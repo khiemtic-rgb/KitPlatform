@@ -47,6 +47,28 @@ novixa-site/
 
 ## Thêm tin tức
 
+### Cách 1 — Excel / CSV (khuyến nghị)
+
+1. Đặt file vào `import/tin-tuc.xlsx` (hoặc `tin-tuc.csv`).
+2. Cột: `title` hoặc `description` (tiêu đề), `pubDate`, `slug` (tuỳ chọn), `content`.
+3. Chạy:
+
+```powershell
+cd novixa-site
+npm run import:news
+git add src/content/tin-tuc import/
+git commit -m "Import tin tuc"
+git push
+```
+
+- **pubDate** trong tương lai → bài **ẩn** đến đúng ngày (giờ VN).
+- **Trùng slug hoặc title** → **cập nhật** file `.md` cũ.
+- Mẫu: `import/tin-tuc.template.csv`
+
+GitHub Actions `novixa-scheduled-publish.yml` chạy import + deploy hàng ngày. Tuỳ chọn: secret `CF_DEPLOY_HOOK` (Cloudflare Pages → Deploy hooks).
+
+### Cách 2 — Markdown tay
+
 Tạo file `src/content/tin-tuc/ten-bai.md`:
 
 ```markdown

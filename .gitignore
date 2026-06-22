@@ -6,6 +6,9 @@ tests/
 migrations/
 docs/
 scripts/
+!scripts/import-novixa-news.ps1
+!novixa-site/scripts/
+!novixa-site/scripts/**
 *.sln
 *.slnx
 .env
