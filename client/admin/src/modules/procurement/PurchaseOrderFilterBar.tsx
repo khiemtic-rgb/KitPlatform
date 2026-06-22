@@ -1,0 +1,318 @@
+import { Button, Checkbox, Col, Input, Row, Select, Space } from 'antd';
+
+import { DownloadOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+
+import type { ProductListItem } from '@/shared/api/catalog.types';
+
+import type { Warehouse } from '@/shared/api/inventory.types';
+
+import type { PurchaseOrderListFilters, Supplier } from '@/shared/api/procurement.types';
+
+import { PO_STATUS_LABELS } from '@/shared/api/procurement.types';
+
+import { PharmaDatePicker } from '@/shared/ui/PharmaDatePicker';
+
+
+
+interface PurchaseOrderFilterBarProps {
+
+  filters: PurchaseOrderListFilters;
+
+  searchInput: string;
+
+  suppliers: Supplier[];
+
+  warehouses: Warehouse[];
+
+  products: ProductListItem[];
+
+  loading?: boolean;
+
+  onSearchInputChange: (value: string) => void;
+
+  onApply: (filters: PurchaseOrderListFilters, search: string) => void;
+
+  onReset: () => void;
+
+  onExport: () => void;
+
+}
+
+
+
+export function PurchaseOrderFilterBar({
+
+  filters,
+
+  searchInput,
+
+  suppliers,
+
+  warehouses,
+
+  products,
+
+  loading,
+
+  onSearchInputChange,
+
+  onApply,
+
+  onReset,
+
+  onExport,
+
+}: PurchaseOrderFilterBarProps) {
+
+  const apply = (next: PurchaseOrderListFilters, search = searchInput) => onApply(next, search);
+
+
+
+  return (
+
+    <div style={{ marginBottom: 16 }}>
+
+      <Row gutter={[12, 12]}>
+
+        <Col xs={24} md={12} lg={6}>
+
+          <Input
+
+            allowClear
+
+            placeholder="Số PO, mã/tên NCC"
+
+            value={searchInput}
+
+            onChange={(e) => onSearchInputChange(e.target.value)}
+
+            onPressEnter={() => onApply(filters, searchInput)}
+
+          />
+
+        </Col>
+
+        <Col xs={24} md={12} lg={4}>
+
+          <Select
+
+            allowClear
+
+            placeholder="Trạng thái"
+
+            style={{ width: '100%' }}
+
+            value={filters.status}
+
+            onChange={(status) => apply({ ...filters, status })}
+
+            options={Object.entries(PO_STATUS_LABELS).map(([value, label]) => ({
+
+              value: Number(value),
+
+              label,
+
+            }))}
+
+          />
+
+        </Col>
+
+        <Col xs={24} md={12} lg={6}>
+
+          <Select
+
+            allowClear
+
+            showSearch
+
+            optionFilterProp="label"
+
+            placeholder="Nhà cung cấp"
+
+            style={{ width: '100%' }}
+
+            value={filters.supplierId}
+
+            onChange={(supplierId) => apply({ ...filters, supplierId })}
+
+            options={suppliers.map((s) => ({
+
+              value: s.id,
+
+              label: `${s.supplierCode} — ${s.supplierName}`,
+
+            }))}
+
+          />
+
+        </Col>
+
+        <Col xs={24} md={12} lg={8}>
+
+          <Select
+
+            allowClear
+
+            showSearch
+
+            optionFilterProp="label"
+
+            placeholder="Kho nhận"
+
+            style={{ width: '100%' }}
+
+            value={filters.warehouseId}
+
+            onChange={(warehouseId) => apply({ ...filters, warehouseId })}
+
+            options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
+
+          />
+
+        </Col>
+
+        <Col xs={24} lg={8}>
+
+          <Select
+
+            allowClear
+
+            showSearch
+
+            optionFilterProp="label"
+
+            placeholder="Sản phẩm trong đơn"
+
+            style={{ width: '100%' }}
+
+            value={filters.productId}
+
+            onChange={(productId) => apply({ ...filters, productId })}
+
+            options={products.map((p) => ({
+
+              value: p.id,
+
+              label: `${p.productCode} — ${p.productName}`,
+
+            }))}
+
+          />
+
+        </Col>
+
+        <Col xs={24} lg={8}>
+
+          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+
+              <PharmaDatePicker
+
+                placeholder="Từ ngày"
+
+                value={filters.dateFrom}
+
+                onChange={(dateFrom) => apply({ ...filters, dateFrom: dateFrom || undefined })}
+
+              />
+
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+
+              <PharmaDatePicker
+
+                placeholder="Đến ngày"
+
+                value={filters.dateTo}
+
+                onChange={(dateTo) => apply({ ...filters, dateTo: dateTo || undefined })}
+
+              />
+
+            </div>
+
+          </div>
+
+        </Col>
+
+        <Col xs={24} lg={8}>
+
+          <Space wrap size={[20, 8]} align="center" style={{ minHeight: 32 }}>
+
+            <Checkbox
+
+              checked={!!filters.pendingReceiptOnly}
+
+              onChange={(e) => apply({ ...filters, pendingReceiptOnly: e.target.checked })}
+
+            >
+
+              Chỉ PO chưa nhận đủ
+
+            </Checkbox>
+
+            <Checkbox
+
+              checked={!!filters.includeArchived}
+
+              onChange={(e) => apply({ ...filters, includeArchived: e.target.checked })}
+
+            >
+
+              Hiện bản ghi đã ẩn
+
+            </Checkbox>
+
+          </Space>
+
+        </Col>
+
+        <Col xs={24}>
+
+          <Space wrap>
+
+            <Button
+
+              type="primary"
+
+              icon={<SearchOutlined />}
+
+              onClick={() => onApply(filters, searchInput)}
+
+              loading={loading}
+
+            >
+
+              Lọc
+
+            </Button>
+
+            <Button onClick={onReset}>Xóa lọc</Button>
+
+            <Button icon={<ReloadOutlined />} onClick={() => onApply(filters, searchInput)} loading={loading}>
+
+              Tải lại
+
+            </Button>
+
+            <Button icon={<DownloadOutlined />} onClick={onExport} disabled={loading}>
+
+              Xuất Excel
+
+            </Button>
+
+          </Space>
+
+        </Col>
+
+      </Row>
+
+    </div>
+
+  );
+
+}
+

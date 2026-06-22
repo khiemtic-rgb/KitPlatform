@@ -1,0 +1,15 @@
+src/**/bin/
+src/**/obj/
+client/**/node_modules/
+client/**/dist/
+tests/
+migrations/
+docs/
+scripts/
+*.sln
+*.slnx
+.env
+.env.*
+!.env.example
+src/**/uploads/
+uploads/

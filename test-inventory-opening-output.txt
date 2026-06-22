@@ -1,0 +1,130 @@
+﻿  Determining projects to restore...
+  All projects are up-to-date for restore.
+  PharmaCore.Domain -> E:\PharmaCore\src\PharmaCore.Domain\bin\Debug\net10.0\PharmaCore.Domain.dll
+  PharmaCore.Application -> E:\PharmaCore\src\PharmaCore.Application\bin\Debug\net10.0\PharmaCore.Application.dll
+  PharmaCore.Infrastructure -> E:\PharmaCore\src\PharmaCore.Infrastructure\bin\Debug\net10.0\PharmaCore.Infrastructure.dll
+  PharmaCore.Api -> E:\PharmaCore\src\PharmaCore.Api\bin\Debug\net10.0\PharmaCore.Api.dll
+  PharmaCore.Api.Tests -> E:\PharmaCore\tests\PharmaCore.Api.Tests\bin\Debug\net10.0\PharmaCore.Api.Tests.dll
+Test run for E:\PharmaCore\tests\PharmaCore.Api.Tests\bin\Debug\net10.0\PharmaCore.Api.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+E:\PharmaCore\tests\PharmaCore.Api.Tests\bin\Debug\net10.0\PharmaCore.Api.Tests.dll
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.9)
+[xUnit.net 00:00:00.08]   Discovering: PharmaCore.Api.Tests
+[xUnit.net 00:00:00.12]   Discovered:  PharmaCore.Api.Tests
+[xUnit.net 00:00:00.14]   Starting:    PharmaCore.Api.Tests
+info: PharmaCore.Api[0]
+      PostgreSQL connection OK
+dbug: Microsoft.Extensions.Hosting.Internal.Host[1]
+      Hosting starting
+info: Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager[63]
+      User profile is available. Using 'C:\Users\admin\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: E:\PharmaCore\src\PharmaCore.Api
+dbug: Microsoft.Extensions.Hosting.Internal.Host[2]
+      Hosting started
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/auth/login - application/json;+charset=utf-8 43
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'PharmaCore.Api.Controllers.AuthController.Login (PharmaCore.Api)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Login(PharmaCore.Application.Auth.LoginRequest, System.Threading.CancellationToken) on controller PharmaCore.Api.Controllers.AuthController (PharmaCore.Api).
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor[1]
+      Executing OkObjectResult, writing value of type 'PharmaCore.Application.Auth.LoginResponse'.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action PharmaCore.Api.Controllers.AuthController.Login (PharmaCore.Api) in 428.8423ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'PharmaCore.Api.Controllers.AuthController.Login (PharmaCore.Api)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/auth/login - 200 - application/json;+charset=utf-8 501.3109ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 GET http://localhost/api/inventory/warehouses - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'PharmaCore.Api.Controllers.Inventory.WarehousesController.List (PharmaCore.Api)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "List", controller = "Warehouses"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IReadOnlyList`1[PharmaCore.Application.Inventory.WarehouseDto]]] List(System.Threading.CancellationToken) on controller PharmaCore.Api.Controllers.Inventory.WarehousesController (PharmaCore.Api).
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor[1]
+      Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[PharmaCore.Application.Inventory.WarehouseDto, PharmaCore.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action PharmaCore.Api.Controllers.Inventory.WarehousesController.List (PharmaCore.Api) in 18.8742ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'PharmaCore.Api.Controllers.Inventory.WarehousesController.List (PharmaCore.Api)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 GET http://localhost/api/inventory/warehouses - 200 - application/json;+charset=utf-8 58.7286ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 GET http://localhost/api/inventory/warehouses/branches - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'PharmaCore.Api.Controllers.Inventory.WarehousesController.Branches (PharmaCore.Api)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Branches", controller = "Warehouses"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IReadOnlyList`1[PharmaCore.Application.Inventory.BranchLookupDto]]] Branches(System.Threading.CancellationToken) on controller PharmaCore.Api.Controllers.Inventory.WarehousesController (PharmaCore.Api).
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor[1]
+      Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[PharmaCore.Application.Inventory.BranchLookupDto, PharmaCore.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action PharmaCore.Api.Controllers.Inventory.WarehousesController.Branches (PharmaCore.Api) in 5.2588ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'PharmaCore.Api.Controllers.Inventory.WarehousesController.Branches (PharmaCore.Api)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 GET http://localhost/api/inventory/warehouses/branches - 200 - application/json;+charset=utf-8 18.2002ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/inventory/warehouses - application/json;+charset=utf-8 160
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'PharmaCore.Api.Controllers.Inventory.WarehousesController.Create (PharmaCore.Api)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Create", controller = "Warehouses"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[PharmaCore.Application.Inventory.WarehouseDto]] Create(PharmaCore.Application.Inventory.CreateWarehouseRequest, System.Threading.CancellationToken) on controller PharmaCore.Api.Controllers.Inventory.WarehousesController (PharmaCore.Api).
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor[1]
+      Executing CreatedAtActionResult, writing value of type 'PharmaCore.Application.Inventory.WarehouseDto'.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action PharmaCore.Api.Controllers.Inventory.WarehousesController.Create (PharmaCore.Api) in 41.9777ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'PharmaCore.Api.Controllers.Inventory.WarehousesController.Create (PharmaCore.Api)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/inventory/warehouses - 201 - application/json;+charset=utf-8 48.0447ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/inventory/opening-balance - application/json;+charset=utf-8 248
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'PharmaCore.Api.Controllers.Inventory.OpeningBalanceController.Create (PharmaCore.Api)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Create", controller = "OpeningBalance"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[PharmaCore.Application.Inventory.OpeningBalanceResultDto]] Create(PharmaCore.Application.Inventory.CreateOpeningBalanceRequest, System.Threading.CancellationToken) on controller PharmaCore.Api.Controllers.Inventory.OpeningBalanceController (PharmaCore.Api).
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action PharmaCore.Api.Controllers.Inventory.OpeningBalanceController.Create (PharmaCore.Api) in 30.4044ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'PharmaCore.Api.Controllers.Inventory.OpeningBalanceController.Create (PharmaCore.Api)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/inventory/opening-balance - 500 - application/json;+charset=utf-8 47.4296ms
+dotnet : [xUnit.net 00:00:01.26]     
+PharmaCore.Api.Tests.InventoryApiTests.Inventory_opening_balance_and_transfer_flow [FAIL]
+At C:\Users\admin\AppData\Local\Temp\ps-script-2776633a-e185-4745-ad34-e410e44a754a.ps1:110 char:1
++ dotnet test tests/PharmaCore.Api.Tests/PharmaCore.Api.Tests.csproj -- ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([xUnit.net 00:0...fer_flow [FAIL]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[xUnit.net 00:00:01.26]       Opening balance failed: 500 {"message":"The member ManufactureDate of type System.DateOnly cannot be used as a parameter value","detail":"System.NotSupportedException: The member ManufactureDate of type System.DateOnly cannot be used as a parameter value\r\n   at Dapper.SqlMapper.LookupDbType(Type type, String name, Boolean demand, ITypeHandler& handler) in /_/Dapper/SqlMapper.cs:line 530\r\n   at Dapper.SqlMapper.CreateParamInfoGenerator(Identity identity, Boolean checkForDuplicates, Boolean removeUnused, IList`1 literals) in /_/Dapper/SqlMapper.cs:line 2693\r\n   at Dapper.SqlMapper.GetCacheInfo(Identity identity, Object exampleParameters, Boolean addToCache) in /_/Dapper/SqlMapper.cs:line 1881\r\n   at Dapper.SqlMapper.QueryRowAsync[T](IDbConnection cnn, Row row, Type effectiveType, CommandDefinition command) in /_/Dapper/SqlMapper.Async.cs:line 481\r\n   at PharmaCore.Infrastructure.Inventory.InventoryRepository.InsertBatchAsync(IDbConnection conn, IDbTransaction tx, Guid warehouseId, Guid productId, String batchNumber, Nullable`1 manufactureDate, Nullable`1 expiryDate, Decimal unitCost, Decimal quantity, CancellationToken cancellationToken) in E:\\PharmaCore\\src\\PharmaCore.Infrastructure\\Inventory\\InventoryRepository.cs:line 350\r\n   at PharmaCore.Infrastructure.Inventory.InventoryRepository.ProcessOpeningBalanceAsync(Guid warehouseId, String notes, IReadOnlyList`1 lines, CancellationToken cancellationToken) in E:\\PharmaCore\\src\\PharmaCore.Infrastructure\\Inventory\\InventoryRepository.cs:line 479\r\n   at PharmaCore.Infrastructure.Inventory.InventoryRepository.ProcessOpeningBalanceAsync(Guid warehouseId, String notes, IReadOnlyList`1 lines, CancellationToken cancellationToken) in E:\\PharmaCore\\src\\PharmaCore.Infrastructure\\Inventory\\InventoryRepository.cs:line 492\r\n   at PharmaCore.Infrastructure.Inventory.InventoryRepository.ProcessOpeningBalanceAsync(Guid warehouseId, String notes, IReadOnlyList`1 lines, CancellationToken cancellationToken) in E:\\PharmaCore\\src\\PharmaCore.Infrastructure\\Inventory\\InventoryRepository.cs:line 492\r\n   at PharmaCore.Infrastructure.Inventory.InventoryService.CreateOpeningBalanceAsync(CreateOpeningBalanceRequest request, CancellationToken cancellationToken) in E:\\PharmaCore\\src\\PharmaCore.Infrastructure\\Inventory\\InventoryService.cs:line 105\r\n   at PharmaCore.Api.Controllers.Inventory.OpeningBalanceController.Create(CreateOpeningBalanceRequest request, CancellationToken cancellationToken) in E:\\PharmaCore\\src\\PharmaCore.Api\\Controllers\\Inventory\\OpeningBalanceController.cs:line 22\r\n   at lambda_method61(Closure, Object)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.AwaitableObjectResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)\r\n   at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|7_0(Endpoint endpoint, Task requestTask, ILogger logger)\r\n   at Program.<>c.<<<Main>$>b__0_6>d.MoveNext() in E:\\PharmaCore\\src\\PharmaCore.Api\\Program.cs:line 192\r\n--- End of stack trace from previous location ---\r\n   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)\r\n   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)\r\n   at Program.<>c__DisplayClass0_0.<<<Main>$>b__5>d.MoveNext() in E:\\PharmaCore\\src\\PharmaCore.Api\\Program.cs:line 124"}
+[xUnit.net 00:00:01.26]       Stack Trace:
+[xUnit.net 00:00:01.26]         E:\PharmaCore\tests\PharmaCore.Api.Tests\InventoryApiTests.cs(73,0): at PharmaCore.Api.Tests.InventoryApiTests.Inventory_opening_balance_and_transfer_flow()
+[xUnit.net 00:00:01.26]         --- End of stack trace from previous location ---
+dbug: Microsoft.Extensions.Hosting.Internal.Host[3]
+      Hosting stopping
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+dbug: Microsoft.Extensions.Hosting.Internal.Host[3]
+      Hosting stopping
+dbug: Microsoft.Extensions.Hosting.Internal.Host[4]
+      Hosting stopped
+dbug: Microsoft.Extensions.Hosting.Internal.Host[4]
+      Hosting stopped
+[xUnit.net 00:00:01.28]   Finished:    PharmaCore.Api.Tests
+  Failed PharmaCore.Api.Tests.InventoryApiTests.Inventory_opening_balance_and_transfer_flow [1 s]
+  Error Message:
+   Opening balance failed: 500 {"message":"The member ManufactureDate of type System.DateOnly cannot be used as a parameter value","detail":"System.NotSupportedException: The member ManufactureDate of type System.DateOnly cannot be used as a parameter value\r\n   at Dapper.SqlMapper.LookupDbType(Type type, String name, Boolean demand, ITypeHandler& handler) in /_/Dapper/SqlMapper.cs:line 530\r\n   at Dapper.SqlMapper.CreateParamInfoGenerator(Identity identity, Boolean checkForDuplicates, Boolean removeUnused, IList`1 literals) in /_/Dapper/SqlMapper.cs:line 2693\r\n   at Dapper.SqlMapper.GetCacheInfo(Identity identity, Object exampleParameters, Boolean addToCache) in /_/Dapper/SqlMapper.cs:line 1881\r\n   at Dapper.SqlMapper.QueryRowAsync[T](IDbConnection cnn, Row row, Type effectiveType, CommandDefinition command) in /_/Dapper/SqlMapper.Async.cs:line 481\r\n   at PharmaCore.Infrastructure.Inventory.InventoryRepository.InsertBatchAsync(IDbConnection conn, IDbTransaction tx, Guid warehouseId, Guid productId, String batchNumber, Nullable`1 manufactureDate, Nullable`1 expiryDate, Decimal unitCost, Decimal quantity, CancellationToken cancellationToken) in E:\\PharmaCore\\src\\PharmaCore.Infrastructure\\Inventory\\InventoryRepository.cs:line 350\r\n   at PharmaCore.Infrastructure.Inventory.InventoryRepository.ProcessOpeningBalanceAsync(Guid warehouseId, String notes, IReadOnlyList`1 lines, CancellationToken cancellationToken) in E:\\PharmaCore\\src\\PharmaCore.Infrastructure\\Inventory\\InventoryRepository.cs:line 479\r\n   at PharmaCore.Infrastructure.Inventory.InventoryRepository.ProcessOpeningBalanceAsync(Guid warehouseId, String notes, IReadOnlyList`1 lines, CancellationToken cancellationToken) in E:\\PharmaCore\\src\\PharmaCore.Infrastructure\\Inventory\\InventoryRepository.cs:line 492\r\n   at PharmaCore.Infrastructure.Inventory.InventoryRepository.ProcessOpeningBalanceAsync(Guid warehouseId, String notes, IReadOnlyList`1 lines, CancellationToken cancellationToken) in E:\\PharmaCore\\src\\PharmaCore.Infrastructure\\Inventory\\InventoryRepository.cs:line 492\r\n   at PharmaCore.Infrastructure.Inventory.InventoryService.CreateOpeningBalanceAsync(CreateOpeningBalanceRequest request, CancellationToken cancellationToken) in E:\\PharmaCore\\src\\PharmaCore.Infrastructure\\Inventory\\InventoryService.cs:line 105\r\n   at PharmaCore.Api.Controllers.Inventory.OpeningBalanceController.Create(CreateOpeningBalanceRequest request, CancellationToken cancellationToken) in E:\\PharmaCore\\src\\PharmaCore.Api\\Controllers\\Inventory\\OpeningBalanceController.cs:line 22\r\n   at lambda_method61(Closure, Object)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.AwaitableObjectResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)\r\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)\r\n   at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|7_0(Endpoint endpoint, Task requestTask, ILogger logger)\r\n   at Program.<>c.<<<Main>$>b__0_6>d.MoveNext() in E:\\PharmaCore\\src\\PharmaCore.Api\\Program.cs:line 192\r\n--- End of stack trace from previous location ---\r\n   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)\r\n   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)\r\n   at Program.<>c__DisplayClass0_0.<<<Main>$>b__5>d.MoveNext() in E:\\PharmaCore\\src\\PharmaCore.Api\\Program.cs:line 124"}
+  Stack Trace:
+     at PharmaCore.Api.Tests.InventoryApiTests.Inventory_opening_balance_and_transfer_flow() in E:\PharmaCore\tests\PharmaCore.Api.Tests\InventoryApiTests.cs:line 73
+--- End of stack trace from previous location ---
+
+Total tests: 1
+     Failed: 1
+Test Run Failed.
+ Total time: 1.8332 Seconds

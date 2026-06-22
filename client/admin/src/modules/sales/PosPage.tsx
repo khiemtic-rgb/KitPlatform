@@ -1,0 +1,840 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import dayjs from 'dayjs';
+import {
+  Alert,
+  AutoComplete,
+  Button,
+  Card,
+  InputNumber,
+  Select,
+  Space,
+  Table,
+  Tooltip,
+  Typography,
+  message,
+} from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { PrinterOutlined } from '@ant-design/icons';
+import { fetchProducts } from '@/shared/api/catalog.api';
+import type { ProductListItem } from '@/shared/api/catalog.types';
+import { fetchWarehouses } from '@/shared/api/inventory.api';
+import type { Warehouse } from '@/shared/api/inventory.types';
+import { createSale, completeDraftSale, fetchOpenShift, fetchPosStock, fetchSalesOrder, lookupPosProduct, openSalesShift, previewPosAllocation, searchCustomers, updateDraftSale } from '@/shared/api/sales.api';
+import {
+  isShiftAlreadyOpenError,
+  loadOpenShiftForWarehouse,
+  shiftAlreadyOpenMessage,
+} from '@/modules/sales/sales-shift-helpers';
+import type { CartLine, CustomerListItem, PosAllocationPreview, PosCheckoutPaymentLine, SalesOrderDetail, SalesShiftDetail } from '@/shared/api/sales.types';
+import { SALES_DISCOUNT_TYPES } from '@/shared/api/sales.types';
+import { apiErrorMessage } from '@/shared/api/api-error';
+import { useHasPermission } from '@/shared/auth/usePermission';
+import { PosCheckoutModal } from '@/modules/sales/PosCheckoutModal';
+import { OpenShiftModal } from '@/modules/sales/OpenShiftModal';
+import { DISCOUNT_TYPE_SELECT_OPTIONS, PosSummaryDivider, PosSummaryOrderDiscountRow, PosSummaryPanel, PosSummaryRow } from '@/modules/sales/pos-summary-ui';
+import { printSalesInvoice } from '@/modules/sales/sales-invoice-print';
+import {
+  discountPercent,
+  lineNet,
+  priceCart,
+  type OrderDiscountState,
+} from '@/modules/sales/pos-pricing';
+import { useSalesDiscountPolicy } from '@/modules/sales/useSalesDiscountPolicy';
+import {
+  buildDraftUpdatePayload,
+  clearPosDraftEdit,
+  loadDraftCartLines,
+  orderDiscountFromDetail,
+  persistPosDraftEdit,
+  readPosDraftEditId,
+} from '@/modules/sales/sales-draft-helpers';
+import { formatDisplayMoney, moneyInputNumberPropsAllowZeroSuffix, moneyInputNumberStyle } from '@/shared/utils/money';
+import { formatAllocationPreviewLine, formatBatchHintLine, formatSuggestedBatch } from '@/modules/sales/pos-batch-display';
+
+function buildSalePayload(
+  warehouseId: string,
+  customerId: string | undefined,
+  cart: CartLine[],
+  orderDiscount: OrderDiscountState,
+  saveAsDraft: boolean,
+  payments?: PosCheckoutPaymentLine[],
+) {
+  return {
+    warehouseId,
+    customerId,
+    saveAsDraft,
+    orderDiscountType: orderDiscount.discountType,
+    orderDiscountValue: orderDiscount.discountValue,
+    payments: payments?.map((p) => ({ paymentMethod: p.paymentMethod, amount: p.amount })),
+    items: cart.map((line) => ({
+      productId: line.productId,
+      productUnitId: line.productUnitId,
+      quantity: line.quantity,
+      discountType: line.discountType,
+      discountValue: line.discountValue,
+    })),
+  };
+}
+
+export function PosPage() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const canWrite = useHasPermission('sales.write');
+  const { canDiscount, maxPercent } = useSalesDiscountPolicy();
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [warehouseId, setWarehouseId] = useState<string>();
+  const [customers, setCustomers] = useState<CustomerListItem[]>([]);
+  const [customerId, setCustomerId] = useState<string>();
+  const [barcode, setBarcode] = useState('');
+  const [products, setProducts] = useState<ProductListItem[]>([]);
+  const [cart, setCart] = useState<CartLine[]>([]);
+  const [orderDiscount, setOrderDiscount] = useState<OrderDiscountState>({});
+  const [saving, setSaving] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [lastCompletedOrder, setLastCompletedOrder] = useState<SalesOrderDetail | null>(null);
+  const [openShift, setOpenShift] = useState<SalesShiftDetail | null>(null);
+  const [openShiftModal, setOpenShiftModal] = useState(false);
+  const [shiftSaving, setShiftSaving] = useState(false);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [editingDraftNumber, setEditingDraftNumber] = useState<string | null>(null);
+  const [draftLoading, setDraftLoading] = useState(false);
+  const [allocationPreview, setAllocationPreview] = useState<PosAllocationPreview | null>(null);
+
+  const cartPreviewKey = useMemo(
+    () => cart.map((c) => `${c.productUnitId}:${c.quantity}`).join('|'),
+    [cart],
+  );
+
+  const allocationByUnit = useMemo(() => {
+    const map = new Map<string, string>();
+    allocationPreview?.lines.forEach((line) => {
+      map.set(line.productUnitId, formatAllocationPreviewLine(line));
+    });
+    return map;
+  }, [allocationPreview]);
+
+  useEffect(() => {
+    if (!warehouseId || cart.length === 0 || !cart.some((c) => c.batchHints?.length)) {
+      setAllocationPreview(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const preview = await previewPosAllocation({
+          warehouseId,
+          items: cart.map((c) => ({
+            productId: c.productId,
+            productUnitId: c.productUnitId,
+            quantity: c.quantity,
+          })),
+        });
+        if (!cancelled) setAllocationPreview(preview);
+      } catch {
+        if (!cancelled) setAllocationPreview(null);
+      }
+    }, 350);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [warehouseId, cartPreviewKey, cart.length]);
+
+  const pricing = useMemo(() => priceCart(cart, orderDiscount), [cart, orderDiscount]);
+
+  const resetCart = useCallback(() => {
+    setCart([]);
+    setOrderDiscount({});
+  }, []);
+
+  const clearDraftEdit = useCallback(() => {
+    setEditingDraftId(null);
+    setEditingDraftNumber(null);
+    clearPosDraftEdit();
+    setSearchParams({}, { replace: true });
+    resetCart();
+  }, [resetCart, setSearchParams]);
+
+  const loadOpenShift = useCallback(async (whId: string) => {
+    const shift = await loadOpenShiftForWarehouse(whId);
+    setOpenShift(shift);
+    return shift;
+  }, []);
+
+  useEffect(() => {
+    if (!warehouseId) {
+      setOpenShift(null);
+      return;
+    }
+    void loadOpenShift(warehouseId).catch((error) => {
+      setOpenShift(null);
+      message.error(apiErrorMessage(error, 'Không tải được trạng thái ca'));
+    });
+  }, [warehouseId, loadOpenShift]);
+
+  useEffect(() => {
+    void (async () => {
+      const wh = await fetchWarehouses();
+      setWarehouses(wh);
+      const defaultWh = wh.find((w) => w.isDefault) ?? wh[0];
+      if (defaultWh && !warehouseId) setWarehouseId(defaultWh.id);
+      setCustomers(await searchCustomers());
+      const catalog = await fetchProducts({ page: 1, pageSize: 200, status: 1 });
+      setProducts(catalog.items);
+    })();
+  }, []);
+
+  const loadDraftFromUrl = useCallback(
+    async (draftId: string, catalog: ProductListItem[]) => {
+      setDraftLoading(true);
+      try {
+        const order = await fetchSalesOrder(draftId);
+        if (order.status !== 1) {
+          message.warning('Đơn không còn ở trạng thái nháp');
+          clearDraftEdit();
+          return;
+        }
+        setWarehouseId(order.warehouseId);
+        setCustomerId(order.customerId);
+        setCart(await loadDraftCartLines(order, catalog));
+        setOrderDiscount(orderDiscountFromDetail(order));
+        setEditingDraftId(order.id);
+        setEditingDraftNumber(order.orderNumber);
+        persistPosDraftEdit(order.id);
+        if (searchParams.get('draftId') !== order.id) {
+          setSearchParams({ draftId: order.id }, { replace: true });
+        }
+      } catch (error) {
+        message.error(apiErrorMessage(error, 'Không tải được đơn nháp'));
+        clearDraftEdit();
+      } finally {
+        setDraftLoading(false);
+      }
+    },
+    [clearDraftEdit, searchParams, setSearchParams],
+  );
+
+  useEffect(() => {
+    const draftId = searchParams.get('draftId') ?? readPosDraftEditId();
+    if (!draftId || products.length === 0) return;
+    if (editingDraftId === draftId) return;
+    if (!searchParams.get('draftId')) {
+      setSearchParams({ draftId }, { replace: true });
+    }
+    void loadDraftFromUrl(draftId, products);
+  }, [searchParams, products, editingDraftId, loadDraftFromUrl, setSearchParams]);
+
+  const productSuggestions = useMemo(() => {
+    const q = barcode.trim().toLowerCase();
+    const filtered = products.filter((p) => {
+      if (!p.primaryBarcode) return false;
+      if (!q) return true;
+      return (
+        p.productCode.toLowerCase().includes(q) ||
+        p.productName.toLowerCase().includes(q) ||
+        p.primaryBarcode.toLowerCase().includes(q)
+      );
+    });
+    return filtered.slice(0, 20).map((p) => ({
+      value: p.primaryBarcode!,
+      label: `${p.productCode} — ${p.productName} · ${p.primaryBarcode}`,
+    }));
+  }, [products, barcode]);
+
+  const validateDiscounts = useCallback(() => {
+    if (!canDiscount) {
+      const hasLineDiscount = cart.some((line) => (line.discountValue ?? 0) > 0);
+      const hasOrderDiscount = (orderDiscount.discountValue ?? 0) > 0;
+      if (hasLineDiscount || hasOrderDiscount) {
+        message.error('Tài khoản không có quyền chiết khấu');
+        return false;
+      }
+      return true;
+    }
+
+    for (const line of cart) {
+      const gross = line.quantity * line.unitPrice;
+      const amount =
+        line.discountType && line.discountValue
+          ? line.discountType === SALES_DISCOUNT_TYPES.Percent
+            ? gross * Math.min(line.discountValue, 100) / 100
+            : Math.min(line.discountValue, gross)
+          : 0;
+      if (discountPercent(amount, gross) > maxPercent + 0.01) {
+        message.error(`Chiết khấu dòng vượt quá ${maxPercent}%`);
+        return false;
+      }
+    }
+
+    if ((orderDiscount.discountValue ?? 0) > 0) {
+      const orderAmount = pricing.orderDiscountAmount;
+      if (discountPercent(orderAmount, pricing.merchandiseNet) > maxPercent + 0.01) {
+        message.error(`Chiết khấu đơn vượt quá ${maxPercent}%`);
+        return false;
+      }
+    }
+
+    return true;
+  }, [canDiscount, cart, maxPercent, orderDiscount.discountValue, pricing.merchandiseNet, pricing.orderDiscountAmount]);
+
+  const validateStock = useCallback(async () => {
+    if (!warehouseId) return false;
+    const stockUpdates: { key: string; stockAvailable: number }[] = [];
+    for (const line of cart) {
+      const stock = await fetchPosStock(warehouseId, line.productUnitId);
+      stockUpdates.push({ key: line.key, stockAvailable: stock.stockAvailable });
+      if (line.quantity > stock.stockAvailable + 0.0001) {
+        message.error(
+          `${stock.productCode} — ${stock.productName}: tồn còn ${stock.stockAvailable.toLocaleString('vi-VN')} ${stock.unitName}, giỏ đang ${line.quantity.toLocaleString('vi-VN')}`,
+        );
+        return false;
+      }
+    }
+    setCart((prev) =>
+      prev.map((line) => {
+        const update = stockUpdates.find((row) => row.key === line.key);
+        return update ? { ...line, stockAvailable: update.stockAvailable } : line;
+      }),
+    );
+    return true;
+  }, [cart, warehouseId]);
+
+  const validateFefoAllocation = useCallback(async () => {
+    if (!warehouseId || cart.length === 0) return true;
+    try {
+      await previewPosAllocation({
+        warehouseId,
+        items: cart.map((c) => ({
+          productId: c.productId,
+          productUnitId: c.productUnitId,
+          quantity: c.quantity,
+        })),
+      });
+      return true;
+    } catch (error) {
+      message.error(apiErrorMessage(error, 'Không đủ tồn kho theo FEFO'));
+      return false;
+    }
+  }, [cart, warehouseId]);
+
+  const addByBarcode = useCallback(
+    async (code?: string) => {
+      const value = (code ?? barcode).trim();
+      if (!warehouseId || !value) return;
+      try {
+        const item = await lookupPosProduct(value, warehouseId);
+        if (item.stockAvailable <= 0) {
+          message.warning('Sản phẩm hết tồn tại kho này');
+          return;
+        }
+        setCart((prev) => {
+          const existing = prev.find((l) => l.productUnitId === item.productUnitId);
+          if (existing) {
+            const nextQty = existing.quantity + 1;
+            if (nextQty > item.stockAvailable) {
+              message.warning(`Tồn kho còn ${item.stockAvailable.toLocaleString('vi-VN')} — không thêm được`);
+              return prev;
+            }
+            return prev.map((l) =>
+              l.productUnitId === item.productUnitId
+                ? {
+                    ...l,
+                    quantity: nextQty,
+                    batchHints: item.batchHints ?? l.batchHints,
+                    stockSourceLabel: item.stockSourceLabel ?? l.stockSourceLabel,
+                  }
+                : l,
+            );
+          }
+          return [
+            ...prev,
+            {
+              key: item.productUnitId,
+              productId: item.productId,
+              productCode: item.productCode,
+              productName: item.productName,
+              productUnitId: item.productUnitId,
+              unitName: item.unitName,
+              quantity: 1,
+              unitPrice: item.unitPrice,
+              stockAvailable: item.stockAvailable,
+              batchHints: item.batchHints,
+              stockSourceLabel: item.stockSourceLabel,
+            },
+          ];
+        });
+        setBarcode('');
+      } catch (error) {
+        message.error(apiErrorMessage(error, 'Không tìm thấy sản phẩm'));
+      }
+    },
+    [barcode, warehouseId],
+  );
+
+  const resetCartAndExitDraft = () => {
+    clearDraftEdit();
+  };
+
+  const saveDraft = async () => {
+    if (!warehouseId) {
+      message.warning('Chọn kho bán trước');
+      return;
+    }
+    if (cart.length === 0) {
+      message.warning('Thêm ít nhất một sản phẩm');
+      return;
+    }
+    if (!validateDiscounts()) return;
+    const updatingExisting = Boolean(editingDraftId);
+    setSaving(true);
+    const hideLoading = message.loading(
+      updatingExisting ? 'Đang cập nhật đơn nháp...' : 'Đang lưu đơn nháp...',
+      0,
+    );
+    try {
+      if (editingDraftId) {
+        const order = await updateDraftSale(
+          editingDraftId,
+          buildDraftUpdatePayload(customerId, cart, orderDiscount),
+        );
+        hideLoading();
+        message.success(
+          `Đã cập nhật nháp ${order.orderNumber} — ${formatDisplayMoney(order.totalAmount)}`,
+        );
+        clearDraftEdit();
+        navigate(`/sales/orders?orderId=${order.id}`);
+      } else {
+        const order = await createSale(
+          buildSalePayload(warehouseId, customerId, cart, orderDiscount, true),
+        );
+        hideLoading();
+        clearPosDraftEdit();
+        message.success(`Đã lưu nháp ${order.orderNumber}`);
+        resetCart();
+        navigate(`/sales/orders?orderId=${order.id}`);
+      }
+    } catch (error) {
+      hideLoading();
+      message.error(apiErrorMessage(error, updatingExisting ? 'Không cập nhật được đơn nháp' : 'Không lưu được đơn nháp'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmCheckout = async (payments: PosCheckoutPaymentLine[]) => {
+    if (!warehouseId) {
+      message.warning('Chọn kho bán trước');
+      throw new Error('missing-warehouse');
+    }
+    if (cart.length === 0) {
+      message.warning('Giỏ hàng trống');
+      throw new Error('empty-cart');
+    }
+    if (!validateDiscounts()) {
+      throw new Error('invalid-discount');
+    }
+    if (!(await validateStock())) {
+      throw new Error('invalid-stock');
+    }
+    if (!(await validateFefoAllocation())) {
+      throw new Error('invalid-fefo');
+    }
+    setSaving(true);
+    const hideLoading = message.loading('Đang ghi đơn bán...', 0);
+    try {
+      let order: SalesOrderDetail;
+      if (editingDraftId) {
+        await updateDraftSale(
+          editingDraftId,
+          buildDraftUpdatePayload(customerId, cart, orderDiscount),
+        );
+        order = await completeDraftSale(editingDraftId, payments);
+      } else {
+        order = await createSale(
+          buildSalePayload(warehouseId, customerId, cart, orderDiscount, false, payments),
+        );
+      }
+      hideLoading();
+      message.success(`Đã bán ${order.orderNumber} — ${formatDisplayMoney(order.totalAmount)}`);
+      setCheckoutOpen(false);
+      clearDraftEdit();
+      resetCart();
+      if (!printSalesInvoice(order)) {
+        setLastCompletedOrder(order);
+        message.warning('Trình duyệt chặn cửa sổ in — bấm In hóa đơn bên dưới.');
+      }
+      if (warehouseId) await loadOpenShift(warehouseId);
+    } catch (error) {
+      hideLoading();
+      throw error;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const columns: ColumnsType<CartLine> = [
+    { title: 'Mã', dataIndex: 'productCode', width: 90 },
+    { title: 'Sản phẩm', dataIndex: 'productName' },
+    {
+      title: 'Lô (FEFO)',
+      width: 168,
+      render: (_, row) => {
+        const label =
+          allocationByUnit.get(row.productUnitId) ?? formatSuggestedBatch(row.batchHints);
+        if (label === '—') return '—';
+        const hints = row.batchHints?.map(formatBatchHintLine).join('\n');
+        return hints ? (
+          <Tooltip title={<span style={{ whiteSpace: 'pre-line' }}>{hints}</span>}>
+            <span>{label}</span>
+          </Tooltip>
+        ) : (
+          label
+        );
+      },
+    },
+    { title: 'ĐVT', dataIndex: 'unitName', width: 70 },
+    {
+      title: 'SL',
+      dataIndex: 'quantity',
+      width: 90,
+      render: (v: number, row) => (
+        <InputNumber
+          min={1}
+          max={row.stockAvailable}
+          value={v}
+          disabled={!canWrite}
+          style={moneyInputNumberStyle}
+          onChange={(qty) => {
+            if (qty == null) return;
+            setCart((prev) =>
+              prev.map((l) => (l.key === row.key ? { ...l, quantity: Number(qty) } : l)),
+            );
+          }}
+        />
+      ),
+    },
+    {
+      title: 'Đơn giá',
+      dataIndex: 'unitPrice',
+      width: 100,
+      align: 'right',
+      render: (v: number) => (
+        <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDisplayMoney(v)}</span>
+      ),
+    },
+    ...(canDiscount
+      ? ([
+          {
+            title: 'CK',
+            width: 158,
+            render: (_, row) => (
+              <Space.Compact>
+                <Select
+                  allowClear
+                  placeholder="%"
+                  style={{ width: 96 }}
+                  disabled={!canWrite}
+                  value={row.discountType}
+                  onChange={(discountType) =>
+                    setCart((prev) =>
+                      prev.map((l) =>
+                        l.key === row.key
+                          ? { ...l, discountType, discountValue: discountType ? l.discountValue ?? 0 : undefined }
+                          : l,
+                      ),
+                    )
+                  }
+                  options={[...DISCOUNT_TYPE_SELECT_OPTIONS]}
+                />
+                <InputNumber
+                  disabled={!canWrite || !row.discountType}
+                  value={row.discountValue}
+                  {...(row.discountType === SALES_DISCOUNT_TYPES.Fixed
+                    ? { ...moneyInputNumberPropsAllowZeroSuffix, style: { ...moneyInputNumberStyle, width: 96 } }
+                    : { min: 0, max: 100, style: { ...moneyInputNumberStyle, width: 72 } })}
+                  onChange={(discountValue) =>
+                    setCart((prev) =>
+                      prev.map((l) =>
+                        l.key === row.key ? { ...l, discountValue: Number(discountValue ?? 0) } : l,
+                      ),
+                    )
+                  }
+                />
+              </Space.Compact>
+            ),
+          },
+        ] as ColumnsType<CartLine>)
+      : []),
+    {
+      title: 'Thành tiền',
+      width: 110,
+      align: 'right',
+      render: (_, row) => (
+        <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDisplayMoney(lineNet(row))}</span>
+      ),
+    },
+    {
+      title: '',
+      width: 70,
+      render: (_, row) => (
+        <Button
+          type="link"
+          danger
+          disabled={!canWrite}
+          onClick={() => setCart((p) => p.filter((l) => l.key !== row.key))}
+        >
+          Xóa
+        </Button>
+      ),
+    },
+  ];
+
+  const handleOpenShift = async (openingCash: number) => {
+    if (!warehouseId) {
+      message.warning('Chọn kho trước khi mở ca');
+      throw new Error('missing warehouse');
+    }
+    setShiftSaving(true);
+    try {
+      const shift = await openSalesShift({ warehouseId, openingCash });
+      setOpenShift(shift);
+      setOpenShiftModal(false);
+      message.success(`Đã mở ca ${shift.shiftNumber}`);
+    } catch (error) {
+      if (isShiftAlreadyOpenError(error)) {
+        const existing = await fetchOpenShift(warehouseId);
+        if (existing) {
+          setOpenShift(existing);
+          setOpenShiftModal(false);
+          message.info(shiftAlreadyOpenMessage(existing));
+          return;
+        }
+      }
+      message.error(apiErrorMessage(error, 'Không mở được ca'));
+      throw error;
+    } finally {
+      setShiftSaving(false);
+    }
+  };
+
+  const warehouseName = warehouses.find((w) => w.id === warehouseId)?.warehouseName;
+
+  return (
+    <Card title="Bán hàng (POS)" loading={draftLoading}>
+      {editingDraftId && editingDraftNumber && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={`Đang sửa đơn nháp ${editingDraftNumber}`}
+          description="Thêm/bớt sản phẩm rồi bấm Cập nhật nháp, hoặc Thanh toán để hoàn tất."
+          action={
+            <Button size="small" onClick={resetCartAndExitDraft}>
+              Bỏ sửa
+            </Button>
+          }
+        />
+      )}
+      {!openShift && warehouseId && canWrite && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Chưa mở ca cho kho này"
+          description="Cần mở ca và nhập quỹ đầu ca trước khi thanh toán đơn bán."
+          action={
+            <Button size="small" type="primary" onClick={() => setOpenShiftModal(true)}>
+              Mở ca
+            </Button>
+          }
+        />
+      )}
+      {openShift && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={`Ca ${openShift.shiftNumber} · Quỹ đầu ${formatDisplayMoney(openShift.openingCash)}`}
+          description={`Mở lúc ${dayjs(openShift.openedAt).format('DD-MM-YYYY HH:mm')} — Thu ròng ca: ${formatDisplayMoney(openShift.summary.netTotal)}`}
+        />
+      )}
+      <Space wrap style={{ marginBottom: 16 }}>
+        <Select
+          style={{ width: 200 }}
+          placeholder="Kho bán"
+          value={warehouseId}
+          disabled={!!editingDraftId}
+          onChange={(id) => {
+            if (editingDraftId) return;
+            setWarehouseId(id);
+            resetCart();
+          }}
+          options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
+        />
+        <Select
+          allowClear
+          showSearch
+          optionFilterProp="label"
+          style={{ width: 220 }}
+          placeholder="Khách hàng (tùy chọn)"
+          value={customerId}
+          onChange={setCustomerId}
+          options={customers.map((c) => ({
+            value: c.id,
+            label: `${c.customerCode} — ${c.fullName}`,
+          }))}
+        />
+        <Space direction="vertical" size={2}>
+          <AutoComplete
+            style={{ width: 320 }}
+            placeholder="Quét mã vạch hoặc gõ tên / mã SP"
+            value={barcode}
+            options={productSuggestions}
+            onChange={setBarcode}
+            onSelect={(value) => void addByBarcode(String(value))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void addByBarcode();
+            }}
+            disabled={!canWrite || !warehouseId}
+            notFoundContent="Không có sản phẩm phù hợp"
+          />
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            Demo: <Typography.Text code>8934567890012</Typography.Text> (Paracetamol 500mg)
+          </Typography.Text>
+        </Space>
+        <Button type="primary" onClick={() => void addByBarcode()} disabled={!canWrite || !warehouseId}>
+          Thêm
+        </Button>
+      </Space>
+
+      {cart.length > 0 && cart.some((c) => c.batchHints?.length) && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={allocationPreview?.stockSourceLabel ?? cart[0]?.stockSourceLabel ?? 'Tồn theo hệ thống'}
+          description="Lô gợi ý theo FEFO trên sổ — đối chiếu kệ khi kiểm kê. Khi thanh toán, hệ thống trừ tồn theo lô này."
+        />
+      )}
+
+      <Table rowKey="key" size="small" pagination={false} dataSource={cart} columns={columns} scroll={{ x: 1140 }} />
+
+      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
+        <PosSummaryPanel>
+          <PosSummaryRow label="Tạm tính" value={formatDisplayMoney(pricing.subtotalGross)} />
+          {pricing.lineDiscountTotal > 0 && (
+            <PosSummaryRow
+              label="Chiết khấu từng SP"
+              value={`−${formatDisplayMoney(pricing.lineDiscountTotal)}`}
+              danger
+            />
+          )}
+          {canDiscount && (
+            <PosSummaryOrderDiscountRow
+              maxPercent={maxPercent}
+              discountType={orderDiscount.discountType}
+              discountValue={orderDiscount.discountValue}
+              disabled={!canWrite || cart.length === 0}
+              onTypeChange={(discountType) =>
+                setOrderDiscount((prev) => ({
+                  ...prev,
+                  discountType,
+                  discountValue: discountType ? prev.discountValue ?? 0 : undefined,
+                }))
+              }
+              onValueChange={(discountValue) =>
+                setOrderDiscount((prev) => ({ ...prev, discountValue }))
+              }
+            />
+          )}
+          {pricing.totalDiscountAmount > 0 && (
+            <PosSummaryRow
+              label="Tổng CK"
+              value={`−${formatDisplayMoney(pricing.totalDiscountAmount)}`}
+              danger
+            />
+          )}
+          <PosSummaryDivider />
+          <PosSummaryRow
+            label="Khách phải trả"
+            value={formatDisplayMoney(pricing.totalAmount)}
+            strong
+          />
+        </PosSummaryPanel>
+        <Space>
+          <Button
+            disabled={!canWrite || cart.length === 0 || draftLoading}
+            loading={saving}
+            onClick={() => void saveDraft()}
+          >
+            {editingDraftId ? 'Cập nhật nháp' : 'Lưu nháp'}
+          </Button>
+          <Button
+            type="primary"
+            size="large"
+            disabled={!canWrite || cart.length === 0 || !openShift}
+            onClick={() => {
+              if (!openShift) {
+                message.warning('Mở ca trước khi thanh toán');
+                return;
+              }
+              if (!validateDiscounts()) return;
+              void (async () => {
+                if (!(await validateStock())) return;
+                if (!(await validateFefoAllocation())) return;
+                setCheckoutOpen(true);
+              })();
+            }}
+          >
+            Thanh toán
+          </Button>
+        </Space>
+      </div>
+
+      <PosCheckoutModal
+        open={checkoutOpen}
+        loading={saving}
+        totalAmount={pricing.totalAmount}
+        subtotalGross={pricing.subtotalGross}
+        lineDiscountTotal={pricing.lineDiscountTotal}
+        orderDiscountAmount={pricing.orderDiscountAmount}
+        allocationPreview={allocationPreview}
+        onCancel={() => setCheckoutOpen(false)}
+        onConfirm={(payments) => confirmCheckout(payments)}
+      />
+
+      {lastCompletedOrder && (
+        <Alert
+          style={{ marginTop: 16 }}
+          type="success"
+          showIcon
+          closable
+          onClose={() => setLastCompletedOrder(null)}
+          message={`Đã hoàn tất ${lastCompletedOrder.orderNumber}`}
+          description={
+            <Space wrap>
+              <Button
+                icon={<PrinterOutlined />}
+                onClick={() => printSalesInvoice(lastCompletedOrder)}
+              >
+                In hóa đơn
+              </Button>
+              <Button type="link" onClick={() => navigate('/sales/orders')}>
+                Xem danh sách đơn
+              </Button>
+            </Space>
+          }
+        />
+      )}
+
+      <OpenShiftModal
+        open={openShiftModal}
+        loading={shiftSaving}
+        warehouseName={warehouseName}
+        onCancel={() => setOpenShiftModal(false)}
+        onConfirm={(cash) => handleOpenShift(cash)}
+      />
+    </Card>
+  );
+}
