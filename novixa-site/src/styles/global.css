@@ -198,8 +198,13 @@ img {
 }
 
 .contact-form textarea {
-  min-height: 120px;
+  min-height: 140px;
   resize: vertical;
+}
+
+.contact-form-wrap .btn-primary {
+  width: 100%;
+  margin-top: 0.25rem;
 }
 
 .hero {

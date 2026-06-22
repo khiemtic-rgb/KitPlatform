@@ -2,12 +2,23 @@
 import { t } from '../i18n';
 
 const m = t('vi');
+const c = m.contact;
 const year = new Date().getFullYear();
+const hasFacebook = Boolean(c.facebookUrl?.trim());
 ---
 
 <footer class="site-footer">
   <div class="container footer-inner">
     <p><strong>{m.meta.siteName}</strong> — {m.meta.tagline}</p>
+    {
+      hasFacebook && (
+        <p>
+          <a class="footer-link" href={c.facebookUrl} target="_blank" rel="noopener noreferrer">
+            {c.facebookPageName || c.facebookLabel}
+          </a>
+        </p>
+      )
+    }
     <p class="muted">{m.footer.erpNote}</p>
     <p class="muted">© {year} {m.footer.rights}</p>
   </div>
@@ -23,6 +34,12 @@ const year = new Date().getFullYear();
   }
   .footer-inner p {
     margin: 0.35rem 0;
+  }
+  .footer-link {
+    color: #93c5fd;
+  }
+  .footer-link:hover {
+    color: #fff;
   }
   .muted {
     color: #94a3b8;

@@ -82,6 +82,20 @@ lang: vi
 Nội dung...
 ```
 
+## Liên hệ (Zalo, Fanpage, form email)
+
+Cấu hình trong `src/i18n/vi.json` → mục `contact`:
+
+| Trường | Ví dụ |
+|--------|--------|
+| `phoneDisplay` | `0901 234 567` (hiển thị) |
+| `phoneTel` | `+84901234567` (gọi / tel:) |
+| `zaloPhone` | `0901234567` (nút Chat Zalo) |
+| `facebookUrl` | `https://www.facebook.com/tenfanpage` |
+| `facebookPageName` | `Novixa` |
+
+Form gửi email qua [Formsubmit](https://formsubmit.co) → `khiemtic@gmail.com`. **Lần đầu** cần bấm link xác nhận trong email Formsubmit gửi tới hộp thư.
+
 ## Bảo mật
 
 - Site **tĩnh** — không kết nối PostgreSQL / API ERP.

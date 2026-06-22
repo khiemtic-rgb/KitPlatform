@@ -6,25 +6,236 @@ import { t } from '../../i18n';
 import '../../styles/global.css';
 
 const m = t('vi');
-const mailto = `mailto:${m.contact.emailAddress}?subject=${encodeURIComponent('Đăng ký quan tâm Novixa')}&body=${encodeURIComponent('Xin chào Novixa,\n\nTôi quan tâm giải pháp quản lý nhà thuốc.\n\nHọ tên:\nSĐT:\nNội dung:\n')}`;
+const c = m.contact;
+const sent = Astro.url.searchParams.get('sent') === '1';
+
+const nextUrl = new URL(Astro.url);
+nextUrl.searchParams.set('sent', '1');
+nextUrl.hash = 'contact-form';
+
+function toZaloLink(phone) {
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) return '';
+  const intl = digits.startsWith('84') ? digits : `84${digits.replace(/^0/, '')}`;
+  return `https://zalo.me/${intl}`;
+}
+
+const zaloLink = toZaloLink(c.zaloPhone || c.phoneTel);
+const telLink = c.phoneTel ? `tel:${c.phoneTel.replace(/\s/g, '')}` : '';
+const hasFacebook = Boolean(c.facebookUrl?.trim());
+const hasZalo = Boolean(zaloLink);
+const hasPhone = Boolean(c.phoneTel?.trim());
 ---
 
-<BaseLayout title={m.contact.title} description={m.contact.intro}>
+<BaseLayout title={c.title} description={c.intro}>
   <Header slot="header" />
   <section class="section">
     <div class="container">
-      <h1 class="section-title">{m.contact.title}</h1>
-      <p class="section-intro">{m.contact.intro}</p>
-      <div class="card" style="max-width: 520px">
-        <p>{m.contact.mailtoNote}</p>
-        <p style="font-size: 1.1rem; font-weight: 600">
-          <a href={`mailto:${m.contact.emailAddress}`}>{m.contact.emailAddress}</a>
-        </p>
-        <p style="margin-top: 1.5rem">
-          <a class="btn btn-primary" href={mailto}>{m.contact.submit}</a>
-        </p>
+      <h1 class="section-title">{c.title}</h1>
+      <p class="section-intro">{c.intro}</p>
+
+      {
+        sent && (
+          <div class="contact-alert" role="status">
+            <strong>{c.successTitle}</strong>
+            <p>{c.successMessage}</p>
+          </div>
+        )
+      }
+
+      <div class="contact-grid">
+        <aside class="card contact-channels">
+          <h2 class="contact-block-title">{c.channelsTitle}</h2>
+
+          {
+            hasPhone && (
+              <div class="contact-channel">
+                <span class="contact-channel-label">{c.phoneLabel}</span>
+                <a class="contact-channel-value" href={telLink}>
+                  {c.phoneDisplay || c.phoneTel}
+                </a>
+              </div>
+            )
+          }
+
+          {
+            !hasPhone && c.phoneDisplay && (
+              <div class="contact-channel">
+                <span class="contact-channel-label">{c.phoneLabel}</span>
+                <span class="contact-channel-value">{c.phoneDisplay}</span>
+              </div>
+            )
+          }
+
+          <div class="contact-channel">
+            <span class="contact-channel-label">{c.emailLabel}</span>
+            <a class="contact-channel-value" href={`mailto:${c.emailAddress}`}>
+              {c.emailAddress}
+            </a>
+          </div>
+
+          <div class="contact-actions">
+            {
+              hasZalo && (
+                <a
+                  class="btn btn-zalo"
+                  href={zaloLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {c.zaloLabel}
+                </a>
+              )
+            }
+            {
+              hasFacebook && (
+                <a
+                  class="btn btn-facebook"
+                  href={c.facebookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {c.facebookLabel}
+                  {c.facebookPageName ? ` — ${c.facebookPageName}` : ''}
+                </a>
+              )
+            }
+          </div>
+
+          {hasZalo && <p class="contact-hint">{c.zaloHint}</p>}
+        </aside>
+
+        <div class="card contact-form-wrap" id="contact-form">
+          <h2 class="contact-block-title">{c.formTitle}</h2>
+          <form
+            class="contact-form"
+            method="POST"
+            action={`https://formsubmit.co/${encodeURIComponent(c.emailAddress)}`}
+          >
+            <input type="hidden" name="_subject" value="Liên hệ từ novixa.vn" />
+            <input type="hidden" name="_captcha" value="false" />
+            <input type="hidden" name="_template" value="table" />
+            <input type="hidden" name="_next" value={nextUrl.toString()} />
+            <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off" />
+
+            <label for="name">{c.name} *</label>
+            <input id="name" name="name" type="text" required autocomplete="name" />
+
+            <label for="phone">{c.phone} *</label>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              required
+              autocomplete="tel"
+              inputmode="tel"
+            />
+
+            <label for="email">{c.email}</label>
+            <input id="email" name="email" type="email" autocomplete="email" />
+
+            <label for="message">{c.message} *</label>
+            <textarea id="message" name="message" required></textarea>
+
+            <button class="btn btn-primary" type="submit">{c.submit}</button>
+            <p class="contact-form-note">{c.formNote}</p>
+          </form>
+        </div>
       </div>
     </div>
   </section>
   <Footer slot="footer" />
 </BaseLayout>
+
+<style>
+  .contact-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  @media (min-width: 768px) {
+    .contact-grid {
+      grid-template-columns: minmax(260px, 340px) 1fr;
+    }
+  }
+
+  .contact-block-title {
+    margin: 0 0 1.25rem;
+    font-size: 1.15rem;
+    color: var(--color-primary);
+  }
+
+  .contact-channel {
+    margin-bottom: 1rem;
+  }
+
+  .contact-channel-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-muted);
+    margin-bottom: 0.2rem;
+  }
+
+  .contact-channel-value {
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+
+  .contact-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-top: 1.25rem;
+  }
+
+  .contact-hint {
+    margin: 0.75rem 0 0;
+    font-size: 0.85rem;
+    color: var(--color-muted);
+  }
+
+  .contact-form-note {
+    margin: 0.75rem 0 0;
+    font-size: 0.82rem;
+    color: var(--color-muted);
+  }
+
+  .contact-alert {
+    background: #ecfdf5;
+    border: 1px solid #6ee7b7;
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    max-width: 720px;
+  }
+
+  .contact-alert p {
+    margin: 0.35rem 0 0;
+    color: #065f46;
+  }
+
+  .btn-zalo {
+    background: #0068ff;
+    color: #fff;
+  }
+
+  .btn-zalo:hover {
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .btn-facebook {
+    background: #1877f2;
+    color: #fff;
+  }
+
+  .btn-facebook:hover {
+    color: #fff;
+    text-decoration: none;
+  }
+</style>
