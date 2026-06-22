@@ -3,14 +3,7 @@ src/**/obj/
 client/**/node_modules/
 client/**/dist/
 tests/
-migrations/
 docs/
-scripts/
-!scripts/import-novixa-news.ps1
-!novixa-site/scripts/
-!novixa-site/scripts/**
-*.sln
-*.slnx
 .env
 .env.*
 !.env.example

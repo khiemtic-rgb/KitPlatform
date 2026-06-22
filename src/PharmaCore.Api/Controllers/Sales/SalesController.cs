@@ -30,7 +30,7 @@ public sealed class SalesController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(barcode))
-            return BadRequest(new { message = "Mã vạch không được để trống." });
+            return BadRequest(new { message = "Mã vạch hoặc mã sản phẩm không được để trống." });
         var item = await _sales.LookupProductAsync(barcode, warehouseId, priceType, cancellationToken);
         return item is null ? NotFound() : Ok(item);
     }

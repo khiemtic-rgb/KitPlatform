@@ -69,57 +69,56 @@ internal sealed class SalesRepository
         short priceType,
         CancellationToken cancellationToken)
     {
-        const string sql = """
-            SELECT
-                p.id AS ProductId,
-                p.product_code AS ProductCode,
-                p.product_name AS ProductName,
-                u.id AS ProductUnitId,
-                u.unit_name AS UnitName,
-                u.conversion_factor AS ConversionFactor,
-                pr.price AS UnitPrice,
-                COALESCE((
-                    SELECT SUM(b.quantity_available)
-                    FROM inventory_batches b
-                    WHERE b.tenant_id = @TenantId AND b.warehouse_id = @WarehouseId
-                      AND b.product_id = p.id AND b.quantity_available > 0
-                ), 0) AS StockAvailable
-            FROM product_barcodes bc
-            INNER JOIN products p ON p.id = bc.product_id
-            INNER JOIN LATERAL (
-                SELECT id, unit_name, conversion_factor
-                FROM product_units pu
-                WHERE pu.product_id = p.id AND pu.tenant_id = @TenantId
-                ORDER BY pu.is_sale_unit DESC, pu.is_base_unit DESC, pu.unit_name
-                LIMIT 1
-            ) u ON TRUE
-            LEFT JOIN LATERAL (
-                SELECT price FROM product_prices pp
-                WHERE pp.tenant_id = @TenantId AND pp.product_id = p.id
-                  AND pp.product_unit_id = u.id AND pp.price_type = @PriceType
-                  AND pp.status = 1 AND pp.effective_from <= NOW()
-                  AND (pp.effective_to IS NULL OR pp.effective_to > NOW())
-                ORDER BY pp.effective_from DESC
-                LIMIT 1
-            ) pr ON TRUE
-            WHERE bc.tenant_id = @TenantId AND bc.barcode = @Barcode
-              AND bc.status = 1 AND p.deleted_at IS NULL
-            LIMIT 1
-            """;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        var lookup = await conn.QuerySingleOrDefaultAsync<PosProductLookupDto>(sql, new
-        {
-            TenantId,
-            WarehouseId = warehouseId,
-            PriceType = priceType,
-            Barcode = barcode.Trim(),
-        });
-        if (lookup is null) return null;
+        var row = await conn.QuerySingleOrDefaultAsync<PosProductLookupRow>(
+            PosProductLookupByBarcodeSql,
+            new
+            {
+                TenantId,
+                WarehouseId = warehouseId,
+                PriceType = priceType,
+                Barcode = barcode.Trim(),
+            });
+        return row is null ? null : await CompletePosLookupAsync(conn, row, warehouseId, cancellationToken);
+    }
 
-        var stockInSaleUnit = lookup.ConversionFactor > 0
-            ? lookup.StockAvailable / lookup.ConversionFactor
-            : lookup.StockAvailable;
-        lookup = lookup with { StockAvailable = stockInSaleUnit };
+    public async Task<PosProductLookupDto?> LookupByProductCodeAsync(
+        string productCode,
+        Guid warehouseId,
+        short priceType,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var row = await conn.QuerySingleOrDefaultAsync<PosProductLookupRow>(
+            PosProductLookupByCodeSql,
+            new
+            {
+                TenantId,
+                WarehouseId = warehouseId,
+                PriceType = priceType,
+                ProductCode = productCode.Trim(),
+            });
+        return row is null ? null : await CompletePosLookupAsync(conn, row, warehouseId, cancellationToken);
+    }
+
+    private async Task<PosProductLookupDto> CompletePosLookupAsync(
+        IDbConnection conn,
+        PosProductLookupRow row,
+        Guid warehouseId,
+        CancellationToken cancellationToken)
+    {
+        var stockInSaleUnit = row.ConversionFactor > 0
+            ? row.StockAvailable / row.ConversionFactor
+            : row.StockAvailable;
+        var lookup = new PosProductLookupDto(
+            row.ProductId,
+            row.ProductCode,
+            row.ProductName,
+            row.ProductUnitId,
+            row.UnitName,
+            row.ConversionFactor,
+            row.UnitPrice,
+            stockInSaleUnit);
 
         var batchMode = await _tenantSettings.GetBatchModeAsync(cancellationToken);
         if (batchMode == TenantBatchMode.Off)
@@ -147,6 +146,72 @@ internal sealed class SalesRepository
         return lookup with { BatchHints = hints, StockSourceLabel = StockSourceLabels.SystemBook };
     }
 
+    private const string PosProductLookupSelect = """
+            SELECT
+                p.id AS ProductId,
+                p.product_code AS ProductCode,
+                p.product_name AS ProductName,
+                u.id AS ProductUnitId,
+                u.unit_name AS UnitName,
+                u.conversion_factor AS ConversionFactor,
+                pr.price AS UnitPrice,
+                COALESCE((
+                    SELECT SUM(b.quantity_available)
+                    FROM inventory_batches b
+                    WHERE b.tenant_id = @TenantId AND b.warehouse_id = @WarehouseId
+                      AND b.product_id = p.id AND b.quantity_available > 0
+                ), 0) AS StockAvailable
+            """;
+
+    private const string PosProductLookupByBarcodeSql = PosProductLookupSelect + """
+
+            FROM product_barcodes bc
+            INNER JOIN products p ON p.id = bc.product_id
+            INNER JOIN LATERAL (
+                SELECT id, unit_name, conversion_factor
+                FROM product_units pu
+                WHERE pu.product_id = p.id AND pu.tenant_id = @TenantId
+                ORDER BY pu.is_sale_unit DESC, pu.is_base_unit DESC, pu.unit_name
+                LIMIT 1
+            ) u ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT price FROM product_prices pp
+                WHERE pp.tenant_id = @TenantId AND pp.product_id = p.id
+                  AND pp.product_unit_id = u.id AND pp.price_type = @PriceType
+                  AND pp.status = 1 AND pp.effective_from <= NOW()
+                  AND (pp.effective_to IS NULL OR pp.effective_to > NOW())
+                ORDER BY pp.effective_from DESC
+                LIMIT 1
+            ) pr ON TRUE
+            WHERE bc.tenant_id = @TenantId AND bc.barcode = @Barcode
+              AND bc.status = 1 AND p.deleted_at IS NULL
+            LIMIT 1
+            """;
+
+    private const string PosProductLookupByCodeSql = PosProductLookupSelect + """
+
+            FROM products p
+            INNER JOIN LATERAL (
+                SELECT id, unit_name, conversion_factor
+                FROM product_units pu
+                WHERE pu.product_id = p.id AND pu.tenant_id = @TenantId
+                ORDER BY pu.is_sale_unit DESC, pu.is_base_unit DESC, pu.unit_name
+                LIMIT 1
+            ) u ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT price FROM product_prices pp
+                WHERE pp.tenant_id = @TenantId AND pp.product_id = p.id
+                  AND pp.product_unit_id = u.id AND pp.price_type = @PriceType
+                  AND pp.status = 1 AND pp.effective_from <= NOW()
+                  AND (pp.effective_to IS NULL OR pp.effective_to > NOW())
+                ORDER BY pp.effective_from DESC
+                LIMIT 1
+            ) pr ON TRUE
+            WHERE p.tenant_id = @TenantId AND p.deleted_at IS NULL
+              AND lower(trim(p.product_code)) = lower(trim(@ProductCode))
+            LIMIT 1
+            """;
+
     public async Task<PosStockCheckDto?> GetPosStockByUnitAsync(
         Guid warehouseId,
         Guid productUnitId,
@@ -171,7 +236,7 @@ internal sealed class SalesRepository
             WHERE u.id = @ProductUnitId AND u.tenant_id = @TenantId AND p.deleted_at IS NULL
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        var row = await conn.QuerySingleOrDefaultAsync<PosStockCheckDto>(sql, new
+        var row = await conn.QuerySingleOrDefaultAsync<PosStockCheckRow>(sql, new
         {
             TenantId,
             WarehouseId = warehouseId,
@@ -182,7 +247,15 @@ internal sealed class SalesRepository
         var stockInSaleUnit = row.ConversionFactor > 0
             ? row.StockAvailable / row.ConversionFactor
             : row.StockAvailable;
-        return row with { StockAvailable = stockInSaleUnit, StockSourceLabel = StockSourceLabels.SystemBook };
+        return new PosStockCheckDto(
+            row.ProductId,
+            row.ProductCode,
+            row.ProductName,
+            row.ProductUnitId,
+            row.UnitName,
+            row.ConversionFactor,
+            stockInSaleUnit,
+            StockSourceLabels.SystemBook);
     }
 
     public async Task<PosAllocationPreviewDto> PreviewPosAllocationAsync(
@@ -1716,6 +1789,25 @@ internal sealed class SalesRepository
         public DateOnly? EarlierExpiryDate { get; init; }
         public decimal EarlierBookQuantity { get; init; }
     }
+
+    private sealed record PosProductLookupRow(
+        Guid ProductId,
+        string ProductCode,
+        string ProductName,
+        Guid ProductUnitId,
+        string UnitName,
+        decimal ConversionFactor,
+        decimal UnitPrice,
+        decimal StockAvailable);
+
+    private sealed record PosStockCheckRow(
+        Guid ProductId,
+        string ProductCode,
+        string ProductName,
+        Guid ProductUnitId,
+        string UnitName,
+        decimal ConversionFactor,
+        decimal StockAvailable);
 
     private sealed class UnitRow
     {

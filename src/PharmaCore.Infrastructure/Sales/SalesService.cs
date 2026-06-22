@@ -30,12 +30,22 @@ internal sealed class SalesService : ISalesService
         CancellationToken cancellationToken = default) =>
         _repository.SearchCustomersAsync(search, cancellationToken);
 
-    public Task<PosProductLookupDto?> LookupProductAsync(
-        string barcode,
+    public async Task<PosProductLookupDto?> LookupProductAsync(
+        string query,
         Guid warehouseId,
         short priceType = SalesPriceTypes.Retail,
-        CancellationToken cancellationToken = default) =>
-        _repository.LookupByBarcodeAsync(barcode, warehouseId, priceType, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var trimmed = query.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+            return null;
+
+        var byBarcode = await _repository.LookupByBarcodeAsync(trimmed, warehouseId, priceType, cancellationToken);
+        if (byBarcode is not null)
+            return byBarcode;
+
+        return await _repository.LookupByProductCodeAsync(trimmed, warehouseId, priceType, cancellationToken);
+    }
 
     public Task<PosStockCheckDto?> GetPosStockByUnitAsync(
         Guid warehouseId,

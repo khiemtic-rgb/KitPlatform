@@ -256,9 +256,10 @@ export interface CartLine {
   stockAvailable?: number;
   batchHints?: PosBatchHint[];
   stockSourceLabel?: string;
-  allocationPreview?: string;
   discountType?: SalesDiscountType;
   discountValue?: number;
+  /** Cảnh báo tồn kho hiển thị ngay tại ô SL */
+  qtyWarning?: string;
 }
 
 export const SALE_STATUS_LABELS: Record<number, string> = {

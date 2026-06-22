@@ -38,7 +38,7 @@ export function priceCart(cart: CartLine[], orderDiscount: OrderDiscountState) {
     orderDiscount.discountType,
     orderDiscount.discountValue,
   );
-  const totalAmount = Math.round(merchandiseNet - orderDiscountAmount);
+  const totalAmount = merchandiseNet - orderDiscountAmount;
 
   return {
     subtotalGross,
@@ -53,4 +53,32 @@ export function priceCart(cart: CartLine[], orderDiscount: OrderDiscountState) {
 export function discountPercent(amount: number, basis: number): number {
   if (basis <= 0) return 0;
   return (amount / basis) * 100;
+}
+
+/** Mirrors SalesPricing.ValidateDiscounts — returns error message or null. */
+export function validateCartDiscountPolicy(
+  cart: CartLine[],
+  orderDiscount: OrderDiscountState,
+  maxPercent: number,
+  unlimited: boolean,
+): string | null {
+  if (unlimited) return null;
+
+  for (const line of cart) {
+    const gross = lineGross(line);
+    const amount = computeDiscountAmount(gross, line.discountType, line.discountValue);
+    if (amount > 0 && discountPercent(amount, gross) > maxPercent + 0.01) {
+      return `Chiết khấu dòng vượt quá ${maxPercent}%`;
+    }
+  }
+
+  const priced = priceCart(cart, orderDiscount);
+  if (
+    priced.orderDiscountAmount > 0 &&
+    discountPercent(priced.orderDiscountAmount, priced.merchandiseNet) > maxPercent + 0.01
+  ) {
+    return `Chiết khấu đơn vượt quá ${maxPercent}%`;
+  }
+
+  return null;
 }

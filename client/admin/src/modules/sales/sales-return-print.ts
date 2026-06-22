@@ -1,16 +1,19 @@
 import type { SalesReturnDetail } from '@/shared/api/sales.types';
 import { SALES_PAYMENT_METHOD_LABELS } from '@/shared/api/sales.types';
+import { getReceiptStoreSettings } from '@/modules/sales/receipt-settings';
 import { formatDisplayDate } from '@/shared/utils/date';
+import { escapeHtml } from '@/shared/utils/escape-html';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
 export function buildSalesReturnHtml(ret: SalesReturnDetail): string {
+  const store = getReceiptStoreSettings();
   const rows = ret.items
     .map(
       (line) => `
       <tr>
-        <td>${line.productCode}</td>
-        <td>${line.productName}</td>
-        <td>${line.batchNumber}</td>
+        <td>${escapeHtml(line.productCode)}</td>
+        <td>${escapeHtml(line.productName)}</td>
+        <td>${escapeHtml(line.batchNumber)}</td>
         <td style="text-align:right">${line.quantity.toLocaleString('vi-VN')}</td>
         <td style="text-align:right">${formatDisplayMoney(line.refundAmount)}</td>
       </tr>`,
@@ -20,7 +23,7 @@ export function buildSalesReturnHtml(ret: SalesReturnDetail): string {
   const paymentRows = (ret.payments ?? [])
     .map(
       (p) =>
-        `<div>${SALES_PAYMENT_METHOD_LABELS[p.paymentMethod] ?? p.paymentMethod}: ${formatDisplayMoney(p.amount)}</div>`,
+        `<div>${escapeHtml(SALES_PAYMENT_METHOD_LABELS[p.paymentMethod] ?? p.paymentMethod)}: ${formatDisplayMoney(p.amount)}</div>`,
     )
     .join('');
 
@@ -28,7 +31,7 @@ export function buildSalesReturnHtml(ret: SalesReturnDetail): string {
 <html lang="vi">
 <head>
   <meta charset="utf-8" />
-  <title>${ret.returnNumber}</title>
+  <title>${escapeHtml(ret.returnNumber)}</title>
   <style>
     body { font-family: Arial, sans-serif; font-size: 13px; margin: 24px; color: #111; }
     h1 { font-size: 18px; margin: 0 0 4px; }
@@ -43,10 +46,11 @@ export function buildSalesReturnHtml(ret: SalesReturnDetail): string {
 <body>
   <h1>PHIẾU TRẢ HÀNG</h1>
   <div class="meta">
-    <div>Số phiếu: <strong>${ret.returnNumber}</strong></div>
-    <div>Đơn bán: <strong>${ret.orderNumber}</strong></div>
+    <div>${escapeHtml(store.name)}</div>
+    <div>Số phiếu: <strong>${escapeHtml(ret.returnNumber)}</strong></div>
+    <div>Đơn bán: <strong>${escapeHtml(ret.orderNumber)}</strong></div>
     <div>Ngày trả: ${formatDisplayDate(ret.returnDate)}</div>
-    ${ret.reason ? `<div>Lý do trả: ${ret.reason}</div>` : ''}
+    ${ret.reason ? `<div>Lý do trả: ${escapeHtml(ret.reason)}</div>` : ''}
   </div>
   <table>
     <thead>

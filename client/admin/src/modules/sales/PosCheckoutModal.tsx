@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Form, InputNumber, Modal, Select, Space, Typography, message } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import type { PosAllocationPreview, PosCheckoutPaymentLine } from '@/shared/api/sales.types';
+import type { PosCheckoutPaymentLine } from '@/shared/api/sales.types';
 import { SALES_PAYMENT_METHOD_LABELS } from '@/shared/api/sales.types';
-import { formatAllocationPreviewLine } from '@/modules/sales/pos-batch-display';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
   formatDisplayMoney,
@@ -21,7 +20,6 @@ type Props = {
   subtotalGross: number;
   lineDiscountTotal: number;
   orderDiscountAmount: number;
-  allocationPreview?: PosAllocationPreview | null;
   onCancel: () => void;
   onConfirm: (payments: PosCheckoutPaymentLine[]) => void | Promise<void>;
 };
@@ -92,7 +90,6 @@ export function PosCheckoutModal({
   subtotalGross,
   lineDiscountTotal,
   orderDiscountAmount,
-  allocationPreview,
   onCancel,
   onConfirm,
 }: Props) {
@@ -246,24 +243,6 @@ export function PosCheckoutModal({
 
       {submitError && (
         <Alert type="error" showIcon message={submitError} style={{ marginBottom: 16 }} closable onClose={() => setSubmitError(null)} />
-      )}
-
-      {allocationPreview && allocationPreview.lines.length > 0 && (
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginBottom: 16 }}
-          message={`Phân bổ lô khi chốt (${allocationPreview.stockSourceLabel})`}
-          description={
-            <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
-              {allocationPreview.lines.map((line) => (
-                <li key={line.productUnitId}>
-                  {line.productCode} — {formatAllocationPreviewLine(line)}
-                </li>
-              ))}
-            </ul>
-          }
-        />
       )}
 
       {isFreeOrder ? (

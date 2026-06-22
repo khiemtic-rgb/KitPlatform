@@ -124,12 +124,17 @@ Swagger: bấm **Authorize** → `Bearer {accessToken}`
 
 Xem `docs/next-steps.md`
 
-## Development freeze — Sales / POS
+## Sales / POS — tiếp tục phát triển
 
-**Tạm dừng phát triển tính năng mới** khu vực bán hàng (POS, checkout, ca, FEFO chốt đơn) cho đến khi **Novixa site v1** live trên `novixa.vn`.
+**Novixa site v1** đã live trên `novixa.vn` — mở lại phát triển **Sales/POS** (checkout, FEFO, ca bán, trả hàng).
 
-- Website: thư mục [`novixa-site/`](novixa-site/) — deploy riêng, không ảnh hưởng API/DB.
-- Vẫn được: hotfix bảo mật/crash, nội dung site, chụp screenshot demo.
-- Mở lại sales: sau khi site có HTTPS + Trang chủ / Giải pháp / Liên hệ + tin tức VI.
+| Luồng | Trạng thái |
+|-------|------------|
+| Quét mã / giỏ / chiết khấu | ✅ |
+| Mở ca / chốt ca | ✅ |
+| Preview & chốt FEFO | ✅ (đang tinh chỉnh UX) |
+| Thanh toán đa hình thức | ✅ |
+| Trả hàng / in hóa đơn | ✅ |
+| CDP consent + outbox | ✅ API; worker CDP backlog |
 
-Xem [`novixa-site/README.md`](novixa-site/README.md).
+Website marketing: [`novixa-site/`](novixa-site/) — deploy tách, không ảnh hưởng API/DB.

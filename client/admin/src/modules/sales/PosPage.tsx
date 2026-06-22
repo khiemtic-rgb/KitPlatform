@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
   Alert,
+  App,
   AutoComplete,
   Button,
   Card,
@@ -12,7 +13,6 @@ import {
   Table,
   Tooltip,
   Typography,
-  message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PrinterOutlined } from '@ant-design/icons';
@@ -26,23 +26,26 @@ import {
   loadOpenShiftForWarehouse,
   shiftAlreadyOpenMessage,
 } from '@/modules/sales/sales-shift-helpers';
-import type { CartLine, CustomerListItem, PosAllocationPreview, PosCheckoutPaymentLine, SalesOrderDetail, SalesShiftDetail } from '@/shared/api/sales.types';
+import type { CartLine, CustomerListItem, PosCheckoutPaymentLine, SalesOrderDetail, SalesShiftDetail } from '@/shared/api/sales.types';
 import { SALES_DISCOUNT_TYPES } from '@/shared/api/sales.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
 import { PosCheckoutModal } from '@/modules/sales/PosCheckoutModal';
+import { PosCartQuantityInput } from '@/modules/sales/PosCartQuantityInput';
+import { formatSuggestedBatch } from '@/modules/sales/pos-batch-display';
+import { capQuantityToStock, stockCapWarningText } from '@/modules/sales/pos-stock-messages';
+import { buildCreateSalePayload, buildDraftUpdatePayload } from '@/modules/sales/pos-sale-payload';
 import { OpenShiftModal } from '@/modules/sales/OpenShiftModal';
 import { DISCOUNT_TYPE_SELECT_OPTIONS, PosSummaryDivider, PosSummaryOrderDiscountRow, PosSummaryPanel, PosSummaryRow } from '@/modules/sales/pos-summary-ui';
 import { printSalesInvoice } from '@/modules/sales/sales-invoice-print';
 import {
-  discountPercent,
   lineNet,
   priceCart,
+  validateCartDiscountPolicy,
   type OrderDiscountState,
 } from '@/modules/sales/pos-pricing';
 import { useSalesDiscountPolicy } from '@/modules/sales/useSalesDiscountPolicy';
 import {
-  buildDraftUpdatePayload,
   clearPosDraftEdit,
   loadDraftCartLines,
   orderDiscountFromDetail,
@@ -50,38 +53,13 @@ import {
   readPosDraftEditId,
 } from '@/modules/sales/sales-draft-helpers';
 import { formatDisplayMoney, moneyInputNumberPropsAllowZeroSuffix, moneyInputNumberStyle } from '@/shared/utils/money';
-import { formatAllocationPreviewLine, formatBatchHintLine, formatSuggestedBatch } from '@/modules/sales/pos-batch-display';
-
-function buildSalePayload(
-  warehouseId: string,
-  customerId: string | undefined,
-  cart: CartLine[],
-  orderDiscount: OrderDiscountState,
-  saveAsDraft: boolean,
-  payments?: PosCheckoutPaymentLine[],
-) {
-  return {
-    warehouseId,
-    customerId,
-    saveAsDraft,
-    orderDiscountType: orderDiscount.discountType,
-    orderDiscountValue: orderDiscount.discountValue,
-    payments: payments?.map((p) => ({ paymentMethod: p.paymentMethod, amount: p.amount })),
-    items: cart.map((line) => ({
-      productId: line.productId,
-      productUnitId: line.productUnitId,
-      quantity: line.quantity,
-      discountType: line.discountType,
-      discountValue: line.discountValue,
-    })),
-  };
-}
 
 export function PosPage() {
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const canWrite = useHasPermission('sales.write');
-  const { canDiscount, maxPercent } = useSalesDiscountPolicy();
+  const { canDiscount, maxPercent, unlimited } = useSalesDiscountPolicy();
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehouseId, setWarehouseId] = useState<string>();
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
@@ -99,47 +77,7 @@ export function PosPage() {
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [editingDraftNumber, setEditingDraftNumber] = useState<string | null>(null);
   const [draftLoading, setDraftLoading] = useState(false);
-  const [allocationPreview, setAllocationPreview] = useState<PosAllocationPreview | null>(null);
-
-  const cartPreviewKey = useMemo(
-    () => cart.map((c) => `${c.productUnitId}:${c.quantity}`).join('|'),
-    [cart],
-  );
-
-  const allocationByUnit = useMemo(() => {
-    const map = new Map<string, string>();
-    allocationPreview?.lines.forEach((line) => {
-      map.set(line.productUnitId, formatAllocationPreviewLine(line));
-    });
-    return map;
-  }, [allocationPreview]);
-
-  useEffect(() => {
-    if (!warehouseId || cart.length === 0 || !cart.some((c) => c.batchHints?.length)) {
-      setAllocationPreview(null);
-      return;
-    }
-    let cancelled = false;
-    const timer = window.setTimeout(async () => {
-      try {
-        const preview = await previewPosAllocation({
-          warehouseId,
-          items: cart.map((c) => ({
-            productId: c.productId,
-            productUnitId: c.productUnitId,
-            quantity: c.quantity,
-          })),
-        });
-        if (!cancelled) setAllocationPreview(preview);
-      } catch {
-        if (!cancelled) setAllocationPreview(null);
-      }
-    }, 350);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [warehouseId, cartPreviewKey, cart.length]);
+  const [checkoutValidating, setCheckoutValidating] = useState(false);
 
   const pricing = useMemo(() => priceCart(cart, orderDiscount), [cart, orderDiscount]);
 
@@ -228,17 +166,16 @@ export function PosPage() {
   const productSuggestions = useMemo(() => {
     const q = barcode.trim().toLowerCase();
     const filtered = products.filter((p) => {
-      if (!p.primaryBarcode) return false;
       if (!q) return true;
       return (
         p.productCode.toLowerCase().includes(q) ||
         p.productName.toLowerCase().includes(q) ||
-        p.primaryBarcode.toLowerCase().includes(q)
+        (p.primaryBarcode?.toLowerCase().includes(q) ?? false)
       );
     });
     return filtered.slice(0, 20).map((p) => ({
-      value: p.primaryBarcode!,
-      label: `${p.productCode} — ${p.productName} · ${p.primaryBarcode}`,
+      value: p.primaryBarcode ?? p.productCode,
+      label: `${p.productCode} — ${p.productName}${p.primaryBarcode ? ` · ${p.primaryBarcode}` : ''}`,
     }));
   }, [products, barcode]);
 
@@ -253,48 +190,67 @@ export function PosPage() {
       return true;
     }
 
-    for (const line of cart) {
-      const gross = line.quantity * line.unitPrice;
-      const amount =
-        line.discountType && line.discountValue
-          ? line.discountType === SALES_DISCOUNT_TYPES.Percent
-            ? gross * Math.min(line.discountValue, 100) / 100
-            : Math.min(line.discountValue, gross)
-          : 0;
-      if (discountPercent(amount, gross) > maxPercent + 0.01) {
-        message.error(`Chiết khấu dòng vượt quá ${maxPercent}%`);
-        return false;
-      }
-    }
-
-    if ((orderDiscount.discountValue ?? 0) > 0) {
-      const orderAmount = pricing.orderDiscountAmount;
-      if (discountPercent(orderAmount, pricing.merchandiseNet) > maxPercent + 0.01) {
-        message.error(`Chiết khấu đơn vượt quá ${maxPercent}%`);
-        return false;
-      }
+    const policyError = validateCartDiscountPolicy(cart, orderDiscount, maxPercent, unlimited);
+    if (policyError) {
+      message.error(policyError);
+      return false;
     }
 
     return true;
-  }, [canDiscount, cart, maxPercent, orderDiscount.discountValue, pricing.merchandiseNet, pricing.orderDiscountAmount]);
+  }, [canDiscount, cart, maxPercent, orderDiscount, unlimited]);
 
-  const validateStock = useCallback(async () => {
-    if (!warehouseId) return false;
-    const stockUpdates: { key: string; stockAvailable: number }[] = [];
-    for (const line of cart) {
-      const stock = await fetchPosStock(warehouseId, line.productUnitId);
-      stockUpdates.push({ key: line.key, stockAvailable: stock.stockAvailable });
-      if (line.quantity > stock.stockAvailable + 0.0001) {
-        message.error(
-          `${stock.productCode} — ${stock.productName}: tồn còn ${stock.stockAvailable.toLocaleString('vi-VN')} ${stock.unitName}, giỏ đang ${line.quantity.toLocaleString('vi-VN')}`,
-        );
-        return false;
-      }
-    }
+  const refreshCartStock = useCallback(async () => {
+    if (!warehouseId || cart.length === 0) return;
+    const stockUpdates = await Promise.all(
+      cart.map(async (line) => {
+        const stock = await fetchPosStock(warehouseId, line.productUnitId);
+        return { key: line.key, stockAvailable: stock.stockAvailable };
+      }),
+    );
     setCart((prev) =>
       prev.map((line) => {
         const update = stockUpdates.find((row) => row.key === line.key);
         return update ? { ...line, stockAvailable: update.stockAvailable } : line;
+      }),
+    );
+  }, [cart, warehouseId]);
+
+  const validateStock = useCallback(async () => {
+    if (!warehouseId) return false;
+    let hadCap = false;
+    const stockByKey = new Map<string, { stockAvailable: number; unitName: string }>();
+    for (const line of cart) {
+      const stock = await fetchPosStock(warehouseId, line.productUnitId);
+      stockByKey.set(line.key, {
+        stockAvailable: stock.stockAvailable,
+        unitName: stock.unitName,
+      });
+      if (line.quantity > stock.stockAvailable + 0.0001) {
+        hadCap = true;
+      }
+    }
+    if (hadCap) {
+      setCart((prev) =>
+        prev.map((line) => {
+          const stock = stockByKey.get(line.key);
+          if (!stock) return line;
+          const over = line.quantity > stock.stockAvailable + 0.0001;
+          return {
+            ...line,
+            stockAvailable: stock.stockAvailable,
+            quantity: over ? capQuantityToStock(stock.stockAvailable, line.quantity) : line.quantity,
+            qtyWarning: over
+              ? stockCapWarningText(stock.stockAvailable, stock.unitName)
+              : line.qtyWarning,
+          };
+        }),
+      );
+      return false;
+    }
+    setCart((prev) =>
+      prev.map((line) => {
+        const stock = stockByKey.get(line.key);
+        return stock ? { ...line, stockAvailable: stock.stockAvailable } : line;
       }),
     );
     return true;
@@ -316,7 +272,7 @@ export function PosPage() {
       message.error(apiErrorMessage(error, 'Không đủ tồn kho theo FEFO'));
       return false;
     }
-  }, [cart, warehouseId]);
+  }, [cart, message, warehouseId]);
 
   const addByBarcode = useCallback(
     async (code?: string) => {
@@ -328,13 +284,24 @@ export function PosPage() {
           message.warning('Sản phẩm hết tồn tại kho này');
           return;
         }
+        const capWarning = stockCapWarningText(item.stockAvailable, item.unitName);
         setCart((prev) => {
           const existing = prev.find((l) => l.productUnitId === item.productUnitId);
           if (existing) {
             const nextQty = existing.quantity + 1;
-            if (nextQty > item.stockAvailable) {
-              message.warning(`Tồn kho còn ${item.stockAvailable.toLocaleString('vi-VN')} — không thêm được`);
-              return prev;
+            if (nextQty > item.stockAvailable + 0.0001) {
+              return prev.map((l) =>
+                l.productUnitId === item.productUnitId
+                  ? {
+                      ...l,
+                      quantity: capQuantityToStock(item.stockAvailable, nextQty),
+                      stockAvailable: item.stockAvailable,
+                      qtyWarning: capWarning,
+                      batchHints: item.batchHints ?? l.batchHints,
+                      stockSourceLabel: item.stockSourceLabel ?? l.stockSourceLabel,
+                    }
+                  : l,
+              );
             }
             return prev.map((l) =>
               l.productUnitId === item.productUnitId
@@ -369,7 +336,7 @@ export function PosPage() {
         message.error(apiErrorMessage(error, 'Không tìm thấy sản phẩm'));
       }
     },
-    [barcode, warehouseId],
+    [barcode, message, warehouseId],
   );
 
   const resetCartAndExitDraft = () => {
@@ -406,7 +373,7 @@ export function PosPage() {
         navigate(`/sales/orders?orderId=${order.id}`);
       } else {
         const order = await createSale(
-          buildSalePayload(warehouseId, customerId, cart, orderDiscount, true),
+          buildCreateSalePayload(warehouseId, customerId, cart, orderDiscount, true),
         );
         hideLoading();
         clearPosDraftEdit();
@@ -452,7 +419,7 @@ export function PosPage() {
         order = await completeDraftSale(editingDraftId, payments);
       } else {
         order = await createSale(
-          buildSalePayload(warehouseId, customerId, cart, orderDiscount, false, payments),
+          buildCreateSalePayload(warehouseId, customerId, cart, orderDiscount, false, payments),
         );
       }
       hideLoading();
@@ -467,29 +434,54 @@ export function PosPage() {
       if (warehouseId) await loadOpenShift(warehouseId);
     } catch (error) {
       hideLoading();
+      await refreshCartStock();
       throw error;
     } finally {
       setSaving(false);
     }
   };
 
+  const openCheckout = useCallback(async () => {
+    if (!openShift) {
+      message.warning('Mở ca trước khi thanh toán');
+      return;
+    }
+    if (!validateDiscounts()) return;
+    setCheckoutValidating(true);
+    try {
+      if (!(await validateStock())) return;
+      if (!(await validateFefoAllocation())) return;
+      setCheckoutOpen(true);
+    } finally {
+      setCheckoutValidating(false);
+    }
+  }, [
+    openShift,
+    validateDiscounts,
+    validateFefoAllocation,
+    validateStock,
+  ]);
+
   const columns: ColumnsType<CartLine> = [
     { title: 'Mã', dataIndex: 'productCode', width: 90 },
-    { title: 'Sản phẩm', dataIndex: 'productName' },
     {
-      title: 'Lô (FEFO)',
-      width: 168,
+      title: 'Sản phẩm',
       render: (_, row) => {
-        const label =
-          allocationByUnit.get(row.productUnitId) ?? formatSuggestedBatch(row.batchHints);
-        if (label === '—') return '—';
-        const hints = row.batchHints?.map(formatBatchHintLine).join('\n');
-        return hints ? (
-          <Tooltip title={<span style={{ whiteSpace: 'pre-line' }}>{hints}</span>}>
-            <span>{label}</span>
-          </Tooltip>
+        const batchLabel = formatSuggestedBatch(row.batchHints);
+        const name = (
+          <span>
+            {row.productName}
+            <Typography.Text
+              style={{ marginLeft: 6, fontSize: '0.88em', color: '#0d7377', fontWeight: 500 }}
+            >
+              (tồn {(row.stockAvailable ?? 0).toLocaleString('vi-VN')} {row.unitName})
+            </Typography.Text>
+          </span>
+        );
+        return batchLabel !== '—' ? (
+          <Tooltip title={`Lô FEFO gợi ý: ${batchLabel}`}>{name}</Tooltip>
         ) : (
-          label
+          name
         );
       },
     },
@@ -497,20 +489,26 @@ export function PosPage() {
     {
       title: 'SL',
       dataIndex: 'quantity',
-      width: 90,
-      render: (v: number, row) => (
-        <InputNumber
-          min={1}
-          max={row.stockAvailable}
-          value={v}
+      width: 240,
+      render: (_v: number, row) => (
+        <PosCartQuantityInput
+          value={row.quantity}
+          stockAvailable={row.stockAvailable ?? 0}
+          unitName={row.unitName}
           disabled={!canWrite}
-          style={moneyInputNumberStyle}
-          onChange={(qty) => {
-            if (qty == null) return;
+          externalWarning={row.qtyWarning}
+          onChange={(quantity) =>
             setCart((prev) =>
-              prev.map((l) => (l.key === row.key ? { ...l, quantity: Number(qty) } : l)),
-            );
-          }}
+              prev.map((l) =>
+                l.key === row.key ? { ...l, quantity, qtyWarning: undefined } : l,
+              ),
+            )
+          }
+          onClearWarning={() =>
+            setCart((prev) =>
+              prev.map((l) => (l.key === row.key ? { ...l, qtyWarning: undefined } : l)),
+            )
+          }
         />
       ),
     },
@@ -688,7 +686,7 @@ export function PosPage() {
         <Space direction="vertical" size={2}>
           <AutoComplete
             style={{ width: 320 }}
-            placeholder="Quét mã vạch hoặc gõ tên / mã SP"
+            placeholder="Quét mã vạch hoặc gõ mã / tên SP"
             value={barcode}
             options={productSuggestions}
             onChange={setBarcode}
@@ -708,17 +706,7 @@ export function PosPage() {
         </Button>
       </Space>
 
-      {cart.length > 0 && cart.some((c) => c.batchHints?.length) && (
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginBottom: 12 }}
-          message={allocationPreview?.stockSourceLabel ?? cart[0]?.stockSourceLabel ?? 'Tồn theo hệ thống'}
-          description="Lô gợi ý theo FEFO trên sổ — đối chiếu kệ khi kiểm kê. Khi thanh toán, hệ thống trừ tồn theo lô này."
-        />
-      )}
-
-      <Table rowKey="key" size="small" pagination={false} dataSource={cart} columns={columns} scroll={{ x: 1140 }} />
+      <Table rowKey="key" size="small" pagination={false} dataSource={cart} columns={columns} scroll={{ x: 960 }} />
 
       <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
         <PosSummaryPanel>
@@ -773,19 +761,9 @@ export function PosPage() {
           <Button
             type="primary"
             size="large"
-            disabled={!canWrite || cart.length === 0 || !openShift}
-            onClick={() => {
-              if (!openShift) {
-                message.warning('Mở ca trước khi thanh toán');
-                return;
-              }
-              if (!validateDiscounts()) return;
-              void (async () => {
-                if (!(await validateStock())) return;
-                if (!(await validateFefoAllocation())) return;
-                setCheckoutOpen(true);
-              })();
-            }}
+            disabled={!canWrite || cart.length === 0 || !openShift || cart.some((l) => l.quantity <= 0)}
+            loading={checkoutValidating}
+            onClick={() => void openCheckout()}
           >
             Thanh toán
           </Button>
@@ -799,7 +777,6 @@ export function PosPage() {
         subtotalGross={pricing.subtotalGross}
         lineDiscountTotal={pricing.lineDiscountTotal}
         orderDiscountAmount={pricing.orderDiscountAmount}
-        allocationPreview={allocationPreview}
         onCancel={() => setCheckoutOpen(false)}
         onConfirm={(payments) => confirmCheckout(payments)}
       />
