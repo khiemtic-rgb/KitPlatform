@@ -27,6 +27,22 @@ export interface PosProductLookup {
   stockSourceLabel?: string;
 }
 
+export interface PosProductSearchItem {
+  productCode: string;
+  productName: string;
+  lookupCode: string;
+  unitName: string;
+  unitPrice: number;
+  stockAvailable: number;
+}
+
+export interface ReceiptStoreSettings {
+  name: string;
+  tagline?: string;
+  phone?: string;
+  address?: string;
+}
+
 export interface PosBatchAllocationPreview {
   batchId: string;
   batchNumber: string;

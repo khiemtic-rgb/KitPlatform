@@ -4,6 +4,8 @@ import type {
   PosAllocationPreview,
   PosBatchHint,
   PosProductLookup,
+  PosProductSearchItem,
+  ReceiptStoreSettings,
   SalesOrderDetail,
   SalesOrderListItem,
   SalesReturnDetail,
@@ -231,6 +233,75 @@ export async function fetchPosStock(
     productName: String(data.productName ?? data.ProductName ?? ''),
     unitName: String(data.unitName ?? data.UnitName ?? ''),
     stockAvailable: Number(data.stockAvailable ?? data.StockAvailable ?? 0),
+  };
+}
+
+export async function fetchPosStockBulk(
+  warehouseId: string,
+  productUnitIds: string[],
+): Promise<
+  {
+    productId: string;
+    productCode: string;
+    productName: string;
+    productUnitId: string;
+    unitName: string;
+    stockAvailable: number;
+  }[]
+> {
+  if (productUnitIds.length === 0) return [];
+  const { data } = await http.post<Record<string, unknown>[]>('/sales/pos/stock/bulk', {
+    warehouseId,
+    productUnitIds,
+  });
+  return data.map((row) => ({
+    productId: String(row.productId ?? row.ProductId),
+    productCode: String(row.productCode ?? row.ProductCode ?? ''),
+    productName: String(row.productName ?? row.ProductName ?? ''),
+    productUnitId: String(row.productUnitId ?? row.ProductUnitId),
+    unitName: String(row.unitName ?? row.UnitName ?? ''),
+    stockAvailable: Number(row.stockAvailable ?? row.StockAvailable ?? 0),
+  }));
+}
+
+export async function searchPosProducts(
+  search: string,
+  warehouseId: string,
+): Promise<PosProductSearchItem[]> {
+  const q = search.trim();
+  if (!q) return [];
+  const { data } = await http.get<Record<string, unknown>[]>('/sales/pos/search', {
+    params: { search: q, warehouseId },
+  });
+  return data.map((row) => ({
+    productCode: String(row.productCode ?? row.ProductCode ?? ''),
+    productName: String(row.productName ?? row.ProductName ?? ''),
+    lookupCode: String(row.lookupCode ?? row.LookupCode ?? ''),
+    unitName: String(row.unitName ?? row.UnitName ?? ''),
+    unitPrice: Number(row.unitPrice ?? row.UnitPrice ?? 0),
+    stockAvailable: Number(row.stockAvailable ?? row.StockAvailable ?? 0),
+  }));
+}
+
+export async function fetchReceiptSettings(): Promise<ReceiptStoreSettings> {
+  const { data } = await http.get<Record<string, unknown>>('/sales/settings/receipt');
+  return {
+    name: String(data.name ?? data.Name ?? ''),
+    tagline: (data.tagline ?? data.Tagline) as string | undefined,
+    phone: (data.phone ?? data.Phone) as string | undefined,
+    address: (data.address ?? data.Address) as string | undefined,
+  };
+}
+
+export async function updateReceiptSettings(
+  payload: ReceiptStoreSettings,
+): Promise<ReceiptStoreSettings> {
+  const { data } = await http.put<Record<string, unknown>>('/sales/settings/receipt', payload);
+  return {
+    name: String(data.name ?? data.Name ?? ''),
+    tagline: (data.tagline ?? data.Tagline) as string | undefined,
+    phone: (data.phone ?? data.Phone) as string | undefined,
+    address: (data.address ?? data.Address) as string | undefined,
   };
 }
 

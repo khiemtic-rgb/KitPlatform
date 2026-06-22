@@ -84,7 +84,7 @@ export function SalesReturnListPage() {
 
   const printReturnById = async (id: string) => {
     try {
-      if (!printSalesReturn(await fetchSalesReturn(id))) {
+      if (!(await printSalesReturn(await fetchSalesReturn(id)))) {
         message.warning('Trình duyệt chặn cửa sổ in — cho phép popup và thử lại.');
       }
     } catch (error) {

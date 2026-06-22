@@ -9,7 +9,7 @@ import {
   remainingLineNet,
 } from '@/modules/sales/sales-return-pricing';
 
-import { getReceiptStoreSettings } from '@/modules/sales/receipt-settings';
+import { loadReceiptStoreSettings, type ReceiptStoreSettings } from '@/modules/sales/receipt-settings';
 import { escapeHtml } from '@/shared/utils/escape-html';
 
 function formatThermalMoney(v: number): string {
@@ -93,7 +93,7 @@ function buildPaymentSection(order: SalesOrderDetail, hasReturns: boolean): stri
     .join('');
 }
 
-export function buildSalesInvoiceHtml(order: SalesOrderDetail): string {
+export function buildSalesInvoiceHtml(order: SalesOrderDetail, receiptStore: ReceiptStoreSettings): string {
   const hasReturns = order.items.some((line) => returnedQty(line) > 0);
   const totalRefunded =
     order.totalRefunded && order.totalRefunded > 0
@@ -116,7 +116,6 @@ export function buildSalesInvoiceHtml(order: SalesOrderDetail): string {
     items: order.items,
   }).label;
 
-  const receiptStore = getReceiptStoreSettings();
   const storeName = escapeHtml(receiptStore.name);
   const storeTagline = receiptStore.tagline ? escapeHtml(receiptStore.tagline) : '';
   const storePhone = receiptStore.phone ? escapeHtml(receiptStore.phone) : '';
@@ -303,8 +302,9 @@ export function buildSalesInvoiceHtml(order: SalesOrderDetail): string {
 </html>`;
 }
 
-export function printSalesInvoice(order: SalesOrderDetail): boolean {
-  const html = buildSalesInvoiceHtml(order);
+export async function printSalesInvoice(order: SalesOrderDetail): Promise<boolean> {
+  const receiptStore = await loadReceiptStoreSettings();
+  const html = buildSalesInvoiceHtml(order, receiptStore);
   const win = window.open('', '_blank', 'width=360,height=720');
   if (!win) return false;
   win.document.write(html);

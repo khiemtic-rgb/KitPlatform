@@ -1,12 +1,12 @@
 import type { SalesReturnDetail } from '@/shared/api/sales.types';
 import { SALES_PAYMENT_METHOD_LABELS } from '@/shared/api/sales.types';
-import { getReceiptStoreSettings } from '@/modules/sales/receipt-settings';
+import { loadReceiptStoreSettings } from '@/modules/sales/receipt-settings';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { escapeHtml } from '@/shared/utils/escape-html';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
-export function buildSalesReturnHtml(ret: SalesReturnDetail): string {
-  const store = getReceiptStoreSettings();
+export async function buildSalesReturnHtml(ret: SalesReturnDetail): Promise<string> {
+  const store = await loadReceiptStoreSettings();
   const rows = ret.items
     .map(
       (line) => `
@@ -71,8 +71,8 @@ export function buildSalesReturnHtml(ret: SalesReturnDetail): string {
 </html>`;
 }
 
-export function printSalesReturn(ret: SalesReturnDetail): boolean {
-  const html = buildSalesReturnHtml(ret);
+export async function printSalesReturn(ret: SalesReturnDetail): Promise<boolean> {
+  const html = await buildSalesReturnHtml(ret);
   const win = window.open('', '_blank', 'width=800,height=600');
   if (!win) return false;
   win.document.write(html);

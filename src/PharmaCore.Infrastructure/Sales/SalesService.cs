@@ -53,6 +53,19 @@ internal sealed class SalesService : ISalesService
         CancellationToken cancellationToken = default) =>
         _repository.GetPosStockByUnitAsync(warehouseId, productUnitId, cancellationToken);
 
+    public Task<IReadOnlyList<PosStockCheckDto>> GetPosStockBulkAsync(
+        Guid warehouseId,
+        IReadOnlyList<Guid> productUnitIds,
+        CancellationToken cancellationToken = default) =>
+        _repository.GetPosStockBulkAsync(warehouseId, productUnitIds, cancellationToken);
+
+    public Task<IReadOnlyList<PosProductSearchItemDto>> SearchPosProductsAsync(
+        string search,
+        Guid warehouseId,
+        short priceType = SalesPriceTypes.Retail,
+        CancellationToken cancellationToken = default) =>
+        _repository.SearchPosProductsAsync(search, warehouseId, priceType, cancellationToken);
+
     public Task<PosAllocationPreviewDto> PreviewPosAllocationAsync(
         PosAllocationPreviewRequest request,
         CancellationToken cancellationToken = default) =>

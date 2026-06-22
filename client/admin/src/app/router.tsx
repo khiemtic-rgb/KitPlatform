@@ -25,6 +25,7 @@ import { SalesOrderListPage } from '@/modules/sales/SalesOrderListPage';
 import { SalesReturnListPage } from '@/modules/sales/SalesReturnListPage';
 import { SalesShiftReportPage } from '@/modules/sales/SalesShiftReportPage';
 import { CustomerConsentPage } from '@/modules/sales/CustomerConsentPage';
+import { ReceiptSettingsPage } from '@/modules/sales/ReceiptSettingsPage';
 
 export function AppRouter() {
   return (
@@ -66,6 +67,7 @@ export function AppRouter() {
               <Route path="returns" element={<SalesReturnListPage />} />
               <Route path="shift" element={<SalesShiftReportPage />} />
               <Route path="customers" element={<CustomerConsentPage />} />
+              <Route path="settings" element={<ReceiptSettingsPage />} />
             </Route>
           </Route>
         </Route>

@@ -220,7 +220,7 @@ export function SalesOrderListPage() {
       setDetail(updated);
       setDraftCheckoutOpen(false);
       message.success('Đã hoàn tất đơn nháp');
-      if (!printSalesInvoice(updated)) {
+      if (!(await printSalesInvoice(updated))) {
         message.warning('Trình duyệt chặn cửa sổ in — bấm In hóa đơn trong chi tiết đơn.');
       }
       void load();
@@ -246,7 +246,9 @@ export function SalesOrderListPage() {
 
   const printOrderById = async (id: string) => {
     try {
-      printSalesInvoice(await fetchSalesOrder(id));
+      if (!(await printSalesInvoice(await fetchSalesOrder(id)))) {
+        message.warning('Trình duyệt chặn cửa sổ in — cho phép popup và thử lại.');
+      }
     } catch (error) {
       message.error(apiErrorMessage(error, 'Không in được hóa đơn'));
     }
@@ -264,7 +266,7 @@ export function SalesOrderListPage() {
 
   const printReturnById = async (returnId: string) => {
     try {
-      if (!printSalesReturn(await fetchSalesReturn(returnId))) {
+      if (!(await printSalesReturn(await fetchSalesReturn(returnId)))) {
         message.warning('Trình duyệt chặn cửa sổ in — cho phép popup và thử lại.');
       }
     } catch (error) {
@@ -283,7 +285,7 @@ export function SalesOrderListPage() {
       const ret = await createSaleReturn(detail.id, payload);
       message.success(`Đã ghi nhận trả hàng ${ret.returnNumber}`);
       setReturnOpen(false);
-      if (!printSalesReturn(ret)) {
+      if (!(await printSalesReturn(ret))) {
         message.warning('Trình duyệt chặn cửa sổ in — mở lại từ chi tiết đơn.');
       }
       await refreshDetail(detail.id);
@@ -559,7 +561,7 @@ export function SalesOrderListPage() {
                     </>
                   )}
                   {isCompletedSaleStatus(detail.status) && canRead && (
-                    <Button icon={<PrinterOutlined />} onClick={() => printSalesInvoice(detail)}>
+                    <Button icon={<PrinterOutlined />} onClick={() => void printSalesInvoice(detail)}>
                       In hóa đơn
                     </Button>
                   )}

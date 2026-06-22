@@ -16,11 +16,9 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PrinterOutlined } from '@ant-design/icons';
-import { fetchProducts } from '@/shared/api/catalog.api';
-import type { ProductListItem } from '@/shared/api/catalog.types';
 import { fetchWarehouses } from '@/shared/api/inventory.api';
 import type { Warehouse } from '@/shared/api/inventory.types';
-import { createSale, completeDraftSale, fetchOpenShift, fetchPosStock, fetchSalesOrder, lookupPosProduct, openSalesShift, previewPosAllocation, searchCustomers, updateDraftSale } from '@/shared/api/sales.api';
+import { createSale, completeDraftSale, fetchOpenShift, fetchPosStockBulk, fetchSalesOrder, lookupPosProduct, openSalesShift, previewPosAllocation, searchCustomers, searchPosProducts, updateDraftSale } from '@/shared/api/sales.api';
 import {
   isShiftAlreadyOpenError,
   loadOpenShiftForWarehouse,
@@ -38,6 +36,7 @@ import { buildCreateSalePayload, buildDraftUpdatePayload } from '@/modules/sales
 import { OpenShiftModal } from '@/modules/sales/OpenShiftModal';
 import { DISCOUNT_TYPE_SELECT_OPTIONS, PosSummaryDivider, PosSummaryOrderDiscountRow, PosSummaryPanel, PosSummaryRow } from '@/modules/sales/pos-summary-ui';
 import { printSalesInvoice } from '@/modules/sales/sales-invoice-print';
+import { loadReceiptStoreSettings } from '@/modules/sales/receipt-settings';
 import {
   lineNet,
   priceCart,
@@ -65,7 +64,9 @@ export function PosPage() {
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [customerId, setCustomerId] = useState<string>();
   const [barcode, setBarcode] = useState('');
-  const [products, setProducts] = useState<ProductListItem[]>([]);
+  const [productSearchOptions, setProductSearchOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [orderDiscount, setOrderDiscount] = useState<OrderDiscountState>({});
   const [saving, setSaving] = useState(false);
@@ -118,13 +119,45 @@ export function PosPage() {
       const defaultWh = wh.find((w) => w.isDefault) ?? wh[0];
       if (defaultWh && !warehouseId) setWarehouseId(defaultWh.id);
       setCustomers(await searchCustomers());
-      const catalog = await fetchProducts({ page: 1, pageSize: 200, status: 1 });
-      setProducts(catalog.items);
+      void loadReceiptStoreSettings();
     })();
   }, []);
 
+  useEffect(() => {
+    if (!warehouseId) {
+      setProductSearchOptions([]);
+      return;
+    }
+    const q = barcode.trim();
+    if (q.length < 1) {
+      setProductSearchOptions([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const items = await searchPosProducts(q, warehouseId);
+          if (cancelled) return;
+          setProductSearchOptions(
+            items.map((p) => ({
+              value: p.lookupCode,
+              label: `${p.productCode} — ${p.productName} · tồn ${p.stockAvailable.toLocaleString('vi-VN')} ${p.unitName}`,
+            })),
+          );
+        } catch {
+          if (!cancelled) setProductSearchOptions([]);
+        }
+      })();
+    }, 300);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [barcode, warehouseId]);
+
   const loadDraftFromUrl = useCallback(
-    async (draftId: string, catalog: ProductListItem[]) => {
+    async (draftId: string) => {
       setDraftLoading(true);
       try {
         const order = await fetchSalesOrder(draftId);
@@ -135,7 +168,7 @@ export function PosPage() {
         }
         setWarehouseId(order.warehouseId);
         setCustomerId(order.customerId);
-        setCart(await loadDraftCartLines(order, catalog));
+        setCart(await loadDraftCartLines(order));
         setOrderDiscount(orderDiscountFromDetail(order));
         setEditingDraftId(order.id);
         setEditingDraftNumber(order.orderNumber);
@@ -155,29 +188,13 @@ export function PosPage() {
 
   useEffect(() => {
     const draftId = searchParams.get('draftId') ?? readPosDraftEditId();
-    if (!draftId || products.length === 0) return;
+    if (!draftId) return;
     if (editingDraftId === draftId) return;
     if (!searchParams.get('draftId')) {
       setSearchParams({ draftId }, { replace: true });
     }
-    void loadDraftFromUrl(draftId, products);
-  }, [searchParams, products, editingDraftId, loadDraftFromUrl, setSearchParams]);
-
-  const productSuggestions = useMemo(() => {
-    const q = barcode.trim().toLowerCase();
-    const filtered = products.filter((p) => {
-      if (!q) return true;
-      return (
-        p.productCode.toLowerCase().includes(q) ||
-        p.productName.toLowerCase().includes(q) ||
-        (p.primaryBarcode?.toLowerCase().includes(q) ?? false)
-      );
-    });
-    return filtered.slice(0, 20).map((p) => ({
-      value: p.primaryBarcode ?? p.productCode,
-      label: `${p.productCode} — ${p.productName}${p.primaryBarcode ? ` · ${p.primaryBarcode}` : ''}`,
-    }));
-  }, [products, barcode]);
+    void loadDraftFromUrl(draftId);
+  }, [searchParams, editingDraftId, loadDraftFromUrl, setSearchParams]);
 
   const validateDiscounts = useCallback(() => {
     if (!canDiscount) {
@@ -201,16 +218,15 @@ export function PosPage() {
 
   const refreshCartStock = useCallback(async () => {
     if (!warehouseId || cart.length === 0) return;
-    const stockUpdates = await Promise.all(
-      cart.map(async (line) => {
-        const stock = await fetchPosStock(warehouseId, line.productUnitId);
-        return { key: line.key, stockAvailable: stock.stockAvailable };
-      }),
+    const stocks = await fetchPosStockBulk(
+      warehouseId,
+      cart.map((line) => line.productUnitId),
     );
+    const stockByUnit = new Map(stocks.map((s) => [s.productUnitId, s]));
     setCart((prev) =>
       prev.map((line) => {
-        const update = stockUpdates.find((row) => row.key === line.key);
-        return update ? { ...line, stockAvailable: update.stockAvailable } : line;
+        const stock = stockByUnit.get(line.productUnitId);
+        return stock ? { ...line, stockAvailable: stock.stockAvailable } : line;
       }),
     );
   }, [cart, warehouseId]);
@@ -218,13 +234,14 @@ export function PosPage() {
   const validateStock = useCallback(async () => {
     if (!warehouseId) return false;
     let hadCap = false;
-    const stockByKey = new Map<string, { stockAvailable: number; unitName: string }>();
+    const stocks = await fetchPosStockBulk(
+      warehouseId,
+      cart.map((line) => line.productUnitId),
+    );
+    const stockByUnit = new Map(stocks.map((s) => [s.productUnitId, s]));
     for (const line of cart) {
-      const stock = await fetchPosStock(warehouseId, line.productUnitId);
-      stockByKey.set(line.key, {
-        stockAvailable: stock.stockAvailable,
-        unitName: stock.unitName,
-      });
+      const stock = stockByUnit.get(line.productUnitId);
+      if (!stock) continue;
       if (line.quantity > stock.stockAvailable + 0.0001) {
         hadCap = true;
       }
@@ -232,7 +249,7 @@ export function PosPage() {
     if (hadCap) {
       setCart((prev) =>
         prev.map((line) => {
-          const stock = stockByKey.get(line.key);
+          const stock = stockByUnit.get(line.productUnitId);
           if (!stock) return line;
           const over = line.quantity > stock.stockAvailable + 0.0001;
           return {
@@ -249,7 +266,7 @@ export function PosPage() {
     }
     setCart((prev) =>
       prev.map((line) => {
-        const stock = stockByKey.get(line.key);
+        const stock = stockByUnit.get(line.productUnitId);
         return stock ? { ...line, stockAvailable: stock.stockAvailable } : line;
       }),
     );
@@ -427,7 +444,7 @@ export function PosPage() {
       setCheckoutOpen(false);
       clearDraftEdit();
       resetCart();
-      if (!printSalesInvoice(order)) {
+      if (!(await printSalesInvoice(order))) {
         setLastCompletedOrder(order);
         message.warning('Trình duyệt chặn cửa sổ in — bấm In hóa đơn bên dưới.');
       }
@@ -688,7 +705,7 @@ export function PosPage() {
             style={{ width: 320 }}
             placeholder="Quét mã vạch hoặc gõ mã / tên SP"
             value={barcode}
-            options={productSuggestions}
+            options={productSearchOptions}
             onChange={setBarcode}
             onSelect={(value) => void addByBarcode(String(value))}
             onKeyDown={(e) => {
@@ -793,7 +810,7 @@ export function PosPage() {
             <Space wrap>
               <Button
                 icon={<PrinterOutlined />}
-                onClick={() => printSalesInvoice(lastCompletedOrder)}
+                onClick={() => void printSalesInvoice(lastCompletedOrder)}
               >
                 In hóa đơn
               </Button>

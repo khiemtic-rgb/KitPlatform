@@ -1,10 +1,7 @@
-/** Cấu hình header phiếu in — sau này thay bằng API cài đặt tenant. */
-export type ReceiptStoreSettings = {
-  name: string;
-  tagline?: string;
-  phone?: string;
-  address?: string;
-};
+import { fetchReceiptSettings } from '@/shared/api/sales.api';
+import type { ReceiptStoreSettings } from '@/shared/api/sales.types';
+
+export type { ReceiptStoreSettings };
 
 const DEFAULT_RECEIPT_STORE: ReceiptStoreSettings = {
   name: 'NHÀ THUỐC NOVIXA',
@@ -13,6 +10,26 @@ const DEFAULT_RECEIPT_STORE: ReceiptStoreSettings = {
   address: '',
 };
 
+let cachedSettings: ReceiptStoreSettings | null = null;
+
+export function clearReceiptSettingsCache() {
+  cachedSettings = null;
+}
+
+/** Sync fallback when API chưa load. */
 export function getReceiptStoreSettings(): ReceiptStoreSettings {
-  return DEFAULT_RECEIPT_STORE;
+  return cachedSettings ?? DEFAULT_RECEIPT_STORE;
+}
+
+export async function loadReceiptStoreSettings(force = false): Promise<ReceiptStoreSettings> {
+  if (cachedSettings && !force) return cachedSettings;
+  try {
+    cachedSettings = await fetchReceiptSettings();
+    if (!cachedSettings.name.trim()) {
+      cachedSettings = DEFAULT_RECEIPT_STORE;
+    }
+  } catch {
+    cachedSettings = DEFAULT_RECEIPT_STORE;
+  }
+  return cachedSettings;
 }

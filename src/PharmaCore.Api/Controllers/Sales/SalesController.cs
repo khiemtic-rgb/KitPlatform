@@ -46,6 +46,33 @@ public sealed class SalesController : ControllerBase
         return item is null ? NotFound() : Ok(item);
     }
 
+    [HttpPost("pos/stock/bulk")]
+    [Authorize(Policy = SalesPolicies.Read)]
+    public async Task<ActionResult<IReadOnlyList<PosStockCheckDto>>> GetPosStockBulk(
+        [FromBody] PosBulkStockRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.ProductUnitIds.Count == 0)
+            return Ok(Array.Empty<PosStockCheckDto>());
+        return Ok(await _sales.GetPosStockBulkAsync(
+            request.WarehouseId,
+            request.ProductUnitIds,
+            cancellationToken));
+    }
+
+    [HttpGet("pos/search")]
+    [Authorize(Policy = SalesPolicies.Read)]
+    public async Task<ActionResult<IReadOnlyList<PosProductSearchItemDto>>> SearchPosProducts(
+        [FromQuery] string search,
+        [FromQuery] Guid warehouseId,
+        [FromQuery] short priceType = SalesPriceTypes.Retail,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+            return Ok(Array.Empty<PosProductSearchItemDto>());
+        return Ok(await _sales.SearchPosProductsAsync(search, warehouseId, priceType, cancellationToken));
+    }
+
     [HttpPost("pos/preview-allocation")]
     [Authorize(Policy = SalesPolicies.Read)]
     public async Task<ActionResult<PosAllocationPreviewDto>> PreviewAllocation(

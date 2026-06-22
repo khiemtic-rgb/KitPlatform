@@ -17,6 +17,17 @@ public interface ISalesService
         Guid productUnitId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<PosStockCheckDto>> GetPosStockBulkAsync(
+        Guid warehouseId,
+        IReadOnlyList<Guid> productUnitIds,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PosProductSearchItemDto>> SearchPosProductsAsync(
+        string search,
+        Guid warehouseId,
+        short priceType = SalesPriceTypes.Retail,
+        CancellationToken cancellationToken = default);
+
     Task<PosAllocationPreviewDto> PreviewPosAllocationAsync(
         PosAllocationPreviewRequest request,
         CancellationToken cancellationToken = default);

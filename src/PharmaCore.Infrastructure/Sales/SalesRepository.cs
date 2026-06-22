@@ -258,6 +258,143 @@ internal sealed class SalesRepository
             StockSourceLabels.SystemBook);
     }
 
+    public async Task<IReadOnlyList<PosStockCheckDto>> GetPosStockBulkAsync(
+        Guid warehouseId,
+        IReadOnlyList<Guid> productUnitIds,
+        CancellationToken cancellationToken)
+    {
+        if (productUnitIds.Count == 0)
+            return [];
+
+        const string sql = """
+            SELECT
+                p.id AS ProductId,
+                p.product_code AS ProductCode,
+                p.product_name AS ProductName,
+                u.id AS ProductUnitId,
+                u.unit_name AS UnitName,
+                u.conversion_factor AS ConversionFactor,
+                COALESCE((
+                    SELECT SUM(b.quantity_available)
+                    FROM inventory_batches b
+                    WHERE b.tenant_id = @TenantId AND b.warehouse_id = @WarehouseId
+                      AND b.product_id = p.id AND b.quantity_available > 0
+                ), 0) AS StockAvailable
+            FROM product_units u
+            INNER JOIN products p ON p.id = u.product_id
+            WHERE u.tenant_id = @TenantId AND p.deleted_at IS NULL
+              AND u.id = ANY(@ProductUnitIds)
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<PosStockCheckRow>(sql, new
+        {
+            TenantId,
+            WarehouseId = warehouseId,
+            ProductUnitIds = productUnitIds.ToArray(),
+        });
+
+        return rows.Select(row =>
+        {
+            var stockInSaleUnit = row.ConversionFactor > 0
+                ? row.StockAvailable / row.ConversionFactor
+                : row.StockAvailable;
+            return new PosStockCheckDto(
+                row.ProductId,
+                row.ProductCode,
+                row.ProductName,
+                row.ProductUnitId,
+                row.UnitName,
+                row.ConversionFactor,
+                stockInSaleUnit,
+                StockSourceLabels.SystemBook);
+        }).ToList();
+    }
+
+    public async Task<IReadOnlyList<PosProductSearchItemDto>> SearchPosProductsAsync(
+        string search,
+        Guid warehouseId,
+        short priceType,
+        CancellationToken cancellationToken)
+    {
+        var term = search.Trim();
+        if (string.IsNullOrWhiteSpace(term))
+            return [];
+
+        const string sql = """
+            SELECT
+                p.product_code AS ProductCode,
+                p.product_name AS ProductName,
+                COALESCE((
+                    SELECT bc.barcode
+                    FROM product_barcodes bc
+                    WHERE bc.product_id = p.id AND bc.tenant_id = @TenantId
+                      AND bc.is_primary = TRUE AND bc.status = 1
+                    LIMIT 1
+                ), p.product_code) AS LookupCode,
+                u.unit_name AS UnitName,
+                u.conversion_factor AS ConversionFactor,
+                COALESCE(pr.price, 0) AS UnitPrice,
+                COALESCE((
+                    SELECT SUM(b.quantity_available)
+                    FROM inventory_batches b
+                    WHERE b.tenant_id = @TenantId AND b.warehouse_id = @WarehouseId
+                      AND b.product_id = p.id AND b.quantity_available > 0
+                ), 0) AS StockAvailable
+            FROM products p
+            INNER JOIN LATERAL (
+                SELECT id, unit_name, conversion_factor
+                FROM product_units pu
+                WHERE pu.product_id = p.id AND pu.tenant_id = @TenantId
+                ORDER BY pu.is_sale_unit DESC, pu.is_base_unit DESC, pu.unit_name
+                LIMIT 1
+            ) u ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT price FROM product_prices pp
+                WHERE pp.tenant_id = @TenantId AND pp.product_id = p.id
+                  AND pp.product_unit_id = u.id AND pp.price_type = @PriceType
+                  AND pp.status = 1 AND pp.effective_from <= NOW()
+                  AND (pp.effective_to IS NULL OR pp.effective_to > NOW())
+                ORDER BY pp.effective_from DESC
+                LIMIT 1
+            ) pr ON TRUE
+            WHERE p.tenant_id = @TenantId AND p.deleted_at IS NULL AND p.status = 1
+              AND (
+                p.product_name ILIKE @Pattern
+                OR p.product_code ILIKE @Pattern
+                OR EXISTS (
+                    SELECT 1 FROM product_barcodes bc
+                    WHERE bc.product_id = p.id AND bc.tenant_id = @TenantId
+                      AND bc.status = 1 AND bc.barcode ILIKE @Pattern
+                )
+              )
+            ORDER BY p.product_name
+            LIMIT 20
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<PosProductSearchRow>(sql, new
+        {
+            TenantId,
+            WarehouseId = warehouseId,
+            PriceType = priceType,
+            Pattern = $"%{term}%",
+        });
+
+        return rows.Select(row =>
+        {
+            var stockInSaleUnit = row.ConversionFactor > 0
+                ? row.StockAvailable / row.ConversionFactor
+                : row.StockAvailable;
+            return new PosProductSearchItemDto(
+                row.ProductCode,
+                row.ProductName,
+                row.LookupCode,
+                row.UnitName,
+                row.UnitPrice,
+                stockInSaleUnit);
+        }).ToList();
+    }
+
     public async Task<PosAllocationPreviewDto> PreviewPosAllocationAsync(
         PosAllocationPreviewRequest request,
         CancellationToken cancellationToken)
@@ -1807,6 +1944,15 @@ internal sealed class SalesRepository
         Guid ProductUnitId,
         string UnitName,
         decimal ConversionFactor,
+        decimal StockAvailable);
+
+    private sealed record PosProductSearchRow(
+        string ProductCode,
+        string ProductName,
+        string LookupCode,
+        string UnitName,
+        decimal ConversionFactor,
+        decimal UnitPrice,
         decimal StockAvailable);
 
     private sealed class UnitRow

@@ -1,5 +1,4 @@
 import { lookupPosProduct } from '@/shared/api/sales.api';
-import type { ProductListItem } from '@/shared/api/catalog.types';
 import type { CartLine, SalesOrderDetail, SalesDiscountType } from '@/shared/api/sales.types';
 import type { OrderDiscountState } from '@/modules/sales/pos-pricing';
 
@@ -27,17 +26,12 @@ export function orderDiscountFromDetail(order: SalesOrderDetail): OrderDiscountS
   };
 }
 
-export async function loadDraftCartLines(
-  order: SalesOrderDetail,
-  products: ProductListItem[],
-): Promise<CartLine[]> {
+export async function loadDraftCartLines(order: SalesOrderDetail): Promise<CartLine[]> {
   const lines: CartLine[] = [];
   for (const item of order.items) {
-    const product = products.find((p) => p.id === item.productId);
     let stockAvailable = 0;
-    const lookupKey = product?.primaryBarcode ?? item.productCode;
     try {
-      const lookup = await lookupPosProduct(lookupKey, order.warehouseId);
+      const lookup = await lookupPosProduct(item.productCode, order.warehouseId);
       stockAvailable = lookup.stockAvailable;
     } catch {
       stockAvailable = 0;

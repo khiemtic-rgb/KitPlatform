@@ -50,9 +50,11 @@ export function SalesReturnDetailDrawer({ open, returnId, onClose, onOpenOrder }
 
   const handlePrint = () => {
     if (!detail) return;
-    if (!printSalesReturn(detail)) {
-      message.warning('Trình duyệt chặn cửa sổ in — cho phép popup và thử lại.');
-    }
+    void (async () => {
+      if (!(await printSalesReturn(detail))) {
+        message.warning('Trình duyệt chặn cửa sổ in — cho phép popup và thử lại.');
+      }
+    })();
   };
 
   const itemColumns: ColumnsType<SalesReturnDetail['items'][number]> = [

@@ -38,6 +38,18 @@ public sealed record PosStockCheckDto(
     decimal StockAvailable,
     string StockSourceLabel = StockSourceLabels.SystemBook);
 
+public sealed record PosProductSearchItemDto(
+    string ProductCode,
+    string ProductName,
+    string LookupCode,
+    string UnitName,
+    decimal UnitPrice,
+    decimal StockAvailable);
+
+public sealed record PosBulkStockRequest(
+    Guid WarehouseId,
+    IReadOnlyList<Guid> ProductUnitIds);
+
 public sealed record PosAllocationPreviewLineRequest(
     Guid ProductId,
     Guid ProductUnitId,
