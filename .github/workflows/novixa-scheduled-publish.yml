@@ -1,0 +1,52 @@
+# Mỗi ngày build lại site để bài có pubDate = hôm nay được hiển thị.
+# Tuỳ chọn: thêm secret CF_DEPLOY_HOOK (Cloudflare Pages → Deploy hooks) để deploy không cần commit.
+name: Novixa scheduled publish
+
+on:
+  schedule:
+    # 00:05 giờ Việt Nam (UTC+7) ≈ 17:05 UTC ngày hôm trước
+    - cron: '5 17 * * *'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: novixa-site/package-lock.json
+
+      - name: Import tin từ Excel (nếu có)
+        working-directory: novixa-site
+        run: |
+          npm ci
+          if [ -f import/tin-tuc.xlsx ] || [ -f import/tin-tuc.csv ]; then
+            npm run import:news
+          else
+            echo "Không có file import — chỉ trigger publish theo ngày."
+          fi
+
+      - name: Commit bài import (nếu đổi)
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore(novixa): import/scheduled news publish'
+          file_pattern: novixa-site/src/content/tin-tuc/*.md
+
+      - name: Trigger Cloudflare Pages deploy
+        env:
+          CF_DEPLOY_HOOK: ${{ secrets.CF_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$CF_DEPLOY_HOOK" ]; then
+            curl -fsS -X POST "$CF_DEPLOY_HOOK"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit --allow-empty -m "chore(novixa): scheduled daily rebuild"
+            git push
+          fi
