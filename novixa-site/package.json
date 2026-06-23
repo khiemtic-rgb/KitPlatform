@@ -12,7 +12,10 @@
     "build": "astro build",
     "preview": "astro preview --host localhost --port 4321",
     "astro": "astro",
-    "import:news": "node scripts/import-tin-tuc.mjs"
+    "import:news": "node scripts/import-tin-tuc.mjs",
+    "post:fanpage": "node scripts/post-fanpage-today.mjs",
+    "post:fanpage:dry": "node scripts/post-fanpage-today.mjs --dry-run",
+    "post:fanpage:verify": "node scripts/verify-fanpage-token.mjs"
   },
   "dependencies": {
     "astro": "^6.4.7"

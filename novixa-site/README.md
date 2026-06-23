@@ -88,6 +88,27 @@ lang: vi
 Nội dung...
 ```
 
+## Đăng tự động fanpage Facebook
+
+Cùng lịch `pubDate` với site — workflow hàng ngày chạy `npm run post:fanpage`.
+
+**Local:** `import/Id_Fanpage.txt` (gitignore) — xem mẫu `Id_Fanpage.template.txt`.
+
+**GitHub Secrets** (Settings → Actions):
+
+| Secret | Giá trị |
+|--------|---------|
+| `FB_PAGE_ID` | Page ID (số) |
+| `FB_PAGE_ACCESS_TOKEN` | Page Access Token |
+
+Log đã đăng: `import/fanpage-posted.json`.
+
+```powershell
+npm run post:fanpage:dry
+npm run post:fanpage:dry -- --date=2026-07-01
+npm run post:fanpage
+```
+
 ## Liên hệ (Zalo, Fanpage, form email)
 
 Cấu hình trong `src/i18n/vi.json` → mục `contact`:

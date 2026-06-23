@@ -36,7 +36,22 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: 'chore(novixa): import/scheduled news publish'
-          file_pattern: novixa-site/src/content/tin-tuc/*.md
+          file_pattern: |
+            novixa-site/src/content/tin-tuc/*.md
+            novixa-site/import/fanpage-posted.json
+
+      - name: Đăng fanpage (bài pubDate hôm nay, giờ VN)
+        working-directory: novixa-site
+        env:
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+        run: npm run post:fanpage
+
+      - name: Commit log fanpage (nếu đã đăng)
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore(novixa): fanpage post log'
+          file_pattern: novixa-site/import/fanpage-posted.json
 
       - name: Trigger Cloudflare Pages deploy
         env:
