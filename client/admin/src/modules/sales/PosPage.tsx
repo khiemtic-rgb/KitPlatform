@@ -15,7 +15,7 @@ import {
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PrinterOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PrinterOutlined } from '@ant-design/icons';
 import { fetchWarehouses } from '@/shared/api/inventory.api';
 import type { Warehouse } from '@/shared/api/inventory.types';
 import { createSale, completeDraftSale, fetchBatchModeSettings, fetchOpenShift, fetchPosStockBulk, fetchSalesOrder, lookupPosProduct, openSalesShift, previewPosAllocation, searchCustomers, searchPosProducts, updateDraftSale, type TenantBatchModeValue } from '@/shared/api/sales.api';
@@ -37,10 +37,12 @@ import {
   showsBatchLabelField,
   validateCartBatchLabels,
 } from '@/modules/sales/pos-batch-mode-ui';
-import { capQuantityToStock, stockCapWarningText } from '@/modules/sales/pos-stock-messages';
+import { applyBatchLabelScan } from '@/modules/sales/pos-batch-scan';
+import { POS_CART_DISCOUNT_TYPE_OPTIONS } from '@/modules/sales/pos-cart-table-options';
+import { capQuantityToStock, outOfStockWarningText, stockCapWarningText } from '@/modules/sales/pos-stock-messages';
 import { buildCreateSalePayload, buildDraftUpdatePayload, buildSaleLineItems } from '@/modules/sales/pos-sale-payload';
 import { OpenShiftModal } from '@/modules/sales/OpenShiftModal';
-import { DISCOUNT_TYPE_SELECT_OPTIONS, PosSummaryDivider, PosSummaryOrderDiscountRow, PosSummaryPanel, PosSummaryRow } from '@/modules/sales/pos-summary-ui';
+import { PosSummaryDivider, PosSummaryOrderDiscountRow, PosSummaryPanel, PosSummaryRow } from '@/modules/sales/pos-summary-ui';
 import { printSalesInvoice } from '@/modules/sales/sales-invoice-print';
 import { loadReceiptStoreSettings } from '@/modules/sales/receipt-settings';
 import {
@@ -375,10 +377,19 @@ export function PosPage() {
         });
         setBarcode('');
       } catch (error) {
+        if (showsBatchLabelField(batchMode)) {
+          const batchResult = applyBatchLabelScan(cart, value);
+          if (batchResult) {
+            setCart(batchResult.cart);
+            message.success(`Đã gán lô ${batchResult.batchNumber} — ${batchResult.productName}`);
+            setBarcode('');
+            return;
+          }
+        }
         message.error(apiErrorMessage(error, 'Không tìm thấy sản phẩm'));
       }
     },
-    [barcode, batchMode, message, warehouseId],
+    [barcode, batchMode, cart, message, warehouseId],
   );
 
   const resetCartAndExitDraft = () => {
@@ -447,12 +458,6 @@ export function PosPage() {
     if (!validateBatchLabels()) {
       throw new Error('invalid-batch-label');
     }
-    if (!(await validateStock())) {
-      throw new Error('invalid-stock');
-    }
-    if (!(await validateFefoAllocation())) {
-      throw new Error('invalid-fefo');
-    }
     setSaving(true);
     const hideLoading = message.loading('Đang ghi đơn bán...', 0);
     try {
@@ -473,11 +478,13 @@ export function PosPage() {
       setCheckoutOpen(false);
       clearDraftEdit();
       resetCart();
-      if (!(await printSalesInvoice(order))) {
-        setLastCompletedOrder(order);
-        message.warning('Trình duyệt chặn cửa sổ in — bấm In hóa đơn bên dưới.');
-      }
-      if (warehouseId) await loadOpenShift(warehouseId);
+      void printSalesInvoice(order).then((printed) => {
+        if (!printed) {
+          setLastCompletedOrder(order);
+          message.warning('Trình duyệt chặn cửa sổ in — bấm In hóa đơn bên dưới.');
+        }
+      });
+      if (warehouseId) void loadOpenShift(warehouseId);
     } catch (error) {
       hideLoading();
       await refreshCartStock();
@@ -510,30 +517,45 @@ export function PosPage() {
     validateStock,
   ]);
 
+  const cartLocked = checkoutOpen || saving;
+
   const columns: ColumnsType<CartLine> = [
-    { title: 'Mã', dataIndex: 'productCode', width: 90 },
     {
       title: 'Sản phẩm',
       render: (_, row) => {
         const suggestedBatch = formatSuggestedBatch(row.batchHints);
-        const name = (
-          <span>
-            {row.productName}
-            <Typography.Text
-              style={{ marginLeft: 6, fontSize: '0.88em', color: '#0d7377', fontWeight: 500 }}
-            >
-              (tồn {(row.stockAvailable ?? 0).toLocaleString('vi-VN')} {row.unitName})
+        const stockWarning =
+          row.qtyWarning ??
+          (row.stockAvailable != null && row.stockAvailable <= 0
+            ? outOfStockWarningText(row.unitName)
+            : null);
+        const body = (
+          <div style={{ lineHeight: 1.45 }}>
+            <Typography.Text type="secondary" style={{ fontSize: 11, lineHeight: 1.35 }}>
+              Mã SP: {row.productCode} | ĐVT lẻ: {row.unitName}
             </Typography.Text>
-          </span>
+            <div>
+              <Typography.Text strong>{row.productName}</Typography.Text>
+              <Typography.Text
+                style={{ marginLeft: 6, fontSize: '0.88em', color: '#0d7377', fontWeight: 500 }}
+              >
+                (tồn {(row.stockAvailable ?? 0).toLocaleString('vi-VN')})
+              </Typography.Text>
+            </div>
+            {stockWarning ? (
+              <Typography.Text type="warning" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                {stockWarning}
+              </Typography.Text>
+            ) : null}
+          </div>
         );
         return showsBatchHints(batchMode) && suggestedBatch !== '—' ? (
-          <Tooltip title={`Lô FEFO gợi ý: ${suggestedBatch}`}>{name}</Tooltip>
+          <Tooltip title={`Lô FEFO gợi ý: ${suggestedBatch}`}>{body}</Tooltip>
         ) : (
-          name
+          body
         );
       },
     },
-    { title: 'ĐVT', dataIndex: 'unitName', width: 70 },
     ...(showsBatchLabelField(batchMode)
       ? ([
           {
@@ -545,7 +567,7 @@ export function PosPage() {
                 allowClear={batchMode !== 'label_required'}
                 placeholder="Chọn lô"
                 style={{ width: 140 }}
-                disabled={!canWrite}
+                disabled={!canWrite || cartLocked}
                 value={row.batchLabel || undefined}
                 options={(row.batchHints ?? []).map((hint) => ({
                   value: hint.batchNumber,
@@ -564,19 +586,26 @@ export function PosPage() {
     {
       title: 'SL',
       dataIndex: 'quantity',
-      width: 240,
+      width: 88,
+      align: 'right',
       render: (_v: number, row) => (
         <PosCartQuantityInput
           value={row.quantity}
           stockAvailable={row.stockAvailable ?? 0}
           unitName={row.unitName}
-          disabled={!canWrite}
+          disabled={!canWrite || cartLocked}
           externalWarning={row.qtyWarning}
-          onChange={(quantity) =>
+          showInlineWarning={false}
+          onQtyWarningChange={(warning) =>
             setCart((prev) =>
               prev.map((l) =>
-                l.key === row.key ? { ...l, quantity, qtyWarning: undefined } : l,
+                l.key === row.key ? { ...l, qtyWarning: warning ?? undefined } : l,
               ),
+            )
+          }
+          onChange={(quantity) =>
+            setCart((prev) =>
+              prev.map((l) => (l.key === row.key ? { ...l, quantity } : l)),
             )
           }
           onClearWarning={() =>
@@ -600,14 +629,14 @@ export function PosPage() {
       ? ([
           {
             title: 'CK',
-            width: 158,
+            width: 124,
             render: (_, row) => (
               <Space.Compact>
                 <Select
                   allowClear
                   placeholder="%"
-                  style={{ width: 96 }}
-                  disabled={!canWrite}
+                  style={{ width: 52 }}
+                  disabled={!canWrite || cartLocked}
                   value={row.discountType}
                   onChange={(discountType) =>
                     setCart((prev) =>
@@ -618,14 +647,14 @@ export function PosPage() {
                       ),
                     )
                   }
-                  options={[...DISCOUNT_TYPE_SELECT_OPTIONS]}
+                  options={[...POS_CART_DISCOUNT_TYPE_OPTIONS]}
                 />
                 <InputNumber
-                  disabled={!canWrite || !row.discountType}
+                  disabled={!canWrite || cartLocked || !row.discountType}
                   value={row.discountValue}
                   {...(row.discountType === SALES_DISCOUNT_TYPES.Fixed
-                    ? { ...moneyInputNumberPropsAllowZeroSuffix, style: { ...moneyInputNumberStyle, width: 96 } }
-                    : { min: 0, max: 100, style: { ...moneyInputNumberStyle, width: 72 } })}
+                    ? { ...moneyInputNumberPropsAllowZeroSuffix, style: { ...moneyInputNumberStyle, width: 72 } }
+                    : { min: 0, max: 100, style: { ...moneyInputNumberStyle, width: 56 } })}
                   onChange={(discountValue) =>
                     setCart((prev) =>
                       prev.map((l) =>
@@ -641,7 +670,7 @@ export function PosPage() {
       : []),
     {
       title: 'Thành tiền',
-      width: 110,
+      width: 136,
       align: 'right',
       render: (_, row) => (
         <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDisplayMoney(lineNet(row))}</span>
@@ -649,16 +678,18 @@ export function PosPage() {
     },
     {
       title: '',
-      width: 70,
+      width: 44,
+      align: 'center',
       render: (_, row) => (
         <Button
-          type="link"
+          type="text"
           danger
-          disabled={!canWrite}
+          size="small"
+          icon={<DeleteOutlined />}
+          disabled={!canWrite || cartLocked}
+          aria-label="Xóa dòng"
           onClick={() => setCart((p) => p.filter((l) => l.key !== row.key))}
-        >
-          Xóa
-        </Button>
+        />
       ),
     },
   ];
@@ -769,19 +800,23 @@ export function PosPage() {
             onKeyDown={(e) => {
               if (e.key === 'Enter') void addByBarcode();
             }}
-            disabled={!canWrite || !warehouseId}
+            disabled={!canWrite || !warehouseId || cartLocked}
             notFoundContent="Không có sản phẩm phù hợp"
           />
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Demo: <Typography.Text code>8934567890012</Typography.Text> (Paracetamol 500mg)
+            {showsBatchLabelField(batchMode)
+              ? 'Quét SP hoặc quét nhãn lô sau khi thêm dòng · Demo SP: '
+              : 'Demo: '}
+            <Typography.Text code>8934567890012</Typography.Text>
+            {showsBatchLabelField(batchMode) ? '' : ' (Paracetamol 500mg)'}
           </Typography.Text>
         </Space>
-        <Button type="primary" onClick={() => void addByBarcode()} disabled={!canWrite || !warehouseId}>
+        <Button type="primary" onClick={() => void addByBarcode()} disabled={!canWrite || !warehouseId || cartLocked}>
           Thêm
         </Button>
       </Space>
 
-      <Table rowKey="key" size="small" pagination={false} dataSource={cart} columns={columns} scroll={{ x: 960 }} />
+      <Table rowKey="key" size="small" pagination={false} dataSource={cart} columns={columns} scroll={{ x: 880 }} />
 
       <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
         <PosSummaryPanel>
