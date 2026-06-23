@@ -2,5 +2,9 @@ Page ID: YOUR_PAGE_ID_HERE
 
 Page Access Token: YOUR_PAGE_ACCESS_TOKEN_HERE
 
-# Sao chép thành Id_Fanpage.txt (file này không commit).
-# Trên GitHub Actions: Settings → Secrets → FB_PAGE_ID, FB_PAGE_ACCESS_TOKEN
+# --- HOẶC dán nguyên khối JSON từ GET me/accounts (1 fanpage) ---
+# "id": "123456789",
+# "name": "Novixa",
+# "access_token": "EAA..."
+
+# GitHub Actions: Secrets FB_PAGE_ID + FB_PAGE_ACCESS_TOKEN
