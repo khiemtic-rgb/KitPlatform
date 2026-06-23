@@ -1447,11 +1447,8 @@ internal sealed class SalesRepository
         IDbConnection conn,
         Guid shiftId)
     {
-        if (!SalesFeatureFlags.ShiftLotComplianceAlertsEnabled)
-            return [];
-
         var batchMode = await _tenantSettings.GetBatchModeAsync();
-        if (batchMode == TenantBatchMode.Off)
+        if (!TenantBatchModeCompliance.EnablesShiftLotComplianceAlerts(batchMode))
             return [];
 
         const string sql = """

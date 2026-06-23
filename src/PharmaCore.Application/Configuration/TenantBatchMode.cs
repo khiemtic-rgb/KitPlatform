@@ -29,6 +29,13 @@ public static class TenantBatchModeParser
     };
 }
 
+public static class TenantBatchModeCompliance
+{
+    /// <summary>Cảnh báo tuân thủ lô trên ca — chỉ khi cài nhãn lô bắt buộc (FEFO chuẩn).</summary>
+    public static bool EnablesShiftLotComplianceAlerts(TenantBatchMode mode) =>
+        mode == TenantBatchMode.LabelRequired;
+}
+
 public static class StockSourceLabels
 {
     public const string SystemBook = "Tồn theo hệ thống";

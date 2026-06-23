@@ -19,10 +19,12 @@ import { fetchWarehouses } from '@/shared/api/inventory.api';
 import type { Warehouse } from '@/shared/api/inventory.types';
 import {
   closeSalesShift,
+  fetchBatchModeSettings,
   fetchOpenShift,
   fetchSalesShiftSummary,
   fetchSalesShifts,
   openSalesShift,
+  type TenantBatchModeValue,
 } from '@/shared/api/sales.api';
 import type { SalesShiftDetail, SalesShiftListItem, SalesShiftSummary } from '@/shared/api/sales.types';
 import { SALES_SHIFT_STATUSES } from '@/shared/api/sales.types';
@@ -36,7 +38,7 @@ import { useHasPermission } from '@/shared/auth/usePermission';
 import { CloseShiftModal } from '@/modules/sales/CloseShiftModal';
 import { OpenShiftModal } from '@/modules/sales/OpenShiftModal';
 import { ShiftSummaryPanel } from '@/modules/sales/shift-summary-ui';
-import { SHOW_SHIFT_FEFO_LOT_ALERTS } from '@/modules/sales/sales-feature-flags';
+import { enablesShiftFefoLotAlerts } from '@/modules/sales/tenant-batch-mode';
 import { formatDisplayMoney } from '@/shared/utils/money';
 import { formatDisplayDate } from '@/shared/utils/date';
 
@@ -52,6 +54,7 @@ export function SalesShiftReportPage() {
   const [openModal, setOpenModal] = useState(false);
   const [closeModal, setCloseModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [batchMode, setBatchMode] = useState<TenantBatchModeValue>('suggest');
 
   const [range, setRange] = useState<[Dayjs, Dayjs]>(() => [
     dayjs().startOf('day'),
@@ -66,6 +69,11 @@ export function SalesShiftReportPage() {
       setWarehouses(wh);
       const defaultWh = wh.find((w) => w.isDefault) ?? wh[0];
       if (defaultWh) setWarehouseId(defaultWh.id);
+      try {
+        setBatchMode(await fetchBatchModeSettings());
+      } catch {
+        /* giữ suggest */
+      }
     })();
   }, []);
 
@@ -229,7 +237,7 @@ export function SalesShiftReportPage() {
                 <Tag color="processing">Đang mở</Tag>
               </Descriptions.Item>
             </Descriptions>
-            {SHOW_SHIFT_FEFO_LOT_ALERTS && openShift.lotAlerts && openShift.lotAlerts.length > 0 && (
+            {enablesShiftFefoLotAlerts(batchMode) && openShift.lotAlerts && openShift.lotAlerts.length > 0 && (
               <Alert
                 type="warning"
                 showIcon
