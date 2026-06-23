@@ -32,10 +32,8 @@ import {
 import { apiErrorMessage } from '@/shared/api/api-error';
 import type { LookupItem, ProductDetail, ProductListFilter, ProductListItem } from '@/shared/api/catalog.types';
 import { DRUG_TYPE_LABELS, STATUS_LABELS } from '@/shared/api/catalog.types';
+import { formatDisplayMoney } from '@/shared/utils/money';
 import { ProductFormDrawer } from '@/modules/catalog/ProductFormDrawer';
-
-const formatMoney = (v?: number) =>
-  v != null ? new Intl.NumberFormat('vi-VN').format(v) + ' ₫' : '—';
 
 const emptyAdvancedFilters: Omit<ProductListFilter, 'search' | 'page' | 'pageSize'> = {
   drugTypes: undefined,
@@ -279,7 +277,7 @@ export function ProductListPage() {
       width: 110,
       align: 'right',
       render: (v?: number) => (
-        <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatMoney(v)}</span>
+        <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDisplayMoney(v)}</span>
       ),
     },
     {

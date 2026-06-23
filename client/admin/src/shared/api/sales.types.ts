@@ -278,13 +278,8 @@ export interface CartLine {
   qtyWarning?: string;
 }
 
-export const SALE_STATUS_LABELS: Record<number, string> = {
-  1: 'Nháp',
-  2: 'Hoàn tất',
-  3: 'Đã hủy',
-  4: 'Hoàn tiền',
-};
-
 export const SALES_RETURN_STATUS_LABELS: Record<number, string> = {
   2: 'Hoàn tất',
 };
+
+export { SALE_STATUS_LABELS } from '@/modules/sales/sales-order-status';

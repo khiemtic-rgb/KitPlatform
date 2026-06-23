@@ -94,6 +94,44 @@ internal sealed class TenantSettingsService : ITenantSettingsService
         return receipt;
     }
 
+    public async Task<TenantBatchModeSettingsDto> GetBatchModeSettingsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var mode = await GetBatchModeAsync(cancellationToken);
+        return new TenantBatchModeSettingsDto(TenantBatchModeParser.ToSettingValue(mode));
+    }
+
+    public async Task<TenantBatchModeSettingsDto> UpdateBatchModeAsync(
+        UpdateTenantBatchModeRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.BatchMode))
+            throw new InvalidOperationException("Chế độ quản lý lô không được để trống.");
+
+        var mode = TenantBatchModeParser.Parse(request.BatchMode);
+        var value = TenantBatchModeParser.ToSettingValue(mode);
+
+        const string sql = """
+            UPDATE tenants
+            SET settings = jsonb_set(
+                COALESCE(settings, '{}'::jsonb),
+                '{batch_mode}',
+                to_jsonb(@BatchMode::text),
+                true
+            ),
+            updated_at = NOW()
+            WHERE id = @TenantId
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(sql, new
+        {
+            TenantId = _tenant.TenantId,
+            BatchMode = value,
+        });
+
+        return new TenantBatchModeSettingsDto(value);
+    }
+
     private static TenantReceiptSettingsDto? ParseReceiptJson(string? json)
     {
         if (string.IsNullOrWhiteSpace(json) || json == "null")

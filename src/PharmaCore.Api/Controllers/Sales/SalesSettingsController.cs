@@ -34,4 +34,25 @@ public sealed class SalesSettingsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpGet("batch-mode")]
+    [Authorize(Policy = SalesPolicies.Read)]
+    public async Task<ActionResult<TenantBatchModeSettingsDto>> GetBatchMode(CancellationToken cancellationToken) =>
+        Ok(await _settings.GetBatchModeSettingsAsync(cancellationToken));
+
+    [HttpPut("batch-mode")]
+    [Authorize(Policy = SalesPolicies.Write)]
+    public async Task<ActionResult<TenantBatchModeSettingsDto>> UpdateBatchMode(
+        [FromBody] UpdateTenantBatchModeRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _settings.UpdateBatchModeAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

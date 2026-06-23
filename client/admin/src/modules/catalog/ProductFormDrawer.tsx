@@ -45,6 +45,7 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import { uploadImage } from '@/shared/api/files.api';
 import type { LookupItem, ProductDetail } from '@/shared/api/catalog.types';
 import { DRUG_TYPE_LABELS, PRICE_TYPE_LABELS, SALE_UNIT_OPTIONS, STATUS_LABELS, BARCODE_TYPE_LABELS } from '@/shared/api/catalog.types';
+import { formatDisplayMoney } from '@/shared/utils/money';
 
 type TabKey = 'general' | 'details' | 'ingredients';
 
@@ -133,8 +134,6 @@ function formatGenericFromIngredients(rows: IngredientRow[]): string {
   };
   return rows.map(formatLine).filter(Boolean).join(' + ');
 }
-
-const formatMoney = (v: number) => new Intl.NumberFormat('vi-VN').format(v) + ' ₫';
 
 type Props = {
   open: boolean;
@@ -1297,7 +1296,7 @@ export function ProductFormDrawer({ open, editing, onClose, onCreated, onUpdated
                   {' · '}
                   {unitName}
                   {' · '}
-                  {formatMoney(p.price)}
+                  {formatDisplayMoney(p.price)}
                 </span>
                 <Button
                   type="text"

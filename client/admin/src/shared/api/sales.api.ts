@@ -212,11 +212,11 @@ export async function searchCustomers(search?: string): Promise<CustomerListItem
 }
 
 export async function lookupPosProduct(
-  barcode: string,
+  code: string,
   warehouseId: string,
 ): Promise<PosProductLookup> {
   const { data } = await http.get<Record<string, unknown>>('/sales/pos/lookup', {
-    params: { barcode, warehouseId },
+    params: { query: code, warehouseId },
   });
   return normalizePosProductLookup(data);
 }
@@ -303,6 +303,21 @@ export async function updateReceiptSettings(
     phone: (data.phone ?? data.Phone) as string | undefined,
     address: (data.address ?? data.Address) as string | undefined,
   };
+}
+
+export type TenantBatchModeValue = 'off' | 'suggest' | 'label_optional' | 'label_required';
+
+export async function fetchBatchModeSettings(): Promise<TenantBatchModeValue> {
+  const { data } = await http.get<Record<string, unknown>>('/sales/settings/batch-mode');
+  const mode = String(data.batchMode ?? data.BatchMode ?? 'suggest') as TenantBatchModeValue;
+  return mode;
+}
+
+export async function updateBatchModeSettings(
+  batchMode: TenantBatchModeValue,
+): Promise<TenantBatchModeValue> {
+  const { data } = await http.put<Record<string, unknown>>('/sales/settings/batch-mode', { batchMode });
+  return String(data.batchMode ?? data.BatchMode ?? batchMode) as TenantBatchModeValue;
 }
 
 export async function previewPosAllocation(payload: {

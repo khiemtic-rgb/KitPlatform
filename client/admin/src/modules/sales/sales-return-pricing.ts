@@ -84,42 +84,8 @@ export function remainingLineNet(
   return line.lineTotal - lineRefundAmount(line, order);
 }
 
-export function isPartiallyReturnedOrder(status: number, totalRefunded?: number): boolean {
-  return status === 2 && (totalRefunded ?? 0) > 0.009;
-}
-
-export function isPartiallyReturnedFromItems(
-  status: number,
-  items: { returnedQuantity?: number }[],
-): boolean {
-  return status === 2 && items.some((line) => (line.returnedQuantity ?? 0) > 0.0001);
-}
-
-export function orderDisplayStatus(row: {
-  status: number;
-  totalRefunded?: number;
-  items?: { returnedQuantity?: number }[];
-}): { label: string; color: string } {
-  const partial =
-    isPartiallyReturnedOrder(row.status, row.totalRefunded) ||
-    (row.items != null && isPartiallyReturnedFromItems(row.status, row.items));
-  if (partial) {
-    return { label: 'Trả một phần', color: 'orange' };
-  }
-  const labels: Record<number, string> = {
-    1: 'Nháp',
-    2: 'Hoàn tất',
-    3: 'Đã hủy',
-    4: 'Hoàn tiền',
-  };
-  const colors: Record<number, string> = {
-    1: 'default',
-    2: 'success',
-    3: 'error',
-    4: 'warning',
-  };
-  return {
-    label: labels[row.status] ?? String(row.status),
-    color: colors[row.status] ?? 'default',
-  };
-}
+export {
+  isPartiallyReturnedFromItems,
+  isPartiallyReturnedOrder,
+  orderDisplayStatus,
+} from '@/modules/sales/sales-order-status';

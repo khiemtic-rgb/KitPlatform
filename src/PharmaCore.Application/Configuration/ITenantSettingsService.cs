@@ -9,4 +9,11 @@ public interface ITenantSettingsService
     Task<TenantReceiptSettingsDto> UpdateReceiptSettingsAsync(
         UpdateTenantReceiptSettingsRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<TenantBatchModeSettingsDto> GetBatchModeSettingsAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<TenantBatchModeSettingsDto> UpdateBatchModeAsync(
+        UpdateTenantBatchModeRequest request,
+        CancellationToken cancellationToken = default);
 }

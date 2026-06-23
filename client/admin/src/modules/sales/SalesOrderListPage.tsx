@@ -34,16 +34,20 @@ import {
 } from '@/shared/api/sales.api';
 import type { SalesOrderDetail, SalesOrderListItem, SalesReturnListItem } from '@/shared/api/sales.types';
 import { SALES_RETURN_STATUS_LABELS } from '@/shared/api/sales.types';
-import { SALE_STATUS_LABELS } from '@/shared/api/sales.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
-import { printSalesInvoice } from '@/modules/sales/sales-invoice-print';
-import { printSalesReturn } from '@/modules/sales/sales-return-print';
+import {
+  matchesSaleStatusFilter,
+  orderDisplayStatus,
+  PARTIAL_RETURN_STATUS,
+  SALE_STATUS_FILTER_OPTIONS,
+} from '@/modules/sales/sales-order-status';
+import { OrderDetailFinancials } from '@/modules/sales/OrderDetailFinancials';
+import { PosCheckoutModal } from '@/modules/sales/PosCheckoutModal';
 import { SalesReturnDetailDrawer } from '@/modules/sales/SalesReturnDetailDrawer';
 import { SalesReturnModal } from '@/modules/sales/SalesReturnModal';
-import { PosCheckoutModal } from '@/modules/sales/PosCheckoutModal';
-import { OrderDetailFinancials } from '@/modules/sales/OrderDetailFinancials';
-import { orderDisplayStatus } from '@/modules/sales/sales-return-pricing';
+import { printSalesInvoice } from '@/modules/sales/sales-invoice-print';
+import { printSalesReturn } from '@/modules/sales/sales-return-print';
 import { filterBarStyle, sectionGapStyle, sectionGapTopStyle, TabularMoney } from '@/modules/sales/sales-ui-styles';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { formatDisplayDate } from '@/shared/utils/date';
@@ -62,7 +66,7 @@ export function SalesOrderListPage() {
   const [loading, setLoading] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<number | undefined>();
+  const [statusFilter, setStatusFilter] = useState<number | typeof PARTIAL_RETURN_STATUS | undefined>();
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<SalesOrderDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -124,7 +128,7 @@ export function SalesOrderListPage() {
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((row) => {
-      if (statusFilter !== undefined && row.status !== statusFilter) return false;
+      if (!matchesSaleStatusFilter(row, statusFilter)) return false;
       if (!q) return true;
       return (
         row.orderNumber.toLowerCase().includes(q) ||
@@ -487,10 +491,7 @@ export function SalesOrderListPage() {
           style={{ width: 140 }}
           value={statusFilter}
           onChange={setStatusFilter}
-          options={Object.entries(SALE_STATUS_LABELS).map(([value, label]) => ({
-            value: Number(value),
-            label,
-          }))}
+          options={SALE_STATUS_FILTER_OPTIONS.map(({ value, label }) => ({ value, label }))}
         />
         <Button
           onClick={() => {

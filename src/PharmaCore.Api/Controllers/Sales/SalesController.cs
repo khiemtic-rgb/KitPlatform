@@ -24,14 +24,16 @@ public sealed class SalesController : ControllerBase
     [HttpGet("pos/lookup")]
     [Authorize(Policy = SalesPolicies.Read)]
     public async Task<ActionResult<PosProductLookupDto>> Lookup(
-        [FromQuery] string barcode,
+        [FromQuery] string? query,
+        [FromQuery] string? barcode,
         [FromQuery] Guid warehouseId,
         [FromQuery] short priceType = SalesPriceTypes.Retail,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(barcode))
+        var lookupQuery = (query ?? barcode)?.Trim();
+        if (string.IsNullOrWhiteSpace(lookupQuery))
             return BadRequest(new { message = "Mã vạch hoặc mã sản phẩm không được để trống." });
-        var item = await _sales.LookupProductAsync(barcode, warehouseId, priceType, cancellationToken);
+        var item = await _sales.LookupProductAsync(lookupQuery, warehouseId, priceType, cancellationToken);
         return item is null ? NotFound() : Ok(item);
     }
 
