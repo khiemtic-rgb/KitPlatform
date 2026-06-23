@@ -283,5 +283,3 @@ export interface CartLine {
 export const SALES_RETURN_STATUS_LABELS: Record<number, string> = {
   2: 'Hoàn tất',
 };
-
-export { SALE_STATUS_LABELS } from '@/modules/sales/sales-order-status';
