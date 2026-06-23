@@ -3,16 +3,12 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import { getCollection } from 'astro:content';
-import { filterPublishedPosts } from '../../../lib/publishedNews';
+import { formatNewsDate, sortPublishedNews } from '../../../lib/newsDate';
 import { t } from '../../../i18n';
 import '../../../styles/global.css';
 
 const m = t('vi');
-const posts = filterPublishedPosts(await getCollection('tinTuc'))
-  .filter((p) => p.data.lang === 'vi')
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
-
-const fmt = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' });
+const posts = sortPublishedNews(await getCollection('tinTuc'));
 ---
 
 <BaseLayout title={m.news.title} description={m.news.intro}>
@@ -26,7 +22,7 @@ const fmt = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' });
           posts.map((post) => (
             <li>
               <a href={`/vi/tin-tuc/${post.id}`}>{post.data.title}</a>
-              <p class="news-meta">{fmt.format(post.data.pubDate)} — {post.data.description}</p>
+              <p class="news-meta">{formatNewsDate(post.data.pubDate)} — {post.data.description}</p>
             </li>
           ))
         }

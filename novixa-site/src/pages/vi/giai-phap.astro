@@ -8,7 +8,7 @@ import '../../styles/global.css';
 const m = t('vi');
 ---
 
-<BaseLayout title={m.solutions.title} description={m.solutions.intro}>
+<BaseLayout title={m.solutions.title} description={m.solutions.intro} canonicalPath="/vi/giai-phap">
   <Header slot="header" />
   <section class="section">
     <div class="container">
@@ -30,6 +30,10 @@ const m = t('vi');
         <article class="card">
           <h3>{m.solutions.opsTitle}</h3>
           <p>{m.solutions.opsDesc}</p>
+        </article>
+        <article class="card">
+          <h3>{m.solutions.aiTitle}</h3>
+          <p>{m.solutions.aiDesc}</p>
         </article>
       </div>
       <p style="margin-top: 2rem">

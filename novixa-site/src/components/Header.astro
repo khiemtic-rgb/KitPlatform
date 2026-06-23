@@ -4,24 +4,64 @@ import { t } from '../i18n';
 const m = t('vi');
 const base = '/vi';
 const path = Astro.url.pathname;
+
+const links = [
+  { href: base, label: m.nav.home, active: path === base || path === `${base}/` },
+  { href: `${base}/giai-phap`, label: m.nav.solutions, active: path.startsWith(`${base}/giai-phap`) },
+  { href: `${base}/ve-chung-toi`, label: m.nav.about, active: path.startsWith(`${base}/ve-chung-toi`) },
+  { href: `${base}/tin-tuc`, label: m.nav.news, active: path.startsWith(`${base}/tin-tuc`) },
+];
 ---
 
 <header class="site-header">
   <div class="container header-inner">
     <a href={base} class="logo">
-      <span class="logo-mark">N</span>
-      <span class="logo-text">{m.meta.siteName}<small>{m.meta.tagline}</small></span>
+      <img class="logo-img" src="/images/logo.png" alt={m.meta.siteName} width="160" height="48" decoding="async" />
     </a>
-    <nav class="nav">
-      <a href={base} class:list={{ active: path === base || path === `${base}/` }}>{m.nav.home}</a>
-      <a href={`${base}/giai-phap`} class:list={{ active: path.startsWith(`${base}/giai-phap`) }}>{m.nav.solutions}</a>
-      <a href={`${base}/ve-chung-toi`} class:list={{ active: path.startsWith(`${base}/ve-chung-toi`) }}>{m.nav.about}</a>
-      <a href={`${base}/tin-tuc`} class:list={{ active: path.startsWith(`${base}/tin-tuc`) }}>{m.nav.news}</a>
+
+    <button
+      type="button"
+      class="nav-toggle"
+      aria-expanded="false"
+      aria-controls="site-nav"
+      data-nav-toggle
+    >
+      <span class="sr-only">{m.nav.menuOpen}</span>
+      <span class="nav-toggle-bar" aria-hidden="true"></span>
+      <span class="nav-toggle-bar" aria-hidden="true"></span>
+      <span class="nav-toggle-bar" aria-hidden="true"></span>
+    </button>
+
+    <nav id="site-nav" class="nav" data-nav>
+      {
+        links.map((link) => (
+          <a href={link.href} class:list={{ active: link.active }}>
+            {link.label}
+          </a>
+        ))
+      }
       <a href={`${base}/lien-he`} class="nav-cta">{m.nav.contact}</a>
       <span class="lang-soon" title={m.nav.langEnSoon}>{m.nav.langEn}</span>
     </nav>
   </div>
 </header>
+
+<script>
+  const toggle = document.querySelector('[data-nav-toggle]');
+  const nav = document.querySelector('[data-nav]');
+
+  toggle?.addEventListener('click', () => {
+    const open = nav?.classList.toggle('is-open');
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+
+  nav?.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => {
+      nav.classList.remove('is-open');
+      toggle?.setAttribute('aria-expanded', 'false');
+    });
+  });
+</script>
 
 <style>
   .site-header {
@@ -31,46 +71,57 @@ const path = Astro.url.pathname;
     top: 0;
     z-index: 50;
   }
+
   .header-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.85rem 0;
-    flex-wrap: wrap;
+    padding: 0.65rem 0;
   }
+
   .logo {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
     text-decoration: none;
     color: inherit;
+    flex-shrink: 0;
   }
+
   .logo:hover {
     text-decoration: none;
   }
-  .logo-mark {
-    width: 40px;
-    height: 40px;
+
+  .logo-img {
+    width: auto;
+    height: 44px;
+    max-width: min(160px, 42vw);
+    object-fit: contain;
+  }
+
+  .nav-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--color-border);
     border-radius: 10px;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-    color: #fff;
-    display: grid;
-    place-items: center;
-    font-weight: 800;
-    font-size: 1.2rem;
+    background: var(--color-surface);
+    cursor: pointer;
   }
-  .logo-text {
-    font-weight: 700;
-    font-size: 1.15rem;
-    line-height: 1.2;
-  }
-  .logo-text small {
+
+  .nav-toggle-bar {
     display: block;
-    font-weight: 400;
-    font-size: 0.72rem;
-    color: var(--color-muted);
+    width: 20px;
+    height: 2px;
+    margin-inline: auto;
+    background: var(--color-primary);
+    border-radius: 2px;
   }
+
   .nav {
     display: flex;
     flex-wrap: wrap;
@@ -78,15 +129,18 @@ const path = Astro.url.pathname;
     gap: 0.35rem 1rem;
     font-size: 0.92rem;
   }
+
   .nav a {
     color: var(--color-muted);
     text-decoration: none;
     padding: 0.35rem 0;
   }
+
   .nav a:hover,
   .nav a.active {
     color: var(--color-primary);
   }
+
   .nav-cta {
     background: var(--color-primary);
     color: #fff !important;
@@ -94,10 +148,12 @@ const path = Astro.url.pathname;
     border-radius: 999px;
     font-weight: 600;
   }
+
   .nav-cta:hover {
     background: var(--color-primary-dark);
     text-decoration: none;
   }
+
   .lang-soon {
     font-size: 0.8rem;
     color: var(--color-border);
@@ -106,10 +162,53 @@ const path = Astro.url.pathname;
     padding: 0.25rem 0.5rem;
     border-radius: 6px;
   }
-  @media (max-width: 640px) {
+
+  @media (max-width: 768px) {
+    .nav-toggle {
+      display: flex;
+    }
+
     .nav {
-      width: 100%;
-      justify-content: flex-start;
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      padding: 0.75rem 1rem 1rem;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      box-shadow: var(--shadow);
+    }
+
+    .nav.is-open {
+      display: flex;
+    }
+
+    .nav a {
+      padding: 0.65rem 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .nav a:last-of-type {
+      border-bottom: none;
+    }
+
+    .nav-cta {
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+
+    .lang-soon {
+      align-self: flex-start;
+      margin-top: 0.5rem;
+    }
+
+    .header-inner {
+      position: relative;
+      flex-wrap: wrap;
     }
   }
 </style>

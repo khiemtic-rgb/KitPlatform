@@ -1,0 +1,40 @@
+---
+description: Novixa marketing site (novixa.vn) — Astro, tách khỏi ERP PharmaCore
+globs: novixa-site/**
+alwaysApply: false
+---
+
+# Novixa Site
+
+Website giới thiệu **Novixa** tại `novixa-site/` — deploy tách, **không** gọi API/DB PharmaCore.
+
+## Stack & chạy local
+
+- Astro + Markdown content collections
+- `cd novixa-site && npm install && npm run dev` → http://localhost:4321
+- Build: `npm run build` → output `dist/`
+
+## Cấu trúc quan trọng
+
+| Path | Vai trò |
+|------|---------|
+| `src/pages/vi/` | Trang công khai (tiếng Việt) |
+| `src/i18n/vi.json` | Chuỗi UI + liên hệ (SĐT, Zalo, Facebook) |
+| `src/content/tin-tuc/*.md` | Bài tin tức |
+| `src/lib/publishedNews.ts` | Ẩn bài có `pubDate` tương lai (giờ VN) |
+| `import/tin-tuc.xlsx` + `npm run import:news` | Import tin hàng loạt |
+| `scripts/import-tin-tuc.mjs` | Logic import |
+
+## Quy tắc khi sửa
+
+1. **Không** import code từ `client/admin` hay `src/PharmaCore.*`
+2. Tin tức: luôn dùng `filterPublishedPosts()` trên trang chủ và danh sách tin
+3. Liên hệ: cấu hình trong `vi.json` → `contact` (phoneDisplay, zaloPhone, facebookUrl)
+4. Form email: Formsubmit → `khiemtic@gmail.com`
+5. i18n: chỉ `/vi` live; EN skeleton trong `en.json`, chưa publish route
+6. Deploy: Cloudflare Pages, root directory `novixa-site`
+
+## Domain & liên hệ hiện tại
+
+- Domain: novixa.vn (Matbao DNS → Cloudflare Pages)
+- Hotline: 0984.660.399 | Facebook: facebook.com/novixa68

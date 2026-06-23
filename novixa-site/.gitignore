@@ -1,3 +1,7 @@
+# secrets / local notes
+tk.txt
+*.docx
+
 # build output
 dist/
 # generated types

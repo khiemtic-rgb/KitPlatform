@@ -4,6 +4,7 @@ import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import { getCollection, render } from 'astro:content';
 import { filterPublishedPosts } from '../../../lib/publishedNews';
+import { formatNewsDate } from '../../../lib/newsDate';
 import { t } from '../../../i18n';
 import '../../../styles/global.css';
 
@@ -20,16 +21,20 @@ export async function getStaticPaths() {
 const m = t('vi');
 const { post } = Astro.props;
 const { Content } = await render(post);
-const fmt = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'long' });
 ---
 
-<BaseLayout title={post.data.title} description={post.data.description}>
+<BaseLayout
+  title={post.data.title}
+  description={post.data.description}
+  type="article"
+  canonicalPath={`/vi/tin-tuc/${post.id}`}
+>
   <Header slot="header" />
   <section class="section">
     <div class="container prose">
       <p><a href="/vi/tin-tuc">{m.news.back}</a></p>
       <h1>{post.data.title}</h1>
-      <p class="news-meta">{fmt.format(post.data.pubDate)}</p>
+      <p class="news-meta">{formatNewsDate(post.data.pubDate)}</p>
       <Content />
     </div>
   </section>

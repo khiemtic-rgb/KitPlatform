@@ -6,7 +6,13 @@ Site marketing **tách biệt** khỏi lõi ERP PharmaCore (`client/admin`, `src
 - **Ngôn ngữ:** Tiếng Việt (`/vi/…`). Khung i18n sẵn; **English chưa publish**.
 - **Tin tức:** Markdown trong `src/content/tin-tuc/`
 
-## Chạy local
+## Xem trên web (không cần localhost)
+
+Sau khi **push GitHub**, Cloudflare Pages tự build và publish lên **https://novixa.vn** (vài phút).
+
+Workflow hàng ngày: `.github/workflows/novixa-scheduled-publish.yml` — bài tin mới lên đúng `pubDate`.
+
+## Chạy local (tuỳ chọn)
 
 ```powershell
 cd novixa-site
@@ -104,4 +110,4 @@ Form gửi email qua [Formsubmit](https://formsubmit.co) → `khiemtic@gmail.com
 
 ## Liên quan PharmaCore
 
-Trong repo ERP, module **Sales/POS** tạm **freeze feature mới** đến khi site v1 live — xem `README.md` gốc mục *Development freeze*.
+Trong repo ERP, module **Sales/POS** đã mở lại phát triển sau khi site v1 live — xem `README.md` gốc mục *Sales / POS*.
