@@ -65,6 +65,7 @@ public static class DependencyInjection
                 client.Timeout = TimeSpan.FromSeconds(Math.Max(5, options.WebhookTimeoutSeconds));
             });
         services.AddSingleton<IIntegrationOutboxPublisher, HttpIntegrationOutboxPublisher>();
+        services.AddScoped<IIntegrationOutboxQuery, IntegrationOutboxQuery>();
         services.AddHostedService<IntegrationOutboxWorker>();
         services.AddScoped<IInventoryService, InventoryService>();
 

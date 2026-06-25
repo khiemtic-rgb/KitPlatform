@@ -50,6 +50,23 @@ export type ProductIngredientDto = ApiSchemas['ProductIngredientDto'];
 export type ProductListItemDto = ApiSchemas['ProductListItemDto'];
 export type ProductPriceDto = ApiSchemas['ProductPriceDto'];
 export type ProductUnitDto = ApiSchemas['ProductUnitDto'];
+export type BarcodeCheckResultDto = ApiSchemas['BarcodeCheckResult'];
+export type CreateProductRequest = ApiSchemas['CreateProductRequest'];
+export type CreateBarcodeRequest = ApiSchemas['CreateBarcodeRequest'];
+export type CreatePriceRequest = ApiSchemas['CreatePriceRequest'];
+export type NextProductCodeDto = ApiSchemas['NextProductCodeDto'];
+export type ProductImageItem = ApiSchemas['ProductImageItem'];
+export type ProductIngredientSyncItem = ApiSchemas['ProductIngredientSyncItem'];
+export type ProductUnitSyncItem = ApiSchemas['ProductUnitSyncItem'];
+export type SimilarProductNameDto = ApiSchemas['SimilarProductNameDto'];
+export type SimilarProductNamesResultDto = ApiSchemas['SimilarProductNamesResult'];
+export type SyncProductCommercialRequest = ApiSchemas['SyncProductCommercialRequest'];
+export type SyncProductIngredientsRequest = ApiSchemas['SyncProductIngredientsRequest'];
+export type SyncProductUnitsRequest = ApiSchemas['SyncProductUnitsRequest'];
+export type UpdateProductRequest = ApiSchemas['UpdateProductRequest'];
+
+// Integration
+export type IntegrationOutboxItemDto = ApiSchemas['IntegrationOutboxItemDto'];
 
 // Inventory
 export type AdjustmentDetailDto = ApiSchemas['AdjustmentDetailDto'];

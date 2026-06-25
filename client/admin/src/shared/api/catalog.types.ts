@@ -1,16 +1,22 @@
 import type {
   ActiveIngredientDto,
+  BarcodeCheckResultDto,
   BrandDto,
   CategoryDto,
+  CreateProductRequest,
   PagedProductListResult,
   ProductBarcodeDto,
   ProductDetailDto,
   ProductImageDto,
+  ProductImageItem,
   ProductIngredientDto,
+  ProductIngredientSyncItem,
   ProductListItemDto,
   ProductPriceDto,
   ProductUnitDto,
   Req,
+  SimilarProductNameDto,
+  SimilarProductNamesResultDto,
 } from '@/shared/api/generated';
 
 /** Phân trang chung (client). */
@@ -127,4 +133,48 @@ export const PRICE_TYPE_LABELS: Record<number, string> = {
 export const STATUS_LABELS: Record<number, string> = {
   1: 'Đang bán',
   2: 'Ngừng',
+};
+
+// --- Catalog API payloads (OpenAPI) ---
+
+export type SimilarProductMatch = Req<
+  SimilarProductNameDto,
+  'id' | 'productCode' | 'productName' | 'similarityScore'
+>;
+
+export type SimilarProductNamesResult = Omit<
+  Req<SimilarProductNamesResultDto, 'hasExactNormalizedMatch'>,
+  'matches'
+> & {
+  matches: SimilarProductMatch[];
+};
+
+export type ProductImageInput = Pick<ProductImageItem, 'imageUrl' | 'isPrimary' | 'sortOrder'> & {
+  imageUrl: string;
+};
+
+export type BarcodeCheckResult = Req<BarcodeCheckResultDto, 'isAvailable'>;
+
+export type ProductSavePayload = Pick<
+  CreateProductRequest,
+  'productCode' | 'genericName' | 'categoryId' | 'brandId' | 'description' | 'status' | 'saleUnitName'
+> & {
+  productName: string;
+  drugType: number;
+};
+
+export type ProductUnitPayload = {
+  id?: string;
+  unitName: string;
+  conversionFactor: number;
+  isBaseUnit: boolean;
+  isSaleUnit: boolean;
+};
+
+export type ProductIngredientPayload = Req<ProductIngredientSyncItem, 'ingredientId'>;
+
+export type ProductCommercialPayload = {
+  barcodes: { barcode: string; isPrimary: boolean; barcodeType?: number }[];
+  prices: { priceType: number; price: number; productUnitId?: string }[];
+  images: ProductImageInput[];
 };

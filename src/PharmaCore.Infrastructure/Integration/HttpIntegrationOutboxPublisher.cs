@@ -32,6 +32,13 @@ internal sealed class HttpIntegrationOutboxPublisher : IIntegrationOutboxPublish
 
         var client = _httpClientFactory.CreateClient(IntegrationOutboxHttpClient.Name);
         using var content = new StringContent(payloadJson, Encoding.UTF8, "application/json");
+        var secret = _options.WebhookSecret?.Trim();
+        if (!string.IsNullOrEmpty(secret))
+        {
+            var signature = IntegrationWebhookSignature.Sign(secret, payloadJson);
+            content.Headers.Add(IntegrationWebhookSignature.HeaderName, signature);
+        }
+
         using var response = await client.PostAsync(webhookUrl, content, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {

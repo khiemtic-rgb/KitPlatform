@@ -2,73 +2,33 @@ import { isAxiosError } from 'axios';
 import { http } from '@/shared/api/http';
 import type {
   ActiveIngredient,
+  BarcodeCheckResult,
   Brand,
   Category,
   LookupItem,
   PagedResult,
+  ProductCommercialPayload,
   ProductDetail,
+  ProductIngredientPayload,
   ProductListFilter,
   ProductListItem,
   ProductBarcode,
   ProductPrice,
+  ProductSavePayload,
+  ProductUnitPayload,
+  SimilarProductMatch,
+  SimilarProductNamesResult,
 } from '@/shared/api/catalog.types';
 
-export interface ProductImageInput {
-  imageUrl: string;
-  isPrimary?: boolean;
-  sortOrder?: number;
-}
-
-export interface SimilarProductMatch {
-  id: string;
-  productCode: string;
-  productName: string;
-  similarityScore: number;
-}
-
-export interface SimilarProductNamesResult {
-  matches: SimilarProductMatch[];
-  hasExactNormalizedMatch: boolean;
-}
-
-export interface ProductCommercialPayload {
-  barcodes: { barcode: string; isPrimary: boolean; barcodeType?: number }[];
-  prices: { priceType: number; price: number; productUnitId?: string }[];
-  images: ProductImageInput[];
-}
-
-export interface ProductSavePayload {
-  productCode?: string;
-  productName: string;
-  genericName?: string;
-  drugType: number;
-  categoryId?: string;
-  brandId?: string;
-  description?: string;
-  status?: number;
-  saleUnitName?: string;
-}
-
-export interface ProductUnitPayload {
-  id?: string;
-  unitName: string;
-  conversionFactor: number;
-  isBaseUnit: boolean;
-  isSaleUnit: boolean;
-}
-
-export interface ProductIngredientPayload {
-  ingredientId: string;
-  strengthValue?: number;
-  strengthUnit?: string;
-}
-
-export interface BarcodeCheckResult {
-  isAvailable: boolean;
-  existingProductId?: string;
-  existingProductCode?: string;
-  existingProductName?: string;
-}
+export type {
+  BarcodeCheckResult,
+  ProductCommercialPayload,
+  ProductIngredientPayload,
+  ProductSavePayload,
+  ProductUnitPayload,
+  SimilarProductMatch,
+  SimilarProductNamesResult,
+};
 
 function cleanParams(params: ProductListFilter): Record<string, unknown> {
   const entries = Object.entries(params).filter(([, value]) => {

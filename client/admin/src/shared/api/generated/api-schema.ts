@@ -800,6 +800,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/integration/cdp-webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/customers/{customerId}/consents": {
         parameters: {
             query?: never;
@@ -1212,6 +1245,45 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/integration/outbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["IntegrationOutboxItemDto"][];
+                        "application/json": components["schemas"]["IntegrationOutboxItemDto"][];
+                        "text/json": components["schemas"]["IntegrationOutboxItemDto"][];
+                    };
                 };
             };
         };
@@ -4822,6 +4894,21 @@ export interface components {
             itemCount?: number;
             /** Format: date-time */
             deletedAt?: string | null;
+        };
+        IntegrationOutboxItemDto: {
+            /** Format: uuid */
+            id?: string;
+            eventType?: string | null;
+            aggregateType?: string | null;
+            /** Format: uuid */
+            aggregateId?: string;
+            /** Format: date-time */
+            occurredAt?: string;
+            /** Format: date-time */
+            publishedAt?: string | null;
+            /** Format: int32 */
+            publishAttempts?: number;
+            lastError?: string | null;
         };
         LastPurchasePriceHintDto: {
             /** Format: double */
