@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Card, Col, Row, Space, Statistic, Tag, Typography, message } from 'antd';
+import { Button, Card, Col, Row, Space, Spin, Statistic, Tag, Typography, message } from 'antd';
 import {
   CalendarOutlined,
   InboxOutlined,
@@ -104,37 +104,40 @@ export function DashboardPage() {
           <Typography.Title level={5} style={{ margin: 0 }}>
             Bán hàng
           </Typography.Title>
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={12} lg={8}>
-              <KpiCard
-                title="Doanh thu hôm nay"
-                value={formatDisplayMoney(sales?.todayNetTotal)}
-                prefix={<ShopOutlined />}
-                hint={`7 ngày: ${formatDisplayMoney(sales?.weekNetTotal)}`}
-                to="/sales/shift"
-              />
-            </Col>
-            <Col xs={24} sm={12} lg={8}>
-              <KpiCard
-                title="Đơn bán hôm nay"
-                value={sales?.todayOrderCount ?? '—'}
-                prefix={<ShoppingCartOutlined />}
-                to="/sales/orders"
-              />
-            </Col>
-            <Col xs={24} sm={12} lg={8}>
-              <KpiCard
-                title="Đơn app chờ xử lý"
-                value={o2o?.draftOrdersAwaitingCount ?? '—'}
-                prefix={<TeamOutlined />}
-                hint="Đã gửi / khách xác nhận"
-                to="/sales/customer-drafts"
-                valueStyle={
-                  (o2o?.draftOrdersAwaitingCount ?? 0) > 0 ? { color: '#d48806' } : undefined
-                }
-              />
-            </Col>
-          </Row>
+          <Spin spinning={loading && !overview}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12} lg={8}>
+                <KpiCard
+                  title="Doanh thu hôm nay"
+                  value={formatDisplayMoney(sales?.todayNetTotal)}
+                  prefix={<ShopOutlined />}
+                  hint={`7 ngày (VN): ${formatDisplayMoney(sales?.weekNetTotal)}`}
+                  to="/sales/shift"
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={8}>
+                <KpiCard
+                  title="Đơn bán hôm nay"
+                  value={sales?.todayOrderCount ?? '—'}
+                  prefix={<ShoppingCartOutlined />}
+                  hint="Theo ngày VN (UTC+7)"
+                  to="/sales/orders"
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={8}>
+                <KpiCard
+                  title="Đơn app chờ xử lý"
+                  value={o2o?.draftOrdersAwaitingCount ?? '—'}
+                  prefix={<TeamOutlined />}
+                  hint="Đã gửi / khách xác nhận"
+                  to="/sales/customer-drafts?actionable=1"
+                  valueStyle={
+                    (o2o?.draftOrdersAwaitingCount ?? 0) > 0 ? { color: '#d48806' } : undefined
+                  }
+                />
+              </Col>
+            </Row>
+          </Spin>
         </>
       )}
 
@@ -143,55 +146,69 @@ export function DashboardPage() {
           <Typography.Title level={5} style={{ margin: 0 }}>
             Kho & mua hàng
           </Typography.Title>
-          <Row gutter={[16, 16]}>
-            {canCatalog && (
-              <Col xs={24} sm={12} lg={6}>
-                <KpiCard
-                  title="Sản phẩm"
-                  value={catalog?.productCount ?? '—'}
-                  prefix={<MedicineBoxOutlined />}
-                  hint={`${formatDisplayQuantity(catalog?.customerCount)} khách hàng`}
-                  to="/catalog/products"
-                />
-              </Col>
-            )}
-            {canInventory && (
-              <>
+          <Spin spinning={loading && !overview}>
+            <Row gutter={[16, 16]}>
+              {canCatalog && (
                 <Col xs={24} sm={12} lg={6}>
                   <KpiCard
-                    title="Lô đang tồn"
-                    value={inventory?.activeBatchCount ?? '—'}
-                    prefix={<InboxOutlined />}
-                    to="/inventory/stock"
+                    title="Sản phẩm"
+                    value={catalog?.productCount ?? '—'}
+                    prefix={<MedicineBoxOutlined />}
+                    hint={`${formatDisplayQuantity(catalog?.customerCount)} khách hàng`}
+                    to="/catalog/products"
                   />
                 </Col>
+              )}
+              {canInventory && (
+                <>
+                  <Col xs={24} sm={12} lg={6}>
+                    <KpiCard
+                      title="Lô đang tồn"
+                      value={inventory?.activeBatchCount ?? '—'}
+                      prefix={<InboxOutlined />}
+                      to="/inventory/stock?tab=fefo"
+                    />
+                  </Col>
+                  <Col xs={24} sm={12} lg={6}>
+                    <KpiCard
+                      title={`Sắp hết HSD (${inventory?.expiryDays ?? 30} ngày)`}
+                      value={inventory?.nearExpiryBatchCount ?? '—'}
+                      prefix={<WarningOutlined />}
+                      to="/inventory/stock?tab=fefo"
+                      valueStyle={
+                        (inventory?.nearExpiryBatchCount ?? 0) > 0 ? { color: '#cf1322' } : undefined
+                      }
+                    />
+                  </Col>
+                  <Col xs={24} sm={12} lg={6}>
+                    <KpiCard
+                      title="Tồn thấp (≤10)"
+                      value={inventory?.lowStockBatchCount ?? '—'}
+                      prefix={<InboxOutlined />}
+                      hint="Lô còn hàng nhưng SL thấp"
+                      to="/inventory/stock?tab=fefo"
+                      valueStyle={
+                        (inventory?.lowStockBatchCount ?? 0) > 0 ? { color: '#d48806' } : undefined
+                      }
+                    />
+                  </Col>
+                </>
+              )}
+              {canProcurement && (
                 <Col xs={24} sm={12} lg={6}>
                   <KpiCard
-                    title={`Sắp hết HSD (${inventory?.expiryDays ?? 30} ngày)`}
-                    value={inventory?.nearExpiryBatchCount ?? '—'}
-                    prefix={<WarningOutlined />}
-                    to="/inventory/stock"
+                    title="PO chờ nhận hàng"
+                    value={procurement?.pendingReceiptCount ?? '—'}
+                    prefix={<CalendarOutlined />}
+                    to="/procurement/purchase-orders?pendingReceipt=1"
                     valueStyle={
-                      (inventory?.nearExpiryBatchCount ?? 0) > 0 ? { color: '#cf1322' } : undefined
+                      (procurement?.pendingReceiptCount ?? 0) > 0 ? { color: '#d48806' } : undefined
                     }
                   />
                 </Col>
-              </>
-            )}
-            {canProcurement && (
-              <Col xs={24} sm={12} lg={6}>
-                <KpiCard
-                  title="PO chờ nhận hàng"
-                  value={procurement?.pendingReceiptCount ?? '—'}
-                  prefix={<CalendarOutlined />}
-                  to="/procurement/purchase-orders"
-                  valueStyle={
-                    (procurement?.pendingReceiptCount ?? 0) > 0 ? { color: '#d48806' } : undefined
-                  }
-                />
-              </Col>
-            )}
-          </Row>
+              )}
+            </Row>
+          </Spin>
         </>
       )}
 
@@ -200,29 +217,31 @@ export function DashboardPage() {
           <Typography.Title level={5} style={{ margin: 0 }}>
             App khách
           </Typography.Title>
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={12} lg={8}>
-              <KpiCard
-                title="Đặt trước chờ xử lý"
-                value={o2o?.reservationsAwaitingCount ?? '—'}
-                prefix={<CalendarOutlined />}
-                hint="Chờ duyệt / sẵn sàng"
-                to="/sales/customer-reservations"
-                valueStyle={
-                  (o2o?.reservationsAwaitingCount ?? 0) > 0 ? { color: '#d48806' } : undefined
-                }
-              />
-            </Col>
-            <Col xs={24} sm={12} lg={8}>
-              <KpiCard
-                title="Chat chưa đọc"
-                value={o2o?.chatUnreadCount ?? '—'}
-                prefix={<MessageOutlined />}
-                to="/sales/chat"
-                valueStyle={(o2o?.chatUnreadCount ?? 0) > 0 ? { color: '#1677ff' } : undefined}
-              />
-            </Col>
-          </Row>
+          <Spin spinning={loading && !overview}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12} lg={8}>
+                <KpiCard
+                  title="Đặt trước chờ xử lý"
+                  value={o2o?.reservationsAwaitingCount ?? '—'}
+                  prefix={<CalendarOutlined />}
+                  hint="Chờ duyệt / sẵn sàng"
+                  to="/sales/customer-reservations?awaiting=1"
+                  valueStyle={
+                    (o2o?.reservationsAwaitingCount ?? 0) > 0 ? { color: '#d48806' } : undefined
+                  }
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={8}>
+                <KpiCard
+                  title="Chat chưa đọc"
+                  value={o2o?.chatUnreadCount ?? '—'}
+                  prefix={<MessageOutlined />}
+                  to="/sales/chat"
+                  valueStyle={(o2o?.chatUnreadCount ?? 0) > 0 ? { color: '#1677ff' } : undefined}
+                />
+              </Col>
+            </Row>
+          </Spin>
         </>
       )}
     </Space>

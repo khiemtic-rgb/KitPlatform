@@ -30,11 +30,10 @@ internal sealed class DashboardRepository
         if (expiryDays < 1) expiryDays = 30;
         if (lowStockThreshold < 0) lowStockThreshold = 10;
 
-        var todayStart = DateTime.UtcNow.Date;
-        var todayEnd = todayStart.AddDays(1);
-        var weekStart = todayStart.AddDays(-6);
-        var weekEnd = todayEnd;
-        var expiryBefore = todayStart.AddDays(expiryDays);
+        var utcNow = DateTime.UtcNow;
+        var (todayStart, todayEnd) = VietnamBusinessCalendar.TodayRangeUtc(utcNow);
+        var (weekStart, weekEnd) = VietnamBusinessCalendar.RollingDaysRangeUtc(utcNow, 7);
+        var expiryCutoff = VietnamBusinessCalendar.Today(utcNow).AddDays(expiryDays);
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
 
@@ -116,7 +115,7 @@ internal sealed class DashboardRepository
 
         var inventory = await conn.QuerySingleAsync<(int ActiveBatchCount, int NearExpiryBatchCount, int LowStockBatchCount)>(
             inventorySql,
-            new { TenantId, ExpiryBefore = expiryBefore, LowStockThreshold = lowStockThreshold });
+            new { TenantId, ExpiryBefore = expiryCutoff, LowStockThreshold = lowStockThreshold });
 
         const string procurementSql = """
             SELECT COUNT(*)::int

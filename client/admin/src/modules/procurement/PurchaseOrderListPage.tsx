@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -53,6 +53,7 @@ import { downloadCsv } from '@/shared/utils/download-csv';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
 import { useProcurementWrite, useSystemDeletePermanent } from '@/shared/auth/usePermission';
+import { useSearchParams } from 'react-router-dom';
 
 interface PoLineForm {
   productId: string;
@@ -66,6 +67,12 @@ const emptyFilters: PurchaseOrderListFilters = {};
 export function PurchaseOrderListPage() {
   const canWrite = useProcurementWrite();
   const canPurge = useSystemDeletePermanent();
+  const [searchParams] = useSearchParams();
+  const initialFilters = useMemo((): PurchaseOrderListFilters => {
+    const pending = searchParams.get('pendingReceipt');
+    if (pending === '1' || pending === 'true') return { pendingReceiptOnly: true };
+    return emptyFilters;
+  }, [searchParams]);
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<PurchaseOrderListItem[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -128,8 +135,8 @@ export function PurchaseOrderListPage() {
     void loadMasterData().catch(() => {
       message.error('Không tải được dữ liệu tham chiếu');
     });
-    void loadOrders(emptyFilters, '');
-  }, [loadMasterData, loadOrders]);
+    void loadOrders(initialFilters, '');
+  }, [loadMasterData, loadOrders, initialFilters]);
 
   const resetFilters = () => {
     void loadOrders(emptyFilters, '');

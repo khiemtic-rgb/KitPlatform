@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   AutoComplete,
   Button,
@@ -31,7 +32,10 @@ function formatQty(value: number): string {
 }
 
 export function StockListPage() {
-  const [activeTab, setActiveTab] = useState<StockTab>('summary');
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<StockTab>(() =>
+    searchParams.get('tab') === 'fefo' ? 'fefo' : 'summary',
+  );
   const [loading, setLoading] = useState(false);
   const [summaryItems, setSummaryItems] = useState<StockProductSummary[]>([]);
   const [fefoItems, setFefoItems] = useState<StockBatch[]>([]);
@@ -103,6 +107,12 @@ export function StockListPage() {
       }
     })();
   }, [loadWarehouses]);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'fefo') setActiveTab('fefo');
+    else if (tab === 'summary') setActiveTab('summary');
+  }, [searchParams]);
 
   useEffect(() => {
     void load();

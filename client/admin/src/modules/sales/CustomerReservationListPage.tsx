@@ -16,7 +16,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { EyeOutlined, ReloadOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   confirmCustomerReservation,
   CUSTOMER_RESERVATION_FULFILLMENT_LABELS,
@@ -40,12 +40,22 @@ const STATUS_FILTER_OPTIONS = Object.entries(CUSTOMER_RESERVATION_STATUS_LABELS)
   label,
 }));
 
+const AWAITING_STATUSES: number[] = [
+  CUSTOMER_RESERVATION_STATUS.Pending,
+  CUSTOMER_RESERVATION_STATUS.Confirmed,
+  CUSTOMER_RESERVATION_STATUS.Ready,
+];
+
 export function CustomerReservationListPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const canWrite = useHasPermission('sales.write');
   const [items, setItems] = useState<CustomerReservationStaffListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<number | undefined>();
+  const [awaitingOnly, setAwaitingOnly] = useState(
+    () => searchParams.get('awaiting') === '1' || searchParams.get('awaiting') === 'true',
+  );
   const [search, setSearch] = useState('');
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<CustomerReservation | null>(null);
@@ -69,6 +79,12 @@ export function CustomerReservationListPage() {
   }, [load]);
 
   useEffect(() => {
+    setAwaitingOnly(
+      searchParams.get('awaiting') === '1' || searchParams.get('awaiting') === 'true',
+    );
+  }, [searchParams]);
+
+  useEffect(() => {
     const hasPending = items.some((row) => row.status === CUSTOMER_RESERVATION_STATUS.Pending);
     if (!hasPending) return;
     const timer = window.setInterval(() => void load(), 30_000);
@@ -78,6 +94,7 @@ export function CustomerReservationListPage() {
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((row) => {
+      if (awaitingOnly && !AWAITING_STATUSES.includes(row.status)) return false;
       if (statusFilter != null && row.status !== statusFilter) return false;
       if (!q) return true;
       return (
@@ -86,7 +103,9 @@ export function CustomerReservationListPage() {
         (row.customerPhone ?? '').includes(q)
       );
     });
-  }, [items, search, statusFilter]);
+  }, [items, search, statusFilter, awaitingOnly]);
+
+  const awaitingCount = items.filter((row) => AWAITING_STATUSES.includes(row.status)).length;
 
   const openDetail = async (row: CustomerReservationStaffListItem) => {
     setDetailOpen(true);
@@ -201,8 +220,21 @@ export function CustomerReservationListPage() {
             style={{ width: 180 }}
             options={STATUS_FILTER_OPTIONS}
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={(value) => {
+              setStatusFilter(value);
+              setAwaitingOnly(false);
+            }}
           />
+          <Button
+            type={awaitingOnly ? 'primary' : 'default'}
+            ghost={awaitingOnly}
+            onClick={() => {
+              setAwaitingOnly((prev) => !prev);
+              setStatusFilter(undefined);
+            }}
+          >
+            Chờ xử lý ({awaitingCount})
+          </Button>
           <Button icon={<ReloadOutlined />} onClick={() => void load()}>
             Tải lại
           </Button>

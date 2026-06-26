@@ -67,6 +67,10 @@ export function CustomerDraftOrderListPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<number | undefined>();
   const [activeOnly, setActiveOnly] = useState(false);
+  const [actionableOnly, setActionableOnly] = useState(
+    () =>
+      searchParams.get('actionable') === '1' || searchParams.get('actionable') === 'true',
+  );
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<CustomerDraftOrder | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -85,6 +89,12 @@ export function CustomerDraftOrderListPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    setActionableOnly(
+      searchParams.get('actionable') === '1' || searchParams.get('actionable') === 'true',
+    );
+  }, [searchParams]);
 
   useEffect(() => {
     const onFocus = () => void load();
@@ -126,6 +136,7 @@ export function CustomerDraftOrderListPage() {
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((row) => {
+      if (actionableOnly && !isActionableStatus(row.status)) return false;
       if (activeOnly && !isActiveDraftStatus(row.status)) return false;
       if (statusFilter != null && row.status !== statusFilter) return false;
       if (!q) return true;
@@ -134,7 +145,7 @@ export function CustomerDraftOrderListPage() {
         row.customerName.toLowerCase().includes(q)
       );
     });
-  }, [items, search, statusFilter, activeOnly]);
+  }, [items, search, statusFilter, activeOnly, actionableOnly]);
 
   const applySearch = (value?: string) => {
     setSearchInput(value ?? searchInput);
@@ -327,9 +338,21 @@ export function CustomerDraftOrderListPage() {
             setSearchInput('');
             setStatusFilter(undefined);
             setActiveOnly(false);
+            setActionableOnly(false);
           }}
         >
           Xóa lọc
+        </Button>
+        <Button
+          onClick={() => {
+            setActionableOnly((prev) => !prev);
+            setStatusFilter(undefined);
+            setActiveOnly(false);
+          }}
+          type={actionableOnly ? 'primary' : 'default'}
+          ghost={actionableOnly}
+        >
+          Chờ xử lý ({pendingCount})
         </Button>
         <Button
           onClick={() => {
