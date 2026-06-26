@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Alert, Button, Card, Empty, List, Popconfirm, Space, Spin, Tabs, Tag, Typography, message } from 'antd';
+import { RightOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
   confirmDraftOrder,
   fetchDraftOrder,
   fetchDraftOrders,
+  fetchPurchase,
+  fetchPurchases,
   getApiErrorMessage,
   hideDraftOrder,
   cancelDraftOrder,
@@ -13,8 +16,13 @@ import {
 import {
   CUSTOMER_DRAFT_ORDER_STATUS,
   CUSTOMER_DRAFT_ORDER_STATUS_LABELS,
+  CUSTOMER_PAYMENT_METHOD_LABELS,
+  CUSTOMER_PURCHASE_STATUS,
+  CUSTOMER_PURCHASE_STATUS_LABELS,
   type CustomerDraftOrder,
   type CustomerDraftOrderListItem,
+  type CustomerPurchaseDetail,
+  type CustomerPurchaseListItem,
 } from '@/shared/api/customer-app.types';
 import { BackToHomeButton } from '@/shared/components/BackToHomeButton';
 import { shouldHidePageErrorForOfflineApi } from '@/shared/components/ApiHealthBanner';
@@ -38,8 +46,17 @@ function isPlacedOrder(status: number): boolean {
   );
 }
 
-function isPurchasedOrder(status: number): boolean {
-  return status === CUSTOMER_DRAFT_ORDER_STATUS.Completed;
+function purchaseStatusLabel(item: CustomerPurchaseListItem): { label: string; color: string } {
+  if (
+    item.status === CUSTOMER_PURCHASE_STATUS.Completed &&
+    item.totalRefunded > 0.0001
+  ) {
+    return { label: 'Trả một phần', color: 'orange' };
+  }
+  return {
+    label: CUSTOMER_PURCHASE_STATUS_LABELS[item.status] ?? String(item.status),
+    color: item.status === CUSTOMER_PURCHASE_STATUS.Refunded ? 'warning' : 'success',
+  };
 }
 
 function statusTagColor(status: number): string {
@@ -91,6 +108,160 @@ function OrderListCards({
         </Card>
       )}
     />
+  );
+}
+
+function PurchaseListCards({
+  items,
+  selectedId,
+  onSelect,
+}: {
+  items: CustomerPurchaseListItem[];
+  selectedId?: string;
+  onSelect: (id: string) => void;
+}) {
+  if (items.length === 0) {
+    return (
+      <Empty
+        description="Chưa có đơn mua tại quầy"
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+      />
+    );
+  }
+
+  return (
+    <List
+      dataSource={items}
+      renderItem={(item) => {
+        const status = purchaseStatusLabel(item);
+        return (
+          <Card
+            size="small"
+            style={{
+              marginBottom: 8,
+              borderRadius: 12,
+              borderColor: item.id === selectedId ? '#0f766e' : undefined,
+              cursor: 'pointer',
+            }}
+            onClick={() => onSelect(item.id)}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Space direction="vertical" size={2} style={{ flex: 1, minWidth: 0 }}>
+                <Space wrap>
+                  <Typography.Text strong>{item.orderNumber}</Typography.Text>
+                  <Tag color={status.color}>{status.label}</Tag>
+                </Space>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {dayjs(item.orderDate).format('DD/MM/YYYY HH:mm')} · {item.itemCount} sản phẩm ·{' '}
+                  {formatMoney(item.totalAmount)}
+                </Typography.Text>
+                {item.id === selectedId ? (
+                  <Typography.Text style={{ fontSize: 12, color: '#0f766e' }}>
+                    Đang xem — chi tiết phía trên
+                  </Typography.Text>
+                ) : null}
+              </Space>
+              <RightOutlined
+                style={{
+                  color: item.id === selectedId ? '#0f766e' : '#94a3b8',
+                  fontSize: 14,
+                  flexShrink: 0,
+                }}
+              />
+            </div>
+          </Card>
+        );
+      }}
+    />
+  );
+}
+
+function PurchaseDetailPanel({ detail }: { detail: CustomerPurchaseDetail }) {
+  const status = purchaseStatusLabel({
+    id: detail.id,
+    orderNumber: detail.orderNumber,
+    status: detail.status,
+    orderDate: detail.orderDate,
+    totalAmount: detail.totalAmount,
+    itemCount: detail.items.length,
+    totalRefunded: detail.totalRefunded,
+  });
+
+  return (
+    <Card size="small" title={`Hóa đơn ${detail.orderNumber}`} style={{ borderRadius: 12 }}>
+      <Space wrap style={{ marginBottom: 12 }}>
+        <Tag color={status.color}>{status.label}</Tag>
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {dayjs(detail.orderDate).format('DD/MM/YYYY HH:mm')}
+        </Typography.Text>
+      </Space>
+
+      <List
+        size="small"
+        dataSource={detail.items}
+        renderItem={(line) => (
+          <List.Item>
+            <List.Item.Meta
+              title={line.productName}
+              description={
+                <Space direction="vertical" size={0}>
+                  <span>
+                    {line.quantity} {line.unitName} · {formatMoney(line.lineTotal)}
+                  </span>
+                  {line.returnedQuantity > 0 ? (
+                    <Typography.Text type="warning" style={{ fontSize: 12 }}>
+                      Đã trả {line.returnedQuantity} {line.unitName}
+                    </Typography.Text>
+                  ) : null}
+                </Space>
+              }
+            />
+          </List.Item>
+        )}
+      />
+
+      <Space direction="vertical" style={{ width: '100%', marginTop: 8 }}>
+        <Typography.Text>
+          Tổng thanh toán: <strong>{formatMoney(detail.totalAmount)}</strong>
+        </Typography.Text>
+        {detail.discountAmount > 0 ? (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            Giảm giá: {formatMoney(detail.discountAmount)}
+          </Typography.Text>
+        ) : null}
+        {detail.loyaltyDiscountAmount > 0 ? (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            Giảm điểm: {formatMoney(detail.loyaltyDiscountAmount)}
+          </Typography.Text>
+        ) : null}
+        {detail.voucherDiscountAmount > 0 && detail.voucherCode ? (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            Voucher {detail.voucherCode}: -{formatMoney(detail.voucherDiscountAmount)}
+          </Typography.Text>
+        ) : null}
+        {detail.loyaltyPointsEarned ? (
+          <Typography.Text type="success" style={{ fontSize: 12 }}>
+            +{detail.loyaltyPointsEarned} điểm thưởng
+          </Typography.Text>
+        ) : null}
+        {detail.payments.length > 0 ? (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            Thanh toán:{' '}
+            {detail.payments
+              .map(
+                (p) =>
+                  `${CUSTOMER_PAYMENT_METHOD_LABELS[p.paymentMethod] ?? p.paymentMethod}: ${formatMoney(p.amount)}`,
+              )
+              .join(' · ')}
+          </Typography.Text>
+        ) : null}
+        {detail.notes ? (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            Ghi chú: {detail.notes}
+          </Typography.Text>
+        ) : null}
+      </Space>
+    </Card>
   );
 }
 
@@ -208,50 +379,69 @@ export function DraftOrdersPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [purchaseLoadError, setPurchaseLoadError] = useState<string | null>(null);
   const [orders, setOrders] = useState<CustomerDraftOrderListItem[]>([]);
+  const [purchases, setPurchases] = useState<CustomerPurchaseListItem[]>([]);
   const [activeTab, setActiveTab] = useState<'placed' | 'purchased'>('placed');
   const [selectedId, setSelectedId] = useState<string>();
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState<string>();
   const [detail, setDetail] = useState<CustomerDraftOrder | null>(null);
+  const [purchaseDetail, setPurchaseDetail] = useState<CustomerPurchaseDetail | null>(null);
+  const [purchaseDetailLoading, setPurchaseDetailLoading] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [hiding, setHiding] = useState(false);
   const [newDraftBanner, setNewDraftBanner] = useState<CustomerDraftOrderListItem[]>([]);
+  const purchaseDetailRef = useRef<HTMLDivElement>(null);
 
   const placedOrders = useMemo(() => orders.filter((o) => isPlacedOrder(o.status)), [orders]);
-  const purchasedOrders = useMemo(() => orders.filter((o) => isPurchasedOrder(o.status)), [orders]);
-  const visibleOrders = useMemo(
-    () => (activeTab === 'placed' ? placedOrders : purchasedOrders),
-    [activeTab, placedOrders, purchasedOrders],
-  );
 
-  const loadList = useCallback(async (isRefresh = false) => {
+  const loadAll = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setInitialLoading(true);
     setLoadError(null);
+    setPurchaseLoadError(null);
     try {
-      const items = await fetchDraftOrders();
-      setOrders(items);
-      const unseenSent = filterUnseenSentDrafts(
-        items.filter((o) => o.status === CUSTOMER_DRAFT_ORDER_STATUS.Sent),
-      );
-      if (unseenSent.length > 0) {
-        setNewDraftBanner(unseenSent);
+      const [draftResult, purchaseResult] = await Promise.allSettled([fetchDraftOrders(), fetchPurchases()]);
+
+      if (draftResult.status === 'fulfilled') {
+        const items = draftResult.value;
+        setOrders(items);
+        const unseenSent = filterUnseenSentDrafts(
+          items.filter((o) => o.status === CUSTOMER_DRAFT_ORDER_STATUS.Sent),
+        );
+        if (unseenSent.length > 0) {
+          setNewDraftBanner(unseenSent);
+        }
+        const placed = items.filter((o) => isPlacedOrder(o.status));
+        setActiveTab((tab) => {
+          if (tab === 'placed' && placed.length === 0 && purchaseResult.status === 'fulfilled' && purchaseResult.value.length > 0) {
+            return 'purchased';
+          }
+          return tab;
+        });
+        setSelectedId((current) => {
+          if (current && items.some((o) => o.id === current)) return current;
+          const placed = items.filter((o) => isPlacedOrder(o.status));
+          return placed[0]?.id;
+        });
+      } else {
+        setOrders([]);
+        setLoadError(getApiErrorMessage(draftResult.reason, 'Không tải được đơn hàng'));
       }
-      const placed = items.filter((o) => isPlacedOrder(o.status));
-      const purchased = items.filter((o) => isPurchasedOrder(o.status));
-      setActiveTab((tab) => {
-        const pool = tab === 'placed' ? placed : purchased;
-        if (pool.length === 0) return placed.length > 0 ? 'placed' : 'purchased';
-        return tab;
-      });
-      setSelectedId((current) => {
-        if (current && items.some((o) => o.id === current)) return current;
-        const pool = placed.length > 0 ? placed : purchased;
-        return pool[0]?.id;
-      });
-    } catch (error) {
-      setOrders([]);
-      setLoadError(getApiErrorMessage(error, 'Không tải được đơn hàng'));
+
+      if (purchaseResult.status === 'fulfilled') {
+        const items = purchaseResult.value;
+        setPurchases(items);
+        setSelectedPurchaseId((current) => {
+          if (current && items.some((o) => o.id === current)) return current;
+          return items[0]?.id;
+        });
+      } else {
+        setPurchases([]);
+        setPurchaseLoadError(getApiErrorMessage(purchaseResult.reason, 'Không tải được lịch sử mua'));
+      }
     } finally {
       setInitialLoading(false);
       setRefreshing(false);
@@ -259,10 +449,10 @@ export function DraftOrdersPage() {
   }, []);
 
   useEffect(() => {
-    void loadList(false);
-  }, [loadList]);
+    void loadAll(false);
+  }, [loadAll]);
 
-  useRetryWhenApiOnline(() => loadList(true));
+  useRetryWhenApiOnline(() => loadAll(true));
 
   useEffect(() => {
     return subscribeDraftOrderAlerts((drafts) => {
@@ -271,9 +461,9 @@ export function DraftOrdersPage() {
         drafts.forEach((d) => merged.set(d.id, d));
         return [...merged.values()];
       });
-      void loadList(true);
+      void loadAll(true);
     });
-  }, [loadList]);
+  }, [loadAll]);
 
   const ordersRef = useRef(orders);
   ordersRef.current = orders;
@@ -288,23 +478,40 @@ export function DraftOrdersPage() {
   }, []);
 
   useEffect(() => {
-    if (visibleOrders.length === 0) {
-      setSelectedId(undefined);
-      setDetail(null);
+    if (activeTab !== 'placed' || placedOrders.length === 0) {
+      if (activeTab === 'placed') {
+        setSelectedId(undefined);
+        setDetail(null);
+      }
       return;
     }
     setSelectedId((current) => {
-      if (current && visibleOrders.some((o) => o.id === current)) return current;
-      return visibleOrders[0].id;
+      if (current && placedOrders.some((o) => o.id === current)) return current;
+      return placedOrders[0].id;
     });
-  }, [activeTab, visibleOrders]);
+  }, [activeTab, placedOrders]);
 
   useEffect(() => {
-    if (!selectedId) {
-      setDetail(null);
+    if (activeTab !== 'purchased' || purchases.length === 0) {
+      if (activeTab === 'purchased') {
+        setSelectedPurchaseId(undefined);
+        setPurchaseDetail(null);
+      }
+      return;
+    }
+    setSelectedPurchaseId((current) => {
+      if (current && purchases.some((o) => o.id === current)) return current;
+      return purchases[0].id;
+    });
+  }, [activeTab, purchases]);
+
+  useEffect(() => {
+    if (activeTab !== 'placed' || !selectedId) {
+      if (activeTab === 'placed') setDetail(null);
       return;
     }
     let cancelled = false;
+    setDetailLoading(true);
     void fetchDraftOrder(selectedId)
       .then((data) => {
         if (!cancelled) setDetail(data);
@@ -314,11 +521,44 @@ export function DraftOrdersPage() {
           setDetail(null);
           message.error(getApiErrorMessage(error, 'Không tải được chi tiết đơn'));
         }
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [selectedId]);
+  }, [activeTab, selectedId]);
+
+  useEffect(() => {
+    if (activeTab !== 'purchased' || !selectedPurchaseId) {
+      if (activeTab === 'purchased') setPurchaseDetail(null);
+      return;
+    }
+    let cancelled = false;
+    setPurchaseDetailLoading(true);
+    void fetchPurchase(selectedPurchaseId)
+      .then((data) => {
+        if (!cancelled) setPurchaseDetail(data);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setPurchaseDetail(null);
+          message.error(getApiErrorMessage(error, 'Không tải được chi tiết hóa đơn'));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPurchaseDetailLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, selectedPurchaseId]);
+
+  useEffect(() => {
+    if (activeTab !== 'purchased' || !purchaseDetail) return;
+    purchaseDetailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [activeTab, selectedPurchaseId, purchaseDetail]);
 
   const onConfirm = async () => {
     if (!selectedId) return;
@@ -327,7 +567,7 @@ export function DraftOrdersPage() {
       const updated = await confirmDraftOrder(selectedId);
       setDetail(updated);
       message.success('Đã xác nhận đơn hàng — khi lấy thuốc dược sĩ sẽ xác nhận lại tại quầy');
-      await loadList(true);
+      await loadAll(true);
     } catch (error) {
       message.error(getApiErrorMessage(error, 'Không xác nhận được đơn hàng'));
     } finally {
@@ -342,7 +582,7 @@ export function DraftOrdersPage() {
       const updated = await cancelDraftOrder(selectedId);
       setDetail(updated);
       message.success('Đã hủy đơn hàng — nhà thuốc đã được thông báo');
-      await loadList(true);
+      await loadAll(true);
     } catch (error) {
       message.error(getApiErrorMessage(error, 'Không hủy được đơn hàng'));
     } finally {
@@ -357,7 +597,7 @@ export function DraftOrdersPage() {
       await hideDraftOrder(selectedId);
       message.success('Đã ẩn đơn hàng khỏi app');
       setDetail(null);
-      await loadList(true);
+      await loadAll(true);
     } catch (error) {
       message.error(getApiErrorMessage(error, 'Không ẩn được đơn hàng'));
     } finally {
@@ -365,7 +605,11 @@ export function DraftOrdersPage() {
     }
   };
 
-  const waitingForApi = online === false && !!loadError;
+  const waitingForApi = online === false && !!loadError && !!purchaseLoadError;
+  const pageError =
+    activeTab === 'placed'
+      ? loadError
+      : purchaseLoadError ?? loadError;
 
   if (initialLoading) {
     return (
@@ -403,14 +647,14 @@ export function DraftOrdersPage() {
         />
       ) : null}
 
-      {loadError && !shouldHidePageErrorForOfflineApi(loadError, online) ? (
+      {pageError && !shouldHidePageErrorForOfflineApi(pageError, online) ? (
         <Alert
           type="error"
           showIcon
-          message="Không tải được đơn hàng"
-          description={loadError}
+          message={activeTab === 'placed' ? 'Không tải được đơn hàng' : 'Không tải được lịch sử mua'}
+          description={pageError}
           action={
-            <Button size="small" onClick={() => void loadList(true)}>
+            <Button size="small" onClick={() => void loadAll(true)}>
               Thử lại
             </Button>
           }
@@ -423,14 +667,7 @@ export function DraftOrdersPage() {
         </div>
       ) : null}
 
-      {!waitingForApi && !loadError && orders.length === 0 ? (
-        <Card size="small" style={{ borderRadius: 12 }}>
-          <Typography.Paragraph style={{ marginBottom: 8 }}>Chưa có đơn hàng nào.</Typography.Paragraph>
-          <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-            Khi dược sĩ gửi đơn thuốc qua app, bạn sẽ thấy tại đây.
-          </Typography.Text>
-        </Card>
-      ) : !waitingForApi && !loadError ? (
+      {!waitingForApi && !pageError ? (
         <Spin spinning={refreshing}>
           <Tabs
             activeKey={activeTab}
@@ -441,7 +678,11 @@ export function DraftOrdersPage() {
                 label: `Đơn hàng đặt${placedOrders.length > 0 ? ` (${placedOrders.length})` : ''}`,
                 children: (
                   <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                    <OrderListCards items={placedOrders} selectedId={selectedId} onSelect={setSelectedId} />
+                    {selectedId && detailLoading ? (
+                      <Card size="small" style={{ borderRadius: 12, textAlign: 'center', padding: 16 }}>
+                        <Spin tip="Đang tải chi tiết đơn…" />
+                      </Card>
+                    ) : null}
                     {detail && activeTab === 'placed' && isPlacedOrder(detail.status) ? (
                       <OrderDetailPanel
                         detail={detail}
@@ -453,26 +694,33 @@ export function DraftOrdersPage() {
                         onHide={() => void onHide()}
                       />
                     ) : null}
+                    <OrderListCards items={placedOrders} selectedId={selectedId} onSelect={setSelectedId} />
                   </Space>
                 ),
               },
               {
                 key: 'purchased',
-                label: `Đơn hàng đã mua${purchasedOrders.length > 0 ? ` (${purchasedOrders.length})` : ''}`,
+                label: `Đơn hàng đã mua${purchases.length > 0 ? ` (${purchases.length})` : ''}`,
                 children: (
                   <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                    <OrderListCards items={purchasedOrders} selectedId={selectedId} onSelect={setSelectedId} />
-                    {detail && activeTab === 'purchased' && isPurchasedOrder(detail.status) ? (
-                      <OrderDetailPanel
-                        detail={detail}
-                        confirming={confirming}
-                        cancelling={cancelling}
-                        hiding={hiding}
-                        onConfirm={() => void onConfirm()}
-                        onCancel={() => void onCancel()}
-                        onHide={() => void onHide()}
-                      />
+                    <Typography.Paragraph type="secondary" style={{ marginBottom: 0, fontSize: 13 }}>
+                      Chạm một hóa đơn để xem chi tiết sản phẩm và thanh toán.
+                    </Typography.Paragraph>
+                    {selectedPurchaseId && purchaseDetailLoading ? (
+                      <Card size="small" style={{ borderRadius: 12, textAlign: 'center', padding: 16 }}>
+                        <Spin tip="Đang tải chi tiết hóa đơn…" />
+                      </Card>
                     ) : null}
+                    {purchaseDetail && activeTab === 'purchased' ? (
+                      <div ref={purchaseDetailRef}>
+                        <PurchaseDetailPanel detail={purchaseDetail} />
+                      </div>
+                    ) : null}
+                    <PurchaseListCards
+                      items={purchases}
+                      selectedId={selectedPurchaseId}
+                      onSelect={setSelectedPurchaseId}
+                    />
                   </Space>
                 ),
               },

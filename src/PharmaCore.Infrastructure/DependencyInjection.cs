@@ -75,6 +75,12 @@ public static class DependencyInjection
         services.AddScoped<CustomerDraftOrderRepository>();
         services.AddScoped<ICustomerDraftOrderService, CustomerDraftOrderService>();
 
+        services.AddScoped<CustomerPurchaseRepository>();
+        services.AddScoped<ICustomerPurchaseService, CustomerPurchaseService>();
+
+        services.AddScoped<CustomerAddressRepository>();
+        services.AddScoped<ICustomerAddressService, CustomerAddressService>();
+
         services.AddScoped<LoyaltyAdminRepository>();
         services.AddScoped<LoyaltyPosService>();
         services.AddScoped<VoucherRepository>();

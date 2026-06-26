@@ -26,6 +26,9 @@ const ProfilePage = lazy(() =>
 const NotificationsPage = lazy(() =>
   import('@/modules/profile/NotificationsPage').then((m) => ({ default: m.NotificationsPage })),
 );
+const AddressesPage = lazy(() =>
+  import('@/modules/profile/AddressesPage').then((m) => ({ default: m.AddressesPage })),
+);
 
 function RouteFallback() {
   return (
@@ -116,6 +119,14 @@ export function AppRouter() {
                 element={
                   <SuspenseRoute>
                     <NotificationsPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="addresses"
+                element={
+                  <SuspenseRoute>
+                    <AddressesPage />
                   </SuspenseRoute>
                 }
               />

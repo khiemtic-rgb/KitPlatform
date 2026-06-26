@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, Descriptions, Space, Spin, Switch, Tag, Typography, message } from 'antd';
-import { BellOutlined, GiftOutlined, LogoutOutlined } from '@ant-design/icons';
+import { BellOutlined, EnvironmentOutlined, GiftOutlined, LogoutOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   fetchCareReminderEligible,
@@ -433,6 +433,16 @@ export function ProfilePage() {
           style={{ textAlign: 'left', justifyContent: 'flex-start', marginBottom: 12 }}
         >
           Điểm thưởng & voucher
+        </Button>
+        <Button
+          type="default"
+          block
+          size="large"
+          icon={<EnvironmentOutlined />}
+          onClick={() => navigate('/addresses')}
+          style={{ textAlign: 'left', justifyContent: 'flex-start', marginBottom: 12 }}
+        >
+          Địa chỉ giao hàng
         </Button>
         <Button
           type="default"

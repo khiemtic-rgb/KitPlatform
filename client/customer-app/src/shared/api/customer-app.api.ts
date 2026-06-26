@@ -259,6 +259,130 @@ export async function cancelDraftOrder(id: string) {
   return normalizeDraftOrder(data);
 }
 
+function normalizePurchaseListItem(row: Record<string, unknown>) {
+  return {
+    id: String(row.id ?? row.Id),
+    orderNumber: String(row.orderNumber ?? row.OrderNumber ?? ''),
+    status: Number(row.status ?? row.Status ?? 2),
+    orderDate: String(row.orderDate ?? row.OrderDate ?? ''),
+    totalAmount: Number(row.totalAmount ?? row.TotalAmount ?? 0),
+    itemCount: Number(row.itemCount ?? row.ItemCount ?? 0),
+    totalRefunded: Number(row.totalRefunded ?? row.TotalRefunded ?? 0),
+  };
+}
+
+function normalizePurchaseLine(row: Record<string, unknown>) {
+  return {
+    id: String(row.id ?? row.Id),
+    productName: String(row.productName ?? row.ProductName ?? ''),
+    unitName: String(row.unitName ?? row.UnitName ?? ''),
+    quantity: Number(row.quantity ?? row.Quantity ?? 0),
+    unitPrice: Number(row.unitPrice ?? row.UnitPrice ?? 0),
+    lineTotal: Number(row.lineTotal ?? row.LineTotal ?? 0),
+    returnedQuantity: Number(row.returnedQuantity ?? row.ReturnedQuantity ?? 0),
+  };
+}
+
+function normalizePurchasePayment(row: Record<string, unknown>) {
+  return {
+    paymentMethod: Number(row.paymentMethod ?? row.PaymentMethod ?? 1),
+    amount: Number(row.amount ?? row.Amount ?? 0),
+  };
+}
+
+function normalizePurchaseDetail(row: Record<string, unknown>) {
+  const items = ((row.items ?? row.Items ?? []) as Record<string, unknown>[]).map(normalizePurchaseLine);
+  const payments = ((row.payments ?? row.Payments ?? []) as Record<string, unknown>[]).map(normalizePurchasePayment);
+  return {
+    id: String(row.id ?? row.Id),
+    orderNumber: String(row.orderNumber ?? row.OrderNumber ?? ''),
+    status: Number(row.status ?? row.Status ?? 2),
+    orderDate: String(row.orderDate ?? row.OrderDate ?? ''),
+    subtotal: Number(row.subtotal ?? row.Subtotal ?? 0),
+    discountAmount: Number(row.discountAmount ?? row.DiscountAmount ?? 0),
+    totalAmount: Number(row.totalAmount ?? row.TotalAmount ?? 0),
+    totalRefunded: Number(row.totalRefunded ?? row.TotalRefunded ?? 0),
+    notes: (row.notes ?? row.Notes) as string | null | undefined,
+    loyaltyPointsEarned: (row.loyaltyPointsEarned ?? row.LoyaltyPointsEarned) as number | null | undefined,
+    loyaltyPointsRedeemed: Number(row.loyaltyPointsRedeemed ?? row.LoyaltyPointsRedeemed ?? 0),
+    loyaltyDiscountAmount: Number(row.loyaltyDiscountAmount ?? row.LoyaltyDiscountAmount ?? 0),
+    voucherDiscountAmount: Number(row.voucherDiscountAmount ?? row.VoucherDiscountAmount ?? 0),
+    voucherCode: (row.voucherCode ?? row.VoucherCode) as string | null | undefined,
+    items,
+    payments,
+  };
+}
+
+export async function fetchPurchases() {
+  const { data } = await http.get<{ items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+    '/purchases',
+  );
+  const rows = data.items ?? data.Items ?? [];
+  return rows.map(normalizePurchaseListItem);
+}
+
+export async function fetchPurchase(id: string) {
+  const { data } = await http.get<Record<string, unknown>>(`/purchases/${id}`);
+  return normalizePurchaseDetail(data);
+}
+
+function normalizeAddress(row: Record<string, unknown>) {
+  return {
+    id: String(row.id ?? row.Id),
+    label: String(row.label ?? row.Label ?? ''),
+    recipientName: (row.recipientName ?? row.RecipientName) as string | null | undefined,
+    phone: (row.phone ?? row.Phone) as string | null | undefined,
+    addressLine: String(row.addressLine ?? row.AddressLine ?? ''),
+    ward: (row.ward ?? row.Ward) as string | null | undefined,
+    district: (row.district ?? row.District) as string | null | undefined,
+    province: (row.province ?? row.Province) as string | null | undefined,
+    isDefault: Boolean(row.isDefault ?? row.IsDefault),
+  };
+}
+
+export async function fetchAddresses() {
+  const { data } = await http.get<{ items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+    '/addresses',
+  );
+  const rows = data.items ?? data.Items ?? [];
+  return rows.map(normalizeAddress);
+}
+
+export async function createAddress(payload: {
+  label: string;
+  recipientName?: string;
+  phone?: string;
+  addressLine: string;
+  ward?: string;
+  district?: string;
+  province?: string;
+  isDefault?: boolean;
+}) {
+  const { data } = await http.post<Record<string, unknown>>('/addresses', payload);
+  return normalizeAddress(data);
+}
+
+export async function updateAddress(
+  id: string,
+  payload: {
+    label: string;
+    recipientName?: string;
+    phone?: string;
+    addressLine: string;
+    ward?: string;
+    district?: string;
+    province?: string;
+    isDefault?: boolean;
+  },
+) {
+  const { data } = await http.put<Record<string, unknown>>(`/addresses/${id}`, payload);
+  return normalizeAddress(data);
+}
+
+export async function deleteAddress(id: string) {
+  await http.delete(`/addresses/${id}`);
+}
+
 export function getApiErrorMessage(error: unknown, fallback = 'Đã có lỗi xảy ra') {
   if (axios.isAxiosError(error)) {
     if (!error.response) {

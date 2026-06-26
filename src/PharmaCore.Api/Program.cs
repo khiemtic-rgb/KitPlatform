@@ -145,6 +145,16 @@ app.Use(async (context, next) =>
     }
     catch (Exception ex)
     {
+        if (context.Response.HasStarted)
+        {
+            app.Logger.LogWarning(
+                ex,
+                "Unhandled exception after response started for {Method} {Path}",
+                context.Request.Method,
+                context.Request.Path);
+            return;
+        }
+
         var statusCode = ex switch
         {
             UnauthorizedAccessException => StatusCodes.Status401Unauthorized,

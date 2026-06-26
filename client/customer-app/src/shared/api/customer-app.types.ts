@@ -240,6 +240,79 @@ export const CUSTOMER_DRAFT_ORDER_STATUS_LABELS: Record<number, string> = {
   6: 'Hết hạn',
 };
 
+export interface CustomerPurchaseListItem {
+  id: string;
+  orderNumber: string;
+  status: number;
+  orderDate: string;
+  totalAmount: number;
+  itemCount: number;
+  totalRefunded: number;
+}
+
+export interface CustomerPurchaseLine {
+  id: string;
+  productName: string;
+  unitName: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+  returnedQuantity: number;
+}
+
+export interface CustomerPurchasePayment {
+  paymentMethod: number;
+  amount: number;
+}
+
+export interface CustomerPurchaseDetail {
+  id: string;
+  orderNumber: string;
+  status: number;
+  orderDate: string;
+  subtotal: number;
+  discountAmount: number;
+  totalAmount: number;
+  totalRefunded: number;
+  notes?: string | null;
+  loyaltyPointsEarned?: number | null;
+  loyaltyPointsRedeemed: number;
+  loyaltyDiscountAmount: number;
+  voucherDiscountAmount: number;
+  voucherCode?: string | null;
+  items: CustomerPurchaseLine[];
+  payments: CustomerPurchasePayment[];
+}
+
+export const CUSTOMER_PURCHASE_STATUS = {
+  Completed: 2,
+  Refunded: 4,
+} as const;
+
+export const CUSTOMER_PURCHASE_STATUS_LABELS: Record<number, string> = {
+  2: 'Hoàn tất',
+  4: 'Hoàn tiền',
+};
+
+export const CUSTOMER_PAYMENT_METHOD_LABELS: Record<number, string> = {
+  1: 'Tiền mặt',
+  2: 'Thẻ',
+  3: 'Chuyển khoản',
+  4: 'Ví điện tử',
+};
+
+export interface CustomerAddress {
+  id: string;
+  label: string;
+  recipientName?: string | null;
+  phone?: string | null;
+  addressLine: string;
+  ward?: string | null;
+  district?: string | null;
+  province?: string | null;
+  isDefault: boolean;
+}
+
 export const LOYALTY_TX_LABELS: Record<number, string> = {
   1: 'Tích điểm',
   2: 'Đổi điểm',
