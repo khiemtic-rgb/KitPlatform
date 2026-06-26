@@ -5,6 +5,7 @@ using PharmaCore.Application.Abstractions;
 using PharmaCore.Application.Auth;
 using PharmaCore.Application.Catalog;
 using PharmaCore.Application.Customers;
+using PharmaCore.Application.Dashboard;
 using PharmaCore.Application.Inventory;
 using PharmaCore.Application.Loyalty;
 using PharmaCore.Application.Integration;
@@ -15,6 +16,7 @@ using PharmaCore.Infrastructure.Auth;
 using PharmaCore.Infrastructure.Catalog;
 using PharmaCore.Infrastructure.Configuration;
 using PharmaCore.Infrastructure.Customers;
+using PharmaCore.Infrastructure.Dashboard;
 using PharmaCore.Infrastructure.Integration;
 using PharmaCore.Infrastructure.Inventory;
 using PharmaCore.Infrastructure.Loyalty;
@@ -124,6 +126,9 @@ public static class DependencyInjection
         services.AddScoped<IIntegrationOutboxQuery, IntegrationOutboxQuery>();
         services.AddHostedService<IntegrationOutboxWorker>();
         services.AddScoped<IInventoryService, InventoryService>();
+
+        services.AddScoped<DashboardRepository>();
+        services.AddScoped<IDashboardService, DashboardService>();
 
         services.AddScoped<CustomerConsentRepository>();
         services.AddScoped<ICustomerConsentService, CustomerConsentService>();
