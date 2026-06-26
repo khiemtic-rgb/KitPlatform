@@ -42,10 +42,18 @@ export function CustomerAppLayout() {
         </div>
       </header>
 
-      <main className="customer-app-content">
-        <div style={{ maxWidth: 480, margin: '0 auto', padding: '0 12px' }}>
-          <ApiHealthBanner />
-        </div>
+      <main
+        className={
+          location.pathname.startsWith('/chat')
+            ? 'customer-app-content customer-app-content--chat'
+            : 'customer-app-content'
+        }
+      >
+        {!location.pathname.startsWith('/chat') ? (
+          <div style={{ maxWidth: 480, margin: '0 auto', padding: '0 12px' }}>
+            <ApiHealthBanner />
+          </div>
+        ) : null}
         <Outlet />
       </main>
 

@@ -79,6 +79,11 @@ const CustomerDraftOrderListPage = lazy(() =>
     default: m.CustomerDraftOrderListPage,
   })),
 );
+const CustomerReservationListPage = lazy(() =>
+  import('@/modules/sales/CustomerReservationListPage').then((m) => ({
+    default: m.CustomerReservationListPage,
+  })),
+);
 const SalesReturnListPage = lazy(() =>
   import('@/modules/sales/SalesReturnListPage').then((m) => ({ default: m.SalesReturnListPage })),
 );
@@ -210,6 +215,7 @@ export function AppRouter() {
                 <Route path="pos" element={<PosPage />} />
                 <Route path="orders" element={<SalesOrderListPage />} />
                 <Route path="customer-drafts" element={<CustomerDraftOrderListPage />} />
+                <Route path="customer-reservations" element={<CustomerReservationListPage />} />
                 <Route path="returns" element={<SalesReturnListPage />} />
                 <Route path="shift" element={<SalesShiftReportPage />} />
                 <Route path="customers" element={<CustomerConsentPage />} />

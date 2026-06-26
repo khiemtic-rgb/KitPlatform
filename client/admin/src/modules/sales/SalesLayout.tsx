@@ -14,6 +14,8 @@ import {
 
   FormOutlined,
 
+  MedicineBoxOutlined,
+
   GiftOutlined,
 
   RollbackOutlined,
@@ -125,6 +127,18 @@ const mainTabs = [
     path: '/sales/customer-drafts',
 
     icon: <FormOutlined />,
+
+  },
+
+  {
+
+    key: 'customer-reservations',
+
+    label: 'Đặt trước app',
+
+    path: '/sales/customer-reservations',
+
+    icon: <MedicineBoxOutlined />,
 
   },
 

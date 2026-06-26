@@ -383,6 +383,80 @@ export async function deleteAddress(id: string) {
   await http.delete(`/addresses/${id}`);
 }
 
+function normalizeReservationLine(row: Record<string, unknown>) {
+  return {
+    id: String(row.id ?? row.Id),
+    lineNumber: Number(row.lineNumber ?? row.LineNumber ?? 0),
+    productId: String(row.productId ?? row.ProductId ?? ''),
+    productCode: String(row.productCode ?? row.ProductCode ?? ''),
+    productName: String(row.productName ?? row.ProductName ?? ''),
+    unitName: String(row.unitName ?? row.UnitName ?? ''),
+    quantity: Number(row.quantity ?? row.Quantity ?? 0),
+    customerNote: (row.customerNote ?? row.CustomerNote) as string | null | undefined,
+  };
+}
+
+function normalizeReservationListItem(row: Record<string, unknown>) {
+  return {
+    id: String(row.id ?? row.Id),
+    reservationNumber: String(row.reservationNumber ?? row.ReservationNumber ?? ''),
+    status: Number(row.status ?? row.Status ?? 0),
+    fulfillmentType: Number(row.fulfillmentType ?? row.FulfillmentType ?? 1),
+    itemCount: Number(row.itemCount ?? row.ItemCount ?? 0),
+    submittedAt: String(row.submittedAt ?? row.SubmittedAt ?? ''),
+    readyAt: (row.readyAt ?? row.ReadyAt) as string | null | undefined,
+  };
+}
+
+function normalizeReservationDetail(row: Record<string, unknown>) {
+  const items = ((row.items ?? row.Items ?? []) as Record<string, unknown>[]).map(normalizeReservationLine);
+  return {
+    id: String(row.id ?? row.Id),
+    reservationNumber: String(row.reservationNumber ?? row.ReservationNumber ?? ''),
+    status: Number(row.status ?? row.Status ?? 0),
+    fulfillmentType: Number(row.fulfillmentType ?? row.FulfillmentType ?? 1),
+    addressId: (row.addressId ?? row.AddressId) as string | null | undefined,
+    addressSummary: (row.addressSummary ?? row.AddressSummary) as string | null | undefined,
+    notes: (row.notes ?? row.Notes) as string | null | undefined,
+    staffNotes: (row.staffNotes ?? row.StaffNotes) as string | null | undefined,
+    submittedAt: String(row.submittedAt ?? row.SubmittedAt ?? ''),
+    confirmedAt: (row.confirmedAt ?? row.ConfirmedAt) as string | null | undefined,
+    readyAt: (row.readyAt ?? row.ReadyAt) as string | null | undefined,
+    collectedAt: (row.collectedAt ?? row.CollectedAt) as string | null | undefined,
+    salesOrderId: (row.salesOrderId ?? row.SalesOrderId) as string | null | undefined,
+    salesOrderNumber: (row.salesOrderNumber ?? row.SalesOrderNumber) as string | null | undefined,
+    items,
+  };
+}
+
+export async function fetchReservations() {
+  const { data } = await http.get<{ items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
+    '/reservations',
+  );
+  const rows = (data.items ?? data.Items ?? []) as Record<string, unknown>[];
+  return rows.map(normalizeReservationListItem);
+}
+
+export async function fetchReservation(id: string) {
+  const { data } = await http.get<Record<string, unknown>>(`/reservations/${id}`);
+  return normalizeReservationDetail(data);
+}
+
+export async function createReservation(payload: {
+  fulfillmentType: number;
+  addressId?: string;
+  notes?: string;
+  items: { productId: string; quantity: number; customerNote?: string }[];
+}) {
+  const { data } = await http.post<Record<string, unknown>>('/reservations', payload);
+  return normalizeReservationDetail(data);
+}
+
+export async function cancelReservation(id: string) {
+  const { data } = await http.post<Record<string, unknown>>(`/reservations/${id}/cancel`);
+  return normalizeReservationDetail(data);
+}
+
 export function getApiErrorMessage(error: unknown, fallback = 'Đã có lỗi xảy ra') {
   if (axios.isAxiosError(error)) {
     if (!error.response) {

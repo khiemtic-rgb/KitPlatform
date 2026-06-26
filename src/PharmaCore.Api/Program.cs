@@ -168,7 +168,7 @@ app.Use(async (context, next) =>
             InvalidOperationException => ex.Message,
             _ when TryGetPostgresSqlState(ex, out var sqlState) => sqlState switch
             {
-                "42P01" => "Thiếu bảng database. Chạy scripts\\setup-and-migrate.bat hoặc migration 008_product_images.sql.",
+                "42P01" => "Thiếu bảng database. Chạy .\\scripts\\run-migrations.ps1 (hoặc setup-and-migrate.ps1).",
                 "3D000" => "Database 'pharmacore' chưa tồn tại. Chạy scripts\\setup-and-migrate.bat.",
                 "28P01" => "Sai user/mật khẩu PostgreSQL. Kiểm tra appsettings.Development.json.",
                 "57P03" or "53300" => "PostgreSQL đang khởi động hoặc quá tải. Thử lại sau vài giây.",

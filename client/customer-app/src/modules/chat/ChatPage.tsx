@@ -13,7 +13,6 @@ import {
 } from '@/shared/api/customer-app.api';
 import type { CustomerChatMessage } from '@/shared/api/customer-app.types';
 import { CUSTOMER_APP_CHAT_CONSENT } from '@/shared/api/customer-app.types';
-import { BackToHomeButton } from '@/shared/components/BackToHomeButton';
 import { buildCustomerChatEventsUrl, subscribeChatSse } from '@/shared/hooks/chat-sse';
 import { useAuthStore } from '@/shared/auth/auth.store';
 
@@ -77,7 +76,9 @@ export function ChatPage() {
   const listRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToBottom = () => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
   };
 
   const loadMessages = useCallback(async (silent = false) => {
@@ -160,59 +161,51 @@ export function ChatPage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 140px)' }}>
-      <BackToHomeButton />
-      <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 8 }}>
-        Chat dược sĩ
-      </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: 12, fontSize: 13 }}>
-        Hỏi đáp trực tiếp với nhà thuốc — tin nhắn được lưu trong app.
-      </Typography.Paragraph>
+    <div className="customer-chat-page">
+      <div className="customer-chat-toolbar">
+        <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 4 }}>
+          Chat dược sĩ
+        </Typography.Title>
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 8, fontSize: 13 }}>
+          Hỏi đáp trực tiếp với nhà thuốc.
+        </Typography.Paragraph>
 
-      {!chatConsentGranted ? (
-        <Alert
-          type="warning"
-          showIcon
-          style={{ marginBottom: 12 }}
-          message="Cần đồng ý chat dược sĩ (hỗ trợ AI) trước khi gửi tin nhắn."
-          action={
-            <Space size={8} wrap>
-              <Button size="small" type="primary" loading={enablingConsent} onClick={() => void onEnableChatConsent()}>
-                Bật ngay
+        {!chatConsentGranted ? (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 8 }}
+            message="Cần đồng ý chat dược sĩ trước khi gửi tin nhắn."
+            action={
+              <Space size={8} wrap>
+                <Button size="small" type="primary" loading={enablingConsent} onClick={() => void onEnableChatConsent()}>
+                  Bật ngay
+                </Button>
+                <Link to="/profile" style={{ whiteSpace: 'nowrap' }}>
+                  Tài khoản
+                </Link>
+              </Space>
+            }
+          />
+        ) : null}
+
+        {loadError ? (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 8 }}
+            message="Không tải được chat"
+            description={loadError}
+            action={
+              <Button size="small" onClick={() => void loadMessages()}>
+                Thử lại
               </Button>
-              <Link to="/profile" style={{ whiteSpace: 'nowrap' }}>
-                Tài khoản
-              </Link>
-            </Space>
-          }
-        />
-      ) : null}
+            }
+          />
+        ) : null}
+      </div>
 
-      {loadError ? (
-        <Alert
-          type="warning"
-          showIcon
-          style={{ marginBottom: 12 }}
-          message="Không tải được chat"
-          description={loadError}
-          action={
-            <Button size="small" onClick={() => void loadMessages()}>
-              Thử lại
-            </Button>
-          }
-        />
-      ) : null}
-
-      <div
-        ref={listRef}
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '8px 4px',
-          marginBottom: 12,
-          minHeight: 280,
-        }}
-      >
+      <div ref={listRef} className="customer-chat-messages">
         {loading && messages.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 48 }}>
             <Spin />
@@ -234,7 +227,7 @@ export function ChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="customer-chat-composer">
         <Input.TextArea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}

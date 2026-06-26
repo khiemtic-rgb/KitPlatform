@@ -72,3 +72,49 @@ body {
   line-height: 1.2;
   text-align: center;
 }
+
+:root {
+  --customer-app-header-height: 52px;
+  --customer-app-bottom-nav-height: calc(72px + env(safe-area-inset-bottom, 0));
+}
+
+.customer-app-content--chat {
+  padding: 8px 16px var(--customer-app-bottom-nav-height);
+  overflow: hidden;
+  height: calc(100dvh - var(--customer-app-header-height));
+  display: flex;
+  flex-direction: column;
+}
+
+.customer-chat-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.customer-chat-toolbar {
+  flex-shrink: 0;
+}
+
+.customer-chat-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 4px;
+  margin: 8px 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.customer-chat-composer {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+  background: #f0fdfa;
+  border-top: 1px solid #e2e8f0;
+}

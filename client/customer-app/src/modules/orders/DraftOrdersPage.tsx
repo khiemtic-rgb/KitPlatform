@@ -5,10 +5,13 @@ import { RightOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
   confirmDraftOrder,
+  cancelReservation,
   fetchDraftOrder,
   fetchDraftOrders,
   fetchPurchase,
   fetchPurchases,
+  fetchReservation,
+  fetchReservations,
   getApiErrorMessage,
   hideDraftOrder,
   cancelDraftOrder,
@@ -19,10 +22,15 @@ import {
   CUSTOMER_PAYMENT_METHOD_LABELS,
   CUSTOMER_PURCHASE_STATUS,
   CUSTOMER_PURCHASE_STATUS_LABELS,
+  CUSTOMER_RESERVATION_FULFILLMENT_LABELS,
+  CUSTOMER_RESERVATION_STATUS,
+  CUSTOMER_RESERVATION_STATUS_LABELS,
   type CustomerDraftOrder,
   type CustomerDraftOrderListItem,
   type CustomerPurchaseDetail,
   type CustomerPurchaseListItem,
+  type CustomerReservationDetail,
+  type CustomerReservationListItem,
 } from '@/shared/api/customer-app.types';
 import { BackToHomeButton } from '@/shared/components/BackToHomeButton';
 import { shouldHidePageErrorForOfflineApi } from '@/shared/components/ApiHealthBanner';
@@ -265,6 +273,149 @@ function PurchaseDetailPanel({ detail }: { detail: CustomerPurchaseDetail }) {
   );
 }
 
+function reservationStatusColor(status: number): string {
+  if (status === CUSTOMER_RESERVATION_STATUS.Ready) return 'green';
+  if (status === CUSTOMER_RESERVATION_STATUS.Confirmed) return 'blue';
+  if (status === CUSTOMER_RESERVATION_STATUS.Collected) return 'success';
+  if (status === CUSTOMER_RESERVATION_STATUS.Cancelled || status === CUSTOMER_RESERVATION_STATUS.Rejected)
+    return 'error';
+  return 'gold';
+}
+
+function ReservationListCards({
+  items,
+  selectedId,
+  onSelect,
+}: {
+  items: CustomerReservationListItem[];
+  selectedId?: string;
+  onSelect: (id: string) => void;
+}) {
+  if (items.length === 0) {
+    return (
+      <Empty
+        description="Chưa có yêu cầu đặt trước"
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+      />
+    );
+  }
+
+  return (
+    <List
+      dataSource={items}
+      renderItem={(item) => (
+        <Card
+          size="small"
+          style={{
+            marginBottom: 8,
+            borderRadius: 12,
+            borderColor: item.id === selectedId ? '#0f766e' : undefined,
+            cursor: 'pointer',
+          }}
+          onClick={() => onSelect(item.id)}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Space direction="vertical" size={2} style={{ flex: 1, minWidth: 0 }}>
+              <Space wrap>
+                <Typography.Text strong>{item.reservationNumber}</Typography.Text>
+                <Tag color={reservationStatusColor(item.status)}>
+                  {CUSTOMER_RESERVATION_STATUS_LABELS[item.status] ?? item.status}
+                </Tag>
+              </Space>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {dayjs(item.submittedAt).format('DD/MM/YYYY HH:mm')} · {item.itemCount} sản phẩm ·{' '}
+                {CUSTOMER_RESERVATION_FULFILLMENT_LABELS[item.fulfillmentType] ?? item.fulfillmentType}
+              </Typography.Text>
+            </Space>
+            <RightOutlined
+              style={{
+                color: item.id === selectedId ? '#0f766e' : '#94a3b8',
+                fontSize: 14,
+                flexShrink: 0,
+              }}
+            />
+          </div>
+        </Card>
+      )}
+    />
+  );
+}
+
+function ReservationDetailPanel({
+  detail,
+  cancelling,
+  onCancel,
+}: {
+  detail: CustomerReservationDetail;
+  cancelling: boolean;
+  onCancel: () => void;
+}) {
+  return (
+    <Card size="small" title={`Yêu cầu ${detail.reservationNumber}`} style={{ borderRadius: 12 }}>
+      <Space wrap style={{ marginBottom: 12 }}>
+        <Tag color={reservationStatusColor(detail.status)}>
+          {CUSTOMER_RESERVATION_STATUS_LABELS[detail.status] ?? detail.status}
+        </Tag>
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {CUSTOMER_RESERVATION_FULFILLMENT_LABELS[detail.fulfillmentType]}
+          {detail.addressSummary ? ` · ${detail.addressSummary}` : ''}
+        </Typography.Text>
+      </Space>
+
+      {detail.salesOrderNumber ? (
+        <Typography.Text type="success" style={{ fontSize: 13, display: 'block' }}>
+          Hóa đơn {detail.salesOrderNumber} — xem tab Đơn hàng đã mua
+        </Typography.Text>
+      ) : detail.status === CUSTOMER_RESERVATION_STATUS.Collected ? (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 8 }}
+          message="Chưa có hóa đơn bán"
+          description="Nhà thuốc cần bán qua quầy để ghi nhận thanh toán và tồn kho."
+        />
+      ) : null}
+
+      <List
+        size="small"
+        dataSource={detail.items}
+        renderItem={(line) => (
+          <List.Item>
+            <List.Item.Meta
+              title={line.productName}
+              description={
+                <span>
+                  {line.quantity} {line.unitName}
+                  {line.customerNote ? ` · ${line.customerNote}` : ''}
+                </span>
+              }
+            />
+          </List.Item>
+        )}
+      />
+
+      {detail.notes ? (
+        <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+          Ghi chú: {detail.notes}
+        </Typography.Text>
+      ) : null}
+      {detail.staffNotes ? (
+        <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+          Nhà thuốc: {detail.staffNotes}
+        </Typography.Text>
+      ) : null}
+
+      {detail.status === CUSTOMER_RESERVATION_STATUS.Pending ? (
+        <Popconfirm title="Hủy yêu cầu đặt trước?" onConfirm={onCancel}>
+          <Button danger block loading={cancelling} style={{ marginTop: 12 }}>
+            Hủy yêu cầu
+          </Button>
+        </Popconfirm>
+      ) : null}
+    </Card>
+  );
+}
+
 function OrderDetailPanel({
   detail,
   confirming,
@@ -380,17 +531,23 @@ export function DraftOrdersPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [purchaseLoadError, setPurchaseLoadError] = useState<string | null>(null);
+  const [reservationLoadError, setReservationLoadError] = useState<string | null>(null);
   const [orders, setOrders] = useState<CustomerDraftOrderListItem[]>([]);
   const [purchases, setPurchases] = useState<CustomerPurchaseListItem[]>([]);
-  const [activeTab, setActiveTab] = useState<'placed' | 'purchased'>('placed');
+  const [reservations, setReservations] = useState<CustomerReservationListItem[]>([]);
+  const [activeTab, setActiveTab] = useState<'placed' | 'purchased' | 'reservations'>('placed');
   const [selectedId, setSelectedId] = useState<string>();
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string>();
+  const [selectedReservationId, setSelectedReservationId] = useState<string>();
   const [detail, setDetail] = useState<CustomerDraftOrder | null>(null);
   const [purchaseDetail, setPurchaseDetail] = useState<CustomerPurchaseDetail | null>(null);
+  const [reservationDetail, setReservationDetail] = useState<CustomerReservationDetail | null>(null);
   const [purchaseDetailLoading, setPurchaseDetailLoading] = useState(false);
+  const [reservationDetailLoading, setReservationDetailLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [cancellingReservation, setCancellingReservation] = useState(false);
   const [hiding, setHiding] = useState(false);
   const [newDraftBanner, setNewDraftBanner] = useState<CustomerDraftOrderListItem[]>([]);
   const purchaseDetailRef = useRef<HTMLDivElement>(null);
@@ -402,8 +559,13 @@ export function DraftOrdersPage() {
     else setInitialLoading(true);
     setLoadError(null);
     setPurchaseLoadError(null);
+    setReservationLoadError(null);
     try {
-      const [draftResult, purchaseResult] = await Promise.allSettled([fetchDraftOrders(), fetchPurchases()]);
+      const [draftResult, purchaseResult, reservationResult] = await Promise.allSettled([
+        fetchDraftOrders(),
+        fetchPurchases(),
+        fetchReservations(),
+      ]);
 
       if (draftResult.status === 'fulfilled') {
         const items = draftResult.value;
@@ -441,6 +603,18 @@ export function DraftOrdersPage() {
       } else {
         setPurchases([]);
         setPurchaseLoadError(getApiErrorMessage(purchaseResult.reason, 'Không tải được lịch sử mua'));
+      }
+
+      if (reservationResult.status === 'fulfilled') {
+        const items = reservationResult.value;
+        setReservations(items);
+        setSelectedReservationId((current) => {
+          if (current && items.some((o) => o.id === current)) return current;
+          return items[0]?.id;
+        });
+      } else {
+        setReservations([]);
+        setReservationLoadError(getApiErrorMessage(reservationResult.reason, 'Không tải được đặt trước'));
       }
     } finally {
       setInitialLoading(false);
@@ -556,6 +730,45 @@ export function DraftOrdersPage() {
   }, [activeTab, selectedPurchaseId]);
 
   useEffect(() => {
+    if (activeTab !== 'reservations' || reservations.length === 0) {
+      if (activeTab === 'reservations') {
+        setSelectedReservationId(undefined);
+        setReservationDetail(null);
+      }
+      return;
+    }
+    setSelectedReservationId((current) => {
+      if (current && reservations.some((o) => o.id === current)) return current;
+      return reservations[0].id;
+    });
+  }, [activeTab, reservations]);
+
+  useEffect(() => {
+    if (activeTab !== 'reservations' || !selectedReservationId) {
+      if (activeTab === 'reservations') setReservationDetail(null);
+      return;
+    }
+    let cancelled = false;
+    setReservationDetailLoading(true);
+    void fetchReservation(selectedReservationId)
+      .then((data) => {
+        if (!cancelled) setReservationDetail(data);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setReservationDetail(null);
+          message.error(getApiErrorMessage(error, 'Không tải được chi tiết đặt trước'));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setReservationDetailLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, selectedReservationId]);
+
+  useEffect(() => {
     if (activeTab !== 'purchased' || !purchaseDetail) return;
     purchaseDetailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [activeTab, selectedPurchaseId, purchaseDetail]);
@@ -605,11 +818,28 @@ export function DraftOrdersPage() {
     }
   };
 
-  const waitingForApi = online === false && !!loadError && !!purchaseLoadError;
+  const onCancelReservation = async () => {
+    if (!selectedReservationId) return;
+    setCancellingReservation(true);
+    try {
+      const updated = await cancelReservation(selectedReservationId);
+      setReservationDetail(updated);
+      message.success('Đã hủy yêu cầu');
+      await loadAll(true);
+    } catch (error) {
+      message.error(getApiErrorMessage(error, 'Không hủy được yêu cầu'));
+    } finally {
+      setCancellingReservation(false);
+    }
+  };
+
+  const waitingForApi = online === false && !!loadError && !!purchaseLoadError && !!reservationLoadError;
   const pageError =
     activeTab === 'placed'
       ? loadError
-      : purchaseLoadError ?? loadError;
+      : activeTab === 'purchased'
+        ? purchaseLoadError ?? loadError
+        : reservationLoadError ?? loadError;
 
   if (initialLoading) {
     return (
@@ -628,6 +858,21 @@ export function DraftOrdersPage() {
       <Typography.Paragraph type="secondary" style={{ marginBottom: 0, fontSize: 13 }}>
         Dược sĩ soạn đơn — bạn xác nhận (tuỳ chọn) rồi đến quầy thanh toán.
       </Typography.Paragraph>
+
+      <Card
+        size="small"
+        style={{ borderRadius: 12, background: '#fffbeb', borderColor: '#fcd34d' }}
+        styles={{ body: { padding: '10px 14px' } }}
+      >
+        <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
+          <Typography.Text style={{ fontSize: 13 }}>Cần thuốc chưa có sẵn? Gửi yêu cầu đặt trước.</Typography.Text>
+          <Link to="/reservations">
+            <Button type="primary" size="small">
+              Đặt thuốc trước
+            </Button>
+          </Link>
+        </Space>
+      </Card>
 
       {newDraftBanner.length > 0 ? (
         <Alert
@@ -651,7 +896,7 @@ export function DraftOrdersPage() {
         <Alert
           type="error"
           showIcon
-          message={activeTab === 'placed' ? 'Không tải được đơn hàng' : 'Không tải được lịch sử mua'}
+          message={activeTab === 'placed' ? 'Không tải được đơn hàng' : activeTab === 'purchased' ? 'Không tải được lịch sử mua' : 'Không tải được đặt trước'}
           description={pageError}
           action={
             <Button size="small" onClick={() => void loadAll(true)}>
@@ -671,7 +916,7 @@ export function DraftOrdersPage() {
         <Spin spinning={refreshing}>
           <Tabs
             activeKey={activeTab}
-            onChange={(key) => setActiveTab(key as 'placed' | 'purchased')}
+            onChange={(key) => setActiveTab(key as 'placed' | 'purchased' | 'reservations')}
             items={[
               {
                 key: 'placed',
@@ -695,6 +940,34 @@ export function DraftOrdersPage() {
                       />
                     ) : null}
                     <OrderListCards items={placedOrders} selectedId={selectedId} onSelect={setSelectedId} />
+                  </Space>
+                ),
+              },
+              {
+                key: 'reservations',
+                label: `Đặt trước${reservations.length > 0 ? ` (${reservations.length})` : ''}`,
+                children: (
+                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <Typography.Paragraph type="secondary" style={{ marginBottom: 0, fontSize: 13 }}>
+                      Yêu cầu thuốc chưa có sẵn — không phải hóa đơn bán. Hóa đơn thanh toán tại quầy nằm ở tab Đã mua.
+                    </Typography.Paragraph>
+                    {selectedReservationId && reservationDetailLoading ? (
+                      <Card size="small" style={{ borderRadius: 12, textAlign: 'center', padding: 16 }}>
+                        <Spin tip="Đang tải chi tiết…" />
+                      </Card>
+                    ) : null}
+                    {reservationDetail && activeTab === 'reservations' ? (
+                      <ReservationDetailPanel
+                        detail={reservationDetail}
+                        cancelling={cancellingReservation}
+                        onCancel={() => void onCancelReservation()}
+                      />
+                    ) : null}
+                    <ReservationListCards
+                      items={reservations}
+                      selectedId={selectedReservationId}
+                      onSelect={setSelectedReservationId}
+                    />
                   </Space>
                 ),
               },

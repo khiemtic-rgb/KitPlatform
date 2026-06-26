@@ -94,7 +94,13 @@ $migrationFiles = @(
     "025_loyalty_max_redeem_percent.sql",
     "026_loyalty_fractional_points.sql",
     "027_customer_app_cdp_consent_demo.sql",
-    "028_customer_chat.sql"
+    "028_customer_chat.sql",
+    "029_customer_draft_orders.sql",
+    "030_customer_draft_order_customer_hide.sql",
+    "031_sales_voucher_discount.sql",
+    "032_customer_address_demo.sql",
+    "033_customer_reservations.sql",
+    "034_customer_reservation_sales_order.sql"
 )
 
 foreach ($file in $migrationFiles) {

@@ -77,6 +77,11 @@ import {
   loadCustomerDraftCartLines,
   orderDiscountFromCustomerDraft,
 } from '@/modules/sales/customer-draft-order-helpers';
+import {
+  linkCustomerReservationSale,
+  loadCustomerReservationForPos,
+} from '@/shared/api/customer-reservations.api';
+import { loadCustomerReservationCartLines } from '@/modules/sales/customer-reservation-helpers';
 import { buildCustomerDraftOrderPayload } from '@/modules/sales/pos-customer-draft-payload';
 import { CustomerDraftOrderStatusBar } from '@/modules/sales/CustomerDraftOrderStatusBar';
 import { formatDisplayMoney, moneyInputNumberPropsAllowZeroSuffix, moneyInputNumberStyle } from '@/shared/utils/money';
@@ -93,6 +98,7 @@ export function PosPage() {
   const [customerId, setCustomerId] = useState<string>();
   const [customerDraftOrders, setCustomerDraftOrders] = useState<CustomerDraftOrderListItem[]>([]);
   const [loadedCustomerDraftOrderId, setLoadedCustomerDraftOrderId] = useState<string>();
+  const [loadedCustomerReservationId, setLoadedCustomerReservationId] = useState<string>();
   const [activeCustomerDraft, setActiveCustomerDraft] = useState<CustomerDraftOrder | null>(null);
   const [customerLoyalty, setCustomerLoyalty] = useState<PosCustomerLoyalty | null>(null);
   const [customerVouchers, setCustomerVouchers] = useState<PosCustomerVoucher[]>([]);
@@ -202,6 +208,7 @@ export function PosPage() {
       setCart(await loadCustomerDraftCartLines(payload));
       setOrderDiscount(orderDiscountFromCustomerDraft(payload));
       setLoadedCustomerDraftOrderId(payload.draftOrderId);
+      setLoadedCustomerReservationId(undefined);
       setCustomerAppDraftMode(false);
       setEditingDraftId(null);
       setEditingDraftNumber(null);
@@ -220,10 +227,42 @@ export function PosPage() {
     }
   };
 
+  const loadCustomerReservationIntoPos = async (
+    reservationId: string,
+    options?: { autoCheckout?: boolean },
+  ) => {
+    try {
+      const payload = await loadCustomerReservationForPos(reservationId);
+      setWarehouseId(payload.warehouseId);
+      setCustomerId(payload.customerId);
+      setCart(await loadCustomerReservationCartLines(payload));
+      setOrderDiscount({});
+      setLoadedCustomerReservationId(payload.reservationId);
+      setLoadedCustomerDraftOrderId(undefined);
+      setActiveCustomerDraft(null);
+      setCustomerAppDraftMode(false);
+      setEditingDraftId(null);
+      setEditingDraftNumber(null);
+      clearPosDraftEdit();
+      if (options?.autoCheckout) {
+        setOpenShift(await loadOpenShiftForWarehouse(payload.warehouseId));
+        pendingAutoCheckoutRef.current = true;
+        setAutoCheckoutTick((t) => t + 1);
+        message.success(`Đã nạp ${payload.reservationNumber} — mở thanh toán...`);
+      } else {
+        message.success(`Đã nạp ${payload.reservationNumber} vào giỏ — bấm Thanh toán khi sẵn sàng`);
+      }
+    } catch (error) {
+      pendingAutoCheckoutRef.current = false;
+      message.error(apiErrorMessage(error, 'Không nạp được đặt trước'));
+    }
+  };
+
   const resetCart = useCallback(() => {
     setCart([]);
     setOrderDiscount({});
     setLoadedCustomerDraftOrderId(undefined);
+    setLoadedCustomerReservationId(undefined);
     setActiveCustomerDraft(null);
   }, []);
 
@@ -355,6 +394,23 @@ export function PosPage() {
     const autoCheckout = searchParams.get('checkout') === '1';
     void loadCustomerDraftIntoPos(customerDraftId, { autoCheckout }).finally(() => {
       deepLinkHandled.current = null;
+      setSearchParams({}, { replace: true });
+    });
+  }, [searchParams, setSearchParams]);
+
+  const reservationDeepLinkHandled = useRef<string | null>(null);
+
+  useEffect(() => {
+    const customerReservationId = searchParams.get('customerReservationId');
+    if (!customerReservationId) {
+      reservationDeepLinkHandled.current = null;
+      return;
+    }
+    if (reservationDeepLinkHandled.current === customerReservationId) return;
+    reservationDeepLinkHandled.current = customerReservationId;
+    const autoCheckout = searchParams.get('checkout') === '1';
+    void loadCustomerReservationIntoPos(customerReservationId, { autoCheckout }).finally(() => {
+      reservationDeepLinkHandled.current = null;
       setSearchParams({}, { replace: true });
     });
   }, [searchParams, setSearchParams]);
@@ -710,6 +766,13 @@ export function PosPage() {
           await linkCustomerDraftOrderSale(loadedCustomerDraftOrderId, order.id);
         } catch {
           message.warning('Đã bán nhưng chưa liên kết được đơn tạm — liên hệ IT nếu cần.');
+        }
+      }
+      if (loadedCustomerReservationId) {
+        try {
+          await linkCustomerReservationSale(loadedCustomerReservationId, order.id);
+        } catch {
+          message.warning('Đã bán nhưng chưa liên kết được đặt trước — liên hệ IT nếu cần.');
         }
       }
       setCheckoutOpen(false);

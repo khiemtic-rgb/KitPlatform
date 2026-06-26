@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } 
 import { Alert, Button, Card, Col, Row, Space, Spin, Statistic, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { fetchDraftOrders, fetchLoyaltySummary, fetchReminders, getApiErrorMessage } from '@/shared/api/customer-app.api';
+import { fetchDraftOrders, fetchLoyaltySummary, fetchReminders, fetchReservations, getApiErrorMessage } from '@/shared/api/customer-app.api';
 import { useApiHealth, useRetryWhenApiOnline } from '@/shared/api/useApiHealth';
 import { shouldHidePageErrorForOfflineApi } from '@/shared/components/ApiHealthBanner';
-import { CUSTOMER_DRAFT_ORDER_STATUS, type LoyaltyProgramSummary } from '@/shared/api/customer-app.types';
+import { CUSTOMER_DRAFT_ORDER_STATUS, CUSTOMER_RESERVATION_STATUS, type LoyaltyProgramSummary } from '@/shared/api/customer-app.types';
 import { useAuthStore } from '@/shared/auth/auth.store';
 import { formatPoints } from '@/shared/utils/points';
 
@@ -56,14 +56,16 @@ export function HomePage() {
   const [reminderCount, setReminderCount] = useState(0);
   const [nextReminder, setNextReminder] = useState<string | null>(null);
   const [pendingDraftCount, setPendingDraftCount] = useState(0);
+  const [activeReservationCount, setActiveReservationCount] = useState(0);
 
   const loadData = useCallback(async () => {
     setLoadError(null);
     try {
-      const [loyaltyResult, remindersResult, draftsResult] = await Promise.allSettled([
+      const [loyaltyResult, remindersResult, draftsResult, reservationsResult] = await Promise.allSettled([
         fetchLoyaltySummary(),
         fetchReminders(),
         fetchDraftOrders(),
+        fetchReservations(),
       ]);
 
       if (loyaltyResult.status === 'rejected') {
@@ -74,6 +76,10 @@ export function HomePage() {
 
       if (draftsResult.status === 'rejected') {
         console.error(getApiErrorMessage(draftsResult.reason, 'Không tải được đơn hàng'));
+      }
+
+      if (reservationsResult.status === 'rejected') {
+        console.error(getApiErrorMessage(reservationsResult.reason, 'Không tải được đặt trước'));
       }
 
       if (loyaltyResult.status === 'fulfilled') {
@@ -96,6 +102,17 @@ export function HomePage() {
             (d) =>
               d.status === CUSTOMER_DRAFT_ORDER_STATUS.Sent ||
               d.status === CUSTOMER_DRAFT_ORDER_STATUS.Confirmed,
+          ).length,
+        );
+      }
+
+      if (reservationsResult.status === 'fulfilled') {
+        setActiveReservationCount(
+          reservationsResult.value.filter(
+            (r) =>
+              r.status === CUSTOMER_RESERVATION_STATUS.Pending ||
+              r.status === CUSTOMER_RESERVATION_STATUS.Confirmed ||
+              r.status === CUSTOMER_RESERVATION_STATUS.Ready,
           ).length,
         );
       }
@@ -186,6 +203,19 @@ export function HomePage() {
                     Chạm để thêm lịch nhắc
                   </Typography.Text>
                 )}
+              </TappableHomeCard>
+            </Col>
+            <Col span={24}>
+              <TappableHomeCard title="Đặt thuốc trước khi có hàng" onClick={() => navigate('/reservations')}>
+                <Statistic
+                  title="Đặt thuốc trước"
+                  value={activeReservationCount}
+                  suffix="yêu cầu"
+                  valueStyle={{ fontSize: 22, color: '#b45309' }}
+                />
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  Chạm để gửi danh sách thuốc cần đặt
+                </Typography.Text>
               </TappableHomeCard>
             </Col>
           </Row>

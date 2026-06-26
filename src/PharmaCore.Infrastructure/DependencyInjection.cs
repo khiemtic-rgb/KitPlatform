@@ -81,6 +81,9 @@ public static class DependencyInjection
         services.AddScoped<CustomerAddressRepository>();
         services.AddScoped<ICustomerAddressService, CustomerAddressService>();
 
+        services.AddScoped<CustomerReservationRepository>();
+        services.AddScoped<ICustomerReservationService, CustomerReservationService>();
+
         services.AddScoped<LoyaltyAdminRepository>();
         services.AddScoped<LoyaltyPosService>();
         services.AddScoped<VoucherRepository>();

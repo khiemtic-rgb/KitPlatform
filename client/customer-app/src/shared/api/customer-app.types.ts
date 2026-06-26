@@ -313,6 +313,73 @@ export interface CustomerAddress {
   isDefault: boolean;
 }
 
+export const CUSTOMER_RESERVATION_STATUS = {
+  Pending: 1,
+  Confirmed: 2,
+  Ready: 3,
+  Collected: 4,
+  Cancelled: 5,
+  Rejected: 6,
+} as const;
+
+export const CUSTOMER_RESERVATION_STATUS_LABELS: Record<number, string> = {
+  1: 'Chờ xác nhận',
+  2: 'Đã xác nhận',
+  3: 'Sẵn sàng lấy thuốc',
+  4: 'Đã lấy thuốc',
+  5: 'Đã hủy',
+  6: 'Từ chối',
+};
+
+export const CUSTOMER_RESERVATION_FULFILLMENT = {
+  Pickup: 1,
+  Delivery: 2,
+} as const;
+
+export const CUSTOMER_RESERVATION_FULFILLMENT_LABELS: Record<number, string> = {
+  1: 'Đến quầy lấy',
+  2: 'Giao tận nơi',
+};
+
+export interface CustomerReservationLine {
+  id: string;
+  lineNumber: number;
+  productId: string;
+  productCode: string;
+  productName: string;
+  unitName: string;
+  quantity: number;
+  customerNote?: string | null;
+}
+
+export interface CustomerReservationListItem {
+  id: string;
+  reservationNumber: string;
+  status: number;
+  fulfillmentType: number;
+  itemCount: number;
+  submittedAt: string;
+  readyAt?: string | null;
+}
+
+export interface CustomerReservationDetail {
+  id: string;
+  reservationNumber: string;
+  status: number;
+  fulfillmentType: number;
+  addressId?: string | null;
+  addressSummary?: string | null;
+  notes?: string | null;
+  staffNotes?: string | null;
+  submittedAt: string;
+  confirmedAt?: string | null;
+  readyAt?: string | null;
+  collectedAt?: string | null;
+  salesOrderId?: string | null;
+  salesOrderNumber?: string | null;
+  items: CustomerReservationLine[];
+}
+
 export const LOYALTY_TX_LABELS: Record<number, string> = {
   1: 'Tích điểm',
   2: 'Đổi điểm',
