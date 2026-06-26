@@ -17,7 +17,7 @@ import { fetchDashboardOverview } from '@/shared/api/dashboard.api';
 import type { DashboardOverview } from '@/shared/api/dashboard.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
-import { formatDisplayMoney, formatDisplayQuantity } from '@/shared/utils/money';
+import { formatDisplayMoney } from '@/shared/utils/money';
 
 interface KpiCardProps {
   title: string;
@@ -126,6 +126,15 @@ export function DashboardPage() {
               </Col>
               <Col xs={24} sm={12} lg={8}>
                 <KpiCard
+                  title="Khách hàng"
+                  value={catalog?.customerCount ?? '—'}
+                  prefix={<TeamOutlined />}
+                  hint="Hồ sơ CRM"
+                  to="/customer/list"
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={8}>
+                <KpiCard
                   title="Đơn app chờ xử lý"
                   value={o2o?.draftOrdersAwaitingCount ?? '—'}
                   prefix={<TeamOutlined />}
@@ -154,7 +163,6 @@ export function DashboardPage() {
                     title="Sản phẩm"
                     value={catalog?.productCount ?? '—'}
                     prefix={<MedicineBoxOutlined />}
-                    hint={`${formatDisplayQuantity(catalog?.customerCount)} khách hàng`}
                     to="/catalog/products"
                   />
                 </Col>

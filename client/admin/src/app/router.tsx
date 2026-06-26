@@ -96,9 +96,6 @@ const SalesShiftReportPage = lazy(() =>
 const CustomerChatPage = lazy(() =>
   import('@/modules/sales/CustomerChatPage').then((m) => ({ default: m.CustomerChatPage })),
 );
-const CustomerConsentPage = lazy(() =>
-  import('@/modules/sales/CustomerConsentPage').then((m) => ({ default: m.CustomerConsentPage })),
-);
 const ReceiptSettingsPage = lazy(() =>
   import('@/modules/sales/ReceiptSettingsPage').then((m) => ({ default: m.ReceiptSettingsPage })),
 );
@@ -107,6 +104,27 @@ const LoyaltySettingsPage = lazy(() =>
 );
 const VoucherListPage = lazy(() =>
   import('@/modules/sales/VoucherListPage').then((m) => ({ default: m.VoucherListPage })),
+);
+const CustomerLayout = lazy(() =>
+  import('@/modules/customer/CustomerLayout').then((m) => ({ default: m.CustomerLayout })),
+);
+const CustomerListPage = lazy(() =>
+  import('@/modules/customer/CustomerListPage').then((m) => ({ default: m.CustomerListPage })),
+);
+const CustomerDetailPage = lazy(() =>
+  import('@/modules/customer/CustomerDetailPage').then((m) => ({ default: m.CustomerDetailPage })),
+);
+const SystemLayout = lazy(() =>
+  import('@/modules/system/SystemLayout').then((m) => ({ default: m.SystemLayout })),
+);
+const UserListPage = lazy(() =>
+  import('@/modules/system/UserListPage').then((m) => ({ default: m.UserListPage })),
+);
+const RoleListPage = lazy(() =>
+  import('@/modules/system/RoleListPage').then((m) => ({ default: m.RoleListPage })),
+);
+const BranchListPage = lazy(() =>
+  import('@/modules/system/BranchListPage').then((m) => ({ default: m.BranchListPage })),
 );
 
 function RouteFallback() {
@@ -222,11 +240,36 @@ export function AppRouter() {
                 <Route path="customer-reservations" element={<CustomerReservationListPage />} />
                 <Route path="returns" element={<SalesReturnListPage />} />
                 <Route path="shift" element={<SalesShiftReportPage />} />
-                <Route path="customers" element={<CustomerConsentPage />} />
+                <Route path="customers" element={<Navigate to="/customer/list" replace />} />
                 <Route path="chat" element={<CustomerChatPage />} />
                 <Route path="loyalty" element={<LoyaltySettingsPage />} />
                 <Route path="vouchers" element={<VoucherListPage />} />
                 <Route path="settings" element={<ReceiptSettingsPage />} />
+              </Route>
+              <Route
+                path="customer"
+                element={
+                  <SuspenseRoute>
+                    <CustomerLayout />
+                  </SuspenseRoute>
+                }
+              >
+                <Route index element={<Navigate to="/customer/list" replace />} />
+                <Route path="list" element={<CustomerListPage />} />
+                <Route path=":customerId" element={<CustomerDetailPage />} />
+              </Route>
+              <Route
+                path="system"
+                element={
+                  <SuspenseRoute>
+                    <SystemLayout />
+                  </SuspenseRoute>
+                }
+              >
+                <Route index element={<Navigate to="/system/users" replace />} />
+                <Route path="users" element={<UserListPage />} />
+                <Route path="roles" element={<RoleListPage />} />
+                <Route path="branches" element={<BranchListPage />} />
               </Route>
             </Route>
           </Route>

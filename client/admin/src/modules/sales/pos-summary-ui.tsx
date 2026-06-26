@@ -33,15 +33,6 @@ const amountBoxStyle: CSSProperties = {
   display: 'inline-block',
 };
 
-const controlBoxStyle: CSSProperties = {
-  ...amountBoxStyle,
-  padding: '1px 4px',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 2,
-  background: '#fff',
-};
-
 type SummaryMoneyProps = {
   value: string;
   danger?: boolean;
@@ -122,12 +113,12 @@ export function PosSummaryOrderDiscountRow({
   return (
     <div style={summaryRowStyle}>
       {label}
-      <Space.Compact style={controlBoxStyle}>
+      <Space.Compact>
         <Select
           allowClear
           size="small"
           placeholder="—"
-          style={{ width: 68 }}
+          style={{ width: 72 }}
           disabled={disabled}
           value={discountType}
           onChange={onTypeChange}
@@ -140,12 +131,12 @@ export function PosSummaryOrderDiscountRow({
           {...(discountType === SALES_DISCOUNT_TYPES.Fixed
             ? {
                 ...moneyInputNumberPropsAllowZeroSuffix,
-                style: { ...moneyInputNumberStyle, width: 96, border: 'none', boxShadow: 'none' },
+                style: { ...moneyInputNumberStyle, width: 96 },
               }
             : {
                 min: 0,
                 max: 100,
-                style: { ...moneyInputNumberStyle, width: 56, border: 'none', boxShadow: 'none' },
+                style: { ...moneyInputNumberStyle, width: 56 },
               })}
           onChange={(v) => onValueChange(Number(v ?? 0))}
         />

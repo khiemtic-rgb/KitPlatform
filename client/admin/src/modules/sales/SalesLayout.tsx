@@ -20,8 +20,6 @@ import {
 
   RollbackOutlined,
 
-  SafetyCertificateOutlined,
-
   SettingOutlined,
 
   ShopOutlined,
@@ -59,18 +57,6 @@ import {
 
 
 const settingsTabs = [
-
-  {
-
-    key: 'customers',
-
-    label: 'Đồng ý KH',
-
-    path: '/sales/customers',
-
-    icon: <SafetyCertificateOutlined />,
-
-  },
 
   {
 

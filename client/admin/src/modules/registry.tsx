@@ -6,9 +6,10 @@ import {
   TeamOutlined,
   InboxOutlined,
   ShopOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 
-export type ModuleKey = 'dashboard' | 'catalog' | 'inventory' | 'procurement' | 'sales' | 'customer';
+export type ModuleKey = 'dashboard' | 'catalog' | 'inventory' | 'procurement' | 'sales' | 'customer' | 'system';
 
 export interface ModuleMenuItem {
   key: ModuleKey;
@@ -25,7 +26,8 @@ export const moduleRegistry: ModuleMenuItem[] = [
   { key: 'inventory', label: 'Kho hàng', path: '/inventory', icon: <InboxOutlined />, enabled: true },
   { key: 'procurement', label: 'Mua hàng', path: '/procurement', icon: <ShoppingOutlined />, enabled: true },
   { key: 'sales', label: 'Bán hàng', path: '/sales', icon: <ShopOutlined />, enabled: true },
-  { key: 'customer', label: 'Khách hàng', path: '/customer', icon: <TeamOutlined />, enabled: false },
+  { key: 'customer', label: 'Khách hàng', path: '/customer', icon: <TeamOutlined />, enabled: true },
+  { key: 'system', label: 'Hệ thống', path: '/system', icon: <SettingOutlined />, enabled: true },
 ];
 
 export function buildMenuItems() {

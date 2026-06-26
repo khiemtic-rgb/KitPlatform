@@ -52,7 +52,7 @@ function normalizeProductListItem(item: ProductListItem & Record<string, unknown
     primaryBarcode: (item.primaryBarcode ?? item.PrimaryBarcode) as string | undefined,
     retailPrice: (item.retailPrice ?? item.RetailPrice) as number | undefined,
     primaryImageUrl: (item.primaryImageUrl ?? item.PrimaryImageUrl) as string | undefined,
-    saleUnitName: (item.saleUnitName ?? item.SaleUnitName) as string | undefined,
+    saleUnitName: String(item.saleUnitName ?? item.SaleUnitName ?? ''),
     status: Number(item.status ?? item.Status ?? 1),
   };
 }

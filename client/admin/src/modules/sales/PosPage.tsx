@@ -16,7 +16,7 @@ import {
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { DeleteOutlined, PrinterOutlined, SendOutlined } from '@ant-design/icons';
+import { DeleteOutlined, CreditCardOutlined, ClockCircleOutlined, PlusOutlined, PrinterOutlined, RollbackOutlined, SaveOutlined, SendOutlined, ShoppingCartOutlined, UnorderedListOutlined, UserAddOutlined } from '@ant-design/icons';
 import { fetchWarehouses } from '@/shared/api/inventory.api';
 import type { Warehouse } from '@/shared/api/inventory.types';
 import { createSale, completeDraftSale, fetchBatchModeSettings, fetchOpenShift, fetchPosCustomerLoyalty, fetchPosCustomerVouchers, fetchPosStockBulk, fetchSalesOrder, lookupPosProduct, openSalesShift, previewPosAllocation, searchCustomers, searchPosProducts, updateDraftSale, type TenantBatchModeValue } from '@/shared/api/sales.api';
@@ -83,6 +83,8 @@ import {
 } from '@/shared/api/customer-reservations.api';
 import { loadCustomerReservationCartLines } from '@/modules/sales/customer-reservation-helpers';
 import { buildCustomerDraftOrderPayload } from '@/modules/sales/pos-customer-draft-payload';
+import { CustomerFormDrawer } from '@/modules/customer/CustomerFormDrawer';
+import type { CustomerDetail } from '@/shared/api/customer-admin.types';
 import { CustomerDraftOrderStatusBar } from '@/modules/sales/CustomerDraftOrderStatusBar';
 import { formatDisplayMoney, moneyInputNumberPropsAllowZeroSuffix, moneyInputNumberStyle } from '@/shared/utils/money';
 
@@ -120,6 +122,7 @@ export function PosPage() {
   const [checkoutValidating, setCheckoutValidating] = useState(false);
   const [batchMode, setBatchMode] = useState<TenantBatchModeValue>('suggest');
   const [customerAppDraftMode, setCustomerAppDraftMode] = useState(false);
+  const [quickCustomerOpen, setQuickCustomerOpen] = useState(false);
   const pendingAutoCheckoutRef = useRef(false);
   const [autoCheckoutTick, setAutoCheckoutTick] = useState(0);
 
@@ -290,6 +293,23 @@ export function PosPage() {
       message.error(apiErrorMessage(error, 'Không tải được trạng thái ca'));
     });
   }, [warehouseId, loadOpenShift]);
+
+  const handleQuickCustomerSaved = useCallback((customer: CustomerDetail) => {
+    const listItem: CustomerListItem = {
+      id: customer.id,
+      customerCode: customer.customerCode,
+      fullName: customer.fullName,
+      phone: customer.phone,
+    };
+    setCustomers((prev) => {
+      if (prev.some((row) => row.id === customer.id)) {
+        return prev.map((row) => (row.id === customer.id ? listItem : row));
+      }
+      return [...prev, listItem].sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi'));
+    });
+    setCustomerId(customer.id);
+    message.success(`Đã chọn ${customer.fullName} (${customer.customerCode})`);
+  }, [message]);
 
   useEffect(() => {
     void (async () => {
@@ -1054,7 +1074,7 @@ export function PosPage() {
           message={`Đang sửa đơn tạm ${editingDraftNumber}`}
           description="Thêm/bớt sản phẩm rồi bấm Cập nhật tạm, hoặc Thanh toán để hoàn tất."
           action={
-            <Button size="small" onClick={resetCartAndExitDraft}>
+            <Button size="small" icon={<RollbackOutlined />} onClick={resetCartAndExitDraft}>
               Bỏ sửa
             </Button>
           }
@@ -1068,7 +1088,7 @@ export function PosPage() {
           message="Chưa mở ca cho kho này"
           description="Cần mở ca và nhập quỹ đầu ca trước khi thanh toán đơn bán."
           action={
-            <Button size="small" type="primary" onClick={() => setOpenShiftModal(true)}>
+            <Button size="small" type="primary" icon={<ClockCircleOutlined />} onClick={() => setOpenShiftModal(true)}>
               Mở ca
             </Button>
           }
@@ -1100,6 +1120,7 @@ export function PosPage() {
                   <Button
                     size="small"
                     type="primary"
+                    icon={<ShoppingCartOutlined />}
                     onClick={() => void loadCustomerDraftIntoPos(draft.id, { autoCheckout: true })}
                   >
                     Nạp POS
@@ -1122,9 +1143,9 @@ export function PosPage() {
           description="Soạn giỏ → bấm Gửi khách hàng. Khách xem/xác nhận trên app; thanh toán tại quầy khi khách đến lấy."
         />
       ) : null}
-      <Space wrap style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'flex-start' }}>
         <Select
-          style={{ width: 200 }}
+          style={{ width: 180, flex: '0 0 auto' }}
           placeholder="Kho bán"
           value={warehouseId}
           disabled={!!editingDraftId}
@@ -1135,21 +1156,28 @@ export function PosPage() {
           }}
           options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
         />
-        <Select
-          allowClear={!customerAppDraftMode}
-          showSearch
-          optionFilterProp="label"
-          style={{ width: 220 }}
-          placeholder={customerAppDraftMode ? 'Chọn khách hàng' : 'Khách hàng (tùy chọn)'}
-          value={customerId}
-          onChange={setCustomerId}
-          options={customers.map((c) => ({
-            value: c.id,
-            label: `${c.customerCode} — ${c.fullName}`,
-          }))}
-        />
+        <Space.Compact block style={{ flex: '1 1 340px', minWidth: 320, maxWidth: 520 }}>
+          <Select
+            allowClear={!customerAppDraftMode}
+            showSearch
+            optionFilterProp="label"
+            style={{ width: 'calc(100% - 32px)' }}
+            placeholder={customerAppDraftMode ? 'Chọn khách hàng' : 'Khách hàng (tùy chọn)'}
+            value={customerId}
+            onChange={setCustomerId}
+            options={customers.map((c) => ({
+              value: c.id,
+              label: `${c.customerCode} — ${c.fullName}`,
+            }))}
+          />
+          {canWrite && !editingDraftId ? (
+            <Tooltip title="Thêm khách nhanh">
+              <Button icon={<UserAddOutlined />} onClick={() => setQuickCustomerOpen(true)} />
+            </Tooltip>
+          ) : null}
+        </Space.Compact>
         {!editingDraftId ? (
-          <Space align="center" size={8}>
+          <Space align="center" size={8} style={{ flex: '0 0 auto' }}>
             <Switch
               checked={customerAppDraftMode}
               disabled={!canWrite}
@@ -1163,32 +1191,39 @@ export function PosPage() {
             <Typography.Text>Gửi đơn qua app khách</Typography.Text>
           </Space>
         ) : null}
-        <Space direction="vertical" size={2}>
-          <AutoComplete
-            style={{ width: 320 }}
-            placeholder="Quét mã vạch hoặc gõ mã / tên SP"
-            value={barcode}
-            options={productSearchOptions}
-            onChange={setBarcode}
-            onSelect={(value) => void addByBarcode(String(value))}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void addByBarcode();
-            }}
+        <div style={{ display: 'flex', flex: '1 1 420px', gap: 8, minWidth: 320, alignItems: 'flex-start' }}>
+          <Space direction="vertical" size={2} style={{ flex: 1, minWidth: 0 }}>
+            <AutoComplete
+              style={{ width: '100%' }}
+              placeholder="Quét mã vạch hoặc gõ mã / tên SP"
+              value={barcode}
+              options={productSearchOptions}
+              onChange={setBarcode}
+              onSelect={(value) => void addByBarcode(String(value))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void addByBarcode();
+              }}
+              disabled={!canWrite || !warehouseId || cartLocked}
+              notFoundContent="Không có sản phẩm phù hợp"
+            />
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              {showsBatchLabelField(batchMode)
+                ? 'Quét SP hoặc quét nhãn lô sau khi thêm dòng · Demo SP: '
+                : 'Demo: '}
+              <Typography.Text code>8934567890012</Typography.Text>
+              {showsBatchLabelField(batchMode) ? '' : ' (Paracetamol 500mg)'}
+            </Typography.Text>
+          </Space>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => void addByBarcode()}
             disabled={!canWrite || !warehouseId || cartLocked}
-            notFoundContent="Không có sản phẩm phù hợp"
-          />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {showsBatchLabelField(batchMode)
-              ? 'Quét SP hoặc quét nhãn lô sau khi thêm dòng · Demo SP: '
-              : 'Demo: '}
-            <Typography.Text code>8934567890012</Typography.Text>
-            {showsBatchLabelField(batchMode) ? '' : ' (Paracetamol 500mg)'}
-          </Typography.Text>
-        </Space>
-        <Button type="primary" onClick={() => void addByBarcode()} disabled={!canWrite || !warehouseId || cartLocked}>
-          Thêm
-        </Button>
-      </Space>
+          >
+            Thêm
+          </Button>
+        </div>
+      </div>
 
       <Table rowKey="key" size="small" pagination={false} dataSource={cart} columns={columns} scroll={{ x: 880 }} />
 
@@ -1255,6 +1290,7 @@ export function PosPage() {
               </Tooltip>
             ) : (
               <Button
+                icon={<SaveOutlined />}
                 disabled={!canWrite || cart.length === 0 || draftLoading}
                 loading={saving}
                 onClick={() => void saveDraft()}
@@ -1265,6 +1301,7 @@ export function PosPage() {
             <Button
               type={customerAppDraftMode && !editingDraftId ? 'default' : 'primary'}
               size="large"
+              icon={<CreditCardOutlined />}
               disabled={!canWrite || cart.length === 0 || !openShift || cart.some((l) => l.quantity <= 0)}
               loading={checkoutValidating}
               onClick={() => void openCheckout()}
@@ -1304,7 +1341,7 @@ export function PosPage() {
               >
                 In hóa đơn
               </Button>
-              <Button type="link" onClick={() => navigate('/sales/orders')}>
+              <Button type="link" icon={<UnorderedListOutlined />} onClick={() => navigate('/sales/orders')}>
                 Xem danh sách đơn
               </Button>
             </Space>
@@ -1318,6 +1355,14 @@ export function PosPage() {
         warehouseName={warehouseName}
         onCancel={() => setOpenShiftModal(false)}
         onConfirm={(cash) => handleOpenShift(cash)}
+      />
+
+      <CustomerFormDrawer
+        open={quickCustomerOpen}
+        editing={null}
+        variant="quick"
+        onClose={() => setQuickCustomerOpen(false)}
+        onSaved={handleQuickCustomerSaved}
       />
     </Card>
   );
