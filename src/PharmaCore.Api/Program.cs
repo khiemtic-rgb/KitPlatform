@@ -70,6 +70,7 @@ builder.Services.AddAuthorization(options =>
     options.AddSalesAuthorization();
     options.AddCustomerAppAuthorization();
     options.AddDashboardAuthorization();
+    options.AddIdentityAuthorization();
 });
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 

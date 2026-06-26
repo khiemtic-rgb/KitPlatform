@@ -8,6 +8,7 @@ using PharmaCore.Application.Customers;
 using PharmaCore.Application.Dashboard;
 using PharmaCore.Application.Inventory;
 using PharmaCore.Application.Loyalty;
+using PharmaCore.Application.Identity;
 using PharmaCore.Application.Integration;
 using PharmaCore.Application.Procurement;
 using PharmaCore.Application.Sales;
@@ -17,6 +18,7 @@ using PharmaCore.Infrastructure.Catalog;
 using PharmaCore.Infrastructure.Configuration;
 using PharmaCore.Infrastructure.Customers;
 using PharmaCore.Infrastructure.Dashboard;
+using PharmaCore.Infrastructure.Identity;
 using PharmaCore.Infrastructure.Integration;
 using PharmaCore.Infrastructure.Inventory;
 using PharmaCore.Infrastructure.Loyalty;
@@ -132,6 +134,10 @@ public static class DependencyInjection
 
         services.AddScoped<CustomerConsentRepository>();
         services.AddScoped<ICustomerConsentService, CustomerConsentService>();
+        services.AddScoped<CustomerAdminRepository>();
+        services.AddScoped<ICustomerAdminService, CustomerAdminService>();
+        services.AddScoped<IdentityAdminRepository>();
+        services.AddScoped<IIdentityAdminService, IdentityAdminService>();
 
         services.AddScoped<ProcurementRepository>();
         services.AddScoped<AuditLogRepository>();
