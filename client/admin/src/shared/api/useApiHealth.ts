@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
+import { apiPath } from '@/shared/api/api-base';
 
-const HEALTH_URL = '/api/health';
+const HEALTH_URL = apiPath('/api/health');
 const POLL_ONLINE_MS = 15_000;
 const POLL_OFFLINE_MS = 5_000;
 

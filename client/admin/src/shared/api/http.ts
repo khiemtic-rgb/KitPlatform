@@ -1,9 +1,10 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/shared/auth/auth.store';
 import type { LoginResponse } from '@/shared/api/types';
+import { apiPath } from '@/shared/api/api-base';
 
 export const http = axios.create({
-  baseURL: '/api',
+  baseURL: apiPath('/api'),
   headers: { 'Content-Type': 'application/json' },
   timeout: 30_000,
   paramsSerializer: {
@@ -67,7 +68,7 @@ async function refreshAccessToken(): Promise<string | null> {
 
   try {
     const { data } = await axios.post<LoginResponse>(
-      '/api/auth/refresh',
+      apiPath('/api/auth/refresh'),
       { refreshToken },
       { timeout: 10_000 },
     );

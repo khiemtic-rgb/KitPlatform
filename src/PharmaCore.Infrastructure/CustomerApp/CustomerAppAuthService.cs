@@ -11,6 +11,7 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
     private readonly CustomerAppAuthRepository _repo;
     private readonly CustomerAppJwtTokenService _tokens;
     private readonly CustomerAppAuthSettings _settings;
+    private readonly ICustomerOtpSender _otpSender;
     private readonly IHostEnvironment _env;
     private readonly ILogger<CustomerAppAuthService> _logger;
 
@@ -18,12 +19,14 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
         CustomerAppAuthRepository repo,
         CustomerAppJwtTokenService tokens,
         IOptions<CustomerAppAuthSettings> settings,
+        ICustomerOtpSender otpSender,
         IHostEnvironment env,
         ILogger<CustomerAppAuthService> logger)
     {
         _repo = repo;
         _tokens = tokens;
         _settings = settings.Value;
+        _otpSender = otpSender;
         _env = env;
         _logger = logger;
     }
@@ -68,17 +71,27 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
             expiresAt,
             cancellationToken);
 
-        _logger.LogInformation(
-            "Customer OTP for {Phone} (tenant {Tenant}, account {AccountId}): {Code}",
+        await _otpSender.SendOtpAsync(
             phone,
             tenant.TenantCode,
-            account.AccountId,
-            _env.IsDevelopment() ? code : "(hidden)");
+            code,
+            _settings.OtpExpireMinutes,
+            cancellationToken);
+
+        _logger.LogInformation(
+            "Customer OTP requested for {Phone} (tenant {Tenant}, account {AccountId})",
+            phone,
+            tenant.TenantCode,
+            account.AccountId);
+
+        var message = _env.IsDevelopment()
+            ? "Đã gửi mã OTP (dev: xem log API hoặc dùng mã bypass)."
+            : "Đã gửi mã OTP qua SMS. Vui lòng kiểm tra tin nhắn.";
 
         return new CustomerOtpSentResponse(
             _settings.OtpExpireMinutes * 60,
             _settings.OtpCooldownSeconds,
-            "Đã gửi mã OTP (demo: xem log API khi chạy Development).");
+            message);
     }
 
     public async Task<CustomerLoginResponse?> VerifyOtpAsync(

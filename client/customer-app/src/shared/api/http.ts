@@ -1,9 +1,10 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/shared/auth/auth.store';
 import type { CustomerLoginResponse } from '@/shared/api/customer-app.types';
+import { apiPath } from '@/shared/api/api-base';
 
 export const http = axios.create({
-  baseURL: '/api/customer-app',
+  baseURL: apiPath('/api/customer-app'),
   headers: { 'Content-Type': 'application/json' },
   timeout: 30_000,
 });
@@ -57,7 +58,7 @@ async function refreshAccessToken(): Promise<string | null> {
 
   try {
     const { data } = await axios.post<CustomerLoginResponse>(
-      '/api/customer-app/auth/refresh',
+      apiPath('/api/customer-app/auth/refresh'),
       { refreshToken },
       { timeout: 10_000 },
     );

@@ -1,3 +1,5 @@
+import { apiPath } from '@/shared/api/api-base';
+
 export function subscribeChatSse(url: string | null, onEvent: () => void): () => void {
   if (!url) return () => undefined;
 
@@ -33,9 +35,9 @@ export function subscribeChatSse(url: string | null, onEvent: () => void): () =>
 }
 
 export function buildCustomerChatEventsUrl(accessToken: string) {
-  return `/api/customer-app/chat/events?access_token=${encodeURIComponent(accessToken)}`;
+  return `${apiPath('/api/customer-app/chat/events')}?access_token=${encodeURIComponent(accessToken)}`;
 }
 
 export function buildCustomerDraftOrderEventsUrl(accessToken: string) {
-  return `/api/customer-app/draft-orders/events?access_token=${encodeURIComponent(accessToken)}`;
+  return `${apiPath('/api/customer-app/draft-orders/events')}?access_token=${encodeURIComponent(accessToken)}`;
 }

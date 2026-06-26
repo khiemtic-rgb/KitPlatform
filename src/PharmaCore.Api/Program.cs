@@ -29,6 +29,11 @@ if (string.IsNullOrWhiteSpace(jwtSettings.Secret) || jwtSettings.Secret.Length <
     throw new InvalidOperationException("Jwt:Secret must be at least 32 characters.");
 }
 
+if (!builder.Environment.IsDevelopment())
+{
+    ValidateProductionConfiguration(builder.Configuration, jwtSettings, customerAppAuth);
+}
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -65,7 +70,10 @@ builder.Services.AddAuthorization(options =>
     options.AddSalesAuthorization();
     options.AddCustomerAppAuthorization();
 });
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
+
+var corsSettings = builder.Configuration.GetSection(CorsSettings.SectionName).Get<CorsSettings>()
+    ?? new CorsSettings();
 
 builder.Services.AddCors(options =>
 {
@@ -84,11 +92,19 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            policy.WithOrigins(
-                    "http://localhost:5173",
-                    "http://127.0.0.1:5173",
-                    "http://localhost:5174",
-                    "http://127.0.0.1:5174")
+            var origins = corsSettings.AllowedOrigins
+                .Where(static o => !string.IsNullOrWhiteSpace(o))
+                .Select(static o => o.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            if (origins.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    "Cors:AllowedOrigins phải có ít nhất một origin trong Production.");
+            }
+
+            policy.WithOrigins(origins)
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         }
@@ -275,19 +291,40 @@ static string GetInnermostMessage(Exception ex)
     return ex.Message;
 }
 
-static bool IsDatabaseException(Exception ex)
+static void ValidateProductionConfiguration(
+    IConfiguration configuration,
+    JwtSettings jwtSettings,
+    CustomerAppAuthSettings customerAppAuth)
 {
-    for (var current = ex; current is not null; current = current.InnerException)
+    if (!string.IsNullOrWhiteSpace(customerAppAuth.DevBypassCode))
     {
-        var name = current.GetType().FullName ?? "";
-        if (name.Contains("Npgsql", StringComparison.OrdinalIgnoreCase)
-            || name.Contains("Postgres", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
+        throw new InvalidOperationException(
+            "CustomerAppAuth:DevBypassCode không được dùng trong Production.");
     }
 
-    return false;
+    if (jwtSettings.Secret.Contains("dev-secret", StringComparison.OrdinalIgnoreCase)
+        || jwtSettings.Secret.Contains("change-in-production", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new InvalidOperationException(
+            "Đặt Jwt:Secret mạnh qua biến môi trường Jwt__Secret.");
+    }
+
+    var connectionString = configuration.GetConnectionString("Default");
+    if (string.IsNullOrWhiteSpace(connectionString)
+        || connectionString.Contains("pharmacore_dev", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new InvalidOperationException(
+            "Đặt ConnectionStrings__Default cho database production.");
+    }
+
+    var sms = configuration.GetSection(CustomerAppSmsSettings.SectionName).Get<CustomerAppSmsSettings>()
+        ?? new CustomerAppSmsSettings();
+    if (!sms.Provider.Equals("Http", StringComparison.OrdinalIgnoreCase)
+        || string.IsNullOrWhiteSpace(sms.HttpUrl))
+    {
+        throw new InvalidOperationException(
+            "Production cần CustomerAppSms:Provider=Http và CustomerAppSms:HttpUrl (gateway SMS).");
+    }
 }
 
 public partial class Program;

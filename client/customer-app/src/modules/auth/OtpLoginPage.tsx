@@ -9,7 +9,7 @@ import { useAuthStore } from '@/shared/auth/auth.store';
 export function OtpLoginPage() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [phone, setPhone] = useState('0909123456');
+  const [phone, setPhone] = useState(import.meta.env.DEV ? '0909123456' : '');
   const [tenantCode, setTenantCode] = useState(DEFAULT_TENANT_CODE);
   const setSession = useAuthStore((s) => s.setSession);
   const navigate = useNavigate();
@@ -98,7 +98,10 @@ export function OtpLoginPage() {
           ) : (
             <Form layout="vertical" onFinish={onVerifyOtp}>
               <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
-                Mã gửi tới <strong>{phone}</strong>. Dev: dùng <code>000000</code>
+                Mã gửi tới <strong>{phone}</strong>.
+                {import.meta.env.DEV ? (
+                  <> Dev: dùng <code>000000</code></>
+                ) : null}
               </Typography.Paragraph>
               <Form.Item
                 name="code"
@@ -122,9 +125,11 @@ export function OtpLoginPage() {
             </Form>
           )}
 
-          <Typography.Paragraph type="secondary" style={{ margin: 0, fontSize: 12, textAlign: 'center' }}>
-            Demo: 0909123456 · {DEFAULT_TENANT_CODE}
-          </Typography.Paragraph>
+          {import.meta.env.DEV ? (
+            <Typography.Paragraph type="secondary" style={{ margin: 0, fontSize: 12, textAlign: 'center' }}>
+              Demo: 0909123456 · {DEFAULT_TENANT_CODE}
+            </Typography.Paragraph>
+          ) : null}
         </Space>
       </Card>
     </div>

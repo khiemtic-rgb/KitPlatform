@@ -29,7 +29,10 @@ namespace PharmaCore.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         var connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
@@ -46,6 +49,8 @@ public static class DependencyInjection
         services.AddScoped<AuthRepository>();
         services.AddSingleton<JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
+
+        services.AddCustomerOtpSender(configuration, environment);
 
         services.AddScoped<CustomerAppAuthRepository>();
         services.AddSingleton<CustomerAppJwtTokenService>();
