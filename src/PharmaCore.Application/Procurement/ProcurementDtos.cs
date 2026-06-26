@@ -85,7 +85,8 @@ public sealed record CreatePurchaseOrderRequest(
     Guid WarehouseId,
     DateOnly? ExpectedDate,
     string? Notes,
-    IReadOnlyList<CreatePurchaseOrderItemRequest> Items);
+    IReadOnlyList<CreatePurchaseOrderItemRequest> Items,
+    decimal TaxAmount = 0);
 
 public sealed record UpdatePurchaseOrderItemRequest(
     Guid? Id,
@@ -97,7 +98,8 @@ public sealed record UpdatePurchaseOrderItemRequest(
 public sealed record UpdatePurchaseOrderRequest(
     DateOnly? ExpectedDate,
     string? Notes,
-    IReadOnlyList<UpdatePurchaseOrderItemRequest> Items);
+    IReadOnlyList<UpdatePurchaseOrderItemRequest> Items,
+    decimal TaxAmount = 0);
 
 public sealed record GoodsReceiptListItemDto(
     Guid Id,
@@ -229,3 +231,49 @@ public sealed record GoodsReceiptListFilter(
     Guid? PurchaseOrderId = null,
     Guid? ProductId = null,
     bool IncludeArchived = false);
+
+public sealed record SupplierPayablesAgingBucketsDto(
+    decimal Current,
+    decimal Days31To60,
+    decimal Days61To90,
+    decimal Over90);
+
+public sealed record SupplierPayablesRowDto(
+    Guid SupplierId,
+    string SupplierCode,
+    string SupplierName,
+    int PaymentTerms,
+    decimal TotalPayable,
+    decimal UnappliedCredit,
+    SupplierPayablesAgingBucketsDto Aging,
+    int OpenDocumentCount);
+
+public sealed record SupplierPayablesDetailLineDto(
+    Guid GoodsReceiptId,
+    string GrnNumber,
+    DateTime ReceiptDate,
+    decimal GrnTotal,
+    decimal PaidAmount,
+    decimal Outstanding,
+    int DaysOutstanding);
+
+public sealed record GrnPayableSourceRow(
+    Guid SupplierId,
+    string SupplierCode,
+    string SupplierName,
+    int PaymentTerms,
+    Guid GrnId,
+    string GrnNumber,
+    DateTime ReceiptDate,
+    decimal GrnTotal,
+    decimal GrnLinkedPaid);
+
+public sealed record SupplierPayablesDetailDto(
+    Guid SupplierId,
+    string SupplierCode,
+    string SupplierName,
+    int PaymentTerms,
+    decimal TotalPayable,
+    decimal UnappliedCredit,
+    SupplierPayablesAgingBucketsDto Aging,
+    IReadOnlyList<SupplierPayablesDetailLineDto> Lines);

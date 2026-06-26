@@ -49,6 +49,7 @@ import type {
 import { GRN_STATUS_LABELS, canEditPurchaseOrder } from '@/shared/api/procurement.types';
 import { PurchaseOrderEditDrawer } from '@/modules/procurement/PurchaseOrderEditDrawer';
 import { ProductUnitSelect } from '@/modules/procurement/ProductUnitSelect';
+import { PoUnitPriceField } from '@/modules/procurement/PoUnitPriceField';
 import { PharmaDatePicker, PharmaExpiryPicker } from '@/shared/ui/PharmaDatePicker';
 import { GoodsReceiptFilterBar } from '@/modules/procurement/GoodsReceiptFilterBar';
 import { filterGoodsReceiptsClient } from '@/modules/procurement/procurement-list-filters';
@@ -140,6 +141,7 @@ export function GoodsReceiptListPage() {
   const [saving, setSaving] = useState(false);
   const [poEditOpen, setPoEditOpen] = useState(false);
   const purchaseOrderId = Form.useWatch('purchaseOrderId', form);
+  const supplierId = Form.useWatch('supplierId', form);
 
   const loadMasterData = useCallback(async () => {
     const [sup, wh, prod, pos, pendingPos] = await Promise.all([
@@ -548,16 +550,25 @@ export function GoodsReceiptListPage() {
         title: 'Giá vốn',
         width: 120,
         align: 'right',
-        render: (_, field) => (
-          <Form.Item
-            {...field}
-            name={[field.name, 'unitCost']}
-            rules={[{ required: true }]}
-            style={{ marginBottom: 0 }}
-          >
-            <InputNumber {...moneyInputNumberPropsAllowZero} style={moneyInputNumberStyle} placeholder="0" />
-          </Form.Item>
-        ),
+        render: (_, field) => {
+          const productId = form.getFieldValue(['items', field.name, 'productId']) as string | undefined;
+          return (
+            <Form.Item
+              {...field}
+              name={[field.name, 'unitCost']}
+              rules={[{ required: true }]}
+              style={{ marginBottom: 0 }}
+            >
+              <PoUnitPriceField
+                supplierId={supplierId}
+                productId={productId}
+                form={form}
+                fieldName={field.name}
+                valueFieldName="unitCost"
+              />
+            </Form.Item>
+          );
+        },
       },
       {
         title: '',
@@ -667,7 +678,13 @@ export function GoodsReceiptListPage() {
                   rules={[{ required: true }]}
                   style={{ flex: '0 0 120px', marginBottom: 0 }}
                 >
-                  <InputNumber {...moneyInputNumberPropsAllowZero} style={moneyInputNumberStyle} placeholder="0" />
+                  <PoUnitPriceField
+                    supplierId={supplierId}
+                    productId={productId}
+                    form={form}
+                    fieldName={field.name}
+                    valueFieldName="unitCost"
+                  />
                 </Form.Item>
                 <Form.Item label=" " colon={false} style={{ flex: '0 0 auto', marginBottom: 0 }}>
                   <Button type="link" danger onClick={() => remove(field.name)}>

@@ -66,6 +66,7 @@ export function PurchaseOrderEditDrawer({
           warehouseId: po.warehouseId,
           expectedDate: po.expectedDate ?? undefined,
           notes: po.notes,
+          taxAmount: po.taxAmount,
           items: po.items.map((line) => ({
             id: line.id,
             receivedQty: line.receivedQty,
@@ -99,6 +100,7 @@ export function PurchaseOrderEditDrawer({
       const updated = await updatePurchaseOrder(poId, {
         expectedDate: values.expectedDate || undefined,
         notes: values.notes,
+        taxAmount: Number(values.taxAmount ?? 0),
         items: (values.items as PoEditLineForm[]).map((line) => ({
           id: line.id,
           productId: line.productId,
@@ -153,6 +155,9 @@ export function PurchaseOrderEditDrawer({
           </div>
           <Form.Item name="notes" label="Ghi chú">
             <Input.TextArea rows={2} placeholder="VD: Điều chỉnh theo xác nhận Zalo..." />
+          </Form.Item>
+          <Form.Item name="taxAmount" label="Thuế / VAT">
+            <InputNumber min={0} style={{ width: 200 }} />
           </Form.Item>
           <Form.List name="items">
             {(fields, { add, remove }) => (

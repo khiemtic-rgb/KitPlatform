@@ -202,6 +202,7 @@ export async function createPurchaseOrder(payload: {
   warehouseId: string;
   expectedDate?: string;
   notes?: string;
+  taxAmount?: number;
   items: { productId: string; productUnitId: string; orderedQty: number; unitPrice: number }[];
 }): Promise<PurchaseOrderDetail> {
   const { data } = await http.post<Record<string, unknown>>('/procurement/purchase-orders', payload);
@@ -213,6 +214,7 @@ export async function updatePurchaseOrder(
   payload: {
     expectedDate?: string;
     notes?: string;
+    taxAmount?: number;
     items: {
       id?: string;
       productId: string;
@@ -406,4 +408,49 @@ export async function postSupplierPayment(id: string): Promise<SupplierPaymentLi
 export async function cancelSupplierPayment(id: string): Promise<SupplierPaymentListItem> {
   const { data } = await http.post<Record<string, unknown>>(`/procurement/supplier-payments/${id}/cancel`);
   return normalizePayment(data);
+}
+
+function normalizePayablesAging(row: Record<string, unknown>) {
+  const aging = (row.aging ?? row.Aging ?? {}) as Record<string, unknown>;
+  return {
+    current: Number(aging.current ?? aging.Current ?? 0),
+    days31To60: Number(aging.days31To60 ?? aging.Days31To60 ?? 0),
+    days61To90: Number(aging.days61To90 ?? aging.Days61To90 ?? 0),
+    over90: Number(aging.over90 ?? aging.Over90 ?? 0),
+  };
+}
+
+function normalizePayablesRow(row: Record<string, unknown>) {
+  return {
+    supplierId: String(row.supplierId ?? row.SupplierId),
+    supplierCode: String(row.supplierCode ?? row.SupplierCode ?? ''),
+    supplierName: String(row.supplierName ?? row.SupplierName ?? ''),
+    paymentTerms: Number(row.paymentTerms ?? row.PaymentTerms ?? 30),
+    totalPayable: Number(row.totalPayable ?? row.TotalPayable ?? 0),
+    unappliedCredit: Number(row.unappliedCredit ?? row.UnappliedCredit ?? 0),
+    aging: normalizePayablesAging(row),
+    openDocumentCount: Number(row.openDocumentCount ?? row.OpenDocumentCount ?? 0),
+  };
+}
+
+export async function fetchSupplierPayables() {
+  const { data } = await http.get<Record<string, unknown>[]>('/procurement/supplier-payables');
+  return data.map((row) => normalizePayablesRow(row));
+}
+
+export async function fetchSupplierPayablesDetail(supplierId: string) {
+  const { data } = await http.get<Record<string, unknown>>(`/procurement/supplier-payables/${supplierId}`);
+  const lines = ((data.lines ?? data.Lines ?? []) as Record<string, unknown>[]).map((line) => ({
+    goodsReceiptId: String(line.goodsReceiptId ?? line.GoodsReceiptId),
+    grnNumber: String(line.grnNumber ?? line.GrnNumber ?? ''),
+    receiptDate: String(line.receiptDate ?? line.ReceiptDate ?? ''),
+    grnTotal: Number(line.grnTotal ?? line.GrnTotal ?? 0),
+    paidAmount: Number(line.paidAmount ?? line.PaidAmount ?? 0),
+    outstanding: Number(line.outstanding ?? line.Outstanding ?? 0),
+    daysOutstanding: Number(line.daysOutstanding ?? line.DaysOutstanding ?? 0),
+  }));
+  return {
+    ...normalizePayablesRow(data),
+    lines,
+  };
 }

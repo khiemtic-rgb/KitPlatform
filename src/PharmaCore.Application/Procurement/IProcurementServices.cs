@@ -52,3 +52,9 @@ public interface ISupplierPaymentService
     Task<SupplierPaymentListItemDto?> PostAsync(Guid id, CancellationToken cancellationToken = default);
     Task<SupplierPaymentListItemDto?> CancelAsync(Guid id, CancellationToken cancellationToken = default);
 }
+
+public interface ISupplierPayablesService
+{
+    Task<IReadOnlyList<SupplierPayablesRowDto>> GetSummaryAsync(CancellationToken cancellationToken = default);
+    Task<SupplierPayablesDetailDto?> GetDetailAsync(Guid supplierId, CancellationToken cancellationToken = default);
+}

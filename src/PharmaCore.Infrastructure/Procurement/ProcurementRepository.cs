@@ -176,6 +176,9 @@ internal sealed class ProcurementRepository
         foreach (var item in request.Items)
             subtotal += item.OrderedQty * item.UnitPrice;
 
+        var taxAmount = Math.Max(0, request.TaxAmount);
+        var totalAmount = subtotal + taxAmount;
+
         const string headerSql = """
             INSERT INTO purchase_orders (
                 tenant_id, po_number, supplier_id, warehouse_id, expected_date,
@@ -183,7 +186,7 @@ internal sealed class ProcurementRepository
             )
             VALUES (
                 @TenantId, @PoNumber, @SupplierId, @WarehouseId, @ExpectedDate,
-                @Status, @Subtotal, 0, @TotalAmount, @Notes, @CreatedBy
+                @Status, @Subtotal, @TaxAmount, @TotalAmount, @Notes, @CreatedBy
             )
             RETURNING id
             """;
@@ -196,7 +199,8 @@ internal sealed class ProcurementRepository
             request.ExpectedDate,
             Status = PurchaseOrderStatuses.Draft,
             Subtotal = subtotal,
-            TotalAmount = subtotal,
+            TaxAmount = taxAmount,
+            TotalAmount = totalAmount,
             request.Notes,
             CreatedBy = createdBy,
         }, tx);
@@ -346,9 +350,11 @@ internal sealed class ProcurementRepository
         const string updateHeaderSql = """
             UPDATE purchase_orders SET
                 expected_date = @ExpectedDate, notes = @Notes,
-                subtotal = @Subtotal, total_amount = @TotalAmount, updated_at = NOW()
+                subtotal = @Subtotal, tax_amount = @TaxAmount,
+                total_amount = @TotalAmount, updated_at = NOW()
             WHERE id = @Id AND tenant_id = @TenantId AND deleted_at IS NULL
             """;
+        var taxAmount = Math.Max(0, request.TaxAmount);
         await conn.ExecuteAsync(updateHeaderSql, new
         {
             Id = id,
@@ -356,7 +362,8 @@ internal sealed class ProcurementRepository
             request.ExpectedDate,
             request.Notes,
             Subtotal = subtotal,
-            TotalAmount = subtotal,
+            TaxAmount = taxAmount,
+            TotalAmount = subtotal + taxAmount,
         }, tx);
 
         await tx.CommitAsync(cancellationToken);
@@ -1210,6 +1217,81 @@ internal sealed class ProcurementRepository
             CancelledBy = cancelledBy,
         });
         return rows > 0;
+    }
+
+    public async Task<IReadOnlyList<GrnPayableSourceRow>> GetGrnPayableSourceRowsAsync(CancellationToken cancellationToken)
+    {
+        const string sql = """
+            WITH grn_totals AS (
+                SELECT
+                    gr.id AS GrnId,
+                    gr.supplier_id AS SupplierId,
+                    s.supplier_code AS SupplierCode,
+                    s.supplier_name AS SupplierName,
+                    s.payment_terms AS PaymentTerms,
+                    gr.grn_number AS GrnNumber,
+                    gr.receipt_date AS ReceiptDate,
+                    COALESCE(SUM(gri.line_total), 0) AS GrnTotal
+                FROM goods_receipts gr
+                INNER JOIN suppliers s ON s.id = gr.supplier_id
+                INNER JOIN goods_receipt_items gri ON gri.goods_receipt_id = gr.id
+                WHERE gr.tenant_id = @TenantId
+                  AND gr.status = @GrnCompleted
+                  AND gr.deleted_at IS NULL
+                  AND s.deleted_at IS NULL
+                GROUP BY gr.id, gr.supplier_id, s.supplier_code, s.supplier_name, s.payment_terms, gr.grn_number, gr.receipt_date
+            ),
+            grn_paid AS (
+                SELECT goods_receipt_id AS GrnId, COALESCE(SUM(amount), 0) AS PaidAmount
+                FROM supplier_payments
+                WHERE tenant_id = @TenantId
+                  AND status = @PaymentPosted
+                  AND goods_receipt_id IS NOT NULL
+                GROUP BY goods_receipt_id
+            )
+            SELECT
+                g.SupplierId,
+                g.SupplierCode,
+                g.SupplierName,
+                g.PaymentTerms,
+                g.GrnId,
+                g.GrnNumber,
+                g.ReceiptDate,
+                g.GrnTotal,
+                COALESCE(p.PaidAmount, 0) AS GrnLinkedPaid
+            FROM grn_totals g
+            LEFT JOIN grn_paid p ON p.GrnId = g.GrnId
+            ORDER BY g.SupplierName, g.ReceiptDate, g.GrnNumber
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return (await conn.QueryAsync<GrnPayableSourceRow>(sql, new
+        {
+            TenantId,
+            GrnCompleted = GoodsReceiptStatuses.Completed,
+            PaymentPosted = SupplierPaymentStatuses.Posted,
+        })).ToList();
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, decimal>> GetUnlinkedSupplierPaymentTotalsAsync(
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT supplier_id AS SupplierId, COALESCE(SUM(amount), 0) AS TotalPaid
+            FROM supplier_payments
+            WHERE tenant_id = @TenantId
+              AND status = @PaymentPosted
+              AND goods_receipt_id IS NULL
+            GROUP BY supplier_id
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<(Guid SupplierId, decimal TotalPaid)>(sql, new
+        {
+            TenantId,
+            PaymentPosted = SupplierPaymentStatuses.Posted,
+        });
+        return rows.ToDictionary(x => x.SupplierId, x => x.TotalPaid);
     }
 
     public async Task<bool> WarehouseExistsAsync(Guid warehouseId, CancellationToken cancellationToken) =>

@@ -178,6 +178,7 @@ export function PurchaseOrderListPage() {
         warehouseId: values.warehouseId,
         expectedDate: values.expectedDate || undefined,
         notes: values.notes,
+        taxAmount: Number(values.taxAmount ?? 0),
         items: (values.items as PoLineForm[]).map((i) => ({
           productId: i.productId,
           productUnitId: i.productUnitId,
@@ -445,6 +446,9 @@ export function PurchaseOrderListPage() {
           <Form.Item name="notes" label="Ghi chú">
             <Input.TextArea rows={2} />
           </Form.Item>
+          <Form.Item name="taxAmount" label="Thuế / VAT" initialValue={0}>
+            <InputNumber min={0} style={{ width: 200 }} formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} />
+          </Form.Item>
           <Form.List name="items">
             {(fields, { add, remove }) => (
               <>
@@ -593,6 +597,8 @@ export function PurchaseOrderListPage() {
               <Descriptions.Item label="Trạng thái">
                 <Tag color={PO_STATUS_TAG[detail.status] ?? 'default'}>{PO_STATUS_LABELS[detail.status]}</Tag>
               </Descriptions.Item>
+              <Descriptions.Item label="Tạm tính">{formatDisplayMoney(detail.subtotal)}</Descriptions.Item>
+              <Descriptions.Item label="Thuế">{formatDisplayMoney(detail.taxAmount)}</Descriptions.Item>
               <Descriptions.Item label="Tổng">{formatDisplayMoney(detail.totalAmount)}</Descriptions.Item>
             </Descriptions>
             <Table

@@ -65,6 +65,11 @@ const GoodsReceiptListPage = lazy(() =>
 const SupplierListPage = lazy(() =>
   import('@/modules/procurement/SupplierListPage').then((m) => ({ default: m.SupplierListPage })),
 );
+const SupplierPayablesPage = lazy(() =>
+  import('@/modules/procurement/SupplierPayablesPage').then((m) => ({
+    default: m.SupplierPayablesPage,
+  })),
+);
 const SupplierPaymentListPage = lazy(() =>
   import('@/modules/procurement/SupplierPaymentListPage').then((m) => ({
     default: m.SupplierPaymentListPage,
@@ -223,6 +228,7 @@ export function AppRouter() {
                 <Route path="purchase-orders" element={<PurchaseOrderListPage />} />
                 <Route path="goods-receipts" element={<GoodsReceiptListPage />} />
                 <Route path="suppliers" element={<SupplierListPage />} />
+                <Route path="supplier-payables" element={<SupplierPayablesPage />} />
                 <Route path="supplier-payments" element={<SupplierPaymentListPage />} />
               </Route>
               <Route

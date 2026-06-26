@@ -13,6 +13,7 @@ interface PoUnitPriceFieldProps {
   form: FormInstance;
   fieldName: number;
   disabled?: boolean;
+  valueFieldName?: 'unitPrice' | 'unitCost';
 }
 
 export function PoUnitPriceField({
@@ -23,6 +24,7 @@ export function PoUnitPriceField({
   form,
   fieldName,
   disabled,
+  valueFieldName = 'unitPrice',
 }: PoUnitPriceFieldProps) {
   const [hint, setHint] = useState<LastPurchasePriceHint | null>(null);
 
@@ -41,9 +43,9 @@ export function PoUnitPriceField({
           return;
         }
         setHint(h);
-        const current = form.getFieldValue(['items', fieldName, 'unitPrice']);
+        const current = form.getFieldValue(['items', fieldName, valueFieldName]);
         if (current === 0 || current === undefined || current === null) {
-          form.setFieldValue(['items', fieldName, 'unitPrice'], h.unitPrice);
+          form.setFieldValue(['items', fieldName, valueFieldName], h.unitPrice);
         }
       })
       .catch(() => {

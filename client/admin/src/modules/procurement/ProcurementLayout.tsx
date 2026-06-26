@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Tabs } from 'antd';
 import {
+  AccountBookOutlined,
   ContainerOutlined,
   CreditCardOutlined,
   FileTextOutlined,
@@ -27,6 +28,12 @@ const tabs = [
     icon: <ContainerOutlined />,
   },
   { key: 'suppliers', label: 'Nhà cung cấp', path: '/procurement/suppliers', icon: <TeamOutlined /> },
+  {
+    key: 'payables',
+    label: 'Công nợ NCC',
+    path: '/procurement/supplier-payables',
+    icon: <AccountBookOutlined />,
+  },
   {
     key: 'payments',
     label: 'Thanh toán NCC',

@@ -66,6 +66,45 @@ export interface SupplierPaymentListFilters {
   dateTo?: string;
 }
 
+export type SupplierPayablesAging = {
+  current: number;
+  days31To60: number;
+  days61To90: number;
+  over90: number;
+};
+
+export type SupplierPayablesRow = {
+  supplierId: string;
+  supplierCode: string;
+  supplierName: string;
+  paymentTerms: number;
+  totalPayable: number;
+  unappliedCredit: number;
+  aging: SupplierPayablesAging;
+  openDocumentCount: number;
+};
+
+export type SupplierPayablesDetailLine = {
+  goodsReceiptId: string;
+  grnNumber: string;
+  receiptDate: string;
+  grnTotal: number;
+  paidAmount: number;
+  outstanding: number;
+  daysOutstanding: number;
+};
+
+export type SupplierPayablesDetail = {
+  supplierId: string;
+  supplierCode: string;
+  supplierName: string;
+  paymentTerms: number;
+  totalPayable: number;
+  unappliedCredit: number;
+  aging: SupplierPayablesAging;
+  lines: SupplierPayablesDetailLine[];
+};
+
 export type LastPurchasePriceHint = Pick<
   LastPurchasePriceHintDto,
   'unitPrice' | 'priceDate' | 'source' | 'documentNumber'
