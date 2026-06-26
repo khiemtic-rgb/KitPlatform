@@ -23,6 +23,9 @@ const RemindersPage = lazy(() =>
 const ProfilePage = lazy(() =>
   import('@/modules/profile/ProfilePage').then((m) => ({ default: m.ProfilePage })),
 );
+const NotificationsPage = lazy(() =>
+  import('@/modules/profile/NotificationsPage').then((m) => ({ default: m.NotificationsPage })),
+);
 
 function RouteFallback() {
   return (
@@ -105,6 +108,14 @@ export function AppRouter() {
                 element={
                   <SuspenseRoute>
                     <ProfilePage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="notifications"
+                element={
+                  <SuspenseRoute>
+                    <NotificationsPage />
                   </SuspenseRoute>
                 }
               />

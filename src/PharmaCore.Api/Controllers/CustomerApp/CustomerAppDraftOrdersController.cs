@@ -86,6 +86,25 @@ public sealed class CustomerAppDraftOrdersController : ControllerBase
         }
     }
 
+    [HttpPost("{id:guid}/cancel")]
+    [ProducesResponseType(typeof(CustomerDraftOrderDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _draftOrders.CancelForCustomerAsync(
+                _customer.TenantId,
+                _customer.CustomerId,
+                id,
+                cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("events")]
     [Produces("text/event-stream")]
     public async Task Events(CancellationToken cancellationToken)

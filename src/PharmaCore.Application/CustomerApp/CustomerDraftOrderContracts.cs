@@ -176,4 +176,10 @@ public interface ICustomerDraftOrderService
         Guid customerId,
         Guid draftOrderId,
         CancellationToken cancellationToken = default);
+
+    Task<CustomerDraftOrderDto> CancelForCustomerAsync(
+        Guid tenantId,
+        Guid customerId,
+        Guid draftOrderId,
+        CancellationToken cancellationToken = default);
 }

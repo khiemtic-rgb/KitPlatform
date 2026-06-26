@@ -8,6 +8,9 @@ import { useApiHealth } from '@/shared/api/useApiHealth';
 import { useAuthStore } from '@/shared/auth/auth.store';
 import { emitDraftOrderAlerts } from '@/shared/hooks/draft-order-alert-bus';
 import {
+  addCustomerNotification,
+} from '@/shared/notifications/customer-notifications';
+import {
   buildCustomerDraftOrderEventsUrl,
   subscribeChatSse,
 } from '@/shared/hooks/chat-sse';
@@ -35,6 +38,16 @@ function notifyNewDrafts(
   if (drafts.length === 0) return;
 
   emitDraftOrderAlerts(drafts);
+
+  for (const draft of drafts) {
+    addCustomerNotification({
+      kind: 'draft_order',
+      dedupeKey: `draft-sent-${draft.id}`,
+      title: 'Đơn thuốc mới',
+      body: `${draft.draftNumber} — tổng tạm tính ${formatMoney(draft.totalAmount)}.`,
+      href: '/orders',
+    });
+  }
 
   if (onOrdersPage) {
     return;

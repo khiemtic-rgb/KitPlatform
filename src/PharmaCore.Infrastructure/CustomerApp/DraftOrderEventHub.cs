@@ -54,6 +54,14 @@ internal sealed class DraftOrderEventHub : IDraftOrderEventHub
             DraftOrderEventTypes.Confirmed,
             draftNumber));
 
+    public void NotifyCancelled(Guid tenantId, Guid customerId, Guid draftOrderId, string draftNumber) =>
+        Publish(new DraftOrderEventPayload(
+            tenantId,
+            customerId,
+            draftOrderId,
+            DraftOrderEventTypes.Cancelled,
+            draftNumber));
+
     private async IAsyncEnumerable<DraftOrderEventPayload> WatchAsync(
         Func<DraftOrderEventPayload, bool> filter,
         [EnumeratorCancellation] CancellationToken cancellationToken)

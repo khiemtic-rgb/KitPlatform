@@ -257,6 +257,24 @@ internal sealed class CustomerDraftOrderService : ICustomerDraftOrderService
             throw new InvalidOperationException("Không ẩn được đơn hàng.");
     }
 
+    public async Task<CustomerDraftOrderDto> CancelForCustomerAsync(
+        Guid tenantId,
+        Guid customerId,
+        Guid draftOrderId,
+        CancellationToken cancellationToken = default)
+    {
+        var header = await _repo.GetHeaderAsync(tenantId, draftOrderId, cancellationToken);
+        if (header is null || header.CustomerId != customerId)
+            throw new InvalidOperationException("Không tìm thấy đơn hàng.");
+
+        if (!await _repo.MarkCancelledByCustomerAsync(tenantId, customerId, draftOrderId, cancellationToken))
+            throw new InvalidOperationException("Không hủy được đơn hàng (có thể đã hết hạn hoặc đã xử lý).");
+
+        var cancelled = (await GetForCustomerAsync(tenantId, customerId, draftOrderId, cancellationToken))!;
+        _events.NotifyCancelled(tenantId, customerId, draftOrderId, cancelled.DraftNumber);
+        return cancelled;
+    }
+
     private async Task<CustomerDraftOrderListResult> MapListAsync(
         Guid tenantId,
         Guid? customerId,

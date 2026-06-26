@@ -25,6 +25,7 @@ import { BackToHomeButton } from '@/shared/components/BackToHomeButton';
 import { shouldHidePageErrorForOfflineApi } from '@/shared/components/ApiHealthBanner';
 import { useApiHealth, useRetryWhenApiOnline } from '@/shared/api/useApiHealth';
 import { isPushSupported, requestNotificationPermission, subscribePush, unsubscribePush } from '@/shared/push/push-client';
+import { useCustomerNotificationCount } from '@/shared/hooks/useCustomerNotificationCount';
 
 const APP_PUSH_CHANNEL = 4;
 const CARE_REMINDER_PURPOSE = 2;
@@ -134,6 +135,7 @@ export function ProfilePage() {
   const [pushStatus, setPushStatus] = useState<PushSubscriptionStatus | null>(null);
   const [pushLoading, setPushLoading] = useState(false);
   const [pushError, setPushError] = useState<string | null>(null);
+  const notificationCount = useCustomerNotificationCount();
 
   const browserPushSupported = isPushSupported();
   const appPushConsentGranted = useMemo(
@@ -428,9 +430,19 @@ export function ProfilePage() {
           size="large"
           icon={<GiftOutlined />}
           onClick={() => navigate('/loyalty')}
-          style={{ textAlign: 'left', justifyContent: 'flex-start' }}
+          style={{ textAlign: 'left', justifyContent: 'flex-start', marginBottom: 12 }}
         >
           Điểm thưởng & voucher
+        </Button>
+        <Button
+          type="default"
+          block
+          size="large"
+          icon={<BellOutlined />}
+          onClick={() => navigate('/notifications')}
+          style={{ textAlign: 'left', justifyContent: 'flex-start' }}
+        >
+          Thông báo{notificationCount > 0 ? ` (${notificationCount} mới)` : ''}
         </Button>
       </Card>
 

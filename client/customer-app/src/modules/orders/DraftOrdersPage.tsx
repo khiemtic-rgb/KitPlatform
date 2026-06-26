@@ -8,6 +8,7 @@ import {
   fetchDraftOrders,
   getApiErrorMessage,
   hideDraftOrder,
+  cancelDraftOrder,
 } from '@/shared/api/customer-app.api';
 import {
   CUSTOMER_DRAFT_ORDER_STATUS,
@@ -96,14 +97,18 @@ function OrderListCards({
 function OrderDetailPanel({
   detail,
   confirming,
+  cancelling,
   hiding,
   onConfirm,
+  onCancel,
   onHide,
 }: {
   detail: CustomerDraftOrder;
   confirming: boolean;
+  cancelling: boolean;
   hiding: boolean;
   onConfirm: () => void;
+  onCancel: () => void;
   onHide: () => void;
 }) {
   return (
@@ -165,6 +170,20 @@ function OrderDetailPanel({
             Xác nhận đơn hàng (tuỳ chọn)
           </Button>
         ) : null}
+        {detail.status === CUSTOMER_DRAFT_ORDER_STATUS.Sent ||
+        detail.status === CUSTOMER_DRAFT_ORDER_STATUS.Confirmed ? (
+          <Popconfirm
+            title="Hủy đơn hàng?"
+            description="Nhà thuốc sẽ được thông báo. Bạn có thể đặt lại sau nếu cần."
+            okText="Hủy đơn"
+            cancelText="Không"
+            onConfirm={onCancel}
+          >
+            <Button danger loading={cancelling} disabled={confirming || hiding}>
+              Hủy đơn hàng
+            </Button>
+          </Popconfirm>
+        ) : null}
         {detail.status === CUSTOMER_DRAFT_ORDER_STATUS.Completed && detail.salesOrderNumber ? (
           <Typography.Text type="success">Đã mua tại quầy — {detail.salesOrderNumber}</Typography.Text>
         ) : null}
@@ -194,6 +213,7 @@ export function DraftOrdersPage() {
   const [selectedId, setSelectedId] = useState<string>();
   const [detail, setDetail] = useState<CustomerDraftOrder | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [hiding, setHiding] = useState(false);
   const [newDraftBanner, setNewDraftBanner] = useState<CustomerDraftOrderListItem[]>([]);
 
@@ -315,6 +335,21 @@ export function DraftOrdersPage() {
     }
   };
 
+  const onCancel = async () => {
+    if (!selectedId) return;
+    setCancelling(true);
+    try {
+      const updated = await cancelDraftOrder(selectedId);
+      setDetail(updated);
+      message.success('Đã hủy đơn hàng — nhà thuốc đã được thông báo');
+      await loadList(true);
+    } catch (error) {
+      message.error(getApiErrorMessage(error, 'Không hủy được đơn hàng'));
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const onHide = async () => {
     if (!selectedId) return;
     setHiding(true);
@@ -411,8 +446,10 @@ export function DraftOrdersPage() {
                       <OrderDetailPanel
                         detail={detail}
                         confirming={confirming}
+                        cancelling={cancelling}
                         hiding={hiding}
                         onConfirm={() => void onConfirm()}
+                        onCancel={() => void onCancel()}
                         onHide={() => void onHide()}
                       />
                     ) : null}
@@ -429,8 +466,10 @@ export function DraftOrdersPage() {
                       <OrderDetailPanel
                         detail={detail}
                         confirming={confirming}
+                        cancelling={cancelling}
                         hiding={hiding}
                         onConfirm={() => void onConfirm()}
+                        onCancel={() => void onCancel()}
                         onHide={() => void onHide()}
                       />
                     ) : null}

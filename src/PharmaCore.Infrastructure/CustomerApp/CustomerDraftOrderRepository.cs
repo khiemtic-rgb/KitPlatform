@@ -224,6 +224,32 @@ internal sealed class CustomerDraftOrderRepository
         return rows > 0;
     }
 
+    public async Task<bool> MarkCancelledByCustomerAsync(
+        Guid tenantId,
+        Guid customerId,
+        Guid draftOrderId,
+        CancellationToken cancellationToken)
+    {
+        await ExpireStaleAsync(tenantId, customerId, cancellationToken);
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.ExecuteAsync("""
+            UPDATE customer_draft_orders SET
+                status = @Cancelled,
+                cancelled_at = NOW()
+            WHERE id = @Id AND tenant_id = @TenantId AND customer_id = @CustomerId
+              AND status IN (@Sent, @Confirmed)
+            """, new
+        {
+            Id = draftOrderId,
+            TenantId = tenantId,
+            CustomerId = customerId,
+            Sent = CustomerDraftOrderStatuses.Sent,
+            Confirmed = CustomerDraftOrderStatuses.Confirmed,
+            Cancelled = CustomerDraftOrderStatuses.Cancelled,
+        });
+        return rows > 0;
+    }
+
     public async Task<bool> MarkConfirmedAsync(
         Guid tenantId,
         Guid customerId,

@@ -4,6 +4,7 @@ public static class DraftOrderEventTypes
 {
     public const string Sent = "sent";
     public const string Confirmed = "confirmed";
+    public const string Cancelled = "cancelled";
 }
 
 public sealed record DraftOrderEventPayload(
@@ -27,4 +28,6 @@ public interface IDraftOrderEventHub
     void NotifySent(Guid tenantId, Guid customerId, Guid draftOrderId, string draftNumber);
 
     void NotifyConfirmed(Guid tenantId, Guid customerId, Guid draftOrderId, string draftNumber);
+
+    void NotifyCancelled(Guid tenantId, Guid customerId, Guid draftOrderId, string draftNumber);
 }

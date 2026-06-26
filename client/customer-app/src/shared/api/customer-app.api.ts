@@ -254,6 +254,11 @@ export async function hideDraftOrder(id: string) {
   await http.post(`/draft-orders/${id}/hide`);
 }
 
+export async function cancelDraftOrder(id: string) {
+  const { data } = await http.post<Record<string, unknown>>(`/draft-orders/${id}/cancel`);
+  return normalizeDraftOrder(data);
+}
+
 export function getApiErrorMessage(error: unknown, fallback = 'Đã có lỗi xảy ra') {
   if (axios.isAxiosError(error)) {
     if (!error.response) {
