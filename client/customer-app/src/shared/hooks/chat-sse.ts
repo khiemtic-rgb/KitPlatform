@@ -35,3 +35,7 @@ export function subscribeChatSse(url: string | null, onEvent: () => void): () =>
 export function buildCustomerChatEventsUrl(accessToken: string) {
   return `/api/customer-app/chat/events?access_token=${encodeURIComponent(accessToken)}`;
 }
+
+export function buildCustomerDraftOrderEventsUrl(accessToken: string) {
+  return `/api/customer-app/draft-orders/events?access_token=${encodeURIComponent(accessToken)}`;
+}

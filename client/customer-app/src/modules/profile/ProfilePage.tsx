@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, Descriptions, Space, Spin, Switch, Tag, Typography, message } from 'antd';
-import { BellOutlined, LogoutOutlined } from '@ant-design/icons';
+import { BellOutlined, GiftOutlined, LogoutOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   fetchCareReminderEligible,
@@ -419,6 +419,19 @@ export function ProfilePage() {
           <Descriptions.Item label="Số điện thoại">{profile?.phone ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Nhà thuốc">{profile?.tenantCode ?? '—'}</Descriptions.Item>
         </Descriptions>
+      </Card>
+
+      <Card style={{ borderRadius: 12, marginBottom: 16 }}>
+        <Button
+          type="default"
+          block
+          size="large"
+          icon={<GiftOutlined />}
+          onClick={() => navigate('/loyalty')}
+          style={{ textAlign: 'left', justifyContent: 'flex-start' }}
+        >
+          Điểm thưởng & voucher
+        </Button>
       </Card>
 
       <Card title="Thông báo push (PWA)" style={{ borderRadius: 12, marginBottom: 16 }}>

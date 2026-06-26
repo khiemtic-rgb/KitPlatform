@@ -26,6 +26,7 @@ internal sealed class CustomerDraftOrderService : ICustomerDraftOrderService
     private readonly CustomerDraftOrderRepository _repo;
     private readonly SalesRepository _sales;
     private readonly ICustomerPushService _push;
+    private readonly IDraftOrderEventHub _events;
     private readonly ICurrentUserAccessor _user;
     private readonly IDbConnectionFactory _db;
 
@@ -33,12 +34,14 @@ internal sealed class CustomerDraftOrderService : ICustomerDraftOrderService
         CustomerDraftOrderRepository repo,
         SalesRepository sales,
         ICustomerPushService push,
+        IDraftOrderEventHub events,
         ICurrentUserAccessor user,
         IDbConnectionFactory db)
     {
         _repo = repo;
         _sales = sales;
         _push = push;
+        _events = events;
         _user = user;
         _db = db;
     }
@@ -151,6 +154,8 @@ internal sealed class CustomerDraftOrderService : ICustomerDraftOrderService
             header.TotalAmount,
             cancellationToken);
 
+        _events.NotifySent(tenantId, header.CustomerId, draftOrderId, header.DraftNumber);
+
         return (await GetForStaffAsync(tenantId, draftOrderId, cancellationToken))!;
     }
 
@@ -237,7 +242,9 @@ internal sealed class CustomerDraftOrderService : ICustomerDraftOrderService
         if (!await _repo.MarkConfirmedAsync(tenantId, customerId, draftOrderId, cancellationToken))
             throw new InvalidOperationException("Không xác nhận được đơn tạm (có thể đã hết hạn hoặc đã xử lý).");
 
-        return (await GetForCustomerAsync(tenantId, customerId, draftOrderId, cancellationToken))!;
+        var confirmed = (await GetForCustomerAsync(tenantId, customerId, draftOrderId, cancellationToken))!;
+        _events.NotifyConfirmed(tenantId, customerId, draftOrderId, confirmed.DraftNumber);
+        return confirmed;
     }
 
     public async Task HideForCustomerAsync(

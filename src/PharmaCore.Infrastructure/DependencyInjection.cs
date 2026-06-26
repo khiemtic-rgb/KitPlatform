@@ -68,6 +68,7 @@ public static class DependencyInjection
         services.AddHostedService<MedicationReminderPushWorker>();
 
         services.AddSingleton<IChatEventHub, ChatEventHub>();
+        services.AddSingleton<IDraftOrderEventHub, DraftOrderEventHub>();
         services.AddScoped<CustomerChatRepository>();
         services.AddScoped<ICustomerChatService, CustomerChatService>();
 

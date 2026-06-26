@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PharmaCore.Api.Authorization;
+using PharmaCore.Api.Sse;
 using PharmaCore.Application.Abstractions;
 using PharmaCore.Application.CustomerApp;
 
@@ -12,13 +13,16 @@ public sealed class CustomerDraftOrdersController : ControllerBase
 {
     private readonly ICustomerDraftOrderService _draftOrders;
     private readonly ITenantContext _tenant;
+    private readonly IDraftOrderEventHub _events;
 
     public CustomerDraftOrdersController(
         ICustomerDraftOrderService draftOrders,
-        ITenantContext tenant)
+        ITenantContext tenant,
+        IDraftOrderEventHub events)
     {
         _draftOrders = draftOrders;
         _tenant = tenant;
+        _events = events;
     }
 
     [HttpGet]
@@ -154,6 +158,36 @@ public sealed class CustomerDraftOrdersController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("events")]
+    [Authorize(Policy = SalesPolicies.Read)]
+    [Produces("text/event-stream")]
+    public async Task Events(CancellationToken cancellationToken)
+    {
+        SseWriter.PrepareResponse(Response);
+
+        using var keepAlive = new PeriodicTimer(TimeSpan.FromSeconds(25));
+        await using var events = _events
+            .WatchStaffAsync(_tenant.TenantId, cancellationToken)
+            .GetAsyncEnumerator(cancellationToken);
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var nextEvent = events.MoveNextAsync().AsTask();
+            var completed = await Task.WhenAny(nextEvent, keepAlive.WaitForNextTickAsync(cancellationToken).AsTask());
+
+            if (completed == nextEvent)
+            {
+                if (!await nextEvent)
+                    break;
+
+                await SseWriter.WriteEventAsync(Response, events.Current, cancellationToken);
+                continue;
+            }
+
+            await SseWriter.WriteKeepAliveAsync(Response, cancellationToken);
         }
     }
 }

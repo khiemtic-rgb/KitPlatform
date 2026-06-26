@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { Alert, Button, Card, Col, Row, Space, Spin, Statistic, Typography } from 'antd';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { fetchDraftOrders, fetchLoyaltySummary, fetchReminders, getApiErrorMessage } from '@/shared/api/customer-app.api';
 import { useApiHealth, useRetryWhenApiOnline } from '@/shared/api/useApiHealth';
@@ -9,7 +9,45 @@ import { CUSTOMER_DRAFT_ORDER_STATUS, type LoyaltyProgramSummary } from '@/share
 import { useAuthStore } from '@/shared/auth/auth.store';
 import { formatPoints } from '@/shared/utils/points';
 
+const tappableCardStyle: CSSProperties = {
+  borderRadius: 12,
+  cursor: 'pointer',
+  transition: 'box-shadow 0.15s ease, transform 0.15s ease',
+};
+
+function TappableHomeCard({
+  title,
+  onClick,
+  children,
+}: {
+  title: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Card
+      size="small"
+      style={tappableCardStyle}
+      styles={{ body: { padding: '12px 16px' } }}
+      hoverable
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      aria-label={title}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClick();
+        }
+      }}
+    >
+      {children}
+    </Card>
+  );
+}
+
 export function HomePage() {
+  const navigate = useNavigate();
   const profile = useAuthStore((s) => s.profile);
   const { online } = useApiHealth();
   const [initialLoading, setInitialLoading] = useState(true);
@@ -18,7 +56,6 @@ export function HomePage() {
   const [reminderCount, setReminderCount] = useState(0);
   const [nextReminder, setNextReminder] = useState<string | null>(null);
   const [pendingDraftCount, setPendingDraftCount] = useState(0);
-  const [orderCount, setOrderCount] = useState(0);
 
   const loadData = useCallback(async () => {
     setLoadError(null);
@@ -54,7 +91,6 @@ export function HomePage() {
       }
 
       if (draftsResult.status === 'fulfilled') {
-        setOrderCount(draftsResult.value.length);
         setPendingDraftCount(
           draftsResult.value.filter(
             (d) =>
@@ -115,7 +151,7 @@ export function HomePage() {
         <>
           <Row gutter={[12, 12]}>
             <Col span={12}>
-              <Card size="small" style={{ borderRadius: 12 }}>
+              <TappableHomeCard title="Xem điểm thưởng và voucher" onClick={() => navigate('/loyalty')}>
                 <Statistic
                   title="Điểm thưởng"
                   value={formatPoints(program?.pointsBalance ?? 0)}
@@ -126,11 +162,15 @@ export function HomePage() {
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     Hạng {program.currentTier.tierName}
                   </Typography.Text>
-                ) : null}
-              </Card>
+                ) : (
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    Chạm để xem voucher
+                  </Typography.Text>
+                )}
+              </TappableHomeCard>
             </Col>
             <Col span={12}>
-              <Card size="small" style={{ borderRadius: 12 }}>
+              <TappableHomeCard title="Quản lý nhắc uống thuốc" onClick={() => navigate('/reminders')}>
                 <Statistic
                   title="Nhắc uống thuốc"
                   value={reminderCount}
@@ -141,33 +181,28 @@ export function HomePage() {
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     Tiếp theo: {dayjs(nextReminder).format('DD/MM HH:mm')}
                   </Typography.Text>
-                ) : null}
-              </Card>
+                ) : (
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    Chạm để thêm lịch nhắc
+                  </Typography.Text>
+                )}
+              </TappableHomeCard>
             </Col>
           </Row>
 
-          <Card size="small" title="Truy cập nhanh" style={{ borderRadius: 12 }}>
-            <Typography.Paragraph style={{ marginBottom: 8 }}>
-              <Link to="/loyalty">Xem điểm & voucher →</Link>
-            </Typography.Paragraph>
-            <Typography.Paragraph style={{ marginBottom: 8 }}>
-              <Link to="/chat">Chat với dược sĩ →</Link>
-            </Typography.Paragraph>
-            <Typography.Paragraph style={{ marginBottom: 8 }}>
-              <Link to="/orders">
-                Đơn hàng
-                {pendingDraftCount > 0
-                  ? ` (${pendingDraftCount} đang đặt)`
-                  : orderCount > 0
-                    ? ` (${orderCount})`
-                    : ''}{' '}
-                →
-              </Link>
-            </Typography.Paragraph>
-            <Typography.Paragraph style={{ marginBottom: 0 }}>
-              <Link to="/reminders">Quản lý nhắc uống thuốc →</Link>
-            </Typography.Paragraph>
-          </Card>
+          {pendingDraftCount > 0 ? (
+            <Alert
+              type="info"
+              showIcon
+              message={`Bạn có ${pendingDraftCount} đơn đang đặt`}
+              description="Xem và xác nhận tại tab Đơn hàng bên dưới."
+              action={
+                <Button size="small" type="primary" onClick={() => navigate('/orders')}>
+                  Mở đơn hàng
+                </Button>
+              }
+            />
+          ) : null}
         </>
       ) : null}
     </Space>

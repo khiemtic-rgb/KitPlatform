@@ -8,11 +8,15 @@ import { useApiHealth } from '@/shared/api/useApiHealth';
 import { useAuthStore } from '@/shared/auth/auth.store';
 import { emitDraftOrderAlerts } from '@/shared/hooks/draft-order-alert-bus';
 import {
+  buildCustomerDraftOrderEventsUrl,
+  subscribeChatSse,
+} from '@/shared/hooks/chat-sse';
+import {
   filterUnseenSentDrafts,
   markSentDraftsSeen,
 } from '@/shared/hooks/draft-order-seen';
 
-const POLL_MS = 8_000;
+const FALLBACK_POLL_MS = 30_000;
 
 function pendingSentDrafts(items: CustomerDraftOrderListItem[]) {
   return items.filter((o) => o.status === CUSTOMER_DRAFT_ORDER_STATUS.Sent);
@@ -48,7 +52,7 @@ function notifyNewDrafts(
   }
 }
 
-/** Badge đơn chưa xem + toast / banner khi dược sĩ gửi đơn mới. */
+/** Badge đơn chưa xem + toast / banner khi dược sĩ gửi đơn mới (SSE + poll). */
 export function useCustomerDraftOrderAlerts() {
   const { notification } = App.useApp();
   const navigate = useNavigate();
@@ -89,11 +93,16 @@ export function useCustomerDraftOrderAlerts() {
     };
 
     void poll();
-    const timer = window.setInterval(() => void poll(), POLL_MS);
+    const timer = window.setInterval(() => void poll(), FALLBACK_POLL_MS);
+    const unsubscribeSse = subscribeChatSse(
+      buildCustomerDraftOrderEventsUrl(accessToken),
+      () => void poll(),
+    );
 
     return () => {
       cancelled = true;
       window.clearInterval(timer);
+      unsubscribeSse();
     };
   }, [accessToken, online, onOrdersPage, notification, navigate]);
 

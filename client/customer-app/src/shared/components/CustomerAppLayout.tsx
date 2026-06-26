@@ -1,12 +1,19 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Badge } from 'antd';
-import { GiftOutlined, HomeOutlined, MedicineBoxOutlined, MessageOutlined, UserOutlined } from '@ant-design/icons';
+import {
+  HomeOutlined,
+  MedicineBoxOutlined,
+  MessageOutlined,
+  ShoppingOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import { ApiHealthBanner } from '@/shared/components/ApiHealthBanner';
 import { useCustomerChatUnread } from '@/shared/hooks/useCustomerChatUnread';
 import { useCustomerDraftOrderAlerts } from '@/shared/hooks/useCustomerDraftOrderAlerts';
+
 const tabs = [
   { to: '/', icon: <HomeOutlined />, label: 'Trang chủ' },
-  { to: '/loyalty', icon: <GiftOutlined />, label: 'Điểm thưởng' },
+  { to: '/orders', icon: <ShoppingOutlined />, label: 'Đơn hàng' },
   { to: '/reminders', icon: <MedicineBoxOutlined />, label: 'Nhắc thuốc' },
   { to: '/chat', icon: <MessageOutlined />, label: 'Chat' },
   { to: '/profile', icon: <UserOutlined />, label: 'Tài khoản' },
@@ -43,47 +50,40 @@ export function CustomerAppLayout() {
       </main>
 
       <nav className="customer-app-bottom-nav" aria-label="Điều hướng chính">
-        <div
-          style={{
-            maxWidth: 480,
-            margin: '0 auto',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
-          }}
-        >
+        <div className="customer-app-bottom-nav-inner">
           {tabs.map((tab) => {
             const active =
               tab.to === '/'
                 ? location.pathname === '/'
                 : location.pathname.startsWith(tab.to);
+            const showDraftBadge = tab.to === '/orders' && draftOrderAlerts > 0 && !active;
+            const showChatBadge = tab.to === '/chat' && chatUnread > 0 && !active;
+
             return (
               <NavLink
                 key={tab.to}
                 to={tab.to}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '10px 4px',
-                  textDecoration: 'none',
-                  color: active ? '#0f766e' : '#64748b',
-                  fontSize: 11,
-                  fontWeight: active ? 600 : 500,
-                }}
+                end={tab.to === '/'}
+                className={({ isActive }) =>
+                  `customer-app-bottom-nav-item${isActive ? ' customer-app-bottom-nav-item--active' : ''}`
+                }
               >
-                {tab.to === '/' && draftOrderAlerts > 0 && !active ? (
-                  <Badge count={draftOrderAlerts > 99 ? '99+' : draftOrderAlerts} size="small" offset={[-2, 2]}>
-                    <span style={{ fontSize: 20 }}>{tab.icon}</span>
+                {showDraftBadge ? (
+                  <Badge
+                    count={draftOrderAlerts > 99 ? '99+' : draftOrderAlerts}
+                    size="small"
+                    offset={[-2, 2]}
+                  >
+                    <span className="customer-app-bottom-nav-icon">{tab.icon}</span>
                   </Badge>
-                ) : tab.to === '/chat' && chatUnread > 0 && !active ? (
+                ) : showChatBadge ? (
                   <Badge count={chatUnread > 99 ? '99+' : chatUnread} size="small" offset={[-2, 2]}>
-                    <span style={{ fontSize: 20 }}>{tab.icon}</span>
+                    <span className="customer-app-bottom-nav-icon">{tab.icon}</span>
                   </Badge>
                 ) : (
-                  <span style={{ fontSize: 20 }}>{tab.icon}</span>
+                  <span className="customer-app-bottom-nav-icon">{tab.icon}</span>
                 )}
-                {tab.label}
+                <span className="customer-app-bottom-nav-label">{tab.label}</span>
               </NavLink>
             );
           })}

@@ -29,15 +29,21 @@ foreach ($dir in @($customerDir, $adminDir)) {
     }
 }
 
+& (Join-Path $PSScriptRoot "stop-dev-frontends.ps1")
+
+foreach ($port in @(5173, 5174)) {
+    $listeners = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+    if ($listeners) {
+        Write-Host "[CANH BAO] Port $port dang duoc dung - dong cua so Vite cu hoac chay scripts\stop-dev-frontends.ps1" -ForegroundColor Yellow
+    }
+}
+
 Write-Host "[OK] Mo Customer App (5174)..." -ForegroundColor Green
-Start-Process -FilePath "cmd.exe" -ArgumentList @(
-    "/k",
-    "cd /d `"$customerDir`" && npm run dev:vite"
-) -WorkingDirectory $customerDir
+Start-Process -FilePath "cmd.exe" -ArgumentList "/k", "npm run dev:vite" -WorkingDirectory $customerDir
 
 Start-Sleep -Seconds 2
 
-Write-Host "[OK] Admin (5173) — Ctrl+C de dung ca session" -ForegroundColor Green
+Write-Host "[OK] Admin (5173) - Ctrl+C de dung ca session" -ForegroundColor Green
 Push-Location $adminDir
 try {
     npm run dev:vite

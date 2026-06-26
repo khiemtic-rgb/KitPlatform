@@ -15,7 +15,7 @@ body {
 }
 
 .customer-app-content {
-  padding: 16px 16px 88px;
+  padding: 16px 16px calc(96px + env(safe-area-inset-bottom, 0));
   max-width: 480px;
   margin: 0 auto;
 }
@@ -29,4 +29,44 @@ body {
   background: #fff;
   border-top: 1px solid #e2e8f0;
   padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.customer-app-bottom-nav-inner {
+  max-width: 480px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.customer-app-bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 64px;
+  padding: 10px 4px 8px;
+  text-decoration: none;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.customer-app-bottom-nav-item--active {
+  color: #0f766e;
+  font-weight: 600;
+}
+
+.customer-app-bottom-nav-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.customer-app-bottom-nav-icon .anticon {
+  font-size: 24px;
+}
+
+.customer-app-bottom-nav-label {
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: center;
 }
