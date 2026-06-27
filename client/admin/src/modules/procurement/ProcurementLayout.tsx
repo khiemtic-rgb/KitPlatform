@@ -6,6 +6,7 @@ import {
   ContainerOutlined,
   CreditCardOutlined,
   FileTextOutlined,
+  PercentageOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
 import {
@@ -13,8 +14,10 @@ import {
   secondaryTabLabel,
   secondaryTabsBarStyle,
 } from '@/shared/components/module-tabs.ui';
+import type { ProductNavTab } from '@/shared/product/product-phases';
+import { useProductNavGuard } from '@/shared/product/useProductNavGuard';
 
-const tabs = [
+const allTabs: ProductNavTab[] = [
   {
     key: 'orders',
     label: 'Đơn đặt hàng',
@@ -29,22 +32,32 @@ const tabs = [
   },
   { key: 'suppliers', label: 'Nhà cung cấp', path: '/procurement/suppliers', icon: <TeamOutlined /> },
   {
+    key: 'vat-settings',
+    label: 'Thuế GTGT',
+    path: '/procurement/vat-treatments',
+    icon: <PercentageOutlined />,
+    feature: 'procurement.vatAdmin',
+  },
+  {
     key: 'payables',
     label: 'Công nợ NCC',
     path: '/procurement/supplier-payables',
     icon: <AccountBookOutlined />,
+    feature: 'procurement.payables',
   },
   {
     key: 'payments',
     label: 'Thanh toán NCC',
     path: '/procurement/supplier-payments',
     icon: <CreditCardOutlined />,
+    feature: 'procurement.payments',
   },
 ];
 
 export function ProcurementLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const tabs = useProductNavGuard(allTabs, '/procurement/purchase-orders');
 
   useEffect(() => {
     if (location.pathname === '/procurement' || location.pathname === '/procurement/') {

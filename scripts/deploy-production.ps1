@@ -8,6 +8,9 @@
 .PARAMETER OutputRoot
   Thư mục output, mặc định .\publish
 
+.PARAMETER UseExistingNodeModules
+  Bỏ qua npm ci — dùng node_modules hiện có (dry-run trên máy dev khi run-dev.bat đang chạy).
+
 .EXAMPLE
   .\scripts\deploy-production.ps1 -ApiBaseUrl "https://api.demo.vn"
 #>
@@ -15,7 +18,9 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$ApiBaseUrl,
 
-    [string]$OutputRoot = "publish"
+    [string]$OutputRoot = "publish",
+
+    [switch]$UseExistingNodeModules
 )
 
 $ErrorActionPreference = "Stop"
@@ -43,27 +48,25 @@ dotnet publish "src\PharmaCore.Api\PharmaCore.Api.csproj" `
     --no-self-contained
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+function Invoke-NpmBuild([string]$ClientDir, [string]$DestDir) {
+    Push-Location $ClientDir
+    $env:VITE_API_BASE_URL = $apiBase
+    if (-not $UseExistingNodeModules) {
+        npm ci
+        if ($LASTEXITCODE -ne 0) { Pop-Location; exit $LASTEXITCODE }
+    }
+    npm run build
+    if ($LASTEXITCODE -ne 0) { Pop-Location; exit $LASTEXITCODE }
+    Copy-Item -Recurse -Force "dist\*" $DestDir
+    Remove-Item Env:VITE_API_BASE_URL -ErrorAction SilentlyContinue
+    Pop-Location
+}
+
 Write-Host "`n[2/4] npm build admin..." -ForegroundColor Yellow
-Push-Location "client\admin"
-$env:VITE_API_BASE_URL = $apiBase
-npm ci
-if ($LASTEXITCODE -ne 0) { Pop-Location; exit $LASTEXITCODE }
-npm run build
-if ($LASTEXITCODE -ne 0) { Pop-Location; exit $LASTEXITCODE }
-Copy-Item -Recurse -Force "dist\*" $adminOut
-Remove-Item Env:VITE_API_BASE_URL -ErrorAction SilentlyContinue
-Pop-Location
+Invoke-NpmBuild "client\admin" $adminOut
 
 Write-Host "`n[3/4] npm build customer-app..." -ForegroundColor Yellow
-Push-Location "client\customer-app"
-$env:VITE_API_BASE_URL = $apiBase
-npm ci
-if ($LASTEXITCODE -ne 0) { Pop-Location; exit $LASTEXITCODE }
-npm run build
-if ($LASTEXITCODE -ne 0) { Pop-Location; exit $LASTEXITCODE }
-Copy-Item -Recurse -Force "dist\*" $customerOut
-Remove-Item Env:VITE_API_BASE_URL -ErrorAction SilentlyContinue
-Pop-Location
+Invoke-NpmBuild "client\customer-app" $customerOut
 
 Write-Host "`n[4/4] Ghi deploy notes..." -ForegroundColor Yellow
 $notes = @"
@@ -85,8 +88,14 @@ Biến môi trường API (bắt buộc):
   CustomerAppPush__PublicKey     (nếu bật push)
   CustomerAppPush__PrivateKey
 
-Migration DB:
-  .\scripts\run-migrations.ps1 -ConnectionString "<prod connection>"
+Migration DB (Production — khong seed demo):
+  .\scripts\run-migrations-prod.ps1 -ConnectionString "<prod connection>"
+
+Tao nha thuoc (form — khuyen nghi Novixa):
+  https://admin.novixa.vn/setup
+  Hoac script: .\scripts\bootstrap-first-tenant.ps1 ...
+
+Huong dan Novixa: docs\novixa-deploy.md
 
 Chạy API:
   cd api

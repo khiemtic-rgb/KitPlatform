@@ -2,13 +2,13 @@
 
 SQL migrations for PharmaCore PostgreSQL schema. Run in numeric order.
 
-## First-time setup (empty PostgreSQL)
+## First-time setup (empty PostgreSQL) — Dev / demo
 
 ```powershell
 .\scripts\setup-and-migrate.ps1 -PostgresPassword <postgres_superuser_password>
 ```
 
-Creates database user, runs `001_extensions.sql` as superuser, then applies `002`–`018` and seeds.
+Creates database user, runs `001_extensions.sql` as superuser, then applies schema + **demo seed**.
 
 ## Existing database (Docker / dev)
 
@@ -17,9 +17,18 @@ docker compose up -d
 .\scripts\run-migrations.ps1
 ```
 
-**Note:** `run-migrations.ps1` includes `001_extensions.sql`. On an existing DB that already has extensions, run only missing files or use `setup-and-migrate` on a fresh instance.
+**Note:** `run-migrations.ps1` includes demo seeds and sample loyalty/CDP data. Do **not** use it on Production.
 
-## File order
+## Production (pilot / go-live) — no demo seed
+
+```powershell
+.\scripts\run-migrations-prod.ps1 -ConnectionString "postgresql://user:pass@host:5432/pharmacore_nt_a"
+.\scripts\bootstrap-first-tenant.ps1 -ConnectionString "..." -TenantCode NT_A -TenantName "..." -AdminEmail "..." -AdminPassword "..."
+```
+
+See [pilot-go-live-checklist.md](../client/admin/pilot-go-live-checklist.md).
+
+## File order (schema)
 
 | File | Module |
 |------|--------|
@@ -32,6 +41,11 @@ docker compose up -d
 | 007_customer_app.sql | Loyalty, reminders |
 | 008–011 | Images, search, procurement status, v2 readiness |
 | 012–018 | Sales drafts, discounts, returns, shifts, CDP outbox, batch source |
-| seed/* | Demo tenant, admin password, sample customers |
+| 019–040 | OTP, loyalty schema, customer app, inventory count, reports permissions, national drug link |
+| 039_reports_permissions.sql | `reports.read`, `reports.export` |
+| seed/* | **Dev only** — demo tenant, admin password, sample customers |
+| seed-prod/001_base_permissions.sql | **Prod** — global permission catalog (no tenant) |
 
-Keep `run-migrations.ps1` and `setup-and-migrate.ps1` in sync when adding new files.
+**Demo-only migrations** (in `run-migrations.ps1` only): `020`, `021`, `027`, `032`, `seed/*`.
+
+Keep `run-migrations.ps1`, `run-migrations-prod.ps1`, and `setup-and-migrate.ps1` in sync when adding new schema files.

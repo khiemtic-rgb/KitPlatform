@@ -79,6 +79,9 @@ export function formatDisplayQuantity(v?: number | null): string {
   return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 3 }).format(v);
 }
 
+/** Ô số lượng read-only trên bảng mua hàng — căn phải, chữ số thẳng cột */
+export const tableQuantityCellClassName = 'procurement-qty-cell';
+
 /** Hiển thị tiền trên danh sách — ví dụ `15.000 ₫` */
 export function formatDisplayMoney(v?: number | null): string {
   if (v == null) return '—';

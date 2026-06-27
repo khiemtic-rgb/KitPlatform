@@ -95,9 +95,9 @@ export const CUSTOMER_DRAFT_ORDER_STATUS = {
 } as const;
 
 export const CUSTOMER_DRAFT_ORDER_STATUS_LABELS: Record<number, string> = {
-  1: 'Tạm lưu',
+  1: 'Nháp',
   2: 'Đã gửi khách',
-  3: 'Khách xác nhận tạm',
+  3: 'Khách đã xác nhận',
   4: 'Đã bán',
   5: 'Đã hủy',
   6: 'Hết hạn',

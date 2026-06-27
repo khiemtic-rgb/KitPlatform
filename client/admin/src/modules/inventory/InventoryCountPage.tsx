@@ -13,7 +13,6 @@ import {
   Tooltip,
   Typography,
   message,
-  Modal,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -21,6 +20,7 @@ import {
   CheckOutlined,
   DeleteOutlined,
   PlusOutlined,
+  PrinterOutlined,
   ReloadOutlined,
   ScanOutlined,
 } from '@ant-design/icons';
@@ -45,6 +45,11 @@ import type {
 import { ADJUSTMENT_STATUS_LABELS } from '@/shared/api/inventory.types';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayQuantity, quantityInputNumberProps } from '@/shared/utils/money';
+import { InventoryCountApproveModal } from '@/modules/inventory/InventoryCountApproveModal';
+import { InventoryCountWorkflowSteps } from '@/modules/inventory/InventoryCountWorkflowSteps';
+import { countVarianceSummary } from '@/modules/inventory/inventory-count-workflow';
+import { printInventoryCountSheet } from '@/shared/print/inventory-count-print';
+import { useAuthStore } from '@/shared/auth/auth.store';
 
 interface ProductSearchOption {
   value: string;
@@ -71,6 +76,7 @@ function nextDraftKey() {
 export function InventoryCountPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const tenantCode = useAuthStore((s) => s.user?.tenantCode);
 
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<AdjustmentDetail | null>(null);
@@ -89,6 +95,7 @@ export function InventoryCountPage() {
   const [submitting, setSubmitting] = useState(false);
   const [approving, setApproving] = useState(false);
   const [resolving, setResolving] = useState(false);
+  const [approveModalOpen, setApproveModalOpen] = useState(false);
 
   const entriesMissingBatch = entries.filter((e) => !e.batchId);
   const canApprove = previewByBatch.length > 0 && entriesMissingBatch.length === 0;
@@ -390,6 +397,7 @@ export function InventoryCountPage() {
     setApproving(true);
     try {
       await approveAdjustment(id);
+      setApproveModalOpen(false);
       message.success('Đã duyệt kiểm kê — tồn kho đã được cập nhật');
       navigate('/inventory/adjustments');
     } catch (error) {
@@ -404,35 +412,10 @@ export function InventoryCountPage() {
       message.warning(approveBlockReason ?? 'Không thể duyệt phiên này');
       return;
     }
-
-    Modal.confirm({
-      title: 'Duyệt phiên kiểm kê?',
-      content: (
-        <div>
-          <p style={{ marginTop: 0 }}>
-            Hệ thống ghi nhận chênh lệch theo <strong>{previewByBatch.length}</strong> nhóm (SP + lô), cập nhật tồn kho
-            và khóa phiên.
-          </p>
-          <ul style={{ paddingLeft: 18, marginBottom: 0 }}>
-            {previewByBatch.slice(0, 5).map((line) => (
-              <li key={`${line.productId}-${line.batchId}`}>
-                {line.productName}
-                {line.batchNumber ? ` · lô ${line.batchNumber}` : ''}: lệch{' '}
-                <strong>{formatDisplayQuantity(line.differenceQuantity)}</strong>
-              </li>
-            ))}
-            {previewByBatch.length > 5 && (
-              <li>… và {previewByBatch.length - 5} nhóm khác</li>
-            )}
-          </ul>
-        </div>
-      ),
-      okText: 'Duyệt',
-      cancelText: 'Hủy',
-      okButtonProps: { loading: approving },
-      onOk: () => handleApprove(),
-    });
+    setApproveModalOpen(true);
   };
+
+  const varianceSummary = countVarianceSummary(previewByBatch);
 
   const previewColumns: ColumnsType<AdjustmentCountPreviewLine> = [
     { title: 'SP', dataIndex: 'productName', ellipsis: true },
@@ -518,6 +501,14 @@ export function InventoryCountPage() {
           <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
             Tải lại
           </Button>
+          {detail && previewByBatch.length > 0 && (
+            <Button
+              icon={<PrinterOutlined />}
+              onClick={() => printInventoryCountSheet(detail, previewByBatch, tenantCode)}
+            >
+              In biên bản A4
+            </Button>
+          )}
           {detail && detail.status === 2 && (
             <Tooltip title={approveBlockReason ?? 'Chốt phiên và cập nhật tồn kho'}>
               <Button
@@ -531,6 +522,16 @@ export function InventoryCountPage() {
             </Tooltip>
           )}
         </Space>
+
+        {detail && (
+          <Card size="small" title="Quy trình kiểm kê" loading={loading}>
+            <InventoryCountWorkflowSteps
+              status={detail.status}
+              entryCount={entries.length}
+              canApprove={canApprove}
+            />
+          </Card>
+        )}
 
         {detail && (
           <Card size="small" loading={loading}>
@@ -549,16 +550,24 @@ export function InventoryCountPage() {
                 {approveBlockReason} trước khi duyệt.
               </Typography.Paragraph>
             )}
+            {detail.status === 2 && entries.length > 0 && (
+              <Typography.Paragraph style={{ marginBottom: 0, marginTop: 12 }}>
+                <strong>Bước 3 — Đối chiếu:</strong>{' '}
+                {varianceSummary.varianceLines > 0
+                  ? `${varianceSummary.varianceLines} nhóm lệch — kiểm tra GRN/đơn bán/chuyển kho trước khi duyệt.`
+                  : 'Không có lệch — có thể duyệt để khóa phiên.'}
+              </Typography.Paragraph>
+            )}
             {detail.status === 2 && canApprove && (
               <Typography.Paragraph type="success" style={{ marginBottom: 0, marginTop: 12 }}>
-                Sẵn sàng duyệt — {previewByBatch.length} nhóm (SP + lô) sẽ được cập nhật tồn.
+                Sẵn sàng bước 4 — bấm <strong>Duyệt</strong> và hoàn tất checklist.
               </Typography.Paragraph>
             )}
           </Card>
         )}
 
         {detail?.status === 2 && (
-          <Card title={<><ScanOutlined /> Quét / tìm sản phẩm</>} size="small">
+          <Card title={<><ScanOutlined /> Bước 2 — Quét / tìm sản phẩm</>} size="small">
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               <AutoComplete
                 style={{ width: '100%' }}
@@ -651,7 +660,7 @@ export function InventoryCountPage() {
           </Card>
         )}
 
-        <Card title="Tổng hợp theo lô" size="small" loading={loading}>
+        <Card title="Bước 3 — Tổng hợp theo lô" size="small" loading={loading}>
           <Table
             rowKey={(r) => `${r.productId}-${r.batchId ?? 'batch'}`}
             size="small"
@@ -684,6 +693,14 @@ export function InventoryCountPage() {
           />
         </Card>
       </Space>
+
+      <InventoryCountApproveModal
+        open={approveModalOpen}
+        loading={approving}
+        previewLines={previewByBatch}
+        onCancel={() => setApproveModalOpen(false)}
+        onConfirm={() => void handleApprove()}
+      />
     </div>
   );
 }

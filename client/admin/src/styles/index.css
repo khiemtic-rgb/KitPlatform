@@ -20,6 +20,22 @@ body {
   vertical-align: top;
 }
 
+.grn-lines-table .ant-table-summary > tr > td {
+  background: #fafafa;
+  border-top: 1px solid #f0f0f0;
+  vertical-align: top;
+}
+
+.grn-lines-table .ant-table-cell-align-right {
+  font-variant-numeric: tabular-nums;
+}
+
+.procurement-qty-cell {
+  display: block;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .pharma-date-picker-wrap {
   min-width: 120px;
 }
@@ -28,4 +44,20 @@ body {
 .money-input.ant-input-number .ant-input-number-input {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+/* Chi tiết hàng — tách khỏi thông tin phiếu GRN trên danh sách / drawer */
+.grn-lines-detail-panel {
+  margin-top: 4px;
+  padding: 12px 16px;
+  background: #f0f5ff;
+  border: 1px solid #adc6ff;
+  border-radius: 8px;
+}
+
+.grn-lines-detail-panel__title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.65);
 }

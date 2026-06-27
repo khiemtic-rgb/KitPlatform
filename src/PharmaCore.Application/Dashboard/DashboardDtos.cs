@@ -20,6 +20,7 @@ public sealed record DashboardInventorySnapshotDto(
     int ActiveBatchCount,
     int NearExpiryBatchCount,
     int LowStockBatchCount,
+    int LowStockProductCount,
     int ExpiryDays);
 
 public sealed record DashboardProcurementSnapshotDto(

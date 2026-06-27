@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Tabs } from 'antd';
-import { BankOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
+import { BankOutlined, FileSearchOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
 import {
   moduleTabsShellStyle,
   secondaryTabLabel,
@@ -12,6 +12,7 @@ const tabs = [
   { key: 'users', label: 'Nhân viên', path: '/system/users', icon: <UserOutlined /> },
   { key: 'roles', label: 'Vai trò', path: '/system/roles', icon: <SafetyCertificateOutlined /> },
   { key: 'branches', label: 'Chi nhánh', path: '/system/branches', icon: <BankOutlined /> },
+  { key: 'audit-log', label: 'Nhật ký', path: '/system/audit-log', icon: <FileSearchOutlined /> },
 ];
 
 export function SystemLayout() {

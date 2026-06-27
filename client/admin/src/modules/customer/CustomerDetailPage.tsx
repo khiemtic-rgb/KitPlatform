@@ -28,6 +28,7 @@ import {
 } from '@/shared/api/customer-admin.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
+import { isProductFeatureEnabled } from '@/shared/product/product-phases';
 import { CustomerConsentPanel } from '@/modules/customer/CustomerConsentPanel';
 import { CustomerFormDrawer } from '@/modules/customer/CustomerFormDrawer';
 import { CustomerLoyaltyPanel } from '@/modules/customer/CustomerLoyaltyPanel';
@@ -40,6 +41,8 @@ export function CustomerDetailPage() {
   const { customerId = '' } = useParams();
   const navigate = useNavigate();
   const canWrite = useHasPermission('sales.write');
+  const showReservations = isProductFeatureEnabled('sales.customerReservations');
+  const showChat = isProductFeatureEnabled('sales.chat');
   const [detail, setDetail] = useState<CustomerDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DetailTab>('profile');
@@ -145,12 +148,16 @@ export function CustomerDetailPage() {
                     <Link to="/sales/customer-drafts">
                       <Button icon={<FormOutlined />}>Đơn tạm app</Button>
                     </Link>
-                    <Link to="/sales/customer-reservations">
-                      <Button icon={<MedicineBoxOutlined />}>Đặt trước</Button>
-                    </Link>
-                    <Link to="/sales/chat">
-                      <Button icon={<CommentOutlined />}>Chat</Button>
-                    </Link>
+                    {showReservations && (
+                      <Link to="/sales/customer-reservations">
+                        <Button icon={<MedicineBoxOutlined />}>Đặt trước</Button>
+                      </Link>
+                    )}
+                    {showChat && (
+                      <Link to="/sales/chat">
+                        <Button icon={<CommentOutlined />}>Chat</Button>
+                      </Link>
+                    )}
                   </Space>
                 </Card>
               </Space>

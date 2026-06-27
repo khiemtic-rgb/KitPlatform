@@ -65,6 +65,7 @@ export function CategoryListPage() {
       parentId: row.parentId,
       sortOrder: row.sortOrder,
       status: row.status,
+      minStockQty: row.minStockQty,
     });
     setDrawerOpen(true);
   };
@@ -80,6 +81,7 @@ export function CategoryListPage() {
           parentId: values.parentId,
           sortOrder: values.sortOrder ?? 0,
           status: values.status ?? 1,
+          minStockQty: values.minStockQty,
         });
         message.success('Đã cập nhật danh mục');
       } else {
@@ -89,6 +91,7 @@ export function CategoryListPage() {
           description: values.description,
           parentId: values.parentId,
           sortOrder: values.sortOrder ?? 0,
+          minStockQty: values.minStockQty,
         });
         message.success('Đã tạo danh mục');
       }
@@ -112,6 +115,13 @@ export function CategoryListPage() {
     { title: 'Tên danh mục', dataIndex: 'categoryName' },
     { title: 'Danh mục cha', dataIndex: 'parentName', render: (v) => v ?? '—' },
     { title: 'Thứ tự', dataIndex: 'sortOrder', width: 80, align: 'center' },
+    {
+      title: 'Tồn TT',
+      dataIndex: 'minStockQty',
+      width: 80,
+      align: 'right',
+      render: (v?: number) => (v != null ? v.toLocaleString('vi-VN') : '—'),
+    },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
@@ -189,6 +199,9 @@ export function CategoryListPage() {
           </Form.Item>
           <Form.Item name="sortOrder" label="Thứ tự hiển thị">
             <InputNumber min={0} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="minStockQty" label="Tồn tối thiểu (cảnh báo)">
+            <InputNumber min={0} precision={3} style={{ width: '100%' }} placeholder="Để trống = dùng ngưỡng chung" />
           </Form.Item>
           <Form.Item name="description" label="Mô tả">
             <Input.TextArea rows={2} />

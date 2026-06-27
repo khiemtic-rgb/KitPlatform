@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
+  Checkbox,
+  Collapse,
   Drawer,
   Form,
   Input,
@@ -11,6 +13,7 @@ import {
   Space,
   Table,
   Tag,
+  Typography,
   message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -34,6 +37,12 @@ import type {
 } from '@/shared/api/inventory.types';
 import { ADJUSTMENT_STATUS_LABELS } from '@/shared/api/inventory.types';
 import { formatDisplayDate } from '@/shared/utils/date';
+import { InventoryCountWorkflowSteps } from '@/modules/inventory/InventoryCountWorkflowSteps';
+import {
+  COUNT_REASON_PRESETS,
+  INVENTORY_COUNT_WORKFLOW_STEPS,
+  buildCountReason,
+} from '@/modules/inventory/inventory-count-workflow';
 
 interface AdjustmentLineForm {
   batchId: string;
@@ -54,6 +63,7 @@ export function AdjustmentListPage() {
   const [form] = Form.useForm();
   const [sessionForm] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const [prepareAcknowledged, setPrepareAcknowledged] = useState(false);
   const warehouseId = Form.useWatch('warehouseId', form);
 
   const load = useCallback(async () => {
@@ -91,16 +101,22 @@ export function AdjustmentListPage() {
 
   const openCreateSession = () => {
     sessionForm.resetFields();
+    sessionForm.setFieldsValue({ countType: 'periodic' });
+    setPrepareAcknowledged(false);
     setSessionDrawerOpen(true);
   };
 
   const handleCreateSession = async () => {
+    if (!prepareAcknowledged) {
+      message.warning('Xác nhận đã chuẩn bị kiểm kê (bước 1) trước khi mở phiên');
+      return;
+    }
     try {
       const values = await sessionForm.validateFields();
       setSaving(true);
       const created = await createCountingSession({
         warehouseId: values.warehouseId,
-        reason: values.reason,
+        reason: buildCountReason(values.countType, values.reasonNote),
       });
       message.success(`Đã mở phiên ${created.adjustmentNumber}`);
       setSessionDrawerOpen(false);
@@ -169,7 +185,7 @@ export function AdjustmentListPage() {
       dataIndex: 'status',
       width: 110,
       render: (v: number) => (
-        <Tag color={v === 3 ? 'green' : v === 2 ? 'processing' : 'default'}>
+        <Tag color={v === 3 ? 'green' : v === 2 ? 'processing' : v === 1 ? 'gold' : 'default'}>
           {ADJUSTMENT_STATUS_LABELS[v] ?? v}
         </Tag>
       ),
@@ -205,7 +221,7 @@ export function AdjustmentListPage() {
           >
             Chi tiết
           </Tag>
-          {row.status !== 3 && row.status !== 4 && (
+          {row.status !== 3 && row.status !== 4 && row.status !== 2 && (
             <Tag
               color="green"
               icon={<CheckOutlined />}
@@ -222,6 +238,34 @@ export function AdjustmentListPage() {
 
   return (
     <>
+      <Collapse
+        size="small"
+        style={{ marginBottom: 16 }}
+        items={[
+          {
+            key: 'workflow',
+            label: 'Quy trình kiểm kê chuẩn (4 bước)',
+            children: (
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <InventoryCountWorkflowSteps status={2} entryCount={0} canApprove={false} />
+                <Typography.Paragraph type="secondary" style={{ marginBottom: 0, fontSize: 13 }}>
+                  <strong>Phiên kiểm kê</strong> (nhiều SP, nhiều người): mở phiên → đếm → đối chiếu → duyệt trên màn
+                  Đếm. <strong>Phiếu theo lô</strong>: lệch vài lô đã biết — tạo phiếu nhập SL thực tế → duyệt tại
+                  danh sách.
+                </Typography.Paragraph>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#555' }}>
+                  {INVENTORY_COUNT_WORKFLOW_STEPS.map((step) => (
+                    <li key={step.title}>
+                      <strong>{step.title}:</strong> {step.description}
+                    </li>
+                  ))}
+                </ul>
+              </Space>
+            ),
+          },
+        ]}
+      />
+
       <Card
         title="Phiếu kiểm kê"
         extra={
@@ -307,8 +351,8 @@ export function AdjustmentListPage() {
       </Drawer>
 
       <Drawer
-        title="Mở phiên kiểm kê (nhiều người)"
-        width={480}
+        title="Bước 1 — Mở phiên kiểm kê"
+        width={520}
         open={sessionDrawerOpen}
         onClose={() => setSessionDrawerOpen(false)}
         extra={
@@ -327,9 +371,15 @@ export function AdjustmentListPage() {
               placeholder="Chọn kho"
             />
           </Form.Item>
-          <Form.Item name="reason" label="Lý do / ghi chú">
-            <Input.TextArea rows={2} placeholder="Kiểm kê định kỳ, cuối tháng..." />
+          <Form.Item name="countType" label="Loại kiểm kê" rules={[{ required: true }]}>
+            <Select options={COUNT_REASON_PRESETS.map((p) => ({ value: p.value, label: p.label }))} />
           </Form.Item>
+          <Form.Item name="reasonNote" label="Ghi chú thêm">
+            <Input.TextArea rows={2} placeholder="VD: Cuối tháng 6, khu A+B…" />
+          </Form.Item>
+          <Checkbox checked={prepareAcknowledged} onChange={(e) => setPrepareAcknowledged(e.target.checked)}>
+            Đã thông báo hạn chế bán hàng / nhập xuất tại kho trong lúc kiểm kê
+          </Checkbox>
         </Form>
       </Drawer>
 
@@ -342,11 +392,15 @@ export function AdjustmentListPage() {
           detail && detail.status !== 3 && detail.status !== 4 ? (
             <Space>
               {detail.status === 2 && (
-                <Button onClick={() => navigate(`/inventory/adjustments/${detail.id}/count`)}>Màn đếm</Button>
+                <Button type="primary" onClick={() => navigate(`/inventory/adjustments/${detail.id}/count`)}>
+                  Màn đếm
+                </Button>
               )}
-              <Button type="primary" onClick={() => handleApprove(detail.id)}>
-                Duyệt
-              </Button>
+              {detail.status !== 2 && (
+                <Button type="primary" onClick={() => handleApprove(detail.id)}>
+                  Duyệt
+                </Button>
+              )}
             </Space>
           ) : null
         }
@@ -366,7 +420,8 @@ export function AdjustmentListPage() {
             )}
             {detail.status === 2 ? (
               <p style={{ color: '#1677ff' }}>
-                Phiên đang kiểm — dùng màn <strong>Đếm</strong> để quét barcode và ghi nhận.
+                Phiên đang kiểm — vào màn <strong>Đếm</strong>, hoàn tất bước 2–3 rồi <strong>Duyệt</strong> (bước 4)
+                kèm checklist.
               </p>
             ) : (
               <Table

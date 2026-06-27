@@ -27,7 +27,8 @@ internal sealed class CategoryRepository
                 c.parent_id AS ParentId,
                 p.category_name AS ParentName,
                 c.sort_order AS SortOrder,
-                c.status AS Status
+                c.status AS Status,
+                c.min_stock_qty AS MinStockQty
             FROM product_categories c
             LEFT JOIN product_categories p ON p.id = c.parent_id
             WHERE c.tenant_id = @TenantId AND c.deleted_at IS NULL
@@ -48,7 +49,8 @@ internal sealed class CategoryRepository
                 c.parent_id AS ParentId,
                 p.category_name AS ParentName,
                 c.sort_order AS SortOrder,
-                c.status AS Status
+                c.status AS Status,
+                c.min_stock_qty AS MinStockQty
             FROM product_categories c
             LEFT JOIN product_categories p ON p.id = c.parent_id
             WHERE c.id = @Id AND c.tenant_id = @TenantId AND c.deleted_at IS NULL
@@ -60,8 +62,8 @@ internal sealed class CategoryRepository
     public async Task<Guid> CreateAsync(CreateCategoryRequest request, CancellationToken cancellationToken)
     {
         const string sql = """
-            INSERT INTO product_categories (tenant_id, parent_id, category_code, category_name, description, sort_order)
-            VALUES (@TenantId, @ParentId, @CategoryCode, @CategoryName, @Description, @SortOrder)
+            INSERT INTO product_categories (tenant_id, parent_id, category_code, category_name, description, sort_order, min_stock_qty)
+            VALUES (@TenantId, @ParentId, @CategoryCode, @CategoryName, @Description, @SortOrder, @MinStockQty)
             RETURNING id
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -73,6 +75,7 @@ internal sealed class CategoryRepository
             CategoryName = request.CategoryName.Trim(),
             request.Description,
             request.SortOrder,
+            request.MinStockQty,
         });
     }
 
@@ -85,6 +88,7 @@ internal sealed class CategoryRepository
                 description = @Description,
                 sort_order = @SortOrder,
                 status = @Status,
+                min_stock_qty = @MinStockQty,
                 updated_at = NOW()
             WHERE id = @Id AND tenant_id = @TenantId AND deleted_at IS NULL
             """;
@@ -98,6 +102,7 @@ internal sealed class CategoryRepository
             request.Description,
             request.SortOrder,
             request.Status,
+            request.MinStockQty,
         }) > 0;
     }
 
@@ -129,5 +134,20 @@ internal sealed class CategoryRepository
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         return await conn.ExecuteAsync(sql, new { Id = id, TenantId = _tenant.TenantId }) > 0;
+    }
+
+    public async Task<bool> UpdateMinStockAsync(Guid id, decimal? minStockQty, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE product_categories SET min_stock_qty = @MinStockQty, updated_at = NOW()
+            WHERE id = @Id AND tenant_id = @TenantId AND deleted_at IS NULL
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.ExecuteAsync(sql, new
+        {
+            Id = id,
+            TenantId = _tenant.TenantId,
+            MinStockQty = minStockQty,
+        }) > 0;
     }
 }

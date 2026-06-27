@@ -13,6 +13,7 @@ export type DashboardInventorySnapshot = {
   activeBatchCount: number;
   nearExpiryBatchCount: number;
   lowStockBatchCount: number;
+  lowStockProductCount: number;
   expiryDays: number;
 };
 

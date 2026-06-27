@@ -101,7 +101,19 @@ $migrationFiles = @(
     "032_customer_address_demo.sql",
     "033_customer_reservations.sql",
     "034_customer_reservation_sales_order.sql",
-    "035_inventory_adjustment_count_entries.sql"
+    "035_inventory_adjustment_count_entries.sql",
+    "036_system_admin_permissions.sql",
+    "037_vietnamese_permission_labels.sql",
+    "038_po_vat_rate_percent.sql",
+    "039_procurement_vat_treatments.sql",
+    "039_reports_permissions.sql",
+    "040_product_national_drug_link.sql",
+    "041_pilot_stability_features.sql",
+    "042_low_stock_group_settings.sql",
+    "043_warehouse_min_stock.sql",
+    "044_active_ingredients_tenant.sql",
+    "045_scale_branch_readiness.sql",
+    "046_chat_branch_scope.sql"
 )
 
 foreach ($file in $migrationFiles) {

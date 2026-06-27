@@ -56,6 +56,9 @@ export type ProductDetail = Omit<
   Req<ProductDetailDto, 'id' | 'productCode' | 'productName' | 'drugType' | 'status'>,
   'units' | 'barcodes' | 'prices' | 'images' | 'ingredients'
 > & {
+  nationalDrugId?: string;
+  nationalRegistrationNumber?: string;
+  minStockQty?: number;
   units: ProductUnit[];
   barcodes: ProductBarcode[];
   prices: ProductPrice[];
@@ -73,7 +76,9 @@ export type LookupItem = {
 export type Category = Req<
   CategoryDto,
   'id' | 'categoryCode' | 'categoryName' | 'sortOrder' | 'status'
->;
+> & {
+  minStockQty?: number;
+};
 
 export type Brand = Req<BrandDto, 'id' | 'brandCode' | 'brandName' | 'status'>;
 
@@ -157,7 +162,16 @@ export type BarcodeCheckResult = Req<BarcodeCheckResultDto, 'isAvailable'>;
 
 export type ProductSavePayload = Pick<
   CreateProductRequest,
-  'productCode' | 'genericName' | 'categoryId' | 'brandId' | 'description' | 'status' | 'saleUnitName'
+  | 'productCode'
+  | 'genericName'
+  | 'categoryId'
+  | 'brandId'
+  | 'description'
+  | 'nationalDrugId'
+  | 'nationalRegistrationNumber'
+  | 'status'
+  | 'saleUnitName'
+  | 'minStockQty'
 > & {
   productName: string;
   drugType: number;

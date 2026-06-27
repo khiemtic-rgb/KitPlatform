@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Hosting;
 using PharmaCore.Application.Auth;
 using PharmaCore.Application.Configuration;
 
@@ -10,18 +11,23 @@ internal sealed class AuthService : IAuthService
 
     private readonly AuthRepository _repository;
     private readonly JwtTokenService _jwt;
+    private readonly IHostEnvironment _environment;
 
-    public AuthService(AuthRepository repository, JwtTokenService jwt)
+    public AuthService(AuthRepository repository, JwtTokenService jwt, IHostEnvironment environment)
     {
         _repository = repository;
         _jwt = jwt;
+        _environment = environment;
     }
 
     public async Task<LoginResponse?> LoginAsync(LoginRequest request, string? ipAddress, CancellationToken cancellationToken = default)
     {
         var tenantCode = string.IsNullOrWhiteSpace(request.TenantCode)
-            ? DefaultTenantCode
+            ? (_environment.IsDevelopment() ? DefaultTenantCode : null)
             : request.TenantCode.Trim();
+
+        if (string.IsNullOrWhiteSpace(tenantCode))
+            return null;
 
         var user = await _repository.FindByCredentialsAsync(tenantCode, request.Username.Trim(), cancellationToken);
         if (user is null || user.Status != ActiveStatus)

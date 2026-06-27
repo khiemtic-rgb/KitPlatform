@@ -8,11 +8,13 @@ public static class ProcurementAuthorizationExtensions
     {
         options.AddPolicy(ProcurementPolicies.Read, policy =>
             policy.RequireAssertion(ctx =>
-                HasPermission(ctx, "procurement.read") || ctx.User.IsInRole("ADMIN")));
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && (HasPermission(ctx, "procurement.read") || ctx.User.IsInRole("ADMIN"))));
 
         options.AddPolicy(ProcurementPolicies.Write, policy =>
             policy.RequireAssertion(ctx =>
-                HasPermission(ctx, "procurement.write") || ctx.User.IsInRole("ADMIN")));
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && (HasPermission(ctx, "procurement.write") || ctx.User.IsInRole("ADMIN"))));
     }
 
     private static bool HasPermission(AuthorizationHandlerContext ctx, string permission) =>

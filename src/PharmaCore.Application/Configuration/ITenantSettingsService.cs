@@ -16,4 +16,10 @@ public interface ITenantSettingsService
     Task<TenantBatchModeSettingsDto> UpdateBatchModeAsync(
         UpdateTenantBatchModeRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<TenantDefaultMinStockDto> GetDefaultMinStockAsync(CancellationToken cancellationToken = default);
+
+    Task<TenantDefaultMinStockDto> UpdateDefaultMinStockAsync(
+        UpdateTenantDefaultMinStockRequest request,
+        CancellationToken cancellationToken = default);
 }

@@ -35,13 +35,14 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
         RequestCustomerOtpRequest request,
         CancellationToken cancellationToken = default)
     {
-        var tenantCode = ResolveTenantCode(request.TenantCode);
+        var tenantCode = ResolveTenantCode(request.TenantCode)
+            ?? throw new InvalidOperationException("Mã nhà thuốc là bắt buộc.");
         var phone = CustomerAppAuthRepository.NormalizePhone(request.Phone);
         if (phone.Length < 9)
             throw new InvalidOperationException("Số điện thoại không hợp lệ.");
 
         var tenant = await _repo.ResolveTenantAsync(tenantCode, cancellationToken)
-            ?? throw new InvalidOperationException("Không tìm thấy tenant.");
+            ?? throw new InvalidOperationException("Không tìm thấy nhà thuốc hoặc nhà thuốc đã ngừng hoạt động.");
 
         var account = await _repo.EnsureAccountForCustomerPhoneAsync(
             tenant.TenantId, tenant.TenantCode, phone, cancellationToken)
@@ -100,6 +101,9 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
         CancellationToken cancellationToken = default)
     {
         var tenantCode = ResolveTenantCode(request.TenantCode);
+        if (tenantCode is null)
+            return null;
+
         var phone = CustomerAppAuthRepository.NormalizePhone(request.Phone);
         var code = request.Code.Trim();
 
@@ -187,6 +191,11 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
     private static CustomerProfileDto ToProfile(CustomerAccountRecord account) =>
         new(account.AccountId, account.CustomerId, account.TenantId, account.TenantCode, account.FullName, account.Phone);
 
-    private static string ResolveTenantCode(string? tenantCode) =>
-        string.IsNullOrWhiteSpace(tenantCode) ? "DEMO_PHARMACY" : tenantCode.Trim();
+    private string? ResolveTenantCode(string? tenantCode)
+    {
+        if (!string.IsNullOrWhiteSpace(tenantCode))
+            return tenantCode.Trim();
+
+        return _env.IsDevelopment() ? "DEMO_PHARMACY" : null;
+    }
 }

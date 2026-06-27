@@ -17,8 +17,8 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, CreditCardOutlined, ClockCircleOutlined, PlusOutlined, PrinterOutlined, RollbackOutlined, SaveOutlined, SendOutlined, ShoppingCartOutlined, UnorderedListOutlined, UserAddOutlined } from '@ant-design/icons';
-import { fetchWarehouses } from '@/shared/api/inventory.api';
-import type { Warehouse } from '@/shared/api/inventory.types';
+import { fetchWarehouses, fetchActiveCountingSession } from '@/shared/api/inventory.api';
+import type { Warehouse, AdjustmentListItem } from '@/shared/api/inventory.types';
 import { createSale, completeDraftSale, fetchBatchModeSettings, fetchOpenShift, fetchPosCustomerLoyalty, fetchPosCustomerVouchers, fetchPosStockBulk, fetchSalesOrder, lookupPosProduct, openSalesShift, previewPosAllocation, searchCustomers, searchPosProducts, updateDraftSale, type TenantBatchModeValue } from '@/shared/api/sales.api';
 import {
   isShiftAlreadyOpenError,
@@ -125,6 +125,7 @@ export function PosPage() {
   const [quickCustomerOpen, setQuickCustomerOpen] = useState(false);
   const pendingAutoCheckoutRef = useRef(false);
   const [autoCheckoutTick, setAutoCheckoutTick] = useState(0);
+  const [activeCountSession, setActiveCountSession] = useState<AdjustmentListItem | null>(null);
 
   const pricing = useMemo(() => priceCart(cart, orderDiscount), [cart, orderDiscount]);
 
@@ -293,6 +294,24 @@ export function PosPage() {
       message.error(apiErrorMessage(error, 'Không tải được trạng thái ca'));
     });
   }, [warehouseId, loadOpenShift]);
+
+  useEffect(() => {
+    if (!warehouseId) {
+      setActiveCountSession(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchActiveCountingSession(warehouseId)
+      .then((session) => {
+        if (!cancelled) setActiveCountSession(session);
+      })
+      .catch(() => {
+        if (!cancelled) setActiveCountSession(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [warehouseId]);
 
   const handleQuickCustomerSaved = useCallback((customer: CustomerDetail) => {
     const listItem: CustomerListItem = {
@@ -1080,6 +1099,23 @@ export function PosPage() {
           }
         />
       )}
+      {activeCountSession && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={`Kho ${warehouseName ?? ''} đang kiểm kê (${activeCountSession.adjustmentNumber})`}
+          description="Theo quy trình chuẩn: hạn chế bán/nhập xuất trong lúc đếm để tránh lệch tồn. Hoàn tất kiểm kê trước khi chốt số."
+          action={
+            <Button
+              size="small"
+              onClick={() => navigate(`/inventory/adjustments/${activeCountSession.id}/count`)}
+            >
+              Màn kiểm kê
+            </Button>
+          }
+        />
+      )}
       {!openShift && warehouseId && canWrite && (
         <Alert
           type="warning"
@@ -1295,7 +1331,7 @@ export function PosPage() {
                 loading={saving}
                 onClick={() => void saveDraft()}
               >
-                {editingDraftId ? 'Cập nhật tạm' : 'Lưu tạm'}
+                {editingDraftId ? 'Cập nhật nháp' : 'Lưu nháp'}
               </Button>
             )}
             <Button

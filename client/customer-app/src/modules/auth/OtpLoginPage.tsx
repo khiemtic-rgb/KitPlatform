@@ -3,14 +3,19 @@ import { Button, Card, Form, Input, Space, Steps, Typography, message } from 'an
 import { MobileOutlined, SafetyOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { getApiErrorMessage, requestOtp, verifyOtp } from '@/shared/api/customer-app.api';
-import { DEFAULT_TENANT_CODE } from '@/shared/api/customer-app.types';
+import {
+  APP_BRAND,
+  DEFAULT_TENANT_CODE,
+  loadStoredTenantCode,
+  saveStoredTenantCode,
+} from '@/shared/config/app-brand';
 import { useAuthStore } from '@/shared/auth/auth.store';
 
 export function OtpLoginPage() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState(import.meta.env.DEV ? '0909123456' : '');
-  const [tenantCode, setTenantCode] = useState(DEFAULT_TENANT_CODE);
+  const [tenantCode, setTenantCode] = useState(loadStoredTenantCode);
   const setSession = useAuthStore((s) => s.setSession);
   const navigate = useNavigate();
 
@@ -22,7 +27,13 @@ export function OtpLoginPage() {
     }
     setLoading(true);
     try {
-      const res = await requestOtp(normalized, tenantCode.trim());
+      const code = tenantCode.trim().toUpperCase();
+      if (!code) {
+        message.warning('Nhập mã nhà thuốc');
+        return;
+      }
+      saveStoredTenantCode(code);
+      const res = await requestOtp(normalized, code);
       message.success(res.message || 'Đã gửi mã OTP');
       setStep(1);
     } catch (error) {
@@ -35,7 +46,7 @@ export function OtpLoginPage() {
   const onVerifyOtp = async (values: { code: string }) => {
     setLoading(true);
     try {
-      const data = await verifyOtp(phone.trim(), values.code.trim(), tenantCode.trim());
+      const data = await verifyOtp(phone.trim(), values.code.trim(), tenantCode.trim().toUpperCase());
       setSession(data);
       message.success(`Xin chào ${data.profile.fullName}!`);
       navigate('/', { replace: true });
@@ -61,9 +72,9 @@ export function OtpLoginPage() {
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <div style={{ textAlign: 'center' }}>
             <Typography.Title level={3} style={{ marginBottom: 4, color: '#0f766e' }}>
-              App khách hàng
+              {APP_BRAND}
             </Typography.Title>
-            <Typography.Text type="secondary">Đăng nhập bằng OTP qua số điện thoại</Typography.Text>
+            <Typography.Text type="secondary">App khách hàng — đăng nhập OTP</Typography.Text>
           </div>
 
           <Steps
@@ -83,12 +94,13 @@ export function OtpLoginPage() {
                   size="large"
                 />
               </Form.Item>
-              <Form.Item label="Mã nhà thuốc">
+              <Form.Item label="Mã nhà thuốc" required>
                 <Input
                   value={tenantCode}
-                  onChange={(e) => setTenantCode(e.target.value)}
-                  placeholder={DEFAULT_TENANT_CODE}
+                  onChange={(e) => setTenantCode(e.target.value.toUpperCase())}
+                  placeholder={DEFAULT_TENANT_CODE || 'NT_A'}
                   size="large"
+                  style={{ textTransform: 'uppercase' }}
                 />
               </Form.Item>
               <Button type="primary" htmlType="submit" block size="large" loading={loading}>

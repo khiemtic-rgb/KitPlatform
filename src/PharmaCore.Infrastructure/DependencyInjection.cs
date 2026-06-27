@@ -11,6 +11,8 @@ using PharmaCore.Application.Loyalty;
 using PharmaCore.Application.Identity;
 using PharmaCore.Application.Integration;
 using PharmaCore.Application.Procurement;
+using PharmaCore.Application.Platform;
+using PharmaCore.Application.Reports;
 using PharmaCore.Application.Sales;
 using PharmaCore.Application.Configuration;
 using PharmaCore.Infrastructure.Auth;
@@ -22,7 +24,9 @@ using PharmaCore.Infrastructure.Identity;
 using PharmaCore.Infrastructure.Integration;
 using PharmaCore.Infrastructure.Inventory;
 using PharmaCore.Infrastructure.Loyalty;
+using PharmaCore.Infrastructure.Platform;
 using PharmaCore.Infrastructure.Procurement;
+using PharmaCore.Infrastructure.Reports;
 using PharmaCore.Infrastructure.Sales;
 using PharmaCore.Infrastructure.Data;
 using PharmaCore.Application.CustomerApp;
@@ -41,12 +45,15 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
 
+        services.Configure<PlatformSettings>(configuration.GetSection(PlatformSettings.SectionName));
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
         services.Configure<CustomerAppAuthSettings>(configuration.GetSection(CustomerAppAuthSettings.SectionName));
         services.Configure<CustomerAppPushOptions>(configuration.GetSection(CustomerAppPushSettings.SectionName));
 
         services.AddSingleton<IDbConnectionFactory>(_ => new NpgsqlConnectionFactory(connectionString));
         services.AddScoped<ITenantContext, TenantContext>();
+        services.AddScoped<BranchAccessRepository>();
+        services.AddScoped<IBranchAccessService, BranchAccessService>();
         services.AddScoped<ICurrentUserAccessor, CurrentUserAccessor>();
         services.AddScoped<ICurrentCustomerAccessor, CurrentCustomerAccessor>();
 
@@ -102,6 +109,7 @@ public static class DependencyInjection
 
         services.AddScoped<CatalogRepository>();
         services.AddScoped<ICatalogService, CatalogService>();
+        services.AddScoped<ICatalogImportService, CatalogImportService>();
 
         services.AddScoped<CategoryRepository>();
         services.AddScoped<ICategoryService, CategoryService>();
@@ -111,6 +119,9 @@ public static class DependencyInjection
 
         services.AddScoped<ActiveIngredientRepository>();
         services.AddScoped<IActiveIngredientService, ActiveIngredientService>();
+
+        services.Configure<NationalDrugCatalogSettings>(configuration.GetSection(NationalDrugCatalogSettings.SectionName));
+        services.AddScoped<INationalDrugCatalogService, MockNationalDrugCatalogService>();
 
         services.AddScoped<InventoryRepository>();
         services.AddScoped<IBatchResolver, BatchResolver>();
@@ -128,9 +139,14 @@ public static class DependencyInjection
         services.AddScoped<IIntegrationOutboxQuery, IntegrationOutboxQuery>();
         services.AddHostedService<IntegrationOutboxWorker>();
         services.AddScoped<IInventoryService, InventoryService>();
+        services.AddScoped<IInventoryImportService, InventoryImportService>();
+        services.AddScoped<ILowStockSettingsService, LowStockSettingsService>();
 
         services.AddScoped<DashboardRepository>();
         services.AddScoped<IDashboardService, DashboardService>();
+
+        services.AddScoped<ReportsRepository>();
+        services.AddScoped<IReportsService, ReportsService>();
 
         services.AddScoped<CustomerConsentRepository>();
         services.AddScoped<ICustomerConsentService, CustomerConsentService>();
@@ -139,14 +155,19 @@ public static class DependencyInjection
         services.AddScoped<IdentityAdminRepository>();
         services.AddScoped<IIdentityAdminService, IdentityAdminService>();
 
+        services.AddScoped<PlatformTenantRepository>();
+        services.AddScoped<IPlatformTenantService, PlatformTenantService>();
+
         services.AddScoped<ProcurementRepository>();
         services.AddScoped<AuditLogRepository>();
         services.AddScoped<IAuditLogService, AuditLogService>();
+        services.AddScoped<IAuditLogQuery, AuditLogQueryService>();
         services.AddScoped<ISupplierService, SupplierService>();
         services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
         services.AddScoped<IGoodsReceiptService, GoodsReceiptService>();
         services.AddScoped<ISupplierPaymentService, SupplierPaymentService>();
         services.AddScoped<ISupplierPayablesService, SupplierPayablesService>();
+        services.AddScoped<IProcurementVatTreatmentService, ProcurementVatTreatmentService>();
 
         services.AddScoped<SalesRepository>();
         services.AddScoped<ISalesService, SalesService>();

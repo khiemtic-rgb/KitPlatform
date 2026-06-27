@@ -7,6 +7,9 @@ const AppLayout = lazy(() =>
   import('@/shared/components/AppLayout').then((m) => ({ default: m.AppLayout })),
 );
 
+const SetupPage = lazy(() =>
+  import('@/modules/platform/SetupPage').then((m) => ({ default: m.SetupPage })),
+);
 const LoginPage = lazy(() =>
   import('@/modules/auth/LoginPage').then((m) => ({ default: m.LoginPage })),
 );
@@ -27,6 +30,12 @@ const BrandListPage = lazy(() =>
 );
 const IngredientListPage = lazy(() =>
   import('@/modules/catalog/IngredientListPage').then((m) => ({ default: m.IngredientListPage })),
+);
+const NationalDrugLookupPage = lazy(() =>
+  import('@/modules/catalog/NationalDrugLookupPage').then((m) => ({ default: m.NationalDrugLookupPage })),
+);
+const ProductImportPage = lazy(() =>
+  import('@/modules/catalog/ProductImportPage').then((m) => ({ default: m.ProductImportPage })),
 );
 const InventoryLayout = lazy(() =>
   import('@/modules/inventory/InventoryLayout').then((m) => ({ default: m.InventoryLayout })),
@@ -49,6 +58,9 @@ const AdjustmentListPage = lazy(() =>
 const InventoryCountPage = lazy(() =>
   import('@/modules/inventory/InventoryCountPage').then((m) => ({ default: m.InventoryCountPage })),
 );
+const LowStockPage = lazy(() =>
+  import('@/modules/inventory/LowStockPage').then((m) => ({ default: m.LowStockPage })),
+);
 const ProcurementLayout = lazy(() =>
   import('@/modules/procurement/ProcurementLayout').then((m) => ({ default: m.ProcurementLayout })),
 );
@@ -64,6 +76,11 @@ const GoodsReceiptListPage = lazy(() =>
 );
 const SupplierListPage = lazy(() =>
   import('@/modules/procurement/SupplierListPage').then((m) => ({ default: m.SupplierListPage })),
+);
+const VatTreatmentListPage = lazy(() =>
+  import('@/modules/procurement/VatTreatmentListPage').then((m) => ({
+    default: m.VatTreatmentListPage,
+  })),
 );
 const SupplierPayablesPage = lazy(() =>
   import('@/modules/procurement/SupplierPayablesPage').then((m) => ({
@@ -131,6 +148,18 @@ const RoleListPage = lazy(() =>
 const BranchListPage = lazy(() =>
   import('@/modules/system/BranchListPage').then((m) => ({ default: m.BranchListPage })),
 );
+const AuditLogListPage = lazy(() =>
+  import('@/modules/system/AuditLogListPage').then((m) => ({ default: m.AuditLogListPage })),
+);
+const ReportsLayout = lazy(() =>
+  import('@/modules/reports/ReportsLayout').then((m) => ({ default: m.ReportsLayout })),
+);
+const ReportsHomePage = lazy(() =>
+  import('@/modules/reports/ReportsHomePage').then((m) => ({ default: m.ReportsHomePage })),
+);
+const ReportViewPage = lazy(() =>
+  import('@/modules/reports/ReportViewPage').then((m) => ({ default: m.ReportViewPage })),
+);
 
 function RouteFallback() {
   return (
@@ -159,6 +188,15 @@ export function AppRouter() {
     <BrowserRouter>
       <Suspense fallback={<RouteFallback />}>
         <Routes>
+          <Route
+            path="/setup"
+            element={
+              <SuspenseRoute>
+                <SetupPage />
+              </SuspenseRoute>
+            }
+          />
+
           <Route element={<GuestGuard />}>
             <Route
               path="/login"
@@ -196,9 +234,11 @@ export function AppRouter() {
               >
                 <Route index element={<Navigate to="/catalog/products" replace />} />
                 <Route path="products" element={<ProductListPage />} />
+                <Route path="import" element={<ProductImportPage />} />
                 <Route path="categories" element={<CategoryListPage />} />
                 <Route path="brands" element={<BrandListPage />} />
                 <Route path="ingredients" element={<IngredientListPage />} />
+                <Route path="national-drugs" element={<NationalDrugLookupPage />} />
               </Route>
               <Route
                 path="inventory"
@@ -210,6 +250,7 @@ export function AppRouter() {
               >
                 <Route index element={<Navigate to="/inventory/stock" replace />} />
                 <Route path="stock" element={<StockListPage />} />
+                <Route path="low-stock" element={<LowStockPage />} />
                 <Route path="warehouses" element={<WarehouseListPage />} />
                 <Route path="opening-balance" element={<OpeningBalancePage />} />
                 <Route path="transfers" element={<TransferListPage />} />
@@ -228,6 +269,7 @@ export function AppRouter() {
                 <Route path="purchase-orders" element={<PurchaseOrderListPage />} />
                 <Route path="goods-receipts" element={<GoodsReceiptListPage />} />
                 <Route path="suppliers" element={<SupplierListPage />} />
+                <Route path="vat-treatments" element={<VatTreatmentListPage />} />
                 <Route path="supplier-payables" element={<SupplierPayablesPage />} />
                 <Route path="supplier-payments" element={<SupplierPaymentListPage />} />
               </Route>
@@ -265,6 +307,79 @@ export function AppRouter() {
                 <Route path=":customerId" element={<CustomerDetailPage />} />
               </Route>
               <Route
+                path="reports"
+                element={
+                  <SuspenseRoute>
+                    <ReportsLayout />
+                  </SuspenseRoute>
+                }
+              >
+                <Route
+                  index
+                  element={
+                    <SuspenseRoute>
+                      <ReportsHomePage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="sales/revenue-by-period"
+                  element={
+                    <SuspenseRoute>
+                      <ReportViewPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="sales/revenue-by-payment-method"
+                  element={
+                    <SuspenseRoute>
+                      <ReportViewPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="sales/shifts"
+                  element={
+                    <SuspenseRoute>
+                      <ReportViewPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="procurement/grn-value"
+                  element={
+                    <SuspenseRoute>
+                      <ReportViewPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="procurement/payables-snapshot"
+                  element={
+                    <SuspenseRoute>
+                      <ReportViewPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="inventory/stock-snapshot"
+                  element={
+                    <SuspenseRoute>
+                      <ReportViewPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="inventory/near-expiry"
+                  element={
+                    <SuspenseRoute>
+                      <ReportViewPage />
+                    </SuspenseRoute>
+                  }
+                />
+              </Route>
+              <Route
                 path="system"
                 element={
                   <SuspenseRoute>
@@ -276,6 +391,7 @@ export function AppRouter() {
                 <Route path="users" element={<UserListPage />} />
                 <Route path="roles" element={<RoleListPage />} />
                 <Route path="branches" element={<BranchListPage />} />
+                <Route path="audit-log" element={<AuditLogListPage />} />
               </Route>
             </Route>
           </Route>

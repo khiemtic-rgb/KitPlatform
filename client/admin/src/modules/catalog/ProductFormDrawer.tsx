@@ -42,8 +42,10 @@ import {
   type SimilarProductMatch,
 } from '@/shared/api/catalog.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
+import { withUploadAuth } from '@/shared/utils/upload-url';
 import { uploadImage } from '@/shared/api/files.api';
 import type { LookupItem, ProductDetail } from '@/shared/api/catalog.types';
+import type { ProductFormNationalPrefill } from '@/shared/api/national-drug.types';
 import { DRUG_TYPE_LABELS, PRICE_TYPE_LABELS, SALE_UNIT_OPTIONS, STATUS_LABELS, BARCODE_TYPE_LABELS } from '@/shared/api/catalog.types';
 import { formatDisplayMoney, moneyInputNumberPropsAllowZeroSuffix, moneyInputNumberStyle } from '@/shared/utils/money';
 
@@ -138,14 +140,17 @@ function formatGenericFromIngredients(rows: IngredientRow[]): string {
 type Props = {
   open: boolean;
   editing: ProductDetail | null;
+  nationalPrefill?: ProductFormNationalPrefill | null;
   onClose: () => void;
   onCreated: (product: ProductDetail) => void;
   onUpdated: (product?: ProductDetail) => void;
 };
 
-export function ProductFormDrawer({ open, editing, onClose, onCreated, onUpdated }: Props) {
+export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onCreated, onUpdated }: Props) {
   const { message: msg, modal } = App.useApp();
   const [form] = Form.useForm();
+  const linkedNationalDrugId = Form.useWatch('nationalDrugId', form);
+  const linkedNationalReg = Form.useWatch('nationalRegistrationNumber', form);
   const [saving, setSaving] = useState(false);
   const [commercialSaving, setCommercialSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -269,8 +274,11 @@ export function ProductFormDrawer({ open, editing, onClose, onCreated, onUpdated
       categoryId: product.categoryId,
       brandId: product.brandId,
       description: product.description,
+      nationalDrugId: product.nationalDrugId,
+      nationalRegistrationNumber: product.nationalRegistrationNumber,
       status: product.status,
       saleUnitName: product.saleUnitName ?? product.units.find((u) => u.isBaseUnit)?.unitName ?? 'Viên',
+      minStockQty: product.minStockQty,
     });
     const saleUnitId =
       product.units.find((u) => u.isSaleUnit)?.id ??
@@ -287,8 +295,11 @@ export function ProductFormDrawer({ open, editing, onClose, onCreated, onUpdated
     categoryId: form.getFieldValue('categoryId') as string | undefined,
     brandId: form.getFieldValue('brandId') as string | undefined,
     description: readTextField(form, 'description'),
+    nationalDrugId: readTextField(form, 'nationalDrugId'),
+    nationalRegistrationNumber: readTextField(form, 'nationalRegistrationNumber'),
     status: (form.getFieldValue('status') as number | undefined) ?? 1,
     saleUnitName: readTextField(form, 'saleUnitName') ?? 'Viên',
+    minStockQty: form.getFieldValue('minStockQty') as number | undefined,
   });
 
   const captureGeneralBaseline = () => {
@@ -531,7 +542,17 @@ export function ProductFormDrawer({ open, editing, onClose, onCreated, onUpdated
     void fetchNextProductCode()
       .then((code) => {
         if (cancelled) return;
-        form.setFieldsValue({ productCode: code, drugType: 1, status: 1, saleUnitName: 'Viên' });
+        form.setFieldsValue({
+          productCode: code,
+          drugType: nationalPrefill?.drugType ?? 1,
+          status: 1,
+          saleUnitName: nationalPrefill?.saleUnitName ?? 'Viên',
+          productName: nationalPrefill?.productName,
+          genericName: nationalPrefill?.genericName,
+          description: nationalPrefill?.description,
+          nationalDrugId: nationalPrefill?.nationalDrugId,
+          nationalRegistrationNumber: nationalPrefill?.nationalRegistrationNumber,
+        });
         captureGeneralBaseline();
       })
       .catch((error) => {
@@ -544,7 +565,7 @@ export function ProductFormDrawer({ open, editing, onClose, onCreated, onUpdated
     return () => {
       cancelled = true;
     };
-  }, [open, editing, form, msg]);
+  }, [open, editing, nationalPrefill, form, msg]);
 
   useEffect(() => {
     if (!open || !editing) return;
@@ -1040,6 +1061,38 @@ export function ProductFormDrawer({ open, editing, onClose, onCreated, onUpdated
 
   const generalFields = (
     <>
+      {linkedNationalDrugId && (
+        <Alert
+          type="success"
+          showIcon
+          message="Liên kết CSDL Dược QG"
+          description={
+            <>
+              Mã QG: <strong>{linkedNationalDrugId}</strong>
+              {linkedNationalReg && (
+                <>
+                  {' '}
+                  · Số ĐK: <strong>{linkedNationalReg}</strong>
+                </>
+              )}
+              {nationalPrefill?.suggestedBarcode && !hasPersistedId && (
+                <>
+                  <br />
+                  Barcode gợi ý: <Typography.Text code>{nationalPrefill.suggestedBarcode}</Typography.Text> — thêm ở tab
+                  Chi tiết sau khi lưu.
+                </>
+              )}
+            </>
+          }
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      <Form.Item name="nationalDrugId" hidden>
+        <Input />
+      </Form.Item>
+      <Form.Item name="nationalRegistrationNumber" hidden>
+        <Input />
+      </Form.Item>
       <Form.Item label="Mã sản phẩm">
         <Space.Compact style={{ width: '100%' }}>
           <Form.Item name="productCode" noStyle>
@@ -1134,6 +1187,9 @@ export function ProductFormDrawer({ open, editing, onClose, onCreated, onUpdated
             label: v,
           }))}
         />
+      </Form.Item>
+      <Form.Item name="minStockQty" label="Tồn tối thiểu (cảnh báo)">
+        <InputNumber min={0} precision={3} style={{ width: '100%' }} placeholder="Mặc định 10 nếu để trống" />
       </Form.Item>
     </>
   );
@@ -1348,7 +1404,7 @@ export function ProductFormDrawer({ open, editing, onClose, onCreated, onUpdated
         {commercial.images.length ? (
           commercial.images.map((img) => (
             <div key={img.imageUrl} style={{ textAlign: 'center' }}>
-              <Avatar shape="square" size={72} src={img.imageUrl} alt="" />
+              <Avatar shape="square" size={72} src={withUploadAuth(img.imageUrl)} alt="" />
               <div style={{ marginTop: 4 }}>
                 <Button
                   type="text"

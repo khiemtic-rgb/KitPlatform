@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import { http } from '@/shared/api/http';
 import type {
   AdjustmentDetail,
@@ -10,6 +11,11 @@ import type {
   OpeningBalanceBatch,
   OpeningBalanceLine,
   OpeningBalanceResult,
+  OpeningBalanceImportResult,
+  LowStockProduct,
+  LowStockSettings,
+  CategoryLowStockSetting,
+  WarehouseLowStockSetting,
   PagedStockBatches,
   PagedStockProducts,
   StockBatch,
@@ -53,6 +59,7 @@ function normalizeStockProductSummary(row: Record<string, unknown>): StockProduc
     productId: String(row.productId ?? row.ProductId),
     productCode: String(row.productCode ?? row.ProductCode ?? ''),
     productName: String(row.productName ?? row.ProductName ?? ''),
+    saleUnitName: (row.saleUnitName ?? row.SaleUnitName) as string | undefined,
     totalQuantity: Number(row.totalQuantity ?? row.TotalQuantity ?? 0),
     warehouseCount: Number(row.warehouseCount ?? row.WarehouseCount ?? 0),
     batchCount: Number(row.batchCount ?? row.BatchCount ?? 0),
@@ -68,6 +75,7 @@ function normalizeStockBatch(row: Record<string, unknown>): StockBatch {
     productId: String(row.productId ?? row.ProductId),
     productCode: String(row.productCode ?? row.ProductCode ?? ''),
     productName: String(row.productName ?? row.ProductName ?? ''),
+    saleUnitName: (row.saleUnitName ?? row.SaleUnitName) as string | undefined,
     batchNumber: String(row.batchNumber ?? row.BatchNumber ?? ''),
     expiryDate: (row.expiryDate ?? row.ExpiryDate) as string | undefined,
     unitCost: Number(row.unitCost ?? row.UnitCost ?? 0),
@@ -228,6 +236,7 @@ function normalizeOpeningBalanceBatch(row: Record<string, unknown>): OpeningBala
     productId: String(row.productId ?? row.ProductId),
     productCode: String(row.productCode ?? row.ProductCode ?? ''),
     productName: String(row.productName ?? row.ProductName ?? ''),
+    saleUnitName: (row.saleUnitName ?? row.SaleUnitName) as string | undefined,
     batchNumber: String(row.batchNumber ?? row.BatchNumber ?? ''),
     expiryDate: (row.expiryDate ?? row.ExpiryDate) as string | undefined,
     unitCost: Number(row.unitCost ?? row.UnitCost ?? 0),
@@ -339,6 +348,18 @@ export async function createCountingSession(payload: {
   return normalizeAdjustmentDetail(data);
 }
 
+export async function fetchActiveCountingSession(warehouseId: string): Promise<AdjustmentListItem | null> {
+  try {
+    const { data } = await http.get<Record<string, unknown>>('/inventory/adjustments/active-counting', {
+      params: { warehouseId },
+    });
+    return normalizeAdjustmentListItem(data);
+  } catch (error) {
+    if (isAxiosError(error) && error.response?.status === 404) return null;
+    throw error;
+  }
+}
+
 export async function fetchCountPreview(adjustmentId: string): Promise<AdjustmentCountPreview> {
   const { data } = await http.get<Record<string, unknown>>(`/inventory/adjustments/${adjustmentId}/count-preview`);
   const byBatchRaw = (data.byBatch ?? data.ByBatch ?? []) as Record<string, unknown>[];
@@ -399,4 +420,139 @@ export async function resolveInventoryBarcode(
   } catch {
     return null;
   }
+}
+
+function normalizeLowStockProduct(row: Record<string, unknown>): LowStockProduct {
+  return {
+    productId: String(row.productId ?? row.ProductId),
+    productCode: String(row.productCode ?? row.ProductCode ?? ''),
+    productName: String(row.productName ?? row.ProductName ?? ''),
+    saleUnitName: (row.saleUnitName ?? row.SaleUnitName) as string | undefined,
+    warehouseId: String(row.warehouseId ?? row.WarehouseId ?? ''),
+    warehouseName: String(row.warehouseName ?? row.WarehouseName ?? ''),
+    branchId: (row.branchId ?? row.BranchId) as string | undefined,
+    branchName: (row.branchName ?? row.BranchName) as string | undefined,
+    totalQuantity: Number(row.totalQuantity ?? row.TotalQuantity ?? 0),
+    minStockQty: Number(row.minStockQty ?? row.MinStockQty ?? 10),
+    batchCount: Number(row.batchCount ?? row.BatchCount ?? 0),
+  };
+}
+
+export async function fetchLowStockProducts(params?: {
+  warehouseId?: string;
+  defaultThreshold?: number;
+}): Promise<LowStockProduct[]> {
+  const { data } = await http.get<Record<string, unknown>[]>('/inventory/stock/low-stock', { params });
+  return data.map((row) => normalizeLowStockProduct(row));
+}
+
+export async function importOpeningBalance(payload: {
+  warehouseId: string;
+  notes?: string;
+  rows: Array<{
+    rowNumber: number;
+    productKey: string;
+    batchNumber: string;
+    expiryDate?: string;
+    quantity: number;
+    unitCost: number;
+  }>;
+}): Promise<OpeningBalanceImportResult> {
+  const { data } = await http.post<Record<string, unknown>>('/inventory/opening-balance/import', payload);
+  const errors = ((data.errors ?? data.Errors ?? []) as Record<string, unknown>[]).map((row) => ({
+    rowNumber: Number(row.rowNumber ?? row.RowNumber ?? 0),
+    message: String(row.message ?? row.Message ?? ''),
+  }));
+  return {
+    linesProcessed: Number(data.linesProcessed ?? data.LinesProcessed ?? 0),
+    batchIds: ((data.batchIds ?? data.BatchIds ?? []) as unknown[]).map(String),
+    errors,
+  };
+}
+
+function normalizeCategoryLowStock(row: Record<string, unknown>): CategoryLowStockSetting {
+  return {
+    id: String(row.id ?? row.Id),
+    categoryCode: String(row.categoryCode ?? row.CategoryCode ?? ''),
+    categoryName: String(row.categoryName ?? row.CategoryName ?? ''),
+    minStockQty: (row.minStockQty ?? row.MinStockQty) as number | undefined,
+    productCount: Number(row.productCount ?? row.ProductCount ?? 0),
+  };
+}
+
+function normalizeWarehouseLowStock(row: Record<string, unknown>): WarehouseLowStockSetting {
+  return {
+    id: String(row.id ?? row.Id),
+    warehouseCode: String(row.warehouseCode ?? row.WarehouseCode ?? ''),
+    warehouseName: String(row.warehouseName ?? row.WarehouseName ?? ''),
+    branchId: (row.branchId ?? row.BranchId) as string | undefined,
+    branchName: (row.branchName ?? row.BranchName) as string | undefined,
+    minStockQty: (row.minStockQty ?? row.MinStockQty) as number | undefined,
+    isDefault: Boolean(row.isDefault ?? row.IsDefault),
+  };
+}
+
+export async function fetchLowStockSettings(): Promise<LowStockSettings> {
+  const { data } = await http.get<Record<string, unknown>>('/inventory/low-stock/settings');
+  const categories = ((data.categories ?? data.Categories ?? []) as Record<string, unknown>[]).map(
+    normalizeCategoryLowStock,
+  );
+  const warehouses = ((data.warehouses ?? data.Warehouses ?? []) as Record<string, unknown>[]).map(
+    normalizeWarehouseLowStock,
+  );
+  return {
+    defaultMinStockQty: (data.defaultMinStockQty ?? data.DefaultMinStockQty) as number | undefined,
+    systemFallbackQty: Number(data.systemFallbackQty ?? data.SystemFallbackQty ?? 10),
+    categories,
+    warehouses,
+  };
+}
+
+export async function updateLowStockDefault(defaultMinStockQty?: number): Promise<number | undefined> {
+  const { data } = await http.put<Record<string, unknown>>('/inventory/low-stock/settings/default', {
+    defaultMinStockQty: defaultMinStockQty ?? null,
+  });
+  return (data.defaultMinStockQty ?? data.DefaultMinStockQty) as number | undefined;
+}
+
+export async function updateCategoryLowStockSetting(
+  categoryId: string,
+  minStockQty?: number,
+): Promise<CategoryLowStockSetting> {
+  const { data } = await http.put<Record<string, unknown>>(
+    `/inventory/low-stock/settings/categories/${categoryId}`,
+    { minStockQty: minStockQty ?? null },
+  );
+  return normalizeCategoryLowStock(data);
+}
+
+export async function updateWarehouseLowStockSetting(
+  warehouseId: string,
+  minStockQty?: number,
+): Promise<WarehouseLowStockSetting> {
+  const { data } = await http.put<Record<string, unknown>>(
+    `/inventory/low-stock/settings/warehouses/${warehouseId}`,
+    { minStockQty: minStockQty ?? null },
+  );
+  return normalizeWarehouseLowStock(data);
+}
+
+export async function applyLowStockToAll(onlyUnset = true, minStockQty?: number): Promise<number> {
+  const { data } = await http.post<Record<string, unknown>>('/inventory/low-stock/settings/apply-all', {
+    minStockQty: minStockQty ?? null,
+    onlyUnset,
+  });
+  return Number(data.updatedCount ?? data.UpdatedCount ?? 0);
+}
+
+export async function applyLowStockToCategory(
+  categoryId: string,
+  onlyUnset = true,
+  minStockQty?: number,
+): Promise<number> {
+  const { data } = await http.post<Record<string, unknown>>(
+    `/inventory/low-stock/settings/apply-category/${categoryId}`,
+    { minStockQty: minStockQty ?? null, onlyUnset },
+  );
+  return Number(data.updatedCount ?? data.UpdatedCount ?? 0);
 }

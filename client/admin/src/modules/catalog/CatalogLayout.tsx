@@ -3,8 +3,10 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Tabs } from 'antd';
 import {
   AppstoreOutlined,
+  CloudSyncOutlined,
   ExperimentOutlined,
   FolderOutlined,
+  ImportOutlined,
   TagOutlined,
 } from '@ant-design/icons';
 import {
@@ -12,22 +14,45 @@ import {
   secondaryTabLabel,
   secondaryTabsBarStyle,
 } from '@/shared/components/module-tabs.ui';
+import type { ProductNavTab } from '@/shared/product/product-phases';
+import { useProductNavGuard } from '@/shared/product/useProductNavGuard';
 
-const tabs = [
-  { key: 'products', label: 'Sản phẩm', path: '/catalog/products', icon: <AppstoreOutlined /> },
+const allTabs: ProductNavTab[] = [
+  {
+    key: 'products',
+    label: 'Sản phẩm',
+    path: '/catalog/products',
+    icon: <AppstoreOutlined />,
+  },
+  { key: 'import', label: 'Import Excel', path: '/catalog/import', icon: <ImportOutlined /> },
   { key: 'categories', label: 'Danh mục SP', path: '/catalog/categories', icon: <FolderOutlined /> },
-  { key: 'brands', label: 'Thương hiệu', path: '/catalog/brands', icon: <TagOutlined /> },
+  {
+    key: 'brands',
+    label: 'Thương hiệu',
+    path: '/catalog/brands',
+    icon: <TagOutlined />,
+    feature: 'catalog.brands',
+  },
   {
     key: 'ingredients',
     label: 'Hoạt chất',
     path: '/catalog/ingredients',
     icon: <ExperimentOutlined />,
+    feature: 'catalog.ingredients',
+  },
+  {
+    key: 'national-drugs',
+    label: 'Tra cứu QG',
+    path: '/catalog/national-drugs',
+    icon: <CloudSyncOutlined />,
+    feature: 'catalog.nationalDrug',
   },
 ];
 
 export function CatalogLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const tabs = useProductNavGuard(allTabs, '/catalog/products');
 
   useEffect(() => {
     if (location.pathname === '/catalog' || location.pathname === '/catalog/') {

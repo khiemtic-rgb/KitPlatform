@@ -32,6 +32,7 @@ internal sealed class AuthRepository
               AND u.username = @Username
               AND u.deleted_at IS NULL
               AND t.deleted_at IS NULL
+              AND t.status = 1
             GROUP BY u.id, u.tenant_id, t.tenant_code, u.username, u.email, u.password_hash, u.status
             """;
 
@@ -60,6 +61,8 @@ internal sealed class AuthRepository
             LEFT JOIN permissions p ON p.id = rp.permission_id
             WHERE u.id = @UserId
               AND u.deleted_at IS NULL
+              AND t.deleted_at IS NULL
+              AND t.status = 1
             GROUP BY u.id, u.tenant_id, t.tenant_code, u.username, u.email, u.password_hash, u.status
             """;
 

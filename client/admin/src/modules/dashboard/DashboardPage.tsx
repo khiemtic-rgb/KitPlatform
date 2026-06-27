@@ -18,6 +18,7 @@ import type { DashboardOverview } from '@/shared/api/dashboard.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
 import { formatDisplayMoney } from '@/shared/utils/money';
+import { isProductFeatureEnabled } from '@/shared/product/product-phases';
 
 interface KpiCardProps {
   title: string;
@@ -77,6 +78,9 @@ export function DashboardPage() {
   const inventory = overview?.inventory;
   const procurement = overview?.procurement;
   const o2o = overview?.o2o;
+  const showReservations = isProductFeatureEnabled('sales.customerReservations');
+  const showChat = isProductFeatureEnabled('sales.chat');
+  const showO2oKpis = showReservations || showChat;
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -190,13 +194,25 @@ export function DashboardPage() {
                   </Col>
                   <Col xs={24} sm={12} lg={6}>
                     <KpiCard
-                      title="Tồn thấp (≤10)"
+                      title="SP tồn thấp"
+                      value={inventory?.lowStockProductCount ?? '—'}
+                      prefix={<WarningOutlined />}
+                      hint="Theo SP / danh mục / ngưỡng chung"
+                      to="/inventory/low-stock"
+                      valueStyle={
+                        (inventory?.lowStockProductCount ?? 0) > 0 ? { color: '#d48806' } : undefined
+                      }
+                    />
+                  </Col>
+                  <Col xs={24} sm={12} lg={6}>
+                    <KpiCard
+                      title="Lô tồn thấp (≤10)"
                       value={inventory?.lowStockBatchCount ?? '—'}
                       prefix={<InboxOutlined />}
                       hint="Lô còn hàng nhưng SL thấp"
                       to="/inventory/stock?tab=fefo"
                       valueStyle={
-                        (inventory?.lowStockBatchCount ?? 0) > 0 ? { color: '#d48806' } : undefined
+                        (inventory?.lowStockBatchCount ?? 0) > 0 ? { color: '#cf1322' } : undefined
                       }
                     />
                   </Col>
@@ -220,34 +236,38 @@ export function DashboardPage() {
         </>
       )}
 
-      {canSales && (
+      {canSales && showO2oKpis && (
         <>
           <Typography.Title level={5} style={{ margin: 0 }}>
             App khách
           </Typography.Title>
           <Spin spinning={loading && !overview}>
             <Row gutter={[16, 16]}>
-              <Col xs={24} sm={12} lg={8}>
-                <KpiCard
-                  title="Đặt trước chờ xử lý"
-                  value={o2o?.reservationsAwaitingCount ?? '—'}
-                  prefix={<CalendarOutlined />}
-                  hint="Chờ duyệt / sẵn sàng"
-                  to="/sales/customer-reservations?awaiting=1"
-                  valueStyle={
-                    (o2o?.reservationsAwaitingCount ?? 0) > 0 ? { color: '#d48806' } : undefined
-                  }
-                />
-              </Col>
-              <Col xs={24} sm={12} lg={8}>
-                <KpiCard
-                  title="Chat chưa đọc"
-                  value={o2o?.chatUnreadCount ?? '—'}
-                  prefix={<MessageOutlined />}
-                  to="/sales/chat"
-                  valueStyle={(o2o?.chatUnreadCount ?? 0) > 0 ? { color: '#1677ff' } : undefined}
-                />
-              </Col>
+              {showReservations && (
+                <Col xs={24} sm={12} lg={8}>
+                  <KpiCard
+                    title="Đặt trước chờ xử lý"
+                    value={o2o?.reservationsAwaitingCount ?? '—'}
+                    prefix={<CalendarOutlined />}
+                    hint="Chờ duyệt / sẵn sàng"
+                    to="/sales/customer-reservations?awaiting=1"
+                    valueStyle={
+                      (o2o?.reservationsAwaitingCount ?? 0) > 0 ? { color: '#d48806' } : undefined
+                    }
+                  />
+                </Col>
+              )}
+              {showChat && (
+                <Col xs={24} sm={12} lg={8}>
+                  <KpiCard
+                    title="Chat chưa đọc"
+                    value={o2o?.chatUnreadCount ?? '—'}
+                    prefix={<MessageOutlined />}
+                    to="/sales/chat"
+                    valueStyle={(o2o?.chatUnreadCount ?? 0) > 0 ? { color: '#1677ff' } : undefined}
+                  />
+                </Col>
+              )}
             </Row>
           </Spin>
         </>

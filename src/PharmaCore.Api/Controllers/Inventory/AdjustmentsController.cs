@@ -47,6 +47,16 @@ public sealed class AdjustmentsController : ControllerBase
         return CreatedAtAction(nameof(Get), new { id = item.Id }, item);
     }
 
+    [HttpGet("active-counting")]
+    [Authorize(Policy = InventoryPolicies.Read)]
+    public async Task<ActionResult<AdjustmentListItemDto>> GetActiveCounting(
+        [FromQuery] Guid warehouseId,
+        CancellationToken cancellationToken)
+    {
+        var item = await _inventory.GetActiveCountingSessionAsync(warehouseId, cancellationToken);
+        return item is null ? NotFound() : Ok(item);
+    }
+
     [HttpGet("{id:guid}/count-preview")]
     [Authorize(Policy = InventoryPolicies.Read)]
     public async Task<ActionResult<AdjustmentCountPreviewResultDto>> CountPreview(

@@ -1,5 +1,7 @@
 src/**/bin/
 src/**/obj/
+tools/**/bin/
+tools/**/obj/
 client/**/node_modules/
 client/**/dist/
 .dev/

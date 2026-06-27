@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import {
+  BarChartOutlined,
   DashboardOutlined,
   MedicineBoxOutlined,
   ShoppingOutlined,
@@ -9,7 +10,17 @@ import {
   SettingOutlined,
 } from '@ant-design/icons';
 
-export type ModuleKey = 'dashboard' | 'catalog' | 'inventory' | 'procurement' | 'sales' | 'customer' | 'system';
+export type ModuleKey = 'dashboard' | 'catalog' | 'inventory' | 'procurement' | 'sales' | 'customer' | 'reports' | 'system';
+
+/** Module hiển thị trên thanh ngang header (ERP Nhà thuốc) */
+export const HEADER_MODULE_KEYS: ModuleKey[] = [
+  'dashboard',
+  'catalog',
+  'inventory',
+  'procurement',
+  'sales',
+  'reports',
+];
 
 export interface ModuleMenuItem {
   key: ModuleKey;
@@ -27,6 +38,7 @@ export const moduleRegistry: ModuleMenuItem[] = [
   { key: 'procurement', label: 'Mua hàng', path: '/procurement', icon: <ShoppingOutlined />, enabled: true },
   { key: 'sales', label: 'Bán hàng', path: '/sales', icon: <ShopOutlined />, enabled: true },
   { key: 'customer', label: 'Khách hàng', path: '/customer', icon: <TeamOutlined />, enabled: true },
+  { key: 'reports', label: 'Báo cáo', path: '/reports', icon: <BarChartOutlined />, enabled: true },
   { key: 'system', label: 'Hệ thống', path: '/system', icon: <SettingOutlined />, enabled: true },
 ];
 

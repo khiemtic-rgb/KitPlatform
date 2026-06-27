@@ -8,7 +8,8 @@ public static class DashboardAuthorizationExtensions
     {
         options.AddPolicy(DashboardPolicies.Read, policy =>
             policy.RequireAssertion(ctx =>
-                ctx.User.IsInRole("ADMIN")
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && (ctx.User.IsInRole("ADMIN")
                 || HasPermission(ctx, "sales.read")
                 || HasPermission(ctx, "sales.write")
                 || HasPermission(ctx, "inventory.read")
@@ -16,7 +17,7 @@ public static class DashboardAuthorizationExtensions
                 || HasPermission(ctx, "procurement.read")
                 || HasPermission(ctx, "procurement.write")
                 || HasPermission(ctx, "catalog.read")
-                || HasPermission(ctx, "catalog.write")));
+                || HasPermission(ctx, "catalog.write"))));
     }
 
     private static bool HasPermission(AuthorizationHandlerContext ctx, string permission) =>

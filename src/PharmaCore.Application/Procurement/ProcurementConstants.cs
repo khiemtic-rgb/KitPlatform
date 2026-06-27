@@ -36,3 +36,9 @@ public static class SupplierPaymentStatuses
     public const short Posted = 2;
     public const short Cancelled = 3;
 }
+
+public static class ProcurementVatTax
+{
+    public static decimal ComputeTaxAmount(decimal subtotal, decimal ratePercent) =>
+        Math.Round(subtotal * ratePercent / 100m, 2, MidpointRounding.AwayFromZero);
+}

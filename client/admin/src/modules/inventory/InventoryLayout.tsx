@@ -7,6 +7,7 @@ import {
   DatabaseOutlined,
   ImportOutlined,
   SwapOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import {
   moduleTabsShellStyle,
@@ -16,6 +17,7 @@ import {
 
 const tabs = [
   { key: 'stock', label: 'Tồn kho', path: '/inventory/stock', icon: <DatabaseOutlined /> },
+  { key: 'low-stock', label: 'Tồn thấp', path: '/inventory/low-stock', icon: <WarningOutlined /> },
   { key: 'warehouses', label: 'Kho', path: '/inventory/warehouses', icon: <BankOutlined /> },
   {
     key: 'opening',

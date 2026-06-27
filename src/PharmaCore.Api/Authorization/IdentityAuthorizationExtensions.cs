@@ -8,13 +8,15 @@ public static class IdentityAuthorizationExtensions
     {
         options.AddPolicy(IdentityPolicies.Read, policy =>
             policy.RequireAssertion(ctx =>
-                HasPermission(ctx, "system.read")
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && (HasPermission(ctx, "system.read")
                 || HasPermission(ctx, "system.write")
-                || ctx.User.IsInRole("ADMIN")));
+                || ctx.User.IsInRole("ADMIN"))));
 
         options.AddPolicy(IdentityPolicies.Write, policy =>
             policy.RequireAssertion(ctx =>
-                HasPermission(ctx, "system.write") || ctx.User.IsInRole("ADMIN")));
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && (HasPermission(ctx, "system.write") || ctx.User.IsInRole("ADMIN"))));
     }
 
     private static bool HasPermission(AuthorizationHandlerContext ctx, string permission) =>

@@ -31,7 +31,7 @@ export type StockBatch = Req<
   | 'quantityAvailable'
   | 'quantityReceived'
   | 'status'
->;
+> & Pick<StockBatchListItemDto, 'saleUnitName'>;
 
 export type PagedStockBatches = Omit<Req<PagedStockBatchesResult, 'total' | 'page' | 'pageSize'>, 'items'> & {
   items: StockBatch[];
@@ -40,7 +40,7 @@ export type PagedStockBatches = Omit<Req<PagedStockBatchesResult, 'total' | 'pag
 export type StockProductSummary = Req<
   StockProductSummaryDto,
   'productId' | 'productCode' | 'productName' | 'totalQuantity' | 'warehouseCount' | 'batchCount'
->;
+> & Pick<StockProductSummaryDto, 'saleUnitName'>;
 
 export type PagedStockProducts = Omit<Req<PagedStockProductsResult, 'total' | 'page' | 'pageSize'>, 'items'> & {
   items: StockProductSummary[];
@@ -76,7 +76,7 @@ export type OpeningBalanceBatch = Req<
   | 'openingQuantity'
   | 'firstOpeningDate'
   | 'canVoid'
->;
+> & Pick<OpeningBalanceBatchListItemDto, 'saleUnitName'>;
 
 export type TransferListItem = Req<
   TransferListItemDto,
@@ -185,6 +185,53 @@ export type InventoryBarcodeResolve = {
   suggestedBatchNumber?: string;
 };
 
+export type LowStockProduct = {
+  productId: string;
+  productCode: string;
+  productName: string;
+  saleUnitName?: string;
+  warehouseId: string;
+  warehouseName: string;
+  branchId?: string;
+  branchName?: string;
+  totalQuantity: number;
+  minStockQty: number;
+  batchCount: number;
+};
+
+export type OpeningBalanceImportError = { rowNumber: number; message: string };
+
+export type OpeningBalanceImportResult = {
+  linesProcessed: number;
+  batchIds: string[];
+  errors: OpeningBalanceImportError[];
+};
+
+export type CategoryLowStockSetting = {
+  id: string;
+  categoryCode: string;
+  categoryName: string;
+  minStockQty?: number;
+  productCount: number;
+};
+
+export type WarehouseLowStockSetting = {
+  id: string;
+  warehouseCode: string;
+  warehouseName: string;
+  branchId?: string;
+  branchName?: string;
+  minStockQty?: number;
+  isDefault: boolean;
+};
+
+export type LowStockSettings = {
+  defaultMinStockQty?: number;
+  systemFallbackQty: number;
+  categories: CategoryLowStockSetting[];
+  warehouses: WarehouseLowStockSetting[];
+};
+
 export const WAREHOUSE_TYPE_LABELS: Record<number, string> = {
   1: 'Kho chính',
   2: 'Kho bán lẻ',
@@ -194,14 +241,14 @@ export const WAREHOUSE_TYPE_LABELS: Record<number, string> = {
 };
 
 export const TRANSFER_STATUS_LABELS: Record<number, string> = {
-  1: 'Nháp',
-  2: 'Chờ xử lý',
+  1: 'Chờ hoàn tất',
+  2: 'Đang chuyển',
   3: 'Hoàn tất',
   4: 'Đã hủy',
 };
 
 export const ADJUSTMENT_STATUS_LABELS: Record<number, string> = {
-  1: 'Nháp',
+  1: 'Chờ duyệt',
   2: 'Đang kiểm',
   3: 'Đã duyệt',
   4: 'Đã hủy',

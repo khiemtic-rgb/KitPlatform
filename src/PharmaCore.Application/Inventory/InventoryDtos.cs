@@ -16,6 +16,7 @@ public sealed record StockProductSummaryDto(
     Guid ProductId,
     string ProductCode,
     string ProductName,
+    string? SaleUnitName,
     decimal TotalQuantity,
     int WarehouseCount,
     int BatchCount);
@@ -28,6 +29,7 @@ public sealed record StockBatchListItemDto(
     Guid ProductId,
     string ProductCode,
     string ProductName,
+    string? SaleUnitName,
     string BatchNumber,
     DateOnly? ExpiryDate,
     decimal UnitCost,
@@ -88,6 +90,7 @@ public sealed record OpeningBalanceBatchListItemDto(
     Guid ProductId,
     string ProductCode,
     string ProductName,
+    string? SaleUnitName,
     string BatchNumber,
     DateOnly? ExpiryDate,
     decimal UnitCost,
@@ -227,3 +230,17 @@ public sealed record InventoryBarcodeResolveDto(
     string? SaleUnitName,
     Guid? SuggestedBatchId,
     string? SuggestedBatchNumber);
+
+public sealed record LowStockProductDto(
+    Guid ProductId,
+    string ProductCode,
+    string ProductName,
+    string? SaleUnitName,
+    Guid WarehouseId,
+    string WarehouseName,
+    Guid? BranchId,
+    string? BranchName,
+    decimal TotalQuantity,
+    decimal MinStockQty,
+    int BatchCount);
+

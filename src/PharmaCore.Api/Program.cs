@@ -1,6 +1,6 @@
 using System.Text;
+using Dapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PharmaCore.Api.Authorization;
@@ -70,6 +70,7 @@ builder.Services.AddAuthorization(options =>
     options.AddSalesAuthorization();
     options.AddCustomerAppAuthorization();
     options.AddDashboardAuthorization();
+    options.AddReportsAuthorization();
     options.AddIdentityAuthorization();
 });
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
@@ -149,11 +150,6 @@ app.UseCors("AdminWeb");
 
 var uploadsRoot = Path.Combine(app.Environment.ContentRootPath, "uploads");
 Directory.CreateDirectory(uploadsRoot);
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(uploadsRoot),
-    RequestPath = "/uploads",
-});
 
 app.Use(async (context, next) =>
 {
@@ -219,8 +215,79 @@ app.UseAuthorization();
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path;
+    if (path.StartsWithSegments("/uploads/products", out var remaining))
+    {
+        var segments = remaining.Value.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length < 2
+            || !Guid.TryParseExact(segments[0], "N", out var folderTenantId))
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
+        if (context.User.Identity?.IsAuthenticated != true)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
+        var claimTenant = context.User.FindFirst("tenant_id")?.Value;
+        if (!Guid.TryParse(claimTenant, out var userTenantId) || userTenantId != folderTenantId)
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return;
+        }
+
+        var filePath = Path.Combine(uploadsRoot, "products", segments[0], segments[^1]);
+        if (!System.IO.File.Exists(filePath))
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
+        context.Response.ContentType = Path.GetExtension(filePath).ToLowerInvariant() switch
+        {
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            _ => "application/octet-stream",
+        };
+        await context.Response.SendFileAsync(filePath);
+        return;
+    }
+
+    await next();
+});
+
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path;
+    if (path.StartsWithSegments("/api")
+        && !path.StartsWithSegments("/api/customer-app")
+        && !path.StartsWithSegments("/api/auth")
+        && !path.StartsWithSegments("/api/platform")
+        && !path.StartsWithSegments("/api/health")
+        && context.User.Identity?.IsAuthenticated == true
+        && !AdminTokenRules.IsAdminPrincipal(context.User))
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new
+        {
+            message = "Token app khách không dùng được cho API quản trị.",
+        });
+        return;
+    }
+
+    await next();
+});
+
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path;
     if (path.StartsWithSegments("/api")
         && !path.StartsWithSegments("/api/auth")
+        && !path.StartsWithSegments("/api/platform")
         && !path.StartsWithSegments("/api/health")
         && context.User.Identity?.IsAuthenticated == true)
     {
@@ -253,6 +320,19 @@ try
     var db = scope.ServiceProvider.GetRequiredService<IDbConnectionFactory>();
     await using var conn = await db.CreateOpenConnectionAsync();
     app.Logger.LogInformation("PostgreSQL connection OK");
+
+    if (!app.Environment.IsDevelopment())
+    {
+        var platform = app.Configuration.GetSection(PlatformSettings.SectionName).Get<PlatformSettings>()
+            ?? new PlatformSettings();
+        var tenantCount = await conn.QuerySingleAsync<int>(
+            "SELECT COUNT(*)::int FROM tenants WHERE deleted_at IS NULL");
+        if (tenantCount > 0 && (platform.ProvisioningKey?.Trim().Length ?? 0) < 16)
+        {
+            throw new InvalidOperationException(
+                "Production: đã có nhà thuốc — cần Platform__ProvisioningKey (≥ 16 ký tự).");
+        }
+    }
 }
 catch (Exception ex)
 {

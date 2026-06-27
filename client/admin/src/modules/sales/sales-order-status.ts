@@ -1,6 +1,6 @@
 /** Trạng thái đơn bán — nguồn thống nhất cho list, filter, in. */
 export const SALE_STATUS_LABELS: Record<number, string> = {
-  1: 'Tạm',
+  1: 'Nháp',
   2: 'Hoàn tất',
   3: 'Đã hủy',
   4: 'Hoàn tiền',

@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Card, Descriptions, Drawer, Spin, Table, Typography, message } from 'antd';
+import { Button, Card, Descriptions, Drawer, Spin, Table, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { CreditCardOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import { fetchSupplierPayables, fetchSupplierPayablesDetail } from '@/shared/api/procurement.api';
-import type { SupplierPayablesDetail, SupplierPayablesRow } from '@/shared/api/procurement.types';
+import type { SupplierPayablesDetail, SupplierPayablesDetailLine, SupplierPayablesRow } from '@/shared/api/procurement.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
+import { buildSupplierPaymentCreateUrl } from '@/modules/procurement/supplier-payment-nav';
+import { useProcurementWrite } from '@/shared/auth/usePermission';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
@@ -12,6 +16,8 @@ function agingCell(value: number) {
 }
 
 export function SupplierPayablesPage() {
+  const canWrite = useProcurementWrite();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<SupplierPayablesRow[]>([]);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -62,6 +68,74 @@ export function SupplierPayablesPage() {
     }
   };
 
+  const goToPayment = (prefill: { supplierId: string; goodsReceiptId?: string; amount?: number }) => {
+    navigate(buildSupplierPaymentCreateUrl(prefill));
+  };
+
+  const detailColumns: ColumnsType<SupplierPayablesDetailLine> = useMemo(() => {
+    const base: ColumnsType<SupplierPayablesDetailLine> = [
+      { title: 'Phiếu nhập', dataIndex: 'grnNumber', width: 130 },
+      {
+        title: 'Ngày nhập',
+        dataIndex: 'receiptDate',
+        width: 120,
+        render: (v: string) => formatDisplayDate(v),
+      },
+      {
+        title: 'Giá trị GRN',
+        dataIndex: 'grnTotal',
+        align: 'right',
+        render: (v: number) => formatDisplayMoney(v),
+      },
+      {
+        title: 'Đã trả',
+        dataIndex: 'paidAmount',
+        align: 'right',
+        render: (v: number) => formatDisplayMoney(v),
+      },
+      {
+        title: 'Còn lại',
+        dataIndex: 'outstanding',
+        align: 'right',
+        render: (v: number) => formatDisplayMoney(v),
+      },
+      {
+        title: 'Tuổi nợ (ngày)',
+        dataIndex: 'daysOutstanding',
+        width: 120,
+        align: 'center',
+      },
+    ];
+
+    if (!canWrite) return base;
+
+    return [
+      ...base,
+      {
+        title: '',
+        width: 110,
+        render: (_, line) =>
+          line.outstanding > 0.009 && detail ? (
+            <Button
+              type="link"
+              size="small"
+              icon={<CreditCardOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                goToPayment({
+                  supplierId: detail.supplierId,
+                  goodsReceiptId: line.goodsReceiptId,
+                  amount: line.outstanding,
+                });
+              }}
+            >
+              Thanh toán
+            </Button>
+          ) : null,
+      },
+    ];
+  }, [canWrite, detail, navigate]);
+
   const columns: ColumnsType<SupplierPayablesRow> = [
     {
       title: 'Mã NCC',
@@ -71,7 +145,8 @@ export function SupplierPayablesPage() {
     {
       title: 'Nhà cung cấp',
       dataIndex: 'supplierName',
-      ellipsis: true,
+      width: 280,
+      ellipsis: { showTitle: true },
     },
     {
       title: 'Hạn TT (ngày)',
@@ -118,45 +193,12 @@ export function SupplierPayablesPage() {
     },
   ];
 
-  const detailColumns: ColumnsType<SupplierPayablesDetail['lines'][number]> = [
-    { title: 'Phiếu nhập', dataIndex: 'grnNumber', width: 130 },
-    {
-      title: 'Ngày nhập',
-      dataIndex: 'receiptDate',
-      width: 120,
-      render: (v: string) => formatDisplayDate(v),
-    },
-    {
-      title: 'Giá trị GRN',
-      dataIndex: 'grnTotal',
-      align: 'right',
-      render: (v: number) => formatDisplayMoney(v),
-    },
-    {
-      title: 'Đã trả',
-      dataIndex: 'paidAmount',
-      align: 'right',
-      render: (v: number) => formatDisplayMoney(v),
-    },
-    {
-      title: 'Còn lại',
-      dataIndex: 'outstanding',
-      align: 'right',
-      render: (v: number) => formatDisplayMoney(v),
-    },
-    {
-      title: 'Tuổi nợ (ngày)',
-      dataIndex: 'daysOutstanding',
-      width: 120,
-      align: 'center',
-    },
-  ];
-
   return (
     <Card title="Công nợ nhà cung cấp" bordered={false}>
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        Tính theo phiếu nhập đã hoàn tất trừ thanh toán đã ghi sổ. Thanh toán không gắn GRN được bù trừ theo thứ tự
-        nhập cũ nhất.
+        Giá trị GRN và công nợ tính theo thành tiền dòng (trước thuế GTGT). Tổng PO sau thuế chỉ mang tính tham
+        chiếu trên màn PO — Giai đoạn 2 sẽ thống nhất cho báo cáo thuế và export kế toán. Thanh toán không gắn GRN
+        được bù trừ theo thứ tự nhập cũ nhất.
       </Typography.Paragraph>
 
       <Table
@@ -165,7 +207,7 @@ export function SupplierPayablesPage() {
         columns={columns}
         dataSource={rows}
         pagination={{ pageSize: 20, showTotal: (total) => `${total} NCC` }}
-        scroll={{ x: 980 }}
+        scroll={{ x: 1180 }}
         summary={() =>
           rows.length > 0 ? (
             <Table.Summary fixed>
@@ -205,6 +247,22 @@ export function SupplierPayablesPage() {
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         destroyOnClose
+        extra={
+          detail && canWrite && detail.totalPayable > 0.009 ? (
+            <Button
+              type="primary"
+              icon={<CreditCardOutlined />}
+              onClick={() =>
+                goToPayment({
+                  supplierId: detail.supplierId,
+                  amount: detail.totalPayable,
+                })
+              }
+            >
+              Tạo thanh toán
+            </Button>
+          ) : undefined
+        }
       >
         {detailLoading ? (
           <Spin tip="Đang tải chi tiết..." />

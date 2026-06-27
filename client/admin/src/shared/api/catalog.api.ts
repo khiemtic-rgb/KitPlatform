@@ -85,8 +85,13 @@ function normalizeProductDetail(data: ProductDetail & Record<string, unknown>): 
     categoryId: (data.categoryId ?? data.CategoryId) as string | undefined,
     brandId: (data.brandId ?? data.BrandId) as string | undefined,
     description: (data.description ?? data.Description) as string | undefined,
+    nationalDrugId: (data.nationalDrugId ?? data.NationalDrugId) as string | undefined,
+    nationalRegistrationNumber: (data.nationalRegistrationNumber ?? data.NationalRegistrationNumber) as
+      | string
+      | undefined,
     status: Number(data.status ?? data.Status ?? 1),
     saleUnitName: (data.saleUnitName ?? data.SaleUnitName) as string | undefined,
+    minStockQty: (data.minStockQty ?? data.MinStockQty) as number | undefined,
     units: units.map((u) => ({
       ...u,
       id: String((u as { id?: string; Id?: string }).id ?? (u as { Id?: string }).Id),
@@ -282,8 +287,11 @@ function toGeneralBody(body: ProductSavePayload) {
     categoryId: body.categoryId ?? null,
     brandId: body.brandId ?? null,
     description: body.description ?? null,
+    nationalDrugId: body.nationalDrugId ?? null,
+    nationalRegistrationNumber: body.nationalRegistrationNumber ?? null,
     status: body.status ?? 1,
     saleUnitName: body.saleUnitName ?? null,
+    minStockQty: body.minStockQty ?? null,
   };
 }
 
@@ -435,8 +443,18 @@ export async function addPrice(
 }
 
 export async function fetchCategories(activeOnly = false): Promise<Category[]> {
-  const { data } = await http.get<Category[]>('/catalog/categories', { params: { activeOnly } });
-  return data;
+  const { data } = await http.get<Array<Category & Record<string, unknown>>>('/catalog/categories', {
+    params: { activeOnly },
+  });
+  return data.map((row) => ({
+    ...row,
+    id: String(row.id ?? row.Id),
+    categoryCode: String(row.categoryCode ?? row.CategoryCode ?? ''),
+    categoryName: String(row.categoryName ?? row.CategoryName ?? ''),
+    sortOrder: Number(row.sortOrder ?? row.SortOrder ?? 0),
+    status: Number(row.status ?? row.Status ?? 1),
+    minStockQty: (row.minStockQty ?? row.MinStockQty) as number | undefined,
+  }));
 }
 
 export async function fetchCategoryLookups(): Promise<LookupItem[]> {
@@ -450,6 +468,7 @@ export async function createCategory(body: {
   description?: string;
   parentId?: string;
   sortOrder?: number;
+  minStockQty?: number;
 }): Promise<Category> {
   const { data } = await http.post<Category>('/catalog/categories', body);
   return data;
@@ -463,6 +482,7 @@ export async function updateCategory(
     parentId?: string;
     sortOrder: number;
     status: number;
+    minStockQty?: number;
   },
 ): Promise<Category> {
   const { data } = await http.put<Category>(`/catalog/categories/${id}`, body);
@@ -628,4 +648,41 @@ export async function syncProductIngredients(
   ingredients: ProductIngredientPayload[],
 ): Promise<ProductDetail> {
   return syncWithFallback(id, 'ingredients', toIngredientsBody(ingredients));
+}
+
+export type ProductImportError = { rowNumber: number; message: string };
+
+export type ProductImportResult = {
+  created: number;
+  skipped: number;
+  failed: number;
+  errors: ProductImportError[];
+};
+
+export async function importProducts(
+  rows: Array<{
+    rowNumber: number;
+    productCode?: string;
+    productName: string;
+    genericName?: string;
+    drugType?: number;
+    categoryCode?: string;
+    brandCode?: string;
+    saleUnitName?: string;
+    barcode?: string;
+    retailPrice?: number;
+    minStockQty?: number;
+  }>,
+): Promise<ProductImportResult> {
+  const { data } = await http.post<Record<string, unknown>>('/catalog/import/products', rows);
+  const errors = ((data.errors ?? data.Errors ?? []) as Record<string, unknown>[]).map((row) => ({
+    rowNumber: Number(row.rowNumber ?? row.RowNumber ?? 0),
+    message: String(row.message ?? row.Message ?? ''),
+  }));
+  return {
+    created: Number(data.created ?? data.Created ?? 0),
+    skipped: Number(data.skipped ?? data.Skipped ?? 0),
+    failed: Number(data.failed ?? data.Failed ?? 0),
+    errors,
+  };
 }

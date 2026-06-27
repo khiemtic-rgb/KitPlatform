@@ -8,11 +8,13 @@ public static class CatalogAuthorizationExtensions
     {
         options.AddPolicy(CatalogPolicies.Read, policy =>
             policy.RequireAssertion(ctx =>
-                HasPermission(ctx, "catalog.read") || ctx.User.IsInRole("ADMIN")));
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && (HasPermission(ctx, "catalog.read") || ctx.User.IsInRole("ADMIN"))));
 
         options.AddPolicy(CatalogPolicies.Write, policy =>
             policy.RequireAssertion(ctx =>
-                HasPermission(ctx, "catalog.write") || ctx.User.IsInRole("ADMIN")));
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && (HasPermission(ctx, "catalog.write") || ctx.User.IsInRole("ADMIN"))));
     }
 
     private static bool HasPermission(AuthorizationHandlerContext ctx, string permission) =>

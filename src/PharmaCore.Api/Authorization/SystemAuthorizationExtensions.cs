@@ -8,7 +8,15 @@ public static class SystemAuthorizationExtensions
     {
         options.AddPolicy(SystemPolicies.DeletePermanent, policy =>
             policy.RequireAssertion(ctx =>
-                HasPermission(ctx, "system.delete_permanent") || ctx.User.IsInRole("ADMIN")));
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && (HasPermission(ctx, "system.delete_permanent") || ctx.User.IsInRole("ADMIN"))));
+
+        options.AddPolicy(SystemPolicies.AuditRead, policy =>
+            policy.RequireAssertion(ctx =>
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && (HasPermission(ctx, "system.audit.read")
+                || HasPermission(ctx, "system.read")
+                || ctx.User.IsInRole("ADMIN"))));
     }
 
     private static bool HasPermission(AuthorizationHandlerContext ctx, string permission) =>

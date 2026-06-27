@@ -34,4 +34,12 @@ public sealed class StockController : ControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default) =>
         Ok(await _inventory.GetStockProductsAsync(warehouseId, search, page, pageSize, cancellationToken));
+
+    [HttpGet("low-stock")]
+    [Authorize(Policy = InventoryPolicies.Read)]
+    public async Task<ActionResult<IReadOnlyList<LowStockProductDto>>> LowStock(
+        [FromQuery] Guid? warehouseId,
+        [FromQuery] decimal defaultThreshold = 10,
+        CancellationToken cancellationToken = default) =>
+        Ok(await _inventory.GetLowStockProductsAsync(warehouseId, defaultThreshold, cancellationToken));
 }

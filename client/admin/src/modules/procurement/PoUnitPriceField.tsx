@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
-import { InputNumber, Typography } from 'antd';
+import { useEffect } from 'react';
+import { InputNumber } from 'antd';
 import type { FormInstance } from 'antd';
 import { fetchLastPurchasePriceHint } from '@/shared/api/procurement.api';
-import type { LastPurchasePriceHint } from '@/shared/api/procurement.types';
-import { moneyInputNumberPropsAllowZero, moneyInputNumberStyle, formatDisplayMoney } from '@/shared/utils/money';
+import { moneyInputNumberPropsAllowZeroSuffix, moneyInputNumberStyle } from '@/shared/utils/money';
 
 interface PoUnitPriceFieldProps {
   supplierId?: string;
@@ -26,57 +25,33 @@ export function PoUnitPriceField({
   disabled,
   valueFieldName = 'unitPrice',
 }: PoUnitPriceFieldProps) {
-  const [hint, setHint] = useState<LastPurchasePriceHint | null>(null);
-
   useEffect(() => {
-    if (disabled || !supplierId || !productId) {
-      setHint(null);
-      return;
-    }
+    if (disabled || !supplierId || !productId) return;
 
     let cancelled = false;
     fetchLastPurchasePriceHint(supplierId, productId)
       .then((h) => {
-        if (cancelled) return;
-        if (h.unitPrice == null) {
-          setHint(null);
-          return;
-        }
-        setHint(h);
+        if (cancelled || h.unitPrice == null) return;
         const current = form.getFieldValue(['items', fieldName, valueFieldName]);
         if (current === 0 || current === undefined || current === null) {
           form.setFieldValue(['items', fieldName, valueFieldName], h.unitPrice);
         }
       })
-      .catch(() => {
-        if (!cancelled) setHint(null);
-      });
+      .catch(() => {});
 
     return () => {
       cancelled = true;
     };
-  }, [supplierId, productId, fieldName, form, disabled]);
-
-  const hintLabel =
-    hint?.unitPrice != null
-      ? `Giá nhập gần nhất: ${formatDisplayMoney(hint.unitPrice)} (${hint.source === 'grn' ? 'GRN' : 'PO'} ${hint.documentNumber ?? ''})`
-      : null;
+  }, [supplierId, productId, fieldName, form, disabled, valueFieldName]);
 
   return (
-    <div>
-      <InputNumber
-        {...moneyInputNumberPropsAllowZero}
-        placeholder="Giá nhập"
-        style={moneyInputNumberStyle}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-      />
-      {hintLabel && (
-        <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', maxWidth: 160, lineHeight: 1.3 }}>
-          {hintLabel}
-        </Typography.Text>
-      )}
-    </div>
+    <InputNumber
+      {...moneyInputNumberPropsAllowZeroSuffix}
+      placeholder="0 đ"
+      style={moneyInputNumberStyle}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+    />
   );
 }

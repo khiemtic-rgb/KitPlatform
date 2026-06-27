@@ -28,6 +28,7 @@ function normalizeInventory(data: Record<string, unknown>) {
     activeBatchCount: num(data, 'activeBatchCount', 'ActiveBatchCount'),
     nearExpiryBatchCount: num(data, 'nearExpiryBatchCount', 'NearExpiryBatchCount'),
     lowStockBatchCount: num(data, 'lowStockBatchCount', 'LowStockBatchCount'),
+    lowStockProductCount: num(data, 'lowStockProductCount', 'LowStockProductCount'),
     expiryDays: num(data, 'expiryDays', 'ExpiryDays') || 30,
   };
 }

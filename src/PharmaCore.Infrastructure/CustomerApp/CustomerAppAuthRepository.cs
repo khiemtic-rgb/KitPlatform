@@ -17,7 +17,7 @@ internal sealed class CustomerAppAuthRepository
         const string sql = """
             SELECT id AS TenantId, tenant_code AS TenantCode
             FROM tenants
-            WHERE tenant_code = @TenantCode AND deleted_at IS NULL
+            WHERE tenant_code = @TenantCode AND deleted_at IS NULL AND status = 1
             """;
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);

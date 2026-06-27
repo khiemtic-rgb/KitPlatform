@@ -255,6 +255,12 @@ export function StockListPage() {
     { title: 'Mã SP', dataIndex: 'productCode', width: 110 },
     { title: 'Tên SP', dataIndex: 'productName' },
     {
+      title: 'ĐVT',
+      dataIndex: 'saleUnitName',
+      width: 72,
+      render: (v?: string) => v ?? '—',
+    },
+    {
       title: 'Tổng tồn',
       dataIndex: 'totalQuantity',
       width: 110,
@@ -456,6 +462,7 @@ export function StockListPage() {
           <>
             <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
               <Descriptions.Item label="Mã SP">{detailProduct.productCode}</Descriptions.Item>
+              <Descriptions.Item label="ĐVT">{detailProduct.saleUnitName ?? '—'}</Descriptions.Item>
               <Descriptions.Item label="Tổng tồn">{formatQty(detailProduct.totalQuantity)}</Descriptions.Item>
               <Descriptions.Item label="Số kho">{detailProduct.warehouseCount}</Descriptions.Item>
               <Descriptions.Item label="Số lô">{detailProduct.batchCount}</Descriptions.Item>

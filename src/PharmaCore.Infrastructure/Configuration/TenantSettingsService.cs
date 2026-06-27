@@ -132,6 +132,49 @@ internal sealed class TenantSettingsService : ITenantSettingsService
         return new TenantBatchModeSettingsDto(value);
     }
 
+    public async Task<TenantDefaultMinStockDto> GetDefaultMinStockAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT NULLIF(settings->>'default_min_stock_qty', '')::numeric AS DefaultMinStockQty
+            FROM tenants
+            WHERE id = @TenantId
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var value = await conn.QuerySingleOrDefaultAsync<decimal?>(sql, new { TenantId = _tenant.TenantId });
+        return new TenantDefaultMinStockDto(value);
+    }
+
+    public async Task<TenantDefaultMinStockDto> UpdateDefaultMinStockAsync(
+        UpdateTenantDefaultMinStockRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.DefaultMinStockQty is < 0)
+            throw new InvalidOperationException("Ngưỡng tồn tối thiểu không được âm.");
+
+        const string sql = """
+            UPDATE tenants
+            SET settings = CASE
+                WHEN @DefaultMinStockQty IS NULL THEN COALESCE(settings, '{}'::jsonb) - 'default_min_stock_qty'
+                ELSE jsonb_set(
+                    COALESCE(settings, '{}'::jsonb),
+                    '{default_min_stock_qty}',
+                    to_jsonb(@DefaultMinStockQty::numeric),
+                    true
+                )
+            END,
+            updated_at = NOW()
+            WHERE id = @TenantId
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(sql, new
+        {
+            TenantId = _tenant.TenantId,
+            DefaultMinStockQty = request.DefaultMinStockQty,
+        });
+
+        return new TenantDefaultMinStockDto(request.DefaultMinStockQty);
+    }
+
     private static TenantReceiptSettingsDto? ParseReceiptJson(string? json)
     {
         if (string.IsNullOrWhiteSpace(json) || json == "null")

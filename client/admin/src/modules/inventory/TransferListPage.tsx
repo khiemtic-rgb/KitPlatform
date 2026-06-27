@@ -134,7 +134,7 @@ export function TransferListPage() {
       dataIndex: 'status',
       width: 110,
       render: (v: number) => (
-        <Tag color={v === 3 ? 'green' : v === 1 ? 'default' : 'blue'}>
+        <Tag color={v === 3 ? 'green' : v === 1 ? 'gold' : 'blue'}>
           {TRANSFER_STATUS_LABELS[v] ?? v}
         </Tag>
       ),

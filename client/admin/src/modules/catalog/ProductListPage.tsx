@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Alert,
   App,
@@ -20,7 +21,7 @@ import {
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { FilterOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { FilterOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, EditOutlined, DeleteOutlined, CloudSyncOutlined, ImportOutlined } from '@ant-design/icons';
 import {
   bulkDeleteProducts,
   deleteProduct,
@@ -33,6 +34,7 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import type { LookupItem, ProductDetail, ProductListFilter, ProductListItem } from '@/shared/api/catalog.types';
 import { DRUG_TYPE_LABELS, STATUS_LABELS } from '@/shared/api/catalog.types';
 import { formatDisplayMoney } from '@/shared/utils/money';
+import { isProductFeatureEnabled } from '@/shared/product/product-phases';
 import { ProductFormDrawer } from '@/modules/catalog/ProductFormDrawer';
 
 const emptyAdvancedFilters: Omit<ProductListFilter, 'search' | 'page' | 'pageSize'> = {
@@ -48,6 +50,8 @@ const emptyAdvancedFilters: Omit<ProductListFilter, 'search' | 'page' | 'pageSiz
 
 export function ProductListPage() {
   const { message: msg } = App.useApp();
+  const navigate = useNavigate();
+  const showNationalDrugLookup = isProductFeatureEnabled('catalog.nationalDrug');
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [items, setItems] = useState<ProductListItem[]>([]);
@@ -349,6 +353,14 @@ export function ProductListPage() {
             </Button>
           </Space.Compact>
           <Button icon={<ReloadOutlined />} onClick={load} />
+          <Button icon={<ImportOutlined />} onClick={() => navigate('/catalog/import')}>
+            Import Excel
+          </Button>
+          {showNationalDrugLookup && (
+            <Button icon={<CloudSyncOutlined />} onClick={() => navigate('/catalog/national-drugs')}>
+              Tra cứu QG
+            </Button>
+          )}
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             Thêm sản phẩm
           </Button>

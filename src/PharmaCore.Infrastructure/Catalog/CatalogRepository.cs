@@ -120,7 +120,10 @@ internal sealed class CatalogRepository
         const string productSql = """
             SELECT id AS Id, product_code AS ProductCode, product_name AS ProductName,
                    generic_name AS GenericName, drug_type AS DrugType,
-                   category_id AS CategoryId, brand_id AS BrandId, description AS Description, status AS Status
+                   category_id AS CategoryId, brand_id AS BrandId, description AS Description,
+                   national_drug_id AS NationalDrugId,
+                   national_registration_number AS NationalRegistrationNumber,
+                   status AS Status, min_stock_qty AS MinStockQty
             FROM products
             WHERE id = @Id AND tenant_id = @TenantId AND deleted_at IS NULL
             """;
@@ -176,7 +179,9 @@ internal sealed class CatalogRepository
 
         return new ProductDetailDto(
             product.Id, product.ProductCode, product.ProductName, product.GenericName, product.DrugType,
-            product.CategoryId, product.BrandId, product.Description, product.Status,
+            product.CategoryId, product.BrandId, product.Description,
+            product.NationalDrugId, product.NationalRegistrationNumber,
+            product.Status, product.MinStockQty,
             saleUnitName,
             units, barcodes, prices, images, ingredients);
     }
@@ -228,8 +233,14 @@ internal sealed class CatalogRepository
         CancellationToken cancellationToken)
     {
         const string sql = """
-            INSERT INTO products (tenant_id, category_id, brand_id, product_code, product_name, product_name_normalized, generic_name, drug_type, description, status)
-            VALUES (@TenantId, @CategoryId, @BrandId, @ProductCode, @ProductName, @ProductNameNormalized, @GenericName, @DrugType, @Description, @Status)
+            INSERT INTO products (
+                tenant_id, category_id, brand_id, product_code, product_name, product_name_normalized,
+                generic_name, drug_type, description, national_drug_id, national_registration_number,
+                min_stock_qty, status)
+            VALUES (
+                @TenantId, @CategoryId, @BrandId, @ProductCode, @ProductName, @ProductNameNormalized,
+                @GenericName, @DrugType, @Description, @NationalDrugId, @NationalRegistrationNumber,
+                @MinStockQty, @Status)
             RETURNING id
             """;
         const string unitSql = """
@@ -249,6 +260,11 @@ internal sealed class CatalogRepository
             GenericName = request.GenericName?.Trim(),
             request.DrugType,
             request.Description,
+            NationalDrugId = string.IsNullOrWhiteSpace(request.NationalDrugId) ? null : request.NationalDrugId.Trim(),
+            NationalRegistrationNumber = string.IsNullOrWhiteSpace(request.NationalRegistrationNumber)
+                ? null
+                : request.NationalRegistrationNumber.Trim(),
+            request.MinStockQty,
             request.Status,
         });
         await conn.ExecuteAsync(unitSql, new { TenantId = _tenant.TenantId, ProductId = id, UnitName = saleUnitName });
@@ -604,7 +620,11 @@ internal sealed class CatalogRepository
                 category_id = @CategoryId, brand_id = @BrandId,
                 product_name = @ProductName, product_name_normalized = @ProductNameNormalized,
                 generic_name = @GenericName,
-                drug_type = @DrugType, description = @Description, status = @Status,
+                drug_type = @DrugType, description = @Description,
+                national_drug_id = @NationalDrugId,
+                national_registration_number = @NationalRegistrationNumber,
+                min_stock_qty = @MinStockQty,
+                status = @Status,
                 updated_at = NOW()
             WHERE id = @Id AND tenant_id = @TenantId AND deleted_at IS NULL
             """;
@@ -620,9 +640,76 @@ internal sealed class CatalogRepository
             GenericName = request.GenericName?.Trim(),
             request.DrugType,
             request.Description,
+            NationalDrugId = string.IsNullOrWhiteSpace(request.NationalDrugId) ? null : request.NationalDrugId.Trim(),
+            NationalRegistrationNumber = string.IsNullOrWhiteSpace(request.NationalRegistrationNumber)
+                ? null
+                : request.NationalRegistrationNumber.Trim(),
+            request.MinStockQty,
             request.Status,
         });
         return rows > 0;
+    }
+
+    public async Task<bool> ProductCodeExistsAsync(string productCode, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT EXISTS(
+                SELECT 1 FROM products
+                WHERE tenant_id = @TenantId AND deleted_at IS NULL
+                  AND UPPER(product_code) = UPPER(@ProductCode)
+            )
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleAsync<bool>(sql, new { TenantId = _tenant.TenantId, ProductCode = productCode.Trim() });
+    }
+
+    public async Task<bool> BarcodeTakenAsync(string barcode, Guid? excludeProductId, CancellationToken cancellationToken)
+    {
+        var result = await CheckBarcodeAsync(barcode, excludeProductId, cancellationToken);
+        return !result.IsAvailable;
+    }
+
+    public async Task<Dictionary<string, Guid>> GetCategoryCodeMapAsync(CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT id AS Id, UPPER(category_code) AS Code
+            FROM product_categories
+            WHERE tenant_id = @TenantId AND deleted_at IS NULL
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<(Guid Id, string Code)>(sql, new { TenantId = _tenant.TenantId });
+        return rows.ToDictionary(r => r.Code, r => r.Id, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public async Task<Dictionary<string, Guid>> GetBrandCodeMapAsync(CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT id AS Id, UPPER(brand_code) AS Code
+            FROM product_brands
+            WHERE tenant_id = @TenantId AND deleted_at IS NULL
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<(Guid Id, string Code)>(sql, new { TenantId = _tenant.TenantId });
+        return rows.ToDictionary(r => r.Code, r => r.Id, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public async Task<Guid?> ResolveProductIdByKeyAsync(string key, CancellationToken cancellationToken)
+    {
+        var trimmed = key.Trim();
+        if (trimmed.Length == 0)
+            return null;
+
+        const string sql = """
+            SELECT p.id
+            FROM products p
+            LEFT JOIN product_barcodes b
+              ON b.product_id = p.id AND b.tenant_id = p.tenant_id AND b.status = 1
+            WHERE p.tenant_id = @TenantId AND p.deleted_at IS NULL
+              AND (UPPER(p.product_code) = UPPER(@Key) OR b.barcode = @Key)
+            LIMIT 1
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<Guid?>(sql, new { TenantId = _tenant.TenantId, Key = trimmed });
     }
 
     public async Task<bool> SoftDeleteProductAsync(Guid id, CancellationToken cancellationToken)
@@ -1286,6 +1373,9 @@ internal sealed class CatalogRepository
         public Guid? CategoryId { get; init; }
         public Guid? BrandId { get; init; }
         public string? Description { get; init; }
+        public string? NationalDrugId { get; init; }
+        public string? NationalRegistrationNumber { get; init; }
         public short Status { get; init; }
+        public decimal? MinStockQty { get; init; }
     }
 }

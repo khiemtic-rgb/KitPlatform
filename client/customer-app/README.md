@@ -41,4 +41,6 @@ client/customer-app/src/
 └── shared/        # api, auth, layout
 ```
 
+Checklist demo: [demo-customer-app-checklist.md](./demo-customer-app-checklist.md) · Admin [POS](../admin/demo-pos-checklist.md) · [Mua hàng](../admin/demo-procurement-checklist.md)
+
 Lưu ý: chọn sản phẩm khi tạo nhắc thuốc tra cứu qua API `/catalog/products`. Đồng ý CDP (SMS/App push — nhắc chăm sóc) quản lý tại **Tài khoản**. Bật **Thông báo push** sau khi API có `CustomerAppPush` VAPID keys (dev đã cấu hình trong `appsettings.Development.json`).

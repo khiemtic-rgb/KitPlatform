@@ -7,7 +7,7 @@ import {
   LogoutOutlined,
 } from '@ant-design/icons';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { buildMenuItems, moduleRegistry } from '@/modules/registry';
+import { buildMenuItems, HEADER_MODULE_KEYS, moduleRegistry } from '@/modules/registry';
 import { ApiHealthBanner } from '@/shared/components/ApiHealthBanner';
 import { MODULE_PRIMARY_BG, primaryTabLabel } from '@/shared/components/module-tabs.ui';
 import { useAuthStore } from '@/shared/auth/auth.store';
@@ -15,7 +15,9 @@ import { logoutApi } from '@/shared/api/auth.api';
 
 const { Header, Sider, Content } = Layout;
 
-const enabledModules = moduleRegistry.filter((m) => m.enabled);
+const enabledModules = moduleRegistry.filter(
+  (m) => m.enabled && HEADER_MODULE_KEYS.includes(m.key),
+);
 
 export function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);

@@ -41,7 +41,10 @@ public sealed record ProductDetailDto(
     Guid? CategoryId,
     Guid? BrandId,
     string? Description,
+    string? NationalDrugId,
+    string? NationalRegistrationNumber,
     short Status,
+    decimal? MinStockQty,
     string? SaleUnitName,
     IReadOnlyList<ProductUnitDto> Units,
     IReadOnlyList<ProductBarcodeDto> Barcodes,
@@ -81,7 +84,10 @@ public sealed class CreateProductRequest
     public Guid? CategoryId { get; init; }
     public Guid? BrandId { get; init; }
     public string? Description { get; init; }
+    public string? NationalDrugId { get; init; }
+    public string? NationalRegistrationNumber { get; init; }
     public short Status { get; init; } = 1;
+    public decimal? MinStockQty { get; init; }
     public string? SaleUnitName { get; init; }
     public string? PrimaryBarcode { get; init; }
     public Guid? RetailProductUnitId { get; init; }
@@ -102,7 +108,10 @@ public sealed class UpdateProductRequest
     public Guid? CategoryId { get; init; }
     public Guid? BrandId { get; init; }
     public string? Description { get; init; }
+    public string? NationalDrugId { get; init; }
+    public string? NationalRegistrationNumber { get; init; }
     public short Status { get; init; }
+    public decimal? MinStockQty { get; init; }
     public string? SaleUnitName { get; init; }
     public string? PrimaryBarcode { get; init; }
     public Guid? RetailProductUnitId { get; init; }
@@ -154,21 +163,24 @@ public sealed record CategoryDto(
     Guid? ParentId,
     string? ParentName,
     int SortOrder,
-    short Status);
+    short Status,
+    decimal? MinStockQty);
 
 public sealed record CreateCategoryRequest(
     string CategoryCode,
     string CategoryName,
     string? Description,
     Guid? ParentId,
-    int SortOrder = 0);
+    int SortOrder = 0,
+    decimal? MinStockQty = null);
 
 public sealed record UpdateCategoryRequest(
     string CategoryName,
     string? Description,
     Guid? ParentId,
     int SortOrder,
-    short Status);
+    short Status,
+    decimal? MinStockQty = null);
 
 public sealed record BrandDto(
     Guid Id,

@@ -8,11 +8,13 @@ public static class SalesAuthorizationExtensions
     {
         options.AddPolicy(SalesPolicies.Read, policy =>
             policy.RequireAssertion(ctx =>
-                HasPermission(ctx, "sales.read") || HasPermission(ctx, "sales.write") || ctx.User.IsInRole("ADMIN")));
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && (HasPermission(ctx, "sales.read") || HasPermission(ctx, "sales.write") || ctx.User.IsInRole("ADMIN"))));
 
         options.AddPolicy(SalesPolicies.Write, policy =>
             policy.RequireAssertion(ctx =>
-                HasPermission(ctx, "sales.write") || ctx.User.IsInRole("ADMIN")));
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && (HasPermission(ctx, "sales.write") || ctx.User.IsInRole("ADMIN"))));
     }
 
     private static bool HasPermission(AuthorizationHandlerContext ctx, string permission) =>

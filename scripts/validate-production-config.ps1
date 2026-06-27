@@ -29,6 +29,13 @@ if ($jwt -match "dev-secret|change-in-production") {
     throw "Jwt__Secret vẫn là placeholder dev."
 }
 
+$platformKey = [Environment]::GetEnvironmentVariable("Platform__ProvisioningKey")
+if ([string]::IsNullOrWhiteSpace($platformKey) -or $platformKey.Length -lt 16) {
+    Write-Host "  Cảnh báo: Platform__ProvisioningKey chưa đặt (≥16 ký tự) — cần khi thêm nhà thuốc thứ 2 qua /setup" -ForegroundColor Yellow
+} else {
+    Write-Host "  Platform__ProvisioningKey OK" -ForegroundColor Green
+}
+
 if ([Environment]::GetEnvironmentVariable("CustomerAppAuth__DevBypassCode")) {
     throw "Xóa CustomerAppAuth__DevBypassCode trong Production."
 }

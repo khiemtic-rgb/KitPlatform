@@ -106,7 +106,35 @@ public sealed class SystemRolesController : ControllerBase
         try
         {
             var item = await _identity.CreateEmployeeAsync(request, cancellationToken);
-            return CreatedAtAction(nameof(ListEmployees), item);
+            return CreatedAtAction(nameof(GetEmployee), new { employeeId = item.Id }, item);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("employees/{employeeId:guid}")]
+    [Authorize(Policy = IdentityPolicies.Read)]
+    public async Task<ActionResult<EmployeeDetailDto>> GetEmployee(
+        Guid employeeId,
+        CancellationToken cancellationToken)
+    {
+        var item = await _identity.GetEmployeeAsync(employeeId, cancellationToken);
+        return item is null ? NotFound() : Ok(item);
+    }
+
+    [HttpPut("employees/{employeeId:guid}/branches")]
+    [Authorize(Policy = IdentityPolicies.Write)]
+    public async Task<ActionResult<EmployeeDetailDto>> UpdateEmployeeBranches(
+        Guid employeeId,
+        [FromBody] UpdateEmployeeBranchesRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var item = await _identity.UpdateEmployeeBranchesAsync(employeeId, request, cancellationToken);
+            return item is null ? NotFound() : Ok(item);
         }
         catch (InvalidOperationException ex)
         {

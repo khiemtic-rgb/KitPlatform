@@ -1,0 +1,230 @@
+import { Button, Form, Input, InputNumber, Select, Table } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import type { FormListFieldData } from 'antd/es/form/FormList';
+import type { FormInstance } from 'antd';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import type { ProductListItem } from '@/shared/api/catalog.types';
+import { PoUnitPriceField } from '@/modules/procurement/PoUnitPriceField';
+import { ProductUnitSelect } from '@/modules/procurement/ProductUnitSelect';
+import { quantityInputNumberProps, formatDisplayQuantity } from '@/shared/utils/money';
+
+export interface PoLineFormRow {
+  id?: string;
+  receivedQty?: number;
+  originalOrderedQty?: number;
+  productId: string;
+  productUnitId: string;
+  orderedQty: number;
+  unitPrice: number;
+}
+
+interface PurchaseOrderLinesEditorProps {
+  form: FormInstance;
+  supplierId?: string;
+  products: ProductListItem[];
+  mode: 'create' | 'edit';
+  scrollY?: number;
+}
+
+export function PurchaseOrderLinesEditor({
+  form,
+  supplierId,
+  products,
+  mode,
+  scrollY = 380,
+}: PurchaseOrderLinesEditorProps) {
+  const isCreate = mode === 'create';
+  const watchedItems = Form.useWatch('items', form) as PoLineFormRow[] | undefined;
+
+  const renderTable = (
+    fields: FormListFieldData[],
+    add: (defaultValue?: Partial<PoLineFormRow>) => void,
+    remove: (index: number) => void,
+  ) => {
+    const columns: ColumnsType<FormListFieldData> = [
+      {
+        title: 'Sản phẩm',
+        width: isCreate ? 300 : 260,
+        render: (_, field) => {
+          const line = watchedItems?.[field.name];
+          const received = line?.receivedQty ?? 0;
+          const isExistingLine = Boolean(line?.id);
+          return (
+            <>
+              <Form.Item name={[field.name, 'id']} hidden>
+                <Input />
+              </Form.Item>
+              <Form.Item name={[field.name, 'receivedQty']} hidden>
+                <InputNumber />
+              </Form.Item>
+              <Form.Item name={[field.name, 'originalOrderedQty']} hidden>
+                <InputNumber />
+              </Form.Item>
+              <Form.Item
+                name={[field.name, 'productId']}
+                rules={[{ required: true, message: 'Chọn SP' }]}
+                style={{ marginBottom: 0 }}
+              >
+                <Select
+                  disabled={!isCreate && isExistingLine}
+                  placeholder="Sản phẩm"
+                  showSearch
+                  optionFilterProp="label"
+                  options={products.map((p) => ({
+                    value: p.id,
+                    label: `${p.productCode} — ${p.productName}`,
+                  }))}
+                  onChange={() => {
+                    form.setFieldValue(['items', field.name, 'productUnitId'], undefined);
+                  }}
+                />
+              </Form.Item>
+              {!isCreate && received > 0 && (
+                <span style={{ fontSize: 11, color: '#888' }}>
+                  Đã nhận {formatDisplayQuantity(received)}
+                </span>
+              )}
+            </>
+          );
+        },
+      },
+      {
+        title: 'ĐVT',
+        width: 88,
+        render: (_, field) => {
+          const line = watchedItems?.[field.name];
+          const isExistingLine = Boolean(line?.id);
+          const productId = line?.productId;
+          return (
+            <Form.Item
+              name={[field.name, 'productUnitId']}
+              rules={[{ required: true, message: 'Chọn ĐVT' }]}
+              style={{ marginBottom: 0 }}
+            >
+              <ProductUnitSelect productId={productId} width={84} disabled={!isCreate && isExistingLine} />
+            </Form.Item>
+          );
+        },
+      },
+      {
+        title: 'SL đặt',
+        width: 82,
+        align: 'right',
+        render: (_, field) => {
+          const line = watchedItems?.[field.name];
+          const received = line?.receivedQty ?? 0;
+          const isExistingLine = Boolean(line?.id);
+          const minOrderedQty = isExistingLine
+            ? (line?.originalOrderedQty ?? line?.orderedQty ?? 0.01)
+            : 0.01;
+          return (
+            <Form.Item
+              name={[field.name, 'orderedQty']}
+              rules={[
+                { required: true, message: 'Nhập SL' },
+                ...(isCreate
+                  ? [{ type: 'number' as const, min: 0.01, message: 'SL > 0' }]
+                  : [
+                      {
+                        validator: (_: unknown, value: number | null) =>
+                          value == null || value >= minOrderedQty
+                            ? Promise.resolve()
+                            : Promise.reject(new Error(`≥ ${minOrderedQty}`)),
+                      },
+                    ]),
+              ]}
+              style={{ marginBottom: 0 }}
+            >
+              <InputNumber
+                {...quantityInputNumberProps}
+                disabled={!isCreate && received > 0}
+                min={minOrderedQty}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+          );
+        },
+      },
+      {
+        title: (
+          <div style={{ lineHeight: 1.25 }}>
+            <div>Đơn giá</div>
+            <div style={{ fontSize: 11, fontWeight: 400, color: '#888' }}>Giá nhập gần nhất</div>
+          </div>
+        ),
+        width: 130,
+        align: 'right',
+        render: (_, field) => {
+          const line = watchedItems?.[field.name];
+          const productId = line?.productId;
+          const isExistingLine = Boolean(line?.id);
+          return (
+            <Form.Item
+              name={[field.name, 'unitPrice']}
+              rules={[{ required: true, message: 'Nhập giá' }]}
+              style={{ marginBottom: 0 }}
+            >
+              <PoUnitPriceField
+                supplierId={supplierId}
+                productId={productId}
+                form={form}
+                fieldName={field.name}
+                disabled={!isCreate && isExistingLine}
+              />
+            </Form.Item>
+          );
+        },
+      },
+      {
+        title: '',
+        width: 44,
+        render: (_, field) => {
+          const line = watchedItems?.[field.name];
+          const received = line?.receivedQty ?? 0;
+          if (!isCreate && received > 0) return null;
+          return (
+            <Button
+              type="text"
+              danger
+              size="small"
+              icon={<DeleteOutlined />}
+              aria-label="Xóa dòng"
+              onClick={() => remove(field.name)}
+            />
+          );
+        },
+      },
+    ];
+
+    return (
+      <>
+        <Table
+          className="po-lines-table"
+          rowKey="key"
+          size="small"
+          pagination={false}
+          scroll={{ x: 620, y: scrollY }}
+          dataSource={fields}
+          columns={columns}
+        />
+        <Button
+          type="dashed"
+          icon={<PlusOutlined />}
+          onClick={() =>
+            add(isCreate ? { orderedQty: 1, unitPrice: 0 } : { orderedQty: 1, unitPrice: 0, receivedQty: 0 })
+          }
+          block
+          style={{ marginTop: 8 }}
+        >
+          Thêm dòng
+        </Button>
+      </>
+    );
+  };
+
+  return (
+    <Form.List name="items">
+      {(fields, { add, remove }) => renderTable(fields, add, remove)}
+    </Form.List>
+  );
+}

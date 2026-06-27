@@ -25,6 +25,14 @@ run-dev.bat
 
 Checklist demo POS: [demo-pos-checklist.md](./demo-pos-checklist.md)
 
+Checklist demo Mua hàng: [demo-procurement-checklist.md](./demo-procurement-checklist.md)
+
+Checklist Customer App: [demo-customer-app-checklist.md](../customer-app/demo-customer-app-checklist.md)
+
+Phạm vi Giai đoạn 1 / 2 (feature flags): [PHASE_SCOPE.md](./PHASE_SCOPE.md)
+
+Báo cáo Wave 1: [REPORTS_WAVE1.md](./REPORTS_WAVE1.md)
+
 ## OpenAPI / types (FE ↔ BE)
 
 Sau khi đổi API backend:
