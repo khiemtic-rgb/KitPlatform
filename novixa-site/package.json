@@ -14,6 +14,8 @@
     "astro": "astro",
     "import:news": "node scripts/import-tin-tuc.mjs",
     "generate:news-images": "node scripts/generate-news-images.mjs",
+    "generate:news-images:ai": "node scripts/generate-news-images-ai.mjs",
+    "generate:news-images:svg": "node scripts/generate-news-images.mjs --svg-only",
     "post:fanpage": "node scripts/post-fanpage-today.mjs",
     "post:fanpage:dry": "node scripts/post-fanpage-today.mjs --dry-run",
     "post:fanpage:verify": "node scripts/verify-fanpage-token.mjs"

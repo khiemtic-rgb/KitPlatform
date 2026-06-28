@@ -115,14 +115,24 @@ Mỗi bài tin có:
 
 | Thành phần | Mô tả |
 |------------|--------|
-| **Ảnh OG 1200×630** | `public/images/tin-tuc/{slug}.png` — chủ đề theo title, tagline *Novixa — Nền tảng quản trị nhà thuốc thế hệ mới* |
+| **Ảnh OG 1200×630** | `public/images/tin-tuc/{slug}.png` — **mỗi bài layout/scene khác nhau**, tagline *Novixa — Nền tảng quản trị nhà thuốc thế hệ mới* |
 | **JSON-LD Article** | Schema.org trên trang chi tiết |
 | **Open Graph / Twitter** | Title, description, ảnh riêng từng bài |
 | **Sitemap** | `/sitemap-index.xml` (Astro sitemap) |
 | **robots.txt** | Trỏ sitemap |
 | **CTA cuối bài** | Link Giải pháp + Liên hệ |
 
-Sinh ảnh: `npm run generate:news-images` (tự chạy khi `import:news` và `prebuild`).
+Sinh ảnh:
+
+| Lệnh | Mô tả |
+|------|--------|
+| `npm run generate:news-images` | Có `OPENAI_API_KEY` → DALL-E 3; không có → SVG đa layout theo slug |
+| `npm run generate:news-images:ai` | Bắt buộc DALL-E (cần key trong `.env`) |
+| `npm run generate:news-images:svg` | Chỉ SVG (miễn phí, 8 layout khác nhau / bài) |
+
+Copy `.env.example` → `.env`, điền `OPENAI_API_KEY` từ [OpenAI Platform](https://platform.openai.com/api-keys). GitHub Actions: thêm secret `OPENAI_API_KEY`.
+
+Tự chạy khi `import:news` và `prebuild`.
 
 Sau deploy: submit sitemap tại [Google Search Console](https://search.google.com/search-console).
 

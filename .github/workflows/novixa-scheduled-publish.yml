@@ -24,6 +24,8 @@ jobs:
 
       - name: Import tin từ Excel (nếu có)
         working-directory: novixa-site
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           npm ci
           if [ -f import/tin-tuc.xlsx ] || [ -f import/tin-tuc.csv ]; then

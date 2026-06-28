@@ -39,4 +39,5 @@ Website giới thiệu **Novixa** tại `novixa-site/` — deploy tách, **khôn
 - Domain: novixa.vn (Matbao DNS → Cloudflare Pages)
 - Hotline: 0984.660.399 | Facebook: facebook.com/novixa68
 - Fanpage auto-post: `scripts/post-fanpage-today.mjs` — secrets `FB_PAGE_ID`, `FB_PAGE_ACCESS_TOKEN`
-- SEO tin: JSON-LD Article, sitemap, ảnh OG `public/images/tin-tuc/{slug}.png` (auto `generate:news-images`)
+- SEO tin: JSON-LD Article, sitemap, ảnh OG `public/images/tin-tuc/{slug}.png`
+- Ảnh tin: ưu tiên DALL-E (`OPENAI_API_KEY`), fallback SVG 8 layout/slug — `generate:news-images`
