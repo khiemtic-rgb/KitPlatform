@@ -1,0 +1,4 @@
+# Cloudflare Workers AI — dùng cho npm run generate:news-images:cf
+# Lấy tại: Dashboard → Workers AI → Use REST API
+Account ID:
+API Token:

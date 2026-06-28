@@ -122,15 +122,23 @@ Mỗi bài tin có:
 | **robots.txt** | Trỏ sitemap |
 | **CTA cuối bài** | Link Giải pháp + Liên hệ |
 
-Sinh ảnh:
+Sinh ảnh (ưu tiên **Cloudflare Workers AI Flux** — free):
 
 | Lệnh | Mô tả |
 |------|--------|
-| `npm run generate:news-images` | Có `OPENAI_API_KEY` → DALL-E 3; không có → SVG đa layout theo slug |
-| `npm run generate:news-images:ai` | Bắt buộc DALL-E (cần key trong `.env`) |
-| `npm run generate:news-images:svg` | Chỉ SVG (miễn phí, 8 layout khác nhau / bài) |
+| `npm run generate:news-images` | CF Flux (nếu có creds) → OpenAI → SVG |
+| `npm run generate:news-images:cf` | Chỉ Cloudflare Flux Schnell |
+| `npm run generate:news-images:ai` | Chỉ OpenAI (có phí) |
+| `npm run generate:news-images:svg` | Chỉ SVG (miễn phí, 8 layout/bài) |
 
-Copy `.env.example` → `.env`, điền `OPENAI_API_KEY` từ [OpenAI Platform](https://platform.openai.com/api-keys). GitHub Actions: thêm secret `OPENAI_API_KEY`.
+**Cloudflare (khuyến nghị):** Dashboard → [Workers AI](https://dash.cloudflare.com/) → **Use REST API** → copy **Account ID** + tạo **API Token**. Điền vào `.env` hoặc file local `import/cf-workers-ai.txt` (gitignored):
+
+```
+Account ID: your-account-id
+API Token: your-token
+```
+
+GitHub Actions: secrets `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`.
 
 Tự chạy khi `import:news` và `prebuild`.
 

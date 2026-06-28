@@ -1,4 +1,7 @@
+import { loadDotEnv } from './load-env.mjs';
 import { generateAllNewsImages } from './news-image-lib.mjs';
+
+loadDotEnv();
 
 const forceSvg = process.argv.includes('--svg-only');
 const force = process.argv.includes('--force');

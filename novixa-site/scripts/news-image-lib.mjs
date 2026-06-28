@@ -391,21 +391,30 @@ export async function generateFromMarkdownFile(mdPath) {
 }
 
 export async function generateAllNewsImages({ forceSvg = false } = {}) {
-  const useAi = !forceSvg && Boolean(process.env.OPENAI_API_KEY?.trim());
-  if (useAi) {
-    const { generateAllAiNewsImages } = await import('./ai-news-image.mjs');
-    const aiResult = await generateAllAiNewsImages({ force: process.argv.includes('--force') });
-    if (aiResult.errors.length === 0) return aiResult.ok + aiResult.skipped;
-    console.warn('Một số bài AI lỗi — fallback SVG cho bài thiếu ảnh.');
-  }
-
+  const force = process.argv.includes('--force');
   const dir = path.join(ROOT, 'src/content/tin-tuc');
   const files = fs.readdirSync(dir).filter((f) => f.endsWith('.md'));
+
+  if (!forceSvg) {
+    const { hasCfAiCredentials } = await import('./cf-ai-config.mjs');
+    if (hasCfAiCredentials()) {
+      const { generateAllCfNewsImages } = await import('./cf-ai-news-image.mjs');
+      const cfResult = await generateAllCfNewsImages({ force });
+      if (cfResult.errors.length === 0) return cfResult.ok + cfResult.skipped;
+      console.warn('Một số bài CF AI lỗi — thử OpenAI hoặc SVG cho bài thiếu.');
+    } else if (process.env.OPENAI_API_KEY?.trim()) {
+      const { generateAllAiNewsImages } = await import('./ai-news-image.mjs');
+      const aiResult = await generateAllAiNewsImages({ force });
+      if (aiResult.errors.length === 0) return aiResult.ok + aiResult.skipped;
+      console.warn('Một số bài OpenAI lỗi — fallback SVG cho bài thiếu ảnh.');
+    }
+  }
+
   let count = 0;
   for (const file of files) {
     const slug = file.replace(/\.md$/, '');
     const outPath = path.join(OUT_DIR, `${slug}.png`);
-    if (useAi && fs.existsSync(outPath) && !process.argv.includes('--force')) {
+    if (!forceSvg && fs.existsSync(outPath) && !force) {
       count++;
       continue;
     }

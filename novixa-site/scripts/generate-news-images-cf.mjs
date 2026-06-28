@@ -1,7 +1,7 @@
 import { loadDotEnv } from './load-env.mjs';
-import { generateAllAiNewsImages } from './ai-news-image.mjs';
+import { generateAllCfNewsImages } from './cf-ai-news-image.mjs';
 
 loadDotEnv();
 
 const force = process.argv.includes('--force');
-await generateAllAiNewsImages({ force });
+await generateAllCfNewsImages({ force });

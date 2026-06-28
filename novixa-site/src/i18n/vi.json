@@ -55,7 +55,7 @@
     "priceValue": "299.000đ",
     "priceUnit": "/ tháng · 4 tháng đầu",
     "bullets": [
-      "Trải nghiệm đầy đủ: POS, tồn lô FEFO, app khách, loyalty, O2O và báo cáo",
+      "Trải nghiệm đầy đủ: POS, tồn lô FEFO, app khách, loyalty (tích điểm thưởng), O2O (đặt online — nhận tại quầy) và báo cáo",
       "Migrate danh mục + tồn đầu và training quầy — miễn phí khi tham gia case study",
       "Tháng 5: chốt gói theo mức bạn thực sự dùng (từ quầy hoặc mở rộng chuỗi)",
       "Cam kết hợp đồng tối thiểu 6 tháng"
@@ -78,11 +78,11 @@
     "items": [
       {
         "q": "Founding Early Access là gì?",
-        "a": "Là giai đoạn chạy thật tại quầy nhà thuốc với mức ưu đãi 4 tháng đầu. Bạn dùng đầy đủ tính năng vận hành (POS, kho lô, app khách, loyalty…) trong khi chúng tôi hỗ trợ migrate dữ liệu và training — không phải bản demo hay dùng thử 14 ngày."
+        "a": "Là giai đoạn chạy thật tại quầy nhà thuốc với mức ưu đãi 4 tháng đầu. Bạn dùng đầy đủ tính năng vận hành (POS, kho lô, app khách, loyalty (tích điểm thưởng)…) trong khi chúng tôi hỗ trợ migrate dữ liệu và training — không phải bản demo hay dùng thử 14 ngày."
       },
       {
         "q": "Sau 4 tháng tính phí thế nào?",
-        "a": "Tháng thứ 5 bạn chốt gói theo mức thực sự sử dụng: nếu chỉ cần quầy và kho lô thì ở mức gói cơ bản; nếu tiếp tục dùng app, loyalty và O2O thì chuyển gói mở rộng. Novixa không tự động nâng giá — có xác nhận trước khi áp dụng."
+        "a": "Tháng thứ 5 bạn chốt gói theo mức thực sự sử dụng: nếu chỉ cần quầy và kho lô thì ở mức gói cơ bản; nếu tiếp tục dùng app, loyalty (tích điểm thưởng) và O2O (đặt online — nhận tại quầy) thì chuyển gói mở rộng. Novixa không tự động nâng giá — có xác nhận trước khi áp dụng."
       },
       {
         "q": "Novixa phù hợp nhà thuốc nào?",
