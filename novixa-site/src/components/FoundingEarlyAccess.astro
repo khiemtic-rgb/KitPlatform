@@ -28,8 +28,6 @@ const { m, contactHref = '/vi/lien-he#contact-form', compact = false } = Astro.p
         ))}
       </ul>
 
-      <p class="founding-note">{m.note}</p>
-
       <div class="founding-actions">
         <a class="btn btn-primary" href={contactHref}>{m.ctaPrimary}</a>
         {m.ctaSecondary && !compact && (
@@ -130,13 +128,6 @@ const { m, contactHref = '/vi/lien-he#contact-form', compact = false } = Astro.p
 
   .founding-list li {
     margin-bottom: 0.35rem;
-  }
-
-  .founding-note {
-    margin: 0 0 1.25rem;
-    font-size: 0.85rem;
-    color: var(--color-muted);
-    max-width: 55ch;
   }
 
   .founding-actions {
