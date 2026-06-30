@@ -19,8 +19,8 @@ const statsPassword = STATS_VIEW_PASSWORD;
     <div class="container stats-container">
       <h1 class="section-title">Thống kê truy cập website</h1>
       <p class="section-intro stats-intro">
-        Xem nhanh lượt ghé thăm novixa.vn — dữ liệu Cloudflare, cập nhật mỗi lần site deploy. Bấm
-        <strong>Tải lại</strong> để đọc lại bản mới nhất trên server.
+        Xem nhanh lượt ghé thăm novixa.vn — dữ liệu Cloudflare. Bấm
+        <strong>Tải lại</strong> để lấy số liệu mới nhất (API trực tiếp); nếu API chưa cấu hình thì dùng bản snapshot lúc deploy.
       </p>
 
       <div id="stats-login" class="stats-login card">
@@ -189,7 +189,9 @@ const statsPassword = STATS_VIEW_PASSWORD;
     renderTable(
       document.getElementById('stats-top-pages'),
       ['Trang', 'Lượt truy cập'],
-      (data.topPages ?? []).map((row) => [row.path, fmt.format(row.views)]),
+      (data.topPages ?? [])
+        .filter((row) => row.path && !row.path.startsWith('/_astro/') && !/\.(png|jpg|svg|ico|css|js|woff2?)$/i.test(row.path))
+        .map((row) => [row.path, fmt.format(row.views)]),
     );
     renderTable(
       document.getElementById('stats-daily'),
@@ -203,12 +205,29 @@ const statsPassword = STATS_VIEW_PASSWORD;
     );
   }
 
-  async function loadStats(key) {
-    showError('');
-    if (key !== statsPassword) {
-      throw new Error('Mật khẩu không đúng.');
-    }
+  function setRefreshLoading(loading) {
+    if (!(refreshBtn instanceof HTMLButtonElement)) return;
+    refreshBtn.disabled = loading;
+    refreshBtn.textContent = loading ? 'Đang tải…' : 'Tải lại';
+  }
 
+  async function fetchLiveStats(key) {
+    const response = await fetch('/api/stats', {
+      headers: { Authorization: `Bearer ${key}` },
+      cache: 'no-store',
+    });
+    const data = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      throw new Error('Mật khẩu không đúng trên server — kiểm tra STATS_VIEW_KEY trên Cloudflare.');
+    }
+    if (!response.ok) {
+      const err = data?.error ?? `API thống kê lỗi (${response.status})`;
+      throw new Error(err);
+    }
+    return data;
+  }
+
+  async function fetchSnapshotStats() {
     const response = await fetch('/stats-snapshot.json', { cache: 'no-store' });
     const raw = await response.text();
     let data;
@@ -226,9 +245,35 @@ const statsPassword = STATS_VIEW_PASSWORD;
           'Chưa có dữ liệu thống kê. Chạy workflow "Novixa update stats" trên GitHub Actions.',
       );
     }
+    return data;
+  }
+
+  async function loadStats(key, { preferLive = false } = {}) {
+    showError('');
+    if (key !== statsPassword) {
+      throw new Error('Mật khẩu không đúng.');
+    }
+
+    if (preferLive) {
+      try {
+        const live = await fetchLiveStats(key);
+        renderStats(live);
+        if (loginEl) loginEl.hidden = true;
+        if (panelEl) panelEl.hidden = false;
+        return { source: 'live' };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Không tải được API.';
+        if (!message.includes('STATS_VIEW_KEY') && !message.includes('503') && !message.includes('502')) {
+          throw err;
+        }
+      }
+    }
+
+    const data = await fetchSnapshotStats();
     renderStats(data);
     if (loginEl) loginEl.hidden = true;
     if (panelEl) panelEl.hidden = false;
+    return { source: 'snapshot' };
   }
 
   async function login() {
@@ -238,7 +283,7 @@ const statsPassword = STATS_VIEW_PASSWORD;
       return;
     }
     try {
-      await loadStats(key);
+      await loadStats(key, { preferLive: true });
       setKey(key);
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Lỗi không xác định.');
@@ -252,17 +297,20 @@ const statsPassword = STATS_VIEW_PASSWORD;
   refreshBtn?.addEventListener('click', async () => {
     const key = getKey();
     if (!key) return;
+    setRefreshLoading(true);
     try {
-      await loadStats(key);
+      await loadStats(key, { preferLive: true });
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Không tải lại được.');
+    } finally {
+      setRefreshLoading(false);
     }
   });
 
   const saved = getKey();
   if (saved) {
     if (keyInput instanceof HTMLInputElement) keyInput.value = saved;
-    loadStats(saved).catch(() => {
+    loadStats(saved, { preferLive: true }).catch(() => {
       sessionStorage.removeItem(STORAGE_KEY);
     });
   } else if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {

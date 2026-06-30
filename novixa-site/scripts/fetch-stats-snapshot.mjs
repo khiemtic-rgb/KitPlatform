@@ -39,6 +39,18 @@ query NovixaStats($zoneTag: String!, $hStart: Time!, $hEnd: Time!, $dStart: Date
         uniq { uniques }
         sum { requests, pageViews }
       }
+      topPages: httpRequestsAdaptiveGroups(
+        limit: 15
+        orderBy: [count_DESC]
+        filter: {
+          datetime_geq: $hStart
+          datetime_lt: $hEnd
+          requestSource: "eyeball"
+        }
+      ) {
+        count
+        dimensions { clientRequestPath }
+      }
     }
   }
 }
@@ -182,7 +194,10 @@ async function fetchStats() {
       pageViews: row.sum?.pageViews ?? 0,
       requests: row.sum?.requests ?? 0,
     })),
-    topPages: [],
+    topPages: (zone.topPages ?? []).map((row) => ({
+      path: row.dimensions?.clientRequestPath ?? '/',
+      views: row.count ?? 0,
+    })),
   });
   console.log('fetch-stats-snapshot: wrote', outPath);
 }

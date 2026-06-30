@@ -178,13 +178,15 @@ Local: đặt token trong `.env` (gitignore) rồi `npm run dev` / `npm run buil
 
 Trang: **https://novixa.vn/vi/thong-ke** — mật khẩu mặc định **`novixa2026`** (đổi trong `src/lib/stats-config.ts`).
 
-Dữ liệu lấy từ Cloudflare qua **GitHub Actions** (Cloudflare Pages không inject biến env lúc build cho project này).
+- **Tải lại:** gọi `/api/stats` trực tiếp Cloudflare (cần secret **`STATS_VIEW_KEY`** trên Cloudflare Pages = cùng mật khẩu xem trang).
+- **Theo từng trang:** bảng *Trang được xem nhiều (24h)* — top URL từ Cloudflare Analytics.
+- **Dự phòng:** file `public/stats-snapshot.json` cập nhật qua GitHub Actions mỗi 6 giờ.
 
-**Thiết lập:** GitHub → **Settings** → **Secrets** → cần **`CLOUDFLARE_API_TOKEN`** (thường đã có cho ảnh tin). `CF_ZONE_ID` tuỳ chọn — script tự tìm zone `novixa.vn`.
+**Thiết lập Cloudflare Pages** (Settings → Variables, Production): `STATS_VIEW_KEY`, `CF_ZONE_ID`, `CLOUDFLARE_API_TOKEN` (Analytics Read).
 
-**Actions** → sidebar **Novixa update stats** (hoặc `.github/workflows/novixa-update-stats.yml`) → **Run workflow**.
+**GitHub Secrets** cho workflow snapshot: `CLOUDFLARE_API_TOKEN` (hoặc `CF_ANALYTICS_API_TOKEN`), `CF_ZONE_ID` tuỳ chọn.
 
-Biến trên Cloudflare Pages **không bắt buộc** cho trang thống kê.
+**Actions** → **Novixa update stats** → Run workflow (cập nhật snapshot + deploy).
 
 ## Bảo mật
 
