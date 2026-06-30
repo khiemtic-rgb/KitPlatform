@@ -39,18 +39,6 @@ query NovixaStats($zoneTag: String!, $hStart: Time!, $hEnd: Time!, $dStart: Date
         uniq { uniques }
         sum { requests, pageViews }
       }
-      topPages: httpRequestsAdaptiveGroups(
-        limit: 10
-        orderBy: [count_DESC]
-        filter: {
-          datetime_geq: $hStart
-          datetime_lt: $hEnd
-          requestSource: "eyeball"
-        }
-      ) {
-        count
-        dimensions { clientRequestPath }
-      }
     }
   }
 }
@@ -81,26 +69,32 @@ async function resolveZoneId(token) {
   const fromEnv = process.env.CF_ZONE_ID?.trim();
   if (fromEnv) return fromEnv;
 
+  // Zone ID novixa.vn (fallback khi token không có quyền Zone List)
+  const fallback = 'd1b5c7d5ca5caf06a967f492625bae24';
+
   const res = await fetch('https://api.cloudflare.com/client/v4/zones?name=novixa.vn', {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
-    throw new Error(`Không lấy được zone novixa.vn (HTTP ${res.status})`);
+    console.warn(`fetch-stats-snapshot: zone list HTTP ${res.status}, dùng CF_ZONE_ID mặc định`);
+    return fallback;
   }
   const payload = await res.json();
   const zoneId = payload.result?.[0]?.id;
   if (!zoneId) {
-    throw new Error('Không tìm thấy zone novixa.vn — thêm secret CF_ZONE_ID hoặc cấp token quyền Zone Read.');
+    console.warn('fetch-stats-snapshot: không list được zone, dùng CF_ZONE_ID mặc định');
+    return fallback;
   }
   console.log('fetch-stats-snapshot: zone', zoneId);
   return zoneId;
 }
 
 async function fetchStats() {
-  const token = process.env.CLOUDFLARE_API_TOKEN?.trim();
+  const token =
+    process.env.CF_ANALYTICS_API_TOKEN?.trim() || process.env.CLOUDFLARE_API_TOKEN?.trim();
 
   if (!token) {
-    console.error('fetch-stats-snapshot: missing CLOUDFLARE_API_TOKEN');
+    console.error('fetch-stats-snapshot: missing CLOUDFLARE_API_TOKEN (cần quyền Analytics Read)');
     process.exit(1);
   }
 
@@ -142,12 +136,13 @@ async function fetchStats() {
 
   const payload = await res.json();
   if (payload.errors?.length) {
+    const msg = payload.errors.map((e) => e.message).join('; ');
     writeSnapshot({
       ok: false,
-      error: payload.errors.map((e) => e.message).join('; '),
+      error: msg,
       generatedAt: now.toISOString(),
     });
-    console.warn('fetch-stats-snapshot:', payload.errors[0]?.message);
+    console.error('fetch-stats-snapshot GraphQL:', msg);
     process.exit(1);
   }
 
@@ -187,10 +182,7 @@ async function fetchStats() {
       pageViews: row.sum?.pageViews ?? 0,
       requests: row.sum?.requests ?? 0,
     })),
-    topPages: (zone.topPages ?? []).map((row) => ({
-      path: row.dimensions?.clientRequestPath ?? '/',
-      views: row.count ?? 0,
-    })),
+    topPages: [],
   });
   console.log('fetch-stats-snapshot: wrote', outPath);
 }

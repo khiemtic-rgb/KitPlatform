@@ -24,10 +24,11 @@ jobs:
       - name: Kiểm tra CLOUDFLARE_API_TOKEN
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ANALYTICS_API_TOKEN: ${{ secrets.CF_ANALYTICS_API_TOKEN }}
         run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "::error::Thiếu GitHub Secret CLOUDFLARE_API_TOKEN"
-            echo "Settings → Secrets and variables → Actions → New repository secret"
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] && [ -z "$CF_ANALYTICS_API_TOKEN" ]; then
+            echo "::error::Thiếu CLOUDFLARE_API_TOKEN hoặc CF_ANALYTICS_API_TOKEN"
+            echo "Tạo token Cloudflare: Zone → Analytics → Read (novixa.vn)"
             exit 1
           fi
 
@@ -35,11 +36,11 @@ jobs:
         working-directory: novixa-site
         env:
           CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+          CF_ANALYTICS_API_TOKEN: ${{ secrets.CF_ANALYTICS_API_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           npm ci
           npm run fetch:stats-snapshot
-          node -e "const d=require('./public/stats-snapshot.json'); if(d.ok!==true) { console.error(d.error||'fetch failed'); process.exit(1) }"
 
       - name: Commit stats snapshot
         uses: stefanzweifel/git-auto-commit-action@v5
