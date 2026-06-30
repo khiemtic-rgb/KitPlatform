@@ -158,6 +158,22 @@ Cấu hình trong `src/i18n/vi.json` → mục `contact`:
 
 Form gửi email qua [Formsubmit](https://formsubmit.co) → `khiemtic@gmail.com`. **Lần đầu** cần bấm link xác nhận trong email Formsubmit gửi tới hộp thư.
 
+## Theo dõi lượt truy cập
+
+Site dùng **[Cloudflare Web Analytics](https://developers.cloudflare.com/web-analytics/)** (miễn phí, không cookie banner, không hiện số công khai trên web).
+
+1. Cloudflare Dashboard → **Analytics & Logs** → **Web Analytics** → **Add a site** → chọn `novixa.vn`.
+2. Copy **token** (beacon).
+3. Cloudflare Pages → project `novixa-site` → **Settings** → **Environment variables**:
+   - Name: `PUBLIC_CF_WEB_ANALYTICS_TOKEN`
+   - Value: token vừa copy
+   - Environment: **Production** (và Preview nếu muốn)
+4. **Redeploy** site (Deployments → Retry deployment).
+
+Xem số liệu: Dashboard → **Web Analytics** → chọn site — lượt xem, trang, nguồn truy cập, quốc gia. Trang quan trọng: `/vi`, `/vi/giai-phap`, `/vi/lien-he`.
+
+Local: đặt token trong `.env` (gitignore) rồi `npm run dev` / `npm run build`.
+
 ## Bảo mật
 
 - Site **tĩnh** — không kết nối PostgreSQL / API ERP.

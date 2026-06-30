@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import CloudflareAnalytics from '../components/CloudflareAnalytics.astro';
 import { t, type Locale } from '../i18n';
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, SITE_URL } from '../lib/site';
 
@@ -56,6 +57,7 @@ const jsonLdScript = jsonLd ? JSON.stringify(jsonLd) : null;
     <meta name="twitter:image" content={ogImage} />
 
     {jsonLdScript && <script type="application/ld+json" set:html={jsonLdScript} />}
+    <CloudflareAnalytics />
   </head>
   <body>
     <slot name="header" />
