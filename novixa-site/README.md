@@ -174,6 +174,20 @@ Xem số liệu: Dashboard → **Web Analytics** → chọn site — lượt xem
 
 Local: đặt token trong `.env` (gitignore) rồi `npm run dev` / `npm run build`.
 
+## Xem thống kê trên web (không cần vào Cloudflare Dashboard)
+
+Trang riêng: **https://novixa.vn/vi/thong-ke** (không hiện trên menu, có mật khẩu).
+
+**Cấu hình một lần** — Cloudflare Pages → Settings → Environment variables (Production):
+
+| Biến | Cách lấy |
+|------|----------|
+| `STATS_VIEW_KEY` | Mật khẩu bạn tự đặt (vd. `novixa2026`) — nhập khi mở trang thống kê |
+| `CF_ZONE_ID` | Cloudflare → domain **novixa.vn** → Overview → **Zone ID** (cột phải) |
+| `CLOUDFLARE_API_TOKEN` | API Token có quyền **Zone → Analytics → Read** |
+
+Sau khi thêm biến → **Retry deployment**. Mở `/vi/thong-ke`, nhập `STATS_VIEW_KEY`, xem visitor hôm nay / 24h / 7 ngày, biểu đồ và trang được xem nhiều.
+
 ## Bảo mật
 
 - Site **tĩnh** — không kết nối PostgreSQL / API ERP.

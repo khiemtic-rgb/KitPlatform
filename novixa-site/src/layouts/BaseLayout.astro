@@ -13,10 +13,20 @@ interface Props {
   type?: 'website' | 'article';
   publishedTime?: string;
   jsonLd?: Record<string, unknown>;
+  noIndex?: boolean;
 }
 
-const { title, description, locale = 'vi', image, canonicalPath, type = 'website', publishedTime, jsonLd } =
-  Astro.props;
+const {
+  title,
+  description,
+  locale = 'vi',
+  image,
+  canonicalPath,
+  type = 'website',
+  publishedTime,
+  jsonLd,
+  noIndex = false,
+} = Astro.props;
 const m = t(locale);
 const pageDescription = description ?? m.meta.description;
 const fullTitle = title === m.meta.siteName ? `${title} — ${m.meta.tagline}` : `${title} — ${m.meta.siteName}`;
@@ -33,6 +43,7 @@ const jsonLdScript = jsonLd ? JSON.stringify(jsonLd) : null;
     <meta name="description" content={pageDescription} />
     <meta name="keywords" content={m.meta.keywords} />
     <meta name="author" content={SITE_NAME} />
+    {noIndex && <meta name="robots" content="noindex, nofollow" />}
     <meta name="theme-color" content="#0b4d8c" />
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/png" href="/images/logo.png" sizes="32x32" />

@@ -1,0 +1,254 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import '../../styles/global.css';
+---
+
+<BaseLayout
+  title="Thống kê truy cập"
+  description="Thống kê lượt truy cập novixa.vn (chỉ dành cho quản trị)."
+  canonicalPath="/vi/thong-ke"
+  noIndex={true}
+>
+  <Header slot="header" />
+  <section class="section stats-page">
+    <div class="container stats-container">
+      <h1 class="section-title">Thống kê truy cập website</h1>
+      <p class="section-intro stats-intro">
+        Xem nhanh lượt ghé thăm novixa.vn — dữ liệu lấy từ Cloudflare, cập nhật mỗi lần bạn bấm
+        <strong>Tải lại</strong>.
+      </p>
+
+      <div id="stats-login" class="stats-login card">
+        <label for="stats-key">Mật khẩu xem thống kê</label>
+        <div class="stats-login-row">
+          <input id="stats-key" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" />
+          <button type="button" class="btn btn-primary" id="stats-login-btn">Xem thống kê</button>
+        </div>
+        <p id="stats-login-error" class="stats-error" hidden></p>
+      </div>
+
+      <div id="stats-panel" class="stats-panel" hidden>
+        <div class="stats-toolbar">
+          <p class="stats-updated" id="stats-updated"></p>
+          <button type="button" class="btn btn-secondary" id="stats-refresh">Tải lại</button>
+        </div>
+
+        <div class="stats-cards">
+          <article class="card stats-card">
+            <h2>Hôm nay</h2>
+            <p class="stats-number" id="stat-today-visitors">—</p>
+            <p class="stats-label">Visitor duy nhất</p>
+            <p class="stats-sub" id="stat-today-pages"></p>
+          </article>
+          <article class="card stats-card">
+            <h2>24 giờ qua</h2>
+            <p class="stats-number" id="stat-24h-visitors">—</p>
+            <p class="stats-label">Visitor duy nhất</p>
+            <p class="stats-sub" id="stat-24h-pages"></p>
+          </article>
+          <article class="card stats-card">
+            <h2>7 ngày qua</h2>
+            <p class="stats-number" id="stat-7d-visitors">—</p>
+            <p class="stats-label">Tổng visitor (theo ngày)</p>
+            <p class="stats-sub" id="stat-7d-pages"></p>
+          </article>
+        </div>
+
+        <article class="card stats-block">
+          <h2>Biểu đồ 24 giờ qua</h2>
+          <p class="stats-hint">Mỗi cột = số visitor duy nhất trong 1 giờ (giờ Việt Nam).</p>
+          <div id="stats-hourly" class="stats-bars" aria-label="Biểu đồ visitor theo giờ"></div>
+        </article>
+
+        <article class="card stats-block">
+          <h2>Trang được xem nhiều (24h)</h2>
+          <div id="stats-top-pages" class="stats-table-wrap"></div>
+        </article>
+
+        <article class="card stats-block">
+          <h2>Theo ngày (7 ngày)</h2>
+          <div id="stats-daily" class="stats-table-wrap"></div>
+        </article>
+
+        <p class="stats-footnote">
+          Trang này không hiện trên menu công khai. Visitor = trình duyệt/IP khác nhau (Cloudflare).
+          Đợt tăng đột biến có thể do bot — xem cột Trang để biết khách xem nội dung nào.
+        </p>
+      </div>
+    </div>
+  </section>
+  <Footer slot="footer" />
+</BaseLayout>
+
+<script>
+  const STORAGE_KEY = 'novixa-stats-key';
+  const loginEl = document.getElementById('stats-login');
+  const panelEl = document.getElementById('stats-panel');
+  const keyInput = document.getElementById('stats-key');
+  const loginBtn = document.getElementById('stats-login-btn');
+  const refreshBtn = document.getElementById('stats-refresh');
+  const loginError = document.getElementById('stats-login-error');
+
+  const fmt = new Intl.NumberFormat('vi-VN');
+  const fmtDate = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+  const fmtHour = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const fmtDay = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+
+  function getKey() {
+    return sessionStorage.getItem(STORAGE_KEY) ?? '';
+  }
+
+  function setKey(value) {
+    sessionStorage.setItem(STORAGE_KEY, value);
+  }
+
+  function showError(message) {
+    if (!loginError) return;
+    loginError.textContent = message;
+    loginError.hidden = !message;
+  }
+
+  function renderTable(container, headers, rows) {
+    if (!container) return;
+    if (!rows.length) {
+      container.innerHTML = '<p class="stats-empty">Chưa có dữ liệu.</p>';
+      return;
+    }
+    const thead = headers.map((h) => `<th>${h}</th>`).join('');
+    const tbody = rows
+      .map((cells) => `<tr>${cells.map((c) => `<td>${c}</td>`).join('')}</tr>`)
+      .join('');
+    container.innerHTML = `<table class="stats-table"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>`;
+  }
+
+  function renderHourly(hourly) {
+    const container = document.getElementById('stats-hourly');
+    if (!container) return;
+    if (!hourly.length) {
+      container.innerHTML = '<p class="stats-empty">Chưa có dữ liệu.</p>';
+      return;
+    }
+    const max = Math.max(...hourly.map((h) => h.visitors), 1);
+    container.innerHTML = hourly
+      .map((row) => {
+        const height = Math.max(4, Math.round((row.visitors / max) * 100));
+        const label = row.time ? fmtHour.format(new Date(row.time)) : '';
+        return `<div class="stats-bar" title="${label}: ${fmt.format(row.visitors)} visitor">
+          <div class="stats-bar-fill" style="height:${height}%"></div>
+          <span class="stats-bar-value">${row.visitors || ''}</span>
+          <span class="stats-bar-label">${label}</span>
+        </div>`;
+      })
+      .join('');
+  }
+
+  function renderStats(data) {
+    const summary = data.summary;
+    const todayVisitors = document.getElementById('stat-today-visitors');
+    const todayPages = document.getElementById('stat-today-pages');
+    const v24 = document.getElementById('stat-24h-visitors');
+    const p24 = document.getElementById('stat-24h-pages');
+    const v7 = document.getElementById('stat-7d-visitors');
+    const p7 = document.getElementById('stat-7d-pages');
+    const updated = document.getElementById('stats-updated');
+
+    if (todayVisitors) todayVisitors.textContent = fmt.format(summary.todayVisitors);
+    if (todayPages) {
+      todayPages.textContent = `${fmt.format(summary.todayPageViews)} lượt xem trang · ${fmt.format(summary.todayRequests)} request`;
+    }
+    if (v24) v24.textContent = fmt.format(summary.last24hVisitors);
+    if (p24) {
+      p24.textContent = `${fmt.format(summary.last24hPageViews)} lượt xem trang · ${fmt.format(summary.last24hRequests)} request`;
+    }
+
+    const total7Visitors = (data.daily ?? []).reduce((sum, row) => sum + (row.visitors ?? 0), 0);
+    const total7Pages = (data.daily ?? []).reduce((sum, row) => sum + (row.pageViews ?? 0), 0);
+    if (v7) v7.textContent = fmt.format(total7Visitors);
+    if (p7) p7.textContent = `${fmt.format(total7Pages)} lượt xem trang (7 ngày)`;
+    if (updated) updated.textContent = `Cập nhật: ${fmtDate.format(new Date(data.generatedAt))}`;
+
+    renderHourly(data.hourly ?? []);
+    renderTable(
+      document.getElementById('stats-top-pages'),
+      ['Trang', 'Lượt truy cập'],
+      (data.topPages ?? []).map((row) => [row.path, fmt.format(row.views)]),
+    );
+    renderTable(
+      document.getElementById('stats-daily'),
+      ['Ngày', 'Visitor', 'Lượt xem', 'Request'],
+      (data.daily ?? []).map((row) => [
+        row.date ? fmtDay.format(new Date(`${row.date}T12:00:00+07:00`)) : '—',
+        fmt.format(row.visitors),
+        fmt.format(row.pageViews),
+        fmt.format(row.requests),
+      ]),
+    );
+  }
+
+  async function loadStats(key) {
+    showError('');
+    const response = await fetch('/api/stats', {
+      headers: { Authorization: `Bearer ${key}` },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error ?? 'Không tải được thống kê.');
+    }
+    renderStats(data);
+    if (loginEl) loginEl.hidden = true;
+    if (panelEl) panelEl.hidden = false;
+  }
+
+  async function login() {
+    const key = keyInput instanceof HTMLInputElement ? keyInput.value.trim() : '';
+    if (!key) {
+      showError('Vui lòng nhập mật khẩu.');
+      return;
+    }
+    try {
+      await loadStats(key);
+      setKey(key);
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Lỗi không xác định.');
+    }
+  }
+
+  loginBtn?.addEventListener('click', login);
+  keyInput?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') login();
+  });
+  refreshBtn?.addEventListener('click', async () => {
+    const key = getKey();
+    if (!key) return;
+    try {
+      await loadStats(key);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Không tải lại được.');
+    }
+  });
+
+  const saved = getKey();
+  if (saved) {
+    if (keyInput instanceof HTMLInputElement) keyInput.value = saved;
+    loadStats(saved).catch(() => {
+      sessionStorage.removeItem(STORAGE_KEY);
+    });
+  } else if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    showError('Trang thống kê chỉ lấy dữ liệu trên production (novixa.vn). Local preview không gọi được API.');
+  }
+</script>
