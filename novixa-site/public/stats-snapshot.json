@@ -1,26 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-06-30T05:29:35.677Z",
+  "generatedAt": "2026-06-30T07:39:31.815Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 93,
-    "todayPageViews": 120,
-    "todayRequests": 215,
-    "last24hVisitors": 133,
-    "last24hPageViews": 233,
-    "last24hRequests": 451
+    "todayVisitors": 100,
+    "todayPageViews": 169,
+    "todayRequests": 392,
+    "last24hVisitors": 123,
+    "last24hPageViews": 224,
+    "last24hRequests": 504
   },
   "hourly": [
-    {
-      "time": "2026-06-29T06:00:00Z",
-      "visitors": 9,
-      "requests": 16
-    },
-    {
-      "time": "2026-06-29T07:00:00Z",
-      "visitors": 16,
-      "requests": 106
-    },
     {
       "time": "2026-06-29T08:00:00Z",
       "visitors": 5,
@@ -108,8 +98,18 @@
     },
     {
       "time": "2026-06-30T05:00:00Z",
+      "visitors": 5,
+      "requests": 68
+    },
+    {
+      "time": "2026-06-30T06:00:00Z",
+      "visitors": 5,
+      "requests": 54
+    },
+    {
+      "time": "2026-06-30T07:00:00Z",
       "visitors": 1,
-      "requests": 22
+      "requests": 75
     }
   ],
   "daily": [
@@ -151,10 +151,71 @@
     },
     {
       "date": "2026-06-30",
-      "visitors": 93,
-      "pageViews": 120,
-      "requests": 215
+      "visitors": 100,
+      "pageViews": 169,
+      "requests": 392
     }
   ],
-  "topPages": []
+  "topPages": [
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 130
+    },
+    {
+      "path": "/vi/tin-tuc/chuyen-doi-so-cho-nha-thuoc-bat-dau-tu-dau/",
+      "views": 90
+    },
+    {
+      "path": "/stats-snapshot.json",
+      "views": 60
+    },
+    {
+      "path": "/api/stats",
+      "views": 50
+    },
+    {
+      "path": "/images/tin-tuc/quan-ly-nhieu-chi-nhanh-nha-thuoc-thach-thuc-va-giai-phap.png",
+      "views": 40
+    },
+    {
+      "path": "/",
+      "views": 40
+    },
+    {
+      "path": "/vi/thong-ke/",
+      "views": 30
+    },
+    {
+      "path": "/images/tin-tuc/chuyen-doi-so-cho-nha-thuoc-bat-dau-tu-dau.png",
+      "views": 20
+    },
+    {
+      "path": "/favicon.ico",
+      "views": 20
+    },
+    {
+      "path": "/_astro/Footer.s1ekC5lm.css",
+      "views": 10
+    },
+    {
+      "path": "/vi/tin-tuc/vi-sao-excel-khong-con-phu-hop-de-quan-ly-nha-thuoc",
+      "views": 10
+    },
+    {
+      "path": "/images/logo.png",
+      "views": 10
+    },
+    {
+      "path": "//wp/wp-includes/wlwmanifest.xml",
+      "views": 10
+    },
+    {
+      "path": "//2021/wp-includes/wlwmanifest.xml",
+      "views": 10
+    },
+    {
+      "path": "/vi/",
+      "views": 10
+    }
+  ]
 }
