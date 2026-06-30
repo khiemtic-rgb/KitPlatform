@@ -77,15 +77,34 @@ function writeSnapshot(payload) {
   writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
 }
 
+async function resolveZoneId(token) {
+  const fromEnv = process.env.CF_ZONE_ID?.trim();
+  if (fromEnv) return fromEnv;
+
+  const res = await fetch('https://api.cloudflare.com/client/v4/zones?name=novixa.vn', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error(`Không lấy được zone novixa.vn (HTTP ${res.status})`);
+  }
+  const payload = await res.json();
+  const zoneId = payload.result?.[0]?.id;
+  if (!zoneId) {
+    throw new Error('Không tìm thấy zone novixa.vn — thêm secret CF_ZONE_ID hoặc cấp token quyền Zone Read.');
+  }
+  console.log('fetch-stats-snapshot: zone', zoneId);
+  return zoneId;
+}
+
 async function fetchStats() {
-  const zoneId = process.env.CF_ZONE_ID?.trim();
   const token = process.env.CLOUDFLARE_API_TOKEN?.trim();
 
-  if (!zoneId || !token) {
-    console.warn('fetch-stats-snapshot: skipped (missing CF_ZONE_ID or CLOUDFLARE_API_TOKEN)');
-    process.exitCode = 0;
-    return;
+  if (!token) {
+    console.error('fetch-stats-snapshot: missing CLOUDFLARE_API_TOKEN');
+    process.exit(1);
   }
+
+  const zoneId = await resolveZoneId(token);
 
   const now = new Date();
   const hStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -118,7 +137,7 @@ async function fetchStats() {
       generatedAt: now.toISOString(),
     });
     console.warn(`fetch-stats-snapshot: HTTP ${res.status}`);
-    return;
+    process.exit(1);
   }
 
   const payload = await res.json();
@@ -129,17 +148,17 @@ async function fetchStats() {
       generatedAt: now.toISOString(),
     });
     console.warn('fetch-stats-snapshot:', payload.errors[0]?.message);
-    return;
+    process.exit(1);
   }
 
   const zone = payload.data?.viewer?.zones?.[0];
   if (!zone) {
     writeSnapshot({
       ok: false,
-      error: 'Không tìm thấy zone — kiểm tra CF_ZONE_ID.',
+      error: 'Không tìm thấy zone — kiểm tra token Analytics Read.',
       generatedAt: now.toISOString(),
     });
-    return;
+    process.exit(1);
   }
 
   const hourTotal = zone.hourTotal?.[0];
@@ -182,5 +201,6 @@ fetchStats().catch((err) => {
     error: err instanceof Error ? err.message : 'Unknown error',
     generatedAt: new Date().toISOString(),
   });
-  console.warn('fetch-stats-snapshot failed:', err);
+  console.error('fetch-stats-snapshot failed:', err);
+  process.exit(1);
 });

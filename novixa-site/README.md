@@ -180,14 +180,9 @@ Trang: **https://novixa.vn/vi/thong-ke** — mật khẩu mặc định **`novix
 
 Dữ liệu lấy từ Cloudflare qua **GitHub Actions** (Cloudflare Pages không inject biến env lúc build cho project này).
 
-**Thiết lập một lần** — GitHub repo → **Settings** → **Secrets and variables** → **Actions**:
+**Thiết lập:** GitHub → **Settings** → **Secrets** → cần **`CLOUDFLARE_API_TOKEN`** (thường đã có cho ảnh tin). `CF_ZONE_ID` tuỳ chọn — script tự tìm zone `novixa.vn`.
 
-| Secret | Giá trị |
-|--------|---------|
-| `CF_ZONE_ID` | Domains → novixa.vn → Overview → **Zone ID** |
-| `CLOUDFLARE_API_TOKEN` | Token quyền Zone Analytics Read (thường đã có) |
-
-Sau đó: **Actions** → **Novixa update stats** → **Run workflow**. Workflow tự chạy lại mỗi 6 giờ.
+**Actions** → sidebar **Novixa update stats** (hoặc `.github/workflows/novixa-update-stats.yml`) → **Run workflow**.
 
 Biến trên Cloudflare Pages **không bắt buộc** cho trang thống kê.
 
