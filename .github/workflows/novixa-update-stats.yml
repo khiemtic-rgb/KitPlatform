@@ -26,6 +26,20 @@ jobs:
           cache: npm
           cache-dependency-path: novixa-site/package-lock.json
 
+      - name: Kiểm tra GitHub Secrets
+        env:
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          missing=""
+          [ -z "$CF_ZONE_ID" ] && missing="$missing CF_ZONE_ID"
+          [ -z "$CLOUDFLARE_API_TOKEN" ] && missing="$missing CLOUDFLARE_API_TOKEN"
+          if [ -n "$missing" ]; then
+            echo "::error::Thiếu GitHub Secrets:$missing"
+            echo "Vào repo → Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
+
       - name: Fetch Cloudflare analytics
         working-directory: novixa-site
         env:
@@ -34,7 +48,8 @@ jobs:
         run: |
           npm ci
           npm run fetch:stats-snapshot
-          test -f public/stats-snapshot.json
+          test -f public/stats-snapshot.json || (echo "::error::Không tạo được stats-snapshot.json" && exit 1)
+          node -e "const d=require('./public/stats-snapshot.json'); if(d.ok===false) { console.error(d.error); process.exit(1) }"
 
       - name: Commit stats snapshot
         uses: stefanzweifel/git-auto-commit-action@v5
