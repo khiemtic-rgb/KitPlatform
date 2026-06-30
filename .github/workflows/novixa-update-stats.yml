@@ -45,7 +45,8 @@ jobs:
       - name: Commit stats snapshot
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: 'chore(novixa): update stats snapshot [skip ci]'
+          # Không dùng [skip ci] — Cloudflare Pages bỏ qua build và snapshot không lên novixa.vn
+          commit_message: 'chore(novixa): update stats snapshot'
           file_pattern: novixa-site/public/stats-snapshot.json
 
       - name: Trigger Cloudflare deploy
@@ -54,6 +55,7 @@ jobs:
         run: |
           if [ -n "$CF_DEPLOY_HOOK" ]; then
             curl -fsS -X POST "$CF_DEPLOY_HOOK"
+            echo "Đã gọi CF_DEPLOY_HOOK."
           else
-            echo "CF_DEPLOY_HOOK not set — bỏ qua (Cloudflare sẽ deploy khi push commit stats)."
+            echo "CF_DEPLOY_HOOK chưa set — Cloudflare Pages sẽ deploy khi push commit stats (không [skip ci])."
           fi
