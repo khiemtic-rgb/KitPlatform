@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Table, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EyeOutlined } from '@ant-design/icons';
@@ -6,7 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import { fetchCustomerOrders } from '@/shared/api/customer-admin.api';
 import type { CustomerOrderListItem } from '@/shared/api/customer-admin.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
-import { SALE_STATUS_COLORS, SALE_STATUS_LABELS } from '@/modules/sales/sales-order-status';
+import { SALE_STATUS_COLORS } from '@/modules/sales/sales-order-status';
+import { useSaleStatusLabels } from '@/shared/i18n/use-sale-status-labels';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
@@ -15,6 +17,9 @@ interface CustomerOrdersPanelProps {
 }
 
 export function CustomerOrdersPanel({ customerId }: CustomerOrdersPanelProps) {
+  const { t } = useTranslation('customer', { keyPrefix: 'ordersPanel' });
+  const { t: tc } = useTranslation('common');
+  const { saleStatusLabel } = useSaleStatusLabels();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<CustomerOrderListItem[]>([]);
@@ -28,63 +33,64 @@ export function CustomerOrdersPanel({ customerId }: CustomerOrdersPanelProps) {
       setItems(result.items);
       setTotal(result.total);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được đơn hàng'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [customerId, page]);
+  }, [customerId, page, t]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const columns: ColumnsType<CustomerOrderListItem> = [
-    {
-      title: 'Số đơn',
-      dataIndex: 'orderNumber',
-      width: 140,
-    },
-    {
-      title: 'Ngày',
-      dataIndex: 'orderDate',
-      width: 120,
-      render: (v: string) => formatDisplayDate(v),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      width: 110,
-      render: (status: number) => (
-        <Tag color={SALE_STATUS_COLORS[status] ?? 'default'}>
-          {SALE_STATUS_LABELS[status] ?? status}
-        </Tag>
-      ),
-    },
-    {
-      title: 'SL dòng',
-      dataIndex: 'itemCount',
-      width: 80,
-    },
-    {
-      title: 'Tổng tiền',
-      dataIndex: 'totalAmount',
-      align: 'right',
-      render: (v: number) => formatDisplayMoney(v),
-    },
-    {
-      title: '',
-      width: 80,
-      render: (_, row) => (
-        <Button
-          type="link"
-          icon={<EyeOutlined />}
-          onClick={() => navigate(`/sales/orders?orderId=${row.id}`)}
-        >
-          Xem
-        </Button>
-      ),
-    },
-  ];
+  const columns: ColumnsType<CustomerOrderListItem> = useMemo(
+    () => [
+      {
+        title: t('columns.orderNumber'),
+        dataIndex: 'orderNumber',
+        width: 140,
+      },
+      {
+        title: t('columns.orderDate'),
+        dataIndex: 'orderDate',
+        width: 120,
+        render: (v: string) => formatDisplayDate(v),
+      },
+      {
+        title: t('columns.status'),
+        dataIndex: 'status',
+        width: 110,
+        render: (status: number) => (
+          <Tag color={SALE_STATUS_COLORS[status] ?? 'default'}>{saleStatusLabel(status)}</Tag>
+        ),
+      },
+      {
+        title: t('columns.itemCount'),
+        dataIndex: 'itemCount',
+        width: 80,
+      },
+      {
+        title: t('columns.totalAmount'),
+        dataIndex: 'totalAmount',
+        align: 'right',
+        render: (v: number) => formatDisplayMoney(v),
+      },
+      {
+        title: '',
+        width: 80,
+        render: (_, row) => (
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            onClick={() => navigate(`/sales/orders?orderId=${row.id}`)}
+          >
+            {tc('actions.view')}
+          </Button>
+        ),
+      },
+    ],
+    [navigate, saleStatusLabel, t, tc],
+  );
 
   return (
     <Table

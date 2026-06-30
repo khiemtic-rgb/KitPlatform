@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import {
   Alert,
@@ -57,8 +58,13 @@ function resolveProductSearchTerm(input: string, products: ProductListItem[]): {
 }
 
 export function ReportViewPage() {
+  const { t, i18n } = useTranslation('reports', { keyPrefix: 'view' });
+  const { t: tg } = useTranslation('reports', { keyPrefix: 'groupBy' });
   const location = useLocation();
-  const definition = useMemo(() => findReportByPath(location.pathname), [location.pathname]);
+  const definition = useMemo(
+    () => findReportByPath(location.pathname),
+    [location.pathname, i18n.language],
+  );
 
   const [range, setRange] = useState<[Dayjs, Dayjs]>(defaultRange);
   const [groupBy, setGroupBy] = useState<string>('day');
@@ -124,13 +130,13 @@ export function ReportViewPage() {
       setLoadedOnce(true);
     } catch (error) {
       setResult(null);
-      const msg = apiErrorMessage(error, 'Không tải được báo cáo');
+      const msg = apiErrorMessage(error, t('loadFailed'));
       setLoadError(msg);
       message.error(msg);
     } finally {
       setLoading(false);
     }
-  }, [definition, range, groupBy, warehouseId, supplierId, searchInput, suggestionProducts, expiryDays]);
+  }, [definition, range, groupBy, warehouseId, supplierId, searchInput, suggestionProducts, expiryDays, t]);
 
   useEffect(() => {
     void load();
@@ -193,7 +199,7 @@ export function ReportViewPage() {
   );
 
   if (!definition) {
-    return <Typography.Text type="danger">Không tìm thấy báo cáo.</Typography.Text>;
+    return <Typography.Text type="danger">{t('notFound')}</Typography.Text>;
   }
 
   return (
@@ -209,7 +215,7 @@ export function ReportViewPage() {
           </Typography.Paragraph>
           {filterHints.length > 0 && (
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              Tiêu chí lọc: {filterHints.join(' · ')}
+              {t('filterCriteria')} {filterHints.join(' · ')}
             </Typography.Text>
           )}
         </div>
@@ -219,7 +225,7 @@ export function ReportViewPage() {
             {definition.supportsDateRange && (
               <Col xs={24} md={10}>
                 <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
-                  Kỳ (VN)
+                  {t('period')}
                 </Typography.Text>
                 <RangePicker
                   value={range}
@@ -232,7 +238,7 @@ export function ReportViewPage() {
             {definition.supportsGroupBy && definition.supportsGroupBy.length > 0 && (
               <Col xs={24} sm={12} md={6}>
                 <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
-                  Nhóm theo
+                  {t('groupBy')}
                 </Typography.Text>
                 <Select
                   style={{ width: '100%' }}
@@ -240,14 +246,7 @@ export function ReportViewPage() {
                   onChange={setGroupBy}
                   options={definition.supportsGroupBy.map((g) => ({
                     value: g,
-                    label:
-                      g === 'supplier'
-                        ? 'Nhà cung cấp'
-                        : g === 'month'
-                          ? 'Tháng'
-                          : g === 'week'
-                            ? 'Tuần'
-                            : 'Ngày',
+                    label: tg(g),
                   }))}
                 />
               </Col>
@@ -255,12 +254,12 @@ export function ReportViewPage() {
             {definition.supportsWarehouse && (
               <Col xs={24} sm={12} md={6}>
                 <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
-                  Kho
+                  {t('warehouse')}
                 </Typography.Text>
                 <Select
                   allowClear
                   style={{ width: '100%' }}
-                  placeholder="Tất cả kho"
+                  placeholder={t('warehouseAll')}
                   value={warehouseId}
                   onChange={setWarehouseId}
                   options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
@@ -270,14 +269,14 @@ export function ReportViewPage() {
             {definition.supportsSupplier && (
               <Col xs={24} sm={12} md={6}>
                 <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
-                  Nhà cung cấp
+                  {t('supplier')}
                 </Typography.Text>
                 <Select
                   allowClear
                   showSearch
                   optionFilterProp="label"
                   style={{ width: '100%' }}
-                  placeholder="Tất cả NCC"
+                  placeholder={t('supplierAll')}
                   value={supplierId}
                   onChange={setSupplierId}
                   options={suppliers.map((s) => ({
@@ -290,7 +289,7 @@ export function ReportViewPage() {
             {definition.supportsSearch && (
               <Col xs={24} sm={12} md={8}>
                 <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
-                  Tên sản phẩm
+                  {t('productSearch')}
                 </Typography.Text>
                 <AutoComplete
                   style={{ width: '100%' }}
@@ -302,7 +301,7 @@ export function ReportViewPage() {
                   }}
                 >
                   <Input
-                    placeholder="Mã / tên sản phẩm"
+                    placeholder={t('productSearchPlaceholder')}
                     prefix={<SearchOutlined />}
                     allowClear
                     onPressEnter={() => void load()}
@@ -313,7 +312,7 @@ export function ReportViewPage() {
             {definition.supportsExpiryDays && (
               <Col xs={24} sm={12} md={4}>
                 <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
-                  Số ngày HSD
+                  {t('expiryDays')}
                 </Typography.Text>
                 <InputNumber min={1} max={365} value={expiryDays} onChange={(v) => setExpiryDays(Number(v) || 30)} />
               </Col>
@@ -321,15 +320,18 @@ export function ReportViewPage() {
             <Col xs={24}>
               <Space wrap>
                 <Button type="primary" icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-                  Xem báo cáo
+                  {t('runReport')}
                 </Button>
                 {result && (
                   <>
                     <Button icon={<DownloadOutlined />} onClick={() => exportReportCsv(result)}>
-                      Xuất CSV
+                      {t('exportCsv')}
                     </Button>
-                    <Button icon={<PrinterOutlined />} onClick={() => printReportElement('report-print-area')}>
-                      In
+                    <Button
+                      icon={<PrinterOutlined />}
+                      onClick={() => printReportElement('report-print-area', definition.name)}
+                    >
+                      {t('print')}
                     </Button>
                   </>
                 )}
@@ -342,14 +344,15 @@ export function ReportViewPage() {
           <Alert
             type="error"
             showIcon
-            message="Không tải được báo cáo"
+            message={t('loadFailed')}
             description={
               <>
                 {loadError}
                 {loadError.includes('404') || loadError.toLowerCase().includes('not found') ? (
                   <div style={{ marginTop: 8 }}>
-                    Gợi ý: chạy <Typography.Text code>.\scripts\restart-api.ps1</Typography.Text> sau khi cập
-                    nhật module Báo cáo.
+                    {t('loadFailedHint')}{' '}
+                    <Typography.Text code>.\scripts\restart-api.ps1</Typography.Text>{' '}
+                    {t('loadFailedHintAfter')}
                   </div>
                 ) : null}
               </>
@@ -368,15 +371,17 @@ export function ReportViewPage() {
                   </span>
                 ))}
               </div>
-              <div style={{ marginTop: 4 }}>Tạo lúc: {dayjs(result.generatedAtUtc).format('DD/MM/YYYY HH:mm')}</div>
+              <div style={{ marginTop: 4 }}>
+                {t('generatedAt')} {dayjs(result.generatedAtUtc).format('DD/MM/YYYY HH:mm')}
+              </div>
             </div>
             <Table
               rowKey={(_, index) => String(index)}
               loading={loading}
               columns={columns}
               dataSource={result.rows}
-              locale={{ emptyText: 'Không có dữ liệu trong kỳ đã chọn' }}
-              pagination={{ pageSize: 50, showTotal: (t) => `${t} dòng` }}
+              locale={{ emptyText: t('emptyData') }}
+              pagination={{ pageSize: 50, showTotal: (total) => t('paginationTotal', { count: total }) }}
               scroll={{ x: true }}
               summary={() =>
                 result.totals ? (
@@ -398,7 +403,7 @@ export function ReportViewPage() {
         )}
 
         {!loading && loadedOnce && !loadError && !result && (
-          <Empty description="Chưa có kết quả — bấm Xem báo cáo" />
+          <Empty description={t('noResult')} />
         )}
       </Space>
     </div>

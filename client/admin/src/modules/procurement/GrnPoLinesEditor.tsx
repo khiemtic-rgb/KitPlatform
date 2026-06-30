@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Form, Input, InputNumber, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { FormListFieldData } from 'antd/es/form/FormList';
@@ -47,6 +48,9 @@ export function GrnPoLinesEditor({
   remove,
   maxScrollY = 520,
 }: GrnPoLinesEditorProps) {
+  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
+  const { t: tVal } = useTranslation('procurement', { keyPrefix: 'shared.validation' });
+  const { t: tLines } = useTranslation('procurement', { keyPrefix: 'shared.lines' });
   const watchedItems = Form.useWatch('items', form) as GrnLineFormRow[] | undefined;
 
   const tableScrollY = useMemo(() => {
@@ -56,7 +60,7 @@ export function GrnPoLinesEditor({
 
   const columns: ColumnsType<FormListFieldData> = [
     {
-      title: 'Sản phẩm',
+      title: tShared('columns.product'),
       ellipsis: true,
       render: (_, field) => {
         const line = watchedItems?.[field.name];
@@ -83,13 +87,13 @@ export function GrnPoLinesEditor({
       },
     },
     {
-      title: 'ĐVT',
+      title: tShared('columns.unit'),
       width: 48,
       className: 'grn-col-nowrap',
-      render: (_, field) => watchedItems?.[field.name]?.unitName ?? '—',
+      render: (_, field) => watchedItems?.[field.name]?.unitName ?? tShared('emDash'),
     },
     {
-      title: 'Chưa nhận',
+      title: tShared('columns.remaining'),
       width: 78,
       align: 'right',
       render: (_, field) => {
@@ -99,7 +103,7 @@ export function GrnPoLinesEditor({
       },
     },
     {
-      title: 'SL nhập',
+      title: tShared('columns.receiveQty'),
       width: 92,
       align: 'right',
       render: (_, field) => {
@@ -109,12 +113,12 @@ export function GrnPoLinesEditor({
           <Form.Item
             name={[field.name, 'quantity']}
             rules={[
-              { required: true, message: 'Nhập SL' },
+              { required: true, message: tVal('enterQty') },
               {
                 validator: (_: unknown, value: number | null) =>
                   value == null || value <= remain
                     ? Promise.resolve()
-                    : Promise.reject(new Error(`Tối đa ${formatDisplayQuantity(remain)}`)),
+                    : Promise.reject(new Error(tVal('maxQty', { qty: formatDisplayQuantity(remain) }))),
               },
             ]}
             style={{ marginBottom: 0 }}
@@ -130,26 +134,26 @@ export function GrnPoLinesEditor({
       },
     },
     {
-      title: 'Số lô',
+      title: tShared('columns.batchNumber'),
       width: 88,
       render: (_, field) => (
         <Form.Item
           name={[field.name, 'batchNumber']}
-          rules={[{ required: true, message: 'Lô' }]}
+          rules={[{ required: true, message: tVal('enterBatch') }]}
           style={{ marginBottom: 0 }}
         >
-          <Input placeholder="Lô" />
+          <Input placeholder={tShared('columns.batchShort')} />
         </Form.Item>
       ),
     },
     {
-      title: 'HSD',
+      title: tShared('columns.expiry'),
       width: 100,
       className: 'grn-col-nowrap',
       render: (_, field) => (
         <Form.Item
           name={[field.name, 'expiryDate']}
-          rules={[{ required: true, message: 'HSD' }]}
+          rules={[{ required: true, message: tVal('selectExpiry') }]}
           style={{ marginBottom: 0 }}
         >
           <PharmaExpiryPicker style={{ width: '100%' }} inTable />
@@ -157,15 +161,15 @@ export function GrnPoLinesEditor({
       ),
     },
     {
-      title: 'CK dòng',
+      title: tShared('columns.lineDiscount'),
       width: 156,
       render: (_, field) => <GrnLineDiscountFields fieldName={field.name} />,
     },
     {
       title: (
         <div style={{ lineHeight: 1.25, textAlign: 'right' }}>
-          <div>Giá vốn</div>
-          <div style={{ fontSize: 11, fontWeight: 400, color: '#888' }}>Giá nhập gần nhất</div>
+          <div>{tShared('columns.unitCost')}</div>
+          <div style={{ fontSize: 11, fontWeight: 400, color: '#888' }}>{tShared('columns.lastPurchasePriceHint')}</div>
         </div>
       ),
       width: PROCUREMENT_MONEY_COL_WIDTH,
@@ -175,7 +179,7 @@ export function GrnPoLinesEditor({
         return (
           <Form.Item
             name={[field.name, 'unitCost']}
-            rules={[{ required: true, message: 'Giá' }]}
+            rules={[{ required: true, message: tVal('enterPrice') }]}
             style={{ marginBottom: 0 }}
           >
             <PoUnitPriceField
@@ -190,7 +194,7 @@ export function GrnPoLinesEditor({
       },
     },
     {
-      title: 'Thành tiền',
+      title: tShared('columns.lineTotal'),
       width: PROCUREMENT_MONEY_COL_WIDTH,
       align: 'right',
       render: (_, field) => {
@@ -218,7 +222,7 @@ export function GrnPoLinesEditor({
           danger
           size="small"
           icon={<DeleteOutlined />}
-          aria-label="Xóa dòng"
+          aria-label={tLines('removeLineAria')}
           onClick={() => remove(field.name)}
         />
       ),

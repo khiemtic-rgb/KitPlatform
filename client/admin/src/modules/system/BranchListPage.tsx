@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Card, Drawer, Form, Input, Popconfirm, Select, Space, Switch, Table, Tag, Tooltip, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
@@ -9,9 +10,9 @@ import {
   updateBranch,
 } from '@/shared/api/identity-admin.api';
 import type { BranchListItem } from '@/shared/api/identity-admin.types';
-import { BRANCH_STATUS_LABELS, BRANCH_STATUS_OPTIONS } from '@/shared/api/identity-admin.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
+import { useSystemEnums } from '@/shared/i18n/use-system-enums';
 
 interface BranchFormValues {
   branchCode: string;
@@ -23,6 +24,9 @@ interface BranchFormValues {
 }
 
 export function BranchListPage() {
+  const { t } = useTranslation('system', { keyPrefix: 'branches' });
+  const { t: tc } = useTranslation('common');
+  const { branchStatusLabel, branchStatusOptions } = useSystemEnums();
   const canWrite = useHasPermission('system.write');
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<BranchListItem[]>([]);
@@ -36,11 +40,11 @@ export function BranchListPage() {
     try {
       setItems(await fetchBranches());
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được chi nhánh'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load();
@@ -85,7 +89,7 @@ export function BranchListPage() {
           isHeadOffice: values.isHeadOffice ?? false,
           status: values.status ?? 1,
         });
-        message.success('Đã cập nhật chi nhánh');
+        message.success(t('messages.updated'));
       } else {
         await createBranch({
           branchCode: code,
@@ -95,12 +99,12 @@ export function BranchListPage() {
           isHeadOffice: values.isHeadOffice ?? false,
           status: values.status ?? 1,
         });
-        message.success('Đã thêm chi nhánh');
+        message.success(t('messages.created'));
       }
       setDrawerOpen(false);
       await load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không lưu được chi nhánh'));
+      message.error(apiErrorMessage(error, t('messages.saveFailed')));
     } finally {
       setSaving(false);
     }
@@ -109,81 +113,84 @@ export function BranchListPage() {
   const handleDelete = async (row: BranchListItem) => {
     try {
       await deleteBranch(row.id);
-      message.success(`Đã xóa chi nhánh ${row.branchCode}`);
+      message.success(t('messages.deleted', { code: row.branchCode }));
       await load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không xóa được chi nhánh'));
+      message.error(apiErrorMessage(error, t('messages.deleteFailed')));
     }
   };
 
-  const columns: ColumnsType<BranchListItem> = [
-    { title: 'Mã CN', dataIndex: 'branchCode', width: 100 },
-    { title: 'Tên chi nhánh', dataIndex: 'branchName' },
-    { title: 'Điện thoại', dataIndex: 'phone', width: 130, render: (v?: string) => v ?? '—' },
-    {
-      title: 'Trụ sở',
-      dataIndex: 'isHeadOffice',
-      width: 90,
-      render: (v: boolean) => (v ? <Tag color="blue">Chính</Tag> : '—'),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      width: 110,
-      render: (v: number) => (
-        <Tag color={v === 1 ? 'green' : 'default'}>{BRANCH_STATUS_LABELS[v] ?? v}</Tag>
-      ),
-    },
-    {
-      title: 'Tác vụ',
-      width: 100,
-      render: (_, row) =>
-        canWrite ? (
-          <Space size={4}>
-            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)}>
-              Sửa
-            </Button>
-            <Popconfirm
-              title={`Xóa «${row.branchCode}»?`}
-              description="Chi nhánh sẽ bị vô hiệu hóa."
-              okText="Xóa"
-              cancelText="Hủy"
-              okButtonProps={{ danger: true }}
-              disabled={row.isHeadOffice}
-              onConfirm={() => void handleDelete(row)}
-            >
-              <Tooltip
-                title={row.isHeadOffice ? 'Không thể xóa chi nhánh trụ sở chính' : 'Xóa'}
+  const columns: ColumnsType<BranchListItem> = useMemo(
+    () => [
+      { title: t('columns.code'), dataIndex: 'branchCode', width: 100 },
+      { title: t('columns.name'), dataIndex: 'branchName' },
+      { title: t('columns.phone'), dataIndex: 'phone', width: 130, render: (v?: string) => v ?? '—' },
+      {
+        title: t('columns.headOffice'),
+        dataIndex: 'isHeadOffice',
+        width: 90,
+        render: (v: boolean) => (v ? <Tag color="blue">{t('headOfficeTag')}</Tag> : '—'),
+      },
+      {
+        title: t('columns.status'),
+        dataIndex: 'status',
+        width: 110,
+        render: (v: number) => (
+          <Tag color={v === 1 ? 'green' : 'default'}>{branchStatusLabel(v)}</Tag>
+        ),
+      },
+      {
+        title: t('columns.actions'),
+        width: 100,
+        render: (_, row) =>
+          canWrite ? (
+            <Space size={4}>
+              <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)}>
+                {tc('actions.edit')}
+              </Button>
+              <Popconfirm
+                title={t('deleteConfirm', { code: row.branchCode })}
+                description={t('deleteDescription')}
+                okText={tc('actions.delete')}
+                cancelText={tc('actions.cancel')}
+                okButtonProps={{ danger: true }}
+                disabled={row.isHeadOffice}
+                onConfirm={() => void handleDelete(row)}
               >
-                <span>
-                  <Button
-                    type="text"
-                    size="small"
-                    danger
-                    disabled={row.isHeadOffice}
-                    icon={<DeleteOutlined />}
-                    aria-label="Xóa"
-                    style={row.isHeadOffice ? { opacity: 0.35 } : undefined}
-                  />
-                </span>
-              </Tooltip>
-            </Popconfirm>
-          </Space>
-        ) : null,
-    },
-  ];
+                <Tooltip
+                  title={row.isHeadOffice ? t('cannotDeleteHeadOffice') : tc('actions.delete')}
+                >
+                  <span>
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      disabled={row.isHeadOffice}
+                      icon={<DeleteOutlined />}
+                      aria-label={tc('actions.delete')}
+                      style={row.isHeadOffice ? { opacity: 0.35 } : undefined}
+                    />
+                  </span>
+                </Tooltip>
+              </Popconfirm>
+            </Space>
+          ) : null,
+      },
+    ],
+    [branchStatusLabel, canWrite, t, tc],
+  );
 
   return (
     <Card
-      title="Chi nhánh"
+      title={t('title')}
       extra={
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-            Tải lại
+            {tc('actions.reload')}
           </Button>
           {canWrite ? (
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-              Thêm chi nhánh
+              {t('add')}
             </Button>
           ) : null}
         </Space>
@@ -192,15 +199,15 @@ export function BranchListPage() {
       <Table rowKey="id" loading={loading} columns={columns} dataSource={items} pagination={false} />
 
       <Drawer
-        title={editing ? 'Sửa chi nhánh' : 'Thêm chi nhánh'}
+        title={editing ? t('edit') : t('create')}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         width={420}
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
+            <Button onClick={() => setDrawerOpen(false)}>{tc('actions.cancel')}</Button>
             <Button type="primary" loading={saving} onClick={() => void handleSave()}>
-              Lưu
+              {tc('actions.save')}
             </Button>
           </Space>
         }
@@ -208,29 +215,29 @@ export function BranchListPage() {
         <Form form={form} layout="vertical">
           <Form.Item
             name="branchCode"
-            label="Mã chi nhánh"
-            rules={[{ required: true, message: 'Nhập mã chi nhánh' }]}
+            label={t('form.code')}
+            rules={[{ required: true, message: t('form.codeRequired') }]}
           >
             <Input placeholder="HN01" style={{ textTransform: 'uppercase' }} />
           </Form.Item>
           <Form.Item
             name="branchName"
-            label="Tên chi nhánh"
-            rules={[{ required: true, message: 'Nhập tên chi nhánh' }]}
+            label={t('form.name')}
+            rules={[{ required: true, message: t('form.nameRequired') }]}
           >
             <Input />
           </Form.Item>
-          <Form.Item name="phone" label="Điện thoại">
+          <Form.Item name="phone" label={t('form.phone')}>
             <Input />
           </Form.Item>
-          <Form.Item name="address" label="Địa chỉ">
+          <Form.Item name="address" label={t('form.address')}>
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item name="isHeadOffice" label="Trụ sở chính" valuePropName="checked">
+          <Form.Item name="isHeadOffice" label={t('form.isHeadOffice')} valuePropName="checked">
             <Switch />
           </Form.Item>
-          <Form.Item name="status" label="Trạng thái">
-            <Select options={BRANCH_STATUS_OPTIONS} />
+          <Form.Item name="status" label={t('form.status')}>
+            <Select options={branchStatusOptions} />
           </Form.Item>
         </Form>
       </Drawer>

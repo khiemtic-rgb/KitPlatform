@@ -1,9 +1,10 @@
+import type { TFunction } from 'i18next';
 import type { SalesOrderDetail, SalesOrderItem } from '@/shared/api/sales.types';
-import { SALES_PAYMENT_METHOD_LABELS } from '@/shared/api/sales.types';
 import { buildOrderNetPaymentLines } from '@/modules/sales/sales-payment-summary';
 import {
   computeOrderTotalRefunded,
-  orderDisplayStatus,
+  isPartiallyReturnedFromItems,
+  isPartiallyReturnedOrder,
   remainingLineNet,
 } from '@/modules/sales/sales-return-pricing';
 import { loadReceiptStoreSettings, type ReceiptStoreSettings } from '@/modules/sales/receipt-settings';
@@ -17,6 +18,35 @@ import {
 } from '@/modules/sales/thermal-receipt-print';
 import { resolveOrderPaymentSummary, SALES_PAYMENT_METHOD_CREDIT } from '@/modules/sales/sales-order-payment-summary';
 import { escapeHtml } from '@/shared/utils/escape-html';
+import { salesT } from '@/shared/i18n';
+
+function paymentMethodLabel(t: TFunction<'sales'>, method: number): string {
+  return t(`enums.paymentMethod.${method}`, { defaultValue: String(method) });
+}
+
+function formatPoints(value: number): string {
+  return value.toLocaleString();
+}
+
+function orderStatusLabel(
+  t: TFunction<'sales'>,
+  order: Pick<SalesOrderDetail, 'status' | 'totalRefunded' | 'items'>,
+): string {
+  const partial =
+    isPartiallyReturnedOrder(order.status, order.totalRefunded) ||
+    (order.items != null && isPartiallyReturnedFromItems(order.status, order.items));
+  if (partial) return t('receipt.orderStatus.partialReturn');
+  return t(`receipt.orderStatus.${order.status}`, { defaultValue: String(order.status) });
+}
+
+function voucherDiscountLabel(t: TFunction<'sales'>, order: SalesOrderDetail): string {
+  const code = order.voucherCode?.trim();
+  const name = order.voucherName?.trim();
+  if (code && name) return t('receipt.voucherNamed', { code, name });
+  if (code) return t('receipt.voucherCode', { code });
+  if (name) return `${t('receipt.voucher')} ${name}`;
+  return t('receipt.voucher');
+}
 
 function returnedQty(line: SalesOrderItem): number {
   return line.returnedQuantity ?? 0;
@@ -27,6 +57,7 @@ function netQty(line: SalesOrderItem): number {
 }
 
 function buildLineItemHtml(
+  t: TFunction<'sales'>,
   line: SalesOrderItem,
   order: SalesOrderDetail,
   hasReturns: boolean,
@@ -37,11 +68,11 @@ function buildLineItemHtml(
   const lineTotal = hasReturns ? remainingLineNet(line, order) : line.lineTotal;
   const name = escapeHtml(line.productName);
   const unit = escapeHtml(line.unitName);
-  const qtyLabel = `${qty.toLocaleString('vi-VN')} ${unit}`;
+  const qtyLabel = `${qty.toLocaleString()} ${unit}`;
 
   const discount =
     (line.discountAmount ?? 0) > 0
-      ? `<div class="row sub"><span class="row-left">  CK</span><span class="row-right">-${formatThermalMoney(line.discountAmount ?? 0)}</span></div>`
+      ? `<div class="row sub"><span class="row-left">  ${escapeHtml(t('receipt.invoice.lineDiscount'))}</span><span class="row-right">-${formatThermalMoney(line.discountAmount ?? 0)}</span></div>`
       : '';
 
   return `
@@ -55,14 +86,14 @@ function buildLineItemHtml(
     </div>`;
 }
 
-function buildPaymentSection(order: SalesOrderDetail, hasReturns: boolean): string {
+function buildPaymentSection(t: TFunction<'sales'>, order: SalesOrderDetail, hasReturns: boolean): string {
   const { lines: netLines } = buildOrderNetPaymentLines(order);
   const { amountPaid, outstanding, hasOutstanding } = resolveOrderPaymentSummary(order);
 
   if (hasReturns && netLines.length > 0) {
     return netLines
       .map((line) => {
-        const label = SALES_PAYMENT_METHOD_LABELS[line.paymentMethod] ?? String(line.paymentMethod);
+        const label = paymentMethodLabel(t, line.paymentMethod);
         return rowBetween(label, formatThermalMoney(line.net), 'sub');
       })
       .join('');
@@ -71,7 +102,7 @@ function buildPaymentSection(order: SalesOrderDetail, hasReturns: boolean): stri
   const paymentRows = (order.payments ?? [])
     .filter((p) => p.paymentMethod !== SALES_PAYMENT_METHOD_CREDIT)
     .map((p) => {
-      const label = SALES_PAYMENT_METHOD_LABELS[p.paymentMethod] ?? String(p.paymentMethod);
+      const label = paymentMethodLabel(t, p.paymentMethod);
       return rowBetween(label, formatThermalMoney(p.amount), 'sub');
     })
     .join('');
@@ -79,26 +110,18 @@ function buildPaymentSection(order: SalesOrderDetail, hasReturns: boolean): stri
   if (hasOutstanding) {
     return (
       paymentRows +
-      rowBetween('Đã thanh toán', formatThermalMoney(amountPaid), 'sub') +
-      rowBetween('Còn nợ (đơn này)', formatThermalMoney(outstanding), 'sub')
+      rowBetween(t('receipt.invoice.paid'), formatThermalMoney(amountPaid), 'sub') +
+      rowBetween(t('receipt.invoice.outstanding'), formatThermalMoney(outstanding), 'sub')
     );
   }
 
   if (paymentRows) return paymentRows;
 
-  return rowBetween('Thanh toán', formatThermalMoney(order.totalAmount));
-}
-
-function voucherDiscountLabel(order: SalesOrderDetail): string {
-  const code = order.voucherCode?.trim();
-  const name = order.voucherName?.trim();
-  if (code && name) return `Voucher ${code} — ${name}`;
-  if (code) return `Voucher ${code}`;
-  if (name) return `Voucher ${name}`;
-  return 'Voucher';
+  return rowBetween(t('receipt.invoice.payment'), formatThermalMoney(order.totalAmount));
 }
 
 export function buildSalesInvoiceHtml(order: SalesOrderDetail, receiptStore: ReceiptStoreSettings): string {
+  const t = salesT();
   const hasReturns = order.items.some((line) => returnedQty(line) > 0);
   const { hasOutstanding } = resolveOrderPaymentSummary(order);
   const totalRefunded =
@@ -112,46 +135,49 @@ export function buildSalesInvoiceHtml(order: SalesOrderDetail, receiptStore: Rec
     order.items.reduce((sum, line) => sum + (line.discountAmount ?? 0), 0);
 
   const itemBlocks = order.items
-    .map((line) => buildLineItemHtml(line, order, hasReturns))
+    .map((line) => buildLineItemHtml(t, line, order, hasReturns))
     .filter(Boolean)
     .join('');
 
-  const statusLabel = orderDisplayStatus({
+  const statusLabel = orderStatusLabel(t, {
     status: order.status,
     totalRefunded: order.totalRefunded ?? totalRefunded,
     items: order.items,
-  }).label;
+  });
 
   const storeName = escapeHtml(receiptStore.name);
   const storeTagline = receiptStore.tagline ? escapeHtml(receiptStore.tagline) : '';
   const storePhone = receiptStore.phone ? escapeHtml(receiptStore.phone) : '';
   const storeAddress = receiptStore.address ? escapeHtml(receiptStore.address) : '';
 
-  const headerContact = [storePhone ? `ĐT: ${storePhone}` : '', storeAddress]
+  const headerContact = [
+    storePhone ? `${t('receipt.invoice.phonePrefix')}: ${storePhone}` : '',
+    storeAddress,
+  ]
     .filter(Boolean)
     .join(' · ');
 
   const totalsBlock = hasReturns
     ? `
-      ${rowBetween('Tổng tiền hàng', formatThermalMoney(order.subtotal), 'sub')}
-      ${lineDiscountTotal > 0 ? rowBetween('Chiết khấu SP', `-${formatThermalMoney(lineDiscountTotal)}`, 'sub') : ''}
-      ${order.discountAmount > 0 ? rowBetween('Chiết khấu đơn', `-${formatThermalMoney(order.discountAmount)}`, 'sub') : ''}
-      ${(order.voucherDiscountAmount ?? 0) > 0 ? rowBetween(voucherDiscountLabel(order), `-${formatThermalMoney(order.voucherDiscountAmount ?? 0)}`, 'sub') : ''}
-      ${(order.loyaltyDiscountAmount ?? 0) > 0 ? rowBetween(`Đổi ${(order.loyaltyPointsRedeemed ?? 0).toLocaleString('vi-VN')} điểm`, `-${formatThermalMoney(order.loyaltyDiscountAmount ?? 0)}`, 'sub') : ''}
-      ${rowBetween('Khách đã trả', formatThermalMoney(order.totalAmount), 'sub')}
-      ${totalRefunded > 0 ? rowBetween('Đã hoàn trả', `-${formatThermalMoney(totalRefunded)}`, 'sub') : ''}
-      ${rowBetween('Còn lại', formatThermalMoney(netPayable), 'total')}
+      ${rowBetween(t('receipt.invoice.subtotal'), formatThermalMoney(order.subtotal), 'sub')}
+      ${lineDiscountTotal > 0 ? rowBetween(t('receipt.invoice.lineDiscountTotal'), `-${formatThermalMoney(lineDiscountTotal)}`, 'sub') : ''}
+      ${order.discountAmount > 0 ? rowBetween(t('receipt.invoice.orderDiscount'), `-${formatThermalMoney(order.discountAmount)}`, 'sub') : ''}
+      ${(order.voucherDiscountAmount ?? 0) > 0 ? rowBetween(voucherDiscountLabel(t, order), `-${formatThermalMoney(order.voucherDiscountAmount ?? 0)}`, 'sub') : ''}
+      ${(order.loyaltyDiscountAmount ?? 0) > 0 ? rowBetween(t('receipt.invoice.pointsRedeemedTotal', { points: formatPoints(order.loyaltyPointsRedeemed ?? 0) }), `-${formatThermalMoney(order.loyaltyDiscountAmount ?? 0)}`, 'sub') : ''}
+      ${rowBetween(t('receipt.invoice.customerPaid'), formatThermalMoney(order.totalAmount), 'sub')}
+      ${totalRefunded > 0 ? rowBetween(t('receipt.invoice.refunded'), `-${formatThermalMoney(totalRefunded)}`, 'sub') : ''}
+      ${rowBetween(t('receipt.invoice.remaining'), formatThermalMoney(netPayable), 'total')}
     `
     : `
-      ${rowBetween('Tổng tiền hàng', formatThermalMoney(order.subtotal), 'sub')}
-      ${lineDiscountTotal > 0 ? rowBetween('Chiết khấu SP', `-${formatThermalMoney(lineDiscountTotal)}`, 'sub') : ''}
-      ${order.discountAmount > 0 ? rowBetween('Chiết khấu đơn', `-${formatThermalMoney(order.discountAmount)}`, 'sub') : ''}
-      ${(order.voucherDiscountAmount ?? 0) > 0 ? rowBetween(voucherDiscountLabel(order), `-${formatThermalMoney(order.voucherDiscountAmount ?? 0)}`, 'sub') : ''}
-      ${(order.loyaltyDiscountAmount ?? 0) > 0 ? rowBetween(`Đổi ${(order.loyaltyPointsRedeemed ?? 0).toLocaleString('vi-VN')} điểm`, `-${formatThermalMoney(order.loyaltyDiscountAmount ?? 0)}`, 'sub') : ''}
-      ${rowBetween('TỔNG CỘNG', formatThermalMoney(order.totalAmount), 'total')}
+      ${rowBetween(t('receipt.invoice.subtotal'), formatThermalMoney(order.subtotal), 'sub')}
+      ${lineDiscountTotal > 0 ? rowBetween(t('receipt.invoice.lineDiscountTotal'), `-${formatThermalMoney(lineDiscountTotal)}`, 'sub') : ''}
+      ${order.discountAmount > 0 ? rowBetween(t('receipt.invoice.orderDiscount'), `-${formatThermalMoney(order.discountAmount)}`, 'sub') : ''}
+      ${(order.voucherDiscountAmount ?? 0) > 0 ? rowBetween(voucherDiscountLabel(t, order), `-${formatThermalMoney(order.voucherDiscountAmount ?? 0)}`, 'sub') : ''}
+      ${(order.loyaltyDiscountAmount ?? 0) > 0 ? rowBetween(t('receipt.invoice.pointsRedeemedTotal', { points: formatPoints(order.loyaltyPointsRedeemed ?? 0) }), `-${formatThermalMoney(order.loyaltyDiscountAmount ?? 0)}`, 'sub') : ''}
+      ${rowBetween(t('receipt.invoice.grandTotal'), formatThermalMoney(order.totalAmount), 'total')}
     `;
 
-  const paymentBlock = buildPaymentSection(order, hasReturns);
+  const paymentBlock = buildPaymentSection(t, order, hasReturns);
 
   const bodyHtml = `
     <div class="center store-name">${storeName}</div>
@@ -159,17 +185,17 @@ export function buildSalesInvoiceHtml(order: SalesOrderDetail, receiptStore: Rec
     ${headerContact ? `<div class="center store-contact">${headerContact}</div>` : ''}
 
     ${dashedLine()}
-    <div class="center title">HÓA ĐƠN BÁN HÀNG</div>
+    <div class="center title">${escapeHtml(t('receipt.invoice.title'))}</div>
 
-    <div class="meta">Số: <strong>${escapeHtml(order.orderNumber)}</strong></div>
-    <div class="meta">Ngày: ${formatReceiptDateTime(order.orderDate)}</div>
-    ${order.shiftNumber ? `<div class="meta">Ca: ${escapeHtml(order.shiftNumber)}</div>` : ''}
-    ${order.customerName ? `<div class="meta">Khách: ${escapeHtml(order.customerName)}</div>` : `<div class="meta">Khách: Khách lẻ</div>`}
-    ${(order.loyaltyPointsEarned ?? 0) > 0 ? `<div class="meta">Tích điểm: +${order.loyaltyPointsEarned!.toLocaleString('vi-VN')} điểm</div>` : ''}
-    ${hasOutstanding ? `<div class="meta">Phần nợ không tích điểm</div>` : ''}
-    ${(order.loyaltyPointsRedeemed ?? 0) > 0 ? `<div class="meta">Đổi điểm: −${order.loyaltyPointsRedeemed!.toLocaleString('vi-VN')} điểm (−${formatThermalMoney(order.loyaltyDiscountAmount ?? 0)})</div>` : ''}
-    ${(order.voucherDiscountAmount ?? 0) > 0 ? `<div class="meta">Voucher: −${formatThermalMoney(order.voucherDiscountAmount ?? 0)}${order.voucherCode ? ` (${escapeHtml(order.voucherCode)})` : ''}</div>` : ''}
-    ${hasReturns ? `<div class="meta">TT: ${escapeHtml(statusLabel)}</div>` : ''}
+    <div class="meta">${t('receipt.invoice.orderNo')}: <strong>${escapeHtml(order.orderNumber)}</strong></div>
+    <div class="meta">${t('receipt.invoice.date')}: ${formatReceiptDateTime(order.orderDate)}</div>
+    ${order.shiftNumber ? `<div class="meta">${t('receipt.invoice.shift')}: ${escapeHtml(order.shiftNumber)}</div>` : ''}
+    ${order.customerName ? `<div class="meta">${t('receipt.invoice.customer')}: ${escapeHtml(order.customerName)}</div>` : `<div class="meta">${t('receipt.invoice.customer')}: ${escapeHtml(t('receipt.invoice.walkIn'))}</div>`}
+    ${(order.loyaltyPointsEarned ?? 0) > 0 ? `<div class="meta">${escapeHtml(t('receipt.invoice.pointsEarned', { points: formatPoints(order.loyaltyPointsEarned!) }))}</div>` : ''}
+    ${hasOutstanding ? `<div class="meta">${escapeHtml(t('receipt.invoice.creditNoPoints'))}</div>` : ''}
+    ${(order.loyaltyPointsRedeemed ?? 0) > 0 ? `<div class="meta">${escapeHtml(t('receipt.invoice.pointsRedeemed', { points: formatPoints(order.loyaltyPointsRedeemed!), amount: formatThermalMoney(order.loyaltyDiscountAmount ?? 0) }))}</div>` : ''}
+    ${(order.voucherDiscountAmount ?? 0) > 0 ? `<div class="meta">${escapeHtml(t('receipt.invoice.voucherLine', { amount: formatThermalMoney(order.voucherDiscountAmount ?? 0) }))}${order.voucherCode ? ` (${escapeHtml(order.voucherCode)})` : ''}</div>` : ''}
+    ${hasReturns ? `<div class="meta">${t('receipt.invoice.status')}: ${escapeHtml(statusLabel)}</div>` : ''}
 
     ${dashedLine()}
     <div class="items">${itemBlocks}</div>
@@ -178,17 +204,17 @@ export function buildSalesInvoiceHtml(order: SalesOrderDetail, receiptStore: Rec
     ${totalsBlock}
     ${paymentBlock ? `${dashedLine()}${paymentBlock}` : ''}
 
-    ${order.notes ? `<div class="note">Ghi chú: ${escapeHtml(order.notes)}</div>` : ''}
-    ${hasReturns ? '<div class="note">Phiếu in lại sau trả hàng — số lượng là phần còn lại.</div>' : ''}
+    ${order.notes ? `<div class="note">${t('receipt.invoice.notes')}: ${escapeHtml(order.notes)}</div>` : ''}
+    ${hasReturns ? `<div class="note">${escapeHtml(t('receipt.invoice.reprintAfterReturn'))}</div>` : ''}
 
     ${dashedLine()}
     <div class="footer">
-      <div>Cảm ơn quý khách!</div>
-      <div>Hẹn gặp lại</div>
-      <div class="note" style="margin-top:6px">Phiếu bán lẻ — không phải hóa đơn GTGT</div>
+      <div>${escapeHtml(t('receipt.invoice.thanks'))}</div>
+      <div>${escapeHtml(t('receipt.invoice.seeAgain'))}</div>
+      <div class="note" style="margin-top:6px">${escapeHtml(t('receipt.invoice.disclaimer'))}</div>
     </div>`;
 
-  return buildThermalReceiptDocument(`HD ${escapeHtml(order.orderNumber)}`, bodyHtml);
+  return buildThermalReceiptDocument(t('receipt.invoice.docTitle', { number: escapeHtml(order.orderNumber) }), bodyHtml);
 }
 
 export async function printSalesInvoice(order: SalesOrderDetail): Promise<boolean> {

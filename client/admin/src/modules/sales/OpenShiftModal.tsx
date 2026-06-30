@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { InputNumber, Modal, message } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { PosSummaryRow } from '@/modules/sales/pos-summary-ui';
 import {
   moneyInputNumberPropsAllowZero,
@@ -15,6 +16,8 @@ type Props = {
 };
 
 export function OpenShiftModal({ open, loading, warehouseName, onCancel, onConfirm }: Props) {
+  const { t } = useTranslation('sales');
+  const { t: tc } = useTranslation('common');
   const [openingCash, setOpeningCash] = useState(0);
 
   useEffect(() => {
@@ -25,7 +28,7 @@ export function OpenShiftModal({ open, loading, warehouseName, onCancel, onConfi
     (async () => {
       const cash = Number(openingCash ?? 0);
       if (Number.isNaN(cash) || cash < 0) {
-        message.warning('Quỹ đầu ca không hợp lệ');
+        message.warning(t('pos.shift.invalidOpeningCash'));
         throw new Error('invalid opening cash');
       }
       await onConfirm(cash);
@@ -33,10 +36,11 @@ export function OpenShiftModal({ open, loading, warehouseName, onCancel, onConfi
 
   return (
     <Modal
-      title="Mở ca làm việc"
+      title={t('pos.shift.openTitle')}
       open={open}
       confirmLoading={loading}
-      okText="Mở ca"
+      okText={t('pos.shift.openConfirm')}
+      cancelText={tc('actions.cancel')}
       destroyOnClose
       maskClosable={false}
       onCancel={onCancel}
@@ -44,12 +48,12 @@ export function OpenShiftModal({ open, loading, warehouseName, onCancel, onConfi
     >
       {warehouseName && (
         <div style={{ marginBottom: 12 }}>
-          <PosSummaryRow label="Kho" value={warehouseName} />
+          <PosSummaryRow label={t('pos.shift.warehouse')} value={warehouseName} />
         </div>
       )}
       <div style={{ marginBottom: 8 }}>
         <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
-          Quỹ đầu ca (tiền mặt)
+          {t('pos.shift.openingCashLabel')}
         </label>
         <InputNumber
           {...moneyInputNumberPropsAllowZero}
@@ -59,10 +63,7 @@ export function OpenShiftModal({ open, loading, warehouseName, onCancel, onConfi
           placeholder="0"
         />
       </div>
-      <div style={{ color: '#666', fontSize: 12 }}>
-        Quỹ đầu ca là số tiền mặt có sẵn trong két trước khi bán. Hệ thống sẽ yêu cầu mở ca trước khi
-        thanh toán đơn.
-      </div>
+      <div style={{ color: '#666', fontSize: 12 }}>{t('pos.shift.openingCashHint')}</div>
     </Modal>
   );
 }

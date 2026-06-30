@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AutoComplete,
   Button,
@@ -27,14 +28,19 @@ import {
 } from '@/shared/api/procurement.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import type { Supplier } from '@/shared/api/procurement.types';
-import { SUPPLIER_STATUS_LABELS } from '@/shared/api/procurement.types';
 import { filterSuppliersById } from '@/modules/procurement/procurement-list-filters';
 import { SupplierImportCard } from '@/modules/procurement/SupplierImportCard';
 import { downloadCsv } from '@/shared/utils/download-csv';
+import { useProcurementEnums } from '@/shared/i18n/use-procurement-enums';
 
 import { useProcurementWrite } from '@/shared/auth/usePermission';
 
 export function SupplierListPage() {
+  const { t } = useTranslation('procurement', { keyPrefix: 'suppliers' });
+  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
+  const { t: tCommon } = useTranslation('common', { keyPrefix: 'actions' });
+  const { t: tVal } = useTranslation('procurement', { keyPrefix: 'shared.validation' });
+  const { supplierStatusLabel, supplierStatusOptions } = useProcurementEnums();
   const canWrite = useProcurementWrite();
   const [loading, setLoading] = useState(false);
   const [allItems, setAllItems] = useState<Supplier[]>([]);
@@ -49,11 +55,11 @@ export function SupplierListPage() {
     try {
       setAllItems(await fetchSuppliers());
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được nhà cung cấp'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load();
@@ -77,19 +83,26 @@ export function SupplierListPage() {
 
   const exportSuppliers = () => {
     if (items.length === 0) {
-      message.info('Không có dữ liệu để xuất');
+      message.info(tShared('messages.noExportData'));
       return;
     }
     downloadCsv(
       `nha-cung-cap-${new Date().toISOString().slice(0, 10)}.csv`,
-      ['Mã NCC', 'Tên NCC', 'Điện thoại', 'MST', 'Hạn TT (ngày)', 'Trạng thái'],
+      [
+        t('exportColumns.code'),
+        t('exportColumns.name'),
+        t('exportColumns.phone'),
+        t('exportColumns.taxCode'),
+        t('exportColumns.paymentTerms'),
+        t('exportColumns.status'),
+      ],
       items.map((row) => [
         row.supplierCode,
         row.supplierName,
         row.phone ?? '',
         row.taxCode ?? '',
         String(row.paymentTerms),
-        SUPPLIER_STATUS_LABELS[row.status] ?? String(row.status),
+        supplierStatusLabel(row.status),
       ]),
     );
   };
@@ -122,7 +135,7 @@ export function SupplierListPage() {
           paymentTerms: values.paymentTerms ?? 30,
           status: values.status ?? 1,
         });
-        message.success('Đã cập nhật NCC');
+        message.success(t('messages.updated'));
       } else {
         await createSupplier({
           supplierCode: values.supplierCode,
@@ -134,13 +147,13 @@ export function SupplierListPage() {
           address: values.address,
           paymentTerms: values.paymentTerms ?? 30,
         });
-        message.success('Đã tạo NCC');
+        message.success(t('messages.created'));
       }
       setDrawerOpen(false);
       void load();
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, 'Không lưu được NCC'));
+        message.error(apiErrorMessage(error, t('messages.saveFailed')));
       }
     } finally {
       setSaving(false);
@@ -148,16 +161,21 @@ export function SupplierListPage() {
   };
 
   const columns: ColumnsType<Supplier> = [
-    { title: 'Mã', dataIndex: 'supplierCode', width: 110 },
-    { title: 'Tên NCC', dataIndex: 'supplierName' },
-    { title: 'Điện thoại', dataIndex: 'phone', width: 120, render: (v) => v ?? '—' },
-    { title: 'Hạn TT (ngày)', dataIndex: 'paymentTerms', width: 120 },
+    { title: tShared('columns.code'), dataIndex: 'supplierCode', width: 110 },
+    { title: tShared('columns.supplierName'), dataIndex: 'supplierName' },
     {
-      title: 'Trạng thái',
+      title: tShared('columns.phone'),
+      dataIndex: 'phone',
+      width: 120,
+      render: (v) => v ?? tShared('emDash'),
+    },
+    { title: tShared('columns.paymentTermsDays'), dataIndex: 'paymentTerms', width: 120 },
+    {
+      title: tShared('columns.status'),
       dataIndex: 'status',
       width: 110,
       render: (s: number) => (
-        <Tag color={s === 1 ? 'green' : 'default'}>{SUPPLIER_STATUS_LABELS[s] ?? s}</Tag>
+        <Tag color={s === 1 ? 'green' : 'default'}>{supplierStatusLabel(s)}</Tag>
       ),
     },
     {
@@ -166,22 +184,22 @@ export function SupplierListPage() {
       render: (_, row) => (
         <Space>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)}>
-            Sửa
+            {tCommon('edit')}
           </Button>
           <Popconfirm
-            title="Xóa NCC này?"
+            title={t('deleteConfirm')}
             onConfirm={async () => {
               try {
                 await deleteSupplier(row.id);
-                message.success('Đã xóa NCC');
+                message.success(t('messages.deleted'));
                 void load();
               } catch (error) {
-                message.error(apiErrorMessage(error, 'Không xóa được NCC'));
+                message.error(apiErrorMessage(error, t('messages.deleteFailed')));
               }
             }}
           >
             <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              Xóa
+              {tCommon('delete')}
             </Button>
           </Popconfirm>
         </Space>
@@ -191,14 +209,14 @@ export function SupplierListPage() {
 
   return (
     <Card
-      title="Nhà cung cấp"
+      title={t('title')}
       extra={
         <Space>
           <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
-            Tải lại
+            {tCommon('reload')}
           </Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={!canWrite}>
-            Thêm NCC
+            {t('add')}
           </Button>
         </Space>
       }
@@ -210,7 +228,7 @@ export function SupplierListPage() {
               allowClear
               showSearch
               optionFilterProp="label"
-              placeholder="Chọn NCC (mã, tên)"
+              placeholder={tShared('filters.supplierSelect')}
               style={{ width: '100%' }}
               value={supplierFilterId}
               onChange={(value) => setSupplierFilterId(value)}
@@ -222,9 +240,9 @@ export function SupplierListPage() {
           </Col>
           <Col xs={24}>
             <Space wrap>
-              <Button onClick={resetSearch}>Xóa lọc</Button>
+              <Button onClick={resetSearch}>{tShared('clearFilters')}</Button>
               <Button icon={<DownloadOutlined />} onClick={exportSuppliers} disabled={loading}>
-                Xuất Excel
+                {tShared('exportExcel')}
               </Button>
             </Space>
           </Col>
@@ -232,7 +250,7 @@ export function SupplierListPage() {
       </div>
 
       {canWrite && (
-        <Card size="small" title="Import NCC (Excel/CSV)" style={{ marginBottom: 16 }}>
+        <Card size="small" title={t('importTitle')} style={{ marginBottom: 16 }}>
           <SupplierImportCard onImported={load} />
         </Card>
       )}
@@ -242,17 +260,20 @@ export function SupplierListPage() {
         loading={loading}
         columns={columns}
         dataSource={items}
-        pagination={{ pageSize: 20, showTotal: (total) => `${total} NCC` }}
+        pagination={{
+          pageSize: 20,
+          showTotal: (total) => tShared('pagination.suppliers', { count: total }),
+        }}
       />
 
       <Drawer
-        title={editing ? 'Sửa NCC' : 'Thêm NCC'}
+        title={editing ? t('editDrawer') : t('createDrawer')}
         width={480}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         extra={
           <Button type="primary" onClick={handleSave} loading={saving}>
-            Lưu
+            {tCommon('save')}
           </Button>
         }
       >
@@ -260,14 +281,18 @@ export function SupplierListPage() {
           {!editing && (
             <Form.Item
               name="supplierCode"
-              label="Mã NCC"
-              rules={[{ required: true, message: 'Nhập mã NCC' }]}
+              label={tShared('columns.supplierCode')}
+              rules={[{ required: true, message: tVal('enterSupplierCode') }]}
               normalize={(value) => (typeof value === 'string' ? value.toUpperCase() : value)}
             >
-              <Input placeholder="VD: NCC001" style={{ textTransform: 'uppercase' }} />
+              <Input placeholder={t('codePlaceholder')} style={{ textTransform: 'uppercase' }} />
             </Form.Item>
           )}
-          <Form.Item name="supplierName" label="Tên NCC" rules={[{ required: true, message: 'Nhập tên NCC' }]}>
+          <Form.Item
+            name="supplierName"
+            label={tShared('columns.supplierName')}
+            rules={[{ required: true, message: tVal('enterSupplierName') }]}
+          >
             <AutoComplete
               options={nameSuggestions}
               filterOption={(input, option) =>
@@ -275,35 +300,30 @@ export function SupplierListPage() {
                   .toLowerCase()
                   .includes(input.toLowerCase())
               }
-              placeholder="Gõ để xem gợi ý NCC có sẵn"
+              placeholder={t('namePlaceholder')}
             />
           </Form.Item>
-          <Form.Item name="taxCode" label="Mã số thuế">
+          <Form.Item name="taxCode" label={tShared('columns.taxCode')}>
             <Input />
           </Form.Item>
-          <Form.Item name="contactName" label="Người liên hệ">
+          <Form.Item name="contactName" label={tShared('columns.contactName')}>
             <Input />
           </Form.Item>
-          <Form.Item name="phone" label="Điện thoại">
+          <Form.Item name="phone" label={tShared('columns.phone')}>
             <Input />
           </Form.Item>
-          <Form.Item name="email" label="Email">
+          <Form.Item name="email" label={tShared('columns.email')}>
             <Input />
           </Form.Item>
-          <Form.Item name="address" label="Địa chỉ">
+          <Form.Item name="address" label={tShared('columns.address')}>
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item name="paymentTerms" label="Hạn thanh toán (ngày)">
+          <Form.Item name="paymentTerms" label={tShared('columns.paymentTermsFull')}>
             <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
           {editing && (
-            <Form.Item name="status" label="Trạng thái">
-              <Select
-                options={Object.entries(SUPPLIER_STATUS_LABELS).map(([value, label]) => ({
-                  value: Number(value),
-                  label,
-                }))}
-              />
+            <Form.Item name="status" label={tShared('columns.status')}>
+              <Select options={supplierStatusOptions} />
             </Form.Item>
           )}
         </Form>

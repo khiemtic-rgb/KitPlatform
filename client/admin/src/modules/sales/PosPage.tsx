@@ -39,7 +39,6 @@ import {
   validateCartBatchLabels,
 } from '@/modules/sales/pos-batch-mode-ui';
 import { applyBatchLabelScan } from '@/modules/sales/pos-batch-scan';
-import { POS_CART_DISCOUNT_TYPE_OPTIONS } from '@/modules/sales/pos-cart-table-options';
 import { capQuantityToStock, outOfStockWarningText, stockCapWarningText } from '@/modules/sales/pos-stock-messages';
 import { buildCreateSalePayload, buildDraftCompletePayload, buildDraftUpdatePayload } from '@/modules/sales/pos-sale-payload';
 import { OpenShiftModal } from '@/modules/sales/OpenShiftModal';
@@ -87,8 +86,11 @@ import { CustomerFormDrawer } from '@/modules/customer/CustomerFormDrawer';
 import type { CustomerDetail } from '@/shared/api/customer-admin.types';
 import { CustomerDraftOrderStatusBar } from '@/modules/sales/CustomerDraftOrderStatusBar';
 import { formatDisplayMoney, moneyInputNumberPropsAllowZeroSuffix, moneyInputNumberStyle } from '@/shared/utils/money';
+import { useTranslation } from 'react-i18next';
 
 export function PosPage() {
+  const { t } = useTranslation('sales');
+  const { t: tc } = useTranslation('common');
   const { message } = App.useApp();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -221,13 +223,13 @@ export function PosPage() {
         setOpenShift(await loadOpenShiftForWarehouse(payload.warehouseId));
         pendingAutoCheckoutRef.current = true;
         setAutoCheckoutTick((t) => t + 1);
-        message.success(`Đã nạp ${payload.draftNumber} — mở thanh toán...`);
+        message.success(t('pos.messages.draftLoadedCheckout', { number: payload.draftNumber }));
       } else {
-        message.success(`Đã nạp ${payload.draftNumber} vào giỏ — bấm Thanh toán khi sẵn sàng`);
+        message.success(t('pos.messages.draftLoadedCart', { number: payload.draftNumber }));
       }
     } catch (error) {
       pendingAutoCheckoutRef.current = false;
-      message.error(apiErrorMessage(error, 'Không nạp được đơn tạm'));
+      message.error(apiErrorMessage(error, t('pos.messages.loadDraftFailed')));
     }
   };
 
@@ -252,13 +254,13 @@ export function PosPage() {
         setOpenShift(await loadOpenShiftForWarehouse(payload.warehouseId));
         pendingAutoCheckoutRef.current = true;
         setAutoCheckoutTick((t) => t + 1);
-        message.success(`Đã nạp ${payload.reservationNumber} — mở thanh toán...`);
+        message.success(t('pos.messages.reservationLoadedCheckout', { number: payload.reservationNumber }));
       } else {
-        message.success(`Đã nạp ${payload.reservationNumber} vào giỏ — bấm Thanh toán khi sẵn sàng`);
+        message.success(t('pos.messages.reservationLoadedCart', { number: payload.reservationNumber }));
       }
     } catch (error) {
       pendingAutoCheckoutRef.current = false;
-      message.error(apiErrorMessage(error, 'Không nạp được đặt trước'));
+      message.error(apiErrorMessage(error, t('pos.messages.loadReservationFailed')));
     }
   };
 
@@ -291,7 +293,7 @@ export function PosPage() {
     }
     void loadOpenShift(warehouseId).catch((error) => {
       setOpenShift(null);
-      message.error(apiErrorMessage(error, 'Không tải được trạng thái ca'));
+      message.error(apiErrorMessage(error, t('pos.messages.loadShiftFailed')));
     });
   }, [warehouseId, loadOpenShift]);
 
@@ -329,7 +331,7 @@ export function PosPage() {
       return [...prev, listItem].sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi'));
     });
     setCustomerId(customer.id);
-    message.success(`Đã chọn ${customer.fullName} (${customer.customerCode})`);
+    message.success(t('pos.messages.customerSelected', { name: customer.fullName, code: customer.customerCode }));
   }, [message]);
 
   useEffect(() => {
@@ -368,7 +370,12 @@ export function PosPage() {
           setProductSearchOptions(
             items.map((p) => ({
               value: p.lookupCode,
-              label: `${p.productCode} — ${p.productName} · tồn ${p.stockAvailable.toLocaleString('vi-VN')} ${p.unitName}`,
+              label: t('pos.toolbar.searchOptionLabel', {
+                code: p.productCode,
+                name: p.productName,
+                stock: p.stockAvailable.toLocaleString(),
+                unit: p.unitName,
+              }),
             })),
           );
         } catch {
@@ -380,7 +387,7 @@ export function PosPage() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [barcode, warehouseId]);
+  }, [barcode, warehouseId, t]);
 
   const loadDraftFromUrl = useCallback(
     async (draftId: string) => {
@@ -388,7 +395,7 @@ export function PosPage() {
       try {
         const order = await fetchSalesOrder(draftId);
         if (order.status !== 1) {
-          message.warning('Đơn không còn ở trạng thái nháp');
+          message.warning(t('pos.messages.draftNotDraft'));
           clearDraftEdit();
           return;
         }
@@ -403,7 +410,7 @@ export function PosPage() {
           setSearchParams({ draftId: order.id }, { replace: true });
         }
       } catch (error) {
-        message.error(apiErrorMessage(error, 'Không tải được đơn nháp'));
+        message.error(apiErrorMessage(error, t('pos.messages.loadDraftOrderFailed')));
         clearDraftEdit();
       } finally {
         setDraftLoading(false);
@@ -461,29 +468,29 @@ export function PosPage() {
       const hasLineDiscount = cart.some((line) => (line.discountValue ?? 0) > 0);
       const hasOrderDiscount = (orderDiscount.discountValue ?? 0) > 0;
       if (hasLineDiscount || hasOrderDiscount) {
-        message.error('Tài khoản không có quyền chiết khấu');
+        message.error(t('pos.messages.noDiscountPermission'));
         return false;
       }
       return true;
     }
 
-    const policyError = validateCartDiscountPolicy(cart, orderDiscount, maxPercent, unlimited);
+    const policyError = validateCartDiscountPolicy(cart, orderDiscount, maxPercent, unlimited, t);
     if (policyError) {
       message.error(policyError);
       return false;
     }
 
     return true;
-  }, [canDiscount, cart, maxPercent, orderDiscount, unlimited]);
+  }, [canDiscount, cart, maxPercent, orderDiscount, unlimited, message, t]);
 
   const validateBatchLabels = useCallback((): boolean => {
-    const error = validateCartBatchLabels(cart, batchMode);
+    const error = validateCartBatchLabels(cart, batchMode, t);
     if (error) {
       message.warning(error);
       return false;
     }
     return true;
-  }, [batchMode, cart, message]);
+  }, [batchMode, cart, message, t]);
 
   const refreshCartStock = useCallback(async () => {
     if (!warehouseId || cart.length === 0) return;
@@ -555,7 +562,7 @@ export function PosPage() {
       });
       return true;
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không đủ tồn kho theo FEFO'));
+      message.error(apiErrorMessage(error, t('pos.messages.fefoFailed')));
       return false;
     }
   }, [cart, message, warehouseId]);
@@ -567,7 +574,7 @@ export function PosPage() {
       try {
         const item = await lookupPosProduct(value, warehouseId);
         if (item.stockAvailable <= 0) {
-          message.warning('Sản phẩm hết tồn tại kho này');
+          message.warning(t('pos.messages.outOfStock'));
           return;
         }
         const capWarning = stockCapWarningText(item.stockAvailable, item.unitName);
@@ -626,12 +633,12 @@ export function PosPage() {
           const batchResult = applyBatchLabelScan(cart, value);
           if (batchResult) {
             setCart(batchResult.cart);
-            message.success(`Đã gán lô ${batchResult.batchNumber} — ${batchResult.productName}`);
+            message.success(t('pos.messages.batchAssigned', { batch: batchResult.batchNumber, name: batchResult.productName }));
             setBarcode('');
             return;
           }
         }
-        message.error(apiErrorMessage(error, 'Không tìm thấy sản phẩm'));
+        message.error(apiErrorMessage(error, t('pos.messages.productNotFound')));
       }
     },
     [barcode, batchMode, cart, message, warehouseId],
@@ -664,11 +671,11 @@ export function PosPage() {
 
   const saveDraft = async () => {
     if (!warehouseId) {
-      message.warning('Chọn kho bán trước');
+      message.warning(t('pos.messages.selectWarehouseFirst'));
       return;
     }
     if (cart.length === 0) {
-      message.warning('Thêm ít nhất một sản phẩm');
+      message.warning(t('pos.messages.addProductFirst'));
       return;
     }
     if (!validateDiscounts()) return;
@@ -677,14 +684,14 @@ export function PosPage() {
     const useCustomerDraft = Boolean(customerAppDraftMode && customerId && !editingDraftId);
     setSaving(true);
     const hideLoading = message.loading(
-      updatingExisting ? 'Đang cập nhật đơn tạm...' : 'Đang lưu đơn tạm...',
+      updatingExisting ? t('pos.messages.updatingDraft') : t('pos.messages.savingDraft'),
       0,
     );
     try {
       if (useCustomerDraft) {
         const order = await saveCustomerDraftTemp();
         hideLoading();
-        message.success(`Đã lưu tạm ${order.draftNumber} — ${formatDisplayMoney(order.totalAmount)}`);
+        message.success(t('pos.messages.draftSaved', { number: order.draftNumber, amount: formatDisplayMoney(order.totalAmount) }));
         setActiveCustomerDraft(order);
         refreshCustomerDraftList();
         return;
@@ -696,7 +703,10 @@ export function PosPage() {
         );
         hideLoading();
         message.success(
-          `Đã cập nhật tạm ${order.orderNumber} — ${formatDisplayMoney(order.totalAmount)}`,
+          t('pos.messages.draftTempUpdated', {
+            number: order.orderNumber,
+            amount: formatDisplayMoney(order.totalAmount),
+          }),
         );
         clearDraftEdit();
         navigate(`/sales/orders?orderId=${order.id}`);
@@ -706,13 +716,13 @@ export function PosPage() {
         );
         hideLoading();
         clearPosDraftEdit();
-        message.success(`Đã lưu tạm ${order.orderNumber}`);
+        message.success(t('pos.messages.draftSavedOrder', { number: order.orderNumber }));
         resetCart();
         navigate(`/sales/orders?orderId=${order.id}`);
       }
     } catch (error) {
       hideLoading();
-      message.error(apiErrorMessage(error, updatingExisting ? 'Không cập nhật được đơn tạm' : 'Không lưu được đơn tạm'));
+      message.error(apiErrorMessage(error, updatingExisting ? t('pos.messages.updateDraftFailed') : t('pos.messages.saveDraftFailed')));
     } finally {
       setSaving(false);
     }
@@ -720,43 +730,43 @@ export function PosPage() {
 
   const sendCustomerDraftToApp = async () => {
     if (!warehouseId) {
-      message.warning('Chọn kho bán trước');
+      message.warning(t('pos.messages.selectWarehouseFirst'));
       return;
     }
     if (!customerId) {
-      message.warning('Chọn khách hàng trước khi gửi app');
+      message.warning(t('pos.messages.selectCustomerForApp'));
       return;
     }
     if (cart.length === 0) {
-      message.warning('Thêm ít nhất một sản phẩm');
+      message.warning(t('pos.messages.addProductFirst'));
       return;
     }
     if (!validateDiscounts()) return;
     if (!validateBatchLabels()) return;
     setSaving(true);
-    const hideLoading = message.loading('Đang gửi đơn tạm lên app khách...', 0);
+    const hideLoading = message.loading(t('pos.messages.sendingDraft'), 0);
     try {
       let order = await saveCustomerDraftTemp();
       if (order.status === CUSTOMER_DRAFT_ORDER_STATUS.Draft) {
         order = await sendCustomerDraftOrder(order.id);
         hideLoading();
-        message.success(`Đã gửi ${order.draftNumber} lên app khách`);
+        message.success(t('pos.messages.draftSent', { number: order.draftNumber }));
       } else if (order.status === CUSTOMER_DRAFT_ORDER_STATUS.Sent) {
         hideLoading();
-        message.info(`${order.draftNumber} đã gửi app — chờ khách xác nhận tạm`);
+        message.info(t('pos.messages.draftSentWaiting', { number: order.draftNumber }));
       } else if (order.status === CUSTOMER_DRAFT_ORDER_STATUS.Confirmed) {
         hideLoading();
-        message.success(`${order.draftNumber} — khách đã xác nhận tạm trên app`);
+        message.success(t('pos.messages.draftConfirmed', { number: order.draftNumber }));
       } else {
         hideLoading();
-        message.success(`Đã cập nhật ${order.draftNumber}`);
+        message.success(t('pos.messages.draftUpdated', { number: order.draftNumber }));
       }
       setActiveCustomerDraft(order);
       setLoadedCustomerDraftOrderId(order.id);
       refreshCustomerDraftList();
     } catch (error) {
       hideLoading();
-      message.error(apiErrorMessage(error, 'Không gửi được đơn tạm'));
+      message.error(apiErrorMessage(error, t('pos.messages.sendDraftFailed')));
     } finally {
       setSaving(false);
     }
@@ -764,11 +774,11 @@ export function PosPage() {
 
   const confirmCheckout = async ({ payments, loyaltyDiscountAmount, customerVoucherId }: PosCheckoutConfirm) => {
     if (!warehouseId) {
-      message.warning('Chọn kho bán trước');
+      message.warning(t('pos.messages.selectWarehouseFirst'));
       throw new Error('missing-warehouse');
     }
     if (cart.length === 0) {
-      message.warning('Giỏ hàng trống');
+      message.warning(t('pos.messages.cartEmpty'));
       throw new Error('empty-cart');
     }
     if (!validateDiscounts()) {
@@ -778,7 +788,7 @@ export function PosPage() {
       throw new Error('invalid-batch-label');
     }
     setSaving(true);
-    const hideLoading = message.loading('Đang ghi đơn bán...', 0);
+    const hideLoading = message.loading(t('pos.messages.creatingSale'), 0);
     try {
       let order: SalesOrderDetail;
       if (editingDraftId) {
@@ -806,14 +816,14 @@ export function PosPage() {
         try {
           await linkCustomerDraftOrderSale(loadedCustomerDraftOrderId, order.id);
         } catch {
-          message.warning('Đã bán nhưng chưa liên kết được đơn tạm — liên hệ IT nếu cần.');
+          message.warning(t('pos.messages.linkDraftFailed'));
         }
       }
       if (loadedCustomerReservationId) {
         try {
           await linkCustomerReservationSale(loadedCustomerReservationId, order.id);
         } catch {
-          message.warning('Đã bán nhưng chưa liên kết được đặt trước — liên hệ IT nếu cần.');
+          message.warning(t('pos.messages.linkReservationFailed'));
         }
       }
       setCheckoutOpen(false);
@@ -822,7 +832,7 @@ export function PosPage() {
       void printSalesInvoice(order).then((printed) => {
         if (!printed) {
           setLastCompletedOrder(order);
-          message.warning('Trình duyệt chặn cửa sổ in — bấm In hóa đơn bên dưới.');
+          message.warning(t('pos.messages.printBlocked'));
         }
       });
       if (warehouseId) void loadOpenShift(warehouseId);
@@ -837,7 +847,7 @@ export function PosPage() {
 
   const openCheckout = useCallback(async () => {
     if (!openShift) {
-      message.warning('Mở ca trước khi thanh toán');
+      message.warning(t('pos.messages.openShiftBeforeCheckout'));
       return;
     }
     if (!validateDiscounts()) return;
@@ -880,21 +890,21 @@ export function PosPage() {
 
   const cartLocked = checkoutOpen || saving;
 
-  const columns: ColumnsType<CartLine> = [
+  const columns: ColumnsType<CartLine> = useMemo(() => [
     {
-      title: 'Sản phẩm',
+      title: t('pos.columns.product'),
       ellipsis: true,
       render: (_, row) => {
         const suggestedBatch = formatSuggestedBatch(row.batchHints);
         const stockWarning =
           row.qtyWarning ??
           (row.stockAvailable != null && row.stockAvailable <= 0
-            ? outOfStockWarningText(row.unitName)
+            ? outOfStockWarningText(row.unitName, t)
             : null);
         const body = (
           <div style={{ lineHeight: 1.45, minWidth: 0 }}>
             <Typography.Text type="secondary" style={{ fontSize: 11, lineHeight: 1.35 }}>
-              Mã SP: {row.productCode}
+              {t('pos.columns.productCode')}: {row.productCode}
             </Typography.Text>
             <div>
               <Typography.Text strong ellipsis={{ tooltip: row.productName }}>
@@ -903,7 +913,7 @@ export function PosPage() {
               <Typography.Text
                 style={{ marginLeft: 6, fontSize: '0.88em', color: '#0d7377', fontWeight: 500 }}
               >
-                (tồn {(row.stockAvailable ?? 0).toLocaleString('vi-VN')})
+                {t('pos.columns.stockInline', { count: (row.stockAvailable ?? 0).toLocaleString() })}
               </Typography.Text>
             </div>
             {stockWarning ? (
@@ -914,14 +924,14 @@ export function PosPage() {
           </div>
         );
         return showsBatchHints(batchMode) && suggestedBatch !== '—' ? (
-          <Tooltip title={`Lô FEFO gợi ý: ${suggestedBatch}`}>{body}</Tooltip>
+          <Tooltip title={t('pos.columns.fefoHint', { batch: suggestedBatch })}>{body}</Tooltip>
         ) : (
           body
         );
       },
     },
     {
-      title: 'ĐVT',
+      title: t('pos.columns.unit'),
       dataIndex: 'unitName',
       width: 52,
       align: 'center',
@@ -933,13 +943,13 @@ export function PosPage() {
     ...(showsBatchLabelField(batchMode)
       ? ([
           {
-            title: 'Lô',
+            title: t('pos.columns.batch'),
             width: 128,
             render: (_, row) => (
               <Select
                 showSearch
                 allowClear={batchMode !== 'label_required'}
-                placeholder="Chọn lô"
+                placeholder={t('pos.columns.batchPlaceholder')}
                 style={{ width: 120 }}
                 disabled={!canWrite || cartLocked}
                 value={row.batchLabel || undefined}
@@ -958,7 +968,7 @@ export function PosPage() {
         ] as ColumnsType<CartLine>)
       : []),
     {
-      title: 'SL',
+      title: t('pos.columns.qty'),
       dataIndex: 'quantity',
       width: 80,
       align: 'right',
@@ -992,7 +1002,7 @@ export function PosPage() {
       ),
     },
     {
-      title: 'Đơn giá',
+      title: t('pos.columns.unitPrice'),
       dataIndex: 'unitPrice',
       width: 92,
       align: 'right',
@@ -1004,7 +1014,7 @@ export function PosPage() {
     ...(canDiscount
       ? ([
           {
-            title: 'CK',
+            title: t('pos.columns.discount'),
             width: 112,
             className: 'pos-cart-col-discount',
             render: (_, row) => (
@@ -1024,7 +1034,10 @@ export function PosPage() {
                       ),
                     )
                   }
-                  options={[...POS_CART_DISCOUNT_TYPE_OPTIONS]}
+                  options={[
+                    { value: SALES_DISCOUNT_TYPES.Percent, label: '%' },
+                    { value: SALES_DISCOUNT_TYPES.Fixed, label: t('enums.discountType.fixed') },
+                  ]}
                 />
                 <InputNumber
                   disabled={!canWrite || cartLocked || !row.discountType}
@@ -1046,7 +1059,7 @@ export function PosPage() {
         ] as ColumnsType<CartLine>)
       : []),
     {
-      title: 'Thành tiền',
+      title: t('pos.columns.lineTotal'),
       width: 100,
       align: 'right',
       className: 'pos-cart-col-money',
@@ -1065,16 +1078,16 @@ export function PosPage() {
           size="small"
           icon={<DeleteOutlined />}
           disabled={!canWrite || cartLocked}
-          aria-label="Xóa dòng"
+          aria-label={t('pos.columns.removeLine')}
           onClick={() => setCart((p) => p.filter((l) => l.key !== row.key))}
         />
       ),
     },
-  ];
+  ], [t, canWrite, cartLocked, batchMode, canDiscount]);
 
   const handleOpenShift = async (openingCash: number) => {
     if (!warehouseId) {
-      message.warning('Chọn kho trước khi mở ca');
+      message.warning(t('pos.messages.selectWarehouseForShift'));
       throw new Error('missing warehouse');
     }
     setShiftSaving(true);
@@ -1082,7 +1095,7 @@ export function PosPage() {
       const shift = await openSalesShift({ warehouseId, openingCash });
       setOpenShift(shift);
       setOpenShiftModal(false);
-      message.success(`Đã mở ca ${shift.shiftNumber}`);
+      message.success(t('pos.messages.shiftOpened', { number: shift.shiftNumber }));
     } catch (error) {
       if (isShiftAlreadyOpenError(error)) {
         const existing = await fetchOpenShift(warehouseId);
@@ -1093,7 +1106,7 @@ export function PosPage() {
           return;
         }
       }
-      message.error(apiErrorMessage(error, 'Không mở được ca'));
+      message.error(apiErrorMessage(error, t('pos.messages.openShiftFailed')));
       throw error;
     } finally {
       setShiftSaving(false);
@@ -1110,11 +1123,11 @@ export function PosPage() {
         <Alert
           type="info"
           showIcon
-          message={`Đang sửa đơn tạm ${editingDraftNumber}`}
-          description="Thêm/bớt sản phẩm rồi bấm Cập nhật tạm, hoặc Thanh toán để hoàn tất."
+          message={t('pos.alerts.editingDraft', { number: editingDraftNumber })}
+          description={t('pos.alerts.editingDraftDesc')}
           action={
             <Button size="small" icon={<RollbackOutlined />} onClick={resetCartAndExitDraft}>
-              Bỏ sửa
+              {t('pos.alerts.discardEdit')}
             </Button>
           }
         />
@@ -1123,14 +1136,17 @@ export function PosPage() {
         <Alert
           type="warning"
           showIcon
-          message={`Kho ${warehouseName ?? ''} đang kiểm kê (${activeCountSession.adjustmentNumber})`}
-          description="Theo quy trình chuẩn: hạn chế bán/nhập xuất trong lúc đếm để tránh lệch tồn. Hoàn tất kiểm kê trước khi chốt số."
+          message={t('pos.alerts.countingTitle', {
+            warehouse: warehouseName ?? '',
+            number: activeCountSession.adjustmentNumber,
+          })}
+          description={t('pos.alerts.countingDesc')}
           action={
             <Button
               size="small"
               onClick={() => navigate(`/inventory/adjustments/${activeCountSession.id}/count`)}
             >
-              Màn kiểm kê
+              {t('pos.alerts.countingAction')}
             </Button>
           }
         />
@@ -1139,11 +1155,11 @@ export function PosPage() {
         <Alert
           type="warning"
           showIcon
-          message="Chưa mở ca cho kho này"
-          description="Cần mở ca và nhập quỹ đầu ca trước khi thanh toán đơn bán."
+          message={t('pos.alerts.shiftNotOpenTitle')}
+          description={t('pos.alerts.shiftNotOpenDesc')}
           action={
             <Button size="small" type="primary" icon={<ClockCircleOutlined />} onClick={() => setOpenShiftModal(true)}>
-              Mở ca
+              {t('pos.alerts.openShift')}
             </Button>
           }
         />
@@ -1152,22 +1168,28 @@ export function PosPage() {
         <Alert
           type="info"
           showIcon
-          message={`Ca ${openShift.shiftNumber} · Quỹ đầu ${formatDisplayMoney(openShift.openingCash)}`}
-          description={`Mở lúc ${dayjs(openShift.openedAt).format('DD-MM-YYYY HH:mm')} — Thu ròng ca: ${formatDisplayMoney(openShift.summary.netTotal)}`}
+          message={t('pos.alerts.shiftOpen', {
+            number: openShift.shiftNumber,
+            opening: formatDisplayMoney(openShift.openingCash),
+          })}
+          description={t('pos.alerts.shiftOpenDesc', {
+            openedAt: dayjs(openShift.openedAt).format('DD-MM-YYYY HH:mm'),
+            net: formatDisplayMoney(openShift.summary.netTotal),
+          })}
         />
       )}
       {customerDraftOrders.length > 0 ? (
         <Alert
           type="warning"
           showIcon
-          message="Khách có đơn tạm chờ lấy"
+          message={t('pos.alerts.pendingDraftsTitle')}
           description={
             <Space direction="vertical" size={4}>
               {customerDraftOrders.map((draft) => (
                 <Space key={draft.id} wrap>
                   <span>
-                    {draft.draftNumber} · {draft.totalAmount.toLocaleString('vi-VN')}đ
-                    {draft.confirmedAt ? ' · Khách đã xác nhận tạm' : ''}
+                    {draft.draftNumber} · {draft.totalAmount.toLocaleString()}đ
+                    {draft.confirmedAt ? t('pos.alerts.pendingDraftConfirmed') : ''}
                   </span>
                   <Button
                     size="small"
@@ -1175,12 +1197,12 @@ export function PosPage() {
                     icon={<ShoppingCartOutlined />}
                     onClick={() => void loadCustomerDraftIntoPos(draft.id, { autoCheckout: true })}
                   >
-                    Nạp POS
+                    {t('pos.alerts.loadIntoPos')}
                   </Button>
                 </Space>
               ))}
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                Hỏi khách xác nhận lại tại quầy. Bấm Nạp POS để mở thanh toán và in hóa đơn.
+                {t('pos.alerts.pendingDraftsHint')}
               </Typography.Text>
             </Space>
           }
@@ -1190,8 +1212,8 @@ export function PosPage() {
         <Alert
           type="info"
           showIcon
-          message="Chế độ gửi đơn qua app khách"
-          description="Soạn giỏ → bấm Gửi khách hàng. Khách xem/xác nhận trên app; thanh toán tại quầy khi khách đến lấy."
+          message={t('pos.alerts.appDraftModeTitle')}
+          description={t('pos.alerts.appDraftModeDesc')}
         />
       ) : null}
       </div>
@@ -1200,7 +1222,7 @@ export function PosPage() {
           <div className="pos-page__toolbar-row">
             <Select
               className="pos-page__warehouse-select"
-              placeholder="Kho bán"
+              placeholder={t('pos.toolbar.warehouse')}
               value={warehouseId}
               disabled={!!editingDraftId}
               onChange={(id) => {
@@ -1216,7 +1238,7 @@ export function PosPage() {
                 showSearch
                 optionFilterProp="label"
                 style={{ width: 'calc(100% - 32px)' }}
-                placeholder={customerAppDraftMode ? 'Chọn khách hàng' : 'Khách hàng (tùy chọn)'}
+                placeholder={customerAppDraftMode ? t('pos.toolbar.customerRequired') : t('pos.toolbar.customerOptional')}
                 value={customerId}
                 onChange={setCustomerId}
                 options={customers.map((c) => ({
@@ -1225,7 +1247,7 @@ export function PosPage() {
                 }))}
               />
               {canWrite && !editingDraftId ? (
-                <Tooltip title="Thêm khách nhanh">
+                <Tooltip title={t('pos.toolbar.quickAddCustomer')}>
                   <Button icon={<UserAddOutlined />} onClick={() => setQuickCustomerOpen(true)} />
                 </Tooltip>
               ) : null}
@@ -1238,12 +1260,12 @@ export function PosPage() {
                   onChange={(checked) => {
                     setCustomerAppDraftMode(checked);
                     if (checked && !customerId) {
-                      message.info('Chọn khách hàng để gửi đơn qua app');
+                      message.info(t('pos.toolbar.selectCustomerForApp'));
                     }
                   }}
                 />
                 <Typography.Text className="pos-page__app-draft-toggle-label">
-                  Gửi đơn qua app khách
+                  {t('pos.toolbar.appDraftMode')}
                 </Typography.Text>
               </Space>
             ) : null}
@@ -1251,7 +1273,7 @@ export function PosPage() {
           <div className="pos-page__toolbar-row pos-page__toolbar-row--scan">
             <AutoComplete
               className="pos-page__barcode-field"
-              placeholder="Quét mã vạch hoặc gõ mã / tên SP"
+              placeholder={t('pos.toolbar.scanPlaceholder')}
               value={barcode}
               options={productSearchOptions}
               onChange={setBarcode}
@@ -1260,7 +1282,7 @@ export function PosPage() {
                 if (e.key === 'Enter') void addByBarcode();
               }}
               disabled={!canWrite || !warehouseId || cartLocked}
-              notFoundContent="Không có sản phẩm phù hợp"
+              notFoundContent={t('pos.toolbar.noProducts')}
             />
             <Button
               className="pos-page__add-btn"
@@ -1269,7 +1291,7 @@ export function PosPage() {
               onClick={() => void addByBarcode()}
               disabled={!canWrite || !warehouseId || cartLocked}
             >
-              Thêm
+              {tc('actions.add')}
             </Button>
           </div>
         </div>
@@ -1285,10 +1307,10 @@ export function PosPage() {
               loading={checkoutValidating}
               onClick={() => void openCheckout()}
             >
-              Thanh toán
+              {t('pos.toolbar.checkout')}
             </Button>
             {customerAppDraftMode && !editingDraftId ? (
-              <Tooltip title={!customerId ? 'Chọn khách hàng trước khi gửi app' : undefined}>
+              <Tooltip title={!customerId ? t('pos.toolbar.selectCustomerBeforeSend') : undefined}>
                 <span className="pos-page__toolbar-action-slot">
                   <Button
                     block
@@ -1299,7 +1321,7 @@ export function PosPage() {
                     loading={saving}
                     onClick={() => void sendCustomerDraftToApp()}
                   >
-                    Gửi KH
+                    {t('pos.toolbar.sendCustomer')}
                   </Button>
                 </span>
               </Tooltip>
@@ -1312,7 +1334,7 @@ export function PosPage() {
                 loading={saving}
                 onClick={() => void saveDraft()}
               >
-                {editingDraftId ? 'Cập nhật tạm' : 'Lưu tạm'}
+                {editingDraftId ? t('pos.toolbar.updateDraft') : t('pos.toolbar.saveDraft')}
               </Button>
             )}
           </div>
@@ -1341,10 +1363,10 @@ export function PosPage() {
           <div className="pos-page__aside-panel">
             <div className="pos-page__aside-summary-box">
               <PosSummaryPanel variant="sidebar">
-                <PosSummaryRow label="Tổng tiền hàng" value={formatDisplayMoney(pricing.subtotalGross)} />
+                <PosSummaryRow label={t('pos.summary.subtotal')} value={formatDisplayMoney(pricing.subtotalGross)} />
                 {pricing.lineDiscountTotal > 0 && (
                   <PosSummaryRow
-                    label="Chiết khấu từng SP"
+                    label={t('pos.summary.lineDiscount')}
                     value={`−${formatDisplayMoney(pricing.lineDiscountTotal)}`}
                     danger
                   />
@@ -1369,14 +1391,14 @@ export function PosPage() {
                 )}
                 {pricing.totalDiscountAmount > 0 && (
                   <PosSummaryRow
-                    label="Tổng CK"
+                    label={t('pos.summary.totalDiscount')}
                     value={`−${formatDisplayMoney(pricing.totalDiscountAmount)}`}
                     danger
                   />
                 )}
                 <PosSummaryDivider />
                 <PosSummaryRow
-                  label="Khách phải trả"
+                  label={t('pos.summary.payable')}
                   value={formatDisplayMoney(pricing.totalAmount)}
                   total
                 />
@@ -1413,17 +1435,17 @@ export function PosPage() {
           showIcon
           closable
           onClose={() => setLastCompletedOrder(null)}
-          message={`Đã hoàn tất ${lastCompletedOrder.orderNumber}`}
+          message={t('pos.alerts.completedTitle', { orderNumber: lastCompletedOrder.orderNumber })}
           description={
             <Space wrap>
               <Button
                 icon={<PrinterOutlined />}
                 onClick={() => void printSalesInvoice(lastCompletedOrder)}
               >
-                In hóa đơn
+                {t('pos.alerts.printInvoice')}
               </Button>
               <Button type="link" icon={<UnorderedListOutlined />} onClick={() => navigate('/sales/orders')}>
-                Xem danh sách đơn
+                {t('pos.alerts.viewOrders')}
               </Button>
             </Space>
           }

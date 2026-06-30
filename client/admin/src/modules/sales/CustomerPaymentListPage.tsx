@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Button,
@@ -44,31 +45,23 @@ import type {
   CustomerPaymentListFilters,
   CustomerPaymentListItem,
 } from '@/shared/api/sales.types';
-import {
-  CUSTOMER_PAYMENT_STATUS_LABELS,
-  CUSTOMER_PAYMENT_STATUS_TAG,
-  SALES_PAYMENT_METHOD_LABELS,
-} from '@/shared/api/sales.types';
+import { CUSTOMER_PAYMENT_STATUS_TAG } from '@/shared/api/sales.types';
 import { useHasPermission } from '@/shared/auth/usePermission';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
 const emptyFilters: CustomerPaymentListFilters = {};
-const statusFilterOptions = Object.entries(CUSTOMER_PAYMENT_STATUS_LABELS).map(([value, label]) => ({
-  value: Number(value),
-  label,
-}));
-const tablePagination = {
-  pageSize: 20,
-  showTotal: (total: number) => `${total} phiếu`,
-};
 const tableScroll = { x: 1000 };
 const alertStyle = { marginBottom: 16 };
 const statusSelectStyle = { width: 140 };
 const tableWrapClassName = 'sales-list-table-wrap';
 
 function CustomerPaymentListPageInner() {
+  const { t } = useTranslation('sales', { keyPrefix: 'customerPayments' });
   const canWrite = useHasPermission('sales.write');
+  const { paymentMethodLabel, customerPaymentStatusLabel, customerPaymentStatusOptions } =
+    useSalesEnums();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const prefillHandled = useRef(false);
@@ -89,28 +82,39 @@ function CustomerPaymentListPageInner() {
   const [saving, setSaving] = useState(false);
   const [referenceReady, setReferenceReady] = useState(false);
 
-  const loadPayments = useCallback(async (
-    nextFilters: CustomerPaymentListFilters,
-    customerSearch: string,
-    documentSearch: string,
-  ) => {
-    const seq = ++loadSeqRef.current;
-    try {
-      const rows = await fetchCustomerPayments({
-        ...nextFilters,
-        customerSearch: customerSearch.trim() || undefined,
-        documentSearch: documentSearch.trim() || undefined,
-      });
-      if (seq !== loadSeqRef.current) return;
-      setFilters(nextFilters);
-      setAppliedCustomer(customerSearch);
-      setAppliedDocument(documentSearch);
-      setItems(rows);
-    } catch (error) {
-      if (seq !== loadSeqRef.current) return;
-      message.error(apiErrorMessage(error, 'Không tải được phiếu thu nợ'));
-    }
-  }, []);
+  const tablePagination = useMemo(
+    () => ({
+      pageSize: 20,
+      showTotal: (total: number) => t('paginationTotal', { count: total }),
+    }),
+    [t],
+  );
+
+  const loadPayments = useCallback(
+    async (
+      nextFilters: CustomerPaymentListFilters,
+      customerSearch: string,
+      documentSearch: string,
+    ) => {
+      const seq = ++loadSeqRef.current;
+      try {
+        const rows = await fetchCustomerPayments({
+          ...nextFilters,
+          customerSearch: customerSearch.trim() || undefined,
+          documentSearch: documentSearch.trim() || undefined,
+        });
+        if (seq !== loadSeqRef.current) return;
+        setFilters(nextFilters);
+        setAppliedCustomer(customerSearch);
+        setAppliedDocument(documentSearch);
+        setItems(rows);
+      } catch (error) {
+        if (seq !== loadSeqRef.current) return;
+        message.error(apiErrorMessage(error, t('messages.loadFailed')));
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -138,7 +142,7 @@ function CustomerPaymentListPageInner() {
 
     prefillHandled.current = true;
     if (!canWrite) {
-      message.warning('Bạn không có quyền ghi nhận thu nợ');
+      message.warning(t('messages.noPermission'));
       navigate('/sales/customer-payments', { replace: true });
       return;
     }
@@ -148,7 +152,7 @@ function CustomerPaymentListPageInner() {
     setEditingRow(null);
     setFormOpen(true);
     navigate('/sales/customer-payments', { replace: true });
-  }, [searchParams, referenceReady, canWrite, navigate]);
+  }, [searchParams, referenceReady, canWrite, navigate, t]);
 
   const customerSuggestions = useMemo(() => {
     const rows = [
@@ -171,13 +175,16 @@ function CustomerPaymentListPageInner() {
     return buildDocumentSearchSuggestions(numbers, documentInput);
   }, [items, documentInput]);
 
-  const applySearch = useCallback((values: { customer: string; document: string }) => {
-    const customer = values.customer.trim();
-    const document = values.document.trim();
-    setCustomerInput(customer);
-    setDocumentInput(document);
-    void loadPayments(filters, customer, document);
-  }, [filters, loadPayments]);
+  const applySearch = useCallback(
+    (values: { customer: string; document: string }) => {
+      const customer = values.customer.trim();
+      const document = values.document.trim();
+      setCustomerInput(customer);
+      setDocumentInput(document);
+      void loadPayments(filters, customer, document);
+    },
+    [filters, loadPayments],
+  );
 
   const resetFilters = useCallback(() => {
     setCustomerInput('');
@@ -216,22 +223,25 @@ function CustomerPaymentListPageInner() {
     setDetailOpen(true);
   }, []);
 
-  const handleFormSaved = useCallback((saved: CustomerPaymentListItem) => {
-    closeFormDrawer();
-    setDetail(saved);
-    setDetailOpen(true);
-    void loadPayments(filters, appliedCustomer, appliedDocument);
-  }, [closeFormDrawer, loadPayments, filters, appliedCustomer, appliedDocument]);
+  const handleFormSaved = useCallback(
+    (saved: CustomerPaymentListItem) => {
+      closeFormDrawer();
+      setDetail(saved);
+      setDetailOpen(true);
+      void loadPayments(filters, appliedCustomer, appliedDocument);
+    },
+    [closeFormDrawer, loadPayments, filters, appliedCustomer, appliedDocument],
+  );
 
   const handlePost = async (id: string) => {
     try {
       setSaving(true);
       const updated = await postCustomerPayment(id);
-      message.success('Đã ghi sổ thu nợ');
+      message.success(t('messages.postSuccess'));
       setDetail(updated);
       void loadPayments(filters, appliedCustomer, appliedDocument);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không ghi sổ được'));
+      message.error(apiErrorMessage(error, t('messages.postFailed')));
     } finally {
       setSaving(false);
     }
@@ -241,11 +251,11 @@ function CustomerPaymentListPageInner() {
     try {
       setSaving(true);
       await cancelCustomerPayment(id);
-      message.success('Đã hủy phiếu thu nợ');
+      message.success(t('messages.cancelSuccess'));
       setDetailOpen(false);
       void loadPayments(filters, appliedCustomer, appliedDocument);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không hủy được phiếu'));
+      message.error(apiErrorMessage(error, t('messages.cancelFailed')));
     } finally {
       setSaving(false);
     }
@@ -253,10 +263,10 @@ function CustomerPaymentListPageInner() {
 
   const columns = useMemo<ColumnsType<CustomerPaymentListItem>>(
     () => [
-      { title: 'Số phiếu', dataIndex: 'paymentNumber', width: 130 },
-      { title: 'Khách hàng', dataIndex: 'customerName' },
+      { title: t('columns.paymentNumber'), dataIndex: 'paymentNumber', width: 130 },
+      { title: t('columns.customer'), dataIndex: 'customerName' },
       {
-        title: 'Số tiền',
+        title: t('columns.amount'),
         dataIndex: 'amount',
         width: 120,
         align: 'right',
@@ -265,28 +275,33 @@ function CustomerPaymentListPageInner() {
         ),
       },
       {
-        title: 'Hình thức',
+        title: t('columns.paymentMethod'),
         dataIndex: 'paymentMethod',
         width: 120,
-        render: (m: number) => SALES_PAYMENT_METHOD_LABELS[m] ?? m,
+        render: (m: number) => paymentMethodLabel(m),
       },
       {
-        title: 'Trạng thái',
+        title: t('columns.status'),
         dataIndex: 'status',
         width: 110,
         render: (s: number) => (
           <Tag color={CUSTOMER_PAYMENT_STATUS_TAG[s] ?? 'default'}>
-            {CUSTOMER_PAYMENT_STATUS_LABELS[s] ?? s}
+            {customerPaymentStatusLabel(s)}
           </Tag>
         ),
       },
       {
-        title: 'Ngày thu',
+        title: t('columns.paymentDate'),
         dataIndex: 'paymentDate',
         width: 110,
         render: (v: string) => formatDisplayDate(v),
       },
-      { title: 'Đơn bán', dataIndex: 'orderNumber', width: 120, render: (v) => v ?? '—' },
+      {
+        title: t('columns.orderNumber'),
+        dataIndex: 'orderNumber',
+        width: 120,
+        render: (v) => v ?? '—',
+      },
       {
         title: '',
         width: 90,
@@ -300,12 +315,12 @@ function CustomerPaymentListPageInner() {
               openDetail(row);
             }}
           >
-            Xem
+            {t('columns.view')}
           </Button>
         ),
       },
     ],
-    [openDetail],
+    [customerPaymentStatusLabel, openDetail, paymentMethodLabel, t],
   );
 
   const handleRowClick = useCallback(
@@ -316,25 +331,23 @@ function CustomerPaymentListPageInner() {
     [openDetail],
   );
 
-  const handleStatusChange = useCallback((status?: number) => {
-    void loadPayments({ ...filters, status }, appliedCustomer, appliedDocument);
-  }, [loadPayments, filters, appliedCustomer, appliedDocument]);
+  const handleStatusChange = useCallback(
+    (status?: number) => {
+      void loadPayments({ ...filters, status }, appliedCustomer, appliedDocument);
+    },
+    [loadPayments, filters, appliedCustomer, appliedDocument],
+  );
 
   return (
     <Card
-      title="Thu nợ khách hàng"
+      title={t('title')}
       extra={
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={!canWrite}>
-          Ghi nhận thu
+          {t('create')}
         </Button>
       }
     >
-      <Alert
-        type="info"
-        showIcon
-        style={alertStyle}
-        message="Lưu tạo phiếu chờ ghi sổ — nợ trên đơn chỉ giảm sau khi bấm Ghi sổ trong chi tiết phiếu."
-      />
+      <Alert type="info" showIcon style={alertStyle} message={t('alert.message')} />
       <SalesListDualSearchWrap>
         <SalesListDualSearchBar
           customerValue={customerInput}
@@ -344,19 +357,19 @@ function CustomerPaymentListPageInner() {
           onApply={applySearch}
           customerSuggestions={customerSuggestions}
           documentSuggestions={documentSuggestions}
-          documentPlaceholder="Số phiếu / đơn bán"
+          documentPlaceholder={t('filters.documentPlaceholder')}
         />
         <Select
           allowClear
-          placeholder="Trạng thái"
+          placeholder={t('filters.status')}
           style={statusSelectStyle}
           value={filters.status}
           onChange={handleStatusChange}
-          options={statusFilterOptions}
+          options={customerPaymentStatusOptions}
         />
-        <Button onClick={resetFilters}>Xóa lọc</Button>
+        <Button onClick={resetFilters}>{t('filters.clear')}</Button>
         <Button icon={<ReloadOutlined />} onClick={reloadList}>
-          Tải lại
+          {t('filters.reload')}
         </Button>
       </SalesListDualSearchWrap>
 
@@ -384,7 +397,7 @@ function CustomerPaymentListPageInner() {
       ) : null}
 
       <Drawer
-        title={detail ? detail.paymentNumber : 'Chi tiết phiếu thu'}
+        title={detail ? detail.paymentNumber : t('detail.drawerTitleDefault')}
         width={480}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
@@ -394,16 +407,22 @@ function CustomerPaymentListPageInner() {
               {detail.status === 1 ? (
                 <>
                   <Button icon={<EditOutlined />} onClick={() => openEdit(detail)}>
-                    Sửa
+                    {t('detail.edit')}
                   </Button>
-                  <Popconfirm title="Ghi sổ phiếu thu nợ?" onConfirm={() => void handlePost(detail.id)}>
+                  <Popconfirm
+                    title={t('detail.postConfirm')}
+                    onConfirm={() => void handlePost(detail.id)}
+                  >
                     <Button type="primary" icon={<CheckOutlined />} loading={saving}>
-                      Ghi sổ
+                      {t('detail.post')}
                     </Button>
                   </Popconfirm>
-                  <Popconfirm title="Hủy phiếu?" onConfirm={() => void handleCancel(detail.id)}>
+                  <Popconfirm
+                    title={t('detail.cancelConfirm')}
+                    onConfirm={() => void handleCancel(detail.id)}
+                  >
                     <Button danger icon={<CloseCircleOutlined />} loading={saving}>
-                      Hủy
+                      {t('detail.cancel')}
                     </Button>
                   </Popconfirm>
                 </>
@@ -414,19 +433,21 @@ function CustomerPaymentListPageInner() {
       >
         {detail ? (
           <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label="Khách hàng">{detail.customerName}</Descriptions.Item>
-            <Descriptions.Item label="Số tiền">{formatDisplayMoney(detail.amount)}</Descriptions.Item>
-            <Descriptions.Item label="Hình thức">
-              {SALES_PAYMENT_METHOD_LABELS[detail.paymentMethod] ?? detail.paymentMethod}
+            <Descriptions.Item label={t('detail.customer')}>{detail.customerName}</Descriptions.Item>
+            <Descriptions.Item label={t('detail.amount')}>{formatDisplayMoney(detail.amount)}</Descriptions.Item>
+            <Descriptions.Item label={t('detail.paymentMethod')}>
+              {paymentMethodLabel(detail.paymentMethod)}
             </Descriptions.Item>
-            <Descriptions.Item label="Trạng thái">
+            <Descriptions.Item label={t('detail.status')}>
               <Tag color={CUSTOMER_PAYMENT_STATUS_TAG[detail.status] ?? 'default'}>
-                {CUSTOMER_PAYMENT_STATUS_LABELS[detail.status] ?? detail.status}
+                {customerPaymentStatusLabel(detail.status)}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Ngày thu">{formatDisplayDate(detail.paymentDate)}</Descriptions.Item>
-            <Descriptions.Item label="Đơn bán">{detail.orderNumber ?? '—'}</Descriptions.Item>
-            <Descriptions.Item label="Ghi chú">{detail.notes ?? '—'}</Descriptions.Item>
+            <Descriptions.Item label={t('detail.paymentDate')}>
+              {formatDisplayDate(detail.paymentDate)}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('detail.orderNumber')}>{detail.orderNumber ?? '—'}</Descriptions.Item>
+            <Descriptions.Item label={t('detail.notes')}>{detail.notes ?? '—'}</Descriptions.Item>
           </Descriptions>
         ) : null}
       </Drawer>

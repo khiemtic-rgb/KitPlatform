@@ -1,7 +1,9 @@
 import { Button, Descriptions, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SalesOrderDetail } from '@/shared/api/sales.types';
-import { SALES_PAYMENT_METHOD_LABELS } from '@/shared/api/sales.types';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 import { PosSummaryPanel, PosSummaryRow } from '@/modules/sales/pos-summary-ui';
 import {
   buildOrderNetPaymentLines,
@@ -17,6 +19,11 @@ type Props = {
 };
 
 export function OrderDetailFinancials({ order, onCollectDebt }: Props) {
+  const { t } = useTranslation('sales');
+  const { t: ti } = useTranslation('sales', { keyPrefix: 'receipt.invoice' });
+  const { t: tf } = useTranslation('sales', { keyPrefix: 'orderDetail.financials' });
+  const { paymentMethodLabel } = useSalesEnums();
+
   const lineDiscountTotal =
     order.lineDiscountTotal ??
     order.items.reduce((sum, line) => sum + (line.discountAmount ?? 0), 0);
@@ -25,46 +32,49 @@ export function OrderDetailFinancials({ order, onCollectDebt }: Props) {
   const { lines: netPayments, refundInferred } = buildOrderNetPaymentLines(order);
   const hasReturns = order.items.some((line) => (line.returnedQuantity ?? 0) > 0);
 
-  const paymentColumns: ColumnsType<NetPaymentLine> = [
-    {
-      title: 'Hình thức',
-      dataIndex: 'paymentMethod',
-      render: (m: number) => SALES_PAYMENT_METHOD_LABELS[m] ?? m,
-    },
-    {
-      title: 'Thu',
-      dataIndex: 'collected',
-      align: 'right',
-      render: (v: number) => formatDisplayMoney(v),
-    },
-    {
-      title: 'Hoàn',
-      dataIndex: 'refunded',
-      align: 'right',
-      render: (v: number) => (v > 0 ? `−${formatDisplayMoney(v)}` : '—'),
-    },
-    {
-      title: 'Ròng',
-      dataIndex: 'net',
-      align: 'right',
-      render: (v: number) => formatDisplayMoney(v),
-    },
-  ];
+  const paymentColumns: ColumnsType<NetPaymentLine> = useMemo(
+    () => [
+      {
+        title: tf('paymentMethod'),
+        dataIndex: 'paymentMethod',
+        render: (m: number) => paymentMethodLabel(m),
+      },
+      {
+        title: tf('collected'),
+        dataIndex: 'collected',
+        align: 'right',
+        render: (v: number) => formatDisplayMoney(v),
+      },
+      {
+        title: tf('refunded'),
+        dataIndex: 'refunded',
+        align: 'right',
+        render: (v: number) => (v > 0 ? `−${formatDisplayMoney(v)}` : '—'),
+      },
+      {
+        title: tf('net'),
+        dataIndex: 'net',
+        align: 'right',
+        render: (v: number) => formatDisplayMoney(v),
+      },
+    ],
+    [paymentMethodLabel, tf],
+  );
 
   return (
     <>
       <PosSummaryPanel>
-        <PosSummaryRow label="Tổng tiền hàng" value={formatDisplayMoney(order.subtotal)} />
+        <PosSummaryRow label={ti('subtotal')} value={formatDisplayMoney(order.subtotal)} />
         {lineDiscountTotal > 0 && (
           <PosSummaryRow
-            label="Chiết khấu sản phẩm"
+            label={tf('lineDiscount')}
             value={`−${formatDisplayMoney(lineDiscountTotal)}`}
             danger
           />
         )}
         {order.discountAmount > 0 && (
           <PosSummaryRow
-            label="Chiết khấu đơn hàng"
+            label={tf('orderDiscount')}
             value={`−${formatDisplayMoney(order.discountAmount)}`}
             danger
           />
@@ -73,10 +83,10 @@ export function OrderDetailFinancials({ order, onCollectDebt }: Props) {
           <PosSummaryRow
             label={
               order.voucherCode
-                ? `Voucher ${order.voucherCode}`
+                ? t('receipt.voucherCode', { code: order.voucherCode })
                 : order.voucherName
-                  ? `Voucher ${order.voucherName}`
-                  : 'Voucher'
+                  ? t('receipt.voucherNamed', { code: order.voucherCode ?? '', name: order.voucherName })
+                  : t('receipt.voucher')
             }
             value={`−${formatDisplayMoney(order.voucherDiscountAmount ?? 0)}`}
             danger
@@ -84,24 +94,22 @@ export function OrderDetailFinancials({ order, onCollectDebt }: Props) {
         )}
         {(order.loyaltyDiscountAmount ?? 0) > 0 && (
           <PosSummaryRow
-            label={`Đổi ${(order.loyaltyPointsRedeemed ?? 0).toLocaleString('vi-VN')} điểm`}
+            label={tf('pointsRedeem', {
+              points: (order.loyaltyPointsRedeemed ?? 0).toLocaleString(),
+            })}
             value={`−${formatDisplayMoney(order.loyaltyDiscountAmount ?? 0)}`}
             danger
           />
         )}
-        <PosSummaryRow label="Khách phải trả" value={formatDisplayMoney(order.totalAmount)} strong />
+        <PosSummaryRow label={tf('customerDue')} value={formatDisplayMoney(order.totalAmount)} strong />
         {hasOutstanding ? (
           <>
-            <PosSummaryRow label="Đã thanh toán" value={formatDisplayMoney(amountPaid)} />
-            <PosSummaryRow
-              label="Còn nợ (đơn này)"
-              value={formatDisplayMoney(outstanding)}
-              strong
-            />
+            <PosSummaryRow label={ti('paid')} value={formatDisplayMoney(amountPaid)} />
+            <PosSummaryRow label={ti('outstanding')} value={formatDisplayMoney(outstanding)} strong />
             {onCollectDebt ? (
               <div style={{ marginTop: 4, marginBottom: 4 }}>
                 <Button type="link" size="small" style={{ padding: 0 }} onClick={onCollectDebt}>
-                  Thu nợ đơn này
+                  {tf('collectThisOrder')}
                 </Button>
               </div>
             ) : null}
@@ -109,14 +117,14 @@ export function OrderDetailFinancials({ order, onCollectDebt }: Props) {
         ) : null}
         {totalRefunded > 0 && (
           <PosSummaryRow
-            label="Đã hoàn trả (phiếu hoàn)"
+            label={tf('refundTotal')}
             value={`−${formatDisplayMoney(totalRefunded)}`}
             danger
           />
         )}
         {order.items.some((line) => (line.returnedQuantity ?? 0) > 0) && (
           <PosSummaryRow
-            label="Thành tiền hàng còn lại"
+            label={tf('remainingGoods')}
             value={formatDisplayMoney(Math.max(0, order.totalAmount - totalRefunded))}
             strong
           />
@@ -125,15 +133,17 @@ export function OrderDetailFinancials({ order, onCollectDebt }: Props) {
 
       {netPayments.length > 0 && (
         <div style={{ marginTop: 12, marginBottom: 12 }}>
-          <Typography.Text strong>{hasReturns ? 'Thanh toán sau trả hàng' : 'Thanh toán'}</Typography.Text>
+          <Typography.Text strong>
+            {hasReturns ? tf('paymentAfterReturn') : tf('payment')}
+          </Typography.Text>
           {hasOutstanding ? (
             <Typography.Paragraph type="secondary" style={{ marginTop: 4, marginBottom: 0, fontSize: 12 }}>
-              Bảng dưới chỉ liệt kê tiền thu thật; phần nợ ghi ở &quot;Còn nợ (đơn này)&quot; phía trên.
+              {tf('outstandingNote')}
             </Typography.Paragraph>
           ) : null}
           {refundInferred && (
             <Typography.Paragraph type="secondary" style={{ marginTop: 4, marginBottom: 0, fontSize: 12 }}>
-              Hoàn tiền phân bổ theo tỷ lệ thu ban đầu — xem phiếu hoàn để biết hình thức hoàn chính xác.
+              {tf('refundInferredNote')}
             </Typography.Paragraph>
           )}
           <Table
@@ -148,7 +158,7 @@ export function OrderDetailFinancials({ order, onCollectDebt }: Props) {
                 return (
                   <Table.Summary.Row>
                     <Table.Summary.Cell index={0}>
-                      <Typography.Text strong>Tổng đã thu ròng</Typography.Text>
+                      <Typography.Text strong>{tf('netCollectedTotal')}</Typography.Text>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={1} />
                     <Table.Summary.Cell index={2} />
@@ -163,7 +173,7 @@ export function OrderDetailFinancials({ order, onCollectDebt }: Props) {
                 <>
                   <Table.Summary.Row>
                     <Table.Summary.Cell index={0}>
-                      <Typography.Text type="secondary">Đã thu (tiền mặt/chuyển…)</Typography.Text>
+                      <Typography.Text type="secondary">{tf('collectedCashTransfer')}</Typography.Text>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={1} align="right">
                       {formatDisplayMoney(amountPaid)}
@@ -175,7 +185,7 @@ export function OrderDetailFinancials({ order, onCollectDebt }: Props) {
                   </Table.Summary.Row>
                   <Table.Summary.Row>
                     <Table.Summary.Cell index={0}>
-                      <Typography.Text strong>Còn nợ (đơn này)</Typography.Text>
+                      <Typography.Text strong>{ti('outstanding')}</Typography.Text>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={1} align="right">
                       <Typography.Text strong>{formatDisplayMoney(outstanding)}</Typography.Text>
@@ -194,7 +204,7 @@ export function OrderDetailFinancials({ order, onCollectDebt }: Props) {
 
       {order.notes && (
         <Descriptions size="small" column={1} style={{ marginBottom: 12 }}>
-          <Descriptions.Item label="Ghi chú">{order.notes}</Descriptions.Item>
+          <Descriptions.Item label={ti('notes')}>{order.notes}</Descriptions.Item>
         </Descriptions>
       )}
     </>

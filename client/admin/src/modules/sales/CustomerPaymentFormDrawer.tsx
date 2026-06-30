@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Drawer, Form, Input, InputNumber, Select, message } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import { isAxiosError } from 'axios';
@@ -15,7 +16,7 @@ import type {
   CustomerPaymentListItem,
   CustomerReceivablesDetailLine,
 } from '@/shared/api/sales.types';
-import { SALES_PAYMENT_METHOD_LABELS } from '@/shared/api/sales.types';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 import { PharmaDatePicker } from '@/shared/ui/PharmaDatePicker';
 import {
   formatDisplayMoney,
@@ -24,10 +25,6 @@ import {
   parseMoneyInput,
 } from '@/shared/utils/money';
 import type { CustomerPaymentPrefill } from '@/modules/sales/customer-payment-nav';
-
-const collectionMethodOptions = Object.entries(SALES_PAYMENT_METHOD_LABELS)
-  .filter(([value]) => Number(value) !== 5)
-  .map(([value, label]) => ({ value: Number(value), label }));
 
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -63,6 +60,8 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
   onClose,
   onSaved,
 }: CustomerPaymentFormDrawerProps) {
+  const { t } = useTranslation('sales', { keyPrefix: 'customerPayments.form' });
+  const { collectionPaymentMethodOptions } = useSalesEnums();
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [orderLines, setOrderLines] = useState<CustomerReceivablesDetailLine[]>([]);
@@ -78,15 +77,18 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
     [customers],
   );
 
-  const loadOrderLines = useCallback(async (id: string) => {
-    try {
-      const detail = await fetchCustomerReceivablesDetail(id);
-      setOrderLines(detail.lines.filter((line) => line.outstanding > 0.009));
-    } catch (error) {
-      setOrderLines([]);
-      message.error(apiErrorMessage(error, 'Không tải được đơn còn nợ'));
-    }
-  }, []);
+  const loadOrderLines = useCallback(
+    async (id: string) => {
+      try {
+        const detail = await fetchCustomerReceivablesDetail(id);
+        setOrderLines(detail.lines.filter((line) => line.outstanding > 0.009));
+      } catch (error) {
+        setOrderLines([]);
+        message.error(apiErrorMessage(error, t('messages.loadOrdersFailed')));
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -140,13 +142,13 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
       })
       .catch((error) => {
         if (!cancelled) {
-          message.error(apiErrorMessage(error, 'Không tải được chi tiết phiếu'));
+          message.error(apiErrorMessage(error, t('messages.loadDetailFailed')));
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [open, editingId, editingRow, form, loadOrderLines]);
+  }, [open, editingId, editingRow, form, loadOrderLines, t]);
 
   useEffect(() => {
     if (!open) return;
@@ -166,9 +168,12 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
     () =>
       orderLines.map((line) => ({
         value: line.salesOrderId,
-        label: `${line.orderNumber} — nợ ${formatDisplayMoney(line.outstanding)}`,
+        label: t('orderOption', {
+          orderNumber: line.orderNumber,
+          outstanding: formatDisplayMoney(line.outstanding),
+        }),
       })),
-    [orderLines],
+    [orderLines, t],
   );
 
   const handleSave = async () => {
@@ -184,29 +189,31 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
         notes: values.notes as string | undefined,
       };
       if (Number.isNaN(payload.amount) || payload.amount <= 0) {
-        message.error('Số tiền không hợp lệ');
+        message.error(t('messages.invalidAmount'));
         return;
       }
       if (selectedOrder && payload.amount > selectedOrder.outstanding + 0.009) {
-        message.error(`Số tiền thu không được vượt còn nợ ${formatDisplayMoney(selectedOrder.outstanding)}`);
+        message.error(
+          t('messages.amountExceeds', {
+            outstanding: formatDisplayMoney(selectedOrder.outstanding),
+          }),
+        );
         return;
       }
       if (editingId) {
         const updated = await updateCustomerPayment(editingId, payload);
-        message.success(`Đã cập nhật ${updated.paymentNumber}`);
+        message.success(t('messages.updateSuccess', { paymentNumber: updated.paymentNumber }));
         onSaved(updated);
       } else {
         const created = await createCustomerPayment(payload);
-        message.success(
-          `Đã lưu ${created.paymentNumber}. Bấm Ghi sổ để trừ nợ trên đơn và ghi nhận tiền thu.`,
-        );
+        message.success(t('messages.createSuccess', { paymentNumber: created.paymentNumber }));
         onSaved(created);
       }
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, 'Không lưu được phiếu thu nợ'));
+        message.error(apiErrorMessage(error, t('messages.saveFailed')));
       } else {
-        message.error('Kiểm tra lại thông tin trên form');
+        message.error(t('messages.formInvalid'));
       }
     } finally {
       setSaving(false);
@@ -215,19 +222,23 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
 
   return (
     <Drawer
-      title={editingId ? 'Sửa phiếu thu nợ' : 'Ghi nhận thu nợ'}
+      title={editingId ? t('editTitle') : t('createTitle')}
       width={480}
       open={open}
       destroyOnClose
       onClose={onClose}
       extra={
         <Button type="primary" icon={<SaveOutlined />} onClick={() => void handleSave()} loading={saving}>
-          Lưu
+          {t('save')}
         </Button>
       }
     >
       <Form form={form} layout="vertical" initialValues={{ paymentMethod: 1, paymentDate: todayIsoDate() }}>
-        <Form.Item name="customerId" label="Khách hàng" rules={[{ required: true, message: 'Chọn khách hàng' }]}>
+        <Form.Item
+          name="customerId"
+          label={t('customer')}
+          rules={[{ required: true, message: t('customerRequired') }]}
+        >
           <Select
             showSearch
             optionFilterProp="label"
@@ -239,13 +250,13 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
             }}
           />
         </Form.Item>
-        <Form.Item name="salesOrderId" label="Liên kết đơn bán (tùy chọn)">
+        <Form.Item name="salesOrderId" label={t('orderLink')}>
           <Select
             allowClear
             showSearch
             optionFilterProp="label"
             disabled={!customerId}
-            placeholder={customerId ? 'Chọn đơn còn nợ' : 'Chọn khách hàng trước'}
+            placeholder={customerId ? t('orderPlaceholder') : t('orderSelectCustomerFirst')}
             options={orderLineOptions}
             onChange={(value: string | undefined) => {
               const line = orderLines.find((row) => row.salesOrderId === value);
@@ -264,18 +275,22 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
         ) : null}
         <Form.Item
           name="amount"
-          label="Số tiền thu"
+          label={t('amount')}
           rules={[
-            { required: true, message: 'Nhập số tiền' },
+            { required: true, message: t('amountRequired') },
             {
               validator: async (_, value) => {
                 if (!selectedOrder) return;
                 const amount = resolveAmount(value);
                 if (Number.isNaN(amount) || amount <= 0) {
-                  throw new Error('Số tiền không hợp lệ');
+                  throw new Error(t('messages.invalidAmount'));
                 }
                 if (amount > selectedOrder.outstanding + 0.009) {
-                  throw new Error(`Không vượt còn nợ ${formatDisplayMoney(selectedOrder.outstanding)}`);
+                  throw new Error(
+                    t('messages.validatorExceeds', {
+                      outstanding: formatDisplayMoney(selectedOrder.outstanding),
+                    }),
+                  );
                 }
               },
             },
@@ -288,13 +303,13 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
             max={selectedOrder ? selectedOrder.outstanding : undefined}
           />
         </Form.Item>
-        <Form.Item name="paymentMethod" label="Hình thức" rules={[{ required: true }]}>
-          <Select options={collectionMethodOptions} />
+        <Form.Item name="paymentMethod" label={t('paymentMethod')} rules={[{ required: true }]}>
+          <Select options={collectionPaymentMethodOptions} />
         </Form.Item>
-        <Form.Item name="paymentDate" label="Ngày thu">
+        <Form.Item name="paymentDate" label={t('paymentDate')}>
           <PharmaDatePicker style={{ width: '100%' }} />
         </Form.Item>
-        <Form.Item name="notes" label="Ghi chú">
+        <Form.Item name="notes" label={t('notes')}>
           <Input.TextArea rows={2} />
         </Form.Item>
       </Form>

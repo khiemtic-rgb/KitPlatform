@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Button, Form, Input, InputNumber, Select, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { FormListFieldData } from 'antd/es/form/FormList';
@@ -33,6 +34,9 @@ export function PurchaseOrderLinesEditor({
   mode,
   scrollY = 380,
 }: PurchaseOrderLinesEditorProps) {
+  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
+  const { t: tVal } = useTranslation('procurement', { keyPrefix: 'shared.validation' });
+  const { t: tLines } = useTranslation('procurement', { keyPrefix: 'shared.lines' });
   const isCreate = mode === 'create';
   const watchedItems = Form.useWatch('items', form) as PoLineFormRow[] | undefined;
 
@@ -43,7 +47,7 @@ export function PurchaseOrderLinesEditor({
   ) => {
     const columns: ColumnsType<FormListFieldData> = [
       {
-        title: 'Sản phẩm',
+        title: tShared('columns.product'),
         width: isCreate ? 300 : 260,
         render: (_, field) => {
           const line = watchedItems?.[field.name];
@@ -62,12 +66,12 @@ export function PurchaseOrderLinesEditor({
               </Form.Item>
               <Form.Item
                 name={[field.name, 'productId']}
-                rules={[{ required: true, message: 'Chọn SP' }]}
+                rules={[{ required: true, message: tVal('selectProduct') }]}
                 style={{ marginBottom: 0 }}
               >
                 <Select
                   disabled={!isCreate && isExistingLine}
-                  placeholder="Sản phẩm"
+                  placeholder={tShared('columns.product')}
                   showSearch
                   optionFilterProp="label"
                   options={products.map((p) => ({
@@ -81,7 +85,7 @@ export function PurchaseOrderLinesEditor({
               </Form.Item>
               {!isCreate && received > 0 && (
                 <span style={{ fontSize: 11, color: '#888' }}>
-                  Đã nhận {formatDisplayQuantity(received)}
+                  {tLines('receivedHint', { qty: formatDisplayQuantity(received) })}
                 </span>
               )}
             </>
@@ -89,7 +93,7 @@ export function PurchaseOrderLinesEditor({
         },
       },
       {
-        title: 'ĐVT',
+        title: tShared('columns.unit'),
         width: 88,
         render: (_, field) => {
           const line = watchedItems?.[field.name];
@@ -98,7 +102,7 @@ export function PurchaseOrderLinesEditor({
           return (
             <Form.Item
               name={[field.name, 'productUnitId']}
-              rules={[{ required: true, message: 'Chọn ĐVT' }]}
+              rules={[{ required: true, message: tVal('selectUnit') }]}
               style={{ marginBottom: 0 }}
             >
               <ProductUnitSelect productId={productId} width={84} disabled={!isCreate && isExistingLine} />
@@ -107,7 +111,7 @@ export function PurchaseOrderLinesEditor({
         },
       },
       {
-        title: 'SL đặt',
+        title: tShared('columns.orderedQty'),
         width: 82,
         align: 'right',
         render: (_, field) => {
@@ -121,9 +125,9 @@ export function PurchaseOrderLinesEditor({
             <Form.Item
               name={[field.name, 'orderedQty']}
               rules={[
-                { required: true, message: 'Nhập SL' },
+                { required: true, message: tVal('enterQty') },
                 ...(isCreate
-                  ? [{ type: 'number' as const, min: 0.01, message: 'SL > 0' }]
+                  ? [{ type: 'number' as const, min: 0.01, message: tVal('qtyPositive') }]
                   : [
                       {
                         validator: (_: unknown, value: number | null) =>
@@ -148,8 +152,8 @@ export function PurchaseOrderLinesEditor({
       {
         title: (
           <div style={{ lineHeight: 1.25 }}>
-            <div>Đơn giá</div>
-            <div style={{ fontSize: 11, fontWeight: 400, color: '#888' }}>Giá nhập gần nhất</div>
+            <div>{tShared('columns.unitPrice')}</div>
+            <div style={{ fontSize: 11, fontWeight: 400, color: '#888' }}>{tShared('columns.lastPurchasePriceHint')}</div>
           </div>
         ),
         width: 130,
@@ -161,7 +165,7 @@ export function PurchaseOrderLinesEditor({
           return (
             <Form.Item
               name={[field.name, 'unitPrice']}
-              rules={[{ required: true, message: 'Nhập giá' }]}
+              rules={[{ required: true, message: tVal('enterPrice') }]}
               style={{ marginBottom: 0 }}
             >
               <PoUnitPriceField
@@ -188,7 +192,7 @@ export function PurchaseOrderLinesEditor({
               danger
               size="small"
               icon={<DeleteOutlined />}
-              aria-label="Xóa dòng"
+              aria-label={tLines('removeLineAria')}
               onClick={() => remove(field.name)}
             />
           );
@@ -216,7 +220,7 @@ export function PurchaseOrderLinesEditor({
           block
           style={{ marginTop: 8 }}
         >
-          Thêm dòng
+          {tLines('addLine')}
         </Button>
       </>
     );

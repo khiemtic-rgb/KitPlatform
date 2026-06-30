@@ -1,4 +1,5 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Layout, Menu, Dropdown, Avatar, Space, Typography, Button, theme } from 'antd';
 import {
   AppstoreOutlined,
@@ -8,7 +9,7 @@ import {
   LogoutOutlined,
 } from '@ant-design/icons';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { buildMenuItems, HEADER_MODULE_KEYS, moduleRegistry } from '@/modules/registry';
+import { HEADER_MODULE_KEYS, moduleRegistry } from '@/modules/registry';
 import { ApiHealthBanner } from '@/shared/components/ApiHealthBanner';
 import { MODULE_PRIMARY_BG, primaryTabLabel } from '@/shared/components/module-tabs.ui';
 import { useAuthStore } from '@/shared/auth/auth.store';
@@ -21,6 +22,7 @@ const enabledModules = moduleRegistry.filter(
 );
 
 export function AppLayout() {
+  const { t } = useTranslation('common');
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,6 +47,19 @@ export function AppLayout() {
     }
   }, [isPosRoute]);
 
+  const menuItems = useMemo(
+    () =>
+      moduleRegistry.map((module) => ({
+        key: module.key,
+        icon: module.icon,
+        label: module.enabled
+          ? t(`modules.${module.key}`)
+          : t('modules.comingSoon', { name: t(`modules.${module.key}`) }),
+        disabled: !module.enabled,
+      })),
+    [t],
+  );
+
   const handleLogout = async () => {
     try {
       if (refreshToken) {
@@ -63,7 +78,7 @@ export function AppLayout() {
       {
         key: 'logout',
         icon: <LogoutOutlined />,
-        label: 'Đăng xuất',
+        label: t('appLayout.logout'),
         onClick: handleLogout,
       },
     ],
@@ -71,7 +86,7 @@ export function AppLayout() {
 
   const moduleNav = (
     <nav
-      aria-label="Module chính"
+      aria-label={t('appLayout.mainNavAria')}
       style={{
         display: 'flex',
         flex: 1,
@@ -106,7 +121,7 @@ export function AppLayout() {
             onClick={() => navigate(m.path)}
           >
             {m.icon}
-            {primaryTabLabel(m.label)}
+            {primaryTabLabel(t(`modules.${m.key}`))}
           </button>
         );
       })}
@@ -151,7 +166,7 @@ export function AppLayout() {
           theme="dark"
           mode="inline"
           selectedKeys={[activeKey]}
-          items={buildMenuItems()}
+          items={menuItems}
           onClick={({ key }) => {
             const module = moduleRegistry.find((m) => m.key === key);
             if (module?.enabled) {
@@ -192,7 +207,7 @@ export function AppLayout() {
               </Typography.Text>
             )}
             <Typography.Text type="secondary" style={{ flexShrink: 0 }}>
-              ERP Nhà thuốc
+              {t('appLayout.productName')}
             </Typography.Text>
             {!isPosRoute ? (
               moduleNav
@@ -202,13 +217,13 @@ export function AppLayout() {
                   items: enabledModules.map((m) => ({
                     key: m.key,
                     icon: m.icon,
-                    label: m.label,
+                    label: t(`modules.${m.key}`),
                     onClick: () => navigate(m.path),
                   })),
                 }}
               >
                 <Button type="text" size="small" icon={<AppstoreOutlined />}>
-                  Chuyển module
+                  {t('appLayout.switchModule')}
                 </Button>
               </Dropdown>
             )}

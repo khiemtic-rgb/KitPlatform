@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, App, Button, Space, Typography, Upload } from 'antd';
 import { InboxOutlined, UploadOutlined } from '@ant-design/icons';
 import type { UploadRequestOption } from 'rc-upload/lib/interface';
@@ -85,6 +86,7 @@ function mapCustomerRows(rows: Record<string, string>[]): MappedRow[] {
 }
 
 export function CustomerImportCard({ onImported }: { onImported?: () => void }) {
+  const { t } = useTranslation('customer', { keyPrefix: 'importCard' });
   const { message } = App.useApp();
   const [preview, setPreview] = useState<MappedRow[]>([]);
   const [result, setResult] = useState<CustomerImportResult | null>(null);
@@ -93,23 +95,26 @@ export function CustomerImportCard({ onImported }: { onImported?: () => void }) 
   const [importBatch, setImportBatch] = useState<{ current: number; total: number } | null>(null);
   const [fileName, setFileName] = useState<string>();
 
-  const handleFile = useCallback(async (file: File) => {
-    try {
-      const rows = await parseSpreadsheetFile(file);
-      const mapped = mapCustomerRows(rows);
-      if (mapped.length === 0) {
-        message.warning('Không tìm thấy dòng hợp lệ. Cần mã + tên khách hàng.');
-        return;
+  const handleFile = useCallback(
+    async (file: File) => {
+      try {
+        const rows = await parseSpreadsheetFile(file);
+        const mapped = mapCustomerRows(rows);
+        if (mapped.length === 0) {
+          message.warning(t('messages.noValidRows'));
+          return;
+        }
+        setPreview(mapped);
+        setResult(null);
+        setImportError(null);
+        setFileName(file.name);
+        message.success(t('messages.readSuccess', { count: mapped.length, fileName: file.name }));
+      } catch (error) {
+        message.error(apiErrorMessage(error, t('messages.readFailed')));
       }
-      setPreview(mapped);
-      setResult(null);
-      setImportError(null);
-      setFileName(file.name);
-      message.success(`Đã đọc ${mapped.length} khách từ «${file.name}»`);
-    } catch (error) {
-      message.error(apiErrorMessage(error, 'Không đọc được file'));
-    }
-  }, [message]);
+    },
+    [message, t],
+  );
 
   const runImport = async () => {
     if (preview.length === 0) return;
@@ -131,10 +136,16 @@ export function CustomerImportCard({ onImported }: { onImported?: () => void }) 
         (current, total) => setImportBatch({ current, total }),
       );
       setResult(res);
-      message.success(`Import KH xong: ${res.created} mới, ${res.skipped} bỏ qua, ${res.failed} lỗi`);
+      message.success(
+        t('messages.importSuccess', {
+          created: res.created,
+          skipped: res.skipped,
+          failed: res.failed,
+        }),
+      );
       await onImported?.();
     } catch (error) {
-      const text = apiErrorMessage(error, 'Import khách hàng thất bại');
+      const text = apiErrorMessage(error, t('messages.importFailed'));
       setImportError(text);
       message.error(text);
     } finally {
@@ -146,7 +157,7 @@ export function CustomerImportCard({ onImported }: { onImported?: () => void }) 
   return (
     <Space direction="vertical" size="small" style={{ width: '100%' }}>
       <Typography.Text type="secondary">
-        Import Excel/CSV từ Sapo hoặc file <code>khach-hang-novixa.csv</code>. Mã hoặc SĐT trùng sẽ bỏ qua.
+        {t('description', { fileName: t('sampleFileName') })}
       </Typography.Text>
       <Space wrap>
         <Upload
@@ -157,7 +168,7 @@ export function CustomerImportCard({ onImported }: { onImported?: () => void }) 
             void handleFile(file).then(() => options.onSuccess?.({}, file));
           }}
         >
-          <Button icon={<UploadOutlined />}>Chọn file KH</Button>
+          <Button icon={<UploadOutlined />}>{t('chooseFile')}</Button>
         </Upload>
         <Button
           type="primary"
@@ -166,17 +177,19 @@ export function CustomerImportCard({ onImported }: { onImported?: () => void }) 
           loading={importing}
           onClick={() => void runImport()}
         >
-          Import {preview.length > 0 ? `(${preview.length})` : ''}
+          {preview.length > 0
+            ? t('importButtonWithCount', { count: preview.length })
+            : t('importButton')}
         </Button>
       </Space>
       {fileName && (
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          File: {fileName}
+          {t('fileLabel', { fileName })}
         </Typography.Text>
       )}
       {importBatch && (
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          Đang import lô {importBatch.current}/{importBatch.total}…
+          {t('batchProgress', { current: importBatch.current, total: importBatch.total })}
         </Typography.Text>
       )}
       {importError && <Alert type="error" showIcon message={importError} />}
@@ -184,7 +197,11 @@ export function CustomerImportCard({ onImported }: { onImported?: () => void }) 
         <Alert
           type={result.failed > 0 ? 'warning' : 'success'}
           showIcon
-          message={`Tạo mới: ${result.created} · Bỏ qua: ${result.skipped} · Lỗi: ${result.failed}`}
+          message={t('resultSummary', {
+            created: result.created,
+            skipped: result.skipped,
+            failed: result.failed,
+          })}
         />
       )}
     </Space>

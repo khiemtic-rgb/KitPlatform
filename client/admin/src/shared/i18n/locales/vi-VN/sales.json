@@ -1,0 +1,1114 @@
+{
+  "enums": {
+    "paymentMethod": {
+      "1": "Tiền mặt",
+      "2": "Thẻ",
+      "3": "Chuyển khoản",
+      "4": "Ví điện tử",
+      "5": "Ghi nợ"
+    },
+    "customerDraftStatus": {
+      "1": "Nháp",
+      "2": "Đã gửi khách",
+      "3": "Khách đã xác nhận",
+      "4": "Đã bán",
+      "5": "Đã hủy",
+      "6": "Hết hạn"
+    },
+    "discountType": {
+      "fixed": "Giá trị"
+    },
+    "reservationStatus": {
+      "1": "Chờ xác nhận",
+      "2": "Đã xác nhận",
+      "3": "Sẵn sàng lấy thuốc",
+      "4": "Đã lấy thuốc",
+      "5": "Đã hủy",
+      "6": "Từ chối"
+    },
+    "reservationFulfillment": {
+      "1": "Đến quầy lấy",
+      "2": "Giao tận nơi"
+    },
+    "voucherStatus": {
+      "0": "Tắt",
+      "1": "Đang dùng"
+    },
+    "voucherDiscountType": {
+      "1": "Phần trăm",
+      "2": "Số tiền cố định"
+    },
+    "consentChannel": {
+      "1": "SMS",
+      "2": "Zalo",
+      "3": "Email",
+      "4": "App push",
+      "5": "Trong app"
+    },
+    "consentPurpose": {
+      "1": "Marketing",
+      "2": "Nhắc chăm sóc",
+      "3": "Nghiên cứu",
+      "4": "Hỗ trợ AI dược sĩ"
+    },
+    "returnStatus": {
+      "2": "Hoàn tất"
+    },
+    "customerPaymentStatus": {
+      "1": "Chờ ghi sổ",
+      "2": "Đã ghi sổ",
+      "3": "Đã hủy"
+    }
+  },
+  "pos": {
+    "checkout": {
+      "title": "Thanh toán",
+      "completeSale": "Hoàn tất bán",
+      "subtotal": "Tổng tiền hàng",
+      "lineDiscount": "Chiết khấu sản phẩm",
+      "orderDiscount": "Chiết khấu đơn hàng",
+      "totalDiscount": "Tổng chiết khấu",
+      "voucher": "Voucher",
+      "loyaltyDiscount": "Tiền trừ tích điểm",
+      "payable": "Khách phải trả",
+      "customer": "Khách hàng",
+      "customerPlaceholderCredit": "Chọn khách (bắt buộc khi ghi nợ)",
+      "quickAddCustomer": "Thêm khách nhanh",
+      "creditAllowed": "Được ghi nợ",
+      "creditNotAllowed": "Không ghi nợ",
+      "outstanding": "Đang nợ {{amount}}",
+      "selectCustomerForCredit": "Chọn khách hàng để ghi nợ — có thể chọn ngay tại đây, không cần quay lại màn POS.",
+      "customerVouchers": "Voucher khách",
+      "voucherPlaceholder": "Chọn voucher (tuỳ chọn)",
+      "loyaltyHasPoints": "Khách có {{points}} điểm (= {{value}}) · 1 điểm = {{amountPerPoint}}",
+      "loyaltyNoPoints": "Khách chưa có điểm tích lũy · 1 điểm = {{amountPerPoint}}",
+      "loyaltyMaxPercent": "Trừ tối đa {{percent}}% đơn — giảm tối đa {{amount}} trên đơn này",
+      "loyaltyMaxAmount": "Có thể giảm tối đa {{amount}} bằng điểm trên đơn này",
+      "loyaltyCannotRedeem": "Không thể đổi điểm trên đơn này",
+      "redeemNow": "Trừ điểm ngay cho đơn này",
+      "remainingAmount": "Số tiền còn lại",
+      "redeemApprox": "Quy đổi ≈ {{points}} điểm",
+      "earnRule": "Mua {{amount}} được +1 điểm.",
+      "freeOrder": "Đơn 0 đ — không cần nhập thanh toán. Bấm Hoàn tất bán để ghi đơn.",
+      "splitPayments": "Chia nhiều hình thức: nhập số tiền các dòng sau — dòng đầu tự nhận phần còn lại.",
+      "paymentMethod": "Hình thức",
+      "amountTendered": "Tiền khách đưa",
+      "amountTenderedAutoSplit": "Tiền khách đưa (tự chia)",
+      "addPaymentMethod": "Thêm hình thức thanh toán",
+      "collected": "Đã thu",
+      "creditLine": "Ghi nợ",
+      "changeDue": "Tiền thừa trả khách",
+      "errors": {
+        "checkCredit": "Kiểm tra khách hàng và số tiền ghi nợ",
+        "paymentMismatch": "Tổng thanh toán chưa khớp số tiền khách phải trả",
+        "createSaleFailed": "Không ghi được đơn bán",
+        "selectCustomerCredit": "Chọn khách hàng để ghi nợ.",
+        "customerCreditNotAllowed": "Khách hàng chưa được phép ghi nợ.",
+        "creditLimitExceeded": "Vượt hạn mức nợ ({{limit}}). Đang nợ {{outstanding}}.",
+        "payOrCredit": "Khách cần trả {{payable}} hoặc chọn KH được phép ghi nợ.",
+        "overpaid": "Tổng thu vượt {{payable}}.",
+        "allocationMismatch": "Tổng phân bổ + ghi nợ phải bằng {{payable}} (hiện thu {{paid}})."
+      }
+    },
+    "checkoutSuccess": {
+      "base": "Đã bán {{orderNumber}} — {{amount}}",
+      "paidOutstanding": "Thu {{paid}} · Nợ {{outstanding}}",
+      "pointsRedeemed": "−{{points}} điểm",
+      "pointsEarned": "+{{points}} điểm"
+    },
+    "columns": {
+      "product": "Sản phẩm",
+      "productCode": "Mã SP",
+      "stockInline": "(tồn {{count}})",
+      "fefoHint": "Lô FEFO gợi ý: {{batch}}",
+      "unit": "ĐVT",
+      "batch": "Lô",
+      "batchPlaceholder": "Chọn lô",
+      "qty": "SL",
+      "qtyAria": "Số lượng bán",
+      "unitPrice": "Đơn giá",
+      "discount": "CK",
+      "lineTotal": "Thành tiền",
+      "removeLine": "Xóa dòng"
+    },
+    "summary": {
+      "subtotal": "Tổng tiền hàng",
+      "lineDiscount": "Chiết khấu từng SP",
+      "orderDiscount": "CK đơn",
+      "orderDiscountMax": "(Tối đa {{percent}}%)",
+      "totalDiscount": "Tổng CK",
+      "payable": "Khách phải trả"
+    },
+    "toolbar": {
+      "warehouse": "Kho bán",
+      "customerRequired": "Chọn khách hàng",
+      "customerOptional": "Khách hàng (tùy chọn)",
+      "quickAddCustomer": "Thêm khách nhanh",
+      "appDraftMode": "Gửi đơn qua app khách",
+      "selectCustomerForApp": "Chọn khách hàng để gửi đơn qua app",
+      "scanPlaceholder": "Quét mã vạch hoặc gõ mã / tên SP",
+      "searchOptionLabel": "{{code}} — {{name}} · tồn {{stock}} {{unit}}",
+      "noProducts": "Không có sản phẩm phù hợp",
+      "checkout": "Thanh toán",
+      "sendCustomer": "Gửi KH",
+      "saveDraft": "Lưu tạm",
+      "updateDraft": "Cập nhật tạm",
+      "selectCustomerBeforeSend": "Chọn khách hàng trước khi gửi app"
+    },
+    "alerts": {
+      "editingDraft": "Đang sửa đơn tạm {{number}}",
+      "editingDraftDesc": "Thêm/bớt sản phẩm rồi bấm Cập nhật tạm, hoặc Thanh toán để hoàn tất.",
+      "discardEdit": "Bỏ sửa",
+      "countingTitle": "Kho {{warehouse}} đang kiểm kê ({{number}})",
+      "countingDesc": "Theo quy trình chuẩn: hạn chế bán/nhập xuất trong lúc đếm để tránh lệch tồn. Hoàn tất kiểm kê trước khi chốt số.",
+      "countingAction": "Màn kiểm kê",
+      "shiftNotOpenTitle": "Chưa mở ca cho kho này",
+      "shiftNotOpenDesc": "Cần mở ca và nhập quỹ đầu ca trước khi thanh toán đơn bán.",
+      "openShift": "Mở ca",
+      "shiftOpen": "Ca {{number}} · Quỹ đầu {{opening}}",
+      "shiftOpenDesc": "Mở lúc {{openedAt}} — Thu ròng ca: {{net}}",
+      "pendingDraftsTitle": "Khách có đơn tạm chờ lấy",
+      "pendingDraftConfirmed": " · Khách đã xác nhận tạm",
+      "loadIntoPos": "Nạp POS",
+      "pendingDraftsHint": "Hỏi khách xác nhận lại tại quầy. Bấm Nạp POS để mở thanh toán và in hóa đơn.",
+      "appDraftModeTitle": "Chế độ gửi đơn qua app khách",
+      "appDraftModeDesc": "Soạn giỏ → bấm Gửi khách hàng. Khách xem/xác nhận trên app; thanh toán tại quầy khi khách đến lấy.",
+      "completedTitle": "Đã hoàn tất {{orderNumber}}",
+      "printInvoice": "In hóa đơn",
+      "viewOrders": "Xem danh sách đơn"
+    },
+    "messages": {
+      "loadDraftFailed": "Không nạp được đơn tạm",
+      "loadReservationFailed": "Không nạp được đặt trước",
+      "loadShiftFailed": "Không tải được trạng thái ca",
+      "draftLoadedCheckout": "Đã nạp {{number}} — mở thanh toán...",
+      "draftLoadedCart": "Đã nạp {{number}} vào giỏ — bấm Thanh toán khi sẵn sàng",
+      "reservationLoadedCheckout": "Đã nạp {{number}} — mở thanh toán...",
+      "reservationLoadedCart": "Đã nạp {{number}} vào giỏ — bấm Thanh toán khi sẵn sàng",
+      "customerSelected": "Đã chọn {{name}} ({{code}})",
+      "draftNotDraft": "Đơn không còn ở trạng thái nháp",
+      "loadDraftOrderFailed": "Không tải được đơn nháp",
+      "noDiscountPermission": "Tài khoản không có quyền chiết khấu",
+      "lineDiscountOverMax": "Chiết khấu dòng vượt quá {{max}}%",
+      "orderDiscountOverMax": "Chiết khấu đơn vượt quá {{max}}%",
+      "fefoFailed": "Không đủ tồn kho theo FEFO",
+      "outOfStock": "Sản phẩm hết tồn tại kho này",
+      "batchAssigned": "Đã gán lô {{batch}} — {{name}}",
+      "productNotFound": "Không tìm thấy sản phẩm",
+      "selectWarehouseFirst": "Chọn kho bán trước",
+      "addProductFirst": "Thêm ít nhất một sản phẩm",
+      "savingDraft": "Đang lưu đơn tạm...",
+      "updatingDraft": "Đang cập nhật đơn tạm...",
+      "draftSaved": "Đã lưu tạm {{number}} — {{amount}}",
+      "draftUpdated": "Đã cập nhật {{number}}",
+      "draftTempUpdated": "Đã cập nhật tạm {{number}} — {{amount}}",
+      "draftSavedOrder": "Đã lưu tạm {{number}}",
+      "updateDraftFailed": "Không cập nhật được đơn tạm",
+      "saveDraftFailed": "Không lưu được đơn tạm",
+      "selectCustomerForApp": "Chọn khách hàng trước khi gửi app",
+      "sendingDraft": "Đang gửi đơn tạm lên app khách...",
+      "draftSent": "Đã gửi {{number}} lên app khách",
+      "draftSentWaiting": "{{number}} đã gửi app — chờ khách xác nhận tạm",
+      "draftConfirmed": "{{number}} — khách đã xác nhận tạm trên app",
+      "sendDraftFailed": "Không gửi được đơn tạm",
+      "cartEmpty": "Giỏ hàng trống",
+      "creatingSale": "Đang ghi đơn bán...",
+      "linkDraftFailed": "Đã bán nhưng chưa liên kết được đơn tạm — liên hệ IT nếu cần.",
+      "linkReservationFailed": "Đã bán nhưng chưa liên kết được đặt trước — liên hệ IT nếu cần.",
+      "printBlocked": "Trình duyệt chặn cửa sổ in — bấm In hóa đơn bên dưới.",
+      "openShiftBeforeCheckout": "Mở ca trước khi thanh toán",
+      "selectWarehouseForShift": "Chọn kho trước khi mở ca",
+      "shiftOpened": "Đã mở ca {{number}}",
+      "openShiftFailed": "Không mở được ca"
+    },
+    "shift": {
+      "alreadyOpen": "Kho đã có ca {{number}} đang mở — có thể tiếp tục bán hàng.",
+      "openTitle": "Mở ca làm việc",
+      "openConfirm": "Mở ca",
+      "warehouse": "Kho",
+      "openingCashLabel": "Quỹ đầu ca (tiền mặt)",
+      "openingCashHint": "Quỹ đầu ca là số tiền mặt có sẵn trong két trước khi bán. Hệ thống sẽ yêu cầu mở ca trước khi thanh toán đơn.",
+      "invalidOpeningCash": "Quỹ đầu ca không hợp lệ"
+    },
+    "customerDraft": {
+      "barTitle": "Đơn tạm app khách",
+      "confirmedAt": "Khách xác nhận tạm: {{time}}",
+      "sentAt": "Đã gửi app: {{time}}"
+    },
+    "stock": {
+      "outOfStock": "Sản phẩm đã hết tồn tại kho này (ĐVT: {{unit}}).",
+      "capped": "Số lượng hàng còn trong kho chỉ có {{cap}}. Bạn chỉ bán tối đa {{cap}}."
+    },
+    "batch": {
+      "labelMismatch": "Số lô \"{{label}}\" không khớp tồn kho cho \"{{product}}\"",
+      "hintLine": "{{batch}} · HSD {{expiry}} · tồn sổ {{qty}}",
+      "suggestedBatch": "{{batch}} ({{expiry}})",
+      "allocationLine": "{{batch}} × {{qty}} (HSD {{expiry}})"
+    },
+    "allocation": {
+      "stockSourceSystem": "Tồn theo hệ thống"
+    }
+  },
+  "receipt": {
+    "orderStatus": {
+      "partialReturn": "Trả một phần",
+      "1": "Nháp",
+      "2": "Hoàn tất",
+      "3": "Đã hủy",
+      "4": "Hoàn tiền"
+    },
+    "voucher": "Voucher",
+    "voucherNamed": "Voucher {{code}} — {{name}}",
+    "voucherCode": "Voucher {{code}}",
+    "invoice": {
+      "docTitle": "HD {{number}}",
+      "title": "HÓA ĐƠN BÁN HÀNG",
+      "phonePrefix": "ĐT",
+      "orderNo": "Số",
+      "date": "Ngày",
+      "shift": "Ca",
+      "customer": "Khách",
+      "walkIn": "Khách lẻ",
+      "pointsEarned": "Tích điểm: +{{points}} điểm",
+      "creditNoPoints": "Phần nợ không tích điểm",
+      "pointsRedeemed": "Đổi điểm: −{{points}} điểm (−{{amount}})",
+      "voucherLine": "Voucher: −{{amount}}",
+      "status": "TT",
+      "lineDiscount": "CK",
+      "subtotal": "Tổng tiền hàng",
+      "lineDiscountTotal": "Chiết khấu SP",
+      "orderDiscount": "Chiết khấu đơn",
+      "pointsRedeemedTotal": "Đổi {{points}} điểm",
+      "customerPaid": "Khách đã trả",
+      "refunded": "Đã hoàn trả",
+      "remaining": "Còn lại",
+      "grandTotal": "TỔNG CỘNG",
+      "paid": "Đã thanh toán",
+      "outstanding": "Còn nợ (đơn này)",
+      "payment": "Thanh toán",
+      "notes": "Ghi chú",
+      "reprintAfterReturn": "Phiếu in lại sau trả hàng — số lượng là phần còn lại.",
+      "thanks": "Cảm ơn quý khách!",
+      "seeAgain": "Hẹn gặp lại",
+      "disclaimer": "Phiếu bán lẻ — không phải hóa đơn GTGT"
+    },
+    "return": {
+      "docTitle": "{{number}}",
+      "title": "PHIẾU TRẢ HÀNG",
+      "returnNo": "Số phiếu",
+      "orderNo": "Đơn bán",
+      "returnDate": "Ngày trả",
+      "reason": "Lý do",
+      "batch": "Lô",
+      "qtyReturned": "SL trả",
+      "refundTotal": "TỔNG HOÀN",
+      "refund": "Hoàn tiền",
+      "footerDone": "Đã hoàn trả hàng",
+      "footerNote": "Phiếu trả hàng — lưu nội bộ"
+    }
+  },
+  "paymentSummary": {
+    "unchanged": "giữ nguyên",
+    "lineSimple": "{{method}}: {{amount}}",
+    "lineUnchanged": "{{method}}: {{amount}} ({{unchanged}})",
+    "lineDetailed": "{{method}}: Thu {{collected}} · Hoàn −{{refunded}} · Ròng {{net}}"
+  },
+  "orderDetail": {
+    "financials": {
+      "paymentMethod": "Hình thức",
+      "collected": "Thu",
+      "refunded": "Hoàn",
+      "net": "Ròng",
+      "lineDiscount": "Chiết khấu sản phẩm",
+      "orderDiscount": "Chiết khấu đơn hàng",
+      "customerDue": "Khách phải trả",
+      "refundTotal": "Đã hoàn trả (phiếu hoàn)",
+      "remainingGoods": "Thành tiền hàng còn lại",
+      "paymentAfterReturn": "Thanh toán sau trả hàng",
+      "payment": "Thanh toán",
+      "outstandingNote": "Bảng dưới chỉ liệt kê tiền thu thật; phần nợ ghi ở \"Còn nợ (đơn này)\" phía trên.",
+      "refundInferredNote": "Hoàn tiền phân bổ theo tỷ lệ thu ban đầu — xem phiếu hoàn để biết hình thức hoàn chính xác.",
+      "netCollectedTotal": "Tổng đã thu ròng",
+      "collectedCashTransfer": "Đã thu (tiền mặt/chuyển…)",
+      "collectThisOrder": "Thu nợ đơn này",
+      "pointsRedeem": "Đổi {{points}} điểm"
+    }
+  },
+  "orders": {
+    "title": "Đơn bán hàng",
+    "appDraftAlert": {
+      "message": "Đơn gửi app khách (Gửi khách hàng tại POS) nằm tại tab Đơn hàng từ app",
+      "description": "Tab này chỉ liệt kê đơn bán nội bộ (nháp / hoàn tất). Đơn chờ khách xác nhận trên app xem tại Bán hàng → Đơn hàng từ app.",
+      "action": "Mở Đơn hàng từ app"
+    },
+    "filters": {
+      "status": "Trạng thái",
+      "clear": "Xóa lọc",
+      "reload": "Tải lại",
+      "documentPlaceholder": "Số đơn"
+    },
+    "paginationTotal": "{{count}} đơn",
+    "columns": {
+      "orderNumber": "Số đơn",
+      "warehouse": "Kho",
+      "customer": "Khách",
+      "date": "Ngày",
+      "status": "Trạng thái",
+      "total": "Tổng tiền",
+      "outstanding": "Nợ {{amount}}",
+      "actions": "Thao tác",
+      "view": "Xem",
+      "printInvoice": "In hóa đơn"
+    },
+    "lines": {
+      "productCode": "Mã SP",
+      "productName": "Tên SP",
+      "batch": "Lô",
+      "expiry": "HSD",
+      "unit": "ĐVT",
+      "qty": "Sl mua",
+      "returnedQty": "Sl trả",
+      "unitPrice": "Đơn giá",
+      "lineTotal": "Thành tiền"
+    },
+    "returns": {
+      "title": "Phiếu trả hàng",
+      "returnNumber": "Số phiếu",
+      "date": "Ngày",
+      "status": "Trạng thái",
+      "refundTotal": "Tổng hoàn tiền",
+      "view": "Xem",
+      "print": "In"
+    },
+    "detail": {
+      "drawerTitle": "Xem {{orderNumber}}",
+      "drawerTitleDefault": "Xem đơn bán",
+      "draftAlert": {
+        "message": "Đơn nháp chưa trừ tồn kho",
+        "description": "Bấm Hoàn tất đơn để xuất hóa đơn, trừ tồn theo FEFO và cho phép trả hàng sau này."
+      },
+      "actions": {
+        "title": "Thao tác",
+        "continueEdit": "Tiếp tục sửa",
+        "complete": "Hoàn tất đơn",
+        "cancelConfirm": "Hủy đơn tạm?",
+        "cancel": "Hủy đơn",
+        "printInvoice": "In hóa đơn",
+        "return": "Trả hàng",
+        "collectDebt": "Thu nợ"
+      },
+      "descriptions": {
+        "warehouse": "Kho",
+        "customer": "Khách",
+        "voucher": "Voucher",
+        "pointsRedeem": "Đổi điểm",
+        "pointsEarned": "Tích điểm",
+        "status": "Trạng thái",
+        "date": "Ngày",
+        "shift": "Ca",
+        "pointsUnit": "điểm"
+      }
+    },
+    "messages": {
+      "loadFailed": "Không tải được đơn bán",
+      "returnsLoadFailed": "Không tải được phiếu trả của đơn",
+      "detailLoadFailed": "Không tải được chi tiết đơn",
+      "customerSelected": "Đã chọn {{name}} ({{code}})",
+      "draftNotFound": "Không tìm thấy đơn tạm",
+      "printBlocked": "Trình duyệt chặn cửa sổ in — bấm In hóa đơn trong chi tiết đơn.",
+      "completeFailed": "Không hoàn tất được đơn",
+      "cancelSuccess": "Đã hủy đơn tạm",
+      "cancelFailed": "Không hủy được đơn",
+      "printBlockedRetry": "Trình duyệt chặn cửa sổ in — cho phép popup và thử lại.",
+      "invoicePrintFailed": "Không in được hóa đơn",
+      "returnPrintFailed": "Không in được phiếu trả",
+      "returnSuccess": "Đã ghi nhận trả hàng {{returnNumber}}",
+      "returnPrintBlocked": "Trình duyệt chặn cửa sổ in — mở lại từ chi tiết đơn.",
+      "returnFailed": "Không trả hàng được",
+      "noCustomerForDebt": "Đơn không có khách hàng để thu nợ"
+    }
+  },
+  "returns": {
+    "list": {
+      "title": "Phiếu trả hàng",
+      "filters": {
+        "documentPlaceholder": "Số phiếu / đơn bán",
+        "clear": "Xóa lọc",
+        "reload": "Tải lại"
+      },
+      "columns": {
+        "returnNumber": "Số phiếu",
+        "orderNumber": "Đơn bán",
+        "returnDate": "Ngày trả",
+        "status": "Trạng thái",
+        "shift": "Ca",
+        "refundTotal": "Tổng hoàn tiền",
+        "actions": "Thao tác",
+        "view": "Xem",
+        "print": "In"
+      },
+      "paginationTotal": "{{count}} phiếu",
+      "messages": {
+        "loadFailed": "Không tải được phiếu trả",
+        "printBlocked": "Trình duyệt chặn cửa sổ in — cho phép popup và thử lại.",
+        "printFailed": "Không in được phiếu trả"
+      }
+    },
+    "modal": {
+      "title": "Trả hàng — {{orderNumber}}",
+      "titleDefault": "Trả hàng",
+      "confirm": "Ghi nhận trả & hoàn tiền",
+      "customerDue": "Khách phải trả (đơn)",
+      "refundThisTime": "Tiền hoàn lần này",
+      "debtReduced": "Giảm công nợ",
+      "cashRefund": "Hoàn tiền mặt cho khách",
+      "creditOnlyNote": "Đơn ghi nợ — không hoàn tiền mặt, chỉ giảm nợ trên đơn.",
+      "reason": "Lý do",
+      "lineQty": "{{productName}} (còn trả tối đa {{max}})",
+      "paymentMethod": "Hình thức hoàn tiền",
+      "paymentMethodRequired": "Chọn hình thức hoàn",
+      "customerRefund": "Tiền trả khách",
+      "refundViaShift": "Hoàn qua {{method}} — ghi vào báo cáo ca."
+    },
+    "detail": {
+      "drawerTitle": "Phiếu trả {{returnNumber}}",
+      "drawerTitleDefault": "Chi tiết phiếu trả",
+      "actions": {
+        "title": "Thao tác",
+        "print": "In phiếu trả",
+        "viewOrder": "Xem đơn bán"
+      },
+      "descriptions": {
+        "returnNumber": "Số phiếu",
+        "orderNumber": "Đơn bán",
+        "returnDate": "Ngày trả",
+        "status": "Trạng thái",
+        "shift": "Ca",
+        "reason": "Lý do trả",
+        "refundTotal": "Tổng hoàn tiền"
+      },
+      "lines": {
+        "productCode": "Mã SP",
+        "productName": "Tên SP",
+        "batch": "Lô",
+        "qty": "SL trả",
+        "refundAmount": "Tiền hoàn"
+      },
+      "paymentsTitle": "Hình thức hoàn tiền",
+      "messages": {
+        "loadFailed": "Không tải được chi tiết phiếu trả",
+        "printBlocked": "Trình duyệt chặn cửa sổ in — cho phép popup và thử lại."
+      }
+    }
+  },
+  "customerPayments": {
+    "title": "Thu nợ khách hàng",
+    "create": "Ghi nhận thu",
+    "alert": {
+      "message": "Lưu tạo phiếu chờ ghi sổ — nợ trên đơn chỉ giảm sau khi bấm Ghi sổ trong chi tiết phiếu."
+    },
+    "filters": {
+      "status": "Trạng thái",
+      "documentPlaceholder": "Số phiếu / đơn bán",
+      "clear": "Xóa lọc",
+      "reload": "Tải lại"
+    },
+    "columns": {
+      "paymentNumber": "Số phiếu",
+      "customer": "Khách hàng",
+      "amount": "Số tiền",
+      "paymentMethod": "Hình thức",
+      "status": "Trạng thái",
+      "paymentDate": "Ngày thu",
+      "orderNumber": "Đơn bán",
+      "view": "Xem"
+    },
+    "detail": {
+      "drawerTitleDefault": "Chi tiết phiếu thu",
+      "customer": "Khách hàng",
+      "amount": "Số tiền",
+      "paymentMethod": "Hình thức",
+      "status": "Trạng thái",
+      "paymentDate": "Ngày thu",
+      "orderNumber": "Đơn bán",
+      "notes": "Ghi chú",
+      "edit": "Sửa",
+      "post": "Ghi sổ",
+      "postConfirm": "Ghi sổ phiếu thu nợ?",
+      "cancel": "Hủy",
+      "cancelConfirm": "Hủy phiếu?"
+    },
+    "form": {
+      "editTitle": "Sửa phiếu thu nợ",
+      "createTitle": "Ghi nhận thu nợ",
+      "save": "Lưu",
+      "customer": "Khách hàng",
+      "customerRequired": "Chọn khách hàng",
+      "orderLink": "Liên kết đơn bán (tùy chọn)",
+      "orderPlaceholder": "Chọn đơn còn nợ",
+      "orderSelectCustomerFirst": "Chọn khách hàng trước",
+      "amount": "Số tiền thu",
+      "amountRequired": "Nhập số tiền",
+      "paymentMethod": "Hình thức",
+      "paymentDate": "Ngày thu",
+      "notes": "Ghi chú",
+      "orderOption": "{{orderNumber}} — nợ {{outstanding}}",
+      "hint": {
+        "noOutstanding": "Đơn bán đã hết nợ — không thể ghi nhận thu trên đơn này.",
+        "orderOutstanding": "Còn nợ đơn {{orderNumber}}: {{outstanding}}",
+        "genericOutstanding": "Còn nợ: {{outstanding}}",
+        "description": "Số tiền thu không được vượt còn nợ của đơn. Nợ trên đơn chỉ giảm sau khi Ghi sổ phiếu thu.",
+        "fillOutstanding": "Điền đủ còn nợ"
+      },
+      "messages": {
+        "loadOrdersFailed": "Không tải được đơn còn nợ",
+        "loadDetailFailed": "Không tải được chi tiết phiếu",
+        "invalidAmount": "Số tiền không hợp lệ",
+        "amountExceeds": "Số tiền thu không được vượt còn nợ {{outstanding}}",
+        "validatorExceeds": "Không vượt còn nợ {{outstanding}}",
+        "updateSuccess": "Đã cập nhật {{paymentNumber}}",
+        "createSuccess": "Đã lưu {{paymentNumber}}. Bấm Ghi sổ để trừ nợ trên đơn và ghi nhận tiền thu.",
+        "saveFailed": "Không lưu được phiếu thu nợ",
+        "formInvalid": "Kiểm tra lại thông tin trên form"
+      }
+    },
+    "messages": {
+      "loadFailed": "Không tải được phiếu thu nợ",
+      "noPermission": "Bạn không có quyền ghi nhận thu nợ",
+      "postSuccess": "Đã ghi sổ thu nợ",
+      "postFailed": "Không ghi sổ được",
+      "cancelSuccess": "Đã hủy phiếu thu nợ",
+      "cancelFailed": "Không hủy được phiếu"
+    },
+    "paginationTotal": "{{count}} phiếu"
+  },
+  "shiftSummary": {
+    "paymentMethod": "Hình thức",
+    "salesAmount": "Thu bán",
+    "refundAmount": "Hoàn khách",
+    "netAmount": "Thu ròng",
+    "totalSales": "Tổng thu bán",
+    "totalRefunds": "Tổng hoàn khách",
+    "netTotal": "Thu ròng",
+    "openingCash": "Quỹ đầu ca (TM)",
+    "cashSales": "Thu tiền mặt",
+    "cashRefunds": "Hoàn tiền mặt",
+    "expectedCash": "Tiền mặt dự kiến trong két",
+    "closingCash": "Tiền đếm cuối ca",
+    "cashVariance": "Chênh lệch"
+  },
+  "shiftReport": {
+    "currentShift": {
+      "title": "Ca làm việc",
+      "warehousePlaceholder": "Chọn kho",
+      "reload": "Tải lại",
+      "openShift": "Mở ca",
+      "closeShift": "Đóng ca",
+      "noOpenShift": "Chưa có ca mở cho kho này. Mở ca và nhập quỹ đầu ca trước khi bán hàng trên POS.",
+      "descriptions": {
+        "shiftNumber": "Số ca",
+        "warehouse": "Kho",
+        "openedBy": "Mở bởi",
+        "openedAt": "Mở lúc",
+        "openingCash": "Quỹ đầu ca",
+        "status": "Trạng thái"
+      },
+      "statusOpen": "Đang mở",
+      "statusClosed": "Đã đóng",
+      "fefoAlert": {
+        "title": "Cảnh báo lô FEFO ({{source}})",
+        "defaultSource": "Tồn theo hệ thống",
+        "expirySuffix": " (HSD {{date}})",
+        "line": "{{productCode}} — đã bán lô {{soldBatch}}{{soldExpiry}} trong khi lô {{earlierBatch}}{{earlierExpiry}} còn {{qty}} trên sổ"
+      }
+    },
+    "history": {
+      "title": "Lịch sử ca",
+      "columns": {
+        "shiftNumber": "Số ca",
+        "warehouse": "Kho",
+        "openedBy": "Mở bởi",
+        "openedAt": "Mở lúc",
+        "openingCash": "Quỹ đầu",
+        "cashVariance": "Chênh lệch TM",
+        "status": "Trạng thái"
+      }
+    },
+    "rangeReport": {
+      "title": "Báo cáo theo khoảng thời gian",
+      "reload": "Tải lại"
+    },
+    "messages": {
+      "loadCurrentFailed": "Không tải ca hiện tại",
+      "loadHistoryFailed": "Không tải lịch sử ca",
+      "loadReportFailed": "Không tải được báo cáo",
+      "closeSuccess": "Đã đóng ca",
+      "closeFailed": "Không đóng được ca"
+    },
+    "closeModal": {
+      "title": "Đóng ca — {{shiftNumber}}",
+      "titleDefault": "Đóng ca",
+      "confirm": "Đóng ca",
+      "intro": "Đếm tiền mặt thực tế trong két và nhập số đếm được. Hệ thống so với tiền mặt dự kiến {{expected}}.",
+      "closingCash": "Tiền mặt đếm cuối ca",
+      "closingCashRequired": "Nhập tiền đếm được",
+      "notes": "Ghi chú (tuỳ chọn)",
+      "notesPlaceholder": "Giải thích chênh lệch nếu có..."
+    }
+  },
+  "salesLayout": {
+    "navAriaLabel": "Menu bán hàng",
+    "loading": "Đang tải...",
+    "tabs": {
+      "pos": "Bán hàng (POS)",
+      "orders": "Đơn bán",
+      "customerReceivables": "Công nợ KH",
+      "customerPayments": "Thu nợ KH",
+      "customerDrafts": "Đơn hàng từ app",
+      "customerReservations": "Đặt trước app",
+      "returns": "Hàng trả lại",
+      "chat": "Chat KH",
+      "shift": "Ca làm việc"
+    }
+  },
+  "salesListSearch": {
+    "customerPlaceholder": "Tên khách hoặc SĐT",
+    "documentPlaceholderDefault": "Số đơn",
+    "apply": "Lọc",
+    "clear": "Xóa lọc"
+  },
+  "customerReceivables": {
+    "title": "Công nợ khách hàng",
+    "intro": "Công nợ theo trường còn nợ trên đơn bán đã hoàn tất. Phiếu thu nợ không gắn đơn được bù trừ theo thứ tự đơn cũ nhất khi ghi sổ.",
+    "searchPlaceholder": "Tên khách hoặc SĐT",
+    "clear": "Xóa lọc",
+    "paginationTotal": "{{count}} khách hàng",
+    "summaryTotal": "Tổng",
+    "columns": {
+      "customerCode": "Mã KH",
+      "customerName": "Khách hàng",
+      "totalReceivable": "Còn phải thu",
+      "agingCurrent": "0–30 ngày",
+      "aging31To60": "31–60",
+      "aging61To90": "61–90",
+      "agingOver90": "> 90",
+      "openDocuments": "Đơn mở"
+    },
+    "detail": {
+      "drawerTitle": "Công nợ — {{customerName}}",
+      "drawerTitleDefault": "Chi tiết công nợ",
+      "createPayment": "Tạo phiếu thu",
+      "loading": "Đang tải chi tiết...",
+      "customerCode": "Mã KH",
+      "totalReceivable": "Còn phải thu",
+      "unappliedCredit": "Thu chưa phân bổ",
+      "collect": "Thu nợ",
+      "columns": {
+        "orderNumber": "Số đơn",
+        "orderDate": "Ngày bán",
+        "orderTotal": "Tổng đơn",
+        "paidAmount": "Đã thu",
+        "outstanding": "Còn nợ",
+        "daysOutstanding": "Tuổi nợ (ngày)"
+      }
+    },
+    "messages": {
+      "loadFailed": "Không tải được báo cáo công nợ khách hàng",
+      "detailLoadFailed": "Không tải được chi tiết công nợ"
+    }
+  },
+  "customerDrafts": {
+    "title": "Đơn tạm app khách",
+    "alert": {
+      "message": "Đơn gửi từ POS (Gửi khách hàng) hiển thị tại đây — không nằm trong tab Đơn bán",
+      "description": "Quy trình: Nháp → Gửi khách → Khách đã xác nhận (tuỳ chọn) → Nạp POS (thanh toán + in hóa đơn)."
+    },
+    "filters": {
+      "status": "Trạng thái",
+      "documentPlaceholder": "Số đơn tạm",
+      "clear": "Xóa lọc",
+      "actionable": "Chờ xử lý ({{count}})",
+      "active": "Đang xử lý ({{count}})",
+      "reload": "Tải lại"
+    },
+    "pendingAlert": {
+      "message": "{{count}} đơn chờ xử lý tại quầy",
+      "description": "Đơn 「Khách đã xác nhận」 hoặc 「Đã gửi khách」 — bấm Nạp POS để thanh toán và in hóa đơn."
+    },
+    "paginationTotal": "{{count}} đơn tạm",
+    "columns": {
+      "draftNumber": "Số đơn",
+      "customer": "Khách",
+      "status": "Trạng thái",
+      "itemCount": "SP",
+      "total": "Tổng tiền",
+      "timeline": "Gửi / Xác nhận",
+      "actions": "Thao tác",
+      "view": "Xem",
+      "loadPos": "Nạp POS",
+      "hiddenOnApp": "Ẩn trên app",
+      "confirmedAt": "XN {{time}}",
+      "sentAt": "Gửi {{time}}"
+    },
+    "detail": {
+      "drawerTitle": "Xem {{draftNumber}}",
+      "drawerTitleDefault": "Xem đơn tạm",
+      "confirmedAlert": {
+        "message": "Khách đã xác nhận tạm trên app",
+        "description": "Hỏi khách tại quầy. Bấm Nạp POS để thanh toán, ghi đơn bán và in hóa đơn."
+      },
+      "sentAlert": {
+        "message": "Đã gửi app — chờ khách xác nhận (không bắt buộc)",
+        "description": "Hỏi khách tại quầy. Bấm Nạp POS để thanh toán, ghi đơn bán và in hóa đơn."
+      },
+      "actions": {
+        "title": "Thao tác",
+        "loadPos": "Nạp POS",
+        "cancelConfirm": "Hủy đơn tạm?",
+        "cancel": "Hủy đơn",
+        "viewOrder": "Xem đơn bán {{orderNumber}}"
+      },
+      "descriptions": {
+        "customer": "Khách",
+        "phone": "Điện thoại",
+        "status": "Trạng thái",
+        "total": "Tổng tiền",
+        "sentAt": "Gửi app",
+        "confirmedAt": "Khách xác nhận",
+        "salesOrder": "Đơn bán"
+      },
+      "lines": {
+        "productCode": "Mã SP",
+        "productName": "Tên SP",
+        "unit": "ĐVT",
+        "qty": "SL",
+        "unitPrice": "Đơn giá",
+        "lineTotal": "Thành tiền"
+      }
+    },
+    "messages": {
+      "loadFailed": "Không tải được đơn tạm app",
+      "detailLoadFailed": "Không tải được chi tiết đơn tạm",
+      "cancelSuccess": "Đã hủy đơn tạm",
+      "cancelFailed": "Không hủy được đơn tạm"
+    },
+    "drawer": {
+      "title": "Đơn tạm — {{customerName}}",
+      "defaultCustomer": "Khách",
+      "alert": "Gửi đơn tạm lên app khách (không qua chat). Khách xem / xác nhận tạm tuỳ chọn; thanh toán tại POS.",
+      "existingList": "Danh sách đơn tạm",
+      "emptyList": "Chưa có đơn tạm",
+      "sendToCustomer": "Gửi khách",
+      "cancel": "Hủy",
+      "lineSummary": "{{count}} SP · {{amount}}",
+      "createNew": "Tạo đơn tạm mới",
+      "productSearchPlaceholder": "Tìm sản phẩm (tên, mã...)",
+      "searchMinChars": "Nhập ≥ 2 ký tự",
+      "productNotFound": "Không thấy sản phẩm",
+      "qtyLabel": "SL",
+      "dosagePlaceholder": "Liều / ghi chú (tuỳ chọn)",
+      "notesPlaceholder": "Ghi chú đơn (tuỳ chọn)",
+      "estimatedTotal": "Tổng tiền hàng: {{amount}}",
+      "saveDraft": "Lưu tạm",
+      "messages": {
+        "loadFailed": "Không tải được đơn tạm",
+        "addProductRequired": "Thêm ít nhất một sản phẩm",
+        "saveSuccess": "Đã lưu tạm",
+        "saveFailed": "Không lưu được đơn tạm",
+        "sendSuccess": "Đã gửi đơn tạm lên app khách",
+        "sendFailed": "Không gửi được đơn tạm",
+        "addProductFailed": "Không thêm được sản phẩm"
+      }
+    },
+    "notifications": {
+      "confirmedTitle": "Khách xác nhận đơn tạm",
+      "confirmedBody": "{{draftNumber}} — sẵn sàng nạp POS tại quầy.",
+      "cancelledTitle": "Khách hủy đơn tạm",
+      "cancelledBody": "{{draftNumber}} — không cần xử lý tại quầy."
+    }
+  },
+  "receiptSettings": {
+    "receiptCard": {
+      "title": "Phiếu in (POS)",
+      "storeName": "Tên cửa hàng",
+      "storeNameRequired": "Nhập tên cửa hàng",
+      "tagline": "Slogan / dòng phụ",
+      "phone": "Điện thoại",
+      "address": "Địa chỉ",
+      "save": "Lưu phiếu in",
+      "placeholders": {
+        "storeName": "NHÀ THUỐC NOVIXA",
+        "tagline": "Chăm sóc sức khỏe cộng đồng",
+        "phone": "0984.660.399",
+        "address": "Số nhà, phường, quận, tỉnh/thành"
+      }
+    },
+    "batchCard": {
+      "title": "Quản lý lô (FEFO)",
+      "save": "Lưu chế độ lô"
+    },
+    "messages": {
+      "loadFailed": "Không tải được cài đặt bán hàng",
+      "receiptSaveSuccess": "Đã lưu cài đặt phiếu in",
+      "receiptSaveFailed": "Không lưu được cài đặt phiếu in",
+      "batchSaveSuccess": "Đã lưu chế độ quản lý lô",
+      "batchSaveFailed": "Không lưu được chế độ lô"
+    },
+    "defaults": {
+      "storeName": "NHÀ THUỐC NOVIXA",
+      "tagline": "Chăm sóc sức khỏe cộng đồng",
+      "phone": "0984.660.399"
+    }
+  },
+  "batchMode": {
+    "options": {
+      "off": "Tắt — không gợi ý lô trên POS",
+      "suggest": "Gợi ý lô FEFO (mặc định)",
+      "label_optional": "Nhãn lô — tùy chọn",
+      "label_required": "Nhãn lô — bắt buộc"
+    },
+    "hints": {
+      "off": "POS không hiển thị gợi ý lô; backend vẫn xuất FEFO khi chốt đơn.",
+      "suggest": "Nhân viên thấy lô FEFO gợi ý (tooltip) khi bán; khách không thấy lô trên hóa đơn.",
+      "label_optional": "POS hiển thị cột chọn lô; có thể bỏ trống nếu không cần (không bật cảnh báo FEFO ca).",
+      "label_required": "POS bắt buộc chọn số lô khớp tồn kho; bật cảnh báo tuân thủ FEFO trên ca làm việc (FEFO chuẩn)."
+    }
+  },
+  "customerReservations": {
+    "filters": {
+      "status": "Trạng thái",
+      "documentPlaceholder": "Số yêu cầu",
+      "awaiting": "Chờ xử lý ({{count}})",
+      "reload": "Tải lại"
+    },
+    "columns": {
+      "reservationNumber": "Số yêu cầu",
+      "customerName": "Khách hàng",
+      "phone": "SĐT",
+      "status": "Trạng thái",
+      "fulfillmentType": "Hình thức",
+      "itemCount": "SP",
+      "submittedAt": "Gửi lúc",
+      "view": "Xem"
+    },
+    "detail": {
+      "drawerTitleDefault": "Chi tiết đặt trước",
+      "status": "Trạng thái",
+      "fulfillmentType": "Hình thức",
+      "address": "Địa chỉ",
+      "customerNotes": "Ghi chú KH",
+      "salesOrder": "Hóa đơn bán",
+      "submittedAt": "Gửi lúc",
+      "productsHeader": "Sản phẩm",
+      "staffNotesPlaceholder": "Ghi chú nội bộ (vd: dự kiến có hàng ngày mai)",
+      "saveNotes": "Lưu ghi chú",
+      "confirmPopconfirm": "Xác nhận yêu cầu?",
+      "confirm": "Xác nhận",
+      "rejectPopconfirm": "Từ chối yêu cầu?",
+      "reject": "Từ chối",
+      "readyPopconfirm": "Đánh dấu sẵn sàng?",
+      "markReady": "Sẵn sàng lấy thuốc",
+      "loadPos": "Bán POS — tạo hóa đơn"
+    },
+    "messages": {
+      "loadFailed": "Không tải được yêu cầu đặt trước",
+      "detailLoadFailed": "Không tải được chi tiết",
+      "actionFailed": "Thao tác thất bại",
+      "notesSaved": "Đã lưu ghi chú",
+      "notesSaveFailed": "Không lưu được ghi chú",
+      "confirmed": "Đã xác nhận",
+      "rejected": "Đã từ chối",
+      "ready": "Đã sẵn sàng"
+    }
+  },
+  "customerChat": {
+    "title": "Chat khách hàng",
+    "loadFailed": "Không tải được danh sách chat",
+    "loadFailedBanner": "Không tải được chat",
+    "retry": "Thử lại",
+    "sidebarHint": "Không tải được — bấm Thử lại phía trên",
+    "noThreads": "Chưa có hội thoại",
+    "noMessages": "Chưa có tin nhắn",
+    "selectCustomer": "Chọn khách để xem hội thoại",
+    "draftOrders": "Đơn tạm",
+    "replyPlaceholder": "Trả lời khách...",
+    "send": "Gửi",
+    "messagesLoadFailed": "Không tải được tin nhắn",
+    "sendFailed": "Không gửi được tin nhắn",
+    "notifications": {
+      "newMessageTitle": "Tin nhắn khách hàng mới",
+      "newMessagePreview": "Có tin nhắn mới",
+      "unreadBody": "Bạn có {{count}} tin chưa đọc"
+    }
+  },
+  "loyaltySettings": {
+    "title": "Tích điểm khách hàng",
+    "loyaltyEnabled": "Bật tích điểm",
+    "switchOn": "Bật",
+    "switchOff": "Tắt",
+    "programSection": "Chương trình",
+    "programCode": "Mã chương trình",
+    "programName": "Tên hiển thị",
+    "enterCode": "Nhập mã",
+    "enterName": "Nhập tên",
+    "pointsPerAmount": "Số tiền mua để được",
+    "pointsEarned": "Điểm nhận được",
+    "onePoint": "1 điểm",
+    "earnRuleHint": "Ví dụ: {{amount}} → 1 điểm — tích điểm và đổi điểm trên POS dùng cùng quy tắc (mua {{amount}} được +1 điểm; đổi 1 điểm giảm {{amount}}).",
+    "maxRedeemPercent": "Trừ tối đa trên một đơn bán (%)",
+    "redeemExampleHint": "Ví dụ: khách có 100 điểm (= {{pointsValue}}) nhưng đơn {{orderAmount}} với giới hạn {{percent}}% thì chỉ được giảm tối đa {{maxDiscount}} bằng điểm, không trừ hết giá trị đơn.",
+    "tiersSection": "Hạng thành viên",
+    "tierColumns": {
+      "code": "Mã",
+      "name": "Tên hạng",
+      "minPoints": "Từ (điểm)",
+      "discountPercent": "Giảm %"
+    },
+    "tierCodePlaceholder": "BRONZE",
+    "tierNamePlaceholder": "Đồng",
+    "addTier": "Thêm hạng",
+    "save": "Lưu cài đặt tích điểm",
+    "messages": {
+      "loadFailed": "Không tải được cài đặt tích điểm",
+      "saveSuccess": "Đã lưu cài đặt tích điểm",
+      "saveFailed": "Không lưu được cài đặt tích điểm"
+    }
+  },
+  "vouchers": {
+    "title": "Voucher khách hàng",
+    "intro": "Tạo mã giảm giá, phát vào ví khách — khách xem trên app, dược sĩ áp tại POS.",
+    "refresh": "Làm mới",
+    "create": "Tạo voucher",
+    "paginationTotal": "{{count}} voucher",
+    "loadFailed": "Không tải được danh sách voucher",
+    "loadErrorHint": "Kiểm tra API đang chạy tại http://localhost:5290 — chạy .\\scripts\\restart-api.ps1 nếu cần.",
+    "retry": "Thử lại",
+    "columns": {
+      "actions": "Thao tác",
+      "code": "Mã",
+      "name": "Tên",
+      "discount": "Giảm",
+      "minOrder": "Đơn TT",
+      "validity": "Hiệu lực",
+      "usage": "Dùng/Phát",
+      "status": "TT"
+    },
+    "actions": {
+      "issueToCustomer": "Phát cho khách",
+      "issueAria": "Phát KH",
+      "delete": "Xóa",
+      "deleteConfirm": "Xóa voucher?",
+      "deleteWithIssued": "{{code}} · gỡ khỏi ví {{count}} khách chưa dùng",
+      "cancel": "Hủy",
+      "cannotDeleteUsed": "Voucher đã dùng — hãy tắt thay vì xóa",
+      "viewIssued": "Xem danh sách phát",
+      "viewIssuedAria": "Xem phát"
+    },
+    "modal": {
+      "editTitle": "Sửa voucher",
+      "createTitle": "Tạo voucher",
+      "save": "Lưu",
+      "voucherCode": "Mã voucher",
+      "enterCode": "Nhập mã",
+      "active": "Kích hoạt",
+      "displayName": "Tên hiển thị",
+      "enterName": "Nhập tên",
+      "namePlaceholder": "Giảm 50.000đ đơn từ 300k",
+      "discountType": "Loại giảm",
+      "discountValue": "Giá trị",
+      "minOrderAmount": "Đơn tối thiểu",
+      "maxUses": "Lượt dùng tối đa (trống = không giới hạn)",
+      "maxUsesPlaceholder": "Không giới hạn",
+      "validRange": "Hiệu lực",
+      "selectDateRange": "Chọn thời gian",
+      "codePlaceholder": "WELCOME50K",
+      "switchOn": "Bật",
+      "switchOff": "Tắt"
+    },
+    "issue": {
+      "title": "Phát voucher",
+      "titleWithCode": "Phát voucher · {{code}}",
+      "hint": "Chọn khách để thêm vào ví (app khách sẽ thấy ngay).",
+      "customerPlaceholder": "Tìm tên / SĐT khách hàng",
+      "submit": "Phát voucher",
+      "bulkIssue": "Phát cho nhiều KH",
+      "issuedCount": "Đã phát ({{count}})",
+      "columns": {
+        "customer": "Khách",
+        "phone": "SĐT",
+        "issuedAt": "Phát lúc",
+        "status": "Trạng thái"
+      },
+      "used": "Đã dùng",
+      "unused": "Chưa dùng"
+    },
+    "messages": {
+      "loadFailed": "Không tải được voucher",
+      "updateSuccess": "Đã cập nhật voucher",
+      "createSuccess": "Đã tạo voucher",
+      "saveFailed": "Không lưu được voucher",
+      "deleteSuccess": "Đã xóa voucher",
+      "deleteFailed": "Không xóa được voucher",
+      "issuedListLoadFailed": "Không tải được danh sách phát",
+      "selectCustomer": "Chọn khách hàng",
+      "issueSuccess": "Đã phát voucher cho khách",
+      "issueFailed": "Không phát được voucher"
+    },
+    "bulkIssue": {
+      "title": "Phát hàng loạt",
+      "titleWithCode": "Phát hàng loạt · {{code}}",
+      "issueButton": "Phát ({{count}})",
+      "searchPlaceholder": "Tìm tên / SĐT / mã khách",
+      "searchCustomers": "Tìm khách",
+      "revenue": "Doanh thu",
+      "minRevenue": "Tối thiểu",
+      "thisMonth": "Tháng này",
+      "birthday": "Sinh nhật",
+      "tier": "Hạng",
+      "selectTiers": "Chọn hạng",
+      "hideAlreadyIssued": "Ẩn đã có voucher",
+      "paginationTotal": "{{count}} KH",
+      "columns": {
+        "code": "Mã",
+        "customer": "Khách",
+        "phone": "SĐT",
+        "tier": "Hạng",
+        "revenue": "DT",
+        "birthday": "SN",
+        "voucher": "Voucher"
+      },
+      "hasVoucher": "Có",
+      "noVoucher": "Chưa",
+      "messages": {
+        "searchFailed": "Không tìm được khách hàng",
+        "selectAtLeastOne": "Chọn ít nhất một khách hàng",
+        "issueSuccess": "Đã phát {{issued}} khách",
+        "issueSuccessSkipped": "Đã phát {{issued}} khách · bỏ qua {{skipped}} đã có",
+        "issueFailed": "Không phát được voucher hàng loạt"
+      }
+    }
+  },
+  "customerConsent": {
+    "title": "Đồng ý khách hàng (CDP)",
+    "alert": {
+      "message": "Opt-in / opt-out theo kênh & mục đích",
+      "description": "Mỗi lần lưu ghi sự kiện customer.consent.updated vào integration_outbox để worker CDP xử lý sau. Đồng ý Trong app / Hỗ trợ AI dược sĩ bật chat hai chiều với khách trong app."
+    },
+    "selectCustomer": "Chọn khách hàng",
+    "save": "Lưu đồng ý",
+    "columns": {
+      "channel": "Kênh",
+      "purpose": "Mục đích",
+      "granted": "Đồng ý",
+      "updated": "Cập nhật"
+    },
+    "messages": {
+      "loadFailed": "Không tải được đồng ý khách hàng",
+      "selectCustomer": "Chọn khách hàng",
+      "saveSuccess": "Đã lưu đồng ý — sự kiện CDP đã ghi outbox",
+      "saveFailed": "Không lưu được đồng ý",
+      "apiNotFound": "API chưa có endpoint đồng ý KH — chạy .\\scripts\\restart-api.ps1 rồi thử lại.",
+      "migrationMissing": "{{message}} — có thể thiếu migration 016: chạy setup-and-migrate hoặc psql -f migrations/016_customer_consents_and_outbox.sql"
+    }
+  }
+}

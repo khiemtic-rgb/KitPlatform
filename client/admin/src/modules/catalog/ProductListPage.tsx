@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert,
@@ -32,7 +33,7 @@ import {
 } from '@/shared/api/catalog.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import type { LookupItem, ProductDetail, ProductListFilter, ProductListItem } from '@/shared/api/catalog.types';
-import { DRUG_TYPE_LABELS, STATUS_LABELS } from '@/shared/api/catalog.types';
+import { useCatalogEnums } from '@/shared/i18n/use-catalog-enums';
 import { formatDisplayMoney } from '@/shared/utils/money';
 import { isProductFeatureEnabled } from '@/shared/product/product-phases';
 import { ProductFormDrawer } from '@/modules/catalog/ProductFormDrawer';
@@ -49,6 +50,9 @@ const emptyAdvancedFilters: Omit<ProductListFilter, 'search' | 'page' | 'pageSiz
 };
 
 export function ProductListPage() {
+  const { t } = useTranslation('catalog', { keyPrefix: 'products' });
+  const { t: ts } = useTranslation('catalog', { keyPrefix: 'shared' });
+  const { drugTypeOptions, productStatusLabel, productStatusOptions } = useCatalogEnums();
   const { message: msg } = App.useApp();
   const navigate = useNavigate();
   const showNationalDrugLookup = isProductFeatureEnabled('catalog.nationalDrug');
@@ -93,13 +97,13 @@ export function ProductListPage() {
       setTotal(data.total ?? 0);
       setLoadError(null);
     } catch (error) {
-      const text = apiErrorMessage(error, 'Không tải được danh sách sản phẩm');
+      const text = apiErrorMessage(error, t('messages.loadFailed'));
       setLoadError(text);
       msg.error(text);
     } finally {
       setLoading(false);
     }
-  }, [search, page, pageSize, advancedFilters, msg]);
+  }, [search, page, pageSize, advancedFilters, msg, t]);
 
   const hasActiveFilters =
     Boolean(advancedFilters.drugTypes?.length) ||
@@ -188,7 +192,7 @@ export function ProductListPage() {
       setEditing(product);
       setDrawerOpen(true);
     } catch {
-      msg.error('Không tải được chi tiết sản phẩm');
+      msg.error(t('messages.detailLoadFailed'));
     }
   };
 
@@ -208,7 +212,7 @@ export function ProductListPage() {
         const refreshed = await fetchProduct(editing.id);
         setEditing(refreshed);
       } catch {
-        msg.error('Không tải lại được chi tiết sản phẩm');
+        msg.error(t('messages.detailReloadFailed'));
       }
     }
   };
@@ -221,11 +225,11 @@ export function ProductListPage() {
   const handleDeleteOne = async (id: string) => {
     try {
       await deleteProduct(id);
-      msg.success('Đã xóa sản phẩm');
+      msg.success(t('messages.deleteSuccess'));
       setSelectedRowKeys((keys) => keys.filter((k) => k !== id));
       load();
     } catch (error) {
-      msg.error(apiErrorMessage(error, 'Không xóa được sản phẩm'));
+      msg.error(apiErrorMessage(error, t('messages.deleteFailed')));
     }
   };
 
@@ -234,96 +238,101 @@ export function ProductListPage() {
     setBulkDeleting(true);
     try {
       const count = await bulkDeleteProducts(selectedRowKeys);
-      msg.success(`Đã xóa ${count} sản phẩm`);
+      msg.success(t('messages.bulkDeleteSuccess', { count }));
       setSelectedRowKeys([]);
       load();
     } catch (error) {
-      msg.error(apiErrorMessage(error, 'Không xóa được các sản phẩm đã chọn'));
+      msg.error(apiErrorMessage(error, t('messages.bulkDeleteFailed')));
     } finally {
       setBulkDeleting(false);
     }
   };
 
-  const columns: ColumnsType<ProductListItem> = [
-    {
-      title: 'Ảnh',
-      dataIndex: 'primaryImageUrl',
-      width: 56,
-      render: (url?: string) =>
-        url ? (
-          <Avatar shape="square" size={40} src={url} alt="" />
-        ) : (
-          <Avatar shape="square" size={40}>—</Avatar>
+  const columns: ColumnsType<ProductListItem> = useMemo(
+    () => [
+      {
+        title: t('columns.image'),
+        dataIndex: 'primaryImageUrl',
+        width: 56,
+        render: (url?: string) =>
+          url ? (
+            <Avatar shape="square" size={40} src={url} alt="" />
+          ) : (
+            <Avatar shape="square" size={40}>
+              —
+            </Avatar>
+          ),
+      },
+      {
+        title: t('columns.barcode'),
+        dataIndex: 'primaryBarcode',
+        width: 130,
+        render: (v?: string) => v ?? '—',
+      },
+      { title: t('columns.productName'), dataIndex: 'productName', ellipsis: true },
+      {
+        title: t('columns.genericName'),
+        dataIndex: 'genericName',
+        ellipsis: true,
+        render: (v?: string) => v ?? '—',
+      },
+      {
+        title: t('columns.saleUnit'),
+        dataIndex: 'saleUnitName',
+        width: 100,
+        render: (v?: string) => v ?? '—',
+      },
+      {
+        title: t('columns.retailPrice'),
+        dataIndex: 'retailPrice',
+        width: 110,
+        align: 'right',
+        render: (v?: number) => (
+          <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDisplayMoney(v)}</span>
         ),
-    },
-    {
-      title: 'Barcode',
-      dataIndex: 'primaryBarcode',
-      width: 130,
-      render: (v?: string) => v ?? '—',
-    },
-    { title: 'Tên sản phẩm', dataIndex: 'productName', ellipsis: true },
-    {
-      title: 'Hoạt chất',
-      dataIndex: 'genericName',
-      ellipsis: true,
-      render: (v?: string) => v ?? '—',
-    },
-    {
-      title: 'ĐVT bán lẻ',
-      dataIndex: 'saleUnitName',
-      width: 100,
-      render: (v?: string) => v ?? '—',
-    },
-    {
-      title: 'Giá lẻ',
-      dataIndex: 'retailPrice',
-      width: 110,
-      align: 'right',
-      render: (v?: number) => (
-        <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDisplayMoney(v)}</span>
-      ),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      width: 100,
-      render: (v: number) => (
-        <Tag color={v === 1 ? 'green' : 'default'}>{STATUS_LABELS[v] ?? v}</Tag>
-      ),
-    },
-    {
-      title: 'Thao tác',
-      key: 'actions',
-      width: 140,
-      fixed: 'right',
-      render: (_, row) => (
-        <Space size={0}>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row.id)}>
-            Sửa
-          </Button>
-          <Popconfirm title="Xóa sản phẩm này?" onConfirm={() => handleDeleteOne(row.id)}>
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              Xóa
+      },
+      {
+        title: t('columns.status'),
+        dataIndex: 'status',
+        width: 100,
+        render: (v: number) => (
+          <Tag color={v === 1 ? 'green' : 'default'}>{productStatusLabel(v)}</Tag>
+        ),
+      },
+      {
+        title: t('columns.actions'),
+        key: 'actions',
+        width: 140,
+        fixed: 'right',
+        render: (_, row) => (
+          <Space size={0}>
+            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row.id)}>
+              {ts('edit')}
             </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+            <Popconfirm title={t('deleteConfirm')} onConfirm={() => handleDeleteOne(row.id)}>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                {ts('delete')}
+              </Button>
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ],
+    [t, ts, productStatusLabel],
+  );
 
   return (
     <Card
-      title="Danh mục sản phẩm"
+      title={t('title')}
       extra={
         <Space wrap>
           {selectedRowKeys.length > 0 && (
             <Popconfirm
-              title={`Xóa ${selectedRowKeys.length} sản phẩm đã chọn?`}
+              title={t('bulkDeleteConfirm', { count: selectedRowKeys.length })}
               onConfirm={handleBulkDelete}
             >
               <Button danger loading={bulkDeleting}>
-                Xóa đã chọn ({selectedRowKeys.length})
+                {t('bulkDeleteButton', { count: selectedRowKeys.length })}
               </Button>
             </Popconfirm>
           )}
@@ -342,27 +351,27 @@ export function ProductListPage() {
               }}
             >
               <Input
-                placeholder="Tìm tên hoặc mã vạch..."
+                placeholder={t('searchPlaceholder')}
                 prefix={<SearchOutlined />}
                 onPressEnter={applySearch}
                 allowClear
               />
             </AutoComplete>
             <Button type="primary" icon={<SearchOutlined />} onClick={applySearch}>
-              Tìm
+              {t('search')}
             </Button>
           </Space.Compact>
           <Button icon={<ReloadOutlined />} onClick={load} />
           <Button icon={<ImportOutlined />} onClick={() => navigate('/catalog/import')}>
-            Import Excel
+            {t('importExcel')}
           </Button>
           {showNationalDrugLookup && (
             <Button icon={<CloudSyncOutlined />} onClick={() => navigate('/catalog/national-drugs')}>
-              Tra cứu QG
+              {t('nationalLookup')}
             </Button>
           )}
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            Thêm sản phẩm
+            {t('addProduct')}
           </Button>
         </Space>
       }
@@ -374,7 +383,7 @@ export function ProductListPage() {
           message={loadError}
           action={
             <Button size="small" onClick={load}>
-              Thử lại
+              {ts('retry')}
             </Button>
           }
           style={{ marginBottom: 16 }}
@@ -384,10 +393,10 @@ export function ProductListPage() {
         <Alert
           type="info"
           showIcon
-          message="Đang lọc sản phẩm — có thể không thấy đủ danh sách."
+          message={t('filterActiveAlert')}
           action={
             <Button size="small" onClick={clearAllFilters}>
-              Xóa bộ lọc
+              {t('clearFilters')}
             </Button>
           }
           style={{ marginBottom: 16 }}
@@ -402,67 +411,61 @@ export function ProductListPage() {
             label: (
               <Space>
                 <FilterOutlined />
-                Bộ lọc nâng cao
+                {t('advancedFilters')}
               </Space>
             ),
             children: (
               <>
                 <Row gutter={[16, 8]}>
                   <Col xs={24} sm={12} md={8}>
-                    <Typography.Text type="secondary">Loại thuốc</Typography.Text>
+                    <Typography.Text type="secondary">{t('filters.drugType')}</Typography.Text>
                     <Select
                       mode="multiple"
                       allowClear
                       style={{ width: '100%' }}
-                      placeholder="Tất cả"
+                      placeholder={ts('all')}
                       value={filterDraft.drugTypes}
                       onChange={(v) => setFilterDraft((f) => ({ ...f, drugTypes: v }))}
-                      options={Object.entries(DRUG_TYPE_LABELS).map(([k, v]) => ({
-                        value: Number(k),
-                        label: v,
-                      }))}
+                      options={drugTypeOptions}
                     />
                   </Col>
                   <Col xs={24} sm={12} md={8}>
-                    <Typography.Text type="secondary">Danh mục</Typography.Text>
+                    <Typography.Text type="secondary">{t('filters.category')}</Typography.Text>
                     <Select
                       mode="multiple"
                       allowClear
                       style={{ width: '100%' }}
-                      placeholder="Tất cả"
+                      placeholder={ts('all')}
                       value={filterDraft.categoryIds}
                       onChange={(v) => setFilterDraft((f) => ({ ...f, categoryIds: v }))}
                       options={filterLookups.categories.map((c) => ({ value: c.id, label: c.name }))}
                     />
                   </Col>
                   <Col xs={24} sm={12} md={8}>
-                    <Typography.Text type="secondary">Thương hiệu</Typography.Text>
+                    <Typography.Text type="secondary">{t('filters.brand')}</Typography.Text>
                     <Select
                       mode="multiple"
                       allowClear
                       style={{ width: '100%' }}
-                      placeholder="Tất cả"
+                      placeholder={ts('all')}
                       value={filterDraft.brandIds}
                       onChange={(v) => setFilterDraft((f) => ({ ...f, brandIds: v }))}
                       options={filterLookups.brands.map((b) => ({ value: b.id, label: b.name }))}
                     />
                   </Col>
                   <Col xs={24} sm={12} md={8}>
-                    <Typography.Text type="secondary">Trạng thái</Typography.Text>
+                    <Typography.Text type="secondary">{t('filters.status')}</Typography.Text>
                     <Select
                       allowClear
                       style={{ width: '100%' }}
-                      placeholder="Tất cả"
+                      placeholder={ts('all')}
                       value={filterDraft.status}
                       onChange={(v) => setFilterDraft((f) => ({ ...f, status: v }))}
-                      options={Object.entries(STATUS_LABELS).map(([k, v]) => ({
-                        value: Number(k),
-                        label: v,
-                      }))}
+                      options={productStatusOptions}
                     />
                   </Col>
                   <Col xs={24} sm={12} md={8}>
-                    <Typography.Text type="secondary">Giá bán lẻ từ</Typography.Text>
+                    <Typography.Text type="secondary">{t('filters.retailPriceFrom')}</Typography.Text>
                     <InputNumber
                       min={0}
                       style={{ width: '100%' }}
@@ -471,7 +474,7 @@ export function ProductListPage() {
                     />
                   </Col>
                   <Col xs={24} sm={12} md={8}>
-                    <Typography.Text type="secondary">Giá bán lẻ đến</Typography.Text>
+                    <Typography.Text type="secondary">{t('filters.retailPriceTo')}</Typography.Text>
                     <InputNumber
                       min={0}
                       style={{ width: '100%' }}
@@ -480,37 +483,37 @@ export function ProductListPage() {
                     />
                   </Col>
                   <Col xs={24} sm={12} md={8}>
-                    <Typography.Text type="secondary">Barcode</Typography.Text>
+                    <Typography.Text type="secondary">{t('filters.barcode')}</Typography.Text>
                     <Select
                       allowClear
                       style={{ width: '100%' }}
-                      placeholder="Tất cả"
+                      placeholder={ts('all')}
                       value={filterDraft.hasBarcode}
                       onChange={(v) => setFilterDraft((f) => ({ ...f, hasBarcode: v }))}
                       options={[
-                        { value: true, label: 'Có barcode' },
-                        { value: false, label: 'Chưa có barcode' },
+                        { value: true, label: t('filters.hasBarcode') },
+                        { value: false, label: t('filters.noBarcode') },
                       ]}
                     />
                   </Col>
                   <Col xs={24} sm={12} md={8}>
-                    <Typography.Text type="secondary">Giá bán</Typography.Text>
+                    <Typography.Text type="secondary">{t('filters.price')}</Typography.Text>
                     <Select
                       allowClear
                       style={{ width: '100%' }}
-                      placeholder="Tất cả"
+                      placeholder={ts('all')}
                       value={filterDraft.hasPrice}
                       onChange={(v) => setFilterDraft((f) => ({ ...f, hasPrice: v }))}
                       options={[
-                        { value: true, label: 'Đã có giá' },
-                        { value: false, label: 'Chưa có giá' },
+                        { value: true, label: t('filters.hasPrice') },
+                        { value: false, label: t('filters.noPrice') },
                       ]}
                     />
                   </Col>
                 </Row>
                 <Space style={{ marginTop: 12 }}>
                   <Button type="primary" onClick={applyFilters}>
-                    Áp dụng bộ lọc
+                    {t('applyFilters')}
                   </Button>
                   <Button
                     onClick={() => {
@@ -519,7 +522,7 @@ export function ProductListPage() {
                       setPage(1);
                     }}
                   >
-                    Xóa bộ lọc
+                    {t('clearFilters')}
                   </Button>
                 </Space>
               </>
@@ -542,15 +545,15 @@ export function ProductListPage() {
             <Empty
               description={
                 loadError
-                  ? 'Không tải được dữ liệu'
+                  ? t('empty.loadFailed')
                   : hasActiveFilters
-                    ? 'Không có sản phẩm khớp bộ lọc'
-                    : 'Chưa có sản phẩm'
+                    ? t('empty.noMatch')
+                    : t('empty.none')
               }
             >
               <Space>
-                <Button onClick={load}>Tải lại</Button>
-                {hasActiveFilters && <Button onClick={clearAllFilters}>Xóa bộ lọc</Button>}
+                <Button onClick={load}>{ts('reload')}</Button>
+                {hasActiveFilters && <Button onClick={clearAllFilters}>{t('clearFilters')}</Button>}
               </Space>
             </Empty>
           ),
@@ -560,7 +563,7 @@ export function ProductListPage() {
           pageSize,
           total,
           showSizeChanger: true,
-          showTotal: (t) => `${t} sản phẩm`,
+          showTotal: (totalCount) => t('paginationTotal', { count: totalCount }),
           onChange: (p, ps) => {
             setPage(p);
             setPageSize(ps);

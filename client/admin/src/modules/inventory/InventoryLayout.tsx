@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Tabs } from 'antd';
 import {
@@ -15,23 +16,27 @@ import {
   secondaryTabsBarStyle,
 } from '@/shared/components/module-tabs.ui';
 
-const tabs = [
-  {
-    key: 'opening',
-    label: 'Tồn đầu kỳ',
-    path: '/inventory/opening-balance',
-    icon: <ImportOutlined />,
-  },
-  { key: 'stock', label: 'Tồn kho', path: '/inventory/stock', icon: <DatabaseOutlined /> },
-  { key: 'low-stock', label: 'Tồn thấp', path: '/inventory/low-stock', icon: <WarningOutlined /> },
-  { key: 'transfers', label: 'Điều chuyển', path: '/inventory/transfers', icon: <SwapOutlined /> },
-  { key: 'adjustments', label: 'Kiểm kê', path: '/inventory/adjustments', icon: <AuditOutlined /> },
-  { key: 'warehouses', label: 'Danh mục kho', path: '/inventory/warehouses', icon: <BankOutlined /> },
-];
-
 export function InventoryLayout() {
+  const { t } = useTranslation('inventory', { keyPrefix: 'inventoryLayout.tabs' });
   const location = useLocation();
   const navigate = useNavigate();
+
+  const tabs = useMemo(
+    () => [
+      {
+        key: 'opening',
+        label: t('opening'),
+        path: '/inventory/opening-balance',
+        icon: <ImportOutlined />,
+      },
+      { key: 'stock', label: t('stock'), path: '/inventory/stock', icon: <DatabaseOutlined /> },
+      { key: 'low-stock', label: t('lowStock'), path: '/inventory/low-stock', icon: <WarningOutlined /> },
+      { key: 'transfers', label: t('transfers'), path: '/inventory/transfers', icon: <SwapOutlined /> },
+      { key: 'adjustments', label: t('adjustments'), path: '/inventory/adjustments', icon: <AuditOutlined /> },
+      { key: 'warehouses', label: t('warehouses'), path: '/inventory/warehouses', icon: <BankOutlined /> },
+    ],
+    [t],
+  );
 
   useEffect(() => {
     if (location.pathname === '/inventory' || location.pathname === '/inventory/') {
@@ -39,7 +44,7 @@ export function InventoryLayout() {
     }
   }, [location.pathname, navigate]);
 
-  const activeKey = tabs.find((t) => location.pathname.startsWith(t.path))?.key ?? 'opening';
+  const activeKey = tabs.find((tab) => location.pathname.startsWith(tab.path))?.key ?? 'opening';
 
   return (
     <div>
@@ -48,12 +53,12 @@ export function InventoryLayout() {
           <Tabs
             activeKey={activeKey}
             size="small"
-            items={tabs.map((t) => ({
-              key: t.key,
-              label: secondaryTabLabel(t.label, t.icon),
+            items={tabs.map((tab) => ({
+              key: tab.key,
+              label: secondaryTabLabel(tab.label, tab.icon),
             }))}
             onChange={(key) => {
-              const tab = tabs.find((t) => t.key === key);
+              const tab = tabs.find((item) => item.key === key);
               if (tab) navigate(tab.path);
             }}
           />

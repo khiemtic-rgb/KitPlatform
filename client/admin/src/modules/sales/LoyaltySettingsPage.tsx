@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   App,
   Button,
@@ -34,6 +35,7 @@ type LoyaltyForm = {
 };
 
 export function LoyaltySettingsPage() {
+  const { t } = useTranslation('sales', { keyPrefix: 'loyaltySettings' });
   const { message } = App.useApp();
   const canWrite = useHasPermission('sales.write');
   const [form] = Form.useForm<LoyaltyForm>();
@@ -58,12 +60,12 @@ export function LoyaltySettingsPage() {
           program: normalizeProgramForForm(settings.program ?? DEFAULT_LOYALTY_PROGRAM),
         });
       } catch (error) {
-        message.error(apiErrorMessage(error, 'Không tải được cài đặt tích điểm'));
+        message.error(apiErrorMessage(error, t('messages.loadFailed')));
       } finally {
         setLoading(false);
       }
     })();
-  }, [form, message]);
+  }, [form, message, t]);
 
   const onSave = async () => {
     const values = await form.validateFields();
@@ -89,24 +91,28 @@ export function LoyaltySettingsPage() {
         loyaltyEnabled: saved.loyaltyEnabled,
         program: normalizeProgramForForm(saved.program ?? DEFAULT_LOYALTY_PROGRAM),
       });
-      message.success('Đã lưu cài đặt tích điểm');
+      message.success(t('messages.saveSuccess'));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không lưu được cài đặt tích điểm'));
+      message.error(apiErrorMessage(error, t('messages.saveFailed')));
     } finally {
       setSaving(false);
     }
   };
 
+  const redeemExampleAmount = formatDisplayMoney(pointsPerAmount * 100);
+  const redeemExampleOrder = formatDisplayMoney(50_000);
+  const redeemExampleMax = formatDisplayMoney(2_500);
+
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Card title="Tích điểm khách hàng" loading={loading}>
+      <Card title={t('title')} loading={loading}>
         <Form form={form} layout="vertical" disabled={!canWrite} style={{ maxWidth: 720 }}>
-          <Form.Item name="loyaltyEnabled" label="Bật tích điểm" valuePropName="checked">
-            <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+          <Form.Item name="loyaltyEnabled" label={t('loyaltyEnabled')} valuePropName="checked">
+            <Switch checkedChildren={t('switchOn')} unCheckedChildren={t('switchOff')} />
           </Form.Item>
 
           <Typography.Title level={5} style={{ marginTop: 8 }}>
-            Chương trình
+            {t('programSection')}
           </Typography.Title>
 
           <Form.Item name={['program', 'id']} hidden>
@@ -119,16 +125,16 @@ export function LoyaltySettingsPage() {
           <Space wrap style={{ width: '100%' }}>
             <Form.Item
               name={['program', 'programCode']}
-              label="Mã chương trình"
-              rules={[{ required: true, message: 'Nhập mã' }]}
+              label={t('programCode')}
+              rules={[{ required: true, message: t('enterCode') }]}
               style={{ minWidth: 200 }}
             >
               <Input disabled={Boolean(programId)} />
             </Form.Item>
             <Form.Item
               name={['program', 'programName']}
-              label="Tên hiển thị"
-              rules={[{ required: true, message: 'Nhập tên' }]}
+              label={t('programName')}
+              rules={[{ required: true, message: t('enterName') }]}
               style={{ flex: 1, minWidth: 240 }}
             >
               <Input />
@@ -142,7 +148,7 @@ export function LoyaltySettingsPage() {
           <Space align="start" wrap style={{ width: '100%' }}>
             <Form.Item
               name={['program', 'pointsPerAmount']}
-              label="Số tiền mua để được"
+              label={t('pointsPerAmount')}
               rules={[{ required: true, type: 'number', min: 1 }]}
             >
               <InputNumber
@@ -152,19 +158,18 @@ export function LoyaltySettingsPage() {
               />
             </Form.Item>
             <Typography.Text style={{ marginTop: 30, fontSize: 18 }}>→</Typography.Text>
-            <Form.Item label="Điểm nhận được">
-              <Input value="1 điểm" disabled style={{ width: 120, textAlign: 'center' }} />
+            <Form.Item label={t('pointsEarned')}>
+              <Input value={t('onePoint')} disabled style={{ width: 120, textAlign: 'center' }} />
             </Form.Item>
           </Space>
 
           <Typography.Paragraph type="secondary" style={{ marginTop: -8 }}>
-            Ví dụ: {formatDisplayMoney(pointsPerAmount)} → 1 điểm — tích điểm và đổi điểm trên POS dùng cùng quy tắc
-            (mua {formatDisplayMoney(pointsPerAmount)} được +1 điểm; đổi 1 điểm giảm {formatDisplayMoney(pointsPerAmount)}).
+            {t('earnRuleHint', { amount: formatDisplayMoney(pointsPerAmount) })}
           </Typography.Paragraph>
 
           <Form.Item
             name={['program', 'maxRedeemPercent']}
-            label="Trừ tối đa trên một đơn bán (%)"
+            label={t('maxRedeemPercent')}
             rules={[{ required: true, type: 'number', min: 0, max: 100 }]}
           >
             <InputNumber
@@ -175,11 +180,15 @@ export function LoyaltySettingsPage() {
             />
           </Form.Item>
           <Typography.Paragraph type="secondary" style={{ marginTop: -8 }}>
-            Ví dụ: khách có 100 điểm (= {formatDisplayMoney(pointsPerAmount * 100)}) nhưng đơn 50.000 đ với giới hạn 5%
-            thì chỉ được giảm tối đa 2.500 đ bằng điểm, không trừ hết giá trị đơn.
+            {t('redeemExampleHint', {
+              pointsValue: redeemExampleAmount,
+              orderAmount: redeemExampleOrder,
+              percent: 5,
+              maxDiscount: redeemExampleMax,
+            })}
           </Typography.Paragraph>
 
-          <Typography.Title level={5}>Hạng thành viên</Typography.Title>
+          <Typography.Title level={5}>{t('tiersSection')}</Typography.Title>
 
           <Form.List name={['program', 'tiers']}>
             {(fields, { add, remove }) => (
@@ -191,7 +200,7 @@ export function LoyaltySettingsPage() {
                   dataSource={fields}
                   columns={[
                     {
-                      title: 'Mã',
+                      title: t('tierColumns.code'),
                       width: 110,
                       render: (_, field) => (
                         <>
@@ -200,28 +209,28 @@ export function LoyaltySettingsPage() {
                           </Form.Item>
                           <Form.Item
                             name={[field.name, 'tierCode']}
-                            rules={[{ required: true, message: 'Nhập mã' }]}
+                            rules={[{ required: true, message: t('enterCode') }]}
                             style={{ marginBottom: 0 }}
                           >
-                            <Input placeholder="BRONZE" />
+                            <Input placeholder={t('tierCodePlaceholder')} />
                           </Form.Item>
                         </>
                       ),
                     },
                     {
-                      title: 'Tên hạng',
+                      title: t('tierColumns.name'),
                       render: (_, field) => (
                         <Form.Item
                           name={[field.name, 'tierName']}
-                          rules={[{ required: true, message: 'Nhập tên' }]}
+                          rules={[{ required: true, message: t('enterName') }]}
                           style={{ marginBottom: 0 }}
                         >
-                          <Input placeholder="Đồng" />
+                          <Input placeholder={t('tierNamePlaceholder')} />
                         </Form.Item>
                       ),
                     },
                     {
-                      title: 'Từ (điểm)',
+                      title: t('tierColumns.minPoints'),
                       width: 110,
                       render: (_, field) => (
                         <Form.Item
@@ -237,7 +246,7 @@ export function LoyaltySettingsPage() {
                       ),
                     },
                     {
-                      title: 'Giảm %',
+                      title: t('tierColumns.discountPercent'),
                       width: 100,
                       render: (_, field) => (
                         <Form.Item
@@ -281,7 +290,7 @@ export function LoyaltySettingsPage() {
                   icon={<PlusOutlined />}
                   style={{ marginTop: 12 }}
                 >
-                  Thêm hạng
+                  {t('addTier')}
                 </Button>
               </>
             )}
@@ -289,7 +298,7 @@ export function LoyaltySettingsPage() {
 
           {canWrite ? (
             <Button type="primary" loading={saving} onClick={() => void onSave()} style={{ marginTop: 16 }}>
-              Lưu cài đặt tích điểm
+              {t('save')}
             </Button>
           ) : null}
         </Form>

@@ -1,0 +1,182 @@
+{
+  "enums": {
+    "customerStatus": {
+      "0": "Inactive",
+      "1": "Active"
+    },
+    "customerGender": {
+      "1": "Male",
+      "2": "Female"
+    },
+    "loyaltyTx": {
+      "1": "Earn",
+      "2": "Redeem",
+      "3": "Expired",
+      "4": "Adjustment"
+    }
+  },
+  "customerLayout": {
+    "tabs": {
+      "list": "List",
+      "loyalty": "Loyalty",
+      "vouchers": "Vouchers"
+    }
+  },
+  "listPage": {
+    "title": "Customers",
+    "addCustomer": "Add customer",
+    "importTitle": "Import customers (Excel/CSV)",
+    "searchPlaceholder": "Name, phone, customer code, email",
+    "columns": {
+      "customerCode": "Code",
+      "fullName": "Full name",
+      "phone": "Phone",
+      "email": "Email",
+      "status": "Status",
+      "createdAt": "Created"
+    },
+    "messages": {
+      "loadFailed": "Could not load customer list",
+      "loadCustomerFailed": "Could not load customer"
+    }
+  },
+  "detailPage": {
+    "loadingTip": "Loading profile…",
+    "backToList": "List",
+    "tabs": {
+      "profile": "Profile",
+      "consents": "Consents",
+      "loyalty": "Loyalty",
+      "orders": "Orders"
+    },
+    "appAccount": {
+      "verified": "App verified",
+      "unverified": "App not verified",
+      "none": "No app account",
+      "registered": "Yes · last login {{lastLogin}}",
+      "notRegistered": "Not registered"
+    },
+    "fields": {
+      "customerCode": "Customer code",
+      "fullName": "Full name",
+      "phone": "Phone",
+      "email": "Email",
+      "dateOfBirth": "Date of birth",
+      "gender": "Gender",
+      "allowCredit": "Credit allowed",
+      "creditLimit": "Credit limit",
+      "unlimitedCredit": "Unlimited",
+      "createdAt": "Created",
+      "appAccount": "App account"
+    },
+    "appActivity": {
+      "title": "App activity",
+      "draftOrders": "App draft orders",
+      "reservations": "Reservations",
+      "chat": "Chat"
+    },
+    "messages": {
+      "loadFailed": "Could not load customer profile"
+    }
+  },
+  "formDrawer": {
+    "titleEdit": "Edit customer",
+    "titleQuickCreate": "Quick add customer",
+    "titleCreate": "Add customer",
+    "fields": {
+      "customerCode": "Customer code",
+      "fullName": "Full name",
+      "phone": "Phone",
+      "email": "Email",
+      "dateOfBirth": "Date of birth",
+      "gender": "Gender",
+      "status": "Status",
+      "allowCredit": "Allow credit",
+      "creditLimit": "Credit limit"
+    },
+    "placeholders": {
+      "customerCode": "KH009",
+      "fullName": "John Doe",
+      "phone": "0909123456",
+      "email": "email@example.com",
+      "dateOfBirth": "dd/mm/yyyy",
+      "gender": "Select"
+    },
+    "hints": {
+      "customerCodeSuggest": "Suggested next code — leave blank for auto-generation on save",
+      "creditLimitEmpty": "Leave blank for unlimited"
+    },
+    "validation": {
+      "customerCodeRequired": "Enter customer code",
+      "fullNameRequired": "Enter full name",
+      "phoneRequired": "Enter phone number"
+    },
+    "messages": {
+      "updateSuccess": "Customer updated",
+      "createSuccess": "Customer added",
+      "saveFailed": "Could not save customer"
+    }
+  },
+  "importCard": {
+    "description": "Import Excel/CSV from Sapo or {{fileName}}. Duplicate codes or phones are skipped.",
+    "sampleFileName": "khach-hang-novixa.csv",
+    "chooseFile": "Choose customer file",
+    "importButton": "Import",
+    "importButtonWithCount": "Import ({{count}})",
+    "fileLabel": "File: {{fileName}}",
+    "batchProgress": "Importing batch {{current}}/{{total}}…",
+    "resultSummary": "Created: {{created}} · Skipped: {{skipped}} · Failed: {{failed}}",
+    "messages": {
+      "noValidRows": "No valid rows found. Customer code and name are required.",
+      "readSuccess": "Read {{count}} customers from «{{fileName}}»",
+      "readFailed": "Could not read file",
+      "importSuccess": "Import complete: {{created}} new, {{skipped}} skipped, {{failed}} failed",
+      "importFailed": "Customer import failed"
+    }
+  },
+  "loyaltyPanel": {
+    "empty": "Customer is not enrolled in a loyalty program",
+    "balance": "Balance: {{balance}} pts · Lifetime: {{lifetime}}",
+    "noTier": "No tier yet",
+    "tierDiscount": "{{tierName}} (−{{discount}}%)",
+    "nextTierProgress": "{{points}} pts to {{tierName}}",
+    "historyTitle": "Points history",
+    "columns": {
+      "createdAt": "Time",
+      "transactionType": "Type",
+      "points": "Points"
+    },
+    "messages": {
+      "loadSummaryFailed": "Could not load loyalty summary",
+      "loadHistoryFailed": "Could not load points history"
+    }
+  },
+  "consentPanel": {
+    "alertTitle": "Opt-in / opt-out by channel & purpose",
+    "alertDescription": "Each save writes a customer.consent.updated event to integration_outbox.",
+    "saveButton": "Save consents",
+    "columns": {
+      "channel": "Channel",
+      "purpose": "Purpose",
+      "granted": "Granted",
+      "updatedAt": "Updated"
+    },
+    "messages": {
+      "loadFailed": "Could not load customer consents",
+      "saveSuccess": "Consents saved",
+      "saveFailed": "Could not save consents"
+    }
+  },
+  "ordersPanel": {
+    "columns": {
+      "orderNumber": "Order #",
+      "orderDate": "Date",
+      "status": "Status",
+      "itemCount": "Lines",
+      "totalAmount": "Total"
+    },
+    "messages": {
+      "loadFailed": "Could not load orders"
+    }
+  }
+}

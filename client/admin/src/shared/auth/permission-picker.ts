@@ -1,5 +1,7 @@
+import { systemT } from '@/shared/i18n';
 import {
   comparePermissionModules,
+  normalizePermissionModuleKey,
   permissionLabel,
   permissionModuleLabel,
 } from '@/shared/auth/permission-labels';
@@ -7,56 +9,55 @@ import {
 export type PermissionUiItem = { code: string; label: string };
 
 export type PermissionUiGroup = {
+  moduleKey: string;
   moduleLabel: string;
   hint?: string;
   items: PermissionUiItem[];
   discountCodes?: string[];
 };
 
-const PERMISSION_UI_GROUPS: PermissionUiGroup[] = [
+const PERMISSION_UI_GROUP_DEFS: Array<{
+  moduleKey: string;
+  items: string[];
+  discountCodes?: string[];
+}> = [
   {
-    moduleLabel: 'Danh mục',
-    hint: 'Chọn «Sửa danh mục» sẽ tự bật «Xem danh mục». Bỏ «Xem» sẽ bỏ luôn «Sửa».',
-    items: [
-      { code: 'catalog.read', label: permissionLabel('catalog.read') },
-      { code: 'catalog.write', label: permissionLabel('catalog.write') },
-    ],
+    moduleKey: 'catalog',
+    items: ['catalog.read', 'catalog.write'],
   },
   {
-    moduleLabel: 'Kho hàng',
-    hint: 'Chọn «Sửa kho» sẽ tự bật «Xem kho». Bỏ «Xem» sẽ bỏ luôn «Sửa».',
-    items: [
-      { code: 'inventory.read', label: permissionLabel('inventory.read') },
-      { code: 'inventory.write', label: permissionLabel('inventory.write') },
-    ],
+    moduleKey: 'inventory',
+    items: ['inventory.read', 'inventory.write'],
   },
   {
-    moduleLabel: 'Mua hàng',
-    hint: 'Chọn «Mua hàng» sẽ tự bật «Xem mua hàng». Bỏ «Xem» sẽ bỏ luôn «Mua hàng».',
-    items: [
-      { code: 'procurement.read', label: permissionLabel('procurement.read') },
-      { code: 'procurement.write', label: permissionLabel('procurement.write') },
-    ],
+    moduleKey: 'procurement',
+    items: ['procurement.read', 'procurement.write'],
   },
   {
-    moduleLabel: 'Bán hàng',
-    hint: 'Có thể chọn nhiều quyền. «Bán hàng» đã bao gồm xem POS trên hệ thống.',
-    items: [
-      { code: 'sales.read', label: permissionLabel('sales.read') },
-      { code: 'sales.write', label: permissionLabel('sales.write') },
-    ],
+    moduleKey: 'sales',
+    items: ['sales.read', 'sales.write'],
     discountCodes: ['sales.discount', 'sales.discount.unlimited'],
   },
   {
-    moduleLabel: 'Hệ thống',
-    hint: 'Có thể chọn nhiều quyền độc lập.',
-    items: [
-      { code: 'system.read', label: permissionLabel('system.read') },
-      { code: 'system.write', label: permissionLabel('system.write') },
-      { code: 'system.delete_permanent', label: permissionLabel('system.delete_permanent') },
-    ],
+    moduleKey: 'system',
+    items: ['system.read', 'system.write', 'system.delete_permanent'],
   },
 ];
+
+function buildPermissionUiGroup(
+  moduleKey: string,
+  items: string[],
+  discountCodes?: string[],
+): PermissionUiGroup {
+  const t = systemT();
+  return {
+    moduleKey,
+    moduleLabel: permissionModuleLabel(moduleKey),
+    hint: t(`permissions.groupHints.${moduleKey}`, { defaultValue: '' }) || undefined,
+    items: items.map((code) => ({ code, label: permissionLabel(code) })),
+    discountCodes,
+  };
+}
 
 const WRITE_IMPLIES_READ_PREFIXES = new Set(['catalog', 'inventory', 'procurement']);
 const DISCOUNT_EXCLUSIVE = ['sales.discount', 'sales.discount.unlimited'] as const;
@@ -107,7 +108,7 @@ export function normalizePermissionCodesForSave(codes: string[]): string[] {
 }
 
 export function discountLevelLabel(level: DiscountLevel): string {
-  if (level === 'none') return 'Không chiết khấu';
+  if (level === 'none') return systemT()('permissions.discountLevels.none');
   return permissionLabel(level);
 }
 
@@ -120,29 +121,32 @@ export type PermissionLookupLike = {
 /** Gom quyền từ API theo module (fallback nếu có quyền mới chưa khai báo UI). */
 export function groupPermissionsForUi(permissions: PermissionLookupLike[]): PermissionUiGroup[] {
   const known = new Set(
-    PERMISSION_UI_GROUPS.flatMap((g) => [
-      ...g.items.map((i) => i.code),
-      ...(g.discountCodes ?? []),
-    ]),
+    PERMISSION_UI_GROUP_DEFS.flatMap((g) => [...g.items, ...(g.discountCodes ?? [])]),
   );
   const extras = new Map<string, PermissionUiItem[]>();
 
   for (const p of permissions) {
     if (known.has(p.permissionCode)) continue;
-    const moduleLabel = permissionModuleLabel(p.moduleName);
-    const list = extras.get(moduleLabel) ?? [];
+    const moduleKey = normalizePermissionModuleKey(p.moduleName);
+    const list = extras.get(moduleKey) ?? [];
     list.push({
       code: p.permissionCode,
       label: permissionLabel(p.permissionCode, p.permissionName),
     });
-    extras.set(moduleLabel, list);
+    extras.set(moduleKey, list);
   }
 
-  const groups: PermissionUiGroup[] = PERMISSION_UI_GROUPS.map((group) => ({ ...group }));
+  const groups: PermissionUiGroup[] = PERMISSION_UI_GROUP_DEFS.map((group) =>
+    buildPermissionUiGroup(group.moduleKey, group.items, group.discountCodes),
+  );
 
-  for (const [moduleLabel, items] of extras.entries()) {
-    groups.push({ moduleLabel, items });
+  for (const [moduleKey, items] of extras.entries()) {
+    groups.push({
+      moduleKey,
+      moduleLabel: permissionModuleLabel(moduleKey),
+      items,
+    });
   }
 
-  return groups.sort((a, b) => comparePermissionModules(a.moduleLabel, b.moduleLabel));
+  return groups.sort((a, b) => comparePermissionModules(a.moduleKey, b.moduleKey));
 }

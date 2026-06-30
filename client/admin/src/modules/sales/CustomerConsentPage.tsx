@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, Button, Card, Select, Space, Switch, Table, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { searchCustomers } from '@/shared/api/sales.api';
 import type { CustomerListItem } from '@/shared/api/sales.types';
 import {
-  CONSENT_CHANNEL_LABELS,
-  CONSENT_PURPOSE_LABELS,
   fetchCustomerConsents,
   upsertCustomerConsents,
   type CustomerConsent,
 } from '@/shared/api/customer.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 import { formatDisplayDate } from '@/shared/utils/date';
 
 const DEFAULT_MATRIX: { channel: number; purpose: number }[] = [
@@ -49,6 +49,8 @@ function mergeMatrix(consents: CustomerConsent[]): ConsentRow[] {
 }
 
 export function CustomerConsentPage() {
+  const { t } = useTranslation('sales', { keyPrefix: 'customerConsent' });
+  const { consentChannelLabel, consentPurposeLabel } = useSalesEnums();
   const canWrite = useHasPermission('sales.write');
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [customerId, setCustomerId] = useState<string>();
@@ -71,11 +73,11 @@ export function CustomerConsentPage() {
       const consents = await fetchCustomerConsents(id);
       setRows(mergeMatrix(consents));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được đồng ý khách hàng'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!customerId) {
@@ -87,18 +89,18 @@ export function CustomerConsentPage() {
 
   const columns: ColumnsType<ConsentRow> = [
     {
-      title: 'Kênh',
+      title: t('columns.channel'),
       dataIndex: 'channel',
       width: 100,
-      render: (v: number) => CONSENT_CHANNEL_LABELS[v] ?? v,
+      render: (v: number) => consentChannelLabel(v),
     },
     {
-      title: 'Mục đích',
+      title: t('columns.purpose'),
       dataIndex: 'purpose',
-      render: (v: number) => CONSENT_PURPOSE_LABELS[v] ?? v,
+      render: (v: number) => consentPurposeLabel(v),
     },
     {
-      title: 'Đồng ý',
+      title: t('columns.granted'),
       width: 100,
       render: (_, row) => (
         <Switch
@@ -113,7 +115,7 @@ export function CustomerConsentPage() {
       ),
     },
     {
-      title: 'Cập nhật',
+      title: t('columns.updated'),
       width: 160,
       render: (_, row) => {
         const stamp = row.granted ? row.grantedAt : row.revokedAt;
@@ -124,7 +126,7 @@ export function CustomerConsentPage() {
 
   const save = async () => {
     if (!customerId) {
-      message.warning('Chọn khách hàng');
+      message.warning(t('messages.selectCustomer'));
       return;
     }
     setSaving(true);
@@ -139,17 +141,13 @@ export function CustomerConsentPage() {
         })),
       );
       setRows(mergeMatrix(saved));
-      message.success('Đã lưu đồng ý — sự kiện CDP đã ghi outbox');
+      message.success(t('messages.saveSuccess'));
     } catch (error) {
-      const msg = apiErrorMessage(error, 'Không lưu được đồng ý');
+      const msg = apiErrorMessage(error, t('messages.saveFailed'));
       if (msg.includes('404')) {
-        message.error(
-          'API chưa có endpoint đồng ý KH — chạy .\\scripts\\restart-api.ps1 rồi thử lại.',
-        );
+        message.error(t('messages.apiNotFound'));
       } else if (msg.includes('500')) {
-        message.error(
-          `${msg} — có thể thiếu migration 016: chạy setup-and-migrate hoặc psql -f migrations/016_customer_consents_and_outbox.sql`,
-        );
+        message.error(t('messages.migrationMissing', { message: msg }));
       } else {
         message.error(msg);
       }
@@ -159,20 +157,20 @@ export function CustomerConsentPage() {
   };
 
   return (
-    <Card title="Đồng ý khách hàng (CDP)">
+    <Card title={t('title')}>
       <Alert
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
-        message="Opt-in / opt-out theo kênh & mục đích"
-        description="Mỗi lần lưu ghi sự kiện customer.consent.updated vào integration_outbox để worker CDP xử lý sau. Đồng ý Trong app / Hỗ trợ AI dược sĩ bật chat hai chiều với khách trong app."
+        message={t('alert.message')}
+        description={t('alert.description')}
       />
       <Space wrap style={{ marginBottom: 16 }}>
         <Select
           showSearch
           optionFilterProp="label"
           style={{ width: 360 }}
-          placeholder="Chọn khách hàng"
+          placeholder={t('selectCustomer')}
           value={customerId}
           onChange={setCustomerId}
           options={customers.map((c) => ({
@@ -181,7 +179,7 @@ export function CustomerConsentPage() {
           }))}
         />
         <Button type="primary" disabled={!canWrite || !customerId} loading={saving} onClick={() => void save()}>
-          Lưu đồng ý
+          {t('save')}
         </Button>
       </Space>
       {selectedCustomer && (

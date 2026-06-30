@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Card, Select, Space, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { ReloadOutlined, WarningOutlined } from '@ant-design/icons';
@@ -9,6 +10,9 @@ import { formatDisplayQuantity } from '@/shared/utils/money';
 import { LowStockSettingsPanel } from '@/modules/inventory/LowStockSettingsPanel';
 
 export function LowStockPage() {
+  const { t } = useTranslation('inventory', { keyPrefix: 'lowStock' });
+  const { t: ts } = useTranslation('inventory', { keyPrefix: 'shared' });
+  const { t: tc } = useTranslation('common');
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehouseId, setWarehouseId] = useState<string>();
   const [items, setItems] = useState<LowStockProduct[]>([]);
@@ -23,64 +27,64 @@ export function LowStockPage() {
     try {
       setItems(await fetchLowStockProducts({ warehouseId }));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được danh sách tồn thấp'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [warehouseId]);
+  }, [warehouseId, t]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
   const columns: ColumnsType<LowStockProduct> = [
-    { title: 'Mã SP', dataIndex: 'productCode', width: 110 },
-    { title: 'Tên SP', dataIndex: 'productName' },
+    { title: ts('productCode'), dataIndex: 'productCode', width: 110 },
+    { title: ts('productName'), dataIndex: 'productName' },
     ...(warehouseId
       ? []
       : [
           {
-            title: 'Kho',
+            title: ts('warehouse'),
             dataIndex: 'warehouseName',
             width: 140,
           } as const,
           {
-            title: 'Chi nhánh',
+            title: ts('branch'),
             dataIndex: 'branchName',
             width: 120,
             render: (v: string | undefined) => v ?? '—',
           } as const,
         ]),
-    { title: 'ĐVT', dataIndex: 'saleUnitName', width: 80 },
+    { title: ts('unit'), dataIndex: 'saleUnitName', width: 80 },
     {
-      title: 'Tồn hiện tại',
+      title: t('columns.currentStock'),
       dataIndex: 'totalQuantity',
       width: 110,
       render: (v: number) => formatDisplayQuantity(v),
     },
     {
-      title: 'Ngưỡng',
+      title: t('columns.threshold'),
       dataIndex: 'minStockQty',
       width: 90,
       render: (v: number) => formatDisplayQuantity(v),
     },
     {
-      title: 'Số lô',
+      title: ts('batchCount'),
       dataIndex: 'batchCount',
       width: 80,
       render: (v: number) => <Tag>{v}</Tag>,
     },
     {
-      title: 'Mức độ',
+      title: t('columns.level'),
       key: 'level',
       width: 100,
       render: (_, row) =>
         row.totalQuantity <= 0 ? (
-          <Tag color="red">Hết hàng</Tag>
+          <Tag color="red">{t('levels.outOfStock')}</Tag>
         ) : row.totalQuantity <= row.minStockQty / 2 ? (
-          <Tag color="orange">Rất thấp</Tag>
+          <Tag color="orange">{t('levels.veryLow')}</Tag>
         ) : (
-          <Tag color="gold">Thấp</Tag>
+          <Tag color="gold">{t('levels.low')}</Tag>
         ),
     },
   ];
@@ -90,10 +94,10 @@ export function LowStockPage() {
       <div>
         <Typography.Title level={4} style={{ marginBottom: 4 }}>
           <WarningOutlined style={{ color: '#faad14', marginRight: 8 }} />
-          Cảnh báo tồn thấp
+          {t('title')}
         </Typography.Title>
         <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          Ngưỡng: SP → kho → danh mục → cài đặt chung → mặc định 10. Khi xem tất cả kho, mỗi dòng là một cặp SP–kho.
+          {t('description')}
         </Typography.Paragraph>
       </div>
 
@@ -103,14 +107,14 @@ export function LowStockPage() {
         <Space wrap>
           <Select
             allowClear
-            placeholder="Tất cả kho"
+            placeholder={t('allWarehouses')}
             style={{ minWidth: 220 }}
             value={warehouseId}
             onChange={(v) => setWarehouseId(v)}
             options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
           />
           <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-            Tải lại
+            {tc('actions.reload')}
           </Button>
         </Space>
       </Card>
@@ -121,7 +125,7 @@ export function LowStockPage() {
         loading={loading}
         columns={columns}
         dataSource={items}
-        pagination={{ pageSize: 25, showTotal: (t) => `${t} dòng` }}
+        pagination={{ pageSize: 25, showTotal: (total) => t('paginationTotal', { count: total }) }}
       />
     </Space>
   );

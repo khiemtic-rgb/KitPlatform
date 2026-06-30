@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { EditOutlined } from '@ant-design/icons';
 import { Button, Form, Input, Select } from 'antd';
 import type { Warehouse } from '@/shared/api/inventory.types';
@@ -25,9 +26,12 @@ export function GoodsReceiptFormHeader({
   poLoading,
   onEditPo,
 }: GoodsReceiptFormHeaderProps) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'goodsReceipts' });
+  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
+  const { t: tVal } = useTranslation('procurement', { keyPrefix: 'shared.validation' });
   const poHint =
     purchaseOrderId && linkedPo && !poLoading
-      ? `Còn phải nhận ${linkedPo.poNumber} — lô/HSD/SL; xóa dòng nếu NCC không giao.`
+      ? t('linkPoHint', { poNumber: linkedPo.poNumber })
       : undefined;
 
   return (
@@ -42,16 +46,16 @@ export function GoodsReceiptFormHeader({
       >
         <Form.Item
           name="purchaseOrderId"
-          label="Liên kết PO"
+          label={t('linkPo')}
           style={{ marginBottom: 0 }}
-          tooltip="Chọn đơn đã duyệt, còn hàng chưa nhận"
+          tooltip={t('linkPoTooltip')}
           extra={poHint ? <span style={{ fontSize: 11 }}>{poHint}</span> : undefined}
         >
           <Select
             allowClear
             showSearch
             optionFilterProp="label"
-            placeholder="PO — NCC (số SP)"
+            placeholder={t('linkPoPlaceholder')}
             options={approvedPos.map((p) => ({
               value: p.id,
               label: `${p.poNumber} — ${p.supplierName} (${p.itemCount} SP)`,
@@ -64,7 +68,7 @@ export function GoodsReceiptFormHeader({
           disabled={!purchaseOrderId || !linkedPo || !canEditPurchaseOrder(linkedPo.status)}
           onClick={onEditPo}
         >
-          Điều chỉnh PO
+          {t('adjustPo')}
         </Button>
       </div>
       <div
@@ -78,8 +82,8 @@ export function GoodsReceiptFormHeader({
       >
         <Form.Item
           name="supplierId"
-          label="NCC"
-          rules={[{ required: true, message: 'Chọn NCC' }]}
+          label={tShared('columns.supplierShort')}
+          rules={[{ required: true, message: tVal('selectSupplier') }]}
           style={{ marginBottom: 0 }}
         >
           <Select
@@ -93,8 +97,8 @@ export function GoodsReceiptFormHeader({
         </Form.Item>
         <Form.Item
           name="warehouseId"
-          label="Kho nhận"
-          rules={[{ required: true, message: 'Chọn kho' }]}
+          label={tShared('columns.receiveWarehouse')}
+          rules={[{ required: true, message: tVal('selectWarehouse') }]}
           style={{ marginBottom: 0 }}
         >
           <Select
@@ -106,14 +110,14 @@ export function GoodsReceiptFormHeader({
         </Form.Item>
         <Form.Item
           name="receiptDate"
-          label="Ngày nhập"
-          rules={[{ required: true, message: 'Chọn ngày' }]}
+          label={tShared('columns.receiptDate')}
+          rules={[{ required: true, message: tVal('selectDate') }]}
           style={{ marginBottom: 0 }}
         >
-          <PharmaDatePicker placeholder="dd/mm/yyyy" style={{ width: '100%' }} />
+          <PharmaDatePicker placeholder={tShared('datePlaceholder')} style={{ width: '100%' }} />
         </Form.Item>
-        <Form.Item name="notes" label="Ghi chú" style={{ marginBottom: 0 }}>
-          <Input placeholder="Tùy chọn" allowClear />
+        <Form.Item name="notes" label={tShared('columns.notes')} style={{ marginBottom: 0 }}>
+          <Input placeholder={t('notesOptional')} allowClear />
         </Form.Item>
       </div>
     </div>

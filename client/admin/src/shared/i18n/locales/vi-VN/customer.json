@@ -1,0 +1,182 @@
+{
+  "enums": {
+    "customerStatus": {
+      "0": "Ngưng",
+      "1": "Hoạt động"
+    },
+    "customerGender": {
+      "1": "Nam",
+      "2": "Nữ"
+    },
+    "loyaltyTx": {
+      "1": "Tích điểm",
+      "2": "Đổi điểm",
+      "3": "Hết hạn",
+      "4": "Điều chỉnh"
+    }
+  },
+  "customerLayout": {
+    "tabs": {
+      "list": "Danh sách",
+      "loyalty": "Tích điểm",
+      "vouchers": "Voucher"
+    }
+  },
+  "listPage": {
+    "title": "Khách hàng",
+    "addCustomer": "Thêm KH",
+    "importTitle": "Import khách hàng (Excel/CSV)",
+    "searchPlaceholder": "Tên, SĐT, mã KH, email",
+    "columns": {
+      "customerCode": "Mã KH",
+      "fullName": "Họ tên",
+      "phone": "SĐT",
+      "email": "Email",
+      "status": "Trạng thái",
+      "createdAt": "Ngày tạo"
+    },
+    "messages": {
+      "loadFailed": "Không tải được danh sách khách hàng",
+      "loadCustomerFailed": "Không tải được khách hàng"
+    }
+  },
+  "detailPage": {
+    "loadingTip": "Đang tải hồ sơ...",
+    "backToList": "Danh sách",
+    "tabs": {
+      "profile": "Hồ sơ",
+      "consents": "Đồng ý",
+      "loyalty": "Tích điểm",
+      "orders": "Đơn hàng"
+    },
+    "appAccount": {
+      "verified": "App đã xác minh",
+      "unverified": "App chưa xác minh",
+      "none": "Chưa có tài khoản app",
+      "registered": "Có · đăng nhập {{lastLogin}}",
+      "notRegistered": "Chưa đăng ký"
+    },
+    "fields": {
+      "customerCode": "Mã khách",
+      "fullName": "Họ tên",
+      "phone": "SĐT",
+      "email": "Email",
+      "dateOfBirth": "Ngày sinh",
+      "gender": "Giới tính",
+      "allowCredit": "Ghi nợ",
+      "creditLimit": "Hạn mức nợ",
+      "unlimitedCredit": "Không giới hạn",
+      "createdAt": "Ngày tạo",
+      "appAccount": "Tài khoản app"
+    },
+    "appActivity": {
+      "title": "Hoạt động app",
+      "draftOrders": "Đơn tạm app",
+      "reservations": "Đặt trước",
+      "chat": "Chat"
+    },
+    "messages": {
+      "loadFailed": "Không tải được hồ sơ khách hàng"
+    }
+  },
+  "formDrawer": {
+    "titleEdit": "Sửa khách hàng",
+    "titleQuickCreate": "Thêm khách nhanh",
+    "titleCreate": "Thêm khách hàng",
+    "fields": {
+      "customerCode": "Mã KH",
+      "fullName": "Họ tên",
+      "phone": "Số điện thoại",
+      "email": "Email",
+      "dateOfBirth": "Ngày sinh",
+      "gender": "Giới tính",
+      "status": "Trạng thái",
+      "allowCredit": "Cho phép ghi nợ",
+      "creditLimit": "Hạn mức nợ"
+    },
+    "placeholders": {
+      "customerCode": "KH009",
+      "fullName": "Nguyễn Văn A",
+      "phone": "0909123456",
+      "email": "email@example.com",
+      "dateOfBirth": "dd/mm/yyyy",
+      "gender": "Chọn"
+    },
+    "hints": {
+      "customerCodeSuggest": "Gợi ý mã tiếp theo — xóa trắng để hệ thống tự sinh khi lưu",
+      "creditLimitEmpty": "Để trống = không giới hạn"
+    },
+    "validation": {
+      "customerCodeRequired": "Nhập mã khách hàng",
+      "fullNameRequired": "Nhập họ tên",
+      "phoneRequired": "Nhập SĐT"
+    },
+    "messages": {
+      "updateSuccess": "Đã cập nhật khách hàng",
+      "createSuccess": "Đã thêm khách hàng",
+      "saveFailed": "Không lưu được khách hàng"
+    }
+  },
+  "importCard": {
+    "description": "Import Excel/CSV từ Sapo hoặc file {{fileName}}. Mã hoặc SĐT trùng sẽ bỏ qua.",
+    "sampleFileName": "khach-hang-novixa.csv",
+    "chooseFile": "Chọn file KH",
+    "importButton": "Import",
+    "importButtonWithCount": "Import ({{count}})",
+    "fileLabel": "File: {{fileName}}",
+    "batchProgress": "Đang import lô {{current}}/{{total}}…",
+    "resultSummary": "Tạo mới: {{created}} · Bỏ qua: {{skipped}} · Lỗi: {{failed}}",
+    "messages": {
+      "noValidRows": "Không tìm thấy dòng hợp lệ. Cần mã + tên khách hàng.",
+      "readSuccess": "Đã đọc {{count}} khách từ «{{fileName}}»",
+      "readFailed": "Không đọc được file",
+      "importSuccess": "Import KH xong: {{created}} mới, {{skipped}} bỏ qua, {{failed}} lỗi",
+      "importFailed": "Import khách hàng thất bại"
+    }
+  },
+  "loyaltyPanel": {
+    "empty": "Khách chưa tham gia chương trình tích điểm",
+    "balance": "Số dư: {{balance}} điểm · Tích lũy: {{lifetime}}",
+    "noTier": "Chưa có hạng",
+    "tierDiscount": "{{tierName}} (−{{discount}}%)",
+    "nextTierProgress": "Còn {{points}} điểm đến {{tierName}}",
+    "historyTitle": "Lịch sử điểm",
+    "columns": {
+      "createdAt": "Thời gian",
+      "transactionType": "Loại",
+      "points": "Điểm"
+    },
+    "messages": {
+      "loadSummaryFailed": "Không tải được tích điểm",
+      "loadHistoryFailed": "Không tải được lịch sử điểm"
+    }
+  },
+  "consentPanel": {
+    "alertTitle": "Opt-in / opt-out theo kênh & mục đích",
+    "alertDescription": "Mỗi lần lưu ghi sự kiện customer.consent.updated vào integration_outbox.",
+    "saveButton": "Lưu đồng ý",
+    "columns": {
+      "channel": "Kênh",
+      "purpose": "Mục đích",
+      "granted": "Đồng ý",
+      "updatedAt": "Cập nhật"
+    },
+    "messages": {
+      "loadFailed": "Không tải được đồng ý khách hàng",
+      "saveSuccess": "Đã lưu đồng ý",
+      "saveFailed": "Không lưu được đồng ý"
+    }
+  },
+  "ordersPanel": {
+    "columns": {
+      "orderNumber": "Số đơn",
+      "orderDate": "Ngày",
+      "status": "Trạng thái",
+      "itemCount": "SL dòng",
+      "totalAmount": "Tổng tiền"
+    },
+    "messages": {
+      "loadFailed": "Không tải được đơn hàng"
+    }
+  }
+}

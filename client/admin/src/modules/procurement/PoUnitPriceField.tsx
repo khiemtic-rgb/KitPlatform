@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { InputNumber } from 'antd';
 import type { FormInstance } from 'antd';
 import { fetchLastPurchasePriceHint } from '@/shared/api/procurement.api';
@@ -25,6 +26,8 @@ export function PoUnitPriceField({
   disabled,
   valueFieldName = 'unitPrice',
 }: PoUnitPriceFieldProps) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'shared' });
+
   useEffect(() => {
     if (disabled || !supplierId || !productId) return;
 
@@ -47,7 +50,7 @@ export function PoUnitPriceField({
   return (
     <InputNumber
       {...moneyInputNumberPropsAllowZeroSuffix}
-      placeholder="0 đ"
+      placeholder={t('moneyPlaceholder')}
       style={moneyInputNumberStyle}
       value={value}
       onChange={onChange}

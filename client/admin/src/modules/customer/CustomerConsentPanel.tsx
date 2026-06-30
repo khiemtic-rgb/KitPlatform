@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, Button, Space, Switch, Table, message } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import {
-  CONSENT_CHANNEL_LABELS,
-  CONSENT_PURPOSE_LABELS,
   fetchCustomerConsents,
   upsertCustomerConsents,
   type CustomerConsent,
 } from '@/shared/api/customer.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 import { formatDisplayDate } from '@/shared/utils/date';
 
 const DEFAULT_MATRIX: { channel: number; purpose: number }[] = [
@@ -52,6 +52,8 @@ interface CustomerConsentPanelProps {
 }
 
 export function CustomerConsentPanel({ customerId }: CustomerConsentPanelProps) {
+  const { t } = useTranslation('customer', { keyPrefix: 'consentPanel' });
+  const { consentChannelLabel, consentPurposeLabel } = useSalesEnums();
   const canWrite = useHasPermission('sales.write');
   const [rows, setRows] = useState<ConsentRow[]>(mergeMatrix([]));
   const [loading, setLoading] = useState(false);
@@ -63,50 +65,53 @@ export function CustomerConsentPanel({ customerId }: CustomerConsentPanelProps) 
       const consents = await fetchCustomerConsents(customerId);
       setRows(mergeMatrix(consents));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được đồng ý khách hàng'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [customerId]);
+  }, [customerId, t]);
 
   useEffect(() => {
     void loadConsents();
   }, [loadConsents]);
 
-  const columns: ColumnsType<ConsentRow> = [
-    {
-      title: 'Kênh',
-      dataIndex: 'channel',
-      width: 100,
-      render: (v: number) => CONSENT_CHANNEL_LABELS[v] ?? v,
-    },
-    {
-      title: 'Mục đích',
-      dataIndex: 'purpose',
-      render: (v: number) => CONSENT_PURPOSE_LABELS[v] ?? v,
-    },
-    {
-      title: 'Đồng ý',
-      width: 100,
-      render: (_, row) => (
-        <Switch
-          checked={row.granted}
-          disabled={!canWrite}
-          onChange={(granted) =>
-            setRows((prev) => prev.map((r) => (r.key === row.key ? { ...r, granted } : r)))
-          }
-        />
-      ),
-    },
-    {
-      title: 'Cập nhật',
-      width: 160,
-      render: (_, row) => {
-        const stamp = row.granted ? row.grantedAt : row.revokedAt;
-        return stamp ? formatDisplayDate(stamp) : '—';
+  const columns: ColumnsType<ConsentRow> = useMemo(
+    () => [
+      {
+        title: t('columns.channel'),
+        dataIndex: 'channel',
+        width: 100,
+        render: (v: number) => consentChannelLabel(v),
       },
-    },
-  ];
+      {
+        title: t('columns.purpose'),
+        dataIndex: 'purpose',
+        render: (v: number) => consentPurposeLabel(v),
+      },
+      {
+        title: t('columns.granted'),
+        width: 100,
+        render: (_, row) => (
+          <Switch
+            checked={row.granted}
+            disabled={!canWrite}
+            onChange={(granted) =>
+              setRows((prev) => prev.map((r) => (r.key === row.key ? { ...r, granted } : r)))
+            }
+          />
+        ),
+      },
+      {
+        title: t('columns.updatedAt'),
+        width: 160,
+        render: (_, row) => {
+          const stamp = row.granted ? row.grantedAt : row.revokedAt;
+          return stamp ? formatDisplayDate(stamp) : '—';
+        },
+      },
+    ],
+    [canWrite, consentChannelLabel, consentPurposeLabel, t],
+  );
 
   const save = async () => {
     setSaving(true);
@@ -121,9 +126,9 @@ export function CustomerConsentPanel({ customerId }: CustomerConsentPanelProps) 
         })),
       );
       setRows(mergeMatrix(saved));
-      message.success('Đã lưu đồng ý');
+      message.success(t('messages.saveSuccess'));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không lưu được đồng ý'));
+      message.error(apiErrorMessage(error, t('messages.saveFailed')));
     } finally {
       setSaving(false);
     }
@@ -134,12 +139,12 @@ export function CustomerConsentPanel({ customerId }: CustomerConsentPanelProps) 
       <Alert
         type="info"
         showIcon
-        message="Opt-in / opt-out theo kênh & mục đích"
-        description="Mỗi lần lưu ghi sự kiện customer.consent.updated vào integration_outbox."
+        message={t('alertTitle')}
+        description={t('alertDescription')}
       />
       {canWrite ? (
         <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={() => void save()}>
-          Lưu đồng ý
+          {t('saveButton')}
         </Button>
       ) : null}
       <Table rowKey="key" size="small" loading={loading} pagination={false} columns={columns} dataSource={rows} />

@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { GoodsReceiptDetail, GoodsReceiptItem } from '@/shared/api/procurement.types';
-import { GRN_STATUS_LABELS, GRN_STATUS_TAG } from '@/shared/api/procurement.types';
+import { GRN_STATUS_TAG } from '@/shared/api/procurement.types';
 import {
   computeGrnPricing,
   formatGrnDiscountDisplay,
@@ -13,6 +14,8 @@ import {
   type ProcurementDiscountType,
 } from '@/modules/procurement/grn-pricing';
 import { GrnTaxSummaryContent } from '@/modules/procurement/GrnPoTaxSummary';
+import { procurementT } from '@/shared/i18n';
+import { useProcurementEnums } from '@/shared/i18n/use-procurement-enums';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
 import { procurementQuantityColumn } from '@/modules/procurement/procurement-quantity-cell';
@@ -80,11 +83,13 @@ function metaCell(label: string, value: ReactNode, note = false) {
 }
 
 export function buildGrnDetailLineColumns(detail: GoodsReceiptDetail): ColumnsType<GoodsReceiptItem> {
+  const t = procurementT();
+  const emDash = t('shared.emDash');
   const inventoryCostVisible = showInventoryUnitCost(detail);
 
   const columns: ColumnsType<GoodsReceiptItem> = [
     {
-      title: 'Sản phẩm',
+      title: t('shared.columns.product'),
       ellipsis: true,
       render: (_, row) => (
         <div
@@ -96,18 +101,30 @@ export function buildGrnDetailLineColumns(detail: GoodsReceiptDetail): ColumnsTy
         </div>
       ),
     },
-    { title: 'ĐVT', dataIndex: 'unitName', width: 48, className: 'grn-col-nowrap', render: (v: string) => v ?? '—' },
-    { title: 'Lô', dataIndex: 'batchNumber', width: 52, className: 'grn-col-nowrap', ellipsis: true },
     {
-      title: 'Hạn dùng',
+      title: t('shared.columns.unit'),
+      dataIndex: 'unitName',
+      width: 48,
+      className: 'grn-col-nowrap',
+      render: (v: string) => v ?? emDash,
+    },
+    {
+      title: t('shared.columns.batchShort'),
+      dataIndex: 'batchNumber',
+      width: 52,
+      className: 'grn-col-nowrap',
+      ellipsis: true,
+    },
+    {
+      title: t('shared.columns.expiryFull'),
       dataIndex: 'expiryDate',
       width: 86,
       className: 'grn-col-nowrap',
       render: (v: string) => formatDisplayDate(v),
     },
-    procurementQuantityColumn('SL', 'quantity', 50),
+    procurementQuantityColumn(t('shared.columns.qty'), 'quantity', 50),
     {
-      title: 'CK',
+      title: t('shared.columns.discount'),
       width: DETAIL_CK_COL_WIDTH,
       align: 'right',
       render: (_, row) => {
@@ -117,21 +134,21 @@ export function buildGrnDetailLineColumns(detail: GoodsReceiptDetail): ColumnsTy
           row.discountAmount,
         );
         return (
-          <span className="grn-discount-cell" title={text === '—' ? undefined : text}>
+          <span className="grn-discount-cell" title={text === emDash ? undefined : text}>
             {text}
           </span>
         );
       },
     },
     {
-      title: 'Giá nhập',
+      title: t('shared.columns.importPrice'),
       dataIndex: 'unitCost',
       width: DETAIL_MONEY_COL_WIDTH,
       align: 'right',
       render: (v: number) => <span style={moneyCellStyle}>{formatDisplayMoney(v)}</span>,
     },
     {
-      title: 'Thành tiền',
+      title: t('shared.columns.lineTotal'),
       width: DETAIL_MONEY_COL_WIDTH,
       align: 'right',
       render: (_, row) => (
@@ -142,13 +159,13 @@ export function buildGrnDetailLineColumns(detail: GoodsReceiptDetail): ColumnsTy
 
   if (inventoryCostVisible) {
     columns.push({
-      title: 'GV/lô',
+      title: t('shared.columns.inventoryUnitCost'),
       dataIndex: 'inventoryUnitCost',
       width: DETAIL_MONEY_COL_WIDTH,
       align: 'right',
       render: (v: number | undefined) => (
-        <span style={moneyCellStyle} title="Giá vốn lô sau CK + thuế">
-          {v != null && v > 0 ? formatDisplayMoney(v) : '—'}
+        <span style={moneyCellStyle} title={t('shared.columns.inventoryUnitCostTooltip')}>
+          {v != null && v > 0 ? formatDisplayMoney(v) : emDash}
         </span>
       ),
     });
@@ -158,35 +175,39 @@ export function buildGrnDetailLineColumns(detail: GoodsReceiptDetail): ColumnsTy
 }
 
 export function GrnDetailHeader({ detail }: { detail: GoodsReceiptDetail }) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'goodsReceipts.detailMeta' });
+  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
+  const { grnStatusLabel } = useProcurementEnums();
   const note = detail.notes?.trim();
 
   return (
     <div className="grn-detail-meta">
-      {metaCell('NCC', detail.supplierName)}
-      {metaCell('Kho', detail.warehouseName)}
-      {metaCell('PO', detail.poNumber ?? '—')}
+      {metaCell(tShared('columns.supplierShort'), detail.supplierName)}
+      {metaCell(tShared('columns.warehouse'), detail.warehouseName)}
+      {metaCell(tShared('columns.poNumber'), detail.poNumber ?? tShared('emDash'))}
       {metaCell(
-        'TT',
+        t('statusShort'),
         <Tag color={GRN_STATUS_TAG[detail.status] ?? 'default'} style={{ marginInlineEnd: 0 }}>
-          {GRN_STATUS_LABELS[detail.status]}
+          {grnStatusLabel(detail.status)}
         </Tag>,
       )}
-      {metaCell('Ngày', formatDisplayDate(detail.receiptDate))}
-      {metaCell('Thuế', formatGrnVatLabel(detail))}
+      {metaCell(t('date'), formatDisplayDate(detail.receiptDate))}
+      {metaCell(t('tax'), formatGrnVatLabel(detail))}
       {metaCell(
-        'CK đơn',
+        t('orderDiscount'),
         formatGrnDiscountDisplay(
           detail.orderDiscountType as ProcurementDiscountType | undefined,
           detail.orderDiscountValue,
           detail.orderDiscountAmount,
         ),
       )}
-      {metaCell('Ghi chú', note || '—', true)}
+      {metaCell(tShared('columns.notes'), note || tShared('emDash'), true)}
     </div>
   );
 }
 
 export function GrnDetailPricingSummary({ detail }: { detail: GoodsReceiptDetail }) {
+  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
   const pricing = resolveGrnPricing(detail);
 
   return (
@@ -194,16 +215,20 @@ export function GrnDetailPricingSummary({ detail }: { detail: GoodsReceiptDetail
       <div style={{ minWidth: 252 }}>
         {pricing.lineDiscountTotal > 0 || pricing.orderDiscountAmount > 0 ? (
           <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', textAlign: 'right' }}>
-            {pricing.lineDiscountTotal > 0 ? `CK dòng: −${formatDisplayMoney(pricing.lineDiscountTotal)}` : ''}
+            {pricing.lineDiscountTotal > 0
+              ? tShared('discount.lineDiscountSummary', { amount: formatDisplayMoney(pricing.lineDiscountTotal) })
+              : ''}
             {pricing.lineDiscountTotal > 0 && pricing.orderDiscountAmount > 0 ? ' · ' : ''}
-            {pricing.orderDiscountAmount > 0 ? `CK đơn: −${formatDisplayMoney(pricing.orderDiscountAmount)}` : ''}
+            {pricing.orderDiscountAmount > 0
+              ? tShared('discount.orderDiscountSummary', { amount: formatDisplayMoney(pricing.orderDiscountAmount) })
+              : ''}
           </Typography.Text>
         ) : null}
         <GrnTaxSummaryContent
           subtotal={pricing.merchandiseNet}
           taxAmount={pricing.taxAmount}
           totalAmount={pricing.totalAmount}
-          subtotalLabel="Tiền hàng (sau CK dòng)"
+          subtotalLabel={tShared('tax.subtotalAfterLineDiscount')}
           moneyColumnWidth={DETAIL_MONEY_COL_WIDTH}
         />
       </div>
@@ -224,6 +249,7 @@ export function GrnDetailLinesPanel({
   compact = false,
   fill = false,
 }: GrnDetailLinesPanelProps) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'shared.lines' });
   const panelClass = [
     'grn-lines-detail-panel',
     compact ? 'grn-lines-detail-panel--compact' : '',
@@ -234,7 +260,7 @@ export function GrnDetailLinesPanel({
 
   return (
     <div className={panelClass}>
-      {showTitle ? <p className="grn-lines-detail-panel__title">Chi tiết hàng nhập</p> : null}
+      {showTitle ? <p className="grn-lines-detail-panel__title">{t('receiptLinesTitle')}</p> : null}
       <Table
         rowKey="id"
         size="small"

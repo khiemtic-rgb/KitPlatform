@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import type { CartLine } from '@/shared/api/sales.types';
 import { SALES_DISCOUNT_TYPES, type SalesDiscountType } from '@/shared/api/sales.types';
 
@@ -61,6 +62,7 @@ export function validateCartDiscountPolicy(
   orderDiscount: OrderDiscountState,
   maxPercent: number,
   unlimited: boolean,
+  t?: TFunction<'sales'>,
 ): string | null {
   if (unlimited) return null;
 
@@ -68,7 +70,9 @@ export function validateCartDiscountPolicy(
     const gross = lineGross(line);
     const amount = computeDiscountAmount(gross, line.discountType, line.discountValue);
     if (amount > 0 && discountPercent(amount, gross) > maxPercent + 0.01) {
-      return `Chiết khấu dòng vượt quá ${maxPercent}%`;
+      return t
+        ? t('pos.messages.lineDiscountOverMax', { max: maxPercent })
+        : `Chiết khấu dòng vượt quá ${maxPercent}%`;
     }
   }
 
@@ -77,7 +81,9 @@ export function validateCartDiscountPolicy(
     priced.orderDiscountAmount > 0 &&
     discountPercent(priced.orderDiscountAmount, priced.merchandiseNet) > maxPercent + 0.01
   ) {
-    return `Chiết khấu đơn vượt quá ${maxPercent}%`;
+    return t
+      ? t('pos.messages.orderDiscountOverMax', { max: maxPercent })
+      : `Chiết khấu đơn vượt quá ${maxPercent}%`;
   }
 
   return null;

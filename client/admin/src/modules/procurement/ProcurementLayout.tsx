@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Tabs } from 'antd';
 import {
@@ -17,46 +18,51 @@ import {
 import type { ProductNavTab } from '@/shared/product/product-phases';
 import { useProductNavGuard } from '@/shared/product/useProductNavGuard';
 
-const allTabs: ProductNavTab[] = [
-  { key: 'suppliers', label: 'Nhà cung cấp', path: '/procurement/suppliers', icon: <TeamOutlined /> },
-  {
-    key: 'orders',
-    label: 'Đơn đặt hàng',
-    path: '/procurement/purchase-orders',
-    icon: <FileTextOutlined />,
-  },
-  {
-    key: 'receipts',
-    label: 'Phiếu nhập',
-    path: '/procurement/goods-receipts',
-    icon: <ContainerOutlined />,
-  },
-  {
-    key: 'vat-settings',
-    label: 'Thuế GTGT',
-    path: '/procurement/vat-treatments',
-    icon: <PercentageOutlined />,
-    feature: 'procurement.vatAdmin',
-  },
-  {
-    key: 'payables',
-    label: 'Công nợ NCC',
-    path: '/procurement/supplier-payables',
-    icon: <AccountBookOutlined />,
-    feature: 'procurement.payables',
-  },
-  {
-    key: 'payments',
-    label: 'Thanh toán NCC',
-    path: '/procurement/supplier-payments',
-    icon: <CreditCardOutlined />,
-    feature: 'procurement.payments',
-  },
-];
-
 export function ProcurementLayout() {
+  const { t } = useTranslation('procurement', { keyPrefix: 'procurementLayout.tabs' });
   const location = useLocation();
   const navigate = useNavigate();
+
+  const allTabs: ProductNavTab[] = useMemo(
+    () => [
+      { key: 'suppliers', label: t('suppliers'), path: '/procurement/suppliers', icon: <TeamOutlined /> },
+      {
+        key: 'orders',
+        label: t('orders'),
+        path: '/procurement/purchase-orders',
+        icon: <FileTextOutlined />,
+      },
+      {
+        key: 'receipts',
+        label: t('receipts'),
+        path: '/procurement/goods-receipts',
+        icon: <ContainerOutlined />,
+      },
+      {
+        key: 'vat-settings',
+        label: t('vatSettings'),
+        path: '/procurement/vat-treatments',
+        icon: <PercentageOutlined />,
+        feature: 'procurement.vatAdmin',
+      },
+      {
+        key: 'payables',
+        label: t('payables'),
+        path: '/procurement/supplier-payables',
+        icon: <AccountBookOutlined />,
+        feature: 'procurement.payables',
+      },
+      {
+        key: 'payments',
+        label: t('payments'),
+        path: '/procurement/supplier-payments',
+        icon: <CreditCardOutlined />,
+        feature: 'procurement.payments',
+      },
+    ],
+    [t],
+  );
+
   const tabs = useProductNavGuard(allTabs, '/procurement/suppliers');
 
   useEffect(() => {
@@ -65,7 +71,7 @@ export function ProcurementLayout() {
     }
   }, [location.pathname, navigate]);
 
-  const activeKey = tabs.find((t) => location.pathname.startsWith(t.path))?.key ?? 'suppliers';
+  const activeKey = tabs.find((tab) => location.pathname.startsWith(tab.path))?.key ?? 'suppliers';
 
   return (
     <div>
@@ -74,12 +80,12 @@ export function ProcurementLayout() {
           <Tabs
             activeKey={activeKey}
             size="small"
-            items={tabs.map((t) => ({
-              key: t.key,
-              label: secondaryTabLabel(t.label, t.icon),
+            items={tabs.map((tab) => ({
+              key: tab.key,
+              label: secondaryTabLabel(tab.label, tab.icon),
             }))}
             onChange={(key) => {
-              const tab = tabs.find((t) => t.key === key);
+              const tab = tabs.find((item) => item.key === key);
               if (tab) navigate(tab.path);
             }}
           />

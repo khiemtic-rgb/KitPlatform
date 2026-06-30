@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
@@ -24,9 +25,13 @@ import {
 } from '@/shared/api/inventory.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import type { Warehouse } from '@/shared/api/inventory.types';
-import { STATUS_LABELS, WAREHOUSE_TYPE_LABELS } from '@/shared/api/inventory.types';
+import { useInventoryEnums } from '@/shared/i18n/use-inventory-enums';
 
 export function WarehouseListPage() {
+  const { t } = useTranslation('inventory', { keyPrefix: 'warehouseList' });
+  const { t: ts } = useTranslation('inventory', { keyPrefix: 'shared' });
+  const { t: tc } = useTranslation('common');
+  const { warehouseTypeLabel, warehouseTypeOptions, statusLabel, statusOptions } = useInventoryEnums();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<Warehouse[]>([]);
   const [branches, setBranches] = useState<{ id: string; branchName: string }[]>([]);
@@ -42,11 +47,11 @@ export function WarehouseListPage() {
       setItems(warehouses);
       setBranches(branchList);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được danh sách kho'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -85,7 +90,7 @@ export function WarehouseListPage() {
           address: values.address,
           status: values.status ?? 1,
         });
-        message.success('Đã cập nhật kho');
+        message.success(t('messages.updateSuccess'));
       } else {
         await createWarehouse({
           branchId: values.branchId,
@@ -95,13 +100,13 @@ export function WarehouseListPage() {
           isDefault: values.isDefault ?? false,
           address: values.address,
         });
-        message.success('Đã tạo kho');
+        message.success(t('messages.createSuccess'));
       }
       setDrawerOpen(false);
       load();
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, 'Không lưu được kho'));
+        message.error(apiErrorMessage(error, t('messages.saveFailed')));
       }
     } finally {
       setSaving(false);
@@ -109,27 +114,27 @@ export function WarehouseListPage() {
   };
 
   const columns: ColumnsType<Warehouse> = [
-    { title: 'Mã kho', dataIndex: 'warehouseCode', width: 120 },
-    { title: 'Tên kho', dataIndex: 'warehouseName' },
-    { title: 'Chi nhánh', dataIndex: 'branchName', width: 160 },
+    { title: t('columns.warehouseCode'), dataIndex: 'warehouseCode', width: 120 },
+    { title: t('columns.warehouseName'), dataIndex: 'warehouseName' },
+    { title: t('columns.branch'), dataIndex: 'branchName', width: 160 },
     {
-      title: 'Loại',
+      title: t('columns.type'),
       dataIndex: 'warehouseType',
       width: 130,
-      render: (v: number) => WAREHOUSE_TYPE_LABELS[v] ?? v,
+      render: (v: number) => warehouseTypeLabel(v),
     },
     {
-      title: 'Mặc định',
+      title: t('columns.isDefault'),
       dataIndex: 'isDefault',
       width: 90,
-      render: (v: boolean) => (v ? <Tag color="blue">Có</Tag> : '—'),
+      render: (v: boolean) => (v ? <Tag color="blue">{tc('actions.yes')}</Tag> : '—'),
     },
     {
-      title: 'Trạng thái',
+      title: t('columns.status'),
       dataIndex: 'status',
       width: 100,
       render: (v: number) => (
-        <Tag color={v === 1 ? 'green' : 'default'}>{STATUS_LABELS[v] ?? v}</Tag>
+        <Tag color={v === 1 ? 'green' : 'default'}>{statusLabel(v)}</Tag>
       ),
     },
     {
@@ -139,22 +144,22 @@ export function WarehouseListPage() {
       render: (_, row) => (
         <Space>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)}>
-            Sửa
+            {tc('actions.edit')}
           </Button>
           <Popconfirm
-            title="Xóa kho này?"
+            title={t('deleteConfirm')}
             onConfirm={async () => {
               try {
                 await deleteWarehouse(row.id);
-                message.success('Đã xóa');
+                message.success(tc('messages.deleted'));
                 load();
               } catch (error) {
-                message.error(apiErrorMessage(error, 'Không xóa được kho'));
+                message.error(apiErrorMessage(error, t('messages.deleteFailed')));
               }
             }}
           >
             <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              Xóa
+              {tc('actions.delete')}
             </Button>
           </Popconfirm>
         </Space>
@@ -164,14 +169,14 @@ export function WarehouseListPage() {
 
   return (
     <Card
-      title="Danh sách kho"
+      title={t('title')}
       extra={
         <Space>
           <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
-            Tải lại
+            {tc('actions.reload')}
           </Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            Thêm kho
+            {t('addWarehouse')}
           </Button>
         </Space>
       }
@@ -179,15 +184,15 @@ export function WarehouseListPage() {
       <Table rowKey="id" loading={loading} columns={columns} dataSource={items} pagination={false} />
 
       <Drawer
-        title={editing ? 'Sửa kho' : 'Thêm kho'}
+        title={editing ? t('editWarehouse') : t('addWarehouse')}
         width={480}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
+            <Button onClick={() => setDrawerOpen(false)}>{tc('actions.cancel')}</Button>
             <Button type="primary" loading={saving} onClick={handleSave}>
-              Lưu
+              {tc('actions.save')}
             </Button>
           </Space>
         }
@@ -195,47 +200,37 @@ export function WarehouseListPage() {
         <Form form={form} layout="vertical">
           {!editing && (
             <>
-              <Form.Item name="branchId" label="Chi nhánh" rules={[{ required: true }]}>
+              <Form.Item name="branchId" label={t('columns.branch')} rules={[{ required: true }]}>
                 <Select
                   options={branches.map((b) => ({ value: b.id, label: b.branchName }))}
-                  placeholder="Chọn chi nhánh"
+                  placeholder={ts('selectBranch')}
                 />
               </Form.Item>
-              <Form.Item name="warehouseCode" label="Mã kho" rules={[{ required: true }]}>
-                <Input placeholder="VD: WH_CH01" />
+              <Form.Item name="warehouseCode" label={t('columns.warehouseCode')} rules={[{ required: true }]}>
+                <Input placeholder={ts('warehouseCodePlaceholder')} />
               </Form.Item>
             </>
           )}
-          <Form.Item name="warehouseName" label="Tên kho" rules={[{ required: true }]}>
+          <Form.Item name="warehouseName" label={t('columns.warehouseName')} rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="warehouseType" label="Loại kho" rules={[{ required: true }]}>
-            <Select
-              options={Object.entries(WAREHOUSE_TYPE_LABELS).map(([value, label]) => ({
-                value: Number(value),
-                label,
-              }))}
-            />
+          <Form.Item name="warehouseType" label={t('columns.type')} rules={[{ required: true }]}>
+            <Select options={warehouseTypeOptions} />
           </Form.Item>
-          <Form.Item name="isDefault" label="Kho mặc định">
+          <Form.Item name="isDefault" label={t('columns.isDefault')}>
             <Select
               options={[
-                { value: true, label: 'Có' },
-                { value: false, label: 'Không' },
+                { value: true, label: tc('actions.yes') },
+                { value: false, label: tc('actions.no') },
               ]}
             />
           </Form.Item>
-          <Form.Item name="address" label="Địa chỉ">
+          <Form.Item name="address" label={ts('address')}>
             <Input.TextArea rows={2} />
           </Form.Item>
           {editing && (
-            <Form.Item name="status" label="Trạng thái">
-              <Select
-                options={Object.entries(STATUS_LABELS).map(([value, label]) => ({
-                  value: Number(value),
-                  label,
-                }))}
-              />
+            <Form.Item name="status" label={t('columns.status')}>
+              <Select options={statusOptions} />
             </Form.Item>
           )}
         </Form>

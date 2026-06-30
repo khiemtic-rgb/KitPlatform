@@ -1,11 +1,12 @@
 import { Space, Tag, Typography } from 'antd';
 import { CheckCircleOutlined, SendOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 import {
   CUSTOMER_DRAFT_ORDER_STATUS,
-  CUSTOMER_DRAFT_ORDER_STATUS_LABELS,
   type CustomerDraftOrder,
 } from '@/shared/api/customer-draft-orders.api';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 
 const STATUS_COLOR: Record<number, string> = {
   [CUSTOMER_DRAFT_ORDER_STATUS.Draft]: 'default',
@@ -24,6 +25,9 @@ interface CustomerDraftOrderStatusBarProps {
 }
 
 export function CustomerDraftOrderStatusBar({ draft }: CustomerDraftOrderStatusBarProps) {
+  const { t } = useTranslation('sales');
+  const { customerDraftStatusLabel } = useSalesEnums();
+
   if (!draft) return null;
 
   const isConfirmed = draft.status === CUSTOMER_DRAFT_ORDER_STATUS.Confirmed;
@@ -40,22 +44,22 @@ export function CustomerDraftOrderStatusBar({ draft }: CustomerDraftOrderStatusB
     >
       <Space wrap size={[8, 4]}>
         <Typography.Text strong style={{ fontSize: 13 }}>
-          Đơn tạm app khách
+          {t('pos.customerDraft.barTitle')}
         </Typography.Text>
         <Tag>{draft.draftNumber}</Tag>
         <Tag color={STATUS_COLOR[draft.status] ?? 'default'} icon={isConfirmed ? <CheckCircleOutlined /> : <SendOutlined />}>
-          {CUSTOMER_DRAFT_ORDER_STATUS_LABELS[draft.status] ?? draft.status}
+          {customerDraftStatusLabel(draft.status)}
         </Tag>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {draft.totalAmount.toLocaleString('vi-VN')}đ
+          {draft.totalAmount.toLocaleString()}đ
         </Typography.Text>
         {draft.confirmedAt ? (
           <Typography.Text type="success" style={{ fontSize: 12 }}>
-            Khách xác nhận tạm: {dayjs(draft.confirmedAt).format('DD/MM HH:mm')}
+            {t('pos.customerDraft.confirmedAt', { time: dayjs(draft.confirmedAt).format('DD/MM HH:mm') })}
           </Typography.Text>
         ) : draft.sentAt ? (
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Đã gửi app: {dayjs(draft.sentAt).format('DD/MM HH:mm')}
+            {t('pos.customerDraft.sentAt', { time: dayjs(draft.sentAt).format('DD/MM HH:mm') })}
           </Typography.Text>
         ) : null}
       </Space>

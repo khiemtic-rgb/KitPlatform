@@ -1,0 +1,454 @@
+{
+  "enums": {
+    "warehouseType": {
+      "1": "Kho chính",
+      "2": "Kho bán lẻ",
+      "3": "Kho thuốc kê đơn",
+      "4": "Kho lạnh",
+      "5": "Kho trả hàng"
+    },
+    "transferStatus": {
+      "1": "Chờ hoàn tất",
+      "2": "Đang chuyển",
+      "3": "Hoàn tất",
+      "4": "Đã hủy"
+    },
+    "adjustmentStatus": {
+      "1": "Chờ duyệt",
+      "2": "Đang kiểm",
+      "3": "Đã duyệt",
+      "4": "Đã hủy"
+    },
+    "status": {
+      "1": "Hoạt động",
+      "2": "Ngừng"
+    }
+  },
+  "inventoryLayout": {
+    "tabs": {
+      "opening": "Tồn đầu kỳ",
+      "stock": "Tồn kho",
+      "lowStock": "Tồn thấp",
+      "transfers": "Điều chuyển",
+      "adjustments": "Kiểm kê",
+      "warehouses": "Danh mục kho"
+    }
+  },
+  "shared": {
+    "productAbbr": "SP",
+    "batchAbbr": "Lô",
+    "quantityAbbr": "SL",
+    "systemQtyAbbr": "HT",
+    "actualQtyAbbr": "Thực",
+    "varianceAbbr": "Lệch",
+    "countAbbr": "Đếm",
+    "expiryAbbr": "HSD",
+    "stockOnHand": "tồn {{qty}}",
+    "batchLabel": "Lô {{number}}",
+    "batchWithExpiry": "{{number}}{{expiry}} · tồn {{qty}}",
+    "expirySuffix": " · HSD {{date}}",
+    "productFilterTag": "SP: {{label}}",
+    "lineCount": "Dòng",
+    "addLine": "Thêm dòng",
+    "detail": "Chi tiết",
+    "complete": "Hoàn tất",
+    "count": "Đếm",
+    "fromWarehouse": "Kho xuất",
+    "toWarehouse": "Kho nhận",
+    "warehouse": "Kho",
+    "branch": "Chi nhánh",
+    "unit": "ĐVT",
+    "unitCost": "Giá vốn",
+    "stockQty": "Tồn",
+    "totalStock": "Tổng tồn",
+    "warehouseCount": "Số kho",
+    "batchCount": "Số lô",
+    "productCode": "Mã SP",
+    "productName": "Tên SP",
+    "productCodeLabel": "Mã SP: {{code}}",
+    "documentNumber": "Số phiếu",
+    "date": "Ngày",
+    "reason": "Lý do",
+    "zone": "Khu vực",
+    "counter": "Người kiểm",
+    "type": "Loại",
+    "default": "Mặc định",
+    "address": "Địa chỉ",
+    "warehouseCode": "Mã kho",
+    "warehouseName": "Tên kho",
+    "warehouseType": "Loại kho",
+    "defaultWarehouse": "Kho mặc định",
+    "selectBranch": "Chọn chi nhánh",
+    "warehouseCodePlaceholder": "VD: WH_CH01",
+    "notes": "Ghi chú",
+    "stockProductOption": "{{code}} — {{name}}{{unit}}{{stock}}",
+    "stockProductUnit": " · {{unit}}",
+    "stockProductStock": " (tồn {{qty}})"
+  },
+  "countWorkflow": {
+    "steps": {
+      "prepare": {
+        "title": "Chuẩn bị",
+        "description": "Mở phiên kiểm kê, ghi lý do. Hạn chế bán/nhập xuất tại kho trong lúc đếm."
+      },
+      "count": {
+        "title": "Ghi nhận đếm",
+        "description": "Quét barcode hoặc chọn SP + lô, nhập số lượng thực tế. Ghi nhận từng đợt."
+      },
+      "reconcile": {
+        "title": "Đối chiếu lệch",
+        "description": "Xem HT · Đếm · Lệch. Ưu tiên sửa GRN/POS/chuyển kho nếu sai chứng từ."
+      },
+      "approve": {
+        "title": "Duyệt & cập nhật tồn",
+        "description": "Người duyệt xác nhận — hệ thống điều chỉnh tồn theo lô và khóa phiên."
+      }
+    },
+    "reasonPresets": {
+      "periodic": "Kiểm kê định kỳ (tháng/quý)",
+      "ad_hoc": "Kiểm kê đột xuất",
+      "incident": "Sau sự cố (mất mát, hư hỏng…)",
+      "audit": "Phục vụ kiểm toán / thanh tra"
+    },
+    "reasonBase": {
+      "periodic": "Kiểm kê định kỳ",
+      "ad_hoc": "Kiểm kê đột xuất",
+      "incident": "Kiểm kê sau sự cố",
+      "audit": "Kiểm kê phục vụ kiểm toán"
+    },
+    "approveChecklist": {
+      "0": "Đã đối chiếu lệch lớn với chứng từ (GRN, đơn bán, chuyển kho) — sửa nghiệp vụ gốc nếu cần",
+      "1": "Lệch còn lại phản ánh đúng thực tế sau khi đếm (theo từng lô)",
+      "2": "Người duyệt khác người đếm (nếu quy mô cho phép) và đã ghi lý do trên phiên"
+    }
+  },
+  "warehouseList": {
+    "title": "Danh sách kho",
+    "addWarehouse": "Thêm kho",
+    "editWarehouse": "Sửa kho",
+    "deleteConfirm": "Xóa kho này?",
+    "columns": {
+      "warehouseCode": "Mã kho",
+      "warehouseName": "Tên kho",
+      "branch": "Chi nhánh",
+      "type": "Loại",
+      "isDefault": "Mặc định",
+      "status": "Trạng thái"
+    },
+    "messages": {
+      "loadFailed": "Không tải được danh sách kho",
+      "saveFailed": "Không lưu được kho",
+      "updateSuccess": "Đã cập nhật kho",
+      "createSuccess": "Đã tạo kho",
+      "deleteFailed": "Không xóa được kho"
+    }
+  },
+  "stockList": {
+    "title": "Tồn kho",
+    "tabs": {
+      "summary": "Tổng hợp SP",
+      "fefo": "Theo lô (FEFO)"
+    },
+    "filterByWarehouse": "Lọc theo kho",
+    "searchSummary": "Tìm SP / mã",
+    "searchFefo": "Tìm SP / mã / số lô",
+    "detailTitle": "Chi tiết tồn",
+    "detailTitleWithProduct": "Chi tiết tồn — {{name}}",
+    "viewFefo": "Xem theo lô FEFO",
+    "loadingBatches": "Đang tải chi tiết lô…",
+    "noBatches": "Không có lô tồn.",
+    "messages": {
+      "loadFailed": "Không tải được tồn kho",
+      "detailLoadFailed": "Không tải được chi tiết lô"
+    }
+  },
+  "transferList": {
+    "title": "Phiếu điều chuyển",
+    "createDocument": "Tạo phiếu",
+    "createTitle": "Tạo phiếu điều chuyển",
+    "detailTitle": "Chi tiết phiếu",
+    "detailTitleWithNumber": "Phiếu {{number}}",
+    "selectFromWarehouse": "Chọn kho xuất",
+    "selectToWarehouse": "Chọn kho nhận",
+    "productPlaceholder": "Sản phẩm",
+    "batchPlaceholder": "Lô hàng",
+    "validation": {
+      "selectProduct": "Chọn SP",
+      "selectBatch": "Chọn lô",
+      "quantity": "SL"
+    },
+    "notFound": {
+      "noStockProducts": "Không có SP tồn",
+      "selectFromWarehouseFirst": "Chọn kho xuất trước",
+      "noStockBatches": "Không có lô tồn",
+      "selectProductFirst": "Chọn SP trước"
+    },
+    "messages": {
+      "loadFailed": "Không tải được phiếu điều chuyển",
+      "detailLoadFailed": "Không tải được chi tiết phiếu",
+      "createSuccess": "Đã tạo phiếu {{number}}",
+      "createFailed": "Không tạo được phiếu",
+      "completeSuccess": "Đã hoàn tất điều chuyển",
+      "completeFailed": "Không hoàn tất được phiếu"
+    }
+  },
+  "adjustmentList": {
+    "workflowTitle": "Quy trình kiểm kê chuẩn (4 bước)",
+    "workflowIntro": "<strong>Phiên kiểm kê</strong> (nhiều SP, nhiều người): mở phiên → đếm → đối chiếu → duyệt trên màn Đếm. <strong>Phiếu theo lô</strong>: lệch vài lô đã biết — tạo phiếu nhập SL thực tế → duyệt tại danh sách.",
+    "title": "Phiếu kiểm kê",
+    "countSession": "Phiên kiểm kê",
+    "batchDocument": "Phiếu theo lô",
+    "createBatchTitle": "Tạo phiếu kiểm kê theo lô",
+    "sessionStep1Title": "Bước 1 — Mở phiên kiểm kê",
+    "startCounting": "Bắt đầu đếm",
+    "countWarehouse": "Kho kiểm kê",
+    "selectWarehouse": "Chọn kho",
+    "countType": "Loại kiểm kê",
+    "reasonNote": "Ghi chú thêm",
+    "reasonNotePlaceholder": "VD: Cuối tháng 6, khu A+B…",
+    "prepareAcknowledge": "Đã thông báo hạn chế bán hàng / nhập xuất tại kho trong lúc kiểm kê",
+    "detailTitle": "Chi tiết kiểm kê",
+    "detailTitleWithNumber": "Phiếu {{number}}",
+    "countScreen": "Màn đếm",
+    "batchOptionLabel": "{{code}} / {{batch}} (HT {{qty}})",
+    "validation": {
+      "selectBatch": "Chọn lô",
+      "actualQuantity": "SL thực"
+    },
+    "sessionInProgressHint": "Phiên đang kiểm — vào màn <strong>Đếm</strong>, hoàn tất bước 2–3 rồi <strong>Duyệt</strong> (bước 4) kèm checklist.",
+    "messages": {
+      "loadFailed": "Không tải được phiếu kiểm kê",
+      "prepareRequired": "Xác nhận đã chuẩn bị kiểm kê (bước 1) trước khi mở phiên",
+      "sessionCreateSuccess": "Đã mở phiên {{number}}",
+      "sessionCreateFailed": "Không mở được phiên kiểm kê",
+      "detailLoadFailed": "Không tải được chi tiết phiếu",
+      "createSuccess": "Đã tạo phiếu {{number}}",
+      "createFailed": "Không tạo được phiếu",
+      "approveSuccess": "Đã duyệt kiểm kê",
+      "approveFailed": "Không duyệt được phiếu"
+    }
+  },
+  "inventoryCount": {
+    "backToList": "Danh sách",
+    "printA4": "In biên bản A4",
+    "approveTooltip": "Chốt phiên và cập nhật tồn kho",
+    "workflowTitle": "Quy trình kiểm kê",
+    "step2Title": "Bước 2 — Quét / tìm sản phẩm",
+    "step3BatchTitle": "Bước 3 — Tổng hợp theo lô",
+    "step3ProductTitle": "Tổng theo sản phẩm",
+    "recentEntriesTitle": "Dòng đếm gần đây",
+    "draftTitle": "Dòng đang nhập",
+    "scanPlaceholder": "Quét barcode hoặc gõ mã / tên thuốc",
+    "batchPlaceholder": "Chọn lô (mặc định FEFO — có thể đổi)",
+    "zonePlaceholder": "Ghi chú (Khu vực đang kiểm kê)",
+    "recordEntries": "Ghi nhận ({{count}})",
+    "notFound": {
+      "noProducts": "Không có sản phẩm phù hợp",
+      "typeToSearch": "Gõ mã hoặc tên để tìm",
+      "noBatchesAtWarehouse": "SP này chưa có lô tại kho"
+    },
+    "approveBlock": {
+      "missingBatch": "Còn {{count}} dòng đếm chưa có lô — xóa ở bảng \"Dòng đếm gần đây\"",
+      "noEntries": "Chưa có dòng đếm nào được ghi nhận",
+      "beforeApprove": " trước khi duyệt.",
+      "cannotApprove": "Không thể duyệt phiên này"
+    },
+    "reconcile": {
+      "title": "Bước 3 — Đối chiếu:",
+      "varianceLines": "{{count}} nhóm lệch — kiểm tra GRN/đơn bán/chuyển kho trước khi duyệt.",
+      "noVariance": "Không có lệch — có thể duyệt để khóa phiên."
+    },
+    "readyToApprove": "Sẵn sàng bước 4 — bấm <strong>Duyệt</strong> và hoàn tất checklist.",
+    "messages": {
+      "loadFailed": "Không tải được phiên kiểm kê",
+      "scanOrSelectProduct": "Quét barcode hoặc chọn sản phẩm từ danh sách",
+      "quantityMustBePositive": "Số lượng phải lớn hơn 0",
+      "selectFromSuggestions": "Chọn sản phẩm từ danh sách gợi ý hoặc quét đúng barcode",
+      "noBatchAtWarehouse": "SP này chưa có lô tại kho — không thể ghi nhận",
+      "addedToDraft": "Đã thêm vào danh sách chờ ghi nhận",
+      "noDraftLines": "Chưa có dòng nào để ghi nhận",
+      "entriesRecorded": "Đã ghi nhận {{count}} dòng",
+      "recordFailed": "Không ghi nhận được dòng đếm",
+      "entryDeleted": "Đã xóa dòng",
+      "entryDeleteFailed": "Không xóa được dòng",
+      "approveSuccess": "Đã duyệt kiểm kê — tồn kho đã được cập nhật",
+      "approveFailed": "Không duyệt được phiếu"
+    }
+  },
+  "inventoryCountApproveModal": {
+    "title": "Bước 4 — Duyệt phiên kiểm kê",
+    "okText": "Duyệt và cập nhật tồn",
+    "cancelText": "Quay lại đối chiếu",
+    "summaryIntro": "Hệ thống sẽ cập nhật tồn theo {{totalLines}} nhóm (SP + lô).",
+    "varianceIntro": "Có {{varianceLines}} nhóm lệch",
+    "surplus": " (dư {{qty}})",
+    "shortage": " (thiếu {{qty}})",
+    "allMatch": " Tất cả nhóm khớp tồn hệ thống.",
+    "lineVariance": "· {{product}}{{batch}}: lệch {{variance}}",
+    "batchSuffix": " · lô {{number}}",
+    "moreGroups": "… và {{count}} nhóm khác",
+    "confirmTitle": "Xác nhận trước khi duyệt:"
+  },
+  "lowStock": {
+    "title": "Cảnh báo tồn thấp",
+    "description": "Ngưỡng: SP → kho → danh mục → cài đặt chung → mặc định 10. Khi xem tất cả kho, mỗi dòng là một cặp SP–kho.",
+    "allWarehouses": "Tất cả kho",
+    "columns": {
+      "currentStock": "Tồn hiện tại",
+      "threshold": "Ngưỡng",
+      "level": "Mức độ"
+    },
+    "levels": {
+      "outOfStock": "Hết hàng",
+      "veryLow": "Rất thấp",
+      "low": "Thấp"
+    },
+    "paginationTotal": "{{count}} dòng",
+    "messages": {
+      "loadFailed": "Không tải được danh sách tồn thấp"
+    }
+  },
+  "lowStockSettings": {
+    "title": "Cài đặt ngưỡng tồn thấp (chung / kho / danh mục)",
+    "priorityAlertTitle": "Thứ tự ưu tiên khi cảnh báo",
+    "priorityAlertDescription": "<strong>SP riêng</strong> → <strong>Kho</strong> → <strong>Danh mục</strong> → <strong>Ngưỡng chung</strong> → mặc định {{fallback}}. Nút <strong>Ghi SP</strong> copy ngưỡng xuống trường từng sản phẩm.",
+    "defaultThreshold": "Ngưỡng chung (toàn nhà thuốc)",
+    "defaultPlaceholder": "Mặc định {{fallback}}",
+    "saveDefault": "Lưu ngưỡng chung",
+    "applyDefaultToProducts": "Ghi ngưỡng chung lên SP",
+    "onlyUnsetProducts": "Chỉ SP chưa có ngưỡng riêng",
+    "byWarehouse": "Theo kho / chi nhánh",
+    "byCategory": "Theo danh mục SP",
+    "columns": {
+      "code": "Mã",
+      "category": "Danh mục",
+      "threshold": "Ngưỡng",
+      "products": "SP",
+      "warehouseCode": "Mã kho",
+      "warehouseBranch": "Kho / chi nhánh",
+      "applyToProducts": "Ghi SP"
+    },
+    "empty": {
+      "noWarehouses": "Chưa có kho — tạo tại Kho → Danh sách kho",
+      "noCategories": "Chưa có danh mục SP — tạo tại Danh mục → Danh mục SP"
+    },
+    "messages": {
+      "loadFailed": "Không tải được cài đặt ngưỡng tồn",
+      "defaultSaveSuccess": "Đã lưu ngưỡng chung",
+      "defaultSaveFailed": "Không lưu được ngưỡng chung",
+      "applyAllSuccess": "Đã ghi ngưỡng lên {{count}} sản phẩm",
+      "applyFailed": "Không áp dụng được",
+      "categorySaveSuccess": "Đã lưu ngưỡng danh mục «{{name}}»",
+      "categorySaveFailed": "Không lưu được danh mục",
+      "categoryApplySuccess": "Đã ghi ngưỡng lên {{count}} SP trong «{{name}}»",
+      "warehouseSaveSuccess": "Đã lưu ngưỡng kho «{{name}}»",
+      "warehouseSaveFailed": "Không lưu được kho"
+    }
+  },
+  "openingBalance": {
+    "excelImportTitle": "Import Excel tồn đầu kỳ",
+    "downloadTemplate": "Tải mẫu",
+    "excelHint": "Import file <code>ton-dau-CN1.csv</code> / <code>ton-dau-CN2.csv</code>. Cần import danh mục SP trước.",
+    "importWarehouse": "Kho nhập",
+    "selectBranchWarehouse": "Chọn kho chi nhánh",
+    "chooseExcelFile": "Chọn file Excel/CSV",
+    "importButton": "Import",
+    "importButtonWithCount": "Import ({{count}} dòng)",
+    "fileReady": "File: {{name}}{{ready}}",
+    "fileReadySuffix": " · {{count}} dòng sẵn sàng import",
+    "selectWarehouseBeforeImport": "Chọn kho nhập trước khi bấm Import.",
+    "uploading": "Đang gửi {{count}} dòng lên server…",
+    "importingBatch": "Đang import lô {{current}}/{{total}}…",
+    "importResult": "Đã nhập: {{processed}} lô · Lỗi: {{errors}}",
+    "importRowError": "Dòng {{row}}: {{message}}",
+    "columnsHint": "Cột: product_key (mã SP/barcode), batch_number, quantity, unit_cost, expiry_date",
+    "manualEntryTitle": "Nhập tồn đầu kỳ",
+    "notesPlaceholder": "VD: Go-live chi nhánh mới...",
+    "selectProduct": "Chọn SP",
+    "batchNumber": "Số lô",
+    "importQuantity": "SL nhập",
+    "saveOpeningBalance": "Lưu nhập tồn",
+    "latestResultTitle": "Kết quả lần nhập vừa lưu",
+    "latestResultMessage": "Đã lưu {{count}} dòng vào kho «{{warehouse}}»",
+    "latestResultDescription": "Thời gian: {{time}}{{notes}} · <success>Các lô vừa nhập: Chưa phát sinh — có thể xóa nếu nhập nhầm.</success>",
+    "listTitle": "Danh sách tồn đầu kỳ",
+    "listTitleWithWarehouse": "Danh sách tồn đầu kỳ: {{warehouse}}",
+    "filterProduct": "Lọc sản phẩm",
+    "searchPlaceholder": "Tìm SP / mã / số lô",
+    "statusFilter": {
+      "all": "Mọi trạng thái",
+      "voidable": "Chưa phát sinh",
+      "locked": "Đã phát sinh"
+    },
+    "emptyListHint": "Chưa có lô nhập từ màn này",
+    "emptyListDescription": "Bảng dưới chỉ liệt kê hàng bạn <strong>Lưu nhập tồn</strong> tại đây (INV-008). Tồn demo từ seed (Paracetamol, …) <strong>không</strong> hiện ở đây — xem tab <stockLink>Tồn kho</stockLink> hoặc bảng \"Tồn thực tế tại kho\" bên dưới. Sau khi bấm <strong>Lưu nhập tồn</strong>, lô mới sẽ xuất hiện trong bảng này.",
+    "listSummary": "Chỉ hiển thị lô nhập từ <strong>Tồn đầu kỳ</strong> còn tồn > 0.",
+    "listSummaryVoidable": " {{voidable}} lô <voidableTag>Chưa phát sinh</voidableTag> (có thể xóa) · {{locked}} lô <lockedTag>Đã phát sinh</lockedTag>",
+    "actualStockTitle": "Tồn thực tế tại kho",
+    "actualStockTitleWithWarehouse": "Tồn thực tế tại kho: {{warehouse}}",
+    "openStockTab": "Mở tab Tồn kho",
+    "actualStockDescription": "Mọi lô còn tồn tại kho (gồm cả tồn demo seed và tồn vừa nhập đầu kỳ). Cùng thứ tự HSD → tên SP → số lô và cùng trang với bảng trên để đối chiếu.",
+    "status": {
+      "voidable": "Chưa phát sinh",
+      "locked": "Đã phát sinh",
+      "lockedTooltip": "Đã phát sinh giao dịch"
+    },
+    "voidConfirm": {
+      "title": "Xóa lô tồn đầu kỳ?",
+      "description": "{{code}} / {{batch}} · {{qty}} đơn vị tại {{warehouse}}",
+      "ariaDelete": "Xóa lô",
+      "ariaCannotDelete": "Không thể xóa",
+      "cannotDeleteTooltip": "Không thể xóa — dùng Kiểm kê để điều chỉnh"
+    },
+    "empty": {
+      "noMatch": "Không có lô khớp bộ lọc",
+      "noOpeningBalance": "Chưa có lô tồn đầu kỳ — hãy nhập và bấm Lưu nhập tồn",
+      "selectWarehouse": "Chọn kho để xem danh sách",
+      "noStockAtWarehouse": "Kho này chưa có tồn — kiểm tra API đã chạy và đã migration/seed",
+      "selectWarehouseShort": "Chọn kho"
+    },
+    "paginationTotal": "{{count}} lô",
+    "messages": {
+      "stockLoadFailed": "Không tải được tồn kho",
+      "listLoadFailed": "Không tải được danh sách tồn đầu kỳ",
+      "lookupsLoadFailed": "Không tải được dữ liệu tham chiếu",
+      "voidSuccess": "Đã xóa lô {{batch}}",
+      "voidFailed": "Không xóa được lô tồn đầu kỳ",
+      "selectWarehouse": "Chọn kho nhập tồn",
+      "addValidLine": "Thêm ít nhất một dòng hợp lệ",
+      "invalidUnitCost": "Giá vốn không hợp lệ",
+      "saveSuccess": "Đã lưu {{count}} dòng tồn đầu kỳ",
+      "saveFailed": "Không nhập được tồn đầu kỳ",
+      "noValidRows": "Không có dòng hợp lệ trong file.",
+      "fileReadSuccess": "Đã đọc {{count}} dòng từ «{{name}}»",
+      "fileReadFailed": "Không đọc được file",
+      "selectWarehouseForImport": "Chọn kho trước khi import.",
+      "importSuccess": "Import xong: {{processed}} lô, {{errors}} lỗi",
+      "importFailed": "Import thất bại"
+    }
+  },
+  "print": {
+    "documentTitle": "Kiểm kê {{number}}",
+    "heading": "Biên bản kiểm kê kho",
+    "sessionNumber": "Số phiên:",
+    "date": "Ngày:",
+    "warehouse": "Kho:",
+    "reason": "Lý do:",
+    "columns": {
+      "index": "STT",
+      "productCode": "Mã SP",
+      "productName": "Tên SP",
+      "batchNumber": "Số lô",
+      "systemQty": "SL sổ",
+      "countedQty": "SL đếm",
+      "difference": "Chênh lệch"
+    },
+    "signatures": {
+      "countLead": "Trưởng nhóm kiểm kê",
+      "storekeeper": "Thủ kho",
+      "manager": "Quản lý",
+      "signHint": "(Ký, họ tên)"
+    },
+    "footnote": "In từ hệ thống PharmaCore — chỉ mang tính tham chiếu trước khi duyệt chốt."
+  }
+}

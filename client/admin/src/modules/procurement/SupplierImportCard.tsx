@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, App, Button, Space, Typography, Upload } from 'antd';
 import { InboxOutlined, UploadOutlined } from '@ant-design/icons';
 import type { UploadRequestOption } from 'rc-upload/lib/interface';
@@ -50,6 +51,7 @@ function mapSupplierRows(rows: Record<string, string>[]): MappedRow[] {
 }
 
 export function SupplierImportCard({ onImported }: { onImported?: () => void }) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'suppliers.import' });
   const { message } = App.useApp();
   const [preview, setPreview] = useState<MappedRow[]>([]);
   const [result, setResult] = useState<SupplierImportResult | null>(null);
@@ -58,23 +60,26 @@ export function SupplierImportCard({ onImported }: { onImported?: () => void }) 
   const [importBatch, setImportBatch] = useState<{ current: number; total: number } | null>(null);
   const [fileName, setFileName] = useState<string>();
 
-  const handleFile = useCallback(async (file: File) => {
-    try {
-      const rows = await parseSpreadsheetFile(file);
-      const mapped = mapSupplierRows(rows);
-      if (mapped.length === 0) {
-        message.warning('Không tìm thấy dòng hợp lệ. Cần cột mã + tên NCC.');
-        return;
+  const handleFile = useCallback(
+    async (file: File) => {
+      try {
+        const rows = await parseSpreadsheetFile(file);
+        const mapped = mapSupplierRows(rows);
+        if (mapped.length === 0) {
+          message.warning(t('noValidRows'));
+          return;
+        }
+        setPreview(mapped);
+        setResult(null);
+        setImportError(null);
+        setFileName(file.name);
+        message.success(t('readSuccess', { count: mapped.length, fileName: file.name }));
+      } catch (error) {
+        message.error(apiErrorMessage(error, t('readFailed')));
       }
-      setPreview(mapped);
-      setResult(null);
-      setImportError(null);
-      setFileName(file.name);
-      message.success(`Đã đọc ${mapped.length} NCC từ «${file.name}»`);
-    } catch (error) {
-      message.error(apiErrorMessage(error, 'Không đọc được file'));
-    }
-  }, []);
+    },
+    [message, t],
+  );
 
   const runImport = async () => {
     if (preview.length === 0) return;
@@ -98,10 +103,10 @@ export function SupplierImportCard({ onImported }: { onImported?: () => void }) 
         (current, total) => setImportBatch({ current, total }),
       );
       setResult(res);
-      message.success(`Import NCC xong: ${res.created} mới, ${res.skipped} bỏ qua, ${res.failed} lỗi`);
+      message.success(t('success', { created: res.created, skipped: res.skipped, failed: res.failed }));
       await onImported?.();
     } catch (error) {
-      const text = apiErrorMessage(error, 'Import NCC thất bại');
+      const text = apiErrorMessage(error, t('failed'));
       setImportError(text);
       message.error(text);
     } finally {
@@ -112,9 +117,7 @@ export function SupplierImportCard({ onImported }: { onImported?: () => void }) 
 
   return (
     <Space direction="vertical" size="small" style={{ width: '100%' }}>
-      <Typography.Text type="secondary">
-        Import Excel/CSV từ Sapo hoặc file <code>nha-cung-cap-novixa.csv</code>. Mã trùng sẽ bỏ qua.
-      </Typography.Text>
+      <Typography.Text type="secondary">{t('hint')}</Typography.Text>
       <Space wrap>
         <Upload
           accept=".xlsx,.xls,.csv"
@@ -124,7 +127,7 @@ export function SupplierImportCard({ onImported }: { onImported?: () => void }) 
             void handleFile(file).then(() => options.onSuccess?.({}, file));
           }}
         >
-          <Button icon={<UploadOutlined />}>Chọn file NCC</Button>
+          <Button icon={<UploadOutlined />}>{t('chooseFile')}</Button>
         </Upload>
         <Button
           type="primary"
@@ -133,32 +136,34 @@ export function SupplierImportCard({ onImported }: { onImported?: () => void }) 
           loading={importing}
           onClick={() => void runImport()}
         >
-          Import {preview.length > 0 ? `(${preview.length})` : ''}
+          {t('importButton')} {preview.length > 0 ? `(${preview.length})` : ''}
         </Button>
       </Space>
       {fileName && (
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          File: {fileName}
+          {t('fileLabel', { name: fileName })}
         </Typography.Text>
       )}
       {importing && !importBatch && (
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          Đang gửi {preview.length} NCC lên server…
+          {t('sending', { count: preview.length })}
         </Typography.Text>
       )}
       {importBatch && (
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          Đang import lô {importBatch.current}/{importBatch.total}…
+          {t('batchProgress', { current: importBatch.current, total: importBatch.total })}
         </Typography.Text>
       )}
-      {importError && (
-        <Alert type="error" showIcon message={importError} />
-      )}
+      {importError && <Alert type="error" showIcon message={importError} />}
       {result && (
         <Alert
           type={result.failed > 0 ? 'warning' : 'success'}
           showIcon
-          message={`Tạo mới: ${result.created} · Bỏ qua: ${result.skipped} · Lỗi: ${result.failed}`}
+          message={t('resultSummary', {
+            created: result.created,
+            skipped: result.skipped,
+            failed: result.failed,
+          })}
         />
       )}
     </Space>

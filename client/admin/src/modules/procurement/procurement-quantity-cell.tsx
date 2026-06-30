@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { procurementT } from '@/shared/i18n';
 import { formatDisplayQuantity, tableQuantityCellClassName } from '@/shared/utils/money';
 
 export function ProcurementQuantityCell({ value }: { value?: number | null }) {
@@ -21,7 +22,7 @@ export function procurementQuantityColumn<T extends string>(
 
 export function procurementRemainingQtyColumn(width = 85) {
   return {
-    title: 'Chưa nhận',
+    title: procurementT()('shared.columns.remaining'),
     width,
     align: 'right' as const,
     render: (_: unknown, row: { orderedQty: number; receivedQty: number }): ReactNode => (

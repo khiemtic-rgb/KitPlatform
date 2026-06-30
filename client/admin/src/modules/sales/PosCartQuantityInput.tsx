@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Input } from 'antd';
+import { useTranslation } from 'react-i18next';
 import {
   capQuantityToStock,
   outOfStockWarningText,
@@ -30,13 +31,14 @@ export function PosCartQuantityInput({
   onChange,
   onClearWarning,
 }: Props) {
+  const { t } = useTranslation('sales');
   const [draft, setDraft] = useState(String(value));
   const [focused, setFocused] = useState(false);
   const [inlineWarning, setInlineWarning] = useState<string | null>(null);
 
   const outOfStock = stockAvailable <= 0;
   const warning =
-    inlineWarning ?? externalWarning ?? (outOfStock ? outOfStockWarningText(unitName) : null);
+    inlineWarning ?? externalWarning ?? (outOfStock ? outOfStockWarningText(unitName, t) : null);
 
   useEffect(() => {
     if (!focused) {
@@ -55,8 +57,8 @@ export function PosCartQuantityInput({
     const capped = capQuantityToStock(stockAvailable, requested);
     const text =
       stockAvailable <= 0
-        ? outOfStockWarningText(unitName)
-        : stockCapWarningText(stockAvailable, unitName);
+        ? outOfStockWarningText(unitName, t)
+        : stockCapWarningText(stockAvailable, unitName, t);
     publishWarning(text);
     setDraft(String(capped));
     if (capped !== value) {
@@ -124,7 +126,7 @@ export function PosCartQuantityInput({
       value={outOfStock ? '0' : draft}
       disabled={disabled || outOfStock}
       inputMode="numeric"
-      aria-label="Số lượng bán"
+      aria-label={t('pos.columns.qtyAria')}
       status={warning ? 'warning' : undefined}
       style={{ width: 76, textAlign: 'right' }}
       onFocus={() => {

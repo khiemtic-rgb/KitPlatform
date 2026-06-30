@@ -1,5 +1,6 @@
 import { formatDisplayMoney } from '@/shared/utils/money';
 import type { ProcurementVatTreatment } from '@/shared/api/procurement.types';
+import { procurementT } from '@/shared/i18n';
 
 export function computePoTaxAmount(
   subtotal: number,
@@ -17,11 +18,16 @@ export function formatPoTaxPreview(
   subtotal: number,
   treatment: ProcurementVatTreatment | undefined,
 ): string {
-  if (!treatment) return 'Chọn loại thuế';
-  if (treatment.isNotSubject) return 'Không chịu thuế GTGT — không tính VAT trên PO';
+  const t = procurementT();
+  if (!treatment) return t('shared.tax.selectTreatment');
+  if (treatment.isNotSubject) return t('shared.tax.notSubjectPoPreview');
   const tax = computePoTaxAmount(subtotal, treatment);
-  if (treatment.ratePercent <= 0) return 'Thuế suất 0% — không phát sinh tiền thuế';
-  return `≈ ${formatDisplayMoney(tax)} (${treatment.ratePercent}% × ${formatDisplayMoney(subtotal)})`;
+  if (treatment.ratePercent <= 0) return t('shared.tax.zeroRatePreview');
+  return t('shared.tax.taxPreview', {
+    tax: formatDisplayMoney(tax),
+    rate: treatment.ratePercent,
+    subtotal: formatDisplayMoney(subtotal),
+  });
 }
 
 export function defaultVatTreatmentId(treatments: ProcurementVatTreatment[]): string | undefined {

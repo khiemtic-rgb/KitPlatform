@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   App,
@@ -26,7 +27,6 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import type { CreatePlatformBranchRequest, PlatformTenantListItem } from '@/shared/api/platform.types';
 import {
   APP_BRAND,
-  APP_PRODUCT,
   loadStoredPlatformKey,
   saveStoredPlatformKey,
   saveStoredTenantCode,
@@ -64,20 +64,26 @@ function padBranchCode(index: number): string {
   return `CN${String(index).padStart(2, '0')}`;
 }
 
-function buildAdditionalBranchRows(count: number): AdditionalBranchFormValues[] {
+function buildAdditionalBranchRows(
+  count: number,
+  counterName: (n: number) => string,
+  warehouseBranchName: (code: string) => string,
+): AdditionalBranchFormValues[] {
   return Array.from({ length: count }, (_, i) => {
     const n = i + 2;
     const code = padBranchCode(n);
     return {
       branchCode: code,
-      branchName: `Quầy ${n}`,
+      branchName: counterName(n),
       warehouseCode: `WH_${code}`,
-      warehouseName: `Kho ${code}`,
+      warehouseName: warehouseBranchName(code),
     };
   });
 }
 
 export function SetupPage() {
+  const { t } = useTranslation('auth', { keyPrefix: 'setup' });
+  const { t: tc } = useTranslation('common');
   const { message } = App.useApp();
   const [form] = Form.useForm<SetupFormValues>();
   const [loading, setLoading] = useState(true);
@@ -132,11 +138,11 @@ export function SetupPage() {
         setTenants([]);
       }
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được trạng thái hệ thống'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [form, message]);
+  }, [form, message, t]);
 
   useEffect(() => {
     void reload();
@@ -148,7 +154,7 @@ export function SetupPage() {
 
   const onFinish = async (values: SetupFormValues) => {
     if (values.adminPassword !== values.adminPasswordConfirm) {
-      message.error('Mật khẩu xác nhận không khớp');
+      message.error(t('messages.passwordMismatch'));
       return;
     }
 
@@ -193,9 +199,15 @@ export function SetupPage() {
       );
 
       saveStoredTenantCode(created.tenantCode);
-      const branchMsg =
-        created.branchCount > 1 ? ` (${created.branchCount} chi nhánh)` : '';
-      message.success(`Đã tạo nhà thuốc ${created.tenantCode}${branchMsg}. Đăng nhập bằng mã này.`);
+      message.success(
+        t('messages.created', {
+          code: created.tenantCode,
+          branches:
+            created.branchCount > 1
+              ? t('messages.createdBranches', { count: created.branchCount })
+              : '',
+        }),
+      );
       form.setFieldsValue({
         adminPassword: '',
         adminPasswordConfirm: '',
@@ -204,7 +216,7 @@ export function SetupPage() {
       setExtraBranchCount(0);
       await reload();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tạo được nhà thuốc'));
+      message.error(apiErrorMessage(error, t('messages.createFailed')));
     } finally {
       setSaving(false);
     }
@@ -225,7 +237,7 @@ export function SetupPage() {
               {APP_BRAND}
             </Typography.Title>
             <Typography.Text style={{ color: '#99f6e4' }}>
-              Thiết lập nhà thuốc — {APP_PRODUCT}
+              {t('subtitle', { product: tc('appLayout.productName') })}
             </Typography.Text>
           </div>
 
@@ -235,15 +247,15 @@ export function SetupPage() {
                 <Alert
                   type="info"
                   showIcon
-                  message="Lần đầu triển khai"
-                  description="Chưa có nhà thuốc nào. Điền form bên dưới để tạo nhà thuốc đầu tiên — không cần mã thiết lập nền tảng."
+                  message={t('firstDeploy.title')}
+                  description={t('firstDeploy.description')}
                 />
               ) : (
                 <Alert
                   type="warning"
                   showIcon
-                  message={`Đang có ${tenantsCount} nhà thuốc trên hệ thống`}
-                  description="Thêm nhà thuốc mới cần Mã thiết lập nền tảng (Platform__ProvisioningKey trên server)."
+                  message={t('existingTenants.title', { count: tenantsCount })}
+                  description={t('existingTenants.description')}
                 />
               )}
 
@@ -253,11 +265,11 @@ export function SetupPage() {
                 onFinish={onFinish}
                 initialValues={{
                   branchCode: 'CN01',
-                  branchName: 'Quầy chính',
+                  branchName: t('defaults.branchName'),
                   warehouseCode: 'WH_MAIN',
-                  warehouseName: 'Kho chính',
+                  warehouseName: t('defaults.warehouseName'),
                   adminUsername: 'admin',
-                  adminFullName: 'Quản trị viên',
+                  adminFullName: t('defaults.adminFullName'),
                   loyaltyEnabled: true,
                   platformKey: loadStoredPlatformKey(),
                 }}
@@ -265,13 +277,13 @@ export function SetupPage() {
                 {provisioningKeyRequired ? (
                   <Form.Item
                     name="platformKey"
-                    label="Mã thiết lập nền tảng"
-                    tooltip="Giá trị Platform__ProvisioningKey trên server API"
-                    rules={[{ required: true, message: 'Nhập mã thiết lập' }]}
+                    label={t('platformKey')}
+                    tooltip={t('platformKeyTooltip')}
+                    rules={[{ required: true, message: t('platformKeyRequired') }]}
                   >
                     <Input.Password
                       prefix={<KeyOutlined />}
-                      placeholder="Nhập mã từ cấu hình server"
+                      placeholder={t('platformKeyPlaceholder')}
                       onBlur={handlePlatformKeyBlur}
                     />
                   </Form.Item>
@@ -279,17 +291,17 @@ export function SetupPage() {
 
                 {tenants.length > 0 ? (
                   <>
-                    <Typography.Title level={5}>Nhà thuốc đã tạo</Typography.Title>
+                    <Typography.Title level={5}>{t('existingTenantsTitle')}</Typography.Title>
                     <Table
                       size="small"
                       rowKey="id"
                       pagination={false}
                       dataSource={tenants}
                       columns={[
-                        { title: 'Mã', dataIndex: 'tenantCode', width: 120 },
-                        { title: 'Tên', dataIndex: 'tenantName' },
+                        { title: t('columns.code'), dataIndex: 'tenantCode', width: 120 },
+                        { title: t('columns.name'), dataIndex: 'tenantName' },
                         {
-                          title: 'Ngày tạo',
+                          title: t('columns.createdAt'),
                           dataIndex: 'createdAt',
                           width: 180,
                           render: (v: string) => new Date(v).toLocaleString('vi-VN'),
@@ -301,15 +313,15 @@ export function SetupPage() {
                 ) : null}
 
                 <Typography.Title level={5}>
-                  <ShopOutlined /> Tạo nhà thuốc mới
+                  <ShopOutlined /> {t('createNewTitle')}
                 </Typography.Title>
                 <Row gutter={16}>
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="tenantCode"
-                      label="Mã nhà thuốc"
-                      rules={[{ required: true, message: 'Nhập mã (vd. NT_A)' }]}
-                      tooltip="Dùng khi đăng nhập admin và app khách"
+                      label={t('tenantCode')}
+                      rules={[{ required: true, message: t('tenantCodeRequired') }]}
+                      tooltip={t('tenantCodeTooltip')}
                     >
                       <Input placeholder="NT_A" style={{ textTransform: 'uppercase' }} />
                     </Form.Item>
@@ -317,22 +329,22 @@ export function SetupPage() {
                   <Col xs={24} md={16}>
                     <Form.Item
                       name="tenantName"
-                      label="Tên nhà thuốc"
-                      rules={[{ required: true, message: 'Nhập tên hiển thị' }]}
+                      label={t('tenantName')}
+                      rules={[{ required: true, message: t('tenantNameRequired') }]}
                     >
-                      <Input placeholder="Nhà Thuốc An" />
+                      <Input placeholder={t('tenantNamePlaceholder')} />
                     </Form.Item>
                   </Col>
                 </Row>
 
                 <Row gutter={16}>
                   <Col xs={24} md={8}>
-                    <Form.Item name="branchCode" label="Mã chi nhánh" rules={[{ required: true }]}>
+                    <Form.Item name="branchCode" label={t('branchCode')} rules={[{ required: true }]}>
                       <Input />
                     </Form.Item>
                   </Col>
                   <Col xs={24} md={16}>
-                    <Form.Item name="branchName" label="Tên chi nhánh" rules={[{ required: true }]}>
+                    <Form.Item name="branchName" label={t('branchName')} rules={[{ required: true }]}>
                       <Input />
                     </Form.Item>
                   </Col>
@@ -340,12 +352,12 @@ export function SetupPage() {
 
                 <Row gutter={16}>
                   <Col xs={24} md={12}>
-                    <Form.Item name="branchAddress" label="Địa chỉ">
+                    <Form.Item name="branchAddress" label={t('branchAddress')}>
                       <Input />
                     </Form.Item>
                   </Col>
                   <Col xs={24} md={12}>
-                    <Form.Item name="branchPhone" label="SĐT chi nhánh">
+                    <Form.Item name="branchPhone" label={t('branchPhone')}>
                       <Input />
                     </Form.Item>
                   </Col>
@@ -353,45 +365,52 @@ export function SetupPage() {
 
                 <Row gutter={16}>
                   <Col xs={24} md={8}>
-                    <Form.Item name="warehouseCode" label="Mã kho" rules={[{ required: true }]}>
+                    <Form.Item name="warehouseCode" label={t('warehouseCode')} rules={[{ required: true }]}>
                       <Input />
                     </Form.Item>
                   </Col>
                   <Col xs={24} md={16}>
-                    <Form.Item name="warehouseName" label="Tên kho" rules={[{ required: true }]}>
+                    <Form.Item name="warehouseName" label={t('warehouseName')} rules={[{ required: true }]}>
                       <Input />
                     </Form.Item>
                   </Col>
                 </Row>
 
-                <Divider orientation="left">Chuỗi — chi nhánh bổ sung</Divider>
+                <Divider orientation="left">{t('chainSection')}</Divider>
                 <Alert
                   type="info"
                   showIcon
                   style={{ marginBottom: 12 }}
-                  message="Chi nhánh đầu tiên ở trên (CN01 / Quầy chính)"
-                  description="Nhập số chi nhánh thêm rồi bấm «Thêm vào form» — hệ thống điền mẫu CN02, CN03… Admin được gán quyền tất cả chi nhánh."
+                  message={t('chainInfo.title')}
+                  description={t('chainInfo.description')}
                 />
                 <Space wrap align="center" style={{ marginBottom: 16 }}>
-                  <Typography.Text>Thêm</Typography.Text>
+                  <Typography.Text>{t('addBranches')}</Typography.Text>
                   <InputNumber
                     min={0}
                     max={20}
                     value={extraBranchCount}
                     onChange={(v) => setExtraBranchCount(v ?? 0)}
                   />
-                  <Typography.Text>chi nhánh</Typography.Text>
+                  <Typography.Text>{t('branchCount')}</Typography.Text>
                   <Button
                     icon={<PlusOutlined />}
                     onClick={() => {
                       if (extraBranchCount <= 0) {
-                        message.info('Chọn số chi nhánh lớn hơn 0');
+                        message.info(t('selectBranchCount'));
                         return;
                       }
-                      form.setFieldValue('additionalBranches', buildAdditionalBranchRows(extraBranchCount));
+                      form.setFieldValue(
+                        'additionalBranches',
+                        buildAdditionalBranchRows(
+                          extraBranchCount,
+                          (n) => t('defaults.counterName', { n }),
+                          (code) => t('defaults.warehouseBranchName', { code }),
+                        ),
+                      );
                     }}
                   >
-                    Thêm vào form
+                    {t('addToForm')}
                   </Button>
                 </Space>
 
@@ -402,10 +421,10 @@ export function SetupPage() {
                         <Card
                           key={field.key}
                           size="small"
-                          title={`Chi nhánh bổ sung ${index + 1}`}
+                          title={t('additionalBranch', { index: index + 1 })}
                           extra={
                             <Button type="link" danger onClick={() => remove(field.name)}>
-                              Xóa
+                              {tc('actions.delete')}
                             </Button>
                           }
                         >
@@ -414,7 +433,7 @@ export function SetupPage() {
                               <Form.Item
                                 {...field}
                                 name={[field.name, 'branchCode']}
-                                label="Mã chi nhánh"
+                                label={t('branchCode')}
                                 rules={[{ required: true }]}
                               >
                                 <Input style={{ textTransform: 'uppercase' }} />
@@ -424,7 +443,7 @@ export function SetupPage() {
                               <Form.Item
                                 {...field}
                                 name={[field.name, 'branchName']}
-                                label="Tên chi nhánh"
+                                label={t('branchName')}
                                 rules={[{ required: true }]}
                               >
                                 <Input />
@@ -433,12 +452,12 @@ export function SetupPage() {
                           </Row>
                           <Row gutter={16}>
                             <Col xs={24} md={12}>
-                              <Form.Item {...field} name={[field.name, 'branchAddress']} label="Địa chỉ">
+                              <Form.Item {...field} name={[field.name, 'branchAddress']} label={t('branchAddress')}>
                                 <Input />
                               </Form.Item>
                             </Col>
                             <Col xs={24} md={12}>
-                              <Form.Item {...field} name={[field.name, 'branchPhone']} label="SĐT">
+                              <Form.Item {...field} name={[field.name, 'branchPhone']} label={t('branchPhone')}>
                                 <Input />
                               </Form.Item>
                             </Col>
@@ -448,7 +467,7 @@ export function SetupPage() {
                               <Form.Item
                                 {...field}
                                 name={[field.name, 'warehouseCode']}
-                                label="Mã kho"
+                                label={t('warehouseCode')}
                                 rules={[{ required: true }]}
                               >
                                 <Input style={{ textTransform: 'uppercase' }} />
@@ -458,7 +477,7 @@ export function SetupPage() {
                               <Form.Item
                                 {...field}
                                 name={[field.name, 'warehouseName']}
-                                label="Tên kho"
+                                label={t('warehouseName')}
                                 rules={[{ required: true }]}
                               >
                                 <Input />
@@ -471,18 +490,18 @@ export function SetupPage() {
                   )}
                 </Form.List>
 
-                <Divider orientation="left">Tài khoản quản trị</Divider>
+                <Divider orientation="left">{t('adminSection')}</Divider>
 
                 <Row gutter={16}>
                   <Col xs={24} md={8}>
-                    <Form.Item name="adminUsername" label="Tên đăng nhập" rules={[{ required: true }]}>
+                    <Form.Item name="adminUsername" label={t('adminUsername')} rules={[{ required: true }]}>
                       <Input />
                     </Form.Item>
                   </Col>
                   <Col xs={24} md={16}>
                     <Form.Item
                       name="adminEmail"
-                      label="Email"
+                      label={t('adminEmail')}
                       rules={[{ required: true, type: 'email' }]}
                     >
                       <Input />
@@ -490,7 +509,7 @@ export function SetupPage() {
                   </Col>
                 </Row>
 
-                <Form.Item name="adminFullName" label="Họ tên">
+                <Form.Item name="adminFullName" label={t('adminFullName')}>
                   <Input />
                 </Form.Item>
 
@@ -498,8 +517,8 @@ export function SetupPage() {
                   <Col xs={24} md={12}>
                     <Form.Item
                       name="adminPassword"
-                      label="Mật khẩu"
-                      rules={[{ required: true, min: 8, message: 'Tối thiểu 8 ký tự' }]}
+                      label={t('adminPassword')}
+                      rules={[{ required: true, min: 8, message: t('adminPasswordMin') }]}
                     >
                       <Input.Password />
                     </Form.Item>
@@ -507,7 +526,7 @@ export function SetupPage() {
                   <Col xs={24} md={12}>
                     <Form.Item
                       name="adminPasswordConfirm"
-                      label="Xác nhận mật khẩu"
+                      label={t('adminPasswordConfirm')}
                       rules={[{ required: true }]}
                     >
                       <Input.Password />
@@ -515,16 +534,16 @@ export function SetupPage() {
                   </Col>
                 </Row>
 
-                <Form.Item name="loyaltyEnabled" label="Bật tích điểm loyalty" valuePropName="checked">
+                <Form.Item name="loyaltyEnabled" label={t('loyaltyEnabled')} valuePropName="checked">
                   <Switch />
                 </Form.Item>
 
                 <Space wrap>
                   <Button type="primary" htmlType="submit" loading={saving} icon={<ShopOutlined />}>
-                    Tạo nhà thuốc
+                    {t('createTenant')}
                   </Button>
                   <Link to="/login">
-                    <Button icon={<LoginOutlined />}>Đi tới đăng nhập</Button>
+                    <Button icon={<LoginOutlined />}>{t('goToLogin')}</Button>
                   </Link>
                 </Space>
               </Form>

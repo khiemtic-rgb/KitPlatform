@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Badge, Button, Card, Empty, Input, List, Space, Spin, Typography, Alert, message } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -45,6 +46,7 @@ function MessageBubble({ item }: { item: AdminChatMessage }) {
 }
 
 export function CustomerChatPage() {
+  const { t } = useTranslation('sales', { keyPrefix: 'customerChat' });
   const accessToken = useAuthStore((s) => s.accessToken);
   const [threads, setThreads] = useState<AdminChatThread[]>([]);
   const [selectedId, setSelectedId] = useState<string>();
@@ -57,7 +59,7 @@ export function CustomerChatPage() {
   const [draftDrawerOpen, setDraftDrawerOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const selected = threads.find((t) => t.customerId === selectedId);
+  const selected = threads.find((thread) => thread.customerId === selectedId);
 
   const loadThreads = useCallback(async (silent = false) => {
     if (!silent) setLoadingThreads(true);
@@ -69,13 +71,13 @@ export function CustomerChatPage() {
         setSelectedId(data[0].customerId);
       }
     } catch (error) {
-      const errMsg = apiErrorMessage(error, 'Không tải được danh sách chat');
+      const errMsg = apiErrorMessage(error, t('loadFailed'));
       setThreadsError(errMsg);
       if (!silent) message.error(errMsg);
     } finally {
       if (!silent) setLoadingThreads(false);
     }
-  }, [selectedId]);
+  }, [selectedId, t]);
 
   const loadMessages = useCallback(
     async (customerId: string, silent = false) => {
@@ -86,12 +88,12 @@ export function CustomerChatPage() {
         await markStaffChatRead(customerId).catch(() => undefined);
         void loadThreads(true);
       } catch (error) {
-        if (!silent) message.error(apiErrorMessage(error, 'Không tải được tin nhắn'));
+        if (!silent) message.error(apiErrorMessage(error, t('messagesLoadFailed')));
       } finally {
         if (!silent) setLoadingMessages(false);
       }
     },
-    [loadThreads],
+    [loadThreads, t],
   );
 
   useEffect(() => {
@@ -131,7 +133,7 @@ export function CustomerChatPage() {
       setDraft('');
       void loadThreads(true);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không gửi được tin nhắn'));
+      message.error(apiErrorMessage(error, t('sendFailed')));
     } finally {
       setSending(false);
     }
@@ -139,7 +141,7 @@ export function CustomerChatPage() {
 
   return (
     <Card
-      title="Chat khách hàng"
+      title={t('title')}
       styles={{
         body: {
           padding: 0,
@@ -155,11 +157,11 @@ export function CustomerChatPage() {
           type="warning"
           showIcon
           style={{ margin: '8px 12px 0', flexShrink: 0 }}
-          message="Không tải được chat"
+          message={t('loadFailedBanner')}
           description={threadsError}
           action={
             <Button size="small" onClick={() => void loadThreads()}>
-              Thử lại
+              {t('retry')}
             </Button>
           }
         />
@@ -187,10 +189,10 @@ export function CustomerChatPage() {
             </div>
           ) : threadsError ? (
             <Typography.Text type="secondary" style={{ display: 'block', padding: 24, textAlign: 'center' }}>
-              Không tải được — bấm Thử lại phía trên
+              {t('sidebarHint')}
             </Typography.Text>
           ) : threads.length === 0 ? (
-            <Empty description="Chưa có hội thoại" style={{ margin: 24 }} />
+            <Empty description={t('noThreads')} style={{ margin: 24 }} />
           ) : (
             <List
               dataSource={threads}
@@ -247,7 +249,7 @@ export function CustomerChatPage() {
                     {selected.customerPhone ?? selected.customerCode}
                   </Typography.Text>
                   <Button size="small" onClick={() => setDraftDrawerOpen(true)}>
-                    Đơn tạm
+                    {t('draftOrders')}
                   </Button>
                 </Space>
               </div>
@@ -263,7 +265,7 @@ export function CustomerChatPage() {
                 {loadingMessages && messages.length === 0 ? (
                   <Spin />
                 ) : messages.length === 0 ? (
-                  <Empty description="Chưa có tin nhắn" />
+                  <Empty description={t('noMessages')} />
                 ) : (
                   messages.map((item) => <MessageBubble key={item.id} item={item} />)
                 )}
@@ -281,7 +283,7 @@ export function CustomerChatPage() {
                 <Input.TextArea
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
-                  placeholder="Trả lời khách..."
+                  placeholder={t('replyPlaceholder')}
                   autoSize={{ minRows: 1, maxRows: 3 }}
                   onPressEnter={(e) => {
                     if (!e.shiftKey) {
@@ -291,7 +293,7 @@ export function CustomerChatPage() {
                   }}
                 />
                 <Button type="primary" icon={<SendOutlined />} loading={sending} onClick={() => void onSend()}>
-                  Gửi
+                  {t('send')}
                 </Button>
               </div>
             </>
@@ -305,7 +307,7 @@ export function CustomerChatPage() {
                 minHeight: 0,
               }}
             >
-              <Empty description="Chọn khách để xem hội thoại" />
+              <Empty description={t('selectCustomer')} />
             </div>
           )}
         </div>

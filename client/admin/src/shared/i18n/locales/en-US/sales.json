@@ -1,0 +1,1114 @@
+{
+  "enums": {
+    "paymentMethod": {
+      "1": "Cash",
+      "2": "Card",
+      "3": "Bank transfer",
+      "4": "E-wallet",
+      "5": "Credit"
+    },
+    "customerDraftStatus": {
+      "1": "Draft",
+      "2": "Sent to customer",
+      "3": "Customer confirmed",
+      "4": "Sold",
+      "5": "Cancelled",
+      "6": "Expired"
+    },
+    "discountType": {
+      "fixed": "Amount"
+    },
+    "reservationStatus": {
+      "1": "Pending confirmation",
+      "2": "Confirmed",
+      "3": "Ready for pickup",
+      "4": "Collected",
+      "5": "Cancelled",
+      "6": "Rejected"
+    },
+    "reservationFulfillment": {
+      "1": "In-store pickup",
+      "2": "Delivery"
+    },
+    "voucherStatus": {
+      "0": "Inactive",
+      "1": "Active"
+    },
+    "voucherDiscountType": {
+      "1": "Percent",
+      "2": "Fixed amount"
+    },
+    "consentChannel": {
+      "1": "SMS",
+      "2": "Zalo",
+      "3": "Email",
+      "4": "App push",
+      "5": "In-app"
+    },
+    "consentPurpose": {
+      "1": "Marketing",
+      "2": "Care reminders",
+      "3": "Research",
+      "4": "AI pharmacist support"
+    },
+    "returnStatus": {
+      "2": "Completed"
+    },
+    "customerPaymentStatus": {
+      "1": "Pending post",
+      "2": "Posted",
+      "3": "Cancelled"
+    }
+  },
+  "pos": {
+    "checkout": {
+      "title": "Checkout",
+      "completeSale": "Complete sale",
+      "subtotal": "Subtotal",
+      "lineDiscount": "Line discount",
+      "orderDiscount": "Order discount",
+      "totalDiscount": "Total discount",
+      "voucher": "Voucher",
+      "loyaltyDiscount": "Points discount",
+      "payable": "Amount due",
+      "customer": "Customer",
+      "customerPlaceholderCredit": "Select customer (required for credit)",
+      "quickAddCustomer": "Quick add customer",
+      "creditAllowed": "Credit allowed",
+      "creditNotAllowed": "No credit",
+      "outstanding": "Outstanding {{amount}}",
+      "selectCustomerForCredit": "Select a customer for credit — you can do it here without returning to POS.",
+      "customerVouchers": "Customer vouchers",
+      "voucherPlaceholder": "Select voucher (optional)",
+      "loyaltyHasPoints": "Customer has {{points}} pts (= {{value}}) · 1 pt = {{amountPerPoint}}",
+      "loyaltyNoPoints": "No loyalty points yet · 1 pt = {{amountPerPoint}}",
+      "loyaltyMaxPercent": "Redeem up to {{percent}}% of order — max {{amount}} on this order",
+      "loyaltyMaxAmount": "Up to {{amount}} can be redeemed with points on this order",
+      "loyaltyCannotRedeem": "Points cannot be redeemed on this order",
+      "redeemNow": "Redeem points on this order",
+      "remainingAmount": "Remaining amount",
+      "redeemApprox": "≈ {{points}} points",
+      "earnRule": "Spend {{amount}} to earn +1 point.",
+      "freeOrder": "Zero-amount order — no payment needed. Click Complete sale to record.",
+      "splitPayments": "Split payment: enter amounts on rows below — the first row takes the remainder.",
+      "paymentMethod": "Method",
+      "amountTendered": "Amount tendered",
+      "amountTenderedAutoSplit": "Amount tendered (auto split)",
+      "addPaymentMethod": "Add payment method",
+      "collected": "Collected",
+      "creditLine": "Credit",
+      "changeDue": "Change due",
+      "errors": {
+        "checkCredit": "Check customer and credit amount",
+        "paymentMismatch": "Payment total does not match amount due",
+        "createSaleFailed": "Could not record sale",
+        "selectCustomerCredit": "Select a customer for credit.",
+        "customerCreditNotAllowed": "Customer is not allowed credit.",
+        "creditLimitExceeded": "Credit limit exceeded ({{limit}}). Outstanding {{outstanding}}.",
+        "payOrCredit": "Customer must pay {{payable}} or select a credit-allowed customer.",
+        "overpaid": "Collected amount exceeds {{payable}}.",
+        "allocationMismatch": "Allocation + credit must equal {{payable}} (currently {{paid}})."
+      }
+    },
+    "checkoutSuccess": {
+      "base": "Sold {{orderNumber}} — {{amount}}",
+      "paidOutstanding": "Paid {{paid}} · Due {{outstanding}}",
+      "pointsRedeemed": "−{{points}} pts",
+      "pointsEarned": "+{{points}} pts"
+    },
+    "columns": {
+      "product": "Product",
+      "productCode": "Code",
+      "stockInline": "(stock {{count}})",
+      "fefoHint": "Suggested FEFO batch: {{batch}}",
+      "unit": "Unit",
+      "batch": "Batch",
+      "batchPlaceholder": "Select batch",
+      "qty": "Qty",
+      "qtyAria": "Sale quantity",
+      "unitPrice": "Unit price",
+      "discount": "Disc.",
+      "lineTotal": "Line total",
+      "removeLine": "Remove line"
+    },
+    "summary": {
+      "subtotal": "Subtotal",
+      "lineDiscount": "Line discounts",
+      "orderDiscount": "Order disc.",
+      "orderDiscountMax": "(Max {{percent}}%)",
+      "totalDiscount": "Total discount",
+      "payable": "Amount due"
+    },
+    "toolbar": {
+      "warehouse": "Warehouse",
+      "customerRequired": "Select customer",
+      "customerOptional": "Customer (optional)",
+      "quickAddCustomer": "Quick add customer",
+      "appDraftMode": "Send order via customer app",
+      "selectCustomerForApp": "Select a customer to send via app",
+      "scanPlaceholder": "Scan barcode or type code / name",
+      "searchOptionLabel": "{{code}} — {{name}} · stock {{stock}} {{unit}}",
+      "noProducts": "No matching products",
+      "checkout": "Checkout",
+      "sendCustomer": "Send",
+      "saveDraft": "Save draft",
+      "updateDraft": "Update draft",
+      "selectCustomerBeforeSend": "Select customer before sending to app"
+    },
+    "alerts": {
+      "editingDraft": "Editing draft {{number}}",
+      "editingDraftDesc": "Adjust cart then Update draft, or Checkout to complete.",
+      "discardEdit": "Discard",
+      "countingTitle": "Warehouse {{warehouse}} is counting ({{number}})",
+      "countingDesc": "Standard process: limit sales/receipts during count to avoid stock variance. Finish counting before posting.",
+      "countingAction": "Count screen",
+      "shiftNotOpenTitle": "No open shift for this warehouse",
+      "shiftNotOpenDesc": "Open shift and enter opening cash before checkout.",
+      "openShift": "Open shift",
+      "shiftOpen": "Shift {{number}} · Opening {{opening}}",
+      "shiftOpenDesc": "Opened {{openedAt}} — Net shift: {{net}}",
+      "pendingDraftsTitle": "Customer has draft orders ready",
+      "pendingDraftConfirmed": " · Customer pre-confirmed",
+      "loadIntoPos": "Load POS",
+      "pendingDraftsHint": "Confirm with customer at counter. Load POS to checkout and print.",
+      "appDraftModeTitle": "Customer app draft mode",
+      "appDraftModeDesc": "Build cart → Send to customer. Customer reviews on app; pay at counter on pickup.",
+      "completedTitle": "Completed {{orderNumber}}",
+      "printInvoice": "Print invoice",
+      "viewOrders": "View orders"
+    },
+    "messages": {
+      "loadDraftFailed": "Could not load draft order",
+      "loadReservationFailed": "Could not load reservation",
+      "loadShiftFailed": "Could not load shift status",
+      "draftLoadedCheckout": "Loaded {{number}} — opening checkout...",
+      "draftLoadedCart": "Loaded {{number}} into cart — click Checkout when ready",
+      "reservationLoadedCheckout": "Loaded {{number}} — opening checkout...",
+      "reservationLoadedCart": "Loaded {{number}} into cart — click Checkout when ready",
+      "customerSelected": "Selected {{name}} ({{code}})",
+      "draftNotDraft": "Order is no longer a draft",
+      "loadDraftOrderFailed": "Could not load draft order",
+      "noDiscountPermission": "Account cannot apply discounts",
+      "lineDiscountOverMax": "Line discount exceeds {{max}}%",
+      "orderDiscountOverMax": "Order discount exceeds {{max}}%",
+      "fefoFailed": "Insufficient FEFO stock",
+      "outOfStock": "Product out of stock at this warehouse",
+      "batchAssigned": "Assigned batch {{batch}} — {{name}}",
+      "productNotFound": "Product not found",
+      "selectWarehouseFirst": "Select warehouse first",
+      "addProductFirst": "Add at least one product",
+      "savingDraft": "Saving draft...",
+      "updatingDraft": "Updating draft...",
+      "draftSaved": "Draft saved {{number}} — {{amount}}",
+      "draftUpdated": "Updated {{number}}",
+      "draftTempUpdated": "Draft updated {{number}} — {{amount}}",
+      "draftSavedOrder": "Draft saved {{number}}",
+      "updateDraftFailed": "Could not update draft",
+      "saveDraftFailed": "Could not save draft",
+      "selectCustomerForApp": "Select customer before sending to app",
+      "sendingDraft": "Sending draft to customer app...",
+      "draftSent": "Sent {{number}} to customer app",
+      "draftSentWaiting": "{{number}} sent — waiting for customer confirmation",
+      "draftConfirmed": "{{number}} — customer confirmed on app",
+      "sendDraftFailed": "Could not send draft",
+      "cartEmpty": "Cart is empty",
+      "creatingSale": "Recording sale...",
+      "linkDraftFailed": "Sold but could not link draft — contact IT if needed.",
+      "linkReservationFailed": "Sold but could not link reservation — contact IT if needed.",
+      "printBlocked": "Browser blocked print window — click Print invoice below.",
+      "openShiftBeforeCheckout": "Open shift before checkout",
+      "selectWarehouseForShift": "Select warehouse before opening shift",
+      "shiftOpened": "Shift opened {{number}}",
+      "openShiftFailed": "Could not open shift"
+    },
+    "shift": {
+      "alreadyOpen": "Warehouse already has shift {{number}} open — you can continue selling.",
+      "openTitle": "Open shift",
+      "openConfirm": "Open shift",
+      "warehouse": "Warehouse",
+      "openingCashLabel": "Opening cash",
+      "openingCashHint": "Opening cash is cash in the drawer before sales. A shift must be open before checkout.",
+      "invalidOpeningCash": "Invalid opening cash"
+    },
+    "customerDraft": {
+      "barTitle": "Customer app draft",
+      "confirmedAt": "Customer confirmed: {{time}}",
+      "sentAt": "Sent to app: {{time}}"
+    },
+    "stock": {
+      "outOfStock": "Out of stock at this warehouse (unit: {{unit}}).",
+      "capped": "Only {{cap}} available in stock. Maximum sale quantity is {{cap}}."
+    },
+    "batch": {
+      "labelMismatch": "Batch \"{{label}}\" does not match stock for \"{{product}}\"",
+      "hintLine": "{{batch}} · exp. {{expiry}} · book qty {{qty}}",
+      "suggestedBatch": "{{batch}} ({{expiry}})",
+      "allocationLine": "{{batch}} × {{qty}} (exp. {{expiry}})"
+    },
+    "allocation": {
+      "stockSourceSystem": "System stock"
+    }
+  },
+  "receipt": {
+    "orderStatus": {
+      "partialReturn": "Partial return",
+      "1": "Draft",
+      "2": "Completed",
+      "3": "Cancelled",
+      "4": "Refunded"
+    },
+    "voucher": "Voucher",
+    "voucherNamed": "Voucher {{code}} — {{name}}",
+    "voucherCode": "Voucher {{code}}",
+    "invoice": {
+      "docTitle": "INV {{number}}",
+      "title": "SALES RECEIPT",
+      "phonePrefix": "Tel",
+      "orderNo": "No.",
+      "date": "Date",
+      "shift": "Shift",
+      "customer": "Customer",
+      "walkIn": "Walk-in",
+      "pointsEarned": "Points earned: +{{points}} pts",
+      "creditNoPoints": "Credit portion earns no points",
+      "pointsRedeemed": "Points redeemed: −{{points}} pts (−{{amount}})",
+      "voucherLine": "Voucher: −{{amount}}",
+      "status": "Status",
+      "lineDiscount": "Disc.",
+      "subtotal": "Subtotal",
+      "lineDiscountTotal": "Line discount",
+      "orderDiscount": "Order discount",
+      "pointsRedeemedTotal": "Redeem {{points}} pts",
+      "customerPaid": "Customer paid",
+      "refunded": "Refunded",
+      "remaining": "Remaining",
+      "grandTotal": "TOTAL",
+      "paid": "Paid",
+      "outstanding": "Outstanding (this order)",
+      "payment": "Payment",
+      "notes": "Notes",
+      "reprintAfterReturn": "Reprint after return — quantities show remaining amounts.",
+      "thanks": "Thank you!",
+      "seeAgain": "See you again",
+      "disclaimer": "Retail receipt — not a VAT invoice"
+    },
+    "return": {
+      "docTitle": "{{number}}",
+      "title": "RETURN RECEIPT",
+      "returnNo": "Return no.",
+      "orderNo": "Sale order",
+      "returnDate": "Return date",
+      "reason": "Reason",
+      "batch": "Batch",
+      "qtyReturned": "Qty returned",
+      "refundTotal": "TOTAL REFUND",
+      "refund": "Refund",
+      "footerDone": "Return completed",
+      "footerNote": "Return receipt — internal use"
+    }
+  },
+  "paymentSummary": {
+    "unchanged": "unchanged",
+    "lineSimple": "{{method}}: {{amount}}",
+    "lineUnchanged": "{{method}}: {{amount}} ({{unchanged}})",
+    "lineDetailed": "{{method}}: Collected {{collected}} · Refund −{{refunded}} · Net {{net}}"
+  },
+  "orderDetail": {
+    "financials": {
+      "paymentMethod": "Method",
+      "collected": "Collected",
+      "refunded": "Refund",
+      "net": "Net",
+      "lineDiscount": "Line discount",
+      "orderDiscount": "Order discount",
+      "customerDue": "Customer due",
+      "refundTotal": "Refunded (returns)",
+      "remainingGoods": "Remaining goods total",
+      "paymentAfterReturn": "Payment after return",
+      "payment": "Payment",
+      "outstandingNote": "The table below lists actual collections only; credit is shown under \"Outstanding (this order)\" above.",
+      "refundInferredNote": "Refunds are allocated by original collection ratio — see return receipt for exact refund methods.",
+      "netCollectedTotal": "Net collected total",
+      "collectedCashTransfer": "Collected (cash/transfer…)",
+      "collectThisOrder": "Collect this order",
+      "pointsRedeem": "Redeem {{points}} pts"
+    }
+  },
+  "orders": {
+    "title": "Sales orders",
+    "appDraftAlert": {
+      "message": "Customer app orders (Send to customer at POS) are under Customer app orders",
+      "description": "This tab lists internal sales only (draft / completed). Orders awaiting customer confirmation on the app are under Sales → Customer app orders.",
+      "action": "Open customer app orders"
+    },
+    "filters": {
+      "status": "Status",
+      "clear": "Clear filters",
+      "reload": "Reload",
+      "documentPlaceholder": "Order no."
+    },
+    "paginationTotal": "{{count}} orders",
+    "columns": {
+      "orderNumber": "Order no.",
+      "warehouse": "Warehouse",
+      "customer": "Customer",
+      "date": "Date",
+      "status": "Status",
+      "total": "Total",
+      "outstanding": "Due {{amount}}",
+      "actions": "Actions",
+      "view": "View",
+      "printInvoice": "Print invoice"
+    },
+    "lines": {
+      "productCode": "SKU",
+      "productName": "Product",
+      "batch": "Batch",
+      "expiry": "Exp.",
+      "unit": "Unit",
+      "qty": "Qty",
+      "returnedQty": "Returned",
+      "unitPrice": "Unit price",
+      "lineTotal": "Line total"
+    },
+    "returns": {
+      "title": "Return receipts",
+      "returnNumber": "Return no.",
+      "date": "Date",
+      "status": "Status",
+      "refundTotal": "Total refund",
+      "view": "View",
+      "print": "Print"
+    },
+    "detail": {
+      "drawerTitle": "View {{orderNumber}}",
+      "drawerTitleDefault": "View sales order",
+      "draftAlert": {
+        "message": "Draft order — stock not deducted yet",
+        "description": "Click Complete order to issue invoice, deduct stock (FEFO), and enable returns later."
+      },
+      "actions": {
+        "title": "Actions",
+        "continueEdit": "Continue editing",
+        "complete": "Complete order",
+        "cancelConfirm": "Cancel draft order?",
+        "cancel": "Cancel order",
+        "printInvoice": "Print invoice",
+        "return": "Return goods",
+        "collectDebt": "Collect payment"
+      },
+      "descriptions": {
+        "warehouse": "Warehouse",
+        "customer": "Customer",
+        "voucher": "Voucher",
+        "pointsRedeem": "Points redeemed",
+        "pointsEarned": "Points earned",
+        "status": "Status",
+        "date": "Date",
+        "shift": "Shift",
+        "pointsUnit": "pts"
+      }
+    },
+    "messages": {
+      "loadFailed": "Could not load sales orders",
+      "returnsLoadFailed": "Could not load order returns",
+      "detailLoadFailed": "Could not load order details",
+      "customerSelected": "Selected {{name}} ({{code}})",
+      "draftNotFound": "Draft order not found",
+      "printBlocked": "Browser blocked print window — use Print invoice in order details.",
+      "completeFailed": "Could not complete order",
+      "cancelSuccess": "Draft order cancelled",
+      "cancelFailed": "Could not cancel order",
+      "printBlockedRetry": "Browser blocked print window — allow popups and try again.",
+      "invoicePrintFailed": "Could not print invoice",
+      "returnPrintFailed": "Could not print return receipt",
+      "returnSuccess": "Return recorded {{returnNumber}}",
+      "returnPrintBlocked": "Browser blocked print window — reopen from order details.",
+      "returnFailed": "Could not process return",
+      "noCustomerForDebt": "Order has no customer for debt collection"
+    }
+  },
+  "returns": {
+    "list": {
+      "title": "Return receipts",
+      "filters": {
+        "documentPlaceholder": "Return no. / sale order",
+        "clear": "Clear filters",
+        "reload": "Reload"
+      },
+      "columns": {
+        "returnNumber": "Return no.",
+        "orderNumber": "Sale order",
+        "returnDate": "Return date",
+        "status": "Status",
+        "shift": "Shift",
+        "refundTotal": "Total refund",
+        "actions": "Actions",
+        "view": "View",
+        "print": "Print"
+      },
+      "paginationTotal": "{{count}} receipts",
+      "messages": {
+        "loadFailed": "Could not load return receipts",
+        "printBlocked": "Browser blocked print window — allow popups and try again.",
+        "printFailed": "Could not print return receipt"
+      }
+    },
+    "modal": {
+      "title": "Return — {{orderNumber}}",
+      "titleDefault": "Return goods",
+      "confirm": "Record return & refund",
+      "customerDue": "Customer due (order)",
+      "refundThisTime": "Refund this time",
+      "debtReduced": "Debt reduced",
+      "cashRefund": "Cash refund to customer",
+      "creditOnlyNote": "Credit order — no cash refund, only reduces order balance.",
+      "reason": "Reason",
+      "lineQty": "{{productName}} (max return {{max}})",
+      "paymentMethod": "Refund method",
+      "paymentMethodRequired": "Select refund method",
+      "customerRefund": "Refund to customer",
+      "refundViaShift": "Refund via {{method}} — recorded on shift report."
+    },
+    "detail": {
+      "drawerTitle": "Return {{returnNumber}}",
+      "drawerTitleDefault": "Return receipt details",
+      "actions": {
+        "title": "Actions",
+        "print": "Print return receipt",
+        "viewOrder": "View sale order"
+      },
+      "descriptions": {
+        "returnNumber": "Return no.",
+        "orderNumber": "Sale order",
+        "returnDate": "Return date",
+        "status": "Status",
+        "shift": "Shift",
+        "reason": "Return reason",
+        "refundTotal": "Total refund"
+      },
+      "lines": {
+        "productCode": "SKU",
+        "productName": "Product",
+        "batch": "Batch",
+        "qty": "Qty returned",
+        "refundAmount": "Refund"
+      },
+      "paymentsTitle": "Refund methods",
+      "messages": {
+        "loadFailed": "Could not load return receipt details",
+        "printBlocked": "Browser blocked print window — allow popups and try again."
+      }
+    }
+  },
+  "customerPayments": {
+    "title": "Customer collections",
+    "create": "Record collection",
+    "alert": {
+      "message": "Saving creates a pending receipt — order debt is reduced only after you Post it from the receipt details."
+    },
+    "filters": {
+      "status": "Status",
+      "documentPlaceholder": "Receipt no. / sale order",
+      "clear": "Clear filters",
+      "reload": "Reload"
+    },
+    "columns": {
+      "paymentNumber": "Receipt no.",
+      "customer": "Customer",
+      "amount": "Amount",
+      "paymentMethod": "Method",
+      "status": "Status",
+      "paymentDate": "Collection date",
+      "orderNumber": "Sale order",
+      "view": "View"
+    },
+    "detail": {
+      "drawerTitleDefault": "Collection receipt details",
+      "customer": "Customer",
+      "amount": "Amount",
+      "paymentMethod": "Method",
+      "status": "Status",
+      "paymentDate": "Collection date",
+      "orderNumber": "Sale order",
+      "notes": "Notes",
+      "edit": "Edit",
+      "post": "Post",
+      "postConfirm": "Post collection receipt?",
+      "cancel": "Cancel",
+      "cancelConfirm": "Cancel receipt?"
+    },
+    "form": {
+      "editTitle": "Edit collection receipt",
+      "createTitle": "Record collection",
+      "save": "Save",
+      "customer": "Customer",
+      "customerRequired": "Select a customer",
+      "orderLink": "Link to sale order (optional)",
+      "orderPlaceholder": "Select order with balance",
+      "orderSelectCustomerFirst": "Select a customer first",
+      "amount": "Collection amount",
+      "amountRequired": "Enter amount",
+      "paymentMethod": "Method",
+      "paymentDate": "Collection date",
+      "notes": "Notes",
+      "orderOption": "{{orderNumber}} — due {{outstanding}}",
+      "hint": {
+        "noOutstanding": "This sale order has no balance — cannot record collection against it.",
+        "orderOutstanding": "Order {{orderNumber}} balance: {{outstanding}}",
+        "genericOutstanding": "Balance: {{outstanding}}",
+        "description": "Collection cannot exceed the order balance. Debt is reduced only after posting the receipt.",
+        "fillOutstanding": "Fill full balance"
+      },
+      "messages": {
+        "loadOrdersFailed": "Could not load orders with balance",
+        "loadDetailFailed": "Could not load receipt details",
+        "invalidAmount": "Invalid amount",
+        "amountExceeds": "Collection cannot exceed balance {{outstanding}}",
+        "validatorExceeds": "Cannot exceed balance {{outstanding}}",
+        "updateSuccess": "Updated {{paymentNumber}}",
+        "createSuccess": "Saved {{paymentNumber}}. Click Post to reduce order debt and record collection.",
+        "saveFailed": "Could not save collection receipt",
+        "formInvalid": "Please check the form"
+      }
+    },
+    "messages": {
+      "loadFailed": "Could not load collection receipts",
+      "noPermission": "You do not have permission to record collections",
+      "postSuccess": "Collection posted",
+      "postFailed": "Could not post receipt",
+      "cancelSuccess": "Collection receipt cancelled",
+      "cancelFailed": "Could not cancel receipt"
+    },
+    "paginationTotal": "{{count}} receipts"
+  },
+  "shiftSummary": {
+    "paymentMethod": "Method",
+    "salesAmount": "Sales",
+    "refundAmount": "Refunds",
+    "netAmount": "Net",
+    "totalSales": "Total sales",
+    "totalRefunds": "Total refunds",
+    "netTotal": "Net total",
+    "openingCash": "Opening cash",
+    "cashSales": "Cash sales",
+    "cashRefunds": "Cash refunds",
+    "expectedCash": "Expected cash in drawer",
+    "closingCash": "Closing cash count",
+    "cashVariance": "Variance"
+  },
+  "shiftReport": {
+    "currentShift": {
+      "title": "Work shift",
+      "warehousePlaceholder": "Select warehouse",
+      "reload": "Reload",
+      "openShift": "Open shift",
+      "closeShift": "Close shift",
+      "noOpenShift": "No open shift for this warehouse. Open a shift and enter opening cash before selling on POS.",
+      "descriptions": {
+        "shiftNumber": "Shift no.",
+        "warehouse": "Warehouse",
+        "openedBy": "Opened by",
+        "openedAt": "Opened at",
+        "openingCash": "Opening cash",
+        "status": "Status"
+      },
+      "statusOpen": "Open",
+      "statusClosed": "Closed",
+      "fefoAlert": {
+        "title": "FEFO batch warning ({{source}})",
+        "defaultSource": "System stock",
+        "expirySuffix": " (exp. {{date}})",
+        "line": "{{productCode}} — sold batch {{soldBatch}}{{soldExpiry}} while batch {{earlierBatch}}{{earlierExpiry}} has {{qty}} on books"
+      }
+    },
+    "history": {
+      "title": "Shift history",
+      "columns": {
+        "shiftNumber": "Shift no.",
+        "warehouse": "Warehouse",
+        "openedBy": "Opened by",
+        "openedAt": "Opened at",
+        "openingCash": "Opening cash",
+        "cashVariance": "Cash variance",
+        "status": "Status"
+      }
+    },
+    "rangeReport": {
+      "title": "Report by date range",
+      "reload": "Reload"
+    },
+    "messages": {
+      "loadCurrentFailed": "Could not load current shift",
+      "loadHistoryFailed": "Could not load shift history",
+      "loadReportFailed": "Could not load report",
+      "closeSuccess": "Shift closed",
+      "closeFailed": "Could not close shift"
+    },
+    "closeModal": {
+      "title": "Close shift — {{shiftNumber}}",
+      "titleDefault": "Close shift",
+      "confirm": "Close shift",
+      "intro": "Count cash in the drawer and enter the amount. The system compares it to expected cash {{expected}}.",
+      "closingCash": "Closing cash count",
+      "closingCashRequired": "Enter counted cash",
+      "notes": "Notes (optional)",
+      "notesPlaceholder": "Explain variance if any..."
+    }
+  },
+  "salesLayout": {
+    "navAriaLabel": "Sales menu",
+    "loading": "Loading...",
+    "tabs": {
+      "pos": "POS",
+      "orders": "Sales orders",
+      "customerReceivables": "Receivables",
+      "customerPayments": "Collections",
+      "customerDrafts": "Customer app orders",
+      "customerReservations": "App reservations",
+      "returns": "Returns",
+      "chat": "Customer chat",
+      "shift": "Work shift"
+    }
+  },
+  "salesListSearch": {
+    "customerPlaceholder": "Customer name or phone",
+    "documentPlaceholderDefault": "Order no.",
+    "apply": "Filter",
+    "clear": "Clear filters"
+  },
+  "customerReceivables": {
+    "title": "Customer receivables",
+    "intro": "Balances are based on outstanding amounts on completed sale orders. Unlinked collection receipts are applied to oldest orders when posted.",
+    "searchPlaceholder": "Customer name or phone",
+    "clear": "Clear filters",
+    "paginationTotal": "{{count}} customers",
+    "summaryTotal": "Total",
+    "columns": {
+      "customerCode": "Customer code",
+      "customerName": "Customer",
+      "totalReceivable": "Receivable",
+      "agingCurrent": "0–30 days",
+      "aging31To60": "31–60",
+      "aging61To90": "61–90",
+      "agingOver90": "> 90",
+      "openDocuments": "Open orders"
+    },
+    "detail": {
+      "drawerTitle": "Receivables — {{customerName}}",
+      "drawerTitleDefault": "Receivables details",
+      "createPayment": "Create collection",
+      "loading": "Loading details...",
+      "customerCode": "Customer code",
+      "totalReceivable": "Receivable",
+      "unappliedCredit": "Unapplied credit",
+      "collect": "Collect",
+      "columns": {
+        "orderNumber": "Order no.",
+        "orderDate": "Sale date",
+        "orderTotal": "Order total",
+        "paidAmount": "Collected",
+        "outstanding": "Outstanding",
+        "daysOutstanding": "Age (days)"
+      }
+    },
+    "messages": {
+      "loadFailed": "Could not load customer receivables report",
+      "detailLoadFailed": "Could not load receivables details"
+    }
+  },
+  "customerDrafts": {
+    "title": "Customer app draft orders",
+    "alert": {
+      "message": "Orders sent from POS (Send to customer) appear here — not under Sales orders",
+      "description": "Flow: Draft → Sent → Customer confirmed (optional) → Load POS (checkout + print invoice)."
+    },
+    "filters": {
+      "status": "Status",
+      "documentPlaceholder": "Draft no.",
+      "clear": "Clear filters",
+      "actionable": "Pending ({{count}})",
+      "active": "In progress ({{count}})",
+      "reload": "Reload"
+    },
+    "pendingAlert": {
+      "message": "{{count}} orders pending at counter",
+      "description": "Orders in Customer confirmed or Sent to customer — click Load POS to checkout and print invoice."
+    },
+    "paginationTotal": "{{count}} drafts",
+    "columns": {
+      "draftNumber": "Draft no.",
+      "customer": "Customer",
+      "status": "Status",
+      "itemCount": "Items",
+      "total": "Total",
+      "timeline": "Sent / Confirmed",
+      "actions": "Actions",
+      "view": "View",
+      "loadPos": "Load POS",
+      "hiddenOnApp": "Hidden on app",
+      "confirmedAt": "CF {{time}}",
+      "sentAt": "Sent {{time}}"
+    },
+    "detail": {
+      "drawerTitle": "View {{draftNumber}}",
+      "drawerTitleDefault": "View draft order",
+      "confirmedAlert": {
+        "message": "Customer pre-confirmed on app",
+        "description": "Confirm with customer at counter. Click Load POS to checkout, create sale order, and print invoice."
+      },
+      "sentAlert": {
+        "message": "Sent to app — awaiting customer confirmation (optional)",
+        "description": "Confirm with customer at counter. Click Load POS to checkout, create sale order, and print invoice."
+      },
+      "actions": {
+        "title": "Actions",
+        "loadPos": "Load POS",
+        "cancelConfirm": "Cancel draft order?",
+        "cancel": "Cancel order",
+        "viewOrder": "View sale order {{orderNumber}}"
+      },
+      "descriptions": {
+        "customer": "Customer",
+        "phone": "Phone",
+        "status": "Status",
+        "total": "Total",
+        "sentAt": "Sent to app",
+        "confirmedAt": "Customer confirmed",
+        "salesOrder": "Sale order"
+      },
+      "lines": {
+        "productCode": "SKU",
+        "productName": "Product",
+        "unit": "Unit",
+        "qty": "Qty",
+        "unitPrice": "Unit price",
+        "lineTotal": "Line total"
+      }
+    },
+    "messages": {
+      "loadFailed": "Could not load customer app drafts",
+      "detailLoadFailed": "Could not load draft order details",
+      "cancelSuccess": "Draft order cancelled",
+      "cancelFailed": "Could not cancel draft order"
+    },
+    "drawer": {
+      "title": "Draft order — {{customerName}}",
+      "defaultCustomer": "Customer",
+      "alert": "Send draft orders to the customer app (not via chat). Customer may view/confirm optionally; payment at POS.",
+      "existingList": "Draft orders",
+      "emptyList": "No draft orders yet",
+      "sendToCustomer": "Send to customer",
+      "cancel": "Cancel",
+      "lineSummary": "{{count}} items · {{amount}}",
+      "createNew": "Create new draft",
+      "productSearchPlaceholder": "Search product (name, code...)",
+      "searchMinChars": "Enter at least 2 characters",
+      "productNotFound": "No products found",
+      "qtyLabel": "Qty",
+      "dosagePlaceholder": "Dosage / note (optional)",
+      "notesPlaceholder": "Order notes (optional)",
+      "estimatedTotal": "Subtotal: {{amount}}",
+      "saveDraft": "Save draft",
+      "messages": {
+        "loadFailed": "Could not load draft orders",
+        "addProductRequired": "Add at least one product",
+        "saveSuccess": "Draft saved",
+        "saveFailed": "Could not save draft",
+        "sendSuccess": "Draft sent to customer app",
+        "sendFailed": "Could not send draft",
+        "addProductFailed": "Could not add product"
+      }
+    },
+    "notifications": {
+      "confirmedTitle": "Customer confirmed draft",
+      "confirmedBody": "{{draftNumber}} — ready to load at POS.",
+      "cancelledTitle": "Customer cancelled draft",
+      "cancelledBody": "{{draftNumber}} — no action needed at counter."
+    }
+  },
+  "receiptSettings": {
+    "receiptCard": {
+      "title": "Receipt (POS)",
+      "storeName": "Store name",
+      "storeNameRequired": "Enter store name",
+      "tagline": "Tagline",
+      "phone": "Phone",
+      "address": "Address",
+      "save": "Save receipt settings",
+      "placeholders": {
+        "storeName": "NOVIXA PHARMACY",
+        "tagline": "Community health care",
+        "phone": "0984.660.399",
+        "address": "Street, ward, district, city/province"
+      }
+    },
+    "batchCard": {
+      "title": "Batch management (FEFO)",
+      "save": "Save batch mode"
+    },
+    "messages": {
+      "loadFailed": "Could not load sales settings",
+      "receiptSaveSuccess": "Receipt settings saved",
+      "receiptSaveFailed": "Could not save receipt settings",
+      "batchSaveSuccess": "Batch mode saved",
+      "batchSaveFailed": "Could not save batch mode"
+    },
+    "defaults": {
+      "storeName": "NOVIXA PHARMACY",
+      "tagline": "Community health care",
+      "phone": "0984.660.399"
+    }
+  },
+  "batchMode": {
+    "options": {
+      "off": "Off — no batch hints on POS",
+      "suggest": "FEFO batch hints (default)",
+      "label_optional": "Batch label — optional",
+      "label_required": "Batch label — required"
+    },
+    "hints": {
+      "off": "POS shows no batch hints; backend still uses FEFO when completing orders.",
+      "suggest": "Staff see FEFO batch hints (tooltip) when selling; batches are not shown on customer receipt.",
+      "label_optional": "POS shows a batch column; can be left blank (no shift FEFO alerts).",
+      "label_required": "POS requires a batch matching stock; enables FEFO compliance alerts on work shift (standard FEFO)."
+    }
+  },
+  "customerReservations": {
+    "filters": {
+      "status": "Status",
+      "documentPlaceholder": "Request no.",
+      "awaiting": "Awaiting action ({{count}})",
+      "reload": "Reload"
+    },
+    "columns": {
+      "reservationNumber": "Request no.",
+      "customerName": "Customer",
+      "phone": "Phone",
+      "status": "Status",
+      "fulfillmentType": "Fulfillment",
+      "itemCount": "Items",
+      "submittedAt": "Submitted",
+      "view": "View"
+    },
+    "detail": {
+      "drawerTitleDefault": "Reservation details",
+      "status": "Status",
+      "fulfillmentType": "Fulfillment",
+      "address": "Address",
+      "customerNotes": "Customer notes",
+      "salesOrder": "Sales invoice",
+      "submittedAt": "Submitted",
+      "productsHeader": "Products",
+      "staffNotesPlaceholder": "Internal notes (e.g. expected in stock tomorrow)",
+      "saveNotes": "Save notes",
+      "confirmPopconfirm": "Confirm this request?",
+      "confirm": "Confirm",
+      "rejectPopconfirm": "Reject this request?",
+      "reject": "Reject",
+      "readyPopconfirm": "Mark as ready?",
+      "markReady": "Ready for pickup",
+      "loadPos": "Sell on POS — create invoice"
+    },
+    "messages": {
+      "loadFailed": "Could not load reservation requests",
+      "detailLoadFailed": "Could not load details",
+      "actionFailed": "Action failed",
+      "notesSaved": "Notes saved",
+      "notesSaveFailed": "Could not save notes",
+      "confirmed": "Confirmed",
+      "rejected": "Rejected",
+      "ready": "Marked ready"
+    }
+  },
+  "customerChat": {
+    "title": "Customer chat",
+    "loadFailed": "Could not load chat list",
+    "loadFailedBanner": "Could not load chat",
+    "retry": "Retry",
+    "sidebarHint": "Could not load — click Retry above",
+    "noThreads": "No conversations yet",
+    "noMessages": "No messages yet",
+    "selectCustomer": "Select a customer to view conversation",
+    "draftOrders": "Draft orders",
+    "replyPlaceholder": "Reply to customer...",
+    "send": "Send",
+    "messagesLoadFailed": "Could not load messages",
+    "sendFailed": "Could not send message",
+    "notifications": {
+      "newMessageTitle": "New customer message",
+      "newMessagePreview": "New message",
+      "unreadBody": "You have {{count}} unread messages"
+    }
+  },
+  "loyaltySettings": {
+    "title": "Customer loyalty",
+    "loyaltyEnabled": "Enable loyalty",
+    "switchOn": "On",
+    "switchOff": "Off",
+    "programSection": "Program",
+    "programCode": "Program code",
+    "programName": "Display name",
+    "enterCode": "Enter code",
+    "enterName": "Enter name",
+    "pointsPerAmount": "Spend amount to earn",
+    "pointsEarned": "Points earned",
+    "onePoint": "1 point",
+    "earnRuleHint": "Example: {{amount}} → 1 point — earn and redeem on POS use the same rule (spend {{amount}} for +1 point; redeem 1 point for {{amount}} off).",
+    "maxRedeemPercent": "Max discount per order (%)",
+    "redeemExampleHint": "Example: customer has 100 points (= {{pointsValue}}) but on a {{orderAmount}} order with a {{percent}}% cap, they can only redeem up to {{maxDiscount}} in points, not the full order value.",
+    "tiersSection": "Membership tiers",
+    "tierColumns": {
+      "code": "Code",
+      "name": "Tier name",
+      "minPoints": "From (points)",
+      "discountPercent": "Discount %"
+    },
+    "tierCodePlaceholder": "BRONZE",
+    "tierNamePlaceholder": "Bronze",
+    "addTier": "Add tier",
+    "save": "Save loyalty settings",
+    "messages": {
+      "loadFailed": "Could not load loyalty settings",
+      "saveSuccess": "Loyalty settings saved",
+      "saveFailed": "Could not save loyalty settings"
+    }
+  },
+  "vouchers": {
+    "title": "Customer vouchers",
+    "intro": "Create discount codes, issue to customer wallets — customers see them in the app; staff apply at POS.",
+    "refresh": "Refresh",
+    "create": "Create voucher",
+    "paginationTotal": "{{count}} vouchers",
+    "loadFailed": "Could not load voucher list",
+    "loadErrorHint": "Check the API is running at http://localhost:5290 — run .\\scripts\\restart-api.ps1 if needed.",
+    "retry": "Retry",
+    "columns": {
+      "actions": "Actions",
+      "code": "Code",
+      "name": "Name",
+      "discount": "Discount",
+      "minOrder": "Min order",
+      "validity": "Valid",
+      "usage": "Used/Issued",
+      "status": "Status"
+    },
+    "actions": {
+      "issueToCustomer": "Issue to customer",
+      "issueAria": "Issue",
+      "delete": "Delete",
+      "deleteConfirm": "Delete voucher?",
+      "deleteWithIssued": "{{code}} · remove from {{count}} unused customer wallets",
+      "cancel": "Cancel",
+      "cannotDeleteUsed": "Voucher was used — deactivate instead of deleting",
+      "viewIssued": "View issued list",
+      "viewIssuedAria": "View issued"
+    },
+    "modal": {
+      "editTitle": "Edit voucher",
+      "createTitle": "Create voucher",
+      "save": "Save",
+      "voucherCode": "Voucher code",
+      "enterCode": "Enter code",
+      "active": "Active",
+      "displayName": "Display name",
+      "enterName": "Enter name",
+      "namePlaceholder": "50,000 off orders from 300k",
+      "discountType": "Discount type",
+      "discountValue": "Value",
+      "minOrderAmount": "Minimum order",
+      "maxUses": "Max uses (blank = unlimited)",
+      "maxUsesPlaceholder": "Unlimited",
+      "validRange": "Valid period",
+      "selectDateRange": "Select date range",
+      "codePlaceholder": "WELCOME50K",
+      "switchOn": "On",
+      "switchOff": "Off"
+    },
+    "issue": {
+      "title": "Issue voucher",
+      "titleWithCode": "Issue voucher · {{code}}",
+      "hint": "Select a customer to add to their wallet (visible in the customer app immediately).",
+      "customerPlaceholder": "Search customer name / phone",
+      "submit": "Issue voucher",
+      "bulkIssue": "Issue to many customers",
+      "issuedCount": "Issued ({{count}})",
+      "columns": {
+        "customer": "Customer",
+        "phone": "Phone",
+        "issuedAt": "Issued at",
+        "status": "Status"
+      },
+      "used": "Used",
+      "unused": "Unused"
+    },
+    "messages": {
+      "loadFailed": "Could not load vouchers",
+      "updateSuccess": "Voucher updated",
+      "createSuccess": "Voucher created",
+      "saveFailed": "Could not save voucher",
+      "deleteSuccess": "Voucher deleted",
+      "deleteFailed": "Could not delete voucher",
+      "issuedListLoadFailed": "Could not load issued list",
+      "selectCustomer": "Select a customer",
+      "issueSuccess": "Voucher issued to customer",
+      "issueFailed": "Could not issue voucher"
+    },
+    "bulkIssue": {
+      "title": "Bulk issue",
+      "titleWithCode": "Bulk issue · {{code}}",
+      "issueButton": "Issue ({{count}})",
+      "searchPlaceholder": "Search name / phone / customer code",
+      "searchCustomers": "Find customers",
+      "revenue": "Revenue",
+      "minRevenue": "Minimum",
+      "thisMonth": "This month",
+      "birthday": "Birthday",
+      "tier": "Tier",
+      "selectTiers": "Select tiers",
+      "hideAlreadyIssued": "Hide already issued",
+      "paginationTotal": "{{count}} customers",
+      "columns": {
+        "code": "Code",
+        "customer": "Customer",
+        "phone": "Phone",
+        "tier": "Tier",
+        "revenue": "Rev.",
+        "birthday": "DOB",
+        "voucher": "Voucher"
+      },
+      "hasVoucher": "Yes",
+      "noVoucher": "No",
+      "messages": {
+        "searchFailed": "Could not search customers",
+        "selectAtLeastOne": "Select at least one customer",
+        "issueSuccess": "Issued to {{issued}} customers",
+        "issueSuccessSkipped": "Issued to {{issued}} customers · skipped {{skipped}} already had it",
+        "issueFailed": "Could not bulk issue vouchers"
+      }
+    }
+  },
+  "customerConsent": {
+    "title": "Customer consent (CDP)",
+    "alert": {
+      "message": "Opt-in / opt-out by channel & purpose",
+      "description": "Each save writes a customer.consent.updated event to integration_outbox for the CDP worker. In-app / AI pharmacist support consent enables two-way chat in the customer app."
+    },
+    "selectCustomer": "Select customer",
+    "save": "Save consent",
+    "columns": {
+      "channel": "Channel",
+      "purpose": "Purpose",
+      "granted": "Granted",
+      "updated": "Updated"
+    },
+    "messages": {
+      "loadFailed": "Could not load customer consent",
+      "selectCustomer": "Select a customer",
+      "saveSuccess": "Consent saved — CDP event written to outbox",
+      "saveFailed": "Could not save consent",
+      "apiNotFound": "Customer consent API endpoint not available — run .\\scripts\\restart-api.ps1 and try again.",
+      "migrationMissing": "{{message}} — migration 016 may be missing: run setup-and-migrate or psql -f migrations/016_customer_consents_and_outbox.sql"
+    }
+  }
+}

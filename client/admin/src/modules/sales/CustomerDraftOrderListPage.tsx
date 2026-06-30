@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Button,
@@ -13,19 +14,13 @@ import {
   message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import {
-  EyeOutlined,
-  ReloadOutlined,
-  ShoppingCartOutlined,
-} from '@ant-design/icons';
+import { EyeOutlined, ReloadOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   cancelCustomerDraftOrder,
   CUSTOMER_DRAFT_ORDER_STATUS,
   CUSTOMER_DRAFT_ORDER_STATUS_COLORS,
-  CUSTOMER_DRAFT_ORDER_STATUS_FILTER_OPTIONS,
-  CUSTOMER_DRAFT_ORDER_STATUS_LABELS,
   fetchCustomerDraftOrder,
   fetchCustomerDraftOrders,
   type CustomerDraftOrder,
@@ -33,6 +28,7 @@ import {
 } from '@/shared/api/customer-draft-orders.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 import { CustomerDraftOrderStatusBar } from '@/modules/sales/CustomerDraftOrderStatusBar';
 import { sectionGapStyle, TabularMoney } from '@/modules/sales/sales-ui-styles';
 import {
@@ -61,6 +57,8 @@ function isActionableStatus(status: number): boolean {
 }
 
 export function CustomerDraftOrderListPage() {
+  const { t } = useTranslation('sales', { keyPrefix: 'customerDrafts' });
+  const { customerDraftStatusLabel, customerDraftStatusOptions } = useSalesEnums();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const canWrite = useHasPermission('sales.write');
@@ -83,11 +81,11 @@ export function CustomerDraftOrderListPage() {
     try {
       setItems(await fetchCustomerDraftOrders());
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được đơn tạm app'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load();
@@ -143,19 +141,22 @@ export function CustomerDraftOrderListPage() {
     setDocumentQuery('');
   };
 
-  const openDetailById = useCallback(async (draftOrderId: string) => {
-    setDetailOpen(true);
-    setDetail(null);
-    setDetailLoading(true);
-    try {
-      setDetail(await fetchCustomerDraftOrder(draftOrderId));
-    } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được chi tiết đơn tạm'));
-      setDetailOpen(false);
-    } finally {
-      setDetailLoading(false);
-    }
-  }, []);
+  const openDetailById = useCallback(
+    async (draftOrderId: string) => {
+      setDetailOpen(true);
+      setDetail(null);
+      setDetailLoading(true);
+      try {
+        setDetail(await fetchCustomerDraftOrder(draftOrderId));
+      } catch (error) {
+        message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
+        setDetailOpen(false);
+      } finally {
+        setDetailLoading(false);
+      }
+    },
+    [t],
+  );
 
   const deepLinkHandled = useRef<string | null>(null);
 
@@ -185,107 +186,144 @@ export function CustomerDraftOrderListPage() {
   const handleCancel = async (draftOrderId: string) => {
     try {
       await cancelCustomerDraftOrder(draftOrderId);
-      message.success('Đã hủy đơn tạm');
+      message.success(t('messages.cancelSuccess'));
       setDetailOpen(false);
       await load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không hủy được đơn tạm'));
+      message.error(apiErrorMessage(error, t('messages.cancelFailed')));
     }
   };
 
-  const columns: ColumnsType<CustomerDraftOrderListItem> = [
-    {
-      title: 'Số đơn',
-      dataIndex: 'draftNumber',
-      width: 130,
-    },
-    {
-      title: 'Khách',
-      dataIndex: 'customerName',
-      ellipsis: true,
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      width: 170,
-      render: (status: number, row) => (
-        <Space size={4} wrap>
-          <Tag color={CUSTOMER_DRAFT_ORDER_STATUS_COLORS[status] ?? 'default'}>
-            {CUSTOMER_DRAFT_ORDER_STATUS_LABELS[status] ?? status}
-          </Tag>
-          {row.hiddenByCustomerAt ? <Tag color="default">Ẩn trên app</Tag> : null}
-        </Space>
-      ),
-    },
-    {
-      title: 'SP',
-      dataIndex: 'itemCount',
-      width: 56,
-      align: 'center',
-    },
-    {
-      title: 'Tổng tiền',
-      dataIndex: 'totalAmount',
-      width: 120,
-      align: 'right',
-      render: (value: number) => <TabularMoney>{formatDisplayMoney(value)}</TabularMoney>,
-    },
-    {
-      title: 'Gửi / Xác nhận',
-      key: 'timeline',
-      width: 150,
-      render: (_, row) => {
-        if (row.confirmedAt) {
-          return (
-            <span style={{ fontSize: 12, color: '#059669' }}>
-              XN {dayjs(row.confirmedAt).format('DD/MM HH:mm')}
-            </span>
-          );
-        }
-        if (row.sentAt) {
-          return (
-            <span style={{ fontSize: 12, color: '#64748b' }}>
-              Gửi {dayjs(row.sentAt).format('DD/MM HH:mm')}
-            </span>
-          );
-        }
-        return '—';
+  const lineColumns = useMemo(
+    () => [
+      { title: t('detail.lines.productCode'), dataIndex: 'productCode', width: 100 },
+      { title: t('detail.lines.productName'), dataIndex: 'productName', ellipsis: true },
+      { title: t('detail.lines.unit'), dataIndex: 'unitName', width: 72 },
+      { title: t('detail.lines.qty'), dataIndex: 'quantity', width: 56, align: 'right' as const },
+      {
+        title: t('detail.lines.unitPrice'),
+        dataIndex: 'unitPrice',
+        width: 100,
+        align: 'right' as const,
+        render: (v: number) => formatDisplayMoney(v),
       },
-    },
-    {
-      title: 'Thao tác',
-      key: 'actions',
-      width: 160,
-      render: (_, row) => (
-        <Space size={4} onClick={(e) => e.stopPropagation()}>
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => void openDetail(row)}>
-            Xem
-          </Button>
-          {isActionableStatus(row.status) && canWrite ? (
+      {
+        title: t('detail.lines.lineTotal'),
+        dataIndex: 'lineAmount',
+        width: 110,
+        align: 'right' as const,
+        render: (v: number) => formatDisplayMoney(v),
+      },
+    ],
+    [t],
+  );
+
+  const columns: ColumnsType<CustomerDraftOrderListItem> = useMemo(
+    () => [
+      {
+        title: t('columns.draftNumber'),
+        dataIndex: 'draftNumber',
+        width: 130,
+      },
+      {
+        title: t('columns.customer'),
+        dataIndex: 'customerName',
+        ellipsis: true,
+      },
+      {
+        title: t('columns.status'),
+        dataIndex: 'status',
+        width: 170,
+        render: (status: number, row) => (
+          <Space size={4} wrap>
+            <Tag color={CUSTOMER_DRAFT_ORDER_STATUS_COLORS[status] ?? 'default'}>
+              {customerDraftStatusLabel(status)}
+            </Tag>
+            {row.hiddenByCustomerAt ? (
+              <Tag color="default">{t('columns.hiddenOnApp')}</Tag>
+            ) : null}
+          </Space>
+        ),
+      },
+      {
+        title: t('columns.itemCount'),
+        dataIndex: 'itemCount',
+        width: 56,
+        align: 'center',
+      },
+      {
+        title: t('columns.total'),
+        dataIndex: 'totalAmount',
+        width: 120,
+        align: 'right',
+        render: (value: number) => <TabularMoney>{formatDisplayMoney(value)}</TabularMoney>,
+      },
+      {
+        title: t('columns.timeline'),
+        key: 'timeline',
+        width: 150,
+        render: (_, row) => {
+          if (row.confirmedAt) {
+            return (
+              <span style={{ fontSize: 12, color: '#059669' }}>
+                {t('columns.confirmedAt', {
+                  time: dayjs(row.confirmedAt).format('DD/MM HH:mm'),
+                })}
+              </span>
+            );
+          }
+          if (row.sentAt) {
+            return (
+              <span style={{ fontSize: 12, color: '#64748b' }}>
+                {t('columns.sentAt', { time: dayjs(row.sentAt).format('DD/MM HH:mm') })}
+              </span>
+            );
+          }
+          return '—';
+        },
+      },
+      {
+        title: t('columns.actions'),
+        key: 'actions',
+        width: 160,
+        render: (_, row) => (
+          <Space size={4} onClick={(e) => e.stopPropagation()}>
             <Button
               type="link"
               size="small"
-              icon={<ShoppingCartOutlined />}
-              onClick={() => loadIntoPos(row.id)}
+              icon={<EyeOutlined />}
+              onClick={() => void openDetail(row)}
             >
-              Nạp POS
+              {t('columns.view')}
             </Button>
-          ) : null}
-        </Space>
-      ),
-    },
-  ];
+            {isActionableStatus(row.status) && canWrite ? (
+              <Button
+                type="link"
+                size="small"
+                icon={<ShoppingCartOutlined />}
+                onClick={() => loadIntoPos(row.id)}
+              >
+                {t('columns.loadPos')}
+              </Button>
+            ) : null}
+          </Space>
+        ),
+      },
+    ],
+    [canWrite, customerDraftStatusLabel, t],
+  );
 
   const pendingCount = items.filter((row) => isActionableStatus(row.status)).length;
+  const activeCount = items.filter((row) => isActiveDraftStatus(row.status)).length;
 
   return (
-    <Card title="Đơn tạm app khách">
+    <Card title={t('title')}>
       <Alert
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
-        message="Đơn gửi từ POS (Gửi khách hàng) hiển thị tại đây — không nằm trong tab Đơn bán"
-        description="Quy trình: Nháp → Gửi khách → Khách đã xác nhận (tuỳ chọn) → Nạp POS (thanh toán + in hóa đơn)."
+        message={t('alert.message')}
+        description={t('alert.description')}
       />
 
       <SalesListDualSearchWrap>
@@ -301,23 +339,20 @@ export function CustomerDraftOrderListPage() {
           onClear={clearSearch}
           customerSuggestions={customerSuggestions}
           documentSuggestions={documentSuggestions}
-          documentPlaceholder="Số đơn tạm"
+          documentPlaceholder={t('filters.documentPlaceholder')}
           liveFilter
           showApplyButton={false}
         />
         <Select
           allowClear
-          placeholder="Trạng thái"
+          placeholder={t('filters.status')}
           style={{ width: 180 }}
           value={statusFilter}
           onChange={(value) => {
             setStatusFilter(value);
             setActiveOnly(false);
           }}
-          options={CUSTOMER_DRAFT_ORDER_STATUS_FILTER_OPTIONS.map(({ value, label }) => ({
-            value,
-            label,
-          }))}
+          options={customerDraftStatusOptions}
         />
         <Button
           onClick={() => {
@@ -327,7 +362,7 @@ export function CustomerDraftOrderListPage() {
             setActionableOnly(false);
           }}
         >
-          Xóa lọc
+          {t('filters.clear')}
         </Button>
         <Button
           onClick={() => {
@@ -338,7 +373,7 @@ export function CustomerDraftOrderListPage() {
           type={actionableOnly ? 'primary' : 'default'}
           ghost={actionableOnly}
         >
-          Chờ xử lý ({pendingCount})
+          {t('filters.actionable', { count: pendingCount })}
         </Button>
         <Button
           onClick={() => {
@@ -348,10 +383,10 @@ export function CustomerDraftOrderListPage() {
           type={activeOnly ? 'primary' : 'default'}
           ghost={activeOnly}
         >
-          Đang xử lý ({items.filter((row) => isActiveDraftStatus(row.status)).length})
+          {t('filters.active', { count: activeCount })}
         </Button>
         <Button type="primary" ghost icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-          Tải lại
+          {t('filters.reload')}
         </Button>
       </SalesListDualSearchWrap>
 
@@ -360,8 +395,8 @@ export function CustomerDraftOrderListPage() {
           type="success"
           showIcon
           style={{ marginBottom: 12 }}
-          message={`${pendingCount} đơn chờ xử lý tại quầy`}
-          description="Đơn 「Khách đã xác nhận」 hoặc 「Đã gửi khách」 — bấm Nạp POS để thanh toán và in hóa đơn."
+          message={t('pendingAlert.message', { count: pendingCount })}
+          description={t('pendingAlert.description')}
         />
       ) : null}
 
@@ -370,7 +405,7 @@ export function CustomerDraftOrderListPage() {
         loading={loading}
         dataSource={filteredItems}
         columns={columns}
-        pagination={{ pageSize: 20, showTotal: (total) => `${total} đơn tạm` }}
+        pagination={{ pageSize: 20, showTotal: (total) => t('paginationTotal', { count: total }) }}
         onRow={(record) => ({
           onClick: () => void openDetail(record),
           style: { cursor: 'pointer' },
@@ -378,7 +413,9 @@ export function CustomerDraftOrderListPage() {
       />
 
       <Drawer
-        title={detail ? `Xem ${detail.draftNumber}` : 'Xem đơn tạm'}
+        title={
+          detail ? t('detail.drawerTitle', { draftNumber: detail.draftNumber }) : t('detail.drawerTitleDefault')
+        }
         width={720}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
@@ -395,16 +432,19 @@ export function CustomerDraftOrderListPage() {
                 style={{ marginBottom: 16 }}
                 message={
                   detail.status === CUSTOMER_DRAFT_ORDER_STATUS.Confirmed
-                    ? 'Khách đã xác nhận tạm trên app'
-                    : 'Đã gửi app — chờ khách xác nhận (không bắt buộc)'
+                    ? t('detail.confirmedAlert.message')
+                    : t('detail.sentAlert.message')
                 }
-                description="Hỏi khách tại quầy. Bấm Nạp POS để thanh toán, ghi đơn bán và in hóa đơn."
+                description={
+                  detail.status === CUSTOMER_DRAFT_ORDER_STATUS.Confirmed
+                    ? t('detail.confirmedAlert.description')
+                    : t('detail.sentAlert.description')
+                }
               />
             ) : null}
 
-            {(isActionableStatus(detail.status) && canWrite) ||
-            detail.salesOrderNumber ? (
-              <Card size="small" title="Thao tác" style={sectionGapStyle}>
+            {(isActionableStatus(detail.status) && canWrite) || detail.salesOrderNumber ? (
+              <Card size="small" title={t('detail.actions.title')} style={sectionGapStyle}>
                 <Space wrap>
                   {isActionableStatus(detail.status) && canWrite ? (
                     <>
@@ -413,10 +453,13 @@ export function CustomerDraftOrderListPage() {
                         icon={<ShoppingCartOutlined />}
                         onClick={() => loadIntoPos(detail.id)}
                       >
-                        Nạp POS
+                        {t('detail.actions.loadPos')}
                       </Button>
-                      <Popconfirm title="Hủy đơn tạm?" onConfirm={() => void handleCancel(detail.id)}>
-                        <Button danger>Hủy đơn</Button>
+                      <Popconfirm
+                        title={t('detail.actions.cancelConfirm')}
+                        onConfirm={() => void handleCancel(detail.id)}
+                      >
+                        <Button danger>{t('detail.actions.cancel')}</Button>
                       </Popconfirm>
                     </>
                   ) : null}
@@ -425,7 +468,7 @@ export function CustomerDraftOrderListPage() {
                       type="link"
                       onClick={() => navigate(`/sales/orders?orderId=${detail.salesOrderId}`)}
                     >
-                      Xem đơn bán {detail.salesOrderNumber}
+                      {t('detail.actions.viewOrder', { orderNumber: detail.salesOrderNumber })}
                     </Button>
                   ) : null}
                 </Space>
@@ -433,28 +476,34 @@ export function CustomerDraftOrderListPage() {
             ) : null}
 
             <Descriptions bordered size="small" column={2} style={sectionGapStyle}>
-              <Descriptions.Item label="Khách">{detail.customerName}</Descriptions.Item>
-              <Descriptions.Item label="Điện thoại">{detail.customerPhone ?? '—'}</Descriptions.Item>
-              <Descriptions.Item label="Trạng thái">
+              <Descriptions.Item label={t('detail.descriptions.customer')}>
+                {detail.customerName}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('detail.descriptions.phone')}>
+                {detail.customerPhone ?? '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('detail.descriptions.status')}>
                 <Tag color={CUSTOMER_DRAFT_ORDER_STATUS_COLORS[detail.status] ?? 'default'}>
-                  {CUSTOMER_DRAFT_ORDER_STATUS_LABELS[detail.status] ?? detail.status}
+                  {customerDraftStatusLabel(detail.status)}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Tổng tiền">
+              <Descriptions.Item label={t('detail.descriptions.total')}>
                 {formatDisplayMoney(detail.totalAmount)}
               </Descriptions.Item>
               {detail.sentAt ? (
-                <Descriptions.Item label="Gửi app">
+                <Descriptions.Item label={t('detail.descriptions.sentAt')}>
                   {dayjs(detail.sentAt).format('DD-MM-YYYY HH:mm')}
                 </Descriptions.Item>
               ) : null}
               {detail.confirmedAt ? (
-                <Descriptions.Item label="Khách xác nhận">
+                <Descriptions.Item label={t('detail.descriptions.confirmedAt')}>
                   {dayjs(detail.confirmedAt).format('DD-MM-YYYY HH:mm')}
                 </Descriptions.Item>
               ) : null}
               {detail.salesOrderNumber ? (
-                <Descriptions.Item label="Đơn bán">{detail.salesOrderNumber}</Descriptions.Item>
+                <Descriptions.Item label={t('detail.descriptions.salesOrder')}>
+                  {detail.salesOrderNumber}
+                </Descriptions.Item>
               ) : null}
             </Descriptions>
 
@@ -464,26 +513,7 @@ export function CustomerDraftOrderListPage() {
               size="small"
               pagination={false}
               dataSource={detail.items}
-              columns={[
-                { title: 'Mã SP', dataIndex: 'productCode', width: 100 },
-                { title: 'Tên SP', dataIndex: 'productName', ellipsis: true },
-                { title: 'ĐVT', dataIndex: 'unitName', width: 72 },
-                { title: 'SL', dataIndex: 'quantity', width: 56, align: 'right' },
-                {
-                  title: 'Đơn giá',
-                  dataIndex: 'unitPrice',
-                  width: 100,
-                  align: 'right',
-                  render: (v: number) => formatDisplayMoney(v),
-                },
-                {
-                  title: 'Thành tiền',
-                  dataIndex: 'lineAmount',
-                  width: 110,
-                  align: 'right',
-                  render: (v: number) => formatDisplayMoney(v),
-                },
-              ]}
+              columns={lineColumns}
             />
           </>
         ) : null}

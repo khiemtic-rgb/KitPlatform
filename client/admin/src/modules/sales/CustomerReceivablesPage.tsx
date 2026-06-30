@@ -1,13 +1,39 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Card, Descriptions, Drawer, AutoComplete, Input, Space, Spin, Table, Typography, message } from 'antd';
+import { useTranslation } from 'react-i18next';
+import {
+  AutoComplete,
+  Button,
+  Card,
+  Descriptions,
+  Drawer,
+  Input,
+  Space,
+  Spin,
+  Table,
+  Typography,
+  message,
+} from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DollarOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { fetchCustomerReceivables, fetchCustomerReceivablesDetail, searchCustomers } from '@/shared/api/sales.api';
-import type { CustomerListItem, CustomerReceivablesDetail, CustomerReceivablesDetailLine, CustomerReceivablesRow } from '@/shared/api/sales.types';
+import {
+  fetchCustomerReceivables,
+  fetchCustomerReceivablesDetail,
+  searchCustomers,
+} from '@/shared/api/sales.api';
+import type {
+  CustomerListItem,
+  CustomerReceivablesDetail,
+  CustomerReceivablesDetailLine,
+  CustomerReceivablesRow,
+} from '@/shared/api/sales.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { buildCustomerPaymentCreateUrl } from '@/modules/sales/customer-payment-nav';
-import { buildCustomerSearchSuggestions, matchesCustomerNameOrPhone, resolveCustomerPhone } from '@/modules/sales/sales-list-customer-search';
+import {
+  buildCustomerSearchSuggestions,
+  matchesCustomerNameOrPhone,
+  resolveCustomerPhone,
+} from '@/modules/sales/sales-list-customer-search';
 import { filterBarStyle } from '@/modules/sales/sales-ui-styles';
 import { useHasPermission } from '@/shared/auth/usePermission';
 import { formatDisplayDate } from '@/shared/utils/date';
@@ -18,6 +44,7 @@ function agingCell(value: number) {
 }
 
 export function CustomerReceivablesPage() {
+  const { t } = useTranslation('sales', { keyPrefix: 'customerReceivables' });
   const canWrite = useHasPermission('sales.write');
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -33,11 +60,11 @@ export function CustomerReceivablesPage() {
     try {
       setRows(await fetchCustomerReceivables());
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được báo cáo công nợ khách hàng'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadSummary();
@@ -72,7 +99,9 @@ export function CustomerReceivablesPage() {
   const filteredRows = useMemo(() => {
     const q = search.trim();
     if (!q) return rowsWithPhone;
-    return rowsWithPhone.filter((row) => matchesCustomerNameOrPhone(q, row.customerName, row.customerPhone));
+    return rowsWithPhone.filter((row) =>
+      matchesCustomerNameOrPhone(q, row.customerName, row.customerPhone),
+    );
   }, [rowsWithPhone, search]);
 
   const totals = useMemo(
@@ -90,6 +119,13 @@ export function CustomerReceivablesPage() {
     [filteredRows],
   );
 
+  const goToPayment = useCallback(
+    (prefill: { customerId: string; salesOrderId?: string; amount?: number }) => {
+      navigate(buildCustomerPaymentCreateUrl(prefill));
+    },
+    [navigate],
+  );
+
   const openDetail = async (customerId: string) => {
     setDetailOpen(true);
     setDetailLoading(true);
@@ -97,46 +133,42 @@ export function CustomerReceivablesPage() {
     try {
       setDetail(await fetchCustomerReceivablesDetail(customerId));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được chi tiết công nợ'));
+      message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
       setDetailOpen(false);
     } finally {
       setDetailLoading(false);
     }
   };
 
-  const goToPayment = (prefill: { customerId: string; salesOrderId?: string; amount?: number }) => {
-    navigate(buildCustomerPaymentCreateUrl(prefill));
-  };
-
   const detailColumns: ColumnsType<CustomerReceivablesDetailLine> = useMemo(() => {
     const base: ColumnsType<CustomerReceivablesDetailLine> = [
-      { title: 'Số đơn', dataIndex: 'orderNumber', width: 130 },
+      { title: t('detail.columns.orderNumber'), dataIndex: 'orderNumber', width: 130 },
       {
-        title: 'Ngày bán',
+        title: t('detail.columns.orderDate'),
         dataIndex: 'orderDate',
         width: 120,
         render: (v: string) => formatDisplayDate(v),
       },
       {
-        title: 'Tổng đơn',
+        title: t('detail.columns.orderTotal'),
         dataIndex: 'orderTotal',
         align: 'right',
         render: (v: number) => formatDisplayMoney(v),
       },
       {
-        title: 'Đã thu',
+        title: t('detail.columns.paidAmount'),
         dataIndex: 'paidAmount',
         align: 'right',
         render: (v: number) => formatDisplayMoney(v),
       },
       {
-        title: 'Còn nợ',
+        title: t('detail.columns.outstanding'),
         dataIndex: 'outstanding',
         align: 'right',
         render: (v: number) => formatDisplayMoney(v),
       },
       {
-        title: 'Tuổi nợ (ngày)',
+        title: t('detail.columns.daysOutstanding'),
         dataIndex: 'daysOutstanding',
         width: 120,
         align: 'center',
@@ -165,65 +197,67 @@ export function CustomerReceivablesPage() {
                 });
               }}
             >
-              Thu nợ
+              {t('detail.collect')}
             </Button>
           ) : null,
       },
     ];
-  }, [canWrite, detail, navigate]);
+  }, [canWrite, detail, goToPayment, t]);
 
-  const columns: ColumnsType<CustomerReceivablesRow> = [
-    { title: 'Mã KH', dataIndex: 'customerCode', width: 110 },
-    {
-      title: 'Khách hàng',
-      dataIndex: 'customerName',
-      width: 280,
-      ellipsis: { showTitle: true },
-    },
-    {
-      title: 'Còn phải thu',
-      dataIndex: 'totalReceivable',
-      width: 140,
-      align: 'right',
-      render: (v: number) => formatDisplayMoney(v),
-    },
-    {
-      title: '0–30 ngày',
-      width: 120,
-      align: 'right',
-      render: (_, row) => agingCell(row.aging.current),
-    },
-    {
-      title: '31–60',
-      width: 110,
-      align: 'right',
-      render: (_, row) => agingCell(row.aging.days31To60),
-    },
-    {
-      title: '61–90',
-      width: 110,
-      align: 'right',
-      render: (_, row) => agingCell(row.aging.days61To90),
-    },
-    {
-      title: '> 90',
-      width: 110,
-      align: 'right',
-      render: (_, row) => agingCell(row.aging.over90),
-    },
-    {
-      title: 'Đơn mở',
-      dataIndex: 'openDocumentCount',
-      width: 90,
-      align: 'center',
-    },
-  ];
+  const columns: ColumnsType<CustomerReceivablesRow> = useMemo(
+    () => [
+      { title: t('columns.customerCode'), dataIndex: 'customerCode', width: 110 },
+      {
+        title: t('columns.customerName'),
+        dataIndex: 'customerName',
+        width: 280,
+        ellipsis: { showTitle: true },
+      },
+      {
+        title: t('columns.totalReceivable'),
+        dataIndex: 'totalReceivable',
+        width: 140,
+        align: 'right',
+        render: (v: number) => formatDisplayMoney(v),
+      },
+      {
+        title: t('columns.agingCurrent'),
+        width: 120,
+        align: 'right',
+        render: (_, row) => agingCell(row.aging.current),
+      },
+      {
+        title: t('columns.aging31To60'),
+        width: 110,
+        align: 'right',
+        render: (_, row) => agingCell(row.aging.days31To60),
+      },
+      {
+        title: t('columns.aging61To90'),
+        width: 110,
+        align: 'right',
+        render: (_, row) => agingCell(row.aging.days61To90),
+      },
+      {
+        title: t('columns.agingOver90'),
+        width: 110,
+        align: 'right',
+        render: (_, row) => agingCell(row.aging.over90),
+      },
+      {
+        title: t('columns.openDocuments'),
+        dataIndex: 'openDocumentCount',
+        width: 90,
+        align: 'center',
+      },
+    ],
+    [t],
+  );
 
   return (
-    <Card title="Công nợ khách hàng" bordered={false}>
+    <Card title={t('title')} bordered={false}>
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        Công nợ theo trường còn nợ trên đơn bán đã hoàn tất. Phiếu thu nợ không gắn đơn được bù trừ theo thứ tự đơn
-        cũ nhất khi ghi sổ.
+        {t('intro')}
       </Typography.Paragraph>
 
       <Space wrap style={filterBarStyle}>
@@ -235,11 +269,13 @@ export function CustomerReceivablesPage() {
           onSelect={(value) => setSearch(String(value))}
           onChange={(value) => setSearch(value)}
         >
-          <Input allowClear placeholder="Tên khách hoặc SĐT" prefix={<SearchOutlined />} />
+          <Input
+            allowClear
+            placeholder={t('searchPlaceholder')}
+            prefix={<SearchOutlined />}
+          />
         </AutoComplete>
-        {search ? (
-          <Button onClick={() => setSearch('')}>Xóa lọc</Button>
-        ) : null}
+        {search ? <Button onClick={() => setSearch('')}>{t('clear')}</Button> : null}
       </Space>
 
       <Table
@@ -247,14 +283,14 @@ export function CustomerReceivablesPage() {
         loading={loading}
         columns={columns}
         dataSource={filteredRows}
-        pagination={{ pageSize: 20, showTotal: (total) => `${total} khách hàng` }}
+        pagination={{ pageSize: 20, showTotal: (total) => t('paginationTotal', { count: total }) }}
         scroll={{ x: 1100 }}
         summary={() =>
           filteredRows.length > 0 ? (
             <Table.Summary fixed>
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={2}>
-                  <strong>Tổng</strong>
+                  <strong>{t('summaryTotal')}</strong>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1} align="right">
                   <strong>{formatDisplayMoney(totals.receivable)}</strong>
@@ -283,7 +319,11 @@ export function CustomerReceivablesPage() {
       />
 
       <Drawer
-        title={detail ? `Công nợ — ${detail.customerName}` : 'Chi tiết công nợ'}
+        title={
+          detail
+            ? t('detail.drawerTitle', { customerName: detail.customerName })
+            : t('detail.drawerTitleDefault')
+        }
         width={880}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
@@ -300,19 +340,23 @@ export function CustomerReceivablesPage() {
                 })
               }
             >
-              Tạo phiếu thu
+              {t('detail.createPayment')}
             </Button>
           ) : undefined
         }
       >
         {detailLoading ? (
-          <Spin tip="Đang tải chi tiết..." />
+          <Spin tip={t('detail.loading')} />
         ) : detail ? (
           <>
             <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
-              <Descriptions.Item label="Mã KH">{detail.customerCode}</Descriptions.Item>
-              <Descriptions.Item label="Còn phải thu">{formatDisplayMoney(detail.totalReceivable)}</Descriptions.Item>
-              <Descriptions.Item label="Thu chưa phân bổ" span={2}>
+              <Descriptions.Item label={t('detail.customerCode')}>
+                {detail.customerCode}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('detail.totalReceivable')}>
+                {formatDisplayMoney(detail.totalReceivable)}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('detail.unappliedCredit')} span={2}>
                 {detail.unappliedCredit > 0.009 ? formatDisplayMoney(detail.unappliedCredit) : '—'}
               </Descriptions.Item>
             </Descriptions>

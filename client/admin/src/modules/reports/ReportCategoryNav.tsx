@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tabs, Typography } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { secondaryTabsBarStyle } from '@/shared/components/module-tabs.ui';
@@ -11,12 +13,17 @@ export function categoryFromReportPath(pathname: string): ReportCategory | null 
 }
 
 export function ReportCategoryNav() {
+  const { i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const category = categoryFromReportPath(location.pathname);
+  const reports = useMemo(
+    () => (category ? reportsForCategory(category) : []),
+    [category, i18n.language],
+  );
+
   if (!category) return null;
 
-  const reports = reportsForCategory(category);
   const activeReport = reports.find((r) => location.pathname.startsWith(r.path));
 
   return (

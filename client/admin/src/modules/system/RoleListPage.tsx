@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
@@ -25,7 +26,6 @@ import {
   updateRolePermissions,
 } from '@/shared/api/identity-admin.api';
 import type { PermissionLookup, RoleListItem } from '@/shared/api/identity-admin.types';
-import { USER_STATUS_OPTIONS } from '@/shared/api/identity-admin.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
   type DiscountLevel,
@@ -37,6 +37,7 @@ import {
   setDiscountLevel,
 } from '@/shared/auth/permission-picker';
 import { useHasPermission } from '@/shared/auth/usePermission';
+import { useSystemEnums } from '@/shared/i18n/use-system-enums';
 
 interface RoleFormValues {
   roleCode: string;
@@ -48,6 +49,9 @@ interface RoleFormValues {
 const DISCOUNT_LEVELS: DiscountLevel[] = ['none', 'sales.discount', 'sales.discount.unlimited'];
 
 export function RoleListPage() {
+  const { t } = useTranslation('system', { keyPrefix: 'roles' });
+  const { t: tc, i18n } = useTranslation('common');
+  const { userStatusOptions } = useSystemEnums();
   const canWrite = useHasPermission('system.write');
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<RoleListItem[]>([]);
@@ -61,18 +65,21 @@ export function RoleListPage() {
   const [savingPerms, setSavingPerms] = useState(false);
   const [form] = Form.useForm<RoleFormValues>();
 
-  const permissionGroups = useMemo(() => groupPermissionsForUi(permissions), [permissions]);
+  const permissionGroups = useMemo(
+    () => groupPermissionsForUi(permissions),
+    [permissions, i18n.language],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       setItems(await fetchRoles());
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được vai trò'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load();
@@ -104,7 +111,7 @@ export function RoleListPage() {
       setSelectedCodes(detail.permissionCodes);
       setPermDrawerOpen(true);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được quyền vai trò'));
+      message.error(apiErrorMessage(error, t('messages.permissionsLoadFailed')));
     }
   };
 
@@ -134,15 +141,15 @@ export function RoleListPage() {
     try {
       if (editingRole) {
         await updateRole(editingRole.id, payload);
-        message.success('Đã cập nhật vai trò');
+        message.success(t('messages.updated'));
       } else {
         await createRole(payload);
-        message.success('Đã thêm vai trò — bấm «Quyền» để gán quyền');
+        message.success(t('messages.created'));
       }
       setFormDrawerOpen(false);
       await load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không lưu được vai trò'));
+      message.error(apiErrorMessage(error, t('messages.saveFailed')));
     } finally {
       setSaving(false);
     }
@@ -153,56 +160,59 @@ export function RoleListPage() {
     setSavingPerms(true);
     try {
       await updateRolePermissions(permRole.id, normalizePermissionCodesForSave(selectedCodes));
-      message.success('Đã cập nhật quyền vai trò');
+      message.success(t('messages.permissionsUpdated'));
       setPermDrawerOpen(false);
       await load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không lưu được quyền'));
+      message.error(apiErrorMessage(error, t('messages.permissionsSaveFailed')));
     } finally {
       setSavingPerms(false);
     }
   };
 
-  const columns: ColumnsType<RoleListItem> = [
-    { title: 'Mã vai trò', dataIndex: 'roleCode', width: 120 },
-    { title: 'Tên vai trò', dataIndex: 'roleName' },
-    { title: 'Mô tả', dataIndex: 'description', render: (v?: string) => v ?? '—' },
-    { title: 'Người dùng', dataIndex: 'userCount', width: 100 },
-    { title: 'Quyền', dataIndex: 'permissionCount', width: 80 },
-    {
-      title: 'Tác vụ',
-      width: 120,
-      render: (_, row) =>
-        canWrite ? (
-          <Space size={4}>
-            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)}>
-              Sửa
-            </Button>
-            <Button
-              type="link"
-              size="small"
-              icon={<SettingOutlined />}
-              onClick={() => void openPermissions(row)}
-            >
-              Quyền
-            </Button>
-          </Space>
-        ) : null,
-    },
-  ];
+  const columns: ColumnsType<RoleListItem> = useMemo(
+    () => [
+      { title: t('columns.code'), dataIndex: 'roleCode', width: 120 },
+      { title: t('columns.name'), dataIndex: 'roleName' },
+      { title: t('columns.description'), dataIndex: 'description', render: (v?: string) => v ?? '—' },
+      { title: t('columns.userCount'), dataIndex: 'userCount', width: 100 },
+      { title: t('columns.permissionCount'), dataIndex: 'permissionCount', width: 80 },
+      {
+        title: t('columns.actions'),
+        width: 120,
+        render: (_, row) =>
+          canWrite ? (
+            <Space size={4}>
+              <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)}>
+                {tc('actions.edit')}
+              </Button>
+              <Button
+                type="link"
+                size="small"
+                icon={<SettingOutlined />}
+                onClick={() => void openPermissions(row)}
+              >
+                {t('permissions')}
+              </Button>
+            </Space>
+          ) : null,
+      },
+    ],
+    [canWrite, t, tc],
+  );
 
   return (
     <>
       <Card
-        title="Vai trò & phân quyền"
+        title={t('title')}
         extra={
           <Space>
             <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-              Tải lại
+              {tc('actions.reload')}
             </Button>
             {canWrite ? (
               <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-                Thêm vai trò
+                {t('add')}
               </Button>
             ) : null}
           </Space>
@@ -212,16 +222,16 @@ export function RoleListPage() {
       </Card>
 
       <Drawer
-        title={editingRole ? 'Sửa vai trò' : 'Thêm vai trò'}
+        title={editingRole ? t('edit') : t('create')}
         open={formDrawerOpen}
         onClose={() => setFormDrawerOpen(false)}
         width={420}
         extra={
           canWrite ? (
             <Space>
-              <Button onClick={() => setFormDrawerOpen(false)}>Hủy</Button>
+              <Button onClick={() => setFormDrawerOpen(false)}>{tc('actions.cancel')}</Button>
               <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={() => void handleSaveRole()}>
-                Lưu
+                {tc('actions.save')}
               </Button>
             </Space>
           ) : null
@@ -230,30 +240,30 @@ export function RoleListPage() {
         <Form form={form} layout="vertical">
           <Form.Item
             name="roleCode"
-            label="Mã vai trò"
-            rules={[{ required: true, message: 'Nhập mã vai trò' }]}
-            extra="VD: STAFF, CASHIER — tự chuyển in hoa"
+            label={t('form.code')}
+            rules={[{ required: true, message: t('form.codeRequired') }]}
+            extra={t('form.codeExtra')}
           >
             <Input placeholder="STAFF" autoComplete="off" disabled={Boolean(editingRole)} />
           </Form.Item>
           <Form.Item
             name="roleName"
-            label="Tên vai trò"
-            rules={[{ required: true, message: 'Nhập tên vai trò' }]}
+            label={t('form.name')}
+            rules={[{ required: true, message: t('form.nameRequired') }]}
           >
-            <Input placeholder="Nhân viên bán hàng" />
+            <Input placeholder={t('form.namePlaceholder')} />
           </Form.Item>
-          <Form.Item name="description" label="Mô tả">
-            <Input.TextArea rows={2} placeholder="Tuỳ chọn" />
+          <Form.Item name="description" label={t('form.description')}>
+            <Input.TextArea rows={2} placeholder={t('form.descriptionPlaceholder')} />
           </Form.Item>
-          <Form.Item name="status" label="Trạng thái">
-            <Select options={USER_STATUS_OPTIONS} />
+          <Form.Item name="status" label={t('form.status')}>
+            <Select options={userStatusOptions} />
           </Form.Item>
         </Form>
       </Drawer>
 
       <Drawer
-        title={permRole ? `Quyền: ${permRole.roleName}` : 'Quyền vai trò'}
+        title={permRole ? t('permissionsTitle', { name: permRole.roleName }) : t('permissionsTitleDefault')}
         open={permDrawerOpen}
         onClose={() => setPermDrawerOpen(false)}
         width={520}
@@ -265,7 +275,7 @@ export function RoleListPage() {
               loading={savingPerms}
               onClick={() => void handleSavePermissions()}
             >
-              Lưu
+              {tc('actions.save')}
             </Button>
           ) : null
         }
@@ -273,11 +283,11 @@ export function RoleListPage() {
         {permRole ? (
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-              Tick nhiều quyền trong cùng module khi cần. Chiết khấu bán hàng chỉ chọn một mức.
+              {t('permissionsHint')}
             </Typography.Paragraph>
             <Tag color="blue">{permRole.roleCode}</Tag>
             {permissionGroups.map((group) => (
-              <div key={group.moduleLabel}>
+              <div key={group.moduleKey}>
                 <Typography.Text strong>{group.moduleLabel}</Typography.Text>
                 {group.hint ? (
                   <Typography.Paragraph type="secondary" style={{ margin: '4px 0 8px', fontSize: 12 }}>
@@ -299,7 +309,7 @@ export function RoleListPage() {
                 {'discountCodes' in group && group.discountCodes?.length ? (
                   <>
                     <Typography.Text type="secondary" style={{ display: 'block', marginTop: 12 }}>
-                      Chiết khấu (chọn một)
+                      {t('discountSelectOne')}
                     </Typography.Text>
                     <Radio.Group
                       style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { fetchChatThreads } from '@/shared/api/chat.api';
 import { useAuthStore } from '@/shared/auth/auth.store';
+import { salesT } from '@/shared/i18n';
 import { buildAdminChatEventsUrl, subscribeChatSse } from '@/shared/utils/chat-sse';
 import { showDesktopNotification } from '@/shared/utils/desktop-notification';
 
@@ -36,11 +37,14 @@ export function useAdminChatUnread(enabled = true) {
           (!onChatPage || document.hidden);
 
         if (shouldNotify) {
+          const t = salesT();
           const latest = threads.find((thread) => thread.staffUnreadCount > 0);
-          const preview = latest?.lastMessagePreview?.trim() || 'Có tin nhắn mới';
+          const preview = latest?.lastMessagePreview?.trim() || t('customerChat.notifications.newMessagePreview');
           showDesktopNotification(
-            'Tin nhắn khách hàng mới',
-            latest ? `${latest.customerName}: ${preview}` : `Bạn có ${total} tin chưa đọc`,
+            t('customerChat.notifications.newMessageTitle'),
+            latest
+              ? `${latest.customerName}: ${preview}`
+              : t('customerChat.notifications.unreadBody', { count: total }),
             latest ? `chat-${latest.customerId}` : 'chat-unread',
           );
         }

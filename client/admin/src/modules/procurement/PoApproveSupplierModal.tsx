@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Form, Modal, Select } from 'antd';
 import type { Supplier } from '@/shared/api/procurement.types';
 import { isPlaceholderSupplier, realSuppliers } from '@/modules/procurement/grn-pricing';
@@ -18,6 +19,10 @@ export function PoApproveSupplierModal({
   onCancel: () => void;
   onConfirm: (supplierId: string) => void;
 }) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'purchaseOrders.approveModal' });
+  const { t: tCommon } = useTranslation('common', { keyPrefix: 'actions' });
+  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
+  const { t: tVal } = useTranslation('procurement', { keyPrefix: 'shared.validation' });
   const [form] = Form.useForm<{ supplierId: string }>();
   const [submitting, setSubmitting] = useState(false);
   const options = realSuppliers(suppliers);
@@ -33,10 +38,10 @@ export function PoApproveSupplierModal({
 
   return (
     <Modal
-      title={`Duyệt ${poNumber}`}
+      title={t('title', { poNumber })}
       open={open}
-      okText="Duyệt PO"
-      cancelText="Hủy"
+      okText={t('okText')}
+      cancelText={tCommon('cancel')}
       confirmLoading={loading || submitting}
       onCancel={onCancel}
       onOk={() => {
@@ -53,13 +58,18 @@ export function PoApproveSupplierModal({
       }}
     >
       <p style={{ marginTop: 0 }}>
-        PO đang dùng NCC <strong>Chưa xác định</strong>. Chọn NCC thật trước khi duyệt.
+        <Trans
+          t={t}
+          i18nKey="body"
+          values={{ supplier: tShared('placeholderSupplierName') }}
+          components={{ strong: <strong /> }}
+        />
       </p>
       <Form form={form} layout="vertical">
         <Form.Item
           name="supplierId"
-          label="Nhà cung cấp"
-          rules={[{ required: true, message: 'Chọn NCC' }]}
+          label={tShared('filters.supplier')}
+          rules={[{ required: true, message: tVal('selectSupplier') }]}
         >
           <Select
             showSearch

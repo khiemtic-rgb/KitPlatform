@@ -1,5 +1,6 @@
 import { computePoTaxAmount } from '@/modules/procurement/po-vat';
 import type { ProcurementVatTreatment } from '@/shared/api/procurement.types';
+import { procurementT } from '@/shared/i18n';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
 export const PROCUREMENT_DISCOUNT_TYPES = {
@@ -125,10 +126,13 @@ export function formatGrnVatLabel(detail: {
   vatIsNotSubject?: boolean;
   taxRatePercent?: number;
 }): string {
-  if (detail.vatIsNotSubject) return 'Không chịu thuế GTGT';
+  const t = procurementT();
+  if (detail.vatIsNotSubject) return t('shared.tax.notSubject');
   if (detail.vatTreatmentName) {
     const rate = detail.taxRatePercent ?? 0;
-    return rate > 0 ? `${detail.vatTreatmentName} (${rate}%)` : detail.vatTreatmentName;
+    return rate > 0
+      ? t('shared.tax.treatmentWithRate', { name: detail.vatTreatmentName, rate })
+      : detail.vatTreatmentName;
   }
-  return '—';
+  return t('shared.emDash');
 }

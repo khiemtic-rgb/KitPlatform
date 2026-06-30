@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AutoComplete, Button, Input } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { filterBarStyle } from '@/modules/sales/sales-ui-styles';
@@ -33,10 +34,13 @@ export function SalesListDualSearchBar({
   onClear,
   customerSuggestions = [],
   documentSuggestions = [],
-  documentPlaceholder = 'Số đơn',
+  documentPlaceholder,
   liveFilter = false,
   showApplyButton = true,
 }: SalesListDualSearchBarProps) {
+  const { t } = useTranslation('sales', { keyPrefix: 'salesListSearch' });
+  const resolvedDocumentPlaceholder = documentPlaceholder ?? t('documentPlaceholderDefault');
+
   const currentValues = (): SalesListSearchApplyValues => ({
     customer: customerValue,
     document: documentValue,
@@ -66,7 +70,11 @@ export function SalesListDualSearchBar({
         }}
         onChange={handleCustomerChange}
       >
-        <Input allowClear placeholder="Tên khách hoặc SĐT" prefix={<SearchOutlined />} />
+        <Input
+          allowClear
+          placeholder={t('customerPlaceholder')}
+          prefix={<SearchOutlined />}
+        />
       </AutoComplete>
       <AutoComplete
         style={{ width: 180 }}
@@ -82,17 +90,17 @@ export function SalesListDualSearchBar({
       >
         <Input
           allowClear
-          placeholder={documentPlaceholder}
+          placeholder={resolvedDocumentPlaceholder}
           onPressEnter={() => onApply(currentValues())}
         />
       </AutoComplete>
       {showApplyButton && !liveFilter ? (
         <Button type="primary" icon={<SearchOutlined />} onClick={() => onApply(currentValues())}>
-          Lọc
+          {t('apply')}
         </Button>
       ) : null}
       {onClear && (customerValue || documentValue) ? (
-        <Button onClick={onClear}>Xóa lọc</Button>
+        <Button onClick={onClear}>{t('clear')}</Button>
       ) : null}
     </>
   );

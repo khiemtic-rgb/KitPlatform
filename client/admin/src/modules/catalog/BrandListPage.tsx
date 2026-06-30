@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
@@ -18,9 +19,12 @@ import { PlusOutlined, ReloadOutlined, EditOutlined, DeleteOutlined } from '@ant
 import { createBrand, deleteBrand, fetchBrands, updateBrand } from '@/shared/api/catalog.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import type { Brand } from '@/shared/api/catalog.types';
-import { STATUS_LABELS } from '@/shared/api/catalog.types';
+import { useCatalogEnums } from '@/shared/i18n/use-catalog-enums';
 
 export function BrandListPage() {
+  const { t } = useTranslation('catalog', { keyPrefix: 'brands' });
+  const { t: ts } = useTranslation('catalog', { keyPrefix: 'shared' });
+  const { productStatusLabel, productStatusOptions } = useCatalogEnums();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<Brand[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -33,14 +37,14 @@ export function BrandListPage() {
     try {
       setItems(await fetchBrands());
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được thương hiệu'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const openCreate = () => {
@@ -70,20 +74,20 @@ export function BrandListPage() {
           countryCode: values.countryCode,
           status: values.status ?? 1,
         });
-        message.success('Đã cập nhật thương hiệu');
+        message.success(t('messages.updateSuccess'));
       } else {
         await createBrand({
           brandCode: values.brandCode,
           brandName: values.brandName,
           countryCode: values.countryCode,
         });
-        message.success('Đã tạo thương hiệu');
+        message.success(t('messages.createSuccess'));
       }
       setDrawerOpen(false);
-      load();
+      void load();
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, 'Không lưu được thương hiệu'));
+        message.error(apiErrorMessage(error, t('messages.saveFailed')));
       }
     } finally {
       setSaving(false);
@@ -91,15 +95,15 @@ export function BrandListPage() {
   };
 
   const columns: ColumnsType<Brand> = [
-    { title: 'Mã', dataIndex: 'brandCode', width: 120 },
-    { title: 'Tên thương hiệu', dataIndex: 'brandName' },
-    { title: 'Quốc gia', dataIndex: 'countryCode', width: 90, render: (v) => v ?? '—' },
+    { title: t('columns.code'), dataIndex: 'brandCode', width: 120 },
+    { title: t('columns.name'), dataIndex: 'brandName' },
+    { title: t('columns.country'), dataIndex: 'countryCode', width: 90, render: (v) => v ?? '—' },
     {
-      title: 'Trạng thái',
+      title: ts('status'),
       dataIndex: 'status',
       width: 100,
       render: (v: number) => (
-        <Tag color={v === 1 ? 'green' : 'default'}>{STATUS_LABELS[v] ?? v}</Tag>
+        <Tag color={v === 1 ? 'green' : 'default'}>{productStatusLabel(v)}</Tag>
       ),
     },
     {
@@ -109,22 +113,22 @@ export function BrandListPage() {
       render: (_, row) => (
         <Space>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)}>
-            Sửa
+            {ts('edit')}
           </Button>
           <Popconfirm
-            title="Xóa thương hiệu này?"
+            title={t('deleteConfirm')}
             onConfirm={async () => {
               try {
                 await deleteBrand(row.id);
-                message.success('Đã xóa');
-                load();
+                message.success(ts('deleted'));
+                void load();
               } catch (error) {
-                message.error(apiErrorMessage(error, 'Không xóa được'));
+                message.error(apiErrorMessage(error, ts('deleteFailed')));
               }
             }}
           >
             <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              Xóa
+              {ts('delete')}
             </Button>
           </Popconfirm>
         </Space>
@@ -134,12 +138,12 @@ export function BrandListPage() {
 
   return (
     <Card
-      title="Thương hiệu"
+      title={t('title')}
       extra={
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={load} />
+          <Button icon={<ReloadOutlined />} onClick={() => void load()} />
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            Thêm thương hiệu
+            {t('add')}
           </Button>
         </Space>
       }
@@ -147,36 +151,39 @@ export function BrandListPage() {
       <Table rowKey="id" loading={loading} columns={columns} dataSource={items} pagination={false} />
 
       <Drawer
-        title={editing ? `Sửa: ${editing.brandCode}` : 'Thêm thương hiệu'}
+        title={editing ? t('drawer.editTitle', { code: editing.brandCode }) : t('drawer.createTitle')}
         width={480}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         extra={
-          <Button type="primary" loading={saving} onClick={handleSave}>
-            Lưu
+          <Button type="primary" loading={saving} onClick={() => void handleSave()}>
+            {ts('save')}
           </Button>
         }
       >
         <Form form={form} layout="vertical">
           {!editing && (
-            <Form.Item name="brandCode" label="Mã thương hiệu" rules={[{ required: true, message: 'Nhập mã' }]}>
-              <Input placeholder="VD: DHG" />
+            <Form.Item
+              name="brandCode"
+              label={t('fields.brandCode')}
+              rules={[{ required: true, message: ts('enterCode') }]}
+            >
+              <Input placeholder={t('placeholders.brandCode')} />
             </Form.Item>
           )}
-          <Form.Item name="brandName" label="Tên thương hiệu" rules={[{ required: true, message: 'Nhập tên' }]}>
+          <Form.Item
+            name="brandName"
+            label={t('fields.brandName')}
+            rules={[{ required: true, message: ts('enterName') }]}
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="countryCode" label="Mã quốc gia (ISO)">
-            <Input maxLength={2} placeholder="VD: VN" style={{ width: 120 }} />
+          <Form.Item name="countryCode" label={t('fields.countryCode')}>
+            <Input maxLength={2} placeholder={t('placeholders.countryCode')} style={{ width: 120 }} />
           </Form.Item>
           {editing && (
-            <Form.Item name="status" label="Trạng thái" rules={[{ required: true }]}>
-              <Select
-                options={Object.entries(STATUS_LABELS).map(([k, v]) => ({
-                  value: Number(k),
-                  label: v,
-                }))}
-              />
+            <Form.Item name="status" label={ts('status')} rules={[{ required: true }]}>
+              <Select options={productStatusOptions} />
             </Form.Item>
           )}
         </Form>

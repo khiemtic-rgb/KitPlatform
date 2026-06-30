@@ -1,27 +1,28 @@
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, Col, List, Row, Typography } from 'antd';
 import { Link } from 'react-router-dom';
 import {
-  REPORT_CATEGORY_LABELS,
-  REPORT_DEFINITIONS,
+  getReportCategoryLabel,
+  getReportDefinitions,
   type ReportCategory,
 } from '@/modules/reports/reports-catalog';
 
 const categories: ReportCategory[] = ['sales', 'procurement', 'inventory'];
 
 export function ReportsHomePage() {
-  const favorites = REPORT_DEFINITIONS.filter((r) => r.favorite);
+  const { t } = useTranslation('reports', { keyPrefix: 'home' });
+  const reports = useMemo(() => getReportDefinitions(), [t]);
+  const favorites = reports.filter((r) => r.favorite);
 
   return (
     <div>
       <Typography.Title level={4} style={{ marginTop: 0 }}>
-        Báo cáo — Thống kê
+        {t('title')}
       </Typography.Title>
-      <Typography.Paragraph type="secondary">
-        Wave 1: doanh thu, ca làm việc, nhập hàng, công nợ NCC, tồn kho và cảnh báo HSD. Chọn báo cáo để lọc kỳ,
-        xuất CSV hoặc in.
-      </Typography.Paragraph>
+      <Typography.Paragraph type="secondary">{t('description')}</Typography.Paragraph>
 
-      <Card size="small" title="Thường dùng" style={{ marginBottom: 16 }}>
+      <Card size="small" title={t('favorites')} style={{ marginBottom: 16 }}>
         <Row gutter={[12, 12]}>
           {favorites.map((report) => (
             <Col xs={24} sm={12} lg={8} key={report.code}>
@@ -47,11 +48,11 @@ export function ReportsHomePage() {
         <Card
           key={category}
           size="small"
-          title={REPORT_CATEGORY_LABELS[category]}
+          title={getReportCategoryLabel(category)}
           style={{ marginBottom: 16 }}
         >
           <List
-            dataSource={REPORT_DEFINITIONS.filter((r) => r.category === category)}
+            dataSource={reports.filter((r) => r.category === category)}
             renderItem={(item) => (
               <List.Item>
                 <List.Item.Meta

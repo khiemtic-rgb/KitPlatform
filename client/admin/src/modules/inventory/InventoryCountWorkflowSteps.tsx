@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Steps, Typography } from 'antd';
 import {
-  INVENTORY_COUNT_WORKFLOW_STEPS,
+  getInventoryCountWorkflowSteps,
   resolveCountWorkflowStep,
 } from '@/modules/inventory/inventory-count-workflow';
 
@@ -17,6 +19,8 @@ export function InventoryCountWorkflowSteps({
   canApprove,
   compact,
 }: InventoryCountWorkflowStepsProps) {
+  const { i18n } = useTranslation();
+  const steps = useMemo(() => getInventoryCountWorkflowSteps(), [i18n.language]);
   const current = resolveCountWorkflowStep({ status, entryCount, canApprove });
 
   return (
@@ -25,14 +29,14 @@ export function InventoryCountWorkflowSteps({
         size="small"
         direction={compact ? 'vertical' : 'horizontal'}
         current={current}
-        items={INVENTORY_COUNT_WORKFLOW_STEPS.map((step) => ({
+        items={steps.map((step) => ({
           title: step.title,
           description: compact ? undefined : step.description,
         }))}
       />
-      {compact && INVENTORY_COUNT_WORKFLOW_STEPS[current] && (
+      {compact && steps[current] && (
         <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0, fontSize: 12 }}>
-          {INVENTORY_COUNT_WORKFLOW_STEPS[current].description}
+          {steps[current].description}
         </Typography.Paragraph>
       )}
     </div>

@@ -1,0 +1,99 @@
+{
+  "layout": {
+    "tabs": {
+      "home": "Reports hub",
+      "sales": "Sales",
+      "procurement": "Procurement",
+      "inventory": "Inventory"
+    }
+  },
+  "categories": {
+    "sales": "Sales",
+    "procurement": "Procurement",
+    "inventory": "Inventory"
+  },
+  "home": {
+    "title": "Reports — Analytics",
+    "description": "Wave 1: revenue, shifts, goods receipt, supplier payables, stock, and expiry alerts. Pick a report to filter by period, export CSV, or print.",
+    "favorites": "Favorites"
+  },
+  "view": {
+    "notFound": "Report not found.",
+    "filterCriteria": "Filters:",
+    "period": "Period (VN)",
+    "groupBy": "Group by",
+    "warehouse": "Warehouse",
+    "warehouseAll": "All warehouses",
+    "supplier": "Supplier",
+    "supplierAll": "All suppliers",
+    "productSearch": "Product name",
+    "productSearchPlaceholder": "Code / product name",
+    "expiryDays": "Days to expiry",
+    "runReport": "Run report",
+    "exportCsv": "Export CSV",
+    "print": "Print",
+    "loadFailed": "Could not load report",
+    "loadFailedHint": "Tip: run",
+    "loadFailedHintAfter": "after updating the Reports module.",
+    "generatedAt": "Generated:",
+    "emptyData": "No data for the selected period",
+    "paginationTotal": "{{count}} rows",
+    "noResult": "No results yet — click Run report"
+  },
+  "groupBy": {
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "supplier": "Supplier"
+  },
+  "filters": {
+    "period": "Period",
+    "groupBy": "Group by",
+    "warehouse": "Warehouse",
+    "supplier": "Supplier",
+    "productSearch": "Product name",
+    "expiryDays": "Days to expiry",
+    "warehouseAll": "All warehouses",
+    "supplierAll": "All suppliers",
+    "apiKeys": {
+      "period": "Thời điểm",
+      "warehouse": "Kho",
+      "supplier": "NCC",
+      "search": "Tìm kiếm"
+    }
+  },
+  "export": {
+    "printTitle": "Report",
+    "printedAt": "Printed"
+  },
+  "reports": {
+    "SALES-01": {
+      "name": "Revenue by period",
+      "description": "Gross sales, returns, and net revenue by day/week/month (VN time)."
+    },
+    "SALES-02": {
+      "name": "Revenue by payment method",
+      "description": "Net revenue by cash, card, bank transfer, and wallet."
+    },
+    "SALES-03": {
+      "name": "Shift report",
+      "description": "Shift list, cash float, and net revenue per shift."
+    },
+    "PROC-01": {
+      "name": "Goods receipt value (GRN)",
+      "description": "Completed receipts summary — pre-VAT amounts."
+    },
+    "PROC-03": {
+      "name": "Supplier payables (snapshot)",
+      "description": "Outstanding balance and aging at view time."
+    },
+    "INV-01": {
+      "name": "Stock & value",
+      "description": "On-hand quantity and value (qty × batch cost) by product/warehouse."
+    },
+    "INV-02": {
+      "name": "Near expiry",
+      "description": "Batches expiring within the alert window."
+    }
+  }
+}

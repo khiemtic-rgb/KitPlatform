@@ -1,22 +1,31 @@
 import type { Supplier } from '@/shared/api/procurement.types';
 import type { Warehouse } from '@/shared/api/inventory.types';
+import { reportsT } from '@/shared/i18n';
 import type { ReportDefinition } from '@/modules/reports/reports-catalog';
 
-export function filterHintsForReport(definition: ReportDefinition): string[] {
-  const hints: string[] = [];
-  if (definition.supportsDateRange) hints.push('Kỳ');
-  if (definition.supportsGroupBy?.length) hints.push('Nhóm theo');
-  if (definition.supportsWarehouse) hints.push('Kho');
-  if (definition.supportsSupplier) hints.push('Nhà cung cấp');
-  if (definition.supportsSearch) hints.push('Tên sản phẩm');
-  if (definition.supportsExpiryDays) hints.push('Số ngày HSD');
-  return hints;
+const API_FILTER_KEY_MAP: Record<string, 'period' | 'warehouse' | 'supplier' | 'productSearch'> = {
+  'Thời điểm': 'period',
+  Kho: 'warehouse',
+  NCC: 'supplier',
+  'Tìm kiếm': 'productSearch',
+};
+
+function localizeFilterKey(key: string): string {
+  const canonical = API_FILTER_KEY_MAP[key];
+  if (canonical) return reportsT()(`filters.${canonical}`);
+  return key;
 }
 
-function filterLabelKey(key: string): string {
-  if (key === 'Tìm kiếm') return 'Tên sản phẩm';
-  if (key === 'NCC') return 'Nhà cung cấp';
-  return key;
+export function filterHintsForReport(definition: ReportDefinition): string[] {
+  const t = reportsT();
+  const hints: string[] = [];
+  if (definition.supportsDateRange) hints.push(t('filters.period'));
+  if (definition.supportsGroupBy?.length) hints.push(t('filters.groupBy'));
+  if (definition.supportsWarehouse) hints.push(t('filters.warehouse'));
+  if (definition.supportsSupplier) hints.push(t('filters.supplier'));
+  if (definition.supportsSearch) hints.push(t('filters.productSearch'));
+  if (definition.supportsExpiryDays) hints.push(t('filters.expiryDays'));
+  return hints;
 }
 
 function resolveFilterValue(
@@ -26,14 +35,15 @@ function resolveFilterValue(
   suppliers: Supplier[],
   productSearchLabel?: string,
 ): string {
-  if (key === 'Kho') {
+  const canonical = API_FILTER_KEY_MAP[key];
+  if (canonical === 'warehouse' || key === 'Kho') {
     return warehouses.find((w) => w.id === value)?.warehouseName ?? value;
   }
-  if (key === 'NCC') {
+  if (canonical === 'supplier' || key === 'NCC') {
     const supplier = suppliers.find((s) => s.id === value);
     return supplier ? `${supplier.supplierCode} — ${supplier.supplierName}` : value;
   }
-  if (key === 'Tìm kiếm') {
+  if (canonical === 'productSearch' || key === 'Tìm kiếm') {
     return productSearchLabel || value;
   }
   return value;
@@ -46,20 +56,30 @@ export function buildReportFilterDisplayEntries(
   suppliers: Supplier[],
   productSearchLabel?: string,
 ): Array<{ key: string; value: string }> {
+  const t = reportsT();
   const entries = Object.entries(filterLabels).map(([key, value]) => ({
-    key: filterLabelKey(key),
+    key: localizeFilterKey(key),
     value: resolveFilterValue(key, value, warehouses, suppliers, productSearchLabel),
   }));
 
+  const warehouseLabel = t('filters.warehouse');
+  const supplierLabel = t('filters.supplier');
+
   if (definition.supportsWarehouse && !filterLabels.Kho) {
-    const insertAt = entries.findIndex((e) => e.key === 'Thời điểm') + 1 || entries.length;
-    entries.splice(insertAt === 0 ? entries.length : insertAt, 0, { key: 'Kho', value: 'Tất cả kho' });
+    const insertAt = entries.findIndex((e) => e.key === t('filters.period')) + 1 || entries.length;
+    entries.splice(insertAt === 0 ? entries.length : insertAt, 0, {
+      key: warehouseLabel,
+      value: t('filters.warehouseAll'),
+    });
   }
 
   if (definition.supportsSupplier && !filterLabels.NCC) {
-    const khoIndex = entries.findIndex((e) => e.key === 'Kho');
+    const khoIndex = entries.findIndex((e) => e.key === warehouseLabel);
     const insertAt = khoIndex >= 0 ? khoIndex + 1 : entries.length;
-    entries.splice(insertAt, 0, { key: 'Nhà cung cấp', value: 'Tất cả NCC' });
+    entries.splice(insertAt, 0, {
+      key: supplierLabel,
+      value: t('filters.supplierAll'),
+    });
   }
 
   return entries;

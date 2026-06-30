@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Drawer, Form, Input, InputNumber, Select, Space, Switch, message } from 'antd';
 import { CloseOutlined, SaveOutlined } from '@ant-design/icons';
 import {
@@ -7,11 +8,8 @@ import {
   updateCustomer,
 } from '@/shared/api/customer-admin.api';
 import type { CustomerDetail } from '@/shared/api/customer-admin.types';
-import {
-  CUSTOMER_GENDER_OPTIONS,
-  CUSTOMER_STATUS_OPTIONS,
-} from '@/shared/api/customer-admin.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
+import { useCustomerEnums } from '@/shared/i18n/use-customer-enums';
 import { PharmaDatePicker } from '@/shared/ui/PharmaDatePicker';
 
 interface CustomerFormValues {
@@ -48,6 +46,9 @@ export function CustomerFormDrawer({
   onSaved,
   variant = 'full',
 }: CustomerFormDrawerProps) {
+  const { t } = useTranslation('customer', { keyPrefix: 'formDrawer' });
+  const { t: tc } = useTranslation('common');
+  const { customerGenderOptions, customerStatusOptions } = useCustomerEnums();
   const isQuick = variant === 'quick' && !editing;
   const [form] = Form.useForm<CustomerFormValues>();
   const [saving, setSaving] = useState(false);
@@ -110,13 +111,13 @@ export function CustomerFormDrawer({
             gender: values.gender,
           });
       if (!isQuick) {
-        message.success(editing ? 'Đã cập nhật khách hàng' : 'Đã thêm khách hàng');
+        message.success(editing ? t('messages.updateSuccess') : t('messages.createSuccess'));
       }
       onSaved(saved);
       onClose();
     } catch (error) {
       if (error && typeof error === 'object' && 'errorFields' in error) return;
-      message.error(apiErrorMessage(error, 'Không lưu được khách hàng'));
+      message.error(apiErrorMessage(error, t('messages.saveFailed')));
     } finally {
       setSaving(false);
     }
@@ -124,7 +125,9 @@ export function CustomerFormDrawer({
 
   return (
     <Drawer
-      title={editing ? 'Sửa khách hàng' : isQuick ? 'Thêm khách nhanh' : 'Thêm khách hàng'}
+      title={
+        editing ? t('titleEdit') : isQuick ? t('titleQuickCreate') : t('titleCreate')
+      }
       width={isQuick ? 400 : 420}
       open={open}
       onClose={onClose}
@@ -132,10 +135,10 @@ export function CustomerFormDrawer({
       extra={
         <Space>
           <Button icon={<CloseOutlined />} onClick={onClose}>
-            Hủy
+            {tc('actions.cancel')}
           </Button>
           <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={() => void handleSave()}>
-            Lưu
+            {tc('actions.save')}
           </Button>
         </Space>
       }
@@ -144,17 +147,15 @@ export function CustomerFormDrawer({
         {!isQuick ? (
           <Form.Item
             name="customerCode"
-            label="Mã KH"
-            extra={
-              editing
-                ? undefined
-                : 'Gợi ý mã tiếp theo — xóa trắng để hệ thống tự sinh khi lưu'
-            }
+            label={t('fields.customerCode')}
+            extra={editing ? undefined : t('hints.customerCodeSuggest')}
             normalize={(value) => normalizeCustomerCodeInput(value) ?? ''}
-            rules={editing ? [{ required: true, message: 'Nhập mã khách hàng' }] : undefined}
+            rules={
+              editing ? [{ required: true, message: t('validation.customerCodeRequired') }] : undefined
+            }
           >
             <Input
-              placeholder="KH009"
+              placeholder={t('placeholders.customerCode')}
               style={{ textTransform: 'uppercase' }}
               disabled={loadingCode && !editing}
             />
@@ -162,37 +163,37 @@ export function CustomerFormDrawer({
         ) : null}
         <Form.Item
           name="fullName"
-          label="Họ tên"
-          rules={[{ required: true, message: 'Nhập họ tên' }]}
+          label={t('fields.fullName')}
+          rules={[{ required: true, message: t('validation.fullNameRequired') }]}
         >
-          <Input placeholder="Nguyễn Văn A" autoFocus={isQuick} />
+          <Input placeholder={t('placeholders.fullName')} autoFocus={isQuick} />
         </Form.Item>
         <Form.Item
           name="phone"
-          label="Số điện thoại"
-          rules={[{ required: true, message: 'Nhập SĐT' }]}
+          label={t('fields.phone')}
+          rules={[{ required: true, message: t('validation.phoneRequired') }]}
         >
-          <Input placeholder="0909123456" />
+          <Input placeholder={t('placeholders.phone')} />
         </Form.Item>
         {!isQuick ? (
           <>
-            <Form.Item name="email" label="Email">
-              <Input placeholder="email@example.com" />
+            <Form.Item name="email" label={t('fields.email')}>
+              <Input placeholder={t('placeholders.email')} />
             </Form.Item>
-            <Form.Item name="dateOfBirth" label="Ngày sinh">
-              <PharmaDatePicker placeholder="dd/mm/yyyy" style={{ width: '100%' }} />
+            <Form.Item name="dateOfBirth" label={t('fields.dateOfBirth')}>
+              <PharmaDatePicker placeholder={t('placeholders.dateOfBirth')} style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="gender" label="Giới tính">
-              <Select allowClear placeholder="Chọn" options={CUSTOMER_GENDER_OPTIONS} />
+            <Form.Item name="gender" label={t('fields.gender')}>
+              <Select allowClear placeholder={t('placeholders.gender')} options={customerGenderOptions} />
             </Form.Item>
           </>
         ) : null}
         {editing ? (
           <>
-            <Form.Item name="status" label="Trạng thái" rules={[{ required: true }]}>
-              <Select options={CUSTOMER_STATUS_OPTIONS} />
+            <Form.Item name="status" label={t('fields.status')} rules={[{ required: true }]}>
+              <Select options={customerStatusOptions} />
             </Form.Item>
-            <Form.Item name="allowCredit" label="Cho phép ghi nợ" valuePropName="checked">
+            <Form.Item name="allowCredit" label={t('fields.allowCredit')} valuePropName="checked">
               <Switch />
             </Form.Item>
             <Form.Item noStyle shouldUpdate={(prev, cur) => prev.allowCredit !== cur.allowCredit}>
@@ -200,8 +201,8 @@ export function CustomerFormDrawer({
                 getFieldValue('allowCredit') ? (
                   <Form.Item
                     name="creditLimit"
-                    label="Hạn mức nợ"
-                    extra="Để trống = không giới hạn"
+                    label={t('fields.creditLimit')}
+                    extra={t('hints.creditLimitEmpty')}
                   >
                     <InputNumber min={0} step={1000} style={{ width: '100%' }} />
                   </Form.Item>

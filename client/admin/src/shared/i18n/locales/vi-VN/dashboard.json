@@ -1,0 +1,57 @@
+{
+  "greeting": "Xin chào, {{name}}",
+  "viewDetails": "Xem chi tiết →",
+  "messages": {
+    "loadFailed": "Không tải được tổng quan"
+  },
+  "sections": {
+    "sales": "Bán hàng",
+    "inventoryProcurement": "Kho & mua hàng",
+    "customerApp": "App khách"
+  },
+  "kpis": {
+    "todayRevenue": {
+      "title": "Doanh thu hôm nay",
+      "hint": "7 ngày (VN): {{amount}}"
+    },
+    "todayOrders": {
+      "title": "Đơn bán hôm nay",
+      "hint": "Theo ngày VN (UTC+7)"
+    },
+    "customers": {
+      "title": "Khách hàng",
+      "hint": "Hồ sơ CRM"
+    },
+    "draftOrdersAwaiting": {
+      "title": "Đơn app chờ xử lý",
+      "hint": "Đã gửi / khách xác nhận"
+    },
+    "products": {
+      "title": "Sản phẩm"
+    },
+    "activeBatches": {
+      "title": "Lô đang tồn"
+    },
+    "nearExpiry": {
+      "title": "Sắp hết HSD ({{days}} ngày)"
+    },
+    "lowStockProducts": {
+      "title": "SP tồn thấp",
+      "hint": "Theo SP / danh mục / ngưỡng chung"
+    },
+    "lowStockBatches": {
+      "title": "Lô tồn thấp (≤10)",
+      "hint": "Lô còn hàng nhưng SL thấp"
+    },
+    "pendingPoReceipt": {
+      "title": "PO chờ nhận hàng"
+    },
+    "reservationsAwaiting": {
+      "title": "Đặt trước chờ xử lý",
+      "hint": "Chờ duyệt / sẵn sàng"
+    },
+    "chatUnread": {
+      "title": "Chat chưa đọc"
+    }
+  }
+}

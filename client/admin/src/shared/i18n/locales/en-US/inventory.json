@@ -1,0 +1,454 @@
+{
+  "enums": {
+    "warehouseType": {
+      "1": "Main warehouse",
+      "2": "Retail warehouse",
+      "3": "Prescription warehouse",
+      "4": "Cold storage",
+      "5": "Returns warehouse"
+    },
+    "transferStatus": {
+      "1": "Pending completion",
+      "2": "In transit",
+      "3": "Completed",
+      "4": "Cancelled"
+    },
+    "adjustmentStatus": {
+      "1": "Pending approval",
+      "2": "Counting",
+      "3": "Approved",
+      "4": "Cancelled"
+    },
+    "status": {
+      "1": "Active",
+      "2": "Inactive"
+    }
+  },
+  "inventoryLayout": {
+    "tabs": {
+      "opening": "Opening balance",
+      "stock": "Stock",
+      "lowStock": "Low stock",
+      "transfers": "Transfers",
+      "adjustments": "Stock count",
+      "warehouses": "Warehouses"
+    }
+  },
+  "shared": {
+    "productAbbr": "Product",
+    "batchAbbr": "Batch",
+    "quantityAbbr": "Qty",
+    "systemQtyAbbr": "Sys",
+    "actualQtyAbbr": "Actual",
+    "varianceAbbr": "Var",
+    "countAbbr": "Count",
+    "expiryAbbr": "Exp",
+    "stockOnHand": "on hand {{qty}}",
+    "batchLabel": "Batch {{number}}",
+    "batchWithExpiry": "{{number}}{{expiry}} · on hand {{qty}}",
+    "expirySuffix": " · Exp {{date}}",
+    "productFilterTag": "Product: {{label}}",
+    "lineCount": "Lines",
+    "addLine": "Add line",
+    "detail": "Details",
+    "complete": "Complete",
+    "count": "Count",
+    "fromWarehouse": "From warehouse",
+    "toWarehouse": "To warehouse",
+    "warehouse": "Warehouse",
+    "branch": "Branch",
+    "unit": "Unit",
+    "unitCost": "Unit cost",
+    "stockQty": "Stock",
+    "totalStock": "Total stock",
+    "warehouseCount": "Warehouses",
+    "batchCount": "Batches",
+    "productCode": "Product code",
+    "productName": "Product name",
+    "productCodeLabel": "Code: {{code}}",
+    "documentNumber": "Document no.",
+    "date": "Date",
+    "reason": "Reason",
+    "zone": "Zone",
+    "counter": "Counter",
+    "type": "Type",
+    "default": "Default",
+    "address": "Address",
+    "warehouseCode": "Warehouse code",
+    "warehouseName": "Warehouse name",
+    "warehouseType": "Warehouse type",
+    "defaultWarehouse": "Default warehouse",
+    "selectBranch": "Select branch",
+    "warehouseCodePlaceholder": "e.g. WH_CH01",
+    "notes": "Notes",
+    "stockProductOption": "{{code}} — {{name}}{{unit}}{{stock}}",
+    "stockProductUnit": " · {{unit}}",
+    "stockProductStock": " (on hand {{qty}})"
+  },
+  "countWorkflow": {
+    "steps": {
+      "prepare": {
+        "title": "Prepare",
+        "description": "Open a count session and record the reason. Restrict sales/receipts at the warehouse while counting."
+      },
+      "count": {
+        "title": "Record counts",
+        "description": "Scan barcodes or select product + batch, enter actual quantities. Submit in batches."
+      },
+      "reconcile": {
+        "title": "Reconcile variances",
+        "description": "Review Sys · Count · Var. Fix GRN/POS/transfers first if source documents are wrong."
+      },
+      "approve": {
+        "title": "Approve & update stock",
+        "description": "Approver confirms — system adjusts stock by batch and locks the session."
+      }
+    },
+    "reasonPresets": {
+      "periodic": "Periodic count (month/quarter)",
+      "ad_hoc": "Ad-hoc count",
+      "incident": "After incident (loss, damage…)",
+      "audit": "Audit / inspection"
+    },
+    "reasonBase": {
+      "periodic": "Periodic count",
+      "ad_hoc": "Ad-hoc count",
+      "incident": "Post-incident count",
+      "audit": "Audit count"
+    },
+    "approveChecklist": {
+      "0": "Large variances reconciled with documents (GRN, sales, transfers) — fix source transactions if needed",
+      "1": "Remaining variances reflect actual counts (by batch)",
+      "2": "Approver is different from counter (when possible) and session reason is recorded"
+    }
+  },
+  "warehouseList": {
+    "title": "Warehouse list",
+    "addWarehouse": "Add warehouse",
+    "editWarehouse": "Edit warehouse",
+    "deleteConfirm": "Delete this warehouse?",
+    "columns": {
+      "warehouseCode": "Warehouse code",
+      "warehouseName": "Warehouse name",
+      "branch": "Branch",
+      "type": "Type",
+      "isDefault": "Default",
+      "status": "Status"
+    },
+    "messages": {
+      "loadFailed": "Could not load warehouse list",
+      "saveFailed": "Could not save warehouse",
+      "updateSuccess": "Warehouse updated",
+      "createSuccess": "Warehouse created",
+      "deleteFailed": "Could not delete warehouse"
+    }
+  },
+  "stockList": {
+    "title": "Stock",
+    "tabs": {
+      "summary": "Product summary",
+      "fefo": "By batch (FEFO)"
+    },
+    "filterByWarehouse": "Filter by warehouse",
+    "searchSummary": "Search product / code",
+    "searchFefo": "Search product / code / batch",
+    "detailTitle": "Stock details",
+    "detailTitleWithProduct": "Stock details — {{name}}",
+    "viewFefo": "View by batch (FEFO)",
+    "loadingBatches": "Loading batch details…",
+    "noBatches": "No batches in stock.",
+    "messages": {
+      "loadFailed": "Could not load stock",
+      "detailLoadFailed": "Could not load batch details"
+    }
+  },
+  "transferList": {
+    "title": "Transfer documents",
+    "createDocument": "Create document",
+    "createTitle": "Create transfer",
+    "detailTitle": "Document details",
+    "detailTitleWithNumber": "Document {{number}}",
+    "selectFromWarehouse": "Select source warehouse",
+    "selectToWarehouse": "Select destination warehouse",
+    "productPlaceholder": "Product",
+    "batchPlaceholder": "Batch",
+    "validation": {
+      "selectProduct": "Select product",
+      "selectBatch": "Select batch",
+      "quantity": "Qty"
+    },
+    "notFound": {
+      "noStockProducts": "No products in stock",
+      "selectFromWarehouseFirst": "Select source warehouse first",
+      "noStockBatches": "No batches in stock",
+      "selectProductFirst": "Select product first"
+    },
+    "messages": {
+      "loadFailed": "Could not load transfers",
+      "detailLoadFailed": "Could not load document details",
+      "createSuccess": "Created document {{number}}",
+      "createFailed": "Could not create document",
+      "completeSuccess": "Transfer completed",
+      "completeFailed": "Could not complete transfer"
+    }
+  },
+  "adjustmentList": {
+    "workflowTitle": "Standard count workflow (4 steps)",
+    "workflowIntro": "<strong>Count session</strong> (many products, multiple counters): open session → count → reconcile → approve on Count screen. <strong>Batch document</strong>: known variances on a few batches — create document with actual qty → approve from list.",
+    "title": "Stock count documents",
+    "countSession": "Count session",
+    "batchDocument": "Batch document",
+    "createBatchTitle": "Create batch count document",
+    "sessionStep1Title": "Step 1 — Open count session",
+    "startCounting": "Start counting",
+    "countWarehouse": "Count warehouse",
+    "selectWarehouse": "Select warehouse",
+    "countType": "Count type",
+    "reasonNote": "Additional notes",
+    "reasonNotePlaceholder": "e.g. End of June, zones A+B…",
+    "prepareAcknowledge": "Sales/receipts at this warehouse are restricted during the count",
+    "detailTitle": "Count details",
+    "detailTitleWithNumber": "Document {{number}}",
+    "countScreen": "Count screen",
+    "batchOptionLabel": "{{code}} / {{batch}} (Sys {{qty}})",
+    "validation": {
+      "selectBatch": "Select batch",
+      "actualQuantity": "Actual qty"
+    },
+    "sessionInProgressHint": "Session in progress — go to <strong>Count</strong>, complete steps 2–3 then <strong>Approve</strong> (step 4) with checklist.",
+    "messages": {
+      "loadFailed": "Could not load count documents",
+      "prepareRequired": "Confirm count preparation (step 1) before opening a session",
+      "sessionCreateSuccess": "Opened session {{number}}",
+      "sessionCreateFailed": "Could not open count session",
+      "detailLoadFailed": "Could not load document details",
+      "createSuccess": "Created document {{number}}",
+      "createFailed": "Could not create document",
+      "approveSuccess": "Count approved",
+      "approveFailed": "Could not approve document"
+    }
+  },
+  "inventoryCount": {
+    "backToList": "Back to list",
+    "printA4": "Print A4 report",
+    "approveTooltip": "Close session and update stock",
+    "workflowTitle": "Count workflow",
+    "step2Title": "Step 2 — Scan / find product",
+    "step3BatchTitle": "Step 3 — Summary by batch",
+    "step3ProductTitle": "Summary by product",
+    "recentEntriesTitle": "Recent count entries",
+    "draftTitle": "Draft lines",
+    "scanPlaceholder": "Scan barcode or type code / product name",
+    "batchPlaceholder": "Select batch (FEFO default — can change)",
+    "zonePlaceholder": "Note (zone being counted)",
+    "recordEntries": "Record ({{count}})",
+    "notFound": {
+      "noProducts": "No matching products",
+      "typeToSearch": "Type code or name to search",
+      "noBatchesAtWarehouse": "No batches for this product at warehouse"
+    },
+    "approveBlock": {
+      "missingBatch": "{{count}} count line(s) missing batch — delete from \"Recent count entries\"",
+      "noEntries": "No count entries recorded yet",
+      "beforeApprove": " before approving.",
+      "cannotApprove": "Cannot approve this session"
+    },
+    "reconcile": {
+      "title": "Step 3 — Reconcile:",
+      "varianceLines": "{{count}} variance group(s) — check GRN/sales/transfers before approving.",
+      "noVariance": "No variances — you can approve to lock the session."
+    },
+    "readyToApprove": "Ready for step 4 — click <strong>Approve</strong> and complete the checklist.",
+    "messages": {
+      "loadFailed": "Could not load count session",
+      "scanOrSelectProduct": "Scan barcode or select a product from the list",
+      "quantityMustBePositive": "Quantity must be greater than 0",
+      "selectFromSuggestions": "Select a product from suggestions or scan the correct barcode",
+      "noBatchAtWarehouse": "No batch at warehouse for this product — cannot record",
+      "addedToDraft": "Added to pending list",
+      "noDraftLines": "No lines to record",
+      "entriesRecorded": "Recorded {{count}} line(s)",
+      "recordFailed": "Could not record count entries",
+      "entryDeleted": "Line deleted",
+      "entryDeleteFailed": "Could not delete line",
+      "approveSuccess": "Count approved — stock updated",
+      "approveFailed": "Could not approve document"
+    }
+  },
+  "inventoryCountApproveModal": {
+    "title": "Step 4 — Approve count session",
+    "okText": "Approve and update stock",
+    "cancelText": "Back to reconcile",
+    "summaryIntro": "Stock will be updated for {{totalLines}} group(s) (product + batch).",
+    "varianceIntro": "{{varianceLines}} group(s) with variance",
+    "surplus": " (surplus {{qty}})",
+    "shortage": " (shortage {{qty}})",
+    "allMatch": " All groups match system stock.",
+    "lineVariance": "· {{product}}{{batch}}: variance {{variance}}",
+    "batchSuffix": " · batch {{number}}",
+    "moreGroups": "… and {{count}} more group(s)",
+    "confirmTitle": "Confirm before approving:"
+  },
+  "lowStock": {
+    "title": "Low stock alerts",
+    "description": "Threshold priority: product → warehouse → category → global setting → default 10. When viewing all warehouses, each row is a product–warehouse pair.",
+    "allWarehouses": "All warehouses",
+    "columns": {
+      "currentStock": "Current stock",
+      "threshold": "Threshold",
+      "level": "Level"
+    },
+    "levels": {
+      "outOfStock": "Out of stock",
+      "veryLow": "Very low",
+      "low": "Low"
+    },
+    "paginationTotal": "{{count}} rows",
+    "messages": {
+      "loadFailed": "Could not load low stock list"
+    }
+  },
+  "lowStockSettings": {
+    "title": "Low stock threshold settings (global / warehouse / category)",
+    "priorityAlertTitle": "Alert priority order",
+    "priorityAlertDescription": "<strong>Product</strong> → <strong>Warehouse</strong> → <strong>Category</strong> → <strong>Global threshold</strong> → default {{fallback}}. <strong>Apply to products</strong> copies the threshold to each product field.",
+    "defaultThreshold": "Global threshold (entire pharmacy)",
+    "defaultPlaceholder": "Default {{fallback}}",
+    "saveDefault": "Save global threshold",
+    "applyDefaultToProducts": "Apply global threshold to products",
+    "onlyUnsetProducts": "Only products without a custom threshold",
+    "byWarehouse": "By warehouse / branch",
+    "byCategory": "By product category",
+    "columns": {
+      "code": "Code",
+      "category": "Category",
+      "threshold": "Threshold",
+      "products": "Products",
+      "warehouseCode": "Warehouse code",
+      "warehouseBranch": "Warehouse / branch",
+      "applyToProducts": "Apply"
+    },
+    "empty": {
+      "noWarehouses": "No warehouses — create under Inventory → Warehouses",
+      "noCategories": "No categories — create under Catalog → Categories"
+    },
+    "messages": {
+      "loadFailed": "Could not load threshold settings",
+      "defaultSaveSuccess": "Global threshold saved",
+      "defaultSaveFailed": "Could not save global threshold",
+      "applyAllSuccess": "Applied threshold to {{count}} product(s)",
+      "applyFailed": "Could not apply",
+      "categorySaveSuccess": "Saved category threshold «{{name}}»",
+      "categorySaveFailed": "Could not save category",
+      "categoryApplySuccess": "Applied threshold to {{count}} product(s) in «{{name}}»",
+      "warehouseSaveSuccess": "Saved warehouse threshold «{{name}}»",
+      "warehouseSaveFailed": "Could not save warehouse"
+    }
+  },
+  "openingBalance": {
+    "excelImportTitle": "Import opening balance Excel",
+    "downloadTemplate": "Download template",
+    "excelHint": "Import <code>ton-dau-CN1.csv</code> / <code>ton-dau-CN2.csv</code>. Import product catalog first.",
+    "importWarehouse": "Import warehouse",
+    "selectBranchWarehouse": "Select branch warehouse",
+    "chooseExcelFile": "Choose Excel/CSV file",
+    "importButton": "Import",
+    "importButtonWithCount": "Import ({{count}} rows)",
+    "fileReady": "File: {{name}}{{ready}}",
+    "fileReadySuffix": " · {{count}} rows ready to import",
+    "selectWarehouseBeforeImport": "Select import warehouse before clicking Import.",
+    "uploading": "Uploading {{count}} rows…",
+    "importingBatch": "Importing batch {{current}}/{{total}}…",
+    "importResult": "Imported: {{processed}} batches · Errors: {{errors}}",
+    "importRowError": "Row {{row}}: {{message}}",
+    "columnsHint": "Columns: product_key (code/barcode), batch_number, quantity, unit_cost, expiry_date",
+    "manualEntryTitle": "Enter opening balance",
+    "notesPlaceholder": "e.g. New branch go-live...",
+    "selectProduct": "Select product",
+    "batchNumber": "Batch no.",
+    "importQuantity": "Import qty",
+    "saveOpeningBalance": "Save opening balance",
+    "latestResultTitle": "Latest save result",
+    "latestResultMessage": "Saved {{count}} line(s) to warehouse «{{warehouse}}»",
+    "latestResultDescription": "Time: {{time}}{{notes}} · <success>New batches: No transactions yet — can delete if entered by mistake.</success>",
+    "listTitle": "Opening balance list",
+    "listTitleWithWarehouse": "Opening balance: {{warehouse}}",
+    "filterProduct": "Filter product",
+    "searchPlaceholder": "Search product / code / batch",
+    "statusFilter": {
+      "all": "All statuses",
+      "voidable": "No transactions",
+      "locked": "Has transactions"
+    },
+    "emptyListHint": "No batches imported from this screen yet",
+    "emptyListDescription": "The table below lists only stock saved via <strong>Save opening balance</strong> here (INV-008). Demo seed stock (Paracetamol, etc.) <strong>does not</strong> appear here — see <stockLink>Stock</stockLink> tab or \"Actual stock at warehouse\" below. After clicking <strong>Save opening balance</strong>, new batches appear in this table.",
+    "listSummary": "Shows only opening-balance batches with stock > 0.",
+    "listSummaryVoidable": " {{voidable}} batch(es) <voidableTag>No transactions</voidableTag> (can delete) · {{locked}} batch(es) <lockedTag>Has transactions</lockedTag>",
+    "actualStockTitle": "Actual stock at warehouse",
+    "actualStockTitleWithWarehouse": "Actual stock: {{warehouse}}",
+    "openStockTab": "Open Stock tab",
+    "actualStockDescription": "All batches with stock at the warehouse (including demo seed and opening balance). Same sort order (expiry → product → batch) and pagination as the table above for comparison.",
+    "status": {
+      "voidable": "No transactions",
+      "locked": "Has transactions",
+      "lockedTooltip": "Transactions exist"
+    },
+    "voidConfirm": {
+      "title": "Delete opening balance batch?",
+      "description": "{{code}} / {{batch}} · {{qty}} units at {{warehouse}}",
+      "ariaDelete": "Delete batch",
+      "ariaCannotDelete": "Cannot delete",
+      "cannotDeleteTooltip": "Cannot delete — use Stock count to adjust"
+    },
+    "empty": {
+      "noMatch": "No batches match filters",
+      "noOpeningBalance": "No opening balance batches — enter and click Save opening balance",
+      "selectWarehouse": "Select warehouse to view list",
+      "noStockAtWarehouse": "No stock at this warehouse — check API, migrations, and seed",
+      "selectWarehouseShort": "Select warehouse"
+    },
+    "paginationTotal": "{{count}} batches",
+    "messages": {
+      "stockLoadFailed": "Could not load stock",
+      "listLoadFailed": "Could not load opening balance list",
+      "lookupsLoadFailed": "Could not load reference data",
+      "voidSuccess": "Deleted batch {{batch}}",
+      "voidFailed": "Could not delete opening balance batch",
+      "selectWarehouse": "Select warehouse for opening balance",
+      "addValidLine": "Add at least one valid line",
+      "invalidUnitCost": "Invalid unit cost",
+      "saveSuccess": "Saved {{count}} opening balance line(s)",
+      "saveFailed": "Could not save opening balance",
+      "noValidRows": "No valid rows in file.",
+      "fileReadSuccess": "Read {{count}} rows from «{{name}}»",
+      "fileReadFailed": "Could not read file",
+      "selectWarehouseForImport": "Select warehouse before importing.",
+      "importSuccess": "Import done: {{processed}} batches, {{errors}} errors",
+      "importFailed": "Import failed"
+    }
+  },
+  "print": {
+    "documentTitle": "Count {{number}}",
+    "heading": "Inventory count sheet",
+    "sessionNumber": "Session:",
+    "date": "Date:",
+    "warehouse": "Warehouse:",
+    "reason": "Reason:",
+    "columns": {
+      "index": "No.",
+      "productCode": "Product code",
+      "productName": "Product name",
+      "batchNumber": "Batch",
+      "systemQty": "Book qty",
+      "countedQty": "Counted qty",
+      "difference": "Variance"
+    },
+    "signatures": {
+      "countLead": "Count team lead",
+      "storekeeper": "Storekeeper",
+      "manager": "Manager",
+      "signHint": "(Signature, name)"
+    },
+    "footnote": "Printed from PharmaCore — for reference only before approval."
+  }
+}

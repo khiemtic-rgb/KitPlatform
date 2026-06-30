@@ -5,6 +5,7 @@ import {
   fetchCustomerDraftOrders,
 } from '@/shared/api/customer-draft-orders.api';
 import { useAuthStore } from '@/shared/auth/auth.store';
+import { salesT } from '@/shared/i18n';
 import { buildAdminDraftOrderEventsUrl, subscribeChatSse } from '@/shared/utils/chat-sse';
 import { showDesktopNotification } from '@/shared/utils/desktop-notification';
 
@@ -54,20 +55,22 @@ export function usePendingCustomerDraftCount(enabled = true) {
         const shouldNotify = initializedRef.current && (!onDraftPage || document.hidden);
 
         if (shouldNotify && newConfirmed.length > 0) {
+          const t = salesT();
           for (const order of newConfirmed) {
             showDesktopNotification(
-              'Khách xác nhận đơn tạm',
-              `${order.draftNumber} — sẵn sàng nạp POS tại quầy.`,
+              t('customerDrafts.notifications.confirmedTitle'),
+              t('customerDrafts.notifications.confirmedBody', { draftNumber: order.draftNumber }),
               `draft-confirmed-${order.id}`,
             );
           }
         }
 
         if (shouldNotify && newCancelled.length > 0) {
+          const t = salesT();
           for (const order of newCancelled) {
             showDesktopNotification(
-              'Khách hủy đơn tạm',
-              `${order.draftNumber} — không cần xử lý tại quầy.`,
+              t('customerDrafts.notifications.cancelledTitle'),
+              t('customerDrafts.notifications.cancelledBody', { draftNumber: order.draftNumber }),
               `draft-cancelled-${order.id}`,
             );
           }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   App,
   AutoComplete,
@@ -59,6 +60,7 @@ export function VoucherBulkIssueDrawer({
   onClose: () => void;
   onIssued: () => void | Promise<void>;
 }) {
+  const { t } = useTranslation('sales', { keyPrefix: 'vouchers.bulkIssue' });
   const { message } = App.useApp();
   const [tiers, setTiers] = useState<LoyaltyTierAdmin[]>([]);
   const [search, setSearch] = useState('');
@@ -190,32 +192,35 @@ export function VoucherBulkIssueDrawer({
         setPageSize(result.pageSize);
         setSelectedIds((prev) => prev.filter((id) => result.items.some((row) => row.id === id)));
       } catch (error) {
-        message.error(apiErrorMessage(error, 'Không tìm được khách hàng'));
+        message.error(apiErrorMessage(error, t('messages.searchFailed')));
       } finally {
         setLoading(false);
       }
     },
-    [voucher, page, pageSize, buildPayload, message],
+    [voucher, page, pageSize, buildPayload, message, t],
   );
 
   const handleIssue = async () => {
     if (!voucher || selectedIds.length === 0) {
-      message.warning('Chọn ít nhất một khách hàng');
+      message.warning(t('messages.selectAtLeastOne'));
       return;
     }
     setIssuing(true);
     try {
       const result = await issueVoucherBulkAdmin(voucher.id, selectedIds);
       message.success(
-        `Đã phát ${result.issuedCount} khách${
-          result.skippedAlreadyHad > 0 ? ` · bỏ qua ${result.skippedAlreadyHad} đã có` : ''
-        }`,
+        result.skippedAlreadyHad > 0
+          ? t('messages.issueSuccessSkipped', {
+              issued: result.issuedCount,
+              skipped: result.skippedAlreadyHad,
+            })
+          : t('messages.issueSuccess', { issued: result.issuedCount }),
       );
       setSelectedIds([]);
       await runSearch(1, pageSize);
       await onIssued();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không phát được voucher hàng loạt'));
+      message.error(apiErrorMessage(error, t('messages.issueFailed')));
     } finally {
       setIssuing(false);
     }
@@ -223,18 +228,18 @@ export function VoucherBulkIssueDrawer({
 
   const columns: ColumnsType<VoucherIssueCandidate> = useMemo(
     () => [
-      { title: 'Mã', dataIndex: 'customerCode', width: 72, ellipsis: true },
-      { title: 'Khách', dataIndex: 'fullName', ellipsis: true },
-      { title: 'SĐT', dataIndex: 'phone', width: 96, ellipsis: true },
+      { title: t('columns.code'), dataIndex: 'customerCode', width: 72, ellipsis: true },
+      { title: t('columns.customer'), dataIndex: 'fullName', ellipsis: true },
+      { title: t('columns.phone'), dataIndex: 'phone', width: 96, ellipsis: true },
       {
-        title: 'Hạng',
+        title: t('columns.tier'),
         dataIndex: 'tierName',
         width: 64,
         ellipsis: true,
         render: (v?: string | null) => v ?? '—',
       },
       {
-        title: 'DT',
+        title: t('columns.revenue'),
         dataIndex: 'periodRevenue',
         width: 96,
         align: 'right',
@@ -242,26 +247,26 @@ export function VoucherBulkIssueDrawer({
           v != null && v > 0 ? <TabularMoney>{formatDisplayMoney(v)}</TabularMoney> : '—',
       },
       {
-        title: 'SN',
+        title: t('columns.birthday'),
         dataIndex: 'dateOfBirth',
         width: 52,
         render: (v?: string | null) => formatBirthday(v),
       },
       {
-        title: 'Voucher',
+        title: t('columns.voucher'),
         key: 'issued',
         width: 72,
         render: (_, row) =>
           row.alreadyIssued ? (
-            <Tag style={{ margin: 0, fontSize: 11, lineHeight: '18px' }}>Có</Tag>
+            <Tag style={{ margin: 0, fontSize: 11, lineHeight: '18px' }}>{t('hasVoucher')}</Tag>
           ) : (
             <Tag color="green" style={{ margin: 0, fontSize: 11, lineHeight: '18px' }}>
-              Chưa
+              {t('noVoucher')}
             </Tag>
           ),
       },
     ],
-    [],
+    [t],
   );
 
   const handleTableChange = (pagination: TablePaginationConfig) => {
@@ -272,7 +277,7 @@ export function VoucherBulkIssueDrawer({
 
   return (
     <Drawer
-      title={voucher ? `Phát hàng loạt · ${voucher.voucherCode}` : 'Phát hàng loạt'}
+      title={voucher ? t('titleWithCode', { code: voucher.voucherCode }) : t('title')}
       open={open}
       onClose={onClose}
       width={920}
@@ -290,7 +295,7 @@ export function VoucherBulkIssueDrawer({
           disabled={selectedIds.length === 0}
           onClick={() => void handleIssue()}
         >
-          Phát ({selectedIds.length})
+          {t('issueButton', { count: selectedIds.length })}
         </Button>
       }
     >
@@ -305,7 +310,7 @@ export function VoucherBulkIssueDrawer({
               onChange={(v) => setSearch(String(v ?? ''))}
               onSearch={(v) => void loadCustomerOptions(v)}
               onSelect={(value) => setSearch(String(value))}
-              placeholder="Tìm tên / SĐT / mã khách"
+              placeholder={t('searchPlaceholder')}
               allowClear
               onClear={() => {
                 setSearch('');
@@ -315,7 +320,7 @@ export function VoucherBulkIssueDrawer({
           </Col>
           <Col flex="none">
             <Button type="primary" size="small" loading={loading} onClick={() => void runSearch(1, pageSize)}>
-              Tìm khách
+              {t('searchCustomers')}
             </Button>
           </Col>
         </Row>
@@ -324,7 +329,7 @@ export function VoucherBulkIssueDrawer({
           <Col style={{ width: FILTER_LABEL_W, flex: `0 0 ${FILTER_LABEL_W}px` }}>
             <Space size={6}>
               <Switch size="small" checked={revenueEnabled} onChange={setRevenueEnabled} />
-              <span style={filterLabelStyle}>Doanh thu</span>
+              <span style={filterLabelStyle}>{t('revenue')}</span>
             </Space>
           </Col>
           <Col flex="auto" style={{ minWidth: 0 }}>
@@ -347,7 +352,7 @@ export function VoucherBulkIssueDrawer({
                 disabled={!revenueEnabled}
                 value={minRevenue}
                 onChange={(v) => setMinRevenue(Number(v ?? 0))}
-                placeholder="Tối thiểu"
+                placeholder={t('minRevenue')}
               />
               <Button
                 size="small"
@@ -355,7 +360,7 @@ export function VoucherBulkIssueDrawer({
                 disabled={!revenueEnabled}
                 onClick={() => setRevenueRange([dayjs().startOf('month'), dayjs().endOf('month')])}
               >
-                Tháng này
+                {t('thisMonth')}
               </Button>
             </div>
           </Col>
@@ -365,7 +370,7 @@ export function VoucherBulkIssueDrawer({
           <Col style={{ width: FILTER_LABEL_W, flex: `0 0 ${FILTER_LABEL_W}px` }}>
             <Space size={6}>
               <Switch size="small" checked={birthdayEnabled} onChange={setBirthdayEnabled} />
-              <span style={filterLabelStyle}>Sinh nhật</span>
+              <span style={filterLabelStyle}>{t('birthday')}</span>
             </Space>
           </Col>
           <Col flex="auto" style={{ minWidth: 0 }}>
@@ -411,7 +416,7 @@ export function VoucherBulkIssueDrawer({
           <Col style={{ width: FILTER_LABEL_W, flex: `0 0 ${FILTER_LABEL_W}px` }}>
             <Space size={6}>
               <Switch size="small" checked={tierEnabled} onChange={setTierEnabled} />
-              <span style={filterLabelStyle}>Hạng</span>
+              <span style={filterLabelStyle}>{t('tier')}</span>
             </Space>
           </Col>
           <Col flex="auto" style={{ minWidth: 0 }}>
@@ -420,7 +425,7 @@ export function VoucherBulkIssueDrawer({
               mode="multiple"
               maxTagCount="responsive"
               style={{ width: '100%' }}
-              placeholder="Chọn hạng"
+              placeholder={t('selectTiers')}
               disabled={!tierEnabled}
               value={tierIds}
               onChange={setTierIds}
@@ -431,7 +436,7 @@ export function VoucherBulkIssueDrawer({
           <Col flex="none">
             <Space size={6}>
               <Switch size="small" checked={excludeAlreadyIssued} onChange={setExcludeAlreadyIssued} />
-              <span style={filterLabelStyle}>Ẩn đã có voucher</span>
+              <span style={filterLabelStyle}>{t('hideAlreadyIssued')}</span>
             </Space>
           </Col>
         </Row>
@@ -458,7 +463,7 @@ export function VoucherBulkIssueDrawer({
           size: 'small',
           showSizeChanger: true,
           pageSizeOptions: [20, 50, 100, 200],
-          showTotal: (t) => `${t} KH`,
+          showTotal: (total) => t('paginationTotal', { count: total }),
         }}
         onChange={handleTableChange}
         scroll={{ y: 'calc(100vh - 248px)' }}

@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Button,
@@ -14,6 +15,7 @@ import { DownloadOutlined, InboxOutlined, UploadOutlined } from '@ant-design/ico
 import type { UploadRequestOption } from 'rc-upload/lib/interface';
 import { importProducts, type ProductImportError, type ProductImportResult } from '@/shared/api/catalog.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
+import { catalogT } from '@/shared/i18n';
 import {
   PRODUCT_IMPORT_TEMPLATE_HEADERS,
   downloadCsvTemplate,
@@ -38,35 +40,40 @@ function mapProductRows(rows: Record<string, string>[]): PreviewRow[] {
     productCode: pickRowValue(row, 'product_code', 'ma_sp', 'mã_sp', 'code'),
     productName: pickRowValue(row, 'product_name', 'ten_sp', 'tên_sp', 'name'),
     barcode: pickRowValue(row, 'barcode', 'ma_vach', 'mã_vạch'),
-    saleUnitName: pickRowValue(row, 'sale_unit_name', 'dvt', 'đvt', 'unit') || 'Viên',
+    saleUnitName:
+      pickRowValue(row, 'sale_unit_name', 'dvt', 'đvt', 'unit') || catalogT()('shared.defaultSaleUnit'),
     retailPrice: parseDecimal(pickRowValue(row, 'retail_price', 'gia_ban', 'giá_bán', 'price')),
     minStockQty: parseDecimal(pickRowValue(row, 'min_stock_qty', 'ton_toi_thieu', 'tồn_tối_thiểu')),
   }));
 }
 
 export function ProductImportPage() {
+  const { t } = useTranslation('catalog', { keyPrefix: 'import' });
   const [preview, setPreview] = useState<PreviewRow[]>([]);
   const [result, setResult] = useState<ProductImportResult | null>(null);
   const [importing, setImporting] = useState(false);
   const [importBatch, setImportBatch] = useState<{ current: number; total: number } | null>(null);
   const [fileName, setFileName] = useState<string>();
 
-  const handleFile = useCallback(async (file: File) => {
-    try {
-      const rows = await parseSpreadsheetFile(file);
-      const mapped = mapProductRows(rows).filter((r) => r.productName.length >= 2);
-      if (mapped.length === 0) {
-        message.warning('Không tìm thấy dòng hợp lệ. Kiểm tra header file Excel/CSV.');
-        return;
+  const handleFile = useCallback(
+    async (file: File) => {
+      try {
+        const rows = await parseSpreadsheetFile(file);
+        const mapped = mapProductRows(rows).filter((r) => r.productName.length >= 2);
+        if (mapped.length === 0) {
+          message.warning(t('messages.noValidRows'));
+          return;
+        }
+        setPreview(mapped);
+        setResult(null);
+        setFileName(file.name);
+        message.success(t('messages.readSuccess', { count: mapped.length, fileName: file.name }));
+      } catch (error) {
+        message.error(apiErrorMessage(error, t('messages.readFailed')));
       }
-      setPreview(mapped);
-      setResult(null);
-      setFileName(file.name);
-      message.success(`Đã đọc ${mapped.length} dòng từ «${file.name}»`);
-    } catch (error) {
-      message.error(apiErrorMessage(error, 'Không đọc được file'));
-    }
-  }, []);
+    },
+    [t],
+  );
 
   const runImport = async () => {
     if (preview.length === 0) return;
@@ -89,40 +96,50 @@ export function ProductImportPage() {
         setImportBatch({ current, total });
       });
       setResult(res);
-      message.success(`Import xong: ${res.created} tạo mới, ${res.skipped} bỏ qua, ${res.failed} lỗi`);
+      message.success(
+        t('messages.importSuccess', {
+          created: res.created,
+          skipped: res.skipped,
+          failed: res.failed,
+        }),
+      );
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Import thất bại'));
+      message.error(apiErrorMessage(error, t('messages.importFailed')));
     } finally {
       setImporting(false);
       setImportBatch(null);
     }
   };
 
-  const previewColumns: ColumnsType<PreviewRow> = [
-    { title: 'Dòng', dataIndex: 'rowNumber', width: 70 },
-    { title: 'Mã SP', dataIndex: 'productCode', width: 110 },
-    { title: 'Tên SP', dataIndex: 'productName' },
-    { title: 'Barcode', dataIndex: 'barcode', width: 130 },
-    { title: 'ĐVT', dataIndex: 'saleUnitName', width: 80 },
-    { title: 'Giá bán', dataIndex: 'retailPrice', width: 100 },
-    { title: 'Tồn TT', dataIndex: 'minStockQty', width: 90 },
-  ];
+  const previewColumns: ColumnsType<PreviewRow> = useMemo(
+    () => [
+      { title: t('columns.row'), dataIndex: 'rowNumber', width: 70 },
+      { title: t('columns.productCode'), dataIndex: 'productCode', width: 110 },
+      { title: t('columns.productName'), dataIndex: 'productName' },
+      { title: t('columns.barcode'), dataIndex: 'barcode', width: 130 },
+      { title: t('columns.unit'), dataIndex: 'saleUnitName', width: 80 },
+      { title: t('columns.retailPrice'), dataIndex: 'retailPrice', width: 100 },
+      { title: t('columns.minStockQty'), dataIndex: 'minStockQty', width: 90 },
+    ],
+    [t],
+  );
 
-  const errorColumns: ColumnsType<ProductImportError> = [
-    { title: 'Dòng', dataIndex: 'rowNumber', width: 70 },
-    { title: 'Lỗi', dataIndex: 'message' },
-  ];
+  const errorColumns: ColumnsType<ProductImportError> = useMemo(
+    () => [
+      { title: t('columns.row'), dataIndex: 'rowNumber', width: 70 },
+      { title: t('columns.error'), dataIndex: 'message' },
+    ],
+    [t],
+  );
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       <div>
         <Typography.Title level={4} style={{ marginBottom: 4 }}>
-          Import sản phẩm (Excel/CSV)
+          {t('title')}
         </Typography.Title>
         <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          Cột tối thiểu: <code>product_name</code>, khuyến nghị thêm <code>barcode</code>,{' '}
-          <code>retail_price</code>, <code>min_stock_qty</code>. Mã SP trùng sẽ bỏ qua. File lớn được
-          gửi theo lô 500 dòng — giữ tab mở vài phút.
+          {t('intro')}
         </Typography.Paragraph>
       </div>
 
@@ -132,7 +149,7 @@ export function ProductImportPage() {
             icon={<DownloadOutlined />}
             onClick={() => downloadCsvTemplate('mau-import-san-pham.csv', PRODUCT_IMPORT_TEMPLATE_HEADERS)}
           >
-            Tải mẫu CSV
+            {t('downloadTemplate')}
           </Button>
           <Upload
             accept=".xlsx,.xls,.csv"
@@ -142,7 +159,7 @@ export function ProductImportPage() {
               void handleFile(file).then(() => options.onSuccess?.({}, file));
             }}
           >
-            <Button icon={<UploadOutlined />}>Chọn file Excel/CSV</Button>
+            <Button icon={<UploadOutlined />}>{t('chooseFile')}</Button>
           </Upload>
           <Button
             type="primary"
@@ -151,17 +168,19 @@ export function ProductImportPage() {
             loading={importing}
             onClick={() => void runImport()}
           >
-            Import {preview.length > 0 ? `(${preview.length} dòng)` : ''}
+            {preview.length > 0
+              ? t('importButtonWithCount', { count: preview.length })
+              : t('importButton')}
           </Button>
         </Space>
         {importBatch && (
           <Typography.Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-            Đang import lô {importBatch.current}/{importBatch.total}…
+            {t('batchProgress', { current: importBatch.current, total: importBatch.total })}
           </Typography.Text>
         )}
         {fileName && (
           <Typography.Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-            File: {fileName}
+            {t('fileLabel', { name: fileName })}
           </Typography.Text>
         )}
       </Card>
@@ -170,19 +189,36 @@ export function ProductImportPage() {
         <Alert
           type={result.failed > 0 ? 'warning' : 'success'}
           showIcon
-          message={`Tạo mới: ${result.created} · Bỏ qua (trùng mã): ${result.skipped} · Lỗi: ${result.failed}`}
+          message={t('resultSummary', {
+            created: result.created,
+            skipped: result.skipped,
+            failed: result.failed,
+          })}
         />
       )}
 
       {result && result.errors.length > 0 && (
-        <Card size="small" title="Chi tiết lỗi">
-          <Table rowKey="rowNumber" size="small" pagination={{ pageSize: 20 }} columns={errorColumns} dataSource={result.errors} />
+        <Card size="small" title={t('errorDetailsTitle')}>
+          <Table
+            rowKey="rowNumber"
+            size="small"
+            pagination={{ pageSize: 20 }}
+            columns={errorColumns}
+            dataSource={result.errors}
+          />
         </Card>
       )}
 
       {preview.length > 0 && (
-        <Card size="small" title={`Xem trước (${preview.length} dòng)`}>
-          <Table rowKey="rowNumber" size="small" pagination={{ pageSize: 15 }} columns={previewColumns} dataSource={preview} scroll={{ x: 800 }} />
+        <Card size="small" title={t('previewTitle', { count: preview.length })}>
+          <Table
+            rowKey="rowNumber"
+            size="small"
+            pagination={{ pageSize: 15 }}
+            columns={previewColumns}
+            dataSource={preview}
+            scroll={{ x: 800 }}
+          />
         </Card>
       )}
     </Space>

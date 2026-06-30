@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Checkbox, Modal, Typography } from 'antd';
 import type { AdjustmentCountPreviewLine } from '@/shared/api/inventory.types';
-import { APPROVE_COUNT_CHECKLIST, countVarianceSummary } from '@/modules/inventory/inventory-count-workflow';
+import { countVarianceSummary, getApproveCountChecklist } from '@/modules/inventory/inventory-count-workflow';
 import { formatDisplayQuantity } from '@/shared/utils/money';
 
 interface InventoryCountApproveModalProps {
@@ -19,56 +20,60 @@ export function InventoryCountApproveModal({
   onCancel,
   onConfirm,
 }: InventoryCountApproveModalProps) {
-  const [checked, setChecked] = useState<boolean[]>(() => APPROVE_COUNT_CHECKLIST.map(() => false));
+  const { t, i18n } = useTranslation('inventory', { keyPrefix: 'inventoryCountApproveModal' });
+  const checklist = useMemo(() => getApproveCountChecklist(), [i18n.language]);
+  const [checked, setChecked] = useState<boolean[]>(() => checklist.map(() => false));
   const summary = countVarianceSummary(previewLines);
   const allChecked = checked.every(Boolean);
 
   useEffect(() => {
-    if (open) setChecked(APPROVE_COUNT_CHECKLIST.map(() => false));
-  }, [open]);
+    if (open) setChecked(checklist.map(() => false));
+  }, [open, checklist]);
 
   return (
     <Modal
-      title="Bước 4 — Duyệt phiên kiểm kê"
+      title={t('title')}
       open={open}
       onCancel={onCancel}
       onOk={onConfirm}
-      okText="Duyệt và cập nhật tồn"
-      cancelText="Quay lại đối chiếu"
+      okText={t('okText')}
+      cancelText={t('cancelText')}
       okButtonProps={{ disabled: !allChecked, loading }}
       width={520}
     >
       <Typography.Paragraph style={{ marginTop: 0 }}>
-        Hệ thống sẽ cập nhật tồn theo <strong>{summary.totalLines}</strong> nhóm (SP + lô).
+        {t('summaryIntro', { totalLines: summary.totalLines })}
         {summary.varianceLines > 0 ? (
           <>
             {' '}
-            Có <strong>{summary.varianceLines}</strong> nhóm lệch
-            {summary.surplus > 0 && <> (dư {formatDisplayQuantity(summary.surplus)})</>}
-            {summary.shortage > 0 && <> (thiếu {formatDisplayQuantity(summary.shortage)})</>}.
+            {t('varianceIntro', { varianceLines: summary.varianceLines })}
+            {summary.surplus > 0 && <> {t('surplus', { qty: formatDisplayQuantity(summary.surplus) })}</>}
+            {summary.shortage > 0 && <> {t('shortage', { qty: formatDisplayQuantity(summary.shortage) })}</>}.
           </>
         ) : (
-          ' Tất cả nhóm khớp tồn hệ thống.'
+          t('allMatch')
         )}
       </Typography.Paragraph>
 
       {previewLines.slice(0, 5).map((line) => (
         <div key={`${line.productId}-${line.batchId}`} style={{ fontSize: 13, marginBottom: 4 }}>
-          · {line.productName}
-          {line.batchNumber ? ` · lô ${line.batchNumber}` : ''}: lệch{' '}
-          <strong>{formatDisplayQuantity(line.differenceQuantity)}</strong>
+          {t('lineVariance', {
+            product: line.productName,
+            batch: line.batchNumber ? t('batchSuffix', { number: line.batchNumber }) : '',
+            variance: formatDisplayQuantity(line.differenceQuantity),
+          })}
         </div>
       ))}
       {previewLines.length > 5 && (
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          … và {previewLines.length - 5} nhóm khác
+          {t('moreGroups', { count: previewLines.length - 5 })}
         </Typography.Text>
       )}
 
       <Typography.Paragraph strong style={{ marginTop: 16, marginBottom: 8 }}>
-        Xác nhận trước khi duyệt:
+        {t('confirmTitle')}
       </Typography.Paragraph>
-      {APPROVE_COUNT_CHECKLIST.map((label, index) => (
+      {checklist.map((label, index) => (
         <div key={label} style={{ marginBottom: 8 }}>
           <Checkbox
             checked={checked[index]}

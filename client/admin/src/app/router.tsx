@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Spin } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { AuthGuard, GuestGuard } from '@/shared/auth/AuthGuard';
 
 const AppLayout = lazy(() =>
@@ -168,6 +169,7 @@ const ReportViewPage = lazy(() =>
 );
 
 function RouteFallback() {
+  const { t } = useTranslation('common', { keyPrefix: 'routeLoading' });
   return (
     <div
       style={{
@@ -178,7 +180,7 @@ function RouteFallback() {
         background: '#f5f5f5',
       }}
     >
-      <Spin size="large" tip="Đang tải...">
+      <Spin size="large" tip={t('tip')}>
         <div style={{ minHeight: 120, minWidth: 120 }} />
       </Spin>
     </div>

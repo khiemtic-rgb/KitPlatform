@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Form, Table, Typography } from 'antd';
 import type { FormInstance } from 'antd';
 import type { PurchaseOrderDetail } from '@/shared/api/procurement.types';
@@ -66,8 +67,8 @@ export function GrnTaxSummaryContent({
   taxAmount,
   totalAmount,
   hint,
-  subtotalLabel = 'Tiền hàng',
-  totalLabel = 'Tổng cộng',
+  subtotalLabel,
+  totalLabel,
   moneyColumnWidth = PROCUREMENT_MONEY_COL_WIDTH,
 }: {
   subtotal: number;
@@ -78,6 +79,9 @@ export function GrnTaxSummaryContent({
   totalLabel?: string;
   moneyColumnWidth?: number;
 }) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'shared.tax' });
+  const resolvedSubtotalLabel = subtotalLabel ?? t('subtotal');
+  const resolvedTotalLabel = totalLabel ?? t('total');
   const rowProps = { moneyColumnWidth };
 
   return (
@@ -91,10 +95,10 @@ export function GrnTaxSummaryContent({
         </Typography.Text>
       ) : null}
       <div style={{ width: '100%' }}>
-        <SummaryRow label={subtotalLabel} value={formatDisplayMoney(subtotal)} {...rowProps} />
-        <SummaryRow label="Thuế GTGT" value={formatDisplayMoney(taxAmount)} {...rowProps} />
+        <SummaryRow label={resolvedSubtotalLabel} value={formatDisplayMoney(subtotal)} {...rowProps} />
+        <SummaryRow label={t('vatLabel')} value={formatDisplayMoney(taxAmount)} {...rowProps} />
         <div style={{ borderTop: '1px solid #e8e8e8', margin: '4px 0' }} />
-        <SummaryRow label={totalLabel} value={formatDisplayMoney(totalAmount)} strong {...rowProps} />
+        <SummaryRow label={resolvedTotalLabel} value={formatDisplayMoney(totalAmount)} strong {...rowProps} />
       </div>
     </>
   );
@@ -116,9 +120,10 @@ export function GrnReadonlyTaxSummaryFooter({
   summaryColSpan = 2,
   moneyColumnWidth = PROCUREMENT_MONEY_COL_WIDTH,
 }: GrnReadonlyTaxSummaryFooterProps) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'shared' });
   const { subtotal, taxAmount, totalAmount } = computeGrnTaxTotals(items, linkedPo);
   const hint = linkedPo
-    ? `${linkedPo.poNumber} · ${linkedPo.vatTreatmentName} · chỉ xem`
+    ? `${linkedPo.poNumber} · ${linkedPo.vatTreatmentName} · ${t('readOnlyHint')}`
     : undefined;
 
   return (
@@ -159,7 +164,8 @@ export function PoReadonlyTaxSummaryFooter({
   summaryColSpan?: number;
   moneyColumnWidth?: number;
 }) {
-  const hintParts = [poNumber, vatTreatmentName, 'chỉ xem'].filter(Boolean);
+  const { t } = useTranslation('procurement', { keyPrefix: 'shared' });
+  const hintParts = [poNumber, vatTreatmentName, t('readOnlyHint')].filter(Boolean);
 
   return (
     <Table.Summary>
@@ -171,8 +177,8 @@ export function PoReadonlyTaxSummaryFooter({
             taxAmount={taxAmount}
             totalAmount={totalAmount}
             hint={hintParts.length ? hintParts.join(' · ') : undefined}
-            subtotalLabel="Tạm tính"
-            totalLabel="Tổng"
+            subtotalLabel={t('tax.provisional')}
+            totalLabel={t('tax.totalShort')}
             moneyColumnWidth={moneyColumnWidth}
           />
         </Table.Summary.Cell>
@@ -183,6 +189,7 @@ export function PoReadonlyTaxSummaryFooter({
 
 /** Footer tổng tiền — gắn vào Table.Summary để sát danh sách hàng */
 export function GrnPoTaxSummaryTableFooter({ form, linkedPo }: GrnPoTaxSummaryProps) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'shared' });
   const items = Form.useWatch('items', form) as GrnLineLike[] | undefined;
   const { subtotal, taxAmount, totalAmount } = computeGrnTaxFromPo(linkedPo, items);
 
@@ -194,7 +201,7 @@ export function GrnPoTaxSummaryTableFooter({ form, linkedPo }: GrnPoTaxSummaryPr
           subtotal={subtotal}
           taxAmount={taxAmount}
           totalAmount={totalAmount}
-          hint={`${linkedPo.poNumber} · ${linkedPo.vatTreatmentName} · chỉ xem`}
+          hint={`${linkedPo.poNumber} · ${linkedPo.vatTreatmentName} · ${t('readOnlyHint')}`}
           moneyColumnWidth={PROCUREMENT_MONEY_COL_WIDTH}
         />
       </Table.Summary.Cell>

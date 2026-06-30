@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
@@ -19,10 +20,8 @@ import dayjs from 'dayjs';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   confirmCustomerReservation,
-  CUSTOMER_RESERVATION_FULFILLMENT_LABELS,
   CUSTOMER_RESERVATION_STATUS,
   CUSTOMER_RESERVATION_STATUS_COLORS,
-  CUSTOMER_RESERVATION_STATUS_LABELS,
   fetchCustomerReservation,
   fetchCustomerReservations,
   markCustomerReservationReady,
@@ -33,6 +32,7 @@ import {
 } from '@/shared/api/customer-reservations.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 import { sectionGapStyle } from '@/modules/sales/sales-ui-styles';
 import {
   buildCustomerSearchSuggestions,
@@ -41,11 +41,6 @@ import {
 } from '@/modules/sales/sales-list-customer-search';
 import { SalesListDualSearchBar, SalesListDualSearchWrap } from '@/modules/sales/SalesListDualSearchBar';
 
-const STATUS_FILTER_OPTIONS = Object.entries(CUSTOMER_RESERVATION_STATUS_LABELS).map(([value, label]) => ({
-  value: Number(value),
-  label,
-}));
-
 const AWAITING_STATUSES: number[] = [
   CUSTOMER_RESERVATION_STATUS.Pending,
   CUSTOMER_RESERVATION_STATUS.Confirmed,
@@ -53,6 +48,8 @@ const AWAITING_STATUSES: number[] = [
 ];
 
 export function CustomerReservationListPage() {
+  const { t } = useTranslation('sales', { keyPrefix: 'customerReservations' });
+  const { reservationStatusLabel, reservationStatusOptions, reservationFulfillmentLabel } = useSalesEnums();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const canWrite = useHasPermission('sales.write');
@@ -75,11 +72,11 @@ export function CustomerReservationListPage() {
     try {
       setItems(await fetchCustomerReservations());
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được yêu cầu đặt trước'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load();
@@ -139,7 +136,7 @@ export function CustomerReservationListPage() {
       setDetail(data);
       setStaffNotes(data.staffNotes ?? '');
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được chi tiết'));
+      message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
       setDetailOpen(false);
     } finally {
       setDetailLoading(false);
@@ -153,14 +150,14 @@ export function CustomerReservationListPage() {
     await load();
   };
 
-  const runAction = async (label: string, action: () => Promise<CustomerReservation>) => {
+  const runAction = async (successKey: 'confirmed' | 'rejected' | 'ready', action: () => Promise<CustomerReservation>) => {
     if (!detail) return;
     try {
       await action();
-      message.success(label);
+      message.success(t(`messages.${successKey}`));
       await refreshDetail(detail.id);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Thao tác thất bại'));
+      message.error(apiErrorMessage(error, t('messages.actionFailed')));
     }
   };
 
@@ -169,10 +166,10 @@ export function CustomerReservationListPage() {
     setSavingNotes(true);
     try {
       await updateCustomerReservationStaffNotes(detail.id, staffNotes.trim() || undefined);
-      message.success('Đã lưu ghi chú');
+      message.success(t('messages.notesSaved'));
       await refreshDetail(detail.id);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không lưu được ghi chú'));
+      message.error(apiErrorMessage(error, t('messages.notesSaveFailed')));
     } finally {
       setSavingNotes(false);
     }
@@ -190,28 +187,28 @@ export function CustomerReservationListPage() {
   };
 
   const columns: ColumnsType<CustomerReservationStaffListItem> = [
-    { title: 'Số yêu cầu', dataIndex: 'reservationNumber', width: 130 },
-    { title: 'Khách hàng', dataIndex: 'customerName' },
-    { title: 'SĐT', dataIndex: 'customerPhone', width: 120 },
+    { title: t('columns.reservationNumber'), dataIndex: 'reservationNumber', width: 130 },
+    { title: t('columns.customerName'), dataIndex: 'customerName' },
+    { title: t('columns.phone'), dataIndex: 'customerPhone', width: 120 },
     {
-      title: 'Trạng thái',
+      title: t('columns.status'),
       dataIndex: 'status',
       width: 150,
       render: (status: number) => (
         <Tag color={CUSTOMER_RESERVATION_STATUS_COLORS[status] ?? 'default'}>
-          {CUSTOMER_RESERVATION_STATUS_LABELS[status] ?? status}
+          {reservationStatusLabel(status)}
         </Tag>
       ),
     },
     {
-      title: 'Hình thức',
+      title: t('columns.fulfillmentType'),
       dataIndex: 'fulfillmentType',
       width: 120,
-      render: (value: number) => CUSTOMER_RESERVATION_FULFILLMENT_LABELS[value] ?? value,
+      render: (value: number) => reservationFulfillmentLabel(value),
     },
-    { title: 'SP', dataIndex: 'itemCount', width: 60 },
+    { title: t('columns.itemCount'), dataIndex: 'itemCount', width: 60 },
     {
-      title: 'Gửi lúc',
+      title: t('columns.submittedAt'),
       dataIndex: 'submittedAt',
       width: 150,
       render: (value: string) => dayjs(value).format('DD/MM/YYYY HH:mm'),
@@ -221,7 +218,7 @@ export function CustomerReservationListPage() {
       width: 80,
       render: (_, row) => (
         <Button type="link" icon={<EyeOutlined />} onClick={() => void openDetail(row)}>
-          Xem
+          {t('columns.view')}
         </Button>
       ),
     },
@@ -243,15 +240,15 @@ export function CustomerReservationListPage() {
             onClear={clearSearch}
             customerSuggestions={customerSuggestions}
             documentSuggestions={documentSuggestions}
-            documentPlaceholder="Số yêu cầu"
+            documentPlaceholder={t('filters.documentPlaceholder')}
             liveFilter
             showApplyButton={false}
           />
           <Select
             allowClear
-            placeholder="Trạng thái"
+            placeholder={t('filters.status')}
             style={{ width: 180 }}
-            options={STATUS_FILTER_OPTIONS}
+            options={reservationStatusOptions}
             value={statusFilter}
             onChange={(value) => {
               setStatusFilter(value);
@@ -266,10 +263,10 @@ export function CustomerReservationListPage() {
               setStatusFilter(undefined);
             }}
           >
-            Chờ xử lý ({awaitingCount})
+            {t('filters.awaiting', { count: awaitingCount })}
           </Button>
           <Button icon={<ReloadOutlined />} onClick={() => void load()}>
-            Tải lại
+            {t('filters.reload')}
           </Button>
         </SalesListDualSearchWrap>
       </Card>
@@ -284,7 +281,7 @@ export function CustomerReservationListPage() {
       />
 
       <Drawer
-        title={detail?.reservationNumber ?? 'Chi tiết đặt trước'}
+        title={detail?.reservationNumber ?? t('detail.drawerTitleDefault')}
         width={520}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
@@ -293,29 +290,29 @@ export function CustomerReservationListPage() {
         {detail ? (
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             <Descriptions size="small" column={1} bordered>
-              <Descriptions.Item label="Trạng thái">
+              <Descriptions.Item label={t('detail.status')}>
                 <Tag color={CUSTOMER_RESERVATION_STATUS_COLORS[detail.status] ?? 'default'}>
-                  {CUSTOMER_RESERVATION_STATUS_LABELS[detail.status]}
+                  {reservationStatusLabel(detail.status)}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Hình thức">
-                {CUSTOMER_RESERVATION_FULFILLMENT_LABELS[detail.fulfillmentType]}
+              <Descriptions.Item label={t('detail.fulfillmentType')}>
+                {reservationFulfillmentLabel(detail.fulfillmentType)}
               </Descriptions.Item>
               {detail.addressSummary ? (
-                <Descriptions.Item label="Địa chỉ">{detail.addressSummary}</Descriptions.Item>
+                <Descriptions.Item label={t('detail.address')}>{detail.addressSummary}</Descriptions.Item>
               ) : null}
-              {detail.notes ? <Descriptions.Item label="Ghi chú KH">{detail.notes}</Descriptions.Item> : null}
+              {detail.notes ? <Descriptions.Item label={t('detail.customerNotes')}>{detail.notes}</Descriptions.Item> : null}
               {detail.salesOrderNumber ? (
-                <Descriptions.Item label="Hóa đơn bán">{detail.salesOrderNumber}</Descriptions.Item>
+                <Descriptions.Item label={t('detail.salesOrder')}>{detail.salesOrderNumber}</Descriptions.Item>
               ) : null}
-              <Descriptions.Item label="Gửi lúc">
+              <Descriptions.Item label={t('detail.submittedAt')}>
                 {dayjs(detail.submittedAt).format('DD/MM/YYYY HH:mm')}
               </Descriptions.Item>
             </Descriptions>
 
             <List
               size="small"
-              header="Sản phẩm"
+              header={t('detail.productsHeader')}
               dataSource={detail.items}
               renderItem={(line) => (
                 <List.Item>
@@ -338,41 +335,41 @@ export function CustomerReservationListPage() {
                   rows={3}
                   value={staffNotes}
                   onChange={(e) => setStaffNotes(e.target.value)}
-                  placeholder="Ghi chú nội bộ (vd: dự kiến có hàng ngày mai)"
+                  placeholder={t('detail.staffNotesPlaceholder')}
                 />
                 <Button loading={savingNotes} onClick={() => void saveStaffNotes()}>
-                  Lưu ghi chú
+                  {t('detail.saveNotes')}
                 </Button>
 
                 <Space wrap>
                   {detail.status === CUSTOMER_RESERVATION_STATUS.Pending ? (
                     <>
                       <Popconfirm
-                        title="Xác nhận yêu cầu?"
+                        title={t('detail.confirmPopconfirm')}
                         onConfirm={() =>
-                          void runAction('Đã xác nhận', () => confirmCustomerReservation(detail.id))
+                          void runAction('confirmed', () => confirmCustomerReservation(detail.id))
                         }
                       >
-                        <Button type="primary">Xác nhận</Button>
+                        <Button type="primary">{t('detail.confirm')}</Button>
                       </Popconfirm>
                       <Popconfirm
-                        title="Từ chối yêu cầu?"
+                        title={t('detail.rejectPopconfirm')}
                         onConfirm={() =>
-                          void runAction('Đã từ chối', () => rejectCustomerReservation(detail.id))
+                          void runAction('rejected', () => rejectCustomerReservation(detail.id))
                         }
                       >
-                        <Button danger>Từ chối</Button>
+                        <Button danger>{t('detail.reject')}</Button>
                       </Popconfirm>
                     </>
                   ) : null}
                   {detail.status === CUSTOMER_RESERVATION_STATUS.Confirmed ? (
                     <Popconfirm
-                      title="Đánh dấu sẵn sàng?"
+                      title={t('detail.readyPopconfirm')}
                       onConfirm={() =>
-                        void runAction('Đã sẵn sàng', () => markCustomerReservationReady(detail.id))
+                        void runAction('ready', () => markCustomerReservationReady(detail.id))
                       }
                     >
-                      <Button>Sẵn sàng lấy thuốc</Button>
+                      <Button>{t('detail.markReady')}</Button>
                     </Popconfirm>
                   ) : null}
                   {canLoadPos(detail) ? (
@@ -381,7 +378,7 @@ export function CustomerReservationListPage() {
                       icon={<ShoppingCartOutlined />}
                       onClick={() => loadIntoPos(detail.id)}
                     >
-                      Bán POS — tạo hóa đơn
+                      {t('detail.loadPos')}
                     </Button>
                   ) : null}
                 </Space>

@@ -1,20 +1,29 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Card, DatePicker, Select, Space, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { Dayjs } from 'dayjs';
 import { ReloadOutlined } from '@ant-design/icons';
-import {
-  AUDIT_ACTION_LABELS,
-  AUDIT_ENTITY_LABELS,
-  fetchAuditLogs,
-  type AuditLogItem,
-} from '@/shared/api/audit.api';
+import { fetchAuditLogs, type AuditLogItem } from '@/shared/api/audit.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { formatDisplayDateTime } from '@/shared/utils/date';
+import { useSystemEnums } from '@/shared/i18n/use-system-enums';
 
-const ENTITY_OPTIONS = Object.entries(AUDIT_ENTITY_LABELS).map(([value, label]) => ({ value, label }));
+const ENTITY_TYPES = [
+  'sales_order',
+  'goods_receipt',
+  'purchase_order',
+  'supplier_payment',
+  'opening_balance',
+  'inventory_adjustment',
+] as const;
+
+const ACTION_TYPES = ['create', 'complete', 'approve', 'cancel'] as const;
 
 export function AuditLogListPage() {
+  const { t } = useTranslation('system', { keyPrefix: 'auditLog' });
+  const { t: tc } = useTranslation('common');
+  const { auditActionLabel, auditEntityLabel } = useSystemEnums();
   const [items, setItems] = useState<AuditLogItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -23,6 +32,16 @@ export function AuditLogListPage() {
   const [action, setAction] = useState<string>();
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const entityOptions = useMemo(
+    () => ENTITY_TYPES.map((value) => ({ value, label: auditEntityLabel(value) })),
+    [auditEntityLabel],
+  );
+
+  const actionOptions = useMemo(
+    () => ACTION_TYPES.map((value) => ({ value, label: auditActionLabel(value) })),
+    [auditActionLabel],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -33,57 +52,60 @@ export function AuditLogListPage() {
       setItems(result.items);
       setTotal(result.total);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được nhật ký'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [action, entityType, page, pageSize, range]);
+  }, [action, entityType, page, pageSize, range, t]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const columns: ColumnsType<AuditLogItem> = [
-    {
-      title: 'Thời gian',
-      dataIndex: 'createdAt',
-      width: 160,
-      render: (v: string) => formatDisplayDateTime(v),
-    },
-    {
-      title: 'Người dùng',
-      dataIndex: 'username',
-      width: 120,
-      render: (v?: string) => v ?? '—',
-    },
-    {
-      title: 'Loại',
-      dataIndex: 'entityType',
-      width: 140,
-      render: (v: string) => <Tag>{AUDIT_ENTITY_LABELS[v] ?? v}</Tag>,
-    },
-    {
-      title: 'Hành động',
-      dataIndex: 'action',
-      width: 110,
-      render: (v: string) => AUDIT_ACTION_LABELS[v] ?? v,
-    },
-    {
-      title: 'Chi tiết',
-      dataIndex: 'payloadJson',
-      ellipsis: true,
-      render: (v?: string) => v ?? '—',
-    },
-  ];
+  const columns: ColumnsType<AuditLogItem> = useMemo(
+    () => [
+      {
+        title: t('columns.time'),
+        dataIndex: 'createdAt',
+        width: 160,
+        render: (v: string) => formatDisplayDateTime(v),
+      },
+      {
+        title: t('columns.user'),
+        dataIndex: 'username',
+        width: 120,
+        render: (v?: string) => v ?? '—',
+      },
+      {
+        title: t('columns.entityType'),
+        dataIndex: 'entityType',
+        width: 140,
+        render: (v: string) => <Tag>{auditEntityLabel(v)}</Tag>,
+      },
+      {
+        title: t('columns.action'),
+        dataIndex: 'action',
+        width: 110,
+        render: (v: string) => auditActionLabel(v),
+      },
+      {
+        title: t('columns.detail'),
+        dataIndex: 'payloadJson',
+        ellipsis: true,
+        render: (v?: string) => v ?? '—',
+      },
+    ],
+    [auditActionLabel, auditEntityLabel, t],
+  );
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       <div>
         <Typography.Title level={4} style={{ marginBottom: 4 }}>
-          Nhật ký hệ thống
+          {t('title')}
         </Typography.Title>
         <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          Ghi nhận mua hàng, bán hàng, nhập tồn đầu và duyệt kiểm kê.
+          {t('description')}
         </Typography.Paragraph>
       </div>
 
@@ -91,28 +113,23 @@ export function AuditLogListPage() {
         <Space wrap>
           <Select
             allowClear
-            placeholder="Loại nghiệp vụ"
+            placeholder={t('filters.entityType')}
             style={{ minWidth: 180 }}
             value={entityType}
             onChange={setEntityType}
-            options={ENTITY_OPTIONS}
+            options={entityOptions}
           />
           <Select
             allowClear
-            placeholder="Hành động"
+            placeholder={t('filters.action')}
             style={{ minWidth: 140 }}
             value={action}
             onChange={setAction}
-            options={[
-              { value: 'create', label: 'Tạo mới' },
-              { value: 'complete', label: 'Hoàn tất' },
-              { value: 'approve', label: 'Duyệt' },
-              { value: 'cancel', label: 'Hủy' },
-            ]}
+            options={actionOptions}
           />
           <DatePicker.RangePicker value={range} onChange={setRange} format="DD/MM/YYYY" />
           <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-            Lọc
+            {tc('actions.filter')}
           </Button>
         </Space>
       </Card>

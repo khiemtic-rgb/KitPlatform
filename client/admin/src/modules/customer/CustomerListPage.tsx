@@ -1,18 +1,22 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Card, Input, Space, Table, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { fetchCustomers, fetchCustomer } from '@/shared/api/customer-admin.api';
 import type { CustomerAdminListItem, CustomerDetail } from '@/shared/api/customer-admin.types';
-import { CUSTOMER_STATUS_LABELS } from '@/shared/api/customer-admin.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
 import { CustomerFormDrawer } from '@/modules/customer/CustomerFormDrawer';
 import { CustomerImportCard } from '@/modules/customer/CustomerImportCard';
+import { useCustomerEnums } from '@/shared/i18n/use-customer-enums';
 import { formatDisplayDate } from '@/shared/utils/date';
 
 export function CustomerListPage() {
+  const { t } = useTranslation('customer', { keyPrefix: 'listPage' });
+  const { t: tc } = useTranslation('common');
+  const { customerStatusLabel } = useCustomerEnums();
   const navigate = useNavigate();
   const canWrite = useHasPermission('sales.write');
   const [loading, setLoading] = useState(false);
@@ -34,11 +38,11 @@ export function CustomerListPage() {
     } catch (error) {
       setItems([]);
       setTotal(0);
-      message.error(apiErrorMessage(error, 'Không tải được danh sách khách hàng'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search]);
+  }, [page, pageSize, search, t]);
 
   useEffect(() => {
     void load();
@@ -55,80 +59,81 @@ export function CustomerListPage() {
       setEditing(await fetchCustomer(row.id));
       setDrawerOpen(true);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được khách hàng'));
+      message.error(apiErrorMessage(error, t('messages.loadCustomerFailed')));
     }
   };
 
-  const columns: ColumnsType<CustomerAdminListItem> = [
-    {
-      title: 'Mã KH',
-      dataIndex: 'customerCode',
-      width: 120,
-    },
-    {
-      title: 'Họ tên',
-      dataIndex: 'fullName',
-    },
-    {
-      title: 'SĐT',
-      dataIndex: 'phone',
-      width: 130,
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      render: (v?: string) => v ?? '—',
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      width: 110,
-      render: (status: number) => (
-        <Tag color={status === 1 ? 'green' : 'default'}>
-          {CUSTOMER_STATUS_LABELS[status] ?? status}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Ngày tạo',
-      dataIndex: 'createdAt',
-      width: 120,
-      render: (v: string) => formatDisplayDate(v),
-    },
-    ...(canWrite
-      ? [
-          {
-            title: '',
-            width: 72,
-            render: (_: unknown, row: CustomerAdminListItem) => (
-              <Button
-                type="link"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={(event) => void openEdit(row, event)}
-              >
-                Sửa
-              </Button>
-            ),
-          } as ColumnsType<CustomerAdminListItem>[number],
-        ]
-      : []),
-  ];
+  const columns: ColumnsType<CustomerAdminListItem> = useMemo(
+    () => [
+      {
+        title: t('columns.customerCode'),
+        dataIndex: 'customerCode',
+        width: 120,
+      },
+      {
+        title: t('columns.fullName'),
+        dataIndex: 'fullName',
+      },
+      {
+        title: t('columns.phone'),
+        dataIndex: 'phone',
+        width: 130,
+      },
+      {
+        title: t('columns.email'),
+        dataIndex: 'email',
+        render: (v?: string) => v ?? '—',
+      },
+      {
+        title: t('columns.status'),
+        dataIndex: 'status',
+        width: 110,
+        render: (status: number) => (
+          <Tag color={status === 1 ? 'green' : 'default'}>{customerStatusLabel(status)}</Tag>
+        ),
+      },
+      {
+        title: t('columns.createdAt'),
+        dataIndex: 'createdAt',
+        width: 120,
+        render: (v: string) => formatDisplayDate(v),
+      },
+      ...(canWrite
+        ? [
+            {
+              title: '',
+              width: 72,
+              render: (_: unknown, row: CustomerAdminListItem) => (
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={(event) => void openEdit(row, event)}
+                >
+                  {tc('actions.edit')}
+                </Button>
+              ),
+            } as ColumnsType<CustomerAdminListItem>[number],
+          ]
+        : []),
+    ],
+    [canWrite, customerStatusLabel, t, tc],
+  );
 
   return (
     <>
       <Card
-        title="Khách hàng"
+        title={t('title')}
         extra={
           canWrite ? (
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-              Thêm KH
+              {t('addCustomer')}
             </Button>
           ) : null
         }
       >
         {canWrite ? (
-          <Card size="small" title="Import khách hàng (Excel/CSV)" style={{ marginBottom: 16 }}>
+          <Card size="small" title={t('importTitle')} style={{ marginBottom: 16 }}>
             <CustomerImportCard onImported={load} />
           </Card>
         ) : null}
@@ -136,7 +141,7 @@ export function CustomerListPage() {
           <Input
             allowClear
             style={{ width: 280 }}
-            placeholder="Tên, SĐT, mã KH, email"
+            placeholder={t('searchPlaceholder')}
             prefix={<SearchOutlined />}
             value={searchInput}
             onChange={(e) => {
@@ -156,10 +161,10 @@ export function CustomerListPage() {
               setSearch(searchInput.trim());
             }}
           >
-            Tìm
+            {tc('actions.search')}
           </Button>
           <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-            Tải lại
+            {tc('actions.reload')}
           </Button>
         </Space>
 

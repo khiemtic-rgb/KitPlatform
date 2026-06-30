@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Button,
@@ -45,6 +46,8 @@ import { formatDisplayDate } from '@/shared/utils/date';
 const { RangePicker } = DatePicker;
 
 export function SalesShiftReportPage() {
+  const { t } = useTranslation('sales', { keyPrefix: 'shiftReport' });
+  const { t: tPos } = useTranslation('sales', { keyPrefix: 'pos.messages' });
   const canWrite = useHasPermission('sales.write');
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehouseId, setWarehouseId] = useState<string>();
@@ -84,16 +87,16 @@ export function SalesShiftReportPage() {
       setOpenShift(await loadOpenShiftForWarehouse(warehouseId));
     } catch (error) {
       setOpenShift(null);
-      message.error(apiErrorMessage(error, 'Không tải ca hiện tại'));
+      message.error(apiErrorMessage(error, t('messages.loadCurrentFailed')));
     }
     try {
       setShifts(await fetchSalesShifts(30));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải lịch sử ca'));
+      message.error(apiErrorMessage(error, t('messages.loadHistoryFailed')));
     } finally {
       setLoading(false);
     }
-  }, [warehouseId]);
+  }, [warehouseId, t]);
 
   useEffect(() => {
     void loadShiftState();
@@ -105,11 +108,11 @@ export function SalesShiftReportPage() {
       const data = await fetchSalesShiftSummary(range[0].toISOString(), range[1].toISOString());
       setRangeSummary(data);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được báo cáo'));
+      message.error(apiErrorMessage(error, t('messages.loadReportFailed')));
     } finally {
       setRangeLoading(false);
     }
-  }, [range]);
+  }, [range, t]);
 
   useEffect(() => {
     void loadRangeSummary();
@@ -117,7 +120,7 @@ export function SalesShiftReportPage() {
 
   const handleOpenShift = async (openingCash: number) => {
     if (!warehouseId) {
-      message.warning('Chọn kho trước khi mở ca');
+      message.warning(tPos('selectWarehouseForShift'));
       throw new Error('missing warehouse');
     }
     setSaving(true);
@@ -125,7 +128,7 @@ export function SalesShiftReportPage() {
       const shift = await openSalesShift({ warehouseId, openingCash });
       setOpenShift(shift);
       setOpenModal(false);
-      message.success(`Đã mở ca ${shift.shiftNumber}`);
+      message.success(tPos('shiftOpened', { number: shift.shiftNumber }));
       await loadShiftState();
     } catch (error) {
       if (isShiftAlreadyOpenError(error)) {
@@ -137,7 +140,7 @@ export function SalesShiftReportPage() {
           return;
         }
       }
-      message.error(apiErrorMessage(error, 'Không mở được ca'));
+      message.error(apiErrorMessage(error, tPos('openShiftFailed')));
       throw error;
     } finally {
       setSaving(false);
@@ -151,72 +154,75 @@ export function SalesShiftReportPage() {
       await closeSalesShift(openShift.id, { closingCash, closeNotes });
       setCloseModal(false);
       setOpenShift(null);
-      message.success('Đã đóng ca');
+      message.success(t('messages.closeSuccess'));
       await loadShiftState();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không đóng được ca'));
+      message.error(apiErrorMessage(error, t('messages.closeFailed')));
     } finally {
       setSaving(false);
     }
   };
 
-  const shiftColumns: ColumnsType<SalesShiftListItem> = [
-    { title: 'Số ca', dataIndex: 'shiftNumber' },
-    { title: 'Kho', dataIndex: 'warehouseName' },
-    { title: 'Mở bởi', dataIndex: 'openedByUserName' },
-    {
-      title: 'Mở lúc',
-      dataIndex: 'openedAt',
-      render: (v: string) => dayjs(v).format('DD-MM-YYYY HH:mm'),
-    },
-    {
-      title: 'Quỹ đầu',
-      dataIndex: 'openingCash',
-      align: 'right',
-      render: (v: number) => formatDisplayMoney(v),
-    },
-    {
-      title: 'Chênh lệch TM',
-      dataIndex: 'cashVariance',
-      align: 'right',
-      render: (v?: number) => (v != null ? formatDisplayMoney(v) : '—'),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      render: (s: number) =>
-        s === SALES_SHIFT_STATUSES.Open ? (
-          <Tag color="processing">Đang mở</Tag>
-        ) : (
-          <Tag color="default">Đã đóng</Tag>
-        ),
-    },
-  ];
+  const shiftColumns: ColumnsType<SalesShiftListItem> = useMemo(
+    () => [
+      { title: t('history.columns.shiftNumber'), dataIndex: 'shiftNumber' },
+      { title: t('history.columns.warehouse'), dataIndex: 'warehouseName' },
+      { title: t('history.columns.openedBy'), dataIndex: 'openedByUserName' },
+      {
+        title: t('history.columns.openedAt'),
+        dataIndex: 'openedAt',
+        render: (v: string) => dayjs(v).format('DD-MM-YYYY HH:mm'),
+      },
+      {
+        title: t('history.columns.openingCash'),
+        dataIndex: 'openingCash',
+        align: 'right',
+        render: (v: number) => formatDisplayMoney(v),
+      },
+      {
+        title: t('history.columns.cashVariance'),
+        dataIndex: 'cashVariance',
+        align: 'right',
+        render: (v?: number) => (v != null ? formatDisplayMoney(v) : '—'),
+      },
+      {
+        title: t('history.columns.status'),
+        dataIndex: 'status',
+        render: (s: number) =>
+          s === SALES_SHIFT_STATUSES.Open ? (
+            <Tag color="processing">{t('currentShift.statusOpen')}</Tag>
+          ) : (
+            <Tag color="default">{t('currentShift.statusClosed')}</Tag>
+          ),
+      },
+    ],
+    [t],
+  );
 
   const warehouseName = warehouses.find((w) => w.id === warehouseId)?.warehouseName;
 
   return (
     <>
-      <Card title="Ca làm việc" loading={loading}>
+      <Card title={t('currentShift.title')} loading={loading}>
         <Space wrap style={{ marginBottom: 16 }}>
           <Select
             style={{ minWidth: 220 }}
-            placeholder="Chọn kho"
+            placeholder={t('currentShift.warehousePlaceholder')}
             value={warehouseId}
             options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
             onChange={setWarehouseId}
           />
           <Button icon={<ReloadOutlined />} onClick={() => void loadShiftState()}>
-            Tải lại
+            {t('currentShift.reload')}
           </Button>
           {canWrite && !openShift && (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpenModal(true)}>
-              Mở ca
+              {t('currentShift.openShift')}
             </Button>
           )}
           {canWrite && openShift && (
             <Button danger icon={<StopOutlined />} onClick={() => setCloseModal(true)}>
-              Đóng ca
+              {t('currentShift.closeShift')}
             </Button>
           )}
         </Space>
@@ -224,49 +230,70 @@ export function SalesShiftReportPage() {
         {openShift ? (
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
             <Descriptions size="small" bordered column={2}>
-              <Descriptions.Item label="Số ca">{openShift.shiftNumber}</Descriptions.Item>
-              <Descriptions.Item label="Kho">{openShift.warehouseName}</Descriptions.Item>
-              <Descriptions.Item label="Mở bởi">{openShift.openedByUserName}</Descriptions.Item>
-              <Descriptions.Item label="Mở lúc">
+              <Descriptions.Item label={t('currentShift.descriptions.shiftNumber')}>
+                {openShift.shiftNumber}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('currentShift.descriptions.warehouse')}>
+                {openShift.warehouseName}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('currentShift.descriptions.openedBy')}>
+                {openShift.openedByUserName}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('currentShift.descriptions.openedAt')}>
                 {dayjs(openShift.openedAt).format('DD-MM-YYYY HH:mm')}
               </Descriptions.Item>
-              <Descriptions.Item label="Quỹ đầu ca">
+              <Descriptions.Item label={t('currentShift.descriptions.openingCash')}>
                 {formatDisplayMoney(openShift.openingCash)}
               </Descriptions.Item>
-              <Descriptions.Item label="Trạng thái">
-                <Tag color="processing">Đang mở</Tag>
+              <Descriptions.Item label={t('currentShift.descriptions.status')}>
+                <Tag color="processing">{t('currentShift.statusOpen')}</Tag>
               </Descriptions.Item>
             </Descriptions>
-            {enablesShiftFefoLotAlerts(batchMode) && openShift.lotAlerts && openShift.lotAlerts.length > 0 && (
-              <Alert
-                type="warning"
-                showIcon
-                message={`Cảnh báo lô FEFO (${openShift.lotAlerts[0]?.stockSourceLabel ?? 'Tồn theo hệ thống'})`}
-                description={
-                  <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
-                    {openShift.lotAlerts.map((alert) => (
-                      <li key={`${alert.productId}-${alert.soldBatchNumber}-${alert.earlierBatchNumber}`}>
-                        {alert.productCode} — đã bán lô {alert.soldBatchNumber}
-                        {alert.soldExpiryDate ? ` (HSD ${formatDisplayDate(alert.soldExpiryDate)})` : ''}
-                        {' '}trong khi lô {alert.earlierBatchNumber}
-                        {alert.earlierExpiryDate ? ` (HSD ${formatDisplayDate(alert.earlierExpiryDate)})` : ''}
-                        {' '}còn {alert.earlierBookQuantity.toLocaleString('vi-VN')} trên sổ
-                      </li>
-                    ))}
-                  </ul>
-                }
-              />
-            )}
+            {enablesShiftFefoLotAlerts(batchMode) &&
+              openShift.lotAlerts &&
+              openShift.lotAlerts.length > 0 && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message={t('currentShift.fefoAlert.title', {
+                    source:
+                      openShift.lotAlerts[0]?.stockSourceLabel ??
+                      t('currentShift.fefoAlert.defaultSource'),
+                  })}
+                  description={
+                    <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
+                      {openShift.lotAlerts.map((alert) => (
+                        <li key={`${alert.productId}-${alert.soldBatchNumber}-${alert.earlierBatchNumber}`}>
+                          {t('currentShift.fefoAlert.line', {
+                            productCode: alert.productCode,
+                            soldBatch: alert.soldBatchNumber,
+                            soldExpiry: alert.soldExpiryDate
+                              ? t('currentShift.fefoAlert.expirySuffix', {
+                                  date: formatDisplayDate(alert.soldExpiryDate),
+                                })
+                              : '',
+                            earlierBatch: alert.earlierBatchNumber,
+                            earlierExpiry: alert.earlierExpiryDate
+                              ? t('currentShift.fefoAlert.expirySuffix', {
+                                  date: formatDisplayDate(alert.earlierExpiryDate),
+                                })
+                              : '',
+                            qty: alert.earlierBookQuantity.toLocaleString(),
+                          })}
+                        </li>
+                      ))}
+                    </ul>
+                  }
+                />
+              )}
             <ShiftSummaryPanel summary={openShift.summary} showCashReconciliation />
           </Space>
         ) : (
-          <Typography.Paragraph type="secondary">
-            Chưa có ca mở cho kho này. Mở ca và nhập quỹ đầu ca trước khi bán hàng trên POS.
-          </Typography.Paragraph>
+          <Typography.Paragraph type="secondary">{t('currentShift.noOpenShift')}</Typography.Paragraph>
         )}
       </Card>
 
-      <Card title="Lịch sử ca" style={{ marginTop: 16 }}>
+      <Card title={t('history.title')} style={{ marginTop: 16 }}>
         <Table
           rowKey="id"
           size="small"
@@ -277,7 +304,7 @@ export function SalesShiftReportPage() {
         />
       </Card>
 
-      <Card title="Báo cáo theo khoảng thời gian" style={{ marginTop: 16 }}>
+      <Card title={t('rangeReport.title')} style={{ marginTop: 16 }}>
         <Space wrap style={{ marginBottom: 16 }}>
           <RangePicker
             showTime
@@ -287,7 +314,7 @@ export function SalesShiftReportPage() {
             }}
           />
           <Button type="primary" ghost loading={rangeLoading} onClick={() => void loadRangeSummary()}>
-            Tải lại
+            {t('rangeReport.reload')}
           </Button>
         </Space>
         {rangeSummary && <ShiftSummaryPanel summary={rangeSummary} loading={rangeLoading} />}

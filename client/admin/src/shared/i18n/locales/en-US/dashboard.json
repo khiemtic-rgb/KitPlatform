@@ -1,0 +1,57 @@
+{
+  "greeting": "Hello, {{name}}",
+  "viewDetails": "View details →",
+  "messages": {
+    "loadFailed": "Could not load overview"
+  },
+  "sections": {
+    "sales": "Sales",
+    "inventoryProcurement": "Inventory & procurement",
+    "customerApp": "Customer app"
+  },
+  "kpis": {
+    "todayRevenue": {
+      "title": "Today's revenue",
+      "hint": "7 days (VN): {{amount}}"
+    },
+    "todayOrders": {
+      "title": "Today's orders",
+      "hint": "By VN calendar day (UTC+7)"
+    },
+    "customers": {
+      "title": "Customers",
+      "hint": "CRM profiles"
+    },
+    "draftOrdersAwaiting": {
+      "title": "App orders awaiting action",
+      "hint": "Submitted / customer confirmed"
+    },
+    "products": {
+      "title": "Products"
+    },
+    "activeBatches": {
+      "title": "Active batches"
+    },
+    "nearExpiry": {
+      "title": "Near expiry ({{days}} days)"
+    },
+    "lowStockProducts": {
+      "title": "Low-stock products",
+      "hint": "By product / category / default threshold"
+    },
+    "lowStockBatches": {
+      "title": "Low-stock batches (≤10)",
+      "hint": "Batches with stock but low quantity"
+    },
+    "pendingPoReceipt": {
+      "title": "POs pending receipt"
+    },
+    "reservationsAwaiting": {
+      "title": "Reservations awaiting action",
+      "hint": "Pending approval / ready"
+    },
+    "chatUnread": {
+      "title": "Unread chat"
+    }
+  }
+}

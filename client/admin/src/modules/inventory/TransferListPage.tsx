@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
@@ -29,7 +30,8 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import type { TransferDetail, TransferListItem, Warehouse } from '@/shared/api/inventory.types';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayQuantity } from '@/shared/utils/money';
-import { TRANSFER_STATUS_LABELS } from '@/shared/api/inventory.types';
+import { inventoryT } from '@/shared/i18n';
+import { useInventoryEnums } from '@/shared/i18n/use-inventory-enums';
 
 interface TransferLineForm {
   productId?: string;
@@ -38,13 +40,23 @@ interface TransferLineForm {
 }
 
 function stockProductLabel(code: string, name: string, unitName?: string | null, totalQty?: number) {
-  const base = unitName ? `${code} — ${name} · ${unitName}` : `${code} — ${name}`;
-  return totalQty != null ? `${base} (tồn ${formatDisplayQuantity(totalQty)})` : base;
+  const t = inventoryT();
+  const unit = unitName ? t('shared.stockProductUnit', { unit: unitName }) : '';
+  const stock =
+    totalQty != null ? t('shared.stockProductStock', { qty: formatDisplayQuantity(totalQty) }) : '';
+  return t('shared.stockProductOption', { code, name, unit, stock });
 }
 
 function batchOptionLabel(batchNumber: string, expiryDate: string | undefined, quantityAvailable: number) {
-  const hsd = expiryDate ? ` · HSD ${formatDisplayDate(expiryDate)}` : '';
-  return `${batchNumber}${hsd} · tồn ${formatDisplayQuantity(quantityAvailable)}`;
+  const t = inventoryT();
+  const expiry = expiryDate
+    ? t('shared.expirySuffix', { date: formatDisplayDate(expiryDate) })
+    : '';
+  return t('shared.batchWithExpiry', {
+    number: batchNumber,
+    expiry,
+    qty: formatDisplayQuantity(quantityAvailable),
+  });
 }
 
 function TransferLineRow({
@@ -56,6 +68,8 @@ function TransferLineRow({
   fromWarehouseId?: string;
   remove: () => void;
 }) {
+  const { t } = useTranslation('inventory', { keyPrefix: 'transferList' });
+  const { t: tc } = useTranslation('common');
   const form = Form.useFormInstance();
   const productId = Form.useWatch(['items', field.name, 'productId'], form) as string | undefined;
   const [productOptions, setProductOptions] = useState<{ value: string; label: string }[]>([]);
@@ -156,13 +170,13 @@ function TransferLineRow({
       <Form.Item
         {...field}
         name={[field.name, 'productId']}
-        rules={[{ required: true, message: 'Chọn SP' }]}
+        rules={[{ required: true, message: t('validation.selectProduct') }]}
         style={{ width: 240, marginBottom: 0 }}
       >
         <Select
           showSearch
           filterOption={false}
-          placeholder="Sản phẩm"
+          placeholder={t('productPlaceholder')}
           disabled={!fromWarehouseId}
           loading={productLoading}
           options={productOptions}
@@ -170,39 +184,45 @@ function TransferLineRow({
           onDropdownVisibleChange={(open) => {
             if (open) searchProducts('');
           }}
-          notFoundContent={fromWarehouseId ? 'Không có SP tồn' : 'Chọn kho xuất trước'}
+          notFoundContent={
+            fromWarehouseId ? t('notFound.noStockProducts') : t('notFound.selectFromWarehouseFirst')
+          }
         />
       </Form.Item>
       <Form.Item
         {...field}
         name={[field.name, 'batchId']}
-        rules={[{ required: true, message: 'Chọn lô' }]}
+        rules={[{ required: true, message: t('validation.selectBatch') }]}
         style={{ width: 220, marginBottom: 0 }}
       >
         <Select
-          placeholder="Lô hàng"
+          placeholder={t('batchPlaceholder')}
           disabled={!productId || batchOptions.length === 0}
           loading={batchLoading}
           options={batchOptions}
-          notFoundContent={productId ? 'Không có lô tồn' : 'Chọn SP trước'}
+          notFoundContent={productId ? t('notFound.noStockBatches') : t('notFound.selectProductFirst')}
         />
       </Form.Item>
       <Form.Item
         {...field}
         name={[field.name, 'quantity']}
-        rules={[{ required: true, message: 'SL' }]}
+        rules={[{ required: true, message: t('validation.quantity') }]}
         style={{ width: 90, marginBottom: 0 }}
       >
         <InputNumber min={0.001} style={{ width: '100%' }} />
       </Form.Item>
       <Button type="text" danger onClick={remove}>
-        Xóa
+        {tc('actions.delete')}
       </Button>
     </Space>
   );
 }
 
 export function TransferListPage() {
+  const { t } = useTranslation('inventory', { keyPrefix: 'transferList' });
+  const { t: ts } = useTranslation('inventory', { keyPrefix: 'shared' });
+  const { t: tc } = useTranslation('common');
+  const { transferStatusLabel } = useInventoryEnums();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<TransferListItem[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -237,11 +257,11 @@ export function TransferListPage() {
       setItems(transfers);
       setWarehouses(wh);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được phiếu điều chuyển'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -258,7 +278,7 @@ export function TransferListPage() {
       setDetail(await fetchTransfer(id));
       setDetailOpen(true);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được chi tiết phiếu'));
+      message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
     }
   };
 
@@ -277,12 +297,12 @@ export function TransferListPage() {
             quantity: i.quantity,
           })),
       });
-      message.success(`Đã tạo phiếu ${created.transferNumber}`);
+      message.success(t('messages.createSuccess', { number: created.transferNumber }));
       setDrawerOpen(false);
       load();
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, 'Không tạo được phiếu'));
+        message.error(apiErrorMessage(error, t('messages.createFailed')));
       }
     } finally {
       setSaving(false);
@@ -292,39 +312,39 @@ export function TransferListPage() {
   const handleComplete = async (id: string) => {
     try {
       await completeTransfer(id);
-      message.success('Đã hoàn tất điều chuyển');
+      message.success(t('messages.completeSuccess'));
       if (detail?.id === id) {
         setDetail(await fetchTransfer(id));
       }
       load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không hoàn tất được phiếu'));
+      message.error(apiErrorMessage(error, t('messages.completeFailed')));
     }
   };
 
   const columns: ColumnsType<TransferListItem> = [
-    { title: 'Số phiếu', dataIndex: 'transferNumber', width: 130 },
-    { title: 'Kho xuất', dataIndex: 'fromWarehouseName' },
-    { title: 'Kho nhận', dataIndex: 'toWarehouseName' },
+    { title: ts('documentNumber'), dataIndex: 'transferNumber', width: 130 },
+    { title: ts('fromWarehouse'), dataIndex: 'fromWarehouseName' },
+    { title: ts('toWarehouse'), dataIndex: 'toWarehouseName' },
     {
-      title: 'Trạng thái',
+      title: tc('fields.status'),
       dataIndex: 'status',
       width: 110,
       render: (v: number) => (
         <Tag color={v === 3 ? 'green' : v === 1 ? 'gold' : 'blue'}>
-          {TRANSFER_STATUS_LABELS[v] ?? v}
+          {transferStatusLabel(v)}
         </Tag>
       ),
     },
     {
-      title: 'Ngày',
+      title: ts('date'),
       dataIndex: 'transferDate',
       width: 110,
       render: (v: string) => formatDisplayDate(v),
     },
-    { title: 'Dòng', dataIndex: 'itemCount', width: 70, align: 'right' },
+    { title: ts('lineCount'), dataIndex: 'itemCount', width: 70, align: 'right' },
     {
-      title: 'Thao tác',
+      title: tc('fields.actions'),
       key: 'actions',
       width: 160,
       render: (_, row) => (
@@ -335,7 +355,7 @@ export function TransferListPage() {
             style={{ cursor: 'pointer', margin: 0 }}
             onClick={() => openDetail(row.id)}
           >
-            Chi tiết
+            {ts('detail')}
           </Tag>
           {row.status !== 3 && row.status !== 4 && (
             <Tag
@@ -344,7 +364,7 @@ export function TransferListPage() {
               style={{ cursor: 'pointer', margin: 0 }}
               onClick={() => handleComplete(row.id)}
             >
-              Hoàn tất
+              {ts('complete')}
             </Tag>
           )}
         </Space>
@@ -355,14 +375,14 @@ export function TransferListPage() {
   return (
     <>
       <Card
-        title="Phiếu điều chuyển"
+        title={t('title')}
         extra={
           <Space>
             <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
-              Tải lại
+              {tc('actions.reload')}
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-              Tạo phiếu
+              {t('createDocument')}
             </Button>
           </Space>
         }
@@ -371,33 +391,33 @@ export function TransferListPage() {
       </Card>
 
       <Drawer
-        title="Tạo phiếu điều chuyển"
+        title={t('createTitle')}
         width={680}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
+            <Button onClick={() => setDrawerOpen(false)}>{tc('actions.cancel')}</Button>
             <Button type="primary" loading={saving} onClick={handleCreate}>
-              Lưu
+              {tc('actions.save')}
             </Button>
           </Space>
         }
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="fromWarehouseId" label="Kho xuất" rules={[{ required: true }]}>
+          <Form.Item name="fromWarehouseId" label={ts('fromWarehouse')} rules={[{ required: true }]}>
             <Select
               options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
-              placeholder="Chọn kho xuất"
+              placeholder={t('selectFromWarehouse')}
             />
           </Form.Item>
-          <Form.Item name="toWarehouseId" label="Kho nhận" rules={[{ required: true }]}>
+          <Form.Item name="toWarehouseId" label={ts('toWarehouse')} rules={[{ required: true }]}>
             <Select
               options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
-              placeholder="Chọn kho nhận"
+              placeholder={t('selectToWarehouse')}
             />
           </Form.Item>
-          <Form.Item name="notes" label="Ghi chú">
+          <Form.Item name="notes" label={ts('notes')}>
             <Input.TextArea rows={2} />
           </Form.Item>
           <Form.List name="items">
@@ -412,7 +432,7 @@ export function TransferListPage() {
                   />
                 ))}
                 <Button type="dashed" onClick={() => add({ quantity: 1 })} block>
-                  Thêm dòng
+                  {ts('addLine')}
                 </Button>
               </>
             )}
@@ -421,14 +441,14 @@ export function TransferListPage() {
       </Drawer>
 
       <Drawer
-        title={detail ? `Phiếu ${detail.transferNumber}` : 'Chi tiết phiếu'}
+        title={detail ? t('detailTitleWithNumber', { number: detail.transferNumber }) : t('detailTitle')}
         width={560}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         extra={
           detail && detail.status !== 3 && detail.status !== 4 ? (
             <Button type="primary" onClick={() => handleComplete(detail.id)}>
-              Hoàn tất
+              {ts('complete')}
             </Button>
           ) : null
         }
@@ -436,17 +456,17 @@ export function TransferListPage() {
         {detail && (
           <>
             <p>
-              <strong>Kho xuất:</strong> {detail.fromWarehouseName}
+              <strong>{ts('fromWarehouse')}:</strong> {detail.fromWarehouseName}
             </p>
             <p>
-              <strong>Kho nhận:</strong> {detail.toWarehouseName}
+              <strong>{ts('toWarehouse')}:</strong> {detail.toWarehouseName}
             </p>
             <p>
-              <strong>Trạng thái:</strong> {TRANSFER_STATUS_LABELS[detail.status] ?? detail.status}
+              <strong>{tc('fields.status')}:</strong> {transferStatusLabel(detail.status)}
             </p>
             {detail.notes && (
               <p>
-                <strong>Ghi chú:</strong> {detail.notes}
+                <strong>{ts('notes')}:</strong> {detail.notes}
               </p>
             )}
             <Table
@@ -455,9 +475,9 @@ export function TransferListPage() {
               pagination={false}
               dataSource={detail.items}
               columns={[
-                { title: 'SP', dataIndex: 'productName' },
-                { title: 'Lô', dataIndex: 'batchNumber', width: 100 },
-                { title: 'SL', dataIndex: 'quantity', width: 80, align: 'right' },
+                { title: ts('productAbbr'), dataIndex: 'productName' },
+                { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 100 },
+                { title: ts('quantityAbbr'), dataIndex: 'quantity', width: 80, align: 'right' },
               ]}
             />
           </>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
@@ -23,9 +24,12 @@ import {
 } from '@/shared/api/catalog.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import type { ActiveIngredient } from '@/shared/api/catalog.types';
-import { STATUS_LABELS } from '@/shared/api/catalog.types';
+import { useCatalogEnums } from '@/shared/i18n/use-catalog-enums';
 
 export function IngredientListPage() {
+  const { t } = useTranslation('catalog', { keyPrefix: 'ingredients' });
+  const { t: ts } = useTranslation('catalog', { keyPrefix: 'shared' });
+  const { productStatusLabel, productStatusOptions } = useCatalogEnums();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<ActiveIngredient[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -38,14 +42,14 @@ export function IngredientListPage() {
     try {
       setItems(await fetchActiveIngredients());
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được hoạt chất'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const openCreate = () => {
@@ -82,41 +86,51 @@ export function IngredientListPage() {
           description: values.description,
           status: values.status ?? 1,
         });
-        message.success('Đã cập nhật hoạt chất');
+        message.success(t('messages.updateSuccess'));
       } else {
         await createActiveIngredient({
           ingredientCode: values.ingredientCode,
           ingredientName: values.ingredientName,
           description: values.description,
         });
-        message.success('Đã tạo hoạt chất');
+        message.success(t('messages.createSuccess'));
       }
       setDrawerOpen(false);
-      load();
+      void load();
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, 'Không lưu được hoạt chất'));
+        message.error(apiErrorMessage(error, t('messages.saveFailed')));
       }
     } finally {
       setSaving(false);
     }
   };
 
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteActiveIngredient(id);
+      message.success(t('messages.deactivateSuccess'));
+      void load();
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('messages.deactivateFailed')));
+    }
+  };
+
   const columns: ColumnsType<ActiveIngredient> = [
-    { title: 'Mã', dataIndex: 'ingredientCode', width: 140 },
-    { title: 'Tên hoạt chất', dataIndex: 'ingredientName' },
+    { title: t('columns.code'), dataIndex: 'ingredientCode', width: 140 },
+    { title: t('columns.name'), dataIndex: 'ingredientName' },
     {
-      title: 'Mô tả',
+      title: ts('description'),
       dataIndex: 'description',
       ellipsis: true,
       render: (v) => v ?? '—',
     },
     {
-      title: 'Trạng thái',
+      title: ts('status'),
       dataIndex: 'status',
       width: 100,
       render: (status: number) => (
-        <Tag color={status === 1 ? 'green' : 'default'}>{STATUS_LABELS[status] ?? status}</Tag>
+        <Tag color={status === 1 ? 'green' : 'default'}>{productStatusLabel(status)}</Tag>
       ),
     },
     {
@@ -126,12 +140,12 @@ export function IngredientListPage() {
       render: (_, row) => (
         <Space>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)}>
-            Sửa
+            {ts('edit')}
           </Button>
           {row.status === 1 && (
-            <Popconfirm title="Ngừng hoạt chất này?" onConfirm={() => void handleDelete(row.id)}>
+            <Popconfirm title={t('deactivateConfirm')} onConfirm={() => void handleDelete(row.id)}>
               <Button type="link" size="small" danger icon={<StopOutlined />}>
-                Ngừng
+                {t('deactivate')}
               </Button>
             </Popconfirm>
           )}
@@ -140,26 +154,16 @@ export function IngredientListPage() {
     },
   ];
 
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteActiveIngredient(id);
-      message.success('Đã ngừng hoạt chất');
-      load();
-    } catch (error) {
-      message.error(apiErrorMessage(error, 'Không ngừng được hoạt chất'));
-    }
-  };
-
   return (
     <Card
-      title="Hoạt chất"
+      title={t('title')}
       extra={
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => void load()}>
-            Tải lại
+            {ts('reload')}
           </Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            Thêm hoạt chất
+            {t('add')}
           </Button>
         </Space>
       }
@@ -167,43 +171,38 @@ export function IngredientListPage() {
       <Table rowKey="id" loading={loading} columns={columns} dataSource={items} pagination={{ pageSize: 20 }} />
 
       <Drawer
-        title={editing ? 'Sửa hoạt chất' : 'Thêm hoạt chất'}
+        title={editing ? t('drawer.editTitle') : t('drawer.createTitle')}
         width={420}
         open={drawerOpen}
         destroyOnClose
         onClose={() => setDrawerOpen(false)}
         extra={
           <Button type="primary" loading={saving} onClick={() => void handleSave()}>
-            Lưu
+            {ts('save')}
           </Button>
         }
       >
         <Form form={form} layout="vertical">
           <Form.Item
             name="ingredientCode"
-            label="Mã hoạt chất"
-            rules={[{ required: true, message: 'Nhập mã' }]}
+            label={t('fields.ingredientCode')}
+            rules={[{ required: true, message: ts('enterCode') }]}
           >
-            <Input disabled={!!editing} placeholder="VD: PARACETAMOL" />
+            <Input disabled={!!editing} placeholder={t('placeholders.ingredientCode')} />
           </Form.Item>
           <Form.Item
             name="ingredientName"
-            label="Tên hoạt chất"
-            rules={[{ required: true, message: 'Nhập tên' }]}
+            label={t('fields.ingredientName')}
+            rules={[{ required: true, message: ts('enterName') }]}
           >
-            <Input placeholder="VD: Paracetamol" />
+            <Input placeholder={t('placeholders.ingredientName')} />
           </Form.Item>
-          <Form.Item name="description" label="Mô tả">
+          <Form.Item name="description" label={ts('description')}>
             <Input.TextArea rows={3} />
           </Form.Item>
           {editing && (
-            <Form.Item name="status" label="Trạng thái" initialValue={1}>
-              <Select
-                options={Object.entries(STATUS_LABELS).map(([value, label]) => ({
-                  value: Number(value),
-                  label,
-                }))}
-              />
+            <Form.Item name="status" label={ts('status')} initialValue={1}>
+              <Select options={productStatusOptions} />
             </Form.Item>
           )}
         </Form>

@@ -1,7 +1,8 @@
 import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Form, Input, InputNumber, Modal, Select, Space, Typography } from 'antd';
 import type { PosCheckoutPaymentLine, SalesOrderDetail } from '@/shared/api/sales.types';
-import { SALES_PAYMENT_METHOD_LABELS } from '@/shared/api/sales.types';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 import { previewReturnRefund } from '@/modules/sales/sales-return-pricing';
 import { resolveOrderPaymentSummary } from '@/modules/sales/sales-order-payment-summary';
 import { PosSummaryMoney, PosSummaryRow } from '@/modules/sales/pos-summary-ui';
@@ -26,6 +27,8 @@ type Props = {
 };
 
 export function SalesReturnModal({ open, loading, order, onCancel, onConfirm }: Props) {
+  const { t } = useTranslation('sales', { keyPrefix: 'returns.modal' });
+  const { paymentMethodLabel, paymentMethodOptions } = useSalesEnums();
   const [form] = Form.useForm<{
     reason?: string;
     quantities: Record<string, number>;
@@ -89,12 +92,12 @@ export function SalesReturnModal({ open, loading, order, onCancel, onConfirm }: 
 
   return (
     <Modal
-      title={order ? `Trả hàng — ${order.orderNumber}` : 'Trả hàng'}
+      title={order ? t('title', { orderNumber: order.orderNumber }) : t('titleDefault')}
       open={open}
       onCancel={onCancel}
       onOk={() => void handleOk()}
       confirmLoading={loading}
-      okText="Ghi nhận trả & hoàn tiền"
+      okText={t('confirm')}
       okButtonProps={{ disabled: !canSubmit }}
       width={620}
       destroyOnClose
@@ -103,22 +106,22 @@ export function SalesReturnModal({ open, loading, order, onCancel, onConfirm }: 
       {order && (
         <>
           <Space direction="vertical" size={8} style={{ width: '100%', marginBottom: 16 }}>
-            <PosSummaryRow label="Khách phải trả (đơn)" value={formatDisplayMoney(order.totalAmount)} />
+            <PosSummaryRow label={t('customerDue')} value={formatDisplayMoney(order.totalAmount)} />
             <PosSummaryRow
-              label="Tiền hoàn lần này"
+              label={t('refundThisTime')}
               value={formatDisplayMoney(preview.totalRefund)}
               danger={preview.totalRefund > 0}
               strong
             />
             {preview.totalRefund > 0.009 && returnSplit.debtReduced > 0.009 ? (
               <PosSummaryRow
-                label="Giảm công nợ"
+                label={t('debtReduced')}
                 value={formatDisplayMoney(returnSplit.debtReduced)}
               />
             ) : null}
             {preview.totalRefund > 0.009 && returnSplit.cashRefund > 0.009 ? (
               <PosSummaryRow
-                label="Hoàn tiền mặt cho khách"
+                label={t('cashRefund')}
                 value={formatDisplayMoney(returnSplit.cashRefund)}
                 danger
               />
@@ -127,13 +130,13 @@ export function SalesReturnModal({ open, loading, order, onCancel, onConfirm }: 
             returnSplit.debtReduced > 0.009 &&
             returnSplit.cashRefund <= 0.009 ? (
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                Đơn ghi nợ — không hoàn tiền mặt, chỉ giảm nợ trên đơn.
+                {t('creditOnlyNote')}
               </Typography.Text>
             ) : null}
           </Space>
 
           <Form form={form} layout="vertical">
-            <Form.Item name="reason" label="Lý do">
+            <Form.Item name="reason" label={t('reason')}>
               <Input.TextArea rows={2} maxLength={300} />
             </Form.Item>
             {returnableLines.map((line) => {
@@ -142,7 +145,10 @@ export function SalesReturnModal({ open, loading, order, onCancel, onConfirm }: 
                 <Form.Item
                   key={line.id}
                   name={['quantities', line.id]}
-                  label={`${line.productName} (còn trả tối đa ${max.toLocaleString('vi-VN')})`}
+                  label={t('lineQty', {
+                    productName: line.productName,
+                    max: max.toLocaleString(),
+                  })}
                   initialValue={0}
                 >
                   <InputNumber min={0} max={max} style={{ width: '100%' }} />
@@ -152,18 +158,12 @@ export function SalesReturnModal({ open, loading, order, onCancel, onConfirm }: 
 
             <Form.Item
               name="paymentMethod"
-              label="Hình thức hoàn tiền"
-              rules={[{ required: true, message: 'Chọn hình thức hoàn' }]}
+              label={t('paymentMethod')}
+              rules={[{ required: true, message: t('paymentMethodRequired') }]}
             >
-              <Select
-                disabled={!hasReturnQty}
-                options={Object.entries(SALES_PAYMENT_METHOD_LABELS).map(([value, label]) => ({
-                  value: Number(value),
-                  label,
-                }))}
-              />
+              <Select disabled={!hasReturnQty} options={paymentMethodOptions} />
             </Form.Item>
-            <Form.Item label="Tiền trả khách">
+            <Form.Item label={t('customerRefund')}>
               <PosSummaryMoney
                 value={formatDisplayMoney(returnSplit.cashRefund)}
                 danger={returnSplit.cashRefund > 0}
@@ -172,7 +172,7 @@ export function SalesReturnModal({ open, loading, order, onCancel, onConfirm }: 
             </Form.Item>
             {hasReturnQty && returnSplit.cashRefund > 0.009 && (
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                Hoàn qua {SALES_PAYMENT_METHOD_LABELS[paymentMethod] ?? '—'} — ghi vào báo cáo ca.
+                {t('refundViaShift', { method: paymentMethodLabel(paymentMethod) })}
               </Typography.Text>
             )}
           </Form>

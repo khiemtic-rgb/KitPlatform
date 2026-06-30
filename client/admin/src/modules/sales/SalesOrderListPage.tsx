@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Button,
@@ -40,14 +41,13 @@ import type {
   SalesOrderListItem,
   SalesReturnListItem,
 } from '@/shared/api/sales.types';
-import { SALES_RETURN_STATUS_LABELS } from '@/shared/api/sales.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
+import { useSaleStatusLabels } from '@/shared/i18n/use-sale-status-labels';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 import {
   matchesSaleStatusFilter,
-  orderDisplayStatus,
   PARTIAL_RETURN_STATUS,
-  SALE_STATUS_FILTER_OPTIONS,
 } from '@/modules/sales/sales-order-status';
 import { OrderDetailFinancials } from '@/modules/sales/OrderDetailFinancials';
 import { buildCustomerPaymentCreateUrl } from '@/modules/sales/customer-payment-nav';
@@ -75,6 +75,9 @@ function isCompletedSaleStatus(status: number): boolean {
 }
 
 export function SalesOrderListPage() {
+  const { t } = useTranslation('sales', { keyPrefix: 'orders' });
+  const { orderDisplayStatus, saleStatusFilterOptions } = useSaleStatusLabels();
+  const { returnStatusLabel } = useSalesEnums();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const canRead = useHasPermission('sales.read');
@@ -131,11 +134,11 @@ export function SalesOrderListPage() {
       setPage(nextPage);
       setPageSize(nextPageSize);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được đơn bán'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, appliedCustomer, appliedDocument]);
+  }, [statusFilter, appliedCustomer, appliedDocument, t]);
 
   const applySearch = (values: { customer: string; document: string }) => {
     const customer = values.customer.trim();
@@ -202,7 +205,7 @@ export function SalesOrderListPage() {
     try {
       setOrderReturns(await fetchOrderReturns(orderId));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được phiếu trả của đơn'));
+      message.error(apiErrorMessage(error, t('messages.returnsLoadFailed')));
       setOrderReturns([]);
     } finally {
       setOrderReturnsLoading(false);
@@ -222,13 +225,13 @@ export function SalesOrderListPage() {
           await loadOrderReturns(orderId);
         }
       } catch (error) {
-        message.error(apiErrorMessage(error, 'Không tải được chi tiết đơn'));
+        message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
         setDetailOpen(false);
       } finally {
         setDetailLoading(false);
       }
     },
-    [loadOrderReturns],
+    [loadOrderReturns, t],
   );
 
   const deepLinkHandled = useRef<string | null>(null);
@@ -284,8 +287,8 @@ export function SalesOrderListPage() {
       return [...prev, listItem].sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi'));
     });
     setDraftCustomerId(customer.id);
-    message.success(`Đã chọn ${customer.fullName} (${customer.customerCode})`);
-  }, []);
+    message.success(t('messages.customerSelected', { name: customer.fullName, code: customer.customerCode }));
+  }, [t]);
 
   useEffect(() => {
     if (!draftCheckoutOpen || !draftCustomerId || !detail || detail.totalAmount <= 0) {
@@ -309,7 +312,7 @@ export function SalesOrderListPage() {
 
   const confirmCompleteDraft = async ({ payments, loyaltyDiscountAmount }: PosCheckoutConfirm) => {
     if (!detail) {
-      message.error('Không tìm thấy đơn tạm');
+      message.error(t('messages.draftNotFound'));
       throw new Error('missing-draft');
     }
     setDraftCompleting(true);
@@ -325,11 +328,11 @@ export function SalesOrderListPage() {
       setDraftCheckoutOpen(false);
       message.success(formatPosCheckoutSuccessMessage(updated));
       if (!(await printSalesInvoice(updated))) {
-        message.warning('Trình duyệt chặn cửa sổ in — bấm In hóa đơn trong chi tiết đơn.');
+        message.warning(t('messages.printBlocked'));
       }
       void load(page, pageSize);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không hoàn tất được đơn'));
+      message.error(apiErrorMessage(error, t('messages.completeFailed')));
       throw error;
     } finally {
       setDraftCompleting(false);
@@ -340,21 +343,21 @@ export function SalesOrderListPage() {
     if (!detail) return;
     try {
       await cancelDraftSale(detail.id);
-      message.success('Đã hủy đơn tạm');
+      message.success(t('messages.cancelSuccess'));
       setDetailOpen(false);
       void load(page, pageSize);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không hủy được đơn'));
+      message.error(apiErrorMessage(error, t('messages.cancelFailed')));
     }
   };
 
   const printOrderById = async (id: string) => {
     try {
       if (!(await printSalesInvoice(await fetchSalesOrder(id)))) {
-        message.warning('Trình duyệt chặn cửa sổ in — cho phép popup và thử lại.');
+        message.warning(t('messages.printBlockedRetry'));
       }
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không in được hóa đơn'));
+      message.error(apiErrorMessage(error, t('messages.invoicePrintFailed')));
     }
   };
 
@@ -371,10 +374,10 @@ export function SalesOrderListPage() {
   const printReturnById = async (returnId: string) => {
     try {
       if (!(await printSalesReturn(await fetchSalesReturn(returnId)))) {
-        message.warning('Trình duyệt chặn cửa sổ in — cho phép popup và thử lại.');
+        message.warning(t('messages.printBlockedRetry'));
       }
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không in được phiếu trả'));
+      message.error(apiErrorMessage(error, t('messages.returnPrintFailed')));
     }
   };
 
@@ -387,187 +390,208 @@ export function SalesOrderListPage() {
     try {
       setReturnSaving(true);
       const ret = await createSaleReturn(detail.id, payload);
-      message.success(`Đã ghi nhận trả hàng ${ret.returnNumber}`);
+      message.success(t('messages.returnSuccess', { returnNumber: ret.returnNumber }));
       setReturnOpen(false);
       if (!(await printSalesReturn(ret))) {
-        message.warning('Trình duyệt chặn cửa sổ in — mở lại từ chi tiết đơn.');
+        message.warning(t('messages.returnPrintBlocked'));
       }
       await refreshDetail(detail.id);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không trả hàng được'));
+      message.error(apiErrorMessage(error, t('messages.returnFailed')));
     } finally {
       setReturnSaving(false);
     }
   };
 
-  const renderOrderStatus = (row: SalesOrderListItem & { items?: SalesOrderDetail['items'] }) => {
-    const { label, color } = orderDisplayStatus(row);
-    return <Tag color={color}>{label}</Tag>;
-  };
+  const renderOrderStatus = useCallback(
+    (row: SalesOrderListItem & { items?: SalesOrderDetail['items'] }) => {
+      const { label, color } = orderDisplayStatus(row);
+      return <Tag color={color}>{label}</Tag>;
+    },
+    [orderDisplayStatus],
+  );
 
-  const columns: ColumnsType<SalesOrderListItem> = [
-    { title: 'Số đơn', dataIndex: 'orderNumber', width: 130 },
-    { title: 'Kho', dataIndex: 'warehouseName', width: 140 },
-    { title: 'Khách', dataIndex: 'customerName', render: (v) => v ?? '—' },
-    {
-      title: 'Ngày',
-      dataIndex: 'orderDate',
-      width: 110,
-      render: (v: string) => formatDisplayDate(v),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      width: 160,
-      render: (_: number, row) => renderOrderStatus(row),
-    },
-    {
-      title: 'Tổng tiền',
-      dataIndex: 'totalAmount',
-      width: 130,
-      align: 'right',
-      render: (v: number, row) => {
-        const outstanding = row.outstanding ?? 0;
-        return (
-          <Space direction="vertical" size={0} style={{ alignItems: 'flex-end' }}>
-            <TabularMoney>{formatDisplayMoney(v)}</TabularMoney>
-            {outstanding > 0.009 ? (
-              <Tag color="orange" style={{ margin: 0, fontSize: 11 }}>
-                Nợ {formatDisplayMoney(outstanding)}
-              </Tag>
-            ) : null}
-          </Space>
-        );
+  const columns: ColumnsType<SalesOrderListItem> = useMemo(
+    () => [
+      { title: t('columns.orderNumber'), dataIndex: 'orderNumber', width: 130 },
+      { title: t('columns.warehouse'), dataIndex: 'warehouseName', width: 140 },
+      { title: t('columns.customer'), dataIndex: 'customerName', render: (v) => v ?? '—' },
+      {
+        title: t('columns.date'),
+        dataIndex: 'orderDate',
+        width: 110,
+        render: (v: string) => formatDisplayDate(v),
       },
-    },
-    {
-      title: 'Thao tác',
-      width: 130,
-      render: (_, row) => (
-        <Space size="small" onClick={(e) => e.stopPropagation()}>
+      {
+        title: t('columns.status'),
+        dataIndex: 'status',
+        width: 160,
+        render: (_: number, row) => renderOrderStatus(row),
+      },
+      {
+        title: t('columns.total'),
+        dataIndex: 'totalAmount',
+        width: 130,
+        align: 'right',
+        render: (v: number, row) => {
+          const outstanding = row.outstanding ?? 0;
+          return (
+            <Space direction="vertical" size={0} style={{ alignItems: 'flex-end' }}>
+              <TabularMoney>{formatDisplayMoney(v)}</TabularMoney>
+              {outstanding > 0.009 ? (
+                <Tag color="orange" style={{ margin: 0, fontSize: 11 }}>
+                  {t('columns.outstanding', { amount: formatDisplayMoney(outstanding) })}
+                </Tag>
+              ) : null}
+            </Space>
+          );
+        },
+      },
+      {
+        title: t('columns.actions'),
+        width: 130,
+        render: (_, row) => (
+          <Space size="small" onClick={(e) => e.stopPropagation()}>
+            <Button
+              type="link"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => void openDetail(row)}
+            >
+              {t('columns.view')}
+            </Button>
+            {isCompletedSaleStatus(row.status) && canRead && (
+              <Button
+                type="link"
+                size="small"
+                icon={<PrinterOutlined />}
+                title={t('columns.printInvoice')}
+                onClick={() => void printOrderById(row.id)}
+              />
+            )}
+          </Space>
+        ),
+      },
+    ],
+    [canRead, openDetail, printOrderById, renderOrderStatus, t],
+  );
+
+  const lineColumns: ColumnsType<SalesOrderDetail['items'][number]> = useMemo(
+    () => [
+      { title: t('lines.productCode'), dataIndex: 'productCode', width: 72, ellipsis: true },
+      { title: t('lines.productName'), dataIndex: 'productName', ellipsis: true },
+      {
+        title: t('lines.batch'),
+        dataIndex: 'batchNumber',
+        width: 76,
+        ellipsis: true,
+        render: (v?: string) => v ?? '—',
+      },
+      {
+        title: t('lines.expiry'),
+        dataIndex: 'expiryDate',
+        width: 84,
+        render: (v?: string) => (v ? formatDisplayDate(v) : '—'),
+      },
+      { title: t('lines.unit'), dataIndex: 'unitName', width: 48, ellipsis: true },
+      {
+        title: t('lines.qty'),
+        dataIndex: 'quantity',
+        width: 56,
+        align: 'right',
+        render: (v: number) => v.toLocaleString(),
+      },
+      {
+        title: t('lines.returnedQty'),
+        dataIndex: 'returnedQuantity',
+        width: 56,
+        align: 'right',
+        render: (v?: number) => (v ? v.toLocaleString() : '—'),
+      },
+      {
+        title: t('lines.unitPrice'),
+        dataIndex: 'unitPrice',
+        width: 84,
+        align: 'right',
+        render: (v: number) => <TabularMoney>{formatDisplayMoney(v)}</TabularMoney>,
+      },
+      {
+        title: t('lines.lineTotal'),
+        dataIndex: 'lineTotal',
+        width: 92,
+        align: 'right',
+        render: (v: number) => <TabularMoney>{formatDisplayMoney(v)}</TabularMoney>,
+      },
+    ],
+    [t],
+  );
+
+  const returnColumns: ColumnsType<SalesReturnListItem> = useMemo(
+    () => [
+      {
+        title: t('returns.returnNumber'),
+        dataIndex: 'returnNumber',
+        width: 120,
+        render: (value: string, row) => (
           <Button
             type="link"
             size="small"
-            icon={<EyeOutlined />}
-            onClick={() => void openDetail(row)}
+            onClick={(e) => {
+              e.stopPropagation();
+              openReturnDetail(row.id);
+            }}
           >
-            Xem
+            {value}
           </Button>
-          {isCompletedSaleStatus(row.status) && canRead && (
-            <Button
-              type="link"
-              size="small"
-              icon={<PrinterOutlined />}
-              title="In hóa đơn"
-              onClick={() => void printOrderById(row.id)}
-            />
-          )}
-        </Space>
-      ),
-    },
-  ];
-
-  const lineColumns: ColumnsType<SalesOrderDetail['items'][number]> = [
-    { title: 'Mã SP', dataIndex: 'productCode', width: 72, ellipsis: true },
-    { title: 'Tên SP', dataIndex: 'productName', ellipsis: true },
-    { title: 'Lô', dataIndex: 'batchNumber', width: 76, ellipsis: true, render: (v?: string) => v ?? '—' },
-    {
-      title: 'HSD',
-      dataIndex: 'expiryDate',
-      width: 84,
-      render: (v?: string) => (v ? formatDisplayDate(v) : '—'),
-    },
-    { title: 'ĐVT', dataIndex: 'unitName', width: 48, ellipsis: true },
-    {
-      title: 'Sl mua',
-      dataIndex: 'quantity',
-      width: 56,
-      align: 'right',
-      render: (v: number) => v.toLocaleString('vi-VN'),
-    },
-    {
-      title: 'Sl trả',
-      dataIndex: 'returnedQuantity',
-      width: 56,
-      align: 'right',
-      render: (v?: number) => (v ? v.toLocaleString('vi-VN') : '—'),
-    },
-    {
-      title: 'Đơn giá',
-      dataIndex: 'unitPrice',
-      width: 84,
-      align: 'right',
-      render: (v: number) => <TabularMoney>{formatDisplayMoney(v)}</TabularMoney>,
-    },
-    {
-      title: 'Thành tiền',
-      dataIndex: 'lineTotal',
-      width: 92,
-      align: 'right',
-      render: (v: number) => <TabularMoney>{formatDisplayMoney(v)}</TabularMoney>,
-    },
-  ];
-
-  const returnColumns: ColumnsType<SalesReturnListItem> = [
-    {
-      title: 'Số phiếu',
-      dataIndex: 'returnNumber',
-      width: 120,
-      render: (value: string, row) => (
-        <Button
-          type="link"
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            openReturnDetail(row.id);
-          }}
-        >
-          {value}
-        </Button>
-      ),
-    },
-    {
-      title: 'Ngày',
-      dataIndex: 'returnDate',
-      width: 100,
-      render: (v: string) => formatDisplayDate(v),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      width: 90,
-      render: (status: number) => (
-        <Tag>{SALES_RETURN_STATUS_LABELS[status] ?? status}</Tag>
-      ),
-    },
-    {
-      title: 'Tổng hoàn tiền',
-      dataIndex: 'totalRefund',
-      width: 110,
-      align: 'right',
-      render: (v: number) => <TabularMoney>{formatDisplayMoney(v)}</TabularMoney>,
-    },
-    {
-      title: '',
-      width: 120,
-      render: (_, row) =>
-        canRead ? (
-          <Space size="small" onClick={(e) => e.stopPropagation()}>
-            <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => openReturnDetail(row.id)}>
-              Xem
-            </Button>
-            <Button
-              type="link"
-              size="small"
-              icon={<PrinterOutlined />}
-              onClick={() => void printReturnById(row.id)}
-            >
-              In
-            </Button>
-          </Space>
-        ) : null,
-    },
-  ];
+        ),
+      },
+      {
+        title: t('returns.date'),
+        dataIndex: 'returnDate',
+        width: 100,
+        render: (v: string) => formatDisplayDate(v),
+      },
+      {
+        title: t('returns.status'),
+        dataIndex: 'status',
+        width: 90,
+        render: (status: number) => <Tag>{returnStatusLabel(status)}</Tag>,
+      },
+      {
+        title: t('returns.refundTotal'),
+        dataIndex: 'totalRefund',
+        width: 110,
+        align: 'right',
+        render: (v: number) => <TabularMoney>{formatDisplayMoney(v)}</TabularMoney>,
+      },
+      {
+        title: '',
+        width: 120,
+        render: (_, row) =>
+          canRead ? (
+            <Space size="small" onClick={(e) => e.stopPropagation()}>
+              <Button
+                type="link"
+                size="small"
+                icon={<EyeOutlined />}
+                onClick={() => openReturnDetail(row.id)}
+              >
+                {t('returns.view')}
+              </Button>
+              <Button
+                type="link"
+                size="small"
+                icon={<PrinterOutlined />}
+                onClick={() => void printReturnById(row.id)}
+              >
+                {t('returns.print')}
+              </Button>
+            </Space>
+          ) : null,
+      },
+    ],
+    [canRead, openReturnDetail, printReturnById, returnStatusLabel, t],
+  );
 
   const returnableLines =
     detail?.items.filter(
@@ -585,7 +609,7 @@ export function SalesOrderListPage() {
 
   const openCollectOrderDebt = () => {
     if (!detail?.customerId) {
-      message.warning('Đơn không có khách hàng để thu nợ');
+      message.warning(t('messages.noCustomerForDebt'));
       return;
     }
     const { outstanding } = resolveOrderPaymentSummary(detail);
@@ -600,16 +624,16 @@ export function SalesOrderListPage() {
   };
 
   return (
-    <Card title="Đơn bán hàng">
+    <Card title={t('title')}>
       <Alert
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
-        message="Đơn gửi app khách (Gửi khách hàng tại POS) nằm tại tab Đơn hàng từ app"
-        description="Tab này chỉ liệt kê đơn bán nội bộ (nháp / hoàn tất). Đơn chờ khách xác nhận trên app xem tại Bán hàng → Đơn hàng từ app."
+        message={t('appDraftAlert.message')}
+        description={t('appDraftAlert.description')}
         action={
           <Button size="small" onClick={() => navigate('/sales/customer-drafts')}>
-            Mở Đơn hàng từ app
+            {t('appDraftAlert.action')}
           </Button>
         }
       />
@@ -622,17 +646,17 @@ export function SalesOrderListPage() {
           onApply={applySearch}
           customerSuggestions={customerSuggestions}
           documentSuggestions={documentSuggestions}
-          documentPlaceholder="Số đơn"
+          documentPlaceholder={t('filters.documentPlaceholder')}
         />
         <Select
           allowClear
-          placeholder="Trạng thái"
+          placeholder={t('filters.status')}
           style={{ width: 140 }}
           value={statusFilter}
           onChange={(value) => setStatusFilter(value)}
-          options={SALE_STATUS_FILTER_OPTIONS.map(({ value, label }) => ({ value, label }))}
+          options={saleStatusFilterOptions.map(({ value, label }) => ({ value, label }))}
         />
-        <Button onClick={resetFilters}>Xóa lọc</Button>
+        <Button onClick={resetFilters}>{t('filters.clear')}</Button>
         <Button
           type="primary"
           ghost
@@ -640,7 +664,7 @@ export function SalesOrderListPage() {
           onClick={reloadList}
           loading={loading}
         >
-          Tải lại
+          {t('filters.reload')}
         </Button>
       </SalesListDualSearchWrap>
 
@@ -654,7 +678,7 @@ export function SalesOrderListPage() {
           pageSize,
           total,
           showSizeChanger: true,
-          showTotal: (t) => `${t} đơn`,
+          showTotal: (count) => t('paginationTotal', { count }),
           onChange: (nextPage, nextPageSize) => {
             void load(
               nextPage,
@@ -672,7 +696,7 @@ export function SalesOrderListPage() {
       />
 
       <Drawer
-        title={detail ? `Xem ${detail.orderNumber}` : 'Xem đơn bán'}
+        title={detail ? t('detail.drawerTitle', { orderNumber: detail.orderNumber }) : t('detail.drawerTitleDefault')}
         width={880}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
@@ -685,14 +709,14 @@ export function SalesOrderListPage() {
                 type="info"
                 showIcon
                 style={{ marginBottom: 16 }}
-                message="Đơn nháp chưa trừ tồn kho"
-                description="Bấm Hoàn tất đơn để xuất hóa đơn, trừ tồn theo FEFO và cho phép trả hàng sau này."
+                message={t('detail.draftAlert.message')}
+                description={t('detail.draftAlert.description')}
               />
             )}
 
             {(detail.status === 1 && canWrite) ||
             (isCompletedSaleStatus(detail.status) && (canRead || canWrite)) ? (
-              <Card size="small" title="Thao tác" style={sectionGapStyle}>
+              <Card size="small" title={t('detail.actions.title')} style={sectionGapStyle}>
                 <Space wrap>
                   {detail.status === 1 && canWrite && (
                     <>
@@ -703,31 +727,34 @@ export function SalesOrderListPage() {
                           navigate(`/sales/pos?draftId=${detail.id}`);
                         }}
                       >
-                        Tiếp tục sửa
+                        {t('detail.actions.continueEdit')}
                       </Button>
                       <Button type="primary" onClick={handleCompleteDraft}>
-                        Hoàn tất đơn
+                        {t('detail.actions.complete')}
                       </Button>
-                      <Popconfirm title="Hủy đơn tạm?" onConfirm={() => void handleCancelDraft()}>
-                        <Button danger>Hủy đơn</Button>
+                      <Popconfirm
+                        title={t('detail.actions.cancelConfirm')}
+                        onConfirm={() => void handleCancelDraft()}
+                      >
+                        <Button danger>{t('detail.actions.cancel')}</Button>
                       </Popconfirm>
                     </>
                   )}
                   {isCompletedSaleStatus(detail.status) && canRead && (
                     <Button icon={<PrinterOutlined />} onClick={() => void printSalesInvoice(detail)}>
-                      In hóa đơn
+                      {t('detail.actions.printInvoice')}
                     </Button>
                   )}
                   {isCompletedSaleStatus(detail.status) &&
                     canWrite &&
                     returnableLines.length > 0 && (
                       <Button icon={<RollbackOutlined />} onClick={openReturnModal}>
-                        Trả hàng
+                        {t('detail.actions.return')}
                       </Button>
                     )}
                   {canCollectOrderDebt && (
                     <Button type="primary" icon={<DollarOutlined />} onClick={openCollectOrderDebt}>
-                      Thu nợ
+                      {t('detail.actions.collectDebt')}
                     </Button>
                   )}
                 </Space>
@@ -735,34 +762,44 @@ export function SalesOrderListPage() {
             ) : null}
 
             <Descriptions column={2} size="small" bordered style={sectionGapStyle}>
-              <Descriptions.Item label="Kho">{detail.warehouseName}</Descriptions.Item>
-              <Descriptions.Item label="Khách">{detail.customerName ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('detail.descriptions.warehouse')}>
+                {detail.warehouseName}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('detail.descriptions.customer')}>
+                {detail.customerName ?? '—'}
+              </Descriptions.Item>
               {(detail.voucherDiscountAmount ?? 0) > 0 ? (
-                <Descriptions.Item label="Voucher">
+                <Descriptions.Item label={t('detail.descriptions.voucher')}>
                   {detail.voucherCode ? `${detail.voucherCode} · ` : ''}
                   −{formatDisplayMoney(detail.voucherDiscountAmount ?? 0)}
                 </Descriptions.Item>
               ) : null}
               {(detail.loyaltyPointsRedeemed ?? 0) > 0 ? (
-                <Descriptions.Item label="Đổi điểm">
-                  −{detail.loyaltyPointsRedeemed!.toLocaleString('vi-VN')} điểm (
-                  −{formatDisplayMoney(detail.loyaltyDiscountAmount ?? 0)})
+                <Descriptions.Item label={t('detail.descriptions.pointsRedeem')}>
+                  −{detail.loyaltyPointsRedeemed!.toLocaleString()}{' '}
+                  {t('detail.descriptions.pointsUnit')} (−
+                  {formatDisplayMoney(detail.loyaltyDiscountAmount ?? 0)})
                 </Descriptions.Item>
               ) : null}
               {(detail.loyaltyPointsEarned ?? 0) > 0 ? (
-                <Descriptions.Item label="Tích điểm">
-                  +{detail.loyaltyPointsEarned!.toLocaleString('vi-VN')} điểm
+                <Descriptions.Item label={t('detail.descriptions.pointsEarned')}>
+                  +{detail.loyaltyPointsEarned!.toLocaleString()}{' '}
+                  {t('detail.descriptions.pointsUnit')}
                 </Descriptions.Item>
               ) : null}
-              <Descriptions.Item label="Trạng thái">
+              <Descriptions.Item label={t('detail.descriptions.status')}>
                 {renderOrderStatus({
                   ...detail,
                   itemCount: detail.items.length,
                   items: detail.items,
                 })}
               </Descriptions.Item>
-              <Descriptions.Item label="Ngày">{formatDisplayDate(detail.orderDate)}</Descriptions.Item>
-              <Descriptions.Item label="Ca">{detail.shiftNumber ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('detail.descriptions.date')}>
+                {formatDisplayDate(detail.orderDate)}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('detail.descriptions.shift')}>
+                {detail.shiftNumber ?? '—'}
+              </Descriptions.Item>
             </Descriptions>
 
             <OrderDetailFinancials
@@ -783,7 +820,7 @@ export function SalesOrderListPage() {
             {orderReturns.length > 0 || orderReturnsLoading ? (
               <Card
                 size="small"
-                title="Phiếu trả hàng"
+                title={t('returns.title')}
                 style={sectionGapTopStyle}
                 loading={orderReturnsLoading}
               >

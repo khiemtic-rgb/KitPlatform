@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Button,
@@ -48,7 +49,8 @@ import type {
   PurchaseOrderListItem,
   Supplier,
 } from '@/shared/api/procurement.types';
-import { GRN_STATUS_LABELS, GRN_STATUS_TAG } from '@/shared/api/procurement.types';
+import { GRN_STATUS_TAG } from '@/shared/api/procurement.types';
+import { useProcurementEnums } from '@/shared/i18n/use-procurement-enums';
 import { PurchaseOrderEditDrawer } from '@/modules/procurement/PurchaseOrderEditDrawer';
 import { GoodsReceiptFormHeader } from '@/modules/procurement/GoodsReceiptFormHeader';
 import { GrnPoLinesEditor } from '@/modules/procurement/GrnPoLinesEditor';
@@ -132,6 +134,11 @@ function buildGrnLinesFromPo(po: PurchaseOrderDetail): GrnLineForm[] {
 }
 
 export function GoodsReceiptListPage() {
+  const { t } = useTranslation('procurement', { keyPrefix: 'goodsReceipts' });
+  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
+  const { t: tCommon } = useTranslation('common', { keyPrefix: 'actions' });
+  const { t: tVal } = useTranslation('procurement', { keyPrefix: 'shared.validation' });
+  const { grnStatusLabel } = useProcurementEnums();
   const canWrite = useProcurementWrite();
   const canPurge = useSystemDeletePermanent();
   const [loading, setLoading] = useState(false);
@@ -200,18 +207,18 @@ export function GoodsReceiptListPage() {
       setItems(result.items);
       setTotal(result.total);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được phiếu nhập hàng'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [pageSize]);
+  }, [pageSize, t]);
 
   useEffect(() => {
     void loadMasterData().catch(() => {
-      message.error('Không tải được dữ liệu tham chiếu');
+      message.error(tShared('messages.loadReferenceFailed'));
     });
     void loadReceipts(emptyFilters, '');
-  }, [loadMasterData, loadReceipts]);
+  }, [loadMasterData, loadReceipts, tShared]);
 
   const resetFilters = () => {
     void loadReceipts(emptyFilters, '');
@@ -219,18 +226,26 @@ export function GoodsReceiptListPage() {
 
   const exportReceipts = () => {
     if (items.length === 0) {
-      message.info('Không có dữ liệu để xuất');
+      message.info(tShared('messages.noExportData'));
       return;
     }
     downloadCsv(
       `phieu-nhap-hang-${new Date().toISOString().slice(0, 10)}.csv`,
-      ['Số phiếu', 'NCC', 'Kho', 'PO', 'Trạng thái', 'Ngày nhập', 'Số dòng'],
+      [
+        t('exportColumns.grnNumber'),
+        t('exportColumns.supplier'),
+        t('exportColumns.warehouse'),
+        t('exportColumns.poNumber'),
+        t('exportColumns.status'),
+        t('exportColumns.receiptDate'),
+        t('exportColumns.itemCount'),
+      ],
       items.map((row) => [
         row.grnNumber,
         row.supplierName,
         row.warehouseName,
-        row.poNumber ?? '—',
-        GRN_STATUS_LABELS[row.status] ?? String(row.status),
+        row.poNumber ?? tShared('emDash'),
+        grnStatusLabel(row.status),
         formatDisplayDate(row.receiptDate),
         String(row.itemCount),
       ]),
@@ -271,14 +286,14 @@ export function GoodsReceiptListPage() {
           items: lines,
         });
         if (lines.length === 0) {
-          message.info('PO này đã nhận đủ hàng.');
+          message.info(t('poFullyReceivedInfo'));
         }
       })
       .catch(() => {
         if (!cancelled) {
           setLinkedPo(null);
           setPoDraftGrn(null);
-          message.error('Không tải được chi tiết PO.');
+          message.error(t('poLoadError'));
         }
       })
       .finally(() => {
@@ -288,7 +303,7 @@ export function GoodsReceiptListPage() {
     return () => {
       cancelled = true;
     };
-  }, [purchaseOrderId, form]);
+  }, [purchaseOrderId, form, t]);
 
   const handlePoEdited = (po: PurchaseOrderDetail) => {
     setLinkedPo(po);
@@ -333,7 +348,7 @@ export function GoodsReceiptListPage() {
       const grn = await fetchGoodsReceipt(id);
       setGrnDetailCache((cache) => ({ ...cache, [id]: grn }));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được chi tiết phiếu nhập'));
+      message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
     }
   };
 
@@ -343,7 +358,7 @@ export function GoodsReceiptListPage() {
       setDetail(grn);
       setDetailOpen(true);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được chi tiết phiếu nhập'));
+      message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
     }
   };
 
@@ -352,12 +367,12 @@ export function GoodsReceiptListPage() {
       const values = await form.validateFields();
       const lines = (values.items as GrnLineForm[]).filter((i) => i.quantity > 0);
       if (lines.length === 0) {
-        message.warning('Thêm ít nhất một dòng nhập có số lượng > 0.');
+        message.warning(t('minOneLine'));
         return;
       }
       const supplier = suppliers.find((s) => s.id === values.supplierId);
       if (!supplier || isPlaceholderSupplier(supplier)) {
-        message.warning('Chọn NCC thật trước khi lưu phiếu nhập.');
+        message.warning(t('realSupplierRequired'));
         return;
       }
       setSaving(true);
@@ -382,13 +397,13 @@ export function GoodsReceiptListPage() {
           discountValue: i.discountValue,
         })),
       });
-      message.success(`Đã tạo ${created.grnNumber}`);
+      message.success(t('messages.created', { grnNumber: created.grnNumber }));
       setDrawerOpen(false);
       void loadReceipts(filters, searchInput, page, pageSize);
       void loadMasterData();
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, 'Không tạo được phiếu nhập'));
+        message.error(apiErrorMessage(error, t('messages.createFailed')));
       }
     } finally {
       setSaving(false);
@@ -398,46 +413,46 @@ export function GoodsReceiptListPage() {
   const handleComplete = async (id: string) => {
     try {
       const updated = await completeGoodsReceipt(id);
-      message.success(`Đã hoàn tất ${updated.grnNumber} — tồn kho đã cập nhật`);
+      message.success(t('messages.completed', { grnNumber: updated.grnNumber }));
       if (detail?.id === id) setDetail(updated);
       void loadReceipts(filters, searchInput, page, pageSize);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không hoàn tất được phiếu nhập'));
+      message.error(apiErrorMessage(error, t('messages.completeFailed')));
     }
   };
 
   const handleCancel = async (id: string) => {
     try {
       const updated = await cancelGoodsReceipt(id);
-      message.success(`Đã hủy ${updated.grnNumber}`);
+      message.success(t('messages.cancelled', { grnNumber: updated.grnNumber }));
       setDetail(updated);
       void loadReceipts(filters, searchInput, page, pageSize);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không hủy được phiếu nhập'));
+      message.error(apiErrorMessage(error, t('messages.cancelFailed')));
     }
   };
 
   const handleArchive = async (id: string) => {
     try {
       await archiveGoodsReceipt(id);
-      message.success('Đã ẩn phiếu nhập (có thể xem trong bản ghi đã ẩn)');
+      message.success(t('messages.archived'));
       setDetailOpen(false);
       setDetail(null);
       void loadReceipts(filters, searchInput, page, pageSize);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không ẩn được phiếu nhập'));
+      message.error(apiErrorMessage(error, t('messages.archiveFailed')));
     }
   };
 
   const handlePurge = async (id: string) => {
     try {
       await purgeGoodsReceipt(id);
-      message.success('Đã xóa vĩnh viễn phiếu nhập');
+      message.success(t('messages.purged'));
       setDetailOpen(false);
       setDetail(null);
       void loadReceipts(filters, searchInput, page, pageSize);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không xóa vĩnh viễn được phiếu'));
+      message.error(apiErrorMessage(error, t('messages.purgeFailed')));
     }
   };
 
@@ -445,24 +460,24 @@ export function GoodsReceiptListPage() {
   const showLockedDeleteGrn = (status: number, deletedAt?: string) => status === 2 && !deletedAt;
 
   const columns: ColumnsType<GoodsReceiptListItem> = [
-    { title: 'Số phiếu', dataIndex: 'grnNumber', width: 140 },
-    { title: 'NCC', dataIndex: 'supplierName' },
-    { title: 'Kho', dataIndex: 'warehouseName' },
-    { title: 'Đơn đặt hàng', dataIndex: 'poNumber', width: 120, render: (v) => v ?? '—' },
+    { title: tShared('columns.grnNumber'), dataIndex: 'grnNumber', width: 140 },
+    { title: tShared('columns.supplierShort'), dataIndex: 'supplierName' },
+    { title: tShared('columns.warehouse'), dataIndex: 'warehouseName' },
+    { title: tShared('columns.purchaseOrder'), dataIndex: 'poNumber', width: 120, render: (v) => v ?? tShared('emDash') },
     {
-      title: 'Ngày nhập',
+      title: tShared('columns.receiptDate'),
       dataIndex: 'receiptDate',
       width: 110,
       render: (v: string) => formatDisplayDate(v),
     },
     {
-      title: 'Trạng thái',
+      title: tShared('columns.status'),
       dataIndex: 'status',
       width: 110,
       render: (s: number, row) => (
         <Space size={4}>
-          <Tag color={GRN_STATUS_TAG[s] ?? 'default'}>{GRN_STATUS_LABELS[s] ?? s}</Tag>
-          {row.deletedAt ? <Tag color="default">Đã ẩn</Tag> : null}
+          <Tag color={GRN_STATUS_TAG[s] ?? 'default'}>{grnStatusLabel(s)}</Tag>
+          {row.deletedAt ? <Tag color="default">{tShared('archived')}</Tag> : null}
         </Space>
       ),
     },
@@ -479,7 +494,7 @@ export function GoodsReceiptListPage() {
             void openDetail(row.id);
           }}
         >
-          Xem
+          {tCommon('view')}
         </Button>
       ),
     },
@@ -492,7 +507,7 @@ export function GoodsReceiptListPage() {
   ) => (
     <>
       <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-        Chọn đơn đặt hàng ở trên để điền tự động, hoặc nhập tay từng dòng bên dưới (số lô, HSD tháng/năm).
+        {t('manualLinesHint')}
       </Typography.Text>
       {fields.map((field) => (
         <Form.Item key={field.key} noStyle shouldUpdate>
@@ -512,12 +527,12 @@ export function GoodsReceiptListPage() {
                 <Form.Item
                   {...field}
                   name={[field.name, 'productId']}
-                  label="Sản phẩm"
-                  rules={[{ required: true, message: 'Chọn SP' }]}
+                  label={tShared('columns.product')}
+                  rules={[{ required: true, message: tVal('selectProduct') }]}
                   style={{ flex: '2 1 320px', marginBottom: 0, minWidth: 240 }}
                 >
                   <Select
-                    placeholder="Sản phẩm"
+                    placeholder={tShared('columns.product')}
                     showSearch
                     optionFilterProp="label"
                     options={products.map((p) => ({
@@ -529,8 +544,8 @@ export function GoodsReceiptListPage() {
                 <Form.Item
                   {...field}
                   name={[field.name, 'productUnitId']}
-                  label="ĐVT"
-                  rules={[{ required: true, message: 'Chọn ĐVT' }]}
+                  label={tShared('columns.unit')}
+                  rules={[{ required: true, message: tVal('selectUnit') }]}
                   style={{ flex: '0 0 84px', marginBottom: 0 }}
                 >
                   <ProductUnitSelect productId={productId} width={84} />
@@ -538,17 +553,17 @@ export function GoodsReceiptListPage() {
                 <Form.Item
                   {...field}
                   name={[field.name, 'batchNumber']}
-                  label="Số lô"
-                  rules={[{ required: true, message: 'Nhập lô' }]}
+                  label={tShared('columns.batchNumber')}
+                  rules={[{ required: true, message: tVal('enterBatch') }]}
                   style={{ flex: '0 0 100px', marginBottom: 0 }}
                 >
-                  <Input placeholder="Lô" />
+                  <Input placeholder={tShared('columns.batchShort')} />
                 </Form.Item>
                 <Form.Item
                   {...field}
                   name={[field.name, 'expiryDate']}
-                  label="HSD"
-                  rules={[{ required: true, message: 'Chọn HSD' }]}
+                  label={tShared('columns.expiry')}
+                  rules={[{ required: true, message: tVal('selectExpiry') }]}
                   style={{ flex: '0 0 112px', marginBottom: 0 }}
                 >
                   <PharmaExpiryPicker style={{ width: 112 }} />
@@ -556,16 +571,16 @@ export function GoodsReceiptListPage() {
                 <Form.Item
                   {...field}
                   name={[field.name, 'quantity']}
-                  label="SL"
+                  label={tShared('columns.qty')}
                   rules={[{ required: true }]}
                   style={{ flex: '0 0 80px', marginBottom: 0 }}
                 >
-                  <InputNumber {...quantityInputNumberProps} min={0.001} placeholder="SL" style={{ width: '100%' }} />
+                  <InputNumber {...quantityInputNumberProps} min={0.001} placeholder={tShared('columns.qty')} style={{ width: '100%' }} />
                 </Form.Item>
                 <Form.Item
                   {...field}
                   name={[field.name, 'unitCost']}
-                  label="Giá vốn"
+                  label={tShared('columns.unitCost')}
                   rules={[{ required: true }]}
                   style={{ flex: '0 0 120px', marginBottom: 0 }}
                 >
@@ -577,7 +592,7 @@ export function GoodsReceiptListPage() {
                     valueFieldName="unitCost"
                   />
                 </Form.Item>
-                <Form.Item label="CK dòng" style={{ flex: '0 0 156px', marginBottom: 0 }}>
+                <Form.Item label={tShared('columns.lineDiscount')} style={{ flex: '0 0 156px', marginBottom: 0 }}>
                   <GrnLineDiscountFields fieldName={field.name} />
                 </Form.Item>
                 <Form.Item label=" " colon={false} style={{ flex: '0 0 auto', marginBottom: 0 }}>
@@ -585,7 +600,7 @@ export function GoodsReceiptListPage() {
                     type="text"
                     danger
                     icon={<DeleteOutlined />}
-                    aria-label="Xóa dòng"
+                    aria-label={tShared('lines.removeLineAria')}
                     onClick={() => remove(field.name)}
                   />
                 </Form.Item>
@@ -600,18 +615,18 @@ export function GoodsReceiptListPage() {
         onClick={() => add(emptyGrnLine())}
         block
       >
-        Thêm dòng (nhập không theo PO)
+        {t('addManualLine')}
       </Button>
     </>
   );
 
   return (
     <Card
-      title="Phiếu nhập hàng"
+      title={t('title')}
       extra={
         canWrite ? (
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            Tạo phiếu
+            {t('create')}
           </Button>
         ) : undefined
       }
@@ -640,7 +655,7 @@ export function GoodsReceiptListPage() {
           pageSize,
           total,
           showSizeChanger: true,
-          showTotal: (t) => `${t} phiếu`,
+          showTotal: (totalCount) => tShared('pagination.receipts', { count: totalCount }),
           onChange: (nextPage, nextPageSize) => {
             void loadReceipts(filters, searchInput, nextPage, nextPageSize);
           },
@@ -663,7 +678,7 @@ export function GoodsReceiptListPage() {
       />
 
       <Drawer
-        title="Tạo phiếu nhập hàng"
+        title={t('createDrawer')}
         width={PROCUREMENT_DRAWER_WIDTH}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -676,7 +691,7 @@ export function GoodsReceiptListPage() {
             loading={saving}
             disabled={!!poDraftGrn}
           >
-            Lưu phiếu
+            {t('saveReceipt')}
           </Button>
         }
       >
@@ -701,11 +716,11 @@ export function GoodsReceiptListPage() {
                 type="warning"
                 showIcon
                 style={{ marginBottom: 8 }}
-                message={`PO đã có phiếu chờ nhập kho ${poDraftGrn.grnNumber}`}
-                description="Hoàn tất nhập kho hoặc hủy phiếu đó trước khi tạo phiếu mới cho PO này."
+                message={t('draftExistsTitle', { grnNumber: poDraftGrn.grnNumber })}
+                description={t('draftExistsDescription')}
                 action={
                   <Button size="small" icon={<FolderOpenOutlined />} onClick={() => void openExistingDraftGrn(poDraftGrn.id)}>
-                    Mở phiếu
+                    {t('openDraft')}
                   </Button>
                 }
               />
@@ -721,20 +736,20 @@ export function GoodsReceiptListPage() {
                 if (poLoading) {
                   return (
                     <div style={{ padding: '24px 0', textAlign: 'center' }}>
-                      <Spin tip="Đang tải hàng từ PO..." />
+                      <Spin tip={tShared('messages.loadingPoLines')} />
                     </div>
                   );
                 }
                 if (!linkedPo) {
                   return (
                     <Typography.Text type="danger">
-                      Không tải được PO — bỏ chọn PO hoặc chọn PO khác.
+                      {t('poLoadFailed')}
                     </Typography.Text>
                   );
                 }
                 if (fields.length === 0) {
                   return (
-                    <Typography.Text type="secondary">PO đã nhận đủ — chọn PO khác.</Typography.Text>
+                    <Typography.Text type="secondary">{t('poFullyReceived')}</Typography.Text>
                   );
                 }
                 return (
@@ -763,7 +778,7 @@ export function GoodsReceiptListPage() {
       />
 
       <Drawer
-        title={detail ? `Xem ${detail.grnNumber}` : 'Xem phiếu nhập hàng'}
+        title={detail ? t('viewDrawerWithNumber', { grnNumber: detail.grnNumber }) : t('viewDrawer')}
         width={PROCUREMENT_DRAWER_WIDTH}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
@@ -772,48 +787,48 @@ export function GoodsReceiptListPage() {
           detail && (
             <Space>
               <Button icon={<PrinterOutlined />} onClick={() => printGoodsReceipt(detail)}>
-                In A4
+                {t('printA4')}
               </Button>
               {canWrite && (
                 <>
               {detail.status === 1 && (
                 <Button type="primary" icon={<CheckOutlined />} onClick={() => handleComplete(detail.id)}>
-                  Hoàn tất nhập kho
+                  {t('complete')}
                 </Button>
               )}
               {detail.status === 1 && (
                 <Popconfirm
-                  title="Hủy phiếu chờ nhập kho?"
-                  okText="Hủy phiếu"
-                  cancelText="Đóng"
+                  title={t('cancelConfirm')}
+                  okText={t('cancelOk')}
+                  cancelText={tCommon('close')}
                   onConfirm={() => void handleCancel(detail.id)}
                 >
                   <Button danger icon={<CloseCircleOutlined />}>
-                    Hủy phiếu
+                    {t('cancelReceipt')}
                   </Button>
                 </Popconfirm>
               )}
               {canArchiveGrn(detail.status, detail.deletedAt) && (
-                <Popconfirm title="Ẩn phiếu đã hủy khỏi danh sách?" onConfirm={() => void handleArchive(detail.id)}>
+                <Popconfirm title={t('archiveConfirm')} onConfirm={() => void handleArchive(detail.id)}>
                   <Button danger icon={<EyeInvisibleOutlined />}>
-                    Ẩn phiếu
+                    {t('archiveReceipt')}
                   </Button>
                 </Popconfirm>
               )}
               {detail.deletedAt && canPurge && (
                 <Popconfirm
-                  title="Xóa vĩnh viễn? Không thể hoàn tác."
+                  title={tShared('purgeConfirm')}
                   onConfirm={() => void handlePurge(detail.id)}
                 >
                   <Button danger type="primary" icon={<DeleteOutlined />}>
-                    Xóa vĩnh viễn
+                    {tShared('purgePermanent')}
                   </Button>
                 </Popconfirm>
               )}
               {showLockedDeleteGrn(detail.status, detail.deletedAt) && (
-                <Tooltip title="Không ẩn được phiếu đã ghi nhận nhập kho">
+                <Tooltip title={t('archiveLockedTooltip')}>
                   <Button disabled icon={<EyeInvisibleOutlined />}>
-                    Ẩn phiếu
+                    {t('archiveReceipt')}
                   </Button>
                 </Tooltip>
               )}

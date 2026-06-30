@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   App,
@@ -37,6 +38,7 @@ import { ProductFormDrawer } from '@/modules/catalog/ProductFormDrawer';
 import { formatDisplayDate } from '@/shared/utils/date';
 
 export function NationalDrugLookupPage() {
+  const { t } = useTranslation('catalog', { keyPrefix: 'nationalDrugs' });
   const { message } = App.useApp();
   const [connection, setConnection] = useState<NationalDrugConnectionStatus | null>(null);
   const [fieldMap, setFieldMap] = useState<NationalDrugFieldMap[]>([]);
@@ -64,9 +66,9 @@ export function NationalDrugLookupPage() {
       setConnection(status);
       setFieldMap(map);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được cấu hình tra cứu dược QG'));
+      message.error(apiErrorMessage(error, t('messages.configLoadFailed')));
     }
-  }, [message]);
+  }, [message, t]);
 
   const loadResults = useCallback(async () => {
     setLoading(true);
@@ -75,11 +77,11 @@ export function NationalDrugLookupPage() {
       setItems(result.items);
       setTotal(result.total);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tra cứu được danh mục dược QG'));
+      message.error(apiErrorMessage(error, t('messages.searchFailed')));
     } finally {
       setLoading(false);
     }
-  }, [search, page, pageSize, message]);
+  }, [search, page, pageSize, message, t]);
 
   useEffect(() => {
     void loadMeta();
@@ -98,36 +100,49 @@ export function NationalDrugLookupPage() {
     void fetchNationalDrugDetail(selectedDrugId)
       .then(setDetail)
       .catch((error) => {
-        message.error(apiErrorMessage(error, 'Không tải được chi tiết thuốc QG'));
+        message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
         setDetail(null);
       })
       .finally(() => setDetailLoading(false));
-  }, [selectedDrugId, message]);
+  }, [selectedDrugId, message, t]);
 
   const columns: ColumnsType<NationalDrugListItem> = useMemo(
     () => [
-      { title: 'Mã QG', dataIndex: 'drugId', width: 130 },
-      { title: 'Số ĐK', dataIndex: 'registrationNumber', width: 110 },
-      { title: 'Tên thuốc', dataIndex: 'productName' },
+      { title: t('columns.nationalId'), dataIndex: 'drugId', width: 130 },
+      { title: t('columns.registrationNumber'), dataIndex: 'registrationNumber', width: 110 },
+      { title: t('columns.productName'), dataIndex: 'productName' },
       {
-        title: 'Hoạt chất',
+        title: t('columns.ingredient'),
         key: 'ingredient',
         render: (_, row) =>
           [row.activeIngredient, row.strength].filter(Boolean).join(' · ') || '—',
       },
-      { title: 'ĐVT', dataIndex: 'unitName', width: 70 },
-      { title: 'Loại', dataIndex: 'drugCategoryLabel', width: 90 },
+      { title: t('columns.unit'), dataIndex: 'unitName', width: 70 },
+      { title: t('columns.category'), dataIndex: 'drugCategoryLabel', width: 90 },
     ],
-    [],
+    [t],
   );
 
-  const fieldMapColumns: ColumnsType<NationalDrugFieldMap> = [
-    { title: 'Trường QG (QĐ 522)', dataIndex: 'nationalLabel', width: 180 },
-    { title: 'Mã API', dataIndex: 'nationalField', width: 120, render: (v) => <Typography.Text code>{v}</Typography.Text> },
-    { title: '→ Trường ERP', dataIndex: 'productLabel', width: 160 },
-    { title: 'Mã ERP', dataIndex: 'productField', width: 130, render: (v) => <Typography.Text code>{v}</Typography.Text> },
-    { title: 'Ghi chú', dataIndex: 'notes', render: (v) => v ?? '—' },
-  ];
+  const fieldMapColumns: ColumnsType<NationalDrugFieldMap> = useMemo(
+    () => [
+      { title: t('fieldMapColumns.nationalLabel'), dataIndex: 'nationalLabel', width: 180 },
+      {
+        title: t('fieldMapColumns.nationalField'),
+        dataIndex: 'nationalField',
+        width: 120,
+        render: (v) => <Typography.Text code>{v}</Typography.Text>,
+      },
+      { title: t('fieldMapColumns.productLabel'), dataIndex: 'productLabel', width: 160 },
+      {
+        title: t('fieldMapColumns.productField'),
+        dataIndex: 'productField',
+        width: 130,
+        render: (v) => <Typography.Text code>{v}</Typography.Text>,
+      },
+      { title: t('fieldMapColumns.notes'), dataIndex: 'notes', render: (v) => v ?? '—' },
+    ],
+    [t],
+  );
 
   const handleCreateProduct = async () => {
     if (!selectedDrugId) return;
@@ -138,7 +153,7 @@ export function NationalDrugLookupPage() {
       setCreatedProduct(null);
       setDrawerOpen(true);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tạo được bản ghi điền sẵn'));
+      message.error(apiErrorMessage(error, t('messages.prefillFailed')));
     } finally {
       setPrefillLoading(false);
     }
@@ -153,27 +168,24 @@ export function NationalDrugLookupPage() {
         style={{ marginBottom: 16 }}
         message={
           <Space wrap>
-            <span>Tra cứu CSDL Dược QG — MVP mock (QĐ 522)</span>
+            <span>{t('alertTitle')}</span>
             {connection && (
               <Tag color={connection.isLive ? 'green' : 'gold'}>{connection.modeLabel}</Tag>
             )}
           </Space>
         }
-        description={
-          connection?.message ??
-          'Dữ liệu mẫu nội bộ. Khi có tài khoản liên thông: cấu hình NationalDrugCatalog:Mode = sandbox hoặc live.'
-        }
+        description={connection?.message ?? t('alertDescriptionDefault')}
       />
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={14}>
           <Card
-            title="Danh mục CSDL Dược QG"
+            title={t('listTitle')}
             extra={
               <Space>
                 <Input
                   allowClear
-                  placeholder="Mã QG, số ĐK, tên, hoạt chất, barcode…"
+                  placeholder={t('searchPlaceholder')}
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   onPressEnter={() => {
@@ -190,7 +202,7 @@ export function NationalDrugLookupPage() {
                     setSearch(searchInput.trim());
                   }}
                 >
-                  Tìm
+                  {t('search')}
                 </Button>
                 <Button icon={<ReloadOutlined />} onClick={() => void loadResults()} loading={loading} />
               </Space>
@@ -227,7 +239,7 @@ export function NationalDrugLookupPage() {
 
         <Col xs={24} xl={10}>
           <Card
-            title="Chi tiết bản ghi QG"
+            title={t('detailTitle')}
             extra={
               <Button
                 type="primary"
@@ -236,47 +248,51 @@ export function NationalDrugLookupPage() {
                 loading={prefillLoading}
                 onClick={() => void handleCreateProduct()}
               >
-                Tạo sản phẩm
+                {t('createProduct')}
               </Button>
             }
           >
             {!detail ? (
-              <Typography.Text type="secondary">Chọn một dòng trong bảng để xem chi tiết.</Typography.Text>
+              <Typography.Text type="secondary">{t('selectRowHint')}</Typography.Text>
             ) : (
               <Spin spinning={detailLoading}>
-              <Descriptions
-                size="small"
-                column={1}
-                bordered
-                styles={{ label: { width: 130 } }}
-              >
-                <Descriptions.Item label="Mã QG">{detail.drugId}</Descriptions.Item>
-                <Descriptions.Item label="Số ĐK">{detail.registrationNumber}</Descriptions.Item>
-                <Descriptions.Item label="Tên thuốc">{detail.productName}</Descriptions.Item>
-                <Descriptions.Item label="Hoạt chất">
-                  {[detail.activeIngredient, detail.strength].filter(Boolean).join(' · ') || '—'}
-                </Descriptions.Item>
-                <Descriptions.Item label="Dạng bào chế">{detail.dosageForm ?? '—'}</Descriptions.Item>
-                <Descriptions.Item label="Quy cách">{detail.packaging ?? '—'}</Descriptions.Item>
-                <Descriptions.Item label="ĐVT">{detail.unitName ?? '—'}</Descriptions.Item>
-                <Descriptions.Item label="NSX">{detail.manufacturer ?? '—'}</Descriptions.Item>
-                <Descriptions.Item label="Xuất xứ">{detail.countryOfOrigin ?? '—'}</Descriptions.Item>
-                <Descriptions.Item label="Loại">{detail.drugCategoryLabel}</Descriptions.Item>
-                <Descriptions.Item label="Barcode">{detail.barcode ?? '—'}</Descriptions.Item>
-                <Descriptions.Item label="ATC">{detail.atcCode ?? '—'}</Descriptions.Item>
-                <Descriptions.Item label="HSD ĐK">
-                  {detail.registrationExpiryDate ? formatDisplayDate(detail.registrationExpiryDate) : '—'}
-                </Descriptions.Item>
-              </Descriptions>
+                <Descriptions
+                  size="small"
+                  column={1}
+                  bordered
+                  styles={{ label: { width: 130 } }}
+                >
+                  <Descriptions.Item label={t('detail.nationalId')}>{detail.drugId}</Descriptions.Item>
+                  <Descriptions.Item label={t('detail.registrationNumber')}>
+                    {detail.registrationNumber}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('detail.productName')}>{detail.productName}</Descriptions.Item>
+                  <Descriptions.Item label={t('detail.ingredient')}>
+                    {[detail.activeIngredient, detail.strength].filter(Boolean).join(' · ') || '—'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('detail.dosageForm')}>{detail.dosageForm ?? '—'}</Descriptions.Item>
+                  <Descriptions.Item label={t('detail.packaging')}>{detail.packaging ?? '—'}</Descriptions.Item>
+                  <Descriptions.Item label={t('detail.unit')}>{detail.unitName ?? '—'}</Descriptions.Item>
+                  <Descriptions.Item label={t('detail.manufacturer')}>{detail.manufacturer ?? '—'}</Descriptions.Item>
+                  <Descriptions.Item label={t('detail.countryOfOrigin')}>
+                    {detail.countryOfOrigin ?? '—'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('detail.category')}>{detail.drugCategoryLabel}</Descriptions.Item>
+                  <Descriptions.Item label={t('detail.barcode')}>{detail.barcode ?? '—'}</Descriptions.Item>
+                  <Descriptions.Item label={t('detail.atc')}>{detail.atcCode ?? '—'}</Descriptions.Item>
+                  <Descriptions.Item label={t('detail.registrationExpiry')}>
+                    {detail.registrationExpiryDate ? formatDisplayDate(detail.registrationExpiryDate) : '—'}
+                  </Descriptions.Item>
+                </Descriptions>
               </Spin>
             )}
           </Card>
         </Col>
       </Row>
 
-      <Card title="Map field QĐ 522 → Danh mục nhà thuốc" style={{ marginTop: 16 }}>
+      <Card title={t('fieldMapTitle')} style={{ marginTop: 16 }}>
         <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-          Tham chiếu khi triển khai connector thật. MVP mock dùng cùng mapping để điền form tạo sản phẩm.
+          {t('fieldMapIntro')}
         </Typography.Paragraph>
         <Table
           rowKey="nationalField"
@@ -297,7 +313,12 @@ export function NationalDrugLookupPage() {
         }}
         onCreated={(product) => {
           setCreatedProduct(product);
-          message.success(`Đã tạo ${product.productCode} — liên kết QG ${product.nationalDrugId ?? ''}`.trim());
+          message.success(
+            t('messages.createSuccess', {
+              code: product.productCode,
+              nationalId: product.nationalDrugId ?? '',
+            }),
+          );
         }}
         onUpdated={() => {}}
       />

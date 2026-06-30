@@ -1,5 +1,5 @@
 import type { SalesOrderDetail, SalesPaymentLine } from '@/shared/api/sales.types';
-import { SALES_PAYMENT_METHOD_LABELS } from '@/shared/api/sales.types';
+import { salesT } from '@/shared/i18n';
 import { formatDisplayMoney } from '@/shared/utils/money';
 import { computeOrderTotalRefunded } from '@/modules/sales/sales-return-pricing';
 
@@ -100,14 +100,30 @@ export function buildOrderNetPaymentLines(order: SalesOrderDetail): {
 }
 
 export function formatNetPaymentLine(line: NetPaymentLine, afterReturn = false): string {
-  const label = SALES_PAYMENT_METHOD_LABELS[line.paymentMethod] ?? String(line.paymentMethod);
+  const t = salesT();
+  const label = t(`enums.paymentMethod.${line.paymentMethod}`, {
+    defaultValue: String(line.paymentMethod),
+  });
+  const unchanged = t('paymentSummary.unchanged');
   if (!afterReturn && line.refunded <= 0.009) {
-    return `${label}: ${formatDisplayMoney(line.collected)}`;
+    return t('paymentSummary.lineSimple', {
+      method: label,
+      amount: formatDisplayMoney(line.collected),
+    });
   }
   if (line.refunded <= 0.009) {
-    return `${label}: ${formatDisplayMoney(line.net)} (giữ nguyên)`;
+    return t('paymentSummary.lineUnchanged', {
+      method: label,
+      amount: formatDisplayMoney(line.net),
+      unchanged,
+    });
   }
-  return `${label}: Thu ${formatDisplayMoney(line.collected)} · Hoàn −${formatDisplayMoney(line.refunded)} · Ròng ${formatDisplayMoney(line.net)}`;
+  return t('paymentSummary.lineDetailed', {
+    method: label,
+    collected: formatDisplayMoney(line.collected),
+    refunded: formatDisplayMoney(line.refunded),
+    net: formatDisplayMoney(line.net),
+  });
 }
 
 export function formatNetPaymentLinesHtml(lines: NetPaymentLine[], afterReturn = false): string {

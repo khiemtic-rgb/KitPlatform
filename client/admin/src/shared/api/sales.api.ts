@@ -1,4 +1,5 @@
 import { http } from '@/shared/api/http';
+import { salesT } from '@/shared/i18n';
 import type {
   CompleteDraftSaleRequest,
   CreateSaleLineRequest,
@@ -199,14 +200,18 @@ function normalizePosProductLookup(data: Record<string, unknown>): PosProductLoo
     unitPrice: Number(data.unitPrice ?? data.UnitPrice ?? 0),
     stockAvailable: Number(data.stockAvailable ?? data.StockAvailable ?? 0),
     batchHints: rawHints?.map((row) => normalizePosBatchHint(row)),
-    stockSourceLabel: String(data.stockSourceLabel ?? data.StockSourceLabel ?? 'Tồn theo hệ thống'),
+    stockSourceLabel: String(
+      data.stockSourceLabel ?? data.StockSourceLabel ?? salesT()('pos.allocation.stockSourceSystem'),
+    ),
   };
 }
 
 function normalizePosAllocationPreview(data: Record<string, unknown>): PosAllocationPreview {
   const rawLines = (data.lines ?? data.Lines ?? []) as Record<string, unknown>[];
   return {
-    stockSourceLabel: String(data.stockSourceLabel ?? data.StockSourceLabel ?? 'Tồn theo hệ thống'),
+    stockSourceLabel: String(
+      data.stockSourceLabel ?? data.StockSourceLabel ?? salesT()('pos.allocation.stockSourceSystem'),
+    ),
     lines: rawLines.map((line) => {
       const rawAllocs = (line.allocations ?? line.Allocations ?? []) as Record<string, unknown>[];
       return {
@@ -623,7 +628,9 @@ function normalizeSalesShiftDetail(data: Record<string, unknown>): SalesShiftDet
       earlierBatchNumber: String(row.earlierBatchNumber ?? row.EarlierBatchNumber ?? ''),
       earlierExpiryDate: (row.earlierExpiryDate ?? row.EarlierExpiryDate) as string | undefined,
       earlierBookQuantity: Number(row.earlierBookQuantity ?? row.EarlierBookQuantity ?? 0),
-      stockSourceLabel: String(row.stockSourceLabel ?? row.StockSourceLabel ?? 'Tồn theo hệ thống'),
+      stockSourceLabel: String(
+        row.stockSourceLabel ?? row.StockSourceLabel ?? salesT()('pos.allocation.stockSourceSystem'),
+      ),
     })),
   };
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   App,
@@ -46,25 +47,12 @@ import { withUploadAuth } from '@/shared/utils/upload-url';
 import { uploadImage } from '@/shared/api/files.api';
 import type { LookupItem, ProductDetail } from '@/shared/api/catalog.types';
 import type { ProductFormNationalPrefill } from '@/shared/api/national-drug.types';
-import { DRUG_TYPE_LABELS, PRICE_TYPE_LABELS, SALE_UNIT_OPTIONS, STATUS_LABELS, BARCODE_TYPE_LABELS } from '@/shared/api/catalog.types';
+import { SALE_UNIT_OPTIONS } from '@/shared/api/catalog.types';
+import { catalogT } from '@/shared/i18n';
+import { useCatalogEnums } from '@/shared/i18n/use-catalog-enums';
 import { formatDisplayMoney, moneyInputNumberPropsAllowZeroSuffix, moneyInputNumberStyle } from '@/shared/utils/money';
 
 type TabKey = 'general' | 'details' | 'ingredients';
-
-const allPriceOptions = Object.entries(PRICE_TYPE_LABELS).map(([k, v]) => ({
-  value: Number(k),
-  label: v,
-}));
-
-const allBarcodeOptions = Object.entries(BARCODE_TYPE_LABELS).map(([k, v]) => ({
-  value: Number(k),
-  label: v,
-}));
-
-const TAB_REQUIRES_PRODUCT: Record<Exclude<TabKey, 'general'>, string> = {
-  details: 'chi tiết sản phẩm',
-  ingredients: 'hoạt chất',
-};
 
 const emptyCommercial = (): ProductCommercialPayload => ({
   barcodes: [],
@@ -147,6 +135,15 @@ type Props = {
 };
 
 export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onCreated, onUpdated }: Props) {
+  const { t } = useTranslation('catalog');
+  const { t: tc } = useTranslation('common');
+  const {
+    drugTypeOptions,
+    productStatusOptions,
+    barcodeTypeOptions,
+    priceTypeOptions,
+    priceTypeLabel,
+  } = useCatalogEnums();
   const { message: msg, modal } = App.useApp();
   const [form] = Form.useForm();
   const linkedNationalDrugId = Form.useWatch('nationalDrugId', form);
@@ -162,7 +159,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
   const [draftPriceType, setDraftPriceType] = useState(1);
   const [draftPrice, setDraftPrice] = useState<number | undefined>();
   const [draftProductUnitId, setDraftProductUnitId] = useState<string>('');
-  const [draftUnitName, setDraftUnitName] = useState('Hộp');
+  const [draftUnitName, setDraftUnitName] = useState(() => catalogT()('shared.defaultPackUnit'));
   const [draftConversionFactor, setDraftConversionFactor] = useState<number | undefined>(10);
   const [draftUnitIsSale, setDraftUnitIsSale] = useState(true);
   const [draftIngredientId, setDraftIngredientId] = useState('');
@@ -242,7 +239,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     setDraftPriceType(1);
     setDraftPrice(undefined);
     setDraftProductUnitId('');
-    setDraftUnitName('Hộp');
+    setDraftUnitName(catalogT()('shared.defaultPackUnit'));
     setDraftConversionFactor(10);
     setDraftUnitIsSale(true);
     setDraftIngredientId('');
@@ -277,7 +274,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
       nationalDrugId: product.nationalDrugId,
       nationalRegistrationNumber: product.nationalRegistrationNumber,
       status: product.status,
-      saleUnitName: product.saleUnitName ?? product.units.find((u) => u.isBaseUnit)?.unitName ?? 'Viên',
+      saleUnitName: product.saleUnitName ?? product.units.find((u) => u.isBaseUnit)?.unitName ?? catalogT()('shared.defaultSaleUnit'),
       minStockQty: product.minStockQty,
     });
     const saleUnitId =
@@ -298,7 +295,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     nationalDrugId: readTextField(form, 'nationalDrugId'),
     nationalRegistrationNumber: readTextField(form, 'nationalRegistrationNumber'),
     status: (form.getFieldValue('status') as number | undefined) ?? 1,
-    saleUnitName: readTextField(form, 'saleUnitName') ?? 'Viên',
+    saleUnitName: readTextField(form, 'saleUnitName') ?? catalogT()('shared.defaultSaleUnit'),
     minStockQty: form.getFieldValue('minStockQty') as number | undefined,
   });
 
@@ -345,7 +342,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
         return updated;
       } catch (error) {
         if (displayProduct) syncCommercialFromProduct(displayProduct);
-        msg.error(apiErrorMessage(error, 'Không lưu được dữ liệu'));
+        msg.error(apiErrorMessage(error, t('productForm.messages.saveFailed')));
         throw error;
       } finally {
         setCommercialSaving(false);
@@ -379,7 +376,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
         return updated;
       } catch (error) {
         if (displayProduct) syncUnitsFromProduct(displayProduct);
-        msg.error(apiErrorMessage(error, 'Không lưu được đơn vị tính'));
+        msg.error(apiErrorMessage(error, t('productForm.messages.saveUnitsFailed')));
         throw error;
       } finally {
         setUnitsSaving(false);
@@ -417,7 +414,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
         return updated;
       } catch (error) {
         if (displayProduct) syncIngredientsFromProduct(displayProduct);
-        msg.error(apiErrorMessage(error, 'Không lưu được hoạt chất'));
+        msg.error(apiErrorMessage(error, t('productForm.messages.saveIngredientsFailed')));
         throw error;
       } finally {
         setIngredientsSaving(false);
@@ -434,7 +431,14 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
       await form.validateFields(['productName', 'drugType']);
       return true;
     } catch {
-      msg.warning(`Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập ${TAB_REQUIRES_PRODUCT[tab]}.`);
+      msg.warning(
+        t('productForm.messages.fillGeneralBefore', {
+          section:
+            tab === 'details'
+              ? t('productForm.sections.detailsTab')
+              : t('productForm.sections.ingredientsTab'),
+        }),
+      );
       return false;
     }
   };
@@ -443,7 +447,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     try {
       await form.validateFields(['productName', 'drugType']);
     } catch {
-      msg.warning('Nhập đủ tên sản phẩm và loại thuốc');
+      msg.warning(t('productForm.messages.requireNameAndDrugType'));
       return false;
     }
 
@@ -479,11 +483,11 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
       onCreated(created);
       setShowCreatedHint(true);
       captureGeneralBaseline();
-      msg.success(`Đã tạo sản phẩm ${created.productCode}`);
+      msg.success(t('productForm.messages.created', { code: created.productCode }));
       return created;
     } catch (error) {
       if (isAxiosError(error)) {
-        msg.error(apiErrorMessage(error, 'Không tạo được sản phẩm'));
+        msg.error(apiErrorMessage(error, t('productForm.messages.createFailed')));
       }
       return null;
     } finally {
@@ -512,13 +516,13 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     setLoadingCode(true);
     try {
       const code = await fetchNextProductCode();
-      form.setFieldsValue({ productCode: code, drugType: 1, status: 1, saleUnitName: 'Viên' });
+      form.setFieldsValue({ productCode: code, drugType: 1, status: 1, saleUnitName: catalogT()('shared.defaultSaleUnit') });
     } catch (error) {
-      msg.error(apiErrorMessage(error, 'Không lấy được mã sản phẩm mới'));
+      msg.error(apiErrorMessage(error, t('productForm.messages.fetchCodeFailed')));
     } finally {
       setLoadingCode(false);
     }
-  }, [form, msg]);
+  }, [form, msg, t]);
 
   useEffect(() => {
     if (!open) return;
@@ -546,7 +550,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
           productCode: code,
           drugType: nationalPrefill?.drugType ?? 1,
           status: 1,
-          saleUnitName: nationalPrefill?.saleUnitName ?? 'Viên',
+          saleUnitName: nationalPrefill?.saleUnitName ?? catalogT()('shared.defaultSaleUnit'),
           productName: nationalPrefill?.productName,
           genericName: nationalPrefill?.genericName,
           description: nationalPrefill?.description,
@@ -556,7 +560,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
         captureGeneralBaseline();
       })
       .catch((error) => {
-        if (!cancelled) msg.error(apiErrorMessage(error, 'Không lấy được mã sản phẩm mới'));
+        if (!cancelled) msg.error(apiErrorMessage(error, t('productForm.messages.fetchCodeFailed')));
       })
       .finally(() => {
         if (!cancelled) setLoadingCode(false);
@@ -565,7 +569,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     return () => {
       cancelled = true;
     };
-  }, [open, editing, nationalPrefill, form, msg]);
+  }, [open, editing, nationalPrefill, form, msg, t]);
 
   useEffect(() => {
     if (!open || !editing) return;
@@ -591,13 +595,13 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
   const confirmSaveDespiteSimilarName = (matches: SimilarProductMatch[]) =>
     new Promise<boolean>((resolve) => {
       modal.confirm({
-        title: 'Tên sản phẩm gần trùng',
+        title: t('productForm.similarName.confirmTitle'),
         width: 520,
         zIndex: 1200,
         content: (
           <div>
             <Typography.Paragraph style={{ marginBottom: 8 }}>
-              Tên này trùng &gt;95% với sản phẩm đã có. Bạn vẫn muốn lưu?
+              {t('productForm.similarName.confirmBody')}
             </Typography.Paragraph>
             <ul style={{ margin: 0, paddingLeft: 20 }}>
               {matches.map((m) => (
@@ -609,8 +613,8 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
             </ul>
           </div>
         ),
-        okText: 'Vẫn lưu',
-        cancelText: 'Hủy',
+        okText: t('productForm.actions.stillSave'),
+        cancelText: tc('actions.cancel'),
         onOk: () => resolve(true),
         onCancel: () => resolve(false),
       });
@@ -618,16 +622,16 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
 
   const handleAddBarcode = async () => {
     if (!currentProduct()) {
-      msg.warning('Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập mã barcode.');
+      msg.warning(t('productForm.messages.fillGeneralBeforeBarcode'));
       return;
     }
     const barcode = draftBarcode.trim();
     if (!barcode) {
-      msg.warning('Nhập mã barcode');
+      msg.warning(t('productForm.messages.enterBarcode'));
       return;
     }
     if (commercialRef.current.barcodes.some((b) => b.barcode === barcode)) {
-      msg.warning('Mã barcode đã có trong danh sách');
+      msg.warning(t('productForm.messages.barcodeDuplicate'));
       return;
     }
 
@@ -639,7 +643,10 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     }
     if (!barcodeCheck.isAvailable) {
       msg.error(
-        `Mã barcode đã dùng cho ${barcodeCheck.existingProductCode} — ${barcodeCheck.existingProductName}`,
+        t('productForm.messages.barcodeInUse', {
+          code: barcodeCheck.existingProductCode,
+          name: barcodeCheck.existingProductName,
+        }),
       );
       return;
     }
@@ -653,7 +660,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     try {
       await persistCommercial({ ...base, barcodes: nextBarcodes });
       setDraftBarcode('');
-      msg.success('Đã thêm mã barcode');
+      msg.success(t('productForm.messages.barcodeAdded'));
     } catch {
       /* persistCommercial đã báo lỗi */
     }
@@ -667,7 +674,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     }));
     try {
       await persistCommercial({ ...base, barcodes: nextBarcodes });
-      msg.success('Đã đặt mã chính');
+      msg.success(t('productForm.messages.primaryBarcodeSet'));
     } catch {
       /* persistCommercial đã báo lỗi */
     }
@@ -683,7 +690,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     }));
     try {
       await persistCommercial({ ...base, barcodes: nextBarcodes });
-      msg.success('Đã xóa mã barcode');
+      msg.success(t('productForm.messages.barcodeRemoved'));
     } catch {
       /* persistCommercial đã báo lỗi */
     }
@@ -691,20 +698,20 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
 
   const handleAddPrice = async () => {
     if (!currentProduct()) {
-      msg.warning('Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập giá bán.');
+      msg.warning(t('productForm.messages.fillGeneralBeforePrice'));
       return;
     }
     const unitId = draftProductUnitId || defaultUnitId;
     if (!unitId) {
-      msg.warning('Chưa có đơn vị tính cho sản phẩm');
+      msg.warning(t('productForm.messages.noUnits'));
       return;
     }
     if (!draftPrice || draftPrice <= 0) {
-      msg.warning('Nhập giá hợp lệ');
+      msg.warning(t('productForm.messages.invalidPrice'));
       return;
     }
     if (commercialRef.current.prices.some((p) => p.priceType === draftPriceType && p.productUnitId === unitId)) {
-      msg.warning('Loại giá và đơn vị này đã có — không thể thêm trùng');
+      msg.warning(t('productForm.messages.priceDuplicate'));
       return;
     }
 
@@ -717,7 +724,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     try {
       await persistCommercial({ ...base, prices: nextPrices });
       setDraftPrice(undefined);
-      msg.success('Đã thêm giá');
+      msg.success(t('productForm.messages.priceAdded'));
     } catch {
       /* persistCommercial đã báo lỗi */
     }
@@ -730,7 +737,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     );
     try {
       await persistCommercial({ ...base, prices: nextPrices });
-      msg.success('Đã xóa giá');
+      msg.success(t('productForm.messages.priceRemoved'));
     } catch {
       /* persistCommercial đã báo lỗi */
     }
@@ -738,13 +745,13 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
 
   const handleAddImage = async (url: string) => {
     if (!currentProduct()) {
-      msg.warning('Vui lòng nhập đầy đủ thông tin sản phẩm trước khi thêm hình ảnh.');
+      msg.warning(t('productForm.messages.fillGeneralBeforeImage'));
       return;
     }
     const trimmed = url.trim();
     if (!trimmed) return;
     if (commercialRef.current.images.some((img) => img.imageUrl === trimmed)) {
-      msg.warning('Ảnh đã có trong danh sách');
+      msg.warning(t('productForm.messages.imageDuplicate'));
       return;
     }
 
@@ -756,7 +763,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
 
     try {
       await persistCommercial({ ...base, images: nextImages });
-      msg.success('Đã thêm ảnh');
+      msg.success(t('productForm.messages.imageAdded'));
     } catch {
       /* persistCommercial đã báo lỗi */
     }
@@ -765,7 +772,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
   const handleAddImageFromUrl = async () => {
     const url = draftImageUrl.trim();
     if (!url) {
-      msg.warning('Nhập URL ảnh');
+      msg.warning(t('productForm.messages.enterImageUrl'));
       return;
     }
     await handleAddImage(url);
@@ -780,7 +787,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
       await handleAddImage(url);
       options.onSuccess?.(url);
     } catch (error) {
-      const text = apiErrorMessage(error, 'Không tải được ảnh');
+      const text = apiErrorMessage(error, t('productForm.messages.uploadFailed'));
       msg.error(text);
       options.onError?.(new Error(text));
     } finally {
@@ -797,7 +804,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     }));
     try {
       await persistCommercial({ ...base, images: nextImages });
-      msg.success('Đã đặt ảnh chính');
+      msg.success(t('productForm.messages.primaryImageSet'));
     } catch {
       /* persistCommercial đã báo lỗi */
     }
@@ -814,7 +821,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     }));
     try {
       await persistCommercial({ ...base, images: nextImages });
-      msg.success('Đã xóa ảnh');
+      msg.success(t('productForm.messages.imageRemoved'));
     } catch {
       /* persistCommercial đã báo lỗi */
     }
@@ -822,22 +829,22 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
 
   const handleAddUnit = async () => {
     if (!currentProduct()) {
-      msg.warning('Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập ĐVT quy đổi.');
+      msg.warning(t('productForm.messages.fillGeneralBeforeUnits'));
       return;
     }
     const unitName = draftUnitName.trim();
     if (!unitName) {
-      msg.warning('Chọn hoặc nhập tên đơn vị');
+      msg.warning(t('productForm.messages.enterUnitName'));
       return;
     }
     const base = unitsRef.current;
     if (base.some((u) => u.unitName.toLowerCase() === unitName.toLowerCase())) {
-      msg.warning('Đơn vị tính đã có trong danh sách');
+      msg.warning(t('productForm.messages.unitDuplicate'));
       return;
     }
     const factor = draftConversionFactor ?? 1;
     if (factor <= 0) {
-      msg.warning('Hệ số quy đổi phải lớn hơn 0');
+      msg.warning(t('productForm.messages.invalidConversionFactor'));
       return;
     }
 
@@ -853,9 +860,9 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
 
     try {
       await persistUnits(nextUnits);
-      setDraftUnitName('Hộp');
+      setDraftUnitName(catalogT()('shared.defaultPackUnit'));
       setDraftConversionFactor(10);
-      msg.success('Đã thêm đơn vị tính');
+      msg.success(t('productForm.messages.unitAdded'));
     } catch {
       /* persistUnits đã báo lỗi */
     }
@@ -866,12 +873,12 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     const target = base.find((u) => u.unitName === unitName);
     if (!target) return;
     if (target.isBaseUnit) {
-      msg.warning('Không xóa được đơn vị cơ sở');
+      msg.warning(t('productForm.messages.cannotRemoveBaseUnit'));
       return;
     }
     try {
       await persistUnits(base.filter((u) => u.unitName !== unitName));
-      msg.success('Đã xóa đơn vị tính');
+      msg.success(t('productForm.messages.unitRemoved'));
     } catch {
       /* persistUnits đã báo lỗi */
     }
@@ -883,12 +890,12 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
       u.unitName === unitName ? { ...u, isSaleUnit: !u.isSaleUnit } : u,
     );
     if (!nextUnits.some((u) => u.isSaleUnit)) {
-      msg.warning('Phải có ít nhất một đơn vị bán');
+      msg.warning(t('productForm.messages.requireSaleUnit'));
       return;
     }
     try {
       await persistUnits(nextUnits);
-      msg.success('Đã cập nhật đơn vị bán');
+      msg.success(t('productForm.messages.saleUnitUpdated'));
     } catch {
       /* persistUnits đã báo lỗi */
     }
@@ -896,17 +903,17 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
 
   const handleAddIngredient = async () => {
     if (!currentProduct()) {
-      msg.warning('Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập hoạt chất.');
+      msg.warning(t('productForm.messages.fillGeneralBeforeIngredients'));
       return;
     }
     if (!draftIngredientId) {
-      msg.warning('Chọn hoạt chất');
+      msg.warning(t('productForm.messages.selectIngredient'));
       return;
     }
     const option = ingredientOptions.find((o) => o.id === draftIngredientId);
     const base = ingredientsRef.current;
     if (base.some((row) => row.ingredientId === draftIngredientId)) {
-      msg.warning('Hoạt chất đã có trong danh sách');
+      msg.warning(t('productForm.messages.ingredientDuplicate'));
       return;
     }
 
@@ -926,7 +933,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
       setDraftIngredientId('');
       setDraftStrengthValue(undefined);
       applyGenericSuggestion(ingredientsRef.current, true);
-      msg.success('Đã thêm hoạt chất');
+      msg.success(t('productForm.messages.ingredientAdded'));
     } catch {
       /* persistIngredients đã báo lỗi */
     }
@@ -936,7 +943,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     const base = ingredientsRef.current;
     try {
       await persistIngredients(base.filter((row) => row.ingredientId !== ingredientId));
-      msg.success('Đã xóa hoạt chất');
+      msg.success(t('productForm.messages.ingredientRemoved'));
     } catch {
       /* persistIngredients đã báo lỗi */
     }
@@ -946,7 +953,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     (rows: IngredientRow[], onlyIfEmpty = false) => {
       const suggestion = formatGenericFromIngredients(rows);
       if (!suggestion) {
-        msg.info('Chưa có hoạt chất để gợi ý');
+        msg.info(t('productForm.messages.noIngredientsToSuggest'));
         return;
       }
 
@@ -954,32 +961,32 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
       if (!current.trim()) {
         form.setFieldsValue({ genericName: suggestion });
         setGeneralDirty(true);
-        msg.success('Đã gợi ý tên hoạt chất từ thành phần');
+        msg.success(t('productForm.messages.genericSuggested'));
         return;
       }
 
       if (onlyIfEmpty) return;
 
       modal.confirm({
-        title: 'Áp dụng gợi ý tên hoạt chất?',
+        title: t('productForm.confirm.applyGenericTitle'),
         zIndex: 1200,
         content: (
           <div>
             <Typography.Paragraph style={{ marginBottom: 8 }}>
-              Thay nội dung hiện tại bằng gợi ý từ tab Hoạt chất:
+              {t('productForm.confirm.applyGenericBody')}
             </Typography.Paragraph>
             <Typography.Text strong>{suggestion}</Typography.Text>
           </div>
         ),
-        okText: 'Áp dụng',
-        cancelText: 'Giữ nguyên',
+        okText: t('productForm.actions.apply'),
+        cancelText: t('productForm.actions.keepCurrent'),
         onOk: () => {
           form.setFieldsValue({ genericName: suggestion });
           setGeneralDirty(true);
         },
       });
     },
-    [form, msg],
+    [form, msg, modal, t],
   );
 
   const saveGeneralChanges = async (): Promise<boolean> => {
@@ -1010,11 +1017,11 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
       loadEditingProduct(updated);
       captureGeneralBaseline();
       onUpdated(updated);
-      msg.success('Đã lưu sản phẩm');
+      msg.success(t('productForm.messages.saved'));
       return true;
     } catch (error) {
       if (isAxiosError(error)) {
-        msg.error(apiErrorMessage(error, 'Không lưu được sản phẩm'));
+        msg.error(apiErrorMessage(error, t('productForm.messages.saveProductFailed')));
       }
       return false;
     } finally {
@@ -1028,10 +1035,10 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
       return;
     }
     modal.confirm({
-      title: 'Thay đổi chưa lưu',
-      content: 'Có thay đổi chưa được lưu. Bạn có muốn lưu lại không?',
-      okText: 'Có',
-      cancelText: 'Không',
+      title: t('productForm.confirm.unsavedTitle'),
+      content: t('productForm.confirm.unsavedBody'),
+      okText: tc('actions.yes'),
+      cancelText: tc('actions.no'),
       maskClosable: false,
       closable: false,
       zIndex: 1200,
@@ -1065,21 +1072,22 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
         <Alert
           type="success"
           showIcon
-          message="Liên kết CSDL Dược QG"
+          message={t('productForm.nationalDrug.linkedTitle')}
           description={
             <>
-              Mã QG: <strong>{linkedNationalDrugId}</strong>
+              {t('productForm.nationalDrug.nationalId')}: <strong>{linkedNationalDrugId}</strong>
               {linkedNationalReg && (
                 <>
                   {' '}
-                  · Số ĐK: <strong>{linkedNationalReg}</strong>
+                  · {t('productForm.nationalDrug.registrationNumber')}: <strong>{linkedNationalReg}</strong>
                 </>
               )}
               {nationalPrefill?.suggestedBarcode && !hasPersistedId && (
                 <>
                   <br />
-                  Barcode gợi ý: <Typography.Text code>{nationalPrefill.suggestedBarcode}</Typography.Text> — thêm ở tab
-                  Chi tiết sau khi lưu.
+                  {t('productForm.nationalDrug.suggestedBarcode')}:{' '}
+                  <Typography.Text code>{nationalPrefill.suggestedBarcode}</Typography.Text>{' '}
+                  {t('productForm.nationalDrug.suggestedBarcodeHint')}
                 </>
               )}
             </>
@@ -1093,23 +1101,27 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
       <Form.Item name="nationalRegistrationNumber" hidden>
         <Input />
       </Form.Item>
-      <Form.Item label="Mã sản phẩm">
+      <Form.Item label={t('productForm.fields.productCode')}>
         <Space.Compact style={{ width: '100%' }}>
           <Form.Item name="productCode" noStyle>
             <Input
               disabled
-              placeholder={loadingCode ? 'Đang lấy mã...' : undefined}
+              placeholder={loadingCode ? t('productForm.placeholders.loadingCode') : undefined}
               style={{ width: 'calc(100% - 40px)' }}
             />
           </Form.Item>
           {!hasPersistedId && (
-            <Button onClick={() => void loadNextProductCode()} loading={loadingCode} title="Lấy mã mới">
+            <Button
+              onClick={() => void loadNextProductCode()}
+              loading={loadingCode}
+              title={t('productForm.actions.refreshCode')}
+            >
               ↻
             </Button>
           )}
         </Space.Compact>
       </Form.Item>
-      <Form.Item name="productName" label="Tên sản phẩm" rules={[{ required: true }]}>
+      <Form.Item name="productName" label={t('productForm.fields.productName')} rules={[{ required: true }]}>
         <Input onBlur={(e) => void runNameSimilarityCheck(e.target.value)} />
       </Form.Item>
       {similarMatches.length > 0 && (
@@ -1118,8 +1130,8 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
           showIcon
           message={
             similarMatches.some((m) => m.similarityScore >= 1)
-              ? 'Tên trùng với sản phẩm đã có'
-              : 'Tên gần trùng với sản phẩm đã có (>95%)'
+              ? t('productForm.similarName.exact')
+              : t('productForm.similarName.near')
           }
           description={
             <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
@@ -1134,62 +1146,60 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
         />
       )}
       <Form.Item
-        label="Tên hoạt chất / generic"
-        extra="Dùng để hiển thị và tìm kiếm. Có thể gợi ý từ tab Hoạt chất."
+        label={t('productForm.fields.genericName')}
+        extra={t('productForm.fields.genericNameExtra')}
       >
         <Space.Compact style={{ width: '100%' }}>
           <Form.Item name="genericName" noStyle>
-            <Input placeholder="VD: Paracetamol 500 mg" style={{ width: 'calc(100% - 88px)' }} />
+            <Input
+              placeholder={t('productForm.placeholders.genericName')}
+              style={{ width: 'calc(100% - 88px)' }}
+            />
           </Form.Item>
           <Button
             onClick={() => applyGenericSuggestion(ingredientRows)}
             disabled={!ingredientRows.length}
-            title="Gợi ý từ danh sách hoạt chất"
+            title={t('productForm.actions.suggestGenericTitle')}
           >
-            Gợi ý
+            {t('productForm.actions.suggestGeneric')}
           </Button>
         </Space.Compact>
       </Form.Item>
-      <Form.Item name="saleUnitName" label="ĐVT cơ sở" rules={[{ required: true }]}>
+      <Form.Item name="saleUnitName" label={t('productForm.fields.saleUnitName')} rules={[{ required: true }]}>
         <Select
           showSearch
           options={SALE_UNIT_OPTIONS}
           disabled={hasPersistedId}
-          placeholder="ĐVT nhỏ nhất (VD: Viên)"
+          placeholder={t('productForm.placeholders.saleUnitName')}
         />
       </Form.Item>
       {!hasPersistedId && (
         <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-          ĐVT cơ sở được tạo khi tạo sản phẩm. Thêm Hộp, Vỉ… ở tab Chi tiết sản phẩm → ĐVT quy đổi.
+          {t('productForm.fields.saleUnitHint')}
         </Typography.Text>
       )}
-      <Form.Item name="drugType" label="Loại thuốc" rules={[{ required: true }]}>
-        <Select
-          options={Object.entries(DRUG_TYPE_LABELS).map(([k, v]) => ({
-            value: Number(k),
-            label: v,
-          }))}
-        />
+      <Form.Item name="drugType" label={t('productForm.fields.drugType')} rules={[{ required: true }]}>
+        <Select options={drugTypeOptions} />
       </Form.Item>
-      <Form.Item name="categoryId" label="Danh mục">
+      <Form.Item name="categoryId" label={t('productForm.fields.categoryId')}>
         <Select allowClear options={categories.map((c) => ({ value: c.id, label: c.name }))} />
       </Form.Item>
-      <Form.Item name="brandId" label="Thương hiệu">
+      <Form.Item name="brandId" label={t('productForm.fields.brandId')}>
         <Select allowClear options={brands.map((b) => ({ value: b.id, label: b.name }))} />
       </Form.Item>
-      <Form.Item name="description" label="Mô tả">
+      <Form.Item name="description" label={t('productForm.fields.description')}>
         <Input.TextArea rows={2} />
       </Form.Item>
-      <Form.Item name="status" label="Trạng thái">
-        <Select
-          options={Object.entries(STATUS_LABELS).map(([k, v]) => ({
-            value: Number(k),
-            label: v,
-          }))}
-        />
+      <Form.Item name="status" label={t('productForm.fields.status')}>
+        <Select options={productStatusOptions} />
       </Form.Item>
-      <Form.Item name="minStockQty" label="Tồn tối thiểu (cảnh báo)">
-        <InputNumber min={0} precision={3} style={{ width: '100%' }} placeholder="Mặc định 10 nếu để trống" />
+      <Form.Item name="minStockQty" label={t('productForm.fields.minStockQty')}>
+        <InputNumber
+          min={0}
+          precision={3}
+          style={{ width: '100%' }}
+          placeholder={t('productForm.placeholders.minStockQty')}
+        />
       </Form.Item>
     </>
   );
@@ -1212,10 +1222,21 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
               >
                 <span>
                   <Typography.Text strong>{u.unitName}</Typography.Text>
-                  {u.isBaseUnit && <Tag color="blue" style={{ marginLeft: 8 }}>Cơ sở</Tag>}
-                  {u.isSaleUnit && <Tag color="green" style={{ marginLeft: 4 }}>Bán</Tag>}
+                  {u.isBaseUnit && (
+                    <Tag color="blue" style={{ marginLeft: 8 }}>
+                      {t('productForm.unitTags.base')}
+                    </Tag>
+                  )}
+                  {u.isSaleUnit && (
+                    <Tag color="green" style={{ marginLeft: 4 }}>
+                      {t('productForm.unitTags.sale')}
+                    </Tag>
+                  )}
                   {!u.isBaseUnit && (
-                    <Typography.Text type="secondary"> · 1 {u.unitName} = {u.conversionFactor} cơ sở</Typography.Text>
+                    <Typography.Text type="secondary">
+                      {' '}
+                      · {t('productForm.unitTags.conversion', { unit: u.unitName, factor: u.conversionFactor })}
+                    </Typography.Text>
                   )}
                 </span>
                 <Space size={4}>
@@ -1224,7 +1245,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
                     size="small"
                     icon={u.isSaleUnit ? <StarFilled style={{ color: '#52c41a' }} /> : <StarOutlined />}
                     onClick={() => void handleToggleUnitSale(u.unitName)}
-                    title="Đơn vị bán"
+                    title={t('productForm.unitTags.saleUnitTitle')}
                     disabled={u.isBaseUnit}
                   />
                   {!u.isBaseUnit && (
@@ -1241,7 +1262,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
             ))}
           </Space>
         ) : (
-          <Typography.Text type="secondary">Chưa có đơn vị tính</Typography.Text>
+          <Typography.Text type="secondary">{t('productForm.empty.units')}</Typography.Text>
         )}
       </div>
       <Space wrap style={{ width: '100%' }}>
@@ -1251,11 +1272,11 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
           value={draftUnitName}
           onChange={setDraftUnitName}
           options={SALE_UNIT_OPTIONS.filter((o) => !units.some((u) => u.unitName === o.value))}
-          placeholder="ĐVT"
+          placeholder={t('productForm.placeholders.unit')}
         />
         <InputNumber
           min={1}
-          placeholder="Hệ số"
+          placeholder={t('productForm.fields.conversionFactor')}
           value={draftConversionFactor}
           onChange={(v) => setDraftConversionFactor(v ?? undefined)}
           style={{ width: 100 }}
@@ -1265,12 +1286,12 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
           value={draftUnitIsSale ? 1 : 0}
           onChange={(v) => setDraftUnitIsSale(v === 1)}
           options={[
-            { value: 1, label: 'Được bán' },
-            { value: 0, label: 'Không bán' },
+            { value: 1, label: t('productForm.unitTags.saleAllowed') },
+            { value: 0, label: t('productForm.unitTags.saleNotAllowed') },
           ]}
         />
         <Button type="primary" onClick={() => void handleAddUnit()} loading={unitsSaving}>
-          Thêm
+          {tc('actions.add')}
         </Button>
       </Space>
     </Spin>
@@ -1288,7 +1309,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
                   size="small"
                   icon={b.isPrimary ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
                   onClick={() => void handleSetPrimaryBarcode(b.barcode)}
-                  title="Đặt làm mã chính"
+                  title={t('productForm.actions.setPrimaryBarcode')}
                 />
                 <span>{b.barcode}</span>
                 <Button
@@ -1302,7 +1323,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
             </Tag>
           ))
         ) : (
-          <Typography.Text type="secondary">Chưa có mã barcode</Typography.Text>
+          <Typography.Text type="secondary">{t('productForm.empty.barcodes')}</Typography.Text>
         )}
       </div>
       <Space.Compact style={{ width: '100%' }}>
@@ -1310,17 +1331,17 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
           style={{ width: 130 }}
           value={draftBarcodeType}
           onChange={setDraftBarcodeType}
-          options={allBarcodeOptions}
+          options={barcodeTypeOptions}
         />
         <Input
-          placeholder="Nhập mã barcode..."
+          placeholder={t('productForm.placeholders.barcode')}
           value={draftBarcode}
           onChange={(e) => setDraftBarcode(e.target.value)}
           onPressEnter={() => void handleAddBarcode()}
           style={{ width: 'calc(100% - 202px)' }}
         />
         <Button type="primary" onClick={() => void handleAddBarcode()} loading={commercialSaving}>
-          Thêm
+          {tc('actions.add')}
         </Button>
       </Space.Compact>
     </Spin>
@@ -1348,7 +1369,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
                 }}
               >
                 <span>
-                  <Typography.Text strong>{PRICE_TYPE_LABELS[p.priceType] ?? p.priceType}</Typography.Text>
+                  <Typography.Text strong>{priceTypeLabel(p.priceType)}</Typography.Text>
                   {' · '}
                   {unitName}
                   {' · '}
@@ -1366,7 +1387,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
             })}
           </Space>
         ) : (
-          <Typography.Text type="secondary">Chưa có giá</Typography.Text>
+          <Typography.Text type="secondary">{t('productForm.empty.prices')}</Typography.Text>
         )}
       </div>
       <Space wrap style={{ width: '100%' }}>
@@ -1374,25 +1395,25 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
           style={{ width: 130 }}
           value={draftPriceType}
           onChange={setDraftPriceType}
-          options={allPriceOptions}
+          options={priceTypeOptions}
         />
         <Select
           style={{ width: 100 }}
           value={draftProductUnitId || defaultUnitId || undefined}
           onChange={setDraftProductUnitId}
           options={unitOptions}
-          placeholder="ĐVT"
+          placeholder={t('productForm.placeholders.unit')}
           disabled={!unitOptions.length}
         />
         <InputNumber
-          placeholder="Giá bán"
+          placeholder={t('productForm.placeholders.salePrice')}
           value={draftPrice}
           onChange={(v) => setDraftPrice(v && v > 0 ? v : undefined)}
           style={{ ...moneyInputNumberStyle, width: 160 }}
           {...moneyInputNumberPropsAllowZeroSuffix}
         />
         <Button type="primary" onClick={() => void handleAddPrice()} loading={commercialSaving}>
-          Thêm
+          {tc('actions.add')}
         </Button>
       </Space>
     </Spin>
@@ -1411,7 +1432,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
                   size="small"
                   icon={img.isPrimary ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
                   onClick={() => void handleSetPrimaryImage(img.imageUrl)}
-                  title="Đặt làm ảnh chính"
+                  title={t('productForm.actions.setPrimaryImage')}
                 />
                 <Button
                   type="text"
@@ -1424,7 +1445,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
             </div>
           ))
         ) : (
-          <Typography.Text type="secondary">Chưa có ảnh</Typography.Text>
+          <Typography.Text type="secondary">{t('productForm.empty.images')}</Typography.Text>
         )}
       </div>
       <Space direction="vertical" style={{ width: '100%' }}>
@@ -1435,19 +1456,19 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
           disabled={uploading || commercialSaving}
         >
           <Button icon={<UploadOutlined />} loading={uploading}>
-            Chọn ảnh từ máy
+            {t('productForm.actions.uploadImage')}
           </Button>
         </Upload>
         <Space.Compact style={{ width: '100%' }}>
           <Input
-            placeholder="Hoặc dán URL ảnh..."
+            placeholder={t('productForm.placeholders.imageUrl')}
             value={draftImageUrl}
             onChange={(e) => setDraftImageUrl(e.target.value)}
             onPressEnter={() => void handleAddImageFromUrl()}
             style={{ width: 'calc(100% - 72px)' }}
           />
           <Button type="primary" onClick={() => void handleAddImageFromUrl()} loading={commercialSaving}>
-            Thêm
+            {tc('actions.add')}
           </Button>
         </Space.Compact>
       </Space>
@@ -1457,12 +1478,13 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
   const productDetailsFields = (
     <>
       <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
-        Mỗi lần bấm Thêm sẽ lưu ngay.
+        {t('productForm.sections.detailsHint')}
       </Typography.Paragraph>
 
       <section style={{ marginBottom: 20 }}>
         <Typography.Text strong>
-          ĐVT quy đổi{units.length ? ` (${units.length})` : ''}
+          {t('productForm.sections.units')}
+          {units.length ? ` (${units.length})` : ''}
         </Typography.Text>
         <div style={{ marginTop: 8 }}>{unitsFields}</div>
       </section>
@@ -1471,7 +1493,8 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
 
       <section style={{ marginBottom: 20 }}>
         <Typography.Text strong>
-          Barcode{commercial.barcodes.length ? ` (${commercial.barcodes.length})` : ''}
+          {t('productForm.sections.barcode')}
+          {commercial.barcodes.length ? ` (${commercial.barcodes.length})` : ''}
         </Typography.Text>
         <div style={{ marginTop: 8 }}>{barcodeFields}</div>
       </section>
@@ -1480,7 +1503,8 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
 
       <section style={{ marginBottom: 20 }}>
         <Typography.Text strong>
-          Giá bán{commercial.prices.length ? ` (${commercial.prices.length})` : ''}
+          {t('productForm.sections.prices')}
+          {commercial.prices.length ? ` (${commercial.prices.length})` : ''}
         </Typography.Text>
         <div style={{ marginTop: 8 }}>{priceFields}</div>
       </section>
@@ -1489,7 +1513,8 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
 
       <section>
         <Typography.Text strong>
-          Ảnh SP{commercial.images.length ? ` (${commercial.images.length})` : ''}
+          {t('productForm.sections.images')}
+          {commercial.images.length ? ` (${commercial.images.length})` : ''}
         </Typography.Text>
         <div style={{ marginTop: 8 }}>{imageFields}</div>
       </section>
@@ -1498,7 +1523,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
 
   const ingredientsFields = (
     <Spin spinning={ingredientsSaving}>
-      <Typography.Text type="secondary">Thành phần hoạt chất và hàm lượng</Typography.Text>
+      <Typography.Text type="secondary">{t('productForm.sections.ingredients')}</Typography.Text>
       <div style={{ margin: '8px 0 12px' }}>
         {ingredientRows.length ? (
           <Space direction="vertical" style={{ width: '100%' }}>
@@ -1533,7 +1558,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
             ))}
           </Space>
         ) : (
-          <Typography.Text type="secondary">Chưa có hoạt chất</Typography.Text>
+          <Typography.Text type="secondary">{t('productForm.empty.ingredients')}</Typography.Text>
         )}
       </div>
       <Space wrap style={{ width: '100%' }}>
@@ -1546,23 +1571,23 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
           options={ingredientOptions
             .filter((o) => !ingredientRows.some((r) => r.ingredientId === o.id))
             .map((o) => ({ value: o.id, label: `${o.code} — ${o.name}` }))}
-          placeholder="Chọn hoạt chất"
+          placeholder={t('productForm.placeholders.ingredient')}
         />
         <InputNumber
           min={0}
-          placeholder="Hàm lượng"
+          placeholder={t('productForm.fields.strengthValue')}
           value={draftStrengthValue}
           onChange={(v) => setDraftStrengthValue(v ?? undefined)}
           style={{ width: 110 }}
         />
         <Input
-          placeholder="Đơn vị"
+          placeholder={t('productForm.fields.strengthUnit')}
           value={draftStrengthUnit}
           onChange={(e) => setDraftStrengthUnit(e.target.value)}
           style={{ width: 72 }}
         />
         <Button type="primary" onClick={() => void handleAddIngredient()} loading={ingredientsSaving}>
-          Thêm
+          {tc('actions.add')}
         </Button>
       </Space>
     </Spin>
@@ -1570,33 +1595,37 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
 
   return (
     <Drawer
-      title={hasPersistedId ? `Sản phẩm: ${displayProduct?.productCode ?? ''}` : 'Thêm sản phẩm mới'}
+      title={
+        hasPersistedId
+          ? t('productForm.title.edit', { code: displayProduct?.productCode ?? '' })
+          : t('productForm.title.create')
+      }
       width={580}
       open={open}
       onClose={tryCloseDrawer}
       forceRender
       extra={
         <Space>
-          <Button onClick={handleSkip}>Bỏ qua</Button>
+          <Button onClick={handleSkip}>{t('productForm.actions.skip')}</Button>
           {hasPersistedId && (
             <Popconfirm
-              title="Xóa sản phẩm này?"
+              title={t('products.deleteConfirm')}
               onConfirm={async () => {
                 try {
                   await deleteProduct(displayProduct!.id);
-                  msg.success('Đã xóa');
+                  msg.success(t('productForm.messages.deleted'));
                   onClose();
                   onUpdated();
                 } catch (error) {
-                  msg.error(apiErrorMessage(error, 'Không xóa được sản phẩm'));
+                  msg.error(apiErrorMessage(error, t('productForm.messages.deleteFailed')));
                 }
               }}
             >
-              <Button danger>Xóa</Button>
+              <Button danger>{tc('actions.delete')}</Button>
             </Popconfirm>
           )}
           <Button type="primary" loading={saving} onClick={() => void handleSave()}>
-            {hasPersistedId ? 'Lưu sản phẩm' : 'Tạo sản phẩm'}
+            {hasPersistedId ? t('productForm.actions.saveProduct') : t('productForm.actions.createProduct')}
           </Button>
         </Space>
       }
@@ -1608,7 +1637,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
             showIcon
             closable
             onClose={() => setShowCreatedHint(false)}
-            message={`Đã tạo ${displayProduct?.productCode}. Mở tab Chi tiết sản phẩm để thêm ĐVT, barcode, giá và ảnh.`}
+            message={t('productForm.messages.createdHint', { code: displayProduct?.productCode ?? '' })}
             style={{ marginBottom: 16 }}
           />
         )}
@@ -1616,9 +1645,9 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
           activeKey={activeTab}
           onChange={(key) => void handleTabChange(key)}
           items={[
-            { key: 'general', label: 'Thông tin chung', children: generalFields },
-            { key: 'details', label: 'Chi tiết sản phẩm', children: productDetailsFields },
-            { key: 'ingredients', label: 'Hoạt chất', children: ingredientsFields },
+            { key: 'general', label: t('productForm.tabs.general'), children: generalFields },
+            { key: 'details', label: t('productForm.tabs.details'), children: productDetailsFields },
+            { key: 'ingredients', label: t('productForm.tabs.ingredients'), children: ingredientsFields },
           ]}
         />
       </Form>

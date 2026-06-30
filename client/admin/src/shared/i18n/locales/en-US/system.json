@@ -1,0 +1,226 @@
+{
+  "enums": {
+    "userStatus": {
+      "0": "Inactive",
+      "1": "Active"
+    },
+    "branchStatus": {
+      "0": "Inactive",
+      "1": "Active"
+    },
+    "auditAction": {
+      "complete": "Complete",
+      "draft_create": "Create draft",
+      "draft_update": "Update draft",
+      "cancel": "Cancel",
+      "approve": "Approve",
+      "create": "Create",
+      "post": "Post"
+    },
+    "auditEntity": {
+      "sales_order": "Sales",
+      "goods_receipt": "Goods receipt (GRN)",
+      "purchase_order": "Purchase order",
+      "supplier_payment": "Supplier payment",
+      "opening_balance": "Opening balance",
+      "inventory_adjustment": "Stock count"
+    }
+  },
+  "systemLayout": {
+    "tabs": {
+      "branches": "Branches",
+      "users": "Staff",
+      "roles": "Roles",
+      "posSettings": "Receipts & POS",
+      "auditLog": "Audit log"
+    }
+  },
+  "branches": {
+    "title": "Branches",
+    "add": "Add branch",
+    "edit": "Edit branch",
+    "create": "Add branch",
+    "columns": {
+      "code": "Code",
+      "name": "Branch name",
+      "phone": "Phone",
+      "headOffice": "HQ",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "headOfficeTag": "HQ",
+    "form": {
+      "code": "Branch code",
+      "codeRequired": "Enter branch code",
+      "name": "Branch name",
+      "nameRequired": "Enter branch name",
+      "phone": "Phone",
+      "address": "Address",
+      "isHeadOffice": "Head office",
+      "status": "Status"
+    },
+    "deleteConfirm": "Delete «{{code}}»?",
+    "deleteDescription": "The branch will be deactivated.",
+    "cannotDeleteHeadOffice": "Cannot delete the head office branch",
+    "messages": {
+      "loadFailed": "Could not load branches",
+      "saveFailed": "Could not save branch",
+      "deleteFailed": "Could not delete branch",
+      "updated": "Branch updated",
+      "created": "Branch added",
+      "deleted": "Deleted branch {{code}}"
+    }
+  },
+  "users": {
+    "title": "Staff accounts",
+    "add": "Add account",
+    "edit": "Edit account",
+    "create": "Add account",
+    "searchPlaceholder": "Search username, email, name, phone...",
+    "columns": {
+      "username": "Username",
+      "fullName": "Full name",
+      "phone": "Phone",
+      "roles": "Roles",
+      "lastLogin": "Last login",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "deleteConfirm": "Delete «{{username}}»?",
+    "deleteDescription": "The account will be deactivated.",
+    "cannotDeleteSelf": "Cannot delete the currently signed-in account",
+    "form": {
+      "username": "Username",
+      "usernameRequired": "Enter username",
+      "employeeLink": "Existing employee",
+      "employeeLinkTooltip": "Link to an existing employee profile without an account. Selecting one fills name and phone.",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "John Doe",
+      "phone": "Phone",
+      "email": "Email",
+      "emailRequired": "Enter email",
+      "emailInvalid": "Invalid email",
+      "status": "Status",
+      "password": "Password",
+      "passwordRequired": "Enter password",
+      "passwordMin": "At least 8 characters",
+      "newPassword": "New password",
+      "newPasswordRequired": "Enter new password",
+      "changePassword": "Change password",
+      "cancelChangePassword": "Cancel password change",
+      "roles": "Roles",
+      "rolesRequired": "Select at least one role",
+      "rolesPlaceholder": "Select roles",
+      "allowedBranches": "Allowed branches",
+      "allowedBranchesTooltip": "Staff only see inventory/POS/reports for these branches. Empty = unrestricted (admin) or no access (regular staff).",
+      "branchesPlaceholder": "Select branches",
+      "primaryBranch": "Primary branch",
+      "primaryBranchTooltip": "Default warehouse when opening POS (if multiple branches).",
+      "primaryBranchPlaceholder": "Select primary branch",
+      "selectBranchFirst": "Select branches first",
+      "optional": "Optional",
+      "hasAccount": " (has account)"
+    },
+    "messages": {
+      "loadFailed": "Could not load accounts",
+      "detailLoadFailed": "Could not load account",
+      "saveFailed": "Could not save account",
+      "deleteFailed": "Could not delete account",
+      "updated": "Account updated",
+      "created": "Account created",
+      "deleted": "Deleted account {{username}}"
+    }
+  },
+  "roles": {
+    "title": "Roles & permissions",
+    "add": "Add role",
+    "edit": "Edit role",
+    "create": "Add role",
+    "permissions": "Permissions",
+    "permissionsTitle": "Permissions: {{name}}",
+    "permissionsTitleDefault": "Role permissions",
+    "columns": {
+      "code": "Role code",
+      "name": "Role name",
+      "description": "Description",
+      "userCount": "Users",
+      "permissionCount": "Permissions",
+      "actions": "Actions"
+    },
+    "form": {
+      "code": "Role code",
+      "codeRequired": "Enter role code",
+      "codeExtra": "E.g. STAFF, CASHIER — auto uppercased",
+      "name": "Role name",
+      "nameRequired": "Enter role name",
+      "namePlaceholder": "Sales staff",
+      "description": "Description",
+      "descriptionPlaceholder": "Optional",
+      "status": "Status"
+    },
+    "permissionsHint": "Select multiple permissions in the same module when needed. Sales discount allows only one level.",
+    "discountSelectOne": "Discount (pick one)",
+    "messages": {
+      "loadFailed": "Could not load roles",
+      "permissionsLoadFailed": "Could not load role permissions",
+      "saveFailed": "Could not save role",
+      "permissionsSaveFailed": "Could not save permissions",
+      "updated": "Role updated",
+      "created": "Role added — click «Permissions» to assign access",
+      "permissionsUpdated": "Role permissions updated"
+    }
+  },
+  "auditLog": {
+    "title": "System audit log",
+    "description": "Records purchases, sales, opening stock, and stock count approvals.",
+    "filters": {
+      "entityType": "Business type",
+      "action": "Action"
+    },
+    "columns": {
+      "time": "Time",
+      "user": "User",
+      "entityType": "Type",
+      "action": "Action",
+      "detail": "Detail"
+    },
+    "messages": {
+      "loadFailed": "Could not load audit log"
+    }
+  },
+  "permissions": {
+    "modules": {
+      "catalog": "Catalog",
+      "inventory": "Inventory",
+      "procurement": "Procurement",
+      "sales": "Sales",
+      "customer": "Customers",
+      "system": "System"
+    },
+    "labels": {
+      "catalog.read": "View catalog",
+      "catalog.write": "Edit catalog",
+      "inventory.read": "View inventory",
+      "inventory.write": "Edit inventory",
+      "procurement.read": "View procurement",
+      "procurement.write": "Procurement",
+      "sales.read": "View sales",
+      "sales.write": "Sales",
+      "sales.discount": "Sales discount (max 10%)",
+      "sales.discount.unlimited": "Unlimited discount",
+      "system.read": "View system",
+      "system.write": "Manage system",
+      "system.delete_permanent": "Permanent delete"
+    },
+    "groupHints": {
+      "catalog": "Selecting «Edit catalog» auto-enables «View catalog». Removing «View» also removes «Edit».",
+      "inventory": "Selecting «Edit inventory» auto-enables «View inventory». Removing «View» also removes «Edit».",
+      "procurement": "Selecting «Procurement» auto-enables «View procurement». Removing «View» also removes «Procurement».",
+      "sales": "Multiple permissions can be selected. «Sales» includes POS access on the system.",
+      "system": "Multiple independent permissions can be selected."
+    },
+    "discountLevels": {
+      "none": "No discount"
+    }
+  }
+}

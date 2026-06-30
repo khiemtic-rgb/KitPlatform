@@ -1,0 +1,226 @@
+{
+  "enums": {
+    "userStatus": {
+      "0": "Ngưng",
+      "1": "Hoạt động"
+    },
+    "branchStatus": {
+      "0": "Ngưng",
+      "1": "Hoạt động"
+    },
+    "auditAction": {
+      "complete": "Hoàn tất",
+      "draft_create": "Tạo nháp",
+      "draft_update": "Cập nhật nháp",
+      "cancel": "Hủy",
+      "approve": "Duyệt",
+      "create": "Tạo mới",
+      "post": "Ghi sổ"
+    },
+    "auditEntity": {
+      "sales_order": "Bán hàng",
+      "goods_receipt": "Nhập kho (GRN)",
+      "purchase_order": "Đơn mua",
+      "supplier_payment": "Thanh toán NCC",
+      "opening_balance": "Tồn đầu kỳ",
+      "inventory_adjustment": "Kiểm kê"
+    }
+  },
+  "systemLayout": {
+    "tabs": {
+      "branches": "Chi nhánh",
+      "users": "Nhân viên",
+      "roles": "Vai trò",
+      "posSettings": "Phiếu in & POS",
+      "auditLog": "Nhật ký"
+    }
+  },
+  "branches": {
+    "title": "Chi nhánh",
+    "add": "Thêm chi nhánh",
+    "edit": "Sửa chi nhánh",
+    "create": "Thêm chi nhánh",
+    "columns": {
+      "code": "Mã CN",
+      "name": "Tên chi nhánh",
+      "phone": "Điện thoại",
+      "headOffice": "Trụ sở",
+      "status": "Trạng thái",
+      "actions": "Tác vụ"
+    },
+    "headOfficeTag": "Chính",
+    "form": {
+      "code": "Mã chi nhánh",
+      "codeRequired": "Nhập mã chi nhánh",
+      "name": "Tên chi nhánh",
+      "nameRequired": "Nhập tên chi nhánh",
+      "phone": "Điện thoại",
+      "address": "Địa chỉ",
+      "isHeadOffice": "Trụ sở chính",
+      "status": "Trạng thái"
+    },
+    "deleteConfirm": "Xóa «{{code}}»?",
+    "deleteDescription": "Chi nhánh sẽ bị vô hiệu hóa.",
+    "cannotDeleteHeadOffice": "Không thể xóa chi nhánh trụ sở chính",
+    "messages": {
+      "loadFailed": "Không tải được chi nhánh",
+      "saveFailed": "Không lưu được chi nhánh",
+      "deleteFailed": "Không xóa được chi nhánh",
+      "updated": "Đã cập nhật chi nhánh",
+      "created": "Đã thêm chi nhánh",
+      "deleted": "Đã xóa chi nhánh {{code}}"
+    }
+  },
+  "users": {
+    "title": "Tài khoản nhân viên",
+    "add": "Thêm tài khoản",
+    "edit": "Sửa tài khoản",
+    "create": "Thêm tài khoản",
+    "searchPlaceholder": "Tìm username, email, tên, SĐT...",
+    "columns": {
+      "username": "Tên đăng nhập",
+      "fullName": "Họ và tên",
+      "phone": "Số điện thoại",
+      "roles": "Vai trò",
+      "lastLogin": "Đăng nhập cuối",
+      "status": "Trạng thái",
+      "actions": "Tác vụ"
+    },
+    "deleteConfirm": "Xóa «{{username}}»?",
+    "deleteDescription": "Tài khoản sẽ bị vô hiệu hóa.",
+    "cannotDeleteSelf": "Không thể xóa tài khoản đang đăng nhập",
+    "form": {
+      "username": "Tên đăng nhập",
+      "usernameRequired": "Nhập tên đăng nhập",
+      "employeeLink": "NV có sẵn",
+      "employeeLinkTooltip": "Gắn tài khoản với hồ sơ EMP đã có (chưa có TK). Chọn sẽ điền họ tên và SĐT.",
+      "fullName": "Họ và tên",
+      "fullNamePlaceholder": "Nguyễn Văn A",
+      "phone": "SĐT",
+      "email": "Email",
+      "emailRequired": "Nhập email",
+      "emailInvalid": "Email không hợp lệ",
+      "status": "Trạng thái",
+      "password": "Mật khẩu",
+      "passwordRequired": "Nhập mật khẩu",
+      "passwordMin": "Tối thiểu 8 ký tự",
+      "newPassword": "Mật khẩu mới",
+      "newPasswordRequired": "Nhập mật khẩu mới",
+      "changePassword": "Đổi mật khẩu",
+      "cancelChangePassword": "Hủy đổi mật khẩu",
+      "roles": "Vai trò",
+      "rolesRequired": "Chọn ít nhất một vai trò",
+      "rolesPlaceholder": "Chọn vai trò",
+      "allowedBranches": "Chi nhánh được phép",
+      "allowedBranchesTooltip": "Nhân viên chỉ thấy kho/POS/báo cáo thuộc các chi nhánh này. Để trống = không giới hạn (admin) hoặc không truy cập (nhân viên thường).",
+      "branchesPlaceholder": "Chọn chi nhánh",
+      "primaryBranch": "Chi nhánh chính",
+      "primaryBranchTooltip": "Kho mặc định khi mở POS (nếu có nhiều chi nhánh).",
+      "primaryBranchPlaceholder": "Chọn chi nhánh chính",
+      "selectBranchFirst": "Chọn chi nhánh trước",
+      "optional": "Tuỳ chọn",
+      "hasAccount": " (đã có TK)"
+    },
+    "messages": {
+      "loadFailed": "Không tải được danh sách tài khoản",
+      "detailLoadFailed": "Không tải được tài khoản",
+      "saveFailed": "Không lưu được tài khoản",
+      "deleteFailed": "Không xóa được tài khoản",
+      "updated": "Đã cập nhật tài khoản",
+      "created": "Đã tạo tài khoản",
+      "deleted": "Đã xóa tài khoản {{username}}"
+    }
+  },
+  "roles": {
+    "title": "Vai trò & phân quyền",
+    "add": "Thêm vai trò",
+    "edit": "Sửa vai trò",
+    "create": "Thêm vai trò",
+    "permissions": "Quyền",
+    "permissionsTitle": "Quyền: {{name}}",
+    "permissionsTitleDefault": "Quyền vai trò",
+    "columns": {
+      "code": "Mã vai trò",
+      "name": "Tên vai trò",
+      "description": "Mô tả",
+      "userCount": "Người dùng",
+      "permissionCount": "Quyền",
+      "actions": "Tác vụ"
+    },
+    "form": {
+      "code": "Mã vai trò",
+      "codeRequired": "Nhập mã vai trò",
+      "codeExtra": "VD: STAFF, CASHIER — tự chuyển in hoa",
+      "name": "Tên vai trò",
+      "nameRequired": "Nhập tên vai trò",
+      "namePlaceholder": "Nhân viên bán hàng",
+      "description": "Mô tả",
+      "descriptionPlaceholder": "Tuỳ chọn",
+      "status": "Trạng thái"
+    },
+    "permissionsHint": "Tick nhiều quyền trong cùng module khi cần. Chiết khấu bán hàng chỉ chọn một mức.",
+    "discountSelectOne": "Chiết khấu (chọn một)",
+    "messages": {
+      "loadFailed": "Không tải được vai trò",
+      "permissionsLoadFailed": "Không tải được quyền vai trò",
+      "saveFailed": "Không lưu được vai trò",
+      "permissionsSaveFailed": "Không lưu được quyền",
+      "updated": "Đã cập nhật vai trò",
+      "created": "Đã thêm vai trò — bấm «Quyền» để gán quyền",
+      "permissionsUpdated": "Đã cập nhật quyền vai trò"
+    }
+  },
+  "auditLog": {
+    "title": "Nhật ký hệ thống",
+    "description": "Ghi nhận mua hàng, bán hàng, nhập tồn đầu và duyệt kiểm kê.",
+    "filters": {
+      "entityType": "Loại nghiệp vụ",
+      "action": "Hành động"
+    },
+    "columns": {
+      "time": "Thời gian",
+      "user": "Người dùng",
+      "entityType": "Loại",
+      "action": "Hành động",
+      "detail": "Chi tiết"
+    },
+    "messages": {
+      "loadFailed": "Không tải được nhật ký"
+    }
+  },
+  "permissions": {
+    "modules": {
+      "catalog": "Danh mục",
+      "inventory": "Kho hàng",
+      "procurement": "Mua hàng",
+      "sales": "Bán hàng",
+      "customer": "Khách hàng",
+      "system": "Hệ thống"
+    },
+    "labels": {
+      "catalog.read": "Xem danh mục",
+      "catalog.write": "Sửa danh mục",
+      "inventory.read": "Xem kho",
+      "inventory.write": "Sửa kho",
+      "procurement.read": "Xem mua hàng",
+      "procurement.write": "Mua hàng",
+      "sales.read": "Xem bán hàng",
+      "sales.write": "Bán hàng",
+      "sales.discount": "Chiết khấu bán hàng (tối đa 10%)",
+      "sales.discount.unlimited": "Chiết khấu không giới hạn",
+      "system.read": "Xem hệ thống",
+      "system.write": "Quản trị hệ thống",
+      "system.delete_permanent": "Xóa vĩnh viễn"
+    },
+    "groupHints": {
+      "catalog": "Chọn «Sửa danh mục» sẽ tự bật «Xem danh mục». Bỏ «Xem» sẽ bỏ luôn «Sửa».",
+      "inventory": "Chọn «Sửa kho» sẽ tự bật «Xem kho». Bỏ «Xem» sẽ bỏ luôn «Sửa».",
+      "procurement": "Chọn «Mua hàng» sẽ tự bật «Xem mua hàng». Bỏ «Xem» sẽ bỏ luôn «Mua hàng».",
+      "sales": "Có thể chọn nhiều quyền. «Bán hàng» đã bao gồm xem POS trên hệ thống.",
+      "system": "Có thể chọn nhiều quyền độc lập."
+    },
+    "discountLevels": {
+      "none": "Không chiết khấu"
+    }
+  }
+}

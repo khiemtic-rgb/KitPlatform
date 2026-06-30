@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   App,
@@ -38,15 +39,14 @@ import {
   issueVoucherAdmin,
   updateVoucherAdmin,
   VOUCHER_DISCOUNT_TYPE,
-  VOUCHER_DISCOUNT_TYPE_LABELS,
   VOUCHER_STATUS,
-  VOUCHER_STATUS_LABELS,
   type IssuedCustomerVoucher,
   type VoucherAdmin,
 } from '@/shared/api/vouchers.api';
 import { searchCustomers } from '@/shared/api/sales.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 import { TabularMoney } from '@/modules/sales/sales-ui-styles';
 import { VoucherBulkIssueDrawer } from '@/modules/sales/VoucherBulkIssueDrawer';
 import {
@@ -103,6 +103,8 @@ function EditableCell({
 }
 
 export function VoucherListPage() {
+  const { t } = useTranslation('sales', { keyPrefix: 'vouchers' });
+  const { voucherStatusLabel, voucherDiscountTypeOptions } = useSalesEnums();
   const { message } = App.useApp();
   const canWrite = useHasPermission('sales.write');
   const [items, setItems] = useState<VoucherAdmin[]>([]);
@@ -128,13 +130,13 @@ export function VoucherListPage() {
     try {
       setItems(await fetchVouchersAdmin());
     } catch (error) {
-      const errMsg = apiErrorMessage(error, 'Không tải được voucher');
+      const errMsg = apiErrorMessage(error, t('messages.loadFailed'));
       setLoadError(errMsg);
       message.error(errMsg);
     } finally {
       setLoading(false);
     }
-  }, [message]);
+  }, [message, t]);
 
   useEffect(() => {
     void load();
@@ -188,15 +190,15 @@ export function VoucherListPage() {
     try {
       if (editing) {
         await updateVoucherAdmin(editing.id, payload);
-        message.success('Đã cập nhật voucher');
+        message.success(t('messages.updateSuccess'));
       } else {
         await createVoucherAdmin(payload);
-        message.success('Đã tạo voucher');
+        message.success(t('messages.createSuccess'));
       }
       setEditOpen(false);
       await load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không lưu được voucher'));
+      message.error(apiErrorMessage(error, t('messages.saveFailed')));
     }
   };
 
@@ -204,10 +206,10 @@ export function VoucherListPage() {
     setDeletingId(row.id);
     try {
       await deleteVoucherAdmin(row.id);
-      message.success('Đã xóa voucher');
+      message.success(t('messages.deleteSuccess'));
       await load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không xóa được voucher'));
+      message.error(apiErrorMessage(error, t('messages.deleteFailed')));
     } finally {
       setDeletingId(undefined);
     }
@@ -222,7 +224,7 @@ export function VoucherListPage() {
     try {
       setIssued(await fetchIssuedVouchersAdmin(row.id));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được danh sách phát'));
+      message.error(apiErrorMessage(error, t('messages.issuedListLoadFailed')));
     } finally {
       setIssuedLoading(false);
     }
@@ -255,25 +257,25 @@ export function VoucherListPage() {
 
   const submitIssue = async () => {
     if (!issueTarget || !selectedCustomerId) {
-      message.warning('Chọn khách hàng');
+      message.warning(t('messages.selectCustomer'));
       return;
     }
     try {
       await issueVoucherAdmin(issueTarget.id, selectedCustomerId);
-      message.success('Đã phát voucher cho khách');
+      message.success(t('messages.issueSuccess'));
       setIssued(await fetchIssuedVouchersAdmin(issueTarget.id));
       setSelectedCustomerId(undefined);
       setCustomerQuery('');
       await load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không phát được voucher'));
+      message.error(apiErrorMessage(error, t('messages.issueFailed')));
     }
   };
 
   const columns: ColumnsType<VoucherAdmin> = useMemo(
     () => [
       {
-        title: 'Thao tác',
+        title: t('columns.actions'),
         key: 'actions',
         width: 72,
         fixed: 'left',
@@ -281,52 +283,52 @@ export function VoucherListPage() {
           <Space size={0} onClick={(e) => e.stopPropagation()}>
             {canWrite ? (
               <>
-                <Tooltip title="Phát cho khách">
+                <Tooltip title={t('actions.issueToCustomer')}>
                   <Button
                     type="text"
                     size="small"
                     icon={<UserAddOutlined />}
-                    aria-label="Phát KH"
+                    aria-label={t('actions.issueAria')}
                     onClick={() => void openIssue(row)}
                   />
                 </Tooltip>
                 {canDeleteVoucher(row) ? (
                   <Popconfirm
-                    title="Xóa voucher?"
+                    title={t('actions.deleteConfirm')}
                     description={
                       row.issuedCount > 0
-                        ? `${row.voucherCode} · gỡ khỏi ví ${row.issuedCount} khách chưa dùng`
+                        ? t('actions.deleteWithIssued', { code: row.voucherCode, count: row.issuedCount })
                         : row.voucherCode
                     }
-                    okText="Xóa"
-                    cancelText="Hủy"
+                    okText={t('actions.delete')}
+                    cancelText={t('actions.cancel')}
                     okButtonProps={{ danger: true }}
                     onConfirm={() => void handleDelete(row)}
                   >
-                    <Tooltip title="Xóa">
+                    <Tooltip title={t('actions.delete')}>
                       <Button
                         type="text"
                         size="small"
                         danger
                         loading={deletingId === row.id}
                         icon={<DeleteOutlined />}
-                        aria-label="Xóa"
+                        aria-label={t('actions.delete')}
                       />
                     </Tooltip>
                   </Popconfirm>
                 ) : (
-                  <Tooltip title="Voucher đã dùng — hãy tắt thay vì xóa">
-                    <Button type="text" size="small" danger disabled icon={<DeleteOutlined />} aria-label="Xóa" />
+                  <Tooltip title={t('actions.cannotDeleteUsed')}>
+                    <Button type="text" size="small" danger disabled icon={<DeleteOutlined />} aria-label={t('actions.delete')} />
                   </Tooltip>
                 )}
               </>
             ) : (
-              <Tooltip title="Xem danh sách phát">
+              <Tooltip title={t('actions.viewIssued')}>
                 <Button
                   type="text"
                   size="small"
                   icon={<UserAddOutlined />}
-                  aria-label="Xem phát"
+                  aria-label={t('actions.viewIssuedAria')}
                   onClick={() => void openIssue(row)}
                 />
               </Tooltip>
@@ -335,7 +337,7 @@ export function VoucherListPage() {
         ),
       },
       {
-        title: 'Mã',
+        title: t('columns.code'),
         dataIndex: 'voucherCode',
         width: 108,
         render: (code: string, row) => (
@@ -347,7 +349,7 @@ export function VoucherListPage() {
         ),
       },
       {
-        title: 'Tên',
+        title: t('columns.name'),
         dataIndex: 'voucherName',
         ellipsis: { showTitle: true },
         render: (name: string, row) => (
@@ -357,7 +359,7 @@ export function VoucherListPage() {
         ),
       },
       {
-        title: 'Giảm',
+        title: t('columns.discount'),
         key: 'discount',
         width: 96,
         align: 'right',
@@ -369,7 +371,7 @@ export function VoucherListPage() {
           ),
       },
       {
-        title: 'Đơn TT',
+        title: t('columns.minOrder'),
         dataIndex: 'minOrderAmount',
         width: 96,
         align: 'right',
@@ -377,7 +379,7 @@ export function VoucherListPage() {
           v > 0 ? <TabularMoney>{formatDisplayMoney(v)}</TabularMoney> : '—',
       },
       {
-        title: 'Hiệu lực',
+        title: t('columns.validity'),
         key: 'valid',
         width: 148,
         render: (_, row) => (
@@ -387,7 +389,7 @@ export function VoucherListPage() {
         ),
       },
       {
-        title: 'Dùng/Phát',
+        title: t('columns.usage'),
         key: 'usage',
         width: 88,
         render: (_, row) => (
@@ -398,7 +400,7 @@ export function VoucherListPage() {
         ),
       },
       {
-        title: 'TT',
+        title: t('columns.status'),
         dataIndex: 'status',
         width: 72,
         render: (status: number) => (
@@ -406,19 +408,19 @@ export function VoucherListPage() {
             color={status === VOUCHER_STATUS.Active ? 'green' : 'default'}
             style={{ margin: 0, fontSize: 11, lineHeight: '18px', padding: '0 6px' }}
           >
-            {VOUCHER_STATUS_LABELS[status] ?? status}
+            {voucherStatusLabel(status)}
           </Tag>
         ),
       },
     ],
-    [canWrite, deletingId],
+    [canWrite, deletingId, t, voucherStatusLabel],
   );
 
   const tableScrollY = 'calc(100vh - 232px)';
 
   return (
     <Card
-      title="Voucher khách hàng"
+      title={t('title')}
       styles={{
         header: { minHeight: 40, padding: '8px 16px' },
         body: { padding: '8px 12px 12px' },
@@ -426,18 +428,18 @@ export function VoucherListPage() {
       extra={
         <Space size={8}>
           <Button size="small" icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-            Làm mới
+            {t('refresh')}
           </Button>
           {canWrite ? (
             <Button type="primary" size="small" icon={<PlusOutlined />} onClick={openCreate}>
-              Tạo voucher
+              {t('create')}
             </Button>
           ) : null}
         </Space>
       }
     >
       <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', lineHeight: 1.35 }}>
-        Tạo mã giảm giá, phát vào ví khách — khách xem trên app, dược sĩ áp tại POS.
+        {t('intro')}
       </Typography.Text>
 
       {loadError ? (
@@ -445,19 +447,16 @@ export function VoucherListPage() {
           type="warning"
           showIcon
           style={{ marginTop: 16 }}
-          message="Không tải được danh sách voucher"
+          message={t('loadFailed')}
           description={
             <>
               {loadError}
-              <div style={{ marginTop: 4, fontSize: 12 }}>
-                Kiểm tra API đang chạy tại <code>http://localhost:5290</code> — chạy{' '}
-                <code>.\scripts\restart-api.ps1</code> nếu cần.
-              </div>
+              <div style={{ marginTop: 4, fontSize: 12 }}>{t('loadErrorHint')}</div>
             </>
           }
           action={
             <Button size="small" onClick={() => void load()} loading={loading}>
-              Thử lại
+              {t('retry')}
             </Button>
           }
         />
@@ -473,7 +472,7 @@ export function VoucherListPage() {
           size: 'small',
           showSizeChanger: true,
           pageSizeOptions: [20, 50, 100, 200],
-          showTotal: (t) => `${t} voucher`,
+          showTotal: (total) => t('paginationTotal', { count: total }),
         }}
         scroll={{ x: 980, y: tableScrollY }}
         size="small"
@@ -481,11 +480,11 @@ export function VoucherListPage() {
       />
 
       <Modal
-        title={editing ? 'Sửa voucher' : 'Tạo voucher'}
+        title={editing ? t('modal.editTitle') : t('modal.createTitle')}
         open={editOpen}
         onCancel={() => setEditOpen(false)}
         onOk={() => void saveVoucher()}
-        okText="Lưu"
+        okText={t('modal.save')}
         okButtonProps={{ disabled: !canWrite }}
         width={560}
         destroyOnClose
@@ -495,39 +494,36 @@ export function VoucherListPage() {
             <Col xs={24} sm={12}>
               <Form.Item
                 name="voucherCode"
-                label="Mã voucher"
-                rules={[{ required: true, message: 'Nhập mã' }]}
+                label={t('modal.voucherCode')}
+                rules={[{ required: true, message: t('modal.enterCode') }]}
               >
-                <Input placeholder="WELCOME50K" />
+                <Input placeholder={t('modal.codePlaceholder')} />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item name="status" label="Kích hoạt" valuePropName="checked">
-                <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+              <Form.Item name="status" label={t('modal.active')} valuePropName="checked">
+                <Switch checkedChildren={t('modal.switchOn')} unCheckedChildren={t('modal.switchOff')} />
               </Form.Item>
             </Col>
           </Row>
           <Form.Item
             name="voucherName"
-            label="Tên hiển thị"
-            rules={[{ required: true, message: 'Nhập tên' }]}
+            label={t('modal.displayName')}
+            rules={[{ required: true, message: t('modal.enterName') }]}
           >
-            <Input placeholder="Giảm 50.000đ đơn từ 300k" />
+            <Input placeholder={t('modal.namePlaceholder')} />
           </Form.Item>
           <Row gutter={16}>
             <Col xs={24} sm={8}>
-              <Form.Item name="discountType" label="Loại giảm">
+              <Form.Item name="discountType" label={t('modal.discountType')}>
                 <Select
                   onChange={(value) => setDiscountType(Number(value))}
-                  options={[
-                    { value: VOUCHER_DISCOUNT_TYPE.Fixed, label: VOUCHER_DISCOUNT_TYPE_LABELS[2] },
-                    { value: VOUCHER_DISCOUNT_TYPE.Percent, label: VOUCHER_DISCOUNT_TYPE_LABELS[1] },
-                  ]}
+                  options={voucherDiscountTypeOptions}
                 />
               </Form.Item>
             </Col>
             <Col xs={24} sm={8}>
-              <Form.Item name="discountValue" label="Giá trị" rules={[{ required: true }]}>
+              <Form.Item name="discountValue" label={t('modal.discountValue')} rules={[{ required: true }]}>
                 <InputNumber
                   {...(discountType === VOUCHER_DISCOUNT_TYPE.Percent
                     ? percentInputNumberProps
@@ -539,7 +535,7 @@ export function VoucherListPage() {
               </Form.Item>
             </Col>
             <Col xs={24} sm={8}>
-              <Form.Item name="minOrderAmount" label="Đơn tối thiểu">
+              <Form.Item name="minOrderAmount" label={t('modal.minOrderAmount')}>
                 <InputNumber
                   {...moneyInputNumberPropsAllowZeroSuffix}
                   style={moneyInputNumberStyle}
@@ -550,15 +546,15 @@ export function VoucherListPage() {
           </Row>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
-              <Form.Item name="maxUses" label="Lượt dùng tối đa (trống = không giới hạn)">
-                <InputNumber style={{ width: '100%' }} min={1} placeholder="Không giới hạn" />
+              <Form.Item name="maxUses" label={t('modal.maxUses')}>
+                <InputNumber style={{ width: '100%' }} min={1} placeholder={t('modal.maxUsesPlaceholder')} />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
               <Form.Item
                 name="validRange"
-                label="Hiệu lực"
-                rules={[{ required: true, message: 'Chọn thời gian' }]}
+                label={t('modal.validRange')}
+                rules={[{ required: true, message: t('modal.selectDateRange') }]}
               >
                 <DatePicker.RangePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
               </Form.Item>
@@ -568,7 +564,11 @@ export function VoucherListPage() {
       </Modal>
 
       <Modal
-        title={issueTarget ? `Phát voucher · ${issueTarget.voucherCode}` : 'Phát voucher'}
+        title={
+          issueTarget
+            ? t('issue.titleWithCode', { code: issueTarget.voucherCode })
+            : t('issue.title')
+        }
         open={issueOpen}
         onCancel={() => setIssueOpen(false)}
         footer={null}
@@ -577,9 +577,7 @@ export function VoucherListPage() {
       >
         {canWrite ? (
           <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
-            <Typography.Text type="secondary">
-              Chọn khách để thêm vào ví (app khách sẽ thấy ngay).
-            </Typography.Text>
+            <Typography.Text type="secondary">{t('issue.hint')}</Typography.Text>
             <AutoComplete
               style={{ width: '100%' }}
               options={customerOptions}
@@ -589,7 +587,7 @@ export function VoucherListPage() {
                 setSelectedCustomerId(String(value));
                 setCustomerQuery(String(option.label ?? value));
               }}
-              placeholder="Tìm tên / SĐT khách hàng"
+              placeholder={t('issue.customerPlaceholder')}
             />
             <Button
               type="primary"
@@ -597,14 +595,14 @@ export function VoucherListPage() {
               disabled={!selectedCustomerId}
               onClick={() => void submitIssue()}
             >
-              Phát voucher
+              {t('issue.submit')}
             </Button>
             <Button icon={<TeamOutlined />} onClick={() => setBulkIssueOpen(true)}>
-              Phát cho nhiều KH
+              {t('issue.bulkIssue')}
             </Button>
           </Space>
         ) : null}
-        <Typography.Text strong>Đã phát ({issued.length})</Typography.Text>
+        <Typography.Text strong>{t('issue.issuedCount', { count: issued.length })}</Typography.Text>
         <Table
           size="small"
           style={{ marginTop: 8 }}
@@ -613,19 +611,20 @@ export function VoucherListPage() {
           pagination={false}
           dataSource={issued}
           columns={[
-            { title: 'Khách', dataIndex: 'customerName' },
-            { title: 'SĐT', dataIndex: 'customerPhone', width: 120 },
+            { title: t('issue.columns.customer'), dataIndex: 'customerName' },
+            { title: t('issue.columns.phone'), dataIndex: 'customerPhone', width: 120 },
             {
-              title: 'Phát lúc',
+              title: t('issue.columns.issuedAt'),
               dataIndex: 'issuedAt',
               width: 130,
               render: (v: string) => dayjs(v).format('DD/MM/YY HH:mm'),
             },
             {
-              title: 'Trạng thái',
+              title: t('issue.columns.status'),
               key: 'used',
               width: 100,
-              render: (_, row) => (row.usedAt ? <Tag>Đã dùng</Tag> : <Tag color="green">Chưa dùng</Tag>),
+              render: (_, row) =>
+                row.usedAt ? <Tag>{t('issue.used')}</Tag> : <Tag color="green">{t('issue.unused')}</Tag>,
             },
           ]}
         />

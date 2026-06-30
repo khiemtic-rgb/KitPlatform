@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Tabs } from 'antd';
 import {
@@ -16,36 +17,41 @@ import type { ProductNavTab } from '@/shared/product/product-phases';
 import { useProductNavGuard } from '@/shared/product/useProductNavGuard';
 import { ReportCategoryNav } from '@/modules/reports/ReportCategoryNav';
 
-const allTabs: ProductNavTab[] = [
-  {
-    key: 'home',
-    label: 'Trung tâm báo cáo',
-    path: '/reports',
-    icon: <BarChartOutlined />,
-  },
-  {
-    key: 'sales',
-    label: 'Bán hàng',
-    path: '/reports/sales/revenue-by-period',
-    icon: <ShopOutlined />,
-  },
-  {
-    key: 'procurement',
-    label: 'Mua hàng',
-    path: '/reports/procurement/grn-value',
-    icon: <ShoppingOutlined />,
-  },
-  {
-    key: 'inventory',
-    label: 'Kho hàng',
-    path: '/reports/inventory/stock-snapshot',
-    icon: <InboxOutlined />,
-  },
-];
-
 export function ReportsLayout() {
+  const { t } = useTranslation('reports', { keyPrefix: 'layout.tabs' });
   const location = useLocation();
   const navigate = useNavigate();
+
+  const allTabs: ProductNavTab[] = useMemo(
+    () => [
+      {
+        key: 'home',
+        label: t('home'),
+        path: '/reports',
+        icon: <BarChartOutlined />,
+      },
+      {
+        key: 'sales',
+        label: t('sales'),
+        path: '/reports/sales/revenue-by-period',
+        icon: <ShopOutlined />,
+      },
+      {
+        key: 'procurement',
+        label: t('procurement'),
+        path: '/reports/procurement/grn-value',
+        icon: <ShoppingOutlined />,
+      },
+      {
+        key: 'inventory',
+        label: t('inventory'),
+        path: '/reports/inventory/stock-snapshot',
+        icon: <InboxOutlined />,
+      },
+    ],
+    [t],
+  );
+
   useProductNavGuard(allTabs, '/reports');
 
   useEffect(() => {
@@ -63,8 +69,6 @@ export function ReportsLayout() {
           ? 'inventory'
           : 'home';
 
-  const visibleTabs = allTabs;
-
   return (
     <div>
       <div style={moduleTabsShellStyle}>
@@ -72,12 +76,12 @@ export function ReportsLayout() {
           <Tabs
             activeKey={activeKey}
             size="small"
-            items={visibleTabs.map((t) => ({
-              key: t.key,
-              label: secondaryTabLabel(t.label, t.icon),
+            items={allTabs.map((tab) => ({
+              key: tab.key,
+              label: secondaryTabLabel(tab.label, tab.icon),
             }))}
             onChange={(key) => {
-              const tab = visibleTabs.find((t) => t.key === key);
+              const tab = allTabs.find((item) => item.key === key);
               if (tab) navigate(tab.path);
             }}
           />

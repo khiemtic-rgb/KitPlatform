@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SaveOutlined } from '@ant-design/icons';
 import { Button, Drawer, Form, Spin, Typography, message } from 'antd';
 import { isAxiosError } from 'axios';
@@ -25,6 +26,8 @@ export function PurchaseOrderEditDrawer({
   onSaved,
   stackZIndex,
 }: PurchaseOrderEditDrawerProps) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'purchaseOrders' });
+  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -74,7 +77,7 @@ export function PurchaseOrderEditDrawer({
         });
       } catch (error) {
         if (!cancelled) {
-          message.error(apiErrorMessage(error, 'Không tải được đơn đặt hàng'));
+          message.error(apiErrorMessage(error, t('messages.loadFailed')));
           onClose();
         }
       } finally {
@@ -85,7 +88,7 @@ export function PurchaseOrderEditDrawer({
     return () => {
       cancelled = true;
     };
-  }, [open, poId, form, onClose]);
+  }, [open, poId, form, onClose, t]);
 
   const handleSave = async () => {
     if (!poId) return;
@@ -105,12 +108,12 @@ export function PurchaseOrderEditDrawer({
           unitPrice: line.unitPrice,
         })),
       });
-      message.success(`Đã cập nhật ${updated.poNumber}`);
+      message.success(t('messages.updated', { poNumber: updated.poNumber }));
       onSaved?.(updated);
       onClose();
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, 'Không cập nhật được đơn đặt hàng'));
+        message.error(apiErrorMessage(error, t('messages.updateFailed')));
       }
     } finally {
       setSaving(false);
@@ -119,7 +122,7 @@ export function PurchaseOrderEditDrawer({
 
   return (
     <Drawer
-      title={header ? `Điều chỉnh ${header.poNumber}` : 'Điều chỉnh đơn đặt hàng'}
+      title={header ? t('editDrawerWithNumber', { poNumber: header.poNumber }) : t('editDrawer')}
       width={980}
       open={open}
       zIndex={stackZIndex}
@@ -128,16 +131,16 @@ export function PurchaseOrderEditDrawer({
       styles={{ body: { paddingTop: 12 } }}
       extra={
         <Button type="primary" icon={<SaveOutlined />} onClick={() => void handleSave()} loading={saving} disabled={loading || !header}>
-          Lưu thay đổi
+          {t('saveChanges')}
         </Button>
       }
     >
       {loading ? (
-        <Spin tip="Đang tải đơn..." />
+        <Spin tip={tShared('messages.loadingOrder')} />
       ) : (
         <Form form={form} layout="vertical">
           <Typography.Paragraph type="secondary" style={{ marginTop: 0, marginBottom: 8, fontSize: 12 }}>
-            Dòng đã nhận: khóa. Dòng chưa nhận: chỉ tăng SL hoặc xóa. Giá thực nhập tại phiếu nhập.
+            {tShared('messages.receivedQtyLockedHint')}
           </Typography.Paragraph>
           <PurchaseOrderFormHeader
             form={form}

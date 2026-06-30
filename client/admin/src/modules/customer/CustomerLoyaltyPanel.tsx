@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, Empty, Progress, Space, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -7,8 +8,8 @@ import {
   fetchCustomerLoyaltyTransactions,
 } from '@/shared/api/customer-admin.api';
 import type { LoyaltyProgramSummary, LoyaltyTransaction } from '@/shared/api/customer-admin.types';
-import { LOYALTY_TX_LABELS } from '@/shared/api/customer-admin.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
+import { useCustomerEnums } from '@/shared/i18n/use-customer-enums';
 import { formatDisplayQuantity } from '@/shared/utils/money';
 
 interface CustomerLoyaltyPanelProps {
@@ -22,6 +23,9 @@ function formatPoints(value: number): string {
 }
 
 export function CustomerLoyaltyPanel({ customerId }: CustomerLoyaltyPanelProps) {
+  const { t } = useTranslation('customer', { keyPrefix: 'loyaltyPanel' });
+  const { t: tc } = useTranslation('common');
+  const { loyaltyTxLabel } = useCustomerEnums();
   const [programs, setPrograms] = useState<LoyaltyProgramSummary[]>([]);
   const [transactions, setTransactions] = useState<LoyaltyTransaction[]>([]);
   const [txTotal, setTxTotal] = useState(0);
@@ -35,11 +39,11 @@ export function CustomerLoyaltyPanel({ customerId }: CustomerLoyaltyPanelProps) 
       const summary = await fetchCustomerLoyaltySummary(customerId);
       setPrograms(summary.programs);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được tích điểm'));
+      message.error(apiErrorMessage(error, t('messages.loadSummaryFailed')));
     } finally {
       setLoading(false);
     }
-  }, [customerId]);
+  }, [customerId, t]);
 
   const loadTransactions = useCallback(
     async (page: number) => {
@@ -50,12 +54,12 @@ export function CustomerLoyaltyPanel({ customerId }: CustomerLoyaltyPanelProps) 
         setTxTotal(result.total);
         setTxPage(page);
       } catch (error) {
-        message.error(apiErrorMessage(error, 'Không tải được lịch sử điểm'));
+        message.error(apiErrorMessage(error, t('messages.loadHistoryFailed')));
       } finally {
         setTxLoading(false);
       }
     },
-    [customerId],
+    [customerId, t],
   );
 
   useEffect(() => {
@@ -63,43 +67,46 @@ export function CustomerLoyaltyPanel({ customerId }: CustomerLoyaltyPanelProps) 
     void loadTransactions(1);
   }, [loadSummary, loadTransactions]);
 
-  const txColumns: ColumnsType<LoyaltyTransaction> = [
-    {
-      title: 'Thời gian',
-      dataIndex: 'createdAt',
-      width: 140,
-      render: (v: string) => dayjs(v).format('DD/MM/YYYY HH:mm'),
-    },
-    {
-      title: 'Loại',
-      dataIndex: 'transactionType',
-      width: 120,
-      render: (v: number) => LOYALTY_TX_LABELS[v] ?? v,
-    },
-    {
-      title: 'Điểm',
-      dataIndex: 'points',
-      width: 100,
-      render: (v: number) => (
-        <span style={{ fontVariantNumeric: 'tabular-nums', color: v >= 0 ? '#389e0d' : '#cf1322' }}>
-          {v >= 0 ? '+' : ''}
-          {formatPoints(v)}
-        </span>
-      ),
-    },
-    {
-      title: 'Ghi chú',
-      dataIndex: 'notes',
-      render: (v?: string) => v ?? '—',
-    },
-  ];
+  const txColumns: ColumnsType<LoyaltyTransaction> = useMemo(
+    () => [
+      {
+        title: t('columns.createdAt'),
+        dataIndex: 'createdAt',
+        width: 140,
+        render: (v: string) => dayjs(v).format('DD/MM/YYYY HH:mm'),
+      },
+      {
+        title: t('columns.transactionType'),
+        dataIndex: 'transactionType',
+        width: 120,
+        render: (v: number) => loyaltyTxLabel(v),
+      },
+      {
+        title: t('columns.points'),
+        dataIndex: 'points',
+        width: 100,
+        render: (v: number) => (
+          <span style={{ fontVariantNumeric: 'tabular-nums', color: v >= 0 ? '#389e0d' : '#cf1322' }}>
+            {v >= 0 ? '+' : ''}
+            {formatPoints(v)}
+          </span>
+        ),
+      },
+      {
+        title: tc('fields.notes'),
+        dataIndex: 'notes',
+        render: (v?: string) => v ?? '—',
+      },
+    ],
+    [loyaltyTxLabel, t, tc],
+  );
 
   if (loading) {
     return <Card loading />;
   }
 
   if (programs.length === 0) {
-    return <Empty description="Khách chưa tham gia chương trình tích điểm" />;
+    return <Empty description={t('empty')} />;
   }
 
   return (
@@ -121,21 +128,28 @@ export function CustomerLoyaltyPanel({ customerId }: CustomerLoyaltyPanelProps) 
           <Card key={program.programId} size="small" title={program.programName}>
             <Space direction="vertical" size="small" style={{ width: '100%' }}>
               <Typography.Text>
-                Số dư: <strong>{formatPoints(program.pointsBalance)}</strong> điểm · Tích lũy:{' '}
-                {formatDisplayQuantity(program.lifetimePoints)}
+                {t('balance', {
+                  balance: formatPoints(program.pointsBalance),
+                  lifetime: formatDisplayQuantity(program.lifetimePoints),
+                })}
               </Typography.Text>
               {program.currentTier ? (
                 <Tag color="blue">
-                  {program.currentTier.tierName} (−{program.currentTier.discountPercent}%)
+                  {t('tierDiscount', {
+                    tierName: program.currentTier.tierName,
+                    discount: program.currentTier.discountPercent,
+                  })}
                 </Tag>
               ) : (
-                <Tag>Chưa có hạng</Tag>
+                <Tag>{t('noTier')}</Tag>
               )}
               {program.nextTier ? (
                 <>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    Còn {formatPoints(program.nextTier.minPoints - program.pointsBalance)} điểm đến{' '}
-                    {program.nextTier.tierName}
+                    {t('nextTierProgress', {
+                      points: formatPoints(program.nextTier.minPoints - program.pointsBalance),
+                      tierName: program.nextTier.tierName,
+                    })}
                   </Typography.Text>
                   <Progress percent={tierProgress} size="small" showInfo={false} />
                 </>
@@ -145,7 +159,7 @@ export function CustomerLoyaltyPanel({ customerId }: CustomerLoyaltyPanelProps) 
         );
       })}
 
-      <Card size="small" title="Lịch sử điểm">
+      <Card size="small" title={t('historyTitle')}>
         <Table
           rowKey="id"
           size="small"

@@ -1,0 +1,73 @@
+{
+  "actions": {
+    "add": "Thêm",
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "save": "Lưu",
+    "yes": "Có",
+    "no": "Không",
+    "edit": "Sửa",
+    "reload": "Tải lại",
+    "retry": "Thử lại",
+    "search": "Tìm",
+    "filter": "Lọc",
+    "all": "Tất cả",
+    "view": "Xem",
+    "close": "Đóng",
+    "approve": "Duyệt",
+    "export": "Xuất",
+    "archive": "Ẩn"
+  },
+  "fields": {
+    "status": "Trạng thái",
+    "description": "Mô tả",
+    "notes": "Ghi chú",
+    "actions": "Thao tác",
+    "enterCode": "Nhập mã",
+    "enterName": "Nhập tên"
+  },
+  "messages": {
+    "deleted": "Đã xóa",
+    "deleteFailed": "Không xóa được"
+  },
+  "errors": {
+    "apiOffline": "Không kết nối được API. Kiểm tra PharmaCore.Api đang chạy (port 5290)."
+  },
+  "appLayout": {
+    "logout": "Đăng xuất",
+    "mainNavAria": "Module chính",
+    "switchModule": "Chuyển module",
+    "productName": "ERP Nhà thuốc"
+  },
+  "apiHealth": {
+    "message": "API backend không phản hồi (port 5290)",
+    "description": "API port 5290 chưa phản hồi. Chạy npm run dev (tự động bật API) hoặc .\\scripts\\restart-api.ps1 — API chạy nền, không cần giữ cửa sổ CMD.",
+    "recheck": "Kiểm tra lại"
+  },
+  "boot": {
+    "loading": "Đang khởi động..."
+  },
+  "routeLoading": {
+    "tip": "Đang tải..."
+  },
+  "errorBoundary": {
+    "title": "Không tải được giao diện",
+    "subtitle": "Có lỗi JavaScript khi khởi động ứng dụng.",
+    "reload": "Tải lại trang"
+  },
+  "modules": {
+    "dashboard": "Tổng quan",
+    "catalog": "Danh mục",
+    "procurement": "Mua hàng",
+    "inventory": "Kho hàng",
+    "sales": "Bán hàng",
+    "customer": "Khách hàng",
+    "reports": "Báo cáo",
+    "system": "Hệ thống",
+    "comingSoon": "{{name}} (sắp có)"
+  },
+  "datePicker": {
+    "pickDate": "Chọn ngày",
+    "monthYear": "Tháng/Năm"
+  }
+}

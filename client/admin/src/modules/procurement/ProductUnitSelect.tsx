@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Select } from 'antd';
 import { fetchProduct } from '@/shared/api/catalog.api';
 import type { ProductUnit } from '@/shared/api/catalog.types';
@@ -21,6 +22,7 @@ export function ProductUnitSelect({
   width = 130,
   disabled = false,
 }: ProductUnitSelectProps) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'shared.columns' });
   const [units, setUnits] = useState<ProductUnit[]>([]);
   const [loading, setLoading] = useState(false);
   const lastProductId = useRef<string | undefined>(undefined);
@@ -75,7 +77,7 @@ export function ProductUnitSelect({
       onChange={onChange}
       loading={loading}
       disabled={disabled || !productId}
-      placeholder="Đơn vị"
+      placeholder={t('unitSelect')}
       style={{ width }}
       options={units.map((u) => ({
         value: u.id,

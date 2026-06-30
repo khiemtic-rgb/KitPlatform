@@ -1,4 +1,5 @@
 import type { ReportColumn, ReportTableResult } from '@/shared/api/reports.types';
+import { reportsT } from '@/shared/i18n';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney, formatDisplayQuantity } from '@/shared/utils/money';
 
@@ -37,13 +38,16 @@ export function exportReportCsv(result: ReportTableResult): void {
   URL.revokeObjectURL(url);
 }
 
-export function printReportElement(elementId: string, title = 'Báo cáo'): void {
+export function printReportElement(elementId: string, title?: string): void {
   const node = document.getElementById(elementId);
   if (!node) return;
+  const t = reportsT();
+  const printTitle = title ?? t('export.printTitle');
+  const printedAt = t('export.printedAt');
   const win = window.open('', '_blank', 'noopener,noreferrer,width=900,height=700');
   if (!win) return;
   win.document.write(`<!DOCTYPE html>
-    <html><head><meta charset="utf-8"><title>${title}</title>
+    <html><head><meta charset="utf-8"><title>${printTitle}</title>
     <style>
       @page { size: A4 portrait; margin: 12mm 14mm; }
       body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; padding: 0; color: #111; }
@@ -55,8 +59,8 @@ export function printReportElement(elementId: string, title = 'Báo cáo'): void
       td.num { text-align: right; font-variant-numeric: tabular-nums; }
       tfoot td { font-weight: bold; background: #fafafa; }
     </style></head><body>
-    <h1>${title}</h1>
-    <div class="meta">In ngày ${new Date().toLocaleString('vi-VN')}</div>
+    <h1>${printTitle}</h1>
+    <div class="meta">${printedAt} ${new Date().toLocaleString('vi-VN')}</div>
     ${node.innerHTML}</body></html>
   `);
   win.document.close();

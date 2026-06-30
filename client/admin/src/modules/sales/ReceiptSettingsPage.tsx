@@ -1,130 +1,267 @@
 import { useEffect, useState } from 'react';
+
+import { useTranslation } from 'react-i18next';
+
 import { App, Button, Card, Form, Input, Select, Space, Typography } from 'antd';
+
 import {
+
   fetchBatchModeSettings,
+
   updateBatchModeSettings,
+
   updateReceiptSettings,
+
   type TenantBatchModeValue,
+
 } from '@/shared/api/sales.api';
+
 import { apiErrorMessage } from '@/shared/api/api-error';
+
 import { useHasPermission } from '@/shared/auth/usePermission';
+
+import { useBatchModeLabels } from '@/shared/i18n/use-batch-mode-labels';
+
 import {
+
   clearReceiptSettingsCache,
+
   loadReceiptStoreSettings,
+
   type ReceiptStoreSettings,
+
 } from '@/modules/sales/receipt-settings';
-import { BATCH_MODE_HINTS, BATCH_MODE_OPTIONS } from '@/modules/sales/tenant-batch-mode';
+
+
 
 type ReceiptForm = ReceiptStoreSettings;
 
+
+
 export function ReceiptSettingsPage() {
+
+  const { t } = useTranslation('sales', { keyPrefix: 'receiptSettings' });
+
   const { message } = App.useApp();
+
+  const { batchModeOptions, batchModeHint } = useBatchModeLabels();
+
   const canWrite = useHasPermission('sales.write');
+
   const [receiptForm] = Form.useForm<ReceiptForm>();
+
   const [loading, setLoading] = useState(true);
+
   const [savingReceipt, setSavingReceipt] = useState(false);
+
   const [batchMode, setBatchMode] = useState<TenantBatchModeValue>('suggest');
+
   const [savingBatchMode, setSavingBatchMode] = useState(false);
 
+
+
   useEffect(() => {
+
     void (async () => {
+
       setLoading(true);
+
       try {
+
         const [receipt, mode] = await Promise.all([
+
           loadReceiptStoreSettings(true),
+
           fetchBatchModeSettings(),
+
         ]);
+
         receiptForm.setFieldsValue(receipt);
+
         setBatchMode(mode);
+
       } catch (error) {
-        message.error(apiErrorMessage(error, 'Không tải được cài đặt bán hàng'));
+
+        message.error(apiErrorMessage(error, t('messages.loadFailed')));
+
       } finally {
+
         setLoading(false);
+
       }
+
     })();
-  }, [receiptForm, message]);
+
+  }, [receiptForm, message, t]);
+
+
 
   const onSaveReceipt = async () => {
+
     const values = await receiptForm.validateFields();
+
     setSavingReceipt(true);
+
     try {
+
       const saved = await updateReceiptSettings({
+
         name: values.name.trim(),
+
         tagline: values.tagline?.trim() || undefined,
+
         phone: values.phone?.trim() || undefined,
+
         address: values.address?.trim() || undefined,
+
       });
+
       clearReceiptSettingsCache();
+
       await loadReceiptStoreSettings(true);
+
       receiptForm.setFieldsValue(saved);
-      message.success('Đã lưu cài đặt phiếu in');
+
+      message.success(t('messages.receiptSaveSuccess'));
+
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không lưu được cài đặt phiếu in'));
+
+      message.error(apiErrorMessage(error, t('messages.receiptSaveFailed')));
+
     } finally {
+
       setSavingReceipt(false);
+
     }
+
   };
+
+
 
   const onSaveBatchMode = async () => {
+
     setSavingBatchMode(true);
+
     try {
+
       const saved = await updateBatchModeSettings(batchMode);
+
       setBatchMode(saved);
-      message.success('Đã lưu chế độ quản lý lô');
+
+      message.success(t('messages.batchSaveSuccess'));
+
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không lưu được chế độ lô'));
+
+      message.error(apiErrorMessage(error, t('messages.batchSaveFailed')));
+
     } finally {
+
       setSavingBatchMode(false);
+
     }
+
   };
 
+
+
   return (
+
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Card title="Phiếu in (POS)" loading={loading}>
+
+      <Card title={t('receiptCard.title')} loading={loading}>
+
         <Form form={receiptForm} layout="vertical" style={{ maxWidth: 520 }} disabled={!canWrite}>
+
           <Form.Item
+
             name="name"
-            label="Tên cửa hàng"
-            rules={[{ required: true, message: 'Nhập tên cửa hàng' }]}
+
+            label={t('receiptCard.storeName')}
+
+            rules={[{ required: true, message: t('receiptCard.storeNameRequired') }]}
+
           >
-            <Input placeholder="NHÀ THUỐC NOVIXA" />
+
+            <Input placeholder={t('receiptCard.placeholders.storeName')} />
+
           </Form.Item>
-          <Form.Item name="tagline" label="Slogan / dòng phụ">
-            <Input placeholder="Chăm sóc sức khỏe cộng đồng" />
+
+          <Form.Item name="tagline" label={t('receiptCard.tagline')}>
+
+            <Input placeholder={t('receiptCard.placeholders.tagline')} />
+
           </Form.Item>
-          <Form.Item name="phone" label="Điện thoại">
-            <Input placeholder="0984.660.399" />
+
+          <Form.Item name="phone" label={t('receiptCard.phone')}>
+
+            <Input placeholder={t('receiptCard.placeholders.phone')} />
+
           </Form.Item>
-          <Form.Item name="address" label="Địa chỉ">
-            <Input.TextArea rows={2} placeholder="Số nhà, phường, quận, tỉnh/thành" />
+
+          <Form.Item name="address" label={t('receiptCard.address')}>
+
+            <Input.TextArea rows={2} placeholder={t('receiptCard.placeholders.address')} />
+
           </Form.Item>
+
           {canWrite ? (
+
             <Button type="primary" loading={savingReceipt} onClick={() => void onSaveReceipt()}>
-              Lưu phiếu in
+
+              {t('receiptCard.save')}
+
             </Button>
+
           ) : null}
+
         </Form>
+
       </Card>
 
-      <Card title="Quản lý lô (FEFO)" loading={loading}>
+
+
+      <Card title={t('batchCard.title')} loading={loading}>
+
         <Space direction="vertical" size={12} style={{ maxWidth: 520, width: '100%' }}>
+
           <Select
+
             style={{ width: '100%' }}
+
             disabled={!canWrite}
+
             value={batchMode}
-            options={BATCH_MODE_OPTIONS}
+
+            options={batchModeOptions}
+
             onChange={setBatchMode}
+
           />
+
           <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-            {BATCH_MODE_HINTS[batchMode]}
+
+            {batchModeHint(batchMode)}
+
           </Typography.Text>
+
           {canWrite ? (
+
             <Button type="primary" loading={savingBatchMode} onClick={() => void onSaveBatchMode()}>
-              Lưu chế độ lô
+
+              {t('batchCard.save')}
+
             </Button>
+
           ) : null}
+
         </Space>
+
       </Card>
+
     </Space>
+
   );
+
 }
+
+

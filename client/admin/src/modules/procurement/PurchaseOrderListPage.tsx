@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
@@ -40,7 +41,8 @@ import type {
   PurchaseOrderListItem,
   Supplier,
 } from '@/shared/api/procurement.types';
-import { PO_STATUS_LABELS, PO_STATUS_TAG, canEditPurchaseOrder } from '@/shared/api/procurement.types';
+import { PO_STATUS_TAG, canEditPurchaseOrder } from '@/shared/api/procurement.types';
+import { useProcurementEnums } from '@/shared/i18n/use-procurement-enums';
 import { PurchaseOrderEditDrawer } from '@/modules/procurement/PurchaseOrderEditDrawer';
 import { PoApproveSupplierModal } from '@/modules/procurement/PoApproveSupplierModal';
 import { isPlaceholderSupplier } from '@/modules/procurement/grn-pricing';
@@ -69,6 +71,10 @@ interface PoLineForm {
 const emptyFilters: PurchaseOrderListFilters = {};
 
 export function PurchaseOrderListPage() {
+  const { t } = useTranslation('procurement', { keyPrefix: 'purchaseOrders' });
+  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
+  const { t: tCommon } = useTranslation('common', { keyPrefix: 'actions' });
+  const { poStatusLabel } = useProcurementEnums();
   const canWrite = useProcurementWrite();
   const canPurge = useSystemDeletePermanent();
   const [searchParams] = useSearchParams();
@@ -136,18 +142,18 @@ export function PurchaseOrderListPage() {
       setItems(result.items);
       setTotal(result.total);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được đơn đặt hàng'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [pageSize]);
+  }, [pageSize, t]);
 
   useEffect(() => {
     void loadMasterData().catch(() => {
-      message.error('Không tải được dữ liệu tham chiếu');
+      message.error(tShared('messages.loadReferenceFailed'));
     });
     void loadOrders(initialFilters, '');
-  }, [loadMasterData, loadOrders, initialFilters]);
+  }, [loadMasterData, loadOrders, initialFilters, tShared]);
 
   const resetFilters = () => {
     void loadOrders(emptyFilters, '');
@@ -171,7 +177,7 @@ export function PurchaseOrderListPage() {
       setPoDetailCache((cache) => ({ ...cache, [id]: po }));
       setDetailOpen(true);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được chi tiết đơn đặt hàng'));
+      message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
     }
   };
 
@@ -181,7 +187,7 @@ export function PurchaseOrderListPage() {
       const po = await fetchPurchaseOrder(id);
       setPoDetailCache((cache) => ({ ...cache, [id]: po }));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được dòng hàng'));
+      message.error(apiErrorMessage(error, t('messages.linesLoadFailed')));
     }
   };
 
@@ -202,12 +208,12 @@ export function PurchaseOrderListPage() {
           unitPrice: i.unitPrice,
         })),
       });
-      message.success(`Đã lưu PO nháp ${created.poNumber}`);
+      message.success(t('messages.draftSaved', { poNumber: created.poNumber }));
       setDrawerOpen(false);
       void loadOrders(filters, searchInput, page, pageSize);
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, 'Không tạo được đơn đặt hàng'));
+        message.error(apiErrorMessage(error, t('messages.createFailed')));
       }
     } finally {
       setSaving(false);
@@ -224,11 +230,11 @@ export function PurchaseOrderListPage() {
         return;
       }
       const updated = await approvePurchaseOrder(id);
-      message.success(`Đã duyệt ${updated.poNumber}`);
+      message.success(t('messages.approved', { poNumber: updated.poNumber }));
       if (detail?.id === id) setDetail(updated);
       void loadOrders(filters, searchInput, page, pageSize);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không duyệt được đơn'));
+      message.error(apiErrorMessage(error, t('messages.approveFailed')));
     }
   };
 
@@ -237,12 +243,12 @@ export function PurchaseOrderListPage() {
     setApproving(true);
     try {
       const updated = await approvePurchaseOrder(approvePoId, { supplierId });
-      message.success(`Đã duyệt ${updated.poNumber}`);
+      message.success(t('messages.approved', { poNumber: updated.poNumber }));
       if (detail?.id === approvePoId) setDetail(updated);
       setApprovePoId(null);
       void loadOrders(filters, searchInput, page, pageSize);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không duyệt được đơn'));
+      message.error(apiErrorMessage(error, t('messages.approveFailed')));
     } finally {
       setApproving(false);
     }
@@ -251,46 +257,46 @@ export function PurchaseOrderListPage() {
   const handleCancel = async (id: string) => {
     try {
       await cancelPurchaseOrder(id);
-      message.success('Đã hủy đơn đặt hàng');
+      message.success(t('messages.cancelled'));
       if (detail?.id === id) setDetail(await fetchPurchaseOrder(id));
       void loadOrders(filters, searchInput, page, pageSize);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không hủy được đơn'));
+      message.error(apiErrorMessage(error, t('messages.cancelFailed')));
     }
   };
 
   const handleClose = async (id: string) => {
     try {
       const updated = await closePurchaseOrder(id);
-      message.success(`Đã đóng ${updated.poNumber}`);
+      message.success(t('messages.closed', { poNumber: updated.poNumber }));
       if (detail?.id === id) setDetail(updated);
       void loadOrders(filters, searchInput, page, pageSize);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không đóng được đơn'));
+      message.error(apiErrorMessage(error, t('messages.closeFailed')));
     }
   };
 
   const handleArchive = async (id: string) => {
     try {
       await archivePurchaseOrder(id);
-      message.success('Đã ẩn đơn đặt hàng (có thể xem trong bản ghi đã ẩn)');
+      message.success(t('messages.archived'));
       setDetailOpen(false);
       setDetail(null);
       void loadOrders(filters, searchInput, page, pageSize);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không ẩn được đơn'));
+      message.error(apiErrorMessage(error, t('messages.archiveFailed')));
     }
   };
 
   const handlePurge = async (id: string) => {
     try {
       await purgePurchaseOrder(id);
-      message.success('Đã xóa vĩnh viễn đơn đặt hàng');
+      message.success(t('messages.purged'));
       setDetailOpen(false);
       setDetail(null);
       void loadOrders(filters, searchInput, page, pageSize);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không xóa vĩnh viễn được đơn'));
+      message.error(apiErrorMessage(error, t('messages.purgeFailed')));
     }
   };
 
@@ -300,17 +306,25 @@ export function PurchaseOrderListPage() {
 
   const exportOrders = () => {
     if (items.length === 0) {
-      message.info('Không có dữ liệu để xuất');
+      message.info(tShared('messages.noExportData'));
       return;
     }
     downloadCsv(
       `don-dat-hang-${new Date().toISOString().slice(0, 10)}.csv`,
-      ['Số PO', 'NCC', 'Kho nhận', 'Trạng thái', 'Ngày đặt', 'Số dòng', 'Tổng tiền'],
+      [
+        t('exportColumns.poNumber'),
+        t('exportColumns.supplier'),
+        t('exportColumns.warehouse'),
+        t('exportColumns.status'),
+        t('exportColumns.orderDate'),
+        t('exportColumns.itemCount'),
+        t('exportColumns.totalAmount'),
+      ],
       items.map((row) => [
         row.poNumber,
         row.supplierName,
         row.warehouseName,
-        PO_STATUS_LABELS[row.status] ?? String(row.status),
+        poStatusLabel(row.status),
         formatDisplayDate(row.orderDate),
         String(row.itemCount),
         formatDisplayMoney(row.totalAmount),
@@ -319,28 +333,28 @@ export function PurchaseOrderListPage() {
   };
 
   const columns: ColumnsType<PurchaseOrderListItem> = [
-    { title: 'Số PO', dataIndex: 'poNumber', width: 140 },
-    { title: 'NCC', dataIndex: 'supplierName' },
-    { title: 'Kho nhận', dataIndex: 'warehouseName' },
+    { title: tShared('columns.poNumber'), dataIndex: 'poNumber', width: 140 },
+    { title: tShared('columns.supplierShort'), dataIndex: 'supplierName' },
+    { title: tShared('columns.receiveWarehouse'), dataIndex: 'warehouseName' },
     {
-      title: 'Ngày đặt',
+      title: tShared('columns.orderDate'),
       dataIndex: 'orderDate',
       width: 110,
       render: (v: string) => formatDisplayDate(v),
     },
     {
-      title: 'Trạng thái',
+      title: tShared('columns.status'),
       dataIndex: 'status',
       width: 130,
       render: (s: number, row) => (
         <Space size={4}>
-          <Tag color={PO_STATUS_TAG[s] ?? 'default'}>{PO_STATUS_LABELS[s] ?? s}</Tag>
-          {row.deletedAt ? <Tag color="default">Đã ẩn</Tag> : null}
+          <Tag color={PO_STATUS_TAG[s] ?? 'default'}>{poStatusLabel(s)}</Tag>
+          {row.deletedAt ? <Tag color="default">{tShared('archived')}</Tag> : null}
         </Space>
       ),
     },
     {
-      title: 'Tổng tiền',
+      title: tShared('columns.totalAmount'),
       dataIndex: 'totalAmount',
       width: 120,
       align: 'right',
@@ -361,21 +375,21 @@ export function PurchaseOrderListPage() {
             void openDetail(row.id);
           }}
         >
-          Xem
+          {tCommon('view')}
         </Button>
       ),
     },
   ];
 
   const poLineColumns: ColumnsType<PurchaseOrderDetail['items'][number]> = [
-    { title: 'Mã SP', dataIndex: 'productCode', width: 90 },
-    { title: 'Tên SP', dataIndex: 'productName', width: 280, ellipsis: true },
-    { title: 'ĐVT', dataIndex: 'unitName', width: 64 },
-    procurementQuantityColumn('Đặt', 'orderedQty', 68),
-    procurementQuantityColumn('Đã nhận', 'receivedQty', 76),
+    { title: tShared('columns.productCode'), dataIndex: 'productCode', width: 90 },
+    { title: tShared('columns.productName'), dataIndex: 'productName', width: 280, ellipsis: true },
+    { title: tShared('columns.unit'), dataIndex: 'unitName', width: 64 },
+    procurementQuantityColumn(tShared('columns.ordered'), 'orderedQty', 68),
+    procurementQuantityColumn(tShared('columns.received'), 'receivedQty', 76),
     procurementRemainingQtyColumn(),
     {
-      title: 'Đơn giá',
+      title: tShared('columns.unitPrice'),
       dataIndex: 'unitPrice',
       width: PROCUREMENT_MONEY_COL_WIDTH,
       align: 'right',
@@ -389,11 +403,11 @@ export function PurchaseOrderListPage() {
 
   return (
     <Card
-      title="Đơn đặt hàng"
+      title={t('title')}
       extra={
         canWrite ? (
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            Tạo đơn
+            {t('create')}
           </Button>
         ) : undefined
       }
@@ -421,7 +435,7 @@ export function PurchaseOrderListPage() {
           pageSize,
           total,
           showSizeChanger: true,
-          showTotal: (t) => `${t} đơn`,
+          showTotal: (count) => tShared('pagination.orders', { count }),
           onChange: (nextPage, nextPageSize) => {
             void loadOrders(filters, searchInput, nextPage, nextPageSize);
           },
@@ -453,14 +467,14 @@ export function PurchaseOrderListPage() {
       />
 
       <Drawer
-        title="Tạo đơn đặt hàng"
+        title={t('createDrawer')}
         width={980}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         styles={{ body: { paddingTop: 12, display: 'flex', flexDirection: 'column' } }}
         extra={
           <Button type="primary" icon={<SaveOutlined />} onClick={() => void handleCreate()} loading={saving}>
-            Lưu nháp
+            {t('saveDraft')}
           </Button>
         }
       >
@@ -483,7 +497,7 @@ export function PurchaseOrderListPage() {
       </Drawer>
 
       <Drawer
-        title={detail ? `Xem ${detail.poNumber}` : 'Xem đơn đặt hàng'}
+        title={detail ? t('viewDrawerWithNumber', { poNumber: detail.poNumber }) : t('viewDrawer')}
         width={880}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
@@ -493,47 +507,47 @@ export function PurchaseOrderListPage() {
             <Space>
               {canEditPurchaseOrder(detail.status) && !detail.deletedAt && (
                 <Button icon={<EditOutlined />} onClick={() => setEditPoOpen(true)}>
-                  Sửa đơn
+                  {t('editOrder')}
                 </Button>
               )}
               {detail.status === 1 && (
                 <Button type="primary" icon={<CheckOutlined />} onClick={() => handleApprove(detail.id)}>
-                  Duyệt
+                  {tCommon('approve')}
                 </Button>
               )}
               {(detail.status === 1 || detail.status === 2) && (
-                <Popconfirm title="Huỷ đơn đặt hàng này?" onConfirm={() => void handleCancel(detail.id)}>
+                <Popconfirm title={t('cancelConfirm')} onConfirm={() => void handleCancel(detail.id)}>
                   <Button danger icon={<CloseCircleOutlined />}>
-                    Huỷ đơn
+                    {t('cancelOrder')}
                   </Button>
                 </Popconfirm>
               )}
               {detail.status === 4 && (
                 <Button type="primary" icon={<LockOutlined />} onClick={() => handleClose(detail.id)}>
-                  Đóng đơn
+                  {t('closeOrder')}
                 </Button>
               )}
               {canArchivePo(detail.status, detail.deletedAt) && (
-                <Popconfirm title="Ẩn đơn đã huỷ khỏi danh sách?" onConfirm={() => void handleArchive(detail.id)}>
+                <Popconfirm title={t('archiveConfirm')} onConfirm={() => void handleArchive(detail.id)}>
                   <Button danger icon={<EyeInvisibleOutlined />}>
-                    Ẩn đơn
+                    {t('archiveOrder')}
                   </Button>
                 </Popconfirm>
               )}
               {detail.deletedAt && canPurge && (
                 <Popconfirm
-                  title="Xóa vĩnh viễn? Không thể hoàn tác."
+                  title={tShared('purgeConfirm')}
                   onConfirm={() => void handlePurge(detail.id)}
                 >
                   <Button danger type="primary" icon={<DeleteOutlined />}>
-                    Xóa vĩnh viễn
+                    {tShared('purgePermanent')}
                   </Button>
                 </Popconfirm>
               )}
               {showLockedDeletePo(detail.status, detail.deletedAt) && (
-                <Tooltip title="Chỉ ẩn được đơn đã huỷ">
+                <Tooltip title={t('archiveLockedTooltip')}>
                   <Button disabled icon={<EyeInvisibleOutlined />}>
-                    Ẩn đơn
+                    {t('archiveOrder')}
                   </Button>
                 </Tooltip>
               )}
@@ -544,14 +558,14 @@ export function PurchaseOrderListPage() {
         {detail && (
           <>
             <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
-              <Descriptions.Item label="NCC">{detail.supplierName}</Descriptions.Item>
-              <Descriptions.Item label="Kho">{detail.warehouseName}</Descriptions.Item>
-              <Descriptions.Item label="Trạng thái">
-                <Tag color={PO_STATUS_TAG[detail.status] ?? 'default'}>{PO_STATUS_LABELS[detail.status]}</Tag>
+              <Descriptions.Item label={tShared('columns.supplierShort')}>{detail.supplierName}</Descriptions.Item>
+              <Descriptions.Item label={tShared('columns.warehouse')}>{detail.warehouseName}</Descriptions.Item>
+              <Descriptions.Item label={tShared('columns.status')}>
+                <Tag color={PO_STATUS_TAG[detail.status] ?? 'default'}>{poStatusLabel(detail.status)}</Tag>
               </Descriptions.Item>
             </Descriptions>
             <div className="grn-lines-detail-panel">
-              <p className="grn-lines-detail-panel__title">Chi tiết hàng đặt</p>
+              <p className="grn-lines-detail-panel__title">{tShared('lines.orderLinesTitle')}</p>
               <Table
                 rowKey="id"
                 size="small"

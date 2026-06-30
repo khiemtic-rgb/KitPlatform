@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Form, Input, Select } from 'antd';
 import type { FormInstance } from 'antd';
 import type { Warehouse } from '@/shared/api/inventory.types';
@@ -26,6 +27,9 @@ export function PurchaseOrderFormHeader({
   warehouseName,
   allowSupplierEdit = false,
 }: PurchaseOrderFormHeaderProps) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'purchaseOrders' });
+  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
+  const { t: tVal } = useTranslation('procurement', { keyPrefix: 'shared.validation' });
   const isCreate = mode === 'create';
   const supplierOptions = (suppliers ?? []).map((s) => ({
     value: s.id,
@@ -46,8 +50,8 @@ export function PurchaseOrderFormHeader({
       >
         <Form.Item
           name="supplierId"
-          label="Nhà cung cấp"
-          rules={isCreate ? [{ required: true, message: 'Chọn NCC' }] : undefined}
+          label={tShared('filters.supplier')}
+          rules={isCreate ? [{ required: true, message: tVal('selectSupplier') }] : undefined}
           style={{ marginBottom: 0 }}
         >
           {isCreate || allowSupplierEdit ? (
@@ -58,8 +62,8 @@ export function PurchaseOrderFormHeader({
         </Form.Item>
         <Form.Item
           name="warehouseId"
-          label="Kho nhận"
-          rules={isCreate ? [{ required: true, message: 'Chọn kho' }] : undefined}
+          label={tShared('columns.receiveWarehouse')}
+          rules={isCreate ? [{ required: true, message: tVal('selectWarehouse') }] : undefined}
           style={{ marginBottom: 0 }}
         >
           {isCreate ? (
@@ -68,26 +72,26 @@ export function PurchaseOrderFormHeader({
             <Select disabled options={[{ value: form.getFieldValue('warehouseId'), label: warehouseName }]} />
           )}
         </Form.Item>
-        <Form.Item name="expectedDate" label="Ngày nhận DK" style={{ marginBottom: 0 }}>
-          <PharmaDatePicker placeholder="dd/mm/yyyy" style={{ width: '100%' }} />
+        <Form.Item name="expectedDate" label={t('expectedDate')} style={{ marginBottom: 0 }}>
+          <PharmaDatePicker placeholder={tShared('datePlaceholder')} style={{ width: '100%' }} />
         </Form.Item>
         <Form.Item
           name="vatTreatmentId"
-          label="Thuế tham chiếu"
-          tooltip="Thuế chính thức ghi trên phiếu nhập kho (GRN)"
-          rules={[{ required: true, message: 'Chọn thuế' }]}
+          label={tShared('tax.vatReference')}
+          tooltip={tShared('tax.vatReferenceTooltip')}
+          rules={[{ required: true, message: tVal('selectTax') }]}
           style={{ marginBottom: 0 }}
         >
           <Select
-            options={vatTreatments.map((t) => ({
-              value: t.id,
-              label: formatVatTreatmentOptionLabel(t),
+            options={vatTreatments.map((item) => ({
+              value: item.id,
+              label: formatVatTreatmentOptionLabel(item),
             }))}
           />
         </Form.Item>
       </div>
-      <Form.Item name="notes" label="Ghi chú" style={{ marginBottom: 0, marginTop: 10 }}>
-        <Input placeholder="Ghi chú đơn (tùy chọn)" allowClear />
+      <Form.Item name="notes" label={tShared('columns.notes')} style={{ marginBottom: 0, marginTop: 10 }}>
+        <Input placeholder={t('notesPlaceholder')} allowClear />
       </Form.Item>
     </div>
   );

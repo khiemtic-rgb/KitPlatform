@@ -1,0 +1,425 @@
+{
+  "enums": {
+    "drugType": {
+      "1": "OTC",
+      "2": "Prescription",
+      "3": "Controlled"
+    },
+    "priceType": {
+      "1": "Retail",
+      "2": "Wholesale",
+      "3": "VIP",
+      "4": "Insurance",
+      "5": "Online"
+    },
+    "barcodeType": {
+      "1": "Manufacturer",
+      "2": "Internal",
+      "3": "QR",
+      "4": "GS1"
+    },
+    "productStatus": {
+      "1": "Active",
+      "2": "Inactive"
+    }
+  },
+  "products": {
+    "title": "Product catalog",
+    "deleteConfirm": "Delete this product?",
+    "bulkDeleteConfirm": "Delete {{count}} selected products?",
+    "bulkDeleteButton": "Delete selected ({{count}})",
+    "searchPlaceholder": "Search name or barcode...",
+    "search": "Search",
+    "importExcel": "Import Excel",
+    "nationalLookup": "National lookup",
+    "addProduct": "Add product",
+    "filterActiveAlert": "Filters are active — the list may be incomplete.",
+    "clearFilters": "Clear filters",
+    "advancedFilters": "Advanced filters",
+    "applyFilters": "Apply filters",
+    "filters": {
+      "drugType": "Drug type",
+      "category": "Category",
+      "brand": "Brand",
+      "status": "Status",
+      "retailPriceFrom": "Retail price from",
+      "retailPriceTo": "Retail price to",
+      "barcode": "Barcode",
+      "hasBarcode": "Has barcode",
+      "noBarcode": "No barcode",
+      "price": "Sale price",
+      "hasPrice": "Has price",
+      "noPrice": "No price"
+    },
+    "columns": {
+      "image": "Image",
+      "barcode": "Barcode",
+      "productName": "Product name",
+      "genericName": "Generic name",
+      "saleUnit": "Retail unit",
+      "retailPrice": "Retail price",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "empty": {
+      "loadFailed": "Could not load data",
+      "noMatch": "No products match the filters",
+      "none": "No products yet"
+    },
+    "paginationTotal": "{{count}} products",
+    "messages": {
+      "loadFailed": "Could not load product list",
+      "detailLoadFailed": "Could not load product details",
+      "detailReloadFailed": "Could not reload product details",
+      "deleteSuccess": "Product deleted",
+      "deleteFailed": "Could not delete product",
+      "bulkDeleteSuccess": "Deleted {{count}} products",
+      "bulkDeleteFailed": "Could not delete selected products"
+    }
+  },
+  "catalogLayout": {
+    "tabs": {
+      "products": "Products",
+      "categories": "Categories",
+      "brands": "Brands",
+      "ingredients": "Ingredients",
+      "nationalDrugs": "National lookup"
+    }
+  },
+  "shared": {
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "retry": "Retry",
+    "reload": "Reload",
+    "all": "All",
+    "enterCode": "Enter code",
+    "enterName": "Enter name",
+    "deleted": "Deleted",
+    "deleteFailed": "Could not delete",
+    "status": "Status",
+    "description": "Description",
+    "defaultSaleUnit": "Tablet",
+    "defaultPackUnit": "Box"
+  },
+  "brands": {
+    "title": "Brands",
+    "add": "Add brand",
+    "deleteConfirm": "Delete this brand?",
+    "drawer": {
+      "createTitle": "Add brand",
+      "editTitle": "Edit: {{code}}"
+    },
+    "fields": {
+      "brandCode": "Brand code",
+      "brandName": "Brand name",
+      "countryCode": "Country code (ISO)"
+    },
+    "placeholders": {
+      "brandCode": "e.g. DHG",
+      "countryCode": "e.g. VN"
+    },
+    "columns": {
+      "code": "Code",
+      "name": "Brand name",
+      "country": "Country"
+    },
+    "messages": {
+      "loadFailed": "Could not load brands",
+      "updateSuccess": "Brand updated",
+      "createSuccess": "Brand created",
+      "saveFailed": "Could not save brand"
+    }
+  },
+  "categories": {
+    "title": "Product categories",
+    "add": "Add category",
+    "deleteConfirm": "Delete this category?",
+    "drawer": {
+      "createTitle": "Add category",
+      "editTitle": "Edit: {{code}}"
+    },
+    "fields": {
+      "categoryCode": "Category code",
+      "categoryName": "Category name",
+      "parentId": "Parent category",
+      "sortOrder": "Display order",
+      "minStockQty": "Minimum stock (alert)"
+    },
+    "placeholders": {
+      "categoryCode": "e.g. PAIN_RELIEF",
+      "parentId": "None (root)",
+      "minStockQty": "Leave blank to use global threshold"
+    },
+    "columns": {
+      "code": "Code",
+      "name": "Category name",
+      "parent": "Parent",
+      "sortOrder": "Order",
+      "minStockQty": "Min stock"
+    },
+    "messages": {
+      "loadFailed": "Could not load categories",
+      "updateSuccess": "Category updated",
+      "createSuccess": "Category created",
+      "saveFailed": "Could not save category"
+    }
+  },
+  "ingredients": {
+    "title": "Active ingredients",
+    "add": "Add ingredient",
+    "deactivate": "Deactivate",
+    "deactivateConfirm": "Deactivate this ingredient?",
+    "drawer": {
+      "createTitle": "Add ingredient",
+      "editTitle": "Edit ingredient"
+    },
+    "fields": {
+      "ingredientCode": "Ingredient code",
+      "ingredientName": "Ingredient name"
+    },
+    "placeholders": {
+      "ingredientCode": "e.g. PARACETAMOL",
+      "ingredientName": "e.g. Paracetamol"
+    },
+    "columns": {
+      "code": "Code",
+      "name": "Ingredient name"
+    },
+    "messages": {
+      "loadFailed": "Could not load ingredients",
+      "updateSuccess": "Ingredient updated",
+      "createSuccess": "Ingredient created",
+      "saveFailed": "Could not save ingredient",
+      "deactivateSuccess": "Ingredient deactivated",
+      "deactivateFailed": "Could not deactivate ingredient"
+    }
+  },
+  "import": {
+    "title": "Import products (Excel/CSV)",
+    "intro": "Minimum column: product_name; recommended: barcode, retail_price, min_stock_qty. Duplicate product codes are skipped. Large files are sent in batches of 500 rows — keep this tab open for a few minutes.",
+    "downloadTemplate": "Download CSV template",
+    "chooseFile": "Choose Excel/CSV file",
+    "importButton": "Import",
+    "importButtonWithCount": "Import ({{count}} rows)",
+    "batchProgress": "Importing batch {{current}}/{{total}}…",
+    "fileLabel": "File: {{name}}",
+    "resultSummary": "Created: {{created}} · Skipped (duplicate code): {{skipped}} · Errors: {{failed}}",
+    "errorDetailsTitle": "Error details",
+    "previewTitle": "Preview ({{count}} rows)",
+    "columns": {
+      "row": "Row",
+      "productCode": "Code",
+      "productName": "Name",
+      "barcode": "Barcode",
+      "unit": "Unit",
+      "retailPrice": "Price",
+      "minStockQty": "Min stock",
+      "error": "Error"
+    },
+    "messages": {
+      "noValidRows": "No valid rows found. Check the Excel/CSV headers.",
+      "readSuccess": "Read {{count}} rows from «{{fileName}}»",
+      "readFailed": "Could not read file",
+      "importSuccess": "Import finished: {{created}} created, {{skipped}} skipped, {{failed}} failed",
+      "importFailed": "Import failed"
+    }
+  },
+  "nationalDrugs": {
+    "alertTitle": "National Drug Database lookup — MVP mock (Decision 522)",
+    "alertDescriptionDefault": "Internal sample data. When integration credentials are available: set NationalDrugCatalog:Mode = sandbox or live.",
+    "listTitle": "National Drug Database catalog",
+    "searchPlaceholder": "National ID, reg. no., name, ingredient, barcode…",
+    "search": "Search",
+    "detailTitle": "National record details",
+    "createProduct": "Create product",
+    "selectRowHint": "Select a row in the table to view details.",
+    "fieldMapTitle": "Decision 522 field map → Pharmacy catalog",
+    "fieldMapIntro": "Reference for the real connector. MVP mock uses the same mapping to prefill the product form.",
+    "columns": {
+      "nationalId": "National ID",
+      "registrationNumber": "Reg. no.",
+      "productName": "Drug name",
+      "ingredient": "Ingredient",
+      "unit": "Unit",
+      "category": "Type"
+    },
+    "fieldMapColumns": {
+      "nationalLabel": "National field (522)",
+      "nationalField": "API code",
+      "productLabel": "→ ERP field",
+      "productField": "ERP code",
+      "notes": "Notes"
+    },
+    "detail": {
+      "nationalId": "National ID",
+      "registrationNumber": "Reg. no.",
+      "productName": "Drug name",
+      "ingredient": "Ingredient",
+      "dosageForm": "Dosage form",
+      "packaging": "Packaging",
+      "unit": "Unit",
+      "manufacturer": "Manufacturer",
+      "countryOfOrigin": "Country of origin",
+      "category": "Type",
+      "barcode": "Barcode",
+      "atc": "ATC",
+      "registrationExpiry": "Reg. expiry"
+    },
+    "messages": {
+      "configLoadFailed": "Could not load national drug lookup configuration",
+      "searchFailed": "Could not search national drug catalog",
+      "detailLoadFailed": "Could not load national drug details",
+      "prefillFailed": "Could not build prefill record",
+      "createSuccess": "Created {{code}} — linked to national ID {{nationalId}}"
+    }
+  },
+  "productForm": {
+    "title": {
+      "create": "Add new product",
+      "edit": "Product: {{code}}"
+    },
+    "tabs": {
+      "general": "General",
+      "details": "Product details",
+      "ingredients": "Ingredients"
+    },
+    "fields": {
+      "productCode": "Product code",
+      "productName": "Product name",
+      "genericName": "Generic / active ingredient name",
+      "genericNameExtra": "Used for display and search. Can be suggested from the Ingredients tab.",
+      "saleUnitName": "Base unit",
+      "saleUnitHint": "The base unit is created when the product is saved. Add Box, Blister, etc. under Product details → Conversion units.",
+      "drugType": "Drug type",
+      "categoryId": "Category",
+      "brandId": "Brand",
+      "description": "Description",
+      "status": "Status",
+      "minStockQty": "Minimum stock (alert)",
+      "conversionFactor": "Factor",
+      "strengthValue": "Strength",
+      "strengthUnit": "Unit"
+    },
+    "placeholders": {
+      "loadingCode": "Loading code...",
+      "genericName": "e.g. Paracetamol 500 mg",
+      "saleUnitName": "Smallest unit (e.g. Tablet)",
+      "minStockQty": "Defaults to 10 if empty",
+      "unit": "Unit",
+      "barcode": "Enter barcode...",
+      "salePrice": "Sale price",
+      "imageUrl": "Or paste image URL...",
+      "ingredient": "Select ingredient"
+    },
+    "sections": {
+      "detailsHint": "Each Add click saves immediately.",
+      "units": "Conversion units",
+      "barcode": "Barcode",
+      "prices": "Sale prices",
+      "images": "Product images",
+      "ingredients": "Active ingredients and strength",
+      "detailsTab": "product details",
+      "ingredientsTab": "ingredients"
+    },
+    "empty": {
+      "units": "No units yet",
+      "barcodes": "No barcodes yet",
+      "prices": "No prices yet",
+      "images": "No images yet",
+      "ingredients": "No ingredients yet"
+    },
+    "unitTags": {
+      "base": "Base",
+      "sale": "Sale",
+      "conversion": "1 {{unit}} = {{factor}} base",
+      "saleUnitTitle": "Sale unit",
+      "saleAllowed": "For sale",
+      "saleNotAllowed": "Not for sale"
+    },
+    "similarName": {
+      "exact": "Name matches an existing product",
+      "near": "Name is very similar to an existing product (>95%)",
+      "confirmTitle": "Similar product name",
+      "confirmBody": "This name is >95% similar to an existing product. Save anyway?"
+    },
+    "actions": {
+      "skip": "Skip",
+      "refreshCode": "Get new code",
+      "suggestGeneric": "Suggest",
+      "suggestGenericTitle": "Suggest from ingredient list",
+      "saveProduct": "Save product",
+      "createProduct": "Create product",
+      "setPrimaryBarcode": "Set as primary",
+      "setPrimaryImage": "Set as primary image",
+      "uploadImage": "Choose image from device",
+      "stillSave": "Save anyway",
+      "apply": "Apply",
+      "keepCurrent": "Keep current"
+    },
+    "confirm": {
+      "unsavedTitle": "Unsaved changes",
+      "unsavedBody": "You have unsaved changes. Do you want to save before closing?",
+      "applyGenericTitle": "Apply suggested generic name?",
+      "applyGenericBody": "Replace the current value with the suggestion from the Ingredients tab:"
+    },
+    "messages": {
+      "saveFailed": "Could not save data",
+      "saveUnitsFailed": "Could not save units",
+      "saveIngredientsFailed": "Could not save ingredients",
+      "fillGeneralBefore": "Please complete the product information before entering {{section}}.",
+      "fillGeneralBeforeBarcode": "Please complete the product information before entering a barcode.",
+      "fillGeneralBeforePrice": "Please complete the product information before entering a sale price.",
+      "fillGeneralBeforeImage": "Please complete the product information before adding an image.",
+      "fillGeneralBeforeUnits": "Please complete the product information before entering conversion units.",
+      "fillGeneralBeforeIngredients": "Please complete the product information before entering ingredients.",
+      "requireNameAndDrugType": "Enter product name and drug type",
+      "createFailed": "Could not create product",
+      "created": "Created product {{code}}",
+      "createdHint": "Created {{code}}. Open the Product details tab to add units, barcodes, prices, and images.",
+      "fetchCodeFailed": "Could not fetch a new product code",
+      "enterBarcode": "Enter a barcode",
+      "barcodeDuplicate": "Barcode already in the list",
+      "barcodeInUse": "Barcode already used for {{code}} — {{name}}",
+      "barcodeAdded": "Barcode added",
+      "primaryBarcodeSet": "Primary barcode set",
+      "barcodeRemoved": "Barcode removed",
+      "noUnits": "Product has no units yet",
+      "invalidPrice": "Enter a valid price",
+      "priceDuplicate": "This price type and unit already exist — cannot add duplicate",
+      "priceAdded": "Price added",
+      "priceRemoved": "Price removed",
+      "imageDuplicate": "Image already in the list",
+      "imageAdded": "Image added",
+      "enterImageUrl": "Enter image URL",
+      "uploadFailed": "Could not upload image",
+      "primaryImageSet": "Primary image set",
+      "imageRemoved": "Image removed",
+      "enterUnitName": "Select or enter unit name",
+      "unitDuplicate": "Unit already in the list",
+      "invalidConversionFactor": "Conversion factor must be greater than 0",
+      "unitAdded": "Unit added",
+      "cannotRemoveBaseUnit": "Cannot remove base unit",
+      "unitRemoved": "Unit removed",
+      "requireSaleUnit": "At least one sale unit is required",
+      "saleUnitUpdated": "Sale unit updated",
+      "selectIngredient": "Select an ingredient",
+      "ingredientDuplicate": "Ingredient already in the list",
+      "ingredientAdded": "Ingredient added",
+      "ingredientRemoved": "Ingredient removed",
+      "noIngredientsToSuggest": "No ingredients to suggest from",
+      "genericSuggested": "Suggested generic name from ingredients",
+      "saveProductFailed": "Could not save product",
+      "saved": "Product saved",
+      "deleted": "Deleted",
+      "deleteFailed": "Could not delete product"
+    },
+    "nationalDrug": {
+      "linkedTitle": "Linked to National Drug Database",
+      "nationalId": "National ID",
+      "registrationNumber": "Reg. no.",
+      "suggestedBarcode": "Suggested barcode",
+      "suggestedBarcodeHint": "— add under Product details after saving."
+    }
+  }
+}

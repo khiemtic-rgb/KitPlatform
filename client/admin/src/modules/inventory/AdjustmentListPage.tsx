@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -35,14 +36,14 @@ import type {
   StockBatch,
   Warehouse,
 } from '@/shared/api/inventory.types';
-import { ADJUSTMENT_STATUS_LABELS } from '@/shared/api/inventory.types';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { InventoryCountWorkflowSteps } from '@/modules/inventory/InventoryCountWorkflowSteps';
 import {
-  COUNT_REASON_PRESETS,
-  INVENTORY_COUNT_WORKFLOW_STEPS,
   buildCountReason,
+  getCountReasonPresets,
+  getInventoryCountWorkflowSteps,
 } from '@/modules/inventory/inventory-count-workflow';
+import { useInventoryEnums } from '@/shared/i18n/use-inventory-enums';
 
 interface AdjustmentLineForm {
   batchId: string;
@@ -52,6 +53,15 @@ interface AdjustmentLineForm {
 
 export function AdjustmentListPage() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation('inventory', { keyPrefix: 'adjustmentList' });
+  const { t: ts } = useTranslation('inventory', { keyPrefix: 'shared' });
+  const { t: tc } = useTranslation('common');
+  const { adjustmentStatusLabel } = useInventoryEnums();
+  const inventoryCountWorkflowSteps = useMemo(
+    () => getInventoryCountWorkflowSteps(),
+    [i18n.language],
+  );
+  const countReasonPresets = useMemo(() => getCountReasonPresets(), [i18n.language]);
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<AdjustmentListItem[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -73,11 +83,11 @@ export function AdjustmentListPage() {
       setItems(adjustments);
       setWarehouses(wh);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được phiếu kiểm kê'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -108,7 +118,7 @@ export function AdjustmentListPage() {
 
   const handleCreateSession = async () => {
     if (!prepareAcknowledged) {
-      message.warning('Xác nhận đã chuẩn bị kiểm kê (bước 1) trước khi mở phiên');
+      message.warning(t('messages.prepareRequired'));
       return;
     }
     try {
@@ -118,12 +128,12 @@ export function AdjustmentListPage() {
         warehouseId: values.warehouseId,
         reason: buildCountReason(values.countType, values.reasonNote),
       });
-      message.success(`Đã mở phiên ${created.adjustmentNumber}`);
+      message.success(t('messages.sessionCreateSuccess', { number: created.adjustmentNumber }));
       setSessionDrawerOpen(false);
       navigate(`/inventory/adjustments/${created.id}/count`);
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, 'Không mở được phiên kiểm kê'));
+        message.error(apiErrorMessage(error, t('messages.sessionCreateFailed')));
       }
     } finally {
       setSaving(false);
@@ -135,7 +145,7 @@ export function AdjustmentListPage() {
       setDetail(await fetchAdjustment(id));
       setDetailOpen(true);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được chi tiết phiếu'));
+      message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
     }
   };
 
@@ -152,12 +162,12 @@ export function AdjustmentListPage() {
           note: i.note,
         })),
       });
-      message.success(`Đã tạo phiếu ${created.adjustmentNumber}`);
+      message.success(t('messages.createSuccess', { number: created.adjustmentNumber }));
       setDrawerOpen(false);
       load();
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, 'Không tạo được phiếu'));
+        message.error(apiErrorMessage(error, t('messages.createFailed')));
       }
     } finally {
       setSaving(false);
@@ -167,38 +177,38 @@ export function AdjustmentListPage() {
   const handleApprove = async (id: string) => {
     try {
       await approveAdjustment(id);
-      message.success('Đã duyệt kiểm kê');
+      message.success(t('messages.approveSuccess'));
       if (detail?.id === id) {
         setDetail(await fetchAdjustment(id));
       }
       load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không duyệt được phiếu'));
+      message.error(apiErrorMessage(error, t('messages.approveFailed')));
     }
   };
 
   const columns: ColumnsType<AdjustmentListItem> = [
-    { title: 'Số phiếu', dataIndex: 'adjustmentNumber', width: 130 },
-    { title: 'Kho', dataIndex: 'warehouseName' },
+    { title: ts('documentNumber'), dataIndex: 'adjustmentNumber', width: 130 },
+    { title: ts('warehouse'), dataIndex: 'warehouseName' },
     {
-      title: 'Trạng thái',
+      title: tc('fields.status'),
       dataIndex: 'status',
       width: 110,
       render: (v: number) => (
         <Tag color={v === 3 ? 'green' : v === 2 ? 'processing' : v === 1 ? 'gold' : 'default'}>
-          {ADJUSTMENT_STATUS_LABELS[v] ?? v}
+          {adjustmentStatusLabel(v)}
         </Tag>
       ),
     },
     {
-      title: 'Ngày',
+      title: ts('date'),
       dataIndex: 'adjustmentDate',
       width: 110,
       render: (v: string) => formatDisplayDate(v),
     },
-    { title: 'Dòng', dataIndex: 'itemCount', width: 70, align: 'right' },
+    { title: ts('lineCount'), dataIndex: 'itemCount', width: 70, align: 'right' },
     {
-      title: 'Thao tác',
+      title: tc('fields.actions'),
       key: 'actions',
       width: 220,
       render: (_, row) => (
@@ -210,7 +220,7 @@ export function AdjustmentListPage() {
               style={{ cursor: 'pointer', margin: 0 }}
               onClick={() => navigate(`/inventory/adjustments/${row.id}/count`)}
             >
-              Đếm
+              {ts('count')}
             </Tag>
           )}
           <Tag
@@ -219,7 +229,7 @@ export function AdjustmentListPage() {
             style={{ cursor: 'pointer', margin: 0 }}
             onClick={() => openDetail(row.id)}
           >
-            Chi tiết
+            {ts('detail')}
           </Tag>
           {row.status !== 3 && row.status !== 4 && row.status !== 2 && (
             <Tag
@@ -228,7 +238,7 @@ export function AdjustmentListPage() {
               style={{ cursor: 'pointer', margin: 0 }}
               onClick={() => handleApprove(row.id)}
             >
-              Duyệt
+              {tc('actions.approve')}
             </Tag>
           )}
         </Space>
@@ -244,17 +254,15 @@ export function AdjustmentListPage() {
         items={[
           {
             key: 'workflow',
-            label: 'Quy trình kiểm kê chuẩn (4 bước)',
+            label: t('workflowTitle'),
             children: (
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                 <InventoryCountWorkflowSteps status={2} entryCount={0} canApprove={false} />
                 <Typography.Paragraph type="secondary" style={{ marginBottom: 0, fontSize: 13 }}>
-                  <strong>Phiên kiểm kê</strong> (nhiều SP, nhiều người): mở phiên → đếm → đối chiếu → duyệt trên màn
-                  Đếm. <strong>Phiếu theo lô</strong>: lệch vài lô đã biết — tạo phiếu nhập SL thực tế → duyệt tại
-                  danh sách.
+                  <Trans i18nKey="workflowIntro" ns="inventory" t={t} />
                 </Typography.Paragraph>
                 <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#555' }}>
-                  {INVENTORY_COUNT_WORKFLOW_STEPS.map((step) => (
+                  {inventoryCountWorkflowSteps.map((step) => (
                     <li key={step.title}>
                       <strong>{step.title}:</strong> {step.description}
                     </li>
@@ -267,17 +275,17 @@ export function AdjustmentListPage() {
       />
 
       <Card
-        title="Phiếu kiểm kê"
+        title={t('title')}
         extra={
           <Space>
             <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
-              Tải lại
+              {tc('actions.reload')}
             </Button>
             <Button icon={<TeamOutlined />} onClick={openCreateSession}>
-              Phiên kiểm kê
+              {t('countSession')}
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-              Phiếu theo lô
+              {t('batchDocument')}
             </Button>
           </Space>
         }
@@ -286,27 +294,27 @@ export function AdjustmentListPage() {
       </Card>
 
       <Drawer
-        title="Tạo phiếu kiểm kê theo lô"
+        title={t('createBatchTitle')}
         width={600}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)}>Hủy</Button>
+            <Button onClick={() => setDrawerOpen(false)}>{tc('actions.cancel')}</Button>
             <Button type="primary" loading={saving} onClick={handleCreate}>
-              Lưu
+              {tc('actions.save')}
             </Button>
           </Space>
         }
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="warehouseId" label="Kho kiểm kê" rules={[{ required: true }]}>
+          <Form.Item name="warehouseId" label={t('countWarehouse')} rules={[{ required: true }]}>
             <Select
               options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
-              placeholder="Chọn kho"
+              placeholder={t('selectWarehouse')}
             />
           </Form.Item>
-          <Form.Item name="reason" label="Lý do">
+          <Form.Item name="reason" label={ts('reason')}>
             <Input.TextArea rows={2} />
           </Form.Item>
           <Form.List name="items">
@@ -317,32 +325,36 @@ export function AdjustmentListPage() {
                     <Form.Item
                       {...field}
                       name={[field.name, 'batchId']}
-                      rules={[{ required: true, message: 'Chọn lô' }]}
+                      rules={[{ required: true, message: t('validation.selectBatch') }]}
                       style={{ width: 300, marginBottom: 0 }}
                     >
                       <Select
-                        placeholder="Lô hàng"
+                        placeholder={ts('batchAbbr')}
                         options={warehouseBatches.map((b) => ({
                           value: b.id,
-                          label: `${b.productCode} / ${b.batchNumber} (HT ${b.quantityAvailable})`,
+                          label: t('batchOptionLabel', {
+                            code: b.productCode,
+                            batch: b.batchNumber,
+                            qty: b.quantityAvailable,
+                          }),
                         }))}
                       />
                     </Form.Item>
                     <Form.Item
                       {...field}
                       name={[field.name, 'actualQuantity']}
-                      rules={[{ required: true, message: 'SL thực' }]}
+                      rules={[{ required: true, message: t('validation.actualQuantity') }]}
                       style={{ width: 110, marginBottom: 0 }}
                     >
                       <InputNumber min={0} style={{ width: '100%' }} />
                     </Form.Item>
                     <Button type="text" danger onClick={() => remove(field.name)}>
-                      Xóa
+                      {tc('actions.delete')}
                     </Button>
                   </Space>
                 ))}
                 <Button type="dashed" onClick={() => add({ actualQuantity: 0 })} block>
-                  Thêm dòng
+                  {ts('addLine')}
                 </Button>
               </>
             )}
@@ -351,40 +363,40 @@ export function AdjustmentListPage() {
       </Drawer>
 
       <Drawer
-        title="Bước 1 — Mở phiên kiểm kê"
+        title={t('sessionStep1Title')}
         width={520}
         open={sessionDrawerOpen}
         onClose={() => setSessionDrawerOpen(false)}
         extra={
           <Space>
-            <Button onClick={() => setSessionDrawerOpen(false)}>Hủy</Button>
+            <Button onClick={() => setSessionDrawerOpen(false)}>{tc('actions.cancel')}</Button>
             <Button type="primary" loading={saving} onClick={handleCreateSession}>
-              Bắt đầu đếm
+              {t('startCounting')}
             </Button>
           </Space>
         }
       >
         <Form form={sessionForm} layout="vertical">
-          <Form.Item name="warehouseId" label="Kho kiểm kê" rules={[{ required: true }]}>
+          <Form.Item name="warehouseId" label={t('countWarehouse')} rules={[{ required: true }]}>
             <Select
               options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
-              placeholder="Chọn kho"
+              placeholder={t('selectWarehouse')}
             />
           </Form.Item>
-          <Form.Item name="countType" label="Loại kiểm kê" rules={[{ required: true }]}>
-            <Select options={COUNT_REASON_PRESETS.map((p) => ({ value: p.value, label: p.label }))} />
+          <Form.Item name="countType" label={t('countType')} rules={[{ required: true }]}>
+            <Select options={countReasonPresets.map((p) => ({ value: p.value, label: p.label }))} />
           </Form.Item>
-          <Form.Item name="reasonNote" label="Ghi chú thêm">
-            <Input.TextArea rows={2} placeholder="VD: Cuối tháng 6, khu A+B…" />
+          <Form.Item name="reasonNote" label={t('reasonNote')}>
+            <Input.TextArea rows={2} placeholder={t('reasonNotePlaceholder')} />
           </Form.Item>
           <Checkbox checked={prepareAcknowledged} onChange={(e) => setPrepareAcknowledged(e.target.checked)}>
-            Đã thông báo hạn chế bán hàng / nhập xuất tại kho trong lúc kiểm kê
+            {t('prepareAcknowledge')}
           </Checkbox>
         </Form>
       </Drawer>
 
       <Drawer
-        title={detail ? `Phiếu ${detail.adjustmentNumber}` : 'Chi tiết kiểm kê'}
+        title={detail ? t('detailTitleWithNumber', { number: detail.adjustmentNumber }) : t('detailTitle')}
         width={640}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
@@ -393,12 +405,12 @@ export function AdjustmentListPage() {
             <Space>
               {detail.status === 2 && (
                 <Button type="primary" onClick={() => navigate(`/inventory/adjustments/${detail.id}/count`)}>
-                  Màn đếm
+                  {t('countScreen')}
                 </Button>
               )}
               {detail.status !== 2 && (
                 <Button type="primary" onClick={() => handleApprove(detail.id)}>
-                  Duyệt
+                  {tc('actions.approve')}
                 </Button>
               )}
             </Space>
@@ -408,20 +420,19 @@ export function AdjustmentListPage() {
         {detail && (
           <>
             <p>
-              <strong>Kho:</strong> {detail.warehouseName}
+              <strong>{ts('warehouse')}:</strong> {detail.warehouseName}
             </p>
             <p>
-              <strong>Trạng thái:</strong> {ADJUSTMENT_STATUS_LABELS[detail.status] ?? detail.status}
+              <strong>{tc('fields.status')}:</strong> {adjustmentStatusLabel(detail.status)}
             </p>
             {detail.reason && (
               <p>
-                <strong>Lý do:</strong> {detail.reason}
+                <strong>{ts('reason')}:</strong> {detail.reason}
               </p>
             )}
             {detail.status === 2 ? (
               <p style={{ color: '#1677ff' }}>
-                Phiên đang kiểm — vào màn <strong>Đếm</strong>, hoàn tất bước 2–3 rồi <strong>Duyệt</strong> (bước 4)
-                kèm checklist.
+                <Trans i18nKey="sessionInProgressHint" ns="inventory" t={t} />
               </p>
             ) : (
               <Table
@@ -430,11 +441,11 @@ export function AdjustmentListPage() {
                 pagination={false}
                 dataSource={detail.items}
                 columns={[
-                  { title: 'SP', dataIndex: 'productName' },
-                  { title: 'Lô', dataIndex: 'batchNumber', width: 90 },
-                  { title: 'HT', dataIndex: 'systemQuantity', width: 70, align: 'right' },
-                  { title: 'Thực', dataIndex: 'actualQuantity', width: 70, align: 'right' },
-                  { title: 'Lệch', dataIndex: 'differenceQuantity', width: 70, align: 'right' },
+                  { title: ts('productAbbr'), dataIndex: 'productName' },
+                  { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 90 },
+                  { title: ts('systemQtyAbbr'), dataIndex: 'systemQuantity', width: 70, align: 'right' },
+                  { title: ts('actualQtyAbbr'), dataIndex: 'actualQuantity', width: 70, align: 'right' },
+                  { title: ts('varianceAbbr'), dataIndex: 'differenceQuantity', width: 70, align: 'right' },
                 ]}
               />
             )}

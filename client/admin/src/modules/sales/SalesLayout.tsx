@@ -1,4 +1,5 @@
-import { memo, Suspense, useCallback, useEffect } from 'react';
+import { memo, Suspense, useCallback, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Badge, Spin } from 'antd';
 import {
@@ -21,48 +22,53 @@ import type { ProductNavTab } from '@/shared/product/product-phases';
 import { filterProductNavTabs } from '@/shared/product/product-phases';
 import { useProductNavGuard } from '@/shared/product/useProductNavGuard';
 
-const allMainTabs: ProductNavTab[] = [
-  { key: 'pos', label: 'Bán hàng (POS)', path: '/sales/pos', icon: <ShoppingCartOutlined /> },
-  { key: 'orders', label: 'Đơn bán', path: '/sales/orders', icon: <FileTextOutlined /> },
+const allMainTabDefs: Omit<ProductNavTab, 'label'>[] = [
+  { key: 'pos', path: '/sales/pos', icon: <ShoppingCartOutlined /> },
+  { key: 'orders', path: '/sales/orders', icon: <FileTextOutlined /> },
   {
     key: 'customer-receivables',
-    label: 'Công nợ KH',
     path: '/sales/customer-receivables',
     icon: <DollarOutlined />,
     feature: 'sales.receivables',
   },
   {
     key: 'customer-payments',
-    label: 'Thu nợ KH',
     path: '/sales/customer-payments',
     icon: <DollarOutlined />,
     feature: 'sales.customerPayments',
   },
   {
     key: 'customer-drafts',
-    label: 'Đơn hàng từ app',
     path: '/sales/customer-drafts',
     icon: <FormOutlined />,
   },
   {
     key: 'customer-reservations',
-    label: 'Đặt trước app',
     path: '/sales/customer-reservations',
     icon: <MedicineBoxOutlined />,
     feature: 'sales.customerReservations',
   },
-  { key: 'returns', label: 'Hàng trả lại', path: '/sales/returns', icon: <RollbackOutlined /> },
+  { key: 'returns', path: '/sales/returns', icon: <RollbackOutlined /> },
   {
     key: 'chat',
-    label: 'Chat KH',
     path: '/sales/chat',
     icon: <CommentOutlined />,
     feature: 'sales.chat',
   },
-  { key: 'shift', label: 'Ca làm việc', path: '/sales/shift', icon: <ClockCircleOutlined /> },
+  { key: 'shift', path: '/sales/shift', icon: <ClockCircleOutlined /> },
 ];
 
-const mainTabs = filterProductNavTabs(allMainTabs);
+const tabLabelKeys: Record<string, string> = {
+  pos: 'pos',
+  orders: 'orders',
+  'customer-receivables': 'customerReceivables',
+  'customer-payments': 'customerPayments',
+  'customer-drafts': 'customerDrafts',
+  'customer-reservations': 'customerReservations',
+  returns: 'returns',
+  chat: 'chat',
+  shift: 'shift',
+};
 
 type SalesSubnavProps = {
   tabs: ProductNavTab[];
@@ -71,31 +77,32 @@ type SalesSubnavProps = {
 };
 
 const SalesSubnav = memo(function SalesSubnav({ tabs, activeKey, onNavigate }: SalesSubnavProps) {
+  const { t } = useTranslation('sales', { keyPrefix: 'salesLayout' });
   const canReadSales = useHasPermission('sales.read');
-  const chatUnread = useAdminChatUnread(canReadSales && tabs.some((t) => t.key === 'chat'));
+  const chatUnread = useAdminChatUnread(canReadSales && tabs.some((tab) => tab.key === 'chat'));
   const pendingDrafts = usePendingCustomerDraftCount(canReadSales);
 
   return (
-    <nav className="pos-sales-subnav" aria-label="Menu bán hàng">
-      {tabs.map((t) => {
-        const active = activeKey === t.key;
-        const labelNode = primaryTabLabel(t.label, t.icon);
+    <nav className="pos-sales-subnav" aria-label={t('navAriaLabel')}>
+      {tabs.map((tab) => {
+        const active = activeKey === tab.key;
+        const labelNode = primaryTabLabel(tab.label, tab.icon);
         return (
           <button
-            key={t.key}
+            key={tab.key}
             type="button"
             className={
               active
                 ? 'pos-sales-subnav__item pos-sales-subnav__item--active'
                 : 'pos-sales-subnav__item'
             }
-            onClick={() => onNavigate(t)}
+            onClick={() => onNavigate(tab)}
           >
-            {t.key === 'chat' && chatUnread > 0 ? (
+            {tab.key === 'chat' && chatUnread > 0 ? (
               <Badge count={chatUnread} size="small" offset={[8, 0]}>
                 {labelNode}
               </Badge>
-            ) : t.key === 'customer-drafts' && pendingDrafts > 0 ? (
+            ) : tab.key === 'customer-drafts' && pendingDrafts > 0 ? (
               <Badge count={pendingDrafts} size="small" offset={[8, 0]}>
                 {labelNode}
               </Badge>
@@ -110,14 +117,26 @@ const SalesSubnav = memo(function SalesSubnav({ tabs, activeKey, onNavigate }: S
 });
 
 export function SalesLayout() {
+  const { t } = useTranslation('sales', { keyPrefix: 'salesLayout' });
   const location = useLocation();
   const navigate = useNavigate();
   const isPosRoute = location.pathname.startsWith('/sales/pos');
 
+  const allMainTabs = useMemo<ProductNavTab[]>(
+    () =>
+      allMainTabDefs.map((tab) => ({
+        ...tab,
+        label: t(`tabs.${tabLabelKeys[tab.key] ?? tab.key}`),
+      })),
+    [t],
+  );
+
+  const mainTabs = useMemo(() => filterProductNavTabs(allMainTabs), [allMainTabs]);
+
   useProductNavGuard(allMainTabs, '/sales/pos');
 
   const activeMainTab =
-    mainTabs.find((t) => location.pathname.startsWith(t.path))?.key ?? 'pos';
+    mainTabs.find((tab) => location.pathname.startsWith(tab.path))?.key ?? 'pos';
 
   useEffect(() => {
     if (location.pathname === '/sales' || location.pathname === '/sales/') {
@@ -125,32 +144,37 @@ export function SalesLayout() {
     }
   }, [location.pathname, navigate]);
 
-  const navigateToTab = useCallback((tab: ProductNavTab) => {
-    if (tab.key === 'chat') {
-      void ensureDesktopNotificationPermission();
-    }
-    if (tab.key === 'pos') {
-      const draftId = readPosDraftEditId();
-      navigate(draftId ? `${tab.path}?draftId=${draftId}` : tab.path);
-      return;
-    }
-    navigate(tab.path);
-  }, [navigate]);
+  const navigateToTab = useCallback(
+    (tab: ProductNavTab) => {
+      if (tab.key === 'chat') {
+        void ensureDesktopNotificationPermission();
+      }
+      if (tab.key === 'pos') {
+        const draftId = readPosDraftEditId();
+        navigate(draftId ? `${tab.path}?draftId=${draftId}` : tab.path);
+        return;
+      }
+      navigate(tab.path);
+    },
+    [navigate],
+  );
 
   return (
-    <div
-      className={isPosRoute ? 'sales-layout--pos' : 'sales-layout'}
-    >
+    <div className={isPosRoute ? 'sales-layout--pos' : 'sales-layout'}>
       <SalesSubnav tabs={mainTabs} activeKey={activeMainTab} onNavigate={navigateToTab} />
 
       <Suspense
         fallback={
           <div style={{ padding: 48, textAlign: 'center' }}>
-            <Spin tip="Đang tải..." />
+            <Spin tip={t('loading')} />
           </div>
         }
       >
-        <div className={isPosRoute ? 'sales-layout__outlet sales-layout__outlet--pos' : 'sales-layout__outlet'}>
+        <div
+          className={
+            isPosRoute ? 'sales-layout__outlet sales-layout__outlet--pos' : 'sales-layout__outlet'
+          }
+        >
           <Outlet />
         </div>
       </Suspense>

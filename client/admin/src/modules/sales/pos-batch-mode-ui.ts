@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import type { TenantBatchModeValue } from '@/shared/api/sales.api';
 import type { CartLine, PosBatchHint } from '@/shared/api/sales.types';
 import { suggestedBatchHint } from '@/modules/sales/pos-batch-display';
@@ -34,6 +35,7 @@ export function initialBatchLabelForMode(
 export function validateCartBatchLabels(
   cart: CartLine[],
   mode: TenantBatchModeValue,
+  t?: TFunction<'sales'>,
 ): string | null {
   if (!showsBatchLabelField(mode)) return null;
 
@@ -41,6 +43,9 @@ export function validateCartBatchLabels(
     const label = line.batchLabel?.trim() ?? '';
     if (!label) continue;
     if (!batchLabelMatchesHints(label, line.batchHints)) {
+      if (t) {
+        return t('pos.batch.labelMismatch', { label, product: line.productName });
+      }
       return `Số lô "${label}" không khớp tồn kho cho "${line.productName}"`;
     }
   }

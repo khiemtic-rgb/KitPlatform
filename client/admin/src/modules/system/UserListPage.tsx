@@ -1,17 +1,21 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Card, Input, Popconfirm, Space, Table, Tag, Tooltip, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { deleteUser, fetchUser, fetchUsers } from '@/shared/api/identity-admin.api';
 import type { UserDetail, UserListItem } from '@/shared/api/identity-admin.types';
-import { USER_STATUS_LABELS } from '@/shared/api/identity-admin.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useAuthStore } from '@/shared/auth/auth.store';
 import { useHasPermission } from '@/shared/auth/usePermission';
 import { UserFormDrawer } from '@/modules/system/UserFormDrawer';
+import { useSystemEnums } from '@/shared/i18n/use-system-enums';
 
 export function UserListPage() {
+  const { t } = useTranslation('system', { keyPrefix: 'users' });
+  const { t: tc } = useTranslation('common');
+  const { userStatusLabel } = useSystemEnums();
   const canWrite = useHasPermission('system.write');
   const currentUserId = useAuthStore((s) => s.user?.id);
   const [loading, setLoading] = useState(false);
@@ -31,11 +35,11 @@ export function UserListPage() {
       setItems(result.items);
       setTotal(result.total);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được danh sách tài khoản'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search]);
+  }, [page, pageSize, search, t]);
 
   useEffect(() => {
     void load();
@@ -51,124 +55,127 @@ export function UserListPage() {
       setEditing(await fetchUser(row.id));
       setDrawerOpen(true);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được tài khoản'));
+      message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
     }
   };
 
   const handleDelete = async (row: UserListItem) => {
     try {
       await deleteUser(row.id);
-      message.success(`Đã xóa tài khoản ${row.username}`);
+      message.success(t('messages.deleted', { username: row.username }));
       await load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không xóa được tài khoản'));
+      message.error(apiErrorMessage(error, t('messages.deleteFailed')));
     }
   };
 
-  const columns: ColumnsType<UserListItem> = [
-    {
-      title: 'Tên đăng nhập',
-      dataIndex: 'username',
-      width: 120,
-      ellipsis: true,
-    },
-    {
-      title: 'Họ và tên',
-      dataIndex: 'employeeName',
-      width: 220,
-      ellipsis: true,
-      render: (v?: string) => v ?? '—',
-    },
-    {
-      title: 'Số điện thoại',
-      dataIndex: 'employeePhone',
-      width: 130,
-      render: (v?: string) => v ?? '—',
-    },
-    {
-      title: 'Vai trò',
-      dataIndex: 'roleCodes',
-      width: 110,
-      render: (codes: string[]) =>
-        codes.length ? codes.map((c) => <Tag key={c}>{c}</Tag>) : '—',
-    },
-    {
-      title: 'Đăng nhập cuối',
-      dataIndex: 'lastLoginAt',
-      width: 148,
-      render: (v?: string) => (v ? dayjs(v).format('DD/MM/YYYY HH:mm') : '—'),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      width: 108,
-      align: 'center',
-      render: (v: number) => (
-        <Tag color={v === 1 ? 'green' : 'default'}>{USER_STATUS_LABELS[v] ?? v}</Tag>
-      ),
-    },
-    {
-      title: 'Tác vụ',
-      key: 'actions',
-      width: 88,
-      fixed: 'right',
-      align: 'center',
-      render: (_, row) =>
-        canWrite ? (
-          <Space size={4}>
-            <Tooltip title="Sửa">
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                aria-label="Sửa"
-                onClick={() => void openEdit(row)}
-              />
-            </Tooltip>
-            <Popconfirm
-              title={`Xóa «${row.username}»?`}
-              description="Tài khoản sẽ bị vô hiệu hóa."
-              okText="Xóa"
-              cancelText="Hủy"
-              okButtonProps={{ danger: true }}
-              disabled={row.id === currentUserId}
-              onConfirm={() => void handleDelete(row)}
-            >
-              <Tooltip
-                title={
-                  row.id === currentUserId
-                    ? 'Không thể xóa tài khoản đang đăng nhập'
-                    : 'Xóa'
-                }
-              >
-                <span>
-                  <Button
-                    type="text"
-                    size="small"
-                    danger
-                    disabled={row.id === currentUserId}
-                    icon={<DeleteOutlined />}
-                    aria-label="Xóa"
-                    style={row.id === currentUserId ? { opacity: 0.35 } : undefined}
-                  />
-                </span>
+  const columns: ColumnsType<UserListItem> = useMemo(
+    () => [
+      {
+        title: t('columns.username'),
+        dataIndex: 'username',
+        width: 120,
+        ellipsis: true,
+      },
+      {
+        title: t('columns.fullName'),
+        dataIndex: 'employeeName',
+        width: 220,
+        ellipsis: true,
+        render: (v?: string) => v ?? '—',
+      },
+      {
+        title: t('columns.phone'),
+        dataIndex: 'employeePhone',
+        width: 130,
+        render: (v?: string) => v ?? '—',
+      },
+      {
+        title: t('columns.roles'),
+        dataIndex: 'roleCodes',
+        width: 110,
+        render: (codes: string[]) =>
+          codes.length ? codes.map((c) => <Tag key={c}>{c}</Tag>) : '—',
+      },
+      {
+        title: t('columns.lastLogin'),
+        dataIndex: 'lastLoginAt',
+        width: 148,
+        render: (v?: string) => (v ? dayjs(v).format('DD/MM/YYYY HH:mm') : '—'),
+      },
+      {
+        title: t('columns.status'),
+        dataIndex: 'status',
+        width: 108,
+        align: 'center',
+        render: (v: number) => (
+          <Tag color={v === 1 ? 'green' : 'default'}>{userStatusLabel(v)}</Tag>
+        ),
+      },
+      {
+        title: t('columns.actions'),
+        key: 'actions',
+        width: 88,
+        fixed: 'right',
+        align: 'center',
+        render: (_, row) =>
+          canWrite ? (
+            <Space size={4}>
+              <Tooltip title={tc('actions.edit')}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EditOutlined />}
+                  aria-label={tc('actions.edit')}
+                  onClick={() => void openEdit(row)}
+                />
               </Tooltip>
-            </Popconfirm>
-          </Space>
-        ) : null,
-    },
-  ];
+              <Popconfirm
+                title={t('deleteConfirm', { username: row.username })}
+                description={t('deleteDescription')}
+                okText={tc('actions.delete')}
+                cancelText={tc('actions.cancel')}
+                okButtonProps={{ danger: true }}
+                disabled={row.id === currentUserId}
+                onConfirm={() => void handleDelete(row)}
+              >
+                <Tooltip
+                  title={
+                    row.id === currentUserId
+                      ? t('cannotDeleteSelf')
+                      : tc('actions.delete')
+                  }
+                >
+                  <span>
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      disabled={row.id === currentUserId}
+                      icon={<DeleteOutlined />}
+                      aria-label={tc('actions.delete')}
+                      style={row.id === currentUserId ? { opacity: 0.35 } : undefined}
+                    />
+                  </span>
+                </Tooltip>
+              </Popconfirm>
+            </Space>
+          ) : null,
+      },
+    ],
+    [canWrite, currentUserId, t, tc, userStatusLabel],
+  );
 
   return (
     <>
       <Card
-        title="Tài khoản nhân viên"
+        title={t('title')}
         extra={
           <Space>
             <Input
               allowClear
               prefix={<SearchOutlined />}
-              placeholder="Tìm username, email, tên, SĐT..."
+              placeholder={t('searchPlaceholder')}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onPressEnter={() => {
@@ -183,14 +190,14 @@ export function UserListPage() {
                 setSearch(searchInput.trim());
               }}
             >
-              Tìm
+              {tc('actions.search')}
             </Button>
             <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-              Tải lại
+              {tc('actions.reload')}
             </Button>
             {canWrite ? (
               <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-                Thêm tài khoản
+                {t('add')}
               </Button>
             ) : null}
           </Space>

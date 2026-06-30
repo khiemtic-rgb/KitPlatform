@@ -3,6 +3,7 @@ import type { DatePickerProps } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import type { CSSProperties, MouseEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 
 dayjs.extend(customParseFormat);
 
@@ -29,17 +30,18 @@ interface PharmaDatePickerProps extends Omit<DatePickerProps, 'value' | 'onChang
   inTable?: boolean;
 }
 
-/** DatePicker tiếng Việt (dropdown tháng/năm), giá trị YYYY-MM-DD cho API. */
+/** DatePicker (dropdown tháng/năm), giá trị YYYY-MM-DD cho API. */
 export function PharmaDatePicker({
   value,
   onChange,
   format = 'DD/MM/YYYY',
-  placeholder = 'Chọn ngày',
+  placeholder,
   style,
   inTable = false,
   size,
   ...rest
 }: PharmaDatePickerProps) {
+  const { t } = useTranslation('common', { keyPrefix: 'datePicker' });
   return (
     <div
       className="pharma-date-picker-wrap"
@@ -51,7 +53,7 @@ export function PharmaDatePicker({
         size={size ?? (inTable ? 'small' : 'middle')}
         value={toDayjs(value)}
         format={format}
-        placeholder={placeholder}
+        placeholder={placeholder ?? t('pickDate')}
         allowClear
         style={{ width: '100%', ...style }}
         getPopupContainer={() => document.body}
@@ -75,6 +77,7 @@ export function PharmaExpiryPicker({
   style?: CSSProperties;
   inTable?: boolean;
 }) {
+  const { t } = useTranslation('common', { keyPrefix: 'datePicker' });
   return (
     <div
       className="pharma-date-picker-wrap"
@@ -85,7 +88,7 @@ export function PharmaExpiryPicker({
         picker="month"
         size={inTable ? 'small' : 'middle'}
         format="MM/YYYY"
-        placeholder="Tháng/Năm"
+        placeholder={t('monthYear')}
         allowClear
         value={toDayjs(value)}
         style={{ width: '100%', ...style }}

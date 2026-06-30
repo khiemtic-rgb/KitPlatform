@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { formatDisplayMoney } from '@/shared/utils/money';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Button,
@@ -19,13 +21,13 @@ import {
   fetchCustomerDraftOrders,
   sendCustomerDraftOrder,
   CUSTOMER_DRAFT_ORDER_STATUS,
-  CUSTOMER_DRAFT_ORDER_STATUS_LABELS,
   type CustomerDraftOrderLineInput,
   type CustomerDraftOrderListItem,
 } from '@/shared/api/customer-draft-orders.api';
 import { fetchWarehouses } from '@/shared/api/inventory.api';
 import { lookupPosProduct, searchPosProducts } from '@/shared/api/sales.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 
 type DraftLineForm = CustomerDraftOrderLineInput & {
   key: string;
@@ -48,6 +50,9 @@ export function CustomerDraftOrderDrawer({
   customerName,
   onClose,
 }: CustomerDraftOrderDrawerProps) {
+  const { t } = useTranslation('sales', { keyPrefix: 'customerDrafts.drawer' });
+  const { t: tDrafts } = useTranslation('sales', { keyPrefix: 'customerDrafts' });
+  const { customerDraftStatusLabel } = useSalesEnums();
   const [warehouseId, setWarehouseId] = useState<string>();
   const [orders, setOrders] = useState<CustomerDraftOrderListItem[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -65,11 +70,11 @@ export function CustomerDraftOrderDrawer({
     try {
       setOrders(await fetchCustomerDraftOrders(customerId));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được đơn tạm'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoadingOrders(false);
     }
-  }, [customerId]);
+  }, [customerId, t]);
 
   useEffect(() => {
     if (!open) return;
@@ -93,7 +98,7 @@ export function CustomerDraftOrderDrawer({
           setProductOptions(
             items.map((item) => ({
               value: item.productCode,
-              label: `${item.productName} (${item.productCode}) — ${item.unitPrice.toLocaleString('vi-VN')}đ`,
+              label: `${item.productName} (${item.productCode}) — ${formatDisplayMoney(item.unitPrice)}`,
               productCode: item.productCode,
             })),
           ),
@@ -121,18 +126,18 @@ export function CustomerDraftOrderDrawer({
 
   const onSaveDraft = async () => {
     if (!customerId || lines.length === 0) {
-      message.warning('Thêm ít nhất một sản phẩm');
+      message.warning(t('messages.addProductRequired'));
       return;
     }
     setSaving(true);
     try {
       await createCustomerDraftOrder(buildPayload());
-      message.success('Đã lưu tạm');
+      message.success(t('messages.saveSuccess'));
       setLines([]);
       setNotes('');
       await loadOrders();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không lưu được đơn tạm'));
+      message.error(apiErrorMessage(error, t('messages.saveFailed')));
     } finally {
       setSaving(false);
     }
@@ -142,10 +147,10 @@ export function CustomerDraftOrderDrawer({
     setSaving(true);
     try {
       await sendCustomerDraftOrder(id);
-      message.success('Đã gửi đơn tạm lên app khách');
+      message.success(t('messages.sendSuccess'));
       await loadOrders();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không gửi được đơn tạm'));
+      message.error(apiErrorMessage(error, t('messages.sendFailed')));
     } finally {
       setSaving(false);
     }
@@ -154,10 +159,10 @@ export function CustomerDraftOrderDrawer({
   const onCancelDraft = async (id: string) => {
     try {
       await cancelCustomerDraftOrder(id);
-      message.success('Đã hủy đơn tạm');
+      message.success(tDrafts('messages.cancelSuccess'));
       await loadOrders();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không hủy được đơn tạm'));
+      message.error(apiErrorMessage(error, tDrafts('messages.cancelFailed')));
     }
   };
 
@@ -191,7 +196,7 @@ export function CustomerDraftOrderDrawer({
       setProductSearch('');
       setProductOptions([]);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không thêm được sản phẩm'));
+      message.error(apiErrorMessage(error, t('messages.addProductFailed')));
     }
   };
 
@@ -202,23 +207,18 @@ export function CustomerDraftOrderDrawer({
 
   return (
     <Drawer
-      title={`Đơn tạm — ${customerName ?? 'Khách'}`}
+      title={t('title', { customerName: customerName ?? t('defaultCustomer') })}
       open={open}
       onClose={onClose}
       width={420}
       destroyOnClose
     >
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 12 }}
-        message="Gửi đơn tạm lên app khách (không qua chat). Khách xem / xác nhận tạm tuỳ chọn; thanh toán tại POS."
-      />
+      <Alert type="info" showIcon style={{ marginBottom: 12 }} message={t('alert')} />
 
-      <Typography.Text strong>Danh sách đơn tạm</Typography.Text>
+      <Typography.Text strong>{t('existingList')}</Typography.Text>
       <List
         loading={loadingOrders}
-        locale={{ emptyText: 'Chưa có đơn tạm' }}
+        locale={{ emptyText: t('emptyList') }}
         dataSource={orders}
         style={{ marginTop: 8, marginBottom: 16 }}
         renderItem={(item) => (
@@ -226,14 +226,14 @@ export function CustomerDraftOrderDrawer({
             actions={[
               item.status === CUSTOMER_DRAFT_ORDER_STATUS.Draft ? (
                 <Button type="link" size="small" onClick={() => void onSendDraft(item.id)}>
-                  Gửi khách
+                  {t('sendToCustomer')}
                 </Button>
               ) : null,
               item.status === CUSTOMER_DRAFT_ORDER_STATUS.Draft ||
               item.status === CUSTOMER_DRAFT_ORDER_STATUS.Sent ||
               item.status === CUSTOMER_DRAFT_ORDER_STATUS.Confirmed ? (
                 <Button type="link" size="small" danger onClick={() => void onCancelDraft(item.id)}>
-                  Hủy
+                  {t('cancel')}
                 </Button>
               ) : null,
             ].filter(Boolean)}
@@ -242,28 +242,31 @@ export function CustomerDraftOrderDrawer({
               title={
                 <Space>
                   <span>{item.draftNumber}</span>
-                  <Tag>{CUSTOMER_DRAFT_ORDER_STATUS_LABELS[item.status] ?? item.status}</Tag>
+                  <Tag>{customerDraftStatusLabel(item.status)}</Tag>
                 </Space>
               }
-              description={`${item.itemCount} SP · ${item.totalAmount.toLocaleString('vi-VN')}đ`}
+              description={t('lineSummary', {
+                count: item.itemCount,
+                amount: formatDisplayMoney(item.totalAmount),
+              })}
             />
           </List.Item>
         )}
       />
 
-      <Typography.Text strong>Tạo đơn tạm mới</Typography.Text>
+      <Typography.Text strong>{t('createNew')}</Typography.Text>
       <Space direction="vertical" style={{ width: '100%', marginTop: 8 }} size="middle">
         <Select
           showSearch
           allowClear
-          placeholder="Tìm sản phẩm (tên, mã...)"
+          placeholder={t('productSearchPlaceholder')}
           filterOption={false}
           value={undefined}
           searchValue={productSearch}
           onSearch={setProductSearch}
           onSelect={(value) => void addProduct(String(value))}
           options={productOptions}
-          notFoundContent={productSearch.length < 2 ? 'Nhập ≥ 2 ký tự' : 'Không thấy sản phẩm'}
+          notFoundContent={productSearch.length < 2 ? t('searchMinChars') : t('productNotFound')}
           style={{ width: '100%' }}
         />
 
@@ -281,7 +284,7 @@ export function CustomerDraftOrderDrawer({
                 />
               </Space>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {line.productCode} · {line.unitPrice.toLocaleString('vi-VN')}đ/{line.unitName}
+                {line.productCode} · {formatDisplayMoney(line.unitPrice)}/{line.unitName}
               </Typography.Text>
               <InputNumber
                 min={0.01}
@@ -294,11 +297,11 @@ export function CustomerDraftOrderDrawer({
                     ),
                   )
                 }
-                addonBefore="SL"
+                addonBefore={t('qtyLabel')}
                 style={{ width: '100%' }}
               />
               <Input
-                placeholder="Liều / ghi chú (tuỳ chọn)"
+                placeholder={t('dosagePlaceholder')}
                 value={line.dosageNote ?? ''}
                 onChange={(e) =>
                   setLines((prev) =>
@@ -312,17 +315,17 @@ export function CustomerDraftOrderDrawer({
 
         <Input.TextArea
           rows={2}
-          placeholder="Ghi chú đơn (tuỳ chọn)"
+          placeholder={t('notesPlaceholder')}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
 
         <Typography.Text type="secondary">
-          Tổng tiền hàng: <strong>{estimatedTotal.toLocaleString('vi-VN')}đ</strong>
+          {t('estimatedTotal', { amount: formatDisplayMoney(estimatedTotal) })}
         </Typography.Text>
 
         <Button type="primary" icon={<PlusOutlined />} loading={saving} onClick={() => void onSaveDraft()}>
-          Lưu tạm
+          {t('saveDraft')}
         </Button>
       </Space>
     </Drawer>

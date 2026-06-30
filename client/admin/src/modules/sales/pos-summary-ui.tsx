@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { InputNumber, Select, Space, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 import {
   SALES_DISCOUNT_TYPES,
   type SalesDiscountType,
@@ -8,11 +9,6 @@ import {
   moneyInputNumberPropsAllowZeroSuffix,
   moneyInputNumberStyle,
 } from '@/shared/utils/money';
-
-export const DISCOUNT_TYPE_SELECT_OPTIONS = [
-  { value: SALES_DISCOUNT_TYPES.Percent, label: '%' },
-  { value: SALES_DISCOUNT_TYPES.Fixed, label: 'Giá trị' },
-] as const;
 
 const summaryRowStyle: CSSProperties = {
   display: 'flex',
@@ -122,11 +118,18 @@ export function PosSummaryOrderDiscountRow({
   onTypeChange,
   onValueChange,
 }: OrderDiscountRowProps) {
+  const { t } = useTranslation('sales');
+
+  const discountTypeOptions = [
+    { value: SALES_DISCOUNT_TYPES.Percent, label: '%' },
+    { value: SALES_DISCOUNT_TYPES.Fixed, label: t('enums.discountType.fixed') },
+  ];
+
   const label = (
     <Typography.Text style={{ lineHeight: 1.3 }}>
-      CK đơn{' '}
+      {t('pos.summary.orderDiscount')}{' '}
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-        (Tối đa {maxPercent}%)
+        {t('pos.summary.orderDiscountMax', { percent: maxPercent })}
       </Typography.Text>
     </Typography.Text>
   );
@@ -143,7 +146,7 @@ export function PosSummaryOrderDiscountRow({
           disabled={disabled}
           value={discountType}
           onChange={onTypeChange}
-          options={[...DISCOUNT_TYPE_SELECT_OPTIONS]}
+          options={discountTypeOptions}
         />
         <InputNumber
           size="small"

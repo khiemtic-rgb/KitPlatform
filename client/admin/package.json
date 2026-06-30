@@ -17,8 +17,10 @@
     "antd": "^5.24.2",
     "axios": "^1.8.4",
     "dayjs": "^1.11.21",
+    "i18next": "^26.3.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-i18next": "^17.0.8",
     "react-router-dom": "^7.4.0",
     "xlsx": "^0.18.5",
     "zustand": "^5.0.3"

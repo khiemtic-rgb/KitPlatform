@@ -1,9 +1,10 @@
 import { isAxiosError } from 'axios';
+import { commonT } from '@/shared/i18n';
 
 export function apiErrorMessage(error: unknown, fallback: string) {
   if (isAxiosError(error)) {
     if (!error.response) {
-      return 'Không kết nối được API. Kiểm tra PharmaCore.Api đang chạy (port 5290).';
+      return commonT()('errors.apiOffline');
     }
     const detail = error.response.data;
     if (typeof detail === 'string' && detail.trim()) return detail;

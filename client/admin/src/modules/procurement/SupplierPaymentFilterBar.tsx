@@ -1,8 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { AutoComplete, Button, Col, Input, Row, Select, Space } from 'antd';
 import { DownloadOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import type { DefaultOptionType } from 'antd/es/select';
 import type { Supplier, SupplierPaymentListFilters } from '@/shared/api/procurement.types';
-import { SUPPLIER_PAYMENT_STATUS_LABELS } from '@/shared/api/procurement.types';
+import { useProcurementEnums } from '@/shared/i18n/use-procurement-enums';
 import { PharmaDatePicker } from '@/shared/ui/PharmaDatePicker';
 
 interface SupplierPaymentFilterBarProps {
@@ -30,6 +31,9 @@ export function SupplierPaymentFilterBar({
   onReset,
   onExport,
 }: SupplierPaymentFilterBarProps) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'shared' });
+  const { t: tCommon } = useTranslation('common', { keyPrefix: 'actions' });
+  const { supplierPaymentStatusOptions } = useProcurementEnums();
   const applyNow = (next: SupplierPaymentListFilters, search = searchInput) => onApply(next, search);
 
   return (
@@ -48,7 +52,7 @@ export function SupplierPaymentFilterBar({
           >
             <Input
               allowClear
-              placeholder="Số phiếu TT, mã/tên NCC, PO, GRN"
+              placeholder={t('filters.searchPayment')}
               onPressEnter={() => onApply(filters, searchInput)}
             />
           </AutoComplete>
@@ -57,7 +61,7 @@ export function SupplierPaymentFilterBar({
           <Select
             allowClear
             showSearch
-            placeholder="Nhà cung cấp"
+            placeholder={t('filters.supplier')}
             style={{ width: '100%' }}
             optionFilterProp="label"
             value={filters.supplierId}
@@ -71,28 +75,25 @@ export function SupplierPaymentFilterBar({
         <Col xs={24} md={12} lg={4}>
           <Select
             allowClear
-            placeholder="Trạng thái"
+            placeholder={t('filters.status')}
             style={{ width: '100%' }}
             value={filters.status}
             onChange={(status) => applyNow({ ...filters, status })}
-            options={Object.entries(SUPPLIER_PAYMENT_STATUS_LABELS).map(([value, label]) => ({
-              value: Number(value),
-              label,
-            }))}
+            options={supplierPaymentStatusOptions}
           />
         </Col>
         <Col xs={24} md={12} lg={8}>
           <div style={{ display: 'flex', gap: 8, width: '100%' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <PharmaDatePicker
-                placeholder="Từ ngày"
+                placeholder={t('filters.dateFrom')}
                 value={filters.dateFrom}
                 onChange={(dateFrom) => onFiltersChange({ ...filters, dateFrom: dateFrom || undefined })}
               />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <PharmaDatePicker
-                placeholder="Đến ngày"
+                placeholder={t('filters.dateTo')}
                 value={filters.dateTo}
                 onChange={(dateTo) => onFiltersChange({ ...filters, dateTo: dateTo || undefined })}
               />
@@ -107,14 +108,14 @@ export function SupplierPaymentFilterBar({
               loading={loading}
               onClick={() => onApply(filters, searchInput)}
             >
-              Lọc
+              {tCommon('filter')}
             </Button>
-            <Button onClick={onReset}>Xóa lọc</Button>
+            <Button onClick={onReset}>{t('clearFilters')}</Button>
             <Button icon={<ReloadOutlined />} onClick={() => onApply(filters, searchInput)} loading={loading}>
-              Tải lại
+              {tCommon('reload')}
             </Button>
             <Button icon={<DownloadOutlined />} onClick={onExport} disabled={loading}>
-              Xuất Excel
+              {t('exportExcel')}
             </Button>
           </Space>
         </Col>

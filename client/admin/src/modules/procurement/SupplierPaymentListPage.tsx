@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
@@ -47,12 +48,9 @@ import type {
   SupplierPaymentListFilters,
   SupplierPaymentListItem,
 } from '@/shared/api/procurement.types';
-import {
-  PAYMENT_METHOD_LABELS,
-  SUPPLIER_PAYMENT_STATUS_LABELS,
-  SUPPLIER_PAYMENT_STATUS_TAG,
-} from '@/shared/api/procurement.types';
+import { SUPPLIER_PAYMENT_STATUS_TAG } from '@/shared/api/procurement.types';
 import { useProcurementWrite } from '@/shared/auth/usePermission';
+import { useProcurementEnums } from '@/shared/i18n/use-procurement-enums';
 import { PharmaDatePicker } from '@/shared/ui/PharmaDatePicker';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { downloadCsv } from '@/shared/utils/download-csv';
@@ -70,6 +68,11 @@ function toFormPaymentDate(value?: string): string {
 }
 
 export function SupplierPaymentListPage() {
+  const { t } = useTranslation('procurement', { keyPrefix: 'supplierPayments' });
+  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
+  const { t: tVal } = useTranslation('procurement', { keyPrefix: 'shared.validation' });
+  const { t: tCommon } = useTranslation('common', { keyPrefix: 'actions' });
+  const { paymentMethodLabel, paymentMethodOptions, supplierPaymentStatusLabel } = useProcurementEnums();
   const canWrite = useProcurementWrite();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -94,6 +97,7 @@ export function SupplierPaymentListPage() {
   const supplierId = Form.useWatch('supplierId', form);
   const goodsReceiptId = Form.useWatch('goodsReceiptId', form);
   const purchaseOrderId = Form.useWatch('purchaseOrderId', form);
+  const emDash = tShared('emDash');
 
   const openCreate = useCallback((prefill?: SupplierPaymentPrefill) => {
     setEditingId(null);
@@ -138,11 +142,11 @@ export function SupplierPaymentListPage() {
       });
       setItems(payments);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được thanh toán NCC'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadReferenceData();
@@ -169,7 +173,7 @@ export function SupplierPaymentListPage() {
 
     prefillHandled.current = true;
     if (!canWrite) {
-      message.warning('Bạn không có quyền ghi nhận thanh toán');
+      message.warning(t('messages.noWritePermission'));
       navigate('/procurement/supplier-payments', { replace: true });
       return;
     }
@@ -182,7 +186,7 @@ export function SupplierPaymentListPage() {
       purchaseOrderId: prefill.purchaseOrderId ?? linkedGrn?.purchaseOrderId,
     });
     navigate('/procurement/supplier-payments', { replace: true });
-  }, [searchParams, referenceReady, goodsReceipts, canWrite, navigate, openCreate]);
+  }, [searchParams, referenceReady, goodsReceipts, canWrite, navigate, openCreate, t]);
 
   useEffect(() => {
     if (!drawerOpen) {
@@ -220,21 +224,30 @@ export function SupplierPaymentListPage() {
 
   const exportPayments = () => {
     if (items.length === 0) {
-      message.info('Không có dữ liệu để xuất');
+      message.info(tShared('messages.noExportData'));
       return;
     }
     downloadCsv(
       `thanh-toan-ncc-${new Date().toISOString().slice(0, 10)}.csv`,
-      ['Số phiếu TT', 'NCC', 'Số tiền', 'Hình thức', 'Trạng thái', 'Ngày TT', 'PO', 'GRN'],
+      [
+        t('exportColumns.paymentNumber'),
+        t('exportColumns.supplier'),
+        t('exportColumns.amount'),
+        t('exportColumns.method'),
+        t('exportColumns.status'),
+        t('exportColumns.paymentDate'),
+        t('exportColumns.poNumber'),
+        t('exportColumns.grnNumber'),
+      ],
       items.map((row) => [
         row.paymentNumber,
         row.supplierName,
         formatDisplayMoney(row.amount),
-        PAYMENT_METHOD_LABELS[row.paymentMethod] ?? String(row.paymentMethod),
-        SUPPLIER_PAYMENT_STATUS_LABELS[row.status] ?? String(row.status),
+        paymentMethodLabel(row.paymentMethod),
+        supplierPaymentStatusLabel(row.status),
         formatDisplayDate(row.paymentDate),
-        row.poNumber ?? '—',
-        row.grnNumber ?? '—',
+        row.poNumber ?? emDash,
+        row.grnNumber ?? emDash,
       ]),
     );
   };
@@ -273,7 +286,7 @@ export function SupplierPaymentListPage() {
       const full = await fetchSupplierPayment(row.id);
       setEditingRow(full);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được chi tiết phiếu — dùng dữ liệu danh sách'));
+      message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
     }
   };
 
@@ -302,15 +315,15 @@ export function SupplierPaymentListPage() {
         notes: values.notes as string | undefined,
       };
       if (Number.isNaN(payload.amount) || payload.amount <= 0) {
-        message.error('Số tiền không hợp lệ');
+        message.error(tVal('invalidAmount'));
         return;
       }
       if (editingId) {
         await updateSupplierPayment(editingId, payload);
-        message.success('Đã cập nhật phiếu thanh toán');
+        message.success(t('messages.updated'));
       } else {
         await createSupplierPayment(payload);
-        message.success('Đã tạo phiếu thanh toán');
+        message.success(t('messages.created'));
       }
       setDrawerOpen(false);
       setEditingId(null);
@@ -320,12 +333,12 @@ export function SupplierPaymentListPage() {
       if (isAxiosError(error)) {
         const status = error.response?.status;
         if (status === 404 && editingId) {
-          message.error('API chưa hỗ trợ sửa phiếu. Restart PharmaCore.Api sau khi build.');
+          message.error(t('messages.apiEditUnsupported'));
         } else {
-          message.error(apiErrorMessage(error, 'Không lưu được phiếu thanh toán'));
+          message.error(apiErrorMessage(error, t('messages.saveFailed')));
         }
       } else {
-        message.error('Kiểm tra lại thông tin trên form');
+        message.error(tShared('messages.checkForm'));
       }
     } finally {
       setSaving(false);
@@ -336,11 +349,11 @@ export function SupplierPaymentListPage() {
     try {
       setSaving(true);
       const updated = await postSupplierPayment(id);
-      message.success('Đã ghi sổ thanh toán');
+      message.success(t('messages.posted'));
       setDetail(updated);
       void loadPayments(filters, searchInput);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không ghi sổ được'));
+      message.error(apiErrorMessage(error, t('messages.postFailed')));
     } finally {
       setSaving(false);
     }
@@ -350,11 +363,11 @@ export function SupplierPaymentListPage() {
     try {
       setSaving(true);
       await cancelSupplierPayment(id);
-      message.success('Đã hủy phiếu thanh toán');
+      message.success(t('messages.cancelled'));
       setDetailOpen(false);
       void loadPayments(filters, searchInput);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không hủy được phiếu'));
+      message.error(apiErrorMessage(error, t('messages.cancelFailed')));
     } finally {
       setSaving(false);
     }
@@ -363,66 +376,79 @@ export function SupplierPaymentListPage() {
   const filteredPos = purchaseOrders.filter((po) => !supplierId || po.supplierId === supplierId);
   const filteredGrns = goodsReceipts.filter((grn) => !supplierId || grn.supplierId === supplierId);
 
-  const columns: ColumnsType<SupplierPaymentListItem> = [
-    { title: 'Số phiếu TT', dataIndex: 'paymentNumber', width: 130 },
-    { title: 'NCC', dataIndex: 'supplierName' },
-    {
-      title: 'Số tiền',
-      dataIndex: 'amount',
-      width: 120,
-      align: 'right',
-      render: (v: number) => (
-        <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDisplayMoney(v)}</span>
-      ),
-    },
-    {
-      title: 'Hình thức',
-      dataIndex: 'paymentMethod',
-      width: 120,
-      render: (m: number) => PAYMENT_METHOD_LABELS[m] ?? m,
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      width: 110,
-      render: (s: number) => (
-        <Tag color={SUPPLIER_PAYMENT_STATUS_TAG[s] ?? 'default'}>{SUPPLIER_PAYMENT_STATUS_LABELS[s] ?? s}</Tag>
-      ),
-    },
-    {
-      title: 'Ngày TT',
-      dataIndex: 'paymentDate',
-      width: 110,
-      render: (v: string) => formatDisplayDate(v),
-    },
-    { title: 'Đơn đặt hàng', dataIndex: 'poNumber', width: 120, render: (v) => v ?? '—' },
-    { title: 'Phiếu nhập', dataIndex: 'grnNumber', width: 120, render: (v) => v ?? '—' },
-    {
-      title: '',
-      width: 90,
-      render: (_, row) => (
-        <Button
-          type="link"
-          size="small"
-          icon={<EyeOutlined />}
-          onClick={(e) => {
-            e.stopPropagation();
-            openDetail(row);
-          }}
-        >
-          Xem
-        </Button>
-      ),
-    },
-  ];
+  const columns: ColumnsType<SupplierPaymentListItem> = useMemo(
+    () => [
+      { title: tShared('columns.paymentNumber'), dataIndex: 'paymentNumber', width: 130 },
+      { title: tShared('columns.supplierShort'), dataIndex: 'supplierName' },
+      {
+        title: tShared('columns.amount'),
+        dataIndex: 'amount',
+        width: 120,
+        align: 'right',
+        render: (v: number) => (
+          <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDisplayMoney(v)}</span>
+        ),
+      },
+      {
+        title: tShared('columns.paymentMethod'),
+        dataIndex: 'paymentMethod',
+        width: 120,
+        render: (m: number) => paymentMethodLabel(m),
+      },
+      {
+        title: tShared('columns.status'),
+        dataIndex: 'status',
+        width: 110,
+        render: (s: number) => (
+          <Tag color={SUPPLIER_PAYMENT_STATUS_TAG[s] ?? 'default'}>{supplierPaymentStatusLabel(s)}</Tag>
+        ),
+      },
+      {
+        title: tShared('columns.paymentDate'),
+        dataIndex: 'paymentDate',
+        width: 110,
+        render: (v: string) => formatDisplayDate(v),
+      },
+      {
+        title: tShared('columns.purchaseOrder'),
+        dataIndex: 'poNumber',
+        width: 120,
+        render: (v) => v ?? emDash,
+      },
+      {
+        title: tShared('columns.grnNumber'),
+        dataIndex: 'grnNumber',
+        width: 120,
+        render: (v) => v ?? emDash,
+      },
+      {
+        title: '',
+        width: 90,
+        render: (_, row) => (
+          <Button
+            type="link"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              openDetail(row);
+            }}
+          >
+            {tCommon('view')}
+          </Button>
+        ),
+      },
+    ],
+    [tShared, paymentMethodLabel, supplierPaymentStatusLabel, emDash, tCommon],
+  );
 
   return (
     <Card
-      title="Thanh toán NCC"
+      title={t('title')}
       extra={
         canWrite ? (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate()}>
-            Ghi nhận TT
+            {t('record')}
           </Button>
         ) : undefined
       }
@@ -445,7 +471,7 @@ export function SupplierPaymentListPage() {
         loading={loading}
         columns={columns}
         dataSource={items}
-        pagination={{ pageSize: 20, showTotal: (total) => `${total} phiếu` }}
+        pagination={{ pageSize: 20, showTotal: (total) => tShared('pagination.payments', { count: total }) }}
         scroll={{ x: 1100 }}
         onRow={(record) => ({
           onClick: () => openDetail(record),
@@ -454,19 +480,23 @@ export function SupplierPaymentListPage() {
       />
 
       <Drawer
-        title={editingId ? 'Sửa phiếu thanh toán' : 'Ghi nhận thanh toán NCC'}
+        title={editingId ? t('editDrawer') : t('createDrawer')}
         width={480}
         open={drawerOpen}
         destroyOnClose
         onClose={closeFormDrawer}
         extra={
           <Button type="primary" icon={<SaveOutlined />} onClick={() => void handleSave()} loading={saving}>
-            Lưu
+            {tCommon('save')}
           </Button>
         }
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="supplierId" label="Nhà cung cấp" rules={[{ required: true, message: 'Chọn NCC' }]}>
+          <Form.Item
+            name="supplierId"
+            label={tShared('columns.supplierName')}
+            rules={[{ required: true, message: tVal('selectSupplier') }]}
+          >
             <Select
               showSearch
               optionFilterProp="label"
@@ -479,26 +509,26 @@ export function SupplierPaymentListPage() {
               }}
             />
           </Form.Item>
-          <Form.Item name="purchaseOrderId" label="Liên kết đơn đặt hàng (tùy chọn)">
+          <Form.Item name="purchaseOrderId" label={t('linkPoOptional')}>
             <Select
               allowClear
               showSearch
               optionFilterProp="label"
               disabled={!supplierId}
-              placeholder={supplierId ? 'Chọn đơn đặt hàng' : 'Chọn NCC trước'}
+              placeholder={supplierId ? t('selectPo') : t('selectSupplierFirst')}
               options={filteredPos.map((po) => ({
                 value: po.id,
                 label: `${po.poNumber} — ${po.supplierName}`,
               }))}
             />
           </Form.Item>
-          <Form.Item name="goodsReceiptId" label="Liên kết phiếu nhập (tùy chọn)">
+          <Form.Item name="goodsReceiptId" label={t('linkGrnOptional')}>
             <Select
               allowClear
               showSearch
               optionFilterProp="label"
               disabled={!supplierId}
-              placeholder={supplierId ? 'Chọn phiếu nhập' : 'Chọn NCC trước'}
+              placeholder={supplierId ? t('selectGrn') : t('selectSupplierFirst')}
               options={filteredGrns.map((grn) => ({
                 value: grn.id,
                 label: `${grn.grnNumber} — ${grn.supplierName}`,
@@ -519,37 +549,36 @@ export function SupplierPaymentListPage() {
           />
           <Form.Item
             name="paymentDate"
-            label="Ngày thanh toán"
-            rules={[{ required: true, message: 'Chọn ngày thanh toán' }]}
+            label={t('paymentDate')}
+            rules={[{ required: true, message: tVal('selectPaymentDate') }]}
           >
-            <PharmaDatePicker placeholder="dd/mm/yyyy" />
+            <PharmaDatePicker placeholder={tShared('datePlaceholder')} />
           </Form.Item>
           <Form.Item
             name="amount"
-            label="Số tiền"
+            label={tShared('columns.amount')}
             rules={[
-              { required: true, message: 'Nhập số tiền' },
-              { type: 'number', min: 1, message: 'Số tiền phải lớn hơn 0' },
+              { required: true, message: tVal('enterAmount') },
+              { type: 'number', min: 1, message: tVal('amountPositive') },
             ]}
           >
-            <InputNumber {...moneyInputNumberProps} style={moneyInputNumberStyle} placeholder="0" />
+            <InputNumber {...moneyInputNumberProps} style={moneyInputNumberStyle} placeholder={tShared('moneyPlaceholder')} />
           </Form.Item>
-          <Form.Item name="paymentMethod" label="Hình thức" rules={[{ required: true, message: 'Chọn hình thức' }]}>
-            <Select
-              options={Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => ({
-                value: Number(value),
-                label,
-              }))}
-            />
+          <Form.Item
+            name="paymentMethod"
+            label={tShared('columns.paymentMethod')}
+            rules={[{ required: true, message: tVal('selectPaymentMethod') }]}
+          >
+            <Select options={paymentMethodOptions} />
           </Form.Item>
-          <Form.Item name="notes" label="Ghi chú">
+          <Form.Item name="notes" label={tShared('columns.notes')}>
             <Input.TextArea rows={2} maxLength={500} showCount />
           </Form.Item>
         </Form>
       </Drawer>
 
       <Drawer
-        title={detail ? `Xem ${detail.paymentNumber}` : 'Xem phiếu thanh toán'}
+        title={detail ? t('viewDrawerWithNumber', { paymentNumber: detail.paymentNumber }) : t('viewDrawer')}
         width={520}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
@@ -559,14 +588,14 @@ export function SupplierPaymentListPage() {
           detail.status === 1 && (
             <Space>
               <Button type="primary" icon={<CheckOutlined />} onClick={() => void handlePost(detail.id)} loading={saving}>
-                Ghi sổ
+                {t('post')}
               </Button>
               <Button icon={<EditOutlined />} onClick={() => void openEdit(detail)}>
-                Sửa
+                {tCommon('edit')}
               </Button>
-              <Popconfirm title="Hủy phiếu chờ ghi sổ?" onConfirm={() => void handleCancel(detail.id)}>
+              <Popconfirm title={t('cancelConfirm')} onConfirm={() => void handleCancel(detail.id)}>
                 <Button danger icon={<CloseCircleOutlined />}>
-                  Hủy
+                  {tCommon('cancel')}
                 </Button>
               </Popconfirm>
             </Space>
@@ -575,23 +604,23 @@ export function SupplierPaymentListPage() {
       >
         {detail && (
           <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label="NCC">{detail.supplierName}</Descriptions.Item>
-            <Descriptions.Item label="Số tiền">{formatDisplayMoney(detail.amount)}</Descriptions.Item>
-            <Descriptions.Item label="Hình thức">
-              {PAYMENT_METHOD_LABELS[detail.paymentMethod] ?? detail.paymentMethod}
+            <Descriptions.Item label={tShared('columns.supplierShort')}>{detail.supplierName}</Descriptions.Item>
+            <Descriptions.Item label={tShared('columns.amount')}>{formatDisplayMoney(detail.amount)}</Descriptions.Item>
+            <Descriptions.Item label={tShared('columns.paymentMethod')}>
+              {paymentMethodLabel(detail.paymentMethod)}
             </Descriptions.Item>
-            <Descriptions.Item label="Trạng thái">
+            <Descriptions.Item label={tShared('columns.status')}>
               <Tag color={SUPPLIER_PAYMENT_STATUS_TAG[detail.status] ?? 'default'}>
-                {SUPPLIER_PAYMENT_STATUS_LABELS[detail.status] ?? detail.status}
+                {supplierPaymentStatusLabel(detail.status)}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Ngày TT">{formatDisplayDate(detail.paymentDate)}</Descriptions.Item>
+            <Descriptions.Item label={tShared('columns.paymentDate')}>{formatDisplayDate(detail.paymentDate)}</Descriptions.Item>
             {detail.postedAt && (
-              <Descriptions.Item label="Ngày ghi sổ">{formatDisplayDate(detail.postedAt)}</Descriptions.Item>
+              <Descriptions.Item label={tShared('columns.postedDate')}>{formatDisplayDate(detail.postedAt)}</Descriptions.Item>
             )}
-            <Descriptions.Item label="Đơn đặt hàng">{detail.poNumber ?? '—'}</Descriptions.Item>
-            <Descriptions.Item label="Phiếu nhập">{detail.grnNumber ?? '—'}</Descriptions.Item>
-            <Descriptions.Item label="Ghi chú">{detail.notes ?? '—'}</Descriptions.Item>
+            <Descriptions.Item label={tShared('columns.purchaseOrder')}>{detail.poNumber ?? emDash}</Descriptions.Item>
+            <Descriptions.Item label={tShared('columns.grnNumber')}>{detail.grnNumber ?? emDash}</Descriptions.Item>
+            <Descriptions.Item label={tShared('columns.notes')}>{detail.notes ?? emDash}</Descriptions.Item>
           </Descriptions>
         )}
       </Drawer>

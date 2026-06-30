@@ -9,7 +9,7 @@ import {
   ShopOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-
+import { commonT } from '@/shared/i18n';
 export type ModuleKey = 'dashboard' | 'catalog' | 'inventory' | 'procurement' | 'sales' | 'customer' | 'reports' | 'system';
 
 /**
@@ -36,21 +36,24 @@ export interface ModuleMenuItem {
 
 /** Bật module khi API backend sẵn sàng — thứ tự = luồng go-live rồi vận hành hàng ngày */
 export const moduleRegistry: ModuleMenuItem[] = [
-  { key: 'dashboard', label: 'Tổng quan', path: '/', icon: <DashboardOutlined />, enabled: true },
-  { key: 'catalog', label: 'Danh mục', path: '/catalog/products', icon: <MedicineBoxOutlined />, enabled: true },
-  { key: 'procurement', label: 'Mua hàng', path: '/procurement/suppliers', icon: <ShoppingOutlined />, enabled: true },
-  { key: 'inventory', label: 'Kho hàng', path: '/inventory/opening-balance', icon: <InboxOutlined />, enabled: true },
-  { key: 'sales', label: 'Bán hàng', path: '/sales/pos', icon: <ShopOutlined />, enabled: true },
-  { key: 'customer', label: 'Khách hàng', path: '/customer', icon: <TeamOutlined />, enabled: true },
-  { key: 'reports', label: 'Báo cáo', path: '/reports', icon: <BarChartOutlined />, enabled: true },
-  { key: 'system', label: 'Hệ thống', path: '/system/branches', icon: <SettingOutlined />, enabled: true },
+  { key: 'dashboard', label: 'dashboard', path: '/', icon: <DashboardOutlined />, enabled: true },
+  { key: 'catalog', label: 'catalog', path: '/catalog/products', icon: <MedicineBoxOutlined />, enabled: true },
+  { key: 'procurement', label: 'procurement', path: '/procurement/suppliers', icon: <ShoppingOutlined />, enabled: true },
+  { key: 'inventory', label: 'inventory', path: '/inventory/opening-balance', icon: <InboxOutlined />, enabled: true },
+  { key: 'sales', label: 'sales', path: '/sales/pos', icon: <ShopOutlined />, enabled: true },
+  { key: 'customer', label: 'customer', path: '/customer', icon: <TeamOutlined />, enabled: true },
+  { key: 'reports', label: 'reports', path: '/reports', icon: <BarChartOutlined />, enabled: true },
+  { key: 'system', label: 'system', path: '/system/branches', icon: <SettingOutlined />, enabled: true },
 ];
 
 export function buildMenuItems() {
+  const t = commonT();
   return moduleRegistry.map((module) => ({
     key: module.key,
     icon: module.icon,
-    label: module.enabled ? module.label : `${module.label} (sắp có)`,
+    label: module.enabled
+      ? t(`modules.${module.key}`)
+      : t('modules.comingSoon', { name: t(`modules.${module.key}`) }),
     disabled: !module.enabled,
   }));
 }

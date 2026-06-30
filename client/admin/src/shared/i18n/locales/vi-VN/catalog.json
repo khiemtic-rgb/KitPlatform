@@ -1,0 +1,425 @@
+{
+  "enums": {
+    "drugType": {
+      "1": "OTC",
+      "2": "Kê đơn",
+      "3": "Kiểm soát"
+    },
+    "priceType": {
+      "1": "Bán lẻ",
+      "2": "Bán buôn",
+      "3": "VIP",
+      "4": "Bảo hiểm",
+      "5": "Online"
+    },
+    "barcodeType": {
+      "1": "Nhà sản xuất",
+      "2": "Nội bộ",
+      "3": "QR",
+      "4": "GS1"
+    },
+    "productStatus": {
+      "1": "Đang bán",
+      "2": "Ngừng"
+    }
+  },
+  "products": {
+    "title": "Danh mục sản phẩm",
+    "deleteConfirm": "Xóa sản phẩm này?",
+    "bulkDeleteConfirm": "Xóa {{count}} sản phẩm đã chọn?",
+    "bulkDeleteButton": "Xóa đã chọn ({{count}})",
+    "searchPlaceholder": "Tìm tên hoặc mã vạch...",
+    "search": "Tìm",
+    "importExcel": "Import Excel",
+    "nationalLookup": "Tra cứu QG",
+    "addProduct": "Thêm sản phẩm",
+    "filterActiveAlert": "Đang lọc sản phẩm — có thể không thấy đủ danh sách.",
+    "clearFilters": "Xóa bộ lọc",
+    "advancedFilters": "Bộ lọc nâng cao",
+    "applyFilters": "Áp dụng bộ lọc",
+    "filters": {
+      "drugType": "Loại thuốc",
+      "category": "Danh mục",
+      "brand": "Thương hiệu",
+      "status": "Trạng thái",
+      "retailPriceFrom": "Giá bán lẻ từ",
+      "retailPriceTo": "Giá bán lẻ đến",
+      "barcode": "Barcode",
+      "hasBarcode": "Có barcode",
+      "noBarcode": "Chưa có barcode",
+      "price": "Giá bán",
+      "hasPrice": "Đã có giá",
+      "noPrice": "Chưa có giá"
+    },
+    "columns": {
+      "image": "Ảnh",
+      "barcode": "Barcode",
+      "productName": "Tên sản phẩm",
+      "genericName": "Hoạt chất",
+      "saleUnit": "ĐVT bán lẻ",
+      "retailPrice": "Giá lẻ",
+      "status": "Trạng thái",
+      "actions": "Thao tác"
+    },
+    "empty": {
+      "loadFailed": "Không tải được dữ liệu",
+      "noMatch": "Không có sản phẩm khớp bộ lọc",
+      "none": "Chưa có sản phẩm"
+    },
+    "paginationTotal": "{{count}} sản phẩm",
+    "messages": {
+      "loadFailed": "Không tải được danh sách sản phẩm",
+      "detailLoadFailed": "Không tải được chi tiết sản phẩm",
+      "detailReloadFailed": "Không tải lại được chi tiết sản phẩm",
+      "deleteSuccess": "Đã xóa sản phẩm",
+      "deleteFailed": "Không xóa được sản phẩm",
+      "bulkDeleteSuccess": "Đã xóa {{count}} sản phẩm",
+      "bulkDeleteFailed": "Không xóa được các sản phẩm đã chọn"
+    }
+  },
+  "catalogLayout": {
+    "tabs": {
+      "products": "Sản phẩm",
+      "categories": "Danh mục SP",
+      "brands": "Thương hiệu",
+      "ingredients": "Hoạt chất",
+      "nationalDrugs": "Tra cứu QG"
+    }
+  },
+  "shared": {
+    "edit": "Sửa",
+    "delete": "Xóa",
+    "save": "Lưu",
+    "retry": "Thử lại",
+    "reload": "Tải lại",
+    "all": "Tất cả",
+    "enterCode": "Nhập mã",
+    "enterName": "Nhập tên",
+    "deleted": "Đã xóa",
+    "deleteFailed": "Không xóa được",
+    "status": "Trạng thái",
+    "description": "Mô tả",
+    "defaultSaleUnit": "Viên",
+    "defaultPackUnit": "Hộp"
+  },
+  "brands": {
+    "title": "Thương hiệu",
+    "add": "Thêm thương hiệu",
+    "deleteConfirm": "Xóa thương hiệu này?",
+    "drawer": {
+      "createTitle": "Thêm thương hiệu",
+      "editTitle": "Sửa: {{code}}"
+    },
+    "fields": {
+      "brandCode": "Mã thương hiệu",
+      "brandName": "Tên thương hiệu",
+      "countryCode": "Mã quốc gia (ISO)"
+    },
+    "placeholders": {
+      "brandCode": "VD: DHG",
+      "countryCode": "VD: VN"
+    },
+    "columns": {
+      "code": "Mã",
+      "name": "Tên thương hiệu",
+      "country": "Quốc gia"
+    },
+    "messages": {
+      "loadFailed": "Không tải được thương hiệu",
+      "updateSuccess": "Đã cập nhật thương hiệu",
+      "createSuccess": "Đã tạo thương hiệu",
+      "saveFailed": "Không lưu được thương hiệu"
+    }
+  },
+  "categories": {
+    "title": "Danh mục sản phẩm",
+    "add": "Thêm danh mục",
+    "deleteConfirm": "Xóa danh mục này?",
+    "drawer": {
+      "createTitle": "Thêm danh mục",
+      "editTitle": "Sửa: {{code}}"
+    },
+    "fields": {
+      "categoryCode": "Mã danh mục",
+      "categoryName": "Tên danh mục",
+      "parentId": "Danh mục cha",
+      "sortOrder": "Thứ tự hiển thị",
+      "minStockQty": "Tồn tối thiểu (cảnh báo)"
+    },
+    "placeholders": {
+      "categoryCode": "VD: GIAM_DAU",
+      "parentId": "Không có (gốc)",
+      "minStockQty": "Để trống = dùng ngưỡng chung"
+    },
+    "columns": {
+      "code": "Mã",
+      "name": "Tên danh mục",
+      "parent": "Danh mục cha",
+      "sortOrder": "Thứ tự",
+      "minStockQty": "Tồn TT"
+    },
+    "messages": {
+      "loadFailed": "Không tải được danh mục",
+      "updateSuccess": "Đã cập nhật danh mục",
+      "createSuccess": "Đã tạo danh mục",
+      "saveFailed": "Không lưu được danh mục"
+    }
+  },
+  "ingredients": {
+    "title": "Hoạt chất",
+    "add": "Thêm hoạt chất",
+    "deactivate": "Ngừng",
+    "deactivateConfirm": "Ngừng hoạt chất này?",
+    "drawer": {
+      "createTitle": "Thêm hoạt chất",
+      "editTitle": "Sửa hoạt chất"
+    },
+    "fields": {
+      "ingredientCode": "Mã hoạt chất",
+      "ingredientName": "Tên hoạt chất"
+    },
+    "placeholders": {
+      "ingredientCode": "VD: PARACETAMOL",
+      "ingredientName": "VD: Paracetamol"
+    },
+    "columns": {
+      "code": "Mã",
+      "name": "Tên hoạt chất"
+    },
+    "messages": {
+      "loadFailed": "Không tải được hoạt chất",
+      "updateSuccess": "Đã cập nhật hoạt chất",
+      "createSuccess": "Đã tạo hoạt chất",
+      "saveFailed": "Không lưu được hoạt chất",
+      "deactivateSuccess": "Đã ngừng hoạt chất",
+      "deactivateFailed": "Không ngừng được hoạt chất"
+    }
+  },
+  "import": {
+    "title": "Import sản phẩm (Excel/CSV)",
+    "intro": "Cột tối thiểu: product_name, khuyến nghị thêm barcode, retail_price, min_stock_qty. Mã SP trùng sẽ bỏ qua. File lớn được gửi theo lô 500 dòng — giữ tab mở vài phút.",
+    "downloadTemplate": "Tải mẫu CSV",
+    "chooseFile": "Chọn file Excel/CSV",
+    "importButton": "Import",
+    "importButtonWithCount": "Import ({{count}} dòng)",
+    "batchProgress": "Đang import lô {{current}}/{{total}}…",
+    "fileLabel": "File: {{name}}",
+    "resultSummary": "Tạo mới: {{created}} · Bỏ qua (trùng mã): {{skipped}} · Lỗi: {{failed}}",
+    "errorDetailsTitle": "Chi tiết lỗi",
+    "previewTitle": "Xem trước ({{count}} dòng)",
+    "columns": {
+      "row": "Dòng",
+      "productCode": "Mã SP",
+      "productName": "Tên SP",
+      "barcode": "Barcode",
+      "unit": "ĐVT",
+      "retailPrice": "Giá bán",
+      "minStockQty": "Tồn TT",
+      "error": "Lỗi"
+    },
+    "messages": {
+      "noValidRows": "Không tìm thấy dòng hợp lệ. Kiểm tra header file Excel/CSV.",
+      "readSuccess": "Đã đọc {{count}} dòng từ «{{fileName}}»",
+      "readFailed": "Không đọc được file",
+      "importSuccess": "Import xong: {{created}} tạo mới, {{skipped}} bỏ qua, {{failed}} lỗi",
+      "importFailed": "Import thất bại"
+    }
+  },
+  "nationalDrugs": {
+    "alertTitle": "Tra cứu CSDL Dược QG — MVP mock (QĐ 522)",
+    "alertDescriptionDefault": "Dữ liệu mẫu nội bộ. Khi có tài khoản liên thông: cấu hình NationalDrugCatalog:Mode = sandbox hoặc live.",
+    "listTitle": "Danh mục CSDL Dược QG",
+    "searchPlaceholder": "Mã QG, số ĐK, tên, hoạt chất, barcode…",
+    "search": "Tìm",
+    "detailTitle": "Chi tiết bản ghi QG",
+    "createProduct": "Tạo sản phẩm",
+    "selectRowHint": "Chọn một dòng trong bảng để xem chi tiết.",
+    "fieldMapTitle": "Map field QĐ 522 → Danh mục nhà thuốc",
+    "fieldMapIntro": "Tham chiếu khi triển khai connector thật. MVP mock dùng cùng mapping để điền form tạo sản phẩm.",
+    "columns": {
+      "nationalId": "Mã QG",
+      "registrationNumber": "Số ĐK",
+      "productName": "Tên thuốc",
+      "ingredient": "Hoạt chất",
+      "unit": "ĐVT",
+      "category": "Loại"
+    },
+    "fieldMapColumns": {
+      "nationalLabel": "Trường QG (QĐ 522)",
+      "nationalField": "Mã API",
+      "productLabel": "→ Trường ERP",
+      "productField": "Mã ERP",
+      "notes": "Ghi chú"
+    },
+    "detail": {
+      "nationalId": "Mã QG",
+      "registrationNumber": "Số ĐK",
+      "productName": "Tên thuốc",
+      "ingredient": "Hoạt chất",
+      "dosageForm": "Dạng bào chế",
+      "packaging": "Quy cách",
+      "unit": "ĐVT",
+      "manufacturer": "NSX",
+      "countryOfOrigin": "Xuất xứ",
+      "category": "Loại",
+      "barcode": "Barcode",
+      "atc": "ATC",
+      "registrationExpiry": "HSD ĐK"
+    },
+    "messages": {
+      "configLoadFailed": "Không tải được cấu hình tra cứu dược QG",
+      "searchFailed": "Không tra cứu được danh mục dược QG",
+      "detailLoadFailed": "Không tải được chi tiết thuốc QG",
+      "prefillFailed": "Không tạo được bản ghi điền sẵn",
+      "createSuccess": "Đã tạo {{code}} — liên kết QG {{nationalId}}"
+    }
+  },
+  "productForm": {
+    "title": {
+      "create": "Thêm sản phẩm mới",
+      "edit": "Sản phẩm: {{code}}"
+    },
+    "tabs": {
+      "general": "Thông tin chung",
+      "details": "Chi tiết sản phẩm",
+      "ingredients": "Hoạt chất"
+    },
+    "fields": {
+      "productCode": "Mã sản phẩm",
+      "productName": "Tên sản phẩm",
+      "genericName": "Tên hoạt chất / generic",
+      "genericNameExtra": "Dùng để hiển thị và tìm kiếm. Có thể gợi ý từ tab Hoạt chất.",
+      "saleUnitName": "ĐVT cơ sở",
+      "saleUnitHint": "ĐVT cơ sở được tạo khi tạo sản phẩm. Thêm Hộp, Vỉ… ở tab Chi tiết sản phẩm → ĐVT quy đổi.",
+      "drugType": "Loại thuốc",
+      "categoryId": "Danh mục",
+      "brandId": "Thương hiệu",
+      "description": "Mô tả",
+      "status": "Trạng thái",
+      "minStockQty": "Tồn tối thiểu (cảnh báo)",
+      "conversionFactor": "Hệ số",
+      "strengthValue": "Hàm lượng",
+      "strengthUnit": "Đơn vị"
+    },
+    "placeholders": {
+      "loadingCode": "Đang lấy mã...",
+      "genericName": "VD: Paracetamol 500 mg",
+      "saleUnitName": "ĐVT nhỏ nhất (VD: Viên)",
+      "minStockQty": "Mặc định 10 nếu để trống",
+      "unit": "ĐVT",
+      "barcode": "Nhập mã barcode...",
+      "salePrice": "Giá bán",
+      "imageUrl": "Hoặc dán URL ảnh...",
+      "ingredient": "Chọn hoạt chất"
+    },
+    "sections": {
+      "detailsHint": "Mỗi lần bấm Thêm sẽ lưu ngay.",
+      "units": "ĐVT quy đổi",
+      "barcode": "Barcode",
+      "prices": "Giá bán",
+      "images": "Ảnh SP",
+      "ingredients": "Thành phần hoạt chất và hàm lượng",
+      "detailsTab": "chi tiết sản phẩm",
+      "ingredientsTab": "hoạt chất"
+    },
+    "empty": {
+      "units": "Chưa có đơn vị tính",
+      "barcodes": "Chưa có mã barcode",
+      "prices": "Chưa có giá",
+      "images": "Chưa có ảnh",
+      "ingredients": "Chưa có hoạt chất"
+    },
+    "unitTags": {
+      "base": "Cơ sở",
+      "sale": "Bán",
+      "conversion": "1 {{unit}} = {{factor}} cơ sở",
+      "saleUnitTitle": "Đơn vị bán",
+      "saleAllowed": "Được bán",
+      "saleNotAllowed": "Không bán"
+    },
+    "similarName": {
+      "exact": "Tên trùng với sản phẩm đã có",
+      "near": "Tên gần trùng với sản phẩm đã có (>95%)",
+      "confirmTitle": "Tên sản phẩm gần trùng",
+      "confirmBody": "Tên này trùng >95% với sản phẩm đã có. Bạn vẫn muốn lưu?"
+    },
+    "actions": {
+      "skip": "Bỏ qua",
+      "refreshCode": "Lấy mã mới",
+      "suggestGeneric": "Gợi ý",
+      "suggestGenericTitle": "Gợi ý từ danh sách hoạt chất",
+      "saveProduct": "Lưu sản phẩm",
+      "createProduct": "Tạo sản phẩm",
+      "setPrimaryBarcode": "Đặt làm mã chính",
+      "setPrimaryImage": "Đặt làm ảnh chính",
+      "uploadImage": "Chọn ảnh từ máy",
+      "stillSave": "Vẫn lưu",
+      "apply": "Áp dụng",
+      "keepCurrent": "Giữ nguyên"
+    },
+    "confirm": {
+      "unsavedTitle": "Thay đổi chưa lưu",
+      "unsavedBody": "Có thay đổi chưa được lưu. Bạn có muốn lưu lại không?",
+      "applyGenericTitle": "Áp dụng gợi ý tên hoạt chất?",
+      "applyGenericBody": "Thay nội dung hiện tại bằng gợi ý từ tab Hoạt chất:"
+    },
+    "messages": {
+      "saveFailed": "Không lưu được dữ liệu",
+      "saveUnitsFailed": "Không lưu được đơn vị tính",
+      "saveIngredientsFailed": "Không lưu được hoạt chất",
+      "fillGeneralBefore": "Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập {{section}}.",
+      "fillGeneralBeforeBarcode": "Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập mã barcode.",
+      "fillGeneralBeforePrice": "Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập giá bán.",
+      "fillGeneralBeforeImage": "Vui lòng nhập đầy đủ thông tin sản phẩm trước khi thêm hình ảnh.",
+      "fillGeneralBeforeUnits": "Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập ĐVT quy đổi.",
+      "fillGeneralBeforeIngredients": "Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập hoạt chất.",
+      "requireNameAndDrugType": "Nhập đủ tên sản phẩm và loại thuốc",
+      "createFailed": "Không tạo được sản phẩm",
+      "created": "Đã tạo sản phẩm {{code}}",
+      "createdHint": "Đã tạo {{code}}. Mở tab Chi tiết sản phẩm để thêm ĐVT, barcode, giá và ảnh.",
+      "fetchCodeFailed": "Không lấy được mã sản phẩm mới",
+      "enterBarcode": "Nhập mã barcode",
+      "barcodeDuplicate": "Mã barcode đã có trong danh sách",
+      "barcodeInUse": "Mã barcode đã dùng cho {{code}} — {{name}}",
+      "barcodeAdded": "Đã thêm mã barcode",
+      "primaryBarcodeSet": "Đã đặt mã chính",
+      "barcodeRemoved": "Đã xóa mã barcode",
+      "noUnits": "Chưa có đơn vị tính cho sản phẩm",
+      "invalidPrice": "Nhập giá hợp lệ",
+      "priceDuplicate": "Loại giá và đơn vị này đã có — không thể thêm trùng",
+      "priceAdded": "Đã thêm giá",
+      "priceRemoved": "Đã xóa giá",
+      "imageDuplicate": "Ảnh đã có trong danh sách",
+      "imageAdded": "Đã thêm ảnh",
+      "enterImageUrl": "Nhập URL ảnh",
+      "uploadFailed": "Không tải được ảnh",
+      "primaryImageSet": "Đã đặt ảnh chính",
+      "imageRemoved": "Đã xóa ảnh",
+      "enterUnitName": "Chọn hoặc nhập tên đơn vị",
+      "unitDuplicate": "Đơn vị tính đã có trong danh sách",
+      "invalidConversionFactor": "Hệ số quy đổi phải lớn hơn 0",
+      "unitAdded": "Đã thêm đơn vị tính",
+      "cannotRemoveBaseUnit": "Không xóa được đơn vị cơ sở",
+      "unitRemoved": "Đã xóa đơn vị tính",
+      "requireSaleUnit": "Phải có ít nhất một đơn vị bán",
+      "saleUnitUpdated": "Đã cập nhật đơn vị bán",
+      "selectIngredient": "Chọn hoạt chất",
+      "ingredientDuplicate": "Hoạt chất đã có trong danh sách",
+      "ingredientAdded": "Đã thêm hoạt chất",
+      "ingredientRemoved": "Đã xóa hoạt chất",
+      "noIngredientsToSuggest": "Chưa có hoạt chất để gợi ý",
+      "genericSuggested": "Đã gợi ý tên hoạt chất từ thành phần",
+      "saveProductFailed": "Không lưu được sản phẩm",
+      "saved": "Đã lưu sản phẩm",
+      "deleted": "Đã xóa",
+      "deleteFailed": "Không xóa được sản phẩm"
+    },
+    "nationalDrug": {
+      "linkedTitle": "Liên kết CSDL Dược QG",
+      "nationalId": "Mã QG",
+      "registrationNumber": "Số ĐK",
+      "suggestedBarcode": "Barcode gợi ý",
+      "suggestedBarcodeHint": "— thêm ở tab Chi tiết sau khi lưu."
+    }
+  }
+}

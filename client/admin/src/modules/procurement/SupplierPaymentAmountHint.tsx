@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Alert, Button, Space, Typography } from 'antd';
 import { formatDisplayMoney } from '@/shared/utils/money';
 import type { SupplierPaymentAmountHints } from '@/modules/procurement/supplier-payment-amount-hints';
@@ -13,16 +14,13 @@ export function SupplierPaymentAmountHint({
   loading,
   onFillAmount,
 }: SupplierPaymentAmountHintProps) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'supplierPayments.amountHint' });
+
   return (
     <Space direction="vertical" size="small" style={{ width: '100%', marginBottom: 16 }}>
-      <Alert
-        type="info"
-        showIcon
-        message="Công nợ hệ thống theo GRN trước thuế GTGT"
-        description="Số «Còn lại» trên công nợ và gợi ý «trước thuế» khớp sổ phải trả. «Tổng PO sau thuế» chỉ tham chiếu khi thanh toán theo hóa đơn VAT — có thể khác công nợ."
-      />
+      <Alert type="info" showIcon message={t('title')} description={t('description')} />
       {loading ? (
-        <Typography.Text type="secondary">Đang tính gợi ý số tiền…</Typography.Text>
+        <Typography.Text type="secondary">{t('loading')}</Typography.Text>
       ) : hints &&
         (hints.payableOutstanding != null ||
           hints.grnPreTax != null ||
@@ -31,36 +29,35 @@ export function SupplierPaymentAmountHint({
           {hints.payableOutstanding != null && (
             <Space wrap>
               <Typography.Text>
-                Số còn lại (công nợ, trước thuế)
+                {t('outstanding')}
                 {hints.grnNumber ? ` — ${hints.grnNumber}` : ''}:{' '}
                 <Typography.Text strong>{formatDisplayMoney(hints.payableOutstanding)}</Typography.Text>
               </Typography.Text>
               <Button type="link" size="small" onClick={() => onFillAmount(hints.payableOutstanding!)}>
-                Điền số còn lại
+                {t('fillOutstanding')}
               </Button>
             </Space>
           )}
-          {hints.grnPreTax != null &&
-            hints.payableOutstanding == null && (
-              <Space wrap>
-                <Typography.Text>
-                  Giá trị GRN (trước thuế)
-                  {hints.grnNumber ? ` — ${hints.grnNumber}` : ''}:{' '}
-                  <Typography.Text strong>{formatDisplayMoney(hints.grnPreTax)}</Typography.Text>
-                </Typography.Text>
-                <Button type="link" size="small" onClick={() => onFillAmount(hints.grnPreTax!)}>
-                  Điền theo GRN
-                </Button>
-              </Space>
-            )}
+          {hints.grnPreTax != null && hints.payableOutstanding == null && (
+            <Space wrap>
+              <Typography.Text>
+                {t('grnPreTax')}
+                {hints.grnNumber ? ` — ${hints.grnNumber}` : ''}:{' '}
+                <Typography.Text strong>{formatDisplayMoney(hints.grnPreTax)}</Typography.Text>
+              </Typography.Text>
+              <Button type="link" size="small" onClick={() => onFillAmount(hints.grnPreTax!)}>
+                {t('fillGrn')}
+              </Button>
+            </Space>
+          )}
           {hints.poPostTax != null && (
             <Space wrap>
               <Typography.Text type="secondary">
-                Tổng PO sau thuế (tham chiếu)
+                {t('poPostTax')}
                 {hints.poNumber ? ` — ${hints.poNumber}` : ''}: {formatDisplayMoney(hints.poPostTax)}
               </Typography.Text>
               <Button type="link" size="small" onClick={() => onFillAmount(hints.poPostTax!)}>
-                Điền tổng PO
+                {t('fillPo')}
               </Button>
             </Space>
           )}

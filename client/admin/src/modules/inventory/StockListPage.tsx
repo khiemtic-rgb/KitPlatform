@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import {
   AutoComplete,
@@ -32,6 +33,9 @@ function formatQty(value: number): string {
 }
 
 export function StockListPage() {
+  const { t } = useTranslation('inventory', { keyPrefix: 'stockList' });
+  const { t: ts } = useTranslation('inventory', { keyPrefix: 'shared' });
+  const { t: tc } = useTranslation('common');
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<StockTab>(() =>
     searchParams.get('tab') === 'fefo' ? 'fefo' : 'summary',
@@ -86,11 +90,11 @@ export function StockListPage() {
         setTotal(result.total);
       }
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được tồn kho'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [activeTab, warehouseId, search, fefoProductId, page, pageSize]);
+  }, [activeTab, warehouseId, search, fefoProductId, page, pageSize, t]);
 
   useEffect(() => {
     loadWarehouses();
@@ -150,11 +154,11 @@ export function StockListPage() {
       .slice(0, 8)
       .map((b) => ({
         value: b.batchNumber,
-        label: `Lô ${b.batchNumber} — ${b.productName}`,
+        label: `${ts('batchLabel', { number: b.batchNumber })} — ${b.productName}`,
       }));
 
     return [...productOpts, ...(activeTab === 'fefo' ? batchOpts : [])].slice(0, 20);
-  }, [suggestionProducts, suggestionBatches, searchInput, activeTab]);
+  }, [suggestionProducts, suggestionBatches, searchInput, activeTab, ts]);
 
   const applySearch = (value?: string) => {
     const text = (value ?? searchInput).trim();
@@ -180,7 +184,7 @@ export function StockListPage() {
       });
       setDetailBatches(result.items);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được chi tiết lô'));
+      message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
     } finally {
       setDetailLoading(false);
     }
@@ -224,15 +228,15 @@ export function StockListPage() {
   }, [detailBatches]);
 
   const detailBatchColumns: ColumnsType<StockBatch> = [
-    { title: 'Số lô', dataIndex: 'batchNumber', width: 110 },
+    { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 110 },
     {
-      title: 'HSD',
+      title: ts('expiryAbbr'),
       dataIndex: 'expiryDate',
       width: 100,
       render: (v?: string) => formatDisplayDate(v),
     },
     {
-      title: 'Giá vốn',
+      title: ts('unitCost'),
       dataIndex: 'unitCost',
       width: 100,
       align: 'right',
@@ -241,7 +245,7 @@ export function StockListPage() {
       ),
     },
     {
-      title: 'Tồn',
+      title: ts('stockQty'),
       dataIndex: 'quantityAvailable',
       width: 80,
       align: 'right',
@@ -252,16 +256,16 @@ export function StockListPage() {
   ];
 
   const summaryColumns: ColumnsType<StockProductSummary> = [
-    { title: 'Mã SP', dataIndex: 'productCode', width: 110 },
-    { title: 'Tên SP', dataIndex: 'productName' },
+    { title: ts('productCode'), dataIndex: 'productCode', width: 110 },
+    { title: ts('productName'), dataIndex: 'productName' },
     {
-      title: 'ĐVT',
+      title: ts('unit'),
       dataIndex: 'saleUnitName',
       width: 72,
       render: (v?: string) => v ?? '—',
     },
     {
-      title: 'Tổng tồn',
+      title: ts('totalStock'),
       dataIndex: 'totalQuantity',
       width: 110,
       align: 'right',
@@ -270,14 +274,14 @@ export function StockListPage() {
       ),
     },
     {
-      title: 'Số kho',
+      title: ts('warehouseCount'),
       dataIndex: 'warehouseCount',
       width: 90,
       align: 'right',
       render: (v: number) => formatQty(v),
     },
     {
-      title: 'Số lô',
+      title: ts('batchCount'),
       dataIndex: 'batchCount',
       width: 90,
       align: 'right',
@@ -296,25 +300,25 @@ export function StockListPage() {
             void openProductDetail(row);
           }}
         >
-          Xem
+          {tc('actions.view')}
         </Button>
       ),
     },
   ];
 
   const fefoColumns: ColumnsType<StockBatch> = [
-    { title: 'Kho', dataIndex: 'warehouseName', width: 140 },
-    { title: 'Mã SP', dataIndex: 'productCode', width: 110 },
-    { title: 'Tên SP', dataIndex: 'productName' },
-    { title: 'Số lô', dataIndex: 'batchNumber', width: 120 },
+    { title: ts('warehouse'), dataIndex: 'warehouseName', width: 140 },
+    { title: ts('productCode'), dataIndex: 'productCode', width: 110 },
+    { title: ts('productName'), dataIndex: 'productName' },
+    { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 120 },
     {
-      title: 'HSD',
+      title: ts('expiryAbbr'),
       dataIndex: 'expiryDate',
       width: 110,
       render: (v?: string) => formatDisplayDate(v),
     },
     {
-      title: 'Giá vốn',
+      title: ts('unitCost'),
       dataIndex: 'unitCost',
       width: 110,
       align: 'right',
@@ -323,7 +327,7 @@ export function StockListPage() {
       ),
     },
     {
-      title: 'Tồn',
+      title: ts('stockQty'),
       dataIndex: 'quantityAvailable',
       width: 90,
       align: 'right',
@@ -337,7 +341,7 @@ export function StockListPage() {
     <Space style={{ marginBottom: 16 }} wrap>
       <Select
         allowClear
-        placeholder="Lọc theo kho"
+        placeholder={t('filterByWarehouse')}
         style={{ width: 220 }}
         value={warehouseId}
         onChange={(id) => {
@@ -365,23 +369,23 @@ export function StockListPage() {
           }}
         >
           <Input
-            placeholder={activeTab === 'summary' ? 'Tìm SP / mã' : 'Tìm SP / mã / số lô'}
+            placeholder={activeTab === 'summary' ? t('searchSummary') : t('searchFefo')}
             prefix={<SearchOutlined />}
             allowClear
             onPressEnter={() => applySearch()}
           />
         </AutoComplete>
         <Button type="primary" icon={<SearchOutlined />} onClick={() => applySearch()}>
-          Tìm
+          {tc('actions.search')}
         </Button>
       </Space.Compact>
       {activeTab === 'fefo' && fefoProductLabel && (
         <Tag closable onClose={clearFefoProductFilter}>
-          SP: {fefoProductLabel}
+          {ts('productFilterTag', { label: fefoProductLabel })}
         </Tag>
       )}
       <Button type="primary" ghost icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-        Tải lại
+        {tc('actions.reload')}
       </Button>
     </Space>
   );
@@ -398,7 +402,7 @@ export function StockListPage() {
   };
 
   return (
-    <Card title="Tồn kho">
+    <Card title={t('title')}>
       <Tabs
         activeKey={activeTab}
         onChange={(key) => {
@@ -408,7 +412,7 @@ export function StockListPage() {
         items={[
           {
             key: 'summary',
-            label: 'Tổng hợp SP',
+            label: t('tabs.summary'),
             children: (
               <>
                 {filterBar}
@@ -428,7 +432,7 @@ export function StockListPage() {
           },
           {
             key: 'fefo',
-            label: 'Theo lô (FEFO)',
+            label: t('tabs.fefo'),
             children: (
               <>
                 {filterBar}
@@ -446,14 +450,18 @@ export function StockListPage() {
       />
 
       <Drawer
-        title={detailProduct ? `Chi tiết tồn — ${detailProduct.productName}` : 'Chi tiết tồn'}
+        title={
+          detailProduct
+            ? t('detailTitleWithProduct', { name: detailProduct.productName })
+            : t('detailTitle')
+        }
         width={640}
         open={detailProduct !== null}
         onClose={() => setDetailProduct(null)}
         extra={
           detailProduct && (
             <Button type="primary" onClick={() => jumpToFefoTab(detailProduct)}>
-              Xem theo lô FEFO
+              {t('viewFefo')}
             </Button>
           )
         }
@@ -461,17 +469,17 @@ export function StockListPage() {
         {detailProduct && (
           <>
             <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
-              <Descriptions.Item label="Mã SP">{detailProduct.productCode}</Descriptions.Item>
-              <Descriptions.Item label="ĐVT">{detailProduct.saleUnitName ?? '—'}</Descriptions.Item>
-              <Descriptions.Item label="Tổng tồn">{formatQty(detailProduct.totalQuantity)}</Descriptions.Item>
-              <Descriptions.Item label="Số kho">{detailProduct.warehouseCount}</Descriptions.Item>
-              <Descriptions.Item label="Số lô">{detailProduct.batchCount}</Descriptions.Item>
+              <Descriptions.Item label={ts('productCode')}>{detailProduct.productCode}</Descriptions.Item>
+              <Descriptions.Item label={ts('unit')}>{detailProduct.saleUnitName ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={ts('totalStock')}>{formatQty(detailProduct.totalQuantity)}</Descriptions.Item>
+              <Descriptions.Item label={ts('warehouseCount')}>{detailProduct.warehouseCount}</Descriptions.Item>
+              <Descriptions.Item label={ts('batchCount')}>{detailProduct.batchCount}</Descriptions.Item>
             </Descriptions>
 
             {detailLoading ? (
-              <Typography.Text type="secondary">Đang tải chi tiết lô…</Typography.Text>
+              <Typography.Text type="secondary">{t('loadingBatches')}</Typography.Text>
             ) : batchesByWarehouse.length === 0 ? (
-              <Typography.Text type="secondary">Không có lô tồn.</Typography.Text>
+              <Typography.Text type="secondary">{t('noBatches')}</Typography.Text>
             ) : (
               batchesByWarehouse.map((group) => (
                 <div key={group.warehouseName} style={{ marginBottom: 20 }}>

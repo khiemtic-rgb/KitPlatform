@@ -1,7 +1,12 @@
 import { Form, Input, InputNumber, Modal, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 import type { SalesShiftDetail } from '@/shared/api/sales.types';
 import { ShiftSummaryPanel } from '@/modules/sales/shift-summary-ui';
-import { formatDisplayMoney, moneyInputNumberPropsAllowZeroSuffix, moneyInputNumberStyle } from '@/shared/utils/money';
+import {
+  formatDisplayMoney,
+  moneyInputNumberPropsAllowZeroSuffix,
+  moneyInputNumberStyle,
+} from '@/shared/utils/money';
 
 type Props = {
   open: boolean;
@@ -12,16 +17,17 @@ type Props = {
 };
 
 export function CloseShiftModal({ open, loading, shift, onCancel, onConfirm }: Props) {
+  const { t } = useTranslation('sales', { keyPrefix: 'shiftReport.closeModal' });
   const [form] = Form.useForm<{ closingCash: number; closeNotes?: string }>();
   const expectedCash = shift?.summary.expectedCash ?? shift?.expectedCash ?? 0;
 
   return (
     <Modal
-      title={shift ? `Đóng ca — ${shift.shiftNumber}` : 'Đóng ca'}
+      title={shift ? t('title', { shiftNumber: shift.shiftNumber }) : t('titleDefault')}
       open={open}
       width={640}
       confirmLoading={loading}
-      okText="Đóng ca"
+      okText={t('confirm')}
       okButtonProps={{ danger: true }}
       onCancel={() => {
         form.resetFields();
@@ -35,8 +41,7 @@ export function CloseShiftModal({ open, loading, shift, onCancel, onConfirm }: P
       {shift && (
         <>
           <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
-            Đếm tiền mặt thực tế trong két và nhập số đếm được. Hệ thống so với tiền mặt dự kiến{' '}
-            <strong>{formatDisplayMoney(expectedCash)}</strong>.
+            {t('intro', { expected: formatDisplayMoney(expectedCash) })}
           </Typography.Paragraph>
           <ShiftSummaryPanel summary={shift.summary} showCashReconciliation />
           <Form
@@ -47,16 +52,16 @@ export function CloseShiftModal({ open, loading, shift, onCancel, onConfirm }: P
           >
             <Form.Item
               name="closingCash"
-              label="Tiền mặt đếm cuối ca"
-              rules={[{ required: true, message: 'Nhập tiền đếm được' }]}
+              label={t('closingCash')}
+              rules={[{ required: true, message: t('closingCashRequired') }]}
             >
               <InputNumber
                 {...moneyInputNumberPropsAllowZeroSuffix}
                 style={{ ...moneyInputNumberStyle, width: '100%' }}
               />
             </Form.Item>
-            <Form.Item name="closeNotes" label="Ghi chú (tuỳ chọn)">
-              <Input.TextArea rows={2} placeholder="Giải thích chênh lệch nếu có..." />
+            <Form.Item name="closeNotes" label={t('notes')}>
+              <Input.TextArea rows={2} placeholder={t('notesPlaceholder')} />
             </Form.Item>
           </Form>
         </>

@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Card, Descriptions, Drawer, Space, Table, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PrinterOutlined } from '@ant-design/icons';
 import { fetchSalesReturn } from '@/shared/api/sales.api';
 import type { SalesReturnDetail } from '@/shared/api/sales.types';
-import { SALES_PAYMENT_METHOD_LABELS, SALES_RETURN_STATUS_LABELS } from '@/shared/api/sales.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 import { printSalesReturn } from '@/modules/sales/sales-return-print';
 import { sectionGapStyle, sectionGapTopStyle, TabularMoney } from '@/modules/sales/sales-ui-styles';
 import { formatDisplayDate } from '@/shared/utils/date';
@@ -19,6 +20,8 @@ type Props = {
 };
 
 export function SalesReturnDetailDrawer({ open, returnId, onClose, onOpenOrder }: Props) {
+  const { t } = useTranslation('sales', { keyPrefix: 'returns.detail' });
+  const { paymentMethodLabel, returnStatusLabel } = useSalesEnums();
   const [detail, setDetail] = useState<SalesReturnDetail | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -36,7 +39,7 @@ export function SalesReturnDetailDrawer({ open, returnId, onClose, onOpenOrder }
       })
       .catch((error) => {
         if (!cancelled) {
-          message.error(apiErrorMessage(error, 'Không tải được chi tiết phiếu trả'));
+          message.error(apiErrorMessage(error, t('messages.loadFailed')));
           onClose();
         }
       })
@@ -46,40 +49,47 @@ export function SalesReturnDetailDrawer({ open, returnId, onClose, onOpenOrder }
     return () => {
       cancelled = true;
     };
-  }, [open, returnId, onClose]);
+  }, [open, returnId, onClose, t]);
 
   const handlePrint = () => {
     if (!detail) return;
     void (async () => {
       if (!(await printSalesReturn(detail))) {
-        message.warning('Trình duyệt chặn cửa sổ in — cho phép popup và thử lại.');
+        message.warning(t('messages.printBlocked'));
       }
     })();
   };
 
-  const itemColumns: ColumnsType<SalesReturnDetail['items'][number]> = [
-    { title: 'Mã SP', dataIndex: 'productCode', width: 90 },
-    { title: 'Tên SP', dataIndex: 'productName' },
-    { title: 'Lô', dataIndex: 'batchNumber', width: 90 },
-    {
-      title: 'SL trả',
-      dataIndex: 'quantity',
-      width: 80,
-      align: 'right',
-      render: (v: number) => v.toLocaleString('vi-VN'),
-    },
-    {
-      title: 'Tiền hoàn',
-      dataIndex: 'refundAmount',
-      width: 110,
-      align: 'right',
-      render: (v: number) => <TabularMoney>{formatDisplayMoney(v)}</TabularMoney>,
-    },
-  ];
+  const itemColumns: ColumnsType<SalesReturnDetail['items'][number]> = useMemo(
+    () => [
+      { title: t('lines.productCode'), dataIndex: 'productCode', width: 90 },
+      { title: t('lines.productName'), dataIndex: 'productName' },
+      { title: t('lines.batch'), dataIndex: 'batchNumber', width: 90 },
+      {
+        title: t('lines.qty'),
+        dataIndex: 'quantity',
+        width: 80,
+        align: 'right',
+        render: (v: number) => v.toLocaleString(),
+      },
+      {
+        title: t('lines.refundAmount'),
+        dataIndex: 'refundAmount',
+        width: 110,
+        align: 'right',
+        render: (v: number) => <TabularMoney>{formatDisplayMoney(v)}</TabularMoney>,
+      },
+    ],
+    [t],
+  );
 
   return (
     <Drawer
-      title={detail ? `Phiếu trả ${detail.returnNumber}` : 'Chi tiết phiếu trả'}
+      title={
+        detail
+          ? t('drawerTitle', { returnNumber: detail.returnNumber })
+          : t('drawerTitleDefault')
+      }
       width={640}
       open={open}
       onClose={onClose}
@@ -87,29 +97,39 @@ export function SalesReturnDetailDrawer({ open, returnId, onClose, onOpenOrder }
     >
       {detail && (
         <>
-          <Card size="small" title="Thao tác" style={sectionGapStyle}>
+          <Card size="small" title={t('actions.title')} style={sectionGapStyle}>
             <Space wrap>
               <Button icon={<PrinterOutlined />} onClick={handlePrint}>
-                In phiếu trả
+                {t('actions.print')}
               </Button>
               {onOpenOrder && (
-                <Button onClick={() => onOpenOrder(detail.salesOrderId)}>Xem đơn bán</Button>
+                <Button onClick={() => onOpenOrder(detail.salesOrderId)}>
+                  {t('actions.viewOrder')}
+                </Button>
               )}
             </Space>
           </Card>
 
           <Descriptions column={2} size="small" bordered style={sectionGapStyle}>
-            <Descriptions.Item label="Số phiếu">{detail.returnNumber}</Descriptions.Item>
-            <Descriptions.Item label="Đơn bán">{detail.orderNumber}</Descriptions.Item>
-            <Descriptions.Item label="Ngày trả">{formatDisplayDate(detail.returnDate)}</Descriptions.Item>
-            <Descriptions.Item label="Trạng thái">
-              <Tag>{SALES_RETURN_STATUS_LABELS[detail.status] ?? detail.status}</Tag>
+            <Descriptions.Item label={t('descriptions.returnNumber')}>
+              {detail.returnNumber}
             </Descriptions.Item>
-            <Descriptions.Item label="Ca">{detail.shiftNumber ?? '—'}</Descriptions.Item>
-            <Descriptions.Item label="Lý do trả" span={2}>
+            <Descriptions.Item label={t('descriptions.orderNumber')}>
+              {detail.orderNumber}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('descriptions.returnDate')}>
+              {formatDisplayDate(detail.returnDate)}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('descriptions.status')}>
+              <Tag>{returnStatusLabel(detail.status)}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label={t('descriptions.shift')}>
+              {detail.shiftNumber ?? '—'}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('descriptions.reason')} span={2}>
               {detail.reason?.trim() ? detail.reason : '—'}
             </Descriptions.Item>
-            <Descriptions.Item label="Tổng hoàn tiền" span={2}>
+            <Descriptions.Item label={t('descriptions.refundTotal')} span={2}>
               <strong>{formatDisplayMoney(detail.totalRefund)}</strong>
             </Descriptions.Item>
           </Descriptions>
@@ -123,11 +143,11 @@ export function SalesReturnDetailDrawer({ open, returnId, onClose, onOpenOrder }
           />
 
           {(detail.payments?.length ?? 0) > 0 && (
-            <Card size="small" title="Hình thức hoàn tiền" style={sectionGapTopStyle}>
+            <Card size="small" title={t('paymentsTitle')} style={sectionGapTopStyle}>
               <Space direction="vertical" size={4}>
                 {detail.payments!.map((p, idx) => (
                   <div key={p.id ?? idx}>
-                    {SALES_PAYMENT_METHOD_LABELS[p.paymentMethod] ?? p.paymentMethod}:{' '}
+                    {paymentMethodLabel(p.paymentMethod)}:{' '}
                     <strong>{formatDisplayMoney(p.amount)}</strong>
                   </div>
                 ))}

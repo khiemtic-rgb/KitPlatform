@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
@@ -22,10 +23,6 @@ import dayjs from 'dayjs';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { fetchCustomer } from '@/shared/api/customer-admin.api';
 import type { CustomerDetail } from '@/shared/api/customer-admin.types';
-import {
-  CUSTOMER_GENDER_LABELS,
-  CUSTOMER_STATUS_LABELS,
-} from '@/shared/api/customer-admin.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
 import { isProductFeatureEnabled } from '@/shared/product/product-phases';
@@ -33,12 +30,16 @@ import { CustomerConsentPanel } from '@/modules/customer/CustomerConsentPanel';
 import { CustomerFormDrawer } from '@/modules/customer/CustomerFormDrawer';
 import { CustomerLoyaltyPanel } from '@/modules/customer/CustomerLoyaltyPanel';
 import { CustomerOrdersPanel } from '@/modules/customer/CustomerOrdersPanel';
+import { useCustomerEnums } from '@/shared/i18n/use-customer-enums';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
 type DetailTab = 'profile' | 'consents' | 'loyalty' | 'orders';
 
 export function CustomerDetailPage() {
+  const { t } = useTranslation('customer', { keyPrefix: 'detailPage' });
+  const { t: tc } = useTranslation('common');
+  const { customerStatusLabel, customerGenderLabel } = useCustomerEnums();
   const { customerId = '' } = useParams();
   const navigate = useNavigate();
   const canWrite = useHasPermission('sales.write');
@@ -55,21 +56,102 @@ export function CustomerDetailPage() {
     try {
       setDetail(await fetchCustomer(customerId));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được hồ sơ khách hàng'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
       navigate('/customer/list');
     } finally {
       setLoading(false);
     }
-  }, [customerId, navigate]);
+  }, [customerId, navigate, t]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
+  const tabItems = useMemo(
+    () => [
+      {
+        key: 'profile' as const,
+        label: t('tabs.profile'),
+        children: detail ? (
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Descriptions bordered size="small" column={1}>
+              <Descriptions.Item label={t('fields.customerCode')}>{detail.customerCode}</Descriptions.Item>
+              <Descriptions.Item label={t('fields.fullName')}>{detail.fullName}</Descriptions.Item>
+              <Descriptions.Item label={t('fields.phone')}>{detail.phone}</Descriptions.Item>
+              <Descriptions.Item label={t('fields.email')}>{detail.email ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('fields.dateOfBirth')}>
+                {detail.dateOfBirth ? formatDisplayDate(detail.dateOfBirth) : '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('fields.gender')}>
+                {detail.gender != null ? customerGenderLabel(detail.gender) : '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('fields.allowCredit')}>
+                {detail.allowCredit ? tc('actions.yes') : tc('actions.no')}
+              </Descriptions.Item>
+              {detail.allowCredit ? (
+                <Descriptions.Item label={t('fields.creditLimit')}>
+                  {detail.creditLimit != null && detail.creditLimit > 0
+                    ? formatDisplayMoney(detail.creditLimit)
+                    : t('fields.unlimitedCredit')}
+                </Descriptions.Item>
+              ) : null}
+              <Descriptions.Item label={t('fields.createdAt')}>
+                {formatDisplayDate(detail.createdAt)}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('fields.appAccount')}>
+                {detail.hasAppAccount
+                  ? t('appAccount.registered', {
+                      lastLogin: detail.appLastLoginAt
+                        ? dayjs(detail.appLastLoginAt).format('DD/MM/YYYY HH:mm')
+                        : '—',
+                    })
+                  : t('appAccount.notRegistered')}
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Card size="small" title={t('appActivity.title')}>
+              <Space wrap>
+                <Link to="/sales/customer-drafts">
+                  <Button icon={<FormOutlined />}>{t('appActivity.draftOrders')}</Button>
+                </Link>
+                {showReservations && (
+                  <Link to="/sales/customer-reservations">
+                    <Button icon={<MedicineBoxOutlined />}>{t('appActivity.reservations')}</Button>
+                  </Link>
+                )}
+                {showChat && (
+                  <Link to="/sales/chat">
+                    <Button icon={<CommentOutlined />}>{t('appActivity.chat')}</Button>
+                  </Link>
+                )}
+              </Space>
+            </Card>
+          </Space>
+        ) : null,
+      },
+      {
+        key: 'consents' as const,
+        label: t('tabs.consents'),
+        children: detail ? <CustomerConsentPanel customerId={detail.id} /> : null,
+      },
+      {
+        key: 'loyalty' as const,
+        label: t('tabs.loyalty'),
+        children: detail ? <CustomerLoyaltyPanel customerId={detail.id} /> : null,
+      },
+      {
+        key: 'orders' as const,
+        label: t('tabs.orders'),
+        children: detail ? <CustomerOrdersPanel customerId={detail.id} /> : null,
+      },
+    ],
+    [customerGenderLabel, detail, showChat, showReservations, t, tc],
+  );
+
   if (loading || !detail) {
     return (
       <div style={{ padding: 48, textAlign: 'center' }}>
-        <Spin tip="Đang tải hồ sơ..." />
+        <Spin tip={t('loadingTip')} />
       </div>
     );
   }
@@ -78,14 +160,14 @@ export function CustomerDetailPage() {
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
       <Space wrap>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/customer/list')}>
-          Danh sách
+          {t('backToList')}
         </Button>
         <Button icon={<ReloadOutlined />} onClick={() => void load()}>
-          Tải lại
+          {tc('actions.reload')}
         </Button>
         {canWrite && detail ? (
           <Button icon={<EditOutlined />} onClick={() => setDrawerOpen(true)}>
-            Sửa
+            {tc('actions.edit')}
           </Button>
         ) : null}
       </Space>
@@ -101,96 +183,20 @@ export function CustomerDetailPage() {
           </Typography.Text>
           <Space wrap>
             <Tag color={detail.status === 1 ? 'green' : 'default'}>
-              {CUSTOMER_STATUS_LABELS[detail.status] ?? detail.status}
+              {customerStatusLabel(detail.status)}
             </Tag>
             {detail.hasAppAccount ? (
               <Tag color={detail.appVerified ? 'blue' : 'gold'}>
-                App {detail.appVerified ? 'đã xác minh' : 'chưa xác minh'}
+                {detail.appVerified ? t('appAccount.verified') : t('appAccount.unverified')}
               </Tag>
             ) : (
-              <Tag>Chưa có tài khoản app</Tag>
+              <Tag>{t('appAccount.none')}</Tag>
             )}
           </Space>
         </Space>
       </Card>
 
-      <Tabs
-        activeKey={activeTab}
-        onChange={(key) => setActiveTab(key as DetailTab)}
-        items={[
-          {
-            key: 'profile',
-            label: 'Hồ sơ',
-            children: (
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <Descriptions bordered size="small" column={1}>
-                  <Descriptions.Item label="Mã khách">{detail.customerCode}</Descriptions.Item>
-                  <Descriptions.Item label="Họ tên">{detail.fullName}</Descriptions.Item>
-                  <Descriptions.Item label="SĐT">{detail.phone}</Descriptions.Item>
-                  <Descriptions.Item label="Email">{detail.email ?? '—'}</Descriptions.Item>
-                  <Descriptions.Item label="Ngày sinh">
-                    {detail.dateOfBirth ? formatDisplayDate(detail.dateOfBirth) : '—'}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Giới tính">
-                    {detail.gender != null ? (CUSTOMER_GENDER_LABELS[detail.gender] ?? detail.gender) : '—'}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Ghi nợ">
-                    {detail.allowCredit ? 'Có' : 'Không'}
-                  </Descriptions.Item>
-                  {detail.allowCredit ? (
-                    <Descriptions.Item label="Hạn mức nợ">
-                      {detail.creditLimit != null && detail.creditLimit > 0
-                        ? formatDisplayMoney(detail.creditLimit)
-                        : 'Không giới hạn'}
-                    </Descriptions.Item>
-                  ) : null}
-                  <Descriptions.Item label="Ngày tạo">
-                    {formatDisplayDate(detail.createdAt)}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Tài khoản app">
-                    {detail.hasAppAccount
-                      ? `Có · đăng nhập ${detail.appLastLoginAt ? dayjs(detail.appLastLoginAt).format('DD/MM/YYYY HH:mm') : '—'}`
-                      : 'Chưa đăng ký'}
-                  </Descriptions.Item>
-                </Descriptions>
-
-                <Card size="small" title="Hoạt động app">
-                  <Space wrap>
-                    <Link to="/sales/customer-drafts">
-                      <Button icon={<FormOutlined />}>Đơn tạm app</Button>
-                    </Link>
-                    {showReservations && (
-                      <Link to="/sales/customer-reservations">
-                        <Button icon={<MedicineBoxOutlined />}>Đặt trước</Button>
-                      </Link>
-                    )}
-                    {showChat && (
-                      <Link to="/sales/chat">
-                        <Button icon={<CommentOutlined />}>Chat</Button>
-                      </Link>
-                    )}
-                  </Space>
-                </Card>
-              </Space>
-            ),
-          },
-          {
-            key: 'consents',
-            label: 'Đồng ý',
-            children: <CustomerConsentPanel customerId={detail.id} />,
-          },
-          {
-            key: 'loyalty',
-            label: 'Tích điểm',
-            children: <CustomerLoyaltyPanel customerId={detail.id} />,
-          },
-          {
-            key: 'orders',
-            label: 'Đơn hàng',
-            children: <CustomerOrdersPanel customerId={detail.id} />,
-          },
-        ]}
-      />
+      <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key as DetailTab)} items={tabItems} />
 
       {detail ? (
         <CustomerFormDrawer

@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Button, Result } from 'antd';
+import { commonT } from '@/shared/i18n';
 
 interface Props {
   children: ReactNode;
@@ -22,6 +23,7 @@ export class AppErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.error) {
+      const t = commonT();
       return (
         <div
           style={{
@@ -35,11 +37,11 @@ export class AppErrorBoundary extends Component<Props, State> {
         >
           <Result
             status="error"
-            title="Không tải được giao diện"
-            subTitle={this.state.error.message || 'Có lỗi JavaScript khi khởi động ứng dụng.'}
+            title={t('errorBoundary.title')}
+            subTitle={this.state.error.message || t('errorBoundary.subtitle')}
             extra={
               <Button type="primary" onClick={() => window.location.reload()}>
-                Tải lại trang
+                {t('errorBoundary.reload')}
               </Button>
             }
           />

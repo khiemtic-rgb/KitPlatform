@@ -12,21 +12,17 @@ import type {
   PosCustomerVoucher,
 } from '@/shared/api/sales.types';
 
-import { SALES_PAYMENT_METHOD_LABELS } from '@/shared/api/sales.types';
-
 import { apiErrorMessage } from '@/shared/api/api-error';
 
 import {
-
   formatDisplayMoney,
-
   moneyInputNumberPropsAllowZeroSuffix,
-
   moneyInputNumberStyle,
-
 } from '@/shared/utils/money';
 
 import { PosSummaryRow } from '@/modules/sales/pos-summary-ui';
+import { useTranslation } from 'react-i18next';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 
 
 
@@ -76,24 +72,9 @@ type Props = {
 
 
 const moneyFieldProps = {
-
   ...moneyInputNumberPropsAllowZeroSuffix,
-
   style: { ...moneyInputNumberStyle, width: 200 },
-
 } as const;
-
-
-
-const paymentMethodOptions = Object.entries(SALES_PAYMENT_METHOD_LABELS).map(([value, label]) => ({
-
-  value: Number(value),
-
-  label,
-
-}));
-
-
 
 function defaultPayments(total: number): PosCheckoutPaymentLine[] {
 
@@ -130,14 +111,6 @@ function sumCreditPaymentRows(rows: PosCheckoutPaymentLine[]): number {
 function isSingleCashPayment(rows: PosCheckoutPaymentLine[]): boolean {
 
   return rows.length === 1 && Number(rows[0]?.paymentMethod) === PAYMENT_METHOD_CASH;
-
-}
-
-
-
-function amountFieldLabel(autoSplit: boolean): string {
-
-  return autoSplit ? 'Tiền khách đưa (tự chia)' : 'Tiền khách đưa';
 
 }
 
@@ -304,6 +277,12 @@ export function PosCheckoutModal({
   onConfirm,
 
 }: Props) {
+  const { t } = useTranslation('sales');
+  const { t: tc } = useTranslation('common');
+  const { paymentMethodOptions } = useSalesEnums();
+
+  const amountFieldLabel = (autoSplit: boolean) =>
+    autoSplit ? t('pos.checkout.amountTenderedAutoSplit') : t('pos.checkout.amountTendered');
 
   const showLoyaltyPanel = Boolean(customerLoyalty?.loyaltyEnabled);
 
@@ -649,10 +628,8 @@ export function PosCheckoutModal({
       if (!paymentsAreValid(rows, payableTotal, { customerId, allowCredit: customerAllowCredit })) {
 
         const err = creditAmount > 0.009
-
-          ? 'Kiểm tra khách hàng và số tiền ghi nợ'
-
-          : 'Tổng thanh toán chưa khớp số tiền khách phải trả';
+          ? t('pos.checkout.errors.checkCredit')
+          : t('pos.checkout.errors.paymentMismatch');
 
         setSubmitError(err);
 
@@ -680,7 +657,7 @@ export function PosCheckoutModal({
 
     } catch (error) {
 
-      const errMsg = apiErrorMessage(error, 'Không ghi được đơn bán');
+      const errMsg = apiErrorMessage(error, t('pos.checkout.errors.createSaleFailed'));
 
       setSubmitError(errMsg);
 
@@ -702,9 +679,9 @@ export function PosCheckoutModal({
 
     if (creditAmount > 0.009) {
 
-      if (!customerId) return 'Chọn khách hàng để ghi nợ.';
+      if (!customerId) return t('pos.checkout.errors.selectCustomerCredit');
 
-      if (!customerAllowCredit) return 'Khách hàng chưa được phép ghi nợ.';
+      if (!customerAllowCredit) return t('pos.checkout.errors.customerCreditNotAllowed');
 
       if (
 
@@ -716,7 +693,10 @@ export function PosCheckoutModal({
 
       ) {
 
-        return `Vượt hạn mức nợ (${formatDisplayMoney(customerCreditLimit)}). Đang nợ ${formatDisplayMoney(customerCurrentOutstanding)}.`;
+        return t('pos.checkout.errors.creditLimitExceeded', {
+          limit: formatDisplayMoney(customerCreditLimit),
+          outstanding: formatDisplayMoney(customerCurrentOutstanding),
+        });
 
       }
 
@@ -730,17 +710,20 @@ export function PosCheckoutModal({
 
     if (singleCash && cashTendered < payableTotal - 0.009 && !customerAllowCredit) {
 
-      return `Khách cần trả ${formatDisplayMoney(payableTotal)} hoặc chọn KH được phép ghi nợ.`;
+      return t('pos.checkout.errors.payOrCredit', { payable: formatDisplayMoney(payableTotal) });
 
     }
 
     if (!singleCash && paidTotal > payableTotal + 0.009) {
 
-      return `Tổng thu vượt ${formatDisplayMoney(payableTotal)}.`;
+      return t('pos.checkout.errors.overpaid', { payable: formatDisplayMoney(payableTotal) });
 
     }
 
-    return `Tổng phân bổ + ghi nợ phải bằng ${formatDisplayMoney(payableTotal)} (hiện thu ${formatDisplayMoney(paidTotal)}).`;
+    return t('pos.checkout.errors.allocationMismatch', {
+      payable: formatDisplayMoney(payableTotal),
+      paid: formatDisplayMoney(paidTotal),
+    });
 
   }, [
 
@@ -766,6 +749,8 @@ export function PosCheckoutModal({
 
     singleCash,
 
+    t,
+
   ]);
 
 
@@ -778,7 +763,7 @@ export function PosCheckoutModal({
 
     <Modal
 
-      title="Thanh toán"
+      title={t('pos.checkout.title')}
 
       open={open}
 
@@ -788,13 +773,13 @@ export function PosCheckoutModal({
 
         <Button key="cancel" onClick={onCancel} disabled={busy}>
 
-          Hủy
+          {tc('actions.cancel')}
 
         </Button>,
 
         <Button key="ok" type="primary" loading={busy} onClick={() => void handleSubmit()}>
 
-          Hoàn tất bán
+          {t('pos.checkout.completeSale')}
 
         </Button>,
 
@@ -810,13 +795,13 @@ export function PosCheckoutModal({
 
       <Space direction="vertical" size={8} style={{ width: '100%', marginBottom: 16 }}>
 
-        <PosSummaryRow label="Tổng tiền hàng" value={formatDisplayMoney(subtotalGross)} />
+        <PosSummaryRow label={t('pos.checkout.subtotal')} value={formatDisplayMoney(subtotalGross)} />
 
         {lineDiscountTotal > 0 && (
 
           <PosSummaryRow
 
-            label="Chiết khấu sản phẩm"
+            label={t('pos.checkout.lineDiscount')}
 
             value={`−${formatDisplayMoney(lineDiscountTotal)}`}
 
@@ -830,7 +815,7 @@ export function PosCheckoutModal({
 
           <PosSummaryRow
 
-            label="Chiết khấu đơn hàng"
+            label={t('pos.checkout.orderDiscount')}
 
             value={`−${formatDisplayMoney(orderDiscountAmount)}`}
 
@@ -844,7 +829,7 @@ export function PosCheckoutModal({
 
           <PosSummaryRow
 
-            label="Tổng chiết khấu"
+            label={t('pos.checkout.totalDiscount')}
 
             value={`−${formatDisplayMoney(totalDiscountAmount)}`}
 
@@ -858,7 +843,7 @@ export function PosCheckoutModal({
 
           <PosSummaryRow
 
-            label="Voucher"
+            label={t('pos.checkout.voucher')}
 
             value={`−${formatDisplayMoney(voucherDiscount)}`}
 
@@ -872,7 +857,7 @@ export function PosCheckoutModal({
 
           <PosSummaryRow
 
-            label="Tiền trừ tích điểm"
+            label={t('pos.checkout.loyaltyDiscount')}
 
             value={`−${formatDisplayMoney(loyaltyDiscount)}`}
 
@@ -882,7 +867,7 @@ export function PosCheckoutModal({
 
         )}
 
-        <PosSummaryRow label="Khách phải trả" value={formatDisplayMoney(payableTotal)} strong />
+        <PosSummaryRow label={t('pos.checkout.payable')} value={formatDisplayMoney(payableTotal)} strong />
 
       </Space>
 
@@ -890,7 +875,7 @@ export function PosCheckoutModal({
 
       <div style={{ marginBottom: 16 }}>
 
-        <Typography.Text strong>Khách hàng</Typography.Text>
+        <Typography.Text strong>{t('pos.checkout.customer')}</Typography.Text>
 
         <Space.Compact block style={{ width: '100%', marginTop: 8 }}>
 
@@ -902,7 +887,7 @@ export function PosCheckoutModal({
 
             optionFilterProp="label"
 
-            placeholder="Chọn khách (bắt buộc khi ghi nợ)"
+            placeholder={t('pos.checkout.customerPlaceholderCredit')}
 
             style={{ width: onQuickAddCustomer ? 'calc(100% - 32px)' : '100%' }}
 
@@ -924,7 +909,7 @@ export function PosCheckoutModal({
 
           {onQuickAddCustomer ? (
 
-            <Tooltip title="Thêm khách nhanh">
+            <Tooltip title={t('pos.checkout.quickAddCustomer')}>
 
               <Button icon={<UserAddOutlined />} disabled={busy} onClick={onQuickAddCustomer} />
 
@@ -948,11 +933,11 @@ export function PosCheckoutModal({
 
             {selectedCustomer.allowCredit ? (
 
-              <Tag color="gold">Được ghi nợ</Tag>
+              <Tag color="gold">{t('pos.checkout.creditAllowed')}</Tag>
 
             ) : (
 
-              <Tag>Không ghi nợ</Tag>
+              <Tag>{t('pos.checkout.creditNotAllowed')}</Tag>
 
             )}
 
@@ -960,7 +945,7 @@ export function PosCheckoutModal({
 
               <Tag color="orange">
 
-                Đang nợ {formatDisplayMoney(selectedCustomer.currentOutstanding)}
+                {t('pos.checkout.outstanding', { amount: formatDisplayMoney(selectedCustomer.currentOutstanding) })}
 
               </Tag>
 
@@ -978,7 +963,7 @@ export function PosCheckoutModal({
 
             style={{ marginTop: 8 }}
 
-            message="Chọn khách hàng để ghi nợ — có thể chọn ngay tại đây, không cần quay lại màn POS."
+            message={t('pos.checkout.selectCustomerForCredit')}
 
           />
 
@@ -992,13 +977,13 @@ export function PosCheckoutModal({
 
         <div style={{ marginBottom: 16 }}>
 
-          <Typography.Text strong>Voucher khách</Typography.Text>
+          <Typography.Text strong>{t('pos.checkout.customerVouchers')}</Typography.Text>
 
           <Select
 
             allowClear
 
-            placeholder="Chọn voucher (tuỳ chọn)"
+            placeholder={t('pos.checkout.voucherPlaceholder')}
 
             style={{ width: '100%', marginTop: 8 }}
 
@@ -1046,9 +1031,14 @@ export function PosCheckoutModal({
 
             customerLoyalty.pointsBalance > 0
 
-              ? `Khách có ${formatPoints(customerLoyalty.pointsBalance)} điểm (= ${formatDisplayMoney(loyaltyPointsValue)}) · 1 điểm = ${formatDisplayMoney(customerLoyalty.amountPerPoint)}`
-
-              : `Khách chưa có điểm tích lũy · 1 điểm = ${formatDisplayMoney(customerLoyalty.amountPerPoint)}`
+              ? t('pos.checkout.loyaltyHasPoints', {
+                  points: formatPoints(customerLoyalty.pointsBalance),
+                  value: formatDisplayMoney(loyaltyPointsValue),
+                  amountPerPoint: formatDisplayMoney(customerLoyalty.amountPerPoint),
+                })
+              : t('pos.checkout.loyaltyNoPoints', {
+                  amountPerPoint: formatDisplayMoney(customerLoyalty.amountPerPoint),
+                })
 
           }
 
@@ -1060,13 +1050,13 @@ export function PosCheckoutModal({
 
                 {customerLoyalty.maxRedeemPercent < 100
 
-                  ? `Trừ tối đa ${customerLoyalty.maxRedeemPercent}% đơn — giảm tối đa ${formatDisplayMoney(maxRedeemMoney)} trên đơn này`
-
+                  ? t('pos.checkout.loyaltyMaxPercent', {
+                      percent: customerLoyalty.maxRedeemPercent,
+                      amount: formatDisplayMoney(maxRedeemMoney),
+                    })
                   : maxRedeemMoney > 0
-
-                    ? `Có thể giảm tối đa ${formatDisplayMoney(maxRedeemMoney)} bằng điểm trên đơn này`
-
-                    : 'Không thể đổi điểm trên đơn này'}
+                    ? t('pos.checkout.loyaltyMaxAmount', { amount: formatDisplayMoney(maxRedeemMoney) })
+                    : t('pos.checkout.loyaltyCannotRedeem')}
 
               </Typography.Text>
 
@@ -1078,7 +1068,7 @@ export function PosCheckoutModal({
 
                   <Space align="center">
 
-                    <Typography.Text>Trừ điểm ngay cho đơn này</Typography.Text>
+                    <Typography.Text>{t('pos.checkout.redeemNow')}</Typography.Text>
 
                     <Switch
 
@@ -1086,9 +1076,8 @@ export function PosCheckoutModal({
 
                       disabled={busy}
 
-                      checkedChildren="Có"
-
-                      unCheckedChildren="Không"
+                      checkedChildren={tc('actions.yes')}
+                      unCheckedChildren={tc('actions.no')}
 
                       onChange={handleRedeemToggle}
 
@@ -1102,7 +1091,7 @@ export function PosCheckoutModal({
 
                     <Space wrap align="start">
 
-                      <Form.Item label="Tiền trừ tích điểm" style={{ marginBottom: 0 }}>
+                      <Form.Item label={t('pos.checkout.loyaltyDiscount')} style={{ marginBottom: 0 }}>
 
                         <InputNumber
 
@@ -1124,7 +1113,7 @@ export function PosCheckoutModal({
 
                       </Form.Item>
 
-                      <Form.Item label="Số tiền còn lại" style={{ marginBottom: 0 }}>
+                      <Form.Item label={t('pos.checkout.remainingAmount')} style={{ marginBottom: 0 }}>
 
                         <InputNumber
 
@@ -1150,7 +1139,7 @@ export function PosCheckoutModal({
 
                     <Typography.Text type="secondary">
 
-                      Quy đổi ≈ {formatPoints(redeemPointsUsed)} điểm
+                      {t('pos.checkout.redeemApprox', { points: formatPoints(redeemPointsUsed) })}
 
                     </Typography.Text>
 
@@ -1162,7 +1151,7 @@ export function PosCheckoutModal({
 
                 <Typography.Text type="secondary">
 
-                  Mua {formatDisplayMoney(customerLoyalty.pointsPerAmount)} được +1 điểm.
+                  {t('pos.checkout.earnRule', { amount: formatDisplayMoney(customerLoyalty.pointsPerAmount) })}
 
                 </Typography.Text>
 
@@ -1194,7 +1183,7 @@ export function PosCheckoutModal({
 
           showIcon
 
-          message="Đơn 0 đ — không cần nhập thanh toán. Bấm Hoàn tất bán để ghi đơn."
+          message={t('pos.checkout.freeOrder')}
 
         />
 
@@ -1212,7 +1201,7 @@ export function PosCheckoutModal({
 
               style={{ marginBottom: 12 }}
 
-              message="Chia nhiều hình thức: nhập số tiền các dòng sau — dòng đầu tự nhận phần còn lại."
+              message={t('pos.checkout.splitPayments')}
 
             />
 
@@ -1230,7 +1219,7 @@ export function PosCheckoutModal({
 
                 <Space key={index} align="start" wrap style={{ marginBottom: 8, width: '100%' }}>
 
-                  <Form.Item label="Hình thức" required style={{ marginBottom: 0 }}>
+                  <Form.Item label={t('pos.checkout.paymentMethod')} required style={{ marginBottom: 0 }}>
 
                     <Select
 
@@ -1296,7 +1285,7 @@ export function PosCheckoutModal({
 
           <Button type="dashed" block icon={<PlusOutlined />} onClick={handleAddPayment} disabled={busy}>
 
-            Thêm hình thức thanh toán
+            {t('pos.checkout.addPaymentMethod')}
 
           </Button>
 
@@ -1306,7 +1295,7 @@ export function PosCheckoutModal({
 
             <Typography.Text>
 
-              Đã thu:{' '}
+              {t('pos.checkout.collected')}:{' '}
 
               <Typography.Text type={paymentOk ? 'success' : 'danger'} strong>
 
@@ -1320,7 +1309,7 @@ export function PosCheckoutModal({
 
                   {' '}
 
-                  · Ghi nợ:{' '}
+                  · {t('pos.checkout.creditLine')}:{' '}
 
                   <Typography.Text strong style={{ color: '#d48806' }}>
 
@@ -1340,7 +1329,7 @@ export function PosCheckoutModal({
 
               <Typography.Paragraph style={{ marginTop: 8, marginBottom: 0 }}>
 
-                Tiền thừa trả khách:{' '}
+                {t('pos.checkout.changeDue')}:{' '}
 
                 <Typography.Text strong style={{ color: '#1677ff' }}>
 

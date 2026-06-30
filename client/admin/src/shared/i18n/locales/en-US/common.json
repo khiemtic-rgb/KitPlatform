@@ -1,0 +1,73 @@
+{
+  "actions": {
+    "add": "Add",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "save": "Save",
+    "yes": "Yes",
+    "no": "No",
+    "edit": "Edit",
+    "reload": "Reload",
+    "retry": "Retry",
+    "search": "Search",
+    "filter": "Filter",
+    "all": "All",
+    "view": "View",
+    "close": "Close",
+    "approve": "Approve",
+    "export": "Export",
+    "archive": "Archive"
+  },
+  "fields": {
+    "status": "Status",
+    "description": "Description",
+    "notes": "Notes",
+    "actions": "Actions",
+    "enterCode": "Enter code",
+    "enterName": "Enter name"
+  },
+  "messages": {
+    "deleted": "Deleted",
+    "deleteFailed": "Could not delete"
+  },
+  "errors": {
+    "apiOffline": "Could not connect to the API. Check that PharmaCore.Api is running (port 5290)."
+  },
+  "appLayout": {
+    "logout": "Sign out",
+    "mainNavAria": "Main modules",
+    "switchModule": "Switch module",
+    "productName": "Pharmacy ERP"
+  },
+  "apiHealth": {
+    "message": "Backend API is not responding (port 5290)",
+    "description": "API on port 5290 is not responding. Run npm run dev (starts API automatically) or .\\scripts\\restart-api.ps1 — the API runs in the background; no CMD window needed.",
+    "recheck": "Check again"
+  },
+  "boot": {
+    "loading": "Starting..."
+  },
+  "routeLoading": {
+    "tip": "Loading..."
+  },
+  "errorBoundary": {
+    "title": "Could not load the interface",
+    "subtitle": "A JavaScript error occurred while starting the app.",
+    "reload": "Reload page"
+  },
+  "modules": {
+    "dashboard": "Overview",
+    "catalog": "Catalog",
+    "procurement": "Procurement",
+    "inventory": "Inventory",
+    "sales": "Sales",
+    "customer": "Customers",
+    "reports": "Reports",
+    "system": "System",
+    "comingSoon": "{{name}} (coming soon)"
+  },
+  "datePicker": {
+    "pickDate": "Pick date",
+    "monthYear": "Month/Year"
+  }
+}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button, Card, Col, Row, Space, Spin, Statistic, Tag, Typography, message } from 'antd';
 import {
   CalendarOutlined,
@@ -41,7 +42,7 @@ function KpiCard({ title, value, prefix, hint, to, linkLabel, valueStyle }: KpiC
       )}
       {to && (
         <Link to={to} style={{ fontSize: 12, marginTop: 8, display: 'inline-block' }}>
-          {linkLabel ?? 'Xem chi tiết →'}
+          {linkLabel}
         </Link>
       )}
     </Card>
@@ -49,6 +50,8 @@ function KpiCard({ title, value, prefix, hint, to, linkLabel, valueStyle }: KpiC
 }
 
 export function DashboardPage() {
+  const { t } = useTranslation('dashboard');
+  const { t: tc } = useTranslation('common');
   const user = useAuthStore((s) => s.user);
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,11 +66,11 @@ export function DashboardPage() {
     try {
       setOverview(await fetchDashboardOverview());
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được tổng quan'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load();
@@ -81,13 +84,14 @@ export function DashboardPage() {
   const showReservations = isProductFeatureEnabled('sales.customerReservations');
   const showChat = isProductFeatureEnabled('sales.chat');
   const showO2oKpis = showReservations || showChat;
+  const viewDetails = t('viewDetails');
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
         <div>
           <Typography.Title level={4} style={{ marginBottom: 4 }}>
-            Xin chào, {user?.username ?? 'Admin'}
+            {t('greeting', { name: user?.username ?? 'Admin' })}
           </Typography.Title>
           <Space wrap>
             <Tag color="blue">{user?.tenantCode ?? 'DEMO_PHARMACY'}</Tag>
@@ -99,51 +103,57 @@ export function DashboardPage() {
           </Space>
         </div>
         <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-          Tải lại
+          {tc('actions.reload')}
         </Button>
       </Space>
 
       {canSales && (
         <>
           <Typography.Title level={5} style={{ margin: 0 }}>
-            Bán hàng
+            {t('sections.sales')}
           </Typography.Title>
           <Spin spinning={loading && !overview}>
             <Row gutter={[16, 16]}>
               <Col xs={24} sm={12} lg={8}>
                 <KpiCard
-                  title="Doanh thu hôm nay"
+                  title={t('kpis.todayRevenue.title')}
                   value={formatDisplayMoney(sales?.todayNetTotal)}
                   prefix={<ShopOutlined />}
-                  hint={`7 ngày (VN): ${formatDisplayMoney(sales?.weekNetTotal)}`}
+                  hint={t('kpis.todayRevenue.hint', {
+                    amount: formatDisplayMoney(sales?.weekNetTotal),
+                  })}
                   to="/sales/shift"
+                  linkLabel={viewDetails}
                 />
               </Col>
               <Col xs={24} sm={12} lg={8}>
                 <KpiCard
-                  title="Đơn bán hôm nay"
+                  title={t('kpis.todayOrders.title')}
                   value={sales?.todayOrderCount ?? '—'}
                   prefix={<ShoppingCartOutlined />}
-                  hint="Theo ngày VN (UTC+7)"
+                  hint={t('kpis.todayOrders.hint')}
                   to="/sales/orders"
+                  linkLabel={viewDetails}
                 />
               </Col>
               <Col xs={24} sm={12} lg={8}>
                 <KpiCard
-                  title="Khách hàng"
+                  title={t('kpis.customers.title')}
                   value={catalog?.customerCount ?? '—'}
                   prefix={<TeamOutlined />}
-                  hint="Hồ sơ CRM"
+                  hint={t('kpis.customers.hint')}
                   to="/customer/list"
+                  linkLabel={viewDetails}
                 />
               </Col>
               <Col xs={24} sm={12} lg={8}>
                 <KpiCard
-                  title="Đơn app chờ xử lý"
+                  title={t('kpis.draftOrdersAwaiting.title')}
                   value={o2o?.draftOrdersAwaitingCount ?? '—'}
                   prefix={<TeamOutlined />}
-                  hint="Đã gửi / khách xác nhận"
+                  hint={t('kpis.draftOrdersAwaiting.hint')}
                   to="/sales/customer-drafts?actionable=1"
+                  linkLabel={viewDetails}
                   valueStyle={
                     (o2o?.draftOrdersAwaitingCount ?? 0) > 0 ? { color: '#d48806' } : undefined
                   }
@@ -157,17 +167,18 @@ export function DashboardPage() {
       {(canInventory || canProcurement || canCatalog) && (
         <>
           <Typography.Title level={5} style={{ margin: 0 }}>
-            Kho & mua hàng
+            {t('sections.inventoryProcurement')}
           </Typography.Title>
           <Spin spinning={loading && !overview}>
             <Row gutter={[16, 16]}>
               {canCatalog && (
                 <Col xs={24} sm={12} lg={6}>
                   <KpiCard
-                    title="Sản phẩm"
+                    title={t('kpis.products.title')}
                     value={catalog?.productCount ?? '—'}
                     prefix={<MedicineBoxOutlined />}
                     to="/catalog/products"
+                    linkLabel={viewDetails}
                   />
                 </Col>
               )}
@@ -175,18 +186,20 @@ export function DashboardPage() {
                 <>
                   <Col xs={24} sm={12} lg={6}>
                     <KpiCard
-                      title="Lô đang tồn"
+                      title={t('kpis.activeBatches.title')}
                       value={inventory?.activeBatchCount ?? '—'}
                       prefix={<InboxOutlined />}
                       to="/inventory/stock?tab=fefo"
+                      linkLabel={viewDetails}
                     />
                   </Col>
                   <Col xs={24} sm={12} lg={6}>
                     <KpiCard
-                      title={`Sắp hết HSD (${inventory?.expiryDays ?? 30} ngày)`}
+                      title={t('kpis.nearExpiry.title', { days: inventory?.expiryDays ?? 30 })}
                       value={inventory?.nearExpiryBatchCount ?? '—'}
                       prefix={<WarningOutlined />}
                       to="/inventory/stock?tab=fefo"
+                      linkLabel={viewDetails}
                       valueStyle={
                         (inventory?.nearExpiryBatchCount ?? 0) > 0 ? { color: '#cf1322' } : undefined
                       }
@@ -194,11 +207,12 @@ export function DashboardPage() {
                   </Col>
                   <Col xs={24} sm={12} lg={6}>
                     <KpiCard
-                      title="SP tồn thấp"
+                      title={t('kpis.lowStockProducts.title')}
                       value={inventory?.lowStockProductCount ?? '—'}
                       prefix={<WarningOutlined />}
-                      hint="Theo SP / danh mục / ngưỡng chung"
+                      hint={t('kpis.lowStockProducts.hint')}
                       to="/inventory/low-stock"
+                      linkLabel={viewDetails}
                       valueStyle={
                         (inventory?.lowStockProductCount ?? 0) > 0 ? { color: '#d48806' } : undefined
                       }
@@ -206,11 +220,12 @@ export function DashboardPage() {
                   </Col>
                   <Col xs={24} sm={12} lg={6}>
                     <KpiCard
-                      title="Lô tồn thấp (≤10)"
+                      title={t('kpis.lowStockBatches.title')}
                       value={inventory?.lowStockBatchCount ?? '—'}
                       prefix={<InboxOutlined />}
-                      hint="Lô còn hàng nhưng SL thấp"
+                      hint={t('kpis.lowStockBatches.hint')}
                       to="/inventory/stock?tab=fefo"
+                      linkLabel={viewDetails}
                       valueStyle={
                         (inventory?.lowStockBatchCount ?? 0) > 0 ? { color: '#cf1322' } : undefined
                       }
@@ -221,10 +236,11 @@ export function DashboardPage() {
               {canProcurement && (
                 <Col xs={24} sm={12} lg={6}>
                   <KpiCard
-                    title="PO chờ nhận hàng"
+                    title={t('kpis.pendingPoReceipt.title')}
                     value={procurement?.pendingReceiptCount ?? '—'}
                     prefix={<CalendarOutlined />}
                     to="/procurement/purchase-orders?pendingReceipt=1"
+                    linkLabel={viewDetails}
                     valueStyle={
                       (procurement?.pendingReceiptCount ?? 0) > 0 ? { color: '#d48806' } : undefined
                     }
@@ -239,18 +255,19 @@ export function DashboardPage() {
       {canSales && showO2oKpis && (
         <>
           <Typography.Title level={5} style={{ margin: 0 }}>
-            App khách
+            {t('sections.customerApp')}
           </Typography.Title>
           <Spin spinning={loading && !overview}>
             <Row gutter={[16, 16]}>
               {showReservations && (
                 <Col xs={24} sm={12} lg={8}>
                   <KpiCard
-                    title="Đặt trước chờ xử lý"
+                    title={t('kpis.reservationsAwaiting.title')}
                     value={o2o?.reservationsAwaitingCount ?? '—'}
                     prefix={<CalendarOutlined />}
-                    hint="Chờ duyệt / sẵn sàng"
+                    hint={t('kpis.reservationsAwaiting.hint')}
                     to="/sales/customer-reservations?awaiting=1"
+                    linkLabel={viewDetails}
                     valueStyle={
                       (o2o?.reservationsAwaitingCount ?? 0) > 0 ? { color: '#d48806' } : undefined
                     }
@@ -260,10 +277,11 @@ export function DashboardPage() {
               {showChat && (
                 <Col xs={24} sm={12} lg={8}>
                   <KpiCard
-                    title="Chat chưa đọc"
+                    title={t('kpis.chatUnread.title')}
                     value={o2o?.chatUnreadCount ?? '—'}
                     prefix={<MessageOutlined />}
                     to="/sales/chat"
+                    linkLabel={viewDetails}
                     valueStyle={(o2o?.chatUnreadCount ?? 0) > 0 ? { color: '#1677ff' } : undefined}
                   />
                 </Col>

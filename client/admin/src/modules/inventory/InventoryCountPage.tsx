@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   AutoComplete,
@@ -42,7 +43,8 @@ import type {
   AdjustmentCountPreviewLine,
   AdjustmentDetail,
 } from '@/shared/api/inventory.types';
-import { ADJUSTMENT_STATUS_LABELS } from '@/shared/api/inventory.types';
+import { inventoryT } from '@/shared/i18n';
+import { useInventoryEnums } from '@/shared/i18n/use-inventory-enums';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayQuantity, quantityInputNumberProps } from '@/shared/utils/money';
 import { InventoryCountApproveModal } from '@/modules/inventory/InventoryCountApproveModal';
@@ -77,6 +79,10 @@ export function InventoryCountPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const tenantCode = useAuthStore((s) => s.user?.tenantCode);
+  const { t } = useTranslation('inventory', { keyPrefix: 'inventoryCount' });
+  const { t: ts } = useTranslation('inventory', { keyPrefix: 'shared' });
+  const { t: tc } = useTranslation('common');
+  const { adjustmentStatusLabel } = useInventoryEnums();
 
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<AdjustmentDetail | null>(null);
@@ -99,12 +105,15 @@ export function InventoryCountPage() {
 
   const entriesMissingBatch = entries.filter((e) => !e.batchId);
   const canApprove = previewByBatch.length > 0 && entriesMissingBatch.length === 0;
-  const approveBlockReason =
-    entriesMissingBatch.length > 0
-      ? `Còn ${entriesMissingBatch.length} dòng đếm chưa có lô — xóa ở bảng "Dòng đếm gần đây"`
-      : previewByBatch.length === 0
-        ? 'Chưa có dòng đếm nào được ghi nhận'
-        : null;
+  const approveBlockReason = useMemo(() => {
+    if (entriesMissingBatch.length > 0) {
+      return t('approveBlock.missingBatch', { count: entriesMissingBatch.length });
+    }
+    if (previewByBatch.length === 0) {
+      return t('approveBlock.noEntries');
+    }
+    return null;
+  }, [entriesMissingBatch.length, previewByBatch.length, t]);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -120,11 +129,11 @@ export function InventoryCountPage() {
       setPreviewByProduct(prev.byProduct);
       setEntries(ents);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được phiên kiểm kê'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
     load();
@@ -179,10 +188,20 @@ export function InventoryCountPage() {
           page: 1,
           pageSize: 50,
         });
-        const options = result.items.map((b) => ({
-          value: b.id,
-          label: `${b.batchNumber}${b.expiryDate ? ` · HSD ${formatDisplayDate(b.expiryDate)}` : ''} · tồn ${formatDisplayQuantity(b.quantityAvailable)}`,
-        }));
+        const options = result.items.map((b) => {
+          const inv = inventoryT();
+          const expiry = b.expiryDate
+            ? inv('shared.expirySuffix', { date: formatDisplayDate(b.expiryDate) })
+            : '';
+          return {
+            value: b.id,
+            label: inv('shared.batchWithExpiry', {
+              number: b.batchNumber,
+              expiry,
+              qty: formatDisplayQuantity(b.quantityAvailable),
+            }),
+          };
+        });
         setBatchOptions(options);
 
         const batchId = preferredBatchId && options.some((o) => o.value === preferredBatchId)
@@ -294,23 +313,23 @@ export function InventoryCountPage() {
 
   const handleAddDraftLine = async () => {
     if (!productSearch.trim()) {
-      message.warning('Quét barcode hoặc chọn sản phẩm từ danh sách');
+      message.warning(t('messages.scanOrSelectProduct'));
       return;
     }
     if (quantity <= 0) {
-      message.warning('Số lượng phải lớn hơn 0');
+      message.warning(t('messages.quantityMustBePositive'));
       return;
     }
 
     const resolved = await resolveActiveProduct();
     if (!resolved) {
-      message.warning('Chọn sản phẩm từ danh sách gợi ý hoặc quét đúng barcode');
+      message.warning(t('messages.selectFromSuggestions'));
       return;
     }
 
     const batchId = resolved.batchId ?? selectedBatchId;
     if (!batchId) {
-      message.warning('SP này chưa có lô tại kho — không thể ghi nhận');
+      message.warning(t('messages.noBatchAtWarehouse'));
       return;
     }
 
@@ -331,7 +350,7 @@ export function InventoryCountPage() {
       },
     ]);
     setQuantity(1);
-    message.success('Đã thêm vào danh sách chờ ghi nhận');
+    message.success(t('messages.addedToDraft'));
   };
 
   const handleRemoveDraftLine = (key: string) => {
@@ -340,7 +359,7 @@ export function InventoryCountPage() {
 
   const handleSubmitDraft = async () => {
     if (!id || draftLines.length === 0) {
-      message.warning('Chưa có dòng nào để ghi nhận');
+      message.warning(t('messages.noDraftLines'));
       return;
     }
 
@@ -365,11 +384,11 @@ export function InventoryCountPage() {
       setBatchOptions([]);
       setProductOptions([]);
       setQuantity(1);
-      message.success(`Đã ghi nhận ${lineCount} dòng`);
+      message.success(t('messages.entriesRecorded', { count: lineCount }));
       await load();
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, 'Không ghi nhận được dòng đếm'));
+        message.error(apiErrorMessage(error, t('messages.recordFailed')));
       }
     } finally {
       setSubmitting(false);
@@ -380,17 +399,17 @@ export function InventoryCountPage() {
     if (!id) return;
     try {
       await deleteCountEntry(id, entryId);
-      message.success('Đã xóa dòng');
+      message.success(tc('messages.deleted'));
       await load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không xóa được dòng'));
+      message.error(apiErrorMessage(error, tc('messages.deleteFailed')));
     }
   };
 
   const handleApprove = async () => {
     if (!id) return;
     if (!canApprove) {
-      message.warning(approveBlockReason ?? 'Không thể duyệt phiên này');
+      message.warning(approveBlockReason ?? t('approveBlock.cannotApprove'));
       return;
     }
 
@@ -398,10 +417,10 @@ export function InventoryCountPage() {
     try {
       await approveAdjustment(id);
       setApproveModalOpen(false);
-      message.success('Đã duyệt kiểm kê — tồn kho đã được cập nhật');
+      message.success(t('messages.approveSuccess'));
       navigate('/inventory/adjustments');
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không duyệt được phiếu'));
+      message.error(apiErrorMessage(error, t('messages.approveFailed')));
     } finally {
       setApproving(false);
     }
@@ -409,7 +428,7 @@ export function InventoryCountPage() {
 
   const openApproveConfirm = () => {
     if (!canApprove) {
-      message.warning(approveBlockReason ?? 'Không thể duyệt phiên này');
+      message.warning(approveBlockReason ?? t('approveBlock.cannotApprove'));
       return;
     }
     setApproveModalOpen(true);
@@ -418,12 +437,12 @@ export function InventoryCountPage() {
   const varianceSummary = countVarianceSummary(previewByBatch);
 
   const previewColumns: ColumnsType<AdjustmentCountPreviewLine> = [
-    { title: 'SP', dataIndex: 'productName', ellipsis: true },
-    { title: 'Lô', dataIndex: 'batchNumber', width: 96, render: (v) => v ?? '—' },
-    { title: 'HT', dataIndex: 'systemQuantity', width: 72, align: 'right', render: (v: number) => formatDisplayQuantity(v) },
-    { title: 'Đếm', dataIndex: 'countedQuantity', width: 72, align: 'right', render: (v: number) => formatDisplayQuantity(v) },
+    { title: ts('productAbbr'), dataIndex: 'productName', ellipsis: true },
+    { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 96, render: (v) => v ?? '—' },
+    { title: ts('systemQtyAbbr'), dataIndex: 'systemQuantity', width: 72, align: 'right', render: (v: number) => formatDisplayQuantity(v) },
+    { title: ts('countAbbr'), dataIndex: 'countedQuantity', width: 72, align: 'right', render: (v: number) => formatDisplayQuantity(v) },
     {
-      title: 'Lệch',
+      title: ts('varianceAbbr'),
       dataIndex: 'differenceQuantity',
       width: 72,
       align: 'right',
@@ -436,11 +455,11 @@ export function InventoryCountPage() {
   ];
 
   const productPreviewColumns: ColumnsType<AdjustmentCountPreviewLine> = [
-    { title: 'SP', dataIndex: 'productName', ellipsis: true },
-    { title: 'HT', dataIndex: 'systemQuantity', width: 80, align: 'right', render: (v: number) => formatDisplayQuantity(v) },
-    { title: 'Đếm', dataIndex: 'countedQuantity', width: 80, align: 'right', render: (v: number) => formatDisplayQuantity(v) },
+    { title: ts('productAbbr'), dataIndex: 'productName', ellipsis: true },
+    { title: ts('systemQtyAbbr'), dataIndex: 'systemQuantity', width: 80, align: 'right', render: (v: number) => formatDisplayQuantity(v) },
+    { title: ts('countAbbr'), dataIndex: 'countedQuantity', width: 80, align: 'right', render: (v: number) => formatDisplayQuantity(v) },
     {
-      title: 'Lệch',
+      title: ts('varianceAbbr'),
       dataIndex: 'differenceQuantity',
       width: 80,
       align: 'right',
@@ -453,10 +472,10 @@ export function InventoryCountPage() {
   ];
 
   const draftColumns: ColumnsType<DraftLine> = [
-    { title: 'SP', dataIndex: 'productLabel', ellipsis: true },
-    { title: 'Lô', dataIndex: 'batchLabel', ellipsis: true },
-    { title: 'SL', dataIndex: 'quantity', width: 72, align: 'right', render: (v: number) => formatDisplayQuantity(v) },
-    { title: 'Khu vực', dataIndex: 'zone', width: 120, ellipsis: true, render: (v) => v ?? '—' },
+    { title: ts('productAbbr'), dataIndex: 'productLabel', ellipsis: true },
+    { title: ts('batchAbbr'), dataIndex: 'batchLabel', ellipsis: true },
+    { title: ts('quantityAbbr'), dataIndex: 'quantity', width: 72, align: 'right', render: (v: number) => formatDisplayQuantity(v) },
+    { title: ts('zone'), dataIndex: 'zone', width: 120, ellipsis: true, render: (v) => v ?? '—' },
     {
       title: '',
       key: 'actions',
@@ -468,11 +487,11 @@ export function InventoryCountPage() {
   ];
 
   const entryColumns: ColumnsType<AdjustmentCountEntry> = [
-    { title: 'SP', dataIndex: 'productName', ellipsis: true },
-    { title: 'Lô', dataIndex: 'batchNumber', width: 96, render: (v) => v ?? '—' },
-    { title: 'SL', dataIndex: 'quantity', width: 88, align: 'right', render: (v: number) => formatDisplayQuantity(v) },
+    { title: ts('productAbbr'), dataIndex: 'productName', ellipsis: true },
+    { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 96, render: (v) => v ?? '—' },
+    { title: ts('quantityAbbr'), dataIndex: 'quantity', width: 88, align: 'right', render: (v: number) => formatDisplayQuantity(v) },
     {
-      title: 'Người kiểm',
+      title: ts('counter'),
       dataIndex: 'counterUserName',
       width: 200,
       ellipsis: true,
@@ -496,35 +515,35 @@ export function InventoryCountPage() {
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         <Space wrap>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/inventory/adjustments')}>
-            Danh sách
+            {t('backToList')}
           </Button>
           <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
-            Tải lại
+            {tc('actions.reload')}
           </Button>
           {detail && previewByBatch.length > 0 && (
             <Button
               icon={<PrinterOutlined />}
               onClick={() => printInventoryCountSheet(detail, previewByBatch, tenantCode)}
             >
-              In biên bản A4
+              {t('printA4')}
             </Button>
           )}
           {detail && detail.status === 2 && (
-            <Tooltip title={approveBlockReason ?? 'Chốt phiên và cập nhật tồn kho'}>
+            <Tooltip title={approveBlockReason ?? t('approveTooltip')}>
               <Button
                 type="primary"
                 icon={<CheckOutlined />}
                 loading={approving}
                 onClick={openApproveConfirm}
               >
-                Duyệt
+                {tc('actions.approve')}
               </Button>
             </Tooltip>
           )}
         </Space>
 
         {detail && (
-          <Card size="small" title="Quy trình kiểm kê" loading={loading}>
+          <Card size="small" title={t('workflowTitle')} loading={loading}>
             <InventoryCountWorkflowSteps
               status={detail.status}
               entryCount={entries.length}
@@ -540,39 +559,39 @@ export function InventoryCountPage() {
             </Typography.Title>
             <Space wrap size="middle">
               <span>
-                <strong>Kho:</strong> {detail.warehouseName}
+                <strong>{ts('warehouse')}:</strong> {detail.warehouseName}
               </span>
-              <Tag>{ADJUSTMENT_STATUS_LABELS[detail.status] ?? detail.status}</Tag>
+              <Tag>{adjustmentStatusLabel(detail.status)}</Tag>
               <span>{formatDisplayDate(detail.adjustmentDate)}</span>
             </Space>
             {detail.status === 2 && approveBlockReason && (
               <Typography.Paragraph type="danger" style={{ marginBottom: 0, marginTop: 12 }}>
-                {approveBlockReason} trước khi duyệt.
+                {approveBlockReason}{t('approveBlock.beforeApprove')}
               </Typography.Paragraph>
             )}
             {detail.status === 2 && entries.length > 0 && (
               <Typography.Paragraph style={{ marginBottom: 0, marginTop: 12 }}>
-                <strong>Bước 3 — Đối chiếu:</strong>{' '}
+                <strong>{t('reconcile.title')}</strong>{' '}
                 {varianceSummary.varianceLines > 0
-                  ? `${varianceSummary.varianceLines} nhóm lệch — kiểm tra GRN/đơn bán/chuyển kho trước khi duyệt.`
-                  : 'Không có lệch — có thể duyệt để khóa phiên.'}
+                  ? t('reconcile.varianceLines', { count: varianceSummary.varianceLines })
+                  : t('reconcile.noVariance')}
               </Typography.Paragraph>
             )}
             {detail.status === 2 && canApprove && (
               <Typography.Paragraph type="success" style={{ marginBottom: 0, marginTop: 12 }}>
-                Sẵn sàng bước 4 — bấm <strong>Duyệt</strong> và hoàn tất checklist.
+                <Trans i18nKey="readyToApprove" ns="inventory" t={t} />
               </Typography.Paragraph>
             )}
           </Card>
         )}
 
         {detail?.status === 2 && (
-          <Card title={<><ScanOutlined /> Bước 2 — Quét / tìm sản phẩm</>} size="small">
+          <Card title={<><ScanOutlined /> {t('step2Title')}</>} size="small">
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               <AutoComplete
                 style={{ width: '100%' }}
                 size="large"
-                placeholder="Quét barcode hoặc gõ mã / tên thuốc"
+                placeholder={t('scanPlaceholder')}
                 value={productSearch}
                 options={productOptions}
                 onChange={(value) => {
@@ -590,20 +609,22 @@ export function InventoryCountPage() {
                   if (e.key === 'Enter') void handleAddDraftLine();
                 }}
                 disabled={submitting || resolving}
-                notFoundContent={productSearch.trim() ? 'Không có sản phẩm phù hợp' : 'Gõ mã hoặc tên để tìm'}
+                notFoundContent={
+                  productSearch.trim() ? t('notFound.noProducts') : t('notFound.typeToSearch')
+                }
               />
               {activeProductId && (
                 <Select
                   size="large"
                   showSearch
                   optionFilterProp="label"
-                  placeholder="Chọn lô (mặc định FEFO — có thể đổi)"
+                  placeholder={t('batchPlaceholder')}
                   value={selectedBatchId}
                   options={batchOptions}
                   onChange={(value) => setSelectedBatchId(value)}
                   style={{ width: '100%' }}
                   disabled={submitting || batchOptions.length === 0}
-                  notFoundContent="SP này chưa có lô tại kho"
+                  notFoundContent={t('notFound.noBatchesAtWarehouse')}
                 />
               )}
               <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'stretch', flexWrap: 'wrap' }}>
@@ -612,13 +633,13 @@ export function InventoryCountPage() {
                   value={quantity}
                   onChange={(v) => setQuantity(Number(v ?? 1))}
                   style={{ width: 200, flex: '0 0 auto' }}
-                  addonBefore="SL"
+                  addonBefore={ts('quantityAbbr')}
                   addonAfter={activeUnitName ?? '—'}
                   {...quantityInputNumberProps}
                 />
                 <Input
                   size="large"
-                  placeholder="Ghi chú (Khu vực đang kiểm kê)"
+                  placeholder={t('zonePlaceholder')}
                   value={zone}
                   onChange={(e) => setZone(e.target.value)}
                   style={{ flex: '1 1 200px', minWidth: 200 }}
@@ -630,7 +651,7 @@ export function InventoryCountPage() {
                   onClick={() => void handleAddDraftLine()}
                   style={{ flex: '0 0 auto' }}
                 >
-                  Thêm dòng
+                  {ts('addLine')}
                 </Button>
                 <Button
                   type="primary"
@@ -640,7 +661,7 @@ export function InventoryCountPage() {
                   onClick={() => void handleSubmitDraft()}
                   style={{ flex: '0 0 auto' }}
                 >
-                  Ghi nhận ({draftLines.length})
+                  {t('recordEntries', { count: draftLines.length })}
                 </Button>
               </div>
             </Space>
@@ -648,7 +669,7 @@ export function InventoryCountPage() {
         )}
 
         {draftLines.length > 0 && (
-          <Card title="Dòng đang nhập" size="small">
+          <Card title={t('draftTitle')} size="small">
             <Table
               rowKey="key"
               size="small"
@@ -660,7 +681,7 @@ export function InventoryCountPage() {
           </Card>
         )}
 
-        <Card title="Bước 3 — Tổng hợp theo lô" size="small" loading={loading}>
+        <Card title={t('step3BatchTitle')} size="small" loading={loading}>
           <Table
             rowKey={(r) => `${r.productId}-${r.batchId ?? 'batch'}`}
             size="small"
@@ -671,7 +692,7 @@ export function InventoryCountPage() {
           />
         </Card>
 
-        <Card title="Tổng theo sản phẩm" size="small" loading={loading}>
+        <Card title={t('step3ProductTitle')} size="small" loading={loading}>
           <Table
             rowKey="productId"
             size="small"
@@ -682,7 +703,7 @@ export function InventoryCountPage() {
           />
         </Card>
 
-        <Card title="Dòng đếm gần đây" size="small" loading={loading}>
+        <Card title={t('recentEntriesTitle')} size="small" loading={loading}>
           <Table
             rowKey="id"
             size="small"

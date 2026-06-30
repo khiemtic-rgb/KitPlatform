@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
@@ -24,9 +25,12 @@ import {
 } from '@/shared/api/catalog.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import type { Category } from '@/shared/api/catalog.types';
-import { STATUS_LABELS } from '@/shared/api/catalog.types';
+import { useCatalogEnums } from '@/shared/i18n/use-catalog-enums';
 
 export function CategoryListPage() {
+  const { t } = useTranslation('catalog', { keyPrefix: 'categories' });
+  const { t: ts } = useTranslation('catalog', { keyPrefix: 'shared' });
+  const { productStatusLabel, productStatusOptions } = useCatalogEnums();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<Category[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -39,14 +43,14 @@ export function CategoryListPage() {
     try {
       setItems(await fetchCategories());
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được danh mục'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const openCreate = () => {
@@ -83,7 +87,7 @@ export function CategoryListPage() {
           status: values.status ?? 1,
           minStockQty: values.minStockQty,
         });
-        message.success('Đã cập nhật danh mục');
+        message.success(t('messages.updateSuccess'));
       } else {
         await createCategory({
           categoryCode: values.categoryCode,
@@ -93,13 +97,13 @@ export function CategoryListPage() {
           sortOrder: values.sortOrder ?? 0,
           minStockQty: values.minStockQty,
         });
-        message.success('Đã tạo danh mục');
+        message.success(t('messages.createSuccess'));
       }
       setDrawerOpen(false);
-      load();
+      void load();
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, 'Không lưu được danh mục'));
+        message.error(apiErrorMessage(error, t('messages.saveFailed')));
       }
     } finally {
       setSaving(false);
@@ -111,23 +115,23 @@ export function CategoryListPage() {
     .map((c) => ({ value: c.id, label: c.categoryName }));
 
   const columns: ColumnsType<Category> = [
-    { title: 'Mã', dataIndex: 'categoryCode', width: 120 },
-    { title: 'Tên danh mục', dataIndex: 'categoryName' },
-    { title: 'Danh mục cha', dataIndex: 'parentName', render: (v) => v ?? '—' },
-    { title: 'Thứ tự', dataIndex: 'sortOrder', width: 80, align: 'center' },
+    { title: t('columns.code'), dataIndex: 'categoryCode', width: 120 },
+    { title: t('columns.name'), dataIndex: 'categoryName' },
+    { title: t('columns.parent'), dataIndex: 'parentName', render: (v) => v ?? '—' },
+    { title: t('columns.sortOrder'), dataIndex: 'sortOrder', width: 80, align: 'center' },
     {
-      title: 'Tồn TT',
+      title: t('columns.minStockQty'),
       dataIndex: 'minStockQty',
       width: 80,
       align: 'right',
       render: (v?: number) => (v != null ? v.toLocaleString('vi-VN') : '—'),
     },
     {
-      title: 'Trạng thái',
+      title: ts('status'),
       dataIndex: 'status',
       width: 100,
       render: (v: number) => (
-        <Tag color={v === 1 ? 'green' : 'default'}>{STATUS_LABELS[v] ?? v}</Tag>
+        <Tag color={v === 1 ? 'green' : 'default'}>{productStatusLabel(v)}</Tag>
       ),
     },
     {
@@ -137,22 +141,22 @@ export function CategoryListPage() {
       render: (_, row) => (
         <Space>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)}>
-            Sửa
+            {ts('edit')}
           </Button>
           <Popconfirm
-            title="Xóa danh mục này?"
+            title={t('deleteConfirm')}
             onConfirm={async () => {
               try {
                 await deleteCategory(row.id);
-                message.success('Đã xóa');
-                load();
+                message.success(ts('deleted'));
+                void load();
               } catch (error) {
-                message.error(apiErrorMessage(error, 'Không xóa được'));
+                message.error(apiErrorMessage(error, ts('deleteFailed')));
               }
             }}
           >
             <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              Xóa
+              {ts('delete')}
             </Button>
           </Popconfirm>
         </Space>
@@ -162,12 +166,12 @@ export function CategoryListPage() {
 
   return (
     <Card
-      title="Danh mục sản phẩm"
+      title={t('title')}
       extra={
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={load} />
+          <Button icon={<ReloadOutlined />} onClick={() => void load()} />
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            Thêm danh mục
+            {t('add')}
           </Button>
         </Space>
       }
@@ -175,45 +179,53 @@ export function CategoryListPage() {
       <Table rowKey="id" loading={loading} columns={columns} dataSource={items} pagination={false} />
 
       <Drawer
-        title={editing ? `Sửa: ${editing.categoryCode}` : 'Thêm danh mục'}
+        title={editing ? t('drawer.editTitle', { code: editing.categoryCode }) : t('drawer.createTitle')}
         width={480}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         extra={
-          <Button type="primary" loading={saving} onClick={handleSave}>
-            Lưu
+          <Button type="primary" loading={saving} onClick={() => void handleSave()}>
+            {ts('save')}
           </Button>
         }
       >
         <Form form={form} layout="vertical">
           {!editing && (
-            <Form.Item name="categoryCode" label="Mã danh mục" rules={[{ required: true, message: 'Nhập mã' }]}>
-              <Input placeholder="VD: GIAM_DAU" />
+            <Form.Item
+              name="categoryCode"
+              label={t('fields.categoryCode')}
+              rules={[{ required: true, message: ts('enterCode') }]}
+            >
+              <Input placeholder={t('placeholders.categoryCode')} />
             </Form.Item>
           )}
-          <Form.Item name="categoryName" label="Tên danh mục" rules={[{ required: true, message: 'Nhập tên' }]}>
+          <Form.Item
+            name="categoryName"
+            label={t('fields.categoryName')}
+            rules={[{ required: true, message: ts('enterName') }]}
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="parentId" label="Danh mục cha">
-            <Select allowClear placeholder="Không có (gốc)" options={parentOptions} />
+          <Form.Item name="parentId" label={t('fields.parentId')}>
+            <Select allowClear placeholder={t('placeholders.parentId')} options={parentOptions} />
           </Form.Item>
-          <Form.Item name="sortOrder" label="Thứ tự hiển thị">
+          <Form.Item name="sortOrder" label={t('fields.sortOrder')}>
             <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item name="minStockQty" label="Tồn tối thiểu (cảnh báo)">
-            <InputNumber min={0} precision={3} style={{ width: '100%' }} placeholder="Để trống = dùng ngưỡng chung" />
+          <Form.Item name="minStockQty" label={t('fields.minStockQty')}>
+            <InputNumber
+              min={0}
+              precision={3}
+              style={{ width: '100%' }}
+              placeholder={t('placeholders.minStockQty')}
+            />
           </Form.Item>
-          <Form.Item name="description" label="Mô tả">
+          <Form.Item name="description" label={ts('description')}>
             <Input.TextArea rows={2} />
           </Form.Item>
           {editing && (
-            <Form.Item name="status" label="Trạng thái" rules={[{ required: true }]}>
-              <Select
-                options={Object.entries(STATUS_LABELS).map(([k, v]) => ({
-                  value: Number(k),
-                  label: v,
-                }))}
-              />
+            <Form.Item name="status" label={ts('status')} rules={[{ required: true }]}>
+              <Select options={productStatusOptions} />
             </Form.Item>
           )}
         </Form>

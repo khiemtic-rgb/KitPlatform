@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Card, Descriptions, Drawer, Spin, Table, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { CreditCardOutlined } from '@ant-design/icons';
@@ -11,11 +12,9 @@ import { useProcurementWrite } from '@/shared/auth/usePermission';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
-function agingCell(value: number) {
-  return value > 0.009 ? formatDisplayMoney(value) : '—';
-}
-
 export function SupplierPayablesPage() {
+  const { t } = useTranslation('procurement', { keyPrefix: 'supplierPayables' });
+  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
   const canWrite = useProcurementWrite();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -23,17 +22,23 @@ export function SupplierPayablesPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detail, setDetail] = useState<SupplierPayablesDetail | null>(null);
+  const emDash = tShared('emDash');
+
+  const agingCell = useCallback(
+    (value: number) => (value > 0.009 ? formatDisplayMoney(value) : emDash),
+    [emDash],
+  );
 
   const loadSummary = useCallback(async () => {
     setLoading(true);
     try {
       setRows(await fetchSupplierPayables());
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được báo cáo công nợ NCC'));
+      message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadSummary();
@@ -61,7 +66,7 @@ export function SupplierPayablesPage() {
     try {
       setDetail(await fetchSupplierPayablesDetail(supplierId));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được chi tiết công nợ'));
+      message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
       setDetailOpen(false);
     } finally {
       setDetailLoading(false);
@@ -74,33 +79,33 @@ export function SupplierPayablesPage() {
 
   const detailColumns: ColumnsType<SupplierPayablesDetailLine> = useMemo(() => {
     const base: ColumnsType<SupplierPayablesDetailLine> = [
-      { title: 'Phiếu nhập', dataIndex: 'grnNumber', width: 130 },
+      { title: tShared('columns.grnNumber'), dataIndex: 'grnNumber', width: 130 },
       {
-        title: 'Ngày nhập',
+        title: tShared('columns.receiptDate'),
         dataIndex: 'receiptDate',
         width: 120,
         render: (v: string) => formatDisplayDate(v),
       },
       {
-        title: 'Giá trị GRN',
+        title: t('columns.grnValue'),
         dataIndex: 'grnTotal',
         align: 'right',
         render: (v: number) => formatDisplayMoney(v),
       },
       {
-        title: 'Đã trả',
+        title: t('columns.paid'),
         dataIndex: 'paidAmount',
         align: 'right',
         render: (v: number) => formatDisplayMoney(v),
       },
       {
-        title: 'Còn lại',
+        title: t('columns.outstanding'),
         dataIndex: 'outstanding',
         align: 'right',
         render: (v: number) => formatDisplayMoney(v),
       },
       {
-        title: 'Tuổi nợ (ngày)',
+        title: t('columns.agingDays'),
         dataIndex: 'daysOutstanding',
         width: 120,
         align: 'center',
@@ -129,76 +134,77 @@ export function SupplierPayablesPage() {
                 });
               }}
             >
-              Thanh toán
+              {t('pay')}
             </Button>
           ) : null,
       },
     ];
-  }, [canWrite, detail, navigate]);
+  }, [canWrite, detail, navigate, t, tShared]);
 
-  const columns: ColumnsType<SupplierPayablesRow> = [
-    {
-      title: 'Mã NCC',
-      dataIndex: 'supplierCode',
-      width: 110,
-    },
-    {
-      title: 'Nhà cung cấp',
-      dataIndex: 'supplierName',
-      width: 280,
-      ellipsis: { showTitle: true },
-    },
-    {
-      title: 'Hạn TT (ngày)',
-      dataIndex: 'paymentTerms',
-      width: 110,
-      align: 'center',
-    },
-    {
-      title: 'Còn phải trả',
-      dataIndex: 'totalPayable',
-      width: 140,
-      align: 'right',
-      render: (v: number) => formatDisplayMoney(v),
-    },
-    {
-      title: '0–30 ngày',
-      width: 120,
-      align: 'right',
-      render: (_, row) => agingCell(row.aging.current),
-    },
-    {
-      title: '31–60',
-      width: 110,
-      align: 'right',
-      render: (_, row) => agingCell(row.aging.days31To60),
-    },
-    {
-      title: '61–90',
-      width: 110,
-      align: 'right',
-      render: (_, row) => agingCell(row.aging.days61To90),
-    },
-    {
-      title: '> 90',
-      width: 110,
-      align: 'right',
-      render: (_, row) => agingCell(row.aging.over90),
-    },
-    {
-      title: 'Phiếu mở',
-      dataIndex: 'openDocumentCount',
-      width: 90,
-      align: 'center',
-    },
-  ];
+  const columns: ColumnsType<SupplierPayablesRow> = useMemo(
+    () => [
+      {
+        title: tShared('columns.supplierCode'),
+        dataIndex: 'supplierCode',
+        width: 110,
+      },
+      {
+        title: tShared('columns.supplierName'),
+        dataIndex: 'supplierName',
+        width: 280,
+        ellipsis: { showTitle: true },
+      },
+      {
+        title: tShared('columns.paymentTermsDays'),
+        dataIndex: 'paymentTerms',
+        width: 110,
+        align: 'center',
+      },
+      {
+        title: t('columns.totalPayable'),
+        dataIndex: 'totalPayable',
+        width: 140,
+        align: 'right',
+        render: (v: number) => formatDisplayMoney(v),
+      },
+      {
+        title: t('columns.aging0To30'),
+        width: 120,
+        align: 'right',
+        render: (_, row) => agingCell(row.aging.current),
+      },
+      {
+        title: t('columns.aging31To60'),
+        width: 110,
+        align: 'right',
+        render: (_, row) => agingCell(row.aging.days31To60),
+      },
+      {
+        title: t('columns.aging61To90'),
+        width: 110,
+        align: 'right',
+        render: (_, row) => agingCell(row.aging.days61To90),
+      },
+      {
+        title: t('columns.agingOver90'),
+        width: 110,
+        align: 'right',
+        render: (_, row) => agingCell(row.aging.over90),
+      },
+      {
+        title: t('columns.openDocuments'),
+        dataIndex: 'openDocumentCount',
+        width: 90,
+        align: 'center',
+      },
+    ],
+    [agingCell, t, tShared],
+  );
 
   return (
-    <Card title="Công nợ nhà cung cấp" bordered={false}>
+    <Card title={t('title')} bordered={false}>
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        Giá trị GRN và công nợ tính theo thành tiền dòng (trước thuế GTGT). Tổng PO sau thuế chỉ mang tính tham
-        chiếu trên màn PO — Giai đoạn 2 sẽ thống nhất cho báo cáo thuế và export kế toán. Thanh toán không gắn GRN
-        được bù trừ theo thứ tự nhập cũ nhất.
+        {t('intro')}
       </Typography.Paragraph>
 
       <Table
@@ -206,14 +212,14 @@ export function SupplierPayablesPage() {
         loading={loading}
         columns={columns}
         dataSource={rows}
-        pagination={{ pageSize: 20, showTotal: (total) => `${total} NCC` }}
+        pagination={{ pageSize: 20, showTotal: (total) => tShared('pagination.suppliers', { count: total }) }}
         scroll={{ x: 1180 }}
         summary={() =>
           rows.length > 0 ? (
             <Table.Summary fixed>
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={3}>
-                  <strong>Tổng</strong>
+                  <strong>{tShared('columns.total')}</strong>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1} align="right">
                   <strong>{formatDisplayMoney(totals.payable)}</strong>
@@ -242,7 +248,7 @@ export function SupplierPayablesPage() {
       />
 
       <Drawer
-        title={detail ? `Công nợ — ${detail.supplierName}` : 'Chi tiết công nợ'}
+        title={detail ? t('detailDrawerWithName', { supplierName: detail.supplierName }) : t('detailDrawer')}
         width={880}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
@@ -259,21 +265,23 @@ export function SupplierPayablesPage() {
                 })
               }
             >
-              Tạo thanh toán
+              {t('createPayment')}
             </Button>
           ) : undefined
         }
       >
         {detailLoading ? (
-          <Spin tip="Đang tải chi tiết..." />
+          <Spin tip={tShared('messages.loadingDetail')} />
         ) : detail ? (
           <>
             <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
-              <Descriptions.Item label="Mã NCC">{detail.supplierCode}</Descriptions.Item>
-              <Descriptions.Item label="Hạn thanh toán">{detail.paymentTerms} ngày</Descriptions.Item>
-              <Descriptions.Item label="Còn phải trả">{formatDisplayMoney(detail.totalPayable)}</Descriptions.Item>
-              <Descriptions.Item label="Tín dụng chưa phân bổ">
-                {detail.unappliedCredit > 0.009 ? formatDisplayMoney(detail.unappliedCredit) : '—'}
+              <Descriptions.Item label={tShared('columns.supplierCode')}>{detail.supplierCode}</Descriptions.Item>
+              <Descriptions.Item label={tShared('columns.paymentTermsFull')}>
+                {t('paymentTermsDays', { days: detail.paymentTerms })}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('columns.totalPayable')}>{formatDisplayMoney(detail.totalPayable)}</Descriptions.Item>
+              <Descriptions.Item label={t('columns.unappliedCredit')}>
+                {detail.unappliedCredit > 0.009 ? formatDisplayMoney(detail.unappliedCredit) : emDash}
               </Descriptions.Item>
             </Descriptions>
             <Table

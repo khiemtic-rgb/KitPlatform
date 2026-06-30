@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { App, Button, Card, Form, Input, Typography, Space } from 'antd';
 import { KeyOutlined, LockOutlined, ShopOutlined, UserOutlined } from '@ant-design/icons';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -7,7 +8,6 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import { useAuthStore } from '@/shared/auth/auth.store';
 import {
   APP_BRAND,
-  APP_PRODUCT,
   loadStoredTenantCode,
   saveStoredTenantCode,
 } from '@/shared/config/app-brand';
@@ -19,6 +19,8 @@ type LoginFormValues = {
 };
 
 export function LoginPage() {
+  const { t } = useTranslation('auth', { keyPrefix: 'login' });
+  const { t: tc } = useTranslation('common', { keyPrefix: 'appLayout' });
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm<LoginFormValues>();
@@ -39,7 +41,7 @@ export function LoginPage() {
   const onFinish = async (values: LoginFormValues) => {
     const tenantCode = values.tenantCode.trim().toUpperCase();
     if (!tenantCode) {
-      message.warning('Nhập mã nhà thuốc');
+      message.warning(t('messages.tenantRequired'));
       return;
     }
 
@@ -52,21 +54,21 @@ export function LoginPage() {
         password: values.password,
       });
       if (!data?.accessToken) {
-        message.error('API trả dữ liệu không hợp lệ — thử lại hoặc restart API.');
+        message.error(t('messages.invalidResponse'));
         return;
       }
       setSession(data);
-      message.success('Đăng nhập thành công');
+      message.success(t('messages.success'));
       navigate(from, { replace: true });
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Sai mã nhà thuốc, tên đăng nhập hoặc mật khẩu'));
+      message.error(apiErrorMessage(error, t('messages.failed')));
     } finally {
       setLoading(false);
     }
   };
 
   const onFinishFailed = () => {
-    message.warning('Vui lòng nhập đủ thông tin đăng nhập.');
+    message.warning(t('messages.formIncomplete'));
   };
 
   return (
@@ -86,7 +88,7 @@ export function LoginPage() {
             <Typography.Title level={3} style={{ marginBottom: 4 }}>
               {APP_BRAND}
             </Typography.Title>
-            <Typography.Text type="secondary">{APP_PRODUCT}</Typography.Text>
+            <Typography.Text type="secondary">{tc('productName')}</Typography.Text>
           </div>
 
           <Form
@@ -103,9 +105,9 @@ export function LoginPage() {
           >
             <Form.Item
               name="tenantCode"
-              label="Mã nhà thuốc"
-              rules={[{ required: true, message: 'Nhập mã nhà thuốc' }]}
-              tooltip="Mã do quản trị nền tảng cung cấp khi tạo nhà thuốc"
+              label={t('tenantCode')}
+              rules={[{ required: true, message: t('tenantCodeRequired') }]}
+              tooltip={t('tenantCodeTooltip')}
             >
               <Input
                 prefix={<ShopOutlined />}
@@ -117,8 +119,8 @@ export function LoginPage() {
             </Form.Item>
             <Form.Item
               name="username"
-              label="Tên đăng nhập"
-              rules={[{ required: true, message: 'Nhập tên đăng nhập' }]}
+              label={t('username')}
+              rules={[{ required: true, message: t('usernameRequired') }]}
             >
               <Input
                 prefix={<UserOutlined />}
@@ -130,8 +132,8 @@ export function LoginPage() {
             </Form.Item>
             <Form.Item
               name="password"
-              label="Mật khẩu"
-              rules={[{ required: true, message: 'Nhập mật khẩu' }]}
+              label={t('password')}
+              rules={[{ required: true, message: t('passwordRequired') }]}
             >
               <Input.Password
                 prefix={<LockOutlined />}
@@ -142,19 +144,19 @@ export function LoginPage() {
               />
             </Form.Item>
             <Button type="primary" htmlType="submit" block size="large" loading={loading}>
-              Đăng nhập
+              {t('submit')}
             </Button>
           </Form>
 
           <Space direction="vertical" size={4} style={{ width: '100%', textAlign: 'center' }}>
             <Link to="/setup">
               <Button type="link" icon={<KeyOutlined />} style={{ padding: 0 }}>
-                Thiết lập / thêm nhà thuốc mới
+                {t('setupLink')}
               </Button>
             </Link>
             {import.meta.env.DEV ? (
               <Typography.Paragraph type="secondary" style={{ marginBottom: 0, fontSize: 12 }}>
-                Dev:{' '}
+                {t('devDemo')}{' '}
                 <Button type="link" size="small" style={{ padding: 0, height: 'auto', fontSize: 12 }} onClick={fillDemo}>
                   DEMO_PHARMACY / admin
                 </Button>

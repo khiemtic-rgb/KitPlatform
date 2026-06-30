@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Tabs } from 'antd';
 import { GiftOutlined, TagOutlined, UnorderedListOutlined } from '@ant-design/icons';
@@ -10,21 +11,26 @@ import {
 import type { ProductNavTab } from '@/shared/product/product-phases';
 import { useProductNavGuard } from '@/shared/product/useProductNavGuard';
 
-const allTabs: ProductNavTab[] = [
-  { key: 'list', label: 'Danh sách', path: '/customer/list', icon: <UnorderedListOutlined /> },
-  { key: 'loyalty', label: 'Tích điểm', path: '/customer/loyalty', icon: <GiftOutlined /> },
-  {
-    key: 'vouchers',
-    label: 'Voucher',
-    path: '/customer/vouchers',
-    icon: <TagOutlined />,
-    feature: 'sales.vouchers',
-  },
-];
-
 export function CustomerLayout() {
+  const { t } = useTranslation('customer', { keyPrefix: 'customerLayout.tabs' });
   const location = useLocation();
   const navigate = useNavigate();
+
+  const allTabs: ProductNavTab[] = useMemo(
+    () => [
+      { key: 'list', label: t('list'), path: '/customer/list', icon: <UnorderedListOutlined /> },
+      { key: 'loyalty', label: t('loyalty'), path: '/customer/loyalty', icon: <GiftOutlined /> },
+      {
+        key: 'vouchers',
+        label: t('vouchers'),
+        path: '/customer/vouchers',
+        icon: <TagOutlined />,
+        feature: 'sales.vouchers',
+      },
+    ],
+    [t],
+  );
+
   const tabs = useProductNavGuard(allTabs, '/customer/list');
 
   useEffect(() => {
@@ -35,9 +41,9 @@ export function CustomerLayout() {
 
   const onDetailRoute =
     /^\/customer\/[^/]+/.test(location.pathname) &&
-    !tabs.some((t) => location.pathname.startsWith(t.path));
+    !tabs.some((tab) => location.pathname.startsWith(tab.path));
 
-  const activeKey = tabs.find((t) => location.pathname.startsWith(t.path))?.key ?? 'list';
+  const activeKey = tabs.find((tab) => location.pathname.startsWith(tab.path))?.key ?? 'list';
 
   return (
     <div>
@@ -47,12 +53,12 @@ export function CustomerLayout() {
             <Tabs
               activeKey={activeKey}
               size="small"
-              items={tabs.map((t) => ({
-                key: t.key,
-                label: secondaryTabLabel(t.label, t.icon),
+              items={tabs.map((tab) => ({
+                key: tab.key,
+                label: secondaryTabLabel(tab.label, tab.icon),
               }))}
               onChange={(key) => {
-                const tab = tabs.find((t) => t.key === key);
+                const tab = tabs.find((item) => item.key === key);
                 if (tab) navigate(tab.path);
               }}
             />

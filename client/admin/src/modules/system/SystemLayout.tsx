@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Tabs } from 'antd';
 import { BankOutlined, FileSearchOutlined, PrinterOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
@@ -8,22 +9,26 @@ import {
   secondaryTabsBarStyle,
 } from '@/shared/components/module-tabs.ui';
 
-const tabs = [
-  { key: 'branches', label: 'Chi nhánh', path: '/system/branches', icon: <BankOutlined /> },
-  { key: 'users', label: 'Nhân viên', path: '/system/users', icon: <UserOutlined /> },
-  { key: 'roles', label: 'Vai trò', path: '/system/roles', icon: <SafetyCertificateOutlined /> },
-  {
-    key: 'pos-settings',
-    label: 'Phiếu in & POS',
-    path: '/system/pos-settings',
-    icon: <PrinterOutlined />,
-  },
-  { key: 'audit-log', label: 'Nhật ký', path: '/system/audit-log', icon: <FileSearchOutlined /> },
-];
-
 export function SystemLayout() {
+  const { t } = useTranslation('system', { keyPrefix: 'systemLayout.tabs' });
   const location = useLocation();
   const navigate = useNavigate();
+
+  const tabs = useMemo(
+    () => [
+      { key: 'branches', label: t('branches'), path: '/system/branches', icon: <BankOutlined /> },
+      { key: 'users', label: t('users'), path: '/system/users', icon: <UserOutlined /> },
+      { key: 'roles', label: t('roles'), path: '/system/roles', icon: <SafetyCertificateOutlined /> },
+      {
+        key: 'pos-settings',
+        label: t('posSettings'),
+        path: '/system/pos-settings',
+        icon: <PrinterOutlined />,
+      },
+      { key: 'audit-log', label: t('auditLog'), path: '/system/audit-log', icon: <FileSearchOutlined /> },
+    ],
+    [t],
+  );
 
   useEffect(() => {
     if (location.pathname === '/system' || location.pathname === '/system/') {
@@ -32,7 +37,7 @@ export function SystemLayout() {
   }, [location.pathname, navigate]);
 
   const activeKey =
-    tabs.find((t) => location.pathname.startsWith(t.path))?.key ?? 'branches';
+    tabs.find((tab) => location.pathname.startsWith(tab.path))?.key ?? 'branches';
 
   return (
     <div>
@@ -41,12 +46,12 @@ export function SystemLayout() {
           <Tabs
             activeKey={activeKey}
             size="small"
-            items={tabs.map((t) => ({
-              key: t.key,
-              label: secondaryTabLabel(t.label, t.icon),
+            items={tabs.map((tab) => ({
+              key: tab.key,
+              label: secondaryTabLabel(tab.label, tab.icon),
             }))}
             onChange={(key) => {
-              const tab = tabs.find((t) => t.key === key);
+              const tab = tabs.find((item) => item.key === key);
               if (tab) navigate(tab.path);
             }}
           />

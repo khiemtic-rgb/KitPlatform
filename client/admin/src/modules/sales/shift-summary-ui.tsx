@@ -1,7 +1,9 @@
 import { Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SalesShiftSummary } from '@/shared/api/sales.types';
-import { SALES_PAYMENT_METHOD_LABELS } from '@/shared/api/sales.types';
+import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 import { PosSummaryPanel, PosSummaryRow } from '@/modules/sales/pos-summary-ui';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
@@ -12,62 +14,68 @@ type Props = {
 };
 
 export function ShiftSummaryPanel({ summary, loading, showCashReconciliation }: Props) {
-  const columns: ColumnsType<SalesShiftSummary['byMethod'][number]> = [
-    {
-      title: 'Hình thức',
-      dataIndex: 'paymentMethod',
-      render: (m: number) => SALES_PAYMENT_METHOD_LABELS[m] ?? m,
-    },
-    {
-      title: 'Thu bán',
-      dataIndex: 'salesAmount',
-      align: 'right',
-      render: (v: number) => formatDisplayMoney(v),
-    },
-    {
-      title: 'Hoàn khách',
-      dataIndex: 'refundAmount',
-      align: 'right',
-      render: (v: number) => (v > 0 ? `−${formatDisplayMoney(v)}` : formatDisplayMoney(0)),
-    },
-    {
-      title: 'Thu ròng',
-      dataIndex: 'netAmount',
-      align: 'right',
-      render: (v: number) => <Typography.Text strong>{formatDisplayMoney(v)}</Typography.Text>,
-    },
-  ];
+  const { t } = useTranslation('sales', { keyPrefix: 'shiftSummary' });
+  const { paymentMethodLabel } = useSalesEnums();
+
+  const columns: ColumnsType<SalesShiftSummary['byMethod'][number]> = useMemo(
+    () => [
+      {
+        title: t('paymentMethod'),
+        dataIndex: 'paymentMethod',
+        render: (m: number) => paymentMethodLabel(m),
+      },
+      {
+        title: t('salesAmount'),
+        dataIndex: 'salesAmount',
+        align: 'right',
+        render: (v: number) => formatDisplayMoney(v),
+      },
+      {
+        title: t('refundAmount'),
+        dataIndex: 'refundAmount',
+        align: 'right',
+        render: (v: number) => (v > 0 ? `−${formatDisplayMoney(v)}` : formatDisplayMoney(0)),
+      },
+      {
+        title: t('netAmount'),
+        dataIndex: 'netAmount',
+        align: 'right',
+        render: (v: number) => <Typography.Text strong>{formatDisplayMoney(v)}</Typography.Text>,
+      },
+    ],
+    [paymentMethodLabel, t],
+  );
 
   return (
     <>
       <PosSummaryPanel>
-        <PosSummaryRow label="Tổng thu bán" value={formatDisplayMoney(summary.totalSales)} />
+        <PosSummaryRow label={t('totalSales')} value={formatDisplayMoney(summary.totalSales)} />
         <PosSummaryRow
-          label="Tổng hoàn khách"
+          label={t('totalRefunds')}
           value={`−${formatDisplayMoney(summary.totalRefunds)}`}
           danger
         />
-        <PosSummaryRow label="Thu ròng" value={formatDisplayMoney(summary.netTotal)} strong />
+        <PosSummaryRow label={t('netTotal')} value={formatDisplayMoney(summary.netTotal)} strong />
         {showCashReconciliation && (
           <>
-            <PosSummaryRow label="Quỹ đầu ca (TM)" value={formatDisplayMoney(summary.openingCash ?? 0)} />
-            <PosSummaryRow label="Thu tiền mặt" value={formatDisplayMoney(summary.cashSales ?? 0)} />
+            <PosSummaryRow label={t('openingCash')} value={formatDisplayMoney(summary.openingCash ?? 0)} />
+            <PosSummaryRow label={t('cashSales')} value={formatDisplayMoney(summary.cashSales ?? 0)} />
             <PosSummaryRow
-              label="Hoàn tiền mặt"
+              label={t('cashRefunds')}
               value={`−${formatDisplayMoney(summary.cashRefunds ?? 0)}`}
               danger
             />
             <PosSummaryRow
-              label="Tiền mặt dự kiến trong két"
+              label={t('expectedCash')}
               value={formatDisplayMoney(summary.expectedCash ?? 0)}
               strong
             />
             {summary.closingCash != null && (
-              <PosSummaryRow label="Tiền đếm cuối ca" value={formatDisplayMoney(summary.closingCash)} />
+              <PosSummaryRow label={t('closingCash')} value={formatDisplayMoney(summary.closingCash)} />
             )}
             {summary.cashVariance != null && (
               <PosSummaryRow
-                label="Chênh lệch"
+                label={t('cashVariance')}
                 value={formatDisplayMoney(summary.cashVariance)}
                 danger={Math.abs(summary.cashVariance) > 0.009}
                 strong
