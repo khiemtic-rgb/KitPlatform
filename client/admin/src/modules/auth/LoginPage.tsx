@@ -11,6 +11,7 @@ import {
   loadStoredTenantCode,
   saveStoredTenantCode,
 } from '@/shared/config/app-brand';
+import { AdminLanguageSelect } from '@/shared/i18n/LanguageSelect';
 
 type LoginFormValues = {
   tenantCode: string;
@@ -84,6 +85,9 @@ export function LoginPage() {
     >
       <Card style={{ width: 440, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <AdminLanguageSelect />
+          </div>
           <div style={{ textAlign: 'center' }}>
             <Typography.Title level={3} style={{ marginBottom: 4 }}>
               {APP_BRAND}

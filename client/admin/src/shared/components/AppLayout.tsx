@@ -32,6 +32,8 @@ import { useAuthStore } from '@/shared/auth/auth.store';
 
 import { logoutApi } from '@/shared/api/auth.api';
 
+import { AdminLanguageSelect } from '@/shared/i18n/LanguageSelect';
+
 
 
 const { Header, Sider, Content } = Layout;
@@ -295,17 +297,15 @@ function AppLayoutShell() {
 
           </div>
 
-          <Dropdown menu={userMenu} placement="bottomRight">
-
-            <Space style={{ cursor: 'pointer', flexShrink: 0, marginLeft: 12 }}>
-
-              <Avatar size="small" icon={<UserOutlined />} />
-
-              <Typography.Text>{user?.username ?? 'Admin'}</Typography.Text>
-
-            </Space>
-
-          </Dropdown>
+          <Space size={12} style={{ flexShrink: 0, marginLeft: 12 }}>
+            <AdminLanguageSelect />
+            <Dropdown menu={userMenu} placement="bottomRight">
+              <Space style={{ cursor: 'pointer' }}>
+                <Avatar size="small" icon={<UserOutlined />} />
+                <Typography.Text>{user?.username ?? 'Admin'}</Typography.Text>
+              </Space>
+            </Dropdown>
+          </Space>
 
         </Header>
 

@@ -70,5 +70,12 @@
   "datePicker": {
     "pickDate": "Chọn ngày",
     "monthYear": "Tháng/Năm"
+  },
+  "language": {
+    "ariaLabel": "Ngôn ngữ",
+    "locale": {
+      "vi-VN": "Tiếng Việt",
+      "en-US": "English"
+    }
   }
 }

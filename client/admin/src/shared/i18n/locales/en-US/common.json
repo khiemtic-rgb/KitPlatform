@@ -70,5 +70,12 @@
   "datePicker": {
     "pickDate": "Pick date",
     "monthYear": "Month/Year"
+  },
+  "language": {
+    "ariaLabel": "Language",
+    "locale": {
+      "vi-VN": "Vietnamese",
+      "en-US": "English"
+    }
   }
 }
