@@ -23,6 +23,12 @@ public interface IReportsService
         Guid? warehouseId,
         CancellationToken cancellationToken = default);
 
+    Task<ReportTableResultDto> RunSalesRevenueByCategoryAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        CancellationToken cancellationToken = default);
+
     Task<ReportTableResultDto> RunProcurementGrnValueAsync(
         DateTime? fromUtc,
         DateTime? toUtc,

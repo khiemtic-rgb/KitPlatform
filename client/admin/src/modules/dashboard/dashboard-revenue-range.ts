@@ -55,6 +55,13 @@ export function readReportFieldNumber(row: Record<string, unknown>, key: string)
   return readRowNumber(row, key);
 }
 
+export function readReportFieldString(row: Record<string, unknown>, key: string): string {
+  const pascal = key.charAt(0).toUpperCase() + key.slice(1);
+  return String(row[key] ?? row[pascal] ?? '').trim();
+}
+
+export type RevenuePeriodDays = 7 | 14 | 30;
+
 function readRowLabel(row: Record<string, unknown>): string {
   const raw = String(row.periodLabel ?? row.PeriodLabel ?? '');
   return normalizeReportPeriodLabel(raw);

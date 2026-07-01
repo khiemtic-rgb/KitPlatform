@@ -29,6 +29,18 @@
     "fullReport": "Báo cáo chi tiết",
     "loadFailed": "Không tải được biểu đồ doanh thu"
   },
+  "analytics": {
+    "title": "Phân tích doanh thu"
+  },
+  "categoryChart": {
+    "title": "Doanh thu theo danh mục",
+    "subtitle": "Top danh mục — {{days}} ngày gần nhất",
+    "fullReport": "Báo cáo chi tiết",
+    "loadFailed": "Không tải được biểu đồ danh mục",
+    "empty": "Chưa có doanh thu theo danh mục trong kỳ",
+    "other": "Khác",
+    "topN": "Top {{count}}"
+  },
   "sections": {
     "sales": "Bán hàng",
     "inventoryProcurement": "Kho & mua hàng",

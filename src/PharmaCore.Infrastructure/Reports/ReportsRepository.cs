@@ -171,6 +171,93 @@ internal sealed class ReportsRepository
         }).ToList();
     }
 
+    public async Task<IReadOnlyList<Dictionary<string, object?>>> GetSalesRevenueByCategoryAsync(
+        DateTime fromUtc,
+        DateTime toUtc,
+        Guid? warehouseId,
+        Guid[]? allowedWarehouseIds,
+        CancellationToken cancellationToken)
+    {
+        var warehouseFilter = BuildWarehouseFilter("o.warehouse_id", warehouseId, allowedWarehouseIds);
+
+        var sql = $"""
+            WITH sales AS (
+                SELECT
+                    COALESCE(c.id::text, 'uncategorized') AS CategoryKey,
+                    COALESCE(c.category_name, 'Chưa phân loại') AS CategoryLabel,
+                    COALESCE(SUM(i.line_total), 0) AS SalesAmount
+                FROM sales_order_items i
+                INNER JOIN sales_orders o ON o.id = i.sales_order_id
+                INNER JOIN products p ON p.id = i.product_id AND p.tenant_id = o.tenant_id
+                LEFT JOIN product_categories c
+                    ON c.id = p.category_id AND c.tenant_id = p.tenant_id AND c.deleted_at IS NULL
+                WHERE o.tenant_id = @TenantId
+                  AND o.status = @OrderCompleted
+                  AND EXISTS (
+                      SELECT 1
+                      FROM sales_payments sp
+                      WHERE sp.sales_order_id = o.id
+                        AND sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
+                  )
+                  {warehouseFilter}
+                GROUP BY c.id, c.category_name
+            ),
+            refunds AS (
+                SELECT
+                    COALESCE(c.id::text, 'uncategorized') AS CategoryKey,
+                    COALESCE(c.category_name, 'Chưa phân loại') AS CategoryLabel,
+                    COALESCE(SUM(ri.refund_amount), 0) AS RefundAmount
+                FROM sales_return_items ri
+                INNER JOIN sales_returns r ON r.id = ri.sales_return_id
+                INNER JOIN sales_order_items i ON i.id = ri.sales_order_item_id
+                INNER JOIN sales_orders o ON o.id = r.sales_order_id
+                INNER JOIN products p ON p.id = i.product_id AND p.tenant_id = o.tenant_id
+                LEFT JOIN product_categories c
+                    ON c.id = p.category_id AND c.tenant_id = p.tenant_id AND c.deleted_at IS NULL
+                WHERE r.tenant_id = @TenantId
+                  AND EXISTS (
+                      SELECT 1
+                      FROM sales_return_payments rp
+                      WHERE rp.sales_return_id = r.id
+                        AND rp.paid_at >= @FromUtc AND rp.paid_at < @ToUtc
+                  )
+                  {warehouseFilter}
+                GROUP BY c.id, c.category_name
+            )
+            SELECT
+                COALESCE(s.CategoryKey, r.CategoryKey) AS CategoryKey,
+                COALESCE(s.CategoryLabel, r.CategoryLabel) AS CategoryLabel,
+                COALESCE(s.SalesAmount, 0) AS SalesAmount,
+                COALESCE(r.RefundAmount, 0) AS RefundAmount,
+                COALESCE(s.SalesAmount, 0) - COALESCE(r.RefundAmount, 0) AS NetAmount
+            FROM sales s
+            FULL OUTER JOIN refunds r ON r.CategoryKey = s.CategoryKey
+            ORDER BY NetAmount DESC, CategoryLabel
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<CategoryRevenueRow>(
+            sql,
+            new
+            {
+                TenantId,
+                FromUtc = fromUtc,
+                ToUtc = toUtc,
+                WarehouseId = warehouseId,
+                AllowedWarehouseIds = allowedWarehouseIds,
+                OrderCompleted = SalesOrderStatuses.Completed,
+            });
+
+        return rows.Select(r => new Dictionary<string, object?>
+        {
+            ["categoryKey"] = r.CategoryKey,
+            ["categoryLabel"] = r.CategoryLabel,
+            ["salesAmount"] = r.SalesAmount,
+            ["refundAmount"] = r.RefundAmount,
+            ["netAmount"] = r.NetAmount,
+        }).ToList();
+    }
+
     public async Task<IReadOnlyList<Dictionary<string, object?>>> GetSalesShiftsAsync(
         DateTime fromUtc,
         DateTime toUtc,
@@ -467,6 +554,15 @@ internal sealed class ReportsRepository
     private sealed class PaymentMethodRow
     {
         public short PaymentMethod { get; init; }
+        public decimal SalesAmount { get; init; }
+        public decimal RefundAmount { get; init; }
+        public decimal NetAmount { get; init; }
+    }
+
+    private sealed class CategoryRevenueRow
+    {
+        public string CategoryKey { get; init; } = "";
+        public string CategoryLabel { get; init; } = "";
         public decimal SalesAmount { get; init; }
         public decimal RefundAmount { get; init; }
         public decimal NetAmount { get; init; }

@@ -28,6 +28,8 @@ internal sealed class ReportsService : IReportsService
             "Thu ròng theo tiền mặt, thẻ, chuyển khoản, ví.", true, false, false),
         new(ReportCodes.SalesShifts, "Báo cáo ca làm việc", "sales",
             "Danh sách ca, quỹ tiền mặt và thu ròng trong ca.", true, false, false),
+        new(ReportCodes.SalesRevenueByCategory, "Doanh thu theo danh mục", "sales",
+            "Thu ròng theo nhóm sản phẩm (danh mục) trong kỳ.", true, false, false),
         new(ReportCodes.ProcurementGrnValue, "Giá trị nhập hàng (GRN)", "procurement",
             "Tổng hợp phiếu nhập hoàn tất — tiền trước thuế GTGT.", false, true, false),
         new(ReportCodes.ProcurementPayablesSnapshot, "Công nợ NCC (snapshot)", "procurement",
@@ -119,6 +121,34 @@ internal sealed class ReportsService : IReportsService
             columns,
             rows,
             SumTotals(rows, "netAmount"));
+    }
+
+    public async Task<ReportTableResultDto> RunSalesRevenueByCategoryAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        CancellationToken cancellationToken = default)
+    {
+        var (from, to) = ReportsDateHelper.ResolveRangeUtc(fromUtc, toUtc, DateTime.UtcNow);
+        var (scopedWarehouseId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
+        var rows = await _repository.GetSalesRevenueByCategoryAsync(from, to, scopedWarehouseId, allowed, cancellationToken);
+        rows = AppendSharePercent(rows);
+
+        var columns = new List<ReportColumnDto>
+        {
+            Col("categoryLabel", "Danh mục", ReportColumnFormats.Text, "left"),
+            Col("salesAmount", "Thu bán", ReportColumnFormats.Money, "right"),
+            Col("refundAmount", "Hoàn trả", ReportColumnFormats.Money, "right"),
+            Col("netAmount", "Thu ròng", ReportColumnFormats.Money, "right"),
+            Col("sharePercent", "Tỷ lệ %", ReportColumnFormats.Qty, "right"),
+        };
+        return BuildTable(
+            ReportCodes.SalesRevenueByCategory,
+            "Doanh thu theo danh mục",
+            FilterLabels(from, to, null, warehouseId),
+            columns,
+            rows,
+            SumTotals(rows, "salesAmount", "refundAmount", "netAmount"));
     }
 
     public async Task<ReportTableResultDto> RunProcurementGrnValueAsync(
@@ -336,7 +366,7 @@ internal sealed class ReportsService : IReportsService
         params string[] numericKeys)
     {
         if (rows.Count == 0) return null;
-        var totals = new Dictionary<string, object?> { ["periodLabel"] = "Tổng cộng", ["supplierName"] = "Tổng cộng", ["productName"] = "Tổng cộng", ["paymentMethodLabel"] = "Tổng cộng" };
+        var totals = new Dictionary<string, object?> { ["periodLabel"] = "Tổng cộng", ["supplierName"] = "Tổng cộng", ["productName"] = "Tổng cộng", ["paymentMethodLabel"] = "Tổng cộng", ["categoryLabel"] = "Tổng cộng" };
         foreach (var key in numericKeys)
         {
             decimal sum = 0;
@@ -348,5 +378,23 @@ internal sealed class ReportsService : IReportsService
             totals[key] = sum;
         }
         return totals;
+    }
+
+    private static List<Dictionary<string, object?>> AppendSharePercent(IReadOnlyList<Dictionary<string, object?>> rows)
+    {
+        decimal totalNet = 0;
+        foreach (var row in rows)
+        {
+            if (row.TryGetValue("netAmount", out var val) && val != null)
+                totalNet += Convert.ToDecimal(val);
+        }
+
+        return rows.Select(row =>
+        {
+            var copy = new Dictionary<string, object?>(row);
+            var net = row.TryGetValue("netAmount", out var val) && val != null ? Convert.ToDecimal(val) : 0m;
+            copy["sharePercent"] = totalNet > 0 ? Math.Round(net / totalNet * 100m, 1) : 0m;
+            return copy;
+        }).ToList();
     }
 }

@@ -29,6 +29,18 @@
     "fullReport": "Full report",
     "loadFailed": "Could not load revenue chart"
   },
+  "analytics": {
+    "title": "Revenue analytics"
+  },
+  "categoryChart": {
+    "title": "Revenue by category",
+    "subtitle": "Top categories — last {{days}} days",
+    "fullReport": "Full report",
+    "loadFailed": "Could not load category chart",
+    "empty": "No category revenue in this period",
+    "other": "Other",
+    "topN": "Top {{count}}"
+  },
   "sections": {
     "sales": "Sales",
     "inventoryProcurement": "Inventory & procurement",

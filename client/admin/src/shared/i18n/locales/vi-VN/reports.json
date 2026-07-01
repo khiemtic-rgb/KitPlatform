@@ -79,6 +79,10 @@
       "name": "Báo cáo ca làm việc",
       "description": "Danh sách ca, quỹ tiền mặt và thu ròng trong ca."
     },
+    "SALES-04": {
+      "name": "Doanh thu theo danh mục",
+      "description": "Thu ròng theo nhóm sản phẩm (danh mục) trong kỳ."
+    },
     "PROC-01": {
       "name": "Giá trị nhập hàng (GRN)",
       "description": "Tổng hợp phiếu nhập hoàn tất — tiền trước thuế GTGT."

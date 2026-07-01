@@ -79,6 +79,10 @@
       "name": "Shift report",
       "description": "Shift list, cash float, and net revenue per shift."
     },
+    "SALES-04": {
+      "name": "Revenue by category",
+      "description": "Net revenue by product category for the selected period."
+    },
     "PROC-01": {
       "name": "Goods receipt value (GRN)",
       "description": "Completed receipts summary — pre-VAT amounts."

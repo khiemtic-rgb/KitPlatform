@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button, Col, Row, Spin, Tag, Typography, message } from 'antd';
+import { Button, Col, Row, Segmented, Spin, Tag, Typography, message } from 'antd';
 import {
   AccountBookOutlined,
   CalendarOutlined,
@@ -25,6 +25,8 @@ import { useHasPermission } from '@/shared/auth/usePermission';
 import { formatDisplayMoney } from '@/shared/utils/money';
 import { isProductFeatureEnabled } from '@/shared/product/product-phases';
 import { DashboardRevenueChart } from '@/modules/dashboard/DashboardRevenueChart';
+import { DashboardCategoryChart } from '@/modules/dashboard/DashboardCategoryChart';
+import type { RevenuePeriodDays } from '@/modules/dashboard/dashboard-revenue-range';
 
 type AlertItem = {
   key: string;
@@ -63,6 +65,7 @@ export function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [revenuePeriodDays, setRevenuePeriodDays] = useState<RevenuePeriodDays>(7);
 
   const canSales = useHasPermission('sales.read') || useHasPermission('sales.write');
   const canCatalog = useHasPermission('catalog.read') || useHasPermission('catalog.write');
@@ -92,6 +95,15 @@ export function DashboardPage() {
   const o2o = overview?.o2o;
   const showReservations = isProductFeatureEnabled('sales.customerReservations');
   const showChat = isProductFeatureEnabled('sales.chat');
+
+  const revenuePeriodOptions = useMemo(
+    () => [
+      { label: t('revenueChart.period7'), value: 7 as RevenuePeriodDays },
+      { label: t('revenueChart.period14'), value: 14 as RevenuePeriodDays },
+      { label: t('revenueChart.period30'), value: 30 as RevenuePeriodDays },
+    ],
+    [t],
+  );
 
   const alerts = useMemo(() => {
     const items: AlertItem[] = [];
@@ -359,7 +371,27 @@ export function DashboardPage() {
             </div>
           ) : null}
 
-          <DashboardRevenueChart enabled={canSales} />
+          {canSales ? (
+            <section className="dashboard-analytics">
+              <div className="dashboard-analytics__toolbar">
+                <Typography.Text className="dashboard-analytics__title">{t('analytics.title')}</Typography.Text>
+                <Segmented
+                  size="small"
+                  value={revenuePeriodDays}
+                  options={revenuePeriodOptions}
+                  onChange={(value) => setRevenuePeriodDays(value as RevenuePeriodDays)}
+                />
+              </div>
+              <Row gutter={[16, 16]} className="dashboard-analytics__grid">
+                <Col xs={24} xl={14}>
+                  <DashboardRevenueChart enabled periodDays={revenuePeriodDays} />
+                </Col>
+                <Col xs={24} xl={10}>
+                  <DashboardCategoryChart enabled periodDays={revenuePeriodDays} />
+                </Col>
+              </Row>
+            </section>
+          ) : null}
 
           {alerts.length > 0 ? (
             <div className="dashboard-alerts">

@@ -392,6 +392,14 @@ export function AppRouter() {
                   }
                 />
                 <Route
+                  path="sales/revenue-by-category"
+                  element={
+                    <SuspenseRoute>
+                      <ReportViewPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
                   path="procurement/grn-value"
                   element={
                     <SuspenseRoute>

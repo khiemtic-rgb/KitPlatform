@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { RightOutlined } from '@ant-design/icons';
-import { Segmented, Spin, Typography, message } from 'antd';
+import { Spin, Typography, message } from 'antd';
 import { runReport } from '@/shared/api/reports.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { formatDisplayMoney } from '@/shared/utils/money';
@@ -11,17 +11,18 @@ import {
   readReportFieldNumber,
   rollingDaysRangeIso,
   sumNetAmount,
+  type RevenuePeriodDays,
 } from '@/modules/dashboard/dashboard-revenue-range';
 
-export type RevenuePeriodDays = 7 | 14 | 30;
+export type { RevenuePeriodDays };
 
 type DashboardRevenueChartProps = {
   enabled: boolean;
+  periodDays: RevenuePeriodDays;
 };
 
-export function DashboardRevenueChart({ enabled }: DashboardRevenueChartProps) {
+export function DashboardRevenueChart({ enabled, periodDays }: DashboardRevenueChartProps) {
   const { t } = useTranslation('dashboard');
-  const [periodDays, setPeriodDays] = useState<RevenuePeriodDays>(7);
   const [loading, setLoading] = useState(false);
   const [points, setPoints] = useState<ReturnType<typeof buildDailyRevenueChartPoints>>([]);
   const [periodTotal, setPeriodTotal] = useState(0);
@@ -56,15 +57,6 @@ export function DashboardRevenueChart({ enabled }: DashboardRevenueChartProps) {
   const totalNet = periodTotal;
   const maxNet = useMemo(() => Math.max(...points.map((p) => p.netAmount), 1), [points]);
 
-  const periodOptions = useMemo(
-    () => [
-      { label: t('revenueChart.period7'), value: 7 as RevenuePeriodDays },
-      { label: t('revenueChart.period14'), value: 14 as RevenuePeriodDays },
-      { label: t('revenueChart.period30'), value: 30 as RevenuePeriodDays },
-    ],
-    [t],
-  );
-
   if (!enabled) return null;
 
   return (
@@ -79,17 +71,9 @@ export function DashboardRevenueChart({ enabled }: DashboardRevenueChartProps) {
             {t('revenueChart.subtitle', { days: periodDays })}
           </Typography.Text>
         </div>
-        <div className="dashboard-revenue-chart__controls">
-          <Segmented
-            size="small"
-            value={periodDays}
-            options={periodOptions}
-            onChange={(value) => setPeriodDays(value as RevenuePeriodDays)}
-          />
-          <Link to="/reports/sales/revenue-by-period" className="dashboard-revenue-chart__report-link">
-            {t('revenueChart.fullReport')} <RightOutlined />
-          </Link>
-        </div>
+        <Link to="/reports/sales/revenue-by-period" className="dashboard-revenue-chart__report-link">
+          {t('revenueChart.fullReport')} <RightOutlined />
+        </Link>
       </div>
 
       <Spin spinning={loading}>

@@ -5,6 +5,7 @@ public static class ReportCodes
     public const string SalesRevenueByPeriod = "SALES-01";
     public const string SalesRevenueByPaymentMethod = "SALES-02";
     public const string SalesShifts = "SALES-03";
+    public const string SalesRevenueByCategory = "SALES-04";
     public const string ProcurementGrnValue = "PROC-01";
     public const string ProcurementPayablesSnapshot = "PROC-03";
     public const string InventoryStockSnapshot = "INV-01";
