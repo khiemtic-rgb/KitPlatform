@@ -4,6 +4,22 @@
   "messages": {
     "loadFailed": "Không tải được tổng quan"
   },
+  "quickActions": {
+    "title": "Thao tác nhanh",
+    "pos": "Bán hàng (POS)",
+    "procurement": "Mua hàng",
+    "receivables": "Công nợ KH",
+    "lowStock": "Tồn thấp",
+    "appDrafts": "Đơn app"
+  },
+  "hero": {
+    "weekRevenue": "Doanh thu 7 ngày",
+    "weekRevenueHint": "7 ngày gần nhất (lịch VN)"
+  },
+  "alerts": {
+    "title": "Cần chú ý",
+    "allClear": "Không có cảnh báo — mọi thứ ổn"
+  },
   "sections": {
     "sales": "Bán hàng",
     "inventoryProcurement": "Kho & mua hàng",
@@ -20,7 +36,8 @@
     },
     "customers": {
       "title": "Khách hàng",
-      "hint": "Hồ sơ CRM"
+      "hint": "Hồ sơ CRM",
+      "countHint": "{{count}} khách hàng"
     },
     "draftOrdersAwaiting": {
       "title": "Đơn app chờ xử lý",

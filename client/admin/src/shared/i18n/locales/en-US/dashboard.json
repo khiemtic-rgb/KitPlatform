@@ -4,6 +4,22 @@
   "messages": {
     "loadFailed": "Could not load overview"
   },
+  "quickActions": {
+    "title": "Quick actions",
+    "pos": "POS",
+    "procurement": "Procurement",
+    "receivables": "Customer AR",
+    "lowStock": "Low stock",
+    "appDrafts": "App orders"
+  },
+  "hero": {
+    "weekRevenue": "7-day revenue",
+    "weekRevenueHint": "Rolling 7 days (VN calendar)"
+  },
+  "alerts": {
+    "title": "Needs attention",
+    "allClear": "No alerts — all clear"
+  },
   "sections": {
     "sales": "Sales",
     "inventoryProcurement": "Inventory & procurement",
@@ -20,7 +36,8 @@
     },
     "customers": {
       "title": "Customers",
-      "hint": "CRM profiles"
+      "hint": "CRM profiles",
+      "countHint": "{{count}} customers"
     },
     "draftOrdersAwaiting": {
       "title": "App orders awaiting action",
