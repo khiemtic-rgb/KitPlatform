@@ -20,10 +20,20 @@
     "title": "Needs attention",
     "allClear": "No alerts — all clear"
   },
+  "revenueChart": {
+    "title": "Daily net revenue",
+    "subtitle": "Net {{days}}-day total (VN time)",
+    "period7": "7 days",
+    "period14": "14 days",
+    "period30": "30 days",
+    "fullReport": "Full report",
+    "loadFailed": "Could not load revenue chart"
+  },
   "sections": {
     "sales": "Sales",
     "inventoryProcurement": "Inventory & procurement",
-    "customerApp": "Customer app"
+    "customerApp": "Customer app",
+    "details": "Operations detail"
   },
   "kpis": {
     "todayRevenue": {

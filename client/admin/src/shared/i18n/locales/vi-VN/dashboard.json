@@ -20,10 +20,20 @@
     "title": "Cần chú ý",
     "allClear": "Không có cảnh báo — mọi thứ ổn"
   },
+  "revenueChart": {
+    "title": "Doanh thu theo ngày",
+    "subtitle": "Thu ròng {{days}} ngày gần nhất (giờ VN)",
+    "period7": "7 ngày",
+    "period14": "14 ngày",
+    "period30": "30 ngày",
+    "fullReport": "Báo cáo chi tiết",
+    "loadFailed": "Không tải được biểu đồ doanh thu"
+  },
   "sections": {
     "sales": "Bán hàng",
     "inventoryProcurement": "Kho & mua hàng",
-    "customerApp": "App khách"
+    "customerApp": "App khách",
+    "details": "Chi tiết vận hành"
   },
   "kpis": {
     "todayRevenue": {

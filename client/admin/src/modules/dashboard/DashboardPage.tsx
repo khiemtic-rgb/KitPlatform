@@ -1,21 +1,11 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  Button,
-  Card,
-  Col,
-  Row,
-  Space,
-  Spin,
-  Statistic,
-  Tag,
-  Typography,
-  message,
-} from 'antd';
+import { Button, Col, Row, Spin, Tag, Typography, message } from 'antd';
 import {
   AccountBookOutlined,
   CalendarOutlined,
+  CheckCircleOutlined,
   InboxOutlined,
   MedicineBoxOutlined,
   MessageOutlined,
@@ -34,6 +24,7 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
 import { formatDisplayMoney } from '@/shared/utils/money';
 import { isProductFeatureEnabled } from '@/shared/product/product-phases';
+import { DashboardRevenueChart } from '@/modules/dashboard/DashboardRevenueChart';
 
 type AlertItem = {
   key: string;
@@ -43,69 +34,26 @@ type AlertItem = {
   tone: 'danger' | 'warning' | 'info';
 };
 
-type KpiCardProps = {
+type MetricTileProps = {
   title: string;
   value: string | number;
-  prefix?: ReactNode;
+  icon: ReactNode;
+  to: string;
+  tone?: 'default' | 'danger' | 'warning' | 'info';
   hint?: string;
-  to?: string;
-  linkLabel?: string;
-  valueStyle?: React.CSSProperties;
-  className?: string;
 };
 
-function KpiCard({ title, value, prefix, hint, to, linkLabel, valueStyle, className }: KpiCardProps) {
+function MetricTile({ title, value, icon, to, tone = 'default', hint }: MetricTileProps) {
   return (
-    <Card size="small" hoverable={Boolean(to)} className={className}>
-      <Statistic title={title} value={value} prefix={prefix} valueStyle={valueStyle} />
-      {hint ? (
-        <Typography.Text type="secondary" className="dashboard-kpi-card__hint">
-          {hint}
-        </Typography.Text>
-      ) : null}
-      {to ? (
-        <Link to={to} className="dashboard-kpi-card__link">
-          {linkLabel}
-        </Link>
-      ) : null}
-    </Card>
-  );
-}
-
-function HeroMetric({
-  title,
-  value,
-  hint,
-  to,
-  linkLabel,
-  accent,
-}: {
-  title: string;
-  value: string | number;
-  hint?: string;
-  to?: string;
-  linkLabel?: string;
-  accent?: 'primary' | 'default';
-}) {
-  return (
-    <Card className={`dashboard-hero-metric dashboard-hero-metric--${accent ?? 'default'}`}>
-      <Typography.Text type="secondary" className="dashboard-hero-metric__title">
-        {title}
-      </Typography.Text>
-      <Typography.Title level={3} className="dashboard-hero-metric__value">
-        {value}
-      </Typography.Title>
-      {hint ? (
-        <Typography.Text type="secondary" className="dashboard-hero-metric__hint">
-          {hint}
-        </Typography.Text>
-      ) : null}
-      {to && linkLabel ? (
-        <Link to={to} className="dashboard-hero-metric__link">
-          {linkLabel} <RightOutlined />
-        </Link>
-      ) : null}
-    </Card>
+    <Link to={to} className={`dashboard-tile dashboard-tile--${tone}`}>
+      <div className="dashboard-tile__icon">{icon}</div>
+      <div className="dashboard-tile__body">
+        <span className="dashboard-tile__label">{title}</span>
+        <span className="dashboard-tile__value">{value}</span>
+        {hint ? <span className="dashboard-tile__hint">{hint}</span> : null}
+      </div>
+      <RightOutlined className="dashboard-tile__arrow" />
+    </Link>
   );
 }
 
@@ -144,8 +92,6 @@ export function DashboardPage() {
   const o2o = overview?.o2o;
   const showReservations = isProductFeatureEnabled('sales.customerReservations');
   const showChat = isProductFeatureEnabled('sales.chat');
-  const showO2oKpis = showReservations || showChat;
-  const viewDetails = t('viewDetails');
 
   const alerts = useMemo(() => {
     const items: AlertItem[] = [];
@@ -216,13 +162,14 @@ export function DashboardPage() {
   }, [canInventory, canProcurement, canSales, inventory, o2o, procurement, showChat, showReservations, t]);
 
   const quickActions = useMemo(() => {
-    const items: Array<{ key: string; label: string; to: string; icon: ReactNode }> = [];
+    const items: Array<{ key: string; label: string; to: string; icon: ReactNode; primary?: boolean }> = [];
     if (canSales) {
       items.push({
         key: 'pos',
         label: t('quickActions.pos'),
         to: '/sales/pos',
         icon: <ShopOutlined />,
+        primary: true,
       });
     }
     if (canProcurement) {
@@ -260,270 +207,203 @@ export function DashboardPage() {
     return items;
   }, [canInventory, canProcurement, canReceivables, canSales, t]);
 
+  const secondaryTiles = useMemo(() => {
+    const tiles: MetricTileProps[] = [];
+    if (canSales) {
+      tiles.push({
+        title: t('kpis.customers.title'),
+        value: catalog?.customerCount ?? '—',
+        icon: <TeamOutlined />,
+        to: '/customer/list',
+        hint: t('kpis.customers.hint'),
+      });
+      tiles.push({
+        title: t('kpis.draftOrdersAwaiting.title'),
+        value: o2o?.draftOrdersAwaitingCount ?? '—',
+        icon: <ShoppingCartOutlined />,
+        to: '/sales/customer-drafts?actionable=1',
+        tone: (o2o?.draftOrdersAwaitingCount ?? 0) > 0 ? 'warning' : 'default',
+      });
+    }
+    if (canCatalog) {
+      tiles.push({
+        title: t('kpis.products.title'),
+        value: catalog?.productCount ?? '—',
+        icon: <MedicineBoxOutlined />,
+        to: '/catalog/products',
+      });
+    }
+    if (canInventory) {
+      tiles.push({
+        title: t('kpis.activeBatches.title'),
+        value: inventory?.activeBatchCount ?? '—',
+        icon: <InboxOutlined />,
+        to: '/inventory/stock?tab=fefo',
+      });
+      tiles.push({
+        title: t('kpis.nearExpiry.title', { days: inventory?.expiryDays ?? 30 }),
+        value: inventory?.nearExpiryBatchCount ?? '—',
+        icon: <WarningOutlined />,
+        to: '/inventory/stock?tab=fefo',
+        tone: (inventory?.nearExpiryBatchCount ?? 0) > 0 ? 'danger' : 'default',
+      });
+      tiles.push({
+        title: t('kpis.lowStockProducts.title'),
+        value: inventory?.lowStockProductCount ?? '—',
+        icon: <WarningOutlined />,
+        to: '/inventory/low-stock',
+        tone: (inventory?.lowStockProductCount ?? 0) > 0 ? 'warning' : 'default',
+      });
+    }
+    if (canProcurement) {
+      tiles.push({
+        title: t('kpis.pendingPoReceipt.title'),
+        value: procurement?.pendingReceiptCount ?? '—',
+        icon: <CalendarOutlined />,
+        to: '/procurement/purchase-orders?pendingReceipt=1',
+        tone: (procurement?.pendingReceiptCount ?? 0) > 0 ? 'warning' : 'default',
+      });
+    }
+    if (canSales && showReservations) {
+      tiles.push({
+        title: t('kpis.reservationsAwaiting.title'),
+        value: o2o?.reservationsAwaitingCount ?? '—',
+        icon: <CalendarOutlined />,
+        to: '/sales/customer-reservations?awaiting=1',
+        tone: (o2o?.reservationsAwaitingCount ?? 0) > 0 ? 'warning' : 'default',
+      });
+    }
+    if (canSales && showChat) {
+      tiles.push({
+        title: t('kpis.chatUnread.title'),
+        value: o2o?.chatUnreadCount ?? '—',
+        icon: <MessageOutlined />,
+        to: '/sales/chat',
+        tone: (o2o?.chatUnreadCount ?? 0) > 0 ? 'info' : 'default',
+      });
+    }
+    return tiles;
+  }, [
+    canCatalog,
+    canInventory,
+    canProcurement,
+    canSales,
+    catalog,
+    inventory,
+    o2o,
+    procurement,
+    showChat,
+    showReservations,
+    t,
+  ]);
+
   return (
     <div className="dashboard-page">
-      <div className="dashboard-page__header">
-        <div>
-          <Typography.Title level={4} className="dashboard-page__greeting">
-            {t('greeting', { name: user?.username ?? 'Admin' })}
-          </Typography.Title>
-          <Space wrap size={[8, 4]}>
-            <Tag color="blue">{user?.tenantCode ?? 'DEMO_PHARMACY'}</Tag>
-            {user?.roles.map((role) => (
-              <Tag key={role} color="green">
-                {role}
+      <div className="dashboard-shell">
+        <header className="dashboard-top">
+          <div>
+            <Typography.Title level={4} className="dashboard-top__title">
+              {t('greeting', { name: user?.username ?? 'Admin' })}
+            </Typography.Title>
+            <div className="dashboard-top__meta">
+              <Tag bordered={false} className="dashboard-top__tenant">
+                {user?.tenantCode ?? 'DEMO_PHARMACY'}
               </Tag>
-            ))}
-          </Space>
-        </div>
-        <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-          {tc('actions.reload')}
-        </Button>
-      </div>
+              {user?.roles.map((role) => (
+                <Tag key={role} bordered={false} className="dashboard-top__role">
+                  {role}
+                </Tag>
+              ))}
+            </div>
+          </div>
+          <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
+            {tc('actions.reload')}
+          </Button>
+        </header>
 
-      {quickActions.length > 0 ? (
-        <Card size="small" className="dashboard-page__quick-actions" title={t('quickActions.title')}>
-          <Space wrap size={[8, 8]}>
+        {quickActions.length > 0 ? (
+          <div className="dashboard-actions">
             {quickActions.map((action) => (
-              <Link key={action.key} to={action.to} className="dashboard-quick-action">
-                {action.icon}
+              <Link
+                key={action.key}
+                to={action.to}
+                className={action.primary ? 'dashboard-action dashboard-action--primary' : 'dashboard-action'}
+              >
+                <span className="dashboard-action__icon">{action.icon}</span>
                 <span>{action.label}</span>
               </Link>
             ))}
-          </Space>
-        </Card>
-      ) : null}
-
-      {canSales ? (
-        <Spin spinning={loading && !overview}>
-          <Row gutter={[16, 16]} className="dashboard-page__hero-row">
-            <Col xs={24} md={8}>
-              <HeroMetric
-                accent="primary"
-                title={t('kpis.todayRevenue.title')}
-                value={formatDisplayMoney(sales?.todayNetTotal)}
-                hint={t('kpis.todayOrders.hint')}
-                to="/sales/shift"
-                linkLabel={viewDetails}
-              />
-            </Col>
-            <Col xs={24} md={8}>
-              <HeroMetric
-                title={t('hero.weekRevenue')}
-                value={formatDisplayMoney(sales?.weekNetTotal)}
-                hint={t('hero.weekRevenueHint')}
-                to="/reports/sales/revenue-by-period"
-                linkLabel={viewDetails}
-              />
-            </Col>
-            <Col xs={24} md={8}>
-              <HeroMetric
-                title={t('kpis.todayOrders.title')}
-                value={sales?.todayOrderCount ?? '—'}
-                hint={t('kpis.customers.countHint', { count: catalog?.customerCount ?? 0 })}
-                to="/sales/orders"
-                linkLabel={viewDetails}
-              />
-            </Col>
-          </Row>
-        </Spin>
-      ) : null}
-
-      <Card
-        size="small"
-        className="dashboard-page__alerts"
-        title={
-          <Space>
-            <WarningOutlined />
-            {t('alerts.title')}
-            {alerts.length > 0 ? <Tag color="orange">{alerts.length}</Tag> : null}
-          </Space>
-        }
-      >
-        {loading && !overview ? (
-          <Spin size="small" />
-        ) : alerts.length === 0 ? (
-          <Typography.Text type="secondary">{t('alerts.allClear')}</Typography.Text>
-        ) : (
-          <div className="dashboard-alert-list">
-            {alerts.map((alert) => (
-              <Link
-                key={alert.key}
-                to={alert.to}
-                className={`dashboard-alert-item dashboard-alert-item--${alert.tone}`}
-              >
-                <span className="dashboard-alert-item__label">{alert.label}</span>
-                <Tag className="dashboard-alert-item__count">{alert.count}</Tag>
-                <RightOutlined className="dashboard-alert-item__arrow" />
-              </Link>
-            ))}
           </div>
-        )}
-      </Card>
+        ) : null}
 
-      {canSales ? (
-        <section className="dashboard-page__section">
-          <Typography.Title level={5}>{t('sections.sales')}</Typography.Title>
-          <Spin spinning={loading && !overview}>
-            <Row gutter={[12, 12]}>
-              <Col xs={12} sm={8} lg={6}>
-                <KpiCard
-                  className="dashboard-kpi-card--compact"
-                  title={t('kpis.customers.title')}
-                  value={catalog?.customerCount ?? '—'}
-                  prefix={<TeamOutlined />}
-                  to="/customer/list"
-                  linkLabel={viewDetails}
-                />
-              </Col>
-              <Col xs={12} sm={8} lg={6}>
-                <KpiCard
-                  className="dashboard-kpi-card--compact"
-                  title={t('kpis.draftOrdersAwaiting.title')}
-                  value={o2o?.draftOrdersAwaitingCount ?? '—'}
-                  prefix={<ShoppingCartOutlined />}
-                  to="/sales/customer-drafts?actionable=1"
-                  linkLabel={viewDetails}
-                  valueStyle={
-                    (o2o?.draftOrdersAwaitingCount ?? 0) > 0 ? { color: '#d48806' } : undefined
-                  }
-                />
-              </Col>
-            </Row>
-          </Spin>
-        </section>
-      ) : null}
+        <Spin spinning={loading && !overview}>
+          {canSales ? (
+            <div className="dashboard-hero">
+              <Link to="/sales/shift" className="dashboard-hero__stat dashboard-hero__stat--featured">
+                <span className="dashboard-hero__label">{t('kpis.todayRevenue.title')}</span>
+                <span className="dashboard-hero__value">{formatDisplayMoney(sales?.todayNetTotal)}</span>
+                <span className="dashboard-hero__hint">{t('kpis.todayOrders.hint')}</span>
+              </Link>
+              <Link to="/reports/sales/revenue-by-period" className="dashboard-hero__stat">
+                <span className="dashboard-hero__label">{t('hero.weekRevenue')}</span>
+                <span className="dashboard-hero__value">{formatDisplayMoney(sales?.weekNetTotal)}</span>
+                <span className="dashboard-hero__hint">{t('hero.weekRevenueHint')}</span>
+              </Link>
+              <Link to="/sales/orders" className="dashboard-hero__stat">
+                <span className="dashboard-hero__label">{t('kpis.todayOrders.title')}</span>
+                <span className="dashboard-hero__value">{sales?.todayOrderCount ?? '—'}</span>
+                <span className="dashboard-hero__hint">
+                  {t('kpis.customers.countHint', { count: catalog?.customerCount ?? 0 })}
+                </span>
+              </Link>
+            </div>
+          ) : null}
 
-      {(canInventory || canProcurement || canCatalog) ? (
-        <section className="dashboard-page__section">
-          <Typography.Title level={5}>{t('sections.inventoryProcurement')}</Typography.Title>
-          <Spin spinning={loading && !overview}>
-            <Row gutter={[12, 12]}>
-              {canCatalog ? (
-                <Col xs={12} sm={8} lg={6}>
-                  <KpiCard
-                    className="dashboard-kpi-card--compact"
-                    title={t('kpis.products.title')}
-                    value={catalog?.productCount ?? '—'}
-                    prefix={<MedicineBoxOutlined />}
-                    to="/catalog/products"
-                    linkLabel={viewDetails}
-                  />
-                </Col>
-              ) : null}
-              {canInventory ? (
-                <>
-                  <Col xs={12} sm={8} lg={6}>
-                    <KpiCard
-                      className="dashboard-kpi-card--compact"
-                      title={t('kpis.activeBatches.title')}
-                      value={inventory?.activeBatchCount ?? '—'}
-                      prefix={<InboxOutlined />}
-                      to="/inventory/stock?tab=fefo"
-                      linkLabel={viewDetails}
-                    />
-                  </Col>
-                  <Col xs={12} sm={8} lg={6}>
-                    <KpiCard
-                      className="dashboard-kpi-card--compact"
-                      title={t('kpis.nearExpiry.title', { days: inventory?.expiryDays ?? 30 })}
-                      value={inventory?.nearExpiryBatchCount ?? '—'}
-                      prefix={<WarningOutlined />}
-                      to="/inventory/stock?tab=fefo"
-                      linkLabel={viewDetails}
-                      valueStyle={
-                        (inventory?.nearExpiryBatchCount ?? 0) > 0 ? { color: '#cf1322' } : undefined
-                      }
-                    />
-                  </Col>
-                  <Col xs={12} sm={8} lg={6}>
-                    <KpiCard
-                      className="dashboard-kpi-card--compact"
-                      title={t('kpis.lowStockProducts.title')}
-                      value={inventory?.lowStockProductCount ?? '—'}
-                      prefix={<WarningOutlined />}
-                      hint={t('kpis.lowStockProducts.hint')}
-                      to="/inventory/low-stock"
-                      linkLabel={viewDetails}
-                      valueStyle={
-                        (inventory?.lowStockProductCount ?? 0) > 0 ? { color: '#d48806' } : undefined
-                      }
-                    />
-                  </Col>
-                  <Col xs={12} sm={8} lg={6}>
-                    <KpiCard
-                      className="dashboard-kpi-card--compact"
-                      title={t('kpis.lowStockBatches.title')}
-                      value={inventory?.lowStockBatchCount ?? '—'}
-                      prefix={<InboxOutlined />}
-                      hint={t('kpis.lowStockBatches.hint')}
-                      to="/inventory/stock?tab=fefo"
-                      linkLabel={viewDetails}
-                      valueStyle={
-                        (inventory?.lowStockBatchCount ?? 0) > 0 ? { color: '#cf1322' } : undefined
-                      }
-                    />
-                  </Col>
-                </>
-              ) : null}
-              {canProcurement ? (
-                <Col xs={12} sm={8} lg={6}>
-                  <KpiCard
-                    className="dashboard-kpi-card--compact"
-                    title={t('kpis.pendingPoReceipt.title')}
-                    value={procurement?.pendingReceiptCount ?? '—'}
-                    prefix={<CalendarOutlined />}
-                    to="/procurement/purchase-orders?pendingReceipt=1"
-                    linkLabel={viewDetails}
-                    valueStyle={
-                      (procurement?.pendingReceiptCount ?? 0) > 0 ? { color: '#d48806' } : undefined
-                    }
-                  />
-                </Col>
-              ) : null}
-            </Row>
-          </Spin>
-        </section>
-      ) : null}
+          <DashboardRevenueChart enabled={canSales} />
 
-      {canSales && showO2oKpis ? (
-        <section className="dashboard-page__section">
-          <Typography.Title level={5}>{t('sections.customerApp')}</Typography.Title>
-          <Spin spinning={loading && !overview}>
-            <Row gutter={[12, 12]}>
-              {showReservations ? (
-                <Col xs={12} sm={8} lg={6}>
-                  <KpiCard
-                    className="dashboard-kpi-card--compact"
-                    title={t('kpis.reservationsAwaiting.title')}
-                    value={o2o?.reservationsAwaitingCount ?? '—'}
-                    prefix={<CalendarOutlined />}
-                    hint={t('kpis.reservationsAwaiting.hint')}
-                    to="/sales/customer-reservations?awaiting=1"
-                    linkLabel={viewDetails}
-                    valueStyle={
-                      (o2o?.reservationsAwaitingCount ?? 0) > 0 ? { color: '#d48806' } : undefined
-                    }
-                  />
-                </Col>
-              ) : null}
-              {showChat ? (
-                <Col xs={12} sm={8} lg={6}>
-                  <KpiCard
-                    className="dashboard-kpi-card--compact"
-                    title={t('kpis.chatUnread.title')}
-                    value={o2o?.chatUnreadCount ?? '—'}
-                    prefix={<MessageOutlined />}
-                    to="/sales/chat"
-                    linkLabel={viewDetails}
-                    valueStyle={(o2o?.chatUnreadCount ?? 0) > 0 ? { color: '#1677ff' } : undefined}
-                  />
-                </Col>
-              ) : null}
-            </Row>
-          </Spin>
-        </section>
-      ) : null}
+          {alerts.length > 0 ? (
+            <div className="dashboard-alerts">
+              <div className="dashboard-alerts__head">
+                <WarningOutlined />
+                <span>{t('alerts.title')}</span>
+                <Tag color="orange">{alerts.length}</Tag>
+              </div>
+              <div className="dashboard-alerts__list">
+                {alerts.map((alert) => (
+                  <Link
+                    key={alert.key}
+                    to={alert.to}
+                    className={`dashboard-alert-chip dashboard-alert-chip--${alert.tone}`}
+                  >
+                    <span>{alert.label}</span>
+                    <strong>{alert.count}</strong>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="dashboard-alerts dashboard-alerts--clear">
+              <CheckCircleOutlined />
+              <span>{t('alerts.allClear')}</span>
+            </div>
+          )}
+
+          {secondaryTiles.length > 0 ? (
+            <section className="dashboard-grid-section">
+              <Typography.Text type="secondary" className="dashboard-grid-section__title">
+                {t('sections.details')}
+              </Typography.Text>
+              <Row gutter={[12, 12]}>
+                {secondaryTiles.map((tile) => (
+                  <Col key={tile.title} xs={24} sm={12} lg={8} xl={6}>
+                    <MetricTile {...tile} />
+                  </Col>
+                ))}
+              </Row>
+            </section>
+          ) : null}
+        </Spin>
+      </div>
     </div>
   );
 }
