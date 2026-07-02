@@ -1,91 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-01T19:15:52.758Z",
+  "generatedAt": "2026-07-02T10:21:07.734Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 148,
-    "last24hPageViews": 368,
-    "last24hRequests": 551
+    "todayVisitors": 125,
+    "todayPageViews": 141,
+    "todayRequests": 285,
+    "last24hVisitors": 151,
+    "last24hPageViews": 391,
+    "last24hRequests": 625
   },
   "hourly": [
-    {
-      "time": "2026-06-30T20:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-06-30T21:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-06-30T22:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-06-30T23:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
-    {
-      "time": "2026-07-01T00:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-07-01T01:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-07-01T02:00:00Z",
-      "visitors": 2,
-      "requests": 22
-    },
-    {
-      "time": "2026-07-01T03:00:00Z",
-      "visitors": 91,
-      "requests": 161
-    },
-    {
-      "time": "2026-07-01T04:00:00Z",
-      "visitors": 16,
-      "requests": 24
-    },
-    {
-      "time": "2026-07-01T05:00:00Z",
-      "visitors": 8,
-      "requests": 9
-    },
-    {
-      "time": "2026-07-01T06:00:00Z",
-      "visitors": 10,
-      "requests": 12
-    },
-    {
-      "time": "2026-07-01T07:00:00Z",
-      "visitors": 10,
-      "requests": 12
-    },
-    {
-      "time": "2026-07-01T08:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-07-01T09:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-07-01T10:00:00Z",
-      "visitors": 5,
-      "requests": 26
-    },
     {
       "time": "2026-07-01T11:00:00Z",
       "visitors": 5,
@@ -125,6 +50,81 @@
       "time": "2026-07-01T18:00:00Z",
       "visitors": 2,
       "requests": 2
+    },
+    {
+      "time": "2026-07-01T19:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-07-01T20:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-07-01T21:00:00Z",
+      "visitors": 6,
+      "requests": 7
+    },
+    {
+      "time": "2026-07-01T22:00:00Z",
+      "visitors": 6,
+      "requests": 63
+    },
+    {
+      "time": "2026-07-01T23:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-07-02T00:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-07-02T01:00:00Z",
+      "visitors": 2,
+      "requests": 21
+    },
+    {
+      "time": "2026-07-02T02:00:00Z",
+      "visitors": 109,
+      "requests": 181
+    },
+    {
+      "time": "2026-07-02T03:00:00Z",
+      "visitors": 8,
+      "requests": 24
+    },
+    {
+      "time": "2026-07-02T04:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-02T05:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-02T06:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-02T07:00:00Z",
+      "visitors": 3,
+      "requests": 20
+    },
+    {
+      "time": "2026-07-02T08:00:00Z",
+      "visitors": 3,
+      "requests": 8
+    },
+    {
+      "time": "2026-07-02T09:00:00Z",
+      "visitors": 4,
+      "requests": 18
     }
   ],
   "daily": [
@@ -160,42 +160,44 @@
     },
     {
       "date": "2026-07-01",
-      "visitors": 142,
-      "pageViews": 366,
-      "requests": 544
+      "visitors": 150,
+      "pageViews": 405,
+      "requests": 621
+    },
+    {
+      "date": "2026-07-02",
+      "visitors": 125,
+      "pageViews": 141,
+      "requests": 285
     }
   ],
   "topPages": [
     {
-      "path": "/vi/tin-tuc/cac-kpi-quan-trong-khi-quan-ly-nha-thuoc/",
-      "views": 115
+      "path": "/vi/tin-tuc/tuan-thu-gpp-trong-quan-ly-nha-thuoc/",
+      "views": 61
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 34
+      "views": 54
     },
     {
-      "path": "/",
-      "views": 33
-    },
-    {
-      "path": "/images/tin-tuc/cac-kpi-quan-trong-khi-quan-ly-nha-thuoc.png",
-      "views": 22
+      "path": "/.../tuan-thu-gpp-trong-quan-ly-nha-thuoc/",
+      "views": 49
     },
     {
       "path": "/vi/",
-      "views": 15
+      "views": 26
     },
     {
-      "path": "/images/logo.png",
-      "views": 14
+      "path": "/",
+      "views": 26
     },
     {
       "path": "/robots.txt",
-      "views": 14
+      "views": 17
     },
     {
-      "path": "/api/stats",
+      "path": "/images/banner.png",
       "views": 14
     },
     {
@@ -204,27 +206,31 @@
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 9
+      "views": 12
+    },
+    {
+      "path": "/images/tin-tuc/tuan-thu-gpp-trong-quan-ly-nha-thuoc.png",
+      "views": 12
+    },
+    {
+      "path": "/images/logo.png",
+      "views": 11
+    },
+    {
+      "path": "/api/stats",
+      "views": 11
+    },
+    {
+      "path": "/vi",
+      "views": 10
+    },
+    {
+      "path": "/images/tin-tuc/cac-kpi-quan-trong-khi-quan-ly-nha-thuoc.png",
+      "views": 10
     },
     {
       "path": "/vi/thong-ke/",
       "views": 8
-    },
-    {
-      "path": "/images/tin-tuc/chuyen-doi-so-cho-nha-thuoc-bat-dau-tu-dau.png",
-      "views": 8
-    },
-    {
-      "path": "/vi",
-      "views": 7
-    },
-    {
-      "path": "/images/banner.png",
-      "views": 5
-    },
-    {
-      "path": "/images/tin-tuc/cach-giam-ton-kho-chet-trong-nha-thuoc.png",
-      "views": 5
     }
   ]
 }
