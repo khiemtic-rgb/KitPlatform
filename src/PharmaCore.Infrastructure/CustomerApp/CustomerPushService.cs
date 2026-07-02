@@ -13,6 +13,7 @@ internal sealed class CustomerPushService : ICustomerPushService
     private readonly CustomerEngagementRepository _engagement;
     private readonly CustomerReminderRepository _reminders;
     private readonly CustomerAppConsentRepository _consents;
+    private readonly ICustomerEngagementEventService _engagementEvents;
     private readonly CustomerAppPushOptions _options;
     private readonly ILogger<CustomerPushService> _logger;
 
@@ -21,6 +22,7 @@ internal sealed class CustomerPushService : ICustomerPushService
         CustomerEngagementRepository engagement,
         CustomerReminderRepository reminders,
         CustomerAppConsentRepository consents,
+        ICustomerEngagementEventService engagementEvents,
         IOptions<CustomerAppPushOptions> options,
         ILogger<CustomerPushService> logger)
     {
@@ -28,6 +30,7 @@ internal sealed class CustomerPushService : ICustomerPushService
         _engagement = engagement;
         _reminders = reminders;
         _consents = consents;
+        _engagementEvents = engagementEvents;
         _options = options.Value;
         _logger = logger;
     }
@@ -75,6 +78,17 @@ internal sealed class CustomerPushService : ICustomerPushService
             customerAccountId,
             SerializeSubscriptions(next),
             cancellationToken);
+
+        var customerId = await _repo.GetCustomerIdForAccountAsync(tenantId, customerAccountId, cancellationToken);
+        if (customerId.HasValue)
+        {
+            await _engagementEvents.RecordEventAsync(
+                tenantId,
+                customerAccountId,
+                customerId.Value,
+                CustomerEngagementEventTypes.PushEnable,
+                cancellationToken: cancellationToken);
+        }
     }
 
     public async Task UnregisterSubscriptionAsync(

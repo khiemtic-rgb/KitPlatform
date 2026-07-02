@@ -86,7 +86,8 @@ $files = @(
     "061_products_product_kind.sql",
     "062_health_care_schema_align.sql",
     "063_p9_engagement_notifications.sql",
-    "064_p10b_customer_app_i18n.sql"
+    "064_p10b_customer_app_i18n.sql",
+    "065_customer_engagement_analytics.sql"
 )
 
 Write-Host "=== PharmaCore Migrations ===" -ForegroundColor Cyan

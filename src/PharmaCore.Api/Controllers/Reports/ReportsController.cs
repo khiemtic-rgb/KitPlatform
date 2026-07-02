@@ -88,4 +88,14 @@ public sealed class ReportsController : ControllerBase
         [FromQuery] int expiryDays = 30,
         CancellationToken cancellationToken = default) =>
         _reports.RunInventoryNearExpiryAsync(warehouseId, expiryDays, cancellationToken);
+
+    [HttpGet("inventory/movement-summary")]
+    [Authorize(Policy = ReportsPolicies.Read)]
+    public Task<ReportTableResultDto> InventoryMovementSummary(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] Guid? warehouseId = null,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default) =>
+        _reports.RunInventoryMovementSummaryAsync(from, to, warehouseId, search, cancellationToken);
 }

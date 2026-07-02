@@ -42,6 +42,20 @@ internal sealed class CustomerPushRepository
             throw new InvalidOperationException("Tài khoản khách không tồn tại.");
     }
 
+    public async Task<Guid?> GetCustomerIdForAccountAsync(
+        Guid tenantId,
+        Guid accountId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT customer_id
+            FROM customer_accounts
+            WHERE id = @AccountId AND tenant_id = @TenantId AND status = 1
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.ExecuteScalarAsync<Guid?>(sql, new { AccountId = accountId, TenantId = tenantId });
+    }
+
     public async Task<IReadOnlyList<DueReminderPushRow>> ListDueRemindersAsync(
         int limit,
         CancellationToken cancellationToken)

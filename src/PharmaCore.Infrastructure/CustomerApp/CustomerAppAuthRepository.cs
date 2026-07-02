@@ -176,7 +176,9 @@ internal sealed class CustomerAppAuthRepository
     {
         const string sql = """
             UPDATE customer_accounts
-            SET is_verified = TRUE, last_login_at = NOW()
+            SET is_verified = TRUE,
+                last_login_at = NOW(),
+                first_login_at = COALESCE(first_login_at, NOW())
             WHERE id = @AccountId
             """;
 

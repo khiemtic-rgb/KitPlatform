@@ -1,6 +1,7 @@
 using System.Data;
 using Dapper;
 using PharmaCore.Application.Abstractions;
+using PharmaCore.Application.Inventory;
 using PharmaCore.Application.Procurement;
 using PharmaCore.Application.Reports;
 using PharmaCore.Application.Sales;
@@ -518,6 +519,97 @@ internal sealed class ReportsRepository
         }).ToList();
     }
 
+    public async Task<IReadOnlyList<Dictionary<string, object?>>> GetInventoryMovementSummaryAsync(
+        DateTime fromUtc,
+        DateTime toUtc,
+        Guid? warehouseId,
+        Guid[]? allowedWarehouseIds,
+        string? search,
+        CancellationToken cancellationToken)
+    {
+        var warehouseFilter = BuildWarehouseFilter("sm.warehouse_id", warehouseId, allowedWarehouseIds);
+        var searchFilter = string.IsNullOrWhiteSpace(search)
+            ? string.Empty
+            : "AND (p.product_code ILIKE @Search OR p.product_name ILIKE @Search)";
+
+        var sql = $"""
+            WITH movement_agg AS (
+                SELECT
+                    sm.product_id,
+                    sm.warehouse_id,
+                    SUM(CASE
+                        WHEN sm.movement_date < @FromDate THEN
+                            CASE
+                                WHEN sm.movement_type = @MovementIn THEN sm.quantity
+                                WHEN sm.movement_type = @MovementOut THEN -sm.quantity
+                                ELSE 0
+                            END
+                        ELSE 0
+                    END) AS OpeningQty,
+                    SUM(CASE
+                        WHEN sm.movement_type = @MovementIn
+                             AND sm.movement_date >= @FromDate
+                             AND sm.movement_date < @ToDate
+                        THEN sm.quantity
+                        ELSE 0
+                    END) AS InQty,
+                    SUM(CASE
+                        WHEN sm.movement_type = @MovementOut
+                             AND sm.movement_date >= @FromDate
+                             AND sm.movement_date < @ToDate
+                        THEN sm.quantity
+                        ELSE 0
+                    END) AS OutQty
+                FROM stock_movements sm
+                INNER JOIN products p ON p.id = sm.product_id AND p.tenant_id = sm.tenant_id
+                WHERE sm.tenant_id = @TenantId
+                  AND p.deleted_at IS NULL
+                  {warehouseFilter}
+                  {searchFilter}
+                GROUP BY sm.product_id, sm.warehouse_id
+            )
+            SELECT
+                p.product_code AS ProductCode,
+                p.product_name AS ProductName,
+                w.warehouse_name AS WarehouseName,
+                ma.OpeningQty,
+                ma.InQty,
+                ma.OutQty,
+                ma.OpeningQty + ma.InQty - ma.OutQty AS ClosingQty
+            FROM movement_agg ma
+            INNER JOIN products p ON p.id = ma.product_id AND p.tenant_id = @TenantId
+            INNER JOIN warehouses w ON w.id = ma.warehouse_id
+            WHERE ma.OpeningQty <> 0 OR ma.InQty <> 0 OR ma.OutQty <> 0
+            ORDER BY p.product_name, w.warehouse_name
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<MovementSummaryRow>(
+            sql,
+            new
+            {
+                TenantId,
+                FromDate = fromUtc,
+                ToDate = toUtc,
+                WarehouseId = warehouseId,
+                AllowedWarehouseIds = allowedWarehouseIds,
+                Search = string.IsNullOrWhiteSpace(search) ? null : $"%{search.Trim()}%",
+                MovementIn = StockMovementTypes.In,
+                MovementOut = StockMovementTypes.Out,
+            });
+
+        return rows.Select(r => new Dictionary<string, object?>
+        {
+            ["productCode"] = r.ProductCode,
+            ["productName"] = r.ProductName,
+            ["warehouseName"] = r.WarehouseName,
+            ["openingQty"] = r.OpeningQty,
+            ["inQty"] = r.InQty,
+            ["outQty"] = r.OutQty,
+            ["closingQty"] = r.ClosingQty,
+        }).ToList();
+    }
+
     private static string FormatPeriodLabel(DateTime periodStart, string groupBy) =>
         groupBy switch
         {
@@ -616,5 +708,16 @@ internal sealed class ReportsRepository
         public DateOnly ExpiryDate { get; init; }
         public decimal TotalQty { get; init; }
         public decimal StockValue { get; init; }
+    }
+
+    private sealed class MovementSummaryRow
+    {
+        public string ProductCode { get; init; } = "";
+        public string ProductName { get; init; } = "";
+        public string WarehouseName { get; init; } = "";
+        public decimal OpeningQty { get; init; }
+        public decimal InQty { get; init; }
+        public decimal OutQty { get; init; }
+        public decimal ClosingQty { get; init; }
     }
 }

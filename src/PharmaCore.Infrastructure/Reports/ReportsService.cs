@@ -38,6 +38,8 @@ internal sealed class ReportsService : IReportsService
             "Số lượng và giá trị tồn (qty × giá vốn lô) theo sản phẩm/kho.", false, false, true),
         new(ReportCodes.InventoryNearExpiry, "Sắp hết hạn sử dụng", "inventory",
             "Lô tồn có HSD trong số ngày cảnh báo.", false, false, true),
+        new(ReportCodes.InventoryMovementSummary, "Xuất — nhập — tồn", "inventory",
+            "Tồn đầu kỳ, nhập/xuất trong kỳ và tồn cuối theo sản phẩm/kho.", false, false, true),
     ];
 
     public async Task<ReportTableResultDto> RunSalesRevenueByPeriodAsync(
@@ -313,6 +315,39 @@ internal sealed class ReportsService : IReportsService
             columns,
             rows,
             SumTotals(rows, "totalQty", "stockValue"));
+    }
+
+    public async Task<ReportTableResultDto> RunInventoryMovementSummaryAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        var (from, to) = ReportsDateHelper.ResolveRangeUtc(fromUtc, toUtc, DateTime.UtcNow);
+        var (scopedWarehouseId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
+        var rows = await _repository.GetInventoryMovementSummaryAsync(from, to, scopedWarehouseId, allowed, search, cancellationToken);
+        var columns = new List<ReportColumnDto>
+        {
+            Col("productCode", "Mã SP", ReportColumnFormats.Text, "left"),
+            Col("productName", "Tên SP", ReportColumnFormats.Text, "left"),
+            Col("warehouseName", "Kho", ReportColumnFormats.Text, "left"),
+            Col("openingQty", "Tồn đầu", ReportColumnFormats.Qty, "right"),
+            Col("inQty", "Nhập", ReportColumnFormats.Qty, "right"),
+            Col("outQty", "Xuất", ReportColumnFormats.Qty, "right"),
+            Col("closingQty", "Tồn cuối", ReportColumnFormats.Qty, "right"),
+        };
+        var filters = FilterLabels(from, to, null, warehouseId);
+        filters["Ghi chú"] = "Tồn cuối = Tồn đầu + Nhập − Xuất (theo stock_movements)";
+        if (!string.IsNullOrWhiteSpace(search)) filters["Tìm kiếm"] = search.Trim();
+
+        return BuildTable(
+            ReportCodes.InventoryMovementSummary,
+            "Xuất — nhập — tồn",
+            filters,
+            columns,
+            rows,
+            SumTotals(rows, "openingQty", "inQty", "outQty", "closingQty"));
     }
 
     private static string NormalizePeriodGroupBy(string groupBy) =>

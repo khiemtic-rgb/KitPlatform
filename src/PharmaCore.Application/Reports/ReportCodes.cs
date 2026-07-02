@@ -10,6 +10,7 @@ public static class ReportCodes
     public const string ProcurementPayablesSnapshot = "PROC-03";
     public const string InventoryStockSnapshot = "INV-01";
     public const string InventoryNearExpiry = "INV-02";
+    public const string InventoryMovementSummary = "INV-03";
 }
 
 public static class ReportGroupBy

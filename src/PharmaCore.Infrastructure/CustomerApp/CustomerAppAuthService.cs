@@ -12,6 +12,7 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
     private readonly CustomerAppJwtTokenService _tokens;
     private readonly CustomerAppAuthSettings _settings;
     private readonly ICustomerOtpSender _otpSender;
+    private readonly ICustomerEngagementEventService _engagementEvents;
     private readonly IHostEnvironment _env;
     private readonly ILogger<CustomerAppAuthService> _logger;
 
@@ -20,6 +21,7 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
         CustomerAppJwtTokenService tokens,
         IOptions<CustomerAppAuthSettings> settings,
         ICustomerOtpSender otpSender,
+        ICustomerEngagementEventService engagementEvents,
         IHostEnvironment env,
         ILogger<CustomerAppAuthService> logger)
     {
@@ -27,6 +29,7 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
         _tokens = tokens;
         _settings = settings.Value;
         _otpSender = otpSender;
+        _engagementEvents = engagementEvents;
         _env = env;
         _logger = logger;
     }
@@ -135,6 +138,11 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
 
         await _repo.ConsumeOtpChallengeAsync(challenge.Id, cancellationToken);
         await _repo.MarkAccountVerifiedAsync(account.AccountId, cancellationToken);
+        await _engagementEvents.TryRecordDailyAppOpenAsync(
+            tenant.TenantId,
+            account.AccountId,
+            account.CustomerId,
+            cancellationToken);
 
         return await IssueTokensAsync(account, cancellationToken);
     }

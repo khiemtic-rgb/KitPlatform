@@ -147,6 +147,9 @@ const CustomerLayout = lazy(() =>
 const CustomerListPage = lazy(() =>
   import('@/modules/customer/CustomerListPage').then((m) => ({ default: m.CustomerListPage })),
 );
+const CustomerEngagementPage = lazy(() =>
+  import('@/modules/customer/CustomerEngagementPage').then((m) => ({ default: m.CustomerEngagementPage })),
+);
 const CustomerDetailPage = lazy(() =>
   import('@/modules/customer/CustomerDetailPage').then((m) => ({ default: m.CustomerDetailPage })),
 );
@@ -347,6 +350,7 @@ export function AppRouter() {
               >
                 <Route index element={<Navigate to="/customer/list" replace />} />
                 <Route path="list" element={<CustomerListPage />} />
+                <Route path="engagement" element={<CustomerEngagementPage />} />
                 <Route path="loyalty" element={<LoyaltySettingsPage />} />
                 <Route path="vouchers" element={<VoucherListPage />} />
                 <Route path=":customerId" element={<CustomerDetailPage />} />
@@ -425,6 +429,14 @@ export function AppRouter() {
                 />
                 <Route
                   path="inventory/near-expiry"
+                  element={
+                    <SuspenseRoute>
+                      <ReportViewPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="inventory/movement-summary"
                   element={
                     <SuspenseRoute>
                       <ReportViewPage />

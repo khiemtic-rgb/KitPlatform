@@ -14,7 +14,7 @@
   },
   "home": {
     "title": "Reports — Analytics",
-    "description": "Wave 1: revenue, shifts, goods receipt, supplier payables, stock, and expiry alerts. Pick a report to filter by period, export CSV, or print.",
+    "description": "Wave 1: revenue, shifts, goods receipt, supplier payables, stock, in-out-balance, and expiry alerts. Pick a report to filter by period, export CSV, or print.",
     "favorites": "Favorites"
   },
   "view": {
@@ -98,6 +98,10 @@
     "INV-02": {
       "name": "Near expiry",
       "description": "Batches expiring within the alert window."
+    },
+    "INV-03": {
+      "name": "In — out — balance",
+      "description": "Opening balance, period movements, and closing balance by product/warehouse."
     }
   }
 }

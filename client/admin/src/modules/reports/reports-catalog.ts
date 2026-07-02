@@ -97,6 +97,16 @@ const REPORT_DEFINITIONS_META: ReportDefinitionMeta[] = [
     supportsExpiryDays: true,
     favorite: true,
   },
+  {
+    code: 'INV-03',
+    category: 'inventory',
+    path: '/reports/inventory/movement-summary',
+    apiPath: 'inventory/movement-summary',
+    supportsDateRange: true,
+    supportsWarehouse: true,
+    supportsSearch: true,
+    favorite: true,
+  },
 ];
 
 function localizeReport(meta: ReportDefinitionMeta): ReportDefinition {

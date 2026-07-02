@@ -14,7 +14,7 @@
   },
   "home": {
     "title": "Báo cáo — Thống kê",
-    "description": "Wave 1: doanh thu, ca làm việc, nhập hàng, công nợ NCC, tồn kho và cảnh báo HSD. Chọn báo cáo để lọc kỳ, xuất CSV hoặc in.",
+    "description": "Wave 1: doanh thu, ca làm việc, nhập hàng, công nợ NCC, tồn kho, xuất-nhập-tồn và cảnh báo HSD. Chọn báo cáo để lọc kỳ, xuất CSV hoặc in.",
     "favorites": "Thường dùng"
   },
   "view": {
@@ -98,6 +98,10 @@
     "INV-02": {
       "name": "Sắp hết hạn sử dụng",
       "description": "Lô tồn có HSD trong số ngày cảnh báo."
+    },
+    "INV-03": {
+      "name": "Xuất — nhập — tồn",
+      "description": "Tồn đầu kỳ, nhập/xuất trong kỳ và tồn cuối theo sản phẩm/kho."
     }
   }
 }

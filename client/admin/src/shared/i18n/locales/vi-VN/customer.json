@@ -18,8 +18,37 @@
   "customerLayout": {
     "tabs": {
       "list": "Danh sách",
+      "engagement": "Engagement app",
       "loyalty": "Tích điểm",
       "vouchers": "Voucher"
+    }
+  },
+  "engagement": {
+    "title": "Customer Engagement",
+    "subtitle": "Funnel hành vi app khách — đo mỗi sáng để biết bước nào cần tối ưu.",
+    "refresh": "Tải lại",
+    "cohort": "Tài khoản app (cohort)",
+    "retention30d": "Retention 30 ngày",
+    "retentionDetail": "{{retained}} / {{eligible}} khách quay lại",
+    "period": "Kỳ đo",
+    "days": "ngày",
+    "ofCohort": "cohort",
+    "fromPrevious": "{{rate}} từ bước trước",
+    "drillTitle": "Chi tiết: {{step}}",
+    "loadFailed": "Không tải được engagement",
+    "drillFailed": "Không tải được danh sách chi tiết",
+    "columns": {
+      "name": "Khách hàng",
+      "phone": "SĐT",
+      "lastLogin": "Login cuối",
+      "firstLogin": "Login đầu"
+    },
+    "steps": {
+      "app_active": "App Active",
+      "reminder_on": "Reminder On",
+      "ai_usage": "AI Usage",
+      "chat": "Chat",
+      "order_again": "Order Again"
     }
   },
   "listPage": {

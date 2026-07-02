@@ -98,6 +98,10 @@ public static class DependencyInjection
         services.AddScoped<CustomerPushRepository>();
         services.AddScoped<CustomerEngagementRepository>();
         services.AddScoped<ICustomerPushService, CustomerPushService>();
+        services.AddScoped<CustomerEngagementEventRepository>();
+        services.AddScoped<ICustomerEngagementEventService, CustomerEngagementEventService>();
+        services.AddScoped<CustomerEngagementAnalyticsRepository>();
+        services.AddScoped<ICustomerEngagementAnalyticsService, CustomerEngagementAnalyticsService>();
         services.AddHostedService<MedicationReminderPushWorker>();
 
         services.AddSingleton<IChatEventHub, ChatEventHub>();

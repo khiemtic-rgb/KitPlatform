@@ -18,8 +18,37 @@
   "customerLayout": {
     "tabs": {
       "list": "List",
+      "engagement": "App engagement",
       "loyalty": "Loyalty",
       "vouchers": "Vouchers"
+    }
+  },
+  "engagement": {
+    "title": "Customer Engagement",
+    "subtitle": "Customer app behavior funnel — check each morning to see where to optimize.",
+    "refresh": "Refresh",
+    "cohort": "App accounts (cohort)",
+    "retention30d": "30-day retention",
+    "retentionDetail": "{{retained}} / {{eligible}} customers returned",
+    "period": "Period",
+    "days": "days",
+    "ofCohort": "of cohort",
+    "fromPrevious": "{{rate}} from previous step",
+    "drillTitle": "Detail: {{step}}",
+    "loadFailed": "Could not load engagement",
+    "drillFailed": "Could not load detail list",
+    "columns": {
+      "name": "Customer",
+      "phone": "Phone",
+      "lastLogin": "Last login",
+      "firstLogin": "First login"
+    },
+    "steps": {
+      "app_active": "App Active",
+      "reminder_on": "Reminder On",
+      "ai_usage": "AI Usage",
+      "chat": "Chat",
+      "order_again": "Order Again"
     }
   },
   "listPage": {

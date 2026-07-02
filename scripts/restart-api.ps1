@@ -24,6 +24,10 @@ Write-Host ">> Migration P10b (i18n / en-US)..." -ForegroundColor Yellow
 & (Join-Path $PSScriptRoot "apply-064-p10b-i18n.ps1")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+Write-Host ">> Migration 065 (Customer Engagement)..." -ForegroundColor Yellow
+& (Join-Path $PSScriptRoot "apply-065-customer-engagement.ps1")
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 
 
 Write-Host ">> Build + khoi dong API nen (5290/7224)..." -ForegroundColor Yellow

@@ -49,4 +49,11 @@ public interface IReportsService
         Guid? warehouseId,
         int expiryDays,
         CancellationToken cancellationToken = default);
+
+    Task<ReportTableResultDto> RunInventoryMovementSummaryAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        string? search,
+        CancellationToken cancellationToken = default);
 }

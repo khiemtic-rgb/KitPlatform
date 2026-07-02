@@ -13,13 +13,16 @@ public sealed class CustomerAppAiHealthController : ControllerBase
 {
     private readonly ICustomerAiHealthService _service;
     private readonly ICurrentCustomerAccessor _customer;
+    private readonly ICustomerEngagementEventService _engagementEvents;
 
     public CustomerAppAiHealthController(
         ICustomerAiHealthService service,
-        ICurrentCustomerAccessor customer)
+        ICurrentCustomerAccessor customer,
+        ICustomerEngagementEventService engagementEvents)
     {
         _service = service;
         _customer = customer;
+        _engagementEvents = engagementEvents;
     }
 
     [HttpPost("ask")]
@@ -31,11 +34,18 @@ public sealed class CustomerAppAiHealthController : ControllerBase
     {
         try
         {
-            return Ok(await _service.AskAsync(
+            var response = await _service.AskAsync(
                 _customer.TenantId,
                 _customer.CustomerId,
                 request,
-                cancellationToken));
+                cancellationToken);
+            await _engagementEvents.RecordEventAsync(
+                _customer.TenantId,
+                _customer.CustomerAccountId,
+                _customer.CustomerId,
+                CustomerEngagementEventTypes.AiAsk,
+                cancellationToken: cancellationToken);
+            return Ok(response);
         }
         catch (InvalidOperationException ex)
         {

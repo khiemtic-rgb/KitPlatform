@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { GiftOutlined, TagOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { GiftOutlined, LineChartOutlined, TagOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { useRegisterProductNavSubnav } from '@/shared/components/module-subnav.context';
 import type { ProductNavTab } from '@/shared/product/product-phases';
 import { useProductNavGuard } from '@/shared/product/useProductNavGuard';
@@ -14,6 +14,12 @@ export function CustomerLayout() {
   const allTabs: ProductNavTab[] = useMemo(
     () => [
       { key: 'list', label: t('list'), path: '/customer/list', icon: <UnorderedListOutlined /> },
+      {
+        key: 'engagement',
+        label: t('engagement'),
+        path: '/customer/engagement',
+        icon: <LineChartOutlined />,
+      },
       { key: 'loyalty', label: t('loyalty'), path: '/customer/loyalty', icon: <GiftOutlined /> },
       {
         key: 'vouchers',
