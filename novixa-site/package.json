@@ -7,7 +7,7 @@
   },
   "scripts": {
     "sync:assets": "node scripts/sync-brand-assets.mjs",
-    "prebuild": "npm run sync:assets && npm run generate:news-images",
+    "prebuild": "npm run sync:assets && npm run generate:news-images:svg",
     "dev": "npm run sync:assets && astro dev --host localhost --port 4321",
     "build": "astro build",
     "preview": "astro preview --host localhost --port 4321",
@@ -15,6 +15,7 @@
     "import:news": "node scripts/import-tin-tuc.mjs",
     "publish:news": "node scripts/auto-publish-news.mjs",
     "publish:news:status": "node scripts/news-content-status.mjs",
+    "ensure:today-images": "node scripts/ensure-today-news-images.mjs",
     "generate:news-images": "node scripts/generate-news-images.mjs",
     "generate:news-images:cf": "node scripts/generate-news-images-cf.mjs",
     "generate:news-images:ai": "node scripts/generate-news-images-ai.mjs",

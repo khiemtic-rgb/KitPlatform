@@ -65,13 +65,12 @@ jobs:
             echo "Không có Excel import — bỏ qua."
           fi
 
-      - name: Regenerate ảnh thiếu (OpenAI → CF → SVG)
+      - name: Ảnh cho bài đăng hôm nay (chỉ bài thiếu .png)
         working-directory: novixa-site
         env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: npm run generate:news-images
+          PUBLISH_DATE: ${{ vars.PUBLISH_DATE }}
+        run: npm run ensure:today-images
 
       - name: Commit bài import (nếu đổi)
         uses: stefanzweifel/git-auto-commit-action@v5

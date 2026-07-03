@@ -61,7 +61,8 @@ Lịch biên tập: `scripts/lib/news-content-plan.mjs` — mỗi ngày 1 bài m
 
 Workflow `novixa-scheduled-publish.yml` mỗi đêm (~00:05 VN):
 
-1. `npm run publish:news` — ChatGPT viết bài + OpenAI sinh ảnh OG
+1. `npm run publish:news` — ChatGPT viết bài + **OpenAI ảnh chỉ cho bài đó**
+2. `npm run ensure:today-images` — bù ảnh thiếu cho bài `pubDate` hôm nay (tối đa vài bài, không quét 23 bài)
 2. Import Excel (nếu có `import/tin-tuc.xlsx`)
 3. Đăng fanpage + deploy
 
@@ -146,12 +147,13 @@ Mỗi bài tin có:
 | **robots.txt** | Trỏ sitemap |
 | **CTA cuối bài** | Link Giải pháp + Liên hệ |
 
-Sinh ảnh (ưu tiên **OpenAI** khi có `OPENAI_API_KEY`, sau đó CF Flux, cuối cùng SVG):
+Sinh ảnh **theo bài đăng** (tiết kiệm OpenAI — không tạo lại cả 23 bài mỗi lần):
 
 | Lệnh | Mô tả |
 |------|--------|
-| `npm run publish:news` | ChatGPT viết bài + OpenAI ảnh (theo lịch ngày) |
-| `npm run generate:news-images` | OpenAI → CF Flux → SVG |
+| `npm run publish:news` | ChatGPT viết bài + OpenAI ảnh **bài đang đăng** |
+| `npm run ensure:today-images` | OpenAI/SVG chỉ cho bài **pubDate hôm nay** thiếu `.png` |
+| `npm run generate:news-images` | Quét tất cả bài (chỉ khi cần bù hàng loạt) |
 | `npm run generate:news-images:cf` | Chỉ Cloudflare Flux Schnell |
 | `npm run generate:news-images:ai` | Chỉ OpenAI (có phí) |
 | `npm run generate:news-images:svg` | Chỉ SVG (miễn phí, 8 layout/bài) |
