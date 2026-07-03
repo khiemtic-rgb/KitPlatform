@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-03T10:17:59.321Z",
+  "generatedAt": "2026-07-03T17:05:20.594Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 142,
-    "todayPageViews": 189,
-    "todayRequests": 364,
-    "last24hVisitors": 168,
-    "last24hPageViews": 225,
-    "last24hRequests": 485
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 172,
+    "last24hPageViews": 304,
+    "last24hRequests": 763
   },
   "hourly": [
-    {
-      "time": "2026-07-02T11:00:00Z",
-      "visitors": 1,
-      "requests": 7
-    },
-    {
-      "time": "2026-07-02T12:00:00Z",
-      "visitors": 3,
-      "requests": 21
-    },
-    {
-      "time": "2026-07-02T13:00:00Z",
-      "visitors": 4,
-      "requests": 17
-    },
-    {
-      "time": "2026-07-02T14:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-07-02T15:00:00Z",
-      "visitors": 7,
-      "requests": 11
-    },
-    {
-      "time": "2026-07-02T16:00:00Z",
-      "visitors": 5,
-      "requests": 37
-    },
-    {
-      "time": "2026-07-02T17:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
     {
       "time": "2026-07-02T18:00:00Z",
       "visitors": 3,
@@ -123,17 +88,41 @@
     },
     {
       "time": "2026-07-03T10:00:00Z",
-      "visitors": 2,
+      "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-07-03T11:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-07-03T12:00:00Z",
+      "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-07-03T13:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-07-03T14:00:00Z",
+      "visitors": 7,
+      "requests": 346
+    },
+    {
+      "time": "2026-07-03T15:00:00Z",
+      "visitors": 8,
+      "requests": 10
+    },
+    {
+      "time": "2026-07-03T16:00:00Z",
+      "visitors": 5,
+      "requests": 5
     }
   ],
   "daily": [
-    {
-      "date": "2026-06-27",
-      "visitors": 152,
-      "pageViews": 181,
-      "requests": 362
-    },
     {
       "date": "2026-06-28",
       "visitors": 106,
@@ -166,22 +155,26 @@
     },
     {
       "date": "2026-07-03",
-      "visitors": 142,
-      "pageViews": 189,
-      "requests": 364
+      "visitors": 162,
+      "pageViews": 298,
+      "requests": 740
     }
   ],
   "topPages": [
-    {
-      "path": "/cdn-cgi/rum",
-      "views": 77
-    },
     {
       "path": "/vi/tin-tuc/canh-bao-hang-can-date-quy-trinh-5-buoc/",
       "views": 60
     },
     {
+      "path": "/cdn-cgi/rum",
+      "views": 52
+    },
+    {
       "path": "/.../canh-bao-hang-can-date-quy-trinh-5/",
+      "views": 42
+    },
+    {
+      "path": "/vi/",
       "views": 38
     },
     {
@@ -189,47 +182,43 @@
       "views": 32
     },
     {
-      "path": "/vi/",
-      "views": 29
-    },
-    {
       "path": "/",
-      "views": 29
+      "views": 24
     },
     {
       "path": "/robots.txt",
-      "views": 19
-    },
-    {
-      "path": "/wp-login.php",
-      "views": 14
+      "views": 23
     },
     {
       "path": "/sitemap-index.xml",
       "views": 14
     },
     {
-      "path": "/_astro/Footer.B_fICVJK.css",
+      "path": "/wp-login.php",
       "views": 14
     },
     {
-      "path": "/api/stats",
-      "views": 11
+      "path": "/_astro/Footer.B_fICVJK.css",
+      "views": 13
     },
     {
       "path": "/vi",
       "views": 11
     },
     {
-      "path": "/favicon.ico",
+      "path": "/images/logo.png",
       "views": 10
     },
     {
-      "path": "/images/logo.png",
+      "path": "/images/tin-tuc/canh-bao-hang-can-date-quy-trinh-5-buoc.png",
       "views": 9
     },
     {
-      "path": "/images/tin-tuc/canh-bao-hang-can-date-quy-trinh-5-buoc.png",
+      "path": "/application.properties",
+      "views": 9
+    },
+    {
+      "path": "/firebase-adminsdk.json",
       "views": 9
     }
   ]
