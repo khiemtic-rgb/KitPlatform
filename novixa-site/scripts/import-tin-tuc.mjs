@@ -12,7 +12,6 @@ import { generateNewsImage } from './news-image-lib.mjs';
 import { generateNewsHeroImage } from './lib/openai-news.mjs';
 
 loadDotEnv();
-import { generateNewsHeroImage } from './lib/openai-news.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
