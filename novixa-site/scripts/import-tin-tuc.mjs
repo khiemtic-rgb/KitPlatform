@@ -17,6 +17,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const IMPORT_DIR = path.join(ROOT, 'import');
 const OUT_DIR = path.join(ROOT, 'src/content/tin-tuc');
+const OUT_DIR_IMAGES = path.join(ROOT, 'public/images/tin-tuc');
 const INPUT_NAMES = ['tin-tuc.xlsx', 'tin-tuc.xls', 'tin-tuc.csv'];
 
 function slugify(text) {
@@ -251,17 +252,24 @@ async function main() {
 
     writeMarkdown(item, filename);
     const slug = filename.replace(/\.md$/, '');
-    const img = await generateNewsHeroImage({
-      slug,
-      title: item.title,
-      description: item.description ?? '',
-    });
-    if (!img.ok) {
-      await generateNewsImage({
+    const imgPath = path.join(OUT_DIR_IMAGES, `${slug}.png`);
+    const forceImages = process.argv.includes('--force-images');
+
+    if (forceImages || !fs.existsSync(imgPath)) {
+      const img = await generateNewsHeroImage({
         slug,
         title: item.title,
         description: item.description ?? '',
       });
+      if (!img.ok) {
+        await generateNewsImage({
+          slug,
+          title: item.title,
+          description: item.description ?? '',
+        });
+      }
+    } else {
+      console.log(`  · Giữ ảnh sẵn có: ${slug}.png`);
     }
 
     if (exists) {
