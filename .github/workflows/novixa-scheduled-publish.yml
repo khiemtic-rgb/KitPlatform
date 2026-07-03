@@ -49,6 +49,9 @@ jobs:
             echo "::error::Thiếu OPENAI_API_KEY trong GitHub Secrets"
             exit 1
           fi
+          if [ -z "$ARTICLE_ID" ] && [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "::warning::Chưa nhập article_id (vd. nv-loyalty) — chỉ chạy bài lên lịch hôm nay nếu có."
+          fi
           npm run publish:news
 
       - name: Import tin từ Excel (nếu có)
@@ -84,6 +87,7 @@ jobs:
 
       - name: Đăng fanpage (bài pubDate hôm nay, giờ VN)
         working-directory: novixa-site
+        continue-on-error: true
         env:
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
           FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
@@ -91,10 +95,17 @@ jobs:
 
       - name: Cập nhật thống kê truy cập
         working-directory: novixa-site
+        continue-on-error: true
         env:
           CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+          CF_ANALYTICS_API_TOKEN: ${{ secrets.CF_ANALYTICS_API_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: npm run fetch:stats-snapshot
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] && [ -z "$CF_ANALYTICS_API_TOKEN" ]; then
+            echo "Bỏ qua stats — chưa có CLOUDFLARE_API_TOKEN trên GitHub Secrets."
+            exit 0
+          fi
+          npm run fetch:stats-snapshot
 
       - name: Commit log fanpage và stats (nếu đổi)
         uses: stefanzweifel/git-auto-commit-action@v5
