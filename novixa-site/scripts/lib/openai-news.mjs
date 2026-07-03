@@ -116,7 +116,9 @@ export async function generateNewsHeroImage({ slug, title, description = '', for
 
   const outPath = path.join(OUT_DIR, `${slug}.png`);
   const manifest = loadManifest();
-  if (!force && manifest[slug]?.mode === 'openai' && fs.existsSync(outPath)) {
+  // Đã có ảnh trên đĩa → giữ nguyên (tránh gọi OpenAI lại mỗi lần chạy workflow).
+  // Dùng force để bắt buộc tạo lại (bài mới auto-publish, hoặc --force-images).
+  if (!force && fs.existsSync(outPath)) {
     return { ok: true, skipped: true, path: outPath };
   }
 
