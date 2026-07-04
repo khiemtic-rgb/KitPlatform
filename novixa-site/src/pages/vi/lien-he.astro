@@ -9,6 +9,7 @@ import '../../styles/global.css';
 
 const m = t('vi');
 const c = m.contact;
+const co = m.company;
 const sent = Astro.url.searchParams.get('sent') === '1';
 
 const nextUrl = new URL(Astro.url);
@@ -107,6 +108,28 @@ const hasPhone = Boolean(c.phoneTel?.trim());
           </div>
 
           {hasZalo && <p class="contact-hint">{c.zaloHint}</p>}
+
+          <div class="contact-company">
+            <div class="contact-channel">
+              <span class="contact-channel-label">{co.addressLabel}</span>
+              <p class="contact-channel-value contact-address">{co.address}</p>
+            </div>
+
+            <div class="contact-channel">
+              <span class="contact-channel-label">{co.legalNameLabel}</span>
+              <p class="contact-channel-value">{co.legalName}</p>
+            </div>
+
+            <div class="contact-channel">
+              <span class="contact-channel-label">{co.taxIdLabel}</span>
+              <p class="contact-channel-value">{co.taxId}</p>
+            </div>
+
+            <p class="contact-provider">
+              {co.providerLabel}{' '}
+              <a href={co.providerUrl} target="_blank" rel="noopener noreferrer">{co.providerName}</a>
+            </p>
+          </div>
         </aside>
 
         <div class="card contact-form-wrap" id="contact-form">
@@ -203,6 +226,29 @@ const hasPhone = Boolean(c.phoneTel?.trim());
     margin: 0.75rem 0 0;
     font-size: 0.85rem;
     color: var(--color-muted);
+  }
+
+  .contact-company {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-border, #e2e8f0);
+  }
+
+  .contact-address {
+    font-weight: 500;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .contact-provider {
+    margin: 1rem 0 0;
+    font-size: 0.85rem;
+    color: var(--color-muted);
+  }
+
+  .contact-provider a {
+    color: var(--color-primary);
+    font-weight: 600;
   }
 
   .contact-form-note {

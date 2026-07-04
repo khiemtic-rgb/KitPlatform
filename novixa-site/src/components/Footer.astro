@@ -3,27 +3,47 @@ import { t } from '../i18n';
 
 const m = t('vi');
 const c = m.contact;
+const f = m.footer;
+const co = m.company;
 const year = new Date().getFullYear();
 const hasFacebook = Boolean(c.facebookUrl?.trim());
 ---
 
 <footer class="site-footer">
   <div class="container footer-inner">
-    <p><strong>{m.meta.siteName}</strong> — {m.meta.tagline}</p>
-    {
-      hasFacebook && (
-        <p>
-          <a class="footer-link" href={c.facebookUrl} target="_blank" rel="noopener noreferrer">
-            {c.facebookPageName || c.facebookLabel}
-          </a>
-        </p>
-      )
-    }
-    <p class="muted">{m.footer.erpNote}</p>
-    <p class="muted">
-      <a class="footer-link" href="https://novixa.vn">{m.footer.website}</a>
-    </p>
-    <p class="muted">© {year} {m.footer.rights}</p>
+    <div class="footer-brand">
+      <p class="footer-name">{m.meta.siteName}</p>
+      <p class="footer-tagline">{m.meta.tagline}</p>
+      <p class="footer-contact">
+        <a href={`tel:${c.phoneTel}`}>{c.phoneDisplay}</a>
+        ·
+        <a href={`mailto:${c.emailAddress}`}>{c.emailAddress}</a>
+      </p>
+      {
+        hasFacebook && (
+          <p class="footer-social-link">
+            <a class="footer-link" href={c.facebookUrl} target="_blank" rel="noopener noreferrer">
+              {c.facebookPageName || c.facebookLabel}
+            </a>
+          </p>
+        )
+      }
+    </div>
+
+    <div class="footer-legal">
+      <p class="footer-provider">
+        {co.providerLabel}{' '}
+        <a class="footer-link" href={co.providerUrl} target="_blank" rel="noopener noreferrer">
+          {co.providerName}
+        </a>
+      </p>
+      <p>{co.legalName}</p>
+      <p>{co.addressShort}</p>
+      <p>{co.taxIdLabel}: {co.taxId}</p>
+    </div>
+
+    <p class="footer-note">{f.erpNote}</p>
+    <p class="footer-bottom">© {year} {f.rights}</p>
   </div>
 </footer>
 
@@ -31,21 +51,72 @@ const hasFacebook = Boolean(c.facebookUrl?.trim());
   .site-footer {
     background: var(--color-text);
     color: #cbd5e1;
-    padding: 2.5rem 0;
+    padding: 2.75rem 0 1.75rem;
     margin-top: 3rem;
     font-size: 0.9rem;
   }
-  .footer-inner p {
-    margin: 0.35rem 0;
+
+  .footer-brand {
+    margin-bottom: 1.25rem;
   }
+
+  .footer-name {
+    margin: 0 0 0.25rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .footer-tagline {
+    margin: 0 0 0.65rem;
+    color: #cbd5e1;
+  }
+
+  .footer-contact {
+    margin: 0;
+  }
+
+  .footer-contact a,
   .footer-link {
     color: #93c5fd;
+    text-decoration: none;
   }
+
+  .footer-contact a:hover,
   .footer-link:hover {
     color: #fff;
   }
-  .muted {
+
+  .footer-social-link {
+    margin: 0.5rem 0 0;
+  }
+
+  .footer-legal {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid #334155;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: #64748b;
+  }
+
+  .footer-legal p {
+    margin: 0.2rem 0;
+  }
+
+  .footer-provider {
     color: #94a3b8;
-    font-size: 0.85rem;
+  }
+
+  .footer-note {
+    margin: 1rem 0 0;
+    color: #94a3b8;
+    font-size: 0.82rem;
+  }
+
+  .footer-bottom {
+    margin: 0.75rem 0 0;
+    color: #64748b;
+    font-size: 0.82rem;
   }
 </style>

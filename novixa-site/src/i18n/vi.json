@@ -132,6 +132,18 @@
     "phoneRequired": "Vui lòng nhập số điện thoại.",
     "messageRequired": "Vui lòng nhập nội dung."
   },
+  "company": {
+    "providerLabel": "Sản phẩm của",
+    "providerName": "KIT Technology",
+    "providerUrl": "https://kittech.vn/vi",
+    "legalName": "Công ty TNHH Truyền thông và Công nghệ KIT",
+    "legalNameLabel": "Pháp nhân",
+    "address": "KĐT Hồ Xương Rồng, phường Phan Đình Phùng, tỉnh Thái Nguyên",
+    "addressShort": "KĐT Hồ Xương Rồng, P. Phan Đình Phùng, Thái Nguyên",
+    "addressLabel": "Địa chỉ",
+    "taxId": "4601239671",
+    "taxIdLabel": "MST"
+  },
   "news": {
     "title": "Tin tức",
     "intro": "Cập nhật phát triển sản phẩm, vận hành nhà thuốc và hướng đi Novixa — theo lịch đăng.",
