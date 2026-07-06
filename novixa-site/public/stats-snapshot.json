@@ -1,91 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-05T21:42:31.419Z",
+  "generatedAt": "2026-07-06T14:08:52.477Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 134,
-    "last24hPageViews": 144,
-    "last24hRequests": 306
+    "todayVisitors": 105,
+    "todayPageViews": 120,
+    "todayRequests": 226,
+    "last24hVisitors": 112,
+    "last24hPageViews": 127,
+    "last24hRequests": 247
   },
   "hourly": [
-    {
-      "time": "2026-07-04T23:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-07-05T01:00:00Z",
-      "visitors": 55,
-      "requests": 81
-    },
-    {
-      "time": "2026-07-05T02:00:00Z",
-      "visitors": 19,
-      "requests": 27
-    },
-    {
-      "time": "2026-07-05T03:00:00Z",
-      "visitors": 9,
-      "requests": 34
-    },
-    {
-      "time": "2026-07-05T04:00:00Z",
-      "visitors": 7,
-      "requests": 16
-    },
-    {
-      "time": "2026-07-05T05:00:00Z",
-      "visitors": 10,
-      "requests": 18
-    },
-    {
-      "time": "2026-07-05T06:00:00Z",
-      "visitors": 8,
-      "requests": 25
-    },
-    {
-      "time": "2026-07-05T07:00:00Z",
-      "visitors": 8,
-      "requests": 14
-    },
-    {
-      "time": "2026-07-05T08:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-07-05T09:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-07-05T10:00:00Z",
-      "visitors": 3,
-      "requests": 13
-    },
-    {
-      "time": "2026-07-05T11:00:00Z",
-      "visitors": 3,
-      "requests": 6
-    },
-    {
-      "time": "2026-07-05T12:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-07-05T13:00:00Z",
-      "visitors": 15,
-      "requests": 25
-    },
-    {
-      "time": "2026-07-05T14:00:00Z",
-      "visitors": 4,
-      "requests": 11
-    },
     {
       "time": "2026-07-05T15:00:00Z",
       "visitors": 2,
@@ -113,6 +38,81 @@
     },
     {
       "time": "2026-07-05T21:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-05T22:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-07-05T23:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-07-06T00:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-07-06T01:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-07-06T02:00:00Z",
+      "visitors": 70,
+      "requests": 95
+    },
+    {
+      "time": "2026-07-06T03:00:00Z",
+      "visitors": 21,
+      "requests": 50
+    },
+    {
+      "time": "2026-07-06T04:00:00Z",
+      "visitors": 10,
+      "requests": 14
+    },
+    {
+      "time": "2026-07-06T05:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-07-06T06:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-06T07:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-07-06T08:00:00Z",
+      "visitors": 2,
+      "requests": 10
+    },
+    {
+      "time": "2026-07-06T09:00:00Z",
+      "visitors": 4,
+      "requests": 20
+    },
+    {
+      "time": "2026-07-06T11:00:00Z",
+      "visitors": 4,
+      "requests": 19
+    },
+    {
+      "time": "2026-07-06T12:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-06T13:00:00Z",
       "visitors": 3,
       "requests": 3
     }
@@ -151,70 +151,76 @@
     {
       "date": "2026-07-05",
       "visitors": 133,
-      "pageViews": 143,
-      "requests": 303
+      "pageViews": 144,
+      "requests": 306
+    },
+    {
+      "date": "2026-07-06",
+      "visitors": 105,
+      "pageViews": 120,
+      "requests": 226
     }
   ],
   "topPages": [
     {
-      "path": "/vi/tin-tuc/crm-cho-nha-thuoc-bat-dau-tu-dau-lieu-khach-hang/",
-      "views": 93
+      "path": "/vi/tin-tuc/bao-cao-doanh-thu-real-time-doc-so-lieu-dung/",
+      "views": 86
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 45
+      "views": 24
     },
     {
       "path": "/robots.txt",
-      "views": 23
+      "views": 20
     },
     {
       "path": "/",
-      "views": 17
-    },
-    {
-      "path": "/images/logo.png",
-      "views": 14
+      "views": 16
     },
     {
       "path": "/sitemap-index.xml",
       "views": 14
     },
     {
-      "path": "/api/stats",
-      "views": 12
-    },
-    {
       "path": "/vi/",
-      "views": 12
+      "views": 11
     },
     {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 9
+      "path": "/images/tin-tuc/bao-cao-doanh-thu-real-time-doc-so-lieu-dung.png",
+      "views": 10
     },
     {
-      "path": "/_astro/Footer.D_gZUTcD.css",
-      "views": 8
+      "path": "/images/logo.png",
+      "views": 10
     },
     {
-      "path": "/images/tin-tuc/crm-cho-nha-thuoc-bat-dau-tu-dau-lieu-khach-hang.png",
-      "views": 8
+      "path": "/api/stats",
+      "views": 7
     },
     {
-      "path": "/vi/thong-ke/",
+      "path": "/vi/tin-tuc/bao-cao-doanh-thu-real-time-doc-so-lieu-dung",
+      "views": 7
+    },
+    {
+      "path": "/images/banner.png",
       "views": 6
     },
     {
-      "path": "/vi",
-      "views": 4
-    },
-    {
-      "path": "/_astro/thong-ke.astro_astro_type_script_index_0_lang.Ci291ITp.js",
+      "path": "/_astro/Footer.D_gZUTcD.css",
       "views": 4
     },
     {
       "path": "/.well-known/security.txt",
       "views": 4
+    },
+    {
+      "path": "/images/tin-tuc/pos-nha-thuoc-5-tinh-nang-khong-the-thieu.png",
+      "views": 4
+    },
+    {
+      "path": "/vi/thong-ke/",
+      "views": 3
     }
   ]
 }
