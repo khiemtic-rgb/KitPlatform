@@ -17,9 +17,8 @@ const links = [
 <header class="site-header" data-site-header>
   <div class="container header-inner">
     <a href={base} class="logo">
-      <span class="logo-symbol" aria-hidden="true">
-        <span></span>
-        <span></span>
+      <span class="logo-crop" aria-hidden="true">
+        <img class="logo-img" src="/images/logo.png" alt="" width="160" height="160" decoding="async" />
       </span>
       <span class="logo-text">NOVIXA</span>
     </a>
@@ -121,31 +120,22 @@ const links = [
     text-decoration: none;
   }
 
-  .logo-symbol {
-    position: relative;
+  .logo-crop {
     display: inline-flex;
-    width: 22px;
-    height: 18px;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: #fff;
   }
 
-  .logo-symbol span {
-    position: absolute;
-    width: 13px;
-    height: 13px;
-    border-radius: 4px;
-    transform: rotate(45deg);
-  }
-
-  .logo-symbol span:first-child {
-    left: 0;
-    top: 2px;
-    background: #16b86a;
-  }
-
-  .logo-symbol span:last-child {
-    right: 0;
-    top: 2px;
-    background: #0877c9;
+  .logo-img {
+    width: 44px;
+    height: 44px;
+    max-width: none;
+    object-fit: contain;
   }
 
   .logo-text {
