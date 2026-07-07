@@ -1,9 +1,9 @@
 ---
 const aiCards = [
-  'Dự báo nhập hàng',
-  'Gợi ý bán FEFO',
-  'Phân tích doanh thu',
-  'Phát hiện bất thường',
+  { title: 'Dự báo nhập hàng', text: 'Ước tính nhu cầu nhập hàng.' },
+  { title: 'Gợi ý bán FEFO', text: 'Ưu tiên xuất kho thông minh.' },
+  { title: 'Phân tích doanh thu', text: 'Theo dõi hiệu quả kinh doanh.' },
+  { title: 'Phát hiện bất thường', text: 'Cảnh báo lệch dữ liệu vận hành.' },
 ];
 ---
 
@@ -15,6 +15,7 @@ const aiCards = [
       <p>
         Không thay thế con người. Giúp con người ra quyết định nhanh hơn.
       </p>
+      <a class="btn btn-light ai-cta" href="/vi/lien-he">Tìm hiểu về AI</a>
     </div>
 
     <div class="ai-card-grid">
@@ -22,7 +23,8 @@ const aiCards = [
         aiCards.map((card) => (
           <article class="ai-card">
             <span></span>
-            <h3>{card}</h3>
+            <h3>{card.title}</h3>
+            <p>{card.text}</p>
           </article>
         ))
       }

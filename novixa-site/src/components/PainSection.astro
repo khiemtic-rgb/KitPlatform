@@ -1,28 +1,35 @@
 ---
 const pains = [
   {
+    icon: '▣',
     title: 'Hàng cận date',
     text: 'Thất thoát vì không kiểm soát theo lô và hạn dùng.',
+    tone: 'red',
   },
   {
+    icon: '⌁',
     title: 'Quản lý nhiều chi nhánh',
     text: 'Thiếu dữ liệu tập trung để ra quyết định.',
+    tone: 'orange',
   },
   {
+    icon: '👥',
     title: 'Khách hàng không quay lại',
     text: 'Thiếu dữ liệu để chăm sóc và xây dựng khách hàng trung thành.',
+    tone: 'purple',
   },
   {
+    icon: '▤',
     title: 'Báo cáo chậm',
     text: 'Không biết nhà thuốc đang lãi hay lỗ theo thời gian thực.',
+    tone: 'blue',
   },
 ];
 ---
 
 <section class="section pain-section" id="van-de">
   <div class="container">
-    <div class="section-heading">
-      <p class="eyebrow">Vấn đề</p>
+    <div class="section-heading center compact-heading">
       <h2>Những vấn đề mà hầu hết nhà thuốc đều gặp.</h2>
       <p>
         Khi quy mô tăng lên, Excel và những công cụ rời rạc không còn đủ để vận hành hiệu quả.
@@ -32,8 +39,8 @@ const pains = [
     <div class="card-grid pain-grid">
       {
         pains.map((pain, index) => (
-          <article class="card pain-card">
-            <span class="card-index">0{index + 1}</span>
+          <article class:list={['card pain-card', `tone-${pain.tone}`]}>
+            <span class="pain-icon">{pain.icon}</span>
             <h3>{pain.title}</h3>
             <p>{pain.text}</p>
           </article>

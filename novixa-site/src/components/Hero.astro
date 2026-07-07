@@ -5,10 +5,11 @@ const chips = ['POS', 'Kho FEFO', 'CRM', 'Dashboard', 'AI'];
 ---
 
 <section class="hero" id="hero">
+  <div class="hero-shape" aria-hidden="true"></div>
   <div class="container hero-grid">
     <div class="hero-content motion-in">
       <p class="eyebrow">Được phát triển dành riêng cho nhà thuốc Việt Nam</p>
-      <h1>Vận hành nhà thuốc<br />thông minh hơn mỗi ngày.</h1>
+      <h1>Vận hành nhà thuốc<br /><span>thông minh</span> hơn mỗi ngày.</h1>
       <p class="hero-lead">
         Novixa giúp bạn quản lý bán hàng, kiểm soát tồn kho, chăm sóc khách hàng
         và vận hành chuỗi trên một nền tảng duy nhất.
@@ -18,7 +19,7 @@ const chips = ['POS', 'Kho FEFO', 'CRM', 'Dashboard', 'AI'];
         <a class="btn btn-secondary" href="#nen-tang">Khám phá nền tảng</a>
       </div>
       <div class="hero-chips" aria-label="Các năng lực chính của Novixa">
-        {chips.map((chip) => <span>{chip}</span>)}
+        {chips.map((chip) => <span><i></i>{chip}</span>)}
       </div>
     </div>
 
@@ -28,6 +29,17 @@ const chips = ['POS', 'Kho FEFO', 'CRM', 'Dashboard', 'AI'];
         <DashboardPreview compact variant="hero" />
       </div>
       <div class="laptop-base"></div>
+      <div class="phone-frame" aria-label="Dashboard Novixa trên điện thoại">
+        <div class="phone-speaker"></div>
+        <div class="phone-screen">
+          <strong>25.450.000đ</strong>
+          <span>+12,5%</span>
+          <div class="phone-grid">
+            <i></i><i></i><i></i><i></i>
+            <i></i><i></i><i></i><i></i>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
