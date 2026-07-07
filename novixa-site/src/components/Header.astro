@@ -6,17 +6,19 @@ const base = '/vi';
 const path = Astro.url.pathname;
 
 const links = [
-  { href: base, label: m.nav.home, active: path === base || path === `${base}/` },
-  { href: `${base}/giai-phap`, label: m.nav.solutions, active: path.startsWith(`${base}/giai-phap`) },
-  { href: `${base}/ve-chung-toi`, label: m.nav.about, active: path.startsWith(`${base}/ve-chung-toi`) },
+  { href: `${base}#nen-tang`, label: m.nav.platform, active: path === base || path === `${base}/` },
+  { href: `${base}#giai-phap`, label: m.nav.solutions, active: path.startsWith(`${base}/giai-phap`) },
+  { href: `${base}#mo-rong-chuoi`, label: m.nav.customers, active: false },
   { href: `${base}/tin-tuc`, label: m.nav.news, active: path.startsWith(`${base}/tin-tuc`) },
+  { href: `${base}/ve-chung-toi`, label: m.nav.about, active: path.startsWith(`${base}/ve-chung-toi`) },
 ];
 ---
 
-<header class="site-header">
+<header class="site-header" data-site-header>
   <div class="container header-inner">
     <a href={base} class="logo">
-      <img class="logo-img" src="/images/logo.png" alt={m.meta.siteName} width="160" height="48" decoding="async" />
+      <span class="logo-mark">N</span>
+      <span class="logo-text">Novixa</span>
     </a>
 
     <button
@@ -40,15 +42,21 @@ const links = [
           </a>
         ))
       }
-      <a href={`${base}/lien-he`} class="nav-cta">{m.nav.contact}</a>
-      <span class="lang-soon" title={m.nav.langEnSoon}>{m.nav.langEn}</span>
+      <a href={`${base}/lien-he`} class="nav-cta">{m.nav.demo}</a>
     </nav>
   </div>
 </header>
 
 <script>
+  const header = document.querySelector('[data-site-header]');
   const toggle = document.querySelector('[data-nav-toggle]');
   const nav = document.querySelector('[data-nav]');
+  const syncHeader = () => {
+    header?.classList.toggle('is-scrolled', window.scrollY > 12);
+  };
+
+  syncHeader();
+  window.addEventListener('scroll', syncHeader, { passive: true });
 
   toggle?.addEventListener('click', () => {
     const open = nav?.classList.toggle('is-open');
@@ -65,11 +73,25 @@ const links = [
 
 <style>
   .site-header {
-    background: var(--color-surface);
-    border-bottom: 1px solid var(--color-border);
-    position: sticky;
+    background: transparent;
+    border-bottom: 1px solid transparent;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 50;
+    transition:
+      background 0.4s ease,
+      border-color 0.4s ease,
+      box-shadow 0.4s ease;
+  }
+
+  .site-header.is-scrolled,
+  .site-header:has(.nav.is-open) {
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(15, 76, 129, 0.08);
+    box-shadow: 0 14px 38px rgba(15, 76, 129, 0.08);
+    backdrop-filter: blur(14px);
   }
 
   .header-inner {
@@ -77,12 +99,13 @@ const links = [
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.65rem 0;
+    min-height: 80px;
   }
 
   .logo {
     display: flex;
     align-items: center;
+    gap: 0.65rem;
     text-decoration: none;
     color: inherit;
     flex-shrink: 0;
@@ -92,11 +115,24 @@ const links = [
     text-decoration: none;
   }
 
-  .logo-img {
-    width: auto;
-    height: 44px;
-    max-width: min(160px, 42vw);
-    object-fit: contain;
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--color-primary), #176aa8);
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+
+  .logo-text {
+    color: var(--color-primary);
+    font-size: 1.12rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
   }
 
   .nav-toggle {
@@ -108,8 +144,8 @@ const links = [
     height: 44px;
     padding: 0;
     border: 1px solid var(--color-border);
-    border-radius: 10px;
-    background: var(--color-surface);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.92);
     cursor: pointer;
   }
 
@@ -126,14 +162,16 @@ const links = [
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.35rem 1rem;
+    gap: 0.35rem 1.1rem;
     font-size: 0.92rem;
+    font-weight: 600;
   }
 
   .nav a {
     color: var(--color-muted);
     text-decoration: none;
     padding: 0.35rem 0;
+    transition: color 0.2s ease;
   }
 
   .nav a:hover,
@@ -144,23 +182,15 @@ const links = [
   .nav-cta {
     background: var(--color-primary);
     color: #fff !important;
-    padding: 0.45rem 1rem !important;
+    padding: 0.72rem 1.2rem !important;
     border-radius: 999px;
-    font-weight: 600;
+    font-weight: 700;
+    box-shadow: 0 12px 24px rgba(15, 76, 129, 0.18);
   }
 
   .nav-cta:hover {
     background: var(--color-primary-dark);
     text-decoration: none;
-  }
-
-  .lang-soon {
-    font-size: 0.8rem;
-    color: var(--color-border);
-    cursor: not-allowed;
-    border: 1px dashed var(--color-border);
-    padding: 0.25rem 0.5rem;
-    border-radius: 6px;
   }
 
   @media (max-width: 768px) {
@@ -198,11 +228,6 @@ const links = [
 
     .nav-cta {
       text-align: center;
-      margin-top: 0.5rem;
-    }
-
-    .lang-soon {
-      align-self: flex-start;
       margin-top: 0.5rem;
     }
 

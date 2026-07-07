@@ -2,8 +2,18 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
+import Hero from '../../components/Hero.astro';
+import PainSection from '../../components/PainSection.astro';
+import SolutionSection from '../../components/SolutionSection.astro';
+import DashboardSection from '../../components/DashboardSection.astro';
+import WorkflowSection from '../../components/WorkflowSection.astro';
+import PlatformSection from '../../components/PlatformSection.astro';
+import AISection from '../../components/AISection.astro';
+import ScaleSection from '../../components/ScaleSection.astro';
+import KnowledgeSection from '../../components/KnowledgeSection.astro';
+import CTASection from '../../components/CTASection.astro';
 import { getCollection } from 'astro:content';
-import { formatNewsDate, sortPublishedNews } from '../../lib/newsDate';
+import { sortPublishedNews } from '../../lib/newsDate';
 import { t } from '../../i18n';
 import '../../styles/global.css';
 
@@ -17,76 +27,15 @@ const posts = sortPublishedNews(await getCollection('tinTuc')).slice(0, 3);
   canonicalPath="/vi"
 >
   <Header slot="header" />
-  <section class="hero">
-    <div class="container hero-grid">
-      <div class="hero-content">
-        <h1>{m.home.heroTitle}</h1>
-        <p class="hero-lead">{m.home.heroSubtitle}</p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="/vi/lien-he">{m.home.ctaContact}</a>
-          <a class="btn btn-secondary" href="/vi/giai-phap">{m.home.ctaSolutions}</a>
-        </div>
-      </div>
-      <div class="hero-visual">
-        <img
-          src="/images/banner.png"
-          alt="Novixa — nền tảng quản trị nhà thuốc: ERP, CRM, báo cáo real-time"
-          width="1200"
-          height="630"
-          loading="eager"
-          fetchpriority="high"
-        />
-      </div>
-    </div>
-  </section>
-  <section class="section">
-    <div class="container">
-      <h2 class="section-title">{m.home.featuresTitle}</h2>
-      <div class="card-grid">
-        <article class="card">
-          <h3>{m.home.feature1Title}</h3>
-          <p>{m.home.feature1Desc}</p>
-        </article>
-        <article class="card">
-          <h3>{m.home.feature2Title}</h3>
-          <p>{m.home.feature2Desc}</p>
-        </article>
-        <article class="card">
-          <h3>{m.home.feature3Title}</h3>
-          <p>{m.home.feature3Desc}</p>
-        </article>
-      </div>
-    </div>
-  </section>
-  <section class="trust-band">
-    <div class="container">
-      <h2>{m.home.trustTitle}</h2>
-      <p>{m.home.trustDesc}</p>
-    </div>
-  </section>
-  <section class="section">
-    <div class="container">
-      <h2 class="section-title">{m.home.newsTitle}</h2>
-      <p class="section-intro">{m.home.newsSubtitle}</p>
-      {
-        posts.length > 0 ? (
-          <ul class="news-list">
-            {posts.map((post) => (
-              <li>
-                <a href={`/vi/tin-tuc/${post.id}`}>{post.data.title}</a>
-                <p class="news-meta">{formatNewsDate(post.data.pubDate)}</p>
-                <p class="news-desc">{post.data.description}</p>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p class="section-intro">Chưa có bài tin mới — vui lòng quay lại sau.</p>
-        )
-      }
-      <p style="margin-top: 1.5rem">
-        <a class="btn btn-secondary" href="/vi/tin-tuc">{m.home.newsAll}</a>
-      </p>
-    </div>
-  </section>
+  <Hero />
+  <PainSection />
+  <SolutionSection />
+  <DashboardSection />
+  <WorkflowSection />
+  <PlatformSection />
+  <AISection />
+  <ScaleSection />
+  <KnowledgeSection posts={posts} />
+  <CTASection />
   <Footer slot="footer" />
 </BaseLayout>

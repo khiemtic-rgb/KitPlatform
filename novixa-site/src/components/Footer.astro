@@ -5,47 +5,146 @@ const m = t('vi');
 const c = m.contact;
 const year = new Date().getFullYear();
 const hasFacebook = Boolean(c.facebookUrl?.trim());
+const columns = [
+  {
+    title: 'Nền tảng',
+    links: [
+      { href: '/vi#nen-tang', label: 'Nền tảng' },
+      { href: '/vi#giai-phap', label: 'Giải pháp' },
+      { href: '/vi#mo-rong-chuoi', label: 'Khách hàng' },
+      { href: '/vi/tin-tuc', label: 'Tin tức' },
+    ],
+  },
+  {
+    title: 'Tài liệu',
+    links: [
+      { href: '/vi/tin-tuc', label: 'Tài liệu' },
+      { href: '/vi/ve-chung-toi', label: 'Chính sách' },
+      { href: '/vi/ve-chung-toi', label: 'Điều khoản' },
+    ],
+  },
+];
 ---
 
 <footer class="site-footer">
-  <div class="container footer-inner">
-    <p><strong>{m.meta.siteName}</strong> — {m.meta.tagline}</p>
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <a href="/vi" class="footer-logo">
+        <span class="logo-mark">N</span>
+        <span>Novixa</span>
+      </a>
+      <p>Nền tảng vận hành nhà thuốc thông minh.</p>
+      <p class="muted">© {year} {m.footer.rights}</p>
+    </div>
+
     {
-      hasFacebook && (
-        <p>
-          <a class="footer-link" href={c.facebookUrl} target="_blank" rel="noopener noreferrer">
-            {c.facebookPageName || c.facebookLabel}
-          </a>
-        </p>
-      )
+      columns.map((column) => (
+        <div class="footer-column">
+          <h2>{column.title}</h2>
+          {column.links.map((link) => (
+            <a class="footer-link" href={link.href}>{link.label}</a>
+          ))}
+        </div>
+      ))
     }
-    <p class="muted">{m.footer.erpNote}</p>
-    <p class="muted">
-      <a class="footer-link" href="https://novixa.vn">{m.footer.website}</a>
-    </p>
-    <p class="muted">© {year} {m.footer.rights}</p>
+
+    <div class="footer-column">
+      <h2>Liên hệ</h2>
+      <a class="footer-link" href={`tel:${c.phoneTel}`}>Hotline: {c.phoneDisplay}</a>
+      <a class="footer-link" href={`mailto:${c.emailAddress}`}>Email: {c.emailAddress}</a>
+      {
+        hasFacebook && (
+          <a class="footer-link" href={c.facebookUrl} target="_blank" rel="noopener noreferrer">
+            Facebook
+          </a>
+        )
+      }
+      <a class="footer-link" href="/vi/lien-he">LinkedIn</a>
+    </div>
   </div>
 </footer>
 
 <style>
   .site-footer {
-    background: var(--color-text);
-    color: #cbd5e1;
-    padding: 2.5rem 0;
-    margin-top: 3rem;
+    background: #071d34;
+    color: #d9e6f3;
+    padding: clamp(3rem, 7vw, 4.5rem) 0 2rem;
     font-size: 0.9rem;
   }
-  .footer-inner p {
-    margin: 0.35rem 0;
+
+  .footer-grid {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-  .footer-link {
-    color: #93c5fd;
+
+  .footer-brand p {
+    max-width: 24ch;
+    margin: 1rem 0 0;
+    color: #a9bfd5;
   }
-  .footer-link:hover {
+
+  .footer-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .footer-logo:hover {
+    text-decoration: none;
+  }
+
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-green));
     color: #fff;
   }
+
+  .footer-column {
+    display: grid;
+    align-content: start;
+    gap: 0.7rem;
+  }
+
+  .footer-column h2 {
+    margin: 0 0 0.35rem;
+    color: #fff;
+    font-size: 0.95rem;
+  }
+
+  .footer-link {
+    color: #a9bfd5;
+    text-decoration: none;
+  }
+
+  .footer-link:hover {
+    color: #fff;
+    text-decoration: none;
+  }
+
   .muted {
-    color: #94a3b8;
+    color: #7892aa !important;
     font-size: 0.85rem;
+  }
+
+  @media (max-width: 900px) {
+    .footer-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 560px) {
+    .footer-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

@@ -1,0 +1,77 @@
+---
+interface Props {
+  compact?: boolean;
+  variant?: 'hero' | 'dashboard' | 'scale';
+}
+
+const { compact = false, variant = 'dashboard' } = Astro.props;
+const metrics = compact
+  ? [
+      { label: 'Doanh thu', value: '128tr', trend: '+18%' },
+      { label: 'Cận date', value: '34', trend: '-12%' },
+      { label: 'Quay lại', value: '42%', trend: '+9%' },
+    ]
+  : [
+      { label: 'Doanh thu hôm nay', value: '128,4tr', trend: '+18%' },
+      { label: 'Tồn kho an toàn', value: '92%', trend: '+6%' },
+      { label: 'Khách quay lại', value: '42%', trend: '+9%' },
+      { label: 'Cảnh báo FEFO', value: '34', trend: '-12%' },
+    ];
+---
+
+<div class:list={['dashboard-preview', `dashboard-preview--${variant}`, { 'is-compact': compact }]}>
+  <div class="dashboard-topbar">
+    <div>
+      <span class="dashboard-kicker">Novixa Operating Dashboard</span>
+      <strong>Toàn hệ thống</strong>
+    </div>
+    <span class="dashboard-status">Live</span>
+  </div>
+
+  <div class="dashboard-metrics">
+    {
+      metrics.map((metric) => (
+        <article>
+          <span>{metric.label}</span>
+          <strong>{metric.value}</strong>
+          <small>{metric.trend}</small>
+        </article>
+      ))
+    }
+  </div>
+
+  <div class="dashboard-body">
+    <div class="dashboard-chart" aria-label="Biểu đồ doanh thu và tồn kho">
+      <span style="height: 42%"></span>
+      <span style="height: 64%"></span>
+      <span style="height: 52%"></span>
+      <span style="height: 76%"></span>
+      <span style="height: 68%"></span>
+      <span style="height: 88%"></span>
+      <span style="height: 72%"></span>
+    </div>
+
+    <div class="dashboard-table">
+      <div class="dashboard-row dashboard-row--head">
+        <span>Chi nhánh</span>
+        <span>Tồn kho</span>
+        <span>Trạng thái</span>
+      </div>
+      <div class="dashboard-row">
+        <span>Quận 1</span>
+        <span>92%</span>
+        <span class="good">Tốt</span>
+      </div>
+      <div class="dashboard-row">
+        <span>Thủ Đức</span>
+        <span>81%</span>
+        <span class="watch">Theo dõi</span>
+      </div>
+      <div class="dashboard-row">
+        <span>Bình Thạnh</span>
+        <span>89%</span>
+        <span class="good">Tốt</span>
+      </div>
+    </div>
+  </div>
+</div>

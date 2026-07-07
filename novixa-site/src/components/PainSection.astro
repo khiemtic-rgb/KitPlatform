@@ -1,0 +1,44 @@
+---
+const pains = [
+  {
+    title: 'Hàng cận date',
+    text: 'Thất thoát vì không kiểm soát theo lô và hạn dùng.',
+  },
+  {
+    title: 'Quản lý nhiều chi nhánh',
+    text: 'Thiếu dữ liệu tập trung để ra quyết định.',
+  },
+  {
+    title: 'Khách hàng không quay lại',
+    text: 'Thiếu dữ liệu để chăm sóc và xây dựng khách hàng trung thành.',
+  },
+  {
+    title: 'Báo cáo chậm',
+    text: 'Không biết nhà thuốc đang lãi hay lỗ theo thời gian thực.',
+  },
+];
+---
+
+<section class="section pain-section" id="van-de">
+  <div class="container">
+    <div class="section-heading">
+      <p class="eyebrow">Vấn đề</p>
+      <h2>Những vấn đề mà hầu hết nhà thuốc đều gặp.</h2>
+      <p>
+        Khi quy mô tăng lên, Excel và những công cụ rời rạc không còn đủ để vận hành hiệu quả.
+      </p>
+    </div>
+
+    <div class="card-grid pain-grid">
+      {
+        pains.map((pain, index) => (
+          <article class="card pain-card">
+            <span class="card-index">0{index + 1}</span>
+            <h3>{pain.title}</h3>
+            <p>{pain.text}</p>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>

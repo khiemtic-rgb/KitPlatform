@@ -1,26 +1,29 @@
 {
   "meta": {
     "siteName": "Novixa",
-    "tagline": "Giải pháp dược thông minh",
-    "description": "Novixa — nền tảng quản trị nhà thuốc thế hệ mới: POS, tồn kho lô FEFO, CRM và báo cáo real-time. Tuân thủ GPP, tối ưu lợi nhuận.",
-    "keywords": "novixa, phần mềm nhà thuốc, quản lý nhà thuốc, POS dược, FEFO, tồn kho lô, GPP, ERP nhà thuốc"
+    "tagline": "Nền tảng vận hành nhà thuốc thông minh",
+    "description": "Novixa giúp nhà thuốc quản lý bán hàng, kiểm soát tồn kho, chăm sóc khách hàng và vận hành chuỗi trên một nền tảng duy nhất.",
+    "keywords": "novixa, nền tảng vận hành nhà thuốc, quản lý nhà thuốc, POS dược, FEFO, tồn kho lô, CRM nhà thuốc, dashboard nhà thuốc, AI nhà thuốc"
   },
   "nav": {
     "home": "Trang chủ",
+    "platform": "Nền tảng",
     "solutions": "Giải pháp",
+    "customers": "Khách hàng",
     "about": "Về Novixa",
     "news": "Tin tức",
     "contact": "Liên hệ",
+    "demo": "Đăng ký Demo",
     "menuOpen": "Mở menu",
     "menuClose": "Đóng menu",
     "langEn": "English",
     "langEnSoon": "English — sắp có"
   },
   "home": {
-    "heroTitle": "Nền tảng quản trị nhà thuốc thế hệ mới",
-    "heroSubtitle": "ERP toàn diện — từ quầy POS, tồn kho lô FEFO, chăm sóc khách hàng đến báo cáo real-time. Dành cho nhà thuốc hiện đại, tuân thủ GPP và sẵn sàng mở rộng chuỗi.",
-    "ctaContact": "Đăng ký quan tâm",
-    "ctaSolutions": "Xem giải pháp",
+    "heroTitle": "Vận hành nhà thuốc thông minh hơn mỗi ngày.",
+    "heroSubtitle": "Novixa giúp bạn quản lý bán hàng, kiểm soát tồn kho, chăm sóc khách hàng và vận hành chuỗi trên một nền tảng duy nhất.",
+    "ctaContact": "Đăng ký Demo",
+    "ctaSolutions": "Khám phá nền tảng",
     "featuresTitle": "Tại sao chọn Novixa",
     "feature1Title": "Quản trị toàn diện (ERP)",
     "feature1Desc": "Danh mục thuốc, giá bán, tồn kho lô, nhập hàng và bán hàng POS — dữ liệu thống nhất, minh bạch.",

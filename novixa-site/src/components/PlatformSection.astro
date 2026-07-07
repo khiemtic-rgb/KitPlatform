@@ -1,0 +1,23 @@
+---
+const modules = ['POS', 'Kho', 'CRM', 'Marketing', 'Nhân sự', 'Chuỗi', 'AI', 'API', 'Báo cáo'];
+---
+
+<section class="section platform-section" id="nen-tang">
+  <div class="container">
+    <div class="section-heading">
+      <p class="eyebrow">Nền tảng</p>
+      <h2>Một nền tảng.<br />Nhiều giải pháp.</h2>
+    </div>
+
+    <div class="platform-grid">
+      {
+        modules.map((module) => (
+          <a class="platform-card" href="/vi/giai-phap" aria-label={`Xem chi tiết ${module}`}>
+            <span>{module}</span>
+            <small>Xem chi tiết</small>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>

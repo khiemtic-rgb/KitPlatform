@@ -1,0 +1,31 @@
+---
+const aiCards = [
+  'Dự báo nhập hàng',
+  'Gợi ý bán FEFO',
+  'Phân tích doanh thu',
+  'Phát hiện bất thường',
+];
+---
+
+<section class="section ai-section" id="ai">
+  <div class="container ai-grid">
+    <div class="section-heading">
+      <p class="eyebrow">AI</p>
+      <h2>AI đồng hành cùng nhà thuốc.</h2>
+      <p>
+        Không thay thế con người. Giúp con người ra quyết định nhanh hơn.
+      </p>
+    </div>
+
+    <div class="ai-card-grid">
+      {
+        aiCards.map((card) => (
+          <article class="ai-card">
+            <span></span>
+            <h3>{card}</h3>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>

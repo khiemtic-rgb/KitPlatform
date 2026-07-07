@@ -1,0 +1,29 @@
+---
+import DashboardPreview from './DashboardPreview.astro';
+---
+
+<section class="section scale-section" id="mo-rong-chuoi">
+  <div class="container scale-grid">
+    <div class="section-heading">
+      <p class="eyebrow">Scale Chain</p>
+      <h2>Sẵn sàng mở rộng chuỗi.</h2>
+      <p>
+        Từ một nhà thuốc đến hàng chục chi nhánh mà vẫn kiểm soát tập trung.
+      </p>
+    </div>
+
+    <div class="scale-visual">
+      <div class="map-card" aria-label="Bản đồ chi nhánh nhà thuốc">
+        <span class="map-node node-1">Q1</span>
+        <span class="map-node node-2">TD</span>
+        <span class="map-node node-3">BT</span>
+        <span class="map-node node-4">GV</span>
+        <svg viewBox="0 0 420 260" role="img" aria-hidden="true">
+          <path d="M42 134 C92 52 157 91 204 62 C271 22 332 70 383 37" />
+          <path d="M68 201 C118 146 160 179 214 143 C279 101 332 157 386 118" />
+        </svg>
+      </div>
+      <DashboardPreview compact variant="scale" />
+    </div>
+  </div>
+</section>

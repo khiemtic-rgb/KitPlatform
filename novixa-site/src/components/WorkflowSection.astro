@@ -1,0 +1,23 @@
+---
+const steps = ['Nhập hàng', 'Kho', 'POS', 'CRM', 'Báo cáo', 'AI', 'Ra quyết định'];
+---
+
+<section class="section workflow-section" id="workflow">
+  <div class="container">
+    <div class="section-heading center">
+      <p class="eyebrow">Operating Platform</p>
+      <h2>Toàn bộ quy trình vận hành<br />được kết nối.</h2>
+    </div>
+
+    <ol class="workflow-timeline" aria-label="Quy trình vận hành được kết nối">
+      {
+        steps.map((step, index) => (
+          <li>
+            <span class="workflow-number">{index + 1}</span>
+            <strong>{step}</strong>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>

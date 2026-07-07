@@ -1,0 +1,34 @@
+---
+const solutions = [
+  { title: 'POS', lines: ['Thanh toán nhanh.', 'Đồng bộ doanh thu.'] },
+  { title: 'Kho FEFO', lines: ['Theo dõi theo lô.', 'Cảnh báo cận date.'] },
+  { title: 'CRM', lines: ['Chăm sóc khách hàng.', 'Tăng tỷ lệ quay lại.'] },
+  { title: 'Dashboard', lines: ['Theo dõi mọi chỉ số.', 'Theo thời gian thực.'] },
+  { title: 'Chuỗi', lines: ['Quản lý nhiều chi nhánh.', 'Một Dashboard.'] },
+  { title: 'AI', lines: ['Hỗ trợ phân tích.', 'Đưa ra gợi ý.'] },
+];
+---
+
+<section class="section solution-section" id="giai-phap">
+  <div class="container">
+    <div class="section-heading center">
+      <p class="eyebrow">Giải pháp</p>
+      <h2>Novixa giúp giải quyết như thế nào?</h2>
+      <p>
+        Một nền tảng thống nhất, mọi dữ liệu được kết nối, mọi hoạt động được đồng bộ.
+      </p>
+    </div>
+
+    <div class="card-grid solution-grid">
+      {
+        solutions.map((solution) => (
+          <article class="card solution-card">
+            <div class="module-icon">{solution.title.slice(0, 2)}</div>
+            <h3>{solution.title}</h3>
+            {solution.lines.map((line) => <p>{line}</p>)}
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>

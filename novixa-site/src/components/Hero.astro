@@ -1,0 +1,33 @@
+---
+import DashboardPreview from './DashboardPreview.astro';
+
+const chips = ['POS', 'Kho FEFO', 'CRM', 'Dashboard', 'AI'];
+---
+
+<section class="hero" id="hero">
+  <div class="container hero-grid">
+    <div class="hero-content motion-in">
+      <p class="eyebrow">Được phát triển dành riêng cho nhà thuốc Việt Nam</p>
+      <h1>Vận hành nhà thuốc<br />thông minh hơn mỗi ngày.</h1>
+      <p class="hero-lead">
+        Novixa giúp bạn quản lý bán hàng, kiểm soát tồn kho, chăm sóc khách hàng
+        và vận hành chuỗi trên một nền tảng duy nhất.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="/vi/lien-he">Đăng ký Demo</a>
+        <a class="btn btn-secondary" href="#nen-tang">Khám phá nền tảng</a>
+      </div>
+      <div class="hero-chips" aria-label="Các năng lực chính của Novixa">
+        {chips.map((chip) => <span>{chip}</span>)}
+      </div>
+    </div>
+
+    <div class="hero-visual motion-in motion-delay">
+      <div class="laptop-frame" aria-label="Dashboard Novixa trên laptop">
+        <div class="laptop-camera"></div>
+        <DashboardPreview compact variant="hero" />
+      </div>
+      <div class="laptop-base"></div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,36 @@
+---
+import { formatNewsDate } from '../lib/newsDate';
+
+const { posts = [] } = Astro.props;
+---
+
+<section class="section knowledge-section" id="tin-tuc">
+  <div class="container">
+    <div class="section-heading">
+      <p class="eyebrow">Knowledge Center</p>
+      <h2>Kiến thức dành cho nhà thuốc.</h2>
+    </div>
+
+    {
+      posts.length > 0 ? (
+        <div class="knowledge-grid">
+          {posts.map((post) => (
+            <article class="knowledge-card">
+              <p class="news-meta">{formatNewsDate(post.data.pubDate)}</p>
+              <h3>
+                <a href={`/vi/tin-tuc/${post.id}`}>{post.data.title}</a>
+              </h3>
+              <p>{post.data.description}</p>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p class="section-intro">Chưa có bài tin mới — vui lòng quay lại sau.</p>
+      )
+    }
+
+    <div class="knowledge-action">
+      <a class="btn btn-secondary" href="/vi/tin-tuc">Xem tất cả</a>
+    </div>
+  </div>
+</section>
