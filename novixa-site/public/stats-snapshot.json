@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-07T11:26:00.519Z",
+  "generatedAt": "2026-07-07T19:20:30.916Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 136,
-    "todayPageViews": 186,
-    "todayRequests": 475,
-    "last24hVisitors": 147,
-    "last24hPageViews": 208,
-    "last24hRequests": 531
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 152,
+    "last24hPageViews": 212,
+    "last24hRequests": 553
   },
   "hourly": [
-    {
-      "time": "2026-07-06T12:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-07-06T13:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-07-06T14:00:00Z",
-      "visitors": 5,
-      "requests": 18
-    },
-    {
-      "time": "2026-07-06T15:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
-    {
-      "time": "2026-07-06T16:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-06T17:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-06T18:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-07-06T19:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
     {
       "time": "2026-07-06T20:00:00Z",
       "visitors": 1,
@@ -128,17 +88,46 @@
     },
     {
       "time": "2026-07-07T11:00:00Z",
-      "visitors": 1,
-      "requests": 1
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-07T12:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-07-07T13:00:00Z",
+      "visitors": 4,
+      "requests": 15
+    },
+    {
+      "time": "2026-07-07T14:00:00Z",
+      "visitors": 3,
+      "requests": 16
+    },
+    {
+      "time": "2026-07-07T15:00:00Z",
+      "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-07-07T16:00:00Z",
+      "visitors": 4,
+      "requests": 8
+    },
+    {
+      "time": "2026-07-07T17:00:00Z",
+      "visitors": 5,
+      "requests": 9
+    },
+    {
+      "time": "2026-07-07T18:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
-    {
-      "date": "2026-07-01",
-      "visitors": 150,
-      "pageViews": 405,
-      "requests": 621
-    },
     {
       "date": "2026-07-02",
       "visitors": 151,
@@ -171,19 +160,19 @@
     },
     {
       "date": "2026-07-07",
-      "visitors": 136,
-      "pageViews": 186,
-      "requests": 475
+      "visitors": 150,
+      "pageViews": 208,
+      "requests": 540
     }
   ],
   "topPages": [
     {
       "path": "/cdn-cgi/rum",
-      "views": 120
+      "views": 131
     },
     {
       "path": "/vi/tin-tuc/mo-rong-chuoi-nha-thuoc-checklist-he-thong/",
-      "views": 97
+      "views": 98
     },
     {
       "path": "/vi/",
@@ -191,19 +180,19 @@
     },
     {
       "path": "/images/logo.png",
-      "views": 27
+      "views": 28
     },
     {
       "path": "/",
-      "views": 24
-    },
-    {
-      "path": "/robots.txt",
-      "views": 23
+      "views": 25
     },
     {
       "path": "/_astro/Footer.D_gZUTcD.css",
       "views": 21
+    },
+    {
+      "path": "/robots.txt",
+      "views": 20
     },
     {
       "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
@@ -211,15 +200,15 @@
     },
     {
       "path": "/images/tin-tuc/mo-rong-chuoi-nha-thuoc-checklist-he-thong.png",
-      "views": 17
+      "views": 18
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 16
+      "views": 15
     },
     {
       "path": "/images/tin-tuc/crm-cho-nha-thuoc-bat-dau-tu-dau-lieu-khach-hang.png",
-      "views": 13
+      "views": 14
     },
     {
       "path": "/images/banner.png",
@@ -227,15 +216,15 @@
     },
     {
       "path": "/images/tin-tuc/bao-cao-doanh-thu-real-time-doc-so-lieu-dung.png",
-      "views": 7
-    },
-    {
-      "path": "/vi",
-      "views": 7
+      "views": 8
     },
     {
       "path": "/api/stats",
-      "views": 6
+      "views": 8
+    },
+    {
+      "path": "/vi/thong-ke/",
+      "views": 8
     }
   ]
 }
