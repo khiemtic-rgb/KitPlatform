@@ -1911,6 +1911,80 @@ main {
   width: min(54%, 420px);
 }
 
+.enterprise-section {
+  padding: clamp(2.4rem, 5vw, 4rem) 0;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(24, 183, 106, 0.12), transparent 24%),
+    linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
+}
+
+.enterprise-heading {
+  max-width: 860px;
+}
+
+.enterprise-heading h2 {
+  color: #083760;
+  font-size: clamp(1.65rem, 3vw, 2.55rem);
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+}
+
+.enterprise-heading p {
+  color: #244765;
+  font-size: clamp(0.95rem, 1.5vw, 1.08rem);
+}
+
+.enterprise-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.enterprise-card {
+  min-height: 190px;
+  padding: 1.35rem;
+  border: 1px solid #dfeaf5;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 28px rgba(15, 76, 129, 0.07);
+  transition:
+    transform 0.4s ease,
+    box-shadow 0.4s ease,
+    border-color 0.4s ease;
+}
+
+.enterprise-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(24, 183, 106, 0.35);
+  box-shadow: 0 20px 42px rgba(15, 76, 129, 0.12);
+}
+
+.enterprise-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 0.9rem;
+  border-radius: 14px;
+  background: #eef8ff;
+  font-size: 1.25rem;
+}
+
+.enterprise-card h3 {
+  margin: 0 0 0.55rem;
+  color: #083760;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.enterprise-card p {
+  margin: 0;
+  color: #31536e;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
 .knowledge-section {
   padding-top: 2rem;
   background: #fff;
@@ -2074,7 +2148,8 @@ main {
 
   .pain-grid,
   .solution-grid,
-  .platform-grid {
+  .platform-grid,
+  .enterprise-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2114,6 +2189,7 @@ main {
   .pain-grid,
   .solution-grid,
   .platform-grid,
+  .enterprise-grid,
   .knowledge-grid,
   .ai-card-grid {
     grid-template-columns: 1fr;

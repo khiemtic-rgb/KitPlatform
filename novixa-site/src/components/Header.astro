@@ -8,7 +8,7 @@ const path = Astro.url.pathname;
 const links = [
   { href: `${base}#nen-tang`, label: m.nav.platform, active: path === base || path === `${base}/`, dropdown: true },
   { href: `${base}#giai-phap`, label: m.nav.solutions, active: path.startsWith(`${base}/giai-phap`), dropdown: true },
-  { href: `${base}#mo-rong-chuoi`, label: m.nav.customers, active: false },
+  { href: `${base}#enterprise-saas`, label: m.nav.customers, active: false },
   { href: `${base}/tin-tuc`, label: m.nav.news, active: path.startsWith(`${base}/tin-tuc`) },
   { href: `${base}/ve-chung-toi`, label: m.nav.about, active: path.startsWith(`${base}/ve-chung-toi`) },
 ];

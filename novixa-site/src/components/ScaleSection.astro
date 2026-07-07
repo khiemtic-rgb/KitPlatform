@@ -1,30 +1,59 @@
 ---
-import DashboardPreview from './DashboardPreview.astro';
+const highlights = [
+  {
+    icon: '🚀',
+    title: 'Khởi đầu đơn giản',
+    text: 'Triển khai nhanh, dễ làm quen và sẵn sàng đưa vào vận hành.',
+  },
+  {
+    icon: '📈',
+    title: 'Mở rộng theo doanh nghiệp',
+    text: 'Từ một nhà thuốc đến hệ thống nhiều chi nhánh trên cùng một nền tảng.',
+  },
+  {
+    icon: '🔄',
+    title: 'Dữ liệu đồng bộ',
+    text: 'Bán hàng, tồn kho, khách hàng và báo cáo luôn được kết nối.',
+  },
+  {
+    icon: '📊',
+    title: 'Ra quyết định bằng dữ liệu',
+    text: 'Dashboard thời gian thực giúp theo dõi và phân tích hoạt động kinh doanh.',
+  },
+  {
+    icon: '🤖',
+    title: 'Công nghệ sẵn sàng cho AI',
+    text: 'Nền tảng được thiết kế để từng bước ứng dụng AI vào phân tích và hỗ trợ vận hành.',
+  },
+  {
+    icon: '🔗',
+    title: 'Hệ sinh thái mở',
+    text: 'Kiến trúc linh hoạt, sẵn sàng tích hợp với các dịch vụ và thiết bị trong tương lai.',
+  },
+];
 ---
 
-<section class="section scale-section" id="mo-rong-chuoi">
-  <div class="container scale-grid">
-    <div class="section-heading">
-      <p class="eyebrow">Scale Chain</p>
-      <h2>Sẵn sàng mở rộng chuỗi.</h2>
+<section class="section enterprise-section" id="enterprise-saas">
+  <div class="container">
+    <div class="section-heading center enterprise-heading">
+      <p class="eyebrow">Enterprise SaaS</p>
+      <h2>Vì sao Novixa là nền tảng để phát triển lâu dài?</h2>
       <p>
-        Từ một nhà thuốc đến hàng chục chi nhánh mà vẫn kiểm soát tập trung.
+        Không chỉ giải quyết bài toán hôm nay, Novixa được thiết kế để đồng hành cùng sự phát triển
+        của nhà thuốc trong nhiều năm tới.
       </p>
-      <a class="btn btn-secondary section-mini-cta" href="/vi/giai-phap">Quản lý chuỗi hiệu quả</a>
     </div>
 
-    <div class="scale-visual">
-      <div class="map-card" aria-label="Bản đồ chi nhánh nhà thuốc">
-        <span class="map-node node-1">Q1</span>
-        <span class="map-node node-2">TD</span>
-        <span class="map-node node-3">BT</span>
-        <span class="map-node node-4">GV</span>
-        <svg viewBox="0 0 420 260" role="img" aria-hidden="true">
-          <path d="M42 134 C92 52 157 91 204 62 C271 22 332 70 383 37" />
-          <path d="M68 201 C118 146 160 179 214 143 C279 101 332 157 386 118" />
-        </svg>
-      </div>
-      <DashboardPreview compact variant="scale" />
+    <div class="enterprise-grid">
+      {
+        highlights.map((item) => (
+          <article class="enterprise-card">
+            <span class="enterprise-icon" aria-hidden="true">{item.icon}</span>
+            <h3>{item.title}</h3>
+            <p>{item.text}</p>
+          </article>
+        ))
+      }
     </div>
   </div>
 </section>
