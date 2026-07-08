@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-08T09:32:41.131Z",
+  "generatedAt": "2026-07-08T17:56:15.329Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 103,
-    "todayPageViews": 113,
-    "todayRequests": 191,
-    "last24hVisitors": 124,
-    "last24hPageViews": 141,
-    "last24hRequests": 285
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 139,
+    "last24hPageViews": 146,
+    "last24hRequests": 286
   },
   "hourly": [
-    {
-      "time": "2026-07-07T10:00:00Z",
-      "visitors": 3,
-      "requests": 14
-    },
-    {
-      "time": "2026-07-07T11:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-07-07T12:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-07T13:00:00Z",
-      "visitors": 4,
-      "requests": 15
-    },
-    {
-      "time": "2026-07-07T14:00:00Z",
-      "visitors": 3,
-      "requests": 16
-    },
-    {
-      "time": "2026-07-07T15:00:00Z",
-      "visitors": 4,
-      "requests": 7
-    },
-    {
-      "time": "2026-07-07T16:00:00Z",
-      "visitors": 4,
-      "requests": 8
-    },
-    {
-      "time": "2026-07-07T17:00:00Z",
-      "visitors": 5,
-      "requests": 9
-    },
     {
       "time": "2026-07-07T18:00:00Z",
       "visitors": 3,
@@ -128,17 +88,51 @@
     },
     {
       "time": "2026-07-08T09:00:00Z",
-      "visitors": 1,
-      "requests": 1
+      "visitors": 2,
+      "requests": 7
+    },
+    {
+      "time": "2026-07-08T10:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-07-08T11:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-07-08T12:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-07-08T13:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-08T14:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-08T15:00:00Z",
+      "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-07-08T16:00:00Z",
+      "visitors": 10,
+      "requests": 30
+    },
+    {
+      "time": "2026-07-08T17:00:00Z",
+      "visitors": 17,
+      "requests": 23
     }
   ],
   "daily": [
-    {
-      "date": "2026-07-02",
-      "visitors": 151,
-      "pageViews": 177,
-      "requests": 408
-    },
     {
       "date": "2026-07-03",
       "visitors": 166,
@@ -171,30 +165,30 @@
     },
     {
       "date": "2026-07-08",
-      "visitors": 103,
-      "pageViews": 113,
-      "requests": 191
+      "visitors": 135,
+      "pageViews": 141,
+      "requests": 269
     }
   ],
   "topPages": [
     {
       "path": "/vi/tin-tuc/ai-ho-tro-van-hanh-nha-thuoc/",
-      "views": 96
+      "views": 97
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 41
+      "views": 34
     },
     {
       "path": "/",
-      "views": 20
+      "views": 25
     },
     {
       "path": "/robots.txt",
-      "views": 16
+      "views": 15
     },
     {
-      "path": "/api/stats",
+      "path": "/vi/",
       "views": 14
     },
     {
@@ -202,20 +196,16 @@
       "views": 12
     },
     {
-      "path": "/vi/",
+      "path": "/api/stats",
       "views": 12
     },
     {
-      "path": "/vi/thong-ke/",
+      "path": "/favicon.svg",
       "views": 7
     },
     {
       "path": "/images/logo.png",
-      "views": 6
-    },
-    {
-      "path": "/favicon.svg",
-      "views": 5
+      "views": 7
     },
     {
       "path": "/images/tin-tuc/ai-ho-tro-van-hanh-nha-thuoc.png",
@@ -223,18 +213,22 @@
     },
     {
       "path": "/_astro/Footer.DL0HHBKH.css",
-      "views": 5
-    },
-    {
-      "path": "/images/tin-tuc/bao-cao-doanh-thu-real-time-doc-so-lieu-dung.png",
-      "views": 4
-    },
-    {
-      "path": "/_astro/thong-ke.astro_astro_type_script_index_0_lang.Ci291ITp.js",
       "views": 4
     },
     {
       "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 4
+    },
+    {
+      "path": "/vi/tin-tuc/mo-rong-chuoi-nha-thuoc-checklist-he-thong/",
+      "views": 4
+    },
+    {
+      "path": "/vi",
+      "views": 4
+    },
+    {
+      "path": "/vi/tin-tuc/ai-ho-tro-van-hanh-nha-thuoc",
       "views": 4
     }
   ]
