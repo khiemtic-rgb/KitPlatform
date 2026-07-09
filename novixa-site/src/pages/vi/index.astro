@@ -24,16 +24,18 @@ const m = t('vi');
 
   <div class="home-page">
     <div class="hp-fold">
-      <div class="hp-hero-wrap">
-        <div class="container">
-          <Hero />
+      <div class="hp-fold__inner">
+        <div class="hp-hero-wrap">
+          <div class="container">
+            <Hero />
+          </div>
         </div>
+
+        <ValueCardsSection />
+        <AssessmentSection />
       </div>
     </div>
 
-    <ValueCardsSection />
-
-    <AssessmentSection />
     <SolutionSection />
     <PricingSection />
     <FaqSection home />
