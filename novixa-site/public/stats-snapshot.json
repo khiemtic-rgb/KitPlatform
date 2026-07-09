@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-09T11:29:56.222Z",
+  "generatedAt": "2026-07-09T19:00:04.304Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 114,
-    "todayPageViews": 112,
-    "todayRequests": 191,
-    "last24hVisitors": 141,
-    "last24hPageViews": 144,
-    "last24hRequests": 283
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 139,
+    "last24hPageViews": 435,
+    "last24hRequests": 1931
   },
   "hourly": [
-    {
-      "time": "2026-07-08T12:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-07-08T13:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-07-08T14:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-07-08T15:00:00Z",
-      "visitors": 4,
-      "requests": 7
-    },
-    {
-      "time": "2026-07-08T16:00:00Z",
-      "visitors": 10,
-      "requests": 30
-    },
-    {
-      "time": "2026-07-08T17:00:00Z",
-      "visitors": 17,
-      "requests": 23
-    },
-    {
-      "time": "2026-07-08T18:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-07-08T19:00:00Z",
-      "visitors": 2,
-      "requests": 6
-    },
     {
       "time": "2026-07-08T20:00:00Z",
       "visitors": 7,
@@ -120,15 +80,44 @@
       "time": "2026-07-09T10:00:00Z",
       "visitors": 2,
       "requests": 2
+    },
+    {
+      "time": "2026-07-09T12:00:00Z",
+      "visitors": 6,
+      "requests": 15
+    },
+    {
+      "time": "2026-07-09T13:00:00Z",
+      "visitors": 8,
+      "requests": 118
+    },
+    {
+      "time": "2026-07-09T14:00:00Z",
+      "visitors": 7,
+      "requests": 440
+    },
+    {
+      "time": "2026-07-09T15:00:00Z",
+      "visitors": 7,
+      "requests": 601
+    },
+    {
+      "time": "2026-07-09T16:00:00Z",
+      "visitors": 3,
+      "requests": 541
+    },
+    {
+      "time": "2026-07-09T17:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-07-09T18:00:00Z",
+      "visitors": 5,
+      "requests": 10
     }
   ],
   "daily": [
-    {
-      "date": "2026-07-03",
-      "visitors": 166,
-      "pageViews": 302,
-      "requests": 757
-    },
     {
       "date": "2026-07-04",
       "visitors": 147,
@@ -161,71 +150,71 @@
     },
     {
       "date": "2026-07-09",
-      "visitors": 114,
-      "pageViews": 112,
-      "requests": 191
+      "visitors": 134,
+      "pageViews": 432,
+      "requests": 1916
     }
   ],
   "topPages": [
     {
-      "path": "/vi/tin-tuc/kiem-ke-ton-kho-dinh-ky-quy-trinh-chuan/",
-      "views": 93
-    },
-    {
       "path": "/cdn-cgi/rum",
-      "views": 29
+      "views": 383
     },
     {
-      "path": "/",
-      "views": 28
+      "path": "/vi/",
+      "views": 293
+    },
+    {
+      "path": "/images/logo.png",
+      "views": 286
+    },
+    {
+      "path": "/favicon.svg",
+      "views": 197
+    },
+    {
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 163
+    },
+    {
+      "path": "/vi/tin-tuc/kiem-ke-ton-kho-dinh-ky-quy-trinh-chuan/",
+      "views": 96
+    },
+    {
+      "path": "/_astro/Footer.BfpnJuxU.css",
+      "views": 87
+    },
+    {
+      "path": "/_astro/index.BXgUcrv1.css",
+      "views": 52
+    },
+    {
+      "path": "/_astro/Footer.C4OSUXSn.css",
+      "views": 39
+    },
+    {
+      "path": "/_astro/index.63lp84YC.css",
+      "views": 33
+    },
+    {
+      "path": "/images/tin-tuc/ai-ho-tro-van-hanh-nha-thuoc.png",
+      "views": 32
+    },
+    {
+      "path": "/_astro/Footer.CqqFq-ap.css",
+      "views": 27
+    },
+    {
+      "path": "/_astro/index.Coo-WNjq.css",
+      "views": 26
     },
     {
       "path": "/robots.txt",
       "views": 22
     },
     {
-      "path": "/sitemap-index.xml",
-      "views": 12
-    },
-    {
-      "path": "/vi/",
-      "views": 11
-    },
-    {
-      "path": "/vi",
-      "views": 8
-    },
-    {
-      "path": "/images/tin-tuc/kiem-ke-ton-kho-dinh-ky-quy-trinh-chuan.png",
-      "views": 6
-    },
-    {
-      "path": "/favicon.svg",
-      "views": 6
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 6
-    },
-    {
-      "path": "/images/logo.png",
-      "views": 5
-    },
-    {
-      "path": "/api/stats",
-      "views": 5
-    },
-    {
-      "path": "/config.json",
-      "views": 4
-    },
-    {
-      "path": "/wp-login.php",
-      "views": 4
-    },
-    {
-      "path": "/_astro/Footer.DL0HHBKH.css",
-      "views": 4
+      "path": "/",
+      "views": 21
     }
   ]
 }
