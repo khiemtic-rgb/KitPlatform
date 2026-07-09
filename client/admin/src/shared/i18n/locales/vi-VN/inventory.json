@@ -29,6 +29,7 @@
       "opening": "Tồn đầu kỳ",
       "stock": "Tồn kho",
       "lowStock": "Tồn thấp",
+      "gppChecklist": "Checklist GPP",
       "transfers": "Điều chuyển",
       "adjustments": "Kiểm kê",
       "warehouses": "Danh mục kho"
@@ -309,6 +310,13 @@
     "paginationTotal": "{{count}} dòng",
     "messages": {
       "loadFailed": "Không tải được danh sách tồn thấp"
+    },
+    "requisition": {
+      "button": "Đề xuất nhập hàng",
+      "empty": "Không có dòng tồn thấp để đề xuất",
+      "pickWarehouse": "Chọn một kho cụ thể trước khi đề xuất (hoặc chỉ chọn SP cùng kho)",
+      "saved": "Đã tạo đề xuất — mở form PO để chỉnh sửa",
+      "autoNote": "Đề xuất nhập từ cảnh báo tồn thấp · {{warehouse}}"
     }
   },
   "lowStockSettings": {
@@ -453,5 +461,32 @@
       "signHint": "(Ký, họ tên)"
     },
     "footnote": "In từ hệ thống KitPlatform — chỉ mang tính tham chiếu trước khi duyệt chốt."
+  },
+  "gppChecklist": {
+    "title": "Checklist vận hành GPP",
+    "description": "Theo dõi thói quen hàng ngày/tuần/tháng sau go-live. Lưu cục bộ trên trình duyệt — không thay thế hồ sơ GPP chính thức.",
+    "disclaimer": "Công cụ nội bộ hypercare tuần 2–4. Tick khi hoàn thành; reset đầu kỳ mới.",
+    "progress": "{{done}}/{{total}} mục",
+    "reset": "Reset checklist",
+    "resetDone": "Đã reset checklist",
+    "sections": {
+      "daily": "Hàng ngày (ca bán)",
+      "weekly": "Hàng tuần",
+      "monthly": "Hàng tháng"
+    },
+    "items": {
+      "shiftOpen": "Mở ca + đối chiếu tiền mặt đầu ca",
+      "fefoSale": "Bán theo FEFO / ghi nhận lô khi bán",
+      "dispenseNotes": "Ghi chú tư vấn / dispense trên đơn hoàn tất",
+      "shiftClose": "Chốt ca + đối soát thu chi",
+      "lowStockScan": "Rà soát tồn thấp → đề xuất PO nếu cần",
+      "nearExpiryReport": "Xem báo cáo cận date / hết hạn",
+      "inventoryCount": "Kiểm kê chéo hoặc kiểm định kỳ",
+      "grnVerify": "Đối chiếu GRN với PO và hóa đơn NCC",
+      "poApproval": "Duyệt PO theo quy trình (không bỏ qua NCC placeholder)",
+      "fullCount": "Kiểm kê toàn phần hoặc theo danh mục trọng yếu",
+      "accessReview": "Rà soát tài khoản / quyền admin & staff",
+      "backupCheck": "Xác nhận backup DB và log API"
+    }
   }
 }

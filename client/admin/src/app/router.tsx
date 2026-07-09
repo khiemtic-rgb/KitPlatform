@@ -63,6 +63,11 @@ const InventoryCountPage = lazy(() =>
 const LowStockPage = lazy(() =>
   import('@/modules/inventory/LowStockPage').then((m) => ({ default: m.LowStockPage })),
 );
+const GppOperationalChecklistPage = lazy(() =>
+  import('@/modules/inventory/GppOperationalChecklistPage').then((m) => ({
+    default: m.GppOperationalChecklistPage,
+  })),
+);
 const ProcurementLayout = lazy(() =>
   import('@/modules/procurement/ProcurementLayout').then((m) => ({ default: m.ProcurementLayout })),
 );
@@ -275,6 +280,7 @@ export function AppRouter() {
                 <Route index element={<Navigate to="/inventory/opening-balance" replace />} />
                 <Route path="stock" element={<StockListPage />} />
                 <Route path="low-stock" element={<LowStockPage />} />
+                <Route path="gpp-checklist" element={<GppOperationalChecklistPage />} />
                 <Route path="warehouses" element={<WarehouseListPage />} />
                 <Route path="opening-balance" element={<OpeningBalancePage />} />
                 <Route path="transfers" element={<TransferListPage />} />

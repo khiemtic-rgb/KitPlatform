@@ -50,6 +50,7 @@ import {
   PARTIAL_RETURN_STATUS,
 } from '@/modules/sales/sales-order-status';
 import { OrderDetailFinancials } from '@/modules/sales/OrderDetailFinancials';
+import { DispensingNotesPanel } from '@/modules/sales/DispensingNotesPanel';
 import { buildCustomerPaymentCreateUrl } from '@/modules/sales/customer-payment-nav';
 import { resolveOrderPaymentSummary } from '@/modules/sales/sales-order-payment-summary';
 import { CustomerFormDrawer } from '@/modules/customer/CustomerFormDrawer';
@@ -819,6 +820,14 @@ export function SalesOrderListPage() {
               order={detail}
               onCollectDebt={canCollectOrderDebt ? openCollectOrderDebt : undefined}
             />
+
+            {isCompletedSaleStatus(detail.status) ? (
+              <DispensingNotesPanel
+                salesOrderId={detail.id}
+                customerId={detail.customerId}
+                readOnly={!canWrite}
+              />
+            ) : null}
 
             <Table
               rowKey="id"

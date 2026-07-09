@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { App, Alert, Button, Drawer, Input, InputNumber, Segmented, Select, Space, Typography } from 'antd';
+import type { InputRef } from 'antd';
 import {
   HomeOutlined,
   MinusOutlined,
@@ -48,6 +49,7 @@ import { loadReservationForPos } from '@/shared/api/reservations.api';
 import { buildReservationCartLines } from '@/modules/reservations/reservation-pos-load';
 import { applyBatchLabelScan } from '@/modules/sales/pos-batch-scan';
 import { useSalesDiscountPolicy } from '@/modules/sales/useSalesDiscountPolicy';
+import { usePosHotkeys } from '@/shared/hooks/usePosHotkeys';
 import { usePosSession } from '@/modules/pos/pos-session.store';
 import { OpenShiftSheet } from '@/modules/pos/OpenShiftSheet';
 import { CloseShiftSheet } from '@/modules/today/CloseShiftSheet';
@@ -88,6 +90,7 @@ export function PosPage() {
   } = usePosSession();
 
   const [query, setQuery] = useState('');
+  const searchRef = useRef<InputRef>(null);
   const [barcode, setBarcode] = useState('');
   const [scanOpen, setScanOpen] = useState(false);
   const [hits, setHits] = useState<PosProductSearchItem[]>([]);
@@ -453,6 +456,16 @@ export function PosPage() {
     }
   };
 
+  const posHotkeys = useMemo(
+    () => ({
+      onFocusSearch: () => searchRef.current?.focus(),
+      onCheckout: goCheckout,
+      onSaveDraft: () => void saveDraft(),
+    }),
+    [cart.length, shift, warehouseId],
+  );
+  usePosHotkeys(posHotkeys);
+
   const batchLine = cart.find((c) => c.key === batchLineKey);
   const activeWarehouse = warehouses.find((w) => w.id === warehouseId);
   const warehouseLabel = activeWarehouse
@@ -532,10 +545,11 @@ export function PosPage() {
           <div className="pos-field-head">
             <span className="pos-field-label">Tìm sản phẩm</span>
             <span className="pos-field-hint">
-              {searching ? 'Đang tìm…' : 'Gõ ≥2 ký tự → chạm kết quả · Enter nếu chỉ còn 1 dòng'}
+              {searching ? 'Đang tìm…' : 'F2 · Gõ ≥2 ký tự → chạm kết quả · Enter nếu chỉ còn 1 dòng'}
             </span>
           </div>
           <Input
+            ref={searchRef}
             className="staff-touch-input"
             prefix={<SearchOutlined />}
             placeholder="Tên, mã SP, SKU..."

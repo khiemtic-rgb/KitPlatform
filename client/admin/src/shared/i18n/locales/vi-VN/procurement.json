@@ -241,6 +241,7 @@
     "editOrder": "Sửa đơn",
     "approve": "Duyệt",
     "submitForApproval": "Gửi duyệt",
+    "requisitionPrefilled": "Đã điền {{count}} dòng từ đề xuất tồn thấp — kiểm tra NCC và giá trước khi lưu",
     "pendingApprovals": "PO chờ duyệt",
     "cancelOrder": "Huỷ đơn",
     "cancelConfirm": "Huỷ đơn đặt hàng này?",

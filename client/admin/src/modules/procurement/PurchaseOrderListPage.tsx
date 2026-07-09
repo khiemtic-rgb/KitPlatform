@@ -60,6 +60,10 @@ import {
   procurementRemainingQtyColumn,
 } from '@/modules/procurement/procurement-quantity-cell';
 import { PoWorkflowPendingDrawer } from '@/modules/procurement/PoWorkflowPendingDrawer';
+import {
+  clearPoRequisitionDraft,
+  readPoRequisitionDraft,
+} from '@/modules/inventory/po-requisition-draft';
 import { useProcurementWrite, useSystemDeletePermanent, useIsAdmin } from '@/shared/auth/usePermission';
 import { useSearchParams } from 'react-router-dom';
 
@@ -175,6 +179,34 @@ export function PurchaseOrderListPage() {
     setDrawerOpen(true);
   };
 
+  const openCreateFromRequisition = useCallback(() => {
+    const draft = readPoRequisitionDraft();
+    if (!draft?.lines.length) return false;
+    form.resetFields();
+    const placeholder = suppliers.find((s) => isPlaceholderSupplier(s));
+    form.setFieldsValue({
+      supplierId: placeholder?.id,
+      warehouseId: draft.warehouseId,
+      notes: draft.notes,
+      vatTreatmentId: defaultVatTreatmentId(vatTreatments),
+      items: draft.lines.map((line) => ({
+        productId: line.productId,
+        orderedQty: line.suggestedQty,
+        unitPrice: 0,
+      })),
+    });
+    setDrawerOpen(true);
+    clearPoRequisitionDraft();
+    message.info(t('requisitionPrefilled', { count: draft.lines.length }));
+    return true;
+  }, [form, suppliers, vatTreatments, t]);
+
+  useEffect(() => {
+    if (searchParams.get('requisition') !== '1') return;
+    if (suppliers.length === 0 || warehouses.length === 0 || products.length === 0) return;
+    openCreateFromRequisition();
+  }, [searchParams, suppliers.length, warehouses.length, products.length, openCreateFromRequisition]);
+
   const openDetail = async (id: string) => {
     try {
       const po = await fetchPurchaseOrder(id);
@@ -262,6 +294,24 @@ export function PurchaseOrderListPage() {
       message.error(apiErrorMessage(error, t('messages.submitFailed')));
     }
   };
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === 's' && drawerOpen && canWrite) {
+        e.preventDefault();
+        void handleCreate();
+        return;
+      }
+      if (key === 'enter' && detailOpen && detail?.status === 1 && canWrite) {
+        e.preventDefault();
+        void handleSubmitForApproval(detail.id);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [drawerOpen, detailOpen, detail, canWrite]);
 
   const confirmApproveWithSupplier = async (supplierId: string) => {
     if (!approvePoId) return;

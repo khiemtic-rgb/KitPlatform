@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   App,
   Alert,
@@ -37,6 +37,7 @@ import { formatMoney } from '@/shared/utils/money';
 import { priceCart, roundMoney } from '@/modules/sales/pos-pricing';
 import { buildCreateSalePayload, buildDraftCompletePayload } from '@/modules/sales/pos-sale-payload';
 import { validateCartBatchLabels } from '@/modules/sales/pos-batch';
+import { usePosHotkeys } from '@/shared/hooks/usePosHotkeys';
 import {
   canOfferLoyaltyRedeem,
   computeMaxLoyaltyRedeem,
@@ -329,13 +330,23 @@ export function CheckoutPage() {
       clearCart();
       clearDraftEdit();
       clearPosDraftEdit();
-      navigate('/receipt', { replace: true, state: { order } });
+      navigate('/receipt', { replace: true, state: { order, autoPrint: true } });
     } catch (error) {
       message.error(apiErrorMessage(error, 'Không hoàn tất được thanh toán'));
     } finally {
       setSaving(false);
     }
   };
+
+  usePosHotkeys(
+    useMemo(
+      () => ({
+        onComplete: () => void submit(),
+      }),
+      [saving],
+    ),
+    !saving,
+  );
 
   return (
     <div className="staff-shell">

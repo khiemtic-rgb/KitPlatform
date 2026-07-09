@@ -4,6 +4,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   AuditOutlined,
   BankOutlined,
+  CheckSquareOutlined,
   DatabaseOutlined,
   ImportOutlined,
   SwapOutlined,
@@ -26,6 +27,7 @@ export function InventoryLayout() {
       },
       { key: 'stock', label: t('stock'), path: '/inventory/stock', icon: <DatabaseOutlined /> },
       { key: 'low-stock', label: t('lowStock'), path: '/inventory/low-stock', icon: <WarningOutlined /> },
+      { key: 'gpp-checklist', label: t('gppChecklist'), path: '/inventory/gpp-checklist', icon: <CheckSquareOutlined /> },
       { key: 'transfers', label: t('transfers'), path: '/inventory/transfers', icon: <SwapOutlined /> },
       { key: 'adjustments', label: t('adjustments'), path: '/inventory/adjustments', icon: <AuditOutlined /> },
       { key: 'warehouses', label: t('warehouses'), path: '/inventory/warehouses', icon: <BankOutlined /> },

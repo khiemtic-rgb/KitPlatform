@@ -32,6 +32,8 @@
     "search": "Search",
     "importExcel": "Import Excel",
     "nationalLookup": "National lookup",
+    "nationalMockBannerTitle": "National drug DB — mock data active",
+    "nationalMockBannerDescription": "Lookup uses internal sample data, not the official registry. When integrated, set NationalDrugCatalog__Mode=sandbox or live on the API.",
     "addProduct": "Add product",
     "filterActiveAlert": "Filters are active — the list may be incomplete.",
     "clearFilters": "Clear filters",

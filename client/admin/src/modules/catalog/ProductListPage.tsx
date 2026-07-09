@@ -36,6 +36,8 @@ import type { LookupItem, ProductDetail, ProductListFilter, ProductListItem } fr
 import { useCatalogEnums } from '@/shared/i18n/use-catalog-enums';
 import { formatDisplayMoney } from '@/shared/utils/money';
 import { isProductFeatureEnabled } from '@/shared/product/product-phases';
+import { withUploadAuth } from '@/shared/utils/upload-url';
+import { fetchNationalDrugConnectionStatus } from '@/shared/api/national-drug.api';
 import { ProductFormDrawer } from '@/modules/catalog/ProductFormDrawer';
 
 const emptyAdvancedFilters: Omit<ProductListFilter, 'search' | 'page' | 'pageSize'> = {
@@ -76,6 +78,14 @@ export function ProductListPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [suggestionProducts, setSuggestionProducts] = useState<ProductListItem[]>([]);
+  const [nationalDrugLive, setNationalDrugLive] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!showNationalDrugLookup) return;
+    void fetchNationalDrugConnectionStatus()
+      .then((s) => setNationalDrugLive(s.isLive))
+      .catch(() => setNationalDrugLive(false));
+  }, [showNationalDrugLookup]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -254,14 +264,16 @@ export function ProductListPage() {
         title: t('columns.image'),
         dataIndex: 'primaryImageUrl',
         width: 56,
-        render: (url?: string) =>
-          url ? (
-            <Avatar shape="square" size={40} src={url} alt="" />
+        render: (url?: string) => {
+          const src = withUploadAuth(url);
+          return src ? (
+            <Avatar shape="square" size={40} src={src} alt="" />
           ) : (
             <Avatar shape="square" size={40}>
               —
             </Avatar>
-          ),
+          );
+        },
       },
       {
         title: t('columns.barcode'),
@@ -376,6 +388,16 @@ export function ProductListPage() {
         </Space>
       }
     >
+      {showNationalDrugLookup && nationalDrugLive === false && (
+        <Alert
+          type="warning"
+          showIcon
+          icon={<CloudSyncOutlined />}
+          message={t('nationalMockBannerTitle')}
+          description={t('nationalMockBannerDescription')}
+          style={{ marginBottom: 16 }}
+        />
+      )}
       {loadError && (
         <Alert
           type="error"

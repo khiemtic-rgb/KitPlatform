@@ -1,22 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Button, Card, Select, Space, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { ReloadOutlined, WarningOutlined } from '@ant-design/icons';
+import { ReloadOutlined, ShoppingCartOutlined, WarningOutlined } from '@ant-design/icons';
 import { fetchLowStockProducts, fetchWarehouses } from '@/shared/api/inventory.api';
 import type { LowStockProduct, Warehouse } from '@/shared/api/inventory.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { formatDisplayQuantity } from '@/shared/utils/money';
 import { LowStockSettingsPanel } from '@/modules/inventory/LowStockSettingsPanel';
+import { savePoRequisitionDraft } from '@/modules/inventory/po-requisition-draft';
 
 export function LowStockPage() {
   const { t } = useTranslation('inventory', { keyPrefix: 'lowStock' });
   const { t: ts } = useTranslation('inventory', { keyPrefix: 'shared' });
   const { t: tc } = useTranslation('common');
+  const navigate = useNavigate();
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehouseId, setWarehouseId] = useState<string>();
   const [items, setItems] = useState<LowStockProduct[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
 
   useEffect(() => {
     void fetchWarehouses().then(setWarehouses).catch(() => undefined);
@@ -36,6 +40,43 @@ export function LowStockPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const suggestRequisition = () => {
+    const rowKey = (row: LowStockProduct) => `${row.productId}-${row.warehouseId}`;
+    const source =
+      selectedRowKeys.length > 0
+        ? items.filter((row) => selectedRowKeys.includes(rowKey(row)))
+        : items;
+    if (source.length === 0) {
+      message.warning(t('requisition.empty'));
+      return;
+    }
+    const warehouseIds = new Set(source.map((row) => row.warehouseId));
+    if (!warehouseId && warehouseIds.size > 1) {
+      message.warning(t('requisition.pickWarehouse'));
+      return;
+    }
+    const targetWarehouseId = warehouseId ?? source[0].warehouseId;
+    const targetWarehouseName =
+      warehouses.find((w) => w.id === targetWarehouseId)?.warehouseName ?? source[0].warehouseName;
+    savePoRequisitionDraft({
+      warehouseId: targetWarehouseId,
+      notes: t('requisition.autoNote', { warehouse: targetWarehouseName }),
+      createdAt: new Date().toISOString(),
+      lines: source
+        .filter((row) => row.warehouseId === targetWarehouseId)
+        .map((row) => ({
+          productId: row.productId,
+          productCode: row.productCode,
+          productName: row.productName,
+          warehouseId: row.warehouseId,
+          warehouseName: row.warehouseName,
+          suggestedQty: Math.max(1, Math.ceil(row.minStockQty - row.totalQuantity)),
+        })),
+    });
+    message.success(t('requisition.saved'));
+    navigate('/procurement/purchase-orders?requisition=1');
+  };
 
   const columns: ColumnsType<LowStockProduct> = [
     { title: ts('productCode'), dataIndex: 'productCode', width: 110 },
@@ -116,11 +157,23 @@ export function LowStockPage() {
           <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
             {tc('actions.reload')}
           </Button>
+          <Button
+            type="primary"
+            icon={<ShoppingCartOutlined />}
+            disabled={items.length === 0}
+            onClick={suggestRequisition}
+          >
+            {t('requisition.button')}
+          </Button>
         </Space>
       </Card>
 
       <Table
         rowKey={(row) => `${row.productId}-${row.warehouseId}`}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: (keys) => setSelectedRowKeys(keys as string[]),
+        }}
         size="small"
         loading={loading}
         columns={columns}

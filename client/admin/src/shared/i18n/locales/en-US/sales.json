@@ -831,6 +831,24 @@
       "cancelledBody": "{{draftNumber}} — no action needed at counter."
     }
   },
+  "dispensingNotes": {
+    "title": "Counseling / dispensing notes (GPP)",
+    "intro": "Record drug counseling on completed orders — for GPP audit and hypercare.",
+    "placeholder": "Counseling content, dosage, warnings…",
+    "save": "Save note",
+    "saved": "Dispensing note saved",
+    "saveFailed": "Could not save note",
+    "loadFailed": "Could not load notes",
+    "textRequired": "Enter note text",
+    "empty": "No notes on this order",
+    "types": {
+      "counseling": "Counseling",
+      "dispensing": "Dispensing",
+      "interaction": "Drug interaction",
+      "adherence": "Adherence",
+      "other": "Other"
+    }
+  },
   "receiptSettings": {
     "pageTabs": {
       "pos": "Receipt & batch",
@@ -854,6 +872,16 @@
     "batchCard": {
       "title": "Batch management (FEFO)",
       "save": "Save batch mode"
+    },
+    "printGuide": {
+      "title": "Thermal printer setup",
+      "intro": "Novixa prints via the browser (window.print). The printer must be installed in the OS and set as default on the POS device.",
+      "steps": "1. Connect USB / Bluetooth 80mm printer on Windows/Android.\n2. Install vendor driver (Epson, Xprinter, HPRT…).\n3. Set thermal printer as default.\n4. Click «Test print» below — allow popups if blocked.\n5. On staff POS: receipt auto-prints after checkout; press P to reprint.",
+      "noteTitle": "No direct USB detection in browser",
+      "noteBody": "Web POS does not scan USB (V1). If layout is wrong, set margins to 0 and paper width 80mm in the OS print dialog.",
+      "testButton": "Test print sample",
+      "testFailed": "Test print failed",
+      "popupBlocked": "Popup blocked — allow popups and try again"
     },
     "customerAppLinkCard": {
       "title": "Customer app link & QR",

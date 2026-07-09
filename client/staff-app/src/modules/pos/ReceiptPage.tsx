@@ -13,6 +13,7 @@ import {
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { buildReceiptHtml, printReceiptDocument } from '@/modules/sales/receipt-print';
 import { formatMoney } from '@/shared/utils/money';
+import { usePosHotkeys } from '@/shared/hooks/usePosHotkeys';
 
 type ReceiptLocationState = {
   order?: SalesOrderDetail;
@@ -100,6 +101,17 @@ export function ReceiptPage() {
       setSavingNote(false);
     }
   };
+
+  usePosHotkeys(
+    useMemo(
+      () => ({
+        onPrint: print,
+        onNewOrder: () => navigate('/pos', { replace: true }),
+        onSaveNote: () => void saveNote(),
+      }),
+      [receiptHtml, noteText, noteType, order.id],
+    ),
+  );
 
   return (
     <div className="staff-shell">

@@ -29,6 +29,7 @@
       "opening": "Opening balance",
       "stock": "Stock",
       "lowStock": "Low stock",
+      "gppChecklist": "GPP checklist",
       "transfers": "Transfers",
       "adjustments": "Stock count",
       "warehouses": "Warehouses"
@@ -309,6 +310,13 @@
     "paginationTotal": "{{count}} rows",
     "messages": {
       "loadFailed": "Could not load low stock list"
+    },
+    "requisition": {
+      "button": "Suggest purchase order",
+      "empty": "No low-stock rows to suggest",
+      "pickWarehouse": "Select a single warehouse first (or pick rows from one warehouse)",
+      "saved": "Draft created — review the PO form before saving",
+      "autoNote": "Suggested from low stock · {{warehouse}}"
     }
   },
   "lowStockSettings": {
@@ -453,5 +461,32 @@
       "signHint": "(Signature, name)"
     },
     "footnote": "Printed from KitPlatform — for reference only before approval."
+  },
+  "gppChecklist": {
+    "title": "GPP operations checklist",
+    "description": "Track daily/weekly/monthly habits after go-live. Stored locally in the browser — not a formal GPP record.",
+    "disclaimer": "Hypercare weeks 2–4 internal tool. Tick when done; reset at period start.",
+    "progress": "{{done}}/{{total}} items",
+    "reset": "Reset checklist",
+    "resetDone": "Checklist reset",
+    "sections": {
+      "daily": "Daily (shift)",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "items": {
+      "shiftOpen": "Open shift + count opening cash",
+      "fefoSale": "Sell FEFO / record batch on sale",
+      "dispenseNotes": "Dispensing notes on completed orders",
+      "shiftClose": "Close shift + reconcile payments",
+      "lowStockScan": "Review low stock → suggest PO if needed",
+      "nearExpiryReport": "Review near-expiry report",
+      "inventoryCount": "Cycle count or spot check",
+      "grnVerify": "Match GRN to PO and supplier invoice",
+      "poApproval": "PO approval workflow (no placeholder supplier skip)",
+      "fullCount": "Full or category-critical count",
+      "accessReview": "Review admin & staff accounts/roles",
+      "backupCheck": "Confirm DB backup and API logs"
+    }
   }
 }

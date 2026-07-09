@@ -32,6 +32,8 @@
     "search": "Tìm",
     "importExcel": "Import Excel",
     "nationalLookup": "Tra cứu QG",
+    "nationalMockBannerTitle": "CSDL Dược QG — đang dùng dữ liệu mock",
+    "nationalMockBannerDescription": "Tra cứu trên trang SP là bộ mẫu nội bộ, không thay tra cứu chính thức. Khi có liên thông: đặt NationalDrugCatalog__Mode=sandbox hoặc live trên API.",
     "addProduct": "Thêm sản phẩm",
     "filterActiveAlert": "Đang lọc sản phẩm — có thể không thấy đủ danh sách.",
     "clearFilters": "Xóa bộ lọc",

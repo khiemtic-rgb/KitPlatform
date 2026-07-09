@@ -241,6 +241,7 @@
     "editOrder": "Edit order",
     "approve": "Approve",
     "submitForApproval": "Submit for approval",
+    "requisitionPrefilled": "Prefilled {{count}} lines from low-stock suggestion — verify supplier and prices before saving",
     "pendingApprovals": "Pending PO approvals",
     "cancelOrder": "Cancel order",
     "cancelConfirm": "Cancel this purchase order?",

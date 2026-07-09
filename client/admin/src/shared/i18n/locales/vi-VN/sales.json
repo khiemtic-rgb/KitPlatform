@@ -831,6 +831,24 @@
       "cancelledBody": "{{draftNumber}} — không cần xử lý tại quầy."
     }
   },
+  "dispensingNotes": {
+    "title": "Ghi chú tư vấn / dispense (GPP)",
+    "intro": "Ghi nhận tư vấn thuốc trên đơn đã hoàn tất — phục vụ audit GPP và hypercare.",
+    "placeholder": "Nội dung tư vấn, liều dùng, lưu ý…",
+    "save": "Lưu ghi chú",
+    "saved": "Đã lưu ghi chú dược",
+    "saveFailed": "Không lưu được ghi chú",
+    "loadFailed": "Không tải được ghi chú",
+    "textRequired": "Nhập nội dung ghi chú",
+    "empty": "Chưa có ghi chú trên đơn này",
+    "types": {
+      "counseling": "Tư vấn",
+      "dispensing": "Cấp phát",
+      "interaction": "Tương tác thuốc",
+      "adherence": "Tuân thủ điều trị",
+      "other": "Khác"
+    }
+  },
   "receiptSettings": {
     "pageTabs": {
       "pos": "Phiếu in & lô",
@@ -854,6 +872,16 @@
     "batchCard": {
       "title": "Quản lý lô (FEFO)",
       "save": "Lưu chế độ lô"
+    },
+    "printGuide": {
+      "title": "Hướng dẫn cài máy in nhiệt",
+      "intro": "Novixa in qua trình duyệt (window.print) — máy in phải được cài trên hệ điều hành và chọn làm máy in mặc định trên máy POS.",
+      "steps": "1. Cắm USB / ghép nối Bluetooth máy in 80mm trên Windows/Android.\n2. Cài driver từ hãng (Epson, Xprinter, HPRT…).\n3. Đặt máy in nhiệt làm mặc định.\n4. Bấm «In thử» bên dưới — popup in phải mở được (tắt chặn popup nếu cần).\n5. Trên POS staff: sau thanh toán bill tự in; phím P in lại.",
+      "noteTitle": "Không tự nhận USB trong trình duyệt",
+      "noteBody": "Web POS không quét USB trực tiếp (V1). Nếu in lệch khổ, chỉnh margin 0 và khổ giấy 80mm trong hộp thoại in của OS.",
+      "testButton": "In thử phiếu mẫu",
+      "testFailed": "Không in thử được",
+      "popupBlocked": "Trình duyệt chặn popup — cho phép popup rồi thử lại"
     },
     "customerAppLinkCard": {
       "title": "Link & QR app khách",

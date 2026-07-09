@@ -19,10 +19,11 @@ import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, CreditCardOutlined, ClockCircleOutlined, PlusOutlined, PrinterOutlined, RollbackOutlined, SaveOutlined, SendOutlined, ShoppingCartOutlined, UnorderedListOutlined, UserAddOutlined } from '@ant-design/icons';
 import { fetchWarehouses, fetchActiveCountingSession } from '@/shared/api/inventory.api';
 import type { Warehouse, AdjustmentListItem } from '@/shared/api/inventory.types';
-import { createSale, completeDraftSale, fetchBatchModeSettings, fetchOpenShift, fetchPosCustomerLoyalty, fetchPosCustomerVouchers, fetchPosStockBulk, fetchSalesOrder, lookupPosProduct, openSalesShift, previewPosAllocation, searchCustomers, searchPosProducts, updateDraftSale, type TenantBatchModeValue } from '@/shared/api/sales.api';
+import { createSale, completeDraftSale, fetchBatchModeSettings, fetchPosCustomerLoyalty, fetchPosCustomerVouchers, fetchPosStockBulk, fetchSalesOrder, lookupPosProduct, openSalesShift, previewPosAllocation, searchCustomers, searchPosProducts, updateDraftSale, type TenantBatchModeValue } from '@/shared/api/sales.api';
 import {
   isShiftAlreadyOpenError,
   loadOpenShiftForWarehouse,
+  resolveOpenShiftForWarehouse,
   shiftAlreadyOpenMessage,
 } from '@/modules/sales/sales-shift-helpers';
 import type { CartLine, CustomerListItem, PosCheckoutConfirm, PosCustomerLoyalty, PosCustomerVoucher, SalesOrderDetail, SalesShiftDetail } from '@/shared/api/sales.types';
@@ -44,6 +45,7 @@ import { buildCreateSalePayload, buildDraftCompletePayload, buildDraftUpdatePayl
 import { OpenShiftModal } from '@/modules/sales/OpenShiftModal';
 import { PosSummaryDivider, PosSummaryOrderDiscountRow, PosSummaryPanel, PosSummaryRow } from '@/modules/sales/pos-summary-ui';
 import { printSalesInvoice } from '@/modules/sales/sales-invoice-print';
+import { usePosHotkeys } from '@/shared/hooks/usePosHotkeys';
 import { formatPosCheckoutSuccessMessage } from '@/modules/sales/pos-checkout-message';
 import { loadReceiptStoreSettings } from '@/modules/sales/receipt-settings';
 import {
@@ -922,6 +924,25 @@ export function PosPage() {
 
   const cartLocked = checkoutOpen || saving;
 
+  usePosHotkeys(
+    useMemo(
+      () => ({
+        onFocusSearch: () => {
+          document.querySelector<HTMLInputElement>('.pos-page__barcode-field input')?.focus();
+        },
+        onCheckout: () => void openCheckout(),
+        onSaveDraft: () => void saveDraft(),
+        onPrint: lastCompletedOrder
+          ? () => {
+              void printSalesInvoice(lastCompletedOrder);
+            }
+          : undefined,
+      }),
+      [openCheckout, lastCompletedOrder],
+    ),
+    canWrite && !cartLocked,
+  );
+
   const columns: ColumnsType<CartLine> = useMemo(() => [
     {
       title: t('pos.columns.product'),
@@ -1130,7 +1151,7 @@ export function PosPage() {
       message.success(t('pos.messages.shiftOpened', { number: shift.shiftNumber }));
     } catch (error) {
       if (isShiftAlreadyOpenError(error)) {
-        const existing = await fetchOpenShift(warehouseId);
+        const existing = await resolveOpenShiftForWarehouse(warehouseId);
         if (existing) {
           setOpenShift(existing);
           setOpenShiftModal(false);
