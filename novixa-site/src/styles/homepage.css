@@ -84,7 +84,7 @@
   display: grid;
   grid-template-columns: 41% 59%;
   gap: 20px;
-  align-items: center;
+  align-items: start;
 }
 
 .hp-hero__badge {
@@ -250,22 +250,23 @@
 .hp-hero__visual {
   display: flex;
   justify-content: flex-end;
-  align-items: center;
-  align-self: center;
+  align-items: flex-start;
+  align-self: start;
   overflow: visible;
-  max-height: min(320px, 34svh);
+  max-height: min(380px, 38svh);
+  margin-top: -4px;
 }
 
 .hp-hero__mockup {
   position: relative;
   width: 100%;
-  max-width: 480px;
+  max-width: 500px;
   padding-right: 10px;
 }
 
 .home-page .hp-hero__mockup .dashboard-preview--hero {
   transform: none !important;
-  max-height: min(300px, 32svh) !important;
+  max-height: min(360px, 36svh) !important;
   overflow: hidden !important;
   border-radius: 14px !important;
   border: 1px solid rgba(15, 76, 129, 0.1) !important;
@@ -274,8 +275,8 @@
 }
 
 .home-page .hp-hero__mockup .dashboard-preview--hero .dashboard-main {
-  padding: 0.5rem !important;
-  gap: 0.35rem !important;
+  padding: 0.55rem !important;
+  gap: 0.4rem !important;
 }
 
 .home-page .hp-hero__mockup .dashboard-preview--hero .dashboard-metrics--hero {
@@ -299,7 +300,7 @@
 }
 
 .home-page .hp-hero__mockup .dashboard-preview--hero .line-chart-svg {
-  height: 52px !important;
+  height: 60px !important;
 }
 
 .home-page .hp-hero__mockup .dashboard-preview--hero .dashboard-charts {
@@ -310,10 +311,10 @@
   position: absolute;
   right: 0;
   bottom: 4%;
-  width: 104px;
-  padding: 6px 5px 7px;
+  width: 112px;
+  padding: 6px 5px 8px;
   border: 3px solid #1e293b;
-  border-radius: 17px;
+  border-radius: 18px;
   background: #fff;
   box-shadow: 0 12px 28px rgba(15, 39, 71, 0.17);
   z-index: 3;
@@ -437,8 +438,8 @@
 }
 
 .hp-health__content {
-  flex: 0 0 min(380px, 42%);
-  min-width: 280px;
+  flex: 0 0 min(440px, 46%);
+  min-width: 300px;
 }
 
 .hp-health__badge {
@@ -468,16 +469,17 @@
   padding: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px 12px;
+  gap: 6px 10px;
 }
 
 .hp-health__list li {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 6px;
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 11px;
+  line-height: 1.3;
   color: var(--hp-text);
+  white-space: nowrap;
 }
 
 .hp-health__check {
@@ -1060,6 +1062,11 @@
     gap: 8px;
   }
 
+  .hp-health__list li {
+    white-space: normal;
+    font-size: 12px;
+  }
+
   .hp-trust__bar,
   .hp-health__benefits,
   .hp-modules__grid,
@@ -1095,15 +1102,15 @@
   }
 
   .hp-hero__visual {
-    max-height: min(240px, 28svh);
+    max-height: min(280px, 30svh);
   }
 
   .home-page .hp-hero__mockup .dashboard-preview--hero {
-    max-height: min(220px, 26svh) !important;
+    max-height: min(260px, 28svh) !important;
   }
 
   .hp-hero__phone {
-    width: 88px;
+    width: 96px;
   }
 
   .hp-trust {
