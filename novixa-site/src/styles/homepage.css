@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
    Novixa Homepage — 100% mockup alignment
-   Container 1280px · Section gap 96px · Radius 20px · Green #16c784
+   Container 1280px · Section gap 56px · Radius 20px · Green #16c784
    ═══════════════════════════════════════════════════════════════ */
 
 .home-page {
@@ -18,7 +18,7 @@
   --hp-radius-sm: 12px;
   --hp-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
   --hp-shadow-xl: 0 20px 50px rgba(15, 76, 129, 0.1);
-  --hp-section: 96px;
+  --hp-section: 56px;
   --hp-container: 1280px;
   --hp-gutter: 40px;
   background: var(--hp-bg);
@@ -395,7 +395,7 @@
 
 /* ─── AI Health Check — gray container, boxed timeline ─── */
 .hp-health {
-  padding: 48px 0 var(--hp-section);
+  padding: 40px 0 calc(var(--hp-section) / 2);
   background: var(--hp-bg);
 }
 
@@ -516,14 +516,14 @@
   align-items: center;
   justify-content: center;
   flex: 1 1 auto;
-  min-width: 8px;
-  max-width: 24px;
-  margin-top: 36px;
+  min-width: 4px;
+  max-width: 16px;
+  margin-top: 28px;
 }
 
 .hp-flow__connector svg {
   width: 100%;
-  max-width: 24px;
+  max-width: 16px;
   height: 8px;
 }
 
@@ -542,9 +542,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
-  margin-bottom: 12px;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 10px;
   border-radius: 14px;
   background: #fff;
   border: 1px solid rgba(15, 76, 129, 0.08);
@@ -555,14 +555,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   color: var(--hp-navy);
 }
 
 .hp-flow__icon svg {
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
 }
 
 .hp-flow__icon--novixa {
@@ -570,8 +570,8 @@
 }
 
 .hp-flow__icon--novixa img {
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
 }
 
@@ -662,13 +662,13 @@
 
 /* ─── Modules ─── */
 .hp-modules {
-  padding: var(--hp-section) 0;
+  padding: calc(var(--hp-section) / 2) 0;
   background: var(--hp-bg-muted);
 }
 
 .hp-modules__head {
   text-align: center;
-  margin-bottom: 48px;
+  margin-bottom: 32px;
 }
 
 .hp-modules__head h2 {
@@ -752,14 +752,14 @@
 
 /* ─── Pricing ─── */
 .hp-pricing {
-  padding: var(--hp-section) 0;
+  padding: calc(var(--hp-section) / 2) 0;
   background: var(--hp-bg);
 }
 
 .hp-pricing__head {
   text-align: center;
   max-width: 560px;
-  margin: 0 auto 48px;
+  margin: 0 auto 32px;
 }
 
 .hp-pricing__head h2 {
@@ -868,13 +868,13 @@
 
 /* ─── FAQ ─── */
 .hp-faq {
-  padding: var(--hp-section) 0 calc(var(--hp-section) + 24px);
+  padding: calc(var(--hp-section) / 2) 0 calc(var(--hp-section) + 16px);
   background: var(--hp-bg-muted);
 }
 
 .hp-faq__head {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 28px;
 }
 
 .hp-faq__head h2 {
@@ -1001,7 +1001,7 @@
 
 @media (max-width: 640px) {
   .home-page {
-    --hp-section: 64px;
+    --hp-section: 40px;
     --hp-gutter: 20px;
   }
 
