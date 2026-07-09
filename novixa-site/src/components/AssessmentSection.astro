@@ -1,17 +1,17 @@
 ---
 const checklist = [
-  'Xác định điểm mạnh và điểm yếu trong vận hành',
+  'Biết điểm mạnh – điểm yếu của nhà thuốc',
+  'Nhận diện rủi ro trước khi mở rộng',
   'Phát hiện vấn đề đang làm giảm doanh thu',
-  'Đánh giá mức độ sẵn sàng cạnh tranh',
   'Nhận lộ trình cải thiện theo từng giai đoạn',
 ];
 
 const steps = [
-  { num: '1', title: 'Trả lời 30 câu hỏi', desc: 'Khoảng 15 phút' },
-  { num: '2', title: 'Phân tích & chấm điểm', desc: 'Hệ thống tự động' },
-  { num: '3', title: 'Nhận báo cáo PDF', desc: 'Trị giá 5.000.000đ' },
-  { num: '4', title: 'Tư vấn 1-1', desc: 'Cùng chuyên gia Novixa' },
-  { num: '5', title: 'Triển khai hiệu quả', desc: 'Lộ trình rõ ràng' },
+  { title: 'Trả lời 30 câu hỏi', desc: 'Khoảng 15 phút', icon: 'quiz' },
+  { title: 'Phân tích & chấm điểm', desc: 'Hệ thống tự động', icon: 'chart' },
+  { title: 'Nhận báo cáo PDF', desc: 'Trị giá 5.000.000đ', icon: 'pdf' },
+  { title: 'Tư vấn 1-1', desc: 'Cùng chuyên gia', icon: 'consult' },
+  { title: 'Triển khai hiệu quả', desc: 'Lộ trình rõ ràng', icon: 'launch' },
 ];
 
 const features = [
@@ -36,14 +36,8 @@ const assessmentUrl = 'https://survey.novixa.vn';
               checklist.map((item) => (
                 <li>
                   <span class="check-icon" aria-hidden="true">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path
-                        d="M3 8.5L6.5 12L13 4"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                      <path d="M3 8.5L6.5 12L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                   </span>
                   {item}
@@ -53,14 +47,8 @@ const assessmentUrl = 'https://survey.novixa.vn';
           </ul>
           <a class="btn btn-green assessment-cta" href={assessmentUrl}>
             Bắt đầu đánh giá miễn phí
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path
-                d="M3 8h10M9 4l4 4-4 4"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </a>
         </div>
@@ -70,7 +58,37 @@ const assessmentUrl = 'https://survey.novixa.vn';
             steps.map((step, i) => (
               <div class="assessment-step-wrap">
                 <div class="assessment-step">
-                  <span class="step-num">{step.num}</span>
+                  <span class="step-icon" aria-hidden="true">
+                    {step.icon === 'quiz' && (
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M8 4h8a2 2 0 012 2v14l-4-3-4 3-4-3-4 3V6a2 2 0 012-2z" stroke="currentColor" stroke-width="1.6" />
+                        <path d="M9 9h6M9 13h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                      </svg>
+                    )}
+                    {step.icon === 'chart' && (
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 4v16M4 12a8 8 0 1016 0" stroke="currentColor" stroke-width="1.6" />
+                        <path d="M12 12l5-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                      </svg>
+                    )}
+                    {step.icon === 'pdf' && (
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.6" />
+                        <path d="M14 3v5h5" stroke="currentColor" stroke-width="1.6" />
+                      </svg>
+                    )}
+                    {step.icon === 'consult' && (
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.6" />
+                        <path d="M6 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.6" />
+                      </svg>
+                    )}
+                    {step.icon === 'launch' && (
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M5 19l4-8 8-4-4 8-8 4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                      </svg>
+                    )}
+                  </span>
                   <div class="step-body">
                     <strong>{step.title}</strong>
                     <span>{step.desc}</span>
@@ -89,49 +107,32 @@ const assessmentUrl = 'https://survey.novixa.vn';
             <div class="assessment-feature">
               <span class="feature-icon" aria-hidden="true">
                 {f.icon === 'clock' && (
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                     <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
                     <path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                   </svg>
                 )}
                 {f.icon === 'questions' && (
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                    />
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z" stroke="currentColor" stroke-width="1.8" />
                     <path d="M8 9h8M8 13h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                   </svg>
                 )}
                 {f.icon === 'pdf' && (
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                    />
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.8" />
                     <path d="M14 3v5h5" stroke="currentColor" stroke-width="1.8" />
                   </svg>
                 )}
                 {f.icon === 'consult' && (
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M4 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4H6a2 2 0 01-2-2V6z"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                    />
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4H6a2 2 0 01-2-2V6z" stroke="currentColor" stroke-width="1.8" />
                   </svg>
                 )}
                 {f.icon === 'lock' && (
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                     <rect x="5" y="10" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.8" />
-                    <path
-                      d="M8 10V7a4 4 0 018 0v3"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                    />
+                    <path d="M8 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                   </svg>
                 )}
               </span>

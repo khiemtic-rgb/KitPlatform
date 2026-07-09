@@ -28,8 +28,10 @@ const posts = sortPublishedNews(await getCollection('tinTuc')).slice(0, 3);
   canonicalPath="/vi"
 >
   <Header slot="header" />
-  <Hero />
-  <AssessmentSection />
+  <div class="home-fold">
+    <Hero />
+    <AssessmentSection />
+  </div>
   <PainSection />
   <SolutionSection />
   <DashboardSection />
