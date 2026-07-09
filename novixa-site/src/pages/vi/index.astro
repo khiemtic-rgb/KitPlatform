@@ -29,8 +29,10 @@ const posts = sortPublishedNews(await getCollection('tinTuc')).slice(0, 3);
 >
   <Header slot="header" />
   <div class="home-fold">
-    <Hero />
-    <AssessmentSection />
+    <div class="home-fold-inner">
+      <Hero />
+      <AssessmentSection />
+    </div>
   </div>
   <PainSection />
   <SolutionSection />

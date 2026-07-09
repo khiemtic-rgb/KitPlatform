@@ -58,7 +58,8 @@ const assessmentUrl = 'https://survey.novixa.vn';
             steps.map((step, i) => (
               <div class="assessment-step-wrap">
                 <div class="assessment-step">
-                  <span class="step-icon" aria-hidden="true">
+                  <span class="step-icon-wrap">
+                    <span class="step-icon" aria-hidden="true">
                     {step.icon === 'quiz' && (
                       <svg viewBox="0 0 24 24" fill="none">
                         <path d="M8 4h8a2 2 0 012 2v14l-4-3-4 3-4-3-4 3V6a2 2 0 012-2z" stroke="currentColor" stroke-width="1.6" />
@@ -85,9 +86,17 @@ const assessmentUrl = 'https://survey.novixa.vn';
                     )}
                     {step.icon === 'launch' && (
                       <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M5 19l4-8 8-4-4 8-8 4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                        <path d="M7 4h10v16H7V4z" fill="url(#stepNovixaGrad)" />
+                        <defs>
+                          <linearGradient id="stepNovixaGrad" x1="7" y1="4" x2="17" y2="20">
+                            <stop stop-color="#18b76a" />
+                            <stop offset="1" stop-color="#0f7fd0" />
+                          </linearGradient>
+                        </defs>
                       </svg>
                     )}
+                    </span>
+                    <span class="step-num">{i + 1}</span>
                   </span>
                   <div class="step-body">
                     <strong>{step.title}</strong>
@@ -105,7 +114,7 @@ const assessmentUrl = 'https://survey.novixa.vn';
         {
           features.map((f) => (
             <div class="assessment-feature">
-              <span class="feature-icon" aria-hidden="true">
+              <span class={`feature-icon feature-icon--${f.icon}`} aria-hidden="true">
                 {f.icon === 'clock' && (
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                     <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
