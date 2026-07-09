@@ -53,35 +53,41 @@
   animation: none !important;
 }
 
+/* ─── Above-the-fold: hero + trust visible together ─── */
+.hp-fold {
+  background: linear-gradient(180deg, #fff 0%, #fff 72%, var(--hp-bg-muted) 72%);
+}
+
 /* ─── Hero ─── */
 .hp-hero-wrap {
-  padding: 56px 0 0;
-  background: var(--hp-bg);
+  padding: 20px 0 12px;
+  background: transparent;
 }
 
 .hp-hero {
   display: grid;
-  grid-template-columns: 44% 56%;
-  gap: 32px;
+  grid-template-columns: 42% 58%;
+  gap: 24px;
   align-items: center;
+  max-height: min(520px, calc(100svh - 80px - 100px));
 }
 
 .hp-hero__badge {
   display: inline-flex;
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: 999px;
   background: var(--hp-green-soft);
   color: var(--hp-green);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .hp-hero__title {
   margin: 0;
-  font-size: clamp(38px, 4.2vw, 58px);
+  font-size: clamp(30px, 3.2vw, 46px);
   font-weight: 800;
-  line-height: 1.08;
+  line-height: 1.06;
   letter-spacing: -0.035em;
   color: var(--hp-heading);
 }
@@ -91,27 +97,27 @@
 }
 
 .hp-hero__desc {
-  margin: 20px 0 0;
-  max-width: 440px;
-  font-size: 15px;
-  line-height: 1.65;
+  margin: 12px 0 0;
+  max-width: 420px;
+  font-size: 14px;
+  line-height: 1.55;
   color: var(--hp-muted);
 }
 
 .hp-hero__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 28px;
+  gap: 10px;
+  margin-top: 18px;
 }
 
 .hp-btn {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  min-height: 56px;
-  padding: 8px 20px 8px 10px;
-  border-radius: var(--hp-radius-sm);
+  gap: 10px;
+  min-height: 50px;
+  padding: 6px 16px 6px 8px;
+  border-radius: 10px;
   font-weight: 600;
   text-decoration: none;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -126,15 +132,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   flex-shrink: 0;
 }
 
 .hp-btn__icon svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .hp-btn--primary {
@@ -171,11 +177,11 @@
 }
 
 .hp-btn__stack strong {
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .hp-btn__stack small {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 400;
 }
 
@@ -190,19 +196,19 @@
 .hp-hero__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 24px;
+  gap: 6px;
+  margin-top: 14px;
 }
 
 .hp-tag {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px 6px 6px;
+  gap: 5px;
+  padding: 4px 10px 4px 4px;
   border: 1px solid var(--hp-border);
   border-radius: 999px;
   background: #fff;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--hp-heading);
   white-space: nowrap;
@@ -212,68 +218,87 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
   background: var(--hp-green-soft);
   color: var(--hp-green);
 }
 
 .hp-tag__icon svg {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
 }
 
-/* Dashboard mockup — larger, charts visible */
+/* Dashboard mockup — compact to fit above-the-fold */
 .hp-hero__visual {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  overflow: visible;
+  overflow: hidden;
+  max-height: min(340px, calc(100svh - 80px - 120px));
 }
 
 .hp-hero__mockup {
   position: relative;
   width: 100%;
-  max-width: 620px;
-  padding-right: 20px;
+  max-width: 500px;
+  padding-right: 12px;
 }
 
 .home-page .hp-hero__mockup .dashboard-preview--hero {
   transform: none !important;
-  max-height: none !important;
-  border-radius: 18px !important;
+  max-height: min(300px, 34svh) !important;
+  overflow: hidden !important;
+  border-radius: 14px !important;
   border: 1px solid rgba(15, 76, 129, 0.1) !important;
-  box-shadow: 0 24px 60px rgba(15, 76, 129, 0.14) !important;
+  box-shadow: 0 16px 40px rgba(15, 76, 129, 0.12) !important;
   width: 100%;
 }
 
+.home-page .hp-hero__mockup .dashboard-preview--hero .dashboard-main {
+  padding: 0.4rem !important;
+  gap: 0.3rem !important;
+}
+
+.home-page .hp-hero__mockup .dashboard-preview--hero .dashboard-metrics--hero {
+  gap: 0.25rem !important;
+}
+
+.home-page .hp-hero__mockup .dashboard-preview--hero .kpi-card {
+  padding: 0.3rem !important;
+}
+
 .home-page .hp-hero__mockup .dashboard-preview--hero .kpi-body span {
-  font-size: 0.52rem !important;
+  font-size: 0.46rem !important;
 }
 
 .home-page .hp-hero__mockup .dashboard-preview--hero .kpi-body strong {
-  font-size: 0.62rem !important;
+  font-size: 0.54rem !important;
 }
 
 .home-page .hp-hero__mockup .dashboard-preview--hero .chart-title {
-  font-size: 0.52rem !important;
+  font-size: 0.46rem !important;
 }
 
 .home-page .hp-hero__mockup .dashboard-preview--hero .line-chart-svg {
-  height: 58px !important;
+  height: 40px !important;
+}
+
+.home-page .hp-hero__mockup .dashboard-preview--hero .dashboard-charts {
+  gap: 0.25rem !important;
 }
 
 .hp-hero__phone {
   position: absolute;
-  right: -8px;
-  bottom: 8%;
-  width: 132px;
-  padding: 8px 7px 10px;
-  border: 5px solid #1e293b;
-  border-radius: 22px;
+  right: 0;
+  bottom: 4%;
+  width: 108px;
+  padding: 6px 5px 8px;
+  border: 4px solid #1e293b;
+  border-radius: 18px;
   background: #fff;
-  box-shadow: 0 20px 48px rgba(15, 39, 71, 0.2);
+  box-shadow: 0 14px 32px rgba(15, 39, 71, 0.18);
   z-index: 3;
 }
 
@@ -290,10 +315,10 @@
   overflow: hidden;
 }
 
-/* ─── Trust bar — gray strip, dashed dividers ─── */
+/* ─── Trust bar — compact, fully visible below hero ─── */
 .hp-trust {
-  padding: 40px 0 56px;
-  background: var(--hp-bg-muted);
+  padding: 16px 0 28px;
+  background: transparent;
 }
 
 .hp-trust__bar {
@@ -320,10 +345,10 @@
 .hp-trust__item {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   flex: 1;
-  min-height: 72px;
-  padding: 12px 28px;
+  min-height: 56px;
+  padding: 8px 20px;
 }
 
 .hp-trust__item:first-child {
@@ -338,22 +363,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   background: var(--hp-green-soft);
   color: var(--hp-green);
   flex-shrink: 0;
 }
 
 .hp-trust__icon svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .hp-trust__item strong {
   display: block;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--hp-heading);
   line-height: 1.2;
@@ -361,9 +386,9 @@
 
 .hp-trust__item span {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--hp-muted);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 /* ─── AI Health Check — gray container, boxed timeline ─── */
@@ -886,14 +911,29 @@
 
 /* ─── Responsive ─── */
 @media (max-width: 1024px) {
+  .hp-fold {
+    background: #fff;
+  }
+
+  .hp-trust {
+    padding: 24px 0 32px;
+    background: var(--hp-bg-muted);
+  }
+
   .hp-hero {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 24px;
+    max-height: none;
   }
 
   .hp-hero__visual {
     order: -1;
     justify-content: center;
+    max-height: none;
+  }
+
+  .home-page .hp-hero__mockup .dashboard-preview--hero {
+    max-height: min(280px, 50vw) !important;
   }
 
   .hp-health__grid {
