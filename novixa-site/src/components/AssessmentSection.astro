@@ -15,10 +15,10 @@ const checklist = [
 ];
 
 const benefits = [
-  { icon: 'trending', title: 'Tăng doanh thu' },
-  { icon: 'shield', title: 'Giảm thất thoát' },
-  { icon: 'clock', title: 'Tiết kiệm thời gian' },
-  { icon: 'chart', title: 'Ra quyết định dễ dàng' },
+  { icon: 'trending', title: 'Tăng doanh thu', desc: 'Tối ưu bán hàng & CRM' },
+  { icon: 'shield', title: 'Giảm thất thoát', desc: 'Kiểm soát tồn kho FEFO' },
+  { icon: 'clock', title: 'Tiết kiệm thời gian', desc: 'Tự động hóa vận hành' },
+  { icon: 'chart', title: 'Ra quyết định dễ dàng', desc: 'Dashboard thời gian thực' },
 ];
 
 const assessmentUrl = 'https://survey.novixa.vn';
@@ -147,6 +147,7 @@ const assessmentUrl = 'https://survey.novixa.vn';
                 )}
               </span>
               <strong>{b.title}</strong>
+              <span>{b.desc}</span>
             </article>
           ))
         }
