@@ -20,7 +20,10 @@ const links = [
       <span class="logo-crop" aria-hidden="true">
         <img class="logo-img" src="/images/logo.png" alt="" width="160" height="160" decoding="async" />
       </span>
-      <span class="logo-text">NOVIXA</span>
+      <span class="logo-stack">
+        <span class="logo-text">NOVIXA</span>
+        <span class="logo-tagline">Quản trị nhà thuốc thông minh</span>
+      </span>
     </a>
 
     <button
@@ -45,6 +48,7 @@ const links = [
           </a>
         ))
       }
+      <a href="https://app.novixa.vn" class="nav-login">{m.nav.login}</a>
       <a href={`${base}/lien-he`} class="nav-cta">{m.nav.demo}</a>
     </nav>
   </div>
@@ -138,11 +142,26 @@ const links = [
     object-fit: contain;
   }
 
+  .logo-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+  }
+
   .logo-text {
     color: var(--color-primary);
     font-size: 1.02rem;
     font-weight: 900;
     letter-spacing: -0.045em;
+    line-height: 1.1;
+  }
+
+  .logo-tagline {
+    color: var(--color-muted);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1.2;
   }
 
   .nav-toggle {
@@ -195,18 +214,33 @@ const links = [
     color: var(--color-primary);
   }
 
+  .nav-login {
+    padding: 0.55rem 1rem !important;
+    border: 1px solid rgba(15, 76, 129, 0.18) !important;
+    border-radius: 10px;
+    color: var(--color-primary) !important;
+    font-size: 0.78rem;
+    font-weight: 800;
+    background: #fff;
+  }
+
+  .nav-login:hover {
+    border-color: rgba(15, 76, 129, 0.35) !important;
+    text-decoration: none;
+  }
+
   .nav-cta {
-    background: var(--color-primary);
+    background: var(--color-green);
     color: #fff !important;
     padding: 0.68rem 1.1rem !important;
     border-radius: 10px;
     font-size: 0.78rem;
     font-weight: 800;
-    box-shadow: 0 10px 22px rgba(15, 76, 129, 0.2);
+    box-shadow: 0 10px 22px rgba(24, 183, 106, 0.25);
   }
 
   .nav-cta:hover {
-    background: var(--color-primary-dark);
+    background: #14a35c;
     text-decoration: none;
   }
 

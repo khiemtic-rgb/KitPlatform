@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import Hero from '../../components/Hero.astro';
+import AssessmentSection from '../../components/AssessmentSection.astro';
 import PainSection from '../../components/PainSection.astro';
 import SolutionSection from '../../components/SolutionSection.astro';
 import DashboardSection from '../../components/DashboardSection.astro';
@@ -28,6 +29,7 @@ const posts = sortPublishedNews(await getCollection('tinTuc')).slice(0, 3);
 >
   <Header slot="header" />
   <Hero />
+  <AssessmentSection />
   <PainSection />
   <SolutionSection />
   <DashboardSection />

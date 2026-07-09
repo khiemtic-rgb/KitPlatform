@@ -1,25 +1,52 @@
 ---
 import DashboardPreview from './DashboardPreview.astro';
 
-const chips = ['POS', 'Kho FEFO', 'CRM', 'Dashboard', 'AI'];
+const chips = [
+  { label: 'POS', icon: 'pos' },
+  { label: 'Kho hàng', icon: 'warehouse' },
+  { label: 'Khách hàng', icon: 'customers' },
+  { label: 'Báo cáo', icon: 'reports' },
+  { label: 'App khách hàng', icon: 'app' },
+];
+
+const assessmentUrl = 'https://survey.novixa.vn';
 ---
 
 <section class="hero" id="hero">
   <div class="hero-shape" aria-hidden="true"></div>
   <div class="container hero-grid">
     <div class="hero-content motion-in">
-      <p class="eyebrow">Được phát triển dành riêng cho nhà thuốc Việt Nam</p>
-      <h1>Vận hành nhà thuốc<br /><span>thông minh</span> hơn mỗi ngày.</h1>
+      <p class="eyebrow">Giải pháp quản trị nhà thuốc toàn diện</p>
+      <h1>Vận hành nhà thuốc thông minh hơn mỗi ngày.</h1>
       <p class="hero-lead">
-        Novixa giúp bạn quản lý bán hàng, kiểm soát tồn kho, chăm sóc khách hàng
-        và vận hành chuỗi trên một nền tảng duy nhất.
+        Novixa giúp bạn kiểm soát tồn kho, tăng doanh thu, giữ chân khách hàng
+        và vận hành hiệu quả hơn trên một nền tảng duy nhất.
       </p>
       <div class="hero-actions">
-        <a class="btn btn-primary" href="/vi/lien-he">Đăng ký Demo</a>
-        <a class="btn btn-secondary" href="#nen-tang">Khám phá nền tảng</a>
+        <a class="btn btn-green" href="/vi/lien-he">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.4" />
+            <path d="M2 6.5h12M5 1.5v2M11 1.5v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          </svg>
+          Đăng ký Demo
+        </a>
+        <a class="btn btn-secondary" href={assessmentUrl}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4" />
+            <path d="M8 5v3.5l2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          </svg>
+          Đánh giá nhà thuốc miễn phí — Nhận báo cáo tư vấn chi tiết
+        </a>
       </div>
       <div class="hero-chips" aria-label="Các năng lực chính của Novixa">
-        {chips.map((chip) => <span><i></i>{chip}</span>)}
+        {
+          chips.map((chip) => (
+            <span>
+              <i class={`chip-icon chip-icon--${chip.icon}`} />
+              {chip.label}
+            </span>
+          ))
+        }
       </div>
     </div>
 
@@ -32,6 +59,7 @@ const chips = ['POS', 'Kho FEFO', 'CRM', 'Dashboard', 'AI'];
       <div class="phone-frame" aria-label="Dashboard Novixa trên điện thoại">
         <div class="phone-speaker"></div>
         <div class="phone-screen">
+          <small>Doanh thu hôm nay</small>
           <strong>25.450.000đ</strong>
           <span>+12,5%</span>
           <div class="phone-grid">

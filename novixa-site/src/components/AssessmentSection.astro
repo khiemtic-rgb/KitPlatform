@@ -1,0 +1,148 @@
+---
+const checklist = [
+  'Xác định điểm mạnh và điểm yếu trong vận hành',
+  'Phát hiện vấn đề đang làm giảm doanh thu',
+  'Đánh giá mức độ sẵn sàng cạnh tranh',
+  'Nhận lộ trình cải thiện theo từng giai đoạn',
+];
+
+const steps = [
+  { num: '1', title: 'Trả lời 30 câu hỏi', desc: 'Khoảng 15 phút' },
+  { num: '2', title: 'Phân tích & chấm điểm', desc: 'Hệ thống tự động' },
+  { num: '3', title: 'Nhận báo cáo PDF', desc: 'Trị giá 5.000.000đ' },
+  { num: '4', title: 'Tư vấn 1-1', desc: 'Cùng chuyên gia Novixa' },
+  { num: '5', title: 'Triển khai hiệu quả', desc: 'Lộ trình rõ ràng' },
+];
+
+const features = [
+  { icon: 'clock', title: '15 phút', desc: 'Hoàn thành đánh giá' },
+  { icon: 'questions', title: '30 câu hỏi', desc: 'Đánh giá toàn diện' },
+  { icon: 'pdf', title: 'Báo cáo PDF', desc: 'Trị giá 5.000.000đ' },
+  { icon: 'consult', title: 'Tư vấn miễn phí', desc: 'Cùng chuyên gia' },
+  { icon: 'lock', title: 'Bảo mật tuyệt đối', desc: 'Thông tin được bảo vệ' },
+];
+
+const assessmentUrl = 'https://survey.novixa.vn';
+---
+
+<section class="assessment-section" id="danh-gia">
+  <div class="container">
+    <div class="assessment-card">
+      <div class="assessment-grid">
+        <div class="assessment-content">
+          <h2>Nhà thuốc của bạn đang gặp vấn đề ở đâu?</h2>
+          <ul class="assessment-checklist">
+            {
+              checklist.map((item) => (
+                <li>
+                  <span class="check-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path
+                        d="M3 8.5L6.5 12L13 4"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  {item}
+                </li>
+              ))
+            }
+          </ul>
+          <a class="btn btn-green assessment-cta" href={assessmentUrl}>
+            Bắt đầu đánh giá miễn phí
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M3 8h10M9 4l4 4-4 4"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </a>
+        </div>
+
+        <div class="assessment-steps" aria-label="Quy trình đánh giá">
+          {
+            steps.map((step, i) => (
+              <div class="assessment-step-wrap">
+                <div class="assessment-step">
+                  <span class="step-num">{step.num}</span>
+                  <div class="step-body">
+                    <strong>{step.title}</strong>
+                    <span>{step.desc}</span>
+                  </div>
+                </div>
+                {i < steps.length - 1 && <span class="step-connector" aria-hidden="true" />}
+              </div>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="assessment-features">
+        {
+          features.map((f) => (
+            <div class="assessment-feature">
+              <span class="feature-icon" aria-hidden="true">
+                {f.icon === 'clock' && (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
+                    <path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  </svg>
+                )}
+                {f.icon === 'questions' && (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                    />
+                    <path d="M8 9h8M8 13h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  </svg>
+                )}
+                {f.icon === 'pdf' && (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                    />
+                    <path d="M14 3v5h5" stroke="currentColor" stroke-width="1.8" />
+                  </svg>
+                )}
+                {f.icon === 'consult' && (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M4 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4H6a2 2 0 01-2-2V6z"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                    />
+                  </svg>
+                )}
+                {f.icon === 'lock' && (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <rect x="5" y="10" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.8" />
+                    <path
+                      d="M8 10V7a4 4 0 018 0v3"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                )}
+              </span>
+              <div>
+                <strong>{f.title}</strong>
+                <span>{f.desc}</span>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</section>

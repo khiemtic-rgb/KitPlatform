@@ -5,7 +5,23 @@ interface Props {
 }
 
 const { compact = false, variant = 'dashboard' } = Astro.props;
-const metrics = compact
+
+const heroMetrics = [
+  { label: 'Doanh thu hôm nay', value: '25.450.000đ', trend: '+12,5%' },
+  { label: 'Số đơn hàng', value: '346', trend: '+8,2%' },
+  { label: 'Lợi nhuận', value: '5.250.000đ', trend: '+15,3%' },
+  { label: 'Tồn kho', value: '1.245', trend: '+3,1%', unit: 'sản phẩm' },
+];
+
+const sidebarItems = [
+  { label: 'Tổng quan', active: true },
+  { label: 'Bán hàng' },
+  { label: 'Tồn kho' },
+  { label: 'Khách hàng' },
+  { label: 'Báo cáo' },
+];
+
+const defaultMetrics = compact
   ? [
       { label: 'Doanh thu', value: '128tr', trend: '+18%' },
       { label: 'Cận date', value: '34', trend: '-12%' },
@@ -17,61 +33,158 @@ const metrics = compact
       { label: 'Khách quay lại', value: '42%', trend: '+9%' },
       { label: 'Cảnh báo FEFO', value: '34', trend: '-12%' },
     ];
+
+const metrics = variant === 'hero' ? heroMetrics : defaultMetrics;
+
+const donutSegments = [
+  { label: 'Đã giao', pct: 72, color: '#18b76a' },
+  { label: 'Đang xử lý', pct: 18, color: '#0f7fd0' },
+  { label: 'Đã hủy', pct: 10, color: '#e2e8f0' },
+];
 ---
 
-<div class:list={['dashboard-preview', `dashboard-preview--${variant}`, { 'is-compact': compact }]}>
-  <div class="dashboard-topbar">
-    <div>
-      <span class="dashboard-kicker">Novixa Operating Dashboard</span>
-      <strong>Toàn hệ thống</strong>
-    </div>
-    <span class="dashboard-status">Live</span>
-  </div>
+{
+  variant === 'hero' ? (
+    <div class="dashboard-preview dashboard-preview--hero is-compact">
+      <div class="dashboard-hero-layout">
+        <aside class="dashboard-sidebar" aria-label="Menu điều hướng">
+          <div class="dashboard-sidebar-logo">N</div>
+          <nav>
+            {sidebarItems.map((item) => (
+              <span class:list={['sidebar-item', { active: item.active }]}>
+                <i />
+                <span>{item.label}</span>
+              </span>
+            ))}
+          </nav>
+        </aside>
 
-  <div class="dashboard-metrics">
-    {
-      metrics.map((metric) => (
-        <article>
-          <span>{metric.label}</span>
-          <strong>{metric.value}</strong>
-          <small>{metric.trend}</small>
-        </article>
-      ))
-    }
-  </div>
+        <div class="dashboard-main">
+          <div class="dashboard-main-header">
+            <strong>Tổng quan hoạt động</strong>
+            <span class="dashboard-status">Live</span>
+          </div>
 
-  <div class="dashboard-body">
-    <div class="dashboard-chart" aria-label="Biểu đồ doanh thu và tồn kho">
-      <span style="height: 42%"></span>
-      <span style="height: 64%"></span>
-      <span style="height: 52%"></span>
-      <span style="height: 76%"></span>
-      <span style="height: 68%"></span>
-      <span style="height: 88%"></span>
-      <span style="height: 72%"></span>
-    </div>
+          <div class="dashboard-metrics dashboard-metrics--hero">
+            {metrics.map((metric) => (
+              <article>
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+                <small>{metric.trend}</small>
+              </article>
+            ))}
+          </div>
 
-    <div class="dashboard-table">
-      <div class="dashboard-row dashboard-row--head">
-        <span>Chi nhánh</span>
-        <span>Tồn kho</span>
-        <span>Trạng thái</span>
-      </div>
-      <div class="dashboard-row">
-        <span>Quận 1</span>
-        <span>92%</span>
-        <span class="good">Tốt</span>
-      </div>
-      <div class="dashboard-row">
-        <span>Thủ Đức</span>
-        <span>81%</span>
-        <span class="watch">Theo dõi</span>
-      </div>
-      <div class="dashboard-row">
-        <span>Bình Thạnh</span>
-        <span>89%</span>
-        <span class="good">Tốt</span>
+          <div class="dashboard-charts">
+            <div class="dashboard-line-chart" aria-label="Doanh thu 7 ngày">
+              <span class="chart-title">Doanh thu 7 ngày</span>
+              <div class="line-bars">
+                <span style="height: 42%" />
+                <span style="height: 58%" />
+                <span style="height: 48%" />
+                <span style="height: 72%" />
+                <span style="height: 65%" />
+                <span style="height: 88%" />
+                <span style="height: 76%" />
+              </div>
+            </div>
+
+            <div class="dashboard-donut" aria-label="Trạng thái đơn hàng">
+              <span class="chart-title">Trạng thái đơn hàng</span>
+              <div class="donut-wrap">
+                <svg viewBox="0 0 80 80" class="donut-svg">
+                  <circle cx="40" cy="40" r="30" fill="none" stroke="#e2e8f0" stroke-width="12" />
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r="30"
+                    fill="none"
+                    stroke="#18b76a"
+                    stroke-width="12"
+                    stroke-dasharray="135.7 188.5"
+                    stroke-dashoffset="0"
+                    transform="rotate(-90 40 40)"
+                  />
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r="30"
+                    fill="none"
+                    stroke="#0f7fd0"
+                    stroke-width="12"
+                    stroke-dasharray="33.9 290.3"
+                    stroke-dashoffset="-135.7"
+                    transform="rotate(-90 40 40)"
+                  />
+                </svg>
+                <div class="donut-legend">
+                  {donutSegments.map((seg) => (
+                    <span>
+                      <i style={`background:${seg.color}`} />
+                      {seg.pct}% {seg.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
+  ) : (
+    <div class:list={['dashboard-preview', `dashboard-preview--${variant}`, { 'is-compact': compact }]}>
+      <div class="dashboard-topbar">
+        <div>
+          <span class="dashboard-kicker">Novixa Operating Dashboard</span>
+          <strong>Toàn hệ thống</strong>
+        </div>
+        <span class="dashboard-status">Live</span>
+      </div>
+
+      <div class="dashboard-metrics">
+        {metrics.map((metric) => (
+          <article>
+            <span>{metric.label}</span>
+            <strong>{metric.value}</strong>
+            <small>{metric.trend}</small>
+          </article>
+        ))}
+      </div>
+
+      <div class="dashboard-body">
+        <div class="dashboard-chart" aria-label="Biểu đồ doanh thu và tồn kho">
+          <span style="height: 42%" />
+          <span style="height: 64%" />
+          <span style="height: 52%" />
+          <span style="height: 76%" />
+          <span style="height: 68%" />
+          <span style="height: 88%" />
+          <span style="height: 72%" />
+        </div>
+
+        <div class="dashboard-table">
+          <div class="dashboard-row dashboard-row--head">
+            <span>Chi nhánh</span>
+            <span>Tồn kho</span>
+            <span>Trạng thái</span>
+          </div>
+          <div class="dashboard-row">
+            <span>Quận 1</span>
+            <span>92%</span>
+            <span class="good">Tốt</span>
+          </div>
+          <div class="dashboard-row">
+            <span>Thủ Đức</span>
+            <span>81%</span>
+            <span class="watch">Theo dõi</span>
+          </div>
+          <div class="dashboard-row">
+            <span>Bình Thạnh</span>
+            <span>89%</span>
+            <span class="good">Tốt</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
