@@ -11,39 +11,42 @@ const cards = [
   <div class="container">
     <div class="hp-trust__bar">
       {
-        cards.map((card) => (
-          <article class="hp-trust__item">
-            <span class="hp-trust__icon" aria-hidden="true">
-              {card.icon === 'clock' && (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M12 7v5l3 2" />
-                </svg>
-              )}
-              {card.icon === 'clipboard' && (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
-                  <rect x="5" y="4" width="14" height="17" rx="2" />
-                  <path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1" />
-                  <path d="M9 10h6M9 14h4" />
-                </svg>
-              )}
-              {card.icon === 'pdf' && (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
-                  <path d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
-                  <path d="M14 3v5h5" />
-                </svg>
-              )}
-              {card.icon === 'message' && (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
-                  <path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4H6a2 2 0 01-2-2V6z" />
-                </svg>
-              )}
-            </span>
-            <div>
-              <strong>{card.title}</strong>
-              <span>{card.desc}</span>
-            </div>
-          </article>
+        cards.map((card, i) => (
+          <>
+            {i > 0 && <span class="hp-trust__divider" aria-hidden="true" />}
+            <article class="hp-trust__item">
+              <span class="hp-trust__icon" aria-hidden="true">
+                {card.icon === 'clock' && (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v5l3 2" />
+                  </svg>
+                )}
+                {card.icon === 'clipboard' && (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                    <rect x="5" y="4" width="14" height="17" rx="2" />
+                    <path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1" />
+                    <path d="M9 10h6M9 14h4" />
+                  </svg>
+                )}
+                {card.icon === 'pdf' && (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                    <path d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
+                    <path d="M14 3v5h5" />
+                  </svg>
+                )}
+                {card.icon === 'message' && (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                    <path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4H6a2 2 0 01-2-2V6z" />
+                  </svg>
+                )}
+              </span>
+              <div>
+                <strong>{card.title}</strong>
+                <span>{card.desc}</span>
+              </div>
+            </article>
+          </>
         ))
       }
     </div>
