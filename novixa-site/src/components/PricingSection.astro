@@ -1,0 +1,46 @@
+---
+const plans = [
+  {
+    name: 'Khởi đầu',
+    desc: 'Phù hợp nhà thuốc độc lập 1 điểm bán.',
+    features: ['POS & Kho FEFO', 'CRM cơ bản', 'Dashboard', 'Hỗ trợ triển khai'],
+  },
+  {
+    name: 'Phát triển',
+    desc: 'Cho chuỗi nhỏ và nhà thuốc đang mở rộng.',
+    features: ['Đa chi nhánh', 'App khách hàng', 'Báo cáo nâng cao', 'AI Copilot'],
+    featured: true,
+  },
+  {
+    name: 'Doanh nghiệp',
+    desc: 'Tùy chỉnh theo quy mô và quy trình riêng.',
+    features: ['Tích hợp mở rộng', 'Phân quyền nâng cao', 'SLA ưu tiên', 'Tư vấn 1-1'],
+  },
+];
+---
+
+<section class="section pricing-section" id="bang-gia">
+  <div class="container">
+    <div class="section-heading center compact-heading">
+      <h2>Bảng giá linh hoạt</h2>
+      <p>Bắt đầu với đánh giá miễn phí — nhận tư vấn và báo giá phù hợp quy mô nhà thuốc của bạn.</p>
+    </div>
+
+    <div class="pricing-grid">
+      {
+        plans.map((plan) => (
+          <article class:list={['pricing-card', { 'is-featured': plan.featured }]}>
+            <h3>{plan.name}</h3>
+            <p class="pricing-desc">{plan.desc}</p>
+            <ul>
+              {plan.features.map((f) => (
+                <li>{f}</li>
+              ))}
+            </ul>
+            <a class="btn btn-assess" href="https://survey.novixa.vn">Nhận tư vấn & báo giá</a>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>

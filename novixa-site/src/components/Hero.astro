@@ -1,21 +1,18 @@
 ---
 import DashboardPreview from './DashboardPreview.astro';
 
-const chips = [
-  { label: 'POS', icon: 'pos' },
-  { label: 'Kho FEFO', icon: 'warehouse' },
-  { label: 'CRM', icon: 'customers' },
-  { label: 'Dashboard', icon: 'reports' },
-  { label: 'App khách hàng', icon: 'app' },
-];
-
 const assessmentUrl = 'https://survey.novixa.vn';
+
+const heroTrust = [
+  { label: '15 phút', icon: 'clock' },
+  { label: '30 câu hỏi', icon: 'questions' },
+  { label: 'Báo cáo PDF', icon: 'pdf' },
+];
 ---
 
 <section class="hero" id="hero">
   <div class="hero-grid">
     <div class="hero-content motion-in">
-      <p class="eyebrow">Giải pháp quản trị nhà thuốc toàn diện</p>
       <h1>
         Vận hành nhà thuốc<br />
         <span>thông minh hơn</span><br />
@@ -26,63 +23,32 @@ const assessmentUrl = 'https://survey.novixa.vn';
         và vận hành nhà thuốc hiệu quả hơn trên một nền tảng duy nhất.
       </p>
       <div class="hero-actions">
-        <a class="btn btn-green" href="/vi/lien-he">Đăng ký Demo</a>
-        <div class="hero-assess-group">
-          <a class="btn btn-assess" href={assessmentUrl}>Đánh giá nhà thuốc miễn phí</a>
-          <p class="hero-assess-note">Nhận báo cáo tư vấn chi tiết</p>
+        <a class="btn btn-green btn-lg" href={assessmentUrl}>Đánh giá miễn phí</a>
+        <a class="btn btn-demo btn-lg" href="/vi/lien-he">Đăng ký Demo</a>
+      </div>
+
+      <a class="hero-pitch-card" href={assessmentUrl}>
+        <span class="hero-pitch-icon" aria-hidden="true">🎯</span>
+        <div class="hero-pitch-body">
+          <strong>Đánh giá mức độ trưởng thành quản trị nhà thuốc</strong>
+          <span class="hero-pitch-meta">
+            {
+              heroTrust.map((item, i) => (
+                <>
+                  {i > 0 && <span class="hero-pitch-dot">·</span>}
+                  <span>{item.label}</span>
+                </>
+              ))
+            }
+          </span>
         </div>
-      </div>
-      <div class="hero-chips" aria-label="Các module chính của Novixa">
-        {
-          chips.map((chip) => (
-            <span class="hero-chip">
-              <span class={`hero-chip-icon hero-chip-icon--${chip.icon}`} aria-hidden="true">
-                {chip.icon === 'pos' && (
-                  <svg viewBox="0 0 20 20" fill="none">
-                    <rect x="3" y="5" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5" />
-                    <path d="M7 9h6M7 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                )}
-                {chip.icon === 'warehouse' && (
-                  <svg viewBox="0 0 20 20" fill="none">
-                    <path d="M3 8l7-4 7 4v8H3V8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
-                    <path d="M8 16v-5h4v5" stroke="currentColor" stroke-width="1.5" />
-                  </svg>
-                )}
-                {chip.icon === 'customers' && (
-                  <svg viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.5" />
-                    <path d="M4 16c0-3 2.7-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                )}
-                {chip.icon === 'reports' && (
-                  <svg viewBox="0 0 20 20" fill="none">
-                    <path d="M4 16V8l4-2 4 3 4-2v9" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
-                  </svg>
-                )}
-                {chip.icon === 'app' && (
-                  <svg viewBox="0 0 20 20" fill="none">
-                    <rect x="6" y="2" width="8" height="16" rx="2" stroke="currentColor" stroke-width="1.5" />
-                    <circle cx="10" cy="15" r="0.8" fill="currentColor" />
-                  </svg>
-                )}
-              </span>
-              {chip.label}
-            </span>
-          ))
-        }
-      </div>
+        <span class="hero-pitch-cta">Bắt đầu miễn phí</span>
+      </a>
     </div>
 
     <div class="hero-visual motion-in motion-delay">
       <div class="hero-mockup-wrap" aria-label="Dashboard Novixa">
         <DashboardPreview compact variant="hero" />
-        <div class="phone-frame" aria-label="Novixa trên điện thoại">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <DashboardPreview compact variant="phone" />
-          </div>
-        </div>
       </div>
     </div>
   </div>

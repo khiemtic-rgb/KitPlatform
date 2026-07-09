@@ -1,0 +1,49 @@
+---
+const benefits = [
+  {
+    icon: '▣',
+    title: 'Kiểm soát tồn kho',
+    text: 'Theo dõi lô, hạn dùng và giảm thất thoát hàng cận date.',
+    tone: 'green',
+  },
+  {
+    icon: '▦',
+    title: 'Tăng doanh thu',
+    text: 'POS nhanh, CRM và chăm sóc khách giúp khách quay lại nhiều hơn.',
+    tone: 'blue',
+  },
+  {
+    icon: '▤',
+    title: 'Báo cáo thời gian thực',
+    text: 'Biết lãi lỗ, tồn kho và hiệu suất nhân viên trên một dashboard.',
+    tone: 'orange',
+  },
+  {
+    icon: '⌁',
+    title: 'Vận hành đơn giản',
+    text: 'Một nền tảng thay Excel — dễ học, dễ triển khai, dễ mở rộng.',
+    tone: 'purple',
+  },
+];
+---
+
+<section class="section benefits-section" id="loi-ich">
+  <div class="container">
+    <div class="section-heading center compact-heading">
+      <h2>Lợi ích khi nâng cấp vận hành</h2>
+      <p>Tập trung vào những gì chủ nhà thuốc quan tâm nhất — doanh thu, tồn kho và khách hàng.</p>
+    </div>
+
+    <div class="card-grid benefits-grid">
+      {
+        benefits.map((item) => (
+          <article class:list={['card benefit-card', `tone-${item.tone}`]}>
+            <span class="benefit-icon">{item.icon}</span>
+            <h3>{item.title}</h3>
+            <p>{item.text}</p>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
