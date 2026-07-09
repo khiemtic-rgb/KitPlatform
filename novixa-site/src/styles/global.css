@@ -63,7 +63,7 @@ svg {
 }
 
 .container {
-  width: min(100% - 1.5rem, var(--max-width));
+  width: min(calc(100% - var(--page-gutter, 1rem) * 2), var(--max-width));
   margin-inline: auto;
 }
 
@@ -1379,6 +1379,7 @@ svg {
 /* Demo screenshot alignment: compact SaaS landing visual. */
 :root {
   --max-width: 1440px;
+  --page-gutter: clamp(0.75rem, 2vw, 1.25rem);
   --color-page-blue: #eef7ff;
 }
 
@@ -1391,7 +1392,8 @@ main {
 }
 
 .container {
-  width: min(100% - 2rem, var(--max-width));
+  width: min(calc(100% - var(--page-gutter) * 2), var(--max-width));
+  margin-inline: auto;
 }
 
 .section {
@@ -1612,10 +1614,14 @@ main {
 
 .hero-mockup-wrap {
   position: relative;
-  width: min(100%, 520px);
+  width: min(100%, 560px);
   margin-inline: auto;
-  transform: scale(clamp(0.78, calc((100svh - 280px) / 520), 0.96));
-  transform-origin: center center;
+  max-height: clamp(210px, 34svh, 360px);
+}
+
+.hero-mockup-wrap .dashboard-preview--hero {
+  max-height: clamp(210px, 34svh, 360px);
+  overflow: hidden;
 }
 
 .laptop-frame,
@@ -2280,7 +2286,6 @@ main {
 /* --- Home above-fold (hero + assessment = 1 screen) --- */
 .home-fold {
   --header-h: 66px;
-  --fold-design-h: 900px;
   height: calc(100svh - var(--header-h));
   max-height: calc(100svh - var(--header-h));
   overflow: hidden;
@@ -2291,24 +2296,23 @@ main {
 }
 
 .home-fold-shell {
+  width: min(calc(100% - var(--page-gutter) * 2), var(--max-width));
   height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   padding-block: 0.35rem 0.25rem;
+  margin-inline: auto;
 }
 
 .home-fold-stage {
-  --fold-scale: min(1, calc((100svh - var(--header-h) - 16px) / var(--fold-design-h)));
   width: 100%;
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: clamp(0.35rem, 0.9svh, 0.55rem);
-  transform: scale(var(--fold-scale));
-  transform-origin: bottom center;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: clamp(0.35rem, 1svh, 0.65rem);
+  overflow: hidden;
 }
 
 .home-fold-stage .hero {
@@ -2316,7 +2320,7 @@ main {
   padding: 0;
   background: transparent;
   min-height: 0;
-  flex: 1;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -2940,21 +2944,29 @@ main {
 }
 
 @media (max-height: 860px) {
-  .hero {
-    padding: calc(66px + 0.35rem) 0 0.15rem;
+  .home-fold-stage .hero h1 {
+    font-size: clamp(1.25rem, 2.2svh, 1.65rem);
   }
 
-  .hero-lead {
-    margin-top: 0.35rem;
+  .home-fold-stage .hero-lead {
+    margin-top: 0.3rem;
     font-size: 0.72rem;
   }
 
-  .hero-actions {
-    margin-top: 0.5rem;
+  .home-fold-stage .hero-actions {
+    margin-top: 0.45rem;
   }
 
-  .hero-chips {
-    margin-top: 0.4rem;
+  .home-fold-stage .hero-chips {
+    margin-top: 0.35rem;
+  }
+
+  .hero-mockup-wrap {
+    max-height: clamp(190px, 30svh, 300px);
+  }
+
+  .hero-mockup-wrap .dashboard-preview--hero {
+    max-height: clamp(190px, 30svh, 300px);
   }
 
   .assessment-grid {
@@ -2968,12 +2980,20 @@ main {
 }
 
 @media (max-height: 760px) {
-  .hero h1 {
-    font-size: clamp(1.2rem, 2vw, 1.55rem);
+  .home-fold-stage .hero h1 {
+    font-size: clamp(1.1rem, 2svh, 1.45rem);
+  }
+
+  .home-fold-stage .hero-lead {
+    font-size: 0.66rem;
   }
 
   .hero-mockup-wrap {
-    transform: scale(clamp(0.68, calc((100svh - 250px) / 560), 0.82));
+    max-height: clamp(170px, 28svh, 260px);
+  }
+
+  .hero-mockup-wrap .dashboard-preview--hero {
+    max-height: clamp(170px, 28svh, 260px);
   }
 
   .assessment-content h2 {
@@ -3011,8 +3031,10 @@ main {
   }
 
   .home-fold-stage {
-    transform: none;
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
+    overflow: visible;
   }
 
   .home-fold-stage .hero {
