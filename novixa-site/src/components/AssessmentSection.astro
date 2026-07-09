@@ -121,10 +121,6 @@ const assessmentUrl = 'https://survey.novixa.vn';
         {
           benefits.map((b) => (
             <article class="hp-health__benefit">
-              <div class="hp-health__benefit-text">
-                <strong>{b.title}</strong>
-                <span>{b.desc}</span>
-              </div>
               <span class="hp-health__benefit-icon" aria-hidden="true">
                 {b.icon === 'trending' && (
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -153,6 +149,10 @@ const assessmentUrl = 'https://survey.novixa.vn';
                   </svg>
                 )}
               </span>
+              <div class="hp-health__benefit-text">
+                <strong>{b.title}</strong>
+                <span>{b.desc}</span>
+              </div>
             </article>
           ))
         }
