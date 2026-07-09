@@ -4,6 +4,7 @@ export type BranchListItem = {
   branchName: string;
   address?: string;
   phone?: string;
+  retailFacilityCode?: string;
   isHeadOffice: boolean;
   status: number;
   createdAt: string;
@@ -16,6 +17,7 @@ export type CreateBranchPayload = {
   branchName: string;
   address?: string;
   phone?: string;
+  retailFacilityCode?: string;
   isHeadOffice?: boolean;
   status?: number;
 };
@@ -25,6 +27,7 @@ export type UpdateBranchPayload = {
   branchName: string;
   address?: string;
   phone?: string;
+  retailFacilityCode?: string;
   isHeadOffice: boolean;
   status: number;
 };

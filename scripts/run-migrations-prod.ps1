@@ -121,6 +121,7 @@ $files = @(
     "088_purchase_order_workflow.sql",
     "089_kap_decision_intelligence_schema.sql",
     "090_kap_pharmacy_intelligence_seed.sql",
+    "092_qd540_integration_schema.sql",
     "seed-prod\001_base_permissions.sql"
 )
 

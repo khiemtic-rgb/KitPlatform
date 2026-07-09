@@ -68,6 +68,9 @@ const GppOperationalChecklistPage = lazy(() =>
     default: m.GppOperationalChecklistPage,
   })),
 );
+const Qd540ExportPage = lazy(() =>
+  import('@/modules/inventory/Qd540ExportPage').then((m) => ({ default: m.Qd540ExportPage })),
+);
 const ProcurementLayout = lazy(() =>
   import('@/modules/procurement/ProcurementLayout').then((m) => ({ default: m.ProcurementLayout })),
 );
@@ -286,6 +289,7 @@ export function AppRouter() {
                 <Route path="transfers" element={<TransferListPage />} />
                 <Route path="adjustments" element={<AdjustmentListPage />} />
                 <Route path="adjustments/:id/count" element={<InventoryCountPage />} />
+                <Route path="qd540-export" element={<Qd540ExportPage />} />
               </Route>
               <Route
                 path="procurement"

@@ -25,6 +25,7 @@ function normalizeBranch(row: Record<string, unknown>): BranchListItem {
     branchName: String(row.branchName ?? row.BranchName ?? ''),
     address: (row.address ?? row.Address) as string | undefined,
     phone: (row.phone ?? row.Phone) as string | undefined,
+    retailFacilityCode: (row.retailFacilityCode ?? row.RetailFacilityCode) as string | undefined,
     isHeadOffice: Boolean(row.isHeadOffice ?? row.IsHeadOffice),
     status: Number(row.status ?? row.Status ?? 1),
     createdAt: String(row.createdAt ?? row.CreatedAt ?? ''),

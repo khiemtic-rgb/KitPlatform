@@ -12,8 +12,10 @@ using KitPlatform.Packs.Pharmacy.Infrastructure.Events;
 using KitPlatform.Packs.Pharmacy.Infrastructure.Knowledge;
 using KitPlatform.Packs.Pharmacy.Inventory;
 using KitPlatform.Packs.Pharmacy.Knowledge;
+using KitPlatform.Packs.Pharmacy.Integration.Qd540;
 using KitPlatform.Packs.Pharmacy.Procurement;
 using KitPlatform.Packs.Pharmacy.Sales;
+using KitPlatform.Packs.Pharmacy.Infrastructure.Integration.Qd540;
 
 namespace KitPlatform.Packs.Pharmacy.Infrastructure;
 
@@ -71,6 +73,10 @@ public static class PharmacyPackDependencyInjection
         services.AddScoped<ISalesService, SalesService>();
         services.AddScoped<ICustomerReceivablesService, CustomerReceivablesService>();
         services.AddScoped<ICustomerPaymentService, CustomerPaymentService>();
+
+        // QĐ 540 integration (Bảng 1 export)
+        services.AddScoped<Qd540Table1Repository>();
+        services.AddScoped<IQd540Table1Service, Qd540Table1Service>();
 
         return services;
     }

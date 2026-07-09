@@ -32,7 +32,40 @@
       "gppChecklist": "GPP checklist",
       "transfers": "Transfers",
       "adjustments": "Stock count",
-      "warehouses": "Warehouses"
+      "warehouses": "Warehouses",
+      "qd540Export": "QĐ 540 export"
+    }
+  },
+  "qd540Export": {
+    "title": "QĐ 540 Table 1 export",
+    "subtitle": "Purchase / sale / batch — pre-interconnection test",
+    "hint": "Configure retail facility code (System → Branches), wholesale supplier code (Procurement → Suppliers), supplier invoice on GRN, and product QĐ 540 fields before export.",
+    "empty": "No rows — select a date range and preview",
+    "warningsTitle": "{{count}} warnings · skipped {{skipped}} rows",
+    "warningsMore": "… and {{count}} more warnings",
+    "form": {
+      "range": "Date range",
+      "rangeRequired": "Select a date range",
+      "branch": "Branch"
+    },
+    "actions": {
+      "preview": "Preview",
+      "exportCsv": "Download CSV"
+    },
+    "columns": {
+      "maThuoc": "Drug code",
+      "tenThuoc": "Drug name",
+      "soLo": "Batch",
+      "soLuongNhap": "Qty in",
+      "soLuongBan": "Qty out",
+      "maCoSoBanLe": "Retail code"
+    },
+    "messages": {
+      "loadBranchesFailed": "Could not load branches",
+      "previewOk": "Loaded {{count}} rows",
+      "previewFailed": "Preview failed",
+      "exportOk": "CSV downloaded",
+      "exportFailed": "Export failed"
     }
   },
   "shared": {

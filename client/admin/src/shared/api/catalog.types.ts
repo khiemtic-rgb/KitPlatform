@@ -58,6 +58,9 @@ export type ProductDetail = Omit<
 > & {
   nationalDrugId?: string;
   nationalRegistrationNumber?: string;
+  dosageForm?: string;
+  packaging?: string;
+  importerName?: string;
   minStockQty?: number;
   units: ProductUnit[];
   barcodes: ProductBarcode[];
@@ -175,6 +178,9 @@ export type ProductSavePayload = Pick<
 > & {
   productName: string;
   drugType: number;
+  dosageForm?: string;
+  packaging?: string;
+  importerName?: string;
 };
 
 export type ProductUnitPayload = {

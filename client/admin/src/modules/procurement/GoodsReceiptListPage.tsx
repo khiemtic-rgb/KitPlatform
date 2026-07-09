@@ -382,6 +382,7 @@ export function GoodsReceiptListPage() {
         warehouseId: values.warehouseId,
         receiptDate: values.receiptDate || todayDateString(),
         notes: values.notes,
+        supplierInvoiceNumber: values.supplierInvoiceNumber,
         vatTreatmentId: values.vatTreatmentId,
         orderDiscountType: values.orderDiscountType,
         orderDiscountValue: values.orderDiscountValue,

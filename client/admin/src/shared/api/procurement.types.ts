@@ -138,7 +138,9 @@ export type LastPurchasePriceHint = Pick<
 export type Supplier = Req<
   SupplierDto,
   'id' | 'supplierCode' | 'supplierName' | 'paymentTerms' | 'status' | 'isPlaceholder'
->;
+> & {
+  wholesaleFacilityCode?: string;
+};
 
 export type PurchaseOrderListItem = Req<
   PurchaseOrderListItemDto,
@@ -259,6 +261,7 @@ export type GoodsReceiptDetail = Omit<
   purchaseOrderId?: string;
   poNumber?: string;
   notes?: string;
+  supplierInvoiceNumber?: string;
   orderDiscountType?: number;
   vatTreatmentId?: string;
   vatTreatmentCode?: string;

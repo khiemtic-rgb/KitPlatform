@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using Dapper;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Packs.Pharmacy.Catalog;
@@ -123,6 +123,7 @@ internal sealed class CatalogRepository
                    category_id AS CategoryId, brand_id AS BrandId, description AS Description,
                    national_drug_id AS NationalDrugId,
                    national_registration_number AS NationalRegistrationNumber,
+                   dosage_form AS DosageForm, packaging AS Packaging, importer_name AS ImporterName,
                    status AS Status, min_stock_qty AS MinStockQty
             FROM products
             WHERE id = @Id AND tenant_id = @TenantId AND deleted_at IS NULL
@@ -181,6 +182,7 @@ internal sealed class CatalogRepository
             product.Id, product.ProductCode, product.ProductName, product.GenericName, product.DrugType,
             product.CategoryId, product.BrandId, product.Description,
             product.NationalDrugId, product.NationalRegistrationNumber,
+            product.DosageForm, product.Packaging, product.ImporterName,
             product.Status, product.MinStockQty,
             saleUnitName,
             units, barcodes, prices, images, ingredients);
@@ -188,18 +190,19 @@ internal sealed class CatalogRepository
 
     public async Task<string> GenerateNextProductCodeAsync(CancellationToken cancellationToken)
     {
+        // Include soft-deleted rows: unique index uq_products_code is on (tenant_id, product_code)
+        // regardless of deleted_at, so skipped codes would collide forever.
         const string sql = """
             SELECT COALESCE(MAX(CAST(SUBSTRING(product_code FROM 4) AS BIGINT)), 0) + 1
             FROM products
             WHERE tenant_id = @TenantId
-              AND deleted_at IS NULL
               AND product_code ~* '^SP-[0-9]+$'
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         var next = await conn.QuerySingleAsync<long>(sql, new { TenantId = _tenant.TenantId });
         if (next < 1)
             next = 1;
-        return $"SP-{next:D6}";
+        return FormatAutoProductCode(next);
     }
 
     public async Task<Guid> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken)
@@ -210,7 +213,7 @@ internal sealed class CatalogRepository
             : request.ProductCode.Trim();
         var bumpOnConflict = string.IsNullOrWhiteSpace(request.ProductCode) || IsAutoProductCode(productCode);
 
-        const int maxAttempts = 5;
+        const int maxAttempts = 8;
         for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
             try
@@ -219,7 +222,9 @@ internal sealed class CatalogRepository
             }
             catch (Exception ex) when (bumpOnConflict && IsUniqueProductCodeViolation(ex))
             {
-                productCode = await GenerateNextProductCodeAsync(cancellationToken);
+                productCode = bumpOnConflict && TryBumpAutoProductCode(productCode, out var bumped)
+                    ? bumped
+                    : await GenerateNextProductCodeAsync(cancellationToken);
             }
         }
 
@@ -236,10 +241,12 @@ internal sealed class CatalogRepository
             INSERT INTO products (
                 tenant_id, category_id, brand_id, product_code, product_name, product_name_normalized,
                 generic_name, drug_type, description, national_drug_id, national_registration_number,
+                dosage_form, packaging, importer_name,
                 min_stock_qty, status)
             VALUES (
                 @TenantId, @CategoryId, @BrandId, @ProductCode, @ProductName, @ProductNameNormalized,
                 @GenericName, @DrugType, @Description, @NationalDrugId, @NationalRegistrationNumber,
+                @DosageForm, @Packaging, @ImporterName,
                 @MinStockQty, @Status)
             RETURNING id
             """;
@@ -264,6 +271,9 @@ internal sealed class CatalogRepository
             NationalRegistrationNumber = string.IsNullOrWhiteSpace(request.NationalRegistrationNumber)
                 ? null
                 : request.NationalRegistrationNumber.Trim(),
+            DosageForm = string.IsNullOrWhiteSpace(request.DosageForm) ? null : request.DosageForm.Trim(),
+            Packaging = string.IsNullOrWhiteSpace(request.Packaging) ? null : request.Packaging.Trim(),
+            ImporterName = string.IsNullOrWhiteSpace(request.ImporterName) ? null : request.ImporterName.Trim(),
             request.MinStockQty,
             request.Status,
         });
@@ -273,6 +283,19 @@ internal sealed class CatalogRepository
 
     private static bool IsAutoProductCode(string code) =>
         Regex.IsMatch(code, @"^SP-\d+$", RegexOptions.IgnoreCase);
+
+    private static string FormatAutoProductCode(long sequence) =>
+        $"SP-{sequence:D6}";
+
+    private static bool TryBumpAutoProductCode(string code, out string next)
+    {
+        next = code;
+        var match = Regex.Match(code, @"^SP-(\d+)$", RegexOptions.IgnoreCase);
+        if (!match.Success || !long.TryParse(match.Groups[1].Value, out var n))
+            return false;
+        next = FormatAutoProductCode(n + 1);
+        return true;
+    }
 
     private static bool IsUniqueProductCodeViolation(Exception ex)
     {
@@ -623,6 +646,9 @@ internal sealed class CatalogRepository
                 drug_type = @DrugType, description = @Description,
                 national_drug_id = @NationalDrugId,
                 national_registration_number = @NationalRegistrationNumber,
+                dosage_form = @DosageForm,
+                packaging = @Packaging,
+                importer_name = @ImporterName,
                 min_stock_qty = @MinStockQty,
                 status = @Status,
                 updated_at = NOW()
@@ -644,6 +670,9 @@ internal sealed class CatalogRepository
             NationalRegistrationNumber = string.IsNullOrWhiteSpace(request.NationalRegistrationNumber)
                 ? null
                 : request.NationalRegistrationNumber.Trim(),
+            DosageForm = string.IsNullOrWhiteSpace(request.DosageForm) ? null : request.DosageForm.Trim(),
+            Packaging = string.IsNullOrWhiteSpace(request.Packaging) ? null : request.Packaging.Trim(),
+            ImporterName = string.IsNullOrWhiteSpace(request.ImporterName) ? null : request.ImporterName.Trim(),
             request.MinStockQty,
             request.Status,
         });
@@ -1375,6 +1404,9 @@ internal sealed class CatalogRepository
         public string? Description { get; init; }
         public string? NationalDrugId { get; init; }
         public string? NationalRegistrationNumber { get; init; }
+        public string? DosageForm { get; init; }
+        public string? Packaging { get; init; }
+        public string? ImporterName { get; init; }
         public short Status { get; init; }
         public decimal? MinStockQty { get; init; }
     }

@@ -6,6 +6,7 @@ public sealed record BranchAdminListItemDto(
     string BranchName,
     string? Address,
     string? Phone,
+    string? RetailFacilityCode,
     bool IsHeadOffice,
     short Status,
     DateTimeOffset CreatedAt);
@@ -16,6 +17,7 @@ public sealed record BranchDetailDto(
     string BranchName,
     string? Address,
     string? Phone,
+    string? RetailFacilityCode,
     bool IsHeadOffice,
     short Status,
     DateTimeOffset CreatedAt);
@@ -25,6 +27,7 @@ public sealed record CreateBranchRequest(
     string BranchName,
     string? Address,
     string? Phone,
+    string? RetailFacilityCode,
     bool IsHeadOffice = false,
     short Status = 1);
 
@@ -33,6 +36,7 @@ public sealed record UpdateBranchRequest(
     string BranchName,
     string? Address,
     string? Phone,
+    string? RetailFacilityCode,
     bool IsHeadOffice,
     short Status);
 

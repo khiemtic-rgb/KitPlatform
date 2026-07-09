@@ -114,6 +114,9 @@ files=(
   "086_pack_pharmacy_report_read_views.sql"
   "087_phase_d_write_cutover.sql"
   "088_purchase_order_workflow.sql"
+  "089_kap_decision_intelligence_schema.sql"
+  "090_kap_pharmacy_intelligence_seed.sql"
+  "092_qd540_integration_schema.sql"
   "seed-prod/001_base_permissions.sql"
 )
 

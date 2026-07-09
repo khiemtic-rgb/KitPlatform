@@ -116,6 +116,14 @@ export function GoodsReceiptFormHeader({
         >
           <PharmaDatePicker placeholder={tShared('datePlaceholder')} style={{ width: '100%' }} />
         </Form.Item>
+        <Form.Item
+          name="supplierInvoiceNumber"
+          label={t('supplierInvoiceNumber')}
+          tooltip={t('supplierInvoiceNumberHint')}
+          style={{ marginBottom: 0 }}
+        >
+          <Input maxLength={20} placeholder={t('supplierInvoicePlaceholder')} allowClear />
+        </Form.Item>
         <Form.Item name="notes" label={tShared('columns.notes')} style={{ marginBottom: 0 }}>
           <Input placeholder={t('notesOptional')} allowClear />
         </Form.Item>

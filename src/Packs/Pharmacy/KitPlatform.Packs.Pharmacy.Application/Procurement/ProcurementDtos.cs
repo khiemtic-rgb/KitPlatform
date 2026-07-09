@@ -11,7 +11,8 @@ public sealed record SupplierDto(
     string? Address,
     int PaymentTerms,
     short Status,
-    bool IsPlaceholder);
+    bool IsPlaceholder,
+    string? WholesaleFacilityCode);
 
 public sealed record CreateSupplierRequest(
     string SupplierCode,
@@ -21,7 +22,8 @@ public sealed record CreateSupplierRequest(
     string? Phone,
     string? Email,
     string? Address,
-    int PaymentTerms = 30);
+    int PaymentTerms = 30,
+    string? WholesaleFacilityCode = null);
 
 public sealed record UpdateSupplierRequest(
     string SupplierName,
@@ -31,7 +33,8 @@ public sealed record UpdateSupplierRequest(
     string? Email,
     string? Address,
     int PaymentTerms,
-    short Status);
+    short Status,
+    string? WholesaleFacilityCode = null);
 
 public sealed record PurchaseOrderListItemDto(
     Guid Id,
@@ -188,6 +191,7 @@ public sealed record GoodsReceiptDetailDto(
     short Status,
     DateTime ReceiptDate,
     string? Notes,
+    string? SupplierInvoiceNumber,
     decimal SubtotalGross,
     decimal LineDiscountTotal,
     decimal MerchandiseNet,
@@ -222,6 +226,7 @@ public sealed record CreateGoodsReceiptRequest(
     Guid WarehouseId,
     DateOnly? ReceiptDate,
     string? Notes,
+    string? SupplierInvoiceNumber,
     Guid VatTreatmentId,
     IReadOnlyList<CreateGoodsReceiptItemRequest> Items,
     short? OrderDiscountType = null,

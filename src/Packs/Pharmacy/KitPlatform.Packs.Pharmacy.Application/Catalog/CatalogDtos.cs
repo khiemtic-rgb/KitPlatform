@@ -43,6 +43,9 @@ public sealed record ProductDetailDto(
     string? Description,
     string? NationalDrugId,
     string? NationalRegistrationNumber,
+    string? DosageForm,
+    string? Packaging,
+    string? ImporterName,
     short Status,
     decimal? MinStockQty,
     string? SaleUnitName,
@@ -86,6 +89,9 @@ public sealed class CreateProductRequest
     public string? Description { get; init; }
     public string? NationalDrugId { get; init; }
     public string? NationalRegistrationNumber { get; init; }
+    public string? DosageForm { get; init; }
+    public string? Packaging { get; init; }
+    public string? ImporterName { get; init; }
     public short Status { get; init; } = 1;
     public decimal? MinStockQty { get; init; }
     public string? SaleUnitName { get; init; }
@@ -110,6 +116,9 @@ public sealed class UpdateProductRequest
     public string? Description { get; init; }
     public string? NationalDrugId { get; init; }
     public string? NationalRegistrationNumber { get; init; }
+    public string? DosageForm { get; init; }
+    public string? Packaging { get; init; }
+    public string? ImporterName { get; init; }
     public short Status { get; init; }
     public decimal? MinStockQty { get; init; }
     public string? SaleUnitName { get; init; }

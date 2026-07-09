@@ -104,6 +104,8 @@
       "name": "Tên chi nhánh",
       "nameRequired": "Nhập tên chi nhánh",
       "phone": "Điện thoại",
+      "retailFacilityCode": "Mã cơ sở bán lẻ (QĐ 540)",
+      "retailFacilityCodeHint": "Ma_co_so_ban_le do Cục QLD cấp — bắt buộc trước khi xuất liên thông",
       "address": "Địa chỉ",
       "isHeadOffice": "Trụ sở chính",
       "status": "Trạng thái"

@@ -57,7 +57,7 @@ internal sealed class ProcurementRepository
                 id AS Id, supplier_code AS SupplierCode, supplier_name AS SupplierName,
                 tax_code AS TaxCode, contact_name AS ContactName, phone AS Phone,
                 email AS Email, address AS Address, payment_terms AS PaymentTerms, status AS Status,
-                is_placeholder AS IsPlaceholder
+                is_placeholder AS IsPlaceholder, wholesale_facility_code AS WholesaleFacilityCode
             FROM suppliers
             WHERE tenant_id = @TenantId {extra}
             ORDER BY supplier_name
@@ -73,7 +73,7 @@ internal sealed class ProcurementRepository
                 id AS Id, supplier_code AS SupplierCode, supplier_name AS SupplierName,
                 tax_code AS TaxCode, contact_name AS ContactName, phone AS Phone,
                 email AS Email, address AS Address, payment_terms AS PaymentTerms, status AS Status,
-                is_placeholder AS IsPlaceholder
+                is_placeholder AS IsPlaceholder, wholesale_facility_code AS WholesaleFacilityCode
             FROM suppliers
             WHERE id = @Id AND tenant_id = @TenantId AND deleted_at IS NULL
             """;
@@ -133,11 +133,11 @@ internal sealed class ProcurementRepository
         const string sql = """
             INSERT INTO suppliers (
                 tenant_id, supplier_code, supplier_name, tax_code, contact_name,
-                phone, email, address, payment_terms
+                phone, email, address, payment_terms, wholesale_facility_code
             )
             VALUES (
                 @TenantId, @SupplierCode, @SupplierName, @TaxCode, @ContactName,
-                @Phone, @Email, @Address, @PaymentTerms
+                @Phone, @Email, @Address, @PaymentTerms, @WholesaleFacilityCode
             )
             RETURNING id
             """;
@@ -153,6 +153,7 @@ internal sealed class ProcurementRepository
             request.Email,
             request.Address,
             request.PaymentTerms,
+            WholesaleFacilityCode = request.WholesaleFacilityCode?.Trim(),
         });
     }
 
@@ -162,7 +163,8 @@ internal sealed class ProcurementRepository
             UPDATE suppliers SET
                 supplier_name = @SupplierName, tax_code = @TaxCode, contact_name = @ContactName,
                 phone = @Phone, email = @Email, address = @Address,
-                payment_terms = @PaymentTerms, status = @Status, updated_at = NOW()
+                payment_terms = @PaymentTerms, wholesale_facility_code = @WholesaleFacilityCode,
+                status = @Status, updated_at = NOW()
             WHERE id = @Id AND tenant_id = @TenantId AND deleted_at IS NULL
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -177,6 +179,7 @@ internal sealed class ProcurementRepository
             request.Email,
             request.Address,
             request.PaymentTerms,
+            WholesaleFacilityCode = request.WholesaleFacilityCode?.Trim(),
             request.Status,
         }) > 0;
     }
@@ -806,7 +809,7 @@ internal sealed class ProcurementRepository
         const string headerSql = """
             INSERT INTO goods_receipts (
                 tenant_id, grn_number, purchase_order_id, supplier_id, warehouse_id,
-                status, receipt_date, received_by, notes,
+                status, receipt_date, received_by, notes, supplier_invoice_number,
                 vat_treatment_id, tax_rate_percent,
                 subtotal_gross, line_discount_total, merchandise_net,
                 order_discount_type, order_discount_value, order_discount_amount,
@@ -814,7 +817,7 @@ internal sealed class ProcurementRepository
             )
             VALUES (
                 @TenantId, @GrnNumber, @PurchaseOrderId, @SupplierId, @WarehouseId,
-                @Status, @ReceiptDate, @ReceivedBy, @Notes,
+                @Status, @ReceiptDate, @ReceivedBy, @Notes, @SupplierInvoiceNumber,
                 @VatTreatmentId, @TaxRatePercent,
                 @SubtotalGross, @LineDiscountTotal, @MerchandiseNet,
                 @OrderDiscountType, @OrderDiscountValue, @OrderDiscountAmount,
@@ -833,6 +836,9 @@ internal sealed class ProcurementRepository
             ReceiptDate = receiptDate,
             ReceivedBy = receivedBy,
             request.Notes,
+            SupplierInvoiceNumber = string.IsNullOrWhiteSpace(request.SupplierInvoiceNumber)
+                ? null
+                : request.SupplierInvoiceNumber.Trim(),
             VatTreatmentId = request.VatTreatmentId,
             TaxRatePercent = treatment.RatePercent,
             SubtotalGross = pricing.SubtotalGross,
@@ -1219,7 +1225,7 @@ internal sealed class ProcurementRepository
                 s.supplier_name AS SupplierName, g.warehouse_id AS WarehouseId,
                 w.warehouse_name AS WarehouseName, g.purchase_order_id AS PurchaseOrderId,
                 p.po_number AS PoNumber, g.status AS Status, g.receipt_date AS ReceiptDate,
-                g.notes AS Notes, g.deleted_at AS DeletedAt,
+                g.notes AS Notes, g.supplier_invoice_number AS SupplierInvoiceNumber, g.deleted_at AS DeletedAt,
                 g.subtotal_gross AS SubtotalGross, g.line_discount_total AS LineDiscountTotal,
                 g.merchandise_net AS MerchandiseNet, g.order_discount_type AS OrderDiscountType,
                 g.order_discount_value AS OrderDiscountValue, g.order_discount_amount AS OrderDiscountAmount,
@@ -1256,7 +1262,7 @@ internal sealed class ProcurementRepository
         return new GoodsReceiptDetailDto(
             header.Id, header.GrnNumber, header.SupplierId, header.SupplierName,
             header.WarehouseId, header.WarehouseName, header.PurchaseOrderId, header.PoNumber,
-            header.Status, header.ReceiptDate, header.Notes,
+            header.Status, header.ReceiptDate, header.Notes, header.SupplierInvoiceNumber,
             header.SubtotalGross, header.LineDiscountTotal, header.MerchandiseNet,
             header.OrderDiscountType, header.OrderDiscountValue, header.OrderDiscountAmount,
             header.VatTreatmentId, header.VatTreatmentCode, header.VatTreatmentName, header.VatIsNotSubject,
@@ -1862,6 +1868,7 @@ internal sealed class ProcurementRepository
         public short Status { get; init; }
         public DateTime ReceiptDate { get; init; }
         public string? Notes { get; init; }
+        public string? SupplierInvoiceNumber { get; init; }
         public DateTime? DeletedAt { get; init; }
         public decimal SubtotalGross { get; init; }
         public decimal LineDiscountTotal { get; init; }

@@ -197,6 +197,8 @@
     "importTitle": "Import NCC (Excel/CSV)",
     "codePlaceholder": "VD: NCC001",
     "namePlaceholder": "Gõ để xem gợi ý NCC có sẵn",
+    "wholesaleFacilityCode": "Mã cơ sở bán buôn (QĐ 540)",
+    "wholesaleFacilityCodeHint": "Ma_co_so_ban_buon do Cục QLD cấp",
     "exportColumns": {
       "code": "Mã NCC",
       "name": "Tên NCC",
@@ -326,6 +328,9 @@
     "linkPoHint": "Còn phải nhận {{poNumber}} — lô/HSD/SL; xóa dòng nếu NCC không giao.",
     "adjustPo": "Điều chỉnh PO",
     "notesOptional": "Tùy chọn",
+    "supplierInvoiceNumber": "Số HĐ GTGT mua thuốc",
+    "supplierInvoiceNumberHint": "so_hoa_don_mthuoc (QĐ 540) — trên hóa đơn NCC",
+    "supplierInvoicePlaceholder": "VD: 0000123",
     "manualLinesHint": "Chọn đơn đặt hàng ở trên để điền tự động, hoặc nhập tay từng dòng bên dưới (số lô, HSD tháng/năm).",
     "addManualLine": "Thêm dòng (nhập không theo PO)",
     "poLoadFailed": "Không tải được PO — bỏ chọn PO hoặc chọn PO khác.",

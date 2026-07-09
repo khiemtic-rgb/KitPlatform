@@ -29,6 +29,7 @@ internal sealed class IdentityAdminRepository
                 b.branch_name AS BranchName,
                 b.address AS Address,
                 b.phone AS Phone,
+                b.retail_facility_code AS RetailFacilityCode,
                 b.is_head_office AS IsHeadOffice,
                 b.status AS Status,
                 b.created_at AS CreatedAt
@@ -51,6 +52,7 @@ internal sealed class IdentityAdminRepository
                 b.branch_name AS BranchName,
                 b.address AS Address,
                 b.phone AS Phone,
+                b.retail_facility_code AS RetailFacilityCode,
                 b.is_head_office AS IsHeadOffice,
                 b.status AS Status,
                 b.created_at AS CreatedAt
@@ -82,8 +84,8 @@ internal sealed class IdentityAdminRepository
     public async Task<Guid> CreateBranchAsync(CreateBranchRequest request, CancellationToken cancellationToken)
     {
         const string sql = """
-            INSERT INTO branches (tenant_id, branch_code, branch_name, address, phone, is_head_office, status)
-            VALUES (@TenantId, @BranchCode, @BranchName, @Address, @Phone, @IsHeadOffice, @Status)
+            INSERT INTO branches (tenant_id, branch_code, branch_name, address, phone, retail_facility_code, is_head_office, status)
+            VALUES (@TenantId, @BranchCode, @BranchName, @Address, @Phone, @RetailFacilityCode, @IsHeadOffice, @Status)
             RETURNING id
             """;
 
@@ -95,6 +97,7 @@ internal sealed class IdentityAdminRepository
             BranchName = request.BranchName.Trim(),
             Address = request.Address?.Trim(),
             Phone = request.Phone?.Trim(),
+            RetailFacilityCode = request.RetailFacilityCode?.Trim(),
             request.IsHeadOffice,
             request.Status,
         });
@@ -108,6 +111,7 @@ internal sealed class IdentityAdminRepository
                 branch_name = @BranchName,
                 address = @Address,
                 phone = @Phone,
+                retail_facility_code = @RetailFacilityCode,
                 is_head_office = @IsHeadOffice,
                 status = @Status
             WHERE id = @BranchId AND tenant_id = @TenantId AND deleted_at IS NULL
@@ -122,6 +126,7 @@ internal sealed class IdentityAdminRepository
             BranchName = request.BranchName.Trim(),
             Address = request.Address?.Trim(),
             Phone = request.Phone?.Trim(),
+            RetailFacilityCode = request.RetailFacilityCode?.Trim(),
             request.IsHeadOffice,
             request.Status,
         });
@@ -856,10 +861,10 @@ internal sealed class IdentityAdminRepository
     }
 
     private static BranchAdminListItemDto MapBranchList(BranchRow row) =>
-        new(row.Id, row.BranchCode, row.BranchName, row.Address, row.Phone, row.IsHeadOffice, row.Status, ToOffset(row.CreatedAt));
+        new(row.Id, row.BranchCode, row.BranchName, row.Address, row.Phone, row.RetailFacilityCode, row.IsHeadOffice, row.Status, ToOffset(row.CreatedAt));
 
     private static BranchDetailDto MapBranchDetail(BranchRow row) =>
-        new(row.Id, row.BranchCode, row.BranchName, row.Address, row.Phone, row.IsHeadOffice, row.Status, ToOffset(row.CreatedAt));
+        new(row.Id, row.BranchCode, row.BranchName, row.Address, row.Phone, row.RetailFacilityCode, row.IsHeadOffice, row.Status, ToOffset(row.CreatedAt));
 
     private static UserAdminListItemDto MapUserList(UserListRow row) =>
         new(
@@ -897,6 +902,7 @@ internal sealed class IdentityAdminRepository
         public string BranchName { get; init; } = "";
         public string? Address { get; init; }
         public string? Phone { get; init; }
+        public string? RetailFacilityCode { get; init; }
         public bool IsHeadOffice { get; init; }
         public short Status { get; init; }
         public DateTime CreatedAt { get; init; }

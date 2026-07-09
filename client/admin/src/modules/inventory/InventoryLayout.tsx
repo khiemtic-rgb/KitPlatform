@@ -8,6 +8,7 @@ import {
   DatabaseOutlined,
   ImportOutlined,
   SwapOutlined,
+  ExportOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
 import { useRegisterSimpleModuleSubnav } from '@/shared/components/module-subnav.context';
@@ -31,6 +32,7 @@ export function InventoryLayout() {
       { key: 'transfers', label: t('transfers'), path: '/inventory/transfers', icon: <SwapOutlined /> },
       { key: 'adjustments', label: t('adjustments'), path: '/inventory/adjustments', icon: <AuditOutlined /> },
       { key: 'warehouses', label: t('warehouses'), path: '/inventory/warehouses', icon: <BankOutlined /> },
+      { key: 'qd540', label: t('qd540Export'), path: '/inventory/qd540-export', icon: <ExportOutlined /> },
     ],
     [t],
   );

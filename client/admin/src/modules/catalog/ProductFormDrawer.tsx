@@ -273,6 +273,9 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
       description: product.description,
       nationalDrugId: product.nationalDrugId,
       nationalRegistrationNumber: product.nationalRegistrationNumber,
+      dosageForm: product.dosageForm,
+      packaging: product.packaging,
+      importerName: product.importerName,
       status: product.status,
       saleUnitName: product.saleUnitName ?? product.units.find((u) => u.isBaseUnit)?.unitName ?? catalogT()('shared.defaultSaleUnit'),
       minStockQty: product.minStockQty,
@@ -294,6 +297,9 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     description: readTextField(form, 'description'),
     nationalDrugId: readTextField(form, 'nationalDrugId'),
     nationalRegistrationNumber: readTextField(form, 'nationalRegistrationNumber'),
+    dosageForm: readTextField(form, 'dosageForm'),
+    packaging: readTextField(form, 'packaging'),
+    importerName: readTextField(form, 'importerName'),
     status: (form.getFieldValue('status') as number | undefined) ?? 1,
     saleUnitName: readTextField(form, 'saleUnitName') ?? catalogT()('shared.defaultSaleUnit'),
     minStockQty: form.getFieldValue('minStockQty') as number | undefined,
@@ -1100,6 +1106,23 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
       </Form.Item>
       <Form.Item name="nationalRegistrationNumber" hidden>
         <Input />
+      </Form.Item>
+      <Form.Item
+        name="dosageForm"
+        label={t('productForm.fields.dosageForm')}
+        tooltip={t('productForm.fields.dosageFormHint')}
+      >
+        <Input maxLength={20} />
+      </Form.Item>
+      <Form.Item
+        name="packaging"
+        label={t('productForm.fields.packaging')}
+        tooltip={t('productForm.fields.packagingHint')}
+      >
+        <Input maxLength={20} />
+      </Form.Item>
+      <Form.Item name="importerName" label={t('productForm.fields.importerName')}>
+        <Input maxLength={100} />
       </Form.Item>
       <Form.Item label={t('productForm.fields.productCode')}>
         <Space.Compact style={{ width: '100%' }}>

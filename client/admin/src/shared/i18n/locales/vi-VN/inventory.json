@@ -32,7 +32,40 @@
       "gppChecklist": "Checklist GPP",
       "transfers": "Điều chuyển",
       "adjustments": "Kiểm kê",
-      "warehouses": "Danh mục kho"
+      "warehouses": "Danh mục kho",
+      "qd540Export": "Xuất QĐ 540"
+    }
+  },
+  "qd540Export": {
+    "title": "Xuất dữ liệu QĐ 540 (Bảng 1)",
+    "subtitle": "Mua / bán / lô — kiểm thử trước liên thông",
+    "hint": "Cần nhập Ma_co_so_ban_le tại Hệ thống → Chi nhánh, mã NCC bán buôn tại Mua hàng → NCC, số HĐ GTGT trên phiếu nhập, và dữ liệu thuốc (số đăng ký, dạng bào chế, quy cách) trên sản phẩm.",
+    "empty": "Chưa có dòng — chọn khoảng ngày và bấm Xem trước",
+    "warningsTitle": "{{count}} cảnh báo · bỏ qua {{skipped}} dòng",
+    "warningsMore": "… và {{count}} cảnh báo khác",
+    "form": {
+      "range": "Khoảng ngày",
+      "rangeRequired": "Chọn khoảng ngày",
+      "branch": "Chi nhánh"
+    },
+    "actions": {
+      "preview": "Xem trước",
+      "exportCsv": "Tải CSV"
+    },
+    "columns": {
+      "maThuoc": "Mã thuốc",
+      "tenThuoc": "Tên thuốc",
+      "soLo": "Số lô",
+      "soLuongNhap": "SL nhập",
+      "soLuongBan": "SL bán",
+      "maCoSoBanLe": "Mã CSBL"
+    },
+    "messages": {
+      "loadBranchesFailed": "Không tải được chi nhánh",
+      "previewOk": "Đã tải {{count}} dòng",
+      "previewFailed": "Không xem trước được",
+      "exportOk": "Đã tải CSV",
+      "exportFailed": "Không xuất được CSV"
     }
   },
   "shared": {

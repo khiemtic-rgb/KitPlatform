@@ -303,6 +303,11 @@
       "description": "Mô tả",
       "status": "Trạng thái",
       "minStockQty": "Tồn tối thiểu (cảnh báo)",
+      "dosageForm": "Dạng bào chế (QĐ 540)",
+      "dosageFormHint": "dang_bao_che — tối đa 20 ký tự",
+      "packaging": "Quy cách đóng gói (QĐ 540)",
+      "packagingHint": "quy_cach_dong_goi — tối đa 20 ký tự",
+      "importerName": "Nhà nhập khẩu (QĐ 540)",
       "conversionFactor": "Hệ số",
       "strengthValue": "Hàm lượng",
       "strengthUnit": "Đơn vị"

@@ -306,6 +306,13 @@ export function SupplierListPage() {
           <Form.Item name="taxCode" label={tShared('columns.taxCode')}>
             <Input />
           </Form.Item>
+          <Form.Item
+            name="wholesaleFacilityCode"
+            label={t('wholesaleFacilityCode')}
+            tooltip={t('wholesaleFacilityCodeHint')}
+          >
+            <Input maxLength={12} />
+          </Form.Item>
           <Form.Item name="contactName" label={tShared('columns.contactName')}>
             <Input />
           </Form.Item>

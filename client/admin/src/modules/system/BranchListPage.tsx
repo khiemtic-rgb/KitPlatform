@@ -19,6 +19,7 @@ interface BranchFormValues {
   branchName: string;
   address?: string;
   phone?: string;
+  retailFacilityCode?: string;
   isHeadOffice?: boolean;
   status?: number;
 }
@@ -64,6 +65,7 @@ export function BranchListPage() {
       branchName: row.branchName,
       address: row.address,
       phone: row.phone,
+      retailFacilityCode: row.retailFacilityCode,
       isHeadOffice: row.isHeadOffice,
       status: row.status,
     });
@@ -86,6 +88,7 @@ export function BranchListPage() {
           branchName: values.branchName.trim(),
           address: values.address?.trim(),
           phone: values.phone?.trim(),
+          retailFacilityCode: values.retailFacilityCode?.trim(),
           isHeadOffice: values.isHeadOffice ?? false,
           status: values.status ?? 1,
         });
@@ -96,6 +99,7 @@ export function BranchListPage() {
           branchName: values.branchName.trim(),
           address: values.address?.trim(),
           phone: values.phone?.trim(),
+          retailFacilityCode: values.retailFacilityCode?.trim(),
           isHeadOffice: values.isHeadOffice ?? false,
           status: values.status ?? 1,
         });
@@ -229,6 +233,13 @@ export function BranchListPage() {
           </Form.Item>
           <Form.Item name="phone" label={t('form.phone')}>
             <Input />
+          </Form.Item>
+          <Form.Item
+            name="retailFacilityCode"
+            label={t('form.retailFacilityCode')}
+            tooltip={t('form.retailFacilityCodeHint')}
+          >
+            <Input maxLength={12} placeholder="012345678901" />
           </Form.Item>
           <Form.Item name="address" label={t('form.address')}>
             <Input.TextArea rows={2} />

@@ -26,6 +26,7 @@ function normalizeSupplier(row: Record<string, unknown>): Supplier {
     paymentTerms: Number(row.paymentTerms ?? row.PaymentTerms ?? 30),
     status: Number(row.status ?? row.Status ?? 1),
     isPlaceholder: Boolean(row.isPlaceholder ?? row.IsPlaceholder ?? false),
+    wholesaleFacilityCode: (row.wholesaleFacilityCode ?? row.WholesaleFacilityCode) as string | undefined,
   };
 }
 
@@ -123,6 +124,7 @@ function normalizeGrnDetail(data: Record<string, unknown>): GoodsReceiptDetail {
   return {
     ...base,
     notes: (data.notes ?? data.Notes) as string | undefined,
+    supplierInvoiceNumber: (data.supplierInvoiceNumber ?? data.SupplierInvoiceNumber) as string | undefined,
     subtotalGross: Number(data.subtotalGross ?? data.SubtotalGross ?? 0),
     lineDiscountTotal: Number(data.lineDiscountTotal ?? data.LineDiscountTotal ?? 0),
     merchandiseNet: Number(data.merchandiseNet ?? data.MerchandiseNet ?? 0),
@@ -171,6 +173,7 @@ export async function createSupplier(payload: {
   email?: string;
   address?: string;
   paymentTerms?: number;
+  wholesaleFacilityCode?: string;
 }): Promise<Supplier> {
   const { data } = await http.post<Record<string, unknown>>('/procurement/suppliers', payload);
   return normalizeSupplier(data);
@@ -187,6 +190,7 @@ export async function updateSupplier(
     address?: string;
     paymentTerms: number;
     status: number;
+    wholesaleFacilityCode?: string;
   },
 ): Promise<Supplier> {
   const { data } = await http.put<Record<string, unknown>>(`/procurement/suppliers/${id}`, payload);
@@ -401,6 +405,7 @@ export async function createGoodsReceipt(payload: {
   warehouseId: string;
   receiptDate?: string;
   notes?: string;
+  supplierInvoiceNumber?: string;
   vatTreatmentId: string;
   orderDiscountType?: number;
   orderDiscountValue?: number;

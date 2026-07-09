@@ -89,6 +89,9 @@ function normalizeProductDetail(data: ProductDetail & Record<string, unknown>): 
     nationalRegistrationNumber: (data.nationalRegistrationNumber ?? data.NationalRegistrationNumber) as
       | string
       | undefined,
+    dosageForm: (data.dosageForm ?? data.DosageForm) as string | undefined,
+    packaging: (data.packaging ?? data.Packaging) as string | undefined,
+    importerName: (data.importerName ?? data.ImporterName) as string | undefined,
     status: Number(data.status ?? data.Status ?? 1),
     saleUnitName: (data.saleUnitName ?? data.SaleUnitName) as string | undefined,
     minStockQty: (data.minStockQty ?? data.MinStockQty) as number | undefined,
@@ -289,6 +292,9 @@ function toGeneralBody(body: ProductSavePayload) {
     description: body.description ?? null,
     nationalDrugId: body.nationalDrugId ?? null,
     nationalRegistrationNumber: body.nationalRegistrationNumber ?? null,
+    dosageForm: body.dosageForm ?? null,
+    packaging: body.packaging ?? null,
+    importerName: body.importerName ?? null,
     status: body.status ?? 1,
     saleUnitName: body.saleUnitName ?? null,
     minStockQty: body.minStockQty ?? null,

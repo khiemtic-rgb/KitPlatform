@@ -1,4 +1,4 @@
-﻿# Cap nhat KitPlatform len VPS — KHONG wipe DB / secrets.
+# Cap nhat KitPlatform len VPS — KHONG wipe DB / secrets.
 # Tu dong nhan layout cu (pharmacore) va chuyen sang kit-platform.
 #
 # Usage:
@@ -35,7 +35,7 @@ $required = @(
     "deploy\ubuntu\nginx-kit-platform.conf"
 )
 foreach ($f in $required) {
-    if (-not (Test-Path $f)) { throw "Missing $f — chay deploy-production.ps1 truoc." }
+    if (-not (Test-Path $f)) { throw "Missing $f - chay deploy-production.ps1 truoc." }
 }
 
 $remote = "/tmp/kit-platform-update"
@@ -92,6 +92,10 @@ rsync -a --delete "$REMOTE/customer-app/" "$NEW_WEB/customer-app/"
 rsync -a --delete "$REMOTE/staff-app/" "$NEW_WEB/staff-app/"
 rsync -a "$REMOTE/deploy/ubuntu/" "$NEW_OPT/"
 rsync -a "$REMOTE/migrations/" "$NEW_OPT/migrations/"
+for f in "$NEW_OPT"/*.sh; do
+  sed -i 's/\r$//' "$f" 2>/dev/null || true
+  sed -i '1s/^\xEF\xBB\xBF//' "$f" 2>/dev/null || true
+done
 chmod +x "$NEW_OPT"/*.sh 2>/dev/null || true
 chown -R www-data:www-data "$NEW_WEB/admin" "$NEW_WEB/customer-app" "$NEW_WEB/staff-app" "$NEW_WEB/api/uploads"
 
@@ -120,7 +124,7 @@ if [[ "$RUN_MIG" == "1" ]]; then
     DB_USER_TRY=$(grep -oP 'Username=\K[^;]+' "$NEW_CFG/api.env" | head -n1 || true)
   fi
   CONN="postgresql://${DB_USER_TRY}:${DB_PASS}@127.0.0.1:5432/${DB_NAME_TRY}"
-  bash "$NEW_OPT/run-migrations-prod.sh" "$CONN" || echo "WARN: migration failed (schema may already exist) — continue"
+  bash "$NEW_OPT/run-migrations-prod.sh" "$CONN" || echo "WARN: migration failed (schema may already exist) - continue"
 else
   echo "==> Skip migrations (schema already live)"
 fi
