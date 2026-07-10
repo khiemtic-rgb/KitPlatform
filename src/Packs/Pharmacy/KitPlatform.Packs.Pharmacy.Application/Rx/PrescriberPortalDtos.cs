@@ -57,7 +57,7 @@ public sealed record PharmacyDirectoryItemDto(
 public sealed record InvitePrescriberLinkRequest(
     string Phone,
     string FullName,
-    string? LicenseNumber = null,
+    string LicenseNumber,
     string? Specialty = null,
     string? Notes = null);
 

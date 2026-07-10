@@ -38,6 +38,8 @@ internal sealed class PrescriberLinkService : IPrescriberLinkService
     {
         if (string.IsNullOrWhiteSpace(request.FullName))
             throw new InvalidOperationException("Tên bác sĩ không được để trống.");
+        if (string.IsNullOrWhiteSpace(request.LicenseNumber))
+            throw new InvalidOperationException("Số CCHN (chứng chỉ hành nghề) là bắt buộc.");
 
         var phone = PrescriberPortalRepository.NormalizePhone(request.Phone);
         if (phone.Length < 9)
@@ -67,6 +69,9 @@ internal sealed class PrescriberLinkService : IPrescriberLinkService
         var link = await _repo.GetLinkForTenantAsync(_tenant.TenantId, linkId, cancellationToken);
         if (link is null || link.LinkStatus != PrescriberLinkStatuses.PendingNtApproval)
             return null;
+        if (string.IsNullOrWhiteSpace(link.PrescriberLicenseNumber))
+            throw new InvalidOperationException(
+                "Không thể duyệt: bác sĩ chưa có số CCHN. Yêu cầu bổ sung chứng chỉ hành nghề trước khi kích hoạt.");
 
         var ok = await _repo.UpdateLinkStatusAsync(
             linkId,

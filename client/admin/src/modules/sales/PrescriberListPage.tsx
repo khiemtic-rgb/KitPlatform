@@ -14,7 +14,7 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 
 type PrescriberFormValues = {
   fullName: string;
-  licenseNumber?: string;
+  licenseNumber: string;
   phone?: string;
   specialty?: string;
 };
@@ -191,7 +191,12 @@ export function PrescriberListPage() {
           >
             <Input placeholder="Nguyễn Văn A" />
           </Form.Item>
-          <Form.Item label="Số giấy phép" name="licenseNumber">
+          <Form.Item
+            label="Số CCHN"
+            name="licenseNumber"
+            rules={[{ required: true, message: 'Nhập số chứng chỉ hành nghề (CCHN)' }]}
+            extra="Bắt buộc để đối chiếu khi thanh tra / kiểm tra"
+          >
             <Input placeholder="Số CCHN" />
           </Form.Item>
           <Form.Item label="Điện thoại" name="phone">

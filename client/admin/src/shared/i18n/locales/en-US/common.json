@@ -58,7 +58,7 @@
   "modules": {
     "dashboard": "Overview",
     "sales": "Sales",
-    "rx": "Prescriptions",
+    "rx": "Doctor Rx",
     "procurement": "Procurement",
     "inventory": "Inventory",
     "receivables": "Receivables",

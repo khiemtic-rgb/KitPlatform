@@ -98,7 +98,7 @@ Auth: prescriber JWT. Rate limit theo SĐT.
 
 | Giai đoạn | Cách |
 |-----------|------|
-| Pilot | Manual — admin NT hoặc Novixa ops duyệt |
+| Pilot | Manual — admin NT hoặc Novixa ops duyệt; **số CCHN bắt buộc** khi tạo/mời/cập nhật BS và trước khi duyệt link / kê đơn |
 | Sau | API registry / upload ảnh CCHN (nếu có nguồn chính thức) |
 
 Trạng thái BS: `pending_verification` → `active` | `suspended`

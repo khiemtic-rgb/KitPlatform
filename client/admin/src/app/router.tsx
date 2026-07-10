@@ -194,9 +194,6 @@ const BranchListPage = lazy(() =>
 const AuditLogListPage = lazy(() =>
   import('@/modules/system/AuditLogListPage').then((m) => ({ default: m.AuditLogListPage })),
 );
-const AssessmentLeadsPage = lazy(() =>
-  import('@/modules/system/AssessmentLeadsPage').then((m) => ({ default: m.AssessmentLeadsPage })),
-);
 const KapLayout = lazy(() =>
   import('@/modules/kap/KapLayout').then((m) => ({ default: m.KapLayout })),
 );
@@ -564,7 +561,10 @@ export function AppRouter() {
                 <Route path="pos-settings" element={<ReceiptSettingsPage />} />
                 <Route path="customer-app-settings" element={<CustomerAppSettingsPage />} />
                 <Route path="audit-log" element={<AuditLogListPage />} />
-                <Route path="assessment-leads" element={<AssessmentLeadsPage />} />
+                <Route
+                  path="assessment-leads"
+                  element={<RedirectPreserveSearch to="/kap/leads" />}
+                />
               </Route>
             </Route>
           </Route>

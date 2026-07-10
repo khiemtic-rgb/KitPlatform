@@ -58,7 +58,7 @@
   "modules": {
     "dashboard": "Tổng quan",
     "sales": "Bán hàng",
-    "rx": "Đơn thuốc",
+    "rx": "Đơn BS",
     "procurement": "Mua hàng",
     "inventory": "Kho hàng",
     "receivables": "Công nợ",

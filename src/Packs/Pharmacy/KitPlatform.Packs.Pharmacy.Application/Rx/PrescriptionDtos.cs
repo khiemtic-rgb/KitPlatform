@@ -25,14 +25,14 @@ public sealed record LinkedPrescriberDto(
 
 public sealed record CreateLinkedPrescriberRequest(
     string FullName,
-    string? LicenseNumber = null,
+    string LicenseNumber,
     string? Phone = null,
     string? Specialty = null,
     string? Notes = null);
 
 public sealed record UpdateLinkedPrescriberRequest(
     string FullName,
-    string? LicenseNumber = null,
+    string LicenseNumber,
     string? Phone = null,
     string? Specialty = null,
     short Status = 1,

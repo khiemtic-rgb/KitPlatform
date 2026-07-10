@@ -666,9 +666,9 @@
     "loading": "Đang tải...",
     "tabs": {
       "pos": "Bán hàng (POS)",
-      "prescriptions": "Đơn thuốc",
-      "prescribers": "Bác sĩ kê đơn",
-      "prescriberLinks": "Mạng bác sĩ",
+      "prescriptions": "Danh sách đơn",
+      "prescribers": "Bác sĩ",
+      "prescriberLinks": "Mạng BS",
       "orders": "Đơn bán",
       "customerReceivables": "Công nợ KH",
       "customerPayments": "Thu nợ KH",

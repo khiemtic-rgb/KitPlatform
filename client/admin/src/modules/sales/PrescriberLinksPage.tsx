@@ -229,8 +229,13 @@ export function PrescriberLinksPage() {
           <Form.Item name="phone" label="Số điện thoại (OTP portal)" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="licenseNumber" label="Số CCHN">
-            <Input />
+          <Form.Item
+            name="licenseNumber"
+            label="Số CCHN"
+            rules={[{ required: true, message: 'Nhập số chứng chỉ hành nghề (CCHN)' }]}
+            extra="Bắt buộc — không kê đơn / duyệt liên kết nếu thiếu CCHN"
+          >
+            <Input placeholder="Số CCHN" />
           </Form.Item>
           <Form.Item name="specialty" label="Chuyên khoa">
             <Input />

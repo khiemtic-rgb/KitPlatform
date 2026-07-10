@@ -5,23 +5,20 @@ import {
   BankOutlined,
   CloudOutlined,
   FileSearchOutlined,
-  FormOutlined,
   MobileOutlined,
   PrinterOutlined,
   SafetyCertificateOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { useRegisterSimpleModuleSubnav } from '@/shared/components/module-subnav.context';
-import { useAssessmentAdminAccess } from '@/shared/hooks/useAssessmentAdminAccess';
 
 export function SystemLayout() {
   const { t } = useTranslation('system', { keyPrefix: 'systemLayout.tabs' });
   const location = useLocation();
   const navigate = useNavigate();
-  const { enabled: assessmentLeadsEnabled, checked: assessmentAccessChecked } = useAssessmentAdminAccess();
 
-  const tabs = useMemo(() => {
-    const base = [
+  const tabs = useMemo(
+    () => [
       { key: 'branches', label: t('branches'), path: '/system/branches', icon: <BankOutlined /> },
       { key: 'users', label: t('users'), path: '/system/users', icon: <UserOutlined /> },
       { key: 'roles', label: t('roles'), path: '/system/roles', icon: <SafetyCertificateOutlined /> },
@@ -44,27 +41,9 @@ export function SystemLayout() {
         icon: <MobileOutlined />,
       },
       { key: 'audit-log', label: t('auditLog'), path: '/system/audit-log', icon: <FileSearchOutlined /> },
-    ];
-    if (assessmentLeadsEnabled) {
-      base.push({
-        key: 'assessment-leads',
-        label: t('assessmentLeads'),
-        path: '/system/assessment-leads',
-        icon: <FormOutlined />,
-      });
-    }
-    return base;
-  }, [assessmentLeadsEnabled, t]);
-
-  useEffect(() => {
-    if (
-      assessmentAccessChecked &&
-      !assessmentLeadsEnabled &&
-      location.pathname.startsWith('/system/assessment-leads')
-    ) {
-      navigate('/system/branches', { replace: true });
-    }
-  }, [assessmentAccessChecked, assessmentLeadsEnabled, location.pathname, navigate]);
+    ],
+    [t],
+  );
 
   useEffect(() => {
     if (location.pathname === '/system' || location.pathname === '/system/') {

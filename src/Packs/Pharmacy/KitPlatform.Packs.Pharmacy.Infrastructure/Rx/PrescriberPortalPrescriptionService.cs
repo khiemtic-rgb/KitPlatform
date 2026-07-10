@@ -118,6 +118,10 @@ internal sealed class PrescriberPortalPrescriptionService : IPrescriberPortalPre
         var profile = await _portal.FindPrescriberByIdAsync(prescriberId, cancellationToken)
             ?? throw new InvalidOperationException("Bác sĩ không tồn tại.");
 
+        if (string.IsNullOrWhiteSpace(profile.LicenseNumber))
+            throw new InvalidOperationException(
+                "Tài khoản bác sĩ chưa có số CCHN. Liên hệ nhà thuốc để bổ sung chứng chỉ hành nghề trước khi kê đơn.");
+
         if (profile.Status != "active")
             throw new InvalidOperationException("Tài khoản bác sĩ chưa được xác minh hoặc đã bị tạm khóa.");
 

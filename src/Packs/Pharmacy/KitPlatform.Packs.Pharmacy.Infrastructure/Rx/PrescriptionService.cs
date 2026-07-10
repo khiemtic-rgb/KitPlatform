@@ -34,6 +34,8 @@ internal sealed class PrescriptionService : IPrescriptionService
     {
         if (string.IsNullOrWhiteSpace(request.FullName))
             throw new InvalidOperationException("Tên bác sĩ không được để trống.");
+        if (string.IsNullOrWhiteSpace(request.LicenseNumber))
+            throw new InvalidOperationException("Số CCHN (chứng chỉ hành nghề) là bắt buộc.");
 
         var id = await _repository.CreatePrescriberAsync(request, cancellationToken);
         return (await _repository.GetPrescriberAsync(id, cancellationToken))!;
@@ -46,6 +48,8 @@ internal sealed class PrescriptionService : IPrescriptionService
     {
         if (string.IsNullOrWhiteSpace(request.FullName))
             throw new InvalidOperationException("Tên bác sĩ không được để trống.");
+        if (string.IsNullOrWhiteSpace(request.LicenseNumber))
+            throw new InvalidOperationException("Số CCHN (chứng chỉ hành nghề) là bắt buộc.");
 
         var updated = await _repository.UpdatePrescriberAsync(id, request, cancellationToken);
         return updated ? await _repository.GetPrescriberAsync(id, cancellationToken) : null;
