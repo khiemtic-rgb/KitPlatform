@@ -51,6 +51,15 @@ const links = [
     </nav>
 
     <div class="nav-actions">
+      <a href="/vi/health-check" class="nav-health-check" class:list={{ active: path.startsWith(`${base}/health-check`) }}>
+        <span class="nav-health-check__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+            <path d="M9 5a3 3 0 00-3 3v1a2 2 0 01-2 2 2 2 0 000 4 2 2 0 012 2v1a3 3 0 003 3" />
+            <path d="M15 5a3 3 0 013 3v1a2 2 0 012 2 2 2 0 010 4 2 2 0 01-2 2v1a3 3 0 01-3 3" />
+          </svg>
+        </span>
+        AI HEALTH CHECK
+      </a>
       <a href="https://app.novixa.vn" class="nav-login">{m.nav.login}</a>
       <a href="/vi/lien-he" class="nav-cta">{m.nav.demo}</a>
     </div>
@@ -223,6 +232,44 @@ const links = [
     grid-column: 3;
   }
 
+  .nav-health-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 40px;
+    padding: 0 0.85rem;
+    border-radius: 999px;
+    background: #ecfdf5;
+    color: #16c784 !important;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 300ms ease, transform 300ms ease;
+  }
+
+  .nav-health-check:hover {
+    background: #d1fae5;
+    transform: translateY(-1px);
+    text-decoration: none;
+  }
+
+  .nav-health-check__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(22, 199, 132, 0.15);
+  }
+
+  .nav-health-check__icon svg {
+    width: 13px;
+    height: 13px;
+  }
+
   .nav-login {
     display: inline-flex;
     align-items: center;
@@ -300,6 +347,25 @@ const links = [
 
     .nav-actions {
       display: none;
+    }
+
+    .site-header:has(.nav.is-open) .nav-actions {
+      display: flex;
+      flex-wrap: wrap;
+      grid-column: 1 / -1;
+      justify-content: stretch;
+      gap: 0.5rem;
+      padding: 0 1rem 0.75rem;
+      border-bottom: 1px solid #e8eef3;
+    }
+
+    .site-header:has(.nav.is-open) .nav-actions a {
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+
+    .site-header:has(.nav.is-open) .nav-health-check {
+      flex: 1 1 100%;
     }
 
     .header-inner {
