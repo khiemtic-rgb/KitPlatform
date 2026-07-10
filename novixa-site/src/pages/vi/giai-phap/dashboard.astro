@@ -1,0 +1,244 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import '../../../styles/global.css';
+
+const title = 'Dashboard Quản trị';
+const description =
+  'Novixa Dashboard giúp theo dõi doanh thu, lợi nhuận, tồn kho, khách hàng và KPI vận hành nhà thuốc trên một màn hình duy nhất.';
+---
+
+<BaseLayout title={title} description={description} canonicalPath="/vi/giai-phap/dashboard">
+  <Header slot="header" />
+  <article class="section module-detail">
+    <div class="container prose module-detail__body">
+      <p><a href="/vi#giai-phap">← Quay lại Giải pháp</a></p>
+      <p class="eyebrow">Novixa Dashboard</p>
+      <h1 class="section-title">{title}</h1>
+      <p class="module-detail__lead">Toàn bộ hoạt động nhà thuốc trên một màn hình duy nhất</p>
+
+      <p>
+        Novixa Dashboard là trung tâm điều hành dành cho chủ nhà thuốc và người quản lý, giúp theo dõi doanh thu, lợi
+        nhuận, tồn kho, khách hàng, nhân sự và các chỉ số vận hành (KPI) theo thời gian thực. Thay vì phải tổng hợp số
+        liệu từ nhiều báo cáo khác nhau, mọi thông tin quan trọng đều được trực quan hóa trên một màn hình, giúp đưa
+        ra quyết định nhanh chóng và chính xác.
+      </p>
+
+      <h2>Theo dõi doanh thu theo thời gian thực</h2>
+      <p>Dashboard cập nhật liên tục các chỉ số kinh doanh:</p>
+      <ul>
+        <li>Doanh thu hôm nay.</li>
+        <li>Doanh thu tuần.</li>
+        <li>Doanh thu tháng.</li>
+        <li>Doanh thu năm.</li>
+        <li>So sánh với kỳ trước.</li>
+        <li>Tốc độ tăng trưởng.</li>
+        <li>Doanh thu theo chi nhánh.</li>
+        <li>Doanh thu theo ca làm việc.</li>
+        <li>Doanh thu theo nhân viên.</li>
+        <li>Doanh thu theo nhóm hàng.</li>
+      </ul>
+      <p>Giúp chủ nhà thuốc nắm bắt ngay tình hình kinh doanh mà không cần chờ tổng hợp cuối ngày.</p>
+
+      <h2>Phân tích lợi nhuận</h2>
+      <p>Không chỉ theo dõi doanh thu, Novixa còn phân tích:</p>
+      <ul>
+        <li>Lợi nhuận gộp.</li>
+        <li>Biên lợi nhuận.</li>
+        <li>Giá vốn.</li>
+        <li>Chi phí.</li>
+        <li>Lợi nhuận theo sản phẩm.</li>
+        <li>Lợi nhuận theo nhóm thuốc.</li>
+        <li>Lợi nhuận theo chi nhánh.</li>
+        <li>Lợi nhuận theo khách hàng.</li>
+      </ul>
+      <p>Nhờ đó, chủ nhà thuốc biết chính xác đâu là nhóm sản phẩm mang lại hiệu quả cao nhất.</p>
+
+      <h2>Dashboard tồn kho</h2>
+      <p>Theo dõi toàn bộ tình trạng kho hàng:</p>
+      <ul>
+        <li>Giá trị tồn kho.</li>
+        <li>Hàng bán chạy.</li>
+        <li>Hàng bán chậm.</li>
+        <li>Hàng tồn lâu.</li>
+        <li>Hàng cận hạn.</li>
+        <li>Hàng hết hạn.</li>
+        <li>Thuốc sắp hết.</li>
+        <li>Vòng quay tồn kho.</li>
+        <li>Tỷ lệ thất thoát.</li>
+        <li>Giá trị hàng cần nhập.</li>
+      </ul>
+      <p>Các chỉ số được cập nhật ngay khi có giao dịch phát sinh.</p>
+
+      <h2>Dashboard khách hàng</h2>
+      <p>Hiển thị các chỉ số CRM quan trọng:</p>
+      <ul>
+        <li>Tổng số khách hàng.</li>
+        <li>Khách hàng mới.</li>
+        <li>Khách hàng quay lại.</li>
+        <li>Tỷ lệ giữ chân khách hàng.</li>
+        <li>Giá trị trung bình mỗi hóa đơn.</li>
+        <li>Giá trị vòng đời khách hàng (Customer Lifetime Value).</li>
+        <li>Doanh thu theo nhóm khách hàng.</li>
+        <li>Hiệu quả chương trình tích điểm.</li>
+        <li>Hiệu quả chiến dịch marketing.</li>
+      </ul>
+      <p>Giúp đánh giá chất lượng chăm sóc khách hàng và hiệu quả kinh doanh.</p>
+
+      <h2>Dashboard bán hàng</h2>
+      <p>Theo dõi hiệu quả hoạt động tại quầy:</p>
+      <ul>
+        <li>Số lượng hóa đơn.</li>
+        <li>Giá trị hóa đơn trung bình.</li>
+        <li>Sản phẩm bán chạy.</li>
+        <li>Giờ cao điểm bán hàng.</li>
+        <li>Tỷ lệ hủy hóa đơn.</li>
+        <li>Tỷ lệ đổi trả.</li>
+        <li>Doanh thu theo quầy.</li>
+        <li>Doanh thu theo nhân viên.</li>
+      </ul>
+      <p>Hỗ trợ tối ưu quy trình bán hàng và phân bổ nhân sự hợp lý.</p>
+
+      <h2>Dashboard nhân sự</h2>
+      <p>Quản lý hiệu suất đội ngũ:</p>
+      <ul>
+        <li>Doanh số theo nhân viên.</li>
+        <li>Số lượng hóa đơn xử lý.</li>
+        <li>KPI cá nhân.</li>
+        <li>Thời gian làm việc.</li>
+        <li>Chấm công.</li>
+        <li>Hiệu suất theo ca.</li>
+        <li>Đánh giá năng lực.</li>
+        <li>Tỷ lệ hoàn thành công việc.</li>
+      </ul>
+      <p>Giúp xây dựng hệ thống đánh giá minh bạch và công bằng.</p>
+
+      <h2>Dashboard tài chính</h2>
+      <p>Theo dõi dòng tiền và tình hình tài chính:</p>
+      <ul>
+        <li>Thu.</li>
+        <li>Chi.</li>
+        <li>Công nợ phải thu.</li>
+        <li>Công nợ phải trả.</li>
+        <li>Dòng tiền.</li>
+        <li>Chi phí vận hành.</li>
+        <li>Lợi nhuận.</li>
+        <li>Xu hướng tài chính.</li>
+      </ul>
+      <p>Giúp chủ nhà thuốc kiểm soát sức khỏe tài chính của doanh nghiệp.</p>
+
+      <h2>Dashboard chuỗi nhà thuốc</h2>
+      <p>Đối với hệ thống nhiều chi nhánh, Dashboard hỗ trợ:</p>
+      <ul>
+        <li>So sánh doanh thu giữa các cửa hàng.</li>
+        <li>So sánh lợi nhuận.</li>
+        <li>Hiệu quả nhân sự.</li>
+        <li>Tồn kho từng chi nhánh.</li>
+        <li>Khách hàng theo khu vực.</li>
+        <li>KPI toàn hệ thống.</li>
+        <li>Bảng xếp hạng chi nhánh.</li>
+      </ul>
+      <p>Mọi dữ liệu được tổng hợp trên một màn hình duy nhất.</p>
+
+      <h2>Dashboard AI</h2>
+      <p>AI phân tích dữ liệu liên tục để:</p>
+      <ul>
+        <li>Phát hiện bất thường trong doanh thu.</li>
+        <li>Cảnh báo tồn kho bất hợp lý.</li>
+        <li>Phát hiện hàng bán chậm.</li>
+        <li>Dự báo nguy cơ thiếu hàng.</li>
+        <li>Dự báo doanh thu.</li>
+        <li>Gợi ý nhập hàng.</li>
+        <li>Phân tích xu hướng mua hàng.</li>
+        <li>Đề xuất cơ hội tăng doanh thu.</li>
+        <li>Đưa ra cảnh báo sớm về rủi ro vận hành.</li>
+      </ul>
+      <p>AI không chỉ hiển thị số liệu mà còn giúp chủ nhà thuốc hiểu ý nghĩa của dữ liệu và hành động kịp thời.</p>
+
+      <h2>Dashboard KPI</h2>
+      <p>Theo dõi các chỉ số vận hành quan trọng:</p>
+      <ul>
+        <li>Doanh thu.</li>
+        <li>Lợi nhuận.</li>
+        <li>Tăng trưởng.</li>
+        <li>Tỷ lệ khách hàng quay lại.</li>
+        <li>Giá trị đơn hàng trung bình.</li>
+        <li>Vòng quay tồn kho.</li>
+        <li>Tỷ lệ hàng cận hạn.</li>
+        <li>Tỷ lệ hết hàng.</li>
+        <li>Hiệu suất nhân viên.</li>
+        <li>Mức độ hoàn thành KPI.</li>
+        <li>Điểm vận hành tổng thể.</li>
+      </ul>
+      <p>Các KPI được hiển thị trực quan bằng biểu đồ và trạng thái cảnh báo.</p>
+
+      <h2>Báo cáo trực quan</h2>
+      <p>Dashboard hỗ trợ nhiều dạng biểu đồ:</p>
+      <ul>
+        <li>Biểu đồ đường (Line Chart).</li>
+        <li>Biểu đồ cột (Bar Chart).</li>
+        <li>Biểu đồ tròn (Pie Chart).</li>
+        <li>Donut Chart.</li>
+        <li>Heatmap.</li>
+        <li>KPI Card.</li>
+        <li>Bảng xếp hạng.</li>
+        <li>Biểu đồ xu hướng.</li>
+        <li>So sánh theo thời gian.</li>
+      </ul>
+      <p>Cho phép người dùng dễ dàng theo dõi và phân tích dữ liệu.</p>
+
+      <h2>Cá nhân hóa Dashboard</h2>
+      <p>Mỗi người dùng có thể:</p>
+      <ul>
+        <li>Chọn các chỉ số quan trọng.</li>
+        <li>Sắp xếp vị trí Widget.</li>
+        <li>Lưu Dashboard cá nhân.</li>
+        <li>Thiết lập Dashboard theo vai trò.</li>
+        <li>Theo dõi nhiều chi nhánh trên cùng một màn hình.</li>
+        <li>Đặt ngưỡng cảnh báo theo nhu cầu.</li>
+      </ul>
+      <p>Giúp mỗi vị trí công việc có góc nhìn phù hợp với nhiệm vụ của mình.</p>
+
+      <h2>Lợi ích mang lại</h2>
+      <ul>
+        <li>Theo dõi toàn bộ hoạt động nhà thuốc theo thời gian thực.</li>
+        <li>Đưa ra quyết định nhanh dựa trên dữ liệu.</li>
+        <li>Phát hiện sớm rủi ro trong kinh doanh và vận hành.</li>
+        <li>Kiểm soát doanh thu, lợi nhuận và tồn kho hiệu quả.</li>
+        <li>Đánh giá hiệu suất nhân sự minh bạch.</li>
+        <li>Tối ưu nguồn lực và chi phí vận hành.</li>
+        <li>Hỗ trợ lập kế hoạch phát triển dựa trên số liệu thực tế.</li>
+        <li>Ứng dụng AI để chuyển dữ liệu thành hành động cụ thể.</li>
+      </ul>
+
+      <p>
+        Với Novixa Dashboard, chủ nhà thuốc không cần xem hàng chục báo cáo khác nhau. Chỉ với một màn hình, bạn có
+        thể nắm bắt toàn bộ hoạt động kinh doanh, theo dõi các KPI quan trọng và nhận được những phân tích, cảnh báo
+        cùng khuyến nghị từ AI để đưa ra quyết định nhanh hơn và chính xác hơn.
+      </p>
+
+      <p class="module-detail__actions">
+        <a class="btn btn-primary" href="https://survey.novixa.vn">Đánh giá miễn phí</a>
+        <a class="btn btn-secondary" href="/vi/lien-he">Đăng ký Demo</a>
+      </p>
+    </div>
+  </article>
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .module-detail__lead {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 1.25rem;
+  }
+
+  .module-detail__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+</style>

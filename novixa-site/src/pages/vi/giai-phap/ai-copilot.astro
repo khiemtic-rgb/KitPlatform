@@ -1,0 +1,209 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import '../../../styles/global.css';
+
+const title = 'AI Copilot';
+const description =
+  'Novixa AI Copilot là trợ lý AI giúp nhà thuốc phân tích dữ liệu, dự báo xu hướng và đưa ra quyết định vận hành nhanh hơn.';
+---
+
+<BaseLayout title={title} description={description} canonicalPath="/vi/giai-phap/ai-copilot">
+  <Header slot="header" />
+  <article class="section module-detail">
+    <div class="container prose module-detail__body">
+      <p><a href="/vi#giai-phap">← Quay lại Giải pháp</a></p>
+      <p class="eyebrow">Novixa AI Copilot</p>
+      <h1 class="section-title">{title}</h1>
+      <p class="module-detail__lead">
+        Trợ lý AI đồng hành cùng nhà thuốc trong mọi quyết định quản trị và vận hành
+      </p>
+
+      <p>
+        Novixa AI Copilot là trợ lý trí tuệ nhân tạo được tích hợp trực tiếp trong nền tảng Novixa, giúp chủ nhà thuốc
+        và nhân viên đưa ra quyết định nhanh hơn, chính xác hơn dựa trên dữ liệu thực tế. AI không chỉ trả lời câu hỏi
+        mà còn chủ động phân tích dữ liệu, phát hiện rủi ro, dự báo xu hướng và đề xuất hành động phù hợp để tối ưu
+        hiệu quả kinh doanh.
+      </p>
+
+      <h2>Hỏi đáp thông minh bằng ngôn ngữ tự nhiên</h2>
+      <p>Thay vì phải tìm kiếm nhiều báo cáo, bạn chỉ cần đặt câu hỏi như:</p>
+      <ul>
+        <li>Hôm nay doanh thu bao nhiêu?</li>
+        <li>Mặt hàng nào bán chạy nhất tuần này?</li>
+        <li>Thuốc nào sắp hết hàng?</li>
+        <li>Những sản phẩm nào tồn kho lâu nhất?</li>
+        <li>Lợi nhuận tháng này tăng hay giảm?</li>
+        <li>Khách hàng nào lâu chưa quay lại?</li>
+        <li>Chi nhánh nào hoạt động hiệu quả nhất?</li>
+      </ul>
+      <p>AI sẽ phân tích dữ liệu và trả lời ngay bằng ngôn ngữ dễ hiểu, kèm biểu đồ hoặc số liệu liên quan.</p>
+
+      <h2>Gợi ý nhập hàng thông minh</h2>
+      <p>Dựa trên dữ liệu bán hàng, tồn kho và xu hướng tiêu thụ, AI tự động:</p>
+      <ul>
+        <li>Đề xuất danh sách thuốc cần nhập.</li>
+        <li>Gợi ý số lượng nhập phù hợp.</li>
+        <li>Xác định thời điểm nhập tối ưu.</li>
+        <li>Phát hiện nguy cơ thiếu hàng.</li>
+        <li>Phát hiện nhập hàng quá mức.</li>
+        <li>Đề xuất nhà cung cấp phù hợp (khi có dữ liệu).</li>
+        <li>Ước tính lượng tồn kho sau khi nhập.</li>
+      </ul>
+      <p>Giúp giảm tồn kho dư thừa nhưng vẫn đảm bảo luôn đủ hàng để phục vụ khách hàng.</p>
+
+      <h2>Phân tích xu hướng kinh doanh</h2>
+      <p>AI liên tục theo dõi dữ liệu để phát hiện:</p>
+      <ul>
+        <li>Xu hướng tăng hoặc giảm doanh thu.</li>
+        <li>Biến động nhu cầu theo mùa.</li>
+        <li>Nhóm thuốc đang tăng trưởng.</li>
+        <li>Nhóm thuốc bán chậm.</li>
+        <li>Xu hướng mua hàng của khách hàng.</li>
+        <li>Thay đổi hành vi tiêu dùng.</li>
+        <li>Hiệu quả các chương trình khuyến mại.</li>
+      </ul>
+      <p>Nhờ đó, chủ nhà thuốc có thể chủ động điều chỉnh kế hoạch kinh doanh.</p>
+
+      <h2>Phát hiện rủi ro sớm</h2>
+      <p>AI không chỉ hiển thị số liệu mà còn chủ động cảnh báo:</p>
+      <ul>
+        <li>Thuốc sắp hết hàng.</li>
+        <li>Thuốc cận hạn sử dụng.</li>
+        <li>Tồn kho bất thường.</li>
+        <li>Doanh thu giảm đột ngột.</li>
+        <li>Lợi nhuận thấp hơn kỳ vọng.</li>
+        <li>Khách hàng có nguy cơ không quay lại.</li>
+        <li>Hàng bán chậm kéo dài.</li>
+        <li>Sai lệch giữa nhập và xuất kho.</li>
+      </ul>
+      <p>Những cảnh báo này giúp nhà thuốc xử lý kịp thời trước khi ảnh hưởng đến hoạt động kinh doanh.</p>
+
+      <h2>Hỗ trợ ra quyết định</h2>
+      <p>Khi phát hiện vấn đề, AI sẽ đưa ra các đề xuất cụ thể:</p>
+      <ul>
+        <li>Nên nhập thêm mặt hàng nào.</li>
+        <li>Nên giảm tồn kho nhóm sản phẩm nào.</li>
+        <li>Nên triển khai chương trình khuyến mại nào.</li>
+        <li>Nên điều chuyển hàng giữa các chi nhánh.</li>
+        <li>Nên tập trung chăm sóc nhóm khách hàng nào.</li>
+        <li>Nên tối ưu quy trình nào trước.</li>
+      </ul>
+      <p>AI không thay thế người quản lý mà đóng vai trò là trợ lý hỗ trợ phân tích và đề xuất.</p>
+
+      <h2>AI hỗ trợ chăm sóc khách hàng</h2>
+      <p>AI giúp nâng cao hiệu quả CRM bằng cách:</p>
+      <ul>
+        <li>Gợi ý khách hàng cần chăm sóc.</li>
+        <li>Dự đoán khách hàng có nguy cơ rời bỏ.</li>
+        <li>Đề xuất thời điểm gửi ưu đãi.</li>
+        <li>Gợi ý sản phẩm phù hợp.</li>
+        <li>Tự động phân nhóm khách hàng.</li>
+        <li>Phân tích hiệu quả các chương trình Loyalty.</li>
+      </ul>
+      <p>Giúp tăng tỷ lệ khách hàng quay lại và nâng cao giá trị vòng đời khách hàng.</p>
+
+      <h2>AI hỗ trợ quản lý chuỗi nhà thuốc</h2>
+      <p>Đối với hệ thống nhiều chi nhánh, AI có thể:</p>
+      <ul>
+        <li>So sánh hiệu quả giữa các cửa hàng.</li>
+        <li>Phát hiện chi nhánh hoạt động kém hiệu quả.</li>
+        <li>Gợi ý điều chuyển hàng hóa.</li>
+        <li>Phân tích KPI từng chi nhánh.</li>
+        <li>Đánh giá hiệu suất nhân sự.</li>
+        <li>Đề xuất các cơ hội cải thiện.</li>
+      </ul>
+
+      <h2>AI tạo báo cáo tự động</h2>
+      <p>AI có thể tổng hợp dữ liệu và tạo các báo cáo quản trị như:</p>
+      <ul>
+        <li>Báo cáo doanh thu.</li>
+        <li>Báo cáo lợi nhuận.</li>
+        <li>Báo cáo tồn kho.</li>
+        <li>Báo cáo khách hàng.</li>
+        <li>Báo cáo KPI.</li>
+        <li>Báo cáo vận hành.</li>
+        <li>Báo cáo tài chính.</li>
+      </ul>
+      <p>
+        Các báo cáo được trình bày dưới dạng biểu đồ, bảng số liệu và phần nhận xét, giúp lãnh đạo dễ dàng nắm bắt
+        tình hình.
+      </p>
+
+      <h2>AI hỗ trợ phân tích và tư vấn</h2>
+      <p>Không chỉ đưa ra số liệu, AI còn:</p>
+      <ul>
+        <li>Phân tích nguyên nhân của vấn đề.</li>
+        <li>Giải thích ý nghĩa của các chỉ số.</li>
+        <li>Đánh giá mức độ ảnh hưởng.</li>
+        <li>Đề xuất nhiều phương án xử lý.</li>
+        <li>Ưu tiên các hành động mang lại hiệu quả cao nhất.</li>
+        <li>Xây dựng lộ trình cải thiện theo từng giai đoạn.</li>
+      </ul>
+      <p>Điều này giúp chủ nhà thuốc đưa ra quyết định dựa trên dữ liệu thay vì cảm tính.</p>
+
+      <h2>AI học từ dữ liệu doanh nghiệp</h2>
+      <p>Theo thời gian, AI sẽ hiểu rõ hơn về đặc điểm hoạt động của từng nhà thuốc:</p>
+      <ul>
+        <li>Mô hình kinh doanh.</li>
+        <li>Danh mục sản phẩm.</li>
+        <li>Hành vi khách hàng.</li>
+        <li>Chu kỳ bán hàng.</li>
+        <li>Thói quen nhập hàng.</li>
+        <li>Hiệu quả các chương trình marketing.</li>
+      </ul>
+      <p>Nhờ đó, các khuyến nghị ngày càng phù hợp với thực tế của từng nhà thuốc.</p>
+
+      <h2>Bảo mật và kiểm soát</h2>
+      <p>Novixa AI Copilot được thiết kế để hỗ trợ người dùng, không tự động đưa ra quyết định thay doanh nghiệp.</p>
+      <ul>
+        <li>Mọi đề xuất đều có căn cứ từ dữ liệu.</li>
+        <li>Người dùng là người quyết định cuối cùng.</li>
+        <li>Có thể xem lại nguồn dữ liệu và lịch sử phân tích.</li>
+        <li>Phân quyền truy cập theo vai trò.</li>
+        <li>Bảo vệ dữ liệu theo tiêu chuẩn bảo mật của hệ thống.</li>
+      </ul>
+
+      <h2>Lợi ích mang lại</h2>
+      <ul>
+        <li>Hỗ trợ ra quyết định nhanh và chính xác.</li>
+        <li>Giảm thời gian tổng hợp và phân tích dữ liệu.</li>
+        <li>Tối ưu kế hoạch nhập hàng.</li>
+        <li>Kiểm soát tồn kho hiệu quả.</li>
+        <li>Phát hiện sớm rủi ro trong vận hành.</li>
+        <li>Gia tăng doanh thu thông qua các khuyến nghị thông minh.</li>
+        <li>Nâng cao hiệu quả chăm sóc khách hàng.</li>
+        <li>Giúp chủ nhà thuốc tập trung vào phát triển kinh doanh thay vì xử lý các công việc thủ công.</li>
+      </ul>
+
+      <p>
+        Với Novixa AI Copilot, dữ liệu không còn chỉ là những con số trên báo cáo. AI biến dữ liệu thành những phân
+        tích, cảnh báo và khuyến nghị có thể hành động ngay, giúp chủ nhà thuốc quản lý hiệu quả hơn, ra quyết định tự
+        tin hơn và từng bước xây dựng một mô hình vận hành hiện đại dựa trên dữ liệu và trí tuệ nhân tạo.
+      </p>
+
+      <p class="module-detail__actions">
+        <a class="btn btn-primary" href="https://survey.novixa.vn">Đánh giá miễn phí</a>
+        <a class="btn btn-secondary" href="/vi/lien-he">Đăng ký Demo</a>
+      </p>
+    </div>
+  </article>
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .module-detail__lead {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 1.25rem;
+  }
+
+  .module-detail__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+</style>

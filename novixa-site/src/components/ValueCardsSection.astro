@@ -5,6 +5,7 @@ const tags = [
   { label: 'CRM', icon: 'customers' },
   { label: 'Dashboard', icon: 'reports' },
   { label: 'App khách hàng', icon: 'app' },
+  { label: 'AI Copilot', icon: 'ai' },
 ];
 ---
 
@@ -44,6 +45,12 @@ const tags = [
                   <>
                     <rect x="7" y="2" width="10" height="20" rx="2" />
                     <circle cx="12" cy="18" r="0.75" fill="currentColor" stroke="none" />
+                  </>
+                )}
+                {tag.icon === 'ai' && (
+                  <>
+                    <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" />
+                    <path d="M5 19l1 3 1-3 3-1-3-1-1-3-1 3-3 1 3 1z" />
                   </>
                 )}
               </svg>

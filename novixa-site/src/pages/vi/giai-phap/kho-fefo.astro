@@ -1,0 +1,202 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import '../../../styles/global.css';
+
+const title = 'Kho FEFO';
+const description =
+  'Novixa Kho FEFO giúp nhà thuốc quản lý tồn kho theo lô, hạn dùng và nguyên tắc FEFO — giảm thất thoát và tối ưu vòng quay hàng hóa.';
+---
+
+<BaseLayout title={title} description={description} canonicalPath="/vi/giai-phap/kho-fefo">
+  <Header slot="header" />
+  <article class="section module-detail">
+    <div class="container prose module-detail__body">
+      <p><a href="/vi#giai-phap">← Quay lại Giải pháp</a></p>
+      <p class="eyebrow">Novixa Kho FEFO</p>
+      <h1 class="section-title">{title}</h1>
+      <p class="module-detail__lead">Kiểm soát tồn kho thông minh, giảm thất thoát và tối ưu vòng quay hàng hóa</p>
+
+      <p>
+        Kho FEFO của Novixa được thiết kế dành riêng cho nhà thuốc, giúp quản lý hàng hóa theo lô sản xuất, hạn sử
+        dụng và nguyên tắc FEFO (First Expired, First Out). Hệ thống tự động theo dõi biến động tồn kho, cảnh báo hàng
+        cận hạn và hỗ trợ xuất đúng lô, giúp giảm thất thoát, hạn chế thuốc hết hạn và nâng cao hiệu quả sử dụng vốn.
+      </p>
+
+      <h2>Quản lý theo lô và hạn sử dụng</h2>
+      <p>Mỗi lần nhập hàng, Novixa lưu đầy đủ thông tin:</p>
+      <ul>
+        <li>Mã lô sản xuất.</li>
+        <li>Ngày sản xuất.</li>
+        <li>Hạn sử dụng.</li>
+        <li>Nhà cung cấp.</li>
+        <li>Phiếu nhập.</li>
+        <li>Giá nhập.</li>
+        <li>Số lượng theo từng lô.</li>
+        <li>Vị trí lưu kho.</li>
+      </ul>
+      <p>Nhờ đó, toàn bộ lịch sử của từng lô thuốc luôn được theo dõi chính xác.</p>
+
+      <h2>Xuất kho theo nguyên tắc FEFO</h2>
+      <p>Novixa tự động ưu tiên xuất các lô có hạn sử dụng gần nhất trước.</p>
+      <p>Hệ thống sẽ:</p>
+      <ul>
+        <li>Gợi ý lô cần xuất.</li>
+        <li>Cảnh báo khi chọn sai lô.</li>
+        <li>Hạn chế xuất nhầm hàng.</li>
+        <li>Giảm nguy cơ thuốc hết hạn trong kho.</li>
+        <li>Đảm bảo tuân thủ nguyên tắc GPP.</li>
+      </ul>
+
+      <h2>Cảnh báo hàng cận hạn</h2>
+      <p>Hệ thống chủ động theo dõi hạn sử dụng của từng lô thuốc và gửi cảnh báo theo nhiều mốc thời gian:</p>
+      <ul>
+        <li>Còn 180 ngày.</li>
+        <li>Còn 90 ngày.</li>
+        <li>Còn 60 ngày.</li>
+        <li>Còn 30 ngày.</li>
+        <li>Đã hết hạn.</li>
+      </ul>
+      <p>Thông báo có thể gửi qua:</p>
+      <ul>
+        <li>Dashboard.</li>
+        <li>Thông báo trong hệ thống.</li>
+        <li>Email.</li>
+        <li>Ứng dụng di động.</li>
+        <li>Zalo (khi tích hợp).</li>
+      </ul>
+      <p>Giúp chủ nhà thuốc chủ động xử lý trước khi phát sinh thiệt hại.</p>
+
+      <h2>Theo dõi tồn kho theo thời gian thực</h2>
+      <p>Mọi giao dịch đều được cập nhật ngay lập tức:</p>
+      <ul>
+        <li>Nhập hàng.</li>
+        <li>Bán hàng.</li>
+        <li>Xuất kho.</li>
+        <li>Chuyển kho.</li>
+        <li>Trả hàng.</li>
+        <li>Kiểm kê.</li>
+        <li>Điều chỉnh tồn.</li>
+      </ul>
+      <p>Chủ nhà thuốc luôn biết chính xác:</p>
+      <ul>
+        <li>Tồn kho hiện tại.</li>
+        <li>Tồn theo từng lô.</li>
+        <li>Tồn theo từng chi nhánh.</li>
+        <li>Giá trị tồn kho.</li>
+        <li>Hàng sắp hết.</li>
+        <li>Hàng tồn lâu.</li>
+      </ul>
+
+      <h2>Quản lý nhiều kho và nhiều chi nhánh</h2>
+      <p>Đối với chuỗi nhà thuốc, Novixa hỗ trợ:</p>
+      <ul>
+        <li>Quản lý nhiều kho.</li>
+        <li>Chuyển hàng giữa các chi nhánh.</li>
+        <li>Theo dõi tồn kho từng cửa hàng.</li>
+        <li>Đồng bộ dữ liệu theo thời gian thực.</li>
+        <li>Điều phối hàng hóa giữa các kho.</li>
+      </ul>
+      <p>Giúp tối ưu lượng hàng và giảm tồn kho dư thừa.</p>
+
+      <h2>Kiểm kê nhanh và chính xác</h2>
+      <p>Novixa hỗ trợ nhiều phương thức kiểm kê:</p>
+      <ul>
+        <li>Quét Barcode.</li>
+        <li>Quét QR Code.</li>
+        <li>Kiểm kê theo khu vực.</li>
+        <li>Kiểm kê theo lô.</li>
+        <li>Kiểm kê theo nhóm hàng.</li>
+        <li>Kiểm kê bằng thiết bị di động.</li>
+      </ul>
+      <p>Sau kiểm kê, hệ thống tự động:</p>
+      <ul>
+        <li>So sánh số liệu.</li>
+        <li>Phát hiện chênh lệch.</li>
+        <li>Ghi nhận điều chỉnh.</li>
+        <li>Lưu lịch sử kiểm kê.</li>
+      </ul>
+
+      <h2>Dự báo nhu cầu nhập hàng</h2>
+      <p>Dựa trên dữ liệu bán hàng và tồn kho, Novixa hỗ trợ:</p>
+      <ul>
+        <li>Dự báo nhu cầu nhập hàng.</li>
+        <li>Đề xuất số lượng nhập.</li>
+        <li>Phát hiện nguy cơ thiếu hàng.</li>
+        <li>Gợi ý thời điểm nhập tối ưu.</li>
+        <li>Tránh nhập quá nhiều hoặc quá ít.</li>
+      </ul>
+      <p>Giúp cân bằng giữa khả năng đáp ứng và chi phí tồn kho.</p>
+
+      <h2>AI hỗ trợ quản lý kho</h2>
+      <p>AI phân tích dữ liệu tồn kho để:</p>
+      <ul>
+        <li>Phát hiện hàng bán chậm.</li>
+        <li>Xác định hàng tồn lâu.</li>
+        <li>Dự báo nguy cơ hết hàng.</li>
+        <li>Dự báo nguy cơ hết hạn.</li>
+        <li>Gợi ý điều chuyển hàng giữa các chi nhánh.</li>
+        <li>Đề xuất chương trình khuyến mại cho hàng cận hạn.</li>
+        <li>Cảnh báo bất thường trong nhập xuất kho.</li>
+      </ul>
+      <p>AI giúp chủ nhà thuốc đưa ra quyết định nhanh hơn và chính xác hơn.</p>
+
+      <h2>Dashboard quản lý kho</h2>
+      <p>Toàn bộ dữ liệu kho được trực quan trên Dashboard:</p>
+      <ul>
+        <li>Tổng giá trị tồn kho.</li>
+        <li>Tồn theo nhóm thuốc.</li>
+        <li>Tồn theo nhà cung cấp.</li>
+        <li>Tồn theo chi nhánh.</li>
+        <li>Hàng bán chậm.</li>
+        <li>Hàng cận hạn.</li>
+        <li>Hàng hết hạn.</li>
+        <li>Vòng quay tồn kho.</li>
+        <li>Tỷ lệ thất thoát.</li>
+        <li>Lịch sử nhập xuất.</li>
+      </ul>
+      <p>Chỉ với một màn hình, chủ nhà thuốc có thể nắm bắt toàn bộ tình trạng kho.</p>
+
+      <h2>Lợi ích mang lại</h2>
+      <ul>
+        <li>Giảm thất thoát do thuốc hết hạn.</li>
+        <li>Kiểm soát tồn kho theo thời gian thực.</li>
+        <li>Xuất đúng lô, đúng hạn sử dụng.</li>
+        <li>Tăng tốc độ kiểm kê.</li>
+        <li>Giảm vốn bị chôn trong tồn kho.</li>
+        <li>Tối ưu vòng quay hàng hóa.</li>
+        <li>Đảm bảo tuân thủ GPP.</li>
+        <li>Hỗ trợ ra quyết định nhập hàng dựa trên dữ liệu.</li>
+        <li>Nâng cao hiệu quả quản lý chuỗi nhà thuốc.</li>
+      </ul>
+
+      <p>
+        Với Novixa Kho FEFO, mỗi lô thuốc đều được theo dõi xuyên suốt từ khi nhập kho đến khi bán ra, giúp nhà thuốc
+        kiểm soát tồn kho chặt chẽ, giảm rủi ro hàng hết hạn và tối ưu hiệu quả kinh doanh bằng dữ liệu và tự động hóa.
+      </p>
+
+      <p class="module-detail__actions">
+        <a class="btn btn-primary" href="https://survey.novixa.vn">Đánh giá miễn phí</a>
+        <a class="btn btn-secondary" href="/vi/lien-he">Đăng ký Demo</a>
+      </p>
+    </div>
+  </article>
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .module-detail__lead {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 1.25rem;
+  }
+
+  .module-detail__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+</style>
