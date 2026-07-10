@@ -82,8 +82,8 @@
 
 .hp-hero {
   display: grid;
-  grid-template-columns: 41% 59%;
-  gap: 20px;
+  grid-template-columns: minmax(0, 44fr) minmax(0, 56fr);
+  gap: 10px;
   align-items: start;
 }
 
@@ -124,6 +124,56 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 10px;
+  margin-bottom: 0;
+}
+
+.hp-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--hp-border);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--hp-heading);
+  white-space: nowrap;
+}
+
+.hp-tag__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: var(--hp-green-soft);
+  color: var(--hp-green);
+}
+
+.hp-tag__icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Dashboard mockup — tall enough to balance left text column */
+.hp-hero__visual {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  align-self: start;
+  overflow: visible;
+  max-height: min(380px, 38svh);
+  margin-top: -4px;
+  padding-left: 0;
+}
+
+.hp-hero__mockup {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  padding-right: 0;
 }
 
 .hp-btn {
@@ -208,62 +258,6 @@
   color: var(--hp-muted);
 }
 
-.hp-hero__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 10px;
-  padding-bottom: 0;
-}
-
-.hp-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px 3px 3px;
-  border: 1px solid var(--hp-border);
-  border-radius: 999px;
-  background: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--hp-heading);
-  white-space: nowrap;
-}
-
-.hp-tag__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  background: var(--hp-green-soft);
-  color: var(--hp-green);
-}
-
-.hp-tag__icon svg {
-  width: 11px;
-  height: 11px;
-}
-
-/* Dashboard mockup — tall enough to balance left text column */
-.hp-hero__visual {
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-start;
-  align-self: start;
-  overflow: visible;
-  max-height: min(380px, 38svh);
-  margin-top: -4px;
-}
-
-.hp-hero__mockup {
-  position: relative;
-  width: 100%;
-  max-width: 500px;
-  padding-right: 10px;
-}
-
 .home-page .hp-hero__mockup .dashboard-preview--hero {
   transform: none !important;
   max-height: min(360px, 36svh) !important;
@@ -333,82 +327,20 @@
   overflow: hidden;
 }
 
-/* ─── Trust bar — compact band inside fold ─── */
+/* ─── Module tags band below hero ─── */
 .hp-trust {
   flex: 0 0 auto;
-  padding: 8px 0 10px;
+  padding: 10px 0 12px;
   background: var(--hp-bg-muted);
   border-top: 1px solid var(--hp-border);
 }
 
-.hp-trust__bar {
+.hp-trust__tags {
   display: flex;
-  align-items: stretch;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 0;
-}
-
-.hp-trust__divider {
-  width: 1px;
-  align-self: stretch;
-  margin: 8px 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    #cbd5e1 0,
-    #cbd5e1 4px,
-    transparent 4px,
-    transparent 8px
-  );
-  flex-shrink: 0;
-}
-
-.hp-trust__item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-height: 36px;
-  padding: 4px 12px;
-}
-
-.hp-trust__item:first-child {
-  padding-left: 0;
-}
-
-.hp-trust__item:last-child {
-  padding-right: 0;
-}
-
-.hp-trust__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  background: var(--hp-green-soft);
-  color: var(--hp-green);
-  flex-shrink: 0;
-}
-
-.hp-trust__icon svg {
-  width: 14px;
-  height: 14px;
-}
-
-.hp-trust__item strong {
-  display: block;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--hp-heading);
-  line-height: 1.2;
-}
-
-.hp-trust__item span {
-  display: block;
-  font-size: 10px;
-  color: var(--hp-muted);
-  margin-top: 0;
+  gap: 8px 12px;
 }
 
 /* ─── AI Health Check — compact inside fold ─── */
@@ -1021,23 +953,9 @@
     width: calc(33.333% - 12px);
   }
 
-  .hp-trust__bar {
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-
-  .hp-trust__divider {
-    display: none;
-  }
-
-  .hp-trust__item {
-    flex: 0 0 calc(50% - 8px);
-    padding: 12px 0;
-  }
-
-  .hp-trust__item:first-child,
-  .hp-trust__item:last-child {
-    padding-inline: 0;
+  .hp-trust__tags {
+    justify-content: center;
+    gap: 8px;
   }
 
   .hp-health__benefits,
@@ -1067,15 +985,14 @@
     font-size: 12px;
   }
 
-  .hp-trust__bar,
+  .hp-trust__tags {
+    justify-content: center;
+  }
+
   .hp-health__benefits,
   .hp-modules__grid,
   .hp-pricing__grid {
     grid-template-columns: 1fr;
-  }
-
-  .hp-trust__item {
-    flex: 0 0 100%;
   }
 
   .hp-health__cta {

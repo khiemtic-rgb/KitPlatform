@@ -1,14 +1,6 @@
 ---
 import DashboardPreview from './DashboardPreview.astro';
 
-const tags = [
-  { label: 'POS', icon: 'pos' },
-  { label: 'Kho FEFO', icon: 'warehouse' },
-  { label: 'CRM', icon: 'customers' },
-  { label: 'Dashboard', icon: 'reports' },
-  { label: 'App khách hàng', icon: 'app' },
-];
-
 const assessmentUrl = 'https://survey.novixa.vn';
 ---
 
@@ -49,49 +41,6 @@ const assessmentUrl = 'https://survey.novixa.vn';
           <small>Trải nghiệm nền tảng</small>
         </span>
       </a>
-    </div>
-    <div class="hp-hero__tags" aria-label="Các module chính">
-      {
-        tags.map((tag) => (
-          <span class="hp-tag">
-            <span class="hp-tag__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                {tag.icon === 'pos' && (
-                  <>
-                    <rect x="3" y="6" width="18" height="12" rx="2" />
-                    <path d="M7 11h10M7 15h6" />
-                  </>
-                )}
-                {tag.icon === 'warehouse' && (
-                  <>
-                    <path d="M3 9l9-5 9 5v11H3V9z" />
-                    <path d="M9 20v-6h6v6" />
-                  </>
-                )}
-                {tag.icon === 'customers' && (
-                  <>
-                    <circle cx="12" cy="8" r="3.5" />
-                    <path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6" />
-                  </>
-                )}
-                {tag.icon === 'reports' && (
-                  <>
-                    <path d="M4 19V9l4-2 4 3 4-2v11" />
-                    <path d="M4 19h16" />
-                  </>
-                )}
-                {tag.icon === 'app' && (
-                  <>
-                    <rect x="7" y="2" width="10" height="20" rx="2" />
-                    <circle cx="12" cy="18" r="0.75" fill="currentColor" stroke="none" />
-                  </>
-                )}
-              </svg>
-            </span>
-            {tag.label}
-          </span>
-        ))
-      }
     </div>
   </div>
 

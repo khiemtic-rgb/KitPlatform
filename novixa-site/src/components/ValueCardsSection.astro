@@ -1,45 +1,55 @@
 ---
-const cards = [
-  { icon: 'clock', title: '7 phút', desc: 'Hoàn thành đánh giá' },
-  { icon: 'clipboard', title: '30 câu hỏi', desc: 'Đánh giá toàn diện' },
-  { icon: 'message', title: 'Tư vấn miễn phí', desc: 'Cùng chuyên gia Novixa' },
+const tags = [
+  { label: 'POS', icon: 'pos' },
+  { label: 'Kho FEFO', icon: 'warehouse' },
+  { label: 'CRM', icon: 'customers' },
+  { label: 'Dashboard', icon: 'reports' },
+  { label: 'App khách hàng', icon: 'app' },
 ];
 ---
 
-<section class="hp-trust" aria-label="Thông tin đánh giá nhanh">
+<section class="hp-trust" aria-label="Các module chính">
   <div class="container">
-    <div class="hp-trust__bar">
+    <div class="hp-trust__tags">
       {
-        cards.map((card, i) => (
-          <>
-            {i > 0 && <span class="hp-trust__divider" aria-hidden="true" />}
-            <article class="hp-trust__item">
-              <span class="hp-trust__icon" aria-hidden="true">
-                {card.icon === 'clock' && (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M12 7v5l3 2" />
-                  </svg>
+        tags.map((tag) => (
+          <span class="hp-tag">
+            <span class="hp-tag__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                {tag.icon === 'pos' && (
+                  <>
+                    <rect x="3" y="6" width="18" height="12" rx="2" />
+                    <path d="M7 11h10M7 15h6" />
+                  </>
                 )}
-                {card.icon === 'clipboard' && (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
-                    <rect x="5" y="4" width="14" height="17" rx="2" />
-                    <path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1" />
-                    <path d="M9 10h6M9 14h4" />
-                  </svg>
+                {tag.icon === 'warehouse' && (
+                  <>
+                    <path d="M3 9l9-5 9 5v11H3V9z" />
+                    <path d="M9 20v-6h6v6" />
+                  </>
                 )}
-                {card.icon === 'message' && (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
-                    <path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4v-4H6a2 2 0 01-2-2V6z" />
-                  </svg>
+                {tag.icon === 'customers' && (
+                  <>
+                    <circle cx="12" cy="8" r="3.5" />
+                    <path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6" />
+                  </>
                 )}
-              </span>
-              <div>
-                <strong>{card.title}</strong>
-                <span>{card.desc}</span>
-              </div>
-            </article>
-          </>
+                {tag.icon === 'reports' && (
+                  <>
+                    <path d="M4 19V9l4-2 4 3 4-2v11" />
+                    <path d="M4 19h16" />
+                  </>
+                )}
+                {tag.icon === 'app' && (
+                  <>
+                    <rect x="7" y="2" width="10" height="20" rx="2" />
+                    <circle cx="12" cy="18" r="0.75" fill="currentColor" stroke="none" />
+                  </>
+                )}
+              </svg>
+            </span>
+            {tag.label}
+          </span>
         ))
       }
     </div>
