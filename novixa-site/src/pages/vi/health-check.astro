@@ -1,0 +1,402 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import HealthCheckHeader from '../../components/health-check/HealthCheckHeader.astro';
+import HealthCheckFooter from '../../components/health-check/HealthCheckFooter.astro';
+import '../../styles/global.css';
+import '../../styles/health-check.css';
+
+const assessmentUrl = 'https://survey.novixa.vn';
+
+const title = 'Kiểm tra sức khỏe nhà thuốc';
+const description =
+  'Chỉ 7 phút để biết nhà thuốc của bạn đang vận hành hiệu quả hay đang mất lợi nhuận mà chưa nhận ra. Đánh giá miễn phí, nhận báo cáo PDF chuyên sâu.';
+
+const heroBenefits = [
+  'Biết điểm mạnh & điểm yếu',
+  'Phát hiện rủi ro tồn kho',
+  'Xác định nguyên nhân giảm doanh thu',
+  'Nhận lộ trình cải thiện',
+];
+
+const trustItems = ['Miễn phí', 'Không cần thẻ', 'Nhận báo cáo PDF', 'Bảo mật thông tin'];
+
+const deliverables = [
+  {
+    icon: 'gauge',
+    title: 'Điểm sức khỏe nhà thuốc',
+    desc: 'Đánh giá mức độ trưởng thành theo thang điểm quốc tế.',
+  },
+  {
+    icon: 'brain',
+    title: 'Báo cáo AI chuyên sâu',
+    desc: 'Phân tích điểm mạnh, điểm yếu, rủi ro và cơ hội cải thiện.',
+  },
+  {
+    icon: 'swot',
+    title: 'SWOT Analysis',
+    desc: 'Phân tích Strength, Weakness, Opportunity, Threat cho nhà thuốc.',
+  },
+  {
+    icon: 'roadmap',
+    title: 'Roadmap 90 ngày',
+    desc: 'Lộ trình cải thiện ưu tiên theo từng giai đoạn.',
+  },
+  {
+    icon: 'consulting',
+    title: 'Tư vấn chuyên gia',
+    desc: 'Tư vấn 1-1 để giải thích kết quả và xây dựng kế hoạch.',
+  },
+];
+
+const steps = [
+  { title: 'Trả lời 30 câu hỏi', desc: 'Khoảng 7 phút', icon: 'questions' },
+  { title: 'AI phân tích', desc: 'Đánh giá & chấm điểm', icon: 'brain' },
+  { title: 'Nhận báo cáo', desc: 'Dashboard • SWOT • Roadmap', icon: 'pdf' },
+  { title: 'Tư vấn chuyên gia', desc: 'Giải thích kết quả', icon: 'expert' },
+  { title: 'Lộ trình cải thiện', desc: 'Giải pháp phù hợp', icon: 'target' },
+];
+
+const reportItems = ['Dashboard', 'SWOT', 'Roadmap', 'KPI', 'Khuyến nghị', 'AI Insight'];
+---
+
+<BaseLayout title={title} description={description} canonicalPath="/vi/health-check">
+  <HealthCheckHeader slot="header" />
+
+  <div class="hc-page">
+    <!-- Hero -->
+    <section class="hc-hero hc-section">
+      <div class="hc-container hc-hero__grid">
+        <div class="hc-hero__content hc-reveal">
+          <span class="hc-hero__badge">AI HEALTH CHECK</span>
+          <h1 class="hc-hero__title">
+            KIỂM TRA<br />SỨC KHỎE<br />NHÀ THUỐC
+          </h1>
+          <p class="hc-hero__subtitle">
+            Chỉ 7 phút để biết nhà thuốc của bạn đang vận hành hiệu quả hay đang mất lợi nhuận mà chưa nhận ra.
+          </p>
+          <ul class="hc-hero__benefits">
+            {
+              heroBenefits.map((item) => (
+                <li>
+                  <span class="hc-hero__check" aria-hidden="true">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 8.5L6.5 12L13 4" />
+                    </svg>
+                  </span>
+                  {item}
+                </li>
+              ))
+            }
+          </ul>
+          <div class="hc-hero__cta-wrap">
+            <a class="hc-btn-primary" href={assessmentUrl}>
+              BẮT ĐẦU ĐÁNH GIÁ MIỄN PHÍ
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </a>
+            <div class="hc-hero__trust">
+              {
+                trustItems.map((item) => (
+                  <span>
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M3 8.5L6.5 12L13 4" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    {item}
+                  </span>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="hc-hero__visual hc-reveal" aria-hidden="true">
+          <div class="hc-mockup">
+            <div class="hc-mockup__card hc-mockup__card--score">
+              <span class="hc-mockup__label">Điểm sức khỏe tổng thể</span>
+              <div class="hc-mockup__score">
+                <strong>72</strong>
+                <span>/100</span>
+              </div>
+              <div class="hc-mockup__bar"><div class="hc-mockup__bar-fill"></div></div>
+              <span class="hc-mockup__level">Level 3 — Đang phát triển</span>
+            </div>
+
+            <div class="hc-mockup__card hc-mockup__card--radar">
+              <span class="hc-mockup__label">Phân tích 6 lĩnh vực</span>
+              <svg class="hc-radar" viewBox="0 0 120 100" fill="none">
+                <polygon points="60,12 95,35 88,72 60,88 32,72 25,35" fill="rgba(25,195,125,0.08)" stroke="#e2e8f0" stroke-width="1" />
+                <polygon points="60,22 82,38 78,65 60,76 42,65 38,38" fill="rgba(25,195,125,0.25)" stroke="#19c37d" stroke-width="1.5" />
+                <circle cx="60" cy="12" r="2" fill="#19c37d" />
+                <circle cx="95" cy="35" r="2" fill="#19c37d" />
+                <circle cx="88" cy="72" r="2" fill="#19c37d" />
+                <circle cx="60" cy="88" r="2" fill="#19c37d" />
+                <circle cx="32" cy="72" r="2" fill="#19c37d" />
+                <circle cx="25" cy="35" r="2" fill="#19c37d" />
+              </svg>
+            </div>
+
+            <div class="hc-mockup__card hc-mockup__card--trend">
+              <span class="hc-mockup__label">Xu hướng lợi nhuận</span>
+              <div class="hc-trend-value">+18.6% so với kỳ trước</div>
+              <svg class="hc-trend-chart" viewBox="0 0 120 48" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="hcTrendFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#19c37d" stop-opacity="0.3" />
+                    <stop offset="100%" stop-color="#19c37d" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <polygon points="0,40 20,32 40,36 60,24 80,28 100,16 120,20 120,48 0,48" fill="url(#hcTrendFill)" />
+                <polyline points="0,40 20,32 40,36 60,24 80,28 100,16 120,20" fill="none" stroke="#19c37d" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </div>
+
+            <div class="hc-mockup__card hc-mockup__card--swot">
+              <span class="hc-mockup__label">SWOT</span>
+              <div class="hc-swot-grid">
+                <span>S</span>
+                <span>W</span>
+                <span>O</span>
+                <span>T</span>
+              </div>
+            </div>
+
+            <div class="hc-mockup__card hc-mockup__card--roadmap">
+              <span class="hc-mockup__label">Roadmap 90 ngày</span>
+              <div class="hc-roadmap-phases">
+                <span>30 ngày</span>
+                <span>60 ngày</span>
+                <span>90 ngày</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Deliverables -->
+    <section class="hc-section hc-deliverables hc-reveal">
+      <div class="hc-container">
+        <h2 class="hc-section__title">Bạn sẽ nhận được gì?</h2>
+        <div class="hc-cards">
+          {
+            deliverables.map((card) => (
+              <article class="hc-card">
+                <span class="hc-card__icon" aria-hidden="true">
+                  {card.icon === 'gauge' && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                      <path d="M12 14a4 4 0 100-8 4 4 0 000 8z" />
+                      <path d="M12 6V4M12 20v-2M6 12H4M20 12h-2" />
+                      <path d="M8.5 8.5l-1-1M16.5 15.5l1 1M15.5 8.5l1-1M8.5 15.5l-1 1" />
+                    </svg>
+                  )}
+                  {card.icon === 'brain' && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                      <path d="M9 5a3 3 0 00-3 3v1a2 2 0 01-2 2 2 2 0 000 4 2 2 0 012 2v1a3 3 0 003 3" />
+                      <path d="M15 5a3 3 0 013 3v1a2 2 0 012 2 2 2 0 010 4 2 2 0 01-2 2v1a3 3 0 01-3 3" />
+                    </svg>
+                  )}
+                  {card.icon === 'swot' && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                      <rect x="3" y="3" width="8" height="8" rx="2" />
+                      <rect x="13" y="3" width="8" height="8" rx="2" />
+                      <rect x="3" y="13" width="8" height="8" rx="2" />
+                      <rect x="13" y="13" width="8" height="8" rx="2" />
+                    </svg>
+                  )}
+                  {card.icon === 'roadmap' && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                      <path d="M4 18l4-8 4 4 4-10 4 6" />
+                      <circle cx="4" cy="18" r="1.5" fill="currentColor" />
+                      <circle cx="20" cy="10" r="1.5" fill="currentColor" />
+                    </svg>
+                  )}
+                  {card.icon === 'consulting' && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                      <circle cx="12" cy="9" r="3" />
+                      <path d="M6 19c0-2.8 2.7-5 6-5s6 2.2 6 5" />
+                      <path d="M4 12.5a8 8 0 0116 0" />
+                    </svg>
+                  )}
+                </span>
+                <h3>{card.title}</h3>
+                <p>{card.desc}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Process -->
+    <section class="hc-section hc-reveal">
+      <div class="hc-container">
+        <h2 class="hc-section__title">Quy trình đánh giá</h2>
+        <div class="hc-process__flow" aria-label="Quy trình 5 bước">
+          {
+            steps.map((step, i) => (
+              <>
+                {i > 0 && (
+                  <span class="hc-process__arrow" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </span>
+                )}
+                <div class="hc-process__step">
+                  <div class="hc-process__circle-wrap">
+                    <div class="hc-process__circle">
+                      {step.icon === 'questions' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                          <rect x="5" y="3" width="14" height="18" rx="2" />
+                          <path d="M8.5 9.5l1.5 1.5 3-3M8 14h8M8 17h5" />
+                        </svg>
+                      )}
+                      {step.icon === 'brain' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                          <path d="M9 5a3 3 0 00-3 3v1a2 2 0 01-2 2 2 2 0 000 4 2 2 0 012 2v1a3 3 0 003 3" />
+                          <path d="M15 5a3 3 0 013 3v1a2 2 0 012 2 2 2 0 010 4 2 2 0 01-2 2v1a3 3 0 01-3 3" />
+                        </svg>
+                      )}
+                      {step.icon === 'pdf' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                          <path d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
+                          <path d="M14 3v5h5" />
+                        </svg>
+                      )}
+                      {step.icon === 'expert' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                          <circle cx="12" cy="9" r="3" />
+                          <path d="M6 19c0-2.8 2.7-5 6-5s6 2.2 6 5" />
+                        </svg>
+                      )}
+                      {step.icon === 'target' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                          <circle cx="12" cy="12" r="8" />
+                          <circle cx="12" cy="12" r="4" />
+                          <circle cx="12" cy="12" r="1" fill="currentColor" />
+                        </svg>
+                      )}
+                    </div>
+                    <span class="hc-process__num">{i + 1}</span>
+                  </div>
+                  <span class="hc-process__title">{step.title}</span>
+                  <span class="hc-process__desc">{step.desc}</span>
+                </div>
+              </>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Report preview -->
+    <section class="hc-section hc-report hc-reveal">
+      <div class="hc-container">
+        <h2 class="hc-section__title">Báo cáo của bạn sẽ như thế nào?</h2>
+        <div class="hc-report__grid">
+          <ul class="hc-report__list">
+            {
+              reportItems.map((item) => (
+                <li>
+                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M4 10l4 4 8-8" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  {item}
+                </li>
+              ))
+            }
+          </ul>
+
+          <div class="hc-report__mockup" aria-hidden="true">
+            <div class="hc-pdf hc-pdf--cover">
+              <div>
+                <img class="hc-pdf__logo" src="/images/logo.png" alt="" width="32" height="32" />
+                <p class="hc-pdf__title" style="margin-top: 16px;">BÁO CÁO ĐÁNH GIÁ SỨC KHỎE NHÀ THUỐC</p>
+              </div>
+              <span style="font-size: 9px; opacity: 0.7;">Novixa AI Health Check</span>
+            </div>
+
+            <div class="hc-pdf hc-pdf--dashboard">
+              <span class="hc-mockup__label">Tổng quan kết quả</span>
+              <div class="hc-mockup__score" style="margin-bottom: 8px;">
+                <strong style="font-size: 22px;">72</strong>
+                <span>/100</span>
+              </div>
+              <svg class="hc-pdf__mini-radar" viewBox="0 0 120 80" fill="none">
+                <polygon points="60,10 95,30 88,60 60,70 32,60 25,30" fill="rgba(25,195,125,0.2)" stroke="#19c37d" stroke-width="1" />
+              </svg>
+            </div>
+
+            <div class="hc-pdf hc-pdf--swot">
+              <span class="hc-mockup__label">SWOT Analysis</span>
+              <div class="hc-pdf__swot-table">
+                <div>Strength</div>
+                <div>Weakness</div>
+                <div>Opportunity</div>
+                <div>Threat</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Social proof -->
+    <section class="hc-section hc-social hc-reveal">
+      <div class="hc-container">
+        <div class="hc-social__box">
+          <p>
+            <strong>Đang triển khai chương trình đánh giá miễn phí</strong> cho các nhà thuốc trên toàn quốc.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="hc-final-cta hc-reveal">
+      <div class="hc-container">
+        <div class="hc-final-cta__banner">
+          <div class="hc-final-cta__left">
+            <span class="hc-final-cta__gift" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                <rect x="3" y="8" width="18" height="13" rx="2" />
+                <path d="M12 8v13M3 12h18" />
+                <path d="M12 8c-2-3-6-3-6 0s4 3 6 0c2-3 6-3 6 0s-4 3-6 0" />
+              </svg>
+            </span>
+            <div class="hc-final-cta__text">
+              <strong>Miễn phí 100 báo cáo đầu tiên</strong>
+              <span>cho các nhà thuốc đăng ký sớm nhất!</span>
+            </div>
+          </div>
+          <a class="hc-btn-white" href={assessmentUrl}>
+            BẮT ĐẦU ĐÁNH GIÁ NGAY
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
+        </div>
+        <span class="hc-final-cta__url">novixa.vn/health-check</span>
+      </div>
+    </section>
+  </div>
+
+  <HealthCheckFooter slot="footer" />
+</BaseLayout>
+
+<script>
+  const reveals = document.querySelectorAll('.hc-reveal');
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
+  );
+  reveals.forEach((el) => observer.observe(el));
+</script>

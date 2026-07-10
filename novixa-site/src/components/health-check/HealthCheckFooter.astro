@@ -1,0 +1,14 @@
+---
+import { t } from '../../i18n';
+
+const m = t('vi');
+const co = m.company;
+const year = new Date().getFullYear();
+---
+
+<footer class="hc-footer">
+  <div class="hc-container hc-footer__inner">
+    <p>© {year} {co.legalName}. {co.taxIdLabel}: {co.taxId}</p>
+    <a href="/vi/ve-chung-toi">Về Novixa</a>
+  </div>
+</footer>
