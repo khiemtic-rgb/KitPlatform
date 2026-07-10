@@ -120,7 +120,14 @@ internal sealed class PrescriberPortalPrescriptionRepository
                 p.product_name AS ProductName,
                 COALESCE(p.dispensing_class, CASE p.drug_type WHEN 2 THEN 'prescription' WHEN 3 THEN 'controlled' ELSE 'otc' END) AS DispensingClass,
                 u.id AS DefaultUnitId,
-                u.unit_name AS DefaultUnitName
+                u.unit_name AS DefaultUnitName,
+                COALESCE((
+                    SELECT SUM(b.quantity_available)
+                    FROM inventory_batches b
+                    WHERE b.tenant_id = p.tenant_id
+                      AND b.product_id = p.id
+                      AND b.quantity_available > 0
+                ), 0)::numeric AS StockAvailableQty
             FROM products p
             LEFT JOIN LATERAL (
                 SELECT pu.id, pu.unit_name
@@ -177,7 +184,8 @@ internal sealed class PrescriberPortalPrescriptionRepository
                 r.DispensingClass,
                 defaultUnit?.Id ?? r.DefaultUnitId,
                 defaultUnit?.UnitName ?? r.DefaultUnitName,
-                units);
+                units,
+                r.StockAvailableQty);
         }).ToList();
     }
 
@@ -189,6 +197,7 @@ internal sealed class PrescriberPortalPrescriptionRepository
         public string DispensingClass { get; init; } = "";
         public Guid? DefaultUnitId { get; init; }
         public string? DefaultUnitName { get; init; }
+        public decimal StockAvailableQty { get; init; }
     }
 
     private sealed class ProductUnitRow

@@ -66,6 +66,8 @@ export interface PortalProductItem {
   defaultUnitId: string | null;
   defaultUnitName: string | null;
   units?: PortalProductUnit[];
+  /** Base-unit stock across warehouses (warning only). */
+  stockAvailableQty?: number;
 }
 
 export interface PortalPrescriptionSummary {

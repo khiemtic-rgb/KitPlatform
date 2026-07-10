@@ -84,7 +84,8 @@ public sealed record PortalProductSearchItemDto(
     string DispensingClass,
     Guid? DefaultUnitId,
     string? DefaultUnitName,
-    IReadOnlyList<PortalProductUnitDto> Units);
+    IReadOnlyList<PortalProductUnitDto> Units,
+    decimal StockAvailableQty = 0);
 
 public sealed record PortalCreatePrescriptionLineRequest(
     Guid ProductId,

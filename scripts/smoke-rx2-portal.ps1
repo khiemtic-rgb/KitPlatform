@@ -217,6 +217,59 @@ Test-Step 'Admin prescriber links API' {
     if ($null -eq $links) { throw 'null links' }
 }
 
+Test-Step 'E2E: BS request link -> NT approve' {
+    $reqPhone = '0909999011'
+    $reqLicense = 'CCHN-SMOKE-REQ-011'
+    $env:PGPASSWORD = 'kitplatform_dev_2026'
+    $seedSql = @"
+UPDATE pack_pharmacy.prescribers
+SET full_name = 'Smoke Request BS',
+    license_number = '$reqLicense',
+    specialty = 'Noi',
+    status = 'active',
+    verified_at = COALESCE(verified_at, NOW()),
+    deleted_at = NULL,
+    updated_at = NOW()
+WHERE phone = '$reqPhone';
+INSERT INTO pack_pharmacy.prescribers (full_name, license_number, phone, specialty, status, verified_at)
+SELECT 'Smoke Request BS', '$reqLicense', '$reqPhone', 'Noi', 'active', NOW()
+WHERE NOT EXISTS (
+  SELECT 1 FROM pack_pharmacy.prescribers WHERE phone = '$reqPhone' AND deleted_at IS NULL
+);
+DELETE FROM pack_pharmacy.prescriber_tenant_links
+WHERE prescriber_id = (SELECT id FROM pack_pharmacy.prescribers WHERE phone = '$reqPhone' AND deleted_at IS NULL LIMIT 1)
+  AND tenant_id = '$tenantId'::uuid;
+"@
+    $seedOut = & $psql -h localhost -p 5432 -U kitplatform -d kitplatform -v ON_ERROR_STOP=1 -c $seedSql 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "seed request BS failed: $seedOut" }
+    Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
+
+    $otpReq = Invoke-RestMethod "$base/api/prescriber-portal/auth/otp-request" -Method POST -ContentType 'application/json' `
+        -Body (@{ phone = $reqPhone } | ConvertTo-Json)
+    $code = if ($otpReq.pilotCode) { $otpReq.pilotCode } else { '000000' }
+    $bsLogin = Invoke-RestMethod "$base/api/prescriber-portal/auth/otp-verify" -Method POST -ContentType 'application/json' `
+        -Body (@{ phone = $reqPhone; code = $code } | ConvertTo-Json)
+    if (-not $bsLogin.accessToken) { throw 'request-BS login failed' }
+    $reqH = @{ Authorization = "Bearer $($bsLogin.accessToken)" }
+
+    $requested = Invoke-RestMethod "$base/api/prescriber-portal/links/request" -Method POST -ContentType 'application/json' `
+        -Headers $reqH -Body (@{ tenantCode = $tenantCode } | ConvertTo-Json)
+    if ($requested.linkStatus -ne 'pending_nt_approval') {
+        throw "expected pending_nt_approval, got $($requested.linkStatus)"
+    }
+    $reqLinkId = $requested.id
+
+    $approved = Invoke-RestMethod "$base/api/pharmacy/prescribers/links/$reqLinkId/approve" -Method POST -Headers $script:adminH
+    if ($approved.linkStatus -ne 'active') {
+        throw "approve status=$($approved.linkStatus)"
+    }
+
+    $pharmacies = Invoke-RestMethod "$base/api/prescriber-portal/pharmacies?activeOnly=true" -Headers $reqH
+    $hit = @($pharmacies) | Where-Object { $_.id -eq $reqLinkId -or $_.tenantCode -eq $tenantCode }
+    if (-not $hit) { throw 'approved link not visible to BS' }
+    $notes += "approve-link ok phone=$reqPhone link=$reqLinkId"
+}
+
 Test-Step 'Revoked link blocks new Rx' {
     $revoked = Invoke-RestMethod "$base/api/pharmacy/prescribers/links/$linkId/revoke" -Method POST -Headers $script:adminH
     if ($revoked.linkStatus -ne 'revoked') { throw "revoke status=$($revoked.linkStatus)" }

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, Form, Input, InputNumber, Select, Space, Tag, Typography, message } from 'antd';
+import { Alert, Button, Card, Form, Input, InputNumber, Select, Space, Tag, Typography, message } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +33,13 @@ function classTag(dispensingClass: string) {
   return <Tag>{dispensingClass}</Tag>;
 }
 
+function formatStock(qty: number | undefined, unitName: string | null | undefined) {
+  const n = Number(qty ?? 0);
+  const unit = unitName ? ` ${unitName}` : '';
+  if (n <= 0) return 'hết hàng';
+  return `tồn ${n.toLocaleString('vi-VN')}${unit}`;
+}
+
 function LineProductFields({
   fieldName,
   tenantId,
@@ -53,77 +60,94 @@ function LineProductFields({
   const { t } = useTranslation();
   const form = Form.useFormInstance<PrescribeForm>();
   const productId = Form.useWatch(['lines', fieldName, 'productId'], form);
+  const qty = Form.useWatch(['lines', fieldName, 'qtyPrescribed'], form);
   const selected = products.find((p) => p.productId === productId);
   const units = selected?.units?.length
     ? selected.units
     : selected?.defaultUnitId
       ? [{ id: selected.defaultUnitId, unitName: selected.defaultUnitName ?? 'ĐVT', isBaseUnit: true }]
       : [];
+  const stock = Number(selected?.stockAvailableQty ?? 0);
+  const stockWarn =
+    selected &&
+    (stock <= 0
+      ? t('prescriptions.stockEmpty')
+      : qty != null && qty > stock
+        ? t('prescriptions.stockLow', {
+            stock: stock.toLocaleString('vi-VN'),
+            unit: selected.defaultUnitName ?? '',
+          })
+        : null);
 
   return (
-    <Space align="start" wrap style={{ width: '100%' }}>
-      <Form.Item
-        name={[fieldName, 'productId']}
-        label={t('prescriptions.product')}
-        rules={[{ required: true }]}
-      >
-        <Select
-          showSearch
-          allowClear
-          filterOption={false}
-          style={{ minWidth: 280 }}
-          placeholder={t('prescriptions.selectProduct')}
-          disabled={!tenantId}
-          loading={productsLoading}
-          options={products.map((p) => ({
-            value: p.productId,
-            label: (
-              <Space size={4}>
-                {classTag(p.dispensingClass)}
-                <span>
-                  {p.productName} ({p.productCode})
-                  {p.defaultUnitName ? ` · ${p.defaultUnitName}` : ''}
-                </span>
-              </Space>
-            ),
-          }))}
-          onSearch={onSearchProduct}
-          notFoundContent={productsError ?? (productsLoading ? t('common.loading') : productEmpty)}
-          onChange={(id) => {
-            const product = products.find((p) => p.productId === id);
-            const unitId = product?.defaultUnitId ?? product?.units?.[0]?.id ?? null;
-            form.setFieldValue(['lines', fieldName, 'productUnitId'], unitId);
-          }}
-        />
-      </Form.Item>
+    <Space direction="vertical" size={4} style={{ width: '100%' }}>
+      <Space align="start" wrap style={{ width: '100%' }}>
+        <Form.Item
+          name={[fieldName, 'productId']}
+          label={t('prescriptions.product')}
+          rules={[{ required: true }]}
+        >
+          <Select
+            showSearch
+            allowClear
+            filterOption={false}
+            style={{ minWidth: 280 }}
+            placeholder={t('prescriptions.selectProduct')}
+            disabled={!tenantId}
+            loading={productsLoading}
+            options={products.map((p) => ({
+              value: p.productId,
+              label: (
+                <Space size={4}>
+                  {classTag(p.dispensingClass)}
+                  <span>
+                    {p.productName} ({p.productCode})
+                    {p.defaultUnitName ? ` · ${p.defaultUnitName}` : ''}
+                    {' · '}
+                    {formatStock(p.stockAvailableQty, p.defaultUnitName)}
+                  </span>
+                </Space>
+              ),
+            }))}
+            onSearch={onSearchProduct}
+            notFoundContent={productsError ?? (productsLoading ? t('common.loading') : productEmpty)}
+            onChange={(id) => {
+              const product = products.find((p) => p.productId === id);
+              const unitId = product?.defaultUnitId ?? product?.units?.[0]?.id ?? null;
+              form.setFieldValue(['lines', fieldName, 'productUnitId'], unitId);
+            }}
+          />
+        </Form.Item>
 
-      <Form.Item
-        name={[fieldName, 'qtyPrescribed']}
-        label={t('prescriptions.qty')}
-        rules={[{ required: true }]}
-      >
-        <InputNumber min={0.01} step={1} style={{ width: 100 }} />
-      </Form.Item>
+        <Form.Item
+          name={[fieldName, 'qtyPrescribed']}
+          label={t('prescriptions.qty')}
+          rules={[{ required: true }]}
+        >
+          <InputNumber min={0.01} step={1} style={{ width: 100 }} />
+        </Form.Item>
 
-      <Form.Item
-        name={[fieldName, 'productUnitId']}
-        label={t('prescriptions.unit')}
-        rules={[{ required: true, message: t('prescriptions.unitRequired') }]}
-      >
-        <Select
-          style={{ minWidth: 120 }}
-          placeholder={t('prescriptions.selectUnit')}
-          disabled={!productId || units.length === 0}
-          options={units.map((u) => ({
-            value: u.id,
-            label: u.isBaseUnit ? `${u.unitName} (cơ bản)` : u.unitName,
-          }))}
-        />
-      </Form.Item>
+        <Form.Item
+          name={[fieldName, 'productUnitId']}
+          label={t('prescriptions.unit')}
+          rules={[{ required: true, message: t('prescriptions.unitRequired') }]}
+        >
+          <Select
+            style={{ minWidth: 120 }}
+            placeholder={t('prescriptions.selectUnit')}
+            disabled={!productId || units.length === 0}
+            options={units.map((u) => ({
+              value: u.id,
+              label: u.isBaseUnit ? `${u.unitName} (cơ bản)` : u.unitName,
+            }))}
+          />
+        </Form.Item>
 
-      <Form.Item name={[fieldName, 'dosageInstruction']} label={t('prescriptions.dosage')}>
-        <Input placeholder="2 viên x 2 lần/ngày" style={{ minWidth: 180 }} />
-      </Form.Item>
+        <Form.Item name={[fieldName, 'dosageInstruction']} label={t('prescriptions.dosage')}>
+          <Input placeholder="2 viên x 2 lần/ngày" style={{ minWidth: 180 }} />
+        </Form.Item>
+      </Space>
+      {stockWarn ? <Alert type="warning" showIcon message={stockWarn} style={{ maxWidth: 640 }} /> : null}
     </Space>
   );
 }
@@ -174,6 +198,24 @@ export function PrescribePage() {
   });
 
   const onFinish = (values: PrescribeForm) => {
+    const stockIssues = values.lines
+      .map((line) => {
+        const product = products.find((p) => p.productId === line.productId);
+        if (!product) return null;
+        const stock = Number(product.stockAvailableQty ?? 0);
+        if (stock <= 0) return `${product.productName}: ${t('prescriptions.stockEmpty')}`;
+        if (line.qtyPrescribed > stock) {
+          return `${product.productName}: ${t('prescriptions.stockLow', {
+            stock: stock.toLocaleString('vi-VN'),
+            unit: product.defaultUnitName ?? '',
+          })}`;
+        }
+        return null;
+      })
+      .filter(Boolean);
+    if (stockIssues.length > 0) {
+      message.warning(t('prescriptions.stockSubmitWarn'));
+    }
     createMutation.mutate({
       tenantId: values.tenantId,
       customerId: values.customerId,

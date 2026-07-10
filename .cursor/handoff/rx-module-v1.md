@@ -137,7 +137,7 @@ psql ... -f migrations/seed/002_admin_password.sql
 
 - [x] BS without active link cannot prescribe to that NT — smoke step pass
 - [x] NT invite → BS accept → active → prescribe works — verified local (BS 0909999001 @ NT_XUANHOA)
-- [ ] BS directory request → NT approve → active — *API có; chưa verify local*
+- [x] BS directory request → NT approve → active — smoke E2E `BS request link -> NT approve` (2026-07-10)
 - [x] Portal prescription requires NT selection + customer search in that tenant — smoke pass
 - [x] Controlled lines rejected on portal create (D16) — smoke pass
 - [x] Signed Rx visible on admin without staff verify — smoke pass
@@ -188,6 +188,6 @@ Portal: chọn NT → ô thuốc load catalog; gõ lọc live (tag Rx/OTC).
 | **B4** Dashboard BS | ✅ `GET /api/prescriber-portal/dashboard` + Home UI stats |
 | **B6** POS deep link | ✅ `GET .../prescriptions/{id}/share` + copy link; admin `?rx=` opens drawer |
 | B1 Mẫu đơn | Backlog |
-| B3 Cảnh báo tồn | Backlog |
+| B3 Cảnh báo tồn | ✅ Portal `stockAvailableQty` + UI warning (không chặn ký) |
 | B5 Dashboard NT | Backlog |
 | Notify push/SMS | Backlog |
