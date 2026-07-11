@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-11T07:25:19.399Z",
+  "generatedAt": "2026-07-11T15:35:52.433Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 61,
-    "todayPageViews": 139,
-    "todayRequests": 243,
-    "last24hVisitors": 104,
-    "last24hPageViews": 226,
-    "last24hRequests": 478
+    "todayVisitors": 94,
+    "todayPageViews": 279,
+    "todayRequests": 529,
+    "last24hVisitors": 118,
+    "last24hPageViews": 328,
+    "last24hRequests": 633
   },
   "hourly": [
-    {
-      "time": "2026-07-10T08:00:00Z",
-      "visitors": 6,
-      "requests": 17
-    },
-    {
-      "time": "2026-07-10T09:00:00Z",
-      "visitors": 10,
-      "requests": 39
-    },
-    {
-      "time": "2026-07-10T10:00:00Z",
-      "visitors": 6,
-      "requests": 20
-    },
-    {
-      "time": "2026-07-10T11:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-10T12:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-07-10T13:00:00Z",
-      "visitors": 2,
-      "requests": 14
-    },
-    {
-      "time": "2026-07-10T14:00:00Z",
-      "visitors": 4,
-      "requests": 14
-    },
-    {
-      "time": "2026-07-10T15:00:00Z",
-      "visitors": 7,
-      "requests": 16
-    },
     {
       "time": "2026-07-10T16:00:00Z",
       "visitors": 4,
@@ -118,8 +78,48 @@
     },
     {
       "time": "2026-07-11T07:00:00Z",
-      "visitors": 1,
-      "requests": 1
+      "visitors": 3,
+      "requests": 11
+    },
+    {
+      "time": "2026-07-11T08:00:00Z",
+      "visitors": 12,
+      "requests": 19
+    },
+    {
+      "time": "2026-07-11T09:00:00Z",
+      "visitors": 17,
+      "requests": 74
+    },
+    {
+      "time": "2026-07-11T10:00:00Z",
+      "visitors": 11,
+      "requests": 119
+    },
+    {
+      "time": "2026-07-11T11:00:00Z",
+      "visitors": 8,
+      "requests": 15
+    },
+    {
+      "time": "2026-07-11T12:00:00Z",
+      "visitors": 4,
+      "requests": 30
+    },
+    {
+      "time": "2026-07-11T13:00:00Z",
+      "visitors": 2,
+      "requests": 5
+    },
+    {
+      "time": "2026-07-11T14:00:00Z",
+      "visitors": 2,
+      "requests": 6
+    },
+    {
+      "time": "2026-07-11T15:00:00Z",
+      "visitors": 4,
+      "requests": 8
     }
   ],
   "daily": [
@@ -161,70 +161,70 @@
     },
     {
       "date": "2026-07-11",
-      "visitors": 61,
-      "pageViews": 139,
-      "requests": 243
+      "visitors": 94,
+      "pageViews": 279,
+      "requests": 529
     }
   ],
   "topPages": [
     {
+      "path": "/vi/",
+      "views": 57
+    },
+    {
       "path": "/vi/health-check/",
-      "views": 122
+      "views": 51
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 53
-    },
-    {
-      "path": "/vi/",
       "views": 49
     },
     {
       "path": "/",
-      "views": 46
+      "views": 47
     },
     {
       "path": "/robots.txt",
-      "views": 27
+      "views": 31
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 25
-    },
-    {
-      "path": "/api/stats",
-      "views": 24
-    },
-    {
-      "path": "/images/logo.png",
-      "views": 16
-    },
-    {
-      "path": "/_astro/BaseLayout.CB-KDw-C.css",
-      "views": 14
+      "views": 27
     },
     {
       "path": "/sitemap-0.xml",
-      "views": 12
-    },
-    {
-      "path": "/vi/thong-ke/",
-      "views": 11
-    },
-    {
-      "path": "/_astro/health-check.Jwr0FVXO.css",
-      "views": 10
+      "views": 18
     },
     {
       "path": "/vi",
-      "views": 9
+      "views": 13
     },
     {
       "path": "/sitemap.xml",
+      "views": 12
+    },
+    {
+      "path": "/vi/giai-phap/pos-ban-hang/",
+      "views": 9
+    },
+    {
+      "path": "/vi/tin-tuc/chuyen-doi-so-cho-nha-thuoc-bat-dau-tu-dau/",
+      "views": 9
+    },
+    {
+      "path": "/vi/ve-chung-toi/",
       "views": 8
     },
     {
       "path": "/favicon.svg",
+      "views": 8
+    },
+    {
+      "path": "/api/stats",
+      "views": 7
+    },
+    {
+      "path": "/images/logo.png",
       "views": 7
     }
   ]
