@@ -1,4 +1,2 @@
 # Prefer apex host paths with trailing slash (Cloudflare Pages default).
 # www → apex must be set in Cloudflare Redirect Rules (host-level).
-
-/sitemap.xml /sitemap-index.xml 301
