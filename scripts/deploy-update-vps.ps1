@@ -34,6 +34,7 @@ $required = @(
     "deploy\ubuntu\run-incremental-migrations-prod.sh",
     "deploy\ubuntu\migration-files.prod.txt",
     "deploy\ubuntu\smoke-test.sh",
+    "deploy\ubuntu\ensure-novixa-cors-env.sh",
     "deploy\ubuntu\kit-platform-api.service",
     "deploy\ubuntu\nginx-kit-platform.conf"
 )
@@ -154,6 +155,13 @@ rm -f /etc/nginx/sites-enabled/pharmacore
 ln -sfn /etc/nginx/sites-available/kit-platform /etc/nginx/sites-enabled/kit-platform
 nginx -t
 systemctl reload nginx
+
+echo "==> Ensure Novixa SPA CORS origins in api.env"
+bash "$NEW_OPT/ensure-novixa-cors-env.sh" "$NEW_CFG/api.env"
+# Keep legacy cfg in sync if still present
+if [[ -f "$OLD_CFG/api.env" ]]; then
+  bash "$NEW_OPT/ensure-novixa-cors-env.sh" "$OLD_CFG/api.env" || true
+fi
 
 echo "==> Switch service pharmacore-api -> kit-platform-api"
 systemctl daemon-reload

@@ -106,7 +106,10 @@ Biến môi trường API (bắt buộc):
   Cors__AllowedOrigins__0        https://admin.domain
   Cors__AllowedOrigins__1        https://app.domain
   Cors__AllowedOrigins__2        https://pos.domain
-  CustomerAppPush__PublicKey     (nếu bật push)
+  Cors__AllowedOrigins__3        https://survey.domain
+  Cors__AllowedOrigins__4        https://prescriber.domain
+  Cors__AllowedOrigins__5        https://partner.domain
+  (env array REPLACES appsettings — list ALL SPAs; deploy runs ensure-novixa-cors-env.sh)  CustomerAppPush__PublicKey     (nếu bật push)
   CustomerAppPush__PrivateKey
 
 Migration DB (Production — khong seed demo):

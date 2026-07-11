@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { App, Alert, Button, Card, Form, Input, Space, Typography } from 'antd';
 import { LockOutlined, ShopOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -11,19 +11,58 @@ import { apiPath, resolveApiOrigin } from '@/shared/api/api-base';
 
 type FormValues = { tenantCode: string; username: string; password: string };
 
+async function probeApiHealth(timeoutMs = 8000): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(apiPath('/api/health'), {
+      method: 'GET',
+      signal: controller.signal,
+      cache: 'no-store',
+    });
+    return res.ok;
+  } catch {
+    return false;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
 export function LoginPage() {
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+  const [checkingApi, setCheckingApi] = useState(false);
   const navigate = useNavigate();
   const setSession = useAuthStore((s) => s.setSession);
   const tenantLocked = isTenantCodeLocked();
 
-  useEffect(() => {
-    void fetch(apiPath('/api/health'), { method: 'GET' })
-      .then((res) => setApiOnline(res.ok))
-      .catch(() => setApiOnline(false));
+  const checkApi = useCallback(async () => {
+    setCheckingApi(true);
+    try {
+      // Retry briefly — deploy/restart can make the first probe fail.
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        if (await probeApiHealth()) {
+          setApiOnline(true);
+          return;
+        }
+        await new Promise((r) => window.setTimeout(r, 700 * (attempt + 1)));
+      }
+      setApiOnline(false);
+    } finally {
+      setCheckingApi(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void checkApi();
+    const timer = window.setInterval(() => {
+      void probeApiHealth(5000).then((ok) => {
+        if (ok) setApiOnline(true);
+      });
+    }, 20_000);
+    return () => window.clearInterval(timer);
+  }, [checkApi]);
 
   const onFinish = async (values: FormValues) => {
     const tenantCode = (tenantLocked ? DEFAULT_TENANT_CODE : values.tenantCode).trim().toUpperCase();
@@ -40,10 +79,13 @@ export function LoginPage() {
         password: values.password,
       });
       setSession(data);
+      setApiOnline(true);
       message.success('Đăng nhập thành công');
       navigate('/', { replace: true });
     } catch (error) {
       message.error(apiErrorMessage(error, 'Sai mã nhà thuốc, tên đăng nhập hoặc mật khẩu'));
+      // If login failed due to network, refresh banner state.
+      void checkApi();
     } finally {
       setLoading(false);
     }
@@ -66,11 +108,18 @@ export function LoginPage() {
             <Alert
               type="warning"
               showIcon
-              message="API chưa chạy"
+              message="Chưa kết nối được máy chủ"
               description={
-                resolveApiOrigin()
-                  ? `Không kết nối được ${resolveApiOrigin()}. Kiểm tra mạng hoặc thử lại sau vài giây.`
-                  : 'Chạy run-dev.bat ở thư mục KitPlatform (API port 5290), rồi tải lại trang.'
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  <span>
+                    {resolveApiOrigin()
+                      ? `Không gọi được ${resolveApiOrigin()}. Kiểm tra Wi‑Fi/4G rồi bấm Thử lại — vẫn đăng nhập được nếu mạng ổn định.`
+                      : 'Chạy run-dev.bat ở thư mục KitPlatform (API port 5290), rồi tải lại trang.'}
+                  </span>
+                  <Button size="small" loading={checkingApi} onClick={() => void checkApi()}>
+                    Thử lại kết nối
+                  </Button>
+                </Space>
               }
             />
           ) : null}

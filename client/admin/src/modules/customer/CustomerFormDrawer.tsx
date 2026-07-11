@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Drawer, Form, Input, InputNumber, Select, Space, Switch, message } from 'antd';
+import { App, Button, Drawer, Form, Input, InputNumber, Select, Space, Switch } from 'antd';
 import { CloseOutlined, SaveOutlined } from '@ant-design/icons';
 import {
   createCustomer,
@@ -39,6 +39,16 @@ function normalizeCustomerCodeInput(value: string | undefined): string | undefin
   return trimmed ? trimmed.toUpperCase() : undefined;
 }
 
+function isPhoneConflictMessage(text: string) {
+  const lower = text.toLowerCase();
+  return lower.includes('điện thoại') || lower.includes('phone');
+}
+
+function isCustomerCodeConflictMessage(text: string) {
+  const lower = text.toLowerCase();
+  return lower.includes('mã khách') || lower.includes('customer code') || lower.includes('đã tồn tại');
+}
+
 export function CustomerFormDrawer({
   open,
   editing,
@@ -48,6 +58,7 @@ export function CustomerFormDrawer({
 }: CustomerFormDrawerProps) {
   const { t } = useTranslation('customer', { keyPrefix: 'formDrawer' });
   const { t: tc } = useTranslation('common');
+  const { message } = App.useApp();
   const { customerGenderOptions, customerStatusOptions } = useCustomerEnums();
   const isQuick = variant === 'quick' && !editing;
   const [form] = Form.useForm<CustomerFormValues>();
@@ -117,7 +128,13 @@ export function CustomerFormDrawer({
       onClose();
     } catch (error) {
       if (error && typeof error === 'object' && 'errorFields' in error) return;
-      message.error(apiErrorMessage(error, t('messages.saveFailed')));
+      const text = apiErrorMessage(error, t('messages.saveFailed'));
+      if (isPhoneConflictMessage(text)) {
+        form.setFields([{ name: 'phone', errors: [text] }]);
+      } else if (isCustomerCodeConflictMessage(text)) {
+        form.setFields([{ name: 'customerCode', errors: [text] }]);
+      }
+      message.error(text);
     } finally {
       setSaving(false);
     }

@@ -14,9 +14,14 @@ Tài liệu thực hành deploy ERP Novixa (KitPlatform) lên VPS — bổ sung 
 | Admin | `https://admin.novixa.vn` |
 | Customer App | `https://app.novixa.vn` |
 | POS | `https://pos.novixa.vn` |
+| Survey | `https://survey.novixa.vn` |
+| Prescriber | `https://prescriber.novixa.vn` |
+| Partner | `https://partner.novixa.vn` |
 | DB | PostgreSQL `novixa_prod` (multi-tenant) |
 
-Marketing: `https://novixa.vn` — Cloudflare Pages, **không** dùng doc này.
+Marketing: `https://novixa.vn` / `www` — Cloudflare Pages, **không** gọi API từ browser (không cần CORS).
+
+**CORS:** `Cors__AllowedOrigins__*` trong `api.env` **thay thế** toàn bộ list appsettings. Phải đủ 6 SPA ở trên. Deploy chạy `ensure-novixa-cors-env.sh`; API Production còn union `RequiredNovixaSpaOrigins`. Verify: `.\scripts\verify-novixa-cors.ps1`.
 
 ---
 
@@ -113,7 +118,7 @@ Validate local trước deploy:
 
 | Biến | Production khách |
 |------|------------------|
-| `CustomerAppAuth__ExposePilotOtpInAdmin` | `false` |
+| `CustomerAppAuth__ExposePilotOtpInAdmin` | `true` (staff đọc mã tại quầy thay SMS) |
 | `CustomerAppAuth__ExposePilotOtpOnCustomerApp` | `false` |
 | `CustomerAppSms__Provider` | Gateway thật (không `Log`) |
 

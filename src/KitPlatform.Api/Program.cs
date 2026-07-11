@@ -144,9 +144,16 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            var origins = corsSettings.AllowedOrigins
+            var configured = corsSettings.AllowedOrigins
                 .Where(static o => !string.IsNullOrWhiteSpace(o))
                 .Select(static o => o.Trim())
+                .ToArray();
+
+            // Env Cors__AllowedOrigins__N replaces the entire appsettings array.
+            // Always union required Novixa SPA origins so a partial api.env cannot
+            // drop pos/survey/partner and break browser clients after deploy.
+            var origins = configured
+                .Concat(CorsSettings.RequiredNovixaSpaOrigins)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
