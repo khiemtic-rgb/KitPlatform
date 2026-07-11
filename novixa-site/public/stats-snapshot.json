@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-11T15:35:52.433Z",
+  "generatedAt": "2026-07-11T21:10:11.958Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 94,
-    "todayPageViews": 279,
-    "todayRequests": 529,
-    "last24hVisitors": 118,
-    "last24hPageViews": 328,
-    "last24hRequests": 633
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 113,
+    "last24hPageViews": 312,
+    "last24hRequests": 625
   },
   "hourly": [
-    {
-      "time": "2026-07-10T16:00:00Z",
-      "visitors": 4,
-      "requests": 9
-    },
-    {
-      "time": "2026-07-10T17:00:00Z",
-      "visitors": 9,
-      "requests": 29
-    },
-    {
-      "time": "2026-07-10T18:00:00Z",
-      "visitors": 4,
-      "requests": 18
-    },
-    {
-      "time": "2026-07-10T20:00:00Z",
-      "visitors": 5,
-      "requests": 10
-    },
-    {
-      "time": "2026-07-10T21:00:00Z",
-      "visitors": 4,
-      "requests": 7
-    },
     {
       "time": "2026-07-10T22:00:00Z",
       "visitors": 7,
@@ -119,16 +94,40 @@
     {
       "time": "2026-07-11T15:00:00Z",
       "visitors": 4,
-      "requests": 8
+      "requests": 10
+    },
+    {
+      "time": "2026-07-11T16:00:00Z",
+      "visitors": 13,
+      "requests": 42
+    },
+    {
+      "time": "2026-07-11T17:00:00Z",
+      "visitors": 2,
+      "requests": 6
+    },
+    {
+      "time": "2026-07-11T18:00:00Z",
+      "visitors": 2,
+      "requests": 5
+    },
+    {
+      "time": "2026-07-11T19:00:00Z",
+      "visitors": 1,
+      "requests": 4
+    },
+    {
+      "time": "2026-07-11T20:00:00Z",
+      "visitors": 1,
+      "requests": 4
+    },
+    {
+      "time": "2026-07-11T21:00:00Z",
+      "visitors": 1,
+      "requests": 2
     }
   ],
   "daily": [
-    {
-      "date": "2026-07-05",
-      "visitors": 133,
-      "pageViews": 144,
-      "requests": 306
-    },
     {
       "date": "2026-07-06",
       "visitors": 112,
@@ -161,27 +160,27 @@
     },
     {
       "date": "2026-07-11",
-      "visitors": 94,
-      "pageViews": 279,
-      "requests": 529
+      "visitors": 102,
+      "pageViews": 294,
+      "requests": 594
     }
   ],
   "topPages": [
     {
       "path": "/vi/",
-      "views": 57
-    },
-    {
-      "path": "/vi/health-check/",
-      "views": 51
+      "views": 55
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 49
+      "views": 51
+    },
+    {
+      "path": "/vi/health-check/",
+      "views": 50
     },
     {
       "path": "/",
-      "views": 47
+      "views": 46
     },
     {
       "path": "/robots.txt",
@@ -189,19 +188,15 @@
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 27
+      "views": 25
     },
     {
       "path": "/sitemap-0.xml",
-      "views": 18
-    },
-    {
-      "path": "/vi",
-      "views": 13
+      "views": 19
     },
     {
       "path": "/sitemap.xml",
-      "views": 12
+      "views": 15
     },
     {
       "path": "/vi/giai-phap/pos-ban-hang/",
@@ -212,19 +207,23 @@
       "views": 9
     },
     {
+      "path": "/images/logo.png",
+      "views": 8
+    },
+    {
       "path": "/vi/ve-chung-toi/",
       "views": 8
     },
     {
-      "path": "/favicon.svg",
+      "path": "/vi",
       "views": 8
     },
     {
-      "path": "/api/stats",
-      "views": 7
+      "path": "/_astro/BaseLayout.CB-KDw-C.css",
+      "views": 8
     },
     {
-      "path": "/images/logo.png",
+      "path": "/favicon.ico",
       "views": 7
     }
   ]
