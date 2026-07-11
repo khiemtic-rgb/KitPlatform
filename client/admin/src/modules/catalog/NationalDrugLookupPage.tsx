@@ -49,6 +49,7 @@ export function NationalDrugLookupPage() {
   const [pageSize, setPageSize] = useState(10);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
   const [selectedDrugId, setSelectedDrugId] = useState<string | null>(null);
   const [detail, setDetail] = useState<NationalDrugDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -88,8 +89,9 @@ export function NationalDrugLookupPage() {
   }, [loadMeta]);
 
   useEffect(() => {
+    if (!hasSearched) return;
     void loadResults();
-  }, [loadResults]);
+  }, [loadResults, hasSearched]);
 
   useEffect(() => {
     if (!selectedDrugId) {
@@ -194,6 +196,7 @@ export function NationalDrugLookupPage() {
                   onChange={(e) => setSearchInput(e.target.value)}
                   onPressEnter={() => {
                     setPage(1);
+                    setHasSearched(true);
                     setSearch(searchInput.trim());
                   }}
                   style={{ width: 280 }}
@@ -203,12 +206,20 @@ export function NationalDrugLookupPage() {
                   type="primary"
                   onClick={() => {
                     setPage(1);
+                    setHasSearched(true);
                     setSearch(searchInput.trim());
                   }}
                 >
                   {t('search')}
                 </Button>
-                <Button icon={<ReloadOutlined />} onClick={() => void loadResults()} loading={loading} />
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={() => {
+                    setHasSearched(true);
+                    void loadResults();
+                  }}
+                  loading={loading}
+                />
               </Space>
             }
           >
@@ -218,12 +229,16 @@ export function NationalDrugLookupPage() {
               loading={loading}
               columns={columns}
               dataSource={items}
+              locale={{
+                emptyText: hasSearched ? undefined : t('searchBeforeHint'),
+              }}
               pagination={{
                 current: page,
                 pageSize,
                 total,
                 showSizeChanger: true,
                 onChange: (nextPage, nextSize) => {
+                  setHasSearched(true);
                   setPage(nextPage);
                   setPageSize(nextSize);
                 },

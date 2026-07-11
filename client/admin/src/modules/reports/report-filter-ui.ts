@@ -7,6 +7,7 @@ const API_FILTER_KEY_MAP: Record<string, 'period' | 'warehouse' | 'supplier' | '
   'Thời điểm': 'period',
   Kho: 'warehouse',
   NCC: 'supplier',
+  'Nhà cung cấp': 'supplier',
   'Tìm kiếm': 'productSearch',
 };
 

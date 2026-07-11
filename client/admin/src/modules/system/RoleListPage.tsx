@@ -83,8 +83,16 @@ export function RoleListPage() {
 
   useEffect(() => {
     void load();
-    void fetchPermissions().then(setPermissions).catch(() => setPermissions([]));
   }, [load]);
+
+  const ensurePermissionsLoaded = useCallback(async () => {
+    if (permissions.length > 0) return;
+    try {
+      setPermissions(await fetchPermissions());
+    } catch {
+      setPermissions([]);
+    }
+  }, [permissions.length]);
 
   const openCreate = () => {
     setEditingRole(null);
@@ -106,6 +114,7 @@ export function RoleListPage() {
 
   const openPermissions = async (row: RoleListItem) => {
     try {
+      await ensurePermissionsLoaded();
       const detail = await fetchRole(row.id);
       setPermRole(row);
       setSelectedCodes(detail.permissionCodes);

@@ -24,6 +24,7 @@ export interface AssessmentSubmissionListItem {
   partnerName?: string | null;
   leadPipelineStatus?: string;
   commissionStatus?: string;
+  archivedAt?: string | null;
 }
 
 export interface AssessmentSubmissionListResult {
@@ -62,6 +63,7 @@ export async function fetchAssessmentSubmissions(params: {
   hasLead?: boolean;
   partnerId?: string;
   leadPipelineStatus?: string;
+  archived?: boolean;
 }): Promise<AssessmentSubmissionListResult> {
   const { data } = await http.get<AssessmentSubmissionListResult>('/system/assessment/submissions', {
     params,
@@ -74,6 +76,14 @@ export async function updateAssessmentLeadPipeline(
   payload: { leadPipelineStatus: string; commissionStatus?: string },
 ): Promise<void> {
   await http.patch(`/system/assessment/submissions/${id}/pipeline`, payload);
+}
+
+export async function archiveAssessmentSubmission(id: string): Promise<void> {
+  await http.post(`/system/assessment/submissions/${id}/archive`, {});
+}
+
+export async function unarchiveAssessmentSubmission(id: string): Promise<void> {
+  await http.post(`/system/assessment/submissions/${id}/unarchive`, {});
 }
 
 export async function fetchAssessmentSubmissionDetail(id: string): Promise<AssessmentSubmissionDetail> {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, Descriptions, Space, Spin, Switch, Tag, Typography, message } from 'antd';
-import { BellOutlined, DollarOutlined, EnvironmentOutlined, GiftOutlined, HeartOutlined, LogoutOutlined, MedicineBoxOutlined, RobotOutlined, ShopOutlined, TeamOutlined } from '@ant-design/icons';
+import { BellOutlined, DollarOutlined, EnvironmentOutlined, ExperimentOutlined, GiftOutlined, HeartOutlined, LogoutOutlined, RobotOutlined, ShopOutlined, TeamOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -482,7 +482,7 @@ export function ProfilePage() {
           type="default"
           block
           size="large"
-          icon={<MedicineBoxOutlined />}
+          icon={<ExperimentOutlined />}
           onClick={() => navigate('/medications')}
           style={{ textAlign: 'left', justifyContent: 'flex-start', marginBottom: 12 }}
         >

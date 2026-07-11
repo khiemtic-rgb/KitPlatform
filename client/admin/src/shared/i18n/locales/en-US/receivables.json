@@ -3,9 +3,9 @@
     "navAriaLabel": "Receivables menu",
     "loading": "Loading...",
     "tabs": {
-      "customerReceivables": "Customer AR",
+      "customerReceivables": "Customer receivables",
       "customerPayments": "Customer receipts",
-      "supplierPayables": "Supplier AP",
+      "supplierPayables": "Supplier payables",
       "supplierPayments": "Supplier payments"
     }
   }

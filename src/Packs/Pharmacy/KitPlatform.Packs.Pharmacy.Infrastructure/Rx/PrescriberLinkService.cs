@@ -9,15 +9,18 @@ internal sealed class PrescriberLinkService : IPrescriberLinkService
     private readonly PrescriberPortalRepository _repo;
     private readonly ITenantContext _tenant;
     private readonly IPlatformEventWriter _platformEvents;
+    private readonly IRxNotifyService _notify;
 
     public PrescriberLinkService(
         PrescriberPortalRepository repo,
         ITenantContext tenant,
-        IPlatformEventWriter platformEvents)
+        IPlatformEventWriter platformEvents,
+        IRxNotifyService notify)
     {
         _repo = repo;
         _tenant = tenant;
         _platformEvents = platformEvents;
+        _notify = notify;
     }
 
     public Task<IReadOnlyList<PrescriberTenantLinkDto>> ListTenantLinksAsync(
@@ -59,7 +62,13 @@ internal sealed class PrescriberLinkService : IPrescriberLinkService
             request.Notes,
             cancellationToken);
 
-        return (await _repo.GetLinkForTenantAsync(_tenant.TenantId, linkId, cancellationToken))!;
+        var link = (await _repo.GetLinkForTenantAsync(_tenant.TenantId, linkId, cancellationToken))!;
+        await _notify.NotifyPrescriberInviteAsync(
+            phone,
+            link.TenantCode,
+            link.TenantName,
+            cancellationToken);
+        return link;
     }
 
     public async Task<PrescriberTenantLinkDto?> ApproveLinkAsync(
@@ -100,6 +109,15 @@ internal sealed class PrescriberLinkService : IPrescriberLinkService
                 actorUserId: _tenant.UserId,
                 source: PlatformEventSources.HealthcareNetwork,
                 cancellationToken: cancellationToken);
+
+            if (!string.IsNullOrWhiteSpace(activated.PrescriberPhone))
+            {
+                await _notify.NotifyPrescriberLinkApprovedAsync(
+                    activated.PrescriberPhone,
+                    activated.TenantCode,
+                    activated.TenantName,
+                    cancellationToken);
+            }
         }
 
         return activated;
@@ -176,7 +194,14 @@ internal sealed class PrescriberLinkService : IPrescriberLinkService
             ?? throw new InvalidOperationException("Không tìm thấy nhà thuốc.");
 
         var linkId = await _repo.UpsertPrescriberRequestLinkAsync(tenant.Id, prescriberId, cancellationToken);
-        return (await _repo.GetLinkForPrescriberAsync(prescriberId, linkId, cancellationToken))!;
+        var link = (await _repo.GetLinkForPrescriberAsync(prescriberId, linkId, cancellationToken))!;
+        await _notify.NotifyPharmacyLinkRequestAsync(
+            link.TenantCode,
+            link.TenantName,
+            link.PrescriberName ?? "Bác sĩ",
+            link.PrescriberPhone,
+            cancellationToken);
+        return link;
     }
 
     public async Task<PrescriberTenantLinkDto?> AcceptInviteAsync(

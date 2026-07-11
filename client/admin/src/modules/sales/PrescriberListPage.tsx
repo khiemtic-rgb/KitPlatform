@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Card, Form, Input, Modal, Popconfirm, Space, Table, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import {
   createPrescriber,
   deletePrescriber,
@@ -20,6 +21,7 @@ type PrescriberFormValues = {
 };
 
 export function PrescriberListPage() {
+  const { t } = useTranslation('rx');
   const canWrite =
     useHasPermission('rx.prescriber.manage') ||
     useHasPermission('rx.prescription.create') ||
@@ -36,11 +38,11 @@ export function PrescriberListPage() {
     try {
       setItems(await fetchPrescribers(undefined, false));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được danh sách bác sĩ kê đơn'));
+      message.error(apiErrorMessage(error, t('prescribers.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load();
@@ -72,15 +74,20 @@ export function PrescriberListPage() {
           ...values,
           status: editing.status ?? 1,
         });
-        message.success('Đã cập nhật bác sĩ kê đơn');
+        message.success(t('prescribers.updateSuccess'));
       } else {
         await createPrescriber(values);
-        message.success('Đã thêm bác sĩ kê đơn');
+        message.success(t('prescribers.createSuccess'));
       }
       setModalOpen(false);
       await load();
     } catch (error) {
-      message.error(apiErrorMessage(error, editing ? 'Không cập nhật được bác sĩ' : 'Không tạo được bác sĩ'));
+      message.error(
+        apiErrorMessage(
+          error,
+          editing ? t('prescribers.saveFailedUpdate') : t('prescribers.saveFailedCreate'),
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -89,78 +96,83 @@ export function PrescriberListPage() {
   const handleDelete = async (id: string) => {
     try {
       await deletePrescriber(id);
-      message.success('Đã xóa bác sĩ kê đơn');
+      message.success(t('prescribers.deleteSuccess'));
       await load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không xóa được bác sĩ'));
+      message.error(apiErrorMessage(error, t('prescribers.deleteFailed')));
     }
   };
 
   const columns: ColumnsType<RxPrescriber> = useMemo(
     () => [
       {
-        title: 'Họ tên',
+        title: t('prescribers.columns.fullName'),
         dataIndex: 'fullName',
       },
       {
-        title: 'Số giấy phép',
+        title: t('prescribers.columns.license'),
         dataIndex: 'licenseNumber',
         width: 180,
         render: (value?: string) => value || '—',
       },
       {
-        title: 'Điện thoại',
+        title: t('prescribers.columns.phone'),
         dataIndex: 'phone',
         width: 130,
         render: (value?: string) => value || '—',
       },
       {
-        title: 'Chuyên khoa',
+        title: t('prescribers.columns.specialty'),
         dataIndex: 'specialty',
         width: 180,
         render: (value?: string) => value || '—',
       },
       {
-        title: 'Trạng thái',
+        title: t('prescribers.columns.status'),
         dataIndex: 'status',
         width: 110,
         render: (value: number) => (
-          <Tag color={value === 1 ? 'green' : 'default'}>{value === 1 ? 'Đang dùng' : 'Ngưng'}</Tag>
+          <Tag color={value === 1 ? 'green' : 'default'}>
+            {t(`enums.prescriberStatus.${value === 1 ? '1' : '0'}`)}
+          </Tag>
         ),
       },
       {
-        title: 'Thao tác',
+        title: t('prescribers.columns.actions'),
         key: 'actions',
         width: 140,
         render: (_, row) =>
           canWrite ? (
             <Space size={4}>
               <Button size="small" type="link" onClick={() => openEdit(row)}>
-                Sửa
+                {t('prescribers.actions.edit')}
               </Button>
-              <Popconfirm title="Xóa bác sĩ này?" onConfirm={() => void handleDelete(row.id)}>
+              <Popconfirm
+                title={t('prescribers.deleteConfirm')}
+                onConfirm={() => void handleDelete(row.id)}
+              >
                 <Button size="small" type="link" danger>
-                  Xóa
+                  {t('prescribers.actions.delete')}
                 </Button>
               </Popconfirm>
             </Space>
           ) : null,
       },
     ],
-    [canWrite],
+    [canWrite, t],
   );
 
   return (
     <Card
-      title="Bác sĩ kê đơn"
+      title={t('prescribers.title')}
       extra={
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-            Tải lại
+            {t('prescribers.reload')}
           </Button>
           {canWrite ? (
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-              Thêm bác sĩ
+              {t('prescribers.add')}
             </Button>
           ) : null}
         </Space>
@@ -175,35 +187,33 @@ export function PrescriberListPage() {
       />
 
       <Modal
-        title={editing ? 'Cập nhật bác sĩ kê đơn' : 'Thêm bác sĩ kê đơn'}
+        title={editing ? t('prescribers.edit') : t('prescribers.create')}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={() => void submit()}
-        okText={editing ? 'Lưu' : 'Tạo'}
-        cancelText="Hủy"
         confirmLoading={saving}
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            label="Họ tên"
+            label={t('prescribers.form.fullName')}
             name="fullName"
-            rules={[{ required: true, message: 'Nhập họ tên bác sĩ' }]}
+            rules={[{ required: true, message: t('prescribers.form.fullNameRequired') }]}
           >
-            <Input placeholder="Nguyễn Văn A" />
+            <Input placeholder={t('prescribers.form.fullNamePlaceholder')} />
           </Form.Item>
           <Form.Item
-            label="Số CCHN"
+            label={t('prescribers.form.license')}
             name="licenseNumber"
-            rules={[{ required: true, message: 'Nhập số chứng chỉ hành nghề (CCHN)' }]}
-            extra="Bắt buộc để đối chiếu khi thanh tra / kiểm tra"
+            rules={[{ required: true, message: t('prescribers.form.licenseRequired') }]}
+            extra={t('prescribers.form.licenseExtra')}
           >
-            <Input placeholder="Số CCHN" />
+            <Input placeholder={t('prescribers.form.licensePlaceholder')} />
           </Form.Item>
-          <Form.Item label="Điện thoại" name="phone">
-            <Input placeholder="09xxxxxxxx" />
+          <Form.Item label={t('prescribers.form.phone')} name="phone">
+            <Input placeholder={t('prescribers.form.phonePlaceholder')} />
           </Form.Item>
-          <Form.Item label="Chuyên khoa" name="specialty">
-            <Input placeholder="Nội tổng quát" />
+          <Form.Item label={t('prescribers.form.specialty')} name="specialty">
+            <Input placeholder={t('prescribers.form.specialtyPlaceholder')} />
           </Form.Item>
         </Form>
       </Modal>

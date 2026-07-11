@@ -17,6 +17,9 @@ public sealed class PlatformSettings
 
     public string ApiUrl { get; set; } = "https://api.novixa.vn";
 
+    /// <summary>URL portal bác sĩ (OTP / kê đơn).</summary>
+    public string PrescriberPortalUrl { get; set; } = "https://prescriber.novixa.vn";
+
     /// <summary>Bật màn admin xem lead khảo sát public (legacy flag).</summary>
     public bool EnableAssessmentLeadsAdmin { get; set; }
 

@@ -29,24 +29,27 @@
   "systemLayout": {
     "tabs": {
       "branches": "Branches",
-      "users": "Staff",
+      "users": "Accounts",
       "roles": "Roles",
-      "posSettings": "Receipts & POS",
+      "posSettings": "Print & POS",
       "customerAppSettings": "Customer app",
-      "platformPack": "KIT Platform / Pack",
-      "auditLog": "Audit log",
-      "assessmentLeads": "Surveys"
+      "platformPack": "Novixa pack",
+      "auditLog": "System audit log"
     }
   },
   "assessmentLeads": {
-    "title": "Assessment surveys",
-    "hint": "Visible only on Novixa operator deployments. Individual pharmacy tenants do not see this section.",
+    "title": "Survey prospects",
+    "hint": "Track surveys and pharmacy prospects. Hidden records do not appear on the partner portal.",
     "refresh": "Refresh",
-    "noLead": "No lead",
+    "noLead": "No prospects yet",
     "detailTitle": "Survey detail",
     "filters": {
       "all": "All",
-      "withLead": "With pharmacy info"
+      "withLead": "With contact info",
+      "visible": "Visible",
+      "archived": "Hidden",
+      "partner": "Partner",
+      "pipeline": "Stage"
     },
     "columns": {
       "startedAt": "Started",
@@ -55,23 +58,57 @@
       "contact": "Contact",
       "score": "Score",
       "progress": "Progress",
+      "partner": "Partner",
+      "pipeline": "Stage",
+      "commission": "Commission",
       "actions": "Actions"
     },
     "actions": {
-      "detail": "Detail",
-      "viewReport": "View report"
+      "detail": "Details",
+      "viewReport": "Report",
+      "reportConsulting": "Consulting report (full)",
+      "reportExecutive": "Executive report",
+      "reportAppendix": "Technical appendix",
+      "archive": "Hide",
+      "unarchive": "Restore"
+    },
+    "archive": {
+      "confirmTitle": "Hide this prospect?",
+      "confirmBody": "The record will disappear from the default list and partner portal. Data is kept for audit and can be restored later.",
+      "unarchiveTitle": "Restore this prospect?",
+      "unarchiveBody": "The record will appear again in Admin and the partner portal (if attributed).",
+      "blockedCommission": "Cannot hide while commission is pending/approved/paid. Set commission to void first.",
+      "ok": "Hide",
+      "unarchiveOk": "Restore",
+      "cancel": "Cancel"
     },
     "status": {
       "draft": "In progress",
       "completed": "Completed",
-      "lead_captured": "Lead captured",
+      "lead_captured": "Contact submitted",
       "report_ready": "Report ready"
     },
+    "pipeline": {
+      "new": "New",
+      "contacted": "Contacted",
+      "demo_scheduled": "Consult scheduled",
+      "demo_done": "Consult done",
+      "won": "Won",
+      "lost": "Lost",
+      "nurturing": "Nurturing"
+    },
+    "commission": {
+      "none": "None",
+      "pending": "Pending",
+      "approved": "Approved",
+      "paid": "Paid",
+      "void": "Void"
+    },
     "detail": {
-      "template": "Template",
+      "template": "Survey template",
       "completedAt": "Completed at",
       "answers": "answers",
-      "leadSection": "Pharmacy lead",
+      "leadSection": "Pharmacy details",
       "org": "Pharmacy name",
       "name": "Contact name",
       "phone": "Phone",
@@ -81,12 +118,21 @@
       "consentYes": "Yes",
       "consentNo": "No",
       "scores": "Category scores",
-      "insights": "Insights"
+      "insights": "Insights",
+      "recommendations": "Recommendations"
     },
     "messages": {
-      "loadFailed": "Failed to load surveys",
-      "detailFailed": "Failed to load survey detail",
-      "reportFailed": "Failed to load report PDF"
+      "loadFailed": "Could not load prospects",
+      "detailFailed": "Could not load survey detail",
+      "reportFailed": "Could not load report PDF",
+      "pipelineUpdated": "Stage updated",
+      "pipelineFailed": "Could not update stage",
+      "commissionUpdated": "Commission updated",
+      "commissionFailed": "Could not update commission",
+      "archived": "Prospect hidden",
+      "archiveFailed": "Could not hide prospect",
+      "unarchived": "Prospect restored",
+      "unarchiveFailed": "Could not restore prospect"
     }
   },
   "branches": {
@@ -109,6 +155,8 @@
       "name": "Branch name",
       "nameRequired": "Enter branch name",
       "phone": "Phone",
+      "retailFacilityCode": "Retail facility code (QD 540)",
+      "retailFacilityCodeHint": "Ma_co_so_ban_le issued by the Drug Administration — required before linkage export",
       "address": "Address",
       "isHeadOffice": "Head office",
       "status": "Status"
@@ -278,7 +326,7 @@
     }
   },
   "platformPack": {
-    "title": "KIT Platform — Solution Pack",
+    "title": "Novixa feature pack",
     "intro": "Configure modules and features for this tenant (Novixa Pharmacy Pack by default).",
     "introDetail": "Changes apply immediately to Admin menus and APIs. Only ADMIN can save.",
     "readOnlyHint": "View only — only ADMIN can edit pack/modules.",

@@ -18,43 +18,43 @@
   "customerLayout": {
     "tabs": {
       "list": "Danh sách",
-      "engagement": "Engagement app",
+      "engagement": "Tương tác app",
       "loyalty": "Tích điểm",
       "vouchers": "Voucher"
     }
   },
   "engagement": {
-    "title": "Customer Engagement",
-    "subtitle": "Funnel hành vi app khách — đo mỗi sáng để biết bước nào cần tối ưu.",
+    "title": "Tương tác app khách",
+    "subtitle": "Phễu hành vi trên app khách — theo dõi để biết bước nào cần cải thiện.",
     "refresh": "Tải lại",
-    "cohort": "Tài khoản app (cohort)",
-    "retention30d": "Retention 30 ngày",
+    "cohort": "Tài khoản app",
+    "retention30d": "Quay lại trong 30 ngày",
     "retentionDetail": "{{retained}} / {{eligible}} khách quay lại",
     "period": "Kỳ đo",
     "days": "ngày",
-    "ofCohort": "cohort",
+    "ofCohort": "trên tổng tài khoản",
     "fromPrevious": "{{rate}} từ bước trước",
     "drillTitle": "Chi tiết: {{step}}",
-    "loadFailed": "Không tải được engagement",
+    "loadFailed": "Không tải được dữ liệu tương tác",
     "drillFailed": "Không tải được danh sách chi tiết",
     "columns": {
       "name": "Khách hàng",
       "phone": "SĐT",
-      "lastLogin": "Login cuối",
-      "firstLogin": "Login đầu"
+      "lastLogin": "Đăng nhập cuối",
+      "firstLogin": "Đăng nhập đầu"
     },
     "steps": {
-      "app_active": "App Active",
-      "reminder_on": "Reminder On",
-      "ai_usage": "AI Usage",
+      "app_active": "Đang dùng app",
+      "reminder_on": "Đã bật nhắc thuốc",
+      "ai_usage": "Đã dùng trợ lý AI",
       "chat": "Chat",
-      "order_again": "Order Again"
+      "order_again": "Mua lại"
     }
   },
   "listPage": {
     "title": "Khách hàng",
-    "addCustomer": "Thêm KH",
-    "importTitle": "Import khách hàng (Excel/CSV)",
+    "addCustomer": "Thêm khách",
+    "importTitle": "Nhập khách hàng (Excel/CSV)",
     "searchPlaceholder": "Tên, SĐT, mã KH, email",
     "columns": {
       "customerCode": "Mã KH",
@@ -114,10 +114,10 @@
     }
   },
   "pilotOtp": {
-    "title": "Mã OTP app khách (pilot)",
+    "title": "Mã OTP app khách (thử nghiệm)",
     "activeMessage": "Khách vừa yêu cầu đăng nhập — đọc mã này cho khách",
     "expiresAt": "Hết hạn lúc {{time}}",
-    "hint": "Mã tự ẩn sau khi khách nhập đúng hoặc hết hạn (~5 phút). Tắt tính năng này khi đã có SMS gateway.",
+    "hint": "Mã tự ẩn sau khi khách nhập đúng hoặc hết hạn (~5 phút). Tắt khi nhà thuốc đã gửi OTP qua SMS.",
     "waiting": "Chưa có mã OTP",
     "waitingHint": "Khi khách bấm «Gửi mã OTP» trên app, mã 6 số sẽ hiện tại đây (tự cập nhật mỗi vài giây)."
   },
@@ -160,20 +160,20 @@
     }
   },
   "importCard": {
-    "description": "Import Excel/CSV từ Sapo hoặc file {{fileName}}. Mã hoặc SĐT trùng sẽ bỏ qua.",
+    "description": "Nhập từ Excel/CSV (mẫu Novixa hoặc file xuất từ phần mềm khác). Mã hoặc SĐT trùng sẽ bỏ qua.",
     "sampleFileName": "khach-hang-novixa.csv",
-    "chooseFile": "Chọn file KH",
-    "importButton": "Import",
-    "importButtonWithCount": "Import ({{count}})",
+    "chooseFile": "Chọn file",
+    "importButton": "Nhập file",
+    "importButtonWithCount": "Nhập file ({{count}})",
     "fileLabel": "File: {{fileName}}",
-    "batchProgress": "Đang import lô {{current}}/{{total}}…",
+    "batchProgress": "Đang nhập lô {{current}}/{{total}}…",
     "resultSummary": "Tạo mới: {{created}} · Bỏ qua: {{skipped}} · Lỗi: {{failed}}",
     "messages": {
       "noValidRows": "Không tìm thấy dòng hợp lệ. Cần mã + tên khách hàng.",
       "readSuccess": "Đã đọc {{count}} khách từ «{{fileName}}»",
       "readFailed": "Không đọc được file",
-      "importSuccess": "Import KH xong: {{created}} mới, {{skipped}} bỏ qua, {{failed}} lỗi",
-      "importFailed": "Import khách hàng thất bại"
+      "importSuccess": "Nhập xong: {{created}} mới, {{skipped}} bỏ qua, {{failed}} lỗi",
+      "importFailed": "Nhập khách hàng thất bại"
     }
   },
   "loyaltyPanel": {
@@ -194,8 +194,8 @@
     }
   },
   "consentPanel": {
-    "alertTitle": "Opt-in / opt-out theo kênh & mục đích",
-    "alertDescription": "Mỗi lần lưu ghi sự kiện customer.consent.updated vào integration_outbox.",
+    "alertTitle": "Đồng ý nhận thông báo theo kênh và mục đích",
+    "alertDescription": "Mỗi lần lưu sẽ cập nhật trạng thái đồng ý của khách để nhà thuốc gửi nhắc và chăm sóc đúng kênh đã chọn.",
     "saveButton": "Lưu đồng ý",
     "columns": {
       "channel": "Kênh",

@@ -77,13 +77,13 @@
       "creditAllowed": "Được ghi nợ",
       "creditNotAllowed": "Không ghi nợ",
       "outstanding": "Đang nợ {{amount}}",
-      "selectCustomerForCredit": "Chọn khách hàng để ghi nợ — có thể chọn ngay tại đây, không cần quay lại màn POS.",
+      "selectCustomerForCredit": "Chọn khách hàng để ghi nợ — có thể chọn ngay tại đây, không cần quay lại Quầy bán.",
       "orderReminderTitle": "Lịch nhắc hết đơn thuốc",
       "orderReminderHint": "Bật để tự tạo lịch nhắc uống hàng ngày cho khách và gợi ý mua lại khi hết thuốc.",
       "orderReminderLabel": "Nhãn đơn",
       "orderReminderDays": "Số ngày dùng thuốc",
       "customerVouchers": "Voucher khách",
-      "voucherPlaceholder": "Chọn voucher (tuỳ chọn)",
+      "voucherPlaceholder": "Chọn voucher (tùy chọn)",
       "loyaltyHasPoints": "Khách có {{points}} điểm (= {{value}}) · 1 điểm = {{amountPerPoint}}",
       "loyaltyNoPoints": "Khách chưa có điểm tích lũy · 1 điểm = {{amountPerPoint}}",
       "loyaltyMaxPercent": "Trừ tối đa {{percent}}% đơn — giảm tối đa {{amount}} trên đơn này",
@@ -173,8 +173,8 @@
       "shiftOpenDesc": "Mở lúc {{openedAt}} — Thu ròng ca: {{net}}",
       "pendingDraftsTitle": "Khách có đơn tạm chờ lấy",
       "pendingDraftConfirmed": " · Khách đã xác nhận tạm",
-      "loadIntoPos": "Nạp POS",
-      "pendingDraftsHint": "Hỏi khách xác nhận lại tại quầy. Bấm Nạp POS để mở thanh toán và in hóa đơn.",
+      "loadIntoPos": "Nạp quầy",
+      "pendingDraftsHint": "Hỏi khách xác nhận lại tại quầy. Bấm Nạp quầy để mở thanh toán và in hóa đơn.",
       "appDraftModeTitle": "Chế độ gửi đơn qua app khách",
       "appDraftModeDesc": "Soạn giỏ → bấm Gửi khách hàng. Khách xem/xác nhận trên app; thanh toán tại quầy khi khách đến lấy.",
       "completedTitle": "Đã hoàn tất {{orderNumber}}",
@@ -235,8 +235,8 @@
       "invalidOpeningCash": "Quỹ đầu ca không hợp lệ"
     },
     "customerDraft": {
-      "barTitle": "Đơn tạm app khách",
-      "confirmedAt": "Khách xác nhận tạm: {{time}}",
+      "barTitle": "Đơn từ app",
+      "confirmedAt": "Khách xác nhận: {{time}}",
       "sentAt": "Đã gửi app: {{time}}"
     },
     "stock": {
@@ -339,11 +339,11 @@
     }
   },
   "orders": {
-    "title": "Đơn bán hàng",
+    "title": "Đơn bán",
     "appDraftAlert": {
-      "message": "Đơn gửi app khách (Gửi khách hàng tại POS) nằm tại tab Đơn hàng từ app",
-      "description": "Tab này chỉ liệt kê đơn bán nội bộ (nháp / hoàn tất). Đơn chờ khách xác nhận trên app xem tại Bán hàng → Đơn hàng từ app.",
-      "action": "Mở Đơn hàng từ app"
+      "message": "Đơn gửi app khách (Gửi khách hàng tại Quầy bán) nằm tại tab Đơn từ app",
+      "description": "Tab này chỉ liệt kê đơn bán nội bộ (nháp / hoàn tất). Đơn chờ khách xác nhận trên app xem tại Bán hàng → Đơn từ app.",
+      "action": "Mở Đơn từ app"
     },
     "filters": {
       "status": "Trạng thái",
@@ -371,8 +371,8 @@
       "batch": "Lô",
       "expiry": "HSD",
       "unit": "ĐVT",
-      "qty": "Sl mua",
-      "returnedQty": "Sl trả",
+      "qty": "SL mua",
+      "returnedQty": "SL trả",
       "unitPrice": "Đơn giá",
       "lineTotal": "Thành tiền"
     },
@@ -657,7 +657,7 @@
       "intro": "Đếm tiền mặt thực tế trong két và nhập số đếm được. Hệ thống so với tiền mặt dự kiến {{expected}}.",
       "closingCash": "Tiền mặt đếm cuối ca",
       "closingCashRequired": "Nhập tiền đếm được",
-      "notes": "Ghi chú (tuỳ chọn)",
+      "notes": "Ghi chú (tùy chọn)",
       "notesPlaceholder": "Giải thích chênh lệch nếu có..."
     }
   },
@@ -665,18 +665,18 @@
     "navAriaLabel": "Menu bán hàng",
     "loading": "Đang tải...",
     "tabs": {
-      "pos": "Bán hàng (POS)",
+      "pos": "Quầy bán",
       "prescriptions": "Danh sách đơn",
       "prescribers": "Bác sĩ",
       "prescriberLinks": "Mạng BS",
       "orders": "Đơn bán",
-      "customerReceivables": "Công nợ KH",
-      "customerPayments": "Thu nợ KH",
+      "customerReceivables": "Công nợ khách",
+      "customerPayments": "Thu nợ khách",
       "appOrders": "Đơn từ app",
-      "customerDrafts": "Đơn hàng từ app",
-      "customerReservations": "Đặt trước app",
-      "returns": "Hàng trả lại",
-      "chat": "Chat KH",
+      "customerDrafts": "Đơn từ app",
+      "customerReservations": "Đặt trước",
+      "returns": "Trả hàng",
+      "chat": "Chat khách",
       "shift": "Ca làm việc"
     },
     "appOrders": {
@@ -731,14 +731,14 @@
     }
   },
   "customerDrafts": {
-    "title": "Đơn tạm app khách",
+    "title": "Đơn từ app",
     "alert": {
-      "message": "Đơn gửi từ POS (Gửi khách hàng) hiển thị tại đây — không nằm trong tab Đơn bán",
-      "description": "Quy trình: Nháp → Gửi khách → Khách đã xác nhận (tuỳ chọn) → Nạp POS (thanh toán + in hóa đơn)."
+      "message": "Đơn gửi từ Quầy bán (Gửi khách hàng) hiển thị tại đây — không nằm trong tab Đơn bán",
+      "description": "Quy trình: Nháp → Gửi khách → Khách đã xác nhận (tùy chọn) → Nạp quầy (thanh toán + in hóa đơn)."
     },
     "filters": {
       "status": "Trạng thái",
-      "documentPlaceholder": "Số đơn tạm",
+      "documentPlaceholder": "Số đơn",
       "clear": "Xóa lọc",
       "actionable": "Chờ xử lý ({{count}})",
       "active": "Đang xử lý ({{count}})",
@@ -746,9 +746,9 @@
     },
     "pendingAlert": {
       "message": "{{count}} đơn chờ xử lý tại quầy",
-      "description": "Đơn 「Khách đã xác nhận」 hoặc 「Đã gửi khách」 — bấm Nạp POS để thanh toán và in hóa đơn."
+      "description": "Đơn 「Khách đã xác nhận」 hoặc 「Đã gửi khách」 — bấm Nạp quầy để thanh toán và in hóa đơn."
     },
-    "paginationTotal": "{{count}} đơn tạm",
+    "paginationTotal": "{{count}} đơn",
     "columns": {
       "draftNumber": "Số đơn",
       "customer": "Khách",
@@ -758,7 +758,7 @@
       "timeline": "Gửi / Xác nhận",
       "actions": "Thao tác",
       "view": "Xem",
-      "loadPos": "Nạp POS",
+      "loadPos": "Nạp quầy",
       "hiddenOnApp": "Ẩn trên app",
       "confirmedAt": "XN {{time}}",
       "sentAt": "Gửi {{time}}"
@@ -768,15 +768,15 @@
       "drawerTitleDefault": "Xem đơn tạm",
       "confirmedAlert": {
         "message": "Khách đã xác nhận tạm trên app",
-        "description": "Hỏi khách tại quầy. Bấm Nạp POS để thanh toán, ghi đơn bán và in hóa đơn."
+        "description": "Hỏi khách tại quầy. Bấm Nạp quầy để thanh toán, ghi đơn bán và in hóa đơn."
       },
       "sentAlert": {
         "message": "Đã gửi app — chờ khách xác nhận (không bắt buộc)",
-        "description": "Hỏi khách tại quầy. Bấm Nạp POS để thanh toán, ghi đơn bán và in hóa đơn."
+        "description": "Hỏi khách tại quầy. Bấm Nạp quầy để thanh toán, ghi đơn bán và in hóa đơn."
       },
       "actions": {
         "title": "Thao tác",
-        "loadPos": "Nạp POS",
+        "loadPos": "Nạp quầy",
         "cancelConfirm": "Hủy đơn tạm?",
         "cancel": "Hủy đơn",
         "viewOrder": "Xem đơn bán {{orderNumber}}"
@@ -806,21 +806,21 @@
       "cancelFailed": "Không hủy được đơn tạm"
     },
     "drawer": {
-      "title": "Đơn tạm — {{customerName}}",
+      "title": "Đơn từ app — {{customerName}}",
       "defaultCustomer": "Khách",
-      "alert": "Gửi đơn tạm lên app khách (không qua chat). Khách xem / xác nhận tạm tuỳ chọn; thanh toán tại POS.",
-      "existingList": "Danh sách đơn tạm",
-      "emptyList": "Chưa có đơn tạm",
+      "alert": "Gửi đơn lên app khách (không qua chat). Khách xem / xác nhận tùy chọn; thanh toán tại quầy.",
+      "existingList": "Danh sách đơn từ app",
+      "emptyList": "Chưa có đơn từ app",
       "sendToCustomer": "Gửi khách",
       "cancel": "Hủy",
       "lineSummary": "{{count}} SP · {{amount}}",
-      "createNew": "Tạo đơn tạm mới",
+      "createNew": "Tạo đơn mới",
       "productSearchPlaceholder": "Tìm sản phẩm (tên, mã...)",
       "searchMinChars": "Nhập ≥ 2 ký tự",
       "productNotFound": "Không thấy sản phẩm",
       "qtyLabel": "SL",
-      "dosagePlaceholder": "Liều / ghi chú (tuỳ chọn)",
-      "notesPlaceholder": "Ghi chú đơn (tuỳ chọn)",
+      "dosagePlaceholder": "Liều / ghi chú (tùy chọn)",
+      "notesPlaceholder": "Ghi chú đơn (tùy chọn)",
       "estimatedTotal": "Tổng tiền hàng: {{amount}}",
       "saveDraft": "Lưu tạm",
       "messages": {
@@ -860,8 +860,8 @@
   },
   "receiptSettings": {
     "pageTabs": {
-      "pos": "Phiếu in & lô",
-      "customerApp": "App khách"
+      "pos": "In & POS",
+      "customerApp": "App khách hàng"
     },
     "receiptCard": {
       "title": "Phiếu in (POS)",
@@ -881,6 +881,17 @@
     "batchCard": {
       "title": "Quản lý lô (FEFO)",
       "save": "Lưu chế độ lô"
+    },
+    "rxCard": {
+      "title": "Thuốc kê đơn — POS",
+      "hint": "Chế độ Strict: chặn bán sản phẩm kê đơn trên POS khi chưa có đơn bác sĩ. Mặc định Tắt — bật sau khi rà phân loại sản phẩm.",
+      "modeOff": "Tắt — bán thuốc kê đơn như hiện tại",
+      "modeStrict": "Strict — chặn thuốc kê đơn không có đơn bác sĩ",
+      "modeWarn": "Cảnh báo (dự phòng)",
+      "auditLabel": "Ghi nhật ký khi POS chặn thuốc kê đơn",
+      "save": "Lưu cài đặt thuốc kê đơn",
+      "saveSuccess": "Đã lưu cài đặt thuốc kê đơn",
+      "saveFailed": "Không lưu được cài đặt thuốc kê đơn"
     },
     "printGuide": {
       "title": "Hướng dẫn cài máy in nhiệt",
@@ -1070,28 +1081,28 @@
     "create": "Tạo voucher",
     "paginationTotal": "{{count}} voucher",
     "loadFailed": "Không tải được danh sách voucher",
-    "loadErrorHint": "Kiểm tra API backend và bấm Thử lại. Nếu vẫn lỗi: trên VPS chạy systemctl restart KitPlatform-api.",
+    "loadErrorHint": "Không tải được danh sách. Kiểm tra kết nối rồi bấm Thử lại.",
     "retry": "Thử lại",
     "columns": {
       "actions": "Thao tác",
       "code": "Mã",
       "name": "Tên",
       "discount": "Giảm",
-      "minOrder": "Đơn TT",
+      "minOrder": "Đơn tối thiểu",
       "validity": "Hiệu lực",
       "usage": "Dùng/Phát",
-      "status": "TT"
+      "status": "Trạng thái"
     },
     "actions": {
       "issueToCustomer": "Phát cho khách",
-      "issueAria": "Phát KH",
+      "issueAria": "Phát cho khách",
       "delete": "Xóa",
       "deleteConfirm": "Xóa voucher?",
       "deleteWithIssued": "{{code}} · gỡ khỏi ví {{count}} khách chưa dùng",
       "cancel": "Hủy",
       "cannotDeleteUsed": "Voucher đã dùng — hãy tắt thay vì xóa",
       "viewIssued": "Xem danh sách phát",
-      "viewIssuedAria": "Xem phát"
+      "viewIssuedAria": "Xem danh sách phát"
     },
     "modal": {
       "editTitle": "Sửa voucher",
@@ -1120,7 +1131,7 @@
       "hint": "Chọn khách để thêm vào ví (app khách sẽ thấy ngay).",
       "customerPlaceholder": "Tìm tên / SĐT khách hàng",
       "submit": "Phát voucher",
-      "bulkIssue": "Phát cho nhiều KH",
+      "bulkIssue": "Phát cho nhiều khách",
       "issuedCount": "Đã phát ({{count}})",
       "columns": {
         "customer": "Khách",
@@ -1156,14 +1167,14 @@
       "tier": "Hạng",
       "selectTiers": "Chọn hạng",
       "hideAlreadyIssued": "Ẩn đã có voucher",
-      "paginationTotal": "{{count}} KH",
+      "paginationTotal": "{{count}} khách",
       "columns": {
         "code": "Mã",
         "customer": "Khách",
         "phone": "SĐT",
         "tier": "Hạng",
-        "revenue": "DT",
-        "birthday": "SN",
+        "revenue": "Doanh thu",
+        "birthday": "Sinh nhật",
         "voucher": "Voucher"
       },
       "hasVoucher": "Có",
@@ -1178,10 +1189,10 @@
     }
   },
   "customerConsent": {
-    "title": "Đồng ý khách hàng (CDP)",
+    "title": "Đồng ý khách hàng",
     "alert": {
-      "message": "Opt-in / opt-out theo kênh & mục đích",
-      "description": "Mỗi lần lưu ghi sự kiện customer.consent.updated vào integration_outbox để worker CDP xử lý sau. Đồng ý Trong app / Hỗ trợ AI dược sĩ bật chat hai chiều với khách trong app."
+      "message": "Đồng ý nhận thông báo theo kênh và mục đích",
+      "description": "Mỗi lần lưu cập nhật trạng thái đồng ý của khách. Đồng ý Trong app / Hỗ trợ AI dược sĩ bật chat hai chiều với khách trong app."
     },
     "selectCustomer": "Chọn khách hàng",
     "save": "Lưu đồng ý",
@@ -1194,10 +1205,10 @@
     "messages": {
       "loadFailed": "Không tải được đồng ý khách hàng",
       "selectCustomer": "Chọn khách hàng",
-      "saveSuccess": "Đã lưu đồng ý — sự kiện CDP đã ghi outbox",
+      "saveSuccess": "Đã lưu đồng ý",
       "saveFailed": "Không lưu được đồng ý",
-      "apiNotFound": "API chưa có endpoint đồng ý KH — chạy .\\scripts\\restart-api.ps1 rồi thử lại.",
-      "migrationMissing": "{{message}} — có thể thiếu migration 016: chạy setup-and-migrate hoặc psql -f migrations/016_customer_consents_and_outbox.sql"
+      "apiNotFound": "Chưa kết nối được chức năng đồng ý. Thử lại sau hoặc liên hệ hỗ trợ kỹ thuật.",
+      "migrationMissing": "{{message}} — chức năng đồng ý chưa sẵn sàng. Liên hệ hỗ trợ kỹ thuật nếu lỗi tiếp tục."
     }
   }
 }

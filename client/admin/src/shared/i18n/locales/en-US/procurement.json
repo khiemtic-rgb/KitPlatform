@@ -2,7 +2,7 @@
   "enums": {
     "poStatus": {
       "1": "Pending approval",
-      "2": "New order",
+      "2": "Approved",
       "3": "Partially received",
       "4": "Fully received",
       "5": "Closed",
@@ -33,7 +33,7 @@
       "suppliers": "Suppliers",
       "orders": "Purchase orders",
       "receipts": "Goods receipts",
-      "vatSettings": "VAT",
+      "vatSettings": "VAT rates",
       "payables": "Supplier payables",
       "payments": "Supplier payments"
     }
@@ -214,7 +214,7 @@
       "deleted": "Supplier deleted"
     },
     "import": {
-      "hint": "Import Excel/CSV from Sapo or nha-cung-cap-novixa.csv. Duplicate codes are skipped.",
+      "hint": "Import Excel/CSV (Novixa template or export from another system). Duplicate supplier codes are skipped.",
       "chooseFile": "Choose supplier file",
       "importButton": "Import",
       "fileLabel": "File: {{name}}",
@@ -407,7 +407,7 @@
       "loadFailed": "Could not load supplier payments",
       "detailLoadFailed": "Could not load payment details — using list data",
       "saveFailed": "Could not save payment",
-      "apiEditUnsupported": "API does not support editing payments yet. Restart KitPlatform.Api after build.",
+      "apiEditUnsupported": "Editing posted payments is not supported. Cancel and create a new payment if changes are needed.",
       "postFailed": "Could not post payment",
       "cancelFailed": "Could not cancel payment",
       "noWritePermission": "You do not have permission to record payments",
@@ -419,7 +419,7 @@
   },
   "supplierPayables": {
     "title": "Supplier payables",
-    "intro": "GRN values and payables are based on line totals (pre-VAT). PO post-tax totals on the PO screen are reference only — Phase 2 will align tax reporting and accounting export. Unlinked payments are applied to oldest receipts first.",
+    "intro": "Payables are based on goods receipt line totals (pre-VAT). Purchase order post-tax totals are reference only. Unlinked payments are applied to the oldest receipts first.",
     "detailDrawer": "Payables detail",
     "detailDrawerWithName": "Payables — {{supplierName}}",
     "createPayment": "Create payment",
@@ -487,7 +487,7 @@
   },
   "print": {
     "documentTitle": "GRN {{number}}",
-    "heading": "Goods receipt note (GRN)",
+    "heading": "Goods receipt",
     "grnNumber": "GRN no.:",
     "receiptDate": "Receipt date:",
     "supplier": "Supplier:",

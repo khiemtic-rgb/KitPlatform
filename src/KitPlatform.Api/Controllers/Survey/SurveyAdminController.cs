@@ -27,12 +27,13 @@ public sealed class SurveyAdminController : ControllerBase
         [FromQuery] bool? hasLead = null,
         [FromQuery] Guid? partnerId = null,
         [FromQuery] string? leadPipelineStatus = null,
+        [FromQuery] bool archived = false,
         CancellationToken cancellationToken = default)
     {
         try
         {
             return Ok(await _admin.ListSubmissionsAsync(
-                new AssessmentSubmissionListQuery(page, pageSize, status, hasLead, partnerId, leadPipelineStatus),
+                new AssessmentSubmissionListQuery(page, pageSize, status, hasLead, partnerId, leadPipelineStatus, archived),
                 cancellationToken));
         }
         catch (UnauthorizedAccessException)
@@ -128,6 +129,46 @@ public sealed class SurveyAdminController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpPost("submissions/{id:guid}/archive")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ArchiveSubmission(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var ok = await _admin.ArchiveSubmissionAsync(id, cancellationToken);
+            return ok ? NoContent() : NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpPost("submissions/{id:guid}/unarchive")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UnarchiveSubmission(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var ok = await _admin.UnarchiveSubmissionAsync(id, cancellationToken);
+            return ok ? NoContent() : NotFound();
         }
         catch (UnauthorizedAccessException)
         {

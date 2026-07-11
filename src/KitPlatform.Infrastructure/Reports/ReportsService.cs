@@ -23,21 +23,21 @@ internal sealed class ReportsService : IReportsService
     public IReadOnlyList<ReportCatalogItemDto> GetCatalog() =>
     [
         new(ReportCodes.SalesRevenueByPeriod, "Doanh thu theo kỳ", "sales",
-            "Thu bán, hoàn trả và thu ròng theo ngày/tuần/tháng (giờ VN).", true, false, false),
-        new(ReportCodes.SalesRevenueByPaymentMethod, "Doanh thu theo hình thức TT", "sales",
+            "Doanh thu bán, hoàn trả và thu ròng theo ngày/tuần/tháng (giờ Việt Nam).", true, false, false),
+        new(ReportCodes.SalesRevenueByPaymentMethod, "Doanh thu theo hình thức thanh toán", "sales",
             "Thu ròng theo tiền mặt, thẻ, chuyển khoản, ví.", true, false, false),
         new(ReportCodes.SalesShifts, "Báo cáo ca làm việc", "sales",
             "Danh sách ca, quỹ tiền mặt và thu ròng trong ca.", true, false, false),
         new(ReportCodes.SalesRevenueByCategory, "Doanh thu theo danh mục", "sales",
             "Thu ròng theo nhóm sản phẩm (danh mục) trong kỳ.", true, false, false),
-        new(ReportCodes.ProcurementGrnValue, "Giá trị nhập hàng (GRN)", "procurement",
-            "Tổng hợp phiếu nhập hoàn tất — tiền trước thuế GTGT.", false, true, false),
-        new(ReportCodes.ProcurementPayablesSnapshot, "Công nợ NCC (snapshot)", "procurement",
-            "Số còn phải trả và phân tích tuổi nợ tại thời điểm xem.", false, true, false),
-        new(ReportCodes.InventoryStockSnapshot, "Tồn kho & giá trị", "inventory",
-            "Số lượng và giá trị tồn (qty × giá vốn lô) theo sản phẩm/kho.", false, false, true),
+        new(ReportCodes.ProcurementGrnValue, "Giá trị nhập hàng", "procurement",
+            "Tổng hợp phiếu nhập hoàn tất — số tiền trước thuế GTGT.", false, true, false),
+        new(ReportCodes.ProcurementPayablesSnapshot, "Công nợ nhà cung cấp", "procurement",
+            "Số còn phải trả và tuổi nợ tại thời điểm xem báo cáo.", false, true, false),
+        new(ReportCodes.InventoryStockSnapshot, "Tồn kho và giá trị", "inventory",
+            "Số lượng và giá trị tồn (số lượng × giá vốn lô) theo sản phẩm/kho.", false, false, true),
         new(ReportCodes.InventoryNearExpiry, "Sắp hết hạn sử dụng", "inventory",
-            "Lô tồn có HSD trong số ngày cảnh báo.", false, false, true),
+            "Lô tồn có hạn dùng trong số ngày cảnh báo.", false, false, true),
         new(ReportCodes.InventoryMovementSummary, "Xuất — nhập — tồn", "inventory",
             "Tồn đầu kỳ, nhập/xuất trong kỳ và tồn cuối theo sản phẩm/kho.", false, false, true),
     ];
@@ -175,14 +175,14 @@ internal sealed class ReportsService : IReportsService
             {
                 Col("supplierCode", "Mã NCC", ReportColumnFormats.Text, "left"),
                 Col("supplierName", "Nhà cung cấp", ReportColumnFormats.Text, "left"),
-                Col("grnCount", "Số GRN", ReportColumnFormats.Integer, "right"),
-                Col("totalQty", "Tổng SL", ReportColumnFormats.Qty, "right"),
+                Col("grnCount", "Số phiếu nhập", ReportColumnFormats.Integer, "right"),
+                Col("totalQty", "Tổng số lượng", ReportColumnFormats.Qty, "right"),
                 Col("preTaxAmount", "Tiền trước thuế", ReportColumnFormats.Money, "right"),
             };
             var filters = FilterLabels(from, to, null, warehouseId);
             if (supplierId.HasValue) filters["NCC"] = supplierId.Value.ToString();
             filters["Nhóm theo"] = "Nhà cung cấp";
-            filters["Ghi chú"] = "Giá trị GRN hoàn tất — trước thuế GTGT";
+            filters["Ghi chú"] = "Phiếu nhập hoàn tất — số tiền trước thuế GTGT";
             return BuildTable(
                 ReportCodes.ProcurementGrnValue,
                 "Giá trị nhập hàng theo nhà cung cấp",
@@ -195,12 +195,12 @@ internal sealed class ReportsService : IReportsService
         var periodColumns = new List<ReportColumnDto>
         {
             Col("periodLabel", "Kỳ", ReportColumnFormats.Text, "left"),
-            Col("grnCount", "Số GRN", ReportColumnFormats.Integer, "right"),
-            Col("totalQty", "Tổng SL", ReportColumnFormats.Qty, "right"),
+            Col("grnCount", "Số phiếu nhập", ReportColumnFormats.Integer, "right"),
+            Col("totalQty", "Tổng số lượng", ReportColumnFormats.Qty, "right"),
             Col("preTaxAmount", "Tiền trước thuế", ReportColumnFormats.Money, "right"),
         };
         var periodFilters = FilterLabels(from, to, groupBy, warehouseId);
-        periodFilters["Ghi chú"] = "Giá trị GRN hoàn tất — trước thuế GTGT";
+        periodFilters["Ghi chú"] = "Phiếu nhập hoàn tất — số tiền trước thuế GTGT";
         return BuildTable(
             ReportCodes.ProcurementGrnValue,
             groupBy == ReportGroupBy.Month ? "Giá trị nhập hàng theo tháng" : "Giá trị nhập hàng theo ngày",
@@ -240,11 +240,11 @@ internal sealed class ReportsService : IReportsService
 
         return BuildTable(
             ReportCodes.ProcurementPayablesSnapshot,
-            "Công nợ nhà cung cấp (snapshot)",
+            "Công nợ nhà cung cấp",
             new Dictionary<string, string>
             {
                 ["Thời điểm"] = DateTime.UtcNow.AddHours(7).ToString("dd/MM/yyyy HH:mm"),
-                ["Ghi chú"] = "Theo GRN trước thuế GTGT",
+                ["Ghi chú"] = "Theo phiếu nhập — số tiền trước thuế GTGT",
             },
             columns,
             rows,
@@ -275,7 +275,7 @@ internal sealed class ReportsService : IReportsService
 
         return BuildTable(
             ReportCodes.InventoryStockSnapshot,
-            "Tồn kho & giá trị",
+            "Tồn kho và giá trị",
             filters,
             columns,
             rows,

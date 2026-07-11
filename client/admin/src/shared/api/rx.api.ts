@@ -506,3 +506,73 @@ export async function revokePrescriberLink(id: string): Promise<RxPrescriberLink
   const { data } = await http.post<UnknownRow>(`/pharmacy/prescribers/links/${id}/revoke`);
   return normalizePrescriberLink(data);
 }
+
+export interface RxTenantDashboard {
+  signedThisMonth: number;
+  signedTotal: number;
+  pendingDispense: number;
+  overduePendingDispense: number;
+  pendingVerification: number;
+  pendingLinkApprovals: number;
+  activePrescriberLinks: number;
+  portalSignedThisMonth: number;
+  staffSignedThisMonth: number;
+  avgHoursToDispense: number | null;
+  topPrescribers: Array<{
+    prescriberId: string | null;
+    prescriberName: string;
+    phone: string | null;
+    signedThisMonth: number;
+    signedTotal: number;
+  }>;
+  recentPendingDispense: Array<{
+    id: string;
+    prescriptionCode: string;
+    prescriberName: string | null;
+    patientName: string | null;
+    status: string;
+    signedAt: string | null;
+    hoursWaiting: number | null;
+  }>;
+}
+
+export async function fetchTenantRxDashboard(): Promise<RxTenantDashboard> {
+  const { data } = await http.get<UnknownRow>('/pharmacy/prescriptions/dashboard');
+  const top = asArray(data.topPrescribers ?? data.TopPrescribers).map((row) => ({
+    prescriberId: optionalString(row.prescriberId ?? row.PrescriberId) ?? null,
+    prescriberName: String(row.prescriberName ?? row.PrescriberName ?? '—'),
+    phone: optionalString(row.phone ?? row.Phone) ?? null,
+    signedThisMonth: Number(row.signedThisMonth ?? row.SignedThisMonth ?? 0),
+    signedTotal: Number(row.signedTotal ?? row.SignedTotal ?? 0),
+  }));
+  const pending = asArray(data.recentPendingDispense ?? data.RecentPendingDispense).map((row) => ({
+    id: String(row.id ?? row.Id),
+    prescriptionCode: String(row.prescriptionCode ?? row.PrescriptionCode ?? ''),
+    prescriberName: optionalString(row.prescriberName ?? row.PrescriberName) ?? null,
+    patientName: optionalString(row.patientName ?? row.PatientName) ?? null,
+    status: String(row.status ?? row.Status ?? ''),
+    signedAt: optionalString(row.signedAt ?? row.SignedAt) ?? null,
+    hoursWaiting:
+      row.hoursWaiting != null || row.HoursWaiting != null
+        ? Number(row.hoursWaiting ?? row.HoursWaiting)
+        : null,
+  }));
+  return {
+    signedThisMonth: Number(data.signedThisMonth ?? data.SignedThisMonth ?? 0),
+    signedTotal: Number(data.signedTotal ?? data.SignedTotal ?? 0),
+    pendingDispense: Number(data.pendingDispense ?? data.PendingDispense ?? 0),
+    overduePendingDispense: Number(data.overduePendingDispense ?? data.OverduePendingDispense ?? 0),
+    pendingVerification: Number(data.pendingVerification ?? data.PendingVerification ?? 0),
+    pendingLinkApprovals: Number(data.pendingLinkApprovals ?? data.PendingLinkApprovals ?? 0),
+    activePrescriberLinks: Number(data.activePrescriberLinks ?? data.ActivePrescriberLinks ?? 0),
+    portalSignedThisMonth: Number(data.portalSignedThisMonth ?? data.PortalSignedThisMonth ?? 0),
+    staffSignedThisMonth: Number(data.staffSignedThisMonth ?? data.StaffSignedThisMonth ?? 0),
+    avgHoursToDispense:
+      data.avgHoursToDispense != null || data.AvgHoursToDispense != null
+        ? Number(data.avgHoursToDispense ?? data.AvgHoursToDispense)
+        : null,
+    topPrescribers: top,
+    recentPendingDispense: pending,
+  };
+}
+

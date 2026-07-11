@@ -68,7 +68,11 @@ export function KapTemplatesPage() {
       title: 'Trạng thái',
       dataIndex: 'status',
       width: 100,
-      render: (v: string) => <Tag color={v === 'active' ? 'green' : 'default'}>{v}</Tag>,
+      render: (v: string) => (
+        <Tag color={v === 'active' ? 'green' : v === 'archived' ? 'default' : 'blue'}>
+          {v === 'active' ? 'Đang dùng' : v === 'draft' ? 'Nháp' : v === 'archived' ? 'Lưu trữ' : v}
+        </Tag>
+      ),
     },
     {
       title: 'Cập nhật',
@@ -89,7 +93,7 @@ export function KapTemplatesPage() {
   return (
     <>
       <Card
-        title="Biểu mẫu KAP"
+        title="Biểu mẫu khảo sát"
         extra={
           <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
             Làm mới
@@ -117,14 +121,14 @@ export function KapTemplatesPage() {
               <Form.Item name="status" label="Trạng thái" rules={[{ required: true }]}>
                 <Select
                   options={[
-                    { value: 'draft', label: 'draft' },
-                    { value: 'active', label: 'active' },
-                    { value: 'archived', label: 'archived' },
+                    { value: 'draft', label: 'Nháp' },
+                    { value: 'active', label: 'Đang dùng' },
+                    { value: 'archived', label: 'Lưu trữ' },
                   ]}
                 />
               </Form.Item>
               <Button type="primary" htmlType="submit">
-                Lưu metadata
+                Lưu thông tin
               </Button>
             </Form>
           </Space>

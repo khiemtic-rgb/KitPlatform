@@ -57,4 +57,6 @@ public interface IPrescriptionService
         Guid warehouseId,
         short priceType,
         CancellationToken cancellationToken = default);
+
+    Task<TenantRxDashboardDto> GetTenantDashboardAsync(CancellationToken cancellationToken = default);
 }

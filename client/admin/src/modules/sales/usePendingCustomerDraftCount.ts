@@ -9,7 +9,8 @@ import { salesT } from '@/shared/i18n';
 import { buildAdminDraftOrderEventsUrl, subscribeChatSse } from '@/shared/utils/chat-sse';
 import { showDesktopNotification } from '@/shared/utils/desktop-notification';
 
-const FALLBACK_POLL_MS = 30_000;
+const FALLBACK_POLL_MS = 60_000;
+const FALLBACK_POLL_HIDDEN_MS = 120_000;
 const SSE_POLL_DEBOUNCE_MS = 1_000;
 const POLL_STATUSES = [
   CUSTOMER_DRAFT_ORDER_STATUS.Sent,
@@ -17,7 +18,7 @@ const POLL_STATUSES = [
   CUSTOMER_DRAFT_ORDER_STATUS.Cancelled,
 ];
 
-/** Số đơn tạm cần xử lý + thông báo desktop khi khách xác nhận / hủy. */
+/** Số đơn từ app cần xử lý + thông báo desktop khi khách xác nhận / hủy. */
 export function usePendingCustomerDraftCount(enabled = true) {
   const location = useLocation();
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -94,7 +95,14 @@ export function usePendingCustomerDraftCount(enabled = true) {
     };
 
     void poll();
-    const timer = window.setInterval(() => schedulePoll(0), FALLBACK_POLL_MS);
+    let timer = window.setInterval(() => schedulePoll(0), FALLBACK_POLL_MS);
+    const scheduleFallback = () => {
+      const delay = document.hidden ? FALLBACK_POLL_HIDDEN_MS : FALLBACK_POLL_MS;
+      window.clearInterval(timer);
+      timer = window.setInterval(() => schedulePoll(0), delay);
+    };
+    const onVisibility = () => scheduleFallback();
+    document.addEventListener('visibilitychange', onVisibility);
     const unsubscribeSse = accessToken
       ? subscribeChatSse(buildAdminDraftOrderEventsUrl(accessToken), () => {
           if (sseTimer) return;
@@ -110,6 +118,7 @@ export function usePendingCustomerDraftCount(enabled = true) {
       window.clearInterval(timer);
       if (pollTimer) window.clearTimeout(pollTimer);
       if (sseTimer) window.clearTimeout(sseTimer);
+      document.removeEventListener('visibilitychange', onVisibility);
       unsubscribeSse();
     };
   }, [enabled, location.pathname, accessToken]);

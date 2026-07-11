@@ -1,7 +1,13 @@
 import { Button, Card, Empty, List, Space, Typography, message } from 'antd';
+import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { acceptPharmacyInvite, fetchPendingInvites, rejectPharmacyInvite } from '@/shared/api/prescriber-portal.api';
+import {
+  acceptPharmacyInvite,
+  fetchPendingInvites,
+  getApiErrorMessage,
+  rejectPharmacyInvite,
+} from '@/shared/api/prescriber-portal.api';
 
 export function PendingInvitesPage() {
   const { t } = useTranslation();
@@ -18,6 +24,7 @@ export function PendingInvitesPage() {
       message.success(t('invites.acceptSuccess'));
       await queryClient.invalidateQueries({ queryKey: ['prescriber'] });
     },
+    onError: (error) => message.error(getApiErrorMessage(error, t('invites.acceptFailed'))),
   });
 
   const rejectMutation = useMutation({
@@ -26,6 +33,7 @@ export function PendingInvitesPage() {
       message.success(t('invites.rejectSuccess'));
       await queryClient.invalidateQueries({ queryKey: ['prescriber'] });
     },
+    onError: (error) => message.error(getApiErrorMessage(error, t('invites.rejectFailed'))),
   });
 
   return (
@@ -43,14 +51,16 @@ export function PendingInvitesPage() {
                 <Space>
                   <Button
                     type="primary"
-                    loading={acceptMutation.isPending}
+                    icon={<CheckOutlined />}
+                    loading={acceptMutation.isPending && acceptMutation.variables === item.id}
                     onClick={() => acceptMutation.mutate(item.id)}
                   >
                     {t('invites.accept')}
                   </Button>
                   <Button
                     danger
-                    loading={rejectMutation.isPending}
+                    icon={<CloseOutlined />}
+                    loading={rejectMutation.isPending && rejectMutation.variables === item.id}
                     onClick={() => rejectMutation.mutate(item.id)}
                   >
                     {t('invites.reject')}

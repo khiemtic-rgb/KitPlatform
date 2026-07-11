@@ -669,8 +669,8 @@
       "customerReceivables": "Receivables",
       "customerPayments": "Collections",
       "appOrders": "App orders",
-      "customerDrafts": "Customer app orders",
-      "customerReservations": "App reservations",
+      "customerDrafts": "App orders",
+      "customerReservations": "Reservations",
       "returns": "Returns",
       "chat": "Customer chat",
       "shift": "Work shift"
@@ -877,6 +877,17 @@
     "batchCard": {
       "title": "Batch management (FEFO)",
       "save": "Save batch mode"
+    },
+    "rxCard": {
+      "title": "Prescription drugs — POS",
+      "hint": "Strict mode blocks prescription SKUs on POS without a doctor order. Default Off — enable after classifying SKUs.",
+      "modeOff": "Off — sell prescription items as today",
+      "modeStrict": "Strict — block prescription items without an Rx",
+      "modeWarn": "Warn (reserved)",
+      "auditLabel": "Log when POS blocks a prescription item",
+      "save": "Save prescription settings",
+      "saveSuccess": "Prescription settings saved",
+      "saveFailed": "Could not save prescription settings"
     },
     "printGuide": {
       "title": "Thermal printer setup",
@@ -1174,10 +1185,10 @@
     }
   },
   "customerConsent": {
-    "title": "Customer consent (CDP)",
+    "title": "Customer consent",
     "alert": {
-      "message": "Opt-in / opt-out by channel & purpose",
-      "description": "Each save writes a customer.consent.updated event to integration_outbox for the CDP worker. In-app / AI pharmacist support consent enables two-way chat in the customer app."
+      "message": "Notification consent by channel and purpose",
+      "description": "Each save updates the customer’s consent. In-app / AI pharmacist support consent enables two-way chat in the customer app."
     },
     "selectCustomer": "Select customer",
     "save": "Save consent",
@@ -1190,10 +1201,10 @@
     "messages": {
       "loadFailed": "Could not load customer consent",
       "selectCustomer": "Select a customer",
-      "saveSuccess": "Consent saved — CDP event written to outbox",
+      "saveSuccess": "Consent saved",
       "saveFailed": "Could not save consent",
-      "apiNotFound": "Customer consent API endpoint not available — run .\\scripts\\restart-api.ps1 and try again.",
-      "migrationMissing": "{{message}} — migration 016 may be missing: run setup-and-migrate or psql -f migrations/016_customer_consents_and_outbox.sql"
+      "apiNotFound": "Consent feature is unavailable. Try again later or contact support.",
+      "migrationMissing": "{{message}} — consent is not ready yet. Contact support if this continues."
     }
   }
 }

@@ -18,8 +18,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EyeOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
-import { fetchProducts, fetchProduct } from '@/shared/api/catalog.api';
-import type { ProductListItem } from '@/shared/api/catalog.types';
+import { fetchProduct } from '@/shared/api/catalog.api';
 import { fetchStockBatches, fetchStockProducts, fetchWarehouses } from '@/shared/api/inventory.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import type { StockBatch, StockProductSummary, Warehouse } from '@/shared/api/inventory.types';
@@ -52,8 +51,7 @@ export function StockListPage() {
   const [searchInput, setSearchInput] = useState('');
   const [fefoProductId, setFefoProductId] = useState<string | undefined>();
   const [fefoProductLabel, setFefoProductLabel] = useState<string | undefined>();
-  const [suggestionProducts, setSuggestionProducts] = useState<ProductListItem[]>([]);
-  const [suggestionBatches, setSuggestionBatches] = useState<StockBatch[]>([]);
+  const [searchSuggestions, setSearchSuggestions] = useState<{ value: string; label: string }[]>([]);
   const [detailProduct, setDetailProduct] = useState<StockProductSummary | null>(null);
   const [detailBatches, setDetailBatches] = useState<StockBatch[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -97,20 +95,66 @@ export function StockListPage() {
   }, [activeTab, warehouseId, search, fefoProductId, page, pageSize, t]);
 
   useEffect(() => {
-    loadWarehouses();
-    void (async () => {
-      try {
-        const [catalog, batches] = await Promise.all([
-          fetchProducts({ page: 1, pageSize: 200 }),
-          fetchStockBatches({ page: 1, pageSize: 200 }),
-        ]);
-        setSuggestionProducts(catalog.items ?? []);
-        setSuggestionBatches(batches.items ?? []);
-      } catch {
-        /* gợi ý tùy chọn */
-      }
-    })();
+    void loadWarehouses();
   }, [loadWarehouses]);
+
+  useEffect(() => {
+    const q = searchInput.trim();
+    if (q.length < 2) {
+      setSearchSuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          if (activeTab === 'summary') {
+            const result = await fetchStockProducts({
+              warehouseId,
+              search: q,
+              page: 1,
+              pageSize: 12,
+            });
+            if (cancelled) return;
+            setSearchSuggestions(
+              result.items.map((p) => ({
+                value: p.productCode || p.productName,
+                label: `${p.productCode} — ${p.productName}`,
+              })),
+            );
+          } else {
+            const result = await fetchStockBatches({
+              warehouseId,
+              search: q,
+              page: 1,
+              pageSize: 12,
+            });
+            if (cancelled) return;
+            const seen = new Set<string>();
+            setSearchSuggestions(
+              result.items
+                .filter((b) => {
+                  if (seen.has(b.batchNumber)) return false;
+                  seen.add(b.batchNumber);
+                  return true;
+                })
+                .slice(0, 12)
+                .map((b) => ({
+                  value: b.batchNumber,
+                  label: `${ts('batchLabel', { number: b.batchNumber })} — ${b.productName}`,
+                })),
+            );
+          }
+        } catch {
+          if (!cancelled) setSearchSuggestions([]);
+        }
+      })();
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [searchInput, activeTab, warehouseId, ts]);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -136,44 +180,6 @@ export function StockListPage() {
   useEffect(() => {
     void load();
   }, [load]);
-
-  const searchSuggestions = useMemo(() => {
-    const q = searchInput.trim().toLowerCase();
-    const productOpts = suggestionProducts
-      .filter((p) => {
-        if (!q) return true;
-        return (
-          p.productCode.toLowerCase().includes(q) ||
-          p.productName.toLowerCase().includes(q) ||
-          (p.primaryBarcode?.toLowerCase().includes(q) ?? false)
-        );
-      })
-      .slice(0, 12)
-      .map((p) => ({
-        value: p.primaryBarcode || p.productCode || p.productName,
-        label: `${p.productCode} — ${p.productName}${p.primaryBarcode ? ` · ${p.primaryBarcode}` : ''}`,
-      }));
-
-    const seenBatches = new Set<string>();
-    const batchOpts = suggestionBatches
-      .filter((b) => {
-        if (seenBatches.has(b.batchNumber)) return false;
-        seenBatches.add(b.batchNumber);
-        if (!q) return true;
-        return (
-          b.batchNumber.toLowerCase().includes(q) ||
-          b.productCode.toLowerCase().includes(q) ||
-          b.productName.toLowerCase().includes(q)
-        );
-      })
-      .slice(0, 8)
-      .map((b) => ({
-        value: b.batchNumber,
-        label: `${ts('batchLabel', { number: b.batchNumber })} — ${b.productName}`,
-      }));
-
-    return [...productOpts, ...(activeTab === 'fefo' ? batchOpts : [])].slice(0, 20);
-  }, [suggestionProducts, suggestionBatches, searchInput, activeTab, ts]);
 
   const applySearch = (value?: string) => {
     const text = (value ?? searchInput).trim();

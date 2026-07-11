@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BellOutlined,
+  CalendarOutlined,
   GiftOutlined,
   HeartOutlined,
   MedicineBoxOutlined,
   MessageOutlined,
   RobotOutlined,
-  ShoppingOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
 import { Badge, Button, Card, Col, Row, Space, Typography } from 'antd';
@@ -95,7 +95,7 @@ export function HomePage() {
       [
         { to: '/health', icon: <HeartOutlined />, labelKey: 'shortcutHealth' as ShortcutKey },
         { to: '/reminders', icon: <MedicineBoxOutlined />, labelKey: 'shortcutReminders' as ShortcutKey },
-        { to: '/reservations', icon: <ShoppingOutlined />, labelKey: 'shortcutReservations' as ShortcutKey },
+        { to: '/reservations', icon: <CalendarOutlined />, labelKey: 'shortcutReservations' as ShortcutKey },
         { to: '/ai', icon: <RobotOutlined />, labelKey: 'shortcutAi' as ShortcutKey },
         { to: '/family', icon: <TeamOutlined />, labelKey: 'shortcutFamily' as ShortcutKey },
         { to: '/loyalty', icon: <GiftOutlined />, labelKey: 'shortcutPoints' as ShortcutKey },

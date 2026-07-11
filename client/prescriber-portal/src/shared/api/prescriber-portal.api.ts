@@ -81,6 +81,37 @@ export async function fetchPortalPrescriptions(tenantId?: string): Promise<Porta
   return data;
 }
 
+export async function fetchPortalPrescription(prescriptionId: string): Promise<PortalPrescriptionDetail> {
+  const { data } = await prescriberHttp.get<PortalPrescriptionDetail>(`/prescriptions/${prescriptionId}`);
+  return data;
+}
+
+export async function amendPortalPrescription(
+  prescriptionId: string,
+  payload: {
+    notes?: string;
+    lines: Array<{
+      productId: string;
+      productUnitId?: string | null;
+      qtyPrescribed: number;
+      dosageInstruction?: string;
+    }>;
+  },
+): Promise<PortalPrescriptionDetail> {
+  const { data } = await prescriberHttp.put<PortalPrescriptionDetail>(`/prescriptions/${prescriptionId}`, payload);
+  return data;
+}
+
+export async function cancelPortalPrescription(
+  prescriptionId: string,
+  reason?: string,
+): Promise<PortalPrescriptionDetail> {
+  const { data } = await prescriberHttp.post<PortalPrescriptionDetail>(`/prescriptions/${prescriptionId}/cancel`, {
+    reason,
+  });
+  return data;
+}
+
 export async function createPortalPrescription(payload: {
   tenantId: string;
   customerId: string;

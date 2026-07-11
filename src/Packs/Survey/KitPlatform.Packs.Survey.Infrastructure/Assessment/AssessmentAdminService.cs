@@ -36,6 +36,7 @@ internal sealed class AssessmentAdminService : IAssessmentAdminService
             query.HasLead,
             query.PartnerId,
             query.LeadPipelineStatus,
+            query.Archived,
             cancellationToken);
 
         return new AssessmentSubmissionListResultDto(
@@ -138,6 +139,45 @@ internal sealed class AssessmentAdminService : IAssessmentAdminService
             cancellationToken);
     }
 
+    public async Task<bool> ArchiveSubmissionAsync(
+        Guid submissionId,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureEnabled();
+        var state = await _repo.GetArchiveStateAsync(submissionId, cancellationToken);
+        if (state is null)
+            return false;
+
+        var (commissionStatus, archivedAt) = state.Value;
+        if (archivedAt.HasValue)
+            return true;
+
+        var blocked = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "pending", "approved", "paid",
+        };
+        if (blocked.Contains(commissionStatus ?? "none"))
+        {
+            throw new InvalidOperationException(
+                "Không thể ẩn lead khi hoa hồng đang pending/approved/paid. Hãy đặt commission = void trước.");
+        }
+
+        return await _repo.SetArchivedAtAsync(submissionId, DateTimeOffset.UtcNow, cancellationToken);
+    }
+
+    public async Task<bool> UnarchiveSubmissionAsync(
+        Guid submissionId,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureEnabled();
+        var state = await _repo.GetArchiveStateAsync(submissionId, cancellationToken);
+        if (state is null)
+            return false;
+        if (!state.Value.ArchivedAt.HasValue)
+            return true;
+        return await _repo.SetArchivedAtAsync(submissionId, null, cancellationToken);
+    }
+
     private static AssessmentSubmissionListItemDto MapListItem(AssessmentSubmissionListRow row) =>
         new(
             row.Id,
@@ -158,7 +198,8 @@ internal sealed class AssessmentAdminService : IAssessmentAdminService
             row.PartnerCode,
             row.PartnerName,
             row.LeadPipelineStatus,
-            row.CommissionStatus);
+            row.CommissionStatus,
+            row.ArchivedAt);
 
     private void EnsureEnabled()
     {

@@ -361,6 +361,222 @@ internal sealed class PrescriberPortalPrescriptionRepository
         return prescriptionId;
     }
 
+    public async Task AmendSignedPrescriptionAsync(
+        Guid prescriberId,
+        Guid prescriptionId,
+        PortalAmendPrescriptionRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request.Lines is null || request.Lines.Count == 0)
+            throw new InvalidOperationException("Đơn thuốc phải có ít nhất 1 dòng thuốc.");
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+
+        var header = await conn.QuerySingleOrDefaultAsync<(Guid TenantId, string Status)?>(
+            """
+            SELECT tenant_id AS TenantId, status AS Status
+            FROM pack_pharmacy.electronic_prescriptions
+            WHERE id = @PrescriptionId
+              AND prescriber_id = @PrescriberId
+            FOR UPDATE
+            """,
+            new { PrescriptionId = prescriptionId, PrescriberId = prescriberId },
+            tx);
+
+        if (header is null)
+            throw new InvalidOperationException("Không tìm thấy đơn thuốc.");
+
+        if (header.Value.Status != PrescriptionStatuses.Signed)
+            throw new InvalidOperationException("Chỉ sửa được đơn đã ký (signed) và chưa cấp phát.");
+
+        var dispensed = await conn.QuerySingleAsync<decimal>(
+            """
+            SELECT COALESCE(SUM(qty_dispensed), 0)
+            FROM pack_pharmacy.electronic_prescription_lines
+            WHERE prescription_id = @PrescriptionId
+            """,
+            new { PrescriptionId = prescriptionId },
+            tx);
+        if (dispensed > 0)
+            throw new InvalidOperationException("Đơn đã bắt đầu cấp phát — không thể sửa. Hãy kê đơn mới.");
+
+        await conn.ExecuteAsync(
+            """
+            DELETE FROM pack_pharmacy.electronic_prescription_lines
+            WHERE prescription_id = @PrescriptionId
+            """,
+            new { PrescriptionId = prescriptionId },
+            tx);
+
+        await conn.ExecuteAsync(
+            """
+            UPDATE pack_pharmacy.electronic_prescriptions
+            SET notes = @Notes, updated_at = NOW()
+            WHERE id = @PrescriptionId
+            """,
+            new { PrescriptionId = prescriptionId, Notes = request.Notes?.Trim() },
+            tx);
+
+        await InsertPrescriptionLinesAsync(
+            conn,
+            tx,
+            header.Value.TenantId,
+            prescriptionId,
+            request.Lines,
+            cancellationToken);
+
+        await InsertAuditAsync(
+            conn,
+            tx,
+            header.Value.TenantId,
+            prescriptionId,
+            "portal_amended",
+            prescriberId,
+            new { lineCount = request.Lines.Count },
+            cancellationToken);
+
+        await tx.CommitAsync(cancellationToken);
+    }
+
+    public async Task CancelForPrescriberAsync(
+        Guid prescriberId,
+        Guid prescriptionId,
+        string? reason,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+
+        var header = await conn.QuerySingleOrDefaultAsync<(Guid TenantId, string Status)?>(
+            """
+            SELECT tenant_id AS TenantId, status AS Status
+            FROM pack_pharmacy.electronic_prescriptions
+            WHERE id = @PrescriptionId
+              AND prescriber_id = @PrescriberId
+            FOR UPDATE
+            """,
+            new { PrescriptionId = prescriptionId, PrescriberId = prescriberId },
+            tx);
+
+        if (header is null)
+            throw new InvalidOperationException("Không tìm thấy đơn thuốc.");
+
+        if (header.Value.Status is PrescriptionStatuses.Dispensed or PrescriptionStatuses.PartiallyDispensed)
+            throw new InvalidOperationException("Đơn đã cấp phát — không thể hủy.");
+
+        if (header.Value.Status == PrescriptionStatuses.Cancelled)
+            throw new InvalidOperationException("Đơn đã hủy trước đó.");
+
+        var dispensed = await conn.QuerySingleAsync<decimal>(
+            """
+            SELECT COALESCE(SUM(qty_dispensed), 0)
+            FROM pack_pharmacy.electronic_prescription_lines
+            WHERE prescription_id = @PrescriptionId
+            """,
+            new { PrescriptionId = prescriptionId },
+            tx);
+        if (dispensed > 0)
+            throw new InvalidOperationException("Đơn đã bắt đầu cấp phát — không thể hủy.");
+
+        await conn.ExecuteAsync(
+            """
+            UPDATE pack_pharmacy.electronic_prescriptions
+            SET status = @Cancelled, cancelled_at = NOW(), updated_at = NOW()
+            WHERE id = @PrescriptionId
+            """,
+            new { PrescriptionId = prescriptionId, Cancelled = PrescriptionStatuses.Cancelled },
+            tx);
+
+        await InsertAuditAsync(
+            conn,
+            tx,
+            header.Value.TenantId,
+            prescriptionId,
+            "portal_cancelled",
+            prescriberId,
+            new { reason },
+            cancellationToken);
+
+        await tx.CommitAsync(cancellationToken);
+    }
+
+    private static async Task InsertPrescriptionLinesAsync(
+        IDbConnection conn,
+        IDbTransaction tx,
+        Guid tenantId,
+        Guid prescriptionId,
+        IReadOnlyList<PortalCreatePrescriptionLineRequest> lines,
+        CancellationToken cancellationToken)
+    {
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var line = lines[i];
+            if (line.QtyPrescribed <= 0)
+                throw new InvalidOperationException("Số lượng kê phải lớn hơn 0.");
+
+            var product = await conn.QuerySingleOrDefaultAsync<ProductLineInfo>(
+                """
+                SELECT
+                    p.id AS ProductId,
+                    COALESCE(p.dispensing_class, CASE p.drug_type WHEN 2 THEN 'prescription' WHEN 3 THEN 'controlled' ELSE 'otc' END) AS DispensingClass
+                FROM products p
+                WHERE p.id = @ProductId
+                  AND p.tenant_id = @TenantId
+                  AND p.deleted_at IS NULL
+                """,
+                new { line.ProductId, TenantId = tenantId },
+                tx) ?? throw new InvalidOperationException("Sản phẩm không tồn tại.");
+
+            if (string.Equals(product.DispensingClass, DispensingClass.Controlled, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Thuốc kiểm soát không được kê qua portal (phase 1).");
+
+            var productUnitId = line.ProductUnitId;
+            if (productUnitId is null)
+            {
+                productUnitId = await conn.QuerySingleOrDefaultAsync<Guid?>(
+                    """
+                    SELECT pu.id
+                    FROM product_units pu
+                    WHERE pu.product_id = @ProductId
+                      AND pu.tenant_id = @TenantId
+                      AND pu.status = 1
+                    ORDER BY pu.is_base_unit DESC, pu.unit_name ASC
+                    LIMIT 1
+                    """,
+                    new { line.ProductId, TenantId = tenantId },
+                    tx);
+            }
+
+            if (productUnitId is null)
+                throw new InvalidOperationException("Sản phẩm không có đơn vị tính.");
+
+            await conn.ExecuteAsync(
+                """
+                INSERT INTO pack_pharmacy.electronic_prescription_lines (
+                    tenant_id, prescription_id, product_id, product_unit_id, line_dispensing_class,
+                    qty_prescribed, qty_dispensed, dosage_instruction, sort_order
+                )
+                VALUES (
+                    @TenantId, @PrescriptionId, @ProductId, @ProductUnitId, @LineDispensingClass,
+                    @QtyPrescribed, 0, @DosageInstruction, @SortOrder
+                )
+                """,
+                new
+                {
+                    TenantId = tenantId,
+                    PrescriptionId = prescriptionId,
+                    line.ProductId,
+                    ProductUnitId = productUnitId,
+                    LineDispensingClass = product.DispensingClass,
+                    line.QtyPrescribed,
+                    DosageInstruction = line.DosageInstruction?.Trim(),
+                    SortOrder = line.SortOrder == 0 ? i + 1 : line.SortOrder,
+                },
+                tx);
+        }
+    }
+
     public async Task<IReadOnlyList<PortalPrescriptionSummaryDto>> ListForPrescriberAsync(
         Guid prescriberId,
         Guid? tenantId,

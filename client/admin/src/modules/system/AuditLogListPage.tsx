@@ -31,6 +31,9 @@ export function AuditLogListPage() {
   const [entityType, setEntityType] = useState<string>();
   const [action, setAction] = useState<string>();
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  const [appliedEntityType, setAppliedEntityType] = useState<string>();
+  const [appliedAction, setAppliedAction] = useState<string>();
+  const [appliedRange, setAppliedRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [loading, setLoading] = useState(false);
 
   const entityOptions = useMemo(
@@ -46,9 +49,16 @@ export function AuditLogListPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const from = range?.[0]?.startOf('day').toISOString();
-      const to = range?.[1]?.endOf('day').toISOString();
-      const result = await fetchAuditLogs({ entityType, action, from, to, page, pageSize });
+      const from = appliedRange?.[0]?.startOf('day').toISOString();
+      const to = appliedRange?.[1]?.endOf('day').toISOString();
+      const result = await fetchAuditLogs({
+        entityType: appliedEntityType,
+        action: appliedAction,
+        from,
+        to,
+        page,
+        pageSize,
+      });
       setItems(result.items);
       setTotal(result.total);
     } catch (error) {
@@ -58,11 +68,18 @@ export function AuditLogListPage() {
     } finally {
       setLoading(false);
     }
-  }, [action, entityType, page, pageSize, range, t]);
+  }, [appliedAction, appliedEntityType, appliedRange, page, pageSize, t]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  const applyFilters = () => {
+    setPage(1);
+    setAppliedEntityType(entityType);
+    setAppliedAction(action);
+    setAppliedRange(range);
+  };
 
   const columns: ColumnsType<AuditLogItem> = useMemo(
     () => [
@@ -130,7 +147,7 @@ export function AuditLogListPage() {
             options={actionOptions}
           />
           <DatePicker.RangePicker value={range} onChange={setRange} format="DD/MM/YYYY" />
-          <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
+          <Button type="primary" icon={<ReloadOutlined />} onClick={applyFilters} loading={loading}>
             {tc('actions.filter')}
           </Button>
         </Space>

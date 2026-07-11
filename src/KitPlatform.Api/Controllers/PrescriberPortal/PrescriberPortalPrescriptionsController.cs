@@ -35,6 +35,48 @@ public sealed class PrescriberPortalPrescriptionsController : ControllerBase
         return item is null ? NotFound() : Ok(item);
     }
 
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<PortalPrescriptionDetailDto>> Amend(
+        Guid id,
+        [FromBody] PortalAmendPrescriptionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var item = await _prescriptions.AmendSignedPrescriptionAsync(
+                _prescriber.PrescriberId,
+                id,
+                request,
+                cancellationToken);
+            return Ok(item);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("{id:guid}/cancel")]
+    public async Task<ActionResult<PortalPrescriptionDetailDto>> Cancel(
+        Guid id,
+        [FromBody] CancelPrescriptionRequest? request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var item = await _prescriptions.CancelPrescriptionAsync(
+                _prescriber.PrescriberId,
+                id,
+                request?.Reason,
+                cancellationToken);
+            return item is null ? NotFound() : Ok(item);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPost]
     public async Task<ActionResult<PortalPrescriptionDetailDto>> Create(
         [FromBody] PortalCreatePrescriptionRequest request,

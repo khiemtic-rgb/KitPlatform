@@ -212,6 +212,7 @@ internal sealed class AssessmentPartnerRepository
                 COUNT(*) FILTER (WHERE commission_status = 'pending')::int AS PendingCommissionCount
             FROM assessment_submission
             WHERE partner_id = ANY(@Ids::uuid[])
+              AND archived_at IS NULL
             GROUP BY partner_id
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -238,6 +239,7 @@ internal sealed class AssessmentPartnerRepository
                 lead_captured_at AS LeadCapturedAt
             FROM assessment_submission
             WHERE partner_id = @PartnerId
+              AND archived_at IS NULL
             ORDER BY started_at DESC
             LIMIT @Limit
             """;

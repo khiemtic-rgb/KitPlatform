@@ -30,7 +30,7 @@ export function PartnerPortalLayout() {
           items={[
             { key: 'home', label: <Link to="/">Tổng quan</Link> },
             { key: 'referral', label: <Link to="/referral">Link & QR</Link> },
-            { key: 'leads', label: <Link to="/leads">Khảo sát</Link> },
+            { key: 'leads', label: <Link to="/leads">Lead</Link> },
           ]}
         />
         <Space>

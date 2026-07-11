@@ -6,7 +6,7 @@ import {
   ClockCircleOutlined,
   CommentOutlined,
   FileTextOutlined,
-  FormOutlined,
+  MobileOutlined,
   RollbackOutlined,
   ShoppingCartOutlined,
 } from '@ant-design/icons';
@@ -26,7 +26,7 @@ const allMainTabDefs: Omit<ProductNavTab, 'label'>[] = [
   {
     key: 'app-orders',
     path: '/sales/app-orders',
-    icon: <FormOutlined />,
+    icon: <MobileOutlined />,
   },
   { key: 'returns', path: '/sales/returns', icon: <RollbackOutlined /> },
   {

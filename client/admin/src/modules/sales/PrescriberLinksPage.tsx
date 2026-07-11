@@ -14,6 +14,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import {
   approvePrescriberLink,
   fetchPendingPrescriberLinks,
@@ -34,6 +35,14 @@ const linkStatusColor: Record<string, string> = {
   revoked: 'red',
 };
 
+const LINK_STATUS_KEYS = [
+  'active',
+  'pending_nt_invite',
+  'pending_nt_approval',
+  'rejected',
+  'revoked',
+] as const;
+
 type InviteFormValues = {
   phone: string;
   fullName: string;
@@ -43,6 +52,7 @@ type InviteFormValues = {
 };
 
 export function PrescriberLinksPage() {
+  const { t } = useTranslation('rx');
   const canManage = useHasPermission('rx.prescriber.link.manage') || useHasPermission('rx.prescriber.manage');
   const [items, setItems] = useState<RxPrescriberLink[]>([]);
   const [pending, setPending] = useState<RxPrescriberLink[]>([]);
@@ -51,6 +61,15 @@ export function PrescriberLinksPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm<InviteFormValues>();
+
+  const linkStatusLabel = useCallback(
+    (key: string) => t(`enums.linkStatus.${key}`, { defaultValue: key }),
+    [t],
+  );
+  const initiatedByLabel = useCallback(
+    (key: string) => t(`enums.initiatedBy.${key}`, { defaultValue: key }),
+    [t],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,11 +81,11 @@ export function PrescriberLinksPage() {
       setItems(links);
       setPending(queue);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được liên kết bác sĩ'));
+      message.error(apiErrorMessage(error, t('links.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, t]);
 
   useEffect(() => {
     void load();
@@ -77,21 +96,60 @@ export function PrescriberLinksPage() {
     setSaving(true);
     try {
       await invitePrescriberLink(values);
-      message.success('Đã gửi lời mời bác sĩ');
+      message.success(t('links.inviteSuccess'));
       setInviteOpen(false);
       form.resetFields();
       await load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không gửi được lời mời'));
+      message.error(apiErrorMessage(error, t('links.inviteFailed')));
     } finally {
       setSaving(false);
     }
   };
 
+  const approve = useCallback(
+    async (id: string) => {
+      try {
+        await approvePrescriberLink(id);
+        message.success(t('links.approveSuccess'));
+        await load();
+      } catch (error) {
+        message.error(apiErrorMessage(error, t('links.approveFailed')));
+      }
+    },
+    [load, t],
+  );
+
+  const reject = useCallback(
+    async (id: string) => {
+      try {
+        await rejectPrescriberLink(id);
+        message.success(t('links.rejectSuccess'));
+        await load();
+      } catch (error) {
+        message.error(apiErrorMessage(error, t('links.rejectFailed')));
+      }
+    },
+    [load, t],
+  );
+
+  const revoke = useCallback(
+    async (id: string) => {
+      try {
+        await revokePrescriberLink(id);
+        message.success(t('links.revokeSuccess'));
+        await load();
+      } catch (error) {
+        message.error(apiErrorMessage(error, t('links.revokeFailed')));
+      }
+    },
+    [load, t],
+  );
+
   const columns: ColumnsType<RxPrescriberLink> = useMemo(
     () => [
       {
-        title: 'Bác sĩ',
+        title: t('links.columns.doctor'),
         render: (_, row) => (
           <div>
             <div>{row.prescriberName ?? '—'}</div>
@@ -99,31 +157,44 @@ export function PrescriberLinksPage() {
           </div>
         ),
       },
-      { title: 'CCHN', dataIndex: 'prescriberLicenseNumber', render: (v) => v || '—' },
       {
-        title: 'Trạng thái',
-        dataIndex: 'linkStatus',
-        render: (value: string) => <Tag color={linkStatusColor[value] ?? 'default'}>{value}</Tag>,
+        title: t('links.columns.license'),
+        dataIndex: 'prescriberLicenseNumber',
+        render: (v) => v || '—',
       },
-      { title: 'Khởi tạo', dataIndex: 'initiatedBy' },
       {
-        title: 'Thao tác',
+        title: t('links.columns.status'),
+        dataIndex: 'linkStatus',
+        render: (value: string) => (
+          <Tag color={linkStatusColor[value] ?? 'default'}>{linkStatusLabel(value)}</Tag>
+        ),
+      },
+      {
+        title: t('links.columns.initiatedBy'),
+        dataIndex: 'initiatedBy',
+        render: (value: string) => initiatedByLabel(value),
+      },
+      {
+        title: t('links.columns.actions'),
         render: (_, row) => (
           <Space>
             {canManage && row.linkStatus === 'pending_nt_approval' ? (
               <>
                 <Button type="link" onClick={() => void approve(row.id)}>
-                  Duyệt
+                  {t('links.actions.approve')}
                 </Button>
                 <Button type="link" danger onClick={() => void reject(row.id)}>
-                  Từ chối
+                  {t('links.actions.reject')}
                 </Button>
               </>
             ) : null}
             {canManage && row.linkStatus === 'active' ? (
-              <Popconfirm title="Thu hồi liên kết?" onConfirm={() => void revoke(row.id)}>
+              <Popconfirm
+                title={t('links.revokeConfirm')}
+                onConfirm={() => void revoke(row.id)}
+              >
                 <Button type="link" danger>
-                  Thu hồi
+                  {t('links.actions.revoke')}
                 </Button>
               </Popconfirm>
             ) : null}
@@ -131,47 +202,17 @@ export function PrescriberLinksPage() {
         ),
       },
     ],
-    [canManage],
+    [approve, canManage, initiatedByLabel, linkStatusLabel, reject, revoke, t],
   );
-
-  async function approve(id: string) {
-    try {
-      await approvePrescriberLink(id);
-      message.success('Đã duyệt liên kết');
-      await load();
-    } catch (error) {
-      message.error(apiErrorMessage(error, 'Không duyệt được'));
-    }
-  }
-
-  async function reject(id: string) {
-    try {
-      await rejectPrescriberLink(id);
-      message.success('Đã từ chối yêu cầu');
-      await load();
-    } catch (error) {
-      message.error(apiErrorMessage(error, 'Không từ chối được'));
-    }
-  }
-
-  async function revoke(id: string) {
-    try {
-      await revokePrescriberLink(id);
-      message.success('Đã thu hồi liên kết');
-      await load();
-    } catch (error) {
-      message.error(apiErrorMessage(error, 'Không thu hồi được'));
-    }
-  }
 
   return (
     <div style={{ padding: 16 }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Card
-          title="Hàng chờ duyệt liên kết"
+          title={t('links.pendingTitle')}
           extra={
             <Button icon={<ReloadOutlined />} onClick={() => void load()}>
-              Tải lại
+              {t('links.reload')}
             </Button>
           }
         >
@@ -181,16 +222,16 @@ export function PrescriberLinksPage() {
             dataSource={pending}
             pagination={false}
             columns={columns}
-            locale={{ emptyText: 'Không có yêu cầu chờ duyệt' }}
+            locale={{ emptyText: t('links.emptyPending') }}
           />
         </Card>
 
         <Card
-          title="Mạng bác sĩ liên kết"
+          title={t('links.networkTitle')}
           extra={
             canManage ? (
               <Button type="primary" icon={<PlusOutlined />} onClick={() => setInviteOpen(true)}>
-                Mời bác sĩ
+                {t('links.invite')}
               </Button>
             ) : null
           }
@@ -198,16 +239,14 @@ export function PrescriberLinksPage() {
           <Space style={{ marginBottom: 16 }}>
             <Select
               allowClear
-              placeholder="Lọc trạng thái"
-              style={{ width: 220 }}
+              placeholder={t('links.filterStatus')}
+              style={{ width: 240 }}
               value={statusFilter}
               onChange={setStatusFilter}
-              options={[
-                { value: 'active', label: 'Active' },
-                { value: 'pending_nt_invite', label: 'Chờ BS chấp nhận' },
-                { value: 'pending_nt_approval', label: 'Chờ NT duyệt' },
-                { value: 'revoked', label: 'Revoked' },
-              ]}
+              options={LINK_STATUS_KEYS.map((key) => ({
+                value: key,
+                label: linkStatusLabel(key),
+              }))}
             />
           </Space>
           <Table rowKey="id" loading={loading} dataSource={items} columns={columns} />
@@ -215,7 +254,7 @@ export function PrescriberLinksPage() {
       </Space>
 
       <Modal
-        title="Mời bác sĩ liên kết"
+        title={t('links.inviteTitle')}
         open={inviteOpen}
         onCancel={() => setInviteOpen(false)}
         onOk={() => void onInvite()}
@@ -223,24 +262,24 @@ export function PrescriberLinksPage() {
         destroyOnClose
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="fullName" label="Họ tên BS" rules={[{ required: true }]}>
+          <Form.Item name="fullName" label={t('links.form.fullName')} rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="phone" label="Số điện thoại (OTP portal)" rules={[{ required: true }]}>
+          <Form.Item name="phone" label={t('links.form.phone')} rules={[{ required: true }]}>
             <Input />
           </Form.Item>
           <Form.Item
             name="licenseNumber"
-            label="Số CCHN"
-            rules={[{ required: true, message: 'Nhập số chứng chỉ hành nghề (CCHN)' }]}
-            extra="Bắt buộc — không kê đơn / duyệt liên kết nếu thiếu CCHN"
+            label={t('links.form.license')}
+            rules={[{ required: true, message: t('links.form.licenseRequired') }]}
+            extra={t('links.form.licenseExtra')}
           >
-            <Input placeholder="Số CCHN" />
+            <Input placeholder={t('links.form.licensePlaceholder')} />
           </Form.Item>
-          <Form.Item name="specialty" label="Chuyên khoa">
+          <Form.Item name="specialty" label={t('links.form.specialty')}>
             <Input />
           </Form.Item>
-          <Form.Item name="notes" label="Ghi chú">
+          <Form.Item name="notes" label={t('links.form.notes')}>
             <Input.TextArea rows={2} />
           </Form.Item>
         </Form>

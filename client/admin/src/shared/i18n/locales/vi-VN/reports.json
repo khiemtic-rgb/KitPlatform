@@ -13,28 +13,27 @@
     "inventory": "Kho hàng"
   },
   "home": {
-    "title": "Báo cáo — Thống kê",
-    "description": "Wave 1: doanh thu, ca làm việc, nhập hàng, công nợ NCC, tồn kho, xuất-nhập-tồn và cảnh báo HSD. Chọn báo cáo để lọc kỳ, xuất CSV hoặc in.",
+    "title": "Báo cáo",
+    "description": "Doanh thu, ca làm việc, nhập hàng, công nợ nhà cung cấp, tồn kho, xuất–nhập–tồn và cảnh báo hạn dùng. Chọn báo cáo để lọc kỳ, xuất file hoặc in.",
     "favorites": "Thường dùng"
   },
   "view": {
     "notFound": "Không tìm thấy báo cáo.",
     "filterCriteria": "Tiêu chí lọc:",
-    "period": "Kỳ (VN)",
+    "period": "Kỳ (giờ Việt Nam)",
     "groupBy": "Nhóm theo",
     "warehouse": "Kho",
     "warehouseAll": "Tất cả kho",
     "supplier": "Nhà cung cấp",
-    "supplierAll": "Tất cả NCC",
+    "supplierAll": "Tất cả nhà cung cấp",
     "productSearch": "Tên sản phẩm",
     "productSearchPlaceholder": "Mã / tên sản phẩm",
-    "expiryDays": "Số ngày HSD",
+    "expiryDays": "Số ngày đến hạn dùng",
     "runReport": "Xem báo cáo",
-    "exportCsv": "Xuất CSV",
+    "exportCsv": "Xuất Excel/CSV",
     "print": "In",
     "loadFailed": "Không tải được báo cáo",
-    "loadFailedHint": "Gợi ý: chạy",
-    "loadFailedHintAfter": "sau khi cập nhật module Báo cáo.",
+    "loadFailedHint": "Không kết nối được máy chủ báo cáo. Thử lại sau hoặc liên hệ hỗ trợ kỹ thuật.",
     "generatedAt": "Tạo lúc:",
     "emptyData": "Không có dữ liệu trong kỳ đã chọn",
     "paginationTotal": "{{count}} dòng",
@@ -52,13 +51,13 @@
     "warehouse": "Kho",
     "supplier": "Nhà cung cấp",
     "productSearch": "Tên sản phẩm",
-    "expiryDays": "Số ngày HSD",
+    "expiryDays": "Số ngày đến hạn dùng",
     "warehouseAll": "Tất cả kho",
-    "supplierAll": "Tất cả NCC",
+    "supplierAll": "Tất cả nhà cung cấp",
     "apiKeys": {
       "period": "Thời điểm",
       "warehouse": "Kho",
-      "supplier": "NCC",
+      "supplier": "Nhà cung cấp",
       "search": "Tìm kiếm"
     }
   },
@@ -69,10 +68,10 @@
   "reports": {
     "SALES-01": {
       "name": "Doanh thu theo kỳ",
-      "description": "Thu bán, hoàn trả và thu ròng theo ngày/tuần/tháng (giờ VN)."
+      "description": "Doanh thu bán, hoàn trả và thu ròng theo ngày/tuần/tháng (giờ Việt Nam)."
     },
     "SALES-02": {
-      "name": "Doanh thu theo hình thức TT",
+      "name": "Doanh thu theo hình thức thanh toán",
       "description": "Thu ròng theo tiền mặt, thẻ, chuyển khoản, ví."
     },
     "SALES-03": {
@@ -84,20 +83,20 @@
       "description": "Thu ròng theo nhóm sản phẩm (danh mục) trong kỳ."
     },
     "PROC-01": {
-      "name": "Giá trị nhập hàng (GRN)",
-      "description": "Tổng hợp phiếu nhập hoàn tất — tiền trước thuế GTGT."
+      "name": "Giá trị nhập hàng",
+      "description": "Tổng hợp phiếu nhập hoàn tất — số tiền trước thuế GTGT."
     },
     "PROC-03": {
-      "name": "Công nợ NCC (snapshot)",
-      "description": "Số còn phải trả và phân tích tuổi nợ tại thời điểm xem."
+      "name": "Công nợ nhà cung cấp",
+      "description": "Số còn phải trả và tuổi nợ tại thời điểm xem báo cáo."
     },
     "INV-01": {
-      "name": "Tồn kho & giá trị",
-      "description": "Số lượng và giá trị tồn (qty × giá vốn lô) theo sản phẩm/kho."
+      "name": "Tồn kho và giá trị",
+      "description": "Số lượng và giá trị tồn (số lượng × giá vốn lô) theo sản phẩm/kho."
     },
     "INV-02": {
       "name": "Sắp hết hạn sử dụng",
-      "description": "Lô tồn có HSD trong số ngày cảnh báo."
+      "description": "Lô tồn có hạn dùng trong số ngày cảnh báo."
     },
     "INV-03": {
       "name": "Xuất — nhập — tồn",

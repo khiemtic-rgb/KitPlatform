@@ -110,6 +110,14 @@ export function AppRouter() {
                   </SuspenseRoute>
                 }
               />
+              <Route
+                path="prescriptions/:id/edit"
+                element={
+                  <SuspenseRoute>
+                    <PrescribePage />
+                  </SuspenseRoute>
+                }
+              />
             </Route>
           </Route>
 

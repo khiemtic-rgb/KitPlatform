@@ -27,6 +27,11 @@ public sealed class PrescriptionsController : ControllerBase
             new PrescriptionListFilter(status, phoneSearch, page, pageSize),
             cancellationToken));
 
+    [HttpGet("dashboard")]
+    [Authorize(Policy = RxPolicies.Read)]
+    public async Task<ActionResult<TenantRxDashboardDto>> Dashboard(CancellationToken cancellationToken = default) =>
+        Ok(await _prescriptions.GetTenantDashboardAsync(cancellationToken));
+
     [HttpGet("{id:guid}")]
     [Authorize(Policy = RxPolicies.Read)]
     public async Task<ActionResult<PrescriptionDetailDto>> Get(Guid id, CancellationToken cancellationToken = default)

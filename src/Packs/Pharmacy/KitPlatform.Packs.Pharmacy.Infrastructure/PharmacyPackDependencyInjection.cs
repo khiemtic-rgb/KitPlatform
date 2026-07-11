@@ -79,6 +79,7 @@ public static class PharmacyPackDependencyInjection
         services.AddScoped<ICustomerPaymentService, CustomerPaymentService>();
         services.AddScoped<PrescriptionRepository>();
         services.AddScoped<IPrescriptionService, PrescriptionService>();
+        services.AddScoped<IRxNotifyService, RxNotifyService>();
         services.AddScoped<PrescriberPortalRepository>();
         services.AddScoped<PrescriberPortalJwtTokenService>();
         services.AddScoped<IPrescriberPortalAuthService, PrescriberPortalAuthService>();

@@ -183,3 +183,34 @@ public sealed record PrescriptionDispenseSaleItem(
     Guid SalesOrderItemId,
     Guid PrescriptionLineId,
     decimal Quantity);
+
+/// <summary>B5 — Dashboard NT (top BS, SLA, chờ cấp phát).</summary>
+public sealed record TenantRxDashboardDto(
+    int SignedThisMonth,
+    int SignedTotal,
+    int PendingDispense,
+    int OverduePendingDispense,
+    int PendingVerification,
+    int PendingLinkApprovals,
+    int ActivePrescriberLinks,
+    int PortalSignedThisMonth,
+    int StaffSignedThisMonth,
+    double? AvgHoursToDispense,
+    IReadOnlyList<TenantRxTopPrescriberDto> TopPrescribers,
+    IReadOnlyList<TenantRxPendingItemDto> RecentPendingDispense);
+
+public sealed record TenantRxTopPrescriberDto(
+    Guid? PrescriberId,
+    string PrescriberName,
+    string? Phone,
+    int SignedThisMonth,
+    int SignedTotal);
+
+public sealed record TenantRxPendingItemDto(
+    Guid Id,
+    string PrescriptionCode,
+    string? PrescriberName,
+    string? PatientName,
+    string Status,
+    DateTime? SignedAt,
+    double? HoursWaiting);

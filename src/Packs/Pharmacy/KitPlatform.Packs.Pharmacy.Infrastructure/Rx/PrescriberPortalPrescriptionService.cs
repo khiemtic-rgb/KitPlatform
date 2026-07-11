@@ -9,15 +9,18 @@ internal sealed class PrescriberPortalPrescriptionService : IPrescriberPortalPre
     private readonly PrescriberPortalPrescriptionRepository _repo;
     private readonly PrescriberPortalRepository _portal;
     private readonly PlatformSettings _platform;
+    private readonly IRxNotifyService _notify;
 
     public PrescriberPortalPrescriptionService(
         PrescriberPortalPrescriptionRepository repo,
         PrescriberPortalRepository portal,
-        IOptions<PlatformSettings> platform)
+        IOptions<PlatformSettings> platform,
+        IRxNotifyService notify)
     {
         _repo = repo;
         _portal = portal;
         _platform = platform.Value;
+        _notify = notify;
     }
 
     public async Task<IReadOnlyList<PortalCustomerSearchItemDto>> SearchCustomersAsync(
@@ -62,8 +65,20 @@ internal sealed class PrescriberPortalPrescriptionService : IPrescriberPortalPre
             createRequest,
             cancellationToken);
 
-        return WithPosDeepLink(
+        var detail = WithPosDeepLink(
             (await _repo.GetForPrescriberAsync(prescriberId, prescriptionId, cancellationToken))!);
+
+        var profile = await _portal.FindPrescriberByIdAsync(prescriberId, cancellationToken);
+        await _notify.NotifyPharmacyNewPrescriptionAsync(
+            detail.TenantCode,
+            detail.TenantName,
+            detail.PrescriptionCode,
+            detail.Id,
+            detail.PatientName,
+            profile?.FullName,
+            cancellationToken);
+
+        return detail;
     }
 
     public Task<IReadOnlyList<PortalPrescriptionSummaryDto>> ListMyPrescriptionsAsync(
@@ -79,6 +94,37 @@ internal sealed class PrescriberPortalPrescriptionService : IPrescriberPortalPre
     {
         var item = await _repo.GetForPrescriberAsync(prescriberId, prescriptionId, cancellationToken);
         return item is null ? null : WithPosDeepLink(item);
+    }
+
+    public async Task<PortalPrescriptionDetailDto> AmendSignedPrescriptionAsync(
+        Guid prescriberId,
+        Guid prescriptionId,
+        PortalAmendPrescriptionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var existing = await _repo.GetForPrescriberAsync(prescriberId, prescriptionId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy đơn thuốc.");
+
+        await EnsureActiveLinkAsync(prescriberId, existing.TenantId, cancellationToken);
+        await _repo.AmendSignedPrescriptionAsync(prescriberId, prescriptionId, request, cancellationToken);
+
+        return WithPosDeepLink(
+            (await _repo.GetForPrescriberAsync(prescriberId, prescriptionId, cancellationToken))!);
+    }
+
+    public async Task<PortalPrescriptionDetailDto?> CancelPrescriptionAsync(
+        Guid prescriberId,
+        Guid prescriptionId,
+        string? reason = null,
+        CancellationToken cancellationToken = default)
+    {
+        var existing = await _repo.GetForPrescriberAsync(prescriberId, prescriptionId, cancellationToken);
+        if (existing is null)
+            return null;
+
+        await _repo.CancelForPrescriberAsync(prescriberId, prescriptionId, reason, cancellationToken);
+        return WithPosDeepLink(
+            (await _repo.GetForPrescriberAsync(prescriberId, prescriptionId, cancellationToken))!);
     }
 
     public Task<PortalPrescriberDashboardDto> GetDashboardAsync(

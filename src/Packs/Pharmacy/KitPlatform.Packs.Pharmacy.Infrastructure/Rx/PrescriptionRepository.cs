@@ -1220,6 +1220,168 @@ internal sealed class PrescriptionRepository
         public decimal QtyPrescribed { get; init; }
         public decimal QtyDispensed { get; init; }
     }
+
+    public async Task<TenantRxDashboardDto> GetTenantDashboardAsync(CancellationToken cancellationToken)
+    {
+        const string summarySql = """
+            SELECT
+                COUNT(*) FILTER (
+                    WHERE ep.status <> @Cancelled
+                      AND ep.signed_at >= date_trunc('month', NOW() AT TIME ZONE 'UTC')
+                )::int AS SignedThisMonth,
+                COUNT(*) FILTER (WHERE ep.status <> @Cancelled)::int AS SignedTotal,
+                COUNT(*) FILTER (
+                    WHERE ep.status IN (@Signed, @Partial)
+                )::int AS PendingDispense,
+                COUNT(*) FILTER (
+                    WHERE ep.status IN (@Signed, @Partial)
+                      AND COALESCE(ep.signed_at, ep.created_at) < NOW() - INTERVAL '24 hours'
+                )::int AS OverduePendingDispense,
+                COUNT(*) FILTER (
+                    WHERE ep.status = @PendingVerification
+                )::int AS PendingVerification,
+                COUNT(*) FILTER (
+                    WHERE ep.status <> @Cancelled
+                      AND ep.source = @PortalSource
+                      AND ep.signed_at >= date_trunc('month', NOW() AT TIME ZONE 'UTC')
+                )::int AS PortalSignedThisMonth,
+                COUNT(*) FILTER (
+                    WHERE ep.status <> @Cancelled
+                      AND COALESCE(ep.source, '') <> @PortalSource
+                      AND ep.signed_at >= date_trunc('month', NOW() AT TIME ZONE 'UTC')
+                )::int AS StaffSignedThisMonth,
+                AVG(
+                    EXTRACT(EPOCH FROM (ep.dispensed_at - ep.signed_at)) / 3600.0
+                ) FILTER (
+                    WHERE ep.dispensed_at IS NOT NULL
+                      AND ep.signed_at IS NOT NULL
+                      AND ep.signed_at >= NOW() - INTERVAL '90 days'
+                ) AS AvgHoursToDispense
+            FROM pack_pharmacy.electronic_prescriptions ep
+            WHERE ep.tenant_id = @TenantId
+            """;
+
+        const string linksSql = """
+            SELECT
+                COUNT(*) FILTER (WHERE link_status = @PendingApproval)::int AS PendingLinkApprovals,
+                COUNT(*) FILTER (WHERE link_status = @Active)::int AS ActivePrescriberLinks
+            FROM pack_pharmacy.prescriber_tenant_links
+            WHERE tenant_id = @TenantId
+            """;
+
+        const string topSql = """
+            SELECT
+                ep.prescriber_id AS "PrescriberId",
+                COALESCE(p.full_name, lp.full_name, '—') AS "PrescriberName",
+                COALESCE(p.phone, lp.phone) AS "Phone",
+                COUNT(*) FILTER (
+                    WHERE ep.signed_at >= date_trunc('month', NOW() AT TIME ZONE 'UTC')
+                )::int AS "SignedThisMonth",
+                COUNT(*)::int AS "SignedTotal"
+            FROM pack_pharmacy.electronic_prescriptions ep
+            LEFT JOIN pack_pharmacy.prescribers p ON p.id = ep.prescriber_id
+            LEFT JOIN pack_pharmacy.linked_prescribers lp ON lp.id = ep.linked_prescriber_id
+            WHERE ep.tenant_id = @TenantId
+              AND ep.status <> @Cancelled
+            GROUP BY ep.prescriber_id, p.full_name, lp.full_name, p.phone, lp.phone
+            ORDER BY "SignedThisMonth" DESC, "SignedTotal" DESC, "PrescriberName"
+            LIMIT 10
+            """;
+
+        const string pendingSql = """
+            SELECT
+                ep.id AS "Id",
+                ep.prescription_code AS "PrescriptionCode",
+                COALESCE(p.full_name, lp.full_name) AS "PrescriberName",
+                ep.patient_name AS "PatientName",
+                ep.status AS "Status",
+                ep.signed_at AS "SignedAt",
+                (EXTRACT(EPOCH FROM (NOW() - COALESCE(ep.signed_at, ep.created_at))) / 3600.0)::float8 AS "HoursWaiting"
+            FROM pack_pharmacy.electronic_prescriptions ep
+            LEFT JOIN pack_pharmacy.prescribers p ON p.id = ep.prescriber_id
+            LEFT JOIN pack_pharmacy.linked_prescribers lp ON lp.id = ep.linked_prescriber_id
+            WHERE ep.tenant_id = @TenantId
+              AND ep.status IN (@Signed, @Partial)
+            ORDER BY COALESCE(ep.signed_at, ep.created_at) ASC
+            LIMIT 15
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var args = new
+        {
+            TenantId,
+            Cancelled = PrescriptionStatuses.Cancelled,
+            Signed = PrescriptionStatuses.Signed,
+            Partial = PrescriptionStatuses.PartiallyDispensed,
+            PendingVerification = PrescriptionStatuses.PendingVerification,
+            PortalSource = "prescriber_portal",
+            PendingApproval = PrescriberLinkStatuses.PendingNtApproval,
+            Active = PrescriberLinkStatuses.Active,
+        };
+
+        var summary = await conn.QuerySingleAsync<TenantRxDashboardSummaryRow>(summarySql, args);
+        var links = await conn.QuerySingleAsync<(int PendingLinkApprovals, int ActivePrescriberLinks)>(linksSql, args);
+        var topRows = (await conn.QueryAsync<TenantRxTopPrescriberRow>(topSql, args)).ToList();
+        var pendingRows = (await conn.QueryAsync<TenantRxPendingItemRow>(pendingSql, args)).ToList();
+
+        return new TenantRxDashboardDto(
+            summary.SignedThisMonth,
+            summary.SignedTotal,
+            summary.PendingDispense,
+            summary.OverduePendingDispense,
+            summary.PendingVerification,
+            links.PendingLinkApprovals,
+            links.ActivePrescriberLinks,
+            summary.PortalSignedThisMonth,
+            summary.StaffSignedThisMonth,
+            summary.AvgHoursToDispense,
+            topRows.Select(r => new TenantRxTopPrescriberDto(
+                r.PrescriberId,
+                r.PrescriberName,
+                r.Phone,
+                r.SignedThisMonth,
+                r.SignedTotal)).ToList(),
+            pendingRows.Select(r => new TenantRxPendingItemDto(
+                r.Id,
+                r.PrescriptionCode,
+                r.PrescriberName,
+                r.PatientName,
+                r.Status,
+                r.SignedAt,
+                r.HoursWaiting.HasValue ? (double)r.HoursWaiting.Value : null)).ToList());
+    }
+
+    private sealed class TenantRxDashboardSummaryRow
+    {
+        public int SignedThisMonth { get; init; }
+        public int SignedTotal { get; init; }
+        public int PendingDispense { get; init; }
+        public int OverduePendingDispense { get; init; }
+        public int PendingVerification { get; init; }
+        public int PortalSignedThisMonth { get; init; }
+        public int StaffSignedThisMonth { get; init; }
+        public double? AvgHoursToDispense { get; init; }
+    }
+
+    private sealed class TenantRxTopPrescriberRow
+    {
+        public Guid? PrescriberId { get; init; }
+        public string PrescriberName { get; init; } = "—";
+        public string? Phone { get; init; }
+        public int SignedThisMonth { get; init; }
+        public int SignedTotal { get; init; }
+    }
+
+    private sealed class TenantRxPendingItemRow
+    {
+        public Guid Id { get; init; }
+        public string PrescriptionCode { get; init; } = "";
+        public string? PrescriberName { get; init; }
+        public string? PatientName { get; init; }
+        public string Status { get; init; } = "";
+        public DateTime? SignedAt { get; init; }
+        public decimal? HoursWaiting { get; init; }
+    }
 }
 
 internal sealed record PrescriptionBasicInfo(

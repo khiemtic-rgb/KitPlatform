@@ -2,7 +2,7 @@
   "enums": {
     "poStatus": {
       "1": "Chờ duyệt",
-      "2": "Đơn mới",
+      "2": "Đã duyệt",
       "3": "Nhận một phần",
       "4": "Đã nhận đủ",
       "5": "Đóng",
@@ -32,28 +32,28 @@
     "tabs": {
       "suppliers": "Nhà cung cấp",
       "orders": "Đơn đặt hàng",
-      "receipts": "Phiếu nhập",
-      "vatSettings": "Cài đặt thuế (kế toán)",
+      "receipts": "Phiếu nhập hàng",
+      "vatSettings": "Thuế GTGT",
       "payables": "Công nợ NCC",
       "payments": "Thanh toán NCC"
     }
   },
   "onboarding": {
     "title": "Bắt đầu nhập hàng",
-    "description": "Quy trình chuẩn: tạo nhà cung cấp → đặt hàng (PO) → nhận hàng (GRN) để cập nhật tồn kho.",
+    "description": "Quy trình chuẩn: tạo nhà cung cấp → tạo đơn đặt hàng → lập phiếu nhập để cập nhật tồn kho.",
     "dismiss": "Ẩn hướng dẫn",
     "steps": {
       "suppliers": {
         "title": "1. Nhà cung cấp",
-        "description": "Thêm NCC và mã cơ sở bán buôn (nếu có)"
+        "description": "Thêm nhà cung cấp và mã cơ sở bán buôn (nếu có)"
       },
       "orders": {
         "title": "2. Đơn đặt hàng",
-        "description": "Tạo PO, duyệt và gửi NCC"
+        "description": "Tạo đơn, duyệt và gửi nhà cung cấp"
       },
       "receipts": {
-        "title": "3. Phiếu nhập",
-        "description": "Nhận hàng, nhập lô/HSD và hoàn tất GRN"
+        "title": "3. Phiếu nhập hàng",
+        "description": "Nhận hàng, nhập số lô/hạn dùng và hoàn tất phiếu nhập"
       }
     }
   },
@@ -137,7 +137,7 @@
       "pendingReceiptOnly": "Chỉ PO chưa nhận đủ",
       "searchPo": "Số PO, mã/tên NCC",
       "searchGrn": "Số phiếu, số PO, NCC",
-      "searchPayment": "Số phiếu TT, mã/tên NCC, PO, GRN"
+      "searchPayment": "Số phiếu thanh toán, mã/tên NCC, PO, GRN"
     },
     "validation": {
       "selectSupplier": "Chọn NCC",
@@ -235,7 +235,7 @@
       "deleted": "Đã xóa NCC"
     },
     "import": {
-      "hint": "Import Excel/CSV từ Sapo hoặc file nha-cung-cap-novixa.csv. Mã trùng sẽ bỏ qua.",
+      "hint": "Nhập từ Excel/CSV (mẫu Novixa hoặc file xuất từ phần mềm khác). Mã nhà cung cấp trùng sẽ bỏ qua.",
       "chooseFile": "Chọn file NCC",
       "importButton": "Import",
       "fileLabel": "File: {{name}}",
@@ -393,7 +393,7 @@
   },
   "supplierPayments": {
     "title": "Thanh toán NCC",
-    "record": "Ghi nhận TT",
+    "record": "Ghi nhận thanh toán",
     "createDrawer": "Ghi nhận thanh toán NCC",
     "editDrawer": "Sửa phiếu thanh toán",
     "viewDrawer": "Xem phiếu thanh toán",
@@ -407,12 +407,12 @@
     "paymentDate": "Ngày thanh toán",
     "cancelConfirm": "Hủy phiếu chờ ghi sổ?",
     "exportColumns": {
-      "paymentNumber": "Số phiếu TT",
+      "paymentNumber": "Số phiếu thanh toán",
       "supplier": "NCC",
       "amount": "Số tiền",
       "method": "Hình thức",
       "status": "Trạng thái",
-      "paymentDate": "Ngày TT",
+      "paymentDate": "Ngày thanh toán",
       "poNumber": "PO",
       "grnNumber": "GRN"
     },
@@ -431,7 +431,7 @@
       "loadFailed": "Không tải được thanh toán NCC",
       "detailLoadFailed": "Không tải được chi tiết phiếu — dùng dữ liệu danh sách",
       "saveFailed": "Không lưu được phiếu thanh toán",
-      "apiEditUnsupported": "API chưa hỗ trợ sửa phiếu. Restart KitPlatform.Api sau khi build.",
+      "apiEditUnsupported": "Chưa hỗ trợ sửa phiếu thanh toán đã tạo. Hủy phiếu và tạo lại nếu cần chỉnh sửa.",
       "postFailed": "Không ghi sổ được",
       "cancelFailed": "Không hủy được phiếu",
       "noWritePermission": "Bạn không có quyền ghi nhận thanh toán",
@@ -443,7 +443,7 @@
   },
   "supplierPayables": {
     "title": "Công nợ nhà cung cấp",
-    "intro": "Giá trị GRN và công nợ tính theo thành tiền dòng (trước thuế GTGT). Tổng PO sau thuế chỉ mang tính tham chiếu trên màn PO — Giai đoạn 2 sẽ thống nhất cho báo cáo thuế và export kế toán. Thanh toán không gắn GRN được bù trừ theo thứ tự nhập cũ nhất.",
+    "intro": "Công nợ tính theo thành tiền dòng trên phiếu nhập (trước thuế GTGT). Tổng đơn đặt hàng sau thuế chỉ mang tính tham chiếu. Thanh toán không gắn phiếu nhập được bù trừ theo thứ tự nhập cũ nhất.",
     "detailDrawer": "Chi tiết công nợ",
     "detailDrawerWithName": "Công nợ — {{supplierName}}",
     "createPayment": "Tạo thanh toán",
@@ -511,7 +511,7 @@
   },
   "print": {
     "documentTitle": "GRN {{number}}",
-    "heading": "Phiếu nhập kho (GRN)",
+    "heading": "Phiếu nhập kho",
     "grnNumber": "Số phiếu:",
     "receiptDate": "Ngày nhập:",
     "supplier": "NCC:",

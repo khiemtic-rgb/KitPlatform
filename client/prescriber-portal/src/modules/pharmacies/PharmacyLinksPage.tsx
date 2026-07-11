@@ -2,6 +2,7 @@ import { Card, Empty, List, Tag, Typography } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { fetchMyPharmacies } from '@/shared/api/prescriber-portal.api';
+import { linkStatusColor, linkStatusLabel } from '@/shared/ui/status-labels';
 
 export function PharmacyLinksPage() {
   const { t } = useTranslation();
@@ -26,9 +27,12 @@ export function PharmacyLinksPage() {
                     <>
                       {item.tenantName}{' '}
                       <Tag color="blue">{item.tenantCode}</Tag>
+                      <Tag color={linkStatusColor(item.linkStatus)}>
+                        {linkStatusLabel(t, item.linkStatus)}
+                      </Tag>
                     </>
                   }
-                  description={item.linkStatus}
+                  description={null}
                 />
               </List.Item>
             )}

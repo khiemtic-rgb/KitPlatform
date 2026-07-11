@@ -2,22 +2,13 @@ import { Card, Col, Row, Statistic, Typography } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
-import {
-  fetchMyPharmacies,
-  fetchPendingInvites,
-  fetchPrescriberDashboard,
-} from '@/shared/api/prescriber-portal.api';
+import { fetchPendingInvites, fetchPrescriberDashboard } from '@/shared/api/prescriber-portal.api';
 import type { PortalPrescriberDashboard } from '@/shared/api/prescriber-portal.types';
 import { useAuthStore } from '@/shared/auth/auth.store';
 
 export function HomePage() {
   const { t } = useTranslation();
   const profile = useAuthStore((s) => s.profile);
-
-  const pharmaciesQuery = useQuery({
-    queryKey: ['prescriber', 'pharmacies'],
-    queryFn: () => fetchMyPharmacies(true),
-  });
 
   const invitesQuery = useQuery({
     queryKey: ['prescriber', 'invites'],
@@ -54,8 +45,8 @@ export function HomePage() {
           <Card>
             <Statistic
               title={t('home.linkedPharmacies')}
-              value={dashboardQuery.data?.activePharmacyCount ?? pharmaciesQuery.data?.length ?? 0}
-              loading={dashboardQuery.isLoading || pharmaciesQuery.isLoading}
+              value={dashboardQuery.data?.activePharmacyCount ?? 0}
+              loading={dashboardQuery.isLoading}
             />
           </Card>
         </Col>
@@ -81,7 +72,7 @@ export function HomePage() {
         </Card>
       ) : null}
       <Card>
-        <Typography.Paragraph style={{ marginBottom: 0 }}>{t('home.phaseNote')}</Typography.Paragraph>
+        <Typography.Paragraph style={{ marginBottom: 0 }}>{t('home.tip')}</Typography.Paragraph>
       </Card>
     </SpacePage>
   );
@@ -102,9 +93,7 @@ function SpacePage({
         <Typography.Title level={4} style={{ margin: 0 }}>
           {title}
         </Typography.Title>
-        {greeting ? (
-          <Typography.Text type="secondary">{greeting}</Typography.Text>
-        ) : null}
+        {greeting ? <Typography.Text type="secondary">{greeting}</Typography.Text> : null}
       </div>
       {children}
     </div>

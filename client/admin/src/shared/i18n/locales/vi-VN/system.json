@@ -19,9 +19,9 @@
     },
     "auditEntity": {
       "sales_order": "Bán hàng",
-      "goods_receipt": "Nhập kho (GRN)",
+      "goods_receipt": "Nhập kho (phiếu nhập)",
       "purchase_order": "Đơn mua",
-      "supplier_payment": "Thanh toán NCC",
+      "supplier_payment": "Thanh toán nhà cung cấp",
       "opening_balance": "Tồn đầu kỳ",
       "inventory_adjustment": "Kiểm kê"
     }
@@ -29,24 +29,27 @@
   "systemLayout": {
     "tabs": {
       "branches": "Chi nhánh",
-      "users": "Nhân viên",
+      "users": "Tài khoản",
       "roles": "Vai trò",
-      "posSettings": "Phiếu in & POS",
-      "customerAppSettings": "App khách",
-      "platformPack": "Gói tính năng Novixa",
-      "auditLog": "Nhật ký",
-      "assessmentLeads": "Khảo sát"
+      "posSettings": "In & POS",
+      "customerAppSettings": "App khách hàng",
+      "platformPack": "Gói Novixa",
+      "auditLog": "Nhật ký hệ thống"
     }
   },
   "assessmentLeads": {
-    "title": "Khảo sát đánh giá",
-    "hint": "Chỉ hiển thị trên môi trường vận hành Novixa. Nhà thuốc triển khai riêng không thấy mục này.",
+    "title": "Khách tiềm năng khảo sát",
+    "hint": "Theo dõi khảo sát và khách tiềm năng nhà thuốc. Bản đã ẩn không hiện trên cổng đối tác.",
     "refresh": "Tải lại",
-    "noLead": "Chưa điền",
+    "noLead": "Chưa có khách tiềm năng",
     "detailTitle": "Chi tiết khảo sát",
     "filters": {
       "all": "Tất cả",
-      "withLead": "Có thông tin nhà thuốc"
+      "withLead": "Có thông tin liên hệ",
+      "visible": "Đang hiện",
+      "archived": "Đã ẩn",
+      "partner": "Đối tác",
+      "pipeline": "Giai đoạn"
     },
     "columns": {
       "startedAt": "Bắt đầu",
@@ -55,20 +58,51 @@
       "contact": "Liên hệ",
       "score": "Điểm",
       "progress": "Tiến độ",
+      "partner": "Đối tác",
+      "pipeline": "Giai đoạn",
+      "commission": "Hoa hồng",
       "actions": "Thao tác"
     },
     "actions": {
       "detail": "Chi tiết",
-      "viewReport": "Xem báo cáo",
+      "viewReport": "Báo cáo",
       "reportConsulting": "Báo cáo tư vấn (đầy đủ)",
       "reportExecutive": "Báo cáo điều hành",
-      "reportAppendix": "Phụ lục kỹ thuật"
+      "reportAppendix": "Phụ lục kỹ thuật",
+      "archive": "Ẩn",
+      "unarchive": "Khôi phục"
+    },
+    "archive": {
+      "confirmTitle": "Ẩn khách tiềm năng này?",
+      "confirmBody": "Bản ghi sẽ biến mất khỏi danh sách mặc định và cổng đối tác. Dữ liệu vẫn được giữ để đối soát; có thể khôi phục sau.",
+      "unarchiveTitle": "Khôi phục khách tiềm năng?",
+      "unarchiveBody": "Bản ghi sẽ hiện lại trên Admin và cổng đối tác (nếu có đối tác).",
+      "blockedCommission": "Không thể ẩn khi hoa hồng đang chờ duyệt / đã duyệt / đã thanh toán. Hãy đặt hoa hồng = Huỷ trước.",
+      "ok": "Ẩn",
+      "unarchiveOk": "Khôi phục",
+      "cancel": "Huỷ"
     },
     "status": {
       "draft": "Đang làm",
       "completed": "Hoàn thành",
-      "lead_captured": "Đã gửi lead",
-      "report_ready": "Báo cáo"
+      "lead_captured": "Đã gửi thông tin",
+      "report_ready": "Có báo cáo"
+    },
+    "pipeline": {
+      "new": "Mới",
+      "contacted": "Đã liên hệ",
+      "demo_scheduled": "Đã hẹn tư vấn",
+      "demo_done": "Đã tư vấn",
+      "won": "Đã chốt",
+      "lost": "Không thành công",
+      "nurturing": "Đang chăm sóc"
+    },
+    "commission": {
+      "none": "Chưa có",
+      "pending": "Chờ duyệt",
+      "approved": "Đã duyệt",
+      "paid": "Đã thanh toán",
+      "void": "Huỷ / không tính"
     },
     "detail": {
       "template": "Mẫu khảo sát",
@@ -84,12 +118,21 @@
       "consentYes": "Có",
       "consentNo": "Không",
       "scores": "Điểm theo nhóm",
-      "insights": "Nhận định"
+      "insights": "Nhận định",
+      "recommendations": "Đề xuất"
     },
     "messages": {
-      "loadFailed": "Không tải được danh sách khảo sát",
+      "loadFailed": "Không tải được danh sách khách tiềm năng",
       "detailFailed": "Không tải được chi tiết",
-      "reportFailed": "Không tải được báo cáo PDF"
+      "reportFailed": "Không tải được báo cáo PDF",
+      "pipelineUpdated": "Đã cập nhật giai đoạn",
+      "pipelineFailed": "Không cập nhật được giai đoạn",
+      "commissionUpdated": "Đã cập nhật hoa hồng",
+      "commissionFailed": "Không cập nhật được hoa hồng",
+      "archived": "Đã ẩn khách tiềm năng",
+      "archiveFailed": "Không ẩn được",
+      "unarchived": "Đã khôi phục",
+      "unarchiveFailed": "Không khôi phục được"
     }
   },
   "branches": {
@@ -98,7 +141,7 @@
     "edit": "Sửa chi nhánh",
     "create": "Thêm chi nhánh",
     "columns": {
-      "code": "Mã CN",
+      "code": "Mã chi nhánh",
       "name": "Tên chi nhánh",
       "phone": "Điện thoại",
       "headOffice": "Trụ sở",
@@ -135,7 +178,7 @@
     "add": "Thêm tài khoản",
     "edit": "Sửa tài khoản",
     "create": "Thêm tài khoản",
-    "searchPlaceholder": "Tìm username, email, tên, SĐT...",
+    "searchPlaceholder": "Tìm username, email, tên, số điện thoại...",
     "columns": {
       "username": "Tên đăng nhập",
       "fullName": "Họ và tên",
@@ -151,11 +194,11 @@
     "form": {
       "username": "Tên đăng nhập",
       "usernameRequired": "Nhập tên đăng nhập",
-      "employeeLink": "NV có sẵn",
-      "employeeLinkTooltip": "Gắn tài khoản với hồ sơ EMP đã có (chưa có TK). Chọn sẽ điền họ tên và SĐT.",
+      "employeeLink": "Nhân viên có sẵn",
+      "employeeLinkTooltip": "Gắn tài khoản với hồ sơ nhân viên đã có (chưa có tài khoản). Chọn sẽ điền họ tên và số điện thoại.",
       "fullName": "Họ và tên",
       "fullNamePlaceholder": "Nguyễn Văn A",
-      "phone": "SĐT",
+      "phone": "Số điện thoại",
       "email": "Email",
       "emailRequired": "Nhập email",
       "emailInvalid": "Email không hợp lệ",
@@ -178,7 +221,7 @@
       "primaryBranchPlaceholder": "Chọn chi nhánh chính",
       "selectBranchFirst": "Chọn chi nhánh trước",
       "optional": "Tuỳ chọn",
-      "hasAccount": " (đã có TK)"
+      "hasAccount": " (đã có tài khoản)"
     },
     "messages": {
       "loadFailed": "Không tải được danh sách tài khoản",
@@ -283,7 +326,7 @@
     }
   },
   "platformPack": {
-    "title": "Gói tính năng Novixa",
+    "title": "Gói Novixa",
     "intro": "Cấu hình module và tính năng theo tenant (Novixa Pharmacy Pack mặc định).",
     "introDetail": "Thay đổi có hiệu lực ngay trên menu Admin và API. Chỉ tài khoản ADMIN được lưu.",
     "readOnlyHint": "Bạn có thể xem; chỉ ADMIN được chỉnh pack/module.",

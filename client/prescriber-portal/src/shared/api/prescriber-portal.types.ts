@@ -91,8 +91,14 @@ export interface PortalPrescriptionLine {
   productId: string;
   productCode: string;
   productName: string;
+  productUnitId?: string | null;
+  unitName?: string | null;
+  lineDispensingClass?: string;
   qtyPrescribed: number;
+  qtyDispensed?: number;
+  qtyRemaining?: number;
   dosageInstruction: string | null;
+  sortOrder?: number;
 }
 
 export interface PortalPrescriptionDetail extends PortalPrescriptionSummary {
@@ -100,6 +106,11 @@ export interface PortalPrescriptionDetail extends PortalPrescriptionSummary {
   notes: string | null;
   lines: PortalPrescriptionLine[];
   posDeepLink?: string | null;
+}
+
+export function canAmendPortalPrescription(detail: PortalPrescriptionDetail): boolean {
+  if (detail.status !== 'signed') return false;
+  return detail.lines.every((line) => Number(line.qtyDispensed ?? 0) <= 0);
 }
 
 export interface PortalPrescriberDashboard {

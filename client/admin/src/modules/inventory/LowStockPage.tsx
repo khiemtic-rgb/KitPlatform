@@ -18,18 +18,26 @@ export function LowStockPage() {
   const navigate = useNavigate();
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehouseId, setWarehouseId] = useState<string>();
+  const [warehouseReady, setWarehouseReady] = useState(false);
   const [items, setItems] = useState<LowStockProduct[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
 
   useEffect(() => {
-    void fetchWarehouses().then(setWarehouses).catch(() => undefined);
+    void fetchWarehouses()
+      .then((list) => {
+        setWarehouses(list);
+        setWarehouseId(list.find((w) => w.isDefault)?.id ?? list[0]?.id);
+      })
+      .catch(() => undefined)
+      .finally(() => setWarehouseReady(true));
   }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       setItems(await fetchLowStockProducts({ warehouseId }));
+      setSelectedRowKeys([]);
     } catch (error) {
       message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
@@ -38,8 +46,9 @@ export function LowStockPage() {
   }, [warehouseId, t]);
 
   useEffect(() => {
+    if (!warehouseReady) return;
     void load();
-  }, [load]);
+  }, [load, warehouseReady]);
 
   const suggestRequisition = () => {
     const rowKey = (row: LowStockProduct) => `${row.productId}-${row.warehouseId}`;

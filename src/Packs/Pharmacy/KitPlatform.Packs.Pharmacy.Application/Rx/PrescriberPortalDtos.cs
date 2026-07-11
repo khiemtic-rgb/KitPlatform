@@ -102,6 +102,10 @@ public sealed record PortalCreatePrescriptionRequest(
     string? Notes,
     IReadOnlyList<PortalCreatePrescriptionLineRequest> Lines);
 
+public sealed record PortalAmendPrescriptionRequest(
+    string? Notes,
+    IReadOnlyList<PortalCreatePrescriptionLineRequest> Lines);
+
 public sealed record PortalPrescriptionSummaryDto(
     Guid Id,
     Guid TenantId,

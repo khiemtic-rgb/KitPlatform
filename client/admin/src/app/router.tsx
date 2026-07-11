@@ -114,6 +114,9 @@ const AppOrdersLayout = lazy(() =>
 const RxLayout = lazy(() =>
   import('@/modules/rx/RxLayout').then((m) => ({ default: m.RxLayout })),
 );
+const RxDashboardPage = lazy(() =>
+  import('@/modules/rx/RxDashboardPage').then((m) => ({ default: m.RxDashboardPage })),
+);
 const PosPage = lazy(() => import('@/modules/sales/PosPage').then((m) => ({ default: m.PosPage })));
 const PrescriptionListPage = lazy(() =>
   import('@/modules/sales/PrescriptionListPage').then((m) => ({ default: m.PrescriptionListPage })),
@@ -421,7 +424,8 @@ export function AppRouter() {
                   </SuspenseRoute>
                 }
               >
-                <Route index element={<Navigate to="/rx/prescriptions" replace />} />
+                <Route index element={<Navigate to="/rx/overview" replace />} />
+                <Route path="overview" element={<RxDashboardPage />} />
                 <Route path="prescriptions" element={<PrescriptionListPage />} />
                 <Route path="prescribers" element={<PrescriberListPage />} />
                 <Route path="prescriber-links" element={<PrescriberLinksPage />} />

@@ -13,14 +13,14 @@
     "inventory": "Inventory"
   },
   "home": {
-    "title": "Reports — Analytics",
-    "description": "Wave 1: revenue, shifts, goods receipt, supplier payables, stock, in-out-balance, and expiry alerts. Pick a report to filter by period, export CSV, or print.",
+    "title": "Reports",
+    "description": "Revenue, shifts, goods receipts, supplier payables, stock, in–out–balance, and expiry alerts. Pick a report to filter by period, export, or print.",
     "favorites": "Favorites"
   },
   "view": {
     "notFound": "Report not found.",
     "filterCriteria": "Filters:",
-    "period": "Period (VN)",
+    "period": "Period (Vietnam time)",
     "groupBy": "Group by",
     "warehouse": "Warehouse",
     "warehouseAll": "All warehouses",
@@ -30,11 +30,10 @@
     "productSearchPlaceholder": "Code / product name",
     "expiryDays": "Days to expiry",
     "runReport": "Run report",
-    "exportCsv": "Export CSV",
+    "exportCsv": "Export Excel/CSV",
     "print": "Print",
     "loadFailed": "Could not load report",
-    "loadFailedHint": "Tip: run",
-    "loadFailedHintAfter": "after updating the Reports module.",
+    "loadFailedHint": "Could not reach the reports server. Try again later or contact support.",
     "generatedAt": "Generated:",
     "emptyData": "No data for the selected period",
     "paginationTotal": "{{count}} rows",
@@ -56,10 +55,10 @@
     "warehouseAll": "All warehouses",
     "supplierAll": "All suppliers",
     "apiKeys": {
-      "period": "Thời điểm",
-      "warehouse": "Kho",
-      "supplier": "NCC",
-      "search": "Tìm kiếm"
+      "period": "As of",
+      "warehouse": "Warehouse",
+      "supplier": "Supplier",
+      "search": "Search"
     }
   },
   "export": {
@@ -69,7 +68,7 @@
   "reports": {
     "SALES-01": {
       "name": "Revenue by period",
-      "description": "Gross sales, returns, and net revenue by day/week/month (VN time)."
+      "description": "Gross sales, returns, and net revenue by day/week/month (Vietnam time)."
     },
     "SALES-02": {
       "name": "Revenue by payment method",
@@ -84,16 +83,16 @@
       "description": "Net revenue by product category for the selected period."
     },
     "PROC-01": {
-      "name": "Goods receipt value (GRN)",
-      "description": "Completed receipts summary — pre-VAT amounts."
+      "name": "Goods receipt value",
+      "description": "Completed receipts summary — amounts before VAT."
     },
     "PROC-03": {
-      "name": "Supplier payables (snapshot)",
-      "description": "Outstanding balance and aging at view time."
+      "name": "Supplier payables",
+      "description": "Outstanding balance and aging at the time you view the report."
     },
     "INV-01": {
-      "name": "Stock & value",
-      "description": "On-hand quantity and value (qty × batch cost) by product/warehouse."
+      "name": "Stock and value",
+      "description": "On-hand quantity and value (quantity × batch cost) by product/warehouse."
     },
     "INV-02": {
       "name": "Near expiry",

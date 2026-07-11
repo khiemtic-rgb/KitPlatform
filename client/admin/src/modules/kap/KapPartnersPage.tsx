@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  App,
   Button,
   Form,
   Input,
@@ -10,8 +11,8 @@ import {
   Table,
   Tag,
   Typography,
-  message,
 } from 'antd';
+import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   createKapPartner,
   fetchKapPartners,
@@ -20,15 +21,12 @@ import {
 } from '@/shared/api/kap-admin.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { formatDisplayDateTime } from '@/shared/utils/date';
+import {
+  KAP_PARTNER_STATUS_LABELS,
+  KAP_PARTNER_TYPE_LABELS,
+  kapLabel,
+} from '@/modules/kap/kap-labels';
 
-const TYPE_LABELS: Record<string, string> = {
-  ctv: 'CTV',
-  consultant: 'Consultant',
-  tdv: 'Trình dược viên',
-  agency: 'Đại lý',
-};
-
-/** Tiền tố loại — mã = PREFIX + SĐT (vd: CTV0984660399). */
 const TYPE_CODE_PREFIX: Record<string, string> = {
   ctv: 'CTV',
   consultant: 'CSL',
@@ -36,7 +34,6 @@ const TYPE_CODE_PREFIX: Record<string, string> = {
   agency: 'DLY',
 };
 
-/** Chuẩn hoá SĐT VN về dạng 0xxxxxxxxx (chỉ số). */
 function normalizeVnPhone(phone?: string): string | null {
   let digits = (phone ?? '').replace(/\D/g, '');
   if (!digits) return null;
@@ -50,7 +47,6 @@ function normalizeVnPhone(phone?: string): string | null {
   return digits;
 }
 
-/** Quy ước: CTV/TDV/CSL/DLY + SĐT — đồng bộ, dễ nhớ, ít trùng. */
 function suggestPartnerCode(partnerType: string, phone?: string): string {
   const prefix = TYPE_CODE_PREFIX[partnerType] ?? 'CTV';
   const phoneNorm = normalizeVnPhone(phone);
@@ -58,8 +54,18 @@ function suggestPartnerCode(partnerType: string, phone?: string): string {
   return `${prefix}${Date.now().toString().slice(-8)}`;
 }
 
+const TYPE_OPTIONS = Object.entries(KAP_PARTNER_TYPE_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
+
+const STATUS_OPTIONS = Object.entries(KAP_PARTNER_STATUS_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
 
 export function KapPartnersPage() {
+  const { message } = App.useApp();
   const [items, setItems] = useState<KapPartnerListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -76,7 +82,7 @@ export function KapPartnersPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [message]);
 
   useEffect(() => {
     void load();
@@ -137,14 +143,15 @@ export function KapPartnersPage() {
       <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
           <Typography.Title level={4} style={{ margin: 0 }}>
-            Đối tác / CTV
+            Đối tác kênh
           </Typography.Title>
           <Typography.Text type="secondary">
-            Cấp tài khoản Partner Portal — link/QR khảo sát gắn attribution
+            Cấp tài khoản cổng đối tác — link/QR khảo sát gắn mã giới thiệu
           </Typography.Text>
         </div>
         <Button
           type="primary"
+          icon={<PlusOutlined />}
           onClick={() => {
             setEditing(null);
             form.resetFields();
@@ -160,25 +167,28 @@ export function KapPartnersPage() {
         rowKey="id"
         loading={loading}
         dataSource={items}
+        scroll={{ x: 960 }}
         columns={[
-          { title: 'Mã', dataIndex: 'code', width: 110 },
-          { title: 'Tên', dataIndex: 'name' },
+          { title: 'Mã', dataIndex: 'code', width: 140 },
+          { title: 'Tên', dataIndex: 'name', ellipsis: true },
           {
             title: 'Loại',
             dataIndex: 'partnerType',
-            width: 130,
-            render: (v: string) => TYPE_LABELS[v] ?? v,
+            width: 160,
+            render: (v: string) => kapLabel(KAP_PARTNER_TYPE_LABELS, v),
           },
           {
-            title: 'TT',
+            title: 'Trạng thái',
             dataIndex: 'status',
-            width: 100,
+            width: 120,
             render: (v: string) => (
-              <Tag color={v === 'active' ? 'green' : v === 'suspended' ? 'orange' : 'default'}>{v}</Tag>
+              <Tag color={v === 'active' ? 'green' : v === 'suspended' ? 'orange' : 'default'}>
+                {kapLabel(KAP_PARTNER_STATUS_LABELS, v)}
+              </Tag>
             ),
           },
-          { title: 'Khảo sát', dataIndex: 'submissionCount', width: 90 },
-          { title: 'Lead', dataIndex: 'leadCount', width: 80 },
+          { title: 'Khảo sát', dataIndex: 'submissionCount', width: 90, align: 'right' },
+          { title: 'Khách tiềm năng', dataIndex: 'leadCount', width: 120, align: 'right' },
           {
             title: 'Đăng nhập gần nhất',
             dataIndex: 'lastLoginAt',
@@ -186,11 +196,14 @@ export function KapPartnersPage() {
             render: (v) => (v ? formatDisplayDateTime(v) : '—'),
           },
           {
-            title: '',
+            title: 'Thao tác',
             width: 100,
+            fixed: 'right',
             render: (_, row) => (
               <Button
                 size="small"
+                type="link"
+                icon={<EditOutlined />}
                 onClick={() => {
                   setEditing(row);
                   form.setFieldsValue({
@@ -232,12 +245,7 @@ export function KapPartnersPage() {
           </Form.Item>
           <Form.Item name="partnerType" label="Loại" rules={[{ required: true, message: 'Chọn loại' }]}>
             <Select
-              options={[
-                { value: 'ctv', label: 'CTV' },
-                { value: 'consultant', label: 'Chuyên viên đánh giá (Consultant)' },
-                { value: 'tdv', label: 'Trình dược viên' },
-                { value: 'agency', label: 'Đại lý' },
-              ]}
+              options={TYPE_OPTIONS}
               onChange={() => {
                 if (editing) return;
                 const phone = form.getFieldValue('phone') as string | undefined;
@@ -250,13 +258,7 @@ export function KapPartnersPage() {
           </Form.Item>
           {editing && (
             <Form.Item name="status" label="Trạng thái" rules={[{ required: true }]}>
-              <Select
-                options={[
-                  { value: 'active', label: 'active' },
-                  { value: 'suspended', label: 'suspended' },
-                  { value: 'archived', label: 'archived' },
-                ]}
-              />
+              <Select options={STATUS_OPTIONS} />
             </Form.Item>
           )}
           <Form.Item

@@ -24,15 +24,15 @@
     }
   },
   "engagement": {
-    "title": "Customer Engagement",
-    "subtitle": "Customer app behavior funnel — check each morning to see where to optimize.",
+    "title": "Customer engagement",
+    "subtitle": "Customer app behavior funnel — review regularly to see where to improve.",
     "refresh": "Refresh",
-    "cohort": "App accounts (cohort)",
-    "retention30d": "30-day retention",
+    "cohort": "App accounts",
+    "retention30d": "30-day return rate",
     "retentionDetail": "{{retained}} / {{eligible}} customers returned",
     "period": "Period",
     "days": "days",
-    "ofCohort": "of cohort",
+    "ofCohort": "of app accounts",
     "fromPrevious": "{{rate}} from previous step",
     "drillTitle": "Detail: {{step}}",
     "loadFailed": "Could not load engagement",
@@ -44,11 +44,11 @@
       "firstLogin": "First login"
     },
     "steps": {
-      "app_active": "App Active",
-      "reminder_on": "Reminder On",
-      "ai_usage": "AI Usage",
+      "app_active": "Using app",
+      "reminder_on": "Reminders on",
+      "ai_usage": "Used AI assistant",
       "chat": "Chat",
-      "order_again": "Order Again"
+      "order_again": "Ordered again"
     }
   },
   "listPage": {
@@ -109,10 +109,10 @@
     }
   },
   "pilotOtp": {
-    "title": "Customer app OTP (pilot)",
+    "title": "Customer app OTP (trial)",
     "activeMessage": "Customer requested login — read this code to them",
     "expiresAt": "Expires at {{time}}",
-    "hint": "Code clears after successful login or expiry (~5 min). Disable when a real SMS gateway is configured.",
+    "hint": "Code clears after successful login or expiry (~5 min). Turn this off when the pharmacy sends OTP by SMS.",
     "waiting": "No OTP yet",
     "waitingHint": "When the customer taps «Send OTP» in the app, the 6-digit code appears here (auto-refreshes every few seconds)."
   },
@@ -155,11 +155,11 @@
     }
   },
   "importCard": {
-    "description": "Import Excel/CSV from Sapo or {{fileName}}. Duplicate codes or phones are skipped.",
+    "description": "Import from Excel/CSV (Novixa template or export from another system). Duplicate codes or phones are skipped.",
     "sampleFileName": "khach-hang-novixa.csv",
-    "chooseFile": "Choose customer file",
-    "importButton": "Import",
-    "importButtonWithCount": "Import ({{count}})",
+    "chooseFile": "Choose file",
+    "importButton": "Import file",
+    "importButtonWithCount": "Import file ({{count}})",
     "fileLabel": "File: {{fileName}}",
     "batchProgress": "Importing batch {{current}}/{{total}}…",
     "resultSummary": "Created: {{created}} · Skipped: {{skipped}} · Failed: {{failed}}",
@@ -189,8 +189,8 @@
     }
   },
   "consentPanel": {
-    "alertTitle": "Opt-in / opt-out by channel & purpose",
-    "alertDescription": "Each save writes a customer.consent.updated event to integration_outbox.",
+    "alertTitle": "Notification consent by channel and purpose",
+    "alertDescription": "Each save updates the customer’s consent so the pharmacy can send reminders and care messages on the channels they chose.",
     "saveButton": "Save consents",
     "columns": {
       "channel": "Channel",

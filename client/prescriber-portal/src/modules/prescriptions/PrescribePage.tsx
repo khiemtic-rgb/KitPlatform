@@ -1,17 +1,20 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, Form, Input, InputNumber, Select, Space, Tag, Typography, message } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
+  amendPortalPrescription,
   createPortalPrescription,
   fetchMyPharmacies,
+  fetchPortalPrescription,
   getApiErrorMessage,
   searchPortalCustomers,
   searchPortalProducts,
 } from '@/shared/api/prescriber-portal.api';
-import type { PortalProductItem } from '@/shared/api/prescriber-portal.types';
+import { canAmendPortalPrescription, type PortalProductItem } from '@/shared/api/prescriber-portal.types';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 
 type LineForm = {
   productId: string;
@@ -33,11 +36,17 @@ function classTag(dispensingClass: string) {
   return <Tag>{dispensingClass}</Tag>;
 }
 
-function formatStock(qty: number | undefined, unitName: string | null | undefined) {
+function formatStock(
+  t: (key: string, opts?: Record<string, string>) => string,
+  qty: number | undefined,
+  unitName: string | null | undefined,
+) {
   const n = Number(qty ?? 0);
-  const unit = unitName ? ` ${unitName}` : '';
-  if (n <= 0) return 'hết hàng';
-  return `tồn ${n.toLocaleString('vi-VN')}${unit}`;
+  if (n <= 0) return t('prescriptions.stockOut');
+  return t('prescriptions.stockLabel', {
+    qty: n.toLocaleString('vi-VN'),
+    unit: unitName ? ` ${unitName}` : '',
+  });
 }
 
 function LineProductFields({
@@ -104,7 +113,7 @@ function LineProductFields({
                     {p.productName} ({p.productCode})
                     {p.defaultUnitName ? ` · ${p.defaultUnitName}` : ''}
                     {' · '}
-                    {formatStock(p.stockAvailableQty, p.defaultUnitName)}
+                    {formatStock(t, p.stockAvailableQty, p.defaultUnitName)}
                   </span>
                 </Space>
               ),
@@ -138,13 +147,13 @@ function LineProductFields({
             disabled={!productId || units.length === 0}
             options={units.map((u) => ({
               value: u.id,
-              label: u.isBaseUnit ? `${u.unitName} (cơ bản)` : u.unitName,
+              label: u.isBaseUnit ? t('prescriptions.unitBase', { name: u.unitName }) : u.unitName,
             }))}
           />
         </Form.Item>
 
         <Form.Item name={[fieldName, 'dosageInstruction']} label={t('prescriptions.dosage')}>
-          <Input placeholder="2 viên x 2 lần/ngày" style={{ minWidth: 180 }} />
+          <Input placeholder={t('prescriptions.dosagePlaceholder')} style={{ minWidth: 180 }} />
         </Form.Item>
       </Space>
       {stockWarn ? <Alert type="warning" showIcon message={stockWarn} style={{ maxWidth: 640 }} /> : null}
@@ -155,10 +164,44 @@ function LineProductFields({
 export function PrescribePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { id: editId } = useParams<{ id?: string }>();
+  const isEdit = Boolean(editId);
   const [form] = Form.useForm<PrescribeForm>();
   const [customerQuery, setCustomerQuery] = useState('');
   const [productQuery, setProductQuery] = useState('');
+  const debouncedCustomerQuery = useDebouncedValue(customerQuery, 300);
+  const debouncedProductQuery = useDebouncedValue(productQuery, 300);
   const tenantId = Form.useWatch('tenantId', form);
+
+  const existingQuery = useQuery({
+    queryKey: ['prescriber', 'prescription', editId],
+    queryFn: () => fetchPortalPrescription(editId!),
+    enabled: isEdit,
+  });
+
+  useEffect(() => {
+    const detail = existingQuery.data;
+    if (!detail) return;
+    if (!canAmendPortalPrescription(detail)) {
+      message.warning(t('prescriptions.editBlockedDispensed'));
+      navigate('/prescriptions', { replace: true });
+      return;
+    }
+    form.setFieldsValue({
+      tenantId: detail.tenantId,
+      customerId: detail.customerId ?? undefined,
+      notes: detail.notes ?? undefined,
+      lines: detail.lines.map((line) => ({
+        productId: line.productId,
+        productUnitId: line.productUnitId ?? undefined,
+        qtyPrescribed: line.qtyPrescribed,
+        dosageInstruction: line.dosageInstruction ?? undefined,
+      })),
+    });
+    if (detail.patientName || detail.patientPhone) {
+      setCustomerQuery(detail.patientPhone || detail.patientName || '');
+    }
+  }, [existingQuery.data, form, navigate, t]);
 
   const pharmaciesQuery = useQuery({
     queryKey: ['prescriber', 'pharmacies'],
@@ -166,42 +209,93 @@ export function PrescribePage() {
   });
 
   const customersQuery = useQuery({
-    queryKey: ['prescriber', 'customers', tenantId, customerQuery],
-    queryFn: () => searchPortalCustomers(tenantId, customerQuery.trim() || undefined),
-    enabled: Boolean(tenantId) && customerQuery.trim().length >= 2,
+    queryKey: ['prescriber', 'customers', tenantId, debouncedCustomerQuery],
+    queryFn: () => searchPortalCustomers(tenantId, debouncedCustomerQuery.trim() || undefined),
+    enabled: Boolean(tenantId) && debouncedCustomerQuery.trim().length >= 2,
   });
 
   const productsQuery = useQuery({
-    queryKey: ['prescriber', 'products', tenantId, productQuery],
-    queryFn: () => searchPortalProducts(tenantId, productQuery.trim() || undefined),
+    queryKey: ['prescriber', 'products', tenantId, debouncedProductQuery],
+    queryFn: () => searchPortalProducts(tenantId, debouncedProductQuery.trim() || undefined),
     enabled: Boolean(tenantId),
+    placeholderData: (prev) => prev,
   });
 
-  const customerOptions = useMemo(
-    () =>
-      (customersQuery.data ?? []).map((c) => ({
-        value: c.id,
-        label: `${c.fullName} · ${c.phone ?? c.customerCode}`,
-      })),
-    [customersQuery.data],
-  );
+  const customerOptions = useMemo(() => {
+    const fromSearch = (customersQuery.data ?? []).map((c) => ({
+      value: c.id,
+      label: `${c.fullName} · ${c.phone ?? c.customerCode}`,
+    }));
+    const detail = existingQuery.data;
+    if (detail?.customerId && !fromSearch.some((o) => o.value === detail.customerId)) {
+      fromSearch.unshift({
+        value: detail.customerId,
+        label: `${detail.patientName ?? 'BN'} · ${detail.patientPhone ?? detail.customerId}`,
+      });
+    }
+    return fromSearch;
+  }, [customersQuery.data, existingQuery.data]);
 
-  const products = productsQuery.data ?? [];
+  const products = useMemo(() => {
+    const list = [...(productsQuery.data ?? [])];
+    const detail = existingQuery.data;
+    if (!detail) return list;
+    for (const line of detail.lines) {
+      if (!list.some((p) => p.productId === line.productId)) {
+        list.push({
+          productId: line.productId,
+          productCode: line.productCode,
+          productName: line.productName,
+          dispensingClass: line.lineDispensingClass ?? 'prescription',
+          defaultUnitId: line.productUnitId ?? null,
+          defaultUnitName: line.unitName ?? null,
+          units: line.productUnitId
+            ? [{ id: line.productUnitId, unitName: line.unitName ?? 'ĐVT', isBaseUnit: true }]
+            : [],
+          stockAvailableQty: undefined,
+        });
+      }
+    }
+    return list;
+  }, [productsQuery.data, existingQuery.data]);
 
-  const createMutation = useMutation({
-    mutationFn: createPortalPrescription,
+  const saveMutation = useMutation({
+    mutationFn: async (values: PrescribeForm) => {
+      const lines = values.lines.map((line) => ({
+        productId: line.productId,
+        productUnitId: line.productUnitId ?? null,
+        qtyPrescribed: line.qtyPrescribed,
+        dosageInstruction: line.dosageInstruction,
+      }));
+      if (isEdit && editId) {
+        return amendPortalPrescription(editId, { notes: values.notes, lines });
+      }
+      return createPortalPrescription({
+        tenantId: values.tenantId,
+        customerId: values.customerId,
+        notes: values.notes,
+        lines,
+      });
+    },
     onSuccess: (data) => {
-      message.success(t('prescriptions.createSuccess', { code: data.prescriptionCode }));
+      message.success(
+        isEdit
+          ? t('prescriptions.amendSuccess', { code: data.prescriptionCode })
+          : t('prescriptions.createSuccess', { code: data.prescriptionCode }),
+      );
       navigate('/prescriptions');
     },
-    onError: (error) => message.error(getApiErrorMessage(error, t('prescriptions.createFailed'))),
+    onError: (error) =>
+      message.error(
+        getApiErrorMessage(error, isEdit ? t('prescriptions.amendFailed') : t('prescriptions.createFailed')),
+      ),
   });
 
   const onFinish = (values: PrescribeForm) => {
     const stockIssues = values.lines
       .map((line) => {
         const product = products.find((p) => p.productId === line.productId);
-        if (!product) return null;
+        if (!product || product.stockAvailableQty == null) return null;
         const stock = Number(product.stockAvailableQty ?? 0);
         if (stock <= 0) return `${product.productName}: ${t('prescriptions.stockEmpty')}`;
         if (line.qtyPrescribed > stock) {
@@ -216,22 +310,20 @@ export function PrescribePage() {
     if (stockIssues.length > 0) {
       message.warning(t('prescriptions.stockSubmitWarn'));
     }
-    createMutation.mutate({
-      tenantId: values.tenantId,
-      customerId: values.customerId,
-      notes: values.notes,
-      lines: values.lines.map((line) => ({
-        productId: line.productId,
-        productUnitId: line.productUnitId ?? null,
-        qtyPrescribed: line.qtyPrescribed,
-        dosageInstruction: line.dosageInstruction,
-      })),
-    });
+    saveMutation.mutate(values);
   };
+
+  if (isEdit && existingQuery.isLoading) {
+    return <Typography.Text type="secondary">{t('common.loading')}</Typography.Text>;
+  }
 
   return (
     <div>
-      <Typography.Title level={4}>{t('prescriptions.newTitle')}</Typography.Title>
+      <Typography.Title level={4}>
+        {isEdit
+          ? t('prescriptions.editTitle', { code: existingQuery.data?.prescriptionCode ?? '' })
+          : t('prescriptions.newTitle')}
+      </Typography.Title>
       <Card>
         <Form
           form={form}
@@ -243,11 +335,13 @@ export function PrescribePage() {
             <Select
               placeholder={t('prescriptions.selectPharmacy')}
               loading={pharmaciesQuery.isLoading}
+              disabled={isEdit}
               options={(pharmaciesQuery.data ?? []).map((p) => ({
                 value: p.tenantId,
                 label: `${p.tenantName} (${p.tenantCode})`,
               }))}
               onChange={() => {
+                if (isEdit) return;
                 setProductQuery('');
                 setCustomerQuery('');
                 form.setFieldsValue({ customerId: undefined, lines: [{ qtyPrescribed: 1 }] });
@@ -267,7 +361,7 @@ export function PrescribePage() {
               allowClear
               filterOption={false}
               placeholder={t('prescriptions.customerLivePlaceholder')}
-              disabled={!tenantId}
+              disabled={!tenantId || isEdit}
               loading={customersQuery.isFetching}
               options={customerOptions}
               onSearch={setCustomerQuery}
@@ -320,9 +414,12 @@ export function PrescribePage() {
             <Input.TextArea rows={2} />
           </Form.Item>
 
-          <Button type="primary" htmlType="submit" loading={createMutation.isPending}>
-            {t('prescriptions.submitSigned')}
-          </Button>
+          <Space>
+            <Button type="primary" htmlType="submit" loading={saveMutation.isPending}>
+              {isEdit ? t('prescriptions.saveAmend') : t('prescriptions.submitSigned')}
+            </Button>
+            <Button onClick={() => navigate('/prescriptions')}>{t('common.cancel')}</Button>
+          </Space>
         </Form>
       </Card>
     </div>

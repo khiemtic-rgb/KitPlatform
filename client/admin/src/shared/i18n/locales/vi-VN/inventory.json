@@ -8,7 +8,7 @@
       "5": "Kho trả hàng"
     },
     "transferStatus": {
-      "1": "Chờ hoàn tất",
+      "1": "Chờ xử lý",
       "2": "Đang chuyển",
       "3": "Hoàn tất",
       "4": "Đã hủy"
@@ -26,19 +26,19 @@
   },
   "inventoryLayout": {
     "tabs": {
-      "opening": "Tồn đầu kỳ",
       "stock": "Tồn kho",
       "lowStock": "Tồn thấp",
-      "gppChecklist": "Checklist GPP",
-      "transfers": "Điều chuyển",
       "adjustments": "Kiểm kê",
+      "transfers": "Điều chuyển",
+      "opening": "Tồn đầu kỳ",
       "warehouses": "Danh mục kho",
-      "qd540Export": "Liên thông dược (QĐ 540)"
+      "gppChecklist": "GPP vận hành",
+      "qd540Export": "QĐ 540"
     }
   },
   "qd540Export": {
-    "title": "Xuất dữ liệu QĐ 540 (Bảng 1)",
-    "subtitle": "Mua / bán / lô — kiểm thử trước liên thông",
+    "title": "Xuất QĐ 540",
+    "subtitle": "Bảng 1 — mua / bán / lô (kiểm thử trước liên thông)",
     "hint": "Cần nhập Ma_co_so_ban_le tại Hệ thống → Chi nhánh, mã NCC bán buôn tại Mua hàng → NCC, số HĐ GTGT trên phiếu nhập, và dữ liệu thuốc (số đăng ký, dạng bào chế, quy cách) trên sản phẩm.",
     "empty": "Chưa có dòng — chọn khoảng ngày và bấm Xem trước",
     "warningsTitle": "{{count}} cảnh báo · bỏ qua {{skipped}} dòng",
@@ -158,7 +158,7 @@
     }
   },
   "warehouseList": {
-    "title": "Danh sách kho",
+    "title": "Danh mục kho",
     "addWarehouse": "Thêm kho",
     "editWarehouse": "Sửa kho",
     "deleteConfirm": "Xóa kho này?",
@@ -327,8 +327,8 @@
     "confirmTitle": "Xác nhận trước khi duyệt:"
   },
   "lowStock": {
-    "title": "Cảnh báo tồn thấp",
-    "description": "Ngưỡng: SP → kho → danh mục → cài đặt chung → mặc định 10. Khi xem tất cả kho, mỗi dòng là một cặp SP–kho.",
+    "title": "Tồn thấp",
+    "description": "Ngưỡng: SP → kho → danh mục → cài đặt chung → mặc định 10. Mặc định xem theo kho chính; chọn «Tất cả kho» để rà toàn bộ.",
     "allWarehouses": "Tất cả kho",
     "columns": {
       "currentStock": "Tồn hiện tại",
@@ -493,11 +493,11 @@
       "manager": "Quản lý",
       "signHint": "(Ký, họ tên)"
     },
-    "footnote": "In từ hệ thống KitPlatform — chỉ mang tính tham chiếu trước khi duyệt chốt."
+    "footnote": "In từ hệ thống Novixa — chỉ mang tính tham chiếu trước khi duyệt chốt."
   },
   "gppChecklist": {
-    "title": "Checklist vận hành GPP",
-    "description": "Theo dõi thói quen hàng ngày/tuần/tháng sau go-live. Lưu trên máy chủ — đồng bộ giữa các thiết bị đăng nhập cùng nhà thuốc.",
+    "title": "GPP vận hành",
+    "description": "Checklist thói quen hàng ngày/tuần/tháng sau go-live. Lưu trên máy chủ — đồng bộ giữa các thiết bị đăng nhập cùng nhà thuốc.",
     "disclaimer": "Công cụ nội bộ hypercare tuần 2–4. Tick khi hoàn thành; reset đầu kỳ mới.",
     "loadingTip": "Đang tải checklist...",
     "saving": "Đang lưu",

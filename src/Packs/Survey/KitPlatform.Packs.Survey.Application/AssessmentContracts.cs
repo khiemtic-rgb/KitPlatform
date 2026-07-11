@@ -197,7 +197,9 @@ public sealed record AssessmentSubmissionListQuery(
     string? Status = null,
     bool? HasLead = null,
     Guid? PartnerId = null,
-    string? LeadPipelineStatus = null);
+    string? LeadPipelineStatus = null,
+    /// <summary>false = active only (default); true = archived only.</summary>
+    bool Archived = false);
 
 public sealed record AssessmentSubmissionListItemDto(
     Guid Id,
@@ -218,7 +220,8 @@ public sealed record AssessmentSubmissionListItemDto(
     string? PartnerCode = null,
     string? PartnerName = null,
     string LeadPipelineStatus = "new",
-    string CommissionStatus = "none");
+    string CommissionStatus = "none",
+    DateTimeOffset? ArchivedAt = null);
 
 public sealed record AssessmentSubmissionListResultDto(
     IReadOnlyList<AssessmentSubmissionListItemDto> Items,
@@ -273,6 +276,14 @@ public interface IAssessmentAdminService
     Task<bool> UpdateLeadPipelineAsync(
         Guid submissionId,
         UpdateLeadPipelineRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ArchiveSubmissionAsync(
+        Guid submissionId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> UnarchiveSubmissionAsync(
+        Guid submissionId,
         CancellationToken cancellationToken = default);
 }
 

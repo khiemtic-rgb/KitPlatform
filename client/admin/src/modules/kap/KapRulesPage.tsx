@@ -50,7 +50,7 @@ export function KapRulesPage() {
     try {
       setRules(await fetchKapRules(templateId));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được rules'));
+      message.error(apiErrorMessage(error, 'Không tải được quy tắc'));
     } finally {
       setLoading(false);
     }
@@ -87,18 +87,18 @@ export function KapRulesPage() {
       } else {
         await createKapRule({ templateId, code: values.code, ...values });
       }
-      message.success('Đã lưu rule');
+      message.success('Đã lưu quy tắc');
       setModalOpen(false);
       void load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không lưu được rule'));
+      message.error(apiErrorMessage(error, 'Không lưu được quy tắc'));
     }
   };
 
   const remove = async (rule: KapRule) => {
     try {
       await deleteKapRule(rule.id);
-      message.success('Đã xóa rule');
+      message.success('Đã xóa quy tắc');
       void load();
     } catch (error) {
       message.error(apiErrorMessage(error, 'Không xóa được'));
@@ -109,13 +109,19 @@ export function KapRulesPage() {
     () => [
       { title: 'Mã', dataIndex: 'code', width: 120 },
       { title: 'Tên', dataIndex: 'name', ellipsis: true },
-      { title: 'Loại', dataIndex: 'actionType', width: 120 },
+      {
+        title: 'Loại',
+        dataIndex: 'actionType',
+        width: 140,
+        render: (v: string) =>
+          v === 'insight' ? 'Nhận xét' : v === 'recommendation' ? 'Khuyến nghị' : v,
+      },
       { title: 'Ưu tiên', dataIndex: 'priority', width: 80 },
       {
-        title: 'Active',
+        title: 'Bật',
         dataIndex: 'isActive',
         width: 80,
-        render: (v: boolean) => (v ? <Tag color="green">ON</Tag> : <Tag>OFF</Tag>),
+        render: (v: boolean) => (v ? <Tag color="green">Bật</Tag> : <Tag>Tắt</Tag>),
       },
       {
         title: '',
@@ -135,7 +141,7 @@ export function KapRulesPage() {
   return (
     <>
       <Card
-        title="Rules KAP"
+        title="Quy tắc đánh giá"
         extra={
           <Space>
             <Select
@@ -149,7 +155,7 @@ export function KapRulesPage() {
             />
             <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading} />
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-              Thêm rule
+              Thêm quy tắc
             </Button>
           </Space>
         }
@@ -158,7 +164,7 @@ export function KapRulesPage() {
       </Card>
 
       <Modal
-        title={editing ? 'Sửa rule' : 'Thêm rule'}
+        title={editing ? 'Sửa quy tắc' : 'Thêm quy tắc'}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={() => void save()}
@@ -167,32 +173,37 @@ export function KapRulesPage() {
       >
         <Form form={form} layout="vertical">
           {!editing ? (
-            <Form.Item name="code" label="Mã rule" rules={[{ required: true }]}>
+            <Form.Item name="code" label="Mã quy tắc" rules={[{ required: true }]}>
               <Input placeholder="RULE_CODE" />
             </Form.Item>
           ) : null}
           <Form.Item name="name" label="Tên" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="expression" label="Biểu thức" rules={[{ required: true }]}>
+          <Form.Item name="expression" label="Điều kiện" rules={[{ required: true }]}>
             <Input.TextArea rows={2} placeholder="category.CUSTOMER.score < 2.5" />
           </Form.Item>
           <Form.Item name="actionType" label="Loại" rules={[{ required: true }]}>
             <Select
               options={[
-                { value: 'insight', label: 'insight' },
-                { value: 'recommendation', label: 'recommendation' },
+                { value: 'insight', label: 'Nhận xét' },
+                { value: 'recommendation', label: 'Khuyến nghị' },
               ]}
             />
           </Form.Item>
-          <Form.Item name="actionPayloadJson" label="Payload JSON" rules={[{ required: true }]}>
+          <Form.Item
+            name="actionPayloadJson"
+            label="Nội dung (JSON)"
+            rules={[{ required: true }]}
+            extra="Định dạng kỹ thuật cho tiêu đề và nội dung hiển thị trên báo cáo."
+          >
             <Input.TextArea rows={8} />
           </Form.Item>
           <Space>
-            <Form.Item name="priority" label="Priority">
+            <Form.Item name="priority" label="Ưu tiên">
               <InputNumber min={0} max={999} />
             </Form.Item>
-            <Form.Item name="isActive" label="Active" valuePropName="checked">
+            <Form.Item name="isActive" label="Bật quy tắc" valuePropName="checked">
               <Switch />
             </Form.Item>
           </Space>

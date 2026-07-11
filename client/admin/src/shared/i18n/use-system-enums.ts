@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const USER_STATUS_IDS = [1, 2] as const;
-const BRANCH_STATUS_IDS = [1, 2] as const;
+const USER_STATUS_IDS = [0, 1] as const;
+const BRANCH_STATUS_IDS = [0, 1] as const;
 
 export function useSystemEnums() {
   const { t } = useTranslation('system');

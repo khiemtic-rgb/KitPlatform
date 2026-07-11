@@ -909,6 +909,7 @@ internal sealed class AssessmentRepository
         bool? hasLead,
         Guid? partnerId,
         string? leadPipelineStatus,
+        bool archived,
         CancellationToken cancellationToken)
     {
         var offset = Math.Max(0, (Math.Max(1, page) - 1) * Math.Max(1, pageSize));
@@ -925,6 +926,7 @@ internal sealed class AssessmentRepository
             where.Add("s.partner_id = @PartnerId");
         if (!string.IsNullOrWhiteSpace(leadPipelineStatus))
             where.Add("s.lead_pipeline_status = @LeadPipelineStatus");
+        where.Add(archived ? "s.archived_at IS NOT NULL" : "s.archived_at IS NULL");
 
         var whereSql = string.Join(" AND ", where);
 
@@ -954,6 +956,7 @@ internal sealed class AssessmentRepository
                 p.name AS PartnerName,
                 s.lead_pipeline_status AS LeadPipelineStatus,
                 s.commission_status AS CommissionStatus,
+                s.archived_at AS ArchivedAt,
                 (SELECT COUNT(*)::int FROM assessment_response r WHERE r.submission_id = s.id) AS ResponseCount
             FROM assessment_submission s
             JOIN assessment_template t ON t.id = s.template_id
@@ -975,6 +978,37 @@ internal sealed class AssessmentRepository
         var total = await conn.ExecuteScalarAsync<int>(countSql, args);
         var items = (await conn.QueryAsync<AssessmentSubmissionListRow>(listSql, args)).ToList();
         return (items, total);
+    }
+
+    public async Task<(string? CommissionStatus, DateTimeOffset? ArchivedAt)?> GetArchiveStateAsync(
+        Guid submissionId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT commission_status AS CommissionStatus, archived_at AS ArchivedAt
+            FROM assessment_submission
+            WHERE id = @Id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var row = await conn.QuerySingleOrDefaultAsync<ArchiveStateRow>(sql, new { Id = submissionId });
+        if (row is null)
+            return null;
+        return (row.CommissionStatus, row.ArchivedAt);
+    }
+
+    public async Task<bool> SetArchivedAtAsync(
+        Guid submissionId,
+        DateTimeOffset? archivedAt,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE assessment_submission
+            SET archived_at = @ArchivedAt
+            WHERE id = @Id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var n = await conn.ExecuteAsync(sql, new { Id = submissionId, ArchivedAt = archivedAt });
+        return n > 0;
     }
 
     public async Task<bool> UpdateLeadPipelineAsync(
@@ -1182,6 +1216,13 @@ internal sealed class AssessmentSubmissionListRow
     public string? PartnerName { get; set; }
     public string LeadPipelineStatus { get; set; } = "new";
     public string CommissionStatus { get; set; } = "none";
+    public DateTimeOffset? ArchivedAt { get; set; }
+}
+
+internal sealed class ArchiveStateRow
+{
+    public string CommissionStatus { get; set; } = "none";
+    public DateTimeOffset? ArchivedAt { get; set; }
 }
 
 internal sealed class KapTemplateListRow

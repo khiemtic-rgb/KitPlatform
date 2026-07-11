@@ -38,7 +38,7 @@ export function PrescriberPortalLayout() {
         <Outlet />
       </main>
 
-      <nav className="prescriber-portal-bottom-nav" aria-label={t('nav.home')}>
+      <nav className="prescriber-portal-bottom-nav" aria-label="Main">
         <NavLink to="/" end>
           <HomeOutlined />
           <span>{t('nav.home')}</span>

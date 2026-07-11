@@ -3,22 +3,12 @@ import { Button, Card, Input, Select, Space, Table, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { fetchPrescriptions, type RxPrescriptionListItem } from '@/shared/api/rx.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
 import { PrescriptionFormDrawer } from '@/modules/sales/PrescriptionFormDrawer';
-
-const STATUS_LABELS: Record<string, string> = {
-  draft: 'Nháp',
-  pending_verification: 'Chờ xác minh',
-  verified: 'Đã xác minh',
-  signed: 'Đã ký',
-  partially_dispensed: 'Đã bán một phần',
-  dispensed: 'Đã bán hết',
-  expired: 'Hết hạn',
-  cancelled: 'Đã hủy',
-};
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'default',
@@ -31,7 +21,10 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: 'red',
 };
 
+const STATUS_KEYS = Object.keys(STATUS_COLORS);
+
 export function PrescriptionListPage() {
+  const { t } = useTranslation('rx');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const canWrite = useHasPermission('rx.prescription.create') || useHasPermission('sales.write');
@@ -47,6 +40,11 @@ export function PrescriptionListPage() {
   const [activeId, setActiveId] = useState<string>();
   const [readOnlyDrawer, setReadOnlyDrawer] = useState(false);
 
+  const statusLabel = useCallback(
+    (key: string) => t(`enums.prescriptionStatus.${key}`, { defaultValue: key }),
+    [t],
+  );
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -59,11 +57,11 @@ export function PrescriptionListPage() {
       setItems(result.items);
       setTotal(result.total);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được danh sách đơn thuốc'));
+      message.error(apiErrorMessage(error, t('prescriptions.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [status, phoneSearch, page, pageSize]);
+  }, [status, phoneSearch, page, pageSize, t]);
 
   useEffect(() => {
     void load();
@@ -99,12 +97,12 @@ export function PrescriptionListPage() {
   const columns: ColumnsType<RxPrescriptionListItem> = useMemo(
     () => [
       {
-        title: 'Mã đơn',
+        title: t('prescriptions.columns.code'),
         dataIndex: 'prescriptionCode',
         width: 140,
       },
       {
-        title: 'Bệnh nhân',
+        title: t('prescriptions.columns.patient'),
         key: 'patient',
         render: (_, row) => (
           <div>
@@ -114,63 +112,67 @@ export function PrescriptionListPage() {
         ),
       },
       {
-        title: 'Bác sĩ kê',
+        title: t('prescriptions.columns.prescriber'),
         dataIndex: 'prescriberName',
       },
       {
-        title: 'Trạng thái',
+        title: t('prescriptions.columns.status'),
         dataIndex: 'status',
-        width: 150,
+        width: 160,
         render: (value: string) => (
-          <Tag color={STATUS_COLORS[value] || 'default'}>{STATUS_LABELS[value] || value}</Tag>
+          <Tag color={STATUS_COLORS[value] || 'default'}>{statusLabel(value)}</Tag>
         ),
       },
       {
-        title: 'Ngày tạo',
+        title: t('prescriptions.columns.createdAt'),
         dataIndex: 'createdAt',
         width: 150,
         render: (value: string) => dayjs(value).format('DD/MM/YYYY HH:mm'),
       },
       {
-        title: 'Thao tác',
+        title: t('prescriptions.columns.actions'),
         key: 'actions',
-        width: 260,
+        width: 280,
         render: (_, row) => (
           <Space size={4} onClick={(event) => event.stopPropagation()}>
             <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => openView(row.id)}>
-              Xem
+              {t('prescriptions.actions.view')}
             </Button>
             {canWrite ? (
               <Button type="link" size="small" onClick={() => openEdit(row.id)}>
-                Sửa
+                {t('prescriptions.actions.edit')}
               </Button>
             ) : null}
             {canVerify && row.status === 'pending_verification' ? (
               <Button type="link" size="small" onClick={() => openEdit(row.id)}>
-                Xác minh
+                {t('prescriptions.actions.verify')}
               </Button>
             ) : null}
-            <Button type="link" size="small" onClick={() => navigate(`/sales/pos?prescriptionId=${row.id}`)}>
-              Nạp POS
+            <Button
+              type="link"
+              size="small"
+              onClick={() => navigate(`/sales/pos?prescriptionId=${row.id}`)}
+            >
+              {t('prescriptions.actions.loadPos')}
             </Button>
           </Space>
         ),
       },
     ],
-    [canWrite, canVerify, navigate],
+    [canWrite, canVerify, navigate, statusLabel, t],
   );
 
   return (
     <Card
-      title="Đơn thuốc"
+      title={t('prescriptions.title')}
       extra={
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-            Tải lại
+            {t('prescriptions.reload')}
           </Button>
           {canWrite ? (
             <Button type="primary" onClick={openCreate}>
-              Tạo đơn thuốc
+              {t('prescriptions.create')}
             </Button>
           ) : null}
         </Space>
@@ -179,18 +181,18 @@ export function PrescriptionListPage() {
       <Space style={{ marginBottom: 12 }} wrap>
         <Select
           allowClear
-          placeholder="Trạng thái"
+          placeholder={t('prescriptions.filterStatus')}
           style={{ width: 200 }}
           value={status}
           onChange={(value) => {
             setStatus(value);
             setPage(1);
           }}
-          options={Object.keys(STATUS_LABELS).map((key) => ({ value: key, label: STATUS_LABELS[key] }))}
+          options={STATUS_KEYS.map((key) => ({ value: key, label: statusLabel(key) }))}
         />
         <Input
           allowClear
-          placeholder="Tìm theo SĐT bệnh nhân"
+          placeholder={t('prescriptions.filterPhone')}
           style={{ width: 250 }}
           value={phoneSearch}
           onChange={(event) => setPhoneSearch(event.target.value)}
@@ -205,7 +207,7 @@ export function PrescriptionListPage() {
             void load();
           }}
         >
-          Lọc
+          {t('prescriptions.filter')}
         </Button>
       </Space>
 
@@ -235,10 +237,7 @@ export function PrescriptionListPage() {
         prescriptionId={activeId}
         readOnly={readOnlyDrawer}
         onClose={() => setDrawerOpen(false)}
-        onSaved={() => {
-          setDrawerOpen(false);
-          void load();
-        }}
+        onSaved={() => void load()}
       />
     </Card>
   );

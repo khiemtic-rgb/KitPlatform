@@ -2,11 +2,11 @@ import { useEffect, useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   FormOutlined,
-  FundOutlined,
   ProfileOutlined,
   RocketOutlined,
+  SolutionOutlined,
   TeamOutlined,
-  UsergroupAddOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useRegisterSimpleModuleSubnav } from '@/shared/components/module-subnav.context';
 import { useKapAdminAccess } from '@/shared/hooks/useKapAdminAccess';
@@ -18,11 +18,11 @@ export function KapLayout() {
 
   const tabs = useMemo(
     () => [
-      { key: 'leads', label: 'Leads', path: '/kap/leads', icon: <TeamOutlined /> },
-      { key: 'partners', label: 'Đối tác', path: '/kap/partners', icon: <UsergroupAddOutlined /> },
+      { key: 'leads', label: 'Khách tiềm năng', path: '/kap/leads', icon: <SolutionOutlined /> },
+      { key: 'partners', label: 'Đối tác', path: '/kap/partners', icon: <TeamOutlined /> },
       { key: 'templates', label: 'Biểu mẫu', path: '/kap/templates', icon: <ProfileOutlined /> },
-      { key: 'rules', label: 'Rules', path: '/kap/rules', icon: <FundOutlined /> },
-      { key: 'campaigns', label: 'Campaign', path: '/kap/campaigns', icon: <RocketOutlined /> },
+      { key: 'rules', label: 'Quy tắc', path: '/kap/rules', icon: <ThunderboltOutlined /> },
+      { key: 'campaigns', label: 'Chiến dịch', path: '/kap/campaigns', icon: <RocketOutlined /> },
     ],
     [],
   );
@@ -46,9 +46,9 @@ export function KapLayout() {
     <div>
       <div style={{ marginBottom: 12, padding: '8px 12px', background: '#f0fdfa', borderRadius: 8 }}>
         <FormOutlined style={{ color: '#0f766e', marginRight: 8 }} />
-        <strong>KIT Assessment Platform (KAP)</strong>
+        <strong>KAP — Khảo sát</strong>
         <span style={{ marginLeft: 8, color: '#64748b', fontSize: 13 }}>
-          Thu thập · Đánh giá · Insight · Lead
+          Thu thập · Đánh giá · Gợi ý · Khách tiềm năng
         </span>
       </div>
       <Outlet />

@@ -67,7 +67,7 @@ export const moduleRegistry: ModuleMenuItem[] = [
   {
     key: 'rx',
     label: 'rx',
-    path: '/rx/prescriptions',
+    path: '/rx/overview',
     icon: <FileProtectOutlined />,
     enabled: true,
     platformModule: ADMIN_MODULE_PLATFORM_CODES.rx,

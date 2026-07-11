@@ -116,9 +116,9 @@ export function ReceiptSettingsPage() {
     try {
       const saved = await updateRxSettings(rxSettings);
       setRxSettings(saved);
-      message.success('Đã lưu cài đặt thuốc kê đơn (Rx).');
+      message.success(t('rxCard.saveSuccess'));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không lưu được cài đặt Rx.'));
+      message.error(apiErrorMessage(error, t('rxCard.saveFailed')));
     } finally {
       setSavingRxSettings(false);
     }
@@ -185,19 +185,19 @@ export function ReceiptSettingsPage() {
         </Space>
       </Card>
 
-      <Card title="Thuốc kê đơn (Rx) — POS" loading={loading}>
+      <Card title={t('rxCard.title')} loading={loading}>
         <Space direction="vertical" size={12} style={{ maxWidth: 520, width: '100%' }}>
           <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-            Strict: chặn bán SKU kê đơn trên POS khi chưa có đơn bác sĩ (Rx-1). Mặc định Tắt — bật sau khi rà phân loại SKU.
+            {t('rxCard.hint')}
           </Typography.Text>
           <Select
             style={{ width: '100%' }}
             disabled={!canWrite}
             value={rxSettings.enforcementMode}
             options={[
-              { value: 'off', label: 'Tắt — bán Rx như hiện tại' },
-              { value: 'strict', label: 'Strict — chặn Rx không đơn BS' },
-              { value: 'warn', label: 'Cảnh báo (dự phòng)' },
+              { value: 'off', label: t('rxCard.modeOff') },
+              { value: 'strict', label: t('rxCard.modeStrict') },
+              { value: 'warn', label: t('rxCard.modeWarn') },
             ]}
             onChange={(enforcementMode: TenantRxSettings['enforcementMode']) =>
               setRxSettings((prev: TenantRxSettings) => ({ ...prev, enforcementMode }))
@@ -211,11 +211,11 @@ export function ReceiptSettingsPage() {
                 setRxSettings((prev: TenantRxSettings) => ({ ...prev, posBlockedAudit }))
               }
             />
-            <Typography.Text>Ghi log khi POS chặn thuốc kê đơn</Typography.Text>
+            <Typography.Text>{t('rxCard.auditLabel')}</Typography.Text>
           </Space>
           {canWrite ? (
             <Button type="primary" loading={savingRxSettings} onClick={() => void onSaveRxSettings()}>
-              Lưu cài đặt Rx
+              {t('rxCard.save')}
             </Button>
           ) : null}
         </Space>

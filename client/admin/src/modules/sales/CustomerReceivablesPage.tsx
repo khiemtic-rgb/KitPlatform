@@ -19,10 +19,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   fetchCustomerReceivables,
   fetchCustomerReceivablesDetail,
-  searchCustomers,
 } from '@/shared/api/sales.api';
 import type {
-  CustomerListItem,
   CustomerReceivablesDetail,
   CustomerReceivablesDetailLine,
   CustomerReceivablesRow,
@@ -32,7 +30,6 @@ import { buildCustomerPaymentCreateUrl } from '@/modules/sales/customer-payment-
 import {
   buildCustomerSearchSuggestions,
   matchesCustomerNameOrPhone,
-  resolveCustomerPhone,
 } from '@/modules/sales/sales-list-customer-search';
 import { filterBarStyle } from '@/modules/sales/sales-ui-styles';
 import { useHasPermission } from '@/shared/auth/usePermission';
@@ -49,7 +46,6 @@ export function CustomerReceivablesPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<CustomerReceivablesRow[]>([]);
-  const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [search, setSearch] = useState('');
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -68,41 +64,20 @@ export function CustomerReceivablesPage() {
 
   useEffect(() => {
     void loadSummary();
-    void searchCustomers()
-      .then(setCustomers)
-      .catch(() => {
-        /* gợi ý SĐT tùy chọn */
-      });
   }, [loadSummary]);
 
-  const rowsWithPhone = useMemo(() => {
-    const phoneById = new Map(
-      customers.map((customer) => [customer.id, customer.phone?.trim() || null]),
-    );
-    const phoneByCode = new Map(
-      customers.map((customer) => [customer.customerCode, customer.phone?.trim() || null]),
-    );
-    return rows.map((row) => ({
-      ...row,
-      customerPhone: resolveCustomerPhone(
-        row.customerPhone,
-        phoneById.get(row.customerId) ?? phoneByCode.get(row.customerCode) ?? null,
-      ),
-    }));
-  }, [rows, customers]);
-
   const searchSuggestions = useMemo(
-    () => buildCustomerSearchSuggestions(rowsWithPhone, search),
-    [rowsWithPhone, search],
+    () => buildCustomerSearchSuggestions(rows, search),
+    [rows, search],
   );
 
   const filteredRows = useMemo(() => {
     const q = search.trim();
-    if (!q) return rowsWithPhone;
-    return rowsWithPhone.filter((row) =>
+    if (!q) return rows;
+    return rows.filter((row) =>
       matchesCustomerNameOrPhone(q, row.customerName, row.customerPhone),
     );
-  }, [rowsWithPhone, search]);
+  }, [rows, search]);
 
   const totals = useMemo(
     () =>

@@ -29,7 +29,7 @@ export function KapCampaignsPage() {
       setItems(campaigns);
       setTemplates(tpls);
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được campaign'));
+      message.error(apiErrorMessage(error, 'Không tải được chiến dịch'));
     } finally {
       setLoading(false);
     }
@@ -64,33 +64,38 @@ export function KapCampaignsPage() {
       } else {
         await createSurveyCampaign(values);
       }
-      message.success('Đã lưu campaign');
+      message.success('Đã lưu chiến dịch');
       setModalOpen(false);
       void load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không lưu được campaign'));
+      message.error(apiErrorMessage(error, 'Không lưu được chiến dịch'));
     }
   };
 
   const archive = async (row: SurveyCampaign) => {
     try {
       await archiveSurveyCampaign(row.id);
-      message.success('Đã archive campaign');
+      message.success('Đã lưu trữ chiến dịch');
       void load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không archive được'));
+      message.error(apiErrorMessage(error, 'Không lưu trữ được'));
     }
   };
+
+  const statusLabel = (v: string) =>
+    v === 'active' ? 'Đang chạy' : v === 'paused' ? 'Tạm dừng' : v === 'archived' ? 'Lưu trữ' : v;
 
   const columns: ColumnsType<SurveyCampaign> = [
     { title: 'Mã', dataIndex: 'campaignCode', width: 140 },
     { title: 'Tên', dataIndex: 'campaignName', ellipsis: true },
-    { title: 'Template', dataIndex: 'templateCode', width: 130 },
+    { title: 'Biểu mẫu', dataIndex: 'templateCode', width: 130 },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
-      width: 100,
-      render: (v: string) => <Tag color={v === 'active' ? 'green' : 'default'}>{v}</Tag>,
+      width: 110,
+      render: (v: string) => (
+        <Tag color={v === 'active' ? 'green' : v === 'paused' ? 'orange' : 'default'}>{statusLabel(v)}</Tag>
+      ),
     },
     {
       title: 'Cập nhật',
@@ -114,12 +119,12 @@ export function KapCampaignsPage() {
   return (
     <>
       <Card
-        title="Campaign KAP"
+        title="Chiến dịch khảo sát"
         extra={
           <Space>
             <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading} />
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-              Tạo campaign
+              Tạo chiến dịch
             </Button>
           </Space>
         }
@@ -128,7 +133,7 @@ export function KapCampaignsPage() {
       </Card>
 
       <Modal
-        title={editing ? 'Sửa campaign' : 'Tạo campaign'}
+        title={editing ? 'Sửa chiến dịch' : 'Tạo chiến dịch'}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={() => void save()}
@@ -137,7 +142,7 @@ export function KapCampaignsPage() {
         <Form form={form} layout="vertical">
           {!editing ? (
             <>
-              <Form.Item name="templateId" label="Template" rules={[{ required: true }]}>
+              <Form.Item name="templateId" label="Biểu mẫu" rules={[{ required: true }]}>
                 <Select
                   options={templates.map((t) => ({
                     value: t.id,
@@ -145,7 +150,7 @@ export function KapCampaignsPage() {
                   }))}
                 />
               </Form.Item>
-              <Form.Item name="campaignCode" label="Mã campaign" rules={[{ required: true }]}>
+              <Form.Item name="campaignCode" label="Mã chiến dịch" rules={[{ required: true }]}>
                 <Input placeholder="PHARMACY_Q1_2026" />
               </Form.Item>
             </>
@@ -156,13 +161,17 @@ export function KapCampaignsPage() {
           <Form.Item name="status" label="Trạng thái" rules={[{ required: true }]}>
             <Select
               options={[
-                { value: 'active', label: 'active' },
-                { value: 'paused', label: 'paused' },
-                { value: 'archived', label: 'archived' },
+                { value: 'active', label: 'Đang chạy' },
+                { value: 'paused', label: 'Tạm dừng' },
+                { value: 'archived', label: 'Lưu trữ' },
               ]}
             />
           </Form.Item>
-          <Form.Item name="settingsJson" label="Settings JSON">
+          <Form.Item
+            name="settingsJson"
+            label="Cấu hình bổ sung (JSON)"
+            extra="Tùy chọn kỹ thuật — để trống {} nếu không dùng."
+          >
             <Input.TextArea rows={4} />
           </Form.Item>
         </Form>

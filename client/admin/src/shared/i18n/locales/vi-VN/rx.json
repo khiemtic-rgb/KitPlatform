@@ -1,9 +1,169 @@
 {
   "rxLayout": {
     "tabs": {
-      "prescriptions": "Danh sách đơn",
-      "prescribers": "Bác sĩ",
-      "prescriberLinks": "Mạng BS"
+      "overview": "Tổng quan",
+      "prescriptions": "Đơn thuốc",
+      "prescribers": "Bác sĩ kê",
+      "prescriberLinks": "Mạng bác sĩ"
+    }
+  },
+  "enums": {
+    "prescriptionStatus": {
+      "draft": "Nháp",
+      "pending_verification": "Chờ xác minh",
+      "verified": "Đã xác minh",
+      "signed": "Đã ký",
+      "partially_dispensed": "Cấp phát một phần",
+      "dispensed": "Đã cấp phát",
+      "expired": "Hết hạn",
+      "cancelled": "Đã hủy"
+    },
+    "linkStatus": {
+      "active": "Đang liên kết",
+      "pending_nt_invite": "Chờ bác sĩ chấp nhận",
+      "pending_nt_approval": "Chờ nhà thuốc duyệt",
+      "rejected": "Từ chối",
+      "revoked": "Đã thu hồi"
+    },
+    "initiatedBy": {
+      "tenant": "Nhà thuốc",
+      "prescriber": "Bác sĩ",
+      "system": "Hệ thống"
+    },
+    "prescriberStatus": {
+      "1": "Đang dùng",
+      "0": "Ngưng"
+    }
+  },
+  "dashboard": {
+    "title": "Tổng quan Đơn BS",
+    "subtitle": "Theo dõi đơn chờ cấp phát, mạng bác sĩ và SLA",
+    "refresh": "Làm mới",
+    "loadFailed": "Không tải được tổng quan Đơn BS",
+    "signedThisMonth": "Đơn tháng này",
+    "pendingDispense": "Chờ cấp phát",
+    "overdue": "Quá 24 giờ",
+    "pendingLinks": "Chờ duyệt liên kết",
+    "pendingLinksHint": "Có bác sĩ đang xin liên kết — duyệt tại Mạng bác sĩ.",
+    "openLinks": "Mở Mạng bác sĩ",
+    "activeLinks": "BS đang liên kết",
+    "pendingVerify": "Chờ xác minh",
+    "avgSla": "SLA cấp phát TB",
+    "hours": "giờ",
+    "portalShare": "Tỷ lệ đơn portal",
+    "topPrescribers": "Top bác sĩ",
+    "pendingQueue": "Hàng chờ cấp phát",
+    "emptyTop": "Chưa có đơn từ bác sĩ",
+    "emptyPending": "Không có đơn chờ cấp phát",
+    "colDoctor": "Bác sĩ",
+    "colMonth": "Tháng này",
+    "colTotal": "Tổng",
+    "colRx": "Đơn",
+    "colWait": "Chờ",
+    "colSigned": "Ký lúc"
+  },
+  "prescriptions": {
+    "title": "Đơn thuốc",
+    "create": "Tạo đơn thuốc",
+    "reload": "Tải lại",
+    "loadFailed": "Không tải được danh sách đơn thuốc",
+    "filterStatus": "Trạng thái",
+    "filterPhone": "Tìm theo SĐT bệnh nhân",
+    "filter": "Lọc",
+    "columns": {
+      "code": "Mã đơn",
+      "patient": "Bệnh nhân",
+      "prescriber": "Bác sĩ kê",
+      "status": "Trạng thái",
+      "createdAt": "Ngày tạo",
+      "actions": "Thao tác"
+    },
+    "actions": {
+      "view": "Xem",
+      "edit": "Sửa",
+      "verify": "Xác minh",
+      "loadPos": "Nạp quầy"
+    }
+  },
+  "prescribers": {
+    "title": "Bác sĩ kê đơn",
+    "add": "Thêm bác sĩ",
+    "edit": "Cập nhật bác sĩ kê đơn",
+    "create": "Thêm bác sĩ kê đơn",
+    "reload": "Tải lại",
+    "loadFailed": "Không tải được danh sách bác sĩ kê đơn",
+    "deleteConfirm": "Xóa bác sĩ này?",
+    "deleteSuccess": "Đã xóa bác sĩ kê đơn",
+    "deleteFailed": "Không xóa được bác sĩ",
+    "updateSuccess": "Đã cập nhật bác sĩ kê đơn",
+    "createSuccess": "Đã thêm bác sĩ kê đơn",
+    "saveFailedUpdate": "Không cập nhật được bác sĩ",
+    "saveFailedCreate": "Không tạo được bác sĩ",
+    "columns": {
+      "fullName": "Họ tên",
+      "license": "Số CCHN",
+      "phone": "Điện thoại",
+      "specialty": "Chuyên khoa",
+      "status": "Trạng thái",
+      "actions": "Thao tác"
+    },
+    "form": {
+      "fullName": "Họ tên",
+      "fullNameRequired": "Nhập họ tên bác sĩ",
+      "fullNamePlaceholder": "Nguyễn Văn A",
+      "license": "Số CCHN",
+      "licenseRequired": "Nhập số chứng chỉ hành nghề (CCHN)",
+      "licenseExtra": "Bắt buộc để đối chiếu khi thanh tra / kiểm tra",
+      "licensePlaceholder": "Số CCHN",
+      "phone": "Điện thoại",
+      "phonePlaceholder": "09xxxxxxxx",
+      "specialty": "Chuyên khoa",
+      "specialtyPlaceholder": "Nội tổng quát"
+    },
+    "actions": {
+      "edit": "Sửa",
+      "delete": "Xóa"
+    }
+  },
+  "links": {
+    "pendingTitle": "Hàng chờ duyệt liên kết",
+    "networkTitle": "Mạng bác sĩ",
+    "invite": "Mời bác sĩ",
+    "inviteTitle": "Mời bác sĩ liên kết",
+    "reload": "Tải lại",
+    "loadFailed": "Không tải được liên kết bác sĩ",
+    "emptyPending": "Không có yêu cầu chờ duyệt",
+    "filterStatus": "Lọc trạng thái",
+    "inviteSuccess": "Đã gửi lời mời bác sĩ",
+    "inviteFailed": "Không gửi được lời mời",
+    "approveSuccess": "Đã duyệt liên kết",
+    "approveFailed": "Không duyệt được",
+    "rejectSuccess": "Đã từ chối yêu cầu",
+    "rejectFailed": "Không từ chối được",
+    "revokeConfirm": "Thu hồi liên kết?",
+    "revokeSuccess": "Đã thu hồi liên kết",
+    "revokeFailed": "Không thu hồi được",
+    "columns": {
+      "doctor": "Bác sĩ",
+      "license": "CCHN",
+      "status": "Trạng thái",
+      "initiatedBy": "Khởi tạo",
+      "actions": "Thao tác"
+    },
+    "actions": {
+      "approve": "Duyệt",
+      "reject": "Từ chối",
+      "revoke": "Thu hồi"
+    },
+    "form": {
+      "fullName": "Họ tên bác sĩ",
+      "phone": "Số điện thoại (OTP portal)",
+      "license": "Số CCHN",
+      "licenseRequired": "Nhập số chứng chỉ hành nghề (CCHN)",
+      "licenseExtra": "Bắt buộc — không kê đơn / duyệt liên kết nếu thiếu CCHN",
+      "licensePlaceholder": "Số CCHN",
+      "specialty": "Chuyên khoa",
+      "notes": "Ghi chú"
     }
   }
 }

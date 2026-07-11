@@ -79,7 +79,7 @@ export function ProductListPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkLinkingSdk, setBulkLinkingSdk] = useState(false);
-  const [suggestionProducts, setSuggestionProducts] = useState<ProductListItem[]>([]);
+  const [productSuggestions, setProductSuggestions] = useState<{ value: string; label: string }[]>([]);
   const [nationalDrugLive, setNationalDrugLive] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -157,32 +157,39 @@ export function ProductListPage() {
     Promise.all([fetchCategoryLookups(), fetchBrandLookups()])
       .then(([categories, brands]) => setFilterLookups({ categories, brands }))
       .catch(() => {});
-    fetchProducts({ page: 1, pageSize: 200 })
-      .then((data) => setSuggestionProducts(data.items ?? []))
-      .catch(() => {});
   }, []);
 
-  const productSuggestions = useMemo(() => {
-    const q = searchInput.trim().toLowerCase();
-    const filtered = suggestionProducts.filter((p) => {
-      if (!q) return true;
-      return (
-        p.productCode.toLowerCase().includes(q) ||
-        p.productName.toLowerCase().includes(q) ||
-        (p.primaryBarcode?.toLowerCase().includes(q) ?? false) ||
-        (p.genericName?.toLowerCase().includes(q) ?? false)
-      );
-    });
-    return filtered.slice(0, 20).map((p) => ({
-      value: p.id,
-      label: `${p.productCode} — ${p.productName}${p.primaryBarcode ? ` · ${p.primaryBarcode}` : ''}`,
-    }));
-  }, [suggestionProducts, searchInput]);
+  useEffect(() => {
+    const q = searchInput.trim();
+    if (q.length < 2) {
+      setProductSuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void fetchProducts({ search: q, page: 1, pageSize: 12 })
+        .then((data) => {
+          if (cancelled) return;
+          setProductSuggestions(
+            (data.items ?? []).map((p) => ({
+              value: p.primaryBarcode || p.productCode || p.productName,
+              label: `${p.productCode} — ${p.productName}${p.primaryBarcode ? ` · ${p.primaryBarcode}` : ''}`,
+            })),
+          );
+        })
+        .catch(() => {
+          if (!cancelled) setProductSuggestions([]);
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [searchInput]);
 
-  const selectSuggestedProduct = (productId: string) => {
-    const product = suggestionProducts.find((p) => p.id === productId);
-    if (!product) return;
-    const text = product.primaryBarcode || product.productCode || product.productName;
+  const selectSuggestedProduct = (value: string) => {
+    const text = value.trim();
+    if (!text) return;
     setSearchInput(text);
     setPage(1);
     setSearch(text);
@@ -380,7 +387,7 @@ export function ProductListPage() {
               style={{ width: 280 }}
               options={productSuggestions}
               value={searchInput}
-              onSelect={(id) => selectSuggestedProduct(String(id))}
+              onSelect={(value) => selectSuggestedProduct(String(value))}
               onChange={(value) => {
                 setSearchInput(value);
                 if (!value) {
@@ -410,7 +417,7 @@ export function ProductListPage() {
                 {t('nationalLookup')}
               </Button>
               <Button
-                icon={<CloudSyncOutlined />}
+                icon={<DatabaseOutlined />}
                 loading={bulkLinkingSdk}
                 onClick={() => void handleBulkLinkSdk()}
               >

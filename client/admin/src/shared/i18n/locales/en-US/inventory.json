@@ -8,7 +8,7 @@
       "5": "Returns warehouse"
     },
     "transferStatus": {
-      "1": "Pending completion",
+      "1": "Pending",
       "2": "In transit",
       "3": "Completed",
       "4": "Cancelled"
@@ -26,19 +26,19 @@
   },
   "inventoryLayout": {
     "tabs": {
-      "opening": "Opening balance",
       "stock": "Stock",
       "lowStock": "Low stock",
-      "gppChecklist": "GPP checklist",
-      "transfers": "Transfers",
       "adjustments": "Stock count",
+      "transfers": "Transfers",
+      "opening": "Opening balance",
       "warehouses": "Warehouses",
-      "qd540Export": "QĐ 540 export"
+      "gppChecklist": "GPP ops",
+      "qd540Export": "QĐ 540"
     }
   },
   "qd540Export": {
-    "title": "QĐ 540 Table 1 export",
-    "subtitle": "Purchase / sale / batch — pre-interconnection test",
+    "title": "QĐ 540 export",
+    "subtitle": "Table 1 — purchase / sale / batch (pre-interconnection test)",
     "hint": "Configure retail facility code (System → Branches), wholesale supplier code (Procurement → Suppliers), supplier invoice on GRN, and product QĐ 540 fields before export.",
     "empty": "No rows — select a date range and preview",
     "warningsTitle": "{{count}} warnings · skipped {{skipped}} rows",
@@ -158,7 +158,7 @@
     }
   },
   "warehouseList": {
-    "title": "Warehouse list",
+    "title": "Warehouses",
     "addWarehouse": "Add warehouse",
     "editWarehouse": "Edit warehouse",
     "deleteConfirm": "Delete this warehouse?",
@@ -327,8 +327,8 @@
     "confirmTitle": "Confirm before approving:"
   },
   "lowStock": {
-    "title": "Low stock alerts",
-    "description": "Threshold priority: product → warehouse → category → global setting → default 10. When viewing all warehouses, each row is a product–warehouse pair.",
+    "title": "Low stock",
+    "description": "Threshold priority: product → warehouse → category → global setting → default 10. Defaults to the main warehouse; choose «All warehouses» to scan everything.",
     "allWarehouses": "All warehouses",
     "columns": {
       "currentStock": "Current stock",
@@ -493,11 +493,11 @@
       "manager": "Manager",
       "signHint": "(Signature, name)"
     },
-    "footnote": "Printed from KitPlatform — for reference only before approval."
+    "footnote": "Printed from Novixa — for reference only before approval."
   },
   "gppChecklist": {
-    "title": "GPP operations checklist",
-    "description": "Track daily/weekly/monthly habits after go-live. Stored locally in the browser — not a formal GPP record.",
+    "title": "GPP operations",
+    "description": "Daily/weekly/monthly habit checklist after go-live. Stored on the server — synced across devices signed into the same pharmacy.",
     "disclaimer": "Hypercare weeks 2–4 internal tool. Tick when done; reset at period start.",
     "progress": "{{done}}/{{total}} items",
     "reset": "Reset checklist",

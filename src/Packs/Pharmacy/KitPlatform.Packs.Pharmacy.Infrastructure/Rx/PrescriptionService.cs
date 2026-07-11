@@ -163,4 +163,7 @@ internal sealed class PrescriptionService : IPrescriptionService
             await _branchAccess.EnsureBranchAccessAsync(branchId, cancellationToken);
         return item;
     }
+
+    public Task<TenantRxDashboardDto> GetTenantDashboardAsync(CancellationToken cancellationToken = default) =>
+        _repository.GetTenantDashboardAsync(cancellationToken);
 }

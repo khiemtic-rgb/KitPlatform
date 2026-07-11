@@ -256,7 +256,7 @@ export function HubPage() {
               compact
               icon={<ImportOutlined />}
               label="Nhập hàng"
-              hint="GRN · lô/HSD · chốt tồn"
+              hint="Phiếu nhập · lô/HSD · cập nhật tồn"
               onClick={() => navigate('/goods-receipt')}
             />
           ) : null}

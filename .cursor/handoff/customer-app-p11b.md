@@ -104,7 +104,8 @@ cd client\customer-app; npm run build
 
 ## S3 — UAT & Gate G1
 
-- [ ] Chạy UAT 6 kịch bản × 3 NT — [phase gates G1.4](../../docs/novixa/07-customer/customer-app-phase-gates-v1.md)
+- [x] Dev UAT 6 kịch bản trên `DEMO_PHARMACY` (2026-07-11) — xem G1.4 cột DEMO
+- [ ] Chạy UAT 6 kịch bản × 3 NT pilot — [phase gates G1.4](../../docs/novixa/07-customer/customer-app-phase-gates-v1.md)
 - [ ] Đo G1.2 push ≥90%, G1.3 API <1% 5xx (7 ngày)
 - [ ] Rollback playbook: tắt `CustomerAppPush:Enabled` nếu spam
 - [ ] Chữ ký G1 — mở **P15** (Track B)

@@ -349,11 +349,7 @@ export function ReportViewPage() {
               <>
                 {loadError}
                 {loadError.includes('404') || loadError.toLowerCase().includes('not found') ? (
-                  <div style={{ marginTop: 8 }}>
-                    {t('loadFailedHint')}{' '}
-                    <Typography.Text code>.\scripts\restart-api.ps1</Typography.Text>{' '}
-                    {t('loadFailedHintAfter')}
-                  </div>
+                  <div style={{ marginTop: 8 }}>{t('loadFailedHint')}</div>
                 ) : null}
               </>
             }

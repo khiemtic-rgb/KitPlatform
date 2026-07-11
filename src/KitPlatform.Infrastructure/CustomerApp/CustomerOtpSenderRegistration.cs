@@ -27,20 +27,28 @@ internal static class CustomerOtpSenderRegistration
             }
         }
 
-        if (environment.IsDevelopment())
-        {
-            services.AddSingleton<ICustomerOtpSender, LogCustomerOtpSender>();
-            return services;
-        }
-
         var provider = configuration.GetSection(CustomerAppSmsSettings.SectionName)["Provider"] ?? "Http";
-        if (provider.Equals("Log", StringComparison.OrdinalIgnoreCase))
+        var useLog = environment.IsDevelopment()
+            || provider.Equals("Log", StringComparison.OrdinalIgnoreCase);
+
+        if (useLog)
         {
             services.AddSingleton<ICustomerOtpSender, LogCustomerOtpSender>();
+            services.AddSingleton<ISmsTextSender, LogSmsTextSender>();
             return services;
         }
 
         services.AddHttpClient<ICustomerOtpSender, HttpCustomerOtpSender>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+            client.DefaultRequestVersion = new Version(1, 1);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+        {
+            ConnectTimeout = TimeSpan.FromSeconds(5),
+        });
+
+        services.AddHttpClient<ISmsTextSender, HttpSmsTextSender>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(15);
             client.DefaultRequestVersion = new Version(1, 1);

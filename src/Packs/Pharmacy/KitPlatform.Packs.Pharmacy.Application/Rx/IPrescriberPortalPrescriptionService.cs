@@ -29,6 +29,18 @@ public interface IPrescriberPortalPrescriptionService
         Guid prescriptionId,
         CancellationToken cancellationToken = default);
 
+    Task<PortalPrescriptionDetailDto> AmendSignedPrescriptionAsync(
+        Guid prescriberId,
+        Guid prescriptionId,
+        PortalAmendPrescriptionRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<PortalPrescriptionDetailDto?> CancelPrescriptionAsync(
+        Guid prescriberId,
+        Guid prescriptionId,
+        string? reason = null,
+        CancellationToken cancellationToken = default);
+
     Task<PortalPrescriberDashboardDto> GetDashboardAsync(
         Guid prescriberId,
         CancellationToken cancellationToken = default);

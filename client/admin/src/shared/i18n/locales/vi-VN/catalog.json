@@ -24,18 +24,18 @@
     }
   },
   "products": {
-    "title": "Danh mục sản phẩm",
+    "title": "Sản phẩm",
     "deleteConfirm": "Xóa sản phẩm này?",
     "bulkDeleteConfirm": "Xóa {{count}} sản phẩm đã chọn?",
     "bulkDeleteButton": "Xóa đã chọn ({{count}})",
     "searchPlaceholder": "Tìm tên hoặc mã vạch...",
     "search": "Tìm",
     "importExcel": "Import Excel",
-    "nationalLookup": "Tra cứu QG",
-    "bulkLinkSdk": "Gợi ý SĐK hàng loạt",
+    "nationalLookup": "Tra cứu dược quốc gia",
+    "bulkLinkSdk": "Gợi ý số đăng ký hàng loạt",
     "viewStock": "Tồn kho",
-    "nationalMockBannerTitle": "CSDL Dược QG — đang dùng dữ liệu mock",
-    "nationalMockBannerDescription": "Tra cứu trên trang SP là bộ mẫu nội bộ, không thay tra cứu chính thức. Khi có liên thông: đặt NationalDrugCatalog__Mode=sandbox hoặc live trên API.",
+    "nationalMockBannerTitle": "CSDL dược quốc gia — đang dùng dữ liệu mẫu",
+    "nationalMockBannerDescription": "Tra cứu trên trang sản phẩm là bộ mẫu nội bộ, không thay tra cứu chính thức. Khi có liên thông: đặt NationalDrugCatalog__Mode=sandbox hoặc live trên API.",
     "addProduct": "Thêm sản phẩm",
     "filterActiveAlert": "Đang lọc sản phẩm — có thể không thấy đủ danh sách.",
     "clearFilters": "Xóa bộ lọc",
@@ -60,7 +60,7 @@
       "barcode": "Barcode",
       "productName": "Tên sản phẩm",
       "genericName": "Hoạt chất",
-      "saleUnit": "ĐVT bán lẻ",
+      "saleUnit": "Đơn vị bán lẻ",
       "retailPrice": "Giá lẻ",
       "status": "Trạng thái",
       "actions": "Thao tác"
@@ -79,17 +79,17 @@
       "deleteFailed": "Không xóa được sản phẩm",
       "bulkDeleteSuccess": "Đã xóa {{count}} sản phẩm",
       "bulkDeleteFailed": "Không xóa được các sản phẩm đã chọn",
-      "bulkLinkSdkSuccess": "Đã quét {{scanned}} SP — cập nhật {{updated}}, bỏ qua {{skipped}}",
-      "bulkLinkSdkFailed": "Không gợi ý được SĐK hàng loạt"
+      "bulkLinkSdkSuccess": "Đã quét {{scanned}} sản phẩm — cập nhật {{updated}}, bỏ qua {{skipped}}",
+      "bulkLinkSdkFailed": "Không gợi ý được số đăng ký hàng loạt"
     }
   },
   "catalogLayout": {
     "tabs": {
       "products": "Sản phẩm",
-      "categories": "Danh mục SP",
+      "categories": "Danh mục",
       "brands": "Thương hiệu",
       "ingredients": "Hoạt chất",
-      "nationalDrugs": "Tra cứu QG"
+      "nationalDrugs": "Dược quốc gia"
     }
   },
   "shared": {
@@ -138,7 +138,7 @@
     }
   },
   "categories": {
-    "title": "Danh mục sản phẩm",
+    "title": "Danh mục",
     "add": "Thêm danh mục",
     "deleteConfirm": "Xóa danh mục này?",
     "drawer": {
@@ -162,7 +162,7 @@
       "name": "Tên danh mục",
       "parent": "Danh mục cha",
       "sortOrder": "Thứ tự",
-      "minStockQty": "Tồn TT"
+      "minStockQty": "Tồn tối thiểu"
     },
     "messages": {
       "loadFailed": "Không tải được danh mục",
@@ -203,7 +203,7 @@
   },
   "import": {
     "title": "Import sản phẩm (Excel/CSV)",
-    "intro": "Cột tối thiểu: product_name, khuyến nghị thêm barcode, retail_price, min_stock_qty. Mã SP trùng sẽ bỏ qua. File lớn được gửi theo lô 500 dòng — giữ tab mở vài phút.",
+    "intro": "Cột tối thiểu: product_name, khuyến nghị thêm barcode, retail_price, min_stock_qty. Mã sản phẩm trùng sẽ bỏ qua. File lớn được gửi theo lô 500 dòng — giữ tab mở vài phút.",
     "downloadTemplate": "Tải mẫu CSV",
     "chooseFile": "Chọn file Excel/CSV",
     "importButton": "Import",
@@ -215,12 +215,12 @@
     "previewTitle": "Xem trước ({{count}} dòng)",
     "columns": {
       "row": "Dòng",
-      "productCode": "Mã SP",
-      "productName": "Tên SP",
+      "productCode": "Mã sản phẩm",
+      "productName": "Tên sản phẩm",
       "barcode": "Barcode",
-      "unit": "ĐVT",
+      "unit": "Đơn vị tính",
       "retailPrice": "Giá bán",
-      "minStockQty": "Tồn TT",
+      "minStockQty": "Tồn tối thiểu",
       "error": "Lỗi"
     },
     "messages": {
@@ -232,56 +232,57 @@
     }
   },
   "nationalDrugs": {
-    "alertTitleMock": "Tra cứu CSDL Dược QG — DỮ LIỆU THAM KHẢO (chưa liên thông Bộ Y tế)",
-    "alertTitleLive": "Tra cứu CSDL Dược QG — Liên thông QĐ 522",
+    "alertTitleMock": "Tra cứu CSDL dược quốc gia — dữ liệu tham khảo (chưa liên thông Bộ Y tế)",
+    "alertTitleLive": "Tra cứu CSDL dược quốc gia — Liên thông QĐ 522",
     "alertDescriptionMock": "Đang dùng bộ dữ liệu mẫu nội bộ (mock). Không thay thế tra cứu chính thức. Khi có tài khoản liên thông: cấu hình NationalDrugCatalog:Mode = sandbox hoặc live trên API.",
     "alertDescriptionLive": "Đang kết nối nguồn dữ liệu quốc gia theo QĐ 522.",
-    "alertTitle": "Tra cứu CSDL Dược QG — MVP mock (QĐ 522)",
+    "alertTitle": "Tra cứu CSDL dược quốc gia — MVP mock (QĐ 522)",
     "alertDescriptionDefault": "Dữ liệu mẫu nội bộ. Khi có tài khoản liên thông: cấu hình NationalDrugCatalog:Mode = sandbox hoặc live.",
-    "listTitle": "Danh mục CSDL Dược QG",
-    "searchPlaceholder": "Mã QG, số ĐK, tên, hoạt chất, barcode…",
+    "listTitle": "Tra cứu dược quốc gia",
+    "searchPlaceholder": "Mã quốc gia, số đăng ký, tên, hoạt chất, barcode…",
     "search": "Tìm",
-    "detailTitle": "Chi tiết bản ghi QG",
+    "searchBeforeHint": "Nhập từ khóa rồi bấm Tìm để tra cứu.",
+    "detailTitle": "Chi tiết bản ghi quốc gia",
     "createProduct": "Tạo sản phẩm",
     "selectRowHint": "Chọn một dòng trong bảng để xem chi tiết.",
     "fieldMapTitle": "Map field QĐ 522 → Danh mục nhà thuốc",
     "fieldMapIntro": "Tham chiếu khi triển khai connector thật. MVP mock dùng cùng mapping để điền form tạo sản phẩm.",
     "columns": {
-      "nationalId": "Mã QG",
-      "registrationNumber": "Số ĐK",
+      "nationalId": "Mã quốc gia",
+      "registrationNumber": "Số đăng ký",
       "productName": "Tên thuốc",
       "ingredient": "Hoạt chất",
-      "unit": "ĐVT",
+      "unit": "Đơn vị",
       "category": "Loại"
     },
     "fieldMapColumns": {
-      "nationalLabel": "Trường QG (QĐ 522)",
+      "nationalLabel": "Trường quốc gia (QĐ 522)",
       "nationalField": "Mã API",
       "productLabel": "→ Trường ERP",
       "productField": "Mã ERP",
       "notes": "Ghi chú"
     },
     "detail": {
-      "nationalId": "Mã QG",
-      "registrationNumber": "Số ĐK",
+      "nationalId": "Mã quốc gia",
+      "registrationNumber": "Số đăng ký",
       "productName": "Tên thuốc",
       "ingredient": "Hoạt chất",
       "dosageForm": "Dạng bào chế",
       "packaging": "Quy cách",
-      "unit": "ĐVT",
-      "manufacturer": "NSX",
+      "unit": "Đơn vị",
+      "manufacturer": "Nhà sản xuất",
       "countryOfOrigin": "Xuất xứ",
       "category": "Loại",
       "barcode": "Barcode",
       "atc": "ATC",
-      "registrationExpiry": "HSD ĐK"
+      "registrationExpiry": "HSD đăng ký"
     },
     "messages": {
-      "configLoadFailed": "Không tải được cấu hình tra cứu dược QG",
-      "searchFailed": "Không tra cứu được danh mục dược QG",
-      "detailLoadFailed": "Không tải được chi tiết thuốc QG",
+      "configLoadFailed": "Không tải được cấu hình tra cứu dược quốc gia",
+      "searchFailed": "Không tra cứu được danh mục dược quốc gia",
+      "detailLoadFailed": "Không tải được chi tiết thuốc quốc gia",
       "prefillFailed": "Không tạo được bản ghi điền sẵn",
-      "createSuccess": "Đã tạo {{code}} — liên kết QG {{nationalId}}"
+      "createSuccess": "Đã tạo {{code}} — liên kết quốc gia {{nationalId}}"
     }
   },
   "productForm": {
@@ -299,15 +300,15 @@
       "productName": "Tên sản phẩm",
       "genericName": "Tên hoạt chất / generic",
       "genericNameExtra": "Dùng để hiển thị và tìm kiếm. Có thể gợi ý từ tab Hoạt chất.",
-      "saleUnitName": "ĐVT cơ sở",
-      "saleUnitHint": "ĐVT cơ sở được tạo khi tạo sản phẩm. Thêm Hộp, Vỉ… ở tab Chi tiết sản phẩm → ĐVT quy đổi.",
+      "saleUnitName": "Đơn vị cơ sở",
+      "saleUnitHint": "Đơn vị cơ sở được tạo khi tạo sản phẩm. Thêm Hộp, Vỉ… ở tab Chi tiết sản phẩm → Đơn vị quy đổi.",
       "drugType": "Loại thuốc",
       "categoryId": "Danh mục",
       "brandId": "Thương hiệu",
       "description": "Mô tả",
       "status": "Trạng thái",
       "minStockQty": "Tồn tối thiểu (cảnh báo)",
-      "nationalRegistrationNumber": "Số ĐK lưu hành",
+      "nationalRegistrationNumber": "Số đăng ký lưu hành",
       "nationalRegistrationNumberHint": "so_dang_ky — bắt buộc khi xuất liên thông QĐ 540",
       "dosageForm": "Dạng bào chế",
       "dosageFormHint": "dang_bao_che — tối đa 20 ký tự",
@@ -321,9 +322,9 @@
     "placeholders": {
       "loadingCode": "Đang lấy mã...",
       "genericName": "VD: Paracetamol 500 mg",
-      "saleUnitName": "ĐVT nhỏ nhất (VD: Viên)",
+      "saleUnitName": "Đơn vị nhỏ nhất (VD: Viên)",
       "minStockQty": "Mặc định 10 nếu để trống",
-      "unit": "ĐVT",
+      "unit": "Đơn vị tính",
       "barcode": "Nhập mã barcode...",
       "salePrice": "Giá bán",
       "imageUrl": "Hoặc dán URL ảnh...",
@@ -332,10 +333,10 @@
     "sections": {
       "detailsHint": "Mỗi lần bấm Thêm sẽ lưu ngay.",
       "qd540": "Liên thông dược (QĐ 540)",
-      "units": "ĐVT quy đổi",
+      "units": "Đơn vị quy đổi",
       "barcode": "Barcode",
       "prices": "Giá bán",
-      "images": "Ảnh SP",
+      "images": "Ảnh sản phẩm",
       "ingredients": "Thành phần hoạt chất và hàm lượng",
       "detailsTab": "chi tiết sản phẩm",
       "ingredientsTab": "hoạt chất"
@@ -389,12 +390,12 @@
       "fillGeneralBeforeBarcode": "Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập mã barcode.",
       "fillGeneralBeforePrice": "Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập giá bán.",
       "fillGeneralBeforeImage": "Vui lòng nhập đầy đủ thông tin sản phẩm trước khi thêm hình ảnh.",
-      "fillGeneralBeforeUnits": "Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập ĐVT quy đổi.",
+      "fillGeneralBeforeUnits": "Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập đơn vị quy đổi.",
       "fillGeneralBeforeIngredients": "Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập hoạt chất.",
       "requireNameAndDrugType": "Nhập đủ tên sản phẩm và loại thuốc",
       "createFailed": "Không tạo được sản phẩm",
       "created": "Đã tạo sản phẩm {{code}}",
-      "createdHint": "Đã tạo {{code}}. Mở tab Chi tiết sản phẩm để thêm ĐVT, barcode, giá và ảnh.",
+      "createdHint": "Đã tạo {{code}}. Mở tab Chi tiết sản phẩm để thêm đơn vị tính, barcode, giá và ảnh.",
       "fetchCodeFailed": "Không lấy được mã sản phẩm mới",
       "enterBarcode": "Nhập mã barcode",
       "barcodeDuplicate": "Mã barcode đã có trong danh sách",
@@ -433,9 +434,9 @@
       "deleteFailed": "Không xóa được sản phẩm"
     },
     "nationalDrug": {
-      "linkedTitle": "Liên kết CSDL Dược QG",
-      "nationalId": "Mã QG",
-      "registrationNumber": "Số ĐK",
+      "linkedTitle": "Liên kết CSDL dược quốc gia",
+      "nationalId": "Mã quốc gia",
+      "registrationNumber": "Số đăng ký",
       "suggestedBarcode": "Barcode gợi ý",
       "suggestedBarcodeHint": "— thêm ở tab Chi tiết sau khi lưu."
     }

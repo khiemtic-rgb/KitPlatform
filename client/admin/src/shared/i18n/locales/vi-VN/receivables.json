@@ -3,10 +3,10 @@
     "navAriaLabel": "Menu công nợ",
     "loading": "Đang tải...",
     "tabs": {
-      "customerReceivables": "Công nợ KH",
-      "customerPayments": "Thu nợ KH",
+      "customerReceivables": "Công nợ khách",
+      "customerPayments": "Thu nợ khách",
       "supplierPayables": "Công nợ NCC",
-      "supplierPayments": "Trả NCC"
+      "supplierPayments": "Thanh toán NCC"
     }
   }
 }

@@ -4,7 +4,6 @@ import {
   MessageOutlined,
   PhoneOutlined,
   ShoppingCartOutlined,
-  StarFilled,
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -68,13 +67,6 @@ export function PharmacyHubPage() {
                   {branding.tagline}
                 </Typography.Text>
               ) : null}
-              <div style={{ marginTop: 8 }}>
-                <StarFilled style={{ color: '#fde047' }} />
-                <StarFilled style={{ color: '#fde047' }} />
-                <StarFilled style={{ color: '#fde047' }} />
-                <StarFilled style={{ color: '#fde047' }} />
-                <StarFilled style={{ color: '#fde047' }} />
-              </div>
             </div>
           </Space>
         </Space>

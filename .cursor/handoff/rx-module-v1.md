@@ -155,7 +155,7 @@ psql ... -f migrations/seed/002_admin_password.sql
 1. ~~**VPS pilot NT_XUANHOA:** apply **098–103**, chạy smoke~~ ✅ 2026-07-10 (migrations 102+103 applied, smoke 6/6)
 2. ~~**Manual UI:** admin `/rx/prescriber-links` + portal walkthrough~~ ✅ admin prod verified; portal local `:5175`
 3. ~~**POS strict dispense:** signed Rx → POS wizard~~ ✅ `smoke-rx2-pos-strict.ps1` 5/5 (fix `product_unit_id` + pos-load COALESCE)
-4. **Phase B (kickoff):** B4 dashboard API + B6 POS deep link — ✅ code; còn B1 templates, B3 stock warn, B5 NT dashboard, notify
+4. **Phase B:** B4/B5/B6/B3 + Notify ✅; còn **B1 templates**
 
 ## Catalog demo (BS gõ thuốc theo NT)
 
@@ -189,5 +189,5 @@ Portal: chọn NT → ô thuốc load catalog; gõ lọc live (tag Rx/OTC).
 | **B6** POS deep link | ✅ `GET .../prescriptions/{id}/share` + copy link; admin `?rx=` opens drawer |
 | B1 Mẫu đơn | Backlog |
 | B3 Cảnh báo tồn | ✅ Portal `stockAvailableQty` + UI warning (không chặn ký) |
-| B5 Dashboard NT | Backlog |
-| Notify push/SMS | Backlog |
+| **B5** Dashboard NT | ✅ `GET /api/pharmacy/prescriptions/dashboard` + tab `/rx/overview` |
+| Notify push/SMS | ✅ SMS invite/approve (ISmsTextSender); đơn mới + xin liên kết = log/in-app B5 |

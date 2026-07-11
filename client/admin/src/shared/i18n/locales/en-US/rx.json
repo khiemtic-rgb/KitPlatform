@@ -1,9 +1,169 @@
 {
   "rxLayout": {
     "tabs": {
-      "prescriptions": "Prescription list",
-      "prescribers": "Doctors",
+      "overview": "Overview",
+      "prescriptions": "Prescriptions",
+      "prescribers": "Prescribers",
       "prescriberLinks": "Doctor network"
+    }
+  },
+  "enums": {
+    "prescriptionStatus": {
+      "draft": "Draft",
+      "pending_verification": "Pending verification",
+      "verified": "Verified",
+      "signed": "Signed",
+      "partially_dispensed": "Partially dispensed",
+      "dispensed": "Dispensed",
+      "expired": "Expired",
+      "cancelled": "Cancelled"
+    },
+    "linkStatus": {
+      "active": "Active",
+      "pending_nt_invite": "Awaiting doctor accept",
+      "pending_nt_approval": "Awaiting pharmacy approval",
+      "rejected": "Rejected",
+      "revoked": "Revoked"
+    },
+    "initiatedBy": {
+      "tenant": "Pharmacy",
+      "prescriber": "Doctor",
+      "system": "System"
+    },
+    "prescriberStatus": {
+      "1": "Active",
+      "0": "Inactive"
+    }
+  },
+  "dashboard": {
+    "title": "Rx overview",
+    "subtitle": "Pending dispense, doctor network, and SLA",
+    "refresh": "Refresh",
+    "loadFailed": "Could not load Rx overview",
+    "signedThisMonth": "This month",
+    "pendingDispense": "Pending dispense",
+    "overdue": "Over 24h",
+    "pendingLinks": "Pending link approvals",
+    "pendingLinksHint": "Doctors requested a link — review in Doctor network.",
+    "openLinks": "Open network",
+    "activeLinks": "Active doctor links",
+    "pendingVerify": "Pending verification",
+    "avgSla": "Avg dispense SLA",
+    "hours": "h",
+    "portalShare": "Portal share",
+    "topPrescribers": "Top doctors",
+    "pendingQueue": "Dispense queue",
+    "emptyTop": "No doctor prescriptions yet",
+    "emptyPending": "No pending prescriptions",
+    "colDoctor": "Doctor",
+    "colMonth": "This month",
+    "colTotal": "Total",
+    "colRx": "Rx",
+    "colWait": "Wait",
+    "colSigned": "Signed"
+  },
+  "prescriptions": {
+    "title": "Prescriptions",
+    "create": "Create prescription",
+    "reload": "Reload",
+    "loadFailed": "Could not load prescriptions",
+    "filterStatus": "Status",
+    "filterPhone": "Search by patient phone",
+    "filter": "Filter",
+    "columns": {
+      "code": "Rx code",
+      "patient": "Patient",
+      "prescriber": "Prescriber",
+      "status": "Status",
+      "createdAt": "Created",
+      "actions": "Actions"
+    },
+    "actions": {
+      "view": "View",
+      "edit": "Edit",
+      "verify": "Verify",
+      "loadPos": "Load counter"
+    }
+  },
+  "prescribers": {
+    "title": "Prescribers",
+    "add": "Add doctor",
+    "edit": "Edit prescriber",
+    "create": "Add prescriber",
+    "reload": "Reload",
+    "loadFailed": "Could not load prescribers",
+    "deleteConfirm": "Delete this doctor?",
+    "deleteSuccess": "Prescriber deleted",
+    "deleteFailed": "Could not delete prescriber",
+    "updateSuccess": "Prescriber updated",
+    "createSuccess": "Prescriber added",
+    "saveFailedUpdate": "Could not update prescriber",
+    "saveFailedCreate": "Could not create prescriber",
+    "columns": {
+      "fullName": "Full name",
+      "license": "License no.",
+      "phone": "Phone",
+      "specialty": "Specialty",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "form": {
+      "fullName": "Full name",
+      "fullNameRequired": "Enter doctor name",
+      "fullNamePlaceholder": "Nguyen Van A",
+      "license": "License no.",
+      "licenseRequired": "Enter practice license number",
+      "licenseExtra": "Required for inspection / audit",
+      "licensePlaceholder": "License no.",
+      "phone": "Phone",
+      "phonePlaceholder": "09xxxxxxxx",
+      "specialty": "Specialty",
+      "specialtyPlaceholder": "General medicine"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    }
+  },
+  "links": {
+    "pendingTitle": "Pending link approvals",
+    "networkTitle": "Doctor network",
+    "invite": "Invite doctor",
+    "inviteTitle": "Invite doctor to link",
+    "reload": "Reload",
+    "loadFailed": "Could not load doctor links",
+    "emptyPending": "No pending requests",
+    "filterStatus": "Filter status",
+    "inviteSuccess": "Invite sent",
+    "inviteFailed": "Could not send invite",
+    "approveSuccess": "Link approved",
+    "approveFailed": "Could not approve",
+    "rejectSuccess": "Request rejected",
+    "rejectFailed": "Could not reject",
+    "revokeConfirm": "Revoke this link?",
+    "revokeSuccess": "Link revoked",
+    "revokeFailed": "Could not revoke",
+    "columns": {
+      "doctor": "Doctor",
+      "license": "License",
+      "status": "Status",
+      "initiatedBy": "Initiated by",
+      "actions": "Actions"
+    },
+    "actions": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "revoke": "Revoke"
+    },
+    "form": {
+      "fullName": "Doctor name",
+      "phone": "Phone (portal OTP)",
+      "license": "License no.",
+      "licenseRequired": "Enter practice license number",
+      "licenseExtra": "Required — cannot prescribe / approve link without license",
+      "licensePlaceholder": "License no.",
+      "specialty": "Specialty",
+      "notes": "Notes"
     }
   }
 }

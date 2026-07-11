@@ -25,10 +25,10 @@ export function ReferralPage() {
               style={{ marginTop: 8, background: '#0f766e' }}
               onClick={async () => {
                 await navigator.clipboard.writeText(data.referralUrl);
-                message.success('Đã copy link');
+                message.success('Đã sao chép link');
               }}
             >
-              Copy link
+              Sao chép link
             </Button>
           </div>
           <div>

@@ -24,14 +24,16 @@
     }
   },
   "products": {
-    "title": "Product catalog",
+    "title": "Products",
     "deleteConfirm": "Delete this product?",
     "bulkDeleteConfirm": "Delete {{count}} selected products?",
     "bulkDeleteButton": "Delete selected ({{count}})",
     "searchPlaceholder": "Search name or barcode...",
     "search": "Search",
     "importExcel": "Import Excel",
-    "nationalLookup": "National lookup",
+    "nationalLookup": "National drug lookup",
+    "bulkLinkSdk": "Suggest registration numbers",
+    "viewStock": "Stock",
     "nationalMockBannerTitle": "National drug DB — mock data active",
     "nationalMockBannerDescription": "Lookup uses internal sample data, not the official registry. When integrated, set NationalDrugCatalog__Mode=sandbox or live on the API.",
     "addProduct": "Add product",
@@ -76,7 +78,9 @@
       "deleteSuccess": "Product deleted",
       "deleteFailed": "Could not delete product",
       "bulkDeleteSuccess": "Deleted {{count}} products",
-      "bulkDeleteFailed": "Could not delete selected products"
+      "bulkDeleteFailed": "Could not delete selected products",
+      "bulkLinkSdkSuccess": "Scanned {{scanned}} products — updated {{updated}}, skipped {{skipped}}",
+      "bulkLinkSdkFailed": "Could not suggest registration numbers in bulk"
     }
   },
   "catalogLayout": {
@@ -85,7 +89,7 @@
       "categories": "Categories",
       "brands": "Brands",
       "ingredients": "Ingredients",
-      "nationalDrugs": "National lookup"
+      "nationalDrugs": "National drugs"
     }
   },
   "shared": {
@@ -134,7 +138,7 @@
     }
   },
   "categories": {
-    "title": "Product categories",
+    "title": "Categories",
     "add": "Add category",
     "deleteConfirm": "Delete this category?",
     "drawer": {
@@ -234,9 +238,10 @@
     "alertDescriptionLive": "Connected to the national drug catalog per Decision 522.",
     "alertTitle": "National Drug Database lookup — MVP mock (Decision 522)",
     "alertDescriptionDefault": "Internal sample data. When integration credentials are available: set NationalDrugCatalog:Mode = sandbox or live.",
-    "listTitle": "National Drug Database catalog",
+    "listTitle": "National drug lookup",
     "searchPlaceholder": "National ID, reg. no., name, ingredient, barcode…",
     "search": "Search",
+    "searchBeforeHint": "Enter a keyword and click Search to look up.",
     "detailTitle": "National record details",
     "createProduct": "Create product",
     "selectRowHint": "Select a row in the table to view details.",

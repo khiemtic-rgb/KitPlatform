@@ -65,20 +65,23 @@ Chi tiết: [docs/customer-app-push-pilot.md](../../customer-app-push-pilot.md)
 
 ### G1.4 — UAT P11a (6 kịch bản / NT)
 
-| # | Kịch bản | NT1 | NT2 | NT3 |
-|---|---|---|---|---|
-| 1 | Đăng nhập OTP → Home | ☐ | ☐ | ☐ |
-| 2 | Profile → bật push → nhận nhắc uống thuốc | ☐ | ☐ | ☐ |
-| 3 | Profile → English → refresh giữ locale | ☐ | ☐ | ☐ |
-| 4 | Nhắc tái khám / hết đơn → in-app + push | ☐ | ☐ | ☐ |
-| 5 | Chat dược sĩ (consent + tin nhắn) | ☐ | ☐ | ☐ |
-| 6 | Đơn O2O / đặt trước / POS hoàn tất | ☐ | ☐ | ☐ |
+> **Dev UAT (DEMO_PHARMACY)** — 2026-07-11 · UI `http://localhost:5174` + API `:5290`  
+> Tenant pilot thật (NT1–3) vẫn ☐ — cần ops S1.
+
+| # | Kịch bản | DEMO | NT1 | NT2 | NT3 |
+|---|---|---|---|---|---|
+| 1 | Đăng nhập OTP → Home | ✅ | ☐ | ☐ | ☐ |
+| 2 | Profile → bật push → nhận nhắc uống thuốc | ⚠️ consent+push On; delivery push chưa đo | ☐ | ☐ | ☐ |
+| 3 | Profile → English → refresh giữ locale | ✅ | ☐ | ☐ | ☐ |
+| 4 | Nhắc tái khám / hết đơn → in-app + push | ✅ in-app; push delivery chưa đo | ☐ | ☐ | ☐ |
+| 5 | Chat dược sĩ (consent + tin nhắn) | ✅ (có cảnh báo load chat thoáng qua) | ☐ | ☐ | ☐ |
+| 6 | Đơn O2O / đặt trước / POS hoàn tất | ✅ xem draft/reservation/purchase; POS quầy chưa UAT | ☐ | ☐ | ☐ |
 
 ### G1.5 — P11b-S2 (notification i18n server)
 
 - [x] Migration `091_p11b_customer_notification_i18n.sql`
 - [x] `ICustomerNotificationTextService` — push/in-app theo `preferred_locale`
-- [ ] UAT: Profile EN → notification title/body tiếng Anh (dev/staging)
+- [x] UAT: Profile EN → notification title/body tiếng Anh (dev) — ví dụ `Reminder scheduled` / `UAT G1 follow-up — …`
 
 ### Chữ ký Gate G1
 
