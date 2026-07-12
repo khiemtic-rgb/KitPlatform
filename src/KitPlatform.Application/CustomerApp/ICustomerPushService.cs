@@ -40,6 +40,16 @@ public interface ICustomerPushService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// In-app (+ Web Push if subscribed) when Connect marks clinic Rx ready at pharmacy.
+    /// </summary>
+    Task NotifyConnectRxReadyAsync(
+        Guid pharmacyTenantId,
+        Guid customerId,
+        string pharmacyDisplayName,
+        string? summary,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Sends Web Push only (no legacy/customer_notifications insert). Used by <c>NotifyQueueWorker</c>.
     /// </summary>
     Task<bool> TryDispatchPushToCustomerAsync(

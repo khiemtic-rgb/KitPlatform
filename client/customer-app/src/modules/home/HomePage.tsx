@@ -20,6 +20,7 @@ import {
   fetchMedicationAdherenceSummary,
   fetchRepurchaseSuggestions,
   getApiErrorMessage,
+  type CustomerConnectInbox,
 } from '@/shared/api/customer-app.api';
 import axios from 'axios';
 import { CUSTOMER_DRAFT_ORDER_STATUS } from '@/shared/api/customer-app.types';
@@ -29,6 +30,7 @@ import { useCustomerBranding } from '@/shared/config/BrandingProvider';
 import { useCustomerNotificationCount } from '@/shared/hooks/useCustomerNotificationCount';
 import { DueRemindersPanel, MissedMedicationAlert } from '@/modules/reminders/DueRemindersPanel';
 import { FamilyCaregiverDuePanel } from '@/modules/reminders/FamilyCaregiverDuePanel';
+import { ConnectCarePanel } from '@/modules/home/ConnectCarePanel';
 import { formatPoints } from '@/shared/utils/points';
 
 type ShortcutKey =
@@ -115,6 +117,7 @@ export function HomePage() {
     missedStreakDays: 0,
     showMissedAlert: false,
   });
+  const [connectInbox, setConnectInbox] = useState<CustomerConnectInbox | null>(null);
 
   const applyHomeData = useCallback(
     (
@@ -122,6 +125,7 @@ export function HomePage() {
       drafts: { status: number }[],
       repurchase: { status: string }[],
       summary: typeof adherence,
+      connect?: CustomerConnectInbox | null,
     ) => {
       setPoints(loyalty.programs[0]?.pointsBalance ?? 0);
       setPendingOrders(
@@ -135,6 +139,7 @@ export function HomePage() {
         repurchase.filter((r) => r.status === 'pending' || r.status === 'snoozed').length,
       );
       setAdherence(summary);
+      if (connect !== undefined) setConnectInbox(connect);
     },
     [],
   );
@@ -149,6 +154,7 @@ export function HomePage() {
           summary.draftOrders,
           summary.repurchaseSuggestions,
           summary.adherence,
+          summary.connectInbox,
         );
       } catch (overviewError) {
         if (axios.isAxiosError(overviewError) && overviewError.response?.status === 404) {
@@ -171,6 +177,7 @@ export function HomePage() {
                   missedStreakDays: 0,
                   showMissedAlert: false,
                 },
+            null,
           );
         } else {
           throw overviewError;
@@ -287,6 +294,7 @@ export function HomePage() {
       <MissedMedicationAlert show={adherence.showMissedAlert} streak={adherence.missedStreakDays} />
       <DueRemindersPanel compact onResponded={() => void load({ silent: true })} />
       <FamilyCaregiverDuePanel compact onResponded={() => void load({ silent: true })} />
+      <ConnectCarePanel inbox={connectInbox} loading={statsLoading && !connectInbox} />
 
       <div>
         <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>

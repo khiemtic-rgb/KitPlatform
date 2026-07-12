@@ -4,6 +4,9 @@ import { Spin } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { AuthGuard, GuestGuard } from '@/shared/auth/AuthGuard';
 import { RedirectPreserveSearch } from '@/shared/components/RedirectPreserveSearch';
+import { TEMP_HIDDEN_MODULE_KEYS } from '@/modules/registry';
+
+const rxModuleHidden = TEMP_HIDDEN_MODULE_KEYS.includes('rx');
 
 const AppLayout = lazy(() =>
   import('@/shared/components/AppLayout').then((m) => ({ default: m.AppLayout })),
@@ -116,6 +119,51 @@ const RxLayout = lazy(() =>
 );
 const RxDashboardPage = lazy(() =>
   import('@/modules/rx/RxDashboardPage').then((m) => ({ default: m.RxDashboardPage })),
+);
+const ConnectLayout = lazy(() =>
+  import('@/modules/connect/ConnectLayout').then((m) => ({ default: m.ConnectLayout })),
+);
+const ConnectOverviewPage = lazy(() =>
+  import('@/modules/connect/ConnectOverviewPage').then((m) => ({ default: m.ConnectOverviewPage })),
+);
+const ConnectNetworkPage = lazy(() =>
+  import('@/modules/connect/ConnectNetworkPage').then((m) => ({ default: m.ConnectNetworkPage })),
+);
+const ConnectPartnersPage = lazy(() =>
+  import('@/modules/connect/ConnectPartnersPage').then((m) => ({ default: m.ConnectPartnersPage })),
+);
+const ConnectTeamPage = lazy(() =>
+  import('@/modules/connect/ConnectTeamPage').then((m) => ({ default: m.ConnectTeamPage })),
+);
+const ConnectReferralsPage = lazy(() =>
+  import('@/modules/connect/ConnectReferralsPage').then((m) => ({ default: m.ConnectReferralsPage })),
+);
+const ConnectBookingsPage = lazy(() =>
+  import('@/modules/connect/ConnectBookingsPage').then((m) => ({ default: m.ConnectBookingsPage })),
+);
+const ConnectStatusPage = lazy(() =>
+  import('@/modules/connect/ConnectStatusPage').then((m) => ({ default: m.ConnectStatusPage })),
+);
+const ClinicLayout = lazy(() =>
+  import('@/modules/clinic/ClinicLayout').then((m) => ({ default: m.ClinicLayout })),
+);
+const ClinicOverviewPage = lazy(() =>
+  import('@/modules/clinic/ClinicOverviewPage').then((m) => ({ default: m.ClinicOverviewPage })),
+);
+const ClinicPatientsPage = lazy(() =>
+  import('@/modules/clinic/ClinicPatientsPage').then((m) => ({ default: m.ClinicPatientsPage })),
+);
+const ClinicProvidersPage = lazy(() =>
+  import('@/modules/clinic/ClinicProvidersPage').then((m) => ({ default: m.ClinicProvidersPage })),
+);
+const ClinicAppointmentsPage = lazy(() =>
+  import('@/modules/clinic/ClinicAppointmentsPage').then((m) => ({ default: m.ClinicAppointmentsPage })),
+);
+const ClinicVisitsPage = lazy(() =>
+  import('@/modules/clinic/ClinicVisitsPage').then((m) => ({ default: m.ClinicVisitsPage })),
+);
+const ClinicSettingsPage = lazy(() =>
+  import('@/modules/clinic/ClinicSettingsPage').then((m) => ({ default: m.ClinicSettingsPage })),
 );
 const PosPage = lazy(() => import('@/modules/sales/PosPage').then((m) => ({ default: m.PosPage })));
 const PrescriptionListPage = lazy(() =>
@@ -372,12 +420,27 @@ export function AppRouter() {
                 <Route path="pos" element={<PosPage />} />
                 <Route
                   path="prescriptions"
-                  element={<RedirectPreserveSearch to="/rx/prescriptions" />}
+                  element={
+                    <RedirectPreserveSearch
+                      to={rxModuleHidden ? '/connect/status' : '/rx/prescriptions'}
+                    />
+                  }
                 />
-                <Route path="prescribers" element={<RedirectPreserveSearch to="/rx/prescribers" />} />
+                <Route
+                  path="prescribers"
+                  element={
+                    <RedirectPreserveSearch
+                      to={rxModuleHidden ? '/connect/team' : '/rx/prescribers'}
+                    />
+                  }
+                />
                 <Route
                   path="prescriber-links"
-                  element={<RedirectPreserveSearch to="/rx/prescriber-links" />}
+                  element={
+                    <RedirectPreserveSearch
+                      to={rxModuleHidden ? '/connect/team' : '/rx/prescriber-links'}
+                    />
+                  }
                 />
                 <Route path="orders" element={<SalesOrderListPage />} />
                 <Route
@@ -416,19 +479,56 @@ export function AppRouter() {
                 <Route path="loyalty" element={<Navigate to="/customer/loyalty" replace />} />
                 <Route path="vouchers" element={<Navigate to="/customer/vouchers" replace />} />
               </Route>
+              {rxModuleHidden ? (
+                <Route path="rx/*" element={<Navigate to="/connect/status" replace />} />
+              ) : (
+                <Route
+                  path="rx"
+                  element={
+                    <SuspenseRoute>
+                      <RxLayout />
+                    </SuspenseRoute>
+                  }
+                >
+                  <Route index element={<Navigate to="/rx/overview" replace />} />
+                  <Route path="overview" element={<RxDashboardPage />} />
+                  <Route path="prescriptions" element={<PrescriptionListPage />} />
+                  <Route path="prescribers" element={<PrescriberListPage />} />
+                  <Route path="prescriber-links" element={<PrescriberLinksPage />} />
+                </Route>
+              )}
               <Route
-                path="rx"
+                path="connect"
                 element={
                   <SuspenseRoute>
-                    <RxLayout />
+                    <ConnectLayout />
                   </SuspenseRoute>
                 }
               >
-                <Route index element={<Navigate to="/rx/overview" replace />} />
-                <Route path="overview" element={<RxDashboardPage />} />
-                <Route path="prescriptions" element={<PrescriptionListPage />} />
-                <Route path="prescribers" element={<PrescriberListPage />} />
-                <Route path="prescriber-links" element={<PrescriberLinksPage />} />
+                <Route index element={<Navigate to="/connect/overview" replace />} />
+                <Route path="overview" element={<ConnectOverviewPage />} />
+                <Route path="network" element={<ConnectNetworkPage />} />
+                <Route path="team" element={<ConnectTeamPage />} />
+                <Route path="referrals" element={<ConnectReferralsPage />} />
+                <Route path="bookings" element={<ConnectBookingsPage />} />
+                <Route path="status" element={<ConnectStatusPage />} />
+                <Route path="partners" element={<ConnectPartnersPage />} />
+              </Route>
+              <Route
+                path="clinic"
+                element={
+                  <SuspenseRoute>
+                    <ClinicLayout />
+                  </SuspenseRoute>
+                }
+              >
+                <Route index element={<Navigate to="/clinic/overview" replace />} />
+                <Route path="overview" element={<ClinicOverviewPage />} />
+                <Route path="patients" element={<ClinicPatientsPage />} />
+                <Route path="providers" element={<ClinicProvidersPage />} />
+                <Route path="appointments" element={<ClinicAppointmentsPage />} />
+                <Route path="visits" element={<ClinicVisitsPage />} />
+                <Route path="settings" element={<ClinicSettingsPage />} />
               </Route>
               <Route
                 path="customer"
@@ -502,6 +602,14 @@ export function AppRouter() {
                 />
                 <Route
                   path="sales/revenue-by-category"
+                  element={
+                    <SuspenseRoute>
+                      <ReportViewPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="sales/revenue-by-clinic-doctor"
                   element={
                     <SuspenseRoute>
                       <ReportViewPage />

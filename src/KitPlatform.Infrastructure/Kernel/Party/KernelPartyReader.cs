@@ -52,6 +52,11 @@ internal static class KernelPartyReader
         c.created_at AS CreatedAt,
         c.allow_credit AS AllowCredit,
         c.credit_limit AS CreditLimit,
+        c.address_line AS AddressLine,
+        c.id_number AS IdNumber,
+        c.emergency_contact_name AS EmergencyContactName,
+        c.emergency_contact_phone AS EmergencyContactPhone,
+        c.clinical_notes AS ClinicalNotes,
         (ca.id IS NOT NULL) AS HasAppAccount,
         ca.is_verified AS AppVerified,
         ca.last_login_at AS AppLastLoginAt
@@ -63,6 +68,8 @@ internal static class KernelPartyReader
             OR c.phone ILIKE @Search
             OR c.customer_code ILIKE @Search
             OR c.email::text ILIKE @Search
+            OR COALESCE(c.id_number, '') ILIKE @Search
+            OR COALESCE(c.address_line, '') ILIKE @Search
             OR p.display_name ILIKE @Search
             OR p.party_code ILIKE @Search
             OR EXISTS (

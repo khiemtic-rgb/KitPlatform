@@ -59,7 +59,19 @@
     "healthWalletCardDesc": "Vitals · records · attachments · follow-up reminders",
     "medicationsCardTitle": "Active medications",
     "medicationsCardDesc": "Purchase · dose · refill timeline",
-    "pharmacyCardDesc": "Your pharmacy — reserve, chat, call"
+    "pharmacyCardDesc": "Your pharmacy — reserve, chat, call",
+    "connectTitle": "Clinic coordination",
+    "connectEmpty": "No linked clinic appointments or prescriptions yet",
+    "connectKinds": {
+      "referral_pending": "Waiting for the clinic to accept your referral",
+      "referral_accepted": "Clinic accepted your referral",
+      "booking_proposed": "Visit time proposed",
+      "booking_confirmed": "Visit time confirmed",
+      "rx_ready": "Clinic prescription ready at your pharmacy"
+    },
+    "connectCtaPickup": "Pick up at the pharmacy",
+    "connectCtaInfo": "Ask the pharmacy for details if needed",
+    "connectScheduled": "Appointment: {{when}}"
   },
   "profile": {
     "title": "Account",

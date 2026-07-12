@@ -309,6 +309,8 @@ export interface CartLine {
   discountValue?: number;
   /** Cảnh báo tồn kho hiển thị ngay tại ô SL */
   qtyWarning?: string;
+  /** Dòng từ đơn BS / Connect — không cho xóa khỏi giỏ */
+  rxLocked?: boolean;
 }
 
 export const SALES_RETURN_STATUS_LABELS: Record<number, string> = {

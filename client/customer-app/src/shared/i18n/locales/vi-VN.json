@@ -59,7 +59,19 @@
     "healthWalletCardDesc": "Chỉ số · hồ sơ · đính kèm · nhắc tái khám",
     "medicationsCardTitle": "Thuốc đang dùng",
     "medicationsCardDesc": "Lịch mua · uống · hết · đặt lại",
-    "pharmacyCardDesc": "Nhà thuốc của bạn — đặt trước, chat, gọi"
+    "pharmacyCardDesc": "Nhà thuốc của bạn — đặt trước, chat, gọi",
+    "connectTitle": "Điều phối với phòng khám",
+    "connectEmpty": "Chưa có lịch hoặc đơn từ phòng khám liên kết",
+    "connectKinds": {
+      "referral_pending": "Đang chờ phòng khám nhận giới thiệu",
+      "referral_accepted": "Phòng khám đã nhận giới thiệu",
+      "booking_proposed": "Lịch khám đang đề xuất",
+      "booking_confirmed": "Lịch khám đã xác nhận",
+      "rx_ready": "Đơn sẵn sàng lấy tại nhà thuốc"
+    },
+    "connectCtaPickup": "Đến nhà thuốc lấy thuốc",
+    "connectCtaInfo": "Chi tiết tại nhà thuốc khi cần",
+    "connectScheduled": "Giờ hẹn: {{when}}"
   },
   "profile": {
     "title": "Tài khoản",

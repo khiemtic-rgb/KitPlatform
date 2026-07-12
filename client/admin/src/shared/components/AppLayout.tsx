@@ -18,7 +18,12 @@ import {
 
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
-import { moduleRegistry } from '@/modules/registry';
+import {
+  isModuleVisibleForVertical,
+  moduleRegistry,
+  resolveAdminVertical,
+  TEMP_HIDDEN_MODULE_KEYS,
+} from '@/modules/registry';
 
 import type { ModuleKey } from '@/modules/registry';
 
@@ -78,38 +83,42 @@ function AppLayoutShell() {
   const subnav = useModuleSubnavState();
   const isModuleEnabled = useTenantPlatformStore((s) => s.isModuleEnabled);
   const platformLoaded = useTenantPlatformStore((s) => s.loaded);
+  const platformVertical = useTenantPlatformStore((s) => s.settings?.vertical);
   const { enabled: kapEnabled, checked: kapAccessChecked } = useKapAdminAccess();
-
-
+  const adminVertical = resolveAdminVertical(platformVertical);
 
   const activeKey = resolveActiveModuleKey(location.pathname);
 
   const activeModuleLabel = t(`modules.${activeKey}`);
 
-
-
   const menuItems = useMemo(
-
     () =>
-
-      moduleRegistry.map((module) => {
-        const platformOk =
-          !module.platformModule || !platformLoaded || isModuleEnabled(module.platformModule);
-        const kapOk = module.key !== 'kap' || (kapAccessChecked && kapEnabled);
-        const navEnabled = module.enabled && platformOk && kapOk;
-
-        return {
-          key: module.key,
-          icon: module.icon,
-          label: navEnabled
-            ? t(`modules.${module.key}`)
-            : t('modules.comingSoon', { name: t(`modules.${module.key}`) }),
-          disabled: !navEnabled,
-        };
-      }),
-
-    [t, isModuleEnabled, platformLoaded, kapAccessChecked, kapEnabled],
-
+      moduleRegistry
+        .filter((module) => !TEMP_HIDDEN_MODULE_KEYS.includes(module.key))
+        .filter((module) => isModuleVisibleForVertical(module, adminVertical))
+        .flatMap((module) => {
+          const platformOk =
+            !module.platformModule || !platformLoaded || isModuleEnabled(module.platformModule);
+          const kapOk = module.key !== 'kap' || (kapAccessChecked && kapEnabled);
+          const navEnabled = module.enabled && platformOk && kapOk;
+          // Ẩn hẳn module tắt / không thuộc vertical — không hiện "(sắp có)".
+          if (!navEnabled) return [];
+          return [
+            {
+              key: module.key,
+              icon: module.icon,
+              label: t(`modules.${module.key}`),
+            },
+          ];
+        }),
+    [
+      t,
+      adminVertical,
+      isModuleEnabled,
+      platformLoaded,
+      kapAccessChecked,
+      kapEnabled,
+    ],
   );
 
 
@@ -209,18 +218,14 @@ function AppLayoutShell() {
           items={menuItems}
 
           onClick={({ key }) => {
-
             const module = moduleRegistry.find((m) => m.key === key);
-
+            if (!module || !isModuleVisibleForVertical(module, adminVertical)) return;
             const platformOk =
-              !module?.platformModule || !platformLoaded || isModuleEnabled(module.platformModule);
-
-            if (module?.enabled && platformOk) {
-
+              !module.platformModule || !platformLoaded || isModuleEnabled(module.platformModule);
+            const kapOk = module.key !== 'kap' || (kapAccessChecked && kapEnabled);
+            if (module.enabled && platformOk && kapOk) {
               navigate(module.path);
-
             }
-
           }}
 
         />

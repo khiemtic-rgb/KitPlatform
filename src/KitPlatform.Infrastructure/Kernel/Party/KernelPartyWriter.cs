@@ -217,9 +217,9 @@ internal static class KernelPartyWriter
 
             await conn.ExecuteAsync(new CommandDefinition("""
                 INSERT INTO kit_common.party_identifier (
-                    tenant_id, workspace_id, party_id, identifier_type, identifier_value, is_primary
+                    tenant_id, party_id, identifier_type, identifier_value, is_primary
                 )
-                SELECT @TenantId, @WorkspaceId, @PartyId, 'phone', @Value, TRUE
+                SELECT @TenantId, @PartyId, 'phone', @Value, TRUE
                 WHERE NOT EXISTS (
                     SELECT 1 FROM kit_common.party_identifier
                     WHERE tenant_id = @TenantId
@@ -228,7 +228,7 @@ internal static class KernelPartyWriter
                       AND deleted_at IS NULL
                       AND status = 1
                 )
-                """, new { TenantId = tenantId, WorkspaceId = workspaceId, PartyId = partyId, Value = phone }, tx, cancellationToken: cancellationToken));
+                """, new { TenantId = tenantId, PartyId = partyId, Value = phone }, tx, cancellationToken: cancellationToken));
         }
 
         if (!string.IsNullOrWhiteSpace(email))
@@ -240,9 +240,9 @@ internal static class KernelPartyWriter
 
             await conn.ExecuteAsync(new CommandDefinition("""
                 INSERT INTO kit_common.party_identifier (
-                    tenant_id, workspace_id, party_id, identifier_type, identifier_value, is_primary
+                    tenant_id, party_id, identifier_type, identifier_value, is_primary
                 )
-                SELECT @TenantId, @WorkspaceId, @PartyId, 'email', @Value, FALSE
+                SELECT @TenantId, @PartyId, 'email', @Value, FALSE
                 WHERE NOT EXISTS (
                     SELECT 1 FROM kit_common.party_identifier
                     WHERE tenant_id = @TenantId
@@ -251,7 +251,7 @@ internal static class KernelPartyWriter
                       AND deleted_at IS NULL
                       AND status = 1
                 )
-                """, new { TenantId = tenantId, WorkspaceId = workspaceId, PartyId = partyId, Value = email.Trim() }, tx, cancellationToken: cancellationToken));
+                """, new { TenantId = tenantId, PartyId = partyId, Value = email.Trim() }, tx, cancellationToken: cancellationToken));
         }
     }
 }

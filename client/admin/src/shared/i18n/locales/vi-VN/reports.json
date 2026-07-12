@@ -36,6 +36,7 @@
     "loadFailedHint": "Không kết nối được máy chủ báo cáo. Thử lại sau hoặc liên hệ hỗ trợ kỹ thuật.",
     "generatedAt": "Tạo lúc:",
     "emptyData": "Không có dữ liệu trong kỳ đã chọn",
+    "emptyDataConnectSales": "Chưa có đơn POS gắn đơn phòng khám Connect trong kỳ. Mở quầy từ «Đơn chờ bán» rồi thanh toán — chỉ «Đã nhận tín hiệu» không tạo số liệu.",
     "paginationTotal": "{{count}} dòng",
     "noResult": "Chưa có kết quả — bấm Xem báo cáo"
   },
@@ -81,6 +82,10 @@
     "SALES-04": {
       "name": "Doanh thu theo danh mục",
       "description": "Thu ròng theo nhóm sản phẩm (danh mục) trong kỳ."
+    },
+    "SALES-05": {
+      "name": "Đơn bán theo phòng khám / bác sĩ",
+      "description": "Tổng hợp đơn POS gắn handoff Connect (PK) theo phòng khám và bác sĩ — số đơn, thu bán, hoàn, thu ròng."
     },
     "PROC-01": {
       "name": "Giá trị nhập hàng",

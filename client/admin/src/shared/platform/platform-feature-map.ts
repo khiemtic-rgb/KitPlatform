@@ -21,6 +21,8 @@ export const ADMIN_MODULE_PLATFORM_CODES: Partial<
     | 'procurement'
     | 'sales'
     | 'rx'
+    | 'connect'
+    | 'clinic'
     | 'receivables'
     | 'customer'
     | 'reports'
@@ -30,6 +32,8 @@ export const ADMIN_MODULE_PLATFORM_CODES: Partial<
 > = {
   sales: 'sales',
   rx: 'e_rx',
+  connect: 'novixa_connect',
+  clinic: 'clinic_emr_lite',
   procurement: 'procurement',
   inventory: 'inventory',
   receivables: 'sales',

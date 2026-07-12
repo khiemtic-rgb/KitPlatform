@@ -89,6 +89,7 @@ import type { CustomerDetail } from '@/shared/api/customer-admin.types';
 import { CustomerDraftOrderStatusBar } from '@/modules/sales/CustomerDraftOrderStatusBar';
 import { formatDisplayMoney, moneyInputNumberPropsAllowZeroSuffix, moneyInputNumberStyle } from '@/shared/utils/money';
 import { useTranslation } from 'react-i18next';
+import { loadConnectHandoffForPos } from '@/modules/sales/connect-handoff-pos-load';
 import { LoadPrescriptionModal } from '@/modules/sales/LoadPrescriptionModal';
 import { fetchPrescriptionPosLoad, type RxPrescriptionPosLoad } from '@/shared/api/rx.api';
 
@@ -109,6 +110,10 @@ export function PosPage() {
   const [loadedCustomerReservationId, setLoadedCustomerReservationId] = useState<string>();
   const [loadedPrescriptionId, setLoadedPrescriptionId] = useState<string>();
   const [loadedPrescriptionCode, setLoadedPrescriptionCode] = useState<string>();
+  const [loadedConnectHandoffId, setLoadedConnectHandoffId] = useState<string>();
+  const [loadedConnectBanner, setLoadedConnectBanner] = useState<string>();
+  const [loadedConnectDoctor, setLoadedConnectDoctor] = useState<string>();
+  const [loadedConnectPatient, setLoadedConnectPatient] = useState<string>();
   const [loadPrescriptionOpen, setLoadPrescriptionOpen] = useState(false);
   const [activeCustomerDraft, setActiveCustomerDraft] = useState<CustomerDraftOrder | null>(null);
   const [customerLoyalty, setCustomerLoyalty] = useState<PosCustomerLoyalty | null>(null);
@@ -285,6 +290,10 @@ export function PosPage() {
       setEditingDraftId(null);
       setEditingDraftNumber(null);
       clearPosDraftEdit();
+      setLoadedConnectHandoffId(undefined);
+      setLoadedConnectBanner(undefined);
+      setLoadedConnectDoctor(undefined);
+      setLoadedConnectPatient(undefined);
       setLoadedPrescriptionId(payload.id);
       setLoadedPrescriptionCode(payload.prescriptionCode);
       if (payload.customerId) {
@@ -305,12 +314,94 @@ export function PosPage() {
             dispensingClass: line.lineDispensingClass,
             stockAvailable: line.stockAvailable,
             prescriptionLineId: line.prescriptionLineId,
+            rxLocked: true,
           })),
       );
       setOrderDiscount({});
       message.success(`Đã nạp đơn ${payload.prescriptionCode} vào POS`);
     },
     [message],
+  );
+
+  const loadConnectHandoffIntoPos = useCallback(
+    async (handoffId: string) => {
+      if (!warehouseId) {
+        message.warning('Chọn kho bán trước khi nạp đơn PK');
+        return;
+      }
+      try {
+        const result = await loadConnectHandoffForPos(handoffId, warehouseId, batchMode);
+        setLoadedCustomerDraftOrderId(undefined);
+        setLoadedCustomerReservationId(undefined);
+        setActiveCustomerDraft(null);
+        setCustomerAppDraftMode(false);
+        setEditingDraftId(null);
+        setEditingDraftNumber(null);
+        clearPosDraftEdit();
+        setLoadedPrescriptionId(undefined);
+        setLoadedPrescriptionCode(undefined);
+        setLoadedConnectHandoffId(result.handoff.id);
+        setLoadedConnectBanner(result.handoff.prescriptionCode);
+        setLoadedConnectDoctor(result.handoff.providerDisplayName || undefined);
+        setLoadedConnectPatient(
+          result.customer?.fullName || result.handoff.patientDisplayName || undefined,
+        );
+        if (result.customer) {
+          setCustomerId(result.customer.id);
+          setCustomers((prev) =>
+            prev.some((c) => c.id === result.customer!.id)
+              ? prev
+              : [...prev, result.customer!].sort((a, b) =>
+                  a.fullName.localeCompare(b.fullName, 'vi'),
+                ),
+          );
+        } else {
+          setCustomerId(undefined);
+        }
+        setCart(result.cart);
+        setOrderDiscount({});
+        if (result.matchedCount === 0) {
+          message.error(
+            `Không khớp thuốc trong kho với đơn ${result.handoff.prescriptionCode}. Kiểm tra danh mục SP.`,
+          );
+        } else if (result.zeroStock.length > 0) {
+          message.warning(
+            `Đã nạp ${result.matchedCount} dòng nhưng tồn 0: ${result.zeroStock.join('; ')}. Cần Hoàn tất phiếu nhập đúng mã SP (không chỉ Lưu nháp).`,
+          );
+        } else if (result.unmatched.length > 0) {
+          message.warning(
+            `Đã nạp ${result.matchedCount} dòng. Chưa khớp: ${result.unmatched.join('; ')}`,
+          );
+        } else {
+          message.success(
+            `Đã nạp đơn PK ${result.handoff.prescriptionCode}${
+              result.handoff.providerDisplayName
+                ? ` · BS ${result.handoff.providerDisplayName}`
+                : ''
+            }${
+              result.customer
+                ? ` · KH ${result.customer.fullName}`
+                : ''
+            }`,
+          );
+        }
+        if (result.customerCreated && result.customer) {
+          message.info(
+            `Đã tạo khách hàng nhà thuốc «${result.customer.fullName}» từ đơn PK (CRM NT chưa có bệnh nhân này).`,
+          );
+        } else if (result.customerMissing) {
+          message.warning(
+            `Đơn PK có bệnh nhân «${result.handoff.patientDisplayName || '—'}» nhưng chưa gắn được KH trên POS — chọn/thêm khách hàng trước khi thanh toán.`,
+          );
+        }
+        if (!result.handoff.providerDisplayName) {
+          message.info('Đơn này chưa có tên bác sĩ — trên Clinic hãy chọn «Bác sĩ khám» rồi lưu trước khi kê đơn.');
+        }
+      } catch (error) {
+        message.error(apiErrorMessage(error, 'Không nạp được đơn phòng khám vào POS'));
+      }
+    },
+    [warehouseId, batchMode, message],
   );
 
   const resetCart = useCallback(() => {
@@ -320,6 +411,10 @@ export function PosPage() {
     setLoadedCustomerReservationId(undefined);
     setLoadedPrescriptionId(undefined);
     setLoadedPrescriptionCode(undefined);
+    setLoadedConnectHandoffId(undefined);
+    setLoadedConnectBanner(undefined);
+    setLoadedConnectDoctor(undefined);
+    setLoadedConnectPatient(undefined);
     setActiveCustomerDraft(null);
   }, []);
 
@@ -341,6 +436,10 @@ export function PosPage() {
     if (cart.length === 0) {
       setLoadedPrescriptionId(undefined);
       setLoadedPrescriptionCode(undefined);
+      setLoadedConnectHandoffId(undefined);
+      setLoadedConnectBanner(undefined);
+      setLoadedConnectDoctor(undefined);
+      setLoadedConnectPatient(undefined);
     }
   }, [cart.length]);
 
@@ -558,6 +657,29 @@ export function PosPage() {
       });
   }, [searchParams, setSearchParams, warehouseId, loadPrescriptionIntoPos, message]);
 
+  const connectHandoffDeepLinkHandled = useRef<string | null>(null);
+  useEffect(() => {
+    const handoffId = searchParams.get('connectHandoffId');
+    if (!handoffId) {
+      connectHandoffDeepLinkHandled.current = null;
+      return;
+    }
+    if (!warehouseId) return;
+    if (connectHandoffDeepLinkHandled.current === handoffId) return;
+    connectHandoffDeepLinkHandled.current = handoffId;
+    void loadConnectHandoffIntoPos(handoffId).finally(() => {
+      connectHandoffDeepLinkHandled.current = null;
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete('connectHandoffId');
+          return next;
+        },
+        { replace: true },
+      );
+    });
+  }, [searchParams, setSearchParams, warehouseId, loadConnectHandoffIntoPos]);
+
   const validateDiscounts = useCallback(() => {
     if (!canDiscount) {
       const hasLineDiscount = cart.some((line) => (line.discountValue ?? 0) > 0);
@@ -663,13 +785,18 @@ export function PosPage() {
   }, [cart, message, warehouseId]);
 
   const validateRxCart = useCallback(() => {
-    const blocked = cart.find((line) => shouldBlockRxAtPos(line.dispensingClass, rxSettings.enforcementMode));
+    const hasVerifiedPrescription = !!(loadedPrescriptionId || loadedConnectHandoffId);
+    const blocked = cart.find((line) =>
+      shouldBlockRxAtPos(line.dispensingClass, rxSettings.enforcementMode, {
+        hasVerifiedPrescription,
+      }),
+    );
     if (blocked) {
       message.error(RX_POS_BLOCK_MESSAGE);
       return false;
     }
     return true;
-  }, [cart, message, rxSettings.enforcementMode]);
+  }, [cart, message, rxSettings.enforcementMode, loadedPrescriptionId, loadedConnectHandoffId]);
 
   const addByBarcode = useCallback(
     async (code?: string) => {
@@ -677,7 +804,12 @@ export function PosPage() {
       if (!warehouseId || !value) return;
       try {
         const item = await lookupPosProduct(value, warehouseId);
-        if (shouldBlockRxAtPos(item.dispensingClass, rxSettings.enforcementMode)) {
+        const hasVerifiedPrescription = !!(loadedPrescriptionId || loadedConnectHandoffId);
+        if (
+          shouldBlockRxAtPos(item.dispensingClass, rxSettings.enforcementMode, {
+            hasVerifiedPrescription,
+          })
+        ) {
           message.error(RX_POS_BLOCK_MESSAGE);
           if (rxSettings.posBlockedAudit) {
             void reportRxPosBlock(item.productId, warehouseId).catch(() => undefined);
@@ -691,6 +823,10 @@ export function PosPage() {
         const capWarning = stockCapWarningText(item.stockAvailable, item.unitName);
         setCart((prev) => {
           const existing = prev.find((l) => l.productUnitId === item.productUnitId);
+          if (existing?.rxLocked) {
+            message.warning(t('pos.columns.qtyRxLockedHint'));
+            return prev;
+          }
           if (existing) {
             const nextQty = existing.quantity + 1;
             if (nextQty > item.stockAvailable + 0.0001) {
@@ -753,7 +889,7 @@ export function PosPage() {
         message.error(apiErrorMessage(error, t('pos.messages.productNotFound')));
       }
     },
-    [barcode, batchMode, cart, message, rxSettings, warehouseId],
+    [barcode, batchMode, cart, message, rxSettings, warehouseId, loadedPrescriptionId, loadedConnectHandoffId, t],
   );
 
   const resetCartAndExitDraft = () => {
@@ -835,6 +971,7 @@ export function PosPage() {
             undefined,
             undefined,
             loadedPrescriptionId,
+            loadedConnectHandoffId,
           ),
         );
         hideLoading();
@@ -936,6 +1073,7 @@ export function PosPage() {
             customerVoucherId,
             orderReminder,
             loadedPrescriptionId,
+            loadedConnectHandoffId,
           ),
         });
       } else {
@@ -951,6 +1089,7 @@ export function PosPage() {
             customerVoucherId,
             orderReminder,
             loadedPrescriptionId,
+            loadedConnectHandoffId,
           ),
         );
       }
@@ -1124,7 +1263,8 @@ export function PosPage() {
           value={row.quantity}
           stockAvailable={row.stockAvailable ?? 0}
           unitName={row.unitName}
-          disabled={!canWrite || cartLocked}
+          disabled={!canWrite || cartLocked || !!row.rxLocked}
+          title={row.rxLocked ? t('pos.columns.qtyRxLockedHint') : undefined}
           externalWarning={row.qtyWarning}
           showInlineWarning={false}
           onQtyWarningChange={(warning) =>
@@ -1134,11 +1274,15 @@ export function PosPage() {
               ),
             )
           }
-          onChange={(quantity) =>
+          onChange={(quantity) => {
+            if (row.rxLocked) {
+              message.warning(t('pos.columns.qtyRxLockedHint'));
+              return;
+            }
             setCart((prev) =>
               prev.map((l) => (l.key === row.key ? { ...l, quantity } : l)),
-            )
-          }
+            );
+          }}
           onClearWarning={() =>
             setCart((prev) =>
               prev.map((l) => (l.key === row.key ? { ...l, qtyWarning: undefined } : l)),
@@ -1223,13 +1367,28 @@ export function PosPage() {
           danger
           size="small"
           icon={<DeleteOutlined />}
-          disabled={!canWrite || cartLocked}
-          aria-label={t('pos.columns.removeLine')}
-          onClick={() => setCart((p) => p.filter((l) => l.key !== row.key))}
+          disabled={!canWrite || cartLocked || !!row.rxLocked}
+          title={
+            row.rxLocked
+              ? t('pos.columns.removeRxLockedHint')
+              : t('pos.columns.removeLine')
+          }
+          aria-label={
+            row.rxLocked
+              ? t('pos.columns.removeRxLockedHint')
+              : t('pos.columns.removeLine')
+          }
+          onClick={() => {
+            if (row.rxLocked) {
+              message.warning(t('pos.columns.removeRxLockedHint'));
+              return;
+            }
+            setCart((p) => p.filter((l) => l.key !== row.key));
+          }}
         />
       ),
     },
-  ], [t, canWrite, cartLocked, batchMode, canDiscount]);
+  ], [t, canWrite, cartLocked, batchMode, canDiscount, message]);
 
   const handleOpenShift = async (openingCash: number) => {
     if (!warehouseId) {
@@ -1330,6 +1489,16 @@ export function PosPage() {
           showIcon
           message={`Đang bán theo đơn ${loadedPrescriptionCode}`}
           description="Giỏ hàng được nạp từ đơn bác sĩ; hệ thống sẽ liên kết khi chốt đơn."
+        />
+      ) : null}
+      {loadedConnectHandoffId && loadedConnectBanner ? (
+        <Alert
+          type="success"
+          showIcon
+          message={`Đơn phòng khám ${loadedConnectBanner}${
+            loadedConnectDoctor ? ` · BS ${loadedConnectDoctor}` : ' · Chưa có bác sĩ trên đơn'
+          }${loadedConnectPatient ? ` · BN ${loadedConnectPatient}` : ''}`}
+          description="Dòng từ đơn PK: không xóa / không đổi số lượng. Bổ sung OTC thêm tay nếu cần. Khách hàng NT khớp/tạo từ BN trên đơn."
         />
       ) : null}
       {customerDraftOrders.length > 0 ? (
@@ -1456,7 +1625,7 @@ export function PosPage() {
               onClick={() => setLoadPrescriptionOpen(true)}
               disabled={!canWrite || !warehouseId}
             >
-              Bán theo đơn BS
+              Bán theo đơn phòng khám
             </Button>
             <Button
               block
@@ -1620,6 +1789,10 @@ export function PosPage() {
         onLoaded={(payload) => {
           setLoadPrescriptionOpen(false);
           void loadPrescriptionIntoPos(payload);
+        }}
+        onLoadedConnectHandoff={(handoffId) => {
+          setLoadPrescriptionOpen(false);
+          void loadConnectHandoffIntoPos(handoffId);
         }}
       />
 

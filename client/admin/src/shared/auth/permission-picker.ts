@@ -39,6 +39,10 @@ const PERMISSION_UI_GROUP_DEFS: Array<{
     discountCodes: ['sales.discount', 'sales.discount.unlimited'],
   },
   {
+    moduleKey: 'clinic',
+    items: ['clinic.read', 'clinic.write'],
+  },
+  {
     moduleKey: 'system',
     items: ['system.read', 'system.write', 'system.delete_permanent'],
   },

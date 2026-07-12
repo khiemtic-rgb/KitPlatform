@@ -20,6 +20,7 @@
     <ProjectReference Include="..\Packs\Pharmacy\KitPlatform.Packs.Pharmacy.Infrastructure\KitPlatform.Packs.Pharmacy.Infrastructure.csproj" />
     <ProjectReference Include="..\Packs\Clinic\KitPlatform.Packs.Clinic.Infrastructure\KitPlatform.Packs.Clinic.Infrastructure.csproj" />
     <ProjectReference Include="..\Packs\Survey\KitPlatform.Packs.Survey.Infrastructure\KitPlatform.Packs.Survey.Infrastructure.csproj" />
+    <ProjectReference Include="..\Packs\Connect\KitPlatform.Packs.Connect.Infrastructure\KitPlatform.Packs.Connect.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

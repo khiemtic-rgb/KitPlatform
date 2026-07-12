@@ -57,6 +57,15 @@ public sealed class ReportsController : ControllerBase
         CancellationToken cancellationToken = default) =>
         _reports.RunSalesRevenueByCategoryAsync(from, to, warehouseId, cancellationToken);
 
+    [HttpGet("sales/revenue-by-clinic-doctor")]
+    [Authorize(Policy = ReportsPolicies.Read)]
+    public Task<ReportTableResultDto> SalesRevenueByClinicDoctor(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] Guid? warehouseId = null,
+        CancellationToken cancellationToken = default) =>
+        _reports.RunSalesRevenueByClinicDoctorAsync(from, to, warehouseId, cancellationToken);
+
     [HttpGet("procurement/grn-value")]
     [Authorize(Policy = ReportsPolicies.Read)]
     public Task<ReportTableResultDto> ProcurementGrnValue(

@@ -36,6 +36,7 @@
     "loadFailedHint": "Could not reach the reports server. Try again later or contact support.",
     "generatedAt": "Generated:",
     "emptyData": "No data for the selected period",
+    "emptyDataConnectSales": "No POS sales linked to a Connect clinic Rx in this period. Open POS from «Pending Rx» and complete checkout — acknowledging the signal alone does not create report rows.",
     "paginationTotal": "{{count}} rows",
     "noResult": "No results yet — click Run report"
   },
@@ -81,6 +82,10 @@
     "SALES-04": {
       "name": "Revenue by category",
       "description": "Net revenue by product category for the selected period."
+    },
+    "SALES-05": {
+      "name": "Sales by clinic / doctor",
+      "description": "Connect clinic Rx sales rolled up by clinic and prescribing doctor — orders, sales, refunds, net."
     },
     "PROC-01": {
       "name": "Goods receipt value",

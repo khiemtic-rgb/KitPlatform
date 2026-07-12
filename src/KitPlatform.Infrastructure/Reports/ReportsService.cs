@@ -30,6 +30,8 @@ internal sealed class ReportsService : IReportsService
             "Danh sách ca, quỹ tiền mặt và thu ròng trong ca.", true, false, false),
         new(ReportCodes.SalesRevenueByCategory, "Doanh thu theo danh mục", "sales",
             "Thu ròng theo nhóm sản phẩm (danh mục) trong kỳ.", true, false, false),
+        new(ReportCodes.SalesRevenueByClinicDoctor, "Đơn bán theo phòng khám / bác sĩ", "sales",
+            "Tổng hợp đơn Connect (PK) theo phòng khám và bác sĩ kê đơn — số đơn, thu bán, hoàn, thu ròng.", true, false, false),
         new(ReportCodes.ProcurementGrnValue, "Giá trị nhập hàng", "procurement",
             "Tổng hợp phiếu nhập hoàn tất — số tiền trước thuế GTGT.", false, true, false),
         new(ReportCodes.ProcurementPayablesSnapshot, "Công nợ nhà cung cấp", "procurement",
@@ -151,6 +153,39 @@ internal sealed class ReportsService : IReportsService
             columns,
             rows,
             SumTotals(rows, "salesAmount", "refundAmount", "netAmount"));
+    }
+
+    public async Task<ReportTableResultDto> RunSalesRevenueByClinicDoctorAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        CancellationToken cancellationToken = default)
+    {
+        var (from, to) = ReportsDateHelper.ResolveRangeUtc(fromUtc, toUtc, DateTime.UtcNow);
+        var (scopedWarehouseId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
+        var rows = await _repository.GetSalesRevenueByClinicDoctorAsync(from, to, scopedWarehouseId, allowed, cancellationToken);
+        rows = AppendSharePercent(rows);
+
+        var columns = new List<ReportColumnDto>
+        {
+            Col("clinicName", "Phòng khám", ReportColumnFormats.Text, "left"),
+            Col("doctorName", "Bác sĩ", ReportColumnFormats.Text, "left"),
+            Col("orderCount", "Số đơn", ReportColumnFormats.Integer, "right"),
+            Col("salesAmount", "Thu bán", ReportColumnFormats.Money, "right"),
+            Col("refundAmount", "Hoàn trả", ReportColumnFormats.Money, "right"),
+            Col("netAmount", "Thu ròng", ReportColumnFormats.Money, "right"),
+            Col("sharePercent", "Tỷ lệ %", ReportColumnFormats.Qty, "right"),
+        };
+        var filters = FilterLabels(from, to, null, warehouseId);
+        filters["Ghi chú"] =
+            "Chỉ đơn POS gắn đơn PK Connect (mở quầy từ handoff). «Đã nhận tín hiệu» không tạo số liệu.";
+        return BuildTable(
+            ReportCodes.SalesRevenueByClinicDoctor,
+            "Đơn bán theo phòng khám / bác sĩ",
+            filters,
+            columns,
+            rows,
+            SumTotals(rows, "orderCount", "salesAmount", "refundAmount", "netAmount"));
     }
 
     public async Task<ReportTableResultDto> RunProcurementGrnValueAsync(

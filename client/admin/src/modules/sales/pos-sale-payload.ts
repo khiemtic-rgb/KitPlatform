@@ -34,6 +34,7 @@ export function buildCreateSalePayload(
   customerVoucherId?: string,
   orderReminder?: { label?: string; daysSupply?: number },
   prescriptionId?: string,
+  connectRxHandoffId?: string,
 ) {
   return {
     warehouseId,
@@ -45,6 +46,7 @@ export function buildCreateSalePayload(
     ...(loyaltyDiscountAmount != null && loyaltyDiscountAmount > 0 ? { loyaltyDiscountAmount } : {}),
     ...(customerVoucherId ? { customerVoucherId } : {}),
     ...(prescriptionId ? { prescriptionId } : {}),
+    ...(connectRxHandoffId ? { connectRxHandoffId } : {}),
     ...(orderReminder?.daysSupply != null && orderReminder.daysSupply >= 1
       ? {
           orderReminderLabel: orderReminder.label ?? null,
@@ -64,6 +66,7 @@ export function buildDraftCompletePayload(
   customerVoucherId?: string,
   orderReminder?: { label?: string; daysSupply?: number },
   prescriptionId?: string,
+  connectRxHandoffId?: string,
 ) {
   return {
     customerId: customerId ?? null,
@@ -73,6 +76,7 @@ export function buildDraftCompletePayload(
     ...(loyaltyDiscountAmount != null && loyaltyDiscountAmount > 0 ? { loyaltyDiscountAmount } : {}),
     ...(customerVoucherId ? { customerVoucherId } : {}),
     ...(prescriptionId ? { prescriptionId } : {}),
+    ...(connectRxHandoffId ? { connectRxHandoffId } : {}),
     ...(orderReminder?.daysSupply != null && orderReminder.daysSupply >= 1
       ? {
           orderReminderLabel: orderReminder.label ?? null,

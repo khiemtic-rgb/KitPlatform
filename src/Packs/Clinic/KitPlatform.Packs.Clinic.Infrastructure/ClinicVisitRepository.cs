@@ -27,40 +27,103 @@ internal sealed class ClinicVisitRepository
         DateTimeOffset? to,
         CancellationToken cancellationToken)
     {
-        const string sql = """
+        var sql = """
             SELECT
-                id AS Id,
-                appointment_id AS AppointmentId,
-                customer_id AS CustomerId,
-                provider_id AS ProviderId,
-                visit_status AS VisitStatus,
-                chief_complaint AS ChiefComplaint,
-                diagnosis_summary AS DiagnosisSummary,
-                started_at AS StartedAt,
-                closed_at AS ClosedAt,
-                created_at AS CreatedAt
-            FROM pack_clinic.clinic_visit
-            WHERE tenant_id = @TenantId
-              AND deleted_at IS NULL
-              AND (@WorkspaceId IS NULL OR workspace_id = @WorkspaceId)
-              AND (@CustomerId IS NULL OR customer_id = @CustomerId)
-              AND (@Status IS NULL OR visit_status = @Status)
-              AND (@From IS NULL OR started_at >= @From)
-              AND (@To IS NULL OR started_at <= @To)
-            ORDER BY started_at DESC
-            LIMIT 200
+                v.id AS Id,
+                v.appointment_id AS AppointmentId,
+                v.customer_id AS CustomerId,
+                c.full_name AS CustomerName,
+                c.phone AS CustomerPhone,
+                v.provider_id AS ProviderId,
+                p.display_name AS ProviderDisplayName,
+                v.visit_status AS VisitStatus,
+                v.encounter_modality AS EncounterModality,
+                v.chief_complaint AS ChiefComplaint,
+                v.diagnosis_summary AS DiagnosisSummary,
+                v.started_at AS StartedAt,
+                v.closed_at AS ClosedAt,
+                v.created_at AS CreatedAt,
+                COALESCE(
+                    NULLIF(a.metadata->>'pharmacy_tenant_id', '')::uuid,
+                    b.pharmacy_tenant_id,
+                    r.pharmacy_tenant_id
+                ) AS PreferredPharmacyTenantId,
+                COALESCE(pt.tenant_name, bt.tenant_name, rt.tenant_name) AS PreferredPharmacyName,
+                COALESCE(pt.tenant_code, bt.tenant_code, rt.tenant_code) AS PreferredPharmacyCode,
+                CASE
+                    WHEN COALESCE(
+                        NULLIF(a.metadata->>'pharmacy_tenant_id', '')::uuid,
+                        b.pharmacy_tenant_id,
+                        r.pharmacy_tenant_id
+                    ) IS NOT NULL THEN
+                        CASE
+                            WHEN a.metadata->>'connect_referral_id' IS NOT NULL OR r.id IS NOT NULL THEN 'referral'
+                            WHEN a.metadata->>'connect_booking_id' IS NOT NULL OR b.id IS NOT NULL THEN 'booking'
+                            ELSE 'connect'
+                        END
+                    ELSE NULL
+                END AS ConnectSource
+            FROM pack_clinic.clinic_visit v
+            LEFT JOIN public.customers c ON c.id = v.customer_id AND c.tenant_id = v.tenant_id
+            LEFT JOIN pack_clinic.clinic_provider p ON p.id = v.provider_id AND p.tenant_id = v.tenant_id
+            LEFT JOIN pack_clinic.clinic_appointment a
+                ON a.id = v.appointment_id AND a.tenant_id = v.tenant_id AND a.deleted_at IS NULL
+            LEFT JOIN pack_connect.bookings b
+                ON b.id = NULLIF(a.metadata->>'connect_booking_id', '')::uuid
+               AND b.clinic_tenant_id = v.tenant_id
+            LEFT JOIN pack_connect.referrals r
+                ON r.id = COALESCE(
+                    NULLIF(a.metadata->>'connect_referral_id', '')::uuid,
+                    b.referral_id)
+               AND r.clinic_tenant_id = v.tenant_id
+            LEFT JOIN public.tenants pt
+                ON pt.id = NULLIF(a.metadata->>'pharmacy_tenant_id', '')::uuid
+            LEFT JOIN public.tenants bt ON bt.id = b.pharmacy_tenant_id
+            LEFT JOIN public.tenants rt ON rt.id = r.pharmacy_tenant_id
+            WHERE v.tenant_id = @TenantId
+              AND v.deleted_at IS NULL
+            """;
+
+        var parameters = new DynamicParameters();
+        parameters.Add("TenantId", TenantId);
+
+        if (workspaceId is Guid ws)
+        {
+            sql += " AND v.workspace_id = @WorkspaceId";
+            parameters.Add("WorkspaceId", ws);
+        }
+
+        if (customerId is Guid cid)
+        {
+            sql += " AND v.customer_id = @CustomerId";
+            parameters.Add("CustomerId", cid);
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            sql += " AND v.visit_status = @Status";
+            parameters.Add("Status", status.Trim());
+        }
+
+        if (from is DateTimeOffset f)
+        {
+            sql += " AND v.started_at >= @From";
+            parameters.Add("From", f.UtcDateTime);
+        }
+
+        if (to is DateTimeOffset t)
+        {
+            sql += " AND v.started_at <= @To";
+            parameters.Add("To", t.UtcDateTime);
+        }
+
+        sql += """
+             ORDER BY v.started_at DESC
+             LIMIT 200
             """;
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return (await conn.QueryAsync<ClinicVisitDto>(sql, new
-        {
-            TenantId,
-            WorkspaceId = workspaceId,
-            CustomerId = customerId,
-            Status = status,
-            From = from?.UtcDateTime,
-            To = to?.UtcDateTime,
-        })).ToList();
+        return (await conn.QueryAsync<ClinicVisitDto>(sql, parameters)).ToList();
     }
 
     public async Task<ClinicVisitDto?> GetAsync(
@@ -70,21 +133,61 @@ internal sealed class ClinicVisitRepository
     {
         const string sql = """
             SELECT
-                id AS Id,
-                appointment_id AS AppointmentId,
-                customer_id AS CustomerId,
-                provider_id AS ProviderId,
-                visit_status AS VisitStatus,
-                chief_complaint AS ChiefComplaint,
-                diagnosis_summary AS DiagnosisSummary,
-                started_at AS StartedAt,
-                closed_at AS ClosedAt,
-                created_at AS CreatedAt
-            FROM pack_clinic.clinic_visit
-            WHERE tenant_id = @TenantId
-              AND id = @VisitId
-              AND deleted_at IS NULL
-              AND (@WorkspaceId IS NULL OR workspace_id = @WorkspaceId)
+                v.id AS Id,
+                v.appointment_id AS AppointmentId,
+                v.customer_id AS CustomerId,
+                c.full_name AS CustomerName,
+                c.phone AS CustomerPhone,
+                v.provider_id AS ProviderId,
+                p.display_name AS ProviderDisplayName,
+                v.visit_status AS VisitStatus,
+                v.encounter_modality AS EncounterModality,
+                v.chief_complaint AS ChiefComplaint,
+                v.diagnosis_summary AS DiagnosisSummary,
+                v.started_at AS StartedAt,
+                v.closed_at AS ClosedAt,
+                v.created_at AS CreatedAt,
+                COALESCE(
+                    NULLIF(a.metadata->>'pharmacy_tenant_id', '')::uuid,
+                    b.pharmacy_tenant_id,
+                    r.pharmacy_tenant_id
+                ) AS PreferredPharmacyTenantId,
+                COALESCE(pt.tenant_name, bt.tenant_name, rt.tenant_name) AS PreferredPharmacyName,
+                COALESCE(pt.tenant_code, bt.tenant_code, rt.tenant_code) AS PreferredPharmacyCode,
+                CASE
+                    WHEN COALESCE(
+                        NULLIF(a.metadata->>'pharmacy_tenant_id', '')::uuid,
+                        b.pharmacy_tenant_id,
+                        r.pharmacy_tenant_id
+                    ) IS NOT NULL THEN
+                        CASE
+                            WHEN a.metadata->>'connect_referral_id' IS NOT NULL OR r.id IS NOT NULL THEN 'referral'
+                            WHEN a.metadata->>'connect_booking_id' IS NOT NULL OR b.id IS NOT NULL THEN 'booking'
+                            ELSE 'connect'
+                        END
+                    ELSE NULL
+                END AS ConnectSource
+            FROM pack_clinic.clinic_visit v
+            LEFT JOIN public.customers c ON c.id = v.customer_id AND c.tenant_id = v.tenant_id
+            LEFT JOIN pack_clinic.clinic_provider p ON p.id = v.provider_id AND p.tenant_id = v.tenant_id
+            LEFT JOIN pack_clinic.clinic_appointment a
+                ON a.id = v.appointment_id AND a.tenant_id = v.tenant_id AND a.deleted_at IS NULL
+            LEFT JOIN pack_connect.bookings b
+                ON b.id = NULLIF(a.metadata->>'connect_booking_id', '')::uuid
+               AND b.clinic_tenant_id = v.tenant_id
+            LEFT JOIN pack_connect.referrals r
+                ON r.id = COALESCE(
+                    NULLIF(a.metadata->>'connect_referral_id', '')::uuid,
+                    b.referral_id)
+               AND r.clinic_tenant_id = v.tenant_id
+            LEFT JOIN public.tenants pt
+                ON pt.id = NULLIF(a.metadata->>'pharmacy_tenant_id', '')::uuid
+            LEFT JOIN public.tenants bt ON bt.id = b.pharmacy_tenant_id
+            LEFT JOIN public.tenants rt ON rt.id = r.pharmacy_tenant_id
+            WHERE v.tenant_id = @TenantId
+              AND v.id = @VisitId
+              AND v.deleted_at IS NULL
+              AND (@WorkspaceId IS NULL OR v.workspace_id = @WorkspaceId)
             """;
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -103,10 +206,12 @@ internal sealed class ClinicVisitRepository
     {
         const string sql = """
             INSERT INTO pack_clinic.clinic_visit (
-                tenant_id, workspace_id, appointment_id, customer_id, provider_id, chief_complaint
+                tenant_id, workspace_id, appointment_id, customer_id, provider_id,
+                chief_complaint, encounter_modality
             )
             VALUES (
-                @TenantId, @WorkspaceId, @AppointmentId, @CustomerId, @ProviderId, @ChiefComplaint
+                @TenantId, @WorkspaceId, @AppointmentId, @CustomerId, @ProviderId,
+                @ChiefComplaint, @EncounterModality
             )
             RETURNING id
             """;
@@ -120,6 +225,48 @@ internal sealed class ClinicVisitRepository
             request.CustomerId,
             request.ProviderId,
             request.ChiefComplaint,
+            EncounterModality = ClinicEncounterModalities.Normalize(request.EncounterModality),
+        });
+    }
+
+    public async Task<ClinicVisitDto?> FindOpenByAppointmentAsync(
+        Guid? workspaceId,
+        Guid appointmentId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+                v.id AS Id,
+                v.appointment_id AS AppointmentId,
+                v.customer_id AS CustomerId,
+                c.full_name AS CustomerName,
+                c.phone AS CustomerPhone,
+                v.provider_id AS ProviderId,
+                p.display_name AS ProviderDisplayName,
+                v.visit_status AS VisitStatus,
+                v.encounter_modality AS EncounterModality,
+                v.chief_complaint AS ChiefComplaint,
+                v.diagnosis_summary AS DiagnosisSummary,
+                v.started_at AS StartedAt,
+                v.closed_at AS ClosedAt,
+                v.created_at AS CreatedAt
+            FROM pack_clinic.clinic_visit v
+            LEFT JOIN public.customers c ON c.id = v.customer_id AND c.tenant_id = v.tenant_id
+            LEFT JOIN pack_clinic.clinic_provider p ON p.id = v.provider_id AND p.tenant_id = v.tenant_id
+            WHERE v.tenant_id = @TenantId
+              AND v.appointment_id = @AppointmentId
+              AND v.visit_status = 'open'
+              AND v.deleted_at IS NULL
+              AND (@WorkspaceId IS NULL OR v.workspace_id = @WorkspaceId)
+            ORDER BY v.started_at DESC
+            LIMIT 1
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<ClinicVisitDto>(sql, new
+        {
+            TenantId,
+            AppointmentId = appointmentId,
+            WorkspaceId = workspaceId,
         });
     }
 
@@ -135,6 +282,7 @@ internal sealed class ClinicVisitRepository
                 chief_complaint = COALESCE(@ChiefComplaint, chief_complaint),
                 diagnosis_summary = COALESCE(@DiagnosisSummary, diagnosis_summary),
                 visit_status = COALESCE(@VisitStatus, visit_status),
+                provider_id = COALESCE(@ProviderId, provider_id),
                 closed_at = CASE
                     WHEN @VisitStatus = 'closed' AND closed_at IS NULL THEN NOW()
                     WHEN @VisitStatus IS NOT NULL AND @VisitStatus <> 'closed' THEN NULL
@@ -156,8 +304,43 @@ internal sealed class ClinicVisitRepository
             request.ChiefComplaint,
             request.DiagnosisSummary,
             request.VisitStatus,
+            request.ProviderId,
         });
-        return rows > 0;
+        if (rows <= 0) return false;
+
+        // Gán BS trên visit → copy sang đơn còn thiếu + handoff Connect (POS đọc từ đây).
+        if (request.ProviderId is Guid providerId && providerId != Guid.Empty)
+        {
+            await conn.ExecuteAsync(
+                """
+                UPDATE pack_clinic.clinic_prescription
+                SET provider_id = @ProviderId, updated_at = NOW()
+                WHERE tenant_id = @TenantId
+                  AND visit_id = @VisitId
+                  AND deleted_at IS NULL
+                  AND provider_id IS NULL
+                  AND prescription_status <> 'cancelled'
+                """,
+                new { TenantId, VisitId = visitId, ProviderId = providerId });
+
+            await conn.ExecuteAsync(
+                """
+                UPDATE pack_connect.rx_handoffs h
+                SET provider_display_name = p.display_name,
+                    updated_at = NOW()
+                FROM pack_clinic.clinic_prescription r
+                INNER JOIN pack_clinic.clinic_provider p
+                    ON p.id = @ProviderId AND p.tenant_id = @TenantId
+                WHERE r.visit_id = @VisitId
+                  AND r.tenant_id = @TenantId
+                  AND h.clinic_prescription_id = r.id
+                  AND h.clinic_tenant_id = @TenantId
+                  AND (h.provider_display_name IS NULL OR BTRIM(h.provider_display_name) = '')
+                """,
+                new { TenantId, VisitId = visitId, ProviderId = providerId });
+        }
+
+        return true;
     }
 
     public async Task<IReadOnlyList<ClinicVisitNoteDto>> ListNotesAsync(
@@ -240,15 +423,21 @@ internal sealed class ClinicVisitService : IClinicVisitService
     };
 
     private readonly ClinicVisitRepository _repo;
+    private readonly EncounterSessionRepository _sessions;
+    private readonly IEncounterMediaProvider _media;
     private readonly ITenantContext _tenant;
     private readonly IWorkspaceResolver _workspace;
 
     public ClinicVisitService(
         ClinicVisitRepository repo,
+        EncounterSessionRepository sessions,
+        IEncounterMediaProvider media,
         ITenantContext tenant,
         IWorkspaceResolver workspace)
     {
         _repo = repo;
+        _sessions = sessions;
+        _media = media;
         _tenant = tenant;
         _workspace = workspace;
     }
@@ -277,10 +466,30 @@ internal sealed class ClinicVisitService : IClinicVisitService
         CreateClinicVisitRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (!string.IsNullOrWhiteSpace(request.EncounterModality)
+            && !ClinicEncounterModalities.IsKnown(request.EncounterModality))
+            throw new InvalidOperationException("Hình thức khám không hợp lệ.");
+
+        var modality = ClinicEncounterModalities.Normalize(request.EncounterModality);
+        if (modality == ClinicEncounterModalities.RemoteVideo)
+            throw new InvalidOperationException(
+                "Khám video trong Novixa chưa bật (CL3-B). Dùng khám từ xa (gọi ngoài) hoặc tại phòng khám.");
+
         var workspaceId = await ResolveClinicWorkspaceAsync(cancellationToken)
             ?? throw new InvalidOperationException("Workspace clinic_crm chưa được provision.");
 
-        var id = await _repo.CreateAsync(workspaceId, request, cancellationToken);
+        var id = await _repo.CreateAsync(
+            workspaceId,
+            request with { EncounterModality = modality },
+            cancellationToken);
+        await _sessions.EnsureRemoteStubAsync(
+            workspaceId,
+            id,
+            request.AppointmentId,
+            modality,
+            cancellationToken);
+        if (ClinicEncounterModalities.IsRemote(modality))
+            await _media.StartAsync(id, modality, cancellationToken);
         return (await _repo.GetAsync(workspaceId, id, cancellationToken))!;
     }
 
@@ -291,6 +500,12 @@ internal sealed class ClinicVisitService : IClinicVisitService
     {
         if (request.VisitStatus is not null && !AllowedStatuses.Contains(request.VisitStatus))
             throw new InvalidOperationException("Trạng thái lượt khám không hợp lệ.");
+
+        if (request.ChiefComplaint is null
+            && request.DiagnosisSummary is null
+            && request.VisitStatus is null
+            && request.ProviderId is null)
+            throw new InvalidOperationException("Không có dữ liệu để cập nhật.");
 
         var workspaceId = await ResolveClinicWorkspaceAsync(cancellationToken);
         var updated = await _repo.UpdateAsync(workspaceId, visitId, request, cancellationToken);

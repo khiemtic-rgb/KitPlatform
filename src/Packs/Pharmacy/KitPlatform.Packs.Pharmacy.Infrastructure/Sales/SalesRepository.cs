@@ -849,7 +849,8 @@ internal sealed class SalesRepository
             request.WarehouseId,
             branchId,
             "pos_complete",
-            cancellationToken);
+            cancellationToken,
+            request.ConnectRxHandoffId);
 
         var voucher = await _voucherPos.ResolveVoucherAsync(
             TenantId,
@@ -889,7 +890,7 @@ internal sealed class SalesRepository
             request.OrderDiscountType, request.OrderDiscountValue ?? 0, redeem.FinalTotal,
             paymentResolution.AmountPaid, paymentResolution.Outstanding, request.Notes,
             shiftId, voucher.VoucherId, voucher.DiscountAmount, redeem.PointsRedeemed, redeem.DiscountAmount,
-            orderReminder.Label, orderReminder.DaysSupply, request.PrescriptionId);
+            orderReminder.Label, orderReminder.DaysSupply, request.PrescriptionId, request.ConnectRxHandoffId);
 
         var insertedLines = await InsertCompletedLinesAsync(
             conn,
@@ -918,6 +919,8 @@ internal sealed class SalesRepository
                 userId,
                 cancellationToken);
         }
+
+        await TryMarkConnectHandoffConsumedAsync(conn, tx, request.ConnectRxHandoffId, userId);
 
         if (voucher.VoucherId is Guid voucherId && voucher.CustomerVoucherId is Guid customerVoucherId)
         {
@@ -1032,7 +1035,8 @@ internal sealed class SalesRepository
             conn, tx, orderNumber, branchId, request.WarehouseId, request.CustomerId, employeeId,
             SalesOrderStatuses.Draft, request.PriceType, pricing.SubtotalGross, pricing.OrderDiscountAmount,
             request.OrderDiscountType, request.OrderDiscountValue ?? 0, pricing.TotalAmount, 0, 0, request.Notes,
-            prescriptionId: request.PrescriptionId);
+            prescriptionId: request.PrescriptionId,
+            connectRxHandoffId: request.ConnectRxHandoffId);
 
         for (var i = 0; i < pricing.Lines.Count; i++)
         {
@@ -1203,7 +1207,8 @@ internal sealed class SalesRepository
             header.WarehouseId,
             branchId,
             "pos_checkout",
-            cancellationToken);
+            cancellationToken,
+            request?.ConnectRxHandoffId);
 
         var voucher = await _voucherPos.ResolveVoucherAsync(
             TenantId,
@@ -1250,7 +1255,8 @@ internal sealed class SalesRepository
                 sales_shift_id = @ShiftId, notes = COALESCE(@Notes, notes),
                 reminder_label = @ReminderLabel,
                 reminder_days_supply = @ReminderDaysSupply,
-                prescription_id = @PrescriptionId
+                prescription_id = @PrescriptionId,
+                connect_rx_handoff_id = COALESCE(@ConnectRxHandoffId, connect_rx_handoff_id)
             WHERE id = @Id AND tenant_id = @TenantId
             """, new
         {
@@ -1274,6 +1280,7 @@ internal sealed class SalesRepository
             ReminderLabel = orderReminder.Label,
             ReminderDaysSupply = orderReminder.DaysSupply,
             PrescriptionId = request?.PrescriptionId,
+            ConnectRxHandoffId = request?.ConnectRxHandoffId,
         }, tx);
 
         var insertedLines = await InsertCompletedLinesAsync(
@@ -1303,6 +1310,12 @@ internal sealed class SalesRepository
                 _tenant.UserId,
                 cancellationToken);
         }
+
+        await TryMarkConnectHandoffConsumedAsync(
+            conn,
+            tx,
+            request?.ConnectRxHandoffId,
+            _tenant.UserId == Guid.Empty ? null : _tenant.UserId);
 
         var orderNumber = await conn.QuerySingleAsync<string>(
             "SELECT order_number FROM sales_orders WHERE id = @Id",
@@ -2433,20 +2446,23 @@ internal sealed class SalesRepository
         decimal loyaltyDiscountAmount = 0,
         string? reminderLabel = null,
         int? reminderDaysSupply = null,
-        Guid? prescriptionId = null)
+        Guid? prescriptionId = null,
+        Guid? connectRxHandoffId = null)
     {
         const string sql = """
             INSERT INTO sales_orders (
                 tenant_id, order_number, branch_id, warehouse_id, customer_id, employee_id,
                 status, price_type, subtotal, discount_amount, order_discount_type, order_discount_value,
                 total_amount, amount_paid, outstanding, notes, sales_shift_id, voucher_id, voucher_discount_amount,
-                loyalty_points_redeemed, loyalty_discount_amount, reminder_label, reminder_days_supply, prescription_id
+                loyalty_points_redeemed, loyalty_discount_amount, reminder_label, reminder_days_supply, prescription_id,
+                connect_rx_handoff_id
             )
             VALUES (
                 @TenantId, @OrderNumber, @BranchId, @WarehouseId, @CustomerId, @EmployeeId,
                 @Status, @PriceType, @Subtotal, @OrderDiscountAmount, @OrderDiscountType, @OrderDiscountValue,
                 @TotalAmount, @AmountPaid, @Outstanding, @Notes, @SalesShiftId, @VoucherId, @VoucherDiscountAmount,
-                @LoyaltyPointsRedeemed, @LoyaltyDiscountAmount, @ReminderLabel, @ReminderDaysSupply, @PrescriptionId
+                @LoyaltyPointsRedeemed, @LoyaltyDiscountAmount, @ReminderLabel, @ReminderDaysSupply, @PrescriptionId,
+                @ConnectRxHandoffId
             )
             RETURNING id
             """;
@@ -2476,6 +2492,56 @@ internal sealed class SalesRepository
             ReminderLabel = reminderLabel,
             ReminderDaysSupply = reminderDaysSupply,
             PrescriptionId = prescriptionId,
+            ConnectRxHandoffId = connectRxHandoffId,
+        }, tx);
+    }
+
+    private async Task TryMarkConnectHandoffConsumedAsync(
+        IDbConnection conn,
+        IDbTransaction tx,
+        Guid? connectRxHandoffId,
+        Guid? actorUserId)
+    {
+        if (connectRxHandoffId is not Guid handoffId) return;
+
+        await conn.ExecuteAsync("""
+            UPDATE pack_connect.rx_handoffs
+            SET handoff_status = 'consumed',
+                consumed_at = COALESCE(consumed_at, NOW()),
+                consumed_by = COALESCE(consumed_by, @Actor),
+                updated_at = NOW()
+            WHERE id = @Id
+              AND pharmacy_tenant_id = @TenantId
+              AND handoff_status IN ('pending_pharmacy', 'consumed')
+              AND dismissed_at IS NULL
+            """, new
+        {
+            Id = handoffId,
+            TenantId,
+            Actor = actorUserId,
+        }, tx);
+
+        // Đồng bộ hàng đợi tín hiệu Connect (ack) khi đã bán xong đơn PK.
+        await conn.ExecuteAsync("""
+            UPDATE pack_connect.status_events e
+            SET event_status = 'consumed',
+                consumed_at = COALESCE(e.consumed_at, NOW()),
+                consumed_by = COALESCE(e.consumed_by, @Actor),
+                updated_at = NOW()
+            FROM pack_connect.rx_handoffs h
+            WHERE h.id = @Id
+              AND h.pharmacy_tenant_id = @TenantId
+              AND e.pharmacy_tenant_id = @TenantId
+              AND e.event_status = 'pending_pharmacy'
+              AND (
+                    e.id = h.status_event_id
+                 OR (e.source_type = 'clinic_rx' AND e.source_id = h.id)
+              )
+            """, new
+        {
+            Id = handoffId,
+            TenantId,
+            Actor = actorUserId,
         }, tx);
     }
 

@@ -14,6 +14,7 @@ using KitPlatform.Infrastructure.Data;
 using KitPlatform.Packs.Pharmacy.Infrastructure;
 using KitPlatform.Packs.Clinic.Infrastructure;
 using KitPlatform.Packs.Survey.Infrastructure;
+using KitPlatform.Packs.Connect.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers()
@@ -100,7 +101,8 @@ builder.Services.AddAuthorization(options =>
 });
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddPharmacyPack(builder.Configuration);
-builder.Services.AddClinicPack();
+builder.Services.AddConnectPack();
+builder.Services.AddClinicPack(builder.Configuration);
 builder.Services.AddSurveyPack(builder.Configuration);
 
 builder.Services.AddRateLimiter(options =>

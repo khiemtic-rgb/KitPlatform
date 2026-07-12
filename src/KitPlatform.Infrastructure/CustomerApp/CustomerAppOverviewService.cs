@@ -17,6 +17,7 @@ internal sealed class CustomerAppOverviewService : ICustomerAppOverviewService
     private readonly ICustomerAppConsentService _consents;
     private readonly ICustomerChatService _chat;
     private readonly ITenantPlatformSettings _platform;
+    private readonly ICustomerAppConnectService _connect;
 
     public CustomerAppOverviewService(
         ICustomerLoyaltyService loyalty,
@@ -29,7 +30,8 @@ internal sealed class CustomerAppOverviewService : ICustomerAppOverviewService
         ICustomerFamilyService family,
         ICustomerAppConsentService consents,
         ICustomerChatService chat,
-        ITenantPlatformSettings platform)
+        ITenantPlatformSettings platform,
+        ICustomerAppConnectService connect)
     {
         _loyalty = loyalty;
         _draftOrders = draftOrders;
@@ -42,6 +44,7 @@ internal sealed class CustomerAppOverviewService : ICustomerAppOverviewService
         _consents = consents;
         _chat = chat;
         _platform = platform;
+        _connect = connect;
     }
 
     public async Task<CustomerHomeSummaryDto> GetHomeSummaryAsync(
@@ -54,14 +57,16 @@ internal sealed class CustomerAppOverviewService : ICustomerAppOverviewService
         var draftsTask = _draftOrders.ListForCustomerAsync(tenantId, customerId, cancellationToken);
         var repurchaseTask = _repurchase.ListAsync(tenantId, customerId, accountId, cancellationToken);
         var adherenceTask = _adherence.GetSummaryAsync(tenantId, customerId, cancellationToken);
+        var connectTask = _connect.GetInboxAsync(tenantId, customerId, cancellationToken);
 
-        await Task.WhenAll(loyaltyTask, draftsTask, repurchaseTask, adherenceTask);
+        await Task.WhenAll(loyaltyTask, draftsTask, repurchaseTask, adherenceTask, connectTask);
 
         return new CustomerHomeSummaryDto(
             await loyaltyTask,
             await draftsTask,
             await repurchaseTask,
-            await adherenceTask);
+            await adherenceTask,
+            await connectTask);
     }
 
     public async Task<CustomerOrdersOverviewDto> GetOrdersOverviewAsync(

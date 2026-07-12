@@ -486,6 +486,7 @@ type CreateSalePayload = Pick<
   orderReminderLabel?: string | null;
   orderReminderDaysSupply?: number;
   prescriptionId?: string;
+  connectRxHandoffId?: string;
 };
 
 export type CompleteDraftSaleOptions = CompleteDraftSaleRequest & {
@@ -494,6 +495,7 @@ export type CompleteDraftSaleOptions = CompleteDraftSaleRequest & {
   orderReminderLabel?: string | null;
   orderReminderDaysSupply?: number;
   prescriptionId?: string;
+  connectRxHandoffId?: string;
 };
 
 export function normalizePosCustomerLoyalty(row: Record<string, unknown>): PosCustomerLoyalty {
@@ -573,6 +575,7 @@ export async function completeDraftSale(
       : {}),
     ...(options?.customerVoucherId ? { customerVoucherId: options.customerVoucherId } : {}),
     ...(options?.prescriptionId ? { prescriptionId: options.prescriptionId } : {}),
+    ...(options?.connectRxHandoffId ? { connectRxHandoffId: options.connectRxHandoffId } : {}),
     ...(options?.orderReminderDaysSupply != null && options.orderReminderDaysSupply >= 1
       ? {
           orderReminderLabel: options.orderReminderLabel ?? null,

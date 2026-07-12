@@ -30,6 +30,7 @@
     <InternalsVisibleTo Include="KitPlatform.Packs.Pharmacy.Infrastructure" />
     <InternalsVisibleTo Include="KitPlatform.Packs.Clinic.Infrastructure" />
     <InternalsVisibleTo Include="KitPlatform.Packs.Survey.Infrastructure" />
+    <InternalsVisibleTo Include="KitPlatform.Packs.Connect.Infrastructure" />
     <InternalsVisibleTo Include="KitPlatform.Application.Tests" />
   </ItemGroup>
 

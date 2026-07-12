@@ -62,6 +62,15 @@ const REPORT_DEFINITIONS_META: ReportDefinitionMeta[] = [
     favorite: true,
   },
   {
+    code: 'SALES-05',
+    category: 'sales',
+    path: '/reports/sales/revenue-by-clinic-doctor',
+    apiPath: 'sales/revenue-by-clinic-doctor',
+    supportsDateRange: true,
+    supportsWarehouse: true,
+    favorite: true,
+  },
+  {
     code: 'PROC-01',
     category: 'procurement',
     path: '/reports/procurement/grn-value',

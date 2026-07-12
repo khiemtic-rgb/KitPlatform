@@ -121,6 +121,7 @@ public static class DependencyInjection
         services.AddScoped<CustomerPurchaseRepository>();
         services.AddScoped<ICustomerPurchaseService, CustomerPurchaseService>();
         services.AddScoped<ICustomerAppOverviewService, CustomerAppOverviewService>();
+        services.AddScoped<ICustomerAppConnectService, CustomerAppConnectService>();
         services.AddScoped<CustomerReceivablesRepository>();
         services.AddScoped<ICustomerAppReceivablesService, CustomerAppReceivablesService>();
 

@@ -103,7 +103,8 @@ public sealed record CompleteDraftSaleRequest(
     string? OrderReminderLabel = null,
     int? OrderReminderDaysSupply = null,
     Guid? DiscountOverrideWorkflowTaskId = null,
-    Guid? PrescriptionId = null);
+    Guid? PrescriptionId = null,
+    Guid? ConnectRxHandoffId = null);
 
 public sealed record ReportRxPosBlockRequest(Guid ProductId, Guid WarehouseId);
 
@@ -127,7 +128,8 @@ public sealed record CreateSaleRequest(
     string? OrderReminderLabel = null,
     int? OrderReminderDaysSupply = null,
     Guid? DiscountOverrideWorkflowTaskId = null,
-    Guid? PrescriptionId = null);
+    Guid? PrescriptionId = null,
+    Guid? ConnectRxHandoffId = null);
 
 public sealed record UpdateDraftSaleRequest(
     Guid? CustomerId,

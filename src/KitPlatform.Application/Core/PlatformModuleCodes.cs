@@ -27,6 +27,8 @@ public static class PlatformModuleCodes
     public const string PrescriberNetwork = "prescriber_network";
     public const string PrescriberPortal = "prescriber_portal";
     public const string Telehealth = "telehealth";
+    /// <summary>Novixa Connect — collaboration workspace (not e-Rx issuer).</summary>
+    public const string NovixaConnect = "novixa_connect";
 
     public static IReadOnlyList<string> All { get; } =
     [
@@ -51,5 +53,6 @@ public static class PlatformModuleCodes
         PrescriberNetwork,
         PrescriberPortal,
         Telehealth,
+        NovixaConnect,
     ];
 }

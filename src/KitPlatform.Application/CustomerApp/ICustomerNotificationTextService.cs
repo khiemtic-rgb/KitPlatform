@@ -47,4 +47,7 @@ public static class CustomerNotificationTextKeys
 
     public const string DraftOrderTitle = "customer.notify.draft_order.title";
     public const string DraftOrderBody = "customer.notify.draft_order.body";
+
+    public const string ConnectRxReadyTitle = "customer.notify.connect.rx_ready.title";
+    public const string ConnectRxReadyBody = "customer.notify.connect.rx_ready.body";
 }

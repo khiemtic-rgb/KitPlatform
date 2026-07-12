@@ -21,7 +21,8 @@ internal static class RxDispensingEnforcer
         Guid? warehouseId,
         Guid? branchId,
         string auditSource,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Guid? connectRxHandoffId = null)
     {
         if (RxEnforcementMode.Parse(rxSettings.EnforcementMode) != RxEnforcementMode.Strict)
             return;
@@ -46,6 +47,30 @@ internal static class RxDispensingEnforcer
         var rxProducts = productRows
             .Where(p => DispensingClass.RequiresPrescription(p.DispensingClass))
             .ToList();
+
+        // Đơn phòng khám qua Connect — đủ ngữ cảnh kê đơn để bán Rx (không cần electronic_prescriptions NT).
+        if (connectRxHandoffId is Guid handoffId && !prescriptionId.HasValue)
+        {
+            var handoffOk = await conn.QuerySingleOrDefaultAsync<bool>(
+                """
+                SELECT EXISTS(
+                    SELECT 1
+                    FROM pack_connect.rx_handoffs h
+                    WHERE h.id = @HandoffId
+                      AND h.pharmacy_tenant_id = @TenantId
+                      AND h.handoff_status IN ('pending_pharmacy', 'consumed')
+                      AND h.dismissed_at IS NULL
+                )
+                """,
+                new { HandoffId = handoffId, TenantId = tenantId },
+                tx);
+            if (!handoffOk)
+                throw new InvalidOperationException(
+                    "Đơn phòng khám (Connect) không hợp lệ hoặc không thuộc nhà thuốc này.");
+
+            // Có handoff hợp lệ → cho phép bán Rx trong giỏ (dòng đã khớp khi nạp POS).
+            return;
+        }
 
         if (!prescriptionId.HasValue)
         {
@@ -79,7 +104,7 @@ internal static class RxDispensingEnforcer
             var names = string.Join(", ", rxProducts.Select(b => $"{b.ProductName} ({b.ProductCode})"));
             throw new InvalidOperationException(
                 $"Không bán được thuốc kê đơn khi chưa có đơn bác sĩ: {names}. " +
-                "Tạo/xác nhận đơn BS trước hoặc tắt chế độ strict trong Cài đặt POS.");
+                "Nạp đơn BS / đơn phòng khám (Connect) trước hoặc tắt chế độ strict trong Cài đặt POS.");
         }
 
         var prescription = await conn.QuerySingleOrDefaultAsync<PrescriptionGuardRow>(

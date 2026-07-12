@@ -24,6 +24,9 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
 import { formatDisplayMoney } from '@/shared/utils/money';
 import { isProductFeatureEnabled } from '@/shared/product/product-phases';
+import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
+import { resolveAdminVertical } from '@/modules/registry';
+import { ClinicOverviewPage } from '@/modules/clinic/ClinicOverviewPage';
 import { DashboardRevenueChart } from '@/modules/dashboard/DashboardRevenueChart';
 import { DashboardCategoryChart } from '@/modules/dashboard/DashboardCategoryChart';
 import type { RevenuePeriodDays } from '@/modules/dashboard/dashboard-revenue-range';
@@ -60,6 +63,25 @@ function MetricTile({ title, value, icon, to, tone = 'default', hint }: MetricTi
 }
 
 export function DashboardPage() {
+  const platformLoaded = useTenantPlatformStore((s) => s.loaded);
+  const vertical = resolveAdminVertical(useTenantPlatformStore((s) => s.settings?.vertical));
+
+  if (!platformLoaded) {
+    return (
+      <div className="dashboard-page" style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (vertical === 'clinic') {
+    return <ClinicOverviewPage />;
+  }
+
+  return <PharmacyDashboardPage />;
+}
+
+function PharmacyDashboardPage() {
   const { t } = useTranslation('dashboard');
   const { t: tc } = useTranslation('common');
   const user = useAuthStore((s) => s.user);

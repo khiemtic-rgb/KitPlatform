@@ -260,6 +260,94 @@ internal sealed class ReportsRepository
         }).ToList();
     }
 
+    public async Task<IReadOnlyList<Dictionary<string, object?>>> GetSalesRevenueByClinicDoctorAsync(
+        DateTime fromUtc,
+        DateTime toUtc,
+        Guid? warehouseId,
+        Guid[]? allowedWarehouseIds,
+        CancellationToken cancellationToken)
+    {
+        var warehouseFilter = BuildWarehouseFilter("o.warehouse_id", warehouseId, allowedWarehouseIds);
+
+        var sql = $"""
+            WITH base AS (
+                SELECT
+                    o.id AS OrderId,
+                    o.warehouse_id,
+                    COALESCE(NULLIF(BTRIM(ct.tenant_name), ''), '(Không rõ PK)') AS ClinicName,
+                    COALESCE(
+                        NULLIF(BTRIM(h.provider_display_name), ''),
+                        '(Chưa có bác sĩ)'
+                    ) AS DoctorName
+                FROM public.sales_orders o
+                INNER JOIN pack_connect.rx_handoffs h
+                    ON h.id = o.connect_rx_handoff_id
+                   AND h.pharmacy_tenant_id = o.tenant_id
+                INNER JOIN public.tenants ct ON ct.id = h.clinic_tenant_id
+                WHERE o.tenant_id = @TenantId
+                  AND o.connect_rx_handoff_id IS NOT NULL
+                  AND o.status = @OrderCompleted
+                  {warehouseFilter}
+            ),
+            sales AS (
+                SELECT
+                    b.ClinicName,
+                    b.DoctorName,
+                    COUNT(DISTINCT b.OrderId)::int AS OrderCount,
+                    COALESCE(SUM(sp.amount), 0) AS SalesAmount
+                FROM base b
+                INNER JOIN sales_payments sp ON sp.sales_order_id = b.OrderId
+                WHERE sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
+                GROUP BY b.ClinicName, b.DoctorName
+            ),
+            refunds AS (
+                SELECT
+                    b.ClinicName,
+                    b.DoctorName,
+                    COALESCE(SUM(rp.amount), 0) AS RefundAmount
+                FROM base b
+                INNER JOIN sales_returns r ON r.sales_order_id = b.OrderId
+                INNER JOIN sales_return_payments rp ON rp.sales_return_id = r.id
+                WHERE rp.paid_at >= @FromUtc AND rp.paid_at < @ToUtc
+                GROUP BY b.ClinicName, b.DoctorName
+            )
+            SELECT
+                COALESCE(s.ClinicName, r.ClinicName) AS ClinicName,
+                COALESCE(s.DoctorName, r.DoctorName) AS DoctorName,
+                COALESCE(s.OrderCount, 0) AS OrderCount,
+                COALESCE(s.SalesAmount, 0) AS SalesAmount,
+                COALESCE(r.RefundAmount, 0) AS RefundAmount,
+                COALESCE(s.SalesAmount, 0) - COALESCE(r.RefundAmount, 0) AS NetAmount
+            FROM sales s
+            FULL OUTER JOIN refunds r
+                ON r.ClinicName = s.ClinicName AND r.DoctorName = s.DoctorName
+            ORDER BY NetAmount DESC, ClinicName, DoctorName
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<ClinicDoctorRevenueRow>(
+            sql,
+            new
+            {
+                TenantId,
+                FromUtc = fromUtc,
+                ToUtc = toUtc,
+                WarehouseId = warehouseId,
+                AllowedWarehouseIds = allowedWarehouseIds,
+                OrderCompleted = SalesOrderStatuses.Completed,
+            });
+
+        return rows.Select(r => new Dictionary<string, object?>
+        {
+            ["clinicName"] = r.ClinicName,
+            ["doctorName"] = r.DoctorName,
+            ["orderCount"] = r.OrderCount,
+            ["salesAmount"] = r.SalesAmount,
+            ["refundAmount"] = r.RefundAmount,
+            ["netAmount"] = r.NetAmount,
+        }).ToList();
+    }
+
     public async Task<IReadOnlyList<Dictionary<string, object?>>> GetSalesShiftsAsync(
         DateTime fromUtc,
         DateTime toUtc,
@@ -656,6 +744,16 @@ internal sealed class ReportsRepository
     {
         public string CategoryKey { get; init; } = "";
         public string CategoryLabel { get; init; } = "";
+        public decimal SalesAmount { get; init; }
+        public decimal RefundAmount { get; init; }
+        public decimal NetAmount { get; init; }
+    }
+
+    private sealed class ClinicDoctorRevenueRow
+    {
+        public string ClinicName { get; init; } = "";
+        public string DoctorName { get; init; } = "";
+        public int OrderCount { get; init; }
         public decimal SalesAmount { get; init; }
         public decimal RefundAmount { get; init; }
         public decimal NetAmount { get; init; }

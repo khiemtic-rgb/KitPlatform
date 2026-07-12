@@ -99,4 +99,15 @@
 101_prescriber_portal_otp.sql
 102_kap_pharmacy_v1_1_telemed.sql
 103_healthcare_network_foundation.sql
+104_kap_submission_archive.sql
+105_novixa_connect_pack.sql
+106_novixa_connect_org_links.sql
+107_novixa_connect_doctor_membership.sql
+108_novixa_connect_org_profiles.sql
+109_novixa_connect_referrals.sql
+110_novixa_connect_bookings.sql
+111_novixa_connect_status_events.sql
+112_clinic_gd1_demo_clinic_modules.sql
+113_clinic_gd1_demo_customer.sql
+114_clinic_gd1_prescriptions.sql
 seed-prod/001_base_permissions.sql

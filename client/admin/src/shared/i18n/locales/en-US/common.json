@@ -59,6 +59,8 @@
     "dashboard": "Overview",
     "sales": "Sales",
     "rx": "Doctor Rx",
+    "connect": "Connect",
+    "clinic": "Clinic",
     "procurement": "Procurement",
     "inventory": "Inventory",
     "receivables": "Receivables",
@@ -71,7 +73,9 @@
   },
   "datePicker": {
     "pickDate": "Pick date",
-    "monthYear": "Month/Year"
+    "monthYear": "Month/Year",
+    "monthN": "M{{n}}",
+    "year": "Year"
   },
   "language": {
     "ariaLabel": "Language",

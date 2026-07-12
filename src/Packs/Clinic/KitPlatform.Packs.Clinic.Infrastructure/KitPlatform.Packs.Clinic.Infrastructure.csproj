@@ -9,11 +9,15 @@
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.79" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.9" />
+    <PackageReference Include="QuestPDF" Version="2024.12.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\KitPlatform.Packs.Clinic.Application\KitPlatform.Packs.Clinic.Application.csproj" />
+    <ProjectReference Include="..\..\Connect\KitPlatform.Packs.Connect.Application\KitPlatform.Packs.Connect.Application.csproj" />
     <ProjectReference Include="..\..\..\KitPlatform.Application\KitPlatform.Application.csproj" />
     <ProjectReference Include="..\..\..\KitPlatform.Infrastructure\KitPlatform.Infrastructure.csproj" />
   </ItemGroup>

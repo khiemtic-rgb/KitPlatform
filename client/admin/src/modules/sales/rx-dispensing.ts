@@ -13,12 +13,15 @@ export function requiresPrescription(dispensingClass?: string | null): boolean {
 export function shouldBlockRxAtPos(
   dispensingClass: string | undefined | null,
   enforcementMode: RxEnforcementModeValue,
+  options?: { hasVerifiedPrescription?: boolean },
 ): boolean {
+  // Đơn BS Rx module hoặc đơn Connect từ PK đều đủ ngữ cảnh kê đơn
+  if (options?.hasVerifiedPrescription) return false;
   return enforcementMode === 'strict' && requiresPrescription(dispensingClass);
 }
 
 export const RX_POS_BLOCK_MESSAGE =
-  'Thuốc kê đơn — cần đơn bác sĩ đã xác nhận trước khi bán. (Module đơn BS sẽ có bước tạo/tìm đơn tại quầy.)';
+  'Thuốc kê đơn — cần nạp đơn bác sĩ (Bán theo đơn phòng khám / Connect) trước khi bán.';
 
 export function normalizeRxSettings(data: Record<string, unknown>): TenantRxSettings {
   const mode = String(data.enforcementMode ?? data.EnforcementMode ?? 'off').toLowerCase();

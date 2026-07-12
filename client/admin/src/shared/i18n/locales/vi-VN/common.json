@@ -58,7 +58,9 @@
   "modules": {
     "dashboard": "Tổng quan",
     "sales": "Bán hàng",
-    "rx": "Đơn BS",
+    "rx": "Đơn thuốc",
+    "connect": "Connect",
+    "clinic": "Phòng khám",
     "procurement": "Mua hàng",
     "inventory": "Kho hàng",
     "receivables": "Công nợ",
@@ -71,7 +73,9 @@
   },
   "datePicker": {
     "pickDate": "Chọn ngày",
-    "monthYear": "Tháng/Năm"
+    "monthYear": "Tháng/Năm",
+    "monthN": "Thg {{n}}",
+    "year": "Năm"
   },
   "language": {
     "ariaLabel": "Ngôn ngữ",

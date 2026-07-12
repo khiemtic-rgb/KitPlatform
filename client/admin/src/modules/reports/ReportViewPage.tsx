@@ -376,7 +376,10 @@ export function ReportViewPage() {
               loading={loading}
               columns={columns}
               dataSource={result.rows}
-              locale={{ emptyText: t('emptyData') }}
+              locale={{
+                emptyText:
+                  definition?.code === 'SALES-05' ? t('emptyDataConnectSales') : t('emptyData'),
+              }}
               pagination={{ pageSize: 50, showTotal: (total) => t('paginationTotal', { count: total }) }}
               scroll={{ x: true }}
               summary={() =>

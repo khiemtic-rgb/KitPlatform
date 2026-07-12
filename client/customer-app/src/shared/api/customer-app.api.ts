@@ -902,6 +902,7 @@ export async function fetchHomeSummary() {
   const { data } = await http.get<Record<string, unknown>>('/overview/home-summary');
   const loyaltyRaw = (data.loyalty ?? data.Loyalty) as Record<string, unknown> | null | undefined;
   const programsRaw = (loyaltyRaw?.programs ?? loyaltyRaw?.Programs ?? []) as Record<string, unknown>[];
+  const connectRaw = (data.connectInbox ?? data.ConnectInbox) as Record<string, unknown> | null | undefined;
 
   return {
     loyalty: {
@@ -928,7 +929,48 @@ export async function fetchHomeSummary() {
       showMissedAlert: Boolean(adherenceRaw?.showMissedAlert ?? adherenceRaw?.ShowMissedAlert ?? false),
       };
     })(),
+    connectInbox: normalizeConnectInbox(connectRaw),
   };
+}
+
+export type CustomerConnectInboxItem = {
+  kind: string;
+  sourceId: string;
+  detail?: string;
+  clinicName?: string;
+  occurredAt?: string;
+  scheduledAt?: string;
+  prescriptionCode?: string;
+  ctaKey: string;
+};
+
+export type CustomerConnectInbox = {
+  connectEnabled: boolean;
+  items: CustomerConnectInboxItem[];
+};
+
+function normalizeConnectInbox(raw: Record<string, unknown> | null | undefined): CustomerConnectInbox {
+  if (!raw) return { connectEnabled: false, items: [] };
+  const itemsRaw = (raw.items ?? raw.Items ?? []) as Record<string, unknown>[];
+  return {
+    connectEnabled: Boolean(raw.connectEnabled ?? raw.ConnectEnabled ?? false),
+    items: itemsRaw.map((row) => ({
+      kind: String(row.kind ?? row.Kind ?? ''),
+      sourceId: String(row.sourceId ?? row.SourceId ?? ''),
+      detail: (row.detail ?? row.Detail) as string | undefined,
+      clinicName: (row.clinicName ?? row.ClinicName) as string | undefined,
+      occurredAt: (row.occurredAt ?? row.OccurredAt) as string | undefined,
+      scheduledAt: (row.scheduledAt ?? row.ScheduledAt) as string | undefined,
+      prescriptionCode: (row.prescriptionCode ?? row.PrescriptionCode) as string | undefined,
+      ctaKey: String(row.ctaKey ?? row.CtaKey ?? 'info'),
+    })),
+  };
+}
+
+/** Connect inbox riêng (Option 1) — khi cần refresh độc lập. */
+export async function fetchConnectInbox(): Promise<CustomerConnectInbox> {
+  const { data } = await http.get<Record<string, unknown>>('/connect/inbox');
+  return normalizeConnectInbox(data);
 }
 
 /** Gộp 3 API tab Đơn hàng — 1 round-trip. */

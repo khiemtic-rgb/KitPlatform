@@ -786,6 +786,65 @@ internal sealed class CustomerPushService : ICustomerPushService
         }
     }
 
+    public async Task NotifyConnectRxReadyAsync(
+        Guid pharmacyTenantId,
+        Guid customerId,
+        string pharmacyDisplayName,
+        string? summary,
+        CancellationToken cancellationToken = default)
+    {
+        var locale = await _notifyText.ResolveLocaleAsync(pharmacyTenantId, customerId, cancellationToken);
+        var pharmacy = string.IsNullOrWhiteSpace(pharmacyDisplayName) ? "nhà thuốc" : pharmacyDisplayName.Trim();
+        var title = await _notifyText.FormatAsync(
+            pharmacyTenantId,
+            locale,
+            CustomerNotificationTextKeys.ConnectRxReadyTitle,
+            cancellationToken: cancellationToken);
+        var body = await _notifyText.FormatAsync(
+            pharmacyTenantId,
+            locale,
+            CustomerNotificationTextKeys.ConnectRxReadyBody,
+            new Dictionary<string, string>
+            {
+                ["pharmacy"] = pharmacy,
+                ["detail"] = string.IsNullOrWhiteSpace(summary) ? "" : $" {summary.Trim()}",
+            },
+            cancellationToken);
+
+        await _repo.InsertNotificationAsync(
+            pharmacyTenantId,
+            customerId,
+            title,
+            body,
+            new { channel = "connect", type = "rx_ready", pharmacy },
+            "connect",
+            "/",
+            cancellationToken);
+
+        if (!_options.Enabled
+            || string.IsNullOrWhiteSpace(_options.PublicKey)
+            || string.IsNullOrWhiteSpace(_options.PrivateKey))
+        {
+            return;
+        }
+
+        try
+        {
+            await TryDispatchPushOnlyAsync(
+                pharmacyTenantId,
+                customerId,
+                title,
+                body,
+                "connect",
+                "/",
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Connect rx_ready push failed for customer {CustomerId}", customerId);
+        }
+    }
+
     private async Task AdvanceReminderScheduleAsync(DueReminderPushRow row, CancellationToken cancellationToken)
     {
         var next = ReminderScheduleHelper.ComputeNextRemindAt(

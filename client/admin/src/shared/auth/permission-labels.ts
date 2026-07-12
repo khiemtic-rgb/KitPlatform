@@ -6,6 +6,7 @@ export const PERMISSION_MODULE_ORDER = [
   'inventory',
   'procurement',
   'sales',
+  'clinic',
   'customer',
   'system',
 ] as const;
@@ -23,6 +24,8 @@ const MODULE_KEY_ALIASES: Record<string, (typeof PERMISSION_MODULE_ORDER)[number
   sales: 'sales',
   Sales: 'sales',
   'Bán hàng': 'sales',
+  clinic: 'clinic',
+  Clinic: 'clinic',
   customer: 'customer',
   Customer: 'customer',
   'Khách hàng': 'customer',

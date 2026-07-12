@@ -7,6 +7,7 @@ namespace KitPlatform.Infrastructure.Kernel.Workspace;
 internal sealed class WorkspacePackProvisioner
 {
     private static readonly string[] ClinicPackModules = ["clinic_appointments", "clinic_emr_lite", "crm_leads"];
+    private static readonly string[] ConnectPackModules = ["novixa_connect"];
 
     private readonly IDbConnectionFactory _db;
 
@@ -27,6 +28,13 @@ internal sealed class WorkspacePackProvisioner
         {
             await conn.ExecuteAsync(
                 "SELECT kit_provision_pack_workspace(@TenantId, 'clinic_crm')",
+                new { TenantId = tenantId });
+        }
+
+        if (enabledModules.Any(m => ConnectPackModules.Contains(m, StringComparer.OrdinalIgnoreCase)))
+        {
+            await conn.ExecuteAsync(
+                "SELECT kit_provision_pack_workspace(@TenantId, 'novixa_connect')",
                 new { TenantId = tenantId });
         }
     }

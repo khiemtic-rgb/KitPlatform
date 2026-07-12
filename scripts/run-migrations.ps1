@@ -127,7 +127,27 @@ $files = @(
     "100_rx_prescriber_network.sql",
     "101_prescriber_portal_otp.sql",
     "102_kap_pharmacy_v1_1_telemed.sql",
-    "103_healthcare_network_foundation.sql"
+    "103_healthcare_network_foundation.sql",
+    "104_kap_submission_archive.sql",
+    "105_novixa_connect_pack.sql",
+    "106_novixa_connect_org_links.sql",
+    "107_novixa_connect_doctor_membership.sql",
+    "108_novixa_connect_org_profiles.sql",
+    "109_novixa_connect_referrals.sql",
+    "110_novixa_connect_bookings.sql",
+    "111_novixa_connect_status_events.sql",
+    "112_clinic_gd1_demo_clinic_modules.sql",
+    "113_clinic_gd1_demo_customer.sql",
+    "114_clinic_gd1_prescriptions.sql",
+    "115_clinic_gd1_rx_handoff.sql",
+    "116_clinic_gd1_permissions.sql",
+    "117_clinic_cl2_soft_cks.sql",
+    "118_connect_referral_pharmacy_customer.sql",
+    "119_connect_referral_clinic_customer.sql",
+    "120_clinic_cl3_encounter_modality.sql",
+    "121_sales_connect_rx_handoff.sql",
+    "122_clinic_patient_provider_profile.sql",
+    "123_clinic_specialty_vi_normalize.sql"
 )
 
 Write-Host "=== KitPlatform Migrations ===" -ForegroundColor Cyan

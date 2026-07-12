@@ -35,6 +35,9 @@ internal sealed class CustomerNotificationTextService : ICustomerNotificationTex
             [CustomerNotificationTextKeys.DraftOrderTitle] = "Đơn thuốc tạm mới",
             [CustomerNotificationTextKeys.DraftOrderBody] =
                 "{draftNumber} — tổng tạm tính {total}đ. Xem và xác nhận (tuỳ chọn) trên app.",
+            [CustomerNotificationTextKeys.ConnectRxReadyTitle] = "Đơn sẵn sàng lấy thuốc",
+            [CustomerNotificationTextKeys.ConnectRxReadyBody] =
+                "Đơn phòng khám sẵn sàng tại {pharmacy}. Mở trang chủ app để xem chi tiết.{detail}",
         };
 
     private static readonly IReadOnlyDictionary<string, string> EnDefaults =
@@ -63,6 +66,9 @@ internal sealed class CustomerNotificationTextService : ICustomerNotificationTex
             [CustomerNotificationTextKeys.DraftOrderTitle] = "New draft order",
             [CustomerNotificationTextKeys.DraftOrderBody] =
                 "{draftNumber} — subtotal {total}. Review and confirm in the app.",
+            [CustomerNotificationTextKeys.ConnectRxReadyTitle] = "Prescription ready for pickup",
+            [CustomerNotificationTextKeys.ConnectRxReadyBody] =
+                "A clinic prescription is ready at {pharmacy}. Open Home in the app for details.{detail}",
         };
 
     private static readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> Defaults =

@@ -4,7 +4,8 @@ public sealed record CustomerHomeSummaryDto(
     CustomerLoyaltySummaryDto? Loyalty,
     CustomerDraftOrderListResult DraftOrders,
     CustomerRepurchaseSuggestionListResult RepurchaseSuggestions,
-    MedicationAdherenceSummaryDto Adherence);
+    MedicationAdherenceSummaryDto Adherence,
+    CustomerConnectInboxDto? ConnectInbox = null);
 
 public sealed record CustomerOrdersOverviewDto(
     CustomerDraftOrderListResult DraftOrders,

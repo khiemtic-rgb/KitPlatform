@@ -9,7 +9,6 @@ import {
   Input,
   InputNumber,
   Popconfirm,
-  Select,
   Space,
   Spin,
   Table,
@@ -65,6 +64,7 @@ import { defaultVatTreatmentId } from '@/modules/procurement/po-vat';
 import { isPlaceholderSupplier } from '@/modules/procurement/grn-pricing';
 import { printGoodsReceipt } from '@/shared/print/grn-print';
 import { ProductUnitSelect } from '@/modules/procurement/ProductUnitSelect';
+import { ProductSearchSelect } from '@/modules/procurement/ProductSearchSelect';
 import { PoUnitPriceField } from '@/modules/procurement/PoUnitPriceField';
 import { PharmaExpiryPicker } from '@/shared/ui/PharmaDatePicker';
 import { GoodsReceiptFilterBar } from '@/modules/procurement/GoodsReceiptFilterBar';
@@ -532,14 +532,12 @@ export function GoodsReceiptListPage() {
                   rules={[{ required: true, message: tVal('selectProduct') }]}
                   style={{ flex: '2 1 320px', marginBottom: 0, minWidth: 240 }}
                 >
-                  <Select
-                    placeholder={tShared('columns.product')}
-                    showSearch
-                    optionFilterProp="label"
-                    options={products.map((p) => ({
-                      value: p.id,
-                      label: `${p.productCode} — ${p.productName}`,
-                    }))}
+                  <ProductSearchSelect
+                    seedProducts={products}
+                    placeholder={t('productSearchPlaceholder')}
+                    afterChange={() => {
+                      form.setFieldValue(['items', field.name, 'productUnitId'], undefined);
+                    }}
                   />
                 </Form.Item>
                 <Form.Item

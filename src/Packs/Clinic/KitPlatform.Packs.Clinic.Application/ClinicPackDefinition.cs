@@ -4,16 +4,14 @@
 public static class ClinicPackDefinition
 {
     public const string PackCode = "clinic_crm";
-    public const string DisplayName = "Clinic + CRM Pack (pilot)";
+    public const string DisplayName = "Novixa Clinic (ClinicOS)";
 
     public static IReadOnlyList<string> DefaultEnabledModules { get; } =
     [
-        "inventory",
         "sales",
-        "customer_app",
         "clinic_appointments",
         "clinic_emr_lite",
-        "crm_leads",
+        "novixa_connect",
         "reports",
     ];
 
