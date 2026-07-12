@@ -245,6 +245,15 @@ Moderation workflow; 1 assessment template live.
 - Hồ sơ bảo hiểm đầy đủ
 - Marketplace đa nhà thuốc
 - Thay thế chẩn đoán / kê đơn tự động không DS
+- Portal BN phòng khám đầy đủ / EMR trên app KH (Option 2–3 — sau khi PK bật channel riêng)
+
+### Đã ship sớm (song song P11b) — Connect-aware Option 1
+
+| ID | Việc | Ghi chú |
+|---|---|---|
+| CA-CONNECT-01 | `GET /api/customer-app/connect/inbox` | Referral / booking / rx_ready theo KH NT |
+| CA-CONNECT-02 | Home card điều phối | CTA lấy thuốc → hub nhà thuốc |
+| CA-CONNECT-03 | Gói `connectInbox` trong home-summary | 1 round-trip |
 
 ---
 
@@ -252,4 +261,5 @@ Moderation workflow; 1 assessment template live.
 
 | Version | Ngày | Thay đổi |
 |---|---|---|
+| 1.1 | 2026-07-12 | Connect-aware Option 1 (inbox + Home) — không mở Clinic portal |
 | 1.0 | 2026-07-09 | Backlog P11b-S2 + P15–P18 với acceptance criteria |
