@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Text.RegularExpressions;
 using Dapper;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Packs.Pharmacy.Inventory;
@@ -191,11 +192,10 @@ internal sealed class InventoryRepository
         if (warehouseId is not null) extra.Add("b.warehouse_id = @WarehouseId");
         else if (allowedWarehouseIds is { Length: > 0 }) extra.Add("b.warehouse_id = ANY(@AllowedWarehouseIds)");
         if (productId is not null) extra.Add("b.product_id = @ProductId");
-        if (!string.IsNullOrWhiteSpace(search))
-            extra.Add("(p.product_name ILIKE @SearchPattern OR p.product_code ILIKE @SearchPattern OR b.batch_number ILIKE @SearchPattern)");
+        var searchClause = BuildProductStockSearchClause(search, out var searchParams);
+        if (searchClause is not null) extra.Add(searchClause);
 
         var whereExtra = " AND " + string.Join(" AND ", extra);
-        var searchPattern = string.IsNullOrWhiteSpace(search) ? null : $"%{search.Trim()}%";
 
         var countSql = $"""
             SELECT COUNT(*)::int
@@ -233,16 +233,17 @@ internal sealed class InventoryRepository
             LIMIT @PageSize OFFSET @Offset
             """;
 
-        var param = new
+        var param = new DynamicParameters(new
         {
             TenantId,
             WarehouseId = warehouseId,
             AllowedWarehouseIds = allowedWarehouseIds,
             ProductId = productId,
-            SearchPattern = searchPattern,
             PageSize = pageSize,
             Offset = offset,
-        };
+        });
+        foreach (var (key, value) in searchParams)
+            param.Add(key, value);
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         var total = await conn.QuerySingleAsync<int>(countSql, param);
@@ -259,62 +260,184 @@ internal sealed class InventoryRepository
         CancellationToken cancellationToken)
     {
         var offset = (page - 1) * pageSize;
-        var extra = new List<string> { "b.quantity_available > 0" };
-        if (warehouseId is not null) extra.Add("b.warehouse_id = @WarehouseId");
-        else if (allowedWarehouseIds is { Length: > 0 }) extra.Add("b.warehouse_id = ANY(@AllowedWarehouseIds)");
-        if (!string.IsNullOrWhiteSpace(search))
-            extra.Add("(p.product_name ILIKE @SearchPattern OR p.product_code ILIKE @SearchPattern OR b.batch_number ILIKE @SearchPattern)");
+        var hasSearch = !string.IsNullOrWhiteSpace(search);
+        var searchClause = BuildProductStockSearchClause(search, out var searchParams, includeBatchNumber: !hasSearch);
 
-        var whereExtra = " AND " + string.Join(" AND ", extra);
-        var searchPattern = string.IsNullOrWhiteSpace(search) ? null : $"%{search.Trim()}%";
+        // Khi đang tìm theo tên/mã: hiện cả SP tồn 0 (để biết SP có trong danh mục nhưng chưa nhập / chưa Hoàn tất).
+        // Không tìm: chỉ SP còn tồn > 0 (giữ hiệu năng danh sách lớn).
+        string warehouseFilter;
+        if (warehouseId is not null)
+            warehouseFilter = "AND b.warehouse_id = @WarehouseId";
+        else if (allowedWarehouseIds is { Length: > 0 })
+            warehouseFilter = "AND b.warehouse_id = ANY(@AllowedWarehouseIds)";
+        else
+            warehouseFilter = "";
 
-        var countSql = $"""
-            SELECT COUNT(*)::int FROM (
-                SELECT p.id
+        string countSql;
+        string sql;
+        if (hasSearch && searchClause is not null)
+        {
+            countSql = $"""
+                SELECT COUNT(*)::int
+                FROM products p
+                WHERE p.tenant_id = @TenantId AND p.deleted_at IS NULL
+                  AND {searchClause}
+                """;
+
+            sql = $"""
+                SELECT
+                    p.id AS ProductId,
+                    p.product_code AS ProductCode,
+                    p.product_name AS ProductName,
+                    (SELECT u.unit_name FROM product_units u
+                     WHERE u.product_id = p.id AND u.is_sale_unit = TRUE AND u.status = 1
+                     ORDER BY u.is_base_unit DESC, u.unit_name LIMIT 1) AS SaleUnitName,
+                    COALESCE((
+                        SELECT SUM(b.quantity_available)
+                        FROM inventory_batches b
+                        INNER JOIN warehouses w ON w.id = b.warehouse_id AND w.deleted_at IS NULL
+                        WHERE b.product_id = p.id AND b.tenant_id = @TenantId
+                          AND b.quantity_available > 0
+                          {warehouseFilter}
+                    ), 0) AS TotalQuantity,
+                    COALESCE((
+                        SELECT COUNT(DISTINCT b.warehouse_id)::int
+                        FROM inventory_batches b
+                        INNER JOIN warehouses w ON w.id = b.warehouse_id AND w.deleted_at IS NULL
+                        WHERE b.product_id = p.id AND b.tenant_id = @TenantId
+                          AND b.quantity_available > 0
+                          {warehouseFilter}
+                    ), 0) AS WarehouseCount,
+                    COALESCE((
+                        SELECT COUNT(*)::int
+                        FROM inventory_batches b
+                        INNER JOIN warehouses w ON w.id = b.warehouse_id AND w.deleted_at IS NULL
+                        WHERE b.product_id = p.id AND b.tenant_id = @TenantId
+                          AND b.quantity_available > 0
+                          {warehouseFilter}
+                    ), 0) AS BatchCount
+                FROM products p
+                WHERE p.tenant_id = @TenantId AND p.deleted_at IS NULL
+                  AND {searchClause}
+                ORDER BY
+                    CASE WHEN COALESCE((
+                        SELECT SUM(b.quantity_available)
+                        FROM inventory_batches b
+                        INNER JOIN warehouses w ON w.id = b.warehouse_id AND w.deleted_at IS NULL
+                        WHERE b.product_id = p.id AND b.tenant_id = @TenantId
+                          AND b.quantity_available > 0
+                          {warehouseFilter}
+                    ), 0) > 0 THEN 0 ELSE 1 END,
+                    p.product_name
+                LIMIT @PageSize OFFSET @Offset
+                """;
+        }
+        else
+        {
+            var extra = new List<string> { "b.quantity_available > 0" };
+            if (warehouseId is not null) extra.Add("b.warehouse_id = @WarehouseId");
+            else if (allowedWarehouseIds is { Length: > 0 }) extra.Add("b.warehouse_id = ANY(@AllowedWarehouseIds)");
+            if (searchClause is not null) extra.Add(searchClause);
+            var whereExtra = " AND " + string.Join(" AND ", extra);
+
+            countSql = $"""
+                SELECT COUNT(*)::int FROM (
+                    SELECT p.id
+                    FROM inventory_batches b
+                    INNER JOIN products p ON p.id = b.product_id
+                    INNER JOIN warehouses w ON w.id = b.warehouse_id
+                    WHERE b.tenant_id = @TenantId AND p.deleted_at IS NULL AND w.deleted_at IS NULL
+                    {whereExtra}
+                    GROUP BY p.id
+                ) grouped
+                """;
+
+            sql = $"""
+                SELECT
+                    p.id AS ProductId,
+                    p.product_code AS ProductCode,
+                    p.product_name AS ProductName,
+                    (SELECT u.unit_name FROM product_units u
+                     WHERE u.product_id = p.id AND u.is_sale_unit = TRUE AND u.status = 1
+                     ORDER BY u.is_base_unit DESC, u.unit_name LIMIT 1) AS SaleUnitName,
+                    SUM(b.quantity_available) AS TotalQuantity,
+                    COUNT(DISTINCT b.warehouse_id)::int AS WarehouseCount,
+                    COUNT(*)::int AS BatchCount
                 FROM inventory_batches b
                 INNER JOIN products p ON p.id = b.product_id
                 INNER JOIN warehouses w ON w.id = b.warehouse_id
                 WHERE b.tenant_id = @TenantId AND p.deleted_at IS NULL AND w.deleted_at IS NULL
                 {whereExtra}
-                GROUP BY p.id
-            ) grouped
-            """;
+                GROUP BY p.id, p.product_code, p.product_name
+                ORDER BY p.product_name
+                LIMIT @PageSize OFFSET @Offset
+                """;
+        }
 
-        var sql = $"""
-            SELECT
-                p.id AS ProductId,
-                p.product_code AS ProductCode,
-                p.product_name AS ProductName,
-                (SELECT u.unit_name FROM product_units u
-                 WHERE u.product_id = p.id AND u.is_sale_unit = TRUE AND u.status = 1
-                 ORDER BY u.is_base_unit DESC, u.unit_name LIMIT 1) AS SaleUnitName,
-                SUM(b.quantity_available) AS TotalQuantity,
-                COUNT(DISTINCT b.warehouse_id)::int AS WarehouseCount,
-                COUNT(*)::int AS BatchCount
-            FROM inventory_batches b
-            INNER JOIN products p ON p.id = b.product_id
-            INNER JOIN warehouses w ON w.id = b.warehouse_id
-            WHERE b.tenant_id = @TenantId AND p.deleted_at IS NULL AND w.deleted_at IS NULL
-            {whereExtra}
-            GROUP BY p.id, p.product_code, p.product_name
-            ORDER BY p.product_name
-            LIMIT @PageSize OFFSET @Offset
-            """;
-
-        var param = new
+        var param = new DynamicParameters(new
         {
             TenantId,
             WarehouseId = warehouseId,
             AllowedWarehouseIds = allowedWarehouseIds,
-            SearchPattern = searchPattern,
             PageSize = pageSize,
             Offset = offset,
-        };
+        });
+        foreach (var (key, value) in searchParams)
+            param.Add(key, value);
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         var total = await conn.QuerySingleAsync<int>(countSql, param);
         var items = (await conn.QueryAsync<StockProductSummaryDto>(sql, param)).ToList();
         return (items, total);
+    }
+
+    /// <summary>
+    /// Tìm theo tên SP (ưu tiên), mã, số lô. Bỏ phần trong ngoặc (vd. strength) và khớp từng từ
+    /// để "Paracetamol 500mg (500 mg)" vẫn ra "Paracetamol 500mg - Vỉ".
+    /// </summary>
+    private static string? BuildProductStockSearchClause(
+        string? search,
+        out List<(string Key, object Value)> searchParams,
+        bool includeBatchNumber = true)
+    {
+        searchParams = [];
+        if (string.IsNullOrWhiteSpace(search)) return null;
+
+        var cleaned = Regex.Replace(search.Trim(), @"\([^)]*\)", " ");
+        cleaned = Regex.Replace(cleaned, @"\s+", " ").Trim();
+        if (cleaned.Length == 0) return null;
+
+        searchParams.Add(("SearchPattern", $"%{cleaned}%"));
+
+        var tokens = cleaned
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(t => t.Length >= 2)
+            .Take(5)
+            .ToArray();
+
+        var batchPart = includeBatchNumber ? "OR b.batch_number ILIKE @SearchPattern" : "";
+
+        if (tokens.Length == 0)
+        {
+            return $"(p.product_name ILIKE @SearchPattern OR p.product_code ILIKE @SearchPattern {batchPart})";
+        }
+
+        var nameParts = new List<string>();
+        for (var i = 0; i < tokens.Length; i++)
+        {
+            var key = $"SearchToken{i}";
+            searchParams.Add((key, $"%{tokens[i]}%"));
+            nameParts.Add($"p.product_name ILIKE @{key}");
+        }
+
+        return $"""
+            (
+                p.product_code ILIKE @SearchPattern
+                {batchPart}
+                OR p.product_name ILIKE @SearchPattern
+                OR ({string.Join(" AND ", nameParts)})
+            )
+            """;
     }
 
     public async Task<bool> ProductExistsAsync(Guid productId, CancellationToken cancellationToken)

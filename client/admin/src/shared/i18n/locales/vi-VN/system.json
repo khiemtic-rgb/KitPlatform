@@ -296,6 +296,7 @@
       "inventory": "Kho hàng",
       "procurement": "Mua hàng",
       "sales": "Bán hàng",
+      "clinic": "Clinic",
       "customer": "Khách hàng",
       "system": "Hệ thống"
     },
@@ -310,6 +311,8 @@
       "sales.write": "Bán hàng",
       "sales.discount": "Chiết khấu bán hàng (tối đa 10%)",
       "sales.discount.unlimited": "Chiết khấu không giới hạn",
+      "clinic.read": "Xem Clinic",
+      "clinic.write": "Sửa Clinic",
       "system.read": "Xem hệ thống",
       "system.write": "Quản trị hệ thống",
       "system.delete_permanent": "Xóa vĩnh viễn"

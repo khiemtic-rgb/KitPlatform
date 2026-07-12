@@ -133,7 +133,9 @@
       "unitPrice": "Đơn giá",
       "discount": "CK",
       "lineTotal": "Thành tiền",
-      "removeLine": "Xóa dòng"
+      "removeLine": "Xóa dòng",
+      "removeRxLockedHint": "Dòng từ đơn bác sĩ — không xóa được. Hủy nạp đơn hoặc bỏ giỏ nếu cần bán lại.",
+      "qtyRxLockedHint": "Số lượng theo đơn bác sĩ — không chỉnh trên POS. Hủy nạp đơn nếu cần bán khác số lượng."
     },
     "summary": {
       "subtotal": "Tổng tiền hàng",

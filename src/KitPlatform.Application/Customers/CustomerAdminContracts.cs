@@ -29,7 +29,12 @@ public sealed record CustomerDetailDto(
     bool? AppVerified,
     DateTimeOffset? AppLastLoginAt,
     bool AllowCredit = false,
-    decimal? CreditLimit = null);
+    decimal? CreditLimit = null,
+    string? AddressLine = null,
+    string? IdNumber = null,
+    string? EmergencyContactName = null,
+    string? EmergencyContactPhone = null,
+    string? ClinicalNotes = null);
 
 public sealed record CustomerOrderListItemDto(
     Guid Id,
@@ -51,7 +56,12 @@ public sealed record CreateCustomerRequest(
     string? CustomerCode = null,
     string? Email = null,
     DateOnly? DateOfBirth = null,
-    short? Gender = null);
+    short? Gender = null,
+    string? AddressLine = null,
+    string? IdNumber = null,
+    string? EmergencyContactName = null,
+    string? EmergencyContactPhone = null,
+    string? ClinicalNotes = null);
 
 public sealed record UpdateCustomerRequest(
     string FullName,
@@ -62,6 +72,11 @@ public sealed record UpdateCustomerRequest(
     short? Gender = null,
     short Status = 1,
     bool AllowCredit = false,
-    decimal? CreditLimit = null);
+    decimal? CreditLimit = null,
+    string? AddressLine = null,
+    string? IdNumber = null,
+    string? EmergencyContactName = null,
+    string? EmergencyContactPhone = null,
+    string? ClinicalNotes = null);
 
 public sealed record NextCustomerCodeDto(string CustomerCode);

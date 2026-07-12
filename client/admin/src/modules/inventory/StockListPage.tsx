@@ -98,6 +98,7 @@ export function StockListPage() {
     void loadWarehouses();
   }, [loadWarehouses]);
 
+  // Gợi ý theo tên/mã — tắt filterOption phía client (mặc định Ant Design lọc theo value=mã → gõ tên không hiện gợi ý).
   useEffect(() => {
     const q = searchInput.trim();
     if (q.length < 2) {
@@ -118,7 +119,7 @@ export function StockListPage() {
             if (cancelled) return;
             setSearchSuggestions(
               result.items.map((p) => ({
-                value: p.productCode || p.productName,
+                value: p.productName,
                 label: `${p.productCode} — ${p.productName}`,
               })),
             );
@@ -134,14 +135,15 @@ export function StockListPage() {
             setSearchSuggestions(
               result.items
                 .filter((b) => {
-                  if (seen.has(b.batchNumber)) return false;
-                  seen.add(b.batchNumber);
+                  const key = `${b.productId}-${b.batchNumber}`;
+                  if (seen.has(key)) return false;
+                  seen.add(key);
                   return true;
                 })
                 .slice(0, 12)
                 .map((b) => ({
-                  value: b.batchNumber,
-                  label: `${ts('batchLabel', { number: b.batchNumber })} — ${b.productName}`,
+                  value: b.productName,
+                  label: `${b.productCode} — ${b.productName} · ${ts('batchLabel', { number: b.batchNumber })}`,
                 })),
             );
           }
@@ -155,6 +157,23 @@ export function StockListPage() {
       window.clearTimeout(timer);
     };
   }, [searchInput, activeTab, warehouseId, ts]);
+
+  // Tự lọc bảng khi gõ tên — không cần nhớ mã hay bấm Tìm.
+  useEffect(() => {
+    const q = searchInput.trim();
+    const timer = window.setTimeout(() => {
+      setSearch((prev) => {
+        if (prev === q) return prev;
+        setPage(1);
+        if (activeTab === 'fefo') {
+          setFefoProductId(undefined);
+          setFefoProductLabel(undefined);
+        }
+        return q;
+      });
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [searchInput, activeTab]);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -373,9 +392,10 @@ export function StockListPage() {
       />
       <Space.Compact>
         <AutoComplete
-          style={{ width: 280 }}
+          style={{ width: 360 }}
           options={searchSuggestions}
           value={searchInput}
+          filterOption={false}
           onSelect={(value) => applySearch(String(value))}
           onChange={(value) => {
             setSearchInput(value);
@@ -443,6 +463,11 @@ export function StockListPage() {
                   columns={summaryColumns}
                   dataSource={summaryItems}
                   pagination={pagination}
+                  locale={{
+                    emptyText: search
+                      ? t('messages.emptySearchHint')
+                      : undefined,
+                  }}
                   onRow={(record) => ({
                     onClick: () => void openProductDetail(record),
                     style: { cursor: 'pointer' },

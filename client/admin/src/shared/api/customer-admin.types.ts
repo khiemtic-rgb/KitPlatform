@@ -30,6 +30,11 @@ export interface CustomerDetail {
   appLastLoginAt?: string;
   allowCredit?: boolean;
   creditLimit?: number | null;
+  addressLine?: string;
+  idNumber?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  clinicalNotes?: string;
 }
 
 export interface CustomerPilotOtpStatus {
@@ -118,6 +123,11 @@ export interface CreateCustomerPayload {
   email?: string;
   dateOfBirth?: string;
   gender?: number;
+  addressLine?: string;
+  idNumber?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  clinicalNotes?: string;
 }
 
 export interface UpdateCustomerPayload extends CreateCustomerPayload {

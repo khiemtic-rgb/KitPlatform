@@ -185,8 +185,8 @@
       "fefo": "Theo lô (FEFO)"
     },
     "filterByWarehouse": "Lọc theo kho",
-    "searchSummary": "Tìm SP / mã",
-    "searchFefo": "Tìm SP / mã / số lô",
+    "searchSummary": "Tìm theo tên SP hoặc mã…",
+    "searchFefo": "Tìm theo tên SP, mã hoặc số lô…",
     "detailTitle": "Chi tiết tồn",
     "detailTitleWithProduct": "Chi tiết tồn — {{name}}",
     "viewFefo": "Xem theo lô FEFO",
@@ -194,7 +194,8 @@
     "noBatches": "Không có lô tồn.",
     "messages": {
       "loadFailed": "Không tải được tồn kho",
-      "detailLoadFailed": "Không tải được chi tiết lô"
+      "detailLoadFailed": "Không tải được chi tiết lô",
+      "emptySearchHint": "Không có SP khớp, hoặc tồn vẫn 0 vì phiếu nhập chưa bấm «Hoàn tất»."
     }
   },
   "transferList": {

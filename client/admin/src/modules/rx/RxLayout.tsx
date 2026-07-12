@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   DashboardOutlined,
+  FileTextOutlined,
+  IdcardOutlined,
   LinkOutlined,
-  MedicineBoxOutlined,
-  UserOutlined,
 } from '@ant-design/icons';
 import { useRegisterProductNavSubnav } from '@/shared/components/module-subnav.context';
 import type { ProductNavTab } from '@/shared/product/product-phases';
@@ -28,13 +28,13 @@ export function RxLayout() {
         key: 'prescriptions',
         label: t('prescriptions'),
         path: '/rx/prescriptions',
-        icon: <MedicineBoxOutlined />,
+        icon: <FileTextOutlined />,
       },
       {
         key: 'prescribers',
         label: t('prescribers'),
         path: '/rx/prescribers',
-        icon: <UserOutlined />,
+        icon: <IdcardOutlined />,
       },
       {
         key: 'prescriber-links',

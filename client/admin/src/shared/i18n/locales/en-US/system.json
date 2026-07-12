@@ -296,6 +296,7 @@
       "inventory": "Inventory",
       "procurement": "Procurement",
       "sales": "Sales",
+      "clinic": "Clinic",
       "customer": "Customers",
       "system": "System"
     },
@@ -310,6 +311,8 @@
       "sales.write": "Sales",
       "sales.discount": "Sales discount (max 10%)",
       "sales.discount.unlimited": "Unlimited discount",
+      "clinic.read": "View Clinic",
+      "clinic.write": "Edit Clinic",
       "system.read": "View system",
       "system.write": "Manage system",
       "system.delete_permanent": "Permanent delete"

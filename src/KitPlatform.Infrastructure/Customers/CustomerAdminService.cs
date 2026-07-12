@@ -65,6 +65,11 @@ internal sealed class CustomerAdminService : ICustomerAdminService
             NormalizeEmail(request.Email),
             request.DateOfBirth,
             request.Gender,
+            NormalizeOptional(request.AddressLine),
+            NormalizeOptional(request.IdNumber),
+            NormalizeOptional(request.EmergencyContactName),
+            NormalizeOptional(request.EmergencyContactPhone),
+            NormalizeOptional(request.ClinicalNotes),
             cancellationToken);
 
         return (await _repository.GetAsync(id, cancellationToken))!;
@@ -99,6 +104,11 @@ internal sealed class CustomerAdminService : ICustomerAdminService
             request.Status,
             request.AllowCredit,
             request.CreditLimit,
+            NormalizeOptional(request.AddressLine),
+            NormalizeOptional(request.IdNumber),
+            NormalizeOptional(request.EmergencyContactName),
+            NormalizeOptional(request.EmergencyContactPhone),
+            NormalizeOptional(request.ClinicalNotes),
             cancellationToken);
 
         return updated ? await _repository.GetAsync(customerId, cancellationToken) : null;
@@ -122,4 +132,7 @@ internal sealed class CustomerAdminService : ICustomerAdminService
 
     private static string? NormalizeEmail(string? email) =>
         string.IsNullOrWhiteSpace(email) ? null : email.Trim();
+
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

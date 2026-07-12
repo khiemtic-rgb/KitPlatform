@@ -582,6 +582,7 @@ export function PrescriptionFormDrawer({
               <div style={{ marginBottom: 4 }}>Ngày ký (tuỳ chọn)</div>
               <DatePicker
                 showTime
+                format="DD/MM/YYYY HH:mm"
                 value={signedAt ? dayjs(signedAt) : null}
                 onChange={(value) => setSignedAt(value ? value.toISOString() : undefined)}
               />

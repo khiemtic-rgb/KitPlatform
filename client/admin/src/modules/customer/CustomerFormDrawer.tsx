@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { App, Button, Drawer, Form, Input, InputNumber, Select, Space, Switch } from 'antd';
 import { CloseOutlined, SaveOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import {
   createCustomer,
   fetchNextCustomerCode,
@@ -22,6 +23,11 @@ interface CustomerFormValues {
   status?: number;
   allowCredit?: boolean;
   creditLimit?: number | null;
+  addressLine?: string;
+  idNumber?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  clinicalNotes?: string;
 }
 
 interface CustomerFormDrawerProps {
@@ -79,6 +85,11 @@ export function CustomerFormDrawer({
         status: editing.status,
         allowCredit: editing.allowCredit,
         creditLimit: editing.creditLimit,
+        addressLine: editing.addressLine,
+        idNumber: editing.idNumber,
+        emergencyContactName: editing.emergencyContactName,
+        emergencyContactPhone: editing.emergencyContactPhone,
+        clinicalNotes: editing.clinicalNotes,
       });
       return;
     }
@@ -112,6 +123,11 @@ export function CustomerFormDrawer({
             status: values.status ?? 1,
             allowCredit: values.allowCredit ?? false,
             creditLimit: values.allowCredit ? values.creditLimit ?? null : null,
+            addressLine: values.addressLine?.trim() || undefined,
+            idNumber: values.idNumber?.trim() || undefined,
+            emergencyContactName: values.emergencyContactName?.trim() || undefined,
+            emergencyContactPhone: values.emergencyContactPhone?.trim() || undefined,
+            clinicalNotes: values.clinicalNotes?.trim() || undefined,
           })
         : await createCustomer({
             fullName: values.fullName.trim(),
@@ -120,6 +136,11 @@ export function CustomerFormDrawer({
             email: values.email?.trim() || undefined,
             dateOfBirth: values.dateOfBirth || undefined,
             gender: values.gender,
+            addressLine: values.addressLine?.trim() || undefined,
+            idNumber: values.idNumber?.trim() || undefined,
+            emergencyContactName: values.emergencyContactName?.trim() || undefined,
+            emergencyContactPhone: values.emergencyContactPhone?.trim() || undefined,
+            clinicalNotes: values.clinicalNotes?.trim() || undefined,
           });
       if (!isQuick) {
         message.success(editing ? t('messages.updateSuccess') : t('messages.createSuccess'));
@@ -140,12 +161,21 @@ export function CustomerFormDrawer({
     }
   };
 
+  const formGridStyle = isQuick
+    ? undefined
+    : ({
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        columnGap: 16,
+        rowGap: 0,
+      } as const);
+
   return (
     <Drawer
       title={
         editing ? t('titleEdit') : isQuick ? t('titleQuickCreate') : t('titleCreate')
       }
-      width={isQuick ? 400 : 420}
+      width={isQuick ? 400 : 760}
       open={open}
       onClose={onClose}
       destroyOnClose
@@ -160,7 +190,7 @@ export function CustomerFormDrawer({
         </Space>
       }
     >
-      <Form form={form} layout="vertical" requiredMark="optional">
+      <Form form={form} layout="vertical" requiredMark="optional" style={formGridStyle}>
         {!isQuick ? (
           <Form.Item
             name="customerCode"
@@ -198,10 +228,40 @@ export function CustomerFormDrawer({
               <Input placeholder={t('placeholders.email')} />
             </Form.Item>
             <Form.Item name="dateOfBirth" label={t('fields.dateOfBirth')}>
-              <PharmaDatePicker placeholder={t('placeholders.dateOfBirth')} style={{ width: '100%' }} />
+              <PharmaDatePicker
+                placeholder={t('placeholders.dateOfBirth')}
+                style={{ width: '100%' }}
+                yearFrom={1920}
+                yearTo={new Date().getFullYear()}
+                disabledDate={(current) => !!current && current.isAfter(dayjs(), 'day')}
+              />
             </Form.Item>
             <Form.Item name="gender" label={t('fields.gender')}>
               <Select allowClear placeholder={t('placeholders.gender')} options={customerGenderOptions} />
+            </Form.Item>
+            <Form.Item name="idNumber" label={t('fields.idNumber')}>
+              <Input placeholder={t('placeholders.idNumber')} />
+            </Form.Item>
+            <Form.Item
+              name="addressLine"
+              label={t('fields.addressLine')}
+              style={{ gridColumn: '1 / -1' }}
+            >
+              <Input.TextArea rows={2} placeholder={t('placeholders.addressLine')} />
+            </Form.Item>
+            <Form.Item name="emergencyContactName" label={t('fields.emergencyContactName')}>
+              <Input placeholder={t('placeholders.emergencyContactName')} />
+            </Form.Item>
+            <Form.Item name="emergencyContactPhone" label={t('fields.emergencyContactPhone')}>
+              <Input placeholder={t('placeholders.emergencyContactPhone')} />
+            </Form.Item>
+            <Form.Item
+              name="clinicalNotes"
+              label={t('fields.clinicalNotes')}
+              extra={t('hints.clinicalNotes')}
+              style={{ gridColumn: '1 / -1' }}
+            >
+              <Input.TextArea rows={3} placeholder={t('placeholders.clinicalNotes')} />
             </Form.Item>
           </>
         ) : null}
@@ -220,6 +280,7 @@ export function CustomerFormDrawer({
                     name="creditLimit"
                     label={t('fields.creditLimit')}
                     extra={t('hints.creditLimitEmpty')}
+                    style={{ gridColumn: '1 / -1' }}
                   >
                     <InputNumber min={0} step={1000} style={{ width: '100%' }} />
                   </Form.Item>

@@ -127,6 +127,11 @@
       "email": "Email",
       "dateOfBirth": "Date of birth",
       "gender": "Gender",
+      "idNumber": "ID / CCCD",
+      "addressLine": "Address",
+      "emergencyContactName": "Emergency contact",
+      "emergencyContactPhone": "Emergency phone",
+      "clinicalNotes": "Clinical notes",
       "status": "Status",
       "allowCredit": "Allow credit",
       "creditLimit": "Credit limit"
@@ -137,11 +142,17 @@
       "phone": "0909123456",
       "email": "email@example.com",
       "dateOfBirth": "dd/mm/yyyy",
-      "gender": "Select"
+      "gender": "Select",
+      "idNumber": "ID number",
+      "addressLine": "Street, ward, district…",
+      "emergencyContactName": "Relative name",
+      "emergencyContactPhone": "09…",
+      "clinicalNotes": "Drug allergies, chronic conditions…"
     },
     "hints": {
       "customerCodeSuggest": "Suggested next code — leave blank for auto-generation on save",
-      "creditLimitEmpty": "Leave blank for unlimited"
+      "creditLimitEmpty": "Leave blank for unlimited",
+      "clinicalNotes": "For intake / prescribing — not a full medical record"
     },
     "validation": {
       "customerCodeRequired": "Enter customer code",

@@ -194,6 +194,11 @@ internal sealed class CustomerAdminRepository
         string? email,
         DateOnly? dateOfBirth,
         short? gender,
+        string? addressLine,
+        string? idNumber,
+        string? emergencyContactName,
+        string? emergencyContactPhone,
+        string? clinicalNotes,
         CancellationToken cancellationToken)
     {
         var customerId = Guid.NewGuid();
@@ -215,10 +220,12 @@ internal sealed class CustomerAdminRepository
 
         const string sql = """
             INSERT INTO customers (
-                id, tenant_id, party_id, customer_code, full_name, phone, email, date_of_birth, gender, status
+                id, tenant_id, party_id, customer_code, full_name, phone, email, date_of_birth, gender, status,
+                address_line, id_number, emergency_contact_name, emergency_contact_phone, clinical_notes
             )
             VALUES (
-                @CustomerId, @TenantId, @PartyId, @CustomerCode, @FullName, @Phone, @Email, @DateOfBirth, @Gender, 1
+                @CustomerId, @TenantId, @PartyId, @CustomerCode, @FullName, @Phone, @Email, @DateOfBirth, @Gender, 1,
+                @AddressLine, @IdNumber, @EmergencyContactName, @EmergencyContactPhone, @ClinicalNotes
             )
             RETURNING id
             """;
@@ -236,6 +243,11 @@ internal sealed class CustomerAdminRepository
                 Email = email,
                 DateOfBirth = dateOfBirth,
                 Gender = gender,
+                AddressLine = addressLine,
+                IdNumber = idNumber,
+                EmergencyContactName = emergencyContactName,
+                EmergencyContactPhone = emergencyContactPhone,
+                ClinicalNotes = clinicalNotes,
             },
             tx);
 
@@ -254,6 +266,11 @@ internal sealed class CustomerAdminRepository
         short status,
         bool allowCredit,
         decimal? creditLimit,
+        string? addressLine,
+        string? idNumber,
+        string? emergencyContactName,
+        string? emergencyContactPhone,
+        string? clinicalNotes,
         CancellationToken cancellationToken)
     {
         const string sql = """
@@ -267,6 +284,11 @@ internal sealed class CustomerAdminRepository
                 status = @Status,
                 allow_credit = @AllowCredit,
                 credit_limit = @CreditLimit,
+                address_line = @AddressLine,
+                id_number = @IdNumber,
+                emergency_contact_name = @EmergencyContactName,
+                emergency_contact_phone = @EmergencyContactPhone,
+                clinical_notes = @ClinicalNotes,
                 updated_at = NOW()
             WHERE id = @CustomerId
               AND tenant_id = @TenantId
@@ -290,6 +312,11 @@ internal sealed class CustomerAdminRepository
                 Status = status,
                 AllowCredit = allowCredit,
                 CreditLimit = creditLimit,
+                AddressLine = addressLine,
+                IdNumber = idNumber,
+                EmergencyContactName = emergencyContactName,
+                EmergencyContactPhone = emergencyContactPhone,
+                ClinicalNotes = clinicalNotes,
             },
             tx);
 
@@ -337,7 +364,12 @@ internal sealed class CustomerAdminRepository
             row.AppVerified,
             row.AppLastLoginAt.HasValue ? ToOffset(row.AppLastLoginAt.Value) : null,
             row.AllowCredit,
-            row.CreditLimit);
+            row.CreditLimit,
+            row.AddressLine,
+            row.IdNumber,
+            row.EmergencyContactName,
+            row.EmergencyContactPhone,
+            row.ClinicalNotes);
 
     private static CustomerOrderListItemDto MapOrder(CustomerOrderRow row) =>
         new(
@@ -378,6 +410,11 @@ internal sealed class CustomerAdminRepository
         public DateTime? AppLastLoginAt { get; init; }
         public bool AllowCredit { get; init; }
         public decimal? CreditLimit { get; init; }
+        public string? AddressLine { get; init; }
+        public string? IdNumber { get; init; }
+        public string? EmergencyContactName { get; init; }
+        public string? EmergencyContactPhone { get; init; }
+        public string? ClinicalNotes { get; init; }
     }
 
     private sealed class CustomerOrderRow

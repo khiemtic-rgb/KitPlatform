@@ -133,7 +133,9 @@
       "unitPrice": "Unit price",
       "discount": "Disc.",
       "lineTotal": "Line total",
-      "removeLine": "Remove line"
+      "removeLine": "Remove line",
+      "removeRxLockedHint": "Line from doctor Rx — cannot remove. Clear the loaded Rx or empty the cart to start over.",
+      "qtyRxLockedHint": "Quantity follows the doctor Rx — cannot change on POS. Clear the loaded Rx to sell a different quantity."
     },
     "summary": {
       "subtotal": "Subtotal",

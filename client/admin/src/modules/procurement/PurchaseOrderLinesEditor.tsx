@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Button, Form, Input, InputNumber, Select, Table } from 'antd';
+import { Button, Form, Input, InputNumber, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { FormListFieldData } from 'antd/es/form/FormList';
 import type { FormInstance } from 'antd';
@@ -7,6 +7,7 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ProductListItem } from '@/shared/api/catalog.types';
 import { PoUnitPriceField } from '@/modules/procurement/PoUnitPriceField';
 import { ProductUnitSelect } from '@/modules/procurement/ProductUnitSelect';
+import { ProductSearchSelect } from '@/modules/procurement/ProductSearchSelect';
 import { quantityInputNumberProps, formatDisplayQuantity } from '@/shared/utils/money';
 
 export interface PoLineFormRow {
@@ -69,16 +70,11 @@ export function PurchaseOrderLinesEditor({
                 rules={[{ required: true, message: tVal('selectProduct') }]}
                 style={{ marginBottom: 0 }}
               >
-                <Select
+                <ProductSearchSelect
                   disabled={!isCreate && isExistingLine}
+                  seedProducts={products}
                   placeholder={tShared('columns.product')}
-                  showSearch
-                  optionFilterProp="label"
-                  options={products.map((p) => ({
-                    value: p.id,
-                    label: `${p.productCode} — ${p.productName}`,
-                  }))}
-                  onChange={() => {
+                  afterChange={() => {
                     form.setFieldValue(['items', field.name, 'productUnitId'], undefined);
                   }}
                 />

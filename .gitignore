@@ -17,3 +17,17 @@ docs/*
 !.env.example
 src/**/uploads/
 uploads/
+
+# Local scratch / deploy artifacts
+.tmp/
+publish/
+**/publish/
+ensure-api-out.txt
+smoke-run-log.txt
+smoke-*-out.txt
+scripts/_last-smoke-out.txt
+scripts/_*-results.csv
+scripts/_inline-*.ps1
+scripts/_run-smoke-batch.ps1
+.cursor/handoff/
+docs/**/node_modules/

@@ -185,8 +185,8 @@
       "fefo": "By batch (FEFO)"
     },
     "filterByWarehouse": "Filter by warehouse",
-    "searchSummary": "Search product / code",
-    "searchFefo": "Search product / code / batch",
+    "searchSummary": "Search by product name or code…",
+    "searchFefo": "Search by name, code, or batch…",
     "detailTitle": "Stock details",
     "detailTitleWithProduct": "Stock details — {{name}}",
     "viewFefo": "View by batch (FEFO)",
@@ -194,7 +194,8 @@
     "noBatches": "No batches in stock.",
     "messages": {
       "loadFailed": "Could not load stock",
-      "detailLoadFailed": "Could not load batch details"
+      "detailLoadFailed": "Could not load batch details",
+      "emptySearchHint": "No matching products, or stock is still 0 because the goods receipt was not completed."
     }
   },
   "transferList": {

@@ -132,6 +132,11 @@
       "email": "Email",
       "dateOfBirth": "Ngày sinh",
       "gender": "Giới tính",
+      "idNumber": "CCCD / giấy tờ",
+      "addressLine": "Địa chỉ",
+      "emergencyContactName": "Người liên hệ khẩn",
+      "emergencyContactPhone": "SĐT liên hệ khẩn",
+      "clinicalNotes": "Ghi chú lâm sàng",
       "status": "Trạng thái",
       "allowCredit": "Cho phép ghi nợ",
       "creditLimit": "Hạn mức nợ"
@@ -142,11 +147,17 @@
       "phone": "0909123456",
       "email": "email@example.com",
       "dateOfBirth": "dd/mm/yyyy",
-      "gender": "Chọn"
+      "gender": "Chọn",
+      "idNumber": "0010…",
+      "addressLine": "Số nhà, đường, phường, quận…",
+      "emergencyContactName": "Họ tên người thân",
+      "emergencyContactPhone": "09…",
+      "clinicalNotes": "Dị ứng thuốc, bệnh nền…"
     },
     "hints": {
       "customerCodeSuggest": "Gợi ý mã tiếp theo — xóa trắng để hệ thống tự sinh khi lưu",
-      "creditLimitEmpty": "Để trống = không giới hạn"
+      "creditLimitEmpty": "Để trống = không giới hạn",
+      "clinicalNotes": "Dùng khi kê đơn / tiếp nhận — không thay hồ sơ bệnh án đầy đủ"
     },
     "validation": {
       "customerCodeRequired": "Nhập mã khách hàng",

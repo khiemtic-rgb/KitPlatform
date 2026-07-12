@@ -48,6 +48,15 @@ function normalizeDetail(row: Record<string, unknown>): CustomerDetail {
       row.creditLimit != null || row.CreditLimit != null
         ? Number(row.creditLimit ?? row.CreditLimit)
         : null,
+    addressLine: (row.addressLine ?? row.AddressLine) as string | undefined,
+    idNumber: (row.idNumber ?? row.IdNumber) as string | undefined,
+    emergencyContactName: (row.emergencyContactName ?? row.EmergencyContactName) as
+      | string
+      | undefined,
+    emergencyContactPhone: (row.emergencyContactPhone ?? row.EmergencyContactPhone) as
+      | string
+      | undefined,
+    clinicalNotes: (row.clinicalNotes ?? row.ClinicalNotes) as string | undefined,
   };
 }
 

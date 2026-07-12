@@ -12,6 +12,7 @@ type Props = {
   stockAvailable: number;
   unitName: string;
   disabled?: boolean;
+  title?: string;
   externalWarning?: string;
   /** Hiển thị cảnh báo dưới ô nhập; tắt khi cảnh báo hiện ở cột Sản phẩm */
   showInlineWarning?: boolean;
@@ -25,6 +26,7 @@ export function PosCartQuantityInput({
   stockAvailable,
   unitName,
   disabled,
+  title,
   externalWarning,
   showInlineWarning = true,
   onQtyWarningChange,
@@ -125,8 +127,9 @@ export function PosCartQuantityInput({
     <Input
       value={outOfStock ? '0' : draft}
       disabled={disabled || outOfStock}
+      title={title}
       inputMode="numeric"
-      aria-label={t('pos.columns.qtyAria')}
+      aria-label={title || t('pos.columns.qtyAria')}
       status={warning ? 'warning' : undefined}
       style={{ width: 76, textAlign: 'right' }}
       onFocus={() => {
