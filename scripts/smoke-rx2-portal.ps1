@@ -225,14 +225,14 @@ Test-Step 'E2E: BS request link -> NT approve' {
 UPDATE pack_pharmacy.prescribers
 SET full_name = 'Smoke Request BS',
     license_number = '$reqLicense',
-    specialty = 'Noi',
+    specialty = 'Nội tổng quát',
     status = 'active',
     verified_at = COALESCE(verified_at, NOW()),
     deleted_at = NULL,
     updated_at = NOW()
 WHERE phone = '$reqPhone';
 INSERT INTO pack_pharmacy.prescribers (full_name, license_number, phone, specialty, status, verified_at)
-SELECT 'Smoke Request BS', '$reqLicense', '$reqPhone', 'Noi', 'active', NOW()
+SELECT 'Smoke Request BS', '$reqLicense', '$reqPhone', N'Nội tổng quát', 'active', NOW()
 WHERE NOT EXISTS (
   SELECT 1 FROM pack_pharmacy.prescribers WHERE phone = '$reqPhone' AND deleted_at IS NULL
 );
