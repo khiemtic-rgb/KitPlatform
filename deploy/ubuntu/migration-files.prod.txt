@@ -110,4 +110,15 @@
 112_clinic_gd1_demo_clinic_modules.sql
 113_clinic_gd1_demo_customer.sql
 114_clinic_gd1_prescriptions.sql
+115_clinic_gd1_rx_handoff.sql
+116_clinic_gd1_permissions.sql
+117_clinic_cl2_soft_cks.sql
+118_connect_referral_pharmacy_customer.sql
+119_connect_referral_clinic_customer.sql
+120_clinic_cl3_encounter_modality.sql
+121_sales_connect_rx_handoff.sql
+122_clinic_patient_provider_profile.sql
+123_clinic_specialty_vi_normalize.sql
+124_connect_rx_handoff_reset_orphan_consumed.sql
+125_enable_novixa_connect_sidebar.sql
 seed-prod/001_base_permissions.sql

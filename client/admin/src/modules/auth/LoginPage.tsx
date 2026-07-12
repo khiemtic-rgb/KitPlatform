@@ -123,7 +123,7 @@ export function LoginPage() {
               >
                 <Input
                   prefix={<ShopOutlined />}
-                  placeholder="NT_A"
+                  placeholder="NT_XUANHOA / DEMO_CLINIC"
                   size="large"
                   style={{ textTransform: 'uppercase' }}
                   autoComplete="organization"

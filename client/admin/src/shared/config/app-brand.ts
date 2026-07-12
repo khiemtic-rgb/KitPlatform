@@ -5,7 +5,7 @@ export const DEFAULT_TENANT_CODE = import.meta.env.VITE_DEFAULT_TENANT_CODE?.tri
 export const TENANT_CODE_STORAGE_KEY = 'novixa_tenant_code';
 export const PLATFORM_KEY_STORAGE_KEY = 'novixa_platform_key';
 
-/** Deploy 1 nhà thuốc: ẩn ô mã, dùng mã cố định lúc build. */
+/** Khi set VITE_DEFAULT_TENANT_CODE: ẩn ô mã (white-label 1 tenant). Multi-tenant: để trống. */
 export function isTenantCodeLocked(): boolean {
   return DEFAULT_TENANT_CODE.length > 0;
 }
