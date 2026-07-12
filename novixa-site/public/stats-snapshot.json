@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-12T15:42:15.793Z",
+  "generatedAt": "2026-07-12T20:37:12.907Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 37,
-    "todayPageViews": 102,
-    "todayRequests": 350,
-    "last24hVisitors": 50,
-    "last24hPageViews": 119,
-    "last24hRequests": 427
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 48,
+    "last24hPageViews": 112,
+    "last24hRequests": 398
   },
   "hourly": [
-    {
-      "time": "2026-07-11T16:00:00Z",
-      "visitors": 13,
-      "requests": 42
-    },
-    {
-      "time": "2026-07-11T17:00:00Z",
-      "visitors": 2,
-      "requests": 6
-    },
-    {
-      "time": "2026-07-11T18:00:00Z",
-      "visitors": 2,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-11T19:00:00Z",
-      "visitors": 1,
-      "requests": 4
-    },
-    {
-      "time": "2026-07-11T20:00:00Z",
-      "visitors": 1,
-      "requests": 4
-    },
     {
       "time": "2026-07-11T21:00:00Z",
       "visitors": 2,
@@ -130,15 +105,29 @@
       "time": "2026-07-12T15:00:00Z",
       "visitors": 5,
       "requests": 75
+    },
+    {
+      "time": "2026-07-12T16:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-07-12T17:00:00Z",
+      "visitors": 5,
+      "requests": 18
+    },
+    {
+      "time": "2026-07-12T19:00:00Z",
+      "visitors": 3,
+      "requests": 6
+    },
+    {
+      "time": "2026-07-12T20:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
-    {
-      "date": "2026-07-06",
-      "visitors": 112,
-      "pageViews": 141,
-      "requests": 276
-    },
     {
       "date": "2026-07-07",
       "visitors": 152,
@@ -171,27 +160,27 @@
     },
     {
       "date": "2026-07-12",
-      "visitors": 37,
-      "pageViews": 102,
-      "requests": 350
+      "visitors": 46,
+      "pageViews": 110,
+      "requests": 382
     }
   ],
   "topPages": [
     {
       "path": "/cdn-cgi/rum",
-      "views": 53
-    },
-    {
-      "path": "/robots.txt",
-      "views": 32
+      "views": 45
     },
     {
       "path": "/",
-      "views": 27
+      "views": 34
+    },
+    {
+      "path": "/robots.txt",
+      "views": 29
     },
     {
       "path": "/vi/",
-      "views": 24
+      "views": 26
     },
     {
       "path": "/sitemap-index.xml",
@@ -199,42 +188,42 @@
     },
     {
       "path": "/sitemap-0.xml",
-      "views": 18
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 15
+      "views": 14
     },
     {
       "path": "/api/stats",
-      "views": 12
+      "views": 11
     },
     {
-      "path": "/_astro/index.v9Iv8YTa.css",
-      "views": 8
+      "path": "/sitemap.xml",
+      "views": 11
     },
     {
       "path": "/images/tin-tuc/pos-nha-thuoc-5-tinh-nang-khong-the-thieu.png",
       "views": 8
     },
     {
-      "path": "/_astro/BaseLayout.CB-KDw-C.css",
-      "views": 7
+      "path": "/_astro/index.v9Iv8YTa.css",
+      "views": 6
+    },
+    {
+      "path": "/.well-known/security.txt",
+      "views": 5
     },
     {
       "path": "/images/logo.png",
-      "views": 7
+      "views": 5
     },
     {
-      "path": "/images/tin-tuc/chuyen-doi-so-cho-nha-thuoc-bat-dau-tu-dau.png",
-      "views": 4
-    },
-    {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 4
+      "path": "/_astro/BaseLayout.CB-KDw-C.css",
+      "views": 5
     },
     {
       "path": "/favicon.svg",
+      "views": 4
+    },
+    {
+      "path": "/wp-login.php",
       "views": 4
     }
   ]
