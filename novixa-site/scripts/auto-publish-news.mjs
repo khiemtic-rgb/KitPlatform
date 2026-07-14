@@ -27,7 +27,9 @@ const ROOT = path.join(__dirname, '..');
 const CONTENT_DIR = path.join(ROOT, 'src/content/tin-tuc');
 
 function publishDate() {
-  return process.env.PUBLISH_DATE?.trim() || new Date().toISOString().slice(0, 10);
+  if (process.env.PUBLISH_DATE?.trim()) return process.env.PUBLISH_DATE.trim();
+  // Workflow chạy ~00:05 giờ VN (= 17:05 UTC ngày hôm trước) — phải dùng ngày VN.
+  return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
 }
 
 function parseArg(flag) {
@@ -86,6 +88,7 @@ async function publishPlanItem(plan) {
     const generated = await generateArticleContent({
       title: plan.title,
       topic: plan.topic,
+      categoryLabel: plan.categoryLabel,
       targetWords: plan.targetWords,
     });
     frontmatter = {
