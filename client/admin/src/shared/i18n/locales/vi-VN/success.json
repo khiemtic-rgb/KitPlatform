@@ -6,6 +6,7 @@
   "tip": "Một màn tóm tắt cho chủ nhà thuốc. Chi tiết xem Báo cáo / kho / CRM.",
   "backDashboard": "← Về tổng quan vận hành",
   "sections": {
+    "risk": "Rủi ro hôm nay",
     "sales": "Doanh số",
     "inventory": "Tồn & rủi ro",
     "customers": "Khách hàng",
@@ -28,7 +29,37 @@
     "last7Days": "7 ngày gần nhất",
     "latestKapScore": "Điểm KAP gần nhất",
     "noScore": "—",
-    "shiftChecklist": "Checklist mở/đóng ca"
+    "shiftChecklist": "Checklist mở/đóng ca",
+    "lossRisk": "Lệch quỹ / thất thoát",
+    "cashVarianceAlerts": "Ca lệch quỹ",
+    "maxCashVariance": "Lệch lớn nhất",
+    "openShiftsToday": "Ca còn mở",
+    "closedShiftsToday": "{{count}} ca đã đóng hôm nay",
+    "openShiftsHint": "Nên đóng ca để đối chiếu tiền",
+    "topAlertShift": "Ca {{shift}}",
+    "thresholdHint": "Ngưỡng cảnh báo {{value}}"
+  },
+  "loss": {
+    "title": "Đối chiếu quỹ ca (Loss AC2)",
+    "subtitle": "Ngày VN: {{date}} — đọc từ sales_shifts, không bảng tiền mới",
+    "tip": "Cảnh báo khi |lệch| > {{threshold}} (closing − expected). Tiền đếm = closing_cash.",
+    "backCockpit": "← Cockpit chủ NT",
+    "loadFailed": "Không tải được lệch quỹ",
+    "closedCount": "Ca đã đóng",
+    "openCount": "Ca đang mở",
+    "alertCount": "Cảnh báo",
+    "maxAbs": "Lệch |max|",
+    "alert": "Lệch",
+    "open": "Đang mở",
+    "linkShifts": "Mở báo cáo / đóng ca bán →",
+    "col": {
+      "shift": "Ca",
+      "branch": "Chi nhánh",
+      "warehouse": "Kho/quầy",
+      "expected": "Quỹ kỳ vọng",
+      "closing": "Tiền đếm",
+      "variance": "Lệch"
+    }
   },
   "checklist": {
     "title": "Checklist mở / đóng ca",

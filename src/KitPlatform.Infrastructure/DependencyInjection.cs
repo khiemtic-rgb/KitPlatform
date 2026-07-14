@@ -168,6 +168,8 @@ public static class DependencyInjection
         services.AddScoped<Application.Success.IOwnerCockpitService, Success.OwnerCockpitService>();
         services.AddScoped<Success.ShiftChecklistRepository>();
         services.AddScoped<Application.Success.IShiftChecklistService, Success.ShiftChecklistService>();
+        services.AddScoped<Success.LossPreventionRepository>();
+        services.AddScoped<Application.Success.ILossPreventionService, Success.LossPreventionService>();
 
         services.AddScoped<ReportsRepository>();
         services.AddScoped<IReportsService, ReportsService>();

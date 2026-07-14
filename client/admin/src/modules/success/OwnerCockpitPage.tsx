@@ -77,7 +77,10 @@ export function OwnerCockpitPage() {
   const invX = data?.inventoryExtras;
   const cust = data?.customers;
   const kap = data?.latestAssessment;
+  const risk = data?.riskStrip;
   const showKap = isModuleEnabled('assessment') && !!kap?.submissionId;
+  const riskTone =
+    (risk?.cashVarianceAlertCount ?? 0) > 0 ? 'danger' : (risk?.openShiftCountToday ?? 0) > 0 ? 'warning' : 'info';
 
   return (
     <div className="dashboard-page">
@@ -96,13 +99,58 @@ export function OwnerCockpitPage() {
 
       <Alert type="info" showIcon style={{ marginTop: 16 }} message={t('tip')} />
 
-      <div style={{ marginTop: 16 }}>
+      <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         <Link to="/success/shift-checklist" className="dashboard-action">
           <CheckCircleOutlined />
           <span>{t('kpi.shiftChecklist')}</span>
           <RightOutlined />
         </Link>
+        <Link to="/success/loss" className="dashboard-action">
+          <WarningOutlined />
+          <span>{t('kpi.lossRisk')}</span>
+          <RightOutlined />
+        </Link>
       </div>
+
+      <Typography.Title level={5} style={{ marginTop: 24 }}>
+        {t('sections.risk')}
+      </Typography.Title>
+      <Row gutter={[12, 12]}>
+        <Col xs={24} sm={12} lg={8}>
+          <Tile
+            title={t('kpi.cashVarianceAlerts')}
+            value={risk?.cashVarianceAlertCount ?? 0}
+            hint={
+              risk?.topAlertShiftNumber
+                ? t('kpi.topAlertShift', { shift: risk.topAlertShiftNumber })
+                : t('kpi.thresholdHint', { value: formatDisplayMoney(risk?.cashVarianceThreshold ?? 0) })
+            }
+            to="/success/loss"
+            icon={<WarningOutlined />}
+            tone={riskTone}
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Tile
+            title={t('kpi.maxCashVariance')}
+            value={formatDisplayMoney(risk?.maxAbsCashVarianceToday ?? 0)}
+            hint={t('kpi.closedShiftsToday', { count: risk?.closedShiftCountToday ?? 0 })}
+            to="/success/loss"
+            icon={<RiseOutlined />}
+            tone={(risk?.cashVarianceAlertCount ?? 0) > 0 ? 'danger' : 'default'}
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Tile
+            title={t('kpi.openShiftsToday')}
+            value={risk?.openShiftCountToday ?? 0}
+            hint={t('kpi.openShiftsHint')}
+            to="/sales/shifts"
+            icon={<CalendarOutlined />}
+            tone={(risk?.openShiftCountToday ?? 0) > 0 ? 'warning' : 'default'}
+          />
+        </Col>
+      </Row>
 
       <Typography.Title level={5} style={{ marginTop: 24 }}>
         {t('sections.sales')}

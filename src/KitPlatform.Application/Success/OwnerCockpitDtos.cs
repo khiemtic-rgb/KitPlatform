@@ -7,7 +7,8 @@ public sealed record OwnerCockpitDto(
     OwnerCockpitSalesExtrasDto SalesExtras,
     OwnerCockpitInventoryExtrasDto InventoryExtras,
     OwnerCockpitCustomerExtrasDto Customers,
-    OwnerCockpitAssessmentSnapshotDto? LatestAssessment);
+    OwnerCockpitAssessmentSnapshotDto? LatestAssessment,
+    OwnerCockpitRiskStripDto? RiskStrip = null);
 
 public sealed record OwnerCockpitSalesExtrasDto(
     decimal MonthNetTotal,

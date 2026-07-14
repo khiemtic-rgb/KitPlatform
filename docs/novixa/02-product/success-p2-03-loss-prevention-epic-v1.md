@@ -2,7 +2,7 @@
 
 **Mã:** NVX-PRD-03-EP03 · **Capability:** Process Excellence (#2) · neo Business Performance (#4) qua Cockpit  
 **Phase:** P2 → mép P3 (incident đầy đủ **không** thuộc epic này)  
-**Trạng thái:** Ready to build  
+**Trạng thái:** In progress — AC2 lab (2026-07-14)  
 **Neo:** [pharmacy-success-capability-map-v1.md](./pharmacy-success-capability-map-v1.md) · [Owner Cockpit EP01](./success-p2-owner-cockpit-epic-v1.md) · [Checklist ca EP02](./success-p2-02-shift-checklist-epic-v1.md) · [KIT-BP-ASBUILT](../03-solution/kitplatform-enterprise-blueprint-asbuilt-v2.1.md)  
 **Điều kiện mở:** EP01 + EP02 lab ✅ · Clinic P0 trên prod ✅ · ưu tiên sau / song song CL-GO-01b (không block lab EP03)
 
@@ -39,12 +39,22 @@ Catalog cảnh báo mở rộng (DT ca thấp bất thường, tồn âm, xuất
 
 ---
 
+## Kiểm tra kế thừa / xung đột (pre-implement)
+
+| Rủi ro | Quyết định |
+|--------|------------|
+| Trùng cột tiền trên `sales_shifts` | **Không** thêm `counted_*` / `opening_cash` mới — dùng `closing_cash` (= tiền đếm), `expected_cash`, `cash_variance` (mig 015) |
+| Trùng EP02 checklist ca | Checklist = SOP tick; **không** gộp schema với quỹ. Deep-link tùy chọn sau |
+| Phá EP01 Cockpit | Chỉ **thêm** `riskStrip?` cuối DTO — giữ Overview/Sales/Inv/Customers/KAP |
+| Đếm cả ngân hàng | As-built chỉ variance **tiền mặt**; bank/card trong summary phương thức — **không** đổi công thức đóng ca trong AC2 |
+| Expected cash multi-WH | Công thức đóng ca hiện có có thể lệch multi-kho (nợ kỹ thuật Sales); AC2 **đọc** variance đã persist, không rewrite POS close |
+
 ## Map as-built → việc làm
 
 | # | As-built (KIT / Pharmacy) | Gap EP03 phải đóng |
 |---|---------------------------|-------------------|
 | 1 | `audit_logs`; timestamps/actor trên sales & inventory; Soft deletes | **Loss feed** lọc event types + actor + deep-link chứng từ; đảm bảo đủ event: tạo/sửa/hủy HĐ, discount, return, internal issue, stock adjust (bổ sung write audit nếu thiếu) |
-| 2 | `sales_shifts` mở/đóng ca (POS Admin + Staff); báo cáo ca | **Variance tiền** (expected vs counted) hiển thị Cockpit + màn Loss; bắt buộc/Soft-enforce ghi nhận khi đóng ca |
+| 2 | `sales_shifts` mở/đóng ca (POS Admin + Staff); báo cáo ca | ✅ AC2 lab: compose `GET /api/success/loss/cash-variance` + Cockpit `riskStrip` (threshold mặc định 10 000); không bảng tiền mới |
 | 3 | Inventory count / adjustments (`inventory_adjustments`, màn kho) | **Cycle count session**: chọn 10–20 SKU (hot / random / FEFO), chốt lệch ngày, report theo SKU |
 | 4 | Reports Wave 1; sales/return/adjust data theo user có phần | **3 report Loss** cố định: hủy · giảm giá · adjust theo `employee`/`user` + date range + branch |
 | 5 | RBAC kernel; workflow `pos_discount_override`; PO approve | **Gate matrix**: hủy HĐ, sửa/giảm giá (đã có mầm), xuất nội bộ — thiếu policy/WF thì thêm mỏng; **không** redesign RBAC toàn nền |
@@ -76,10 +86,12 @@ Catalog cảnh báo mở rộng (DT ca thấp bất thường, tồn âm, xuất
 
 ### AC2 — Đối chiếu tiền cuối ca
 
-- [ ] Từ ca đóng (`sales_shifts`): doanh thu ca vs tiền mặt/ngân hàng đếm được → **số lệch**  
-- [ ] Cockpit / Loss home: “Ca hôm nay — lệch quỹ” (branch đang chọn)  
-- [ ] Danh sách ca có `|variance| > threshold` (config tenant hoặc mặc định cố định V0)  
-- [ ] Không yêu cầu đếm lại từng tờ tiền trong epic (dùng số đã nhập khi đóng ca)  
+- [x] Từ ca đóng (`sales_shifts`): `cash_variance = closing_cash − expected_cash` (đã persist lúc đóng ca)  
+- [x] Cockpit `riskStrip` + Admin `/success/loss`  
+- [x] Danh sách ca `|variance| > threshold` (mặc định 10 000; query `?threshold=`)  
+- [x] Không đếm tờ tiền / không cột counted_* mới  
+- [ ] Soft-enforce “phải đóng ca có closing_cash” (đã bắt buộc trên CloseShift UI — xác nhận pilot)  
+- [ ] Screenshot UAT / deploy VPS còn Open  
 
 ### AC3 — Kiểm kê cuốn chiếu
 

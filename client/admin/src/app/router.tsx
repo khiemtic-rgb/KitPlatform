@@ -32,6 +32,9 @@ const OwnerCockpitPage = lazy(() =>
 const ShiftChecklistPage = lazy(() =>
   import('@/modules/success/ShiftChecklistPage').then((m) => ({ default: m.ShiftChecklistPage })),
 );
+const LossCashVariancePage = lazy(() =>
+  import('@/modules/success/LossCashVariancePage').then((m) => ({ default: m.LossCashVariancePage })),
+);
 const CatalogLayout = lazy(() =>
   import('@/modules/catalog/CatalogLayout').then((m) => ({ default: m.CatalogLayout })),
 );
@@ -369,6 +372,14 @@ export function AppRouter() {
                 element={
                   <SuspenseRoute>
                     <ShiftChecklistPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="success/loss"
+                element={
+                  <SuspenseRoute>
+                    <LossCashVariancePage />
                   </SuspenseRoute>
                 }
               />

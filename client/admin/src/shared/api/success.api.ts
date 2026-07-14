@@ -1,6 +1,15 @@
 import { http } from '@/shared/api/http';
 import type { DashboardOverview } from '@/shared/api/dashboard.types';
 
+export interface OwnerCockpitRiskStrip {
+  cashVarianceThreshold: number;
+  closedShiftCountToday: number;
+  openShiftCountToday: number;
+  cashVarianceAlertCount: number;
+  maxAbsCashVarianceToday: number;
+  topAlertShiftNumber?: string | null;
+}
+
 export interface OwnerCockpit {
   overview: DashboardOverview;
   salesExtras: {
@@ -22,6 +31,35 @@ export interface OwnerCockpit {
     completedAt?: string | null;
     status: string;
   } | null;
+  riskStrip?: OwnerCockpitRiskStrip | null;
+}
+
+export interface LossCashVarianceShift {
+  shiftId: string;
+  shiftNumber: string;
+  warehouseId: string;
+  warehouseName: string;
+  branchId: string;
+  branchName: string;
+  status: string;
+  openingCash: number;
+  closingCash?: number | null;
+  expectedCash?: number | null;
+  cashVariance?: number | null;
+  absCashVariance: number;
+  isAlert: boolean;
+  openedAt: string;
+  closedAt?: string | null;
+}
+
+export interface LossCashVarianceToday {
+  businessDate: string;
+  threshold: number;
+  closedShiftCount: number;
+  openShiftCount: number;
+  alertCount: number;
+  maxAbsVariance: number;
+  shifts: LossCashVarianceShift[];
 }
 
 type UnknownRow = Record<string, unknown>;
@@ -180,6 +218,39 @@ export async function completeShiftChecklistRun(runId: string): Promise<ShiftChe
   return normalizeRun(data as UnknownRow);
 }
 
+export async function fetchLossCashVarianceToday(threshold?: number): Promise<LossCashVarianceToday> {
+  const { data } = await http.get<UnknownRow>('/success/loss/cash-variance', {
+    params: threshold != null ? { threshold } : undefined,
+  });
+  const row = data as UnknownRow;
+  const shifts = ((row.shifts ?? row.Shifts ?? []) as UnknownRow[]).map((s) => ({
+    shiftId: String(s.shiftId ?? s.ShiftId ?? ''),
+    shiftNumber: String(s.shiftNumber ?? s.ShiftNumber ?? ''),
+    warehouseId: String(s.warehouseId ?? s.WarehouseId ?? ''),
+    warehouseName: String(s.warehouseName ?? s.WarehouseName ?? ''),
+    branchId: String(s.branchId ?? s.BranchId ?? ''),
+    branchName: String(s.branchName ?? s.BranchName ?? ''),
+    status: String(s.status ?? s.Status ?? ''),
+    openingCash: num(s.openingCash ?? s.OpeningCash),
+    closingCash: (s.closingCash ?? s.ClosingCash) as number | null | undefined,
+    expectedCash: (s.expectedCash ?? s.ExpectedCash) as number | null | undefined,
+    cashVariance: (s.cashVariance ?? s.CashVariance) as number | null | undefined,
+    absCashVariance: num(s.absCashVariance ?? s.AbsCashVariance),
+    isAlert: Boolean(s.isAlert ?? s.IsAlert),
+    openedAt: String(s.openedAt ?? s.OpenedAt ?? ''),
+    closedAt: (s.closedAt ?? s.ClosedAt) as string | null | undefined,
+  }));
+  return {
+    businessDate: String(row.businessDate ?? row.BusinessDate ?? ''),
+    threshold: num(row.threshold ?? row.Threshold),
+    closedShiftCount: num(row.closedShiftCount ?? row.ClosedShiftCount),
+    openShiftCount: num(row.openShiftCount ?? row.OpenShiftCount),
+    alertCount: num(row.alertCount ?? row.AlertCount),
+    maxAbsVariance: num(row.maxAbsVariance ?? row.MaxAbsVariance),
+    shifts,
+  };
+}
+
 export async function fetchOwnerCockpit(params?: {
   expiryDays?: number;
   lowStockThreshold?: number;
@@ -190,6 +261,7 @@ export async function fetchOwnerCockpit(params?: {
   const inventoryExtras = (row.inventoryExtras ?? row.InventoryExtras ?? {}) as UnknownRow;
   const customers = (row.customers ?? row.Customers ?? {}) as UnknownRow;
   const assessment = (row.latestAssessment ?? row.LatestAssessment) as UnknownRow | null | undefined;
+  const risk = (row.riskStrip ?? row.RiskStrip) as UnknownRow | null | undefined;
 
   return {
     overview: normalizeOverview((row.overview ?? row.Overview ?? {}) as UnknownRow),
@@ -217,6 +289,19 @@ export async function fetchOwnerCockpit(params?: {
               : num(assessment.overallScore ?? assessment.OverallScore),
           completedAt: (assessment.completedAt ?? assessment.CompletedAt) as string | null | undefined,
           status: String(assessment.status ?? assessment.Status ?? ''),
+        }
+      : null,
+    riskStrip: risk
+      ? {
+          cashVarianceThreshold: num(risk.cashVarianceThreshold ?? risk.CashVarianceThreshold),
+          closedShiftCountToday: num(risk.closedShiftCountToday ?? risk.ClosedShiftCountToday),
+          openShiftCountToday: num(risk.openShiftCountToday ?? risk.OpenShiftCountToday),
+          cashVarianceAlertCount: num(risk.cashVarianceAlertCount ?? risk.CashVarianceAlertCount),
+          maxAbsCashVarianceToday: num(risk.maxAbsCashVarianceToday ?? risk.MaxAbsCashVarianceToday),
+          topAlertShiftNumber: (risk.topAlertShiftNumber ?? risk.TopAlertShiftNumber) as
+            | string
+            | null
+            | undefined,
         }
       : null,
   };

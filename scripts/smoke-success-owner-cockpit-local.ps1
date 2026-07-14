@@ -19,6 +19,7 @@ if ($null -eq $cockpit.overview) { throw "overview missing" }
 if ($null -eq $cockpit.salesExtras) { throw "salesExtras missing" }
 if ($null -eq $cockpit.inventoryExtras) { throw "inventoryExtras missing" }
 if ($null -eq $cockpit.customers) { throw "customers missing" }
+if ($null -eq $cockpit.riskStrip) { throw "riskStrip missing (EP03 AC2 additive — must not break EP01)" }
 
 Write-Host "[OK] todayNet=$($cockpit.overview.sales.todayNetTotal) monthNet=$($cockpit.salesExtras.monthNetTotal)" -ForegroundColor Green
 Write-Host "[OK] nearExpirySku=$($cockpit.inventoryExtras.nearExpirySkuCount) value=$($cockpit.inventoryExtras.nearExpiryStockValue)" -ForegroundColor Green

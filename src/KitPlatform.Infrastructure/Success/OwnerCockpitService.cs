@@ -10,15 +10,18 @@ internal sealed class OwnerCockpitService : IOwnerCockpitService
     private readonly IDashboardService _dashboard;
     private readonly OwnerCockpitRepository _extras;
     private readonly IBranchAccessService _branchAccess;
+    private readonly ILossPreventionService _loss;
 
     public OwnerCockpitService(
         IDashboardService dashboard,
         OwnerCockpitRepository extras,
-        IBranchAccessService branchAccess)
+        IBranchAccessService branchAccess,
+        ILossPreventionService loss)
     {
         _dashboard = dashboard;
         _extras = extras;
         _branchAccess = branchAccess;
+        _loss = loss;
     }
 
     public async Task<OwnerCockpitDto> GetAsync(
@@ -30,6 +33,7 @@ internal sealed class OwnerCockpitService : IOwnerCockpitService
         var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(null, cancellationToken);
         var (sales, inventory, customers, assessment) =
             await _extras.GetExtrasAsync(expiryDays, allowed, cancellationToken);
-        return new OwnerCockpitDto(overview, sales, inventory, customers, assessment);
+        var risk = await _loss.GetRiskStripAsync(cancellationToken: cancellationToken);
+        return new OwnerCockpitDto(overview, sales, inventory, customers, assessment, risk);
     }
 }

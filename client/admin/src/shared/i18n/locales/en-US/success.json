@@ -6,6 +6,7 @@
   "tip": "One snapshot for the pharmacy owner. Drill into reports / inventory / CRM for detail.",
   "backDashboard": "← Back to operations dashboard",
   "sections": {
+    "risk": "Risk today",
     "sales": "Sales",
     "inventory": "Inventory risk",
     "customers": "Customers",
@@ -28,7 +29,37 @@
     "last7Days": "Last 7 days",
     "latestKapScore": "Latest KAP score",
     "noScore": "—",
-    "shiftChecklist": "Open/close shift checklist"
+    "shiftChecklist": "Open/close shift checklist",
+    "lossRisk": "Cash variance / loss",
+    "cashVarianceAlerts": "Cash variance alerts",
+    "maxCashVariance": "Largest variance",
+    "openShiftsToday": "Open shifts",
+    "closedShiftsToday": "{{count}} shifts closed today",
+    "openShiftsHint": "Close shift to reconcile cash",
+    "topAlertShift": "Shift {{shift}}",
+    "thresholdHint": "Alert threshold {{value}}"
+  },
+  "loss": {
+    "title": "Shift cash reconciliation (Loss AC2)",
+    "subtitle": "VN business day: {{date}} — composed from sales_shifts",
+    "tip": "Alert when |variance| > {{threshold}} (closing − expected). Counted cash = closing_cash.",
+    "backCockpit": "← Owner cockpit",
+    "loadFailed": "Could not load cash variance",
+    "closedCount": "Closed shifts",
+    "openCount": "Open shifts",
+    "alertCount": "Alerts",
+    "maxAbs": "|Max| variance",
+    "alert": "Alert",
+    "open": "Open",
+    "linkShifts": "Open sales shift report / close →",
+    "col": {
+      "shift": "Shift",
+      "branch": "Branch",
+      "warehouse": "Warehouse",
+      "expected": "Expected cash",
+      "closing": "Counted cash",
+      "variance": "Variance"
+    }
   },
   "checklist": {
     "title": "Open / close shift checklist",
