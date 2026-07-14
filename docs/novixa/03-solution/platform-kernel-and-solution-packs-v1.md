@@ -6,7 +6,7 @@
 > **Định vị:** **KIT Platform** = nền tảng SaaS dùng chung. **Novixa** = **Solution Pack đầu tiên** (nhà thuốc / health retail), **không** phải toàn bộ platform.  
 > **Nguyên tắc:** Evolve additive — **không đập đi làm lại** Novixa đang pilot.
 
-**Liên quan:** [enterprise-architecture-evolution-v1.md](./enterprise-architecture-evolution-v1.md) (NVX-SOL-07) · [domain-map-v1.md](../domains/domain-map-v1.md) · migration `051_platform_multi_branch_i18n.sql`
+**Liên quan:** [kitplatform-enterprise-blueprint-asbuilt-v2.1.md](./kitplatform-enterprise-blueprint-asbuilt-v2.1.md) (KIT-BP-ASBUILT — **SSOT kỹ thuật as-built**) · [enterprise-architecture-evolution-v1.md](./enterprise-architecture-evolution-v1.md) (NVX-SOL-07) · [domain-map-v1.md](../domains/domain-map-v1.md) · migration `051_platform_multi_branch_i18n.sql`
 
 ---
 

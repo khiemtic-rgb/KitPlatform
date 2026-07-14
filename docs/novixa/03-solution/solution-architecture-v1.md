@@ -2,7 +2,7 @@
 
 **Mã:** NVX-SOL-01 · **Tier:** T2/T3 · **Trạng thái:** Draft · **Version:** 1.1
 
-> **EA evolution (pilot-safe):** [enterprise-architecture-evolution-v1.md](./enterprise-architecture-evolution-v1.md) (NVX-SOL-07) · Gap matrix [enterprise-architecture-gap-matrix-v1.md](./enterprise-architecture-gap-matrix-v1.md) (NVX-SOL-06) · **KIT Platform / Novixa Pack:** [platform-kernel-and-solution-packs-v1.md](./platform-kernel-and-solution-packs-v1.md) (KIT-PLT-01) · NSF `docs/novixa/standards/` · Core Engines trong `KitPlatform.Application/Core/Engines`.
+> **EA evolution (pilot-safe):** [enterprise-architecture-evolution-v1.md](./enterprise-architecture-evolution-v1.md) (NVX-SOL-07) · Gap matrix [enterprise-architecture-gap-matrix-v1.md](./enterprise-architecture-gap-matrix-v1.md) (NVX-SOL-06) · **As-built SSOT:** [kitplatform-enterprise-blueprint-asbuilt-v2.1.md](./kitplatform-enterprise-blueprint-asbuilt-v2.1.md) (KIT-BP-ASBUILT) · **KIT Platform / Novixa Pack:** [platform-kernel-and-solution-packs-v1.md](./platform-kernel-and-solution-packs-v1.md) (KIT-PLT-01) · NSF `docs/novixa/standards/` · Core Engines trong `KitPlatform.Application/Core/Engines`.
 
 ---
 

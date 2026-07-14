@@ -14,7 +14,7 @@
 |----|------------|
 | Lãnh đạo / GTM | [01-company/vision-and-strategy-v1.md](./01-company/vision-and-strategy-v1.md) → [04-gtm/icp-positioning-pricing-v1.md](./04-gtm/icp-positioning-pricing-v1.md) |
 | Sales / CS | [launch/DOC-008/sales-deck-v1.md](./launch/DOC-008/sales-deck-v1.md) · [sales-playbook-v1.md](./04-gtm/sales-playbook-v1.md) → [go-live-checklist-customer-v1.md](./07-customer/go-live-checklist-customer-v1.md) |
-| Triển khai / Kỹ thuật | [03-solution/platform-kernel-and-solution-packs-v1.md](./03-solution/platform-kernel-and-solution-packs-v1.md) (KIT-PLT-01) → [03-solution/solution-architecture-v1.md](./03-solution/solution-architecture-v1.md) → [05-operations/deployment-model-v1.md](./05-operations/deployment-model-v1.md) |
+| Triển khai / Kỹ thuật | [03-solution/kitplatform-enterprise-blueprint-asbuilt-v2.1.md](./03-solution/kitplatform-enterprise-blueprint-asbuilt-v2.1.md) (KIT-BP-ASBUILT) → [03-solution/platform-kernel-and-solution-packs-v1.md](./03-solution/platform-kernel-and-solution-packs-v1.md) (KIT-PLT-01) → [03-solution/solution-architecture-v1.md](./03-solution/solution-architecture-v1.md) → [05-operations/deployment-model-v1.md](./05-operations/deployment-model-v1.md) |
 | Sản phẩm | [02-product/product-overview-v1.md](./02-product/product-overview-v1.md) → [02-product/module-catalog-v1.md](./02-product/module-catalog-v1.md) |
 | Tuân thủ / QA | [06-compliance/gpp-operational-context-v1.md](./06-compliance/gpp-operational-context-v1.md) |
 

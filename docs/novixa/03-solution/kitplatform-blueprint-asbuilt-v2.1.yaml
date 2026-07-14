@@ -1,0 +1,431 @@
+# KIT Platform Enterprise Blueprint — As-Built v2.1
+# Single source of truth for AI/agents and contributors.
+# Mirror of shipped KitPlatform architecture. Do NOT invent EF/Blazor/HospitalOS.
+# Evolve additive unless explicitly instructed to redesign.
+
+blueprint:
+  version: "2.1.1"
+  name: KIT Platform Blueprint (As-Built)
+  status: active
+  synced: "2026-07-14"
+  verify_script: scripts/check-kit-bp-asbuilt.ps1
+  source_of_truth_priority:
+    - PackDefinition.cs
+    - PlatformModuleCodes.cs
+    - this_blueprint
+  purpose: >
+    Canonical technical contract for KitPlatform modular monolith.
+    Every new module, migration, API, and UI MUST follow this document.
+    Never redesign stack (ORM, UI framework, API envelope) unless explicitly instructed.
+    If PackDefinition drifts from this file, update the blueprint (code wins).
+
+################################################################################
+# PLATFORM (SHIPPED)
+################################################################################
+
+platform:
+  architecture: modular_monolith
+  host: KitPlatform.Api
+  framework: net10.0
+  language: csharp
+  database: postgresql
+  data_access: dapper
+  schema_management: database_first_sql_migrations
+  migrations_path: migrations/
+  migration_ledger: public.kit_schema_migrations
+  api: rest
+  api_prefix: /api/
+  api_versioning: none_required   # do not force /api/v1/
+  auth: jwt
+  authorization:
+    - rbac_permissions
+    - platform_module_gates
+    - platform_feature_gates
+  multi_tenant: true
+  cache: redis_optional
+  storage: s3_compatible_optional
+  search: postgresql
+  ui_framework: react_vite_typescript   # NOT blazor
+  orm: none_ef_core_forbidden_for_new_code
+
+channels:
+  - id: admin
+    path: client/admin
+    role: erp_admin_clinic_connect_system
+  - id: staff_app
+    path: client/staff-app
+    role: pos_inventory_mobile_pwa
+  - id: customer_app
+    path: client/customer-app
+    role: customer_o2o_pwa
+  - id: assessment_web
+    path: client/assessment-web
+    role: kap_public_survey
+  - id: prescriber_portal
+    path: client/prescriber-portal
+    role: pharmacy_rx2_portal_frozen_legal_expansion
+  - id: partner_portal
+    path: client/partner-portal
+    role: kap_partner_ctv
+
+################################################################################
+# PRINCIPLES
+################################################################################
+
+principles:
+  - modular_monolith
+  - platform_kernel_plus_capabilities_plus_packs
+  - api_and_sql_first
+  - multi_tenant_vertical_entitlement
+  - additive_evolve_only
+  - event_ready_outbox   # not full internal bus yet
+  - security_by_design
+  - ai_where_useful      # not ai_first everywhere
+  - thin_domain_no_forced_ddd_everywhere
+
+################################################################################
+# LAYERS
+################################################################################
+
+layers:
+  A_kernel:
+    description: Shared by all packs — change rarely
+    includes:
+      - tenants_organizations
+      - branches_warehouses
+      - identity_users_employees_rbac
+      - settings_jsonb
+      - platform_module_registry
+      - i18n_locales
+      - audit_logs
+      - integration_outbox
+      - platform_entitlement_apis
+
+  B_capabilities:
+    description: Shared engines toggled per tenant modules
+    includes:
+      - catalog
+      - sales_pos
+      - inventory_fefo
+      - procurement
+      - pricing
+      - customer_loyalty
+      - finance_ar_ap
+      - notification_otp_push
+      - reports_dashboard
+      - workflow_engine
+      - ai_orchestrator_hooks
+
+  C_packs:
+    description: Additive solution packs — own schema/APIs/UI slices
+    rule: do_not_duplicate_kernel_customers_or_sales_orders
+
+################################################################################
+# PRODUCTS / PACKS (SHIPPED)
+################################################################################
+
+commercial_brand: Novixa
+
+packs:
+  - code: pharmacy
+    tenant_package_code: novixa_pharmacy
+    display: Novixa Pharmacy Pack
+    definition: src/Packs/Pharmacy/.../PharmacyPackDefinition.cs
+    verticals: [pharmacy, pharmacy_chain, supplement_store, medical_equipment_store]
+    default_enabled_modules:
+      - inventory
+      - procurement
+      - sales
+      - loyalty
+      - customer_app
+      - medication
+      - health_wallet
+      - reservations
+      - reports
+      - e_rx
+      - prescriber_network
+      - prescriber_portal
+    pack_module_codes:
+      - medication
+      - health_wallet
+      - reservations
+      - e_rx
+      - prescriber_network
+      - prescriber_portal
+
+  - code: clinic_crm
+    display: Novixa Clinic (ClinicOS)
+    definition: src/Packs/Clinic/.../ClinicPackDefinition.cs
+    verticals: [clinic, hybrid]
+    default_enabled_modules:
+      - sales
+      - clinic_appointments
+      - clinic_emr_lite
+      - novixa_connect
+      - reports
+    pack_module_codes:
+      - clinic_appointments
+      - clinic_emr_lite
+      - crm_leads   # pack-owned but NOT in DefaultEnabledModules
+    non_goals:
+      - full_HIS
+      - BHYT
+      - hard_CKS
+      - national_e_rx
+    notes:
+      - clinic_telemed_remote_and_video_exist_in_sql_registry_not_in_PlatformModuleCodes_All
+
+  - code: novixa_connect
+    tenant_package_code: novixa_connect
+    display: Novixa Connect
+    definition: src/Packs/Connect/.../ConnectPackDefinition.cs
+    default_enabled_modules: [novixa_connect]
+    pack_module_codes: [novixa_connect]
+    purpose: NT_PK_collaboration_referrals_bookings_rx_handoff
+    note: not_e_rx_legal_issuer
+
+  - code: pharmacy_survey
+    display: Pharmacy Survey Pack
+    definition: src/Packs/Survey/.../SurveyPackDefinition.cs
+    default_enabled_modules:
+      - assessment
+      - pharmacy_survey
+      - reports
+    pack_module_codes:
+      - assessment
+      - pharmacy_survey
+    related_ui:
+      - assessment_web
+      - partner_portal
+      - admin_kap
+
+workspace_provisioner:
+  class: KitPlatform.Infrastructure.Kernel.Workspace.WorkspacePackProvisioner
+  rules:
+    - always: novixa_pharmacy
+    - if_any: [clinic_appointments, clinic_emr_lite, crm_leads]
+      then: clinic_crm
+    - if_any: [novixa_connect]
+      then: novixa_connect
+    - pharmacy_survey: not_in_runtime_provisioner_historically_migration_084
+
+commercial_ui:
+  module_tree: client/admin/src/modules/platform/platform-module-tree.ts
+  note: commercial grouping may differ from PackModuleCodes ownership
+  pack_templates:
+    - novixa_pharmacy
+    - novixa_pharmacy_core
+    - novixa_clinic
+    - novixa_clinic_plus_telemed
+    - novixa_connect
+    - survey_kap
+
+platform_module_codes_all:
+  source: src/KitPlatform.Application/Core/PlatformModuleCodes.cs
+  codes:
+    - inventory
+    - procurement
+    - sales
+    - loyalty
+    - customer_app
+    - medication
+    - health_wallet
+    - reservations
+    - reports
+    - clinic
+    - clinic_appointments
+    - clinic_emr_lite
+    - crm_leads
+    - lab
+    - spa
+    - assessment
+    - pharmacy_survey
+    - e_rx
+    - prescriber_network
+    - prescriber_portal
+    - telehealth
+    - novixa_connect
+
+roadmap_products:
+  status: aspirational_do_not_codegen_as_shipped
+  items:
+    - FamilyOS
+    - HospitalOS
+    - RetailOS
+    - EnterpriseOS
+    - HIS_HL7_FHIR_adapters
+    - Hard_CKS_USB_CA
+    - Clinic_billing_BHYT
+
+################################################################################
+# ENTITLEMENT
+################################################################################
+
+entitlement:
+  storage: tenants.settings.platform
+  fields:
+    schema_version: int
+    vertical: string
+    allowed_modules: string[]    # Core ceiling
+    enabled_modules: string[]    # subset of allowed
+    max_branches: int|null       # null = unlimited
+    features: object
+    i18n: object
+  code:
+    validator: TenantPlatformSettingsValidator
+    services:
+      - TenantPlatformSettingsService
+      - PlatformTenantService
+  core_apis:
+    - GET/PUT /api/platform/tenants/{id}/entitlement
+    - GET /api/platform/modules
+    - GET/PUT /api/system/tenant-platform
+  ui:
+    core: /setup/organizations
+    tenant: /system/platform-pack
+  rules:
+    - contracts_use_module_codes_not_ui_tab_names
+    - iam_branches_users_roles_not_sold_as_skus
+    - lowering_max_branches_does_not_delete_existing
+    - workspace_provisioner_runs_on_entitlement_save
+
+################################################################################
+# CODE STRUCTURE
+################################################################################
+
+repo_layout:
+  api: src/KitPlatform.Api
+  application: src/KitPlatform.Application
+  domain: src/KitPlatform.Domain
+  infrastructure: src/KitPlatform.Infrastructure
+  packs: src/Packs/{Pharmacy|Clinic|Connect|Survey}
+  clients: client/*
+  migrations: migrations/
+  tests: tests/
+
+module_generate_must:
+  - sql_migration_additive
+  - dapper_repository_or_sql
+  - application_contract_dto
+  - infrastructure_service
+  - api_controller_with_module_gate
+  - permission_seed_if_needed
+  - react_ui_if_user_facing
+  - update_migration_manifests
+  - tests_when_nontrivial
+
+module_generate_never:
+  - ef_core
+  - blazor
+  - duplicate_tables
+  - business_logic_in_controllers
+  - hardcode_pharmacy_rules_in_core_engines
+  - breaking_rename_without_migration
+  - invent_hospitalos_modules
+
+################################################################################
+# DATABASE
+################################################################################
+
+database:
+  naming:
+    table: snake_case
+    column: snake_case
+    pk: id
+    fk: "*_id"
+  requirements:
+    uuid_pk: true
+    soft_delete: deleted_at_preferred
+    audit_timestamps: true
+    indexes: true
+    unique_constraints: true
+  entity_base_fields:
+    always: [id]
+    usually: [tenant_id, created_at, updated_at]
+    when_applicable: [branch_id, deleted_at, status, code, name]
+    do_not_force_on_every_table:
+      - branch_id
+      - code
+      - name
+      - description
+      - is_deleted_boolean
+
+################################################################################
+# API
+################################################################################
+
+api:
+  style: rest_dto_bodies
+  success: http_2xx_plus_json_dto
+  error: http_4xx_5xx_plus_message_or_problem_details
+  envelope_success_data: not_required
+  auth_header: Authorization Bearer
+  platform_key_header: X-Platform-Key
+  module_filter: RequirePlatformModule
+  feature_filter: RequirePlatformFeature
+
+################################################################################
+# UI
+################################################################################
+
+ui:
+  framework: react
+  bundler: vite
+  language: typescript
+  admin_design_system: ant_design
+  principles:
+    - channel_adapter_not_domain
+    - respect_vertical_and_module_gates
+    - desktop_first_admin
+    - pwa_where_applicable
+
+################################################################################
+# SECURITY / WORKFLOW / REPORT / AI
+################################################################################
+
+security:
+  authentication: jwt
+  authorization: rbac_plus_module_gates
+  audit: enabled
+
+workflow:
+  engine: present
+  used_for:
+    - purchase_order_approve
+    - pos_discount_override
+    - other_as_registered
+
+report:
+  export_formats_present:
+    - csv
+    - pdf
+
+ai:
+  posture: opportunistic
+  present:
+    - kap_narrative
+    - health_copilot_hooks
+  not_required_for_every_crud: true
+
+################################################################################
+# INTEGRATION
+################################################################################
+
+integration:
+  outbox: public_integration_pattern_via_integration_outbox
+  publisher: http_webhook_optional
+  his_hl7_fhir: not_shipped
+  connect_network: pack_novixa_connect
+
+################################################################################
+# FUTURE FLAGS
+################################################################################
+
+future:
+  multi_language: partial_shipped
+  multi_currency: partial
+  multi_timezone: partial
+  offline_ready: partial_staff_pwa
+  microservice_ready: boundary_only
+  event_bus_internal: not_yet
+  his_adapters: project_based

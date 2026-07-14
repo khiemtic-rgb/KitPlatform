@@ -22,6 +22,9 @@
     <ProjectReference Include="..\..\src\KitPlatform.Application\KitPlatform.Application.csproj" />
     <ProjectReference Include="..\..\src\Packs\Pharmacy\KitPlatform.Packs.Pharmacy.Application\KitPlatform.Packs.Pharmacy.Application.csproj" />
     <ProjectReference Include="..\..\src\Packs\Pharmacy\KitPlatform.Packs.Pharmacy.Infrastructure\KitPlatform.Packs.Pharmacy.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Packs\Clinic\KitPlatform.Packs.Clinic.Application\KitPlatform.Packs.Clinic.Application.csproj" />
+    <ProjectReference Include="..\..\src\Packs\Connect\KitPlatform.Packs.Connect.Application\KitPlatform.Packs.Connect.Application.csproj" />
+    <ProjectReference Include="..\..\src\Packs\Survey\KitPlatform.Packs.Survey.Application\KitPlatform.Packs.Survey.Application.csproj" />
   </ItemGroup>
 
 </Project>
