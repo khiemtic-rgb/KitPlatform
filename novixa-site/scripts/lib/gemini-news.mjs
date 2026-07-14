@@ -11,15 +11,23 @@ import { loadManifest, saveManifest } from '../news-image-manifest.mjs';
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
 /** Text models tried in order if the preferred one fails. */
-const TEXT_MODEL_FALLBACKS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+const TEXT_MODEL_FALLBACKS = [
+  'gemini-2.0-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-flash-latest',
+];
 
 /** Image models: Nano Banana / Gemini image → Imagen predict. */
 const IMAGE_MODEL_FALLBACKS = [
-  { model: 'gemini-2.5-flash-image', mode: 'generateContent' },
   { model: 'gemini-2.0-flash-preview-image-generation', mode: 'generateContent' },
+  { model: 'gemini-2.5-flash-image', mode: 'generateContent' },
   { model: 'imagen-4.0-generate-001', mode: 'predict' },
   { model: 'imagen-3.0-generate-002', mode: 'predict' },
 ];
+
+const RATE_LIMIT_RETRIES = 4;
+const RATE_LIMIT_BASE_MS = 20_000;
 
 function getApiKey() {
   return (
@@ -43,7 +51,11 @@ export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function geminiRequest(urlPath, body) {
+function isRateLimited(error) {
+  return /failed \(429\)/.test(error?.message ?? '');
+}
+
+async function geminiRequestOnce(urlPath, body) {
   const apiKey = getApiKey();
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
 
@@ -62,6 +74,23 @@ async function geminiRequest(urlPath, body) {
   }
 
   return res.json();
+}
+
+/** Retry 429 (free-tier RPM) before giving up on a model. */
+async function geminiRequest(urlPath, body) {
+  let lastError;
+  for (let attempt = 1; attempt <= RATE_LIMIT_RETRIES; attempt++) {
+    try {
+      return await geminiRequestOnce(urlPath, body);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (!isRateLimited(lastError) || attempt === RATE_LIMIT_RETRIES) throw lastError;
+      const wait = RATE_LIMIT_BASE_MS * attempt;
+      console.warn(`  · Rate limit 429 — chờ ${Math.round(wait / 1000)}s rồi thử lại (${attempt}/${RATE_LIMIT_RETRIES})`);
+      await sleep(wait);
+    }
+  }
+  throw lastError ?? new Error('Gemini request failed');
 }
 
 function extractText(data) {
