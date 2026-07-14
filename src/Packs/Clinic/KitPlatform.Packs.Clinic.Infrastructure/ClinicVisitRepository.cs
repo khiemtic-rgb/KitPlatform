@@ -234,25 +234,11 @@ internal sealed class ClinicVisitRepository
         Guid appointmentId,
         CancellationToken cancellationToken)
     {
+        // Resolve id then load full DTO (preferred pharmacy columns) — avoids Dapper
+        // ctor mismatch when SELECT omits trailing ClinicVisitDto fields.
         const string sql = """
-            SELECT
-                v.id AS Id,
-                v.appointment_id AS AppointmentId,
-                v.customer_id AS CustomerId,
-                c.full_name AS CustomerName,
-                c.phone AS CustomerPhone,
-                v.provider_id AS ProviderId,
-                p.display_name AS ProviderDisplayName,
-                v.visit_status AS VisitStatus,
-                v.encounter_modality AS EncounterModality,
-                v.chief_complaint AS ChiefComplaint,
-                v.diagnosis_summary AS DiagnosisSummary,
-                v.started_at AS StartedAt,
-                v.closed_at AS ClosedAt,
-                v.created_at AS CreatedAt
+            SELECT v.id
             FROM pack_clinic.clinic_visit v
-            LEFT JOIN public.customers c ON c.id = v.customer_id AND c.tenant_id = v.tenant_id
-            LEFT JOIN pack_clinic.clinic_provider p ON p.id = v.provider_id AND p.tenant_id = v.tenant_id
             WHERE v.tenant_id = @TenantId
               AND v.appointment_id = @AppointmentId
               AND v.visit_status = 'open'
@@ -262,12 +248,14 @@ internal sealed class ClinicVisitRepository
             LIMIT 1
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return await conn.QuerySingleOrDefaultAsync<ClinicVisitDto>(sql, new
+        var id = await conn.QuerySingleOrDefaultAsync<Guid?>(sql, new
         {
             TenantId,
             AppointmentId = appointmentId,
             WorkspaceId = workspaceId,
         });
+        if (id is null) return null;
+        return await GetAsync(workspaceId, id.Value, cancellationToken);
     }
 
     public async Task<bool> UpdateAsync(

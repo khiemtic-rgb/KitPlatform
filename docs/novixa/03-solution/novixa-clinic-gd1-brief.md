@@ -171,16 +171,17 @@ Chi tiết màn hình/API: **[checklist MVP](./novixa-clinic-gd1-mvp-checklist.m
 | CL-GO-03 | Reschedule appointment (`PATCH /api/clinic/appointments/{id}`) | Done |
 | CL-GO-04 | ClinicPack defaults không `sales` (align mig. 126) | Done |
 | CL-GO-05 | Checklist gap column đồng bộ as-built | Done |
-| CL-GO-01 | Ops acceptance DEMO_CLINIC ↔ NT + sign-off pilot PK | **Open** |
+| CL-GO-01 | Ops acceptance DEMO_CLINIC ↔ NT (lab smoke) | **Done** (2026-07-14) — `smoke-clinic-chain-local.ps1` CL1.0–CL1.4 + CL2 + settings; handoff → NT_XUANHOA |
+| CL-GO-01b | Sign-off PK khách thật tắt app cũ | **Open** (customer acceptance — ngoài lab) |
 
 ### GĐ1 full (còn lại)
 
 - [x] Checklist P0 màn hình + API (code) — [mvp-checklist](./novixa-clinic-gd1-mvp-checklist.md)
-- [ ] **CL-GO-01:** 1 tenant PK thật (hoặc DEMO_CLINIC lab) chạy walk-in end-to-end trong ngày
-- [ ] Đơn finalized gửi được tới ≥1 NT Connect active; NT consume / bán theo quy trình Pharmacy
-- [ ] PK xác nhận ngừng dùng app lịch + hồ sơ + kê đơn cũ cho luồng pilot
+- [x] **CL-GO-01 (lab):** DEMO_CLINIC walk-in / lịch / Rx / gửi NT_XUANHOA end-to-end (`smoke-clinic-chain-local.ps1`)
+- [x] Đơn finalized gửi được tới ≥1 NT Connect (smoke CL1.3 / CL2)
+- [ ] **CL-GO-01b:** PK khách thật xác nhận ngừng app lịch + hồ sơ + kê đơn cũ
 - [x] Không có endpoint kê đơn dưới `/api/connect/*`
-- [x] Smoke scripts CL1.0–CL1.4
+- [x] Smoke scripts CL1.0–CL1.4 (+ CL2 Soft-CKS)
 
 ---
 
