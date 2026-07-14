@@ -82,6 +82,8 @@ Admin: `http://localhost:5173/success/loss` + Cockpit `/success/cockpit`
    - giữ AC2/AC4 smokes  
 4. Tick deploy trong epic AC1/AC3/AC5; lưu ảnh bảng ký §2.
 
+**Đã deploy VPS 2026-07-14:** `deploy-production` → `deploy-update-vps -RunMigrations` (APPLY `133_success_loss_gates.sql`); prod smokes AC1/AC2/AC3/AC4/AC5 NT_XUANHOA PASS. Epic AC1/AC3/AC5 Deploy VPS ☑.
+
 **Hold** — không deploy; ghi blocker vào epic / chat.
 
 ---

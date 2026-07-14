@@ -2,7 +2,7 @@
 
 **Mã:** NVX-PRD-03-EP03 · **Capability:** Process Excellence (#2) · neo Business Performance (#4) qua Cockpit  
 **Phase:** P2 → mép P3 (incident đầy đủ **không** thuộc epic này)  
-**Trạng thái:** In progress — AC2+AC4 prod · AC1+AC5+AC3 lab UAT **Ready deploy** (2026-07-14) — [UAT pack](../07-customer/success-ep03-ac135-lab-uat-pack-v1.md)  
+**Trạng thái:** In progress — AC1–AC5 prod (2026-07-14, mig **133**) — [UAT pack](../07-customer/success-ep03-ac135-lab-uat-pack-v1.md) · AC6 Open  
 **Neo:** [pharmacy-success-capability-map-v1.md](./pharmacy-success-capability-map-v1.md) · [Owner Cockpit EP01](./success-p2-owner-cockpit-epic-v1.md) · [Checklist ca EP02](./success-p2-02-shift-checklist-epic-v1.md) · [KIT-BP-ASBUILT](../03-solution/kitplatform-enterprise-blueprint-asbuilt-v2.1.md)  
 **Điều kiện mở:** EP01 + EP02 lab ✅ · Clinic P0 trên prod ✅ · ưu tiên sau / song song CL-GO-01b (không block lab EP03)
 
@@ -83,7 +83,7 @@ Catalog cảnh báo mở rộng (DT ca thấp bất thường, tồn âm, xuất
 - [x] Í thiểu loại: tạo/sửa/hủy HĐ · giảm giá · trả hàng · xuất nội bộ (reason tag) · điều chỉnh tồn  
 - [x] Mỗi dòng: actor, thời điểm, loại, tóm tắt, link chứng từ (list routes)  
 - [x] Write-path: `sales_order/discount` khi có giảm POS; `inventory_adjustment/create` + enrich payload (compose `activity_log`, không bảng `success_loss_event`)  
-- [ ] Deploy VPS / UAT screenshot còn Open  
+- [x] Deploy VPS 2026-07-14 — prod smoke NT_XUANHOA PASS (UAT screenshot còn Open)  
 
 ### AC2 — Đối chiếu tiền cuối ca
 
@@ -100,7 +100,7 @@ Catalog cảnh báo mở rộng (DT ca thấp bất thường, tồn âm, xuất
 - [x] Nhập SL / chốt lệch reuse `/inventory/adjustments/:id/count` + approve (`inventory.approve`)  
 - [x] Báo cáo lệch cycle count theo ngày / SKU — `GET .../cycle-count/variance`  
 - [x] Tile Cockpit `riskStrip.cycleCountStatusToday` (not_done / in_progress / done / has_variance)  
-- [ ] Deploy VPS / UAT screenshot còn Open  
+- [x] Deploy VPS 2026-07-14 — prod smoke NT_XUANHOA PASS (UAT screenshot còn Open)  
 
 ### AC4 — Báo cáo theo nhân viên
 
@@ -125,7 +125,7 @@ Catalog cảnh báo mở rộng (DT ca thấp bất thường, tồn âm, xuất
 - [x] Đóng gap: hủy HĐ (`sales.cancel`) · giảm giá (409 + audit decide) · duyệt adjust/xuất nội bộ (`inventory.approve`)  
 - [x] Thao tác bị chặn trả message rõ (403 / 409 structured); audit override/approve  
 - [x] Không bắt buộc Soft-CKS / chữ ký số  
-- [ ] Deploy VPS mig 133 + UAT còn Open  
+- [x] Deploy VPS 2026-07-14 + mig **133** APPLY — prod smoke gates NT_XUANHOA PASS (UAT screenshot còn Open)  
 
 ### AC6 — Cảnh báo (3 rule)
 
