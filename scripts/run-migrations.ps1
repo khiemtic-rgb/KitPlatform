@@ -156,7 +156,8 @@ $files = @(
     "129_kap_partner_portal.sql",
     "130_kap_assessment_partner_grants.sql",
     "131_clinic_persona_roles.sql",
-    "132_success_shift_checklist.sql"
+    "132_success_shift_checklist.sql",
+    "133_success_loss_gates.sql"
 )
 
 Write-Host "=== KitPlatform Migrations ===" -ForegroundColor Cyan

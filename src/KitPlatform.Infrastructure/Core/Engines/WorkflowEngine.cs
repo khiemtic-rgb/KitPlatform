@@ -14,11 +14,13 @@ internal sealed class WorkflowEngine : IWorkflowEngine
 
     private readonly IDbConnectionFactory _db;
     private readonly ITenantContext _tenant;
+    private readonly IAuditEngine _audit;
 
-    public WorkflowEngine(IDbConnectionFactory db, ITenantContext tenant)
+    public WorkflowEngine(IDbConnectionFactory db, ITenantContext tenant, IAuditEngine audit)
     {
         _db = db;
         _tenant = tenant;
+        _audit = audit;
     }
 
     public async Task EnforcePosDiscountApprovalAsync(
@@ -309,6 +311,13 @@ internal sealed class WorkflowEngine : IWorkflowEngine
         }, tx);
 
         await tx.CommitAsync(cancellationToken);
+
+        await _audit.WriteAsync(
+            "workflow_task",
+            taskId,
+            approved ? "discount_override_approved" : "discount_override_rejected",
+            new { workflowCode = PosDiscountOverrideCode, decision, notes },
+            cancellationToken);
 
         return new WorkflowTaskDecisionDto(taskId, newTaskStatus, decision, DateTime.UtcNow);
     }

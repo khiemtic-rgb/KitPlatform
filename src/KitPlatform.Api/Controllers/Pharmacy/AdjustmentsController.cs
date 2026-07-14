@@ -102,10 +102,17 @@ public sealed class AdjustmentsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/approve")]
-    [Authorize(Policy = InventoryPolicies.Write)]
+    [Authorize(Policy = InventoryPolicies.Approve)]
     public async Task<ActionResult<AdjustmentDetailDto>> Approve(Guid id, CancellationToken cancellationToken)
     {
-        var item = await _inventory.ApproveAdjustmentAsync(id, cancellationToken);
-        return item is null ? NotFound() : Ok(item);
+        try
+        {
+            var item = await _inventory.ApproveAdjustmentAsync(id, cancellationToken);
+            return item is null ? NotFound() : Ok(item);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }

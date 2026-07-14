@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using KitPlatform.Api.Authorization;
+using KitPlatform.Application.Core.Engines;
 using KitPlatform.Packs.Pharmacy.Sales;
 
 namespace KitPlatform.Api.Controllers.Pharmacy;
@@ -148,6 +149,10 @@ public sealed class SalesController : ControllerBase
             var item = await _sales.CreateSaleAsync(request, cancellationToken);
             return CreatedAtAction(nameof(Get), new { id = item.Id }, item);
         }
+        catch (DiscountApprovalRequiredException ex)
+        {
+            return DiscountApprovalRequired(ex);
+        }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
@@ -165,6 +170,10 @@ public sealed class SalesController : ControllerBase
         {
             var item = await _sales.UpdateDraftSaleAsync(id, request, cancellationToken);
             return item is null ? NotFound() : Ok(item);
+        }
+        catch (DiscountApprovalRequiredException ex)
+        {
+            return DiscountApprovalRequired(ex);
         }
         catch (InvalidOperationException ex)
         {
@@ -184,6 +193,10 @@ public sealed class SalesController : ControllerBase
             var item = await _sales.CompleteDraftSaleAsync(id, request, cancellationToken);
             return item is null ? NotFound() : Ok(item);
         }
+        catch (DiscountApprovalRequiredException ex)
+        {
+            return DiscountApprovalRequired(ex);
+        }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
@@ -191,7 +204,7 @@ public sealed class SalesController : ControllerBase
     }
 
     [HttpPost("orders/{id:guid}/cancel")]
-    [Authorize(Policy = SalesPolicies.Write)]
+    [Authorize(Policy = SalesPolicies.Cancel)]
     public async Task<ActionResult<SalesOrderDetailDto>> CancelDraft(Guid id, CancellationToken cancellationToken)
     {
         try
@@ -204,6 +217,14 @@ public sealed class SalesController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    private ObjectResult DiscountApprovalRequired(DiscountApprovalRequiredException ex) =>
+        StatusCode(StatusCodes.Status409Conflict, new
+        {
+            message = ex.Message,
+            code = "discount_approval_required",
+            workflowTaskId = ex.WorkflowTaskId,
+        });
 
     [HttpPost("orders/{id:guid}/returns")]
     [Authorize(Policy = SalesPolicies.Write)]

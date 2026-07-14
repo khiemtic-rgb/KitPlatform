@@ -57,7 +57,7 @@ Catalog cảnh báo mở rộng (DT ca thấp bất thường, tồn âm, xuất
 | 2 | `sales_shifts` mở/đóng ca (POS Admin + Staff); báo cáo ca | ✅ AC2 lab: compose `GET /api/success/loss/cash-variance` + Cockpit `riskStrip` (threshold mặc định 10 000); không bảng tiền mới |
 | 3 | Inventory count / adjustments (`inventory_adjustments`, màn kho) | **Cycle count session**: chọn 10–20 SKU (hot / random / FEFO), chốt lệch ngày, report theo SKU |
 | 4 | Reports Wave 1; sales/return/adjust data theo user có phần | ✅ AC4 lab: `GET /api/success/loss/reports/by-employee` — hủy draft (`employee_id`+`updated_at`) · giảm giá POS order+line (`employee_id`) · adjust approved (`approved_by`→NV, \|Δ\|×cost). Không cột actor mới |
-| 5 | RBAC kernel; workflow `pos_discount_override`; PO approve | **Gate matrix**: hủy HĐ, sửa/giảm giá (đã có mầm), xuất nội bộ — thiếu policy/WF thì thêm mỏng; **không** redesign RBAC toàn nền |
+| 5 | RBAC kernel; workflow `pos_discount_override`; PO approve | ✅ AC5 lab: mig **133** `sales.cancel` + `inventory.approve`; cancel/approve policies; discount 409 + audit decide |
 
 **Tái sử dụng Success:**
 
@@ -112,10 +112,19 @@ Catalog cảnh báo mở rộng (DT ca thấp bất thường, tồn âm, xuất
 
 ### AC5 — Phân quyền & phê duyệt
 
-- [ ] Ma trận V0 (bảng trong PR / brief): thao tác → permission / workflow hiện có → gap  
-- [ ] Đóng gap bắt buộc cho: **hủy hóa đơn**, **giảm giá vượt ngưỡng** (nối `pos_discount_override`), **xuất nội bộ** (approve hoặc role quản lý)  
-- [ ] Thao tác bị chặn trả message rõ; có audit khi override/approve  
-- [ ] Không bắt buộc Soft-CKS / chữ ký số  
+#### Ma trận V0
+
+| Thao tác | Gate sau AC5 | Message / audit |
+|----------|--------------|-----------------|
+| Hủy HĐ nháp | Policy `SalesCancel` = `sales.cancel` hoặc ADMIN (mig **133**) | 403 chuẩn ASP.NET nếu thiếu quyền; audit `sales_order/cancel` sẵn |
+| Giảm giá > ngưỡng | WF `pos_discount_override` (đã có) + API **409** `{ code: discount_approval_required, workflowTaskId }` | Decide ghi audit `workflow_task/discount_override_approved\|rejected` |
+| Xuất nội bộ / duyệt adjust | Policy `InventoryApprove` = `inventory.approve` hoặc ADMIN; create vẫn `inventory.write` | Approve giữ audit `inventory_adjustment/approve`; xuất nội bộ V0 = reason tag (AC1) |
+
+- [x] Ma trận V0 (bảng trên)  
+- [x] Đóng gap: hủy HĐ (`sales.cancel`) · giảm giá (409 + audit decide) · duyệt adjust/xuất nội bộ (`inventory.approve`)  
+- [x] Thao tác bị chặn trả message rõ (403 / 409 structured); audit override/approve  
+- [x] Không bắt buộc Soft-CKS / chữ ký số  
+- [ ] Deploy VPS mig 133 + UAT còn Open  
 
 ### AC6 — Cảnh báo (3 rule)
 
