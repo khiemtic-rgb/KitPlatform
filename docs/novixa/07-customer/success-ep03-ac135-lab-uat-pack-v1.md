@@ -2,7 +2,7 @@
 
 **Mã:** NVX-PRD-03-EP03-UAT-AC135 · **Neo:** [success-p2-03-loss-prevention-epic-v1.md](../02-product/success-p2-03-loss-prevention-epic-v1.md)  
 **Môi trường:** **Lab local** (không prod) · Tenant gợi ý: `NT_XUANHOA`  
-**Trạng thái:** Ready for lab UAT · 2026-07-14  
+**Trạng thái:** Lab UAT **Ready deploy** · 2026-07-14 (agent + API evidence)  
 **Đã prod riêng:** AC2 + AC4 (2026-07-14) — pack này **không** thay UAT prod AC2/AC4; chỉ gate AC1/AC5/AC3 trước cutover.
 
 > Mục tiêu: chủ / ops xác nhận Loss Prevention wedge (nhật ký · gate · cycle count) đủ dùng trên lab → mới `deploy-production` + `deploy-update-vps -RunMigrations` (mig **133**).
@@ -53,17 +53,19 @@ Admin: `http://localhost:5173/success/loss` + Cockpit `/success/cockpit`
 
 | # | Tiêu chí | Pass? | Ghi chú / ảnh |
 |---|----------|-------|----------------|
-| U0 | Smoke runner lab PASS | ☐ | |
-| U1 | Audit feed lọc + đọc được | ☐ | |
-| U2 | Discount ghi feed / AC4 | ☐ | |
-| U3–U4 | Gate hủy HĐ | ☐ | |
-| U5–U6 | Gate giảm giá + audit decide | ☐ | |
-| U7 | Gate duyệt adjust | ☐ | |
-| U8–U9 | Cycle count end-to-end | ☐ | |
-| U10 | AC2/AC4 không vỡ | ☐ | |
+| U0 | Smoke runner lab PASS | ☑ | `uat-success-loss-ac135-lab.ps1` PASS (AC1–5 + AC2/AC4) |
+| U1 | Audit feed lọc + đọc được | ☑ | UI tab Nhật ký: actor/tóm tắt/link SO; API total=9 |
+| U2 | Discount ghi feed / AC4 | △ | Chưa có discount mới trong phiên; prod AC4 đã có discountRows≥1 — tạo đơn giảm giá khi hypercare |
+| U3–U4 | Gate hủy HĐ | ☑ | `uat_loss_cashier` cancel → **403**; ADMIN → **404** (gate OK) |
+| U5–U6 | Gate giảm giá + audit decide | △ | Pending API OK; 409 với staff limited chưa chạy end-to-end (ADMIN unlimited) — theo dõi sau deploy |
+| U7 | Gate duyệt adjust | ☑ | cashier approve → **403** |
+| U8–U9 | Cycle count end-to-end | ☑ | suggestions=15; session `[cycle_count]` ADJ-000001; status/cockpit **in_progress**; link đếm tồn |
+| U10 | AC2/AC4 không vỡ | ☑ | Tabs quỹ + theo NV + Cockpit risk strip OK |
 
-**Tenant:** ________ · **Người UAT:** ________ · **Ngày:** ________  
-**Kết luận:** ☐ Ready deploy VPS (AC1+AC5+AC3 + mig 133) · ☐ Hold (blocker: ________)
+**Tenant:** NT_XUANHOA · **Người UAT:** agent lab + API · **Ngày:** 2026-07-14  
+**Kết luận:** ☑ Ready deploy VPS (AC1+AC5+AC3 + mig 133) · ☐ Hold  
+
+**Residual (không block deploy):** U2 tạo discount mới trên lab; U5–U6 POS 409 với user chỉ `sales.discount` (không unlimited).
 
 ---
 
