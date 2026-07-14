@@ -46,7 +46,7 @@ Assessment (KAP) → Xác định vấn đề → Act (People|Process|Customer|B
 | Phase | Trọng tâm Success | Ship / không ship |
 |-------|-------------------|-------------------|
 | **P1** | POS + kho + CRM + Dashboard + Assessment | Đúng hướng hiện tại; siết adoption + KAP loop |
-| **P2** | People *performance* + SOP/Checklist mỏng + KPI owner + Scorecard v0 | **Epic đang mở:** [Owner Cockpit](./success-p2-owner-cockpit-epic-v1.md) (NVX-PRD-03-EP01). **Không** HRIS full / QMS full |
+| **P2** | People *performance* + SOP/Checklist mỏng + KPI owner + Scorecard v0 | **EP01** [Owner Cockpit](./success-p2-owner-cockpit-epic-v1.md) (lab ✅). **EP02 tiếp:** [Checklist ca](./success-p2-02-shift-checklist-epic-v1.md). **Không** HRIS full / QMS full |
 | **P3** | AI Copilot rule-based + Business Insight + Benchmark nhẹ | **Không** P&L/coaching nặng trước data ổn |
 | **P4** | Coaching + Learning + Continuous Improvement sâu + Partner mở rộng | Sau P2–P3 đã đo được tiến bộ quý |
 

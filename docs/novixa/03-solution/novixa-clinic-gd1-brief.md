@@ -172,16 +172,32 @@ Chi tiết màn hình/API: **[checklist MVP](./novixa-clinic-gd1-mvp-checklist.m
 | CL-GO-04 | ClinicPack defaults không `sales` (align mig. 126) | Done |
 | CL-GO-05 | Checklist gap column đồng bộ as-built | Done |
 | CL-GO-01 | Ops acceptance DEMO_CLINIC ↔ NT (lab smoke) | **Done** (2026-07-14) — `smoke-clinic-chain-local.ps1` CL1.0–CL1.4 + CL2 + settings; handoff → NT_XUANHOA |
-| CL-GO-01b | Sign-off PK khách thật tắt app cũ | **Open** (customer acceptance — ngoài lab) |
+| CL-GO-01b | Sign-off PK khách thật tắt app cũ | **Open** — chờ UAT prod sau deploy Clinic P0 (xem §8.1) |
 
 ### GĐ1 full (còn lại)
 
 - [x] Checklist P0 màn hình + API (code) — [mvp-checklist](./novixa-clinic-gd1-mvp-checklist.md)
 - [x] **CL-GO-01 (lab):** DEMO_CLINIC walk-in / lịch / Rx / gửi NT_XUANHOA end-to-end (`smoke-clinic-chain-local.ps1`)
 - [x] Đơn finalized gửi được tới ≥1 NT Connect (smoke CL1.3 / CL2)
-- [ ] **CL-GO-01b:** PK khách thật xác nhận ngừng app lịch + hồ sơ + kê đơn cũ
+- [ ] **CL-GO-01b:** PK khách thật xác nhận ngừng app lịch + hồ sơ + kê đơn cũ (§8.1)
 - [x] Không có endpoint kê đơn dưới `/api/connect/*`
 - [x] Smoke scripts CL1.0–CL1.4 (+ CL2 Soft-CKS)
+
+### 8.1 CL-GO-01b — Acceptance khách (template)
+
+**Điều kiện:** API + Admin Clinic P0 đã trên `api.novixa.vn` / `admin.novixa.vn` (mig 131, reschedule, RBAC persona).
+
+| # | Tiêu chí (PK thực tế) | Pass? | Ghi chú khách |
+|---|----------------------|-------|---------------|
+| A1 | Lễ tân tạo/đổi lịch hẹn trên Admin (kể cả reschedule) đủ để **không** dùng app lịch cũ | ☐ | |
+| A2 | Check-in → visit → kê đơn / finalize trên Clinic đủ để **không** dùng app hồ sơ+Rx cũ | ☐ | |
+| A3 | Đơn gửi NT liên kết (Connect) nhận được tại nhà thuốc | ☐ | |
+| A4 | Role Lễ tân / Bác sĩ đúng quyền (không thấy màn thừa) | ☐ | |
+| A5 | Chủ PK / ops xác nhận ngày **ngắt** app cũ (hoặc chỉ đọc lưu trữ) | ☐ | Ngày: ____ |
+
+**Ký xác nhận:** Tên PK ________ · Người ký ________ · Ngày ________ · Tenant code ________
+
+**Đóng CL-GO-01b:** đánh dấu Done trong bảng trên + lưu ảnh/email sign-off vào thư mục khách hàng (ops).
 
 ---
 

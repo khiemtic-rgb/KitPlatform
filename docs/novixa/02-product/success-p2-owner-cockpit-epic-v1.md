@@ -39,5 +39,5 @@ Chủ NT mở cockpit ≥3 lần/tuần trong hypercare **hoặc** dùng thay v�
 
 ## Ngoài scope → epic sau
 
-- **Success-P2-02** Process: Checklist mở/đóng ca  
+- **Success-P2-02** Process: [Checklist mở/đóng ca](./success-p2-02-shift-checklist-epic-v1.md) (NVX-PRD-03-EP02)  
 - Scorecard quý / SWOT (Continuous Improvement)
