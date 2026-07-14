@@ -193,7 +193,8 @@
     "hints": {
       "customerCodeSuggest": "Suggested next code — leave blank for auto-generation on save",
       "creditLimitEmpty": "Leave blank for unlimited",
-      "clinicalNotes": "For intake / prescribing — not a full medical record",`r`n      "customerGroup": "Group % discount auto-fills on POS"
+      "clinicalNotes": "For intake / prescribing — not a full medical record",
+      "customerGroup": "Group % discount auto-fills on POS"
     },
     "validation": {
       "customerCodeRequired": "Enter customer code",
