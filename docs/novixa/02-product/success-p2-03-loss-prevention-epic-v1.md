@@ -2,7 +2,7 @@
 
 **Mã:** NVX-PRD-03-EP03 · **Capability:** Process Excellence (#2) · neo Business Performance (#4) qua Cockpit  
 **Phase:** P2 → mép P3 (incident đầy đủ **không** thuộc epic này)  
-**Trạng thái:** In progress — AC2+AC4 prod · AC1+AC5+AC3 lab (2026-07-14); deploy AC1/3/5 còn Open  
+**Trạng thái:** In progress — AC2+AC4 prod · AC1+AC5+AC3 lab (2026-07-14); **lab UAT trước deploy** — [success-ep03-ac135-lab-uat-pack-v1.md](../07-customer/success-ep03-ac135-lab-uat-pack-v1.md)  
 **Neo:** [pharmacy-success-capability-map-v1.md](./pharmacy-success-capability-map-v1.md) · [Owner Cockpit EP01](./success-p2-owner-cockpit-epic-v1.md) · [Checklist ca EP02](./success-p2-02-shift-checklist-epic-v1.md) · [KIT-BP-ASBUILT](../03-solution/kitplatform-enterprise-blueprint-asbuilt-v2.1.md)  
 **Điều kiện mở:** EP01 + EP02 lab ✅ · Clinic P0 trên prod ✅ · ưu tiên sau / song song CL-GO-01b (không block lab EP03)
 
