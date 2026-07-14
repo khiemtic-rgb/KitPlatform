@@ -7,7 +7,10 @@ public sealed record CustomerAdminListItemDto(
     string Phone,
     string? Email,
     short Status,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    Guid? CustomerGroupId = null,
+    string? CustomerGroupName = null,
+    decimal GroupDiscountPercent = 0);
 
 public sealed record PagedCustomersResult(
     IReadOnlyList<CustomerAdminListItemDto> Items,
@@ -34,7 +37,10 @@ public sealed record CustomerDetailDto(
     string? IdNumber = null,
     string? EmergencyContactName = null,
     string? EmergencyContactPhone = null,
-    string? ClinicalNotes = null);
+    string? ClinicalNotes = null,
+    Guid? CustomerGroupId = null,
+    string? CustomerGroupName = null,
+    decimal GroupDiscountPercent = 0);
 
 public sealed record CustomerOrderListItemDto(
     Guid Id,
@@ -61,7 +67,8 @@ public sealed record CreateCustomerRequest(
     string? IdNumber = null,
     string? EmergencyContactName = null,
     string? EmergencyContactPhone = null,
-    string? ClinicalNotes = null);
+    string? ClinicalNotes = null,
+    Guid? CustomerGroupId = null);
 
 public sealed record UpdateCustomerRequest(
     string FullName,
@@ -77,6 +84,7 @@ public sealed record UpdateCustomerRequest(
     string? IdNumber = null,
     string? EmergencyContactName = null,
     string? EmergencyContactPhone = null,
-    string? ClinicalNotes = null);
+    string? ClinicalNotes = null,
+    Guid? CustomerGroupId = null);
 
 public sealed record NextCustomerCodeDto(string CustomerCode);

@@ -254,6 +254,12 @@ export async function searchCustomers(search?: string): Promise<CustomerListItem
         ? Number(row.creditLimit ?? row.CreditLimit)
         : undefined,
     currentOutstanding: Number(row.currentOutstanding ?? row.CurrentOutstanding ?? 0),
+    customerGroupId:
+      row.customerGroupId != null || row.CustomerGroupId != null
+        ? String(row.customerGroupId ?? row.CustomerGroupId)
+        : null,
+    customerGroupName: (row.customerGroupName ?? row.CustomerGroupName) as string | null | undefined,
+    groupDiscountPercent: Number(row.groupDiscountPercent ?? row.GroupDiscountPercent ?? 0),
   }));
 }
 

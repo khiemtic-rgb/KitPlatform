@@ -9,6 +9,7 @@ import {
   updateCustomer,
 } from '@/shared/api/customer-admin.api';
 import type { CustomerDetail } from '@/shared/api/customer-admin.types';
+import { fetchCustomerGroups, type CustomerGroup } from '@/shared/api/customer-groups.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useCustomerEnums } from '@/shared/i18n/use-customer-enums';
 import { PharmaDatePicker } from '@/shared/ui/PharmaDatePicker';
@@ -28,6 +29,7 @@ interface CustomerFormValues {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   clinicalNotes?: string;
+  customerGroupId?: string | null;
 }
 
 interface CustomerFormDrawerProps {
@@ -70,6 +72,14 @@ export function CustomerFormDrawer({
   const [form] = Form.useForm<CustomerFormValues>();
   const [saving, setSaving] = useState(false);
   const [loadingCode, setLoadingCode] = useState(false);
+  const [groups, setGroups] = useState<CustomerGroup[]>([]);
+
+  useEffect(() => {
+    if (!open || isQuick) return;
+    void fetchCustomerGroups(true)
+      .then(setGroups)
+      .catch(() => setGroups([]));
+  }, [open, isQuick]);
 
   useEffect(() => {
     if (!open) return;
@@ -90,6 +100,7 @@ export function CustomerFormDrawer({
         emergencyContactName: editing.emergencyContactName,
         emergencyContactPhone: editing.emergencyContactPhone,
         clinicalNotes: editing.clinicalNotes,
+        customerGroupId: editing.customerGroupId ?? undefined,
       });
       return;
     }
@@ -128,6 +139,7 @@ export function CustomerFormDrawer({
             emergencyContactName: values.emergencyContactName?.trim() || undefined,
             emergencyContactPhone: values.emergencyContactPhone?.trim() || undefined,
             clinicalNotes: values.clinicalNotes?.trim() || undefined,
+            customerGroupId: values.customerGroupId || null,
           })
         : await createCustomer({
             fullName: values.fullName.trim(),
@@ -141,6 +153,7 @@ export function CustomerFormDrawer({
             emergencyContactName: values.emergencyContactName?.trim() || undefined,
             emergencyContactPhone: values.emergencyContactPhone?.trim() || undefined,
             clinicalNotes: values.clinicalNotes?.trim() || undefined,
+            customerGroupId: values.customerGroupId || null,
           });
       if (!isQuick) {
         message.success(editing ? t('messages.updateSuccess') : t('messages.createSuccess'));
@@ -238,6 +251,23 @@ export function CustomerFormDrawer({
             </Form.Item>
             <Form.Item name="gender" label={t('fields.gender')}>
               <Select allowClear placeholder={t('placeholders.gender')} options={customerGenderOptions} />
+            </Form.Item>
+            <Form.Item
+              name="customerGroupId"
+              label={t('fields.customerGroup')}
+              extra={t('hints.customerGroup')}
+            >
+              <Select
+                allowClear
+                placeholder={t('placeholders.customerGroup')}
+                options={groups.map((g) => ({
+                  value: g.id,
+                  label:
+                    g.discountPercent > 0
+                      ? `${g.groupName} (−${g.discountPercent}%)`
+                      : g.groupName,
+                }))}
+              />
             </Form.Item>
             <Form.Item name="idNumber" label={t('fields.idNumber')}>
               <Input placeholder={t('placeholders.idNumber')} />

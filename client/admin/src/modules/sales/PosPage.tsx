@@ -19,6 +19,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, CreditCardOutlined, ClockCircleOutlined, PlusOutlined, PrinterOutlined, RollbackOutlined, SaveOutlined, SendOutlined, ShoppingCartOutlined, UnorderedListOutlined, UserAddOutlined } from '@ant-design/icons';
 import { fetchWarehouses, fetchActiveCountingSession } from '@/shared/api/inventory.api';
 import type { Warehouse, AdjustmentListItem } from '@/shared/api/inventory.types';
+import { fetchCustomer } from '@/shared/api/customer-admin.api';
 import { createSale, completeDraftSale, fetchBatchModeSettings, fetchPosCustomerLoyalty, fetchPosCustomerVouchers, fetchPosStockBulk, fetchRxSettings, fetchSalesOrder, lookupPosProduct, openSalesShift, previewPosAllocation, reportRxPosBlock, searchCustomers, searchPosProducts, updateDraftSale, type TenantBatchModeValue, type TenantRxSettings } from '@/shared/api/sales.api';
 import {
   isShiftAlreadyOpenError,
@@ -159,6 +160,38 @@ export function PosPage() {
       cancelled = true;
     };
   }, [customerId, pricing.totalAmount]);
+
+  // Auto order % discount from customer group (staff may override)
+  useEffect(() => {
+    if (!customerId) {
+      setOrderDiscount((prev) =>
+        prev.discountType === SALES_DISCOUNT_TYPES.Percent ? {} : prev,
+      );
+      return;
+    }
+    let cancelled = false;
+    void fetchCustomer(customerId)
+      .then((c) => {
+        if (cancelled) return;
+        const pct = Number(c.groupDiscountPercent ?? 0);
+        if (pct > 0) {
+          setOrderDiscount({
+            discountType: SALES_DISCOUNT_TYPES.Percent,
+            discountValue: pct,
+          });
+        } else {
+          setOrderDiscount((prev) =>
+            prev.discountType === SALES_DISCOUNT_TYPES.Percent ? {} : prev,
+          );
+        }
+      })
+      .catch(() => {
+        /* optional — sale can proceed without group autofill */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [customerId]);
 
   useEffect(() => {
     if (!customerId) {

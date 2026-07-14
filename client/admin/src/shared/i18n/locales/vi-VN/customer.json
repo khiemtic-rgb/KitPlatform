@@ -18,9 +18,47 @@
   "customerLayout": {
     "tabs": {
       "list": "Danh sách",
+      "groups": "Nhóm khách",
       "engagement": "Tương tác app",
       "loyalty": "Tích điểm",
       "vouchers": "Voucher"
+    }
+  },
+  "groups": {
+    "create": "Thêm nhóm",
+    "createTitle": "Thêm nhóm khách",
+    "editTitle": "Sửa nhóm khách",
+    "columns": {
+      "code": "Mã",
+      "name": "Tên nhóm",
+      "discount": "CK %",
+      "status": "Trạng thái"
+    },
+    "fields": {
+      "code": "Mã nhóm",
+      "name": "Tên nhóm",
+      "discount": "Chiết khấu đơn (%)",
+      "status": "Trạng thái"
+    },
+    "placeholders": {
+      "name": "Thân thiết / VIP / …"
+    },
+    "hints": {
+      "discount": "Khi bán, POS tự điền giảm % đơn theo nhóm (có thể sửa tay)."
+    },
+    "validation": {
+      "codeRequired": "Nhập mã nhóm",
+      "nameRequired": "Nhập tên nhóm",
+      "discountRequired": "Nhập % chiết khấu"
+    },
+    "messages": {
+      "loadFailed": "Không tải được nhóm khách",
+      "createSuccess": "Đã thêm nhóm",
+      "updateSuccess": "Đã cập nhật nhóm",
+      "saveFailed": "Không lưu được nhóm",
+      "deleteSuccess": "Đã xóa nhóm",
+      "deleteFailed": "Không xóa được nhóm",
+      "deleteConfirm": "Xóa nhóm này? Khách đang gắn sẽ bỏ nhóm."
     }
   },
   "engagement": {
@@ -60,6 +98,7 @@
       "customerCode": "Mã KH",
       "fullName": "Họ tên",
       "phone": "SĐT",
+      "group": "Nhóm",
       "email": "Email",
       "status": "Trạng thái",
       "createdAt": "Ngày tạo"
@@ -137,6 +176,7 @@
       "emergencyContactName": "Người liên hệ khẩn",
       "emergencyContactPhone": "SĐT liên hệ khẩn",
       "clinicalNotes": "Ghi chú lâm sàng",
+      "customerGroup": "Nhóm khách",
       "status": "Trạng thái",
       "allowCredit": "Cho phép ghi nợ",
       "creditLimit": "Hạn mức nợ"
@@ -148,6 +188,7 @@
       "email": "email@example.com",
       "dateOfBirth": "dd/mm/yyyy",
       "gender": "Chọn",
+      "customerGroup": "Chọn nhóm (tuỳ chọn)",
       "idNumber": "0010…",
       "addressLine": "Số nhà, đường, phường, quận…",
       "emergencyContactName": "Họ tên người thân",
@@ -157,7 +198,8 @@
     "hints": {
       "customerCodeSuggest": "Gợi ý mã tiếp theo — xóa trắng để hệ thống tự sinh khi lưu",
       "creditLimitEmpty": "Để trống = không giới hạn",
-      "clinicalNotes": "Dùng khi kê đơn / tiếp nhận — không thay hồ sơ bệnh án đầy đủ"
+      "clinicalNotes": "Dùng khi kê đơn / tiếp nhận — không thay hồ sơ bệnh án đầy đủ",
+      "customerGroup": "Chiết khấu % theo nhóm sẽ tự điền khi bán trên POS"
     },
     "validation": {
       "customerCodeRequired": "Nhập mã khách hàng",

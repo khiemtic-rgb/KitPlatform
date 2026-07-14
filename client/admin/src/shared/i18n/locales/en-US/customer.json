@@ -18,9 +18,47 @@
   "customerLayout": {
     "tabs": {
       "list": "List",
+      "groups": "Groups",
       "engagement": "App engagement",
       "loyalty": "Loyalty",
       "vouchers": "Vouchers"
+    }
+  },
+  "groups": {
+    "create": "Add group",
+    "createTitle": "Add customer group",
+    "editTitle": "Edit customer group",
+    "columns": {
+      "code": "Code",
+      "name": "Group name",
+      "discount": "Discount %",
+      "status": "Status"
+    },
+    "fields": {
+      "code": "Group code",
+      "name": "Group name",
+      "discount": "Order discount (%)",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "VIP / Loyal / …"
+    },
+    "hints": {
+      "discount": "POS auto-fills this order % discount; staff can change it."
+    },
+    "validation": {
+      "codeRequired": "Enter group code",
+      "nameRequired": "Enter group name",
+      "discountRequired": "Enter discount %"
+    },
+    "messages": {
+      "loadFailed": "Could not load customer groups",
+      "createSuccess": "Group created",
+      "updateSuccess": "Group updated",
+      "saveFailed": "Could not save group",
+      "deleteSuccess": "Group deleted",
+      "deleteFailed": "Could not delete group",
+      "deleteConfirm": "Delete this group? Assigned customers will be ungrouped."
     }
   },
   "engagement": {
@@ -60,6 +98,7 @@
       "customerCode": "Code",
       "fullName": "Full name",
       "phone": "Phone",
+      "group": "Group",
       "email": "Email",
       "status": "Status",
       "createdAt": "Created"
@@ -132,6 +171,7 @@
       "emergencyContactName": "Emergency contact",
       "emergencyContactPhone": "Emergency phone",
       "clinicalNotes": "Clinical notes",
+      "customerGroup": "Customer group",
       "status": "Status",
       "allowCredit": "Allow credit",
       "creditLimit": "Credit limit"
@@ -143,6 +183,7 @@
       "email": "email@example.com",
       "dateOfBirth": "dd/mm/yyyy",
       "gender": "Select",
+      "customerGroup": "Select group (optional)",
       "idNumber": "ID number",
       "addressLine": "Street, ward, district…",
       "emergencyContactName": "Relative name",
@@ -152,7 +193,7 @@
     "hints": {
       "customerCodeSuggest": "Suggested next code — leave blank for auto-generation on save",
       "creditLimitEmpty": "Leave blank for unlimited",
-      "clinicalNotes": "For intake / prescribing — not a full medical record"
+      "clinicalNotes": "For intake / prescribing — not a full medical record",`r`n      "customerGroup": "Group % discount auto-fills on POS"
     },
     "validation": {
       "customerCodeRequired": "Enter customer code",

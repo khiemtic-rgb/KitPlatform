@@ -6,6 +6,9 @@ export interface CustomerAdminListItem {
   email?: string;
   status: number;
   createdAt: string;
+  customerGroupId?: string | null;
+  customerGroupName?: string | null;
+  groupDiscountPercent?: number;
 }
 
 export interface PagedCustomersResult {
@@ -35,6 +38,9 @@ export interface CustomerDetail {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   clinicalNotes?: string;
+  customerGroupId?: string | null;
+  customerGroupName?: string | null;
+  groupDiscountPercent?: number;
 }
 
 export interface CustomerPilotOtpStatus {
@@ -128,6 +134,7 @@ export interface CreateCustomerPayload {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   clinicalNotes?: string;
+  customerGroupId?: string | null;
 }
 
 export interface UpdateCustomerPayload extends CreateCustomerPayload {

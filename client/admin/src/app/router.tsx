@@ -235,6 +235,9 @@ const CustomerLayout = lazy(() =>
 const CustomerListPage = lazy(() =>
   import('@/modules/customer/CustomerListPage').then((m) => ({ default: m.CustomerListPage })),
 );
+const CustomerGroupListPage = lazy(() =>
+  import('@/modules/customer/CustomerGroupListPage').then((m) => ({ default: m.CustomerGroupListPage })),
+);
 const CustomerEngagementPage = lazy(() =>
   import('@/modules/customer/CustomerEngagementPage').then((m) => ({ default: m.CustomerEngagementPage })),
 );
@@ -586,6 +589,7 @@ export function AppRouter() {
               >
                 <Route index element={<Navigate to="/customer/list" replace />} />
                 <Route path="list" element={<CustomerListPage />} />
+                <Route path="groups" element={<CustomerGroupListPage />} />
                 <Route path="engagement" element={<CustomerEngagementPage />} />
                 <Route path="loyalty" element={<LoyaltySettingsPage />} />
                 <Route path="vouchers" element={<VoucherListPage />} />

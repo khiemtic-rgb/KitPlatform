@@ -5,8 +5,13 @@ namespace KitPlatform.Infrastructure.Customers;
 internal sealed class CustomerAdminService : ICustomerAdminService
 {
     private readonly CustomerAdminRepository _repository;
+    private readonly CustomerGroupRepository _groups;
 
-    public CustomerAdminService(CustomerAdminRepository repository) => _repository = repository;
+    public CustomerAdminService(CustomerAdminRepository repository, CustomerGroupRepository groups)
+    {
+        _repository = repository;
+        _groups = groups;
+    }
 
     public async Task<PagedCustomersResult> ListAsync(
         string? search,
@@ -58,6 +63,8 @@ internal sealed class CustomerAdminService : ICustomerAdminService
         if (await _repository.CustomerCodeExistsAsync(code, excludeCustomerId: null, cancellationToken))
             throw new InvalidOperationException($"Mã khách hàng «{code}» đã tồn tại — chọn mã khác hoặc để trống để hệ thống tự sinh.");
 
+        var groupId = await ResolveGroupIdAsync(request.CustomerGroupId, cancellationToken);
+
         var id = await _repository.CreateAsync(
             code,
             request.FullName.Trim(),
@@ -70,6 +77,7 @@ internal sealed class CustomerAdminService : ICustomerAdminService
             NormalizeOptional(request.EmergencyContactName),
             NormalizeOptional(request.EmergencyContactPhone),
             NormalizeOptional(request.ClinicalNotes),
+            groupId,
             cancellationToken);
 
         return (await _repository.GetAsync(id, cancellationToken))!;
@@ -93,6 +101,8 @@ internal sealed class CustomerAdminService : ICustomerAdminService
         if (await _repository.CustomerCodeExistsAsync(code, customerId, cancellationToken))
             throw new InvalidOperationException($"Mã khách hàng «{code}» đã tồn tại.");
 
+        var groupId = await ResolveGroupIdAsync(request.CustomerGroupId, cancellationToken);
+
         var updated = await _repository.UpdateAsync(
             customerId,
             code,
@@ -109,6 +119,7 @@ internal sealed class CustomerAdminService : ICustomerAdminService
             NormalizeOptional(request.EmergencyContactName),
             NormalizeOptional(request.EmergencyContactPhone),
             NormalizeOptional(request.ClinicalNotes),
+            groupId,
             cancellationToken);
 
         return updated ? await _repository.GetAsync(customerId, cancellationToken) : null;
@@ -116,6 +127,15 @@ internal sealed class CustomerAdminService : ICustomerAdminService
 
     public Task<string> GetNextCustomerCodeAsync(CancellationToken cancellationToken = default) =>
         _repository.GenerateCustomerCodeAsync(cancellationToken);
+
+    private async Task<Guid?> ResolveGroupIdAsync(Guid? groupId, CancellationToken cancellationToken)
+    {
+        if (groupId is null)
+            return null;
+        if (!await _groups.ExistsActiveAsync(groupId.Value, cancellationToken))
+            throw new InvalidOperationException("Nhóm khách không tồn tại hoặc đã ngưng.");
+        return groupId;
+    }
 
     private static void ValidateNameAndPhone(string fullName, string phone)
     {

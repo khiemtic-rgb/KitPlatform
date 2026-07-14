@@ -199,6 +199,7 @@ internal sealed class CustomerAdminRepository
         string? emergencyContactName,
         string? emergencyContactPhone,
         string? clinicalNotes,
+        Guid? customerGroupId,
         CancellationToken cancellationToken)
     {
         var customerId = Guid.NewGuid();
@@ -221,11 +222,13 @@ internal sealed class CustomerAdminRepository
         const string sql = """
             INSERT INTO customers (
                 id, tenant_id, party_id, customer_code, full_name, phone, email, date_of_birth, gender, status,
-                address_line, id_number, emergency_contact_name, emergency_contact_phone, clinical_notes
+                address_line, id_number, emergency_contact_name, emergency_contact_phone, clinical_notes,
+                customer_group_id
             )
             VALUES (
                 @CustomerId, @TenantId, @PartyId, @CustomerCode, @FullName, @Phone, @Email, @DateOfBirth, @Gender, 1,
-                @AddressLine, @IdNumber, @EmergencyContactName, @EmergencyContactPhone, @ClinicalNotes
+                @AddressLine, @IdNumber, @EmergencyContactName, @EmergencyContactPhone, @ClinicalNotes,
+                @CustomerGroupId
             )
             RETURNING id
             """;
@@ -248,6 +251,7 @@ internal sealed class CustomerAdminRepository
                 EmergencyContactName = emergencyContactName,
                 EmergencyContactPhone = emergencyContactPhone,
                 ClinicalNotes = clinicalNotes,
+                CustomerGroupId = customerGroupId,
             },
             tx);
 
@@ -271,6 +275,7 @@ internal sealed class CustomerAdminRepository
         string? emergencyContactName,
         string? emergencyContactPhone,
         string? clinicalNotes,
+        Guid? customerGroupId,
         CancellationToken cancellationToken)
     {
         const string sql = """
@@ -289,6 +294,7 @@ internal sealed class CustomerAdminRepository
                 emergency_contact_name = @EmergencyContactName,
                 emergency_contact_phone = @EmergencyContactPhone,
                 clinical_notes = @ClinicalNotes,
+                customer_group_id = @CustomerGroupId,
                 updated_at = NOW()
             WHERE id = @CustomerId
               AND tenant_id = @TenantId
@@ -317,6 +323,7 @@ internal sealed class CustomerAdminRepository
                 EmergencyContactName = emergencyContactName,
                 EmergencyContactPhone = emergencyContactPhone,
                 ClinicalNotes = clinicalNotes,
+                CustomerGroupId = customerGroupId,
             },
             tx);
 
@@ -347,7 +354,10 @@ internal sealed class CustomerAdminRepository
             row.Phone,
             row.Email,
             row.Status,
-            ToOffset(row.CreatedAt));
+            ToOffset(row.CreatedAt),
+            row.CustomerGroupId,
+            row.CustomerGroupName,
+            row.GroupDiscountPercent);
 
     private static CustomerDetailDto MapDetail(CustomerDetailRow row) =>
         new(
@@ -369,7 +379,10 @@ internal sealed class CustomerAdminRepository
             row.IdNumber,
             row.EmergencyContactName,
             row.EmergencyContactPhone,
-            row.ClinicalNotes);
+            row.ClinicalNotes,
+            row.CustomerGroupId,
+            row.CustomerGroupName,
+            row.GroupDiscountPercent);
 
     private static CustomerOrderListItemDto MapOrder(CustomerOrderRow row) =>
         new(
@@ -392,6 +405,9 @@ internal sealed class CustomerAdminRepository
         public string? Email { get; init; }
         public short Status { get; init; }
         public DateTime CreatedAt { get; init; }
+        public Guid? CustomerGroupId { get; init; }
+        public string? CustomerGroupName { get; init; }
+        public decimal GroupDiscountPercent { get; init; }
     }
 
     private sealed class CustomerDetailRow
@@ -415,6 +431,9 @@ internal sealed class CustomerAdminRepository
         public string? EmergencyContactName { get; init; }
         public string? EmergencyContactPhone { get; init; }
         public string? ClinicalNotes { get; init; }
+        public Guid? CustomerGroupId { get; init; }
+        public string? CustomerGroupName { get; init; }
+        public decimal GroupDiscountPercent { get; init; }
     }
 
     private sealed class CustomerOrderRow

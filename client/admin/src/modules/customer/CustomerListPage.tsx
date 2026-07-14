@@ -80,6 +80,16 @@ export function CustomerListPage() {
         width: 130,
       },
       {
+        title: t('columns.group'),
+        dataIndex: 'customerGroupName',
+        width: 140,
+        render: (v?: string | null, row?: CustomerAdminListItem) => {
+          if (!v) return '—';
+          const pct = Number(row?.groupDiscountPercent ?? 0);
+          return pct > 0 ? `${v} (−${pct}%)` : v;
+        },
+      },
+      {
         title: t('columns.email'),
         dataIndex: 'email',
         render: (v?: string) => v ?? '—',

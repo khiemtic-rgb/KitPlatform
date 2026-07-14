@@ -926,7 +926,7 @@ export function PosCheckoutModal({
 
               value: c.id,
 
-              label: `${c.customerCode} — ${c.fullName}${c.phone ? ` · ${c.phone}` : ''}`,
+              label: `${c.customerCode} — ${c.fullName}${c.phone ? ` · ${c.phone}` : ''}${c.customerGroupName ? ` · ${c.customerGroupName}` : ''}`,
 
             }))}
 

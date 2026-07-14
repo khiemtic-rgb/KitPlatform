@@ -177,7 +177,9 @@ public static class DependencyInjection
         services.AddScoped<CustomerConsentRepository>();
         services.AddScoped<ICustomerConsentService, CustomerConsentService>();
         services.AddScoped<CustomerAdminRepository>();
+        services.AddScoped<CustomerGroupRepository>();
         services.AddScoped<ICustomerAdminService, CustomerAdminService>();
+        services.AddScoped<ICustomerGroupService, CustomerGroupService>();
         services.AddScoped<ICustomerImportService, CustomerImportService>();
         services.AddScoped<IdentityAdminRepository>();
         services.AddScoped<IIdentityAdminService, IdentityAdminService>();

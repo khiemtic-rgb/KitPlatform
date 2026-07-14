@@ -8,7 +8,10 @@ public sealed record CustomerListItemDto(
     string? Email,
     bool AllowCredit = false,
     decimal? CreditLimit = null,
-    decimal CurrentOutstanding = 0);
+    decimal CurrentOutstanding = 0,
+    Guid? CustomerGroupId = null,
+    string? CustomerGroupName = null,
+    decimal GroupDiscountPercent = 0);
 
 public sealed record PosBatchHintDto(
     Guid BatchId,

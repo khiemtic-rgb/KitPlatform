@@ -129,4 +129,5 @@
 131_clinic_persona_roles.sql
 132_success_shift_checklist.sql
 133_success_loss_gates.sql
+134_customer_groups.sql
 seed-prod/001_base_permissions.sql

@@ -28,6 +28,10 @@ internal static class KernelPartyReader
             ORDER BY pi.is_primary DESC, pi.created_at
             LIMIT 1
         ) pi_email ON TRUE
+        LEFT JOIN customer_groups cg
+            ON cg.id = c.customer_group_id
+           AND cg.tenant_id = c.tenant_id
+           AND cg.deleted_at IS NULL
         """;
 
     public const string CustomerListSelect = """
@@ -37,7 +41,10 @@ internal static class KernelPartyReader
         COALESCE(pi_phone.identifier_value, c.phone) AS Phone,
         COALESCE(pi_email.identifier_value, c.email::text) AS Email,
         c.status AS Status,
-        c.created_at AS CreatedAt
+        c.created_at AS CreatedAt,
+        c.customer_group_id AS CustomerGroupId,
+        cg.group_name AS CustomerGroupName,
+        COALESCE(cg.discount_percent, 0) AS GroupDiscountPercent
         """;
 
     public const string CustomerDetailSelect = """
@@ -57,6 +64,9 @@ internal static class KernelPartyReader
         c.emergency_contact_name AS EmergencyContactName,
         c.emergency_contact_phone AS EmergencyContactPhone,
         c.clinical_notes AS ClinicalNotes,
+        c.customer_group_id AS CustomerGroupId,
+        cg.group_name AS CustomerGroupName,
+        COALESCE(cg.discount_percent, 0) AS GroupDiscountPercent,
         (ca.id IS NOT NULL) AS HasAppAccount,
         ca.is_verified AS AppVerified,
         ca.last_login_at AS AppLastLoginAt

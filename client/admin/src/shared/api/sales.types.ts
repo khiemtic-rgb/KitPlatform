@@ -28,6 +28,9 @@ export type CustomerListItem = Req<S['CustomerListItemDto'], 'id' | 'customerCod
   allowCredit?: boolean;
   creditLimit?: number | null;
   currentOutstanding?: number;
+  customerGroupId?: string | null;
+  customerGroupName?: string | null;
+  groupDiscountPercent?: number;
 };
 
 export type PosBatchHint = Req<PosBatchHintDto, 'batchId' | 'batchNumber' | 'quantityAvailable' | 'isSuggested'>;

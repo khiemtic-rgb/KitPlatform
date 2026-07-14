@@ -106,8 +106,16 @@ internal sealed class SalesRepository
                       AND so.tenant_id = c.tenant_id
                       AND so.status = @Completed
                       AND so.outstanding > 0
-                ), 0) AS CurrentOutstanding
+                ), 0) AS CurrentOutstanding,
+                c.customer_group_id AS CustomerGroupId,
+                cg.group_name AS CustomerGroupName,
+                COALESCE(cg.discount_percent, 0) AS GroupDiscountPercent
             FROM customers c
+            LEFT JOIN customer_groups cg
+                ON cg.id = c.customer_group_id
+               AND cg.tenant_id = c.tenant_id
+               AND cg.deleted_at IS NULL
+               AND cg.status = 1
             WHERE {string.Join(" AND ", conditions)}
             ORDER BY c.full_name
             LIMIT 50
@@ -827,7 +835,9 @@ internal sealed class SalesRepository
         var orderNumber = await _inventory.NextDocumentNumberAsync(conn, tx, "SO", "sales_orders", cancellationToken);
 
         var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, request.Items, request.PriceType, cancellationToken);
-        var orderDiscount = new SaleDiscountInput(request.OrderDiscountType, request.OrderDiscountValue);
+        var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
+            conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
+        var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
         var pricing = _pricing.PriceSaleOrder(pricedInputs, orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
@@ -887,7 +897,7 @@ internal sealed class SalesRepository
         var orderId = await InsertSaleHeaderAsync(
             conn, tx, orderNumber, branchId, request.WarehouseId, request.CustomerId, employeeId,
             SalesOrderStatuses.Completed, request.PriceType, pricing.SubtotalGross, pricing.OrderDiscountAmount,
-            request.OrderDiscountType, request.OrderDiscountValue ?? 0, redeem.FinalTotal,
+            orderDiscountType, orderDiscountValue ?? 0, redeem.FinalTotal,
             paymentResolution.AmountPaid, paymentResolution.Outstanding, request.Notes,
             shiftId, voucher.VoucherId, voucher.DiscountAmount, redeem.PointsRedeemed, redeem.DiscountAmount,
             orderReminder.Label, orderReminder.DaysSupply, request.PrescriptionId, request.ConnectRxHandoffId);
@@ -1023,7 +1033,9 @@ internal sealed class SalesRepository
         var (branchId, employeeId) = await ResolveSaleContextAsync(conn, tx, request.WarehouseId, request.CustomerId, userId);
         var orderNumber = await _inventory.NextDocumentNumberAsync(conn, tx, "SO", "sales_orders", cancellationToken);
         var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, request.Items, request.PriceType, cancellationToken);
-        var orderDiscount = new SaleDiscountInput(request.OrderDiscountType, request.OrderDiscountValue);
+        var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
+            conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
+        var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
         var pricing = _pricing.PriceSaleOrder(pricedInputs, orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
@@ -1034,7 +1046,7 @@ internal sealed class SalesRepository
         var orderId = await InsertSaleHeaderAsync(
             conn, tx, orderNumber, branchId, request.WarehouseId, request.CustomerId, employeeId,
             SalesOrderStatuses.Draft, request.PriceType, pricing.SubtotalGross, pricing.OrderDiscountAmount,
-            request.OrderDiscountType, request.OrderDiscountValue ?? 0, pricing.TotalAmount, 0, 0, request.Notes,
+            orderDiscountType, orderDiscountValue ?? 0, pricing.TotalAmount, 0, 0, request.Notes,
             prescriptionId: request.PrescriptionId,
             connectRxHandoffId: request.ConnectRxHandoffId);
 
@@ -1071,7 +1083,9 @@ internal sealed class SalesRepository
             throw new InvalidOperationException("Chỉ sửa được đơn ở trạng thái Nháp.");
 
         var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, request.Items, request.PriceType, cancellationToken);
-        var orderDiscount = new SaleDiscountInput(request.OrderDiscountType, request.OrderDiscountValue);
+        var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
+            conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
+        var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
         var pricing = _pricing.PriceSaleOrder(pricedInputs, orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
@@ -1097,8 +1111,8 @@ internal sealed class SalesRepository
             request.PriceType,
             Subtotal = pricing.SubtotalGross,
             OrderDiscountAmount = pricing.OrderDiscountAmount,
-            OrderDiscountType = request.OrderDiscountType,
-            OrderDiscountValue = request.OrderDiscountValue ?? 0,
+            OrderDiscountType = orderDiscountType,
+            OrderDiscountValue = orderDiscountValue ?? 0,
             TotalAmount = pricing.TotalAmount,
             request.Notes,
             Draft = SalesOrderStatuses.Draft,
@@ -2392,6 +2406,44 @@ internal sealed class SalesRepository
         }
 
         return linePlans;
+    }
+
+    /// <summary>
+    /// When the client omits order discount (null value), apply active customer-group % if any.
+    /// Explicit 0/ typed discount from POS is respected.
+    /// </summary>
+    private async Task<(short? Type, decimal? Value)> ResolveCustomerGroupOrderDiscountAsync(
+        IDbConnection conn,
+        IDbTransaction tx,
+        Guid? customerId,
+        short? orderDiscountType,
+        decimal? orderDiscountValue)
+    {
+        if (orderDiscountValue is not null)
+            return (orderDiscountType, orderDiscountValue);
+        if (customerId is null)
+            return (orderDiscountType, orderDiscountValue);
+
+        var pct = await conn.QuerySingleOrDefaultAsync<decimal?>(
+            """
+            SELECT g.discount_percent
+            FROM customers c
+            INNER JOIN customer_groups g
+                ON g.id = c.customer_group_id
+               AND g.tenant_id = c.tenant_id
+               AND g.deleted_at IS NULL
+               AND g.status = 1
+            WHERE c.id = @CustomerId
+              AND c.tenant_id = @TenantId
+              AND c.deleted_at IS NULL
+            """,
+            new { CustomerId = customerId.Value, TenantId },
+            tx);
+
+        if (pct is null || pct <= 0)
+            return (orderDiscountType, orderDiscountValue);
+
+        return (SalesDiscountTypes.Percent, pct);
     }
 
     private async Task<(Guid BranchId, Guid? EmployeeId)> ResolveSaleContextAsync(

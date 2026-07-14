@@ -23,6 +23,12 @@ function normalizeListItem(row: Record<string, unknown>): CustomerAdminListItem 
     email: (row.email ?? row.Email) as string | undefined,
     status: Number(row.status ?? row.Status ?? 1),
     createdAt: String(row.createdAt ?? row.CreatedAt ?? ''),
+    customerGroupId:
+      row.customerGroupId != null || row.CustomerGroupId != null
+        ? String(row.customerGroupId ?? row.CustomerGroupId)
+        : null,
+    customerGroupName: (row.customerGroupName ?? row.CustomerGroupName) as string | null | undefined,
+    groupDiscountPercent: Number(row.groupDiscountPercent ?? row.GroupDiscountPercent ?? 0),
   };
 }
 
@@ -57,6 +63,12 @@ function normalizeDetail(row: Record<string, unknown>): CustomerDetail {
       | string
       | undefined,
     clinicalNotes: (row.clinicalNotes ?? row.ClinicalNotes) as string | undefined,
+    customerGroupId:
+      row.customerGroupId != null || row.CustomerGroupId != null
+        ? String(row.customerGroupId ?? row.CustomerGroupId)
+        : null,
+    customerGroupName: (row.customerGroupName ?? row.CustomerGroupName) as string | null | undefined,
+    groupDiscountPercent: Number(row.groupDiscountPercent ?? row.GroupDiscountPercent ?? 0),
   };
 }
 
