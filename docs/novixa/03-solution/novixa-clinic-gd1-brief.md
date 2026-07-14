@@ -172,7 +172,7 @@ Chi tiết màn hình/API: **[checklist MVP](./novixa-clinic-gd1-mvp-checklist.m
 | CL-GO-04 | ClinicPack defaults không `sales` (align mig. 126) | Done |
 | CL-GO-05 | Checklist gap column đồng bộ as-built | Done |
 | CL-GO-01 | Ops acceptance DEMO_CLINIC ↔ NT (lab smoke) | **Done** (2026-07-14) — `smoke-clinic-chain-local.ps1` CL1.0–CL1.4 + CL2 + settings; handoff → NT_XUANHOA |
-| CL-GO-01b | Sign-off PK khách thật tắt app cũ | **Open** — chờ UAT prod sau deploy Clinic P0 (xem §8.1) |
+| CL-GO-01b | Sign-off PK khách thật tắt app cũ | **Open / Ready UAT** — prod đã deploy Clinic P0 (2026-07-14); pack [clinic-cl-go-01b-uat-pack-v1.md](../07-customer/clinic-cl-go-01b-uat-pack-v1.md) |
 
 ### GĐ1 full (còn lại)
 
@@ -183,9 +183,10 @@ Chi tiết màn hình/API: **[checklist MVP](./novixa-clinic-gd1-mvp-checklist.m
 - [x] Không có endpoint kê đơn dưới `/api/connect/*`
 - [x] Smoke scripts CL1.0–CL1.4 (+ CL2 Soft-CKS)
 
-### 8.1 CL-GO-01b — Acceptance khách (template)
+### 8.1 CL-GO-01b — Acceptance khách
 
-**Điều kiện:** API + Admin Clinic P0 đã trên `api.novixa.vn` / `admin.novixa.vn` (mig 131, reschedule, RBAC persona).
+**Điều kiện:** ✅ API + Admin Clinic P0 trên prod (mig 131+, reschedule, persona roles) — deploy 2026-07-14.  
+**Pack UAT đầy đủ:** [clinic-cl-go-01b-uat-pack-v1.md](../07-customer/clinic-cl-go-01b-uat-pack-v1.md)
 
 | # | Tiêu chí (PK thực tế) | Pass? | Ghi chú khách |
 |---|----------------------|-------|---------------|
