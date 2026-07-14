@@ -53,29 +53,29 @@ novixa-site/
 
 ## Thêm tin tức
 
-### Cách 1 — Tự động ChatGPT + OpenAI ảnh (giống Kit Technology)
+### Cách 1 — Tự động Gemini (viết bài + ảnh)
 
-Lịch biên tập: `scripts/lib/news-content-plan.mjs` — mỗi ngày 1 bài mới (từ 11/7/2026).
+Lịch biên tập: `scripts/lib/news-content-plan.mjs` — mỗi ngày 1 bài mới (từ 15/7/2026).
 
-**GitHub Secret:** `OPENAI_API_KEY` (bắt buộc). Tuỳ chọn: `OPENAI_MODEL` (mặc định `gpt-4o-mini`), `OPENAI_IMAGE_MODEL` (mặc định `gpt-image-1` → fallback `dall-e-3`).
+**GitHub Secret:** `GEMINI_API_KEY` (bắt buộc — [Google AI Studio](https://aistudio.google.com/apikey)). Tuỳ chọn repo Variables: `GEMINI_MODEL` (mặc định `gemini-2.5-flash`), `GEMINI_IMAGE_MODEL` (mặc định `gemini-2.5-flash-image` → fallback Imagen).
 
 Workflow `novixa-scheduled-publish.yml` mỗi đêm (~00:05 VN):
 
-1. `npm run publish:news` — ChatGPT viết bài + **OpenAI ảnh chỉ cho bài đó**
-2. `npm run ensure:today-images` — bù ảnh thiếu cho bài `pubDate` hôm nay (tối đa vài bài, không quét 23 bài)
-2. Import Excel (nếu có `import/tin-tuc.xlsx`)
-3. Đăng fanpage + deploy
+1. `npm run publish:news` — Gemini viết bài + **ảnh chỉ cho bài đó**
+2. `npm run ensure:today-images` — bù ảnh thiếu cho bài `pubDate` hôm nay
+3. Import Excel (nếu có `import/tin-tuc.xlsx`)
+4. Đăng fanpage + deploy
 
 ```powershell
 cd novixa-site
 # Xem lịch sắp tới
 npm run publish:news:status
 
-# Chạy tay (cần OPENAI_API_KEY trong .env)
+# Chạy tay (cần GEMINI_API_KEY trong .env)
 npm run publish:news
 
 # Một bài cụ thể, đăng ngay
-$env:ARTICLE_ID="nv-loyalty"; $env:FORCE_PUBLISH="1"; npm run publish:news
+$env:ARTICLE_ID="nv-a01"; $env:FORCE_PUBLISH="1"; npm run publish:news
 ```
 
 ### Cách 2 — Excel / CSV (nhập tay / chỉnh sửa)
@@ -147,15 +147,15 @@ Mỗi bài tin có:
 | **robots.txt** | Trỏ sitemap |
 | **CTA cuối bài** | Link Giải pháp + Liên hệ |
 
-Sinh ảnh **theo bài đăng** (tiết kiệm OpenAI — không tạo lại cả 23 bài mỗi lần):
+Sinh ảnh **theo bài đăng** (tiết kiệm Gemini — không tạo lại cả thư viện mỗi lần):
 
 | Lệnh | Mô tả |
 |------|--------|
-| `npm run publish:news` | ChatGPT viết bài + OpenAI ảnh **bài đang đăng** |
-| `npm run ensure:today-images` | OpenAI/SVG chỉ cho bài **pubDate hôm nay** thiếu `.png` |
+| `npm run publish:news` | Gemini viết bài + ảnh **bài đang đăng** |
+| `npm run ensure:today-images` | Gemini/SVG chỉ cho bài **pubDate hôm nay** thiếu `.png` |
 | `npm run generate:news-images` | Quét tất cả bài (chỉ khi cần bù hàng loạt) |
 | `npm run generate:news-images:cf` | Chỉ Cloudflare Flux Schnell |
-| `npm run generate:news-images:ai` | Chỉ OpenAI (có phí) |
+| `npm run generate:news-images:ai` | Chỉ Gemini ảnh (có phí) |
 | `npm run generate:news-images:svg` | Chỉ SVG (miễn phí, 8 layout/bài) |
 
 **Cloudflare (khuyến nghị):** Dashboard → [Workers AI](https://dash.cloudflare.com/) → **Use REST API** → copy **Account ID** + tạo **API Token**. Điền vào `.env` hoặc file local `import/cf-workers-ai.txt` (gitignored):

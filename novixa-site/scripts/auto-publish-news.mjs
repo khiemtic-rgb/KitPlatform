@@ -1,5 +1,5 @@
 /**
- * Tự động đăng tin Novixa — ChatGPT viết bài + OpenAI sinh ảnh (mô hình Kit Technology).
+ * Tự động đăng tin Novixa — Gemini viết bài + sinh ảnh hero.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -15,9 +15,9 @@ import {
 import {
   generateArticleContent,
   generateNewsHeroImage,
-  hasOpenAiKey,
+  hasGeminiKey,
   sleep,
-} from './lib/openai-news.mjs';
+} from './lib/gemini-news.mjs';
 import { generateNewsImage } from './news-image-lib.mjs';
 
 loadDotEnv();
@@ -57,10 +57,10 @@ function resolvePlans() {
 
 async function ensureHeroImage(plan, title, description, { force = false } = {}) {
   const slug = plan.slug;
-  const openAi = await generateNewsHeroImage({ slug, title, description, force });
-  if (openAi.ok) return openAi;
+  const ai = await generateNewsHeroImage({ slug, title, description, force });
+  if (ai.ok) return ai;
 
-  console.warn(`  ! OpenAI ảnh lỗi (${openAi.reason}) — fallback SVG`);
+  console.warn(`  ! Gemini ảnh lỗi (${ai.reason}) — fallback SVG`);
   await generateNewsImage({ slug, title, description });
   return { ok: true, path: path.join(ROOT, 'public/images/tin-tuc', `${slug}.png`), fallback: 'svg' };
 }
@@ -81,8 +81,8 @@ async function publishPlanItem(plan) {
   let body = existing?.body ?? '';
 
   if (!isRealBody(body) || forcePublish()) {
-    if (!hasOpenAiKey()) {
-      throw new Error('OPENAI_API_KEY is not set — cần để ChatGPT viết bài.');
+    if (!hasGeminiKey()) {
+      throw new Error('GEMINI_API_KEY is not set — cần để Gemini viết bài.');
     }
     console.log(`  → Generating article: ${plan.title}`);
     const generated = await generateArticleContent({
@@ -151,8 +151,8 @@ async function main() {
     return;
   }
 
-  if (!hasOpenAiKey()) {
-    console.error('OPENAI_API_KEY chưa set — thêm vào GitHub Secrets hoặc .env');
+  if (!hasGeminiKey()) {
+    console.error('GEMINI_API_KEY chưa set — thêm vào GitHub Secrets hoặc .env');
     process.exit(1);
   }
 

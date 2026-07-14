@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadDotEnv } from './load-env.mjs';
 import { parseNewsMarkdown } from './lib/news-markdown.mjs';
-import { generateNewsHeroImage } from './lib/openai-news.mjs';
+import { generateNewsHeroImage } from './lib/gemini-news.mjs';
 import { generateNewsImage, OUT_DIR } from './news-image-lib.mjs';
 
 loadDotEnv();
@@ -37,10 +37,10 @@ async function ensureImage({ slug, title, description }) {
   }
 
   console.log(`  → Tạo ảnh: ${slug}`);
-  const openAi = await generateNewsHeroImage({ slug, title, description, force: true });
-  if (openAi.ok) return 'created';
+  const ai = await generateNewsHeroImage({ slug, title, description, force: true });
+  if (ai.ok) return 'created';
 
-  console.warn(`  ! OpenAI lỗi (${openAi.reason}) — fallback SVG`);
+  console.warn(`  ! Gemini lỗi (${ai.reason}) — fallback SVG`);
   await generateNewsImage({ slug, title, description });
   return 'svg';
 }

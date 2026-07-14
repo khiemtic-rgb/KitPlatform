@@ -1,11 +1,11 @@
 /**
- * Sinh ảnh bài tin qua OpenAI Images — mỗi bài một scene khác nhau.
- * Logic chính nằm ở scripts/lib/openai-news.mjs (fallback đa model).
+ * Sinh ảnh bài tin qua Gemini Images — mỗi bài một scene khác nhau.
+ * Logic chính nằm ở scripts/lib/gemini-news.mjs (fallback đa model).
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { OUT_DIR, ROOT } from './news-image-lib.mjs';
-import { generateNewsHeroImage } from './lib/openai-news.mjs';
+import { ROOT } from './news-image-lib.mjs';
+import { generateNewsHeroImage } from './lib/gemini-news.mjs';
 
 export async function generateAiNewsImage({ slug, title, description = '', force = false }) {
   return generateNewsHeroImage({ slug, title, description, force });
@@ -34,10 +34,10 @@ export async function generateAllAiNewsImages({ force = false } = {}) {
 
     if (result.ok && result.skipped) {
       skipped++;
-      console.log(`  skip ${slug}.png (OpenAI, đã có)`);
+      console.log(`  skip ${slug}.png (Gemini, đã có)`);
     } else if (result.ok) {
       ok++;
-      console.log(`  OpenAI ${slug}.png`);
+      console.log(`  Gemini ${slug}.png`);
       await new Promise((r) => setTimeout(r, 3500));
     } else {
       errors.push({ slug, reason: result.reason });
@@ -45,6 +45,6 @@ export async function generateAllAiNewsImages({ force = false } = {}) {
     }
   }
 
-  console.log(`OpenAI ảnh tin tức: ${ok} mới, ${skipped} giữ nguyên, ${errors.length} lỗi / ${files.length} bài`);
+  console.log(`Gemini ảnh tin tức: ${ok} mới, ${skipped} giữ nguyên, ${errors.length} lỗi / ${files.length} bài`);
   return { ok, skipped, errors, total: files.length };
 }

@@ -396,11 +396,15 @@ export async function generateAllNewsImages({ forceSvg = false } = {}) {
   const files = fs.readdirSync(dir).filter((f) => f.endsWith('.md'));
 
   if (!forceSvg) {
-    if (process.env.OPENAI_API_KEY?.trim()) {
+    const hasGemini =
+      process.env.GEMINI_API_KEY?.trim() ||
+      process.env.GOOGLE_API_KEY?.trim() ||
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim();
+    if (hasGemini) {
       const { generateAllAiNewsImages } = await import('./ai-news-image.mjs');
       const aiResult = await generateAllAiNewsImages({ force });
       if (aiResult.errors.length === 0) return aiResult.ok + aiResult.skipped;
-      console.warn('Một số bài OpenAI lỗi — thử CF hoặc SVG cho bài thiếu.');
+      console.warn('Một số bài Gemini lỗi — thử CF hoặc SVG cho bài thiếu.');
     }
     const { hasCfAiCredentials } = await import('./cf-ai-config.mjs');
     if (hasCfAiCredentials()) {
@@ -408,8 +412,8 @@ export async function generateAllNewsImages({ forceSvg = false } = {}) {
       const cfResult = await generateAllCfNewsImages({ force });
       if (cfResult.errors.length === 0) return cfResult.ok + cfResult.skipped;
       console.warn('Một số bài CF AI lỗi — fallback SVG cho bài thiếu ảnh.');
-    } else if (!process.env.OPENAI_API_KEY?.trim()) {
-      console.warn('Chưa có OPENAI_API_KEY hoặc CF credentials — dùng SVG.');
+    } else if (!hasGemini) {
+      console.warn('Chưa có GEMINI_API_KEY hoặc CF credentials — dùng SVG.');
     }
   }
 
