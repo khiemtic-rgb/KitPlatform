@@ -63,6 +63,14 @@ public sealed record CreateClinicAppointmentRequest(
 
 public sealed record UpdateClinicAppointmentStatusRequest(string AppointmentStatus);
 
+/// <summary>Reschedule scheduled/checked_in appointment (time, provider, duration).</summary>
+public sealed record RescheduleClinicAppointmentRequest(
+    DateTimeOffset AppointmentAt,
+    Guid? ProviderId = null,
+    int? DurationMinutes = null,
+    string? Reason = null,
+    string? Notes = null);
+
 public sealed record CrmLeadDto(
     Guid Id,
     string LeadCode,
@@ -99,6 +107,11 @@ public interface IClinicAppointmentService
     Task<ClinicAppointmentDto?> UpdateStatusAsync(
         Guid appointmentId,
         string appointmentStatus,
+        CancellationToken cancellationToken = default);
+
+    Task<ClinicAppointmentDto?> RescheduleAsync(
+        Guid appointmentId,
+        RescheduleClinicAppointmentRequest request,
         CancellationToken cancellationToken = default);
 
     /// <summary>scheduled → checked_in and open a visit (idempotent if visit already open).</summary>

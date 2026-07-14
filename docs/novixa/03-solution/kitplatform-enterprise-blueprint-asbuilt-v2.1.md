@@ -79,7 +79,7 @@ Nguồn: `src/Packs/*/…/*PackDefinition.cs`. Hai danh sách:
 | Pack | DefaultEnabledModules | PackModuleCodes |
 |------|----------------------|-----------------|
 | **Pharmacy** | inventory, procurement, sales, loyalty, customer_app, medication, health_wallet, reservations, reports, **e_rx, prescriber_network, prescriber_portal** | medication, health_wallet, reservations, e_rx, prescriber_network, prescriber_portal |
-| **Clinic** | sales, clinic_appointments, clinic_emr_lite, **novixa_connect**, reports | clinic_appointments, clinic_emr_lite, **crm_leads** *(pack SKU, không nằm trong default)* |
+| **Clinic** | clinic_appointments, clinic_emr_lite, **novixa_connect** *(không sales / retail — align mig. 126)* | clinic_appointments, clinic_emr_lite, **crm_leads** *(pack SKU, không nằm trong default)* |
 | **Connect** | novixa_connect | novixa_connect |
 | **Survey** | assessment, pharmacy_survey, **reports** | assessment, pharmacy_survey |
 

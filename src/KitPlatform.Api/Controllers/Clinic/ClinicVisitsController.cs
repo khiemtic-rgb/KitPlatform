@@ -10,6 +10,7 @@ namespace KitPlatform.Api.Controllers.Clinic;
 [Route("api/clinic/visits")]
 [Authorize]
 [RequirePlatformModule(PlatformModuleCodes.ClinicEmrLite)]
+[Authorize(Policy = ClinicPolicies.Read)]
 public sealed class ClinicVisitsController : ControllerBase
 {
     private readonly IClinicVisitService _visits;
@@ -36,6 +37,7 @@ public sealed class ClinicVisitsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicVisitDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ClinicVisitDto>> Create(
@@ -54,6 +56,7 @@ public sealed class ClinicVisitsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}")]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicVisitDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -81,6 +84,7 @@ public sealed class ClinicVisitsController : ControllerBase
         Ok(await _visits.ListNotesAsync(id, cancellationToken));
 
     [HttpPost("{id:guid}/notes")]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicVisitNoteDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ClinicVisitNoteDto>> AddNote(

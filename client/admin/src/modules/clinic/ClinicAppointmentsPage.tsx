@@ -50,10 +50,12 @@ import {
   createClinicAppointment,
   fetchClinicAppointments,
   fetchClinicProviders,
+  rescheduleClinicAppointment,
   updateClinicAppointmentStatus,
   type ClinicAppointment,
   type ClinicProvider,
 } from '@/shared/api/clinic.api';
+import { useHasPermission } from '@/shared/auth/usePermission';
 
 const STATUS_COLOR: Record<string, string> = {
   scheduled: 'blue',
@@ -77,6 +79,14 @@ type CreateForm = {
   appointmentAt: dayjs.Dayjs;
   durationMinutes: number;
   encounterModality: 'in_person' | 'remote_async';
+  reason?: string;
+  notes?: string;
+};
+
+type RescheduleForm = {
+  appointmentAt: dayjs.Dayjs;
+  providerId?: string;
+  durationMinutes: number;
   reason?: string;
   notes?: string;
 };
@@ -140,6 +150,7 @@ export function ClinicAppointmentsPage() {
   const { t } = useTranslation('clinic');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const canWrite = useHasPermission('clinic.write');
   const dayFromQuery = searchParams.get('day');
   const [day, setDay] = useState(() =>
     dayFromQuery && dayjs(dayFromQuery).isValid() ? dayjs(dayFromQuery) : dayjs(),
@@ -150,8 +161,10 @@ export function ClinicAppointmentsPage() {
   const [customerOptions, setCustomerOptions] = useState<{ value: string; label: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [rescheduleRow, setRescheduleRow] = useState<ClinicAppointment | null>(null);
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm<CreateForm>();
+  const [rescheduleForm] = Form.useForm<RescheduleForm>();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
@@ -346,6 +359,42 @@ export function ClinicAppointmentsPage() {
     }
   };
 
+  const openReschedule = (row: ClinicAppointment) => {
+    setRescheduleRow(row);
+    rescheduleForm.setFieldsValue({
+      appointmentAt: dayjs(row.appointmentAt),
+      providerId: row.providerId,
+      durationMinutes: row.durationMinutes || 30,
+      reason: row.reason,
+      notes: row.notes,
+    });
+  };
+
+  const onReschedule = async () => {
+    if (!rescheduleRow) return;
+    const values = await rescheduleForm.validateFields();
+    setSaving(true);
+    try {
+      const updated = await rescheduleClinicAppointment(rescheduleRow.id, {
+        appointmentAt: values.appointmentAt.toDate().toISOString(),
+        providerId: values.providerId,
+        durationMinutes: values.durationMinutes,
+        reason: values.reason,
+        notes: values.notes,
+      });
+      message.success(t('appointments.rescheduleSuccess'));
+      setRescheduleRow(null);
+      rescheduleForm.resetFields();
+      const at = dayjs(updated.appointmentAt);
+      if (at.isValid() && !at.isSame(day, 'day')) setDay(at.startOf('day'));
+      await load();
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('appointments.rescheduleFailed')));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const columns: ColumnsType<ClinicAppointment> = [
     {
       title: colTitle(<ClockCircleOutlined />, t('appointments.colWhen')),
@@ -429,7 +478,7 @@ export function ClinicAppointmentsPage() {
         const remote =
           row.encounterModality === 'remote_async' || row.encounterModality === 'remote_video';
         const actions: ReactNode[] = [];
-        if (row.appointmentStatus === 'scheduled') {
+        if (canWrite && row.appointmentStatus === 'scheduled') {
           actions.push(
             <Button
               key="checkin"
@@ -440,6 +489,13 @@ export function ClinicAppointmentsPage() {
             >
               {remote ? t('appointments.startRemote') : t('appointments.checkIn')}
             </Button>,
+            <Tooltip key="reschedule" title={t('appointments.reschedule')}>
+              <Button
+                size="small"
+                icon={<SyncOutlined />}
+                onClick={() => openReschedule(row)}
+              />
+            </Tooltip>,
             <Tooltip key="cancel" title={t('appointments.cancel')}>
               <Button
                 size="small"
@@ -456,7 +512,7 @@ export function ClinicAppointmentsPage() {
             </Tooltip>,
           );
         }
-        if (row.appointmentStatus === 'checked_in') {
+        if (canWrite && row.appointmentStatus === 'checked_in') {
           actions.push(
             <Button
               key="open"
@@ -467,6 +523,13 @@ export function ClinicAppointmentsPage() {
             >
               {t('appointments.openVisit')}
             </Button>,
+            <Tooltip key="reschedule" title={t('appointments.reschedule')}>
+              <Button
+                size="small"
+                icon={<SyncOutlined />}
+                onClick={() => openReschedule(row)}
+              />
+            </Tooltip>,
             <Tooltip key="complete" title={t('appointments.complete')}>
               <Button
                 size="small"
@@ -474,6 +537,18 @@ export function ClinicAppointmentsPage() {
                 onClick={() => void onStatus(row.id, 'completed')}
               />
             </Tooltip>,
+          );
+        }
+        if (!canWrite && row.appointmentStatus === 'checked_in') {
+          actions.push(
+            <Button
+              key="open-ro"
+              size="small"
+              icon={<ProfileOutlined />}
+              onClick={() => navigate(`/clinic/visits?appointment=${row.id}`)}
+            >
+              {t('appointments.openVisit')}
+            </Button>,
           );
         }
         if (actions.length === 0) {
@@ -520,21 +595,23 @@ export function ClinicAppointmentsPage() {
           <Button icon={<ReloadOutlined />} onClick={() => void load()}>
             {t('appointments.refresh')}
           </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              form.setFieldsValue({
-                appointmentAt: day.hour(9).minute(0),
-                durationMinutes: 30,
-                encounterModality: 'in_person',
-              });
-              void searchCustomers('');
-              setOpen(true);
-            }}
-          >
-            {t('appointments.create')}
-          </Button>
+          {canWrite ? (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                form.setFieldsValue({
+                  appointmentAt: day.hour(9).minute(0),
+                  durationMinutes: 30,
+                  encounterModality: 'in_person',
+                });
+                void searchCustomers('');
+                setOpen(true);
+              }}
+            >
+              {t('appointments.create')}
+            </Button>
+          ) : null}
         </Space>
       </div>
 
@@ -686,6 +763,49 @@ export function ClinicAppointmentsPage() {
           locale={{ emptyText }}
         />
       </Card>
+
+      <Modal
+        title={t('appointments.rescheduleTitle')}
+        open={!!rescheduleRow}
+        onCancel={() => {
+          setRescheduleRow(null);
+          rescheduleForm.resetFields();
+        }}
+        onOk={() => void onReschedule()}
+        confirmLoading={saving}
+        destroyOnClose
+      >
+        <Form form={rescheduleForm} layout="vertical">
+          <Form.Item
+            name="appointmentAt"
+            label={t('appointments.when')}
+            rules={[{ required: true, message: t('appointments.whenRequired') }]}
+          >
+            <DatePicker showTime format="DD/MM/YYYY HH:mm" style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="providerId" label={t('appointments.provider')}>
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              options={providers.map((p) => ({
+                value: p.id,
+                label: p.specialty ? `${p.displayName} · ${p.specialty}` : p.displayName,
+              }))}
+              placeholder={t('appointments.providerPlaceholder')}
+            />
+          </Form.Item>
+          <Form.Item name="durationMinutes" label={t('appointments.duration')} rules={[{ required: true }]}>
+            <InputNumber min={5} max={480} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="reason" label={t('appointments.reason')}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="notes" label={t('appointments.notes')}>
+            <Input.TextArea rows={2} />
+          </Form.Item>
+        </Form>
+      </Modal>
 
       <Modal
         title={t('appointments.createTitle')}

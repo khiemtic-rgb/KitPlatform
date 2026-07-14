@@ -15,7 +15,7 @@ import { useHasPermission } from '@/shared/auth/usePermission';
 export function ClinicPatientsPage() {
   const { t } = useTranslation('clinic');
   const navigate = useNavigate();
-  const canWrite = useHasPermission('clinic.write') || useHasPermission('sales.write');
+  const canWrite = useHasPermission('clinic.write');
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<CustomerAdminListItem[]>([]);
   const [total, setTotal] = useState(0);

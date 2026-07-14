@@ -10,6 +10,7 @@ namespace KitPlatform.Api.Controllers.Clinic;
 [Route("api/clinic/providers")]
 [Authorize]
 [RequirePlatformModule(PlatformModuleCodes.ClinicEmrLite)]
+[Authorize(Policy = ClinicPolicies.Read)]
 public sealed class ClinicProvidersController : ControllerBase
 {
     private readonly IClinicProviderService _providers;
@@ -33,6 +34,7 @@ public sealed class ClinicProvidersController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicProviderDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ClinicProviderDto>> Create(
@@ -51,6 +53,7 @@ public sealed class ClinicProvidersController : ControllerBase
     }
 
     [HttpPatch("{id:guid}")]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicProviderDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -71,6 +74,7 @@ public sealed class ClinicProvidersController : ControllerBase
     }
 
     [HttpPost("from-connect")]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicProviderDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ClinicProviderDto>> UpsertFromConnect(

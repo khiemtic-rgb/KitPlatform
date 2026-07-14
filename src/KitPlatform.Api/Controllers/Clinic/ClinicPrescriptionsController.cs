@@ -10,6 +10,7 @@ namespace KitPlatform.Api.Controllers.Clinic;
 [Route("api/clinic/prescriptions")]
 [Authorize]
 [RequirePlatformModule(PlatformModuleCodes.ClinicEmrLite)]
+[Authorize(Policy = ClinicPolicies.Read)]
 public sealed class ClinicPrescriptionsController : ControllerBase
 {
     private readonly IClinicPrescriptionService _prescriptions;
@@ -39,6 +40,7 @@ public sealed class ClinicPrescriptionsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicPrescriptionDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ClinicPrescriptionDto>> Create(
@@ -57,6 +59,7 @@ public sealed class ClinicPrescriptionsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}")]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicPrescriptionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -77,6 +80,7 @@ public sealed class ClinicPrescriptionsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/finalize")]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicPrescriptionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -96,6 +100,7 @@ public sealed class ClinicPrescriptionsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/sign")]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicPrescriptionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -115,6 +120,7 @@ public sealed class ClinicPrescriptionsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicPrescriptionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -134,6 +140,7 @@ public sealed class ClinicPrescriptionsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/send-to-pharmacy")]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicPrescriptionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

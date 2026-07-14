@@ -154,7 +154,8 @@ $files = @(
     "127_platform_allowed_modules_ceiling.sql",
     "128_platform_max_branches_ceiling.sql",
     "129_kap_partner_portal.sql",
-    "130_kap_assessment_partner_grants.sql"
+    "130_kap_assessment_partner_grants.sql",
+    "131_clinic_persona_roles.sql"
 )
 
 Write-Host "=== KitPlatform Migrations ===" -ForegroundColor Cyan

@@ -53,11 +53,9 @@ public sealed class PackDefinitionsAsBuiltSyncTests
     {
         Assert.Equal(
             [
-                "sales",
                 "clinic_appointments",
                 "clinic_emr_lite",
                 "novixa_connect",
-                "reports",
             ],
             ClinicPackDefinition.DefaultEnabledModules);
 

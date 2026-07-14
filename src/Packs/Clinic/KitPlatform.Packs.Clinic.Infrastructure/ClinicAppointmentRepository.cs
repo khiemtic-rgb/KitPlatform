@@ -153,6 +153,45 @@ internal sealed class ClinicAppointmentRepository
         });
         return n > 0;
     }
+
+    public async Task<bool> RescheduleAsync(
+        Guid? workspaceId,
+        Guid id,
+        DateTime appointmentAtUtc,
+        Guid? providerId,
+        int durationMinutes,
+        string? reason,
+        string? notes,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE pack_clinic.clinic_appointment
+            SET appointment_at = @AppointmentAt,
+                provider_id = @ProviderId,
+                duration_minutes = @DurationMinutes,
+                reason = COALESCE(@Reason, reason),
+                notes = COALESCE(@Notes, notes),
+                updated_at = NOW()
+            WHERE tenant_id = @TenantId
+              AND id = @Id
+              AND deleted_at IS NULL
+              AND appointment_status IN ('scheduled', 'checked_in')
+              AND (@WorkspaceId IS NULL OR workspace_id = @WorkspaceId)
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var n = await conn.ExecuteAsync(sql, new
+        {
+            TenantId,
+            Id = id,
+            WorkspaceId = workspaceId,
+            AppointmentAt = appointmentAtUtc,
+            ProviderId = providerId,
+            DurationMinutes = durationMinutes,
+            Reason = reason,
+            Notes = notes,
+        });
+        return n > 0;
+    }
 }
 
 internal sealed class ClinicAppointmentService : IClinicAppointmentService
@@ -261,6 +300,37 @@ internal sealed class ClinicAppointmentService : IClinicAppointmentService
             appointmentId,
             row.AppointmentStatus,
             to,
+            cancellationToken);
+        if (!ok) return null;
+        return await _repo.GetAsync(workspaceId, appointmentId, cancellationToken);
+    }
+
+    public async Task<ClinicAppointmentDto?> RescheduleAsync(
+        Guid appointmentId,
+        RescheduleClinicAppointmentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var workspaceId = await ResolveClinicWorkspaceAsync(cancellationToken);
+        var row = await _repo.GetAsync(workspaceId, appointmentId, cancellationToken);
+        if (row is null) return null;
+
+        var status = row.AppointmentStatus.Trim().ToLowerInvariant();
+        if (status is not (ClinicAppointmentStatuses.Scheduled or ClinicAppointmentStatuses.CheckedIn))
+            throw new InvalidOperationException(
+                "Chỉ đổi lịch khi trạng thái là scheduled hoặc checked_in.");
+
+        var minutes = request.DurationMinutes ?? row.DurationMinutes;
+        if (minutes < 5 || minutes > 480)
+            throw new InvalidOperationException("Thời lượng lịch hẹn không hợp lệ.");
+
+        var ok = await _repo.RescheduleAsync(
+            workspaceId,
+            appointmentId,
+            request.AppointmentAt.UtcDateTime,
+            request.ProviderId ?? row.ProviderId,
+            minutes,
+            string.IsNullOrWhiteSpace(request.Reason) ? null : request.Reason.Trim(),
+            string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim(),
             cancellationToken);
         if (!ok) return null;
         return await _repo.GetAsync(workspaceId, appointmentId, cancellationToken);

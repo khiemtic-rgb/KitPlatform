@@ -98,6 +98,7 @@ builder.Services.AddAuthorization(options =>
     options.AddDashboardAuthorization();
     options.AddReportsAuthorization();
     options.AddIdentityAuthorization();
+    options.AddClinicAuthorization();
 });
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddPharmacyPack(builder.Configuration);

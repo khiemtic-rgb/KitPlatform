@@ -204,6 +204,20 @@ export async function updateClinicAppointmentStatus(
   return normalizeAppointment(data);
 }
 
+export async function rescheduleClinicAppointment(
+  id: string,
+  payload: {
+    appointmentAt: string;
+    providerId?: string | null;
+    durationMinutes?: number;
+    reason?: string;
+    notes?: string;
+  },
+): Promise<ClinicAppointment> {
+  const { data } = await http.patch<UnknownRow>(`/clinic/appointments/${id}`, payload);
+  return normalizeAppointment(data);
+}
+
 export async function checkInClinicAppointment(id: string): Promise<ClinicVisit> {
   const { data } = await http.post<UnknownRow>(`/clinic/appointments/${id}/check-in`);
   return normalizeVisit(data);

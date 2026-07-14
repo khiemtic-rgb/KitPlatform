@@ -10,6 +10,7 @@ namespace KitPlatform.Api.Controllers.Clinic;
 [Route("api/clinic/day-summary")]
 [Authorize]
 [RequirePlatformModule(PlatformModuleCodes.ClinicEmrLite)]
+[Authorize(Policy = ClinicPolicies.Read)]
 public sealed class ClinicDaySummaryController : ControllerBase
 {
     private readonly IClinicDaySummaryService _summary;

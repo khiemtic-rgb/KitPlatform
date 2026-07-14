@@ -158,11 +158,9 @@ packs:
     definition: src/Packs/Clinic/.../ClinicPackDefinition.cs
     verticals: [clinic, hybrid]
     default_enabled_modules:
-      - sales
       - clinic_appointments
       - clinic_emr_lite
       - novixa_connect
-      - reports
     pack_module_codes:
       - clinic_appointments
       - clinic_emr_lite
@@ -173,6 +171,7 @@ packs:
       - hard_CKS
       - national_e_rx
     notes:
+      - no_sales_or_pharmacy_retail_defaults_align_migration_126
       - clinic_telemed_remote_and_video_exist_in_sql_registry_not_in_PlatformModuleCodes_All
 
   - code: novixa_connect

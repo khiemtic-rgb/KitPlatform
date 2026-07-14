@@ -163,14 +163,24 @@ Chi tiết màn hình/API: **[checklist MVP](./novixa-clinic-gd1-mvp-checklist.m
 - [x] `clinic.read` / `clinic.write` permissions
 - [x] Smoke `scripts/smoke-clinic-gd1-cl14-local.ps1`
 
+### GĐ1 full / go-live P0 (CL-GO)
+
+| ID | Hạng mục | Status |
+|----|----------|--------|
+| CL-GO-02 | Roles `CLINIC_RECEPTION` / `CLINIC_PROVIDER` + API `ClinicRead`/`ClinicWrite` | Done (mig. 131) |
+| CL-GO-03 | Reschedule appointment (`PATCH /api/clinic/appointments/{id}`) | Done |
+| CL-GO-04 | ClinicPack defaults không `sales` (align mig. 126) | Done |
+| CL-GO-05 | Checklist gap column đồng bộ as-built | Done |
+| CL-GO-01 | Ops acceptance DEMO_CLINIC ↔ NT + sign-off pilot PK | **Open** |
+
 ### GĐ1 full (còn lại)
 
-- [ ] Checklist P0 100% (màn hình + API) — xem file checklist
-- [ ] 1 tenant PK thật (hoặc DEMO_CLINIC lab) chạy walk-in end-to-end trong ngày
+- [x] Checklist P0 màn hình + API (code) — [mvp-checklist](./novixa-clinic-gd1-mvp-checklist.md)
+- [ ] **CL-GO-01:** 1 tenant PK thật (hoặc DEMO_CLINIC lab) chạy walk-in end-to-end trong ngày
 - [ ] Đơn finalized gửi được tới ≥1 NT Connect active; NT consume / bán theo quy trình Pharmacy
 - [ ] PK xác nhận ngừng dùng app lịch + hồ sơ + kê đơn cũ cho luồng pilot
-- [ ] Không có endpoint kê đơn dưới `/api/connect/*`
-- [ ] Smoke script full GĐ1 (khi CL1.4)
+- [x] Không có endpoint kê đơn dưới `/api/connect/*`
+- [x] Smoke scripts CL1.0–CL1.4
 
 ---
 

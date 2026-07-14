@@ -10,6 +10,7 @@ namespace KitPlatform.Api.Controllers.Clinic;
 [Route("api/clinic/settings")]
 [Authorize]
 [RequirePlatformModule(PlatformModuleCodes.ClinicEmrLite)]
+[Authorize(Policy = ClinicPolicies.Read)]
 public sealed class ClinicSettingsController : ControllerBase
 {
     private readonly IClinicTenantSettingsService _settings;
@@ -22,6 +23,7 @@ public sealed class ClinicSettingsController : ControllerBase
         Ok(await _settings.GetAsync(cancellationToken));
 
     [HttpPut]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicTenantSettingsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ClinicTenantSettingsDto>> Update(

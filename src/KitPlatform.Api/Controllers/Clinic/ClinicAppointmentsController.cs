@@ -10,6 +10,7 @@ namespace KitPlatform.Api.Controllers.Clinic;
 [Route("api/clinic/appointments")]
 [Authorize]
 [RequirePlatformModule(PlatformModuleCodes.ClinicAppointments)]
+[Authorize(Policy = ClinicPolicies.Read)]
 public sealed class ClinicAppointmentsController : ControllerBase
 {
     private readonly IClinicAppointmentService _appointments;
@@ -46,6 +47,7 @@ public sealed class ClinicAppointmentsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicAppointmentDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ClinicAppointmentDto>> Create(
@@ -64,6 +66,7 @@ public sealed class ClinicAppointmentsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/status")]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicAppointmentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -83,7 +86,29 @@ public sealed class ClinicAppointmentsController : ControllerBase
         }
     }
 
+    [HttpPatch("{id:guid}")]
+    [Authorize(Policy = ClinicPolicies.Write)]
+    [ProducesResponseType(typeof(ClinicAppointmentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ClinicAppointmentDto>> Reschedule(
+        Guid id,
+        [FromBody] RescheduleClinicAppointmentRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var updated = await _appointments.RescheduleAsync(id, request, cancellationToken);
+            return updated is null ? NotFound() : Ok(updated);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPost("{id:guid}/check-in")]
+    [Authorize(Policy = ClinicPolicies.Write)]
     [ProducesResponseType(typeof(ClinicVisitDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ClinicVisitDto>> CheckIn(Guid id, CancellationToken cancellationToken)
