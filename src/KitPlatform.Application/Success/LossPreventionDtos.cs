@@ -68,3 +68,32 @@ public sealed record LossEmployeeAdjustmentRowDto(
     string EmployeeName,
     int AdjustmentCount,
     decimal AbsVarianceValue);
+
+/// <summary>
+/// AC1 — Loss audit feed composed from kit_audit.activity_log / audit_logs (no success_loss_event table).
+/// </summary>
+public sealed record LossAuditFeedDto(
+    DateTime FromUtc,
+    DateTime ToUtc,
+    Guid? BranchId,
+    Guid? UserId,
+    string? EventType,
+    string AttributionNotes,
+    int Total,
+    int Page,
+    int PageSize,
+    IReadOnlyList<LossAuditFeedItemDto> Items);
+
+public sealed record LossAuditFeedItemDto(
+    Guid Id,
+    DateTime OccurredAt,
+    string EventType,
+    Guid? ActorUserId,
+    string? ActorUsername,
+    string Summary,
+    string EntityType,
+    Guid? EntityId,
+    string? DocumentNumber,
+    string? DocumentHref,
+    Guid? BranchId,
+    string? BranchName);

@@ -15,4 +15,14 @@ public interface ILossPreventionService
         DateTime? toUtc = null,
         Guid? branchId = null,
         CancellationToken cancellationToken = default);
+
+    Task<LossAuditFeedDto> GetAuditFeedAsync(
+        DateTime? fromUtc = null,
+        DateTime? toUtc = null,
+        Guid? branchId = null,
+        Guid? userId = null,
+        string? eventType = null,
+        int page = 1,
+        int pageSize = 50,
+        CancellationToken cancellationToken = default);
 }

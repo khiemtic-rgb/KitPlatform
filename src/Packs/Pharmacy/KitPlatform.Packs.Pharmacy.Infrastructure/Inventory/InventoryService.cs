@@ -261,7 +261,20 @@ internal sealed class InventoryService : IInventoryService
         var adjustmentId = await _repository.CreateAdjustmentWithItemsAsync(
             request.WarehouseId, request.Reason, request.Items, cancellationToken);
 
-        return (await _repository.GetAdjustmentAsync(adjustmentId, cancellationToken))!;
+        var created = (await _repository.GetAdjustmentAsync(adjustmentId, cancellationToken))!;
+        await _audit.WriteAsync(
+            "inventory_adjustment",
+            adjustmentId,
+            "create",
+            new
+            {
+                created.AdjustmentNumber,
+                created.WarehouseId,
+                reason = request.Reason,
+                itemCount = created.Items.Count,
+            },
+            cancellationToken);
+        return created;
     }
 
     public async Task<AdjustmentDetailDto?> ApproveAdjustmentAsync(Guid id, CancellationToken cancellationToken = default)
@@ -277,7 +290,13 @@ internal sealed class InventoryService : IInventoryService
                 "inventory_adjustment",
                 id,
                 "approve",
-                new { detail.AdjustmentNumber, detail.WarehouseId, itemCount = detail.Items.Count },
+                new
+                {
+                    detail.AdjustmentNumber,
+                    detail.WarehouseId,
+                    reason = before.Reason,
+                    itemCount = detail.Items.Count,
+                },
                 cancellationToken);
         }
         return detail;

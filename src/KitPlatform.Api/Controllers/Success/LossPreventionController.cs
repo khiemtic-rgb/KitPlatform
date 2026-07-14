@@ -48,4 +48,35 @@ public sealed class LossPreventionController : ControllerBase
             return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
     }
+
+    /// <summary>
+    /// AC1 — Loss audit feed from activity_log (dashboard.read). Filters: date, branch, eventType, userId.
+    /// </summary>
+    [HttpGet("audit-feed")]
+    [Authorize(Policy = DashboardPolicies.Read)]
+    [ProducesResponseType(typeof(LossAuditFeedDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<LossAuditFeedDto>> GetAuditFeed(
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
+        [FromQuery] Guid? branchId = null,
+        [FromQuery] Guid? userId = null,
+        [FromQuery] string? eventType = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return Ok(await _loss.GetAuditFeedAsync(
+                from, to, branchId, userId, eventType, page, pageSize, cancellationToken));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

@@ -149,8 +149,9 @@ internal sealed class SalesService : ISalesService
             "sales_order",
             id,
             request.SaveAsDraft ? "draft_create" : "complete",
-            new { order.OrderNumber, order.TotalAmount, draft = request.SaveAsDraft },
+            new { order.OrderNumber, order.TotalAmount, draft = request.SaveAsDraft, warehouseId = order.WarehouseId },
             cancellationToken);
+        await WritePosDiscountAuditIfNeededAsync(order, cancellationToken);
         return order;
     }
 
@@ -171,8 +172,9 @@ internal sealed class SalesService : ISalesService
                 "sales_order",
                 id,
                 "draft_update",
-                new { order.OrderNumber, order.TotalAmount },
+                new { order.OrderNumber, order.TotalAmount, warehouseId = order.WarehouseId },
                 cancellationToken);
+            await WritePosDiscountAuditIfNeededAsync(order, cancellationToken);
         }
         return order;
     }
@@ -194,8 +196,9 @@ internal sealed class SalesService : ISalesService
                 "sales_order",
                 id,
                 "complete",
-                new { order.OrderNumber, order.TotalAmount, fromDraft = true },
+                new { order.OrderNumber, order.TotalAmount, fromDraft = true, warehouseId = order.WarehouseId },
                 cancellationToken);
+            await WritePosDiscountAuditIfNeededAsync(order, cancellationToken);
         }
         return order;
     }
@@ -211,7 +214,7 @@ internal sealed class SalesService : ISalesService
             "sales_order",
             id,
             "cancel",
-            new { orderBefore.OrderNumber },
+            new { orderBefore.OrderNumber, warehouseId = orderBefore.WarehouseId },
             cancellationToken);
         return await _repository.GetSalesOrderAsync(id, cancellationToken);
     }
@@ -230,7 +233,14 @@ internal sealed class SalesService : ISalesService
             "sales_return",
             returnId,
             "complete",
-            new { detail.ReturnNumber, detail.OrderNumber, detail.TotalRefund, salesOrderId },
+            new
+            {
+                detail.ReturnNumber,
+                detail.OrderNumber,
+                detail.TotalRefund,
+                salesOrderId,
+                warehouseId = order.WarehouseId,
+            },
             cancellationToken);
         return detail;
     }
@@ -334,4 +344,27 @@ internal sealed class SalesService : ISalesService
         ReportRxPosBlockRequest request,
         CancellationToken cancellationToken = default) =>
         _repository.ReportRxPosBlockAsync(request, _tenant.UserId, cancellationToken);
+
+    /// <summary>AC1 — dedicated discount audit when POS order/line discount &gt; 0 (excludes loyalty/voucher fields).</summary>
+    private async Task WritePosDiscountAuditIfNeededAsync(
+        SalesOrderDetailDto order,
+        CancellationToken cancellationToken)
+    {
+        var posDiscountTotal = order.DiscountAmount + order.LineDiscountTotal;
+        if (posDiscountTotal <= 0) return;
+
+        await _audit.WriteAsync(
+            "sales_order",
+            order.Id,
+            "discount",
+            new
+            {
+                order.OrderNumber,
+                orderDiscountAmount = order.DiscountAmount,
+                lineDiscountTotal = order.LineDiscountTotal,
+                posDiscountTotal,
+                warehouseId = order.WarehouseId,
+            },
+            cancellationToken);
+    }
 }

@@ -299,6 +299,92 @@ export async function fetchLossEmployeeReports(params?: {
   };
 }
 
+export type LossAuditEventType =
+  | 'order_create'
+  | 'order_edit'
+  | 'order_cancel'
+  | 'discount'
+  | 'return'
+  | 'stock_adjust'
+  | 'internal_issue';
+
+export interface LossAuditFeedItem {
+  id: string;
+  occurredAt: string;
+  eventType: LossAuditEventType | string;
+  actorUserId?: string | null;
+  actorUsername?: string | null;
+  summary: string;
+  entityType: string;
+  entityId?: string | null;
+  documentNumber?: string | null;
+  documentHref?: string | null;
+  branchId?: string | null;
+  branchName?: string | null;
+}
+
+export interface LossAuditFeed {
+  fromUtc: string;
+  toUtc: string;
+  branchId?: string | null;
+  userId?: string | null;
+  eventType?: string | null;
+  attributionNotes: string;
+  total: number;
+  page: number;
+  pageSize: number;
+  items: LossAuditFeedItem[];
+}
+
+export async function fetchLossAuditFeed(params?: {
+  from?: string;
+  to?: string;
+  branchId?: string;
+  userId?: string;
+  eventType?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<LossAuditFeed> {
+  const { data } = await http.get<UnknownRow>('/success/loss/audit-feed', {
+    params: {
+      from: params?.from,
+      to: params?.to,
+      branchId: params?.branchId,
+      userId: params?.userId,
+      eventType: params?.eventType,
+      page: params?.page,
+      pageSize: params?.pageSize,
+    },
+  });
+  const row = data as UnknownRow;
+  const items = ((row.items ?? row.Items ?? []) as UnknownRow[]).map((r) => ({
+    id: String(r.id ?? r.Id ?? ''),
+    occurredAt: String(r.occurredAt ?? r.OccurredAt ?? ''),
+    eventType: String(r.eventType ?? r.EventType ?? ''),
+    actorUserId: (r.actorUserId ?? r.ActorUserId) as string | null | undefined,
+    actorUsername: (r.actorUsername ?? r.ActorUsername) as string | null | undefined,
+    summary: String(r.summary ?? r.Summary ?? ''),
+    entityType: String(r.entityType ?? r.EntityType ?? ''),
+    entityId: (r.entityId ?? r.EntityId) as string | null | undefined,
+    documentNumber: (r.documentNumber ?? r.DocumentNumber) as string | null | undefined,
+    documentHref: (r.documentHref ?? r.DocumentHref) as string | null | undefined,
+    branchId: (r.branchId ?? r.BranchId) as string | null | undefined,
+    branchName: (r.branchName ?? r.BranchName) as string | null | undefined,
+  }));
+  return {
+    fromUtc: String(row.fromUtc ?? row.FromUtc ?? ''),
+    toUtc: String(row.toUtc ?? row.ToUtc ?? ''),
+    branchId: (row.branchId ?? row.BranchId) as string | null | undefined,
+    userId: (row.userId ?? row.UserId) as string | null | undefined,
+    eventType: (row.eventType ?? row.EventType) as string | null | undefined,
+    attributionNotes: String(row.attributionNotes ?? row.AttributionNotes ?? ''),
+    total: num(row.total ?? row.Total),
+    page: num(row.page ?? row.Page) || 1,
+    pageSize: num(row.pageSize ?? row.PageSize) || 50,
+    items,
+  };
+}
+
 export async function fetchLossCashVarianceToday(threshold?: number): Promise<LossCashVarianceToday> {
   const { data } = await http.get<UnknownRow>('/success/loss/cash-variance', {
     params: threshold != null ? { threshold } : undefined,

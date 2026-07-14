@@ -2,7 +2,7 @@
 
 **Mã:** NVX-PRD-03-EP03 · **Capability:** Process Excellence (#2) · neo Business Performance (#4) qua Cockpit  
 **Phase:** P2 → mép P3 (incident đầy đủ **không** thuộc epic này)  
-**Trạng thái:** In progress — AC2 lab (2026-07-14)  
+**Trạng thái:** In progress — AC2+AC4 prod (2026-07-14) · tiếp AC1 → AC5 → AC3  
 **Neo:** [pharmacy-success-capability-map-v1.md](./pharmacy-success-capability-map-v1.md) · [Owner Cockpit EP01](./success-p2-owner-cockpit-epic-v1.md) · [Checklist ca EP02](./success-p2-02-shift-checklist-epic-v1.md) · [KIT-BP-ASBUILT](../03-solution/kitplatform-enterprise-blueprint-asbuilt-v2.1.md)  
 **Điều kiện mở:** EP01 + EP02 lab ✅ · Clinic P0 trên prod ✅ · ưu tiên sau / song song CL-GO-01b (không block lab EP03)
 
@@ -53,7 +53,7 @@ Catalog cảnh báo mở rộng (DT ca thấp bất thường, tồn âm, xuất
 
 | # | As-built (KIT / Pharmacy) | Gap EP03 phải đóng |
 |---|---------------------------|-------------------|
-| 1 | `audit_logs`; timestamps/actor trên sales & inventory; Soft deletes | **Loss feed** lọc event types + actor + deep-link chứng từ; đảm bảo đủ event: tạo/sửa/hủy HĐ, discount, return, internal issue, stock adjust (bổ sung write audit nếu thiếu) |
+| 1 | `audit_logs`; timestamps/actor trên sales & inventory; Soft deletes | ✅ AC1 lab: `GET /api/success/loss/audit-feed` compose `kit_audit.activity_log`; write `discount` + adjust `create`; xuất nội bộ = reason tag |
 | 2 | `sales_shifts` mở/đóng ca (POS Admin + Staff); báo cáo ca | ✅ AC2 lab: compose `GET /api/success/loss/cash-variance` + Cockpit `riskStrip` (threshold mặc định 10 000); không bảng tiền mới |
 | 3 | Inventory count / adjustments (`inventory_adjustments`, màn kho) | **Cycle count session**: chọn 10–20 SKU (hot / random / FEFO), chốt lệch ngày, report theo SKU |
 | 4 | Reports Wave 1; sales/return/adjust data theo user có phần | ✅ AC4 lab: `GET /api/success/loss/reports/by-employee` — hủy draft (`employee_id`+`updated_at`) · giảm giá POS order+line (`employee_id`) · adjust approved (`approved_by`→NV, \|Δ\|×cost). Không cột actor mới |
@@ -79,10 +79,11 @@ Catalog cảnh báo mở rộng (DT ca thấp bất thường, tồn âm, xuất
 
 ### AC1 — Nhật ký thao tác (Loss Audit)
 
-- [ ] Feed filter theo khoảng ngày, branch, loại sự kiện, user  
-- [ ] Í thiểu loại: tạo HĐ · sửa HĐ · hủy HĐ · giảm giá · trả hàng · xuất nội bộ · điều chỉnh tồn  
-- [ ] Mỗi dòng: actor, thời điểm, loại, tóm tắt, link chứng từ (nếu có)  
-- [ ] Event thiếu write-path → bổ sung ghi `audit_logs` (hoặc bảng slim `success_loss_event` nếu compose audit quá chậm — **một** nguồn đọc cho UI)  
+- [x] Feed filter theo khoảng ngày, branch, loại sự kiện, user — `GET /api/success/loss/audit-feed`  
+- [x] Í thiểu loại: tạo/sửa/hủy HĐ · giảm giá · trả hàng · xuất nội bộ (reason tag) · điều chỉnh tồn  
+- [x] Mỗi dòng: actor, thời điểm, loại, tóm tắt, link chứng từ (list routes)  
+- [x] Write-path: `sales_order/discount` khi có giảm POS; `inventory_adjustment/create` + enrich payload (compose `activity_log`, không bảng `success_loss_event`)  
+- [ ] Deploy VPS / UAT screenshot còn Open  
 
 ### AC2 — Đối chiếu tiền cuối ca
 
@@ -91,7 +92,7 @@ Catalog cảnh báo mở rộng (DT ca thấp bất thường, tồn âm, xuất
 - [x] Danh sách ca `|variance| > threshold` (mặc định 10 000; query `?threshold=`)  
 - [x] Không đếm tờ tiền / không cột counted_* mới  
 - [ ] Soft-enforce “phải đóng ca có closing_cash” (đã bắt buộc trên CloseShift UI — xác nhận pilot)  
-- [ ] Screenshot UAT / deploy VPS còn Open  
+- [x] Deploy VPS 2026-07-14 — prod smoke NT_XUANHOA PASS (UAT screenshot còn Open)  
 
 ### AC3 — Kiểm kê cuốn chiếu
 
@@ -107,7 +108,7 @@ Catalog cảnh báo mở rộng (DT ca thấp bất thường, tồn âm, xuất
 - [x] Điều chỉnh tồn approved theo NV duyệt — giá trị \|ΔSL\|×`unit_cost`  
 - [x] Filter: from/to (mặc định tháng VN), branchId; UI tab trên `/success/loss`  
 - [ ] Export CSV optional  
-- [ ] Deploy VPS / UAT screenshot còn Open  
+- [x] Deploy VPS 2026-07-14 — prod smoke NT_XUANHOA PASS (discountRows≥1 trên tháng; UAT screenshot còn Open)  
 
 ### AC5 — Phân quyền & phê duyệt
 

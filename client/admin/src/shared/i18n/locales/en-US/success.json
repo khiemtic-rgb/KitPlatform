@@ -41,10 +41,11 @@
   },
   "loss": {
     "title": "Risk / loss prevention",
-    "pageSubtitle": "AC2 shift cash variance · AC4 by-employee reports (compose as-built)",
+    "pageSubtitle": "AC2 cash variance · AC1 audit feed · AC4 by-employee (compose as-built)",
     "subtitle": "VN business day: {{date}} — composed from sales_shifts",
     "tip": "Alert when |variance| > {{threshold}} (closing − expected). Counted cash = closing_cash.",
     "reportsTip": "Employee attribution uses existing columns (seller / approver) — see system notes after load.",
+    "auditTip": "Sensitive-operation feed from audit (operational transparency, not staff surveillance).",
     "backCockpit": "← Owner cockpit",
     "loadFailed": "Could not load loss reports",
     "closedCount": "Closed shifts",
@@ -53,13 +54,26 @@
     "maxAbs": "|Max| variance",
     "alert": "Alert",
     "open": "Open",
+    "openDoc": "Open document",
     "linkShifts": "Open sales shift report / close →",
     "tabs": {
       "cash": "Shift cash",
+      "audit": "Activity log",
       "byEmployee": "By employee"
     },
     "branchAll": "All branches",
+    "userAll": "All users",
+    "eventAll": "All event types",
     "applyFilter": "Apply",
+    "events": {
+      "order_create": "Create order",
+      "order_edit": "Edit order",
+      "order_cancel": "Cancel order",
+      "discount": "Discount",
+      "return": "Return",
+      "stock_adjust": "Stock adjust",
+      "internal_issue": "Internal issue"
+    },
     "reports": {
       "cancellations": "Cancelled drafts by employee",
       "discounts": "POS discounts by employee",
@@ -80,7 +94,12 @@
       "lineDiscount": "Line discount",
       "totalDiscount": "Total POS discount",
       "adjustCount": "Adjustments",
-      "absVariance": "|Variance| (cost)"
+      "absVariance": "|Variance| (cost)",
+      "time": "Time",
+      "event": "Type",
+      "actor": "Actor",
+      "summary": "Summary",
+      "document": "Document"
     }
   },
   "checklist": {

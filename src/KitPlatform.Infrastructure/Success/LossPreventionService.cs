@@ -12,6 +12,17 @@ internal sealed class LossPreventionService : ILossPreventionService
         "Giảm giá: POS order+line trên đơn Completed; gán seller employee_id (không gồm loyalty/voucher). " +
         "Điều chỉnh tồn: approved adjustments; gán theo approved_by→employee; giá trị = |ΔSL|×unit_cost.";
 
+    private const string AuditFeedNotes =
+        "Nguồn: kit_audit.activity_log (dual-write từ audit_logs). " +
+        "Tạo/sửa/hủy HĐ · trả hàng · điều chỉnh tồn (approve/create) có sẵn; giảm giá POS ghi action=discount khi có giảm. " +
+        "Xuất nội bộ V0: phiếu điều chỉnh reason chứa 'nội bộ' / internal_issue. " +
+        "Chi nhánh = JOIN chứng từ (audit không có branch_id).";
+
+    private static readonly HashSet<string> AllowedAuditEventTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "order_create", "order_edit", "order_cancel", "discount", "return", "stock_adjust", "internal_issue",
+    };
+
     private readonly LossPreventionRepository _repo;
     private readonly IBranchAccessService _branchAccess;
 
@@ -73,6 +84,35 @@ internal sealed class LossPreventionService : ILossPreventionService
         var adjustments = await _repo.ListAdjustmentsByEmployeeAsync(from, to, branchId, allowed, cancellationToken);
 
         return new LossEmployeeReportsDto(from, to, branchId, AttributionNotes, cancellations, discounts, adjustments);
+    }
+
+    public async Task<LossAuditFeedDto> GetAuditFeedAsync(
+        DateTime? fromUtc = null,
+        DateTime? toUtc = null,
+        Guid? branchId = null,
+        Guid? userId = null,
+        string? eventType = null,
+        int page = 1,
+        int pageSize = 50,
+        CancellationToken cancellationToken = default)
+    {
+        if (branchId is Guid bid)
+            await _branchAccess.EnsureBranchAccessAsync(bid, cancellationToken);
+
+        var normalizedType = string.IsNullOrWhiteSpace(eventType) ? null : eventType.Trim();
+        if (normalizedType is not null && !AllowedAuditEventTypes.Contains(normalizedType))
+            throw new ArgumentException($"eventType không hợp lệ: {normalizedType}");
+
+        var (from, to) = ReportsDateHelper.ResolveRangeUtc(fromUtc, toUtc, DateTime.UtcNow);
+        var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(null, cancellationToken);
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var (items, total) = await _repo.ListAuditFeedAsync(
+            from, to, branchId, userId, normalizedType, allowed, page, pageSize, cancellationToken);
+
+        return new LossAuditFeedDto(
+            from, to, branchId, userId, normalizedType, AuditFeedNotes, total, page, pageSize, items);
     }
 
     private static decimal NormalizeThreshold(decimal? threshold)

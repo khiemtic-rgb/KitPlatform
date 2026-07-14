@@ -41,10 +41,11 @@
   },
   "loss": {
     "title": "Rủi ro / thất thoát",
-    "pageSubtitle": "AC2 lệch quỹ ca · AC4 báo cáo theo nhân viên (compose as-built)",
+    "pageSubtitle": "AC2 lệch quỹ · AC1 nhật ký · AC4 theo nhân viên (compose as-built)",
     "subtitle": "Ngày VN: {{date}} — đọc từ sales_shifts, không bảng tiền mới",
     "tip": "Cảnh báo khi |lệch| > {{threshold}} (closing − expected). Tiền đếm = closing_cash.",
     "reportsTip": "Gán NV theo cột sẵn có (seller / người duyệt) — xem ghi chú hệ thống khi tải.",
+    "auditTip": "Nhật ký thao tác nhạy cảm từ audit (không giám sát nhân viên).",
     "backCockpit": "← Cockpit chủ NT",
     "loadFailed": "Không tải được báo cáo thất thoát",
     "closedCount": "Ca đã đóng",
@@ -53,13 +54,26 @@
     "maxAbs": "Lệch |max|",
     "alert": "Lệch",
     "open": "Đang mở",
+    "openDoc": "Mở chứng từ",
     "linkShifts": "Mở báo cáo / đóng ca bán →",
     "tabs": {
       "cash": "Lệch quỹ ca",
+      "audit": "Nhật ký thao tác",
       "byEmployee": "Theo nhân viên"
     },
     "branchAll": "Tất cả chi nhánh",
+    "userAll": "Tất cả người dùng",
+    "eventAll": "Tất cả loại sự kiện",
     "applyFilter": "Áp dụng",
+    "events": {
+      "order_create": "Tạo HĐ",
+      "order_edit": "Sửa HĐ",
+      "order_cancel": "Hủy HĐ",
+      "discount": "Giảm giá",
+      "return": "Trả hàng",
+      "stock_adjust": "Điều chỉnh tồn",
+      "internal_issue": "Xuất nội bộ"
+    },
     "reports": {
       "cancellations": "Hủy hóa đơn (draft) theo NV",
       "discounts": "Giảm giá POS theo NV",
@@ -80,7 +94,12 @@
       "lineDiscount": "Giảm dòng",
       "totalDiscount": "Tổng giảm POS",
       "adjustCount": "Số phiếu",
-      "absVariance": "|Lệch| (giá vốn)"
+      "absVariance": "|Lệch| (giá vốn)",
+      "time": "Thời điểm",
+      "event": "Loại",
+      "actor": "Người thao tác",
+      "summary": "Tóm tắt",
+      "document": "Chứng từ"
     }
   },
   "checklist": {
