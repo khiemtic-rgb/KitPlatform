@@ -75,10 +75,12 @@
 }
 
 .logo-tagline {
-  color: #64748b;
-  font-size: 0.65rem;
-  font-weight: 500;
+  color: #5b6b7c;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   line-height: 1.2;
+  text-transform: none;
 }
 
 .nav-toggle {
@@ -111,18 +113,54 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(1rem, 2vw, 2.25rem);
+  gap: clamp(0.85rem, 1.8vw, 1.75rem);
   font-size: 0.875rem;
   font-weight: 600;
   grid-column: 2;
   min-width: 0;
 }
 
+.nav-item {
+  position: relative;
+}
+
+.nav-item--mega {
+  /* Keeps hover continuous from trigger into panel */
+  padding-bottom: 0;
+}
+
+.nav-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.55rem 0.15rem;
+  margin-block: -0.2rem;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 300ms ease;
+}
+
+.nav-item--mega.is-open .nav-trigger,
+.nav-trigger:hover,
+.nav-trigger:focus-visible {
+  color: #16c784;
+}
+
 .nav-chevron {
-  margin-left: 0.2rem;
-  color: var(--color-green, #16c784);
+  margin-left: 0.15rem;
+  color: #16c784;
   font-size: 0.65rem;
   vertical-align: middle;
+  transition: transform 200ms ease;
+}
+
+.nav-item--mega.is-open .nav-chevron {
+  transform: rotate(180deg);
 }
 
 .nav a {
@@ -136,6 +174,247 @@
 .nav a:hover,
 .nav a.active {
   color: #0f2747;
+}
+
+/* Ecosystem mega menu */
+.mega {
+  position: absolute;
+  /* No vertical gap — padding-top is the invisible hover bridge */
+  top: 100%;
+  left: 50%;
+  z-index: 60;
+  width: min(880px, calc(100vw - 2rem));
+  padding-top: 0.85rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-38%, 6px);
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+}
+
+.nav-item--mega.is-open .mega {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-38%, 0);
+  pointer-events: auto;
+}
+
+@media (min-width: 1181px) {
+  .nav-item--mega:focus-within .mega {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-38%, 0);
+    pointer-events: auto;
+  }
+}
+
+.mega__inner {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(0, 1.35fr);
+  gap: 1.5rem;
+  align-items: stretch;
+  padding: 1.35rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #e8eef3;
+  box-shadow: 0 24px 60px rgba(11, 31, 51, 0.12);
+  backdrop-filter: blur(16px);
+}
+
+.mega__copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: 0.25rem;
+}
+
+.mega__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #0b1f33;
+}
+
+.mega__desc {
+  margin: 0.65rem 0 1rem;
+  color: #5b6b7c;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.mega__link {
+  width: fit-content;
+  color: #16c784 !important;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.mega__link:hover {
+  text-decoration: underline;
+}
+
+.mega__diagram {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+  border-radius: 16px;
+  background: #f7faf9;
+  border: 1px solid #e8eef3;
+  min-width: 0;
+}
+
+.mega__platform {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  background: #16c784;
+  color: #fff !important;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-decoration: none !important;
+  transition: filter 160ms ease, transform 160ms ease;
+}
+
+.mega__platform:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.mega__platform-ico {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+}
+
+.mega__products {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.mega__product {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.85rem 0.65rem;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #e8eef3;
+  text-align: center;
+  text-decoration: none !important;
+  transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.mega__product:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(11, 31, 51, 0.06);
+}
+
+.mega__product--green:hover {
+  border-color: #b7ecd4;
+}
+
+.mega__product--blue:hover {
+  border-color: #bfdbfe;
+}
+
+.mega__product--violet:hover {
+  border-color: #ddd6fe;
+}
+
+.mega__product-ico {
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.mega__product-ico svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.mega__product-ico--green {
+  background: #e9fbf3;
+  color: #12a86e;
+}
+
+.mega__product-ico--blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.mega__product-ico--violet {
+  background: #f3f0ff;
+  color: #6d5ce7;
+}
+
+.mega__product-name {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0b1f33;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.mega__shared {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.mega__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.4rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #e8eef3;
+  color: #0b1f33 !important;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none !important;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.mega__chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(11, 31, 51, 0.06);
+  border-color: #c9d7e4;
+}
+
+.mega__chip svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.mega__chip--ai {
+  background: linear-gradient(90deg, #ecfdf5, #eef2ff);
+  border-color: #d8f3e6;
+  color: #0f766e;
+}
+
+.mega__chip--ai svg {
+  color: #0f766e;
 }
 
 .nav-actions {
@@ -273,9 +552,50 @@
     display: flex;
   }
 
-  .nav a {
+  .nav > a,
+  .nav-trigger {
+    width: 100%;
+    justify-content: space-between;
     padding: 0.75rem 0;
     border-bottom: 1px solid #e8eef3;
+  }
+
+  .nav-item--mega {
+    width: 100%;
+  }
+
+  .mega {
+    position: static;
+    width: 100%;
+    left: auto;
+    top: auto;
+    transform: none;
+    padding-top: 0;
+    margin: 0.35rem 0 0.75rem;
+  }
+
+  .nav-item--mega.is-open .mega {
+    transform: none;
+  }
+
+  .mega__inner {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    box-shadow: none;
+  }
+
+  .mega__products {
+    grid-template-columns: 1fr;
+  }
+
+  .mega__product {
+    flex-direction: row;
+    text-align: left;
+    padding: 0.75rem;
+  }
+
+  .mega__shared {
+    grid-template-columns: 1fr;
   }
 
   .nav-actions {

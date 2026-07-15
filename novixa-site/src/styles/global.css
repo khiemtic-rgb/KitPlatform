@@ -1,24 +1,26 @@
 @import './site-header.css';
 
 :root {
-  --color-primary: #0f4c81;
-  --color-primary-dark: #083760;
+  --color-primary: #16c784;
+  --color-primary-dark: #12a86e;
   --color-green: #16c784;
   --color-green-soft: #e8faf2;
   --color-accent: var(--color-green);
   --color-accent-light: var(--color-green-soft);
-  --color-text: #0f172a;
-  --color-muted: #64748b;
-  --color-bg: #f7fafc;
+  --color-text: #0b1f33;
+  --color-muted: #5b6b7c;
+  --color-bg: #ffffff;
   --color-surface: #ffffff;
-  --color-border: #e5e7eb;
-  --color-navy: #0f172a;
-  --radius: 16px;
+  --color-border: #e8eef3;
+  --color-navy: #0b1f33;
+  --color-clinic: #7c6cf0;
+  --color-clinic-soft: #f3f0ff;
+  --radius: 14px;
   --radius-card: 20px;
-  --shadow: 0 20px 50px rgba(15, 76, 129, 0.1);
-  --shadow-soft: 0 10px 30px rgba(15, 76, 129, 0.08);
-  --font: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --max-width: 1280px;
+  --shadow: 0 18px 48px rgba(11, 31, 51, 0.08);
+  --shadow-soft: 0 10px 30px rgba(11, 31, 51, 0.06);
+  --font: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --max-width: 1200px;
 }
 
 *,

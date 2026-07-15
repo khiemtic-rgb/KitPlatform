@@ -2,16 +2,17 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-import Hero from '../../components/Hero.astro';
-import ValueCardsSection from '../../components/ValueCardsSection.astro';
-import AssessmentSection from '../../components/AssessmentSection.astro';
-import SolutionSection from '../../components/SolutionSection.astro';
-import PricingSection from '../../components/PricingSection.astro';
-import FaqSection from '../../components/FaqSection.astro';
+import PlatformHero from '../../components/platform/PlatformHero.astro';
+import EcosystemSection from '../../components/platform/EcosystemSection.astro';
+import WhyNovixaSection from '../../components/platform/WhyNovixaSection.astro';
+import HealthcareJourney from '../../components/platform/HealthcareJourney.astro';
+import ClinicSection from '../../components/platform/ClinicSection.astro';
+import PartnersStrip from '../../components/platform/PartnersStrip.astro';
+import PlatformCta from '../../components/platform/PlatformCta.astro';
 import { t } from '../../i18n';
 import { buildSiteGraphStructuredData } from '../../lib/site-structured-data';
 import '../../styles/global.css';
-import '../../styles/homepage.css';
+import '../../styles/platform-home.css';
 
 const m = t('vi');
 const jsonLd = buildSiteGraphStructuredData();
@@ -20,28 +21,19 @@ const jsonLd = buildSiteGraphStructuredData();
 <BaseLayout
   title={m.meta.siteName}
   description={m.meta.description}
-  canonicalPath="/vi"
+  canonicalPath="/vi/"
   jsonLd={jsonLd}
 >
   <Header slot="header" />
 
   <div class="home-page">
-    <div class="hp-fold">
-      <div class="hp-fold__inner">
-        <div class="hp-hero-wrap">
-          <div class="container">
-            <Hero />
-          </div>
-        </div>
-
-        <ValueCardsSection />
-        <AssessmentSection />
-      </div>
-    </div>
-
-    <SolutionSection />
-    <PricingSection />
-    <FaqSection home />
+    <PlatformHero />
+    <EcosystemSection />
+    <WhyNovixaSection />
+    <HealthcareJourney />
+    <ClinicSection />
+    <PlatformCta />
+    <PartnersStrip />
   </div>
 
   <Footer slot="footer" />

@@ -14,7 +14,7 @@ export function buildArticleJsonLd(post: {
   id: string;
   data: { title: string; description: string; pubDate: Date };
 }) {
-  const url = absoluteUrl(`/vi/tin-tuc/${post.id}`);
+  const url = absoluteUrl(`/vi/tin-tuc/${post.id}/`);
   const image = articleOgImageUrl(post.id);
 
   return {

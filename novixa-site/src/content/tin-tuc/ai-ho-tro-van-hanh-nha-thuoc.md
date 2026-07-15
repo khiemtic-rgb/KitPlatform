@@ -16,4 +16,4 @@ AI trong nhà thuốc **không** thay thế tư vấn y khoa. Giá trị thực 
 
 Novixa đặt AI trong lộ trình dài hạn — sau khi nền ERP, kho và POS ổn định.
 
-Xem thêm [giải pháp Novixa](/vi/giai-phap).
+Xem thêm [giải pháp Novixa](/vi/giai-phap/).

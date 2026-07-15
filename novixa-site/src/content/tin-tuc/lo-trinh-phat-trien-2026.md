@@ -19,4 +19,4 @@ Novixa công bố lộ trình tham khảo (có thể điều chỉnh theo phản
 2. Trải nghiệm quầy bán — ít thao tác, thông báo lỗi rõ ràng  
 3. Báo cáo và tuân thủ vận hành dược  
 
-Theo dõi [mục tin tức](/vi/tin-tuc) để cập nhật chi tiết từng tháng.
+Theo dõi [mục tin tức](/vi/tin-tuc/) để cập nhật chi tiết từng tháng.

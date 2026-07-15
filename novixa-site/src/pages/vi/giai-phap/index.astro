@@ -1,16 +1,16 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Header from '../../components/Header.astro';
-import Footer from '../../components/Footer.astro';
-import FoundingEarlyAccess from '../../components/FoundingEarlyAccess.astro';
-import FoundingFaq from '../../components/FoundingFaq.astro';
-import { t } from '../../i18n';
-import '../../styles/global.css';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import FoundingEarlyAccess from '../../../components/FoundingEarlyAccess.astro';
+import FoundingFaq from '../../../components/FoundingFaq.astro';
+import { t } from '../../../i18n';
+import '../../../styles/global.css';
 
 const m = t('vi');
 ---
 
-<BaseLayout title={m.solutions.title} description={m.solutions.intro} canonicalPath="/vi/giai-phap">
+<BaseLayout title={m.solutions.title} description={m.solutions.intro} canonicalPath="/vi/giai-phap/">
   <Header slot="header" />
   <section class="section">
     <div class="container">
@@ -45,7 +45,7 @@ const m = t('vi');
   <section class="section" style="padding-top: 0">
     <div class="container">
       <p>
-        <a class="btn btn-primary" href="/vi/lien-he#contact-form">{m.founding.ctaPrimary}</a>
+        <a class="btn btn-primary" href="/vi/lien-he/#contact-form">{m.founding.ctaPrimary}</a>
       </p>
     </div>
   </section>

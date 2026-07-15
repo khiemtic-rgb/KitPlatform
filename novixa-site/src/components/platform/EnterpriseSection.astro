@@ -1,0 +1,25 @@
+---
+const items = [
+  'Security',
+  'Cloud',
+  'Multi Tenant',
+  'RBAC',
+  'Audit',
+  'Open API',
+  'AI',
+  '99.9% Uptime',
+];
+---
+
+<section class="ph-ent" id="enterprise" aria-labelledby="ph-ent-title">
+  <div class="container">
+    <header class="ph-section-head">
+      <p class="ph-eyebrow">Enterprise Ready</p>
+      <h2 id="ph-ent-title" class="ph-section-title">Security, scale, and governance by design</h2>
+    </header>
+
+    <ul class="ph-ent__grid">
+      {items.map((item) => <li class="ph-ent__item">{item}</li>)}
+    </ul>
+  </div>
+</section>

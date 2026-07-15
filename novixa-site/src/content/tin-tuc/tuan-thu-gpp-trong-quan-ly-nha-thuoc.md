@@ -18,4 +18,4 @@ Thực hành tốt nhà thuốc (GPP) đòi hỏi nhà thuốc **lưu vết** đ
 
 Module kho và POS được thiết kế **batch-centric**: mọi thay đổi tồn đi qua sổ cái, dễ truy vết khi thanh tra hoặc đối soát nội bộ.
 
-[Liên hệ](/vi/lien-he) nếu bạn muốn trao đổi checklist GPP phù hợp quy mô nhà thuốc.
+[Liên hệ](/vi/lien-he/) nếu bạn muốn trao đổi checklist GPP phù hợp quy mô nhà thuốc.

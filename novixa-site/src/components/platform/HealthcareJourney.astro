@@ -1,0 +1,102 @@
+---
+const steps = [
+  { tone: 'green', label: 'Khách hàng có nhu cầu', icon: 'need' },
+  { tone: 'green', label: 'Đến nhà thuốc được tư vấn', icon: 'pharmacy' },
+  { tone: 'cyan', label: 'Giới thiệu đến phòng khám', icon: 'refer' },
+  { tone: 'cyan', label: 'Đặt lịch khám', icon: 'booking' },
+  { tone: 'blue', label: 'Khám & điều trị', icon: 'doctor' },
+  { tone: 'violet', label: 'Kê đơn điện tử', icon: 'rx' },
+  { tone: 'violet', label: 'Mua thuốc tại nhà thuốc', icon: 'cart' },
+  { tone: 'purple', label: 'Theo dõi & chăm sóc', icon: 'care' },
+] as const;
+---
+
+<section class="ph-journey" id="journey" aria-labelledby="ph-journey-title">
+  <div class="container ph-journey__wrap">
+    <div class="ph-journey__copy">
+      <p class="ph-journey__eyebrow">
+        <span>KẾT NỐI TOÀN DIỆN</span>
+        <span>HÀNH TRÌNH CHĂM SÓC SỨC KHỎE</span>
+      </p>
+      <h2 id="ph-journey-title" class="ph-journey__title">Một hành trình – Chăm sóc toàn diện</h2>
+      <p class="ph-journey__desc">
+        Novixa Connect giúp kết nối liền mạch nhà thuốc, phòng khám và bệnh nhân trên cùng một nền tảng.
+      </p>
+      <a class="ph-journey__btn" href="#connect">Xem quy trình chi tiết →</a>
+    </div>
+
+    <ol class="ph-journey__track">
+      {
+        steps.map((step, i) => (
+          <li class={`ph-journey__node ph-journey__node--${step.tone}`} style={`--i:${i}`}>
+            <span class={`ph-journey__ico ph-journey__ico--${step.tone}`} aria-hidden="true">
+              {step.icon === 'need' && (
+                <svg viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="8.2" r="2.6" stroke="currentColor" stroke-width="1.7" />
+                  <path d="M7 19c.8-3 2.6-4.5 5-4.5s4.2 1.5 5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  <path d="M5.5 10.5c0-1.4.7-2.5 1.6-2.8M18.5 10.5c0-1.4-.7-2.5-1.6-2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M4.8 11.2h2.2M17 11.2h2.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+              )}
+              {step.icon === 'pharmacy' && (
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M4 11V20h16V11L12 4.5 4 11z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                  <path d="M10.2 14.2h3.6M12 12.4v3.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                </svg>
+              )}
+              {step.icon === 'refer' && (
+                <svg viewBox="0 0 24 24" fill="none">
+                  <circle cx="10" cy="8.5" r="2.7" stroke="currentColor" stroke-width="1.7" />
+                  <path d="M5.2 18.8c.9-2.8 2.5-4.2 4.8-4.2 1.5 0 2.8.6 3.7 1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  <path d="M14.8 12.2h5M17.3 9.8l2.5 2.4-2.5 2.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              )}
+              {step.icon === 'booking' && (
+                <svg viewBox="0 0 24 24" fill="none">
+                  <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.7" />
+                  <path d="M8 3.5V7M16 3.5V7M4 10h16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  <circle cx="12" cy="15" r="2.4" stroke="currentColor" stroke-width="1.5" />
+                  <path d="M12 13.8v1.5l1.1.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              )}
+              {step.icon === 'doctor' && (
+                <svg viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="7.2" r="2.6" stroke="currentColor" stroke-width="1.7" />
+                  <path d="M7 19c1-3 2.8-4.4 5-4.4s4 1.4 5 4.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  <circle cx="12" cy="14.8" r="2.2" stroke="currentColor" stroke-width="1.5" />
+                  <path d="M12 13.5v2.6M10.7 14.8h2.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                </svg>
+              )}
+              {step.icon === 'rx' && (
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M7 3.8h8.2L18 6.5v13.7H7V3.8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                  <path d="M9.4 10h5.2M9.4 13.2h5.2M9.4 16.4h3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  <path d="M15.2 16.8l2.6 2.6M17.8 16.8l-2.6 2.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+              )}
+              {step.icon === 'cart' && (
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M3.5 5.5h2.2l1.4 9.2h10.2l1.6-6.6H7.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                  <circle cx="9.2" cy="18.2" r="1.3" stroke="currentColor" stroke-width="1.5" />
+                  <circle cx="16.2" cy="18.2" r="1.3" stroke="currentColor" stroke-width="1.5" />
+                </svg>
+              )}
+              {step.icon === 'care' && (
+                <svg viewBox="0 0 24 24" fill="none">
+                  <rect x="4.5" y="8" width="7.2" height="11" rx="2" stroke="currentColor" stroke-width="1.7" />
+                  <path d="M13.5 11.2h4.8a2 2 0 012 2v3.8a2 2 0 01-2 2h-4.8" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                  <circle cx="8.1" cy="13.2" r="1.1" stroke="currentColor" stroke-width="1.4" />
+                  <path d="M8.1 15.6v1.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                </svg>
+              )}
+            </span>
+            <span class={`ph-journey__label ph-journey__label--${step.tone}`}>
+              <strong>{i + 1}</strong> {step.label}
+            </span>
+            {i < steps.length - 1 && <span class="ph-journey__arrow" aria-hidden="true" />}
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>

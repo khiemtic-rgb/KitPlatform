@@ -7,7 +7,7 @@ interface Props {
   compact?: boolean;
 }
 
-const { m, contactHref = '/vi/lien-he#contact-form', compact = false } = Astro.props;
+const { m, contactHref = '/vi/lien-he/#contact-form', compact = false } = Astro.props;
 ---
 
 <section class:list={['founding-band', { 'founding-band--compact': compact }]}>

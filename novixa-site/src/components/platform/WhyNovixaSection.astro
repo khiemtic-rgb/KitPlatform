@@ -1,0 +1,140 @@
+---
+const features = [
+  {
+    tone: 'green',
+    title: 'Quản trị hiệu quả',
+    items: ['Vận hành chuẩn quy trình', 'Giảm tồn kho – Tối ưu chi phí', 'Báo cáo real-time'],
+    icon: 'ops',
+  },
+  {
+    tone: 'teal',
+    title: 'Giữ chân khách hàng',
+    items: ['CRM & Loyalty', 'Marketing cá nhân hóa', 'Chăm sóc sau bán'],
+    icon: 'heart',
+  },
+  {
+    tone: 'blue',
+    title: 'Kết nối hệ sinh thái',
+    items: ['Kết nối nhà thuốc – phòng khám', 'Chuyển tuyến thông minh', 'Hành trình điều trị liền mạch'],
+    icon: 'link',
+  },
+  {
+    tone: 'violet',
+    title: 'AI thông minh',
+    items: ['AI Copilot hỗ trợ công việc', 'Phân tích dữ liệu sâu', 'Dự báo & gợi ý thông minh'],
+    icon: 'ai',
+  },
+  {
+    tone: 'purple',
+    title: 'Bảo mật & an toàn',
+    items: ['Chuẩn bảo mật quốc tế', 'Mã hóa dữ liệu', 'Phân quyền chặt chẽ'],
+    icon: 'shield',
+  },
+] as const;
+---
+
+<section class="ph-why" id="solutions" aria-labelledby="ph-why-title">
+  <div class="container ph-why__wrap">
+    <header class="ph-why__head">
+      <p class="ph-eyebrow">TẠI SAO CHỌN NOVIXA</p>
+      <h2 id="ph-why-title" class="ph-why__title">Một nền tảng – Nhiều giá trị vận hành</h2>
+    </header>
+
+    <div class="ph-why__row">
+      {
+        features.map((f) => (
+          <article class={`ph-why-card ph-why-card--${f.tone}`}>
+            <div class="ph-why-card__head">
+              <span class={`ph-why-card__icon ph-why-card__icon--${f.tone}`} aria-hidden="true">
+                {f.icon === 'ops' && (
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7" />
+                    <path
+                      d="M5.5 19.5c1.2-3.2 3.4-4.8 6.5-4.8s5.3 1.6 6.5 4.8"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M15.8 7.2l1.5 1.5 3-3.2"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                )}
+                {f.icon === 'heart' && (
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M7 12.5c-2.2 0-3.8-1.8-3.8-3.9C3.2 5.8 5.2 4 7.4 4c1.2 0 2.3.5 3.1 1.4C11.3 4.5 12.4 4 13.6 4c2.2 0 4.2 1.8 4.2 4.6 0 2.1-1.6 3.9-3.8 3.9H12l-2.2 3.2L7.8 12.5H7z"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linejoin="round"
+                    />
+                    <path d="M8.2 20.2h7.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  </svg>
+                )}
+                {f.icon === 'link' && (
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M14.2 9.8l1.6-1.6a3.6 3.6 0 015.1 5.1l-2.5 2.5a3.6 3.6 0 01-5.1 0"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M9.8 14.2l-1.6 1.6a3.6 3.6 0 11-5.1-5.1l2.5-2.5a3.6 3.6 0 015.1 0"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                    <path d="M9.2 14.8l5.6-5.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  </svg>
+                )}
+                {f.icon === 'ai' && (
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.7" />
+                    <path
+                      d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6.2 6.2l1.6 1.6M16.2 16.2l1.6 1.6M17.8 6.2l-1.6 1.6M7.8 16.2l-1.6 1.6"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                )}
+                {f.icon === 'shield' && (
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 3.5l7.5 3v5.4c0 4.4-2.9 7.5-7.5 9.1-4.6-1.6-7.5-4.7-7.5-9.1V6.5L12 3.5z"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M12 9.2c1.3 0 2.3 1 2.3 2.2 0 1.7-1.4 2.4-2.3 3.5-.9-1.1-2.3-1.8-2.3-3.5 0-1.2 1-2.2 2.3-2.2z"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                )}
+              </span>
+              <h3>{f.title}</h3>
+            </div>
+            <ul>
+              {f.items.map((item) => (
+                <li>
+                  <span class={`ph-why-card__check ph-why-card__check--${f.tone}`} aria-hidden="true">
+                    ✓
+                  </span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>

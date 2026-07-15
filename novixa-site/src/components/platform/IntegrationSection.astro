@@ -1,0 +1,34 @@
+---
+const integrations = [
+  'API First',
+  'ePrescription',
+  'EMR',
+  'ERP',
+  'Accounting',
+  'Payment',
+  'SMS',
+  'Email',
+  'Zalo',
+  'AI',
+];
+---
+
+<section class="ph-integ" id="integrations" aria-labelledby="ph-integ-title">
+  <div class="container">
+    <header class="ph-section-head ph-section-head--center">
+      <p class="ph-eyebrow">Integration</p>
+      <h2 id="ph-integ-title" class="ph-section-title">Open platform. Connected healthcare stack.</h2>
+    </header>
+
+    <ul class="ph-integ__grid">
+      {
+        integrations.map((name) => (
+          <li class="ph-integ__item">
+            <span class="ph-integ__icon" aria-hidden="true" />
+            <span>{name}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

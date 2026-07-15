@@ -33,14 +33,14 @@ const jsonLd = buildArticleJsonLd(post);
   description={post.data.description}
   type="article"
   image={ogImage}
-  canonicalPath={`/vi/tin-tuc/${post.id}`}
+  canonicalPath={`/vi/tin-tuc/${post.id}/`}
   publishedTime={publishedTime}
   jsonLd={jsonLd}
 >
   <Header slot="header" />
   <article class="section" itemscope itemtype="https://schema.org/Article">
     <div class="container prose">
-      <p><a href="/vi/tin-tuc">{m.news.back}</a></p>
+      <p><a href="/vi/tin-tuc/">{m.news.back}</a></p>
       <h1 itemprop="headline">{post.data.title}</h1>
       <p class="news-meta">
         <time datetime={publishedTime} itemprop="datePublished">{formatNewsDate(post.data.pubDate)}</time>

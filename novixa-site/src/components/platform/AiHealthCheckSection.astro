@@ -1,0 +1,34 @@
+---
+const steps = [
+  { n: '1', title: 'Answer questions' },
+  { n: '2', title: 'AI Analysis' },
+  { n: '3', title: 'Detailed Report' },
+  { n: '4', title: 'Expert Consultation' },
+  { n: '5', title: 'Digital Transformation Roadmap' },
+];
+---
+
+<section class="ph-check" id="health-check" aria-labelledby="ph-check-title">
+  <div class="container ph-check__inner">
+    <header class="ph-section-head ph-section-head--center">
+      <p class="ph-eyebrow">AI Health Check</p>
+      <h2 id="ph-check-title" class="ph-section-title">How healthy is your pharmacy?</h2>
+    </header>
+
+    <ol class="ph-check__steps">
+      {
+        steps.map((s, i) => (
+          <li class="ph-check__step">
+            <span class="ph-check__n">{s.n}</span>
+            <span class="ph-check__label">{s.title}</span>
+            {i < steps.length - 1 && <span class="ph-check__arrow" aria-hidden="true" />}
+          </li>
+        ))
+      }
+    </ol>
+
+    <div class="ph-check__cta">
+      <a class="ph-btn ph-btn--primary" href="/vi/health-check/">Start AI Health Check</a>
+    </div>
+  </div>
+</section>

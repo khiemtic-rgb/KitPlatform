@@ -1,0 +1,98 @@
+---
+/** Market-context wordmarks only — not a customer / partnership claim. */
+const partners = [
+  { id: 'pharmacity', name: 'Pharmacity' },
+  { id: 'longchau', name: 'Long Châu' },
+  { id: 'ankhang', name: 'Nhà thuốc AN KHANG' },
+  { id: 'phano', name: 'Phano Pharmacy' },
+  { id: 'trungson', name: 'Trung Son Pharmacy' },
+  { id: 'hoanmy', name: 'Hoan My Clinic' },
+  { id: 'careplus', name: 'CAREPLUS Vietnam' },
+] as const;
+---
+
+<section class="ph-partners" aria-labelledby="ph-partners-title">
+  <div class="container">
+    <p id="ph-partners-title" class="ph-partners__label">
+      ĐỒNG HÀNH CÙNG HÀNG NGHÌN NHÀ THUỐC &amp; PHÒNG KHÁM
+    </p>
+    <ul class="ph-partners__row">
+      {
+        partners.map((p) => (
+          <li class={`ph-partners__mark ph-partners__mark--${p.id}`}>
+            {p.id === 'pharmacity' && (
+              <span class="ph-partners__pill" aria-hidden="true">
+                Pharmacity
+              </span>
+            )}
+            {p.id === 'longchau' && (
+              <span class="ph-partners__lc" aria-hidden="true">
+                <span>Long</span>
+                <span>Châu</span>
+              </span>
+            )}
+            {p.id === 'ankhang' && (
+              <span class="ph-partners__ak" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="7" r="3" stroke="#2bb673" stroke-width="1.8" />
+                  <path d="M6 19c1.2-3.5 3.2-5 6-5s4.8 1.5 6 5" stroke="#1e5bb8" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+                <span>
+                  Nhà thuốc
+                  <strong>AN KHANG</strong>
+                </span>
+              </span>
+            )}
+            {p.id === 'phano' && (
+              <span class="ph-partners__phano" aria-hidden="true">
+                <strong>Phano</strong>
+                <small>PHARMACY</small>
+              </span>
+            )}
+            {p.id === 'trungson' && (
+              <span class="ph-partners__icon-text" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="5.5" r="2.2" fill="#2563eb" />
+                  <circle cx="5.5" cy="12" r="2.2" fill="#2563eb" />
+                  <circle cx="18.5" cy="12" r="2.2" fill="#2563eb" />
+                  <circle cx="12" cy="18.5" r="2.2" fill="#2563eb" />
+                  <circle cx="12" cy="12" r="2.4" fill="#1d4ed8" />
+                </svg>
+                <span>
+                  Trung Son
+                  <small>Pharmacy</small>
+                </span>
+              </span>
+            )}
+            {p.id === 'hoanmy' && (
+              <span class="ph-partners__icon-text" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <rect x="3.5" y="3.5" width="17" height="17" rx="4" stroke="#2563eb" stroke-width="1.7" />
+                  <path d="M12 7.5v9M7.5 12h9" stroke="#2563eb" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                <span>
+                  Hoan My
+                  <small>Clinic</small>
+                </span>
+              </span>
+            )}
+            {p.id === 'careplus' && (
+              <span class="ph-partners__icon-text" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 3.5l2.2 6.2H21l-5.2 3.9 2 6.4L12 16.4 6.2 20l2-6.4L3 9.7h6.8L12 3.5z" fill="#16a34a" opacity="0.15" />
+                  <path d="M12 5v14M5 12h14" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" />
+                  <path d="M12 5v14M5 12h14" stroke="#2563eb" stroke-width="1.2" stroke-linecap="round" transform="rotate(45 12 12)" />
+                </svg>
+                <span>
+                  CAREPLUS
+                  <small>Vietnam</small>
+                </span>
+              </span>
+            )}
+            <span class="sr-only">{p.name}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

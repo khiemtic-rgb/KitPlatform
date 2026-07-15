@@ -17,4 +17,4 @@ Novixa ra đời từ nhu cầu thực tế: nhà thuốc cần một hệ thố
 
 Sản phẩm đang phát triển và thử nghiệm nội bộ. Website này là kênh cập nhật tiến độ và thu phản hồi từ nhà thuốc quan tâm.
 
-Nếu bạn muốn trao đổi hoặc đăng ký quan tâm bản demo, hãy [liên hệ](/vi/lien-he).
+Nếu bạn muốn trao đổi hoặc đăng ký quan tâm bản demo, hãy [liên hệ](/vi/lien-he/).

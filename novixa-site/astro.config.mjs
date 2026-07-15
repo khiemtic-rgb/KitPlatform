@@ -1,12 +1,14 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 
+const isProd = process.env.NODE_ENV === 'production';
+
 // https://astro.build/config
 export default defineConfig({
   site: 'https://novixa.vn',
-  // Cloudflare Pages serves directory indexes at `/path/` and 308-redirects `/path` → `/path/`.
-  // Keep trailingSlash=always so canonical + sitemap match the live URL Google actually crawls.
-  trailingSlash: 'always',
+  // Production: always trailing slash (matches Cloudflare Pages + canonicals).
+  // Local: ignore so /vi/giai-phap and /vi/giai-phap/ both work in `astro dev`.
+  trailingSlash: isProd ? 'always' : 'ignore',
   integrations: [
     sitemap({
       filter: (page) => {

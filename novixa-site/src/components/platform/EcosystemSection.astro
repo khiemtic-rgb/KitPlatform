@@ -1,0 +1,170 @@
+---
+const products = [
+  {
+    id: 'pharmacy',
+    name: 'Novixa Pharmacy',
+    tagline: 'Quản trị nhà thuốc toàn diện',
+    tone: 'green',
+    items: [
+      'POS – Bán hàng',
+      'Quản lý kho – FEFO',
+      'CRM – Chăm sóc khách hàng',
+      'Dashboard – Báo cáo',
+      'App khách hàng',
+    ],
+    cta: 'Khám phá',
+    href: '/vi/giai-phap/',
+  },
+  {
+    id: 'connect',
+    name: 'Novixa Connect',
+    tagline: 'Kết nối Nhà thuốc – Bệnh nhân – Phòng khám',
+    tone: 'blue',
+    items: [
+      'Referral thông minh',
+      'Đặt lịch khám',
+      'Mạng lưới bác sĩ & phòng khám',
+      'Theo dõi hành trình điều trị',
+      'Kết nối đơn thuốc',
+    ],
+    cta: 'Tìm hiểu',
+    href: '#connect',
+  },
+  {
+    id: 'clinic',
+    name: 'Novixa Clinic',
+    tagline: 'Nền tảng vận hành phòng khám thế hệ mới',
+    badge: 'Early Access',
+    tone: 'violet',
+    items: [
+      'Quản lý lịch hẹn',
+      'EMR – Hồ sơ bệnh án',
+      'Kê đơn điện tử',
+      'CRM – Chăm sóc bệnh nhân',
+      'AI – Hỗ trợ bác sĩ',
+    ],
+    cta: 'Đăng ký đối tác',
+    href: '/vi/lien-he/',
+  },
+] as const;
+---
+
+<section class="ph-eco" id="ecosystem" aria-labelledby="ph-eco-title">
+  <div class="container ph-eco__wrap">
+    <header class="ph-eco__head">
+      <p class="ph-eco__eyebrow">HỆ SINH THÁI NOVIXA</p>
+      <h2 id="ph-eco-title" class="ph-eco__title">
+        Ba giải pháp – Một&nbsp;nền&nbsp;tảng – Một&nbsp;hệ&nbsp;sinh&nbsp;thái
+      </h2>
+    </header>
+
+    <div class="ph-eco__grid">
+      {
+        products.map((p) => (
+          <article class={`ph-card ph-card--${p.tone}`} id={p.id}>
+            <div class={`ph-card__icon ph-card__icon--${p.tone}`} aria-hidden="true">
+              {p.id === 'pharmacy' && (
+                <svg viewBox="0 0 40 40" fill="none">
+                  <rect x="8" y="14" width="24" height="18" rx="2.5" stroke="currentColor" stroke-width="2" />
+                  <path d="M14 14V11a6 6 0 0112 0v3" stroke="currentColor" stroke-width="2" />
+                  <path d="M16 22h8M20 18v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <path d="M8 28h24" stroke="currentColor" stroke-width="2" />
+                </svg>
+              )}
+              {p.id === 'connect' && (
+                <svg viewBox="0 0 40 40" fill="none">
+                  <path
+                    d="M23.5 16.5l2.2-2.2a5 5 0 017.1 7.1l-3.5 3.5a5 5 0 01-7.1 0"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M16.5 23.5l-2.2 2.2a5 5 0 11-7.1-7.1l3.5-3.5a5 5 0 017.1 0"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                  <path d="M15.5 24.5l9-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              )}
+              {p.id === 'clinic' && (
+                <svg viewBox="0 0 40 40" fill="none">
+                  <path
+                    d="M8 33V15.5L20 8l12 7.5V33H8z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                  <path d="M16 33v-8h8v8" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                  <path d="M20 14v6M17 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              )}
+            </div>
+
+            <div class="ph-card__title-row">
+              <h3 class={`ph-card__name ph-card__name--${p.tone}`}>{p.name}</h3>
+              {'badge' in p && p.badge ? <span class="ph-card__badge">{p.badge}</span> : null}
+            </div>
+
+            <p class="ph-card__tagline">{p.tagline}</p>
+
+            <ul class="ph-card__list">
+              {p.items.map((item) => (
+                <li>
+                  <span class={`ph-card__check ph-card__check--${p.tone}`} aria-hidden="true">✓</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+
+            <a class={`ph-card__btn ph-card__btn--${p.tone}`} href={p.href}>
+              <span>{p.cta}</span>
+              <span aria-hidden="true">→</span>
+            </a>
+          </article>
+        ))
+      }
+    </div>
+
+    <div class="ph-eco__bridge" aria-hidden="true">
+      <i class="is-green"></i>
+      <i class="is-blue"></i>
+      <i class="is-violet"></i>
+    </div>
+
+    <div class="ph-eco__rails">
+      <a class="ph-rail ph-rail--app" href="/vi/giai-phap/app-khach-hang/">
+        <span class="ph-rail__main">
+          <span class="ph-rail__ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <rect x="8" y="2.5" width="8" height="19" rx="2" stroke="currentColor" stroke-width="1.7"></rect>
+              <path d="M11 5h2M10.5 18.5h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+            </svg>
+          </span>
+          <span class="ph-rail__copy">
+            <strong>Customer App</strong>
+            <span>Ứng dụng chăm sóc sức khỏe dành cho khách hàng</span>
+          </span>
+        </span>
+        <span class="ph-rail__cta">Trải nghiệm ngay →</span>
+      </a>
+
+      <div class="ph-rail ph-rail--ai">
+        <span class="ph-rail__main">
+          <span class="ph-rail__ico ph-rail__ico--ai" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <rect x="5" y="7" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.7"></rect>
+              <path d="M9 4v3M15 4v3M9 17v3M15 17v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+              <path d="M9 12h2.2M13 12h2.2M10.2 14.2h3.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+            </svg>
+          </span>
+          <strong class="ph-rail__ai-title">AI Healthcare Platform</strong>
+        </span>
+        <span class="ph-rail__features">
+          AI Copilot <span>•</span> AI Insight <span>•</span> AI Automation <span>•</span> AI Recommendation
+        </span>
+      </div>
+    </div>
+  </div>
+</section>

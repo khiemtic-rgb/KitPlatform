@@ -1,0 +1,142 @@
+---
+const benefits = [
+  {
+    label: 'Tham gia phát triển sản phẩm',
+    icon: 'build',
+  },
+  {
+    label: 'Miễn phí triển khai trong giai đoạn đầu',
+    icon: 'free',
+  },
+  {
+    label: 'Hỗ trợ đào tạo & chuyển đổi',
+    icon: 'train',
+  },
+  {
+    label: 'Kết nối với hệ sinh thái nhà thuốc Novixa',
+    icon: 'ecosystem',
+  },
+  {
+    label: 'Ưu tiên tính năng riêng theo nhu cầu',
+    icon: 'priority',
+  },
+] as const;
+---
+
+<section class="ph-clinic" id="clinic" aria-labelledby="ph-clinic-title">
+  <div class="container ph-clinic__grid">
+    <div class="ph-clinic__intro">
+      <p class="ph-clinic__eyebrow">NOVIXA CLINIC EARLY ACCESS</p>
+      <h2 id="ph-clinic-title" class="ph-clinic__title">
+        Đồng hành cùng phòng khám xây dựng nền tảng vận hành thế hệ mới
+      </h2>
+      <p class="ph-clinic__sub">
+        Chúng tôi đang tìm 10 phòng khám đối tác đầu tiên để cùng phát triển và tối ưu giải pháp phù
+        hợp nhất với thực tiễn.
+      </p>
+    </div>
+
+    <div class="ph-clinic__benefits">
+      <p class="ph-clinic__benefits-title">QUYỀN LỢI ĐỐI TÁC SỚM</p>
+      <ul class="ph-clinic__icons">
+        {
+          benefits.map((b) => (
+            <li class="ph-clinic__item">
+              <span class="ph-clinic__ico" aria-hidden="true">
+                {b.icon === 'build' && (
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7" />
+                    <path
+                      d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6.1 6.1l1.6 1.6M16.3 16.3l1.6 1.6M17.9 6.1l-1.6 1.6M7.7 16.3l-1.6 1.6"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                )}
+                {b.icon === 'free' && (
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.7" />
+                    <circle cx="15.5" cy="10.5" r="2.4" stroke="currentColor" stroke-width="1.7" />
+                    <path
+                      d="M4.5 19c1-3 2.8-4.4 4.5-4.4 1.2 0 2.3.6 3.2 1.6M12.8 18.5c.7-1.8 1.9-2.7 3.2-2.7 1.1 0 2 .5 2.8 1.4"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                )}
+                {b.icon === 'train' && (
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8" r="2.8" stroke="currentColor" stroke-width="1.7" />
+                    <path
+                      d="M7 19c1-3 2.8-4.5 5-4.5s4 1.5 5 4.5"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M16.5 7.5l1.8-1.2M17.2 10.2l2 .4"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                )}
+                {b.icon === 'ecosystem' && (
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M4 20V10.5L12 4l8 6.5V20"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linejoin="round"
+                    />
+                    <path d="M9.5 20v-5.5h5V20" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                  </svg>
+                )}
+                {b.icon === 'priority' && (
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M7 3.8h8.2L18 6.5v13.7H7V3.8z"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M10.2 11.2l1.2 1.2 2.6-2.8"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path d="M9.5 16h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                )}
+              </span>
+              <span class="ph-clinic__item-label">{b.label}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <aside class="ph-clinic__cta">
+      <h3 class="ph-clinic__cta-title">Trở thành đối tác đầu tiên của Novixa Clinic</h3>
+      <a class="ph-clinic__btn" href="/vi/lien-he/">Đăng ký ngay →</a>
+      <p class="ph-clinic__or">
+        hoặc liên hệ
+        <a class="ph-clinic__phone" href="tel:+84984660399">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M7.2 4.8h3.1l1 3.2-1.7 1.2a11.5 11.5 0 005.2 5.2l1.2-1.7 3.2 1v3.1a1.6 1.6 0 01-1.6 1.6A13.8 13.8 0 015.6 6.4a1.6 1.6 0 011.6-1.6z"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linejoin="round"
+            />
+          </svg>
+          0984.660.399
+        </a>
+      </p>
+    </aside>
+  </div>
+</section>

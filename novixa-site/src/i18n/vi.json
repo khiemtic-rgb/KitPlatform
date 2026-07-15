@@ -1,21 +1,26 @@
 ﻿{
   "meta": {
     "siteName": "Novixa",
-    "tagline": "Nền tảng vận hành nhà thuốc thông minh",
-    "description": "Novixa giúp nhà thuốc quản lý bán hàng, kiểm soát tồn kho, chăm sóc khách hàng và vận hành chuỗi trên một nền tảng duy nhất.",
-    "keywords": "novixa, nền tảng vận hành nhà thuốc, quản lý nhà thuốc, POS dược, FEFO, tồn kho lô, CRM nhà thuốc, dashboard nhà thuốc, AI nhà thuốc"
+    "tagline": "Healthcare Platform",
+    "description": "Novixa Healthcare Platform kết nối nhà thuốc, phòng khám và bệnh nhân — quản trị vận hành, chăm sóc khách hàng, AI và cộng tác y tế trên một nền tảng.",
+    "keywords": "novixa, healthcare platform, phần mềm nhà thuốc, phòng khám, novixa connect, AI health check, POS dược, CRM nhà thuốc"
   },
   "nav": {
     "home": "Trang chủ",
     "platform": "Nền tảng",
+    "ecosystem": "Hệ sinh thái",
     "solutions": "Giải pháp",
-    "customers": "Enterprise SaaS",
+    "enterprise": "Enterprise",
+    "resources": "Tài nguyên",
+    "company": "Về Novixa",
+    "customers": "Enterprise",
     "about": "Về Novixa",
-    "news": "Tin tức",
+    "news": "Tài nguyên",
     "contact": "Liên hệ",
     "login": "Đăng nhập",
     "demo": "Đăng ký Demo",
-    "assess": "Đánh giá miễn phí",
+    "assess": "AI Health Check",
+    "logoSubtitle": "Healthcare Platform",
     "menuOpen": "Mở menu",
     "menuClose": "Đóng menu",
     "langEn": "English",
@@ -67,7 +72,7 @@
     ],
     "ctaPrimary": "Đăng ký Founding / Demo",
     "ctaSecondary": "Nhắn tin đăng ký",
-    "ctaSecondaryHref": "/vi/lien-he#contact-form",
+    "ctaSecondaryHref": "/vi/lien-he/#contact-form",
     "asideTitle": "Timeline founding",
     "timeline": [
       { "label": "Tháng 1–4", "desc": "299k/th · dùng đầy đủ tính năng vận hành" },

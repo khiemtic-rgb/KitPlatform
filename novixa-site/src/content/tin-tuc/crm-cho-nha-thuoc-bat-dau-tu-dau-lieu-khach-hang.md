@@ -17,4 +17,4 @@ CRM nhà thuốc không phải gửi hàng loạt tin nhắn quảng cáo. Mục
 
 Module khách hàng (CDP) nằm trong roadmap — xây trên nền đơn bán và danh mục thống nhất, tránh Excel tách rời.
 
-Quan tâm demo? [Liên hệ Novixa](/vi/lien-he).
+Quan tâm demo? [Liên hệ Novixa](/vi/lien-he/).

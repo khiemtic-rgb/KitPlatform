@@ -9,7 +9,7 @@ const { posts = [] } = Astro.props;
   <div class="container">
     <div class="section-heading knowledge-heading">
       <h2>Kiến thức dành cho nhà thuốc.</h2>
-      <a href="/vi/tin-tuc">Xem tất cả bài viết →</a>
+      <a href="/vi/tin-tuc/">Xem tất cả bài viết →</a>
     </div>
 
     {
@@ -17,12 +17,12 @@ const { posts = [] } = Astro.props;
         <div class="knowledge-grid">
           {posts.map((post) => (
             <article class="knowledge-card">
-              <a class="knowledge-thumb" href={`/vi/tin-tuc/${post.id}`} aria-hidden="true" tabindex="-1">
+              <a class="knowledge-thumb" href={`/vi/tin-tuc/${post.id}/`} aria-hidden="true" tabindex="-1">
                 <img src={articleOgImagePath(post.id)} alt="" loading="lazy" decoding="async" />
               </a>
               <p class="news-meta">{formatNewsDate(post.data.pubDate)}</p>
               <h3>
-                <a href={`/vi/tin-tuc/${post.id}`}>{post.data.title}</a>
+                <a href={`/vi/tin-tuc/${post.id}/`}>{post.data.title}</a>
               </h3>
               <p>{post.data.description}</p>
             </article>
