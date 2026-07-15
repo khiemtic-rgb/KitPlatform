@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-15T07:31:08.691Z",
+  "generatedAt": "2026-07-15T16:53:50.858Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 80,
-    "todayPageViews": 96,
-    "todayRequests": 258,
-    "last24hVisitors": 110,
-    "last24hPageViews": 149,
-    "last24hRequests": 444
+    "todayVisitors": 132,
+    "todayPageViews": 213,
+    "todayRequests": 575,
+    "last24hVisitors": 141,
+    "last24hPageViews": 235,
+    "last24hRequests": 613
   },
   "hourly": [
-    {
-      "time": "2026-07-14T08:00:00Z",
-      "visitors": 5,
-      "requests": 12
-    },
-    {
-      "time": "2026-07-14T09:00:00Z",
-      "visitors": 3,
-      "requests": 46
-    },
-    {
-      "time": "2026-07-14T10:00:00Z",
-      "visitors": 5,
-      "requests": 24
-    },
-    {
-      "time": "2026-07-14T11:00:00Z",
-      "visitors": 11,
-      "requests": 13
-    },
-    {
-      "time": "2026-07-14T12:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-14T13:00:00Z",
-      "visitors": 3,
-      "requests": 14
-    },
-    {
-      "time": "2026-07-14T14:00:00Z",
-      "visitors": 5,
-      "requests": 27
-    },
-    {
-      "time": "2026-07-14T16:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
     {
       "time": "2026-07-14T17:00:00Z",
       "visitors": 3,
@@ -113,8 +73,53 @@
     },
     {
       "time": "2026-07-15T07:00:00Z",
+      "visitors": 7,
+      "requests": 84
+    },
+    {
+      "time": "2026-07-15T08:00:00Z",
+      "visitors": 12,
+      "requests": 59
+    },
+    {
+      "time": "2026-07-15T09:00:00Z",
+      "visitors": 28,
+      "requests": 36
+    },
+    {
+      "time": "2026-07-15T10:00:00Z",
+      "visitors": 12,
+      "requests": 16
+    },
+    {
+      "time": "2026-07-15T11:00:00Z",
       "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-07-15T12:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-15T13:00:00Z",
+      "visitors": 6,
+      "requests": 20
+    },
+    {
+      "time": "2026-07-15T14:00:00Z",
+      "visitors": 2,
+      "requests": 6
+    },
+    {
+      "time": "2026-07-15T15:00:00Z",
+      "visitors": 4,
+      "requests": 51
+    },
+    {
+      "time": "2026-07-15T16:00:00Z",
+      "visitors": 6,
+      "requests": 42
     }
   ],
   "daily": [
@@ -156,71 +161,71 @@
     },
     {
       "date": "2026-07-15",
-      "visitors": 80,
-      "pageViews": 96,
-      "requests": 258
+      "visitors": 132,
+      "pageViews": 213,
+      "requests": 575
     }
   ],
   "topPages": [
     {
-      "path": "/vi/",
-      "views": 91
-    },
-    {
       "path": "/cdn-cgi/rum",
-      "views": 72
+      "views": 132
     },
     {
-      "path": "/robots.txt",
-      "views": 22
+      "path": "/vi/",
+      "views": 123
     },
     {
       "path": "/",
-      "views": 20
+      "views": 34
     },
     {
-      "path": "/api/stats",
-      "views": 14
-    },
-    {
-      "path": "/images/tin-tuc/mo-rong-chuoi-nha-thuoc-checklist-he-thong.png",
-      "views": 14
+      "path": "/robots.txt",
+      "views": 24
     },
     {
       "path": "/images/logo.png",
-      "views": 14
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 13
-    },
-    {
-      "path": "/images/tin-tuc/ai-ho-tro-van-hanh-nha-thuoc.png",
-      "views": 11
+      "views": 19
     },
     {
       "path": "/favicon.svg",
-      "views": 11
+      "views": 19
     },
     {
-      "path": "/vi/tin-tuc/",
+      "path": "/images/tin-tuc/mo-rong-chuoi-nha-thuoc-checklist-he-thong.png",
+      "views": 17
+    },
+    {
+      "path": "/_astro/BaseLayout.DTXchRW1.css",
+      "views": 16
+    },
+    {
+      "path": "/api/stats",
+      "views": 16
+    },
+    {
+      "path": "/sitemap-index.xml",
+      "views": 15
+    },
+    {
+      "path": "/images/hero/home-devices.png",
       "views": 10
     },
     {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "path": "/images/tin-tuc/ai-ho-tro-van-hanh-nha-thuoc.png",
       "views": 10
     },
     {
-      "path": "/_astro/index.v9Iv8YTa.css",
-      "views": 7
+      "path": "/vi/tin-tuc/mo-rong-chuoi-nha-thuoc-checklist-he-thong/",
+      "views": 8
     },
     {
-      "path": "/_astro/BaseLayout.CB-KDw-C.css",
-      "views": 7
+      "path": "/vi/lien-he/",
+      "views": 8
     },
     {
-      "path": "/images/tin-tuc/cac-kpi-quan-trong-khi-quan-ly-nha-thuoc.png",
-      "views": 6
+      "path": "/images/tin-tuc/bao-cao-doanh-thu-real-time-doc-so-lieu-dung.png",
+      "views": 8
     }
   ]
 }
