@@ -183,7 +183,7 @@ Cấu hình trong `src/i18n/vi.json` → mục `contact`:
 | `facebookUrl` | `https://www.facebook.com/tenfanpage` |
 | `facebookPageName` | `Novixa` |
 
-Form gửi email qua [Formsubmit](https://formsubmit.co) → `khiemtic@gmail.com`. **Lần đầu** cần bấm link xác nhận trong email Formsubmit gửi tới hộp thư.
+Form gửi email qua [Formsubmit](https://formsubmit.co) → `care@novixa.vn`. **Lần đầu** cần bấm link xác nhận trong email Formsubmit gửi tới hộp thư.
 
 ## Theo dõi lượt truy cập
 
@@ -218,7 +218,7 @@ Trang: **https://novixa.vn/vi/thong-ke** — mật khẩu mặc định **`novix
 ## Bảo mật
 
 - Site **tĩnh** — không kết nối PostgreSQL / API ERP.
-- Form liên hệ: `mailto:khiemtic@gmail.com` (có thể thay Formspree sau).
+- Form liên hệ: `mailto:care@novixa.vn` (có thể thay Formspree sau).
 - ERP demo sau này: `app.novixa.vn` (VPS riêng).
 
 ## Liên quan KitPlatform

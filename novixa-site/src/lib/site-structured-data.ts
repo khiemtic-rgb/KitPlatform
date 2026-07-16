@@ -20,7 +20,7 @@ export function buildOrganizationStructuredData() {
         contactType: 'customer service',
         areaServed: 'VN',
         availableLanguage: ['Vietnamese'],
-        email: 'khiemtic@gmail.com',
+        email: 'care@novixa.vn',
       },
     ],
   };
