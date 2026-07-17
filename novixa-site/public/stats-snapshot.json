@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-17T07:36:07.864Z",
+  "generatedAt": "2026-07-17T16:40:13.726Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 58,
-    "todayPageViews": 76,
-    "todayRequests": 207,
-    "last24hVisitors": 91,
-    "last24hPageViews": 112,
-    "last24hRequests": 354
+    "todayVisitors": 83,
+    "todayPageViews": 134,
+    "todayRequests": 477,
+    "last24hVisitors": 95,
+    "last24hPageViews": 148,
+    "last24hRequests": 524
   },
   "hourly": [
-    {
-      "time": "2026-07-16T08:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
-    {
-      "time": "2026-07-16T09:00:00Z",
-      "visitors": 2,
-      "requests": 13
-    },
-    {
-      "time": "2026-07-16T10:00:00Z",
-      "visitors": 1,
-      "requests": 10
-    },
-    {
-      "time": "2026-07-16T11:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-07-16T12:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-07-16T13:00:00Z",
-      "visitors": 3,
-      "requests": 16
-    },
-    {
-      "time": "2026-07-16T14:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-07-16T15:00:00Z",
-      "visitors": 1,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-16T16:00:00Z",
-      "visitors": 8,
-      "requests": 37
-    },
     {
       "time": "2026-07-16T17:00:00Z",
       "visitors": 5,
@@ -123,8 +78,53 @@
     },
     {
       "time": "2026-07-17T07:00:00Z",
-      "visitors": 2,
-      "requests": 21
+      "visitors": 3,
+      "requests": 139
+    },
+    {
+      "time": "2026-07-17T08:00:00Z",
+      "visitors": 7,
+      "requests": 61
+    },
+    {
+      "time": "2026-07-17T09:00:00Z",
+      "visitors": 4,
+      "requests": 8
+    },
+    {
+      "time": "2026-07-17T10:00:00Z",
+      "visitors": 3,
+      "requests": 8
+    },
+    {
+      "time": "2026-07-17T11:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-17T12:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-07-17T13:00:00Z",
+      "visitors": 10,
+      "requests": 10
+    },
+    {
+      "time": "2026-07-17T14:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-07-17T15:00:00Z",
+      "visitors": 1,
+      "requests": 47
+    },
+    {
+      "time": "2026-07-17T16:00:00Z",
+      "visitors": 3,
+      "requests": 5
     }
   ],
   "daily": [
@@ -166,19 +166,23 @@
     },
     {
       "date": "2026-07-17",
-      "visitors": 58,
-      "pageViews": 76,
-      "requests": 207
+      "visitors": 83,
+      "pageViews": 134,
+      "requests": 477
     }
   ],
   "topPages": [
     {
       "path": "/cdn-cgi/rum",
-      "views": 85
+      "views": 156
     },
     {
       "path": "/vi/",
-      "views": 65
+      "views": 84
+    },
+    {
+      "path": "/api/stats",
+      "views": 39
     },
     {
       "path": "/",
@@ -186,51 +190,47 @@
     },
     {
       "path": "/robots.txt",
-      "views": 23
-    },
-    {
-      "path": "/api/stats",
-      "views": 15
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 13
-    },
-    {
-      "path": "/images/tin-tuc/cac-kpi-quan-trong-khi-quan-ly-nha-thuoc.png",
-      "views": 12
-    },
-    {
-      "path": "/vi/tai-lieu/",
-      "views": 12
+      "views": 21
     },
     {
       "path": "/vi/thong-ke/",
-      "views": 8
+      "views": 14
     },
     {
-      "path": "/vi/tin-tuc/",
-      "views": 7
+      "path": "/vi/tai-lieu/",
+      "views": 14
     },
     {
       "path": "/images/hero/home-devices.png",
-      "views": 6
+      "views": 10
+    },
+    {
+      "path": "/sitemap-index.xml",
+      "views": 10
     },
     {
       "path": "/images/logo.png",
-      "views": 6
+      "views": 9
+    },
+    {
+      "path": "/vi/tin-tuc/",
+      "views": 8
     },
     {
       "path": "/_astro/index.DcoAHZV3.css",
-      "views": 5
+      "views": 8
     },
     {
-      "path": "/_astro/thong-ke.astro_astro_type_script_index_0_lang.Ci291ITp.js",
-      "views": 5
+      "path": "/favicon.svg",
+      "views": 7
     },
     {
-      "path": "/_astro/BaseLayout.DTXchRW1.css",
-      "views": 5
+      "path": "/images/tin-tuc/cac-kpi-quan-trong-khi-quan-ly-nha-thuoc.png",
+      "views": 7
+    },
+    {
+      "path": "/og-novixa.svg",
+      "views": 7
     }
   ]
 }
