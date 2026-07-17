@@ -277,15 +277,23 @@ const benefits = [
                 </span>
                 <span class={`lib-card__access ${accessClass[doc.access]}`}>{ACCESS_LABELS[doc.access]}</span>
               </div>
-              <button
-                type="button"
-                class="lib-card__cta"
-                data-doc-open
-                data-slug={doc.slug}
-                data-title={doc.title}
-              >
-                {d.downloadCta}
-              </button>
+              {
+                doc.access === 'free' ? (
+                  <a class="lib-card__cta" href={doc.file} download>
+                    {d.downloadCta}
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    class="lib-card__cta"
+                    data-doc-open
+                    data-slug={doc.slug}
+                    data-title={doc.title}
+                  >
+                    {d.downloadCta}
+                  </button>
+                )
+              }
             </li>
           ))
         }
@@ -399,6 +407,7 @@ const benefits = [
       const matchSearch = !q || hay.includes(q);
       const show = matchNav && accessOk && matchSearch;
       card.hidden = !show;
+      card.classList.toggle('is-hidden', !show);
       if (show) visible += 1;
     });
 
