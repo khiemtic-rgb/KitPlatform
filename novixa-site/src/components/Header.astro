@@ -149,6 +149,13 @@ const products = [
                   </svg>
                   Customer App
                 </a>
+                <a class="mega__chip mega__chip--ai" href={`${base}/danh-gia/`}>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M9 5a3 3 0 00-3 3v1a2 2 0 01-2 2 2 2 0 000 4 2 2 0 012 2v1a3 3 0 003 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+                    <path d="M15 5a3 3 0 013 3v1a2 2 0 012 2 2 2 0 010 4 2 2 0 01-2 2v1a3 3 0 01-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+                  </svg>
+                  AI Health Check
+                </a>
                 <a class="mega__chip mega__chip--ai" href={`${base}/giai-phap/ai-copilot/`}>
                   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6"></rect>
@@ -171,6 +178,19 @@ const products = [
     </nav>
 
     <div class="nav-actions">
+      <a
+        href={`${base}/danh-gia/`}
+        class="nav-health-check"
+        class:list={{ active: path.startsWith(`${base}/danh-gia`) || path.includes('health-check') }}
+      >
+        <span class="nav-health-check__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M9 5a3 3 0 00-3 3v1a2 2 0 01-2 2 2 2 0 000 4 2 2 0 012 2v1a3 3 0 003 3"></path>
+            <path d="M15 5a3 3 0 013 3v1a2 2 0 012 2 2 2 0 010 4 2 2 0 01-2 2v1a3 3 0 01-3 3"></path>
+          </svg>
+        </span>
+        <span class="nav-health-check__label">{n.assess}</span>
+      </a>
       <a href="https://app.novixa.vn" class="nav-login">{n.login}</a>
       <a href={`${base}/lien-he/`} class="nav-cta">{n.demo}</a>
     </div>
