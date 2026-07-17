@@ -386,18 +386,18 @@ const benefits = [
     const cards = [...document.querySelectorAll('[data-doc-card]')];
     let visible = 0;
 
-    // Tab tầng: Miễn phí 1→2, Thành viên 1→6, Khách hàng Novixa 1→9
-    const maxOrder =
-      accessFilter === 'free' ? 2 : accessFilter === 'member' ? 6 : accessFilter === 'customer' ? 9 : Infinity;
-
     cards.forEach((card) => {
       const slug = card.dataset.slug;
-      const order = Number(card.dataset.order) || 0;
       const hay = (card.dataset.title + ' ' + card.dataset.desc).toLowerCase();
       const matchNav = navFilter === 'all' || slug === navFilter;
-      const matchAccess = order <= maxOrder;
+      const order = Number(card.dataset.order) || 0;
+      // Miễn phí: chỉ tài liệu free (01–02). Thành viên: 01–06. Khách hàng: 01–09.
+      let accessOk = true;
+      if (accessFilter === 'free') accessOk = card.dataset.access === 'free';
+      else if (accessFilter === 'member') accessOk = order <= 6;
+      else if (accessFilter === 'customer') accessOk = order <= 9;
       const matchSearch = !q || hay.includes(q);
-      const show = matchNav && matchAccess && matchSearch;
+      const show = matchNav && accessOk && matchSearch;
       card.hidden = !show;
       if (show) visible += 1;
     });
