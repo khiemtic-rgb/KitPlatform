@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-17T16:40:13.726Z",
+  "generatedAt": "2026-07-17T21:12:12.713Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 83,
-    "todayPageViews": 134,
-    "todayRequests": 477,
-    "last24hVisitors": 95,
-    "last24hPageViews": 148,
-    "last24hRequests": 524
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 131,
+    "last24hPageViews": 150,
+    "last24hRequests": 561
   },
   "hourly": [
-    {
-      "time": "2026-07-16T17:00:00Z",
-      "visitors": 5,
-      "requests": 9
-    },
-    {
-      "time": "2026-07-16T18:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-16T19:00:00Z",
-      "visitors": 3,
-      "requests": 13
-    },
-    {
-      "time": "2026-07-16T20:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-16T21:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
     {
       "time": "2026-07-16T23:00:00Z",
       "visitors": 3,
@@ -123,17 +98,36 @@
     },
     {
       "time": "2026-07-17T16:00:00Z",
+      "visitors": 39,
+      "requests": 50
+    },
+    {
+      "time": "2026-07-17T17:00:00Z",
       "visitors": 3,
-      "requests": 5
+      "requests": 6
+    },
+    {
+      "time": "2026-07-17T18:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-07-17T19:00:00Z",
+      "visitors": 6,
+      "requests": 10
+    },
+    {
+      "time": "2026-07-17T20:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-07-17T21:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
-    {
-      "date": "2026-07-11",
-      "visitors": 104,
-      "pageViews": 296,
-      "requests": 608
-    },
     {
       "date": "2026-07-12",
       "visitors": 54,
@@ -166,9 +160,9 @@
     },
     {
       "date": "2026-07-17",
-      "visitors": 83,
-      "pageViews": 134,
-      "requests": 477
+      "visitors": 130,
+      "pageViews": 147,
+      "requests": 548
     }
   ],
   "topPages": [
@@ -178,34 +172,42 @@
     },
     {
       "path": "/vi/",
-      "views": 84
+      "views": 85
     },
     {
       "path": "/api/stats",
-      "views": 39
+      "views": 41
+    },
+    {
+      "path": "/og-novixa.svg",
+      "views": 38
     },
     {
       "path": "/",
-      "views": 35
+      "views": 29
     },
     {
       "path": "/robots.txt",
-      "views": 21
-    },
-    {
-      "path": "/vi/thong-ke/",
-      "views": 14
+      "views": 23
     },
     {
       "path": "/vi/tai-lieu/",
       "views": 14
     },
     {
-      "path": "/images/hero/home-devices.png",
+      "path": "/vi/thong-ke/",
+      "views": 14
+    },
+    {
+      "path": "/favicon.svg",
       "views": 10
     },
     {
       "path": "/sitemap-index.xml",
+      "views": 10
+    },
+    {
+      "path": "/images/hero/home-devices.png",
       "views": 10
     },
     {
@@ -217,19 +219,11 @@
       "views": 8
     },
     {
-      "path": "/_astro/index.DcoAHZV3.css",
-      "views": 8
-    },
-    {
-      "path": "/favicon.svg",
+      "path": "/_astro/BaseLayout.DTXchRW1.css",
       "views": 7
     },
     {
-      "path": "/images/tin-tuc/cac-kpi-quan-trong-khi-quan-ly-nha-thuoc.png",
-      "views": 7
-    },
-    {
-      "path": "/og-novixa.svg",
+      "path": "/vi/spa-health-check/",
       "views": 7
     }
   ]
