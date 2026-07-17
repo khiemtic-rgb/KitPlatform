@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /vi/thong-ke/
 Disallow: /vi/health-check/
+Disallow: /vi/spa-health-check/
 
 Sitemap: https://novixa.vn/sitemap-index.xml

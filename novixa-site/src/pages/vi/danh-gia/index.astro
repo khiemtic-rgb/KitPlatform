@@ -1,0 +1,133 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import { ASSESSMENT } from '../../../lib/assessment';
+import '../../../styles/global.css';
+
+const title = 'AI Health Check — chọn ngành của bạn';
+const description =
+  'Đánh giá năng lực doanh nghiệp miễn phí với AI: Nhà thuốc hoặc Spa / Thẩm mỹ viện & Clinic.';
+
+const cards = [
+  {
+    ...ASSESSMENT.pharmacy,
+    title: 'Sức khỏe nhà thuốc',
+    desc: '30 câu hỏi · ~7 phút. Biết điểm mạnh, rủi ro tồn kho và lộ trình cải thiện.',
+    cta: 'Đánh giá nhà thuốc',
+  },
+  {
+    ...ASSESSMENT.spa,
+    title: 'Sức khỏe Spa & Clinic',
+    desc: '35 câu hỏi · ~7 phút. Business Health Score, điểm nghẽn và roadmap 30-60-90.',
+    cta: 'Đánh giá Spa',
+  },
+];
+---
+
+<BaseLayout title={title} description={description} canonicalPath="/vi/danh-gia/">
+  <Header slot="header" />
+  <section class="section assess-hub">
+    <div class="container assess-hub__inner">
+      <p class="assess-hub__eyebrow">AI Health Check</p>
+      <h1 class="section-title">Chọn ngành của bạn</h1>
+      <p class="section-intro">
+        Cùng một nhóm chức năng đánh giá năng lực — khác bộ câu hỏi và báo cáo theo vertical.
+      </p>
+
+      <ul class="assess-hub__grid">
+        {
+          cards.map((card) => (
+            <li class="assess-hub__card">
+              <h2>{card.title}</h2>
+              <p>{card.desc}</p>
+              <div class="assess-hub__actions">
+                <a class="btn btn-primary" href={card.landingPath}>
+                  {card.cta}
+                </a>
+                <a class="assess-hub__survey" href={card.surveyUrl} rel="noopener">
+                  Vào bài đánh giá →
+                </a>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .assess-hub__inner {
+    max-width: 52rem;
+  }
+
+  .assess-hub__eyebrow {
+    margin: 0 0 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-primary-dark);
+  }
+
+  .assess-hub__grid {
+    list-style: none;
+    margin: 2rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .assess-hub__card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: linear-gradient(180deg, #fff 0%, #f7fbf9 100%);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .assess-hub__card h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--color-navy);
+  }
+
+  .assess-hub__card p {
+    margin: 0;
+    flex: 1;
+    color: var(--color-muted);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .assess-hub__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.85rem;
+    margin-top: 0.35rem;
+  }
+
+  .assess-hub__survey {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-primary-dark);
+    text-decoration: none;
+  }
+
+  .assess-hub__survey:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 700px) {
+    .assess-hub__grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

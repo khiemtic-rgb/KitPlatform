@@ -4,10 +4,12 @@ import HealthCheckHeader from '../../components/health-check/HealthCheckHeader.a
 import HealthCheckFooter from '../../components/health-check/HealthCheckFooter.astro';
 import HealthCheckDeliverableIcon from '../../components/health-check/HealthCheckDeliverableIcon.astro';
 import HealthCheckProcessIcon from '../../components/health-check/HealthCheckProcessIcon.astro';
+import { ASSESSMENT } from '../../lib/assessment';
 import '../../styles/global.css';
 import '../../styles/health-check.css';
 
-const assessmentUrl = 'https://survey.novixa.vn';
+const assessmentUrl = ASSESSMENT.pharmacy.surveyUrl;
+const displayUrl = ASSESSMENT.pharmacy.displayUrl;
 
 const title = 'Kiểm tra sức khỏe nhà thuốc';
 const description =
@@ -53,7 +55,7 @@ const reportItems = [
 ---
 
 <BaseLayout title={title} description={description} canonicalPath="/vi/health-check/">
-  <HealthCheckHeader slot="header" />
+  <HealthCheckHeader slot="header" vertical="pharmacy" />
 
   <div class="hc-page">
     <section class="hc-hero">
@@ -331,7 +333,7 @@ const reportItems = [
                 <circle cx="8" cy="8" r="6.5" />
                 <path d="M2 8h12M8 2c2 2.5 3 5 3 6s-1 3.5-3 6M8 2c-2 2.5-3 5-3 6s1 3.5 3 6" stroke-linecap="round" />
               </svg>
-              www.novixa.vn/health-check
+              {displayUrl}
             </span>
           </div>
         </div>

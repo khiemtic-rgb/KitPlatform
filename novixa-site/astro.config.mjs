@@ -18,6 +18,7 @@ export default defineConfig({
           if (path.includes('/404')) return false;
           if (path.includes('/thong-ke')) return false;
           if (path.includes('/health-check')) return false;
+          if (path.includes('/spa-health-check')) return false;
           return true;
         } catch {
           return false;

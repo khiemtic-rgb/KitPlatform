@@ -1,5 +1,12 @@
 ---
-const assessmentUrl = 'https://survey.novixa.vn';
+import { ASSESSMENT, type AssessmentVertical } from '../../lib/assessment';
+
+interface Props {
+  vertical?: AssessmentVertical;
+}
+
+const { vertical = 'pharmacy' } = Astro.props;
+const pack = ASSESSMENT[vertical];
 ---
 
 <header class="hc-header">
@@ -8,17 +15,17 @@ const assessmentUrl = 'https://survey.novixa.vn';
       <img src="/images/logo.png" alt="" width="32" height="32" decoding="async" />
       <span class="hc-header__brand">
         <strong>NOVIXA</strong>
-        <small>Quản trị nhà thuốc thông minh</small>
+        <small>{pack.tagline}</small>
       </span>
     </a>
-    <a class="hc-header__badge" href={assessmentUrl}>
+    <a class="hc-header__badge" href={pack.surveyUrl}>
       <span class="hc-header__badge-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
-          <path d="M9 5a3 3 0 00-3 3v1a2 2 0 01-2 2 2 2 0 000 4 2 2 0 012 2v1a3 3 0 003 3" />
-          <path d="M15 5a3 3 0 013 3v1a2 2 0 012 2 2 2 0 010 4 2 2 0 01-2 2v1a3 3 0 01-3 3" />
+          <path d="M9 5a3 3 0 00-3 3v1a2 2 0 01-2 2 2 2 0 000 4 2 2 0 012 2v1a3 3 0 003 3"></path>
+          <path d="M15 5a3 3 0 013 3v1a2 2 0 012 2 2 2 0 010 4 2 2 0 01-2 2v1a3 3 0 01-3 3"></path>
         </svg>
       </span>
-      AI HEALTH CHECK
+      {pack.badgeLabel}
     </a>
   </div>
 </header>

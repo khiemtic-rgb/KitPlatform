@@ -1,0 +1,349 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import HealthCheckHeader from '../../components/health-check/HealthCheckHeader.astro';
+import HealthCheckFooter from '../../components/health-check/HealthCheckFooter.astro';
+import HealthCheckDeliverableIcon from '../../components/health-check/HealthCheckDeliverableIcon.astro';
+import HealthCheckProcessIcon from '../../components/health-check/HealthCheckProcessIcon.astro';
+import { ASSESSMENT } from '../../lib/assessment';
+import '../../styles/global.css';
+import '../../styles/health-check.css';
+
+const pack = ASSESSMENT.spa;
+const assessmentUrl = pack.surveyUrl;
+
+const title = 'AI Business Health Check cho Spa';
+const description =
+  'Đánh giá 35 câu hỏi trong ~7 phút — AI phân tích điểm mạnh, điểm nghẽn và roadmap tăng trưởng cho Spa, Thẩm mỹ viện & Clinic.';
+
+const heroFeatures = [
+  { icon: 'questions', title: '35 câu hỏi', desc: 'Chuyên sâu' },
+  { icon: 'clock', title: '~7 phút', desc: 'Hoàn thành' },
+  { icon: 'brain', title: 'AI phân tích', desc: 'Thông minh' },
+  { icon: 'pdf', title: 'Báo cáo', desc: 'Chi tiết' },
+];
+
+const deliverables: Array<{
+  icon: 'gauge' | 'report' | 'swot' | 'roadmap' | 'consulting';
+  title: string;
+  desc: string;
+}> = [
+  {
+    icon: 'gauge',
+    title: 'Điểm sức khỏe',
+    desc: 'Đánh giá toàn diện 8 lĩnh vực vận hành Spa.',
+  },
+  {
+    icon: 'report',
+    title: 'AI Insight',
+    desc: 'Phân tích điểm mạnh, điểm nghẽn & nguyên nhân.',
+  },
+  {
+    icon: 'roadmap',
+    title: 'Roadmap 30-60-90 ngày',
+    desc: 'Lộ trình cải thiện rõ ràng theo từng giai đoạn.',
+  },
+  {
+    icon: 'swot',
+    title: 'So sánh Benchmark',
+    desc: 'So sánh với mặt bằng chung ngành Spa.',
+  },
+  {
+    icon: 'consulting',
+    title: 'Báo cáo chi tiết',
+    desc: 'File PDF chuyên nghiệp để lưu trữ và chia sẻ.',
+  },
+];
+
+const steps: Array<{
+  title: string;
+  desc: string;
+  icon: 'questions' | 'brain' | 'pdf' | 'target';
+}> = [
+  { title: 'Trả lời 35 câu hỏi', desc: 'Khoảng 7 phút', icon: 'questions' },
+  { title: 'AI phân tích & chấm điểm', desc: 'Dựa trên dữ liệu thực tế', icon: 'brain' },
+  { title: 'Sinh báo cáo chi tiết', desc: 'Hiểu rõ mạnh / yếu', icon: 'pdf' },
+  { title: 'Nhận roadmap & khuyến nghị', desc: 'Hành động để tăng trưởng', icon: 'target' },
+];
+
+const bottlenecks = [
+  'Tỷ lệ khách quay lại thấp',
+  'Lịch hẹn trống giờ cao điểm',
+  'Upsell liệu trình chưa ổn định',
+];
+
+const trusts = [
+  { title: 'Bảo mật tuyệt đối', desc: 'Dữ liệu chỉ dùng cho báo cáo của bạn.' },
+  { title: 'Không tốn chi phí', desc: 'Đánh giá & báo cáo cơ bản miễn phí.' },
+  { title: 'Không ràng buộc', desc: 'Không tư vấn làm phiền sau khi hoàn thành.' },
+];
+---
+
+<BaseLayout title={title} description={description} canonicalPath={pack.landingPath} noIndex={true}>
+  <HealthCheckHeader slot="header" vertical="spa" />
+
+  <div class="hc-page hc-page--spa">
+    <section class="hc-hero">
+      <div class="hc-container">
+        <div class="hc-hero__grid">
+          <div class="hc-hero__content">
+            <p class="hc-hero__eyebrow">Dành cho Spa, Thẩm mỹ viện & Clinic</p>
+            <h1 class="hc-hero__title hc-hero__title--spa">
+              Spa của bạn đang ở<br />
+              <span>giai đoạn nào?</span>
+            </h1>
+            <p class="hc-hero__subtitle hc-hero__subtitle--highlight">
+              Biết điểm mạnh · Điểm nghẽn · Roadmap tăng trưởng
+            </p>
+            <p class="hc-hero__subtitle">
+              Bài đánh giá 35 câu hỏi, mất khoảng 7 phút — AI phân tích và trả về hồ sơ sức khỏe doanh nghiệp Spa.
+            </p>
+
+            <div class="hc-hero__features">
+              {
+                heroFeatures.map((f) => (
+                  <div class="hc-hero__feature">
+                    <span class="hc-hero__feature-icon" aria-hidden="true">
+                      {f.icon === 'questions' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                          <path d="M8 6h8M8 10h8M8 14h5" stroke-linecap="round" />
+                          <rect x="4" y="3" width="16" height="18" rx="2" />
+                        </svg>
+                      )}
+                      {f.icon === 'clock' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                          <circle cx="12" cy="12" r="9" />
+                          <path d="M12 7v5l3 2" stroke-linecap="round" />
+                        </svg>
+                      )}
+                      {f.icon === 'brain' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                          <path d="M9 5a3 3 0 00-3 3v1a2 2 0 01-2 2 2 2 0 000 4 2 2 0 012 2v1a3 3 0 003 3" />
+                          <path d="M15 5a3 3 0 013 3v1a2 2 0 012 2 2 2 0 010 4 2 2 0 01-2 2v1a3 3 0 01-3 3" />
+                        </svg>
+                      )}
+                      {f.icon === 'pdf' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                          <path d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
+                          <path d="M14 3v5h5" />
+                        </svg>
+                      )}
+                    </span>
+                    <span class="hc-hero__feature-text">
+                      <strong>{f.title}</strong>
+                      <small>{f.desc}</small>
+                    </span>
+                  </div>
+                ))
+              }
+            </div>
+
+            <a class="hc-btn-primary" href={assessmentUrl}>
+              ĐÁNH GIÁ SPA MIỄN PHÍ
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </a>
+            <p class="hc-hero__trust">Không cần đăng ký · Không cần cài đặt · Bảo mật tuyệt đối</p>
+          </div>
+
+          <div class="hc-hero__visual" aria-hidden="true">
+            <div class="hc-dashboard hc-dashboard--spa">
+              <article class="hc-dashboard__card hc-dashboard__card--score">
+                <span class="hc-float__label">Business Health Score</span>
+                <div class="hc-spa-gauge">
+                  <svg viewBox="0 0 120 72" class="hc-spa-gauge__svg">
+                    <path
+                      d="M14 62 A46 46 0 0 1 106 62"
+                      fill="none"
+                      stroke="#e2e8f0"
+                      stroke-width="10"
+                      stroke-linecap="round"></path>
+                    <path
+                      d="M14 62 A46 46 0 0 1 88 22"
+                      fill="none"
+                      stroke="#19c37d"
+                      stroke-width="10"
+                      stroke-linecap="round"></path>
+                  </svg>
+                  <div class="hc-spa-gauge__value">
+                    <strong>78</strong><span>/100</span>
+                  </div>
+                </div>
+                <small>Khá tốt — sẵn sàng tăng trưởng</small>
+              </article>
+
+              <article class="hc-dashboard__card hc-dashboard__card--radar">
+                <span class="hc-float__label">Hồ sơ sức khỏe doanh nghiệp Spa</span>
+                <svg viewBox="0 0 160 120" fill="none" class="hc-float__radar">
+                  <polygon
+                    points="80,12 128,40 118,88 80,108 42,88 32,40"
+                    fill="rgba(25,195,125,0.08)"
+                    stroke="#e2e8f0"></polygon>
+                  <polygon
+                    points="80,28 112,46 104,78 80,92 52,76 46,48"
+                    fill="rgba(25,195,125,0.28)"
+                    stroke="#19c37d"
+                    stroke-width="1.5"></polygon>
+                  <text x="80" y="8" text-anchor="middle" fill="#64748b" font-size="6">Marketing</text>
+                  <text x="136" y="42" fill="#64748b" font-size="6">Khách hàng</text>
+                  <text x="122" y="98" fill="#64748b" font-size="6">Liệu trình</text>
+                  <text x="80" y="118" text-anchor="middle" fill="#64748b" font-size="6">Nhân sự</text>
+                  <text x="20" y="98" fill="#64748b" font-size="6">Tài chính</text>
+                  <text x="8" y="42" fill="#64748b" font-size="6">Chuyển đổi</text>
+                </svg>
+              </article>
+
+              <article class="hc-dashboard__card hc-dashboard__card--bottlenecks">
+                <span class="hc-float__label">Top điểm nghẽn</span>
+                <ul class="hc-spa-bottlenecks">
+                  {
+                    bottlenecks.map((item) => (
+                      <li>
+                        <span class="hc-spa-bottlenecks__warn" aria-hidden="true">!</span>
+                        {item}
+                      </li>
+                    ))
+                  }
+                </ul>
+              </article>
+
+              <article class="hc-dashboard__card hc-dashboard__card--trend">
+                <span class="hc-float__label">Roadmap 30-60-90 ngày</span>
+                <svg viewBox="0 0 160 48" preserveAspectRatio="none" class="hc-float__chart">
+                  <defs>
+                    <linearGradient id="spaChartFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#19c37d" stop-opacity="0.25"></stop>
+                      <stop offset="100%" stop-color="#19c37d" stop-opacity="0"></stop>
+                    </linearGradient>
+                  </defs>
+                  <polygon
+                    points="0,40 40,34 80,28 120,18 160,10 160,48 0,48"
+                    fill="url(#spaChartFill)"></polygon>
+                  <polyline
+                    points="0,40 40,34 80,28 120,18 160,10"
+                    fill="none"
+                    stroke="#19c37d"
+                    stroke-width="2"
+                    stroke-linecap="round"></polyline>
+                </svg>
+                <div class="hc-spa-roadmap-labels">
+                  <span>30 ngày</span>
+                  <span>60 ngày</span>
+                  <span>90 ngày</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="hc-section hc-deliverables">
+      <div class="hc-container">
+        <h2 class="hc-section__title">Bạn sẽ nhận được gì?</h2>
+        <div class="hc-cards">
+          {
+            deliverables.map((card) => (
+              <article class="hc-card">
+                <HealthCheckDeliverableIcon name={card.icon} />
+                <h3>{card.title}</h3>
+                <p>{card.desc}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="hc-section hc-process">
+      <div class="hc-container">
+        <h2 class="hc-section__title">Quy trình đánh giá chỉ 4 bước đơn giản</h2>
+        <div class="hc-process__flow" aria-label="Quy trình 4 bước">
+          {
+            steps.map((step, i) => (
+              <>
+                {i > 0 && (
+                  <span class="hc-process__connector" aria-hidden="true">
+                    <svg viewBox="0 0 40 8" fill="none">
+                      <line
+                        x1="0"
+                        y1="4"
+                        x2="30"
+                        y2="4"
+                        stroke="#19c37d"
+                        stroke-width="1.5"
+                        stroke-dasharray="4 3"></line>
+                      <path
+                        d="M33 1l4 3-4 3"
+                        stroke="#19c37d"
+                        stroke-width="1.5"
+                        stroke-linecap="round"></path>
+                    </svg>
+                  </span>
+                )}
+                <div class="hc-process__step">
+                  <div class="hc-process__card">
+                    <HealthCheckProcessIcon name={step.icon} />
+                    <span class="hc-process__num">{i + 1}</span>
+                  </div>
+                  <span class="hc-process__title">{step.title}</span>
+                  <span class="hc-process__desc">{step.desc}</span>
+                </div>
+              </>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="hc-section hc-social hc-spa-trust">
+      <div class="hc-container hc-spa-trust__grid">
+        <div class="hc-spa-trust__proof">
+          <p class="hc-spa-trust__kicker">Được nhiều chủ Spa tin tưởng</p>
+          <p class="hc-spa-trust__stat">
+            <strong>250+</strong> chủ Spa đã hoàn thành đánh giá
+          </p>
+          <p class="hc-spa-trust__stars" aria-label="Đánh giá 4.9 trên 5">
+            ★★★★★ <span>4.9/5</span>
+          </p>
+        </div>
+        <ul class="hc-spa-trust__list">
+          {
+            trusts.map((t) => (
+              <li>
+                <strong>{t.title}</strong>
+                <span>{t.desc}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </section>
+
+    <section class="hc-final-cta">
+      <div class="hc-container">
+        <div class="hc-final-cta__banner">
+          <div class="hc-final-cta__left">
+            <div class="hc-final-cta__text">
+              <p class="hc-final-cta__headline">
+                Đánh giá Spa <strong>miễn phí</strong> — nhận hồ sơ ngay
+              </p>
+              <span>Biết điểm nghẽn và việc nên làm trong 30–90 ngày tới.</span>
+            </div>
+          </div>
+          <div class="hc-final-cta__action">
+            <a class="hc-btn-white" href={assessmentUrl}>
+              ĐÁNH GIÁ SPA MIỄN PHÍ
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </a>
+            <span class="hc-final-cta__url">{pack.displayUrl}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <HealthCheckFooter slot="footer" />
+</BaseLayout>
