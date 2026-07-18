@@ -1,0 +1,216 @@
+---
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import Header from '../../../../components/Header.astro';
+import Footer from '../../../../components/Footer.astro';
+import {
+  LEGAL_CATEGORIES,
+  LEGAL_DOCS,
+  LEGAL_STATUS_LABELS,
+  LEGAL_TYPE_LABELS,
+} from '../../../../lib/legal-docs-catalog';
+import '../../../../styles/global.css';
+import '../../../../styles/legal-docs.css';
+
+const title = 'Văn bản pháp luật y tế & dược';
+const description =
+  'Thư viện văn bản pháp luật liên quan nhà thuốc, dược, khám chữa bệnh và BHYT — tóm tắt nội dung chính, mở bản gốc trên VBPL.';
+
+const count = LEGAL_DOCS.length;
+const pharmacyCount = LEGAL_DOCS.filter((d) => d.pharmacyRelevant).length;
+---
+
+<BaseLayout title={title} description={description} canonicalPath="/vi/tai-lieu/van-ban-phap-luat/">
+  <Header slot="header" />
+
+  <div class="lg" data-legal-hub>
+    <div class="lg-wrap">
+      <nav class="lg-crumb" aria-label="Breadcrumb">
+        <a href="/vi/tai-lieu/">Tài liệu</a>
+        <span aria-hidden="true">/</span>
+        <span>Văn bản pháp luật</span>
+      </nav>
+
+      <header class="lg-hero">
+        <p class="lg-hero__eyebrow">Thư viện pháp lý</p>
+        <h1>Văn bản pháp luật y tế &amp; dược</h1>
+        <p>
+          Tập hợp Luật, Nghị định và Thông tư then chốt — tóm tắt đủ ý chính, lọc theo lĩnh vực, mở bản gốc trên
+          CSDL quốc gia VBPL.
+        </p>
+        <div class="lg-hero__meta">
+          <span>{count} văn bản</span>
+          <span>{pharmacyCount} liên quan nhà thuốc</span>
+          <span>Nguồn: VBPL</span>
+        </div>
+      </header>
+
+      <div class="lg-toolbar">
+        <label class="lg-search">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"></circle>
+            <path
+              d="M20 20l-3.5-3.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"></path>
+          </svg>
+          <span class="visually-hidden">Tìm văn bản</span>
+          <input
+            type="search"
+            placeholder="Tìm theo số hiệu, tên văn bản, GPP, BHYT…"
+            data-legal-search
+            autocomplete="off"
+          />
+        </label>
+        <div class="lg-filters" role="group" aria-label="Bộ lọc nhanh">
+          <button type="button" class="lg-chip active" data-pharma-filter="all">Tất cả</button>
+          <button type="button" class="lg-chip lg-chip--soft" data-pharma-filter="pharmacy"
+            >Liên quan nhà thuốc</button
+          >
+          <button type="button" class="lg-chip" data-type-filter="all">Mọi loại</button>
+          <button type="button" class="lg-chip" data-type-filter="luat">Luật</button>
+          <button type="button" class="lg-chip" data-type-filter="nghi-dinh">Nghị định</button>
+          <button type="button" class="lg-chip" data-type-filter="thong-tu">Thông tư</button>
+        </div>
+      </div>
+
+      <div class="lg-layout">
+        <aside class="lg-side" aria-label="Nhóm lĩnh vực">
+          <p class="lg-side__label">Lĩnh vực</p>
+          <button type="button" class="active" data-cat-filter="all">Tất cả lĩnh vực</button>
+          {
+            LEGAL_CATEGORIES.map((cat) => (
+              <button type="button" data-cat-filter={cat.id}>
+                {cat.title}
+              </button>
+            ))
+          }
+        </aside>
+
+        <div>
+          <ul class="lg-grid" data-legal-grid>
+            {
+              LEGAL_DOCS.map((doc) => (
+                <li
+                  class="lg-card"
+                  data-legal-card
+                  data-slug={doc.slug}
+                  data-category={doc.categoryId}
+                  data-type={doc.type}
+                  data-pharma={doc.pharmacyRelevant ? '1' : '0'}
+                  data-hay={`${doc.number} ${doc.title} ${doc.shortTitle} ${doc.summary} ${doc.tags.join(' ')}`.toLowerCase()}
+                >
+                  <div class="lg-card__top">
+                    <span class="lg-badge lg-badge--type">{LEGAL_TYPE_LABELS[doc.type]}</span>
+                    <span class={`lg-badge lg-badge--status-${doc.status}`}>
+                      {LEGAL_STATUS_LABELS[doc.status]}
+                    </span>
+                    {doc.pharmacyRelevant && <span class="lg-badge lg-badge--pharma">Nhà thuốc</span>}
+                  </div>
+                  <p class="lg-card__number">{doc.number}</p>
+                  <h2 class="lg-card__title">
+                    <a href={`/vi/tai-lieu/van-ban-phap-luat/${doc.slug}/`}>{doc.shortTitle}</a>
+                  </h2>
+                  <p class="lg-card__summary">{doc.summary}</p>
+                  <div class="lg-card__foot">
+                    <span class="lg-card__agency">{doc.agency}</span>
+                    <div class="lg-actions">
+                      <a class="lg-btn lg-btn--ghost" href={`/vi/tai-lieu/van-ban-phap-luat/${doc.slug}/`}>
+                        Chi tiết
+                      </a>
+                      <a
+                        class="lg-btn lg-btn--primary"
+                        href={doc.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Xem trên VBPL
+                      </a>
+                    </div>
+                  </div>
+                </li>
+              ))
+            }
+          </ul>
+          <p class="lg-empty" data-legal-empty hidden>Không tìm thấy văn bản phù hợp.</p>
+        </div>
+      </div>
+
+      <p class="lg-disclaimer">
+        Thông tin trên trang chỉ mang tính tham khảo, hỗ trợ tra cứu nhanh. Nội dung pháp lý chính thức lấy theo bản
+        công bố trên CSDL quốc gia về VBPL và các nguồn nhà nước có thẩm quyền — không thay thế tư vấn pháp lý.
+      </p>
+    </div>
+  </div>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style is:global>
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+
+<script>
+  const search = document.querySelector('[data-legal-search]');
+  const empty = document.querySelector('[data-legal-empty]');
+  let catFilter = 'all';
+  let typeFilter = 'all';
+  let pharmaFilter = 'all';
+
+  const apply = () => {
+    const q = (search?.value || '').trim().toLowerCase();
+    const cards = [...document.querySelectorAll('[data-legal-card]')];
+    let visible = 0;
+
+    cards.forEach((card) => {
+      const hay = card.dataset.hay || '';
+      const matchQ = !q || hay.includes(q);
+      const matchCat = catFilter === 'all' || card.dataset.category === catFilter;
+      const matchType = typeFilter === 'all' || card.dataset.type === typeFilter;
+      const matchPharma = pharmaFilter === 'all' || card.dataset.pharma === '1';
+      const show = matchQ && matchCat && matchType && matchPharma;
+      card.hidden = !show;
+      card.classList.toggle('is-hidden', !show);
+      if (show) visible += 1;
+    });
+
+    if (empty) empty.hidden = visible > 0;
+  };
+
+  search?.addEventListener('input', apply);
+
+  document.querySelectorAll('[data-cat-filter]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      catFilter = btn.dataset.catFilter || 'all';
+      document.querySelectorAll('[data-cat-filter]').forEach((b) => b.classList.toggle('active', b === btn));
+      apply();
+    });
+  });
+
+  document.querySelectorAll('[data-type-filter]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      typeFilter = btn.dataset.typeFilter || 'all';
+      document.querySelectorAll('[data-type-filter]').forEach((b) => b.classList.toggle('active', b === btn));
+      apply();
+    });
+  });
+
+  document.querySelectorAll('[data-pharma-filter]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      pharmaFilter = btn.dataset.pharmaFilter || 'all';
+      document.querySelectorAll('[data-pharma-filter]').forEach((b) => b.classList.toggle('active', b === btn));
+      apply();
+    });
+  });
+</script>

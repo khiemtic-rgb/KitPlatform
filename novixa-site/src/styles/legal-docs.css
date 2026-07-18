@@ -1,0 +1,498 @@
+/* Văn bản pháp luật — thư viện pháp lý (con của /vi/tai-lieu/) */
+
+.lg {
+  --lg-ink: #0f172a;
+  --lg-muted: #64748b;
+  --lg-border: #e2e8f0;
+  --lg-bg: #f8fafc;
+  --lg-card: #ffffff;
+  --lg-accent: #0f766e;
+  --lg-accent-soft: #ccfbf1;
+  --lg-navy: #0b1f3a;
+  background: var(--lg-bg);
+  color: var(--lg-ink);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  padding-bottom: 3rem;
+}
+
+.lg-wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 0;
+}
+
+.lg-crumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  margin: 0 0 1.25rem;
+  font-size: 0.85rem;
+  color: var(--lg-muted);
+}
+
+.lg-crumb a {
+  color: var(--lg-accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.lg-crumb a:hover {
+  text-decoration: underline;
+}
+
+.lg-hero {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+  padding: 1.5rem 1.5rem 1.6rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #0b1f3a 0%, #134e4a 55%, #0f766e 100%);
+  color: #f8fafc;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+}
+
+.lg-hero__eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #99f6e4;
+}
+
+.lg-hero h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.lg-hero p {
+  margin: 0;
+  max-width: 40rem;
+  color: #cbd5e1;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.lg-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.lg-hero__meta span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ecfeff;
+}
+
+.lg-toolbar {
+  display: grid;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.lg-search {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: var(--lg-card);
+  border: 1px solid var(--lg-border);
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.lg-search input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  font: inherit;
+  font-size: 0.95rem;
+  background: transparent;
+}
+
+.lg-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.lg-chip {
+  border: 1px solid var(--lg-border);
+  background: var(--lg-card);
+  color: #475569;
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lg-chip.active {
+  background: var(--lg-accent);
+  border-color: var(--lg-accent);
+  color: #fff;
+}
+
+.lg-chip--soft.active {
+  background: #0f766e;
+}
+
+.lg-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.lg-side {
+  position: sticky;
+  top: 1rem;
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border-radius: 14px;
+  background: var(--lg-card);
+  border: 1px solid var(--lg-border);
+}
+
+.lg-side__label {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--lg-muted);
+}
+
+.lg-side button {
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: #334155;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.lg-side button:hover {
+  background: #f1f5f9;
+}
+
+.lg-side button.active {
+  background: var(--lg-accent-soft);
+  color: var(--lg-accent);
+  font-weight: 700;
+}
+
+.lg-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.lg-card {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1.15rem 1.2rem;
+  background: var(--lg-card);
+  border: 1px solid var(--lg-border);
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.lg-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(15, 118, 110, 0.08);
+}
+
+.lg-card[hidden],
+.lg-card.is-hidden {
+  display: none !important;
+}
+
+.lg-card__top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.lg-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+}
+
+.lg-badge--type {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.lg-badge--status-hieu-luc {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.lg-badge--status-sua-doi {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.lg-badge--status-theo-doi {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.lg-badge--pharma {
+  background: var(--lg-accent-soft);
+  color: var(--lg-accent);
+}
+
+.lg-card__number {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--lg-navy);
+  letter-spacing: -0.01em;
+}
+
+.lg-card__title {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  color: var(--lg-ink);
+}
+
+.lg-card__title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.lg-card__title a:hover {
+  color: var(--lg-accent);
+}
+
+.lg-card__summary {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--lg-muted);
+}
+
+.lg-card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.15rem;
+}
+
+.lg-card__agency {
+  font-size: 0.78rem;
+  color: var(--lg-muted);
+}
+
+.lg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.lg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+
+.lg-btn--primary {
+  background: var(--lg-accent);
+  color: #fff;
+}
+
+.lg-btn--primary:hover {
+  background: #0d9488;
+}
+
+.lg-btn--ghost {
+  background: #fff;
+  border-color: var(--lg-border);
+  color: var(--lg-navy);
+}
+
+.lg-btn--ghost:hover {
+  border-color: #99f6e4;
+  color: var(--lg-accent);
+}
+
+.lg-empty {
+  margin: 1.5rem 0;
+  text-align: center;
+  color: var(--lg-muted);
+}
+
+.lg-disclaimer {
+  margin: 1.75rem 0 0;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* Detail */
+.lg-detail {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.lg-panel {
+  background: var(--lg-card);
+  border: 1px solid var(--lg-border);
+  border-radius: 16px;
+  padding: 1.35rem 1.4rem;
+}
+
+.lg-panel h1 {
+  margin: 0.35rem 0 0.5rem;
+  font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+  line-height: 1.25;
+  color: var(--lg-navy);
+}
+
+.lg-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lg-meta li {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid var(--lg-border);
+}
+
+.lg-meta span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--lg-muted);
+}
+
+.lg-meta strong {
+  font-size: 0.9rem;
+  color: var(--lg-ink);
+  font-weight: 700;
+}
+
+.lg-overview {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.55rem;
+  color: #334155;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.lg-note {
+  margin: 1rem 0 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.lg-related {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.lg-related a {
+  display: block;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--lg-border);
+  text-decoration: none;
+  color: var(--lg-ink);
+  background: #fff;
+}
+
+.lg-related a:hover {
+  border-color: #99f6e4;
+}
+
+.lg-related strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.lg-related span {
+  font-size: 0.8rem;
+  color: var(--lg-muted);
+}
+
+.lg-section-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  color: var(--lg-navy);
+}
+
+@media (max-width: 860px) {
+  .lg-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .lg-side {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .lg-side__label {
+    width: 100%;
+  }
+}

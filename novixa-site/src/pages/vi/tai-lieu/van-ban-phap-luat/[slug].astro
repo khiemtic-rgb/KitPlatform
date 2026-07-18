@@ -1,0 +1,132 @@
+---
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import Header from '../../../../components/Header.astro';
+import Footer from '../../../../components/Footer.astro';
+import {
+  getLegalCategory,
+  getLegalDocBySlug,
+  getRelatedLegalDocs,
+  LEGAL_DOCS,
+  LEGAL_STATUS_LABELS,
+  LEGAL_TYPE_LABELS,
+} from '../../../../lib/legal-docs-catalog';
+import '../../../../styles/global.css';
+import '../../../../styles/legal-docs.css';
+
+export function getStaticPaths() {
+  return LEGAL_DOCS.map((doc) => ({ params: { slug: doc.slug } }));
+}
+
+const { slug } = Astro.params;
+const doc = getLegalDocBySlug(slug);
+
+if (!doc) {
+  return Astro.redirect('/vi/tai-lieu/van-ban-phap-luat/');
+}
+
+const category = getLegalCategory(doc.categoryId);
+const related = getRelatedLegalDocs(doc);
+const title = `${doc.shortTitle} (${doc.number})`;
+const description = doc.summary;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={`/vi/tai-lieu/van-ban-phap-luat/${doc.slug}/`}
+>
+  <Header slot="header" />
+
+  <div class="lg">
+    <div class="lg-wrap lg-detail">
+      <nav class="lg-crumb" aria-label="Breadcrumb">
+        <a href="/vi/tai-lieu/">Tài liệu</a>
+        <span aria-hidden="true">/</span>
+        <a href="/vi/tai-lieu/van-ban-phap-luat/">Văn bản pháp luật</a>
+        <span aria-hidden="true">/</span>
+        <span>{doc.number}</span>
+      </nav>
+
+      <article class="lg-panel">
+        <div class="lg-card__top">
+          <span class="lg-badge lg-badge--type">{LEGAL_TYPE_LABELS[doc.type]}</span>
+          <span class={`lg-badge lg-badge--status-${doc.status}`}>{LEGAL_STATUS_LABELS[doc.status]}</span>
+          {doc.pharmacyRelevant && <span class="lg-badge lg-badge--pharma">Liên quan nhà thuốc</span>}
+          {category && <span class="lg-badge lg-badge--type">{category.title}</span>}
+        </div>
+        <p class="lg-card__number">{doc.number}</p>
+        <h1>{doc.title}</h1>
+        <p class="lg-card__summary">{doc.summary}</p>
+
+        <ul class="lg-meta">
+          <li>
+            <span>Cơ quan ban hành</span>
+            <strong>{doc.agency}</strong>
+          </li>
+          <li>
+            <span>Ngày ban hành</span>
+            <strong>{doc.issuedDate}</strong>
+          </li>
+          {
+            doc.effectiveDate && (
+              <li>
+                <span>Ngày hiệu lực</span>
+                <strong>{doc.effectiveDate}</strong>
+              </li>
+            )
+          }
+          <li>
+            <span>Loại văn bản</span>
+            <strong>{LEGAL_TYPE_LABELS[doc.type]}</strong>
+          </li>
+          <li>
+            <span>Trạng thái</span>
+            <strong>{LEGAL_STATUS_LABELS[doc.status]}</strong>
+          </li>
+        </ul>
+
+        <div class="lg-actions" style="margin-top: 1.15rem">
+          <a class="lg-btn lg-btn--primary" href={doc.sourceUrl} target="_blank" rel="noopener noreferrer">
+            Xem / tải bản gốc trên VBPL
+          </a>
+          <a class="lg-btn lg-btn--ghost" href="/vi/tai-lieu/van-ban-phap-luat/">← Tất cả văn bản</a>
+        </div>
+      </article>
+
+      <section class="lg-panel">
+        <h2 class="lg-section-title">Nội dung chính</h2>
+        <ul class="lg-overview">
+          {doc.overview.map((item) => <li>{item}</li>)}
+        </ul>
+        {doc.note && <p class="lg-note"><strong>Lưu ý:</strong> {doc.note}</p>}
+      </section>
+
+      {
+        related.length > 0 && (
+          <section class="lg-panel">
+            <h2 class="lg-section-title">Văn bản liên quan</h2>
+            <ul class="lg-related">
+              {related.map((r) => (
+                <li>
+                  <a href={`/vi/tai-lieu/van-ban-phap-luat/${r.slug}/`}>
+                    <strong>
+                      {r.number} — {r.shortTitle}
+                    </strong>
+                    <span>{r.summary}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+
+      <p class="lg-disclaimer">
+        Trang này tóm tắt để tra cứu nhanh. Khi áp dụng thực tế, luôn đối chiếu bản chính thức trên VBPL và văn bản
+        sửa đổi, bổ sung mới nhất.
+      </p>
+    </div>
+  </div>
+
+  <Footer slot="footer" />
+</BaseLayout>
