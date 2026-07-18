@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-17T21:12:12.713Z",
+  "generatedAt": "2026-07-18T07:12:20.062Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 131,
-    "last24hPageViews": 150,
-    "last24hRequests": 561
+    "todayVisitors": 190,
+    "todayPageViews": 201,
+    "todayRequests": 504,
+    "last24hVisitors": 258,
+    "last24hPageViews": 245,
+    "last24hRequests": 748
   },
   "hourly": [
-    {
-      "time": "2026-07-16T23:00:00Z",
-      "visitors": 3,
-      "requests": 13
-    },
-    {
-      "time": "2026-07-17T00:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-07-17T01:00:00Z",
-      "visitors": 8,
-      "requests": 11
-    },
-    {
-      "time": "2026-07-17T02:00:00Z",
-      "visitors": 33,
-      "requests": 76
-    },
-    {
-      "time": "2026-07-17T03:00:00Z",
-      "visitors": 6,
-      "requests": 35
-    },
-    {
-      "time": "2026-07-17T04:00:00Z",
-      "visitors": 5,
-      "requests": 52
-    },
-    {
-      "time": "2026-07-17T05:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-07-17T06:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-07-17T07:00:00Z",
-      "visitors": 3,
-      "requests": 139
-    },
     {
       "time": "2026-07-17T08:00:00Z",
       "visitors": 7,
@@ -123,8 +78,58 @@
     },
     {
       "time": "2026-07-17T21:00:00Z",
+      "visitors": 8,
+      "requests": 18
+    },
+    {
+      "time": "2026-07-17T22:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-07-17T23:00:00Z",
       "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-07-18T00:00:00Z",
+      "visitors": 4,
+      "requests": 14
+    },
+    {
+      "time": "2026-07-18T01:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-07-18T02:00:00Z",
+      "visitors": 98,
+      "requests": 179
+    },
+    {
+      "time": "2026-07-18T03:00:00Z",
+      "visitors": 85,
+      "requests": 247
+    },
+    {
+      "time": "2026-07-18T04:00:00Z",
+      "visitors": 12,
+      "requests": 24
+    },
+    {
+      "time": "2026-07-18T05:00:00Z",
+      "visitors": 12,
+      "requests": 13
+    },
+    {
+      "time": "2026-07-18T06:00:00Z",
+      "visitors": 15,
+      "requests": 23
+    },
+    {
+      "time": "2026-07-18T07:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -160,71 +165,77 @@
     },
     {
       "date": "2026-07-17",
-      "visitors": 130,
-      "pageViews": 147,
-      "requests": 548
+      "visitors": 136,
+      "pageViews": 151,
+      "requests": 570
+    },
+    {
+      "date": "2026-07-18",
+      "visitors": 190,
+      "pageViews": 201,
+      "requests": 504
     }
   ],
   "topPages": [
     {
       "path": "/cdn-cgi/rum",
-      "views": 156
-    },
-    {
-      "path": "/vi/",
-      "views": 85
-    },
-    {
-      "path": "/api/stats",
-      "views": 41
+      "views": 211
     },
     {
       "path": "/og-novixa.svg",
-      "views": 38
+      "views": 101
     },
     {
-      "path": "/",
-      "views": 29
+      "path": "/vi/tin-tuc/5-chi-so-chu-nha-thuoc-can-xem-moi-sang/",
+      "views": 100
+    },
+    {
+      "path": "/vi/",
+      "views": 89
+    },
+    {
+      "path": "/api/stats",
+      "views": 45
+    },
+    {
+      "path": "/vi/health-check/",
+      "views": 24
     },
     {
       "path": "/robots.txt",
+      "views": 24
+    },
+    {
+      "path": "/",
       "views": 23
     },
     {
-      "path": "/vi/tai-lieu/",
-      "views": 14
-    },
-    {
-      "path": "/vi/thong-ke/",
-      "views": 14
+      "path": "/images/hero/home-devices.png",
+      "views": 22
     },
     {
       "path": "/favicon.svg",
-      "views": 10
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 10
-    },
-    {
-      "path": "/images/hero/home-devices.png",
-      "views": 10
+      "views": 19
     },
     {
       "path": "/images/logo.png",
-      "views": 9
+      "views": 16
     },
     {
-      "path": "/vi/tin-tuc/",
-      "views": 8
+      "path": "/vi/thong-ke/",
+      "views": 16
+    },
+    {
+      "path": "/_astro/index.DcoAHZV3.css",
+      "views": 15
+    },
+    {
+      "path": "/vi/tai-lieu/",
+      "views": 15
     },
     {
       "path": "/_astro/BaseLayout.DTXchRW1.css",
-      "views": 7
-    },
-    {
-      "path": "/vi/spa-health-check/",
-      "views": 7
+      "views": 14
     }
   ]
 }
