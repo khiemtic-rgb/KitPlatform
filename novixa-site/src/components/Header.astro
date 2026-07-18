@@ -190,13 +190,13 @@ const products = [
           {n.docs}
           <span class="nav-chevron" aria-hidden="true">▾</span>
         </button>
-        <div id="docs-dropdown" class="nav-dropdown" role="menu" aria-label="Tài liệu" data-dropdown-panel>
+        <div id="docs-dropdown" class="nav-dropdown" role="menu" aria-label="Thư viện" data-dropdown-panel>
           <a
             href={`${base}/tai-lieu/`}
             role="menuitem"
             class:list={{ active: path.startsWith(`${base}/tai-lieu`) && !path.includes('/van-ban-phap-luat') }}
           >
-            Thư viện nhà thuốc
+            Cẩm nang nhà thuốc
           </a>
           <a
             href={`${base}/tai-lieu/van-ban-phap-luat/`}
