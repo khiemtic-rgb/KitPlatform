@@ -163,6 +163,68 @@
   transform: rotate(180deg);
 }
 
+.nav-item--dropdown.is-open .nav-trigger,
+.nav-item--dropdown .nav-trigger.active {
+  color: #0f2747;
+}
+
+.nav-item--dropdown.is-open .nav-chevron {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 60;
+  min-width: 13.5rem;
+  padding: 0.45rem;
+  padding-top: calc(0.45rem + 0.55rem);
+  margin-top: -0.55rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    visibility 160ms ease;
+}
+
+.nav-item--dropdown.is-open .nav-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.nav-dropdown::before {
+  content: '';
+  position: absolute;
+  inset: 0.55rem 0 0;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e8eef3;
+  box-shadow: 0 12px 32px rgba(15, 39, 71, 0.12);
+  z-index: -1;
+}
+
+.nav-dropdown a {
+  display: block;
+  padding: 0.65rem 0.8rem;
+  border-radius: 8px;
+  color: #0f2747;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.nav-dropdown a:hover,
+.nav-dropdown a.active {
+  background: #ecfdf5;
+  color: #16c784;
+}
+
 .nav a {
   color: #64748b;
   text-decoration: none;
@@ -564,6 +626,10 @@
     width: 100%;
   }
 
+  .nav-item--dropdown {
+    width: 100%;
+  }
+
   .mega {
     position: static;
     width: 100%;
@@ -576,6 +642,38 @@
 
   .nav-item--mega.is-open .mega {
     transform: none;
+  }
+
+  .nav-dropdown {
+    position: static;
+    min-width: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0.25rem 0 0.5rem;
+    transform: none;
+    opacity: 0;
+    visibility: hidden;
+    max-height: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .nav-dropdown::before {
+    display: none;
+  }
+
+  .nav-item--dropdown.is-open .nav-dropdown {
+    opacity: 1;
+    visibility: visible;
+    max-height: 12rem;
+    pointer-events: auto;
+    transform: none;
+  }
+
+  .nav-dropdown a {
+    padding: 0.65rem 0.5rem;
+    border-bottom: 1px solid #e8eef3;
+    border-radius: 0;
   }
 
   .mega__inner {

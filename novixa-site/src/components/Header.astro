@@ -172,7 +172,42 @@ const products = [
 
       <a href={`${base}/#solutions`}>{n.solutions}</a>
       <a href={`${base}/#enterprise`}>{n.enterprise}</a>
-      <a href={`${base}/tai-lieu/`} class:list={{ active: path.startsWith(`${base}/tai-lieu`) }}>{n.docs}</a>
+
+      <div
+        class="nav-item nav-item--dropdown"
+        data-dropdown
+        class:list={{ active: path.startsWith(`${base}/tai-lieu`) }}
+      >
+        <button
+          type="button"
+          class="nav-trigger"
+          aria-expanded="false"
+          aria-haspopup="true"
+          aria-controls="docs-dropdown"
+          data-dropdown-trigger
+          class:list={{ active: path.startsWith(`${base}/tai-lieu`) }}
+        >
+          {n.docs}
+          <span class="nav-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div id="docs-dropdown" class="nav-dropdown" role="menu" aria-label="Tài liệu" data-dropdown-panel>
+          <a
+            href={`${base}/tai-lieu/`}
+            role="menuitem"
+            class:list={{ active: path.startsWith(`${base}/tai-lieu`) && !path.includes('/van-ban-phap-luat') }}
+          >
+            Thư viện nhà thuốc
+          </a>
+          <a
+            href={`${base}/tai-lieu/van-ban-phap-luat/`}
+            role="menuitem"
+            class:list={{ active: path.includes('/van-ban-phap-luat') }}
+          >
+            Văn bản pháp luật
+          </a>
+        </div>
+      </div>
+
       <a href={`${base}/tin-tuc/`} class:list={{ active: path.startsWith(`${base}/tin-tuc`) }}>{n.resources}</a>
       <a href={`${base}/ve-chung-toi/`} class:list={{ active: path.startsWith(`${base}/ve-chung-toi`) }}>{n.company}</a>
     </nav>
@@ -204,37 +239,45 @@ const products = [
   const mega = document.querySelector('[data-mega]');
   const megaTrigger = document.querySelector('[data-mega-trigger]');
   const megaPanel = document.querySelector('[data-mega-panel]');
+  const dropdown = document.querySelector('[data-dropdown]');
+  const dropdownTrigger = document.querySelector('[data-dropdown-trigger]');
 
   let megaCloseTimer = null;
+  let dropdownCloseTimer = null;
 
-  const isDesktopMega = () => window.matchMedia('(min-width: 1181px)').matches;
+  const isDesktopNav = () => window.matchMedia('(min-width: 1181px)').matches;
 
   const syncHeader = () => {
     header?.classList.toggle('is-scrolled', window.scrollY > 12);
   };
 
-  const setMegaOpen = (open, { immediate = false } = {}) => {
-    window.clearTimeout(megaCloseTimer);
+  const setOpen = (el, trigger, open, timerRef, { immediate = false } = {}) => {
+    window.clearTimeout(timerRef.id);
 
     if (open) {
-      mega?.classList.add('is-open');
-      megaTrigger?.setAttribute('aria-expanded', 'true');
+      el?.classList.add('is-open');
+      trigger?.setAttribute('aria-expanded', 'true');
       return;
     }
 
     const close = () => {
-      mega?.classList.remove('is-open');
-      megaTrigger?.setAttribute('aria-expanded', 'false');
+      el?.classList.remove('is-open');
+      trigger?.setAttribute('aria-expanded', 'false');
     };
 
-    if (immediate || !isDesktopMega()) {
+    if (immediate || !isDesktopNav()) {
       close();
       return;
     }
 
-    // Small delay so cursor can cross into the panel without flicker
-    megaCloseTimer = window.setTimeout(close, 220);
+    timerRef.id = window.setTimeout(close, 220);
   };
+
+  const megaTimer = { id: null };
+  const dropdownTimer = { id: null };
+
+  const setMegaOpen = (open, opts) => setOpen(mega, megaTrigger, open, megaTimer, opts);
+  const setDropdownOpen = (open, opts) => setOpen(dropdown, dropdownTrigger, open, dropdownTimer, opts);
 
   syncHeader();
   window.addEventListener('scroll', syncHeader, { passive: true });
@@ -243,32 +286,38 @@ const products = [
     const open = header?.classList.toggle('nav-open');
     nav?.classList.toggle('is-open', Boolean(open));
     toggle.setAttribute('aria-expanded', String(Boolean(open)));
-    if (!open) setMegaOpen(false, { immediate: true });
+    if (!open) {
+      setMegaOpen(false, { immediate: true });
+      setDropdownOpen(false, { immediate: true });
+    }
   });
 
   mega?.addEventListener('pointerenter', () => {
-    if (isDesktopMega()) setMegaOpen(true);
+    if (isDesktopNav()) {
+      setDropdownOpen(false, { immediate: true });
+      setMegaOpen(true);
+    }
   });
 
   mega?.addEventListener('pointerleave', (event) => {
-    if (!isDesktopMega()) return;
+    if (!isDesktopNav()) return;
     const next = event.relatedTarget;
     if (next instanceof Node && mega.contains(next)) return;
     setMegaOpen(false);
   });
 
   megaPanel?.addEventListener('pointerenter', () => {
-    if (isDesktopMega()) setMegaOpen(true);
+    if (isDesktopNav()) setMegaOpen(true);
   });
 
   megaTrigger?.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
     const next = !mega?.classList.contains('is-open');
+    if (next) setDropdownOpen(false, { immediate: true });
     setMegaOpen(Boolean(next), { immediate: true });
   });
 
-  // Keep open while focus moves through panel links (keyboard)
   mega?.addEventListener('focusin', () => setMegaOpen(true, { immediate: true }));
   mega?.addEventListener('focusout', (event) => {
     const next = event.relatedTarget;
@@ -276,10 +325,41 @@ const products = [
     setMegaOpen(false);
   });
 
+  dropdown?.addEventListener('pointerenter', () => {
+    if (isDesktopNav()) {
+      setMegaOpen(false, { immediate: true });
+      setDropdownOpen(true);
+    }
+  });
+
+  dropdown?.addEventListener('pointerleave', (event) => {
+    if (!isDesktopNav()) return;
+    const next = event.relatedTarget;
+    if (next instanceof Node && dropdown.contains(next)) return;
+    setDropdownOpen(false);
+  });
+
+  dropdownTrigger?.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const next = !dropdown?.classList.contains('is-open');
+    if (next) setMegaOpen(false, { immediate: true });
+    setDropdownOpen(Boolean(next), { immediate: true });
+  });
+
+  dropdown?.addEventListener('focusin', () => setDropdownOpen(true, { immediate: true }));
+  dropdown?.addEventListener('focusout', (event) => {
+    const next = event.relatedTarget;
+    if (next instanceof Node && dropdown.contains(next)) return;
+    setDropdownOpen(false);
+  });
+
   document.addEventListener('pointerdown', (event) => {
     if (!(event.target instanceof Node)) return;
     if (mega?.contains(event.target)) return;
+    if (dropdown?.contains(event.target)) return;
     if (mega?.classList.contains('is-open')) setMegaOpen(false, { immediate: true });
+    if (dropdown?.classList.contains('is-open')) setDropdownOpen(false, { immediate: true });
   });
 
   nav?.querySelectorAll('a').forEach((link) => {
@@ -288,10 +368,14 @@ const products = [
       nav.classList.remove('is-open');
       toggle?.setAttribute('aria-expanded', 'false');
       setMegaOpen(false, { immediate: true });
+      setDropdownOpen(false, { immediate: true });
     });
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') setMegaOpen(false, { immediate: true });
+    if (event.key === 'Escape') {
+      setMegaOpen(false, { immediate: true });
+      setDropdownOpen(false, { immediate: true });
+    }
   });
 </script>
