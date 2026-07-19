@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-19T13:56:41.768Z",
+  "generatedAt": "2026-07-19T19:33:40.820Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 102,
-    "todayPageViews": 162,
-    "todayRequests": 301,
-    "last24hVisitors": 135,
-    "last24hPageViews": 214,
-    "last24hRequests": 447
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 118,
+    "last24hPageViews": 237,
+    "last24hRequests": 444
   },
   "hourly": [
-    {
-      "time": "2026-07-18T14:00:00Z",
-      "visitors": 19,
-      "requests": 24
-    },
-    {
-      "time": "2026-07-18T15:00:00Z",
-      "visitors": 12,
-      "requests": 15
-    },
-    {
-      "time": "2026-07-18T16:00:00Z",
-      "visitors": 4,
-      "requests": 15
-    },
-    {
-      "time": "2026-07-18T17:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-07-18T18:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-07-18T19:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
     {
       "time": "2026-07-18T20:00:00Z",
       "visitors": 4,
@@ -123,17 +93,41 @@
     },
     {
       "time": "2026-07-19T13:00:00Z",
-      "visitors": 5,
-      "requests": 13
+      "visitors": 6,
+      "requests": 14
+    },
+    {
+      "time": "2026-07-19T14:00:00Z",
+      "visitors": 4,
+      "requests": 10
+    },
+    {
+      "time": "2026-07-19T15:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-07-19T16:00:00Z",
+      "visitors": 2,
+      "requests": 5
+    },
+    {
+      "time": "2026-07-19T17:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-19T18:00:00Z",
+      "visitors": 2,
+      "requests": 37
+    },
+    {
+      "time": "2026-07-19T19:00:00Z",
+      "visitors": 2,
+      "requests": 4
     }
   ],
   "daily": [
-    {
-      "date": "2026-07-13",
-      "visitors": 93,
-      "pageViews": 134,
-      "requests": 293
-    },
     {
       "date": "2026-07-14",
       "visitors": 65,
@@ -166,9 +160,9 @@
     },
     {
       "date": "2026-07-19",
-      "visitors": 102,
-      "pageViews": 162,
-      "requests": 301
+      "visitors": 114,
+      "pageViews": 199,
+      "requests": 363
     }
   ],
   "topPages": [
@@ -177,43 +171,39 @@
       "views": 54
     },
     {
-      "path": "/cdn-cgi/rum",
-      "views": 32
+      "path": "/",
+      "views": 30
     },
     {
-      "path": "/",
-      "views": 29
+      "path": "/cdn-cgi/rum",
+      "views": 26
     },
     {
       "path": "/vi/",
-      "views": 23
+      "views": 21
     },
     {
       "path": "/robots.txt",
-      "views": 23
-    },
-    {
-      "path": "/og-novixa.svg",
-      "views": 19
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 14
+      "views": 21
     },
     {
       "path": "/api/stats",
       "views": 13
     },
     {
+      "path": "/sitemap-index.xml",
+      "views": 13
+    },
+    {
+      "path": "/og-novixa.svg",
+      "views": 12
+    },
+    {
       "path": "/.git/config",
-      "views": 7
+      "views": 8
     },
     {
       "path": "/docs/cam-nang-chu-nha-thuoc.pdf",
-      "views": 7
-    },
-    {
-      "path": "/docs/cam-nang-quan-ly-nhan-su.pdf",
       "views": 7
     },
     {
@@ -221,15 +211,19 @@
       "views": 7
     },
     {
-      "path": "/images/logo.png",
-      "views": 6
+      "path": "/docs/cam-nang-quan-ly-nhan-su.pdf",
+      "views": 7
     },
     {
       "path": "/images/tin-tuc/pos-nha-thuoc-5-tinh-nang-khong-the-thieu.png",
       "views": 6
     },
     {
-      "path": "/wp-login.php",
+      "path": "/images/logo.png",
+      "views": 6
+    },
+    {
+      "path": "/wp-config.php",
       "views": 4
     }
   ]
