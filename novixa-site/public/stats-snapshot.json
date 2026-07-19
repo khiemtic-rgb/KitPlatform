@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-18T19:33:30.484Z",
+  "generatedAt": "2026-07-19T03:56:42.464Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 254,
-    "last24hPageViews": 250,
-    "last24hRequests": 709
+    "todayVisitors": 79,
+    "todayPageViews": 63,
+    "todayRequests": 150,
+    "last24hVisitors": 175,
+    "last24hPageViews": 176,
+    "last24hRequests": 472
   },
   "hourly": [
-    {
-      "time": "2026-07-17T20:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-07-17T21:00:00Z",
-      "visitors": 8,
-      "requests": 18
-    },
-    {
-      "time": "2026-07-17T22:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-07-17T23:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-07-18T00:00:00Z",
-      "visitors": 4,
-      "requests": 14
-    },
-    {
-      "time": "2026-07-18T01:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-07-18T02:00:00Z",
-      "visitors": 98,
-      "requests": 179
-    },
-    {
-      "time": "2026-07-18T03:00:00Z",
-      "visitors": 85,
-      "requests": 247
-    },
     {
       "time": "2026-07-18T04:00:00Z",
       "visitors": 12,
@@ -130,6 +90,41 @@
       "time": "2026-07-18T19:00:00Z",
       "visitors": 2,
       "requests": 2
+    },
+    {
+      "time": "2026-07-18T20:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-07-18T21:00:00Z",
+      "visitors": 2,
+      "requests": 72
+    },
+    {
+      "time": "2026-07-18T22:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-07-18T23:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-07-19T01:00:00Z",
+      "visitors": 13,
+      "requests": 43
+    },
+    {
+      "time": "2026-07-19T02:00:00Z",
+      "visitors": 65,
+      "requests": 89
+    },
+    {
+      "time": "2026-07-19T03:00:00Z",
+      "visitors": 5,
+      "requests": 18
     }
   ],
   "daily": [
@@ -165,71 +160,77 @@
     },
     {
       "date": "2026-07-18",
-      "visitors": 247,
-      "pageViews": 245,
-      "requests": 683
+      "visitors": 248,
+      "pageViews": 283,
+      "requests": 764
+    },
+    {
+      "date": "2026-07-19",
+      "visitors": 79,
+      "pageViews": 63,
+      "requests": 150
     }
   ],
   "topPages": [
     {
-      "path": "/cdn-cgi/rum",
-      "views": 131
+      "path": "/vi/tai-lieu/",
+      "views": 54
     },
     {
-      "path": "/vi/tin-tuc/5-chi-so-chu-nha-thuoc-can-xem-moi-sang/",
-      "views": 109
+      "path": "/cdn-cgi/rum",
+      "views": 48
     },
     {
       "path": "/og-novixa.svg",
-      "views": 87
+      "views": 35
     },
     {
       "path": "/vi/",
-      "views": 72
+      "views": 33
     },
     {
-      "path": "/",
+      "path": "/vi/tin-tuc/5-chi-so-chu-nha-thuoc-can-xem-moi-sang/",
       "views": 28
     },
     {
       "path": "/robots.txt",
-      "views": 27
-    },
-    {
-      "path": "/vi/health-check/",
       "views": 23
     },
     {
-      "path": "/api/stats",
-      "views": 19
+      "path": "/",
+      "views": 22
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 18
-    },
-    {
-      "path": "/images/logo.png",
       "views": 17
     },
     {
-      "path": "/images/hero/home-devices.png",
-      "views": 17
-    },
-    {
-      "path": "/favicon.svg",
+      "path": "/api/stats",
       "views": 14
     },
     {
-      "path": "/_astro/BaseLayout.DstE-6Da.css",
-      "views": 13
+      "path": "/images/logo.png",
+      "views": 12
     },
     {
-      "path": "/vi/tai-lieu/",
-      "views": 13
+      "path": "/_astro/BaseLayout.DstE-6Da.css",
+      "views": 11
+    },
+    {
+      "path": "/docs/cam-nang-quan-ly-nhan-su.pdf",
+      "views": 7
+    },
+    {
+      "path": "/docs/cam-nang-chu-nha-thuoc.pdf",
+      "views": 7
     },
     {
       "path": "/_astro/index.DcoAHZV3.css",
-      "views": 12
+      "views": 7
+    },
+    {
+      "path": "/_astro/index.N-SH1TPc.css",
+      "views": 6
     }
   ]
 }
