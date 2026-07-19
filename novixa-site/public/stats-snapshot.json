@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-19T08:34:16.672Z",
+  "generatedAt": "2026-07-19T13:56:41.768Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 91,
-    "todayPageViews": 71,
-    "todayRequests": 178,
-    "last24hVisitors": 140,
-    "last24hPageViews": 137,
-    "last24hRequests": 390
+    "todayVisitors": 102,
+    "todayPageViews": 162,
+    "todayRequests": 301,
+    "last24hVisitors": 135,
+    "last24hPageViews": 214,
+    "last24hRequests": 447
   },
   "hourly": [
-    {
-      "time": "2026-07-18T09:00:00Z",
-      "visitors": 11,
-      "requests": 26
-    },
-    {
-      "time": "2026-07-18T10:00:00Z",
-      "visitors": 9,
-      "requests": 9
-    },
-    {
-      "time": "2026-07-18T11:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-07-18T12:00:00Z",
-      "visitors": 5,
-      "requests": 8
-    },
-    {
-      "time": "2026-07-18T13:00:00Z",
-      "visitors": 4,
-      "requests": 17
-    },
     {
       "time": "2026-07-18T14:00:00Z",
       "visitors": 19,
@@ -123,8 +98,33 @@
     },
     {
       "time": "2026-07-19T08:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-07-19T09:00:00Z",
+      "visitors": 3,
+      "requests": 24
+    },
+    {
+      "time": "2026-07-19T10:00:00Z",
       "visitors": 2,
       "requests": 3
+    },
+    {
+      "time": "2026-07-19T11:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-19T12:00:00Z",
+      "visitors": 6,
+      "requests": 78
+    },
+    {
+      "time": "2026-07-19T13:00:00Z",
+      "visitors": 5,
+      "requests": 13
     }
   ],
   "daily": [
@@ -166,54 +166,46 @@
     },
     {
       "date": "2026-07-19",
-      "visitors": 91,
-      "pageViews": 71,
-      "requests": 178
+      "visitors": 102,
+      "pageViews": 162,
+      "requests": 301
     }
   ],
   "topPages": [
     {
       "path": "/vi/tai-lieu/",
-      "views": 53
+      "views": 54
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 38
-    },
-    {
-      "path": "/robots.txt",
-      "views": 24
+      "views": 32
     },
     {
       "path": "/",
-      "views": 24
+      "views": 29
     },
     {
       "path": "/vi/",
       "views": 23
     },
     {
-      "path": "/og-novixa.svg",
+      "path": "/robots.txt",
       "views": 23
     },
     {
-      "path": "/sitemap-index.xml",
-      "views": 17
+      "path": "/og-novixa.svg",
+      "views": 19
     },
     {
-      "path": "/api/stats",
+      "path": "/sitemap-index.xml",
       "views": 14
     },
     {
-      "path": "/images/logo.png",
-      "views": 10
+      "path": "/api/stats",
+      "views": 13
     },
     {
-      "path": "/docs/cam-nang-quan-ly-nhan-su.pdf",
-      "views": 7
-    },
-    {
-      "path": "/_astro/BaseLayout.DstE-6Da.css",
+      "path": "/.git/config",
       "views": 7
     },
     {
@@ -221,16 +213,24 @@
       "views": 7
     },
     {
+      "path": "/docs/cam-nang-quan-ly-nhan-su.pdf",
+      "views": 7
+    },
+    {
+      "path": "/.env",
+      "views": 7
+    },
+    {
+      "path": "/images/logo.png",
+      "views": 6
+    },
+    {
       "path": "/images/tin-tuc/pos-nha-thuoc-5-tinh-nang-khong-the-thieu.png",
       "views": 6
     },
     {
-      "path": "/.git/config",
-      "views": 6
-    },
-    {
-      "path": "/_astro/index.N-SH1TPc.css",
-      "views": 5
+      "path": "/wp-login.php",
+      "views": 4
     }
   ]
 }
