@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-20T04:06:25.731Z",
+  "generatedAt": "2026-07-20T09:34:59.860Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 76,
-    "todayPageViews": 81,
-    "todayRequests": 170,
-    "last24hVisitors": 113,
-    "last24hPageViews": 283,
-    "last24hRequests": 463
+    "todayVisitors": 89,
+    "todayPageViews": 93,
+    "todayRequests": 221,
+    "last24hVisitors": 117,
+    "last24hPageViews": 271,
+    "last24hRequests": 465
   },
   "hourly": [
-    {
-      "time": "2026-07-19T05:00:00Z",
-      "visitors": 7,
-      "requests": 13
-    },
-    {
-      "time": "2026-07-19T06:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-19T07:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-07-19T08:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-19T09:00:00Z",
-      "visitors": 3,
-      "requests": 24
-    },
     {
       "time": "2026-07-19T10:00:00Z",
       "visitors": 2,
@@ -125,6 +100,31 @@
       "time": "2026-07-20T03:00:00Z",
       "visitors": 7,
       "requests": 14
+    },
+    {
+      "time": "2026-07-20T04:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-07-20T06:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-07-20T07:00:00Z",
+      "visitors": 6,
+      "requests": 22
+    },
+    {
+      "time": "2026-07-20T08:00:00Z",
+      "visitors": 8,
+      "requests": 22
+    },
+    {
+      "time": "2026-07-20T09:00:00Z",
+      "visitors": 4,
+      "requests": 5
     }
   ],
   "daily": [
@@ -166,46 +166,54 @@
     },
     {
       "date": "2026-07-20",
-      "visitors": 76,
-      "pageViews": 81,
-      "requests": 170
+      "visitors": 89,
+      "pageViews": 93,
+      "requests": 221
     }
   ],
   "topPages": [
     {
       "path": "/vi/tai-lieu/van-ban-phap-luat/",
-      "views": 71
+      "views": 79
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 35
+      "views": 44
     },
     {
       "path": "/",
-      "views": 31
+      "views": 27
     },
     {
       "path": "/vi/",
-      "views": 26
+      "views": 23
     },
     {
       "path": "/robots.txt",
       "views": 22
     },
     {
-      "path": "/api/stats",
-      "views": 13
+      "path": "/images/logo.png",
+      "views": 15
     },
     {
       "path": "/sitemap-index.xml",
       "views": 13
     },
     {
-      "path": "/og-novixa.svg",
-      "views": 12
+      "path": "/_astro/BaseLayout.DstE-6Da.css",
+      "views": 11
+    },
+    {
+      "path": "/api/stats",
+      "views": 9
     },
     {
       "path": "/vi/tai-lieu/van-ban-phap-luat/thong-tu-03-2018-gdp/",
+      "views": 9
+    },
+    {
+      "path": "/favicon.svg",
       "views": 9
     },
     {
@@ -213,23 +221,15 @@
       "views": 9
     },
     {
-      "path": "/_astro/BaseLayout.DstE-6Da.css",
+      "path": "/_astro/legal-docs.Qve5AKzn.css",
       "views": 8
-    },
-    {
-      "path": "/images/logo.png",
-      "views": 8
-    },
-    {
-      "path": "/vi/tai-lieu/van-ban-phap-luat/luat-an-toan-thuc-pham-55-2010/",
-      "views": 7
-    },
-    {
-      "path": "/vi/tai-lieu/van-ban-phap-luat/nghi-dinh-98-2021/",
-      "views": 7
     },
     {
       "path": "/.env.production",
+      "views": 7
+    },
+    {
+      "path": "/vi/tai-lieu/van-ban-phap-luat/luat-an-toan-thuc-pham-55-2010/",
       "views": 7
     }
   ]
