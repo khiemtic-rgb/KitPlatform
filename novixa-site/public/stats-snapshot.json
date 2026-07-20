@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-20T14:34:21.137Z",
+  "generatedAt": "2026-07-20T19:57:57.855Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 100,
-    "todayPageViews": 108,
-    "todayRequests": 280,
-    "last24hVisitors": 113,
-    "last24hPageViews": 212,
-    "last24hRequests": 415
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 120,
+    "last24hPageViews": 206,
+    "last24hRequests": 433
   },
   "hourly": [
-    {
-      "time": "2026-07-19T15:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-07-19T16:00:00Z",
-      "visitors": 2,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-19T17:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-07-19T18:00:00Z",
-      "visitors": 2,
-      "requests": 37
-    },
-    {
-      "time": "2026-07-19T19:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
     {
       "time": "2026-07-19T20:00:00Z",
       "visitors": 4,
@@ -123,17 +98,36 @@
     },
     {
       "time": "2026-07-20T14:00:00Z",
+      "visitors": 4,
+      "requests": 12
+    },
+    {
+      "time": "2026-07-20T15:00:00Z",
+      "visitors": 5,
+      "requests": 13
+    },
+    {
+      "time": "2026-07-20T16:00:00Z",
+      "visitors": 6,
+      "requests": 26
+    },
+    {
+      "time": "2026-07-20T17:00:00Z",
       "visitors": 3,
-      "requests": 10
+      "requests": 5
+    },
+    {
+      "time": "2026-07-20T18:00:00Z",
+      "visitors": 3,
+      "requests": 21
+    },
+    {
+      "time": "2026-07-20T19:00:00Z",
+      "visitors": 2,
+      "requests": 2
     }
   ],
   "daily": [
-    {
-      "date": "2026-07-14",
-      "visitors": 65,
-      "pageViews": 164,
-      "requests": 470
-    },
     {
       "date": "2026-07-15",
       "visitors": 149,
@@ -166,71 +160,71 @@
     },
     {
       "date": "2026-07-20",
-      "visitors": 100,
-      "pageViews": 108,
-      "requests": 280
+      "visitors": 115,
+      "pageViews": 138,
+      "requests": 350
     }
   ],
   "topPages": [
     {
       "path": "/vi/tai-lieu/van-ban-phap-luat/",
-      "views": 80
+      "views": 83
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 50
+      "views": 52
     },
     {
       "path": "/robots.txt",
-      "views": 21
+      "views": 25
+    },
+    {
+      "path": "/vi/",
+      "views": 18
     },
     {
       "path": "/sitemap-index.xml",
       "views": 18
     },
     {
-      "path": "/vi/",
-      "views": 16
-    },
-    {
       "path": "/images/logo.png",
-      "views": 15
-    },
-    {
-      "path": "/",
-      "views": 14
+      "views": 17
     },
     {
       "path": "/_astro/BaseLayout.DstE-6Da.css",
-      "views": 13
+      "views": 16
+    },
+    {
+      "path": "/favicon.svg",
+      "views": 14
     },
     {
       "path": "/.env",
       "views": 13
     },
     {
-      "path": "/favicon.svg",
+      "path": "/",
+      "views": 13
+    },
+    {
+      "path": "/_astro/index.DcoAHZV3.css",
       "views": 11
     },
     {
       "path": "/_astro/legal-docs.Qve5AKzn.css",
+      "views": 10
+    },
+    {
+      "path": "/api/stats",
       "views": 9
-    },
-    {
-      "path": "/.env.production",
-      "views": 8
-    },
-    {
-      "path": "/js/config.js",
-      "views": 8
     },
     {
       "path": "/vi/tai-lieu/van-ban-phap-luat/thong-tu-03-2018-gdp/",
       "views": 8
     },
     {
-      "path": "/_astro/index.DcoAHZV3.css",
-      "views": 7
+      "path": "/.env.production",
+      "views": 8
     }
   ]
 }
