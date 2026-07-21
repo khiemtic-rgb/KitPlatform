@@ -7,10 +7,11 @@ backend:
   name: github
   repo: khiemtic-rgb/KitPlatform
   branch: main
-  # OAuth qua Cloudflare Pages Functions (/auth, /callback).
-  # Chưa cấu hình GITHUB_CLIENT_ID? Dùng "Sign in with token".
-  base_url: https://novixa.vn
-  auth_methods: [oauth, token]
+  # Đăng nhập bằng GitHub Access Token (không cần OAuth app).
+  # Khi đã gắn GITHUB_CLIENT_ID/SECRET trên Cloudflare, đổi thành:
+  #   base_url: https://novixa.vn
+  #   auth_methods: [oauth, token]
+  auth_methods: [token]
   commit_messages:
     create: 'cms: thêm {{collection}} "{{slug}}"'
     update: 'cms: cập nhật {{collection}} "{{slug}}"'

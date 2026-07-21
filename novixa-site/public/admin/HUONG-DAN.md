@@ -2,10 +2,17 @@
 
 Mở: **https://novixa.vn/admin/**
 
-## Đăng nhập
+## Đăng nhập (Access Token)
 
-1. Bấm **Sign in with GitHub** (hoặc **Sign in with token** nếu IT chưa bật OAuth).
-2. Dùng tài khoản GitHub đã được thêm vào team Novixa (quyền ghi repo).
+1. Bấm **Sign In Using Access Token**.
+2. Mở link GitHub trong hộp thoại (hoặc vào https://github.com/settings/personal-access-tokens ).
+3. Tạo token (Fine-grained):
+   - Repository: chỉ chọn **KitPlatform**
+   - Permissions → **Contents: Read and write**
+   - Metadata: Read-only (mặc định)
+4. Copy token → dán vào CMS → đăng nhập.
+
+Tài khoản GitHub phải được **invite Write** vào repo `khiemtic-rgb/KitPlatform`.
 
 ## Đăng bài mới
 
