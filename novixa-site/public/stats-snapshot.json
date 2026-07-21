@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-21T03:47:27.784Z",
+  "generatedAt": "2026-07-21T08:46:40.660Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 151,
-    "todayPageViews": 139,
-    "todayRequests": 320,
-    "last24hVisitors": 199,
-    "last24hPageViews": 218,
-    "last24hRequests": 557
+    "todayVisitors": 215,
+    "todayPageViews": 256,
+    "todayRequests": 493,
+    "last24hVisitors": 247,
+    "last24hPageViews": 323,
+    "last24hRequests": 675
   },
   "hourly": [
-    {
-      "time": "2026-07-20T04:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-07-20T06:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-07-20T07:00:00Z",
-      "visitors": 6,
-      "requests": 22
-    },
-    {
-      "time": "2026-07-20T08:00:00Z",
-      "visitors": 8,
-      "requests": 22
-    },
     {
       "time": "2026-07-20T09:00:00Z",
       "visitors": 5,
@@ -118,8 +98,33 @@
     },
     {
       "time": "2026-07-21T03:00:00Z",
-      "visitors": 47,
-      "requests": 81
+      "visitors": 57,
+      "requests": 95
+    },
+    {
+      "time": "2026-07-21T04:00:00Z",
+      "visitors": 16,
+      "requests": 19
+    },
+    {
+      "time": "2026-07-21T05:00:00Z",
+      "visitors": 25,
+      "requests": 28
+    },
+    {
+      "time": "2026-07-21T06:00:00Z",
+      "visitors": 22,
+      "requests": 46
+    },
+    {
+      "time": "2026-07-21T07:00:00Z",
+      "visitors": 28,
+      "requests": 31
+    },
+    {
+      "time": "2026-07-21T08:00:00Z",
+      "visitors": 11,
+      "requests": 28
     }
   ],
   "daily": [
@@ -161,70 +166,70 @@
     },
     {
       "date": "2026-07-21",
-      "visitors": 151,
-      "pageViews": 139,
-      "requests": 320
+      "visitors": 215,
+      "pageViews": 256,
+      "requests": 493
     }
   ],
   "topPages": [
     {
       "path": "/vi/tin-tuc/vi-sao-dao-tao-nhan-su-la-khoan-dau-tu-sinh-loi-nhat/",
-      "views": 112
-    },
-    {
-      "path": "/cdn-cgi/rum",
-      "views": 66
+      "views": 194
     },
     {
       "path": "/images/tin-tuc/vi-sao-dao-tao-nhan-su-la-khoan-dau-tu-sinh-loi-nhat.png",
-      "views": 58
+      "views": 73
     },
     {
-      "path": "/vi/tai-lieu/van-ban-phap-luat/",
-      "views": 26
+      "path": "/cdn-cgi/rum",
+      "views": 65
     },
     {
       "path": "/robots.txt",
-      "views": 25
+      "views": 28
     },
     {
-      "path": "/images/logo.png",
-      "views": 18
+      "path": "/vi/tai-lieu/van-ban-phap-luat/",
+      "views": 21
     },
     {
-      "path": "/sitemap-index.xml",
+      "path": "/vi/",
+      "views": 21
+    },
+    {
+      "path": "/",
       "views": 17
     },
     {
       "path": "/_astro/BaseLayout.DstE-6Da.css",
-      "views": 17
+      "views": 16
     },
     {
-      "path": "/vi/",
-      "views": 13
-    },
-    {
-      "path": "/favicon.svg",
-      "views": 13
+      "path": "/sitemap-index.xml",
+      "views": 16
     },
     {
       "path": "/.env",
       "views": 13
     },
     {
-      "path": "/",
+      "path": "/images/logo.png",
+      "views": 13
+    },
+    {
+      "path": "/favicon.svg",
       "views": 11
     },
     {
       "path": "/.aws/credentials",
-      "views": 8
-    },
-    {
-      "path": "/_astro/index.DcoAHZV3.css",
-      "views": 8
+      "views": 9
     },
     {
       "path": "/vi/tin-tuc/",
+      "views": 7
+    },
+    {
+      "path": "/_astro/index.DcoAHZV3.css",
       "views": 7
     }
   ]
