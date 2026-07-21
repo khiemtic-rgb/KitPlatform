@@ -421,7 +421,8 @@ export async function generateAllNewsImages({ forceSvg = false } = {}) {
   for (const file of files) {
     const slug = file.replace(/\.md$/, '');
     const outPath = path.join(OUT_DIR, `${slug}.png`);
-    if (!forceSvg && fs.existsSync(outPath) && !force) {
+    // --svg-only = chỉ dùng SVG (không gọi AI); vẫn giữ ảnh đã có trừ khi --force
+    if (fs.existsSync(outPath) && !force) {
       count++;
       continue;
     }
