@@ -1,9 +1,9 @@
 ---
-title: "POS bán hàng — nhanh, đúng giá, đúng ca"
-description: "Module bán hàng Novixa: quét mã, chiết khấu, thanh toán và in hóa đơn."
+title: POS bán hàng — nhanh, đúng giá, đúng ca
+description: 'Module bán hàng Novixa: quét mã, chiết khấu, thanh toán và in hóa đơn.'
+category: quan-tri-nha-thuoc
 pubDate: 2026-06-10
 lang: vi
-category: tin-tuc-novixa
 ---
 
 Module **POS** của Novixa được thiết kế cho quầy nhà thuốc:
@@ -20,4 +20,4 @@ Module **POS** của Novixa được thiết kế cho quầy nhà thuốc:
 
 Tích hợp sâu hơn với phân bổ lô khi chốt đơn, in hóa đơn và đối soát cuối ngày.
 
-*Demo nội bộ — tính năng công khai sẽ cập nhật trên mục tin tức.*
+_Demo nội bộ — tính năng công khai sẽ cập nhật trên mục tin tức._
