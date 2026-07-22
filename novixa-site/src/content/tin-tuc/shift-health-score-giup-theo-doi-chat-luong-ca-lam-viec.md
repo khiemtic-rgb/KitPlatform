@@ -7,7 +7,7 @@ description: |-
 image: /images/tin-tuc/giup-theo-doi-ca-lam-viec.png
 pubDate: 2026-08-01
 lang: vi
-category: tin-tuc-novixa
+category: quan-tri-nha-thuoc
 ---
 
 Khi bước vào một nhà thuốc vào buổi sáng, chủ nhà thuốc hoặc quản lý thường đối mặt với hàng loạt câu hỏi quen thuộc:

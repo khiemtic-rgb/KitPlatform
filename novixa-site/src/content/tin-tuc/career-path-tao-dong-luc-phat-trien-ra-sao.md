@@ -4,7 +4,7 @@ description: 'Trong các cuộc thảo luận về quản trị nhà thuốc, kh
 image: /images/tin-tuc/dong-luc-phat-trien.png
 pubDate: 2026-07-28
 lang: vi
-category: tin-tuc-novixa
+category: quan-tri-nha-thuoc
 ---
 
 Thế nhưng, có một thực tế khá xót xa mà nhiều chủ nhà thuốc gặp phải: Dù đã áp dụng cơ chế thưởng doanh số bán hàng, nhân sự trẻ vẫn thường rơi vào trạng thái "chạm trần" về động lực sau 6 đến 12 tháng làm việc. Hàng ngày, công việc của họ lặp đi lặp lại một kịch bản: mở cửa, lau kệ, tư vấn cắt liều, nhập máy, dọn kho và đóng cửa.

@@ -4,7 +4,7 @@ description: 'Trong công tác quản trị nhà thuốc, kỳ đánh giá hiệ
 image: /images/tin-tuc/thay-doi-cach-danh-gia-nhan-vien.png
 pubDate: 2026-07-31
 lang: vi
-category: tin-tuc-novixa
+category: quan-tri-nha-thuoc
 ---
 
 Trong công tác quản trị nhà thuốc, kỳ đánh giá hiệu suất làm việc luôn là thời điểm nhạy cảm đối với cả quản lý lẫn nhân viên. Một câu hỏi kinh điển thường xuyên gây tranh cãi: **Dựa vào đâu để khẳng định một dược sĩ đang làm việc xuất sắc hay yếu kém?**
