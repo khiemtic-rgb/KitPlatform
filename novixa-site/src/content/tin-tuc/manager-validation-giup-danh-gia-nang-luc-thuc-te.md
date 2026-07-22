@@ -1,7 +1,7 @@
 ---
 title: Manager Validation giúp đánh giá năng lực thực tế.
 description: 'Trong công tác quản trị và đào tạo nhân sự nhà thuốc, có một nghịch lý xảy ra khá phổ biến: Một dược sĩ trẻ có thể đạt điểm tuyệt đối trong các bài kiểm tra trắc nghiệm chuyên môn, thuộc lòng danh mục sản phẩm và quy trình tư vấn. Nhưng khi đứng trước một khách hàng thực tế—người đang lo lắng, đặt liên tục các câu hỏi dồn dập hoặc mang theo một đơn thuốc phức tạp—dược sĩ đó lại trở nên lúng túng, tư vấn ngập ngừng, thậm chí thao tác sai quy trình bàn giao.'
-image: images/tin-tuc/giup-danh-gia-nang-luc-thuc-te.png
+image: /images/tin-tuc/giup-danh-gia-nang-luc-thuc-te.png
 pubDate: 2026-07-30
 lang: vi
 ---

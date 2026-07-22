@@ -1,7 +1,7 @@
 ---
 title: Recognition giúp giữ chân nhân viên nhà thuốc như thế nào?
 description: Trong môi trường nhà thuốc bận rộn, áp lực từ ca trực kéo dài, việc tư vấn liên tục cho hàng trăm lượt khách và những công việc không tên như kiểm hàng, dọn kệ, kiểm soát hạn dùng (FEFO) dễ khiến nhân sự rơi vào trạng thái kiệt sức. Nếu tất cả những sự cố gắng đó chỉ được đáp lại bằng sự im lặng—hoặc tệ hơn là chỉ nhận được phản hồi khi xảy ra sai sót—nhân viên sẽ dần mất đi sự gắn kết và lặng lẽ tìm kiếm một môi trường mới.
-image: images/tin-tuc/giup-giu-chan-nhan-vien.png
+image: /images/tin-tuc/giup-giu-chan-nhan-vien.png
 pubDate: 2026-07-27
 lang: vi
 ---

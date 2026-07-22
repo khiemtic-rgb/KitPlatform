@@ -1,7 +1,7 @@
 ---
 title: Những sai lầm âm thầm "ngốn" chi phí khi đào tạo nhân viên mới tại nhà thuốc
 description: 'Nhận một dược sĩ mới vào ca, chủ nhà thuốc nào cũng kỳ vọng họ sẽ nhanh chóng thạo việc, đứng quầy độc lập và mang lại doanh số. Nhưng thực tế thường không như là mơ: Sau một hai tháng "cầm tay chỉ việc", nhân viên mới vẫn lúng túng khi tư vấn, liên tục kê sai đơn hoặc quên quy trình bảo quản. Tồi tệ hơn, không ít trường hợp vừa bắt đầu quen việc thì đột ngột xin nghỉ, buộc nhà thuốc phải quay lại vòng lặp tuyển dụng tốn kém.'
-image: images/tin-tuc/sai-lam-khi-dao-tao-nhan-vien-moi.png
+image: /images/tin-tuc/sai-lam-khi-dao-tao-nhan-vien-moi.png
 pubDate: 2026-07-23
 lang: vi
 ---

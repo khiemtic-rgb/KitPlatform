@@ -1,7 +1,7 @@
 ---
 title: Checklist giúp giảm sai sót trong vận hành
 description: 'Trong ngành bán lẻ dược phẩm, có những sai sót không xảy ra bằng một cú sốc lớn, mà nó diễn ra âm thầm mỗi ngày: Một tủ lạnh bảo quản vắc-xin hay men vi sinh bị ngắt nguồn điện từ đêm trước nhưng không ai phát hiện; một lô thuốc sát hạn dùng (FEFO) bị bỏ quên sâu trong hóc kệ; một ca trực quên không bàn giao số lượng thuốc kiểm soát đặc biệt; hoặc đơn giản là quầy kệ bụi bẩn khiến khách hàng cảm thấy thiếu tin tưởng ngay từ ánh nhìn đầu tiên.'
-image: images/tin-tuc/checklist-giup-giam-sai-sot.png
+image: /images/tin-tuc/checklist-giup-giam-sai-sot.png
 pubDate: 2026-07-29
 lang: vi
 ---

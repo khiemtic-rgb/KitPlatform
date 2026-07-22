@@ -11,8 +11,14 @@ export function resolveArticleImage(
   slug: string,
   image?: string | null,
 ): string {
-  const raw = image?.trim();
+  let raw = image?.trim();
   if (!raw) return articleOgImagePath(slug);
+  // CMS đôi khi lưu thiếu dấu / đầu
+  if (!raw.startsWith('http://') && !raw.startsWith('https://') && !raw.startsWith('/')) {
+    raw = `/${raw}`;
+  }
+  // Bỏ prefix monorepo nếu CMS lỡ ghi path repo
+  raw = raw.replace(/^\/?novixa-site\/public/, '');
   if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
   return raw.startsWith('/') ? raw : `/${raw}`;
 }

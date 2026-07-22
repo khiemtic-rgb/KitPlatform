@@ -1,7 +1,7 @@
 ---
 title: Competency Score thay đổi cách đánh giá nhân viên.
 description: 'Trong công tác quản trị nhà thuốc, kỳ đánh giá hiệu suất làm việc luôn là thời điểm nhạy cảm đối với cả quản lý lẫn nhân viên. Một câu hỏi kinh điển thường xuyên gây tranh cãi: Dựa vào đâu để khẳng định một dược sĩ đang làm việc xuất sắc hay yếu kém?'
-image: images/tin-tuc/thay-doi-cach-danh-gia-nhan-vien.png
+image: /images/tin-tuc/thay-doi-cach-danh-gia-nhan-vien.png
 pubDate: 2026-07-31
 lang: vi
 ---

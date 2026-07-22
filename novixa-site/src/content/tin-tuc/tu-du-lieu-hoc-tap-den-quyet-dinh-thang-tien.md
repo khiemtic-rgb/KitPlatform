@@ -1,7 +1,7 @@
 ---
 title: Từ dữ liệu học tập đến quyết định thăng tiến.
 description: Thông thường, khi một vị trí quản lý bị trống, chủ nhà thuốc thường đối mặt với hai kịch bản quen thuộc. Một là cất nhắc một dược sĩ có thâm niên lâu nhất—với niềm tin rằng "làm lâu thì nghiễm nhiên thạo việc và uy tín". Hai là chọn người có doanh số bán hàng tốt nhất—với hy vọng năng lực cá nhân của họ sẽ truyền cảm hứng cho cả đội ngũ.
-image: images/tin-tuc/tu-du-lieu-hoc-tap-den-thang-tien.png
+image: /images/tin-tuc/tu-du-lieu-hoc-tap-den-thang-tien.png
 pubDate: 2026-08-02
 lang: vi
 ---

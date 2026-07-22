@@ -1,7 +1,7 @@
 ---
 title: Lộ trình L0–L6 của Novixa Academy.
 description: 'Trong ngành bán lẻ dược phẩm, một thực tế khá phũ phàng mà nhiều quản lý và chủ nhà thuốc phải thừa nhận: Kiến thức chuyên môn tại trường đại học chỉ là điều kiện cần, nhưng chưa bao giờ là điều kiện đủ để một dược sĩ đứng quầy thành công.'
-image: images/tin-tuc/lo-trinh-l0-l6-cua-novixa-academy.png
+image: /images/tin-tuc/lo-trinh-l0-l6-cua-novixa-academy.png
 pubDate: 2026-07-25
 lang: vi
 ---

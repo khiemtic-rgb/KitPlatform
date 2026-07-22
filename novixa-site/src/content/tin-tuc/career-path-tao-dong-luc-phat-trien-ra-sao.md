@@ -1,7 +1,7 @@
 ---
 title: Career Path tạo động lực phát triển ra sao?
 description: 'Trong các cuộc thảo luận về quản trị nhà thuốc, khi nhắc đến câu chuyện "làm sao để nhân viên gắn bó và cống hiến hết mình", câu trả lời phổ biến nhất vẫn thường là: tăng lương, thưởng doanh số hay tạo môi trường làm việc thoải mái.'
-image: images/tin-tuc/dong-luc-phat-trien.png
+image: /images/tin-tuc/dong-luc-phat-trien.png
 pubDate: 2026-07-28
 lang: vi
 ---

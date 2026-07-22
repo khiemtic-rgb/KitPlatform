@@ -62,8 +62,7 @@ collections:
         widget: image
         required: true
         choose_url: false
-        media_folder: novixa-site/public/images/tin-tuc
-        public_folder: /images/tin-tuc
+        # Dùng media_folder global (không ghi đè ở đây — tránh lưu nhầm vào src/content/...)
         hint: Ảnh thumbnail + đầu bài. Khuyến nghị 1200×630 px (PNG hoặc JPG).
       - label: Ngày đăng
         name: pubDate

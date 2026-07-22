@@ -1,7 +1,7 @@
 ---
 title: Vì sao SOP quan trọng hơn kinh nghiệm cá nhân?
 description: 'Kinh nghiệm cá nhân rõ ràng là một tài sản quý giá. Nhưng nếu toàn bộ bộ máy vận hành của nhà thuốc chỉ dựa vào "vốn sống" và "mẹo nghề" của một vài cá nhân, nhà thuốc đó đang đối mặt với một rủi ro rất lớn. Khi dược sĩ giỏi xin nghỉ, rắc rối lập tức xuất hiện: chất lượng tư vấn sụt giảm, quy trình bị xáo trộn, và khách hàng bắt đầu than phiền.'
-image: images/tin-tuc/vi-sao-sop-quan-trong-hon-kinh-nghiem-ca-nhan.png
+image: /images/tin-tuc/vi-sao-sop-quan-trong-hon-kinh-nghiem-ca-nhan.png
 pubDate: 2026-07-24
 lang: vi
 ---

@@ -4,7 +4,7 @@ description: |-
   Khi bước vào một nhà thuốc vào buổi sáng, chủ nhà thuốc hoặc quản lý thường đối mặt với hàng loạt câu hỏi quen thuộc:
 
   Ca tối qua vận hành ra sao? Các em có kiểm tra nhiệt độ tủ lạnh bảo quản đúng quy định? Thuốc cận hạn (FEFO) có được rà soát? Quầy kệ có sạch sẽ và doanh số có đạt mục tiêu không?
-image: images/tin-tuc/giup-theo-doi-ca-lam-viec.png
+image: /images/tin-tuc/giup-theo-doi-ca-lam-viec.png
 pubDate: 2026-08-01
 lang: vi
 ---
