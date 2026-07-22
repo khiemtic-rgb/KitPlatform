@@ -3,6 +3,7 @@ title: "CRM cho nhà thuốc — bắt đầu từ dữ liệu khách hàng có 
 description: "Chăm sóc khách không cần phức tạp ngay từ đầu. Bước đầu: lưu hồ sơ, lịch sử mua và đồng ý sử dụng dữ liệu."
 pubDate: 2026-07-05
 lang: vi
+category: tin-tuc-novixa
 ---
 
 CRM nhà thuốc không phải gửi hàng loạt tin nhắn quảng cáo. Mục tiêu đầu là **hiểu khách quay lại** và **tuân thủ quyền riêng tư**.

@@ -3,6 +3,7 @@ title: "Cảnh báo hàng cận date — quy trình xử lý 5 bước"
 description: "Hàng cận hạn là rủi ro lớn. Cách lập danh sách, ưu tiên bán FEFO và giảm tồn chết trước khi hết hạn."
 pubDate: 2026-07-03
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Nhiều nhà thuốc chỉ phát hiện hàng cận date khi **kiểm kê cuối tháng** — lúc đó đã muộn.

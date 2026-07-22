@@ -3,6 +3,7 @@ title: "Vì sao đào tạo nhân sự là khoản đầu tư sinh lời nhất?
 description: "Mỗi chủ nhà thuốc đều quan tâm doanh thu và lợi nhuận, nhưng khoản đầu tư mang lại giá trị lâu dài thường bị bỏ qua chính là đào tạo và phát triển nhân sự."
 pubDate: 2026-07-21
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Mỗi chủ nhà thuốc đều quan tâm đến doanh thu, tồn kho hay lợi nhuận. Nhưng có một khoản đầu tư mang lại giá trị lâu dài mà nhiều người thường bỏ qua: **đào tạo và phát triển nhân sự**.

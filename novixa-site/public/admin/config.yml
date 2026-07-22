@@ -30,10 +30,10 @@ slug:
 
 collections:
   - name: tin_tuc
-    label: Tin tức
+    label: Kiến thức nhà thuốc
     label_singular: Bài viết
     description: >
-      Đăng / sửa bài trên novixa.vn. Sau khi Lưu, chờ Cloudflare build vài phút.
+      Đăng / sửa bài trên novixa.vn. Chọn đúng nhóm kiến thức. Sau khi Lưu, chờ Cloudflare build vài phút.
       Tải ảnh ở trường "Ảnh hiển thị" (khuyến nghị 1200×630).
     folder: novixa-site/src/content/tin-tuc
     create: true
@@ -42,12 +42,15 @@ collections:
     format: frontmatter
     slug: '{{slug}}'
     identifier_field: title
-    summary: '{{title}} — {{pubDate}}'
+    summary: '{{title}} — {{category}} — {{pubDate}}'
     sortable_fields:
-      fields: [pubDate, title]
+      fields: [pubDate, title, category]
       default:
         field: pubDate
         direction: descending
+    view_groups:
+      - label: Theo nhóm
+        field: category
     fields:
       - label: Tiêu đề
         name: title
@@ -57,12 +60,26 @@ collections:
         name: description
         widget: text
         hint: 1–2 câu tóm tắt (meta description / danh sách tin).
+      - label: Nhóm kiến thức
+        name: category
+        widget: select
+        required: true
+        default: tin-tuc-novixa
+        options:
+          - { label: Quản trị nhà thuốc, value: quan-tri-nha-thuoc }
+          - { label: Vận hành, value: van-hanh }
+          - { label: Bán hàng & CSKH, value: ban-hang-cskh }
+          - { label: AI trong nhà thuốc, value: ai-trong-nha-thuoc }
+          - { label: Connect, value: connect }
+          - { label: Novixa Academy, value: novixa-academy }
+          - { label: Câu chuyện khách hàng, value: cau-chuyen-khach-hang }
+          - { label: Tin tức Novixa, value: tin-tuc-novixa }
+        hint: Bài sẽ hiện trong menu Kiến thức nhà thuốc → nhóm đã chọn.
       - label: Ảnh hiển thị
         name: image
         widget: image
         required: true
         choose_url: false
-        # Dùng media_folder global (không ghi đè ở đây — tránh lưu nhầm vào src/content/...)
         hint: Ảnh thumbnail + đầu bài. Khuyến nghị 1200×630 px (PNG hoặc JPG).
       - label: Ngày đăng
         name: pubDate

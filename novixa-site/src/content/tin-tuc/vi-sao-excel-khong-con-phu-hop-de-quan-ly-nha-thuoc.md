@@ -3,6 +3,7 @@ title: "Vì sao Excel không còn phù hợp để quản lý nhà thuốc?"
 description: "Excel từng là công cụ quen thuộc của rất nhiều nhà thuốc. Tuy nhiên khi quy mô kinh doanh tăng lên, những hạn chế của Excel bắt đầu bộc lộ rõ ràng."
 pubDate: 2026-06-24
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Excel từng là công cụ quen thuộc của rất nhiều nhà thuốc. Tuy nhiên khi quy mô kinh doanh tăng lên, những hạn chế của Excel bắt đầu bộc lộ rõ ràng.

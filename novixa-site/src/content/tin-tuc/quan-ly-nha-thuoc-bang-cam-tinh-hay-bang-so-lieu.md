@@ -3,6 +3,7 @@ title: "Quản lý nhà thuốc bằng cảm tính hay bằng số liệu?"
 description: "Quản lý nhà thuốc bằng cảm tính hay số liệu? Phân tích thực tế giúp chủ nhà thuốc tối ưu hóa tồn kho, dòng tiền và bứt phá doanh thu bền vững."
 pubDate: 2026-07-19
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Nhiều chủ nhà thuốc tại Việt Nam thường bắt đầu sự nghiệp bằng chuyên môn ngành y dược và một chút vốn liếng tích lũy. Trong những năm đầu, khi quy mô còn nhỏ, việc quản lý bằng trí nhớ và cảm tính tỏ ra khá hiệu quả. Bạn có thể nhớ rõ vị trí từng hộp thuốc, nhẩm tính được doanh thu mỗi ngày và biết khách quen hay mua loại gì. 

@@ -16,14 +16,16 @@ Tài khoản GitHub phải được **invite Write** vào repo `khiemtic-rgb/Kit
 
 ## Đăng bài mới
 
-1. Chọn **Tin tức** → **New**.
+1. Chọn **Kiến thức nhà thuốc** → **New**.
 2. Điền:
    - **Tiêu đề**
    - **Mô tả ngắn** (1–2 câu)
+   - **Nhóm kiến thức** (bắt buộc) — chọn đúng nhóm trong menu
+   - **Ảnh hiển thị**
    - **Ngày đăng** — để ngày tương lai nếu muốn lên lịch
    - **Nội dung** — dùng tiêu đề phụ `##`, danh sách `*`, in đậm `**chữ**`
 3. Bấm **Publish** / Lưu.
-4. Đợi 2–5 phút rồi kiểm tra https://novixa.vn/vi/tin-tuc/
+4. Đợi 2–5 phút rồi kiểm tra https://novixa.vn/vi/kien-thuc/
 
 ## Ảnh đại diện
 

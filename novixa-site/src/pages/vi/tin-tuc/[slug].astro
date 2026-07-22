@@ -7,6 +7,7 @@ import { getCollection, render } from 'astro:content';
 import { filterPublishedPosts } from '../../../lib/publishedNews';
 import { formatNewsDate } from '../../../lib/newsDate';
 import { resolveArticleImage, buildArticleJsonLd } from '../../../lib/articleSeo';
+import { getNewsCategory, newsCategoryPath } from '../../../lib/news-categories';
 import { t } from '../../../i18n';
 import '../../../styles/global.css';
 
@@ -26,6 +27,8 @@ const { Content } = await render(post);
 const ogImage = resolveArticleImage(post.id, post.data.image);
 const publishedTime = post.data.pubDate.toISOString();
 const jsonLd = buildArticleJsonLd(post);
+const category = getNewsCategory(post.data.category);
+const categoryHref = newsCategoryPath(category.id);
 ---
 
 <BaseLayout
@@ -40,9 +43,11 @@ const jsonLd = buildArticleJsonLd(post);
   <Header slot="header" />
   <article class="section" itemscope itemtype="https://schema.org/Article">
     <div class="container prose">
-      <p><a href="/vi/tin-tuc/">{m.news.back}</a></p>
+      <p><a href="/vi/kien-thuc/">{m.news.back}</a></p>
       <h1 itemprop="headline">{post.data.title}</h1>
       <p class="news-meta">
+        <a href={categoryHref}>{category.label}</a>
+        <span aria-hidden="true"> · </span>
         <time datetime={publishedTime} itemprop="datePublished">{formatNewsDate(post.data.pubDate)}</time>
       </p>
       <figure class="article-hero-image">

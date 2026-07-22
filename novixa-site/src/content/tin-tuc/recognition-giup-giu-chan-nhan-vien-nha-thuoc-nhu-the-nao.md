@@ -4,6 +4,7 @@ description: Trong môi trường nhà thuốc bận rộn, áp lực từ ca tr
 image: /images/tin-tuc/giup-giu-chan-nhan-vien.png
 pubDate: 2026-07-27
 lang: vi
+category: tin-tuc-novixa
 ---
 
 "Lại thêm một dược sĩ cứng nghỉ việc."

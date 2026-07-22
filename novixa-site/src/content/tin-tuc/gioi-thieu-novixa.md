@@ -3,6 +3,7 @@ title: "Novixa — Giải pháp dược thông minh cho nhà thuốc Việt Nam"
 description: "Giới thiệu tầm nhìn Novixa và lộ trình xây nền tảng quản lý nhà thuốc."
 pubDate: 2026-06-01
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Novixa ra đời từ nhu cầu thực tế: nhà thuốc cần một hệ thống **vừa đủ cho quầy bán**, vừa **kiểm soát tồn và lô** — không phải ERP generic khó dùng.

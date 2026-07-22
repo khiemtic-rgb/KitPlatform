@@ -3,6 +3,7 @@ title: "Chủ nhà thuốc nên làm gì mỗi ngày?"
 description: "Làm thế nào để quản lý nhà thuốc hiệu quả mà không bị quá tải? Khám phá quy trình làm việc mỗi ngày giúp chủ nhà thuốc tối ưu doanh thu và vận hành."
 pubDate: 2026-07-14
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Nhiều dược sĩ khi mới mở nhà thuốc thường rơi vào cái bẫy "tự làm chủ nhưng thực chất là làm thuê cho chính mình". Hàng ngày, bạn phải quay cuồng với hàng tá công việc không tên: từ đứng quầy tư vấn, nhập hàng, kiểm kho, cho đến đối soát sổ sách cuối ngày. Đến tối muộn, khi đóng cửa quán, bạn nhận ra mình mệt nhoài nhưng vẫn mơ hồ không biết hôm nay lời lỗ ra sao, thất thoát ở đâu.

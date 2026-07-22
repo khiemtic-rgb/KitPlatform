@@ -3,6 +3,7 @@ title: "Mở rộng chuỗi nhà thuốc — checklist hệ thống trước khi
 description: "Mở thêm điểm bán cần chuẩn danh mục, giá, tồn và phân quyền. Checklist ngắn trước khi nhân bản mô hình."
 pubDate: 2026-07-07
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Chi nhánh thứ hai thất bại thường vì **dữ liệu không đồng nhất** — giá khác nhau, tồn không khớp, báo cáo gộp thủ công.

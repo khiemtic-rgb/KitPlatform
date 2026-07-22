@@ -213,6 +213,7 @@ title: "${escapeYaml(title)}"
 description: "${escapeYaml(description)}"
 pubDate: ${formatPubDate(pubDate)}
 lang: vi
+category: tin-tuc-novixa
 ---
 
 ${content}

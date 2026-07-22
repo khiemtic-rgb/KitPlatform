@@ -3,6 +3,7 @@ title: "10 sai lầm khiến nhà thuốc mãi không phát triển"
 description: "Nhận diện ngay 10 sai lầm phổ biến trong quản lý khiến nhà thuốc của bạn dậm chân tại chỗ và giải pháp bứt phá doanh thu từ Novixa."
 pubDate: 2026-07-16
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Nhiều chủ nhà thuốc thường tự hỏi bản thân: "Tại sao mình mở cửa từ 6 giờ sáng đến 10 giờ đêm, tư vấn tận tình, khách vẫn ra vào đều đặn nhưng doanh thu cuối tháng cộng lại chẳng đáng bao nhiêu?" hoặc "Tại sao nhà thuốc đối thủ mới mở cách vài căn lại đông nườm nượp, còn mình có thâm niên chục năm trong nghề lại ngày càng vắng khách?".

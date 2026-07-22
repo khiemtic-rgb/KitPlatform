@@ -3,6 +3,7 @@ title: "Lộ trình Novixa Q3 2026 — POS, báo cáo và mở rộng chuỗi"
 description: "Cập nhật mốc phát triển quý 3: hoàn thiện POS, cài đặt in, batch mode và nội dung site novixa.vn."
 pubDate: 2026-07-10
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Novixa tiếp tục phát triển song song **sản phẩm lõi** và **kênh công khai** novixa.vn.

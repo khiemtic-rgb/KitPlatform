@@ -3,6 +3,7 @@ title: "Lộ trình phát triển 2026"
 description: "Các mốc Novixa dự kiến trong năm 2026."
 pubDate: 2026-06-18
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Novixa công bố lộ trình tham khảo (có thể điều chỉnh theo phản hồi thực tế):

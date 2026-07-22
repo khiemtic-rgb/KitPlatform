@@ -3,6 +3,7 @@ title: "AI hỗ trợ vận hành nhà thuốc — từ gợi ý nhập hàng đ
 description: "Trí tuệ nhân tạo không thay dược sĩ — nhưng có thể gợi ý nhập hàng, cảnh báo bất thường và tóm tắt báo cáo."
 pubDate: 2026-07-08
 lang: vi
+category: tin-tuc-novixa
 ---
 
 AI trong nhà thuốc **không** thay thế tư vấn y khoa. Giá trị thực tế nằm ở **vận hành và dữ liệu**.

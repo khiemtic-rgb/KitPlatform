@@ -3,6 +3,7 @@ title: "Khi doanh thu giảm, nên kiểm tra điều gì trước?"
 description: "Doanh thu nhà thuốc sụt giảm? Đừng hoảng loạn hạ giá. Hãy cùng Novixa rà soát ngay 4 yếu tố cốt lõi để tìm ra nguyên nhân và khắc phục kịp thời."
 pubDate: 2026-07-20
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Doanh thu sụt giảm là "cơn ác mộng" thầm lặng của bất kỳ chủ nhà thuốc nào. Sau một tháng bận rộn, nhìn vào con số tổng kết cuối tháng, bạn chợt nhận ra dòng tiền thu về không còn được như trước. Phản ứng tự nhiên của hầu hết các chủ nhà thuốc là lo lắng, sốt ruột và ngay lập tức nghĩ đến việc giảm giá hoặc chạy các chương trình khuyến mãi cắt máu để kéo khách.

@@ -4,6 +4,7 @@ description: 'Kinh nghiệm cá nhân rõ ràng là một tài sản quý giá. 
 image: /images/tin-tuc/vi-sao-sop-quan-trong-hon-kinh-nghiem-ca-nhan.png
 pubDate: 2026-07-24
 lang: vi
+category: tin-tuc-novixa
 ---
 
 "Ở đây chị làm mười mấy năm rồi, cứ nhìn chị làm là chuẩn nhất."

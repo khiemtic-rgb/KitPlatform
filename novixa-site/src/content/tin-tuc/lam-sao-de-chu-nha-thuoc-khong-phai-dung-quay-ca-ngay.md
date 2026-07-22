@@ -3,6 +3,7 @@ title: "Làm sao để chủ nhà thuốc không phải đứng quầy cả ngà
 description: "Bí quyết thực tế giúp chủ nhà thuốc thoát khỏi cảnh đứng quầy 12 tiếng mỗi ngày, tự động hóa vận hành và quản lý từ xa hiệu quả cùng Novixa."
 pubDate: 2026-07-17
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Nhiều dược sĩ khi mới mở nhà thuốc đều ấp ủ giấc mơ tự chủ tài chính và tự do thời gian. Thế nhưng, thực tế sau vài năm vận hành, không ít người nhận ra mình đang "làm thuê" cho chính cửa hàng của mình. Từ 6 giờ sáng đến 10 giờ đêm, bạn phải túc trực tại quầy, ăn vội bát cơm khi vắng khách, không dám đi du lịch, thậm chí không có thời gian chăm sóc con cái. 

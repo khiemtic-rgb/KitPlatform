@@ -3,6 +3,7 @@ title: "Quản lý nhiều chi nhánh nhà thuốc — thách thức và giải 
 description: "Khi mở thêm chi nhánh thứ hai, thứ ba, nhiều chủ nhà thuốc nhận ra rằng việc quản lý không còn đơn giản như trước."
 pubDate: 2026-06-28
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Khi mở thêm chi nhánh thứ hai, thứ ba, nhiều chủ nhà thuốc nhận ra rằng việc quản lý không còn đơn giản như trước.

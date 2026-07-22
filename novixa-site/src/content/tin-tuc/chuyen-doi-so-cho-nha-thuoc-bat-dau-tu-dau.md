@@ -3,6 +3,7 @@ title: "Chuyển đổi số cho nhà thuốc — bắt đầu từ đâu?"
 description: "Chuyển đổi số đang trở thành xu hướng tất yếu trong ngành dược. Tuy nhiên, nhiều chủ nhà thuốc vẫn nghĩ rằng chuyển đổi số là một dự án phức tạp và tốn kém."
 pubDate: 2026-06-30
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Chuyển đổi số đang trở thành xu hướng tất yếu trong ngành dược. Tuy nhiên, nhiều chủ nhà thuốc vẫn nghĩ rằng chuyển đổi số là một dự án phức tạp và tốn kém.

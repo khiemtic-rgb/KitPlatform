@@ -3,6 +3,7 @@ title: "FEFO là gì? Nguyên tắc bán hết hạn trước cho nhà thuốc"
 description: "Trong ngành dược, việc xuất bán đúng lô hàng quan trọng không kém việc nhập hàng đúng giá. FEFO là một trong những nguyên tắc giúp nhà thuốc giảm thất thoát và đảm bảo chất lượng sản phẩm."
 pubDate: 2026-06-27
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Trong ngành dược, việc xuất bán đúng lô hàng quan trọng không kém việc nhập hàng đúng giá. FEFO là một trong những nguyên tắc giúp nhà thuốc giảm thất thoát và đảm bảo chất lượng sản phẩm.

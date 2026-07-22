@@ -3,6 +3,7 @@ title: "5 chỉ số chủ nhà thuốc cần xem mỗi sáng"
 description: "Dành 10 phút mỗi sáng xem 5 chỉ số này giúp chủ nhà thuốc kiểm soát dòng tiền, tối ưu doanh thu và tránh thất thoát hiệu quả."
 pubDate: 2026-07-18
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Một ngày mới của chủ nhà thuốc thường bắt đầu bằng hàng tá công việc không tên: kiểm kho, nhận hàng từ nhà cung cấp, kiểm tra hạn dùng, chia ca cho nhân viên, và cả đứng quầy tư vấn. Trong guồng quay bận rộn đó, nhiều chủ nhà thuốc thừa nhận họ chỉ kịp cộng sổ vào cuối tháng, hoặc thậm chí vài tháng mới tổng kết một lần. Hậu quả là có những dòng tiền bị rò rỉ, những mặt hàng hết hạn gây lãng phí, hay nhân viên tư vấn kém hiệu quả mà chủ cửa hàng không hề hay biết.

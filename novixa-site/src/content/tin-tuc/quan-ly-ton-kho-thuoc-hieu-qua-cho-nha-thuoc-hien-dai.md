@@ -3,6 +3,7 @@ title: "Quản lý tồn kho thuốc hiệu quả cho nhà thuốc hiện đại
 description: "Tồn kho là tài sản lớn nhất của hầu hết các nhà thuốc. Quản lý tồn kho tốt giúp tăng lợi nhuận, giảm thất thoát và cải thiện dòng tiền."
 pubDate: 2026-06-25
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Tồn kho là tài sản lớn nhất của hầu hết các nhà thuốc. Quản lý tồn kho tốt giúp tăng lợi nhuận, giảm thất thoát và cải thiện dòng tiền.

@@ -76,6 +76,7 @@ async function publishPlanItem(plan) {
     description: `${plan.title} — Novixa.`,
     pubDate: plan.publishDate,
     lang: 'vi',
+    category: 'tin-tuc-novixa',
   };
 
   let body = existing?.body ?? '';
@@ -97,6 +98,7 @@ async function publishPlanItem(plan) {
       description: generated.description,
       pubDate: forcePublish() ? today : plan.publishDate,
       lang: 'vi',
+      category: frontmatter.category ?? 'tin-tuc-novixa',
     };
     body = generated.body;
     await sleep(800);

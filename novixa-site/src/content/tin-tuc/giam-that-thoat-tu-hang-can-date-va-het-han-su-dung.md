@@ -3,6 +3,7 @@ title: "Giảm thất thoát từ hàng cận date và hết hạn sử dụng"
 description: "Một trong những nguyên nhân gây thất thoát lớn nhất tại nhà thuốc là hàng hóa hết hạn sử dụng. Không chỉ gây thiệt hại về tài chính, việc bán nhầm sản phẩm hết hạn còn ảnh hưởng nghiêm trọng đến uy tí"
 pubDate: 2026-06-26
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Một trong những nguyên nhân gây thất thoát lớn nhất tại nhà thuốc là hàng hóa hết hạn sử dụng. Không chỉ gây thiệt hại về tài chính, việc bán nhầm sản phẩm hết hạn còn ảnh hưởng nghiêm trọng đến uy tín và có thể dẫn đến các vấn đề pháp lý.

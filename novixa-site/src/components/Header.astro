@@ -1,10 +1,12 @@
 ---
 import { t } from '../i18n';
+import { NEWS_CATEGORIES, newsCategoryPath } from '../lib/news-categories';
 
 const m = t('vi');
 const base = '/vi';
 const path = Astro.url.pathname;
 const n = m.nav;
+const knowledgeActive = path.startsWith(`${base}/tin-tuc`) || path.startsWith(`${base}/kien-thuc`);
 
 const products = [
   {
@@ -208,7 +210,46 @@ const products = [
         </div>
       </div>
 
-      <a href={`${base}/tin-tuc/`} class:list={{ active: path.startsWith(`${base}/tin-tuc`) }}>{n.resources}</a>
+      <div
+        class="nav-item nav-item--dropdown"
+        data-dropdown
+        class:list={{ active: knowledgeActive }}
+      >
+        <button
+          type="button"
+          class="nav-trigger"
+          aria-expanded="false"
+          aria-haspopup="true"
+          aria-controls="knowledge-dropdown"
+          data-dropdown-trigger
+          class:list={{ active: knowledgeActive }}
+        >
+          {n.resources}
+          <span class="nav-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div
+          id="knowledge-dropdown"
+          class="nav-dropdown"
+          role="menu"
+          aria-label="Kiến thức nhà thuốc"
+          data-dropdown-panel
+        >
+          <a href={`${base}/kien-thuc/`} role="menuitem" class:list={{ active: path === `${base}/kien-thuc/` || path === `${base}/kien-thuc` }}>
+            Tổng quan
+          </a>
+          {
+            NEWS_CATEGORIES.map((cat) => (
+              <a
+                href={newsCategoryPath(cat.id)}
+                role="menuitem"
+                class:list={{ active: path.startsWith(newsCategoryPath(cat.id)) }}
+              >
+                {cat.label}
+              </a>
+            ))
+          }
+        </div>
+      </div>
       <a href={`${base}/ve-chung-toi/`} class:list={{ active: path.startsWith(`${base}/ve-chung-toi`) }}>{n.company}</a>
     </nav>
 
@@ -239,17 +280,16 @@ const products = [
   const mega = document.querySelector('[data-mega]');
   const megaTrigger = document.querySelector('[data-mega-trigger]');
   const megaPanel = document.querySelector('[data-mega-panel]');
-  const dropdown = document.querySelector('[data-dropdown]');
-  const dropdownTrigger = document.querySelector('[data-dropdown-trigger]');
-
-  let megaCloseTimer = null;
-  let dropdownCloseTimer = null;
+  const dropdownItems = [...document.querySelectorAll('[data-dropdown]')];
 
   const isDesktopNav = () => window.matchMedia('(min-width: 1181px)').matches;
 
   const syncHeader = () => {
     header?.classList.toggle('is-scrolled', window.scrollY > 12);
   };
+
+  const megaTimer = { id: null };
+  const dropdownTimers = new WeakMap();
 
   const setOpen = (el, trigger, open, timerRef, { immediate = false } = {}) => {
     window.clearTimeout(timerRef.id);
@@ -273,11 +313,37 @@ const products = [
     timerRef.id = window.setTimeout(close, 220);
   };
 
-  const megaTimer = { id: null };
-  const dropdownTimer = { id: null };
+  const getDropdownTimer = (el) => {
+    let timer = dropdownTimers.get(el);
+    if (!timer) {
+      timer = { id: null };
+      dropdownTimers.set(el, timer);
+    }
+    return timer;
+  };
 
   const setMegaOpen = (open, opts) => setOpen(mega, megaTrigger, open, megaTimer, opts);
-  const setDropdownOpen = (open, opts) => setOpen(dropdown, dropdownTrigger, open, dropdownTimer, opts);
+
+  const closeAllDropdowns = (opts) => {
+    dropdownItems.forEach((item) => {
+      const trigger = item.querySelector('[data-dropdown-trigger]');
+      setOpen(item, trigger, false, getDropdownTimer(item), opts);
+    });
+  };
+
+  const setDropdownOpen = (item, open, opts) => {
+    const trigger = item.querySelector('[data-dropdown-trigger]');
+    if (open) {
+      dropdownItems.forEach((other) => {
+        if (other === item) return;
+        setOpen(other, other.querySelector('[data-dropdown-trigger]'), false, getDropdownTimer(other), {
+          immediate: true,
+        });
+      });
+      setMegaOpen(false, { immediate: true });
+    }
+    setOpen(item, trigger, open, getDropdownTimer(item), opts);
+  };
 
   syncHeader();
   window.addEventListener('scroll', syncHeader, { passive: true });
@@ -288,13 +354,13 @@ const products = [
     toggle.setAttribute('aria-expanded', String(Boolean(open)));
     if (!open) {
       setMegaOpen(false, { immediate: true });
-      setDropdownOpen(false, { immediate: true });
+      closeAllDropdowns({ immediate: true });
     }
   });
 
   mega?.addEventListener('pointerenter', () => {
     if (isDesktopNav()) {
-      setDropdownOpen(false, { immediate: true });
+      closeAllDropdowns({ immediate: true });
       setMegaOpen(true);
     }
   });
@@ -314,7 +380,7 @@ const products = [
     event.preventDefault();
     event.stopPropagation();
     const next = !mega?.classList.contains('is-open');
-    if (next) setDropdownOpen(false, { immediate: true });
+    if (next) closeAllDropdowns({ immediate: true });
     setMegaOpen(Boolean(next), { immediate: true });
   });
 
@@ -325,41 +391,41 @@ const products = [
     setMegaOpen(false);
   });
 
-  dropdown?.addEventListener('pointerenter', () => {
-    if (isDesktopNav()) {
-      setMegaOpen(false, { immediate: true });
-      setDropdownOpen(true);
-    }
-  });
+  dropdownItems.forEach((item) => {
+    const trigger = item.querySelector('[data-dropdown-trigger]');
 
-  dropdown?.addEventListener('pointerleave', (event) => {
-    if (!isDesktopNav()) return;
-    const next = event.relatedTarget;
-    if (next instanceof Node && dropdown.contains(next)) return;
-    setDropdownOpen(false);
-  });
+    item.addEventListener('pointerenter', () => {
+      if (isDesktopNav()) setDropdownOpen(item, true);
+    });
 
-  dropdownTrigger?.addEventListener('click', (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const next = !dropdown?.classList.contains('is-open');
-    if (next) setMegaOpen(false, { immediate: true });
-    setDropdownOpen(Boolean(next), { immediate: true });
-  });
+    item.addEventListener('pointerleave', (event) => {
+      if (!isDesktopNav()) return;
+      const next = event.relatedTarget;
+      if (next instanceof Node && item.contains(next)) return;
+      setDropdownOpen(item, false);
+    });
 
-  dropdown?.addEventListener('focusin', () => setDropdownOpen(true, { immediate: true }));
-  dropdown?.addEventListener('focusout', (event) => {
-    const next = event.relatedTarget;
-    if (next instanceof Node && dropdown.contains(next)) return;
-    setDropdownOpen(false);
+    trigger?.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const next = !item.classList.contains('is-open');
+      setDropdownOpen(item, Boolean(next), { immediate: true });
+    });
+
+    item.addEventListener('focusin', () => setDropdownOpen(item, true, { immediate: true }));
+    item.addEventListener('focusout', (event) => {
+      const next = event.relatedTarget;
+      if (next instanceof Node && item.contains(next)) return;
+      setDropdownOpen(item, false);
+    });
   });
 
   document.addEventListener('pointerdown', (event) => {
     if (!(event.target instanceof Node)) return;
     if (mega?.contains(event.target)) return;
-    if (dropdown?.contains(event.target)) return;
+    if (dropdownItems.some((item) => item.contains(event.target))) return;
     if (mega?.classList.contains('is-open')) setMegaOpen(false, { immediate: true });
-    if (dropdown?.classList.contains('is-open')) setDropdownOpen(false, { immediate: true });
+    closeAllDropdowns({ immediate: true });
   });
 
   nav?.querySelectorAll('a').forEach((link) => {
@@ -368,14 +434,14 @@ const products = [
       nav.classList.remove('is-open');
       toggle?.setAttribute('aria-expanded', 'false');
       setMegaOpen(false, { immediate: true });
-      setDropdownOpen(false, { immediate: true });
+      closeAllDropdowns({ immediate: true });
     });
   });
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       setMegaOpen(false, { immediate: true });
-      setDropdownOpen(false, { immediate: true });
+      closeAllDropdowns({ immediate: true });
     }
   });
 </script>

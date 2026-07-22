@@ -3,6 +3,7 @@ title: "Kiểm kê tồn kho định kỳ — quy trình chuẩn cho nhà thuố
 description: "Kiểm kê không chỉ đếm số lượng — cần đối chiếu lô, HSD và ghi nhận chênh lệch có trách nhiệm."
 pubDate: 2026-07-09
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Kiểm kê định kỳ giúp phát hiện **thất thoát**, **nhầm lô** và **sai sổ** trước khi thành thiệt hại lớn.

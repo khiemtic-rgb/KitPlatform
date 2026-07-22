@@ -3,6 +3,7 @@ title: "Báo cáo doanh thu real-time — đọc số liệu đúng để ra quy
 description: "Doanh thu hôm nay, tồn kho, đơn hàng và hàng cận date trên một màn hình — tránh nhìn số cũ cuối ngày."
 pubDate: 2026-07-06
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Chủ nhà thuốc thường hỏi ba câu mỗi ngày: **hôm nay bán được bao nhiêu**, **tồn còn gì**, **có hàng sắp hết hạn không**.

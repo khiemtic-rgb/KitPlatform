@@ -3,6 +3,7 @@ title: "POS nhà thuốc — 5 tính năng không thể thiếu năm 2026"
 description: "Quầy bán vẫn là trung tâm doanh thu. Các tính năng POS cần có để vừa nhanh vừa kiểm soát lô và giá."
 pubDate: 2026-07-04
 lang: vi
+category: tin-tuc-novixa
 ---
 
 POS nhà thuốc khác cửa hàng bán lẻ: cần **mã vạch**, **nhiều đơn vị**, **chiết khấu** và **gắn lô** khi chốt đơn.

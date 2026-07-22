@@ -1,0 +1,119 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import NewsListItem from '../../../components/NewsListItem.astro';
+import { getCollection } from 'astro:content';
+import {
+  NEWS_CATEGORIES,
+  getNewsCategory,
+  newsCategoryPath,
+} from '../../../lib/news-categories';
+import { sortPublishedNews } from '../../../lib/newsDate';
+import { t } from '../../../i18n';
+import '../../../styles/global.css';
+
+export function getStaticPaths() {
+  return NEWS_CATEGORIES.map((cat) => ({
+    params: { category: cat.id },
+    props: { categoryId: cat.id },
+  }));
+}
+
+const m = t('vi');
+const { categoryId } = Astro.props;
+const category = getNewsCategory(categoryId);
+const all = sortPublishedNews(await getCollection('tinTuc'));
+const posts = all.filter((p) => (p.data.category ?? 'tin-tuc-novixa') === categoryId);
+---
+
+<BaseLayout
+  title={`${category.label} — Kiến thức nhà thuốc`}
+  description={category.description}
+  canonicalPath={newsCategoryPath(categoryId)}
+>
+  <Header slot="header" />
+  <section class="section">
+    <div class="container">
+      <p class="knowledge-crumb">
+        <a href="/vi/kien-thuc/">Kiến thức nhà thuốc</a>
+        <span aria-hidden="true"> / </span>
+        <span>{category.label}</span>
+      </p>
+      <h1 class="section-title">{category.label}</h1>
+      <p class="section-intro">{category.description}</p>
+
+      <nav class="knowledge-cat-nav" aria-label="Nhóm kiến thức">
+        {
+          NEWS_CATEGORIES.map((cat) => (
+            <a
+              href={newsCategoryPath(cat.id)}
+              class:list={{ active: cat.id === categoryId }}
+            >
+              {cat.label}
+            </a>
+          ))
+        }
+      </nav>
+
+      {
+        posts.length > 0 ? (
+          <ul class="news-list">
+            {posts.map((post) => (
+              <NewsListItem
+                slug={post.id}
+                title={post.data.title}
+                description={post.data.description}
+                pubDate={post.data.pubDate}
+                image={post.data.image}
+                newLabel={m.news.newBadge}
+              />
+            ))}
+          </ul>
+        ) : (
+          <p class="section-intro">Chưa có bài trong nhóm này. Quay lại sau hoặc chọn nhóm khác.</p>
+        )
+      }
+    </div>
+  </section>
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .knowledge-crumb {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    color: var(--color-muted, #5b6b7c);
+  }
+
+  .knowledge-crumb a {
+    color: var(--color-primary, #1a7a4c);
+    text-decoration: none;
+  }
+
+  .knowledge-cat-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.25rem 0 1.75rem;
+  }
+
+  .knowledge-cat-nav a {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    text-decoration: none;
+    color: var(--color-text, #243447);
+    background: #fff;
+  }
+
+  .knowledge-cat-nav a:hover,
+  .knowledge-cat-nav a.active {
+    border-color: var(--color-primary, #1a7a4c);
+    color: var(--color-primary, #1a7a4c);
+    background: color-mix(in srgb, var(--color-primary, #1a7a4c) 8%, white);
+  }
+</style>

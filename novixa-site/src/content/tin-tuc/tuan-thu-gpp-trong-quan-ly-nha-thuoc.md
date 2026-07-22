@@ -3,6 +3,7 @@ title: "Tuân thủ GPP trong quản lý nhà thuốc — những điểm cần 
 description: "GPP không chỉ là giấy tờ treo tường. Novixa gợi ý các quy trình nên ghi nhận trên hệ thống để kiểm tra và đối soát dễ hơn."
 pubDate: 2026-07-02
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Thực hành tốt nhà thuốc (GPP) đòi hỏi nhà thuốc **lưu vết** được: nguồn gốc hàng, điều kiện bảo quản, bán đúng lô và hạn dùng.

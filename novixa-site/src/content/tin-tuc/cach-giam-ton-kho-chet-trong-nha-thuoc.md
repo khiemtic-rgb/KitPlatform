@@ -3,6 +3,7 @@ title: "Cách giảm tồn kho chết trong nhà thuốc"
 description: "Tồn kho là tài sản của nhà thuốc. Tuy nhiên, không phải hàng tồn nào cũng mang lại giá trị. Một phần hàng hóa có thể nằm trên kệ nhiều tháng, thậm chí nhiều năm mà không phát sinh giao dịch. Đây chính"
 pubDate: 2026-06-29
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Tồn kho là tài sản của nhà thuốc. Tuy nhiên, không phải hàng tồn nào cũng mang lại giá trị. Một phần hàng hóa có thể nằm trên kệ nhiều tháng, thậm chí nhiều năm mà không phát sinh giao dịch. Đây chính là tồn kho chết.

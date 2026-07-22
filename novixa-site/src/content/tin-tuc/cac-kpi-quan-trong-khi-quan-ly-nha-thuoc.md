@@ -3,6 +3,7 @@ title: "Các KPI quan trọng khi quản lý nhà thuốc"
 description: "Một trong những sai lầm phổ biến của chủ nhà thuốc là chỉ theo dõi doanh thu. Thực tế, doanh thu cao chưa chắc đồng nghĩa với hiệu quả kinh doanh tốt."
 pubDate: 2026-07-01
 lang: vi
+category: tin-tuc-novixa
 ---
 
 Một trong những sai lầm phổ biến của chủ nhà thuốc là chỉ theo dõi doanh thu. Thực tế, doanh thu cao chưa chắc đồng nghĩa với hiệu quả kinh doanh tốt.

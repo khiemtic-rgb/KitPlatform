@@ -4,6 +4,7 @@ description: Trong guồng quay bận rộn của điểm bán, hầu hết các
 image: /images/tin-tuc/nha-thuoc-ban-dang-dao-tao-nhan-vien-hay-huong-dan.png
 pubDate: 2026-07-22
 lang: vi
+category: tin-tuc-novixa
 ---
 
 "Em nhìn chị làm mẫu rồi làm theo nhé."

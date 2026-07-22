@@ -5,6 +5,7 @@ import Footer from '../../../components/Footer.astro';
 import { getCollection } from 'astro:content';
 import { sortPublishedNews } from '../../../lib/newsDate';
 import NewsListItem from '../../../components/NewsListItem.astro';
+import { NEWS_CATEGORIES, newsCategoryPath, DEFAULT_NEWS_CATEGORY } from '../../../lib/news-categories';
 import { t } from '../../../i18n';
 import '../../../styles/global.css';
 
@@ -12,12 +13,24 @@ const m = t('vi');
 const posts = sortPublishedNews(await getCollection('tinTuc'));
 ---
 
-<BaseLayout title={m.news.title} description={m.news.intro}>
+<BaseLayout title="Kiến thức nhà thuốc" description={m.news.intro} canonicalPath="/vi/tin-tuc/">
   <Header slot="header" />
   <section class="section">
     <div class="container">
-      <h1 class="section-title">{m.news.title}</h1>
+      <h1 class="section-title">Kiến thức nhà thuốc</h1>
       <p class="section-intro">{m.news.intro}</p>
+
+      <nav class="knowledge-cat-nav" aria-label="Nhóm kiến thức">
+        <a href="/vi/kien-thuc/">Tất cả nhóm</a>
+        {
+          NEWS_CATEGORIES.map((cat) => (
+            <a href={newsCategoryPath(cat.id)} class:list={{ active: cat.id === DEFAULT_NEWS_CATEGORY }}>
+              {cat.label}
+            </a>
+          ))
+        }
+      </nav>
+
       <ul class="news-list">
         {
           posts.map((post) => (
@@ -36,3 +49,31 @@ const posts = sortPublishedNews(await getCollection('tinTuc'));
   </section>
   <Footer slot="footer" />
 </BaseLayout>
+
+<style>
+  .knowledge-cat-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.25rem 0 1.75rem;
+  }
+
+  .knowledge-cat-nav a {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    text-decoration: none;
+    color: var(--color-text, #243447);
+    background: #fff;
+  }
+
+  .knowledge-cat-nav a:hover,
+  .knowledge-cat-nav a.active {
+    border-color: var(--color-primary, #1a7a4c);
+    color: var(--color-primary, #1a7a4c);
+    background: color-mix(in srgb, var(--color-primary, #1a7a4c) 8%, white);
+  }
+</style>

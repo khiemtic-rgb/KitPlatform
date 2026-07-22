@@ -954,6 +954,15 @@ svg {
   text-transform: uppercase;
 }
 
+.news-meta a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.news-meta a:hover {
+  text-decoration: underline;
+}
+
 .news-desc {
   max-width: 65ch;
   margin: 0.35rem 0 0;

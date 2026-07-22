@@ -11,12 +11,12 @@
     "ecosystem": "Hệ sinh thái",
     "solutions": "Giải pháp",
     "enterprise": "Enterprise",
-    "resources": "Tài nguyên",
+    "resources": "Kiến thức nhà thuốc",
     "docs": "Thư viện",
     "company": "Về Novixa",
     "customers": "Enterprise",
     "about": "Về Novixa",
-    "news": "Tài nguyên",
+    "news": "Kiến thức nhà thuốc",
     "contact": "Liên hệ",
     "login": "Đăng nhập",
     "demo": "Đăng ký Demo",
@@ -211,11 +211,11 @@
     "taxIdLabel": "MST"
   },
   "news": {
-    "title": "Tin tức",
-    "intro": "Cập nhật phát triển sản phẩm, vận hành nhà thuốc và hướng đi Novixa — theo lịch đăng.",
+    "title": "Kiến thức nhà thuốc",
+    "intro": "Kiến thức quản trị, vận hành, bán hàng, AI và tin tức Novixa — theo lịch đăng.",
     "newBadge": "Mới",
     "readMore": "Đọc tiếp",
-    "back": "← Quay lại tin tức"
+    "back": "← Quay lại kiến thức nhà thuốc"
   },
   "footer": {
     "rights": "Bản quyền thuộc Novixa.",
