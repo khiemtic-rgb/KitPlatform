@@ -1,10 +1,10 @@
 ---
 title: Nhà thuốc của bạn đang đào tạo nhân viên hay chỉ đang hướng dẫn?
 description: Trong guồng quay bận rộn của điểm bán, hầu hết các quản lý và chủ nhà thuốc đều bắt đầu việc phát triển nhân sự bằng cách truyền đạt trực tiếp ngay trên quầy. Chúng ta thường gọi đó là "đào tạo nhân viên mới
+category: quan-tri-nha-thuoc
 image: /images/tin-tuc/nha-thuoc-ban-dang-dao-tao-nhan-vien-hay-huong-dan.png
 pubDate: 2026-07-22
 lang: vi
-category: tin-tuc-novixa
 ---
 
 "Em nhìn chị làm mẫu rồi làm theo nhé."
