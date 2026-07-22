@@ -1,9 +1,9 @@
 ---
-title: "Quản lý nhà thuốc thông minh — từ quầy bán đến tồn kho lô"
-description: "Nhiều nhà thuốc hiện nay vẫn đang vận hành theo cách quen thuộc: ghi nhớ bằng kinh nghiệm, quản lý tồn kho bằng Excel, kiểm tra hạn dùng bằng mắt và xử lý công nợ thủ công. Khi quy mô còn nhỏ, cách là"
+title: Quản lý nhà thuốc thông minh — từ quầy bán đến tồn kho lô
+description: 'Nhiều nhà thuốc hiện nay vẫn đang vận hành theo cách quen thuộc: ghi nhớ bằng kinh nghiệm, quản lý tồn kho bằng Excel, kiểm tra hạn dùng bằng mắt và xử lý công nợ thủ công. Khi quy mô còn nhỏ, cách là'
+category: quan-tri-nha-thuoc
 pubDate: 2026-06-22
 lang: vi
-category: tin-tuc-novixa
 ---
 
 Nhiều nhà thuốc hiện nay vẫn đang vận hành theo cách quen thuộc: ghi nhớ bằng kinh nghiệm, quản lý tồn kho bằng Excel, kiểm tra hạn dùng bằng mắt và xử lý công nợ thủ công. Khi quy mô còn nhỏ, cách làm này có thể đáp ứng được. Nhưng khi lượng hàng hóa tăng lên hàng nghìn sản phẩm, hàng chục nhà cung cấp và hàng trăm khách hàng mỗi ngày, những rủi ro bắt đầu xuất hiện.
