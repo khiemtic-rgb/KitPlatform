@@ -1,9 +1,9 @@
 ---
-title: "Quản lý tồn kho & FEFO — bán đúng lô, giảm rủi ro"
-description: "Novixa theo dõi tồn theo lô và gợi ý phân bổ FEFO khi bán hàng."
+title: Quản lý tồn kho & FEFO — bán đúng lô, giảm rủi ro
+description: Novixa theo dõi tồn theo lô và gợi ý phân bổ FEFO khi bán hàng.
+category: quan-tri-nha-thuoc
 pubDate: 2026-06-15
 lang: vi
-category: tin-tuc-novixa
 ---
 
 Tồn kho dược phẩm **bắt buộc theo lô và hạn dùng**. Novixa xử lý trên **tồn sổ** (số liệu hệ thống), hỗ trợ đối chiếu với thực tế khi kiểm kê.
