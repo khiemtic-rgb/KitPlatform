@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-23T03:46:53.614Z",
+  "generatedAt": "2026-07-23T08:45:22.329Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 15,
-    "todayPageViews": 17,
-    "todayRequests": 44,
-    "last24hVisitors": 249,
-    "last24hPageViews": 267,
-    "last24hRequests": 574
+    "todayVisitors": 110,
+    "todayPageViews": 143,
+    "todayRequests": 381,
+    "last24hVisitors": 173,
+    "last24hPageViews": 239,
+    "last24hRequests": 554
   },
   "hourly": [
-    {
-      "time": "2026-07-22T04:00:00Z",
-      "visitors": 11,
-      "requests": 14
-    },
-    {
-      "time": "2026-07-22T05:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-07-22T06:00:00Z",
-      "visitors": 12,
-      "requests": 51
-    },
-    {
-      "time": "2026-07-22T07:00:00Z",
-      "visitors": 155,
-      "requests": 230
-    },
-    {
-      "time": "2026-07-22T08:00:00Z",
-      "visitors": 22,
-      "requests": 53
-    },
     {
       "time": "2026-07-22T09:00:00Z",
       "visitors": 26,
@@ -128,8 +103,33 @@
     },
     {
       "time": "2026-07-23T03:00:00Z",
-      "visitors": 8,
-      "requests": 12
+      "visitors": 9,
+      "requests": 14
+    },
+    {
+      "time": "2026-07-23T04:00:00Z",
+      "visitors": 6,
+      "requests": 22
+    },
+    {
+      "time": "2026-07-23T05:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-07-23T06:00:00Z",
+      "visitors": 1,
+      "requests": 187
+    },
+    {
+      "time": "2026-07-23T07:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-23T08:00:00Z",
+      "visitors": 90,
+      "requests": 118
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-07-23",
-      "visitors": 15,
-      "pageViews": 17,
-      "requests": 44
+      "visitors": 110,
+      "pageViews": 143,
+      "requests": 381
     }
   ],
   "topPages": [
     {
-      "path": "/vi/tin-tuc/nha-thuoc-cua-ban-dang-dao-tao-nhan-vien-hay-chi-dang-huong-dan/",
-      "views": 163
+      "path": "/vi/tin-tuc/nhung-sai-lam-am-tham-ngon-chi-phi-khi-dao-tao-nhan-vien-moi-tai-nha-thuoc/",
+      "views": 52
     },
     {
-      "path": "/images/tin-tuc/nha-thuoc-ban-dang-dao-tao-nhan-vien-hay-huong-dan.png",
-      "views": 74
+      "path": "/vi/tin-tuc/nha-thuoc-cua-ban-dang-dao-tao-nhan-vien-hay-chi-dang-huong-dan/",
+      "views": 41
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 60
+      "views": 35
+    },
+    {
+      "path": "/images/tin-tuc/sai-lam-khi-dao-tao-nhan-vien-moi.png",
+      "views": 33
     },
     {
       "path": "/robots.txt",
-      "views": 28
+      "views": 26
+    },
+    {
+      "path": "/id_dsa",
+      "views": 21
     },
     {
       "path": "/vi/",
-      "views": 23
+      "views": 21
     },
     {
       "path": "/",
-      "views": 23
+      "views": 21
     },
     {
-      "path": "/images/tin-tuc/vi-sao-dao-tao-nhan-su-la-khoan-dau-tu-sinh-loi-nhat.png",
-      "views": 19
+      "path": "/build/manifest.json",
+      "views": 21
+    },
+    {
+      "path": "/api/v2/config",
+      "views": 18
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 15
+      "views": 14
+    },
+    {
+      "path": "/assets/manifest.json",
+      "views": 12
+    },
+    {
+      "path": "/server/.env",
+      "views": 12
+    },
+    {
+      "path": "/.env.backup",
+      "views": 12
     },
     {
       "path": "/favicon.svg",
-      "views": 10
-    },
-    {
-      "path": "/_astro/BaseLayout.DstE-6Da.css",
       "views": 9
-    },
-    {
-      "path": "/api/stats",
-      "views": 9
-    },
-    {
-      "path": "/vi/tin-tuc/vi-sao-dao-tao-nhan-su-la-khoan-dau-tu-sinh-loi-nhat/",
-      "views": 8
-    },
-    {
-      "path": "/images/logo.png",
-      "views": 7
-    },
-    {
-      "path": "/_astro/BaseLayout.CEPXErrG.css",
-      "views": 7
-    },
-    {
-      "path": "/images/tin-tuc/5-chi-so-chu-nha-thuoc-can-xem-moi-sang.png",
-      "views": 6
     }
   ]
 }
