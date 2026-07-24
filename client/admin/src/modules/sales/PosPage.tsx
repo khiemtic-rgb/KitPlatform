@@ -122,7 +122,6 @@ export function PosPage() {
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [customerId, setCustomerId] = useState<string>();
   const [customerSearchLoading, setCustomerSearchLoading] = useState(false);
-  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
   /** Last non-empty search — Select clears onSearch('') when blur/click add. */
   const lastCustomerSearchRef = useRef('');
   const [quickCreatePrefill, setQuickCreatePrefill] = useState<{ phone?: string; name?: string }>(
@@ -197,7 +196,6 @@ export function PosPage() {
       const trimmed = query.trim();
       // Ant Select fires onSearch('') on blur — keep last real query for quick-add prefill.
       if (trimmed) lastCustomerSearchRef.current = trimmed;
-      setCustomerSearchQuery(query);
       window.clearTimeout(customerSearchTimer.current);
       customerSearchTimer.current = window.setTimeout(() => {
         void runCustomerSearch(query);
