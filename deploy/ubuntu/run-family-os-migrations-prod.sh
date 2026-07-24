@@ -29,7 +29,8 @@ echo "=== FamilyOS migrations (pilot) ==="
 echo "Database: $CONN"
 
 while IFS= read -r line || [[ -n "$line" ]]; do
-  # trim / skip comments and blanks
+  # trim CRLF (Windows checkout), comments and blanks
+  line="${line//$'\r'/}"
   file="$(echo "$line" | sed 's/#.*//' | xargs || true)"
   [[ -z "$file" ]] && continue
   path="$MIGRATIONS/$file"
