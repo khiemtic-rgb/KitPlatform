@@ -101,12 +101,39 @@
       "group": "Group",
       "email": "Email",
       "status": "Status",
-      "createdAt": "Created"
+      "createdAt": "Created",
+      "match": "Match",
+      "similarity": "Similarity",
+      "hasOrders": "Has orders"
     },
     "messages": {
       "loadFailed": "Could not load customer list",
-      "loadCustomerFailed": "Could not load customer"
-    }
+      "loadCustomerFailed": "Could not load customer",
+      "similarLoadFailed": "Could not load near-similar groups"
+    },
+    "tabs": {
+      "list": "List",
+      "similar": "Similar ≥ 80%"
+    },
+    "similarGuideTitle": "Similar ≥ 80% (data cleanup)",
+    "similarGuide1": "Same phone after digit normalization (e.g. 090… vs 8490…) — common after legacy imports.",
+    "similarGuide2": "Or full names ≥ 80% similar (different normalized string) — review before merging/deactivating.",
+    "similarGuide3": "Pick «Keep», then «Merge» on the others — orders/loyalty/payments move to the keeper; sources are soft-deleted.",
+    "similarSummary": "{{clusters}} groups · {{customers}} near-similar customers.",
+    "similarEmpty": "No near-similar groups ≥ 80%.",
+    "matchPhone": "Same phone",
+    "matchName": "Similar name",
+    "similarityPct": "~{{pct}}%",
+    "hasOrdersYes": "Yes · {{count}}",
+    "hasOrdersNo": "No orders",
+    "keep": "Keep",
+    "merge": "Merge",
+    "pickKeeperFirst": "Pick a keeper first",
+    "mergeConfirmTitle": "Merge this customer into the keeper?",
+    "mergeConfirmBody": "Orders, loyalty, payments… move to the keeper. This record will be soft-deleted.",
+    "mergeSuccess": "Merged {{source}} into keeper ({{orders}} orders, {{payments}} payments).",
+    "mergeFailed": "Could not merge customers",
+    "needCustomersWrite": "Customer write permission is required to merge."
   },
   "detailPage": {
     "loadingTip": "Loading profile…",
@@ -205,6 +232,13 @@
       "updateSuccess": "Customer updated",
       "createSuccess": "Customer added",
       "saveFailed": "Could not save customer"
+    },
+    "similarName": {
+      "exact": "Name matches an existing customer",
+      "near": "Name is similar to an existing customer (≥80%)",
+      "confirmTitle": "Similar customer name",
+      "confirmBody": "This name is ≥95% similar to an existing customer. Save anyway?",
+      "stillSave": "Save anyway"
     }
   },
   "importCard": {

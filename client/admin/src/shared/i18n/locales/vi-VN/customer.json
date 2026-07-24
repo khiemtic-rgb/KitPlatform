@@ -101,12 +101,39 @@
       "group": "Nhóm",
       "email": "Email",
       "status": "Trạng thái",
-      "createdAt": "Ngày tạo"
+      "createdAt": "Ngày tạo",
+      "match": "Lý do",
+      "similarity": "Độ giống",
+      "hasOrders": "Đã phát sinh đơn"
     },
     "messages": {
       "loadFailed": "Không tải được danh sách khách hàng",
-      "loadCustomerFailed": "Không tải được khách hàng"
-    }
+      "loadCustomerFailed": "Không tải được khách hàng",
+      "similarLoadFailed": "Không tải được nhóm gần giống"
+    },
+    "tabs": {
+      "list": "Danh sách",
+      "similar": "Gần giống ≥ 80%"
+    },
+    "similarGuideTitle": "Gần giống ≥ 80% (chuẩn hóa dữ liệu)",
+    "similarGuide1": "Nhóm cùng SĐT sau khi chuẩn hóa số (vd. 090… và 8490…) — hay gặp khi import phần mềm cũ.",
+    "similarGuide2": "Hoặc họ tên gần giống ≥ 80% (khác chuỗi chuẩn hóa) — kiểm tra trước khi gộp/xóa tay.",
+    "similarGuide3": "Chọn «Giữ» rồi bấm «Gộp» trên bản còn lại — đơn/điểm/phiếu thu chuyển sang khách giữ, bản nguồn bị ẩn.",
+    "similarSummary": "{{clusters}} nhóm · {{customers}} khách gần giống.",
+    "similarEmpty": "Không có nhóm gần giống ≥ 80%.",
+    "matchPhone": "Trùng SĐT",
+    "matchName": "Giống tên",
+    "similarityPct": "~{{pct}}%",
+    "hasOrdersYes": "Có · {{count}} đơn",
+    "hasOrdersNo": "Chưa có đơn",
+    "keep": "Giữ",
+    "merge": "Gộp",
+    "pickKeeperFirst": "Chọn khách giữ trước",
+    "mergeConfirmTitle": "Gộp khách này vào bản giữ?",
+    "mergeConfirmBody": "Đơn, điểm, phiếu thu… sẽ chuyển sang khách giữ. Bản này sẽ bị ẩn (soft-delete).",
+    "mergeSuccess": "Đã gộp {{source}} → giữ ({{orders}} đơn, {{payments}} phiếu thu).",
+    "mergeFailed": "Không gộp được khách",
+    "needCustomersWrite": "Cần quyền quản lý khách hàng để gộp."
   },
   "detailPage": {
     "loadingTip": "Đang tải hồ sơ...",
@@ -210,6 +237,13 @@
       "updateSuccess": "Đã cập nhật khách hàng",
       "createSuccess": "Đã thêm khách hàng",
       "saveFailed": "Không lưu được khách hàng"
+    },
+    "similarName": {
+      "exact": "Họ tên trùng với khách đã có",
+      "near": "Họ tên gần trùng với khách đã có (≥80%)",
+      "confirmTitle": "Họ tên khách gần trùng",
+      "confirmBody": "Họ tên này trùng ≥95% với khách đã có. Bạn vẫn muốn lưu?",
+      "stillSave": "Vẫn lưu"
     }
   },
   "importCard": {

@@ -26,6 +26,18 @@ internal sealed class CustomerAdminService : ICustomerAdminService
         return new PagedCustomersResult(items, total, page, pageSize);
     }
 
+    public Task<SimilarCustomerClustersResult> GetSimilarClustersAsync(
+        double similarityThreshold = 0.8,
+        CancellationToken cancellationToken = default) =>
+        _repository.GetSimilarClustersAsync(similarityThreshold, cancellationToken);
+
+    public Task<SimilarCustomerNamesResult> FindSimilarNamesAsync(
+        string fullName,
+        Guid? excludeCustomerId = null,
+        double similarityThreshold = 0.8,
+        CancellationToken cancellationToken = default) =>
+        _repository.FindSimilarNamesAsync(fullName, excludeCustomerId, similarityThreshold, cancellationToken);
+
     public Task<CustomerDetailDto?> GetAsync(Guid customerId, CancellationToken cancellationToken = default) =>
         _repository.GetAsync(customerId, cancellationToken);
 

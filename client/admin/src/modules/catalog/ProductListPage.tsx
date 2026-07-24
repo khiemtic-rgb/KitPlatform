@@ -22,7 +22,7 @@ import {
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { FilterOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, EditOutlined, DeleteOutlined, CloudSyncOutlined, ImportOutlined, DatabaseOutlined } from '@ant-design/icons';
+import { FilterOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, EditOutlined, DeleteOutlined, CloudSyncOutlined, ImportOutlined, DatabaseOutlined, MergeCellsOutlined } from '@ant-design/icons';
 import {
   bulkDeleteProducts,
   bulkSuggestNationalRegistration,
@@ -410,6 +410,9 @@ export function ProductListPage() {
           <Button icon={<ReloadOutlined />} onClick={load} />
           <Button icon={<ImportOutlined />} onClick={() => navigate('/catalog/import')}>
             {t('importExcel')}
+          </Button>
+          <Button icon={<MergeCellsOutlined />} onClick={() => navigate('/catalog/products/duplicates')}>
+            {t('duplicateMerge')}
           </Button>
           {showNationalDrugLookup && (
             <>

@@ -130,4 +130,6 @@
 132_success_shift_checklist.sql
 133_success_loss_gates.sql
 134_customer_groups.sql
+189_customer_merge_events.sql
+190_backfill_product_name_normalized.sql
 seed-prod/001_base_permissions.sql

@@ -18,6 +18,40 @@ public sealed record PagedCustomersResult(
     int Page,
     int PageSize);
 
+public sealed record SimilarCustomerMemberDto(
+    Guid Id,
+    string CustomerCode,
+    string FullName,
+    string Phone,
+    string? Email,
+    short Status,
+    DateTimeOffset CreatedAt,
+    int OrderCount = 0);
+
+public sealed record SimilarCustomerClusterDto(
+    string ClusterKey,
+    string MatchKind,
+    string DisplayLabel,
+    double? MaxSimilarity,
+    IReadOnlyList<SimilarCustomerMemberDto> Customers);
+
+public sealed record SimilarCustomerClustersResult(
+    IReadOnlyList<SimilarCustomerClusterDto> Clusters,
+    int ClusterCount,
+    int CustomerCount,
+    double SimilarityThreshold);
+
+public sealed record SimilarCustomerNameDto(
+    Guid Id,
+    string CustomerCode,
+    string FullName,
+    string Phone,
+    double SimilarityScore);
+
+public sealed record SimilarCustomerNamesResult(
+    IReadOnlyList<SimilarCustomerNameDto> Matches,
+    bool HasExactNormalizedMatch);
+
 public sealed record CustomerDetailDto(
     Guid Id,
     string CustomerCode,

@@ -14,6 +14,7 @@ public sealed class CustomersController : ControllerBase
 {
     private readonly ICustomerConsentService _consents;
     private readonly ICustomerAdminService _admin;
+    private readonly ICustomerMergeService _merge;
     private readonly ICustomerImportService _import;
     private readonly ICustomerLoyaltyService _loyalty;
     private readonly ICustomerPilotOtpAdminService _pilotOtp;
@@ -22,6 +23,7 @@ public sealed class CustomersController : ControllerBase
     public CustomersController(
         ICustomerConsentService consents,
         ICustomerAdminService admin,
+        ICustomerMergeService merge,
         ICustomerImportService import,
         ICustomerLoyaltyService loyalty,
         ICustomerPilotOtpAdminService pilotOtp,
@@ -29,6 +31,7 @@ public sealed class CustomersController : ControllerBase
     {
         _consents = consents;
         _admin = admin;
+        _merge = merge;
         _import = import;
         _loyalty = loyalty;
         _pilotOtp = pilotOtp;
@@ -43,6 +46,46 @@ public sealed class CustomersController : ControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default) =>
         Ok(await _admin.ListAsync(search, page, pageSize, cancellationToken));
+
+    /// <summary>Near-duplicate customers: same digit-phone or name similarity ≥ threshold.</summary>
+    [HttpGet("similar-clusters")]
+    [Authorize(Policy = SalesPolicies.Read)]
+    public async Task<ActionResult<SimilarCustomerClustersResult>> SimilarClusters(
+        [FromQuery] double threshold = 0.8,
+        CancellationToken cancellationToken = default) =>
+        Ok(await _admin.GetSimilarClustersAsync(threshold, cancellationToken));
+
+    /// <summary>Soft-warn helper: names similar to an existing customer (≥ threshold, default 0.8).</summary>
+    [HttpGet("check-name")]
+    [Authorize(Policy = SalesPolicies.Read)]
+    public async Task<ActionResult<SimilarCustomerNamesResult>> CheckName(
+        [FromQuery] string name,
+        [FromQuery] Guid? excludeId = null,
+        [FromQuery] double threshold = 0.8,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return Ok(new SimilarCustomerNamesResult([], false));
+
+        return Ok(await _admin.FindSimilarNamesAsync(name, excludeId, threshold, cancellationToken));
+    }
+
+    /// <summary>Merge source customer into keeper (reassign orders/loyalty/etc, soft-delete source).</summary>
+    [HttpPost("merge")]
+    [Authorize(Policy = SalesPolicies.Customers)]
+    public async Task<ActionResult<MergeCustomersResult>> Merge(
+        [FromBody] MergeCustomersRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _merge.MergeAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 
     [HttpGet("next-code")]
     [Authorize(Policy = SalesPolicies.Read)]

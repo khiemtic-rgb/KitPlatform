@@ -11,6 +11,12 @@ import type {
   PagedCustomerOrdersResult,
   PagedCustomersResult,
   PagedLoyaltyTransactionsResult,
+  SimilarCustomerCluster,
+  SimilarCustomerClustersResult,
+  SimilarCustomerMember,
+  SimilarCustomerNamesResult,
+  MergeCustomersPayload,
+  MergeCustomersResult,
   UpdateCustomerPayload,
 } from '@/shared/api/customer-admin.types';
 
@@ -120,6 +126,104 @@ export async function fetchCustomers(params?: {
     total: Number(data.total ?? data.Total ?? items.length),
     page: Number(data.page ?? data.Page ?? 1),
     pageSize: Number(data.pageSize ?? data.PageSize ?? 20),
+  };
+}
+
+function normalizeSimilarMember(row: Record<string, unknown>): SimilarCustomerMember {
+  return {
+    id: String(row.id ?? row.Id),
+    customerCode: String(row.customerCode ?? row.CustomerCode ?? ''),
+    fullName: String(row.fullName ?? row.FullName ?? ''),
+    phone: String(row.phone ?? row.Phone ?? ''),
+    email: (row.email ?? row.Email) as string | undefined,
+    status: Number(row.status ?? row.Status ?? 1),
+    createdAt: String(row.createdAt ?? row.CreatedAt ?? ''),
+    orderCount: Number(row.orderCount ?? row.OrderCount ?? 0),
+  };
+}
+
+function normalizeSimilarCluster(row: Record<string, unknown>): SimilarCustomerCluster {
+  const customers = ((row.customers ?? row.Customers ?? []) as Record<string, unknown>[]).map(
+    normalizeSimilarMember,
+  );
+  return {
+    clusterKey: String(row.clusterKey ?? row.ClusterKey ?? ''),
+    matchKind: String(row.matchKind ?? row.MatchKind ?? 'name'),
+    displayLabel: String(row.displayLabel ?? row.DisplayLabel ?? ''),
+    maxSimilarity:
+      row.maxSimilarity != null || row.MaxSimilarity != null
+        ? Number(row.maxSimilarity ?? row.MaxSimilarity)
+        : null,
+    customers,
+  };
+}
+
+export async function fetchSimilarCustomerClusters(
+  threshold = 0.8,
+): Promise<SimilarCustomerClustersResult> {
+  const { data } = await http.get<Record<string, unknown>>('/customers/similar-clusters', {
+    params: { threshold },
+  });
+  const clusters = ((data.clusters ?? data.Clusters ?? []) as Record<string, unknown>[]).map(
+    normalizeSimilarCluster,
+  );
+  return {
+    clusters,
+    clusterCount: Number(data.clusterCount ?? data.ClusterCount ?? clusters.length),
+    customerCount: Number(
+      data.customerCount ?? data.CustomerCount ?? clusters.reduce((n, c) => n + c.customers.length, 0),
+    ),
+    similarityThreshold: Number(data.similarityThreshold ?? data.SimilarityThreshold ?? threshold),
+  };
+}
+
+export async function checkSimilarCustomerNames(
+  name: string,
+  excludeId?: string,
+  threshold = 0.8,
+): Promise<SimilarCustomerNamesResult> {
+  const empty: SimilarCustomerNamesResult = { matches: [], hasExactNormalizedMatch: false };
+  const trimmed = name.trim();
+  if (!trimmed) return empty;
+
+  const { data } = await http.get<Record<string, unknown>>('/customers/check-name', {
+    params: {
+      name: trimmed,
+      excludeId: excludeId || undefined,
+      threshold,
+    },
+  });
+  const raw = (data.matches ?? data.Matches ?? []) as Record<string, unknown>[];
+  return {
+    matches: raw.map((row) => ({
+      id: String(row.id ?? row.Id),
+      customerCode: String(row.customerCode ?? row.CustomerCode ?? ''),
+      fullName: String(row.fullName ?? row.FullName ?? ''),
+      phone: String(row.phone ?? row.Phone ?? ''),
+      similarityScore: Number(row.similarityScore ?? row.SimilarityScore ?? 0),
+    })),
+    hasExactNormalizedMatch: Boolean(
+      data.hasExactNormalizedMatch ?? data.HasExactNormalizedMatch ?? false,
+    ),
+  };
+}
+
+export async function mergeCustomers(payload: MergeCustomersPayload): Promise<MergeCustomersResult> {
+  const { data } = await http.post<Record<string, unknown>>('/customers/merge', {
+    keeperCustomerId: payload.keeperCustomerId,
+    sourceCustomerId: payload.sourceCustomerId,
+    reason: payload.reason,
+  });
+  return {
+    mergeId: String(data.mergeId ?? data.MergeId ?? ''),
+    keeperCustomerId: String(data.keeperCustomerId ?? data.KeeperCustomerId ?? payload.keeperCustomerId),
+    sourceCustomerId: String(data.sourceCustomerId ?? data.SourceCustomerId ?? payload.sourceCustomerId),
+    sourceSoftDeleted: Boolean(data.sourceSoftDeleted ?? data.SourceSoftDeleted ?? true),
+    ordersMoved: Number(data.ordersMoved ?? data.OrdersMoved ?? 0),
+    paymentsMoved: Number(data.paymentsMoved ?? data.PaymentsMoved ?? 0),
+    loyaltyProgramsMerged: Number(data.loyaltyProgramsMerged ?? data.LoyaltyProgramsMerged ?? 0),
+    vouchersMoved: Number(data.vouchersMoved ?? data.VouchersMoved ?? 0),
+    consentsMoved: Number(data.consentsMoved ?? data.ConsentsMoved ?? 0),
   };
 }
 

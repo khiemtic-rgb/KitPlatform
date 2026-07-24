@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$ConnectionString = "postgresql://kitplatform:kitplatform_dev_2026@localhost:5432/kitplatform"
 )
 
@@ -17,7 +17,7 @@ if (-not $psql) {
     if ($cmd) { $psql = $cmd.Source }
 }
 
-# Thứ tự đồng bộ với setup-and-migrate.ps1 (001 chạy riêng khi setup lần đầu)
+# Th? t? d?ng b? v?i setup-and-migrate.ps1 (001 ch?y ri�ng khi setup l?n d?u)
 $files = @(
     "001_extensions.sql",
     "002_identity.sql",
@@ -158,7 +158,9 @@ $files = @(
     "131_clinic_persona_roles.sql",
     "132_success_shift_checklist.sql",
     "133_success_loss_gates.sql",
-    "134_customer_groups.sql"
+    "134_customer_groups.sql",
+    "189_customer_merge_events.sql",
+    "190_backfill_product_name_normalized.sql"
 )
 
 Write-Host "=== KitPlatform Migrations ===" -ForegroundColor Cyan

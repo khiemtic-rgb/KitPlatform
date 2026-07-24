@@ -8,6 +8,16 @@ public interface ICustomerAdminService
         int pageSize,
         CancellationToken cancellationToken = default);
 
+    Task<SimilarCustomerClustersResult> GetSimilarClustersAsync(
+        double similarityThreshold = 0.8,
+        CancellationToken cancellationToken = default);
+
+    Task<SimilarCustomerNamesResult> FindSimilarNamesAsync(
+        string fullName,
+        Guid? excludeCustomerId = null,
+        double similarityThreshold = 0.8,
+        CancellationToken cancellationToken = default);
+
     Task<CustomerDetailDto?> GetAsync(Guid customerId, CancellationToken cancellationToken = default);
 
     Task<PagedCustomerOrdersResult> GetOrdersAsync(

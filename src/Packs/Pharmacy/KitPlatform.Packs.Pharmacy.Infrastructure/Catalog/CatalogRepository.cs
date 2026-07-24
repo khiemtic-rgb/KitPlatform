@@ -790,9 +790,21 @@ internal sealed class CatalogRepository
 
     public async Task<bool> SoftDeleteProductAsync(Guid id, CancellationToken cancellationToken)
     {
-        const string sql = "UPDATE products SET deleted_at = NOW(), status = 2 WHERE id = @Id AND tenant_id = @TenantId AND deleted_at IS NULL";
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return await conn.ExecuteAsync(sql, new { Id = id, TenantId = _tenant.TenantId }) > 0;
+        return await SoftDeleteProductAsync(conn, null, id, cancellationToken);
+    }
+
+    public async Task<bool> SoftDeleteProductAsync(
+        System.Data.IDbConnection conn,
+        System.Data.IDbTransaction? tx,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE products SET deleted_at = NOW(), status = 2
+            WHERE id = @Id AND tenant_id = @TenantId AND deleted_at IS NULL
+            """;
+        return await conn.ExecuteAsync(sql, new { Id = id, TenantId = _tenant.TenantId }, tx) > 0;
     }
 
     public async Task<int> BulkSoftDeleteProductsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken)

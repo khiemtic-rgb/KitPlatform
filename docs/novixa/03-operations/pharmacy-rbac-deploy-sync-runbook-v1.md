@@ -34,8 +34,11 @@
 | POS chọn kho | `GET /inventory/warehouses` = `InventoryPolicies.WarehouseLookup` (`sales.pos` OK) — **không** đòi `inventory.read` |
 | People / Learning | `client/admin/src/modules/learning/**`, `learning.api.ts`, routes `/people` |
 | Learning API (bắt buộc cùng FE) | `Controllers/Learning/**`, `Infrastructure/Learning/**`, `migrations/*learning*.sql` |
+| Gộp SP / KH trùng | `ProductDuplicateMergePage`, `CustomerMerge*`, mig `189`/`190` — **commit ngay**, không để chỉ stash |
 
 **Cảnh báo (2026-07-24):** FE People từng deploy mà **thiếu Learning API trên git/DLL** → HTTP 404 khi mở bài (`…222210`). Backend phải commit + deploy API cùng lúc với FE.
+
+**Cảnh báo (2026-07-24 b):** Gộp SP/KH trùng từng chỉ nằm `stash` → mất working tree. Restore → **commit + push trước** epic khác.
 
 ---
 

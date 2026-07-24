@@ -43,6 +43,7 @@ public static class PharmacyPackDependencyInjection
         services.AddScoped<CatalogRepository>();
         services.AddScoped<ICatalogService, CatalogService>();
         services.AddScoped<ICatalogImportService, CatalogImportService>();
+        services.AddScoped<IProductDuplicateMergeService, ProductDuplicateMergeService>();
         services.AddScoped<CategoryRepository>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<BrandRepository>();

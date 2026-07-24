@@ -13,11 +13,16 @@ public sealed class ProductsController : ControllerBase
 {
     private readonly ICatalogService _catalog;
     private readonly INationalDrugBulkLinkService _nationalBulkLink;
+    private readonly IProductDuplicateMergeService _merge;
 
-    public ProductsController(ICatalogService catalog, INationalDrugBulkLinkService nationalBulkLink)
+    public ProductsController(
+        ICatalogService catalog,
+        INationalDrugBulkLinkService nationalBulkLink,
+        IProductDuplicateMergeService merge)
     {
         _catalog = catalog;
         _nationalBulkLink = nationalBulkLink;
+        _merge = merge;
     }
 
     [HttpGet]
@@ -53,7 +58,8 @@ public sealed class ProductsController : ControllerBase
         if (string.IsNullOrWhiteSpace(name))
             return Ok(new SimilarProductNamesResult([], false));
 
-        var result = await _catalog.FindSimilarProductNamesAsync(name, excludeId, 0.95, cancellationToken);
+        // Soft warn from 80%; UI asks hard confirm only for ≥95%.
+        var result = await _catalog.FindSimilarProductNamesAsync(name, excludeId, 0.8, cancellationToken);
         return Ok(result);
     }
 
@@ -63,6 +69,82 @@ public sealed class ProductsController : ControllerBase
     {
         var code = await _catalog.GetNextProductCodeAsync(cancellationToken);
         return Ok(new NextProductCodeDto(code));
+    }
+
+    [HttpGet("duplicate-clusters")]
+    [Authorize(Policy = CatalogPolicies.Read)]
+    public async Task<ActionResult<DuplicateProductClustersResult>> DuplicateClusters(
+        CancellationToken cancellationToken) =>
+        Ok(await _merge.GetDuplicateClustersAsync(cancellationToken));
+
+    /// <summary>Near-duplicate groups (pg_trgm similarity ≥ threshold, default 0.8) with different normalized names.</summary>
+    [HttpGet("similar-clusters")]
+    [Authorize(Policy = CatalogPolicies.Read)]
+    public async Task<ActionResult<DuplicateProductClustersResult>> SimilarClusters(
+        [FromQuery] double threshold = 0.8,
+        CancellationToken cancellationToken = default) =>
+        Ok(await _merge.GetSimilarClustersAsync(threshold, cancellationToken));
+
+    [HttpPost("merge-duplicate-stock")]
+    [Authorize(Policy = CatalogPolicies.Write)]
+    [Authorize(Policy = InventoryPolicies.Write)]
+    public async Task<ActionResult<MergeDuplicateProductStockResult>> MergeDuplicateStock(
+        [FromBody] MergeDuplicateProductStockRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _merge.MergeStockAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("merge-history")]
+    [Authorize(Policy = CatalogPolicies.Read)]
+    public async Task<ActionResult<ProductMergeHistoryResult>> MergeHistory(
+        [FromQuery] int limit = 200,
+        CancellationToken cancellationToken = default) =>
+        Ok(await _merge.GetMergeHistoryAsync(limit, cancellationToken));
+
+    [HttpGet("hidden")]
+    [Authorize(Policy = CatalogPolicies.Read)]
+    public async Task<ActionResult<HiddenProductsResult>> HiddenProducts(
+        [FromQuery] int limit = 500,
+        CancellationToken cancellationToken = default) =>
+        Ok(await _merge.GetHiddenProductsAsync(limit, cancellationToken));
+
+    [HttpPost("{id:guid}/restore")]
+    [Authorize(Policy = CatalogPolicies.Write)]
+    public async Task<IActionResult> RestoreHidden(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var ok = await _merge.RestoreHiddenProductAsync(id, cancellationToken);
+            return ok ? NoContent() : NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("{id:guid}/permanent")]
+    [Authorize(Policy = CatalogPolicies.Write)]
+    public async Task<ActionResult<HardDeleteProductResult>> PermanentDelete(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _merge.HardDeleteHiddenProductAsync(id, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpGet("{id:guid}")]

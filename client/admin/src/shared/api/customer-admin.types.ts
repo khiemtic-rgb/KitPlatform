@@ -18,6 +18,63 @@ export interface PagedCustomersResult {
   pageSize: number;
 }
 
+export interface SimilarCustomerMember {
+  id: string;
+  customerCode: string;
+  fullName: string;
+  phone: string;
+  email?: string;
+  status: number;
+  createdAt: string;
+  orderCount: number;
+}
+
+export interface SimilarCustomerCluster {
+  clusterKey: string;
+  matchKind: 'phone' | 'name' | string;
+  displayLabel: string;
+  maxSimilarity?: number | null;
+  customers: SimilarCustomerMember[];
+}
+
+export interface SimilarCustomerClustersResult {
+  clusters: SimilarCustomerCluster[];
+  clusterCount: number;
+  customerCount: number;
+  similarityThreshold: number;
+}
+
+export interface SimilarCustomerNameMatch {
+  id: string;
+  customerCode: string;
+  fullName: string;
+  phone: string;
+  similarityScore: number;
+}
+
+export interface SimilarCustomerNamesResult {
+  matches: SimilarCustomerNameMatch[];
+  hasExactNormalizedMatch: boolean;
+}
+
+export interface MergeCustomersPayload {
+  keeperCustomerId: string;
+  sourceCustomerId: string;
+  reason?: string;
+}
+
+export interface MergeCustomersResult {
+  mergeId: string;
+  keeperCustomerId: string;
+  sourceCustomerId: string;
+  sourceSoftDeleted: boolean;
+  ordersMoved: number;
+  paymentsMoved: number;
+  loyaltyProgramsMerged: number;
+  vouchersMoved: number;
+  consentsMoved: number;
+}
+
 export interface CustomerDetail {
   id: string;
   customerCode: string;

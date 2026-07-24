@@ -117,6 +117,11 @@ const NationalDrugLookupPage = lazy(() =>
 const ProductImportPage = lazy(() =>
   import('@/modules/catalog/ProductImportPage').then((m) => ({ default: m.ProductImportPage })),
 );
+const ProductDuplicateMergePage = lazy(() =>
+  import('@/modules/catalog/ProductDuplicateMergePage').then((m) => ({
+    default: m.ProductDuplicateMergePage,
+  })),
+);
 const InventoryLayout = lazy(() =>
   import('@/modules/inventory/InventoryLayout').then((m) => ({ default: m.InventoryLayout })),
 );
@@ -549,6 +554,7 @@ export function AppRouter() {
               >
                 <Route index element={<Navigate to="/catalog/products" replace />} />
                 <Route path="products" element={<ProductListPage />} />
+                <Route path="products/duplicates" element={<ProductDuplicateMergePage />} />
                 <Route path="import" element={<ProductImportPage />} />
                 <Route path="categories" element={<CategoryListPage />} />
                 <Route path="brands" element={<BrandListPage />} />

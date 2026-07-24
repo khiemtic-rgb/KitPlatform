@@ -746,3 +746,192 @@ export async function importProducts(
 
   return { created, skipped, failed, errors };
 }
+
+export type DuplicateProductMember = {
+  id: string;
+  productCode: string;
+  productName: string;
+  unitName: string;
+  totalQuantity: number;
+  warehouseCount: number;
+  suggestedKeeper: boolean;
+};
+
+export type DuplicateProductCluster = {
+  normalizedName: string;
+  displayName: string;
+  products: DuplicateProductMember[];
+  /** Max pairwise similarity in group (similar-clusters only). */
+  maxSimilarity?: number | null;
+};
+
+export type DuplicateProductClustersResult = {
+  clusters: DuplicateProductCluster[];
+  clusterCount: number;
+  productCount: number;
+  similarityThreshold?: number | null;
+};
+
+export type MergeDuplicateProductStockResult = {
+  keeperProductId: string;
+  sourceProductId: string;
+  conversionFactor: number;
+  sourceSoftDeleted: boolean;
+  totalSourceQuantity: number;
+  totalKeeperQuantityAdded: number;
+};
+
+function normalizeDuplicateMember(row: Record<string, unknown>): DuplicateProductMember {
+  return {
+    id: String(row.id ?? row.Id),
+    productCode: String(row.productCode ?? row.ProductCode ?? ''),
+    productName: String(row.productName ?? row.ProductName ?? ''),
+    unitName: String(row.unitName ?? row.UnitName ?? ''),
+    totalQuantity: Number(row.totalQuantity ?? row.TotalQuantity ?? 0),
+    warehouseCount: Number(row.warehouseCount ?? row.WarehouseCount ?? 0),
+    suggestedKeeper: Boolean(row.suggestedKeeper ?? row.SuggestedKeeper ?? false),
+  };
+}
+
+function normalizeDuplicateClustersResult(
+  data: Record<string, unknown>,
+): DuplicateProductClustersResult {
+  const rawClusters = (data.clusters ?? data.Clusters ?? []) as Record<string, unknown>[];
+  const clusters = rawClusters.map((c) => {
+    const products = ((c.products ?? c.Products ?? []) as Record<string, unknown>[]).map(
+      normalizeDuplicateMember,
+    );
+    const maxRaw = c.maxSimilarity ?? c.MaxSimilarity;
+    return {
+      normalizedName: String(c.normalizedName ?? c.NormalizedName ?? ''),
+      displayName: String(c.displayName ?? c.DisplayName ?? products[0]?.productName ?? ''),
+      products,
+      maxSimilarity: maxRaw == null || maxRaw === '' ? null : Number(maxRaw),
+    };
+  });
+  const thr = data.similarityThreshold ?? data.SimilarityThreshold;
+  return {
+    clusters,
+    clusterCount: Number(data.clusterCount ?? data.ClusterCount ?? clusters.length),
+    productCount: Number(
+      data.productCount ?? data.ProductCount ?? clusters.reduce((s, c) => s + c.products.length, 0),
+    ),
+    similarityThreshold: thr == null || thr === '' ? null : Number(thr),
+  };
+}
+
+export async function fetchDuplicateProductClusters(): Promise<DuplicateProductClustersResult> {
+  const { data } = await http.get<Record<string, unknown>>('/catalog/products/duplicate-clusters');
+  return normalizeDuplicateClustersResult(data);
+}
+
+/** Near-duplicates (different normalized names, similarity GÎ— threshold). */
+export async function fetchSimilarProductClusters(
+  threshold = 0.8,
+): Promise<DuplicateProductClustersResult> {
+  const { data } = await http.get<Record<string, unknown>>('/catalog/products/similar-clusters', {
+    params: { threshold },
+    timeout: 60_000,
+  });
+  return normalizeDuplicateClustersResult(data);
+}
+
+export async function mergeDuplicateProductStock(payload: {
+  keeperProductId: string;
+  sourceProductId: string;
+  conversionFactor: number;
+  softDeleteSource?: boolean;
+  reason?: string;
+}): Promise<MergeDuplicateProductStockResult> {
+  const { data } = await http.post<Record<string, unknown>>('/catalog/products/merge-duplicate-stock', {
+    keeperProductId: payload.keeperProductId,
+    sourceProductId: payload.sourceProductId,
+    conversionFactor: payload.conversionFactor,
+    softDeleteSource: payload.softDeleteSource ?? true,
+    reason: payload.reason,
+  });
+  return {
+    keeperProductId: String(data.keeperProductId ?? data.KeeperProductId ?? payload.keeperProductId),
+    sourceProductId: String(data.sourceProductId ?? data.SourceProductId ?? payload.sourceProductId),
+    conversionFactor: Number(data.conversionFactor ?? data.ConversionFactor ?? payload.conversionFactor),
+    sourceSoftDeleted: Boolean(data.sourceSoftDeleted ?? data.SourceSoftDeleted ?? false),
+    totalSourceQuantity: Number(data.totalSourceQuantity ?? data.TotalSourceQuantity ?? 0),
+    totalKeeperQuantityAdded: Number(
+      data.totalKeeperQuantityAdded ?? data.TotalKeeperQuantityAdded ?? 0,
+    ),
+  };
+}
+
+export type ProductMergeHistoryItem = {
+  mergeId: string;
+  mergedAt: string;
+  sourceProductId?: string;
+  sourceProductCode: string;
+  sourceProductName: string;
+  keeperProductId?: string;
+  keeperProductCode: string;
+  keeperProductName: string;
+  sourceQuantity: number;
+  keeperQuantityAdded: number;
+  notes?: string;
+  sourceStillHidden: boolean;
+};
+
+export type HiddenProductItem = {
+  id: string;
+  productCode: string;
+  productName: string;
+  unitName: string;
+  deletedAt?: string;
+  remainingStock: number;
+  canHardDelete: boolean;
+  blockReasons: string[];
+  mergedAway: boolean;
+};
+
+export async function fetchProductMergeHistory(limit = 200): Promise<ProductMergeHistoryItem[]> {
+  const { data } = await http.get<Record<string, unknown>>('/catalog/products/merge-history', {
+    params: { limit },
+  });
+  const items = (data.items ?? data.Items ?? []) as Record<string, unknown>[];
+  return items.map((row) => ({
+    mergeId: String(row.mergeId ?? row.MergeId ?? ''),
+    mergedAt: String(row.mergedAt ?? row.MergedAt ?? ''),
+    sourceProductId: (row.sourceProductId ?? row.SourceProductId) as string | undefined,
+    sourceProductCode: String(row.sourceProductCode ?? row.SourceProductCode ?? ''),
+    sourceProductName: String(row.sourceProductName ?? row.SourceProductName ?? ''),
+    keeperProductId: (row.keeperProductId ?? row.KeeperProductId) as string | undefined,
+    keeperProductCode: String(row.keeperProductCode ?? row.KeeperProductCode ?? ''),
+    keeperProductName: String(row.keeperProductName ?? row.KeeperProductName ?? ''),
+    sourceQuantity: Number(row.sourceQuantity ?? row.SourceQuantity ?? 0),
+    keeperQuantityAdded: Number(row.keeperQuantityAdded ?? row.KeeperQuantityAdded ?? 0),
+    notes: (row.notes ?? row.Notes) as string | undefined,
+    sourceStillHidden: Boolean(row.sourceStillHidden ?? row.SourceStillHidden ?? false),
+  }));
+}
+
+export async function fetchHiddenProducts(limit = 500): Promise<HiddenProductItem[]> {
+  const { data } = await http.get<Record<string, unknown>>('/catalog/products/hidden', {
+    params: { limit },
+  });
+  const items = (data.items ?? data.Items ?? []) as Record<string, unknown>[];
+  return items.map((row) => ({
+    id: String(row.id ?? row.Id),
+    productCode: String(row.productCode ?? row.ProductCode ?? ''),
+    productName: String(row.productName ?? row.ProductName ?? ''),
+    unitName: String(row.unitName ?? row.UnitName ?? ''),
+    deletedAt: (row.deletedAt ?? row.DeletedAt) as string | undefined,
+    remainingStock: Number(row.remainingStock ?? row.RemainingStock ?? 0),
+    canHardDelete: Boolean(row.canHardDelete ?? row.CanHardDelete ?? false),
+    blockReasons: ((row.blockReasons ?? row.BlockReasons ?? []) as unknown[]).map(String),
+    mergedAway: Boolean(row.mergedAway ?? row.MergedAway ?? false),
+  }));
+}
+
+export async function restoreHiddenProduct(id: string): Promise<void> {
+  await http.post(`/catalog/products/${id}/restore`);
+}
+
+export async function permanentDeleteHiddenProduct(id: string): Promise<void> {
+  await http.delete(`/catalog/products/${id}/permanent`);
+}

@@ -31,6 +31,7 @@
     "searchPlaceholder": "Tìm tên hoặc mã vạch...",
     "search": "Tìm",
     "importExcel": "Import Excel",
+    "duplicateMerge": "Gộp SP trùng",
     "nationalLookup": "Tra cứu dược quốc gia",
     "bulkLinkSdk": "Gợi ý số đăng ký hàng loạt",
     "viewStock": "Tồn kho",
@@ -358,9 +359,9 @@
     },
     "similarName": {
       "exact": "Tên trùng với sản phẩm đã có",
-      "near": "Tên gần trùng với sản phẩm đã có (>95%)",
+      "near": "Tên gần trùng với sản phẩm đã có (≥80%)",
       "confirmTitle": "Tên sản phẩm gần trùng",
-      "confirmBody": "Tên này trùng >95% với sản phẩm đã có. Bạn vẫn muốn lưu?"
+      "confirmBody": "Tên này trùng ≥95% với sản phẩm đã có. Bạn vẫn muốn lưu?"
     },
     "actions": {
       "skip": "Bỏ qua",
@@ -439,6 +440,93 @@
       "registrationNumber": "Số đăng ký",
       "suggestedBarcode": "Barcode gợi ý",
       "suggestedBarcodeHint": "— thêm ở tab Chi tiết sau khi lưu."
+    }
+  },
+  "duplicateMerge": {
+    "title": "Gộp sản phẩm trùng / đã ẩn",
+    "tabs": {
+      "merge": "Gộp trùng",
+      "similar": "Gần giống ≥ 80%",
+      "history": "Lịch sử gộp",
+      "hidden": "Đã ẩn"
+    },
+    "loadFailed": "Không tải được danh sách trùng",
+    "similarLoadFailed": "Không tải được danh sách gần giống",
+    "historyLoadFailed": "Không tải được lịch sử gộp",
+    "hiddenLoadFailed": "Không tải được danh sách đã ẩn",
+    "mergeFailed": "Không gộp được tồn",
+    "mergeSuccess": "Đã cộng {{added}} vào mã giữ từ {{source}}. {{deleted}}",
+    "sourceHidden": "Đã ẩn mã nguồn.",
+    "restoreSuccess": "Đã khôi phục {{code}}",
+    "restoreFailed": "Không khôi phục được",
+    "permanentDeleteSuccess": "Đã xóa vĩnh viễn {{code}}",
+    "permanentDeleteFailed": "Không xóa vĩnh viễn được",
+    "pickKeeperFirst": "Chọn mã giữ trước",
+    "factorRequired": "Nhập hệ số quy đổi (vd 1 hộp = 10 vỉ → nhập 10)",
+    "guideTitle": "Cách làm",
+    "guide1": "Chọn mã giữ = đơn vị nhỏ (Vỉ / Viên).",
+    "guide2": "Ở mã đơn vị lớn (Hộp), nhập hệ số: 1 ĐVT lớn = bao nhiêu ĐVT mã giữ.",
+    "guide3": "Bấm Gộp — hệ thống cộng tồn đã quy đổi vào mã giữ (theo từng kho/lô) rồi ẩn mã lớn.",
+    "similarGuideTitle": "Gần giống ≥ 80% (import phần mềm cũ)",
+    "similarGuide1": "Nhóm tên chuẩn hóa khác nhau nhưng độ giống ≥ 80% — hay gặp khi import bị trùng mã.",
+    "similarGuide2": "Đối chiếu kỹ tên / ĐVT / tồn trước khi gộp (có thể khác hàm lượng hoặc quy cách).",
+    "similarGuide3": "Cách gộp giống tab «Gộp trùng»: chọn mã giữ → nhập hệ số → Gộp.",
+    "needInventoryWrite": "Cần quyền inventory.write để gộp tồn.",
+    "summary": "{{clusters}} nhóm · {{products}} mã nghi trùng (cùng tên chuẩn hóa).",
+    "similarSummary": "{{clusters}} nhóm · {{products}} mã gần giống (độ giống ≥ 80%, khác tên chuẩn hóa).",
+    "empty": "Không có nhóm sản phẩm trùng tên.",
+    "similarEmpty": "Không có nhóm gần giống ≥ 80%.",
+    "similarityPct": "Giống ~{{pct}}%",
+    "groupSize": "{{count}} mã",
+    "warehouses": "{{count}} kho",
+    "keep": "Giữ",
+    "keeperHint": "Mã giữ",
+    "factorPlaceholder": "1 ĐVT = ?",
+    "merge": "Gộp",
+    "confirmTitle": "Gộp tồn và ẩn mã này?",
+    "confirmBody": "Cộng {{qty}} ({{source}} × {{factor}}) vào mã giữ, rồi ẩn mã nguồn.",
+    "columns": {
+      "group": "Nhóm",
+      "code": "Mã SP",
+      "unit": "ĐVT",
+      "stock": "Tồn",
+      "keeper": "Mã giữ",
+      "factor": "Hệ số quy đổi",
+      "converted": "Tồn quy đổi",
+      "action": "Thao tác"
+    },
+    "history": {
+      "guide": "Các lần gộp tồn đã thực hiện (từ chứng từ kho product_merge). Dùng để đối chiếu trước khi xóa hẳn mã nguồn.",
+      "empty": "Chưa có lịch sử gộp.",
+      "stillHidden": "Nguồn còn ẩn",
+      "columns": {
+        "time": "Thời gian",
+        "source": "Mã nguồn",
+        "keeper": "Mã giữ",
+        "sourceQty": "SL nguồn",
+        "addedQty": "SL cộng vào",
+        "notes": "Ghi chú"
+      }
+    },
+    "hidden": {
+      "guideTitle": "Sản phẩm đã ẩn (soft-delete)",
+      "guideBody": "Kiểm tra trước khi xóa vĩnh viễn. Mã đã gộp thường vẫn còn lịch sử kho/bán — chỉ nên giữ ẩn, không xóa cứng. Xóa vĩnh viễn chỉ khi không còn tồn và không còn giao dịch gắn mã.",
+      "empty": "Không có sản phẩm đã ẩn.",
+      "mergedAway": "Đã gộp",
+      "canPurge": "Có thể xóa cứng",
+      "keepHidden": "Chỉ giữ ẩn",
+      "restore": "Khôi phục",
+      "permanent": "Xóa hẳn",
+      "restoreConfirm": "Khôi phục sản phẩm này vào danh mục?",
+      "permanentConfirm": "Xóa vĩnh viễn? Không hoàn tác được.",
+      "permanentBodyOk": "Không còn tồn / lịch sử chặn — sẽ xóa khỏi DB.",
+      "permanentBodyBlocked": "Không đủ điều kiện xóa cứng.",
+      "columns": {
+        "name": "Tên SP",
+        "deletedAt": "Ẩn lúc",
+        "stock": "Tồn còn",
+        "flags": "Trạng thái"
+      }
     }
   }
 }

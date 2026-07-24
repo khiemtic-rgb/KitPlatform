@@ -28,8 +28,16 @@ export function useCanCatalogRead(): boolean {
   return useHasAnyPermission('catalog.read', 'catalog.write');
 }
 
+export function useCanCatalogWrite(): boolean {
+  return useHasPermission('catalog.write');
+}
+
 export function useCanInventoryRead(): boolean {
   return useHasAnyPermission('inventory.read', 'inventory.write', 'inventory.approve');
+}
+
+export function useCanInventoryWrite(): boolean {
+  return useHasPermission('inventory.write');
 }
 
 export function useCanProcurementRead(): boolean {

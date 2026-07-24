@@ -31,6 +31,7 @@
     "searchPlaceholder": "Search name or barcode...",
     "search": "Search",
     "importExcel": "Import Excel",
+    "duplicateMerge": "Merge duplicates",
     "nationalLookup": "National drug lookup",
     "bulkLinkSdk": "Suggest registration numbers",
     "viewStock": "Stock",
@@ -350,9 +351,9 @@
     },
     "similarName": {
       "exact": "Name matches an existing product",
-      "near": "Name is very similar to an existing product (>95%)",
+      "near": "Name is similar to an existing product (≥80%)",
       "confirmTitle": "Similar product name",
-      "confirmBody": "This name is >95% similar to an existing product. Save anyway?"
+      "confirmBody": "This name is ≥95% similar to an existing product. Save anyway?"
     },
     "actions": {
       "skip": "Skip",
@@ -431,6 +432,93 @@
       "registrationNumber": "Reg. no.",
       "suggestedBarcode": "Suggested barcode",
       "suggestedBarcodeHint": "— add under Product details after saving."
+    }
+  },
+  "duplicateMerge": {
+    "title": "Merge duplicates / hidden products",
+    "tabs": {
+      "merge": "Merge",
+      "similar": "Similar ≥ 80%",
+      "history": "Merge history",
+      "hidden": "Hidden"
+    },
+    "loadFailed": "Could not load duplicate groups",
+    "similarLoadFailed": "Could not load near-similar groups",
+    "historyLoadFailed": "Could not load merge history",
+    "hiddenLoadFailed": "Could not load hidden products",
+    "mergeFailed": "Could not merge stock",
+    "mergeSuccess": "Added {{added}} to keeper from {{source}}. {{deleted}}",
+    "sourceHidden": "Source product hidden.",
+    "restoreSuccess": "Restored {{code}}",
+    "restoreFailed": "Could not restore",
+    "permanentDeleteSuccess": "Permanently deleted {{code}}",
+    "permanentDeleteFailed": "Could not permanently delete",
+    "pickKeeperFirst": "Pick a keeper product first",
+    "factorRequired": "Enter conversion factor (e.g. 1 box = 10 blister → 10)",
+    "guideTitle": "How to use",
+    "guide1": "Pick keeper = smaller unit (blister / tablet).",
+    "guide2": "On the larger unit (box), enter factor: 1 large unit = how many keeper units.",
+    "guide3": "Click Merge — stock is converted into the keeper (per warehouse/batch), then the larger SKU is hidden.",
+    "similarGuideTitle": "Similar ≥ 80% (legacy import cleanup)",
+    "similarGuide1": "Groups with different normalized names but ≥ 80% similarity — common after imports with duplicate SKUs.",
+    "similarGuide2": "Review name / UoM / stock carefully before merging (may differ in strength or pack).",
+    "similarGuide3": "Same merge flow as the exact-duplicate tab: pick keeper → enter factor → Merge.",
+    "needInventoryWrite": "inventory.write permission is required to merge stock.",
+    "summary": "{{clusters}} groups · {{products}} candidate SKUs (same normalized name).",
+    "similarSummary": "{{clusters}} groups · {{products}} near-similar SKUs (≥ 80% similar, different normalized name).",
+    "empty": "No duplicate name groups found.",
+    "similarEmpty": "No near-similar groups ≥ 80%.",
+    "similarityPct": "~{{pct}}% similar",
+    "groupSize": "{{count}} SKUs",
+    "warehouses": "{{count}} warehouses",
+    "keep": "Keep",
+    "keeperHint": "Keeper",
+    "factorPlaceholder": "1 unit = ?",
+    "merge": "Merge",
+    "confirmTitle": "Merge stock and hide this SKU?",
+    "confirmBody": "Add {{qty}} ({{source}} × {{factor}}) to keeper, then hide source.",
+    "columns": {
+      "group": "Group",
+      "code": "Code",
+      "unit": "UoM",
+      "stock": "Stock",
+      "keeper": "Keeper",
+      "factor": "Conversion factor",
+      "converted": "Converted qty",
+      "action": "Action"
+    },
+    "history": {
+      "guide": "Past stock merges (product_merge movements). Review before permanently deleting source SKUs.",
+      "empty": "No merge history yet.",
+      "stillHidden": "Source still hidden",
+      "columns": {
+        "time": "Time",
+        "source": "Source",
+        "keeper": "Keeper",
+        "sourceQty": "Source qty",
+        "addedQty": "Added qty",
+        "notes": "Notes"
+      }
+    },
+    "hidden": {
+      "guideTitle": "Hidden products (soft-deleted)",
+      "guideBody": "Review before permanent delete. Merged SKUs usually still have stock/sales history — keep them hidden. Permanent delete only when there is no stock and no linked transactions.",
+      "empty": "No hidden products.",
+      "mergedAway": "Merged",
+      "canPurge": "Can purge",
+      "keepHidden": "Keep hidden",
+      "restore": "Restore",
+      "permanent": "Delete forever",
+      "restoreConfirm": "Restore this product to the catalog?",
+      "permanentConfirm": "Permanently delete? This cannot be undone.",
+      "permanentBodyOk": "No blocking stock/history — will remove from DB.",
+      "permanentBodyBlocked": "Not eligible for hard delete.",
+      "columns": {
+        "name": "Name",
+        "deletedAt": "Hidden at",
+        "stock": "Stock left",
+        "flags": "Flags"
+      }
     }
   }
 }

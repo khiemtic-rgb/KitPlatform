@@ -15,6 +15,7 @@ public static class StockReferenceTypes
     public const string InventoryAdjustment = "inventory_adjustment";
     public const string SalesOrder = "sales_order";
     public const string SalesReturn = "sales_return";
+    public const string ProductMerge = "product_merge";
 }
 
 public static class WarehouseTypes

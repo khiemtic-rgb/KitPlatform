@@ -182,6 +182,7 @@ public static class DependencyInjection
         services.AddScoped<CustomerAdminRepository>();
         services.AddScoped<CustomerGroupRepository>();
         services.AddScoped<ICustomerAdminService, CustomerAdminService>();
+        services.AddScoped<ICustomerMergeService, CustomerMergeService>();
         services.AddScoped<ICustomerGroupService, CustomerGroupService>();
         services.AddScoped<ICustomerImportService, CustomerImportService>();
         services.AddScoped<IdentityAdminRepository>();
