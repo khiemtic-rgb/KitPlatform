@@ -1,0 +1,28 @@
+---
+description: Bảo vệ Pharmacy RBAC khi làm Family OS/Care và quy trình deploy/git sync
+alwaysApply: true
+---
+
+# Pharmacy RBAC + deploy sync
+
+Khi sửa Family OS, Care, platform, hoặc bất kỳ auth/layout chung:
+
+## Không được regress
+
+- STAFF (`sales.pos` / `sales.read` / `success.checklist`) **không** xem doanh thu cửa hàng, báo cáo tài chính, Owner Cockpit.
+- Analytics / báo cáo: chỉ `reports.read` | `reports.export` | ADMIN — **không** kế thừa từ `sales.*`.
+- Xuất CSV: chỉ `reports.export` (hoặc ADMIN).
+- Cockpit / Loss: `success.read` hoặc `reports.*` / ADMIN·MANAGER — **không** `success.checklist` / `sales.read`.
+- `ReportsPolicies.Read` **không** được mở lại cho `sales.read` / `inventory.read` / `procurement.read`.
+- Đơn bán: mặc định lọc **hôm nay** (`from`/`to`); tìm khách/số đơn thì bỏ giới hạn ngày.
+
+## File đỏ (đọc gate hiện tại trước khi “đơn giản hóa”)
+
+`usePermission.ts`, `AppLayout.tsx`, `DashboardService.cs`, `ReportsAuthorizationExtensions.cs`, `SuccessAuthorizationExtensions.cs`, `OwnerCockpitPage.tsx`, `SalesOrderListPage.tsx`, `modules/learning/**`.
+
+## Git / deploy
+
+- Nguồn chuẩn = `origin/main`, không phải VPS (VPS chỉ có build).
+- Commit + push RBAC/Pharmacy **trước** khi chuyển epic lớn hoặc deploy.
+- Không deploy working tree chưa commit các thay đổi auth.
+- Chi tiết bước: `docs/novixa/03-operations/pharmacy-rbac-deploy-sync-runbook-v1.md`
