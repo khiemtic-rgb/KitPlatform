@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using System.Text;
 using Dapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -102,6 +102,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPartnerPortalAuthorization();
     options.AddDashboardAuthorization();
     options.AddSuccessAuthorization();
+    options.AddLearningAuthorization();
     options.AddReportsAuthorization();
     options.AddIdentityAuthorization();
     options.AddClinicAuthorization();

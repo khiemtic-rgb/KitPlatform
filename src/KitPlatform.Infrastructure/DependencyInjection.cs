@@ -170,6 +170,9 @@ public static class DependencyInjection
         services.AddScoped<Application.Success.IShiftChecklistService, Success.ShiftChecklistService>();
         services.AddScoped<Success.LossPreventionRepository>();
         services.AddScoped<Application.Success.ILossPreventionService, Success.LossPreventionService>();
+        services.AddScoped<Learning.LearningRepository>();
+        services.AddScoped<Application.Learning.ILearningCatalogService, Learning.LearningCatalogService>();
+        services.AddScoped<Application.Learning.ILearningProgressService, Learning.LearningProgressService>();
 
         services.AddScoped<ReportsRepository>();
         services.AddScoped<IReportsService, ReportsService>();

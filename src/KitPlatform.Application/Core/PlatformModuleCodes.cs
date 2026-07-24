@@ -29,6 +29,11 @@ public static class PlatformModuleCodes
     public const string Telehealth = "telehealth";
     /// <summary>Novixa Connect — collaboration workspace (not e-Rx issuer).</summary>
     public const string NovixaConnect = "novixa_connect";
+    /// <summary>FamilyOS Starter — family daily flow (routine / commitment / progress).</summary>
+    public const string FamilyOs = "family_os";
+    /// <summary>Care OS — T3-ready care events / cohort / KPI hooks (Community Health instrumentation).</summary>
+    public const string CareOs = "care_os";
+    public const string Learning = "learning";
 
     public static IReadOnlyList<string> All { get; } =
     [
@@ -54,5 +59,8 @@ public static class PlatformModuleCodes
         PrescriberPortal,
         Telehealth,
         NovixaConnect,
+        FamilyOs,
+        CareOs,
+        Learning,
     ];
 }
