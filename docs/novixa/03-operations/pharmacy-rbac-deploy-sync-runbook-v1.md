@@ -60,23 +60,27 @@ API policies phải khớp FE. Đặc biệt **không** mở lại `ReportsPolic
 ## 4. Trình tự deploy an toàn
 
 ```text
-1. git pull --rebase origin main
-2. Sửa + test local (admin tsc/build; API publish nếu đổi C#)
-3. git add (đúng file) → commit → git push
+1. git fetch origin && git rev-parse HEAD origin/main   # tip local = origin/main
+2. Sửa + test local
+   - Bắt buộc: cd client/admin && npm run build   # tsc --noEmit — TS6133 chặn prod
+   - API: dotnet publish nếu đổi C#
+3. git add (đúng file) → commit → git push origin main
 4. scripts/deploy-production.ps1 -ApiBaseUrl "https://api.novixa.vn" -UseExistingNodeModules
-   (hoặc publish API + npm run build admin rồi copy sang publish\)
 5. scripts/deploy-update-vps.ps1          # mặc định SkipMigrations
-   scripts/deploy-update-vps.ps1 -RunMigrations   # chỉ khi có migration mới
-6. Kiểm tra: https://api.novixa.vn/api/health (+ /api/health/db)
-7. Smoke STAFF (vd. khiemtic @ NT_XUANHOA):
+   scripts/deploy-update-vps.ps1 -RunMigrations   # chỉ khi có migration mới (191/210/211, …)
+6. Verify bundle: so MD5 assets/PosPage-*.js (local dist vs https://admin.novixa.vn) — xem pharmacy-pos-customer-incidents-v1.md §5
+7. Kiểm tra: https://api.novixa.vn/api/health (+ /api/health/db)
+8. Hard refresh admin (Ctrl+F5) cho user test
+9. Smoke STAFF (vd. khiemtic @ NT_XUANHOA):
    - Không KPI doanh thu trên Tổng quan
    - Không vào /reports (403 / redirect)
    - Không vào /success/cockpit (redirect checklist hoặc /)
    - Đơn bán mặc định hôm nay
-8. Smoke ADMIN: báo cáo + Cockpit + xuất CSV (nếu có reports.export)
+10. Smoke ADMIN: báo cáo + Cockpit + xuất CSV (nếu có reports.export)
+11. POS/KH (nếu đụng): checklist pharmacy-pos-customer-incidents-v1.md §3
 ```
 
-**Không làm:** deploy working tree chưa commit; amend commit đã push; force push `main`.
+**Không làm:** deploy working tree chưa commit; amend commit đã push; force push `main`; commit `artifacts/` hoặc `publish/`.
 
 ---
 
@@ -111,11 +115,18 @@ UX:  ShiftChecklist không hiện link Cockpit nếu không có quyền owner
 | STAFF vào Cockpit thấy Doanh số | Cockpit dùng `DashboardPolicies.Read` (mở theo sales) | `SuccessPolicies.Owner` |
 | Mất tab People | Module learning chưa commit, bị mất disk | Commit `modules/learning/**` |
 | Đơn bán không mặc định hôm nay | `from`/`to` + RangePicker chỉ nằm stash | Commit vertical slice FE+API |
+| POS quick-add KH trống SĐT/tên | Ant `Select` `onSearch('')` on blur xóa state trước drawer | `lastCustomerSearchRef` + prefill `''` not `undefined` — `ad9231d` |
+| Deploy prod fail / VPS thiếu fix POS | `npm run build` = `tsc --noEmit` — unused var TS6133 | Xóa dead code; build local trước deploy |
+| Learning mail 404 | FE path `/api/learning/...` + axios base `/api` | Path `/learning/mail/...` only |
+| Thư “owner/manager” cho STAFF | `LearningWriteGuard` bọc route mail | Mail route không WriteGuard |
+
+**Chi tiết POS/KH/Learning (07/2026):** [pharmacy-pos-customer-incidents-v1.md](./pharmacy-pos-customer-incidents-v1.md)
 
 ---
 
 ## 8. Liên quan
 
 - Deploy: `scripts/deploy-production.ps1`, `scripts/deploy-update-vps.ps1`
+- POS/KH/Learning incidents: [pharmacy-pos-customer-incidents-v1.md](./pharmacy-pos-customer-incidents-v1.md)
 - Hypercare chung: [hypercare-week1-4-runbook-v1.md](./hypercare-week1-4-runbook-v1.md)
-- Cursor rule: `.cursor/rules/pharmacy-rbac-deploy-sync.mdc`
+- Cursor rules: `.cursor/rules/pharmacy-rbac-deploy-sync.mdc`, `.cursor/rules/pos-ant-select-prefill.mdc`

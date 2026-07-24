@@ -1,0 +1,23 @@
+---
+description: Tránh regress POS quick-add KH — Ant Select blur xóa search
+globs:
+  - client/admin/src/modules/sales/PosPage.tsx
+  - client/admin/src/modules/customer/CustomerFormDrawer.tsx
+---
+
+# POS — Ant Select + quick-add prefill
+
+## Không regress
+
+- `Select` `onSearch` của Ant Design gọi `onSearch('')` khi **blur** — kể cả click nút UserAdd.
+- **Không** dựa vào state search hiện tại để prefill drawer; dùng `useRef` giữ query non-empty cuối (`lastCustomerSearchRef`).
+- Prefill drawer: `initialPhone` / `initialName` set `''` not `undefined` — Input Ant Design không hiện giá trị với `undefined`.
+
+## Trước deploy
+
+- `cd client/admin && npm run build` — `tsc --noEmit` fail nếu unused vars (TS6133).
+- Smoke: gõ SĐT → click thêm KH **không blur** → drawer có SĐT.
+
+## Chi tiết
+
+`docs/novixa/03-operations/pharmacy-pos-customer-incidents-v1.md`

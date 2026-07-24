@@ -26,3 +26,5 @@ Khi sửa Family OS, Care, platform, hoặc bất kỳ auth/layout chung:
 - Commit + push RBAC/Pharmacy **trước** khi chuyển epic lớn hoặc deploy.
 - Không deploy working tree chưa commit các thay đổi auth.
 - Chi tiết bước: `docs/novixa/03-operations/pharmacy-rbac-deploy-sync-runbook-v1.md`
+- POS quick-add / Ant Select blur: `docs/novixa/03-operations/pharmacy-pos-customer-incidents-v1.md`, rule `pos-ant-select-prefill.mdc`
+- Trước deploy admin: `npm run build` (tsc bắt buộc — TS6133 chặn prod)
