@@ -1,0 +1,39 @@
+---
+description: Family OS deploy, migration manifest, và đồng bộ LOCAL/GIT/VPS
+alwaysApply: false
+globs:
+  - client/family-app/**
+  - client/admin/src/modules/family-os/**
+  - src/Packs/FamilyOS/**
+  - deploy/ubuntu/*family-os*
+  - migrations/*pack_family*
+  - migrations/21*_pack_family*.sql
+---
+
+# Family OS deploy + sync
+
+Khi sửa Family OS pack, `family-app`, Admin modules `/family-os`, hoặc script deploy pilot:
+
+## Nguyên tắc
+
+- **SoT = `origin/main`**, không phải VPS.
+- Mig Family OS qua **`deploy/ubuntu/migration-files.family-os.txt`** — **không** gộp vào `migration-files.prod.txt` trừ khi được duyệt off-hours.
+- Commit + push **trước** deploy pilot; không deploy working tree dirty.
+- Windows → VPS: manifest có thể CRLF — runner phải strip `\r` (`b76f547`).
+
+## Không regress Pharmacy
+
+Đụng `router.tsx`, `AppLayout.tsx`, `usePermission.ts`, platform entitlement → đọc gate Pharmacy trước merge.
+
+## Build trước deploy
+
+- `cd client/admin && npm run build` (tsc bắt buộc)
+- `cd client/family-app && npm run build`
+
+## Verify
+
+- `https://family.kittech.vn` + `https://api.novixa.vn/api/health`
+- Bảng `pack_family.*` sau mig
+- Hard refresh SPA sau deploy
+
+Chi tiết: `docs/novixa/03-operations/family-os-sync-runbook-v1.md`

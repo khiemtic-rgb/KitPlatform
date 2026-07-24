@@ -124,9 +124,28 @@ UX:  ShiftChecklist không hiện link Cockpit nếu không có quyền owner
 
 ---
 
-## 8. Liên quan
+## 8. Checklist đồng bộ cuối ngày (LOCAL / GIT / VPS)
+
+Dùng **trước khi rời máy** hoặc chuyển epic — tránh lặp sáng 2026-07-24 (fix POS không lên VPS, RBAC regress, Family OS mig CRLF fail).
+
+| # | Việc | Pass |
+|---|------|------|
+| 1 | `git fetch` + `HEAD == origin/main` | ☐ |
+| 2 | Không uncommitted auth / Family OS / Pharmacy RBAC | ☐ |
+| 3 | `npm run build` admin (+ family-app nếu đụng) + API build OK | ☐ |
+| 4 | Push rồi mới deploy; Family OS mig qua `migration-files.family-os.txt` | ☐ |
+| 5 | VPS: health, `family.kittech.vn`, bảng `pack_family` | ☐ |
+| 6 | Stash/WIP có nhãn — **không** tin VPS là SoT | ☐ |
+| 7 | Hard refresh admin SPA sau deploy | ☐ |
+
+Chi tiết Family OS + bug epic 2026-07-24: [family-os-sync-runbook-v1.md](./family-os-sync-runbook-v1.md) §5.
+
+---
+
+## 9. Liên quan
 
 - Deploy: `scripts/deploy-production.ps1`, `scripts/deploy-update-vps.ps1`
 - POS/KH/Learning incidents: [pharmacy-pos-customer-incidents-v1.md](./pharmacy-pos-customer-incidents-v1.md)
+- Family OS pilot + sync: [family-os-sync-runbook-v1.md](./family-os-sync-runbook-v1.md)
 - Hypercare chung: [hypercare-week1-4-runbook-v1.md](./hypercare-week1-4-runbook-v1.md)
-- Cursor rules: `.cursor/rules/pharmacy-rbac-deploy-sync.mdc`, `.cursor/rules/pos-ant-select-prefill.mdc`
+- Cursor rules: `.cursor/rules/pharmacy-rbac-deploy-sync.mdc`, `.cursor/rules/family-os-deploy-sync.mdc`, `.cursor/rules/pos-ant-select-prefill.mdc`

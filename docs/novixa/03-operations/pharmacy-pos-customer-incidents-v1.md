@@ -192,6 +192,7 @@ Khớp MD5 ⇒ admin prod align với local build cùng commit. Ghi nhận lần
 
 ## 7. Liên quan
 
-- Runbook RBAC + deploy: [pharmacy-rbac-deploy-sync-runbook-v1.md](./pharmacy-rbac-deploy-sync-runbook-v1.md)
-- Cursor: `.cursor/rules/pharmacy-rbac-deploy-sync.mdc`, `.cursor/rules/pos-ant-select-prefill.mdc`
+- Runbook RBAC + deploy: [pharmacy-rbac-deploy-sync-runbook-v1.md](./pharmacy-rbac-deploy-sync-runbook-v1.md) (checklist đồng bộ §8)
+- Family OS epic chiều 2026-07-24: [family-os-sync-runbook-v1.md](./family-os-sync-runbook-v1.md)
+- Cursor: `.cursor/rules/pharmacy-rbac-deploy-sync.mdc`, `.cursor/rules/family-os-deploy-sync.mdc`, `.cursor/rules/pos-ant-select-prefill.mdc`
 - Scripts: `scripts/deploy-production.ps1`, `scripts/deploy-update-vps.ps1`
