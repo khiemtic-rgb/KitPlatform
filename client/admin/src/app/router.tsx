@@ -553,8 +553,15 @@ export function AppRouter() {
                 }
               >
                 <Route index element={<Navigate to="/catalog/products" replace />} />
+                <Route
+                  path="products/duplicates"
+                  element={
+                    <SuspenseRoute>
+                      <ProductDuplicateMergePage />
+                    </SuspenseRoute>
+                  }
+                />
                 <Route path="products" element={<ProductListPage />} />
-                <Route path="products/duplicates" element={<ProductDuplicateMergePage />} />
                 <Route path="import" element={<ProductImportPage />} />
                 <Route path="categories" element={<CategoryListPage />} />
                 <Route path="brands" element={<BrandListPage />} />

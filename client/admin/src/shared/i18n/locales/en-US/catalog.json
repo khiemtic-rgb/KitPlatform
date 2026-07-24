@@ -463,6 +463,7 @@
     "similarGuide1": "Groups with different normalized names but ≥ 80% similarity — common after imports with duplicate SKUs.",
     "similarGuide2": "Review name / UoM / stock carefully before merging (may differ in strength or pack).",
     "similarGuide3": "Same merge flow as the exact-duplicate tab: pick keeper → enter factor → Merge.",
+    "needCatalogWrite": "catalog.write is required to merge (you can still browse the list).",
     "needInventoryWrite": "inventory.write permission is required to merge stock.",
     "summary": "{{clusters}} groups · {{products}} candidate SKUs (same normalized name).",
     "similarSummary": "{{clusters}} groups · {{products}} near-similar SKUs (≥ 80% similar, different normalized name).",

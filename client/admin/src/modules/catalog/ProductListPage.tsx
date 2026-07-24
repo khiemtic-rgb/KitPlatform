@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Alert,
   App,
@@ -411,9 +411,9 @@ export function ProductListPage() {
           <Button icon={<ImportOutlined />} onClick={() => navigate('/catalog/import')}>
             {t('importExcel')}
           </Button>
-          <Button icon={<MergeCellsOutlined />} onClick={() => navigate('/catalog/products/duplicates')}>
-            {t('duplicateMerge')}
-          </Button>
+          <Link to="/catalog/products/duplicates">
+            <Button icon={<MergeCellsOutlined />}>{t('duplicateMerge')}</Button>
+          </Link>
           {showNationalDrugLookup && (
             <>
               <Button icon={<CloudSyncOutlined />} onClick={() => navigate('/catalog/national-drugs')}>

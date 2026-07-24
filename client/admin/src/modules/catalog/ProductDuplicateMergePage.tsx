@@ -38,7 +38,7 @@ import {
   type ProductMergeHistoryItem,
 } from '@/shared/api/catalog.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
-import { useCanCatalogWrite, useCanInventoryWrite } from '@/shared/auth/usePermission';
+import { useCanCatalogRead, useCanCatalogWrite, useCanInventoryWrite } from '@/shared/auth/usePermission';
 import { formatDisplayDateTime } from '@/shared/utils/date';
 import { formatDisplayQuantity } from '@/shared/utils/money';
 
@@ -90,6 +90,7 @@ function applyClusterKeepers(
 export function ProductDuplicateMergePage() {
   const { t } = useTranslation('catalog', { keyPrefix: 'duplicateMerge' });
   const { message: msg } = App.useApp();
+  const canCatalogRead = useCanCatalogRead();
   const canCatalogWrite = useCanCatalogWrite();
   const canInventoryWrite = useCanInventoryWrite();
   const canMerge = canCatalogWrite && canInventoryWrite;
@@ -251,7 +252,7 @@ export function ProductDuplicateMergePage() {
     }
   };
 
-  if (!canCatalogWrite) {
+  if (!canCatalogRead) {
     return <Navigate to="/catalog/products" replace />;
   }
 
@@ -598,7 +599,14 @@ export function ProductDuplicateMergePage() {
                     </ol>
                   }
                 />
-                {!canInventoryWrite ? (
+                {!canCatalogWrite ? (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                    message={t('needCatalogWrite')}
+                  />
+                ) : !canInventoryWrite ? (
                   <Alert
                     type="warning"
                     showIcon
@@ -643,7 +651,14 @@ export function ProductDuplicateMergePage() {
                     </ol>
                   }
                 />
-                {!canInventoryWrite ? (
+                {!canCatalogWrite ? (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                    message={t('needCatalogWrite')}
+                  />
+                ) : !canInventoryWrite ? (
                   <Alert
                     type="warning"
                     showIcon
