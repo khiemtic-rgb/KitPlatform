@@ -1,6 +1,7 @@
 using KitPlatform.Application.Core;
 using KitPlatform.Packs.Clinic;
 using KitPlatform.Packs.Connect;
+using KitPlatform.Packs.FamilyOs;
 using KitPlatform.Packs.Pharmacy;
 using KitPlatform.Packs.Survey;
 using Xunit;
@@ -91,6 +92,15 @@ public sealed class PackDefinitionsAsBuiltSyncTests
     }
 
     [Fact]
+    public void FamilyOs_match_starter_pack_definition()
+    {
+        Assert.Equal(["family_os"], FamilyOsPackDefinition.DefaultEnabledModules);
+        Assert.Equal(["family_os"], FamilyOsPackDefinition.PackModuleCodes);
+        Assert.Equal("family_os", FamilyOsPackDefinition.PackCode);
+        Assert.Equal("family_os", FamilyOsPackDefinition.TenantPackageCode);
+    }
+
+    [Fact]
     public void Platform_module_codes_include_all_asbuilt_catalog_entries()
     {
         string[] expected =
@@ -117,6 +127,7 @@ public sealed class PackDefinitionsAsBuiltSyncTests
             "prescriber_portal",
             "telehealth",
             "novixa_connect",
+            "family_os",
         ];
 
         Assert.Equal(expected, PlatformModuleCodes.All.ToArray());
@@ -128,7 +139,8 @@ public sealed class PackDefinitionsAsBuiltSyncTests
         foreach (var code in PharmacyPackDefinition.PackModuleCodes
                      .Concat(ClinicPackDefinition.PackModuleCodes)
                      .Concat(ConnectPackDefinition.PackModuleCodes)
-                     .Concat(SurveyPackDefinition.PackModuleCodes))
+                     .Concat(SurveyPackDefinition.PackModuleCodes)
+                     .Concat(FamilyOsPackDefinition.PackModuleCodes))
         {
             Assert.Contains(code, PlatformModuleCodes.All);
         }

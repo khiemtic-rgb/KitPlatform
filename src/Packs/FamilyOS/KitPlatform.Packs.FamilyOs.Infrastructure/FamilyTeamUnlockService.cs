@@ -1,0 +1,203 @@
+using KitPlatform.Packs.FamilyOs;
+
+namespace KitPlatform.Packs.FamilyOs.Infrastructure;
+
+internal sealed class FamilyTeamUnlockService : IFamilyTeamUnlockService
+{
+    private readonly FamilyTeamUnlockRepository _repo;
+    private readonly FamilyGraphRepository _families;
+    private readonly FamilyDayFlowRepository _dayFlows;
+
+    public FamilyTeamUnlockService(
+        FamilyTeamUnlockRepository repo,
+        FamilyGraphRepository families,
+        FamilyDayFlowRepository dayFlows)
+    {
+        _repo = repo;
+        _families = families;
+        _dayFlows = dayFlows;
+    }
+
+    public async Task<FamilyTeamDayDto> GetTeamDayAsync(
+        Guid familyId,
+        DateOnly? flowDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        var family = await _families.GetFamilyAsync(familyId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+
+        var today = DateOnly.FromDateTime(FamilyTimeZones.NowIn(family.Timezone).DateTime);
+        var date = flowDate ?? today;
+        var flow = await _dayFlows.GetByDateAsync(familyId, date, cancellationToken);
+        var members = await _families.ListMembersAsync(familyId, cancellationToken);
+        var children = members.Where(m =>
+                m.RoleCode.Equals("child", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        IReadOnlyList<FamilyDayFlowRepository.CommitmentRow> commitments =
+            flow is null
+                ? Array.Empty<FamilyDayFlowRepository.CommitmentRow>()
+                : await _dayFlows.ListCommitmentsAsync(flow.Id, cancellationToken);
+
+        var childIds = children.Select(c => c.Id).ToHashSet();
+        var slices = children.Select(ch =>
+        {
+            var mine = commitments.Where(c => c.MemberId == ch.Id).ToList();
+            var done = mine.Count(c => c.Status == FamilyCommitmentStatuses.Done);
+            var skipped = mine.Count(c => c.Status == FamilyCommitmentStatuses.Skipped);
+            var open = mine.Count(c =>
+                c.Status is not FamilyCommitmentStatuses.Done
+                    and not FamilyCommitmentStatuses.Skipped);
+            return new FamilyTeamChildSliceDto(
+                ch.Id, ch.DisplayName, done, mine.Count, open, skipped);
+        }).ToList();
+
+        // Unassigned commitments still count toward house total if any (rare)
+        var orphan = commitments
+            .Where(c => c.MemberId is null || !childIds.Contains(c.MemberId.Value))
+            .ToList();
+        if (orphan.Count > 0 && slices.Count == 0)
+        {
+            var done = orphan.Count(c => c.Status == FamilyCommitmentStatuses.Done);
+            var skipped = orphan.Count(c => c.Status == FamilyCommitmentStatuses.Skipped);
+            var open = orphan.Count - done - skipped;
+            slices.Add(new FamilyTeamChildSliceDto(
+                Guid.Empty, "Nhà", done, orphan.Count, open, skipped));
+        }
+
+        var active = slices.Where(s => s.Total > 0).ToList();
+        var teamDone = active.Sum(s => s.Done);
+        var teamTotal = active.Sum(s => s.Total);
+        var remaining = active.Sum(s => Math.Max(0, s.Open));
+        var percent = teamTotal > 0 ? (int)Math.Round(100.0 * teamDone / teamTotal) : 0;
+        var complete = teamTotal > 0 && remaining == 0;
+
+        string line;
+        if (teamTotal == 0)
+            line = "Hôm nay nhà chưa có Mission — mình nghỉ vui cũng được!";
+        else if (complete)
+            line = "🎉 Mission Complete! Cả đội đã xong ngày hôm nay.";
+        else if (remaining == 1)
+            line = "🎯 Cả đội còn 1 Mission nữa để hoàn thành ngày hôm nay.";
+        else
+            line = $"🎯 Cả đội còn {remaining} Mission nữa để hoàn thành ngày hôm nay.";
+
+        return new FamilyTeamDayDto(
+            date,
+            flow?.Id,
+            teamDone,
+            teamTotal,
+            percent,
+            remaining,
+            complete,
+            line,
+            slices);
+    }
+
+    public async Task<IReadOnlyList<FamilyTeamUnlockDto>> ListAsync(
+        Guid familyId,
+        DateOnly? flowDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (await _families.GetFamilyAsync(familyId, cancellationToken) is null)
+            throw new InvalidOperationException("Không tìm thấy gia đình.");
+
+        var rows = await _repo.ListAsync(familyId, flowDate, cancellationToken);
+        return rows.Select(Map).ToList();
+    }
+
+    public async Task<FamilyTeamUnlockDto?> EnsurePendingAsync(
+        Guid familyId,
+        DateOnly? flowDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        var team = await GetTeamDayAsync(familyId, flowDate, cancellationToken);
+        if (!team.TeamComplete || team.DayFlowId is null)
+            return null;
+
+        var pick = await _repo.PickFamilyRewardAsync(familyId, cancellationToken);
+        var rewardCode = string.IsNullOrWhiteSpace(pick?.RewardCode)
+            ? "reward_choose_movie_sat"
+            : pick!.RewardCode.Trim();
+        var label = string.IsNullOrWhiteSpace(pick?.LabelVi)
+            ? "Movie Night"
+            : pick!.LabelVi.Trim();
+
+        // Brand Movie Night when movie-ish codes
+        if (rewardCode.Contains("movie", StringComparison.OrdinalIgnoreCase)
+            || label.Contains("phim", StringComparison.OrdinalIgnoreCase))
+        {
+            label = "Movie Night";
+        }
+
+        await _repo.UpsertPendingAsync(
+            familyId,
+            team.DayFlowId.Value,
+            team.FlowDate,
+            rewardCode,
+            label,
+            pick?.AgreementId,
+            team.TeamDone,
+            team.TeamTotal,
+            team.TeamPercent,
+            cancellationToken);
+
+        var list = await _repo.ListAsync(familyId, team.FlowDate, cancellationToken);
+        var row = list.FirstOrDefault(r =>
+            r.RewardCode.Equals(rewardCode, StringComparison.OrdinalIgnoreCase));
+        return row is null ? null : Map(row);
+    }
+
+    public async Task<FamilyTeamUnlockDto> DecideAsync(
+        Guid familyId,
+        Guid unlockId,
+        FamilyTeamUnlockDecideRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (await _families.GetFamilyAsync(familyId, cancellationToken) is null)
+            throw new InvalidOperationException("Không tìm thấy gia đình.");
+
+        var status = (request.Status ?? "").Trim().ToLowerInvariant();
+        if (!FamilyTeamUnlockStatuses.Decide.Contains(status))
+            throw new InvalidOperationException("status phải là confirmed | deferred.");
+
+        var members = await _families.ListMembersAsync(familyId, cancellationToken);
+        var actor = members.FirstOrDefault(m => m.Id == request.ConfirmedBy)
+            ?? throw new InvalidOperationException("confirmedBy không thuộc gia đình này.");
+        if (actor.RoleCode.Equals("child", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Chỉ phụ huynh mới xác nhận Team Unlock.");
+
+        var existing = await _repo.GetAsync(familyId, unlockId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy Team Unlock.");
+        if (existing.Status != FamilyTeamUnlockStatuses.PendingConfirm)
+            throw new InvalidOperationException("Team Unlock đã được quyết định.");
+
+        var note = string.IsNullOrWhiteSpace(request.DecisionNote)
+            ? null
+            : request.DecisionNote.Trim();
+
+        var updated = await _repo.DecideAsync(
+            familyId, unlockId, status, request.ConfirmedBy, note, cancellationToken)
+            ?? throw new InvalidOperationException("Không cập nhật được Team Unlock.");
+
+        return Map(updated);
+    }
+
+    private static FamilyTeamUnlockDto Map(FamilyTeamUnlockRepository.UnlockRow row) =>
+        new(
+            row.Id,
+            row.FamilyId,
+            row.DayFlowId,
+            row.FlowDate,
+            row.RewardCode,
+            row.LabelVi,
+            row.AgreementId,
+            row.TeamDone,
+            row.TeamTotal,
+            row.TeamPercent,
+            row.Status,
+            row.ConfirmedBy,
+            row.ConfirmedAt,
+            row.DecisionNote,
+            row.CreatedAt);
+}

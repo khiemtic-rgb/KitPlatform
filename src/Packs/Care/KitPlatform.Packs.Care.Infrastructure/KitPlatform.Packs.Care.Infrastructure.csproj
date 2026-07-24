@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>KitPlatform.Packs.Care.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.79" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KitPlatform.Packs.Care.Application\KitPlatform.Packs.Care.Application.csproj" />
+    <ProjectReference Include="..\..\..\KitPlatform.Application\KitPlatform.Application.csproj" />
+    <ProjectReference Include="..\..\..\KitPlatform.Infrastructure\KitPlatform.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

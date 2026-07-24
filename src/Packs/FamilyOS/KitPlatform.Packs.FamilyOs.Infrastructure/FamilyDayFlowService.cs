@@ -1,0 +1,463 @@
+using KitPlatform.Application.Abstractions;
+using KitPlatform.Packs.FamilyOs;
+
+namespace KitPlatform.Packs.FamilyOs.Infrastructure;
+
+internal sealed class FamilyDayFlowService : IFamilyDayFlowService
+{
+    private readonly FamilyDayFlowRepository _repo;
+    private readonly FamilyRoutineRepository _routines;
+    private readonly FamilyGraphRepository _families;
+    private readonly IFamilyConsequenceService _consequences;
+    private readonly IFamilyTeamUnlockService _teamUnlocks;
+    private readonly IFamilyStarService _stars;
+    private readonly FamilyStarSettingsRepository _starSettings;
+    private readonly ITenantContext _tenant;
+
+    public FamilyDayFlowService(
+        FamilyDayFlowRepository repo,
+        FamilyRoutineRepository routines,
+        FamilyGraphRepository families,
+        IFamilyConsequenceService consequences,
+        IFamilyTeamUnlockService teamUnlocks,
+        IFamilyStarService stars,
+        FamilyStarSettingsRepository starSettings,
+        ITenantContext tenant)
+    {
+        _repo = repo;
+        _routines = routines;
+        _families = families;
+        _consequences = consequences;
+        _teamUnlocks = teamUnlocks;
+        _stars = stars;
+        _starSettings = starSettings;
+        _tenant = tenant;
+    }
+
+    public async Task<DayFlowDto> EnsureDayFlowAsync(
+        Guid familyId,
+        EnsureDayFlowRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var family = await _families.GetFamilyAsync(familyId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+
+        var localNow = FamilyTimeZones.NowIn(family.Timezone);
+        var flowDate = request.FlowDate ?? DateOnly.FromDateTime(localNow.DateTime);
+
+        var existing = await _repo.GetByDateAsync(familyId, flowDate, cancellationToken);
+        if (existing is not null)
+            return await MapDayFlowAsync(existing, family.Timezone, cancellationToken);
+
+        var routine = await _repo.PickRoutineForDateAsync(
+            familyId, flowDate, request.RoutineId, cancellationToken)
+            ?? throw new InvalidOperationException(
+                "Chưa có routine active — tạo routine trước khi mở Daily Flow.");
+
+        var (created, _) = await _repo.CreateDayFlowWithCommitmentsAsync(
+            familyId, routine.Id, routine.DisplayName, flowDate, cancellationToken);
+
+        return await MapDayFlowAsync(created, family.Timezone, cancellationToken);
+    }
+
+    public async Task<DayFlowDto?> GetDayFlowAsync(
+        Guid familyId,
+        DateOnly flowDate,
+        CancellationToken cancellationToken = default)
+    {
+        var family = await _families.GetFamilyAsync(familyId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+
+        var flow = await _repo.GetByDateAsync(familyId, flowDate, cancellationToken);
+        if (flow is null) return null;
+        return await MapDayFlowAsync(flow, family.Timezone, cancellationToken);
+    }
+
+    public async Task<CommitmentDto> UpdateCommitmentProgressAsync(
+        Guid familyId,
+        Guid commitmentId,
+        UpdateCommitmentProgressRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var status = (request.Status ?? "").Trim().ToLowerInvariant();
+        if (!FamilyCommitmentStatuses.All.Contains(status))
+            throw new InvalidOperationException(
+                "status phải là pending | in_progress | done | skipped.");
+
+        var family = await _families.GetFamilyAsync(familyId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+
+        var existing = await _repo.GetCommitmentForFamilyAsync(familyId, commitmentId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy commitment.");
+
+        string? skipReason = null;
+        if (status == FamilyCommitmentStatuses.Skipped)
+        {
+            var reason = (request.SkipReason ?? "").Trim().ToLowerInvariant();
+            if (!FamilySkipReasons.All.Contains(reason))
+            {
+                throw new InvalidOperationException(
+                    "skipReason bắt buộc khi skipped: forgot | busy | need_help | not_ready | sick | other.");
+            }
+
+            skipReason = reason;
+        }
+
+        var localNow = FamilyTimeZones.NowIn(family.Timezone);
+        var localTime = TimeOnly.FromTimeSpan(localNow.TimeOfDay);
+
+        string? evidenceUrl = null;
+        if (status == FamilyCommitmentStatuses.Done)
+        {
+            evidenceUrl = NormalizeEvidenceUrl(request.EvidenceUrl, _tenant.TenantId);
+
+            if (!request.ParentOverride &&
+                FamilyCommitmentTiming.IsTooEarlyToComplete(
+                    existing.AllowEarlyComplete,
+                    existing.EarlyLeadMinutes,
+                    existing.WindowStart,
+                    localTime))
+            {
+                throw new InvalidOperationException(
+                    FamilyCommitmentTiming.EarlyCompleteMessageVi(
+                        existing.Title,
+                        existing.WindowStart,
+                        existing.AllowEarlyComplete,
+                        existing.EarlyLeadMinutes));
+            }
+        }
+
+        var updated = await _repo.UpdateCommitmentStatusAsync(
+            existing.Id, status, skipReason, evidenceUrl, cancellationToken)
+            ?? throw new InvalidOperationException("Không cập nhật được commitment.");
+
+        var reloaded = await _repo.GetCommitmentForFamilyAsync(familyId, updated.Id, cancellationToken)
+            ?? updated;
+
+        var flowDate = reloaded.FlowDate
+            ?? DateOnly.FromDateTime(localNow.DateTime);
+
+        if (status == FamilyCommitmentStatuses.Skipped && skipReason is not null)
+        {
+            await _consequences.SuggestFromSkipAsync(
+                familyId,
+                new SkipConsequenceSuggestRequest(
+                    reloaded.DayFlowId,
+                    reloaded.Id,
+                    reloaded.TemplateId,
+                    reloaded.MemberId,
+                    reloaded.Title,
+                    flowDate,
+                    skipReason),
+                cancellationToken);
+        }
+
+        if (status is FamilyCommitmentStatuses.Done or FamilyCommitmentStatuses.Skipped)
+        {
+            try
+            {
+                await _teamUnlocks.EnsurePendingAsync(familyId, flowDate, cancellationToken);
+            }
+            catch
+            {
+                // Unlock ensure is best-effort — never block progress updates
+            }
+        }
+
+        StarAwardDto? starAward = null;
+        try
+        {
+            starAward = await _stars.SyncCommitmentStarsAsync(
+                familyId, reloaded.Id, status, cancellationToken);
+        }
+        catch
+        {
+            // Star ledger is best-effort — never block progress updates
+        }
+
+        reloaded = await _repo.GetCommitmentForFamilyAsync(familyId, reloaded.Id, cancellationToken)
+            ?? reloaded;
+
+        var memberBalance = starAward?.Balance;
+        if (memberBalance is null && reloaded.MemberId is Guid mid)
+        {
+            try
+            {
+                memberBalance = await _stars.GetMemberBalanceAsync(familyId, mid, cancellationToken);
+            }
+            catch
+            {
+                // ignore balance lookup failures
+            }
+        }
+
+        StarAwardResult? awardForMap = starAward is not null
+            ? new StarAwardResult(starAward.Delta, starAward.Tier, starAward.LateMinutes, starAward.LabelVi)
+            : null;
+        if (awardForMap is null)
+        {
+            var ledgerAwards = await _stars.GetCommitmentAwardsAsync(
+                [reloaded.Id], cancellationToken);
+            ledgerAwards.TryGetValue(reloaded.Id, out awardForMap);
+        }
+
+        var tierSettings = await ResolveTierSettingsAsync(familyId, cancellationToken);
+        return MapCommitment(
+            reloaded,
+            TimeOnly.FromTimeSpan(localNow.TimeOfDay),
+            flowDate,
+            family.Timezone,
+            awardForMap,
+            tierSettings,
+            localNow,
+            memberBalance);
+    }
+
+    public async Task<CommitmentDto> ApproveCommitmentStarsAsync(
+        Guid familyId,
+        Guid commitmentId,
+        CancellationToken cancellationToken = default)
+    {
+        var family = await _families.GetFamilyAsync(familyId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+
+        var existing = await _repo.GetCommitmentForFamilyAsync(familyId, commitmentId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy commitment.");
+
+        StarAwardDto? starAward;
+        try
+        {
+            starAward = await _stars.ApprovePendingStarsAsync(
+                familyId, commitmentId, cancellationToken)
+                ?? throw new InvalidOperationException("Không duyệt được sao cho nhiệm vụ này.");
+        }
+        catch (InvalidOperationException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Không duyệt được sao — thử lại.", ex);
+        }
+
+        var reloaded = await _repo.GetCommitmentForFamilyAsync(familyId, commitmentId, cancellationToken)
+            ?? existing;
+
+        var localNow = FamilyTimeZones.NowIn(family.Timezone);
+        var flowDate = reloaded.FlowDate
+            ?? DateOnly.FromDateTime(localNow.DateTime);
+        var tierSettings = await ResolveTierSettingsAsync(familyId, cancellationToken);
+        var awardForMap = new StarAwardResult(
+            starAward.Delta,
+            starAward.Tier,
+            starAward.LateMinutes,
+            starAward.LabelVi);
+
+        return MapCommitment(
+            reloaded,
+            TimeOnly.FromTimeSpan(localNow.TimeOfDay),
+            flowDate,
+            family.Timezone,
+            awardForMap,
+            tierSettings,
+            localNow,
+            starAward.Balance);
+    }
+
+    private async Task<DayFlowDto> MapDayFlowAsync(
+        FamilyDayFlowRepository.DayFlowRow flow,
+        string timezone,
+        CancellationToken cancellationToken)
+    {
+        var localNow = FamilyTimeZones.NowIn(timezone);
+        var localTime = TimeOnly.FromTimeSpan(localNow.TimeOfDay);
+        var tierSettings = await ResolveTierSettingsAsync(flow.FamilyId, cancellationToken);
+        var commitments = await _repo.ListCommitmentsAsync(flow.Id, cancellationToken);
+        foreach (var c in commitments)
+        {
+            if (c.Status != FamilyCommitmentStatuses.Done || c.StarPostedAt is not null)
+                continue;
+            if (c.PendingStarDelta is not null
+                && FamilyCommitmentReview.NeedsParentApproval(c.Title, c.EvidenceUrl))
+            {
+                continue;
+            }
+
+            try
+            {
+                await _stars.RepairMissingPendingStarsAsync(flow.FamilyId, c.Id, cancellationToken);
+            }
+            catch
+            {
+                // Star repair is best-effort — never block day-flow reads
+            }
+        }
+
+        commitments = await _repo.ListCommitmentsAsync(flow.Id, cancellationToken);
+        var ledgerAwards = await _stars.GetCommitmentAwardsAsync(
+            commitments.Select(c => c.Id), cancellationToken);
+        var mapped = commitments
+            .Select(c =>
+            {
+                ledgerAwards.TryGetValue(c.Id, out var award);
+                return MapCommitment(
+                    c, localTime, flow.FlowDate, timezone, award, tierSettings, localNow);
+            })
+            .OrderBy(c => FamilyCommitmentReminder.SortRank(c.ReminderState, c.Status))
+            .ThenBy(c => c.SortOrder)
+            .ToList();
+
+        return new DayFlowDto(
+            flow.Id,
+            flow.FamilyId,
+            flow.RoutineId,
+            flow.RoutineName,
+            flow.FlowDate,
+            flow.Status,
+            mapped.Count,
+            mapped.Count(c => c.Status == FamilyCommitmentStatuses.Done),
+            mapped.Count(c => c.Status is FamilyCommitmentStatuses.Pending
+                or FamilyCommitmentStatuses.InProgress),
+            mapped.Count(c => c.ReminderState == FamilyReminderStates.DueNow),
+            mapped.Count(c => c.ReminderState == FamilyReminderStates.Overdue),
+            mapped.Count(c => c.ReminderState == FamilyReminderStates.Upcoming),
+            localTime,
+            mapped);
+    }
+
+    private async Task<FamilyStarTierSettings> ResolveTierSettingsAsync(
+        Guid familyId,
+        CancellationToken cancellationToken)
+    {
+        var row = await _starSettings.GetAsync(familyId, cancellationToken);
+        return FamilyStarSettingsService.ResolveTierSettings(row);
+    }
+
+    private static CommitmentDto MapCommitment(
+        FamilyDayFlowRepository.CommitmentRow c,
+        TimeOnly localTime,
+        DateOnly flowDate,
+        string? timezone,
+        StarAwardResult? ledgerAward = null,
+        FamilyStarTierSettings? tierSettings = null,
+        DateTimeOffset? localNow = null,
+        int? memberStarBalance = null)
+    {
+        var (state, label) = FamilyCommitmentReminder.Evaluate(
+            c.Status, c.WindowStart, c.WindowEnd, localTime);
+        var late = FamilyCommitmentReminder.IsLateDone(
+            c.Status, c.CompletedAt, c.WindowEnd, flowDate, timezone, c.OnTimeGraceMinutes);
+
+        var starReward = c.StarReward > 0
+            ? c.StarReward
+            : FamilyStarCalculator.InferStarReward(c.Title);
+
+        int? projectedDelta = null;
+        string? projectedLabel = null;
+        if (c.Status is FamilyCommitmentStatuses.Pending or FamilyCommitmentStatuses.InProgress
+            && localNow is not null)
+        {
+            var projected = FamilyStarCalculator.Calculate(
+                starReward,
+                localNow,
+                c.WindowEnd,
+                flowDate,
+                timezone,
+                tierSettings,
+                c.OnTimeGraceMinutes);
+            projectedDelta = projected.Delta;
+            projectedLabel = projected.LabelVi;
+        }
+
+        int? starDelta = null;
+        string? starTier = null;
+        string? starLabel = null;
+        var starPosted = c.StarPostedAt is not null;
+
+        if (c.Status == FamilyCommitmentStatuses.Done)
+        {
+            if (starPosted && ledgerAward is not null)
+            {
+                starDelta = ledgerAward.Delta;
+                starTier = ledgerAward.Tier;
+                starLabel = ledgerAward.LabelVi;
+            }
+            else if (c.PendingStarDelta is int pending)
+            {
+                starDelta = pending;
+                starTier = c.PendingStarTier;
+                starLabel = FamilyStarCalculator.FormatLabelVi(
+                    pending,
+                    c.PendingStarLateMinutes,
+                    c.PendingStarTier ?? FamilyStarTiers.OnTime);
+            }
+            else if (c.CompletedAt is not null)
+            {
+                var computed = FamilyStarCalculator.Calculate(
+                    starReward,
+                    c.CompletedAt,
+                    c.WindowEnd,
+                    flowDate,
+                    timezone,
+                    tierSettings,
+                    c.OnTimeGraceMinutes);
+                starDelta = computed.Delta;
+                starTier = computed.Tier;
+                starLabel = computed.LabelVi;
+            }
+        }
+
+        return new CommitmentDto(
+            c.Id,
+            c.DayFlowId,
+            c.TemplateId,
+            c.MemberId,
+            c.MemberName,
+            c.Title,
+            c.Description,
+            c.WindowStart,
+            c.WindowEnd,
+            c.SortOrder,
+            c.Status,
+            c.SkipReason,
+            c.CompletedAt,
+            late,
+            state,
+            label,
+            string.IsNullOrWhiteSpace(c.Priority) ? FamilyCommitmentPriorities.Normal : c.Priority,
+            c.ExpectedDurationMinutes,
+            c.ContextAnchor,
+            (c.DependsOnTemplateIds ?? []).ToList(),
+            c.EvidenceUrl,
+            c.EvidenceUploadedAt,
+            c.AllowEarlyComplete,
+            c.EarlyLeadMinutes,
+            c.OnTimeGraceMinutes,
+            starReward,
+            starDelta,
+            starTier,
+            starLabel,
+            memberStarBalance,
+            projectedDelta,
+            projectedLabel,
+            starPosted,
+            c.StarComputedAt);
+    }
+
+    /// <summary>Only accept same-tenant family-os upload paths.</summary>
+    internal static string? NormalizeEvidenceUrl(string? raw, Guid tenantId)
+    {
+        var url = (raw ?? "").Trim();
+        if (url.Length == 0) return null;
+        if (url.Length > 500)
+            throw new InvalidOperationException("evidenceUrl quá dài.");
+
+        var prefix = $"/uploads/family-os/{tenantId:N}/";
+        if (!url.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException(
+                "evidenceUrl phải là đường dẫn /uploads/family-os/... từ API upload FamilyOS.");
+        if (url.Contains("..", StringComparison.Ordinal) || url.Contains('\\', StringComparison.Ordinal))
+            throw new InvalidOperationException("evidenceUrl không hợp lệ.");
+        return url;
+    }
+}

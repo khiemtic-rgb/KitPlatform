@@ -147,4 +147,18 @@ public sealed class TenantPlatformSettingsValidatorTests
     {
         TenantPlatformSettingsValidator.EnsureWithinBranchQuota(99, maxBranches: null);
     }
+
+    [Fact]
+    public void ToColumnValue_keeps_hybrid_until_family_promoted()
+    {
+        Assert.Equal(
+            PlatformVerticalCodes.Hybrid,
+            PlatformVerticalCodes.ToColumnValue(PlatformVerticalCodes.Family, PlatformVerticalCodes.Hybrid));
+        Assert.Equal(
+            PlatformVerticalCodes.Family,
+            PlatformVerticalCodes.ToColumnValue(PlatformVerticalCodes.Family, PlatformVerticalCodes.Family));
+        Assert.Equal(
+            PlatformVerticalCodes.Pharmacy,
+            PlatformVerticalCodes.ToColumnValue(PlatformVerticalCodes.Pharmacy, PlatformVerticalCodes.Hybrid));
+    }
 }

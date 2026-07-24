@@ -1,0 +1,25 @@
+# FamilyOS pack migrations — PILOT ONLY
+# Do NOT merge into migration-files.prod.txt until off-hours deploy is explicitly approved.
+# Apply with: deploy/ubuntu/run-kit-migrations-prod.sh "<conn>" after pointing at this list,
+# or run files in order via psql as app DB user (192a needs table owner / postgres).
+
+192_pack_family_os.sql
+193_pack_family_agreement_f2.sql
+194_pack_family_accountability_options.sql
+195_pack_family_consequence_event.sql
+196_pack_family_parent_push.sql
+197_pack_family_routine_graph.sql
+198_pack_family_agreement_taxonomy.sql
+199_pack_family_commitment_evidence.sql
+200_pack_family_value_persistence.sql
+201_pack_family_team_unlock.sql
+212_pack_family_child_gratitude.sql
+213_pack_family_allow_early_complete.sql
+214_pack_family_star_ledger.sql
+215_pack_family_star_settings.sql
+216_pack_family_commitment_timing.sql
+217_pack_family_pending_stars.sql
+218_pack_family_reward_catalog.sql
+219_pack_family_member_mood_entry.sql
+220_pack_family_reward_catalog_admin.sql
+# Optional (owner ALTER tenants CHECK): 192a_pack_family_os_vertical_owner.sql

@@ -13,6 +13,7 @@ REQUIRED=(
   "https://survey.novixa.vn"
   "https://prescriber.novixa.vn"
   "https://partner.novixa.vn"
+  "https://family.kittech.vn"
 )
 
 tmp="$(mktemp)"

@@ -1,0 +1,18 @@
+{
+  "name": "FamilyOS",
+  "short_name": "FamilyOS",
+  "description": "One Family. One Plan. One Daily Flow.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f7f4",
+  "theme_color": "#1d6a6a",
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

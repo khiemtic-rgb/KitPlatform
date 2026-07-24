@@ -1,0 +1,297 @@
+using Dapper;
+using KitPlatform.Application.Abstractions;
+using KitPlatform.Infrastructure.Data;
+using KitPlatform.Packs.FamilyOs;
+using Npgsql;
+
+namespace KitPlatform.Packs.FamilyOs.Infrastructure;
+
+internal sealed class FamilyOsParentPushRepository
+{
+    private readonly IDbConnectionFactory _db;
+    private readonly ITenantContext _tenant;
+
+    public FamilyOsParentPushRepository(IDbConnectionFactory db, ITenantContext tenant)
+    {
+        _db = db;
+        _tenant = tenant;
+    }
+
+    private Guid TenantId => _tenant.TenantId;
+
+    public async Task UpsertSubscriptionAsync(
+        Guid familyId,
+        Guid membershipId,
+        string endpoint,
+        string p256dh,
+        string auth,
+        string? userAgent,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO pack_family.parent_push_subscription (
+                tenant_id, family_id, membership_id, endpoint, p256dh, auth, user_agent
+            )
+            VALUES (@TenantId, @FamilyId, @MembershipId, @Endpoint, @P256dh, @Auth, @UserAgent)
+            ON CONFLICT (tenant_id, endpoint)
+            DO UPDATE SET
+                family_id = EXCLUDED.family_id,
+                membership_id = EXCLUDED.membership_id,
+                p256dh = EXCLUDED.p256dh,
+                auth = EXCLUDED.auth,
+                user_agent = EXCLUDED.user_agent,
+                updated_at = NOW(),
+                deleted_at = NULL
+            """,
+            new
+            {
+                TenantId,
+                FamilyId = familyId,
+                MembershipId = membershipId,
+                Endpoint = endpoint,
+                P256dh = p256dh,
+                Auth = auth,
+                UserAgent = userAgent,
+            });
+    }
+
+    public async Task SoftDeleteSubscriptionAsync(
+        Guid familyId,
+        Guid membershipId,
+        string endpoint,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(
+            """
+            UPDATE pack_family.parent_push_subscription
+            SET deleted_at = NOW(), updated_at = NOW()
+            WHERE tenant_id = @TenantId
+              AND family_id = @FamilyId
+              AND membership_id = @MembershipId
+              AND endpoint = @Endpoint
+              AND deleted_at IS NULL
+            """,
+            new { TenantId, FamilyId = familyId, MembershipId = membershipId, Endpoint = endpoint });
+    }
+
+    public async Task<bool> HasSubscriptionAsync(
+        Guid familyId,
+        Guid membershipId,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.ExecuteScalarAsync<bool>(
+            """
+            SELECT EXISTS(
+                SELECT 1
+                FROM pack_family.parent_push_subscription
+                WHERE tenant_id = @TenantId
+                  AND family_id = @FamilyId
+                  AND membership_id = @MembershipId
+                  AND deleted_at IS NULL
+            )
+            """,
+            new { TenantId, FamilyId = familyId, MembershipId = membershipId });
+    }
+
+    public async Task SoftDeleteByEndpointAsync(string endpoint, CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(
+            """
+            UPDATE pack_family.parent_push_subscription
+            SET deleted_at = NOW(), updated_at = NOW()
+            WHERE endpoint = @Endpoint AND deleted_at IS NULL
+            """,
+            new { Endpoint = endpoint });
+    }
+
+    public async Task<IReadOnlyList<SubscriptionRow>> ListAllActiveSubscriptionsAsync(
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<SubscriptionRow>(
+            """
+            SELECT
+                s.id AS Id,
+                s.tenant_id AS TenantId,
+                s.family_id AS FamilyId,
+                s.membership_id AS MembershipId,
+                s.endpoint AS Endpoint,
+                s.p256dh AS P256dh,
+                s.auth AS Auth
+            FROM pack_family.parent_push_subscription s
+            WHERE s.deleted_at IS NULL
+            """);
+        return rows.AsList();
+    }
+
+    public async Task<IReadOnlyList<OpenCommitmentRow>> ListOpenCommitmentsAsync(
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<OpenCommitmentRow>(
+            """
+            SELECT
+                c.id AS CommitmentId,
+                c.tenant_id AS TenantId,
+                d.family_id AS FamilyId,
+                d.flow_date AS FlowDate,
+                f.timezone AS Timezone,
+                f.display_name AS FamilyName,
+                c.title AS Title,
+                c.status AS Status,
+                c.window_start AS WindowStart,
+                c.window_end AS WindowEnd,
+                c.completed_at AS CompletedAt,
+                m.display_name AS MemberName,
+                m.role_code AS MemberRole
+            FROM pack_family.commitment c
+            INNER JOIN pack_family.day_flow d
+              ON d.id = c.day_flow_id AND d.tenant_id = c.tenant_id AND d.deleted_at IS NULL
+            INNER JOIN pack_family.family f
+              ON f.id = d.family_id AND f.tenant_id = c.tenant_id AND f.deleted_at IS NULL
+             AND f.status = 'active'
+            LEFT JOIN pack_family.membership m
+              ON m.id = c.member_id AND m.tenant_id = c.tenant_id AND m.deleted_at IS NULL
+            WHERE c.deleted_at IS NULL
+              AND c.status IN ('pending', 'in_progress')
+            """);
+        return rows.AsList();
+    }
+
+    public async Task<IReadOnlyList<DigestItemRow>> ListDigestCandidatesAsync(
+        Guid tenantId,
+        Guid familyId,
+        DateOnly flowDate,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<DigestItemRow>(
+            """
+            SELECT
+                c.id AS CommitmentId,
+                c.title AS Title,
+                c.status AS Status,
+                c.window_start AS WindowStart,
+                c.window_end AS WindowEnd,
+                c.completed_at AS CompletedAt,
+                m.display_name AS MemberName
+            FROM pack_family.commitment c
+            INNER JOIN pack_family.day_flow d
+              ON d.id = c.day_flow_id AND d.tenant_id = c.tenant_id AND d.deleted_at IS NULL
+            LEFT JOIN pack_family.membership m
+              ON m.id = c.member_id AND m.tenant_id = c.tenant_id AND m.deleted_at IS NULL
+            WHERE c.tenant_id = @TenantId
+              AND d.family_id = @FamilyId
+              AND d.flow_date = @FlowDate
+              AND c.deleted_at IS NULL
+              AND (
+                    c.status IN ('pending', 'in_progress')
+                 OR c.status = 'done'
+              )
+            ORDER BY c.sort_order
+            """,
+            new { TenantId = tenantId, FamilyId = familyId, FlowDate = flowDate });
+        return rows.AsList();
+    }
+
+    public async Task<IReadOnlyList<FamilyClockRow>> ListActiveFamiliesAsync(
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<FamilyClockRow>(
+            """
+            SELECT id AS FamilyId, tenant_id AS TenantId, timezone AS Timezone, display_name AS DisplayName
+            FROM pack_family.family
+            WHERE deleted_at IS NULL AND status = 'active'
+            """);
+        return rows.AsList();
+    }
+
+    public async Task<bool> TryInsertDispatchAsync(
+        Guid tenantId,
+        Guid familyId,
+        DateOnly flowDate,
+        string kind,
+        Guid? commitmentId,
+        string? summary,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        try
+        {
+            var rows = await conn.ExecuteAsync(
+                """
+                INSERT INTO pack_family.reminder_dispatch (
+                    tenant_id, family_id, flow_date, kind, commitment_id, payload_summary
+                )
+                VALUES (@TenantId, @FamilyId, @FlowDate, @Kind, @CommitmentId, @Summary)
+                """,
+                new
+                {
+                    TenantId = tenantId,
+                    FamilyId = familyId,
+                    FlowDate = flowDate,
+                    Kind = kind,
+                    CommitmentId = commitmentId,
+                    Summary = summary,
+                });
+            return rows > 0;
+        }
+        catch (PostgresException ex) when (ex.SqlState == "23505")
+        {
+            return false;
+        }
+    }
+
+    internal sealed class SubscriptionRow
+    {
+        public Guid Id { get; init; }
+        public Guid TenantId { get; init; }
+        public Guid FamilyId { get; init; }
+        public Guid MembershipId { get; init; }
+        public string Endpoint { get; init; } = "";
+        public string P256dh { get; init; } = "";
+        public string Auth { get; init; } = "";
+    }
+
+    internal sealed class OpenCommitmentRow
+    {
+        public Guid CommitmentId { get; init; }
+        public Guid TenantId { get; init; }
+        public Guid FamilyId { get; init; }
+        public DateOnly FlowDate { get; init; }
+        public string Timezone { get; init; } = "Asia/Ho_Chi_Minh";
+        public string FamilyName { get; init; } = "";
+        public string Title { get; init; } = "";
+        public string Status { get; init; } = "";
+        public TimeOnly? WindowStart { get; init; }
+        public TimeOnly? WindowEnd { get; init; }
+        public DateTimeOffset? CompletedAt { get; init; }
+        public string? MemberName { get; init; }
+        public string? MemberRole { get; init; }
+    }
+
+    internal sealed class DigestItemRow
+    {
+        public Guid CommitmentId { get; init; }
+        public string Title { get; init; } = "";
+        public string Status { get; init; } = "";
+        public TimeOnly? WindowStart { get; init; }
+        public TimeOnly? WindowEnd { get; init; }
+        public DateTimeOffset? CompletedAt { get; init; }
+        public string? MemberName { get; init; }
+    }
+
+    internal sealed class FamilyClockRow
+    {
+        public Guid FamilyId { get; init; }
+        public Guid TenantId { get; init; }
+        public string Timezone { get; init; } = "Asia/Ho_Chi_Minh";
+        public string DisplayName { get; init; } = "";
+    }
+}

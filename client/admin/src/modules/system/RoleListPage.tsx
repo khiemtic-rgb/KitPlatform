@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Alert,
   Button,
   Card,
   Checkbox,
@@ -31,6 +32,7 @@ import {
   type DiscountLevel,
   applyPermissionToggle,
   discountLevelLabel,
+  filterPermissionCodesForVertical,
   getDiscountLevel,
   groupPermissionsForUi,
   normalizePermissionCodesForSave,
@@ -38,6 +40,8 @@ import {
 } from '@/shared/auth/permission-picker';
 import { useHasPermission } from '@/shared/auth/usePermission';
 import { useSystemEnums } from '@/shared/i18n/use-system-enums';
+import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
+import { resolveAdminVertical } from '@/modules/registry';
 
 interface RoleFormValues {
   roleCode: string;
@@ -52,6 +56,9 @@ export function RoleListPage() {
   const { t } = useTranslation('system', { keyPrefix: 'roles' });
   const { t: tc, i18n } = useTranslation('common');
   const { userStatusOptions } = useSystemEnums();
+  const platformSettings = useTenantPlatformStore((s) => s.settings);
+  // Chỉ theo vertical — không suy FamilyOS từ enabledModules (tránh ẩn/xóa quyền nhà thuốc).
+  const isFamily = resolveAdminVertical(platformSettings?.vertical) === 'family';
   const canWrite = useHasPermission('system.write');
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<RoleListItem[]>([]);
@@ -66,8 +73,8 @@ export function RoleListPage() {
   const [form] = Form.useForm<RoleFormValues>();
 
   const permissionGroups = useMemo(
-    () => groupPermissionsForUi(permissions),
-    [permissions, i18n.language],
+    () => groupPermissionsForUi(permissions, { vertical: isFamily ? 'family' : undefined }),
+    [permissions, i18n.language, isFamily],
   );
 
   const load = useCallback(async () => {
@@ -168,7 +175,11 @@ export function RoleListPage() {
     if (!permRole) return;
     setSavingPerms(true);
     try {
-      await updateRolePermissions(permRole.id, normalizePermissionCodesForSave(selectedCodes));
+      const codes = filterPermissionCodesForVertical(
+        normalizePermissionCodesForSave(selectedCodes),
+        isFamily ? 'family' : undefined,
+      );
+      await updateRolePermissions(permRole.id, codes);
       message.success(t('messages.permissionsUpdated'));
       setPermDrawerOpen(false);
       await load();
@@ -291,8 +302,11 @@ export function RoleListPage() {
       >
         {permRole ? (
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            {isFamily ? (
+              <Alert type="info" showIcon message={t('permissionsFamilyAlert')} />
+            ) : null}
             <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-              {t('permissionsHint')}
+              {isFamily ? t('permissionsHintFamily') : t('permissionsHint')}
             </Typography.Paragraph>
             <Tag color="blue">{permRole.roleCode}</Tag>
             {permissionGroups.map((group) => (

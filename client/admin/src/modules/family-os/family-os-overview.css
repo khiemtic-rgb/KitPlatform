@@ -1,0 +1,613 @@
+/* FamilyOS Overview — gia đình kết nối, không phải dashboard quản trị */
+
+.fo-home {
+  --fo-ink: #2c2925;
+  --fo-soft: #6f675c;
+  --fo-cream: #f7f1e8;
+  --fo-card: #fffcf7;
+  --fo-line: rgba(80, 60, 30, 0.08);
+  --fo-good: #2f9e7b;
+  --fo-warn: #d4921a;
+  --fo-risk: #c45a45;
+  --fo-calm: #4a7fa8;
+  color: var(--fo-ink);
+}
+
+.fo-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  padding: 8px 4px 4px;
+}
+
+.fo-hero-left {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  min-width: 0;
+}
+
+.fo-hero-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.7rem;
+  background: linear-gradient(160deg, #ffe2b0, #ffc978);
+  box-shadow: 0 8px 20px rgba(180, 120, 40, 0.18);
+  flex-shrink: 0;
+}
+
+.fo-hero h1 {
+  margin: 0;
+  font-size: clamp(1.45rem, 2.4vw, 1.85rem);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.fo-hero p {
+  margin: 6px 0 0;
+  color: var(--fo-soft);
+  max-width: 520px;
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+.fo-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 14px;
+}
+
+.fo-card {
+  grid-column: span 12;
+  background: var(--fo-card);
+  border: 1px solid var(--fo-line);
+  border-radius: 22px;
+  padding: 18px 18px 16px;
+  box-shadow: 0 10px 28px rgba(60, 45, 20, 0.05);
+  position: relative;
+  overflow: hidden;
+  min-height: 160px;
+}
+
+@media (min-width: 900px) {
+  .fo-card.span-4 {
+    grid-column: span 4;
+  }
+  .fo-card.span-5 {
+    grid-column: span 5;
+  }
+  .fo-card.span-6 {
+    grid-column: span 6;
+  }
+  .fo-card.span-7 {
+    grid-column: span 7;
+  }
+  .fo-card.span-8 {
+    grid-column: span 8;
+  }
+  .fo-card.span-12 {
+    grid-column: span 12;
+  }
+}
+
+.fo-card-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fo-soft);
+}
+
+.fo-card-title {
+  margin: 4px 0 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.fo-illust {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  z-index: 0;
+  font-size: 3.2rem;
+  opacity: 0.92;
+  pointer-events: none;
+  line-height: 1;
+  user-select: none;
+}
+
+.fo-health-score {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.fo-health-score strong {
+  font-size: 3rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+/* —— Family Team Play (TP0–TP1) —— */
+.fo-celebrate {
+  background: linear-gradient(120deg, #fff8e8, #e8f7ef 55%, #eef4ff);
+  border-color: rgba(47, 158, 123, 0.22);
+}
+
+.fo-celebrate-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.fo-celebrate-emoji {
+  font-size: 2.4rem;
+  line-height: 1;
+  animation: fo-pop 0.55s ease both;
+}
+
+@keyframes fo-pop {
+  0% {
+    transform: scale(0.6) rotate(-8deg);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08) rotate(4deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+.fo-team-hero.is-complete {
+  background: linear-gradient(165deg, #fffcf7, #eaf8f0);
+}
+
+.fo-team-score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.fo-team-pct {
+  font-size: 2.6rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.fo-team-bar {
+  position: relative;
+  z-index: 1;
+  height: 12px;
+  border-radius: 999px;
+  background: #efe8da;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.fo-team-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5bb88a, #3d9e72);
+  transition: width 0.35s ease;
+}
+
+.fo-team-bar.is-complete > span {
+  background: linear-gradient(90deg, #f0c14a, #2f9e7b);
+}
+
+.fo-team-mission {
+  position: relative;
+  z-index: 1;
+  margin: 12px 0 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.45;
+  color: var(--fo-ink);
+}
+
+.fo-coop-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(61, 110, 168, 0.08);
+}
+
+.fo-coop-row small {
+  width: 100%;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fo-soft);
+}
+
+.fo-coop-row strong {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.fo-coop-parts {
+  font-size: 0.78rem;
+  color: var(--fo-soft);
+  font-weight: 650;
+}
+
+.fo-nudge-tease {
+  position: relative;
+  z-index: 1;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 214, 234, 0.35);
+  border: 1px solid rgba(200, 100, 140, 0.12);
+}
+
+.fo-nudge-tease p {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.fo-nudge-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fo-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.fo-pill.good {
+  background: #e6f7ef;
+  color: #1d7a55;
+}
+.fo-pill.warn {
+  background: #fff1d6;
+  color: #9a6200;
+}
+.fo-pill.risk {
+  background: #fde8e4;
+  color: #a33b2a;
+}
+.fo-pill.calm {
+  background: #e8f1f8;
+  color: #2f5f86;
+}
+.fo-pill.idle {
+  background: #efeae2;
+  color: #6f675c;
+}
+
+.fo-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.fo-meta-row small {
+  display: block;
+  color: var(--fo-soft);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.fo-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.fo-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: #f4efe6;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.fo-stat.good {
+  background: #e8f7ef;
+  color: #1d7a55;
+}
+.fo-stat.warn {
+  background: #fff1d6;
+  color: #9a6200;
+}
+.fo-stat.risk {
+  background: #fde8e4;
+  color: #a33b2a;
+}
+
+.fo-progress {
+  margin-top: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.fo-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6bcf8e, #3fad6e);
+}
+
+.fo-progress.is-warn > span {
+  background: linear-gradient(90deg, #ffc45c, #e89a20);
+}
+
+.fo-progress.is-risk > span {
+  background: linear-gradient(90deg, #f08a72, #d4573f);
+}
+
+.fo-week {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.fo-day {
+  position: relative;
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #eceff1;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #5a6570;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.fo-day:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(60, 45, 20, 0.12);
+}
+
+.fo-day:focus-visible {
+  outline: 2px solid #3d6ea8;
+  outline-offset: 2px;
+}
+
+.fo-day.on {
+  background: #7ed39a;
+  color: #14553a;
+}
+
+.fo-day.is-today {
+  background: #2e7d32;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.35);
+}
+
+.fo-day.is-today.on {
+  background: #1b5e20;
+  color: #fff;
+}
+
+.fo-reward-hit {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-top: 14px;
+  margin-right: 48px;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 12px;
+  padding: 4px 6px;
+  margin-left: -6px;
+  transition: background 0.12s ease;
+}
+
+.fo-reward-hit:hover {
+  background: rgba(255, 244, 220, 0.55);
+}
+
+.fo-child-switch {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fo-child-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: #efe8da;
+  color: #5c4e36;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fo-child-chip em {
+  font-style: normal;
+  font-weight: 800;
+  opacity: 0.75;
+}
+
+.fo-child-chip.on {
+  background: #3d6ea8;
+  color: #fff;
+}
+
+.fo-child-chip.idle {
+  opacity: 0.72;
+}
+
+.fo-member {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--fo-line);
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.fo-member:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.fo-member.is-selectable {
+  cursor: pointer;
+  border-radius: 14px;
+  transition: background 0.12s ease;
+}
+
+.fo-member.is-selectable:hover {
+  background: rgba(255, 244, 220, 0.45);
+}
+
+.fo-member.is-focus {
+  background: rgba(255, 244, 220, 0.65);
+  margin: 0 -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+  border-radius: 14px;
+}
+
+.fo-stat.calm {
+  background: #e8f1f8;
+  color: #2f5f86;
+}
+
+.fo-member-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.fo-member-avatar.is-girl {
+  background: linear-gradient(160deg, #ffd6ea, #ff9ec8);
+}
+.fo-member-avatar.is-boy {
+  background: linear-gradient(160deg, #cfe8ff, #7eb8f5);
+}
+.fo-member-avatar.is-neutral {
+  background: linear-gradient(160deg, #ffe7b0, #ffc978);
+}
+.fo-member-avatar.is-adult {
+  background: linear-gradient(160deg, #e8f0ea, #c5ddd0);
+}
+
+.fo-member-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.fo-member-body strong {
+  display: block;
+  font-size: 0.98rem;
+}
+
+.fo-member-body span {
+  color: var(--fo-soft);
+  font-size: 0.8rem;
+}
+
+.fo-coach-block {
+  margin-top: 10px;
+}
+
+.fo-coach-block small {
+  display: block;
+  font-weight: 700;
+  color: var(--fo-soft);
+  margin-bottom: 2px;
+}
+
+.fo-coach-block p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.fo-coach-block.strength small {
+  color: #1d7a55;
+}
+.fo-coach-block.attention small {
+  color: #a33b2a;
+}
+.fo-coach-block.idea small {
+  color: #2f5f86;
+}
+
+.fo-footer-note {
+  margin-top: 8px;
+  color: var(--fo-soft);
+  font-size: 0.82rem;
+}
+
+.fo-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fo-scope {
+  margin-top: 8px;
+}

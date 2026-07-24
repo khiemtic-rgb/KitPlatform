@@ -17,6 +17,7 @@ public sealed class CorsSettings
         "https://survey.novixa.vn",
         "https://prescriber.novixa.vn",
         "https://partner.novixa.vn",
+        "https://family.kittech.vn",
     ];
 
     public string[] AllowedOrigins { get; set; } = [];

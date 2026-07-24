@@ -45,13 +45,14 @@ $staffOut = Join-Path $out "staff-app"
 $prescriberOut = Join-Path $out "prescriber-portal"
 $partnerOut = Join-Path $out "partner-portal"
 $assessmentOut = Join-Path $out "assessment-web"
+$familyOut = Join-Path $out "family-app"
 
 if (Test-Path $out) {
     Remove-Item -Recurse -Force $out
 }
-New-Item -ItemType Directory -Force -Path $apiOut, $adminOut, $customerOut, $staffOut, $prescriberOut, $partnerOut, $assessmentOut | Out-Null
+New-Item -ItemType Directory -Force -Path $apiOut, $adminOut, $customerOut, $staffOut, $prescriberOut, $partnerOut, $assessmentOut, $familyOut | Out-Null
 
-Write-Host "`n[1/8] dotnet publish API (Release)..." -ForegroundColor Yellow
+Write-Host "`n[1/9] dotnet publish API (Release)..." -ForegroundColor Yellow
 dotnet publish "src\KitPlatform.Api\KitPlatform.Api.csproj" `
     -c Release `
     -o $apiOut `
@@ -87,10 +88,13 @@ Invoke-NpmBuild "client\prescriber-portal" $prescriberOut
 Write-Host "`n[6/8] npm build partner-portal..." -ForegroundColor Yellow
 Invoke-NpmBuild "client\partner-portal" $partnerOut
 
-Write-Host "`n[7/8] npm build assessment-web (KAP public)..." -ForegroundColor Yellow
+Write-Host "`n[7/9] npm build assessment-web (KAP public)..." -ForegroundColor Yellow
 Invoke-NpmBuild "client\assessment-web" $assessmentOut
 
-Write-Host "`n[8/8] Ghi deploy notes..." -ForegroundColor Yellow
+Write-Host "`n[8/9] npm build family-app (FamilyOS)..." -ForegroundColor Yellow
+Invoke-NpmBuild "client\family-app" $familyOut
+
+Write-Host "`n[9/9] Ghi deploy notes..." -ForegroundColor Yellow
 $notes = @"
 KitPlatform production artifacts
 Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
@@ -103,6 +107,7 @@ Thư mục:
   prescriber-portal/ - Portal bác sĩ kê đơn (Rx-2)
   partner-portal/ - KAP Partner / CTV portal
   assessment-web/ - KAP public survey (survey.domain)
+  family-app/    - FamilyOS consumer (family.kittech.vn)
 
 Biến môi trường API (bắt buộc):
   ConnectionStrings__Default
@@ -115,8 +120,14 @@ Biến môi trường API (bắt buộc):
   Cors__AllowedOrigins__3        https://survey.domain
   Cors__AllowedOrigins__4        https://prescriber.domain
   Cors__AllowedOrigins__5        https://partner.domain
-  (env array REPLACES appsettings — list ALL SPAs; deploy runs ensure-novixa-cors-env.sh)  CustomerAppPush__PublicKey     (nếu bật push)
+  Cors__AllowedOrigins__6        https://family.kittech.vn
+  (env array REPLACES appsettings — list ALL SPAs; deploy runs ensure-novixa-cors-env.sh)
+  CustomerAppPush__PublicKey     (nếu bật push)
   CustomerAppPush__PrivateKey
+
+FamilyOS schema (KHÔNG nằm trong migration-files.prod.txt mặc định):
+  Chỉ apply off-hours khi chốt pilot — xem deploy/ubuntu/migration-files.family-os.txt
+  + seed tenant riêng (không dùng DEMO_FAMILY trên prod pharmacy DB nếu chưa tách).
 
 Migration DB (Production — khong seed demo):
   .\scripts\run-migrations-prod.ps1 -ConnectionString "<prod connection>"
@@ -137,7 +148,7 @@ Chạy API:
   `$env:ASPNETCORE_ENVIRONMENT='Production'
   dotnet KitPlatform.Api.dll
 
-Frontend build dùng VITE_API_BASE_URL=$apiBase
+Frontend build dùng VITE_API_BASE_URL=$apiBase (family-app dùng same-origin /api qua nginx)
 "@
 Set-Content -Path (Join-Path $out "DEPLOY.txt") -Value $notes -Encoding UTF8
 

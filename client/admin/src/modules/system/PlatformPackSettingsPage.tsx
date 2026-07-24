@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, App, Button, Card, Checkbox, Form, Select, Space, Switch, Typography } from 'antd';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useAuthStore } from '@/shared/auth/auth.store';
+import { resolveAdminVertical } from '@/modules/registry';
 import {
   fetchPlatformModuleRegistry,
   fetchTenantPlatformSettings,
@@ -11,7 +12,8 @@ import {
 } from '@/shared/platform/tenant-platform.api';
 import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
 
-const FEATURE_KEYS = [
+/** Pharmacy / retail flags — hidden on FamilyOS. */
+const PHARMACY_FEATURE_KEYS = [
   'batch_tracking',
   'national_drug_catalog',
   'order_level_repurchase',
@@ -20,11 +22,11 @@ const FEATURE_KEYS = [
   'branch_product_listings',
 ] as const;
 
-type FeatureKey = (typeof FEATURE_KEYS)[number];
+type FeatureKey = (typeof PHARMACY_FEATURE_KEYS)[number];
 
 interface PlatformPackFormValues {
   enabledModules: string[];
-  features: Record<FeatureKey, boolean>;
+  features: Record<string, boolean>;
 }
 
 export function PlatformPackSettingsPage() {
@@ -44,6 +46,12 @@ export function PlatformPackSettingsPage() {
   const [allowedModules, setAllowedModules] = useState<string[]>([]);
   const loadedRef = useRef(false);
 
+  const isFamily = resolveAdminVertical(vertical) === 'family';
+  const visibleFeatureKeys = useMemo(
+    () => (isFamily ? ([] as FeatureKey[]) : [...PHARMACY_FEATURE_KEYS]),
+    [isFamily],
+  );
+
   useEffect(() => {
     if (loadedRef.current) return;
     loadedRef.current = true;
@@ -58,14 +66,15 @@ export function PlatformPackSettingsPage() {
         setModules(registry);
         setVertical(settings.vertical);
         setAllowedModules(settings.allowedModules);
+        const familyShell = resolveAdminVertical(settings.vertical) === 'family';
         form.setFieldsValue({
           enabledModules: settings.enabledModules,
-          features: FEATURE_KEYS.reduce(
+          features: PHARMACY_FEATURE_KEYS.reduce(
             (acc, key) => {
-              acc[key] = settings.features[key] === true;
+              acc[key] = familyShell ? false : settings.features[key] === true;
               return acc;
             },
-            {} as Record<FeatureKey, boolean>,
+            {} as Record<string, boolean>,
           ),
         });
       } catch (error) {
@@ -104,26 +113,37 @@ export function PlatformPackSettingsPage() {
   const onSave = async (values: PlatformPackFormValues) => {
     setSaving(true);
     try {
+      const featuresPayload = isFamily
+        ? PHARMACY_FEATURE_KEYS.reduce(
+            (acc, key) => {
+              acc[key] = false;
+              return acc;
+            },
+            {} as Record<string, boolean>,
+          )
+        : values.features;
       const result = await updateTenantPlatformSettings({
         vertical,
         enabledModules: values.enabledModules,
-        features: values.features,
+        features: featuresPayload,
       });
       setPlatformSettings(result.settings);
       setPlatformLoaded(true);
       setAllowedModules(result.settings.allowedModules);
       form.setFieldsValue({
         enabledModules: result.settings.enabledModules,
-        features: FEATURE_KEYS.reduce(
+        features: PHARMACY_FEATURE_KEYS.reduce(
           (acc, key) => {
-            acc[key] = result.settings.features[key] === true;
+            acc[key] = isFamily ? false : result.settings.features[key] === true;
             return acc;
           },
-          {} as Record<FeatureKey, boolean>,
+          {} as Record<string, boolean>,
         ),
       });
       if (result.ignoredModuleCodes.length > 0) {
-        message.warning(t('messages.ignoredModules', { codes: result.ignoredModuleCodes.join(', ') }));
+        message.warning(
+          t('messages.ignoredModules', { codes: result.ignoredModuleCodes.join(', ') }),
+        );
       }
       message.success(t('messages.saveSuccess'));
     } catch (error) {
@@ -134,15 +154,22 @@ export function PlatformPackSettingsPage() {
   };
 
   return (
-    <Card title={t('title')} loading={loading}>
+    <Card title={isFamily ? t('titleFamily') : t('title')} loading={loading}>
       <Space direction="vertical" size={16} style={{ width: '100%', maxWidth: 720 }}>
-        <Alert type="info" showIcon message={t('intro')} description={t('introDetail')} />
         <Alert
-          type="warning"
+          type="info"
           showIcon
-          message={t('ceilingHint')}
-          description={t('ceilingHintDetail')}
+          message={isFamily ? t('introFamily') : t('intro')}
+          description={isFamily ? t('introDetailFamily') : t('introDetail')}
         />
+        {!isFamily ? (
+          <Alert
+            type="warning"
+            showIcon
+            message={t('ceilingHint')}
+            description={t('ceilingHintDetail')}
+          />
+        ) : null}
         {!canEdit ? <Alert type="warning" showIcon message={t('readOnlyHint')} /> : null}
 
         <Form form={form} layout="vertical" disabled={!canEdit} onFinish={(v) => void onSave(v)}>
@@ -164,26 +191,41 @@ export function PlatformPackSettingsPage() {
             label={t('fields.enabledModules')}
             rules={[{ required: true, message: t('validation.modulesRequired') }]}
           >
-            <Checkbox.Group options={moduleOptions} style={{ display: 'flex', flexDirection: 'column', gap: 8 }} />
+            <Checkbox.Group
+              options={moduleOptions}
+              style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+            />
           </Form.Item>
 
-          <Typography.Title level={5} style={{ marginTop: 8 }}>
-            {t('fields.features')}
-          </Typography.Title>
-          {FEATURE_KEYS.map((key) => (
-            <Form.Item
-              key={key}
-              name={['features', key]}
-              label={tf(key, { defaultValue: key })}
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-          ))}
+          {isFamily ? (
+            <Alert
+              type="success"
+              showIcon
+              message={t('familyFeaturesTitle')}
+              description={t('familyFeaturesDetail')}
+              style={{ marginBottom: 8 }}
+            />
+          ) : (
+            <>
+              <Typography.Title level={5} style={{ marginTop: 8 }}>
+                {t('fields.features')}
+              </Typography.Title>
+              {visibleFeatureKeys.map((key) => (
+                <Form.Item
+                  key={key}
+                  name={['features', key]}
+                  label={tf(key, { defaultValue: key })}
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+              ))}
+            </>
+          )}
 
           {canEdit ? (
             <Button type="primary" htmlType="submit" loading={saving}>
-              {t('actions.save')}
+              {isFamily ? t('actions.saveFamily') : t('actions.save')}
             </Button>
           ) : null}
         </Form>

@@ -29,6 +29,7 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
 import { useSystemEnums } from '@/shared/i18n/use-system-enums';
 import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
+import { resolveAdminVertical } from '@/modules/registry';
 
 interface BranchFormValues {
   branchCode: string;
@@ -41,7 +42,11 @@ interface BranchFormValues {
 }
 
 export function BranchListPage() {
-  const { t } = useTranslation('system', { keyPrefix: 'branches' });
+  const platformVertical = useTenantPlatformStore((s) => s.settings?.vertical);
+  const isFamily = resolveAdminVertical(platformVertical) === 'family';
+  const { t } = useTranslation('system', {
+    keyPrefix: isFamily ? 'branchesFamily' : 'branches',
+  });
   const { t: tc } = useTranslation('common');
   const { branchStatusLabel, branchStatusOptions } = useSystemEnums();
   const canWrite = useHasPermission('system.write');
@@ -267,7 +272,7 @@ export function BranchListPage() {
             label={t('form.code')}
             rules={[{ required: true, message: t('form.codeRequired') }]}
           >
-            <Input placeholder="HN01" style={{ textTransform: 'uppercase' }} />
+            <Input placeholder={isFamily ? 'HOME' : 'HN01'} style={{ textTransform: 'uppercase' }} />
           </Form.Item>
           <Form.Item
             name="branchName"
@@ -282,13 +287,15 @@ export function BranchListPage() {
           <Form.Item name="address" label={t('form.address')}>
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item
-            name="retailFacilityCode"
-            label={t('form.retailFacilityCode')}
-            tooltip={t('form.retailFacilityCodeHint')}
-          >
-            <Input maxLength={12} placeholder="012345678901" />
-          </Form.Item>
+          {!isFamily ? (
+            <Form.Item
+              name="retailFacilityCode"
+              label={t('form.retailFacilityCode')}
+              tooltip={t('form.retailFacilityCodeHint')}
+            >
+              <Input maxLength={12} placeholder="012345678901" />
+            </Form.Item>
+          ) : null}
           <Form.Item name="isHeadOffice" label={t('form.isHeadOffice')} valuePropName="checked">
             <Switch />
           </Form.Item>

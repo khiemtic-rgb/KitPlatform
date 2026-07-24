@@ -1,9 +1,27 @@
 export const APP_BRAND = import.meta.env.VITE_APP_BRAND?.trim() || 'Novixa';
 export const APP_PRODUCT = import.meta.env.VITE_APP_PRODUCT?.trim() || 'ERP Nhà thuốc';
+
+/** FamilyOS Starter — admin shell when tenant vertical = family. */
+export const FAMILY_OS_BRAND = import.meta.env.VITE_FAMILY_OS_BRAND?.trim() || 'FamilyOS';
+export const FAMILY_OS_PRODUCT =
+  import.meta.env.VITE_FAMILY_OS_PRODUCT?.trim() || 'One Family. One Plan. One Daily Flow.';
+
 export const DEFAULT_TENANT_CODE = import.meta.env.VITE_DEFAULT_TENANT_CODE?.trim() || '';
 
 export const TENANT_CODE_STORAGE_KEY = 'novixa_tenant_code';
 export const PLATFORM_KEY_STORAGE_KEY = 'novixa_platform_key';
+
+export function resolveShellBrand(vertical: string | null | undefined): {
+  brand: string;
+  product: string;
+  isFamily: boolean;
+} {
+  const value = String(vertical ?? '').trim().toLowerCase();
+  if (value === 'family') {
+    return { brand: FAMILY_OS_BRAND, product: FAMILY_OS_PRODUCT, isFamily: true };
+  }
+  return { brand: APP_BRAND, product: APP_PRODUCT, isFamily: false };
+}
 
 /** Khi set VITE_DEFAULT_TENANT_CODE: ẩn ô mã (white-label 1 tenant). Multi-tenant: để trống. */
 export function isTenantCodeLocked(): boolean {

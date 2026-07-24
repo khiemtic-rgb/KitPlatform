@@ -53,6 +53,11 @@ export const PLATFORM_MODULE_GROUPS: ReadonlyArray<{
     children: ['assessment', 'pharmacy_survey', 'crm_leads'],
   },
   {
+    key: 'group:family_os',
+    labelKey: 'moduleGroups.familyOs',
+    children: ['family_os'],
+  },
+  {
     key: 'group:lab_spa',
     labelKey: 'moduleGroups.labSpa',
     children: ['lab', 'spa'],
@@ -124,6 +129,12 @@ export const PLATFORM_PACK_TEMPLATES: ReadonlyArray<{
     labelKey: 'packTemplates.surveyKap',
     suggestedVertical: 'pharmacy',
     moduleCodes: ['assessment', 'pharmacy_survey', 'crm_leads', 'reports'],
+  },
+  {
+    id: 'family_os',
+    labelKey: 'packTemplates.familyOs',
+    suggestedVertical: 'family',
+    moduleCodes: ['family_os'],
   },
 ];
 

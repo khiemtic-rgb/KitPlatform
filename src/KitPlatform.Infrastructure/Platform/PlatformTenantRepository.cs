@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Dapper;
 using KitPlatform.Application.Configuration;
+using KitPlatform.Application.Core;
 using KitPlatform.Application.Platform;
 using KitPlatform.Infrastructure.Data;
 
@@ -363,6 +364,8 @@ internal sealed class PlatformTenantRepository
 
         rootNode["platform"] = existingPlatform;
 
+        var columnVertical = PlatformVerticalCodes.ToColumnValue(vertical, row.BusinessVertical);
+
         const string sql = """
             UPDATE tenants
             SET
@@ -376,7 +379,7 @@ internal sealed class PlatformTenantRepository
         var affected = await conn.ExecuteAsync(sql, new
         {
             TenantId = tenantId,
-            Vertical = vertical,
+            Vertical = columnVertical,
             SettingsJson = rootNode.ToJsonString(),
         });
 

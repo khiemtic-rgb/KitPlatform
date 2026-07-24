@@ -26,6 +26,7 @@ const VERTICAL_OPTIONS = [
   'lab',
   'medical_spa',
   'hybrid',
+  'family',
 ] as const;
 
 type EntitlementFormValues = {

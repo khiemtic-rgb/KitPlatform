@@ -22,13 +22,15 @@ export function SystemLayout() {
   const adminVertical = resolveAdminVertical(platformVertical);
 
   const tabs = useMemo(() => {
+    const branchLabel = adminVertical === 'family' ? 'Gia đình' : t('branches');
+    const packLabel = adminVertical === 'family' ? 'Gói FamilyOS' : t('platformPack');
     const all = [
-      { key: 'branches', label: t('branches'), path: '/system/branches', icon: <BankOutlined /> },
+      { key: 'branches', label: branchLabel, path: '/system/branches', icon: <BankOutlined /> },
       { key: 'users', label: t('users'), path: '/system/users', icon: <UserOutlined /> },
       { key: 'roles', label: t('roles'), path: '/system/roles', icon: <SafetyCertificateOutlined /> },
       {
         key: 'platform-pack',
-        label: t('platformPack'),
+        label: packLabel,
         path: '/system/platform-pack',
         icon: <CloudOutlined />,
       },
@@ -50,7 +52,7 @@ export function SystemLayout() {
     ];
 
     return all
-      .filter((tab) => !('pharmacyOnly' in tab && tab.pharmacyOnly && adminVertical === 'clinic'))
+      .filter((tab) => !('pharmacyOnly' in tab && tab.pharmacyOnly && adminVertical !== 'pharmacy'))
       .map((tab) => {
         const { pharmacyOnly: _p, ...rest } = tab as typeof tab & { pharmacyOnly?: boolean };
         return rest;
@@ -66,7 +68,7 @@ export function SystemLayout() {
     const onPharmacyOnlyTab =
       location.pathname.startsWith('/system/pos-settings') ||
       location.pathname.startsWith('/system/customer-app-settings');
-    if (adminVertical === 'clinic' && onPharmacyOnlyTab) {
+    if (adminVertical !== 'pharmacy' && onPharmacyOnlyTab) {
       navigate('/system/platform-pack', { replace: true });
     }
   }, [location.pathname, navigate, adminVertical]);

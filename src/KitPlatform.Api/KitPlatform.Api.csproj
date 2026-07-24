@@ -21,6 +21,8 @@
     <ProjectReference Include="..\Packs\Clinic\KitPlatform.Packs.Clinic.Infrastructure\KitPlatform.Packs.Clinic.Infrastructure.csproj" />
     <ProjectReference Include="..\Packs\Survey\KitPlatform.Packs.Survey.Infrastructure\KitPlatform.Packs.Survey.Infrastructure.csproj" />
     <ProjectReference Include="..\Packs\Connect\KitPlatform.Packs.Connect.Infrastructure\KitPlatform.Packs.Connect.Infrastructure.csproj" />
+    <ProjectReference Include="..\Packs\FamilyOS\KitPlatform.Packs.FamilyOs.Infrastructure\KitPlatform.Packs.FamilyOs.Infrastructure.csproj" />
+    <ProjectReference Include="..\Packs\Care\KitPlatform.Packs.Care.Infrastructure\KitPlatform.Packs.Care.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

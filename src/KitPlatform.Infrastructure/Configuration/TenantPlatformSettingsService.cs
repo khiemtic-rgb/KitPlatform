@@ -95,6 +95,8 @@ internal sealed class TenantPlatformSettingsService : ITenantPlatformSettings
         var allowedCeiling = current.AllowedModules.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         // Tenant ADMIN may toggle modules within Core ceiling; vertical is Core-owned.
+        // Do not UPDATE tenants.business_vertical here — DEMO_FAMILY keeps column=hybrid
+        // until migration 192a; settings.platform.vertical may already be "family".
         var vertical = current.Vertical;
         var (modules, ignored) = TenantPlatformSettingsValidator.NormalizeModules(
             request.EnabledModules,
@@ -135,7 +137,6 @@ internal sealed class TenantPlatformSettingsService : ITenantPlatformSettings
         const string sql = """
             UPDATE tenants
             SET
-                business_vertical = @Vertical,
                 settings = @SettingsJson::jsonb,
                 updated_at = NOW()
             WHERE id = @TenantId AND deleted_at IS NULL
@@ -145,7 +146,6 @@ internal sealed class TenantPlatformSettingsService : ITenantPlatformSettings
         var affected = await conn.ExecuteAsync(sql, new
         {
             TenantId = _tenant.TenantId,
-            Vertical = vertical,
             SettingsJson = root.ToJsonString(),
         });
 

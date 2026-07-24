@@ -43,6 +43,14 @@ export function LoginPage() {
     });
   };
 
+  const fillFamilyDemo = () => {
+    form.setFieldsValue({
+      tenantCode: 'DEMO_FAMILY',
+      username: 'admin',
+      password: 'Admin@123',
+    });
+  };
+
   const onFinish = async (values: LoginFormValues) => {
     const tenantCode = (tenantLocked ? DEFAULT_TENANT_CODE : values.tenantCode).trim().toUpperCase();
     if (!tenantCode) {
@@ -123,7 +131,7 @@ export function LoginPage() {
               >
                 <Input
                   prefix={<ShopOutlined />}
-                  placeholder="NT_XUANHOA / DEMO_CLINIC"
+                  placeholder="DEMO_FAMILY / DEMO_PHARMACY"
                   size="large"
                   style={{ textTransform: 'uppercase' }}
                   autoComplete="organization"
@@ -171,7 +179,16 @@ export function LoginPage() {
               <Typography.Paragraph type="secondary" style={{ marginBottom: 0, fontSize: 12 }}>
                 {t('devDemo')}{' '}
                 <Button type="link" size="small" style={{ padding: 0, height: 'auto', fontSize: 12 }} onClick={fillDemo}>
-                  DEMO_PHARMACY / admin
+                  DEMO_PHARMACY
+                </Button>
+                {' · '}
+                <Button
+                  type="link"
+                  size="small"
+                  style={{ padding: 0, height: 'auto', fontSize: 12 }}
+                  onClick={fillFamilyDemo}
+                >
+                  DEMO_FAMILY
                 </Button>
               </Typography.Paragraph>
             ) : null}

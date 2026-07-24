@@ -1,0 +1,360 @@
+.fm-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  color: #1e3a5f;
+}
+
+.fm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.fm-header h1 {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #163a63;
+  line-height: 1.25;
+}
+
+.fm-header p {
+  margin: 4px 0 0;
+  color: #7a8699;
+  font-weight: 500;
+}
+
+.fm-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fm-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(180px, 220px);
+  gap: 18px;
+  align-items: center;
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: linear-gradient(120deg, #eaf4ff 0%, #f3f8ff 55%, #eef5ff 100%);
+  border: 1px solid #d7e8fb;
+  box-shadow: 0 10px 28px rgba(40, 90, 160, 0.06);
+}
+
+.fm-hero-illust {
+  width: 110px;
+  height: 110px;
+  border-radius: 22px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(160deg, #fff, #e8f3ff);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+.fm-hero-family {
+  font-size: 3.2rem;
+  line-height: 1;
+  filter: drop-shadow(0 6px 10px rgba(40, 80, 140, 0.15));
+}
+
+.fm-hero-body {
+  min-width: 0;
+}
+
+.fm-hero-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fm-hero-name h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #163a63;
+}
+
+.fm-edit-name {
+  border: 0;
+  background: transparent;
+  color: #3d7fd4;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.fm-edit-name:hover {
+  background: rgba(61, 127, 212, 0.1);
+}
+
+.fm-hero-motto {
+  margin: 8px 0 14px;
+  color: #6a7a90;
+  font-weight: 550;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.45;
+}
+
+.fm-hero-motto .anticon {
+  color: #5a9de0;
+  margin-top: 3px;
+}
+
+.fm-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.fm-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(40, 70, 120, 0.06);
+}
+
+.fm-stat.is-total {
+  color: #2f6fad;
+}
+
+.fm-stat.is-adult {
+  color: #2f8a5b;
+}
+
+.fm-stat.is-child {
+  color: #7a4db5;
+}
+
+.fm-invite {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 120px;
+  padding: 16px 14px;
+  border-radius: 18px;
+  border: 1.5px dashed #9ec4ef;
+  background: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  text-align: center;
+  font: inherit;
+  color: #3d6ea8;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.fm-invite:hover:not(:disabled) {
+  background: #fff;
+  border-color: #3d7fd4;
+}
+
+.fm-invite:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.fm-invite-icon {
+  font-size: 1.4rem;
+  color: #3d7fd4;
+}
+
+.fm-invite strong {
+  font-size: 0.95rem;
+  color: #163a63;
+}
+
+.fm-invite span {
+  font-size: 0.78rem;
+  color: #7a8699;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+.fm-table-card {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #e8eef6;
+  box-shadow: 0 8px 24px rgba(30, 50, 90, 0.04);
+  overflow: hidden;
+  padding: 8px 12px 4px;
+}
+
+.fm-table-card .ant-table {
+  background: transparent;
+}
+
+.fm-table-card .ant-table-thead > tr > th {
+  background: transparent !important;
+  color: #7a8699;
+  font-weight: 700;
+  border-bottom: 1px solid #eef2f7 !important;
+}
+
+.fm-table-card .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #f2f5fa !important;
+  padding-top: 14px !important;
+  padding-bottom: 14px !important;
+}
+
+.fm-table-card .ant-table-tbody > tr:last-child > td {
+  border-bottom: 0 !important;
+}
+
+.fm-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fm-person strong {
+  display: block;
+  font-size: 0.98rem;
+  color: #163a63;
+}
+
+.fm-person span {
+  display: block;
+  font-size: 0.82rem;
+  color: #8a94a6;
+  font-weight: 600;
+}
+
+.fm-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.fm-avatar.is-girl {
+  background: linear-gradient(160deg, #ffd6ea, #ff9ec8);
+}
+
+.fm-avatar.is-boy {
+  background: linear-gradient(160deg, #cfe8ff, #7eb8f5);
+}
+
+.fm-avatar.is-neutral {
+  background: linear-gradient(160deg, #ffe7b0, #ffc978);
+}
+
+.fm-avatar.is-adult {
+  background: linear-gradient(160deg, #e8f0ea, #c5ddd0);
+}
+
+.fm-role {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.fm-role.is-adult {
+  background: #e4f0ff;
+  color: #2f6fad;
+}
+
+.fm-role.is-child {
+  background: #f0e8ff;
+  color: #6b45a8;
+}
+
+.fm-role.is-other {
+  background: #eef1f5;
+  color: #5a6578;
+}
+
+.fm-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+  color: #6a7588;
+}
+
+.fm-status i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #b0b8c4;
+  display: inline-block;
+}
+
+.fm-status.is-active {
+  color: #2f8a5b;
+}
+
+.fm-status.is-active i {
+  background: #3dce6e;
+  box-shadow: 0 0 0 3px rgba(61, 206, 110, 0.2);
+}
+
+.fm-icon-btn.ant-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 10px;
+}
+
+.fm-icon-btn.ant-btn-dangerous {
+  color: #d4573f;
+}
+
+@media (max-width: 900px) {
+  .fm-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .fm-invite {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    min-height: 0;
+    padding: 14px 16px;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .fm-invite span {
+    flex: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .fm-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .fm-hero-illust {
+    width: 88px;
+    height: 88px;
+  }
+
+  .fm-hero-family {
+    font-size: 2.6rem;
+  }
+
+  .fm-header h1 {
+    font-size: 1.3rem;
+  }
+}

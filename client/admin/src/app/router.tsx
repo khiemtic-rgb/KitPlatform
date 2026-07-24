@@ -229,6 +229,16 @@ const FamilyOsAgreementsPage = lazy(() =>
     default: m.FamilyOsAgreementsPage,
   })),
 );
+const FamilyOsStarSettingsPage = lazy(() =>
+  import('@/modules/family-os/FamilyOsStarSettingsPage').then((m) => ({
+    default: m.FamilyOsStarSettingsPage,
+  })),
+);
+const FamilyOsRewardsPage = lazy(() =>
+  import('@/modules/family-os/FamilyOsRewardsPage').then((m) => ({
+    default: m.FamilyOsRewardsPage,
+  })),
+);
 const FamilyOsMembersPage = lazy(() =>
   import('@/modules/family-os/FamilyOsMembersPage').then((m) => ({
     default: m.FamilyOsMembersPage,
@@ -739,6 +749,8 @@ export function AppRouter() {
                 <Route path="day-flow" element={<FamilyOsDayFlowPage />} />
                 <Route path="routines" element={<FamilyOsRoutinesPage />} />
                 <Route path="agreements" element={<FamilyOsAgreementsPage />} />
+                <Route path="rewards" element={<FamilyOsRewardsPage />} />
+                <Route path="star-settings" element={<FamilyOsStarSettingsPage />} />
               </Route>
               <Route
                 path="clinic"

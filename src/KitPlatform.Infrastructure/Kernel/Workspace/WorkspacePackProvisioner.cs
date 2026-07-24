@@ -8,6 +8,7 @@ internal sealed class WorkspacePackProvisioner
 {
     private static readonly string[] ClinicPackModules = ["clinic_appointments", "clinic_emr_lite", "crm_leads"];
     private static readonly string[] ConnectPackModules = ["novixa_connect"];
+    private static readonly string[] FamilyOsPackModules = ["family_os"];
 
     private readonly IDbConnectionFactory _db;
 
@@ -35,6 +36,13 @@ internal sealed class WorkspacePackProvisioner
         {
             await conn.ExecuteAsync(
                 "SELECT kit_provision_pack_workspace(@TenantId, 'novixa_connect')",
+                new { TenantId = tenantId });
+        }
+
+        if (enabledModules.Any(m => FamilyOsPackModules.Contains(m, StringComparer.OrdinalIgnoreCase)))
+        {
+            await conn.ExecuteAsync(
+                "SELECT kit_provision_pack_workspace(@TenantId, 'family_os')",
                 new { TenantId = tenantId });
         }
     }
