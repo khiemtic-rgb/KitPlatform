@@ -112,13 +112,14 @@ export function CustomerFormDrawer({
 
     form.resetFields();
     // New customers require a phone → default allow credit (can turn off later).
+    // Use '' not undefined so Inputs actually show prefilled POS search text.
     form.setFieldsValue({
       status: 1,
       allowCredit: true,
       ...(isQuick
         ? {
-            fullName: initialName?.trim() || undefined,
-            phone: initialPhone?.trim() || undefined,
+            fullName: initialName?.trim() ?? '',
+            phone: initialPhone?.trim() ?? '',
           }
         : {}),
     });

@@ -123,6 +123,11 @@ export function PosPage() {
   const [customerId, setCustomerId] = useState<string>();
   const [customerSearchLoading, setCustomerSearchLoading] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  /** Last non-empty search — Select clears onSearch('') when blur/click add. */
+  const lastCustomerSearchRef = useRef('');
+  const [quickCreatePrefill, setQuickCreatePrefill] = useState<{ phone?: string; name?: string }>(
+    {},
+  );
   const customerIdRef = useRef<string | undefined>(undefined);
   const customerSearchSeq = useRef(0);
   const customerSearchTimer = useRef<number | undefined>(undefined);
@@ -189,6 +194,9 @@ export function PosPage() {
 
   const handleCustomerSearch = useCallback(
     (query: string) => {
+      const trimmed = query.trim();
+      // Ant Select fires onSearch('') on blur — keep last real query for quick-add prefill.
+      if (trimmed) lastCustomerSearchRef.current = trimmed;
       setCustomerSearchQuery(query);
       window.clearTimeout(customerSearchTimer.current);
       customerSearchTimer.current = window.setTimeout(() => {
@@ -198,12 +206,10 @@ export function PosPage() {
     [runCustomerSearch],
   );
 
-  const quickCreateDefaults = useMemo(
-    () => guessPhoneOrName(customerSearchQuery),
-    [customerSearchQuery],
-  );
-
-  const openQuickCustomer = useCallback(() => setQuickCustomerOpen(true), []);
+  const openQuickCustomer = useCallback(() => {
+    setQuickCreatePrefill(guessPhoneOrName(lastCustomerSearchRef.current));
+    setQuickCustomerOpen(true);
+  }, []);
 
   useEffect(() => {
     return () => window.clearTimeout(customerSearchTimer.current);
@@ -1932,8 +1938,8 @@ export function PosPage() {
         open={quickCustomerOpen}
         editing={null}
         variant="quick"
-        initialPhone={quickCreateDefaults.phone}
-        initialName={quickCreateDefaults.name}
+        initialPhone={quickCreatePrefill.phone}
+        initialName={quickCreatePrefill.name}
         onClose={() => setQuickCustomerOpen(false)}
         onSaved={handleQuickCustomerSaved}
       />
