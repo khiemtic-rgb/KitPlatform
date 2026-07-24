@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-24T14:14:44.086Z",
+  "generatedAt": "2026-07-24T19:48:28.302Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 263,
-    "todayPageViews": 264,
-    "todayRequests": 589,
-    "last24hVisitors": 284,
-    "last24hPageViews": 303,
-    "last24hRequests": 677
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 290,
+    "last24hPageViews": 557,
+    "last24hRequests": 941
   },
   "hourly": [
-    {
-      "time": "2026-07-23T15:00:00Z",
-      "visitors": 12,
-      "requests": 14
-    },
-    {
-      "time": "2026-07-23T16:00:00Z",
-      "visitors": 6,
-      "requests": 9
-    },
-    {
-      "time": "2026-07-23T17:00:00Z",
-      "visitors": 5,
-      "requests": 8
-    },
-    {
-      "time": "2026-07-23T18:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-07-23T19:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
     {
       "time": "2026-07-23T20:00:00Z",
       "visitors": 4,
@@ -125,15 +100,39 @@
       "time": "2026-07-24T13:00:00Z",
       "visitors": 6,
       "requests": 6
+    },
+    {
+      "time": "2026-07-24T14:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-07-24T15:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-07-24T16:00:00Z",
+      "visitors": 9,
+      "requests": 9
+    },
+    {
+      "time": "2026-07-24T17:00:00Z",
+      "visitors": 5,
+      "requests": 277
+    },
+    {
+      "time": "2026-07-24T18:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-07-24T19:00:00Z",
+      "visitors": 5,
+      "requests": 9
     }
   ],
   "daily": [
-    {
-      "date": "2026-07-18",
-      "visitors": 248,
-      "pageViews": 283,
-      "requests": 764
-    },
     {
       "date": "2026-07-19",
       "visitors": 120,
@@ -166,71 +165,71 @@
     },
     {
       "date": "2026-07-24",
-      "visitors": 263,
-      "pageViews": 264,
-      "requests": 589
+      "visitors": 279,
+      "pageViews": 539,
+      "requests": 897
     }
   ],
   "topPages": [
     {
       "path": "/vi/tin-tuc/vi-sao-sop-quan-trong-hon-kinh-nghiem-ca-nhan/",
-      "views": 138
+      "views": 141
     },
     {
       "path": "/images/tin-tuc/vi-sao-sop-quan-trong-hon-kinh-nghiem-ca-nhan.png",
-      "views": 115
+      "views": 121
     },
     {
-      "path": "/vi/tin-tuc/nhung-sai-lam-am-tham-ngon-chi-phi-khi-dao-tao-nhan-vien-moi-tai-nha-thuoc/",
-      "views": 53
+      "path": "/vi/",
+      "views": 60
     },
     {
       "path": "/cdn-cgi/rum",
       "views": 49
     },
     {
-      "path": "/images/tin-tuc/sai-lam-khi-dao-tao-nhan-vien-moi.png",
-      "views": 33
-    },
-    {
-      "path": "/vi/",
-      "views": 30
-    },
-    {
-      "path": "/robots.txt",
-      "views": 30
+      "path": "/vi/tin-tuc/nhung-sai-lam-am-tham-ngon-chi-phi-khi-dao-tao-nhan-vien-moi-tai-nha-thuoc/",
+      "views": 44
     },
     {
       "path": "/",
-      "views": 27
+      "views": 34
+    },
+    {
+      "path": "/images/tin-tuc/sai-lam-khi-dao-tao-nhan-vien-moi.png",
+      "views": 29
+    },
+    {
+      "path": "/robots.txt",
+      "views": 28
+    },
+    {
+      "path": "/.env.example",
+      "views": 18
     },
     {
       "path": "/sitemap-index.xml",
       "views": 18
     },
     {
-      "path": "/api/stats",
-      "views": 12
+      "path": "/ses/.env",
+      "views": 18
     },
     {
-      "path": "/favicon.svg",
-      "views": 10
+      "path": "/scripts/.env",
+      "views": 18
     },
     {
-      "path": "/_astro/BaseLayout.CEPXErrG.css",
-      "views": 10
+      "path": "/phpinfo.php.bak",
+      "views": 18
     },
     {
-      "path": "/images/logo.png",
-      "views": 10
+      "path": "/rest/.env",
+      "views": 16
     },
     {
-      "path": "/blog/wp-json/",
-      "views": 8
-    },
-    {
-      "path": "/vi/tin-tuc/vi-sao-dao-tao-nhan-su-la-khoan-dau-tu-sinh-loi-nhat/",
-      "views": 7
+      "path": "/mailing/.env",
+      "views": 16
     }
   ]
 }
