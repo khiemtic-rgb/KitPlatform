@@ -1,9 +1,11 @@
-﻿using Dapper;
+﻿using System.Globalization;
+using Dapper;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.Customers;
 using KitPlatform.Infrastructure.Data;
 using KitPlatform.Infrastructure.Kernel.Party;
 using KitPlatform.Infrastructure.Kernel.Pharmacy;
+using Npgsql;
 
 namespace KitPlatform.Infrastructure.Customers;
 
@@ -70,7 +72,98 @@ internal sealed class CustomerAdminRepository
     {
         var threshold = Math.Clamp(similarityThreshold, 0.5, 0.99);
 
-        const string loadSql = """
+        // Must match ix_customers_full_name_trgm expression exactly for GIN/% to apply.
+        const string nameNormExpr =
+            "lower(trim(regexp_replace(coalesce({0}.full_name, ''), '\\s+', ' ', 'g')))";
+        const string phoneDigitsExpr = """
+            CASE
+                WHEN regexp_replace(coalesce({0}.phone, ''), '[^0-9]', '', 'g') ~ '^84[0-9]{8,}$'
+                    THEN '0' || substring(regexp_replace(coalesce({0}.phone, ''), '[^0-9]', '', 'g') from 3)
+                ELSE regexp_replace(coalesce({0}.phone, ''), '[^0-9]', '', 'g')
+            END
+            """;
+
+        var phoneDigitsC = phoneDigitsExpr.Replace("{0}", "c", StringComparison.Ordinal);
+        var nameNormA = nameNormExpr.Replace("{0}", "a", StringComparison.Ordinal);
+        var nameNormB = nameNormExpr.Replace("{0}", "b", StringComparison.Ordinal);
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+
+        // 1) Phone duplicate keys only (no per-row order counts — that made ~3k customers hang).
+        var phoneKeysSql = $"""
+            WITH active AS (
+                SELECT {phoneDigitsC} AS PhoneDigits
+                FROM customers c
+                WHERE c.tenant_id = @TenantId
+                  AND c.deleted_at IS NULL
+                  AND c.status = 1
+            )
+            SELECT PhoneDigits
+            FROM active
+            WHERE length(PhoneDigits) >= 9
+            GROUP BY PhoneDigits
+            HAVING COUNT(*) >= 2
+            LIMIT 500
+            """;
+        var phoneKeys = (await conn.QueryAsync<string>(
+                new CommandDefinition(phoneKeysSql, new { TenantId }, cancellationToken: cancellationToken)))
+            .ToArray();
+
+        // 2) Fuzzy name pairs via pg_trgm `%` + GIN (same pattern as product similar-clusters).
+        // Full nested CTE cross-join is O(n²) and times out (~3k customers → 30s+ / empty UI).
+        List<(Guid IdA, Guid IdB, double Score)> pairs = [];
+        try
+        {
+            await conn.ExecuteAsync(
+                new CommandDefinition(
+                    "SELECT set_config('pg_trgm.similarity_threshold', @Th, true)",
+                    new { Th = threshold.ToString("0.###", CultureInfo.InvariantCulture) },
+                    cancellationToken: cancellationToken));
+
+            var pairSql = $"""
+                SELECT
+                    a.id AS IdA,
+                    b.id AS IdB,
+                    similarity({nameNormA}, {nameNormB})::float8 AS Score
+                FROM customers a
+                INNER JOIN customers b
+                  ON a.tenant_id = b.tenant_id
+                 AND a.id < b.id
+                 AND {nameNormA} % {nameNormB}
+                WHERE a.tenant_id = @TenantId
+                  AND a.deleted_at IS NULL AND a.status = 1
+                  AND b.deleted_at IS NULL AND b.status = 1
+                  AND length(trim(coalesce(a.full_name, ''))) >= 3
+                  AND length(trim(coalesce(b.full_name, ''))) >= 3
+                  AND {nameNormA} <> {nameNormB}
+                  AND similarity({nameNormA}, {nameNormB}) >= @Threshold
+                ORDER BY Score DESC
+                LIMIT 3000
+                """;
+            pairs = (await conn.QueryAsync<(Guid IdA, Guid IdB, double Score)>(
+                    new CommandDefinition(
+                        pairSql,
+                        new { TenantId, Threshold = threshold },
+                        cancellationToken: cancellationToken,
+                        commandTimeout: 45)))
+                .ToList();
+        }
+        catch (PostgresException ex) when (ex.SqlState is "42883" or "42704")
+        {
+            // pg_trgm missing — still return phone clusters below
+            pairs = [];
+        }
+
+        var pairIds = pairs
+            .SelectMany(p => new[] { p.IdA, p.IdB })
+            .Distinct()
+            .ToArray();
+
+        if (phoneKeys.Length == 0 && pairIds.Length == 0)
+            return new SimilarCustomerClustersResult([], 0, 0, threshold);
+
+        // Load only customers that participate in a cluster candidate.
+        var loadSql = $"""
             SELECT
                 c.id AS Id,
                 c.customer_code AS CustomerCode,
@@ -79,34 +172,69 @@ internal sealed class CustomerAdminRepository
                 c.email::text AS Email,
                 c.status AS Status,
                 c.created_at AS CreatedAt,
-                lower(trim(regexp_replace(c.full_name, '\s+', ' ', 'g'))) AS NameNorm,
-                CASE
-                    WHEN regexp_replace(c.phone, '[^0-9]', '', 'g') ~ '^84[0-9]{8,}$'
-                        THEN '0' || substring(regexp_replace(c.phone, '[^0-9]', '', 'g') from 3)
-                    ELSE regexp_replace(c.phone, '[^0-9]', '', 'g')
-                END AS PhoneDigits,
-                COALESCE((
-                    SELECT COUNT(*)::int
-                    FROM pack_pharmacy.v_sales_order o
-                    WHERE o.tenant_id = c.tenant_id
-                      AND o.customer_id = c.id
-                ), 0) AS OrderCount
+                {nameNormExpr.Replace("{0}", "c", StringComparison.Ordinal)} AS NameNorm,
+                {phoneDigitsC} AS PhoneDigits,
+                0 AS OrderCount
             FROM customers c
             WHERE c.tenant_id = @TenantId
               AND c.deleted_at IS NULL
               AND c.status = 1
+              AND (
+                    (@HasPhoneKeys AND ({phoneDigitsC}) = ANY(@PhoneDigits))
+                 OR (@HasPairIds AND c.id = ANY(@Ids))
+              )
             """;
 
-        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        var all = (await conn.QueryAsync<SimilarCustomerRow>(loadSql, new { TenantId })).ToList();
-        if (all.Count < 2)
+        var all = (await conn.QueryAsync<SimilarCustomerRow>(
+                new CommandDefinition(
+                    loadSql,
+                    new
+                    {
+                        TenantId,
+                        HasPhoneKeys = phoneKeys.Length > 0,
+                        PhoneDigits = phoneKeys,
+                        HasPairIds = pairIds.Length > 0,
+                        Ids = pairIds,
+                    },
+                    cancellationToken: cancellationToken)))
+            .ToList();
+
+        if (all.Count == 0)
             return new SimilarCustomerClustersResult([], 0, 0, threshold);
 
-        var byId = all.ToDictionary(x => x.Id);
+        // Batch order counts for cluster members only (not the whole tenant).
+        var orderCounts = (await conn.QueryAsync<(Guid CustomerId, int OrderCount)>(
+                new CommandDefinition(
+                    """
+                    SELECT o.customer_id AS CustomerId, COUNT(*)::int AS OrderCount
+                    FROM pack_pharmacy.v_sales_order o
+                    WHERE o.tenant_id = @TenantId
+                      AND o.customer_id = ANY(@Ids)
+                    GROUP BY o.customer_id
+                    """,
+                    new { TenantId, Ids = all.Select(x => x.Id).ToArray() },
+                    cancellationToken: cancellationToken)))
+            .ToDictionary(x => x.CustomerId, x => x.OrderCount);
+
+        var byId = all.ToDictionary(
+            x => x.Id,
+            x => new SimilarCustomerRow
+            {
+                Id = x.Id,
+                CustomerCode = x.CustomerCode,
+                FullName = x.FullName,
+                Phone = x.Phone,
+                Email = x.Email,
+                Status = x.Status,
+                CreatedAt = x.CreatedAt,
+                NameNorm = x.NameNorm,
+                PhoneDigits = x.PhoneDigits,
+                OrderCount = orderCounts.GetValueOrDefault(x.Id),
+            });
+
         var clusters = new List<SimilarCustomerClusterDto>();
 
-        // 1) Same normalized phone (digit variants: 84… vs 0…)
-        foreach (var group in all
+        foreach (var group in byId.Values
             .Where(x => x.PhoneDigits.Length >= 9)
             .GroupBy(x => x.PhoneDigits)
             .Where(g => g.Count() >= 2))
@@ -124,38 +252,6 @@ internal sealed class CustomerAdminRepository
             .Where(c => c.MatchKind == "phone")
             .SelectMany(c => c.Customers.Select(m => m.Id))
             .ToHashSet();
-
-        // 2) Fuzzy name pairs (exclude exact same NameNorm; skip if both already in same phone cluster)
-        List<(Guid A, Guid B, double Score)> pairs;
-        try
-        {
-            const string pairSql = """
-                WITH active AS (
-                    SELECT
-                        c.id AS Id,
-                        lower(trim(regexp_replace(c.full_name, '\s+', ' ', 'g'))) AS NameNorm
-                    FROM customers c
-                    WHERE c.tenant_id = @TenantId
-                      AND c.deleted_at IS NULL
-                      AND c.status = 1
-                      AND length(trim(c.full_name)) >= 3
-                )
-                SELECT a.Id AS IdA, b.Id AS IdB, similarity(a.NameNorm, b.NameNorm)::float8 AS Score
-                FROM active a
-                INNER JOIN active b ON a.Id < b.Id
-                WHERE a.NameNorm <> b.NameNorm
-                  AND similarity(a.NameNorm, b.NameNorm) >= @Threshold
-                ORDER BY Score DESC
-                LIMIT 3000
-                """;
-            var raw = await conn.QueryAsync<(Guid IdA, Guid IdB, double Score)>(
-                pairSql, new { TenantId, Threshold = threshold });
-            pairs = raw.ToList();
-        }
-        catch
-        {
-            pairs = [];
-        }
 
         if (pairs.Count > 0)
         {
@@ -181,7 +277,6 @@ internal sealed class CustomerAdminRepository
             var maxScore = new Dictionary<Guid, double>();
             foreach (var (a, b, score) in pairs)
             {
-                // Prefer phone tab when both share a phone cluster membership together — still allow name groups for others
                 Union(a, b);
                 maxScore[a] = Math.Max(maxScore.GetValueOrDefault(a), score);
                 maxScore[b] = Math.Max(maxScore.GetValueOrDefault(b), score);
@@ -204,7 +299,6 @@ internal sealed class CustomerAdminRepository
 
             foreach (var (root, members) in groups.Where(g => g.Value.Count >= 2))
             {
-                // Skip pure subsets already covered by a phone cluster of the same set
                 if (members.All(m => inPhoneCluster.Contains(m.Id))
                     && members.Select(m => m.PhoneDigits).Distinct().Count() == 1)
                     continue;

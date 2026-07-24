@@ -17,7 +17,7 @@ if (-not $psql) {
     if ($cmd) { $psql = $cmd.Source }
 }
 
-# Th? t? d?ng b? v?i setup-and-migrate.ps1 (001 ch?y riêng khi setup l?n d?u)
+# Th? t? d?ng b? v?i setup-and-migrate.ps1 (001 ch?y ri?ng khi setup l?n d?u)
 $files = @(
     "001_extensions.sql",
     "002_identity.sql",
@@ -160,7 +160,8 @@ $files = @(
     "133_success_loss_gates.sql",
     "134_customer_groups.sql",
     "189_customer_merge_events.sql",
-    "190_backfill_product_name_normalized.sql"
+    "190_backfill_product_name_normalized.sql",
+    "191_customer_name_trgm.sql"
 )
 
 Write-Host "=== KitPlatform Migrations ===" -ForegroundColor Cyan

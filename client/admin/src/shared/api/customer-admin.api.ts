@@ -163,6 +163,8 @@ export async function fetchSimilarCustomerClusters(
 ): Promise<SimilarCustomerClustersResult> {
   const { data } = await http.get<Record<string, unknown>>('/customers/similar-clusters', {
     params: { threshold },
+    // Name fuzzy scan can take longer on large tenants; default http timeout is 30s.
+    timeout: 60_000,
   });
   const clusters = ((data.clusters ?? data.Clusters ?? []) as Record<string, unknown>[]).map(
     normalizeSimilarCluster,
