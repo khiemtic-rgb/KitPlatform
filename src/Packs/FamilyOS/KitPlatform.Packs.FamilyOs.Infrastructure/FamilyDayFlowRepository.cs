@@ -9,11 +9,16 @@ internal sealed class FamilyDayFlowRepository
 {
     private readonly IDbConnectionFactory _db;
     private readonly ITenantContext _tenant;
+    private readonly FamilyCalendarPeriodRepository _calendarPeriods;
 
-    public FamilyDayFlowRepository(IDbConnectionFactory db, ITenantContext tenant)
+    public FamilyDayFlowRepository(
+        IDbConnectionFactory db,
+        ITenantContext tenant,
+        FamilyCalendarPeriodRepository calendarPeriods)
     {
         _db = db;
         _tenant = tenant;
+        _calendarPeriods = calendarPeriods;
     }
 
     private Guid TenantId => _tenant.TenantId;
@@ -47,7 +52,8 @@ internal sealed class FamilyDayFlowRepository
         Guid familyId,
         DateOnly flowDate,
         Guid? preferredRoutineId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool skipPeriodLookup = false)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
 
@@ -65,6 +71,20 @@ internal sealed class FamilyDayFlowRepository
 
         // ISO: Monday=1 … Sunday=7
         var isoDow = flowDate.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)flowDate.DayOfWeek;
+
+        if (!skipPeriodLookup)
+        {
+            var fromPeriod = await _calendarPeriods.PickPeriodRoutineAsync(
+                familyId, flowDate, (short)isoDow, cancellationToken);
+            if (fromPeriod is not null)
+            {
+                return new RoutinePickRow
+                {
+                    Id = fromPeriod.RoutineId,
+                    DisplayName = fromPeriod.RoutineDisplayName,
+                };
+            }
+        }
 
         var matched = await conn.QuerySingleOrDefaultAsync<RoutinePickRow>(
             """
@@ -178,17 +198,107 @@ internal sealed class FamilyDayFlowRepository
 
         await tx.CommitAsync(cancellationToken);
 
-        return (
-            new DayFlowRow
-            {
-                Id = flowId,
-                FamilyId = familyId,
-                RoutineId = routineId,
-                RoutineName = routineName,
-                FlowDate = flowDate,
-                Status = "open",
-            },
-            true);
+        var created = await conn.QuerySingleAsync<DayFlowRow>(
+            """
+            SELECT
+                d.id AS Id,
+                d.family_id AS FamilyId,
+                d.routine_id AS RoutineId,
+                @RoutineName AS RoutineName,
+                d.flow_date AS FlowDate,
+                d.status AS Status
+            FROM pack_family.day_flow d
+            WHERE d.id = @Id
+            """,
+            new { Id = flowId, RoutineName = routineName });
+
+        return (created, true);
+    }
+
+    /// <summary>
+    /// Soft-delete today's commitments and rematerialize from the given routine.
+    /// Keeps the same day_flow row (unique family+date). Done/skipped history is archived.
+    /// </summary>
+    public async Task<DayFlowRow> RebuildDayFlowCommitmentsAsync(
+        Guid familyId,
+        Guid dayFlowId,
+        Guid routineId,
+        string routineName,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+
+        await conn.ExecuteAsync(
+            """
+            UPDATE pack_family.day_flow
+            SET routine_id = @RoutineId, status = 'open', updated_at = NOW()
+            WHERE tenant_id = @TenantId AND id = @DayFlowId AND family_id = @FamilyId
+              AND deleted_at IS NULL
+            """,
+            new { TenantId, DayFlowId = dayFlowId, FamilyId = familyId, RoutineId = routineId },
+            tx);
+
+        await conn.ExecuteAsync(
+            """
+            UPDATE pack_family.commitment
+            SET deleted_at = NOW(), updated_at = NOW()
+            WHERE tenant_id = @TenantId AND day_flow_id = @DayFlowId AND deleted_at IS NULL
+            """,
+            new { TenantId, DayFlowId = dayFlowId },
+            tx);
+
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO pack_family.commitment (
+                tenant_id, day_flow_id, template_id, member_id, title, description,
+                window_start, window_end, sort_order,
+                priority, expected_duration_minutes, context_anchor, depends_on_template_ids,
+                allow_early_complete, early_lead_minutes, on_time_grace_minutes, star_reward
+            )
+            SELECT
+                @TenantId,
+                @DayFlowId,
+                t.id,
+                t.member_id,
+                t.title,
+                t.description,
+                t.window_start,
+                t.window_end,
+                t.sort_order,
+                t.priority,
+                t.expected_duration_minutes,
+                t.context_anchor,
+                t.depends_on_template_ids,
+                t.allow_early_complete,
+                t.early_lead_minutes,
+                t.on_time_grace_minutes,
+                t.star_reward
+            FROM pack_family.commitment_template t
+            WHERE t.tenant_id = @TenantId
+              AND t.routine_id = @RoutineId
+              AND t.deleted_at IS NULL
+              AND t.is_active
+            ORDER BY t.sort_order, t.created_at
+            """,
+            new { TenantId, DayFlowId = dayFlowId, RoutineId = routineId },
+            tx);
+
+        await tx.CommitAsync(cancellationToken);
+
+        return await conn.QuerySingleAsync<DayFlowRow>(
+            """
+            SELECT
+                d.id AS Id,
+                d.family_id AS FamilyId,
+                d.routine_id AS RoutineId,
+                @RoutineName AS RoutineName,
+                d.flow_date AS FlowDate,
+                d.status AS Status
+            FROM pack_family.day_flow d
+            WHERE d.id = @Id
+            """,
+            new { Id = dayFlowId, RoutineName = routineName });
     }
 
     public async Task<IReadOnlyList<CommitmentRow>> ListCommitmentsAsync(

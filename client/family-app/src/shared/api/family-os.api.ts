@@ -97,6 +97,182 @@ export async function loginFamilyParent(input: {
   };
 }
 
+
+function mapAuthSession(session: Row): { accessToken: string; refreshToken: string | null; tenantCode: string } {
+  const accessToken = String(session.accessToken ?? session.AccessToken ?? '');
+  if (!accessToken) throw new Error('Phiên đăng nhập không trả về token');
+  const refreshRaw = session.refreshToken ?? session.RefreshToken;
+  return {
+    accessToken,
+    refreshToken: refreshRaw != null ? String(refreshRaw) : null,
+    tenantCode: String(session.tenantCode ?? session.TenantCode ?? ''),
+  };
+}
+
+export async function registerFamily(input: {
+  familyName: string;
+  parentDisplayName: string;
+  username: string;
+  email: string;
+  password: string;
+  parentPin: string;
+  child1Name?: string;
+  child2Name?: string;
+}): Promise<{
+  tenantCode: string;
+  familyId: string;
+  familyName: string;
+  accessToken: string;
+  refreshToken: string | null;
+}> {
+  const { data } = await http.post<Row>('/family-os/register', {
+    familyName: input.familyName.trim(),
+    parentDisplayName: input.parentDisplayName.trim(),
+    username: input.username.trim(),
+    email: input.email.trim(),
+    password: input.password,
+    parentPin: input.parentPin,
+    child1Name: input.child1Name?.trim() || null,
+    child2Name: input.child2Name?.trim() || null,
+  });
+  const session = mapAuthSession((data.session ?? data.Session ?? {}) as Row);
+  return {
+    tenantCode: String(data.tenantCode ?? data.TenantCode ?? session.tenantCode),
+    familyId: String(data.familyId ?? data.FamilyId ?? ''),
+    familyName: String(data.familyName ?? data.FamilyName ?? ''),
+    accessToken: session.accessToken,
+    refreshToken: session.refreshToken,
+  };
+}
+
+export async function acceptFamilyInvite(input: {
+  code: string;
+  parentDisplayName: string;
+  username: string;
+  email: string;
+  password: string;
+  parentPin?: string;
+}): Promise<{
+  tenantCode: string;
+  familyId: string;
+  familyName: string;
+  accessToken: string;
+  refreshToken: string | null;
+}> {
+  const { data } = await http.post<Row>('/family-os/invites/accept', {
+    code: input.code.trim().toUpperCase(),
+    parentDisplayName: input.parentDisplayName.trim(),
+    username: input.username.trim(),
+    email: input.email.trim(),
+    password: input.password,
+    parentPin: input.parentPin || null,
+  });
+  const session = mapAuthSession((data.session ?? data.Session ?? {}) as Row);
+  return {
+    tenantCode: String(data.tenantCode ?? data.TenantCode ?? session.tenantCode),
+    familyId: String(data.familyId ?? data.FamilyId ?? ''),
+    familyName: String(data.familyName ?? data.FamilyName ?? ''),
+    accessToken: session.accessToken,
+    refreshToken: session.refreshToken,
+  };
+}
+
+export interface FamilySubscription {
+  familyId: string;
+  planCode: string;
+  status: string;
+  trialEndsAt?: string;
+  currentPeriodEnd?: string;
+  isEntitled: boolean;
+}
+
+export interface FamilyCheckout {
+  id: string;
+  familyId: string;
+  orderCode: number;
+  planCode: string;
+  amountVnd: number;
+  status: string;
+  checkoutUrl?: string;
+  qrCode?: string;
+  description?: string;
+  paidAt?: string;
+  createdAt: string;
+  expiresAt?: string;
+}
+
+function mapSubscription(r: Row): FamilySubscription {
+  return {
+    familyId: String(r.familyId ?? r.FamilyId ?? ''),
+    planCode: String(r.planCode ?? r.PlanCode ?? ''),
+    status: String(r.status ?? r.Status ?? ''),
+    trialEndsAt:
+      r.trialEndsAt != null || r.TrialEndsAt != null
+        ? String(r.trialEndsAt ?? r.TrialEndsAt)
+        : undefined,
+    currentPeriodEnd:
+      r.currentPeriodEnd != null || r.CurrentPeriodEnd != null
+        ? String(r.currentPeriodEnd ?? r.CurrentPeriodEnd)
+        : undefined,
+    isEntitled: Boolean(r.isEntitled ?? r.IsEntitled ?? false),
+  };
+}
+
+function mapCheckout(r: Row): FamilyCheckout {
+  return {
+    id: String(r.id ?? r.Id ?? ''),
+    familyId: String(r.familyId ?? r.FamilyId ?? ''),
+    orderCode: Number(r.orderCode ?? r.OrderCode ?? 0),
+    planCode: String(r.planCode ?? r.PlanCode ?? ''),
+    amountVnd: Number(r.amountVnd ?? r.AmountVnd ?? 0),
+    status: String(r.status ?? r.Status ?? ''),
+    checkoutUrl:
+      r.checkoutUrl != null || r.CheckoutUrl != null
+        ? String(r.checkoutUrl ?? r.CheckoutUrl)
+        : undefined,
+    qrCode:
+      r.qrCode != null || r.QrCode != null ? String(r.qrCode ?? r.QrCode) : undefined,
+    description:
+      r.description != null || r.Description != null
+        ? String(r.description ?? r.Description)
+        : undefined,
+    paidAt:
+      r.paidAt != null || r.PaidAt != null ? String(r.paidAt ?? r.PaidAt) : undefined,
+    createdAt: String(r.createdAt ?? r.CreatedAt ?? ''),
+    expiresAt:
+      r.expiresAt != null || r.ExpiresAt != null
+        ? String(r.expiresAt ?? r.ExpiresAt)
+        : undefined,
+  };
+}
+
+export async function fetchFamilySubscription(familyId: string): Promise<FamilySubscription> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/subscription`);
+  return mapSubscription(data);
+}
+
+export async function createFamilyCheckout(
+  familyId: string,
+  input?: { planCode?: string; returnUrl?: string; cancelUrl?: string },
+): Promise<FamilyCheckout> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/billing/checkout`, {
+    planCode: input?.planCode ?? null,
+    returnUrl: input?.returnUrl ?? null,
+    cancelUrl: input?.cancelUrl ?? null,
+  });
+  return mapCheckout(data);
+}
+
+export async function getFamilyCheckout(
+  familyId: string,
+  orderCode: number,
+): Promise<FamilyCheckout> {
+  const { data } = await http.get<Row>(
+    `/family-os/families/${familyId}/billing/checkout/${orderCode}`,
+  );
+  return mapCheckout(data);
+}
+
 export async function fetchFamilies(): Promise<FamilySummary[]> {
   const { data } = await http.get<unknown>('/family-os/families');
   return asArray(data).map((r) => ({
@@ -192,8 +368,10 @@ export interface CommitmentProgressResult {
   memberStarBalance?: number;
 }
 
-export async function ensureDayFlow(familyId: string): Promise<DayFlow> {
-  const { data } = await http.post<Row>(`/family-os/families/${familyId}/day-flows/ensure`, {});
+export async function ensureDayFlow(familyId: string, forceRebuild = false): Promise<DayFlow> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/day-flows/ensure`, {
+    forceRebuild,
+  });
   return {
     id: String(data.id ?? data.Id),
     familyId: String(data.familyId ?? data.FamilyId ?? ''),

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using KitPlatform.Application.Payment;
 using KitPlatform.Packs.FamilyOs;
 
 namespace KitPlatform.Packs.FamilyOs.Infrastructure;
@@ -10,11 +11,16 @@ public static class FamilyOsPackDependencyInjection
         this IServiceCollection services,
         IConfiguration? configuration = null)
     {
+        services.AddScoped<IFamilyCommercialService, FamilyCommercialService>();
+        services.AddScoped<IFamilyBillingService, FamilyBillingService>();
+        services.AddScoped<IPaymentProductHandler, FamilyOsPaymentProductHandler>();
         services.AddScoped<IFamilyOsOverviewService, FamilyOsOverviewService>();
         services.AddScoped<FamilyGraphRepository>();
         services.AddScoped<IFamilyGraphService, FamilyGraphService>();
         services.AddScoped<FamilyRoutineRepository>();
         services.AddScoped<IFamilyRoutineService, FamilyRoutineService>();
+        services.AddScoped<FamilyCalendarPeriodRepository>();
+        services.AddScoped<IFamilyCalendarPeriodService, FamilyCalendarPeriodService>();
         services.AddScoped<FamilyDayFlowRepository>();
         services.AddScoped<IFamilyDayFlowService, FamilyDayFlowService>();
         services.AddScoped<FamilyAgreementRepository>();
@@ -47,10 +53,16 @@ public static class FamilyOsPackDependencyInjection
         {
             services.Configure<FamilyOsReminderOptions>(
                 configuration.GetSection(FamilyOsReminderSettings.SectionName));
+            services.Configure<FamilyOsPayOsOptions>(
+                configuration.GetSection(FamilyOsPayOsSettings.SectionName));
+            services.Configure<FamilyOsBillingOptions>(
+                configuration.GetSection(FamilyOsBillingSettings.SectionName));
         }
         else
         {
             services.Configure<FamilyOsReminderOptions>(_ => { });
+            services.Configure<FamilyOsPayOsOptions>(_ => { });
+            services.Configure<FamilyOsBillingOptions>(_ => { });
         }
 
         services.AddHostedService<FamilyOsParentReminderWorker>();

@@ -30,6 +30,8 @@ using KitPlatform.Infrastructure.Platform.Events;
 using KitPlatform.Infrastructure.Reports;
 using KitPlatform.Infrastructure.Data;
 using KitPlatform.Infrastructure.CustomerApp;
+using KitPlatform.Application.Payment;
+using KitPlatform.Infrastructure.Payment;
 using KitPlatform.Infrastructure.Security;
 
 namespace KitPlatform.Infrastructure;
@@ -190,6 +192,15 @@ public static class DependencyInjection
 
         services.AddScoped<PlatformTenantRepository>();
         services.AddScoped<IPlatformTenantService, PlatformTenantService>();
+
+        // Kit Payment Platform — shared SaaS billing (Famixa / Novixa / KEMS)
+        services.AddHttpClient("KitPaymentPayOS");
+        services.AddScoped<IPaymentProvider, PayOsPaymentProvider>();
+        services.AddScoped<IPaymentService, PaymentService>();
+        var payOsSection = configuration.GetSection(PaymentSettings.PayOsSectionName);
+        if (!payOsSection.Exists() || string.IsNullOrWhiteSpace(payOsSection["ClientId"]))
+            payOsSection = configuration.GetSection("FamilyOs:PayOS"); // backward-compatible alias
+        services.Configure<PaymentPayOsOptions>(payOsSection);
 
         services.AddScoped<AuditLogRepository>();
         services.AddScoped<IAuditLogService, AuditLogService>();

@@ -5,6 +5,7 @@ import { useSessionStore } from '@/shared/auth/session.store';
 import { isOnboardingDone } from '@/shared/onboarding/onboarding';
 import { hydrateFamilyValueState } from '@/shared/value/value-sync';
 import { ParentPinSheet } from '@/shared/ui/ParentPinSheet';
+import { BillingBanner } from '@/shared/ui/BillingBanner';
 import {
   avatarEmoji,
   avatarToneClass,
@@ -109,6 +110,8 @@ export function WhoAreYouPage() {
         <div className="brand-mark">Xin chào!</div>
         <div className="brand-sub">{familyName ?? 'Gia đình mình'}</div>
       </header>
+
+      {familyId ? <BillingBanner familyId={familyId} /> : null}
 
       <section className="card stack">
         <p className="lead">Con là ai hôm nay?</p>

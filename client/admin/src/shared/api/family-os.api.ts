@@ -325,6 +325,175 @@ export async function updateFamilyRoutine(
   await http.patch(`/family-os/families/${familyId}/routines/${routineId}`, payload);
 }
 
+export interface CalendarPeriodSlot {
+  id: string;
+  periodId: string;
+  weekdays: number[];
+  routineId: string;
+  routineDisplayName?: string;
+  sortOrder: number;
+}
+
+export interface CalendarPeriod {
+  id: string;
+  familyId: string;
+  code: string;
+  displayName: string;
+  kind: string;
+  startDate: string;
+  endDate: string;
+  priority: number;
+  isActive: boolean;
+  notes?: string;
+  slots: CalendarPeriodSlot[];
+}
+
+export type CalendarPeriodSlotInput = {
+  weekdays: number[];
+  routineId: string;
+  sortOrder?: number;
+};
+
+export type CreateCalendarPeriodPayload = {
+  code: string;
+  displayName: string;
+  kind?: string;
+  startDate: string;
+  endDate: string;
+  priority?: number;
+  isActive?: boolean;
+  notes?: string;
+  slots?: CalendarPeriodSlotInput[];
+};
+
+export type UpdateCalendarPeriodPayload = {
+  displayName?: string;
+  kind?: string;
+  startDate?: string;
+  endDate?: string;
+  priority?: number;
+  isActive?: boolean;
+  notes?: string | null;
+  slots?: CalendarPeriodSlotInput[];
+};
+
+export interface ResolvedCalendarRoutine {
+  flowDate: string;
+  isoWeekday: number;
+  routineId: string;
+  routineDisplayName: string;
+  source: string;
+  periodId?: string;
+  periodDisplayName?: string;
+  periodKind?: string;
+}
+
+function mapCalendarPeriodSlot(data: UnknownRow): CalendarPeriodSlot {
+  const weekdaysRaw = data.weekdays ?? data.Weekdays;
+  return {
+    id: String(data.id ?? data.Id ?? ''),
+    periodId: String(data.periodId ?? data.PeriodId ?? ''),
+    weekdays: Array.isArray(weekdaysRaw) ? weekdaysRaw.map((d) => Number(d)) : [],
+    routineId: String(data.routineId ?? data.RoutineId ?? ''),
+    routineDisplayName:
+      data.routineDisplayName != null || data.RoutineDisplayName != null
+        ? String(data.routineDisplayName ?? data.RoutineDisplayName)
+        : undefined,
+    sortOrder: Number(data.sortOrder ?? data.SortOrder ?? 0) || 0,
+  };
+}
+
+function mapCalendarPeriod(data: UnknownRow): CalendarPeriod {
+  const slotsRaw = data.slots ?? data.Slots;
+  return {
+    id: String(data.id ?? data.Id ?? ''),
+    familyId: String(data.familyId ?? data.FamilyId ?? ''),
+    code: String(data.code ?? data.Code ?? ''),
+    displayName: String(data.displayName ?? data.DisplayName ?? ''),
+    kind: String(data.kind ?? data.Kind ?? 'custom'),
+    startDate: String(data.startDate ?? data.StartDate ?? ''),
+    endDate: String(data.endDate ?? data.EndDate ?? ''),
+    priority: Number(data.priority ?? data.Priority ?? 0) || 0,
+    isActive: Boolean(data.isActive ?? data.IsActive ?? true),
+    notes:
+      data.notes != null || data.Notes != null
+        ? String(data.notes ?? data.Notes)
+        : undefined,
+    slots: Array.isArray(slotsRaw)
+      ? slotsRaw.map((row) => mapCalendarPeriodSlot(row as UnknownRow))
+      : [],
+  };
+}
+
+function mapResolvedCalendarRoutine(data: UnknownRow): ResolvedCalendarRoutine {
+  return {
+    flowDate: String(data.flowDate ?? data.FlowDate ?? ''),
+    isoWeekday: Number(data.isoWeekday ?? data.IsoWeekday ?? 0) || 0,
+    routineId: String(data.routineId ?? data.RoutineId ?? ''),
+    routineDisplayName: String(data.routineDisplayName ?? data.RoutineDisplayName ?? ''),
+    source: String(data.source ?? data.Source ?? ''),
+    periodId:
+      data.periodId != null || data.PeriodId != null
+        ? String(data.periodId ?? data.PeriodId)
+        : undefined,
+    periodDisplayName:
+      data.periodDisplayName != null || data.PeriodDisplayName != null
+        ? String(data.periodDisplayName ?? data.PeriodDisplayName)
+        : undefined,
+    periodKind:
+      data.periodKind != null || data.PeriodKind != null
+        ? String(data.periodKind ?? data.PeriodKind)
+        : undefined,
+  };
+}
+
+export async function fetchFamilyCalendarPeriods(familyId: string): Promise<CalendarPeriod[]> {
+  const { data } = await http.get<unknown>(`/family-os/families/${familyId}/calendar-periods`);
+  const rows = Array.isArray(data) ? data : [];
+  return rows.map((row) => mapCalendarPeriod(row as UnknownRow));
+}
+
+export async function createFamilyCalendarPeriod(
+  familyId: string,
+  payload: CreateCalendarPeriodPayload,
+): Promise<CalendarPeriod> {
+  const { data } = await http.post<UnknownRow>(
+    `/family-os/families/${familyId}/calendar-periods`,
+    payload,
+  );
+  return mapCalendarPeriod(data);
+}
+
+export async function updateFamilyCalendarPeriod(
+  familyId: string,
+  periodId: string,
+  payload: UpdateCalendarPeriodPayload,
+): Promise<CalendarPeriod> {
+  const { data } = await http.patch<UnknownRow>(
+    `/family-os/families/${familyId}/calendar-periods/${periodId}`,
+    payload,
+  );
+  return mapCalendarPeriod(data);
+}
+
+export async function deleteFamilyCalendarPeriod(
+  familyId: string,
+  periodId: string,
+): Promise<void> {
+  await http.delete(`/family-os/families/${familyId}/calendar-periods/${periodId}`);
+}
+
+export async function resolveFamilyCalendarRoutine(
+  familyId: string,
+  date?: string,
+): Promise<ResolvedCalendarRoutine> {
+  const { data } = await http.get<UnknownRow>(
+    `/family-os/families/${familyId}/calendar-periods/resolve`,
+    { params: date ? { date } : undefined },
+  );
+  return mapResolvedCalendarRoutine(data);
+}
+
 export async function addCommitmentTemplate(
   familyId: string,
   routineId: string,

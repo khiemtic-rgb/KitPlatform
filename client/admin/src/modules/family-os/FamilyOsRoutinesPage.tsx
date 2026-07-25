@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  App,
   Button,
   Checkbox,
   Drawer,
   Form,
   Input,
   InputNumber,
-  Modal,
   Select,
   Switch,
   Table,
   TimePicker,
-  message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -92,7 +91,6 @@ type TemplateFormValues = {
   sortOrder: number;
   isActive: boolean;
   priority: string;
-  expectedDurationMinutes?: number | null;
   contextAnchor?: string | null;
   dependsOnTemplateIds?: string[];
   allowEarlyComplete?: boolean;
@@ -314,6 +312,7 @@ function activeTone(kind: string): string {
 }
 
 export function FamilyOsRoutinesPage() {
+  const { modal, message } = App.useApp();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [family, setFamily] = useState<FamilySummary | null>(null);
@@ -325,6 +324,13 @@ export function FamilyOsRoutinesPage() {
   const [templateRoutine, setTemplateRoutine] = useState<FamilyRoutine | null>(null);
   const [routineForm] = Form.useForm<RoutineFormValues>();
   const [templateForm] = Form.useForm<TemplateFormValues>();
+  const templateWindow = Form.useWatch('window', templateForm);
+  const templateDurationMinutes = useMemo(() => {
+    const [start, end] = templateWindow ?? [];
+    if (!start?.isValid() || !end?.isValid()) return null;
+    const minutes = end.diff(start, 'minute');
+    return minutes > 0 ? minutes : null;
+  }, [templateWindow]);
   /** null = cả đội; id = chỉ xem con đó */
   const [focusChildId, setFocusChildId] = useState<string | null>(null);
 
@@ -418,7 +424,6 @@ export function FamilyOsRoutinesPage() {
       sortOrder: nextOrder,
       isActive: true,
       priority: 'normal',
-      expectedDurationMinutes: null,
       contextAnchor: null,
       dependsOnTemplateIds: [],
       allowEarlyComplete: false,
@@ -440,7 +445,6 @@ export function FamilyOsRoutinesPage() {
       sortOrder: template.sortOrder,
       isActive: template.isActive,
       priority: template.priority || 'normal',
-      expectedDurationMinutes: template.expectedDurationMinutes ?? null,
       contextAnchor: template.contextAnchor ?? null,
       dependsOnTemplateIds: template.dependsOnTemplateIds ?? [],
       allowEarlyComplete:
@@ -465,7 +469,7 @@ export function FamilyOsRoutinesPage() {
       sortOrder: values.sortOrder,
       isActive: values.isActive,
       priority: values.priority || 'normal',
-      expectedDurationMinutes: values.expectedDurationMinutes ?? null,
+      expectedDurationMinutes: null,
       contextAnchor: values.contextAnchor || null,
       dependsOnTemplateIds: values.dependsOnTemplateIds ?? [],
       allowEarlyComplete: values.allowEarlyComplete ?? null,
@@ -497,13 +501,17 @@ export function FamilyOsRoutinesPage() {
   };
 
   const confirmRemoveTemplate = (routine: FamilyRoutine, template: CommitmentTemplate) => {
-    if (!family) return;
-    Modal.confirm({
+    if (!family) {
+      message.warning('Chưa chọn gia đình — tải lại trang rồi thử xóa.');
+      return;
+    }
+    modal.confirm({
       title: 'Xóa cam kết này?',
       content: `"${template.title}" sẽ không còn trong các Daily Flow mới. Ngày hôm nay (nếu đã tạo) không bị đổi.`,
       okText: 'Xóa',
-      okType: 'danger',
+      okButtonProps: { danger: true },
       cancelText: 'Huỷ',
+      centered: true,
       onOk: async () => {
         try {
           await removeCommitmentTemplate(family.id, routine.id, template.id);
@@ -511,6 +519,7 @@ export function FamilyOsRoutinesPage() {
           await load();
         } catch (error) {
           message.error(apiErrorMessage(error, 'Không xóa được'));
+          return Promise.reject(error);
         }
       },
     });
@@ -615,7 +624,11 @@ export function FamilyOsRoutinesPage() {
             type="button"
             className="fr-icon-btn is-danger"
             aria-label={`Xóa ${row.title}`}
-            onClick={() => confirmRemoveTemplate(routine, row)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              confirmRemoveTemplate(routine, row);
+            }}
           >
             <DeleteOutlined />
           </button>
@@ -1004,13 +1017,28 @@ export function FamilyOsRoutinesPage() {
           >
             <Select options={PRIORITY_OPTIONS} />
           </Form.Item>
-          <Form.Item name="expectedDurationMinutes" label="Thời lượng (phút)">
-            <InputNumber min={1} max={1440} style={{ width: '100%' }} placeholder="VD: 15" />
-          </Form.Item>
           <Form.Item
             name="window"
-            label="Khung giờ (gợi ý)"
-            extra="Vẫn dùng cho nhắc giờ hôm nay; scheduler R2 sẽ tính lại từ thời lượng + neo."
+            label="Giờ bắt đầu – giờ kết thúc"
+            rules={[
+              {
+                validator: (_, value: TemplateFormValues['window']) => {
+                  const [start, end] = value ?? [];
+                  if (!start?.isValid() || !end?.isValid()) {
+                    return Promise.reject(new Error('Chọn đủ giờ bắt đầu và giờ kết thúc'));
+                  }
+                  if (!end.isAfter(start)) {
+                    return Promise.reject(new Error('Giờ kết thúc phải sau giờ bắt đầu'));
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
+            extra={
+              templateDurationMinutes != null
+                ? `Thời lượng tự tính: ${templateDurationMinutes} phút`
+                : 'Chọn giờ bắt đầu và giờ kết thúc; số phút làm việc sẽ tự tính.'
+            }
           >
             <TimePicker.RangePicker format="HH:mm" style={{ width: '100%' }} />
           </Form.Item>

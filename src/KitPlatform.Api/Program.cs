@@ -106,6 +106,7 @@ builder.Services.AddAuthorization(options =>
     options.AddReportsAuthorization();
     options.AddIdentityAuthorization();
     options.AddClinicAuthorization();
+    options.AddPaymentAuthorization();
 });
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddPharmacyPack(builder.Configuration);
@@ -131,6 +132,24 @@ builder.Services.AddRateLimiter(options =>
             _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
             {
                 PermitLimit = builder.Configuration.GetValue("Assessment:PublicRequestsPerMinutePerIp", 30),
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+    options.AddPolicy("family-os-public", httpContext =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue("FamilyOs:PublicRequestsPerMinutePerIp", 10),
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+    options.AddPolicy("payment-webhook", httpContext =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue("Payment:WebhookRequestsPerMinutePerIp", 120),
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0,
             }));

@@ -12,6 +12,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
     private readonly IFamilyTeamUnlockService _teamUnlocks;
     private readonly IFamilyStarService _stars;
     private readonly FamilyStarSettingsRepository _starSettings;
+    private readonly IFamilyCommercialService _commercial;
     private readonly ITenantContext _tenant;
 
     public FamilyDayFlowService(
@@ -22,6 +23,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         IFamilyTeamUnlockService teamUnlocks,
         IFamilyStarService stars,
         FamilyStarSettingsRepository starSettings,
+        IFamilyCommercialService commercial,
         ITenantContext tenant)
     {
         _repo = repo;
@@ -31,6 +33,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         _teamUnlocks = teamUnlocks;
         _stars = stars;
         _starSettings = starSettings;
+        _commercial = commercial;
         _tenant = tenant;
     }
 
@@ -39,20 +42,30 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         EnsureDayFlowRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 
         var localNow = FamilyTimeZones.NowIn(family.Timezone);
         var flowDate = request.FlowDate ?? DateOnly.FromDateTime(localNow.DateTime);
 
-        var existing = await _repo.GetByDateAsync(familyId, flowDate, cancellationToken);
-        if (existing is not null)
-            return await MapDayFlowAsync(existing, family.Timezone, cancellationToken);
-
         var routine = await _repo.PickRoutineForDateAsync(
             familyId, flowDate, request.RoutineId, cancellationToken)
             ?? throw new InvalidOperationException(
                 "Chưa có routine active — tạo routine trước khi mở Daily Flow.");
+
+        var existing = await _repo.GetByDateAsync(familyId, flowDate, cancellationToken);
+        if (existing is not null)
+        {
+            if (!request.ForceRebuild && existing.RoutineId == routine.Id)
+                return await MapDayFlowAsync(existing, family.Timezone, cancellationToken);
+
+            // ForceRebuild or calendar/period now maps a different routine for this date.
+            var rebuilt = await _repo.RebuildDayFlowCommitmentsAsync(
+                familyId, existing.Id, routine.Id, routine.DisplayName, cancellationToken);
+            return await MapDayFlowAsync(rebuilt, family.Timezone, cancellationToken);
+        }
 
         var (created, _) = await _repo.CreateDayFlowWithCommitmentsAsync(
             familyId, routine.Id, routine.DisplayName, flowDate, cancellationToken);
@@ -79,6 +92,8 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         UpdateCommitmentProgressRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+
         var status = (request.Status ?? "").Trim().ToLowerInvariant();
         if (!FamilyCommitmentStatuses.All.Contains(status))
             throw new InvalidOperationException(
@@ -218,6 +233,8 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         Guid commitmentId,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 

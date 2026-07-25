@@ -54,7 +54,8 @@ public sealed record CommitmentDto(
 
 public sealed record EnsureDayFlowRequest(
     DateOnly? FlowDate,
-    Guid? RoutineId);
+    Guid? RoutineId,
+    bool ForceRebuild = false);
 
 public sealed record UpdateCommitmentProgressRequest(
     string Status,

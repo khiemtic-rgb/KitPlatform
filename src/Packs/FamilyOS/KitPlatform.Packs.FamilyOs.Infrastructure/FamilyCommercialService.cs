@@ -1,0 +1,749 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using Dapper;
+using KitPlatform.Application.Abstractions;
+using KitPlatform.Application.Auth;
+using KitPlatform.Infrastructure.Data;
+using KitPlatform.Packs.FamilyOs;
+
+namespace KitPlatform.Packs.FamilyOs.Infrastructure;
+
+internal sealed class FamilyCommercialService : IFamilyCommercialService
+{
+    private const int DefaultTrialDays = 30;
+    private readonly IDbConnectionFactory _db;
+    private readonly IAuthService _auth;
+    private readonly ITenantContext _tenant;
+
+    public FamilyCommercialService(IDbConnectionFactory db, IAuthService auth, ITenantContext tenant)
+    {
+        _db = db;
+        _auth = auth;
+        _tenant = tenant;
+    }
+
+    public async Task<FamilyRegisterResponse> RegisterAsync(
+        FamilyRegisterRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var familyName = Require(request.FamilyName, "Tên gia đình");
+        var parentName = Require(request.ParentDisplayName, "Tên phụ huynh");
+        var username = Require(request.Username, "Tài khoản").ToLowerInvariant();
+        var email = Require(request.Email, "Email").ToLowerInvariant();
+        var password = request.Password?.Trim() ?? "";
+        if (password.Length < 8)
+            throw new InvalidOperationException("Mật khẩu tối thiểu 8 ký tự.");
+        var pin = NormalizePin(request.ParentPin);
+        var timezone = string.IsNullOrWhiteSpace(request.Timezone)
+            ? "Asia/Ho_Chi_Minh"
+            : request.Timezone.Trim();
+
+        var tenantCode = await AllocateTenantCodeAsync(familyName, cancellationToken);
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+        var pinHash = BCrypt.Net.BCrypt.HashPassword(pin);
+
+        var tenantId = Guid.NewGuid();
+        var branchId = Guid.NewGuid();
+        var employeeId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var roleId = Guid.NewGuid();
+        var familyId = Guid.NewGuid();
+        var membershipId = Guid.NewGuid();
+        var subscriptionId = Guid.NewGuid();
+        var trialEnds = DateTimeOffset.UtcNow.AddDays(DefaultTrialDays);
+
+        var settings = JsonSerializer.Serialize(new Dictionary<string, object?>
+        {
+            ["platform"] = new Dictionary<string, object?>
+            {
+                ["schema_version"] = 1,
+                ["vertical"] = "family",
+                ["enabled_modules"] = new[] { "family_os" },
+                ["allowed_modules"] = new[] { "family_os" },
+                ["features"] = new Dictionary<string, object?>(),
+            },
+        });
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO public.tenants (
+                id, tenant_code, tenant_name, country_code, default_currency,
+                business_vertical, settings, status
+            )
+            VALUES (
+                @Id, @TenantCode, @TenantName, 'VN', 'VND',
+                'hybrid', @Settings::jsonb, 1
+            )
+            """,
+            new
+            {
+                Id = tenantId,
+                TenantCode = tenantCode,
+                TenantName = familyName,
+                Settings = settings,
+            },
+            tx);
+
+        await conn.ExecuteAsync(
+            "SELECT set_config('app.tenant_id', @Value, true)",
+            new { Value = tenantId.ToString() },
+            tx);
+
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO public.branches (
+                id, tenant_id, branch_code, branch_name, is_head_office, status
+            )
+            VALUES (@Id, @TenantId, 'HOME', 'Nhà', TRUE, 1)
+            """,
+            new { Id = branchId, TenantId = tenantId },
+            tx);
+
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO public.employees (
+                id, tenant_id, employee_code, full_name, email, status
+            )
+            VALUES (@Id, @TenantId, 'EMP001', @FullName, @Email, 1)
+            """,
+            new { Id = employeeId, TenantId = tenantId, FullName = parentName, Email = email },
+            tx);
+
+        await conn.ExecuteAsync(
+            "INSERT INTO public.employee_branches (employee_id, branch_id, is_primary) VALUES (@E, @B, TRUE)",
+            new { E = employeeId, B = branchId },
+            tx);
+
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO public.users (
+                id, tenant_id, employee_id, username, email, password_hash, status
+            )
+            VALUES (@Id, @TenantId, @EmployeeId, @Username, @Email, @PasswordHash, 1)
+            """,
+            new
+            {
+                Id = userId,
+                TenantId = tenantId,
+                EmployeeId = employeeId,
+                Username = username,
+                Email = email,
+                PasswordHash = passwordHash,
+            },
+            tx);
+
+        await conn.ExecuteAsync(
+            "INSERT INTO public.roles (id, tenant_id, role_code, role_name) VALUES (@Id, @TenantId, 'ADMIN', 'Phụ huynh')",
+            new { Id = roleId, TenantId = tenantId },
+            tx);
+
+        await conn.ExecuteAsync(
+            "INSERT INTO public.user_roles (user_id, role_id) VALUES (@UserId, @RoleId)",
+            new { UserId = userId, RoleId = roleId },
+            tx);
+
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO public.role_permissions (role_id, permission_id)
+            SELECT @RoleId, p.id FROM public.permissions p
+            WHERE p.permission_code LIKE 'family_os.%'
+            ON CONFLICT DO NOTHING
+            """,
+            new { RoleId = roleId },
+            tx);
+
+        await conn.ExecuteAsync(
+            "SELECT kit_provision_pack_workspace(@TenantId, 'family_os')",
+            new { TenantId = tenantId },
+            tx);
+
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO pack_family.family (
+                id, tenant_id, display_name, timezone, status, parent_pin_hash
+            )
+            VALUES (@Id, @TenantId, @DisplayName, @Timezone, 'active', @PinHash)
+            """,
+            new
+            {
+                Id = familyId,
+                TenantId = tenantId,
+                DisplayName = familyName,
+                Timezone = timezone,
+                PinHash = pinHash,
+            },
+            tx);
+
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO pack_family.membership (
+                id, tenant_id, family_id, display_name, role_code, status, sort_order, user_id
+            )
+            VALUES (
+                @Id, @TenantId, @FamilyId, @DisplayName, 'guardian', 'active', 0, @UserId
+            )
+            """,
+            new
+            {
+                Id = membershipId,
+                TenantId = tenantId,
+                FamilyId = familyId,
+                DisplayName = parentName,
+                UserId = userId,
+            },
+            tx);
+
+        await InsertChildIfAnyAsync(conn, tx, tenantId, familyId, request.Child1Name, 10, cancellationToken);
+        await InsertChildIfAnyAsync(conn, tx, tenantId, familyId, request.Child2Name, 20, cancellationToken);
+
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO pack_family.family_subscription (
+                id, tenant_id, family_id, plan_code, status, trial_ends_at, current_period_end
+            )
+            VALUES (
+                @Id, @TenantId, @FamilyId, 'starter_trial', 'trial', @TrialEnds, @TrialEnds
+            )
+            """,
+            new
+            {
+                Id = subscriptionId,
+                TenantId = tenantId,
+                FamilyId = familyId,
+                TrialEnds = trialEnds.UtcDateTime,
+            },
+            tx);
+
+        // Kit Payment Platform subscription (source of truth going forward)
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO payment.subscription (
+                tenant_id, product_code, subject_type, subject_id,
+                plan_code, status, trial_ends_at, current_period_end
+            )
+            VALUES (
+                @TenantId, 'family_os', 'family', @FamilyId,
+                'starter_trial', 'trial', @TrialEnds, @TrialEnds
+            )
+            ON CONFLICT (tenant_id, product_code, subject_type, subject_id) DO NOTHING
+            """,
+            new
+            {
+                TenantId = tenantId,
+                FamilyId = familyId,
+                TrialEnds = trialEnds.UtcDateTime,
+            },
+            tx);
+
+        await tx.CommitAsync(cancellationToken);
+
+        var session = await _auth.LoginAsync(
+            new LoginRequest(username, password, tenantCode),
+            null,
+            cancellationToken)
+            ?? throw new InvalidOperationException("Đăng ký xong nhưng không đăng nhập được — thử đăng nhập lại.");
+
+        return new FamilyRegisterResponse(
+            tenantCode,
+            tenantId,
+            familyId,
+            familyName,
+            MapSession(session),
+            new FamilySubscriptionDto(
+                familyId,
+                "starter_trial",
+                FamilySubscriptionStatuses.Trial,
+                trialEnds,
+                trialEnds,
+                true));
+    }
+
+    public async Task<FamilyInviteDto> CreateInviteAsync(
+        Guid familyId,
+        FamilyInviteCreateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureEntitledAsync(familyId, cancellationToken);
+
+        var role = string.IsNullOrWhiteSpace(request.RoleCode)
+            ? FamilyMembershipRoles.Guardian
+            : request.RoleCode.Trim().ToLowerInvariant();
+        if (role is not (FamilyMembershipRoles.Guardian or FamilyMembershipRoles.Caregiver or FamilyMembershipRoles.Viewer))
+            throw new InvalidOperationException("roleCode phải là guardian | caregiver | viewer.");
+
+        var maxUses = Math.Clamp(request.MaxUses ?? 3, 1, 20);
+        var days = Math.Clamp(request.ValidDays ?? 7, 1, 30);
+        var code = GenerateInviteCode();
+        var expires = DateTimeOffset.UtcNow.AddDays(days);
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        if (!_tenant.IsAuthenticated || _tenant.TenantId == Guid.Empty)
+            throw new InvalidOperationException("Cần đăng nhập để tạo mã mời.");
+
+        var family = await conn.QuerySingleOrDefaultAsync<(Guid TenantId, Guid Id)>(
+            """
+            SELECT tenant_id AS TenantId, id AS Id
+            FROM pack_family.family
+            WHERE id = @FamilyId AND tenant_id = @TenantId AND deleted_at IS NULL
+            """,
+            new { FamilyId = familyId, TenantId = _tenant.TenantId });
+        if (family.Id == Guid.Empty)
+            throw new InvalidOperationException("Không tìm thấy gia đình.");
+
+        var id = await conn.ExecuteScalarAsync<Guid>(
+            """
+            INSERT INTO pack_family.family_invite (
+                tenant_id, family_id, code, role_code, expires_at, max_uses
+            )
+            VALUES (@TenantId, @FamilyId, @Code, @RoleCode, @ExpiresAt, @MaxUses)
+            RETURNING id
+            """,
+            new
+            {
+                family.TenantId,
+                FamilyId = familyId,
+                Code = code,
+                RoleCode = role,
+                ExpiresAt = expires.UtcDateTime,
+                MaxUses = maxUses,
+            });
+
+        return new FamilyInviteDto(id, code, role, expires, maxUses, 0);
+    }
+
+    public async Task<FamilyInviteAcceptResponse> AcceptInviteAsync(
+        FamilyInviteAcceptRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var code = (request.Code ?? "").Trim().ToUpperInvariant();
+        if (code.Length < 6)
+            throw new InvalidOperationException("Mã mời không hợp lệ.");
+
+        var parentName = Require(request.ParentDisplayName, "Tên phụ huynh");
+        var username = Require(request.Username, "Tài khoản").ToLowerInvariant();
+        var email = Require(request.Email, "Email").ToLowerInvariant();
+        var password = request.Password?.Trim() ?? "";
+        if (password.Length < 8)
+            throw new InvalidOperationException("Mật khẩu tối thiểu 8 ký tự.");
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+
+        var invite = await conn.QuerySingleOrDefaultAsync<InviteRow>(
+            """
+            SELECT
+                id AS Id,
+                tenant_id AS TenantId,
+                family_id AS FamilyId,
+                code AS Code,
+                role_code AS RoleCode,
+                expires_at AS ExpiresAt,
+                max_uses AS MaxUses,
+                used_count AS UsedCount,
+                revoked_at AS RevokedAt
+            FROM pack_family.family_invite
+            WHERE code = @Code
+            FOR UPDATE
+            """,
+            new { Code = code },
+            tx);
+
+        if (invite is null)
+            throw new InvalidOperationException("Không tìm thấy mã mời.");
+        if (invite.RevokedAt is not null)
+            throw new InvalidOperationException("Mã mời đã bị thu hồi.");
+        if (invite.ExpiresAt < DateTime.UtcNow)
+            throw new InvalidOperationException("Mã mời đã hết hạn.");
+        if (invite.UsedCount >= invite.MaxUses)
+            throw new InvalidOperationException("Mã mời đã dùng hết lượt.");
+
+        await conn.ExecuteAsync(
+            "SELECT set_config('app.tenant_id', @Value, true)",
+            new { Value = invite.TenantId.ToString() },
+            tx);
+
+        var tenantCode = await conn.ExecuteScalarAsync<string>(
+            "SELECT tenant_code FROM public.tenants WHERE id = @Id",
+            new { Id = invite.TenantId },
+            tx) ?? throw new InvalidOperationException("Tenant không tồn tại.");
+
+        var familyName = await conn.ExecuteScalarAsync<string>(
+            """
+            SELECT display_name FROM pack_family.family
+            WHERE id = @Id AND deleted_at IS NULL
+            """,
+            new { Id = invite.FamilyId },
+            tx) ?? throw new InvalidOperationException("Gia đình không tồn tại.");
+
+        if (await conn.ExecuteScalarAsync<bool>(
+                """
+                SELECT EXISTS(
+                    SELECT 1 FROM public.users
+                    WHERE tenant_id = @TenantId AND lower(username) = @Username AND deleted_at IS NULL
+                )
+                """,
+                new { TenantId = invite.TenantId, Username = username },
+                tx))
+            throw new InvalidOperationException("Tên tài khoản đã dùng trong nhà này.");
+
+        var employeeId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var roleId = Guid.NewGuid();
+        var membershipId = Guid.NewGuid();
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO public.employees (id, tenant_id, employee_code, full_name, email, status)
+            VALUES (@Id, @TenantId, @Code, @FullName, @Email, 1)
+            """,
+            new
+            {
+                Id = employeeId,
+                TenantId = invite.TenantId,
+                Code = "EMP" + RandomNumberGenerator.GetInt32(1000, 9999),
+                FullName = parentName,
+                Email = email,
+            },
+            tx);
+
+        var homeBranch = await conn.ExecuteScalarAsync<Guid?>(
+            """
+            SELECT id FROM public.branches
+            WHERE tenant_id = @TenantId AND deleted_at IS NULL
+            ORDER BY is_head_office DESC NULLS LAST
+            LIMIT 1
+            """,
+            new { TenantId = invite.TenantId },
+            tx);
+
+        if (homeBranch is Guid bid)
+        {
+            await conn.ExecuteAsync(
+                "INSERT INTO public.employee_branches (employee_id, branch_id, is_primary) VALUES (@E, @B, TRUE)",
+                new { E = employeeId, B = bid },
+                tx);
+        }
+
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO public.users (id, tenant_id, employee_id, username, email, password_hash, status)
+            VALUES (@Id, @TenantId, @EmployeeId, @Username, @Email, @PasswordHash, 1)
+            """,
+            new
+            {
+                Id = userId,
+                TenantId = invite.TenantId,
+                EmployeeId = employeeId,
+                Username = username,
+                Email = email,
+                PasswordHash = passwordHash,
+            },
+            tx);
+
+        await conn.ExecuteAsync(
+            "INSERT INTO public.roles (id, tenant_id, role_code, role_name) VALUES (@Id, @TenantId, 'GUARDIAN', 'Phụ huynh')",
+            new { Id = roleId, TenantId = invite.TenantId },
+            tx);
+
+        await conn.ExecuteAsync(
+            "INSERT INTO public.user_roles (user_id, role_id) VALUES (@U, @R)",
+            new { U = userId, R = roleId },
+            tx);
+
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO public.role_permissions (role_id, permission_id)
+            SELECT @RoleId, p.id FROM public.permissions p
+            WHERE p.permission_code LIKE 'family_os.%'
+            ON CONFLICT DO NOTHING
+            """,
+            new { RoleId = roleId },
+            tx);
+
+        var sort = await conn.ExecuteScalarAsync<int>(
+            """
+            SELECT COALESCE(MAX(sort_order), 0) + 10
+            FROM pack_family.membership
+            WHERE family_id = @FamilyId AND deleted_at IS NULL
+            """,
+            new { FamilyId = invite.FamilyId },
+            tx);
+
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO pack_family.membership (
+                id, tenant_id, family_id, display_name, role_code, status, sort_order, user_id
+            )
+            VALUES (
+                @Id, @TenantId, @FamilyId, @DisplayName, @RoleCode, 'active', @Sort, @UserId
+            )
+            """,
+            new
+            {
+                Id = membershipId,
+                TenantId = invite.TenantId,
+                FamilyId = invite.FamilyId,
+                DisplayName = parentName,
+                RoleCode = invite.RoleCode,
+                Sort = sort,
+                UserId = userId,
+            },
+            tx);
+
+        if (!string.IsNullOrWhiteSpace(request.ParentPin))
+        {
+            var pinHash = BCrypt.Net.BCrypt.HashPassword(NormalizePin(request.ParentPin));
+            await conn.ExecuteAsync(
+                """
+                UPDATE pack_family.family
+                SET parent_pin_hash = COALESCE(parent_pin_hash, @PinHash), updated_at = NOW()
+                WHERE id = @FamilyId
+                """,
+                new { FamilyId = invite.FamilyId, PinHash = pinHash },
+                tx);
+        }
+
+        await conn.ExecuteAsync(
+            """
+            UPDATE pack_family.family_invite
+            SET used_count = used_count + 1
+            WHERE id = @Id
+            """,
+            new { Id = invite.Id },
+            tx);
+
+        await tx.CommitAsync(cancellationToken);
+
+        var session = await _auth.LoginAsync(
+            new LoginRequest(username, password, tenantCode),
+            null,
+            cancellationToken)
+            ?? throw new InvalidOperationException("Tham gia xong nhưng không đăng nhập được.");
+
+        return new FamilyInviteAcceptResponse(tenantCode, invite.FamilyId, familyName, MapSession(session));
+    }
+
+    public async Task<FamilySubscriptionDto> GetSubscriptionAsync(
+        Guid familyId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var row = await conn.QuerySingleOrDefaultAsync<SubscriptionRow>(
+            """
+            SELECT
+                family_id AS FamilyId,
+                plan_code AS PlanCode,
+                status AS Status,
+                trial_ends_at AS TrialEndsAt,
+                current_period_end AS CurrentPeriodEnd
+            FROM pack_family.family_subscription
+            WHERE family_id = @FamilyId
+              AND (@TenantId = '00000000-0000-0000-0000-000000000000'::uuid
+                   OR tenant_id = @TenantId)
+            """,
+            new
+            {
+                FamilyId = familyId,
+                TenantId = _tenant.IsAuthenticated ? _tenant.TenantId : Guid.Empty,
+            });
+
+        if (row is null)
+        {
+            // Missing row = not entitled for commercial tenants (no forever-pilot leak).
+            return new FamilySubscriptionDto(
+                familyId, "none", FamilySubscriptionStatuses.Expired, null, null, false);
+        }
+
+        var status = NormalizeSubscriptionStatus(row);
+        var entitled = status is FamilySubscriptionStatuses.Trial or FamilySubscriptionStatuses.Active;
+        if (status == FamilySubscriptionStatuses.PastDue
+            && row.CurrentPeriodEnd is DateTime grace
+            && grace.AddDays(3) >= DateTime.UtcNow)
+        {
+            entitled = true;
+        }
+
+        return new FamilySubscriptionDto(
+            row.FamilyId,
+            row.PlanCode,
+            status,
+            row.TrialEndsAt is DateTime t ? new DateTimeOffset(DateTime.SpecifyKind(t, DateTimeKind.Utc)) : null,
+            row.CurrentPeriodEnd is DateTime p ? new DateTimeOffset(DateTime.SpecifyKind(p, DateTimeKind.Utc)) : null,
+            entitled);
+    }
+
+    public async Task EnsureEntitledAsync(
+        Guid familyId,
+        CancellationToken cancellationToken = default)
+    {
+        var sub = await GetSubscriptionAsync(familyId, cancellationToken);
+        if (!sub.IsEntitled)
+            throw new InvalidOperationException(
+                "Gói Family OS đã hết hạn — gia hạn để tiếp tục dùng Daily Flow và thưởng sao.");
+    }
+
+    public async Task SetParentPinAsync(
+        Guid familyId,
+        SetParentPinRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var pin = NormalizePin(request.Pin);
+        var hash = BCrypt.Net.BCrypt.HashPassword(pin);
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var n = await conn.ExecuteAsync(
+            """
+            UPDATE pack_family.family
+            SET parent_pin_hash = @Hash, updated_at = NOW()
+            WHERE id = @FamilyId AND tenant_id = @TenantId AND deleted_at IS NULL
+            """,
+            new { FamilyId = familyId, TenantId = _tenant.TenantId, Hash = hash });
+        if (n == 0)
+            throw new InvalidOperationException("Không tìm thấy gia đình.");
+    }
+
+    public async Task<bool> VerifyParentPinAsync(
+        Guid familyId,
+        VerifyParentPinRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var pin = NormalizePin(request.Pin);
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var hash = await conn.ExecuteScalarAsync<string?>(
+            """
+            SELECT parent_pin_hash FROM pack_family.family
+            WHERE id = @FamilyId AND tenant_id = @TenantId AND deleted_at IS NULL
+            """,
+            new { FamilyId = familyId, TenantId = _tenant.TenantId });
+        if (string.IsNullOrWhiteSpace(hash))
+            return false; // no silent default PIN — must set server PIN first
+        return BCrypt.Net.BCrypt.Verify(pin, hash);
+    }
+
+    private static async Task InsertChildIfAnyAsync(
+        Npgsql.NpgsqlConnection conn,
+        System.Data.Common.DbTransaction tx,
+        Guid tenantId,
+        Guid familyId,
+        string? name,
+        int sort,
+        CancellationToken cancellationToken)
+    {
+        var trimmed = name?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed)) return;
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO pack_family.membership (
+                tenant_id, family_id, display_name, role_code, status, sort_order
+            )
+            VALUES (@TenantId, @FamilyId, @DisplayName, 'child', 'active', @Sort)
+            """,
+            new { TenantId = tenantId, FamilyId = familyId, DisplayName = trimmed, Sort = sort },
+            tx);
+    }
+
+    private async Task<string> AllocateTenantCodeAsync(string familyName, CancellationToken cancellationToken)
+    {
+        var slug = new string(familyName
+            .Normalize(NormalizationForm.FormD)
+            .Where(c => char.IsLetterOrDigit(c))
+            .Take(10)
+            .ToArray())
+            .ToUpperInvariant();
+        if (slug.Length < 3) slug = "FAMILY";
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        for (var i = 0; i < 12; i++)
+        {
+            var suffix = RandomNumberGenerator.GetInt32(100, 999);
+            var code = $"FOS_{slug}{suffix}";
+            if (code.Length > 32) code = code[..32];
+            var exists = await conn.ExecuteScalarAsync<bool>(
+                "SELECT EXISTS(SELECT 1 FROM public.tenants WHERE tenant_code = @Code)",
+                new { Code = code });
+            if (!exists) return code;
+        }
+
+        return $"FOS_{Guid.NewGuid():N}"[..20].ToUpperInvariant();
+    }
+
+    private static string GenerateInviteCode()
+    {
+        const string alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        Span<char> chars = stackalloc char[8];
+        for (var i = 0; i < chars.Length; i++)
+            chars[i] = alphabet[RandomNumberGenerator.GetInt32(alphabet.Length)];
+        return new string(chars);
+    }
+
+    private static string NormalizePin(string? pin)
+    {
+        var value = (pin ?? "").Trim();
+        if (!System.Text.RegularExpressions.Regex.IsMatch(value, @"^\d{4}$"))
+            throw new InvalidOperationException("Mã PIN phụ huynh phải gồm đúng 4 chữ số.");
+        return value;
+    }
+
+    private static string Require(string? value, string label)
+    {
+        var trimmed = (value ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+            throw new InvalidOperationException($"{label} là bắt buộc.");
+        return trimmed;
+    }
+
+    private static FamilyAuthSessionDto MapSession(LoginResponse session) =>
+        new(
+            session.AccessToken,
+            session.RefreshToken,
+            session.AccessTokenExpiresAt,
+            session.User.Id,
+            session.User.TenantId,
+            session.User.TenantCode,
+            session.User.Username,
+            session.User.Email);
+
+    private static string NormalizeSubscriptionStatus(SubscriptionRow row)
+    {
+        var status = (row.Status ?? "").Trim().ToLowerInvariant();
+        if (status == FamilySubscriptionStatuses.Trial
+            && row.TrialEndsAt is DateTime ends
+            && ends < DateTime.UtcNow)
+            return FamilySubscriptionStatuses.Expired;
+        if (status == FamilySubscriptionStatuses.Active
+            && row.CurrentPeriodEnd is DateTime periodEnd
+            && periodEnd < DateTime.UtcNow)
+            return FamilySubscriptionStatuses.Expired;
+        if (status == FamilySubscriptionStatuses.PastDue
+            && row.CurrentPeriodEnd is DateTime pastDueEnd
+            && pastDueEnd.AddDays(3) < DateTime.UtcNow)
+            return FamilySubscriptionStatuses.Expired;
+        return status;
+    }
+
+    private sealed class InviteRow
+    {
+        public Guid Id { get; init; }
+        public Guid TenantId { get; init; }
+        public Guid FamilyId { get; init; }
+        public string Code { get; init; } = "";
+        public string RoleCode { get; init; } = "";
+        public DateTime ExpiresAt { get; init; }
+        public int MaxUses { get; init; }
+        public int UsedCount { get; init; }
+        public DateTime? RevokedAt { get; init; }
+    }
+
+    private sealed class SubscriptionRow
+    {
+        public Guid FamilyId { get; init; }
+        public string PlanCode { get; init; } = "";
+        public string Status { get; init; } = "";
+        public DateTime? TrialEndsAt { get; init; }
+        public DateTime? CurrentPeriodEnd { get; init; }
+    }
+}

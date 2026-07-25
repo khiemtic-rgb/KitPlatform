@@ -6,13 +6,16 @@ internal sealed class FamilyRewardService : IFamilyRewardService
 {
     private readonly FamilyRewardRepository _rewards;
     private readonly FamilyGraphRepository _families;
+    private readonly IFamilyCommercialService _commercial;
 
     public FamilyRewardService(
         FamilyRewardRepository rewards,
-        FamilyGraphRepository families)
+        FamilyGraphRepository families,
+        IFamilyCommercialService commercial)
     {
         _rewards = rewards;
         _families = families;
+        _commercial = commercial;
     }
 
     public async Task<IReadOnlyList<RewardCatalogItemDto>> GetCatalogAsync(
@@ -53,6 +56,8 @@ internal sealed class FamilyRewardService : IFamilyRewardService
         RewardRedeemRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+
         if (await _families.GetFamilyAsync(familyId, cancellationToken) is null)
             throw new InvalidOperationException("Không tìm thấy gia đình.");
 

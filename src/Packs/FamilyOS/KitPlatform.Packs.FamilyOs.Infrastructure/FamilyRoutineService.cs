@@ -309,14 +309,17 @@ internal sealed class FamilyRoutineService : IFamilyRoutineService
         TimeOnly? windowStart,
         TimeOnly? windowEnd)
     {
+        // A complete time window is the source of truth. This keeps duration
+        // consistent when callers edit either endpoint and avoids duplicate input.
+        if (windowStart is TimeOnly start && windowEnd is TimeOnly end && end > start)
+            return Math.Max(1, (int)Math.Round((end - start).TotalMinutes));
+
         if (expectedDurationMinutes is int d)
         {
             if (d < 1 || d > 24 * 60)
                 throw new InvalidOperationException("expectedDurationMinutes phải từ 1–1440.");
             return d;
         }
-        if (windowStart is TimeOnly start && windowEnd is TimeOnly end && end > start)
-            return Math.Max(1, (int)Math.Round((end - start).TotalMinutes));
         return null;
     }
     private static string? NormalizeContextAnchor(string? contextAnchor)

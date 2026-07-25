@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { CalendarOutlined, DashboardOutlined, FileProtectOutlined, GiftOutlined, SettingOutlined, TeamOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { CalendarOutlined, DashboardOutlined, FileProtectOutlined, GiftOutlined, ScheduleOutlined, SettingOutlined, TeamOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { useRegisterSimpleModuleSubnav } from '@/shared/components/module-subnav.context';
 
 export function FamilyOsLayout() {
@@ -32,6 +32,12 @@ export function FamilyOsLayout() {
         label: 'Nhịp sống',
         path: '/family-os/routines',
         icon: <UnorderedListOutlined />,
+      },
+      {
+        key: 'calendar-periods',
+        label: 'Lịch gia đình',
+        path: '/family-os/calendar-periods',
+        icon: <ScheduleOutlined />,
       },
       {
         key: 'agreements',

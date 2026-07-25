@@ -239,6 +239,11 @@ const FamilyOsRewardsPage = lazy(() =>
     default: m.FamilyOsRewardsPage,
   })),
 );
+const FamilyOsCalendarPeriodsPage = lazy(() =>
+  import('@/modules/family-os/FamilyOsCalendarPeriodsPage').then((m) => ({
+    default: m.FamilyOsCalendarPeriodsPage,
+  })),
+);
 const FamilyOsMembersPage = lazy(() =>
   import('@/modules/family-os/FamilyOsMembersPage').then((m) => ({
     default: m.FamilyOsMembersPage,
@@ -748,6 +753,7 @@ export function AppRouter() {
                 <Route path="members" element={<FamilyOsMembersPage />} />
                 <Route path="day-flow" element={<FamilyOsDayFlowPage />} />
                 <Route path="routines" element={<FamilyOsRoutinesPage />} />
+                <Route path="calendar-periods" element={<FamilyOsCalendarPeriodsPage />} />
                 <Route path="agreements" element={<FamilyOsAgreementsPage />} />
                 <Route path="rewards" element={<FamilyOsRewardsPage />} />
                 <Route path="star-settings" element={<FamilyOsStarSettingsPage />} />

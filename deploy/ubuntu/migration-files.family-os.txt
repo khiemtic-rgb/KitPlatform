@@ -22,4 +22,8 @@
 218_pack_family_reward_catalog.sql
 219_pack_family_member_mood_entry.sql
 220_pack_family_reward_catalog_admin.sql
+221_pack_family_calendar_period.sql
+222_pack_family_commercial_foundation.sql
+223_pack_family_billing_checkout.sql
+224_kit_payment_platform.sql
 # Optional (owner ALTER tenants CHECK): 192a_pack_family_os_vertical_owner.sql
