@@ -63,7 +63,8 @@ collections:
       - label: Mô tả ngắn
         name: description
         widget: text
-        hint: 1–2 câu tóm tắt (meta description / danh sách tin).
+        required: false
+        hint: Bỏ trống → web tự cắt ~160 ký tự đầu của nội dung. Điền nếu muốn tóm tắt riêng.
       - name: category
         widget: hidden
         default: quan-tri-nha-thuoc
@@ -137,7 +138,8 @@ collections:
       - label: Mô tả ngắn
         name: description
         widget: text
-        hint: 1–2 câu tóm tắt (meta description / danh sách tin).
+        required: false
+        hint: Bỏ trống → web tự cắt ~160 ký tự đầu của nội dung. Điền nếu muốn tóm tắt riêng.
       - label: Nhóm bài viết
         name: category
         widget: select

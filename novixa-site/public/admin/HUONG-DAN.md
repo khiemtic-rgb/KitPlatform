@@ -37,7 +37,7 @@ Trên **novixa.vn** mọi bài Quản trị vẫn hiện chung trong menu **Qu�
 ## Đăng bài Quản trị
 
 1. Chọn **Quản trị nhà thuốc (Management)** → **New**.
-2. Điền tiêu đề, mô tả, **Mục con** (bắt buộc), ảnh, ngày đăng, nội dung.
+2. Điền tiêu đề, **Mục con** (bắt buộc), ảnh, ngày đăng, nội dung. Mô tả ngắn có thể bỏ trống — web tự cắt từ phần đầu nội dung.
 3. **Publish** / Lưu → chờ Cloudflare vài phút.
 4. Kiểm tra: https://novixa.vn/vi/kien-thuc/quan-tri-nha-thuoc/
 

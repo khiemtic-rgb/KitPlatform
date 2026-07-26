@@ -7,6 +7,7 @@ import { getCollection, render } from 'astro:content';
 import { filterPublishedPosts } from '../../../lib/publishedNews';
 import { formatNewsDate } from '../../../lib/newsDate';
 import { resolveArticleImage, buildArticleJsonLd } from '../../../lib/articleSeo';
+import { postDescription } from '../../../lib/newsExcerpt';
 import { getNewsCategory, newsCategoryPath } from '../../../lib/news-categories';
 import { t } from '../../../i18n';
 import '../../../styles/global.css';
@@ -26,7 +27,8 @@ const { post } = Astro.props;
 const { Content } = await render(post);
 const ogImage = resolveArticleImage(post.id, post.data.image);
 const publishedTime = post.data.pubDate.toISOString();
-const jsonLd = buildArticleJsonLd(post);
+const description = postDescription(post);
+const jsonLd = buildArticleJsonLd(post, description);
 const category = getNewsCategory(post.data.category);
 const categoryHref = newsCategoryPath(category.id);
 const backHref = category.navGroup === 'company' ? categoryHref : '/vi/kien-thuc/';
@@ -36,7 +38,7 @@ const backLabel =
 
 <BaseLayout
   title={post.data.title}
-  description={post.data.description}
+  description={description}
   type="article"
   image={ogImage}
   canonicalPath={`/vi/tin-tuc/${post.id}/`}

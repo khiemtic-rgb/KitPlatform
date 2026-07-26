@@ -29,10 +29,13 @@ export function articleOgImageUrl(slug: string, image?: string | null): string {
   return absoluteUrl(path);
 }
 
-export function buildArticleJsonLd(post: {
-  id: string;
-  data: { title: string; description: string; pubDate: Date; image?: string };
-}) {
+export function buildArticleJsonLd(
+  post: {
+    id: string;
+    data: { title: string; description?: string; pubDate: Date; image?: string };
+  },
+  description?: string,
+) {
   const url = absoluteUrl(`/vi/tin-tuc/${post.id}/`);
   const image = articleOgImageUrl(post.id, post.data.image);
 
@@ -40,7 +43,7 @@ export function buildArticleJsonLd(post: {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: post.data.title,
-    description: post.data.description,
+    description: description ?? post.data.description ?? '',
     datePublished: post.data.pubDate.toISOString(),
     dateModified: post.data.pubDate.toISOString(),
     inLanguage: 'vi-VN',

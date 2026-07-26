@@ -1,6 +1,7 @@
 ---
 import { formatNewsDate } from '../lib/newsDate';
 import { resolveArticleImage } from '../lib/articleSeo';
+import { postDescription } from '../lib/newsExcerpt';
 
 const { posts = [] } = Astro.props;
 ---
@@ -24,7 +25,7 @@ const { posts = [] } = Astro.props;
               <h3>
                 <a href={`/vi/tin-tuc/${post.id}/`}>{post.data.title}</a>
               </h3>
-              <p>{post.data.description}</p>
+              <p>{postDescription(post)}</p>
             </article>
           ))}
         </div>

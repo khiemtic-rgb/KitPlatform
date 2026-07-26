@@ -10,7 +10,8 @@ const tinTuc = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/tin-tuc' }),
   schema: z.object({
     title: z.string(),
-    description: z.string(),
+    /** Bỏ trống → tự cắt từ phần đầu nội dung (xem lib/newsExcerpt.ts). */
+    description: z.string().optional().default(''),
     pubDate: z.coerce.date(),
     lang: z.literal('vi').default('vi'),
     /** Đường dẫn ảnh hiển thị (CMS), vd. /images/tin-tuc/ten-bai.png */
