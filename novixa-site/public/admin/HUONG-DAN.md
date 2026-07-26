@@ -14,48 +14,14 @@ Mở: **https://novixa.vn/admin/**
 
 Tài khoản GitHub phải được **invite Write** vào repo `khiemtic-rgb/KitPlatform`.
 
-## Đăng bài mới
+## Cấu trúc CMS
 
-1. Chọn **Kiến thức nhà thuốc** → **New**.
-2. Điền:
-   - **Tiêu đề**
-   - **Mô tả ngắn** (1–2 câu)
-   - **Nhóm bài viết** — Kiến thức nhà thuốc (các nhóm) hoặc **Tin tức Novixa** (menu Về Novixa)
-   - **Phân mục (Quản trị nhà thuốc)** — chỉ chọn khi Nhóm = Quản trị nhà thuốc (xem bảng dưới)
-   - **Ảnh hiển thị**
-   - **Ngày đăng** — để ngày tương lai nếu muốn lên lịch
-   - **Nội dung** — dùng tiêu đề phụ `##`, danh sách `*`, in đậm `**chữ**`
-3. Bấm **Publish** / Lưu.
-4. Đợi 2–5 phút rồi kiểm tra https://novixa.vn/vi/kien-thuc/
-
-## Ảnh đại diện
-
-Trong form bài viết, dùng trường **Ảnh hiển thị** → Upload / chọn ảnh (khuyến nghị **1200 × 630** px).
-
-Không cần đặt tên file trùng slug — CMS lưu đường dẫn vào bài.
-
-## Sửa / xóa bài
-
-Vào **Kiến thức nhà thuốc** → chọn bài → sửa nội dung → Lưu. Xóa chỉ khi chắc chắn.
-
-Mẹo: dùng bộ lọc **Theo nhóm** hoặc **Theo phân mục Quản trị** (thanh bên) để tìm bài nhanh hơn.
-
-## Nhóm bài viết — bài sẽ hiện ở đâu?
-
-| Nhóm chọn trong CMS | Hiện trên web |
+| Trong CMS | Ghi chú |
 |---|---|
-| Quản trị nhà thuốc | Menu **Kiến thức nhà thuốc** → Quản trị nhà thuốc |
-| Vận hành nhà thuốc | Menu **Kiến thức nhà thuốc** → Vận hành nhà thuốc |
-| Novixa Academy | Menu **Kiến thức nhà thuốc** → Novixa Academy |
-| Bán hàng & Chăm sóc khách hàng | Menu **Kiến thức nhà thuốc** → Bán hàng & CSKH |
-| AI trong nhà thuốc | Menu **Kiến thức nhà thuốc** → AI trong nhà thuốc |
-| Chăm sóc khách hàng (Connect) | Menu **Kiến thức nhà thuốc** → Connect |
-| Câu chuyện khách hàng | Menu **Kiến thức nhà thuốc** → Câu chuyện khách hàng |
-| Tin tức Novixa | Menu **Về Novixa** → Tin tức Novixa |
+| **Quản trị nhà thuốc (Management)** | Mục cha — chọn thêm **Mục con** (bắt buộc) |
+| **Kiến thức & Tin tức khác** | Vận hành, Academy, Bán hàng, AI, Connect, Câu chuyện KH, Tin tức Novixa |
 
-## Phân mục trong Quản trị nhà thuốc (chỉ CMS)
-
-Khi **Nhóm** = Quản trị nhà thuốc, chọn thêm **Phân mục** để sắp xếp nội bộ trong CMS:
+### Mục con của Quản trị nhà thuốc (Management)
 
 - Chiến lược phát triển
 - KPI
@@ -66,10 +32,38 @@ Khi **Nhóm** = Quản trị nhà thuốc, chọn thêm **Phân mục** để s�
 - Mở chuỗi
 - Chuyển đổi số
 
-**Lưu ý:** Phân mục **không** tạo menu con trên novixa.vn — mọi bài vẫn hiện chung trong **Quản trị nhà thuốc**.
+Trên **novixa.vn** mọi bài Quản trị vẫn hiện chung trong menu **Quản trị nhà thuốc** (không tách menu con).
+
+## Đăng bài Quản trị
+
+1. Chọn **Quản trị nhà thuốc (Management)** → **New**.
+2. Điền tiêu đề, mô tả, **Mục con** (bắt buộc), ảnh, ngày đăng, nội dung.
+3. **Publish** / Lưu → chờ Cloudflare vài phút.
+4. Kiểm tra: https://novixa.vn/vi/kien-thuc/quan-tri-nha-thuoc/
+
+Mẹo: thanh bên → **Theo mục con** để lọc Chiến lược / KPI / Doanh thu…
+
+## Đăng bài nhóm khác
+
+1. Chọn **Kiến thức & Tin tức khác** → **New**.
+2. Chọn **Nhóm bài viết** (Vận hành, Academy, Tin tức Novixa…).
+3. Lưu như trên.
+
+| Nhóm trong CMS | Hiện trên web |
+|---|---|
+| Vận hành nhà thuốc | Kiến thức nhà thuốc → Vận hành nhà thuốc |
+| Novixa Academy | Kiến thức nhà thuốc → Novixa Academy |
+| Bán hàng & Chăm sóc khách hàng | Kiến thức nhà thuốc → Bán hàng & CSKH |
+| AI trong nhà thuốc | Kiến thức nhà thuốc → AI trong nhà thuốc |
+| Chăm sóc khách hàng (Connect) | Kiến thức nhà thuốc → Connect |
+| Câu chuyện khách hàng | Kiến thức nhà thuốc → Câu chuyện khách hàng |
+| Tin tức Novixa | **Về Novixa** → Tin tức Novixa |
+
+## Ảnh đại diện
+
+Trường **Ảnh hiển thị** → Upload (khuyến nghị **1200 × 630** px).
 
 ## Lưu ý
 
-- Sau khi lưu, website tự cập nhật qua Cloudflare — không cần nhờ IT deploy.
-- Không sửa file ngoài mục Kiến thức nhà thuốc trong CMS.
-- Gặp lỗi đăng nhập: liên hệ IT (invite GitHub / token / OAuth).
+- Sau khi lưu, website tự cập nhật qua Cloudflare.
+- Gặp lỗi đăng nhập: liên hệ IT (invite GitHub / token).
