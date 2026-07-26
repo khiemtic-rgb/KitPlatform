@@ -6,6 +6,7 @@ import {
   App,
   Button,
   Card,
+  Checkbox,
   InputNumber,
   Popconfirm,
   Radio,
@@ -163,7 +164,10 @@ export function ProductDuplicateMergePage() {
 
   const [keepers, setKeepers] = useState<Record<string, string>>({});
   const [factors, setFactors] = useState<Record<string, number | null>>({});
+  /** clusterKey → danh sách mã nguồn được tick để gộp (không gồm mã giữ). */
+  const [selectedSources, setSelectedSources] = useState<Record<string, string[]>>({});
   const [mergingId, setMergingId] = useState<string | null>(null);
+  const [mergingClusterKey, setMergingClusterKey] = useState<string | null>(null);
 
   const [historyLoading, setHistoryLoading] = useState(false);
   const [history, setHistory] = useState<ProductMergeHistoryItem[]>([]);
@@ -187,6 +191,7 @@ export function ProductDuplicateMergePage() {
       setClusterCount(data.clusterCount);
       setProductCount(data.productCount);
       applyClusterKeepers(data.clusters, setKeepers, setFactors);
+      setSelectedSources({});
     } catch (error) {
       msg.error(apiErrorMessage(error, t('loadFailed')));
     } finally {
@@ -202,6 +207,7 @@ export function ProductDuplicateMergePage() {
       setSimilarClusterCount(data.clusterCount);
       setSimilarProductCount(data.productCount);
       applyClusterKeepers(data.clusters, setKeepers, setFactors);
+      setSelectedSources({});
     } catch (error) {
       msg.error(apiErrorMessage(error, t('similarLoadFailed')));
     } finally {
@@ -278,6 +284,27 @@ export function ProductDuplicateMergePage() {
     }
   };
 
+  const toggleSourceSelected = (clusterKey: string, productId: string, checked: boolean) => {
+    setSelectedSources((prev) => {
+      const set = new Set(prev[clusterKey] ?? []);
+      if (checked) set.add(productId);
+      else set.delete(productId);
+      return { ...prev, [clusterKey]: [...set] };
+    });
+  };
+
+  const setClusterSourcesSelected = (clusterKey: string, productIds: string[]) => {
+    setSelectedSources((prev) => ({ ...prev, [clusterKey]: productIds }));
+  };
+
+  const clearClusterSelection = (clusterKey: string) => {
+    setSelectedSources((prev) => {
+      const next = { ...prev };
+      delete next[clusterKey];
+      return next;
+    });
+  };
+
   const handleMerge = async (row: RowModel) => {
     const keeperId = keepers[row.clusterKey];
     if (!keeperId || keeperId === row.id) {
@@ -305,11 +332,84 @@ export function ProductDuplicateMergePage() {
           deleted: result.sourceSoftDeleted ? t('sourceHidden') : '',
         }),
       );
+      clearClusterSelection(row.clusterKey);
       await reloadAfterMerge();
     } catch (error) {
       msg.error(apiErrorMessage(error, t('mergeFailed')));
     } finally {
       setMergingId(null);
+    }
+  };
+
+  /** Gộp các mã đã tick trong nhóm vào mã giữ (có thể bỏ mã không cùng SKU thật). */
+  const handleMergeSelected = async (clusterKey: string) => {
+    const keeperId = keepers[clusterKey];
+    if (!keeperId) {
+      msg.warning(t('pickKeeperFirst'));
+      return;
+    }
+    const cluster = clusterByKey.get(clusterKey);
+    const sourceIds = (selectedSources[clusterKey] ?? []).filter((id) => id !== keeperId);
+    if (sourceIds.length === 0) {
+      msg.warning(t('selectSourcesRequired'));
+      return;
+    }
+    for (const id of sourceIds) {
+      const factor = factors[id];
+      if (factor == null || factor <= 0) {
+        const code = cluster?.products.find((p) => p.id === id)?.productCode ?? id;
+        msg.warning(t('factorRequiredFor', { code }));
+        return;
+      }
+    }
+
+    setMergingClusterKey(clusterKey);
+    let merged = 0;
+    let addedTotal = 0;
+    try {
+      for (const sourceId of sourceIds) {
+        const source = cluster?.products.find((p) => p.id === sourceId);
+        const factor = factors[sourceId]!;
+        const result = await mergeDuplicateProductStock({
+          keeperProductId: keeperId,
+          sourceProductId: sourceId,
+          conversionFactor: factor,
+          softDeleteSource: true,
+        });
+        merged += 1;
+        addedTotal += result.totalKeeperQuantityAdded;
+        if (source) {
+          msg.success(
+            t('mergeSuccess', {
+              source: source.productCode,
+              added: formatDisplayQuantity(result.totalKeeperQuantityAdded),
+              deleted: result.sourceSoftDeleted ? t('sourceHidden') : '',
+            }),
+            2,
+          );
+        }
+      }
+      msg.success(
+        t('mergeSelectedSuccess', {
+          count: merged,
+          added: formatDisplayQuantity(addedTotal),
+        }),
+      );
+      clearClusterSelection(clusterKey);
+      await reloadAfterMerge();
+    } catch (error) {
+      msg.error(
+        apiErrorMessage(
+          error,
+          merged > 0 ? t('mergeSelectedPartial', { count: merged }) : t('mergeFailed'),
+        ),
+      );
+      if (merged > 0) {
+        clearClusterSelection(clusterKey);
+        await reloadAfterMerge();
+      }
+    } finally {
+      setMergingClusterKey(null);
     }
   };
 
@@ -381,32 +481,116 @@ export function ProductDuplicateMergePage() {
     {
       title: t('columns.group'),
       dataIndex: 'clusterName',
-      width: 220,
+      width: 260,
       onCell: (row) => (row.isFirstInCluster ? { rowSpan: row.clusterSize } : { rowSpan: 0 }),
-      render: (name: string, row) => (
-        <div>
-          <Typography.Text strong>{name}</Typography.Text>
+      render: (name: string, row) => {
+        const keeperId = keepers[row.clusterKey];
+        const cluster = clusterByKey.get(row.clusterKey);
+        const sourceCandidates = (cluster?.products ?? []).filter((p) => p.id !== keeperId);
+        const selectedIds = (selectedSources[row.clusterKey] ?? []).filter((id) => id !== keeperId);
+        const allSelected =
+          sourceCandidates.length > 0 && sourceCandidates.every((p) => selectedIds.includes(p.id));
+        const someSelected = selectedIds.length > 0 && !allSelected;
+        const selectedReady =
+          selectedIds.length > 0 &&
+          selectedIds.every((id) => {
+            const f = factors[id];
+            return f != null && f > 0;
+          });
+        const bulkBusy = mergingClusterKey === row.clusterKey;
+
+        return (
           <div>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {t('groupSize', { count: row.clusterSize })}
-            </Typography.Text>
-            {row.maxSimilarity != null && row.maxSimilarity > 0 ? (
-              <div>
-                <Tag color="orange" style={{ marginTop: 4 }}>
-                  {t('similarityPct', { pct: Math.round(row.maxSimilarity * 100) })}
-                </Tag>
-              </div>
-            ) : null}
-            {!row.unitsCompatible ? (
-              <div>
-                <Tag color="warning" style={{ marginTop: 4 }}>
-                  {t('incompatibleUnits.tag')}
-                </Tag>
+            <Typography.Text strong>{name}</Typography.Text>
+            <div>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {t('groupSize', { count: row.clusterSize })}
+              </Typography.Text>
+              {row.maxSimilarity != null && row.maxSimilarity > 0 ? (
+                <div>
+                  <Tag color="orange" style={{ marginTop: 4 }}>
+                    {t('similarityPct', { pct: Math.round(row.maxSimilarity * 100) })}
+                  </Tag>
+                </div>
+              ) : null}
+              {!row.unitsCompatible ? (
+                <div>
+                  <Tag color="warning" style={{ marginTop: 4 }}>
+                    {t('incompatibleUnits.tag')}
+                  </Tag>
+                </div>
+              ) : null}
+            </div>
+            {sourceCandidates.length > 0 ? (
+              <div style={{ marginTop: 10 }}>
+                <Checkbox
+                  checked={allSelected}
+                  indeterminate={someSelected}
+                  disabled={!canMerge || !keeperId || bulkBusy}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setClusterSourcesSelected(
+                        row.clusterKey,
+                        sourceCandidates.map((p) => p.id),
+                      );
+                    } else {
+                      clearClusterSelection(row.clusterKey);
+                    }
+                  }}
+                >
+                  <Typography.Text style={{ fontSize: 12 }}>{t('selectAllSources')}</Typography.Text>
+                </Checkbox>
+                <div style={{ marginTop: 6 }}>
+                  <Popconfirm
+                    title={t(
+                      row.unitsCompatible
+                        ? 'mergeSelectedConfirmTitle'
+                        : 'incompatibleUnits.mergeSelectedConfirmTitle',
+                    )}
+                    description={t(
+                      row.unitsCompatible
+                        ? 'mergeSelectedConfirmBody'
+                        : 'incompatibleUnits.mergeSelectedConfirmBody',
+                      { count: selectedIds.length },
+                    )}
+                    okText={row.unitsCompatible ? undefined : t('incompatibleUnits.confirmOk')}
+                    okButtonProps={row.unitsCompatible ? undefined : { danger: true }}
+                    disabled={!canMerge || !selectedReady || bulkBusy}
+                    onConfirm={() => void handleMergeSelected(row.clusterKey)}
+                  >
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<MergeCellsOutlined />}
+                      disabled={!canMerge || !selectedReady}
+                      loading={bulkBusy}
+                    >
+                      {t('mergeSelected', { count: selectedIds.length })}
+                    </Button>
+                  </Popconfirm>
+                </div>
               </div>
             ) : null}
           </div>
-        </div>
-      ),
+        );
+      },
+    },
+    {
+      title: t('columns.select'),
+      width: 56,
+      align: 'center',
+      render: (_, row) => {
+        const isKeeper = keepers[row.clusterKey] === row.id;
+        if (isKeeper) return <Typography.Text type="secondary">—</Typography.Text>;
+        const checked = (selectedSources[row.clusterKey] ?? []).includes(row.id);
+        return (
+          <Checkbox
+            checked={checked}
+            disabled={!canMerge || mergingClusterKey === row.clusterKey}
+            onChange={(e) => toggleSourceSelected(row.clusterKey, row.id, e.target.checked)}
+          />
+        );
+      },
     },
     {
       title: t('columns.code'),
@@ -462,6 +646,10 @@ export function ProductDuplicateMergePage() {
               }
               return next;
             });
+            setSelectedSources((prev) => {
+              const cur = (prev[row.clusterKey] ?? []).filter((id) => id !== row.id);
+              return { ...prev, [row.clusterKey]: cur };
+            });
           }}
           disabled={!canMerge}
         >
@@ -516,7 +704,10 @@ export function ProductDuplicateMergePage() {
         const factor = factors[row.id];
         const ready = canMerge && !isKeeper && factor != null && factor > 0;
         const needsManualReview = !row.unitsCompatible;
-        const busy = actingId === row.id || mergingId === row.id;
+        const busy =
+          actingId === row.id ||
+          mergingId === row.id ||
+          mergingClusterKey === row.clusterKey;
         return (
           <Space size={4} wrap>
             {!isKeeper ? (
@@ -537,14 +728,14 @@ export function ProductDuplicateMergePage() {
                 }
                 okText={needsManualReview ? t('incompatibleUnits.confirmOk') : undefined}
                 okButtonProps={needsManualReview ? { danger: true } : undefined}
-                disabled={!ready}
+                disabled={!ready || busy}
                 onConfirm={() => void handleMerge(row)}
               >
                 <Button
                   type="primary"
                   size="small"
                   icon={<MergeCellsOutlined />}
-                  disabled={!ready}
+                  disabled={!ready || busy}
                   loading={mergingId === row.id}
                 >
                   {t('merge')}
@@ -787,6 +978,7 @@ export function ProductDuplicateMergePage() {
                       <li>{t('guide2')}</li>
                       <li>{t('guide3')}</li>
                       <li>{t('guide4')}</li>
+                      <li>{t('guide5')}</li>
                     </ol>
                   }
                 />
@@ -805,9 +997,18 @@ export function ProductDuplicateMergePage() {
                   dataSource={mergeSplit.convertible}
                   columns={mergeColumns}
                   pagination={false}
-                  scroll={{ x: 1100 }}
+                  scroll={{ x: 1180 }}
                   locale={{ emptyText: t('empty') }}
-                  rowClassName={(row) => clusterRowClassName(row, keepers[row.clusterKey])}
+                  rowClassName={(row) =>
+                    [
+                      clusterRowClassName(row, keepers[row.clusterKey]),
+                      (selectedSources[row.clusterKey] ?? []).includes(row.id)
+                        ? 'product-dup-selected-row'
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')
+                  }
                 />
               </>
             ),
@@ -829,6 +1030,7 @@ export function ProductDuplicateMergePage() {
                       <li>{t('similarGuide3')}</li>
                       <li>{t('similarGuide4')}</li>
                       <li>{t('similarGuide5')}</li>
+                      <li>{t('similarGuide6')}</li>
                     </ol>
                   }
                 />
@@ -850,9 +1052,18 @@ export function ProductDuplicateMergePage() {
                   dataSource={similarSplit.convertible}
                   columns={mergeColumns}
                   pagination={{ pageSize: 50, hideOnSinglePage: true }}
-                  scroll={{ x: 1100 }}
+                  scroll={{ x: 1180 }}
                   locale={{ emptyText: t('similarEmpty') }}
-                  rowClassName={(row) => clusterRowClassName(row, keepers[row.clusterKey])}
+                  rowClassName={(row) =>
+                    [
+                      clusterRowClassName(row, keepers[row.clusterKey]),
+                      (selectedSources[row.clusterKey] ?? []).includes(row.id)
+                        ? 'product-dup-selected-row'
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')
+                  }
                 />
               </>
             ),
@@ -882,9 +1093,18 @@ export function ProductDuplicateMergePage() {
                   dataSource={manualReviewRows}
                   columns={mergeColumns}
                   pagination={{ pageSize: 50, hideOnSinglePage: true }}
-                  scroll={{ x: 1100 }}
+                  scroll={{ x: 1180 }}
                   locale={{ emptyText: t('incompatibleUnits.empty') }}
-                  rowClassName={(row) => clusterRowClassName(row, keepers[row.clusterKey])}
+                  rowClassName={(row) =>
+                    [
+                      clusterRowClassName(row, keepers[row.clusterKey]),
+                      (selectedSources[row.clusterKey] ?? []).includes(row.id)
+                        ? 'product-dup-selected-row'
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')
+                  }
                 />
               </>
             ),

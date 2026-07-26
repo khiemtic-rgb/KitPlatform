@@ -17,7 +17,10 @@
   background: #bfbfbf !important;
 }
 
-/* Vạch ngăn đầu nhóm (từ nhóm thứ 2 trở đi). */
-.product-dup-cluster-start > td {
-  border-top: 3px solid #8c8c8c !important;
+.product-dup-keeper-row > td {
+  outline: 1px solid rgba(82, 196, 26, 0.35);
+}
+
+.product-dup-selected-row > td {
+  box-shadow: inset 3px 0 0 #1677ff;
 }
