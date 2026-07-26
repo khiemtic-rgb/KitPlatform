@@ -29,31 +29,29 @@ slug:
   sanitize_replacement: '-'
 
 collections:
-  # ── Mục cha: Quản trị nhà thuốc (Management) + 8 mục con ─────────────
-  - name: quan_tri_management
-    label: Quản trị nhà thuốc (Management)
-    label_singular: Bài Quản trị
+  - name: tin_tuc
+    label: Kiến thức nhà thuốc
+    label_singular: Bài viết
     description: >
-      Mục cha trên web: "Quản trị nhà thuốc". Trong CMS chọn thêm mục con
-      (Chiến lược, KPI, Doanh thu…). Trên novixa.vn vẫn chỉ hiện mục cha.
+      Chọn Nhóm cha (hiện trên menu novixa.vn). Nếu Nhóm cha = Quản trị nhà thuốc
+      thì chọn thêm Nhóm bài viết (8 mục con — chỉ dùng trong CMS, web vẫn hiện mục cha).
     folder: novixa-site/src/content/tin-tuc
-    filter:
-      field: category
-      value: quan-tri-nha-thuoc
     create: true
     delete: true
     extension: md
     format: frontmatter
     slug: '{{slug}}'
     identifier_field: title
-    summary: '{{title}} — {{subcategory}} — {{pubDate}}'
+    summary: '{{title}} — {{category}} — {{subcategory}} — {{pubDate}}'
     sortable_fields:
-      fields: [pubDate, title, subcategory]
+      fields: [pubDate, title, category, subcategory]
       default:
         field: pubDate
         direction: descending
     view_groups:
-      - label: Theo mục con
+      - label: Theo nhóm cha
+        field: category
+      - label: Theo nhóm bài viết (Quản trị)
         field: subcategory
     fields:
       - label: Tiêu đề
@@ -65,14 +63,25 @@ collections:
         widget: text
         required: false
         hint: Bỏ trống → web tự cắt ~160 ký tự đầu của nội dung. Điền nếu muốn tóm tắt riêng.
-      - name: category
-        widget: hidden
-        default: quan-tri-nha-thuoc
-      - label: Mục con
-        name: subcategory
+      - label: Nhóm cha
+        name: category
         widget: select
         required: true
-        default: chien-luoc-phat-trien
+        default: quan-tri-nha-thuoc
+        options:
+          - { label: Quản trị nhà thuốc (Management), value: quan-tri-nha-thuoc }
+          - { label: Vận hành nhà thuốc, value: van-hanh }
+          - { label: Novixa Academy, value: novixa-academy }
+          - { label: Bán hàng & Chăm sóc khách hàng, value: ban-hang-cskh }
+          - { label: AI trong nhà thuốc, value: ai-trong-nha-thuoc }
+          - { label: Chăm sóc khách hàng (Connect), value: connect }
+          - { label: Câu chuyện khách hàng, value: cau-chuyen-khach-hang }
+          - { label: Tin tức Novixa (menu Về Novixa), value: tin-tuc-novixa }
+        hint: Nhóm hiện trên menu novixa.vn. Tin tức Novixa nằm dưới menu Về Novixa.
+      - label: Nhóm bài viết (thuộc nhóm cha Quản trị)
+        name: subcategory
+        widget: select
+        required: false
         options:
           - { label: Chiến lược phát triển, value: chien-luoc-phat-trien }
           - { label: KPI, value: kpi }
@@ -82,78 +91,9 @@ collections:
           - { label: Nhân sự, value: nhan-su }
           - { label: Mở chuỗi, value: mo-chuoi }
           - { label: Chuyển đổi số, value: chuyen-doi-so }
-        hint: Mục con chỉ dùng trong CMS. Trên web bài vẫn nằm trong "Quản trị nhà thuốc".
-      - label: Ảnh hiển thị
-        name: image
-        widget: image
-        required: true
-        choose_url: false
-        hint: Ảnh thumbnail + đầu bài. Khuyến nghị 1200×630 px (PNG hoặc JPG).
-      - label: Ngày đăng
-        name: pubDate
-        widget: datetime
-        date_format: YYYY-MM-DD
-        time_format: false
-        format: YYYY-MM-DD
-        hint: Bài có ngày sau hôm nay sẽ ẩn đến đúng ngày (giờ VN).
-      - label: Ngôn ngữ
-        name: lang
-        widget: select
-        options:
-          - { label: Tiếng Việt, value: vi }
-        default: vi
-      - label: Nội dung
-        name: body
-        widget: markdown
-        hint: Dùng heading ##, danh sách *, in đậm **text**.
-
-  # ── Các nhóm kiến thức khác + Tin tức Novixa ─────────────────────────
-  - name: tin_tuc
-    label: Kiến thức & Tin tức khác
-    label_singular: Bài viết
-    description: >
-      Các nhóm ngoài Quản trị (Management). Bài Quản trị đăng ở mục
-      "Quản trị nhà thuốc (Management)". Tin tức Novixa hiện dưới menu "Về Novixa".
-    folder: novixa-site/src/content/tin-tuc
-    create: true
-    delete: true
-    extension: md
-    format: frontmatter
-    slug: '{{slug}}'
-    identifier_field: title
-    summary: '{{title}} — {{category}} — {{pubDate}}'
-    sortable_fields:
-      fields: [pubDate, title, category]
-      default:
-        field: pubDate
-        direction: descending
-    view_groups:
-      - label: Theo nhóm
-        field: category
-    fields:
-      - label: Tiêu đề
-        name: title
-        widget: string
-        hint: Hiện trên trang tin và Google.
-      - label: Mô tả ngắn
-        name: description
-        widget: text
-        required: false
-        hint: Bỏ trống → web tự cắt ~160 ký tự đầu của nội dung. Điền nếu muốn tóm tắt riêng.
-      - label: Nhóm bài viết
-        name: category
-        widget: select
-        required: true
-        default: van-hanh
-        options:
-          - { label: Vận hành nhà thuốc, value: van-hanh }
-          - { label: Novixa Academy, value: novixa-academy }
-          - { label: Bán hàng & Chăm sóc khách hàng, value: ban-hang-cskh }
-          - { label: AI trong nhà thuốc, value: ai-trong-nha-thuoc }
-          - { label: Chăm sóc khách hàng (Connect), value: connect }
-          - { label: Câu chuyện khách hàng, value: cau-chuyen-khach-hang }
-          - { label: Tin tức Novixa (menu Về Novixa), value: tin-tuc-novixa }
-        hint: Bài Quản trị → dùng collection "Quản trị nhà thuốc (Management)".
+        hint: >
+          Chỉ chọn khi Nhóm cha = Quản trị nhà thuốc (Management).
+          Dùng để sắp xếp trong CMS. Trên novixa.vn bài vẫn hiện chung trong mục cha.
       - label: Ảnh hiển thị
         name: image
         widget: image

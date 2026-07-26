@@ -16,12 +16,14 @@ Tài khoản GitHub phải được **invite Write** vào repo `khiemtic-rgb/Kit
 
 ## Cấu trúc CMS
 
-| Trong CMS | Ghi chú |
-|---|---|
-| **Quản trị nhà thuốc (Management)** | Mục cha — chọn thêm **Mục con** (bắt buộc) |
-| **Kiến thức & Tin tức khác** | Vận hành, Academy, Bán hàng, AI, Connect, Câu chuyện KH, Tin tức Novixa |
+Một mục duy nhất: **Kiến thức nhà thuốc**.
 
-### Mục con của Quản trị nhà thuốc (Management)
+| Trường | Ghi chú |
+|---|---|
+| **Nhóm cha** | Hiện trên menu novixa.vn (Quản trị, Vận hành, Academy…) |
+| **Nhóm bài viết** | Chỉ khi Nhóm cha = **Quản trị nhà thuốc** — 8 mục con bên dưới |
+
+### Nhóm bài viết thuộc nhóm cha Quản trị nhà thuốc (Management)
 
 - Chiến lược phát triển
 - KPI
@@ -34,23 +36,19 @@ Tài khoản GitHub phải được **invite Write** vào repo `khiemtic-rgb/Kit
 
 Trên **novixa.vn** mọi bài Quản trị vẫn hiện chung trong menu **Quản trị nhà thuốc** (không tách menu con).
 
-## Đăng bài Quản trị
+## Đăng bài
 
-1. Chọn **Quản trị nhà thuốc (Management)** → **New**.
-2. Điền tiêu đề, **Mục con** (bắt buộc), ảnh, ngày đăng, nội dung. Mô tả ngắn có thể bỏ trống — web tự cắt từ phần đầu nội dung.
-3. **Publish** / Lưu → chờ Cloudflare vài phút.
-4. Kiểm tra: https://novixa.vn/vi/kien-thuc/quan-tri-nha-thuoc/
+1. Chọn **Kiến thức nhà thuốc** → **New**.
+2. Điền tiêu đề, chọn **Nhóm cha**.
+3. Nếu Nhóm cha = Quản trị nhà thuốc → chọn thêm **Nhóm bài viết** (Chiến lược / KPI…).
+4. Ảnh, ngày đăng, nội dung. Mô tả ngắn có thể bỏ trống — web tự cắt từ phần đầu nội dung.
+5. **Publish** / Lưu → chờ Cloudflare vài phút.
 
-Mẹo: thanh bên → **Theo mục con** để lọc Chiến lược / KPI / Doanh thu…
+Mẹo: thanh bên → **Theo nhóm cha** hoặc **Theo nhóm bài viết (Quản trị)** để lọc nhanh.
 
-## Đăng bài nhóm khác
-
-1. Chọn **Kiến thức & Tin tức khác** → **New**.
-2. Chọn **Nhóm bài viết** (Vận hành, Academy, Tin tức Novixa…).
-3. Lưu như trên.
-
-| Nhóm trong CMS | Hiện trên web |
+| Nhóm cha trong CMS | Hiện trên web |
 |---|---|
+| Quản trị nhà thuốc | Kiến thức nhà thuốc → Quản trị nhà thuốc |
 | Vận hành nhà thuốc | Kiến thức nhà thuốc → Vận hành nhà thuốc |
 | Novixa Academy | Kiến thức nhà thuốc → Novixa Academy |
 | Bán hàng & Chăm sóc khách hàng | Kiến thức nhà thuốc → Bán hàng & CSKH |
