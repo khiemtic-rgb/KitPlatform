@@ -3,10 +3,12 @@ import {
   createFamilyRoutine,
   ensureDayFlow,
   fetchFamilyRoutines,
+  proposeScreenWallet,
   type FamilyRoutineDto,
 } from '@/shared/api/family-os.api';
 import {
   buildStarterPlan,
+  suggestStarterWalletMinutes,
   type OnboardingAnswers,
   type StarterMission,
 } from '@/shared/onboarding/onboarding';
@@ -80,6 +82,16 @@ export async function applyOnboardingPlan(input: {
 
   // Force day flow rebuild/ensure so today picks up templates when possible
   await ensureDayFlow(familyId);
+
+  // AFE: propose weekly screen wallet into Decision Inbox (parent must 👍 — never auto-apply)
+  try {
+    await proposeScreenWallet(familyId, {
+      memberId: answers.childId,
+      budgetMinutes: suggestStarterWalletMinutes(answers),
+    });
+  } catch {
+    // Wallet propose is best-effort during setup
+  }
 
   await syncSaveOnboarding(familyId, {
     ...answers,

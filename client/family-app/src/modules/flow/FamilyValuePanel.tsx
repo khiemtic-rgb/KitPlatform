@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
-import type { AccountabilityGlance, DayFlow } from '@/shared/api/family-os.api';
+import { useEffect, useMemo, useState } from 'react';
+import type { AccountabilityGlance, DayFlow, FamilyWeeklyInsight } from '@/shared/api/family-os.api';
+import { fetchWeeklyInsight } from '@/shared/api/family-os.api';
 import { shareOrCopyNudge } from '@/shared/nudge/nudge';
 import { computeFamilyHealthScore } from '@/shared/value/family-health-score';
 import {
@@ -32,7 +33,23 @@ export function FamilyValuePanel({
   nudgeToday,
   momentCount,
 }: Props) {
-  const health = useMemo(
+  const [serverWeekly, setServerWeekly] = useState<FamilyWeeklyInsight | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchWeeklyInsight(familyId, { asOf: flow.flowDate, days: 7 })
+      .then((r) => {
+        if (!cancelled) setServerWeekly(r);
+      })
+      .catch(() => {
+        if (!cancelled) setServerWeekly(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId, flow.flowDate]);
+
+  const localHealth = useMemo(
     () =>
       computeFamilyHealthScore({
         familyId,
@@ -43,6 +60,32 @@ export function FamilyValuePanel({
       }),
     [familyId, flow, glance, nudgeToday, momentCount],
   );
+
+  // Prefer Evidence Engine score when available; fall back to local estimate.
+  const health = useMemo(() => {
+    const s = serverWeekly?.health;
+    if (s?.score != null) {
+      return {
+        score: s.score,
+        breakdown: {
+          completion: s.completion ?? 0,
+          nudgeCalm: s.reminderCalm ?? 0,
+          streak: s.streak ?? 0,
+          autonomy: s.onTime ?? 0,
+          parentProgress: s.parentProgress,
+        },
+        label: s.label ?? localHealth.label,
+        deltaVsYesterday: localHealth.deltaVsYesterday,
+        promiseLine: s.promiseLine ?? localHealth.promiseLine,
+        fromServer: true as const,
+      };
+    }
+    return {
+      ...localHealth,
+      breakdown: { ...localHealth.breakdown, parentProgress: undefined as number | undefined },
+      fromServer: false as const,
+    };
+  }, [serverWeekly, localHealth]);
 
   const report = useMemo(
     () =>
@@ -57,7 +100,7 @@ export function FamilyValuePanel({
     [familyId, familyName, flow, glance, momentCount],
   );
 
-  const weekly = useMemo(
+  const weeklyLocal = useMemo(
     () => buildWeeklyReview({ familyId, flow, glance }),
     [familyId, flow, glance],
   );
@@ -135,7 +178,7 @@ export function FamilyValuePanel({
 
       <section className="fv-card fv-coach">
         <header className="fv-head">
-          <h2>Parenting Coach</h2>
+          <h2>Family Coach</h2>
           <p>Lời khuyên dựa dữ liệu nhà bạn — không generic</p>
         </header>
         <p className="fv-label">{coach.childProfile}</p>
@@ -158,7 +201,7 @@ export function FamilyValuePanel({
           <button
             type="button"
             className="pill"
-            onClick={() => void shareOrCopyNudge(formatCoachShare(coach))}
+            onClick={() => void shareOrCopyNudge(formatCoachShare(coach), { preferShare: true })}
           >
             Chia sẻ Coach
           </button>
@@ -166,7 +209,10 @@ export function FamilyValuePanel({
       </section>
 
       <section className="fv-card fv-health">
-        <p className="fv-eyebrow">KPI cốt lõi · lý do trả phí</p>
+        <p className="fv-eyebrow">
+          KPI cốt lõi · lý do trả phí
+          {health.fromServer ? ' · đo từ dữ liệu thật' : ''}
+        </p>
         <div className="fv-health-row">
           <div
             className="fv-ring"
@@ -196,7 +242,10 @@ export function FamilyValuePanel({
               ['Ít phải nhắc', health.breakdown.nudgeCalm],
               ['Streak', health.breakdown.streak],
               ['Tự giác đúng giờ', health.breakdown.autonomy],
-            ] as const
+              ...(health.breakdown.parentProgress != null
+                ? ([['Bố mẹ cùng làm', health.breakdown.parentProgress]] as const)
+                : []),
+            ] as ReadonlyArray<readonly [string, number]>
           ).map(([label, value]) => (
             <div key={label} className="fv-bar-row">
               <span>{label}</span>
@@ -212,7 +261,7 @@ export function FamilyValuePanel({
       <section className="fv-card">
         <header className="fv-head">
           <h2>Báo cáo {report.daySpan} ngày</h2>
-          <p>3 kết quả phụ huynh có thể nhìn thấy và đo được</p>
+          <p>3 kết quả cả nhà có thể nhìn thấy và đo được</p>
         </header>
         <ul className="fv-outcomes">
           {report.outcomesHit.map((o) => (
@@ -239,7 +288,9 @@ export function FamilyValuePanel({
           <button
             type="button"
             className="pill"
-            onClick={() => void shareOrCopyNudge(formatReportShareText(report))}
+            onClick={() =>
+              void shareOrCopyNudge(formatReportShareText(report), { preferShare: true })
+            }
           >
             Chia sẻ báo cáo
           </button>
@@ -251,38 +302,154 @@ export function FamilyValuePanel({
 
       <section className="fv-card fv-weekly">
         <header className="fv-head">
-          <h2>AI Weekly Review</h2>
-          <p>{weekly.weekLabel} · giữ nhịp quay lại mỗi tuần</p>
+          <h2>{serverWeekly ? 'Gương tuần' : 'AI Weekly Review'}</h2>
+          <p>
+            {serverWeekly
+              ? `${serverWeekly.periodStart} → ${serverWeekly.periodEnd} · ${serverWeekly.dataDays}/${serverWeekly.days} ngày có dữ liệu · phản ánh, không chấm điểm`
+              : `${weeklyLocal.weekLabel} · giữ nhịp quay lại mỗi tuần`}
+          </p>
         </header>
-        <div className="fv-weekly-grid">
-          <div>
-            <span>Tự giác</span>
-            <strong>
-              {weekly.autonomyDeltaPct >= 0 ? '+' : ''}
-              {weekly.autonomyDeltaPct}%
-            </strong>
-          </div>
-          <div>
-            <span>Nhắc tuần này</span>
-            <strong>{weekly.nudgeThisWeek}</strong>
-            <em>
-              tuần trước {weekly.nudgeLastWeek}
-              {weekly.nudgeDelta > 0 ? ` · ↓${weekly.nudgeDelta}` : ''}
-            </em>
-          </div>
-        </div>
-        <ul className="fv-outcomes">
-          {weekly.wins.map((w) => (
-            <li key={w}>
-              <span aria-hidden>🌟</span>
-              {w}
-            </li>
-          ))}
-        </ul>
-        <p className="fv-ai">
-          <strong>Tuần tới:</strong> {weekly.focusNextWeek}
-        </p>
-        <p className="fv-promise">{weekly.coachNote}</p>
+        {serverWeekly ? (
+          <>
+            {serverWeekly.isPartial && serverWeekly.note ? (
+              <p className="fv-promise">{serverWeekly.note}</p>
+            ) : null}
+
+            <div className="fv-mirror-cols">
+              <article className="fv-mirror-col">
+                <h3>Con</h3>
+                <strong>
+                  {serverWeekly.mirror.child.doneCount}/
+                  {serverWeekly.mirror.child.totalCommitments}
+                </strong>
+                <em>
+                  {serverWeekly.mirror.child.completionRate != null
+                    ? `${Math.round(serverWeekly.mirror.child.completionRate * 100)}% routine`
+                    : 'chưa có dữ liệu'}
+                  {serverWeekly.mirror.child.bestStreakDays > 0
+                    ? ` · streak ${serverWeekly.mirror.child.bestStreakDays} ngày`
+                    : ''}
+                </em>
+              </article>
+              <article className="fv-mirror-col">
+                <h3>Bố mẹ</h3>
+                {serverWeekly.mirror.parent.anyShared ? (
+                  <>
+                    <strong>
+                      {serverWeekly.mirror.parent.checkinDoneCount}/
+                      {serverWeekly.mirror.parent.checkinExpectedCount}
+                    </strong>
+                    <em>
+                      {serverWeekly.mirror.parent.checkinRate != null
+                        ? `${Math.round(serverWeekly.mirror.parent.checkinRate * 100)}% check-in đã chia sẻ`
+                        : `${serverWeekly.mirror.parent.sharedGoalCount} mục tiêu`}
+                    </em>
+                  </>
+                ) : (
+                  <>
+                    <strong>—</strong>
+                    <em>Chưa chia sẻ mục tiêu (riêng tư mặc định)</em>
+                  </>
+                )}
+              </article>
+              <article className="fv-mirror-col">
+                <h3>Cả nhà</h3>
+                <strong>
+                  {serverWeekly.mirror.challenge
+                    ? `${serverWeekly.mirror.challenge.legsComplete}/${serverWeekly.mirror.challenge.legsTotal} chân`
+                    : serverWeekly.mirror.household.teamUnlocksConfirmed > 0
+                      ? `${serverWeekly.mirror.household.teamUnlocksConfirmed} thưởng chung`
+                      : `${serverWeekly.mirror.household.starsEarned} sao`}
+                </strong>
+                <em>
+                  {serverWeekly.mirror.challenge
+                    ? `Challenge · ${serverWeekly.mirror.challenge.rewardLabel}`
+                    : serverWeekly.mirror.household.remindersTracked
+                      ? `${serverWeekly.mirror.household.reminderCount} lần nhắc trong kỳ`
+                      : 'chưa theo dõi nhắc'}
+                </em>
+              </article>
+            </div>
+
+            {serverWeekly.mirror.parent.goals.length > 0 ? (
+              <ul className="fv-mirror-goals">
+                {serverWeekly.mirror.parent.goals.map((g) => (
+                  <li key={g.goalId}>
+                    <span>
+                      {g.emoji ? `${g.emoji} ` : ''}
+                      {g.memberName}: {g.title}
+                    </span>
+                    <strong>
+                      {g.doneDays}/{g.targetDaysPerWeek}
+                      {g.todayDone ? ' · hôm nay ✓' : ''}
+                    </strong>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
+            <ul className="fv-outcomes">
+              {(serverWeekly.mirror.reflections.length > 0
+                ? serverWeekly.mirror.reflections
+                : serverWeekly.highlights
+              ).map((w) => (
+                <li key={w}>
+                  <span aria-hidden>🪞</span>
+                  {w}
+                </li>
+              ))}
+            </ul>
+
+            {serverWeekly.mirror.child.members.length > 0 ? (
+              <div className="fv-metrics" style={{ marginTop: 12 }}>
+                {serverWeekly.mirror.child.members.map((m) => (
+                  <article key={m.memberId ?? m.name} className="fv-metric is-up">
+                    <span>{m.name}</span>
+                    <strong>
+                      {m.doneCount}/{m.totalCommitments}
+                      {m.completionRate != null ? ` · ${Math.round(m.completionRate * 100)}%` : ''}
+                    </strong>
+                    <em>
+                      streak {m.currentStreakDays} ngày · {m.starsEarned} sao
+                    </em>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <div className="fv-weekly-grid">
+              <div>
+                <span>Tự giác</span>
+                <strong>
+                  {weeklyLocal.autonomyDeltaPct >= 0 ? '+' : ''}
+                  {weeklyLocal.autonomyDeltaPct}%
+                </strong>
+              </div>
+              <div>
+                <span>Nhắc tuần này</span>
+                <strong>{weeklyLocal.nudgeThisWeek}</strong>
+                <em>
+                  tuần trước {weeklyLocal.nudgeLastWeek}
+                  {weeklyLocal.nudgeDelta > 0 ? ` · ↓${weeklyLocal.nudgeDelta}` : ''}
+                </em>
+              </div>
+            </div>
+            <ul className="fv-outcomes">
+              {weeklyLocal.wins.map((w) => (
+                <li key={w}>
+                  <span aria-hidden>🌟</span>
+                  {w}
+                </li>
+              ))}
+            </ul>
+            <p className="fv-ai">
+              <strong>Tuần tới:</strong> {weeklyLocal.focusNextWeek}
+            </p>
+            <p className="fv-promise">{weeklyLocal.coachNote}</p>
+          </>
+        )}
       </section>
 
       <section className="fv-card">

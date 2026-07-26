@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSessionStore } from '@/shared/auth/session.store';
 import { ParentUnlockPage } from '@/modules/unlock/ParentUnlockPage';
 import { WhoAreYouPage } from '@/modules/who/WhoAreYouPage';
 import { TodayFlowPage } from '@/modules/flow/TodayFlowPage';
 import { OnboardingPage } from '@/modules/onboarding/OnboardingPage';
+import { CheckoutPage } from '@/modules/pay/CheckoutPage';
+import { FamilyAdminPage } from '@/modules/admin/FamilyAdminPage';
 
 function RequireParent({ children }: { children: ReactNode }) {
   const token = useSessionStore((s) => s.accessToken);
@@ -28,10 +30,14 @@ function HomeRedirect() {
 
 export function App() {
   const member = useSessionStore((s) => s.member);
+  const location = useLocation();
   const kidMode = member?.roleCode === 'child';
+  const homeMode = location.pathname === '/who';
 
   return (
-    <div className={`app-shell${kidMode ? ' is-kid' : ''}`}>
+    <div
+      className={`app-shell${kidMode ? ' is-kid' : ''}${homeMode ? ' is-home' : ''}`}
+    >
       <Routes>
         <Route path="/unlock" element={<ParentUnlockPage />} />
         <Route
@@ -49,6 +55,22 @@ export function App() {
               <RequireMember>
                 <OnboardingPage />
               </RequireMember>
+            </RequireParent>
+          }
+        />
+        <Route
+          path="/pay"
+          element={
+            <RequireParent>
+              <CheckoutPage />
+            </RequireParent>
+          }
+        />
+        <Route
+          path="/family-admin"
+          element={
+            <RequireParent>
+              <FamilyAdminPage />
             </RequireParent>
           }
         />

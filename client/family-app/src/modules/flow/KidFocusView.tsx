@@ -18,6 +18,8 @@ import {
   type DayFlowCommitment,
   type SkipReasonCode,
 } from '@/shared/api/family-os.api';
+import { ChildScreenRequestSheet } from '@/modules/flow/ChildScreenRequestSheet';
+import { ChildMissionRequestSheet } from '@/modules/flow/ChildMissionRequestSheet';
 import { withEvidenceAuth } from '@/shared/upload/evidence-url';
 import {
   avatarEmoji,
@@ -42,6 +44,7 @@ import {
 } from '@/shared/flow/family-memories';
 import { FAMILY_MOODS, moodIndexFromCode } from '@/shared/flow/family-moods';
 import { isParentVerified } from '@/shared/nudge/nudge-stats';
+import { FamilyChallengeCard } from '@/modules/flow/FamilyChallengeCard';
 
 const TRUST_CHILD_RE =
   /đánh răng|ăn sáng|ăn trưa|ăn tối|uống sữa|đi ngủ|ngủ|đi học|mặc|đồng phục|tắm|rửa mặt|rửa tay/i;
@@ -966,6 +969,9 @@ export function KidFocusView({
   const [waitOpen, setWaitOpen] = useState(true);
   const [soonOpen, setSoonOpen] = useState(true);
   const [treasureToast, setTreasureToast] = useState<string | null>(null);
+  const [screenRequestOpen, setScreenRequestOpen] = useState(false);
+  const [missionRequestOpen, setMissionRequestOpen] = useState(false);
+  const [screenRequestToast, setScreenRequestToast] = useState<string | null>(null);
   const [moodIdx, setMoodIdx] = useState(3);
   const [moodNote, setMoodNote] = useState('');
   const [moodSaving, setMoodSaving] = useState(false);
@@ -1882,6 +1888,15 @@ export function KidFocusView({
         </div>
       ) : null}
 
+      {familyId && childMemberId && tab === 'home' ? (
+        <FamilyChallengeCard
+          familyId={familyId}
+          memberId={childMemberId}
+          isParent={false}
+          compact
+        />
+      ) : null}
+
       <header className="kv2-top">
         <div className="kv2-identity">
           <div className={`kv2-avatar ${avatarToneClass(gender)}`} aria-hidden>
@@ -2179,9 +2194,32 @@ export function KidFocusView({
                   {thanksSending ? 'Đang gửi…' : thanksSent ? 'Đã gửi' : 'Cảm ơn mẹ!'}
                 </button>
               </div>
+              {familyId && childMemberId ? (
+                <div className="kv2-ask-row">
+                  <button
+                    type="button"
+                    className="kv2-screen-ask"
+                    onClick={() => setMissionRequestOpen(true)}
+                  >
+                    Đề xuất việc hôm nay
+                  </button>
+                  <button
+                    type="button"
+                    className="kv2-screen-ask is-soft"
+                    onClick={() => setScreenRequestOpen(true)}
+                  >
+                    Xin thêm phút màn hình
+                  </button>
+                </div>
+              ) : null}
               {thanksError ? (
                 <p className="kv2-thanks-error" role="alert">
                   {thanksError}
+                </p>
+              ) : null}
+              {screenRequestToast ? (
+                <p className="kv2-thanks-error" role="status">
+                  {screenRequestToast}
                 </p>
               ) : null}
             </article>
@@ -3489,6 +3527,25 @@ export function KidFocusView({
           e.target.value = '';
         }}
       />
+
+      {familyId && childMemberId ? (
+        <>
+          <ChildScreenRequestSheet
+            familyId={familyId}
+            memberId={childMemberId}
+            open={screenRequestOpen}
+            onClose={() => setScreenRequestOpen(false)}
+            onSubmitted={(msg) => setScreenRequestToast(msg)}
+          />
+          <ChildMissionRequestSheet
+            familyId={familyId}
+            memberId={childMemberId}
+            open={missionRequestOpen}
+            onClose={() => setMissionRequestOpen(false)}
+            onSubmitted={(msg) => setScreenRequestToast(msg)}
+          />
+        </>
+      ) : null}
     </section>
   );
 }

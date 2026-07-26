@@ -11,7 +11,8 @@
 **FamilyOS Starter** giúp gia đình hạt nhân có con **4–17 tuổi** cùng tổ chức, phối hợp và **thực thi những gì đã thống nhất** — không phải quản lý con bằng checklist.
 
 Tagline: **One Family. One Plan. One Daily Flow.**  
-Bổ sung (Team Play): **Not “I finished.” — “We finished.”** — xem [family-team-play-v1.md](./family-team-play-v1.md).
+Bổ sung (Team Play): **Not “I finished.” — “We finished.”** — xem [family-team-play-v1.md](./family-team-play-v1.md).  
+Bổ sung (AFE): **Gia đình không học Famixa — Famixa học từng gia đình.** — xem [adaptive-family-engine-v1.md](./adaptive-family-engine-v1.md). Cha mẹ duyệt vài giây; con đề xuất có trách nhiệm; không cấu hình Rule theo ngày.
 
 Vấn đề không phải “quên việc” (Todo/Calendar đã làm được). Vấn đề là **không có cơ chế thực thi cam kết chung của cả nhà**.
 
@@ -43,6 +44,7 @@ Accountability (trách nhiệm với cam kết) là **khác biệt dài hạn** 
 | 7 | **Family Coach** | Quan sát → nhớ → đề xuất quyết định (không chat LLM) | ✅ C1+C2 Daily Insight + Memory 7 ngày; 🔜 C3 đồng hành cả ngày |
 | 8 | **Family Team Play** | Điểm đội · Team Streak · Unlock · Sibling nudge · Cooperation Score | 🟡 Brief + prototype UI TP0–TP1 — [family-team-play-v1.md](./family-team-play-v1.md) |
 | 9 | **Screen Boundary (A+B)** | PIN + soft-lock trong app · Screen Agreement deep-link OS (không firewall) | 🟡 Brief + prototype — [family-screen-boundary-v1.md](./family-screen-boundary-v1.md) |
+| 10 | **Adaptive Family Engine (AFE)** | Setup Wizard · Decision Inbox · Child Proposal · Family Mode · Screen Wallet thỏa thuận · Adaptive đề xuất | 🟡 Epic — [adaptive-family-engine-v1.md](./adaptive-family-engine-v1.md) |
 
 ### 2.0 Family Coach (thesis)
 

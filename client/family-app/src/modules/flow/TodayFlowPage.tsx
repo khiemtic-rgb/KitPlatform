@@ -25,6 +25,11 @@ import {
   shouldOfferNotificationOptIn,
 } from '@/shared/reminders/localReminders';
 import {
+  isInAppChimeEnabled,
+  playInAppDueChime,
+  setInAppChimeEnabled,
+} from '@/shared/reminders/inAppChime';
+import {
   fetchParentPushStatus,
   isParentPushSupported,
   registerParentPushSubscription,
@@ -34,6 +39,8 @@ import { ParentPinSheet } from '@/shared/ui/ParentPinSheet';
 import { useHoldAction } from '@/shared/ui/useHoldAction';
 import { KidFocusView } from '@/modules/flow/KidFocusView';
 import { ParentBoardView } from '@/modules/flow/ParentBoardView';
+import { ParentGoalsPanel } from '@/modules/flow/ParentGoalsPanel';
+import { FamilyChallengeCard } from '@/modules/flow/FamilyChallengeCard';
 import { buildTeamDayFromChildren, slicesFromCommitments } from '@/modules/flow/teamPlay';
 import { isScreenBoundaryCode } from '@/shared/screen/screenBoundary';
 import { hydrateFamilyValueState } from '@/shared/value/value-sync';
@@ -58,6 +65,7 @@ export function TodayFlowPage() {
   const [softLockBypassed, setSoftLockBypassed] = useState(false);
   const [offerReminders, setOfferReminders] = useState(() => shouldOfferNotificationOptIn());
   const [parentPushSubscribed, setParentPushSubscribed] = useState(false);
+  const [inAppChime, setInAppChime] = useState(() => isInAppChimeEnabled());
   const [familyChildren, setFamilyChildren] = useState<
     Array<{ id: string; displayName: string }>
   >([]);
@@ -257,6 +265,13 @@ export function TodayFlowPage() {
         memberId: isChild ? member?.id : undefined,
       });
     }
+  };
+
+  const toggleInAppChime = () => {
+    const next = !isInAppChimeEnabled();
+    setInAppChimeEnabled(next);
+    setInAppChime(next);
+    if (next) void playInAppDueChime();
   };
 
   const markDone = async (
@@ -466,13 +481,31 @@ export function TodayFlowPage() {
           onEnableParentPush={() => void enableParentPush()}
           offerLocalReminders={offerReminders}
           onEnableLocalReminders={() => void enableReminders()}
+          inAppChimeEnabled={inAppChime}
+          onToggleInAppChime={toggleInAppChime}
           onMarkDone={(item) => void markDone(item, undefined, true)}
           onReflect={(item, reason) => void markReflect(item, reason)}
           onReopen={(item) => void reopenCommitment(item)}
           onApproveStars={(item) => approveStars(item)}
           onDecideConsequence={(eventId, status) => decideConsequence(eventId, status)}
           onSwitchUser={requestSwitchUser}
+          onRefreshFlow={() => void load(true)}
         />
+      ) : null}
+
+      {flow && !isChild && familyId ? (
+        <>
+          <FamilyChallengeCard
+            familyId={familyId}
+            memberId={member.id}
+            isParent
+          />
+          <ParentGoalsPanel
+            familyId={familyId}
+            memberId={member.id}
+            viewerName={member.displayName}
+          />
+        </>
       ) : null}
 
       <ParentPinSheet

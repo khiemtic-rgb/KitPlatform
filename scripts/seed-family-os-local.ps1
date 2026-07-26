@@ -83,6 +83,10 @@ Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\
 Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\seed\006_family_os_demo.sql"
 Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\seed\007_family_constitution_v1.sql"
 Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\seed\008_family_team_siblings.sql"
+Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\seed\009_family_weekend_commitments.sql"
+Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\221_pack_family_calendar_period.sql"
+Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\seed\010_family_calendar_periods.sql"
+Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\seed\011_family_summer_schedule_2026.sql"
 
 if ($ApplyFamilyVertical) {
     if ([string]::IsNullOrWhiteSpace($PostgresPassword)) {

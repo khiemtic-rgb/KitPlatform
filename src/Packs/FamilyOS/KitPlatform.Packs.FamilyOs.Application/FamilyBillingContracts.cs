@@ -37,6 +37,9 @@ public sealed class FamilyOsPayOsOptions
 public sealed class FamilyOsBillingOptions
 {
     public int StarterMonthAmountVnd { get; set; } = FamilyBillingPlans.DefaultStarterMonthAmountVnd;
+
+    /// <summary>Self-serve trial length when a new family registers (default 30).</summary>
+    public int TrialDays { get; set; } = 30;
 }
 
 public sealed record CreateCheckoutRequest(

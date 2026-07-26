@@ -13,6 +13,8 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
     private readonly IFamilyStarService _stars;
     private readonly FamilyStarSettingsRepository _starSettings;
     private readonly IFamilyCommercialService _commercial;
+    private readonly IFamilyMemoryService _memories;
+    private readonly IFamilyScreenWalletService _wallet;
     private readonly ITenantContext _tenant;
 
     public FamilyDayFlowService(
@@ -24,6 +26,8 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         IFamilyStarService stars,
         FamilyStarSettingsRepository starSettings,
         IFamilyCommercialService commercial,
+        IFamilyMemoryService memories,
+        IFamilyScreenWalletService wallet,
         ITenantContext tenant)
     {
         _repo = repo;
@@ -34,6 +38,8 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         _stars = stars;
         _starSettings = starSettings;
         _commercial = commercial;
+        _memories = memories;
+        _wallet = wallet;
         _tenant = tenant;
     }
 
@@ -179,6 +185,51 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             }
         }
 
+        if (status == FamilyCommitmentStatuses.Done && !string.IsNullOrWhiteSpace(evidenceUrl))
+        {
+            try
+            {
+                await _memories.TryCaptureAsync(
+                    _tenant.TenantId,
+                    familyId,
+                    flowDate,
+                    FamilyMemoryKinds.Photo,
+                    reloaded.Title,
+                    noteVi: null,
+                    icon: "📸",
+                    photoUrl: evidenceUrl,
+                    sourceRef: reloaded.Id.ToString("D"),
+                    memberId: reloaded.MemberId,
+                    cancellationToken: cancellationToken);
+            }
+            catch
+            {
+                // Memory capture is best-effort — never block progress updates
+            }
+        }
+
+        if (status == FamilyCommitmentStatuses.Done && reloaded.MemberId is Guid earnMemberId)
+        {
+            var earn = EarnMinutesForTitle(reloaded.Title);
+            if (earn > 0)
+            {
+                try
+                {
+                    await _wallet.ApplyEarnAsync(
+                        familyId,
+                        earnMemberId,
+                        earn,
+                        sourceRef: $"earn_commitment:{reloaded.Id:D}",
+                        noteVi: $"+{earn} phút · {reloaded.Title}",
+                        cancellationToken);
+                }
+                catch
+                {
+                    // Wallet earn is best-effort
+                }
+            }
+        }
+
         StarAwardDto? starAward = null;
         try
         {
@@ -279,6 +330,72 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             tierSettings,
             localNow,
             starAward.Balance);
+    }
+
+    public async Task<CommitmentDto> AddAdHocCommitmentAsync(
+        Guid familyId,
+        AddAdHocCommitmentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+
+        var family = await _families.GetFamilyAsync(familyId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+
+        var title = (request.Title ?? "").Trim();
+        if (title.Length is < 2 or > 200)
+            throw new InvalidOperationException("Tên việc phải từ 2–200 ký tự.");
+
+        if (request.MemberId is Guid mid)
+        {
+            var members = await _families.ListMembersAsync(familyId, cancellationToken);
+            if (members.All(m => m.Id != mid))
+                throw new InvalidOperationException("Thành viên không thuộc gia đình.");
+        }
+
+        var today = DateOnly.FromDateTime(FamilyTimeZones.NowIn(family.Timezone).DateTime);
+        var flowDate = request.FlowDate ?? today;
+
+        var flow = await EnsureDayFlowAsync(
+            familyId,
+            new EnsureDayFlowRequest(flowDate, null),
+            cancellationToken);
+
+        var sort = await _repo.MaxSortOrderAsync(flow.Id, cancellationToken) + 1;
+        var priority = string.IsNullOrWhiteSpace(request.Priority)
+            ? "normal"
+            : request.Priority.Trim().ToLowerInvariant();
+        var duration = request.ExpectedDurationMinutes is > 0 and <= 240
+            ? request.ExpectedDurationMinutes
+            : null;
+
+        var id = await _repo.InsertAdHocCommitmentAsync(
+            flow.Id,
+            request.MemberId,
+            title,
+            string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
+            request.WindowStart,
+            request.WindowEnd,
+            sort,
+            priority,
+            duration,
+            starReward: 1,
+            cancellationToken);
+
+        var row = await _repo.GetCommitmentForFamilyAsync(familyId, id, cancellationToken)
+            ?? throw new InvalidOperationException("Không tạo được việc hôm nay.");
+
+        var localNow = FamilyTimeZones.NowIn(family.Timezone);
+        var tierSettings = await ResolveTierSettingsAsync(familyId, cancellationToken);
+        return MapCommitment(
+            row,
+            TimeOnly.FromTimeSpan(localNow.TimeOfDay),
+            flowDate,
+            family.Timezone,
+            null,
+            tierSettings,
+            localNow,
+            null);
     }
 
     private async Task<DayFlowDto> MapDayFlowAsync(
@@ -459,6 +576,22 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             projectedLabel,
             starPosted,
             c.StarComputedAt);
+    }
+
+    /// <summary>Screen Wallet earn rules — reading / movement titles.</summary>
+    private static int EarnMinutesForTitle(string title)
+    {
+        var t = (title ?? "").Trim().ToLowerInvariant();
+        if (t.Length == 0) return 0;
+        if (t.Contains("đọc", StringComparison.Ordinal) || t.Contains("sach", StringComparison.Ordinal)
+            || t.Contains("sách", StringComparison.Ordinal) || t.Contains("read", StringComparison.Ordinal))
+            return 15;
+        if (t.Contains("xe đạp", StringComparison.Ordinal) || t.Contains("xe dap", StringComparison.Ordinal)
+            || t.Contains("chạy", StringComparison.Ordinal) || t.Contains("thể dục", StringComparison.Ordinal)
+            || t.Contains("the duc", StringComparison.Ordinal) || t.Contains("đá bóng", StringComparison.Ordinal)
+            || t.Contains("vận động", StringComparison.Ordinal) || t.Contains("van dong", StringComparison.Ordinal))
+            return 20;
+        return 0;
     }
 
     /// <summary>Only accept same-tenant family-os upload paths.</summary>

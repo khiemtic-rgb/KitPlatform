@@ -62,7 +62,14 @@ public sealed record FamilySubscriptionDto(
     string Status,
     DateTimeOffset? TrialEndsAt,
     DateTimeOffset? CurrentPeriodEnd,
-    bool IsEntitled);
+    bool IsEntitled,
+    /// <summary>Days left in trial (0 when expired / not trial).</summary>
+    int? TrialDaysRemaining = null,
+    /// <summary>Configured trial length used for progress bar (remaining / total).</summary>
+    int? TrialDaysTotal = null);
+
+/// <summary>Ops-only: extend a family's trial by N days (Admin → Billing).</summary>
+public sealed record ExtendFamilyTrialRequest(int ExtraDays);
 
 public sealed record SetParentPinRequest(string Pin);
 
@@ -98,6 +105,12 @@ public interface IFamilyCommercialService
 
     Task EnsureEntitledAsync(
         Guid familyId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Ops-only: extend trial window; re-opens trial when expired.</summary>
+    Task<FamilySubscriptionDto> ExtendTrialAsync(
+        Guid familyId,
+        ExtendFamilyTrialRequest request,
         CancellationToken cancellationToken = default);
 
     Task SetParentPinAsync(

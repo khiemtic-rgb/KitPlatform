@@ -1,3 +1,4 @@
+using KitPlatform.Application.Abstractions;
 using KitPlatform.Packs.FamilyOs;
 
 namespace KitPlatform.Packs.FamilyOs.Infrastructure;
@@ -7,15 +8,21 @@ internal sealed class FamilyTeamUnlockService : IFamilyTeamUnlockService
     private readonly FamilyTeamUnlockRepository _repo;
     private readonly FamilyGraphRepository _families;
     private readonly FamilyDayFlowRepository _dayFlows;
+    private readonly IFamilyMemoryService _memories;
+    private readonly ITenantContext _tenant;
 
     public FamilyTeamUnlockService(
         FamilyTeamUnlockRepository repo,
         FamilyGraphRepository families,
-        FamilyDayFlowRepository dayFlows)
+        FamilyDayFlowRepository dayFlows,
+        IFamilyMemoryService memories,
+        ITenantContext tenant)
     {
         _repo = repo;
         _families = families;
         _dayFlows = dayFlows;
+        _memories = memories;
+        _tenant = tenant;
     }
 
     public async Task<FamilyTeamDayDto> GetTeamDayAsync(
@@ -179,6 +186,28 @@ internal sealed class FamilyTeamUnlockService : IFamilyTeamUnlockService
         var updated = await _repo.DecideAsync(
             familyId, unlockId, status, request.ConfirmedBy, note, cancellationToken)
             ?? throw new InvalidOperationException("Không cập nhật được Team Unlock.");
+
+        if (status == FamilyTeamUnlockStatuses.Confirmed)
+        {
+            try
+            {
+                var label = string.IsNullOrWhiteSpace(updated.LabelVi) ? "Movie Night" : updated.LabelVi;
+                await _memories.TryCaptureAsync(
+                    _tenant.TenantId,
+                    familyId,
+                    updated.FlowDate,
+                    FamilyMemoryKinds.TeamUnlock,
+                    $"{label} cả nhà",
+                    noteVi: "Cả nhà cùng làm được — phần thưởng chung đã mở.",
+                    icon: "🍿",
+                    sourceRef: updated.Id.ToString("D"),
+                    cancellationToken: cancellationToken);
+            }
+            catch
+            {
+                // Memory capture is best-effort — never block the unlock decision.
+            }
+        }
 
         return Map(updated);
     }

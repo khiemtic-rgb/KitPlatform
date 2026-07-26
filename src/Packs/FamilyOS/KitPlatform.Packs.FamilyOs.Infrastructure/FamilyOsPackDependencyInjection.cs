@@ -32,6 +32,8 @@ public static class FamilyOsPackDependencyInjection
         services.AddScoped<IFamilyAccountabilityGlanceService, FamilyAccountabilityGlanceService>();
         services.AddScoped<FamilyCoachInsightRepository>();
         services.AddScoped<IFamilyCoachInsightService, FamilyCoachInsightService>();
+        services.AddScoped<FamilyInsightRepository>();
+        services.AddScoped<IFamilyInsightService, FamilyInsightService>();
         services.AddScoped<FamilyOsParentPushRepository>();
         services.AddScoped<IFamilyOsParentPushService, FamilyOsParentPushService>();
         services.AddScoped<FamilyValueRepository>();
@@ -48,6 +50,21 @@ public static class FamilyOsPackDependencyInjection
         services.AddScoped<IFamilyRewardService, FamilyRewardService>();
         services.AddScoped<FamilyMoodRepository>();
         services.AddScoped<IFamilyMoodService, FamilyMoodService>();
+        services.AddScoped<FamilyParentGoalRepository>();
+        services.AddScoped<IFamilyParentGoalService, FamilyParentGoalService>();
+        services.AddScoped<FamilyChallengeRepository>();
+        services.AddScoped<IFamilyChallengeService, FamilyChallengeService>();
+        services.AddScoped<FamilyMemoryRepository>();
+        services.AddScoped<IFamilyMemoryService, FamilyMemoryService>();
+        services.AddScoped<FamilyChildRequestRepository>();
+        services.AddScoped<FamilyAiProposalRepository>();
+        services.AddScoped<FamilyScreenWalletRepository>();
+        services.AddScoped<IFamilyScoreService, FamilyScoreService>();
+        services.AddScoped<IFamilyScreenWalletService, FamilyScreenWalletService>();
+        services.AddScoped<IFamilyModeService, FamilyModeService>();
+        services.AddScoped<IFamilyChildRequestService, FamilyChildRequestService>();
+        services.AddScoped<IFamilyAiProposalService, FamilyAiProposalService>();
+        services.AddScoped<IFamilyDecisionInboxService, FamilyDecisionInboxService>();
 
         if (configuration is not null)
         {

@@ -11,17 +11,28 @@ namespace KitPlatform.Packs.FamilyOs.Infrastructure;
 
 internal sealed class FamilyCommercialService : IFamilyCommercialService
 {
-    private const int DefaultTrialDays = 30;
     private readonly IDbConnectionFactory _db;
     private readonly IAuthService _auth;
+    private readonly IKitAccountService _kitAccounts;
     private readonly ITenantContext _tenant;
+    private readonly FamilyOsBillingOptions _billing;
 
-    public FamilyCommercialService(IDbConnectionFactory db, IAuthService auth, ITenantContext tenant)
+    public FamilyCommercialService(
+        IDbConnectionFactory db,
+        IAuthService auth,
+        IKitAccountService kitAccounts,
+        ITenantContext tenant,
+        Microsoft.Extensions.Options.IOptions<FamilyOsBillingOptions> billing)
     {
         _db = db;
         _auth = auth;
+        _kitAccounts = kitAccounts;
         _tenant = tenant;
+        _billing = billing.Value;
     }
+
+    private int TrialDays =>
+        _billing.TrialDays > 0 ? _billing.TrialDays : 30;
 
     public async Task<FamilyRegisterResponse> RegisterAsync(
         FamilyRegisterRequest request,
@@ -39,6 +50,8 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
             ? "Asia/Ho_Chi_Minh"
             : request.Timezone.Trim();
 
+        await _kitAccounts.AssertEmailPasswordCompatibleAsync(email, password, cancellationToken);
+
         var tenantCode = await AllocateTenantCodeAsync(familyName, cancellationToken);
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
         var pinHash = BCrypt.Net.BCrypt.HashPassword(pin);
@@ -51,7 +64,6 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
         var familyId = Guid.NewGuid();
         var membershipId = Guid.NewGuid();
         var subscriptionId = Guid.NewGuid();
-        var trialEnds = DateTimeOffset.UtcNow.AddDays(DefaultTrialDays);
 
         var settings = JsonSerializer.Serialize(new Dictionary<string, object?>
         {
@@ -66,6 +78,11 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
         });
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+
+        // Trial length is runtime-configurable via payment.plan (Admin → Family OS → Billing).
+        var trialDays = await ResolveTrialDaysAsync(conn, cancellationToken);
+        var trialEnds = DateTimeOffset.UtcNow.AddDays(trialDays);
+
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
 
         await conn.ExecuteAsync(
@@ -239,12 +256,24 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
             },
             tx);
 
+        await _kitAccounts.EnsureAccountForUserAsync(
+            userId,
+            tenantId,
+            email,
+            password,
+            passwordHash,
+            parentName,
+            conn,
+            tx,
+            cancellationToken);
+
         await tx.CommitAsync(cancellationToken);
 
-        var session = await _auth.LoginAsync(
+        var login = await _auth.LoginAsync(
             new LoginRequest(username, password, tenantCode),
             null,
-            cancellationToken)
+            cancellationToken);
+        var session = login?.Session
             ?? throw new InvalidOperationException("Đăng ký xong nhưng không đăng nhập được — thử đăng nhập lại.");
 
         return new FamilyRegisterResponse(
@@ -259,7 +288,26 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
                 FamilySubscriptionStatuses.Trial,
                 trialEnds,
                 trialEnds,
-                true));
+                true,
+                trialDays,
+                trialDays));
+    }
+
+    private async Task<int> ResolveTrialDaysAsync(
+        Npgsql.NpgsqlConnection conn,
+        CancellationToken cancellationToken)
+    {
+        var fromPlan = await conn.ExecuteScalarAsync<int?>(
+            new CommandDefinition(
+                """
+                SELECT trial_days
+                FROM payment.plan
+                WHERE product_code = 'family_os' AND is_active = TRUE
+                ORDER BY amount_vnd ASC, plan_code ASC
+                LIMIT 1
+                """,
+                cancellationToken: cancellationToken));
+        return fromPlan is int days && days >= 0 ? days : TrialDays;
     }
 
     public async Task<FamilyInviteDto> CreateInviteAsync(
@@ -329,6 +377,8 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
         var password = request.Password?.Trim() ?? "";
         if (password.Length < 8)
             throw new InvalidOperationException("Mật khẩu tối thiểu 8 ký tự.");
+
+        await _kitAccounts.AssertEmailPasswordCompatibleAsync(email, password, cancellationToken);
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
@@ -517,12 +567,24 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
             new { Id = invite.Id },
             tx);
 
+        await _kitAccounts.EnsureAccountForUserAsync(
+            userId,
+            invite.TenantId,
+            email,
+            password,
+            passwordHash,
+            parentName,
+            conn,
+            tx,
+            cancellationToken);
+
         await tx.CommitAsync(cancellationToken);
 
-        var session = await _auth.LoginAsync(
+        var login = await _auth.LoginAsync(
             new LoginRequest(username, password, tenantCode),
             null,
-            cancellationToken)
+            cancellationToken);
+        var session = login?.Session
             ?? throw new InvalidOperationException("Tham gia xong nhưng không đăng nhập được.");
 
         return new FamilyInviteAcceptResponse(tenantCode, invite.FamilyId, familyName, MapSession(session));
@@ -540,7 +602,8 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
                 plan_code AS PlanCode,
                 status AS Status,
                 trial_ends_at AS TrialEndsAt,
-                current_period_end AS CurrentPeriodEnd
+                current_period_end AS CurrentPeriodEnd,
+                created_at AS CreatedAt
             FROM pack_family.family_subscription
             WHERE family_id = @FamilyId
               AND (@TenantId = '00000000-0000-0000-0000-000000000000'::uuid
@@ -568,13 +631,39 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
             entitled = true;
         }
 
+        int? trialDaysRemaining = null;
+        int? trialDaysTotal = null;
+        if (status == FamilySubscriptionStatuses.Trial && row.TrialEndsAt is DateTime trialEnd)
+        {
+            var endUtc = DateTime.SpecifyKind(trialEnd, DateTimeKind.Utc);
+            trialDaysRemaining = Math.Max(0, (int)Math.Ceiling((endUtc - DateTime.UtcNow).TotalDays));
+
+            // Prefer actual trial window from created→ends; fall back to billing config.
+            if (row.CreatedAt is DateTime created)
+            {
+                var startUtc = DateTime.SpecifyKind(created, DateTimeKind.Utc);
+                var span = (int)Math.Round((endUtc - startUtc).TotalDays);
+                trialDaysTotal = span > 0 ? span : TrialDays;
+            }
+            else
+            {
+                trialDaysTotal = TrialDays;
+            }
+
+            // Never show remaining > total (clock skew / rounding).
+            if (trialDaysTotal is int total && trialDaysRemaining > total)
+                trialDaysRemaining = total;
+        }
+
         return new FamilySubscriptionDto(
             row.FamilyId,
             row.PlanCode,
             status,
             row.TrialEndsAt is DateTime t ? new DateTimeOffset(DateTime.SpecifyKind(t, DateTimeKind.Utc)) : null,
             row.CurrentPeriodEnd is DateTime p ? new DateTimeOffset(DateTime.SpecifyKind(p, DateTimeKind.Utc)) : null,
-            entitled);
+            entitled,
+            trialDaysRemaining,
+            trialDaysTotal);
     }
 
     public async Task EnsureEntitledAsync(
@@ -585,6 +674,110 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
         if (!sub.IsEntitled)
             throw new InvalidOperationException(
                 "Gói Family OS đã hết hạn — gia hạn để tiếp tục dùng Daily Flow và thưởng sao.");
+    }
+
+    public async Task<FamilySubscriptionDto> ExtendTrialAsync(
+        Guid familyId,
+        ExtendFamilyTrialRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_tenant.IsAuthenticated || _tenant.TenantId == Guid.Empty)
+            throw new InvalidOperationException("Cần đăng nhập.");
+        if (request.ExtraDays is < 1 or > 365)
+            throw new InvalidOperationException("Số ngày gia hạn phải trong khoảng 1–365.");
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+
+        // Only trial / lapsed subscriptions — paid periods must be extended via payment.
+        var updated = await conn.ExecuteAsync(
+            """
+            UPDATE pack_family.family_subscription
+            SET status = 'trial',
+                trial_ends_at = GREATEST(COALESCE(trial_ends_at, NOW()), NOW())
+                    + make_interval(days => @ExtraDays),
+                current_period_end = GREATEST(COALESCE(current_period_end, NOW()), NOW())
+                    + make_interval(days => @ExtraDays),
+                updated_at = NOW()
+            WHERE family_id = @FamilyId
+              AND tenant_id = @TenantId
+              AND status IN ('trial', 'expired', 'canceled')
+            """,
+            new { FamilyId = familyId, TenantId = _tenant.TenantId, request.ExtraDays },
+            tx);
+
+        if (updated == 0)
+        {
+            var existingStatus = await conn.ExecuteScalarAsync<string?>(
+                """
+                SELECT status FROM pack_family.family_subscription
+                WHERE family_id = @FamilyId AND tenant_id = @TenantId
+                """,
+                new { FamilyId = familyId, TenantId = _tenant.TenantId },
+                tx);
+
+            if (existingStatus is not null)
+                throw new InvalidOperationException(
+                    $"Gói đang ở trạng thái '{existingStatus}' — gia hạn qua thanh toán, không phải trial.");
+
+            var familyExists = await conn.ExecuteScalarAsync<bool>(
+                """
+                SELECT EXISTS(
+                    SELECT 1 FROM pack_family.family
+                    WHERE id = @FamilyId AND tenant_id = @TenantId AND deleted_at IS NULL
+                )
+                """,
+                new { FamilyId = familyId, TenantId = _tenant.TenantId },
+                tx);
+            if (!familyExists)
+                throw new InvalidOperationException("Không tìm thấy gia đình.");
+
+            // Legacy family without a subscription row — open a fresh trial window.
+            await conn.ExecuteAsync(
+                """
+                INSERT INTO pack_family.family_subscription (
+                    id, tenant_id, family_id, plan_code, status, trial_ends_at, current_period_end
+                )
+                VALUES (
+                    @Id, @TenantId, @FamilyId, 'starter_trial', 'trial',
+                    NOW() + make_interval(days => @ExtraDays),
+                    NOW() + make_interval(days => @ExtraDays)
+                )
+                """,
+                new
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = _tenant.TenantId,
+                    FamilyId = familyId,
+                    request.ExtraDays,
+                },
+                tx);
+        }
+
+        // Mirror into Kit Payment platform subscription (source of truth going forward).
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO payment.subscription (
+                tenant_id, product_code, subject_type, subject_id,
+                plan_code, status, trial_ends_at, current_period_end
+            )
+            SELECT tenant_id, 'family_os', 'family', family_id,
+                   plan_code, status, trial_ends_at, current_period_end
+            FROM pack_family.family_subscription
+            WHERE family_id = @FamilyId AND tenant_id = @TenantId
+            ON CONFLICT (tenant_id, product_code, subject_type, subject_id)
+            DO UPDATE SET
+                status = EXCLUDED.status,
+                trial_ends_at = EXCLUDED.trial_ends_at,
+                current_period_end = EXCLUDED.current_period_end,
+                updated_at = NOW()
+            """,
+            new { FamilyId = familyId, TenantId = _tenant.TenantId },
+            tx);
+
+        await tx.CommitAsync(cancellationToken);
+
+        return await GetSubscriptionAsync(familyId, cancellationToken);
     }
 
     public async Task SetParentPinAsync(
@@ -745,5 +938,6 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
         public string Status { get; init; } = "";
         public DateTime? TrialEndsAt { get; init; }
         public DateTime? CurrentPeriodEnd { get; init; }
+        public DateTime? CreatedAt { get; init; }
     }
 }

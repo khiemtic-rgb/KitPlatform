@@ -78,23 +78,89 @@ export function skipReasonLabel(code?: string): string | undefined {
   return SKIP_REASON_OPTIONS.find((o) => o.value === code)?.label;
 }
 
+export interface AuthWorkspace {
+  userId: string;
+  tenantId: string;
+  tenantCode: string;
+  tenantName: string;
+  productCode: string;
+  username: string;
+  isDefault: boolean;
+}
+
+export type FamilyLoginResult =
+  | { kind: 'session'; accessToken: string; refreshToken: string | null; tenantCode: string }
+  | { kind: 'choice'; selectionToken: string; workspaces: AuthWorkspace[] };
+
+function mapWorkspaces(raw: unknown): AuthWorkspace[] {
+  return asArray(raw).map((w) => ({
+    userId: String(w.userId ?? w.UserId ?? ''),
+    tenantId: String(w.tenantId ?? w.TenantId ?? ''),
+    tenantCode: String(w.tenantCode ?? w.TenantCode ?? ''),
+    tenantName: String(w.tenantName ?? w.TenantName ?? ''),
+    productCode: String(w.productCode ?? w.ProductCode ?? ''),
+    username: String(w.username ?? w.Username ?? ''),
+    isDefault: Boolean(w.isDefault ?? w.IsDefault),
+  }));
+}
+
+function mapLoginResponse(data: Row): FamilyLoginResult {
+  if (data.requiresWorkspaceChoice === true || data.RequiresWorkspaceChoice === true) {
+    return {
+      kind: 'choice',
+      selectionToken: String(data.selectionToken ?? data.SelectionToken ?? ''),
+      workspaces: mapWorkspaces(data.workspaces ?? data.Workspaces),
+    };
+  }
+  const accessToken = String(data.accessToken ?? data.AccessToken ?? '');
+  if (!accessToken) throw new Error('Đăng nhập không trả về token');
+  const refreshRaw = data.refreshToken ?? data.RefreshToken;
+  const user = (data.user ?? data.User) as Row | undefined;
+  return {
+    kind: 'session',
+    accessToken,
+    refreshToken: refreshRaw != null ? String(refreshRaw) : null,
+    tenantCode: String(user?.tenantCode ?? user?.TenantCode ?? ''),
+  };
+}
+
+/** Legacy: tenant code + username */
 export async function loginFamilyParent(input: {
   tenantCode: string;
   username: string;
   password: string;
-}): Promise<{ accessToken: string; refreshToken: string | null }> {
+}): Promise<FamilyLoginResult> {
   const { data } = await http.post<Row>('/auth/login', {
     tenantCode: input.tenantCode.trim().toUpperCase(),
     username: input.username.trim(),
     password: input.password,
   });
-  const accessToken = String(data.accessToken ?? data.AccessToken ?? '');
-  if (!accessToken) throw new Error('Đăng nhập không trả về token');
-  const refreshRaw = data.refreshToken ?? data.RefreshToken;
-  return {
-    accessToken,
-    refreshToken: refreshRaw != null ? String(refreshRaw) : null,
-  };
+  return mapLoginResponse(data);
+}
+
+/** Kit email login — no tenant code; may return workspace choice */
+export async function loginFamilyByEmail(input: {
+  email: string;
+  password: string;
+}): Promise<FamilyLoginResult> {
+  const { data } = await http.post<Row>('/auth/login', {
+    username: input.email.trim().toLowerCase(),
+    password: input.password,
+  });
+  return mapLoginResponse(data);
+}
+
+export async function selectFamilyWorkspace(input: {
+  selectionToken: string;
+  userId: string;
+}): Promise<{ accessToken: string; refreshToken: string | null; tenantCode: string }> {
+  const { data } = await http.post<Row>('/auth/select-workspace', {
+    selectionToken: input.selectionToken,
+    userId: input.userId,
+  });
+  const mapped = mapLoginResponse(data);
+  if (mapped.kind !== 'session') throw new Error('Không chọn được workspace');
+  return mapped;
 }
 
 
@@ -184,6 +250,8 @@ export interface FamilySubscription {
   trialEndsAt?: string;
   currentPeriodEnd?: string;
   isEntitled: boolean;
+  trialDaysRemaining?: number;
+  trialDaysTotal?: number;
 }
 
 export interface FamilyCheckout {
@@ -202,6 +270,8 @@ export interface FamilyCheckout {
 }
 
 function mapSubscription(r: Row): FamilySubscription {
+  const remainingRaw = r.trialDaysRemaining ?? r.TrialDaysRemaining;
+  const totalRaw = r.trialDaysTotal ?? r.TrialDaysTotal;
   return {
     familyId: String(r.familyId ?? r.FamilyId ?? ''),
     planCode: String(r.planCode ?? r.PlanCode ?? ''),
@@ -215,6 +285,12 @@ function mapSubscription(r: Row): FamilySubscription {
         ? String(r.currentPeriodEnd ?? r.CurrentPeriodEnd)
         : undefined,
     isEntitled: Boolean(r.isEntitled ?? r.IsEntitled ?? false),
+    trialDaysRemaining:
+      remainingRaw != null && remainingRaw !== ''
+        ? Number(remainingRaw)
+        : undefined,
+    trialDaysTotal:
+      totalRaw != null && totalRaw !== '' ? Number(totalRaw) : undefined,
   };
 }
 
@@ -565,11 +641,13 @@ export async function fetchAccountabilityGlance(familyId: string): Promise<Accou
 export interface CommitmentTemplateDto {
   id: string;
   title: string;
+  description?: string;
   memberId?: string;
   windowStart?: string;
   windowEnd?: string;
   sortOrder: number;
   isActive: boolean;
+  priority?: string;
   starReward?: number;
 }
 
@@ -584,19 +662,23 @@ export interface FamilyRoutineDto {
 }
 
 function mapTemplate(t: Row): CommitmentTemplateDto {
+  const startRaw = t.windowStart ?? t.WindowStart;
+  const endRaw = t.windowEnd ?? t.WindowEnd;
   return {
     id: String(t.id ?? t.Id),
     title: String(t.title ?? t.Title ?? ''),
+    description:
+      t.description != null || t.Description != null
+        ? String(t.description ?? t.Description)
+        : undefined,
     memberId:
       t.memberId != null || t.MemberId != null ? String(t.memberId ?? t.MemberId) : undefined,
-    windowStart:
-      t.windowStart != null || t.WindowStart != null
-        ? String(t.windowStart ?? t.WindowStart)
-        : undefined,
-    windowEnd:
-      t.windowEnd != null || t.WindowEnd != null ? String(t.windowEnd ?? t.WindowEnd) : undefined,
+    windowStart: startRaw != null ? String(startRaw).slice(0, 5) : undefined,
+    windowEnd: endRaw != null ? String(endRaw).slice(0, 5) : undefined,
     sortOrder: Number(t.sortOrder ?? t.SortOrder ?? 0),
     isActive: Boolean(t.isActive ?? t.IsActive ?? true),
+    priority:
+      t.priority != null || t.Priority != null ? String(t.priority ?? t.Priority) : undefined,
     starReward: Number(t.starReward ?? t.StarReward ?? 0) || undefined,
   };
 }
@@ -680,6 +762,69 @@ export async function addCommitmentTemplate(
     },
   );
   return mapTemplate(data);
+}
+
+export async function updateCommitmentTemplate(
+  familyId: string,
+  routineId: string,
+  templateId: string,
+  input: {
+    title: string;
+    description?: string;
+    memberId?: string;
+    windowStart?: string;
+    windowEnd?: string;
+    sortOrder: number;
+    isActive: boolean;
+    priority?: string;
+    starReward?: number;
+  },
+): Promise<CommitmentTemplateDto> {
+  const { data } = await http.patch<Row>(
+    `/family-os/families/${familyId}/routines/${routineId}/templates/${templateId}`,
+    {
+      title: input.title,
+      description: input.description ?? null,
+      memberId: input.memberId ?? null,
+      windowStart: input.windowStart ?? null,
+      windowEnd: input.windowEnd ?? null,
+      sortOrder: input.sortOrder,
+      isActive: input.isActive,
+      priority: input.priority ?? 'normal',
+      starReward: input.starReward ?? null,
+    },
+  );
+  return mapTemplate(data);
+}
+
+export interface ResolvedCalendarRoutine {
+  flowDate: string;
+  routineId: string;
+  routineDisplayName: string;
+  periodDisplayName?: string;
+  periodKind?: string;
+}
+
+export async function resolveCalendarRoutine(
+  familyId: string,
+  date?: string,
+): Promise<ResolvedCalendarRoutine> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/calendar-periods/resolve`, {
+    params: date ? { date } : undefined,
+  });
+  return {
+    flowDate: String(data.flowDate ?? data.FlowDate ?? ''),
+    routineId: String(data.routineId ?? data.RoutineId ?? ''),
+    routineDisplayName: String(data.routineDisplayName ?? data.RoutineDisplayName ?? ''),
+    periodDisplayName:
+      data.periodDisplayName != null || data.PeriodDisplayName != null
+        ? String(data.periodDisplayName ?? data.PeriodDisplayName)
+        : undefined,
+    periodKind:
+      data.periodKind != null || data.PeriodKind != null
+        ? String(data.periodKind ?? data.PeriodKind)
+        : undefined,
+  };
 }
 
 export interface FamilyValueState {
@@ -991,6 +1136,143 @@ export async function markChildGratitudeRead(
   await http.post(`/family-os/families/${familyId}/gratitude/${gratitudeId}/read`);
 }
 
+export type FamilyMemoryKind =
+  | 'beautiful_day'
+  | 'streak_milestone'
+  | 'gratitude'
+  | 'photo'
+  | 'team_unlock'
+  | 'reward'
+  | 'first_time'
+  | 'manual';
+
+export interface FamilyMemoryEntry {
+  id: string;
+  familyId: string;
+  memberId?: string;
+  memberName?: string;
+  flowDate: string;
+  kind: FamilyMemoryKind;
+  titleVi: string;
+  noteVi?: string;
+  icon?: string;
+  photoUrl?: string;
+  isFavorite: boolean;
+  happenedAt: string;
+}
+
+export interface FamilyMemoryRecap {
+  from: string;
+  to: string;
+  totalCount: number;
+  beautifulDays: number;
+  gratitudeCount: number;
+  photoCount: number;
+  celebrationCount: number;
+  bestStreak: number;
+  headlineVi: string;
+  highlights: FamilyMemoryEntry[];
+}
+
+function mapFamilyMemory(r: Row): FamilyMemoryEntry {
+  return {
+    id: String(r.id ?? r.Id ?? ''),
+    familyId: String(r.familyId ?? r.FamilyId ?? ''),
+    memberId:
+      r.memberId != null || r.MemberId != null ? String(r.memberId ?? r.MemberId) : undefined,
+    memberName:
+      r.memberName != null || r.MemberName != null
+        ? String(r.memberName ?? r.MemberName)
+        : undefined,
+    flowDate: String(r.flowDate ?? r.FlowDate ?? ''),
+    kind: String(r.kind ?? r.Kind ?? 'manual') as FamilyMemoryKind,
+    titleVi: String(r.titleVi ?? r.TitleVi ?? ''),
+    noteVi: r.noteVi != null || r.NoteVi != null ? String(r.noteVi ?? r.NoteVi) : undefined,
+    icon: r.icon != null || r.Icon != null ? String(r.icon ?? r.Icon) : undefined,
+    photoUrl:
+      r.photoUrl != null || r.PhotoUrl != null ? String(r.photoUrl ?? r.PhotoUrl) : undefined,
+    isFavorite: Boolean(r.isFavorite ?? r.IsFavorite ?? false),
+    happenedAt: String(r.happenedAt ?? r.HappenedAt ?? ''),
+  };
+}
+
+export async function fetchFamilyMemories(
+  familyId: string,
+  params?: { from?: string; to?: string; favoritesOnly?: boolean; limit?: number },
+): Promise<FamilyMemoryEntry[]> {
+  const { data } = await http.get<unknown>(`/family-os/families/${familyId}/memories`, {
+    params: {
+      from: params?.from,
+      to: params?.to,
+      favoritesOnly: params?.favoritesOnly,
+      limit: params?.limit,
+    },
+  });
+  return asArray(data).map((r) => mapFamilyMemory(r as Row));
+}
+
+export async function createFamilyMemory(
+  familyId: string,
+  input: {
+    titleVi: string;
+    flowDate?: string;
+    memberId?: string;
+    kind?: FamilyMemoryKind;
+    noteVi?: string;
+    icon?: string;
+    photoUrl?: string;
+  },
+): Promise<FamilyMemoryEntry> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/memories`, {
+    titleVi: input.titleVi,
+    flowDate: input.flowDate ?? null,
+    memberId: input.memberId ?? null,
+    kind: input.kind ?? null,
+    noteVi: input.noteVi ?? null,
+    icon: input.icon ?? null,
+    photoUrl: input.photoUrl ?? null,
+  });
+  return mapFamilyMemory(data);
+}
+
+export async function setFamilyMemoryFavorite(
+  familyId: string,
+  memoryId: string,
+  value: boolean,
+): Promise<void> {
+  await http.post(
+    `/family-os/families/${familyId}/memories/${memoryId}/favorite`,
+    null,
+    { params: { value } },
+  );
+}
+
+export async function deleteFamilyMemory(familyId: string, memoryId: string): Promise<void> {
+  await http.delete(`/family-os/families/${familyId}/memories/${memoryId}`);
+}
+
+export async function fetchFamilyMemoryRecap(
+  familyId: string,
+  params?: { from?: string; to?: string },
+): Promise<FamilyMemoryRecap> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/memories/recap`, {
+    params: { from: params?.from, to: params?.to },
+  });
+  const r = (data ?? {}) as Row;
+  return {
+    from: String(r.from ?? r.From ?? ''),
+    to: String(r.to ?? r.To ?? ''),
+    totalCount: Number(r.totalCount ?? r.TotalCount ?? 0),
+    beautifulDays: Number(r.beautifulDays ?? r.BeautifulDays ?? 0),
+    gratitudeCount: Number(r.gratitudeCount ?? r.GratitudeCount ?? 0),
+    photoCount: Number(r.photoCount ?? r.PhotoCount ?? 0),
+    celebrationCount: Number(r.celebrationCount ?? r.CelebrationCount ?? 0),
+    bestStreak: Number(r.bestStreak ?? r.BestStreak ?? 0),
+    headlineVi: String(r.headlineVi ?? r.HeadlineVi ?? ''),
+    highlights: asArray(r.highlights ?? r.Highlights).map((x) => mapFamilyMemory(x as Row)),
+  };
+}
+
 export interface RewardCatalogItem {
   id: string;
   title: string;
@@ -1155,4 +1437,957 @@ export async function upsertMemberMood(
     },
   );
   return mapFamilyMemberMood(data);
+}
+
+/** Evidence Engine — weekly report aggregated server-side from day-flow / stars / reminders. */
+export interface FamilyWeeklyInsight {
+  familyId: string;
+  periodStart: string;
+  periodEnd: string;
+  days: number;
+  dataDays: number;
+  isPartial: boolean;
+  note?: string;
+  totalCommitments: number;
+  doneCount: number;
+  onTimeDoneCount: number;
+  lateDoneCount: number;
+  skippedCount: number;
+  pendingCount: number;
+  completionRate?: number;
+  onTimeRate?: number;
+  starsEarned: number;
+    health: {
+      score?: number;
+      completion?: number;
+      reminderCalm?: number;
+      streak?: number;
+      onTime?: number;
+      label?: string;
+      promiseLine?: string;
+      parentProgress?: number;
+    };
+  reminders: {
+    tracked: boolean;
+    count: number;
+    previousCount: number;
+    deltaPct?: number;
+  };
+  members: Array<{
+    memberId?: string;
+    name: string;
+    totalCommitments: number;
+    doneCount: number;
+    onTimeDoneCount: number;
+    skippedCount: number;
+    completionRate?: number;
+    starsEarned: number;
+    currentStreakDays: number;
+  }>;
+  habits: Array<{
+    templateId?: string;
+    title: string;
+    memberName?: string;
+    occurrences: number;
+    doneCount: number;
+    forgotCount: number;
+    doneRate?: number;
+    previousDoneRate?: number;
+    trend: string;
+  }>;
+  highlights: string[];
+  /** Family Mirror — reflective weekly view (opt-in parents only). */
+  mirror: {
+    child: {
+      memberCount: number;
+      totalCommitments: number;
+      doneCount: number;
+      completionRate?: number;
+      starsEarned: number;
+      bestStreakDays: number;
+      members: Array<{
+        memberId?: string;
+        name: string;
+        totalCommitments: number;
+        doneCount: number;
+        onTimeDoneCount: number;
+        skippedCount: number;
+        completionRate?: number;
+        starsEarned: number;
+        currentStreakDays: number;
+      }>;
+    };
+    parent: {
+      anyShared: boolean;
+      sharedGoalCount: number;
+      checkinDoneCount: number;
+      checkinExpectedCount: number;
+      checkinRate?: number;
+      goals: Array<{
+        goalId: string;
+        memberId: string;
+        memberName: string;
+        title: string;
+        emoji?: string;
+        targetDaysPerWeek: number;
+        doneDays: number;
+        todayDone: boolean;
+      }>;
+    };
+    household: {
+      teamUnlocksConfirmed: number;
+      starsEarned: number;
+      reminderCount: number;
+      remindersTracked: boolean;
+    };
+    reflections: string[];
+    challenge?: {
+      challengeId: string;
+      title: string;
+      status: string;
+      rewardLabel: string;
+      legsComplete: number;
+      legsTotal: number;
+    };
+  };
+}
+
+function mapWeeklyInsight(data: Row): FamilyWeeklyInsight {
+  const health = (data.health ?? data.Health ?? {}) as Row;
+  const reminders = (data.reminders ?? data.Reminders ?? {}) as Row;
+  return {
+    familyId: String(data.familyId ?? data.FamilyId ?? ''),
+    periodStart: String(data.periodStart ?? data.PeriodStart ?? ''),
+    periodEnd: String(data.periodEnd ?? data.PeriodEnd ?? ''),
+    days: Number(data.days ?? data.Days ?? 7),
+    dataDays: Number(data.dataDays ?? data.DataDays ?? 0),
+    isPartial: Boolean(data.isPartial ?? data.IsPartial),
+    note: (data.note ?? data.Note) != null ? String(data.note ?? data.Note) : undefined,
+    totalCommitments: Number(data.totalCommitments ?? data.TotalCommitments ?? 0),
+    doneCount: Number(data.doneCount ?? data.DoneCount ?? 0),
+    onTimeDoneCount: Number(data.onTimeDoneCount ?? data.OnTimeDoneCount ?? 0),
+    lateDoneCount: Number(data.lateDoneCount ?? data.LateDoneCount ?? 0),
+    skippedCount: Number(data.skippedCount ?? data.SkippedCount ?? 0),
+    pendingCount: Number(data.pendingCount ?? data.PendingCount ?? 0),
+    completionRate:
+      data.completionRate != null || data.CompletionRate != null
+        ? Number(data.completionRate ?? data.CompletionRate)
+        : undefined,
+    onTimeRate:
+      data.onTimeRate != null || data.OnTimeRate != null
+        ? Number(data.onTimeRate ?? data.OnTimeRate)
+        : undefined,
+    starsEarned: Number(data.starsEarned ?? data.StarsEarned ?? 0),
+    health: {
+      score:
+        health.score != null || health.Score != null
+          ? Number(health.score ?? health.Score)
+          : undefined,
+      completion:
+        health.completion != null || health.Completion != null
+          ? Number(health.completion ?? health.Completion)
+          : undefined,
+      reminderCalm:
+        health.reminderCalm != null || health.ReminderCalm != null
+          ? Number(health.reminderCalm ?? health.ReminderCalm)
+          : undefined,
+      streak:
+        health.streak != null || health.Streak != null
+          ? Number(health.streak ?? health.Streak)
+          : undefined,
+      onTime:
+        health.onTime != null || health.OnTime != null
+          ? Number(health.onTime ?? health.OnTime)
+          : undefined,
+      label:
+        (health.label ?? health.Label) != null
+          ? String(health.label ?? health.Label)
+          : undefined,
+      promiseLine:
+        (health.promiseLine ?? health.PromiseLine) != null
+          ? String(health.promiseLine ?? health.PromiseLine)
+          : undefined,
+      parentProgress:
+        health.parentProgress != null || health.ParentProgress != null
+          ? Number(health.parentProgress ?? health.ParentProgress)
+          : undefined,
+    },
+    reminders: {
+      tracked: Boolean(reminders.tracked ?? reminders.Tracked),
+      count: Number(reminders.count ?? reminders.Count ?? 0),
+      previousCount: Number(reminders.previousCount ?? reminders.PreviousCount ?? 0),
+      deltaPct:
+        reminders.deltaPct != null || reminders.DeltaPct != null
+          ? Number(reminders.deltaPct ?? reminders.DeltaPct)
+          : undefined,
+    },
+    members: asArray(data.members ?? data.Members).map((m) => ({
+      memberId: (m.memberId ?? m.MemberId) != null ? String(m.memberId ?? m.MemberId) : undefined,
+      name: String(m.name ?? m.Name ?? 'Thành viên'),
+      totalCommitments: Number(m.totalCommitments ?? m.TotalCommitments ?? 0),
+      doneCount: Number(m.doneCount ?? m.DoneCount ?? 0),
+      onTimeDoneCount: Number(m.onTimeDoneCount ?? m.OnTimeDoneCount ?? 0),
+      skippedCount: Number(m.skippedCount ?? m.SkippedCount ?? 0),
+      completionRate:
+        m.completionRate != null || m.CompletionRate != null
+          ? Number(m.completionRate ?? m.CompletionRate)
+          : undefined,
+      starsEarned: Number(m.starsEarned ?? m.StarsEarned ?? 0),
+      currentStreakDays: Number(m.currentStreakDays ?? m.CurrentStreakDays ?? 0),
+    })),
+    habits: asArray(data.habits ?? data.Habits).map((h) => ({
+      templateId:
+        (h.templateId ?? h.TemplateId) != null ? String(h.templateId ?? h.TemplateId) : undefined,
+      title: String(h.title ?? h.Title ?? ''),
+      memberName:
+        (h.memberName ?? h.MemberName) != null ? String(h.memberName ?? h.MemberName) : undefined,
+      occurrences: Number(h.occurrences ?? h.Occurrences ?? 0),
+      doneCount: Number(h.doneCount ?? h.DoneCount ?? 0),
+      forgotCount: Number(h.forgotCount ?? h.ForgotCount ?? 0),
+      doneRate:
+        h.doneRate != null || h.DoneRate != null ? Number(h.doneRate ?? h.DoneRate) : undefined,
+      previousDoneRate:
+        h.previousDoneRate != null || h.PreviousDoneRate != null
+          ? Number(h.previousDoneRate ?? h.PreviousDoneRate)
+          : undefined,
+      trend: String(h.trend ?? h.Trend ?? 'flat'),
+    })),
+    highlights: (() => {
+      const raw = data.highlights ?? data.Highlights;
+      return Array.isArray(raw) ? raw.map((x) => String(x)) : [];
+    })(),
+    mirror: mapWeeklyMirror(data.mirror ?? data.Mirror),
+  };
+}
+
+function mapWeeklyMirror(raw: unknown): FamilyWeeklyInsight['mirror'] {
+  const m = (raw && typeof raw === 'object' ? raw : {}) as Row;
+  const child = (m.child ?? m.Child ?? {}) as Row;
+  const parent = (m.parent ?? m.Parent ?? {}) as Row;
+  const household = (m.household ?? m.Household ?? {}) as Row;
+  const reflectionsRaw = m.reflections ?? m.Reflections;
+  return {
+    child: {
+      memberCount: Number(child.memberCount ?? child.MemberCount ?? 0),
+      totalCommitments: Number(child.totalCommitments ?? child.TotalCommitments ?? 0),
+      doneCount: Number(child.doneCount ?? child.DoneCount ?? 0),
+      completionRate:
+        child.completionRate != null || child.CompletionRate != null
+          ? Number(child.completionRate ?? child.CompletionRate)
+          : undefined,
+      starsEarned: Number(child.starsEarned ?? child.StarsEarned ?? 0),
+      bestStreakDays: Number(child.bestStreakDays ?? child.BestStreakDays ?? 0),
+      members: asArray(child.members ?? child.Members).map((row) => ({
+        memberId:
+          (row.memberId ?? row.MemberId) != null
+            ? String(row.memberId ?? row.MemberId)
+            : undefined,
+        name: String(row.name ?? row.Name ?? 'Thành viên'),
+        totalCommitments: Number(row.totalCommitments ?? row.TotalCommitments ?? 0),
+        doneCount: Number(row.doneCount ?? row.DoneCount ?? 0),
+        onTimeDoneCount: Number(row.onTimeDoneCount ?? row.OnTimeDoneCount ?? 0),
+        skippedCount: Number(row.skippedCount ?? row.SkippedCount ?? 0),
+        completionRate:
+          row.completionRate != null || row.CompletionRate != null
+            ? Number(row.completionRate ?? row.CompletionRate)
+            : undefined,
+        starsEarned: Number(row.starsEarned ?? row.StarsEarned ?? 0),
+        currentStreakDays: Number(row.currentStreakDays ?? row.CurrentStreakDays ?? 0),
+      })),
+    },
+    parent: {
+      anyShared: Boolean(parent.anyShared ?? parent.AnyShared),
+      sharedGoalCount: Number(parent.sharedGoalCount ?? parent.SharedGoalCount ?? 0),
+      checkinDoneCount: Number(parent.checkinDoneCount ?? parent.CheckinDoneCount ?? 0),
+      checkinExpectedCount: Number(
+        parent.checkinExpectedCount ?? parent.CheckinExpectedCount ?? 0,
+      ),
+      checkinRate:
+        parent.checkinRate != null || parent.CheckinRate != null
+          ? Number(parent.checkinRate ?? parent.CheckinRate)
+          : undefined,
+      goals: asArray(parent.goals ?? parent.Goals).map((g) => {
+        const emoji = g.emoji ?? g.Emoji;
+        return {
+          goalId: String(g.goalId ?? g.GoalId ?? ''),
+          memberId: String(g.memberId ?? g.MemberId ?? ''),
+          memberName: String(g.memberName ?? g.MemberName ?? ''),
+          title: String(g.title ?? g.Title ?? ''),
+          emoji: emoji != null ? String(emoji) : undefined,
+          targetDaysPerWeek: Number(g.targetDaysPerWeek ?? g.TargetDaysPerWeek ?? 5),
+          doneDays: Number(g.doneDays ?? g.DoneDays ?? 0),
+          todayDone: Boolean(g.todayDone ?? g.TodayDone),
+        };
+      }),
+    },
+    household: {
+      teamUnlocksConfirmed: Number(
+        household.teamUnlocksConfirmed ?? household.TeamUnlocksConfirmed ?? 0,
+      ),
+      starsEarned: Number(household.starsEarned ?? household.StarsEarned ?? 0),
+      reminderCount: Number(household.reminderCount ?? household.ReminderCount ?? 0),
+      remindersTracked: Boolean(household.remindersTracked ?? household.RemindersTracked),
+    },
+    reflections: Array.isArray(reflectionsRaw)
+      ? reflectionsRaw.map((x) => String(x))
+      : [],
+    challenge: (() => {
+      const c = (m.challenge ?? m.Challenge) as Row | undefined;
+      if (!c || typeof c !== 'object') return undefined;
+      const id = c.challengeId ?? c.ChallengeId;
+      if (id == null) return undefined;
+      return {
+        challengeId: String(id),
+        title: String(c.title ?? c.Title ?? ''),
+        status: String(c.status ?? c.Status ?? ''),
+        rewardLabel: String(c.rewardLabel ?? c.RewardLabel ?? 'Movie Night'),
+        legsComplete: Number(c.legsComplete ?? c.LegsComplete ?? 0),
+        legsTotal: Number(c.legsTotal ?? c.LegsTotal ?? 0),
+      };
+    })(),
+  };
+}
+
+export async function fetchWeeklyInsight(
+  familyId: string,
+  opts?: { asOf?: string; days?: number },
+): Promise<FamilyWeeklyInsight> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/insight/weekly`, {
+    params: {
+      asOf: opts?.asOf ?? undefined,
+      days: opts?.days ?? 7,
+    },
+  });
+  return mapWeeklyInsight(data);
+}
+
+/** Parent Progress (opt-in) — a guardian/caregiver's own light habit goals. */
+export interface ParentGoal {
+  id: string;
+  familyId: string;
+  memberId: string;
+  memberName: string;
+  title: string;
+  emoji?: string;
+  targetDaysPerWeek: number;
+  shareWithFamily: boolean;
+  isActive: boolean;
+  sortOrder: number;
+  todayStatus?: 'done' | 'skip' | null;
+  weekDoneCount: number;
+  currentStreak: number;
+}
+
+export interface SharedParentProgress {
+  memberId: string;
+  memberName: string;
+  goalId: string;
+  title: string;
+  emoji?: string;
+  targetDaysPerWeek: number;
+  todayDone: boolean;
+  weekDoneCount: number;
+}
+
+function mapParentGoal(r: Row): ParentGoal {
+  const today = r.todayStatus ?? r.TodayStatus;
+  const emoji = r.emoji ?? r.Emoji;
+  return {
+    id: String(r.id ?? r.Id ?? ''),
+    familyId: String(r.familyId ?? r.FamilyId ?? ''),
+    memberId: String(r.memberId ?? r.MemberId ?? ''),
+    memberName: String(r.memberName ?? r.MemberName ?? ''),
+    title: String(r.title ?? r.Title ?? ''),
+    emoji: emoji != null ? String(emoji) : undefined,
+    targetDaysPerWeek: Number(r.targetDaysPerWeek ?? r.TargetDaysPerWeek ?? 5),
+    shareWithFamily: Boolean(r.shareWithFamily ?? r.ShareWithFamily ?? false),
+    isActive: Boolean(r.isActive ?? r.IsActive ?? true),
+    sortOrder: Number(r.sortOrder ?? r.SortOrder ?? 0),
+    todayStatus: today != null ? (String(today) as 'done' | 'skip') : null,
+    weekDoneCount: Number(r.weekDoneCount ?? r.WeekDoneCount ?? 0),
+    currentStreak: Number(r.currentStreak ?? r.CurrentStreak ?? 0),
+  };
+}
+
+function mapSharedParentProgress(r: Row): SharedParentProgress {
+  const emoji = r.emoji ?? r.Emoji;
+  return {
+    memberId: String(r.memberId ?? r.MemberId ?? ''),
+    memberName: String(r.memberName ?? r.MemberName ?? ''),
+    goalId: String(r.goalId ?? r.GoalId ?? ''),
+    title: String(r.title ?? r.Title ?? ''),
+    emoji: emoji != null ? String(emoji) : undefined,
+    targetDaysPerWeek: Number(r.targetDaysPerWeek ?? r.TargetDaysPerWeek ?? 5),
+    todayDone: Boolean(r.todayDone ?? r.TodayDone ?? false),
+    weekDoneCount: Number(r.weekDoneCount ?? r.WeekDoneCount ?? 0),
+  };
+}
+
+export async function fetchParentGoals(
+  familyId: string,
+  memberId: string,
+): Promise<ParentGoal[]> {
+  const { data } = await http.get<unknown>(
+    `/family-os/families/${familyId}/members/${memberId}/parent-goals`,
+  );
+  return asArray(data).map((r) => mapParentGoal(r));
+}
+
+export async function createParentGoal(
+  familyId: string,
+  input: {
+    memberId: string;
+    title: string;
+    emoji?: string;
+    targetDaysPerWeek?: number;
+    shareWithFamily?: boolean;
+  },
+): Promise<ParentGoal> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/parent-goals`, {
+    memberId: input.memberId,
+    title: input.title,
+    emoji: input.emoji ?? null,
+    targetDaysPerWeek: input.targetDaysPerWeek ?? null,
+    shareWithFamily: input.shareWithFamily ?? null,
+  });
+  return mapParentGoal(data);
+}
+
+export async function updateParentGoal(
+  familyId: string,
+  goalId: string,
+  input: {
+    title?: string;
+    emoji?: string;
+    targetDaysPerWeek?: number;
+    shareWithFamily?: boolean;
+    isActive?: boolean;
+  },
+): Promise<ParentGoal> {
+  const { data } = await http.patch<Row>(
+    `/family-os/families/${familyId}/parent-goals/${goalId}`,
+    input,
+  );
+  return mapParentGoal(data);
+}
+
+export async function deleteParentGoal(familyId: string, goalId: string): Promise<void> {
+  await http.delete(`/family-os/families/${familyId}/parent-goals/${goalId}`);
+}
+
+export async function checkinParentGoal(
+  familyId: string,
+  goalId: string,
+  status: 'done' | 'skip' | 'clear',
+  opts?: { date?: string; note?: string },
+): Promise<ParentGoal> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/parent-goals/${goalId}/checkin`,
+    { status, date: opts?.date ?? null, note: opts?.note ?? null },
+  );
+  return mapParentGoal(data);
+}
+
+export async function fetchSharedParentProgress(
+  familyId: string,
+): Promise<SharedParentProgress[]> {
+  const { data } = await http.get<unknown>(
+    `/family-os/families/${familyId}/parent-goals/shared`,
+  );
+  return asArray(data).map((r) => mapSharedParentProgress(r));
+}
+
+/** Weekly whole-family challenge (P0.3). */
+export interface FamilyChallengeLeg {
+  id: string;
+  memberId?: string;
+  memberName?: string;
+  legKind: 'parent' | 'child' | 'household' | string;
+  title: string;
+  emoji?: string;
+  targetDays: number;
+  doneDays: number;
+  todayDone: boolean;
+  isComplete: boolean;
+  sortOrder: number;
+}
+
+export interface FamilyChallenge {
+  id: string;
+  familyId: string;
+  weekStart: string;
+  weekEnd: string;
+  status: string;
+  title: string;
+  rewardCode: string;
+  rewardLabel: string;
+  acceptedBy?: string;
+  completedAt?: string;
+  unlockId?: string;
+  legsComplete: number;
+  legsTotal: number;
+  legs: FamilyChallengeLeg[];
+}
+
+function mapChallengeLeg(r: Row): FamilyChallengeLeg {
+  const emoji = r.emoji ?? r.Emoji;
+  const memberId = r.memberId ?? r.MemberId;
+  const memberName = r.memberName ?? r.MemberName;
+  return {
+    id: String(r.id ?? r.Id ?? ''),
+    memberId: memberId != null ? String(memberId) : undefined,
+    memberName: memberName != null ? String(memberName) : undefined,
+    legKind: String(r.legKind ?? r.LegKind ?? ''),
+    title: String(r.title ?? r.Title ?? ''),
+    emoji: emoji != null ? String(emoji) : undefined,
+    targetDays: Number(r.targetDays ?? r.TargetDays ?? 5),
+    doneDays: Number(r.doneDays ?? r.DoneDays ?? 0),
+    todayDone: Boolean(r.todayDone ?? r.TodayDone),
+    isComplete: Boolean(r.isComplete ?? r.IsComplete),
+    sortOrder: Number(r.sortOrder ?? r.SortOrder ?? 0),
+  };
+}
+
+function mapChallenge(r: Row): FamilyChallenge {
+  const acceptedBy = r.acceptedBy ?? r.AcceptedBy;
+  const completedAt = r.completedAt ?? r.CompletedAt;
+  const unlockId = r.unlockId ?? r.UnlockId;
+  return {
+    id: String(r.id ?? r.Id ?? ''),
+    familyId: String(r.familyId ?? r.FamilyId ?? ''),
+    weekStart: String(r.weekStart ?? r.WeekStart ?? ''),
+    weekEnd: String(r.weekEnd ?? r.WeekEnd ?? ''),
+    status: String(r.status ?? r.Status ?? ''),
+    title: String(r.title ?? r.Title ?? ''),
+    rewardCode: String(r.rewardCode ?? r.RewardCode ?? ''),
+    rewardLabel: String(r.rewardLabel ?? r.RewardLabel ?? 'Movie Night'),
+    acceptedBy: acceptedBy != null ? String(acceptedBy) : undefined,
+    completedAt: completedAt != null ? String(completedAt) : undefined,
+    unlockId: unlockId != null ? String(unlockId) : undefined,
+    legsComplete: Number(r.legsComplete ?? r.LegsComplete ?? 0),
+    legsTotal: Number(r.legsTotal ?? r.LegsTotal ?? 0),
+    legs: asArray(r.legs ?? r.Legs).map(mapChallengeLeg),
+  };
+}
+
+export async function fetchCurrentChallenge(
+  familyId: string,
+): Promise<FamilyChallenge | null> {
+  try {
+    const { data, status } = await http.get<Row | ''>(
+      `/family-os/families/${familyId}/challenges/current`,
+      { validateStatus: (s) => (s >= 200 && s < 300) || s === 204 },
+    );
+    if (status === 204 || !data) return null;
+    return mapChallenge(data as Row);
+  } catch (err: unknown) {
+    const status = (err as { response?: { status?: number } })?.response?.status;
+    if (status === 204) return null;
+    throw err;
+  }
+}
+
+export async function acceptFamilyChallenge(
+  familyId: string,
+  acceptedBy: string,
+): Promise<FamilyChallenge> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/challenges/accept`, {
+    acceptedBy,
+  });
+  return mapChallenge(data);
+}
+
+export async function checkinChallengeLeg(
+  familyId: string,
+  legId: string,
+  actorMemberId: string,
+  status: 'done' | 'skip' | 'clear',
+): Promise<FamilyChallenge> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/challenges/legs/${legId}/checkin`,
+    { actorMemberId, status },
+  );
+  return mapChallenge(data);
+}
+
+// ─── Adaptive Family Engine (AFE) ────────────────────────────────────────────
+
+export type DecisionKind =
+  | 'awaiting_stars'
+  | 'consequence_confirm'
+  | 'team_unlock'
+  | 'reward_fulfill'
+  | 'child_request'
+  | 'ai_proposal';
+
+export interface DecisionItem {
+  kind: DecisionKind;
+  id: string;
+  titleVi: string;
+  bodyVi: string;
+  recommend?: string;
+  memberId?: string;
+  memberName?: string;
+  createdAt: string;
+  refType?: string;
+  refId?: string;
+}
+
+export interface DecisionInbox {
+  totalCount: number;
+  headlineVi: string;
+  items: DecisionItem[];
+}
+
+export interface ChildRequest {
+  id: string;
+  familyId: string;
+  memberId: string;
+  memberName: string;
+  flowDate: string;
+  kind: string;
+  amountMinutes?: number;
+  titleVi?: string;
+  windowStart?: string;
+  windowEnd?: string;
+  reasonCodes: string[];
+  reasonNote?: string;
+  status: string;
+  aiSummaryVi?: string;
+  aiRecommend?: string;
+  grantedMinutes?: number;
+  createdAt: string;
+  decidedAt?: string;
+}
+
+export interface ScreenWallet {
+  id: string;
+  familyId: string;
+  memberId: string;
+  memberName: string;
+  isoYear: number;
+  isoWeek: number;
+  budgetMinutes: number;
+  spentMinutes: number;
+  earnedMinutes: number;
+  grantedMinutes: number;
+  remainingMinutes: number;
+  status: string;
+}
+
+export interface FamilyScore {
+  score: number;
+  band: string;
+  headlineVi: string;
+  allowBonusMinutes: boolean;
+  beautifulDays: number;
+  bestStreak: number;
+  routinePct: number;
+  challengeActive: boolean;
+}
+
+export interface FamilyModeResult {
+  mode: string;
+  labelVi: string;
+  messageVi: string;
+  primaryRoutineId?: string;
+  primaryRoutineName?: string;
+  primaryTemplateCount?: number;
+}
+
+export const CHILD_REQUEST_REASONS = [
+  { value: 'no_extra_class', label: 'Hôm nay không có học thêm' },
+  { value: 'chores_done', label: 'Đã hoàn thành việc nhà' },
+  { value: 'homework_done', label: 'Đã học xong' },
+  { value: 'play_with_friend', label: 'Muốn chơi cùng bạn' },
+  { value: 'other', label: 'Lý do khác' },
+] as const;
+
+export const FAMILY_MODE_OPTIONS = [
+  { value: 'normal', label: 'Bình thường', hint: 'Theo lịch năm học' },
+  { value: 'summer', label: 'Nghỉ hè', hint: 'Nhịp nhẹ hơn' },
+  { value: 'exam', label: 'Thi học kỳ', hint: 'Ưu tiên học' },
+  { value: 'travel', label: 'Du lịch', hint: 'Tạm đổi routine' },
+  { value: 'weekend', label: 'Cuối tuần', hint: 'T7–CN' },
+  { value: 'holiday', label: 'Nghỉ lễ', hint: 'Vài ngày' },
+] as const;
+
+function mapDecisionItem(r: Row): DecisionItem {
+  const memberId = r.memberId ?? r.MemberId;
+  const recommend = r.recommend ?? r.Recommend;
+  const refType = r.refType ?? r.RefType;
+  const refId = r.refId ?? r.RefId;
+  return {
+    kind: String(r.kind ?? r.Kind ?? '') as DecisionKind,
+    id: String(r.id ?? r.Id ?? ''),
+    titleVi: String(r.titleVi ?? r.TitleVi ?? ''),
+    bodyVi: String(r.bodyVi ?? r.BodyVi ?? ''),
+    recommend: recommend != null ? String(recommend) : undefined,
+    memberId: memberId != null ? String(memberId) : undefined,
+    memberName: r.memberName != null || r.MemberName != null
+      ? String(r.memberName ?? r.MemberName)
+      : undefined,
+    createdAt: String(r.createdAt ?? r.CreatedAt ?? ''),
+    refType: refType != null ? String(refType) : undefined,
+    refId: refId != null ? String(refId) : undefined,
+  };
+}
+
+function mapDecisionInbox(r: Row): DecisionInbox {
+  return {
+    totalCount: Number(r.totalCount ?? r.TotalCount ?? 0),
+    headlineVi: String(r.headlineVi ?? r.HeadlineVi ?? ''),
+    items: asArray(r.items ?? r.Items).map(mapDecisionItem),
+  };
+}
+
+function mapChildRequest(r: Row): ChildRequest {
+  const codes = r.reasonCodes ?? r.ReasonCodes;
+  const amount = r.amountMinutes ?? r.AmountMinutes;
+  return {
+    id: String(r.id ?? r.Id ?? ''),
+    familyId: String(r.familyId ?? r.FamilyId ?? ''),
+    memberId: String(r.memberId ?? r.MemberId ?? ''),
+    memberName: String(r.memberName ?? r.MemberName ?? ''),
+    flowDate: String(r.flowDate ?? r.FlowDate ?? ''),
+    kind: String(r.kind ?? r.Kind ?? ''),
+    amountMinutes: amount != null ? Number(amount) : undefined,
+    titleVi: r.titleVi != null || r.TitleVi != null ? String(r.titleVi ?? r.TitleVi) : undefined,
+    windowStart:
+      r.windowStart != null || r.WindowStart != null
+        ? String(r.windowStart ?? r.WindowStart).slice(0, 5)
+        : undefined,
+    windowEnd:
+      r.windowEnd != null || r.WindowEnd != null
+        ? String(r.windowEnd ?? r.WindowEnd).slice(0, 5)
+        : undefined,
+    reasonCodes: Array.isArray(codes) ? codes.map(String) : [],
+    reasonNote: r.reasonNote != null || r.ReasonNote != null
+      ? String(r.reasonNote ?? r.ReasonNote)
+      : undefined,
+    status: String(r.status ?? r.Status ?? ''),
+    aiSummaryVi: r.aiSummaryVi != null || r.AiSummaryVi != null
+      ? String(r.aiSummaryVi ?? r.AiSummaryVi)
+      : undefined,
+    aiRecommend: r.aiRecommend != null || r.AiRecommend != null
+      ? String(r.aiRecommend ?? r.AiRecommend)
+      : undefined,
+    grantedMinutes: r.grantedMinutes != null || r.GrantedMinutes != null
+      ? Number(r.grantedMinutes ?? r.GrantedMinutes)
+      : undefined,
+    createdAt: String(r.createdAt ?? r.CreatedAt ?? ''),
+    decidedAt: r.decidedAt != null || r.DecidedAt != null
+      ? String(r.decidedAt ?? r.DecidedAt)
+      : undefined,
+  };
+}
+
+function mapScreenWallet(r: Row): ScreenWallet {
+  return {
+    id: String(r.id ?? r.Id ?? ''),
+    familyId: String(r.familyId ?? r.FamilyId ?? ''),
+    memberId: String(r.memberId ?? r.MemberId ?? ''),
+    memberName: String(r.memberName ?? r.MemberName ?? ''),
+    isoYear: Number(r.isoYear ?? r.IsoYear ?? 0),
+    isoWeek: Number(r.isoWeek ?? r.IsoWeek ?? 0),
+    budgetMinutes: Number(r.budgetMinutes ?? r.BudgetMinutes ?? 0),
+    spentMinutes: Number(r.spentMinutes ?? r.SpentMinutes ?? 0),
+    earnedMinutes: Number(r.earnedMinutes ?? r.EarnedMinutes ?? 0),
+    grantedMinutes: Number(r.grantedMinutes ?? r.GrantedMinutes ?? 0),
+    remainingMinutes: Number(r.remainingMinutes ?? r.RemainingMinutes ?? 0),
+    status: String(r.status ?? r.Status ?? ''),
+  };
+}
+
+function mapFamilyScore(r: Row): FamilyScore {
+  return {
+    score: Number(r.score ?? r.Score ?? 0),
+    band: String(r.band ?? r.Band ?? ''),
+    headlineVi: String(r.headlineVi ?? r.HeadlineVi ?? ''),
+    allowBonusMinutes: Boolean(r.allowBonusMinutes ?? r.AllowBonusMinutes ?? false),
+    beautifulDays: Number(r.beautifulDays ?? r.BeautifulDays ?? 0),
+    bestStreak: Number(r.bestStreak ?? r.BestStreak ?? 0),
+    routinePct: Number(r.routinePct ?? r.RoutinePct ?? 0),
+    challengeActive: Boolean(r.challengeActive ?? r.ChallengeActive ?? false),
+  };
+}
+
+export async function fetchDecisionInbox(familyId: string): Promise<DecisionInbox> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/decision-inbox`);
+  return mapDecisionInbox(data);
+}
+
+export async function createChildRequest(
+  familyId: string,
+  body: {
+    memberId: string;
+    amountMinutes?: number;
+    reasonCodes?: string[];
+    reasonNote?: string;
+    flowDate?: string;
+    kind?: string;
+    titleVi?: string;
+    windowStart?: string;
+    windowEnd?: string;
+  },
+): Promise<ChildRequest> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/requests`, body);
+  return mapChildRequest(data);
+}
+
+export async function addAdHocCommitment(
+  familyId: string,
+  body: {
+    memberId?: string;
+    title: string;
+    description?: string;
+    flowDate?: string;
+    windowStart?: string;
+    windowEnd?: string;
+    expectedDurationMinutes?: number;
+  },
+): Promise<DayFlowCommitment> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/commitments/ad-hoc`,
+    body,
+  );
+  return mapCommitment(data);
+}
+
+export async function addFamilyMember(
+  familyId: string,
+  body: {
+    displayName: string;
+    roleCode: string;
+    dateOfBirth?: string;
+    sortOrder?: number;
+  },
+): Promise<FamilyMembership> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/members`, body);
+  return {
+    id: String(data.id ?? data.Id ?? ''),
+    displayName: String(data.displayName ?? data.DisplayName ?? ''),
+    roleCode: String(data.roleCode ?? data.RoleCode ?? ''),
+    dateOfBirth:
+      data.dateOfBirth != null || data.DateOfBirth != null
+        ? String(data.dateOfBirth ?? data.DateOfBirth)
+        : undefined,
+  };
+}
+
+export async function updateFamilyMember(
+  familyId: string,
+  memberId: string,
+  body: {
+    displayName?: string;
+    roleCode?: string;
+    dateOfBirth?: string;
+    status?: string;
+  },
+): Promise<FamilyMembership> {
+  const { data } = await http.patch<Row>(
+    `/family-os/families/${familyId}/members/${memberId}`,
+    body,
+  );
+  return {
+    id: String(data.id ?? data.Id ?? memberId),
+    displayName: String(data.displayName ?? data.DisplayName ?? ''),
+    roleCode: String(data.roleCode ?? data.RoleCode ?? ''),
+    dateOfBirth:
+      data.dateOfBirth != null || data.DateOfBirth != null
+        ? String(data.dateOfBirth ?? data.DateOfBirth)
+        : undefined,
+  };
+}
+
+export async function decideChildRequest(
+  familyId: string,
+  requestId: string,
+  body: {
+    decidedByMemberId: string;
+    decision: 'approve' | 'reject' | 'partial';
+    grantedMinutes?: number;
+    note?: string;
+  },
+): Promise<ChildRequest> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/requests/${requestId}/decide`,
+    body,
+  );
+  return mapChildRequest(data);
+}
+
+export async function decideAiProposal(
+  familyId: string,
+  proposalId: string,
+  body: { decidedByMemberId: string; decision: 'approve' | 'reject' },
+): Promise<void> {
+  await http.post(`/family-os/families/${familyId}/ai-proposals/${proposalId}/decide`, body);
+}
+
+export async function scanAdaptiveProposals(familyId: string): Promise<number> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/ai-proposals/scan`, {});
+  return Number(data.created ?? data.Created ?? 0);
+}
+
+export async function activateFamilyMode(
+  familyId: string,
+  body: {
+    mode: string;
+    startDate?: string;
+    endDate?: string;
+    activatedByMemberId?: string;
+    confirmNow?: boolean;
+  },
+): Promise<FamilyModeResult> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/family-modes/activate`,
+    body,
+  );
+  const routineId = data.primaryRoutineId ?? data.PrimaryRoutineId;
+  const routineName = data.primaryRoutineName ?? data.PrimaryRoutineName;
+  const templateCount = data.primaryTemplateCount ?? data.PrimaryTemplateCount;
+  return {
+    mode: String(data.mode ?? data.Mode ?? ''),
+    labelVi: String(data.labelVi ?? data.LabelVi ?? ''),
+    messageVi: String(data.messageVi ?? data.MessageVi ?? ''),
+    primaryRoutineId: routineId != null ? String(routineId) : undefined,
+    primaryRoutineName: routineName != null ? String(routineName) : undefined,
+    primaryTemplateCount:
+      templateCount != null && Number.isFinite(Number(templateCount))
+        ? Number(templateCount)
+        : undefined,
+  };
+}
+
+export async function fetchScreenWallet(familyId: string): Promise<ScreenWallet[]> {
+  const { data } = await http.get<unknown>(`/family-os/families/${familyId}/screen-wallet`);
+  return asArray(data).map(mapScreenWallet);
+}
+
+export async function proposeScreenWallet(
+  familyId: string,
+  body: { memberId: string; budgetMinutes?: number; proposedByMemberId?: string },
+): Promise<ScreenWallet> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/screen-wallet/propose`,
+    body,
+  );
+  return mapScreenWallet(data);
+}
+
+export async function spendScreenWallet(
+  familyId: string,
+  body: { memberId: string; minutes: number; flowDate?: string; note?: string },
+): Promise<ScreenWallet> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/screen-wallet/spend`,
+    body,
+  );
+  return mapScreenWallet(data);
+}
+
+export async function fetchFamilyScore(familyId: string): Promise<FamilyScore> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/family-score`);
+  return mapFamilyScore(data);
 }

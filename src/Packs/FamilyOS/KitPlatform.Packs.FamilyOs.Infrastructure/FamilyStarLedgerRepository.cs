@@ -81,7 +81,8 @@ internal sealed class FamilyStarLedgerRepository
                 @TenantId, @FamilyId, @MemberId, @CommitmentId,
                 @Delta, @Tier, @StarReward, @LateMinutes
             )
-            ON CONFLICT (tenant_id, commitment_id) DO UPDATE SET
+            -- Match partial unique index ux_star_ledger_commitment (commitment_id IS NOT NULL).
+            ON CONFLICT (tenant_id, commitment_id) WHERE commitment_id IS NOT NULL DO UPDATE SET
                 member_id = EXCLUDED.member_id,
                 delta = EXCLUDED.delta,
                 tier = EXCLUDED.tier,

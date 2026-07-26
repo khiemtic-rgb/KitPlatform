@@ -58,6 +58,25 @@ public sealed class FamilyOsDayFlowsController : ControllerBase
         }
     }
 
+    /// <summary>Add a one-off mission for a day (child proposal approve / parent admin).</summary>
+    [HttpPost("~/api/family-os/families/{familyId:guid}/commitments/ad-hoc")]
+    [ProducesResponseType(typeof(CommitmentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<CommitmentDto>> AddAdHoc(
+        Guid familyId,
+        [FromBody] AddAdHocCommitmentRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _dayFlows.AddAdHocCommitmentAsync(familyId, request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { code = "validation_error", message = ex.Message });
+        }
+    }
+
     [HttpPatch("~/api/family-os/families/{familyId:guid}/commitments/{commitmentId:guid}")]
     [ProducesResponseType(typeof(CommitmentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

@@ -239,11 +239,15 @@ internal sealed class FamilyDayFlowRepository
             new { TenantId, DayFlowId = dayFlowId, FamilyId = familyId, RoutineId = routineId },
             tx);
 
+        // Soft-delete template-backed rows only — keep ad-hoc (template_id IS NULL) missions.
         await conn.ExecuteAsync(
             """
             UPDATE pack_family.commitment
             SET deleted_at = NOW(), updated_at = NOW()
-            WHERE tenant_id = @TenantId AND day_flow_id = @DayFlowId AND deleted_at IS NULL
+            WHERE tenant_id = @TenantId
+              AND day_flow_id = @DayFlowId
+              AND deleted_at IS NULL
+              AND template_id IS NOT NULL
             """,
             new { TenantId, DayFlowId = dayFlowId },
             tx);
@@ -346,6 +350,69 @@ internal sealed class FamilyDayFlowRepository
             """,
             new { TenantId, DayFlowId = dayFlowId });
         return rows.AsList();
+    }
+
+    public async Task<Guid> InsertAdHocCommitmentAsync(
+        Guid dayFlowId,
+        Guid? memberId,
+        string title,
+        string? description,
+        TimeOnly? windowStart,
+        TimeOnly? windowEnd,
+        int sortOrder,
+        string priority,
+        int? expectedDurationMinutes,
+        int starReward,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.ExecuteScalarAsync<Guid>(
+            """
+            INSERT INTO pack_family.commitment (
+                tenant_id, day_flow_id, template_id, member_id, title, description,
+                window_start, window_end, sort_order, status,
+                priority, expected_duration_minutes, context_anchor, depends_on_template_ids,
+                allow_early_complete, early_lead_minutes, on_time_grace_minutes, star_reward
+            )
+            VALUES (
+                @TenantId, @DayFlowId, NULL, @MemberId, @Title, @Description,
+                @WindowStart, @WindowEnd, @SortOrder, 'pending',
+                @Priority, @ExpectedDurationMinutes, 'child_proposal', '{}'::uuid[],
+                TRUE, 30, 15, @StarReward
+            )
+            RETURNING id
+            """,
+            new
+            {
+                TenantId,
+                DayFlowId = dayFlowId,
+                MemberId = memberId,
+                Title = title,
+                Description = description,
+                // Dapper/Npgsql: bind TIME as TimeSpan (same pattern as FamilyRoutineRepository).
+                WindowStart = windowStart?.ToTimeSpan(),
+                WindowEnd = windowEnd?.ToTimeSpan(),
+                SortOrder = sortOrder,
+                Priority = priority,
+                ExpectedDurationMinutes = expectedDurationMinutes,
+                StarReward = starReward,
+            });
+    }
+
+    public async Task<int> MaxSortOrderAsync(
+        Guid dayFlowId,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.ExecuteScalarAsync<int>(
+            """
+            SELECT COALESCE(MAX(sort_order), 0)::int
+            FROM pack_family.commitment
+            WHERE tenant_id = @TenantId
+              AND day_flow_id = @DayFlowId
+              AND deleted_at IS NULL
+            """,
+            new { TenantId, DayFlowId = dayFlowId });
     }
 
     public async Task<CommitmentRow?> GetCommitmentForFamilyAsync(

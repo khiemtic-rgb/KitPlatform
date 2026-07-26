@@ -1457,3 +1457,48 @@ export async function fetchMemberStarBalance(
   );
   return Number(data.balance ?? data.Balance ?? 0);
 }
+
+export interface FamilySubscription {
+  familyId: string;
+  planCode: string;
+  status: string;
+  trialEndsAt?: string;
+  currentPeriodEnd?: string;
+  isEntitled: boolean;
+  trialDaysRemaining?: number;
+  trialDaysTotal?: number;
+}
+
+function mapFamilySubscription(row: UnknownRow): FamilySubscription {
+  const trialEnds = row.trialEndsAt ?? row.TrialEndsAt;
+  const periodEnd = row.currentPeriodEnd ?? row.CurrentPeriodEnd;
+  const remaining = row.trialDaysRemaining ?? row.TrialDaysRemaining;
+  const total = row.trialDaysTotal ?? row.TrialDaysTotal;
+  return {
+    familyId: String(row.familyId ?? row.FamilyId ?? ''),
+    planCode: String(row.planCode ?? row.PlanCode ?? ''),
+    status: String(row.status ?? row.Status ?? ''),
+    trialEndsAt: trialEnds != null ? String(trialEnds) : undefined,
+    currentPeriodEnd: periodEnd != null ? String(periodEnd) : undefined,
+    isEntitled: Boolean(row.isEntitled ?? row.IsEntitled ?? false),
+    trialDaysRemaining: remaining != null ? Number(remaining) : undefined,
+    trialDaysTotal: total != null ? Number(total) : undefined,
+  };
+}
+
+export async function fetchFamilySubscription(familyId: string): Promise<FamilySubscription> {
+  const { data } = await http.get<UnknownRow>(`/family-os/families/${familyId}/subscription`);
+  return mapFamilySubscription(data);
+}
+
+/** Ops-only (payment.ops.activate / PLATFORM_OPS). */
+export async function extendFamilyTrial(
+  familyId: string,
+  extraDays: number,
+): Promise<FamilySubscription> {
+  const { data } = await http.post<UnknownRow>(
+    `/family-os/families/${familyId}/billing/extend-trial`,
+    { extraDays },
+  );
+  return mapFamilySubscription(data);
+}

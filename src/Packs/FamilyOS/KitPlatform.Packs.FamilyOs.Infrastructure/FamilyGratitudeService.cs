@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using KitPlatform.Application.Abstractions;
 using KitPlatform.Packs.FamilyOs;
 
 namespace KitPlatform.Packs.FamilyOs.Infrastructure;
@@ -11,13 +12,22 @@ internal sealed class FamilyGratitudeService : IFamilyGratitudeService
 
     private readonly FamilyGratitudeRepository _repo;
     private readonly FamilyGraphRepository _families;
+    private readonly IFamilyOsParentPushService _parentPush;
+    private readonly IFamilyMemoryService _memories;
+    private readonly ITenantContext _tenant;
 
     public FamilyGratitudeService(
         FamilyGratitudeRepository repo,
-        FamilyGraphRepository families)
+        FamilyGraphRepository families,
+        IFamilyOsParentPushService parentPush,
+        IFamilyMemoryService memories,
+        ITenantContext tenant)
     {
         _repo = repo;
         _families = families;
+        _parentPush = parentPush;
+        _memories = memories;
+        _tenant = tenant;
     }
 
     public async Task<IReadOnlyList<FamilyChildGratitudeDto>> ListAsync(
@@ -73,6 +83,52 @@ internal sealed class FamilyGratitudeService : IFamilyGratitudeService
 
         var row = await _repo.GetAsync(familyId, id, cancellationToken)
             ?? throw new InvalidOperationException("Không lưu được lời cảm ơn.");
+
+        try
+        {
+            var title = $"{childShort} vừa gửi lời cảm ơn";
+            var body = string.IsNullOrWhiteSpace(messageVi)
+                ? $"{childShort} đang chờ bố mẹ xem."
+                : messageVi;
+            if (body.Length > 160)
+                body = body[..157] + "…";
+
+            await _parentPush.TryNotifyFamilyAsync(
+                _tenant.TenantId,
+                familyId,
+                flowDate,
+                kind: "gratitude",
+                title: title,
+                body: body,
+                url: "/today",
+                dataType: "familyos_gratitude",
+                payloadSummary: id.ToString("D"),
+                preferMembershipId: recipient?.Id,
+                cancellationToken: cancellationToken);
+        }
+        catch
+        {
+            // Gratitude already saved — push must not fail the request.
+        }
+
+        try
+        {
+            await _memories.TryCaptureAsync(
+                _tenant.TenantId,
+                familyId,
+                flowDate,
+                FamilyMemoryKinds.Gratitude,
+                messageVi,
+                noteVi: praiseContext,
+                icon: "💌",
+                sourceRef: id.ToString("D"),
+                memberId: request.FromMemberId,
+                cancellationToken: cancellationToken);
+        }
+        catch
+        {
+            // Memory capture is best-effort.
+        }
 
         return Map(row, alreadySent: false);
     }

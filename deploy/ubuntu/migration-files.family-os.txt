@@ -26,4 +26,14 @@
 222_pack_family_commercial_foundation.sql
 223_pack_family_billing_checkout.sql
 224_kit_payment_platform.sql
+225_payment_plan_trial_days.sql
+226_pack_family_parent_goal.sql
+227_pack_family_challenge.sql
+228_kit_accounts_memberships.sql
+229_kit_accounts_prefer_pharmacy.sql
+230_pack_family_parent_emotion_push.sql
+231_pack_family_memory.sql
+232_pack_family_afe_engine.sql
+233_pack_family_day_mission_request.sql
+234_pack_family_routine_trim_proposal.sql
 # Optional (owner ALTER tenants CHECK): 192a_pack_family_os_vertical_owner.sql

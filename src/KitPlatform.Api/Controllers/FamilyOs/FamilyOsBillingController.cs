@@ -12,9 +12,15 @@ namespace KitPlatform.Api.Controllers.FamilyOs;
 public sealed class FamilyOsBillingController : ControllerBase
 {
     private readonly IFamilyBillingService _billing;
+    private readonly IFamilyCommercialService _commercial;
 
-    public FamilyOsBillingController(IFamilyBillingService billing) =>
+    public FamilyOsBillingController(
+        IFamilyBillingService billing,
+        IFamilyCommercialService commercial)
+    {
         _billing = billing;
+        _commercial = commercial;
+    }
 
     [Authorize]
     [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]
@@ -79,6 +85,30 @@ public sealed class FamilyOsBillingController : ControllerBase
             || ex.Message.Contains("signature", StringComparison.OrdinalIgnoreCase))
         {
             return Unauthorized(new { code = "invalid_signature", message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { code = "validation_error", message = ex.Message });
+        }
+    }
+
+    /// <summary>Ops-only — extend a family's trial by N days (Admin → Billing).</summary>
+    [Authorize(Policy = PaymentPolicies.OpsActivate)]
+    [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]
+    [HttpPost("families/{familyId:guid}/billing/extend-trial")]
+    [ProducesResponseType(typeof(FamilySubscriptionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<FamilySubscriptionDto>> ExtendTrial(
+        Guid familyId,
+        [FromBody] ExtendFamilyTrialRequest? request,
+        CancellationToken cancellationToken)
+    {
+        if (request is null || request.ExtraDays <= 0)
+            return BadRequest(new { code = "validation_error", message = "extraDays là bắt buộc." });
+        try
+        {
+            return Ok(await _commercial.ExtendTrialAsync(familyId, request, cancellationToken));
         }
         catch (InvalidOperationException ex)
         {

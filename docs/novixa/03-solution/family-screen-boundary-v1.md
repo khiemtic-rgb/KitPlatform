@@ -114,6 +114,9 @@ Agreement / Consequence catalog (screen_*)
 | **SB2** | B: checklist + deep-link trên Parent Board + Admin Agreements | Prototype |
 | **SB3** | Persist “đã cấu hình OS” + nhắc lại nếu chưa tick | Later |
 | **SB4** | Native companion / MDM (nếu bao giờ) | Out of Starter |
+| **SB5** | **Screen Time Wallet (thỏa thuận)** + Child Proposal xin phút — không đo máy; bố mẹ duyệt qua Decision Inbox | AFE sóng 1–2 — [adaptive-family-engine-v1.md](./adaptive-family-engine-v1.md) |
+
+**Đường chính Screen Time:** không bắt bố mẹ cài Rule phút theo ngày. Con đề xuất (+ lý do) → AI tóm tắt → bố mẹ 👍/👎. Wallet = ngân sách tuần thỏa thuận trong nhà; vẫn dùng A+B để giữ ranh giới trên máy.
 
 ---
 
@@ -143,4 +146,5 @@ Agreement / Consequence catalog (screen_*)
 ## 9. Liên kết
 
 - SoftLockGuide hiện có: `FamilySoftLockGuides` (Pack FamilyOS)  
-- UI: `ParentPinSheet` · `ParentBoardView` · `KidFocusView` · `FamilyOsAgreementsPage`
+- UI: `ParentPinSheet` · `ParentBoardView` · `KidFocusView` · `FamilyOsAgreementsPage`  
+- AFE / Wallet / Child Proposal: [adaptive-family-engine-v1.md](./adaptive-family-engine-v1.md)

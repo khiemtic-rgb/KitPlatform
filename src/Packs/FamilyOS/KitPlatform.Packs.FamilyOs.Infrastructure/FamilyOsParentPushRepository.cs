@@ -212,6 +212,192 @@ internal sealed class FamilyOsParentPushRepository
         return rows.AsList();
     }
 
+    /// <summary>Done items that may still need parent star/evidence approval.</summary>
+    public async Task<IReadOnlyList<PendingApprovalRow>> ListPendingApprovalsAsync(
+        Guid tenantId,
+        Guid familyId,
+        DateOnly flowDate,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<PendingApprovalRow>(
+            """
+            SELECT
+                c.id AS CommitmentId,
+                c.title AS Title,
+                c.evidence_url AS EvidenceUrl,
+                c.pending_star_delta AS PendingStarDelta,
+                m.display_name AS MemberName
+            FROM pack_family.commitment c
+            INNER JOIN pack_family.day_flow d
+              ON d.id = c.day_flow_id AND d.tenant_id = c.tenant_id AND d.deleted_at IS NULL
+            LEFT JOIN pack_family.membership m
+              ON m.id = c.member_id AND m.tenant_id = c.tenant_id AND m.deleted_at IS NULL
+            WHERE c.tenant_id = @TenantId
+              AND d.family_id = @FamilyId
+              AND d.flow_date = @FlowDate
+              AND c.deleted_at IS NULL
+              AND c.status = 'done'
+              AND c.star_posted_at IS NULL
+              AND c.pending_star_delta IS NOT NULL
+            ORDER BY c.sort_order, c.completed_at NULLS LAST
+            """,
+            new { TenantId = tenantId, FamilyId = familyId, FlowDate = flowDate });
+        return rows.AsList();
+    }
+
+    public async Task<DayAggRow?> GetDayAggregateAsync(
+        Guid tenantId,
+        Guid familyId,
+        DateOnly flowDate,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<DayAggRow>(
+            """
+            SELECT
+                COUNT(*) FILTER (
+                    WHERE m.role_code = 'child' AND c.status = 'done'
+                )::int AS ChildDone,
+                COUNT(*) FILTER (
+                    WHERE m.role_code = 'child' AND c.status = 'skipped'
+                )::int AS ChildSkipped,
+                COUNT(*) FILTER (
+                    WHERE m.role_code = 'child' AND c.status IN ('pending', 'in_progress')
+                )::int AS ChildOpen,
+                COUNT(*) FILTER (
+                    WHERE m.role_code = 'child'
+                      AND c.status = 'done'
+                      AND c.completed_at IS NOT NULL
+                      AND c.window_end IS NOT NULL
+                      AND (c.completed_at AT TIME ZONE f.timezone)::time > c.window_end
+                )::int AS ChildLateDone,
+                (
+                    SELECT COUNT(*)::int
+                    FROM pack_family.consequence_event ce
+                    WHERE ce.tenant_id = @TenantId
+                      AND ce.family_id = @FamilyId
+                      AND ce.flow_date = @FlowDate
+                      AND ce.deleted_at IS NULL
+                      AND ce.status = 'applied'
+                ) AS AppliedConsequences
+            FROM pack_family.day_flow d
+            INNER JOIN pack_family.family f
+              ON f.id = d.family_id AND f.tenant_id = d.tenant_id
+            LEFT JOIN pack_family.commitment c
+              ON c.day_flow_id = d.id AND c.tenant_id = d.tenant_id AND c.deleted_at IS NULL
+            LEFT JOIN pack_family.membership m
+              ON m.id = c.member_id AND m.tenant_id = c.tenant_id AND m.deleted_at IS NULL
+            WHERE d.tenant_id = @TenantId
+              AND d.family_id = @FamilyId
+              AND d.flow_date = @FlowDate
+              AND d.deleted_at IS NULL
+            GROUP BY f.timezone
+            """,
+            new { TenantId = tenantId, FamilyId = familyId, FlowDate = flowDate });
+    }
+
+    public async Task<int> CountBeautifulDayStreakAsync(
+        Guid tenantId,
+        Guid familyId,
+        DateOnly today,
+        string timezone,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var from = today.AddDays(-60);
+        var rows = await conn.QueryAsync<StreakDayRow>(
+            """
+            SELECT
+                d.flow_date AS FlowDate,
+                COUNT(*) FILTER (
+                    WHERE m.role_code = 'child'
+                )::int AS ChildTotal,
+                COUNT(*) FILTER (
+                    WHERE m.role_code = 'child' AND c.status IN ('pending', 'in_progress')
+                )::int AS ChildOpen,
+                COUNT(*) FILTER (
+                    WHERE m.role_code = 'child'
+                      AND c.status = 'done'
+                      AND c.completed_at IS NOT NULL
+                      AND c.window_end IS NOT NULL
+                      AND (c.completed_at AT TIME ZONE @Timezone)::time > c.window_end
+                )::int AS ChildLateDone,
+                (
+                    SELECT COUNT(*)::int
+                    FROM pack_family.consequence_event ce
+                    WHERE ce.tenant_id = d.tenant_id
+                      AND ce.family_id = d.family_id
+                      AND ce.flow_date = d.flow_date
+                      AND ce.deleted_at IS NULL
+                      AND ce.status = 'applied'
+                ) AS AppliedConsequences
+            FROM pack_family.day_flow d
+            LEFT JOIN pack_family.commitment c
+              ON c.day_flow_id = d.id AND c.tenant_id = d.tenant_id AND c.deleted_at IS NULL
+            LEFT JOIN pack_family.membership m
+              ON m.id = c.member_id AND m.tenant_id = c.tenant_id AND m.deleted_at IS NULL
+            WHERE d.tenant_id = @TenantId
+              AND d.family_id = @FamilyId
+              AND d.flow_date BETWEEN @From AND @Today
+              AND d.deleted_at IS NULL
+            GROUP BY d.tenant_id, d.family_id, d.flow_date
+            ORDER BY d.flow_date DESC
+            """,
+            new
+            {
+                TenantId = tenantId,
+                FamilyId = familyId,
+                From = from,
+                Today = today,
+                Timezone = timezone,
+            });
+
+        var streak = 0;
+        var byDate = rows.ToDictionary(r => r.FlowDate);
+        for (var d = today; d >= from; d = d.AddDays(-1))
+        {
+            if (!byDate.TryGetValue(d, out var row) || row.ChildTotal <= 0)
+            {
+                if (d == today)
+                    continue;
+                continue;
+            }
+
+            var beautiful = row.ChildOpen == 0
+                && row.AppliedConsequences == 0
+                && row.ChildLateDone == 0;
+            if (!beautiful)
+                break;
+            streak++;
+        }
+
+        return streak;
+    }
+
+    public async Task<IReadOnlyList<SubscriptionRow>> ListSubscriptionsForFamilyAsync(
+        Guid familyId,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<SubscriptionRow>(
+            """
+            SELECT
+                s.id AS Id,
+                s.tenant_id AS TenantId,
+                s.family_id AS FamilyId,
+                s.membership_id AS MembershipId,
+                s.endpoint AS Endpoint,
+                s.p256dh AS P256dh,
+                s.auth AS Auth
+            FROM pack_family.parent_push_subscription s
+            WHERE s.family_id = @FamilyId
+              AND s.deleted_at IS NULL
+            """,
+            new { FamilyId = familyId });
+        return rows.AsList();
+    }
+
     public async Task<bool> TryInsertDispatchAsync(
         Guid tenantId,
         Guid familyId,
@@ -293,5 +479,33 @@ internal sealed class FamilyOsParentPushRepository
         public Guid TenantId { get; init; }
         public string Timezone { get; init; } = "Asia/Ho_Chi_Minh";
         public string DisplayName { get; init; } = "";
+    }
+
+    internal sealed class PendingApprovalRow
+    {
+        public Guid CommitmentId { get; init; }
+        public string Title { get; init; } = "";
+        public string? EvidenceUrl { get; init; }
+        public int? PendingStarDelta { get; init; }
+        public string? MemberName { get; init; }
+    }
+
+    internal sealed class DayAggRow
+    {
+        public int ChildDone { get; init; }
+        public int ChildSkipped { get; init; }
+        public int ChildOpen { get; init; }
+        public int ChildLateDone { get; init; }
+        public int AppliedConsequences { get; init; }
+        public int ChildTotal => ChildDone + ChildSkipped + ChildOpen;
+    }
+
+    internal sealed class StreakDayRow
+    {
+        public DateOnly FlowDate { get; init; }
+        public int ChildTotal { get; init; }
+        public int ChildOpen { get; init; }
+        public int ChildLateDone { get; init; }
+        public int AppliedConsequences { get; init; }
     }
 }

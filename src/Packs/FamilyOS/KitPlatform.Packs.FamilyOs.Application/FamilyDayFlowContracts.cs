@@ -63,6 +63,16 @@ public sealed record UpdateCommitmentProgressRequest(
     string? EvidenceUrl = null,
     bool ParentOverride = false);
 
+public sealed record AddAdHocCommitmentRequest(
+    DateOnly? FlowDate,
+    Guid? MemberId,
+    string Title,
+    string? Description = null,
+    TimeOnly? WindowStart = null,
+    TimeOnly? WindowEnd = null,
+    int? ExpectedDurationMinutes = null,
+    string? Priority = null);
+
 public sealed record FamilyEvidenceUploadResult(string Url);
 
 /// <summary>F2.5 L2 — structured reflection reasons (not free-text punishment).</summary>
@@ -114,5 +124,11 @@ public interface IFamilyDayFlowService
     Task<CommitmentDto> ApproveCommitmentStarsAsync(
         Guid familyId,
         Guid commitmentId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>One-off mission for a day (template_id null). Survives routine rebuild.</summary>
+    Task<CommitmentDto> AddAdHocCommitmentAsync(
+        Guid familyId,
+        AddAdHocCommitmentRequest request,
         CancellationToken cancellationToken = default);
 }

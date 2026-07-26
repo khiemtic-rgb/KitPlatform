@@ -10,8 +10,11 @@ namespace KitPlatform.Packs.FamilyOs.Infrastructure;
 
 internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
 {
+    private static readonly int[] StreakMilestones = [3, 7, 14, 21, 27];
+
     private readonly FamilyOsParentPushRepository _repo;
     private readonly FamilyGraphRepository _families;
+    private readonly IFamilyMemoryService _memories;
     private readonly CustomerAppPushOptions _pushOptions;
     private readonly FamilyOsReminderOptions _reminderOptions;
     private readonly ILogger<FamilyOsParentPushService> _logger;
@@ -19,12 +22,14 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
     public FamilyOsParentPushService(
         FamilyOsParentPushRepository repo,
         FamilyGraphRepository families,
+        IFamilyMemoryService memories,
         IOptions<CustomerAppPushOptions> pushOptions,
         IOptions<FamilyOsReminderOptions> reminderOptions,
         ILogger<FamilyOsParentPushService> logger)
     {
         _repo = repo;
         _families = families;
+        _memories = memories;
         _pushOptions = pushOptions.Value;
         _reminderOptions = reminderOptions.Value;
         _logger = logger;
@@ -104,16 +109,65 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
             return 0;
 
         var subscriptions = await _repo.ListAllActiveSubscriptionsAsync(cancellationToken);
-        if (subscriptions.Count == 0)
-            return 0;
-
         var byFamily = subscriptions.GroupBy(s => s.FamilyId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
         var sent = 0;
-        sent += await DispatchHotCommitmentsAsync(byFamily, cancellationToken);
+        // Surprises also write Family Memories, so they run even without push subscriptions.
+        sent += await DispatchPositiveSurprisesAsync(byFamily, cancellationToken);
+
+        if (byFamily.Count == 0)
+            return sent;
+
+        if (_reminderOptions.HotCommitmentPushEnabled)
+            sent += await DispatchHotCommitmentsAsync(byFamily, cancellationToken);
+        sent += await DispatchApprovalDigestsAsync(byFamily, cancellationToken);
         sent += await DispatchEveningDigestsAsync(byFamily, cancellationToken);
         return sent;
+    }
+
+    public async Task<bool> TryNotifyFamilyAsync(
+        Guid tenantId,
+        Guid familyId,
+        DateOnly flowDate,
+        string kind,
+        string title,
+        string body,
+        string url,
+        string dataType,
+        string? payloadSummary = null,
+        Guid? preferMembershipId = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_reminderOptions.Enabled || !_pushOptions.Enabled)
+            return false;
+        if (string.IsNullOrWhiteSpace(_pushOptions.PublicKey)
+            || string.IsNullOrWhiteSpace(_pushOptions.PrivateKey))
+            return false;
+
+        var subs = await _repo.ListSubscriptionsForFamilyAsync(familyId, cancellationToken);
+        if (subs.Count == 0)
+            return false;
+
+        var summary = string.IsNullOrWhiteSpace(payloadSummary)
+            ? $"{kind}:{title}"
+            : payloadSummary.Trim();
+        if (summary.Length > 390)
+            summary = summary[..390];
+
+        var inserted = await _repo.TryInsertDispatchAsync(
+            tenantId, familyId, flowDate, kind, null, summary, cancellationToken);
+        if (!inserted)
+            return false;
+
+        if (preferMembershipId is Guid mid)
+        {
+            var preferred = subs.Where(s => s.MembershipId == mid).ToList();
+            if (preferred.Count > 0)
+                subs = preferred;
+        }
+
+        return await SendToSubscriptionsAsync(subs, title, body, url, dataType, cancellationToken);
     }
 
     private async Task<int> DispatchHotCommitmentsAsync(
@@ -152,7 +206,76 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
             if (!inserted)
                 continue;
 
-            if (await SendToSubscriptionsAsync(subs, title, body, "/today", cancellationToken))
+            if (await SendToSubscriptionsAsync(
+                    subs, title, body, "/today", "familyos_parent_reminder", cancellationToken))
+                sent++;
+        }
+
+        return sent;
+    }
+
+    private async Task<int> DispatchApprovalDigestsAsync(
+        IReadOnlyDictionary<Guid, List<FamilyOsParentPushRepository.SubscriptionRow>> byFamily,
+        CancellationToken cancellationToken)
+    {
+        var hour = Math.Clamp(_reminderOptions.ApprovalDigestHour, 0, 23);
+        var families = await _repo.ListActiveFamiliesAsync(cancellationToken);
+        var sent = 0;
+
+        foreach (var family in families)
+        {
+            if (!byFamily.TryGetValue(family.FamilyId, out var subs) || subs.Count == 0)
+                continue;
+
+            var localNow = FamilyTimeZones.NowIn(family.Timezone);
+            if (localNow.Hour < hour)
+                continue;
+
+            var today = DateOnly.FromDateTime(localNow.DateTime);
+            var pending = await _repo.ListPendingApprovalsAsync(
+                family.TenantId, family.FamilyId, today, cancellationToken);
+
+            var needReview = pending
+                .Where(p => FamilyCommitmentReview.NeedsParentApproval(p.Title, p.EvidenceUrl))
+                .Take(5)
+                .ToList();
+
+            if (needReview.Count == 0)
+                continue;
+
+            var n = needReview.Count;
+            var samples = needReview
+                .Select(p =>
+                {
+                    var who = string.IsNullOrWhiteSpace(p.MemberName) ? "" : $"{p.MemberName}: ";
+                    return $"{who}{p.Title}";
+                })
+                .ToList();
+
+            var summary = $"approval:{n}|" + string.Join("|", samples);
+            if (summary.Length > 390)
+                summary = summary[..390];
+
+            var inserted = await _repo.TryInsertDispatchAsync(
+                family.TenantId,
+                family.FamilyId,
+                today,
+                "approval_digest",
+                null,
+                summary,
+                cancellationToken);
+            if (!inserted)
+                continue;
+
+            var title = n == 1
+                ? "Chỉ 1 việc cần xác nhận (~15 giây)"
+                : $"Chỉ {n} việc cần xác nhận (~15 giây)";
+            var body = string.Join(" · ", samples.Take(2))
+                       + (n > 2 ? $" · +{n - 2} việc nữa" : "")
+                       + " — đổi lấy việc phải nhắc con ít hơn.";
+
+            if (await SendToSubscriptionsAsync(
+                    subs, title, body, "/today", "familyos_approval_digest", cancellationToken))
                 sent++;
         }
 
@@ -224,11 +347,166 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
 
             var title = "Tóm tắt tối — việc muộn";
             var body = string.Join(" · ", lateItems);
-            if (await SendToSubscriptionsAsync(subs, title, body, "/today", cancellationToken))
+            if (await SendToSubscriptionsAsync(
+                    subs, title, body, "/today", "familyos_parent_reminder", cancellationToken))
                 sent++;
         }
 
         return sent;
+    }
+
+    private async Task<int> DispatchPositiveSurprisesAsync(
+        IReadOnlyDictionary<Guid, List<FamilyOsParentPushRepository.SubscriptionRow>> byFamily,
+        CancellationToken cancellationToken)
+    {
+        var earliest = Math.Clamp(_reminderOptions.SurpriseEarliestHour, 0, 23);
+        var families = await _repo.ListActiveFamiliesAsync(cancellationToken);
+        var sent = 0;
+
+        foreach (var family in families)
+        {
+            byFamily.TryGetValue(family.FamilyId, out var subs);
+            subs ??= [];
+
+            var localNow = FamilyTimeZones.NowIn(family.Timezone);
+            if (localNow.Hour < earliest)
+                continue;
+
+            var today = DateOnly.FromDateTime(localNow.DateTime);
+            var agg = await _repo.GetDayAggregateAsync(
+                family.TenantId, family.FamilyId, today, cancellationToken);
+            if (agg is null || agg.ChildTotal <= 0)
+                continue;
+
+            // All child tasks finished — soft win (may include late).
+            if (agg.ChildOpen == 0 && agg.ChildDone > 0)
+            {
+                var allDoneBody = agg.ChildLateDone == 0 && agg.AppliedConsequences == 0
+                    ? "Con hoàn thành toàn bộ. Không cần mở App — chúc cả nhà buổi tối vui vẻ."
+                    : "Con đã xong hết việc hôm nay. Bố mẹ có thể nghỉ một nhịp.";
+                if (await TryFamilyKindPushAsync(
+                        family, today, subs,
+                        kind: "all_done",
+                        title: "Cả nhà xong việc rồi",
+                        body: allDoneBody,
+                        dataType: "familyos_surprise",
+                        cancellationToken))
+                    sent++;
+            }
+
+            var beautiful = agg.ChildOpen == 0
+                && agg.ChildTotal > 0
+                && agg.AppliedConsequences == 0
+                && agg.ChildLateDone == 0;
+
+            if (beautiful)
+            {
+                await TryCaptureMemoryAsync(
+                    family,
+                    today,
+                    FamilyMemoryKinds.BeautifulDay,
+                    "Ngày đẹp — không phải nhắc con",
+                    "Con xong hết việc đúng giờ, cả nhà không phải nhắc.",
+                    "🌤️",
+                    cancellationToken);
+
+                if (await TryFamilyKindPushAsync(
+                        family, today, subs,
+                        kind: "beautiful_day",
+                        title: "Ngày đẹp của cả nhà",
+                        body: "Hôm nay không phải nhắc con — một khoảnh khắc đáng giữ lại.",
+                        dataType: "familyos_surprise",
+                        cancellationToken))
+                    sent++;
+
+                var streak = await _repo.CountBeautifulDayStreakAsync(
+                    family.TenantId, family.FamilyId, today, family.Timezone, cancellationToken);
+                if (StreakMilestones.Contains(streak))
+                {
+                    await TryCaptureMemoryAsync(
+                        family,
+                        today,
+                        FamilyMemoryKinds.StreakMilestone,
+                        $"Chuỗi {streak} ngày đẹp liên tiếp",
+                        "Nhịp sống của nhà mình đang dần thành thói quen.",
+                        "🔥",
+                        cancellationToken,
+                        sourceRef: $"streak:{today:yyyy-MM-dd}:{streak}");
+
+                    if (await TryFamilyKindPushAsync(
+                            family,
+                            today,
+                            subs,
+                            kind: "streak_milestone",
+                            title: $"Ngày thứ {streak}",
+                            body: streak >= 27
+                                ? $"Hôm nay là ngày thứ {streak} cả nhà cùng giữ nhịp. Đây là kỷ lục đáng tự hào."
+                                : $"Chuỗi {streak} ngày đẹp liên tiếp — gia đình đang lớn lên từng ngày.",
+                            dataType: "familyos_surprise",
+                            cancellationToken: cancellationToken,
+                            summary: $"streak:{streak}"))
+                        sent++;
+                }
+            }
+        }
+
+        return sent;
+    }
+
+    private async Task TryCaptureMemoryAsync(
+        FamilyOsParentPushRepository.FamilyClockRow family,
+        DateOnly today,
+        string kind,
+        string titleVi,
+        string noteVi,
+        string icon,
+        CancellationToken cancellationToken,
+        string? sourceRef = null)
+    {
+        try
+        {
+            await _memories.TryCaptureAsync(
+                family.TenantId,
+                family.FamilyId,
+                today,
+                kind,
+                titleVi,
+                noteVi: noteVi,
+                icon: icon,
+                sourceRef: sourceRef ?? $"{kind}:{today:yyyy-MM-dd}",
+                cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "FamilyOS memory capture failed for family {FamilyId}.", family.FamilyId);
+        }
+    }
+
+    private async Task<bool> TryFamilyKindPushAsync(
+        FamilyOsParentPushRepository.FamilyClockRow family,
+        DateOnly today,
+        IReadOnlyList<FamilyOsParentPushRepository.SubscriptionRow> subs,
+        string kind,
+        string title,
+        string body,
+        string dataType,
+        CancellationToken cancellationToken,
+        string? summary = null)
+    {
+        // No subscriber yet — don't burn the dedupe row, parent may subscribe later today.
+        if (subs.Count == 0)
+            return false;
+
+        var payload = summary ?? $"{kind}:{today:yyyy-MM-dd}";
+        if (payload.Length > 390)
+            payload = payload[..390];
+
+        var inserted = await _repo.TryInsertDispatchAsync(
+            family.TenantId, family.FamilyId, today, kind, null, payload, cancellationToken);
+        if (!inserted)
+            return false;
+
+        return await SendToSubscriptionsAsync(subs, title, body, "/today", dataType, cancellationToken);
     }
 
     private async Task<bool> SendToSubscriptionsAsync(
@@ -236,13 +514,15 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
         string title,
         string body,
         string url,
+        string dataType,
         CancellationToken cancellationToken)
     {
         var payload = JsonSerializer.Serialize(new
         {
             title,
             body,
-            data = new { type = "familyos_parent_reminder", url },
+            silent = false,
+            data = new { type = dataType, url },
         });
 
         var vapid = new VapidDetails(_pushOptions.Subject, _pushOptions.PublicKey, _pushOptions.PrivateKey);

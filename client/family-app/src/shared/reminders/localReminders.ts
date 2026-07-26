@@ -1,4 +1,5 @@
 import type { DayFlow, DayFlowCommitment } from '@/shared/api/family-os.api';
+import { isInAppChimeEnabled, playInAppDueChime } from '@/shared/reminders/inAppChime';
 
 const PERMISSION_HINT_KEY = 'familyos.notify.asked';
 
@@ -6,9 +7,13 @@ function storageKey(flowDate: string): string {
   return `familyos.notified:${flowDate}`;
 }
 
-function readNotified(flowDate: string): Set<string> {
+function chimeStorageKey(flowDate: string): string {
+  return `familyos.chimed:${flowDate}`;
+}
+
+function readSet(key: string): Set<string> {
   try {
-    const raw = sessionStorage.getItem(storageKey(flowDate));
+    const raw = sessionStorage.getItem(key);
     if (!raw) return new Set();
     const parsed = JSON.parse(raw) as unknown;
     return new Set(Array.isArray(parsed) ? parsed.map(String) : []);
@@ -17,8 +22,8 @@ function readNotified(flowDate: string): Set<string> {
   }
 }
 
-function writeNotified(flowDate: string, ids: Set<string>): void {
-  sessionStorage.setItem(storageKey(flowDate), JSON.stringify([...ids]));
+function writeSet(key: string, ids: Set<string>): void {
+  sessionStorage.setItem(key, JSON.stringify([...ids]));
 }
 
 export function notificationSupport(): boolean {
@@ -62,15 +67,21 @@ function notifyBody(c: DayFlowCommitment): string {
   return `${who}${c.title}`;
 }
 
-/** Fire browser notifications for due_now / overdue (once per state per day, session). */
+/**
+ * Fire system notifications (with sound) + optional in-app chime for due_now / overdue.
+ * Dedupes once per commitment state per day (session).
+ */
 export function notifyDueCommitments(
   flow: DayFlow,
   opts?: { memberId?: string },
 ): number {
-  if (!notificationSupport() || Notification.permission !== 'granted') return 0;
-
-  const notified = readNotified(flow.flowDate);
+  const notified = readSet(storageKey(flow.flowDate));
+  const chimed = readSet(chimeStorageKey(flow.flowDate));
   let fired = 0;
+  let wantChime = false;
+
+  const canNotify =
+    notificationSupport() && Notification.permission === 'granted';
 
   const items = flow.commitments.filter((c) => {
     if (!isHot(c)) return false;
@@ -80,19 +91,41 @@ export function notifyDueCommitments(
 
   for (const item of items) {
     const key = `${item.id}:${item.reminderState}`;
-    if (notified.has(key)) continue;
-    try {
-      new Notification(notifyTitle(item), {
-        body: notifyBody(item),
-        tag: key,
-      });
-      notified.add(key);
-      fired++;
-    } catch {
-      // Safari / restricted contexts — ignore
+    const alreadyNotified = notified.has(key);
+    const alreadyChimed = chimed.has(key);
+    if (alreadyNotified && alreadyChimed) continue;
+
+    if (canNotify && !alreadyNotified) {
+      try {
+        new Notification(notifyTitle(item), {
+          body: notifyBody(item),
+          tag: key,
+          // Explicit: never silence — use OS / browser notification sound.
+          silent: false,
+          // Best-effort on supporting browsers (Android Chrome, etc.).
+          vibrate: item.reminderState === 'overdue' ? [220, 100, 220] : [160, 60, 160],
+          renotify: true,
+        } as NotificationOptions);
+        notified.add(key);
+        fired++;
+      } catch {
+        // Safari / restricted contexts — still allow in-app chime below
+      }
+    }
+
+    // In-app chime while Daily Flow is open (independent of Notification permission).
+    if (!alreadyChimed) {
+      wantChime = true;
+      chimed.add(key);
     }
   }
 
-  writeNotified(flow.flowDate, notified);
+  writeSet(storageKey(flow.flowDate), notified);
+  writeSet(chimeStorageKey(flow.flowDate), chimed);
+
+  if (wantChime && isInAppChimeEnabled()) {
+    void playInAppDueChime();
+  }
+
   return fired;
 }

@@ -9,8 +9,17 @@ public sealed class FamilyOsReminderOptions
 {
     public bool Enabled { get; init; } = true;
     public int PollIntervalSeconds { get; init; } = 60;
-    /// <summary>Local family hour (0–23) to send evening digest once per day.</summary>
+    /// <summary>Local family hour (0–23) to send evening late-work digest once per day.</summary>
     public int EveningDigestHour { get; init; } = 20;
+    /// <summary>
+    /// Local hour to send parent approval digest once/day:
+    /// "Chỉ N việc cần xác nhận (~15 giây)".
+    /// </summary>
+    public int ApprovalDigestHour { get; init; } = 18;
+    /// <summary>Per-commitment due_now/overdue pings. Prefer digest when false.</summary>
+    public bool HotCommitmentPushEnabled { get; init; } = true;
+    /// <summary>Local hour after which all_done / beautiful_day / streak may fire.</summary>
+    public int SurpriseEarliestHour { get; init; } = 17;
 }
 
 public sealed record FamilyParentPushStatusDto(
@@ -87,6 +96,22 @@ public interface IFamilyOsParentPushService
         string endpoint,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Worker tick: due_now / overdue push + evening digest.</summary>
+    /// <summary>Worker tick: hot reminders + digests + positive surprises.</summary>
     Task<int> DispatchDueParentRemindersAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Event push (gratitude / ad-hoc). Deduped via reminder_dispatch when kind+date(+summary) unique.
+    /// </summary>
+    Task<bool> TryNotifyFamilyAsync(
+        Guid tenantId,
+        Guid familyId,
+        DateOnly flowDate,
+        string kind,
+        string title,
+        string body,
+        string url,
+        string dataType,
+        string? payloadSummary = null,
+        Guid? preferMembershipId = null,
+        CancellationToken cancellationToken = default);
 }

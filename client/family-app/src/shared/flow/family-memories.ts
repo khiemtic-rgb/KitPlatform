@@ -1,4 +1,9 @@
-import type { DayFlowCommitment, RewardRedemption, TeamUnlock } from '@/shared/api/family-os.api';
+import type {
+  DayFlowCommitment,
+  FamilyMemoryEntry,
+  RewardRedemption,
+  TeamUnlock,
+} from '@/shared/api/family-os.api';
 
 export type FamilyMemory = {
   id: string;
@@ -9,6 +14,9 @@ export type FamilyMemory = {
   isNew?: boolean;
   pending?: boolean;
   locked?: boolean;
+  /** Present when this card comes from pack_family.family_memory. */
+  entry?: FamilyMemoryEntry;
+  photoUrl?: string;
 };
 
 export const FAMILY_MEMORY_VISIBLE = 4;
@@ -56,11 +64,47 @@ function milestoneKind(title: string): 'garden' | 'read' | null {
   return null;
 }
 
+export function memoryFromSaved(entry: FamilyMemoryEntry, now = new Date()): FamilyMemory {
+  const at = entry.happenedAt || entry.flowDate;
+  return {
+    id: `saved-${entry.id}`,
+    icon: entry.icon || defaultIconForKind(entry.kind),
+    title: entry.titleVi,
+    date: formatMemoryDate(entry.flowDate || at),
+    sortAt: parseSortTime(at),
+    isNew: isRecent(at, now) || entry.isFavorite,
+    entry,
+    photoUrl: entry.photoUrl,
+  };
+}
+
+function defaultIconForKind(kind: string): string {
+  switch (kind) {
+    case 'beautiful_day':
+      return '🌤️';
+    case 'streak_milestone':
+      return '🔥';
+    case 'gratitude':
+      return '💌';
+    case 'photo':
+      return '📸';
+    case 'team_unlock':
+      return '🍿';
+    case 'reward':
+      return '🎁';
+    case 'first_time':
+      return '🌱';
+    default:
+      return '💛';
+  }
+}
+
 export function buildFamilyMemories(opts: {
   childShort: string;
   redemptions: RewardRedemption[];
   teamUnlocks: TeamUnlock[];
   doneItems?: DayFlowCommitment[];
+  saved?: FamilyMemoryEntry[];
   voice?: 'kid' | 'parent';
   now?: Date;
 }): FamilyMemory[] {
@@ -69,10 +113,18 @@ export function buildFamilyMemories(opts: {
     redemptions,
     teamUnlocks,
     doneItems = [],
+    saved = [],
     voice = 'parent',
     now = new Date(),
   } = opts;
   const out: FamilyMemory[] = [];
+  const seenTitles = new Set<string>();
+
+  for (const entry of saved) {
+    const mem = memoryFromSaved(entry, now);
+    out.push(mem);
+    seenTitles.add(normalizeTitle(mem.title));
+  }
 
   for (const r of redemptions) {
     const at = r.fulfilledAt ?? r.createdAt;
@@ -85,6 +137,7 @@ export function buildFamilyMemories(opts: {
         : pending
           ? `${childShort} đổi ${r.title} (chờ xác nhận)`
           : `${childShort} đổi ${r.title}`;
+    if (seenTitles.has(normalizeTitle(title))) continue;
     out.push({
       id: `redeem-${r.id}`,
       icon: r.icon || '🎁',
@@ -109,6 +162,7 @@ export function buildFamilyMemories(opts: {
         : pending
           ? `${label} — chờ xác nhận`
           : `${label} cả nhà`;
+    if (seenTitles.has(normalizeTitle(title))) continue;
     out.push({
       id: `unlock-${u.id}`,
       icon: teamUnlockIcon(u),
@@ -129,9 +183,8 @@ export function buildFamilyMemories(opts: {
     seenMilestones.add(kind);
     const at = c.completedAt ?? `${now.toISOString().slice(0, 10)}T12:00:00`;
     const title =
-      kind === 'garden'
-        ? `${childShort} trồng cây lần đầu`
-        : `Đọc sách cùng bố`;
+      kind === 'garden' ? `${childShort} trồng cây lần đầu` : `Đọc sách cùng bố`;
+    if (seenTitles.has(normalizeTitle(title))) continue;
     out.push({
       id: `milestone-${kind}-${c.id}`,
       icon: kind === 'garden' ? '🌱' : '📚',
@@ -142,8 +195,17 @@ export function buildFamilyMemories(opts: {
     });
   }
 
-  return out.sort((a, b) => b.sortAt - a.sortAt);
+  return out.sort((a, b) => {
+    const favA = a.entry?.isFavorite ? 1 : 0;
+    const favB = b.entry?.isFavorite ? 1 : 0;
+    if (favA !== favB) return favB - favA;
+    return b.sortAt - a.sortAt;
+  });
+}
+
+function normalizeTitle(title: string): string {
+  return title.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 export const FAMILY_MEMORY_EMPTY =
-  'Chưa có kỷ niệm — khi nhà làm Movie Night hoặc đổi quà sẽ hiện ở đây';
+  'Chưa có kỷ niệm — khi nhà làm Movie Night, đổi quà hoặc có ngày đẹp sẽ hiện ở đây';

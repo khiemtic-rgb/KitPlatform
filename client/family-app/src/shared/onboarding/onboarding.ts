@@ -16,12 +16,19 @@ export type StarterMission = {
   priority: 'high' | 'normal';
 };
 
+export type PriorityCode = 'autonomy' | 'study' | 'screen' | 'chores';
+
 export type OnboardingAnswers = {
   childId: string;
   childName: string;
   ageBand: AgeBand;
   struggles: StruggleCode[];
   goal: GoalCode;
+  /** AFE wizard extras — optional for backward compat. */
+  childCount?: number;
+  hasExtraClass?: boolean;
+  sleepHour?: string;
+  priorities?: PriorityCode[];
 };
 
 export type OnboardingProfile = OnboardingAnswers & {
@@ -102,6 +109,31 @@ export const GOAL_OPTIONS: Array<{ value: GoalCode; label: string; icon: string 
   { value: 'quality_time', label: 'Thêm thời gian chất lượng (Movie Night / đọc)', icon: '🎬' },
   { value: 'bedtime', label: 'Giữ giờ đi ngủ ổn định', icon: '😴' },
 ];
+
+export const PRIORITY_OPTIONS: Array<{ value: PriorityCode; label: string; icon: string }> = [
+  { value: 'autonomy', label: 'Tự giác', icon: '🌟' },
+  { value: 'study', label: 'Học tập', icon: '📘' },
+  { value: 'screen', label: 'Giảm màn hình', icon: '📱' },
+  { value: 'chores', label: 'Việc nhà', icon: '🏠' },
+];
+
+export const SLEEP_HOUR_OPTIONS = ['20:00', '20:30', '21:00', '21:30', '22:00'] as const;
+
+/** Suggested weekly screen budget (agreement minutes) from age + mode signals. */
+export function suggestStarterWalletMinutes(answers: OnboardingAnswers): number {
+  const base =
+    answers.ageBand === '4-6'
+      ? 120
+      : answers.ageBand === '7-9'
+        ? 150
+        : answers.ageBand === '10-12'
+          ? 180
+          : 210;
+  let n = base;
+  if (answers.priorities?.includes('screen') || answers.struggles.includes('screen')) n -= 30;
+  if (answers.hasExtraClass) n -= 15;
+  return Math.max(60, Math.min(300, n));
+}
 
 /** Rule-based “AI” starter plan — age + struggle + goal → concrete missions. */
 export function buildStarterPlan(answers: OnboardingAnswers): {
@@ -186,13 +218,37 @@ export function buildStarterPlan(answers: OnboardingAnswers): {
     });
   }
 
-  if (struggles.includes('sleep') || goal === 'bedtime') {
+  if (struggles.includes('sleep') || goal === 'bedtime' || answers.sleepHour) {
+    const sleep = answers.sleepHour ?? (ageBand === '4-6' ? '20:30' : ageBand === '7-9' ? '21:00' : '21:30');
+    const [hh, mm] = sleep.split(':').map(Number);
+    const endH = mm >= 30 ? hh + 1 : hh;
+    const endM = mm >= 30 ? '00' : '30';
     push({
       title: 'Đi ngủ đúng giờ',
-      windowStart: ageBand === '4-6' ? '20:30' : ageBand === '7-9' ? '21:00' : '21:30',
-      windowEnd: ageBand === '4-6' ? '21:00' : ageBand === '7-9' ? '21:30' : '22:00',
+      windowStart: sleep,
+      windowEnd: `${String(endH).padStart(2, '0')}:${endM}`,
       why: 'Ngủ đủ → sáng ít quên hơn',
       priority: 'high',
+    });
+  }
+
+  if (answers.hasExtraClass) {
+    push({
+      title: 'Học thêm / ôn bài ngắn',
+      windowStart: '17:00',
+      windowEnd: '17:40',
+      why: 'Giữ khung học thêm ổn định',
+      priority: 'high',
+    });
+  }
+
+  if (answers.priorities?.includes('chores') && !struggles.includes('tidy')) {
+    push({
+      title: 'Việc nhà nhỏ 10 phút',
+      windowStart: '18:30',
+      windowEnd: '18:45',
+      why: 'Ưu tiên việc nhà theo Setup Wizard',
+      priority: 'normal',
     });
   }
 
