@@ -119,8 +119,17 @@ UX:  ShiftChecklist không hiện link Cockpit nếu không có quyền owner
 | Deploy prod fail / VPS thiếu fix POS | `npm run build` = `tsc --noEmit` — unused var TS6133 | Xóa dead code; build local trước deploy |
 | Learning mail 404 | FE path `/api/learning/...` + axios base `/api` | Path `/learning/mail/...` only |
 | Thư “owner/manager” cho STAFF | `LearningWriteGuard` bọc route mail | Mail route không WriteGuard |
+| Deploy KAP: `OTP: command not found` + `psql: no password supplied` | Script `deploy-kap-*.ps1` **source** `/etc/kit-platform/api.env` bằng bash, trong khi file viết kiểu systemd (không nháy). Giá trị có khoảng trắng / `;` bị bash cắt → `CustomerAppSms__MessageTemplate=... OTP ...` thành lệnh; `ConnectionStrings__Default=Host=...;Database=...` chỉ còn `Host=...` | Bọc nháy kép mọi value chứa space / `;` / `$` / backtick trong `api.env`. Backup trước khi sửa (`api.env.bak.<timestamp>`). Kiểm: `( set -a; . /etc/kit-platform/api.env; set +a )` không lỗi; sau `systemctl restart` process **không** dính nháy (systemd tự strip). Xem §7b |
+| Survey / partner bundle lệch sau `deploy-update-vps.ps1` | Script update chính **không** rsync `assessment-web` / `partner-portal` | Sau deploy chung: chạy thêm `scripts/deploy-kap-partner-vps.ps1` (hoặc `deploy-kap-vps.ps1`); so MD5/`assets/index-*.js` local `publish/` vs domain |
 
 **Chi tiết POS/KH/Learning (07/2026):** [pharmacy-pos-customer-incidents-v1.md](./pharmacy-pos-customer-incidents-v1.md)
+
+### 7b. Quy tắc `/etc/kit-platform/api.env` (2026-07-26)
+
+- **systemd** đọc `EnvironmentFile=` không bắt buộc nháy; **bash** `. file` thì bắt buộc nháy nếu value có khoảng trắng hoặc `;`.
+- Khi thêm/sửa key trên VPS: luôn `cp -p api.env api.env.bak.$(date +%Y%m%d%H%M%S)` rồi sửa.
+- Sau sửa: restart `kit-platform-api` → `curl -s https://api.novixa.vn/api/health` + `/api/health/db` = `ok`.
+- Đã khóa (prod): `CustomerAppSms__MessageTemplate="..."` và `ConnectionStrings__Default="Host=...;..."`.
 
 ---
 
@@ -135,6 +144,8 @@ Dùng **trước khi rời máy** hoặc chuyển epic — tránh lặp sáng 20
 | 3 | `npm run build` admin (+ family-app nếu đụng) + API build OK | ☐ |
 | 4 | Push rồi mới deploy; Family OS mig qua `migration-files.family-os.txt` | ☐ |
 | 5 | VPS: health, `family.kittech.vn`, bảng `pack_family` | ☐ |
+| 5b | So bundle `publish/*/index.html` vs prod: admin / app / pos / prescriber / **survey** / **partner** / family — lệch survey·partner → `deploy-kap-partner-vps.ps1` | ☐ |
+| 5c | Script KAP source `api.env` không lỗi (`OTP: command not found` / `psql no password` → §7b) | ☐ |
 | 6 | Stash/WIP có nhãn — **không** tin VPS là SoT | ☐ |
 | 7 | Hard refresh admin SPA sau deploy | ☐ |
 
@@ -144,7 +155,7 @@ Chi tiết Family OS + bug epic 2026-07-24: [family-os-sync-runbook-v1.md](./fam
 
 ## 9. Liên quan
 
-- Deploy: `scripts/deploy-production.ps1`, `scripts/deploy-update-vps.ps1`
+- Deploy: `scripts/deploy-production.ps1`, `scripts/deploy-update-vps.ps1`, `scripts/deploy-kap-partner-vps.ps1` (survey + partner — không nằm trong update chính)
 - POS/KH/Learning incidents: [pharmacy-pos-customer-incidents-v1.md](./pharmacy-pos-customer-incidents-v1.md)
 - Family OS pilot + sync: [family-os-sync-runbook-v1.md](./family-os-sync-runbook-v1.md)
 - Hypercare chung: [hypercare-week1-4-runbook-v1.md](./hypercare-week1-4-runbook-v1.md)

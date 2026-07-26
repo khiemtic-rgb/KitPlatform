@@ -352,15 +352,16 @@ internal sealed class CustomerReminderRepository
         DateTimeOffset scheduledAt,
         string response,
         int? snoozeMinutes,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? skipReason = null)
     {
         const string sql = """
             INSERT INTO medication_adherence_events (
                 tenant_id, customer_id, medication_reminder_id, product_id,
-                family_member_id, scheduled_at, response, snooze_minutes)
+                family_member_id, scheduled_at, response, snooze_minutes, skip_reason)
             VALUES (
                 @TenantId, @CustomerId, @ReminderId, @ProductId,
-                @FamilyMemberId, @ScheduledAt, @Response, @SnoozeMinutes)
+                @FamilyMemberId, @ScheduledAt, @Response, @SnoozeMinutes, @SkipReason)
             """;
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -374,6 +375,7 @@ internal sealed class CustomerReminderRepository
             ScheduledAt = scheduledAt.UtcDateTime,
             Response = response,
             SnoozeMinutes = snoozeMinutes,
+            SkipReason = skipReason,
         });
     }
 

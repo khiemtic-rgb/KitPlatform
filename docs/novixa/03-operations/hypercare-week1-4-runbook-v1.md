@@ -77,4 +77,5 @@ Production bắt buộc **HTTPS** cho PWA + Service Worker.
 
 - In lệch khổ: chỉnh OS printer 80mm, không sửa code V1.  
 - OTP fail: kiểm tra `CustomerAppSms__HttpUrl` và log API.  
+  Nếu deploy KAP báo `OTP: command not found` hoặc `psql: no password supplied`: value trong `/etc/kit-platform/api.env` thiếu nháy khi bash source — xem [pharmacy-rbac-deploy-sync-runbook-v1.md](./pharmacy-rbac-deploy-sync-runbook-v1.md) §7 / §7b.  
 - PO stuck pending: Admin → PO chờ duyệt drawer.

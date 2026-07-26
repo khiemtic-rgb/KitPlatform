@@ -837,10 +837,15 @@ export async function respondMedicationReminder(
   reminderId: string,
   action: 'taken' | 'skipped' | 'snooze',
   snoozeMinutes?: number,
+  skipReason?: string,
 ) {
   const { data } = await http.post<Record<string, unknown>>(
     `/medication-adherence/reminders/${reminderId}/respond`,
-    { action, snoozeMinutes: snoozeMinutes ?? null },
+    {
+      action,
+      snoozeMinutes: snoozeMinutes ?? null,
+      skipReason: skipReason ?? null,
+    },
   );
   return normalizeReminder(data);
 }

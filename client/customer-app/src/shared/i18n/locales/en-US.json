@@ -71,7 +71,28 @@
     },
     "connectCtaPickup": "Pick up at the pharmacy",
     "connectCtaInfo": "Ask the pharmacy for details if needed",
-    "connectScheduled": "Appointment: {{when}}"
+    "connectScheduled": "Appointment: {{when}}",
+    "careInbox": {
+      "title": "Needs you today",
+      "headlineOne": "1 item · a few seconds",
+      "headlineMany": "{{count}} items · about 1 minute",
+      "empty": "Nothing needs action right now.",
+      "emptyWin": "Today's due doses are done.",
+      "draftOrders": "{{count}} orders waiting",
+      "draftOrdersHint": "Confirm or track orders sent to the pharmacy.",
+      "openOrders": "View orders",
+      "repurchase": "{{count}} meds running low",
+      "repurchaseHint": "Repurchase tips from past purchases.",
+      "openMeds": "View meds"
+    },
+    "careWin": {
+      "title": "Doses logged today",
+      "body": "{{taken}} dose(s) taken — keep the rhythm."
+    },
+    "careInsight": {
+      "title": "Gentle tip",
+      "skippedToday": "You skipped {{count}} dose(s) today. If you often forget, anchor reminders after a fixed meal."
+    }
   },
   "profile": {
     "title": "Account",
@@ -138,6 +159,16 @@
     "familyTakenRecorded": "Marked family member as taken",
     "missedAlert": "{{days}} day(s) without full adherence",
     "missedDesc": "Turn on reminders or talk to your pharmacist if dosing is difficult.",
+    "skipReasonTitle": "Why skip this dose?",
+    "skipReasonHint": "A short reason helps you and the pharmacy follow up — no penalty.",
+    "skipReasonConfirm": "Log skip",
+    "skipReasons": {
+      "forgot": "Forgot",
+      "away": "Away / no meds with me",
+      "unwell": "Feeling unwell / nauseous",
+      "outOfStock": "Out of medication",
+      "other": "Other"
+    },
     "pageTitle": "Reminders",
     "showInactive": "Show inactive schedules",
     "empty": "No reminders yet",

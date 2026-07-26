@@ -28,9 +28,7 @@ import { prefetchPrimaryTabOverviews } from '@/shared/api/overview-queries';
 import { useAuthStore } from '@/shared/auth/auth.store';
 import { useCustomerBranding } from '@/shared/config/BrandingProvider';
 import { useCustomerNotificationCount } from '@/shared/hooks/useCustomerNotificationCount';
-import { DueRemindersPanel, MissedMedicationAlert } from '@/modules/reminders/DueRemindersPanel';
-import { FamilyCaregiverDuePanel } from '@/modules/reminders/FamilyCaregiverDuePanel';
-import { ConnectCarePanel } from '@/modules/home/ConnectCarePanel';
+import { CareDecisionInbox } from '@/modules/home/CareDecisionInbox';
 import { formatPoints } from '@/shared/utils/points';
 
 type ShortcutKey =
@@ -113,6 +111,7 @@ export function HomePage() {
   const [adherence, setAdherence] = useState({
     dueCount: 0,
     takenToday: 0,
+    skippedToday: 0,
     scheduledToday: 0,
     missedStreakDays: 0,
     showMissedAlert: false,
@@ -173,6 +172,7 @@ export function HomePage() {
               : {
                   dueCount: 0,
                   takenToday: 0,
+                  skippedToday: 0,
                   scheduledToday: 0,
                   missedStreakDays: 0,
                   showMissedAlert: false,
@@ -291,10 +291,14 @@ export function HomePage() {
         ) : null}
       </Card>
 
-      <MissedMedicationAlert show={adherence.showMissedAlert} streak={adherence.missedStreakDays} />
-      <DueRemindersPanel compact onResponded={() => void load({ silent: true })} />
-      <FamilyCaregiverDuePanel compact onResponded={() => void load({ silent: true })} />
-      <ConnectCarePanel inbox={connectInbox} loading={statsLoading && !connectInbox} />
+      <CareDecisionInbox
+        adherence={adherence}
+        pendingOrders={pendingOrders}
+        repurchaseCount={repurchaseCount}
+        connectInbox={connectInbox}
+        homeLoading={statsLoading}
+        onChanged={() => void load({ silent: true })}
+      />
 
       <div>
         <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>

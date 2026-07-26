@@ -71,7 +71,28 @@
     },
     "connectCtaPickup": "Đến nhà thuốc lấy thuốc",
     "connectCtaInfo": "Chi tiết tại nhà thuốc khi cần",
-    "connectScheduled": "Giờ hẹn: {{when}}"
+    "connectScheduled": "Giờ hẹn: {{when}}",
+    "careInbox": {
+      "title": "Cần bạn hôm nay",
+      "headlineOne": "1 việc · khoảng vài giây",
+      "headlineMany": "{{count}} việc · khoảng 1 phút",
+      "empty": "Không việc cần xử lý ngay.",
+      "emptyWin": "Hôm nay đã xong phần thuốc đến hạn.",
+      "draftOrders": "{{count}} đơn đang chờ",
+      "draftOrdersHint": "Xác nhận hoặc theo dõi đơn gửi nhà thuốc.",
+      "openOrders": "Xem đơn",
+      "repurchase": "{{count}} thuốc sắp hết",
+      "repurchaseHint": "Gợi ý mua lại từ đơn đã mua.",
+      "openMeds": "Xem thuốc"
+    },
+    "careWin": {
+      "title": "Đã ghi nhận uống thuốc hôm nay",
+      "body": "{{taken}} liều đã uống — giữ nhịp này nhé."
+    },
+    "careInsight": {
+      "title": "Gợi ý nhẹ",
+      "skippedToday": "Hôm nay bỏ {{count}} liều. Nếu hay quên, gắn nhắc sau bữa ăn cố định."
+    }
   },
   "profile": {
     "title": "Tài khoản",
@@ -138,6 +159,16 @@
     "familyTakenRecorded": "Đã ghi nhận người thân đã uống",
     "missedAlert": "{{days}} ngày chưa ghi nhận uống thuốc đủ",
     "missedDesc": "Hãy bật nhắc hoặc trao đổi với dược sĩ nếu khó tuân thủ liều.",
+    "skipReasonTitle": "Vì sao bỏ liều này?",
+    "skipReasonHint": "Chọn lý do giúp nhà thuốc và bạn theo dõi tốt hơn — không phạt.",
+    "skipReasonConfirm": "Ghi nhận bỏ liều",
+    "skipReasons": {
+      "forgot": "Quên uống",
+      "away": "Đang đi / không mang theo thuốc",
+      "unwell": "Không khỏe / buồn nôn",
+      "outOfStock": "Hết thuốc",
+      "other": "Lý do khác"
+    },
     "pageTitle": "Nhắc thuốc",
     "showInactive": "Hiện cả lịch đã tắt",
     "empty": "Chưa có lịch nhắc",

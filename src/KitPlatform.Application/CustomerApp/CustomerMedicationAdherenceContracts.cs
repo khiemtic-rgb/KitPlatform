@@ -10,7 +10,9 @@ public sealed record MedicationAdherenceSummaryDto(
 
 public sealed record RespondMedicationReminderRequest(
     string Action,
-    int? SnoozeMinutes = null);
+    int? SnoozeMinutes = null,
+    /// <summary>Khi Action=skipped: forgot|away|unwell|out_of_stock|other.</summary>
+    string? SkipReason = null);
 
 public interface ICustomerMedicationAdherenceService
 {

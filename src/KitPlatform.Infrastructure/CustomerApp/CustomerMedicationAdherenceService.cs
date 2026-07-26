@@ -7,6 +7,11 @@ internal sealed class CustomerMedicationAdherenceService : ICustomerMedicationAd
     private const int DefaultSnoozeMinutes = 15;
     private const int MissedAlertThresholdDays = 3;
 
+    private static readonly HashSet<string> AllowedSkipReasons = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "forgot", "away", "unwell", "out_of_stock", "other",
+    };
+
     private readonly CustomerReminderRepository _repo;
 
     public CustomerMedicationAdherenceService(CustomerReminderRepository repo) => _repo = repo;
@@ -80,7 +85,6 @@ internal sealed class CustomerMedicationAdherenceService : ICustomerMedicationAd
         switch (action)
         {
             case "taken":
-            case "skipped":
                 await _repo.InsertAdherenceEventAsync(
                     tenantId,
                     customerId,
@@ -96,6 +100,27 @@ internal sealed class CustomerMedicationAdherenceService : ICustomerMedicationAd
                     existing.DaysOfWeek.Select(d => (int)d).ToArray(),
                     utcNow);
                 break;
+
+            case "skipped":
+            {
+                var skipReason = NormalizeSkipReason(request.SkipReason);
+                await _repo.InsertAdherenceEventAsync(
+                    tenantId,
+                    customerId,
+                    reminderId,
+                    existing.ProductId,
+                    existing.FamilyMemberId,
+                    scheduledAt,
+                    action,
+                    null,
+                    cancellationToken,
+                    skipReason);
+                nextRemindAt = ReminderScheduleHelper.ComputeNextRemindAt(
+                    existing.RemindTime.ToTimeSpan(),
+                    existing.DaysOfWeek.Select(d => (int)d).ToArray(),
+                    utcNow);
+                break;
+            }
 
             case "snooze":
                 snoozeMinutes = request.SnoozeMinutes is > 0 and <= 120
@@ -154,4 +179,15 @@ internal sealed class CustomerMedicationAdherenceService : ICustomerMedicationAd
             row.IsActive,
             new DateTimeOffset(DateTime.SpecifyKind(row.CreatedAt, DateTimeKind.Utc)),
             new DateTimeOffset(DateTime.SpecifyKind(row.UpdatedAt, DateTimeKind.Utc)));
+
+    private static string? NormalizeSkipReason(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return null;
+        var code = raw.Trim().ToLowerInvariant();
+        if (!AllowedSkipReasons.Contains(code))
+            throw new InvalidOperationException(
+                "skipReason phải là forgot, away, unwell, out_of_stock hoặc other.");
+        return code;
+    }
 }
