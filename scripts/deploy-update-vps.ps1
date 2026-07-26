@@ -241,7 +241,7 @@ $tmpScript = Join-Path $env:TEMP "kitplatform-update-remote.sh"
 & $pscp -batch -pw $pass $tmpScript "${SshTarget}:${remote}/update.sh"
 & $plink -batch -pw $pass $SshTarget "bash $remote/update.sh"
 if ($LASTEXITCODE -ne 0) {
-    throw "Remote update failed (exit $LASTEXITCODE). Nginx/API may be partially updated — do not assume cutover OK."
+    throw "Remote update failed (exit $LASTEXITCODE). Nginx/API may be partially updated - do not assume cutover OK."
 }
 
 Write-Host "`nDeploy update + cutover done." -ForegroundColor Green
