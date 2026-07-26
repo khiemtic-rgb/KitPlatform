@@ -323,11 +323,13 @@ internal sealed class CustomerMergeService : ICustomerMergeService
             consentsMoved);
     }
 
-    private static string FreedPhone(Guid sourceId) =>
-        ("M" + sourceId.ToString("N"))[..20];
+    /// <summary>Free UNIQUE (tenant_id, phone|code) after soft-delete — plan format __merged_{shortId}__.</summary>
+    private static string FreedMergedToken(Guid sourceId) =>
+        $"__merged_{sourceId.ToString("N")[..8]}__";
 
-    private static string FreedCode(Guid sourceId) =>
-        "MERGED-" + sourceId.ToString("N");
+    private static string FreedPhone(Guid sourceId) => FreedMergedToken(sourceId);
+
+    private static string FreedCode(Guid sourceId) => FreedMergedToken(sourceId);
 
     private async Task<CustomerLockRow?> LoadCustomerAsync(
         NpgsqlConnection conn,

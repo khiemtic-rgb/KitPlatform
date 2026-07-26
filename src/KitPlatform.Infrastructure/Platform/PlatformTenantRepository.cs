@@ -77,6 +77,16 @@ internal sealed class PlatformTenantRepository
         return await conn.QuerySingleAsync<bool>(sql, new { TenantCode = tenantCode });
     }
 
+    public static string[] DefaultModulesForVertical(string vertical) =>
+        vertical.Equals(PlatformVerticalCodes.Family, StringComparison.OrdinalIgnoreCase)
+            ? ["family_os"]
+            : vertical.Equals(PlatformVerticalCodes.Clinic, StringComparison.OrdinalIgnoreCase)
+                ? ["clinic_appointments", "clinic_emr_lite", "novixa_connect", "crm_leads"]
+                : [
+                    "inventory", "procurement", "sales", "loyalty", "customer_app",
+                    "medication", "health_wallet", "reservations", "reports",
+                ];
+
     public async Task<CreatePlatformTenantResponse> CreateTenantAsync(
         CreatePlatformTenantRequest request,
         string passwordHash,
@@ -88,19 +98,21 @@ internal sealed class PlatformTenantRepository
         var userId = Guid.NewGuid();
         var roleId = Guid.NewGuid();
         var warehouseId = Guid.NewGuid();
+        var familyId = Guid.NewGuid();
 
-        var pharmacyModules = new[]
-        {
-            "inventory", "procurement", "sales", "loyalty", "customer_app",
-            "medication", "health_wallet", "reservations", "reports",
-        };
+        var vertical = string.IsNullOrWhiteSpace(request.Vertical)
+            ? PlatformVerticalCodes.Pharmacy
+            : TenantPlatformSettingsValidator.NormalizeVertical(request.Vertical);
+        var isFamily = vertical.Equals(PlatformVerticalCodes.Family, StringComparison.OrdinalIgnoreCase);
+        var modules = DefaultModulesForVertical(vertical);
+        var columnVertical = PlatformVerticalCodes.ToColumnValue(vertical, currentColumnValue: null);
 
         var platformNode = new Dictionary<string, object?>
         {
             ["schema_version"] = 1,
-            ["vertical"] = "pharmacy",
-            ["enabled_modules"] = pharmacyModules,
-            ["allowed_modules"] = pharmacyModules,
+            ["vertical"] = vertical,
+            ["enabled_modules"] = modules,
+            ["allowed_modules"] = modules,
             ["i18n"] = new Dictionary<string, object?>
             {
                 ["default_locale"] = "vi-VN",
@@ -109,15 +121,18 @@ internal sealed class PlatformTenantRepository
                 ["admin_default_locale"] = "vi-VN",
                 ["customer_app_default_locale"] = "vi-VN",
             },
-            ["features"] = new Dictionary<string, object?>
-            {
-                ["batch_tracking"] = true,
-                ["national_drug_catalog"] = true,
-                ["order_level_repurchase"] = true,
-                ["family_members"] = true,
-                ["branch_price_overrides"] = true,
-                ["branch_product_listings"] = false,
-            },
+            ["features"] = isFamily
+                ? new Dictionary<string, object?>()
+                : new Dictionary<string, object?>
+                {
+                    ["batch_tracking"] = true,
+                    ["national_drug_catalog"] = vertical.Equals(
+                        PlatformVerticalCodes.Pharmacy, StringComparison.OrdinalIgnoreCase),
+                    ["order_level_repurchase"] = true,
+                    ["family_members"] = true,
+                    ["branch_price_overrides"] = true,
+                    ["branch_product_listings"] = false,
+                },
         };
         if (request.MaxBranches is int maxBranches)
             platformNode["max_branches"] = maxBranches;
@@ -125,7 +140,7 @@ internal sealed class PlatformTenantRepository
         var settings = JsonSerializer.Serialize(new Dictionary<string, object?>
         {
             ["allow_negative_stock"] = false,
-            ["loyalty_enabled"] = request.LoyaltyEnabled,
+            ["loyalty_enabled"] = !isFamily && request.LoyaltyEnabled,
             ["batch_mode"] = "suggest",
             ["platform"] = platformNode,
         });
@@ -135,7 +150,7 @@ internal sealed class PlatformTenantRepository
 
         const string tenantSql = """
             INSERT INTO tenants (id, tenant_code, tenant_name, country_code, default_currency, business_vertical, settings)
-            VALUES (@Id, @TenantCode, @TenantName, 'VN', 'VND', 'pharmacy', @Settings::jsonb)
+            VALUES (@Id, @TenantCode, @TenantName, 'VN', 'VND', @BusinessVertical, @Settings::jsonb)
             """;
 
         await conn.ExecuteAsync(tenantSql, new
@@ -143,6 +158,7 @@ internal sealed class PlatformTenantRepository
             Id = tenantId,
             TenantCode = request.TenantCode,
             TenantName = request.TenantName,
+            BusinessVertical = columnVertical,
             Settings = settings,
         }, tx);
 
@@ -195,9 +211,10 @@ internal sealed class PlatformTenantRepository
             PasswordHash = passwordHash,
         }, tx);
 
+        var roleName = isFamily ? "Phụ huynh / Quản trị" : "Quản trị viên";
         await conn.ExecuteAsync(
-            "INSERT INTO roles (id, tenant_id, role_code, role_name) VALUES (@Id, @TenantId, 'ADMIN', 'Quản trị viên')",
-            new { Id = roleId, TenantId = tenantId },
+            "INSERT INTO roles (id, tenant_id, role_code, role_name) VALUES (@Id, @TenantId, 'ADMIN', @RoleName)",
+            new { Id = roleId, TenantId = tenantId, RoleName = roleName },
             tx);
 
         await conn.ExecuteAsync(
@@ -205,15 +222,32 @@ internal sealed class PlatformTenantRepository
             new { UserId = userId, RoleId = roleId },
             tx);
 
-        await conn.ExecuteAsync(
-            """
-            INSERT INTO role_permissions (role_id, permission_id)
-            SELECT @RoleId, p.id FROM permissions p
-            ON CONFLICT DO NOTHING
-            """,
-            new { RoleId = roleId },
-            tx);
+        if (isFamily)
+        {
+            await conn.ExecuteAsync(
+                """
+                INSERT INTO role_permissions (role_id, permission_id)
+                SELECT @RoleId, p.id FROM permissions p
+                WHERE p.permission_code LIKE 'family_os.%'
+                   OR p.permission_code LIKE 'system.%'
+                ON CONFLICT DO NOTHING
+                """,
+                new { RoleId = roleId },
+                tx);
+        }
+        else
+        {
+            await conn.ExecuteAsync(
+                """
+                INSERT INTO role_permissions (role_id, permission_id)
+                SELECT @RoleId, p.id FROM permissions p
+                ON CONFLICT DO NOTHING
+                """,
+                new { RoleId = roleId },
+                tx);
+        }
 
+        // Warehouse still required by many admin flows; Family gets a lightweight HOME warehouse.
         const string warehouseSql = """
             INSERT INTO warehouses (id, tenant_id, branch_id, warehouse_code, warehouse_name, warehouse_type, is_default)
             VALUES (@Id, @TenantId, @BranchId, @WarehouseCode, @WarehouseName, 1, TRUE)
@@ -229,7 +263,7 @@ internal sealed class PlatformTenantRepository
         }, tx);
 
         var branchCount = 1;
-        if (request.AdditionalBranches is { Count: > 0 })
+        if (!isFamily && request.AdditionalBranches is { Count: > 0 })
         {
             const string extraBranchSql = """
                 INSERT INTO branches (id, tenant_id, branch_code, branch_name, address, phone, is_head_office)
@@ -278,6 +312,48 @@ internal sealed class PlatformTenantRepository
 
                 branchCount++;
             }
+        }
+
+        if (isFamily)
+        {
+            await conn.ExecuteAsync(
+                "SELECT set_config('app.tenant_id', @Value, true)",
+                new { Value = tenantId.ToString() },
+                tx);
+
+            await conn.ExecuteAsync(
+                """
+                INSERT INTO pack_family.family (
+                    id, tenant_id, display_name, timezone, status
+                )
+                VALUES (@Id, @TenantId, @DisplayName, 'Asia/Ho_Chi_Minh', 'active')
+                """,
+                new
+                {
+                    Id = familyId,
+                    TenantId = tenantId,
+                    DisplayName = request.TenantName,
+                },
+                tx);
+
+            await conn.ExecuteAsync(
+                """
+                INSERT INTO pack_family.membership (
+                    id, tenant_id, family_id, display_name, role_code, status, sort_order, user_id
+                )
+                VALUES (
+                    @Id, @TenantId, @FamilyId, @DisplayName, 'guardian', 'active', 0, @UserId
+                )
+                """,
+                new
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = tenantId,
+                    FamilyId = familyId,
+                    DisplayName = request.AdminFullName,
+                    UserId = userId,
+                },
+                tx);
         }
 
         await tx.CommitAsync(cancellationToken);

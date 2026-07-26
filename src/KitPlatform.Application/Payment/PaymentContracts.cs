@@ -59,7 +59,23 @@ public sealed record PaymentPlanDto(
     string DisplayName,
     int AmountVnd,
     string Currency,
-    int IntervalDays);
+    int IntervalDays,
+    int TrialDays);
+
+/// <summary>Ops-only partial update for a sellable plan (null = keep current value).</summary>
+public sealed record UpdatePaymentPlanRequest(
+    int? AmountVnd = null,
+    int? TrialDays = null,
+    string? DisplayName = null,
+    bool? IsActive = null);
+
+/// <summary>Checkout method shown in shared KIT Pay UI (gateway or bank transfer).</summary>
+public sealed record PaymentMethodDto(
+    string ProviderCode,
+    string DisplayName,
+    string Description,
+    bool Available,
+    string? UnavailableReason = null);
 
 public sealed record PaymentSubscriptionDto(
     Guid Id,
@@ -175,6 +191,22 @@ public interface IPaymentService
     Task<PaymentPlanDto?> GetPlanAsync(
         string productCode,
         string planCode,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Active plans for a product (shared checkout catalog).</summary>
+    Task<IReadOnlyList<PaymentPlanDto>> ListPlansAsync(
+        string productCode,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Ops-only: adjust price / trial length of a plan at runtime.</summary>
+    Task<PaymentPlanDto> UpdatePlanAsync(
+        string productCode,
+        string planCode,
+        UpdatePaymentPlanRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Payment methods for shared checkout (available + coming soon).</summary>
+    Task<IReadOnlyList<PaymentMethodDto>> ListMethodsAsync(
         CancellationToken cancellationToken = default);
 
     Task<PaymentSubscriptionDto?> GetSubscriptionAsync(

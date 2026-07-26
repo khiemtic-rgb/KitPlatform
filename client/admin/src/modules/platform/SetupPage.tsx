@@ -11,6 +11,7 @@ import {
   Input,
   InputNumber,
   Row,
+  Select,
   Space,
   Switch,
   Typography,
@@ -44,6 +45,7 @@ type AdditionalBranchFormValues = {
 
 type SetupFormValues = {
   platformKey?: string;
+  vertical: 'pharmacy' | 'clinic' | 'family';
   tenantCode: string;
   tenantName: string;
   branchCode: string;
@@ -92,6 +94,44 @@ export function SetupPage() {
   const [tenantsCount, setTenantsCount] = useState(0);
   const [provisioningKeyRequired, setProvisioningKeyRequired] = useState(false);
   const [extraBranchCount, setExtraBranchCount] = useState(0);
+  const vertical = Form.useWatch('vertical', form) as SetupFormValues['vertical'] | undefined;
+  const isFamily = vertical === 'family';
+  const isClinic = vertical === 'clinic';
+
+  const applyVerticalDefaults = (next: SetupFormValues['vertical']) => {
+    if (next === 'family') {
+      form.setFieldsValue({
+        branchCode: 'HOME',
+        branchName: t('defaults.familyHomeName'),
+        warehouseCode: 'WH_HOME',
+        warehouseName: t('defaults.familyWarehouseName'),
+        loyaltyEnabled: false,
+        additionalBranches: [],
+        adminFullName: t('defaults.familyAdminFullName'),
+      });
+      setExtraBranchCount(0);
+      return;
+    }
+    if (next === 'clinic') {
+      form.setFieldsValue({
+        branchCode: 'CN01',
+        branchName: t('defaults.clinicBranchName'),
+        warehouseCode: 'WH_MAIN',
+        warehouseName: t('defaults.warehouseName'),
+        loyaltyEnabled: false,
+        adminFullName: t('defaults.adminFullName'),
+      });
+      return;
+    }
+    form.setFieldsValue({
+      branchCode: 'CN01',
+      branchName: t('defaults.branchName'),
+      warehouseCode: 'WH_MAIN',
+      warehouseName: t('defaults.warehouseName'),
+      loyaltyEnabled: true,
+      adminFullName: t('defaults.adminFullName'),
+    });
+  };
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -146,6 +186,7 @@ export function SetupPage() {
 
       const created = await createPlatformTenant(
         {
+          vertical: values.vertical,
           tenantCode: values.tenantCode.trim(),
           tenantName: values.tenantName.trim(),
           branchCode: values.branchCode.trim(),
@@ -158,8 +199,13 @@ export function SetupPage() {
           adminEmail: values.adminEmail.trim(),
           adminFullName: values.adminFullName.trim(),
           adminPassword: values.adminPassword,
-          loyaltyEnabled: values.loyaltyEnabled,
-          additionalBranches: additionalBranches.length > 0 ? additionalBranches : undefined,
+          loyaltyEnabled: values.vertical === 'family' ? false : values.loyaltyEnabled,
+          additionalBranches:
+            values.vertical === 'family'
+              ? undefined
+              : additionalBranches.length > 0
+                ? additionalBranches
+                : undefined,
         },
         platformKey,
       );
@@ -203,7 +249,7 @@ export function SetupPage() {
               {APP_BRAND}
             </Typography.Title>
             <Typography.Text style={{ color: '#99f6e4' }}>
-              {t('subtitle', { product: tc('appLayout.productName') })}
+              {t('platformSubtitle')}
             </Typography.Text>
           </div>
 
@@ -252,6 +298,7 @@ export function SetupPage() {
                 layout="vertical"
                 onFinish={onFinish}
                 initialValues={{
+                  vertical: 'pharmacy',
                   branchCode: 'CN01',
                   branchName: t('defaults.branchName'),
                   warehouseCode: 'WH_MAIN',
@@ -283,36 +330,97 @@ export function SetupPage() {
                 <Typography.Title level={5}>
                   <ShopOutlined /> {t('createNewTitle')}
                 </Typography.Title>
+
+                <Form.Item
+                  name="vertical"
+                  label={t('vertical')}
+                  rules={[{ required: true, message: t('verticalRequired') }]}
+                  tooltip={t('verticalTooltip')}
+                >
+                  <Select
+                    options={[
+                      { value: 'pharmacy', label: t('verticals.pharmacy') },
+                      { value: 'clinic', label: t('verticals.clinic') },
+                      { value: 'family', label: t('verticals.family') },
+                    ]}
+                    onChange={(v) => applyVerticalDefaults(v as SetupFormValues['vertical'])}
+                  />
+                </Form.Item>
+
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                  message={
+                    isFamily
+                      ? t('verticalHint.family')
+                      : isClinic
+                        ? t('verticalHint.clinic')
+                        : t('verticalHint.pharmacy')
+                  }
+                />
+
                 <Row gutter={16}>
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="tenantCode"
-                      label={t('tenantCode')}
+                      label={
+                        isFamily
+                          ? t('tenantCodeFamily')
+                          : isClinic
+                            ? t('tenantCodeClinic')
+                            : t('tenantCode')
+                      }
                       rules={[{ required: true, message: t('tenantCodeRequired') }]}
                       tooltip={t('tenantCodeTooltip')}
                     >
-                      <Input placeholder="NT_A" style={{ textTransform: 'uppercase' }} />
+                      <Input
+                        placeholder={isFamily ? 'FM_A' : isClinic ? 'PK_A' : 'NT_A'}
+                        style={{ textTransform: 'uppercase' }}
+                      />
                     </Form.Item>
                   </Col>
                   <Col xs={24} md={16}>
                     <Form.Item
                       name="tenantName"
-                      label={t('tenantName')}
+                      label={
+                        isFamily
+                          ? t('tenantNameFamily')
+                          : isClinic
+                            ? t('tenantNameClinic')
+                            : t('tenantName')
+                      }
                       rules={[{ required: true, message: t('tenantNameRequired') }]}
                     >
-                      <Input placeholder={t('tenantNamePlaceholder')} />
+                      <Input
+                        placeholder={
+                          isFamily
+                            ? t('tenantNamePlaceholderFamily')
+                            : isClinic
+                              ? t('tenantNamePlaceholderClinic')
+                              : t('tenantNamePlaceholder')
+                        }
+                      />
                     </Form.Item>
                   </Col>
                 </Row>
 
                 <Row gutter={16}>
                   <Col xs={24} md={8}>
-                    <Form.Item name="branchCode" label={t('branchCode')} rules={[{ required: true }]}>
+                    <Form.Item
+                      name="branchCode"
+                      label={isFamily ? t('branchCodeFamily') : t('branchCode')}
+                      rules={[{ required: true }]}
+                    >
                       <Input />
                     </Form.Item>
                   </Col>
                   <Col xs={24} md={16}>
-                    <Form.Item name="branchName" label={t('branchName')} rules={[{ required: true }]}>
+                    <Form.Item
+                      name="branchName"
+                      label={isFamily ? t('branchNameFamily') : t('branchName')}
+                      rules={[{ required: true }]}
+                    >
                       <Input />
                     </Form.Item>
                   </Col>
@@ -331,19 +439,40 @@ export function SetupPage() {
                   </Col>
                 </Row>
 
-                <Row gutter={16}>
-                  <Col xs={24} md={8}>
-                    <Form.Item name="warehouseCode" label={t('warehouseCode')} rules={[{ required: true }]}>
+                {!isFamily ? (
+                  <Row gutter={16}>
+                    <Col xs={24} md={8}>
+                      <Form.Item
+                        name="warehouseCode"
+                        label={t('warehouseCode')}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={16}>
+                      <Form.Item
+                        name="warehouseName"
+                        label={t('warehouseName')}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                ) : (
+                  <>
+                    <Form.Item name="warehouseCode" hidden>
                       <Input />
                     </Form.Item>
-                  </Col>
-                  <Col xs={24} md={16}>
-                    <Form.Item name="warehouseName" label={t('warehouseName')} rules={[{ required: true }]}>
+                    <Form.Item name="warehouseName" hidden>
                       <Input />
                     </Form.Item>
-                  </Col>
-                </Row>
+                  </>
+                )}
 
+                {!isFamily ? (
+                  <>
                 <Divider orientation="left">{t('chainSection')}</Divider>
                 <Alert
                   type="info"
@@ -457,6 +586,8 @@ export function SetupPage() {
                     </Space>
                   )}
                 </Form.List>
+                  </>
+                ) : null}
 
                 <Divider orientation="left">{t('adminSection')}</Divider>
 
@@ -502,13 +633,19 @@ export function SetupPage() {
                   </Col>
                 </Row>
 
-                <Form.Item name="loyaltyEnabled" label={t('loyaltyEnabled')} valuePropName="checked">
-                  <Switch />
-                </Form.Item>
+                {!isFamily ? (
+                  <Form.Item name="loyaltyEnabled" label={t('loyaltyEnabled')} valuePropName="checked">
+                    <Switch />
+                  </Form.Item>
+                ) : null}
 
                 <Space wrap>
                   <Button type="primary" htmlType="submit" loading={saving} icon={<ShopOutlined />}>
-                    {t('createTenant')}
+                    {isFamily
+                      ? t('createTenantFamily')
+                      : isClinic
+                        ? t('createTenantClinic')
+                        : t('createTenant')}
                   </Button>
                   <Link to="/login">
                     <Button icon={<LoginOutlined />}>{t('goToLogin')}</Button>

@@ -66,6 +66,8 @@ public static class DependencyInjection
         services.AddScoped<ICurrentPrescriberAccessor, CurrentPrescriberAccessor>();
 
         services.AddScoped<AuthRepository>();
+        services.AddScoped<KitAccountRepository>();
+        services.AddScoped<IKitAccountService, KitAccountService>();
         services.AddSingleton<JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
 

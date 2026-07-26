@@ -20,10 +20,12 @@ internal sealed class AuthRepository
                 u.email AS Email,
                 u.password_hash AS PasswordHash,
                 u.status AS Status,
+                kam.account_id AS KitAccountId,
                 COALESCE(array_agg(DISTINCT r.role_code) FILTER (WHERE r.role_code IS NOT NULL), '{}') AS Roles,
                 COALESCE(array_agg(DISTINCT p.permission_code) FILTER (WHERE p.permission_code IS NOT NULL), '{}') AS Permissions
             FROM users u
             INNER JOIN tenants t ON t.id = u.tenant_id
+            LEFT JOIN kit_account_memberships kam ON kam.user_id = u.id AND kam.status = 1
             LEFT JOIN user_roles ur ON ur.user_id = u.id
             LEFT JOIN roles r ON r.id = ur.role_id
             LEFT JOIN role_permissions rp ON rp.role_id = r.id
@@ -33,7 +35,7 @@ internal sealed class AuthRepository
               AND u.deleted_at IS NULL
               AND t.deleted_at IS NULL
               AND t.status = 1
-            GROUP BY u.id, u.tenant_id, t.tenant_code, u.username, u.email, u.password_hash, u.status
+            GROUP BY u.id, u.tenant_id, t.tenant_code, u.username, u.email, u.password_hash, u.status, kam.account_id
             """;
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -51,10 +53,12 @@ internal sealed class AuthRepository
                 u.email AS Email,
                 u.password_hash AS PasswordHash,
                 u.status AS Status,
+                kam.account_id AS KitAccountId,
                 COALESCE(array_agg(DISTINCT r.role_code) FILTER (WHERE r.role_code IS NOT NULL), '{}') AS Roles,
                 COALESCE(array_agg(DISTINCT p.permission_code) FILTER (WHERE p.permission_code IS NOT NULL), '{}') AS Permissions
             FROM users u
             INNER JOIN tenants t ON t.id = u.tenant_id
+            LEFT JOIN kit_account_memberships kam ON kam.user_id = u.id AND kam.status = 1
             LEFT JOIN user_roles ur ON ur.user_id = u.id
             LEFT JOIN roles r ON r.id = ur.role_id
             LEFT JOIN role_permissions rp ON rp.role_id = r.id
@@ -63,7 +67,7 @@ internal sealed class AuthRepository
               AND u.deleted_at IS NULL
               AND t.deleted_at IS NULL
               AND t.status = 1
-            GROUP BY u.id, u.tenant_id, t.tenant_code, u.username, u.email, u.password_hash, u.status
+            GROUP BY u.id, u.tenant_id, t.tenant_code, u.username, u.email, u.password_hash, u.status, kam.account_id
             """;
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);

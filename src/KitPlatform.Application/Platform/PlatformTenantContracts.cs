@@ -67,7 +67,12 @@ public sealed record CreatePlatformTenantRequest(
     bool LoyaltyEnabled,
     IReadOnlyList<CreatePlatformBranchRequest>? AdditionalBranches = null,
     /// <summary>Optional Core ceiling at provision time. Null = unlimited.</summary>
-    int? MaxBranches = null);
+    int? MaxBranches = null,
+    /// <summary>
+    /// Commercial shell: <c>pharmacy</c> | <c>clinic</c> | <c>family</c>.
+    /// Defaults to pharmacy for backward compatibility with older clients.
+    /// </summary>
+    string? Vertical = null);
 
 public sealed record CreatePlatformTenantResponse(
     Guid TenantId,

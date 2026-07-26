@@ -1,4 +1,6 @@
-﻿using KitPlatform.Application.Configuration;
+﻿using KitPlatform.Application.Abstractions;
+using KitPlatform.Application.Auth;
+using KitPlatform.Application.Configuration;
 using KitPlatform.Application.Identity;
 
 namespace KitPlatform.Infrastructure.Identity;
@@ -10,13 +12,19 @@ internal sealed class IdentityAdminService : IIdentityAdminService
 
     private readonly IdentityAdminRepository _repository;
     private readonly ITenantPlatformSettings _platformSettings;
+    private readonly IKitAccountService _kitAccounts;
+    private readonly ITenantContext _tenant;
 
     public IdentityAdminService(
         IdentityAdminRepository repository,
-        ITenantPlatformSettings platformSettings)
+        ITenantPlatformSettings platformSettings,
+        IKitAccountService kitAccounts,
+        ITenantContext tenant)
     {
         _repository = repository;
         _platformSettings = platformSettings;
+        _kitAccounts = kitAccounts;
+        _tenant = tenant;
     }
 
     public Task<IReadOnlyList<BranchAdminListItemDto>> ListBranchesAsync(CancellationToken cancellationToken = default) =>
@@ -129,6 +137,8 @@ internal sealed class IdentityAdminService : IIdentityAdminService
             existingEmployeeId: null,
             cancellationToken);
 
+        await _kitAccounts.AssertEmailPasswordCompatibleAsync(email, request.Password, cancellationToken);
+
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
         var userId = await _repository.CreateUserAsync(
             username,
@@ -137,6 +147,17 @@ internal sealed class IdentityAdminService : IIdentityAdminService
             request.Status,
             employeeId,
             request.RoleIds,
+            cancellationToken);
+
+        await _kitAccounts.EnsureAccountForUserAsync(
+            userId,
+            _tenant.TenantId,
+            email,
+            request.Password,
+            passwordHash,
+            username,
+            connection: null,
+            transaction: null,
             cancellationToken);
 
         if (employeeId is not null)
@@ -198,6 +219,15 @@ internal sealed class IdentityAdminService : IIdentityAdminService
             passwordHash,
             request.RoleIds,
             cancellationToken);
+
+        if (updated && passwordHash is not null && !string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            await _kitAccounts.SyncPasswordForUserAsync(
+                userId,
+                request.NewPassword,
+                passwordHash,
+                cancellationToken);
+        }
 
         if (updated && employeeId is not null && request.BranchIds is not null)
             await AssignEmployeeBranchesAsync(employeeId.Value, request.BranchIds, request.PrimaryBranchId, cancellationToken);

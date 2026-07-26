@@ -13,15 +13,63 @@ public sealed class AuthController : ControllerBase
 
     public AuthController(IAuthService auth) => _auth = auth;
 
-    /// <summary>Đăng nhập — demo: admin / Admin@123</summary>
+    /// <summary>
+    /// Đăng nhập — tenant+username (cũ) hoặc email Kit (không gửi tenantCode).
+    /// Nhiều workspace → { requiresWorkspaceChoice, selectionToken, workspaces }.
+    /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(LoginWorkspaceChoiceResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
         var result = await _auth.LoginAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), cancellationToken);
-        return result is null ? Unauthorized(new { message = "Sai tên đăng nhập hoặc mật khẩu." }) : Ok(result);
+        if (result is null)
+            return Unauthorized(new { message = "Sai tên đăng nhập hoặc mật khẩu." });
+
+        if (result.RequiresWorkspaceChoice)
+        {
+            return Ok(new LoginWorkspaceChoiceResponse(
+                true,
+                result.SelectionToken!,
+                result.Workspaces ?? []));
+        }
+
+        return Ok(result.Session);
+    }
+
+    [HttpPost("select-workspace")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> SelectWorkspace(
+        [FromBody] SelectWorkspaceRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _auth.SelectWorkspaceAsync(
+            request,
+            HttpContext.Connection.RemoteIpAddress?.ToString(),
+            cancellationToken);
+        return result is null
+            ? Unauthorized(new { message = "Phiên chọn workspace không hợp lệ hoặc đã hết hạn." })
+            : Ok(result);
+    }
+
+    [HttpGet("workspaces")]
+    [Authorize]
+    [ProducesResponseType(typeof(IReadOnlyList<AuthWorkspaceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Workspaces(CancellationToken cancellationToken)
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub");
+
+        if (!Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        var workspaces = await _auth.ListWorkspacesAsync(userId, cancellationToken);
+        return Ok(workspaces);
     }
 
     [HttpPost("refresh")]
@@ -52,9 +100,7 @@ public sealed class AuthController : ControllerBase
             ?? User.FindFirstValue("sub");
 
         if (!Guid.TryParse(userIdClaim, out var userId))
-        {
             return Unauthorized();
-        }
 
         var user = await _auth.GetUserAsync(userId, cancellationToken);
         return user is null ? Unauthorized() : Ok(user);

@@ -77,6 +77,8 @@ export interface CreatePlatformTenantRequest {
   adminPassword: string;
   loyaltyEnabled: boolean;
   additionalBranches?: CreatePlatformBranchRequest[];
+  /** pharmacy | clinic | family */
+  vertical?: string;
 }
 
 export interface CreatePlatformTenantResponse {

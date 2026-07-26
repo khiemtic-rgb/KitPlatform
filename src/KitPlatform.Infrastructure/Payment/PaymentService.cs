@@ -48,18 +48,135 @@ internal sealed class PaymentService : IPaymentService
                 display_name AS DisplayName,
                 amount_vnd AS AmountVnd,
                 currency AS Currency,
-                interval_days AS IntervalDays
+                interval_days AS IntervalDays,
+                trial_days AS TrialDays
             FROM payment.plan
             WHERE product_code = @ProductCode
               AND plan_code = @PlanCode
               AND is_active = TRUE
             """,
             new { ProductCode = productCode, PlanCode = planCode });
-        return row is null
-            ? null
-            : new PaymentPlanDto(
-                row.ProductCode, row.PlanCode, row.DisplayName,
-                row.AmountVnd, row.Currency, row.IntervalDays);
+        return row is null ? null : MapPlan(row);
+    }
+
+    public async Task<IReadOnlyList<PaymentPlanDto>> ListPlansAsync(
+        string productCode,
+        CancellationToken cancellationToken = default)
+    {
+        var code = RequireCode(productCode, "productCode");
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<PlanRow>(
+            """
+            SELECT
+                product_code AS ProductCode,
+                plan_code AS PlanCode,
+                display_name AS DisplayName,
+                amount_vnd AS AmountVnd,
+                currency AS Currency,
+                interval_days AS IntervalDays,
+                trial_days AS TrialDays
+            FROM payment.plan
+            WHERE product_code = @ProductCode
+              AND is_active = TRUE
+            ORDER BY amount_vnd ASC, plan_code ASC
+            """,
+            new { ProductCode = code });
+        return rows.Select(MapPlan).ToList();
+    }
+
+    public async Task<PaymentPlanDto> UpdatePlanAsync(
+        string productCode,
+        string planCode,
+        UpdatePaymentPlanRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var product = RequireCode(productCode, "productCode");
+        var plan = RequireCode(planCode, "planCode");
+
+        if (request.AmountVnd is int amount && amount <= 0)
+            throw new InvalidOperationException("Giá gói phải lớn hơn 0.");
+        if (request.TrialDays is int trial && (trial < 0 || trial > 365))
+            throw new InvalidOperationException("Số ngày dùng thử phải trong khoảng 0–365.");
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var row = await conn.QuerySingleOrDefaultAsync<PlanRow>(
+            """
+            UPDATE payment.plan
+            SET amount_vnd = COALESCE(@AmountVnd, amount_vnd),
+                trial_days = COALESCE(@TrialDays, trial_days),
+                display_name = COALESCE(NULLIF(TRIM(@DisplayName), ''), display_name),
+                is_active = COALESCE(@IsActive, is_active),
+                updated_at = NOW()
+            WHERE product_code = @ProductCode
+              AND plan_code = @PlanCode
+            RETURNING
+                product_code AS ProductCode,
+                plan_code AS PlanCode,
+                display_name AS DisplayName,
+                amount_vnd AS AmountVnd,
+                currency AS Currency,
+                interval_days AS IntervalDays,
+                trial_days AS TrialDays
+            """,
+            new
+            {
+                ProductCode = product,
+                PlanCode = plan,
+                request.AmountVnd,
+                request.TrialDays,
+                request.DisplayName,
+                request.IsActive,
+            });
+
+        if (row is null)
+            throw new InvalidOperationException($"Không tìm thấy gói {product}/{plan}.");
+
+        _logger.LogInformation(
+            "Payment plan updated {Product}/{Plan} amount={Amount} trialDays={TrialDays}",
+            row.ProductCode, row.PlanCode, row.AmountVnd, row.TrialDays);
+        return MapPlan(row);
+    }
+
+    public Task<IReadOnlyList<PaymentMethodDto>> ListMethodsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        _ = cancellationToken;
+        var payOsReady = _providers.TryGetValue(PaymentProviderCodes.PayOs, out var payOs)
+            && payOs.IsReady;
+
+        IReadOnlyList<PaymentMethodDto> methods =
+        [
+            new(
+                PaymentProviderCodes.PayOs,
+                "VietQR (PayOS)",
+                "Quét QR ngân hàng / ví — xác nhận tự động",
+                payOsReady,
+                payOsReady ? null : "Chưa cấu hình cổng PayOS trên server"),
+            new(
+                PaymentProviderCodes.Manual,
+                "Chuyển khoản ngân hàng",
+                "Chuyển đúng mã đối soát FMX… — hệ thống tự khớp",
+                Available: true),
+            new(
+                PaymentProviderCodes.MoMo,
+                "MoMo",
+                "Thanh toán nhanh bằng ví MoMo",
+                Available: false,
+                "Sắp ra mắt"),
+            new(
+                PaymentProviderCodes.ZaloPay,
+                "ZaloPay",
+                "Thanh toán bằng ZaloPay",
+                Available: false,
+                "Sắp ra mắt"),
+            new(
+                PaymentProviderCodes.VnPay,
+                "VNPay",
+                "ATM / Visa / QR ngân hàng qua VNPay",
+                Available: false,
+                "Sắp ra mắt"),
+        ];
+        return Task.FromResult(methods);
     }
 
     public async Task<PaymentSubscriptionDto?> GetSubscriptionAsync(
@@ -174,35 +291,50 @@ internal sealed class PaymentService : IPaymentService
         string? providerCode = null;
 
         var preferred = string.IsNullOrWhiteSpace(request.PreferredProvider)
-            ? PaymentProviderCodes.PayOs
+            ? null
             : request.PreferredProvider.Trim().ToLowerInvariant();
 
-        if (_providers.TryGetValue(preferred, out var provider) && provider.IsReady)
+        // Explicit bank transfer — never force a gateway.
+        if (string.Equals(preferred, PaymentProviderCodes.Manual, StringComparison.OrdinalIgnoreCase))
         {
-            var returnUrl = FirstNonEmpty(request.ReturnUrl, _payOs.ReturnUrl)
-                ?? throw new InvalidOperationException("Thiếu returnUrl (Payment:PayOS:ReturnUrl).");
-            var cancelUrl = FirstNonEmpty(request.CancelUrl, _payOs.CancelUrl)
-                ?? throw new InvalidOperationException("Thiếu cancelUrl (Payment:PayOS:CancelUrl).");
-
-            var created = await provider.CreateCheckoutAsync(
-                orderCode,
-                publicCode,
-                plan.AmountVnd,
-                publicCode,
-                returnUrl,
-                cancelUrl,
-                cancellationToken);
-
-            checkoutUrl = created.CheckoutUrl;
-            qrCode = created.QrCode;
-            providerPaymentId = created.ProviderPaymentId;
-            providerCode = provider.ProviderCode;
-            if (created.ExpiresAt is DateTimeOffset exp) expiresAt = exp;
+            providerCode = PaymentProviderCodes.Manual;
         }
         else
         {
-            // Fallback: VietQR-ready public_code for bank transfer / future SePay — no manual content typing.
-            providerCode = PaymentProviderCodes.Manual;
+            // Default prefer PayOS when caller did not pick a method.
+            var gatewayCode = preferred ?? PaymentProviderCodes.PayOs;
+            if (_providers.TryGetValue(gatewayCode, out var provider) && provider.IsReady)
+            {
+                var returnUrl = FirstNonEmpty(request.ReturnUrl, _payOs.ReturnUrl)
+                    ?? throw new InvalidOperationException("Thiếu returnUrl (Payment:PayOS:ReturnUrl).");
+                var cancelUrl = FirstNonEmpty(request.CancelUrl, _payOs.CancelUrl)
+                    ?? throw new InvalidOperationException("Thiếu cancelUrl (Payment:PayOS:CancelUrl).");
+
+                var created = await provider.CreateCheckoutAsync(
+                    orderCode,
+                    publicCode,
+                    plan.AmountVnd,
+                    publicCode,
+                    returnUrl,
+                    cancelUrl,
+                    cancellationToken);
+
+                checkoutUrl = created.CheckoutUrl;
+                qrCode = created.QrCode;
+                providerPaymentId = created.ProviderPaymentId;
+                providerCode = provider.ProviderCode;
+                if (created.ExpiresAt is DateTimeOffset exp) expiresAt = exp;
+            }
+            else if (preferred is not null)
+            {
+                throw new InvalidOperationException(
+                    $"Hình thức thanh toán '{preferred}' chưa sẵn sàng. Chọn chuyển khoản hoặc VietQR khi đã cấu hình.");
+            }
+            else
+            {
+                // No preference + gateway offline → bank transfer with unique public_code.
+                providerCode = PaymentProviderCodes.Manual;
+            }
         }
 
         var id = await conn.ExecuteScalarAsync<Guid>(
@@ -614,6 +746,11 @@ internal sealed class PaymentService : IPaymentService
         return $"{prefix}{day}{Guid.NewGuid():N}"[..16].ToUpperInvariant();
     }
 
+    private static PaymentPlanDto MapPlan(PlanRow row) =>
+        new(
+            row.ProductCode, row.PlanCode, row.DisplayName,
+            row.AmountVnd, row.Currency, row.IntervalDays, row.TrialDays);
+
     private static PaymentSubscriptionDto MapSubscription(SubscriptionRow row)
     {
         var status = NormalizeStatus(row);
@@ -710,6 +847,7 @@ internal sealed class PaymentService : IPaymentService
         public int AmountVnd { get; init; }
         public string Currency { get; init; } = "VND";
         public int IntervalDays { get; init; }
+        public int TrialDays { get; init; }
     }
 
     private sealed class SubscriptionRow

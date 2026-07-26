@@ -27,6 +27,9 @@ internal sealed class JwtTokenService
             new("tenant_code", user.TenantCode),
         };
 
+        if (user.KitAccountId is Guid kitAccountId)
+            claims.Add(new Claim("kit_account_id", kitAccountId.ToString()));
+
         foreach (var role in user.Roles)
         {
             claims.Add(new Claim(ClaimTypes.Role, role));

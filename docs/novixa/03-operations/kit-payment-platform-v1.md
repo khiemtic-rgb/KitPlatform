@@ -15,10 +15,44 @@ IPaymentService
   └── IPaymentProductHandler (FamilyOs now; Novixa later)
 ```
 
+## Canonical Checkout API
+
+All products create / poll orders here (do **not** invent per-pack payment UIs):
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| GET | `/api/payment/plans?productCode=` | Bearer | Plan catalog |
+| GET | `/api/payment/methods` | Bearer | Payment methods (VietQR / bank / MoMo…) |
+| GET | `/api/payment/subscriptions?productCode=&subjectType=&subjectId=` | Bearer | Entitlement |
+| POST | `/api/payment/orders` | Bearer | **Create order** (body: productCode, subjectType, subjectId, planCode?, returnUrl?, cancelUrl?) |
+| GET | `/api/payment/orders/{orderCode}?productCode=&subjectId=` | Bearer | Poll status |
+| POST | `/api/payment/webhooks/payos` | Anonymous + signature | Provider webhook |
+| POST | `/api/payment/orders/activate` | Ops (`payment.ops.activate`) | Manual bank confirm |
+
+Legacy Famixa facade (`POST /api/family-os/families/{id}/billing/checkout`) still works and delegates to the same `IPaymentService`.
+
+## Shared Checkout UI
+
+Deep-link (family-app today; same contract for Novixa/KEMS shells later):
+
+```
+/pay?product=family_os&subjectType=family&subjectId={guid}&plan=starter_month&return=/who
+```
+
+Optional after create / provider return: `&orderCode={n}`
+
+Flow:
+
+1. Banner / CTA → navigate to `/pay?…`
+2. UI loads plans + subscription via `/api/payment/*`
+3. User confirms → `POST /api/payment/orders`
+4. Prefer PayOS `checkoutUrl`; else show `public_code` + QR and poll until `paid`
+5. Webhook / ops activate → subscription extended → product handler syncs entitlement
+
 ## Famixa path
 
-1. Parent taps renew → `POST /api/family-os/families/{id}/billing/checkout`
-2. Facade → `IPaymentService.CreateOrderAsync(product=family_os, subject=family)`
+1. Parent taps renew on BillingBanner → `/pay?product=family_os&…`
+2. Checkout UI → `POST /api/payment/orders`
 3. Prefer PayOS VietQR; else pending order with unique `public_code` (e.g. `FMX250725A91`)
 4. Webhook `POST /api/payment/webhooks/payos` (fail-closed signature) → extend `payment.subscription` (stacks remaining days) → `FamilyOsPaymentProductHandler` syncs `pack_family.family_subscription`
 

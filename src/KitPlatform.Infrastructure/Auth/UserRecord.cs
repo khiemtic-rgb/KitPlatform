@@ -9,6 +9,7 @@ internal sealed class UserRecord
     public string Email { get; init; } = string.Empty;
     public string PasswordHash { get; init; } = string.Empty;
     public short Status { get; init; }
+    public Guid? KitAccountId { get; init; }
     public string[] Roles { get; init; } = [];
     public string[] Permissions { get; init; } = [];
 }

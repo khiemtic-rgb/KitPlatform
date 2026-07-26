@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using KitPlatform.Application.Auth;
 using KitPlatform.Application.Configuration;
+using KitPlatform.Application.Core;
 using KitPlatform.Application.Platform;
 using KitPlatform.Infrastructure.Kernel.Workspace;
 
@@ -16,17 +18,20 @@ internal sealed class PlatformTenantService : IPlatformTenantService
     private readonly PlatformSettings _settings;
     private readonly IHostEnvironment _environment;
     private readonly WorkspacePackProvisioner _workspaceProvisioner;
+    private readonly IKitAccountService _kitAccounts;
 
     public PlatformTenantService(
         PlatformTenantRepository repository,
         IOptions<PlatformSettings> settings,
         IHostEnvironment environment,
-        WorkspacePackProvisioner workspaceProvisioner)
+        WorkspacePackProvisioner workspaceProvisioner,
+        IKitAccountService kitAccounts)
     {
         _repository = repository;
         _settings = settings.Value;
         _environment = environment;
         _workspaceProvisioner = workspaceProvisioner;
+        _kitAccounts = kitAccounts;
     }
 
     public PlatformPublicConfigDto GetPublicConfig() =>
@@ -36,7 +41,7 @@ internal sealed class PlatformTenantService : IPlatformTenantService
             _settings.AdminUrl,
             _settings.CustomerAppUrl,
             _settings.ApiUrl,
-            "Nhập mã nhà thuốc do quản trị nền tảng cung cấp (ví dụ NT_A).");
+            "Nhập mã đơn vị do quản trị nền tảng cung cấp (ví dụ NT_A, PK_A, FM_A).");
 
     public async Task<PlatformSetupStatusDto> GetSetupStatusAsync(CancellationToken cancellationToken = default)
     {
@@ -110,27 +115,48 @@ internal sealed class PlatformTenantService : IPlatformTenantService
         var tenantCount = await _repository.CountTenantsAsync(cancellationToken);
         EnsureProvisioningAuthorized(tenantCount, provisioningKey);
 
-        var tenantCode = NormalizeCode(request.TenantCode, "Mã nhà thuốc");
-        var branchCode = NormalizeCode(request.BranchCode, "Mã chi nhánh");
-        var warehouseCode = NormalizeCode(request.WarehouseCode, "Mã kho");
+        var vertical = string.IsNullOrWhiteSpace(request.Vertical)
+            ? PlatformVerticalCodes.Pharmacy
+            : TenantPlatformSettingsValidator.NormalizeVertical(request.Vertical);
+
+        var isFamily = vertical.Equals(PlatformVerticalCodes.Family, StringComparison.OrdinalIgnoreCase);
+        var isClinic = vertical.Equals(PlatformVerticalCodes.Clinic, StringComparison.OrdinalIgnoreCase);
+        var codeLabel = isFamily ? "Mã đơn vị" : isClinic ? "Mã phòng khám" : "Mã nhà thuốc";
+        var nameLabel = isFamily ? "Tên gia đình" : isClinic ? "Tên phòng khám" : "Tên nhà thuốc";
+
+        var tenantCode = NormalizeCode(request.TenantCode, codeLabel);
+        var branchCode = NormalizeCode(
+            string.IsNullOrWhiteSpace(request.BranchCode) && isFamily ? "HOME" : request.BranchCode,
+            isFamily ? "Mã nhà" : "Mã chi nhánh");
+
+        var warehouseCode = isFamily
+            ? NormalizeCode(
+                string.IsNullOrWhiteSpace(request.WarehouseCode) ? "WH_HOME" : request.WarehouseCode,
+                "Mã kho")
+            : NormalizeCode(request.WarehouseCode, "Mã kho");
 
         if (string.IsNullOrWhiteSpace(request.TenantName))
-            throw new InvalidOperationException("Tên nhà thuốc là bắt buộc.");
+            throw new InvalidOperationException($"{nameLabel} là bắt buộc.");
 
-        if (string.IsNullOrWhiteSpace(request.BranchName))
-            throw new InvalidOperationException("Tên chi nhánh là bắt buộc.");
+        var branchName = string.IsNullOrWhiteSpace(request.BranchName)
+            ? (isFamily ? "Nhà" : isClinic ? "Cơ sở chính" : "Quầy chính")
+            : request.BranchName.Trim();
 
-        if (string.IsNullOrWhiteSpace(request.WarehouseName))
-            throw new InvalidOperationException("Tên kho là bắt buộc.");
+        var warehouseName = string.IsNullOrWhiteSpace(request.WarehouseName)
+            ? (isFamily ? "Kho nhà" : "Kho chính")
+            : request.WarehouseName.Trim();
 
         ValidateAdmin(request);
 
         if (await _repository.TenantCodeExistsAsync(tenantCode, cancellationToken))
-            throw new InvalidOperationException($"Mã nhà thuốc «{tenantCode}» đã tồn tại.");
+            throw new InvalidOperationException($"{codeLabel} «{tenantCode}» đã tồn tại.");
 
-        var additional = NormalizeAdditionalBranches(request.AdditionalBranches);
+        var additional = isFamily
+            ? Array.Empty<CreatePlatformBranchRequest>()
+            : NormalizeAdditionalBranches(request.AdditionalBranches);
         ValidateUniqueBranchCodes(branchCode, additional);
-        ValidateUniqueWarehouseCodes(warehouseCode, additional);
+        if (!isFamily)
+            ValidateUniqueWarehouseCodes(warehouseCode, additional);
 
         var maxBranches = TenantPlatformSettingsValidator.NormalizeMaxBranches(request.MaxBranches);
         var plannedBranchCount = 1 + additional.Count;
@@ -138,23 +164,46 @@ internal sealed class PlatformTenantService : IPlatformTenantService
 
         var normalized = request with
         {
+            Vertical = vertical,
             TenantCode = tenantCode,
             TenantName = request.TenantName.Trim(),
             BranchCode = branchCode,
-            BranchName = request.BranchName.Trim(),
+            BranchName = branchName,
             WarehouseCode = warehouseCode,
-            WarehouseName = request.WarehouseName.Trim(),
+            WarehouseName = warehouseName,
             AdminUsername = request.AdminUsername.Trim(),
             AdminEmail = request.AdminEmail.Trim().ToLowerInvariant(),
             AdminFullName = string.IsNullOrWhiteSpace(request.AdminFullName)
-                ? "Quản trị viên"
+                ? (isFamily ? "Phụ huynh" : "Quản trị viên")
                 : request.AdminFullName.Trim(),
+            LoyaltyEnabled = isFamily ? false : request.LoyaltyEnabled,
             AdditionalBranches = additional,
             MaxBranches = maxBranches,
         };
 
+        await _kitAccounts.AssertEmailPasswordCompatibleAsync(
+            normalized.AdminEmail,
+            request.AdminPassword,
+            cancellationToken);
+
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.AdminPassword);
-        return await _repository.CreateTenantAsync(normalized, passwordHash, cancellationToken);
+        var created = await _repository.CreateTenantAsync(normalized, passwordHash, cancellationToken);
+
+        await _kitAccounts.EnsureAccountForUserAsync(
+            created.UserId,
+            created.TenantId,
+            normalized.AdminEmail,
+            request.AdminPassword,
+            passwordHash,
+            normalized.AdminFullName,
+            connection: null,
+            transaction: null,
+            cancellationToken);
+
+        var modules = PlatformTenantRepository.DefaultModulesForVertical(vertical);
+        await _workspaceProvisioner.EnsurePacksForTenantAsync(created.TenantId, modules, cancellationToken);
+
+        return created;
     }
 
     private void EnsureProvisioningAuthorized(int tenantCount, string? provisioningKey)
@@ -166,7 +215,7 @@ internal sealed class PlatformTenantService : IPlatformTenantService
         if (configured.Length < MinProvisioningKeyLength)
         {
             throw new InvalidOperationException(
-                "Đã có nhà thuốc trên hệ thống — cần cấu hình Platform:ProvisioningKey (≥ 16 ký tự) trên server.");
+                "Đã có đơn vị trên hệ thống — cần cấu hình Platform:ProvisioningKey (≥ 16 ký tự) trên server.");
         }
 
         var provided = provisioningKey?.Trim() ?? "";
