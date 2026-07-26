@@ -1,18 +1,23 @@
-/* Nền nhóm trắng / xám ghi — áp lên td để thắng hover mặc định của Ant Table. */
+/* Hai tông rõ hơn: trắng / xám ghi đậm — tránh hai nhóm liền kề bị hòa vào nhau. */
 .product-dup-cluster-a > td {
   background: #ffffff !important;
 }
 
 .product-dup-cluster-b > td {
-  background: #f0f0f0 !important;
+  background: #d9d9d9 !important;
 }
 
 .product-dup-cluster-a.ant-table-row:hover > td,
 .product-dup-cluster-a > td.ant-table-cell-row-hover {
-  background: #f7f7f7 !important;
+  background: #f5f5f5 !important;
 }
 
 .product-dup-cluster-b.ant-table-row:hover > td,
 .product-dup-cluster-b > td.ant-table-cell-row-hover {
-  background: #e4e4e4 !important;
+  background: #bfbfbf !important;
+}
+
+/* Vạch ngăn đầu nhóm (từ nhóm thứ 2 trở đi). */
+.product-dup-cluster-start > td {
+  border-top: 3px solid #8c8c8c !important;
 }

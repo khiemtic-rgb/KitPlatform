@@ -109,9 +109,22 @@ function splitRows(all: RowModel[]) {
   };
 }
 
+/** Đánh lại chỉ số nhóm theo thứ tự hiển thị — tránh hai nhóm liền kề cùng màu sau khi lọc. */
+function reindexClusterTones(rows: RowModel[]): RowModel[] {
+  const order = new Map<string, number>();
+  return rows.map((row) => {
+    if (!order.has(row.clusterKey)) order.set(row.clusterKey, order.size);
+    return { ...row, clusterIndex: order.get(row.clusterKey)! };
+  });
+}
+
 function clusterRowClassName(row: RowModel, keeperId?: string): string {
   const tone = row.clusterIndex % 2 === 0 ? 'product-dup-cluster-a' : 'product-dup-cluster-b';
-  return keeperId === row.id ? `${tone} product-dup-keeper-row` : tone;
+  const parts = [tone];
+  // Vạch ngăn giữa các nhóm — tránh hai nhóm liền kề trông như một khối.
+  if (row.isFirstInCluster && row.clusterIndex > 0) parts.push('product-dup-cluster-start');
+  if (keeperId === row.id) parts.push('product-dup-keeper-row');
+  return parts.join(' ');
 }
 
 function applyClusterKeepers(
@@ -231,18 +244,26 @@ export function ProductDuplicateMergePage() {
 
   const rows = useMemo(() => toRows(clusters), [clusters]);
   const similarRows = useMemo(() => toRows(similarClusters), [similarClusters]);
-  const mergeSplit = useMemo(() => splitRows(rows), [rows]);
-  const similarSplit = useMemo(() => splitRows(similarRows), [similarRows]);
+  const mergeSplit = useMemo(() => {
+    const split = splitRows(rows);
+    return {
+      convertible: reindexClusterTones(split.convertible),
+      incompatible: split.incompatible,
+    };
+  }, [rows]);
+  const similarSplit = useMemo(() => {
+    const split = splitRows(similarRows);
+    return {
+      convertible: reindexClusterTones(split.convertible),
+      incompatible: split.incompatible,
+    };
+  }, [similarRows]);
 
   /** Gộp các nhóm khác họ ĐVT từ cả «trùng» và «gần giống», đánh lại chỉ số nền để tô xen kẽ. */
-  const manualReviewRows = useMemo(() => {
-    const combined = [...mergeSplit.incompatible, ...similarSplit.incompatible];
-    const clusterOrder = new Map<string, number>();
-    return combined.map((row) => {
-      if (!clusterOrder.has(row.clusterKey)) clusterOrder.set(row.clusterKey, clusterOrder.size);
-      return { ...row, clusterIndex: clusterOrder.get(row.clusterKey)! };
-    });
-  }, [mergeSplit.incompatible, similarSplit.incompatible]);
+  const manualReviewRows = useMemo(
+    () => reindexClusterTones([...mergeSplit.incompatible, ...similarSplit.incompatible]),
+    [mergeSplit.incompatible, similarSplit.incompatible],
+  );
 
   const incompatibleClusterCount = (list: RowModel[]) =>
     new Set(list.map((r) => r.clusterKey)).size;
