@@ -27,9 +27,20 @@ function createReadyPromise() {
       onRegisteredSW(_swUrl, registration) {
         if (registration?.active || registration?.installing || registration?.waiting) {
           finish(registration);
-          return;
+        } else {
+          navigator.serviceWorker.ready.then(finish).catch(fail);
         }
-        navigator.serviceWorker.ready.then(finish).catch(fail);
+        if (registration) {
+          window.setInterval(() => {
+            void registration.update();
+          }, 60_000);
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') void registration.update();
+          });
+        }
+      },
+      onNeedRefresh() {
+        window.location.reload();
       },
       onRegisterError(error) {
         fail(normalizeServiceWorkerError(error));

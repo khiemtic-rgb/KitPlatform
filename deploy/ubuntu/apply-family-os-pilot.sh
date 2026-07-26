@@ -62,6 +62,12 @@ log "CORS — them https://${FAMILY_HOST}"
 bash "$OPT/ensure-novixa-cors-env.sh" "$CONFIG_DIR/api.env"
 
 log "Nginx site rieng cho ${FAMILY_HOST} (khong ghi de kit-platform SSL)"
+mkdir -p /etc/nginx/snippets
+if [[ -f "$OPT/nginx-pwa-cache.conf" ]]; then
+  cp "$OPT/nginx-pwa-cache.conf" /etc/nginx/snippets/pwa-cache.conf
+elif [[ -f "$UPLOAD/deploy/ubuntu/nginx-pwa-cache.conf" ]]; then
+  cp "$UPLOAD/deploy/ubuntu/nginx-pwa-cache.conf" /etc/nginx/snippets/pwa-cache.conf
+fi
 cat > /etc/nginx/sites-available/family-kittech <<EOF
 server {
     listen 80;
@@ -71,6 +77,8 @@ server {
     root ${WEB_ROOT}/family-app;
     index index.html;
     client_max_body_size 8m;
+
+    include /etc/nginx/snippets/pwa-cache.conf;
 
     location /api/ {
         proxy_pass http://127.0.0.1:5000;
@@ -93,14 +101,9 @@ server {
 
     location / {
         try_files \$uri \$uri/ /index.html;
-        add_header Cache-Control "no-cache, no-store, must-revalidate";
     }
 
-    location = /index.html {
-        add_header Cache-Control "no-cache, no-store, must-revalidate";
-    }
-
-    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?|webmanifest)\$ {
+    location ~* \\.(css|png|jpg|jpeg|gif|ico|svg|woff2?)\$ {
         expires 7d;
         add_header Cache-Control "public, immutable";
     }

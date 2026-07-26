@@ -51,8 +51,16 @@ Write-Host "=== KitPlatform UPDATE (no wipe, cutover pharmacore->kit-platform) -
 & $pscp -batch -pw $pass -r "$Root\publish\customer-app" "${SshTarget}:${remote}/"
 & $pscp -batch -pw $pass -r "$Root\publish\staff-app" "${SshTarget}:${remote}/"
 & $pscp -batch -pw $pass -r "$Root\publish\prescriber-portal" "${SshTarget}:${remote}/"
+# FamilyOS consumer SPA — trước đây chỉ deploy qua pilot script, dễ lệch bản.
+if (Test-Path "$Root\publish\family-app\index.html") {
+    & $pscp -batch -pw $pass -r "$Root\publish\family-app" "${SshTarget}:${remote}/"
+}
 & $pscp -batch -pw $pass -r "$Root\migrations" "${SshTarget}:${remote}/"
 & $pscp -batch -pw $pass -r "$Root\deploy\ubuntu" "${SshTarget}:${remote}/deploy/"
+# PWA: không cache sw.js / version.json / index.html
+& $plink -batch -pw $pass $SshTarget "mkdir -p /etc/nginx/snippets"
+& $pscp -batch -pw $pass "$Root\deploy\ubuntu\nginx-pwa-cache.conf" "${SshTarget}:/etc/nginx/snippets/pwa-cache.conf"
+& $pscp -batch -pw $pass "$Root\deploy\ubuntu\nginx-staff-pwa-cache.conf" "${SshTarget}:/etc/nginx/snippets/staff-pwa-cache.conf"
 
 $runMig = if ($RunMigrations) { "1" } else { "0" }
 # Use LF remote script via bash -s to avoid PowerShell CRLF/here-string issues.
@@ -96,14 +104,33 @@ rsync -a --delete "$REMOTE/admin/" "$NEW_WEB/admin/"
 rsync -a --delete "$REMOTE/customer-app/" "$NEW_WEB/customer-app/"
 rsync -a --delete "$REMOTE/staff-app/" "$NEW_WEB/staff-app/"
 rsync -a --delete "$REMOTE/prescriber-portal/" "$NEW_WEB/prescriber-portal/"
+if [[ -d "$REMOTE/family-app" ]]; then
+  echo "==> Sync family-app SPA"
+  mkdir -p "$NEW_WEB/family-app"
+  rsync -a --delete "$REMOTE/family-app/" "$NEW_WEB/family-app/"
+fi
 rsync -a "$REMOTE/deploy/ubuntu/" "$NEW_OPT/"
 rsync -a "$REMOTE/migrations/" "$NEW_OPT/migrations/"
+mkdir -p /etc/nginx/snippets
+if [[ -f "$NEW_OPT/nginx-pwa-cache.conf" ]]; then
+  cp "$NEW_OPT/nginx-pwa-cache.conf" /etc/nginx/snippets/pwa-cache.conf
+fi
+if [[ -f "$NEW_OPT/nginx-staff-pwa-cache.conf" ]]; then
+  cp "$NEW_OPT/nginx-staff-pwa-cache.conf" /etc/nginx/snippets/staff-pwa-cache.conf
+fi
+# Family site riêng (family-kittech): đảm bảo include pwa-cache (sw.js / version.json không bị cache)
+if [[ -f /etc/nginx/sites-available/family-kittech ]]; then
+  if ! grep -q 'pwa-cache.conf' /etc/nginx/sites-available/family-kittech; then
+    sed -i '/server_name family.kittech.vn;/a\    include /etc/nginx/snippets/pwa-cache.conf;' /etc/nginx/sites-available/family-kittech || true
+  fi
+fi
 for f in "$NEW_OPT"/*.sh; do
   sed -i 's/\r$//' "$f" 2>/dev/null || true
   sed -i '1s/^\xEF\xBB\xBF//' "$f" 2>/dev/null || true
 done
 chmod +x "$NEW_OPT"/*.sh 2>/dev/null || true
 chown -R www-data:www-data "$NEW_WEB/admin" "$NEW_WEB/customer-app" "$NEW_WEB/staff-app" "$NEW_WEB/prescriber-portal" "$NEW_WEB/api/uploads"
+[[ -d "$NEW_WEB/family-app" ]] && chown -R www-data:www-data "$NEW_WEB/family-app" || true
 
 # Keep legacy web tree in sync during dual-run (nginx may still point to pharmacore until cutover)
 if [[ -d "$OLD_WEB" ]]; then

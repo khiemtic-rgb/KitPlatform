@@ -20,7 +20,13 @@ export function isParentPushSupported() {
 
 export async function ensureFamilyServiceWorker(): Promise<ServiceWorkerRegistration> {
   const existing = await navigator.serviceWorker.getRegistration('/');
-  if (existing) return existing;
+  if (existing?.active || existing?.installing || existing?.waiting) {
+    return existing;
+  }
+  // VitePWA đăng ký /sw.js (autoUpdate). Fallback nếu chưa kịp register.
+  if (import.meta.env.DEV) {
+    return navigator.serviceWorker.register('/dev-sw.js?dev-sw', { scope: '/', type: 'module' });
+  }
   return navigator.serviceWorker.register('/sw.js', { scope: '/' });
 }
 
