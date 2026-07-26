@@ -2891,8 +2891,8 @@ export function KidFocusView({
               type="button"
               className="kv2-j-nav"
               aria-label="Ngày trước"
-              disabled={journalDayIdx <= 0}
-              onClick={() => setJournalDayIdx((v) => Math.max(0, v - 1))}
+              disabled
+              title="Lịch sử nhật ký sẽ mở sau"
             >
               ‹
             </button>
@@ -2903,8 +2903,16 @@ export function KidFocusView({
                   type="button"
                   role="tab"
                   aria-selected={i === journalDayIdx}
-                  className={`kv2-j-chip${i === journalDayIdx ? ' is-on' : ''}`}
-                  onClick={() => setJournalDayIdx(i)}
+                  aria-disabled={!d.isToday}
+                  title={d.isToday ? d.fullLabel : 'Nhật ký ngày trước sẽ mở khi có lịch sử'}
+                  className={`kv2-j-chip${i === journalDayIdx ? ' is-on' : ''}${
+                    d.isToday ? '' : ' is-muted'
+                  }`}
+                  disabled={!d.isToday}
+                  onClick={() => {
+                    if (!d.isToday) return;
+                    setJournalDayIdx(i);
+                  }}
                 >
                   {d.shortLabel}
                 </button>
@@ -3028,7 +3036,7 @@ export function KidFocusView({
                 </ol>
               ) : (
                 <p className="kv2-j-empty soft">
-                  Nhật ký các ngày trước sẽ sớm có — hôm nay hãy làm thật vui nhé!
+                  Hôm nay là nhật ký đang mở — các ngày trước sẽ hiện khi có lịch sử lưu.
                 </p>
               )}
 

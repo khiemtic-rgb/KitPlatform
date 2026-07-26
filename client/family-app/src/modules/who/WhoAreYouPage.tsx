@@ -4,6 +4,7 @@ import {
   ensureDayFlow,
   fetchFamilies,
   fetchFamilySubscription,
+  fetchTeamUnlocks,
   type FamilyMembership,
   type FamilySubscription,
 } from '@/shared/api/family-os.api';
@@ -93,6 +94,9 @@ export function WhoAreYouPage() {
   const [sub, setSub] = useState<FamilySubscription | null>(null);
   const [pendingChildTasks, setPendingChildTasks] = useState(0);
   const [starsToday, setStarsToday] = useState(0);
+  const [doneToday, setDoneToday] = useState(0);
+  const [totalToday, setTotalToday] = useState(0);
+  const [movieNightLabel, setMovieNightLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pinOpen, setPinOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -109,8 +113,9 @@ export function WhoAreYouPage() {
       fetchFamilies(),
       fetchFamilySubscription(familyId).catch(() => null),
       ensureDayFlow(familyId).catch(() => null),
+      fetchTeamUnlocks(familyId).catch(() => []),
     ])
-      .then(([families, subscription, day]) => {
+      .then(([families, subscription, day, unlocks]) => {
         if (cancelled) return;
         const family = families.find((f) => f.id === familyId) ?? families[0];
         const list = family?.members ?? [];
@@ -121,18 +126,44 @@ export function WhoAreYouPage() {
           const childIds = new Set(
             list.filter((m) => m.roleCode === 'child').map((m) => m.id),
           );
-          const childPending = day.commitments.filter(
+          const childOpen = day.commitments.filter(
             (c) =>
               c.status !== 'done' &&
               c.status !== 'skipped' &&
               (!c.memberId || childIds.has(c.memberId)),
           );
-          setPendingChildTasks(childPending.length);
-          const stars = day.commitments.reduce(
+          setPendingChildTasks(childOpen.length);
+          setDoneToday(day.doneCount);
+          setTotalToday(day.totalCommitments);
+          // Only remaining (open) tasks contribute to "sao có thể nhận".
+          const stars = childOpen.reduce(
             (sum, c) => sum + Number(c.projectedStarDelta ?? c.starReward ?? 0),
             0,
           );
           setStarsToday(stars);
+        } else {
+          setPendingChildTasks(0);
+          setDoneToday(0);
+          setTotalToday(0);
+          setStarsToday(0);
+        }
+
+        const unlock = unlocks.find((u) =>
+          ['pending_confirm', 'confirmed', 'deferred'].includes(
+            String(u.status ?? '').toLowerCase(),
+          ),
+        );
+        if (unlock) {
+          const st = String(unlock.status).toLowerCase();
+          setMovieNightLabel(
+            st === 'confirmed'
+              ? 'đã mở'
+              : st === 'pending_confirm'
+                ? 'chờ bố mẹ duyệt'
+                : unlock.labelVi?.trim() || 'có tín hiệu hôm nay',
+          );
+        } else {
+          setMovieNightLabel(null);
         }
       })
       .catch(() => {
@@ -208,14 +239,22 @@ export function WhoAreYouPage() {
             </button>
           </div>
         </div>
-        <button type="button" className="home-bell" aria-label="Thông báo">
+        <button
+          type="button"
+          className="home-bell"
+          aria-label="Quản trị gia đình"
+          title="Quản trị gia đình"
+          onClick={() => navigate('/family-admin')}
+        >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path
               d="M12 22a2.2 2.2 0 0 0 2.2-2.2h-4.4A2.2 2.2 0 0 0 12 22Zm7-5.2V11a7 7 0 1 0-14 0v5.8L3 19v1h18v-1l-2-2.2Z"
               fill="currentColor"
             />
           </svg>
-          <span className="home-bell-dot" aria-hidden />
+          {pendingChildTasks > 0 ? (
+            <span className="home-bell-dot" aria-hidden />
+          ) : null}
         </button>
       </header>
 
@@ -318,13 +357,26 @@ export function WhoAreYouPage() {
           <button
             type="button"
             className="home-manage-btn"
-            onClick={() => setMoreOpen(true)}
+            onClick={() => navigate('/family-admin')}
           >
             Quản lý thành viên
           </button>
         </div>
 
         {error ? <div className="banner-error">{error}</div> : null}
+
+        {children.length === 0 && adults.length === 0 ? (
+          <div className="home-empty-members">
+            <p>Chưa có thành viên nào. Thêm bố/mẹ và con để bắt đầu ngày hôm nay.</p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => navigate('/family-admin')}
+            >
+              Thêm thành viên
+            </button>
+          </div>
+        ) : null}
 
         {children.length > 0 ? (
           <>
@@ -364,13 +416,24 @@ export function WhoAreYouPage() {
           <div>
             <span aria-hidden>⭐</span>
             <p>
-              <strong>{starsToday}</strong> Sao có thể nhận hôm nay
+              <strong>{starsToday}</strong> Sao còn có thể nhận hôm nay
             </p>
           </div>
           <div>
-            <span aria-hidden>🎬</span>
+            <span aria-hidden>{movieNightLabel ? '🎬' : '✅'}</span>
             <p>
-              <strong>Movie Night</strong> Cùng mở khi cả nhà hoàn thành nhé!
+              {movieNightLabel ? (
+                <>
+                  <strong>Movie Night</strong> · {movieNightLabel}
+                </>
+              ) : (
+                <>
+                  <strong>
+                    {doneToday}/{Math.max(totalToday, 1)}
+                  </strong>{' '}
+                  Việc đã xong hôm nay
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -391,20 +454,20 @@ export function WhoAreYouPage() {
             document.getElementById('home-who')?.scrollIntoView({ behavior: 'smooth' })
           }
         >
-          <span aria-hidden>🗓️</span>
-          Công việc
-        </button>
-        <button type="button" className="home-tab-fab" aria-label="Thêm nhanh" onClick={goCheckout}>
-          +
+          <span aria-hidden>👤</span>
+          Thành viên
         </button>
         <button
           type="button"
-          onClick={() =>
-            document.getElementById('home-who')?.scrollIntoView({ behavior: 'smooth' })
-          }
+          className="home-tab-fab"
+          aria-label="Quản trị gia đình"
+          onClick={() => navigate('/family-admin')}
         >
-          <span aria-hidden>📊</span>
-          Báo cáo
+          +
+        </button>
+        <button type="button" onClick={() => navigate('/family-admin')}>
+          <span aria-hidden>⚙️</span>
+          Quản trị
         </button>
         <button type="button" onClick={() => setMoreOpen(true)}>
           <span aria-hidden>▦</span>

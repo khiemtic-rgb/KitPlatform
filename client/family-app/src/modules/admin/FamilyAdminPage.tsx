@@ -211,12 +211,19 @@ export function FamilyAdminPage() {
       <section className="fa-card">
         <h2>Thành viên</h2>
         <ul className="fa-member-list">
-          {members.map((m) => (
-            <li key={m.id}>
-              <strong>{m.displayName}</strong>
-              <span>{ROLE_LABEL[m.roleCode] ?? m.roleCode}</span>
+          {members.length === 0 ? (
+            <li className="fa-empty-row">
+              <strong>Chưa có thành viên</strong>
+              <span>Thêm bố/mẹ hoặc con bên dưới</span>
             </li>
-          ))}
+          ) : (
+            members.map((m) => (
+              <li key={m.id}>
+                <strong>{m.displayName}</strong>
+                <span>{ROLE_LABEL[m.roleCode] ?? m.roleCode}</span>
+              </li>
+            ))
+          )}
         </ul>
         <div className="fa-add-row">
           <input
@@ -243,12 +250,17 @@ export function FamilyAdminPage() {
         <select
           value={missionChildId}
           onChange={(e) => setMissionChildId(e.target.value)}
+          disabled={children.length === 0}
         >
-          {children.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.displayName}
-            </option>
-          ))}
+          {children.length === 0 ? (
+            <option value="">Thêm con trước khi gán việc</option>
+          ) : (
+            children.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.displayName}
+              </option>
+            ))
+          )}
         </select>
         <input
           value={missionTitle}
@@ -263,7 +275,12 @@ export function FamilyAdminPage() {
           />
           <input type="time" value={missionEnd} onChange={(e) => setMissionEnd(e.target.value)} />
         </div>
-        <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void onAddMission()}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={busy || !missionTitle.trim() || children.length === 0}
+          onClick={() => void onAddMission()}
+        >
           Thêm vào hôm nay
         </button>
         {flow ? (

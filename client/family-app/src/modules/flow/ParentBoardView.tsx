@@ -2441,8 +2441,14 @@ export function ParentBoardView({
                 type="button"
                 role="tab"
                 aria-selected={i === diaryDayIdx}
-                className={`ph-diary-date${i === diaryDayIdx ? ' is-on' : ''}`}
+                aria-disabled={!d.isToday}
+                title={d.isToday ? d.fullLabel : 'Nhật ký các ngày khác sẽ mở khi có lịch sử lưu'}
+                className={`ph-diary-date${i === diaryDayIdx ? ' is-on' : ''}${
+                  d.isToday ? '' : ' is-muted'
+                }`}
+                disabled={!d.isToday}
                 onClick={() => {
+                  if (!d.isToday) return;
                   setDiaryDayIdx(i);
                   setDiaryExpanded(false);
                 }}
@@ -2526,7 +2532,7 @@ export function ParentBoardView({
 
               {selectedDiaryDay && !selectedDiaryDay.isToday ? (
                 <p className="ph-diary-empty">
-                  Nhật ký ngày này sẽ sớm có — mẹ đang xem timeline hôm nay nhé!
+                  Đang xem hôm nay — lịch sử nhật ký các ngày khác sẽ mở sau khi hệ thống lưu đủ dữ liệu.
                 </p>
               ) : diaryFilteredEntries.length === 0 ? (
                 <p className="ph-diary-empty">
