@@ -4,6 +4,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   BankOutlined,
   CloudOutlined,
+  CreditCardOutlined,
   FileSearchOutlined,
   MobileOutlined,
   PrinterOutlined,
@@ -35,6 +36,13 @@ export function SystemLayout() {
         icon: <CloudOutlined />,
       },
       {
+        key: 'billing',
+        label: t('billing'),
+        path: '/system/billing',
+        icon: <CreditCardOutlined />,
+        familyOnly: true as const,
+      },
+      {
         key: 'pos-settings',
         label: t('posSettings'),
         path: '/system/pos-settings',
@@ -52,9 +60,16 @@ export function SystemLayout() {
     ];
 
     return all
-      .filter((tab) => !('pharmacyOnly' in tab && tab.pharmacyOnly && adminVertical !== 'pharmacy'))
+      .filter((tab) => {
+        if ('pharmacyOnly' in tab && tab.pharmacyOnly && adminVertical !== 'pharmacy') return false;
+        if ('familyOnly' in tab && tab.familyOnly && adminVertical !== 'family') return false;
+        return true;
+      })
       .map((tab) => {
-        const { pharmacyOnly: _p, ...rest } = tab as typeof tab & { pharmacyOnly?: boolean };
+        const { pharmacyOnly: _p, familyOnly: _f, ...rest } = tab as typeof tab & {
+          pharmacyOnly?: boolean;
+          familyOnly?: boolean;
+        };
         return rest;
       });
   }, [t, adminVertical]);
@@ -69,6 +84,11 @@ export function SystemLayout() {
       location.pathname.startsWith('/system/pos-settings') ||
       location.pathname.startsWith('/system/customer-app-settings');
     if (adminVertical !== 'pharmacy' && onPharmacyOnlyTab) {
+      navigate('/system/platform-pack', { replace: true });
+      return;
+    }
+
+    if (adminVertical !== 'family' && location.pathname.startsWith('/system/billing')) {
       navigate('/system/platform-pack', { replace: true });
     }
   }, [location.pathname, navigate, adminVertical]);

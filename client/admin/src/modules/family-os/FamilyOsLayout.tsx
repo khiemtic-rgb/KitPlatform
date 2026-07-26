@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { CalendarOutlined, CreditCardOutlined, DashboardOutlined, FileProtectOutlined, GiftOutlined, ScheduleOutlined, SettingOutlined, TeamOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { CalendarOutlined, DashboardOutlined, FileProtectOutlined, GiftOutlined, ScheduleOutlined, SettingOutlined, TeamOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { useRegisterSimpleModuleSubnav } from '@/shared/components/module-subnav.context';
 
 export function FamilyOsLayout() {
@@ -56,12 +56,6 @@ export function FamilyOsLayout() {
         label: 'Cài đặt sao',
         path: '/family-os/star-settings',
         icon: <SettingOutlined />,
-      },
-      {
-        key: 'billing',
-        label: 'Billing',
-        path: '/family-os/billing',
-        icon: <CreditCardOutlined />,
       },
     ],
     [],

@@ -766,7 +766,7 @@ export function AppRouter() {
                 <Route path="agreements" element={<FamilyOsAgreementsPage />} />
                 <Route path="rewards" element={<FamilyOsRewardsPage />} />
                 <Route path="star-settings" element={<FamilyOsStarSettingsPage />} />
-                <Route path="billing" element={<FamilyOsBillingPage />} />
+                <Route path="billing" element={<Navigate to="/system/billing" replace />} />
               </Route>
               <Route
                 path="clinic"
@@ -925,6 +925,7 @@ export function AppRouter() {
                 <Route path="users" element={<UserListPage />} />
                 <Route path="roles" element={<RoleListPage />} />
                 <Route path="platform-pack" element={<PlatformPackSettingsPage />} />
+                <Route path="billing" element={<FamilyOsBillingPage />} />
                 <Route path="pos-settings" element={<ReceiptSettingsPage />} />
                 <Route path="customer-app-settings" element={<CustomerAppSettingsPage />} />
                 <Route path="audit-log" element={<AuditLogListPage />} />
