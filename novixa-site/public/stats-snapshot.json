@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-25T19:36:03.951Z",
+  "generatedAt": "2026-07-26T03:57:18.694Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 309,
-    "last24hPageViews": 491,
-    "last24hRequests": 888
+    "todayVisitors": 145,
+    "todayPageViews": 116,
+    "todayRequests": 320,
+    "last24hVisitors": 387,
+    "last24hPageViews": 340,
+    "last24hRequests": 919
   },
   "hourly": [
-    {
-      "time": "2026-07-24T20:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-07-24T21:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-24T22:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-07-24T23:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-07-25T00:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-07-25T01:00:00Z",
-      "visitors": 6,
-      "requests": 12
-    },
-    {
-      "time": "2026-07-25T02:00:00Z",
-      "visitors": 9,
-      "requests": 284
-    },
-    {
-      "time": "2026-07-25T03:00:00Z",
-      "visitors": 8,
-      "requests": 17
-    },
     {
       "time": "2026-07-25T04:00:00Z",
       "visitors": 133,
@@ -128,8 +88,48 @@
     },
     {
       "time": "2026-07-25T19:00:00Z",
+      "visitors": 8,
+      "requests": 12
+    },
+    {
+      "time": "2026-07-25T20:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-07-25T21:00:00Z",
       "visitors": 4,
+      "requests": 8
+    },
+    {
+      "time": "2026-07-25T22:00:00Z",
+      "visitors": 5,
       "requests": 6
+    },
+    {
+      "time": "2026-07-25T23:00:00Z",
+      "visitors": 14,
+      "requests": 24
+    },
+    {
+      "time": "2026-07-26T00:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-07-26T01:00:00Z",
+      "visitors": 106,
+      "requests": 186
+    },
+    {
+      "time": "2026-07-26T02:00:00Z",
+      "visitors": 38,
+      "requests": 83
+    },
+    {
+      "time": "2026-07-26T03:00:00Z",
+      "visitors": 12,
+      "requests": 46
     }
   ],
   "daily": [
@@ -165,71 +165,77 @@
     },
     {
       "date": "2026-07-25",
-      "visitors": 303,
-      "pageViews": 485,
-      "requests": 867
+      "visitors": 321,
+      "pageViews": 499,
+      "requests": 916
+    },
+    {
+      "date": "2026-07-26",
+      "visitors": 145,
+      "pageViews": 116,
+      "requests": 320
     }
   ],
   "topPages": [
     {
       "path": "/vi/tin-tuc/lo-trinh-l0-l6-cua-novixa-academy/",
-      "views": 167
+      "views": 168
     },
     {
       "path": "/images/tin-tuc/lo-trinh-l0-l6-cua-novixa-academy.png",
-      "views": 100
-    },
-    {
-      "path": "/",
-      "views": 47
+      "views": 113
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 44
+      "views": 102
     },
     {
-      "path": "/images/tin-tuc/vi-sao-sop-quan-trong-hon-kinh-nghiem-ca-nhan.png",
-      "views": 32
+      "path": "/vi/tin-tuc/lap-ke-hoach-thang-cho-nha-thuoc-nhu-the-nao/",
+      "views": 94
+    },
+    {
+      "path": "/images/tin-tuc/lap-ke-hoach-nha-thuoc.png",
+      "views": 80
+    },
+    {
+      "path": "/",
+      "views": 42
     },
     {
       "path": "/vi/",
-      "views": 26
+      "views": 32
+    },
+    {
+      "path": "/favicon.svg",
+      "views": 32
+    },
+    {
+      "path": "/images/tin-tuc/vi-sao-sop-quan-trong-hon-kinh-nghiem-ca-nhan.png",
+      "views": 29
     },
     {
       "path": "/images/tin-tuc/sai-lam-khi-dao-tao-nhan-vien-moi.png",
       "views": 26
     },
     {
+      "path": "/_astro/BaseLayout.CEPXErrG.css",
+      "views": 25
+    },
+    {
+      "path": "/images/logo.png",
+      "views": 24
+    },
+    {
       "path": "/robots.txt",
-      "views": 24
+      "views": 23
     },
     {
-      "path": "/cloud/.env",
-      "views": 24
+      "path": "/sitemap-index.xml",
+      "views": 18
     },
     {
-      "path": "/.env.railway",
-      "views": 24
-    },
-    {
-      "path": "/local/.env",
-      "views": 24
-    },
-    {
-      "path": "/.env.production",
-      "views": 24
-    },
-    {
-      "path": "/ansible/.env",
-      "views": 24
-    },
-    {
-      "path": "/laravel5/.env",
-      "views": 21
-    },
-    {
-      "path": "/backup/.env",
-      "views": 21
+      "path": "/api/stats",
+      "views": 14
     }
   ]
 }
