@@ -32,6 +32,7 @@ export function parseNewsMarkdown(raw) {
   const lang = matchField(block, 'lang') ?? 'vi';
   const image = matchField(block, 'image');
   const category = matchField(block, 'category') ?? 'tin-tuc-novixa';
+  const subcategory = matchField(block, 'subcategory');
 
   if (!title) return null;
   return {
@@ -42,6 +43,7 @@ export function parseNewsMarkdown(raw) {
       lang,
       ...(image ? { image } : {}),
       category,
+      ...(subcategory ? { subcategory } : {}),
     },
     body,
   };
@@ -62,6 +64,9 @@ export function writeNewsMarkdown(filePath, frontmatter, body) {
     `lang: ${frontmatter.lang ?? 'vi'}`,
     `category: ${frontmatter.category ?? 'tin-tuc-novixa'}`,
   ];
+  if (frontmatter.subcategory) {
+    lines.push(`subcategory: ${frontmatter.subcategory}`);
+  }
   if (frontmatter.image) {
     lines.push(`image: ${frontmatter.image}`);
   }

@@ -75,3 +75,29 @@ export function newsCategoryPath(id: NewsCategoryId | string): string {
 export function isNewsCategoryId(value: string): value is NewsCategoryId {
   return NEWS_CATEGORY_IDS.includes(value as NewsCategoryId);
 }
+
+/**
+ * Phân mục con của Quản trị nhà thuốc — chỉ dùng trong CMS để phân loại.
+ * Trên novixa.vn vẫn hiển thị theo mục cha `quan-tri-nha-thuoc`.
+ */
+export const QUAN_TRI_SUBCATEGORIES = [
+  { id: 'chien-luoc-phat-trien', label: 'Chiến lược phát triển' },
+  { id: 'kpi', label: 'KPI' },
+  { id: 'doanh-thu', label: 'Doanh thu' },
+  { id: 'loi-nhuan', label: 'Lợi nhuận' },
+  { id: 'dong-tien', label: 'Dòng tiền' },
+  { id: 'nhan-su', label: 'Nhân sự' },
+  { id: 'mo-chuoi', label: 'Mở chuỗi' },
+  { id: 'chuyen-doi-so', label: 'Chuyển đổi số' },
+] as const;
+
+export type QuanTriSubcategoryId = (typeof QUAN_TRI_SUBCATEGORIES)[number]['id'];
+
+export const QUAN_TRI_SUBCATEGORY_IDS = QUAN_TRI_SUBCATEGORIES.map((c) => c.id) as [
+  QuanTriSubcategoryId,
+  ...QuanTriSubcategoryId[],
+];
+
+export function getQuanTriSubcategory(id: string | undefined | null) {
+  return QUAN_TRI_SUBCATEGORIES.find((c) => c.id === id) ?? null;
+}

@@ -43,15 +43,17 @@ collections:
     format: frontmatter
     slug: '{{slug}}'
     identifier_field: title
-    summary: '{{title}} — {{category}} — {{pubDate}}'
+    summary: '{{title}} — {{category}}{{subcategory}} — {{pubDate}}'
     sortable_fields:
-      fields: [pubDate, title, category]
+      fields: [pubDate, title, category, subcategory]
       default:
         field: pubDate
         direction: descending
     view_groups:
       - label: Theo nhóm
         field: category
+      - label: Theo phân mục Quản trị
+        field: subcategory
     fields:
       - label: Tiêu đề
         name: title
@@ -76,6 +78,22 @@ collections:
           - { label: Câu chuyện khách hàng, value: cau-chuyen-khach-hang }
           - { label: Tin tức Novixa (menu Về Novixa), value: tin-tuc-novixa }
         hint: Kiến thức nhà thuốc hiện trên menu Kiến thức; Tin tức Novixa hiện dưới Về Novixa.
+      - label: Phân mục (Quản trị nhà thuốc)
+        name: subcategory
+        widget: select
+        required: false
+        options:
+          - { label: Chiến lược phát triển, value: chien-luoc-phat-trien }
+          - { label: KPI, value: kpi }
+          - { label: Doanh thu, value: doanh-thu }
+          - { label: Lợi nhuận, value: loi-nhuan }
+          - { label: Dòng tiền, value: dong-tien }
+          - { label: Nhân sự, value: nhan-su }
+          - { label: Mở chuỗi, value: mo-chuoi }
+          - { label: Chuyển đổi số, value: chuyen-doi-so }
+        hint: >
+          Chỉ chọn khi Nhóm = Quản trị nhà thuốc. Dùng để sắp xếp trong CMS.
+          Trên novixa.vn bài vẫn hiện trong mục cha "Quản trị nhà thuốc" (không tách menu con).
       - label: Ảnh hiển thị
         name: image
         widget: image

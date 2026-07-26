@@ -21,6 +21,7 @@ Tài khoản GitHub phải được **invite Write** vào repo `khiemtic-rgb/Kit
    - **Tiêu đề**
    - **Mô tả ngắn** (1–2 câu)
    - **Nhóm bài viết** — Kiến thức nhà thuốc (các nhóm) hoặc **Tin tức Novixa** (menu Về Novixa)
+   - **Phân mục (Quản trị nhà thuốc)** — chỉ chọn khi Nhóm = Quản trị nhà thuốc (xem bảng dưới)
    - **Ảnh hiển thị**
    - **Ngày đăng** — để ngày tương lai nếu muốn lên lịch
    - **Nội dung** — dùng tiêu đề phụ `##`, danh sách `*`, in đậm `**chữ**`
@@ -37,7 +38,7 @@ Không cần đặt tên file trùng slug — CMS lưu đường dẫn vào bài
 
 Vào **Kiến thức nhà thuốc** → chọn bài → sửa nội dung → Lưu. Xóa chỉ khi chắc chắn.
 
-Mẹo: dùng bộ lọc **Theo nhóm** (thanh bên) để tìm bài theo nhóm nhanh hơn.
+Mẹo: dùng bộ lọc **Theo nhóm** hoặc **Theo phân mục Quản trị** (thanh bên) để tìm bài nhanh hơn.
 
 ## Nhóm bài viết — bài sẽ hiện ở đâu?
 
@@ -51,6 +52,21 @@ Mẹo: dùng bộ lọc **Theo nhóm** (thanh bên) để tìm bài theo nhóm n
 | Chăm sóc khách hàng (Connect) | Menu **Kiến thức nhà thuốc** → Connect |
 | Câu chuyện khách hàng | Menu **Kiến thức nhà thuốc** → Câu chuyện khách hàng |
 | Tin tức Novixa | Menu **Về Novixa** → Tin tức Novixa |
+
+## Phân mục trong Quản trị nhà thuốc (chỉ CMS)
+
+Khi **Nhóm** = Quản trị nhà thuốc, chọn thêm **Phân mục** để sắp xếp nội bộ trong CMS:
+
+- Chiến lược phát triển
+- KPI
+- Doanh thu
+- Lợi nhuận
+- Dòng tiền
+- Nhân sự
+- Mở chuỗi
+- Chuyển đổi số
+
+**Lưu ý:** Phân mục **không** tạo menu con trên novixa.vn — mọi bài vẫn hiện chung trong **Quản trị nhà thuốc**.
 
 ## Lưu ý
 
