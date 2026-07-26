@@ -118,11 +118,37 @@ fi
 if [[ -f "$NEW_OPT/nginx-staff-pwa-cache.conf" ]]; then
   cp "$NEW_OPT/nginx-staff-pwa-cache.conf" /etc/nginx/snippets/staff-pwa-cache.conf
 fi
-# Family site riêng (family-kittech): đảm bảo include pwa-cache (sw.js / version.json không bị cache)
+# Family site riêng (family-kittech): include pwa-cache một lần; bỏ location = /index.html cũ (trùng snippet)
 if [[ -f /etc/nginx/sites-available/family-kittech ]]; then
-  if ! grep -q 'pwa-cache.conf' /etc/nginx/sites-available/family-kittech; then
-    sed -i '/server_name family.kittech.vn;/a\    include /etc/nginx/snippets/pwa-cache.conf;' /etc/nginx/sites-available/family-kittech || true
-  fi
+  python3 - <<'PY'
+from pathlib import Path
+import re
+path = Path("/etc/nginx/sites-available/family-kittech")
+text = path.read_text()
+text = re.sub(r"^[ \t]*include /etc/nginx/snippets/pwa-cache\.conf;\s*\n", "", text, flags=re.M)
+text = re.sub(
+    r"\n[ \t]*location = /index\.html\s*\{(?:[^{}]|\{[^{}]*\})*\}\s*",
+    "\n",
+    text,
+)
+# Không cache immutable toàn bộ *.js (đụng sw.js nếu mất exact location)
+text = re.sub(
+    r"location ~\* \\\.\(js\|css\|",
+    r"location ~* \\.(css|",
+    text,
+)
+lines = text.splitlines(True)
+out = []
+for i, line in enumerate(lines):
+    out.append(line)
+    if "server_name family.kittech.vn" in line:
+        nxt = lines[i + 1] if i + 1 < len(lines) else ""
+        if "pwa-cache.conf" not in nxt:
+            indent = re.match(r"^(\s*)", line).group(1) or "    "
+            out.append(f"{indent}include /etc/nginx/snippets/pwa-cache.conf;\n")
+path.write_text("".join(out))
+print("family-kittech: pwa-cache include ensured")
+PY
 fi
 for f in "$NEW_OPT"/*.sh; do
   sed -i 's/\r$//' "$f" 2>/dev/null || true
@@ -214,5 +240,8 @@ $tmpScript = Join-Path $env:TEMP "kitplatform-update-remote.sh"
 [IO.File]::WriteAllText($tmpScript, $remoteBashUnix, [Text.UTF8Encoding]::new($false))
 & $pscp -batch -pw $pass $tmpScript "${SshTarget}:${remote}/update.sh"
 & $plink -batch -pw $pass $SshTarget "bash $remote/update.sh"
+if ($LASTEXITCODE -ne 0) {
+    throw "Remote update failed (exit $LASTEXITCODE). Nginx/API may be partially updated — do not assume cutover OK."
+}
 
 Write-Host "`nDeploy update + cutover done." -ForegroundColor Green
