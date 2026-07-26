@@ -3,13 +3,13 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import { getCollection } from 'astro:content';
-import { NEWS_CATEGORIES, newsCategoryPath } from '../../../lib/news-categories';
+import { KNOWLEDGE_CATEGORIES, newsCategoryPath } from '../../../lib/news-categories';
 import { filterPublishedPosts } from '../../../lib/publishedNews';
 import '../../../styles/global.css';
 
 const published = filterPublishedPosts(await getCollection('tinTuc'));
 const counts = Object.fromEntries(
-  NEWS_CATEGORIES.map((c) => [
+  KNOWLEDGE_CATEGORIES.map((c) => [
     c.id,
     published.filter((p) => (p.data.category ?? 'tin-tuc-novixa') === c.id).length,
   ]),
@@ -18,7 +18,7 @@ const counts = Object.fromEntries(
 
 <BaseLayout
   title="Kiến thức nhà thuốc"
-  description="Kiến thức quản trị, vận hành, bán hàng, AI, Academy và tin tức Novixa dành cho nhà thuốc."
+  description="Kiến thức quản trị, vận hành, bán hàng, AI, Academy và câu chuyện khách hàng dành cho nhà thuốc."
   canonicalPath="/vi/kien-thuc/"
 >
   <Header slot="header" />
@@ -30,7 +30,7 @@ const counts = Object.fromEntries(
       </p>
       <ul class="knowledge-hub-grid">
         {
-          NEWS_CATEGORIES.map((cat) => (
+          KNOWLEDGE_CATEGORIES.map((cat) => (
             <li>
               <a class="knowledge-hub-card" href={newsCategoryPath(cat.id)}>
                 <span class="knowledge-hub-card__title">{cat.label}</span>

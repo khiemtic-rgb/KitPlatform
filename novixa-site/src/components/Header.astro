@@ -1,12 +1,17 @@
 ---
 import { t } from '../i18n';
-import { NEWS_CATEGORIES, newsCategoryPath } from '../lib/news-categories';
+import { NEWS_CATEGORIES, newsCategoryPath, KNOWLEDGE_CATEGORIES } from '../lib/news-categories';
 
 const m = t('vi');
 const base = '/vi';
 const path = Astro.url.pathname;
 const n = m.nav;
-const knowledgeActive = path.startsWith(`${base}/tin-tuc`) || path.startsWith(`${base}/kien-thuc`);
+const companyNewsPath = newsCategoryPath('tin-tuc-novixa');
+const companyNewsActive = path.startsWith(companyNewsPath);
+const knowledgeActive =
+  (path.startsWith(`${base}/kien-thuc`) && !companyNewsActive) ||
+  (path.startsWith(`${base}/tin-tuc`) && !companyNewsActive);
+const companyActive = path.startsWith(`${base}/ve-chung-toi`) || companyNewsActive;
 
 const products = [
   {
@@ -238,7 +243,7 @@ const products = [
             Tổng quan
           </a>
           {
-            NEWS_CATEGORIES.map((cat) => (
+            KNOWLEDGE_CATEGORIES.map((cat) => (
               <a
                 href={newsCategoryPath(cat.id)}
                 role="menuitem"
@@ -250,7 +255,46 @@ const products = [
           }
         </div>
       </div>
-      <a href={`${base}/ve-chung-toi/`} class:list={{ active: path.startsWith(`${base}/ve-chung-toi`) }}>{n.company}</a>
+      <div
+        class="nav-item nav-item--dropdown"
+        data-dropdown
+        class:list={{ active: companyActive }}
+      >
+        <button
+          type="button"
+          class="nav-trigger"
+          aria-expanded="false"
+          aria-haspopup="true"
+          aria-controls="company-dropdown"
+          data-dropdown-trigger
+          class:list={{ active: companyActive }}
+        >
+          {n.company}
+          <span class="nav-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div
+          id="company-dropdown"
+          class="nav-dropdown"
+          role="menu"
+          aria-label="Về Novixa"
+          data-dropdown-panel
+        >
+          <a
+            href={`${base}/ve-chung-toi/`}
+            role="menuitem"
+            class:list={{ active: path.startsWith(`${base}/ve-chung-toi`) }}
+          >
+            Giới thiệu
+          </a>
+          <a
+            href={companyNewsPath}
+            role="menuitem"
+            class:list={{ active: companyNewsActive }}
+          >
+            Tin tức Novixa
+          </a>
+        </div>
+      </div>
     </nav>
 
     <div class="nav-actions">

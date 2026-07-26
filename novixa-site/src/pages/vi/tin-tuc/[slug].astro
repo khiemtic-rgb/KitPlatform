@@ -29,6 +29,9 @@ const publishedTime = post.data.pubDate.toISOString();
 const jsonLd = buildArticleJsonLd(post);
 const category = getNewsCategory(post.data.category);
 const categoryHref = newsCategoryPath(category.id);
+const backHref = category.navGroup === 'company' ? categoryHref : '/vi/kien-thuc/';
+const backLabel =
+  category.navGroup === 'company' ? '← Quay lại Tin tức Novixa' : m.news.back;
 ---
 
 <BaseLayout
@@ -43,7 +46,7 @@ const categoryHref = newsCategoryPath(category.id);
   <Header slot="header" />
   <article class="section" itemscope itemtype="https://schema.org/Article">
     <div class="container prose">
-      <p><a href="/vi/kien-thuc/">{m.news.back}</a></p>
+      <p><a href={backHref}>{backLabel}</a></p>
       <h1 itemprop="headline">{post.data.title}</h1>
       <p class="news-meta">
         <a href={categoryHref}>{category.label}</a>

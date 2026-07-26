@@ -1,50 +1,62 @@
-/** Nhóm kiến thức nhà thuốc — dùng cho nav, listing, CMS. */
+/** Nhóm bài viết — schema CMS + listing. */
 export const NEWS_CATEGORIES = [
   {
     id: 'quan-tri-nha-thuoc',
     label: 'Quản trị nhà thuốc',
     description: 'Quản lý, KPI, chiến lược và phát triển nhà thuốc.',
+    navGroup: 'knowledge' as const,
   },
   {
     id: 'van-hanh',
-    label: 'Vận hành',
+    label: 'Vận hành nhà thuốc',
     description: 'Quy trình, tồn kho, FEFO, SOP và vận hành hàng ngày.',
-  },
-  {
-    id: 'ban-hang-cskh',
-    label: 'Bán hàng & CSKH',
-    description: 'POS, tư vấn, CRM và chăm sóc khách hàng.',
-  },
-  {
-    id: 'ai-trong-nha-thuoc',
-    label: 'AI trong nhà thuốc',
-    description: 'Ứng dụng AI hỗ trợ vận hành và tư vấn.',
-  },
-  {
-    id: 'connect',
-    label: 'Connect',
-    description: 'Kết nối nhà thuốc – phòng khám – bệnh nhân.',
+    navGroup: 'knowledge' as const,
   },
   {
     id: 'novixa-academy',
     label: 'Novixa Academy',
     description: 'Đào tạo nhân sự, lộ trình năng lực và Academy.',
+    navGroup: 'knowledge' as const,
+  },
+  {
+    id: 'ban-hang-cskh',
+    label: 'Bán hàng & Chăm sóc khách hàng',
+    description: 'POS, tư vấn, CRM và chăm sóc khách hàng tại quầy.',
+    navGroup: 'knowledge' as const,
+  },
+  {
+    id: 'ai-trong-nha-thuoc',
+    label: 'AI trong nhà thuốc',
+    description: 'Ứng dụng AI hỗ trợ vận hành và tư vấn.',
+    navGroup: 'knowledge' as const,
+  },
+  {
+    id: 'connect',
+    label: 'Chăm sóc khách hàng (Connect)',
+    description: 'Kết nối nhà thuốc – phòng khám – bệnh nhân trên Novixa Connect.',
+    navGroup: 'knowledge' as const,
   },
   {
     id: 'cau-chuyen-khach-hang',
     label: 'Câu chuyện khách hàng',
     description: 'Câu chuyện triển khai và kết quả từ nhà thuốc thực tế.',
+    navGroup: 'knowledge' as const,
   },
   {
     id: 'tin-tuc-novixa',
     label: 'Tin tức Novixa',
     description: 'Cập nhật sản phẩm, lộ trình và tin tức từ Novixa.',
+    navGroup: 'company' as const,
   },
 ] as const;
+
+/** Menu Kiến thức nhà thuốc (không gồm Tin tức Novixa). */
+export const KNOWLEDGE_CATEGORIES = NEWS_CATEGORIES.filter((c) => c.navGroup === 'knowledge');
 
 export type NewsCategoryId = (typeof NEWS_CATEGORIES)[number]['id'];
 
 export const DEFAULT_NEWS_CATEGORY: NewsCategoryId = 'tin-tuc-novixa';
+export const DEFAULT_KNOWLEDGE_CATEGORY: NewsCategoryId = 'quan-tri-nha-thuoc';
 
 export const NEWS_CATEGORY_IDS = NEWS_CATEGORIES.map((c) => c.id) as [
   NewsCategoryId,

@@ -20,7 +20,7 @@ Tài khoản GitHub phải được **invite Write** vào repo `khiemtic-rgb/Kit
 2. Điền:
    - **Tiêu đề**
    - **Mô tả ngắn** (1–2 câu)
-   - **Nhóm kiến thức** (bắt buộc) — chọn đúng nhóm trong menu
+   - **Nhóm bài viết** — Kiến thức nhà thuốc (các nhóm) hoặc **Tin tức Novixa** (menu Về Novixa)
    - **Ảnh hiển thị**
    - **Ngày đăng** — để ngày tương lai nếu muốn lên lịch
    - **Nội dung** — dùng tiêu đề phụ `##`, danh sách `*`, in đậm `**chữ**`

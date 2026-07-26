@@ -60,21 +60,21 @@ collections:
         name: description
         widget: text
         hint: 1–2 câu tóm tắt (meta description / danh sách tin).
-      - label: Nhóm kiến thức
+      - label: Nhóm bài viết
         name: category
         widget: select
         required: true
-        default: tin-tuc-novixa
+        default: quan-tri-nha-thuoc
         options:
           - { label: Quản trị nhà thuốc, value: quan-tri-nha-thuoc }
-          - { label: Vận hành, value: van-hanh }
-          - { label: Bán hàng & CSKH, value: ban-hang-cskh }
-          - { label: AI trong nhà thuốc, value: ai-trong-nha-thuoc }
-          - { label: Connect, value: connect }
+          - { label: Vận hành nhà thuốc, value: van-hanh }
           - { label: Novixa Academy, value: novixa-academy }
+          - { label: Bán hàng & Chăm sóc khách hàng, value: ban-hang-cskh }
+          - { label: AI trong nhà thuốc, value: ai-trong-nha-thuoc }
+          - { label: Chăm sóc khách hàng (Connect), value: connect }
           - { label: Câu chuyện khách hàng, value: cau-chuyen-khach-hang }
-          - { label: Tin tức Novixa, value: tin-tuc-novixa }
-        hint: Bài sẽ hiện trong menu Kiến thức nhà thuốc → nhóm đã chọn.
+          - { label: Tin tức Novixa (menu Về Novixa), value: tin-tuc-novixa }
+        hint: Kiến thức nhà thuốc hiện trên menu Kiến thức; Tin tức Novixa hiện dưới Về Novixa.
       - label: Ảnh hiển thị
         name: image
         widget: image
