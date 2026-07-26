@@ -726,6 +726,10 @@
     "defaultTenantName": "Nhà thuốc",
     "defaultTagline": "Đồng hành sức khỏe gia đình"
   },
+  "pwa": {
+    "updateAvailable": "Có bản cập nhật mới",
+    "reload": "Tải lại"
+  },
   "push": {
     "vapidKeyInvalid": "Cấu hình thông báo trên thiết bị chưa hợp lệ. Liên hệ nhà thuốc để được hỗ trợ.",
     "notificationsUnsupported": "Trình duyệt không hỗ trợ thông báo.",

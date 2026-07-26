@@ -44,7 +44,7 @@ export function CareDecisionInbox({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [dueItems, setDueItems] = useState<MedicationReminder[]>([]);
-  const [dueLoading, setDueLoading] = useState(true);
+  const [dueLoading, setDueLoading] = useState(false);
   const [familyDueCount, setFamilyDueCount] = useState(0);
 
   const reloadDue = useCallback(async () => {
@@ -59,8 +59,24 @@ export function CareDecisionInbox({
     }
   }, []);
 
+  // Due list sau idle / ngắn delay — ưu tiên home-summary + paint trước.
   useEffect(() => {
-    void reloadDue();
+    let idleId: number | undefined;
+    let timeoutId: number | undefined;
+    const run = () => {
+      void reloadDue();
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      idleId = window.requestIdleCallback(run, { timeout: 1800 });
+    } else {
+      timeoutId = window.setTimeout(run, 400);
+    }
+    return () => {
+      if (idleId !== undefined && typeof window.cancelIdleCallback === 'function') {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    };
   }, [reloadDue]);
 
   const handleResponded = useCallback(() => {
@@ -71,6 +87,8 @@ export function CareDecisionInbox({
   const linkCount = (pendingOrders > 0 ? 1 : 0) + (repurchaseCount > 0 ? 1 : 0);
   const connectCount = connectInbox?.connectEnabled ? connectInbox.items.length : 0;
   const actionCount = dueItems.length + familyDueCount + linkCount + Math.min(connectCount, 3);
+  // dueCount từ home-summary — hiện inbox sớm trước khi fetchDue xong.
+  const showInboxCard = actionCount > 0 || dueLoading || adherence.dueCount > 0;
 
   const headline = useMemo(() => {
     if (actionCount === 0) {
@@ -131,7 +149,7 @@ export function CareDecisionInbox({
         </Card>
       ) : null}
 
-      {actionCount > 0 || dueLoading ? (
+      {showInboxCard ? (
         <Card
           size="small"
           style={{ borderRadius: 12, border: '1px solid #99f6e4' }}

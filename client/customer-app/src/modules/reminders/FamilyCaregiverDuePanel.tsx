@@ -24,7 +24,7 @@ export function FamilyCaregiverDuePanel({ compact, embedded, onResponded, onCoun
   const { t } = useTranslation();
   const [items, setItems] = useState<MedicationReminder[]>([]);
   const [family, setFamily] = useState<FamilyMember[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [actingId, setActingId] = useState<string | null>(null);
   const [skipTarget, setSkipTarget] = useState<MedicationReminder | null>(null);
 
@@ -45,7 +45,22 @@ export function FamilyCaregiverDuePanel({ compact, embedded, onResponded, onCoun
   }, [onCountChange]);
 
   useEffect(() => {
-    void load();
+    let idleId: number | undefined;
+    let timeoutId: number | undefined;
+    const run = () => {
+      void load();
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      idleId = window.requestIdleCallback(run, { timeout: 2200 });
+    } else {
+      timeoutId = window.setTimeout(run, 600);
+    }
+    return () => {
+      if (idleId !== undefined && typeof window.cancelIdleCallback === 'function') {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    };
   }, [load]);
 
   const familyName = (id: string | null) => {

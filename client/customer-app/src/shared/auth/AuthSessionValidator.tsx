@@ -17,11 +17,15 @@ function ValidatingFallback() {
   );
 }
 
-/** Xác thực token sau khi hydrate — tránh UI kẹt với phiên hết hạn trong localStorage. */
+/**
+ * Xác thực token sau hydrate.
+ * Có profile cache (persist) → paint shell ngay, revalidate nền.
+ * Chỉ block full-screen khi có token mà chưa có profile.
+ */
 export function AuthSessionValidator({ children }: { children: ReactNode }) {
   const accessToken = useAuthStore((s) => s.accessToken);
   const setProfile = useAuthStore((s) => s.setProfile);
-  const [ready, setReady] = useState(() => !accessToken);
+  const [ready, setReady] = useState(() => !accessToken || Boolean(useAuthStore.getState().profile));
 
   useEffect(() => {
     if (!accessToken) {
@@ -29,8 +33,10 @@ export function AuthSessionValidator({ children }: { children: ReactNode }) {
       return;
     }
 
+    const hasCachedProfile = Boolean(useAuthStore.getState().profile);
+    if (!hasCachedProfile) setReady(false);
+
     let cancelled = false;
-    setReady(false);
 
     void fetchProfile()
       .then((profile) => {

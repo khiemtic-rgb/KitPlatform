@@ -726,6 +726,10 @@
     "defaultTenantName": "Pharmacy",
     "defaultTagline": "Family health companion"
   },
+  "pwa": {
+    "updateAvailable": "A new update is available",
+    "reload": "Reload"
+  },
   "push": {
     "vapidKeyInvalid": "Device notification setup is invalid. Please contact the pharmacy for help.",
     "notificationsUnsupported": "This browser does not support notifications.",

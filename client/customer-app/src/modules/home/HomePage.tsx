@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BellOutlined,
   CalendarOutlined,
@@ -28,8 +28,11 @@ import { prefetchPrimaryTabOverviews } from '@/shared/api/overview-queries';
 import { useAuthStore } from '@/shared/auth/auth.store';
 import { useCustomerBranding } from '@/shared/config/BrandingProvider';
 import { useCustomerNotificationCount } from '@/shared/hooks/useCustomerNotificationCount';
-import { CareDecisionInbox } from '@/modules/home/CareDecisionInbox';
 import { formatPoints } from '@/shared/utils/points';
+
+const CareDecisionInbox = lazy(() =>
+  import('@/modules/home/CareDecisionInbox').then((m) => ({ default: m.CareDecisionInbox })),
+);
 
 type ShortcutKey =
   | 'shortcutHealth'
@@ -194,8 +197,24 @@ export function HomePage() {
     void load();
   }, [load]);
 
+  // Prefetch tab Đơn hàng / Nhắc thuốc sau idle — không tranh 4G với home-summary.
   useEffect(() => {
-    void prefetchPrimaryTabOverviews(queryClient);
+    let idleId: number | undefined;
+    let timeoutId: number | undefined;
+    const run = () => {
+      void prefetchPrimaryTabOverviews(queryClient);
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      idleId = window.requestIdleCallback(run, { timeout: 4000 });
+    } else {
+      timeoutId = window.setTimeout(run, 2500);
+    }
+    return () => {
+      if (idleId !== undefined && typeof window.cancelIdleCallback === 'function') {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    };
   }, [queryClient]);
 
   const medicationDone =
@@ -291,14 +310,16 @@ export function HomePage() {
         ) : null}
       </Card>
 
-      <CareDecisionInbox
-        adherence={adherence}
-        pendingOrders={pendingOrders}
-        repurchaseCount={repurchaseCount}
-        connectInbox={connectInbox}
-        homeLoading={statsLoading}
-        onChanged={() => void load({ silent: true })}
-      />
+      <Suspense fallback={null}>
+        <CareDecisionInbox
+          adherence={adherence}
+          pendingOrders={pendingOrders}
+          repurchaseCount={repurchaseCount}
+          connectInbox={connectInbox}
+          homeLoading={statsLoading}
+          onChanged={() => void load({ silent: true })}
+        />
+      </Suspense>
 
       <div>
         <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>

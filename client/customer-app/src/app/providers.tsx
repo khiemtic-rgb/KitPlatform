@@ -7,6 +7,7 @@ import { ApiHealthProvider } from '@/shared/api/ApiHealthProvider';
 import { queryClient } from '@/shared/api/query-client';
 import { BrandingProvider } from '@/shared/config/BrandingProvider';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
+import { PwaUpdateBanner } from '@/shared/pwa/PwaUpdateBanner';
 import '@/shared/i18n';
 
 export function AppProviders() {
@@ -19,6 +20,7 @@ export function AppProviders() {
               <LocaleProvider>
                 <AuthHydrationGate>
                   <AppRouter />
+                  <PwaUpdateBanner />
                 </AuthHydrationGate>
               </LocaleProvider>
             </BrandingProvider>

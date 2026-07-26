@@ -14,6 +14,20 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
+      // Đăng ký SW thủ công (sw-registration) — tránh inject thêm script race critical path.
+      injectRegister: false,
+      injectManifest: {
+        // Precache shell + vendor; bỏ lazy route/icon chunks (tải khi mở trang).
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2,webmanifest}'],
+        globIgnores: [
+          '**/assets/*Page-*.js',
+          '**/assets/*Inbox-*.js',
+          '**/assets/*Panel-*.js',
+          '**/assets/*Outlined-*.js',
+          '**/assets/*Filled-*.js',
+          '**/assets/*TwoTone-*.js',
+        ],
+      },
       manifest: {
         name: 'Novixa Khách hàng',
         short_name: 'Novixa',
@@ -48,7 +62,6 @@ export default defineConfig({
         enabled: true,
         type: 'module',
       },
-      injectRegister: 'auto',
     }),
   ],
   resolve: {
@@ -56,6 +69,24 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
     dedupe: ['dayjs', 'react', 'react-dom'],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          // Chỉ tách React — đừng nhét cả antd vào một chunk (mất tree-shake, phình ~1MB).
+          if (
+            id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/scheduler/') ||
+            id.includes('react-router')
+          ) {
+            return 'react-vendor';
+          }
+        },
+      },
+    },
   },
   server: {
     port: 5174,

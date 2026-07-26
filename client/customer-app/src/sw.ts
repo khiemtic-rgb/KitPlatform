@@ -3,12 +3,25 @@ import { clientsClaim } from 'workbox-core';
 import { precacheAndRoute } from 'workbox-precaching';
 
 declare let self: ServiceWorkerGlobalScope & {
-  __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
+  __WB_MANIFEST: Array<{ url: string; revision: string | null } | string>;
 };
 
 clientsClaim();
 
-precacheAndRoute(self.__WB_MANIFEST);
+/** Bỏ lazy page/icon chunks khỏi precache — lần mở đầu không tranh bandwidth với Home. */
+function shouldPrecache(url: string): boolean {
+  if (!url.includes('/assets/')) return true;
+  if (/(Page|Inbox|Panel)-[^/]+\.js$/i.test(url)) return false;
+  if (/(Outlined|Filled|TwoTone)-[^/]+\.js$/i.test(url)) return false;
+  return true;
+}
+
+const manifest = (self.__WB_MANIFEST ?? []).filter((entry) => {
+  const url = typeof entry === 'string' ? entry : entry.url;
+  return shouldPrecache(url);
+});
+
+precacheAndRoute(manifest);
 
 self.addEventListener('install', () => {
   void self.skipWaiting();

@@ -3,9 +3,20 @@ import { registerSW } from 'virtual:pwa-register';
 
 let setupDone = false;
 let readyPromise: Promise<ServiceWorkerRegistration> | null = null;
+let needRefreshListeners = new Set<() => void>();
+let updateSW: ((reloadPage?: boolean) => Promise<void>) | undefined;
 
 function getServiceWorkerScriptUrl() {
   return import.meta.env.DEV ? '/dev-sw.js?dev-sw' : '/sw.js';
+}
+
+function scheduleIdle(task: () => void, timeoutMs = 2500) {
+  const ric = window.requestIdleCallback?.bind(window);
+  if (ric) {
+    ric(() => task(), { timeout: timeoutMs });
+    return;
+  }
+  window.setTimeout(task, Math.min(timeoutMs, 1200));
 }
 
 function createReadyPromise() {
@@ -22,8 +33,8 @@ function createReadyPromise() {
       reject(error instanceof Error ? error : new Error(i18n.t('push.swRegisterFailed')));
     };
 
-    registerSW({
-      immediate: true,
+    updateSW = registerSW({
+      immediate: false,
       onRegisteredSW(_swUrl, registration) {
         if (registration?.active || registration?.installing || registration?.waiting) {
           finish(registration);
@@ -40,7 +51,11 @@ function createReadyPromise() {
         }
       },
       onNeedRefresh() {
-        window.location.reload();
+        if (needRefreshListeners.size === 0) {
+          // Chưa gắn UI — vẫn cập nhật nền; user reload lần sau sẽ nhận bản mới.
+          return;
+        }
+        needRefreshListeners.forEach((listener) => listener());
       },
       onRegisterError(error) {
         fail(normalizeServiceWorkerError(error));
@@ -66,10 +81,38 @@ function createReadyPromise() {
   });
 }
 
+function startRegistration() {
+  if (readyPromise) return;
+  readyPromise = createReadyPromise();
+}
+
+/** Đăng ký SW sau load/idle — không tranh bandwidth với JS Home. */
 export function setupServiceWorkerRegistration() {
   if (setupDone || !('serviceWorker' in navigator)) return;
   setupDone = true;
-  readyPromise = createReadyPromise();
+
+  const kickoff = () => scheduleIdle(startRegistration, 3000);
+
+  if (document.readyState === 'complete') {
+    kickoff();
+  } else {
+    window.addEventListener('load', kickoff, { once: true });
+  }
+}
+
+/** Soft update: banner gọi applyPwaUpdate() thay vì hard reload ngay. */
+export function subscribePwaNeedRefresh(listener: () => void) {
+  needRefreshListeners.add(listener);
+  return () => {
+    needRefreshListeners.delete(listener);
+  };
+}
+
+export function applyPwaUpdate() {
+  void updateSW?.(true);
+  window.setTimeout(() => {
+    window.location.reload();
+  }, 200);
 }
 
 export async function waitForServiceWorkerRegistration(timeoutMs = 20_000) {
@@ -78,7 +121,8 @@ export async function waitForServiceWorkerRegistration(timeoutMs = 20_000) {
   }
 
   if (!readyPromise) {
-    setupServiceWorkerRegistration();
+    setupDone = true;
+    startRegistration();
   }
 
   const registration = await Promise.race([
