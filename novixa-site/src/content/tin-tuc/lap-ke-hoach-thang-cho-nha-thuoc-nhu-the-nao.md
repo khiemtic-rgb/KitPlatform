@@ -1,9 +1,10 @@
 ---
-title: "Lập kế hoạch tháng cho nhà thuốc như thế nào?"
-description: "Hướng dẫn từng bước lập kế hoạch tháng cho nhà thuốc giúp tối ưu tồn kho, kiểm soát dòng tiền và tăng doanh thu ổn định từ kinh nghiệm vận hành thực tế."
+title: Lập kế hoạch tháng cho nhà thuốc như thế nào?
+description: Hướng dẫn từng bước lập kế hoạch tháng cho nhà thuốc giúp tối ưu tồn kho, kiểm soát dòng tiền và tăng doanh thu ổn định từ kinh nghiệm vận hành thực tế.
+category: quan-tri-nha-thuoc
+image: /images/tin-tuc/lap-ke-hoach-nha-thuoc.png
 pubDate: 2026-07-26
 lang: vi
-category: tin-tuc-novixa
 ---
 
 Nhiều chủ nhà thuốc tại Việt Nam thường rơi vào trạng thái "chữa cháy" mỗi ngày: hôm nay hết loại thuốc này mới vội đặt mua, cuối tháng kiểm kê mới phát hiện cả đống hàng cận hạn dùng, hoặc doanh thu tháng này giảm mạnh mà không rõ nguyên nhân từ đâu. Nguyên nhân cốt lõi của tình trạng này là nhà thuốc chưa có một **kế hoạch tháng** cụ thể và khoa học.
@@ -28,13 +29,17 @@ Việc nhìn lại các số liệu này giúp bạn nhận ra ngay những đi�
 Sau khi có dữ liệu tháng cũ, bạn hãy đặt ra mục tiêu cụ thể cho tháng mới. Mục tiêu nên tuân theo nguyên tắc rõ ràng, có số liệu đo lường được.
 
 ### Đặt mục tiêu doanh thu tổng và theo nhóm hàng
+
 Thay vì chỉ đặt mục tiêu chung chung như "Tháng này tăng doanh thu", bạn nên chia nhỏ con số:
+
 * Target doanh thu tổng tháng: Ví dụ 200 triệu đồng.
 * Doanh thu từ thuốc điều trị (OTC & ETC): 120 triệu đồng.
 * Doanh thu từ Thực phẩm chức năng & Dược mỹ phẩm: 80 triệu đồng.
 
 ### Xác định sản phẩm trọng tâm theo mùa và xu hướng dịch bệnh
+
 Thời tiết và dịch bệnh theo mùa tại Việt Nam ảnh hưởng rất lớn đến nhu cầu dùng thuốc. Ví dụ:
+
 * **Mùa nồm ẩm/mùa đông ở miền Bắc:** Nhu cầu thuốc hô hấp, cảm cúm, xi-rô ho, máy xịt mũi tăng cao.
 * **Mùa hè/mùa mưa ở miền Nam:** Nhu cầu thuốc tiêu hóa, sốt xuất huyết, sản phẩm chống nắng, xịt côn trùng tăng mạnh.
 
