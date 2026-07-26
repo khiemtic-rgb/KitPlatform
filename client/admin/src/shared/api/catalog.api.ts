@@ -959,6 +959,11 @@ export async function restoreHiddenProduct(id: string): Promise<void> {
   await http.post(`/catalog/products/${id}/restore`);
 }
 
+/** Soft-delete SP đang bán khi dọn trùng mà không gộp tồn (catalog.merge). */
+export async function hideProductFromMerge(id: string): Promise<void> {
+  await http.post(`/catalog/products/${id}/hide`);
+}
+
 export async function permanentDeleteHiddenProduct(id: string): Promise<void> {
   await http.delete(`/catalog/products/${id}/permanent`);
 }

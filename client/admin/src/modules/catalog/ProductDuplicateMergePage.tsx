@@ -20,6 +20,7 @@ import type { ColumnsType } from 'antd/es/table';
 import {
   ArrowLeftOutlined,
   DeleteOutlined,
+  EyeInvisibleOutlined,
   MergeCellsOutlined,
   ReloadOutlined,
   UndoOutlined,
@@ -29,6 +30,7 @@ import {
   fetchHiddenProducts,
   fetchProductMergeHistory,
   fetchSimilarProductClusters,
+  hideProductFromMerge,
   mergeDuplicateProductStock,
   permanentDeleteHiddenProduct,
   restoreHiddenProduct,
@@ -316,6 +318,40 @@ export function ProductDuplicateMergePage() {
     }
   };
 
+  const handleHide = async (row: RowModel) => {
+    setActingId(row.id);
+    try {
+      await hideProductFromMerge(row.id);
+      msg.success(t('hideSuccess', { code: row.productCode }));
+      await reloadAfterMerge();
+    } catch (error) {
+      msg.error(apiErrorMessage(error, t('hideFailed')));
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  /** Ẩn trước; nếu đủ điều kiện thì xóa cứng. Còn tồn/lịch sử → chỉ ẩn. */
+  const handleHideOrPurge = async (row: RowModel) => {
+    setActingId(row.id);
+    try {
+      await hideProductFromMerge(row.id);
+      try {
+        await permanentDeleteHiddenProduct(row.id);
+        msg.success(t('permanentDeleteSuccess', { code: row.productCode }));
+      } catch (purgeError) {
+        msg.warning(
+          apiErrorMessage(purgeError, t('hideOnlyAfterDeleteBlocked', { code: row.productCode })),
+        );
+      }
+      await reloadAfterMerge();
+    } catch (error) {
+      msg.error(apiErrorMessage(error, t('hideFailed')));
+    } finally {
+      setActingId(null);
+    }
+  };
+
   if (!canMerge) {
     return <Navigate to="/catalog/products" replace />;
   }
@@ -452,45 +488,95 @@ export function ProductDuplicateMergePage() {
     },
     {
       title: t('columns.action'),
-      width: 140,
+      width: 260,
       fixed: 'right',
       render: (_, row) => {
         const isKeeper = keepers[row.clusterKey] === row.id;
-        if (isKeeper) return null;
         const factor = factors[row.id];
-        const ready = canMerge && factor != null && factor > 0;
+        const ready = canMerge && !isKeeper && factor != null && factor > 0;
         const needsManualReview = !row.unitsCompatible;
+        const busy = actingId === row.id || mergingId === row.id;
         return (
-          <Popconfirm
-            title={t(needsManualReview ? 'incompatibleUnits.confirmTitle' : 'confirmTitle')}
-            description={
-              needsManualReview
-                ? t('incompatibleUnits.confirmBody', {
-                    source: row.productCode,
-                    factor: factor ?? '?',
-                    qty: formatDisplayQuantity(row.totalQuantity * (factor ?? 0)),
-                  })
-                : t('confirmBody', {
-                    source: row.productCode,
-                    factor: factor ?? '?',
-                    qty: formatDisplayQuantity(row.totalQuantity * (factor ?? 0)),
-                  })
-            }
-            okText={needsManualReview ? t('incompatibleUnits.confirmOk') : undefined}
-            okButtonProps={needsManualReview ? { danger: true } : undefined}
-            disabled={!ready}
-            onConfirm={() => void handleMerge(row)}
-          >
-            <Button
-              type="primary"
-              size="small"
-              icon={<MergeCellsOutlined />}
-              disabled={!ready}
-              loading={mergingId === row.id}
+          <Space size={4} wrap>
+            {!isKeeper ? (
+              <Popconfirm
+                title={t(needsManualReview ? 'incompatibleUnits.confirmTitle' : 'confirmTitle')}
+                description={
+                  needsManualReview
+                    ? t('incompatibleUnits.confirmBody', {
+                        source: row.productCode,
+                        factor: factor ?? '?',
+                        qty: formatDisplayQuantity(row.totalQuantity * (factor ?? 0)),
+                      })
+                    : t('confirmBody', {
+                        source: row.productCode,
+                        factor: factor ?? '?',
+                        qty: formatDisplayQuantity(row.totalQuantity * (factor ?? 0)),
+                      })
+                }
+                okText={needsManualReview ? t('incompatibleUnits.confirmOk') : undefined}
+                okButtonProps={needsManualReview ? { danger: true } : undefined}
+                disabled={!ready}
+                onConfirm={() => void handleMerge(row)}
+              >
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<MergeCellsOutlined />}
+                  disabled={!ready}
+                  loading={mergingId === row.id}
+                >
+                  {t('merge')}
+                </Button>
+              </Popconfirm>
+            ) : null}
+            <Popconfirm
+              title={t('hideConfirmTitle')}
+              description={
+                row.totalQuantity > 0
+                  ? t('hideConfirmBodyWithStock', {
+                      code: row.productCode,
+                      qty: formatDisplayQuantity(row.totalQuantity),
+                    })
+                  : t('hideConfirmBody', { code: row.productCode })
+              }
+              disabled={!canMerge || busy}
+              onConfirm={() => void handleHide(row)}
             >
-              {t('merge')}
-            </Button>
-          </Popconfirm>
+              <Button
+                size="small"
+                icon={<EyeInvisibleOutlined />}
+                disabled={!canMerge || busy}
+                loading={actingId === row.id}
+              >
+                {t('hide')}
+              </Button>
+            </Popconfirm>
+            <Popconfirm
+              title={t('purgeConfirmTitle')}
+              description={
+                row.totalQuantity > 0
+                  ? t('purgeConfirmBodyWithStock', {
+                      code: row.productCode,
+                      qty: formatDisplayQuantity(row.totalQuantity),
+                    })
+                  : t('purgeConfirmBody', { code: row.productCode })
+              }
+              okButtonProps={{ danger: true }}
+              disabled={!canMerge || busy}
+              onConfirm={() => void handleHideOrPurge(row)}
+            >
+              <Button
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                disabled={!canMerge || busy}
+                loading={actingId === row.id}
+              >
+                {t('purge')}
+              </Button>
+            </Popconfirm>
+          </Space>
         );
       },
     },
@@ -630,22 +716,23 @@ export function ProductDuplicateMergePage() {
     },
   ];
 
-  const reload =
-    activeTab === 'merge'
-      ? loadClusters
-      : activeTab === 'similar'
-        ? loadSimilarClusters
-        : activeTab === 'history'
-          ? loadHistory
-          : loadHidden;
+  const reload = () => {
+    if (activeTab === 'merge') return loadClusters();
+    if (activeTab === 'similar') return loadSimilarClusters();
+    if (activeTab === 'manualReview') return Promise.all([loadClusters(), loadSimilarClusters()]);
+    if (activeTab === 'history') return loadHistory();
+    return loadHidden();
+  };
   const reloading =
     activeTab === 'merge'
       ? loading
       : activeTab === 'similar'
         ? similarLoading
-        : activeTab === 'history'
-          ? historyLoading
-          : hiddenLoading;
+        : activeTab === 'manualReview'
+          ? loading || similarLoading
+          : activeTab === 'history'
+            ? historyLoading
+            : hiddenLoading;
 
   return (
     <Card
@@ -678,6 +765,7 @@ export function ProductDuplicateMergePage() {
                       <li>{t('guide1')}</li>
                       <li>{t('guide2')}</li>
                       <li>{t('guide3')}</li>
+                      <li>{t('guide4')}</li>
                     </ol>
                   }
                 />
@@ -719,6 +807,7 @@ export function ProductDuplicateMergePage() {
                       <li>{t('similarGuide2')}</li>
                       <li>{t('similarGuide3')}</li>
                       <li>{t('similarGuide4')}</li>
+                      <li>{t('similarGuide5')}</li>
                     </ol>
                   }
                 />

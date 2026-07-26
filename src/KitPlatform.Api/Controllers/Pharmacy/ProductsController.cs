@@ -130,8 +130,17 @@ public sealed class ProductsController : ControllerBase
         }
     }
 
+    /// <summary>Ẩn SP (soft-delete) khi dọn trùng / gần giống mà không gộp tồn.</summary>
+    [HttpPost("{id:guid}/hide")]
+    [Authorize(Policy = CatalogPolicies.Merge)]
+    public async Task<IActionResult> HideProduct(Guid id, CancellationToken cancellationToken)
+    {
+        var ok = await _merge.HideProductAsync(id, cancellationToken);
+        return ok ? NoContent() : NotFound();
+    }
+
     [HttpDelete("{id:guid}/permanent")]
-    [Authorize(Policy = CatalogPolicies.Write)]
+    [Authorize(Policy = CatalogPolicies.Merge)]
     public async Task<ActionResult<HardDeleteProductResult>> PermanentDelete(
         Guid id,
         CancellationToken cancellationToken)

@@ -22,6 +22,9 @@ public interface IProductDuplicateMergeService
 
     Task<bool> RestoreHiddenProductAsync(Guid productId, CancellationToken cancellationToken = default);
 
+    /// <summary>Ẩn SP đang bán (soft-delete) khi dọn trùng mà không gộp tồn.</summary>
+    Task<bool> HideProductAsync(Guid productId, CancellationToken cancellationToken = default);
+
     Task<HardDeleteProductResult> HardDeleteHiddenProductAsync(
         Guid productId,
         CancellationToken cancellationToken = default);

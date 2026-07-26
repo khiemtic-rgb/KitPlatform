@@ -586,6 +586,9 @@ internal sealed class ProductDuplicateMergeService : IProductDuplicateMergeServi
         return await conn.ExecuteAsync(sql, new { Id = productId, TenantId }) > 0;
     }
 
+    public Task<bool> HideProductAsync(Guid productId, CancellationToken cancellationToken = default) =>
+        _catalog.SoftDeleteProductAsync(productId, cancellationToken);
+
     public async Task<HardDeleteProductResult> HardDeleteHiddenProductAsync(
         Guid productId,
         CancellationToken cancellationToken = default)
