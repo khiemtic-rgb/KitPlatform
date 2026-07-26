@@ -35,10 +35,25 @@ Không cần đặt tên file trùng slug — CMS lưu đường dẫn vào bài
 
 ## Sửa / xóa bài
 
-Vào **Tin tức** → chọn bài → sửa nội dung → Lưu. Xóa chỉ khi chắc chắn.
+Vào **Kiến thức nhà thuốc** → chọn bài → sửa nội dung → Lưu. Xóa chỉ khi chắc chắn.
+
+Mẹo: dùng bộ lọc **Theo nhóm** (thanh bên) để tìm bài theo nhóm nhanh hơn.
+
+## Nhóm bài viết — bài sẽ hiện ở đâu?
+
+| Nhóm chọn trong CMS | Hiện trên web |
+|---|---|
+| Quản trị nhà thuốc | Menu **Kiến thức nhà thuốc** → Quản trị nhà thuốc |
+| Vận hành nhà thuốc | Menu **Kiến thức nhà thuốc** → Vận hành nhà thuốc |
+| Novixa Academy | Menu **Kiến thức nhà thuốc** → Novixa Academy |
+| Bán hàng & Chăm sóc khách hàng | Menu **Kiến thức nhà thuốc** → Bán hàng & CSKH |
+| AI trong nhà thuốc | Menu **Kiến thức nhà thuốc** → AI trong nhà thuốc |
+| Chăm sóc khách hàng (Connect) | Menu **Kiến thức nhà thuốc** → Connect |
+| Câu chuyện khách hàng | Menu **Kiến thức nhà thuốc** → Câu chuyện khách hàng |
+| Tin tức Novixa | Menu **Về Novixa** → Tin tức Novixa |
 
 ## Lưu ý
 
 - Sau khi lưu, website tự cập nhật qua Cloudflare — không cần nhờ IT deploy.
-- Không sửa file ngoài mục Tin tức trong CMS.
+- Không sửa file ngoài mục Kiến thức nhà thuốc trong CMS.
 - Gặp lỗi đăng nhập: liên hệ IT (invite GitHub / token / OAuth).

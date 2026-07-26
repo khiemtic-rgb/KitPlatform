@@ -33,7 +33,8 @@ collections:
     label: Kiến thức nhà thuốc
     label_singular: Bài viết
     description: >
-      Đăng / sửa bài trên novixa.vn. Chọn đúng nhóm kiến thức. Sau khi Lưu, chờ Cloudflare build vài phút.
+      Đăng / sửa bài trên novixa.vn. Nhóm kiến thức hiện trên menu "Kiến thức nhà thuốc";
+      nhóm "Tin tức Novixa" hiện dưới menu "Về Novixa". Sau khi Lưu, chờ Cloudflare build vài phút.
       Tải ảnh ở trường "Ảnh hiển thị" (khuyến nghị 1200×630).
     folder: novixa-site/src/content/tin-tuc
     create: true
