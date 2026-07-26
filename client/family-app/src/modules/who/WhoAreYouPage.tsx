@@ -29,7 +29,6 @@ function daysUntil(iso?: string): number | null {
   return Math.max(0, Math.ceil((t - Date.now()) / (24 * 60 * 60 * 1000)));
 }
 
-/** Fill ratio for trial slider: remaining / total (1 = full trial left). */
 function trialFillRatio(remaining: number, total: number): number {
   if (total <= 0) return 0;
   return Math.min(1, Math.max(0, remaining / total));
@@ -64,7 +63,9 @@ function MemberCard({
   const age = ageYears(member.dateOfBirth);
   const meta = isChild
     ? [childRelation(gender), age != null ? `${age} tuổi` : null].filter(Boolean).join(' · ')
-    : 'Phụ huynh';
+    : member.roleCode === 'caregiver'
+      ? 'Người chăm sóc'
+      : 'Phụ huynh';
 
   return (
     <button type="button" className="home-member-card" onClick={onPick}>
@@ -135,9 +136,8 @@ export function WhoAreYouPage() {
           setPendingChildTasks(childOpen.length);
           setDoneToday(day.doneCount);
           setTotalToday(day.totalCommitments);
-          // Only remaining (open) tasks contribute to "sao có thể nhận".
           const stars = childOpen.reduce(
-            (sum, c) => sum + Number(c.projectedStarDelta ?? c.starReward ?? 0),
+            (sum, c) => sum + Math.max(0, Number(c.projectedStarDelta ?? c.starReward ?? 0)),
             0,
           );
           setStarsToday(stars);
@@ -149,19 +149,11 @@ export function WhoAreYouPage() {
         }
 
         const unlock = unlocks.find((u) =>
-          ['pending_confirm', 'confirmed', 'deferred'].includes(
-            String(u.status ?? '').toLowerCase(),
-          ),
+          ['pending_confirm', 'confirmed'].includes(String(u.status ?? '').toLowerCase()),
         );
         if (unlock) {
           const st = String(unlock.status).toLowerCase();
-          setMovieNightLabel(
-            st === 'confirmed'
-              ? 'đã mở'
-              : st === 'pending_confirm'
-                ? 'chờ bố mẹ duyệt'
-                : unlock.labelVi?.trim() || 'có tín hiệu hôm nay',
-          );
+          setMovieNightLabel(st === 'confirmed' ? 'đã mở' : 'chờ duyệt');
         } else {
           setMovieNightLabel(null);
         }
@@ -194,6 +186,8 @@ export function WhoAreYouPage() {
     isTrial && trialDaysLeft != null
       ? trialFillRatio(trialDaysLeft, trialDaysTotal)
       : 0;
+  const showBilling =
+    !sub || isTrial || !sub.isEntitled;
 
   const pick = async (picked: FamilyMembership) => {
     setMember(picked);
@@ -220,6 +214,8 @@ export function WhoAreYouPage() {
     );
   };
 
+  const goAdmin = () => navigate('/family-admin');
+
   return (
     <div className="home-screen">
       <header className="home-topbar">
@@ -228,12 +224,20 @@ export function WhoAreYouPage() {
             className="home-foxy"
             src="/home/foxy-avatar.png"
             alt=""
-            width={48}
-            height={48}
+            width={44}
+            height={44}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = 'none';
+            }}
           />
           <div>
-            <p className="home-hello">Xin chào!</p>
-            <button type="button" className="home-family-name" onClick={() => setMoreOpen(true)}>
+            <p className="home-hello">Xin chào</p>
+            <button
+              type="button"
+              className="home-family-name"
+              onClick={() => setMoreOpen(true)}
+              aria-label="Tuỳ chọn gia đình"
+            >
               {familyName ?? 'Gia đình mình'}
               <span aria-hidden>▾</span>
             </button>
@@ -241,125 +245,37 @@ export function WhoAreYouPage() {
         </div>
         <button
           type="button"
-          className="home-bell"
+          className="home-admin-btn"
           aria-label="Quản trị gia đình"
           title="Quản trị gia đình"
-          onClick={() => navigate('/family-admin')}
+          onClick={goAdmin}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path
-              d="M12 22a2.2 2.2 0 0 0 2.2-2.2h-4.4A2.2 2.2 0 0 0 12 22Zm7-5.2V11a7 7 0 1 0-14 0v5.8L3 19v1h18v-1l-2-2.2Z"
-              fill="currentColor"
+              d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            />
+            <path
+              d="M19.4 13a7.6 7.6 0 0 0 .05-1l2.05-1.6-2-3.46-2.45.98a7.7 7.7 0 0 0-1.73-1L14.9 2h-5.8L8.68 6.92a7.7 7.7 0 0 0-1.73 1L4.5 6.94l-2 3.46L4.55 12a7.6 7.6 0 0 0 0 2l-2.05 1.6 2 3.46 2.45-.98a7.7 7.7 0 0 0 1.73 1L9.1 22h5.8l.42-4.92a7.7 7.7 0 0 0 1.73-1l2.45.98 2-3.46L19.4 13Z"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinejoin="round"
             />
           </svg>
-          {pendingChildTasks > 0 ? (
-            <span className="home-bell-dot" aria-hidden />
-          ) : null}
+          {pendingChildTasks > 0 ? <span className="home-bell-dot" aria-hidden /> : null}
         </button>
       </header>
 
-      <section className="home-hero">
-        <img
-          className="home-hero-art"
-          src="/home/family-hero.png"
-          alt=""
-        />
-        <article className="home-trial-card">
-          <img
-            className="home-trial-badge"
-            src="/home/calendar-badge.png"
-            alt=""
-          />
-          <div className="home-trial-head">
-            <span className="home-trial-crown" aria-hidden>
-              ♛
-            </span>
-            <div className="home-trial-head-copy">
-              <div className="home-trial-title-row">
-                <h2>Gói Family OS</h2>
-                <span className="home-trial-tag">Starter</span>
-              </div>
-              {isTrial && trialDaysLeft != null ? (
-                <>
-                  <p className="home-trial-copy">Gia đình bạn đang dùng thử</p>
-                  <p className="home-trial-days">
-                    còn <strong>{trialDaysLeft} ngày</strong>
-                  </p>
-                </>
-              ) : sub && !sub.isEntitled ? (
-                <p className="home-trial-copy">
-                  Gói đã hết hạn — gia hạn để mở lại Daily Flow.
-                </p>
-              ) : (
-                <p className="home-trial-copy">
-                  Gói Starter đang hoạt động cho cả nhà.
-                </p>
-              )}
-            </div>
-          </div>
-
-          {isTrial && trialDaysLeft != null ? (
-            <div
-              className="home-trial-bar"
-              role="progressbar"
-              aria-valuenow={trialDaysLeft}
-              aria-valuemin={0}
-              aria-valuemax={trialDaysTotal}
-              aria-label={`Còn ${trialDaysLeft} trên ${trialDaysTotal} ngày dùng thử`}
-            >
-              <span style={{ width: `${Math.round(trialProgress * 100)}%` }} />
-            </div>
-          ) : null}
-
-          <p className="home-trial-desc">
-            Cả nhà cùng xây thói quen tốt —
-            <br />
-            giúp gia đình cùng thay đổi.
-          </p>
-
-          <div className="home-trial-actions">
-            <button
-              type="button"
-              className="home-trial-link"
-              onClick={() =>
-                document.getElementById('home-who')?.scrollIntoView({ behavior: 'smooth' })
-              }
-            >
-              <span aria-hidden>🌱</span> Khám phá tính năng
-              <span aria-hidden>›</span>
-            </button>
-            <button type="button" className="home-trial-cta" onClick={goCheckout}>
-              {sub && !sub.isEntitled ? 'Gia hạn ngay' : 'Nâng cấp khi sẵn sàng'}{' '}
-              <span aria-hidden>›</span>
-            </button>
-          </div>
-
-          <ul className="home-trial-perks">
-            <li>
-              <span aria-hidden>★</span> Giữ lịch sử & kỷ niệm
-            </li>
-            <li>
-              <span aria-hidden>★</span> Báo cáo tiến độ chi tiết
-            </li>
-            <li>
-              <span aria-hidden>★</span> Sao & phần thưởng đặc biệt
-            </li>
-          </ul>
-        </article>
-      </section>
-
+      {/* Primary job: pick who is using the app today */}
       <section className="home-who" id="home-who">
         <div className="home-who-head">
           <div>
-            <h2>Con là ai hôm nay?</h2>
-            <p>Chọn thành viên để xem công việc và tiến độ trong ngày</p>
+            <h1>Ai đang dùng hôm nay?</h1>
+            <p>Chạm tên để mở lịch ngày — bố/mẹ quản trị, con làm việc.</p>
           </div>
-          <button
-            type="button"
-            className="home-manage-btn"
-            onClick={() => navigate('/family-admin')}
-          >
-            Quản lý thành viên
+          <button type="button" className="home-manage-btn" onClick={goAdmin}>
+            Quản lý
           </button>
         </div>
 
@@ -367,12 +283,8 @@ export function WhoAreYouPage() {
 
         {children.length === 0 && adults.length === 0 ? (
           <div className="home-empty-members">
-            <p>Chưa có thành viên nào. Thêm bố/mẹ và con để bắt đầu ngày hôm nay.</p>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => navigate('/family-admin')}
-            >
+            <p>Chưa có thành viên. Thêm bố/mẹ và con để bắt đầu.</p>
+            <button type="button" className="btn btn-primary" onClick={goAdmin}>
               Thêm thành viên
             </button>
           </div>
@@ -380,7 +292,7 @@ export function WhoAreYouPage() {
 
         {children.length > 0 ? (
           <>
-            <div className="home-group-label">Các bạn nhỏ</div>
+            <div className="home-group-label">Các con</div>
             <div className="home-member-grid">
               {children.map((member) => (
                 <MemberCard key={member.id} member={member} onPick={() => void pick(member)} />
@@ -391,7 +303,7 @@ export function WhoAreYouPage() {
 
         {adults.length > 0 ? (
           <>
-            <div className="home-group-label">Bố mẹ</div>
+            <div className="home-group-label">Bố mẹ / người lớn</div>
             <div className="home-member-grid">
               {adults.map((member) => (
                 <MemberCard key={member.id} member={member} onPick={() => void pick(member)} />
@@ -401,47 +313,66 @@ export function WhoAreYouPage() {
         ) : null}
       </section>
 
-      <section className="home-today">
+      {/* Live glance — one scope, plain labels */}
+      <section className="home-today" aria-label="Tóm tắt hôm nay">
         <div className="home-today-title">
-          <span aria-hidden>💚</span>
-          <h2>Hôm nay có gì đặc biệt?</h2>
+          <h2>Hôm nay</h2>
         </div>
-        <div className="home-today-stats">
+        <div className="home-today-stats home-today-stats-grid">
           <div>
-            <span aria-hidden>📅</span>
-            <p>
-              <strong>{pendingChildTasks}</strong> Công việc đang chờ các con
-            </p>
+            <strong>{pendingChildTasks}</strong>
+            <span>việc con còn lại</span>
           </div>
           <div>
-            <span aria-hidden>⭐</span>
-            <p>
-              <strong>{starsToday}</strong> Sao còn có thể nhận hôm nay
-            </p>
+            <strong>{doneToday}/{Math.max(totalToday, 0)}</strong>
+            <span>cả nhà đã xong</span>
           </div>
           <div>
-            <span aria-hidden>{movieNightLabel ? '🎬' : '✅'}</span>
-            <p>
-              {movieNightLabel ? (
-                <>
-                  <strong>Movie Night</strong> · {movieNightLabel}
-                </>
-              ) : (
-                <>
-                  <strong>
-                    {doneToday}/{Math.max(totalToday, 1)}
-                  </strong>{' '}
-                  Việc đã xong hôm nay
-                </>
-              )}
-            </p>
+            <strong>{starsToday}</strong>
+            <span>sao còn có thể nhận</span>
           </div>
+          {movieNightLabel ? (
+            <div className="is-wide">
+              <strong>Movie Night</strong>
+              <span>{movieNightLabel}</span>
+            </div>
+          ) : null}
         </div>
-        <p className="home-today-foot">
-          <span aria-hidden>💗</span>
-          Mỗi việc nhỏ hôm nay giúp cả nhà cùng lớn lên — không chỉ riêng con.
-        </p>
       </section>
+
+      {/* Billing only when trial / expired — not a second hero */}
+      {showBilling ? (
+        <section className="home-billing" aria-label="Gói Family OS">
+          <div className="home-billing-copy">
+            <p className="home-billing-kicker">
+              {isTrial && trialDaysLeft != null
+                ? `Dùng thử · còn ${trialDaysLeft} ngày`
+                : sub && !sub.isEntitled
+                  ? 'Gói đã hết hạn'
+                  : 'Gói Family OS'}
+            </p>
+            <p className="home-billing-note">
+              {sub && !sub.isEntitled
+                ? 'Gia hạn để mở lại Daily Flow và sao.'
+                : 'Cả nhà cùng thói quen — nâng cấp khi sẵn sàng.'}
+            </p>
+            {isTrial && trialDaysLeft != null ? (
+              <div
+                className="home-trial-bar home-billing-bar"
+                role="progressbar"
+                aria-valuenow={trialDaysLeft}
+                aria-valuemin={0}
+                aria-valuemax={trialDaysTotal}
+              >
+                <span style={{ width: `${Math.round(trialProgress * 100)}%` }} />
+              </div>
+            ) : null}
+          </div>
+          <button type="button" className="home-billing-cta" onClick={goCheckout}>
+            {sub && !sub.isEntitled ? 'Gia hạn' : 'Nâng cấp'}
+          </button>
+        </section>
+      ) : null}
 
       <nav className="home-tabbar" aria-label="Điều hướng chính">
         <button type="button" className="is-active">
@@ -461,13 +392,9 @@ export function WhoAreYouPage() {
           type="button"
           className="home-tab-fab"
           aria-label="Quản trị gia đình"
-          onClick={() => navigate('/family-admin')}
+          onClick={goAdmin}
         >
           +
-        </button>
-        <button type="button" onClick={() => navigate('/family-admin')}>
-          <span aria-hidden>⚙️</span>
-          Quản trị
         </button>
         <button type="button" onClick={() => setMoreOpen(true)}>
           <span aria-hidden>▦</span>
@@ -485,18 +412,27 @@ export function WhoAreYouPage() {
           >
             <h3>Tuỳ chọn gia đình</h3>
             <p className="muted">
-              Quản trị ngay trên điện thoại — thêm thành viên, việc hôm nay, chế độ gia đình.
-              Không cần máy tính.
+              Quản trị trên điện thoại — thành viên, việc hôm nay, chế độ gia đình.
             </p>
             <button
               type="button"
               className="btn btn-primary"
               onClick={() => {
                 setMoreOpen(false);
-                navigate('/family-admin');
+                goAdmin();
               }}
             >
               Quản trị gia đình
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => {
+                setMoreOpen(false);
+                goCheckout();
+              }}
+            >
+              Gói & thanh toán
             </button>
             <button
               type="button"
