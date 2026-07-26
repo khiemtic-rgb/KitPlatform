@@ -26,6 +26,9 @@ internal sealed class CatalogService : ICatalogService
 
     public async Task<ProductDetailDto> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken = default)
     {
+        if (!string.IsNullOrWhiteSpace(request.SaleUnitName))
+            await _repository.EnsureMeasureUnitExistsAsync(request.SaleUnitName, cancellationToken);
+
         var id = await _repository.CreateProductAsync(request, cancellationToken);
         await ApplyCommercialDataAsync(
             id,
@@ -46,7 +49,7 @@ internal sealed class CatalogService : ICatalogService
         if (!updated) return null;
 
         if (!string.IsNullOrWhiteSpace(request.SaleUnitName))
-            await _repository.UpdateSaleUnitNameAsync(id, request.SaleUnitName, cancellationToken);
+            await RenameBaseUnitIfNeededAsync(id, request.SaleUnitName, request.ConfirmBaseUnitRename, cancellationToken);
 
         if (HasCommercialPayload(request))
         {
@@ -63,6 +66,48 @@ internal sealed class CatalogService : ICatalogService
         }
 
         return await _repository.GetProductAsync(id, cancellationToken);
+    }
+
+    private async Task RenameBaseUnitIfNeededAsync(
+        Guid productId,
+        string requestedUnitName,
+        bool confirmBaseUnitRename,
+        CancellationToken cancellationToken)
+    {
+        var newName = requestedUnitName.Trim();
+        if (newName.Length == 0)
+            throw new InvalidOperationException("Đơn vị cơ sở không được để trống.");
+        if (newName.Length > 50)
+            throw new InvalidOperationException("Đơn vị cơ sở tối đa 50 ký tự.");
+
+        var current = await _repository.GetBaseUnitNameAsync(productId, cancellationToken);
+        if (current is not null && string.Equals(current.Trim(), newName, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (await _repository.HasOtherUnitWithNameAsync(productId, newName, cancellationToken))
+            throw new InvalidOperationException(
+                $"Không đổi được: sản phẩm đã có đơn vị quy đổi \"{newName}\". Hãy đổi/xóa đơn vị đó trước.");
+
+        var (stockOnHand, salesLines, procurementLines) =
+            await _repository.GetBaseUnitRenameImpactAsync(productId, cancellationToken);
+        var hasRisk = stockOnHand > 0 || salesLines > 0 || procurementLines > 0;
+        if (hasRisk && !confirmBaseUnitRename)
+        {
+            var parts = new List<string>();
+            if (stockOnHand > 0)
+                parts.Add($"tồn hiện có {stockOnHand:0.###}");
+            if (salesLines > 0)
+                parts.Add($"{salesLines} dòng đơn bán");
+            if (procurementLines > 0)
+                parts.Add($"{procurementLines} dòng nhập/mua hàng");
+            throw new InvalidOperationException(
+                "BASE_UNIT_RENAME_CONFIRM_REQUIRED: " +
+                $"Đổi đơn vị cơ sở từ \"{current}\" sang \"{newName}\" sẽ đổi nhãn trên lịch sử giao dịch ({string.Join(", ", parts)}). " +
+                "Số lượng tồn không đổi. Gửi lại với confirmBaseUnitRename=true nếu bạn chắc chắn đây chỉ là sửa sai nhãn.");
+        }
+
+        await _repository.EnsureMeasureUnitExistsAsync(newName, cancellationToken);
+        await _repository.UpdateSaleUnitNameAsync(productId, newName, cancellationToken);
     }
 
     public async Task<ProductDetailDto?> SyncProductCommercialAsync(

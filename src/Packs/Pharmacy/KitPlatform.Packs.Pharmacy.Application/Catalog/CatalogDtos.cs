@@ -123,6 +123,10 @@ public sealed class UpdateProductRequest
     public short Status { get; init; }
     public decimal? MinStockQty { get; init; }
     public string? SaleUnitName { get; init; }
+    /// <summary>
+    /// Bắt buộc = true khi đổi đơn vị cơ sở trên sản phẩm đã có tồn/giao dịch.
+    /// </summary>
+    public bool ConfirmBaseUnitRename { get; init; }
     public string? PrimaryBarcode { get; init; }
     public Guid? RetailProductUnitId { get; init; }
     public decimal? RetailPrice { get; init; }

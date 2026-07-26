@@ -25,6 +25,9 @@ import type { UploadRequestOption } from 'rc-upload/lib/interface';
 import { DeleteOutlined, DatabaseOutlined, StarFilled, StarOutlined, UploadOutlined } from '@ant-design/icons';
 import { isAxiosError } from 'axios';
 import {
+  createBrand,
+  createCategory,
+  createMeasureUnit,
   createProduct,
   checkSimilarProductNames,
   checkBarcode,
@@ -32,6 +35,7 @@ import {
   fetchBrandLookups,
   fetchCategoryLookups,
   fetchIngredientLookups,
+  fetchMeasureUnits,
   fetchNextProductCode,
   syncProductCommercial,
   syncProductIngredients,
@@ -51,7 +55,9 @@ import type { ProductFormNationalPrefill } from '@/shared/api/national-drug.type
 import { SALE_UNIT_OPTIONS } from '@/shared/api/catalog.types';
 import { catalogT } from '@/shared/i18n';
 import { useCatalogEnums } from '@/shared/i18n/use-catalog-enums';
+import { useCanCatalogWrite } from '@/shared/auth/usePermission';
 import { formatDisplayMoney, moneyInputNumberPropsAllowZeroSuffix, moneyInputNumberStyle } from '@/shared/utils/money';
+import { CatalogQuickAddSelect, suggestCatalogCode } from './CatalogQuickAddSelect';
 
 type TabKey = 'general' | 'details' | 'ingredients';
 
@@ -146,6 +152,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     priceTypeOptions,
     priceTypeLabel,
   } = useCatalogEnums();
+  const canCatalogWrite = useCanCatalogWrite();
   const { message: msg, modal } = App.useApp();
   const [form] = Form.useForm();
   const linkedNationalDrugId = Form.useWatch('nationalDrugId', form);
@@ -226,6 +233,17 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
 
   const currentProduct = () => productRef.current ?? displayProduct;
 
+  const [measureUnitNames, setMeasureUnitNames] = useState<string[]>([]);
+
+  /** Danh mục đơn vị tính quản trị được; fallback danh sách mặc định khi chưa có/lỗi. */
+  const saleUnitOptions = useMemo(
+    () =>
+      measureUnitNames.length
+        ? measureUnitNames.map((u) => ({ value: u, label: u }))
+        : SALE_UNIT_OPTIONS,
+    [measureUnitNames],
+  );
+
   const unitOptions = useMemo(() => {
     const product = displayProduct;
     const source = product?.units?.length ? product.units : [];
@@ -289,7 +307,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     setDraftProductUnitId(saleUnitId ?? '');
   };
 
-  const buildGeneralPayload = () => ({
+  const buildGeneralPayload = (opts?: { confirmBaseUnitRename?: boolean }) => ({
     productCode: readTextField(form, 'productCode'),
     productName: readTextField(form, 'productName')!,
     genericName: readTextField(form, 'genericName'),
@@ -305,6 +323,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     status: (form.getFieldValue('status') as number | undefined) ?? 1,
     saleUnitName: readTextField(form, 'saleUnitName') ?? catalogT()('shared.defaultSaleUnit'),
     minStockQty: form.getFieldValue('minStockQty') as number | undefined,
+    confirmBaseUnitRename: opts?.confirmBaseUnitRename === true,
   });
 
   const captureGeneralBaseline = () => {
@@ -541,6 +560,9 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
         setIngredientOptions(ings);
       })
       .catch(() => {});
+    void fetchMeasureUnits(true)
+      .then((units) => setMeasureUnitNames(units.map((u) => u.unitName)))
+      .catch(() => setMeasureUnitNames([]));
   }, [open]);
 
   useEffect(() => {
@@ -997,6 +1019,29 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     [form, msg, modal, t],
   );
 
+  const confirmBaseUnitRename = (fromUnit: string, toUnit: string) =>
+    new Promise<boolean>((resolve) => {
+      modal.confirm({
+        title: t('productForm.confirm.baseUnitRenameTitle'),
+        width: 520,
+        zIndex: 1200,
+        content: (
+          <div>
+            <Typography.Paragraph style={{ marginBottom: 8 }}>
+              {t('productForm.confirm.baseUnitRenameBody', { from: fromUnit, to: toUnit })}
+            </Typography.Paragraph>
+            <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+              {t('productForm.confirm.baseUnitRenameHint')}
+            </Typography.Paragraph>
+          </div>
+        ),
+        okText: t('productForm.actions.confirmRenameUnit'),
+        cancelText: tc('actions.cancel'),
+        onOk: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+
   const saveGeneralChanges = async (): Promise<boolean> => {
     if (!hasPersistedId) {
       const created = await createProductFirstTime();
@@ -1004,7 +1049,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     }
 
     try {
-      await form.validateFields(['productName', 'drugType']);
+      await form.validateFields(['productName', 'drugType', 'saleUnitName']);
 
       const productName = readTextField(form, 'productName') ?? '';
       let matches = similarMatches;
@@ -1018,8 +1063,29 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
         if (!proceed) return false;
       }
 
+      let baselineSaleUnit = '';
+      try {
+        baselineSaleUnit = String(JSON.parse(baselineGeneralRef.current || '{}').saleUnitName ?? '').trim();
+      } catch {
+        baselineSaleUnit = displayProduct?.saleUnitName?.trim() ?? '';
+      }
+      const nextSaleUnit = readTextField(form, 'saleUnitName') ?? '';
+      const unitChanged =
+        baselineSaleUnit.length > 0 &&
+        nextSaleUnit.length > 0 &&
+        baselineSaleUnit.toLowerCase() !== nextSaleUnit.toLowerCase();
+
+      let confirmRename = false;
+      if (unitChanged) {
+        confirmRename = await confirmBaseUnitRename(baselineSaleUnit, nextSaleUnit);
+        if (!confirmRename) return false;
+      }
+
       setSaving(true);
-      const updated = await updateProduct(displayProduct!.id, buildGeneralPayload());
+      const updated = await updateProduct(
+        displayProduct!.id,
+        buildGeneralPayload({ confirmBaseUnitRename: confirmRename }),
+      );
       productRef.current = updated;
       setSessionProduct(updated);
       loadEditingProduct(updated);
@@ -1029,7 +1095,35 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
       return true;
     } catch (error) {
       if (isAxiosError(error)) {
-        msg.error(apiErrorMessage(error, t('productForm.messages.saveProductFailed')));
+        const apiMsg = apiErrorMessage(error, t('productForm.messages.saveProductFailed'));
+        if (apiMsg.includes('BASE_UNIT_RENAME_CONFIRM_REQUIRED')) {
+          const fromUnit =
+            displayProduct?.saleUnitName ??
+            catalogT()('shared.defaultSaleUnit');
+          const toUnit = readTextField(form, 'saleUnitName') ?? '';
+          const force = await confirmBaseUnitRename(fromUnit, toUnit);
+          if (!force) return false;
+          try {
+            setSaving(true);
+            const updated = await updateProduct(
+              displayProduct!.id,
+              buildGeneralPayload({ confirmBaseUnitRename: true }),
+            );
+            productRef.current = updated;
+            setSessionProduct(updated);
+            loadEditingProduct(updated);
+            captureGeneralBaseline();
+            onUpdated(updated);
+            msg.success(t('productForm.messages.saved'));
+            return true;
+          } catch (retryError) {
+            msg.error(apiErrorMessage(retryError, t('productForm.messages.saveProductFailed')));
+            return false;
+          } finally {
+            setSaving(false);
+          }
+        }
+        msg.error(apiMsg.replace(/^BASE_UNIT_RENAME_CONFIRM_REQUIRED:\s*/i, ''));
       }
       return false;
     } finally {
@@ -1171,26 +1265,125 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
         </Space.Compact>
       </Form.Item>
       <Form.Item name="saleUnitName" label={t('productForm.fields.saleUnitName')} rules={[{ required: true }]}>
-        <Select
-          showSearch
-          options={SALE_UNIT_OPTIONS}
-          disabled={hasPersistedId}
+        <CatalogQuickAddSelect
+          options={saleUnitOptions}
           placeholder={t('productForm.placeholders.saleUnitName')}
+          addPlaceholder={t('productForm.quickAdd.unitPlaceholder')}
+          addLabel={t('productForm.quickAdd.add')}
+          canAdd={canCatalogWrite}
+          onQuickAdd={async (name) => {
+            try {
+              const existing = measureUnitNames.find((u) => u.toLowerCase() === name.toLowerCase());
+              if (existing) {
+                form.setFieldsValue({ saleUnitName: existing });
+                msg.info(t('productForm.quickAdd.unitExists', { name: existing }));
+                return { value: existing, label: existing };
+              }
+              const created = await createMeasureUnit({ unitName: name, sortOrder: 0 });
+              setMeasureUnitNames((prev) =>
+                prev.some((u) => u.toLowerCase() === created.unitName.toLowerCase())
+                  ? prev
+                  : [...prev, created.unitName].sort((a, b) => a.localeCompare(b, 'vi')),
+              );
+              form.setFieldsValue({ saleUnitName: created.unitName });
+              msg.success(t('productForm.quickAdd.unitSuccess', { name: created.unitName }));
+              return { value: created.unitName, label: created.unitName };
+            } catch (error) {
+              msg.error(apiErrorMessage(error, t('productForm.quickAdd.unitFailed')));
+              return null;
+            }
+          }}
         />
       </Form.Item>
-      {!hasPersistedId && (
-        <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-          {t('productForm.fields.saleUnitHint')}
-        </Typography.Text>
-      )}
-      <Form.Item name="drugType" label={t('productForm.fields.drugType')} rules={[{ required: true }]}>
+      <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+        {hasPersistedId ? t('productForm.fields.saleUnitEditHint') : t('productForm.fields.saleUnitHint')}
+      </Typography.Text>
+      <Form.Item
+        name="drugType"
+        label={t('productForm.fields.drugType')}
+        rules={[{ required: true }]}
+        extra={t('productForm.fields.drugTypeHint')}
+      >
         <Select options={drugTypeOptions} />
       </Form.Item>
       <Form.Item name="categoryId" label={t('productForm.fields.categoryId')}>
-        <Select allowClear options={categories.map((c) => ({ value: c.id, label: c.name }))} />
+        <CatalogQuickAddSelect
+          allowClear
+          options={categories.map((c) => ({ value: c.id, label: c.name }))}
+          addPlaceholder={t('productForm.quickAdd.categoryPlaceholder')}
+          addLabel={t('productForm.quickAdd.add')}
+          canAdd={canCatalogWrite}
+          onQuickAdd={async (name) => {
+            try {
+              const existing = categories.find((c) => c.name.toLowerCase() === name.toLowerCase());
+              if (existing) {
+                form.setFieldsValue({ categoryId: existing.id });
+                msg.info(t('productForm.quickAdd.categoryExists', { name: existing.name }));
+                return { value: existing.id, label: existing.name };
+              }
+              const created = await createCategory({
+                categoryCode: suggestCatalogCode(name, 'DM'),
+                categoryName: name,
+                sortOrder: 0,
+              });
+              const lookup: LookupItem = {
+                id: created.id,
+                code: created.categoryCode,
+                name: created.categoryName,
+              };
+              setCategories((prev) =>
+                [...prev.filter((c) => c.id !== lookup.id), lookup].sort((a, b) =>
+                  a.name.localeCompare(b.name, 'vi'),
+                ),
+              );
+              form.setFieldsValue({ categoryId: created.id });
+              msg.success(t('productForm.quickAdd.categorySuccess', { name: created.categoryName }));
+              return { value: created.id, label: created.categoryName };
+            } catch (error) {
+              msg.error(apiErrorMessage(error, t('productForm.quickAdd.categoryFailed')));
+              return null;
+            }
+          }}
+        />
       </Form.Item>
       <Form.Item name="brandId" label={t('productForm.fields.brandId')}>
-        <Select allowClear options={brands.map((b) => ({ value: b.id, label: b.name }))} />
+        <CatalogQuickAddSelect
+          allowClear
+          options={brands.map((b) => ({ value: b.id, label: b.name }))}
+          addPlaceholder={t('productForm.quickAdd.brandPlaceholder')}
+          addLabel={t('productForm.quickAdd.add')}
+          canAdd={canCatalogWrite}
+          onQuickAdd={async (name) => {
+            try {
+              const existing = brands.find((b) => b.name.toLowerCase() === name.toLowerCase());
+              if (existing) {
+                form.setFieldsValue({ brandId: existing.id });
+                msg.info(t('productForm.quickAdd.brandExists', { name: existing.name }));
+                return { value: existing.id, label: existing.name };
+              }
+              const created = await createBrand({
+                brandCode: suggestCatalogCode(name, 'TH'),
+                brandName: name,
+              });
+              const lookup: LookupItem = {
+                id: created.id,
+                code: created.brandCode,
+                name: created.brandName,
+              };
+              setBrands((prev) =>
+                [...prev.filter((b) => b.id !== lookup.id), lookup].sort((a, b) =>
+                  a.name.localeCompare(b.name, 'vi'),
+                ),
+              );
+              form.setFieldsValue({ brandId: created.id });
+              msg.success(t('productForm.quickAdd.brandSuccess', { name: created.brandName }));
+              return { value: created.id, label: created.brandName };
+            } catch (error) {
+              msg.error(apiErrorMessage(error, t('productForm.quickAdd.brandFailed')));
+              return null;
+            }
+          }}
+        />
       </Form.Item>
 
       <Divider orientation="left" plain style={{ margin: '8px 0 16px' }}>
@@ -1305,7 +1498,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
           style={{ width: 120 }}
           value={draftUnitName}
           onChange={setDraftUnitName}
-          options={SALE_UNIT_OPTIONS.filter((o) => !units.some((u) => u.unitName === o.value))}
+          options={saleUnitOptions.filter((o) => !units.some((u) => u.unitName === o.value))}
           placeholder={t('productForm.placeholders.unit')}
         />
         <InputNumber

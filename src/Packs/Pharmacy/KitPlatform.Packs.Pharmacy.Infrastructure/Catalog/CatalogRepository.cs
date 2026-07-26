@@ -311,6 +311,91 @@ internal sealed class CatalogRepository
         return false;
     }
 
+    public async Task<string?> GetBaseUnitNameAsync(Guid productId, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT unit_name
+            FROM product_units
+            WHERE product_id = @ProductId AND tenant_id = @TenantId AND is_base_unit = TRUE AND status = 1
+            LIMIT 1
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<string>(sql, new { ProductId = productId, TenantId = _tenant.TenantId });
+    }
+
+    public async Task<bool> HasOtherUnitWithNameAsync(Guid productId, string unitName, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT EXISTS (
+                SELECT 1 FROM product_units
+                WHERE product_id = @ProductId AND tenant_id = @TenantId AND status = 1
+                  AND is_base_unit = FALSE
+                  AND lower(unit_name) = lower(@UnitName)
+            )
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleAsync<bool>(sql, new
+        {
+            ProductId = productId,
+            TenantId = _tenant.TenantId,
+            UnitName = unitName,
+        });
+    }
+
+    /// <summary>Tồn hiện có + giao dịch lịch sử — dùng để gate đổi tên đơn vị cơ sở.</summary>
+    public async Task<(decimal StockOnHand, int SalesLines, int ProcurementLines)> GetBaseUnitRenameImpactAsync(
+        Guid productId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+                COALESCE((
+                    SELECT SUM(b.quantity_available)
+                    FROM inventory_batches b
+                    WHERE b.product_id = @ProductId AND b.tenant_id = @TenantId
+                ), 0) AS StockOnHand,
+                COALESCE((
+                    SELECT COUNT(*)::int
+                    FROM sales_order_items soi
+                    INNER JOIN sales_orders so ON so.id = soi.sales_order_id
+                    WHERE soi.product_id = @ProductId AND so.tenant_id = @TenantId
+                ), 0) AS SalesLines,
+                COALESCE((
+                    SELECT COUNT(*)::int
+                    FROM (
+                        SELECT poi.id
+                        FROM purchase_order_items poi
+                        INNER JOIN purchase_orders po ON po.id = poi.purchase_order_id
+                        WHERE poi.product_id = @ProductId AND po.tenant_id = @TenantId
+                        UNION ALL
+                        SELECT gri.id
+                        FROM goods_receipt_items gri
+                        INNER JOIN goods_receipts gr ON gr.id = gri.goods_receipt_id
+                        WHERE gri.product_id = @ProductId AND gr.tenant_id = @TenantId
+                    ) x
+                ), 0) AS ProcurementLines
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var row = await conn.QuerySingleAsync<(decimal StockOnHand, int SalesLines, int ProcurementLines)>(
+            sql,
+            new { ProductId = productId, TenantId = _tenant.TenantId });
+        return row;
+    }
+
+    public async Task EnsureMeasureUnitExistsAsync(string unitName, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            INSERT INTO measure_units (tenant_id, unit_name, sort_order, status)
+            SELECT @TenantId, @UnitName, 100, 1
+            WHERE NOT EXISTS (
+                SELECT 1 FROM measure_units
+                WHERE tenant_id = @TenantId AND lower(unit_name) = lower(@UnitName) AND deleted_at IS NULL
+            )
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(sql, new { TenantId = _tenant.TenantId, UnitName = unitName.Trim() });
+    }
+
     public async Task UpdateSaleUnitNameAsync(Guid productId, string saleUnitName, CancellationToken cancellationToken)
     {
         const string sql = """

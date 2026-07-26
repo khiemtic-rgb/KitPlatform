@@ -135,4 +135,9 @@
 191_customer_name_trgm.sql
 210_customer_allow_credit_with_phone.sql
 211_merge_permissions.sql
+228_kit_accounts_memberships.sql
+229_kit_accounts_prefer_pharmacy.sql
+230_pack_family_parent_emotion_push.sql
+231_pack_family_memory.sql
+235_catalog_measure_units.sql
 seed-prod/001_base_permissions.sql

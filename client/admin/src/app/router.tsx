@@ -108,6 +108,9 @@ const CategoryListPage = lazy(() =>
 const BrandListPage = lazy(() =>
   import('@/modules/catalog/BrandListPage').then((m) => ({ default: m.BrandListPage })),
 );
+const UnitListPage = lazy(() =>
+  import('@/modules/catalog/UnitListPage').then((m) => ({ default: m.UnitListPage })),
+);
 const IngredientListPage = lazy(() =>
   import('@/modules/catalog/IngredientListPage').then((m) => ({ default: m.IngredientListPage })),
 );
@@ -232,6 +235,11 @@ const FamilyOsAgreementsPage = lazy(() =>
 const FamilyOsStarSettingsPage = lazy(() =>
   import('@/modules/family-os/FamilyOsStarSettingsPage').then((m) => ({
     default: m.FamilyOsStarSettingsPage,
+  })),
+);
+const FamilyOsBillingPage = lazy(() =>
+  import('@/modules/family-os/FamilyOsBillingPage').then((m) => ({
+    default: m.FamilyOsBillingPage,
   })),
 );
 const FamilyOsRewardsPage = lazy(() =>
@@ -576,6 +584,7 @@ export function AppRouter() {
                 <Route path="import" element={<ProductImportPage />} />
                 <Route path="categories" element={<CategoryListPage />} />
                 <Route path="brands" element={<BrandListPage />} />
+                <Route path="units" element={<UnitListPage />} />
                 <Route path="ingredients" element={<IngredientListPage />} />
                 <Route path="national-drugs" element={<NationalDrugLookupPage />} />
               </Route>
@@ -757,6 +766,7 @@ export function AppRouter() {
                 <Route path="agreements" element={<FamilyOsAgreementsPage />} />
                 <Route path="rewards" element={<FamilyOsRewardsPage />} />
                 <Route path="star-settings" element={<FamilyOsStarSettingsPage />} />
+                <Route path="billing" element={<FamilyOsBillingPage />} />
               </Route>
               <Route
                 path="clinic"

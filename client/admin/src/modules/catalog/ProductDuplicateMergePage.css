@@ -1,0 +1,18 @@
+/* Nền nhóm trắng / xám ghi — áp lên td để thắng hover mặc định của Ant Table. */
+.product-dup-cluster-a > td {
+  background: #ffffff !important;
+}
+
+.product-dup-cluster-b > td {
+  background: #f0f0f0 !important;
+}
+
+.product-dup-cluster-a.ant-table-row:hover > td,
+.product-dup-cluster-a > td.ant-table-cell-row-hover {
+  background: #f7f7f7 !important;
+}
+
+.product-dup-cluster-b.ant-table-row:hover > td,
+.product-dup-cluster-b > td.ant-table-cell-row-hover {
+  background: #e4e4e4 !important;
+}

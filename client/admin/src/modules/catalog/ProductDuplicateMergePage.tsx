@@ -41,6 +41,32 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import { useCanCatalogMerge } from '@/shared/auth/usePermission';
 import { formatDisplayDateTime } from '@/shared/utils/date';
 import { formatDisplayQuantity } from '@/shared/utils/money';
+import './ProductDuplicateMergePage.css';
+
+/**
+ * Họ ĐVT có thể quy đổi nội bộ (vd Viên↔Vỉ↔Hộp).
+ * Khác họ (vd Hộp vs Lọ) → coi là SKU khác, không gộp tồn.
+ */
+function unitFamily(unitName?: string | null): string {
+  const u = (unitName ?? '').trim().toLowerCase();
+  if (!u) return 'unknown';
+
+  const hit = (...needles: string[]) => needles.some((n) => u.includes(n));
+
+  // Cùng chuỗi đóng gói rắn: Viên → Vỉ → Gói → Hộp → Thùng
+  if (hit('viên', 'vien', 'vỉ', 'blister', 'gói', 'goi', 'hộp', 'hop', 'box', 'thùng', 'thung', 'lốc', 'loc'))
+    return 'solid_pack';
+  // Chai / lọ / hũ — khác họ với Hộp (thường là SKU khác)
+  if (hit('chai', 'lọ', 'hũ', 'bottle', 'jar') || u === 'lo') return 'bottle';
+  if (hit('tuýp', 'tuyp', 'tube', 'ống') || u === 'ong') return 'tube';
+  if (hit('ml', 'lít', 'lit', 'kg', 'mg') || u === 'g') return 'measure';
+  return `other:${u}`;
+}
+
+function clusterUnitsCompatible(products: { unitName?: string | null }[]): boolean {
+  const families = new Set(products.map((p) => unitFamily(p.unitName)));
+  return families.size <= 1;
+}
 
 type RowModel = DuplicateProductMember & {
   key: string;
@@ -48,12 +74,15 @@ type RowModel = DuplicateProductMember & {
   clusterName: string;
   isFirstInCluster: boolean;
   clusterSize: number;
+  clusterIndex: number;
   maxSimilarity?: number | null;
+  unitsCompatible: boolean;
 };
 
 function toRows(clusterList: DuplicateProductCluster[]): RowModel[] {
   const list: RowModel[] = [];
-  for (const cluster of clusterList) {
+  clusterList.forEach((cluster, clusterIndex) => {
+    const compatible = clusterUnitsCompatible(cluster.products);
     cluster.products.forEach((p, index) => {
       list.push({
         ...p,
@@ -62,11 +91,25 @@ function toRows(clusterList: DuplicateProductCluster[]): RowModel[] {
         clusterName: cluster.displayName,
         isFirstInCluster: index === 0,
         clusterSize: cluster.products.length,
+        clusterIndex,
         maxSimilarity: cluster.maxSimilarity,
+        unitsCompatible: compatible,
       });
     });
-  }
+  });
   return list;
+}
+
+function splitRows(all: RowModel[]) {
+  return {
+    convertible: all.filter((r) => r.unitsCompatible),
+    incompatible: all.filter((r) => !r.unitsCompatible),
+  };
+}
+
+function clusterRowClassName(row: RowModel, keeperId?: string): string {
+  const tone = row.clusterIndex % 2 === 0 ? 'product-dup-cluster-a' : 'product-dup-cluster-b';
+  return keeperId === row.id ? `${tone} product-dup-keeper-row` : tone;
 }
 
 function applyClusterKeepers(
@@ -176,16 +219,40 @@ export function ProductDuplicateMergePage() {
   useEffect(() => {
     if (activeTab === 'merge') void loadClusters();
     if (activeTab === 'similar') void loadSimilarClusters();
+    if (activeTab === 'manualReview') {
+      void loadClusters();
+      void loadSimilarClusters();
+    }
     if (activeTab === 'history') void loadHistory();
     if (activeTab === 'hidden') void loadHidden();
   }, [activeTab, loadClusters, loadSimilarClusters, loadHistory, loadHidden]);
 
   const rows = useMemo(() => toRows(clusters), [clusters]);
   const similarRows = useMemo(() => toRows(similarClusters), [similarClusters]);
+  const mergeSplit = useMemo(() => splitRows(rows), [rows]);
+  const similarSplit = useMemo(() => splitRows(similarRows), [similarRows]);
+
+  /** Gộp các nhóm khác họ ĐVT từ cả «trùng» và «gần giống», đánh lại chỉ số nền để tô xen kẽ. */
+  const manualReviewRows = useMemo(() => {
+    const combined = [...mergeSplit.incompatible, ...similarSplit.incompatible];
+    const clusterOrder = new Map<string, number>();
+    return combined.map((row) => {
+      if (!clusterOrder.has(row.clusterKey)) clusterOrder.set(row.clusterKey, clusterOrder.size);
+      return { ...row, clusterIndex: clusterOrder.get(row.clusterKey)! };
+    });
+  }, [mergeSplit.incompatible, similarSplit.incompatible]);
+
+  const incompatibleClusterCount = (list: RowModel[]) =>
+    new Set(list.map((r) => r.clusterKey)).size;
 
   const reloadAfterMerge = async () => {
-    if (activeTab === 'similar') await loadSimilarClusters();
-    else await loadClusters();
+    if (activeTab === 'manualReview') {
+      await Promise.all([loadClusters(), loadSimilarClusters()]);
+    } else if (activeTab === 'similar') {
+      await loadSimilarClusters();
+    } else {
+      await loadClusters();
+    }
   };
 
   const handleMerge = async (row: RowModel) => {
@@ -270,6 +337,13 @@ export function ProductDuplicateMergePage() {
               <div>
                 <Tag color="orange" style={{ marginTop: 4 }}>
                   {t('similarityPct', { pct: Math.round(row.maxSimilarity * 100) })}
+                </Tag>
+              </div>
+            ) : null}
+            {!row.unitsCompatible ? (
+              <div>
+                <Tag color="warning" style={{ marginTop: 4 }}>
+                  {t('incompatibleUnits.tag')}
                 </Tag>
               </div>
             ) : null}
@@ -385,14 +459,25 @@ export function ProductDuplicateMergePage() {
         if (isKeeper) return null;
         const factor = factors[row.id];
         const ready = canMerge && factor != null && factor > 0;
+        const needsManualReview = !row.unitsCompatible;
         return (
           <Popconfirm
-            title={t('confirmTitle')}
-            description={t('confirmBody', {
-              source: row.productCode,
-              factor: factor ?? '?',
-              qty: formatDisplayQuantity(row.totalQuantity * (factor ?? 0)),
-            })}
+            title={t(needsManualReview ? 'incompatibleUnits.confirmTitle' : 'confirmTitle')}
+            description={
+              needsManualReview
+                ? t('incompatibleUnits.confirmBody', {
+                    source: row.productCode,
+                    factor: factor ?? '?',
+                    qty: formatDisplayQuantity(row.totalQuantity * (factor ?? 0)),
+                  })
+                : t('confirmBody', {
+                    source: row.productCode,
+                    factor: factor ?? '?',
+                    qty: formatDisplayQuantity(row.totalQuantity * (factor ?? 0)),
+                  })
+            }
+            okText={needsManualReview ? t('incompatibleUnits.confirmOk') : undefined}
+            okButtonProps={needsManualReview ? { danger: true } : undefined}
             disabled={!ready}
             onConfirm={() => void handleMerge(row)}
           >
@@ -598,19 +683,22 @@ export function ProductDuplicateMergePage() {
                 />
                 <Typography.Paragraph type="secondary">
                   {t('summary', { clusters: clusterCount, products: productCount })}
+                  {mergeSplit.incompatible.length > 0
+                    ? ` · ${t('incompatibleUnits.movedHint', {
+                        products: mergeSplit.incompatible.length,
+                      })}`
+                    : ''}
                 </Typography.Paragraph>
                 <Table
                   rowKey="key"
                   size="middle"
                   loading={loading}
-                  dataSource={rows}
+                  dataSource={mergeSplit.convertible}
                   columns={mergeColumns}
                   pagination={false}
                   scroll={{ x: 1100 }}
                   locale={{ emptyText: t('empty') }}
-                  rowClassName={(row) =>
-                    keepers[row.clusterKey] === row.id ? 'product-dup-keeper-row' : ''
-                  }
+                  rowClassName={(row) => clusterRowClassName(row, keepers[row.clusterKey])}
                 />
               </>
             ),
@@ -630,6 +718,7 @@ export function ProductDuplicateMergePage() {
                       <li>{t('similarGuide1')}</li>
                       <li>{t('similarGuide2')}</li>
                       <li>{t('similarGuide3')}</li>
+                      <li>{t('similarGuide4')}</li>
                     </ol>
                   }
                 />
@@ -638,19 +727,54 @@ export function ProductDuplicateMergePage() {
                     clusters: similarClusterCount,
                     products: similarProductCount,
                   })}
+                  {similarSplit.incompatible.length > 0
+                    ? ` · ${t('incompatibleUnits.movedHint', {
+                        products: similarSplit.incompatible.length,
+                      })}`
+                    : ''}
                 </Typography.Paragraph>
                 <Table
                   rowKey="key"
                   size="middle"
                   loading={similarLoading}
-                  dataSource={similarRows}
+                  dataSource={similarSplit.convertible}
                   columns={mergeColumns}
                   pagination={{ pageSize: 50, hideOnSinglePage: true }}
                   scroll={{ x: 1100 }}
                   locale={{ emptyText: t('similarEmpty') }}
-                  rowClassName={(row) =>
-                    keepers[row.clusterKey] === row.id ? 'product-dup-keeper-row' : ''
-                  }
+                  rowClassName={(row) => clusterRowClassName(row, keepers[row.clusterKey])}
+                />
+              </>
+            ),
+          },
+          {
+            key: 'manualReview',
+            label: t('incompatibleUnits.tabLabel'),
+            children: (
+              <>
+                <Alert
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                  message={t('incompatibleUnits.guideTitle')}
+                  description={t('incompatibleUnits.guideBody')}
+                />
+                <Typography.Paragraph type="secondary">
+                  {t('incompatibleUnits.summaryInline', {
+                    clusters: incompatibleClusterCount(manualReviewRows),
+                    products: manualReviewRows.length,
+                  })}
+                </Typography.Paragraph>
+                <Table
+                  rowKey="key"
+                  size="middle"
+                  loading={loading || similarLoading}
+                  dataSource={manualReviewRows}
+                  columns={mergeColumns}
+                  pagination={{ pageSize: 50, hideOnSinglePage: true }}
+                  scroll={{ x: 1100 }}
+                  locale={{ emptyText: t('incompatibleUnits.empty') }}
+                  rowClassName={(row) => clusterRowClassName(row, keepers[row.clusterKey])}
                 />
               </>
             ),

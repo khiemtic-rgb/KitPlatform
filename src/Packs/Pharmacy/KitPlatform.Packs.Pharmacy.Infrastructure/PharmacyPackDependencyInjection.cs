@@ -48,6 +48,8 @@ public static class PharmacyPackDependencyInjection
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<BrandRepository>();
         services.AddScoped<IBrandService, BrandService>();
+        services.AddScoped<MeasureUnitRepository>();
+        services.AddScoped<IMeasureUnitService, MeasureUnitService>();
         services.AddScoped<ActiveIngredientRepository>();
         services.AddScoped<IActiveIngredientService, ActiveIngredientService>();
         services.Configure<NationalDrugCatalogSettings>(configuration.GetSection(NationalDrugCatalogSettings.SectionName));

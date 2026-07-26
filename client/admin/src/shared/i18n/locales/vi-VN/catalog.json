@@ -89,6 +89,7 @@
       "products": "Sản phẩm",
       "categories": "Danh mục",
       "brands": "Thương hiệu",
+      "units": "Đơn vị tính",
       "ingredients": "Hoạt chất",
       "nationalDrugs": "Dược quốc gia"
     }
@@ -136,6 +137,32 @@
       "updateSuccess": "Đã cập nhật thương hiệu",
       "createSuccess": "Đã tạo thương hiệu",
       "saveFailed": "Không lưu được thương hiệu"
+    }
+  },
+  "units": {
+    "title": "Đơn vị tính",
+    "add": "Thêm đơn vị",
+    "deleteConfirm": "Xóa đơn vị tính này?",
+    "drawer": {
+      "createTitle": "Thêm đơn vị tính",
+      "editTitle": "Sửa: {{name}}"
+    },
+    "fields": {
+      "unitName": "Tên đơn vị",
+      "sortOrder": "Thứ tự hiển thị"
+    },
+    "placeholders": {
+      "unitName": "VD: Viên, Hộp, Vỉ…"
+    },
+    "columns": {
+      "name": "Tên đơn vị",
+      "sortOrder": "Thứ tự"
+    },
+    "messages": {
+      "loadFailed": "Không tải được đơn vị tính",
+      "updateSuccess": "Đã cập nhật đơn vị tính",
+      "createSuccess": "Đã tạo đơn vị tính",
+      "saveFailed": "Không lưu được đơn vị tính"
     }
   },
   "categories": {
@@ -302,8 +329,10 @@
       "genericName": "Tên hoạt chất / generic",
       "genericNameExtra": "Dùng để hiển thị và tìm kiếm. Có thể gợi ý từ tab Hoạt chất.",
       "saleUnitName": "Đơn vị cơ sở",
-      "saleUnitHint": "Đơn vị cơ sở được tạo khi tạo sản phẩm. Thêm Hộp, Vỉ… ở tab Chi tiết sản phẩm → Đơn vị quy đổi.",
+      "saleUnitHint": "Chọn từ danh mục Đơn vị tính. Sau khi tạo có thể thêm Hộp, Vỉ… ở tab Chi tiết → Đơn vị quy đổi.",
+      "saleUnitEditHint": "Có thể sửa khi chọn sai. Nếu sản phẩm đã có tồn/đơn hàng, hệ thống sẽ yêu cầu xác nhận — số lượng tồn không đổi, chỉ đổi nhãn đơn vị.",
       "drugType": "Loại thuốc",
+      "drugTypeHint": "Cố định theo quy định: OTC / Kê đơn / Kiểm soát — không thêm loại mới.",
       "categoryId": "Danh mục",
       "brandId": "Thương hiệu",
       "description": "Mô tả",
@@ -330,6 +359,21 @@
       "salePrice": "Giá bán",
       "imageUrl": "Hoặc dán URL ảnh...",
       "ingredient": "Chọn hoạt chất"
+    },
+    "quickAdd": {
+      "add": "Thêm",
+      "unitPlaceholder": "Tên ĐVT mới (VD: Gói)",
+      "categoryPlaceholder": "Tên danh mục mới",
+      "brandPlaceholder": "Tên thương hiệu mới",
+      "unitSuccess": "Đã thêm ĐVT «{{name}}»",
+      "unitExists": "ĐVT «{{name}}» đã có — đã chọn sẵn",
+      "unitFailed": "Không thêm được ĐVT",
+      "categorySuccess": "Đã thêm danh mục «{{name}}»",
+      "categoryExists": "Danh mục «{{name}}» đã có — đã chọn sẵn",
+      "categoryFailed": "Không thêm được danh mục",
+      "brandSuccess": "Đã thêm thương hiệu «{{name}}»",
+      "brandExists": "Thương hiệu «{{name}}» đã có — đã chọn sẵn",
+      "brandFailed": "Không thêm được thương hiệu"
     },
     "sections": {
       "detailsHint": "Mỗi lần bấm Thêm sẽ lưu ngay.",
@@ -373,6 +417,7 @@
       "setPrimaryBarcode": "Đặt làm mã chính",
       "setPrimaryImage": "Đặt làm ảnh chính",
       "uploadImage": "Chọn ảnh từ máy",
+      "confirmRenameUnit": "Xác nhận đổi đơn vị",
       "stillSave": "Vẫn lưu",
       "apply": "Áp dụng",
       "keepCurrent": "Giữ nguyên"
@@ -381,7 +426,10 @@
       "unsavedTitle": "Thay đổi chưa lưu",
       "unsavedBody": "Có thay đổi chưa được lưu. Bạn có muốn lưu lại không?",
       "applyGenericTitle": "Áp dụng gợi ý tên hoạt chất?",
-      "applyGenericBody": "Thay nội dung hiện tại bằng gợi ý từ tab Hoạt chất:"
+      "applyGenericBody": "Thay nội dung hiện tại bằng gợi ý từ tab Hoạt chất:",
+      "baseUnitRenameTitle": "Đổi đơn vị cơ sở?",
+      "baseUnitRenameBody": "Đổi từ \"{{from}}\" sang \"{{to}}\".",
+      "baseUnitRenameHint": "Nếu đã có tồn kho hoặc đơn hàng, nhãn đơn vị trên lịch sử sẽ đổi theo. Số lượng tồn không đổi. Chỉ dùng khi đơn vị đang sai/không chuẩn."
     },
     "messages": {
       "saveFailed": "Không lưu được dữ liệu",
@@ -471,6 +519,24 @@
     "similarGuide1": "Nhóm tên chuẩn hóa khác nhau nhưng độ giống ≥ 80% — hay gặp khi import bị trùng mã.",
     "similarGuide2": "Đối chiếu kỹ tên / ĐVT / tồn trước khi gộp (có thể khác hàm lượng hoặc quy cách).",
     "similarGuide3": "Cách gộp giống tab «Gộp trùng»: chọn mã giữ → nhập hệ số → Gộp.",
+    "similarGuide4": "Nhóm khác họ ĐVT (vd Hộp vs Lọ) được tách riêng để xét kỹ; chỉ gộp khi chủ nhà thuốc xác nhận có quy đổi thực tế.",
+    "incompatibleUnits": {
+      "mergeableTitle": "Có thể quy đổi ĐVT (gộp tồn)",
+      "title": "Cùng tên gần giống · ĐVT khác họ (cần xét thủ công)",
+      "tag": "Cần xét thủ công",
+      "guideTitle": "Chỉ gộp khi đã xác nhận quy đổi thực tế",
+      "guideBody": "Hộp và Lọ / Chai thường là hai SKU khác nhau nên được tách riêng. Chủ nhà thuốc vẫn có thể chọn mã giữ, nhập hệ số và gộp nếu đã đối chiếu sản phẩm, quy cách và xác nhận hai mã thực sự quy đổi được. Nếu không chắc chắn, hãy giữ riêng hoặc sửa ĐVT bị nhập sai.",
+      "summaryInline": "{{clusters}} nhóm ĐVT cần xét thủ công ({{products}} mã)",
+      "tabLabel": "Khác họ ĐVT",
+      "movedHint": "{{products}} mã khác họ ĐVT ở tab «Khác họ ĐVT»",
+      "empty": "Không có nhóm khác họ ĐVT cần xét.",
+      "confirmTitle": "Xác nhận đặc biệt: vẫn gộp hai ĐVT khác họ?",
+      "confirmBody": "Tôi đã kiểm tra sản phẩm và quy cách. Cộng {{qty}} ({{source}} × {{factor}}) vào mã giữ, rồi ẩn mã nguồn.",
+      "confirmOk": "Đã kiểm tra, vẫn gộp",
+      "columns": {
+        "note": "Gợi ý"
+      }
+    },
     "needCatalogWrite": "Cần quyền «Gộp sản phẩm trùng» (catalog.merge) — gán trong Hệ thống → Vai trò.",
     "needInventoryWrite": "Cần quyền catalog.merge để gộp tồn.",
     "summary": "{{clusters}} nhóm · {{products}} mã nghi trùng (cùng tên chuẩn hóa).",

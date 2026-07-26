@@ -85,6 +85,14 @@ export type Category = Req<
 
 export type Brand = Req<BrandDto, 'id' | 'brandCode' | 'brandName' | 'status'>;
 
+/** Danh mục đơn vị tính (GET /catalog/units). */
+export type MeasureUnit = {
+  id: string;
+  unitName: string;
+  sortOrder: number;
+  status: number;
+};
+
 export type ActiveIngredient = Req<
   ActiveIngredientDto,
   'id' | 'ingredientCode' | 'ingredientName' | 'status'
@@ -181,6 +189,8 @@ export type ProductSavePayload = Pick<
   dosageForm?: string;
   packaging?: string;
   importerName?: string;
+  /** Bắt buộc khi đổi ĐVT cơ sở trên SP đã có tồn/giao dịch. */
+  confirmBaseUnitRename?: boolean;
 };
 
 export type ProductUnitPayload = {

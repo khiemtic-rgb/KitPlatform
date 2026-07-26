@@ -213,8 +213,15 @@ public sealed class ProductsController : ControllerBase
         [FromBody] UpdateProductRequest request,
         CancellationToken cancellationToken)
     {
-        var product = await _catalog.UpdateProductAsync(id, request, cancellationToken);
-        return product is null ? NotFound() : Ok(product);
+        try
+        {
+            var product = await _catalog.UpdateProductAsync(id, request, cancellationToken);
+            return product is null ? NotFound() : Ok(product);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpDelete("{id:guid}")]

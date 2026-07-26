@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppstoreOutlined,
+  CalculatorOutlined,
   CloudSyncOutlined,
   ExperimentOutlined,
   FolderOutlined,
@@ -37,6 +38,12 @@ export function CatalogLayout() {
         path: '/catalog/brands',
         icon: <TagOutlined />,
         feature: 'catalog.brands',
+      },
+      {
+        key: 'units',
+        label: t('units'),
+        path: '/catalog/units',
+        icon: <CalculatorOutlined />,
       },
       {
         key: 'ingredients',

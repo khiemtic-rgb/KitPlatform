@@ -89,6 +89,7 @@
       "products": "Products",
       "categories": "Categories",
       "brands": "Brands",
+      "units": "Units",
       "ingredients": "Ingredients",
       "nationalDrugs": "National drugs"
     }
@@ -136,6 +137,32 @@
       "updateSuccess": "Brand updated",
       "createSuccess": "Brand created",
       "saveFailed": "Could not save brand"
+    }
+  },
+  "units": {
+    "title": "Measure units",
+    "add": "Add unit",
+    "deleteConfirm": "Delete this unit?",
+    "drawer": {
+      "createTitle": "Add unit",
+      "editTitle": "Edit: {{name}}"
+    },
+    "fields": {
+      "unitName": "Unit name",
+      "sortOrder": "Sort order"
+    },
+    "placeholders": {
+      "unitName": "e.g. Tablet, Box, Blister…"
+    },
+    "columns": {
+      "name": "Unit name",
+      "sortOrder": "Sort"
+    },
+    "messages": {
+      "loadFailed": "Could not load units",
+      "updateSuccess": "Unit updated",
+      "createSuccess": "Unit created",
+      "saveFailed": "Could not save unit"
     }
   },
   "categories": {
@@ -302,8 +329,10 @@
       "genericName": "Generic / active ingredient name",
       "genericNameExtra": "Used for display and search. Can be suggested from the Ingredients tab.",
       "saleUnitName": "Base unit",
-      "saleUnitHint": "The base unit is created when the product is saved. Add Box, Blister, etc. under Product details → Conversion units.",
+      "saleUnitHint": "Pick from the Units catalog. After create, add Box/Blister under Product details → Conversion units.",
+      "saleUnitEditHint": "You can fix a wrong base unit. If the product already has stock or orders, confirmation is required — stock quantity stays the same; only the unit label changes.",
       "drugType": "Drug type",
+      "drugTypeHint": "Fixed by regulation: OTC / Prescription / Controlled — cannot add new types.",
       "categoryId": "Category",
       "brandId": "Brand",
       "description": "Description",
@@ -323,6 +352,21 @@
       "salePrice": "Sale price",
       "imageUrl": "Or paste image URL...",
       "ingredient": "Select ingredient"
+    },
+    "quickAdd": {
+      "add": "Add",
+      "unitPlaceholder": "New unit name (e.g. Pack)",
+      "categoryPlaceholder": "New category name",
+      "brandPlaceholder": "New brand name",
+      "unitSuccess": "Added unit «{{name}}»",
+      "unitExists": "Unit «{{name}}» already exists — selected",
+      "unitFailed": "Could not add unit",
+      "categorySuccess": "Added category «{{name}}»",
+      "categoryExists": "Category «{{name}}» already exists — selected",
+      "categoryFailed": "Could not add category",
+      "brandSuccess": "Added brand «{{name}}»",
+      "brandExists": "Brand «{{name}}» already exists — selected",
+      "brandFailed": "Could not add brand"
     },
     "sections": {
       "detailsHint": "Each Add click saves immediately.",
@@ -365,6 +409,7 @@
       "setPrimaryBarcode": "Set as primary",
       "setPrimaryImage": "Set as primary image",
       "uploadImage": "Choose image from device",
+      "confirmRenameUnit": "Confirm unit change",
       "stillSave": "Save anyway",
       "apply": "Apply",
       "keepCurrent": "Keep current"
@@ -373,7 +418,10 @@
       "unsavedTitle": "Unsaved changes",
       "unsavedBody": "You have unsaved changes. Do you want to save before closing?",
       "applyGenericTitle": "Apply suggested generic name?",
-      "applyGenericBody": "Replace the current value with the suggestion from the Ingredients tab:"
+      "applyGenericBody": "Replace the current value with the suggestion from the Ingredients tab:",
+      "baseUnitRenameTitle": "Change base unit?",
+      "baseUnitRenameBody": "Change from \"{{from}}\" to \"{{to}}\".",
+      "baseUnitRenameHint": "If stock or orders already exist, historical unit labels will follow the new name. Quantities stay the same. Use only to fix an incorrect unit."
     },
     "messages": {
       "saveFailed": "Could not save data",
@@ -463,6 +511,24 @@
     "similarGuide1": "Groups with different normalized names but ≥ 80% similarity — common after imports with duplicate SKUs.",
     "similarGuide2": "Review name / UoM / stock carefully before merging (may differ in strength or pack).",
     "similarGuide3": "Same merge flow as the exact-duplicate tab: pick keeper → enter factor → Merge.",
+    "similarGuide4": "Groups with different unit families (e.g. Box vs Bottle) are listed separately for review; merge only when the pharmacy owner confirms a real conversion.",
+    "incompatibleUnits": {
+      "mergeableTitle": "Convertible units (merge stock)",
+      "title": "Near-similar name · different unit families (manual review)",
+      "tag": "Manual review",
+      "guideTitle": "Merge only after confirming a real conversion",
+      "guideBody": "Box and Bottle/Jar are usually different SKUs, so they remain in a separate section. The pharmacy owner may still pick a keeper, enter a factor, and merge after verifying the product, pack specification, and actual conversion. If uncertain, keep the SKUs separate or correct an incorrect unit label.",
+      "summaryInline": "{{clusters}} unit groups requiring manual review ({{products}} SKUs)",
+      "tabLabel": "Different unit families",
+      "movedHint": "{{products}} SKUs with different unit families in the «Different unit families» tab",
+      "empty": "No different-unit-family groups to review.",
+      "confirmTitle": "Special confirmation: merge different unit families?",
+      "confirmBody": "I verified the product and pack specification. Add {{qty}} ({{source}} × {{factor}}) to the keeper, then hide the source.",
+      "confirmOk": "Verified — merge anyway",
+      "columns": {
+        "note": "Note"
+      }
+    },
     "needCatalogWrite": "«Merge duplicate products» (catalog.merge) is required — assign under System → Roles.",
     "needInventoryWrite": "catalog.merge permission is required to merge stock.",
     "summary": "{{clusters}} groups · {{products}} candidate SKUs (same normalized name).",

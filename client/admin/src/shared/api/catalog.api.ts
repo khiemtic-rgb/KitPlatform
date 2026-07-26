@@ -6,6 +6,7 @@ import type {
   Brand,
   Category,
   LookupItem,
+  MeasureUnit,
   PagedResult,
   ProductCommercialPayload,
   ProductDetail,
@@ -297,6 +298,7 @@ function toGeneralBody(body: ProductSavePayload) {
     importerName: body.importerName ?? null,
     status: body.status ?? 1,
     saleUnitName: body.saleUnitName ?? null,
+    confirmBaseUnitRename: body.confirmBaseUnitRename === true,
     minStockQty: body.minStockQty ?? null,
   };
 }
@@ -547,6 +549,31 @@ export async function updateBrand(
 
 export async function deleteBrand(id: string): Promise<void> {
   await http.delete(`/catalog/brands/${id}`);
+}
+
+export async function fetchMeasureUnits(activeOnly = false): Promise<MeasureUnit[]> {
+  const { data } = await http.get<MeasureUnit[]>('/catalog/units', { params: { activeOnly } });
+  return data;
+}
+
+export async function createMeasureUnit(body: {
+  unitName: string;
+  sortOrder?: number;
+}): Promise<MeasureUnit> {
+  const { data } = await http.post<MeasureUnit>('/catalog/units', body);
+  return data;
+}
+
+export async function updateMeasureUnit(
+  id: string,
+  body: { unitName: string; sortOrder: number; status: number },
+): Promise<MeasureUnit> {
+  const { data } = await http.put<MeasureUnit>(`/catalog/units/${id}`, body);
+  return data;
+}
+
+export async function deleteMeasureUnit(id: string): Promise<void> {
+  await http.delete(`/catalog/units/${id}`);
 }
 
 function normalizeActiveIngredient(raw: ActiveIngredient & Record<string, unknown>): ActiveIngredient {
@@ -825,7 +852,7 @@ export async function fetchDuplicateProductClusters(): Promise<DuplicateProductC
   return normalizeDuplicateClustersResult(data);
 }
 
-/** Near-duplicates (different normalized names, similarity GëÑ threshold). */
+/** Near-duplicates (different normalized names, similarity Gï¿½ï¿½ threshold). */
 export async function fetchSimilarProductClusters(
   threshold = 0.8,
 ): Promise<DuplicateProductClustersResult> {
