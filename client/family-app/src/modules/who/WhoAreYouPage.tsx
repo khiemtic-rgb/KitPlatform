@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  createFamilyInvite,
   ensureDayFlow,
   fetchFamilies,
   fetchFamilySubscription,
   fetchTeamUnlocks,
+  formatFamilyInviteShare,
   type DayFlow,
   type DayFlowCommitment,
   type FamilyMembership,
@@ -15,6 +17,7 @@ import { buildCheckoutPath } from '@/shared/api/payment.api';
 import { useSessionStore } from '@/shared/auth/session.store';
 import { isOnboardingDone } from '@/shared/onboarding/onboarding';
 import { hydrateFamilyValueState } from '@/shared/value/value-sync';
+import { shareOrCopyNudge } from '@/shared/nudge/nudge';
 import { ParentPinSheet } from '@/shared/ui/ParentPinSheet';
 import {
   avatarEmoji,
@@ -22,6 +25,10 @@ import {
   inferGenderFromName,
   type AvatarGender,
 } from '@/shared/ui/avatarGender';
+import {
+  isCapabilityPaywallError,
+  getApiErrorMessage,
+} from '@/shared/billing/capability-error';
 
 type MemberTone = 'pink' | 'blue' | 'purple' | 'green' | 'teal';
 
@@ -163,6 +170,8 @@ export function WhoAreYouPage() {
   const [error, setError] = useState<string | null>(null);
   const [pinOpen, setPinOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteToast, setInviteToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (!familyId) return;
@@ -263,6 +272,53 @@ export function WhoAreYouPage() {
   };
 
   const goAdmin = () => navigate('/family-admin');
+
+  const showInviteToast = (msg: string) => {
+    setInviteToast(msg);
+    window.setTimeout(() => setInviteToast(null), 2800);
+  };
+
+  const inviteShare = async () => {
+    if (!familyId || inviteBusy) return;
+    setInviteBusy(true);
+    try {
+      const invite = await createFamilyInvite(familyId, {
+        roleCode: 'guardian',
+        maxUses: 3,
+        validDays: 7,
+      });
+      const text = formatFamilyInviteShare({
+        code: invite.code,
+        familyName,
+        expiresAt: invite.expiresAt,
+      });
+      try {
+        const how = await shareOrCopyNudge(text, { preferShare: true });
+        showInviteToast(
+          how === 'shared'
+            ? `Đã mở chia sẻ · mã ${invite.code}`
+            : `Đã copy mã ${invite.code} — dán vào Zalo/Messenger`,
+        );
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          showInviteToast(`Mã mời: ${invite.code} (chưa gửi)`);
+          return;
+        }
+        showInviteToast(`Mã mời: ${invite.code}`);
+      }
+    } catch (err: unknown) {
+      if (isCapabilityPaywallError(err)) {
+        showInviteToast(
+          getApiErrorMessage(err) || 'Gói hiện tại chưa mở mời thành viên — nâng Peace Plan.',
+        );
+        goCheckout();
+        return;
+      }
+      showInviteToast(getApiErrorMessage(err) || 'Chưa tạo được mã mời — thử lại nhé.');
+    } finally {
+      setInviteBusy(false);
+    }
+  };
 
   const unlockStatusVi =
     unlock == null
@@ -462,11 +518,11 @@ export function WhoAreYouPage() {
           </i>
           Thêm thành viên
         </button>
-        <button type="button" onClick={goAdmin}>
+        <button type="button" disabled={inviteBusy} onClick={() => void inviteShare()}>
           <i className="is-blue" aria-hidden>
             👥
           </i>
-          Mời tham gia
+          {inviteBusy ? 'Đang tạo…' : 'Mời tham gia'}
         </button>
         <button type="button" onClick={goCheckout}>
           <i className="is-orange" aria-hidden>
@@ -475,6 +531,12 @@ export function WhoAreYouPage() {
           Ưu đãi Famixa
         </button>
       </nav>
+
+      {inviteToast ? (
+        <div className="home-v2-toast" role="status">
+          {inviteToast}
+        </div>
+      ) : null}
 
       {moreOpen ? (
         <div className="home-sheet-backdrop" onClick={() => setMoreOpen(false)}>

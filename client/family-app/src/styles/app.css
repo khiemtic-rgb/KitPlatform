@@ -13894,6 +13894,29 @@ body:has(.app-shell.is-kid) {
 .home-v2-quick i.is-blue { background: #e8f3ff; color: #2f6fad; }
 .home-v2-quick i.is-orange { background: #fff0e0; color: #c46a12; }
 
+.home-v2-quick > button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.home-v2-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 60;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #1b3d36;
+  color: #f4faf6;
+  font-size: 0.85rem;
+  font-weight: 650;
+  line-height: 1.35;
+  box-shadow: 0 10px 28px rgba(22, 53, 47, 0.28);
+  text-align: center;
+}
+
 @media (max-width: 380px) {
   .home-v2-ai {
     grid-template-columns: auto 1fr;

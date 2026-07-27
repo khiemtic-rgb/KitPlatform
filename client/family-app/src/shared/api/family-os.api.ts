@@ -283,6 +283,59 @@ export async function acceptFamilyInvite(input: {
   };
 }
 
+export interface FamilyInvite {
+  id: string;
+  code: string;
+  roleCode: string;
+  expiresAt: string;
+  maxUses: number;
+  usedCount: number;
+}
+
+export async function createFamilyInvite(
+  familyId: string,
+  input?: { roleCode?: string; maxUses?: number; validDays?: number },
+): Promise<FamilyInvite> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/invites`, {
+    roleCode: input?.roleCode ?? null,
+    maxUses: input?.maxUses ?? null,
+    validDays: input?.validDays ?? null,
+  });
+  return {
+    id: String(data.id ?? data.Id ?? ''),
+    code: String(data.code ?? data.Code ?? '').toUpperCase(),
+    roleCode: String(data.roleCode ?? data.RoleCode ?? 'guardian'),
+    expiresAt: String(data.expiresAt ?? data.ExpiresAt ?? ''),
+    maxUses: Number(data.maxUses ?? data.MaxUses ?? 0),
+    usedCount: Number(data.usedCount ?? data.UsedCount ?? 0),
+  };
+}
+
+/** Soft share text for Zalo / Messenger / SMS via system share sheet. */
+export function formatFamilyInviteShare(input: {
+  code: string;
+  familyName?: string | null;
+  expiresAt?: string;
+}): string {
+  const house = (input.familyName || 'gia đình mình').trim();
+  const code = input.code.trim().toUpperCase();
+  let expiry = '';
+  if (input.expiresAt) {
+    const t = Date.parse(input.expiresAt);
+    if (!Number.isNaN(t)) {
+      const d = new Date(t);
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      expiry = ` (hết hạn ${dd}/${mm})`;
+    }
+  }
+  return [
+    `Mời vào nhà «${house}» trên Famixa.`,
+    `Mở app → Tham gia bằng mã → nhập: ${code}${expiry}.`,
+    'Bố/mẹ tạo tài khoản một lần, sau đó cả nhà chạm tên để dùng.',
+  ].join('\n');
+}
+
 export interface FamilySubscription {
   familyId: string;
   planCode: string;
