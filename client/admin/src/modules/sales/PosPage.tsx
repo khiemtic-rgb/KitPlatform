@@ -31,6 +31,7 @@ import type { CartLine, CustomerListItem, PosCheckoutConfirm, PosCustomerLoyalty
 import { SALES_DISCOUNT_TYPES } from '@/shared/api/sales.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useCanSalesPos } from '@/shared/auth/usePermission';
+import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 import { PosCheckoutModal } from '@/modules/sales/PosCheckoutModal';
 import { PosCartQuantityInput } from '@/modules/sales/PosCartQuantityInput';
 import { formatSuggestedBatch } from '@/modules/sales/pos-batch-display';
@@ -116,6 +117,7 @@ export function PosPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const canWrite = useCanSalesPos();
+  const auditSlimNav = useAuditSlimNav();
   const { canDiscount, maxPercent, unlimited } = useSalesDiscountPolicy();
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehouseId, setWarehouseId] = useState<string>();
@@ -168,6 +170,10 @@ export function PosPage() {
   const [activeCountSession, setActiveCountSession] = useState<AdjustmentListItem | null>(null);
 
   const pricing = useMemo(() => priceCart(cart, orderDiscount), [cart, orderDiscount]);
+
+  useEffect(() => {
+    if (auditSlimNav && customerAppDraftMode) setCustomerAppDraftMode(false);
+  }, [auditSlimNav, customerAppDraftMode]);
 
   useEffect(() => {
     customerIdRef.current = customerId;
@@ -1701,7 +1707,7 @@ export function PosPage() {
                 </Tooltip>
               ) : null}
             </Space.Compact>
-            {!editingDraftId ? (
+            {!editingDraftId && !auditSlimNav ? (
               <Space align="center" size={8} className="pos-page__app-draft-toggle">
                 <Switch
                   checked={customerAppDraftMode}
@@ -1746,13 +1752,15 @@ export function PosPage() {
         </div>
         <div className="pos-page__toolbar-aside">
           <div className="pos-page__toolbar-actions">
-            <Button
-              block
-              onClick={() => setLoadPrescriptionOpen(true)}
-              disabled={!canWrite || !warehouseId}
-            >
-              Bán theo đơn phòng khám
-            </Button>
+            {!auditSlimNav ? (
+              <Button
+                block
+                onClick={() => setLoadPrescriptionOpen(true)}
+                disabled={!canWrite || !warehouseId}
+              >
+                Bán theo đơn phòng khám
+              </Button>
+            ) : null}
             <Button
               block
               size="large"
