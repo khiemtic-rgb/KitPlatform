@@ -137,7 +137,7 @@ function AppLayoutShell() {
       customer: canAccessCustomer,
       catalog: canAccessCatalog,
       reports: canAccessReports,
-      learning: canAccessLearning,
+      learning: canAccessLearning && !auditSlimNav,
       kap: kapAccessChecked && kapEnabled,
       system: canAccessSystem,
     }),
@@ -168,7 +168,12 @@ function AppLayoutShell() {
   }, [shellBrand.brand, shellBrand.isFamily]);
 
   useEffect(() => {
-    if (auditSlimNav && location.pathname.startsWith('/success')) {
+    if (
+      auditSlimNav &&
+      (location.pathname.startsWith('/success') ||
+        location.pathname.startsWith('/people') ||
+        location.pathname.startsWith('/learning'))
+    ) {
       navigate('/', { replace: true });
     }
   }, [auditSlimNav, location.pathname, navigate]);
