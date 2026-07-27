@@ -1,21 +1,31 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   Button,
   DatePicker,
   Form,
   Input,
   InputNumber,
-  Modal,
   Select,
   Space,
   Spin,
-  Tabs,
-  Tag,
-  Typography,
   Upload,
   message,
 } from 'antd';
-import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
+import {
+  BellOutlined,
+  CalendarOutlined,
+  ColumnHeightOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  FileTextOutlined,
+  LineChartOutlined,
+  LinkOutlined,
+  MedicineBoxOutlined,
+  PlusOutlined,
+  SafetyCertificateOutlined,
+  UploadOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
@@ -40,12 +50,29 @@ import {
   type HealthRecord,
   type HealthRecordAttachment,
 } from '@/shared/api/customer-app.types';
-import { BackToHomeButton } from '@/shared/components/BackToHomeButton';
+import {
+  CustomerFormModal,
+  FormModalFooter,
+  FormModalLabel,
+} from '@/shared/components/CustomerFormModal';
 import i18n from '@/shared/i18n';
 import { useCustomerLabels } from '@/shared/i18n/useCustomerLabels';
+import { useCustomerBranding } from '@/shared/config/BrandingProvider';
+import { BrandingLogo } from '@/shared/components/BrandingLogo';
 import { withCustomerUploadAuth } from '@/shared/utils/upload-url';
+import './HealthWalletPage.css';
+
+type HealthTab = 'vitals' | 'records' | 'care';
 
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+
+function parseMeta(record: HealthRecord): Record<string, unknown> {
+  try {
+    return JSON.parse(record.metadataJson || '{}') as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
 
 async function filesToAttachments(files: UploadFile[]): Promise<HealthRecordAttachment[]> {
   const attachments: HealthRecordAttachment[] = [];
@@ -65,32 +92,15 @@ async function filesToAttachments(files: UploadFile[]): Promise<HealthRecordAtta
   return attachments;
 }
 
-function formatVitalSummary(record: HealthRecord): string | null {
-  if (record.summary) return record.summary;
-  try {
-    const meta = JSON.parse(record.metadataJson || '{}') as Record<string, unknown>;
-    if (record.recordType === 'bmi' && meta.bmi != null) {
-      return `BMI ${meta.bmi}${meta.weightKg != null ? ` · ${meta.weightKg}kg` : ''}${meta.heightCm != null ? ` · ${meta.heightCm}cm` : ''}`;
-    }
-    if (record.recordType === 'blood_pressure' && meta.systolic != null && meta.diastolic != null) {
-      return `${meta.systolic}/${meta.diastolic} mmHg`;
-    }
-    if (record.recordType === 'blood_glucose' && meta.value != null) {
-      return `${meta.value} ${meta.unit ?? 'mmol/L'}`;
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
 export function HealthWalletPage() {
   const { t } = useTranslation();
+  const { branding } = useCustomerBranding();
   const { healthRecordType, careReminderType } = useCustomerLabels();
   const [records, setRecords] = useState<HealthRecord[]>([]);
   const [careReminders, setCareReminders] = useState<CareReminder[]>([]);
   const [family, setFamily] = useState<FamilyMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<HealthTab>('vitals');
   const [recordModal, setRecordModal] = useState(false);
   const [vitalsModal, setVitalsModal] = useState(false);
   const [careModal, setCareModal] = useState(false);
@@ -139,11 +149,6 @@ export function HealthWalletPage() {
   const familyName = (id: string | null) => {
     if (!id) return t('health.self');
     return family.find((f) => f.id === id)?.fullName ?? t('health.familyMember');
-  };
-
-  const recordTitle = (id: string | null) => {
-    if (!id) return null;
-    return records.find((r) => r.id === id)?.title ?? null;
   };
 
   const openCareFromRecord = (record: HealthRecord) => {
@@ -374,176 +379,381 @@ export function HealthWalletPage() {
     }
   };
 
-  const renderRecordCard = (item: HealthRecord) => (
-    <div key={item.id} style={{ borderBottom: '1px solid #e2e8f0', padding: '12px 0' }}>
-      <Space wrap style={{ marginBottom: 4 }}>
-        <Tag>{healthRecordType(item.recordType)}</Tag>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {familyName(item.familyMemberId)}
-        </Typography.Text>
-      </Space>
-      <Typography.Text strong>{item.title}</Typography.Text>
-      <div>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {dayjs(item.recordedAt).format('DD/MM/YYYY')}
-          {item.providerName ? ` · ${item.providerName}` : ''}
-        </Typography.Text>
-      </div>
-      {formatVitalSummary(item) ? (
-        <Typography.Paragraph style={{ marginBottom: 8 }}>{formatVitalSummary(item)}</Typography.Paragraph>
-      ) : item.summary ? (
-        <Typography.Paragraph style={{ marginBottom: 8 }}>{item.summary}</Typography.Paragraph>
-      ) : null}
-      {item.attachments.length > 0 ? (
-        <Space direction="vertical" size={2} style={{ marginBottom: 8 }}>
-          {item.attachments.map((att, index) => {
-            const href = att.url ? withCustomerUploadAuth(att.url) : att.dataUrl;
-            return href ? (
-              <a key={`${item.id}-att-${index}`} href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>
-                📎 {att.fileName}
-              </a>
-            ) : (
-              <Typography.Text key={`${item.id}-att-${index}`} type="secondary" style={{ fontSize: 12 }}>
-                {att.fileName}
-              </Typography.Text>
-            );
-          })}
-        </Space>
-      ) : null}
-      <Space wrap>
-        {!VITAL_RECORD_TYPES.includes(item.recordType as (typeof VITAL_RECORD_TYPES)[number]) ? (
-          <Button size="small" onClick={() => openCareFromRecord(item)}>
-            {t('health.followUpBtn')}
-          </Button>
+  const renderVitalCard = (item: HealthRecord) => {
+    const meta = parseMeta(item);
+    const typeLabel = healthRecordType(item.recordType);
+    const bmi = meta.bmi != null ? String(meta.bmi) : null;
+    const weight = meta.weightKg != null ? `${meta.weightKg} kg` : null;
+    const height = meta.heightCm != null ? `${meta.heightCm} cm` : null;
+    const bp =
+      meta.systolic != null && meta.diastolic != null
+        ? `${meta.systolic}/${meta.diastolic} mmHg`
+        : null;
+    const glucose = meta.value != null ? `${meta.value} ${meta.unit ?? 'mmol/L'}` : null;
+
+    return (
+      <div key={item.id} className="health-hub-card">
+        <div className="health-hub-card-top">
+          <span className="health-hub-card-icon">
+            <LineChartOutlined />
+          </span>
+          <div className="health-hub-card-main">
+            <div className="health-hub-card-row">
+              <span className="health-hub-type">{typeLabel}</span>
+              <span className="health-hub-card-title">{familyName(item.familyMemberId)}</span>
+              {bmi ? <span className="health-hub-card-bmi">BMI {bmi}</span> : null}
+              {!bmi && (bp || glucose) ? (
+                <span className="health-hub-card-bmi">{bp || glucose}</span>
+              ) : null}
+            </div>
+            <div className="health-hub-card-date">
+              <CalendarOutlined />
+              {dayjs(item.recordedAt).format('DD/MM/YYYY')}
+            </div>
+          </div>
+        </div>
+        {(weight || height || bp || glucose) && item.recordType === 'bmi' ? (
+          <div className="health-hub-stats">
+            {weight ? (
+              <span className="health-hub-stat">
+                <SafetyCertificateOutlined />
+                {weight}
+              </span>
+            ) : null}
+            {weight && height ? <span className="health-hub-stat-divider" /> : null}
+            {height ? (
+              <span className="health-hub-stat">
+                <ColumnHeightOutlined />
+                {height}
+              </span>
+            ) : null}
+          </div>
         ) : null}
-        <Button size="small" onClick={() => openEditRecord(item)}>
+        {item.recordType !== 'bmi' && (bp || glucose || item.summary) ? (
+          <div className="health-hub-stats">
+            <span className="health-hub-stat">{bp || glucose || item.summary}</span>
+          </div>
+        ) : null}
+        <div className="health-hub-actions">
+          <button type="button" className="health-hub-btn health-hub-btn--edit" onClick={() => openEditRecord(item)}>
+            <EditOutlined />
+            {t('health.editRecord')}
+          </button>
+          <button
+            type="button"
+            className="health-hub-btn health-hub-btn--danger"
+            onClick={() => void onDeleteRecord(item.id)}
+          >
+            <DeleteOutlined />
+            {t('common.delete')}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderDocCard = (item: HealthRecord) => (
+    <div key={item.id} className="health-hub-card">
+      <div className="health-hub-card-top">
+        <span className="health-hub-card-icon">
+          <UserOutlined />
+        </span>
+        <div className="health-hub-card-main">
+          <div className="health-hub-card-row">
+            <span className="health-hub-type">{healthRecordType(item.recordType)}</span>
+            <span className="health-hub-card-title">{item.title}</span>
+          </div>
+          <div className="health-hub-card-date">
+            <CalendarOutlined />
+            {dayjs(item.recordedAt).format('DD/MM/YYYY')}
+            {item.providerName ? ` · ${item.providerName}` : ''}
+            {` · ${familyName(item.familyMemberId)}`}
+          </div>
+          {item.summary ? <div className="health-hub-card-date">{item.summary}</div> : null}
+          {item.attachments.length > 0 ? (
+            <Space direction="vertical" size={2} style={{ marginTop: 8 }}>
+              {item.attachments.map((att, index) => {
+                const href = att.url ? withCustomerUploadAuth(att.url) : att.dataUrl;
+                return href ? (
+                  <a key={`${item.id}-att-${index}`} href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>
+                    📎 {att.fileName}
+                  </a>
+                ) : (
+                  <span key={`${item.id}-att-${index}`} style={{ fontSize: 12, color: '#64748b' }}>
+                    {att.fileName}
+                  </span>
+                );
+              })}
+            </Space>
+          ) : null}
+        </div>
+      </div>
+      <div className="health-hub-actions">
+        <button type="button" className="health-hub-btn health-hub-btn--edit" onClick={() => openCareFromRecord(item)}>
+          <BellOutlined />
+          {t('health.followUpBtn')}
+        </button>
+        <button type="button" className="health-hub-btn health-hub-btn--edit" onClick={() => openEditRecord(item)}>
+          <EditOutlined />
           {t('health.editRecord')}
-        </Button>
-        <Button size="small" danger onClick={() => void onDeleteRecord(item.id)}>
+        </button>
+        <button
+          type="button"
+          className="health-hub-btn health-hub-btn--danger"
+          onClick={() => void onDeleteRecord(item.id)}
+        >
+          <DeleteOutlined />
           {t('common.delete')}
-        </Button>
-      </Space>
+        </button>
+      </div>
     </div>
   );
 
   const vitalType = Form.useWatch('recordType', vitalsForm) ?? 'bmi';
+  const headerStyle = {
+    background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})`,
+  };
+
+  const tabs: Array<{ key: HealthTab; label: string; icon: ReactNode }> = [
+    { key: 'vitals', label: t('health.tabVitals'), icon: <LineChartOutlined /> },
+    { key: 'records', label: t('health.tabRecords'), icon: <UserOutlined /> },
+    { key: 'care', label: t('health.tabCare'), icon: <BellOutlined /> },
+  ];
+
+  const openAddPrimary = () => {
+    if (activeTab === 'vitals') {
+      setEditingRecord(null);
+      vitalsForm.resetFields();
+      setVitalsModal(true);
+      return;
+    }
+    if (activeTab === 'records') {
+      setEditingRecord(null);
+      recordForm.resetFields();
+      setRecordFiles([]);
+      setRecordModal(true);
+      return;
+    }
+    setCareModal(true);
+  };
 
   return (
-    <div>
-      <BackToHomeButton />
-      <Typography.Title level={5} style={{ marginBottom: 12 }}>
-        {t('health.title')}
-      </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ fontSize: 13, marginTop: -8, marginBottom: 12 }}>
-        {t('health.intro')}
-      </Typography.Paragraph>
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <Spin />
+    <div className="health-hub">
+      <header className="health-hub-header" style={headerStyle}>
+        <div className="health-hub-header-inner">
+          <div className="health-hub-brand">
+            <BrandingLogo logoUrl={branding.logoUrl} />
+            <div>
+              <div className="health-hub-brand-title">{branding.appName}</div>
+              <div className="health-hub-tagline">{branding.tagline || t('health.hubTagline')}</div>
+            </div>
+          </div>
         </div>
-      ) : (
-        <Tabs
-          items={[
-            {
-              key: 'vitals',
-              label: t('health.tabVitals'),
-              children: (
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingRecord(null); vitalsForm.resetFields(); setVitalsModal(true); }}>
-                    {t('health.addVital')}
-                  </Button>
-                  {vitalsRecords.length === 0 ? (
-                    <Typography.Text type="secondary">{t('health.emptyVitals')}</Typography.Text>
-                  ) : (
-                    vitalsRecords.map(renderRecordCard)
-                  )}
-                </Space>
-              ),
-            },
-            {
-              key: 'records',
-              label: t('health.tabRecords'),
-              children: (
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingRecord(null); recordForm.resetFields(); setRecordFiles([]); setRecordModal(true); }}>
-                    {t('health.addRecord')}
-                  </Button>
-                  {documentRecords.length === 0 ? (
-                    <Typography.Text type="secondary">{t('health.emptyRecords')}</Typography.Text>
-                  ) : (
-                    documentRecords.map(renderRecordCard)
-                  )}
-                </Space>
-              ),
-            },
-            {
-              key: 'care',
-              label: t('health.tabCare'),
-              children: (
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <Button type="primary" icon={<PlusOutlined />} onClick={() => setCareModal(true)}>
-                    {t('health.addCare')}
-                  </Button>
-                  {careReminders.length === 0 ? (
-                    <Typography.Text type="secondary">{t('health.emptyCare')}</Typography.Text>
-                  ) : (
-                    careReminders.map((item) => (
-                      <div key={item.id} style={{ borderBottom: '1px solid #e2e8f0', padding: '12px 0' }}>
-                        <Space wrap style={{ marginBottom: 4 }}>
-                          <Tag>{careReminderType(item.reminderType)}</Tag>
-                          <Typography.Text strong>{item.title}</Typography.Text>
-                        </Space>
-                        <div>
-                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                            {dayjs(item.remindAt).format('DD/MM/YYYY HH:mm')} · {familyName(item.familyMemberId)}
-                          </Typography.Text>
-                        </div>
-                        {item.note ? <Typography.Paragraph style={{ marginBottom: 8 }}>{item.note}</Typography.Paragraph> : null}
-                        {item.healthRecordId && recordTitle(item.healthRecordId) ? (
-                          <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 8 }}>
-                            {t('health.recordLabel', { title: recordTitle(item.healthRecordId) })}
-                          </Typography.Text>
-                        ) : null}
-                        <Button size="small" onClick={() => void onDoneCare(item)}>
-                          {t('health.careDoneBtn')}
-                        </Button>
-                      </div>
-                    ))
-                  )}
-                </Space>
-              ),
-            },
-          ]}
-        />
-      )}
+      </header>
 
-      <Modal
-        title={editingRecord ? t('health.modalEditRecord') : t('health.modalAddRecord')}
+      <div className="health-hub-sheet">
+        <div className="health-hub-hero">
+          <div className="health-hub-hero-copy">
+            <h1 className="health-hub-hero-title">
+              {t('health.title')}
+              <SafetyCertificateOutlined />
+            </h1>
+            <p className="health-hub-hero-intro">{t('health.heroIntro')}</p>
+          </div>
+          <div className="health-hub-art" aria-hidden>
+            <div className="health-hub-folder">
+              <div className="health-hub-folder-paper" />
+              <span className="health-hub-folder-badge">
+                <SafetyCertificateOutlined />
+              </span>
+            </div>
+            <span className="health-hub-folder-plus">
+              <PlusOutlined />
+            </span>
+          </div>
+        </div>
+
+        <div className="health-hub-tabs" role="tablist">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.key}
+              className={`health-hub-tab${activeTab === tab.key ? ' health-hub-tab--active' : ''}`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="health-hub-cta">
+          <div className="health-hub-cta-icon">
+            {activeTab === 'care' ? <BellOutlined /> : activeTab === 'records' ? <UserOutlined /> : <LineChartOutlined />}
+          </div>
+          <div className="health-hub-cta-copy">
+            <div className="health-hub-cta-title">
+              {activeTab === 'vitals'
+                ? t('health.trackVitalsTitle')
+                : activeTab === 'records'
+                  ? t('health.trackRecordsTitle')
+                  : t('health.trackCareTitle')}
+            </div>
+            <div className="health-hub-cta-sub">
+              {activeTab === 'vitals'
+                ? t('health.trackVitalsSub')
+                : activeTab === 'records'
+                  ? t('health.trackRecordsSub')
+                  : t('health.trackCareSub')}
+            </div>
+          </div>
+          <button type="button" className="health-hub-cta-btn" onClick={openAddPrimary}>
+            <PlusOutlined />
+            {activeTab === 'vitals'
+              ? t('health.addVital')
+              : activeTab === 'records'
+                ? t('health.addRecord')
+                : t('health.addCare')}
+          </button>
+        </div>
+
+        <div className="health-hub-list-head">
+          <h2 className="health-hub-list-title">
+            {activeTab === 'vitals'
+              ? t('health.listVitals')
+              : activeTab === 'records'
+                ? t('health.listRecords')
+                : t('health.listCare')}
+          </h2>
+          <span className="health-hub-sort">{t('health.sortNewest')} ▾</span>
+        </div>
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 48 }}>
+            <Spin />
+          </div>
+        ) : activeTab === 'vitals' ? (
+          vitalsRecords.length === 0 ? (
+            <div className="health-hub-empty">{t('health.emptyVitals')}</div>
+          ) : (
+            <div className="health-hub-list">{vitalsRecords.map(renderVitalCard)}</div>
+          )
+        ) : activeTab === 'records' ? (
+          documentRecords.length === 0 ? (
+            <div className="health-hub-empty">{t('health.emptyRecords')}</div>
+          ) : (
+            <div className="health-hub-list">{documentRecords.map(renderDocCard)}</div>
+          )
+        ) : careReminders.length === 0 ? (
+          <div className="health-hub-empty">{t('health.emptyCare')}</div>
+        ) : (
+          <div className="health-hub-list">
+            {careReminders.map((item) => (
+              <div key={item.id} className="health-hub-card">
+                <div className="health-hub-card-top">
+                  <span className="health-hub-card-icon">
+                    <BellOutlined />
+                  </span>
+                  <div className="health-hub-card-main">
+                    <div className="health-hub-card-row">
+                      <span className="health-hub-type">{careReminderType(item.reminderType)}</span>
+                      <span className="health-hub-card-title">{item.title}</span>
+                    </div>
+                    <div className="health-hub-card-date">
+                      <CalendarOutlined />
+                      {dayjs(item.remindAt).format('DD/MM/YYYY HH:mm')} · {familyName(item.familyMemberId)}
+                    </div>
+                    {item.note ? <div className="health-hub-card-date">{item.note}</div> : null}
+                  </div>
+                </div>
+                <div className="health-hub-actions">
+                  <button
+                    type="button"
+                    className="health-hub-btn health-hub-btn--edit"
+                    onClick={() => void onDoneCare(item)}
+                  >
+                    {t('health.careDoneBtn')}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <CustomerFormModal
         open={recordModal}
         onCancel={closeRecordModal}
-        onOk={() => void onCreateRecord()}
+        icon={<FileTextOutlined />}
+        title={editingRecord ? t('health.modalEditRecord') : t('health.modalAddRecord')}
+        subtitle={t('health.modalRecordSub')}
+        footer={
+          <FormModalFooter onCancel={closeRecordModal} onOk={() => void onCreateRecord()} />
+        }
       >
-        <Form form={recordForm} layout="vertical" initialValues={{ recordType: 'prescription', recordedAt: dayjs() }}>
-          <Form.Item name="familyMemberId" label={t('health.forWho')}>
-            <Select allowClear options={familyOptions} placeholder={t('health.self')} />
+        <Form
+          form={recordForm}
+          layout="vertical"
+          className="cfm-form"
+          requiredMark={false}
+          initialValues={{ recordType: 'prescription', recordedAt: dayjs() }}
+        >
+          <Form.Item
+            name="familyMemberId"
+            label={<FormModalLabel icon={<UserOutlined />}>{t('health.forWho')}</FormModalLabel>}
+          >
+            <Select size="large" allowClear options={familyOptions} placeholder={t('health.self')} />
           </Form.Item>
-          <Form.Item name="recordType" label={t('health.type')} rules={[{ required: true }]}>
-            <Select options={recordOptions} />
+          <Form.Item
+            name="recordType"
+            label={
+              <FormModalLabel icon={<MedicineBoxOutlined />} required>
+                {t('health.type')}
+              </FormModalLabel>
+            }
+            rules={[{ required: true }]}
+          >
+            <Select size="large" options={recordOptions} />
           </Form.Item>
-          <Form.Item name="title" label={t('health.titleLabel')} rules={[{ required: true }]}>
-            <Input placeholder={t('health.titlePlaceholder')} />
+          <Form.Item
+            name="title"
+            label={
+              <FormModalLabel icon={<FileTextOutlined />} required>
+                {t('health.titleLabel')}
+              </FormModalLabel>
+            }
+            rules={[{ required: true }]}
+          >
+            <Input size="large" placeholder={t('health.titlePlaceholder')} />
           </Form.Item>
-          <Form.Item name="providerName" label={t('health.provider')}>
-            <Input placeholder={t('health.providerPlaceholder')} />
+          <Form.Item
+            name="providerName"
+            label={<FormModalLabel icon={<SafetyCertificateOutlined />}>{t('health.provider')}</FormModalLabel>}
+          >
+            <Input size="large" placeholder={t('health.providerPlaceholder')} />
           </Form.Item>
-          <Form.Item name="recordedAt" label={t('health.date')} rules={[{ required: true }]}>
-            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+          <Form.Item
+            name="recordedAt"
+            label={
+              <FormModalLabel icon={<CalendarOutlined />} required>
+                {t('health.date')}
+              </FormModalLabel>
+            }
+            rules={[{ required: true }]}
+          >
+            <DatePicker size="large" style={{ width: '100%' }} format="DD/MM/YYYY" />
           </Form.Item>
-          <Form.Item name="summary" label={t('health.note')}>
+          <Form.Item
+            name="summary"
+            label={<FormModalLabel icon={<FileTextOutlined />}>{t('health.note')}</FormModalLabel>}
+          >
             <Input.TextArea rows={3} />
           </Form.Item>
-          <Form.Item label={t('health.attachments')}>
+          <Form.Item
+            label={<FormModalLabel icon={<UploadOutlined />}>{t('health.attachments')}</FormModalLabel>}
+          >
             <Upload
               fileList={recordFiles}
               beforeUpload={() => false}
@@ -558,55 +768,124 @@ export function HealthWalletPage() {
             </Upload>
           </Form.Item>
         </Form>
-      </Modal>
+      </CustomerFormModal>
 
-      <Modal
-        title={editingRecord ? t('health.modalEditRecord') : t('health.modalAddVital')}
+      <CustomerFormModal
         open={vitalsModal}
         onCancel={closeVitalsModal}
-        onOk={() => void onCreateVital()}
+        icon={<LineChartOutlined />}
+        title={t('health.modalAddVital')}
+        subtitle={t('health.modalVitalSub')}
+        footer={
+          <FormModalFooter onCancel={closeVitalsModal} onOk={() => void onCreateVital()} />
+        }
       >
         <Form
           form={vitalsForm}
           layout="vertical"
+          className="cfm-form"
+          requiredMark={false}
           initialValues={{ recordType: 'bmi', recordedAt: dayjs(), glucoseUnit: 'mmol/L' }}
         >
-          <Form.Item name="familyMemberId" label={t('health.forWho')}>
-            <Select allowClear options={familyOptions} placeholder={t('health.self')} />
+          <Form.Item
+            name="familyMemberId"
+            label={<FormModalLabel icon={<UserOutlined />}>{t('health.forWho')}</FormModalLabel>}
+          >
+            <Select size="large" allowClear options={familyOptions} placeholder={t('health.self')} />
           </Form.Item>
-          <Form.Item name="recordType" label={t('health.vitalType')} rules={[{ required: true }]}>
-            <Select options={vitalOptions} />
+          <Form.Item
+            name="recordType"
+            label={
+              <FormModalLabel icon={<LineChartOutlined />} required>
+                {t('health.vitalType')}
+              </FormModalLabel>
+            }
+            rules={[{ required: true }]}
+          >
+            <Select size="large" options={vitalOptions} />
           </Form.Item>
-          <Form.Item name="recordedAt" label={t('health.measureDate')} rules={[{ required: true }]}>
-            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+          <Form.Item
+            name="recordedAt"
+            label={
+              <FormModalLabel icon={<CalendarOutlined />} required>
+                {t('health.measureDate')}
+              </FormModalLabel>
+            }
+            rules={[{ required: true }]}
+          >
+            <DatePicker size="large" style={{ width: '100%' }} format="DD/MM/YYYY" />
           </Form.Item>
           {vitalType === 'bmi' ? (
             <>
-              <Form.Item name="weightKg" label={t('health.weight')} rules={[{ required: true }]}>
-                <InputNumber min={1} max={300} style={{ width: '100%' }} />
+              <Form.Item
+                name="weightKg"
+                label={
+                  <FormModalLabel icon={<ColumnHeightOutlined />} required>
+                    {t('health.weight')}
+                  </FormModalLabel>
+                }
+                rules={[{ required: true }]}
+              >
+                <InputNumber size="large" min={1} max={300} style={{ width: '100%' }} />
               </Form.Item>
-              <Form.Item name="heightCm" label={t('health.height')} rules={[{ required: true }]}>
-                <InputNumber min={50} max={250} style={{ width: '100%' }} />
+              <Form.Item
+                name="heightCm"
+                label={
+                  <FormModalLabel icon={<ColumnHeightOutlined />} required>
+                    {t('health.height')}
+                  </FormModalLabel>
+                }
+                rules={[{ required: true }]}
+              >
+                <InputNumber size="large" min={50} max={250} style={{ width: '100%' }} />
               </Form.Item>
             </>
           ) : null}
           {vitalType === 'blood_pressure' ? (
             <>
-              <Form.Item name="systolic" label={t('health.systolic')} rules={[{ required: true }]}>
-                <InputNumber min={60} max={250} style={{ width: '100%' }} />
+              <Form.Item
+                name="systolic"
+                label={
+                  <FormModalLabel icon={<LineChartOutlined />} required>
+                    {t('health.systolic')}
+                  </FormModalLabel>
+                }
+                rules={[{ required: true }]}
+              >
+                <InputNumber size="large" min={60} max={250} style={{ width: '100%' }} />
               </Form.Item>
-              <Form.Item name="diastolic" label={t('health.diastolic')} rules={[{ required: true }]}>
-                <InputNumber min={40} max={150} style={{ width: '100%' }} />
+              <Form.Item
+                name="diastolic"
+                label={
+                  <FormModalLabel icon={<LineChartOutlined />} required>
+                    {t('health.diastolic')}
+                  </FormModalLabel>
+                }
+                rules={[{ required: true }]}
+              >
+                <InputNumber size="large" min={40} max={150} style={{ width: '100%' }} />
               </Form.Item>
             </>
           ) : null}
           {vitalType === 'blood_glucose' ? (
             <>
-              <Form.Item name="glucoseValue" label={t('health.glucoseValue')} rules={[{ required: true }]}>
-                <InputNumber min={1} max={40} step={0.1} style={{ width: '100%' }} />
+              <Form.Item
+                name="glucoseValue"
+                label={
+                  <FormModalLabel icon={<LineChartOutlined />} required>
+                    {t('health.glucoseValue')}
+                  </FormModalLabel>
+                }
+                rules={[{ required: true }]}
+              >
+                <InputNumber size="large" min={1} max={40} step={0.1} style={{ width: '100%' }} />
               </Form.Item>
-              <Form.Item name="glucoseUnit" label={t('health.unit')}>
+              <Form.Item
+                name="glucoseUnit"
+                label={<FormModalLabel icon={<MedicineBoxOutlined />}>{t('health.unit')}</FormModalLabel>}
+              >
                 <Select
+                  size="large"
                   options={[
                     { value: 'mmol/L', label: 'mmol/L' },
                     { value: 'mg/dL', label: 'mg/dL' },
@@ -616,34 +895,86 @@ export function HealthWalletPage() {
             </>
           ) : null}
         </Form>
-      </Modal>
+      </CustomerFormModal>
 
-      <Modal title={t('health.modalCare')} open={careModal} onCancel={() => setCareModal(false)} onOk={() => void onCreateCare()}>
-        <Form form={careForm} layout="vertical" initialValues={{ reminderType: 'visit', remindAt: dayjs().add(7, 'day') }}>
-          <Form.Item name="familyMemberId" label={t('health.forWho')}>
-            <Select allowClear options={familyOptions} placeholder={t('health.self')} />
+      <CustomerFormModal
+        open={careModal}
+        onCancel={() => setCareModal(false)}
+        icon={<BellOutlined />}
+        title={t('health.modalCare')}
+        subtitle={t('health.modalCareSub')}
+        footer={
+          <FormModalFooter
+            onCancel={() => setCareModal(false)}
+            onOk={() => void onCreateCare()}
+          />
+        }
+      >
+        <Form
+          form={careForm}
+          layout="vertical"
+          className="cfm-form"
+          requiredMark={false}
+          initialValues={{ reminderType: 'visit', remindAt: dayjs().add(7, 'day') }}
+        >
+          <Form.Item
+            name="familyMemberId"
+            label={<FormModalLabel icon={<UserOutlined />}>{t('health.forWho')}</FormModalLabel>}
+          >
+            <Select size="large" allowClear options={familyOptions} placeholder={t('health.self')} />
           </Form.Item>
-          <Form.Item name="reminderType" label={t('health.careReminderType')} rules={[{ required: true }]}>
-            <Select options={careReminderOptions} />
+          <Form.Item
+            name="reminderType"
+            label={
+              <FormModalLabel icon={<BellOutlined />} required>
+                {t('health.careReminderType')}
+              </FormModalLabel>
+            }
+            rules={[{ required: true }]}
+          >
+            <Select size="large" options={careReminderOptions} />
           </Form.Item>
-          <Form.Item name="healthRecordId" label={t('health.linkRecord')}>
+          <Form.Item
+            name="healthRecordId"
+            label={<FormModalLabel icon={<LinkOutlined />}>{t('health.linkRecord')}</FormModalLabel>}
+          >
             <Select
+              size="large"
               allowClear
               placeholder={t('health.linkRecordPlaceholder')}
               options={documentRecords.map((r) => ({ value: r.id, label: r.title }))}
             />
           </Form.Item>
-          <Form.Item name="title" label={t('health.titleLabel')} rules={[{ required: true }]}>
-            <Input placeholder={t('health.careTitlePlaceholder')} />
+          <Form.Item
+            name="title"
+            label={
+              <FormModalLabel icon={<FileTextOutlined />} required>
+                {t('health.titleLabel')}
+              </FormModalLabel>
+            }
+            rules={[{ required: true }]}
+          >
+            <Input size="large" placeholder={t('health.careTitlePlaceholder')} />
           </Form.Item>
-          <Form.Item name="remindAt" label={t('health.remindAt')} rules={[{ required: true }]}>
-            <DatePicker showTime style={{ width: '100%' }} format="DD/MM/YYYY HH:mm" />
+          <Form.Item
+            name="remindAt"
+            label={
+              <FormModalLabel icon={<CalendarOutlined />} required>
+                {t('health.remindAt')}
+              </FormModalLabel>
+            }
+            rules={[{ required: true }]}
+          >
+            <DatePicker showTime size="large" style={{ width: '100%' }} format="DD/MM/YYYY HH:mm" />
           </Form.Item>
-          <Form.Item name="note" label={t('health.note')}>
+          <Form.Item
+            name="note"
+            label={<FormModalLabel icon={<FileTextOutlined />}>{t('health.note')}</FormModalLabel>}
+          >
             <Input.TextArea rows={2} />
           </Form.Item>
         </Form>
-      </Modal>
+      </CustomerFormModal>
     </div>
   );
 }

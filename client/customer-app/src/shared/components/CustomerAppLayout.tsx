@@ -1,10 +1,10 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Badge } from 'antd';
 import {
+  HeartOutlined,
   HomeOutlined,
-  MedicineBoxOutlined,
   MessageOutlined,
-  ShoppingOutlined,
+  PlusOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { useQueryClient } from '@tanstack/react-query';
@@ -25,16 +25,24 @@ export function CustomerAppLayout() {
   const chatUnread = useCustomerChatUnread();
   const draftOrderAlerts = useCustomerDraftOrderAlerts();
   const isChat = location.pathname.startsWith('/chat');
+  const isOrders = location.pathname.startsWith('/orders');
+  const isHealth = location.pathname.startsWith('/health');
+  const isLoyalty = location.pathname.startsWith('/loyalty');
+  const isProfile = location.pathname.startsWith('/profile');
+  const isReminders = location.pathname.startsWith('/reminders');
+  const isFamily = location.pathname.startsWith('/family');
+  const isAi = location.pathname.startsWith('/ai');
+  const isHome = location.pathname === '/';
 
   const tabs = [
-    { to: '/', icon: <HomeOutlined />, label: t('nav.home') },
-    { to: '/orders', icon: <ShoppingOutlined />, label: t('nav.orders') },
-    { to: '/reminders', icon: <MedicineBoxOutlined />, label: t('nav.reminders') },
-    { to: '/chat', icon: <MessageOutlined />, label: t('nav.chat') },
-    { to: '/profile', icon: <UserOutlined />, label: t('nav.account') },
-  ] as const;
+    { to: '/', icon: <HomeOutlined />, label: t('nav.home'), kind: 'link' as const },
+    { to: '/health', icon: <HeartOutlined />, label: t('nav.health'), kind: 'link' as const },
+    { to: '/orders', icon: <PlusOutlined />, label: t('nav.orderMeds'), kind: 'fab' as const },
+    { to: '/chat', icon: <MessageOutlined />, label: t('nav.chat'), kind: 'link' as const },
+    { to: '/profile', icon: <UserOutlined />, label: t('nav.account'), kind: 'link' as const },
+  ];
 
-  const headerGradient = `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})`;
+  const headerGradient = `linear-gradient(90deg, ${branding.primaryColor}, ${branding.secondaryColor})`;
 
   const warmTab = (path: string) => {
     if (path === '/') return;
@@ -42,28 +50,56 @@ export function CustomerAppLayout() {
     void prefetchOverviewForPath(queryClient, path);
   };
 
+  const hideChromeHeader =
+    !isHome &&
+    !isChat &&
+    !isOrders &&
+    !isHealth &&
+    !isLoyalty &&
+    !isProfile &&
+    !isReminders &&
+    !isFamily &&
+    !isAi;
+
   return (
-    <div className={`customer-app-shell${isChat ? ' customer-app-shell--chat' : ''}`}>
-      <header className="customer-app-header" style={{ background: headerGradient }}>
-        <div className="customer-app-header-inner">
-          <div className="customer-app-header-brand">
-            <BrandingLogo logoUrl={branding.logoUrl} />
-            <div className="customer-app-header-text">
-              <div className="customer-app-header-title">{branding.appName}</div>
-              {branding.tagline ? (
-                <div className="customer-app-header-tagline">{branding.tagline}</div>
-              ) : null}
+    <div
+      className={`customer-app-shell${isChat ? ' customer-app-shell--chat' : ''}${
+        isHome ? ' customer-app-shell--home' : ''
+      }${isOrders ? ' customer-app-shell--orders' : ''}${isHealth ? ' customer-app-shell--health' : ''}${
+        isLoyalty ? ' customer-app-shell--loyalty' : ''
+      }${isProfile ? ' customer-app-shell--profile' : ''}${isReminders ? ' customer-app-shell--reminders' : ''}${
+        isFamily ? ' customer-app-shell--family' : ''
+      }${isAi ? ' customer-app-shell--ai' : ''}`}
+    >
+      {hideChromeHeader ? (
+        <header className="customer-app-header" style={{ background: headerGradient }}>
+          <div className="customer-app-header-inner">
+            <div className="customer-app-header-brand">
+              <BrandingLogo logoUrl={branding.logoUrl} size={36} />
+              <div className="customer-app-header-text">
+                <div className="customer-app-header-title">{branding.appName}</div>
+                {branding.tagline ? (
+                  <div className="customer-app-header-tagline">{branding.tagline}</div>
+                ) : null}
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
+      ) : null}
 
       <main
         className={
           isChat ? 'customer-app-content customer-app-content--chat' : 'customer-app-content'
         }
       >
-        {!isChat ? (
+        {!isChat &&
+        !isOrders &&
+        !isHealth &&
+        !isLoyalty &&
+        !isProfile &&
+        !isReminders &&
+        !isFamily &&
+        !isAi ? (
           <div className="customer-app-banner-wrap">
             <ApiHealthBanner />
           </div>
@@ -87,28 +123,44 @@ export function CustomerAppLayout() {
                 to={tab.to}
                 end={tab.to === '/'}
                 className={({ isActive }) =>
-                  `customer-app-bottom-nav-item${isActive ? ' customer-app-bottom-nav-item--active' : ''}`
+                  `customer-app-bottom-nav-item${isActive ? ' customer-app-bottom-nav-item--active' : ''}${
+                    tab.kind === 'fab' ? ' customer-app-bottom-nav-item--fab' : ''
+                  }`
                 }
                 onTouchStart={() => warmTab(tab.to)}
                 onMouseEnter={() => warmTab(tab.to)}
                 onFocus={() => warmTab(tab.to)}
               >
-                {showDraftBadge ? (
-                  <Badge
-                    count={draftOrderAlerts > 99 ? '99+' : draftOrderAlerts}
-                    size="small"
-                    offset={[-2, 2]}
-                  >
-                    <span className="customer-app-bottom-nav-icon">{tab.icon}</span>
-                  </Badge>
+                {tab.kind === 'fab' ? (
+                  <>
+                    <span className="customer-app-bottom-nav-fab">
+                      {showDraftBadge ? (
+                        <Badge
+                          count={draftOrderAlerts > 99 ? '99+' : draftOrderAlerts}
+                          size="small"
+                          offset={[-2, 2]}
+                        >
+                          {tab.icon}
+                        </Badge>
+                      ) : (
+                        tab.icon
+                      )}
+                    </span>
+                    <span className="customer-app-bottom-nav-label">{tab.label}</span>
+                  </>
                 ) : showChatBadge ? (
-                  <Badge count={chatUnread > 99 ? '99+' : chatUnread} size="small" offset={[-2, 2]}>
-                    <span className="customer-app-bottom-nav-icon">{tab.icon}</span>
-                  </Badge>
+                  <>
+                    <Badge count={chatUnread > 99 ? '99+' : chatUnread} size="small" offset={[-2, 2]}>
+                      <span className="customer-app-bottom-nav-icon">{tab.icon}</span>
+                    </Badge>
+                    <span className="customer-app-bottom-nav-label">{tab.label}</span>
+                  </>
                 ) : (
-                  <span className="customer-app-bottom-nav-icon">{tab.icon}</span>
+                  <>
+                    <span className="customer-app-bottom-nav-icon">{tab.icon}</span>
+                    <span className="customer-app-bottom-nav-label">{tab.label}</span>
+                  </>
                 )}
-                <span className="customer-app-bottom-nav-label">{tab.label}</span>
               </NavLink>
             );
           })}

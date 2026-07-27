@@ -1,0 +1,34 @@
+.repurchase-panel {
+  width: 100%;
+}
+
+.repurchase-panel-head {
+  margin-bottom: 12px;
+}
+
+.repurchase-panel-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.repurchase-panel-desc {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.repurchase-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.repurchase-loading {
+  display: grid;
+  place-items: center;
+  min-height: 64px;
+}

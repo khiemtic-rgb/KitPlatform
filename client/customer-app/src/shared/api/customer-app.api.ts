@@ -588,6 +588,7 @@ export async function createFamilyMember(payload: {
   relationship: string;
   phone?: string;
   dateOfBirth?: string;
+  gender?: number | null;
   notes?: string;
   notifyCaregiver?: boolean;
 }) {
@@ -602,6 +603,7 @@ export async function updateFamilyMember(
     relationship: string;
     phone?: string;
     dateOfBirth?: string;
+    gender?: number | null;
     notes?: string;
     status: number;
     notifyCaregiver?: boolean;
@@ -851,15 +853,24 @@ export async function respondMedicationReminder(
 }
 
 function normalizeServerNotification(row: Record<string, unknown>) {
+  const readAt = (row.readAt ?? row.ReadAt ?? null) as string | null;
+  const explicitRead = row.isRead ?? row.IsRead;
+  const isRead =
+    explicitRead === true ||
+    explicitRead === 1 ||
+    explicitRead === 'true' ||
+    explicitRead === '1' ||
+    (explicitRead == null && Boolean(readAt));
+
   return {
     id: String(row.id ?? row.Id),
     category: String(row.category ?? row.Category ?? 'general'),
     title: String(row.title ?? row.Title ?? ''),
     body: String(row.body ?? row.Body ?? ''),
     href: (row.href ?? row.Href ?? null) as string | null,
-    readAt: (row.readAt ?? row.ReadAt ?? null) as string | null,
+    readAt,
     createdAt: String(row.createdAt ?? row.CreatedAt ?? ''),
-    isRead: Boolean(row.isRead ?? row.IsRead ?? false),
+    isRead,
   };
 }
 

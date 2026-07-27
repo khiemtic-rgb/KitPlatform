@@ -13,18 +13,38 @@ body,
   margin: 0;
   min-height: 100%;
   max-width: 100%;
-  background: #f0fdfa;
+  background: #f1f5f9;
 }
 
 body {
   overflow-x: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
+  /* Inter ≈ Facebook / Meta UI; variable file covers weights 400–800 used on Home */
+  font-family: 'Inter', Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.47059;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root,
+.ant-app,
+.customer-app-shell {
+  font-family: 'Inter', Helvetica, Arial, sans-serif;
+}
+
+/* UA stylesheet: button/input không inherit font → hay rơi về Arial */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  font-family: inherit;
 }
 
 :root {
-  --customer-app-header-height: 76px;
+  --customer-app-frame-width: 430px;
+  --customer-app-header-height: 64px;
   --customer-app-bottom-nav-height: calc(64px + env(safe-area-inset-bottom, 0));
   --keyboard-inset: 0px;
   --vv-offset-left: 0px;
@@ -33,12 +53,28 @@ body {
 }
 
 .customer-app-shell {
+  position: relative;
+  width: 100%;
+  max-width: var(--customer-app-frame-width);
   min-height: 100dvh;
+  margin-inline: auto;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
-  max-width: 100%;
-  background: #f0fdfa;
+  background: #f1f5f9;
+}
+
+@media (min-width: 431px) {
+  html,
+  body,
+  #root {
+    background: #dbe4ee;
+  }
+
+  .customer-app-shell {
+    min-height: 100dvh;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.06), 0 24px 64px rgba(15, 23, 42, 0.12);
+  }
 }
 
 .customer-app-header {
@@ -46,31 +82,35 @@ body {
   top: 0;
   z-index: 10;
   flex-shrink: 0;
+  width: 100%;
   color: #fff;
-  padding: 14px 16px;
-  padding-top: max(14px, env(safe-area-inset-top, 0));
+  padding: 12px 16px;
+  padding-top: max(12px, env(safe-area-inset-top, 0));
   box-shadow: 0 2px 8px rgba(15, 118, 110, 0.25);
 }
 
 .customer-app-header-inner {
-  max-width: 480px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 .customer-app-header-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 
 .customer-app-header-text {
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .customer-app-header-title {
-  font-weight: 600;
-  font-size: 17px;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -78,7 +118,8 @@ body {
 
 .customer-app-header-tagline {
   font-size: 12px;
-  opacity: 0.9;
+  font-weight: 500;
+  opacity: 0.92;
   margin-top: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -86,8 +127,8 @@ body {
 }
 
 .customer-app-banner-wrap {
-  max-width: 480px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 0 12px;
   width: 100%;
 }
@@ -96,29 +137,36 @@ body {
   flex: 1;
   min-height: 0;
   width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 16px 16px var(--customer-app-bottom-nav-height);
   overflow-x: hidden;
 }
 
 .customer-app-bottom-nav {
   position: fixed;
-  left: 0;
-  right: 0;
+  /* Căn giữa đúng khung điện thoại — không kéo full desktop */
+  left: max(0px, calc((100vw - var(--customer-app-frame-width)) / 2));
+  right: max(0px, calc((100vw - var(--customer-app-frame-width)) / 2));
   bottom: 0;
   z-index: 100;
+  width: auto;
+  max-width: var(--customer-app-frame-width);
+  margin: 0;
+  transform: none;
   background: #fff;
   border-top: 1px solid #e2e8f0;
   padding-bottom: env(safe-area-inset-bottom, 0);
+  box-sizing: border-box;
 }
 
 .customer-app-bottom-nav-inner {
-  max-width: 480px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   width: 100%;
+  padding: 0 4px;
 }
 
 .customer-app-bottom-nav-item {
@@ -129,11 +177,45 @@ body {
   gap: 2px;
   min-height: 56px;
   min-width: 0;
-  padding: 8px 2px 6px;
+  padding: 8px 1px 6px;
   text-decoration: none;
   color: #64748b;
   font-weight: 500;
   overflow: hidden;
+}
+
+.customer-app-bottom-nav-item--fab {
+  overflow: visible;
+  z-index: 2;
+  position: relative;
+}
+
+.customer-app-bottom-nav,
+.customer-app-bottom-nav-inner {
+  overflow: visible;
+}
+
+.customer-app-bottom-nav-fab {
+  width: 48px;
+  height: 48px;
+  margin-top: -18px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #14b8a6, #0d9488);
+  color: #fff !important;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.35);
+  border: 3px solid #fff;
+  flex-shrink: 0;
+}
+
+.customer-app-bottom-nav-fab .anticon {
+  font-size: 22px;
+  color: #fff;
+}
+
+.customer-app-bottom-nav-item--fab .customer-app-bottom-nav-label {
+  margin-top: 2px;
 }
 
 .customer-app-bottom-nav-item--active {
@@ -158,6 +240,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: -0.02em;
 }
 
 .home-health-stat {
@@ -256,7 +339,11 @@ body {
   display: block;
   padding: 8px 12px 0;
   overflow: hidden;
-  max-width: 100%;
+  /* Giữ cột mobile như các trang khác — không kéo full desktop */
+  max-width: 480px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .customer-app-shell--chat .customer-app-content--chat {
@@ -265,7 +352,8 @@ body {
 
 .customer-chat-page {
   width: 100%;
-  max-width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
   min-height: 0;
 }
 
@@ -303,10 +391,10 @@ body {
 .customer-chat-composer-dock {
   position: fixed;
   /* Pin to visual viewport so iOS keyboard focus cannot pan the bar off-screen. */
-  left: var(--vv-offset-left, 0px);
-  right: auto;
-  width: var(--vv-width, 100%);
-  max-width: 100%;
+  left: max(var(--vv-offset-left, 0px), calc((100vw - var(--customer-app-frame-width)) / 2));
+  right: max(0px, calc((100vw - var(--customer-app-frame-width)) / 2));
+  width: auto;
+  max-width: var(--customer-app-frame-width);
   bottom: var(--customer-app-bottom-nav-height);
   z-index: 110;
   padding: 8px 12px;
@@ -401,7 +489,8 @@ body.customer-app--chat-typing .customer-app-bottom-nav {
 }
 
 /* When typing: hide bottom nav and sit above keyboard once (no double lift). */
-body.customer-app--chat-typing .customer-chat-composer-dock {
+body.customer-app--chat-typing .customer-chat-composer-dock,
+body.customer-app--chat-typing .chat-v2-composer-dock {
   bottom: env(safe-area-inset-bottom, 0px);
   transform: translateY(calc(-1 * var(--keyboard-inset, 0px)));
 }

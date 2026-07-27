@@ -1,17 +1,20 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Button, Card, Col, Row, Space, Spin, Tag, Typography, message } from 'antd';
+import { useCallback, useEffect, useState, type CSSProperties } from 'react';
+import { Spin, message } from 'antd';
 import {
+  ArrowLeftOutlined,
+  GiftOutlined,
   MessageOutlined,
   PhoneOutlined,
+  RightOutlined,
   ShoppingCartOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { fetchLoyaltySummary, fetchVouchers, getApiErrorMessage } from '@/shared/api/customer-app.api';
-import { BackToHomeButton } from '@/shared/components/BackToHomeButton';
 import { BrandingLogo } from '@/shared/components/BrandingLogo';
 import { useCustomerBranding } from '@/shared/config/BrandingProvider';
 import { formatPoints } from '@/shared/utils/points';
+import './PharmacyHubPage.css';
 
 export function PharmacyHubPage() {
   const { t } = useTranslation();
@@ -44,92 +47,122 @@ export function PharmacyHubPage() {
   const phone = branding.supportPhone?.replace(/\s/g, '') ?? '';
 
   return (
-    <div>
-      <BackToHomeButton />
-      <Card
-        style={{
-          borderRadius: 16,
-          marginBottom: 16,
-          background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})`,
-          border: 'none',
-        }}
-        styles={{ body: { padding: 20, color: '#fff' } }}
-      >
-        <Space align="start" style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Space align="start" size={12}>
-            <BrandingLogo logoUrl={branding.logoUrl} size={48} style={{ background: 'rgba(255,255,255,0.95)' }} />
-            <div>
-              <Typography.Title level={4} style={{ color: '#fff', margin: 0 }}>
-                {branding.tenantName}
-              </Typography.Title>
-              {branding.tagline ? (
-                <Typography.Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13 }}>
-                  {branding.tagline}
-                </Typography.Text>
-              ) : null}
-            </div>
-          </Space>
-        </Space>
-      </Card>
+    <div
+      className="pharmacy-hub"
+      style={
+        {
+          '--ph-primary': branding.primaryColor,
+          '--ph-secondary': branding.secondaryColor,
+        } as CSSProperties
+      }
+    >
+      <button type="button" className="pharmacy-hub-back" onClick={() => navigate('/')}>
+        <ArrowLeftOutlined />
+        {t('common.backHome')}
+      </button>
+
+      <section className="pharmacy-hub-hero">
+        <BrandingLogo logoUrl={branding.logoUrl} size={48} style={{ background: 'rgba(255,255,255,0.95)' }} />
+        <div className="pharmacy-hub-hero-copy">
+          <h1 className="pharmacy-hub-hero-name">{branding.tenantName}</h1>
+          <p className="pharmacy-hub-hero-tag">
+            {branding.tagline || t('pharmacy.hubTagline')}
+          </p>
+        </div>
+      </section>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 32 }}>
+        <div className="pharmacy-hub-loading">
           <Spin />
         </div>
       ) : (
-        <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-          <Col span={12}>
-            <Card size="small" style={{ borderRadius: 12 }}>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {t('pharmacy.points')}
-              </Typography.Text>
-              <div>
-                <Typography.Text strong style={{ fontSize: 20, color: branding.primaryColor }}>
-                  {formatPoints(points)}
-                </Typography.Text>
-              </div>
-              {tierName ? <Tag color="gold">{t('pharmacy.tier', { name: tierName })}</Tag> : null}
-            </Card>
-          </Col>
-          <Col span={12}>
-            <Card size="small" style={{ borderRadius: 12 }}>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {t('pharmacy.vouchers')}
-              </Typography.Text>
-              <div>
-                <Typography.Text strong style={{ fontSize: 20 }}>
-                  {voucherCount}
-                </Typography.Text>
-              </div>
-              <Link to="/loyalty">{t('pharmacy.viewOffers')}</Link>
-            </Card>
-          </Col>
-        </Row>
+        <div className="pharmacy-hub-stats">
+          <div className="pharmacy-hub-stat">
+            <span className="pharmacy-hub-stat-label">{t('pharmacy.points')}</span>
+            <span className="pharmacy-hub-stat-value">{formatPoints(points)}</span>
+            {tierName ? (
+              <span className="pharmacy-hub-stat-meta">{t('pharmacy.tier', { name: tierName })}</span>
+            ) : null}
+          </div>
+          <div className="pharmacy-hub-stat">
+            <span className="pharmacy-hub-stat-label">{t('pharmacy.vouchers')}</span>
+            <span className="pharmacy-hub-stat-value">{voucherCount}</span>
+            <Link className="pharmacy-hub-stat-link" to="/loyalty">
+              {t('pharmacy.viewOffers')}
+            </Link>
+          </div>
+        </div>
       )}
 
-      <Space direction="vertical" style={{ width: '100%' }} size={10}>
-        <Button block size="large" icon={<ShoppingCartOutlined />} onClick={() => navigate('/reservations')}>
-          {t('pharmacy.reserveMed')}
-        </Button>
-        <Button block size="large" icon={<MessageOutlined />} onClick={() => navigate('/chat')}>
-          {t('pharmacy.chatPharmacist')}
-        </Button>
+      <div className="pharmacy-hub-actions">
+        <button type="button" className="pharmacy-hub-action" onClick={() => navigate('/reservations')}>
+          <span className="pharmacy-hub-action-icon" aria-hidden>
+            <ShoppingCartOutlined />
+          </span>
+          <span className="pharmacy-hub-action-copy">
+            <span className="pharmacy-hub-action-title">{t('pharmacy.reserveMed')}</span>
+            <span className="pharmacy-hub-action-sub">{t('pharmacy.reserveMedSub')}</span>
+          </span>
+          <RightOutlined className="pharmacy-hub-action-chevron" />
+        </button>
+
+        <button type="button" className="pharmacy-hub-action" onClick={() => navigate('/chat')}>
+          <span className="pharmacy-hub-action-icon pharmacy-hub-action-icon--blue" aria-hidden>
+            <MessageOutlined />
+          </span>
+          <span className="pharmacy-hub-action-copy">
+            <span className="pharmacy-hub-action-title">{t('pharmacy.chatPharmacist')}</span>
+            <span className="pharmacy-hub-action-sub">{t('pharmacy.chatPharmacistSub')}</span>
+          </span>
+          <RightOutlined className="pharmacy-hub-action-chevron" />
+        </button>
+
         {phone ? (
-          <Button block size="large" icon={<PhoneOutlined />} href={`tel:${phone}`}>
-            {t('pharmacy.callSupport', { phone: branding.supportPhone })}
-          </Button>
+          <a className="pharmacy-hub-action" href={`tel:${phone}`}>
+            <span className="pharmacy-hub-action-icon pharmacy-hub-action-icon--amber" aria-hidden>
+              <PhoneOutlined />
+            </span>
+            <span className="pharmacy-hub-action-copy">
+              <span className="pharmacy-hub-action-title">
+                {t('pharmacy.callSupport', { phone: branding.supportPhone })}
+              </span>
+              <span className="pharmacy-hub-action-sub">{t('pharmacy.callSupportSub')}</span>
+            </span>
+            <RightOutlined className="pharmacy-hub-action-chevron" />
+          </a>
         ) : (
-          <Button block size="large" icon={<PhoneOutlined />} disabled>
-            {t('pharmacy.noSupportPhone')}
-          </Button>
+          <button type="button" className="pharmacy-hub-action" disabled>
+            <span className="pharmacy-hub-action-icon pharmacy-hub-action-icon--amber" aria-hidden>
+              <PhoneOutlined />
+            </span>
+            <span className="pharmacy-hub-action-copy">
+              <span className="pharmacy-hub-action-title">{t('pharmacy.noSupportPhone')}</span>
+            </span>
+          </button>
         )}
-        <Button block onClick={() => navigate('/orders')}>
-          {t('pharmacy.ordersAndReorder')}
-        </Button>
-        <Button block onClick={() => navigate('/loyalty')}>
-          {t('pharmacy.pointsAndVouchers')}
-        </Button>
-      </Space>
+
+        <button type="button" className="pharmacy-hub-action" onClick={() => navigate('/orders')}>
+          <span className="pharmacy-hub-action-icon" aria-hidden>
+            <ShoppingCartOutlined />
+          </span>
+          <span className="pharmacy-hub-action-copy">
+            <span className="pharmacy-hub-action-title">{t('pharmacy.ordersAndReorder')}</span>
+            <span className="pharmacy-hub-action-sub">{t('pharmacy.ordersAndReorderSub')}</span>
+          </span>
+          <RightOutlined className="pharmacy-hub-action-chevron" />
+        </button>
+
+        <button type="button" className="pharmacy-hub-action" onClick={() => navigate('/loyalty')}>
+          <span className="pharmacy-hub-action-icon" aria-hidden>
+            <GiftOutlined />
+          </span>
+          <span className="pharmacy-hub-action-copy">
+            <span className="pharmacy-hub-action-title">{t('pharmacy.pointsAndVouchers')}</span>
+            <span className="pharmacy-hub-action-sub">{t('pharmacy.pointsAndVouchersSub')}</span>
+          </span>
+          <RightOutlined className="pharmacy-hub-action-chevron" />
+        </button>
+      </div>
     </div>
   );
 }

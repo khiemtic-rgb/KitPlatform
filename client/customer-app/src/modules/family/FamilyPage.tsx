@@ -1,7 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Form, Input, Modal, Select, Space, Spin, Switch, Typography, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Form, Input, Popconfirm, Select, Spin, Switch, message } from 'antd';
+import {
+  ArrowLeftOutlined,
+  BellOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  FileTextOutlined,
+  HeartFilled,
+  ManOutlined,
+  PhoneOutlined,
+  PlusOutlined,
+  RightOutlined,
+  SafetyCertificateOutlined,
+  TeamOutlined,
+  UserAddOutlined,
+  UserOutlined,
+  WomanOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import {
   createFamilyMember,
   deleteFamilyMember,
@@ -12,11 +29,62 @@ import {
 } from '@/shared/api/customer-app.api';
 import type { FamilyMember } from '@/shared/api/customer-app.types';
 import { FAMILY_RELATIONSHIP_LABELS } from '@/shared/api/customer-app.types';
-import { BackToHomeButton } from '@/shared/components/BackToHomeButton';
+import { BrandingLogo } from '@/shared/components/BrandingLogo';
+import {
+  CustomerFormModal,
+  FormModalFooter,
+  FormModalLabel,
+  FormModalTip,
+} from '@/shared/components/CustomerFormModal';
+import { useCustomerBranding } from '@/shared/config/BrandingProvider';
+import { FAMILY_GENDER, familyRoleLabel, resolveFamilyGender } from '@/shared/i18n/family-role-label';
 import { useCustomerLabels } from '@/shared/i18n/useCustomerLabels';
+import './FamilyPage.css';
+
+function memberAvatarSrc(member: FamilyMember): string {
+  const g = resolveFamilyGender(member.gender, member.id) ?? FAMILY_GENDER.female;
+  if (member.relationship === 'child') {
+    return g === FAMILY_GENDER.female ? '/home/avatars/girl.jpg' : '/home/avatars/boy.jpg';
+  }
+  return g === FAMILY_GENDER.male ? '/home/avatars/adult-male.jpg' : '/home/avatars/adult-female.jpg';
+}
+
+type GenderOption = { value: number; label: string; icon: React.ReactNode };
+
+function GenderToggle({
+  value,
+  onChange,
+  options,
+  ariaLabel,
+}: {
+  value?: number;
+  onChange?: (next: number) => void;
+  options: GenderOption[];
+  ariaLabel: string;
+}) {
+  return (
+    <div className="family-modal-gender" role="radiogroup" aria-label={ariaLabel}>
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          role="radio"
+          aria-checked={value === opt.value}
+          className={`family-modal-gender-btn${value === opt.value ? ' family-modal-gender-btn--active' : ''}`}
+          onClick={() => onChange?.(opt.value)}
+        >
+          {opt.icon}
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function FamilyPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { branding } = useCustomerBranding();
   const { familyRelationship } = useCustomerLabels();
   const [items, setItems] = useState<FamilyMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +100,14 @@ export function FamilyPage() {
         label: familyRelationship(value),
       })),
     [familyRelationship],
+  );
+
+  const genderOptions = useMemo(
+    () => [
+      { value: FAMILY_GENDER.male, label: t('family.genderMale'), icon: <ManOutlined /> },
+      { value: FAMILY_GENDER.female, label: t('family.genderFemale'), icon: <WomanOutlined /> },
+    ],
+    [t],
   );
 
   const load = useCallback(async () => {
@@ -52,7 +128,14 @@ export function FamilyPage() {
 
   const openCreate = () => {
     setEditing(null);
-    form.setFieldsValue({ relationship: 'parent', fullName: '', phone: '', notes: '', notifyCaregiver: false });
+    form.setFieldsValue({
+      relationship: 'parent',
+      gender: FAMILY_GENDER.female,
+      fullName: '',
+      phone: '',
+      notes: '',
+      notifyCaregiver: false,
+    });
     setModalOpen(true);
   };
 
@@ -61,6 +144,7 @@ export function FamilyPage() {
     form.setFieldsValue({
       fullName: item.fullName,
       relationship: item.relationship,
+      gender: item.gender ?? FAMILY_GENDER.female,
       phone: item.phone ?? '',
       notes: item.notes ?? '',
       notifyCaregiver: item.notifyCaregiver,
@@ -70,11 +154,13 @@ export function FamilyPage() {
 
   const onSubmit = async () => {
     const values = await form.validateFields();
+    const gender = Number(values.gender) as number;
     try {
       if (editing) {
         const updated = await updateFamilyMember(editing.id, {
           fullName: values.fullName,
           relationship: values.relationship,
+          gender,
           phone: values.phone || undefined,
           notes: values.notes || undefined,
           status: 1,
@@ -92,6 +178,7 @@ export function FamilyPage() {
         const created = await createFamilyMember({
           fullName: values.fullName,
           relationship: values.relationship,
+          gender,
           phone: values.phone || undefined,
           notes: values.notes || undefined,
           notifyCaregiver: Boolean(values.notifyCaregiver),
@@ -138,92 +225,219 @@ export function FamilyPage() {
     }
   };
 
-  return (
-    <div>
-      <BackToHomeButton />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <Typography.Title level={5} style={{ margin: 0 }}>
-          {t('family.title')}
-        </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          {t('common.add')}
-        </Button>
-      </div>
+  const headerStyle = {
+    background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})`,
+  };
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <Spin />
-        </div>
-      ) : items.length === 0 ? (
-        <Typography.Text type="secondary">{t('family.emptyHint')}</Typography.Text>
-      ) : (
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          {items.map((item) => (
-            <div key={item.id} style={{ borderBottom: '1px solid #e2e8f0', padding: '12px 0' }}>
-              <Typography.Text strong>{item.fullName}</Typography.Text>
-              <div>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {familyRelationship(item.relationship)}
-                  {item.phone ? ` · ${item.phone}` : ''}
-                </Typography.Text>
+  return (
+    <div className="family-hub">
+      <header className="family-hub-header" style={headerStyle}>
+        <div className="family-hub-header-inner">
+          <div className="family-hub-brand">
+            <button
+              type="button"
+              className="family-hub-back"
+              aria-label={t('common.back')}
+              onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))}
+            >
+              <ArrowLeftOutlined />
+            </button>
+            <BrandingLogo logoUrl={branding.logoUrl} />
+            <div>
+              <div className="family-hub-brand-title">{branding.appName}</div>
+              <div className="family-hub-tagline">{branding.tagline || t('family.hubTagline')}</div>
+            </div>
+          </div>
+          <div className="family-hub-art" aria-hidden>
+            <div className="family-hub-house">
+              <div className="family-hub-house-people">
+                <span className="family-hub-person" />
+                <span className="family-hub-person family-hub-person--sm" />
+                <span className="family-hub-person" />
               </div>
-              <div style={{ marginTop: 8 }}>
-                <Space align="center">
+            </div>
+            <span className="family-hub-heart">
+              <HeartFilled />
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <div className="family-hub-sheet">
+        <div className="family-hub-top">
+          <div>
+            <h1 className="family-hub-title">{t('family.title')}</h1>
+            <p className="family-hub-intro">{t('family.hubIntro')}</p>
+          </div>
+          <button type="button" className="family-hub-add" onClick={openCreate}>
+            <PlusOutlined />
+            {t('family.addMember')}
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="family-hub-loading">
+            <Spin />
+          </div>
+        ) : items.length === 0 ? (
+          <div className="family-hub-empty">{t('family.emptyHint')}</div>
+        ) : (
+          <div className="family-hub-list">
+            {items.map((item) => (
+              <article key={item.id} className="family-hub-card">
+                <div className="family-hub-card-main">
+                  <div className="family-hub-avatar">
+                    <UserOutlined aria-hidden />
+                    <img
+                      src={memberAvatarSrc(item)}
+                      alt=""
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  <div className="family-hub-card-copy">
+                    <div className="family-hub-card-name-row">
+                      <span className="family-hub-card-name">{item.fullName}</span>
+                      <span className="family-hub-role">
+                        {familyRoleLabel(item.relationship, item.gender, t, familyRelationship, item.id)}
+                      </span>
+                    </div>
+                    {item.phone ? (
+                      <div className="family-hub-phone">
+                        <PhoneOutlined />
+                        {item.phone}
+                      </div>
+                    ) : null}
+                  </div>
+                  <RightOutlined className="family-hub-chevron" aria-hidden />
+                </div>
+
+                <div className="family-hub-notify">
+                  <span className="family-hub-notify-label">
+                    <BellOutlined />
+                    {t('family.notifyCaregiverLabel')}
+                  </span>
                   <Switch
-                    size="small"
                     checked={item.notifyCaregiver}
                     loading={togglingNotifyId === item.id}
-                    onClick={(_, e) => e.stopPropagation()}
                     onChange={(checked) => void toggleNotify(item, checked)}
                   />
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {t('family.notifyCaregiverLabel')}
-                  </Typography.Text>
-                </Space>
-              </div>
-              <Space style={{ marginTop: 8 }}>
-                <Button size="small" onClick={() => openEdit(item)}>
-                  {t('common.edit')}
-                </Button>
-                <Button size="small" danger onClick={() => void onDelete(item)}>
-                  {t('common.delete')}
-                </Button>
-              </Space>
-            </div>
-          ))}
-        </Space>
-      )}
+                </div>
 
-      <Modal
-        title={editing ? t('family.modalEdit') : t('family.modalAdd')}
+                <div className="family-hub-actions">
+                  <button type="button" className="family-hub-btn family-hub-btn--edit" onClick={() => openEdit(item)}>
+                    <EditOutlined />
+                    {t('common.edit')}
+                  </button>
+                  <Popconfirm
+                    title={t('family.confirmDelete')}
+                    okText={t('common.delete')}
+                    cancelText={t('common.cancel')}
+                    okButtonProps={{ danger: true }}
+                    onConfirm={() => void onDelete(item)}
+                  >
+                    <button type="button" className="family-hub-btn family-hub-btn--delete">
+                      <DeleteOutlined />
+                      {t('common.delete')}
+                    </button>
+                  </Popconfirm>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+
+        <div className="family-hub-privacy">
+          <span className="family-hub-privacy-icon">
+            <SafetyCertificateOutlined />
+          </span>
+          <div className="family-hub-privacy-copy">
+            <div className="family-hub-privacy-title">{t('family.privacyTitle')}</div>
+            <div className="family-hub-privacy-sub">{t('family.privacySub')}</div>
+          </div>
+          <RightOutlined className="family-hub-chevron" aria-hidden />
+        </div>
+      </div>
+
+      <CustomerFormModal
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
-        onOk={() => void onSubmit()}
-        okText={t('common.save')}
+        icon={<UserAddOutlined />}
+        title={editing ? t('family.modalEdit') : t('family.modalAdd')}
+        subtitle={t('family.modalSub')}
+        footer={
+          <FormModalFooter onCancel={() => setModalOpen(false)} onOk={() => void onSubmit()} />
+        }
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="fullName" label={t('family.fullName')} rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="relationship" label={t('family.relationship')} rules={[{ required: true }]}>
-            <Select options={relationshipOptions} />
-          </Form.Item>
-          <Form.Item name="phone" label={t('family.phone')}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="notes" label={t('family.notes')}>
-            <Input.TextArea rows={2} />
-          </Form.Item>
+        <Form form={form} layout="vertical" className="cfm-form" requiredMark={false}>
           <Form.Item
-            name="notifyCaregiver"
-            label={t('family.notifyCaregiver')}
-            valuePropName="checked"
-            extra={t('family.notifyCaregiverExtra')}
+            name="fullName"
+            label={
+              <FormModalLabel icon={<UserOutlined />} required>
+                {t('family.fullName')}
+              </FormModalLabel>
+            }
+            rules={[{ required: true, message: t('family.fullNameRequired') }]}
           >
-            <Switch />
+            <Input size="large" placeholder={t('family.fullNamePlaceholder')} />
           </Form.Item>
+
+          <Form.Item
+            name="relationship"
+            label={
+              <FormModalLabel icon={<TeamOutlined />} required>
+                {t('family.relationship')}
+              </FormModalLabel>
+            }
+            rules={[{ required: true }]}
+          >
+            <Select
+              size="large"
+              options={relationshipOptions}
+              placeholder={t('family.relationshipPlaceholder')}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="gender"
+            label={
+              <FormModalLabel icon={<UserOutlined />} required>
+                {t('family.gender')}
+              </FormModalLabel>
+            }
+            rules={[{ required: true, message: t('family.genderRequired') }]}
+            extra={<span className="cfm-hint">{t('family.genderHint')}</span>}
+          >
+            <GenderToggle options={genderOptions} ariaLabel={t('family.gender')} />
+          </Form.Item>
+
+          <Form.Item
+            name="phone"
+            label={<FormModalLabel icon={<PhoneOutlined />}>{t('family.phone')}</FormModalLabel>}
+          >
+            <Input size="large" placeholder={t('family.phonePlaceholder')} inputMode="tel" />
+          </Form.Item>
+
+          <Form.Item
+            name="notes"
+            label={<FormModalLabel icon={<FileTextOutlined />}>{t('family.notes')}</FormModalLabel>}
+          >
+            <Input.TextArea rows={3} placeholder={t('family.notesPlaceholder')} />
+          </Form.Item>
+
+          <FormModalTip
+            icon={<BellOutlined />}
+            title={t('family.notifyCaregiver')}
+            subtitle={t('family.notifyCaregiverExtra')}
+            action={
+              <Form.Item name="notifyCaregiver" valuePropName="checked" noStyle>
+                <Switch />
+              </Form.Item>
+            }
+          />
         </Form>
-      </Modal>
+      </CustomerFormModal>
     </div>
   );
 }

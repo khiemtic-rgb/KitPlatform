@@ -1,6 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Card, Empty, List, Space, Spin, Tag, Typography, message } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Spin, message } from 'antd';
+import {
+  BellOutlined,
+  CalendarOutlined,
+  CheckCircleOutlined,
+  MedicineBoxOutlined,
+  RightOutlined,
+  SafetyCertificateOutlined,
+  ShoppingCartOutlined,
+  TeamOutlined,
+  LockOutlined,
+} from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
@@ -11,7 +22,6 @@ import {
 } from '@/shared/api/customer-app.api';
 import type { ServerNotification } from '@/shared/api/customer-app.types';
 import { useCustomerLabels } from '@/shared/i18n/useCustomerLabels';
-import { BackToHomeButton } from '@/shared/components/BackToHomeButton';
 import { notifyServerNotificationsChanged } from '@/shared/hooks/useCustomerNotificationCount';
 import {
   listCustomerNotifications,
@@ -20,6 +30,7 @@ import {
   subscribeCustomerNotifications,
   type CustomerNotification,
 } from '@/shared/notifications/customer-notifications';
+import './NotificationsPage.css';
 
 type DisplayNotification = {
   id: string;
@@ -49,7 +60,7 @@ function toDisplayFromLocal(item: CustomerNotification): DisplayNotification {
   return {
     id: item.id,
     source: 'local',
-    category: item.kind,
+    category: item.kind === 'draft_order' ? 'order' : item.kind,
     title: item.title,
     body: item.body,
     href: item.href,
@@ -58,12 +69,46 @@ function toDisplayFromLocal(item: CustomerNotification): DisplayNotification {
   };
 }
 
+function isAlertNotification(item: DisplayNotification) {
+  const haystack = `${item.title} ${item.body}`.toLowerCase();
+  return (
+    haystack.includes('missed') ||
+    haystack.includes('bỏ liều') ||
+    haystack.includes('quên') ||
+    haystack.includes('no doses')
+  );
+}
+
+function iconMeta(item: DisplayNotification): {
+  icon: ReactNode;
+  tone: 'default' | 'alert' | 'care' | 'order';
+  alertDot?: boolean;
+} {
+  if (isAlertNotification(item)) {
+    return { icon: <BellOutlined />, tone: 'alert', alertDot: true };
+  }
+  switch (item.category) {
+    case 'medication':
+      return { icon: <MedicineBoxOutlined />, tone: 'default' };
+    case 'care':
+      return { icon: <CalendarOutlined />, tone: 'care' };
+    case 'order':
+      return { icon: <ShoppingCartOutlined />, tone: 'order' };
+    case 'family':
+      return { icon: <TeamOutlined />, tone: 'care' };
+    default:
+      return { icon: <BellOutlined />, tone: 'default' };
+  }
+}
+
 export function NotificationsPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { notificationCategory } = useCustomerLabels();
   const [loading, setLoading] = useState(true);
+  const [markingAll, setMarkingAll] = useState(false);
   const [serverItems, setServerItems] = useState<ServerNotification[]>([]);
+  const [serverUnreadTotal, setServerUnreadTotal] = useState(0);
   const [localItems, setLocalItems] = useState<CustomerNotification[]>(() => listCustomerNotifications());
 
   const loadServer = useCallback(async () => {
@@ -71,6 +116,7 @@ export function NotificationsPage() {
     try {
       const result = await fetchServerNotifications(50);
       setServerItems(result.items);
+      setServerUnreadTotal(result.unreadCount);
     } catch (error) {
       message.error(getApiErrorMessage(error, t('notifications.loadFailed')));
     } finally {
@@ -96,21 +142,34 @@ export function NotificationsPage() {
     return [...server, ...local].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }, [localItems, serverItems]);
 
-  const unreadCount = items.filter((item) => !item.read).length;
+  const localOnlyUnread = useMemo(() => {
+    const serverKeys = new Set(serverItems.map((item) => `${item.title}|${item.body}`));
+    return localItems.filter(
+      (item) => !item.read && !serverKeys.has(`${item.title}|${item.body}`),
+    ).length;
+  }, [localItems, serverItems]);
+
+  const unreadCount = serverUnreadTotal + localOnlyUnread;
 
   const openNotification = async (item: DisplayNotification) => {
     try {
       if (item.source === 'server' && !item.read) {
-        await markServerNotificationRead(item.id);
         setServerItems((prev) =>
-          prev.map((row) => (row.id === item.id ? { ...row, isRead: true, readAt: new Date().toISOString() } : row)),
+          prev.map((row) =>
+            row.id === item.id ? { ...row, isRead: true, readAt: new Date().toISOString() } : row,
+          ),
         );
+        setServerUnreadTotal((count) => Math.max(0, count - 1));
+        await markServerNotificationRead(item.id);
         notifyServerNotificationsChanged();
       } else if (item.source === 'local' && !item.read) {
         markCustomerNotificationRead(item.id);
       }
     } catch (error) {
       message.error(getApiErrorMessage(error, t('notifications.markReadFailed')));
+      if (item.source === 'server') {
+        void loadServer();
+      }
       return;
     }
     if (item.href) {
@@ -119,77 +178,134 @@ export function NotificationsPage() {
   };
 
   const markAllRead = async () => {
+    setMarkingAll(true);
+    const previousItems = serverItems;
+    const previousUnread = serverUnreadTotal;
+    setServerItems((prev) =>
+      prev.map((row) => ({ ...row, isRead: true, readAt: row.readAt ?? new Date().toISOString() })),
+    );
+    setServerUnreadTotal(0);
+    markAllCustomerNotificationsRead();
     try {
       await markAllServerNotificationsRead();
-      setServerItems((prev) =>
-        prev.map((row) => ({ ...row, isRead: true, readAt: row.readAt ?? new Date().toISOString() })),
-      );
       notifyServerNotificationsChanged();
     } catch (error) {
+      setServerItems(previousItems);
+      setServerUnreadTotal(previousUnread);
       message.error(getApiErrorMessage(error, t('notifications.markAllReadFailed')));
+    } finally {
+      setMarkingAll(false);
     }
-    markAllCustomerNotificationsRead();
   };
 
   return (
-    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-      <BackToHomeButton />
-      <Typography.Title level={5} style={{ margin: 0 }}>
-        {t('notifications.title')}
-      </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: 0, fontSize: 13 }}>
-        {t('notifications.subtitle')}
-      </Typography.Paragraph>
+    <div className="notif-page">
+      <header className="notif-hero">
+        <div className="notif-hero-copy">
+          <h1 className="notif-hero-title">{t('notifications.title')}</h1>
+          <p className="notif-hero-intro">{t('notifications.subtitle')}</p>
+        </div>
+        <div className="notif-hero-bell" aria-hidden>
+          <BellOutlined />
+          {unreadCount > 0 ? (
+            <span className="notif-hero-count">{unreadCount > 99 ? '99+' : unreadCount}</span>
+          ) : null}
+        </div>
+      </header>
 
       {unreadCount > 0 ? (
-        <Button size="small" onClick={() => void markAllRead()}>
+        <button
+          type="button"
+          className="notif-mark-all"
+          disabled={markingAll}
+          onClick={() => void markAllRead()}
+        >
+          <CheckCircleOutlined />
           {t('notifications.markAllRead')}
-        </Button>
+        </button>
       ) : null}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 32 }}>
+        <div className="notif-loading">
           <Spin />
         </div>
       ) : items.length === 0 ? (
-        <Card size="small" style={{ borderRadius: 12 }}>
-          <Empty description={t('notifications.empty')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        </Card>
+        <div className="notif-empty">
+          <BellOutlined />
+          {t('notifications.empty')}
+        </div>
       ) : (
-        <List
-          dataSource={items}
-          renderItem={(item) => (
-            <Card
-              size="small"
-              style={{
-                marginBottom: 8,
-                borderRadius: 12,
-                borderColor: item.read ? undefined : '#5eead4',
-                cursor: item.href ? 'pointer' : 'default',
-              }}
-              onClick={() => void openNotification(item)}
-            >
-              <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                <Space wrap>
-                  <Typography.Text strong={!item.read}>{item.title}</Typography.Text>
-                  {!item.read ? <Tag color="processing">{t('common.new')}</Tag> : null}
-                  {item.category ? (
-                    <Tag>{notificationCategory(item.category)}</Tag>
-                  ) : null}
-                </Space>
-                <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-                  {item.body}
-                </Typography.Text>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {dayjs(item.createdAt).format('DD/MM/YYYY HH:mm')}
-                </Typography.Text>
-              </Space>
-            </Card>
-          )}
-        />
+        <div className="notif-list">
+          {items.map((item) => {
+            const clickable = Boolean(item.href);
+            const meta = iconMeta(item);
+            const className = [
+              'notif-card',
+              item.read ? 'notif-card--read' : 'notif-card--unread',
+              clickable ? 'notif-card--clickable' : '',
+            ]
+              .filter(Boolean)
+              .join(' ');
+            const iconTone = meta.tone === 'default' ? '' : ` notif-card-icon--${meta.tone}`;
+
+            return (
+              <article
+                key={`${item.source}-${item.id}`}
+                className={className}
+                role={clickable ? 'button' : undefined}
+                tabIndex={clickable ? 0 : undefined}
+                onClick={() => void openNotification(item)}
+                onKeyDown={(event) => {
+                  if (!clickable) return;
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    void openNotification(item);
+                  }
+                }}
+              >
+                <span className={`notif-card-icon${iconTone}`} aria-hidden>
+                  {meta.icon}
+                  {meta.alertDot ? <span className="notif-card-alert-dot" /> : null}
+                </span>
+
+                <div className="notif-card-main">
+                  <div className="notif-card-top">
+                    <h2 className="notif-card-title">{item.title}</h2>
+                    <div className="notif-card-badges">
+                      {!item.read ? (
+                        <span className="notif-badge notif-badge--new">{t('common.new')}</span>
+                      ) : null}
+                      {item.category ? (
+                        <span className="notif-badge notif-badge--cat">
+                          {notificationCategory(item.category)}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <p className="notif-card-body">{item.body}</p>
+                  <p className="notif-card-time">
+                    <CalendarOutlined />
+                    {dayjs(item.createdAt).format('DD/MM/YYYY HH:mm')}
+                  </p>
+                </div>
+
+                {clickable ? <RightOutlined className="notif-card-chevron" /> : null}
+              </article>
+            );
+          })}
+        </div>
       )}
 
-      <Link to="/profile">{t('notifications.backToProfile')}</Link>
-    </Space>
+      <div className="notif-privacy">
+        <span className="notif-privacy-icon" aria-hidden>
+          <SafetyCertificateOutlined />
+        </span>
+        <div className="notif-privacy-copy">
+          <div className="notif-privacy-title">{t('notifications.privacyTitle')}</div>
+          <div className="notif-privacy-sub">{t('notifications.privacySub')}</div>
+        </div>
+        <LockOutlined className="notif-privacy-lock" aria-hidden />
+      </div>
+    </div>
   );
 }

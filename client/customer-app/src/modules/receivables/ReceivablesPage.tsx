@@ -1,21 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  Alert,
-  Button,
-  Card,
-  Drawer,
-  Empty,
-  List,
-  Space,
-  Spin,
-  Statistic,
-  Tag,
-  Typography,
-  message,
-} from 'antd';
-import { RightOutlined } from '@ant-design/icons';
+import { Spin, message } from 'antd';
+import { ArrowLeftOutlined, CloseOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import {
   fetchReceivableOrder,
   fetchReceivablesSummary,
@@ -26,71 +14,60 @@ import type {
   CustomerReceivableLine,
   CustomerReceivablesSummary,
 } from '@/shared/api/customer-app.types';
-import { BackToHomeButton } from '@/shared/components/BackToHomeButton';
 import { shouldHidePageErrorForOfflineApi } from '@/shared/components/ApiHealthBanner';
 import { useApiHealth, useRetryWhenApiOnline } from '@/shared/api/useApiHealth';
 import { useCustomerLabels } from '@/shared/i18n/useCustomerLabels';
-
 import { formatMoney } from '@/shared/i18n/format-money';
+import './ReceivablesPage.css';
 
 function ReceivableOrderDetail({ detail }: { detail: CustomerPurchaseDetail }) {
   const { t } = useTranslation();
   const { paymentMethod } = useCustomerLabels();
 
   return (
-    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-      <Alert
-        type="info"
-        showIcon
-        message={t('receivables.viewOnlyTitle')}
-        description={t('receivables.viewOnlyDesc')}
-      />
+    <>
+      <div className="recv-tip">
+        <div className="recv-tip-title">{t('receivables.viewOnlyTitle')}</div>
+        <div className="recv-tip-sub">{t('receivables.viewOnlyDesc')}</div>
+      </div>
 
-      <Card size="small" style={{ borderRadius: 12, background: '#fff7ed' }}>
-        <Statistic
-          title={t('receivables.outstandingThisOrder')}
-          value={detail.outstanding}
-          formatter={(v) => formatMoney(Number(v))}
-          valueStyle={{ color: '#c2410c', fontSize: 24 }}
-        />
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+      <div className="recv-detail-summary">
+        <span className="recv-summary-label">{t('receivables.outstandingThisOrder')}</span>
+        <span className="recv-summary-value">{formatMoney(detail.outstanding)}</span>
+        <span className="recv-summary-meta">
           {t('receivables.paidAndTotal', {
             paid: formatMoney(detail.amountPaid),
             total: formatMoney(detail.totalAmount),
           })}
-        </Typography.Text>
-      </Card>
+        </span>
+      </div>
 
-      <List
-        size="small"
-        dataSource={detail.items}
-        renderItem={(line) => (
-          <List.Item>
-            <List.Item.Meta
-              title={line.productName}
-              description={`${line.quantity} ${line.unitName} · ${formatMoney(line.lineTotal)}`}
-            />
-          </List.Item>
-        )}
-      />
+      <div className="recv-detail-lines">
+        {detail.items.map((line) => (
+          <div key={line.id} className="recv-detail-line">
+            <div className="recv-detail-line-title">{line.productName}</div>
+            <div className="recv-detail-line-sub">
+              {line.quantity} {line.unitName} · {formatMoney(line.lineTotal)}
+            </div>
+          </div>
+        ))}
+      </div>
 
       {detail.payments.length > 0 ? (
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <p className="recv-payments">
           {t('receivables.collected')}:{' '}
           {detail.payments
-            .map(
-              (p) =>
-                `${paymentMethod(p.paymentMethod)}: ${formatMoney(p.amount)}`,
-            )
+            .map((p) => `${paymentMethod(p.paymentMethod)}: ${formatMoney(p.amount)}`)
             .join(' · ')}
-        </Typography.Text>
+        </p>
       ) : null}
-    </Space>
+    </>
   );
 }
 
 export function ReceivablesPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { online } = useApiHealth();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -135,105 +112,110 @@ export function ReceivablesPage() {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: 48 }}>
+      <div className="recv-page recv-loading">
         <Spin />
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', padding: '0 12px 24px' }}>
-      <BackToHomeButton />
-      <Typography.Title level={5} style={{ marginTop: 0 }}>
-        {t('receivables.title')}
-      </Typography.Title>
+    <div className="recv-page">
+      <button type="button" className="recv-back" onClick={() => navigate('/')}>
+        <ArrowLeftOutlined />
+        {t('common.backHome')}
+      </button>
+
+      <h1 className="recv-title">{t('receivables.title')}</h1>
+      <p className="recv-intro">{t('receivables.intro')}</p>
 
       {loadError && !shouldHidePageErrorForOfflineApi(loadError, online) ? (
-        <Alert
-          type="error"
-          showIcon
-          message={loadError}
-          action={
-            <Button size="small" onClick={() => void loadSummary()}>
-              {t('common.retry')}
-            </Button>
-          }
-          style={{ marginBottom: 16 }}
-        />
+        <div className="recv-error">
+          {loadError}
+          <button type="button" onClick={() => void loadSummary()}>
+            {t('common.retry')}
+          </button>
+        </div>
       ) : null}
 
       {summary && summary.totalReceivable <= 0.009 ? (
-        <Empty
-          description={t('receivables.empty')}
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
+        <div className="recv-empty">{t('receivables.empty')}</div>
       ) : summary ? (
         <>
-          <Card size="small" style={{ borderRadius: 12, marginBottom: 16, background: '#fff7ed' }}>
-            <Statistic
-              title={t('receivables.totalOutstanding')}
-              value={summary.totalReceivable}
-              formatter={(v) => formatMoney(Number(v))}
-              valueStyle={{ color: '#c2410c', fontSize: 28 }}
-            />
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <div className="recv-summary">
+            <span className="recv-summary-label">{t('receivables.totalOutstanding')}</span>
+            <span className="recv-summary-value">{formatMoney(summary.totalReceivable)}</span>
+            <span className="recv-summary-meta">
               {t('receivables.openOrdersSummary', { count: summary.openOrderCount })}
-            </Typography.Text>
-          </Card>
+            </span>
+          </div>
 
-          <List
-            dataSource={summary.lines}
-            renderItem={(line) => (
-              <Card
-                size="small"
-                style={{
-                  marginBottom: 8,
-                  borderRadius: 12,
-                  borderColor: line.salesOrderId === selectedId ? '#0f766e' : undefined,
-                  cursor: 'pointer',
-                }}
+          <div className="recv-list">
+            {summary.lines.map((line) => (
+              <button
+                key={line.salesOrderId}
+                type="button"
+                className={`recv-card${line.salesOrderId === selectedId ? ' recv-card--active' : ''}`}
                 onClick={() => void openDetail(line)}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                  <Space direction="vertical" size={2}>
-                    <Space wrap>
-                      <Typography.Text strong>{line.orderNumber}</Typography.Text>
-                      <Tag color="orange">{t('receivables.owed', { amount: formatMoney(line.outstanding) })}</Tag>
-                    </Space>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {t('receivables.orderDateTotal', {
-                        date: dayjs(line.orderDate).format('DD/MM/YYYY'),
-                        total: formatMoney(line.orderTotal),
-                      })}
-                      {line.amountPaid > 0.009
-                        ? t('receivables.paidPartial', { amount: formatMoney(line.amountPaid) })
-                        : ''}
-                    </Typography.Text>
-                  </Space>
-                  <RightOutlined style={{ color: '#94a3b8', flexShrink: 0 }} />
+                <div className="recv-card-main">
+                  <div className="recv-card-top">
+                    <h2 className="recv-card-title">{line.orderNumber}</h2>
+                    <span className="recv-badge">
+                      {t('receivables.owed', { amount: formatMoney(line.outstanding) })}
+                    </span>
+                  </div>
+                  <p className="recv-card-sub">
+                    {t('receivables.orderDateTotal', {
+                      date: dayjs(line.orderDate).format('DD/MM/YYYY'),
+                      total: formatMoney(line.orderTotal),
+                    })}
+                    {line.amountPaid > 0.009
+                      ? t('receivables.paidPartial', { amount: formatMoney(line.amountPaid) })
+                      : ''}
+                  </p>
                 </div>
-              </Card>
-            )}
-          />
+                <RightOutlined className="recv-card-chevron" />
+              </button>
+            ))}
+          </div>
         </>
       ) : null}
 
-      <Drawer
-        title={detail ? detail.orderNumber : t('receivables.drawerDetail')}
-        placement="bottom"
-        height="85%"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        destroyOnClose
-      >
-        {detailLoading ? (
-          <div style={{ textAlign: 'center', padding: 32 }}>
-            <Spin />
+      {drawerOpen ? (
+        <div
+          className="recv-drawer-backdrop"
+          role="presentation"
+          onClick={() => setDrawerOpen(false)}
+        >
+          <div
+            className="recv-drawer"
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="recv-drawer-head">
+              <h2 className="recv-drawer-title">
+                {detail ? detail.orderNumber : t('receivables.drawerDetail')}
+              </h2>
+              <button
+                type="button"
+                className="recv-drawer-close"
+                aria-label={t('common.close')}
+                onClick={() => setDrawerOpen(false)}
+              >
+                <CloseOutlined />
+              </button>
+            </div>
+            {detailLoading ? (
+              <div className="recv-loading">
+                <Spin />
+              </div>
+            ) : detail ? (
+              <ReceivableOrderDetail detail={detail} />
+            ) : null}
           </div>
-        ) : detail ? (
-          <ReceivableOrderDetail detail={detail} />
-        ) : null}
-      </Drawer>
+        </div>
+      ) : null}
     </div>
   );
 }

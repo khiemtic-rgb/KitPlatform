@@ -122,6 +122,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       token: {
         colorPrimary: branding.primaryColor,
         borderRadius: 10,
+        fontFamily: "'Inter', Helvetica, Arial, sans-serif",
       },
     }),
     [branding.primaryColor],

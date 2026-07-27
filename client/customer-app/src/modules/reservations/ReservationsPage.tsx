@@ -1,23 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  Button,
-  Card,
-  Empty,
-  Form,
   Input,
   InputNumber,
-  List,
   Popconfirm,
-  Radio,
   Select,
-  Space,
   Spin,
-  Tag,
-  Typography,
   message,
 } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, DeleteOutlined, InboxOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -42,7 +33,7 @@ import {
 } from '@/shared/api/customer-app.types';
 import { useApiHealth, useRetryWhenApiOnline } from '@/shared/api/useApiHealth';
 import { shouldHidePageErrorForOfflineApi } from '@/shared/components/ApiHealthBanner';
-import { BackToHomeButton } from '@/shared/components/BackToHomeButton';
+import '@/shared/components/EntryPage.css';
 import { useCustomerLabels } from '@/shared/i18n/useCustomerLabels';
 
 type DraftLine = {
@@ -55,8 +46,7 @@ type DraftLine = {
   customerNote?: string;
 };
 
-
-function reservationStatusColor(status: number): string {
+function reservationStatusTone(status: number): string {
   if (status === CUSTOMER_RESERVATION_STATUS.Ready) return 'green';
   if (status === CUSTOMER_RESERVATION_STATUS.Confirmed) return 'blue';
   if (status === CUSTOMER_RESERVATION_STATUS.Collected) return 'success';
@@ -76,67 +66,61 @@ function ReservationDetailPanel({
 }) {
   const { t } = useTranslation();
   const { reservationStatus, reservationFulfillment } = useCustomerLabels();
+  const tone = reservationStatusTone(detail.status);
 
   return (
-    <Card size="small" style={{ borderRadius: 12, marginBottom: 12 }}>
-      <Space direction="vertical" size="small" style={{ width: '100%' }}>
-        <Space wrap>
-          <Typography.Text strong>{detail.reservationNumber}</Typography.Text>
-          <Tag color={reservationStatusColor(detail.status)}>
-            {reservationStatus(detail.status)}
-          </Tag>
-        </Space>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {reservationFulfillment(detail.fulfillmentType)}
-          {detail.addressSummary ? ` · ${detail.addressSummary}` : ''}
-        </Typography.Text>
-        {detail.notes ? (
-          <Typography.Text style={{ fontSize: 13 }}>{t('reservations.notes')}: {detail.notes}</Typography.Text>
-        ) : null}
-        {detail.staffNotes ? (
-          <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-            {t('reservations.pharmacy')}: {detail.staffNotes}
-          </Typography.Text>
-        ) : null}
-        {detail.salesOrderNumber ? (
-          <Typography.Text type="success" style={{ fontSize: 13, display: 'block' }}>
-            {t('reservations.invoiceLink', { number: detail.salesOrderNumber })}
-          </Typography.Text>
-        ) : detail.status === CUSTOMER_RESERVATION_STATUS.Collected ? (
-          <Alert
-            type="warning"
-            showIcon
-            message={t('reservations.noInvoiceTitle')}
-            description={t('reservations.noInvoiceDesc')}
-          />
-        ) : null}
-        <List
-          size="small"
-          dataSource={detail.items}
-          renderItem={(line) => (
-            <List.Item style={{ paddingInline: 0 }}>
-              <Space direction="vertical" size={0}>
-                <Typography.Text>
-                  {line.productName} × {line.quantity} {line.unitName}
-                </Typography.Text>
-                {line.customerNote ? (
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {line.customerNote}
-                  </Typography.Text>
-                ) : null}
-              </Space>
-            </List.Item>
-          )}
+    <div className="entry-card entry-detail">
+      <div className="entry-list-card-top">
+        <span className="entry-list-card-title">{detail.reservationNumber}</span>
+        <span className={`entry-status entry-status--${tone}`}>{reservationStatus(detail.status)}</span>
+      </div>
+      <div className="entry-list-card-sub">
+        {reservationFulfillment(detail.fulfillmentType)}
+        {detail.addressSummary ? ` · ${detail.addressSummary}` : ''}
+      </div>
+      {detail.notes ? (
+        <div className="entry-detail-notes">
+          {t('reservations.notes')}: {detail.notes}
+        </div>
+      ) : null}
+      {detail.staffNotes ? (
+        <div className="entry-detail-muted">
+          {t('reservations.pharmacy')}: {detail.staffNotes}
+        </div>
+      ) : null}
+      {detail.salesOrderNumber ? (
+        <div className="entry-detail-notes" style={{ color: '#0f766e' }}>
+          {t('reservations.invoiceLink', { number: detail.salesOrderNumber })}
+        </div>
+      ) : detail.status === CUSTOMER_RESERVATION_STATUS.Collected ? (
+        <Alert
+          style={{ marginTop: 10 }}
+          type="warning"
+          showIcon
+          message={t('reservations.noInvoiceTitle')}
+          description={t('reservations.noInvoiceDesc')}
         />
-        {detail.status === CUSTOMER_RESERVATION_STATUS.Pending ? (
+      ) : null}
+                  <ul className="entry-detail-items">
+        {detail.items.map((line) => (
+          <li key={line.id}>
+            <div>
+              {line.productName} × {line.quantity} {line.unitName}
+            </div>
+            {line.customerNote ? <div className="entry-detail-muted">{line.customerNote}</div> : null}
+          </li>
+        ))}
+      </ul>
+      {detail.status === CUSTOMER_RESERVATION_STATUS.Pending ? (
+        <div className="entry-actions" style={{ marginTop: 12 }}>
           <Popconfirm title={t('reservations.cancelConfirm')} onConfirm={onCancel}>
-            <Button danger loading={cancelling} block>
+            <button type="button" className="entry-btn entry-btn--danger" disabled={cancelling}>
               {t('reservations.cancelRequest')}
-            </Button>
+            </button>
           </Popconfirm>
-        ) : null}
-      </Space>
-    </Card>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -154,7 +138,7 @@ export function ReservationsPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
-  const [createOpen, setCreateOpen] = useState(searchParams.get('create') === '1');
+  const [createOpen, setCreateOpen] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [fulfillmentType, setFulfillmentType] = useState<number>(CUSTOMER_RESERVATION_FULFILLMENT.Pickup);
   const [addressId, setAddressId] = useState<string | undefined>();
@@ -205,7 +189,7 @@ export function ReservationsPage() {
         setSelectedId(null);
       })
       .finally(() => setDetailLoading(false));
-  }, [selectedId]);
+  }, [selectedId, t]);
 
   useEffect(() => {
     if (searchParams.get('create') === '1') {
@@ -214,18 +198,21 @@ export function ReservationsPage() {
     }
   }, [searchParams, setSearchParams]);
 
-  const loadProducts = useCallback(async (search?: string) => {
-    setProductLoading(true);
-    try {
-      const result = await searchProducts(search?.trim() || undefined, 1, 30);
-      setProductOptions(result.items);
-    } catch (error) {
-      setProductOptions([]);
-      message.error(getApiErrorMessage(error, t('reservations.productLoadFailed')));
-    } finally {
-      setProductLoading(false);
-    }
-  }, []);
+  const loadProducts = useCallback(
+    async (search?: string) => {
+      setProductLoading(true);
+      try {
+        const result = await searchProducts(search?.trim() || undefined, 1, 30);
+        setProductOptions(result.items);
+      } catch (error) {
+        setProductOptions([]);
+        message.error(getApiErrorMessage(error, t('reservations.productLoadFailed')));
+      } finally {
+        setProductLoading(false);
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (!createOpen) return;
@@ -281,6 +268,14 @@ export function ReservationsPage() {
     setSelectOpen(false);
   };
 
+  const resetCreateForm = () => {
+    setDraftLines([]);
+    setNotes('');
+    setFulfillmentType(CUSTOMER_RESERVATION_FULFILLMENT.Pickup);
+    setProductSearch('');
+    setSelectOpen(false);
+  };
+
   const submitCreate = async () => {
     if (draftLines.length === 0) {
       message.warning(t('reservations.addAtLeastOne'));
@@ -303,10 +298,7 @@ export function ReservationsPage() {
         })),
       });
       message.success(t('reservations.submitted'));
-      setCreateOpen(false);
-      setDraftLines([]);
-      setNotes('');
-      setFulfillmentType(CUSTOMER_RESERVATION_FULFILLMENT.Pickup);
+      resetCreateForm();
       await loadList();
       setSelectedId(created.id);
     } catch (error) {
@@ -333,86 +325,103 @@ export function ReservationsPage() {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: 48 }}>
-        <Spin />
+      <div className="entry-page">
+        <div className="entry-page-loading">
+          <Spin />
+        </div>
       </div>
     );
   }
 
   return (
-    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-      <BackToHomeButton />
-      <div>
-        <Typography.Title level={4} style={{ marginBottom: 4 }}>
-          {t('reservations.title')}
-        </Typography.Title>
-        <Typography.Text type="secondary">
-          {t('reservations.intro')}
-        </Typography.Text>
-      </div>
+    <div className="entry-page">
+      <button type="button" className="entry-page-home" onClick={() => navigate('/')}>
+        <ArrowLeftOutlined />
+        {t('common.backHome')}
+      </button>
+
+      <h1 className="entry-page-title">{t('reservations.title')}</h1>
+      <p className="entry-page-intro">{t('reservations.intro')}</p>
 
       {loadError && !shouldHidePageErrorForOfflineApi(loadError, online) ? (
-        <Typography.Text type="danger">{loadError}</Typography.Text>
+        <div className="entry-page-error">{loadError}</div>
       ) : null}
 
       {!createOpen ? (
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          block
-          size="large"
+        <button
+          type="button"
+          className="entry-btn entry-btn--primary entry-open-create"
           onClick={() => {
             setCreateOpen(true);
             setProductSearch('');
             setSelectOpen(false);
           }}
         >
+          <PlusOutlined />
           {t('reservations.createNew')}
-        </Button>
+        </button>
       ) : (
-        <Card
-          size="small"
-          title={t('reservations.newRequest')}
-          style={{ borderRadius: 12, overflow: 'visible' }}
-          styles={{ body: { overflow: 'visible' } }}
-        >
-          <Form layout="vertical" requiredMark={false}>
-            <Form.Item label={t('reservations.fulfillmentType')}>
-              <Radio.Group
-                value={fulfillmentType}
-                onChange={(e) => setFulfillmentType(e.target.value)}
-                optionType="button"
-                buttonStyle="solid"
+        <section className="entry-card">
+          <h2 className="entry-card-title">{t('reservations.newRequest')}</h2>
+
+          <div className="entry-field">
+            <span className="entry-label">{t('reservations.fulfillmentType')}</span>
+            <div className="entry-seg" role="group" aria-label={t('reservations.fulfillmentType')}>
+              <button
+                type="button"
+                className={`entry-seg-btn${
+                  fulfillmentType === CUSTOMER_RESERVATION_FULFILLMENT.Pickup
+                    ? ' entry-seg-btn--active'
+                    : ''
+                }`}
+                onClick={() => setFulfillmentType(CUSTOMER_RESERVATION_FULFILLMENT.Pickup)}
               >
-                <Radio.Button value={CUSTOMER_RESERVATION_FULFILLMENT.Pickup}>{t('reservations.pickup')}</Radio.Button>
-                <Radio.Button value={CUSTOMER_RESERVATION_FULFILLMENT.Delivery}>{t('reservations.delivery')}</Radio.Button>
-              </Radio.Group>
-            </Form.Item>
+                {t('reservations.pickup')}
+              </button>
+              <button
+                type="button"
+                className={`entry-seg-btn${
+                  fulfillmentType === CUSTOMER_RESERVATION_FULFILLMENT.Delivery
+                    ? ' entry-seg-btn--active'
+                    : ''
+                }`}
+                onClick={() => setFulfillmentType(CUSTOMER_RESERVATION_FULFILLMENT.Delivery)}
+              >
+                {t('reservations.delivery')}
+              </button>
+            </div>
+          </div>
 
-            {fulfillmentType === CUSTOMER_RESERVATION_FULFILLMENT.Delivery ? (
-              <Form.Item label={t('reservations.deliveryAddress')}>
-                {addresses.length === 0 ? (
-                  <Typography.Text type="secondary">
-                    {t('reservations.noAddress')}{' '}
-                    <Link to="/addresses" onClick={() => navigate('/addresses')}>
-                      {t('reservations.addAddress')}
-                    </Link>
-                  </Typography.Text>
-                ) : (
-                  <Select
-                    value={addressId}
-                    onChange={setAddressId}
-                    options={addresses.map((a) => ({
-                      value: a.id,
-                      label: `${a.label} — ${[a.addressLine, a.ward, a.district].filter(Boolean).join(', ')}`,
-                    }))}
-                  />
-                )}
-              </Form.Item>
-            ) : null}
+          {fulfillmentType === CUSTOMER_RESERVATION_FULFILLMENT.Delivery ? (
+            <div className="entry-field">
+              <span className="entry-label">{t('reservations.deliveryAddress')}</span>
+              {addresses.length === 0 ? (
+                <div className="entry-hint">
+                  {t('reservations.noAddress')}{' '}
+                  <Link className="entry-page-link" to="/addresses">
+                    {t('reservations.addAddress')}
+                  </Link>
+                </div>
+              ) : (
+                <Select
+                  size="large"
+                  value={addressId}
+                  onChange={setAddressId}
+                  style={{ width: '100%' }}
+                  options={addresses.map((a) => ({
+                    value: a.id,
+                    label: `${a.label} — ${[a.addressLine, a.ward, a.district].filter(Boolean).join(', ')}`,
+                  }))}
+                />
+              )}
+            </div>
+          ) : null}
 
-            <Form.Item label={t('reservations.searchProduct')} extra={t('reservations.searchHint')}>
+          <div className="entry-field">
+            <span className="entry-label">{t('reservations.searchProduct')}</span>
+            <div className="entry-search-row">
               <Select
+                size="large"
                 showSearch
                 allowClear
                 value={null}
@@ -457,98 +466,115 @@ export function ReservationsPage() {
                   }`,
                 }))}
               />
-            </Form.Item>
+              <button
+                type="button"
+                className="entry-search-add"
+                aria-label={t('reservations.addProductAria')}
+                onClick={() => {
+                  if (searchResults[0]) {
+                    addProduct(searchResults[0]);
+                    return;
+                  }
+                  setSelectOpen(true);
+                  if (productOptions.length === 0) {
+                    void loadProducts(productSearch.trim() || undefined);
+                  }
+                }}
+              >
+                <PlusOutlined />
+              </button>
+            </div>
+            <span className="entry-hint">{t('reservations.searchHint')}</span>
+          </div>
 
-            {draftLines.length > 0 ? (
-              <>
-                <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-                  {t('reservations.selected', { count: draftLines.length })}
-                </Typography.Text>
-                {draftLines.map((line) => (
-                  <Card
-                    key={line.key}
-                    size="small"
-                    style={{
-                      marginBottom: 10,
-                      borderRadius: 12,
-                      borderColor: '#99f6e4',
-                      background: '#f0fdfa',
-                    }}
-                    styles={{ body: { padding: '12px 14px' } }}
-                  >
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <Typography.Text strong style={{ fontSize: 15, display: 'block' }}>
-                          {line.productName}
-                        </Typography.Text>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                          {line.productCode}
-                          {line.unitName ? ` · ${line.unitName}` : ''}
-                        </Typography.Text>
+          {draftLines.length > 0 ? (
+            <div className="entry-field">
+              <span className="entry-label">{t('reservations.selected', { count: draftLines.length })}</span>
+              {draftLines.map((line) => (
+                <div key={line.key} className="entry-line">
+                  <div className="entry-line-head">
+                    <div className="entry-line-copy">
+                      <div className="entry-line-name">{line.productName}</div>
+                      <div className="entry-line-meta">
+                        {line.productCode}
+                        {line.unitName ? ` · ${line.unitName}` : ''}
                       </div>
-                      <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        aria-label={t('reservations.removeAria', { name: line.productName })}
-                        onClick={() => setDraftLines((prev) => prev.filter((x) => x.key !== line.key))}
-                      />
                     </div>
-                    <InputNumber
-                      min={0.01}
-                      step={1}
-                      value={line.quantity}
-                      addonAfter={line.unitName || t('reservations.qtyUnit')}
-                      style={{ width: '100%', marginTop: 10 }}
-                      onChange={(value) =>
-                        setDraftLines((prev) =>
-                          prev.map((x) =>
-                            x.key === line.key ? { ...x, quantity: Number(value) || 1 } : x,
-                          ),
-                        )
-                      }
-                    />
-                    <Input
-                      placeholder={t('reservations.noteOptional')}
-                      value={line.customerNote}
-                      style={{ marginTop: 8 }}
-                      onChange={(e) =>
-                        setDraftLines((prev) =>
-                          prev.map((x) =>
-                            x.key === line.key ? { ...x, customerNote: e.target.value } : x,
-                          ),
-                        )
-                      }
-                    />
-                  </Card>
-                ))}
-              </>
-            ) : (
-              <Empty
-                description={t('reservations.emptyDraft')}
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                style={{ marginBottom: 8 }}
-              />
-            )}
+                    <button
+                      type="button"
+                      className="entry-line-remove"
+                      aria-label={t('reservations.removeAria', { name: line.productName })}
+                      onClick={() => setDraftLines((prev) => prev.filter((x) => x.key !== line.key))}
+                    >
+                      <DeleteOutlined />
+                    </button>
+                  </div>
+                  <InputNumber
+                    className="entry-line-qty"
+                    min={0.01}
+                    step={1}
+                    size="large"
+                    value={line.quantity}
+                    addonAfter={line.unitName || t('reservations.qtyUnit')}
+                    onChange={(value) =>
+                      setDraftLines((prev) =>
+                        prev.map((x) =>
+                          x.key === line.key ? { ...x, quantity: Number(value) || 1 } : x,
+                        ),
+                      )
+                    }
+                  />
+                  <Input
+                    className="entry-line-note"
+                    size="large"
+                    placeholder={t('reservations.noteOptional')}
+                    value={line.customerNote}
+                    onChange={(e) =>
+                      setDraftLines((prev) =>
+                        prev.map((x) =>
+                          x.key === line.key ? { ...x, customerNote: e.target.value } : x,
+                        ),
+                      )
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="entry-empty">
+              <InboxOutlined className="entry-empty-icon" />
+              <span>{t('reservations.emptyDraft')}</span>
+            </div>
+          )}
 
-            <Form.Item label={t('reservations.generalNotes')}>
-              <Input.TextArea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-            </Form.Item>
+          <div className="entry-field">
+            <span className="entry-label">{t('reservations.generalNotes')}</span>
+            <Input.TextArea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
 
-            <Space style={{ width: '100%' }} direction="vertical">
-              <Button type="primary" block size="large" loading={submitting} onClick={() => void submitCreate()}>
-                {t('reservations.submit')}
-              </Button>
-              <Button block onClick={() => setCreateOpen(false)}>
-                {t('common.cancel')}
-              </Button>
-            </Space>
-          </Form>
-        </Card>
+          <div className="entry-actions">
+            <button
+              type="button"
+              className="entry-btn entry-btn--primary"
+              disabled={submitting}
+              onClick={() => void submitCreate()}
+            >
+              {t('reservations.submit')}
+            </button>
+            <button
+              type="button"
+              className="entry-btn entry-btn--ghost"
+              disabled={submitting}
+              onClick={() => resetCreateForm()}
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
+        </section>
       )}
 
       {detailLoading ? (
-        <div style={{ textAlign: 'center', padding: 24 }}>
+        <div className="entry-page-loading">
           <Spin />
         </div>
       ) : detail ? (
@@ -556,36 +582,37 @@ export function ReservationsPage() {
       ) : null}
 
       {items.length === 0 ? (
-        <Empty description={t('reservations.empty')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <div className="entry-empty" style={{ marginTop: 14 }}>
+          <InboxOutlined className="entry-empty-icon" />
+          <span>{t('reservations.empty')}</span>
+        </div>
       ) : (
-        <List
-          dataSource={items}
-          renderItem={(item) => (
-            <Card
-              size="small"
-              style={{
-                marginBottom: 8,
-                borderRadius: 12,
-                borderColor: item.id === selectedId ? '#0f766e' : undefined,
-                cursor: 'pointer',
-              }}
-              onClick={() => setSelectedId(item.id)}
-            >
-              <Space direction="vertical" size={2}>
-                <Space wrap>
-                  <Typography.Text strong>{item.reservationNumber}</Typography.Text>
-                  <Tag color={reservationStatusColor(item.status)}>
+        <div className="entry-list">
+          {items.map((item) => {
+            const tone = reservationStatusTone(item.status);
+            const active = item.id === selectedId;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`entry-list-card${active ? ' entry-list-card--active' : ''}`}
+                onClick={() => setSelectedId(item.id)}
+              >
+                <div className="entry-list-card-top">
+                  <span className="entry-list-card-title">{item.reservationNumber}</span>
+                  <span className={`entry-status entry-status--${tone}`}>
                     {reservationStatus(item.status)}
-                  </Tag>
-                </Space>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {t('reservations.productCount', { count: item.itemCount })} · {dayjs(item.submittedAt).format('DD/MM/YYYY HH:mm')}
-                </Typography.Text>
-              </Space>
-            </Card>
-          )}
-        />
+                  </span>
+                </div>
+                <div className="entry-list-card-sub">
+                  {t('reservations.productCount', { count: item.itemCount })} ·{' '}
+                  {dayjs(item.submittedAt).format('DD/MM/YYYY HH:mm')}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       )}
-    </Space>
+    </div>
   );
 }

@@ -1,0 +1,216 @@
+.rp-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #e8edf3;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.rp-card-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.rp-card-icon {
+  position: relative;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: #ffedd5;
+  color: #ea580c;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+}
+
+.rp-card-icon-plus {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffedd5;
+  color: #ea580c;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 12px;
+  text-align: center;
+}
+
+.rp-card-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rp-card-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+.rp-card-title {
+  margin: 0;
+  flex: 0 1 auto;
+  max-width: 100%;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.rp-card-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.rp-card-status--expired {
+  background: #ffedd5;
+  color: #ea580c;
+}
+
+.rp-card-status--remain {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.rp-card-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.rp-card-status .anticon {
+  font-size: 11px;
+}
+
+.rp-card-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  line-height: 1.2;
+}
+
+.rp-card-stamp .anticon {
+  font-size: 12px;
+}
+
+.rp-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.rp-card-sep {
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.rp-card-meta em {
+  font-style: normal;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.rp-card-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: #ffedd5;
+  color: #c2410c;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.rp-card-tag .anticon {
+  font-size: 11px;
+}
+
+.rp-card-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #eef2f7;
+}
+
+.rp-card-actions--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.rp-card-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.rp-card-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.rp-card-btn--primary {
+  border: none;
+  color: #fff;
+  background: #2563eb;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+}
+
+.rp-card-btn--snooze {
+  border: 1.5px solid #cbd5e1;
+  color: #1e3a8a;
+}
+
+.rp-card-btn--dismiss {
+  border: 1.5px solid #fecaca;
+  color: #dc2626;
+}
+
+.rp-card-btn .anticon {
+  font-size: 13px;
+}
+
+@media (max-width: 360px) {
+  .rp-card-btn {
+    font-size: 11px;
+    padding: 8px 6px;
+    gap: 4px;
+  }
+}

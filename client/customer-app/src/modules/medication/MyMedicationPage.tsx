@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Card, Empty, Select, Space, Spin, Tag, Timeline, Typography, message } from 'antd';
+import { Select, Spin, message } from 'antd';
+import { ArrowLeftOutlined, InboxOutlined, PlusOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
@@ -10,8 +11,9 @@ import {
   getApiErrorMessage,
 } from '@/shared/api/customer-app.api';
 import type { ActiveMedication, FamilyMember, RepurchaseSuggestion } from '@/shared/api/customer-app.types';
-import { BackToHomeButton } from '@/shared/components/BackToHomeButton';
 import { RepurchaseSuggestionsPanel } from '@/modules/reminders/RepurchaseSuggestionsPanel';
+import '@/shared/components/EntryPage.css';
+import './MyMedicationPage.css';
 
 type FamilyFilter = 'all' | 'self' | string;
 
@@ -40,69 +42,58 @@ function MedicationCard({
         ? t('medications.daysMayRunOut')
         : t('medications.daysRemaining', { days: item.daysRemaining });
 
+  const timeline = item.timeline.slice(-5);
+
   return (
-    <Card size="small" style={{ borderRadius: 12, marginBottom: 12 }}>
-      <Space direction="vertical" style={{ width: '100%' }} size={6}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-          <Typography.Text strong>{item.productName}</Typography.Text>
-          <Tag color={lowSupply ? 'orange' : 'green'}>{daysLabel}</Tag>
+    <article className="med-card">
+      <div className="med-card-head">
+        <h2 className="med-card-name">{item.productName}</h2>
+        <span className={`med-card-badge${lowSupply ? ' med-card-badge--warn' : ''}`}>{daysLabel}</span>
+      </div>
+
+      {personLabel ? <div className="med-card-meta">{t('medications.forPerson', { name: personLabel })}</div> : null}
+
+      {item.remindTime ? (
+        <div className="med-card-meta">
+          {t('medications.remindAt', { time: item.remindTime })}
+          {item.dosageNote ? ` · ${item.dosageNote}` : ''}
         </div>
-        {personLabel ? (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('medications.forPerson', { name: personLabel })}
-          </Typography.Text>
-        ) : null}
-        {item.remindTime ? (
-          <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-            {t('medications.remindAt', { time: item.remindTime })}
-            {item.dosageNote ? ` · ${item.dosageNote}` : ''}
-          </Typography.Text>
-        ) : null}
-        {item.lastOrderNumber ? (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('medications.purchased', { orderNumber: item.lastOrderNumber })}
-            {item.lastOrderDate ? ` · ${dayjs(item.lastOrderDate).format('DD/MM/YYYY')}` : ''}
-          </Typography.Text>
-        ) : null}
-        {lowSupply ? (
-          <Alert
-            type="info"
-            showIcon
-            style={{ borderRadius: 8 }}
-            message={t('medications.lowSupplyAlert')}
-            action={
-              <Link to="/reservations">
-                <Button size="small" type="primary">
-                  {t('medications.reserveMed')}
-                </Button>
-              </Link>
-            }
-          />
-        ) : null}
-        {item.timeline.length > 0 ? (
-          <Timeline
-            style={{ marginTop: 8, marginBottom: 0 }}
-            items={item.timeline.slice(-5).map((ev) => ({
-              children: (
-                <div>
-                  <Typography.Text style={{ fontSize: 13 }}>{ev.label}</Typography.Text>
-                  <div>
-                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                      {dayjs(ev.occurredAt).format('DD/MM/YYYY')}
-                    </Typography.Text>
-                  </div>
-                </div>
-              ),
-            }))}
-          />
-        ) : null}
-        <Link to={`/ai?productId=${item.productId}`}>
-          <Button size="small" type="link" style={{ padding: 0, height: 'auto' }}>
-            {t('medications.askCopilot')}
-          </Button>
-        </Link>
-      </Space>
-    </Card>
+      ) : null}
+
+      {item.lastOrderNumber ? (
+        <div className="med-card-meta">
+          {t('medications.purchased', { orderNumber: item.lastOrderNumber })}
+          {item.lastOrderDate ? ` · ${dayjs(item.lastOrderDate).format('DD/MM/YYYY')}` : ''}
+        </div>
+      ) : null}
+
+      {lowSupply ? (
+        <div className="med-card-alert">
+          <span>{t('medications.lowSupplyAlert')}</span>
+          <Link to="/reservations" className="med-card-alert-cta">
+            {t('medications.reserveMed')}
+          </Link>
+        </div>
+      ) : null}
+
+      {timeline.length > 0 ? (
+        <ol className="med-timeline">
+          {timeline.map((ev, index) => (
+            <li key={`${ev.occurredAt}-${index}`} className="med-timeline-item">
+              <span className="med-timeline-dot" aria-hidden />
+              <div className="med-timeline-copy">
+                <div className="med-timeline-label">{ev.label}</div>
+                <div className="med-timeline-date">{dayjs(ev.occurredAt).format('DD/MM/YYYY')}</div>
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+
+      <Link to={`/ai?productId=${item.productId}`} className="med-card-ai">
+        {t('medications.askCopilot')}
+      </Link>
+    </article>
   );
 }
 
@@ -179,20 +170,19 @@ export function MyMedicationPage() {
   const hasRepurchase = repurchase.length > 0;
 
   return (
-    <div>
-      <BackToHomeButton />
-      <Typography.Title level={5} style={{ marginTop: 0 }}>
-        {t('medications.title')}
-      </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
-        {t('medications.intro')}
-      </Typography.Paragraph>
+    <div className="entry-page med-page">
+      <button type="button" className="entry-page-home" onClick={() => navigate('/')}>
+        <ArrowLeftOutlined />
+        {t('common.backHome')}
+      </button>
 
-      <div style={{ marginBottom: 12 }}>
-        <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>
-          {t('medications.filterLabel')}
-        </Typography.Text>
+      <h1 className="entry-page-title">{t('medications.title')}</h1>
+      <p className="entry-page-intro">{t('medications.intro')}</p>
+
+      <div className="med-filter">
+        <span className="entry-label">{t('medications.filterLabel')}</span>
         <Select
+          size="large"
           style={{ width: '100%' }}
           value={familyFilter}
           options={familyFilterOptions}
@@ -201,49 +191,69 @@ export function MyMedicationPage() {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
+        <div className="entry-page-loading">
           <Spin />
         </div>
       ) : (
         <>
           {activeMedsUnavailable ? (
-            <Alert
-              type="warning"
-              showIcon
-              style={{ marginBottom: 12, borderRadius: 10 }}
-              message={t('medications.apiUnavailableTitle')}
-              description={t('medications.apiUnavailableDesc')}
-            />
+            <div className="med-warn">
+              <div className="med-warn-title">{t('medications.apiUnavailableTitle')}</div>
+              <div className="med-warn-desc">{t('medications.apiUnavailableDesc')}</div>
+            </div>
           ) : null}
 
-          {items.length > 0
-            ? items.map((item) => (
+          {items.length > 0 ? (
+            <div className="med-list">
+              {items.map((item) => (
                 <MedicationCard
                   key={`${item.productId}-${item.familyMemberId ?? 'self'}`}
                   item={item}
-                  personLabel={item.familyMemberId || familyFilter !== 'all' ? resolvePersonLabel(item.familyMemberId) : null}
+                  personLabel={
+                    item.familyMemberId || familyFilter !== 'all'
+                      ? resolvePersonLabel(item.familyMemberId)
+                      : null
+                  }
                 />
-              ))
-            : null}
+              ))}
+            </div>
+          ) : null}
 
           {items.length === 0 && !hasRepurchase ? (
-            <Empty description={t('medications.empty')}>
-              <Space>
-                <Button type="primary" onClick={() => navigate('/reminders')}>
+            <div className="entry-empty" style={{ marginTop: 14 }}>
+              <InboxOutlined className="entry-empty-icon" />
+              <span>{t('medications.empty')}</span>
+              <div className="entry-actions" style={{ width: '100%', marginTop: 8 }}>
+                <button
+                  type="button"
+                  className="entry-btn entry-btn--primary"
+                  onClick={() => navigate('/reminders')}
+                >
                   {t('medications.addReminder')}
-                </Button>
-                <Button onClick={() => navigate('/orders')}>{t('medications.viewOrders')}</Button>
-              </Space>
-            </Empty>
+                </button>
+                <button type="button" className="entry-btn entry-btn--ghost" onClick={() => navigate('/orders')}>
+                  {t('medications.viewOrders')}
+                </button>
+              </div>
+            </div>
           ) : null}
 
           {hasRepurchase ? (
-            <div style={{ marginTop: items.length > 0 ? 16 : 0 }}>
+            <div className="med-repurchase">
               <RepurchaseSuggestionsPanel onAccepted={() => void load()} />
             </div>
           ) : null}
         </>
       )}
+
+      <button
+        type="button"
+        className="med-fab"
+        aria-label={t('medications.addReminder')}
+        onClick={() => navigate('/reminders')}
+      >
+        <PlusOutlined />
+      </button>
     </div>
   );
 }

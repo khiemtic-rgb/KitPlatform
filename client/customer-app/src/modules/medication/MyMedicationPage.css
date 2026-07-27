@@ -1,0 +1,201 @@
+.med-page {
+  position: relative;
+  padding-bottom: 72px;
+}
+
+.med-filter {
+  margin-top: 14px;
+}
+
+.med-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.med-card {
+  padding: 14px 16px 12px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+}
+
+.med-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.med-card-name {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.med-card-badge {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #86efac;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.med-card-badge--warn {
+  border-color: #fdba74;
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.med-card-meta {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.med-card-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  font-size: 12px;
+  color: #1e3a8a;
+  line-height: 1.35;
+}
+
+.med-card-alert-cta {
+  font-size: 12px;
+  font-weight: 800;
+  color: #2563eb;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.med-timeline {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0 0 0 6px;
+}
+
+.med-timeline-item {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding-bottom: 14px;
+  padding-left: 2px;
+}
+
+.med-timeline-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 12px;
+  bottom: 0;
+  width: 2px;
+  background: #e2e8f0;
+}
+
+.med-timeline-dot {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: #2563eb;
+  box-shadow: 0 0 0 3px #dbeafe;
+}
+
+.med-timeline-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.med-timeline-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.med-timeline-date {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.med-card-ai {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.med-warn {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+}
+
+.med-warn-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #92400e;
+}
+
+.med-warn-desc {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #78716c;
+  line-height: 1.4;
+}
+
+.med-repurchase {
+  margin-top: 16px;
+}
+
+.med-fab {
+  position: fixed;
+  right: max(16px, calc((100vw - var(--customer-app-frame-width, 430px)) / 2 + 16px));
+  bottom: calc(var(--customer-app-bottom-nav-height) + 16px);
+  z-index: 40;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: #0f766e;
+  color: #fff;
+  font-size: 22px;
+  box-shadow: 0 8px 20px rgba(15, 118, 110, 0.35);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.med-page .ant-select-selector {
+  border-radius: 12px !important;
+  border-color: #e2e8f0 !important;
+  min-height: 42px !important;
+}

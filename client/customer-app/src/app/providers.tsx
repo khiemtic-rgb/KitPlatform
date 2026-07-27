@@ -14,18 +14,18 @@ export function AppProviders() {
   return (
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AntApp>
-          <ApiHealthProvider>
-            <BrandingProvider>
+        <BrandingProvider>
+          <AntApp>
+            <ApiHealthProvider>
               <LocaleProvider>
                 <AuthHydrationGate>
                   <AppRouter />
                   <PwaUpdateBanner />
                 </AuthHydrationGate>
               </LocaleProvider>
-            </BrandingProvider>
-          </ApiHealthProvider>
-        </AntApp>
+            </ApiHealthProvider>
+          </AntApp>
+        </BrandingProvider>
       </QueryClientProvider>
     </AppErrorBoundary>
   );

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Button, Card, Form, Modal, Select, Space, Spin, Tag, TimePicker, Typography, message } from 'antd';
+import { Form, Select, Spin, TimePicker, message } from 'antd';
+import { ClockCircleOutlined, MedicineBoxOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
@@ -11,7 +12,14 @@ import {
   snoozeRepurchaseSuggestion,
 } from '@/shared/api/customer-app.api';
 import { FAMILY_RELATIONSHIP_LABELS, type FamilyMember, type RepurchaseSuggestion } from '@/shared/api/customer-app.types';
+import {
+  CustomerFormModal,
+  FormModalFooter,
+  FormModalLabel,
+} from '@/shared/components/CustomerFormModal';
 import { useCustomerLabels } from '@/shared/i18n/useCustomerLabels';
+import { RepurchaseCard } from '@/modules/reminders/RepurchaseCard';
+import './RepurchaseSuggestionsPanel.css';
 
 function isVisibleSuggestion(item: RepurchaseSuggestion) {
   if (item.status === 'dismissed' || item.status === 'expired') return false;
@@ -43,9 +51,7 @@ export function RepurchaseSuggestionsPanel({
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [form] = Form.useForm();
 
-  const visibleItems = controlled
-    ? suggestions.filter(isVisibleSuggestion)
-    : items;
+  const visibleItems = controlled ? suggestions.filter(isVisibleSuggestion) : items;
   const resolvedFamilyMembers = externalFamilyMembers ?? familyMembers;
   const panelLoading = controlled ? Boolean(suggestionsLoading) : loading;
 
@@ -140,7 +146,7 @@ export function RepurchaseSuggestionsPanel({
 
   if (panelLoading) {
     return (
-      <div style={{ textAlign: 'center', padding: 16 }}>
+      <div className="repurchase-loading">
         <Spin size="small" />
       </div>
     );
@@ -150,82 +156,75 @@ export function RepurchaseSuggestionsPanel({
 
   return (
     <>
-      <Space direction="vertical" size="middle" style={{ width: '100%', marginBottom: 16 }}>
-        <div>
-          <Typography.Title level={5} style={{ margin: 0 }}>
-            {t('reminders.repurchasePanelTitle')}
-          </Typography.Title>
-          <Typography.Paragraph type="secondary" style={{ marginBottom: 0, fontSize: 12 }}>
-            {t('reminders.repurchasePanelDesc')}
-          </Typography.Paragraph>
+      <section className="repurchase-panel" aria-label={t('reminders.repurchasePanelTitle')}>
+        <div className="repurchase-panel-head">
+          <h2 className="repurchase-panel-title">{t('reminders.repurchasePanelTitle')}</h2>
+          <p className="repurchase-panel-desc">{t('reminders.repurchasePanelDesc')}</p>
         </div>
-        {visibleItems.map((item) => (
-          <Card key={item.id} size="small" style={{ borderRadius: 12 }}>
-            <Space direction="vertical" size={8} style={{ width: '100%' }}>
-              <div>
-                <Typography.Text strong>{item.orderLabel}</Typography.Text>
-                {item.drinkRemindersCreatedAt ? (
-                  <Tag color="blue">{t('repurchase.reminderCreatedTag')}</Tag>
-                ) : null}
-              </div>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {t('repurchase.orderLine', { orderNumber: item.orderNumber })}
-                {item.suggestedForDate
-                  ? t('repurchase.expectedRunOut', {
-                      date: dayjs(item.suggestedForDate).format('DD/MM/YYYY'),
-                    })
-                  : ''}
-              </Typography.Text>
-              <Space wrap>
-                {!item.drinkRemindersCreatedAt ? (
-                  <Button
-                    type="primary"
-                    size="small"
-                    loading={actingId === item.id}
-                    onClick={() => openAccept(item.id)}
-                  >
-                    {t('repurchase.createReminder')}
-                  </Button>
-                ) : null}
-                <Button size="small" loading={actingId === item.id} onClick={() => void onSnooze(item.id)}>
-                  {t('repurchase.snooze3Days')}
-                </Button>
-                <Button size="small" danger loading={actingId === item.id} onClick={() => void onDismiss(item.id)}>
-                  {t('repurchase.dismiss')}
-                </Button>
-              </Space>
-            </Space>
-          </Card>
-        ))}
-      </Space>
 
-      <Modal
-        title={t('repurchase.modalTitle')}
+        <div className="repurchase-list">
+          {visibleItems.map((item) => (
+            <RepurchaseCard
+              key={item.id}
+              item={item}
+              busy={actingId === item.id}
+              onCreate={
+                item.drinkRemindersCreatedAt ? undefined : () => openAccept(item.id)
+              }
+              onSnooze={() => void onSnooze(item.id)}
+              onDismiss={() => void onDismiss(item.id)}
+            />
+          ))}
+        </div>
+      </section>
+
+      <CustomerFormModal
         open={acceptModalOpen}
         onCancel={() => {
           setAcceptModalOpen(false);
           setAcceptingId(null);
         }}
-        onOk={() => void onAccept()}
-        okText={t('repurchase.okCreate')}
-        cancelText={t('common.cancel')}
-        confirmLoading={actingId !== null}
-        destroyOnClose
+        icon={<MedicineBoxOutlined />}
+        title={t('repurchase.modalTitle')}
+        subtitle={t('repurchase.modalSub')}
+        footer={
+          <FormModalFooter
+            onCancel={() => {
+              setAcceptModalOpen(false);
+              setAcceptingId(null);
+            }}
+            onOk={() => void onAccept()}
+            okText={t('repurchase.okCreate')}
+            confirmLoading={actingId !== null}
+          />
+        }
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="familyMemberId" label={t('repurchase.forWho')}>
+        <Form form={form} layout="vertical" className="cfm-form" requiredMark={false}>
+          <Form.Item
+            name="familyMemberId"
+            label={<FormModalLabel icon={<UserOutlined />}>{t('repurchase.forWho')}</FormModalLabel>}
+          >
             <Select
+              size="large"
               allowClear
               placeholder={t('repurchase.forWhoPlaceholder')}
               options={familyOptions}
               notFoundContent={t('repurchase.noFamily')}
             />
           </Form.Item>
-          <Form.Item name="remindTime" label={t('repurchase.remindTime')} rules={[{ required: true }]}>
-            <TimePicker format="HH:mm" style={{ width: '100%' }} />
+          <Form.Item
+            name="remindTime"
+            label={
+              <FormModalLabel icon={<ClockCircleOutlined />} required>
+                {t('repurchase.remindTime')}
+              </FormModalLabel>
+            }
+            rules={[{ required: true }]}
+          >
+            <TimePicker size="large" format="HH:mm" style={{ width: '100%' }} />
           </Form.Item>
         </Form>
-      </Modal>
+      </CustomerFormModal>
     </>
   );
 }
