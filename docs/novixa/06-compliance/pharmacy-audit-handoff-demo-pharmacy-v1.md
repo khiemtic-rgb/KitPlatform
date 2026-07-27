@@ -17,7 +17,7 @@
 | Health | https://api.novixa.vn/api/health |
 | Tenant code | `DEMO_PHARMACY` |
 | Ghi chú môi trường | Cùng hạ tầng production, **tenant demo tách biệt**. Dữ liệu gắn nhãn “thẩm định / demo”. |
-| UI slim | `features.audit_slim_nav=true` — ẩn People / Cockpit / App KH / Gói Novixa / Gộp SP (không đụng `NT_XUANHOA`) |
+| UI slim | `features.audit_slim_nav=true` — xem §5 (ẩn menu ngoài phạm vi thẩm định; bật lại sau khi xong) |
 
 ### Tài khoản UI
 
@@ -277,7 +277,54 @@ GET /api/reports/inventory/stock-snapshot?warehouseId=22222222-2222-2222-2222-22
 
 ---
 
-## 5. Checklist gửi đội thẩm định
+## 5. UI slim thẩm định (ghi nhận) & bật lại sau khi xong
+
+**Mục đích:** Trong lúc thẩm định, menu Admin trên `DEMO_PHARMACY` chỉ giữ luồng Pharmacy cốt lõi (bán / mua / kho / công nợ / khách / SP / báo cáo / cấu hình cơ bản), tránh hỏi lan sang People, Cockpit, App KH, pack thương mại.
+
+**Phạm vi:** Chỉ `DEMO_PHARMACY`. `NT_XUANHOA` và tenant khác **không** bị ảnh hưởng.
+
+### 5.1 Đã ẩn gì (trạng thái thẩm định)
+
+| Menu / tab | Cơ chế |
+|---|---|
+| Phát triển Nhân sự (`/people`) | `audit_slim_nav` — Learning **không** gắn `platformModule`, nên bắt buộc ẩn bằng flag này |
+| Cockpit chủ NT | `audit_slim_nav` (giữ module `reports` để báo cáo tồn vẫn dùng được) |
+| Bán hàng → Đơn từ app, Chat khách | Tắt module `customer_app` (+ gate FE `sales.appOrders` / `sales.chat`) |
+| Khách hàng → Tương tác app | Tắt `customer_app` (`customer.engagement`) |
+| Sản phẩm → Gộp SP trùng | `audit_slim_nav` (ẩn nút + chặn route) |
+| Cấu hình → Gói Novixa | `audit_slim_nav` |
+| Cấu hình → App khách hàng | Tắt `customer_app` |
+
+### 5.2 Code / migration liên quan
+
+| File | Vai trò |
+|---|---|
+| `client/admin/src/shared/platform/audit-slim-nav.ts` | Đọc `features.audit_slim_nav` |
+| `AppLayout`, `SystemLayout`, `SalesLayout`, `Dashboard`, merge/Cockpit pages | Ẩn menu / redirect khi slim |
+| `platform-feature-map.ts` / `product-phases.ts` | Gate app-orders / chat theo `customer_app` |
+| `migrations/237_demo_pharmacy_audit_handoff.sql` | Seed DEMO (đã gồm slim modules + flag) |
+| `migrations/238_demo_pharmacy_audit_slim_nav.sql` | Bật slim trên DEMO đã tồn tại |
+| `scripts/demo-pharmacy-restore-full-nav.sql` | **Bật lại full nav** sau thẩm định (xem §5.3) |
+
+Commits tham chiếu: `896ba11` (seed handoff), `a3cd17c` (slim nav), `3229cb7` (ẩn Learning).
+
+### 5.3 Sau thẩm định — bật lại để demo khách
+
+Chạy SQL **chỉ** trên tenant `DEMO_PHARMACY` (file `scripts/demo-pharmacy-restore-full-nav.sql`):
+
+1. `audit_slim_nav` → `false` (hoặc xóa key)
+2. Thêm lại `customer_app`, `reservations`, `learning` vào `enabled_modules` + `allowed_modules` (nếu thiếu)
+3. Hard refresh Admin (Ctrl+F5), login lại `DEMO_PHARMACY`
+
+Không cần redeploy FE nếu code slim đã có trên VPS — chỉ đổi settings DB là đủ.
+
+**Kiểm tra sau restore:** sidebar có lại Phát triển Nhân sự, Cockpit (nếu có quyền), Đơn từ app / Chat, Tương tác app, Gói Novixa, App khách hàng, nút Gộp SP.
+
+**Muốn slim lại (đợt thẩm định sau):** chạy lại logic trong `238_demo_pharmacy_audit_slim_nav.sql` (hoặc set `audit_slim_nav=true` và bỏ `customer_app` / `reservations` / `learning` khỏi enabled).
+
+---
+
+## 6. Checklist gửi đội thẩm định
 
 - [x] URL Admin / POS / API
 - [x] Tài khoản Admin + Dược sĩ trên `DEMO_PHARMACY`
@@ -285,8 +332,10 @@ GET /api/reports/inventory/stock-snapshot?warehouseId=22222222-2222-2222-2222-22
 - [x] OpenAPI file + mẫu 5 luồng API
 - [x] Không đụng tenant vận hành thật (`NT_XUANHOA`)
 - [x] Verify live login + stock API (2026-07-27)
+- [x] UI slim ngoài phạm vi thẩm định (§5) — nhớ **bật lại** theo §5.3 trước khi demo khách
 
-## 6. Liên quan
+## 7. Liên quan
 
 - Kiến trúc / liên thông CSDL QG: `docs/novixa/06-compliance/cuc-qld-lien-thong/`
 - RBAC Pharmacy (STAFF không xem doanh thu/cockpit): `docs/novixa/03-operations/pharmacy-rbac-deploy-sync-runbook-v1.md`
+- Restore full nav: `scripts/demo-pharmacy-restore-full-nav.sql`
