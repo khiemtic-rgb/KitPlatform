@@ -19,15 +19,11 @@ export interface ReportDefinition {
   supportsSearch?: boolean;
   supportsExpiryDays?: boolean;
   favorite?: boolean;
-  /** Hide on DEMO audit_slim_nav (Connect / PK out of pharmacy audit scope). */
-  hideWhenAuditSlim?: boolean;
 }
 
 type ReportDefinitionMeta = Omit<ReportDefinition, 'name' | 'description'>;
 
-export type ReportCatalogOptions = {
-  auditSlimNav?: boolean;
-};
+export type ReportCatalogOptions = Record<string, never>;
 
 const REPORT_DEFINITIONS_META: ReportDefinitionMeta[] = [
   {
@@ -67,16 +63,8 @@ const REPORT_DEFINITIONS_META: ReportDefinitionMeta[] = [
     supportsWarehouse: true,
     favorite: true,
   },
-  {
-    code: 'SALES-05',
-    category: 'sales',
-    path: '/reports/sales/revenue-by-clinic-doctor',
-    apiPath: 'sales/revenue-by-clinic-doctor',
-    supportsDateRange: true,
-    supportsWarehouse: true,
-    favorite: true,
-    hideWhenAuditSlim: true,
-  },
+  // SALES-05 (revenue-by-clinic-doctor / Connect PK) — intentionally omitted from UI catalog
+  // for pharmacy audit handoff. API route may remain; restore here when Connect is in scope.
   {
     code: 'PROC-01',
     category: 'procurement',
@@ -134,11 +122,8 @@ function localizeReport(meta: ReportDefinitionMeta): ReportDefinition {
   };
 }
 
-export function getReportDefinitions(options?: ReportCatalogOptions): ReportDefinition[] {
-  const auditSlimNav = options?.auditSlimNav === true;
-  return REPORT_DEFINITIONS_META
-    .filter((meta) => !(auditSlimNav && meta.hideWhenAuditSlim))
-    .map(localizeReport);
+export function getReportDefinitions(_options?: ReportCatalogOptions): ReportDefinition[] {
+  return REPORT_DEFINITIONS_META.map(localizeReport);
 }
 
 export function getReportCategoryLabel(category: ReportCategory): string {
@@ -147,14 +132,14 @@ export function getReportCategoryLabel(category: ReportCategory): string {
 
 export function findReportByPath(
   pathname: string,
-  options?: ReportCatalogOptions,
+  _options?: ReportCatalogOptions,
 ): ReportDefinition | undefined {
-  return getReportDefinitions(options).find((r) => pathname.startsWith(r.path));
+  return getReportDefinitions().find((r) => pathname.startsWith(r.path));
 }
 
 export function reportsForCategory(
   category: ReportCategory,
-  options?: ReportCatalogOptions,
+  _options?: ReportCatalogOptions,
 ): ReportDefinition[] {
-  return getReportDefinitions(options).filter((r) => r.category === category);
+  return getReportDefinitions().filter((r) => r.category === category);
 }

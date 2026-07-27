@@ -4,7 +4,6 @@ import { Tabs, Typography } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { secondaryTabsBarStyle } from '@/shared/components/module-tabs.ui';
 import { reportsForCategory, type ReportCategory } from '@/modules/reports/reports-catalog';
-import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 
 export function categoryFromReportPath(pathname: string): ReportCategory | null {
   if (pathname.startsWith('/reports/sales')) return 'sales';
@@ -17,11 +16,10 @@ export function ReportCategoryNav() {
   const { i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const auditSlimNav = useAuditSlimNav();
   const category = categoryFromReportPath(location.pathname);
   const reports = useMemo(
-    () => (category ? reportsForCategory(category, { auditSlimNav }) : []),
-    [category, i18n.language, auditSlimNav],
+    () => (category ? reportsForCategory(category) : []),
+    [category, i18n.language],
   );
 
   if (!category) return null;

@@ -322,7 +322,7 @@ GET /api/reports/inventory/stock-snapshot?warehouseId=22222222-2222-2222-2222-22
 | Bán hàng → Đơn từ app, Chat khách | Tắt module `customer_app` (+ gate FE `sales.appOrders` / `sales.chat`) |
 | Khách hàng → Tương tác app | Tắt `customer_app` (`customer.engagement`) |
 | Sản phẩm → Gộp SP trùng | `audit_slim_nav` (ẩn nút + chặn route) |
-| Báo cáo → Đơn bán theo phòng khám / bác sĩ (SALES-05) | `audit_slim_nav` (Connect/PK ngoài phạm vi thẩm định Pharmacy) |
+| Báo cáo → Đơn bán theo phòng khám / bác sĩ (SALES-05) | **Gỡ khỏi catalog UI** (Connect/PK ngoài phạm vi thẩm định; API vẫn có thể gọi) |
 | Cấu hình → Gói Novixa | `audit_slim_nav` |
 | Cấu hình → App khách hàng | Tắt `customer_app` |
 

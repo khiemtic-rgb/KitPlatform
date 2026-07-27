@@ -34,7 +34,6 @@ import { findReportByPath } from '@/modules/reports/reports-catalog';
 import { buildReportFilterDisplayEntries, filterHintsForReport } from '@/modules/reports/report-filter-ui';
 import { exportReportCsv, formatReportCell, printReportElement } from '@/modules/reports/report-export';
 import { useCanReportsExport } from '@/shared/auth/usePermission';
-import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 
 const { RangePicker } = DatePicker;
 
@@ -63,11 +62,10 @@ export function ReportViewPage() {
   const { t, i18n } = useTranslation('reports', { keyPrefix: 'view' });
   const { t: tg } = useTranslation('reports', { keyPrefix: 'groupBy' });
   const location = useLocation();
-  const auditSlimNav = useAuditSlimNav();
   const canExportReports = useCanReportsExport();
   const definition = useMemo(
-    () => findReportByPath(location.pathname, { auditSlimNav }),
-    [location.pathname, i18n.language, auditSlimNav],
+    () => findReportByPath(location.pathname),
+    [location.pathname, i18n.language],
   );
 
   const [range, setRange] = useState<[Dayjs, Dayjs]>(defaultRange);
@@ -202,10 +200,7 @@ export function ReportViewPage() {
     [suggestionProducts],
   );
 
-  if (
-    auditSlimNav &&
-    location.pathname.startsWith('/reports/sales/revenue-by-clinic-doctor')
-  ) {
+  if (location.pathname.startsWith('/reports/sales/revenue-by-clinic-doctor')) {
     return <Navigate to="/reports" replace />;
   }
 
