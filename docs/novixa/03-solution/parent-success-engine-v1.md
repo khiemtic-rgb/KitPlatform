@@ -119,6 +119,7 @@ Parent Home không còn dashboard stack (ROP/Wins/Letter/Twin).
 Layout: **AI Brief → Need Attention (nếu có) → Progress strip → Explore chips**.  
 SoT: `buildHomeBrief` + `buildParentPulse` + coach tip; ROP/Letter/3Q trên tab Value.  
 **P0.5:** Brief ưu tiên Attention khi có việc; CTA/deep-link `#fv-3q` / `#fv-rop` / `#fv-ai-letter`.  
+**P1/P2:** Family Feed (ẩn nếu trống) + Memory win vào Brief bullets.  
 Chi tiết: `parent-home-brief-p0-plan.md`.
 
 Không deploy pilot hàng loạt khi Family OS vẫn park.

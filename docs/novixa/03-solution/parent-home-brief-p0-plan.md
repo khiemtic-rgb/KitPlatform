@@ -102,10 +102,10 @@ Hàng chip/link: Famixa đồng hành · Growth Report (`#fv-rop`) · Letter (`#
 | Coach / capability paywall vẫn hoạt động | |
 | `tsc` family-app OK | |
 
-## Follow-ups (không P0.5)
+## Follow-ups
 
-- **P1:** Family Feed chỉ khi có event mới hôm nay  
-- **P2:** Brief lấy Memory win trong ngày (“lần đầu tự học”)  
+- **P1:** Family Feed chỉ khi có event mới hôm nay — **IMPLEMENTED** (`buildHomeFamilyFeed`, ẩn nếu trống)
+- **P2:** Brief lấy Memory win trong ngày — **IMPLEMENTED** (`memoryWinVi` → bullet đầu khi không Attention)
 - **P3:** Coach Act Rate / `parent_coach_acted`
 
 ## Quyết định mặc định (đã khóa trong plan)

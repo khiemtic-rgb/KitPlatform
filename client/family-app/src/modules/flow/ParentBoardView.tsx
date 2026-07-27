@@ -66,6 +66,10 @@ import { clearOnboardingProfile } from '@/shared/onboarding/onboarding';
 import { buildParentPulse } from '@/shared/value/parent-pulse';
 import { resolveParentCoach } from '@/shared/value/resolve-parenting-coach';
 import { buildHomeBrief } from '@/shared/value/home-brief';
+import {
+  buildHomeFamilyFeed,
+  pickMemoryWinVi,
+} from '@/shared/value/home-family-feed';
 import { FamilyValuePanel } from '@/modules/flow/FamilyValuePanel';
 import { BillingBanner } from '@/shared/ui/BillingBanner';
 import { PaywallSheet } from '@/shared/ui/PaywallSheet';
@@ -1022,6 +1026,11 @@ export function ParentBoardView({
     ],
   );
 
+  const memoryWinVi = useMemo(
+    () => pickMemoryWinVi(savedMemories, flow.flowDate),
+    [savedMemories, flow.flowDate],
+  );
+
   const homeBrief = useMemo(() => {
     const who =
       (selectedChild?.name ?? focusChild?.name ?? 'Con').trim().split(/\s+/).pop() || 'Con';
@@ -1051,6 +1060,7 @@ export function ParentBoardView({
       topAttention,
       localTime: flow.localTime,
       eveningCheckinDone: Boolean(eveningCheckin),
+      memoryWinVi,
     });
   }, [
     parentPulse,
@@ -1060,11 +1070,25 @@ export function ParentBoardView({
     eveningCheckin,
     selectedChild?.name,
     focusChild?.name,
+    memoryWinVi,
   ]);
 
   const homeAttention = useMemo(
     () => attentionItems.slice(0, 3),
     [attentionItems],
+  );
+
+  const homeFeed = useMemo(
+    () =>
+      buildHomeFamilyFeed({
+        flowDate: flow.flowDate,
+        gratitudes: childGratitudes,
+        memories: savedMemories,
+        doneCommitments: scopedCommitments,
+        redemptions: childRedemptions,
+        max: 4,
+      }),
+    [flow.flowDate, childGratitudes, savedMemories, scopedCommitments, childRedemptions],
   );
 
   const buckets = useMemo(() => {
@@ -1852,20 +1876,50 @@ export function ParentBoardView({
             ) : null}
           </section>
 
-          {childGratitudes.length > 0 ? (
-            <section className="ph-brief-moment" aria-label="Khoảnh khắc">
-              <p className="ph-brief-eyebrow" style={{ color: '#5a4a3a' }}>
-                Con đang lớn lên
-              </p>
-              <p className="ph-brief-mood" style={{ fontSize: '1.05rem', color: '#1a3344' }}>
-                {childGratitudes[0].messageVi}
-              </p>
-              <em className="ph-brief-note" style={{ color: '#5a4a3a' }}>
-                {childGratitudes[0].fromMemberName}
-                {childGratitudes[0].praiseContext
-                  ? ` · vì «${childGratitudes[0].praiseContext}»`
-                  : ''}
-              </em>
+          {homeFeed.length > 0 ? (
+            <section className="ph-brief-feed" aria-label="Family Feed hôm nay">
+              <header className="ph-brief-section-head">
+                <h3>Hôm nay có gì mới</h3>
+                <button
+                  type="button"
+                  className="ph-text-link"
+                  onClick={() => goValueAnchor('fv-ai-letter')}
+                >
+                  Nhật ký →
+                </button>
+              </header>
+              <ul className="ph-brief-feed-list">
+                {homeFeed.map((item) => (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      className="ph-brief-feed-item"
+                      onClick={() => {
+                        if (item.go === 'tasks') {
+                          scrollToMissions();
+                          return;
+                        }
+                        if (item.go === 'rewards') {
+                          setTab('rewards');
+                          return;
+                        }
+                        if (item.go === 'diary') {
+                          setTab('value');
+                          openMemoriesSheet();
+                          return;
+                        }
+                        goValueAnchor('fv-ai-letter');
+                      }}
+                    >
+                      <span aria-hidden>{item.icon}</span>
+                      <span>
+                        <strong>{item.titleVi}</strong>
+                        {item.detailVi ? <em>{item.detailVi}</em> : null}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </section>
           ) : null}
 
@@ -2012,7 +2066,7 @@ export function ParentBoardView({
               font-size: 0.95rem;
               letter-spacing: 0.02em;
             }
-            .ph-brief-attn, .ph-brief-progress, .ph-brief-moment, .ph-brief-explore {
+            .ph-brief-attn, .ph-brief-progress, .ph-brief-feed, .ph-brief-explore {
               margin: 0 0 14px;
             }
             .ph-brief-attn-list {
@@ -2073,7 +2127,8 @@ export function ParentBoardView({
               font-weight: 700;
             }
             .ph-brief-progress .ph-text-link,
-            .ph-brief-attn .ph-text-link {
+            .ph-brief-attn .ph-text-link,
+            .ph-brief-feed .ph-text-link {
               background: none;
               border: 0;
               padding: 0;
@@ -2081,11 +2136,38 @@ export function ParentBoardView({
               font: inherit;
               cursor: pointer;
             }
-            .ph-brief-moment {
-              padding: 14px 14px;
-              border-radius: 16px;
-              background: #f7f4ef;
+            .ph-brief-feed-list {
+              list-style: none;
+              margin: 0;
+              padding: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+            }
+            .ph-brief-feed-item {
+              width: 100%;
+              display: flex;
+              align-items: flex-start;
+              gap: 10px;
+              text-align: left;
               border: 1px solid #e6ddd0;
+              background: #f7f4ef;
+              border-radius: 14px;
+              padding: 10px 12px;
+              color: #1a3344;
+              cursor: pointer;
+            }
+            .ph-brief-feed-item strong {
+              display: block;
+              font-size: 0.92rem;
+              line-height: 1.35;
+            }
+            .ph-brief-feed-item em {
+              display: block;
+              margin-top: 2px;
+              font-style: normal;
+              font-size: 0.8rem;
+              color: #5a4a3a;
             }
             .ph-brief-chips {
               display: flex;

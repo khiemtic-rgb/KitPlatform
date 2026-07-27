@@ -42,6 +42,7 @@ function localHour(localTime?: string | null, fallback = new Date()): number {
 
 /**
  * P0.5 Home Brief — prioritize Attention when present; else coach tip.
+ * P2: optional memoryWinVi becomes first bullet when not in Attention mode.
  */
 export function buildHomeBrief(input: {
   pulse: ParentPulse;
@@ -50,12 +51,14 @@ export function buildHomeBrief(input: {
   topAttention?: HomeBriefAttentionLite | null;
   localTime?: string | null;
   eveningCheckinDone?: boolean;
+  /** Today memory win line, e.g. "Lần đầu: tự học". */
+  memoryWinVi?: string | null;
 }): HomeBrief {
   const hour = localHour(input.localTime);
   const period: HomeBriefPeriod = hour >= 17 ? 'evening' : 'morning';
   const { pulse, coach } = input;
 
-  const bullets = [pulse.nudgeLineVi, pulse.autonomyLineVi, pulse.peaceLineVi]
+  let bullets = [pulse.nudgeLineVi, pulse.autonomyLineVi, pulse.peaceLineVi]
     .map((b) => b.trim())
     .filter(Boolean)
     .slice(0, 3);
@@ -108,6 +111,14 @@ export function buildHomeBrief(input: {
       reasonVi: coach.insight,
       doThisVi: coach.doThis,
     };
+  }
+
+  const win = input.memoryWinVi?.trim();
+  if (win && primaryAction.kind !== 'attention') {
+    bullets = [win, ...bullets.filter((b) => b !== win)].slice(0, 3);
+    if (period === 'evening' && primaryAction.kind !== 'evening_checkin') {
+      moodLineVi = `Hôm nay có khoảnh khắc đáng nhớ — ${win}`;
+    }
   }
 
   let eveningCheckinHintVi: string | undefined;
