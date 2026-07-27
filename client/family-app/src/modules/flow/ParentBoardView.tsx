@@ -50,6 +50,8 @@ import {
   formatFamilyAiLetterShare,
   type FamilyAiWinsDigest,
   type FamilyAiLetter,
+  fetchFamilySubscription,
+  type FamilySubscription,
   fetchParentSuccessEveningCheckin,
   upsertParentSuccessEveningCheckin,
   fetchParentAchievements,
@@ -83,6 +85,13 @@ import { clearOnboardingProfile } from '@/shared/onboarding/onboarding';
 import { buildParentPulse } from '@/shared/value/parent-pulse';
 import { resolveParentCoach } from '@/shared/value/resolve-parenting-coach';
 import { FamilyValuePanel } from '@/modules/flow/FamilyValuePanel';
+import { BillingBanner } from '@/shared/ui/BillingBanner';
+import { PaywallSheet } from '@/shared/ui/PaywallSheet';
+import {
+  getApiErrorMessage,
+  isCapabilityPaywallError,
+} from '@/shared/billing/capability-error';
+import { buildTrialRopConversion } from '@/shared/billing/trial-rop-conversion';
 import {
   buildFamilyMemories,
   FAMILY_MEMORY_EMPTY,
@@ -549,6 +558,11 @@ export function ParentBoardView({
   const [coachInsight, setCoachInsight] = useState<FamilyCoachInsight | null>(null);
   const [behaviorCoach, setBehaviorCoach] = useState<BehaviorCoach | null>(null);
   const [rop, setRop] = useState<ParentSuccessRop | null>(null);
+  const [subscription, setSubscription] = useState<FamilySubscription | null>(null);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallReason, setPaywallReason] = useState<string | null>(null);
+  const [ropBlocked, setRopBlocked] = useState(false);
+  const [twinBlocked, setTwinBlocked] = useState(false);
   const [winsDigest, setWinsDigest] = useState<FamilyAiWinsDigest | null>(null);
   const [aiLetter, setAiLetter] = useState<FamilyAiLetter | null>(null);
   const [eveningCheckin, setEveningCheckin] = useState<ParentSuccessCheckin | null>(null);
@@ -756,6 +770,13 @@ export function ParentBoardView({
 
   useEffect(() => {
     let cancelled = false;
+    void fetchFamilySubscription(familyId)
+      .then((s) => {
+        if (!cancelled) setSubscription(s);
+      })
+      .catch(() => {
+        if (!cancelled) setSubscription(null);
+      });
     void fetchFamilyScore(familyId)
       .then((s) => {
         if (!cancelled) setFamilyScore(s);
@@ -765,17 +786,29 @@ export function ParentBoardView({
       });
     void fetchBehaviorTwin(familyId)
       .then((t) => {
-        if (!cancelled) setBehaviorTwin(t);
+        if (!cancelled) {
+          setBehaviorTwin(t);
+          setTwinBlocked(false);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setBehaviorTwin(null);
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setBehaviorTwin(null);
+          if (isCapabilityPaywallError(err)) setTwinBlocked(true);
+        }
       });
     void fetchFamilyBehaviorTwin(familyId)
       .then((t) => {
-        if (!cancelled) setFamilyTwin(t);
+        if (!cancelled) {
+          setFamilyTwin(t);
+          setTwinBlocked(false);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setFamilyTwin(null);
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setFamilyTwin(null);
+          if (isCapabilityPaywallError(err)) setTwinBlocked(true);
+        }
       });
     void fetchFamilyCoachInsight(familyId, flow.flowDate)
       .then((c) => {
@@ -793,10 +826,16 @@ export function ParentBoardView({
       });
     void fetchParentSuccessRop(familyId, { days: 30, asOf: flow.flowDate })
       .then((r) => {
-        if (!cancelled) setRop(r);
+        if (!cancelled) {
+          setRop(r);
+          setRopBlocked(false);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setRop(null);
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setRop(null);
+          if (isCapabilityPaywallError(err)) setRopBlocked(true);
+        }
       });
     void fetchFamilyAiWinsDigest(familyId, { to: flow.flowDate, limit: 5 })
       .then((r) => {
@@ -1711,6 +1750,39 @@ export function ParentBoardView({
     ];
   }, [teamUnlocks, scopedCommitments, explorerLevel, rewardPoints]);
 
+  const hasCap = (cap: string) => {
+    const caps = subscription?.capabilities;
+    if (!caps || caps.length === 0) return true; // optimistic until pack loads
+    return caps.some((c) => c.toLowerCase() === cap.toLowerCase());
+  };
+
+  const openPaywall = (reason?: string | null) => {
+    setPaywallReason(reason?.trim() || null);
+    setPaywallOpen(true);
+  };
+
+  const openCoachOrPaywall = () => {
+    if (!hasCap('parenting_coach') && !hasCap('behavior_coach')) {
+      openPaywall(
+        subscription?.upgradeHintVi ||
+          'Gói hiện tại chưa gồm AI Parenting Coach — nâng Family Peace Plan để Famixa đồng hành.',
+      );
+      return;
+    }
+    setCoachOpen(true);
+  };
+
+  const isTrialSub = subscription?.status === 'trial' && subscription.isEntitled;
+  const trialDaysLeft = subscription?.trialDaysRemaining;
+  const trialRop =
+    isTrialSub && rop ? buildTrialRopConversion(rop) : null;
+  const showTrialConversion = Boolean(trialRop);
+  const showRopTeaser =
+    !rop &&
+    (ropBlocked ||
+      subscription?.tierCode === 'free' ||
+      (subscription != null && !subscription.isEntitled));
+
   const handleFulfillRedemption = async (redemptionId: string) => {
     if (!parentMembershipId || fulfillBusyId) return;
     setFulfillBusyId(redemptionId);
@@ -1734,6 +1806,7 @@ export function ParentBoardView({
           {actionToast}
         </div>
       ) : null}
+      {tab === 'home' ? <BillingBanner familyId={familyId} /> : null}
       {tab !== 'tasks' && tab !== 'rewards' && tab !== 'value' ? (
       <header className="ph-top">
         <div className="ph-identity">
@@ -1789,7 +1862,7 @@ export function ParentBoardView({
                   </p>
                 ) : null}
                 <div className="ph-pulse-actions">
-                  <button type="button" className="ph-pulse-cta" onClick={() => setCoachOpen(true)}>
+                  <button type="button" className="ph-pulse-cta" onClick={openCoachOrPaywall}>
                     Famixa đồng hành →
                   </button>
                   <button
@@ -1811,7 +1884,77 @@ export function ParentBoardView({
                 ) : null}
               </article>
 
-              {rop ? (
+              {showTrialConversion && trialRop && rop ? (
+                <article
+                  className={`ph-rop-card ph-rop-trial${
+                    trialDaysLeft != null && trialDaysLeft <= 7 ? ' is-urgent' : ''
+                  }`}
+                  id="ph-rop-home"
+                >
+                  <p className="ph-rop-eyebrow">
+                    Trial · còn {trialDaysLeft != null ? `${trialDaysLeft} ngày` : 'một chút'}
+                  </p>
+                  <h2>{trialRop.titleVi}</h2>
+                  <p className="ph-rop-score">{trialRop.summaryVi}</p>
+                  <div className="ph-rop-metrics" aria-label="Kết quả trial">
+                    <div>
+                      <span className="ph-rop-metric-label">Lần phải nhắc</span>
+                      <strong>
+                        {trialRop.nudgeBefore} → {trialRop.nudgeAfter}
+                        {trialRop.nudgeDeltaPct != null && trialRop.nudgeDeltaPct > 0
+                          ? ` (−${trialRop.nudgeDeltaPct}%)`
+                          : ''}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="ph-rop-metric-label">Con tự bắt đầu</span>
+                      <strong>
+                        {trialRop.selfBefore} → {trialRop.selfAfter}
+                        {trialRop.selfDeltaPct != null && trialRop.selfDeltaPct > 0
+                          ? ` (+${trialRop.selfDeltaPct}%)`
+                          : ''}
+                      </strong>
+                    </div>
+                  </div>
+                  {rop.minutesSavedEstimate > 0 ? (
+                    <p className="ph-rop-minutes">
+                      ~{rop.minutesSavedEstimate} phút nhắc nhở được tiết kiệm (ước tính)
+                    </p>
+                  ) : null}
+                  <div className="ph-rop-actions">
+                    <button
+                      type="button"
+                      className="ph-pulse-cta"
+                      onClick={() =>
+                        openPaywall(
+                          'Giữ nhịp Pro sau trial — Coach, ROP và Letter tiếp tục đo giúp bạn.',
+                        )
+                      }
+                    >
+                      {trialRop.ctaVi}
+                    </button>
+                    <button
+                      type="button"
+                      className="ph-text-link"
+                      onClick={() =>
+                        void shareOrCopyNudge(
+                          formatParentSuccessRopShare(rop, familyName),
+                          { preferShare: true },
+                        ).then((mode) =>
+                          showActionToast(
+                            mode === 'shared' ? 'Đã mở chia sẻ ROP' : 'Đã copy ROP',
+                          ),
+                        )
+                      }
+                    >
+                      Chia sẻ
+                    </button>
+                  </div>
+                  {rop.isPartial && rop.partialNoteVi ? (
+                    <p className="ph-pulse-note">{rop.partialNoteVi}</p>
+                  ) : null}
+                </article>
+              ) : rop ? (
                 <article className="ph-rop-card" id="ph-rop-home">
                   <p className="ph-rop-eyebrow">ROP · Return on Parenting</p>
                   <h2>{rop.headlineVi}</h2>
@@ -1854,6 +1997,62 @@ export function ParentBoardView({
                   {rop.isPartial && rop.partialNoteVi ? (
                     <p className="ph-pulse-note">{rop.partialNoteVi}</p>
                   ) : null}
+                </article>
+              ) : showRopTeaser ? (
+                <article className="ph-rop-card ph-rop-teaser" id="ph-rop-home">
+                  <p className="ph-rop-eyebrow">ROP · có trong Peace Plan</p>
+                  <h2>Đo “nhẹ tay hơn” sau 30 ngày</h2>
+                  <p className="ph-rop-score">
+                    {subscription?.upgradeHintVi ||
+                      'Free giữ routine. Growth Report / Coach mở khi nâng Family Peace Plan.'}
+                  </p>
+                  <div className="ph-rop-actions">
+                    <button
+                      type="button"
+                      className="ph-pulse-cta"
+                      onClick={() => openPaywall(subscription?.upgradeHintVi)}
+                    >
+                      Xem Family Peace Plan · 199.000đ
+                    </button>
+                  </div>
+                </article>
+              ) : null}
+
+              {rop?.hasAiPlusDeep && rop.deepPlaybookVi ? (
+                <article className="ph-rop-card ph-aiplus-card" id="ph-aiplus-home">
+                  <p className="ph-rop-eyebrow">AI+ · Playbook tuần</p>
+                  <h2>Đồng hành chuyên sâu</h2>
+                  <p className="ph-rop-score">{rop.deepPlaybookVi}</p>
+                  {rop.deepActionsVi && rop.deepActionsVi.length > 0 ? (
+                    <ul className="ph-rop-bullets">
+                      {rop.deepActionsVi.slice(0, 3).map((a) => (
+                        <li key={a}>{a}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </article>
+              ) : subscription?.tierCode === 'pro' &&
+                subscription.isEntitled &&
+                subscription.status !== 'trial' ? (
+                <article className="ph-rop-card ph-rop-teaser" id="ph-aiplus-home">
+                  <p className="ph-rop-eyebrow">AI+ · sắp mở rộng</p>
+                  <h2>Playbook tuần & scan sâu hơn</h2>
+                  <p className="ph-rop-score">
+                    Peace Plan đã mở Coach/ROP. AI+ thêm playbook tuần và đề xuất anh chị / tối.
+                  </p>
+                  <div className="ph-rop-actions">
+                    <button
+                      type="button"
+                      className="ph-pulse-cta"
+                      onClick={() =>
+                        openPaywall(
+                          'Nâng AI+ để mở Weekly Deep Playbook và adaptive scan mở rộng.',
+                        )
+                      }
+                    >
+                      Xem AI+ · 399.000đ
+                    </button>
+                  </div>
                 </article>
               ) : null}
 
@@ -2044,6 +2243,41 @@ export function ParentBoardView({
                   background: #f3f7f4;
                   color: #1a3344;
                   border: 1px solid #d5e6dc;
+                }
+                .ph-rop-card.ph-rop-trial {
+                  background: linear-gradient(165deg, #eef6f1 0%, #f7f4ef 100%);
+                  border-color: #c5ddcf;
+                }
+                .ph-rop-card.ph-rop-trial.is-urgent {
+                  border-color: #c9a882;
+                  box-shadow: 0 0 0 1px rgba(180, 120, 60, 0.12);
+                }
+                .ph-rop-card.ph-rop-teaser {
+                  background: #f7f4ef;
+                  border-style: dashed;
+                }
+                .ph-rop-metrics {
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  gap: 10px;
+                  margin: 0 0 12px;
+                }
+                .ph-rop-metrics > div {
+                  padding: 10px 12px;
+                  border-radius: 12px;
+                  background: rgba(255, 255, 255, 0.65);
+                }
+                .ph-rop-metric-label {
+                  display: block;
+                  font-size: 0.72rem;
+                  letter-spacing: 0.04em;
+                  text-transform: uppercase;
+                  opacity: 0.65;
+                  margin-bottom: 4px;
+                }
+                .ph-rop-metrics strong {
+                  font-size: 0.95rem;
+                  line-height: 1.3;
                 }
                 .ph-rop-eyebrow {
                   margin: 0 0 6px;
@@ -2330,7 +2564,13 @@ export function ParentBoardView({
                           setInboxTick((t) => t + 1);
                           showActionToast('AI đã đề xuất ngân sách tuần — duyệt trong hộp thư.');
                         })
-                        .catch(() => showActionToast('Chưa đề xuất được ví tuần.'));
+                        .catch((err: unknown) => {
+                          if (isCapabilityPaywallError(err)) {
+                            openPaywall(getApiErrorMessage(err));
+                            return;
+                          }
+                          showActionToast('Chưa đề xuất được ví tuần.');
+                        });
                     }}
                   >
                     Đề xuất ví tuần
@@ -2407,7 +2647,11 @@ export function ParentBoardView({
                             setFamilyTwin(t);
                             onRefreshFlow?.();
                           })
-                          .catch(() => undefined)
+                          .catch((err: unknown) => {
+                            if (isCapabilityPaywallError(err)) {
+                              openPaywall(getApiErrorMessage(err));
+                            }
+                          })
                           .finally(() => setObserveBusy(false));
                       }}
                     />
@@ -2418,6 +2662,29 @@ export function ParentBoardView({
                       Gợi ý: nhà đang sẵn sàng Observe-only — bật công tắc phía trên.
                     </p>
                   ) : null}
+                </section>
+              ) : twinBlocked ||
+                (subscription != null &&
+                  !hasCap('behavior_twin') &&
+                  (subscription.tierCode === 'free' || !subscription.isEntitled)) ? (
+                <section className="ph-block ph-cap-teaser">
+                  <header className="ph-block-head">
+                    <h2>Behavior Twin</h2>
+                  </header>
+                  <p className="ph-empty-soft">
+                    Tín hiệu hành vi / AI Retirement có từ Plus (Growth Plan).
+                  </p>
+                  <button
+                    type="button"
+                    className="ph-pulse-cta"
+                    onClick={() =>
+                      openPaywall(
+                        'Twin có từ Plus. Peace Plan thêm Coach/ROP — khuyến nghị 199.000đ.',
+                      )
+                    }
+                  >
+                    Xem gói nâng cấp
+                  </button>
                 </section>
               ) : null}
 
@@ -2591,7 +2858,7 @@ export function ParentBoardView({
                 <button
                   type="button"
                   className="ph-foxy-strip-btn"
-                  onClick={() => setCoachOpen(true)}
+                  onClick={openCoachOrPaywall}
                 >
                   Famixa
                 </button>
@@ -3169,6 +3436,7 @@ export function ParentBoardView({
               glance={glance}
               nudgeToday={nudgeToday}
               momentCount={savedMemories.length + childGratitudes.length}
+              onOpenPaywall={(reason) => openPaywall(reason)}
             />
           </div>
 
@@ -4322,7 +4590,14 @@ export function ParentBoardView({
                             setActedTipIds(r.actedTipIdsToday);
                             showActionToast(r.messageVi);
                           })
-                          .catch(() => showActionToast('Chưa ghi nhận được — thử lại nhé'))
+                          .catch((err: unknown) => {
+                            if (isCapabilityPaywallError(err)) {
+                              setCoachOpen(false);
+                              openPaywall(getApiErrorMessage(err));
+                              return;
+                            }
+                            showActionToast('Chưa ghi nhận được — thử lại nhé');
+                          })
                           .finally(() => setCoachActBusyId(null));
                       }}
                     >
@@ -4490,6 +4765,17 @@ export function ParentBoardView({
           </div>
         </div>
       ) : null}
+
+      <PaywallSheet
+        open={paywallOpen}
+        onClose={() => {
+          setPaywallOpen(false);
+          setPaywallReason(null);
+        }}
+        familyId={familyId}
+        subscription={subscription}
+        reasonVi={paywallReason}
+      />
     </section>
   );
 }

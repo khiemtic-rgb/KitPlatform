@@ -353,8 +353,11 @@ export function WhoAreYouPage() {
             </p>
             <p className="home-billing-note">
               {sub && !sub.isEntitled
-                ? 'Gia hạn để mở lại Daily Flow và sao.'
-                : 'Cả nhà cùng thói quen — nâng cấp khi sẵn sàng.'}
+                ? sub.upgradeHintVi ||
+                  'Free giữ routine cơ bản. Nâng Family Peace Plan để mở Coach, ROP và Letter.'
+                : isTrial
+                  ? 'Trial đang mở tầng Pro — giữ Peace Plan trước khi hết hạn.'
+                  : 'Cả nhà cùng thói quen — nâng cấp khi sẵn sàng.'}
             </p>
             {isTrial && trialDaysLeft != null ? (
               <div
@@ -369,7 +372,11 @@ export function WhoAreYouPage() {
             ) : null}
           </div>
           <button type="button" className="home-billing-cta" onClick={goCheckout}>
-            {sub && !sub.isEntitled ? 'Gia hạn' : 'Nâng cấp'}
+            {sub && !sub.isEntitled
+              ? 'Family Peace Plan · 199k'
+              : isTrial
+                ? 'Giữ Peace Plan'
+                : 'Nâng cấp'}
           </button>
         </section>
       ) : null}

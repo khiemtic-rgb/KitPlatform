@@ -174,6 +174,38 @@ internal sealed class FamilyParentSuccessService : IFamilyParentSuccessService
             ? "Đây là ROP của Famixa: bạn đang nuôi dạy nhẹ hơn và hiệu quả hơn — đáng để giữ nhịp."
             : "Tiếp tục vài tuần nữa — khi nhắc ↓ và tự bắt đầu ↑, đây sẽ là bằng chứng gia hạn.";
 
+        string? deepPlaybook = null;
+        IReadOnlyList<string>? deepActions = null;
+        var hasDeep = false;
+        try
+        {
+            var pack = await _commercial.GetCapabilityPackAsync(familyId, cancellationToken);
+            hasDeep = pack.Capabilities.Contains(
+                FamilyCapabilityCodes.AiPlusDeep, StringComparer.OrdinalIgnoreCase);
+            if (hasDeep)
+            {
+                deepPlaybook =
+                    $"Playbook tuần ({start:dd/MM}–{end:dd/MM}): ưu tiên giảm nhắc trước 20:00, " +
+                    $"giữ Observe-only khi twin ổn định, và chọn 1 tip Coach để thử mỗi tối.";
+                var actions = new List<string>();
+                if (nudgeLate > 0)
+                    actions.Add("Tối nay: để 1 việc không nhắc — ghi nhận nếu con tự bắt đầu.");
+                if (selfLate <= selfEarly)
+                    actions.Add("Mai: hỏi con chọn thứ tự 2 việc đầu — tăng quyền tự chủ.");
+                if (qualityTotal == 0)
+                    actions.Add("Cuối tuần: lưu 1 kỷ niệm ấm vào Timeline (15 giây).");
+                if (conflictProxyLate > conflictProxyEarly)
+                    actions.Add("Khi skip: hỏi “cần giúp gì?” thay vì nhắc lại.");
+                if (actions.Count == 0)
+                    actions.Add("Giữ nhịp hiện tại — AI+ sẽ tinh chỉnh khi có thêm tín hiệu.");
+                deepActions = actions;
+            }
+        }
+        catch
+        {
+            // optional enrich
+        }
+
         return new ParentSuccessRopDto(
             familyId,
             window,
@@ -200,7 +232,10 @@ internal sealed class FamilyParentSuccessService : IFamilyParentSuccessService
             doneEarly,
             doneLate,
             graduations,
-            qualityTotal);
+            qualityTotal,
+            deepPlaybook,
+            deepActions,
+            hasDeep);
     }
 
     public async Task<ParentSuccessCheckinDto?> GetEveningCheckinAsync(

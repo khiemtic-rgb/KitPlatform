@@ -30,7 +30,9 @@ public sealed record FamilyAiLetterDto(
     string BodyVi,
     IReadOnlyList<string> HighlightsVi,
     string ClosingVi,
-    bool IsThinData);
+    bool IsThinData,
+    IReadOnlyList<string>? DeepHighlightsVi = null,
+    bool HasAiPlusDeep = false);
 
 /// <summary>Family Replay chữ — EOM/EOY memory narrative (no video).</summary>
 public sealed record FamilyReplaySceneDto(
@@ -52,7 +54,8 @@ public sealed record FamilyReplayDto(
     IReadOnlyList<FamilyReplaySceneDto> Scenes,
     string ClosingVi,
     string ShareTextVi,
-    bool IsThinData);
+    bool IsThinData,
+    bool HasAiPlusDeep = false);
 
 public interface IFamilyAiDigestService
 {

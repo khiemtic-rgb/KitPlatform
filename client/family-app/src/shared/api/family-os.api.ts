@@ -2346,12 +2346,16 @@ export interface ParentSuccessRop {
   selfStartsLate: number;
   habitGraduations: number;
   qualityMoments: number;
+  deepPlaybookVi?: string;
+  deepActionsVi?: string[];
+  hasAiPlusDeep?: boolean;
 }
 
 function mapParentSuccessRop(data: Row): ParentSuccessRop {
   const metricsRaw = asArray(data.metrics ?? data.Metrics);
   const bulletsRaw = data.growthBulletsVi ?? data.GrowthBulletsVi;
   const outcomesRaw = data.outcomesVi ?? data.OutcomesVi;
+  const deepActionsRaw = data.deepActionsVi ?? data.DeepActionsVi;
   return {
     familyId: String(data.familyId ?? data.FamilyId ?? ''),
     windowDays: Number(data.windowDays ?? data.WindowDays ?? 30),
@@ -2394,6 +2398,14 @@ function mapParentSuccessRop(data: Row): ParentSuccessRop {
     selfStartsLate: Number(data.selfStartsLate ?? data.SelfStartsLate ?? 0),
     habitGraduations: Number(data.habitGraduations ?? data.HabitGraduations ?? 0),
     qualityMoments: Number(data.qualityMoments ?? data.QualityMoments ?? 0),
+    deepPlaybookVi:
+      data.deepPlaybookVi != null || data.DeepPlaybookVi != null
+        ? String(data.deepPlaybookVi ?? data.DeepPlaybookVi)
+        : undefined,
+    deepActionsVi: Array.isArray(deepActionsRaw)
+      ? deepActionsRaw.map((x) => String(x))
+      : undefined,
+    hasAiPlusDeep: Boolean(data.hasAiPlusDeep ?? data.HasAiPlusDeep ?? false),
   };
 }
 
@@ -2459,6 +2471,8 @@ export interface FamilyAiLetter {
   highlightsVi: string[];
   closingVi: string;
   isThinData: boolean;
+  deepHighlightsVi?: string[];
+  hasAiPlusDeep?: boolean;
 }
 
 function mapFamilyAiWin(r: Row): FamilyAiWin {
@@ -2516,6 +2530,8 @@ export async function fetchFamilyAiLetter(
     highlightsVi: asArray(r.highlightsVi ?? r.HighlightsVi).map((x) => String(x)),
     closingVi: String(r.closingVi ?? r.ClosingVi ?? ''),
     isThinData: Boolean(r.isThinData ?? r.IsThinData ?? false),
+    deepHighlightsVi: asArray(r.deepHighlightsVi ?? r.DeepHighlightsVi).map((x) => String(x)),
+    hasAiPlusDeep: Boolean(r.hasAiPlusDeep ?? r.HasAiPlusDeep ?? false),
   };
 }
 
@@ -2553,6 +2569,7 @@ export interface FamilyReplay {
   closingVi: string;
   shareTextVi: string;
   isThinData: boolean;
+  hasAiPlusDeep?: boolean;
 }
 
 export async function fetchFamilyReplay(
@@ -2589,6 +2606,7 @@ export async function fetchFamilyReplay(
     closingVi: String(r.closingVi ?? r.ClosingVi ?? ''),
     shareTextVi: String(r.shareTextVi ?? r.ShareTextVi ?? ''),
     isThinData: Boolean(r.isThinData ?? r.IsThinData ?? false),
+    hasAiPlusDeep: Boolean(r.hasAiPlusDeep ?? r.HasAiPlusDeep ?? false),
   };
 }
 

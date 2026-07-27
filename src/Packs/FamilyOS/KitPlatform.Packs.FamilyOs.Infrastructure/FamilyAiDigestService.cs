@@ -165,6 +165,32 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
             ? "Thân ái,\nFamixa — người bạn đồng hành của bố mẹ."
             : "Có lẽ con đang lớn lên — và bố mẹ cũng đang nhẹ tay hơn.\n\nThân ái,\nFamixa";
 
+        IReadOnlyList<string>? deepHighlights = null;
+        var hasDeep = false;
+        try
+        {
+            var pack = await _commercial.GetCapabilityPackAsync(familyId, cancellationToken);
+            hasDeep = pack.Capabilities.Contains(
+                FamilyCapabilityCodes.AiPlusDeep, StringComparer.OrdinalIgnoreCase);
+            if (hasDeep)
+            {
+                var deep = new List<string>();
+                if (rop.HasAiPlusDeep && !string.IsNullOrWhiteSpace(rop.DeepPlaybookVi))
+                    deep.Add(rop.DeepPlaybookVi!);
+                if (rop.DeepActionsVi is { Count: > 0 })
+                    deep.AddRange(rop.DeepActionsVi.Take(2));
+                if (rop.HabitGraduations > 0)
+                    deep.Add($"{rop.HabitGraduations} lần thói quen tiến tới tự chủ trong kỳ gần.");
+                if (deep.Count == 0)
+                    deep.Add("AI+ đang theo dõi sâu hơn — Letter sẽ giàu dần theo tín hiệu twin.");
+                deepHighlights = deep;
+            }
+        }
+        catch
+        {
+            // optional
+        }
+
         return new FamilyAiLetterDto(
             familyId,
             familyName,
@@ -176,7 +202,9 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
             body,
             highlights,
             closing,
-            thin);
+            thin,
+            deepHighlights,
+            hasDeep);
     }
 
     public async Task<FamilyReplayDto> GetMonthlyReplayAsync(
@@ -261,6 +289,39 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
                 "moment"));
         }
 
+        var hasDeep = false;
+        try
+        {
+            var pack = await _commercial.GetCapabilityPackAsync(familyId, cancellationToken);
+            hasDeep = pack.Capabilities.Contains(
+                FamilyCapabilityCodes.AiPlusDeep, StringComparer.OrdinalIgnoreCase);
+            if (hasDeep)
+            {
+                if (rop.HabitGraduations > 0)
+                {
+                    scenes.Add(new FamilyReplaySceneDto(
+                        periodEnd,
+                        "🎯",
+                        "Thói quen tiến tới tự chủ",
+                        $"{rop.HabitGraduations} lần graduation trong kỳ — AI+ ghi nhận.",
+                        "deep"));
+                }
+                if (!string.IsNullOrWhiteSpace(rop.DeepPlaybookVi))
+                {
+                    scenes.Add(new FamilyReplaySceneDto(
+                        periodEnd,
+                        "📘",
+                        "Playbook tuần",
+                        rop.DeepPlaybookVi,
+                        "deep"));
+                }
+            }
+        }
+        catch
+        {
+            // optional
+        }
+
         scenes.Add(new FamilyReplaySceneDto(
             periodEnd,
             "✨",
@@ -283,7 +344,9 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
         var thin = letter.IsThinData && memories.Count < 2;
         var title = thin
             ? $"Replay · {monthLabel} (đang mở)"
-            : $"Family Replay · {monthLabel}";
+            : hasDeep
+                ? $"Family Replay AI+ · {monthLabel}"
+                : $"Family Replay · {monthLabel}";
         var opening = thin
             ? $"Trong {monthLabel}, {familyName} mới bắt đầu để Famixa ghi lại. Replay sẽ dày hơn khi nhà có thêm kỷ niệm."
             : $"Trong {monthLabel}, hãy xem lại những gì {familyName} đã sống — không phải checklist, mà là những lần nhẹ hơn và gần nhau hơn.";
@@ -321,7 +384,8 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
             scenes,
             closing,
             string.Join("\n", shareLines),
-            thin);
+            thin,
+            hasDeep);
     }
 
     private static string IconFor(string kind) =>

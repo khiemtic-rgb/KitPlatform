@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchFamilySubscription, type FamilySubscription } from '@/shared/api/family-os.api';
 import { buildCheckoutPath } from '@/shared/api/payment.api';
+import { outcomeNameForTier, tierFromPlanCode } from '@/shared/billing/famixa-plan-copy';
 
 const TRIAL_WARN_DAYS = 7;
 
@@ -39,45 +40,80 @@ export function BillingBanner({ familyId }: { familyId: string }) {
 
   const trialDays = daysUntil(sub.trialEndsAt);
   const periodDays = daysUntil(sub.currentPeriodEnd);
-  const tier = sub.tierCode ?? 'free';
+  const tier = (sub.tierCode ?? 'free') as string;
   const showFree = tier === 'free' || !sub.isEntitled;
+  const showTrial = sub.isEntitled && sub.status === 'trial';
   const showTrialEnding =
-    sub.isEntitled &&
-    sub.status === 'trial' &&
-    trialDays != null &&
-    trialDays <= TRIAL_WARN_DAYS;
+    showTrial && trialDays != null && trialDays <= TRIAL_WARN_DAYS;
   const showPeriodEnding =
     sub.isEntitled &&
     sub.status === 'active' &&
     periodDays != null &&
     periodDays <= TRIAL_WARN_DAYS;
+  const showPlusNudge = sub.isEntitled && tier === 'plus' && !showPeriodEnding;
+  const showProAiNudge =
+    sub.isEntitled &&
+    tier === 'pro' &&
+    sub.status === 'active' &&
+    !showPeriodEnding &&
+    Boolean(sub.recommendedUpgradePlanCode);
+
+  // Quiet only for healthy AI+ (top tier) or quiet Pro without upgrade hint.
+  if (
+    !showFree &&
+    !showTrial &&
+    !showPeriodEnding &&
+    !showPlusNudge &&
+    !showProAiNudge
+  ) {
+    return null;
+  }
 
   const planLabel = sub.outcomeNameVi || sub.displayNameVi || 'Famixa';
   const upgradePlan =
     sub.recommendedUpgradePlanCode ||
-    (tier === 'plus' ? 'family_pro_month' : 'family_pro_month');
+    (tier === 'pro' ? 'family_ai_plus_month' : 'family_pro_month');
+  const upgradeTier = tierFromPlanCode(upgradePlan);
+  const upgradeOutcome = outcomeNameForTier(upgradeTier);
 
   const message = showFree
     ? sub.upgradeHintVi ||
       'Free: routine cơ bản. Nâng Family Peace Plan để mở Coach, ROP và Letter.'
-    : sub.status === 'trial'
+    : showTrial
       ? trialDays != null
         ? `Dùng thử ${planLabel} — còn khoảng ${trialDays} ngày (trải nghiệm tầng Pro).`
         : `Đang dùng thử ${planLabel}.`
-      : periodDays != null
-        ? `${planLabel} đang hoạt động — còn khoảng ${periodDays} ngày.`
-        : `${planLabel} đang hoạt động.`;
+      : showPlusNudge
+        ? sub.upgradeHintVi ||
+          'Plus đã mở Twin/Timeline. Nâng Peace Plan để mở Coach, ROP và Letter.'
+        : showProAiNudge
+          ? sub.upgradeHintVi ||
+            'Peace Plan đang chạy. AI+ thêm playbook tuần và đề xuất sâu hơn.'
+          : periodDays != null
+            ? `${planLabel} đang hoạt động — còn khoảng ${periodDays} ngày.`
+            : `${planLabel} đang hoạt động.`;
 
   const title = showFree
     ? 'Gói Free'
     : showTrialEnding || showPeriodEnding
       ? 'Sắp hết hạn'
-      : planLabel;
+      : showTrial
+        ? 'Dùng thử Pro'
+        : showPlusNudge
+          ? 'Family Growth Plan'
+          : showProAiNudge
+            ? 'Family Peace Plan'
+            : planLabel;
 
-  const actionLabel =
-    tier === 'pro' || tier === 'ai_plus'
-      ? 'Xem gói / gia hạn'
-      : 'Nâng Family Peace Plan · 199.000đ';
+  const actionLabel = showTrial
+    ? 'Giữ Family Peace Plan · 199.000đ'
+    : showPlusNudge
+      ? 'Nâng Peace Plan · 199.000đ'
+      : showProAiNudge
+        ? `Xem ${upgradeOutcome}`
+        : showFree
+          ? 'Nâng Family Peace Plan · 199.000đ'
+          : 'Gia hạn';
 
   const goCheckout = () => {
     navigate(
@@ -92,7 +128,13 @@ export function BillingBanner({ familyId }: { familyId: string }) {
   };
 
   return (
-    <div className={`billing-banner${showFree || showTrialEnding || showPeriodEnding ? ' is-warn' : ''}`}>
+    <div
+      className={`billing-banner${
+        showFree || showTrialEnding || showPeriodEnding || showPlusNudge
+          ? ' is-warn'
+          : ''
+      }`}
+    >
       <div>
         <strong>{title}</strong>
         <p>{message}</p>

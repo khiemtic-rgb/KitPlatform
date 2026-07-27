@@ -37,7 +37,19 @@ Gói chủ lực: **Family Peace Plan (Pro) 199.000đ/tháng**.
 | monthly_letter | | | ✓ | ✓ |
 | family_replay | | | ✓ | ✓ |
 | parent_success_checkin | | | ✓ | ✓ |
-| ai_plus_deep | | | | ✓ (stub) |
+| ai_plus_deep | | | | ✓ |
+
+### `ai_plus_deep` (rule/template — no LLM)
+
+1. **Weekly Deep Playbook** — `ParentSuccessRop.DeepPlaybookVi` + `DeepActionsVi`
+2. **Richer Letter / Replay** — thêm deep highlights & scenes twin/graduation/playbook
+3. **Deeper adaptive scan** — sibling balance + evening risk proposals
+
+## UX packaging
+
+- Paywall / Checkout / BillingBanner phân tầng Free → Pro (hero), Plus → Pro, Pro → AI+
+- Free/Plus: teaser thay vì silent-fail; Value tab không fake ROP/Coach local
+- Admin: chặn thêm trẻ theo `maxChildren` trước khi API throw
 
 ## API
 
@@ -52,6 +64,6 @@ Gói chủ lực: **Family Peace Plan (Pro) 199.000đ/tháng**.
 ## Non-goals v1
 
 - Marketplace hoa hồng  
-- AI+ gọi điện / study plan đầy đủ  
+- AI+ gọi điện / study plan đầy đủ / free-form LLM chat  
 - Guarantee copy 60 ngày (messaging later)  
 - Deploy pilot

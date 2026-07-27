@@ -38,7 +38,11 @@ public sealed record ParentSuccessRopDto(
     int CommitmentDoneEarly,
     int CommitmentDoneLate,
     int HabitGraduations,
-    int QualityMoments);
+    int QualityMoments,
+    /// <summary>AI+ only — weekly deep playbook (templated).</summary>
+    string? DeepPlaybookVi = null,
+    IReadOnlyList<string>? DeepActionsVi = null,
+    bool HasAiPlusDeep = false);
 
 /// <summary>Parent Success P2 — evening 3Q check-in (soft, guardian-only).</summary>
 public sealed record ParentSuccessCheckinDto(

@@ -6,6 +6,7 @@ import type {
   FamilyAiWinsDigest,
   FamilyMemoryEntry,
   FamilyReplay,
+  FamilySubscription,
   FamilyWeeklyInsight,
   ParentAchievements,
   ParentSuccessRop,
@@ -20,13 +21,10 @@ import {
   fetchFamilyMemories,
   fetchParentAchievements,
   fetchFamilyReplay,
+  fetchFamilySubscription,
 } from '@/shared/api/family-os.api';
 import { shareOrCopyNudge } from '@/shared/nudge/nudge';
 import { computeFamilyHealthScore } from '@/shared/value/family-health-score';
-import {
-  buildTransformationReport,
-  formatReportShareText,
-} from '@/shared/value/transformation-report';
 import { buildWeeklyReview } from '@/shared/value/weekly-review';
 import {
   buildFamilyJourney,
@@ -38,6 +36,7 @@ import {
   formatCoachShare,
 } from '@/shared/value/parenting-coach';
 import { resolveParentCoach } from '@/shared/value/resolve-parenting-coach';
+import { isCapabilityPaywallError } from '@/shared/billing/capability-error';
 
 type Props = {
   familyId: string;
@@ -46,6 +45,7 @@ type Props = {
   glance: AccountabilityGlance | null;
   nudgeToday: number;
   momentCount: number;
+  onOpenPaywall?: (reasonVi?: string) => void;
 };
 
 export function FamilyValuePanel({
@@ -55,18 +55,31 @@ export function FamilyValuePanel({
   glance,
   nudgeToday,
   momentCount,
+  onOpenPaywall,
 }: Props) {
   const [serverWeekly, setServerWeekly] = useState<FamilyWeeklyInsight | null>(null);
   const [rop, setRop] = useState<ParentSuccessRop | null>(null);
+  const [ropBlocked, setRopBlocked] = useState(false);
   const [ropDays, setRopDays] = useState<30 | 90>(30);
   const [winsDigest, setWinsDigest] = useState<FamilyAiWinsDigest | null>(null);
   const [aiLetter, setAiLetter] = useState<FamilyAiLetter | null>(null);
+  const [letterBlocked, setLetterBlocked] = useState(false);
   const [memories, setMemories] = useState<FamilyMemoryEntry[]>([]);
+  const [timelineBlocked, setTimelineBlocked] = useState(false);
   const [achievements, setAchievements] = useState<ParentAchievements | null>(null);
   const [replay, setReplay] = useState<FamilyReplay | null>(null);
+  const [replayBlocked, setReplayBlocked] = useState(false);
+  const [subscription, setSubscription] = useState<FamilySubscription | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    void fetchFamilySubscription(familyId)
+      .then((s) => {
+        if (!cancelled) setSubscription(s);
+      })
+      .catch(() => {
+        if (!cancelled) setSubscription(null);
+      });
     void fetchWeeklyInsight(familyId, { asOf: flow.flowDate, days: 7 })
       .then((r) => {
         if (!cancelled) setServerWeekly(r);
@@ -83,10 +96,16 @@ export function FamilyValuePanel({
     let cancelled = false;
     void fetchParentSuccessRop(familyId, { days: ropDays, asOf: flow.flowDate })
       .then((r) => {
-        if (!cancelled) setRop(r);
+        if (!cancelled) {
+          setRop(r);
+          setRopBlocked(false);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setRop(null);
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setRop(null);
+          setRopBlocked(isCapabilityPaywallError(err));
+        }
       });
     return () => {
       cancelled = true;
@@ -104,17 +123,29 @@ export function FamilyValuePanel({
       });
     void fetchFamilyAiLetter(familyId)
       .then((r) => {
-        if (!cancelled) setAiLetter(r);
+        if (!cancelled) {
+          setAiLetter(r);
+          setLetterBlocked(false);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setAiLetter(null);
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setAiLetter(null);
+          setLetterBlocked(isCapabilityPaywallError(err));
+        }
       });
     void fetchFamilyMemories(familyId, { limit: 40 })
       .then((r) => {
-        if (!cancelled) setMemories(r);
+        if (!cancelled) {
+          setMemories(r);
+          setTimelineBlocked(false);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setMemories([]);
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setMemories([]);
+          setTimelineBlocked(isCapabilityPaywallError(err));
+        }
       });
     void fetchParentAchievements(familyId, { asOf: flow.flowDate })
       .then((r) => {
@@ -125,10 +156,16 @@ export function FamilyValuePanel({
       });
     void fetchFamilyReplay(familyId)
       .then((r) => {
-        if (!cancelled) setReplay(r);
+        if (!cancelled) {
+          setReplay(r);
+          setReplayBlocked(false);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setReplay(null);
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setReplay(null);
+          setReplayBlocked(isCapabilityPaywallError(err));
+        }
       });
     return () => {
       cancelled = true;
@@ -173,18 +210,15 @@ export function FamilyValuePanel({
     };
   }, [serverWeekly, localHealth]);
 
-  const localReport = useMemo(
-    () =>
-      buildTransformationReport({
-        familyId,
-        familyName,
-        flow,
-        glance,
-        momentCountToday: momentCount,
-        movieNightUnlocksApprox: glance?.days.filter((d) => d.isBeautifulDay).length ?? 0,
-      }),
-    [familyId, familyName, flow, glance, momentCount],
-  );
+  const hasCap = (cap: string) => {
+    const caps = subscription?.capabilities;
+    if (!caps || caps.length === 0) return true;
+    return caps.some((c) => c.toLowerCase() === cap.toLowerCase());
+  };
+
+  const canCoach = hasCap('parenting_coach') || hasCap('behavior_coach');
+  const canGrowth = hasCap('growth_report');
+  const canAiPlus = hasCap('ai_plus_deep');
 
   const reportFromRop = useMemo(() => {
     if (!rop) return null;
@@ -215,16 +249,8 @@ export function FamilyValuePanel({
     };
   }, [rop, familyName]);
 
-  const report = reportFromRop ?? {
-    ...localReport,
-    headlineVi: `Báo cáo ${localReport.daySpan} ngày`,
-    growthScore: null as number | null,
-    growthBulletsVi: [] as string[],
-    isPartial: true,
-    partialNoteVi: 'Đang dùng ước lượng máy — server ROP chưa sẵn.',
-    minutesSavedEstimate: 0,
-    fromServer: false as const,
-  };
+  // Never fake Pro ROP on Free/Plus — only show server Growth Report or a teaser.
+  const report = reportFromRop;
 
   const weeklyLocal = useMemo(
     () => buildWeeklyReview({ familyId, flow, glance }),
@@ -233,34 +259,45 @@ export function FamilyValuePanel({
 
   const journey = useMemo(() => {
     if (memories.length > 0) return buildFamilyJourneyFromMemories(memories, familyName);
+    if (timelineBlocked) return null;
     return buildFamilyJourney({ flow, glance, familyName });
-  }, [memories, flow, glance, familyName]);
+  }, [memories, flow, glance, familyName, timelineBlocked]);
 
   const resolvedCoach = useMemo(
     () =>
-      resolveParentCoach({
-        familyId,
-        flow,
-        glance,
-        nudgeToday,
-        focusChildName: getOnboardingProfile(familyId)?.childName,
-        coachInsight: null,
-        familyTwin: null,
-        behaviorCoach: null,
-      }),
-    [familyId, flow, glance, nudgeToday],
+      canCoach
+        ? resolveParentCoach({
+            familyId,
+            flow,
+            glance,
+            nudgeToday,
+            focusChildName: getOnboardingProfile(familyId)?.childName,
+            coachInsight: null,
+            familyTwin: null,
+            behaviorCoach: null,
+          })
+        : null,
+    [familyId, flow, glance, nudgeToday, canCoach],
   );
-  const coach = resolvedCoach.primary;
+  const coach = resolvedCoach?.primary ?? null;
 
   const faqs = useMemo(
-    () => buildParentingCoachFaqs({ familyId, flow, glance, nudgeToday }),
-    [familyId, flow, glance, nudgeToday],
+    () =>
+      canCoach
+        ? buildParentingCoachFaqs({ familyId, flow, glance, nudgeToday })
+        : [],
+    [familyId, flow, glance, nudgeToday, canCoach],
   );
+
+  const openUpgrade = (reason?: string) => {
+    onOpenPaywall?.(reason);
+  };
 
   const onboard = getOnboardingProfile(familyId);
   const goalLabel = GOAL_OPTIONS.find((g) => g.value === onboard?.goal)?.label;
 
   const printReport = () => {
+    if (!report) return;
     const w = window.open('', '_blank', 'noopener,noreferrer,width=720,height=900');
     if (!w) return;
     const rows = report.metrics
@@ -308,37 +345,63 @@ export function FamilyValuePanel({
         </section>
       ) : null}
 
-      <section className="fv-card fv-coach">
-        <header className="fv-head">
-          <h2>Famixa đồng hành</h2>
-          <p>{resolvedCoach.sourceLabelVi}</p>
-        </header>
-        <p className="fv-label">{coach.childProfile}</p>
-        <p className="fv-promise">{coach.insight}</p>
-        <p className="fv-ai">
-          <strong>Làm:</strong> {coach.doThis}
-        </p>
-        <p className="fv-ai">
-          <strong>Tránh:</strong> {coach.avoid}
-        </p>
-        <div className="fv-faq">
-          {faqs.map((f) => (
-            <details key={f.id} className="fv-faq-item">
-              <summary>{f.question}</summary>
-              <p>{f.answer}</p>
-            </details>
-          ))}
-        </div>
-        <div className="fv-actions">
-          <button
-            type="button"
-            className="pill"
-            onClick={() => void shareOrCopyNudge(formatCoachShare(coach), { preferShare: true })}
-          >
-            Chia sẻ Coach
-          </button>
-        </div>
-      </section>
+      {coach && resolvedCoach ? (
+        <section className="fv-card fv-coach">
+          <header className="fv-head">
+            <h2>Famixa đồng hành</h2>
+            <p>{resolvedCoach.sourceLabelVi}</p>
+          </header>
+          <p className="fv-label">{coach.childProfile}</p>
+          <p className="fv-promise">{coach.insight}</p>
+          <p className="fv-ai">
+            <strong>Làm:</strong> {coach.doThis}
+          </p>
+          <p className="fv-ai">
+            <strong>Tránh:</strong> {coach.avoid}
+          </p>
+          <div className="fv-faq">
+            {faqs.map((f) => (
+              <details key={f.id} className="fv-faq-item">
+                <summary>{f.question}</summary>
+                <p>{f.answer}</p>
+              </details>
+            ))}
+          </div>
+          <div className="fv-actions">
+            <button
+              type="button"
+              className="pill"
+              onClick={() => void shareOrCopyNudge(formatCoachShare(coach), { preferShare: true })}
+            >
+              Chia sẻ Coach
+            </button>
+          </div>
+        </section>
+      ) : (
+        <section className="fv-card fv-coach fv-teaser">
+          <header className="fv-head">
+            <h2>Famixa đồng hành</h2>
+            <p>Có trong Family Peace Plan</p>
+          </header>
+          <p className="fv-promise">
+            Coach giúp bớt nhắc và nhẹ tay hơn — không mở trên Free/Plus.
+          </p>
+          <div className="fv-actions">
+            <button
+              type="button"
+              className="pill"
+              onClick={() =>
+                openUpgrade(
+                  subscription?.upgradeHintVi ||
+                    'Nâng Family Peace Plan để mở AI Parenting Coach.',
+                )
+              }
+            >
+              Xem Peace Plan · 199.000đ
+            </button>
+          </div>
+        </section>
+      )}
 
       <section className="fv-card fv-health">
         <p className="fv-eyebrow">
@@ -390,16 +453,12 @@ export function FamilyValuePanel({
         </div>
       </section>
 
-      <section className="fv-card" id="fv-rop">
-        <header className="fv-head">
-          <h2>{report.fromServer ? 'ROP · Return on Parenting' : `Báo cáo ${report.daySpan} ngày`}</h2>
-          <p>
-            {report.fromServer
-              ? 'Growth Report từ behavior_event — không phải số sao / routine'
-              : '3 kết quả cả nhà có thể nhìn thấy và đo được'}
-          </p>
-        </header>
-        {report.fromServer ? (
+      {report ? (
+        <section className="fv-card" id="fv-rop">
+          <header className="fv-head">
+            <h2>ROP · Return on Parenting</h2>
+            <p>Growth Report từ behavior_event — không phải số sao / routine</p>
+          </header>
           <div className="fv-actions" style={{ marginBottom: 12 }}>
             <button
               type="button"
@@ -416,73 +475,113 @@ export function FamilyValuePanel({
               90 ngày
             </button>
           </div>
-        ) : null}
-        {report.growthScore != null ? (
-          <p className="fv-promise">
-            <strong>Growth {report.growthScore}/100</strong> · {report.headlineVi}
-          </p>
-        ) : (
-          <p className="fv-promise">{report.headlineVi}</p>
-        )}
-        {report.isPartial && report.partialNoteVi ? (
-          <p className="fv-label">{report.partialNoteVi}</p>
-        ) : null}
-        {report.minutesSavedEstimate > 0 ? (
-          <p className="fv-ai">
-            Ước tính tiết kiệm ~{report.minutesSavedEstimate} phút nhắc nhở trong kỳ.
-          </p>
-        ) : null}
-        <ul className="fv-outcomes">
-          {report.outcomesHit.map((o) => (
-            <li key={o}>
-              <span aria-hidden>✅</span>
-              {o}
-            </li>
-          ))}
-        </ul>
-        {report.growthBulletsVi.length > 0 ? (
+          {report.growthScore != null ? (
+            <p className="fv-promise">
+              <strong>Growth {report.growthScore}/100</strong> · {report.headlineVi}
+            </p>
+          ) : (
+            <p className="fv-promise">{report.headlineVi}</p>
+          )}
+          {rop?.hasAiPlusDeep && rop.deepPlaybookVi ? (
+            <div className="fv-card" style={{ margin: '12px 0', padding: 12, background: '#eef6f1' }}>
+              <p className="fv-eyebrow">AI+ · Playbook tuần</p>
+              <p className="fv-promise">{rop.deepPlaybookVi}</p>
+              {rop.deepActionsVi && rop.deepActionsVi.length > 0 ? (
+                <ul className="fv-outcomes">
+                  {rop.deepActionsVi.map((a) => (
+                    <li key={a}>
+                      <span aria-hidden>→</span>
+                      {a}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+          {report.isPartial && report.partialNoteVi ? (
+            <p className="fv-label">{report.partialNoteVi}</p>
+          ) : null}
+          {report.minutesSavedEstimate > 0 ? (
+            <p className="fv-ai">
+              Ước tính tiết kiệm ~{report.minutesSavedEstimate} phút nhắc nhở trong kỳ.
+            </p>
+          ) : null}
           <ul className="fv-outcomes">
-            {report.growthBulletsVi.map((b) => (
-              <li key={b}>
-                <span aria-hidden>•</span>
-                {b}
+            {report.outcomesHit.map((o) => (
+              <li key={o}>
+                <span aria-hidden>✅</span>
+                {o}
               </li>
             ))}
           </ul>
-        ) : null}
-        <div className="fv-metrics">
-          {report.metrics.map((m) => (
-            <article key={m.id} className={`fv-metric${m.positive ? ' is-up' : ' is-down'}`}>
-              <span>{m.label}</span>
-              <strong>
-                {m.before} → {m.after}
-              </strong>
-              <em>{m.deltaLabel}</em>
-            </article>
-          ))}
-        </div>
-        <p className="fv-ai">{report.aiSummary}</p>
-        <p className="fv-pay">{report.readyToPayLine}</p>
-        <div className="fv-actions">
-          <button
-            type="button"
-            className="pill"
-            onClick={() =>
-              void shareOrCopyNudge(
-                rop
-                  ? formatParentSuccessRopShare(rop, familyName)
-                  : formatReportShareText(localReport),
-                { preferShare: true },
-              )
-            }
-          >
-            Chia sẻ ROP
-          </button>
-          <button type="button" className="pill is-soft" onClick={printReport}>
-            In / PDF
-          </button>
-        </div>
-      </section>
+          {report.growthBulletsVi.length > 0 ? (
+            <ul className="fv-outcomes">
+              {report.growthBulletsVi.map((b) => (
+                <li key={b}>
+                  <span aria-hidden>•</span>
+                  {b}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <div className="fv-metrics">
+            {report.metrics.map((m) => (
+              <article key={m.id} className={`fv-metric${m.positive ? ' is-up' : ' is-down'}`}>
+                <span>{m.label}</span>
+                <strong>
+                  {m.before} → {m.after}
+                </strong>
+                <em>{m.deltaLabel}</em>
+              </article>
+            ))}
+          </div>
+          <p className="fv-ai">{report.aiSummary}</p>
+          <p className="fv-pay">{report.readyToPayLine}</p>
+          <div className="fv-actions">
+            <button
+              type="button"
+              className="pill"
+              onClick={() =>
+                void shareOrCopyNudge(
+                  rop
+                    ? formatParentSuccessRopShare(rop, familyName)
+                    : '',
+                  { preferShare: true },
+                )
+              }
+            >
+              Chia sẻ ROP
+            </button>
+            <button type="button" className="pill is-soft" onClick={printReport}>
+              In / PDF
+            </button>
+          </div>
+        </section>
+      ) : ropBlocked || !canGrowth ? (
+        <section className="fv-card fv-teaser" id="fv-rop">
+          <header className="fv-head">
+            <h2>ROP · Return on Parenting</h2>
+            <p>Có trong Family Peace Plan</p>
+          </header>
+          <p className="fv-promise">
+            Growth Report đo “bớt nhắc / con chủ động hơn” — không mở trên Free/Plus.
+          </p>
+          <div className="fv-actions">
+            <button
+              type="button"
+              className="pill"
+              onClick={() =>
+                openUpgrade(
+                  subscription?.upgradeHintVi ||
+                    'Nâng Family Peace Plan để mở Growth Report (ROP).',
+                )
+              }
+            >
+              Xem Peace Plan · 199.000đ
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <section className="fv-card fv-weekly">
         <header className="fv-head">
@@ -685,6 +784,18 @@ export function FamilyValuePanel({
           {aiLetter.isThinData ? (
             <p className="fv-label">Tháng này còn mỏng dữ liệu — thư sẽ đầy hơn khi nhà có thêm kỷ niệm.</p>
           ) : null}
+          {aiLetter.deepHighlightsVi && aiLetter.deepHighlightsVi.length > 0 ? (
+            <ul className="fv-outcomes">
+              {aiLetter.deepHighlightsVi.map((h) => (
+                <li key={h}>
+                  <span aria-hidden>✦</span>
+                  {h}
+                </li>
+              ))}
+            </ul>
+          ) : canAiPlus ? (
+            <p className="fv-label">AI+ · Letter đã làm giàu thêm tín hiệu twin / tip đã thử (nếu có).</p>
+          ) : null}
           <div className="fv-actions">
             <button
               type="button"
@@ -694,6 +805,23 @@ export function FamilyValuePanel({
               }
             >
               Chia sẻ Letter
+            </button>
+          </div>
+        </section>
+      ) : letterBlocked ? (
+        <section className="fv-card fv-teaser" id="fv-ai-letter">
+          <header className="fv-head">
+            <h2>Famixa · Letter</h2>
+            <p>Có trong Family Peace Plan</p>
+          </header>
+          <p className="fv-promise">Thư tháng cho bố mẹ — mở khi nâng Peace Plan.</p>
+          <div className="fv-actions">
+            <button
+              type="button"
+              className="pill"
+              onClick={() => openUpgrade('Nâng Peace Plan để mở AI Letter hàng tháng.')}
+            >
+              Xem Peace Plan · 199.000đ
             </button>
           </div>
         </section>
@@ -740,6 +868,23 @@ export function FamilyValuePanel({
             </button>
           </div>
         </section>
+      ) : replayBlocked ? (
+        <section className="fv-card fv-teaser" id="fv-replay">
+          <header className="fv-head">
+            <h2>Family Replay</h2>
+            <p>Có trong Family Peace Plan</p>
+          </header>
+          <p className="fv-promise">Replay chữ tháng — mở khi nâng Peace Plan.</p>
+          <div className="fv-actions">
+            <button
+              type="button"
+              className="pill"
+              onClick={() => openUpgrade('Nâng Peace Plan để mở Family Replay.')}
+            >
+              Xem Peace Plan · 199.000đ
+            </button>
+          </div>
+        </section>
       ) : null}
 
       {achievements ? (
@@ -767,29 +912,54 @@ export function FamilyValuePanel({
         </section>
       ) : null}
 
-      <section className="fv-card">
-        <header className="fv-head">
-          <h2>Family Timeline</h2>
-          <p>
-            {memories.length > 0
-              ? 'Memory SoT — nhật ký trưởng thành cả nhà'
-              : 'Đang dùng ước lượng local — Memory sẽ thay khi có kỷ niệm'}
+      {journey && journey.length > 0 ? (
+        <section className="fv-card">
+          <header className="fv-head">
+            <h2>Family Timeline</h2>
+            <p>
+              {memories.length > 0
+                ? 'Memory SoT — nhật ký trưởng thành cả nhà'
+                : 'Đang dùng ước lượng local — Memory sẽ thay khi có kỷ niệm'}
+            </p>
+          </header>
+          <ol className="fv-journey">
+            {journey.map((j) => (
+              <li key={j.id}>
+                <span className="fv-journey-icon" aria-hidden>
+                  {j.icon}
+                </span>
+                <div>
+                  <strong>{j.title}</strong>
+                  <p>{j.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : timelineBlocked ? (
+        <section className="fv-card fv-teaser">
+          <header className="fv-head">
+            <h2>Family Timeline</h2>
+            <p>Có trong Family Growth Plan (Plus)</p>
+          </header>
+          <p className="fv-promise">
+            Timeline kỷ niệm nhà — nâng Plus hoặc Peace Plan để mở.
           </p>
-        </header>
-        <ol className="fv-journey">
-          {journey.map((j) => (
-            <li key={j.id}>
-              <span className="fv-journey-icon" aria-hidden>
-                {j.icon}
-              </span>
-              <div>
-                <strong>{j.title}</strong>
-                <p>{j.detail}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </section>
+          <div className="fv-actions">
+            <button
+              type="button"
+              className="pill"
+              onClick={() =>
+                openUpgrade(
+                  'Timeline có từ Plus. Peace Plan thêm Coach/ROP — gói khuyến nghị.',
+                )
+              }
+            >
+              Xem gói nâng cấp
+            </button>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

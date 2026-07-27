@@ -2555,6 +2555,42 @@ body:has(.app-shell.is-kid) {
   padding: 16px;
 }
 
+.billing-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #eef4f1;
+  border: 1px solid #d5e6dc;
+  color: #1a3344;
+}
+
+.billing-banner.is-warn {
+  background: #f7f1e8;
+  border-color: #e2d0b4;
+}
+
+.billing-banner strong {
+  display: block;
+  font-size: 0.92rem;
+  margin-bottom: 2px;
+}
+
+.billing-banner p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  opacity: 0.88;
+}
+
+.billing-banner .pill {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .sheet {
   width: min(480px, 100%);
   background: var(--surface);
@@ -12242,6 +12278,18 @@ body:has(.app-shell.is-kid) {
   gap: 2px;
   cursor: pointer;
   color: var(--ink);
+}
+
+.checkout-plan-sku {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.checkout-plan-blurb {
+  font-style: normal;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  margin-top: 4px;
 }
 
 .checkout-plan.is-active {

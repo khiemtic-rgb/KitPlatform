@@ -14,6 +14,11 @@ import {
   type PaymentPlan,
   type PaymentSubscription,
 } from '@/shared/api/payment.api';
+import {
+  blurbForPlan,
+  outcomeNameForTier,
+  tierFromPlanCode,
+} from '@/shared/billing/famixa-plan-copy';
 
 function formatVnd(amount: number): string {
   return amount.toLocaleString('vi-VN') + '₫';
@@ -295,28 +300,40 @@ export function CheckoutPage() {
                   <p className="muted">Chưa có gói active cho sản phẩm này.</p>
                 ) : (
                   <ul className="checkout-plan-list">
-                    {checkoutPlans.map((p) => (
-                      <li key={p.planCode}>
-                        <button
-                          type="button"
-                          className={
-                            p.planCode === activePlan?.planCode
-                              ? 'checkout-plan is-active'
-                              : 'checkout-plan'
-                          }
-                          onClick={() => setSelectedPlan(p.planCode)}
-                          disabled={Boolean(order && order.status === 'pending')}
-                        >
-                          <strong>{p.displayName || p.planCode}</strong>
-                          <span>
-                            {formatVnd(p.amountVnd)} / {p.intervalDays} ngày
-                          </span>
-                          {p.planCode.includes('pro') ? (
-                            <em className="muted"> · Gói khuyến nghị</em>
-                          ) : null}
-                        </button>
-                      </li>
-                    ))}
+                    {checkoutPlans.map((p) => {
+                      const tier = tierFromPlanCode(p.planCode);
+                      const outcome = outcomeNameForTier(tier);
+                      const isHero =
+                        p.planCode === 'family_pro_month' ||
+                        (p.planCode.includes('pro') && !p.planCode.includes('ai'));
+                      const isActive = p.planCode === activePlan?.planCode;
+                      return (
+                        <li key={p.planCode}>
+                          <button
+                            type="button"
+                            className={
+                              isActive
+                                ? 'checkout-plan is-active'
+                                : 'checkout-plan'
+                            }
+                            onClick={() => setSelectedPlan(p.planCode)}
+                            disabled={Boolean(order && order.status === 'pending')}
+                          >
+                            <strong>{outcome}</strong>
+                            <span className="checkout-plan-sku">
+                              {p.displayName || p.planCode}
+                            </span>
+                            <span>
+                              {formatVnd(p.amountVnd)} / {p.intervalDays} ngày
+                            </span>
+                            <em className="muted checkout-plan-blurb">
+                              {blurbForPlan(p.planCode)}
+                              {isHero ? ' · Gói khuyến nghị' : ''}
+                            </em>
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </section>
