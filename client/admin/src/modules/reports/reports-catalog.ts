@@ -19,9 +19,15 @@ export interface ReportDefinition {
   supportsSearch?: boolean;
   supportsExpiryDays?: boolean;
   favorite?: boolean;
+  /** Hide on DEMO audit_slim_nav (Connect / PK out of pharmacy audit scope). */
+  hideWhenAuditSlim?: boolean;
 }
 
 type ReportDefinitionMeta = Omit<ReportDefinition, 'name' | 'description'>;
+
+export type ReportCatalogOptions = {
+  auditSlimNav?: boolean;
+};
 
 const REPORT_DEFINITIONS_META: ReportDefinitionMeta[] = [
   {
@@ -69,6 +75,7 @@ const REPORT_DEFINITIONS_META: ReportDefinitionMeta[] = [
     supportsDateRange: true,
     supportsWarehouse: true,
     favorite: true,
+    hideWhenAuditSlim: true,
   },
   {
     code: 'PROC-01',
@@ -127,18 +134,27 @@ function localizeReport(meta: ReportDefinitionMeta): ReportDefinition {
   };
 }
 
-export function getReportDefinitions(): ReportDefinition[] {
-  return REPORT_DEFINITIONS_META.map(localizeReport);
+export function getReportDefinitions(options?: ReportCatalogOptions): ReportDefinition[] {
+  const auditSlimNav = options?.auditSlimNav === true;
+  return REPORT_DEFINITIONS_META
+    .filter((meta) => !(auditSlimNav && meta.hideWhenAuditSlim))
+    .map(localizeReport);
 }
 
 export function getReportCategoryLabel(category: ReportCategory): string {
   return reportsT()(`categories.${category}`);
 }
 
-export function findReportByPath(pathname: string): ReportDefinition | undefined {
-  return getReportDefinitions().find((r) => pathname.startsWith(r.path));
+export function findReportByPath(
+  pathname: string,
+  options?: ReportCatalogOptions,
+): ReportDefinition | undefined {
+  return getReportDefinitions(options).find((r) => pathname.startsWith(r.path));
 }
 
-export function reportsForCategory(category: ReportCategory): ReportDefinition[] {
-  return getReportDefinitions().filter((r) => r.category === category);
+export function reportsForCategory(
+  category: ReportCategory,
+  options?: ReportCatalogOptions,
+): ReportDefinition[] {
+  return getReportDefinitions(options).filter((r) => r.category === category);
 }

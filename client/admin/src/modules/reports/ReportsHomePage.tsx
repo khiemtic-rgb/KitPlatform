@@ -7,12 +7,17 @@ import {
   getReportDefinitions,
   type ReportCategory,
 } from '@/modules/reports/reports-catalog';
+import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 
 const categories: ReportCategory[] = ['sales', 'procurement', 'inventory'];
 
 export function ReportsHomePage() {
   const { t } = useTranslation('reports', { keyPrefix: 'home' });
-  const reports = useMemo(() => getReportDefinitions(), [t]);
+  const auditSlimNav = useAuditSlimNav();
+  const reports = useMemo(
+    () => getReportDefinitions({ auditSlimNav }),
+    [t, auditSlimNav],
+  );
   const favorites = reports.filter((r) => r.favorite);
 
   return (

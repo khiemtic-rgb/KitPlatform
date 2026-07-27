@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import {
   Alert,
   AutoComplete,
@@ -34,6 +34,7 @@ import { findReportByPath } from '@/modules/reports/reports-catalog';
 import { buildReportFilterDisplayEntries, filterHintsForReport } from '@/modules/reports/report-filter-ui';
 import { exportReportCsv, formatReportCell, printReportElement } from '@/modules/reports/report-export';
 import { useCanReportsExport } from '@/shared/auth/usePermission';
+import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 
 const { RangePicker } = DatePicker;
 
@@ -62,10 +63,11 @@ export function ReportViewPage() {
   const { t, i18n } = useTranslation('reports', { keyPrefix: 'view' });
   const { t: tg } = useTranslation('reports', { keyPrefix: 'groupBy' });
   const location = useLocation();
+  const auditSlimNav = useAuditSlimNav();
   const canExportReports = useCanReportsExport();
   const definition = useMemo(
-    () => findReportByPath(location.pathname),
-    [location.pathname, i18n.language],
+    () => findReportByPath(location.pathname, { auditSlimNav }),
+    [location.pathname, i18n.language, auditSlimNav],
   );
 
   const [range, setRange] = useState<[Dayjs, Dayjs]>(defaultRange);
@@ -199,6 +201,13 @@ export function ReportViewPage() {
     },
     [suggestionProducts],
   );
+
+  if (
+    auditSlimNav &&
+    location.pathname.startsWith('/reports/sales/revenue-by-clinic-doctor')
+  ) {
+    return <Navigate to="/reports" replace />;
+  }
 
   if (!definition) {
     return <Typography.Text type="danger">{t('notFound')}</Typography.Text>;

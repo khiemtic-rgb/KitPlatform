@@ -2,7 +2,7 @@
 
 **Ngày:** 2026-07-27  
 **Phạm vi:** Chỉ tenant `DEMO_PHARMACY` — **không** dùng / không đụng `NT_XUANHOA` (đang vận hành thật).  
-**Seed:** `migrations/237_demo_pharmacy_audit_handoff.sql`
+**Seed:** `migrations/237_demo_pharmacy_audit_handoff.sql` + làm giàu `migrations/239_demo_pharmacy_realistic_data.sql`
 
 ---
 
@@ -48,20 +48,50 @@
 
 ## 2. Dữ liệu mẫu đã nạp
 
-### Danh mục thuốc (đã map mã CSDL Dược QG — mock catalog)
+> Làm giàu lần gần nhất: `239_demo_pharmacy_realistic_data.sql` (idempotent, prefix `AUD-*` / `DECK*`). Chỉ `DEMO_PHARMACY` — `NT_XUANHOA` không đổi.
+
+### Quy mô sandbox (sau seed 239)
+
+| Module | Số lượng / ghi chú |
+|---|---|
+| SKU | **24** (4 cốt lõi + 20 DECK*) — có `national_drug_id` mock `DRUG-VN-*` |
+| Lô tồn | **27** — gồm lô gần hết hạn (FEFO / cảnh báo) |
+| Khách | **8** (KH001–KH008) + loyalty Bronze/Silver/Gold |
+| NCC | **2** (NCC001, NCC002) |
+| Đơn bán hôm nay | **18** completed (`AUD-T-*`) + 1 draft + 1 cancelled + 1 công nợ |
+| Đơn lịch sử 14 ngày | **~154** (`AUD-H-*`) |
+| PO / GRN | `AUD-PO-001` đã nhận+đóng; `AUD-PO-002` đã duyệt chờ nhận; `AUD-GRN-DRAFT` |
+| Ca bán | `AUD-SHIFT-YDAY` (đã chốt) + `AUD-SHIFT-TODAY` (đang mở) |
+| Đơn thuốc | `RX-DEMO-001` (verified) + `RX-DEMO-002` (draft) |
+
+### Danh mục thuốc cốt lõi (map QG mock)
 
 | Mã nội bộ | Tên | `national_drug_id` | Số ĐK | Loại | Tồn (lô) |
 |---|---|---|---|---|---|
-| PARA500 | Paracetamol 500mg | `DRUG-VN-000001` | VD-1234-23 | OTC | LOT2026A: 1000; LOT2027B: 500 |
-| PARA_EXTRA | Paracetamol Extra | `DRUG-VN-000004` | VD-3456-24 | OTC | LOT2026C: 300 |
-| AMOX500 | Amoxicillin 500mg | `DRUG-VN-000002` | VD-5678-22 | Rx | LOTAMOX01: 400 |
-| VITC1000 | Vitamin C 1000mg | `DRUG-VN-000003` | VD-9012-21 | OTC | LOTVITC01: 200 |
+| PARA500 | Paracetamol 500mg | `DRUG-VN-000001` | VD-1234-23 | OTC | LOT2026A / LOT2027B (+ bán đã trừ) |
+| PARA_EXTRA | Paracetamol Extra | `DRUG-VN-000004` | VD-3456-24 | OTC | LOT2026C |
+| AMOX500 | Amoxicillin 500mg | `DRUG-VN-000002` | VD-5678-22 | Rx | LOTAMOX01 + AMOX-NEAR (gần HSD) |
+| VITC1000 | Vitamin C 1000mg | `DRUG-VN-000003` | VD-9012-21 | OTC | LOTVITC01 + VITC-NEAR (gần HSD) |
 
-Barcode PARA: `8934567890012` (dùng nhanh trên POS).
+Thêm DECK001–DECK020 (Panadol, Augmentin, Omeprazole, Decolgen, …) — barcode `8934567891xxx`.
 
-> **Lưu ý kỹ thuật:** Production hiện `NationalDrugCatalog:Mode = mock` (catalog nội bộ chuẩn QĐ 522 field-map). Mã `DRUG-VN-*` là mã sandbox/mock đã gắn sẵn trên SKU demo để test ánh xạ / xuất liên thông — chưa phải live CSDL QG.
+Barcode PARA nhanh POS: `8934567890012`.
 
-Đơn thuốc mẫu: `RX-DEMO-001` (đã verify) kê AMOX500 × 20 viên cho khách `0909123456`.
+> **Lưu ý kỹ thuật:** Production hiện `NationalDrugCatalog:Mode = mock` (catalog nội bộ chuẩn QĐ 522 field-map). Mã `DRUG-VN-*` là mã sandbox/mock đã gắn sẵn trên SKU demo để test ánh xạ / xuất liên thông — chưa phải live CSDL Dược QG.
+
+Đơn thuốc: `RX-DEMO-001` (verified) kê AMOX500 × 20 viên cho `0909123456`; `RX-DEMO-002` (draft) kê Augmentin cho KH002.
+
+### Gợi ý test nhanh theo module
+
+| Luồng | Gợi ý |
+|---|---|
+| POS / đơn hôm nay | Đăng nhập `pharmacist` → danh sách đơn mặc định hôm nay thấy `AUD-T-*`; mở ca `AUD-SHIFT-TODAY` |
+| Tìm khách / số đơn | Bỏ lọc ngày → thấy lịch sử `AUD-H-*` |
+| Kho / FEFO | Lọc HSD ≤ 30 ngày → AMOX-NEAR, VITC-NEAR, DECK-LOT gần hạn |
+| Mua hàng | PO đã đóng + PO chờ nhận + GRN draft |
+| Công nợ | Đơn `AUD-AR-001` outstanding 300.000 |
+| Rx | Verify / cấp phát từ `RX-DEMO-001`; hoàn thiện draft `RX-DEMO-002` |
+| Báo cáo | Admin (`reports.*`) xem doanh thu; STAFF không thấy báo cáo tài chính (RBAC) |
 
 ---
 
@@ -292,6 +322,7 @@ GET /api/reports/inventory/stock-snapshot?warehouseId=22222222-2222-2222-2222-22
 | Bán hàng → Đơn từ app, Chat khách | Tắt module `customer_app` (+ gate FE `sales.appOrders` / `sales.chat`) |
 | Khách hàng → Tương tác app | Tắt `customer_app` (`customer.engagement`) |
 | Sản phẩm → Gộp SP trùng | `audit_slim_nav` (ẩn nút + chặn route) |
+| Báo cáo → Đơn bán theo phòng khám / bác sĩ (SALES-05) | `audit_slim_nav` (Connect/PK ngoài phạm vi thẩm định Pharmacy) |
 | Cấu hình → Gói Novixa | `audit_slim_nav` |
 | Cấu hình → App khách hàng | Tắt `customer_app` |
 
