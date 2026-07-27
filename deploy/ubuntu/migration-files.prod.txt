@@ -141,4 +141,5 @@
 231_pack_family_memory.sql
 235_catalog_measure_units.sql
 236_customer_adherence_skip_reason.sql
+237_demo_pharmacy_audit_handoff.sql
 seed-prod/001_base_permissions.sql
