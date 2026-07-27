@@ -26,8 +26,8 @@ public sealed class FamilyOsStarBalanceController : ControllerBase
     {
         try
         {
-            var balance = await _stars.GetMemberBalanceAsync(familyId, memberId, cancellationToken);
-            return Ok(new MemberStarBalanceDto(memberId, balance));
+            var balance = await _stars.GetMemberBalancesAsync(familyId, memberId, cancellationToken);
+            return Ok(balance);
         }
         catch (InvalidOperationException ex)
         {

@@ -10,10 +10,14 @@ import {
   fetchTeamDay,
   updateCommitmentProgress,
   approveCommitmentStars,
+  submitCommitmentReflection,
+  submitRetrievalCheck,
+  selfStartCommitment,
   type AccountabilityGlance,
   type ConsequenceEvent,
   type DayFlow,
   type DayFlowCommitment,
+  type ReflectionPromptCode,
   type SkipReasonCode,
   type SoftLockGuide,
   type TeamDay,
@@ -41,6 +45,8 @@ import { KidFocusView } from '@/modules/flow/KidFocusView';
 import { ParentBoardView } from '@/modules/flow/ParentBoardView';
 import { ParentGoalsPanel } from '@/modules/flow/ParentGoalsPanel';
 import { FamilyChallengeCard } from '@/modules/flow/FamilyChallengeCard';
+import { ReflectionPromptSheet } from '@/modules/flow/ReflectionPromptSheet';
+import { RetrievalCheckSheet } from '@/modules/flow/RetrievalCheckSheet';
 import { buildTeamDayFromChildren, slicesFromCommitments } from '@/modules/flow/teamPlay';
 import { isScreenBoundaryCode } from '@/shared/screen/screenBoundary';
 import { hydrateFamilyValueState } from '@/shared/value/value-sync';
@@ -71,6 +77,18 @@ export function TodayFlowPage() {
   >([]);
   const [onboardBanner, setOnboardBanner] = useState<string | null>(null);
   const [starBalance, setStarBalance] = useState(0);
+  const [reflectionTarget, setReflectionTarget] = useState<{
+    commitmentId: string;
+    title: string;
+    promptCode: ReflectionPromptCode;
+    pendingQuiz?: boolean;
+  } | null>(null);
+  const [reflectionBusy, setReflectionBusy] = useState(false);
+  const [quizTarget, setQuizTarget] = useState<{
+    commitmentId: string;
+    title: string;
+  } | null>(null);
+  const [quizBusy, setQuizBusy] = useState(false);
 
   useEffect(() => {
     const st = location.state as { onboardingAdded?: number; onboardingChild?: string } | null;
@@ -295,6 +313,21 @@ export function TodayFlowPage() {
       }
       setCelebrating(true);
       window.setTimeout(() => setCelebrating(false), 450);
+      if (result.commitment.needsReflection && !parentOverride) {
+        const code = (result.commitment.suggestedReflectionPrompt ??
+          'hardest') as ReflectionPromptCode;
+        setReflectionTarget({
+          commitmentId: result.commitment.id,
+          title: result.commitment.title,
+          promptCode: code,
+          pendingQuiz: Boolean(result.commitment.needsRetrievalCheck),
+        });
+      } else if (result.commitment.needsRetrievalCheck && !parentOverride) {
+        setQuizTarget({
+          commitmentId: result.commitment.id,
+          title: result.commitment.title,
+        });
+      }
       await load(true);
       return {
         starDelta: result.commitment.starDelta,
@@ -324,6 +357,19 @@ export function TodayFlowPage() {
       await load(true);
     } catch {
       setError('Chưa ghi được lý do. Thử lại nhé.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const markSelfStart = async (item: DayFlowCommitment) => {
+    if (!familyId || busyId) return;
+    setBusyId(item.id);
+    try {
+      await selfStartCommitment(familyId, item.id);
+      await load(true);
+    } catch {
+      setError('Chưa ghi được lần bắt đầu. Thử lại nhé.');
     } finally {
       setBusyId(null);
     }
@@ -451,6 +497,7 @@ export function TodayFlowPage() {
           onStarBalanceChange={setStarBalance}
           onDone={(item, evidenceUrl) => markDone(item, evidenceUrl)}
           onReflect={(item, reason) => void markReflect(item, reason)}
+          onSelfStart={(item) => void markSelfStart(item)}
           onHoldSwitchStart={hold.start}
           onHoldSwitchCancel={hold.cancel}
           holdProgress={hold.progress}
@@ -528,6 +575,74 @@ export function TodayFlowPage() {
           goWho();
         }}
       />
+
+      {reflectionTarget && familyId ? (
+        <ReflectionPromptSheet
+          title={reflectionTarget.title}
+          promptCode={reflectionTarget.promptCode}
+          busy={reflectionBusy}
+          onSkip={() => {
+            const pending = reflectionTarget.pendingQuiz
+              ? {
+                  commitmentId: reflectionTarget.commitmentId,
+                  title: reflectionTarget.title,
+                }
+              : null;
+            setReflectionTarget(null);
+            if (pending) setQuizTarget(pending);
+          }}
+          onSubmit={async (answer) => {
+            setReflectionBusy(true);
+            try {
+              const result = await submitCommitmentReflection(
+                familyId,
+                reflectionTarget.commitmentId,
+                reflectionTarget.promptCode,
+                answer,
+              );
+              const pendingQuiz =
+                result.needsRetrievalCheck || reflectionTarget.pendingQuiz
+                  ? {
+                      commitmentId: reflectionTarget.commitmentId,
+                      title: reflectionTarget.title,
+                    }
+                  : null;
+              setReflectionTarget(null);
+              if (pendingQuiz) setQuizTarget(pendingQuiz);
+              await load(true);
+            } catch {
+              setError('Chưa gửi được câu trả lời. Thử lại hoặc bỏ qua.');
+            } finally {
+              setReflectionBusy(false);
+            }
+          }}
+        />
+      ) : null}
+
+      {quizTarget && familyId && !reflectionTarget ? (
+        <RetrievalCheckSheet
+          title={quizTarget.title}
+          busy={quizBusy}
+          onSkip={() => setQuizTarget(null)}
+          onSubmit={async (method, recall) => {
+            setQuizBusy(true);
+            try {
+              await submitRetrievalCheck(
+                familyId,
+                quizTarget.commitmentId,
+                method,
+                recall,
+              );
+              setQuizTarget(null);
+              await load(true);
+            } catch {
+              setError('Chưa gửi được kiểm tra nhớ. Thử lại hoặc bỏ qua.');
+            } finally {
+              setQuizBusy(false);
+            }
+          }}
+        />
+      ) : null}
     </>
   );
 }

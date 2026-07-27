@@ -928,6 +928,7 @@ type Props = {
     evidenceUrl?: string,
   ) => Promise<{ starDelta?: number; starLabelVi?: string; memberStarBalance?: number } | void>;
   onReflect: (item: DayFlowCommitment, reason: SkipReasonCode) => void;
+  onSelfStart?: (item: DayFlowCommitment) => void | Promise<void>;
   onHoldSwitchStart: () => void;
   onHoldSwitchCancel: () => void;
   holdProgress: number;
@@ -957,6 +958,7 @@ export function KidFocusView({
   onStarBalanceChange,
   onDone,
   onReflect,
+  onSelfStart,
   onHoldSwitchStart,
   onHoldSwitchCancel,
   holdProgress,
@@ -2000,6 +2002,61 @@ export function KidFocusView({
 
       {tab === 'home' ? (
         <div className="kv2-home">
+          <aside className="kv2-bos-banner" role="status">
+            <p className="kv2-bos-eyebrow">Behavior OS</p>
+            <strong>
+              {(() => {
+                const hot =
+                  doNowItems[0] ??
+                  items.find((c) => c.status !== 'done' && c.status !== 'skipped');
+                if (hot?.reminderSuppressed || hot?.interventionLevel === 'observe_only') {
+                  return 'Foxy tin con tự làm — ít nhắc hơn hôm nay';
+                }
+                if (hot?.motivationCueVi) return hot.motivationCueVi;
+                return 'Con tự bắt đầu = nhà ít cần nhắc hơn';
+              })()}
+            </strong>
+            <p>
+              {(() => {
+                const hot =
+                  doNowItems[0] ??
+                  items.find((c) => c.status !== 'done' && c.status !== 'skipped');
+                const stage = hot?.habitStageLabelVi || 'Mới';
+                const streak = hot?.habitStreakDays ?? 0;
+                return hot
+                  ? `Việc tiếp: ${hot.title} · thói quen «${stage}»${streak > 1 ? ` · ${streak} ngày` : ''}`
+                  : 'Không còn việc mở — Foxy ghi nhận ngày tự chủ đẹp!';
+              })()}
+            </p>
+          </aside>
+          <style>{`
+            .kv2-bos-banner {
+              margin: 0 0 12px;
+              padding: 14px 14px 12px;
+              border-radius: 16px;
+              background: linear-gradient(140deg, #e8f6f1, #f3f7e8);
+              border: 1px solid #c5ddd2;
+              color: #1c342c;
+            }
+            .kv2-bos-eyebrow {
+              margin: 0 0 4px;
+              font-size: 11px;
+              letter-spacing: 0.07em;
+              text-transform: uppercase;
+              opacity: 0.65;
+            }
+            .kv2-bos-banner strong {
+              display: block;
+              font-size: 1.05rem;
+              line-height: 1.35;
+              margin-bottom: 4px;
+            }
+            .kv2-bos-banner p {
+              margin: 0;
+              font-size: 0.88rem;
+              opacity: 0.8;
+            }
+          `}</style>
           <div className="kv2-hero-row">
             <article className={`kv2-movie${teamComplete ? ' is-ready' : ''}`}>
               <div className="kv2-movie-copy">
@@ -2478,7 +2535,41 @@ export function KidFocusView({
                             </span>
                             <div className="kv2-m-featured-copy">
                               <strong>{item.title}</strong>
-                              <p>{taskTip(item.title)}</p>
+                              <span
+                                className="kv2-m-habit"
+                                title={`Chuỗi ${item.habitStreakDays ?? 0} ngày`}
+                              >
+                                {item.reminderSuppressed || item.interventionLevel === 'observe_only'
+                                  ? '✨ '
+                                  : ''}
+                                Behavior · {item.habitStageLabelVi || 'Mới'}
+                                {item.habitStreakDays && item.habitStreakDays > 1
+                                  ? ` · ${item.habitStreakDays} ngày`
+                                  : ''}
+                                {item.interventionLabelVi
+                                  ? ` · ${item.interventionLabelVi}`
+                                  : ''}
+                              </span>
+                              {item.status === 'done' && item.confidenceLabelVi ? (
+                                <span
+                                  className="kv2-m-habit"
+                                  title={item.evidenceLevelLabelVi ?? 'Độ tin cậy hoàn thành'}
+                                >
+                                  {item.confidenceLabelVi}
+                                  {item.confidenceScore != null ? ` · ${item.confidenceScore}` : ''}
+                                </span>
+                              ) : null}
+                              <p>
+                                {item.motivationCueVi
+                                  ? item.motivationCueVi
+                                  : `Behavior OS: ${taskTip(item.title)}`}
+                              </p>
+                              {item.eveningRiskBand === 'high' ||
+                              item.eveningRiskBand === 'medium' ? (
+                                <span className="kv2-m-habit" title={item.eveningRiskActionVi}>
+                                  Buổi tối · rủi ro {item.eveningRiskLabelVi?.toLowerCase() ?? ''}
+                                </span>
+                              ) : null}
                               <span className="kv2-m-urgency">
                                 <span aria-hidden>⏱</span>
                                 {minutesUntilExcited(item) ??
@@ -2490,6 +2581,16 @@ export function KidFocusView({
                             <MissionStarBadge item={item} className="is-featured" />
                           </div>
                           <div className="kv2-m-featured-actions">
+                            {item.status === 'pending' && onSelfStart ? (
+                              <button
+                                type="button"
+                                className="kv2-m-photo-btn"
+                                disabled={busyId === item.id}
+                                onClick={() => void onSelfStart(item)}
+                              >
+                                Bắt đầu rồi
+                              </button>
+                            ) : null}
                             <button
                               type="button"
                               className="kv2-m-cta"

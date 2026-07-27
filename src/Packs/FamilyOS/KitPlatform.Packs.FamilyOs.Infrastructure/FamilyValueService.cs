@@ -6,11 +6,16 @@ internal sealed class FamilyValueService : IFamilyValueService
 {
     private readonly FamilyValueRepository _repo;
     private readonly FamilyGraphRepository _families;
+    private readonly IFamilyBehaviorService _behavior;
 
-    public FamilyValueService(FamilyValueRepository repo, FamilyGraphRepository families)
+    public FamilyValueService(
+        FamilyValueRepository repo,
+        FamilyGraphRepository families,
+        IFamilyBehaviorService behavior)
     {
         _repo = repo;
         _families = families;
+        _behavior = behavior;
     }
 
     public async Task<FamilyValueStateDto> GetStateAsync(
@@ -70,7 +75,23 @@ internal sealed class FamilyValueService : IFamilyValueService
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 
         var inc = Math.Max(1, request.Increment);
-        return await _repo.IncrementNudgeAsync(familyId, request.NudgeDate, inc, cancellationToken);
+        var total = await _repo.IncrementNudgeAsync(familyId, request.NudgeDate, inc, cancellationToken);
+        try
+        {
+            await _behavior.RecordParentNudgeAsync(
+                familyId,
+                commitmentId: null,
+                memberId: null,
+                allowed: true,
+                reason: "manual_parent_nudge",
+                cancellationToken);
+        }
+        catch
+        {
+            // event is best-effort
+        }
+
+        return total;
     }
 
     public async Task SetNudgeCountAsync(

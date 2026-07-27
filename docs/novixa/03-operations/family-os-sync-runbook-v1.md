@@ -7,8 +7,9 @@
 
 | | |
 |---|---|
-| **Status** | **PARK** — tạm dừng phát triển / pilot deploy |
+| **Status** | **PARK** — tạm dừng epic / pilot deploy VPS |
 | **Lý do** | Chờ phản hồi thẩm định Pharmacy (`DEMO_PHARMACY`); tránh đụng auth/layout chung và regression RBAC |
+| **Ngoại lệ local** | Behavior OS Wave 0–1 (`behavior-os-north-star-v1.md`, mig `240`) được phép trên máy local khi Product yêu cầu |
 | **Rule Cursor** | `.cursor/rules/family-os-parked.mdc` |
 | **Unpark** | User yêu cầu rõ “tiếp Family OS / unpark” → đổi status §0 + gỡ/ cập nhật rule parked |
 

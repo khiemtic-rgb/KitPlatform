@@ -46,6 +46,46 @@ export interface DayFlowCommitment {
   memberStarBalance?: number;
   starPosted?: boolean;
   starComputedAt?: string;
+  /** Behavior OS Wave 1 */
+  habitStage?: string;
+  habitStageLabelVi?: string;
+  habitStreakDays?: number;
+  reminderSuppressed?: boolean;
+  needsReflection?: boolean;
+  suggestedReflectionPrompt?: string;
+  /** Behavior OS Wave 2 */
+  evidenceLevel?: number;
+  evidenceLevelLabelVi?: string;
+  confidenceScore?: number;
+  confidenceLabelVi?: string;
+  needsRetrievalCheck?: boolean;
+  isLearningMission?: boolean;
+  /** Behavior OS Wave 3 */
+  motivationDriver?: string;
+  motivationCueVi?: string;
+  interventionLevel?: string;
+  interventionLabelVi?: string;
+  allowParentPush?: boolean;
+  allowChildChime?: boolean;
+  parentAdviceVi?: string;
+  eveningRiskBand?: string;
+  eveningRiskLabelVi?: string;
+  eveningRiskActionVi?: string;
+}
+
+export const REFLECTION_PROMPT_OPTIONS = [
+  { value: 'hardest', label: 'Điều khó nhất hôm nay là gì?' },
+  { value: 'learned', label: 'Con học được gì?' },
+  { value: 'improve_tomorrow', label: 'Mai con muốn cải thiện điều gì?' },
+] as const;
+
+export type ReflectionPromptCode = (typeof REFLECTION_PROMPT_OPTIONS)[number]['value'];
+
+export function reflectionPromptLabel(code?: string): string {
+  return (
+    REFLECTION_PROMPT_OPTIONS.find((o) => o.value === code)?.label ??
+    'Con muốn chia sẻ gì?'
+  );
 }
 
 export interface DayFlow {
@@ -436,6 +476,70 @@ function mapCommitment(c: Row): DayFlowCommitment {
       c.starComputedAt != null || c.StarComputedAt != null
         ? String(c.starComputedAt ?? c.StarComputedAt)
         : undefined,
+    habitStage:
+      c.habitStage != null || c.HabitStage != null
+        ? String(c.habitStage ?? c.HabitStage)
+        : undefined,
+    habitStageLabelVi:
+      c.habitStageLabelVi != null || c.HabitStageLabelVi != null
+        ? String(c.habitStageLabelVi ?? c.HabitStageLabelVi)
+        : undefined,
+    habitStreakDays: Number(c.habitStreakDays ?? c.HabitStreakDays ?? 0) || 0,
+    reminderSuppressed: Boolean(c.reminderSuppressed ?? c.ReminderSuppressed ?? false),
+    needsReflection: Boolean(c.needsReflection ?? c.NeedsReflection ?? false),
+    suggestedReflectionPrompt:
+      c.suggestedReflectionPrompt != null || c.SuggestedReflectionPrompt != null
+        ? String(c.suggestedReflectionPrompt ?? c.SuggestedReflectionPrompt)
+        : undefined,
+    evidenceLevel: Number(c.evidenceLevel ?? c.EvidenceLevel ?? 0) || 0,
+    evidenceLevelLabelVi:
+      c.evidenceLevelLabelVi != null || c.EvidenceLevelLabelVi != null
+        ? String(c.evidenceLevelLabelVi ?? c.EvidenceLevelLabelVi)
+        : undefined,
+    confidenceScore:
+      c.confidenceScore != null || c.ConfidenceScore != null
+        ? Number(c.confidenceScore ?? c.ConfidenceScore)
+        : undefined,
+    confidenceLabelVi:
+      c.confidenceLabelVi != null || c.ConfidenceLabelVi != null
+        ? String(c.confidenceLabelVi ?? c.ConfidenceLabelVi)
+        : undefined,
+    needsRetrievalCheck: Boolean(c.needsRetrievalCheck ?? c.NeedsRetrievalCheck ?? false),
+    isLearningMission: Boolean(c.isLearningMission ?? c.IsLearningMission ?? false),
+    motivationDriver:
+      c.motivationDriver != null || c.MotivationDriver != null
+        ? String(c.motivationDriver ?? c.MotivationDriver)
+        : undefined,
+    motivationCueVi:
+      c.motivationCueVi != null || c.MotivationCueVi != null
+        ? String(c.motivationCueVi ?? c.MotivationCueVi)
+        : undefined,
+    interventionLevel:
+      c.interventionLevel != null || c.InterventionLevel != null
+        ? String(c.interventionLevel ?? c.InterventionLevel)
+        : undefined,
+    interventionLabelVi:
+      c.interventionLabelVi != null || c.InterventionLabelVi != null
+        ? String(c.interventionLabelVi ?? c.InterventionLabelVi)
+        : undefined,
+    allowParentPush: Boolean(c.allowParentPush ?? c.AllowParentPush ?? false),
+    allowChildChime: Boolean(c.allowChildChime ?? c.AllowChildChime ?? false),
+    parentAdviceVi:
+      c.parentAdviceVi != null || c.ParentAdviceVi != null
+        ? String(c.parentAdviceVi ?? c.ParentAdviceVi)
+        : undefined,
+    eveningRiskBand:
+      c.eveningRiskBand != null || c.EveningRiskBand != null
+        ? String(c.eveningRiskBand ?? c.EveningRiskBand)
+        : undefined,
+    eveningRiskLabelVi:
+      c.eveningRiskLabelVi != null || c.EveningRiskLabelVi != null
+        ? String(c.eveningRiskLabelVi ?? c.EveningRiskLabelVi)
+        : undefined,
+    eveningRiskActionVi:
+      c.eveningRiskActionVi != null || c.EveningRiskActionVi != null
+        ? String(c.eveningRiskActionVi ?? c.EveningRiskActionVi)
+        : undefined,
   };
 }
 
@@ -503,6 +607,418 @@ export async function updateCommitmentProgress(
     commitment,
     memberStarBalance: commitment.memberStarBalance,
   };
+}
+
+export async function submitCommitmentReflection(
+  familyId: string,
+  commitmentId: string,
+  promptCode: ReflectionPromptCode,
+  answerText: string,
+): Promise<{
+  id: string;
+  promptCode: string;
+  answerText: string;
+  confidenceScore?: number;
+  confidenceLabelVi?: string;
+  evidenceLevel?: number;
+  needsRetrievalCheck?: boolean;
+}> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/commitments/${commitmentId}/reflection`,
+    { promptCode, answerText },
+  );
+  return {
+    id: String(data.id ?? data.Id ?? ''),
+    promptCode: String(data.promptCode ?? data.PromptCode ?? promptCode),
+    answerText: String(data.answerText ?? data.AnswerText ?? answerText),
+    confidenceScore:
+      data.confidenceScore != null || data.ConfidenceScore != null
+        ? Number(data.confidenceScore ?? data.ConfidenceScore)
+        : undefined,
+    confidenceLabelVi:
+      data.confidenceLabelVi != null || data.ConfidenceLabelVi != null
+        ? String(data.confidenceLabelVi ?? data.ConfidenceLabelVi)
+        : undefined,
+    evidenceLevel:
+      data.evidenceLevel != null || data.EvidenceLevel != null
+        ? Number(data.evidenceLevel ?? data.EvidenceLevel)
+        : undefined,
+    needsRetrievalCheck: Boolean(data.needsRetrievalCheck ?? data.NeedsRetrievalCheck ?? false),
+  };
+}
+
+export type RetrievalMethodAnswer = 'skim' | 'practice' | 'retrieve';
+export type RetrievalRecallAnswer = 'can_explain' | 'vaguely' | 'need_review';
+
+export interface RetrievalCheckResult {
+  commitmentId: string;
+  methodAnswer: string;
+  recallAnswer: string;
+  illusionRisk: boolean;
+  confidenceScore: number;
+  confidenceLabelVi: string;
+  evidenceLevel: number;
+  evidenceLevelLabelVi?: string;
+}
+
+export async function submitRetrievalCheck(
+  familyId: string,
+  commitmentId: string,
+  methodAnswer: RetrievalMethodAnswer,
+  recallAnswer: RetrievalRecallAnswer,
+): Promise<RetrievalCheckResult> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/commitments/${commitmentId}/retrieval-check`,
+    { methodAnswer, recallAnswer },
+  );
+  return {
+    commitmentId: String(data.commitmentId ?? data.CommitmentId ?? commitmentId),
+    methodAnswer: String(data.methodAnswer ?? data.MethodAnswer ?? methodAnswer),
+    recallAnswer: String(data.recallAnswer ?? data.RecallAnswer ?? recallAnswer),
+    illusionRisk: Boolean(data.illusionRisk ?? data.IllusionRisk ?? false),
+    confidenceScore: Number(data.confidenceScore ?? data.ConfidenceScore ?? 0),
+    confidenceLabelVi: String(
+      data.confidenceLabelVi ?? data.ConfidenceLabelVi ?? 'Cần thêm dữ liệu',
+    ),
+    evidenceLevel: Number(data.evidenceLevel ?? data.EvidenceLevel ?? 0),
+    evidenceLevelLabelVi:
+      data.evidenceLevelLabelVi != null || data.EvidenceLevelLabelVi != null
+        ? String(data.evidenceLevelLabelVi ?? data.EvidenceLevelLabelVi)
+        : undefined,
+  };
+}
+
+export async function selfStartCommitment(
+  familyId: string,
+  commitmentId: string,
+): Promise<CommitmentProgressResult> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/commitments/${commitmentId}/self-start`,
+  );
+  const commitment = mapCommitment(data);
+  return {
+    commitment,
+    memberStarBalance: commitment.memberStarBalance,
+  };
+}
+
+export interface BehaviorCoachHint {
+  memberId?: string;
+  memberName?: string;
+  commitmentId: string;
+  title: string;
+  interventionLevel: string;
+  interventionLabelVi: string;
+  parentAdviceVi: string;
+  allowParentPush: boolean;
+  motivationCueVi?: string;
+}
+
+export interface BehaviorCoach {
+  flowDate: string;
+  parentNudgesUsedToday: number;
+  parentNudgeBudget: number;
+  observeOnlyCount: number;
+  allowParentPushCount: number;
+  hints: BehaviorCoachHint[];
+}
+
+export async function fetchBehaviorCoach(
+  familyId: string,
+  flowDate?: string,
+): Promise<BehaviorCoach> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/behavior/coach`, {
+    params: flowDate ? { flowDate } : undefined,
+  });
+  const hintsRaw = asArray(data.hints ?? data.Hints);
+  return {
+    flowDate: String(data.flowDate ?? data.FlowDate ?? ''),
+    parentNudgesUsedToday: Number(data.parentNudgesUsedToday ?? data.ParentNudgesUsedToday ?? 0),
+    parentNudgeBudget: Number(data.parentNudgeBudget ?? data.ParentNudgeBudget ?? 3),
+    observeOnlyCount: Number(data.observeOnlyCount ?? data.ObserveOnlyCount ?? 0),
+    allowParentPushCount: Number(data.allowParentPushCount ?? data.AllowParentPushCount ?? 0),
+    hints: hintsRaw.map((h) => ({
+      memberId:
+        h.memberId != null || h.MemberId != null ? String(h.memberId ?? h.MemberId) : undefined,
+      memberName:
+        h.memberName != null || h.MemberName != null
+          ? String(h.memberName ?? h.MemberName)
+          : undefined,
+      commitmentId: String(h.commitmentId ?? h.CommitmentId ?? ''),
+      title: String(h.title ?? h.Title ?? ''),
+      interventionLevel: String(h.interventionLevel ?? h.InterventionLevel ?? ''),
+      interventionLabelVi: String(h.interventionLabelVi ?? h.InterventionLabelVi ?? ''),
+      parentAdviceVi: String(h.parentAdviceVi ?? h.ParentAdviceVi ?? ''),
+      allowParentPush: Boolean(h.allowParentPush ?? h.AllowParentPush ?? false),
+      motivationCueVi:
+        h.motivationCueVi != null || h.MotivationCueVi != null
+          ? String(h.motivationCueVi ?? h.MotivationCueVi)
+          : undefined,
+    })),
+  };
+}
+
+export interface BehaviorTwinDimension {
+  code: string;
+  labelVi: string;
+  score: number;
+  whyVi: string;
+}
+
+export interface BehaviorTwinMember {
+  memberId: string;
+  memberName: string;
+  overallScore: number;
+  overallLabelVi: string;
+  disclaimerVi: string;
+  eveningRiskBand?: string;
+  eveningRiskLabelVi?: string;
+  eveningReasonsVi: string[];
+  eveningSuggestedActionVi?: string;
+  dimensions: BehaviorTwinDimension[];
+  snapshotDate: string;
+}
+
+export interface BehaviorTwin {
+  asOfDate: string;
+  disclaimerVi: string;
+  members: BehaviorTwinMember[];
+}
+
+export async function fetchBehaviorTwin(
+  familyId: string,
+  memberId?: string,
+): Promise<BehaviorTwin> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/behavior/twin`, {
+    params: memberId ? { memberId } : undefined,
+  });
+  const membersRaw = asArray(data.members ?? data.Members);
+  return {
+    asOfDate: String(data.asOfDate ?? data.AsOfDate ?? ''),
+    disclaimerVi: String(
+      data.disclaimerVi ??
+        data.DisclaimerVi ??
+        'Mô hình tín hiệu — không đánh giá tính cách.',
+    ),
+    members: membersRaw.map((m) => {
+      const dims = asArray(m.dimensions ?? m.Dimensions);
+      const reasons = m.eveningReasonsVi ?? m.EveningReasonsVi;
+      return {
+        memberId: String(m.memberId ?? m.MemberId ?? ''),
+        memberName: String(m.memberName ?? m.MemberName ?? ''),
+        overallScore: Number(m.overallScore ?? m.OverallScore ?? 0),
+        overallLabelVi: String(m.overallLabelVi ?? m.OverallLabelVi ?? ''),
+        disclaimerVi: String(m.disclaimerVi ?? m.DisclaimerVi ?? ''),
+        eveningRiskBand:
+          m.eveningRiskBand != null || m.EveningRiskBand != null
+            ? String(m.eveningRiskBand ?? m.EveningRiskBand)
+            : undefined,
+        eveningRiskLabelVi:
+          m.eveningRiskLabelVi != null || m.EveningRiskLabelVi != null
+            ? String(m.eveningRiskLabelVi ?? m.EveningRiskLabelVi)
+            : undefined,
+        eveningReasonsVi: Array.isArray(reasons) ? reasons.map((x) => String(x)) : [],
+        eveningSuggestedActionVi:
+          m.eveningSuggestedActionVi != null || m.EveningSuggestedActionVi != null
+            ? String(m.eveningSuggestedActionVi ?? m.EveningSuggestedActionVi)
+            : undefined,
+        dimensions: dims.map((d) => ({
+          code: String(d.code ?? d.Code ?? ''),
+          labelVi: String(d.labelVi ?? d.LabelVi ?? ''),
+          score: Number(d.score ?? d.Score ?? 0),
+          whyVi: String(d.whyVi ?? d.WhyVi ?? ''),
+        })),
+        snapshotDate: String(m.snapshotDate ?? m.SnapshotDate ?? ''),
+      };
+    }),
+  };
+}
+
+export interface BehaviorRetirementPolicy {
+  observeOnly: boolean;
+  retirementStage?: string;
+  retirementLabelVi?: string;
+  parentNudgeBudget?: number;
+  notesVi?: string;
+  updatedAt?: string;
+}
+
+export interface FamilyBehaviorTwin {
+  asOfDate: string;
+  disclaimerVi: string;
+  familyPeaceIndex: number;
+  familyAutonomyIndex: number;
+  parentalInterventionIndex: number;
+  retirementStage: string;
+  retirementLabelVi: string;
+  retirementAdviceVi: string;
+  siblingBalance: string;
+  siblingBalanceLabelVi: string;
+  siblingAdviceVi: string;
+  dependenceWarning: boolean;
+  dependenceWarningVi?: string;
+  recommendObserveOnly: boolean;
+  observeOnlyActive: boolean;
+  policy: BehaviorRetirementPolicy;
+  children: BehaviorTwinMember[];
+}
+
+function mapRetirementPolicy(p: Row | undefined | null): BehaviorRetirementPolicy {
+  if (!p) return { observeOnly: false };
+  return {
+    observeOnly: Boolean(p.observeOnly ?? p.ObserveOnly ?? false),
+    retirementStage:
+      p.retirementStage != null || p.RetirementStage != null
+        ? String(p.retirementStage ?? p.RetirementStage)
+        : undefined,
+    retirementLabelVi:
+      p.retirementLabelVi != null || p.RetirementLabelVi != null
+        ? String(p.retirementLabelVi ?? p.RetirementLabelVi)
+        : undefined,
+    parentNudgeBudget:
+      p.parentNudgeBudget != null || p.ParentNudgeBudget != null
+        ? Number(p.parentNudgeBudget ?? p.ParentNudgeBudget)
+        : undefined,
+    notesVi:
+      p.notesVi != null || p.NotesVi != null ? String(p.notesVi ?? p.NotesVi) : undefined,
+    updatedAt:
+      p.updatedAt != null || p.UpdatedAt != null
+        ? String(p.updatedAt ?? p.UpdatedAt)
+        : undefined,
+  };
+}
+
+export async function fetchFamilyBehaviorTwin(familyId: string): Promise<FamilyBehaviorTwin> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/behavior/family-twin`);
+  const childrenRaw = asArray(data.children ?? data.Children);
+  const children = childrenRaw.map((m) => {
+    const dims = asArray(m.dimensions ?? m.Dimensions);
+    const reasons = m.eveningReasonsVi ?? m.EveningReasonsVi;
+    return {
+      memberId: String(m.memberId ?? m.MemberId ?? ''),
+      memberName: String(m.memberName ?? m.MemberName ?? ''),
+      overallScore: Number(m.overallScore ?? m.OverallScore ?? 0),
+      overallLabelVi: String(m.overallLabelVi ?? m.OverallLabelVi ?? ''),
+      disclaimerVi: String(m.disclaimerVi ?? m.DisclaimerVi ?? ''),
+      eveningRiskBand:
+        m.eveningRiskBand != null || m.EveningRiskBand != null
+          ? String(m.eveningRiskBand ?? m.EveningRiskBand)
+          : undefined,
+      eveningRiskLabelVi:
+        m.eveningRiskLabelVi != null || m.EveningRiskLabelVi != null
+          ? String(m.eveningRiskLabelVi ?? m.EveningRiskLabelVi)
+          : undefined,
+      eveningReasonsVi: Array.isArray(reasons) ? reasons.map((x) => String(x)) : [],
+      eveningSuggestedActionVi:
+        m.eveningSuggestedActionVi != null || m.EveningSuggestedActionVi != null
+          ? String(m.eveningSuggestedActionVi ?? m.EveningSuggestedActionVi)
+          : undefined,
+      dimensions: dims.map((d) => ({
+        code: String(d.code ?? d.Code ?? ''),
+        labelVi: String(d.labelVi ?? d.LabelVi ?? ''),
+        score: Number(d.score ?? d.Score ?? 0),
+        whyVi: String(d.whyVi ?? d.WhyVi ?? ''),
+      })),
+      snapshotDate: String(m.snapshotDate ?? m.SnapshotDate ?? ''),
+    };
+  });
+
+  const policyRaw = (data.policy ?? data.Policy) as Row | undefined;
+  return {
+    asOfDate: String(data.asOfDate ?? data.AsOfDate ?? ''),
+    disclaimerVi: String(data.disclaimerVi ?? data.DisclaimerVi ?? ''),
+    familyPeaceIndex: Number(data.familyPeaceIndex ?? data.FamilyPeaceIndex ?? 0),
+    familyAutonomyIndex: Number(data.familyAutonomyIndex ?? data.FamilyAutonomyIndex ?? 0),
+    parentalInterventionIndex: Number(
+      data.parentalInterventionIndex ?? data.ParentalInterventionIndex ?? 0,
+    ),
+    retirementStage: String(data.retirementStage ?? data.RetirementStage ?? ''),
+    retirementLabelVi: String(data.retirementLabelVi ?? data.RetirementLabelVi ?? ''),
+    retirementAdviceVi: String(data.retirementAdviceVi ?? data.RetirementAdviceVi ?? ''),
+    siblingBalance: String(data.siblingBalance ?? data.SiblingBalance ?? ''),
+    siblingBalanceLabelVi: String(
+      data.siblingBalanceLabelVi ?? data.SiblingBalanceLabelVi ?? '',
+    ),
+    siblingAdviceVi: String(data.siblingAdviceVi ?? data.SiblingAdviceVi ?? ''),
+    dependenceWarning: Boolean(data.dependenceWarning ?? data.DependenceWarning ?? false),
+    dependenceWarningVi:
+      data.dependenceWarningVi != null || data.DependenceWarningVi != null
+        ? String(data.dependenceWarningVi ?? data.DependenceWarningVi)
+        : undefined,
+    recommendObserveOnly: Boolean(
+      data.recommendObserveOnly ?? data.RecommendObserveOnly ?? false,
+    ),
+    observeOnlyActive: Boolean(data.observeOnlyActive ?? data.ObserveOnlyActive ?? false),
+    policy: mapRetirementPolicy(policyRaw),
+    children,
+  };
+}
+
+export interface FamilyCoachInsight {
+  flowDate: string;
+  headline: string;
+  strength?: string;
+  attention?: string;
+  pattern?: string;
+  proposal?: string;
+  proposalCode?: string;
+  ctaLabel?: string;
+  doneCount: number;
+  skippedCount: number;
+  openCount: number;
+  totalCount: number;
+}
+
+export async function fetchFamilyCoachInsight(
+  familyId: string,
+  date?: string,
+): Promise<FamilyCoachInsight> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/coach-insight`, {
+    params: date ? { date } : undefined,
+  });
+  return {
+    flowDate: String(data.flowDate ?? data.FlowDate ?? date ?? ''),
+    headline: String(data.headline ?? data.Headline ?? ''),
+    strength:
+      data.strength != null || data.Strength != null
+        ? String(data.strength ?? data.Strength)
+        : undefined,
+    attention:
+      data.attention != null || data.Attention != null
+        ? String(data.attention ?? data.Attention)
+        : undefined,
+    pattern:
+      data.pattern != null || data.Pattern != null
+        ? String(data.pattern ?? data.Pattern)
+        : undefined,
+    proposal:
+      data.proposal != null || data.Proposal != null
+        ? String(data.proposal ?? data.Proposal)
+        : undefined,
+    proposalCode:
+      data.proposalCode != null || data.ProposalCode != null
+        ? String(data.proposalCode ?? data.ProposalCode)
+        : undefined,
+    ctaLabel:
+      data.ctaLabel != null || data.CtaLabel != null
+        ? String(data.ctaLabel ?? data.CtaLabel)
+        : undefined,
+    doneCount: Number(data.doneCount ?? data.DoneCount ?? 0),
+    skippedCount: Number(data.skippedCount ?? data.SkippedCount ?? 0),
+    openCount: Number(data.openCount ?? data.OpenCount ?? 0),
+    totalCount: Number(data.totalCount ?? data.TotalCount ?? 0),
+  };
+}
+
+export async function updateRetirementPolicy(
+  familyId: string,
+  body: { observeOnly?: boolean; parentNudgeBudget?: number; notesVi?: string },
+): Promise<BehaviorRetirementPolicy> {
+  const { data } = await http.put<Row>(
+    `/family-os/families/${familyId}/behavior/retirement-policy`,
+    body,
+  );
+  return mapRetirementPolicy(data);
 }
 
 export async function approveCommitmentStars(
@@ -1759,6 +2275,399 @@ export async function fetchWeeklyInsight(
     },
   });
   return mapWeeklyInsight(data);
+}
+
+/** Parent Success P0c — Return on Parenting + Growth Report (server SoT). */
+export interface ParentSuccessMetric {
+  id: string;
+  labelVi: string;
+  beforeDisplay: string;
+  afterDisplay: string;
+  deltaLabelVi: string;
+  positive: boolean;
+  unit?: string;
+}
+
+export interface ParentSuccessRop {
+  familyId: string;
+  windowDays: number;
+  periodStart: string;
+  periodEnd: string;
+  dataDays: number;
+  isPartial: boolean;
+  partialNoteVi?: string;
+  generatedAt: string;
+  growthScore: number | null;
+  headlineVi: string;
+  summaryVi: string;
+  readyToRenewLineVi: string;
+  metrics: ParentSuccessMetric[];
+  growthBulletsVi: string[];
+  outcomesVi: string[];
+  minutesSavedEstimate: number;
+  parentNudgesEarly: number;
+  parentNudgesLate: number;
+  selfStartsEarly: number;
+  selfStartsLate: number;
+  habitGraduations: number;
+  qualityMoments: number;
+}
+
+function mapParentSuccessRop(data: Row): ParentSuccessRop {
+  const metricsRaw = asArray(data.metrics ?? data.Metrics);
+  const bulletsRaw = data.growthBulletsVi ?? data.GrowthBulletsVi;
+  const outcomesRaw = data.outcomesVi ?? data.OutcomesVi;
+  return {
+    familyId: String(data.familyId ?? data.FamilyId ?? ''),
+    windowDays: Number(data.windowDays ?? data.WindowDays ?? 30),
+    periodStart: String(data.periodStart ?? data.PeriodStart ?? ''),
+    periodEnd: String(data.periodEnd ?? data.PeriodEnd ?? ''),
+    dataDays: Number(data.dataDays ?? data.DataDays ?? 0),
+    isPartial: Boolean(data.isPartial ?? data.IsPartial ?? false),
+    partialNoteVi:
+      data.partialNoteVi != null || data.PartialNoteVi != null
+        ? String(data.partialNoteVi ?? data.PartialNoteVi)
+        : undefined,
+    generatedAt: String(data.generatedAt ?? data.GeneratedAt ?? ''),
+    growthScore:
+      data.growthScore == null && data.GrowthScore == null
+        ? null
+        : Number(data.growthScore ?? data.GrowthScore),
+    headlineVi: String(data.headlineVi ?? data.HeadlineVi ?? ''),
+    summaryVi: String(data.summaryVi ?? data.SummaryVi ?? ''),
+    readyToRenewLineVi: String(data.readyToRenewLineVi ?? data.ReadyToRenewLineVi ?? ''),
+    metrics: metricsRaw.map((m) => ({
+      id: String(m.id ?? m.Id ?? ''),
+      labelVi: String(m.labelVi ?? m.LabelVi ?? ''),
+      beforeDisplay: String(m.beforeDisplay ?? m.BeforeDisplay ?? ''),
+      afterDisplay: String(m.afterDisplay ?? m.AfterDisplay ?? ''),
+      deltaLabelVi: String(m.deltaLabelVi ?? m.DeltaLabelVi ?? ''),
+      positive: Boolean(m.positive ?? m.Positive ?? false),
+      unit:
+        m.unit != null || m.Unit != null ? String(m.unit ?? m.Unit) : undefined,
+    })),
+    growthBulletsVi: Array.isArray(bulletsRaw)
+      ? bulletsRaw.map((x) => String(x))
+      : [],
+    outcomesVi: Array.isArray(outcomesRaw) ? outcomesRaw.map((x) => String(x)) : [],
+    minutesSavedEstimate: Number(
+      data.minutesSavedEstimate ?? data.MinutesSavedEstimate ?? 0,
+    ),
+    parentNudgesEarly: Number(data.parentNudgesEarly ?? data.ParentNudgesEarly ?? 0),
+    parentNudgesLate: Number(data.parentNudgesLate ?? data.ParentNudgesLate ?? 0),
+    selfStartsEarly: Number(data.selfStartsEarly ?? data.SelfStartsEarly ?? 0),
+    selfStartsLate: Number(data.selfStartsLate ?? data.SelfStartsLate ?? 0),
+    habitGraduations: Number(data.habitGraduations ?? data.HabitGraduations ?? 0),
+    qualityMoments: Number(data.qualityMoments ?? data.QualityMoments ?? 0),
+  };
+}
+
+export async function fetchParentSuccessRop(
+  familyId: string,
+  opts?: { days?: 30 | 60 | 90; asOf?: string },
+): Promise<ParentSuccessRop> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/parent-success/rop`, {
+    params: {
+      days: opts?.days ?? 30,
+      asOf: opts?.asOf ?? undefined,
+    },
+  });
+  return mapParentSuccessRop(data);
+}
+
+export function formatParentSuccessRopShare(rop: ParentSuccessRop, familyName: string): string {
+  const lines = [
+    `ROP Famixa · ${rop.windowDays} ngày · ${familyName}`,
+    rop.headlineVi,
+    '',
+    ...rop.metrics.map(
+      (m) => `• ${m.labelVi}: ${m.beforeDisplay} → ${m.afterDisplay} (${m.deltaLabelVi})`,
+    ),
+    '',
+    rop.summaryVi,
+    rop.readyToRenewLineVi,
+  ];
+  return lines.join('\n');
+}
+
+/** Parent Success P1 — AI Wins digest (Memory SoT, templated). */
+export interface FamilyAiWin {
+  id: string;
+  kind: string;
+  titleVi: string;
+  noteVi?: string;
+  flowDate: string;
+  icon?: string;
+  isFavorite: boolean;
+  happenedAt: string;
+}
+
+export interface FamilyAiWinsDigest {
+  from: string;
+  to: string;
+  totalCount: number;
+  headlineVi: string;
+  subheadVi: string;
+  wins: FamilyAiWin[];
+}
+
+/** Parent Success P1 — monthly AI Letter (templated, no LLM). */
+export interface FamilyAiLetter {
+  familyId: string;
+  familyName: string;
+  periodStart: string;
+  periodEnd: string;
+  generatedAt: string;
+  monthLabelVi: string;
+  greetingVi: string;
+  bodyVi: string;
+  highlightsVi: string[];
+  closingVi: string;
+  isThinData: boolean;
+}
+
+function mapFamilyAiWin(r: Row): FamilyAiWin {
+  return {
+    id: String(r.id ?? r.Id ?? ''),
+    kind: String(r.kind ?? r.Kind ?? ''),
+    titleVi: String(r.titleVi ?? r.TitleVi ?? ''),
+    noteVi: r.noteVi != null || r.NoteVi != null ? String(r.noteVi ?? r.NoteVi) : undefined,
+    flowDate: String(r.flowDate ?? r.FlowDate ?? ''),
+    icon: r.icon != null || r.Icon != null ? String(r.icon ?? r.Icon) : undefined,
+    isFavorite: Boolean(r.isFavorite ?? r.IsFavorite ?? false),
+    happenedAt: String(r.happenedAt ?? r.HappenedAt ?? ''),
+  };
+}
+
+export async function fetchFamilyAiWinsDigest(
+  familyId: string,
+  opts?: { from?: string; to?: string; limit?: number },
+): Promise<FamilyAiWinsDigest> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/ai/wins-digest`, {
+    params: {
+      from: opts?.from,
+      to: opts?.to,
+      limit: opts?.limit ?? 10,
+    },
+  });
+  const r = (data ?? {}) as Row;
+  return {
+    from: String(r.from ?? r.From ?? ''),
+    to: String(r.to ?? r.To ?? ''),
+    totalCount: Number(r.totalCount ?? r.TotalCount ?? 0),
+    headlineVi: String(r.headlineVi ?? r.HeadlineVi ?? ''),
+    subheadVi: String(r.subheadVi ?? r.SubheadVi ?? ''),
+    wins: asArray(r.wins ?? r.Wins).map((x) => mapFamilyAiWin(x as Row)),
+  };
+}
+
+export async function fetchFamilyAiLetter(
+  familyId: string,
+  opts?: { month?: string },
+): Promise<FamilyAiLetter> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/ai/letter`, {
+    params: { month: opts?.month },
+  });
+  const r = (data ?? {}) as Row;
+  return {
+    familyId: String(r.familyId ?? r.FamilyId ?? familyId),
+    familyName: String(r.familyName ?? r.FamilyName ?? ''),
+    periodStart: String(r.periodStart ?? r.PeriodStart ?? ''),
+    periodEnd: String(r.periodEnd ?? r.PeriodEnd ?? ''),
+    generatedAt: String(r.generatedAt ?? r.GeneratedAt ?? ''),
+    monthLabelVi: String(r.monthLabelVi ?? r.MonthLabelVi ?? ''),
+    greetingVi: String(r.greetingVi ?? r.GreetingVi ?? ''),
+    bodyVi: String(r.bodyVi ?? r.BodyVi ?? ''),
+    highlightsVi: asArray(r.highlightsVi ?? r.HighlightsVi).map((x) => String(x)),
+    closingVi: String(r.closingVi ?? r.ClosingVi ?? ''),
+    isThinData: Boolean(r.isThinData ?? r.IsThinData ?? false),
+  };
+}
+
+export function formatFamilyAiLetterShare(letter: FamilyAiLetter): string {
+  return [
+    letter.greetingVi,
+    '',
+    letter.bodyVi,
+    '',
+    ...letter.highlightsVi.map((h) => `• ${h}`),
+    '',
+    letter.closingVi,
+  ].join('\n');
+}
+
+/** Parent Success P2 — evening 3Q check-in. */
+export interface ParentSuccessCheckin {
+  id: string;
+  familyId: string;
+  memberId: string;
+  flowDate: string;
+  qLessNudge: boolean;
+  qLessTension: boolean;
+  qQualityTime: boolean;
+  note?: string;
+  updatedAt: string;
+  reflectionVi: string;
+}
+
+export interface ParentAchievement {
+  code: string;
+  titleVi: string;
+  detailVi: string;
+  icon: string;
+  unlocked: boolean;
+  progressHintVi: string;
+}
+
+export interface ParentAchievements {
+  familyId: string;
+  asOf: string;
+  headlineVi: string;
+  items: ParentAchievement[];
+}
+
+function mapParentSuccessCheckin(data: Row): ParentSuccessCheckin {
+  return {
+    id: String(data.id ?? data.Id ?? ''),
+    familyId: String(data.familyId ?? data.FamilyId ?? ''),
+    memberId: String(data.memberId ?? data.MemberId ?? ''),
+    flowDate: String(data.flowDate ?? data.FlowDate ?? ''),
+    qLessNudge: Boolean(data.qLessNudge ?? data.QLessNudge ?? false),
+    qLessTension: Boolean(data.qLessTension ?? data.QLessTension ?? false),
+    qQualityTime: Boolean(data.qQualityTime ?? data.QQualityTime ?? false),
+    note: data.note != null || data.Note != null ? String(data.note ?? data.Note) : undefined,
+    updatedAt: String(data.updatedAt ?? data.UpdatedAt ?? ''),
+    reflectionVi: String(data.reflectionVi ?? data.ReflectionVi ?? ''),
+  };
+}
+
+export async function fetchParentSuccessEveningCheckin(
+  familyId: string,
+  memberId: string,
+  date?: string,
+): Promise<ParentSuccessCheckin | null> {
+  try {
+    const { data, status } = await http.get<Row | null>(
+      `/family-os/families/${familyId}/parent-success/evening-checkin`,
+      {
+        params: { memberId, date },
+        validateStatus: (s) => (s >= 200 && s < 300) || s === 204,
+      },
+    );
+    if (status === 204 || data == null) return null;
+    return mapParentSuccessCheckin(data);
+  } catch {
+    return null;
+  }
+}
+
+export async function upsertParentSuccessEveningCheckin(
+  familyId: string,
+  input: {
+    memberId: string;
+    flowDate?: string;
+    qLessNudge: boolean;
+    qLessTension: boolean;
+    qQualityTime: boolean;
+    note?: string;
+  },
+): Promise<ParentSuccessCheckin> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/parent-success/evening-checkin`,
+    {
+      memberId: input.memberId,
+      flowDate: input.flowDate ?? null,
+      qLessNudge: input.qLessNudge,
+      qLessTension: input.qLessTension,
+      qQualityTime: input.qQualityTime,
+      note: input.note ?? null,
+    },
+  );
+  return mapParentSuccessCheckin(data);
+}
+
+export async function fetchParentAchievements(
+  familyId: string,
+  opts?: { asOf?: string },
+): Promise<ParentAchievements> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/parent-success/achievements`, {
+    params: { asOf: opts?.asOf },
+  });
+  const r = (data ?? {}) as Row;
+  return {
+    familyId: String(r.familyId ?? r.FamilyId ?? familyId),
+    asOf: String(r.asOf ?? r.AsOf ?? ''),
+    headlineVi: String(r.headlineVi ?? r.HeadlineVi ?? ''),
+    items: asArray(r.items ?? r.Items).map((x) => {
+      const row = x as Row;
+      return {
+        code: String(row.code ?? row.Code ?? ''),
+        titleVi: String(row.titleVi ?? row.TitleVi ?? ''),
+        detailVi: String(row.detailVi ?? row.DetailVi ?? ''),
+        icon: String(row.icon ?? row.Icon ?? '✨'),
+        unlocked: Boolean(row.unlocked ?? row.Unlocked ?? false),
+        progressHintVi: String(row.progressHintVi ?? row.ProgressHintVi ?? ''),
+      };
+    }),
+  };
+}
+
+/** Parent Success P3 — Trust Flywheel tip acted. */
+export interface ParentCoachActed {
+  familyId: string;
+  memberId: string;
+  flowDate: string;
+  tipId: string;
+  alreadyActed: boolean;
+  messageVi: string;
+  actedTipIdsToday: string[];
+}
+
+function mapParentCoachActed(data: Row): ParentCoachActed {
+  return {
+    familyId: String(data.familyId ?? data.FamilyId ?? ''),
+    memberId: String(data.memberId ?? data.MemberId ?? ''),
+    flowDate: String(data.flowDate ?? data.FlowDate ?? ''),
+    tipId: String(data.tipId ?? data.TipId ?? ''),
+    alreadyActed: Boolean(data.alreadyActed ?? data.AlreadyActed ?? false),
+    messageVi: String(data.messageVi ?? data.MessageVi ?? ''),
+    actedTipIdsToday: asArray(data.actedTipIdsToday ?? data.ActedTipIdsToday).map((x) =>
+      String(x),
+    ),
+  };
+}
+
+export async function fetchParentCoachActedToday(
+  familyId: string,
+  memberId: string,
+  date?: string,
+): Promise<ParentCoachActed> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/parent-success/coach-acted`, {
+    params: { memberId, date },
+  });
+  return mapParentCoachActed(data ?? {});
+}
+
+export async function recordParentCoachActed(
+  familyId: string,
+  input: {
+    memberId: string;
+    tipId: string;
+    tipSource?: string;
+    slot?: string;
+    titleVi?: string;
+    flowDate?: string;
+  },
+): Promise<ParentCoachActed> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/parent-success/coach-acted`, {
+    memberId: input.memberId,
+    tipId: input.tipId,
+    tipSource: input.tipSource ?? null,
+    slot: input.slot ?? null,
+    titleVi: input.titleVi ?? null,
+    flowDate: input.flowDate ?? null,
+  });
+  return mapParentCoachActed(data ?? {});
 }
 
 /** Parent Progress (opt-in) — a guardian/caregiver's own light habit goals. */

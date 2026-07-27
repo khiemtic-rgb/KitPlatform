@@ -10154,6 +10154,17 @@ body:has(.app-shell.is-kid) {
   color: #6a6790;
 }
 
+.kv2-m-habit {
+  display: inline-block;
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1f6f5b;
+  background: rgba(31, 111, 91, 0.1);
+  border-radius: 8px;
+  padding: 2px 8px;
+}
+
 .kv2-m-urgency {
   display: inline-flex;
   align-items: center;

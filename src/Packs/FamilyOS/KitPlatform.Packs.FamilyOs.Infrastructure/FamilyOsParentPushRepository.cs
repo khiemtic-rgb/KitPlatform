@@ -148,7 +148,10 @@ internal sealed class FamilyOsParentPushRepository
                 c.window_end AS WindowEnd,
                 c.completed_at AS CompletedAt,
                 m.display_name AS MemberName,
-                m.role_code AS MemberRole
+                m.role_code AS MemberRole,
+                COALESCE(t.habit_stage, c.habit_stage, 'new') AS HabitStage,
+                COALESCE(t.habit_streak_days, 0) AS HabitStreakDays,
+                COALESCE(t.reminder_suppressed, c.reminder_suppressed, FALSE) AS ReminderSuppressed
             FROM pack_family.commitment c
             INNER JOIN pack_family.day_flow d
               ON d.id = c.day_flow_id AND d.tenant_id = c.tenant_id AND d.deleted_at IS NULL
@@ -157,6 +160,8 @@ internal sealed class FamilyOsParentPushRepository
              AND f.status = 'active'
             LEFT JOIN pack_family.membership m
               ON m.id = c.member_id AND m.tenant_id = c.tenant_id AND m.deleted_at IS NULL
+            LEFT JOIN pack_family.commitment_template t
+              ON t.id = c.template_id AND t.tenant_id = c.tenant_id AND t.deleted_at IS NULL
             WHERE c.deleted_at IS NULL
               AND c.status IN ('pending', 'in_progress')
             """);
@@ -460,6 +465,9 @@ internal sealed class FamilyOsParentPushRepository
         public DateTimeOffset? CompletedAt { get; init; }
         public string? MemberName { get; init; }
         public string? MemberRole { get; init; }
+        public string? HabitStage { get; init; }
+        public int HabitStreakDays { get; init; }
+        public bool ReminderSuppressed { get; init; }
     }
 
     internal sealed class DigestItemRow

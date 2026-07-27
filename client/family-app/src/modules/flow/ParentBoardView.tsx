@@ -33,6 +33,30 @@ import {
   type RewardCatalogItem,
   type RewardRedemption,
   type FamilyScore,
+  fetchBehaviorTwin,
+  type BehaviorTwin,
+  fetchFamilyBehaviorTwin,
+  updateRetirementPolicy,
+  type FamilyBehaviorTwin,
+  fetchFamilyCoachInsight,
+  type FamilyCoachInsight,
+  fetchBehaviorCoach,
+  type BehaviorCoach,
+  fetchParentSuccessRop,
+  type ParentSuccessRop,
+  formatParentSuccessRopShare,
+  fetchFamilyAiWinsDigest,
+  fetchFamilyAiLetter,
+  formatFamilyAiLetterShare,
+  type FamilyAiWinsDigest,
+  type FamilyAiLetter,
+  fetchParentSuccessEveningCheckin,
+  upsertParentSuccessEveningCheckin,
+  fetchParentAchievements,
+  type ParentSuccessCheckin,
+  type ParentAchievements,
+  fetchParentCoachActedToday,
+  recordParentCoachActed,
 } from '@/shared/api/family-os.api';
 import { DecisionInboxPanel } from '@/modules/flow/DecisionInboxPanel';
 import { FamilyModeSheet } from '@/modules/flow/FamilyModeSheet';
@@ -54,7 +78,9 @@ import {
 } from '@/shared/ui/avatarGender';
 import { withEvidenceAuth } from '@/shared/upload/evidence-url';
 import { clearOnboardingProfile } from '@/shared/onboarding/onboarding';
-import { buildParentingCoach } from '@/shared/value/parenting-coach';
+import { buildParentPulse } from '@/shared/value/parent-pulse';
+import { resolveParentCoach } from '@/shared/value/resolve-parenting-coach';
+import { FamilyValuePanel } from '@/modules/flow/FamilyValuePanel';
 import {
   buildFamilyMemories,
   FAMILY_MEMORY_EMPTY,
@@ -516,6 +542,22 @@ export function ParentBoardView({
   const [actionToast, setActionToast] = useState<string | null>(null);
   const [modeSheetOpen, setModeSheetOpen] = useState(false);
   const [familyScore, setFamilyScore] = useState<FamilyScore | null>(null);
+  const [behaviorTwin, setBehaviorTwin] = useState<BehaviorTwin | null>(null);
+  const [familyTwin, setFamilyTwin] = useState<FamilyBehaviorTwin | null>(null);
+  const [coachInsight, setCoachInsight] = useState<FamilyCoachInsight | null>(null);
+  const [behaviorCoach, setBehaviorCoach] = useState<BehaviorCoach | null>(null);
+  const [rop, setRop] = useState<ParentSuccessRop | null>(null);
+  const [winsDigest, setWinsDigest] = useState<FamilyAiWinsDigest | null>(null);
+  const [aiLetter, setAiLetter] = useState<FamilyAiLetter | null>(null);
+  const [eveningCheckin, setEveningCheckin] = useState<ParentSuccessCheckin | null>(null);
+  const [parentAchievements, setParentAchievements] = useState<ParentAchievements | null>(null);
+  const [qLessNudge, setQLessNudge] = useState(false);
+  const [qLessTension, setQLessTension] = useState(false);
+  const [qQualityTime, setQQualityTime] = useState(false);
+  const [checkinBusy, setCheckinBusy] = useState(false);
+  const [actedTipIds, setActedTipIds] = useState<string[]>([]);
+  const [coachActBusyId, setCoachActBusyId] = useState<string | null>(null);
+  const [observeBusy, setObserveBusy] = useState(false);
   const [inboxTick, setInboxTick] = useState(0);
   const [coachOpen, setCoachOpen] = useState(false);
   const [diaryDayIdx, setDiaryDayIdx] = useState(2);
@@ -718,6 +760,87 @@ export function ParentBoardView({
       .catch(() => {
         if (!cancelled) setFamilyScore(null);
       });
+    void fetchBehaviorTwin(familyId)
+      .then((t) => {
+        if (!cancelled) setBehaviorTwin(t);
+      })
+      .catch(() => {
+        if (!cancelled) setBehaviorTwin(null);
+      });
+    void fetchFamilyBehaviorTwin(familyId)
+      .then((t) => {
+        if (!cancelled) setFamilyTwin(t);
+      })
+      .catch(() => {
+        if (!cancelled) setFamilyTwin(null);
+      });
+    void fetchFamilyCoachInsight(familyId, flow.flowDate)
+      .then((c) => {
+        if (!cancelled) setCoachInsight(c);
+      })
+      .catch(() => {
+        if (!cancelled) setCoachInsight(null);
+      });
+    void fetchBehaviorCoach(familyId, flow.flowDate)
+      .then((c) => {
+        if (!cancelled) setBehaviorCoach(c);
+      })
+      .catch(() => {
+        if (!cancelled) setBehaviorCoach(null);
+      });
+    void fetchParentSuccessRop(familyId, { days: 30, asOf: flow.flowDate })
+      .then((r) => {
+        if (!cancelled) setRop(r);
+      })
+      .catch(() => {
+        if (!cancelled) setRop(null);
+      });
+    void fetchFamilyAiWinsDigest(familyId, { to: flow.flowDate, limit: 5 })
+      .then((r) => {
+        if (!cancelled) setWinsDigest(r);
+      })
+      .catch(() => {
+        if (!cancelled) setWinsDigest(null);
+      });
+    void fetchFamilyAiLetter(familyId)
+      .then((r) => {
+        if (!cancelled) setAiLetter(r);
+      })
+      .catch(() => {
+        if (!cancelled) setAiLetter(null);
+      });
+    void fetchParentAchievements(familyId, { asOf: flow.flowDate })
+      .then((r) => {
+        if (!cancelled) setParentAchievements(r);
+      })
+      .catch(() => {
+        if (!cancelled) setParentAchievements(null);
+      });
+    if (parentMembershipId) {
+      void fetchParentSuccessEveningCheckin(familyId, parentMembershipId, flow.flowDate)
+        .then((r) => {
+          if (cancelled) return;
+          setEveningCheckin(r);
+          if (r) {
+            setQLessNudge(r.qLessNudge);
+            setQLessTension(r.qLessTension);
+            setQQualityTime(r.qQualityTime);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setEveningCheckin(null);
+        });
+      void fetchParentCoachActedToday(familyId, parentMembershipId, flow.flowDate)
+        .then((r) => {
+          if (!cancelled) setActedTipIds(r.actedTipIdsToday);
+        })
+        .catch(() => {
+          if (!cancelled) setActedTipIds([]);
+        });
+    } else if (!cancelled) {
+      setEveningCheckin(null);
+      setActedTipIds([]);
+    }
     void scanAdaptiveProposals(familyId)
       .then((n) => {
         if (!cancelled && n > 0) setInboxTick((t) => t + 1);
@@ -726,7 +849,7 @@ export function ParentBoardView({
     return () => {
       cancelled = true;
     };
-  }, [familyId, flow.flowDate, flow.doneCount]);
+  }, [familyId, flow.flowDate, flow.doneCount, parentMembershipId]);
 
   const todayUnlock = useMemo(
     () =>
@@ -913,16 +1036,64 @@ export function ParentBoardView({
 
   const parentRole = useMemo(() => parentRoleFromName(viewerName), [viewerName]);
 
-  const coach = useMemo(
+  const resolvedCoach = useMemo(
     () =>
-      buildParentingCoach({
+      resolveParentCoach({
         familyId,
         flow: { ...flow, commitments: scopedCommitments },
         glance,
         nudgeToday,
         focusChildName: selectedChild?.name ?? null,
+        coachInsight,
+        familyTwin,
+        behaviorCoach,
       }),
-    [familyId, flow, scopedCommitments, glance, nudgeToday, selectedChild?.name],
+    [
+      familyId,
+      flow,
+      scopedCommitments,
+      glance,
+      nudgeToday,
+      selectedChild?.name,
+      coachInsight,
+      familyTwin,
+      behaviorCoach,
+    ],
+  );
+
+  const coach = resolvedCoach.primary;
+
+  const parentPulse = useMemo(
+    () =>
+      buildParentPulse({
+        flow: { ...flow, commitments: scopedCommitments },
+        twin: familyTwin,
+        familyScore,
+        nudgeToday,
+        nudgeYesterday,
+        coachInsight: coachInsight
+          ? {
+              headline: coachInsight.headline,
+              strength: coachInsight.strength ?? coach.insight,
+              proposal: coachInsight.proposal ?? coach.doThis,
+            }
+          : {
+              headline: coach.insight,
+              strength: coach.insight,
+              proposal: coach.doThis,
+            },
+      }),
+    [
+      flow,
+      scopedCommitments,
+      familyTwin,
+      familyScore,
+      nudgeToday,
+      nudgeYesterday,
+      coachInsight,
+      coach.insight,
+      coach.doThis,
+    ],
   );
 
   const buckets = useMemo(() => {
@@ -1585,17 +1756,366 @@ export function ParentBoardView({
 
       {tab === 'home' ? (
         <>
-              <article className="ph-movie-hero">
+              <article className="ph-pulse-hero" role="status">
+                <p className="ph-pulse-eyebrow">Parent Success · hôm nay</p>
+                <div className="ph-pulse-score-row">
+                  <div className="ph-pulse-score" aria-label={`Family Score ${parentPulse.familyScore}`}>
+                    <span className="ph-pulse-score-num">{parentPulse.familyScore}</span>
+                    <span className="ph-pulse-score-lbl">Family Score</span>
+                  </div>
+                  <div className="ph-pulse-copy">
+                    <h2>{parentPulse.headlineVi}</h2>
+                    <p className="ph-pulse-mood">{parentPulse.dayMoodVi}</p>
+                  </div>
+                </div>
+                <ul className="ph-pulse-lines">
+                  <li>{parentPulse.nudgeLineVi}</li>
+                  <li>{parentPulse.autonomyLineVi}</li>
+                  <li>{parentPulse.peaceLineVi}</li>
+                </ul>
+                {parentPulse.insightVi ? (
+                  <p className="ph-pulse-insight">
+                    <strong>Insight hôm nay:</strong> {parentPulse.insightVi}
+                  </p>
+                ) : null}
+                <div className="ph-pulse-actions">
+                  <button type="button" className="ph-pulse-cta" onClick={() => setCoachOpen(true)}>
+                    Famixa đồng hành →
+                  </button>
+                  <button
+                    type="button"
+                    className="ph-text-link"
+                    onClick={() => {
+                      document
+                        .getElementById('ph-bos-detail')
+                        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                  >
+                    Chi tiết tín hiệu nhà
+                  </button>
+                </div>
+                {parentPulse.confidence === 'low' ? (
+                  <p className="ph-pulse-note">
+                    Đang học nhịp nhà — điểm sẽ rõ hơn sau vài ngày dùng.
+                  </p>
+                ) : null}
+              </article>
+
+              {rop ? (
+                <article className="ph-rop-card" id="ph-rop-home">
+                  <p className="ph-rop-eyebrow">ROP · Return on Parenting</p>
+                  <h2>{rop.headlineVi}</h2>
+                  {rop.growthScore != null ? (
+                    <p className="ph-rop-score">Growth {rop.growthScore}/100 · {rop.windowDays} ngày</p>
+                  ) : (
+                    <p className="ph-rop-score">{rop.windowDays} ngày · {rop.dataDays} ngày có tín hiệu</p>
+                  )}
+                  <ul className="ph-rop-bullets">
+                    {rop.growthBulletsVi.slice(0, 3).map((b) => (
+                      <li key={b}>{b}</li>
+                    ))}
+                  </ul>
+                  {rop.minutesSavedEstimate > 0 ? (
+                    <p className="ph-rop-minutes">
+                      ~{rop.minutesSavedEstimate} phút nhắc nhở được tiết kiệm (ước tính)
+                    </p>
+                  ) : null}
+                  <div className="ph-rop-actions">
+                    <button type="button" className="ph-pulse-cta" onClick={() => setTab('value')}>
+                      Xem Growth Report →
+                    </button>
+                    <button
+                      type="button"
+                      className="ph-text-link"
+                      onClick={() =>
+                        void shareOrCopyNudge(
+                          formatParentSuccessRopShare(rop, familyName),
+                          { preferShare: true },
+                        ).then((mode) =>
+                          showActionToast(
+                            mode === 'shared' ? 'Đã mở chia sẻ ROP' : 'Đã copy ROP',
+                          ),
+                        )
+                      }
+                    >
+                      Chia sẻ
+                    </button>
+                  </div>
+                  {rop.isPartial && rop.partialNoteVi ? (
+                    <p className="ph-pulse-note">{rop.partialNoteVi}</p>
+                  ) : null}
+                </article>
+              ) : null}
+
+              {winsDigest && winsDigest.wins.length > 0 ? (
+                <article className="ph-wins-card" id="ph-wins-home">
+                  <p className="ph-rop-eyebrow">Famixa · Wins</p>
+                  <h2>{winsDigest.headlineVi}</h2>
+                  {winsDigest.subheadVi ? (
+                    <p className="ph-rop-score">{winsDigest.subheadVi}</p>
+                  ) : null}
+                  <ul className="ph-wins-strip">
+                    {winsDigest.wins.slice(0, 4).map((w) => (
+                      <li key={w.id}>
+                        <span aria-hidden>{w.icon ?? '✨'}</span>
+                        <span>{w.titleVi}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="ph-rop-actions">
+                    <button type="button" className="ph-pulse-cta" onClick={() => setTab('value')}>
+                      Timeline & Letter →
+                    </button>
+                  </div>
+                </article>
+              ) : null}
+
+              {aiLetter && !aiLetter.isThinData ? (
+                <article className="ph-letter-card" id="ph-letter-home">
+                  <p className="ph-rop-eyebrow">Famixa · Letter · {aiLetter.monthLabelVi}</p>
+                  <h2>{aiLetter.greetingVi}</h2>
+                  <p className="ph-letter-body">
+                    {aiLetter.bodyVi.length > 180
+                      ? `${aiLetter.bodyVi.slice(0, 180).trim()}…`
+                      : aiLetter.bodyVi}
+                  </p>
+                  <div className="ph-rop-actions">
+                    <button type="button" className="ph-pulse-cta" onClick={() => setTab('value')}>
+                      Đọc full Letter →
+                    </button>
+                    <button
+                      type="button"
+                      className="ph-text-link"
+                      onClick={() =>
+                        void shareOrCopyNudge(formatFamilyAiLetterShare(aiLetter), {
+                          preferShare: true,
+                        }).then((mode) =>
+                          showActionToast(
+                            mode === 'shared' ? 'Đã mở chia sẻ Letter' : 'Đã copy Letter',
+                          ),
+                        )
+                      }
+                    >
+                      Chia sẻ
+                    </button>
+                  </div>
+                </article>
+              ) : null}
+
+              {parentMembershipId ? (
+                <article className="ph-checkin-card" id="ph-3q-home">
+                  <p className="ph-rop-eyebrow">Famixa · 3 câu tối</p>
+                  <h2>
+                    {eveningCheckin
+                      ? 'Đã trả lời hôm nay'
+                      : 'Hôm nay nhà mình thế nào?'}
+                  </h2>
+                  <div className="ph-3q-list">
+                    {(
+                      [
+                        ['qLessNudge', 'Đã phải nhắc ít hơn?', qLessNudge, setQLessNudge],
+                        ['qLessTension', 'Nhà bớt căng thẳng hơn?', qLessTension, setQLessTension],
+                        ['qQualityTime', 'Có thời gian chất lượng với con?', qQualityTime, setQQualityTime],
+                      ] as const
+                    ).map(([key, label, value, setter]) => (
+                      <label key={key} className="ph-3q-row">
+                        <span>{label}</span>
+                        <button
+                          type="button"
+                          className={`ph-3q-toggle${value ? ' is-on' : ''}`}
+                          aria-pressed={value}
+                          onClick={() => setter(!value)}
+                        >
+                          {value ? 'Có' : 'Chưa'}
+                        </button>
+                      </label>
+                    ))}
+                  </div>
+                  {eveningCheckin?.reflectionVi ? (
+                    <p className="ph-letter-body">{eveningCheckin.reflectionVi}</p>
+                  ) : null}
+                  <div className="ph-rop-actions">
+                    <button
+                      type="button"
+                      className="ph-pulse-cta"
+                      disabled={checkinBusy}
+                      onClick={() => {
+                        if (!parentMembershipId || checkinBusy) return;
+                        setCheckinBusy(true);
+                        void upsertParentSuccessEveningCheckin(familyId, {
+                          memberId: parentMembershipId,
+                          flowDate: flow.flowDate,
+                          qLessNudge,
+                          qLessTension,
+                          qQualityTime,
+                        })
+                          .then((r) => {
+                            setEveningCheckin(r);
+                            showActionToast('Famixa đã ghi nhận tối nay');
+                            return fetchParentAchievements(familyId, { asOf: flow.flowDate });
+                          })
+                          .then((a) => setParentAchievements(a))
+                          .catch(() => showActionToast('Chưa lưu được — thử lại nhé'))
+                          .finally(() => setCheckinBusy(false));
+                      }}
+                    >
+                      {eveningCheckin ? 'Cập nhật' : 'Gửi Famixa'}
+                    </button>
+                  </div>
+                </article>
+              ) : null}
+
+              {parentAchievements ? (
+                <article className="ph-achv-card" id="ph-parent-achv">
+                  <p className="ph-rop-eyebrow">Famixa · Ghi nhận bố mẹ</p>
+                  <h2>{parentAchievements.headlineVi}</h2>
+                  <ul className="ph-achv-list">
+                    {parentAchievements.items.map((a) => (
+                      <li key={a.code} className={a.unlocked ? 'is-on' : ''}>
+                        <span aria-hidden>{a.icon}</span>
+                        <div>
+                          <strong>
+                            {a.titleVi}
+                            {a.unlocked ? ' · mở' : ''}
+                          </strong>
+                          <p>{a.unlocked ? a.detailVi : a.progressHintVi}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              ) : null}
+
+              <style>{`
+                .ph-rop-card {
+                  margin: 0 0 14px;
+                  padding: 16px;
+                  border-radius: 18px;
+                  background: #f3f7f4;
+                  color: #1a3344;
+                  border: 1px solid #d5e6dc;
+                }
+                .ph-rop-eyebrow {
+                  margin: 0 0 6px;
+                  font-size: 11px;
+                  letter-spacing: 0.07em;
+                  text-transform: uppercase;
+                  opacity: 0.65;
+                }
+                .ph-rop-card h2 {
+                  margin: 0 0 6px;
+                  font-size: 1.08rem;
+                  line-height: 1.35;
+                }
+                .ph-rop-score { margin: 0 0 8px; font-size: 0.9rem; opacity: 0.85; }
+                .ph-rop-bullets {
+                  margin: 0 0 10px;
+                  padding-left: 18px;
+                  font-size: 0.88rem;
+                  line-height: 1.4;
+                }
+                .ph-rop-minutes { margin: 0 0 10px; font-size: 0.88rem; font-weight: 650; }
+                .ph-rop-actions {
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 12px;
+                  align-items: center;
+                }
+                .ph-rop-card .ph-text-link { color: #2a5f4a; }
+                .ph-wins-card, .ph-letter-card, .ph-checkin-card, .ph-achv-card {
+                  margin: 0 0 14px;
+                  padding: 16px;
+                  border-radius: 18px;
+                  background: #f7f4ef;
+                  color: #1a3344;
+                  border: 1px solid #e6ddd0;
+                }
+                .ph-wins-card h2, .ph-letter-card h2, .ph-checkin-card h2, .ph-achv-card h2 {
+                  margin: 0 0 6px;
+                  font-size: 1.05rem;
+                  line-height: 1.35;
+                }
+                .ph-wins-strip {
+                  list-style: none;
+                  margin: 0 0 12px;
+                  padding: 0;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 8px;
+                }
+                .ph-wins-strip li {
+                  display: flex;
+                  gap: 8px;
+                  align-items: flex-start;
+                  font-size: 0.88rem;
+                  line-height: 1.35;
+                }
+                .ph-letter-body {
+                  margin: 0 0 12px;
+                  font-size: 0.9rem;
+                  line-height: 1.45;
+                  opacity: 0.9;
+                }
+                .ph-wins-card .ph-text-link,
+                .ph-letter-card .ph-text-link { color: #2a5f4a; }
+                .ph-3q-list {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  margin: 10px 0 12px;
+                }
+                .ph-3q-row {
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 12px;
+                  font-size: 0.9rem;
+                }
+                .ph-3q-toggle {
+                  border: 1px solid #c9b8a0;
+                  background: #fff;
+                  color: #5a4a3a;
+                  border-radius: 999px;
+                  padding: 6px 14px;
+                  font-weight: 650;
+                  min-width: 64px;
+                }
+                .ph-3q-toggle.is-on {
+                  background: #2a5f4a;
+                  border-color: #2a5f4a;
+                  color: #fff;
+                }
+                .ph-achv-list {
+                  list-style: none;
+                  margin: 10px 0 0;
+                  padding: 0;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                }
+                .ph-achv-list li {
+                  display: flex;
+                  gap: 10px;
+                  align-items: flex-start;
+                  opacity: 0.55;
+                  font-size: 0.88rem;
+                  line-height: 1.35;
+                }
+                .ph-achv-list li.is-on { opacity: 1; }
+                .ph-achv-list p { margin: 2px 0 0; }
+              `}</style>
+
+              <article className="ph-movie-hero ph-movie-hero--secondary">
                 <div className="ph-movie-copy">
                   <p className="ph-movie-eyebrow">
-                    Gia đình hôm nay <span aria-hidden>❤️</span>
+                    Cùng nhau <span aria-hidden>❤️</span>
                   </p>
                   <h2>
                     {todayUnlock?.status === 'confirmed'
                       ? `${todayUnlock.labelVi} đã mở — cả nhà tận hưởng!`
                       : todayUnlock?.status === 'pending_confirm'
                         ? 'Cả nhà đã sẵn sàng mở Movie Night!'
-                        : 'Cả nhà đang tiến gần đến Movie Night!'}
+                        : 'Tiến tới Movie Night'}
                   </h2>
                   <div className="ph-movie-progress">
                     <i aria-hidden>
@@ -1605,13 +2125,13 @@ export function ParentBoardView({
                   </div>
                   <p className="ph-movie-left">
                     {movieLeft > 0
-                      ? `Chỉ còn ${movieLeft} nhiệm vụ nữa thôi!`
+                      ? `Còn ${movieLeft} nhiệm vụ tới phần thưởng nhà`
                       : scopedTotal > 0 && scopedDone >= scopedTotal
                         ? 'Đã xong cam kết hôm nay!'
                         : 'Cùng hoàn thành nhiệm vụ nhé!'}
                   </p>
                   <button type="button" className="ph-movie-cta" onClick={() => scrollToMissions()}>
-                    Xem chi tiết →
+                    Xem nhiệm vụ →
                   </button>
                 </div>
                 <div className="ph-movie-art" aria-hidden>
@@ -1620,6 +2140,106 @@ export function ParentBoardView({
                   <span className="ph-movie-label">MOVIE NIGHT</span>
                 </div>
               </article>
+
+              <style>{`
+                .ph-pulse-hero {
+                  margin: 4px 0 14px;
+                  padding: 18px 16px 16px;
+                  border-radius: 20px;
+                  background: #1a3344;
+                  color: #f3f7fa;
+                }
+                .ph-pulse-eyebrow {
+                  margin: 0 0 10px;
+                  font-size: 11px;
+                  letter-spacing: 0.07em;
+                  text-transform: uppercase;
+                  opacity: 0.72;
+                }
+                .ph-pulse-score-row {
+                  display: flex;
+                  gap: 14px;
+                  align-items: flex-start;
+                  margin-bottom: 12px;
+                }
+                .ph-pulse-score {
+                  flex: 0 0 auto;
+                  width: 72px;
+                  height: 72px;
+                  border-radius: 18px;
+                  background: #243f52;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                }
+                .ph-pulse-score-num {
+                  font-size: 1.55rem;
+                  font-weight: 750;
+                  line-height: 1;
+                }
+                .ph-pulse-score-lbl {
+                  margin-top: 4px;
+                  font-size: 9px;
+                  letter-spacing: 0.04em;
+                  text-transform: uppercase;
+                  opacity: 0.7;
+                }
+                .ph-pulse-copy h2 {
+                  margin: 0 0 6px;
+                  font-size: 1.15rem;
+                  line-height: 1.35;
+                  font-weight: 750;
+                }
+                .ph-pulse-mood {
+                  margin: 0;
+                  font-size: 0.9rem;
+                  line-height: 1.4;
+                  opacity: 0.88;
+                }
+                .ph-pulse-lines {
+                  margin: 0 0 10px;
+                  padding: 0 0 0 18px;
+                  font-size: 0.9rem;
+                  line-height: 1.45;
+                }
+                .ph-pulse-lines li { margin-bottom: 4px; }
+                .ph-pulse-insight {
+                  margin: 0 0 12px;
+                  padding: 10px 12px;
+                  border-radius: 12px;
+                  background: #243f52;
+                  font-size: 0.88rem;
+                  line-height: 1.4;
+                }
+                .ph-pulse-actions {
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 12px;
+                  align-items: center;
+                }
+                .ph-pulse-cta {
+                  border: 0;
+                  border-radius: 999px;
+                  padding: 8px 14px;
+                  background: #e8f3ea;
+                  color: #1a3344;
+                  font-weight: 700;
+                  font-size: 0.9rem;
+                }
+                .ph-pulse-hero .ph-text-link { color: #c9e4ff; }
+                .ph-pulse-note {
+                  margin: 10px 0 0;
+                  font-size: 0.8rem;
+                  opacity: 0.65;
+                }
+                .ph-movie-hero--secondary {
+                  opacity: 0.95;
+                  transform: scale(0.99);
+                  transform-origin: top center;
+                }
+                .ph-movie-hero--secondary h2 { font-size: 1.05rem; }
+              `}</style>
 
               {familyScore ? (
                 <p className="ph-family-score-line" role="status">
@@ -1690,6 +2310,111 @@ export function ParentBoardView({
                 }}
               />
 
+              {familyTwin ? (
+                <section className="ph-block" id="ph-bos-detail">
+                  <header className="ph-block-head">
+                    <h2>AI RETIREMENT</h2>
+                  </header>
+                  <p className="ph-empty-soft" style={{ marginTop: 0 }}>
+                    {familyTwin.disclaimerVi}
+                  </p>
+                  <p>
+                    <strong>{familyTwin.retirementLabelVi}</strong>
+                    {' · '}
+                    Autonomy {familyTwin.familyAutonomyIndex} · Peace{' '}
+                    {familyTwin.familyPeaceIndex} · Intervention{' '}
+                    {familyTwin.parentalInterventionIndex}
+                  </p>
+                  <p className="ph-empty-soft">{familyTwin.retirementAdviceVi}</p>
+                  <p className="ph-empty-soft">
+                    Anh chị em: {familyTwin.siblingBalanceLabelVi} — {familyTwin.siblingAdviceVi}
+                  </p>
+                  {familyTwin.dependenceWarning && familyTwin.dependenceWarningVi ? (
+                    <p role="alert" style={{ color: '#9a3412', fontSize: '0.9rem' }}>
+                      {familyTwin.dependenceWarningVi}
+                    </p>
+                  ) : null}
+                  <label
+                    style={{
+                      display: 'flex',
+                      gap: 8,
+                      alignItems: 'center',
+                      marginTop: 10,
+                      fontWeight: 650,
+                      fontSize: '0.9rem',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={Boolean(familyTwin.observeOnlyActive)}
+                      disabled={observeBusy}
+                      onChange={(e) => {
+                        const next = e.target.checked;
+                        setObserveBusy(true);
+                        void updateRetirementPolicy(familyId, { observeOnly: next })
+                          .then(() => fetchFamilyBehaviorTwin(familyId))
+                          .then((t) => {
+                            setFamilyTwin(t);
+                            onRefreshFlow?.();
+                          })
+                          .catch(() => undefined)
+                          .finally(() => setObserveBusy(false));
+                      }}
+                    />
+                    Observe-only (tắt nhắc bố mẹ)
+                  </label>
+                  {familyTwin.recommendObserveOnly && !familyTwin.observeOnlyActive ? (
+                    <p className="ph-empty-soft">
+                      Gợi ý: nhà đang sẵn sàng Observe-only — bật công tắc phía trên.
+                    </p>
+                  ) : null}
+                </section>
+              ) : null}
+
+              {behaviorTwin && behaviorTwin.members.length > 0 ? (
+                <section className="ph-block">
+                  <header className="ph-block-head">
+                    <h2>TÍN HIỆU HÀNH VI</h2>
+                  </header>
+                  <p className="ph-empty-soft" style={{ marginTop: 0 }}>
+                    {behaviorTwin.disclaimerVi}
+                  </p>
+                  <div className="ph-support-grid">
+                    {behaviorTwin.members
+                      .filter((m) => {
+                        if (effectiveChildFocus === 'all') return true;
+                        return (
+                          m.memberId === effectiveChildFocus ||
+                          m.memberName === selectedChild?.name
+                        );
+                      })
+                      .map((m) => (
+                        <article key={m.memberId} className="ph-support-tile tone-lilac">
+                          <strong>
+                            {m.memberName} · {m.overallLabelVi} ({m.overallScore})
+                          </strong>
+                          <p>
+                            Buổi tối:{' '}
+                            {m.eveningRiskLabelVi
+                              ? `rủi ro ${m.eveningRiskLabelVi.toLowerCase()}`
+                              : 'ổn'}
+                            {m.eveningSuggestedActionVi
+                              ? ` — ${m.eveningSuggestedActionVi}`
+                              : ''}
+                          </p>
+                          <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: '0.85rem' }}>
+                            {m.dimensions.slice(0, 4).map((d) => (
+                              <li key={d.code}>
+                                {d.labelVi}: {d.score} — {d.whyVi}
+                              </li>
+                            ))}
+                          </ul>
+                        </article>
+                      ))}
+                  </div>
+                </section>
+              ) : null}
+
               <section className="ph-block">
                 <header className="ph-block-head">
                   <h2>NHẮC NHẸ</h2>
@@ -1701,12 +2426,25 @@ export function ParentBoardView({
                     Xem nhiệm vụ →
                   </button>
                 </header>
-                {supportCards.filter((c) => c.raw.kind === 'overdue').length === 0 ? (
-                  <p className="ph-empty-soft">Không việc quá giờ cần nhắc.</p>
+                {supportCards.filter((c) => {
+                  if (c.raw.kind !== 'overdue') return false;
+                  return c.raw.item.allowParentPush !== false;
+                }).length === 0 ? (
+                  <p className="ph-empty-soft">
+                    {supportCards.some((c) => {
+                      if (c.raw.kind !== 'overdue') return false;
+                      return c.raw.item.interventionLevel === 'observe_only';
+                    })
+                      ? 'Hôm nay nên quan sát — đừng nhắc thêm (thói quen đang tự chủ / hết ngân sách).'
+                      : 'Không việc quá giờ cần nhắc.'}
+                  </p>
                 ) : (
                   <div className="ph-support-grid">
                     {supportCards
-                      .filter((c) => c.raw.kind === 'overdue')
+                      .filter((c) => {
+                        if (c.raw.kind !== 'overdue') return false;
+                        return c.raw.item.allowParentPush !== false;
+                      })
                       .map((card) => (
                       <button
                         key={card.id}
@@ -1741,7 +2479,11 @@ export function ParentBoardView({
                           {card.icon}
                         </span>
                         <strong>{card.title}</strong>
-                        <p>{card.note}</p>
+                        <p>
+                          {card.raw.kind === 'overdue' && card.raw.item.parentAdviceVi
+                            ? card.raw.item.parentAdviceVi
+                            : card.note}
+                        </p>
                         <em>
                           <span aria-hidden>🕒</span> {card.deadline}
                         </em>
@@ -1789,15 +2531,19 @@ export function ParentBoardView({
 
               <section className="ph-foxy-strip">
                 <span className="ph-foxy-strip-mascot" aria-hidden>
-                  🦊
+                  ✦
                 </span>
-                <p>Foxy nhận thấy ✨ {foxyNotice}</p>
+                <p>
+                  {resolvedCoach.isServerSot
+                    ? coach.insight
+                    : `Famixa nhận thấy ✨ ${foxyNotice}`}
+                </p>
                 <button
                   type="button"
                   className="ph-foxy-strip-btn"
                   onClick={() => setCoachOpen(true)}
                 >
-                  Xem gợi ý
+                  Famixa
                 </button>
               </section>
 
@@ -2364,6 +3110,17 @@ export function ParentBoardView({
               {diaryToast}
             </div>
           ) : null}
+
+          <div style={{ padding: '0 12px 8px' }}>
+            <FamilyValuePanel
+              familyId={familyId}
+              familyName={familyName}
+              flow={flow}
+              glance={glance}
+              nudgeToday={nudgeToday}
+              momentCount={savedMemories.length + childGratitudes.length}
+            />
+          </div>
 
           <header className="ph-diary-top">
             <button
@@ -3453,37 +4210,122 @@ export function ParentBoardView({
             className="sheet ph-coach-sheet"
             role="dialog"
             aria-modal="true"
-            aria-label="Gợi ý từ Foxy"
+            aria-label="Famixa đồng hành"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2>
-              <span aria-hidden>🦊</span> Gợi ý từ Foxy
-            </h2>
-            <p className="ph-coach-insight">{coach.insight}</p>
-            <div className="ph-coach-block">
-              <strong>Làm ngay</strong>
-              <p>{coach.doThis}</p>
-            </div>
-            <div className="ph-coach-block">
-              <strong>Nên tránh</strong>
-              <p>{coach.avoid}</p>
-            </div>
-            {coach.styleTip ? (
-              <div className="ph-coach-block">
-                <strong>Gợi ý theo độ tuổi</strong>
-                <p>{coach.styleTip}</p>
+            <h2>Famixa đồng hành</h2>
+            <p className="muted ph-coach-based" style={{ marginTop: 0 }}>
+              {resolvedCoach.sourceLabelVi}
+              {resolvedCoach.tips.length > 1
+                ? ` · ${resolvedCoach.tips.length}/2 gợi ý hôm nay`
+                : ' · tối đa 2 gợi ý/ngày'}
+            </p>
+            {resolvedCoach.tips.map((tip) => (
+              <div key={tip.id} className="ph-coach-tip-card">
+                <p className="ph-coach-tip-title">
+                  <strong>{tip.titleVi}</strong>
+                  {tip.source !== 'local_fallback' ? (
+                    <span className="ph-coach-sot">Famixa</span>
+                  ) : (
+                    <span className="ph-coach-sot is-local">tạm</span>
+                  )}
+                </p>
+                <p className="ph-coach-insight">{tip.insight}</p>
+                <div className="ph-coach-block">
+                  <strong>Làm ngay</strong>
+                  <p>{tip.doThis}</p>
+                </div>
+                <div className="ph-coach-block">
+                  <strong>Nên tránh</strong>
+                  <p>{tip.avoid}</p>
+                </div>
+                {tip.styleTip ? (
+                  <div className="ph-coach-block">
+                    <strong>Cách tương tác</strong>
+                    <p>{tip.styleTip}</p>
+                  </div>
+                ) : null}
+                {tip.basedOn ? (
+                  <p className="muted ph-coach-based">Dựa trên: {tip.basedOn}</p>
+                ) : null}
+                {parentMembershipId ? (
+                  <div className="ph-coach-act">
+                    <button
+                      type="button"
+                      className="pill"
+                      disabled={
+                        coachActBusyId === tip.id ||
+                        actedTipIds.some((id) => id.toLowerCase() === tip.id.toLowerCase())
+                      }
+                      onClick={() => {
+                        if (!parentMembershipId || coachActBusyId) return;
+                        setCoachActBusyId(tip.id);
+                        void recordParentCoachActed(familyId, {
+                          memberId: parentMembershipId,
+                          tipId: tip.id,
+                          tipSource: tip.source,
+                          slot: tip.slot,
+                          titleVi: tip.titleVi,
+                          flowDate: flow.flowDate,
+                        })
+                          .then((r) => {
+                            setActedTipIds(r.actedTipIdsToday);
+                            showActionToast(r.messageVi);
+                          })
+                          .catch(() => showActionToast('Chưa ghi nhận được — thử lại nhé'))
+                          .finally(() => setCoachActBusyId(null));
+                      }}
+                    >
+                      {actedTipIds.some((id) => id.toLowerCase() === tip.id.toLowerCase())
+                        ? 'Đã thử ✓'
+                        : 'Đã thử'}
+                    </button>
+                  </div>
+                ) : null}
               </div>
-            ) : null}
-            {coach.basedOn ? (
-              <p className="muted ph-coach-based">Dựa trên: {coach.basedOn}</p>
-            ) : null}
+            ))}
+            <style>{`
+              .ph-coach-tip-card {
+                margin: 0 0 14px;
+                padding: 12px 12px 8px;
+                border-radius: 14px;
+                background: #f4f7f5;
+              }
+              .ph-coach-tip-title {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                margin: 0 0 8px;
+                font-size: 0.95rem;
+              }
+              .ph-coach-sot {
+                font-size: 10px;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+                padding: 2px 8px;
+                border-radius: 999px;
+                background: #d7eee0;
+                color: #1f4f45;
+                font-weight: 700;
+              }
+              .ph-coach-sot.is-local {
+                background: #eee6d8;
+                color: #6b5420;
+              }
+              .ph-coach-act {
+                margin: 10px 0 4px;
+              }
+            `}</style>
             <div className="ph-diary-mem-sheet-actions">
               <button
                 type="button"
                 className="pill is-soft"
                 onClick={() =>
                   void shareOrCopyNudge(
-                    `Gợi ý Foxy:\n${coach.doThis}\n\nTránh: ${coach.avoid}`,
+                    `Famixa:\n${resolvedCoach.tips
+                      .map((t) => `• ${t.titleVi}\n${t.doThis}\nTránh: ${t.avoid}`)
+                      .join('\n\n')}`,
                     { preferShare: true },
                   )
                     .then((mode) =>

@@ -15,6 +15,9 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
     private readonly IFamilyCommercialService _commercial;
     private readonly IFamilyMemoryService _memories;
     private readonly IFamilyScreenWalletService _wallet;
+    private readonly IFamilyBehaviorService _behavior;
+    private readonly FamilyValueRepository _value;
+    private readonly FamilyBehaviorRepository _behaviorRepo;
     private readonly ITenantContext _tenant;
 
     public FamilyDayFlowService(
@@ -28,6 +31,9 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         IFamilyCommercialService commercial,
         IFamilyMemoryService memories,
         IFamilyScreenWalletService wallet,
+        IFamilyBehaviorService behavior,
+        FamilyValueRepository value,
+        FamilyBehaviorRepository behaviorRepo,
         ITenantContext tenant)
     {
         _repo = repo;
@@ -40,6 +46,9 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         _commercial = commercial;
         _memories = memories;
         _wallet = wallet;
+        _behavior = behavior;
+        _value = value;
+        _behaviorRepo = behaviorRepo;
         _tenant = tenant;
     }
 
@@ -158,6 +167,19 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         var flowDate = reloaded.FlowDate
             ?? DateOnly.FromDateTime(localNow.DateTime);
 
+        if (status == FamilyCommitmentStatuses.InProgress
+            && existing.Status == FamilyCommitmentStatuses.Pending)
+        {
+            try
+            {
+                await _behavior.RecordSelfStartAsync(familyId, reloaded.Id, cancellationToken);
+            }
+            catch
+            {
+                // Self-start signal is best-effort
+            }
+        }
+
         if (status == FamilyCommitmentStatuses.Skipped && skipReason is not null)
         {
             await _consequences.SuggestFromSkipAsync(
@@ -175,6 +197,16 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
 
         if (status is FamilyCommitmentStatuses.Done or FamilyCommitmentStatuses.Skipped)
         {
+            try
+            {
+                await _behavior.SyncHabitAfterProgressAsync(
+                    familyId, reloaded.Id, status, flowDate, cancellationToken);
+            }
+            catch
+            {
+                // Habit lifecycle is best-effort — never block progress updates
+            }
+
             try
             {
                 await _teamUnlocks.EnsurePendingAsync(familyId, flowDate, cancellationToken);
@@ -430,12 +462,37 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         commitments = await _repo.ListCommitmentsAsync(flow.Id, cancellationToken);
         var ledgerAwards = await _stars.GetCommitmentAwardsAsync(
             commitments.Select(c => c.Id), cancellationToken);
+        var nudgesUsed = 0;
+        var observeOnly = false;
+        var nudgeBudget = FamilyMotivationIntervention.DefaultParentNudgeBudgetPerDay;
+        try
+        {
+            nudgesUsed = await _value.GetNudgeCountAsync(
+                flow.FamilyId, flow.FlowDate, cancellationToken);
+            var policy = await _behaviorRepo.GetRetirementPolicyAsync(
+                flow.FamilyId, cancellationToken);
+            observeOnly = policy?.ObserveOnly ?? false;
+            if (policy?.ParentNudgeBudget is int b)
+                nudgeBudget = b;
+        }
+        catch
+        {
+            // budget lookup is best-effort
+        }
+
         var mapped = commitments
             .Select(c =>
             {
                 ledgerAwards.TryGetValue(c.Id, out var award);
-                return MapCommitment(
-                    c, localTime, flow.FlowDate, timezone, award, tierSettings, localNow);
+                return WithEveningPrediction(
+                    MapCommitment(
+                        c, localTime, flow.FlowDate, timezone, award, tierSettings, localNow,
+                        memberStarBalance: null,
+                        parentNudgesUsedToday: nudgesUsed,
+                        familyObserveOnly: observeOnly,
+                        parentNudgeBudget: nudgeBudget),
+                    localTime,
+                    memberSignals: null);
             })
             .OrderBy(c => FamilyCommitmentReminder.SortRank(c.ReminderState, c.Status))
             .ThenBy(c => c.SortOrder)
@@ -475,10 +532,18 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         StarAwardResult? ledgerAward = null,
         FamilyStarTierSettings? tierSettings = null,
         DateTimeOffset? localNow = null,
-        int? memberStarBalance = null)
+        int? memberStarBalance = null,
+        int parentNudgesUsedToday = 0,
+        bool familyObserveOnly = false,
+        int parentNudgeBudget = FamilyMotivationIntervention.DefaultParentNudgeBudgetPerDay)
     {
         var (state, label) = FamilyCommitmentReminder.Evaluate(
-            c.Status, c.WindowStart, c.WindowEnd, localTime);
+            c.Status,
+            c.WindowStart,
+            c.WindowEnd,
+            localTime,
+            c.HabitStage,
+            c.ReminderSuppressed);
         var late = FamilyCommitmentReminder.IsLateDone(
             c.Status, c.CompletedAt, c.WindowEnd, flowDate, timezone, c.OnTimeGraceMinutes);
 
@@ -541,6 +606,20 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             }
         }
 
+        var isLearning = FamilyLearningMission.IsLearningTitle(c.Title);
+        var intervention = FamilyMotivationIntervention.Decide(
+            new FamilyMotivationIntervention.Input(
+                c.Status,
+                state,
+                string.IsNullOrWhiteSpace(c.HabitStage) ? FamilyHabitStages.New : c.HabitStage,
+                FamilyHabitStages.IsReminderSuppressed(c.HabitStage, c.ReminderSuppressed),
+                c.HabitStreakDays,
+                isLearning,
+                c.SkipReason,
+                parentNudgesUsedToday,
+                parentNudgeBudget,
+                FamilyObserveOnly: familyObserveOnly));
+
         return new CommitmentDto(
             c.Id,
             c.DayFlowId,
@@ -575,7 +654,78 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             projectedDelta,
             projectedLabel,
             starPosted,
-            c.StarComputedAt);
+            c.StarComputedAt,
+            string.IsNullOrWhiteSpace(c.HabitStage) ? FamilyHabitStages.New : c.HabitStage,
+            FamilyHabitStages.LabelVi(
+                string.IsNullOrWhiteSpace(c.HabitStage) ? FamilyHabitStages.New : c.HabitStage),
+            c.HabitStreakDays,
+            FamilyHabitStages.IsReminderSuppressed(c.HabitStage, c.ReminderSuppressed),
+            c.Status == FamilyCommitmentStatuses.Done && !c.HasReflection,
+            c.Status == FamilyCommitmentStatuses.Done && !c.HasReflection
+                ? FamilyReflectionPrompts.SuggestFor(c.Id)
+                : null,
+            c.EvidenceLevel,
+            FamilyEvidenceLevels.LabelVi(c.EvidenceLevel),
+            c.Status == FamilyCommitmentStatuses.Done ? c.ConfidenceScore : null,
+            c.Status == FamilyCommitmentStatuses.Done && c.ConfidenceScore is int conf
+                ? FamilyEvidenceConfidence.LabelVi(conf)
+                : null,
+            c.Status == FamilyCommitmentStatuses.Done
+                && isLearning
+                && !c.HasRetrievalCheck,
+            isLearning,
+            string.IsNullOrWhiteSpace(intervention.MotivationCueVi)
+                ? null
+                : intervention.MotivationDriver,
+            string.IsNullOrWhiteSpace(intervention.MotivationCueVi)
+                ? null
+                : intervention.MotivationCueVi,
+            intervention.InterventionLevel == FamilyInterventionLevels.None
+                ? null
+                : intervention.InterventionLevel,
+            intervention.InterventionLevel == FamilyInterventionLevels.None
+                ? null
+                : intervention.InterventionLabelVi,
+            intervention.AllowParentPush,
+            intervention.AllowChildChime,
+            string.IsNullOrWhiteSpace(intervention.ParentAdviceVi)
+                ? null
+                : intervention.ParentAdviceVi,
+            null,
+            null,
+            null);
+    }
+
+    /// <summary>Attach evening prediction bands after mapping (Wave 4).</summary>
+    private static CommitmentDto WithEveningPrediction(
+        CommitmentDto c,
+        TimeOnly localTime,
+        FamilyBehaviorTwin.WindowSignals? memberSignals)
+    {
+        if (c.Status is FamilyCommitmentStatuses.Done or FamilyCommitmentStatuses.Skipped)
+            return c;
+
+        var end = c.WindowEnd ?? c.WindowStart;
+        if (end is null || end.Value.Hour < 17)
+            return c;
+
+        var pred = FamilyBehaviorTwin.PredictEveningQuit(
+            c.WindowStart,
+            c.WindowEnd,
+            c.HabitStage,
+            c.IsLearningMission,
+            memberSignals,
+            localTime);
+
+        return c with
+        {
+            EveningRiskBand = pred.RiskBand,
+            EveningRiskLabelVi = pred.RiskLabelVi,
+            EveningRiskActionVi = pred.RiskBand is FamilyPredictionBands.Medium
+                or FamilyPredictionBands.High
+                ? pred.SuggestedActionVi
+                : null,
+        };
     }
 
     /// <summary>Screen Wallet earn rules — reading / movement titles.</summary>

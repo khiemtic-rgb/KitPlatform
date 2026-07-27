@@ -21,7 +21,9 @@ public static class FamilyCommitmentReminder
         string status,
         TimeOnly? windowStart,
         TimeOnly? windowEnd,
-        TimeOnly nowLocal)
+        TimeOnly nowLocal,
+        string? habitStage = null,
+        bool reminderSuppressed = false)
     {
         if (status is FamilyCommitmentStatuses.Done or FamilyCommitmentStatuses.Skipped)
             return (FamilyReminderStates.None, null);
@@ -45,16 +47,30 @@ public static class FamilyCommitmentReminder
         start ??= TimeSpan.Zero;
         end ??= start.Value + FamilyReminderStates.OpenWindowGrace;
 
+        string state;
+        string? label;
         if (now > end.Value)
-            return (FamilyReminderStates.Overdue, "Quá giờ rồi");
+        {
+            state = FamilyReminderStates.Overdue;
+            label = "Quá giờ rồi";
+        }
+        else if (now >= start.Value)
+        {
+            state = FamilyReminderStates.DueNow;
+            label = "Đến giờ rồi";
+        }
+        else if (start.Value - now <= FamilyReminderStates.UpcomingLead)
+        {
+            state = FamilyReminderStates.Upcoming;
+            label = "Sắp tới";
+        }
+        else
+        {
+            return (FamilyReminderStates.None, null);
+        }
 
-        if (now >= start.Value)
-            return (FamilyReminderStates.DueNow, "Đến giờ rồi");
-
-        if (start.Value - now <= FamilyReminderStates.UpcomingLead)
-            return (FamilyReminderStates.Upcoming, "Sắp tới");
-
-        return (FamilyReminderStates.None, null);
+        return FamilyHabitLifecycle.ApplyReminderBudget(
+            state, label, habitStage, reminderSuppressed);
     }
 
     public static int SortRank(string reminderState, string status)

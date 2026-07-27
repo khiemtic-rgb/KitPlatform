@@ -14,6 +14,9 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
 
     private readonly FamilyOsParentPushRepository _repo;
     private readonly FamilyGraphRepository _families;
+    private readonly FamilyValueRepository _value;
+    private readonly FamilyBehaviorRepository _behaviorRepo;
+    private readonly IFamilyBehaviorService _behavior;
     private readonly IFamilyMemoryService _memories;
     private readonly CustomerAppPushOptions _pushOptions;
     private readonly FamilyOsReminderOptions _reminderOptions;
@@ -22,6 +25,9 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
     public FamilyOsParentPushService(
         FamilyOsParentPushRepository repo,
         FamilyGraphRepository families,
+        FamilyValueRepository value,
+        FamilyBehaviorRepository behaviorRepo,
+        IFamilyBehaviorService behavior,
         IFamilyMemoryService memories,
         IOptions<CustomerAppPushOptions> pushOptions,
         IOptions<FamilyOsReminderOptions> reminderOptions,
@@ -29,6 +35,9 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
     {
         _repo = repo;
         _families = families;
+        _value = value;
+        _behaviorRepo = behaviorRepo;
+        _behavior = behavior;
         _memories = memories;
         _pushOptions = pushOptions.Value;
         _reminderOptions = reminderOptions.Value;
@@ -189,10 +198,66 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
 
             var localTime = TimeOnly.FromTimeSpan(localNow.TimeOfDay);
             var (state, label) = FamilyCommitmentReminder.Evaluate(
-                row.Status, row.WindowStart, row.WindowEnd, localTime);
+                row.Status,
+                row.WindowStart,
+                row.WindowEnd,
+                localTime,
+                row.HabitStage,
+                row.ReminderSuppressed);
 
             if (state is not (FamilyReminderStates.DueNow or FamilyReminderStates.Overdue))
                 continue;
+
+            var nudgesUsed = 0;
+            var observeOnly = false;
+            var nudgeBudget = FamilyMotivationIntervention.DefaultParentNudgeBudgetPerDay;
+            try
+            {
+                nudgesUsed = await _value.GetNudgeCountAsync(
+                    row.FamilyId, row.FlowDate, cancellationToken);
+                var policy = await _behaviorRepo.GetRetirementPolicyAsync(
+                    row.FamilyId, cancellationToken);
+                observeOnly = policy?.ObserveOnly ?? false;
+                if (policy?.ParentNudgeBudget is int b)
+                    nudgeBudget = b;
+            }
+            catch
+            {
+                // ignore
+            }
+
+            var decision = FamilyMotivationIntervention.Decide(
+                new FamilyMotivationIntervention.Input(
+                    row.Status,
+                    state,
+                    row.HabitStage,
+                    row.ReminderSuppressed,
+                    row.HabitStreakDays,
+                    FamilyLearningMission.IsLearningTitle(row.Title),
+                    SkipReason: null,
+                    nudgesUsed,
+                    nudgeBudget,
+                    FamilyObserveOnly: observeOnly));
+
+            if (!decision.AllowParentPush)
+            {
+                try
+                {
+                    await _behavior.RecordParentNudgeAsync(
+                        row.FamilyId,
+                        row.CommitmentId,
+                        memberId: null,
+                        allowed: false,
+                        reason: decision.InterventionLevel,
+                        cancellationToken);
+                }
+                catch
+                {
+                    // best-effort
+                }
+
+                continue;
+            }
 
             var kind = state == FamilyReminderStates.Overdue ? "overdue" : "due_now";
             var who = string.IsNullOrWhiteSpace(row.MemberName) ? "" : $"{row.MemberName} · ";
@@ -208,7 +273,24 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
 
             if (await SendToSubscriptionsAsync(
                     subs, title, body, "/today", "familyos_parent_reminder", cancellationToken))
+            {
                 sent++;
+                try
+                {
+                    await _value.IncrementNudgeAsync(row.FamilyId, row.FlowDate, 1, cancellationToken);
+                    await _behavior.RecordParentNudgeAsync(
+                        row.FamilyId,
+                        row.CommitmentId,
+                        memberId: null,
+                        allowed: true,
+                        reason: "push_dispatch",
+                        cancellationToken);
+                }
+                catch
+                {
+                    // best-effort
+                }
+            }
         }
 
         return sent;
