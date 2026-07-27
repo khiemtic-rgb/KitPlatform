@@ -13,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import { resolveAdminVertical } from '@/modules/registry';
 import { useRegisterSimpleModuleSubnav } from '@/shared/components/module-subnav.context';
+import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
 
 export function SystemLayout() {
@@ -20,11 +21,15 @@ export function SystemLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const platformVertical = useTenantPlatformStore((s) => s.settings?.vertical);
+  const isModuleEnabled = useTenantPlatformStore((s) => s.isModuleEnabled);
+  const platformLoaded = useTenantPlatformStore((s) => s.loaded);
+  const auditSlimNav = useAuditSlimNav();
   const adminVertical = resolveAdminVertical(platformVertical);
 
   const tabs = useMemo(() => {
     const branchLabel = adminVertical === 'family' ? 'Gia đình' : t('branches');
     const packLabel = adminVertical === 'family' ? 'Gói FamilyOS' : t('platformPack');
+    const customerAppOk = !platformLoaded || isModuleEnabled('customer_app');
     const all = [
       { key: 'branches', label: branchLabel, path: '/system/branches', icon: <BankOutlined /> },
       { key: 'users', label: t('users'), path: '/system/users', icon: <UserOutlined /> },
@@ -34,6 +39,7 @@ export function SystemLayout() {
         label: packLabel,
         path: '/system/platform-pack',
         icon: <CloudOutlined />,
+        hideWhenAuditSlim: true as const,
       },
       {
         key: 'billing',
@@ -55,6 +61,7 @@ export function SystemLayout() {
         path: '/system/customer-app-settings',
         icon: <MobileOutlined />,
         pharmacyOnly: true as const,
+        requiresCustomerApp: true as const,
       },
       { key: 'audit-log', label: t('auditLog'), path: '/system/audit-log', icon: <FileSearchOutlined /> },
     ];
@@ -63,16 +70,26 @@ export function SystemLayout() {
       .filter((tab) => {
         if ('pharmacyOnly' in tab && tab.pharmacyOnly && adminVertical !== 'pharmacy') return false;
         if ('familyOnly' in tab && tab.familyOnly && adminVertical !== 'family') return false;
+        if ('hideWhenAuditSlim' in tab && tab.hideWhenAuditSlim && auditSlimNav) return false;
+        if ('requiresCustomerApp' in tab && tab.requiresCustomerApp && !customerAppOk) return false;
         return true;
       })
       .map((tab) => {
-        const { pharmacyOnly: _p, familyOnly: _f, ...rest } = tab as typeof tab & {
+        const {
+          pharmacyOnly: _p,
+          familyOnly: _f,
+          hideWhenAuditSlim: _h,
+          requiresCustomerApp: _c,
+          ...rest
+        } = tab as typeof tab & {
           pharmacyOnly?: boolean;
           familyOnly?: boolean;
+          hideWhenAuditSlim?: boolean;
+          requiresCustomerApp?: boolean;
         };
         return rest;
       });
-  }, [t, adminVertical]);
+  }, [t, adminVertical, auditSlimNav, isModuleEnabled, platformLoaded]);
 
   useEffect(() => {
     if (location.pathname === '/system' || location.pathname === '/system/') {
@@ -89,9 +106,20 @@ export function SystemLayout() {
     }
 
     if (adminVertical !== 'family' && location.pathname.startsWith('/system/billing')) {
-      navigate('/system/platform-pack', { replace: true });
+      navigate('/system/branches', { replace: true });
+      return;
     }
-  }, [location.pathname, navigate, adminVertical]);
+
+    if (auditSlimNav && location.pathname.startsWith('/system/platform-pack')) {
+      navigate('/system/branches', { replace: true });
+      return;
+    }
+
+    const customerAppOk = !platformLoaded || isModuleEnabled('customer_app');
+    if (!customerAppOk && location.pathname.startsWith('/system/customer-app-settings')) {
+      navigate('/system/branches', { replace: true });
+    }
+  }, [location.pathname, navigate, adminVertical, auditSlimNav, isModuleEnabled, platformLoaded]);
 
   const activeKey =
     tabs.find((tab) => location.pathname.startsWith(tab.path))?.key ?? 'branches';

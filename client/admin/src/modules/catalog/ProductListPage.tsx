@@ -40,6 +40,7 @@ import { isProductFeatureEnabled } from '@/shared/product/product-phases';
 import { withUploadAuth } from '@/shared/utils/upload-url';
 import { fetchNationalDrugConnectionStatus } from '@/shared/api/national-drug.api';
 import { useCanCatalogMerge } from '@/shared/auth/usePermission';
+import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 import { ProductFormDrawer } from '@/modules/catalog/ProductFormDrawer';
 
 const emptyAdvancedFilters: Omit<ProductListFilter, 'search' | 'page' | 'pageSize'> = {
@@ -60,6 +61,7 @@ export function ProductListPage() {
   const { message: msg } = App.useApp();
   const navigate = useNavigate();
   const canCatalogMerge = useCanCatalogMerge();
+  const auditSlimNav = useAuditSlimNav();
   const showNationalDrugLookup = isProductFeatureEnabled('catalog.nationalDrug');
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -413,7 +415,7 @@ export function ProductListPage() {
           <Button icon={<ImportOutlined />} onClick={() => navigate('/catalog/import')}>
             {t('importExcel')}
           </Button>
-          {canCatalogMerge ? (
+          {canCatalogMerge && !auditSlimNav ? (
             <Link to="/catalog/products/duplicates">
               <Button icon={<MergeCellsOutlined />}>{t('duplicateMerge')}</Button>
             </Link>

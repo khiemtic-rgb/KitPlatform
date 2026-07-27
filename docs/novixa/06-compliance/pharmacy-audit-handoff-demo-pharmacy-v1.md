@@ -17,6 +17,7 @@
 | Health | https://api.novixa.vn/api/health |
 | Tenant code | `DEMO_PHARMACY` |
 | Ghi chú môi trường | Cùng hạ tầng production, **tenant demo tách biệt**. Dữ liệu gắn nhãn “thẩm định / demo”. |
+| UI slim | `features.audit_slim_nav=true` — ẩn People / Cockpit / App KH / Gói Novixa / Gộp SP (không đụng `NT_XUANHOA`) |
 
 ### Tài khoản UI
 

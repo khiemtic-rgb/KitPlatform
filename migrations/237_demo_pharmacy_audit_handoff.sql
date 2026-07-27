@@ -31,12 +31,12 @@ SELECT
             'schema_version', 1,
             'vertical', 'pharmacy',
             'enabled_modules', jsonb_build_array(
-                'inventory', 'procurement', 'sales', 'loyalty', 'customer_app',
-                'medication', 'health_wallet', 'reservations', 'reports', 'e_rx'
+                'inventory', 'procurement', 'sales', 'loyalty',
+                'medication', 'health_wallet', 'reports', 'e_rx'
             ),
             'allowed_modules', jsonb_build_array(
-                'inventory', 'procurement', 'sales', 'loyalty', 'customer_app',
-                'medication', 'health_wallet', 'reservations', 'reports', 'e_rx',
+                'inventory', 'procurement', 'sales', 'loyalty',
+                'medication', 'health_wallet', 'reports', 'e_rx',
                 'prescriber_network', 'prescriber_portal'
             ),
             'features', jsonb_build_object(
@@ -45,7 +45,8 @@ SELECT
                 'order_level_repurchase', true,
                 'family_members', true,
                 'branch_price_overrides', true,
-                'branch_product_listings', false
+                'branch_product_listings', false,
+                'audit_slim_nav', true
             ),
             'i18n', jsonb_build_object(
                 'default_locale', 'vi-VN',

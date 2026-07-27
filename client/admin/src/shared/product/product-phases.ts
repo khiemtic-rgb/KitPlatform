@@ -24,6 +24,7 @@ export type ProductFeatureKey =
   | 'sales.receivables'
   | 'sales.customerPayments'
   | 'sales.customerReservations'
+  | 'sales.appOrders'
   | 'sales.chat'
   | 'sales.vouchers'
   | 'catalog.brands'
@@ -44,6 +45,7 @@ const PHASE_1_FEATURES: Record<ProductFeatureKey, boolean> = {
   'sales.customerPayments': true,
   // Bán hàng — POS, loyalty, voucher, đặt trước & chat app KH
   'sales.customerReservations': true,
+  'sales.appOrders': true,
   'sales.chat': true,
   'sales.vouchers': true,
   // Danh mục — tra cứu CSDL Dược QG (mock → sandbox/live khi có tài khoản liên thông QĐ 522)

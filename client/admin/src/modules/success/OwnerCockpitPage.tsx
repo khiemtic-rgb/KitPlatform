@@ -18,6 +18,7 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import { fetchOwnerCockpit, type OwnerCockpit } from '@/shared/api/success.api';
 import { formatDisplayMoney } from '@/shared/utils/money';
 import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
+import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 import { useCanAccessOwnerCockpit, useHasPermission } from '@/shared/auth/usePermission';
 
 type TileProps = {
@@ -46,13 +47,14 @@ function Tile({ title, value, hint, to, icon, tone = 'default' }: TileProps) {
 export function OwnerCockpitPage() {
   const { t } = useTranslation('success');
   const isModuleEnabled = useTenantPlatformStore((s) => s.isModuleEnabled);
+  const auditSlimNav = useAuditSlimNav();
   const canCockpit = useCanAccessOwnerCockpit();
   const canChecklist = useHasPermission('success.checklist');
   const [data, setData] = useState<OwnerCockpit | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!canCockpit) return;
+    if (!canCockpit || auditSlimNav) return;
     setLoading(true);
     try {
       setData(await fetchOwnerCockpit());
@@ -61,14 +63,14 @@ export function OwnerCockpitPage() {
     } finally {
       setLoading(false);
     }
-  }, [canCockpit, t]);
+  }, [canCockpit, auditSlimNav, t]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  if (!canCockpit) {
-    return <Navigate to={canChecklist ? '/success/shift-checklist' : '/'} replace />;
+  if (auditSlimNav || !canCockpit) {
+    return <Navigate to={canChecklist && !auditSlimNav ? '/success/shift-checklist' : '/'} replace />;
   }
 
   if (loading && !data) {

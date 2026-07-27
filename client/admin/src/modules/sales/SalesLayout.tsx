@@ -27,6 +27,7 @@ const allMainTabDefs: Omit<ProductNavTab, 'label'>[] = [
     key: 'app-orders',
     path: '/sales/app-orders',
     icon: <MobileOutlined />,
+    feature: 'sales.appOrders',
   },
   { key: 'returns', path: '/sales/returns', icon: <RollbackOutlined /> },
   {

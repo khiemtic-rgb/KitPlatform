@@ -28,6 +28,7 @@ import {
 import type { ModuleKey } from '@/modules/registry';
 
 import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
+import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 
 import { ApiHealthBanner } from '@/shared/components/ApiHealthBanner';
 import {
@@ -119,11 +120,12 @@ function AppLayoutShell() {
   const canAccessCustomer = useCanCustomerModule();
   const canAccessReceivables = useCanReceivables();
   const canAccessLearning = useCanLearningRead();
+  const auditSlimNav = useAuditSlimNav();
 
   const modulePermissionOk = useMemo(
     (): Partial<Record<ModuleKey, boolean>> => ({
       dashboard: true,
-      success: canAccessSuccess,
+      success: canAccessSuccess && !auditSlimNav,
       sales: canAccessSales,
       rx: canAccessRx,
       connect: canAccessConnect,
@@ -141,6 +143,7 @@ function AppLayoutShell() {
     }),
     [
       canAccessSuccess,
+      auditSlimNav,
       canAccessSales,
       canAccessRx,
       canAccessConnect,
@@ -163,6 +166,12 @@ function AppLayoutShell() {
       ? `${shellBrand.brand} Admin`
       : 'Novixa Admin';
   }, [shellBrand.brand, shellBrand.isFamily]);
+
+  useEffect(() => {
+    if (auditSlimNav && location.pathname.startsWith('/success')) {
+      navigate('/', { replace: true });
+    }
+  }, [auditSlimNav, location.pathname, navigate]);
 
   const activeKey = resolveActiveModuleKey(location.pathname);
 

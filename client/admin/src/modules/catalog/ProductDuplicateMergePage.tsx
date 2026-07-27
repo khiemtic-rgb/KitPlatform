@@ -44,6 +44,7 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import { useCanCatalogMerge } from '@/shared/auth/usePermission';
 import { formatDisplayDateTime } from '@/shared/utils/date';
 import { formatDisplayQuantity } from '@/shared/utils/money';
+import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 import './ProductDuplicateMergePage.css';
 
 /**
@@ -150,6 +151,7 @@ export function ProductDuplicateMergePage() {
   const { t } = useTranslation('catalog', { keyPrefix: 'duplicateMerge' });
   const { message: msg } = App.useApp();
   const canMerge = useCanCatalogMerge();
+  const auditSlimNav = useAuditSlimNav();
 
   const [activeTab, setActiveTab] = useState('merge');
   const [loading, setLoading] = useState(false);
@@ -473,7 +475,7 @@ export function ProductDuplicateMergePage() {
     }
   };
 
-  if (!canMerge) {
+  if (!canMerge || auditSlimNav) {
     return <Navigate to="/catalog/products" replace />;
   }
 

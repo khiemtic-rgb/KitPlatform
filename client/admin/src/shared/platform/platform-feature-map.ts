@@ -8,6 +8,7 @@ export interface PlatformGateRef {
 
 export const PRODUCT_FEATURE_PLATFORM_GATES: Partial<Record<ProductFeatureKey, PlatformGateRef>> = {
   'sales.customerReservations': { modules: ['customer_app', 'reservations'] },
+  'sales.appOrders': { modules: ['customer_app'] },
   'sales.chat': { modules: ['customer_app'] },
   'catalog.nationalDrug': { features: ['national_drug_catalog'] },
   'customer.engagement': { modules: ['customer_app'] },

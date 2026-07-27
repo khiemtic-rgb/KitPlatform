@@ -32,6 +32,7 @@ import {
 import { formatDisplayMoney } from '@/shared/utils/money';
 import { isProductFeatureEnabled } from '@/shared/product/product-phases';
 import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
+import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 import { resolveAdminVertical } from '@/modules/registry';
 import { ClinicOverviewPage } from '@/modules/clinic/ClinicOverviewPage';
 import { FamilyOsOverviewPage } from '@/modules/family-os/FamilyOsOverviewPage';
@@ -105,6 +106,7 @@ function PharmacyDashboardPage() {
   const canSalesCustomers = useCanSalesCustomers();
   const canViewAnalytics = useCanViewStoreAnalytics();
   const canAccessOwnerCockpit = useCanAccessOwnerCockpit();
+  const auditSlimNav = useAuditSlimNav();
   const canCatalog = useHasPermission('catalog.read') || useHasPermission('catalog.write');
   const canInventory = useHasPermission('inventory.read') || useHasPermission('inventory.write');
   const canProcurement = useHasPermission('procurement.read') || useHasPermission('procurement.write');
@@ -132,6 +134,7 @@ function PharmacyDashboardPage() {
   const o2o = overview?.o2o;
   const showReservations = isProductFeatureEnabled('sales.customerReservations');
   const showChat = isProductFeatureEnabled('sales.chat');
+  const showAppOrders = isProductFeatureEnabled('sales.appOrders');
 
   const revenuePeriodOptions = useMemo(
     () => [
@@ -180,7 +183,7 @@ function PharmacyDashboardPage() {
         tone: 'warning',
       });
     }
-    if (canSalesOps && (o2o?.draftOrdersAwaitingCount ?? 0) > 0) {
+    if (canSalesOps && showAppOrders && (o2o?.draftOrdersAwaitingCount ?? 0) > 0) {
       items.push({
         key: 'app-drafts',
         label: t('kpis.draftOrdersAwaiting.title'),
@@ -208,12 +211,12 @@ function PharmacyDashboardPage() {
       });
     }
     return items;
-  }, [canInventory, canProcurement, canSalesOps, inventory, o2o, procurement, showChat, showReservations, t]);
+  }, [canInventory, canProcurement, canSalesOps, inventory, o2o, procurement, showAppOrders, showChat, showReservations, t]);
 
   const quickActions = useMemo(() => {
     const items: Array<{ key: string; label: string; to: string; icon: ReactNode; primary?: boolean }> = [];
-    // Cockpit chủ NT: chỉ chủ/quản lý — không hiện với thu ngân STAFF.
-    if (canAccessOwnerCockpit) {
+    // Cockpit chủ NT: chỉ chủ/quản lý — không hiện với thu ngân STAFF / audit slim DEMO.
+    if (canAccessOwnerCockpit && !auditSlimNav) {
       items.push({
         key: 'owner-cockpit',
         label: t('quickActions.ownerCockpit'),
@@ -264,7 +267,7 @@ function PharmacyDashboardPage() {
       });
     }
     return items;
-  }, [canAccessOwnerCockpit, canInventory, canProcurement, canReceivables, canSalesOps, canViewAnalytics, t]);
+  }, [auditSlimNav, canAccessOwnerCockpit, canInventory, canProcurement, canReceivables, canSalesOps, canViewAnalytics, t]);
 
   const secondaryTiles = useMemo(() => {
     const tiles: MetricTileProps[] = [];
