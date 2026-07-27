@@ -5,6 +5,7 @@ import type {
   FamilyAiLetter,
   FamilyAiWinsDigest,
   FamilyMemoryEntry,
+  FamilyReplay,
   FamilyWeeklyInsight,
   ParentAchievements,
   ParentSuccessRop,
@@ -18,6 +19,7 @@ import {
   formatFamilyAiLetterShare,
   fetchFamilyMemories,
   fetchParentAchievements,
+  fetchFamilyReplay,
 } from '@/shared/api/family-os.api';
 import { shareOrCopyNudge } from '@/shared/nudge/nudge';
 import { computeFamilyHealthScore } from '@/shared/value/family-health-score';
@@ -61,6 +63,7 @@ export function FamilyValuePanel({
   const [aiLetter, setAiLetter] = useState<FamilyAiLetter | null>(null);
   const [memories, setMemories] = useState<FamilyMemoryEntry[]>([]);
   const [achievements, setAchievements] = useState<ParentAchievements | null>(null);
+  const [replay, setReplay] = useState<FamilyReplay | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,6 +122,13 @@ export function FamilyValuePanel({
       })
       .catch(() => {
         if (!cancelled) setAchievements(null);
+      });
+    void fetchFamilyReplay(familyId)
+      .then((r) => {
+        if (!cancelled) setReplay(r);
+      })
+      .catch(() => {
+        if (!cancelled) setReplay(null);
       });
     return () => {
       cancelled = true;
@@ -684,6 +694,49 @@ export function FamilyValuePanel({
               }
             >
               Chia sẻ Letter
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {replay ? (
+        <section className="fv-card" id="fv-replay">
+          <header className="fv-head">
+            <h2>{replay.titleVi}</h2>
+            <p>Replay chữ · kỷ niệm tháng — không phải video</p>
+          </header>
+          <p className="fv-promise">{replay.openingVi}</p>
+          <ol className="fv-journey">
+            {replay.scenes.map((s, i) => (
+              <li key={`${s.kind}-${s.date ?? i}-${s.titleVi}`}>
+                <span className="fv-journey-icon" aria-hidden>
+                  {s.icon}
+                </span>
+                <div>
+                  <strong>
+                    {s.date ? `${s.date.slice(8, 10)}/${s.date.slice(5, 7)} · ` : ''}
+                    {s.titleVi}
+                  </strong>
+                  {s.detailVi ? <p>{s.detailVi}</p> : null}
+                </div>
+              </li>
+            ))}
+          </ol>
+          <p className="fv-ai" style={{ whiteSpace: 'pre-wrap' }}>
+            {replay.closingVi}
+          </p>
+          {replay.isThinData ? (
+            <p className="fv-label">Tháng còn mỏng dữ liệu — Replay sẽ đầy hơn khi có thêm kỷ niệm.</p>
+          ) : null}
+          <div className="fv-actions">
+            <button
+              type="button"
+              className="pill"
+              onClick={() =>
+                void shareOrCopyNudge(replay.shareTextVi, { preferShare: true })
+              }
+            >
+              Chia sẻ Replay
             </button>
           </div>
         </section>

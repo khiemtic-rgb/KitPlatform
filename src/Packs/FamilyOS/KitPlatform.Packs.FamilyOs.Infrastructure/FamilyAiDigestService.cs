@@ -172,6 +172,149 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
             thin);
     }
 
+    public async Task<FamilyReplayDto> GetMonthlyReplayAsync(
+        Guid familyId,
+        DateOnly? month = null,
+        CancellationToken cancellationToken = default)
+    {
+        var family = await _families.GetFamilyAsync(familyId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+
+        var today = DateOnly.FromDateTime(FamilyTimeZones.NowIn(family.Timezone).DateTime);
+        var anchor = month ?? new DateOnly(today.Year, today.Month, 1);
+        var periodStart = new DateOnly(anchor.Year, anchor.Month, 1);
+        var periodEnd = periodStart.AddMonths(1).AddDays(-1);
+        if (periodEnd > today)
+            periodEnd = today;
+
+        var familyName = string.IsNullOrWhiteSpace(family.DisplayName)
+            ? "nhà mình"
+            : family.DisplayName.Trim();
+        var monthLabel = $"tháng {periodStart.Month}/{periodStart.Year}";
+
+        var letter = await GetMonthlyLetterAsync(familyId, periodStart, cancellationToken);
+        var memories = await _memories.ListAsync(
+            familyId, periodStart, periodEnd, favoritesOnly: false, limit: 60, cancellationToken);
+        var rop = await _parentSuccess.GetRopAsync(familyId, days: 30, asOf: periodEnd, cancellationToken);
+
+        var scenes = new List<FamilyReplaySceneDto>
+        {
+            new(
+                periodStart,
+                "🌱",
+                $"Mở {monthLabel}",
+                $"Famixa bắt đầu ghi lại nhịp của {familyName}.",
+                "open"),
+        };
+
+        foreach (var m in memories
+                     .OrderBy(x => x.FlowDate)
+                     .ThenBy(x => x.HappenedAt)
+                     .Take(10))
+        {
+            scenes.Add(new FamilyReplaySceneDto(
+                m.FlowDate,
+                m.Icon ?? IconFor(m.Kind),
+                m.TitleVi,
+                string.IsNullOrWhiteSpace(m.NoteVi)
+                    ? (m.MemberName is null ? null : m.MemberName)
+                    : m.NoteVi,
+                m.Kind));
+        }
+
+        if (rop.ParentNudgesLate <= rop.ParentNudgesEarly && rop.DataDays >= 5)
+        {
+            scenes.Add(new FamilyReplaySceneDto(
+                periodEnd,
+                "🍃",
+                "Nhắc dịu lại",
+                $"{rop.ParentNudgesEarly} → {rop.ParentNudgesLate} lần nhắc trong kỳ.",
+                "growth"));
+        }
+
+        if (rop.SelfStartsLate > rop.SelfStartsEarly)
+        {
+            scenes.Add(new FamilyReplaySceneDto(
+                periodEnd,
+                "🌱",
+                "Con tự bắt đầu nhiều hơn",
+                $"{rop.SelfStartsEarly} → {rop.SelfStartsLate} lần tự bắt đầu.",
+                "growth"));
+        }
+
+        if (rop.QualityMoments > 0)
+        {
+            scenes.Add(new FamilyReplaySceneDto(
+                periodEnd,
+                "💌",
+                "Khoảnh khắc chất lượng",
+                $"{rop.QualityMoments} kỷ niệm / lời cảm ơn được giữ lại.",
+                "moment"));
+        }
+
+        scenes.Add(new FamilyReplaySceneDto(
+            periodEnd,
+            "✨",
+            "Khép lại tháng",
+            letter.IsThinData
+                ? "Tháng còn mỏng — nhưng Famixa đã lắng nghe."
+                : "Đây không còn là app — đây là kỷ niệm nhà mình.",
+            "close"));
+
+        // Cap scenes for shareable length
+        if (scenes.Count > 14)
+        {
+            scenes = scenes
+                .Take(1)
+                .Concat(scenes.Skip(1).Take(scenes.Count - 2).Take(11))
+                .Concat(scenes.TakeLast(1))
+                .ToList();
+        }
+
+        var thin = letter.IsThinData && memories.Count < 2;
+        var title = thin
+            ? $"Replay · {monthLabel} (đang mở)"
+            : $"Family Replay · {monthLabel}";
+        var opening = thin
+            ? $"Trong {monthLabel}, {familyName} mới bắt đầu để Famixa ghi lại. Replay sẽ dày hơn khi nhà có thêm kỷ niệm."
+            : $"Trong {monthLabel}, hãy xem lại những gì {familyName} đã sống — không phải checklist, mà là những lần nhẹ hơn và gần nhau hơn.";
+
+        var closing = thin
+            ? "Tháng sau, Famixa sẽ có nhiều cảnh hơn để kể.\n— Famixa"
+            : "Có lẽ con đang lớn lên — và bố mẹ cũng đang nhẹ tay hơn.\n— Famixa";
+
+        var shareLines = new List<string>
+        {
+            title,
+            "",
+            opening,
+            "",
+        };
+        foreach (var s in scenes)
+        {
+            var datePart = s.Date is DateOnly d ? $"{d:dd/MM} · " : "";
+            shareLines.Add($"{s.Icon} {datePart}{s.TitleVi}");
+            if (!string.IsNullOrWhiteSpace(s.DetailVi))
+                shareLines.Add($"   {s.DetailVi}");
+        }
+        shareLines.Add("");
+        shareLines.Add(closing);
+
+        return new FamilyReplayDto(
+            familyId,
+            familyName,
+            periodStart,
+            periodEnd,
+            DateTimeOffset.UtcNow,
+            monthLabel,
+            title,
+            opening,
+            scenes,
+            closing,
+            string.Join("\n", shareLines),
+            thin);
+    }
+
     private static string IconFor(string kind) =>
         kind.ToLowerInvariant() switch
         {

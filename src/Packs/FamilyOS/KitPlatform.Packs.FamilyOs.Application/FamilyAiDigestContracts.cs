@@ -32,6 +32,28 @@ public sealed record FamilyAiLetterDto(
     string ClosingVi,
     bool IsThinData);
 
+/// <summary>Family Replay chữ — EOM/EOY memory narrative (no video).</summary>
+public sealed record FamilyReplaySceneDto(
+    DateOnly? Date,
+    string Icon,
+    string TitleVi,
+    string? DetailVi,
+    string Kind);
+
+public sealed record FamilyReplayDto(
+    Guid FamilyId,
+    string FamilyName,
+    DateOnly PeriodStart,
+    DateOnly PeriodEnd,
+    DateTimeOffset GeneratedAt,
+    string MonthLabelVi,
+    string TitleVi,
+    string OpeningVi,
+    IReadOnlyList<FamilyReplaySceneDto> Scenes,
+    string ClosingVi,
+    string ShareTextVi,
+    bool IsThinData);
+
 public interface IFamilyAiDigestService
 {
     Task<FamilyAiWinsDigestDto> GetWinsDigestAsync(
@@ -42,6 +64,11 @@ public interface IFamilyAiDigestService
         CancellationToken cancellationToken = default);
 
     Task<FamilyAiLetterDto> GetMonthlyLetterAsync(
+        Guid familyId,
+        DateOnly? month = null,
+        CancellationToken cancellationToken = default);
+
+    Task<FamilyReplayDto> GetMonthlyReplayAsync(
         Guid familyId,
         DateOnly? month = null,
         CancellationToken cancellationToken = default);

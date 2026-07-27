@@ -57,6 +57,8 @@ import {
   type ParentAchievements,
   fetchParentCoachActedToday,
   recordParentCoachActed,
+  fetchFamilyReplay,
+  type FamilyReplay,
 } from '@/shared/api/family-os.api';
 import { DecisionInboxPanel } from '@/modules/flow/DecisionInboxPanel';
 import { FamilyModeSheet } from '@/modules/flow/FamilyModeSheet';
@@ -557,6 +559,7 @@ export function ParentBoardView({
   const [checkinBusy, setCheckinBusy] = useState(false);
   const [actedTipIds, setActedTipIds] = useState<string[]>([]);
   const [coachActBusyId, setCoachActBusyId] = useState<string | null>(null);
+  const [familyReplay, setFamilyReplay] = useState<FamilyReplay | null>(null);
   const [observeBusy, setObserveBusy] = useState(false);
   const [inboxTick, setInboxTick] = useState(0);
   const [coachOpen, setCoachOpen] = useState(false);
@@ -815,6 +818,13 @@ export function ParentBoardView({
       })
       .catch(() => {
         if (!cancelled) setParentAchievements(null);
+      });
+    void fetchFamilyReplay(familyId)
+      .then((r) => {
+        if (!cancelled) setFamilyReplay(r);
+      })
+      .catch(() => {
+        if (!cancelled) setFamilyReplay(null);
       });
     if (parentMembershipId) {
       void fetchParentSuccessEveningCheckin(familyId, parentMembershipId, flow.flowDate)
@@ -1983,6 +1993,46 @@ export function ParentBoardView({
                       </li>
                     ))}
                   </ul>
+                </article>
+              ) : null}
+
+              {familyReplay && !familyReplay.isThinData ? (
+                <article className="ph-letter-card" id="ph-replay-home">
+                  <p className="ph-rop-eyebrow">Famixa · Replay</p>
+                  <h2>{familyReplay.titleVi}</h2>
+                  <p className="ph-letter-body">
+                    {familyReplay.openingVi.length > 160
+                      ? `${familyReplay.openingVi.slice(0, 160).trim()}…`
+                      : familyReplay.openingVi}
+                  </p>
+                  <ul className="ph-wins-strip">
+                    {familyReplay.scenes.slice(0, 4).map((s, i) => (
+                      <li key={`${s.kind}-${i}`}>
+                        <span aria-hidden>{s.icon}</span>
+                        <span>{s.titleVi}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="ph-rop-actions">
+                    <button type="button" className="ph-pulse-cta" onClick={() => setTab('value')}>
+                      Xem Replay đầy đủ →
+                    </button>
+                    <button
+                      type="button"
+                      className="ph-text-link"
+                      onClick={() =>
+                        void shareOrCopyNudge(familyReplay.shareTextVi, {
+                          preferShare: true,
+                        }).then((mode) =>
+                          showActionToast(
+                            mode === 'shared' ? 'Đã mở chia sẻ Replay' : 'Đã copy Replay',
+                          ),
+                        )
+                      }
+                    >
+                      Chia sẻ
+                    </button>
+                  </div>
                 </article>
               ) : null}
 

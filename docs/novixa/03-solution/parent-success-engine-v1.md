@@ -179,3 +179,8 @@ Parent home = `ph-pulse-hero` (Family Score từ Twin + nudge trend + autonomy/p
 
 ### P3 ship note (2026-07-27)
 Trust Flywheel bước 1: quan sát tip → bố mẹ “Đã thử” → event SoT. Outcome `parent_nudge`↓ đối chiếu là bước sau.
+
+### Family Replay chữ (sau P3)
+- [x] `GET …/ai/replay?month=` — scenes từ Memory + ROP growth beats · shareTextVi
+- [x] Value tab full Replay · home teaser khi không thin-data
+- Non-goal: video 365 ngày (later)

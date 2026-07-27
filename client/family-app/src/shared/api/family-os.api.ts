@@ -2496,6 +2496,67 @@ export function formatFamilyAiLetterShare(letter: FamilyAiLetter): string {
   ].join('\n');
 }
 
+/** Family Replay chữ — EOM narrative (Memory + ROP, no video). */
+export interface FamilyReplayScene {
+  date?: string;
+  icon: string;
+  titleVi: string;
+  detailVi?: string;
+  kind: string;
+}
+
+export interface FamilyReplay {
+  familyId: string;
+  familyName: string;
+  periodStart: string;
+  periodEnd: string;
+  generatedAt: string;
+  monthLabelVi: string;
+  titleVi: string;
+  openingVi: string;
+  scenes: FamilyReplayScene[];
+  closingVi: string;
+  shareTextVi: string;
+  isThinData: boolean;
+}
+
+export async function fetchFamilyReplay(
+  familyId: string,
+  opts?: { month?: string },
+): Promise<FamilyReplay> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/ai/replay`, {
+    params: { month: opts?.month },
+  });
+  const r = (data ?? {}) as Row;
+  return {
+    familyId: String(r.familyId ?? r.FamilyId ?? familyId),
+    familyName: String(r.familyName ?? r.FamilyName ?? ''),
+    periodStart: String(r.periodStart ?? r.PeriodStart ?? ''),
+    periodEnd: String(r.periodEnd ?? r.PeriodEnd ?? ''),
+    generatedAt: String(r.generatedAt ?? r.GeneratedAt ?? ''),
+    monthLabelVi: String(r.monthLabelVi ?? r.MonthLabelVi ?? ''),
+    titleVi: String(r.titleVi ?? r.TitleVi ?? ''),
+    openingVi: String(r.openingVi ?? r.OpeningVi ?? ''),
+    scenes: asArray(r.scenes ?? r.Scenes).map((x) => {
+      const row = x as Row;
+      return {
+        date:
+          row.date != null || row.Date != null ? String(row.date ?? row.Date) : undefined,
+        icon: String(row.icon ?? row.Icon ?? '✨'),
+        titleVi: String(row.titleVi ?? row.TitleVi ?? ''),
+        detailVi:
+          row.detailVi != null || row.DetailVi != null
+            ? String(row.detailVi ?? row.DetailVi)
+            : undefined,
+        kind: String(row.kind ?? row.Kind ?? ''),
+      };
+    }),
+    closingVi: String(r.closingVi ?? r.ClosingVi ?? ''),
+    shareTextVi: String(r.shareTextVi ?? r.ShareTextVi ?? ''),
+    isThinData: Boolean(r.isThinData ?? r.IsThinData ?? false),
+  };
+}
+
 /** Parent Success P2 — evening 3Q check-in. */
 export interface ParentSuccessCheckin {
   id: string;
