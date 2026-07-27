@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-27T10:11:03.800Z",
+  "generatedAt": "2026-07-27T15:15:38.346Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 151,
-    "todayPageViews": 73,
-    "todayRequests": 239,
-    "last24hVisitors": 193,
-    "last24hPageViews": 87,
-    "last24hRequests": 319
+    "todayVisitors": 187,
+    "todayPageViews": 84,
+    "todayRequests": 296,
+    "last24hVisitors": 212,
+    "last24hPageViews": 88,
+    "last24hRequests": 335
   },
   "hourly": [
-    {
-      "time": "2026-07-26T11:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-26T12:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-07-26T13:00:00Z",
-      "visitors": 8,
-      "requests": 13
-    },
-    {
-      "time": "2026-07-26T14:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-07-26T15:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
     {
       "time": "2026-07-26T16:00:00Z",
       "visitors": 9,
@@ -125,6 +100,31 @@
       "time": "2026-07-27T09:00:00Z",
       "visitors": 14,
       "requests": 16
+    },
+    {
+      "time": "2026-07-27T10:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-07-27T11:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-07-27T12:00:00Z",
+      "visitors": 12,
+      "requests": 14
+    },
+    {
+      "time": "2026-07-27T13:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-07-27T14:00:00Z",
+      "visitors": 23,
+      "requests": 25
     }
   ],
   "daily": [
@@ -166,43 +166,35 @@
     },
     {
       "date": "2026-07-27",
-      "visitors": 151,
-      "pageViews": 73,
-      "requests": 239
+      "visitors": 187,
+      "pageViews": 84,
+      "requests": 296
     }
   ],
   "topPages": [
     {
       "path": "/images/tin-tuc/lap-ke-hoach-nha-thuoc.png",
-      "views": 67
+      "views": 75
     },
     {
       "path": "/vi/tin-tuc/lap-ke-hoach-thang-cho-nha-thuoc-nhu-the-nao/",
-      "views": 51
+      "views": 57
     },
     {
       "path": "/images/tin-tuc/lo-trinh-l0-l6-cua-novixa-academy.png",
-      "views": 28
+      "views": 31
     },
     {
       "path": "/robots.txt",
-      "views": 26
-    },
-    {
-      "path": "/images/tin-tuc/vi-sao-sop-quan-trong-hon-kinh-nghiem-ca-nhan.png",
-      "views": 19
+      "views": 24
     },
     {
       "path": "/images/tin-tuc/sai-lam-khi-dao-tao-nhan-vien-moi.png",
-      "views": 19
+      "views": 21
     },
     {
-      "path": "/vi/",
-      "views": 17
-    },
-    {
-      "path": "/",
-      "views": 17
+      "path": "/images/tin-tuc/vi-sao-sop-quan-trong-hon-kinh-nghiem-ca-nhan.png",
+      "views": 21
     },
     {
       "path": "/cdn-cgi/rum",
@@ -210,26 +202,34 @@
     },
     {
       "path": "/sitemap-index.xml",
+      "views": 15
+    },
+    {
+      "path": "/vi/",
       "views": 14
     },
     {
-      "path": "/api/stats",
-      "views": 6
+      "path": "/",
+      "views": 12
     },
     {
-      "path": "/vi/tin-tuc/nha-thuoc-cua-ban-dang-dao-tao-nhan-vien-hay-chi-dang-huong-dan/",
-      "views": 6
+      "path": "/api/stats",
+      "views": 9
+    },
+    {
+      "path": "/_astro/BaseLayout.CEPXErrG.css",
+      "views": 3
+    },
+    {
+      "path": "/vi/thong-ke/",
+      "views": 3
+    },
+    {
+      "path": "/images/hero/home-devices.png",
+      "views": 3
     },
     {
       "path": "/images/logo.png",
-      "views": 3
-    },
-    {
-      "path": "/images/tin-tuc/nha-thuoc-ban-dang-dao-tao-nhan-vien-hay-huong-dan.png",
-      "views": 3
-    },
-    {
-      "path": "/favicon.svg",
       "views": 3
     }
   ]
