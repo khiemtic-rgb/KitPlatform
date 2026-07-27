@@ -30,7 +30,8 @@ internal sealed class ReportsService : IReportsService
             "Danh sách ca, quỹ tiền mặt và thu ròng trong ca.", true, false, false),
         new(ReportCodes.SalesRevenueByCategory, "Doanh thu theo danh mục", "sales",
             "Thu ròng theo nhóm sản phẩm (danh mục) trong kỳ.", true, false, false),
-        // SALES-05 clinic/doctor omitted from catalog (Connect PK — out of pharmacy audit UI scope)
+        new(ReportCodes.SalesRevenueByClinicDoctor, "Đơn bán theo phòng khám / bác sĩ", "sales",
+            "Tổng hợp đơn Connect (PK) theo phòng khám và bác sĩ kê đơn — số đơn, thu bán, hoàn, thu ròng.", true, false, false),
         new(ReportCodes.ProcurementGrnValue, "Giá trị nhập hàng", "procurement",
             "Tổng hợp phiếu nhập hoàn tất — số tiền trước thuế GTGT.", false, true, false),
         new(ReportCodes.ProcurementPayablesSnapshot, "Công nợ nhà cung cấp", "procurement",

@@ -1,0 +1,36 @@
+---
+description: Bảo vệ DEMO_PHARMACY thẩm định và NT_XUANHOA khi deploy/git
+alwaysApply: true
+---
+
+# Pharmacy DEMO audit freeze + tenant safety
+
+Trong đợt thẩm định Pharmacy (handoff):
+
+## Tenant
+
+- **Chỉ** thao tác / seed / SQL trên `DEMO_PHARMACY`.
+- **Không** đụng `NT_XUANHOA` (prod thật): không seed, không UPDATE/DELETE hàng loạt, không “đồng bộ demo”, không đổi password/RBAC live.
+- Migration/seed DEMO phải có guard `tenant_code = 'DEMO_PHARMACY'` (và abort nếu UUID demo đụng NT).
+
+## Tài khoản thẩm định (đã chốt — đừng đổi khi chưa được yêu cầu)
+
+| Tenant | User | Pass |
+|---|---|---|
+| `DEMO_PHARMACY` | `admin` | `Admin@123` |
+| `DEMO_PHARMACY` | `pharmacist` | `Admin@123` |
+
+Chi tiết: `docs/novixa/06-compliance/pharmacy-audit-handoff-demo-pharmacy-v1.md`
+
+## UI slim DEMO (`audit_slim_nav=true`)
+
+- Giữ flag + modules slim trên DEMO cho đến khi user bảo **bật lại** (`scripts/demo-pharmacy-restore-full-nav.sql`).
+- Không “dọn” / harden bằng cách xóa `audit-slim-nav.ts` hoặc bỏ gate POS (app draft, đơn PK), Learning, Cockpit, Gói Novixa trên DEMO.
+- SALES-05 (đơn bán theo PK/BS): ẩn khi `audit_slim_nav` **hoặc** tenant không có Connect; **không** xóa hẳn khỏi catalog nếu làm mất báo cáo trên `NT_XUANHOA`.
+
+## Deploy / git
+
+- Nguồn chuẩn = `origin/main`. Commit + push trước deploy auth/UI slim.
+- Deploy artifact **không** wipe DB; migration chỉ chạy khi chủ đích và đã review phạm vi tenant.
+- Sau deploy: smoke login `DEMO_PHARMACY` (admin + pharmacist) + xác nhận `NT_XUANHOA` vẫn OK nếu đụng code Pharmacy chung.
+- Seed làm giàu: `migrations/239_demo_pharmacy_realistic_data.sql` (idempotent, prefix `AUD-*`) — chỉ DEMO.

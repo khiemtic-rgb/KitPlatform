@@ -28,4 +28,5 @@ Khi sửa Family OS, Care, platform, hoặc bất kỳ auth/layout chung:
 - Chi tiết bước: `docs/novixa/03-operations/pharmacy-rbac-deploy-sync-runbook-v1.md` (checklist đồng bộ §8)
 - POS quick-add / Ant Select blur: `docs/novixa/03-operations/pharmacy-pos-customer-incidents-v1.md`, rule `pos-ant-select-prefill.mdc`
 - Family OS pilot / mig manifest: `docs/novixa/03-operations/family-os-sync-runbook-v1.md`, rule `family-os-deploy-sync.mdc`
+- DEMO thẩm định freeze / không đụng `NT_XUANHOA`: rule `pharmacy-demo-audit-freeze.mdc`, handoff `docs/novixa/06-compliance/pharmacy-audit-handoff-demo-pharmacy-v1.md`
 - Trước deploy admin: `npm run build` (tsc bắt buộc — TS6133 chặn prod)

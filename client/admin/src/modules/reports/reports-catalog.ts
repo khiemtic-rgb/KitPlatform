@@ -19,11 +19,17 @@ export interface ReportDefinition {
   supportsSearch?: boolean;
   supportsExpiryDays?: boolean;
   favorite?: boolean;
+  /** Connect PK report — hide without Connect module or during DEMO audit_slim_nav. */
+  requiresConnect?: boolean;
+  hideWhenAuditSlim?: boolean;
 }
 
 type ReportDefinitionMeta = Omit<ReportDefinition, 'name' | 'description'>;
 
-export type ReportCatalogOptions = Record<string, never>;
+export type ReportCatalogOptions = {
+  auditSlimNav?: boolean;
+  connectEnabled?: boolean;
+};
 
 const REPORT_DEFINITIONS_META: ReportDefinitionMeta[] = [
   {
@@ -63,8 +69,18 @@ const REPORT_DEFINITIONS_META: ReportDefinitionMeta[] = [
     supportsWarehouse: true,
     favorite: true,
   },
-  // SALES-05 (revenue-by-clinic-doctor / Connect PK) — intentionally omitted from UI catalog
-  // for pharmacy audit handoff. API route may remain; restore here when Connect is in scope.
+  // SALES-05: Connect PK — visible only when Connect enabled and not DEMO audit slim
+  {
+    code: 'SALES-05',
+    category: 'sales',
+    path: '/reports/sales/revenue-by-clinic-doctor',
+    apiPath: 'sales/revenue-by-clinic-doctor',
+    supportsDateRange: true,
+    supportsWarehouse: true,
+    favorite: true,
+    requiresConnect: true,
+    hideWhenAuditSlim: true,
+  },
   {
     code: 'PROC-01',
     category: 'procurement',
@@ -122,8 +138,16 @@ function localizeReport(meta: ReportDefinitionMeta): ReportDefinition {
   };
 }
 
-export function getReportDefinitions(_options?: ReportCatalogOptions): ReportDefinition[] {
-  return REPORT_DEFINITIONS_META.map(localizeReport);
+export function getReportDefinitions(options?: ReportCatalogOptions): ReportDefinition[] {
+  const auditSlimNav = options?.auditSlimNav === true;
+  const connectEnabled = options?.connectEnabled === true;
+  return REPORT_DEFINITIONS_META
+    .filter((meta) => {
+      if (meta.requiresConnect && !connectEnabled) return false;
+      if (auditSlimNav && meta.hideWhenAuditSlim) return false;
+      return true;
+    })
+    .map(localizeReport);
 }
 
 export function getReportCategoryLabel(category: ReportCategory): string {
@@ -132,14 +156,14 @@ export function getReportCategoryLabel(category: ReportCategory): string {
 
 export function findReportByPath(
   pathname: string,
-  _options?: ReportCatalogOptions,
+  options?: ReportCatalogOptions,
 ): ReportDefinition | undefined {
-  return getReportDefinitions().find((r) => pathname.startsWith(r.path));
+  return getReportDefinitions(options).find((r) => pathname.startsWith(r.path));
 }
 
 export function reportsForCategory(
   category: ReportCategory,
-  _options?: ReportCatalogOptions,
+  options?: ReportCatalogOptions,
 ): ReportDefinition[] {
-  return getReportDefinitions().filter((r) => r.category === category);
+  return getReportDefinitions(options).filter((r) => r.category === category);
 }

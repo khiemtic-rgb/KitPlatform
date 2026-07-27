@@ -7,12 +7,21 @@ import {
   getReportDefinitions,
   type ReportCategory,
 } from '@/modules/reports/reports-catalog';
+import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
+import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
 
 const categories: ReportCategory[] = ['sales', 'procurement', 'inventory'];
 
 export function ReportsHomePage() {
   const { t } = useTranslation('reports', { keyPrefix: 'home' });
-  const reports = useMemo(() => getReportDefinitions(), [t]);
+  const auditSlimNav = useAuditSlimNav();
+  const connectEnabled = useTenantPlatformStore(
+    (s) => s.loaded && s.isModuleEnabled('novixa_connect'),
+  );
+  const reports = useMemo(
+    () => getReportDefinitions({ auditSlimNav, connectEnabled }),
+    [t, auditSlimNav, connectEnabled],
+  );
   const favorites = reports.filter((r) => r.favorite);
 
   return (

@@ -1,8 +1,16 @@
 # Gói handoff thẩm định — Phân hệ Pharmacy (DEMO_PHARMACY)
 
-**Ngày:** 2026-07-27  
+**Ngày:** 2026-07-27 · **Trạng thái:** Đã chốt tài khoản — chờ phản hồi thẩm định  
 **Phạm vi:** Chỉ tenant `DEMO_PHARMACY` — **không** dùng / không đụng `NT_XUANHOA` (đang vận hành thật).  
 **Seed:** `migrations/237_demo_pharmacy_audit_handoff.sql` + làm giàu `migrations/239_demo_pharmacy_realistic_data.sql`
+
+### Đóng băng vận hành (tránh sự cố khi cập nhật local/git)
+
+- **Không đổi** password / username / tenant code dưới đây cho đến khi kết thúc đợt thẩm định (trừ khi bên thẩm định yêu cầu).
+- **Không** chạy seed/SQL hàng loạt trên `NT_XUANHOA`; mọi script DEMO phải filter `tenant_code = 'DEMO_PHARMACY'`.
+- Giữ `features.audit_slim_nav = true` trên DEMO (xem §5). Chỉ tắt bằng `scripts/demo-pharmacy-restore-full-nav.sql` **sau** thẩm định.
+- Deploy từ git: commit trên `origin/main` trước; không wipe DB; smoke `DEMO_PHARMACY` sau deploy UI/Pharmacy.
+- Rule Cursor (agent): `.cursor/rules/pharmacy-demo-audit-freeze.mdc`
 
 ---
 
@@ -322,7 +330,7 @@ GET /api/reports/inventory/stock-snapshot?warehouseId=22222222-2222-2222-2222-22
 | Bán hàng → Đơn từ app, Chat khách | Tắt module `customer_app` (+ gate FE `sales.appOrders` / `sales.chat`) |
 | Khách hàng → Tương tác app | Tắt `customer_app` (`customer.engagement`) |
 | Sản phẩm → Gộp SP trùng | `audit_slim_nav` (ẩn nút + chặn route) |
-| Báo cáo → Đơn bán theo phòng khám / bác sĩ (SALES-05) | **Gỡ khỏi catalog UI** (Connect/PK ngoài phạm vi thẩm định; API vẫn có thể gọi) |
+| Báo cáo → Đơn bán theo phòng khám / bác sĩ (SALES-05) | Ẩn khi `audit_slim_nav` **hoặc** không có module `novixa_connect` (DEMO không có Connect → ẩn; `NT_XUANHOA` vẫn thấy) |
 | POS → Gửi đơn qua app khách | `audit_slim_nav` |
 | POS → Bán theo đơn phòng khám | `audit_slim_nav` |
 | Cấu hình → Gói Novixa | `audit_slim_nav` |

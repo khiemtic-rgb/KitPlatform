@@ -4,6 +4,8 @@ import { Tabs, Typography } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { secondaryTabsBarStyle } from '@/shared/components/module-tabs.ui';
 import { reportsForCategory, type ReportCategory } from '@/modules/reports/reports-catalog';
+import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
+import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
 
 export function categoryFromReportPath(pathname: string): ReportCategory | null {
   if (pathname.startsWith('/reports/sales')) return 'sales';
@@ -16,10 +18,14 @@ export function ReportCategoryNav() {
   const { i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+  const auditSlimNav = useAuditSlimNav();
+  const connectEnabled = useTenantPlatformStore(
+    (s) => s.loaded && s.isModuleEnabled('novixa_connect'),
+  );
   const category = categoryFromReportPath(location.pathname);
   const reports = useMemo(
-    () => (category ? reportsForCategory(category) : []),
-    [category, i18n.language],
+    () => (category ? reportsForCategory(category, { auditSlimNav, connectEnabled }) : []),
+    [category, i18n.language, auditSlimNav, connectEnabled],
   );
 
   if (!category) return null;
