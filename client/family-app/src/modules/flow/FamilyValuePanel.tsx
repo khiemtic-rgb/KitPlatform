@@ -9,6 +9,7 @@ import type {
   FamilySubscription,
   FamilyWeeklyInsight,
   ParentAchievements,
+  ParentSuccessCheckin,
   ParentSuccessRop,
 } from '@/shared/api/family-os.api';
 import {
@@ -22,6 +23,7 @@ import {
   fetchParentAchievements,
   fetchFamilyReplay,
   fetchFamilySubscription,
+  upsertParentSuccessEveningCheckin,
 } from '@/shared/api/family-os.api';
 import { shareOrCopyNudge } from '@/shared/nudge/nudge';
 import { computeFamilyHealthScore } from '@/shared/value/family-health-score';
@@ -46,6 +48,9 @@ type Props = {
   nudgeToday: number;
   momentCount: number;
   onOpenPaywall?: (reasonVi?: string) => void;
+  parentMembershipId?: string;
+  eveningCheckin?: ParentSuccessCheckin | null;
+  onEveningCheckinChange?: (row: ParentSuccessCheckin) => void;
 };
 
 export function FamilyValuePanel({
@@ -56,6 +61,9 @@ export function FamilyValuePanel({
   nudgeToday,
   momentCount,
   onOpenPaywall,
+  parentMembershipId,
+  eveningCheckin,
+  onEveningCheckinChange,
 }: Props) {
   const [serverWeekly, setServerWeekly] = useState<FamilyWeeklyInsight | null>(null);
   const [rop, setRop] = useState<ParentSuccessRop | null>(null);
@@ -70,6 +78,11 @@ export function FamilyValuePanel({
   const [replay, setReplay] = useState<FamilyReplay | null>(null);
   const [replayBlocked, setReplayBlocked] = useState(false);
   const [subscription, setSubscription] = useState<FamilySubscription | null>(null);
+  const [qLessNudge, setQLessNudge] = useState(false);
+  const [qLessTension, setQLessTension] = useState(false);
+  const [qQualityTime, setQQualityTime] = useState(false);
+  const [checkinBusy, setCheckinBusy] = useState(false);
+  const [checkinMsg, setCheckinMsg] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -171,6 +184,12 @@ export function FamilyValuePanel({
       cancelled = true;
     };
   }, [familyId, flow.flowDate]);
+
+  useEffect(() => {
+    setQLessNudge(Boolean(eveningCheckin?.qLessNudge));
+    setQLessTension(Boolean(eveningCheckin?.qLessTension));
+    setQQualityTime(Boolean(eveningCheckin?.qQualityTime));
+  }, [eveningCheckin]);
 
   const localHealth = useMemo(
     () =>
@@ -291,6 +310,33 @@ export function FamilyValuePanel({
 
   const openUpgrade = (reason?: string) => {
     onOpenPaywall?.(reason);
+  };
+
+  const saveEveningCheckin = async () => {
+    if (!parentMembershipId || checkinBusy) return;
+    setCheckinBusy(true);
+    setCheckinMsg(null);
+    try {
+      const row = await upsertParentSuccessEveningCheckin(familyId, {
+        memberId: parentMembershipId,
+        flowDate: flow.flowDate,
+        qLessNudge,
+        qLessTension,
+        qQualityTime,
+      });
+      onEveningCheckinChange?.(row);
+      setCheckinMsg(row.reflectionVi || 'Đã lưu phản hồi tối.');
+    } catch (err: unknown) {
+      if (isCapabilityPaywallError(err)) {
+        openUpgrade(
+          'Evening check-in có trong Peace Plan — nâng gói để Famixa học nhịp nhà.',
+        );
+      } else {
+        setCheckinMsg('Chưa lưu được — thử lại nhé.');
+      }
+    } finally {
+      setCheckinBusy(false);
+    }
   };
 
   const onboard = getOnboardingProfile(familyId);
@@ -452,6 +498,58 @@ export function FamilyValuePanel({
           ))}
         </div>
       </section>
+
+      {parentMembershipId ? (
+        <section className="fv-card" id="fv-3q">
+          <header className="fv-head">
+            <p className="fv-eyebrow">Famixa · 3 câu tối</p>
+            <h2>
+              {eveningCheckin ? 'Đã trả lời hôm nay' : 'Hôm nay nhà mình thế nào?'}
+            </h2>
+            <p>Phản hồi nhanh — giúp Brief học nhịp nhà (không phải điểm số con).</p>
+          </header>
+          <div className="fv-3q-list">
+            {(
+              [
+                ['qLessNudge', 'Đã phải nhắc ít hơn?', qLessNudge, setQLessNudge],
+                ['qLessTension', 'Nhà bớt căng thẳng hơn?', qLessTension, setQLessTension],
+                [
+                  'qQualityTime',
+                  'Có thời gian chất lượng với con?',
+                  qQualityTime,
+                  setQQualityTime,
+                ],
+              ] as const
+            ).map(([key, label, value, setter]) => (
+              <label key={key} className="fv-3q-row">
+                <span>{label}</span>
+                <button
+                  type="button"
+                  className={`fv-3q-toggle${value ? ' is-on' : ''}`}
+                  aria-pressed={value}
+                  onClick={() => setter(!value)}
+                >
+                  {value ? 'Có' : 'Chưa'}
+                </button>
+              </label>
+            ))}
+          </div>
+          {eveningCheckin?.reflectionVi ? (
+            <p className="fv-promise">{eveningCheckin.reflectionVi}</p>
+          ) : null}
+          {checkinMsg ? <p className="fv-label">{checkinMsg}</p> : null}
+          <div className="fv-actions" style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              className="pill"
+              disabled={checkinBusy}
+              onClick={() => void saveEveningCheckin()}
+            >
+              {eveningCheckin ? 'Cập nhật' : 'Gửi Famixa'}
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       {report ? (
         <section className="fv-card" id="fv-rop">

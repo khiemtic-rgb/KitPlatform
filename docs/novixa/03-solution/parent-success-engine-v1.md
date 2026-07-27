@@ -113,6 +113,14 @@ behavior_event (SoT)
 | **P2** | Parent Achievements (3 badge nhẹ) + Parent Success 3Q check-in tối | Self-recognition |
 | **P3** | `parent_coach_acted` · nút Đã thử trên Famixa tip | Trust Flywheel đo được |
 
+### Home UX P0 — Brief (2026-07-27)
+
+Parent Home không còn dashboard stack (ROP/Wins/Letter/Twin).  
+Layout: **AI Brief → Need Attention (nếu có) → Progress strip → Explore chips**.  
+SoT: `buildHomeBrief` + `buildParentPulse` + coach tip; ROP/Letter/3Q trên tab Value.  
+**P0.5:** Brief ưu tiên Attention khi có việc; CTA/deep-link `#fv-3q` / `#fv-rop` / `#fv-ai-letter`.  
+Chi tiết: `parent-home-brief-p0-plan.md`.
+
 Không deploy pilot hàng loạt khi Family OS vẫn park.
 
 ---

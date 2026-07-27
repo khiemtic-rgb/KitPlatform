@@ -22,8 +22,6 @@ import {
   fetchFamilyMemoryRecap,
   createFamilyMemory,
   setFamilyMemoryFavorite,
-  incrementFamilyNudge,
-  proposeScreenWallet,
   scanAdaptiveProposals,
   fetchFamilyScore,
   type FamilyMemberMood,
@@ -33,44 +31,27 @@ import {
   type RewardCatalogItem,
   type RewardRedemption,
   type FamilyScore,
-  fetchBehaviorTwin,
-  type BehaviorTwin,
   fetchFamilyBehaviorTwin,
-  updateRetirementPolicy,
   type FamilyBehaviorTwin,
   fetchFamilyCoachInsight,
   type FamilyCoachInsight,
   fetchBehaviorCoach,
   type BehaviorCoach,
-  fetchParentSuccessRop,
-  type ParentSuccessRop,
-  formatParentSuccessRopShare,
-  fetchFamilyAiWinsDigest,
-  fetchFamilyAiLetter,
-  formatFamilyAiLetterShare,
-  type FamilyAiWinsDigest,
-  type FamilyAiLetter,
   fetchFamilySubscription,
   type FamilySubscription,
   fetchParentSuccessEveningCheckin,
-  upsertParentSuccessEveningCheckin,
-  fetchParentAchievements,
   type ParentSuccessCheckin,
-  type ParentAchievements,
   fetchParentCoachActedToday,
   recordParentCoachActed,
-  fetchFamilyReplay,
-  type FamilyReplay,
 } from '@/shared/api/family-os.api';
 import { DecisionInboxPanel } from '@/modules/flow/DecisionInboxPanel';
 import { FamilyModeSheet } from '@/modules/flow/FamilyModeSheet';
-import { buildNudgeText, shareOrCopyNudge } from '@/shared/nudge/nudge';
+import { shareOrCopyNudge } from '@/shared/nudge/nudge';
 import {
   getNudgeCount,
   isParentVerified,
   markParentVerified,
   previousCalendarDate,
-  setNudgeCountLocal,
 } from '@/shared/nudge/nudge-stats';
 import { QuickNudgeButton } from '@/shared/ui/QuickNudgeButton';
 import { ScreenBoundaryPanel } from '@/shared/ui/ScreenBoundaryPanel';
@@ -84,6 +65,7 @@ import { withEvidenceAuth } from '@/shared/upload/evidence-url';
 import { clearOnboardingProfile } from '@/shared/onboarding/onboarding';
 import { buildParentPulse } from '@/shared/value/parent-pulse';
 import { resolveParentCoach } from '@/shared/value/resolve-parenting-coach';
+import { buildHomeBrief } from '@/shared/value/home-brief';
 import { FamilyValuePanel } from '@/modules/flow/FamilyValuePanel';
 import { BillingBanner } from '@/shared/ui/BillingBanner';
 import { PaywallSheet } from '@/shared/ui/PaywallSheet';
@@ -91,7 +73,6 @@ import {
   getApiErrorMessage,
   isCapabilityPaywallError,
 } from '@/shared/billing/capability-error';
-import { buildTrialRopConversion } from '@/shared/billing/trial-rop-conversion';
 import {
   buildFamilyMemories,
   FAMILY_MEMORY_EMPTY,
@@ -99,7 +80,6 @@ import {
   type FamilyMemory,
 } from '@/shared/flow/family-memories';
 import {
-  buildFoxyNotice,
   parentRoleFromName,
   warmTaskSupportNote,
   warmTaskTip,
@@ -553,28 +533,15 @@ export function ParentBoardView({
   const [actionToast, setActionToast] = useState<string | null>(null);
   const [modeSheetOpen, setModeSheetOpen] = useState(false);
   const [familyScore, setFamilyScore] = useState<FamilyScore | null>(null);
-  const [behaviorTwin, setBehaviorTwin] = useState<BehaviorTwin | null>(null);
   const [familyTwin, setFamilyTwin] = useState<FamilyBehaviorTwin | null>(null);
   const [coachInsight, setCoachInsight] = useState<FamilyCoachInsight | null>(null);
   const [behaviorCoach, setBehaviorCoach] = useState<BehaviorCoach | null>(null);
-  const [rop, setRop] = useState<ParentSuccessRop | null>(null);
   const [subscription, setSubscription] = useState<FamilySubscription | null>(null);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallReason, setPaywallReason] = useState<string | null>(null);
-  const [ropBlocked, setRopBlocked] = useState(false);
-  const [twinBlocked, setTwinBlocked] = useState(false);
-  const [winsDigest, setWinsDigest] = useState<FamilyAiWinsDigest | null>(null);
-  const [aiLetter, setAiLetter] = useState<FamilyAiLetter | null>(null);
   const [eveningCheckin, setEveningCheckin] = useState<ParentSuccessCheckin | null>(null);
-  const [parentAchievements, setParentAchievements] = useState<ParentAchievements | null>(null);
-  const [qLessNudge, setQLessNudge] = useState(false);
-  const [qLessTension, setQLessTension] = useState(false);
-  const [qQualityTime, setQQualityTime] = useState(false);
-  const [checkinBusy, setCheckinBusy] = useState(false);
   const [actedTipIds, setActedTipIds] = useState<string[]>([]);
   const [coachActBusyId, setCoachActBusyId] = useState<string | null>(null);
-  const [familyReplay, setFamilyReplay] = useState<FamilyReplay | null>(null);
-  const [observeBusy, setObserveBusy] = useState(false);
   const [inboxTick, setInboxTick] = useState(0);
   const [coachOpen, setCoachOpen] = useState(false);
   const [diaryDayIdx, setDiaryDayIdx] = useState(2);
@@ -784,31 +751,12 @@ export function ParentBoardView({
       .catch(() => {
         if (!cancelled) setFamilyScore(null);
       });
-    void fetchBehaviorTwin(familyId)
-      .then((t) => {
-        if (!cancelled) {
-          setBehaviorTwin(t);
-          setTwinBlocked(false);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setBehaviorTwin(null);
-          if (isCapabilityPaywallError(err)) setTwinBlocked(true);
-        }
-      });
     void fetchFamilyBehaviorTwin(familyId)
       .then((t) => {
-        if (!cancelled) {
-          setFamilyTwin(t);
-          setTwinBlocked(false);
-        }
+        if (!cancelled) setFamilyTwin(t);
       })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setFamilyTwin(null);
-          if (isCapabilityPaywallError(err)) setTwinBlocked(true);
-        }
+      .catch(() => {
+        if (!cancelled) setFamilyTwin(null);
       });
     void fetchFamilyCoachInsight(familyId, flow.flowDate)
       .then((c) => {
@@ -824,57 +772,11 @@ export function ParentBoardView({
       .catch(() => {
         if (!cancelled) setBehaviorCoach(null);
       });
-    void fetchParentSuccessRop(familyId, { days: 30, asOf: flow.flowDate })
-      .then((r) => {
-        if (!cancelled) {
-          setRop(r);
-          setRopBlocked(false);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setRop(null);
-          if (isCapabilityPaywallError(err)) setRopBlocked(true);
-        }
-      });
-    void fetchFamilyAiWinsDigest(familyId, { to: flow.flowDate, limit: 5 })
-      .then((r) => {
-        if (!cancelled) setWinsDigest(r);
-      })
-      .catch(() => {
-        if (!cancelled) setWinsDigest(null);
-      });
-    void fetchFamilyAiLetter(familyId)
-      .then((r) => {
-        if (!cancelled) setAiLetter(r);
-      })
-      .catch(() => {
-        if (!cancelled) setAiLetter(null);
-      });
-    void fetchParentAchievements(familyId, { asOf: flow.flowDate })
-      .then((r) => {
-        if (!cancelled) setParentAchievements(r);
-      })
-      .catch(() => {
-        if (!cancelled) setParentAchievements(null);
-      });
-    void fetchFamilyReplay(familyId)
-      .then((r) => {
-        if (!cancelled) setFamilyReplay(r);
-      })
-      .catch(() => {
-        if (!cancelled) setFamilyReplay(null);
-      });
     if (parentMembershipId) {
       void fetchParentSuccessEveningCheckin(familyId, parentMembershipId, flow.flowDate)
         .then((r) => {
           if (cancelled) return;
           setEveningCheckin(r);
-          if (r) {
-            setQLessNudge(r.qLessNudge);
-            setQLessTension(r.qLessTension);
-            setQQualityTime(r.qQualityTime);
-          }
         })
         .catch(() => {
           if (!cancelled) setEveningCheckin(null);
@@ -1005,31 +907,6 @@ export function ParentBoardView({
     return 0;
   }, [familyId, flow.flowDate, glance?.days, nudgeTick]);
 
-  const nudgeDeltaPct =
-    nudgeYesterday > 0
-      ? Math.round(((nudgeYesterday - nudgeToday) / nudgeYesterday) * 100)
-      : nudgeToday === 0
-        ? 100
-        : 0;
-
-  const autonomyGain = useMemo(() => {
-    const days = [...(glance?.days ?? [])].sort((a, b) => a.date.localeCompare(b.date));
-    if (days.length < 7) return null;
-    const recent = days.slice(-3);
-    const prior = days.slice(-7, -3);
-    if (prior.length === 0) return null;
-    const ratio = (list: typeof days) => {
-      const done = list.reduce((s, d) => s + d.childDone, 0);
-      const total = list.reduce(
-        (s, d) => s + Math.max(1, d.childDone + d.childSkipped + d.childOpen),
-        0,
-      );
-      return done / total;
-    };
-    const gain = Math.round((ratio(recent) - ratio(prior)) * 100);
-    return Number.isFinite(gain) ? gain : null;
-  }, [glance?.days]);
-
   const rewardPoints = childStarBalance;
   const streak = glance?.currentStreak ?? 0;
   const familyXp = Math.min(500, rewardPoints * 2 + scopedDone * 40);
@@ -1145,6 +1022,51 @@ export function ParentBoardView({
     ],
   );
 
+  const homeBrief = useMemo(() => {
+    const who =
+      (selectedChild?.name ?? focusChild?.name ?? 'Con').trim().split(/\s+/).pop() || 'Con';
+    const top = attentionItems[0];
+    const topAttention = top
+      ? {
+          kind: top.kind,
+          id: top.id,
+          titleVi:
+            top.kind === 'consequence'
+              ? top.event.labelVi
+              : top.item.title,
+          detailVi:
+            top.kind === 'consequence'
+              ? `${(top.event.memberName?.trim() || who)} · chờ quyết định`
+              : top.kind === 'awaiting'
+                ? 'Cần xác nhận bằng chứng / sao'
+                : top.item.windowEnd
+                  ? `Chưa xong · trước ${top.item.windowEnd.slice(0, 5)}`
+                  : 'Chưa xong / quá giờ',
+        }
+      : null;
+    return buildHomeBrief({
+      pulse: parentPulse,
+      coach,
+      attentionCount: attentionItems.length,
+      topAttention,
+      localTime: flow.localTime,
+      eveningCheckinDone: Boolean(eveningCheckin),
+    });
+  }, [
+    parentPulse,
+    coach,
+    attentionItems,
+    flow.localTime,
+    eveningCheckin,
+    selectedChild?.name,
+    focusChild?.name,
+  ]);
+
+  const homeAttention = useMemo(
+    () => attentionItems.slice(0, 3),
+    [attentionItems],
+  );
+
   const buckets = useMemo(() => {
     const done: DayFlowCommitment[] = [];
     const waiting: DayFlowCommitment[] = [];
@@ -1218,110 +1140,6 @@ export function ParentBoardView({
     'child',
   );
   const helloWho = viewerName.trim() || greetName(viewerName);
-  const movieLeft = unlockGap;
-
-  const foxyNotice = useMemo(
-    () =>
-      buildFoxyNotice({
-        flowDate: flow.flowDate,
-        childShort,
-        parentRole,
-        done: scopedDone,
-        total: scopedTotal,
-        open: Math.max(0, scopedTotal - scopedDone),
-        nudgeToday,
-        nudgeYesterday,
-        streak: glance?.currentStreak ?? 0,
-        beautifulToday: Boolean(glance?.todayIsBeautifulDay),
-        needHelp: attentionItems.length,
-      }),
-    [
-      flow.flowDate,
-      childShort,
-      parentRole,
-      scopedDone,
-      scopedTotal,
-      nudgeToday,
-      nudgeYesterday,
-      glance?.currentStreak,
-      glance?.todayIsBeautifulDay,
-      attentionItems.length,
-    ],
-  );
-
-  const supportCards = useMemo(() => {
-    const tones = ['pink', 'lemon', 'lilac'] as const;
-    return attentionItems.slice(0, 2).map((a, i) => {
-      if (a.kind === 'consequence') {
-        return {
-          id: a.id,
-          title: a.event.labelVi,
-          note: `${a.event.memberName?.trim() || childShort} · thỏa thuận chờ quyết định`,
-          deadline: 'Cần quyết định',
-          icon: '📄',
-          tone: tones[i] ?? 'lilac',
-          kind: a.kind,
-          raw: a,
-        };
-      }
-      const item = a.item;
-      const deadline = item.windowEnd
-        ? `Trước ${item.windowEnd.slice(0, 5)}`
-        : a.kind === 'overdue'
-          ? lateLabel(item, flow.localTime)
-          : 'Chờ kiểm tra';
-      const note = warmTaskSupportNote({
-        title: item.title,
-        childShort,
-        parentRole,
-        kind: a.kind === 'overdue' ? 'overdue' : 'awaiting',
-        flowDate: flow.flowDate,
-        itemId: item.id,
-      });
-      return {
-        id: a.id,
-        title: item.title,
-        note,
-        deadline,
-        icon: taskIcon(item.title),
-        tone: tones[i] ?? 'pink',
-        kind: a.kind,
-        raw: a,
-      };
-    });
-  }, [attentionItems, childShort, flow.localTime, flow.flowDate, parentRole]);
-
-  const memoryCards = useMemo(() => {
-    const merged = buildFamilyMemories({
-      childShort,
-      redemptions: childRedemptions,
-      teamUnlocks,
-      doneItems: scopedCommitments.filter((c) => c.status === 'done'),
-      saved: savedMemories,
-      voice: 'parent',
-    }).slice(0, 6);
-    if (merged.length > 0) {
-      return merged.map((m) => ({
-        id: m.id,
-        icon: m.icon,
-        title: m.title,
-        time: m.date,
-        memory: m,
-      }));
-    }
-    return scopedCommitments
-      .filter((c) => c.status === 'done')
-      .slice(0, 4)
-      .map((c) => ({
-        id: c.id,
-        icon: taskIcon(c.title),
-        title: `${childShort} · ${c.title}`,
-        time: formatClock(c.completedAt)
-          ? `Hôm nay, ${formatClock(c.completedAt)}`
-          : 'Hôm nay',
-        memory: undefined as FamilyMemory | undefined,
-      }));
-  }, [scopedCommitments, childShort, childRedemptions, teamUnlocks, savedMemories]);
 
   const diaryDays = useMemo(() => {
     const base = new Date(`${flow.flowDate}T12:00:00`);
@@ -1772,16 +1590,52 @@ export function ParentBoardView({
     setCoachOpen(true);
   };
 
-  const isTrialSub = subscription?.status === 'trial' && subscription.isEntitled;
-  const trialDaysLeft = subscription?.trialDaysRemaining;
-  const trialRop =
-    isTrialSub && rop ? buildTrialRopConversion(rop) : null;
-  const showTrialConversion = Boolean(trialRop);
-  const showRopTeaser =
-    !rop &&
-    (ropBlocked ||
-      subscription?.tierCode === 'free' ||
-      (subscription != null && !subscription.isEntitled));
+  const goValueAnchor = (anchorId: string) => {
+    setTab('value');
+    window.setTimeout(() => {
+      document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  };
+
+  const runBriefPrimary = () => {
+    const action = homeBrief.primaryAction;
+    if (action.kind === 'evening_checkin') {
+      goValueAnchor('fv-3q');
+      return;
+    }
+    if (action.kind === 'attention') {
+      const hit = attentionItems.find((x) => x.id === action.attentionId) ?? attentionItems[0];
+      if (!hit) {
+        scrollToMissions('need_help');
+        return;
+      }
+      if (hit.kind === 'awaiting') {
+        void verifyItem(hit.item).catch(() => undefined);
+        return;
+      }
+      scrollToMissions('need_help');
+      return;
+    }
+    openCoachOrPaywall();
+  };
+
+  const runBriefReason = () => {
+    const action = homeBrief.primaryAction;
+    if (action.kind === 'evening_checkin') {
+      goValueAnchor('fv-3q');
+      return;
+    }
+    if (action.kind === 'attention') {
+      const el = document.getElementById('ph-brief-attn');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      scrollToMissions('need_help');
+      return;
+    }
+    openCoachOrPaywall();
+  };
 
   const handleFulfillRedemption = async (redemptionId: string) => {
     if (!parentMembershipId || fulfillBusyId) return;
@@ -1839,1185 +1693,421 @@ export function ParentBoardView({
 
       {tab === 'home' ? (
         <>
-              <article className="ph-pulse-hero" role="status">
-                <p className="ph-pulse-eyebrow">Parent Success · hôm nay</p>
-                <div className="ph-pulse-score-row">
-                  <div className="ph-pulse-score" aria-label={`Family Score ${parentPulse.familyScore}`}>
-                    <span className="ph-pulse-score-num">{parentPulse.familyScore}</span>
-                    <span className="ph-pulse-score-lbl">Family Score</span>
-                  </div>
-                  <div className="ph-pulse-copy">
-                    <h2>{parentPulse.headlineVi}</h2>
-                    <p className="ph-pulse-mood">{parentPulse.dayMoodVi}</p>
-                  </div>
-                </div>
-                <ul className="ph-pulse-lines">
-                  <li>{parentPulse.nudgeLineVi}</li>
-                  <li>{parentPulse.autonomyLineVi}</li>
-                  <li>{parentPulse.peaceLineVi}</li>
-                </ul>
-                {parentPulse.insightVi ? (
-                  <p className="ph-pulse-insight">
-                    <strong>Insight hôm nay:</strong> {parentPulse.insightVi}
-                  </p>
-                ) : null}
-                <div className="ph-pulse-actions">
-                  <button type="button" className="ph-pulse-cta" onClick={openCoachOrPaywall}>
-                    Famixa đồng hành →
-                  </button>
-                  <button
-                    type="button"
-                    className="ph-text-link"
-                    onClick={() => {
-                      document
-                        .getElementById('ph-bos-detail')
-                        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }}
-                  >
-                    Chi tiết tín hiệu nhà
-                  </button>
-                </div>
-                {parentPulse.confidence === 'low' ? (
-                  <p className="ph-pulse-note">
-                    Đang học nhịp nhà — điểm sẽ rõ hơn sau vài ngày dùng.
-                  </p>
-                ) : null}
-              </article>
-
-              {showTrialConversion && trialRop && rop ? (
-                <article
-                  className={`ph-rop-card ph-rop-trial${
-                    trialDaysLeft != null && trialDaysLeft <= 7 ? ' is-urgent' : ''
-                  }`}
-                  id="ph-rop-home"
+          <article className="ph-brief" aria-label="Famixa brief">
+            <p className="ph-brief-eyebrow">{homeBrief.eyebrowVi}</p>
+            <h2 className="ph-brief-mood">{homeBrief.moodLineVi}</h2>
+            {homeBrief.bulletsVi.length > 0 ? (
+              <ul className="ph-brief-bullets">
+                {homeBrief.bulletsVi.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+            ) : null}
+            <div className="ph-brief-action">
+              <p className="ph-brief-action-kicker">Việc duy nhất nên làm</p>
+              <strong>{homeBrief.primaryAction.doThisVi}</strong>
+              <p className="ph-brief-action-reason">{homeBrief.primaryAction.reasonVi}</p>
+              <div className="ph-brief-action-btns">
+                <button type="button" className="ph-pulse-cta" onClick={runBriefPrimary}>
+                  {homeBrief.primaryAction.kind === 'attention'
+                    ? homeBrief.primaryAction.titleVi || 'Làm theo'
+                    : homeBrief.primaryAction.kind === 'evening_checkin'
+                      ? 'Trả lời 3Q'
+                      : 'Làm theo'}
+                </button>
+                <button type="button" className="ph-text-link" onClick={runBriefReason}>
+                  {homeBrief.primaryAction.kind === 'attention' ? 'Xem việc' : 'Xem lý do'}
+                </button>
+              </div>
+            </div>
+            {homeBrief.eveningCheckinHintVi ? (
+              <p className="ph-brief-note">
+                {homeBrief.eveningCheckinHintVi}{' '}
+                <button
+                  type="button"
+                  className="ph-text-link"
+                  onClick={() => goValueAnchor('fv-3q')}
                 >
-                  <p className="ph-rop-eyebrow">
-                    Trial · còn {trialDaysLeft != null ? `${trialDaysLeft} ngày` : 'một chút'}
-                  </p>
-                  <h2>{trialRop.titleVi}</h2>
-                  <p className="ph-rop-score">{trialRop.summaryVi}</p>
-                  <div className="ph-rop-metrics" aria-label="Kết quả trial">
-                    <div>
-                      <span className="ph-rop-metric-label">Lần phải nhắc</span>
-                      <strong>
-                        {trialRop.nudgeBefore} → {trialRop.nudgeAfter}
-                        {trialRop.nudgeDeltaPct != null && trialRop.nudgeDeltaPct > 0
-                          ? ` (−${trialRop.nudgeDeltaPct}%)`
-                          : ''}
-                      </strong>
-                    </div>
-                    <div>
-                      <span className="ph-rop-metric-label">Con tự bắt đầu</span>
-                      <strong>
-                        {trialRop.selfBefore} → {trialRop.selfAfter}
-                        {trialRop.selfDeltaPct != null && trialRop.selfDeltaPct > 0
-                          ? ` (+${trialRop.selfDeltaPct}%)`
-                          : ''}
-                      </strong>
-                    </div>
-                  </div>
-                  {rop.minutesSavedEstimate > 0 ? (
-                    <p className="ph-rop-minutes">
-                      ~{rop.minutesSavedEstimate} phút nhắc nhở được tiết kiệm (ước tính)
-                    </p>
-                  ) : null}
-                  <div className="ph-rop-actions">
-                    <button
-                      type="button"
-                      className="ph-pulse-cta"
-                      onClick={() =>
-                        openPaywall(
-                          'Giữ nhịp Pro sau trial — Coach, ROP và Letter tiếp tục đo giúp bạn.',
-                        )
-                      }
-                    >
-                      {trialRop.ctaVi}
-                    </button>
-                    <button
-                      type="button"
-                      className="ph-text-link"
-                      onClick={() =>
-                        void shareOrCopyNudge(
-                          formatParentSuccessRopShare(rop, familyName),
-                          { preferShare: true },
-                        ).then((mode) =>
-                          showActionToast(
-                            mode === 'shared' ? 'Đã mở chia sẻ ROP' : 'Đã copy ROP',
-                          ),
-                        )
-                      }
-                    >
-                      Chia sẻ
-                    </button>
-                  </div>
-                  {rop.isPartial && rop.partialNoteVi ? (
-                    <p className="ph-pulse-note">{rop.partialNoteVi}</p>
-                  ) : null}
-                </article>
-              ) : rop ? (
-                <article className="ph-rop-card" id="ph-rop-home">
-                  <p className="ph-rop-eyebrow">ROP · Return on Parenting</p>
-                  <h2>{rop.headlineVi}</h2>
-                  {rop.growthScore != null ? (
-                    <p className="ph-rop-score">Growth {rop.growthScore}/100 · {rop.windowDays} ngày</p>
-                  ) : (
-                    <p className="ph-rop-score">{rop.windowDays} ngày · {rop.dataDays} ngày có tín hiệu</p>
-                  )}
-                  <ul className="ph-rop-bullets">
-                    {rop.growthBulletsVi.slice(0, 3).map((b) => (
-                      <li key={b}>{b}</li>
-                    ))}
-                  </ul>
-                  {rop.minutesSavedEstimate > 0 ? (
-                    <p className="ph-rop-minutes">
-                      ~{rop.minutesSavedEstimate} phút nhắc nhở được tiết kiệm (ước tính)
-                    </p>
-                  ) : null}
-                  <div className="ph-rop-actions">
-                    <button type="button" className="ph-pulse-cta" onClick={() => setTab('value')}>
-                      Xem Growth Report →
-                    </button>
-                    <button
-                      type="button"
-                      className="ph-text-link"
-                      onClick={() =>
-                        void shareOrCopyNudge(
-                          formatParentSuccessRopShare(rop, familyName),
-                          { preferShare: true },
-                        ).then((mode) =>
-                          showActionToast(
-                            mode === 'shared' ? 'Đã mở chia sẻ ROP' : 'Đã copy ROP',
-                          ),
-                        )
-                      }
-                    >
-                      Chia sẻ
-                    </button>
-                  </div>
-                  {rop.isPartial && rop.partialNoteVi ? (
-                    <p className="ph-pulse-note">{rop.partialNoteVi}</p>
-                  ) : null}
-                </article>
-              ) : showRopTeaser ? (
-                <article className="ph-rop-card ph-rop-teaser" id="ph-rop-home">
-                  <p className="ph-rop-eyebrow">ROP · có trong Peace Plan</p>
-                  <h2>Đo “nhẹ tay hơn” sau 30 ngày</h2>
-                  <p className="ph-rop-score">
-                    {subscription?.upgradeHintVi ||
-                      'Free giữ routine. Growth Report / Coach mở khi nâng Family Peace Plan.'}
-                  </p>
-                  <div className="ph-rop-actions">
-                    <button
-                      type="button"
-                      className="ph-pulse-cta"
-                      onClick={() => openPaywall(subscription?.upgradeHintVi)}
-                    >
-                      Xem Family Peace Plan · 199.000đ
-                    </button>
-                  </div>
-                </article>
-              ) : null}
+                  Mở 3 câu tối →
+                </button>
+              </p>
+            ) : null}
+            {parentPulse.confidence === 'low' ? (
+              <p className="ph-brief-note">Đang học nhịp nhà — brief sẽ rõ hơn sau vài ngày.</p>
+            ) : null}
+          </article>
 
-              {rop?.hasAiPlusDeep && rop.deepPlaybookVi ? (
-                <article className="ph-rop-card ph-aiplus-card" id="ph-aiplus-home">
-                  <p className="ph-rop-eyebrow">AI+ · Playbook tuần</p>
-                  <h2>Đồng hành chuyên sâu</h2>
-                  <p className="ph-rop-score">{rop.deepPlaybookVi}</p>
-                  {rop.deepActionsVi && rop.deepActionsVi.length > 0 ? (
-                    <ul className="ph-rop-bullets">
-                      {rop.deepActionsVi.slice(0, 3).map((a) => (
-                        <li key={a}>{a}</li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </article>
-              ) : subscription?.tierCode === 'pro' &&
-                subscription.isEntitled &&
-                subscription.status !== 'trial' ? (
-                <article className="ph-rop-card ph-rop-teaser" id="ph-aiplus-home">
-                  <p className="ph-rop-eyebrow">AI+ · sắp mở rộng</p>
-                  <h2>Playbook tuần & scan sâu hơn</h2>
-                  <p className="ph-rop-score">
-                    Peace Plan đã mở Coach/ROP. AI+ thêm playbook tuần và đề xuất anh chị / tối.
-                  </p>
-                  <div className="ph-rop-actions">
-                    <button
-                      type="button"
-                      className="ph-pulse-cta"
-                      onClick={() =>
-                        openPaywall(
-                          'Nâng AI+ để mở Weekly Deep Playbook và adaptive scan mở rộng.',
-                        )
-                      }
-                    >
-                      Xem AI+ · 399.000đ
-                    </button>
-                  </div>
-                </article>
-              ) : null}
-
-              {winsDigest && winsDigest.wins.length > 0 ? (
-                <article className="ph-wins-card" id="ph-wins-home">
-                  <p className="ph-rop-eyebrow">Famixa · Wins</p>
-                  <h2>{winsDigest.headlineVi}</h2>
-                  {winsDigest.subheadVi ? (
-                    <p className="ph-rop-score">{winsDigest.subheadVi}</p>
-                  ) : null}
-                  <ul className="ph-wins-strip">
-                    {winsDigest.wins.slice(0, 4).map((w) => (
-                      <li key={w.id}>
-                        <span aria-hidden>{w.icon ?? '✨'}</span>
-                        <span>{w.titleVi}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="ph-rop-actions">
-                    <button type="button" className="ph-pulse-cta" onClick={() => setTab('value')}>
-                      Timeline & Letter →
-                    </button>
-                  </div>
-                </article>
-              ) : null}
-
-              {aiLetter && !aiLetter.isThinData ? (
-                <article className="ph-letter-card" id="ph-letter-home">
-                  <p className="ph-rop-eyebrow">Famixa · Letter · {aiLetter.monthLabelVi}</p>
-                  <h2>{aiLetter.greetingVi}</h2>
-                  <p className="ph-letter-body">
-                    {aiLetter.bodyVi.length > 180
-                      ? `${aiLetter.bodyVi.slice(0, 180).trim()}…`
-                      : aiLetter.bodyVi}
-                  </p>
-                  <div className="ph-rop-actions">
-                    <button type="button" className="ph-pulse-cta" onClick={() => setTab('value')}>
-                      Đọc full Letter →
-                    </button>
-                    <button
-                      type="button"
-                      className="ph-text-link"
-                      onClick={() =>
-                        void shareOrCopyNudge(formatFamilyAiLetterShare(aiLetter), {
-                          preferShare: true,
-                        }).then((mode) =>
-                          showActionToast(
-                            mode === 'shared' ? 'Đã mở chia sẻ Letter' : 'Đã copy Letter',
-                          ),
-                        )
-                      }
-                    >
-                      Chia sẻ
-                    </button>
-                  </div>
-                </article>
-              ) : null}
-
-              {parentMembershipId ? (
-                <article className="ph-checkin-card" id="ph-3q-home">
-                  <p className="ph-rop-eyebrow">Famixa · 3 câu tối</p>
-                  <h2>
-                    {eveningCheckin
-                      ? 'Đã trả lời hôm nay'
-                      : 'Hôm nay nhà mình thế nào?'}
-                  </h2>
-                  <div className="ph-3q-list">
-                    {(
-                      [
-                        ['qLessNudge', 'Đã phải nhắc ít hơn?', qLessNudge, setQLessNudge],
-                        ['qLessTension', 'Nhà bớt căng thẳng hơn?', qLessTension, setQLessTension],
-                        ['qQualityTime', 'Có thời gian chất lượng với con?', qQualityTime, setQQualityTime],
-                      ] as const
-                    ).map(([key, label, value, setter]) => (
-                      <label key={key} className="ph-3q-row">
-                        <span>{label}</span>
+          {homeAttention.length > 0 ? (
+            <section className="ph-brief-attn" id="ph-brief-attn" aria-label="Cần bạn xử lý">
+              <header className="ph-brief-section-head">
+                <h3>Cần bạn xử lý</h3>
+                <button
+                  type="button"
+                  className="ph-text-link"
+                  onClick={() => scrollToMissions('need_help')}
+                >
+                  Tất cả →
+                </button>
+              </header>
+              <ul className="ph-brief-attn-list">
+                {homeAttention.map((a) => {
+                  if (a.kind === 'consequence') {
+                    return (
+                      <li key={a.id}>
                         <button
                           type="button"
-                          className={`ph-3q-toggle${value ? ' is-on' : ''}`}
-                          aria-pressed={value}
-                          onClick={() => setter(!value)}
+                          className="ph-brief-attn-item"
+                          onClick={() => scrollToMissions('need_help')}
                         >
-                          {value ? 'Có' : 'Chưa'}
+                          <span aria-hidden>!</span>
+                          <span>
+                            <strong>{a.event.labelVi}</strong>
+                            <em>
+                              {(a.event.memberName?.trim() || childShort) + ' · chờ quyết định'}
+                            </em>
+                          </span>
                         </button>
-                      </label>
-                    ))}
-                  </div>
-                  {eveningCheckin?.reflectionVi ? (
-                    <p className="ph-letter-body">{eveningCheckin.reflectionVi}</p>
-                  ) : null}
-                  <div className="ph-rop-actions">
-                    <button
-                      type="button"
-                      className="ph-pulse-cta"
-                      disabled={checkinBusy}
-                      onClick={() => {
-                        if (!parentMembershipId || checkinBusy) return;
-                        setCheckinBusy(true);
-                        void upsertParentSuccessEveningCheckin(familyId, {
-                          memberId: parentMembershipId,
-                          flowDate: flow.flowDate,
-                          qLessNudge,
-                          qLessTension,
-                          qQualityTime,
-                        })
-                          .then((r) => {
-                            setEveningCheckin(r);
-                            showActionToast('Famixa đã ghi nhận tối nay');
-                            return fetchParentAchievements(familyId, { asOf: flow.flowDate });
-                          })
-                          .then((a) => setParentAchievements(a))
-                          .catch(() => showActionToast('Chưa lưu được — thử lại nhé'))
-                          .finally(() => setCheckinBusy(false));
-                      }}
-                    >
-                      {eveningCheckin ? 'Cập nhật' : 'Gửi Famixa'}
-                    </button>
-                  </div>
-                </article>
-              ) : null}
-
-              {parentAchievements ? (
-                <article className="ph-achv-card" id="ph-parent-achv">
-                  <p className="ph-rop-eyebrow">Famixa · Ghi nhận bố mẹ</p>
-                  <h2>{parentAchievements.headlineVi}</h2>
-                  <ul className="ph-achv-list">
-                    {parentAchievements.items.map((a) => (
-                      <li key={a.code} className={a.unlocked ? 'is-on' : ''}>
-                        <span aria-hidden>{a.icon}</span>
-                        <div>
-                          <strong>
-                            {a.titleVi}
-                            {a.unlocked ? ' · mở' : ''}
-                          </strong>
-                          <p>{a.unlocked ? a.detailVi : a.progressHintVi}</p>
-                        </div>
                       </li>
-                    ))}
-                  </ul>
-                </article>
-              ) : null}
-
-              {familyReplay && !familyReplay.isThinData ? (
-                <article className="ph-letter-card" id="ph-replay-home">
-                  <p className="ph-rop-eyebrow">Famixa · Replay</p>
-                  <h2>{familyReplay.titleVi}</h2>
-                  <p className="ph-letter-body">
-                    {familyReplay.openingVi.length > 160
-                      ? `${familyReplay.openingVi.slice(0, 160).trim()}…`
-                      : familyReplay.openingVi}
-                  </p>
-                  <ul className="ph-wins-strip">
-                    {familyReplay.scenes.slice(0, 4).map((s, i) => (
-                      <li key={`${s.kind}-${i}`}>
-                        <span aria-hidden>{s.icon}</span>
-                        <span>{s.titleVi}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="ph-rop-actions">
-                    <button type="button" className="ph-pulse-cta" onClick={() => setTab('value')}>
-                      Xem Replay đầy đủ →
-                    </button>
-                    <button
-                      type="button"
-                      className="ph-text-link"
-                      onClick={() =>
-                        void shareOrCopyNudge(familyReplay.shareTextVi, {
-                          preferShare: true,
-                        }).then((mode) =>
-                          showActionToast(
-                            mode === 'shared' ? 'Đã mở chia sẻ Replay' : 'Đã copy Replay',
-                          ),
-                        )
-                      }
-                    >
-                      Chia sẻ
-                    </button>
-                  </div>
-                </article>
-              ) : null}
-
-              <style>{`
-                .ph-rop-card {
-                  margin: 0 0 14px;
-                  padding: 16px;
-                  border-radius: 18px;
-                  background: #f3f7f4;
-                  color: #1a3344;
-                  border: 1px solid #d5e6dc;
-                }
-                .ph-rop-card.ph-rop-trial {
-                  background: linear-gradient(165deg, #eef6f1 0%, #f7f4ef 100%);
-                  border-color: #c5ddcf;
-                }
-                .ph-rop-card.ph-rop-trial.is-urgent {
-                  border-color: #c9a882;
-                  box-shadow: 0 0 0 1px rgba(180, 120, 60, 0.12);
-                }
-                .ph-rop-card.ph-rop-teaser {
-                  background: #f7f4ef;
-                  border-style: dashed;
-                }
-                .ph-rop-metrics {
-                  display: grid;
-                  grid-template-columns: 1fr 1fr;
-                  gap: 10px;
-                  margin: 0 0 12px;
-                }
-                .ph-rop-metrics > div {
-                  padding: 10px 12px;
-                  border-radius: 12px;
-                  background: rgba(255, 255, 255, 0.65);
-                }
-                .ph-rop-metric-label {
-                  display: block;
-                  font-size: 0.72rem;
-                  letter-spacing: 0.04em;
-                  text-transform: uppercase;
-                  opacity: 0.65;
-                  margin-bottom: 4px;
-                }
-                .ph-rop-metrics strong {
-                  font-size: 0.95rem;
-                  line-height: 1.3;
-                }
-                .ph-rop-eyebrow {
-                  margin: 0 0 6px;
-                  font-size: 11px;
-                  letter-spacing: 0.07em;
-                  text-transform: uppercase;
-                  opacity: 0.65;
-                }
-                .ph-rop-card h2 {
-                  margin: 0 0 6px;
-                  font-size: 1.08rem;
-                  line-height: 1.35;
-                }
-                .ph-rop-score { margin: 0 0 8px; font-size: 0.9rem; opacity: 0.85; }
-                .ph-rop-bullets {
-                  margin: 0 0 10px;
-                  padding-left: 18px;
-                  font-size: 0.88rem;
-                  line-height: 1.4;
-                }
-                .ph-rop-minutes { margin: 0 0 10px; font-size: 0.88rem; font-weight: 650; }
-                .ph-rop-actions {
-                  display: flex;
-                  flex-wrap: wrap;
-                  gap: 12px;
-                  align-items: center;
-                }
-                .ph-rop-card .ph-text-link { color: #2a5f4a; }
-                .ph-wins-card, .ph-letter-card, .ph-checkin-card, .ph-achv-card {
-                  margin: 0 0 14px;
-                  padding: 16px;
-                  border-radius: 18px;
-                  background: #f7f4ef;
-                  color: #1a3344;
-                  border: 1px solid #e6ddd0;
-                }
-                .ph-wins-card h2, .ph-letter-card h2, .ph-checkin-card h2, .ph-achv-card h2 {
-                  margin: 0 0 6px;
-                  font-size: 1.05rem;
-                  line-height: 1.35;
-                }
-                .ph-wins-strip {
-                  list-style: none;
-                  margin: 0 0 12px;
-                  padding: 0;
-                  display: flex;
-                  flex-direction: column;
-                  gap: 8px;
-                }
-                .ph-wins-strip li {
-                  display: flex;
-                  gap: 8px;
-                  align-items: flex-start;
-                  font-size: 0.88rem;
-                  line-height: 1.35;
-                }
-                .ph-letter-body {
-                  margin: 0 0 12px;
-                  font-size: 0.9rem;
-                  line-height: 1.45;
-                  opacity: 0.9;
-                }
-                .ph-wins-card .ph-text-link,
-                .ph-letter-card .ph-text-link { color: #2a5f4a; }
-                .ph-3q-list {
-                  display: flex;
-                  flex-direction: column;
-                  gap: 10px;
-                  margin: 10px 0 12px;
-                }
-                .ph-3q-row {
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  gap: 12px;
-                  font-size: 0.9rem;
-                }
-                .ph-3q-toggle {
-                  border: 1px solid #c9b8a0;
-                  background: #fff;
-                  color: #5a4a3a;
-                  border-radius: 999px;
-                  padding: 6px 14px;
-                  font-weight: 650;
-                  min-width: 64px;
-                }
-                .ph-3q-toggle.is-on {
-                  background: #2a5f4a;
-                  border-color: #2a5f4a;
-                  color: #fff;
-                }
-                .ph-achv-list {
-                  list-style: none;
-                  margin: 10px 0 0;
-                  padding: 0;
-                  display: flex;
-                  flex-direction: column;
-                  gap: 10px;
-                }
-                .ph-achv-list li {
-                  display: flex;
-                  gap: 10px;
-                  align-items: flex-start;
-                  opacity: 0.55;
-                  font-size: 0.88rem;
-                  line-height: 1.35;
-                }
-                .ph-achv-list li.is-on { opacity: 1; }
-                .ph-achv-list p { margin: 2px 0 0; }
-              `}</style>
-
-              <article className="ph-movie-hero ph-movie-hero--secondary">
-                <div className="ph-movie-copy">
-                  <p className="ph-movie-eyebrow">
-                    Cùng nhau <span aria-hidden>❤️</span>
-                  </p>
-                  <h2>
-                    {todayUnlock?.status === 'confirmed'
-                      ? `${todayUnlock.labelVi} đã mở — cả nhà tận hưởng!`
-                      : todayUnlock?.status === 'pending_confirm'
-                        ? 'Cả nhà đã sẵn sàng mở Movie Night!'
-                        : 'Tiến tới Movie Night'}
-                  </h2>
-                  <div className="ph-movie-progress">
-                    <i aria-hidden>
-                      <b style={{ width: `${percent}%` }} />
-                    </i>
-                    <strong>{percent}%</strong>
-                  </div>
-                  <p className="ph-movie-left">
-                    {movieLeft > 0
-                      ? `Còn ${movieLeft} nhiệm vụ tới phần thưởng nhà`
-                      : scopedTotal > 0 && scopedDone >= scopedTotal
-                        ? 'Đã xong cam kết hôm nay!'
-                        : 'Cùng hoàn thành nhiệm vụ nhé!'}
-                  </p>
-                  <button type="button" className="ph-movie-cta" onClick={() => scrollToMissions()}>
-                    Xem nhiệm vụ →
-                  </button>
-                </div>
-                <div className="ph-movie-art" aria-hidden>
-                  <span className="ph-movie-tv">📺</span>
-                  <span className="ph-movie-pop">🍿</span>
-                  <span className="ph-movie-label">MOVIE NIGHT</span>
-                </div>
-              </article>
-
-              <style>{`
-                .ph-pulse-hero {
-                  margin: 4px 0 14px;
-                  padding: 18px 16px 16px;
-                  border-radius: 20px;
-                  background: #1a3344;
-                  color: #f3f7fa;
-                }
-                .ph-pulse-eyebrow {
-                  margin: 0 0 10px;
-                  font-size: 11px;
-                  letter-spacing: 0.07em;
-                  text-transform: uppercase;
-                  opacity: 0.72;
-                }
-                .ph-pulse-score-row {
-                  display: flex;
-                  gap: 14px;
-                  align-items: flex-start;
-                  margin-bottom: 12px;
-                }
-                .ph-pulse-score {
-                  flex: 0 0 auto;
-                  width: 72px;
-                  height: 72px;
-                  border-radius: 18px;
-                  background: #243f52;
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  justify-content: center;
-                }
-                .ph-pulse-score-num {
-                  font-size: 1.55rem;
-                  font-weight: 750;
-                  line-height: 1;
-                }
-                .ph-pulse-score-lbl {
-                  margin-top: 4px;
-                  font-size: 9px;
-                  letter-spacing: 0.04em;
-                  text-transform: uppercase;
-                  opacity: 0.7;
-                }
-                .ph-pulse-copy h2 {
-                  margin: 0 0 6px;
-                  font-size: 1.15rem;
-                  line-height: 1.35;
-                  font-weight: 750;
-                }
-                .ph-pulse-mood {
-                  margin: 0;
-                  font-size: 0.9rem;
-                  line-height: 1.4;
-                  opacity: 0.88;
-                }
-                .ph-pulse-lines {
-                  margin: 0 0 10px;
-                  padding: 0 0 0 18px;
-                  font-size: 0.9rem;
-                  line-height: 1.45;
-                }
-                .ph-pulse-lines li { margin-bottom: 4px; }
-                .ph-pulse-insight {
-                  margin: 0 0 12px;
-                  padding: 10px 12px;
-                  border-radius: 12px;
-                  background: #243f52;
-                  font-size: 0.88rem;
-                  line-height: 1.4;
-                }
-                .ph-pulse-actions {
-                  display: flex;
-                  flex-wrap: wrap;
-                  gap: 12px;
-                  align-items: center;
-                }
-                .ph-pulse-cta {
-                  border: 0;
-                  border-radius: 999px;
-                  padding: 8px 14px;
-                  background: #e8f3ea;
-                  color: #1a3344;
-                  font-weight: 700;
-                  font-size: 0.9rem;
-                }
-                .ph-pulse-hero .ph-text-link { color: #c9e4ff; }
-                .ph-pulse-note {
-                  margin: 10px 0 0;
-                  font-size: 0.8rem;
-                  opacity: 0.65;
-                }
-                .ph-movie-hero--secondary {
-                  opacity: 0.95;
-                  transform: scale(0.99);
-                  transform-origin: top center;
-                }
-                .ph-movie-hero--secondary h2 { font-size: 1.05rem; }
-              `}</style>
-
-              {familyScore ? (
-                <p className="ph-family-score-line" role="status">
-                  {familyScore.headlineVi}
-                </p>
-              ) : null}
-
-              <div className="ph-afe-toolbar">
-                <button
-                  type="button"
-                  className="ph-afe-mode-btn"
-                  onClick={() => navigate('/family-admin')}
-                >
-                  Quản trị
-                </button>
-                <button
-                  type="button"
-                  className="ph-afe-mode-btn"
-                  onClick={() => setModeSheetOpen(true)}
-                >
-                  Chế độ gia đình
-                </button>
-                {selectedChild || focusChild ? (
-                  <button
-                    type="button"
-                    className="ph-afe-wallet-btn"
-                    onClick={() => {
-                      const childId = selectedChild?.key ?? focusChild?.key;
-                      if (!childId || !parentMembershipId) {
-                        showActionToast('Chọn con và đăng nhập phụ huynh trước.');
-                        return;
-                      }
-                      void proposeScreenWallet(familyId, {
-                        memberId: childId,
-                        proposedByMemberId: parentMembershipId,
-                      })
-                        .then(() => {
-                          setInboxTick((t) => t + 1);
-                          showActionToast('AI đã đề xuất ngân sách tuần — duyệt trong hộp thư.');
-                        })
-                        .catch((err: unknown) => {
-                          if (isCapabilityPaywallError(err)) {
-                            openPaywall(getApiErrorMessage(err));
+                    );
+                  }
+                  const label =
+                    a.kind === 'awaiting'
+                      ? 'Cần xác nhận'
+                      : a.kind === 'overdue'
+                        ? 'Chưa xong / quá giờ'
+                        : 'Cần chú ý';
+                  return (
+                    <li key={a.id}>
+                      <button
+                        type="button"
+                        className="ph-brief-attn-item"
+                        onClick={() => {
+                          if (a.kind === 'awaiting') {
+                            void verifyItem(a.item).catch(() => undefined);
                             return;
                           }
-                          showActionToast('Chưa đề xuất được ví tuần.');
-                        });
-                    }}
-                  >
-                    Đề xuất ví tuần
-                  </button>
-                ) : null}
-              </div>
-
-              <DecisionInboxPanel
-                familyId={familyId}
-                parentMembershipId={parentMembershipId}
-                refreshKey={`${flow.flowDate}-${flow.doneCount}-${inboxTick}`}
-                onApproveStars={async (commitmentId) => {
-                  // Call API directly — do not swallow errors via verifyItem early-return.
-                  await approveCommitmentStars(familyId, commitmentId);
-                  markParentVerified(flow.flowDate, commitmentId);
-                  setVerifiedTick((t) => t + 1);
-                }}
-                onConsequence={async (eventId, status) => {
-                  const guide = await onDecideConsequence(eventId, status);
-                  if (guide) setSoftGuide(guide);
-                }}
-                onTeamUnlock={(unlockId, status) => onDecideUnlockById(unlockId, status)}
-                onRewardFulfill={(id) => handleFulfillRedemption(id)}
-                onChanged={() => {
-                  setInboxTick((t) => t + 1);
-                  onRefreshFlow?.();
-                }}
-              />
-
-              {familyTwin ? (
-                <section className="ph-block" id="ph-bos-detail">
-                  <header className="ph-block-head">
-                    <h2>AI RETIREMENT</h2>
-                  </header>
-                  <p className="ph-empty-soft" style={{ marginTop: 0 }}>
-                    {familyTwin.disclaimerVi}
-                  </p>
-                  <p>
-                    <strong>{familyTwin.retirementLabelVi}</strong>
-                    {' · '}
-                    Autonomy {familyTwin.familyAutonomyIndex} · Peace{' '}
-                    {familyTwin.familyPeaceIndex} · Intervention{' '}
-                    {familyTwin.parentalInterventionIndex}
-                  </p>
-                  <p className="ph-empty-soft">{familyTwin.retirementAdviceVi}</p>
-                  <p className="ph-empty-soft">
-                    Anh chị em: {familyTwin.siblingBalanceLabelVi} — {familyTwin.siblingAdviceVi}
-                  </p>
-                  {familyTwin.dependenceWarning && familyTwin.dependenceWarningVi ? (
-                    <p role="alert" style={{ color: '#9a3412', fontSize: '0.9rem' }}>
-                      {familyTwin.dependenceWarningVi}
-                    </p>
-                  ) : null}
-                  <label
-                    style={{
-                      display: 'flex',
-                      gap: 8,
-                      alignItems: 'center',
-                      marginTop: 10,
-                      fontWeight: 650,
-                      fontSize: '0.9rem',
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={Boolean(familyTwin.observeOnlyActive)}
-                      disabled={observeBusy}
-                      onChange={(e) => {
-                        const next = e.target.checked;
-                        setObserveBusy(true);
-                        void updateRetirementPolicy(familyId, { observeOnly: next })
-                          .then(() => fetchFamilyBehaviorTwin(familyId))
-                          .then((t) => {
-                            setFamilyTwin(t);
-                            onRefreshFlow?.();
-                          })
-                          .catch((err: unknown) => {
-                            if (isCapabilityPaywallError(err)) {
-                              openPaywall(getApiErrorMessage(err));
-                            }
-                          })
-                          .finally(() => setObserveBusy(false));
-                      }}
-                    />
-                    Observe-only (tắt nhắc bố mẹ)
-                  </label>
-                  {familyTwin.recommendObserveOnly && !familyTwin.observeOnlyActive ? (
-                    <p className="ph-empty-soft">
-                      Gợi ý: nhà đang sẵn sàng Observe-only — bật công tắc phía trên.
-                    </p>
-                  ) : null}
-                </section>
-              ) : twinBlocked ||
-                (subscription != null &&
-                  !hasCap('behavior_twin') &&
-                  (subscription.tierCode === 'free' || !subscription.isEntitled)) ? (
-                <section className="ph-block ph-cap-teaser">
-                  <header className="ph-block-head">
-                    <h2>Behavior Twin</h2>
-                  </header>
-                  <p className="ph-empty-soft">
-                    Tín hiệu hành vi / AI Retirement có từ Plus (Growth Plan).
-                  </p>
-                  <button
-                    type="button"
-                    className="ph-pulse-cta"
-                    onClick={() =>
-                      openPaywall(
-                        'Twin có từ Plus. Peace Plan thêm Coach/ROP — khuyến nghị 199.000đ.',
-                      )
-                    }
-                  >
-                    Xem gói nâng cấp
-                  </button>
-                </section>
-              ) : null}
-
-              {behaviorTwin && behaviorTwin.members.length > 0 ? (
-                <section className="ph-block">
-                  <header className="ph-block-head">
-                    <h2>TÍN HIỆU HÀNH VI</h2>
-                  </header>
-                  <p className="ph-empty-soft" style={{ marginTop: 0 }}>
-                    {behaviorTwin.disclaimerVi}
-                  </p>
-                  <div className="ph-support-grid">
-                    {behaviorTwin.members
-                      .filter((m) => {
-                        if (effectiveChildFocus === 'all') return true;
-                        return (
-                          m.memberId === effectiveChildFocus ||
-                          m.memberName === selectedChild?.name
-                        );
-                      })
-                      .map((m) => (
-                        <article key={m.memberId} className="ph-support-tile tone-lilac">
-                          <strong>
-                            {m.memberName} · {m.overallLabelVi} ({m.overallScore})
-                          </strong>
-                          <p>
-                            Buổi tối:{' '}
-                            {m.eveningRiskLabelVi
-                              ? `rủi ro ${m.eveningRiskLabelVi.toLowerCase()}`
-                              : 'ổn'}
-                            {m.eveningSuggestedActionVi
-                              ? ` — ${m.eveningSuggestedActionVi}`
-                              : ''}
-                          </p>
-                          <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: '0.85rem' }}>
-                            {m.dimensions.slice(0, 4).map((d) => (
-                              <li key={d.code}>
-                                {d.labelVi}: {d.score} — {d.whyVi}
-                              </li>
-                            ))}
-                          </ul>
-                        </article>
-                      ))}
-                  </div>
-                </section>
-              ) : null}
-
-              <section className="ph-block">
-                <header className="ph-block-head">
-                  <h2>NHẮC NHẸ</h2>
-                  <button
-                    type="button"
-                    className="ph-text-link"
-                    onClick={() => scrollToMissions('need_help')}
-                  >
-                    Xem nhiệm vụ →
-                  </button>
-                </header>
-                {supportCards.filter((c) => {
-                  if (c.raw.kind !== 'overdue') return false;
-                  return c.raw.item.allowParentPush !== false;
-                }).length === 0 ? (
-                  <p className="ph-empty-soft">
-                    {supportCards.some((c) => {
-                      if (c.raw.kind !== 'overdue') return false;
-                      return c.raw.item.interventionLevel === 'observe_only';
-                    })
-                      ? 'Hôm nay nên quan sát — đừng nhắc thêm (thói quen đang tự chủ / hết ngân sách).'
-                      : 'Không việc quá giờ cần nhắc.'}
-                  </p>
-                ) : (
-                  <div className="ph-support-grid">
-                    {supportCards
-                      .filter((c) => {
-                        if (c.raw.kind !== 'overdue') return false;
-                        return c.raw.item.allowParentPush !== false;
-                      })
-                      .map((card) => (
-                      <button
-                        key={card.id}
-                        type="button"
-                        className={`ph-support-tile tone-${card.tone}`}
-                        onClick={() => {
-                          const a = card.raw;
-                          if (a.kind !== 'overdue') return;
-                          void (async () => {
-                            try {
-                              await shareOrCopyNudge(buildNudgeText(a.item));
-                              const next = getNudgeCount(familyId, flow.flowDate) + 1;
-                              setNudgeCountLocal(familyId, flow.flowDate, next);
-                              onParentNudged(1);
-                              try {
-                                await incrementFamilyNudge(familyId, flow.flowDate, 1);
-                              } catch {
-                                /* offline OK */
-                              }
-                              showActionToast(
-                                'Đã copy tin nhắc — dán Zalo/Messenger cho con',
-                              );
-                            } catch (err) {
-                              if (err instanceof DOMException && err.name === 'AbortError') return;
-                              setTab('tasks');
-                              setMissionFilter('need_help');
-                            }
-                          })();
+                          scrollToMissions('need_help');
                         }}
                       >
-                        <span className="ph-support-tile-ico" aria-hidden>
-                          {card.icon}
-                        </span>
-                        <strong>{card.title}</strong>
-                        <p>
-                          {card.raw.kind === 'overdue' && card.raw.item.parentAdviceVi
-                            ? card.raw.item.parentAdviceVi
-                            : card.note}
-                        </p>
-                        <em>
-                          <span aria-hidden>🕒</span> {card.deadline}
-                        </em>
-                        <span className="ph-support-chevron" aria-hidden>
-                          ›
+                        <span aria-hidden>!</span>
+                        <span>
+                          <strong>{a.item.title}</strong>
+                          <em>
+                            {label}
+                            {a.item.windowEnd ? ` · trước ${a.item.windowEnd.slice(0, 5)}` : ''}
+                          </em>
                         </span>
                       </button>
-                    ))}
-                  </div>
-                )}
-              </section>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ) : null}
 
-              {childGratitudes.length > 0 ? (
-                <section className="ph-block ph-gratitude-block">
-                  <header className="ph-block-head">
-                    <h2>
-                      <span aria-hidden>💌</span> CON GỬI LỜI CẢM ƠN
-                    </h2>
-                  </header>
-                  <div className="ph-gratitude-list">
-                    {childGratitudes.map((g) => {
-                      const sentAt = formatClock(g.createdAt);
-                      return (
-                        <article key={g.id} className="ph-gratitude-card">
-                          <span className="ph-gratitude-heart" aria-hidden>
-                            💖
-                          </span>
-                          <div>
-                            <strong>{g.messageVi}</strong>
-                            {g.praiseContext ? (
-                              <p className="ph-gratitude-context">Vì: «{g.praiseContext}»</p>
-                            ) : null}
-                            <em>
-                              {g.fromMemberName}
-                              {sentAt ? ` · ${sentAt}` : ''}
-                              {g.toMemberName ? ` → ${g.toMemberName}` : ''}
-                            </em>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                </section>
-              ) : null}
+          <DecisionInboxPanel
+            familyId={familyId}
+            parentMembershipId={parentMembershipId}
+            refreshKey={`${flow.flowDate}-${flow.doneCount}-${inboxTick}`}
+            onApproveStars={async (commitmentId) => {
+              await approveCommitmentStars(familyId, commitmentId);
+              markParentVerified(flow.flowDate, commitmentId);
+              setVerifiedTick((t) => t + 1);
+            }}
+            onConsequence={async (eventId, status) => {
+              const guide = await onDecideConsequence(eventId, status);
+              if (guide) setSoftGuide(guide);
+            }}
+            onTeamUnlock={(unlockId, status) => onDecideUnlockById(unlockId, status)}
+            onRewardFulfill={(id) => handleFulfillRedemption(id)}
+            onChanged={() => {
+              setInboxTick((t) => t + 1);
+              onRefreshFlow?.();
+            }}
+          />
 
-              <section className="ph-foxy-strip">
-                <span className="ph-foxy-strip-mascot" aria-hidden>
-                  ✦
-                </span>
-                <p>
-                  {resolvedCoach.isServerSot
-                    ? coach.insight
-                    : `Famixa nhận thấy ✨ ${foxyNotice}`}
-                </p>
-                <button
-                  type="button"
-                  className="ph-foxy-strip-btn"
-                  onClick={openCoachOrPaywall}
-                >
-                  Famixa
+          <section className="ph-brief-progress" aria-label="Tiến độ hôm nay">
+            <header className="ph-brief-section-head">
+              <h3>Hôm nay</h3>
+              <span>
+                {scopedDone}/{Math.max(scopedTotal, 0)}
+              </span>
+            </header>
+            <div className="ph-brief-bar" aria-hidden>
+              <i>
+                <b style={{ width: `${percent}%` }} />
+              </i>
+              <strong>{percent}%</strong>
+            </div>
+            <button type="button" className="ph-pulse-cta" onClick={() => scrollToMissions()}>
+              Xem missions →
+            </button>
+            {todayUnlock?.status === 'pending_confirm' ? (
+              <p className="ph-brief-note">
+                Movie Night sẵn sàng xác nhận —{' '}
+                <button type="button" className="ph-text-link" onClick={() => setTab('rewards')}>
+                  mở Phần thưởng
                 </button>
-              </section>
+              </p>
+            ) : null}
+          </section>
 
-              <section className="ph-block">
-                <header className="ph-block-head">
-                  <h2>GIA ĐÌNH TUẦN NÀY</h2>
-                  <button type="button" className="ph-text-link" onClick={() => setTab('value')}>
-                    Xem nhật ký →
-                  </button>
-                </header>
-                <div className="ph-week-grid">
-                  <article className="ph-week-tile">
-                    <span aria-hidden>🔔</span>
-                    <p className="ph-week-cap">Số lần phải nhắc</p>
-                    <strong>
-                      {nudgeToday} <em>lần</em>
-                    </strong>
-                    <b className={nudgeDeltaPct >= 0 ? 'is-up' : 'is-down'}>
-                      {nudgeYesterday <= 0
-                        ? 'Chưa có so sánh'
-                        : nudgeDeltaPct >= 0
-                          ? `Giảm ${nudgeDeltaPct}% ↓`
-                          : `Tăng ${Math.abs(nudgeDeltaPct)}% ↑`}
-                    </b>
-                    <i className="ph-spark is-green" aria-hidden />
-                  </article>
-                  <article className="ph-week-tile">
-                    <span aria-hidden>🎯</span>
-                    <p className="ph-week-cap">Team Streak</p>
-                    <strong>
-                      {glance?.currentStreak ?? 0} <em>ngày</em>
-                    </strong>
-                    <div className="ph-streak-flames" aria-hidden>
-                      {Array.from({ length: 7 }, (_, i) => (
-                        <span
-                          key={i}
-                          className={
-                            i < Math.min(Math.max(glance?.currentStreak ?? 0, 0), 7)
-                              ? 'is-on'
-                              : undefined
-                          }
-                        >
-                          🔥
-                        </span>
-                      ))}
-                    </div>
-                    <em className="ph-week-note">
-                      {(glance?.currentStreak ?? 0) > 0 ? 'Tuyệt vời!' : 'Bắt đầu từ hôm nay'}
-                    </em>
-                  </article>
-                  <article className="ph-week-tile">
-                    <span aria-hidden>📈</span>
-                    <p className="ph-week-cap">Tỷ lệ tự giác</p>
-                    <strong className="is-purple">
-                      {autonomyGain != null
-                        ? `${autonomyGain >= 0 ? '+' : ''}${autonomyGain}%`
-                        : '—'}
-                    </strong>
-                    <em className="ph-week-note">
-                      {autonomyGain != null ? 'So với tuần trước' : 'Cần thêm dữ liệu tuần'}
-                    </em>
-                    <i className="ph-spark is-purple" aria-hidden />
-                  </article>
-                  <article className="ph-week-tile">
-                    <span aria-hidden>⭐</span>
-                    <p className="ph-week-cap">Sao của {childShort}</p>
-                    <strong>{rewardPoints.toLocaleString('vi-VN')}</strong>
-                    <em className="ph-week-note is-star">{starBalanceNote(rewardPoints)}</em>
-                  </article>
-                </div>
-              </section>
+          {childGratitudes.length > 0 ? (
+            <section className="ph-brief-moment" aria-label="Khoảnh khắc">
+              <p className="ph-brief-eyebrow" style={{ color: '#5a4a3a' }}>
+                Con đang lớn lên
+              </p>
+              <p className="ph-brief-mood" style={{ fontSize: '1.05rem', color: '#1a3344' }}>
+                {childGratitudes[0].messageVi}
+              </p>
+              <em className="ph-brief-note" style={{ color: '#5a4a3a' }}>
+                {childGratitudes[0].fromMemberName}
+                {childGratitudes[0].praiseContext
+                  ? ` · vì «${childGratitudes[0].praiseContext}»`
+                  : ''}
+              </em>
+            </section>
+          ) : null}
 
-              <section className="ph-block ph-mood-today">
-                <header className="ph-block-head">
-                  <h2>TÂM TRẠNG HÔM NAY</h2>
-                  {focusedChildMood && focusedMoodDisplay ? (
-                    <span className="ph-mood-hint">{childShort} đã cảm thấy:</span>
-                  ) : null}
-                </header>
-                {focusedChildMood && focusedMoodDisplay ? (
-                  <>
-                    <div className="ph-mood-picks" aria-label="Tâm trạng con">
-                      <span className="ph-mood-pick is-on tone-green">
-                        <span aria-hidden>{focusedMoodDisplay.emoji}</span>
-                        <em>{focusedMoodDisplay.label}</em>
-                      </span>
-                    </div>
-                    {focusedChildMood.note?.trim() ? (
-                      <p className="ph-diary-mood-bubble">{focusedChildMood.note.trim()}</p>
-                    ) : null}
-                  </>
-                ) : (
-                  <p className="ph-mood-hint">Con chưa ghi tâm trạng hôm nay</p>
-                )}
-              </section>
+          <nav className="ph-brief-explore" aria-label="Khám phá">
+            <div className="ph-brief-section-head">
+              <h3>Khám phá</h3>
+            </div>
+            <div className="ph-brief-chips">
+              <button type="button" className="ph-brief-chip" onClick={openCoachOrPaywall}>
+                Famixa đồng hành
+              </button>
+              <button
+                type="button"
+                className="ph-brief-chip"
+                onClick={() => goValueAnchor('fv-rop')}
+              >
+                Growth Report
+              </button>
+              <button
+                type="button"
+                className="ph-brief-chip"
+                onClick={() => goValueAnchor('fv-ai-letter')}
+              >
+                Nhật ký / Letter
+              </button>
+              <button
+                type="button"
+                className="ph-brief-chip"
+                onClick={() => goValueAnchor('fv-3q')}
+              >
+                3 câu tối
+              </button>
+              <button type="button" className="ph-brief-chip" onClick={() => setTab('tasks')}>
+                Nhiệm vụ
+              </button>
+              <button
+                type="button"
+                className="ph-brief-chip is-soft"
+                onClick={() => navigate('/family-admin')}
+              >
+                Quản trị
+              </button>
+              <button
+                type="button"
+                className="ph-brief-chip is-soft"
+                onClick={() => setModeSheetOpen(true)}
+              >
+                Chế độ nhà
+              </button>
+            </div>
+          </nav>
 
-              <section className="ph-block">
-                <header className="ph-block-head">
-                  <h2>KHOẢNH KHẮC ĐÁNG NHỚ</h2>
-                  <button
-                    type="button"
-                    className="ph-text-link"
-                    onClick={openMemoriesSheet}
-                    disabled={memoryCards.length === 0}
-                  >
-                    Xem tất cả →
-                  </button>
-                </header>
-                {memoryRecap && memoryRecap.totalCount > 0 ? (
-                  <p className="ph-memory-recap">{memoryRecap.headlineVi}</p>
-                ) : null}
-                <div className="ph-memory-scroll">
-                  {memoryCards.length === 0 ? (
-                    <p className="ph-empty-soft">{FAMILY_MEMORY_EMPTY}</p>
-                  ) : (
-                    memoryCards.map((m) => (
-                      <article key={m.id} className="ph-memory-card">
-                        <div className="ph-memory-art">
-                          {m.memory?.photoUrl ? (
-                            <img
-                              src={withEvidenceAuth(m.memory.photoUrl)}
-                              alt=""
-                              className="ph-memory-photo"
-                            />
-                          ) : (
-                            <span aria-hidden>{m.icon}</span>
-                          )}
-                          {m.memory ? (
-                            <button
-                              type="button"
-                              className={
-                                m.memory.entry?.isFavorite
-                                  ? 'ph-memory-heart is-on'
-                                  : 'ph-memory-heart'
-                              }
-                              aria-label={
-                                m.memory.entry?.isFavorite
-                                  ? 'Bỏ thích'
-                                  : m.memory.entry
-                                    ? 'Thích'
-                                    : 'Lưu vào kỷ niệm'
-                              }
-                              aria-pressed={m.memory.entry?.isFavorite ?? false}
-                              disabled={memoryHeartBusy === m.memory.id}
-                              onClick={() => void heartMemory(m.memory!)}
-                            >
-                              {m.memory.entry?.isFavorite ? '❤️' : '🤍'}
-                            </button>
-                          ) : null}
-                        </div>
-                        <strong>{m.title}</strong>
-                        <em>{m.time}</em>
-                      </article>
-                    ))
-                  )}
-                </div>
-              </section>
+          <style>{`
+            .ph-brief {
+              margin: 0 0 14px;
+              padding: 18px 16px 16px;
+              border-radius: 20px;
+              background: linear-gradient(165deg, #1a3344 0%, #243f52 55%, #2a4a3a 100%);
+              color: #f4faf6;
+            }
+            .ph-brief-eyebrow {
+              margin: 0 0 8px;
+              font-size: 11px;
+              letter-spacing: 0.08em;
+              text-transform: uppercase;
+              opacity: 0.7;
+            }
+            .ph-brief-mood {
+              margin: 0 0 12px;
+              font-size: 1.28rem;
+              line-height: 1.3;
+              font-weight: 700;
+            }
+            .ph-brief-bullets {
+              margin: 0 0 14px;
+              padding: 0 0 0 18px;
+              font-size: 0.9rem;
+              line-height: 1.45;
+              opacity: 0.92;
+            }
+            .ph-brief-bullets li { margin-bottom: 4px; }
+            .ph-brief-action {
+              padding: 12px 14px;
+              border-radius: 14px;
+              background: rgba(255,255,255,0.1);
+            }
+            .ph-brief-action-kicker {
+              margin: 0 0 6px;
+              font-size: 0.75rem;
+              letter-spacing: 0.04em;
+              text-transform: uppercase;
+              opacity: 0.75;
+            }
+            .ph-brief-action strong {
+              display: block;
+              font-size: 1.02rem;
+              line-height: 1.35;
+              margin-bottom: 6px;
+            }
+            .ph-brief-action-reason {
+              margin: 0 0 12px;
+              font-size: 0.86rem;
+              line-height: 1.4;
+              opacity: 0.85;
+            }
+            .ph-brief-action-btns {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 12px;
+              align-items: center;
+            }
+            .ph-brief .ph-pulse-cta {
+              border: 0;
+              border-radius: 999px;
+              padding: 8px 14px;
+              background: #e8f3ea;
+              color: #1a3344;
+              font-weight: 700;
+              font-size: 0.9rem;
+            }
+            .ph-brief .ph-text-link {
+              color: #c9e4ff;
+              background: none;
+              border: 0;
+              padding: 0;
+              font: inherit;
+              cursor: pointer;
+            }
+            .ph-brief-note {
+              margin: 10px 0 0;
+              font-size: 0.82rem;
+              opacity: 0.75;
+              line-height: 1.4;
+            }
+            .ph-brief-section-head {
+              display: flex;
+              align-items: baseline;
+              justify-content: space-between;
+              gap: 10px;
+              margin: 0 0 10px;
+            }
+            .ph-brief-section-head h3 {
+              margin: 0;
+              font-size: 0.95rem;
+              letter-spacing: 0.02em;
+            }
+            .ph-brief-attn, .ph-brief-progress, .ph-brief-moment, .ph-brief-explore {
+              margin: 0 0 14px;
+            }
+            .ph-brief-attn-list {
+              list-style: none;
+              margin: 0;
+              padding: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+            }
+            .ph-brief-attn-item {
+              width: 100%;
+              text-align: left;
+              display: flex;
+              gap: 10px;
+              align-items: flex-start;
+              padding: 12px 12px;
+              border-radius: 14px;
+              border: 1px solid #e6ddd0;
+              background: #fffaf4;
+              color: #1a3344;
+              cursor: pointer;
+            }
+            .ph-brief-attn-item strong { display: block; font-size: 0.95rem; }
+            .ph-brief-attn-item em {
+              display: block;
+              margin-top: 2px;
+              font-style: normal;
+              font-size: 0.8rem;
+              opacity: 0.7;
+            }
+            .ph-brief-bar {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              margin: 0 0 12px;
+            }
+            .ph-brief-bar i {
+              flex: 1;
+              height: 10px;
+              border-radius: 999px;
+              background: #e4ebe6;
+              overflow: hidden;
+              display: block;
+            }
+            .ph-brief-bar b {
+              display: block;
+              height: 100%;
+              background: #2a5f4a;
+              border-radius: 999px;
+            }
+            .ph-brief-progress .ph-pulse-cta {
+              border: 0;
+              border-radius: 999px;
+              padding: 8px 14px;
+              background: #e8f3ea;
+              color: #1a3344;
+              font-weight: 700;
+            }
+            .ph-brief-progress .ph-text-link,
+            .ph-brief-attn .ph-text-link {
+              background: none;
+              border: 0;
+              padding: 0;
+              color: #2a5f4a;
+              font: inherit;
+              cursor: pointer;
+            }
+            .ph-brief-moment {
+              padding: 14px 14px;
+              border-radius: 16px;
+              background: #f7f4ef;
+              border: 1px solid #e6ddd0;
+            }
+            .ph-brief-chips {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 8px;
+            }
+            .ph-brief-chip {
+              border: 1px solid #d5e6dc;
+              background: #f3f7f4;
+              color: #1a3344;
+              border-radius: 999px;
+              padding: 8px 12px;
+              font-size: 0.85rem;
+              font-weight: 650;
+              cursor: pointer;
+            }
+            .ph-brief-chip.is-soft {
+              background: #fff;
+              border-color: #e5e0d8;
+              font-weight: 550;
+            }
+          `}</style>
         </>
       ) : null}
 
@@ -3437,6 +2527,9 @@ export function ParentBoardView({
               nudgeToday={nudgeToday}
               momentCount={savedMemories.length + childGratitudes.length}
               onOpenPaywall={(reason) => openPaywall(reason)}
+              parentMembershipId={parentMembershipId}
+              eveningCheckin={eveningCheckin}
+              onEveningCheckinChange={setEveningCheckin}
             />
           </div>
 
