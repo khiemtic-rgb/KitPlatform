@@ -106,7 +106,7 @@ Hàng chip/link: Famixa đồng hành · Growth Report (`#fv-rop`) · Letter (`#
 
 - **P1:** Family Feed chỉ khi có event mới hôm nay — **IMPLEMENTED** (`buildHomeFamilyFeed`, ẩn nếu trống)
 - **P2:** Brief lấy Memory win trong ngày — **IMPLEMENTED** (`memoryWinVi` → bullet đầu khi không Attention)
-- **P3:** Coach Act Rate / `parent_coach_acted`
+- **P3:** Coach Act Rate / `parent_coach_acted` — **IMPLEMENTED** (API + nút **Đã thử** trên Famixa tip sheet)
 
 ## Quyết định mặc định (đã khóa trong plan)
 

@@ -5,8 +5,11 @@ import {
   fetchFamilies,
   fetchFamilySubscription,
   fetchTeamUnlocks,
+  type DayFlow,
+  type DayFlowCommitment,
   type FamilyMembership,
   type FamilySubscription,
+  type TeamUnlock,
 } from '@/shared/api/family-os.api';
 import { buildCheckoutPath } from '@/shared/api/payment.api';
 import { useSessionStore } from '@/shared/auth/session.store';
@@ -20,18 +23,13 @@ import {
   type AvatarGender,
 } from '@/shared/ui/avatarGender';
 
-const TRIAL_TOTAL_FALLBACK = 30;
+type MemberTone = 'pink' | 'blue' | 'purple' | 'green' | 'teal';
 
 function daysUntil(iso?: string): number | null {
   if (!iso) return null;
   const t = Date.parse(iso);
   if (Number.isNaN(t)) return null;
   return Math.max(0, Math.ceil((t - Date.now()) / (24 * 60 * 60 * 1000)));
-}
-
-function trialFillRatio(remaining: number, total: number): number {
-  if (total <= 0) return 0;
-  return Math.min(1, Math.max(0, remaining / total));
 }
 
 function ageYears(dob?: string): number | null {
@@ -51,16 +49,65 @@ function childRelation(gender: AvatarGender): string {
   return 'Con';
 }
 
-function MemberCard({
+function memberTone(member: FamilyMembership, gender: AvatarGender): MemberTone {
+  if (member.roleCode === 'child') {
+    if (gender === 'girl') return 'pink';
+    if (gender === 'boy') return 'blue';
+    return 'teal';
+  }
+  if (gender === 'girl' || /mẹ|me|mom|mother/i.test(member.displayName)) return 'purple';
+  if (gender === 'boy' || /bố|bo|dad|father/i.test(member.displayName)) return 'green';
+  return member.roleCode === 'caregiver' ? 'teal' : 'purple';
+}
+
+function decorIcon(tone: MemberTone, isChild: boolean): string {
+  if (isChild) return tone === 'pink' ? '⭐' : tone === 'blue' ? '🚀' : '✨';
+  if (tone === 'purple') return '❤️';
+  if (tone === 'green') return '🛡️';
+  return '🌿';
+}
+
+function countForMember(commitments: DayFlowCommitment[], memberId: string) {
+  const mine = commitments.filter((c) => !c.memberId || c.memberId === memberId);
+  const total = mine.filter((c) => c.status !== 'skipped').length;
+  const done = mine.filter((c) => c.status === 'done').length;
+  const open = mine.filter((c) => c.status !== 'done' && c.status !== 'skipped').length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  return { total, done, open, pct };
+}
+
+function parentAttentionCount(day: DayFlow | null, childIds: Set<string>): number {
+  if (!day) return 0;
+  let n = 0;
+  for (const c of day.commitments) {
+    if (c.status === 'done' && c.evidenceUrl && !c.starPosted) n += 1;
+    else if (
+      c.status !== 'done' &&
+      c.status !== 'skipped' &&
+      (c.reminderState === 'overdue' || c.reminderState === 'due_now') &&
+      (!c.memberId || childIds.has(c.memberId))
+    ) {
+      n += 1;
+    }
+  }
+  return n;
+}
+
+function MemberPickCard({
   member,
+  statusLabel,
+  progressPct,
   onPick,
 }: {
   member: FamilyMembership;
+  statusLabel: string;
+  progressPct?: number | null;
   onPick: () => void;
 }) {
   const gender = inferGenderFromName(member.displayName);
   const isChild = member.roleCode === 'child';
   const age = ageYears(member.dateOfBirth);
+  const tone = memberTone(member, gender);
   const meta = isChild
     ? [childRelation(gender), age != null ? `${age} tuổi` : null].filter(Boolean).join(' · ')
     : member.roleCode === 'caregiver'
@@ -68,15 +115,33 @@ function MemberCard({
       : 'Phụ huynh';
 
   return (
-    <button type="button" className="home-member-card" onClick={onPick}>
-      <span className={`home-member-avatar ${avatarToneClass(gender)}`}>
-        {avatarEmoji(gender, member.roleCode)}
+    <button
+      type="button"
+      className={`home-v2-member home-v2-member--${tone}`}
+      onClick={onPick}
+    >
+      <span className="home-v2-member-avatar-wrap">
+        <span className={`home-v2-member-avatar ${avatarToneClass(gender)}`}>
+          {avatarEmoji(gender, member.roleCode)}
+        </span>
+        <i className="home-v2-member-badge" aria-hidden>
+          {isChild ? (gender === 'girl' ? '👧' : gender === 'boy' ? '👦' : '🧒') : '👤'}
+        </i>
       </span>
-      <span className="home-member-text">
+      <span className="home-v2-member-body">
         <strong>{member.displayName}</strong>
         <em>{meta}</em>
+        <span className="home-v2-member-chip">{statusLabel}</span>
+        {progressPct != null ? (
+          <span className="home-v2-member-bar" aria-hidden>
+            <i style={{ width: `${Math.min(100, Math.max(0, progressPct))}%` }} />
+          </span>
+        ) : null}
       </span>
-      <span className="home-member-chevron" aria-hidden>
+      <span className="home-v2-member-decor" aria-hidden>
+        {decorIcon(tone, isChild)}
+      </span>
+      <span className={`home-v2-member-go home-v2-member-go--${tone}`} aria-hidden>
         ›
       </span>
     </button>
@@ -93,11 +158,8 @@ export function WhoAreYouPage() {
 
   const [members, setMembers] = useState<FamilyMembership[]>([]);
   const [sub, setSub] = useState<FamilySubscription | null>(null);
-  const [pendingChildTasks, setPendingChildTasks] = useState(0);
-  const [starsToday, setStarsToday] = useState(0);
-  const [doneToday, setDoneToday] = useState(0);
-  const [totalToday, setTotalToday] = useState(0);
-  const [movieNightLabel, setMovieNightLabel] = useState<string | null>(null);
+  const [day, setDay] = useState<DayFlow | null>(null);
+  const [unlock, setUnlock] = useState<TeamUnlock | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pinOpen, setPinOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -116,47 +178,16 @@ export function WhoAreYouPage() {
       ensureDayFlow(familyId).catch(() => null),
       fetchTeamUnlocks(familyId).catch(() => []),
     ])
-      .then(([families, subscription, day, unlocks]) => {
+      .then(([families, subscription, dayFlow, unlocks]) => {
         if (cancelled) return;
         const family = families.find((f) => f.id === familyId) ?? families[0];
-        const list = family?.members ?? [];
-        setMembers(list);
+        setMembers(family?.members ?? []);
         setSub(subscription);
-
-        if (day) {
-          const childIds = new Set(
-            list.filter((m) => m.roleCode === 'child').map((m) => m.id),
-          );
-          const childOpen = day.commitments.filter(
-            (c) =>
-              c.status !== 'done' &&
-              c.status !== 'skipped' &&
-              (!c.memberId || childIds.has(c.memberId)),
-          );
-          setPendingChildTasks(childOpen.length);
-          setDoneToday(day.doneCount);
-          setTotalToday(day.totalCommitments);
-          const stars = childOpen.reduce(
-            (sum, c) => sum + Math.max(0, Number(c.projectedStarDelta ?? c.starReward ?? 0)),
-            0,
-          );
-          setStarsToday(stars);
-        } else {
-          setPendingChildTasks(0);
-          setDoneToday(0);
-          setTotalToday(0);
-          setStarsToday(0);
-        }
-
-        const unlock = unlocks.find((u) =>
+        setDay(dayFlow);
+        const active = unlocks.find((u) =>
           ['pending_confirm', 'confirmed'].includes(String(u.status ?? '').toLowerCase()),
         );
-        if (unlock) {
-          const st = String(unlock.status).toLowerCase();
-          setMovieNightLabel(st === 'confirmed' ? 'đã mở' : 'chờ duyệt');
-        } else {
-          setMovieNightLabel(null);
-        }
+        setUnlock(active ?? null);
       })
       .catch(() => {
         if (!cancelled) setError('Không tải được danh sách thành viên');
@@ -174,20 +205,37 @@ export function WhoAreYouPage() {
     () => members.filter((m) => m.roleCode !== 'child'),
     [members],
   );
+  const childIds = useMemo(
+    () => new Set(children.map((c) => c.id)),
+    [children],
+  );
+
+  const pendingOpen = useMemo(() => {
+    if (!day) return 0;
+    return day.commitments.filter(
+      (c) =>
+        c.status !== 'done' &&
+        c.status !== 'skipped' &&
+        (!c.memberId || childIds.has(c.memberId)),
+    ).length;
+  }, [day, childIds]);
+
+  const attentionForParents = useMemo(
+    () => parentAttentionCount(day, childIds),
+    [day, childIds],
+  );
+
+  const aiLine =
+    pendingOpen > 0
+      ? `Gia đình mình ơi! Hôm nay có ${pendingOpen} nhiệm vụ đang chờ hoàn thành nhé!`
+      : day && day.totalCommitments > 0
+        ? 'Gia đình mình ơi! Hôm nay nhịp đang ổn — chạm tên để xem lịch ngày.'
+        : 'Gia đình mình ơi! Chạm tên để mở lịch ngày — bố/mẹ quản trị, con làm việc.';
 
   const trialDaysLeft =
     sub?.trialDaysRemaining ?? daysUntil(sub?.trialEndsAt) ?? null;
-  const trialDaysTotal =
-    sub?.trialDaysTotal && sub.trialDaysTotal > 0
-      ? sub.trialDaysTotal
-      : TRIAL_TOTAL_FALLBACK;
   const isTrial = sub?.status === 'trial';
-  const trialProgress =
-    isTrial && trialDaysLeft != null
-      ? trialFillRatio(trialDaysLeft, trialDaysTotal)
-      : 0;
-  const showBilling =
-    !sub || isTrial || !sub.isEntitled;
+  const showBilling = !sub || isTrial || !sub.isEntitled;
 
   const pick = async (picked: FamilyMembership) => {
     setMember(picked);
@@ -216,38 +264,36 @@ export function WhoAreYouPage() {
 
   const goAdmin = () => navigate('/family-admin');
 
+  const unlockStatusVi =
+    unlock == null
+      ? null
+      : String(unlock.status).toLowerCase() === 'confirmed'
+        ? 'đã mở'
+        : 'chờ duyệt';
+
   return (
-    <div className="home-screen">
-      <header className="home-topbar">
-        <div className="home-topbar-left">
+    <div className="home-screen home-screen--v2">
+      <header className="home-v2-brand">
+        <div className="home-v2-brand-left">
           <img
-            className="home-foxy"
+            className="home-v2-logo"
             src="/home/foxy-avatar.png"
             alt=""
-            width={44}
-            height={44}
+            width={40}
+            height={40}
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = 'none';
             }}
           />
           <div>
-            <p className="home-hello">Xin chào</p>
-            <button
-              type="button"
-              className="home-family-name"
-              onClick={() => setMoreOpen(true)}
-              aria-label="Tuỳ chọn gia đình"
-            >
-              {familyName ?? 'Gia đình mình'}
-              <span aria-hidden>▾</span>
-            </button>
+            <p className="home-v2-brand-name">Famixa</p>
+            <p className="home-v2-brand-sub">AI Family OS</p>
           </div>
         </div>
         <button
           type="button"
-          className="home-admin-btn"
+          className="home-v2-settings"
           aria-label="Quản trị gia đình"
-          title="Quản trị gia đình"
           onClick={goAdmin}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -263,22 +309,37 @@ export function WhoAreYouPage() {
               strokeLinejoin="round"
             />
           </svg>
-          {pendingChildTasks > 0 ? <span className="home-bell-dot" aria-hidden /> : null}
+          {attentionForParents > 0 ? <span className="home-bell-dot" aria-hidden /> : null}
         </button>
       </header>
 
-      {/* Primary job: pick who is using the app today */}
-      <section className="home-who" id="home-who">
-        <div className="home-who-head">
-          <div>
-            <h1>Ai đang dùng hôm nay?</h1>
-            <p>Chạm tên để mở lịch ngày — bố/mẹ quản trị, con làm việc.</p>
-          </div>
-          <button type="button" className="home-manage-btn" onClick={goAdmin}>
-            Quản lý
-          </button>
-        </div>
+      <div className="home-v2-hello">
+        <p className="home-v2-hello-line">Xin chào! 👋</p>
+        <button
+          type="button"
+          className="home-v2-family-pill"
+          onClick={() => setMoreOpen(true)}
+          aria-label="Tuỳ chọn gia đình"
+        >
+          {familyName ?? 'Gia đình mình'}
+          <span aria-hidden>▾</span>
+        </button>
+      </div>
 
+      <section className="home-v2-ai" aria-label="Famixa AI">
+        <div className="home-v2-ai-mascot" aria-hidden>
+          <span>🤖</span>
+        </div>
+        <div className="home-v2-ai-copy">
+          <p>{aiLine}</p>
+        </div>
+        <button type="button" className="home-v2-ai-manage" onClick={goAdmin}>
+          <span aria-hidden>👤</span>
+          Quản lý
+        </button>
+      </section>
+
+      <section className="home-v2-who" id="home-who" aria-label="Ai đang dùng">
         {error ? <div className="banner-error">{error}</div> : null}
 
         {children.length === 0 && adults.length === 0 ? (
@@ -290,90 +351,103 @@ export function WhoAreYouPage() {
           </div>
         ) : null}
 
-        {children.length > 0 ? (
-          <>
-            <div className="home-group-label">Các con</div>
-            <div className="home-member-grid">
-              {children.map((member) => (
-                <MemberCard key={member.id} member={member} onPick={() => void pick(member)} />
-              ))}
-            </div>
-          </>
-        ) : null}
-
-        {adults.length > 0 ? (
-          <>
-            <div className="home-group-label">Bố mẹ / người lớn</div>
-            <div className="home-member-grid">
-              {adults.map((member) => (
-                <MemberCard key={member.id} member={member} onPick={() => void pick(member)} />
-              ))}
-            </div>
-          </>
-        ) : null}
-      </section>
-
-      {/* Live glance — one scope, plain labels */}
-      <section className="home-today" aria-label="Tóm tắt hôm nay">
-        <div className="home-today-title">
-          <h2>Hôm nay</h2>
-        </div>
-        <div className="home-today-stats home-today-stats-grid">
-          <div>
-            <strong>{pendingChildTasks}</strong>
-            <span>việc con còn lại</span>
-          </div>
-          <div>
-            <strong>{doneToday}/{Math.max(totalToday, 0)}</strong>
-            <span>cả nhà đã xong</span>
-          </div>
-          <div>
-            <strong>{starsToday}</strong>
-            <span>sao còn có thể nhận</span>
-          </div>
-          {movieNightLabel ? (
-            <div className="is-wide">
-              <strong>Movie Night</strong>
-              <span>{movieNightLabel}</span>
-            </div>
-          ) : null}
+        <div className="home-v2-member-list">
+          {children.map((member) => {
+            const stats = countForMember(day?.commitments ?? [], member.id);
+            return (
+              <MemberPickCard
+                key={member.id}
+                member={member}
+                statusLabel={
+                  stats.total > 0
+                    ? `${stats.total} việc hôm nay`
+                    : 'Chưa có việc hôm nay'
+                }
+                progressPct={stats.total > 0 ? stats.pct : null}
+                onPick={() => void pick(member)}
+              />
+            );
+          })}
+          {adults.map((member) => (
+            <MemberPickCard
+              key={member.id}
+              member={member}
+              statusLabel={
+                attentionForParents > 0
+                  ? `${attentionForParents} việc cần xử lý`
+                  : 'Sẵn sàng đồng hành'
+              }
+              progressPct={null}
+              onPick={() => void pick(member)}
+            />
+          ))}
         </div>
       </section>
 
-      {/* Billing only when trial / expired — not a second hero */}
+      {unlock ? (
+        <section className="home-v2-challenge" aria-label="Family Challenge">
+          <div className="home-v2-challenge-copy">
+            <p className="home-v2-challenge-kicker">Family Challenge</p>
+            <h2>
+              {unlock.labelVi || 'Movie Night'} <span aria-hidden>🍿</span>
+            </h2>
+            <p>
+              {unlock.teamDone}/{Math.max(unlock.teamTotal, 1)} thành viên ·{' '}
+              {unlockStatusVi}
+            </p>
+            <div className="home-v2-challenge-bar" aria-hidden>
+              <i
+                style={{
+                  width: `${Math.min(100, Math.max(0, unlock.teamPercent))}%`,
+                }}
+              />
+            </div>
+          </div>
+          <span className="home-v2-challenge-art" aria-hidden>
+            🍿
+          </span>
+          <button
+            type="button"
+            className="home-v2-challenge-go"
+            aria-label="Mở phần thưởng"
+            onClick={() => {
+              const parent = adults[0];
+              if (parent) void pick(parent);
+              else goAdmin();
+            }}
+          >
+            ›
+          </button>
+        </section>
+      ) : null}
+
       {showBilling ? (
-        <section className="home-billing" aria-label="Gói Family OS">
-          <div className="home-billing-copy">
-            <p className="home-billing-kicker">
+        <section className="home-v2-trial" aria-label="Gói Family OS">
+          <div className="home-v2-trial-cal" aria-hidden>
+            <strong>{isTrial && trialDaysLeft != null ? trialDaysLeft : '✦'}</strong>
+            <span>ngày</span>
+          </div>
+          <div className="home-v2-trial-copy">
+            <p>
               {isTrial && trialDaysLeft != null
                 ? `Dùng thử · còn ${trialDaysLeft} ngày`
                 : sub && !sub.isEntitled
                   ? 'Gói đã hết hạn'
                   : 'Gói Family OS'}
             </p>
-            <p className="home-billing-note">
+            <em>
               {sub && !sub.isEntitled
                 ? sub.upgradeHintVi ||
-                  'Free giữ routine cơ bản. Nâng Family Peace Plan để mở Coach, ROP và Letter.'
+                  'Nâng Family Peace Plan để mở Coach, ROP và Letter.'
                 : isTrial
-                  ? 'Trial đang mở tầng Pro — giữ Peace Plan trước khi hết hạn.'
+                  ? 'Nâng cấp Pro để mở khóa toàn bộ tính năng.'
                   : 'Cả nhà cùng thói quen — nâng cấp khi sẵn sàng.'}
-            </p>
-            {isTrial && trialDaysLeft != null ? (
-              <div
-                className="home-trial-bar home-billing-bar"
-                role="progressbar"
-                aria-valuenow={trialDaysLeft}
-                aria-valuemin={0}
-                aria-valuemax={trialDaysTotal}
-              >
-                <span style={{ width: `${Math.round(trialProgress * 100)}%` }} />
-              </div>
-            ) : null}
+            </em>
           </div>
-          <button type="button" className="home-billing-cta" onClick={goCheckout}>
+          <button type="button" className="home-v2-trial-cta" onClick={goCheckout}>
+            <span aria-hidden>👑</span>
             {sub && !sub.isEntitled
-              ? 'Family Peace Plan · 199k'
+              ? 'Peace Plan'
               : isTrial
                 ? 'Giữ Peace Plan'
                 : 'Nâng cấp'}
@@ -381,31 +455,24 @@ export function WhoAreYouPage() {
         </section>
       ) : null}
 
-      <nav className="home-tabbar" aria-label="Điều hướng chính">
-        <button type="button" className="is-active">
-          <span aria-hidden>🏠</span>
-          Trang chủ
+      <nav className="home-v2-quick" aria-label="Thao tác nhanh">
+        <button type="button" onClick={goAdmin}>
+          <i className="is-green" aria-hidden>
+            +
+          </i>
+          Thêm thành viên
         </button>
-        <button
-          type="button"
-          onClick={() =>
-            document.getElementById('home-who')?.scrollIntoView({ behavior: 'smooth' })
-          }
-        >
-          <span aria-hidden>👤</span>
-          Thành viên
+        <button type="button" onClick={goAdmin}>
+          <i className="is-blue" aria-hidden>
+            👥
+          </i>
+          Mời tham gia
         </button>
-        <button
-          type="button"
-          className="home-tab-fab"
-          aria-label="Quản trị gia đình"
-          onClick={goAdmin}
-        >
-          +
-        </button>
-        <button type="button" onClick={() => setMoreOpen(true)}>
-          <span aria-hidden>▦</span>
-          Thêm
+        <button type="button" onClick={goCheckout}>
+          <i className="is-orange" aria-hidden>
+            🎁
+          </i>
+          Ưu đãi Famixa
         </button>
       </nav>
 
