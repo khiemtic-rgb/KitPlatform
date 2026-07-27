@@ -1,0 +1,26 @@
+---
+description: Family OS đang PARK — không tiếp tục epic/deploy trừ khi user mở lại
+alwaysApply: true
+---
+
+# Family OS — PARKED (2026-07-27)
+
+**Trạng thái:** PARK — tạm dừng epic / pilot deploy Family OS trong lúc chờ phản hồi thẩm định Pharmacy (`DEMO_PHARMACY`).
+
+## Không làm (trừ khi user nói “unpark / tiếp Family OS”)
+
+- Không mở epic lớn Family OS, không deploy `family.kittech.vn` / `apply-family-os-pilot`, không chạy hàng loạt mig `pack_family` trên VPS.
+- Không gộp commit Family OS + Pharmacy auth trong một PR.
+- Không “dọn” / refactor `client/family-app`, `src/Packs/FamilyOS`, Admin `/family-os` chỉ vì rảnh.
+
+## Vẫn được phép
+
+- Hotfix prod đã báo lỗi (có ticket / user chỉ rõ).
+- Đọc docs / trả lời câu hỏi về Family OS.
+- Giữ SoT = `origin/main`; mig vẫn qua `migration-files.family-os.txt` khi được unpark.
+
+## Bối cảnh song song
+
+- Pharmacy audit freeze: `.cursor/rules/pharmacy-demo-audit-freeze.mdc`
+- Runbook Family OS: `docs/novixa/03-operations/family-os-sync-runbook-v1.md` (§0 PARK)
+- Unpark: user bảo rõ → xóa/đổi rule này + cập nhật §0 runbook sang ACTIVE

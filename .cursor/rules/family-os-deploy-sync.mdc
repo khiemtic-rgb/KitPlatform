@@ -17,6 +17,7 @@ Khi sửa Family OS pack, `family-app`, Admin modules `/family-os`, hoặc scrip
 ## Nguyên tắc
 
 - **SoT = `origin/main`**, không phải VPS.
+- **PARK (2026-07-27):** xem `.cursor/rules/family-os-parked.mdc` — không epic/deploy pilot mới trừ khi user unpark.
 - Mig Family OS qua **`deploy/ubuntu/migration-files.family-os.txt`** — **không** gộp vào `migration-files.prod.txt` trừ khi được duyệt off-hours.
 - Commit + push **trước** deploy pilot; không deploy working tree dirty.
 - Windows → VPS: manifest có thể CRLF — runner phải strip `\r` (`b76f547`).

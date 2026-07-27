@@ -3,6 +3,19 @@
 **Mã:** NVX-OPS-FAMILY-SYNC-01 · **Ngày:** 2026-07-24  
 **Liên quan:** [pharmacy-rbac-deploy-sync-runbook-v1.md](./pharmacy-rbac-deploy-sync-runbook-v1.md) · [pharmacy-pos-customer-incidents-v1.md](./pharmacy-pos-customer-incidents-v1.md) · `.cursor/rules/family-os-deploy-sync.mdc`
 
+### §0. Trạng thái epic — PARKED (2026-07-27)
+
+| | |
+|---|---|
+| **Status** | **PARK** — tạm dừng phát triển / pilot deploy |
+| **Lý do** | Chờ phản hồi thẩm định Pharmacy (`DEMO_PHARMACY`); tránh đụng auth/layout chung và regression RBAC |
+| **Rule Cursor** | `.cursor/rules/family-os-parked.mdc` |
+| **Unpark** | User yêu cầu rõ “tiếp Family OS / unpark” → đổi status §0 + gỡ/ cập nhật rule parked |
+
+Pilot đã ship trước đó vẫn giữ trên VPS (`family.kittech.vn`); **không** coi PARK là gỡ prod — chỉ dừng epic mới.
+
+---
+
 Tài liệu ghi lại epic Family OS (chiều–tối 2026-07-24): tính năng, migration, deploy pilot, bug đã sửa, và checklist tránh **mất đồng bộ** giữa máy local, `origin/main`, và VPS.
 
 **Nguồn chuẩn (SoT):** `origin/main` — **không** phải VPS, **không** phải working tree chưa commit.
