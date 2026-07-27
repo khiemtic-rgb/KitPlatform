@@ -57,7 +57,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         EnsureDayFlowRequest request,
         CancellationToken cancellationToken = default)
     {
-        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
 
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
@@ -107,7 +107,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         UpdateCommitmentProgressRequest request,
         CancellationToken cancellationToken = default)
     {
-        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
 
         var status = (request.Status ?? "").Trim().ToLowerInvariant();
         if (!FamilyCommitmentStatuses.All.Contains(status))
@@ -316,7 +316,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         Guid commitmentId,
         CancellationToken cancellationToken = default)
     {
-        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
 
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
@@ -369,7 +369,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         AddAdHocCommitmentRequest request,
         CancellationToken cancellationToken = default)
     {
-        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
 
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");

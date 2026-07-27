@@ -2,8 +2,15 @@ namespace KitPlatform.Packs.FamilyOs;
 
 public static class FamilyBillingPlans
 {
-    public const string StarterMonth = "starter_month";
+    /// <summary>Legacy alias — Plus 99k.</summary>
+    public const string StarterMonth = FamilyPlanCodes.StarterMonth;
+    public const string PlusMonth = FamilyPlanCodes.PlusMonth;
+    public const string FamilyProMonth = FamilyPlanCodes.FamilyProMonth;
+    public const string FamilyAiPlusMonth = FamilyPlanCodes.FamilyAiPlusMonth;
     public const int DefaultStarterMonthAmountVnd = 99_000;
+    public const int DefaultPlusMonthAmountVnd = 99_000;
+    public const int DefaultFamilyProMonthAmountVnd = 199_000;
+    public const int DefaultFamilyAiPlusMonthAmountVnd = 399_000;
 }
 
 public static class FamilyBillingCheckoutStatuses

@@ -292,6 +292,13 @@ export interface FamilySubscription {
   isEntitled: boolean;
   trialDaysRemaining?: number;
   trialDaysTotal?: number;
+  tierCode?: string;
+  displayNameVi?: string;
+  outcomeNameVi?: string;
+  maxChildren?: number | null;
+  capabilities?: string[];
+  recommendedUpgradePlanCode?: string;
+  upgradeHintVi?: string;
 }
 
 export interface FamilyCheckout {
@@ -312,6 +319,7 @@ export interface FamilyCheckout {
 function mapSubscription(r: Row): FamilySubscription {
   const remainingRaw = r.trialDaysRemaining ?? r.TrialDaysRemaining;
   const totalRaw = r.trialDaysTotal ?? r.TrialDaysTotal;
+  const maxChildrenRaw = r.maxChildren ?? r.MaxChildren;
   return {
     familyId: String(r.familyId ?? r.FamilyId ?? ''),
     planCode: String(r.planCode ?? r.PlanCode ?? ''),
@@ -331,6 +339,33 @@ function mapSubscription(r: Row): FamilySubscription {
         : undefined,
     trialDaysTotal:
       totalRaw != null && totalRaw !== '' ? Number(totalRaw) : undefined,
+    tierCode:
+      r.tierCode != null || r.TierCode != null
+        ? String(r.tierCode ?? r.TierCode)
+        : undefined,
+    displayNameVi:
+      r.displayNameVi != null || r.DisplayNameVi != null
+        ? String(r.displayNameVi ?? r.DisplayNameVi)
+        : undefined,
+    outcomeNameVi:
+      r.outcomeNameVi != null || r.OutcomeNameVi != null
+        ? String(r.outcomeNameVi ?? r.OutcomeNameVi)
+        : undefined,
+    maxChildren:
+      maxChildrenRaw === null
+        ? null
+        : maxChildrenRaw != null && maxChildrenRaw !== ''
+          ? Number(maxChildrenRaw)
+          : undefined,
+    capabilities: asArray(r.capabilities ?? r.Capabilities).map((x) => String(x)),
+    recommendedUpgradePlanCode:
+      r.recommendedUpgradePlanCode != null || r.RecommendedUpgradePlanCode != null
+        ? String(r.recommendedUpgradePlanCode ?? r.RecommendedUpgradePlanCode)
+        : undefined,
+    upgradeHintVi:
+      r.upgradeHintVi != null || r.UpgradeHintVi != null
+        ? String(r.upgradeHintVi ?? r.UpgradeHintVi)
+        : undefined,
   };
 }
 

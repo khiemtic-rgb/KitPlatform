@@ -66,7 +66,14 @@ public sealed record FamilySubscriptionDto(
     /// <summary>Days left in trial (0 when expired / not trial).</summary>
     int? TrialDaysRemaining = null,
     /// <summary>Configured trial length used for progress bar (remaining / total).</summary>
-    int? TrialDaysTotal = null);
+    int? TrialDaysTotal = null,
+    string? TierCode = null,
+    string? DisplayNameVi = null,
+    string? OutcomeNameVi = null,
+    int? MaxChildren = null,
+    IReadOnlyList<string>? Capabilities = null,
+    string? RecommendedUpgradePlanCode = null,
+    string? UpgradeHintVi = null);
 
 /// <summary>Ops-only: extend a family's trial by N days (Admin → Billing).</summary>
 public sealed record ExtendFamilyTrialRequest(int ExtraDays);
@@ -103,7 +110,21 @@ public interface IFamilyCommercialService
         Guid familyId,
         CancellationToken cancellationToken = default);
 
+    Task<FamilyCapabilityPackDto> GetCapabilityPackAsync(
+        Guid familyId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Paid/trial still required for some write paths; prefer EnsureCapabilityAsync.</summary>
     Task EnsureEntitledAsync(
+        Guid familyId,
+        CancellationToken cancellationToken = default);
+
+    Task EnsureCapabilityAsync(
+        Guid familyId,
+        string capabilityCode,
+        CancellationToken cancellationToken = default);
+
+    Task EnsureCanAddChildAsync(
         Guid familyId,
         CancellationToken cancellationToken = default);
 

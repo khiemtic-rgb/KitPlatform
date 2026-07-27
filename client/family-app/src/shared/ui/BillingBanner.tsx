@@ -7,9 +7,14 @@ const TRIAL_WARN_DAYS = 7;
 
 function daysUntil(iso?: string): number | null {
   if (!iso) return null;
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return null;
+  const t = DateParseSafe(iso);
+  if (t == null) return null;
   return Math.ceil((t - Date.now()) / (24 * 60 * 60 * 1000));
+}
+
+function DateParseSafe(iso: string): number | null {
+  const t = Date.parse(iso);
+  return Number.isNaN(t) ? null : t;
 }
 
 export function BillingBanner({ familyId }: { familyId: string }) {
@@ -34,7 +39,8 @@ export function BillingBanner({ familyId }: { familyId: string }) {
 
   const trialDays = daysUntil(sub.trialEndsAt);
   const periodDays = daysUntil(sub.currentPeriodEnd);
-  const showExpired = !sub.isEntitled;
+  const tier = sub.tierCode ?? 'free';
+  const showFree = tier === 'free' || !sub.isEntitled;
   const showTrialEnding =
     sub.isEntitled &&
     sub.status === 'trial' &&
@@ -46,24 +52,32 @@ export function BillingBanner({ familyId }: { familyId: string }) {
     periodDays != null &&
     periodDays <= TRIAL_WARN_DAYS;
 
-  const message = showExpired
-    ? 'Gói Family OS đã hết hạn — gia hạn để mở lại Daily Flow.'
+  const planLabel = sub.outcomeNameVi || sub.displayNameVi || 'Famixa';
+  const upgradePlan =
+    sub.recommendedUpgradePlanCode ||
+    (tier === 'plus' ? 'family_pro_month' : 'family_pro_month');
+
+  const message = showFree
+    ? sub.upgradeHintVi ||
+      'Free: routine cơ bản. Nâng Family Peace Plan để mở Coach, ROP và Letter.'
     : sub.status === 'trial'
       ? trialDays != null
-        ? `Đang dùng thử — còn khoảng ${trialDays} ngày.`
-        : 'Đang dùng thử Family OS.'
+        ? `Dùng thử ${planLabel} — còn khoảng ${trialDays} ngày (trải nghiệm tầng Pro).`
+        : `Đang dùng thử ${planLabel}.`
       : periodDays != null
-        ? `Gói Starter đang hoạt động — còn khoảng ${periodDays} ngày.`
-        : 'Gói Starter đang hoạt động.';
-  const title = showExpired
-    ? 'Cần gia hạn'
+        ? `${planLabel} đang hoạt động — còn khoảng ${periodDays} ngày.`
+        : `${planLabel} đang hoạt động.`;
+
+  const title = showFree
+    ? 'Gói Free'
     : showTrialEnding || showPeriodEnding
       ? 'Sắp hết hạn'
-      : 'Gói Family OS';
+      : planLabel;
+
   const actionLabel =
-    sub.status === 'trial' && sub.isEntitled
-      ? 'Nâng cấp 99.000₫ / tháng'
-      : 'Gia hạn 99.000₫ / tháng';
+    tier === 'pro' || tier === 'ai_plus'
+      ? 'Xem gói / gia hạn'
+      : 'Nâng Family Peace Plan · 199.000đ';
 
   const goCheckout = () => {
     navigate(
@@ -71,22 +85,19 @@ export function BillingBanner({ familyId }: { familyId: string }) {
         productCode: 'family_os',
         subjectType: 'family',
         subjectId: familyId,
-        planCode: 'starter_month',
+        planCode: upgradePlan,
         returnPath: '/who',
       }),
     );
   };
 
   return (
-    <div className="banner-now" style={{ animation: 'none' }}>
-      <strong>{title}</strong>
-      <span style={{ fontWeight: 600 }}>{message}</span>
-      <button
-        type="button"
-        className="btn btn-primary"
-        onClick={goCheckout}
-        style={{ alignSelf: 'flex-start', marginTop: 4 }}
-      >
+    <div className={`billing-banner${showFree || showTrialEnding || showPeriodEnding ? ' is-warn' : ''}`}>
+      <div>
+        <strong>{title}</strong>
+        <p>{message}</p>
+      </div>
+      <button type="button" className="pill" onClick={goCheckout}>
         {actionLabel}
       </button>
     </div>

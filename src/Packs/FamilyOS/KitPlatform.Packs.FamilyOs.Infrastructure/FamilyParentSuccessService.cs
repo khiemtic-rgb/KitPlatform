@@ -10,13 +10,16 @@ internal sealed class FamilyParentSuccessService : IFamilyParentSuccessService
 
     private readonly FamilyParentSuccessRepository _repo;
     private readonly FamilyGraphRepository _families;
+    private readonly IFamilyCommercialService _commercial;
 
     public FamilyParentSuccessService(
         FamilyParentSuccessRepository repo,
-        FamilyGraphRepository families)
+        FamilyGraphRepository families,
+        IFamilyCommercialService commercial)
     {
         _repo = repo;
         _families = families;
+        _commercial = commercial;
     }
 
     public async Task<ParentSuccessRopDto> GetRopAsync(
@@ -25,6 +28,8 @@ internal sealed class FamilyParentSuccessService : IFamilyParentSuccessService
         DateOnly? asOf = null,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.GrowthReport, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 
@@ -204,6 +209,8 @@ internal sealed class FamilyParentSuccessService : IFamilyParentSuccessService
         DateOnly? flowDate = null,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.ParentSuccessCheckin, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
         await EnsureGuardianAsync(familyId, memberId, cancellationToken);
@@ -219,6 +226,8 @@ internal sealed class FamilyParentSuccessService : IFamilyParentSuccessService
         UpsertParentSuccessCheckinRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.ParentSuccessCheckin, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
         await EnsureGuardianAsync(familyId, request.MemberId, cancellationToken);
@@ -245,6 +254,8 @@ internal sealed class FamilyParentSuccessService : IFamilyParentSuccessService
         DateOnly? asOf = null,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.ParentSuccessCheckin, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 
@@ -322,6 +333,8 @@ internal sealed class FamilyParentSuccessService : IFamilyParentSuccessService
         ParentCoachActedRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.ParentingCoach, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
         await EnsureGuardianAsync(familyId, request.MemberId, cancellationToken);
@@ -383,6 +396,8 @@ internal sealed class FamilyParentSuccessService : IFamilyParentSuccessService
         DateOnly? flowDate = null,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.ParentingCoach, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
         await EnsureGuardianAsync(familyId, memberId, cancellationToken);

@@ -15,6 +15,7 @@ internal sealed class FamilyAiProposalService : IFamilyAiProposalService
     private readonly IFamilyRoutineService _routines;
     private readonly IFamilyOsParentPushService _parentPush;
     private readonly KitPlatform.Application.Abstractions.ITenantContext _tenant;
+    private readonly IFamilyCommercialService _commercial;
 
     public FamilyAiProposalService(
         FamilyAiProposalRepository repo,
@@ -26,7 +27,8 @@ internal sealed class FamilyAiProposalService : IFamilyAiProposalService
         IFamilyCalendarPeriodService periods,
         IFamilyRoutineService routines,
         IFamilyOsParentPushService parentPush,
-        KitPlatform.Application.Abstractions.ITenantContext tenant)
+        KitPlatform.Application.Abstractions.ITenantContext tenant,
+        IFamilyCommercialService commercial)
     {
         _repo = repo;
         _families = families;
@@ -38,6 +40,7 @@ internal sealed class FamilyAiProposalService : IFamilyAiProposalService
         _routines = routines;
         _parentPush = parentPush;
         _tenant = tenant;
+        _commercial = commercial;
     }
 
     public async Task<IReadOnlyList<FamilyAiProposalDto>> ListPendingAsync(
@@ -103,6 +106,8 @@ internal sealed class FamilyAiProposalService : IFamilyAiProposalService
         Guid familyId,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.AiSuggest, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 

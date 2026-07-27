@@ -256,7 +256,7 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
         DateOnly? flowDate = null,
         CancellationToken cancellationToken = default)
     {
-        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.BehaviorCoach, cancellationToken);
 
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
@@ -337,7 +337,7 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
         Guid? memberId = null,
         CancellationToken cancellationToken = default)
     {
-        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.BehaviorTwin, cancellationToken);
 
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
@@ -471,7 +471,7 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
         Guid familyId,
         CancellationToken cancellationToken = default)
     {
-        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.BehaviorTwin, cancellationToken);
 
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
@@ -598,7 +598,7 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
         Guid familyId,
         CancellationToken cancellationToken = default)
     {
-        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.BehaviorCoach, cancellationToken);
         if (await _families.GetFamilyAsync(familyId, cancellationToken) is null)
             throw new InvalidOperationException("Không tìm thấy gia đình.");
 
@@ -610,7 +610,7 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
         UpdateBehaviorRetirementPolicyRequest request,
         CancellationToken cancellationToken = default)
     {
-        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.BehaviorCoach, cancellationToken);
         if (await _families.GetFamilyAsync(familyId, cancellationToken) is null)
             throw new InvalidOperationException("Không tìm thấy gia đình.");
 
@@ -688,7 +688,7 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
         SubmitCommitmentReflectionRequest request,
         CancellationToken cancellationToken = default)
     {
-        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.BehaviorCoach, cancellationToken);
 
         if (await _families.GetFamilyAsync(familyId, cancellationToken) is null)
             throw new InvalidOperationException("Không tìm thấy gia đình.");
@@ -769,7 +769,7 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
         SubmitRetrievalCheckRequest request,
         CancellationToken cancellationToken = default)
     {
-        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.BehaviorCoach, cancellationToken);
 
         if (await _families.GetFamilyAsync(familyId, cancellationToken) is null)
             throw new InvalidOperationException("Không tìm thấy gia đình.");

@@ -10,15 +10,18 @@ internal sealed class FamilyMemoryService : IFamilyMemoryService
     private readonly FamilyMemoryRepository _repo;
     private readonly FamilyGraphRepository _families;
     private readonly ITenantContext _tenant;
+    private readonly IFamilyCommercialService _commercial;
 
     public FamilyMemoryService(
         FamilyMemoryRepository repo,
         FamilyGraphRepository families,
-        ITenantContext tenant)
+        ITenantContext tenant,
+        IFamilyCommercialService commercial)
     {
         _repo = repo;
         _families = families;
         _tenant = tenant;
+        _commercial = commercial;
     }
 
     public async Task<IReadOnlyList<FamilyMemoryDto>> ListAsync(
@@ -29,6 +32,8 @@ internal sealed class FamilyMemoryService : IFamilyMemoryService
         int limit = 60,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.Timeline, cancellationToken);
         if (await _families.GetFamilyAsync(familyId, cancellationToken) is null)
             throw new InvalidOperationException("Không tìm thấy gia đình.");
 
@@ -42,6 +47,8 @@ internal sealed class FamilyMemoryService : IFamilyMemoryService
         FamilyMemoryCreateRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.Timeline, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 
@@ -116,6 +123,8 @@ internal sealed class FamilyMemoryService : IFamilyMemoryService
         DateOnly? to = null,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.Timeline, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 

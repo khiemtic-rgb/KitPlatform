@@ -19,15 +19,18 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
     private readonly IFamilyMemoryService _memories;
     private readonly IFamilyParentSuccessService _parentSuccess;
     private readonly FamilyGraphRepository _families;
+    private readonly IFamilyCommercialService _commercial;
 
     public FamilyAiDigestService(
         IFamilyMemoryService memories,
         IFamilyParentSuccessService parentSuccess,
-        FamilyGraphRepository families)
+        FamilyGraphRepository families,
+        IFamilyCommercialService commercial)
     {
         _memories = memories;
         _parentSuccess = parentSuccess;
         _families = families;
+        _commercial = commercial;
     }
 
     public async Task<FamilyAiWinsDigestDto> GetWinsDigestAsync(
@@ -37,6 +40,8 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
         int limit = 10,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.MonthlyLetter, cancellationToken);
         _ = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 
@@ -94,6 +99,8 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
         DateOnly? month = null,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.MonthlyLetter, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 
@@ -177,6 +184,8 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
         DateOnly? month = null,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.FamilyReplay, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 

@@ -208,7 +208,7 @@ export function WhoAreYouPage() {
         productCode: 'family_os',
         subjectType: 'family',
         subjectId: familyId,
-        planCode: 'starter_month',
+        planCode: 'family_pro_month',
         returnPath: '/who',
       }),
     );
