@@ -13917,6 +13917,106 @@ body:has(.app-shell.is-kid) {
   text-align: center;
 }
 
+.home-invite-sheet {
+  padding-bottom: calc(18px + env(safe-area-inset-bottom));
+}
+
+.home-invite-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.home-invite-sheet-head h3 {
+  margin: 0;
+}
+
+.home-invite-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.home-invite-lead {
+  margin: 0 0 14px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #4b5563;
+}
+
+.home-invite-code-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 14px;
+  margin-bottom: 14px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #eef8f2, #f8fffe);
+  border: 1px solid rgba(31, 107, 92, 0.16);
+  text-align: center;
+}
+
+.home-invite-code-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #3d7a66;
+}
+
+.home-invite-code {
+  font-size: 1.85rem;
+  letter-spacing: 0.18em;
+  font-weight: 800;
+  color: #164f44;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-invite-code-box em {
+  font-style: normal;
+  font-size: 0.8rem;
+  color: #5a7268;
+  font-weight: 600;
+}
+
+.home-invite-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-invite-actions .btn {
+  width: 100%;
+}
+
+.home-invite-feedback {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.home-invite-hint {
+  margin: 12px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
 @media (max-width: 380px) {
   .home-v2-ai {
     grid-template-columns: auto 1fr;

@@ -9,6 +9,7 @@ import {
   formatFamilyInviteShare,
   type DayFlow,
   type DayFlowCommitment,
+  type FamilyInvite,
   type FamilyMembership,
   type FamilySubscription,
   type TeamUnlock,
@@ -171,7 +172,9 @@ export function WhoAreYouPage() {
   const [pinOpen, setPinOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [inviteBusy, setInviteBusy] = useState(false);
-  const [inviteToast, setInviteToast] = useState<string | null>(null);
+  const [inviteSheet, setInviteSheet] = useState<FamilyInvite | null>(null);
+  const [inviteFeedback, setInviteFeedback] = useState<string | null>(null);
+  const [inviteErrorToast, setInviteErrorToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (!familyId) return;
@@ -273,51 +276,86 @@ export function WhoAreYouPage() {
 
   const goAdmin = () => navigate('/family-admin');
 
-  const showInviteToast = (msg: string) => {
-    setInviteToast(msg);
-    window.setTimeout(() => setInviteToast(null), 2800);
+  const showInviteError = (msg: string) => {
+    setInviteErrorToast(msg);
+    window.setTimeout(() => setInviteErrorToast(null), 3200);
   };
 
-  const inviteShare = async () => {
+  const inviteShareText = (invite: FamilyInvite) =>
+    formatFamilyInviteShare({
+      code: invite.code,
+      familyName,
+      expiresAt: invite.expiresAt,
+    });
+
+  const formatInviteExpiry = (iso?: string) => {
+    if (!iso) return null;
+    const t = Date.parse(iso);
+    if (Number.isNaN(t)) return null;
+    const d = new Date(t);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${dd}/${mm}/${d.getFullYear()}`;
+  };
+
+  const openInviteSheet = async () => {
     if (!familyId || inviteBusy) return;
     setInviteBusy(true);
+    setInviteFeedback(null);
     try {
       const invite = await createFamilyInvite(familyId, {
         roleCode: 'guardian',
         maxUses: 3,
         validDays: 7,
       });
-      const text = formatFamilyInviteShare({
-        code: invite.code,
-        familyName,
-        expiresAt: invite.expiresAt,
-      });
-      try {
-        const how = await shareOrCopyNudge(text, { preferShare: true });
-        showInviteToast(
-          how === 'shared'
-            ? `Đã mở chia sẻ · mã ${invite.code}`
-            : `Đã copy mã ${invite.code} — dán vào Zalo/Messenger`,
-        );
-      } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') {
-          showInviteToast(`Mã mời: ${invite.code} (chưa gửi)`);
-          return;
-        }
-        showInviteToast(`Mã mời: ${invite.code}`);
-      }
+      setInviteSheet(invite);
     } catch (err: unknown) {
       if (isCapabilityPaywallError(err)) {
-        showInviteToast(
+        showInviteError(
           getApiErrorMessage(err) || 'Gói hiện tại chưa mở mời thành viên — nâng Peace Plan.',
         );
         goCheckout();
         return;
       }
-      showInviteToast(getApiErrorMessage(err) || 'Chưa tạo được mã mời — thử lại nhé.');
+      showInviteError(getApiErrorMessage(err) || 'Chưa tạo được mã mời — thử lại nhé.');
     } finally {
       setInviteBusy(false);
     }
+  };
+
+  const copyInviteCode = async () => {
+    if (!inviteSheet) return;
+    try {
+      await shareOrCopyNudge(inviteSheet.code);
+      setInviteFeedback('Đã sao chép mã — dán vào Zalo / Messenger');
+    } catch {
+      setInviteFeedback('Chưa copy được — chọn mã và copy tay nhé');
+    }
+  };
+
+  const shareInviteSystem = async () => {
+    if (!inviteSheet) return;
+    try {
+      const how = await shareOrCopyNudge(inviteShareText(inviteSheet), { preferShare: true });
+      setInviteFeedback(
+        how === 'shared'
+          ? 'Đã mở chia sẻ — chọn Zalo / Messenger / SMS…'
+          : 'Đã copy nội dung mời — dán vào app chat',
+      );
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setInviteFeedback('Bạn đã đóng cửa sổ chia sẻ');
+        return;
+      }
+      setInviteFeedback('Chưa chia sẻ được — thử Sao chép mã');
+    }
+  };
+
+  const shareInviteSms = () => {
+    if (!inviteSheet) return;
+    const body = encodeURIComponent(inviteShareText(inviteSheet));
+    window.location.href = `sms:?&body=${body}`;
+    setInviteFeedback('Đang mở SMS…');
   };
 
   const unlockStatusVi =
@@ -518,7 +556,7 @@ export function WhoAreYouPage() {
           </i>
           Thêm thành viên
         </button>
-        <button type="button" disabled={inviteBusy} onClick={() => void inviteShare()}>
+        <button type="button" disabled={inviteBusy} onClick={() => void openInviteSheet()}>
           <i className="is-blue" aria-hidden>
             👥
           </i>
@@ -532,9 +570,76 @@ export function WhoAreYouPage() {
         </button>
       </nav>
 
-      {inviteToast ? (
+      {inviteErrorToast ? (
         <div className="home-v2-toast" role="status">
-          {inviteToast}
+          {inviteErrorToast}
+        </div>
+      ) : null}
+
+      {inviteSheet ? (
+        <div
+          className="home-sheet-backdrop"
+          onClick={() => {
+            setInviteSheet(null);
+            setInviteFeedback(null);
+          }}
+        >
+          <div
+            className="home-sheet home-invite-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="home-invite-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="home-invite-sheet-head">
+              <h3 id="home-invite-title">Mời tham gia nhà</h3>
+              <button
+                type="button"
+                className="home-invite-close"
+                aria-label="Đóng"
+                onClick={() => {
+                  setInviteSheet(null);
+                  setInviteFeedback(null);
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <p className="home-invite-lead">
+              Gửi mã cho bố/mẹ khác — họ mở Famixa → <strong>Tham gia bằng mã</strong>.
+            </p>
+            <div className="home-invite-code-box">
+              <span className="home-invite-code-label">Mã mời</span>
+              <strong className="home-invite-code">{inviteSheet.code}</strong>
+              <em>
+                {formatInviteExpiry(inviteSheet.expiresAt)
+                  ? `Hết hạn ${formatInviteExpiry(inviteSheet.expiresAt)}`
+                  : 'Có hiệu lực vài ngày'}
+                {' · '}
+                dùng tối đa {inviteSheet.maxUses} lần
+              </em>
+            </div>
+            <div className="home-invite-actions">
+              <button type="button" className="btn btn-primary" onClick={() => void copyInviteCode()}>
+                Sao chép mã
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => void shareInviteSystem()}>
+                Chia sẻ… (Zalo / Messenger…)
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={shareInviteSms}>
+                Gửi SMS
+              </button>
+            </div>
+            {inviteFeedback ? (
+              <p className="home-invite-feedback" role="status">
+                {inviteFeedback}
+              </p>
+            ) : (
+              <p className="home-invite-hint muted">
+                “Chia sẻ…” mở menu hệ thống — chọn Zalo, Messenger hoặc app chat khác.
+              </p>
+            )}
+          </div>
         </div>
       ) : null}
 
