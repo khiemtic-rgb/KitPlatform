@@ -21,7 +21,32 @@ type Props = {
   onRewardFulfill?: (redemptionId: string) => void | Promise<void>;
   onChanged?: () => void;
   onSeeAll?: () => void;
+  /** Empty inbox → open Family Mode (≤1 phút path). */
+  onOpenMode?: () => void;
 };
+
+function estimateSeconds(count: number): number {
+  if (count <= 0) return 0;
+  if (count === 1) return 3;
+  return Math.min(60, 3 + (count - 1) * 5);
+}
+
+function headlineForCount(count: number): string {
+  if (count <= 0) return 'Không việc cần duyệt — nghỉ ngơi đi.';
+  const sec = estimateSeconds(count);
+  if (count === 1) return `AI cần bạn · 1 việc · khoảng ${sec} giây`;
+  return `AI cần bạn · ${count} việc · khoảng ${sec} giây · mục tiêu ≤1 phút`;
+}
+
+function sortForOneMinute(items: DecisionItem[]): DecisionItem[] {
+  const rank = (item: DecisionItem) => {
+    if (item.recommend === 'approve') return 0;
+    if (item.recommend === 'partial') return 1;
+    if (!item.recommend) return 2;
+    return 3;
+  };
+  return [...items].sort((a, b) => rank(a) - rank(b));
+}
 
 export function DecisionInboxPanel({
   familyId,
@@ -35,6 +60,7 @@ export function DecisionInboxPanel({
   onRewardFulfill,
   onChanged,
   onSeeAll,
+  onOpenMode,
 }: Props) {
   const [inbox, setInbox] = useState<DecisionInbox | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -98,12 +124,7 @@ export function DecisionInboxPanel({
         return {
           items: nextItems,
           totalCount: n,
-          headlineVi:
-            n === 0
-              ? 'Không việc cần duyệt — nghỉ ngơi đi.'
-              : n === 1
-                ? 'AI cần bạn · 1 việc · khoảng 3 giây'
-                : `AI cần bạn · ${n} việc · khoảng 15 giây`,
+          headlineVi: headlineForCount(n),
         };
       });
       reload();
@@ -117,12 +138,29 @@ export function DecisionInboxPanel({
 
   const count = inbox?.totalCount ?? 0;
   const limit = maxItems ?? (variant === 'homeB4' ? 2 : 8);
-  const items = (inbox?.items ?? []).slice(0, limit);
+  const items = sortForOneMinute(inbox?.items ?? []).slice(0, limit);
+  const etaSec = estimateSeconds(count);
   const approveLabel = (item: DecisionItem) =>
     item.kind === 'ai_proposal' ? 'Áp dụng' : 'Đồng ý';
+  const preferApprove = (item: DecisionItem) => item.recommend !== 'reject';
 
   if (variant === 'homeB4') {
-    if (count === 0 && items.length === 0) return null;
+    if (count === 0 && items.length === 0) {
+      if (!onOpenMode) return null;
+      return (
+        <section className="ph-b4-inbox is-empty-afe" aria-label="Decision Inbox">
+          <header className="ph-b4-col-head">
+            <h3>
+              <span aria-hidden>🤖</span> DECISION INBOX
+            </h3>
+          </header>
+          <p className="ph-b4-empty">Không đề xuất cần duyệt · mục tiêu ≤1 phút/ngày.</p>
+          <button type="button" className="ph-b4-see-all" onClick={onOpenMode}>
+            Đổi chế độ nhà (1 chạm) ›
+          </button>
+        </section>
+      );
+    }
     return (
       <section className="ph-b4-inbox" aria-label="Decision Inbox">
         <header className="ph-b4-col-head">
@@ -130,34 +168,63 @@ export function DecisionInboxPanel({
             <span aria-hidden>🤖</span> DECISION INBOX
             {count > 0 ? <i>{Math.min(count, 9)}</i> : null}
           </h3>
+          {count > 0 ? (
+            <em className="ph-b4-inbox-eta">~{etaSec}s · ≤1 phút</em>
+          ) : null}
         </header>
         {items.length === 0 ? (
           <p className="ph-b4-empty">Không đề xuất cần duyệt.</p>
         ) : (
           <ul className="ph-b4-inbox-list">
-            {items.map((item) => (
-              <li key={`${item.kind}-${item.id}`}>
-                <p>{item.titleVi}</p>
-                <div className="ph-b4-inbox-btns">
-                  <button
-                    type="button"
-                    className="is-yes"
-                    disabled={busyId === item.id}
-                    onClick={() => void decide(item, true)}
-                  >
-                    {approveLabel(item)}
-                  </button>
-                  <button
-                    type="button"
-                    className="is-no"
-                    disabled={busyId === item.id}
-                    onClick={() => void decide(item, false)}
-                  >
-                    Bỏ qua
-                  </button>
-                </div>
-              </li>
-            ))}
+            {items.map((item) => {
+              const yesFirst = preferApprove(item);
+              return (
+                <li key={`${item.kind}-${item.id}`}>
+                  <p>{item.titleVi}</p>
+                  <div className="ph-b4-inbox-btns">
+                    {yesFirst ? (
+                      <>
+                        <button
+                          type="button"
+                          className="is-yes"
+                          disabled={busyId === item.id}
+                          onClick={() => void decide(item, true)}
+                        >
+                          {approveLabel(item)}
+                        </button>
+                        <button
+                          type="button"
+                          className="is-no"
+                          disabled={busyId === item.id}
+                          onClick={() => void decide(item, false)}
+                        >
+                          Bỏ qua
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="is-no"
+                          disabled={busyId === item.id}
+                          onClick={() => void decide(item, false)}
+                        >
+                          Bỏ qua
+                        </button>
+                        <button
+                          type="button"
+                          className="is-yes"
+                          disabled={busyId === item.id}
+                          onClick={() => void decide(item, true)}
+                        >
+                          {approveLabel(item)}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
         {onSeeAll ? (
@@ -183,50 +250,90 @@ export function DecisionInboxPanel({
         </h2>
       </header>
       <p className="ph-digest-promise" role="status">
-        {inbox?.headlineVi ?? 'Đang tải…'}
+        {inbox?.headlineVi ?? headlineForCount(count) ?? 'Đang tải…'}
       </p>
+      {count > 0 ? (
+        <p className="ph-afe-eta" role="status">
+          Ước tính ~{etaSec} giây · mục tiêu Famixa ≤1 phút/ngày
+        </p>
+      ) : null}
       {items.length === 0 ? (
-        <p className="ph-empty-soft">Không việc cần duyệt — nghỉ ngơi đi.</p>
+        <div className="ph-empty-afe">
+          <p className="ph-empty-soft">Không việc cần duyệt — nghỉ ngơi đi.</p>
+          {onOpenMode ? (
+            <button type="button" className="pill is-soft" onClick={onOpenMode}>
+              Đổi chế độ nhà (1 chạm)
+            </button>
+          ) : null}
+        </div>
       ) : (
         <ul className="ph-decision-list">
-          {items.map((item) => (
-            <li key={`${item.kind}-${item.id}`} className="ph-decision-card">
-              <div className="ph-decision-card-body">
-                <strong>{item.titleVi}</strong>
-                <p>{item.bodyVi}</p>
-                {item.recommend ? (
-                  <span className={`ph-decision-rec rec-${item.recommend}`}>
-                    AI gợi ý:{' '}
-                    {item.recommend === 'approve'
-                      ? 'Đồng ý'
-                      : item.recommend === 'reject'
-                        ? 'Từ chối'
-                        : 'Một phần'}
-                  </span>
-                ) : null}
-              </div>
-              <div className="ph-decision-actions">
-                <button
-                  type="button"
-                  className="ph-decision-yes"
-                  disabled={busyId === item.id}
-                  onClick={() => void decide(item, true)}
-                  aria-label="Đồng ý"
-                >
-                  👍
-                </button>
-                <button
-                  type="button"
-                  className="ph-decision-no"
-                  disabled={busyId === item.id}
-                  onClick={() => void decide(item, false)}
-                  aria-label="Từ chối"
-                >
-                  👎
-                </button>
-              </div>
-            </li>
-          ))}
+          {items.map((item) => {
+            const yesFirst = preferApprove(item);
+            return (
+              <li key={`${item.kind}-${item.id}`} className="ph-decision-card">
+                <div className="ph-decision-card-body">
+                  <strong>{item.titleVi}</strong>
+                  <p>{item.bodyVi}</p>
+                  {item.recommend ? (
+                    <span className={`ph-decision-rec rec-${item.recommend}`}>
+                      AI gợi ý:{' '}
+                      {item.recommend === 'approve'
+                        ? 'Đồng ý'
+                        : item.recommend === 'reject'
+                          ? 'Từ chối'
+                          : 'Một phần'}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="ph-decision-actions">
+                  {yesFirst ? (
+                    <>
+                      <button
+                        type="button"
+                        className="ph-decision-yes"
+                        disabled={busyId === item.id}
+                        onClick={() => void decide(item, true)}
+                        aria-label="Đồng ý"
+                      >
+                        👍
+                      </button>
+                      <button
+                        type="button"
+                        className="ph-decision-no"
+                        disabled={busyId === item.id}
+                        onClick={() => void decide(item, false)}
+                        aria-label="Từ chối"
+                      >
+                        👎
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="ph-decision-no"
+                        disabled={busyId === item.id}
+                        onClick={() => void decide(item, false)}
+                        aria-label="Từ chối"
+                      >
+                        👎
+                      </button>
+                      <button
+                        type="button"
+                        className="ph-decision-yes"
+                        disabled={busyId === item.id}
+                        onClick={() => void decide(item, true)}
+                        aria-label="Đồng ý"
+                      >
+                        👍
+                      </button>
+                    </>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
       {toast ? (

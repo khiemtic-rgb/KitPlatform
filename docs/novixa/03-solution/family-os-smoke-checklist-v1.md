@@ -40,6 +40,20 @@ Chạy script nhanh: `.\scripts\smoke-family-os-local.ps1`
 
 ---
 
+## D. Payer path (Brief → Coach “Đã thử” → ROP → checkout Pro)
+
+| # | Bước | Kỳ vọng | ☐ |
+|---|------|---------|---|
+| D1 | Parent Home Morning Brief hiện | 1 CTA chính (attention / coach / 3Q) | |
+| D2 | Coach → **Đã thử** | `POST .../parent-success/coach-acted` 200 | |
+| D3 | Báo cáo → ROP | `GET .../parent-success/rop?days=30` 200 hoặc gated Free/Plus | |
+| D4 | Gia hạn / checkout Pro | `POST .../billing/checkout` tạo order hoặc URL | |
+| D5 | Decision Inbox + Family Mode | duyệt ~vài giây; Mode 1 chạm ≤1 phút | |
+
+Chạy kèm: `.\scripts\smoke-family-os-local.ps1` (đã gồm mục D API).
+
+---
+
 ## Không làm trong smoke này
 
 - Deploy VPS / `migration-files.prod.txt`

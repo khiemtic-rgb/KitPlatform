@@ -14429,6 +14429,34 @@ body:has(.app-shell.is-kid) {
   background: #fff;
   color: #64748b;
 }
+.ph-b4-col-head .ph-b4-inbox-eta {
+  margin-left: auto;
+  font-style: normal;
+  font-size: .72rem;
+  font-weight: 700;
+  color: #7c3aed;
+  white-space: nowrap;
+}
+.ph-b4-inbox.is-empty-afe .ph-b4-empty {
+  margin-bottom: 8px;
+}
+.ph-afe-eta {
+  margin: -4px 0 10px;
+  font-size: .78rem;
+  color: #0f766e;
+  font-weight: 650;
+}
+.ph-empty-afe {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.ph-mode-option.is-busy {
+  opacity: .72;
+  border-color: #0f766e;
+}  color: #64748b;
+}
 .ph-b4-see-all {
   display: inline-flex;
   margin-top: 10px;

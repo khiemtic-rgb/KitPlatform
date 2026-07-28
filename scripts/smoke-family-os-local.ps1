@@ -193,6 +193,114 @@ catch {
 }
 
 Write-Host ""
+Write-Host "=== Payer path (Brief → Coach acted → ROP → checkout) ===" -ForegroundColor Cyan
+
+try {
+    $null = Invoke-RestMethod -Uri "$ApiBase/api/family-os/families/$familyId/decision-inbox" -Headers $headers
+    Ok "decision-inbox"
+}
+catch {
+    Bad "decision-inbox: $($_.Exception.Message)"
+}
+
+try {
+    if ($parentId) {
+        $modeBody = @{
+            mode                = "normal"
+            activatedByMemberId = $parentId
+            confirmNow          = $true
+        } | ConvertTo-Json
+        $null = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/family-os/families/$familyId/family-modes/activate" -Headers $headers -ContentType "application/json" -Body $modeBody
+        Ok "family-mode activate"
+    }
+    else {
+        Info "skip family-mode (no parent)"
+    }
+}
+catch {
+    Bad "family-mode: $($_.Exception.Message)"
+}
+
+try {
+    $null = Invoke-RestMethod -Uri "$ApiBase/api/family-os/families/$familyId/behavior/coach" -Headers $headers
+    Ok "behavior/coach"
+}
+catch {
+    Info "behavior/coach skipped: $($_.Exception.Message)"
+}
+
+if ($parentId) {
+    $actedBody = @{
+        memberId = $parentId
+        tipId    = "smoke_tip"
+        slot     = "brief"
+        titleVi  = "Smoke Đã thử"
+    } | ConvertTo-Json
+    try {
+        $null = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/family-os/families/$familyId/parent-success/coach-acted" -Headers $headers -ContentType "application/json" -Body $actedBody
+        Ok "coach-acted"
+    }
+    catch {
+        Bad "coach-acted: $($_.Exception.Message)"
+    }
+}
+
+try {
+    $null = Invoke-RestMethod -Uri "$ApiBase/api/family-os/families/$familyId/parent-success/rop?days=30" -Headers $headers
+    Ok "parent-success/rop"
+}
+catch {
+    $code = $null
+    try { $code = [int]$_.Exception.Response.StatusCode } catch { }
+    if ($code -eq 402 -or $code -eq 403 -or $code -eq 400) {
+        Ok "parent-success/rop gated/validation ($code)"
+    }
+    else {
+        Bad "parent-success/rop: $($_.Exception.Message)"
+    }
+}
+
+try {
+    $sub = Invoke-RestMethod -Uri "$ApiBase/api/family-os/families/$familyId/subscription" -Headers $headers
+    $plan = $sub.planCode
+    if (-not $plan) { $plan = $sub.PlanCode }
+    Ok "subscription plan=$plan"
+}
+catch {
+    Bad "subscription: $($_.Exception.Message)"
+}
+
+if ($parentId) {
+    try {
+        $checkoutBody = @{
+            planCode            = "pro"
+            initiatedByMemberId = $parentId
+        } | ConvertTo-Json
+        $co = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/family-os/families/$familyId/billing/checkout" -Headers $headers -ContentType "application/json" -Body $checkoutBody
+        $url = $co.checkoutUrl
+        if (-not $url) { $url = $co.CheckoutUrl }
+        $order = $co.orderCode
+        if (-not $order) { $order = $co.OrderCode }
+        if ($url -or $order) {
+            Ok "billing/checkout created"
+        }
+        else {
+            Ok "billing/checkout accepted"
+        }
+    }
+    catch {
+        $code = $null
+        try { $code = [int]$_.Exception.Response.StatusCode } catch { }
+        if ($code -eq 400 -or $code -eq 409 -or $code -eq 402) {
+            Ok "billing/checkout reachable ($code)"
+        }
+        else {
+            Bad "billing/checkout: $($_.Exception.Message)"
+        }
+    }
+}
+
+Write-Host ""
 if ($script:FailCount -eq 0) {
     Write-Host "SMOKE OK" -ForegroundColor Green
     Write-Host "Checklist: docs/novixa/03-solution/family-os-smoke-checklist-v1.md"

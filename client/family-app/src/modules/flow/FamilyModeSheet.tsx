@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   activateFamilyMode,
   FAMILY_MODE_OPTIONS,
@@ -22,13 +22,29 @@ export function FamilyModeSheet({
   onActivated,
 }: Props) {
   const [busy, setBusy] = useState(false);
+  const [busyMode, setBusyMode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<FamilyModeResult | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      setError(null);
+      setLastResult(null);
+      setBusyMode(null);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!lastResult) return;
+    const t = window.setTimeout(() => onClose(), 1400);
+    return () => window.clearTimeout(t);
+  }, [lastResult, onClose]);
 
   if (!open) return null;
 
   const activate = async (mode: string) => {
     setBusy(true);
+    setBusyMode(mode);
     setError(null);
     try {
       const result = await activateFamilyMode(familyId, {
@@ -46,6 +62,7 @@ export function FamilyModeSheet({
       setError(msg);
     } finally {
       setBusy(false);
+      setBusyMode(null);
     }
   };
 
@@ -65,19 +82,19 @@ export function FamilyModeSheet({
           </button>
         </header>
         <p className="ph-sheet-lead">
-          Chọn một chế độ — AI đổi Routine theo lịch. Không cần vào Settings.
+          1 chạm đổi nhịp nhà · mục tiêu ≤1 phút. AI chỉnh Routine theo lịch — không cần Settings.
         </p>
         <ul className="ph-mode-list">
           {FAMILY_MODE_OPTIONS.map((opt) => (
             <li key={opt.value}>
               <button
                 type="button"
-                className="ph-mode-option"
+                className={`ph-mode-option${busyMode === opt.value ? ' is-busy' : ''}`}
                 disabled={busy}
                 onClick={() => void activate(opt.value)}
               >
                 <strong>{opt.label}</strong>
-                <span>{opt.hint}</span>
+                <span>{busyMode === opt.value ? 'Đang áp dụng…' : opt.hint}</span>
               </button>
             </li>
           ))}
@@ -97,7 +114,7 @@ export function FamilyModeSheet({
               ) : null}
             </p>
             <p className="fa-hint" style={{ marginBottom: 0 }}>
-              Vào Quản trị gia đình → Xem việc / Chỉnh nhẹ để xem bảng hoặc sửa giờ.
+              Xong — đóng tự động. Cần chỉnh giờ: Quản trị gia đình → Xem việc.
             </p>
           </div>
         ) : null}

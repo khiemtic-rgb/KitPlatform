@@ -1998,6 +1998,7 @@ export function ParentBoardView({
                 onRefreshFlow?.();
               }}
               onSeeAll={() => scrollToMissions('need_help')}
+              onOpenMode={() => setModeSheetOpen(true)}
             />
           </div>
 
