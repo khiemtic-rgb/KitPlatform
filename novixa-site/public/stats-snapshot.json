@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-28T14:40:06.740Z",
+  "generatedAt": "2026-07-28T19:54:40.391Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 349,
-    "todayPageViews": 321,
-    "todayRequests": 987,
-    "last24hVisitors": 370,
-    "last24hPageViews": 602,
-    "last24hRequests": 1329
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 381,
+    "last24hPageViews": 354,
+    "last24hRequests": 1075
   },
   "hourly": [
-    {
-      "time": "2026-07-27T15:00:00Z",
-      "visitors": 9,
-      "requests": 291
-    },
-    {
-      "time": "2026-07-27T16:00:00Z",
-      "visitors": 9,
-      "requests": 13
-    },
-    {
-      "time": "2026-07-27T17:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-07-27T18:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-07-27T19:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
     {
       "time": "2026-07-27T20:00:00Z",
       "visitors": 3,
@@ -128,17 +103,36 @@
     },
     {
       "time": "2026-07-28T14:00:00Z",
-      "visitors": 5,
-      "requests": 5
+      "visitors": 16,
+      "requests": 16
+    },
+    {
+      "time": "2026-07-28T15:00:00Z",
+      "visitors": 10,
+      "requests": 12
+    },
+    {
+      "time": "2026-07-28T16:00:00Z",
+      "visitors": 7,
+      "requests": 11
+    },
+    {
+      "time": "2026-07-28T17:00:00Z",
+      "visitors": 8,
+      "requests": 8
+    },
+    {
+      "time": "2026-07-28T18:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-07-28T19:00:00Z",
+      "visitors": 4,
+      "requests": 16
     }
   ],
   "daily": [
-    {
-      "date": "2026-07-22",
-      "visitors": 257,
-      "pageViews": 284,
-      "requests": 614
-    },
     {
       "date": "2026-07-23",
       "visitors": 206,
@@ -171,9 +165,9 @@
     },
     {
       "date": "2026-07-28",
-      "visitors": 349,
-      "pageViews": 321,
-      "requests": 987
+      "visitors": 376,
+      "pageViews": 348,
+      "requests": 1052
     }
   ],
   "topPages": [
@@ -183,59 +177,59 @@
     },
     {
       "path": "/images/tin-tuc/van-hanh-nha-thuoc.png",
-      "views": 107
+      "views": 110
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 100
+      "views": 96
     },
     {
       "path": "/vi/tin-tuc/recognition-giup-giu-chan-nhan-vien-nha-thuoc-nhu-the-nao/",
-      "views": 77
+      "views": 88
     },
     {
       "path": "/images/tin-tuc/giup-giu-chan-nhan-vien.png",
-      "views": 60
-    },
-    {
-      "path": "/images/tin-tuc/lap-ke-hoach-nha-thuoc.png",
-      "views": 44
+      "views": 64
     },
     {
       "path": "/images/tin-tuc/lo-trinh-l0-l6-cua-novixa-academy.png",
       "views": 41
     },
     {
-      "path": "/images/tin-tuc/sai-lam-khi-dao-tao-nhan-vien-moi.png",
-      "views": 25
+      "path": "/images/tin-tuc/lap-ke-hoach-nha-thuoc.png",
+      "views": 39
     },
     {
       "path": "/robots.txt",
-      "views": 25
+      "views": 28
     },
     {
-      "path": "/v3/.env",
-      "views": 24
-    },
-    {
-      "path": "/.env_copy",
-      "views": 24
-    },
-    {
-      "path": "/queue/.env",
-      "views": 24
-    },
-    {
-      "path": "/release/.env",
-      "views": 24
-    },
-    {
-      "path": "/images/logo.png",
-      "views": 22
+      "path": "/",
+      "views": 26
     },
     {
       "path": "/vi/",
+      "views": 25
+    },
+    {
+      "path": "/images/tin-tuc/sai-lam-khi-dao-tao-nhan-vien-moi.png",
       "views": 22
+    },
+    {
+      "path": "/@fs/root/.env",
+      "views": 21
+    },
+    {
+      "path": "/.env.bak",
+      "views": 21
+    },
+    {
+      "path": "/settings",
+      "views": 21
+    },
+    {
+      "path": "/__/firebase/init.json",
+      "views": 21
     }
   ]
 }
