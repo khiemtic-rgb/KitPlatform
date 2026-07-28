@@ -3,17 +3,18 @@
 **Mã:** NVX-OPS-FAMILY-SYNC-01 · **Ngày:** 2026-07-24  
 **Liên quan:** [pharmacy-rbac-deploy-sync-runbook-v1.md](./pharmacy-rbac-deploy-sync-runbook-v1.md) · [pharmacy-pos-customer-incidents-v1.md](./pharmacy-pos-customer-incidents-v1.md) · `.cursor/rules/family-os-deploy-sync.mdc`
 
-### §0. Trạng thái epic — PARKED (2026-07-27)
+### §0. Trạng thái epic — ACTIVE local / VPS gated (2026-07-28)
 
 | | |
 |---|---|
-| **Status** | **PARK** — tạm dừng epic / pilot deploy VPS |
-| **Lý do** | Chờ phản hồi thẩm định Pharmacy (`DEMO_PHARMACY`); tránh đụng auth/layout chung và regression RBAC |
-| **Ngoại lệ local** | Behavior OS Wave 0–1 (`behavior-os-north-star-v1.md`, mig `240`) được phép trên máy local khi Product yêu cầu |
+| **Status** | **ACTIVE (local)** — Behavior OS / PSE / Brief / nav trên tip local; **VPS pilot vẫn gated** |
+| **Lý do gate VPS** | Chờ Pharmacy audit (`DEMO_PHARMACY`) xong trước khi `apply-family-os-pilot` |
+| **Unpark trigger** | User 2026-07-28: thực hiện 1→5 (unify tip + unpark lớp local + smoke + AFE) |
 | **Rule Cursor** | `.cursor/rules/family-os-parked.mdc` |
-| **Unpark** | User yêu cầu rõ “tiếp Family OS / unpark” → đổi status §0 + gỡ/ cập nhật rule parked |
+| **Mig lớp mới** | `240`–`248` trong `migration-files.family-os.txt` (Behavior OS, currency, PSE, packaging) |
+| **Deploy VPS** | Chỉ khi user bảo rõ + Pharmacy gate mở |
 
-Pilot đã ship trước đó vẫn giữ trên VPS (`family.kittech.vn`); **không** coi PARK là gỡ prod — chỉ dừng epic mới.
+Pilot đã ship trước đó vẫn giữ trên VPS (`family.kittech.vn`); ACTIVE local **không** đồng nghĩa đã ship Behavior/PSE lên prod.
 
 ---
 

@@ -1,27 +1,31 @@
 ---
-description: Family OS đang PARK — không tiếp tục epic/deploy trừ khi user mở lại
+description: Family OS ACTIVE local — VPS pilot vẫn gated Pharmacy
 alwaysApply: true
 ---
 
-# Family OS — PARKED (2026-07-27)
+# Family OS — ACTIVE (local) / VPS gated (2026-07-28)
 
-**Trạng thái:** PARK — tạm dừng epic / pilot deploy Family OS trong lúc chờ phản hồi thẩm định Pharmacy (`DEMO_PHARMACY`).
+**Trạng thái:** **ACTIVE trên local tip** — epic Behavior OS / PSE / Brief được tiếp tục trên máy local.  
+**VPS / `family.kittech.vn`:** vẫn **không** deploy pilot mới cho đến khi Pharmacy audit (`DEMO_PHARMACY`) xong **và** user bảo rõ deploy.
 
-## Không làm (trừ khi user nói “unpark / tiếp Family OS”)
+## Được làm
 
-- Không mở epic lớn Family OS, không deploy `family.kittech.vn` / `apply-family-os-pilot`, không chạy hàng loạt mig `pack_family` trên VPS.
-- Không gộp commit Family OS + Pharmacy auth trong một PR.
-- Không “dọn” / refactor `client/family-app`, `src/Packs/FamilyOS`, Admin `/family-os` chỉ vì rảnh.
-
-## Vẫn được phép
-
+- Tiếp epic Family OS trên local: `client/family-app`, `src/Packs/FamilyOS`, Admin `/family-os`, mig `240`–`248` qua `migration-files.family-os.txt`.
+- Commit local; smoke `DEMO_FAMILY` trên `:5290` / `:5178`.
 - Hotfix prod đã báo lỗi (có ticket / user chỉ rõ).
-- Đọc docs / trả lời câu hỏi về Family OS.
-- **Behavior OS Wave 0–1 trên local** khi user bảo triển khai (PRD + mig 240 + habit/reflection) — **không** deploy pilot VPS trừ khi unpark.
-- Giữ SoT = `origin/main`; mig vẫn qua `migration-files.family-os.txt` khi được unpark.
 
-## Bối cảnh song song
+## Không làm (cho đến khi deploy được phép)
+
+- Không `apply-family-os-pilot` / hàng loạt mig `pack_family` trên VPS.
+- Không gộp commit Family OS + Pharmacy auth trong một PR.
+- Không push `origin/main` chỉ để “ship” Family nếu Pharmacy freeze còn hiệu lực — trừ khi user bảo push/deploy.
+
+## SoT
+
+- Nguồn chuẩn vẫn `origin/main` sau khi push; trước push tip local có Behavior/PSE/nav.
+- Mig pilot: `deploy/ubuntu/migration-files.family-os.txt` (không gộp `migration-files.prod.txt`).
+
+## Bối cảnh
 
 - Pharmacy audit freeze: `.cursor/rules/pharmacy-demo-audit-freeze.mdc`
-- Runbook Family OS: `docs/novixa/03-operations/family-os-sync-runbook-v1.md` (§0 PARK)
-- Unpark: user bảo rõ → xóa/đổi rule này + cập nhật §0 runbook sang ACTIVE
+- Runbook: `docs/novixa/03-operations/family-os-sync-runbook-v1.md` (§0)
