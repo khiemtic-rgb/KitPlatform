@@ -261,7 +261,7 @@ export function WhoAreYouPage() {
     navigate('/today', { replace: true });
   };
 
-  const enterAsParent = async (parentTab: 'home' | 'value' | 'rewards' = 'home') => {
+  const enterAsParent = async (parentTab: 'home' | 'value' | 'rewards' | 'diary' = 'home') => {
     const parent = adults[0];
     if (!parent) {
       document.getElementById('home-who')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -749,9 +749,9 @@ export function WhoAreYouPage() {
           <span aria-hidden>📊</span>
           Báo cáo
         </button>
-        <button type="button" className="ph-tab" onClick={() => void enterAsParent('value')}>
-          <span aria-hidden>🧭</span>
-          Khám phá
+        <button type="button" className="ph-tab" onClick={() => void enterAsParent('diary')}>
+          <span aria-hidden>📖</span>
+          Nhật ký
         </button>
       </nav>
     </div>

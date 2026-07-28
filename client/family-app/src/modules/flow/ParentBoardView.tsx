@@ -112,7 +112,7 @@ const NEED_APPROVAL_RE =
 
 type MissionFilter = 'all' | 'need_help' | 'waiting_child' | 'done';
 type DiaryFilter = 'all' | 'tasks' | 'moments' | 'health' | 'study';
-type ParentTab = 'home' | 'tasks' | 'rewards' | 'value';
+type ParentTab = 'home' | 'tasks' | 'rewards' | 'value' | 'diary';
 
 function needsParentApproval(item: DayFlowCommitment): boolean {
   if (NEED_APPROVAL_RE.test(item.title)) return true;
@@ -525,7 +525,13 @@ export function ParentBoardView({
   const [tab, setTab] = useState<ParentTab>(() => {
     try {
       const raw = sessionStorage.getItem('famixa.parentTab');
-      if (raw === 'home' || raw === 'tasks' || raw === 'rewards' || raw === 'value') {
+      if (
+        raw === 'home' ||
+        raw === 'tasks' ||
+        raw === 'rewards' ||
+        raw === 'value' ||
+        raw === 'diary'
+      ) {
         sessionStorage.removeItem('famixa.parentTab');
         return raw;
       }
@@ -534,6 +540,7 @@ export function ParentBoardView({
     }
     return 'home';
   });
+  const [valueFocus, setValueFocus] = useState<string | null>(null);
   const [verifiedTick, setVerifiedTick] = useState(0);
   const [nudgeTick, setNudgeTick] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -1244,7 +1251,6 @@ export function ParentBoardView({
     inferGenderFromName(selectedChild?.name ?? focusChild?.name ?? childShort),
     'child',
   );
-  const helloWho = viewerName.trim() || greetName(viewerName);
 
   const diaryDays = useMemo(() => {
     const base = new Date(`${flow.flowDate}T12:00:00`);
@@ -1281,7 +1287,7 @@ export function ParentBoardView({
     diaryDays[0];
 
   const moodFetchDate =
-    tab === 'value' && selectedDiaryDay ? selectedDiaryDay.key : flow.flowDate;
+    tab === 'diary' && selectedDiaryDay ? selectedDiaryDay.key : flow.flowDate;
 
   useEffect(() => {
     let cancelled = false;
@@ -1474,7 +1480,7 @@ export function ParentBoardView({
       setAddMemoryNote('');
       setAddMemoryOpen(false);
       showDiaryToast('Đã thêm kỷ niệm mới');
-      setTab('value');
+      setTab('diary');
       openMemoriesSheet();
     } catch {
       showDiaryToast('Chưa thêm được — thử lại nhé');
@@ -1484,7 +1490,7 @@ export function ParentBoardView({
   };
 
   const goDiaryDay = (delta: -1 | 1) => {
-    setTab('value');
+    setTab('diary');
     setDiaryDayIdx((idx) => {
       const next = Math.min(Math.max(idx + delta, 0), Math.max(diaryDays.length - 1, 0));
       return next;
@@ -1696,9 +1702,19 @@ export function ParentBoardView({
   };
 
   const goValueAnchor = (anchorId: string) => {
+    setValueFocus(anchorId);
     setTab('value');
+  };
+
+  const goReportHub = () => {
+    setValueFocus(null);
+    setTab('value');
+  };
+
+  const goRewardsSection = (sectionId: string) => {
+    setTab('rewards');
     window.setTimeout(() => {
-      document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 80);
   };
 
@@ -1790,7 +1806,7 @@ export function ParentBoardView({
           <button
             type="button"
             className="ph-b4-icon-btn"
-            aria-label="Thông báo"
+            aria-label="Việc cần xử lý"
             onClick={() => scrollToMissions('need_help')}
           >
             <span aria-hidden>🔔</span>
@@ -1801,39 +1817,11 @@ export function ParentBoardView({
           <button
             type="button"
             className="ph-b4-icon-btn"
-            aria-label="Hồ sơ"
+            aria-label="Cài đặt"
             onClick={() => setMoreOpen(true)}
           >
-            <span aria-hidden>👤</span>
+            <span aria-hidden>⚙️</span>
           </button>
-        </div>
-      </header>
-      ) : tab !== 'tasks' && tab !== 'rewards' && tab !== 'value' ? (
-      <header className="ph-top">
-        <div className="ph-identity">
-          <div className="ph-mom-avatar" aria-hidden>
-            {parentAvatar}
-          </div>
-          <div>
-            <h1 className="ph-hello">
-              Chào {helloWho}! <span aria-hidden>👋</span>
-            </h1>
-            <p className="ph-date">{formatFlowDay(flow.flowDate)}</p>
-          </div>
-        </div>
-        <div className="ph-top-right">
-          <button
-            type="button"
-            className="ph-bell"
-            aria-label="Thông báo"
-            onClick={() => scrollToMissions('need_help')}
-          >
-            <span aria-hidden>🔔</span>
-            {attentionItems.length > 0 ? (
-              <i className="ph-bell-badge">{Math.min(attentionItems.length, 9)}</i>
-            ) : null}
-          </button>
-          {renderChildPicker('home')}
         </div>
       </header>
       ) : null}
@@ -2061,7 +2049,7 @@ export function ParentBoardView({
                     type="button"
                     className="ph-b4-moment-card"
                     onClick={() => {
-                      setTab('value');
+                      setTab('diary');
                       openMemoriesSheet();
                     }}
                   >
@@ -2128,18 +2116,12 @@ export function ParentBoardView({
             <BillingBanner familyId={familyId} />
           )}
 
-          <nav className="ph-b4-explore-row" aria-label="Khám phá nhanh">
+          <nav className="ph-b4-explore-row" aria-label="Lối tắt tính năng">
             <button type="button" onClick={openCoachOrPaywall}>
               <i className="is-green" aria-hidden>
                 🤖
               </i>
-              AI Coach
-            </button>
-            <button type="button" onClick={() => goValueAnchor('fv-rop')}>
-              <i className="is-pink" aria-hidden>
-                📘
-              </i>
-              Family Report
+              Coach AI
             </button>
             <button type="button" onClick={() => goValueAnchor('fv-3q')}>
               <i className="is-purple" aria-hidden>
@@ -2147,17 +2129,23 @@ export function ParentBoardView({
               </i>
               3Q tối
             </button>
+            <button type="button" onClick={() => setTab('tasks')}>
+              <i className="is-blue" aria-hidden>
+                ✅
+              </i>
+              Nhiệm vụ
+            </button>
             <button type="button" onClick={() => setTab('rewards')}>
               <i className="is-yellow" aria-hidden>
                 ⭐
               </i>
-              Điểm & thưởng
+              Kho báu
             </button>
-            <button type="button" onClick={() => setTab('tasks')}>
-              <i className="is-blue" aria-hidden>
-                📅
+            <button type="button" onClick={() => goRewardsSection('ph-treasure-challenge')}>
+              <i className="is-pink" aria-hidden>
+                🏆
               </i>
-              Sự kiện
+              Challenge
             </button>
           </nav>
         </div>
@@ -2257,7 +2245,7 @@ export function ParentBoardView({
               type="button"
               className="ph-tasks-date-pill"
               onClick={() => {
-                setTab('value');
+                setTab('diary');
                 const todayIdx = diaryDays.findIndex((d) => d.isToday);
                 if (todayIdx >= 0) setDiaryDayIdx(todayIdx);
                 window.setTimeout(() => {
@@ -2563,14 +2551,48 @@ export function ParentBoardView({
       ) : null}
 
       {tab === 'value' ? (
-        <div className="ph-diary">
-          {diaryToast ? (
-            <div className="ph-diary-toast" role="status">
-              {diaryToast}
+        <div className="ph-report">
+          <header className="ph-report-top">
+            <button
+              type="button"
+              className="ph-report-back"
+              aria-label="Về trang chủ"
+              onClick={() => setTab('home')}
+            >
+              ‹
+            </button>
+            <div className="ph-report-titles">
+              <h1>
+                {valueFocus === 'fv-3q'
+                  ? '3Q tối'
+                  : valueFocus === 'fv-rop'
+                    ? 'ROP · Family Report'
+                    : 'Báo cáo gia đình'}
+              </h1>
+              <p>
+                {valueFocus === 'fv-3q'
+                  ? 'Ba câu hỏi nhanh — nhịp nhà hôm nay'
+                  : valueFocus === 'fv-rop'
+                    ? 'Tăng trưởng bố mẹ theo hành vi'
+                    : 'ROP · 3Q · ghi nhận · replay'}
+              </p>
+            </div>
+            <div className="ph-report-tools">{renderChildPicker('module')}</div>
+          </header>
+          {!valueFocus ? (
+            <div className="ph-report-jumps" aria-label="Mục trong báo cáo">
+              <button type="button" onClick={() => goValueAnchor('fv-rop')}>
+                📘 ROP
+              </button>
+              <button type="button" onClick={() => goValueAnchor('fv-3q')}>
+                🎯 3Q tối
+              </button>
+              <button type="button" onClick={() => setTab('diary')}>
+                📖 Nhật ký →
+              </button>
             </div>
           ) : null}
-
-          <div style={{ padding: '0 12px 8px' }}>
+          <div className="ph-report-body">
             <FamilyValuePanel
               familyId={familyId}
               familyName={familyName}
@@ -2582,8 +2604,25 @@ export function ParentBoardView({
               parentMembershipId={parentMembershipId}
               eveningCheckin={eveningCheckin}
               onEveningCheckinChange={setEveningCheckin}
+              focusAnchorId={valueFocus}
             />
           </div>
+          <p className="ph-report-diary-hint">
+            Muốn xem timeline việc & kỷ niệm?{' '}
+            <button type="button" className="ph-text-link" onClick={() => setTab('diary')}>
+              Mở Nhật ký →
+            </button>
+          </p>
+        </div>
+      ) : null}
+
+      {tab === 'diary' ? (
+        <div className="ph-diary">
+          {diaryToast ? (
+            <div className="ph-diary-toast" role="status">
+              {diaryToast}
+            </div>
+          ) : null}
 
           <header className="ph-diary-top">
             <button
@@ -3064,9 +3103,11 @@ export function ParentBoardView({
             </button>
             <div className="ph-treasure-titles">
               <h1>
-                Kho báu của {childShort} <span aria-hidden>✨</span>
+                Kho báu · điểm &amp; thưởng <span aria-hidden>✨</span>
               </h1>
-              <p>Đang xem: {childFocusLabel}</p>
+              <p>
+                {childShort} · đang xem {childFocusLabel}
+              </p>
             </div>
             <div className="ph-treasure-top-actions">
               {renderChildPicker('module')}
@@ -3195,7 +3236,11 @@ export function ParentBoardView({
             </div>
           </section>
 
-          <section className="ph-treasure-sec" aria-label="Challenge và mục tiêu bố mẹ">
+          <section
+            className="ph-treasure-sec"
+            id="ph-treasure-challenge"
+            aria-label="Challenge và mục tiêu bố mẹ"
+          >
             {parentMembershipId ? (
               <>
                 <FamilyChallengeCard
@@ -3529,14 +3574,18 @@ export function ParentBoardView({
         <button
           type="button"
           className={`ph-tab${tab === 'value' ? ' is-on' : ''}`}
-          onClick={() => goValueAnchor('fv-rop')}
+          onClick={goReportHub}
         >
           <span aria-hidden>📊</span>
           Báo cáo
         </button>
-        <button type="button" className="ph-tab" onClick={() => setTab('value')}>
-          <span aria-hidden>🧭</span>
-          Khám phá
+        <button
+          type="button"
+          className={`ph-tab${tab === 'diary' ? ' is-on' : ''}`}
+          onClick={() => setTab('diary')}
+        >
+          <span aria-hidden>📖</span>
+          Nhật ký
         </button>
       </nav>
 

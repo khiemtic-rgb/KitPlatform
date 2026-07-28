@@ -51,6 +51,8 @@ type Props = {
   parentMembershipId?: string;
   eveningCheckin?: ParentSuccessCheckin | null;
   onEveningCheckinChange?: (row: ParentSuccessCheckin) => void;
+  /** Deep-link target: fv-3q | fv-rop | … */
+  focusAnchorId?: string | null;
 };
 
 export function FamilyValuePanel({
@@ -64,6 +66,7 @@ export function FamilyValuePanel({
   parentMembershipId,
   eveningCheckin,
   onEveningCheckinChange,
+  focusAnchorId = null,
 }: Props) {
   const [serverWeekly, setServerWeekly] = useState<FamilyWeeklyInsight | null>(null);
   const [rop, setRop] = useState<ParentSuccessRop | null>(null);
@@ -83,6 +86,25 @@ export function FamilyValuePanel({
   const [qQualityTime, setQQualityTime] = useState(false);
   const [checkinBusy, setCheckinBusy] = useState(false);
   const [checkinMsg, setCheckinMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!focusAnchorId) return;
+    let tries = 0;
+    let timer = 0;
+    const run = () => {
+      const el = document.getElementById(focusAnchorId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.classList.add('is-spotlight');
+        window.setTimeout(() => el.classList.remove('is-spotlight'), 2200);
+        return;
+      }
+      tries += 1;
+      if (tries < 12) timer = window.setTimeout(run, 80);
+    };
+    timer = window.setTimeout(run, 40);
+    return () => window.clearTimeout(timer);
+  }, [focusAnchorId, parentMembershipId, rop, ropBlocked]);
 
   useEffect(() => {
     let cancelled = false;
@@ -378,6 +400,13 @@ export function FamilyValuePanel({
 
   return (
     <div className="fv-stack">
+      {focusAnchorId === 'fv-3q' || focusAnchorId === 'fv-rop' ? (
+        <p className="fv-focus-banner" role="status">
+          {focusAnchorId === 'fv-3q'
+            ? 'Đang mở · 3Q tối — phản hồi nhanh nhịp nhà'
+            : 'Đang mở · Family Report (ROP) — tăng trưởng bố mẹ'}
+        </p>
+      ) : null}
       {onboard && !onboard.skipped ? (
         <section className="fv-card" style={{ background: 'linear-gradient(145deg,#eef8f2,#fff)' }}>
           <p className="fv-eyebrow">Mục tiêu Onboarding 30 ngày</p>
@@ -500,7 +529,11 @@ export function FamilyValuePanel({
       </section>
 
       {parentMembershipId ? (
-        <section className="fv-card" id="fv-3q">
+        <section
+          className={`fv-card${focusAnchorId === 'fv-3q' ? ' is-spotlight' : ''}`}
+          id="fv-3q"
+          style={{ order: focusAnchorId === 'fv-3q' ? -2 : undefined }}
+        >
           <header className="fv-head">
             <p className="fv-eyebrow">Famixa · 3 câu tối</p>
             <h2>
@@ -549,10 +582,26 @@ export function FamilyValuePanel({
             </button>
           </div>
         </section>
+      ) : focusAnchorId === 'fv-3q' ? (
+        <section
+          className="fv-card is-spotlight"
+          id="fv-3q"
+          style={{ order: -2 }}
+        >
+          <header className="fv-head">
+            <p className="fv-eyebrow">Famixa · 3 câu tối</p>
+            <h2>Cần hồ sơ bố/mẹ để trả lời 3Q</h2>
+            <p>Chọn thành viên bố/mẹ rồi mở lại 3Q tối nhé.</p>
+          </header>
+        </section>
       ) : null}
 
       {report ? (
-        <section className="fv-card" id="fv-rop">
+        <section
+          className={`fv-card${focusAnchorId === 'fv-rop' ? ' is-spotlight' : ''}`}
+          id="fv-rop"
+          style={{ order: focusAnchorId === 'fv-rop' ? -2 : undefined }}
+        >
           <header className="fv-head">
             <h2>ROP · Return on Parenting</h2>
             <p>Growth Report từ behavior_event — không phải số sao / routine</p>
@@ -656,7 +705,11 @@ export function FamilyValuePanel({
           </div>
         </section>
       ) : ropBlocked || !canGrowth ? (
-        <section className="fv-card fv-teaser" id="fv-rop">
+        <section
+          className={`fv-card fv-teaser${focusAnchorId === 'fv-rop' ? ' is-spotlight' : ''}`}
+          id="fv-rop"
+          style={{ order: focusAnchorId === 'fv-rop' ? -2 : undefined }}
+        >
           <header className="fv-head">
             <h2>ROP · Return on Parenting</h2>
             <p>Có trong Family Peace Plan</p>
