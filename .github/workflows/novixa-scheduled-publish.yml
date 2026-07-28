@@ -116,15 +116,20 @@ jobs:
             novixa-site/import/fanpage-posted.json
             novixa-site/public/stats-snapshot.json
 
+      # Cloudflare Pages (root = novixa-site) thường KHÔNG rebuild khi chỉ empty-commit.
+      # Ghi stamp trong novixa-site/public để luôn có diff → build lại → bài tới pubDate hiện lên.
       - name: Trigger Cloudflare Pages deploy
         env:
           CF_DEPLOY_HOOK: ${{ secrets.CF_DEPLOY_HOOK }}
         run: |
           if [ -n "$CF_DEPLOY_HOOK" ]; then
             curl -fsS -X POST "$CF_DEPLOY_HOOK"
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit --allow-empty -m "chore(novixa): scheduled daily rebuild"
-            git push
+            echo "Triggered CF_DEPLOY_HOOK"
           fi
+          # Luôn ghi stamp (kể cả khi có hook) để monorepo diff chắc chắn kích hoạt Pages.
+          TZ=Asia/Ho_Chi_Minh date '+%Y-%m-%dT%H:%M:%S%z' > novixa-site/public/.publish-stamp
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add novixa-site/public/.publish-stamp
+          git commit -m "chore(novixa): daily rebuild stamp $(TZ=Asia/Ho_Chi_Minh date +%Y-%m-%d)" || echo "No stamp change"
+          git push

@@ -114,6 +114,7 @@ git push
 ```
 
 - **pubDate** trong tương lai → bài **ẩn** đến đúng ngày (giờ VN).
+- Site tĩnh: bài chỉ hiện sau khi **Cloudflare build lại** (workflow ghi `public/.publish-stamp` mỗi đêm ~00:05 VN). Empty-commit không đủ vì Pages root = `novixa-site`.
 - **Trùng slug hoặc title** → **cập nhật** file `.md` cũ.
 - Mẫu: `import/tin-tuc.template.csv`
 
