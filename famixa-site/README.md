@@ -18,9 +18,9 @@ npm run build
 
 ## Cloudflare Pages
 
-1. Pages → Create project → Connect KitPlatform repo
-2. Project name: `famixa` (or `famixa-site`)
-3. Root directory: `famixa-site`
-4. Build command: `npm run build`
-5. Output: `dist`
-6. Custom domain: `famixa.vn` (+ `www` → apex)
+1. Workers & Pages → Create → Connect to Git → `khiemtic-rgb/KitPlatform`
+2. Project name: **`famixa`** (không tái dùng project Novixa `KitPlatform`)
+3. Root directory: **`famixa-site`**
+4. Build: `npm run build` · Output: **`dist`** · Node **22**
+5. Custom domains: `famixa.vn`, `www.famixa.vn`
+6. Hoặc GHA `Famixa Pages provision` sau khi set secret `CLOUDFLARE_API_TOKEN`

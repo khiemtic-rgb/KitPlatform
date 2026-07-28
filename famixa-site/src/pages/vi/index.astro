@@ -6,56 +6,59 @@ import { APP_URL } from '../../lib/site';
 
 const moments = [
   {
-    icon: '🌙',
+    img: '/images/moment-sleep.png',
     title: 'Giờ đi ngủ',
     body: 'Routine tối nhẹ nhàng — bớt căng, ngủ đúng giờ hơn.',
   },
   {
-    icon: '📚',
+    img: '/images/moment-study.png',
     title: 'Giờ học tập',
     body: 'Con chủ động bắt đầu; bố mẹ ít phải đứng nhắc.',
   },
   {
-    icon: '🧹',
+    img: '/images/moment-chores.png',
     title: 'Việc nhà',
     body: 'Mission nhỏ mỗi ngày — thành thói quen, không thành trận chiến.',
   },
   {
-    icon: '👨‍👩‍👧',
+    img: '/images/moment-family.png',
     title: 'Thời gian gia đình',
     body: 'Movie Night & khoảnh khắc ấm — phần thưởng cả nhà cùng mở.',
   },
 ];
 
 const steps = [
-  { icon: '👀', title: 'Quan sát', body: 'Famixa lắng nghe nhịp nhà — không soi, không chấm điểm con.' },
+  { icon: '👀', title: 'Quan sát', body: 'Lắng nghe nhịp nhà — không soi, không chấm điểm con.' },
   { icon: '💛', title: 'Thấu hiểu', body: 'Hiểu vì sao nhắc nhiều / căng thẳng — trước khi đề xuất.' },
-  { icon: '✨', title: 'Đề xuất', body: '1 việc bố mẹ làm hôm nay · Decision Inbox vài giây.' },
-  { icon: '🌱', title: 'Đồng hành', body: 'AI học gia đình bạn — càng dùng càng vừa nhà.' },
+  { icon: '💡', title: 'Đề xuất', body: 'Một việc bố mẹ làm hôm nay — Decision Inbox vài giây.' },
+  { icon: '🤝', title: 'Đồng hành', body: 'AI học gia đình bạn — càng dùng càng vừa nhà.' },
 ];
 
 const growth = [
-  { emoji: '🫘', title: 'Hạt mầm', hint: 'Bắt đầu' },
-  { emoji: '🌱', title: 'Nảy mầm', hint: 'Thói quen mới' },
-  { emoji: '🌿', title: 'Fami nhỏ', hint: 'Ít nhắc hơn' },
-  { emoji: '🌳', title: 'Fami lớn', hint: 'Con tự giác' },
-  { emoji: '🏞️', title: 'Cây trưởng thành', hint: 'Nhà yên' },
+  { title: 'Hạt mầm', hint: 'Bắt đầu' },
+  { title: 'Nảy mầm', hint: 'Thói quen mới' },
+  { title: 'Fami nhỏ', hint: 'Ít nhắc hơn' },
+  { title: 'Fami lớn', hint: 'Con tự giác' },
+  { title: 'Cây trưởng thành', hint: 'Nhà yên' },
 ];
 
 const quotes = [
   {
     name: 'Chị Lan Anh',
     place: 'Hà Nội',
-    text: 'Trước phải nhắc con 5–6 lần mỗi sáng. Giờ Brief chỉ chỉ một việc — nhà đỡ ồn hẳn.',
+    img: '/images/quote-lan.png',
+    text: 'Trước phải nhắc con 5–6 lần mỗi sáng. Giờ Morning Brief chỉ chỉ một việc — nhà đỡ ồn hẳn.',
   },
   {
     name: 'Anh Minh Hoàng',
     place: 'TP.HCM',
+    img: '/images/quote-minh.png',
     text: 'Không phải app chấm sao cho vui. Mình thấy rõ tuần nào bớt căng — đó mới là thứ đáng trả tiền.',
   },
   {
     name: 'Chị Thu Thảo',
     place: 'Đà Nẵng',
+    img: '/images/quote-thu.png',
     text: '3 câu tối mất chưa tới một phút. Con cũng thích Movie Night khi cả nhà xong nhiệm vụ.',
   },
 ];
@@ -64,34 +67,40 @@ const plans = [
   {
     name: 'Start',
     price: '0đ',
-    period: '/ mãi',
+    period: '/ vĩnh viễn',
     badge: null as string | null,
     featured: false,
-    cta: 'Dùng miễn phí',
-    items: ['Routine & nhiệm vụ cơ bản', '1 trẻ', 'Weekly insight nhẹ', 'Trải nghiệm Famixa'],
-  },
-  {
-    name: 'Plus',
-    price: '99.000đ',
-    period: '/ tháng',
-    badge: '14 ngày dùng thử Peace',
-    featured: false,
-    cta: 'Bắt đầu Plus',
-    items: ['Tới 2 trẻ', 'Timeline & Behavior Twin', 'Gợi ý thích nghi', 'Family Growth Plan'],
+    cta: 'Bắt đầu miễn phí',
+    items: ['AI Coach cơ bản', 'Morning Brief', 'Thời gian giới hạn', 'Bảo mật cơ bản'],
   },
   {
     name: 'Peace',
-    price: '199.000đ',
+    price: '149.000đ',
+    period: '/ tháng',
+    badge: null as string | null,
+    featured: false,
+    cta: 'Dùng thử 14 ngày',
+    items: [
+      'Tất cả tính năng Start',
+      'AI Coach nâng cao',
+      'Behavior OS',
+      'Thử thách & phần thưởng',
+      'Báo cáo tuần',
+    ],
+  },
+  {
+    name: 'Growth',
+    price: '249.000đ',
     period: '/ tháng',
     badge: 'Phổ biến',
     featured: true,
-    cta: 'Chọn Peace Plan',
+    cta: 'Dùng thử 14 ngày',
     items: [
-      'Không giới hạn trẻ',
-      'AI Parenting Coach',
-      'ROP / Growth Report',
-      '3Q tối · Letter · Replay',
-      'Trial 30 ngày quyền Peace',
+      'Tất cả tính năng Peace',
+      'AI Coach cá nhân hóa',
+      'Family Reson',
+      'Hỗ trợ ưu tiên',
+      'Sự kiện & workshop',
     ],
   },
 ];
@@ -103,22 +112,62 @@ const plans = [
   <main>
     <section class="hero">
       <div class="wrap hero-grid">
-        <div>
-          <p class="eyebrow">Famixa · AI Human Growth OS</p>
-          <h1>AI giúp con tự giác. Cha mẹ không còn phải nhắc mỗi ngày.</h1>
+        <div class="hero-copy">
+          <h1>AI giúp con tự giác.<br />Cha mẹ không còn phải nhắc mỗi ngày.</h1>
           <p class="lead">
-            Famixa là người bạn đồng hành AI cho gia đình — hiểu nhịp nhà bạn, đề xuất đúng lúc, giúp
-            con lớn bằng thói quen chứ không bằng lời nhắc.
+            Famixa là người bạn đồng hành AI hiểu từng gia đình — giúp nuôi dạy nhẹ hơn, thời gian bên nhau
+            chất lượng hơn, và con lớn lên bằng thói quen chứ không bằng lời nhắc.
           </p>
           <div class="hero-cta">
-            <a class="btn btn-primary" href={APP_URL}>Bắt đầu hành trình</a>
-            <a class="btn btn-secondary" href="#giai-phap">Xem cách Famixa làm</a>
+            <a class="btn btn-primary" href={APP_URL}>
+              Bắt đầu hành trình
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+                ><path
+                  d="M5 12h14M13 5l7 7-7 7"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"></path></svg
+              >
+            </a>
+            <a class="btn btn-ghost" href="#video">
+              <span class="play" aria-hidden="true"
+                ><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"
+                  ><path d="M8 5v14l11-7z"></path></svg
+                ></span
+              >
+              Xem video
+            </a>
           </div>
           <div class="proof" aria-label="Cam kết">
-            <span>🇻🇳 Made in Vietnam</span>
-            <span>🔒 Bảo mật dữ liệu gia đình</span>
-            <span>⏱️ Bố mẹ ≤ 1 phút/ngày</span>
-            <span>🌱 Trial Peace 30 ngày</span>
+            <div class="proof-item">
+              <span class="proof-icon" aria-hidden="true">👨‍👩‍👧</span>
+              <div>
+                <strong>10.000+</strong>
+                <span>gia đình</span>
+              </div>
+            </div>
+            <div class="proof-item">
+              <span class="proof-icon" aria-hidden="true">⭐</span>
+              <div>
+                <strong>4.8/5</strong>
+                <span>đánh giá</span>
+              </div>
+            </div>
+            <div class="proof-item">
+              <span class="proof-icon" aria-hidden="true">🔒</span>
+              <div>
+                <strong>Bảo mật</strong>
+                <span>dữ liệu gia đình</span>
+              </div>
+            </div>
+            <div class="proof-item">
+              <span class="proof-icon" aria-hidden="true">🇻🇳</span>
+              <div>
+                <strong>Made in VN</strong>
+                <span>by KIT</span>
+              </div>
+            </div>
           </div>
         </div>
         <div class="hero-art">
@@ -137,15 +186,15 @@ const plans = [
       <div class="wrap fami-appear">
         <div>
           <p class="eyebrow">Chương 1</p>
-          <h2 style="margin:0 0 0.75rem;font-size:clamp(1.6rem,3vw,2.2rem);line-height:1.2">
-            Fami xuất hiện.
-          </h2>
-          <p style="margin:0;color:var(--ink-soft);font-size:1.05rem;max-width:32rem">
-            Không phải chatbot dạy con. Fami là biểu tượng đồng hành — nhắc nhở nhẹ, ăn mừng đúng lúc,
-            và giúp cả nhà nhìn thấy tiến bộ thật: bớt nhắc, thêm tự giác.
+          <h2>Fami xuất hiện.</h2>
+          <p class="chapter-lead">
+            Không phải chatbot dạy con. Fami là hạt mầm đồng hành — nhắc nhẹ, ăn mừng đúng lúc, và giúp cả
+            nhà nhìn thấy tiến bộ thật: bớt nhắc, thêm tự giác.
           </p>
         </div>
-        <img src="/images/fami-appear.png" alt="Fami — mầm xanh Famixa" width="840" height="630" />
+        <figure class="fami-figure">
+          <img src="/images/fami-appear.png" alt="Fami — mầm xanh Famixa" width="840" height="630" />
+        </figure>
       </div>
     </section>
 
@@ -154,7 +203,7 @@ const plans = [
         <div class="section-head">
           <p class="eyebrow">Chương 2</p>
           <h2>Fami lắng nghe và thấu hiểu.</h2>
-          <p>Vòng lặp Adaptive Family Engine — quan sát trước, đề xuất sau, bố mẹ duyệt trong vài giây.</p>
+          <p>Quan sát nhịp nhà → thấu hiểu cảm xúc → đề xuất vừa lúc → đồng hành từng ngày.</p>
         </div>
         <div class="steps">
           {steps.map((s) => (
@@ -178,9 +227,13 @@ const plans = [
         <div class="moment-grid">
           {moments.map((m) => (
             <article class="moment">
-              <div class="icon" aria-hidden="true">{m.icon}</div>
-              <h3>{m.title}</h3>
-              <p>{m.body}</p>
+              <div class="moment-media">
+                <img src={m.img} alt="" width="640" height="480" loading="lazy" />
+              </div>
+              <div class="moment-body">
+                <h3>{m.title}</h3>
+                <p>{m.body}</p>
+              </div>
             </article>
           ))}
         </div>
@@ -194,10 +247,18 @@ const plans = [
           <h2>Hành trình trưởng thành của gia đình bạn.</h2>
           <p>Từ hạt mầm đến cây lớn — Famixa đo tiến bộ nhà, không đo “điểm con”.</p>
         </div>
+        <figure class="journey-art">
+          <img
+            src="/images/growth-journey.png"
+            alt="Hành trình Fami từ hạt mầm đến cây trưởng thành"
+            width="1400"
+            height="788"
+            loading="lazy"
+          />
+        </figure>
         <div class="growth-track" aria-label="Các giai trưởng thành">
           {growth.map((g) => (
             <div class="growth-item">
-              <div class="dot" aria-hidden="true">{g.emoji}</div>
               <strong>{g.title}</strong>
               <span>{g.hint}</span>
             </div>
@@ -211,44 +272,42 @@ const plans = [
         <div class="section-head">
           <p class="eyebrow">Chương 5</p>
           <h2>Công nghệ tinh tế, trải nghiệm đơn giản.</h2>
-          <p>Morning Brief · Decision Inbox · ROP — trên web, sẵn sàng cho bố mẹ bận rộn.</p>
+          <p>Morning Brief · Decision Inbox · Growth Report — trên mọi thiết bị bố mẹ đang dùng.</p>
         </div>
-        <div class="devices">
-          <article class="device">
-            <div class="chrome" aria-hidden="true"><i /><i /><i /></div>
-            <h3>Growth Report</h3>
-            <p>ROP — Return on Parenting: bớt nhắc, con chủ động hơn.</p>
-            <div class="fake-ui" aria-hidden="true"><b /><b /><b /></div>
-          </article>
-          <article class="device">
-            <div class="chrome" aria-hidden="true"><i /><i /><i /></div>
-            <h3>Morning Brief</h3>
-            <p>Một việc cần chú ý hôm nay — không phải dashboard đầy thẻ.</p>
-            <div class="fake-ui" aria-hidden="true"><b /><b /><b /></div>
-          </article>
-          <article class="device">
-            <div class="chrome" aria-hidden="true"><i /><i /><i /></div>
-            <h3>Kid Home</h3>
-            <p>Mission rõ ràng, Movie Night cả nhà — vui mà có kỷ luật.</p>
-            <div class="fake-ui" aria-hidden="true"><b /><b /><b /></div>
-          </article>
-        </div>
+        <figure class="devices-art">
+          <img
+            src="/images/devices-mock.png"
+            alt="Famixa trên laptop, tablet và điện thoại"
+            width="1400"
+            height="788"
+            loading="lazy"
+          />
+        </figure>
       </div>
     </section>
 
-    <section class="section chapter alt">
-      <div class="wrap">
-        <div class="section-head">
+    <section class="section chapter alt" id="video">
+      <div class="wrap loop-grid">
+        <div class="section-head left">
           <p class="eyebrow">Chương 6</p>
           <h2>Vòng lặp tăng trưởng của Famixa.</h2>
           <p>Gia đình thực hành → AI học nhà bạn → đề xuất ngày càng vừa.</p>
+          <ol class="loop-list">
+            <li><strong>Quan sát</strong> nhịp nhà & hành vi</li>
+            <li><strong>Thấu hiểu</strong> trước khi khuyên</li>
+            <li><strong>Đề xuất</strong> 1 hành động ≤ 1 phút</li>
+            <li><strong>Gia đình thực hành</strong> · AI học tiếp</li>
+          </ol>
         </div>
-        <div class="loop">
-          <div class="loop-item"><em>1</em><div><strong>Quan sát</strong> nhịp nhà & hành vi</div></div>
-          <div class="loop-item"><em>2</em><div><strong>Thấu hiểu</strong> trước khi khuyên</div></div>
-          <div class="loop-item"><em>3</em><div><strong>Đề xuất</strong> 1 hành động ≤ 1 phút</div></div>
-          <div class="loop-item"><em>4</em><div><strong>Gia đình thực hành</strong> · AI học tiếp</div></div>
-        </div>
+        <figure class="loop-art">
+          <img
+            src="/images/growth-loop.png"
+            alt="Vòng lặp tăng trưởng Famixa quanh Fami"
+            width="900"
+            height="900"
+            loading="lazy"
+          />
+        </figure>
       </div>
     </section>
 
@@ -262,10 +321,13 @@ const plans = [
         <div class="quotes">
           {quotes.map((q) => (
             <article class="quote">
-              <div class="stars" aria-label="5 sao">★★★★★</div>
+              <img class="quote-avatar" src={q.img} alt="" width="72" height="72" loading="lazy" />
               <p>“{q.text}”</p>
-              <strong>{q.name}</strong>
-              <span>{q.place}</span>
+              <div class="quote-meta">
+                <strong>{q.name}</strong>
+                <span>{q.place}</span>
+              </div>
+              <div class="stars" aria-label="5 sao">★★★★★</div>
             </article>
           ))}
         </div>
@@ -277,12 +339,12 @@ const plans = [
         <div class="section-head">
           <p class="eyebrow">Chương 8</p>
           <h2>Gói đồng hành cho mọi gia đình.</h2>
-          <p>Định giá theo kết quả phụ huynh — không theo số task. Trial Peace 30 ngày.</p>
+          <p>Chọn nhịp nhà bạn — bắt đầu miễn phí, nâng cấp khi đã thấy yên hơn.</p>
         </div>
         <div class="pricing">
           {plans.map((p) => (
             <article class:list={['plan', p.featured && 'featured']}>
-              {p.badge ? <span class="badge">{p.badge}</span> : <span class="badge" style="visibility:hidden">·</span>}
+              {p.badge ? <span class="badge">{p.badge}</span> : null}
               <h3>{p.name}</h3>
               <div class="price">
                 {p.price}
@@ -302,10 +364,10 @@ const plans = [
       </div>
     </section>
 
-    <section class="section">
+    <section class="section final-section">
       <div class="wrap">
         <div class="final-cta">
-          <img src="/images/cta-campfire.png" alt="" width="1400" height="788" />
+          <img src="/images/cta-campfire.png" alt="" width="1400" height="788" loading="lazy" />
           <div class="veil" aria-hidden="true" />
           <div class="content">
             <h2>Mỗi gia đình là một hành trình. Famixa ở đây để đồng hành từng bước nhỏ.</h2>
