@@ -9,15 +9,18 @@ internal sealed class FamilyScreenWalletService : IFamilyScreenWalletService
     private readonly FamilyScreenWalletRepository _repo;
     private readonly FamilyAiProposalRepository _proposals;
     private readonly FamilyGraphRepository _families;
+    private readonly IFamilyCommercialService _commercial;
 
     public FamilyScreenWalletService(
         FamilyScreenWalletRepository repo,
         FamilyAiProposalRepository proposals,
-        FamilyGraphRepository families)
+        FamilyGraphRepository families,
+        IFamilyCommercialService commercial)
     {
         _repo = repo;
         _proposals = proposals;
         _families = families;
+        _commercial = commercial;
     }
 
     public async Task<IReadOnlyList<FamilyScreenWalletDto>> ListWeekAsync(
@@ -26,6 +29,8 @@ internal sealed class FamilyScreenWalletService : IFamilyScreenWalletService
         int? isoWeek = null,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.ScreenNegotiate, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
         var (y, w) = ResolveWeek(family.Timezone, isoYear, isoWeek);
@@ -38,6 +43,8 @@ internal sealed class FamilyScreenWalletService : IFamilyScreenWalletService
         FamilyScreenWalletProposeRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.ScreenNegotiate, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
         var members = await _families.ListMembersAsync(familyId, cancellationToken);

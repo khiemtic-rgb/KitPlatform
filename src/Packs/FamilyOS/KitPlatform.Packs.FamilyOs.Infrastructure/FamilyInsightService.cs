@@ -10,15 +10,18 @@ internal sealed class FamilyInsightService : IFamilyInsightService
     private readonly FamilyInsightRepository _repo;
     private readonly FamilyGraphRepository _families;
     private readonly IFamilyChallengeService _challenges;
+    private readonly IFamilyCommercialService _commercial;
 
     public FamilyInsightService(
         FamilyInsightRepository repo,
         FamilyGraphRepository families,
-        IFamilyChallengeService challenges)
+        IFamilyChallengeService challenges,
+        IFamilyCommercialService commercial)
     {
         _repo = repo;
         _families = families;
         _challenges = challenges;
+        _commercial = commercial;
     }
 
     public async Task<FamilyWeeklyReportDto> GetWeeklyReportAsync(
@@ -27,6 +30,8 @@ internal sealed class FamilyInsightService : IFamilyInsightService
         int days = 7,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.WeeklyInsight, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 

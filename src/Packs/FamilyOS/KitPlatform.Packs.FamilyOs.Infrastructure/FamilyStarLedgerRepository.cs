@@ -35,6 +35,28 @@ internal sealed class FamilyStarLedgerRepository
             new { TenantId, FamilyId = familyId, MemberId = memberId });
     }
 
+    public async Task<(int Total, int Growth, int Responsibility, int Kindness)> GetBalancesByKindAsync(
+        Guid familyId,
+        Guid memberId,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var row = await conn.QuerySingleAsync<KindBalanceRow>(
+            """
+            SELECT
+                COALESCE(SUM(delta), 0)::int AS Total,
+                COALESCE(SUM(CASE WHEN star_kind = 'growth' THEN delta ELSE 0 END), 0)::int AS Growth,
+                COALESCE(SUM(CASE WHEN star_kind = 'responsibility' THEN delta ELSE 0 END), 0)::int AS Responsibility,
+                COALESCE(SUM(CASE WHEN star_kind = 'kindness' THEN delta ELSE 0 END), 0)::int AS Kindness
+            FROM pack_family.star_ledger
+            WHERE tenant_id = @TenantId
+              AND family_id = @FamilyId
+              AND member_id = @MemberId
+            """,
+            new { TenantId, FamilyId = familyId, MemberId = memberId });
+        return (row.Total, row.Growth, row.Responsibility, row.Kindness);
+    }
+
     public async Task<IReadOnlyDictionary<Guid, LedgerRow>> ListForCommitmentsAsync(
         IEnumerable<Guid> commitmentIds,
         CancellationToken cancellationToken)
@@ -51,7 +73,8 @@ internal sealed class FamilyStarLedgerRepository
                 delta AS Delta,
                 tier AS Tier,
                 star_reward AS StarReward,
-                late_minutes AS LateMinutes
+                late_minutes AS LateMinutes,
+                star_kind AS StarKind
             FROM pack_family.star_ledger
             WHERE tenant_id = @TenantId
               AND commitment_id = ANY(@CommitmentIds)
@@ -66,8 +89,10 @@ internal sealed class FamilyStarLedgerRepository
         Guid memberId,
         StarAwardResult award,
         int starReward,
+        string starKind,
         CancellationToken cancellationToken)
     {
+        var kind = FamilyCurrencyStarKinds.Normalize(starKind);
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
 
@@ -75,11 +100,11 @@ internal sealed class FamilyStarLedgerRepository
             """
             INSERT INTO pack_family.star_ledger (
                 tenant_id, family_id, member_id, commitment_id,
-                delta, tier, star_reward, late_minutes
+                delta, tier, star_reward, late_minutes, star_kind
             )
             VALUES (
                 @TenantId, @FamilyId, @MemberId, @CommitmentId,
-                @Delta, @Tier, @StarReward, @LateMinutes
+                @Delta, @Tier, @StarReward, @LateMinutes, @StarKind
             )
             -- Match partial unique index ux_star_ledger_commitment (commitment_id IS NOT NULL).
             ON CONFLICT (tenant_id, commitment_id) WHERE commitment_id IS NOT NULL DO UPDATE SET
@@ -88,6 +113,7 @@ internal sealed class FamilyStarLedgerRepository
                 tier = EXCLUDED.tier,
                 star_reward = EXCLUDED.star_reward,
                 late_minutes = EXCLUDED.late_minutes,
+                star_kind = EXCLUDED.star_kind,
                 created_at = NOW()
             """,
             new
@@ -100,12 +126,17 @@ internal sealed class FamilyStarLedgerRepository
                 award.Tier,
                 StarReward = starReward,
                 award.LateMinutes,
+                StarKind = kind,
             },
             tx);
 
-        var balance = await conn.ExecuteScalarAsync<int>(
+        var balances = await conn.QuerySingleAsync<KindBalanceRow>(
             """
-            SELECT COALESCE(SUM(delta), 0)::int
+            SELECT
+                COALESCE(SUM(delta), 0)::int AS Total,
+                COALESCE(SUM(CASE WHEN star_kind = 'growth' THEN delta ELSE 0 END), 0)::int AS Growth,
+                COALESCE(SUM(CASE WHEN star_kind = 'responsibility' THEN delta ELSE 0 END), 0)::int AS Responsibility,
+                COALESCE(SUM(CASE WHEN star_kind = 'kindness' THEN delta ELSE 0 END), 0)::int AS Kindness
             FROM pack_family.star_ledger
             WHERE tenant_id = @TenantId
               AND family_id = @FamilyId
@@ -118,10 +149,14 @@ internal sealed class FamilyStarLedgerRepository
 
         return new StarAwardDto(
             award.Delta,
-            balance,
+            balances.Total,
             award.Tier,
             award.LateMinutes,
-            award.LabelVi);
+            award.LabelVi,
+            kind,
+            balances.Growth,
+            balances.Responsibility,
+            balances.Kindness);
     }
 
     public async Task RemoveForCommitmentAsync(
@@ -144,5 +179,14 @@ internal sealed class FamilyStarLedgerRepository
         public string Tier { get; init; } = "";
         public int StarReward { get; init; }
         public int? LateMinutes { get; init; }
+        public string StarKind { get; init; } = FamilyCurrencyStarKinds.Growth;
+    }
+
+    private sealed class KindBalanceRow
+    {
+        public int Total { get; init; }
+        public int Growth { get; init; }
+        public int Responsibility { get; init; }
+        public int Kindness { get; init; }
     }
 }

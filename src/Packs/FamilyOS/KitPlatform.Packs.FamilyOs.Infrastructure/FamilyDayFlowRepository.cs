@@ -166,7 +166,9 @@ internal sealed class FamilyDayFlowRepository
                 tenant_id, day_flow_id, template_id, member_id, title, description,
                 window_start, window_end, sort_order,
                 priority, expected_duration_minutes, context_anchor, depends_on_template_ids,
-                allow_early_complete, early_lead_minutes, on_time_grace_minutes, star_reward
+                allow_early_complete, early_lead_minutes, on_time_grace_minutes, star_reward,
+                habit_stage, reminder_suppressed,
+                currency_category, eligible_for_stars, star_kind, plan_target
             )
             SELECT
                 @TenantId,
@@ -185,7 +187,13 @@ internal sealed class FamilyDayFlowRepository
                 t.allow_early_complete,
                 t.early_lead_minutes,
                 t.on_time_grace_minutes,
-                t.star_reward
+                t.star_reward,
+                t.habit_stage,
+                t.reminder_suppressed,
+                t.currency_category,
+                t.eligible_for_stars,
+                t.star_kind,
+                t.plan_target
             FROM pack_family.commitment_template t
             WHERE t.tenant_id = @TenantId
               AND t.routine_id = @RoutineId
@@ -258,7 +266,9 @@ internal sealed class FamilyDayFlowRepository
                 tenant_id, day_flow_id, template_id, member_id, title, description,
                 window_start, window_end, sort_order,
                 priority, expected_duration_minutes, context_anchor, depends_on_template_ids,
-                allow_early_complete, early_lead_minutes, on_time_grace_minutes, star_reward
+                allow_early_complete, early_lead_minutes, on_time_grace_minutes, star_reward,
+                habit_stage, reminder_suppressed,
+                currency_category, eligible_for_stars, star_kind, plan_target
             )
             SELECT
                 @TenantId,
@@ -277,7 +287,13 @@ internal sealed class FamilyDayFlowRepository
                 t.allow_early_complete,
                 t.early_lead_minutes,
                 t.on_time_grace_minutes,
-                t.star_reward
+                t.star_reward,
+                t.habit_stage,
+                t.reminder_suppressed,
+                t.currency_category,
+                t.eligible_for_stars,
+                t.star_kind,
+                t.plan_target
             FROM pack_family.commitment_template t
             WHERE t.tenant_id = @TenantId
               AND t.routine_id = @RoutineId
@@ -340,9 +356,27 @@ internal sealed class FamilyDayFlowRepository
                 c.pending_star_tier AS PendingStarTier,
                 c.pending_star_late_minutes AS PendingStarLateMinutes,
                 c.star_computed_at AS StarComputedAt,
-                c.star_posted_at AS StarPostedAt
+                c.star_posted_at AS StarPostedAt,
+                COALESCE(t.habit_stage, c.habit_stage, 'new') AS HabitStage,
+                COALESCE(t.habit_streak_days, 0) AS HabitStreakDays,
+                COALESCE(t.reminder_suppressed, c.reminder_suppressed, FALSE) AS ReminderSuppressed,
+                (refl.id IS NOT NULL) AS HasReflection,
+                (quiz.id IS NOT NULL) AS HasRetrievalCheck,
+                COALESCE(c.evidence_level, 0) AS EvidenceLevel,
+                c.confidence_score AS ConfidenceScore,
+                COALESCE(c.currency_category, t.currency_category) AS CurrencyCategory,
+                COALESCE(c.eligible_for_stars, t.eligible_for_stars, TRUE) AS EligibleForStars,
+                COALESCE(c.star_kind, t.star_kind) AS StarKind,
+                COALESCE(c.plan_target, t.plan_target) AS PlanTarget,
+                c.actual_progress AS ActualProgress,
+                c.allocated_base_stars AS AllocatedBaseStars,
+                d.flow_date AS FlowDate
             FROM pack_family.commitment c
+            INNER JOIN pack_family.day_flow d ON d.id = c.day_flow_id
             LEFT JOIN pack_family.membership m ON m.id = c.member_id
+            LEFT JOIN pack_family.commitment_template t ON t.id = c.template_id
+            LEFT JOIN pack_family.commitment_reflection refl ON refl.commitment_id = c.id
+            LEFT JOIN pack_family.commitment_retrieval_check quiz ON quiz.commitment_id = c.id
             WHERE c.tenant_id = @TenantId
               AND c.day_flow_id = @DayFlowId
               AND c.deleted_at IS NULL
@@ -452,10 +486,26 @@ internal sealed class FamilyDayFlowRepository
                 c.pending_star_tier AS PendingStarTier,
                 c.pending_star_late_minutes AS PendingStarLateMinutes,
                 c.star_computed_at AS StarComputedAt,
-                c.star_posted_at AS StarPostedAt
+                c.star_posted_at AS StarPostedAt,
+                COALESCE(t.habit_stage, c.habit_stage, 'new') AS HabitStage,
+                COALESCE(t.habit_streak_days, 0) AS HabitStreakDays,
+                COALESCE(t.reminder_suppressed, c.reminder_suppressed, FALSE) AS ReminderSuppressed,
+                (refl.id IS NOT NULL) AS HasReflection,
+                (quiz.id IS NOT NULL) AS HasRetrievalCheck,
+                COALESCE(c.evidence_level, 0) AS EvidenceLevel,
+                c.confidence_score AS ConfidenceScore,
+                COALESCE(c.currency_category, t.currency_category) AS CurrencyCategory,
+                COALESCE(c.eligible_for_stars, t.eligible_for_stars, TRUE) AS EligibleForStars,
+                COALESCE(c.star_kind, t.star_kind) AS StarKind,
+                COALESCE(c.plan_target, t.plan_target) AS PlanTarget,
+                c.actual_progress AS ActualProgress,
+                c.allocated_base_stars AS AllocatedBaseStars
             FROM pack_family.commitment c
             INNER JOIN pack_family.day_flow d ON d.id = c.day_flow_id
             LEFT JOIN pack_family.membership m ON m.id = c.member_id
+            LEFT JOIN pack_family.commitment_template t ON t.id = c.template_id
+            LEFT JOIN pack_family.commitment_reflection refl ON refl.commitment_id = c.id
+            LEFT JOIN pack_family.commitment_retrieval_check quiz ON quiz.commitment_id = c.id
             WHERE c.tenant_id = @TenantId
               AND c.id = @CommitmentId
               AND d.family_id = @FamilyId
@@ -666,5 +716,18 @@ internal sealed class FamilyDayFlowRepository
         public int? PendingStarLateMinutes { get; init; }
         public DateTimeOffset? StarComputedAt { get; init; }
         public DateTimeOffset? StarPostedAt { get; init; }
+        public string? HabitStage { get; init; }
+        public int HabitStreakDays { get; init; }
+        public bool ReminderSuppressed { get; init; }
+        public bool HasReflection { get; init; }
+        public bool HasRetrievalCheck { get; init; }
+        public int EvidenceLevel { get; init; }
+        public int? ConfidenceScore { get; init; }
+        public string? CurrencyCategory { get; init; }
+        public bool EligibleForStars { get; init; } = true;
+        public string? StarKind { get; init; }
+        public int? PlanTarget { get; init; }
+        public int? ActualProgress { get; init; }
+        public int? AllocatedBaseStars { get; init; }
     }
 }

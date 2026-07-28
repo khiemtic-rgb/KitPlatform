@@ -5,11 +5,19 @@ public sealed record StarAwardDto(
     int Balance,
     string Tier,
     int? LateMinutes,
-    string LabelVi);
+    string LabelVi,
+    string? StarKind = null,
+    int? GrowthBalance = null,
+    int? ResponsibilityBalance = null,
+    int? KindnessBalance = null,
+    string? CurrencyMessageVi = null);
 
 public sealed record MemberStarBalanceDto(
     Guid MemberId,
-    int Balance);
+    int Balance,
+    int Growth = 0,
+    int Responsibility = 0,
+    int Kindness = 0);
 
 public interface IFamilyStarService
 {
@@ -29,6 +37,11 @@ public interface IFamilyStarService
         CancellationToken cancellationToken = default);
 
     Task<int> GetMemberBalanceAsync(
+        Guid familyId,
+        Guid memberId,
+        CancellationToken cancellationToken = default);
+
+    Task<MemberStarBalanceDto> GetMemberBalancesAsync(
         Guid familyId,
         Guid memberId,
         CancellationToken cancellationToken = default);

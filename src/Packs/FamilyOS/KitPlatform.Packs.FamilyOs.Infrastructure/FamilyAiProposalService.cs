@@ -15,6 +15,7 @@ internal sealed class FamilyAiProposalService : IFamilyAiProposalService
     private readonly IFamilyRoutineService _routines;
     private readonly IFamilyOsParentPushService _parentPush;
     private readonly KitPlatform.Application.Abstractions.ITenantContext _tenant;
+    private readonly IFamilyCommercialService _commercial;
 
     public FamilyAiProposalService(
         FamilyAiProposalRepository repo,
@@ -26,7 +27,8 @@ internal sealed class FamilyAiProposalService : IFamilyAiProposalService
         IFamilyCalendarPeriodService periods,
         IFamilyRoutineService routines,
         IFamilyOsParentPushService parentPush,
-        KitPlatform.Application.Abstractions.ITenantContext tenant)
+        KitPlatform.Application.Abstractions.ITenantContext tenant,
+        IFamilyCommercialService commercial)
     {
         _repo = repo;
         _families = families;
@@ -38,6 +40,7 @@ internal sealed class FamilyAiProposalService : IFamilyAiProposalService
         _routines = routines;
         _parentPush = parentPush;
         _tenant = tenant;
+        _commercial = commercial;
     }
 
     public async Task<IReadOnlyList<FamilyAiProposalDto>> ListPendingAsync(
@@ -103,6 +106,8 @@ internal sealed class FamilyAiProposalService : IFamilyAiProposalService
         Guid familyId,
         CancellationToken cancellationToken = default)
     {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.AiSuggest, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 
@@ -232,6 +237,60 @@ internal sealed class FamilyAiProposalService : IFamilyAiProposalService
         catch
         {
             // optional
+        }
+
+        // AI+ deep: sibling balance + evening risk (templated, no LLM).
+        try
+        {
+            var pack = await _commercial.GetCapabilityPackAsync(familyId, cancellationToken);
+            var hasDeep = pack.Capabilities.Contains(
+                FamilyCapabilityCodes.AiPlusDeep, StringComparer.OrdinalIgnoreCase);
+            if (hasDeep && children.Count >= 2)
+            {
+                var a = children[0];
+                var b = children[1];
+                var dto = await TryCreateAsync(
+                    familyId,
+                    FamilyAiProposalKinds.Other,
+                    $"Cân bằng anh chị — {ShortName(a.DisplayName)} & {ShortName(b.DisplayName)}?",
+                    "AI+ gợi ý tuần này: mỗi con một việc tự chọn trước 19:00, bố mẹ chỉ quan sát — giảm so sánh.",
+                    JsonSerializer.Serialize(new
+                    {
+                        kind = "sibling_balance",
+                        memberIds = new[] { a.Id, b.Id },
+                    }),
+                    $"sibling_balance:{a.Id:D}:{b.Id:D}:{DateTime.UtcNow:yyyy-MM-dd}",
+                    null,
+                    cancellationToken);
+                if (dto is not null) created++;
+            }
+
+            if (hasDeep)
+            {
+                var localNow = FamilyTimeZones.NowIn(family.Timezone).DateTime;
+                if (localNow.Hour >= 18)
+                {
+                    var focus = children.FirstOrDefault();
+                    var dto = await TryCreateAsync(
+                        familyId,
+                        FamilyAiProposalKinds.Other,
+                        "Tối nay: giảm rủi ro căng thẳng?",
+                        "AI+ gợi ý: cắt 1 nhắc không cần thiết sau 19:30, đổi thành câu hỏi ngắn (“Cần giúp gì?”).",
+                        JsonSerializer.Serialize(new
+                        {
+                            kind = "evening_risk",
+                            memberId = focus?.Id,
+                        }),
+                        $"evening_risk:{DateOnly.FromDateTime(localNow):yyyy-MM-dd}",
+                        focus?.Id,
+                        cancellationToken);
+                    if (dto is not null) created++;
+                }
+            }
+        }
+        catch
+        {
+            // optional deep scan
         }
 
         if (created > 0)

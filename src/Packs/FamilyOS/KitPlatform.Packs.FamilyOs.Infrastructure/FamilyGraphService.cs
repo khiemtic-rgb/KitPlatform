@@ -5,8 +5,13 @@ namespace KitPlatform.Packs.FamilyOs.Infrastructure;
 internal sealed class FamilyGraphService : IFamilyGraphService
 {
     private readonly FamilyGraphRepository _repo;
+    private readonly IFamilyCommercialService _commercial;
 
-    public FamilyGraphService(FamilyGraphRepository repo) => _repo = repo;
+    public FamilyGraphService(FamilyGraphRepository repo, IFamilyCommercialService commercial)
+    {
+        _repo = repo;
+        _commercial = commercial;
+    }
 
     public async Task<IReadOnlyList<FamilyDto>> ListFamiliesAsync(CancellationToken cancellationToken = default)
     {
@@ -95,6 +100,10 @@ internal sealed class FamilyGraphService : IFamilyGraphService
     {
         var family = await _repo.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+
+        var role = (request.RoleCode ?? "").Trim().ToLowerInvariant();
+        if (role == FamilyMembershipRoles.Child)
+            await _commercial.EnsureCanAddChildAsync(familyId, cancellationToken);
 
         var row = await InsertValidatedMemberAsync(
             family.Id,

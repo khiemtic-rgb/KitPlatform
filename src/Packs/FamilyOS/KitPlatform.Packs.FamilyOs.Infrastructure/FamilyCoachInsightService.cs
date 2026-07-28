@@ -10,15 +10,18 @@ internal sealed class FamilyCoachInsightService : IFamilyCoachInsightService
     private readonly FamilyCoachInsightRepository _repo;
     private readonly FamilyGraphRepository _families;
     private readonly IFamilyDayFlowService _dayFlows;
+    private readonly IFamilyCommercialService _commercial;
 
     public FamilyCoachInsightService(
         FamilyCoachInsightRepository repo,
         FamilyGraphRepository families,
-        IFamilyDayFlowService dayFlows)
+        IFamilyDayFlowService dayFlows,
+        IFamilyCommercialService commercial)
     {
         _repo = repo;
         _families = families;
         _dayFlows = dayFlows;
+        _commercial = commercial;
     }
 
     public async Task<FamilyCoachInsightDto> GetInsightAsync(
@@ -26,6 +29,10 @@ internal sealed class FamilyCoachInsightService : IFamilyCoachInsightService
         DateOnly? flowDate = null,
         CancellationToken cancellationToken = default)
     {
+        // Coach-like daily insight is Pro+ (parenting_coach), not Free weekly_insight.
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.ParentingCoach, cancellationToken);
+
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 

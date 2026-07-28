@@ -36,4 +36,13 @@
 232_pack_family_afe_engine.sql
 233_pack_family_day_mission_request.sql
 234_pack_family_routine_trim_proposal.sql
+240_pack_family_behavior_os_wave1.sql
+241_pack_family_behavior_os_wave2.sql
+242_pack_family_behavior_os_wave3.sql
+243_pack_family_behavior_os_wave4.sql
+244_pack_family_behavior_os_wave5.sql
+245_pack_family_currency_economics.sql
+246_pack_family_parent_success_p2.sql
+247_pack_family_parent_coach_acted.sql
+248_pack_family_commercial_packaging_v1.sql
 # Optional (owner ALTER tenants CHECK): 192a_pack_family_os_vertical_owner.sql

@@ -27,10 +27,11 @@ internal sealed class FamilyBillingService : IFamilyBillingService
         CancellationToken cancellationToken = default)
     {
         var planCode = string.IsNullOrWhiteSpace(request.PlanCode)
-            ? FamilyBillingPlans.StarterMonth
+            ? FamilyBillingPlans.FamilyProMonth
             : request.PlanCode.Trim().ToLowerInvariant();
-        if (planCode != FamilyBillingPlans.StarterMonth)
-            throw new InvalidOperationException("Gói không hỗ trợ — hiện chỉ có starter_month.");
+        if (!FamilyPlanCapabilityMatrix.IsPaidCheckoutPlan(planCode))
+            throw new InvalidOperationException(
+                "Gói không hỗ trợ checkout — chọn Plus / Family Pro / Family AI+.");
 
         // Ensure plan amount matches Famixa config override if present.
         _ = _billing.StarterMonthAmountVnd;

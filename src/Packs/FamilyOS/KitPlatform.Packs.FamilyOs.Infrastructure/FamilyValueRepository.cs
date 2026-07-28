@@ -132,6 +132,26 @@ internal sealed class FamilyValueRepository
             });
     }
 
+    public async Task<int> GetNudgeCountAsync(
+        Guid familyId,
+        DateOnly nudgeDate,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.ExecuteScalarAsync<int>(
+            """
+            SELECT COALESCE((
+                SELECT nudge_count
+                FROM pack_family.parent_nudge_day
+                WHERE tenant_id = @TenantId
+                  AND family_id = @FamilyId
+                  AND nudge_date = @NudgeDate
+                  AND deleted_at IS NULL
+            ), 0)
+            """,
+            new { TenantId, FamilyId = familyId, NudgeDate = nudgeDate });
+    }
+
     public async Task<IReadOnlyList<NudgeDayRow>> ListNudgeDaysAsync(
         Guid familyId,
         DateOnly from,

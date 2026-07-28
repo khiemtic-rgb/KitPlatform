@@ -617,9 +617,10 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
 
         if (row is null)
         {
-            // Missing row = not entitled for commercial tenants (no forever-pilot leak).
-            return new FamilySubscriptionDto(
-                familyId, "none", FamilySubscriptionStatuses.Expired, null, null, false);
+            // Missing row → Free soft tier (not forever pilot paid).
+            return EnrichSubscription(
+                new FamilySubscriptionDto(
+                    familyId, FamilyPlanCodes.Free, FamilySubscriptionStatuses.Expired, null, null, false));
         }
 
         var status = NormalizeSubscriptionStatus(row);
@@ -655,25 +656,129 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
                 trialDaysRemaining = total;
         }
 
-        return new FamilySubscriptionDto(
-            row.FamilyId,
-            row.PlanCode,
-            status,
-            row.TrialEndsAt is DateTime t ? new DateTimeOffset(DateTime.SpecifyKind(t, DateTimeKind.Utc)) : null,
-            row.CurrentPeriodEnd is DateTime p ? new DateTimeOffset(DateTime.SpecifyKind(p, DateTimeKind.Utc)) : null,
-            entitled,
-            trialDaysRemaining,
-            trialDaysTotal);
+        return EnrichSubscription(
+            new FamilySubscriptionDto(
+                row.FamilyId,
+                row.PlanCode,
+                status,
+                row.TrialEndsAt is DateTime t ? new DateTimeOffset(DateTime.SpecifyKind(t, DateTimeKind.Utc)) : null,
+                row.CurrentPeriodEnd is DateTime p ? new DateTimeOffset(DateTime.SpecifyKind(p, DateTimeKind.Utc)) : null,
+                entitled,
+                trialDaysRemaining,
+                trialDaysTotal));
     }
+
+    public Task<FamilyCapabilityPackDto> GetCapabilityPackAsync(
+        Guid familyId,
+        CancellationToken cancellationToken = default) =>
+        GetCapabilityPackFromSubAsync(familyId, cancellationToken);
 
     public async Task EnsureEntitledAsync(
         Guid familyId,
         CancellationToken cancellationToken = default)
     {
+        // Packaging v1: CoreRoutine remains available on Free after trial —
+        // keep EnsureEntitled for legacy callers that mean "paid surface".
         var sub = await GetSubscriptionAsync(familyId, cancellationToken);
         if (!sub.IsEntitled)
             throw new InvalidOperationException(
-                "Gói Family OS đã hết hạn — gia hạn để tiếp tục dùng Daily Flow và thưởng sao.");
+                "Gói trả phí / trial đã hết — nâng Family Peace Plan để mở Coach, ROP và Letter. Free vẫn dùng được routine cơ bản.");
+    }
+
+    public async Task EnsureCapabilityAsync(
+        Guid familyId,
+        string capabilityCode,
+        CancellationToken cancellationToken = default)
+    {
+        var pack = await GetCapabilityPackFromSubAsync(familyId, cancellationToken);
+        var code = (capabilityCode ?? "").Trim().ToLowerInvariant();
+        if (pack.Capabilities.Contains(code, StringComparer.OrdinalIgnoreCase))
+            return;
+
+        var hint = pack.UpgradeHintVi
+            ?? "Nâng gói Famixa để mở tính năng này.";
+        throw new InvalidOperationException(
+            $"Gói {pack.DisplayNameVi} chưa gồm tính năng này. {hint}");
+    }
+
+    public async Task EnsureCanAddChildAsync(
+        Guid familyId,
+        CancellationToken cancellationToken = default)
+    {
+        var pack = await GetCapabilityPackFromSubAsync(familyId, cancellationToken);
+        if (pack.MaxChildren is null)
+            return;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var childCount = await conn.ExecuteScalarAsync<int>(
+            """
+            SELECT COUNT(*)::int
+            FROM pack_family.membership
+            WHERE family_id = @FamilyId
+              AND tenant_id = @TenantId
+              AND LOWER(role_code) = 'child'
+              AND deleted_at IS NULL
+            """,
+            new
+            {
+                FamilyId = familyId,
+                TenantId = _tenant.IsAuthenticated ? _tenant.TenantId : Guid.Empty,
+            });
+
+        // When tenant filter empty (edge), recount without tenant.
+        if (!_tenant.IsAuthenticated || _tenant.TenantId == Guid.Empty)
+        {
+            childCount = await conn.ExecuteScalarAsync<int>(
+                """
+                SELECT COUNT(*)::int
+                FROM pack_family.membership
+                WHERE family_id = @FamilyId
+                  AND LOWER(role_code) = 'child'
+                  AND deleted_at IS NULL
+                """,
+                new { FamilyId = familyId });
+        }
+
+        if (childCount >= pack.MaxChildren.Value)
+        {
+            throw new InvalidOperationException(
+                $"Gói {pack.DisplayNameVi} tối đa {pack.MaxChildren} trẻ. {pack.UpgradeHintVi}");
+        }
+    }
+
+    private async Task<FamilyCapabilityPackDto> GetCapabilityPackFromSubAsync(
+        Guid familyId,
+        CancellationToken cancellationToken)
+    {
+        var sub = await GetSubscriptionAsync(familyId, cancellationToken);
+        var tier = FamilyPlanCapabilityMatrix.ResolveTier(sub.PlanCode, sub.IsEntitled, sub.Status);
+        return new FamilyCapabilityPackDto(
+            familyId,
+            sub.PlanCode,
+            tier,
+            FamilyPlanCapabilityMatrix.DisplayNameVi(tier),
+            FamilyPlanCapabilityMatrix.OutcomeNameVi(tier),
+            sub.IsEntitled,
+            sub.Status,
+            FamilyPlanCapabilityMatrix.MaxChildrenForTier(tier),
+            FamilyPlanCapabilityMatrix.CapabilitiesForTier(tier),
+            FamilyPlanCapabilityMatrix.RecommendedUpgrade(tier),
+            FamilyPlanCapabilityMatrix.UpgradeHintVi(tier));
+    }
+
+    private static FamilySubscriptionDto EnrichSubscription(FamilySubscriptionDto sub)
+    {
+        var tier = FamilyPlanCapabilityMatrix.ResolveTier(sub.PlanCode, sub.IsEntitled, sub.Status);
+        return sub with
+        {
+            TierCode = tier,
+            DisplayNameVi = FamilyPlanCapabilityMatrix.DisplayNameVi(tier),
+            OutcomeNameVi = FamilyPlanCapabilityMatrix.OutcomeNameVi(tier),
+            MaxChildren = FamilyPlanCapabilityMatrix.MaxChildrenForTier(tier),
+            Capabilities = FamilyPlanCapabilityMatrix.CapabilitiesForTier(tier),
+            RecommendedUpgradePlanCode = FamilyPlanCapabilityMatrix.RecommendedUpgrade(tier),
+            UpgradeHintVi = FamilyPlanCapabilityMatrix.UpgradeHintVi(tier),
+        };
     }
 
     public async Task<FamilySubscriptionDto> ExtendTrialAsync(

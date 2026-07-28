@@ -56,7 +56,7 @@ internal sealed class FamilyRewardService : IFamilyRewardService
         RewardRedeemRequest request,
         CancellationToken cancellationToken = default)
     {
-        await _commercial.EnsureEntitledAsync(familyId, cancellationToken);
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
 
         if (await _families.GetFamilyAsync(familyId, cancellationToken) is null)
             throw new InvalidOperationException("Không tìm thấy gia đình.");

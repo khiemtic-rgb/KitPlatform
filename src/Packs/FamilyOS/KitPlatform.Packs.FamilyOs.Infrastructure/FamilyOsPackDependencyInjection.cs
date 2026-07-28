@@ -23,6 +23,8 @@ public static class FamilyOsPackDependencyInjection
         services.AddScoped<IFamilyCalendarPeriodService, FamilyCalendarPeriodService>();
         services.AddScoped<FamilyDayFlowRepository>();
         services.AddScoped<IFamilyDayFlowService, FamilyDayFlowService>();
+        services.AddScoped<FamilyBehaviorRepository>();
+        services.AddScoped<IFamilyBehaviorService, FamilyBehaviorService>();
         services.AddScoped<FamilyAgreementRepository>();
         services.AddScoped<FamilyAccountabilityOptionRepository>();
         services.AddScoped<IFamilyAgreementService, FamilyAgreementService>();
@@ -34,6 +36,9 @@ public static class FamilyOsPackDependencyInjection
         services.AddScoped<IFamilyCoachInsightService, FamilyCoachInsightService>();
         services.AddScoped<FamilyInsightRepository>();
         services.AddScoped<IFamilyInsightService, FamilyInsightService>();
+        services.AddScoped<FamilyParentSuccessRepository>();
+        services.AddScoped<IFamilyParentSuccessService, FamilyParentSuccessService>();
+        services.AddScoped<IFamilyAiDigestService, FamilyAiDigestService>();
         services.AddScoped<FamilyOsParentPushRepository>();
         services.AddScoped<IFamilyOsParentPushService, FamilyOsParentPushService>();
         services.AddScoped<FamilyValueRepository>();
@@ -44,8 +49,12 @@ public static class FamilyOsPackDependencyInjection
         services.AddScoped<IFamilyGratitudeService, FamilyGratitudeService>();
         services.AddScoped<FamilyStarLedgerRepository>();
         services.AddScoped<FamilyStarSettingsRepository>();
+        services.AddScoped<FamilyCurrencySettingsRepository>();
+        services.AddScoped<FamilyBadgeRepository>();
         services.AddScoped<IFamilyStarService, FamilyStarService>();
         services.AddScoped<IFamilyStarSettingsService, FamilyStarSettingsService>();
+        services.AddScoped<IFamilyCurrencySettingsService, FamilyCurrencySettingsService>();
+        services.AddScoped<IFamilyBadgeService, FamilyBadgeService>();
         services.AddScoped<FamilyRewardRepository>();
         services.AddScoped<IFamilyRewardService, FamilyRewardService>();
         services.AddScoped<FamilyMoodRepository>();

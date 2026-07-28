@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Form, InputNumber, message, Space, Typography } from 'antd';
+import { Button, Form, InputNumber, message, Select, Space, Switch, Typography } from 'antd';
 import {
   ArrowDownOutlined,
   ArrowLeftOutlined,
@@ -15,9 +15,13 @@ import {
 import { Link } from 'react-router-dom';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
+  applyFamilyCurrencyPreset,
   fetchFamilies,
+  fetchFamilyCurrencySettings,
   fetchFamilyStarSettings,
+  updateFamilyCurrencySettings,
   updateFamilyStarSettings,
+  type FamilyCurrencySettings,
   type FamilyStarSettings,
   type FamilySummary,
 } from '@/shared/api/family-os.api';
@@ -29,6 +33,12 @@ type SettingsFormValues = {
   lateT3Minutes: number;
   lateHalfPct: number;
   latePenaltyHalfPct: number;
+};
+
+type CurrencyFormValues = {
+  enabled: boolean;
+  ageBand: string | null;
+  dailyBudgetOverride: number | null;
 };
 
 const DEFAULTS: SettingsFormValues = {
@@ -70,7 +80,9 @@ export function FamilyOsStarSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [family, setFamily] = useState<FamilySummary | null>(null);
   const [settings, setSettings] = useState<FamilyStarSettings | null>(null);
+  const [currency, setCurrency] = useState<FamilyCurrencySettings | null>(null);
   const [form] = Form.useForm<SettingsFormValues>();
+  const [currencyForm] = Form.useForm<CurrencyFormValues>();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -80,17 +92,27 @@ export function FamilyOsStarSettingsPage() {
       setFamily(first);
       if (!first) {
         setSettings(null);
+        setCurrency(null);
         return;
       }
-      const row = await fetchFamilyStarSettings(first.id);
+      const [row, currencyRow] = await Promise.all([
+        fetchFamilyStarSettings(first.id),
+        fetchFamilyCurrencySettings(first.id),
+      ]);
       setSettings(row);
+      setCurrency(currencyRow);
       form.setFieldsValue(toFormValues(row));
+      currencyForm.setFieldsValue({
+        enabled: currencyRow.enabled,
+        ageBand: currencyRow.ageBand,
+        dailyBudgetOverride: currencyRow.dailyBudgetOverride,
+      });
     } catch (error) {
       message.error(apiErrorMessage(error, 'Không tải được cài đặt sao'));
     } finally {
       setLoading(false);
     }
-  }, [form]);
+  }, [form, currencyForm]);
 
   useEffect(() => {
     void load();
@@ -99,21 +121,50 @@ export function FamilyOsStarSettingsPage() {
   const save = async () => {
     if (!family) return;
     const values = await form.validateFields();
+    const currencyValues = await currencyForm.validateFields();
     setSaving(true);
     try {
-      const updated = await updateFamilyStarSettings(family.id, {
-        lateT1Minutes: values.lateT1Minutes,
-        lateT2Minutes: values.lateT2Minutes,
-        lateT3Minutes: values.lateT3Minutes,
-        lateHalfPct: values.lateHalfPct,
-        lateZeroPct: 0,
-        latePenaltyHalfPct: values.latePenaltyHalfPct,
-        latePenaltyFullPct: -100,
-      });
+      const [updated, currencyUpdated] = await Promise.all([
+        updateFamilyStarSettings(family.id, {
+          lateT1Minutes: values.lateT1Minutes,
+          lateT2Minutes: values.lateT2Minutes,
+          lateT3Minutes: values.lateT3Minutes,
+          lateHalfPct: values.lateHalfPct,
+          lateZeroPct: 0,
+          latePenaltyHalfPct: values.latePenaltyHalfPct,
+          latePenaltyFullPct: -100,
+        }),
+        updateFamilyCurrencySettings(family.id, {
+          enabled: currencyValues.enabled,
+          presetId: 'balanced_v1',
+          ageBand: currencyValues.ageBand,
+          dailyBudgetOverride: currencyValues.dailyBudgetOverride,
+        }),
+      ]);
       setSettings(updated);
-      message.success('Đã lưu luật sao muộn');
+      setCurrency(currencyUpdated);
+      message.success('Đã lưu Family Currency + luật sao muộn');
     } catch (error) {
       message.error(apiErrorMessage(error, 'Không lưu được cài đặt'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const applyPreset = async () => {
+    if (!family) return;
+    setSaving(true);
+    try {
+      const currencyUpdated = await applyFamilyCurrencyPreset(family.id, 'balanced_v1');
+      setCurrency(currencyUpdated);
+      currencyForm.setFieldsValue({
+        enabled: currencyUpdated.enabled,
+        ageBand: currencyUpdated.ageBand,
+        dailyBudgetOverride: currencyUpdated.dailyBudgetOverride,
+      });
+      message.success('Đã áp preset balanced_v1 (ngân sách ngày + trọng số nhóm)');
+    } catch (error) {
+      message.error(apiErrorMessage(error, 'Không áp được preset'));
     } finally {
       setSaving(false);
     }
@@ -219,14 +270,17 @@ export function FamilyOsStarSettingsPage() {
             i
           </span>
           <div>
-            <strong>Luật sao áp dụng khi bé hoàn thành sau khung giờ (window_end).</strong>
+            <strong>Family Currency — SAO như tiền tệ gia đình (khan hiếm + phản ánh giá trị).</strong>
             <p>
-              Mỗi cam kết có <em>star_reward</em> riêng ở tab Nhịp sống. Bảng dưới chỉ điều chỉnh
-              ngưỡng phút muộn và hệ số % so với star_reward của từng việc.
+              Ngân sách ngày + AI phân bổ theo nhóm phát triển. Luật muộn bên dưới vẫn áp sau khi đã
+              có base từ ngân sách.
             </p>
             <p className="fr-banner-shield">
               <SafetyCertificateOutlined aria-hidden />
-              <span>App con vẫn nhận delta từ API — không hardcode trên FE.</span>
+              <span>
+                Ngân sách hiện tại: {currency?.resolvedDailyBudget ?? '—'} sao/ngày · nhóm tuổi{' '}
+                {currency?.resolvedAgeBand ?? '—'}
+              </span>
             </p>
           </div>
         </div>
@@ -242,6 +296,53 @@ export function FamilyOsStarSettingsPage() {
           </Typography.Text>
         </section>
       ) : (
+        <>
+          <Form form={currencyForm} layout="vertical" disabled={loading}>
+            <section className="fr-card">
+              <div className="fr-section-head">
+                <h2>Family Currency (preset balanced_v1)</h2>
+                <Button onClick={() => void applyPreset()} loading={saving}>
+                  Áp preset mẫu
+                </Button>
+              </div>
+              <Form.Item name="enabled" label="Bật ngân sách ngày + phân bổ giá trị" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+              <Space wrap size="large">
+                <Form.Item name="ageBand" label="Nhóm tuổi (để trống = theo ngày sinh)">
+                  <Select
+                    allowClear
+                    style={{ minWidth: 220 }}
+                    options={[
+                      { value: '6_10', label: '6–10 · 20 sao' },
+                      { value: '11_15', label: '11–15 · 30 sao' },
+                      { value: '16_18', label: '16–18 · 40 sao' },
+                      { value: 'custom', label: 'Tự cấu hình ngân sách' },
+                    ]}
+                    placeholder="Theo ngày sinh / mặc định 11–15"
+                  />
+                </Form.Item>
+                <Form.Item name="dailyBudgetOverride" label="Ngân sách ngày (10–80, tùy chọn)">
+                  <InputNumber min={10} max={80} step={5} />
+                </Form.Item>
+              </Space>
+              {currency && currency.categoryWeights.length > 0 ? (
+                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  {currency.categoryWeights.map((w) => (
+                    <li key={w.code}>
+                      {w.labelVi}: <strong>{w.budgetPct}%</strong>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <Typography.Text type="secondary">
+                  Trọng số mẫu: Phát triển 48% · Trách nhiệm 28% · Tích cực 16% · Động viên 6% · Giải
+                  trí 2%
+                </Typography.Text>
+              )}
+            </section>
+          </Form>
+
         <Form form={form} layout="vertical" disabled={loading}>
           <section className="fr-card">
             <div className="fr-section-head">
@@ -432,6 +533,7 @@ export function FamilyOsStarSettingsPage() {
             </div>
           </section>
         </Form>
+        </>
       )}
     </div>
   );

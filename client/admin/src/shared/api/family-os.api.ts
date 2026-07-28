@@ -608,6 +608,85 @@ export async function updateFamilyStarSettings(
   return mapFamilyStarSettings(data);
 }
 
+export interface FamilyCurrencySettings {
+  enabled: boolean;
+  presetId: string;
+  ageBand: string | null;
+  dailyBudgetOverride: number | null;
+  resolvedDailyBudget: number;
+  resolvedAgeBand: string;
+  isConfigured: boolean;
+  categoryWeights: Array<{ code: string; labelVi: string; budgetPct: number }>;
+}
+
+export type UpdateFamilyCurrencySettingsPayload = {
+  enabled: boolean;
+  presetId?: string | null;
+  ageBand?: string | null;
+  dailyBudgetOverride?: number | null;
+};
+
+function mapFamilyCurrencySettings(data: UnknownRow): FamilyCurrencySettings {
+  const config = (data.config ?? data.Config ?? {}) as UnknownRow;
+  const weightsRaw = Array.isArray(config.categoryWeights)
+    ? config.categoryWeights
+    : Array.isArray(config.CategoryWeights)
+      ? config.CategoryWeights
+      : [];
+  return {
+    enabled: Boolean(data.enabled ?? data.Enabled ?? true),
+    presetId: String(data.presetId ?? data.PresetId ?? 'balanced_v1'),
+    ageBand: (data.ageBand ?? data.AgeBand ?? null) as string | null,
+    dailyBudgetOverride:
+      data.dailyBudgetOverride == null && data.DailyBudgetOverride == null
+        ? null
+        : Number(data.dailyBudgetOverride ?? data.DailyBudgetOverride),
+    resolvedDailyBudget: Number(data.resolvedDailyBudget ?? data.ResolvedDailyBudget ?? 30),
+    resolvedAgeBand: String(data.resolvedAgeBand ?? data.ResolvedAgeBand ?? '11_15'),
+    isConfigured: Boolean(data.isConfigured ?? data.IsConfigured ?? false),
+    categoryWeights: weightsRaw.map((w) => {
+      const row = w as UnknownRow;
+      return {
+        code: String(row.code ?? row.Code ?? ''),
+        labelVi: String(row.labelVi ?? row.LabelVi ?? ''),
+        budgetPct: Number(row.budgetPct ?? row.BudgetPct ?? 0),
+      };
+    }),
+  };
+}
+
+export async function fetchFamilyCurrencySettings(
+  familyId: string,
+): Promise<FamilyCurrencySettings> {
+  const { data } = await http.get<UnknownRow>(
+    `/family-os/families/${familyId}/currency-settings`,
+  );
+  return mapFamilyCurrencySettings(data);
+}
+
+export async function updateFamilyCurrencySettings(
+  familyId: string,
+  payload: UpdateFamilyCurrencySettingsPayload,
+): Promise<FamilyCurrencySettings> {
+  const { data } = await http.put<UnknownRow>(
+    `/family-os/families/${familyId}/currency-settings`,
+    payload,
+  );
+  return mapFamilyCurrencySettings(data);
+}
+
+export async function applyFamilyCurrencyPreset(
+  familyId: string,
+  presetId = 'balanced_v1',
+): Promise<FamilyCurrencySettings> {
+  const { data } = await http.post<UnknownRow>(
+    `/family-os/families/${familyId}/currency-settings/apply-preset`,
+    null,
+    { params: { presetId } },
+  );
+  return mapFamilyCurrencySettings(data);
+}
+
 export async function ensureDayFlow(familyId: string): Promise<DayFlow> {
   const { data } = await http.post<UnknownRow>(`/family-os/families/${familyId}/day-flows/ensure`, {});
   const commitmentsRaw = Array.isArray(data.commitments)

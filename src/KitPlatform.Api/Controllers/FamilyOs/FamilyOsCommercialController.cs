@@ -96,6 +96,25 @@ public sealed class FamilyOsCommercialController : ControllerBase
         }
     }
 
+    /// <summary>Commercial packaging v1 — effective tier + capability list.</summary>
+    [Authorize]
+    [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]
+    [HttpGet("families/{familyId:guid}/capabilities")]
+    [ProducesResponseType(typeof(FamilyCapabilityPackDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<FamilyCapabilityPackDto>> GetCapabilities(
+        Guid familyId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _commercial.GetCapabilityPackAsync(familyId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { code = "validation_error", message = ex.Message });
+        }
+    }
+
     [Authorize]
     [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]
     [HttpPut("families/{familyId:guid}/parent-pin")]
