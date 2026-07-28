@@ -2029,34 +2029,6 @@ export function KidFocusView({
               })()}
             </p>
           </aside>
-          <style>{`
-            .kv2-bos-banner {
-              margin: 0 0 12px;
-              padding: 14px 14px 12px;
-              border-radius: 16px;
-              background: linear-gradient(140deg, #e8f6f1, #f3f7e8);
-              border: 1px solid #c5ddd2;
-              color: #1c342c;
-            }
-            .kv2-bos-eyebrow {
-              margin: 0 0 4px;
-              font-size: 11px;
-              letter-spacing: 0.07em;
-              text-transform: uppercase;
-              opacity: 0.65;
-            }
-            .kv2-bos-banner strong {
-              display: block;
-              font-size: 1.05rem;
-              line-height: 1.35;
-              margin-bottom: 4px;
-            }
-            .kv2-bos-banner p {
-              margin: 0;
-              font-size: 0.88rem;
-              opacity: 0.8;
-            }
-          `}</style>
           <div className="kv2-hero-row">
             <article className={`kv2-movie${teamComplete ? ' is-ready' : ''}`}>
               <div className="kv2-movie-copy">
