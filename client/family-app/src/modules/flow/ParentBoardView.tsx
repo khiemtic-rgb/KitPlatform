@@ -45,6 +45,8 @@ import {
   recordParentCoachActed,
 } from '@/shared/api/family-os.api';
 import { DecisionInboxPanel } from '@/modules/flow/DecisionInboxPanel';
+import { FamilyChallengeCard } from '@/modules/flow/FamilyChallengeCard';
+import { ParentGoalsPanel } from '@/modules/flow/ParentGoalsPanel';
 import { FamilyModeSheet } from '@/modules/flow/FamilyModeSheet';
 import { shareOrCopyNudge } from '@/shared/nudge/nudge';
 import {
@@ -520,7 +522,18 @@ export function ParentBoardView({
   const navigate = useNavigate();
   const [softGuide, setSoftGuide] = useState<SoftLockGuide | null>(null);
   const [missionFilter, setMissionFilter] = useState<MissionFilter>('all');
-  const [tab, setTab] = useState<ParentTab>('home');
+  const [tab, setTab] = useState<ParentTab>(() => {
+    try {
+      const raw = sessionStorage.getItem('famixa.parentTab');
+      if (raw === 'home' || raw === 'tasks' || raw === 'rewards' || raw === 'value') {
+        sessionStorage.removeItem('famixa.parentTab');
+        return raw;
+      }
+    } catch {
+      /* ignore */
+    }
+    return 'home';
+  });
   const [verifiedTick, setVerifiedTick] = useState(0);
   const [nudgeTick, setNudgeTick] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -2114,6 +2127,39 @@ export function ParentBoardView({
           ) : (
             <BillingBanner familyId={familyId} />
           )}
+
+          <nav className="ph-b4-explore-row" aria-label="Khám phá nhanh">
+            <button type="button" onClick={openCoachOrPaywall}>
+              <i className="is-green" aria-hidden>
+                🤖
+              </i>
+              AI Coach
+            </button>
+            <button type="button" onClick={() => goValueAnchor('fv-rop')}>
+              <i className="is-pink" aria-hidden>
+                📘
+              </i>
+              Family Report
+            </button>
+            <button type="button" onClick={() => goValueAnchor('fv-3q')}>
+              <i className="is-purple" aria-hidden>
+                🎯
+              </i>
+              3Q tối
+            </button>
+            <button type="button" onClick={() => setTab('rewards')}>
+              <i className="is-yellow" aria-hidden>
+                ⭐
+              </i>
+              Điểm & thưởng
+            </button>
+            <button type="button" onClick={() => setTab('tasks')}>
+              <i className="is-blue" aria-hidden>
+                📅
+              </i>
+              Sự kiện
+            </button>
+          </nav>
         </div>
       ) : null}
 
@@ -3149,6 +3195,23 @@ export function ParentBoardView({
             </div>
           </section>
 
+          <section className="ph-treasure-sec" aria-label="Challenge và mục tiêu bố mẹ">
+            {parentMembershipId ? (
+              <>
+                <FamilyChallengeCard
+                  familyId={familyId}
+                  memberId={parentMembershipId}
+                  isParent
+                />
+                <ParentGoalsPanel
+                  familyId={familyId}
+                  memberId={parentMembershipId}
+                  viewerName={viewerName}
+                />
+              </>
+            ) : null}
+          </section>
+
           {pendingRedemptions.length > 0 ? (
             <section className="ph-treasure-sec">
               <header className="ph-treasure-sec-head">
@@ -3441,57 +3504,18 @@ export function ParentBoardView({
         </div>
       </details>
 
-      <nav
-        className={`ph-tabbar${tab === 'home' ? ' ph-tabbar--b4' : ''}`}
-        aria-label="Điều hướng bố mẹ"
-      >
-        {tab === 'home' ? (
-          <>
-            <button type="button" className="ph-tab" onClick={openCoachOrPaywall}>
-              <span aria-hidden>🤖</span>
-              AI Coach
-            </button>
-            <button type="button" className="ph-tab" onClick={() => goValueAnchor('fv-3q')}>
-              <span aria-hidden>🎯</span>
-              3Q tối
-            </button>
-            <button
-              type="button"
-              className="ph-tab"
-              onClick={() => setTab('rewards')}
-            >
-              <span aria-hidden>⭐</span>
-              Điểm & thưởng
-            </button>
-            <button type="button" className="ph-tab" onClick={() => goValueAnchor('fv-rop')}>
-              <span aria-hidden>📘</span>
-              Family Report
-            </button>
-            <button type="button" className="ph-tab" onClick={() => setTab('tasks')}>
-              <span aria-hidden>📅</span>
-              Sự kiện
-            </button>
-          </>
-        ) : (
-          <>
+      <nav className="ph-tabbar ph-tabbar--b5" aria-label="Điều hướng bố mẹ">
         <button
           type="button"
-          className="ph-tab"
+          className={`ph-tab${tab === 'home' ? ' is-on' : ''}`}
           onClick={() => setTab('home')}
         >
           <span aria-hidden>🏠</span>
           Trang chủ
         </button>
-        <button
-          type="button"
-          className={`ph-tab${tab === 'tasks' ? ' is-on' : ''}`}
-          onClick={() => {
-            setTab('tasks');
-            setMissionFilter('all');
-          }}
-        >
-          <span aria-hidden>✅</span>
-          Nhiệm vụ
+        <button type="button" className="ph-tab" onClick={() => navigate('/who')}>
+          <span aria-hidden>👥</span>
+          Thành viên
         </button>
         <button
           type="button"
@@ -3504,22 +3528,16 @@ export function ParentBoardView({
         </button>
         <button
           type="button"
-          className={`ph-tab${tab === 'rewards' ? ' is-on' : ''}`}
-          onClick={() => setTab('rewards')}
-        >
-          <span aria-hidden>🧰</span>
-          Kho báu
-        </button>
-        <button
-          type="button"
           className={`ph-tab${tab === 'value' ? ' is-on' : ''}`}
-          onClick={() => setTab('value')}
+          onClick={() => goValueAnchor('fv-rop')}
         >
-          <span aria-hidden>📖</span>
-          Nhật ký
+          <span aria-hidden>📊</span>
+          Báo cáo
         </button>
-          </>
-        )}
+        <button type="button" className="ph-tab" onClick={() => setTab('value')}>
+          <span aria-hidden>🧭</span>
+          Khám phá
+        </button>
       </nav>
 
       {treasureHistoryOpen ? (

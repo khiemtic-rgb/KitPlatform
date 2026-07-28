@@ -43,8 +43,6 @@ import { ParentPinSheet } from '@/shared/ui/ParentPinSheet';
 import { useHoldAction } from '@/shared/ui/useHoldAction';
 import { KidFocusView } from '@/modules/flow/KidFocusView';
 import { ParentBoardView } from '@/modules/flow/ParentBoardView';
-import { ParentGoalsPanel } from '@/modules/flow/ParentGoalsPanel';
-import { FamilyChallengeCard } from '@/modules/flow/FamilyChallengeCard';
 import { ReflectionPromptSheet } from '@/modules/flow/ReflectionPromptSheet';
 import { RetrievalCheckSheet } from '@/modules/flow/RetrievalCheckSheet';
 import { buildTeamDayFromChildren, slicesFromCommitments } from '@/modules/flow/teamPlay';
@@ -538,21 +536,6 @@ export function TodayFlowPage() {
           onSwitchUser={requestSwitchUser}
           onRefreshFlow={() => void load(true)}
         />
-      ) : null}
-
-      {flow && !isChild && familyId ? (
-        <>
-          <FamilyChallengeCard
-            familyId={familyId}
-            memberId={member.id}
-            isParent
-          />
-          <ParentGoalsPanel
-            familyId={familyId}
-            memberId={member.id}
-            viewerName={member.displayName}
-          />
-        </>
       ) : null}
 
       <ParentPinSheet

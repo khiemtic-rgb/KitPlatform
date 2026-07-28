@@ -261,6 +261,20 @@ export function WhoAreYouPage() {
     navigate('/today', { replace: true });
   };
 
+  const enterAsParent = async (parentTab: 'home' | 'value' | 'rewards' = 'home') => {
+    const parent = adults[0];
+    if (!parent) {
+      document.getElementById('home-who')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    try {
+      sessionStorage.setItem('famixa.parentTab', parentTab);
+    } catch {
+      /* ignore */
+    }
+    await pick(parent);
+  };
+
   const goCheckout = () => {
     if (!familyId) return;
     navigate(
@@ -704,6 +718,42 @@ export function WhoAreYouPage() {
           navigate('/unlock', { replace: true });
         }}
       />
+
+      <nav className="ph-tabbar ph-tabbar--b5 home-v2-tabbar" aria-label="Điều hướng Famixa">
+        <button type="button" className="ph-tab" onClick={() => void enterAsParent('home')}>
+          <span aria-hidden>🏠</span>
+          Trang chủ
+        </button>
+        <button
+          type="button"
+          className="ph-tab is-on"
+          onClick={() =>
+            document
+              .getElementById('home-who')
+              ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+        >
+          <span aria-hidden>👥</span>
+          Thành viên
+        </button>
+        <button
+          type="button"
+          className="ph-tab ph-tab-add"
+          aria-label="Thêm thành viên"
+          title="Thêm thành viên"
+          onClick={goAdmin}
+        >
+          <span aria-hidden>+</span>
+        </button>
+        <button type="button" className="ph-tab" onClick={() => void enterAsParent('value')}>
+          <span aria-hidden>📊</span>
+          Báo cáo
+        </button>
+        <button type="button" className="ph-tab" onClick={() => void enterAsParent('value')}>
+          <span aria-hidden>🧭</span>
+          Khám phá
+        </button>
+      </nav>
     </div>
   );
 }
