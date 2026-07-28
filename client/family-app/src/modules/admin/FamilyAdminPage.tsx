@@ -8,15 +8,19 @@ import {
   FAMILY_MODE_OPTIONS,
   fetchFamilies,
   fetchFamilyRoutines,
+  fetchFamilySubscription,
   resolveCalendarRoutine,
   scanAdaptiveProposals,
   type DayFlow,
   type FamilyMembership,
   type FamilyRoutineDto,
+  type FamilySubscription,
   type ResolvedCalendarRoutine,
 } from '@/shared/api/family-os.api';
 import { useSessionStore } from '@/shared/auth/session.store';
 import { RoutineLightEditor } from '@/modules/admin/RoutineLightEditor';
+import { buildCheckoutPath } from '@/shared/api/payment.api';
+import { isCapabilityPaywallError, getApiErrorMessage } from '@/shared/billing/capability-error';
 
 const ROLE_LABEL: Record<string, string> = {
   guardian: 'Bố/Mẹ',
@@ -47,6 +51,7 @@ export function FamilyAdminPage() {
   const [missionTitle, setMissionTitle] = useState('');
   const [missionStart, setMissionStart] = useState('16:00');
   const [missionEnd, setMissionEnd] = useState('17:00');
+  const [subscription, setSubscription] = useState<FamilySubscription | null>(null);
 
   /** Device unlock is parent-gated; block only when a child profile is active. */
   const childMode = member?.roleCode === 'child';
@@ -55,6 +60,12 @@ export function FamilyAdminPage() {
     () => members.filter((m) => m.roleCode === 'child'),
     [members],
   );
+
+  const childAtLimit = useMemo(() => {
+    const max = subscription?.maxChildren;
+    if (max == null) return false;
+    return children.length >= max;
+  }, [subscription?.maxChildren, children.length]);
 
   const activeRoutine = useMemo(() => {
     const id = editorRoutineId ?? resolved?.routineId;
@@ -72,14 +83,16 @@ export function FamilyAdminPage() {
     const families = await fetchFamilies();
     const fam = families.find((f) => f.id === familyId) ?? families[0];
     setMembers(fam?.members ?? []);
-    const [rts, day, cal] = await Promise.all([
+    const [rts, day, cal, sub] = await Promise.all([
       fetchFamilyRoutines(familyId).catch(() => [] as FamilyRoutineDto[]),
       ensureDayFlow(familyId).catch(() => null),
       resolveCalendarRoutine(familyId).catch(() => null),
+      fetchFamilySubscription(familyId).catch(() => null),
     ]);
     setRoutines(rts);
     setFlow(day);
     setResolved(cal);
+    setSubscription(sub);
     if (!missionChildId && fam?.members) {
       const kid = fam.members.find((m) => m.roleCode === 'child');
       if (kid) setMissionChildId(kid.id);
@@ -106,6 +119,13 @@ export function FamilyAdminPage() {
 
   const onAddMember = async () => {
     if (!familyId || !newName.trim()) return;
+    if (newRole === 'child' && childAtLimit) {
+      setError(
+        subscription?.upgradeHintVi ||
+          `Gói hiện tại tối đa ${subscription?.maxChildren ?? 1} trẻ. Nâng gói để thêm con.`,
+      );
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -118,8 +138,10 @@ export function FamilyAdminPage() {
       await reload();
     } catch (err: unknown) {
       setError(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          'Chưa thêm được thành viên.',
+        isCapabilityPaywallError(err)
+          ? getApiErrorMessage(err)
+          : (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+            'Chưa thêm được thành viên.',
       );
     } finally {
       setBusy(false);
@@ -236,10 +258,38 @@ export function FamilyAdminPage() {
             <option value="guardian">Bố/Mẹ</option>
             <option value="caregiver">Người chăm sóc</option>
           </select>
-          <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void onAddMember()}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={busy || (newRole === 'child' && childAtLimit)}
+            onClick={() => void onAddMember()}
+          >
             Thêm
           </button>
         </div>
+        {newRole === 'child' && childAtLimit ? (
+          <p className="fa-hint">
+            Gói {subscription?.displayNameVi || 'hiện tại'} tối đa {subscription?.maxChildren}{' '}
+            trẻ.
+            {familyId ? (
+              <>
+                {' '}
+                <Link
+                  to={buildCheckoutPath({
+                    productCode: 'family_os',
+                    subjectType: 'family',
+                    subjectId: familyId,
+                    planCode:
+                      subscription?.recommendedUpgradePlanCode || 'family_pro_month',
+                    returnPath: '/family-admin',
+                  })}
+                >
+                  Nâng gói
+                </Link>
+              </>
+            ) : null}
+          </p>
+        ) : null}
       </section>
 
       <section className="fa-card">

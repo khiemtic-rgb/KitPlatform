@@ -1,0 +1,289 @@
+{
+  "schemaVersion": "1.0",
+  "presetId": "balanced_v1",
+  "presetNameVi": "Cân bằng giáo dục (mẫu đề xuất)",
+  "presetNameEn": "Educational balance (sample)",
+  "descriptionVi": "SAO như tiền tệ gia đình: ngân sách ngày, phân bổ theo nhóm phát triển, 3 loại sao, tốt nghiệp thói quen, huy hiệu thay farm điểm.",
+  "principles": [
+    "daily_scarcity_budget",
+    "ai_allocate_by_contribution",
+    "reward_progress_not_repetition",
+    "graduate_habits_to_badges",
+    "entertainment_near_zero"
+  ],
+  "currency": {
+    "kinds": [
+      {
+        "code": "growth",
+        "labelVi": "Sao Phát triển",
+        "shortVi": "G",
+        "sources": ["study", "reading", "skill", "practice"]
+      },
+      {
+        "code": "responsibility",
+        "labelVi": "Sao Trách nhiệm",
+        "shortVi": "R",
+        "sources": ["chores", "punctuality", "promise", "self_care_duty"]
+      },
+      {
+        "code": "kindness",
+        "labelVi": "Sao Tử tế",
+        "shortVi": "K",
+        "sources": ["help_others", "honesty", "share", "apology", "gratitude"]
+      }
+    ],
+    "displayMode": "three_balances",
+    "legacyFlatStarMigration": "map_existing_ledger_to_growth_until_backfill"
+  },
+  "dailyBudget": {
+    "unit": "stars_per_member_per_day",
+    "byAgeBand": {
+      "6_10": 20,
+      "11_15": 30,
+      "16_18": 40
+    },
+    "parentOverride": {
+      "enabled": true,
+      "min": 10,
+      "max": 80,
+      "step": 5
+    },
+    "hardCap": true,
+    "stretchOverflowPolicy": "soft_cap",
+    "stretchOverflowMaxPctOfBudget": 20,
+    "timezone": "family_local"
+  },
+  "categoryWeights": {
+    "sumMustEqual": 100,
+    "items": [
+      {
+        "code": "growth",
+        "labelVi": "Phát triển bản thân",
+        "examplesVi": ["Học tập", "Đọc sách", "Kỹ năng"],
+        "budgetPct": 48,
+        "starLevel": "high",
+        "defaultStarKind": "growth"
+      },
+      {
+        "code": "responsibility",
+        "labelVi": "Trách nhiệm",
+        "examplesVi": ["Việc nhà", "Chăm em", "Dọn phòng"],
+        "budgetPct": 28,
+        "starLevel": "medium",
+        "defaultStarKind": "responsibility"
+      },
+      {
+        "code": "kindness",
+        "labelVi": "Hành vi tích cực",
+        "examplesVi": ["Chủ động", "Giúp đỡ", "Trung thực"],
+        "budgetPct": 16,
+        "starLevel": "medium",
+        "defaultStarKind": "kindness"
+      },
+      {
+        "code": "cue",
+        "labelVi": "Động viên nhỏ",
+        "examplesVi": ["Đúng giờ", "Giữ lời hứa"],
+        "budgetPct": 6,
+        "starLevel": "low",
+        "defaultStarKind": "responsibility"
+      },
+      {
+        "code": "play",
+        "labelVi": "Giải trí",
+        "examplesVi": ["Mini game", "Check-in", "Vòng may mắn"],
+        "budgetPct": 2,
+        "starLevel": "very_low",
+        "defaultStarKind": "growth",
+        "maxStarsPerEvent": 1
+      }
+    ]
+  },
+  "dutyNoStar": {
+    "descriptionVi": "Trách nhiệm thuần — không giao dịch bằng sao khi đã ổn định.",
+    "templates": [
+      {
+        "match": ["đánh răng", "brush teeth"],
+        "category": "duty",
+        "eligibleForStars": false,
+        "formationStars": {
+          "enabled": true,
+          "onlyStages": ["new", "guided"],
+          "maxStars": 1,
+          "starKind": "responsibility"
+        }
+      },
+      {
+        "match": ["chào hỏi", "chao hoi", "greet"],
+        "category": "duty",
+        "eligibleForStars": false,
+        "formationStars": {
+          "enabled": true,
+          "onlyStages": ["new"],
+          "maxStars": 1,
+          "starKind": "kindness"
+        }
+      },
+      {
+        "match": ["đi học", "di hoc", "school"],
+        "category": "duty",
+        "eligibleForStars": false,
+        "formationStars": { "enabled": false }
+      },
+      {
+        "match": ["đi ngủ đúng giờ", "ngủ đúng giờ", "bedtime"],
+        "category": "duty",
+        "eligibleForStars": false,
+        "formationStars": {
+          "enabled": true,
+          "onlyStages": ["new", "guided", "assisted"],
+          "maxStars": 2,
+          "starKind": "responsibility"
+        }
+      }
+    ],
+    "graduateCopyVi": "Hành vi này đã tốt nghiệp. Không còn sao — con đã duy trì {streakDays} ngày liên tục."
+  },
+  "habitStageMultipliers": {
+    "new": 1.0,
+    "guided": 0.85,
+    "assisted": 0.7,
+    "habit_forming": 0.5,
+    "autonomous": 0.0,
+    "maintained": 0.0,
+    "notesVi": "Base decay theo thói quen. Initiative/stretch vẫn có thể cộng ngoài base."
+  },
+  "progressBonuses": {
+    "stretch": {
+      "enabled": true,
+      "rule": "actual_gt_plan_target",
+      "bonusStars": 2,
+      "starKind": "inherit_task",
+      "exampleVi": "Kế hoạch 10 câu → làm 15: +2 Sao Phát triển"
+    },
+    "initiative": {
+      "enabled": true,
+      "triggers": ["self_start", "extra_session_beyond_plan"],
+      "bonusStars": 4,
+      "starKind": "growth",
+      "exampleVi": "Chủ động học thêm 30 phút ngoài kế hoạch: +4 Growth"
+    },
+    "doNotReward": ["mere_repetition_of_maintained_habit"]
+  },
+  "entertainmentCaps": {
+    "mini_game": 1,
+    "check_in": 1,
+    "lucky_spin": { "min": 0, "max": 1 },
+    "inspire_video": 1,
+    "notesVi": "Chỉ tăng tương tác — không phải nguồn kiếm sao chính."
+  },
+  "lateTier": {
+    "keepExistingFamilyStarSettings": true,
+    "applyAfterAllocation": true,
+    "defaults": {
+      "lateT1Minutes": 30,
+      "lateT2Minutes": 60,
+      "lateT3Minutes": 90,
+      "lateHalfPct": 50,
+      "lateZeroPct": 0,
+      "latePenaltyHalfPct": -50,
+      "latePenaltyFullPct": -100
+    }
+  },
+  "sampleDay": {
+    "ageBand": "11_15",
+    "budget": 30,
+    "allocations": [
+      { "titleVi": "Học 90 phút", "category": "growth", "stars": 8, "kind": "growth" },
+      { "titleVi": "Làm bài tập", "category": "growth", "stars": 6, "kind": "growth" },
+      { "titleVi": "Rửa bát", "category": "responsibility", "stars": 4, "kind": "responsibility" },
+      { "titleVi": "Đọc sách", "category": "growth", "stars": 4, "kind": "growth" },
+      { "titleVi": "Giúp em học", "category": "kindness", "stars": 3, "kind": "kindness" },
+      { "titleVi": "Dậy đúng giờ", "category": "cue", "stars": 2, "kind": "responsibility" },
+      { "titleVi": "Mini game", "category": "play", "stars": 1, "kind": "growth" },
+      { "titleVi": "Check-in", "category": "play", "stars": 1, "kind": "growth" }
+    ],
+    "dutyZero": [
+      { "titleVi": "Đánh răng", "stars": 0, "recognition": "streak_only" },
+      { "titleVi": "Chào hỏi", "stars": 0, "recognition": "streak_only" }
+    ],
+    "totals": {
+      "starsAwardedIfAllDone": 29,
+      "budgetRemaining": 1,
+      "byKind": { "growth": 20, "responsibility": 6, "kindness": 3 }
+    },
+    "stretchExample": {
+      "titleVi": "Toán vượt kế hoạch",
+      "plan": 10,
+      "actual": 15,
+      "baseStars": 6,
+      "stretchBonus": 2,
+      "kind": "growth"
+    }
+  },
+  "badges": {
+    "replaceStarsWhen": "habit_graduated_or_duty",
+    "catalog": [
+      {
+        "code": "read_30d",
+        "labelVi": "Đọc sách 30 ngày",
+        "rule": { "event": "commitment_done", "matchCategory": "growth", "matchTitleContains": ["đọc"], "streakDays": 30 },
+        "unlock": ["avatar_frame"]
+      },
+      {
+        "code": "room_tidy_14d",
+        "labelVi": "Giữ phòng gọn 14 ngày",
+        "rule": { "event": "commitment_done", "matchTitleContains": ["phòng", "dọn"], "streakDays": 14 },
+        "unlock": ["story_chapter"]
+      },
+      {
+        "code": "peace_7d",
+        "labelVi": "Không cãi bố mẹ 7 ngày",
+        "rule": { "event": "family_peace_day", "streakDays": 7 },
+        "unlock": ["title"]
+      },
+      {
+        "code": "help_10x",
+        "labelVi": "Giúp người khác 10 lần",
+        "rule": { "event": "commitment_done", "matchCategory": "kindness", "count": 10 },
+        "unlock": ["badge_wall"]
+      }
+    ]
+  },
+  "redeemMixExample": {
+    "itemVi": "Movie Night",
+    "cost": { "growth": 15, "responsibility": 8, "kindness": 5 },
+    "rationaleVi": "Chống farm một chiều — cần cân bằng 3 mặt."
+  },
+  "adminUiHints": {
+    "parentConfigures": [
+      "daily_budget_or_age_band",
+      "category_weight_sliders_sum_100",
+      "duty_list_overrides",
+      "badge_catalog_enable",
+      "late_tier_existing_page"
+    ],
+    "parentDoesNotConfigure": [
+      "per_task_fixed_star_reward_as_primary"
+    ],
+    "aiOrRulesConfigure": [
+      "daily_allocation_across_today_tasks",
+      "stage_multiplier",
+      "stretch_and_initiative"
+    ]
+  },
+  "compatibility": {
+    "mapsOntoExisting": [
+      "family_star_settings (late tiers)",
+      "commitment_template.habit_stage",
+      "behavior_event",
+      "star_ledger (extend with star_kind)",
+      "FamilyScreenWallet pattern for daily budget"
+    ],
+    "replacesAsPrimary": [
+      "InferStarReward title heuristic as equalizing default",
+      "manual star_reward 10/10/10 on every task"
+    ]
+  },
+  "implementationWaves": ["C0_settings_schema", "C1_daily_allocator", "C2_duty_and_stage_decay", "C3_three_kinds", "C4_stretch_initiative", "C5_badges"]
+}

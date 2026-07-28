@@ -14,6 +14,11 @@ import {
   type PaymentPlan,
   type PaymentSubscription,
 } from '@/shared/api/payment.api';
+import {
+  blurbForPlan,
+  outcomeNameForTier,
+  tierFromPlanCode,
+} from '@/shared/billing/famixa-plan-copy';
 
 function formatVnd(amount: number): string {
   return amount.toLocaleString('vi-VN') + '₫';
@@ -81,7 +86,7 @@ export function CheckoutPage() {
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [sub, setSub] = useState<PaymentSubscription | null>(null);
   const [order, setOrder] = useState<PaymentOrder | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState(planCodeParam || 'starter_month');
+  const [selectedPlan, setSelectedPlan] = useState(planCodeParam || 'family_pro_month');
   const [selectedMethod, setSelectedMethod] = useState('manual');
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
@@ -90,14 +95,21 @@ export function CheckoutPage() {
   const productLabel = paymentProductLabel(productCode);
   const paramsOk = Boolean(productCode && subjectType && subjectId);
 
+  const checkoutPlans = useMemo(
+    () => plans.filter((p) => p.planCode !== 'free' && (p.amountVnd ?? 0) > 0),
+    [plans],
+  );
+
   const activePlan = useMemo(() => {
-    if (!plans.length) return null;
+    if (!checkoutPlans.length) return null;
     return (
-      plans.find((p) => p.planCode === selectedPlan) ??
-      plans.find((p) => p.planCode === 'starter_month') ??
-      plans[0]
+      checkoutPlans.find((p) => p.planCode === selectedPlan) ??
+      checkoutPlans.find((p) => p.planCode === 'family_pro_month') ??
+      checkoutPlans.find((p) => p.planCode === 'plus_month') ??
+      checkoutPlans.find((p) => p.planCode === 'starter_month') ??
+      checkoutPlans[0]
     );
-  }, [plans, selectedPlan]);
+  }, [checkoutPlans, selectedPlan]);
 
   const activeMethod = useMemo(
     () => methods.find((m) => m.providerCode === selectedMethod) ?? null,
@@ -121,8 +133,11 @@ export function CheckoutPage() {
       setPlans(planList);
       setMethods(methodList);
       setSub(subscription);
+      const paid = planList.filter((p) => p.planCode !== 'free' && (p.amountVnd ?? 0) > 0);
       if (planCodeParam) setSelectedPlan(planCodeParam);
-      else if (planList[0]) setSelectedPlan(planList[0].planCode);
+      else if (paid.find((p) => p.planCode === 'family_pro_month'))
+        setSelectedPlan('family_pro_month');
+      else if (paid[0]) setSelectedPlan(paid[0].planCode);
 
       const preferred =
         methodList.find((m) => m.providerCode === 'payos' && m.available) ??
@@ -281,29 +296,44 @@ export function CheckoutPage() {
             <>
               <section className="checkout-card">
                 <h2>Chọn gói</h2>
-                {plans.length === 0 ? (
+                {checkoutPlans.length === 0 ? (
                   <p className="muted">Chưa có gói active cho sản phẩm này.</p>
                 ) : (
                   <ul className="checkout-plan-list">
-                    {plans.map((p) => (
-                      <li key={p.planCode}>
-                        <button
-                          type="button"
-                          className={
-                            p.planCode === activePlan?.planCode
-                              ? 'checkout-plan is-active'
-                              : 'checkout-plan'
-                          }
-                          onClick={() => setSelectedPlan(p.planCode)}
-                          disabled={Boolean(order && order.status === 'pending')}
-                        >
-                          <strong>{p.displayName || p.planCode}</strong>
-                          <span>
-                            {formatVnd(p.amountVnd)} / {p.intervalDays} ngày
-                          </span>
-                        </button>
-                      </li>
-                    ))}
+                    {checkoutPlans.map((p) => {
+                      const tier = tierFromPlanCode(p.planCode);
+                      const outcome = outcomeNameForTier(tier);
+                      const isHero =
+                        p.planCode === 'family_pro_month' ||
+                        (p.planCode.includes('pro') && !p.planCode.includes('ai'));
+                      const isActive = p.planCode === activePlan?.planCode;
+                      return (
+                        <li key={p.planCode}>
+                          <button
+                            type="button"
+                            className={
+                              isActive
+                                ? 'checkout-plan is-active'
+                                : 'checkout-plan'
+                            }
+                            onClick={() => setSelectedPlan(p.planCode)}
+                            disabled={Boolean(order && order.status === 'pending')}
+                          >
+                            <strong>{outcome}</strong>
+                            <span className="checkout-plan-sku">
+                              {p.displayName || p.planCode}
+                            </span>
+                            <span>
+                              {formatVnd(p.amountVnd)} / {p.intervalDays} ngày
+                            </span>
+                            <em className="muted checkout-plan-blurb">
+                              {blurbForPlan(p.planCode)}
+                              {isHero ? ' · Gói khuyến nghị' : ''}
+                            </em>
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </section>

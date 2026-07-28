@@ -55,6 +55,9 @@ function isOpen(c: DayFlowCommitment): boolean {
 }
 
 function isHot(c: DayFlowCommitment): boolean {
+  if (c.reminderSuppressed) return false;
+  if (c.allowChildChime === false) return false;
+  if (c.interventionLevel === 'observe_only') return false;
   return isOpen(c) && (c.reminderState === 'due_now' || c.reminderState === 'overdue');
 }
 

@@ -1,4 +1,4 @@
-import type { AccountabilityGlance, DayFlow } from '@/shared/api/family-os.api';
+import type { FamilyMemoryEntry } from '@/shared/api/family-os.api';
 
 export type JourneyMilestone = {
   id: string;
@@ -15,10 +15,90 @@ function formatVi(iso: string): string {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
-/** Family Journey — accumulating timeline parents stay for years. */
+function kindFromMemory(kind: string): JourneyMilestone['kind'] {
+  switch (kind) {
+    case 'streak_milestone':
+    case 'beautiful_day':
+      return 'streak';
+    case 'first_time':
+      return 'first';
+    case 'team_unlock':
+    case 'reward':
+      return 'family';
+    case 'gratitude':
+    case 'photo':
+      return 'moment';
+    default:
+      return 'habit';
+  }
+}
+
+function iconFromMemory(m: FamilyMemoryEntry): string {
+  if (m.icon?.trim()) return m.icon.trim();
+  switch (m.kind) {
+    case 'beautiful_day':
+      return '☀️';
+    case 'streak_milestone':
+      return '🔥';
+    case 'gratitude':
+      return '💌';
+    case 'photo':
+      return '📷';
+    case 'team_unlock':
+      return '🎬';
+    case 'reward':
+      return '🎁';
+    case 'first_time':
+      return '🌱';
+    default:
+      return '✨';
+  }
+}
+
+/**
+ * Family Journey / Timeline — Memory is the durable SoT.
+ * Client glance/flow heuristics are only a thin empty-state fallback.
+ */
+export function buildFamilyJourneyFromMemories(
+  memories: FamilyMemoryEntry[],
+  familyName: string,
+): JourneyMilestone[] {
+  if (memories.length === 0) {
+    return [
+      {
+        id: 'empty',
+        date: new Date().toISOString().slice(0, 10),
+        icon: '🌱',
+        title: 'Hành trình đang mở',
+        detail: `Gia đình ${familyName} — kỷ niệm sẽ hiện ở đây khi nhà mình sống thêm vài ngày.`,
+        kind: 'family',
+      },
+    ];
+  }
+
+  return [...memories]
+    .sort((a, b) => {
+      const byDate = b.flowDate.localeCompare(a.flowDate);
+      if (byDate !== 0) return byDate;
+      return (b.happenedAt || '').localeCompare(a.happenedAt || '');
+    })
+    .slice(0, 40)
+    .map((m) => ({
+      id: m.id,
+      date: m.flowDate,
+      icon: iconFromMemory(m),
+      title: m.titleVi,
+      detail: [m.noteVi?.trim(), m.memberName?.trim(), formatVi(m.flowDate)]
+        .filter(Boolean)
+        .join(' · '),
+      kind: kindFromMemory(m.kind),
+    }));
+}
+
+/** @deprecated Prefer buildFamilyJourneyFromMemories — kept for rare offline fallbacks. */
 export function buildFamilyJourney(input: {
-  flow: DayFlow;
-  glance: AccountabilityGlance | null;
+  flow: { flowDate: string; commitments: Array<{ id: string; title: string; status: string; isLateDone?: boolean; memberName?: string }>; doneCount: number; totalCommitments: number };
+  glance: { days?: Array<{ date: string; isBeautifulDay?: boolean }>; currentStreak?: number } | null;
   familyName: string;
 }): JourneyMilestone[] {
   const { flow, glance, familyName } = input;
@@ -59,45 +139,5 @@ export function buildFamilyJourney(input: {
     });
   }
 
-  const onTime = flow.commitments.filter((c) => c.status === 'done' && !c.isLateDone);
-  for (const c of onTime.slice(0, 3)) {
-    const title = c.title.toLowerCase();
-    let icon = '⭐';
-    let headline = `Tự hoàn thành «${c.title}»`;
-    if (title.includes('cặp') || title.includes('balo')) {
-      icon = '❤️';
-      headline = 'Lần đầu / hôm nay tự chuẩn bị cặp';
-    } else if (title.includes('răng')) {
-      icon = '🪥';
-      headline = 'Tự đánh răng đúng nhịp';
-    } else if (title.includes('đọc') || title.includes('sách')) {
-      icon = '📚';
-      headline = 'Đọc sách — trang nhật ký trưởng thành';
-    }
-    items.push({
-      id: `done-${c.id}`,
-      date: flow.flowDate,
-      icon,
-      title: headline,
-      detail: `${c.memberName?.trim() || 'Con'} · ${formatVi(flow.flowDate)}`,
-      kind: title.includes('cặp') ? 'first' : 'habit',
-    });
-  }
-
-  if (flow.doneCount > 0 && flow.doneCount >= flow.totalCommitments && flow.totalCommitments > 0) {
-    items.push({
-      id: 'full-day',
-      date: flow.flowDate,
-      icon: '🎬',
-      title: 'Xong hết cam kết trong ngày',
-      detail: 'Sẵn sàng mở Movie Night — thời gian chất lượng cả nhà.',
-      kind: 'family',
-    });
-  }
-
-  // Newest first for feed feel
-  return items
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 12)
-    .map((m) => ({ ...m, detail: m.detail.includes('/') ? m.detail : `${m.detail}` }));
+  return items.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12);
 }

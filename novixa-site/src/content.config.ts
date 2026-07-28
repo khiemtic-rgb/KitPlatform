@@ -18,7 +18,10 @@ const tinTuc = defineCollection({
     image: z.string().optional(),
     category: z.enum(NEWS_CATEGORY_IDS).default(DEFAULT_NEWS_CATEGORY),
     /** Chỉ dùng trong CMS khi category = quan-tri-nha-thuoc; web vẫn hiện mục cha. */
-    subcategory: z.enum(QUAN_TRI_SUBCATEGORY_IDS).optional(),
+    subcategory: z.preprocess(
+      (v) => (v === '' || v == null ? undefined : v),
+      z.enum(QUAN_TRI_SUBCATEGORY_IDS).optional(),
+    ),
   }),
 });
 
