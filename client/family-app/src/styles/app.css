@@ -14136,88 +14136,115 @@ body:has(.app-shell.is-kid) {
   padding-bottom: 8px;
 }
 .ph-b4-brief {
+  position: relative;
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  padding: 16px;
-  border-radius: 22px;
-  background: #fff;
-  border: 1px solid rgba(26,51,68,.06);
-  box-shadow: 0 10px 28px rgba(22,53,47,.06);
+  grid-template-columns: minmax(0, 1.15fr) minmax(120px, 0.85fr);
+  gap: 4px;
+  align-items: stretch;
+  overflow: hidden;
+  padding: 18px 14px 16px 18px;
+  border-radius: 24px;
+  background: linear-gradient(120deg, #f7f8fa 0%, #f2f4f6 55%, #eef6f1 100%);
+  border: 1px solid rgba(26,51,68,.05);
+  box-shadow: 0 12px 30px rgba(22,53,47,.07);
+}
+.ph-b4-brief-main {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  padding-right: 4px;
 }
 .ph-b4-brief-eyebrow {
-  margin: 0 0 8px;
-  font-size: .72rem;
+  margin: 0 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .7rem;
   font-weight: 800;
-  letter-spacing: .06em;
-  color: #1f9d6a;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #00a859;
+}
+.ph-b4-spark {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: #00a859;
+  font-size: .85rem;
+  line-height: 1;
 }
 .ph-b4-brief-title {
-  margin: 0 0 12px;
-  font-size: 1.2rem;
-  line-height: 1.3;
+  margin: 0 0 14px;
+  font-size: 1.28rem;
+  line-height: 1.28;
   font-weight: 800;
-  color: #14352c;
+  color: #0a1d37;
+  letter-spacing: -0.01em;
 }
 .ph-b4-brief-task {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
-  padding: 12px;
-  margin-bottom: 12px;
-  border-radius: 14px;
-  background: #e9f8f0;
-  color: #14352c;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: 999px;
+  background: #e8f3ea;
+  color: #1f2a37;
 }
-.ph-b4-brief-task span {
-  width: 22px;
-  height: 22px;
+.ph-b4-brief-check {
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  background: #1f9d6a;
+  background: #00a859;
   color: #fff;
   display: grid;
   place-items: center;
-  font-size: .75rem;
+  font-size: .8rem;
+  font-weight: 800;
   flex-shrink: 0;
-  margin-top: 1px;
 }
 .ph-b4-brief-task strong {
-  font-size: .95rem;
+  font-size: .9rem;
   line-height: 1.35;
+  font-weight: 650;
+  color: #243447;
 }
 .ph-b4-brief-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  width: 100%;
+  gap: 8px;
+  width: auto;
+  min-width: 168px;
+  max-width: 100%;
   border: none;
   border-radius: 999px;
-  padding: 12px 16px;
-  background: linear-gradient(90deg, #1f9d6a, #168a5c);
+  padding: 12px 22px;
+  background: #00a859;
   color: #fff;
   font: inherit;
   font-weight: 800;
   font-size: .95rem;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(31,157,106,.28);
+  box-shadow: 0 10px 20px rgba(0,168,89,.28);
 }
 .ph-b4-brief-ai {
   display: flex;
   align-items: flex-start;
   gap: 8px;
   width: 100%;
-  margin-top: 10px;
   text-align: left;
   border: none;
-  border-radius: 14px;
-  padding: 10px 12px;
+  border-radius: 16px;
+  padding: 12px 14px;
   background: #f3eefc;
   color: #4c3d6e;
   font: inherit;
   font-size: .8rem;
   line-height: 1.35;
   cursor: pointer;
+  box-shadow: 0 6px 16px rgba(22,53,47,.04);
 }
 .ph-b4-brief-ai em {
   font-style: normal;
@@ -14225,14 +14252,51 @@ body:has(.app-shell.is-kid) {
   color: #6d28d9;
 }
 .ph-b4-brief-art {
-  align-self: center;
-  width: 88px;
-  height: 88px;
-  border-radius: 22px;
-  background: linear-gradient(145deg, #e8f8ef, #fff6e8);
+  position: relative;
+  align-self: stretch;
+  min-height: 150px;
+  margin: -8px -6px -10px 0;
+  border-radius: 0 20px 20px 0;
+  overflow: hidden;
+  background: transparent;
+}
+.ph-b4-brief-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center right;
+  display: block;
+}
+.ph-b4-brief-art-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  color: #00a859;
   display: grid;
   place-items: center;
-  font-size: 2.4rem;
+  font-style: normal;
+  font-size: .85rem;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(22,53,47,.12);
+}
+@media (max-width: 420px) {
+  .ph-b4-brief {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+  .ph-b4-brief-art {
+    order: -1;
+    min-height: 120px;
+    margin: -6px -6px 8px;
+    border-radius: 18px;
+  }
+  .ph-b4-brief-cta {
+    width: 100%;
+  }
 }
 .ph-b4-mid {
   display: grid;

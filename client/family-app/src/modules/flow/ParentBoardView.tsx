@@ -1830,62 +1830,74 @@ export function ParentBoardView({
           <article className="ph-b4-brief" aria-label="Morning Brief">
             <div className="ph-b4-brief-main">
               <p className="ph-b4-brief-eyebrow">
-                <span aria-hidden>✦</span>{' '}
+                <span className="ph-b4-spark" aria-hidden>
+                  ✦
+                </span>
                 {homeBrief.period === 'evening' ? 'EVENING BRIEF' : 'MORNING BRIEF'}
               </p>
-              <h2 className="ph-b4-brief-title">{homeBrief.moodLineVi}</h2>
+              <h2 className="ph-b4-brief-title">
+                {homeBrief.period === 'evening'
+                  ? 'Tối nay chỉ có 1 việc bạn nên làm.'
+                  : 'Hôm nay chỉ có 1 việc bạn nên làm.'}
+              </h2>
               <div className="ph-b4-brief-task">
-                <span aria-hidden>✓</span>
+                <span className="ph-b4-brief-check" aria-hidden>
+                  ✓
+                </span>
                 <strong>{homeBrief.primaryAction.doThisVi}</strong>
               </div>
               <button type="button" className="ph-b4-brief-cta" onClick={runBriefPrimary}>
                 <span aria-hidden>⚡</span>
                 Thực hiện ngay
               </button>
-              {(homeBrief.eveningCheckinHintVi || homeBrief.period === 'evening') &&
-              !eveningCheckin ? (
-                <button
-                  type="button"
-                  className="ph-b4-brief-ai"
-                  onClick={() => goValueAnchor('fv-3q')}
-                >
-                  <span aria-hidden>🎯</span>
-                  <span>
-                    Gợi ý từ AI: 3Q tối giúp duy trì thói quen tốt.{' '}
-                    <em>Xem gợi ý phù hợp với gia đình →</em>
-                  </span>
-                </button>
-              ) : homeBrief.primaryAction.kind === 'coach' ? (
-                <button
-                  type="button"
-                  className="ph-b4-brief-ai"
-                  onClick={runBriefReason}
-                >
-                  <span aria-hidden>🎯</span>
-                  <span>
+            </div>
+            <div className="ph-b4-brief-art" aria-hidden>
+              <img
+                src="/home/morning-brief-art.png"
+                alt=""
+                width={180}
+                height={180}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            </div>
+          </article>
+
+          {(homeBrief.eveningCheckinHintVi ||
+            homeBrief.period === 'evening' ||
+            homeBrief.primaryAction.kind === 'coach') &&
+          !eveningCheckin ? (
+            <button
+              type="button"
+              className="ph-b4-brief-ai"
+              onClick={() => {
+                if (homeBrief.primaryAction.kind === 'coach' && homeBrief.period !== 'evening') {
+                  runBriefReason();
+                  return;
+                }
+                goValueAnchor('fv-3q');
+              }}
+            >
+              <span aria-hidden>🎯</span>
+              <span>
+                {homeBrief.primaryAction.kind === 'coach' &&
+                homeBrief.period !== 'evening' &&
+                !homeBrief.eveningCheckinHintVi ? (
+                  <>
                     {homeBrief.primaryAction.reasonVi.slice(0, 110)}
                     {homeBrief.primaryAction.reasonVi.length > 110 ? '…' : ''}{' '}
                     <em>Xem lý do →</em>
-                  </span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="ph-b4-brief-ai"
-                  onClick={() => goValueAnchor('fv-3q')}
-                >
-                  <span aria-hidden>🎯</span>
-                  <span>
+                  </>
+                ) : (
+                  <>
                     Gợi ý từ AI: 3Q tối giúp duy trì thói quen tốt.{' '}
                     <em>Xem gợi ý phù hợp với gia đình →</em>
-                  </span>
-                </button>
-              )}
-            </div>
-            <div className="ph-b4-brief-art" aria-hidden>
-              <span>👨‍👦</span>
-            </div>
-          </article>
+                  </>
+                )}
+              </span>
+            </button>
+          ) : null}
 
           <div className="ph-b4-mid">
             <section className="ph-b4-priority" id="ph-brief-attn" aria-label="Ưu tiên hôm nay">
