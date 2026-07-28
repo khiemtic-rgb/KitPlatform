@@ -14717,3 +14717,48 @@ body:has(.app-shell.is-kid) {
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(22,53,47,.05);
 }
+
+.ph-challenge-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+.ph-challenge-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ph-challenge-back {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(22,53,47,.08);
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+.ph-challenge-titles h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #1b3d36;
+}
+.ph-challenge-titles p {
+  margin: 2px 0 0;
+  font-size: .82rem;
+  color: #6b857e;
+  font-weight: 650;
+}
+.ph-challenge-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ph-challenge-hint {
+  margin: 4px 2px 0;
+  font-size: .84rem;
+  color: #64748b;
+  font-weight: 650;
+}

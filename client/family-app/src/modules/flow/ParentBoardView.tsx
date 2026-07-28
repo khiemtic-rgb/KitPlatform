@@ -112,7 +112,7 @@ const NEED_APPROVAL_RE =
 
 type MissionFilter = 'all' | 'need_help' | 'waiting_child' | 'done';
 type DiaryFilter = 'all' | 'tasks' | 'moments' | 'health' | 'study';
-type ParentTab = 'home' | 'tasks' | 'rewards' | 'value' | 'diary';
+type ParentTab = 'home' | 'tasks' | 'rewards' | 'value' | 'diary' | 'challenge';
 
 function needsParentApproval(item: DayFlowCommitment): boolean {
   if (NEED_APPROVAL_RE.test(item.title)) return true;
@@ -530,7 +530,8 @@ export function ParentBoardView({
         raw === 'tasks' ||
         raw === 'rewards' ||
         raw === 'value' ||
-        raw === 'diary'
+        raw === 'diary' ||
+        raw === 'challenge'
       ) {
         sessionStorage.removeItem('famixa.parentTab');
         return raw;
@@ -1711,13 +1712,6 @@ export function ParentBoardView({
     setTab('value');
   };
 
-  const goRewardsSection = (sectionId: string) => {
-    setTab('rewards');
-    window.setTimeout(() => {
-      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 80);
-  };
-
   const runBriefPrimary = () => {
     const action = homeBrief.primaryAction;
     if (action.kind === 'evening_checkin') {
@@ -2074,7 +2068,7 @@ export function ParentBoardView({
                   <button
                     type="button"
                     className="ph-b4-challenge-card"
-                    onClick={() => setTab('rewards')}
+                    onClick={() => setTab('challenge')}
                   >
                     <span className="ph-b4-challenge-pop" aria-hidden>
                       🍿
@@ -2141,7 +2135,7 @@ export function ParentBoardView({
               </i>
               Kho báu
             </button>
-            <button type="button" onClick={() => goRewardsSection('ph-treasure-challenge')}>
+            <button type="button" onClick={() => setTab('challenge')}>
               <i className="is-pink" aria-hidden>
                 🏆
               </i>
@@ -3084,6 +3078,47 @@ export function ParentBoardView({
         </div>
       ) : null}
 
+      {tab === 'challenge' ? (
+        <div className="ph-challenge-page">
+          <header className="ph-challenge-top">
+            <button
+              type="button"
+              className="ph-challenge-back"
+              aria-label="Về trang chủ"
+              onClick={() => setTab('home')}
+            >
+              ‹
+            </button>
+            <div className="ph-challenge-titles">
+              <h1>Challenge &amp; mục tiêu</h1>
+              <p>Thử thách tuần · mục tiêu bố mẹ làm gương</p>
+            </div>
+          </header>
+          {parentMembershipId ? (
+            <div className="ph-challenge-body">
+              <FamilyChallengeCard
+                familyId={familyId}
+                memberId={parentMembershipId}
+                isParent
+              />
+              <ParentGoalsPanel
+                familyId={familyId}
+                memberId={parentMembershipId}
+                viewerName={viewerName}
+              />
+            </div>
+          ) : (
+            <p className="ph-empty-soft">Cần hồ sơ bố/mẹ để mở Challenge.</p>
+          )}
+          <p className="ph-challenge-hint">
+            Đổi sao / quà ở{' '}
+            <button type="button" className="ph-text-link" onClick={() => setTab('rewards')}>
+              Kho báu →
+            </button>
+          </p>
+        </div>
+      ) : null}
+
       {tab === 'rewards' ? (
         <div className="ph-treasure">
           {treasureToast || unlockMsg ? (
@@ -3107,6 +3142,10 @@ export function ParentBoardView({
               </h1>
               <p>
                 {childShort} · đang xem {childFocusLabel}
+                {' · '}
+                <button type="button" className="ph-text-link" onClick={() => setTab('challenge')}>
+                  Challenge →
+                </button>
               </p>
             </div>
             <div className="ph-treasure-top-actions">
@@ -3234,27 +3273,6 @@ export function ParentBoardView({
                 ))
               )}
             </div>
-          </section>
-
-          <section
-            className="ph-treasure-sec"
-            id="ph-treasure-challenge"
-            aria-label="Challenge và mục tiêu bố mẹ"
-          >
-            {parentMembershipId ? (
-              <>
-                <FamilyChallengeCard
-                  familyId={familyId}
-                  memberId={parentMembershipId}
-                  isParent
-                />
-                <ParentGoalsPanel
-                  familyId={familyId}
-                  memberId={parentMembershipId}
-                  viewerName={viewerName}
-                />
-              </>
-            ) : null}
           </section>
 
           {pendingRedemptions.length > 0 ? (
