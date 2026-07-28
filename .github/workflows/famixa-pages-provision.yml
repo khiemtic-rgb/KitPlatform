@@ -1,0 +1,94 @@
+# One-shot: create Cloudflare Pages project `famixa` (root famixa-site) + domains famixa.vn
+name: Famixa Pages provision
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: famixa-site/package-lock.json
+
+      - name: Build famixa-site
+        working-directory: famixa-site
+        run: |
+          npm ci
+          npm run build
+
+      - name: Create Pages project if missing
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          export CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-db0d4500b2d1fd3d607105da7d4f931d}"
+          npx --yes wrangler@4 pages project list > /tmp/projects.txt || true
+          cat /tmp/projects.txt
+          if grep -qE '(^|[^a-z])famixa([^a-z]|$)' /tmp/projects.txt; then
+            echo "Project famixa already listed"
+          else
+            npx --yes wrangler@4 pages project create famixa --production-branch=main
+          fi
+
+      - name: Deploy production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-db0d4500b2d1fd3d607105da7d4f931d}"
+          npx --yes wrangler@4 pages deploy famixa-site/dist \
+            --project-name=famixa \
+            --branch=main \
+            --commit-dirty=true
+
+      - name: Attach custom domains
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-db0d4500b2d1fd3d607105da7d4f931d}"
+          TOKEN="${CLOUDFLARE_API_TOKEN:?Missing CLOUDFLARE_API_TOKEN}"
+          PROJECT=famixa
+          API="https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/pages/projects/${PROJECT}/domains"
+
+          add_domain() {
+            local domain="$1"
+            echo "=== domain $domain ==="
+            RESP=$(curl -sS -X POST "$API" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data "{\"name\":\"${domain}\"}")
+            echo "$RESP"
+            echo "$RESP" | python3 -c '
+          import json,sys
+          d=json.load(sys.stdin)
+          if d.get("success"):
+            print("added", d["result"].get("name"), d["result"].get("status"))
+            sys.exit(0)
+          errs=d.get("errors") or []
+          msg=json.dumps(errs)
+          # already exists / already configured
+          if any(x.get("code") in (8000014, 8000015, 8000007) or "already" in str(x).lower() for x in errs):
+            print("already present:", msg)
+            sys.exit(0)
+          print("FAILED:", msg)
+          sys.exit(1)
+          '
+          }
+
+          add_domain famixa.vn
+          add_domain www.famixa.vn
+
+          echo "Project: https://dash.cloudflare.com/${ACCOUNT_ID}/pages/view/${PROJECT}"
+          echo "Site: https://famixa.vn/vi/"
