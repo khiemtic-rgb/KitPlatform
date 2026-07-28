@@ -1,0 +1,56 @@
+---
+import { APP_URL } from '../lib/site';
+---
+
+<footer class="site-footer" id="about">
+  <div class="wrap footer-grid">
+    <div>
+      <div class="brand" style="margin-bottom: 0.85rem">
+        <img src="/favicon.svg" alt="" width="36" height="36" />
+        <div>
+          <strong style="color:#fff">Famixa</strong>
+          <span style="color:rgba(255,255,255,.7)">AI Human Growth OS for Families</span>
+        </div>
+      </div>
+      <p class="muted">
+        Đồng hành cùng gia đình Việt — giúp con tự giác, bố mẹ bớt nhắc, nhà yên hơn từng ngày.
+      </p>
+      <p class="muted" style="margin-top: 1rem">
+        Facebook · TikTok · YouTube
+      </p>
+    </div>
+    <div>
+      <h4>Giải pháp</h4>
+      <ul>
+        <li><a href="#giai-phap">Morning Brief</a></li>
+        <li><a href="#ai-coach">AI Coach</a></li>
+        <li><a href="#method">3Q Method</a></li>
+        <li><a href="#pricing">Gói đồng hành</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Tài nguyên</h4>
+      <ul id="blog">
+        <li><a href="#growth">Hành trình tăng trưởng</a></li>
+        <li><a href={APP_URL}>Mở app Famixa</a></li>
+        <li><a href="https://novixa.vn/vi">Novixa (KIT)</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Nhận bản tin Famixa</h4>
+      <p class="muted" style="margin: 0 0 0.75rem">Mẹo nhà yên · cập nhật sản phẩm · không spam.</p>
+      <form class="newsletter" action={APP_URL} method="get">
+        <input type="email" name="email" placeholder="Email của bạn" aria-label="Email" />
+        <button class="btn btn-primary" type="submit">Đăng ký</button>
+      </form>
+      <p class="muted" style="margin-top: 1rem; font-size: 0.82rem">
+        Sản phẩm của <strong style="color:#fff">KIT Technology</strong><br />
+        Thái Nguyên, Việt Nam
+      </p>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <span>© {new Date().getFullYear()} Famixa · KIT Technology</span>
+    <span>Made with ♥ for Vietnamese families</span>
+  </div>
+</footer>
