@@ -12,22 +12,29 @@ type Props = {
   parentMembershipId?: string;
   /** Bump to refetch (e.g. after day flow changes). */
   refreshKey?: string | number;
+  /** homeB4 = mockup man-hinh-bome4 compact cards. */
+  variant?: 'default' | 'homeB4';
+  maxItems?: number;
   onApproveStars?: (commitmentId: string) => void | Promise<void>;
   onConsequence?: (eventId: string, status: 'applied' | 'waived') => void | Promise<void>;
   onTeamUnlock?: (unlockId: string, status: 'confirmed' | 'deferred') => void | Promise<void>;
   onRewardFulfill?: (redemptionId: string) => void | Promise<void>;
   onChanged?: () => void;
+  onSeeAll?: () => void;
 };
 
 export function DecisionInboxPanel({
   familyId,
   parentMembershipId,
   refreshKey,
+  variant = 'default',
+  maxItems,
   onApproveStars,
   onConsequence,
   onTeamUnlock,
   onRewardFulfill,
   onChanged,
+  onSeeAll,
 }: Props) {
   const [inbox, setInbox] = useState<DecisionInbox | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -84,13 +91,12 @@ export function DecisionInboxPanel({
       } else if (!approve) {
         setToast('Đã bỏ qua');
       }
-      // Drop card immediately so parent sees progress even before refetch.
       setInbox((prev) => {
         if (!prev) return prev;
-        const items = prev.items.filter((x) => !(x.kind === item.kind && x.id === item.id));
-        const n = items.length;
+        const nextItems = prev.items.filter((x) => !(x.kind === item.kind && x.id === item.id));
+        const n = nextItems.length;
         return {
-          items,
+          items: nextItems,
           totalCount: n,
           headlineVi:
             n === 0
@@ -110,7 +116,63 @@ export function DecisionInboxPanel({
   };
 
   const count = inbox?.totalCount ?? 0;
-  const items = inbox?.items ?? [];
+  const limit = maxItems ?? (variant === 'homeB4' ? 2 : 8);
+  const items = (inbox?.items ?? []).slice(0, limit);
+  const approveLabel = (item: DecisionItem) =>
+    item.kind === 'ai_proposal' ? 'Áp dụng' : 'Đồng ý';
+
+  if (variant === 'homeB4') {
+    if (count === 0 && items.length === 0) return null;
+    return (
+      <section className="ph-b4-inbox" aria-label="Decision Inbox">
+        <header className="ph-b4-col-head">
+          <h3>
+            <span aria-hidden>🤖</span> DECISION INBOX
+            {count > 0 ? <i>{Math.min(count, 9)}</i> : null}
+          </h3>
+        </header>
+        {items.length === 0 ? (
+          <p className="ph-b4-empty">Không đề xuất cần duyệt.</p>
+        ) : (
+          <ul className="ph-b4-inbox-list">
+            {items.map((item) => (
+              <li key={`${item.kind}-${item.id}`}>
+                <p>{item.titleVi}</p>
+                <div className="ph-b4-inbox-btns">
+                  <button
+                    type="button"
+                    className="is-yes"
+                    disabled={busyId === item.id}
+                    onClick={() => void decide(item, true)}
+                  >
+                    {approveLabel(item)}
+                  </button>
+                  <button
+                    type="button"
+                    className="is-no"
+                    disabled={busyId === item.id}
+                    onClick={() => void decide(item, false)}
+                  >
+                    Bỏ qua
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        {onSeeAll ? (
+          <button type="button" className="ph-b4-see-all" onClick={onSeeAll}>
+            Xem tất cả đề xuất ›
+          </button>
+        ) : null}
+        {toast ? (
+          <p className="ph-b4-inbox-toast" role="status">
+            {toast}
+          </p>
+        ) : null}
+      </section>
+    );
+  }
 
   return (
     <section className="ph-block ph-decision-inbox">
@@ -127,14 +189,19 @@ export function DecisionInboxPanel({
         <p className="ph-empty-soft">Không việc cần duyệt — nghỉ ngơi đi.</p>
       ) : (
         <ul className="ph-decision-list">
-          {items.slice(0, 8).map((item) => (
+          {items.map((item) => (
             <li key={`${item.kind}-${item.id}`} className="ph-decision-card">
               <div className="ph-decision-card-body">
                 <strong>{item.titleVi}</strong>
                 <p>{item.bodyVi}</p>
                 {item.recommend ? (
                   <span className={`ph-decision-rec rec-${item.recommend}`}>
-                    AI gợi ý: {item.recommend === 'approve' ? 'Đồng ý' : item.recommend === 'reject' ? 'Từ chối' : 'Một phần'}
+                    AI gợi ý:{' '}
+                    {item.recommend === 'approve'
+                      ? 'Đồng ý'
+                      : item.recommend === 'reject'
+                        ? 'Từ chối'
+                        : 'Một phần'}
                   </span>
                 ) : null}
               </div>

@@ -73,6 +73,7 @@ import {
 import { FamilyValuePanel } from '@/modules/flow/FamilyValuePanel';
 import { BillingBanner } from '@/shared/ui/BillingBanner';
 import { PaywallSheet } from '@/shared/ui/PaywallSheet';
+import { buildCheckoutPath } from '@/shared/api/payment.api';
 import {
   getApiErrorMessage,
   isCapabilityPaywallError,
@@ -517,7 +518,6 @@ export function ParentBoardView({
   void _onReopen;
 
   const navigate = useNavigate();
-  void familyName;
   const [softGuide, setSoftGuide] = useState<SoftLockGuide | null>(null);
   const [missionFilter, setMissionFilter] = useState<MissionFilter>('all');
   const [tab, setTab] = useState<ParentTab>('home');
@@ -1090,6 +1090,74 @@ export function ParentBoardView({
       }),
     [flow.flowDate, childGratitudes, savedMemories, scopedCommitments, childRedemptions],
   );
+
+  const parentHelloLabel =
+    parentRole === 'bố' ? 'Bố' : parentRole === 'mẹ' ? 'Mẹ' : 'Bố mẹ';
+
+  const homeMoment = useMemo(() => {
+    const gratitude = childGratitudes[0];
+    if (gratitude) {
+      return {
+        id: `grat-${gratitude.id}`,
+        titleVi: gratitude.messageVi,
+        detailVi:
+          (gratitude.fromMemberName || 'Con') +
+          (gratitude.praiseContext ? ` · vì «${gratitude.praiseContext}»` : ''),
+        photoUrl: undefined as string | undefined,
+      };
+    }
+    const mem = savedMemories.find((m) => m.flowDate === flow.flowDate) ?? savedMemories[0];
+    if (mem) {
+      return {
+        id: `mem-${mem.id}`,
+        titleVi: mem.titleVi,
+        detailVi: mem.noteVi || mem.memberName,
+        photoUrl: mem.photoUrl,
+      };
+    }
+    const feed = homeFeed[0];
+    if (feed) {
+      return {
+        id: feed.id,
+        titleVi: feed.titleVi,
+        detailVi: feed.detailVi,
+        photoUrl: undefined as string | undefined,
+      };
+    }
+    return null;
+  }, [childGratitudes, savedMemories, flow.flowDate, homeFeed]);
+
+  const progressSegments = useMemo(() => {
+    const total = Math.min(Math.max(scopedTotal, 0), 10);
+    const segs = total > 0 ? total : 10;
+    const filled =
+      scopedTotal > 0
+        ? Math.round((scopedDone / Math.max(scopedTotal, 1)) * segs)
+        : 0;
+    return { segs, filled };
+  }, [scopedDone, scopedTotal]);
+
+  const peaceDaysLeft = useMemo(() => {
+    if (!subscription) return null;
+    if (subscription.trialDaysRemaining != null) return subscription.trialDaysRemaining;
+    const iso = subscription.trialEndsAt || subscription.currentPeriodEnd;
+    if (!iso) return null;
+    const t = Date.parse(iso);
+    if (Number.isNaN(t)) return null;
+    return Math.max(0, Math.ceil((t - Date.now()) / (24 * 60 * 60 * 1000)));
+  }, [subscription]);
+
+  const goPeaceCheckout = () => {
+    navigate(
+      buildCheckoutPath({
+        productCode: 'family_os',
+        subjectType: 'family',
+        subjectId: familyId,
+        planCode: subscription?.recommendedUpgradePlanCode || 'family_pro_month',
+        returnPath: '/today',
+      }),
+    );
+  };
 
   const buckets = useMemo(() => {
     const done: DayFlowCommitment[] = [];
@@ -1684,8 +1752,50 @@ export function ParentBoardView({
           {actionToast}
         </div>
       ) : null}
-      {tab === 'home' ? <BillingBanner familyId={familyId} /> : null}
-      {tab !== 'tasks' && tab !== 'rewards' && tab !== 'value' ? (
+
+      {tab === 'home' ? (
+      <header className="ph-b4-top">
+        <div className="ph-b4-identity">
+          <div className="ph-b4-avatar" aria-hidden>
+            {parentAvatar}
+          </div>
+          <div>
+            <h1 className="ph-b4-hello">
+              Xin chào, {parentHelloLabel} <span aria-hidden>👋</span>
+            </h1>
+            <button
+              type="button"
+              className="ph-b4-family"
+              onClick={() => setModeSheetOpen(true)}
+            >
+              {familyName || 'Gia đình mình'}
+              <span aria-hidden>▾</span>
+            </button>
+          </div>
+        </div>
+        <div className="ph-b4-top-right">
+          <button
+            type="button"
+            className="ph-b4-icon-btn"
+            aria-label="Thông báo"
+            onClick={() => scrollToMissions('need_help')}
+          >
+            <span aria-hidden>🔔</span>
+            {attentionItems.length > 0 ? (
+              <i>{Math.min(attentionItems.length, 9)}</i>
+            ) : null}
+          </button>
+          <button
+            type="button"
+            className="ph-b4-icon-btn"
+            aria-label="Hồ sơ"
+            onClick={() => setMoreOpen(true)}
+          >
+            <span aria-hidden>👤</span>
+          </button>
+        </div>
+      </header>
+      ) : tab !== 'tasks' && tab !== 'rewards' && tab !== 'value' ? (
       <header className="ph-top">
         <div className="ph-identity">
           <div className="ph-mom-avatar" aria-hidden>
@@ -1716,481 +1826,283 @@ export function ParentBoardView({
       ) : null}
 
       {tab === 'home' ? (
-        <>
-          <article className="ph-brief" aria-label="Famixa brief">
-            <p className="ph-brief-eyebrow">{homeBrief.eyebrowVi}</p>
-            <h2 className="ph-brief-mood">{homeBrief.moodLineVi}</h2>
-            {homeBrief.bulletsVi.length > 0 ? (
-              <ul className="ph-brief-bullets">
-                {homeBrief.bulletsVi.map((b) => (
-                  <li key={b}>{b}</li>
-                ))}
-              </ul>
-            ) : null}
-            <div className="ph-brief-action">
-              <p className="ph-brief-action-kicker">Việc duy nhất nên làm</p>
-              <strong>{homeBrief.primaryAction.doThisVi}</strong>
-              <p className="ph-brief-action-reason">{homeBrief.primaryAction.reasonVi}</p>
-              <div className="ph-brief-action-btns">
-                <button type="button" className="ph-pulse-cta" onClick={runBriefPrimary}>
-                  {homeBrief.primaryAction.kind === 'attention'
-                    ? homeBrief.primaryAction.titleVi || 'Làm theo'
-                    : homeBrief.primaryAction.kind === 'evening_checkin'
-                      ? 'Trả lời 3Q'
-                      : 'Làm theo'}
-                </button>
-                <button type="button" className="ph-text-link" onClick={runBriefReason}>
-                  {homeBrief.primaryAction.kind === 'attention' ? 'Xem việc' : 'Xem lý do'}
-                </button>
+        <div className="ph-b4-home">
+          <article className="ph-b4-brief" aria-label="Morning Brief">
+            <div className="ph-b4-brief-main">
+              <p className="ph-b4-brief-eyebrow">
+                <span aria-hidden>✦</span>{' '}
+                {homeBrief.period === 'evening' ? 'EVENING BRIEF' : 'MORNING BRIEF'}
+              </p>
+              <h2 className="ph-b4-brief-title">{homeBrief.moodLineVi}</h2>
+              <div className="ph-b4-brief-task">
+                <span aria-hidden>✓</span>
+                <strong>{homeBrief.primaryAction.doThisVi}</strong>
               </div>
-            </div>
-            {homeBrief.eveningCheckinHintVi ? (
-              <p className="ph-brief-note">
-                {homeBrief.eveningCheckinHintVi}{' '}
+              <button type="button" className="ph-b4-brief-cta" onClick={runBriefPrimary}>
+                <span aria-hidden>⚡</span>
+                Thực hiện ngay
+              </button>
+              {(homeBrief.eveningCheckinHintVi || homeBrief.period === 'evening') &&
+              !eveningCheckin ? (
                 <button
                   type="button"
-                  className="ph-text-link"
+                  className="ph-b4-brief-ai"
                   onClick={() => goValueAnchor('fv-3q')}
                 >
-                  Mở 3 câu tối →
+                  <span aria-hidden>🎯</span>
+                  <span>
+                    Gợi ý từ AI: 3Q tối giúp duy trì thói quen tốt.{' '}
+                    <em>Xem gợi ý phù hợp với gia đình →</em>
+                  </span>
                 </button>
-              </p>
-            ) : null}
-            {parentPulse.confidence === 'low' ? (
-              <p className="ph-brief-note">Đang học nhịp nhà — brief sẽ rõ hơn sau vài ngày.</p>
-            ) : null}
-          </article>
-
-          {homeAttention.length > 0 ? (
-            <section className="ph-brief-attn" id="ph-brief-attn" aria-label="Cần bạn xử lý">
-              <header className="ph-brief-section-head">
-                <h3>Cần bạn xử lý</h3>
+              ) : homeBrief.primaryAction.kind === 'coach' ? (
                 <button
                   type="button"
-                  className="ph-text-link"
-                  onClick={() => scrollToMissions('need_help')}
+                  className="ph-b4-brief-ai"
+                  onClick={runBriefReason}
                 >
-                  Tất cả →
+                  <span aria-hidden>🎯</span>
+                  <span>
+                    {homeBrief.primaryAction.reasonVi.slice(0, 110)}
+                    {homeBrief.primaryAction.reasonVi.length > 110 ? '…' : ''}{' '}
+                    <em>Xem lý do →</em>
+                  </span>
                 </button>
+              ) : (
+                <button
+                  type="button"
+                  className="ph-b4-brief-ai"
+                  onClick={() => goValueAnchor('fv-3q')}
+                >
+                  <span aria-hidden>🎯</span>
+                  <span>
+                    Gợi ý từ AI: 3Q tối giúp duy trì thói quen tốt.{' '}
+                    <em>Xem gợi ý phù hợp với gia đình →</em>
+                  </span>
+                </button>
+              )}
+            </div>
+            <div className="ph-b4-brief-art" aria-hidden>
+              <span>👨‍👦</span>
+            </div>
+          </article>
+
+          <div className="ph-b4-mid">
+            <section className="ph-b4-priority" id="ph-brief-attn" aria-label="Ưu tiên hôm nay">
+              <header className="ph-b4-col-head">
+                <h3>
+                  <span aria-hidden>🎯</span> ƯU TIÊN HÔM NAY
+                </h3>
               </header>
-              <ul className="ph-brief-attn-list">
-                {homeAttention.map((a) => {
-                  if (a.kind === 'consequence') {
+              {homeAttention.length === 0 ? (
+                <p className="ph-b4-empty">Không việc nóng — nhà đang ổn.</p>
+              ) : (
+                <ul className="ph-b4-priority-list">
+                  {homeAttention.map((a) => {
+                    if (a.kind === 'consequence') {
+                      return (
+                        <li key={a.id}>
+                          <button
+                            type="button"
+                            className="ph-b4-priority-item"
+                            onClick={() => scrollToMissions('need_help')}
+                          >
+                            <span className="ph-b4-priority-ico" aria-hidden>
+                              ⚠️
+                            </span>
+                            <span>
+                              <strong>{a.event.labelVi}</strong>
+                              <em>
+                                {(a.event.memberName?.trim() || childShort) +
+                                  ' · chờ quyết định'}
+                              </em>
+                            </span>
+                            <i aria-hidden />
+                          </button>
+                        </li>
+                      );
+                    }
+                    const label =
+                      a.kind === 'awaiting'
+                        ? 'Cần xác nhận'
+                        : a.kind === 'overdue'
+                          ? 'Chưa xong / quá giờ'
+                          : 'Cần chú ý';
                     return (
                       <li key={a.id}>
                         <button
                           type="button"
-                          className="ph-brief-attn-item"
-                          onClick={() => scrollToMissions('need_help')}
+                          className="ph-b4-priority-item"
+                          onClick={() => {
+                            if (a.kind === 'awaiting') {
+                              void verifyItem(a.item).catch(() => undefined);
+                              return;
+                            }
+                            scrollToMissions('need_help');
+                          }}
                         >
-                          <span aria-hidden>!</span>
+                          <span className="ph-b4-priority-ico" aria-hidden>
+                            {a.kind === 'awaiting' ? '💊' : '📖'}
+                          </span>
                           <span>
-                            <strong>{a.event.labelVi}</strong>
+                            <strong>{a.item.title}</strong>
                             <em>
-                              {(a.event.memberName?.trim() || childShort) + ' · chờ quyết định'}
+                              {label}
+                              {a.item.windowEnd
+                                ? ` · trước ${a.item.windowEnd.slice(0, 5)}`
+                                : ''}
                             </em>
                           </span>
+                          <i aria-hidden />
                         </button>
                       </li>
                     );
-                  }
-                  const label =
-                    a.kind === 'awaiting'
-                      ? 'Cần xác nhận'
-                      : a.kind === 'overdue'
-                        ? 'Chưa xong / quá giờ'
-                        : 'Cần chú ý';
-                  return (
-                    <li key={a.id}>
-                      <button
-                        type="button"
-                        className="ph-brief-attn-item"
-                        onClick={() => {
-                          if (a.kind === 'awaiting') {
-                            void verifyItem(a.item).catch(() => undefined);
-                            return;
-                          }
-                          scrollToMissions('need_help');
-                        }}
-                      >
-                        <span aria-hidden>!</span>
-                        <span>
-                          <strong>{a.item.title}</strong>
-                          <em>
-                            {label}
-                            {a.item.windowEnd ? ` · trước ${a.item.windowEnd.slice(0, 5)}` : ''}
-                          </em>
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                  })}
+                </ul>
+              )}
+              <button
+                type="button"
+                className="ph-b4-see-all"
+                onClick={() => scrollToMissions('need_help')}
+              >
+                Xem tất cả ›
+              </button>
             </section>
-          ) : null}
 
-          <DecisionInboxPanel
-            familyId={familyId}
-            parentMembershipId={parentMembershipId}
-            refreshKey={`${flow.flowDate}-${flow.doneCount}-${inboxTick}`}
-            onApproveStars={async (commitmentId) => {
-              await approveCommitmentStars(familyId, commitmentId);
-              markParentVerified(flow.flowDate, commitmentId);
-              setVerifiedTick((t) => t + 1);
-            }}
-            onConsequence={async (eventId, status) => {
-              const guide = await onDecideConsequence(eventId, status);
-              if (guide) setSoftGuide(guide);
-            }}
-            onTeamUnlock={(unlockId, status) => onDecideUnlockById(unlockId, status)}
-            onRewardFulfill={(id) => handleFulfillRedemption(id)}
-            onChanged={() => {
-              setInboxTick((t) => t + 1);
-              onRefreshFlow?.();
-            }}
-          />
+            <DecisionInboxPanel
+              variant="homeB4"
+              maxItems={2}
+              familyId={familyId}
+              parentMembershipId={parentMembershipId}
+              refreshKey={`${flow.flowDate}-${flow.doneCount}-${inboxTick}`}
+              onApproveStars={async (commitmentId) => {
+                await approveCommitmentStars(familyId, commitmentId);
+                markParentVerified(flow.flowDate, commitmentId);
+                setVerifiedTick((t) => t + 1);
+              }}
+              onConsequence={async (eventId, status) => {
+                const guide = await onDecideConsequence(eventId, status);
+                if (guide) setSoftGuide(guide);
+              }}
+              onTeamUnlock={(unlockId, status) => onDecideUnlockById(unlockId, status)}
+              onRewardFulfill={(id) => handleFulfillRedemption(id)}
+              onChanged={() => {
+                setInboxTick((t) => t + 1);
+                onRefreshFlow?.();
+              }}
+              onSeeAll={() => scrollToMissions('need_help')}
+            />
+          </div>
 
-          <section className="ph-brief-progress" aria-label="Tiến độ hôm nay">
-            <header className="ph-brief-section-head">
-              <h3>Hôm nay</h3>
-              <span>
-                {scopedDone}/{Math.max(scopedTotal, 0)}
-              </span>
+          <section className="ph-b4-progress" aria-label="Tiến độ cả nhà">
+            <header className="ph-b4-col-head">
+              <h3>
+                <span aria-hidden>👨‍👩‍👧‍👦</span> TIẾN ĐỘ CẢ NHÀ
+              </h3>
             </header>
-            <div className="ph-brief-bar" aria-hidden>
-              <i>
-                <b style={{ width: `${percent}%` }} />
-              </i>
+            <p className="ph-b4-progress-copy">
+              {scopedDone}/{Math.max(scopedTotal, 0)} việc quan trọng đã hoàn thành hôm nay
+            </p>
+            <div className="ph-b4-progress-row">
+              <div className="ph-b4-segments" aria-hidden>
+                {Array.from({ length: progressSegments.segs }, (_, idx) => (
+                  <i
+                    key={idx}
+                    className={idx < progressSegments.filled ? 'is-on' : undefined}
+                  />
+                ))}
+              </div>
               <strong>{percent}%</strong>
             </div>
-            <button type="button" className="ph-pulse-cta" onClick={() => scrollToMissions()}>
-              Xem missions →
+            <button
+              type="button"
+              className="ph-b4-see-all"
+              onClick={() => scrollToMissions()}
+            >
+              Xem chi tiết ›
             </button>
-            {todayUnlock?.status === 'pending_confirm' ? (
-              <p className="ph-brief-note">
-                Movie Night sẵn sàng xác nhận —{' '}
-                <button type="button" className="ph-text-link" onClick={() => setTab('rewards')}>
-                  mở Phần thưởng
-                </button>
-              </p>
-            ) : null}
           </section>
 
-          {homeFeed.length > 0 ? (
-            <section className="ph-brief-feed" aria-label="Family Feed hôm nay">
-              <header className="ph-brief-section-head">
-                <h3>Hôm nay có gì mới</h3>
-                <button
-                  type="button"
-                  className="ph-text-link"
-                  onClick={() => goValueAnchor('fv-ai-letter')}
-                >
-                  Nhật ký →
-                </button>
-              </header>
-              <ul className="ph-brief-feed-list">
-                {homeFeed.map((item) => (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      className="ph-brief-feed-item"
-                      onClick={() => {
-                        if (item.go === 'tasks') {
-                          scrollToMissions();
-                          return;
-                        }
-                        if (item.go === 'rewards') {
-                          setTab('rewards');
-                          return;
-                        }
-                        if (item.go === 'diary') {
-                          setTab('value');
-                          openMemoriesSheet();
-                          return;
-                        }
-                        goValueAnchor('fv-ai-letter');
-                      }}
-                    >
-                      <span aria-hidden>{item.icon}</span>
-                      <span>
-                        <strong>{item.titleVi}</strong>
-                        {item.detailVi ? <em>{item.detailVi}</em> : null}
+          {(homeMoment || todayUnlock) ? (
+            <div className="ph-b4-bottom-grid">
+              {homeMoment ? (
+                <section className="ph-b4-moment" aria-label="Khoảnh khắc gia đình">
+                  <header className="ph-b4-col-head">
+                    <h3>
+                      <span aria-hidden>❤️</span> KHOẢNH KHẮC GIA ĐÌNH
+                    </h3>
+                  </header>
+                  <button
+                    type="button"
+                    className="ph-b4-moment-card"
+                    onClick={() => {
+                      setTab('value');
+                      openMemoriesSheet();
+                    }}
+                  >
+                    {homeMoment.photoUrl ? (
+                      <img src={homeMoment.photoUrl} alt="" />
+                    ) : (
+                      <span className="ph-b4-moment-ph" aria-hidden>
+                        🏆
                       </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
+                    )}
+                    <strong>{homeMoment.titleVi}</strong>
+                    {homeMoment.detailVi ? <em>{homeMoment.detailVi}</em> : null}
+                  </button>
+                </section>
+              ) : null}
+
+              {todayUnlock ? (
+                <section className="ph-b4-challenge" aria-label="Challenge đang diễn ra">
+                  <header className="ph-b4-col-head">
+                    <h3>CHALLENGE ĐANG DIỄN RA</h3>
+                  </header>
+                  <button
+                    type="button"
+                    className="ph-b4-challenge-card"
+                    onClick={() => setTab('rewards')}
+                  >
+                    <span className="ph-b4-challenge-pop" aria-hidden>
+                      🍿
+                    </span>
+                    <strong>{todayUnlock.labelVi || 'Movie Night'}</strong>
+                    <p>Cùng xem phim và thưởng thức cuối tuần cùng gia đình!</p>
+                    <em>
+                      {todayUnlock.teamDone}/{Math.max(todayUnlock.teamTotal, 1)} thành viên
+                      {todayUnlock.status === 'confirmed'
+                        ? ' · đã mở'
+                        : todayUnlock.status === 'pending_confirm'
+                          ? ' · chờ duyệt'
+                          : ''}
+                    </em>
+                  </button>
+                </section>
+              ) : null}
+            </div>
           ) : null}
 
-          <nav className="ph-brief-explore" aria-label="Khám phá">
-            <div className="ph-brief-section-head">
-              <h3>Khám phá</h3>
-            </div>
-            <div className="ph-brief-chips">
-              <button type="button" className="ph-brief-chip" onClick={openCoachOrPaywall}>
-                Famixa đồng hành
+          {subscription ? (
+            <section className="ph-b4-plan" aria-label="Gói dịch vụ">
+              <span aria-hidden>👑</span>
+              <div>
+                <strong>
+                  {subscription.displayNameVi ||
+                    subscription.outcomeNameVi ||
+                    'Peace Plan - Family'}
+                </strong>
+                {peaceDaysLeft != null ? (
+                  <em className="ph-b4-plan-pill">Còn {peaceDaysLeft} ngày</em>
+                ) : null}
+              </div>
+              <button type="button" onClick={goPeaceCheckout}>
+                Gia hạn ›
               </button>
-              <button
-                type="button"
-                className="ph-brief-chip"
-                onClick={() => goValueAnchor('fv-rop')}
-              >
-                Growth Report
-              </button>
-              <button
-                type="button"
-                className="ph-brief-chip"
-                onClick={() => goValueAnchor('fv-ai-letter')}
-              >
-                Nhật ký / Letter
-              </button>
-              <button
-                type="button"
-                className="ph-brief-chip"
-                onClick={() => goValueAnchor('fv-3q')}
-              >
-                3 câu tối
-              </button>
-              <button type="button" className="ph-brief-chip" onClick={() => setTab('tasks')}>
-                Nhiệm vụ
-              </button>
-              <button
-                type="button"
-                className="ph-brief-chip is-soft"
-                onClick={() => navigate('/family-admin')}
-              >
-                Quản trị
-              </button>
-              <button
-                type="button"
-                className="ph-brief-chip is-soft"
-                onClick={() => setModeSheetOpen(true)}
-              >
-                Chế độ nhà
-              </button>
-            </div>
-          </nav>
-
-          <style>{`
-            .ph-brief {
-              margin: 0 0 14px;
-              padding: 18px 16px 16px;
-              border-radius: 20px;
-              background: linear-gradient(165deg, #1a3344 0%, #243f52 55%, #2a4a3a 100%);
-              color: #f4faf6;
-            }
-            .ph-brief-eyebrow {
-              margin: 0 0 8px;
-              font-size: 11px;
-              letter-spacing: 0.08em;
-              text-transform: uppercase;
-              opacity: 0.7;
-            }
-            .ph-brief-mood {
-              margin: 0 0 12px;
-              font-size: 1.28rem;
-              line-height: 1.3;
-              font-weight: 700;
-            }
-            .ph-brief-bullets {
-              margin: 0 0 14px;
-              padding: 0 0 0 18px;
-              font-size: 0.9rem;
-              line-height: 1.45;
-              opacity: 0.92;
-            }
-            .ph-brief-bullets li { margin-bottom: 4px; }
-            .ph-brief-action {
-              padding: 12px 14px;
-              border-radius: 14px;
-              background: rgba(255,255,255,0.1);
-            }
-            .ph-brief-action-kicker {
-              margin: 0 0 6px;
-              font-size: 0.75rem;
-              letter-spacing: 0.04em;
-              text-transform: uppercase;
-              opacity: 0.75;
-            }
-            .ph-brief-action strong {
-              display: block;
-              font-size: 1.02rem;
-              line-height: 1.35;
-              margin-bottom: 6px;
-            }
-            .ph-brief-action-reason {
-              margin: 0 0 12px;
-              font-size: 0.86rem;
-              line-height: 1.4;
-              opacity: 0.85;
-            }
-            .ph-brief-action-btns {
-              display: flex;
-              flex-wrap: wrap;
-              gap: 12px;
-              align-items: center;
-            }
-            .ph-brief .ph-pulse-cta {
-              border: 0;
-              border-radius: 999px;
-              padding: 8px 14px;
-              background: #e8f3ea;
-              color: #1a3344;
-              font-weight: 700;
-              font-size: 0.9rem;
-            }
-            .ph-brief .ph-text-link {
-              color: #c9e4ff;
-              background: none;
-              border: 0;
-              padding: 0;
-              font: inherit;
-              cursor: pointer;
-            }
-            .ph-brief-note {
-              margin: 10px 0 0;
-              font-size: 0.82rem;
-              opacity: 0.75;
-              line-height: 1.4;
-            }
-            .ph-brief-section-head {
-              display: flex;
-              align-items: baseline;
-              justify-content: space-between;
-              gap: 10px;
-              margin: 0 0 10px;
-            }
-            .ph-brief-section-head h3 {
-              margin: 0;
-              font-size: 0.95rem;
-              letter-spacing: 0.02em;
-            }
-            .ph-brief-attn, .ph-brief-progress, .ph-brief-feed, .ph-brief-explore {
-              margin: 0 0 14px;
-            }
-            .ph-brief-attn-list {
-              list-style: none;
-              margin: 0;
-              padding: 0;
-              display: flex;
-              flex-direction: column;
-              gap: 8px;
-            }
-            .ph-brief-attn-item {
-              width: 100%;
-              text-align: left;
-              display: flex;
-              gap: 10px;
-              align-items: flex-start;
-              padding: 12px 12px;
-              border-radius: 14px;
-              border: 1px solid #e6ddd0;
-              background: #fffaf4;
-              color: #1a3344;
-              cursor: pointer;
-            }
-            .ph-brief-attn-item strong { display: block; font-size: 0.95rem; }
-            .ph-brief-attn-item em {
-              display: block;
-              margin-top: 2px;
-              font-style: normal;
-              font-size: 0.8rem;
-              opacity: 0.7;
-            }
-            .ph-brief-bar {
-              display: flex;
-              align-items: center;
-              gap: 10px;
-              margin: 0 0 12px;
-            }
-            .ph-brief-bar i {
-              flex: 1;
-              height: 10px;
-              border-radius: 999px;
-              background: #e4ebe6;
-              overflow: hidden;
-              display: block;
-            }
-            .ph-brief-bar b {
-              display: block;
-              height: 100%;
-              background: #2a5f4a;
-              border-radius: 999px;
-            }
-            .ph-brief-progress .ph-pulse-cta {
-              border: 0;
-              border-radius: 999px;
-              padding: 8px 14px;
-              background: #e8f3ea;
-              color: #1a3344;
-              font-weight: 700;
-            }
-            .ph-brief-progress .ph-text-link,
-            .ph-brief-attn .ph-text-link,
-            .ph-brief-feed .ph-text-link {
-              background: none;
-              border: 0;
-              padding: 0;
-              color: #2a5f4a;
-              font: inherit;
-              cursor: pointer;
-            }
-            .ph-brief-feed-list {
-              list-style: none;
-              margin: 0;
-              padding: 0;
-              display: flex;
-              flex-direction: column;
-              gap: 8px;
-            }
-            .ph-brief-feed-item {
-              width: 100%;
-              display: flex;
-              align-items: flex-start;
-              gap: 10px;
-              text-align: left;
-              border: 1px solid #e6ddd0;
-              background: #f7f4ef;
-              border-radius: 14px;
-              padding: 10px 12px;
-              color: #1a3344;
-              cursor: pointer;
-            }
-            .ph-brief-feed-item strong {
-              display: block;
-              font-size: 0.92rem;
-              line-height: 1.35;
-            }
-            .ph-brief-feed-item em {
-              display: block;
-              margin-top: 2px;
-              font-style: normal;
-              font-size: 0.8rem;
-              color: #5a4a3a;
-            }
-            .ph-brief-chips {
-              display: flex;
-              flex-wrap: wrap;
-              gap: 8px;
-            }
-            .ph-brief-chip {
-              border: 1px solid #d5e6dc;
-              background: #f3f7f4;
-              color: #1a3344;
-              border-radius: 999px;
-              padding: 8px 12px;
-              font-size: 0.85rem;
-              font-weight: 650;
-              cursor: pointer;
-            }
-            .ph-brief-chip.is-soft {
-              background: #fff;
-              border-color: #e5e0d8;
-              font-weight: 550;
-            }
-          `}</style>
-        </>
+            </section>
+          ) : (
+            <BillingBanner familyId={familyId} />
+          )}
+        </div>
       ) : null}
 
       {tab === 'tasks' ? (
@@ -3517,10 +3429,42 @@ export function ParentBoardView({
         </div>
       </details>
 
-      <nav className="ph-tabbar" aria-label="Điều hướng bố mẹ">
+      <nav
+        className={`ph-tabbar${tab === 'home' ? ' ph-tabbar--b4' : ''}`}
+        aria-label="Điều hướng bố mẹ"
+      >
+        {tab === 'home' ? (
+          <>
+            <button type="button" className="ph-tab" onClick={openCoachOrPaywall}>
+              <span aria-hidden>🤖</span>
+              AI Coach
+            </button>
+            <button type="button" className="ph-tab" onClick={() => goValueAnchor('fv-3q')}>
+              <span aria-hidden>🎯</span>
+              3Q tối
+            </button>
+            <button
+              type="button"
+              className="ph-tab"
+              onClick={() => setTab('rewards')}
+            >
+              <span aria-hidden>⭐</span>
+              Điểm & thưởng
+            </button>
+            <button type="button" className="ph-tab" onClick={() => goValueAnchor('fv-rop')}>
+              <span aria-hidden>📘</span>
+              Family Report
+            </button>
+            <button type="button" className="ph-tab" onClick={() => setTab('tasks')}>
+              <span aria-hidden>📅</span>
+              Sự kiện
+            </button>
+          </>
+        ) : (
+          <>
         <button
           type="button"
-          className={`ph-tab${tab === 'home' ? ' is-on' : ''}`}
+          className="ph-tab"
           onClick={() => setTab('home')}
         >
           <span aria-hidden>🏠</span>
@@ -3562,6 +3506,8 @@ export function ParentBoardView({
           <span aria-hidden>📖</span>
           Nhật ký
         </button>
+          </>
+        )}
       </nav>
 
       {treasureHistoryOpen ? (

@@ -1,7 +1,7 @@
 # P0 Parent Home Brief
 
 **Mã:** KIT-UX-FO-HOME-BRIEF-P0 · **Ngày:** 2026-07-27  
-**Trạng thái:** IMPLEMENTED + **P0.5** (local) · 2026-07-27  
+**Trạng thái:** IMPLEMENTED + **P0.5** + **Home visual bome4** (local) · 2026-07-28  
 **Phụ thuộc:** Parent Pulse, Coach SoT, attentionItems, commercial packaging (paywall không chiếm Tầng 1)
 
 ## Goal
