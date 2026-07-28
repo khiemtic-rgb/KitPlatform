@@ -23,7 +23,12 @@ ALTER TABLE pack_family.behavior_event
         'intervention_decided',
         'parent_nudge_blocked',
         'twin_scored',
-        'prediction_flagged'
+        'prediction_flagged',
+        'retirement_advanced',
+        'observe_mode_entered',
+        'observe_mode_exited',
+        'dependence_warned',
+        'parent_coach_acted'
     ));
 
 CREATE TABLE IF NOT EXISTS pack_family.behavior_twin_snapshot (

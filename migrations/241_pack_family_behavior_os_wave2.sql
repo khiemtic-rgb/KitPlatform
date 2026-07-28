@@ -40,6 +40,7 @@ COMMENT ON COLUMN pack_family.commitment.confidence_score IS
 ALTER TABLE pack_family.behavior_event
     DROP CONSTRAINT IF EXISTS ck_behavior_event_type;
 
+-- Superset includes later waves + PSE so re-apply stays safe if those rows already exist.
 ALTER TABLE pack_family.behavior_event
     ADD CONSTRAINT ck_behavior_event_type CHECK (event_type IN (
         'commitment_done',
@@ -52,7 +53,17 @@ ALTER TABLE pack_family.behavior_event
         'self_start',
         'retrieval_submitted',
         'confidence_scored',
-        'evidence_uploaded'
+        'evidence_uploaded',
+        'motivation_cued',
+        'intervention_decided',
+        'parent_nudge_blocked',
+        'twin_scored',
+        'prediction_flagged',
+        'retirement_advanced',
+        'observe_mode_entered',
+        'observe_mode_exited',
+        'dependence_warned',
+        'parent_coach_acted'
     ));
 
 -- =============================================================================

@@ -22,7 +22,14 @@ ALTER TABLE pack_family.behavior_event
         'evidence_uploaded',
         'motivation_cued',
         'intervention_decided',
-        'parent_nudge_blocked'
+        'parent_nudge_blocked',
+        'twin_scored',
+        'prediction_flagged',
+        'retirement_advanced',
+        'observe_mode_entered',
+        'observe_mode_exited',
+        'dependence_warned',
+        'parent_coach_acted'
     ));
 
 COMMENT ON CONSTRAINT ck_behavior_event_type ON pack_family.behavior_event IS

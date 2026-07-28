@@ -27,7 +27,8 @@ ALTER TABLE pack_family.behavior_event
         'retirement_advanced',
         'observe_mode_entered',
         'observe_mode_exited',
-        'dependence_warned'
+        'dependence_warned',
+        'parent_coach_acted'
     ));
 
 CREATE TABLE IF NOT EXISTS pack_family.behavior_retirement_policy (
