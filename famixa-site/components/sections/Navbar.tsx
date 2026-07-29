@@ -29,23 +29,27 @@ const UI = {
   },
 } as const;
 
-/** Header: Famixa logo lockup · nav · locale · login · CTA */
+/** Header: Famixa mark · nav · locale · login · CTA */
 export function Navbar({ content, brand, appUrl, locale }: Props) {
   const [open, setOpen] = useState(false);
   const ui = UI[locale];
   const homeHref = `/${locale}/`;
+  const mark = brand.logoMark || brand.logo;
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#E8E6DF]/70 bg-[#FBF8F1]/95 backdrop-blur-sm">
       <Container className="flex min-h-[72px] items-center gap-5 md:min-h-[78px]">
-        <a href={homeHref} className="flex shrink-0 items-center" aria-label={brand.name}>
+        <a href={homeHref} className="flex shrink-0 items-center gap-2.5" aria-label={brand.name}>
           <img
-            src={brand.logo}
-            alt={brand.name}
-            width={200}
-            height={170}
-            className="h-11 w-auto max-w-[200px] object-contain object-left md:h-12 md:max-w-[220px]"
+            src={mark}
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0 rounded-full bg-white object-contain shadow-[0_2px_10px_rgba(16,59,43,0.1)]"
           />
+          <strong className="text-[1.2rem] font-extrabold leading-none tracking-[-0.02em] text-[#103B2B]">
+            {brand.name}
+          </strong>
         </a>
 
         <nav
