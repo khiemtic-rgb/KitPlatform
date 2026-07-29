@@ -1,0 +1,472 @@
+{
+  "_id": "landing-en",
+  "_type": "landingPage",
+  "locale": "en",
+  "appUrl": "https://home.famixa.vn",
+  "seo": {
+    "title": "Famixa — AI Human Growth OS for Families",
+    "description": "AI helps kids build self-discipline. Parents stop nagging every day. Famixa — an AI companion for growing families.",
+    "ogImage": "/images/hero-family.png",
+    "keywords": [
+      "Famixa",
+      "family AI",
+      "parenting",
+      "self-discipline",
+      "Family OS",
+      "Fami"
+    ]
+  },
+  "brand": {
+    "name": "Famixa",
+    "tagline": "AI Human Growth OS for Families",
+    "logo": "/images/logo-fami.svg"
+  },
+  "storyChapters": [
+    { "id": "hero", "label": "Opening" },
+    { "id": "giai-phap", "label": "Fami" },
+    { "id": "ai-coach", "label": "Listening" },
+    { "id": "moments", "label": "Moments" },
+    { "id": "growth", "label": "Journey" },
+    { "id": "method", "label": "Technology" },
+    { "id": "video", "label": "Growth loop" },
+    { "id": "testimonials", "label": "Parents" },
+    { "id": "pricing", "label": "Plans" },
+    { "id": "blog", "label": "FAQ" },
+    { "id": "final-cta", "label": "Start" }
+  ],
+  "nav": {
+    "links": [
+      { "href": "#giai-phap", "label": "Solution" },
+      { "href": "#ai-coach", "label": "AI Coach" },
+      { "href": "#method", "label": "3Q Method" },
+      { "href": "#growth", "label": "Family Growth" },
+      { "href": "#testimonials", "label": "Stories" },
+      { "href": "#about", "label": "About Famixa" }
+    ],
+    "login": "Log in",
+    "cta": "Start free"
+  },
+  "hero": {
+    "badge": "AI HUMAN GROWTH OS FOR FAMILIES",
+    "titleLine1": "AI helps kids build self-discipline.",
+    "titleLine2": "Parents stop nagging every day.",
+    "lead": "Famixa is an AI companion that understands each family — easing parents, helping kids grow more self-driven, and giving everyone more quality time together.",
+    "primaryCta": "Start the journey",
+    "secondaryCta": "Watch video",
+    "secondaryHref": "#video",
+    "image": {
+      "src": "/images/hero-family.png",
+      "alt": "A family before Famixa — parents exhausted from daily reminders"
+    },
+    "bubbles": [
+      {
+        "text": "Go study...\nHomework done?\nWhy the phone\nagain?",
+        "left": "33%",
+        "top": "20%",
+        "width": "20%",
+        "tail": "br"
+      },
+      {
+        "text": "I keep saying it\nand nothing\nchanges...",
+        "left": "71%",
+        "top": "18.5%",
+        "width": "18%",
+        "tail": "bl"
+      }
+    ],
+    "proof": [
+      { "title": "30-day trial", "sub": "Experience Peace", "icon": "sparkles" },
+      { "title": "Start free", "sub": "Free plan ready", "icon": "heart" },
+      { "title": "Private by design", "sub": "Family data protected", "icon": "shield" },
+      { "title": "Made in Vietnam", "sub": "Built for real families", "icon": "sprout" }
+    ]
+  },
+  "chapter1": {
+    "id": "giai-phap",
+    "eyebrow": "CHAPTER 1",
+    "title": "Fami\narrives",
+    "lead": "A tiny seed begins the journey of connection and care.",
+    "cta": "Learn more",
+    "ctaHref": "#ai-coach",
+    "image": {
+      "src": "/images/fami-appear.png",
+      "alt": "Fami — a bright little seed of companionship"
+    },
+    "bridgeQuote": "From a tiny seed, Fami walks with your family on the journey of growing happiness every day."
+  },
+  "chapter2": {
+    "id": "ai-coach",
+    "eyebrow": "CHAPTER 2",
+    "title": "Fami listens\nand understands",
+    "lead": "Fami observes habits, emotions, and the unique rhythm of each household.",
+    "steps": [
+      { "title": "Observe", "body": "Listen with care", "icon": "eye" },
+      { "title": "Understand", "body": "Sense needs & feelings", "icon": "heart" },
+      { "title": "Suggest", "body": "Timely, fitting ideas", "icon": "lightbulb" },
+      { "title": "Walk with you", "body": "Beside the family daily", "icon": "users" }
+    ]
+  },
+  "chapter3": {
+    "id": "moments",
+    "eyebrow": "CHAPTER 3",
+    "title": "Present in every small moment",
+    "lead": "From daily routines, Fami helps kids build good habits naturally.",
+    "cta": "See details",
+    "ctaHref": "#method",
+    "moments": [
+      {
+        "title": "Bedtime",
+        "body": "Sleep on time, rest well, wake up gently.",
+        "tag": "Evening",
+        "icon": "moon",
+        "tone": "night",
+        "image": { "src": "/images/moment-sleep.png", "alt": "Bedtime with Fami" }
+      },
+      {
+        "title": "Study time",
+        "body": "More focus, more initiative each day.",
+        "tag": "Learning",
+        "icon": "book",
+        "tone": "study",
+        "image": { "src": "/images/moment-study.png", "alt": "Study time with Fami" }
+      },
+      {
+        "title": "Chores",
+        "body": "Kids share housework with parents willingly.",
+        "tag": "Family",
+        "icon": "home",
+        "tone": "home",
+        "image": { "src": "/images/moment-chores.png", "alt": "Chores with Fami" }
+      },
+      {
+        "title": "Family time",
+        "body": "Fewer screens, more laughter.",
+        "tag": "Weekend",
+        "icon": "heart",
+        "tone": "weekend",
+        "image": { "src": "/images/moment-family.png", "alt": "Family time with Fami" }
+      }
+    ],
+    "trust": [
+      {
+        "icon": "shield",
+        "title": "Safe & trustworthy",
+        "body": "Family information is protected with care"
+      },
+      {
+        "icon": "chart",
+        "title": "Science & personalization",
+        "body": "Suggestions that fit age and needs"
+      },
+      {
+        "icon": "smile",
+        "title": "AI that supports parents",
+        "body": "Guidance at the right moment, the right way"
+      },
+      {
+        "icon": "users",
+        "title": "The whole family grows",
+        "body": "Stronger bonds, happier days"
+      }
+    ]
+  },
+  "chapter4": {
+    "id": "growth",
+    "eyebrow": "CHAPTER 4",
+    "title": "The growth journey of your family",
+    "titleAccent": "your family",
+    "lead": "Every small step today becomes tomorrow's foundation for happiness.",
+    "cta": "See the journey",
+    "ctaHref": "#pricing",
+    "image": {
+      "src": "/images/ch4-stages-art.png",
+      "alt": "Fami's journey from seed to grown tree"
+    },
+    "stages": [
+      {
+        "title": "Seed",
+        "hint": "Start\nconnecting",
+        "icon": "droplet",
+        "image": { "src": "/images/journey/stage-seed-cut.png", "alt": "Fami seed" }
+      },
+      {
+        "title": "Sprout",
+        "hint": "Habits\ntake root",
+        "icon": "sprout",
+        "image": { "src": "/images/journey/stage-sprout-cut.png", "alt": "Fami sprout" }
+      },
+      {
+        "title": "Little Fami",
+        "hint": "Kids grow\nmore self-driven",
+        "icon": "sprout",
+        "image": { "src": "/images/journey/stage-fami-small-cut.png", "alt": "Little Fami" }
+      },
+      {
+        "title": "Big Fami",
+        "hint": "Family understands\neach other more",
+        "icon": "sparkles",
+        "image": { "src": "/images/journey/stage-fami-big-cut.png", "alt": "Big Fami" }
+      },
+      {
+        "title": "Grown tree",
+        "hint": "Happiness becomes the foundation",
+        "icon": "tree",
+        "image": { "src": "/images/journey/stage-tree-cut.png", "alt": "Grown tree" }
+      }
+    ]
+  },
+  "chapter5": {
+    "id": "method",
+    "eyebrow": "CHAPTER 5",
+    "title": "Thoughtful technology, simple experience",
+    "lead": "A friendly interface that looks great and works for the whole family.",
+    "cta": "Explore the product",
+    "quote": "Let's all try together today! 💚",
+    "image": {
+      "src": "/images/chapter5-scene.png",
+      "alt": "Chapter 5 — thoughtful tech on laptop, tablet, phone, and Fami"
+    }
+  },
+  "chapter6": {
+    "id": "video",
+    "eyebrow": "CHAPTER 6",
+    "title": "Exclusive growth loop of Famixa",
+    "titleAccent": "of Famixa",
+    "lead": "Fami and your family learn and grow together every day.",
+    "cta": "Learn more",
+    "ctaHref": "#pricing",
+    "image": {
+      "src": "/images/chapter6-loop-cards.png",
+      "alt": "Famixa growth loop: Observe, Understand, Suggest, Family practice, AI learns"
+    },
+    "mascot": {
+      "src": "/images/loop/fami-center.png",
+      "alt": "Fami"
+    },
+    "mascotLabel": "Fami",
+    "mascotTagline": "Growing together",
+    "loop": [
+      { "title": "Observe", "hint": "Behavior & emotion" },
+      { "title": "Understand", "hint": "Unique needs" },
+      { "title": "Suggest", "hint": "Fitting solutions" },
+      { "title": "Family practice", "hint": "Habits take shape" },
+      { "title": "AI learns", "hint": "More precise over time" }
+    ]
+  },
+  "chapter7": {
+    "id": "testimonials",
+    "eyebrow": "CHAPTER 7",
+    "title": "What parents say about Famixa?",
+    "titleAccent": "Famixa?",
+    "lead": "Real stories from Vietnamese families.",
+    "cta": "More stories",
+    "ctaHref": "#pricing",
+    "mascot": {
+      "src": "/images/fami-testimonial.png",
+      "alt": "Fami"
+    },
+    "mascotLabel": "Fami",
+    "mascotTagline": "Always walking with your family",
+    "quotes": [
+      {
+        "name": "Lan Anh",
+        "place": "Hanoi",
+        "text": "I remind less, and my child is more self-driven every day. Our home feels lighter and happier.",
+        "highlights": ["self-driven"],
+        "rating": 5,
+        "image": {
+          "src": "/images/quote-lan-card.png",
+          "alt": "Lan Anh's family"
+        }
+      },
+      {
+        "name": "Minh Hoang",
+        "place": "Ho Chi Minh City",
+        "text": "Famixa understands our child better than we do. The suggestions are timely and practical.",
+        "highlights": ["understands"],
+        "rating": 5,
+        "image": {
+          "src": "/images/quote-minh-card.png",
+          "alt": "Minh Hoang's family"
+        }
+      },
+      {
+        "name": "Thu Thao",
+        "place": "Da Nang",
+        "text": "Morning Brief each day has become a wonderful habit for our whole family.",
+        "highlights": ["wonderful habit"],
+        "rating": 5,
+        "image": {
+          "src": "/images/quote-thu-card.png",
+          "alt": "Thu Thao's family"
+        }
+      }
+    ]
+  },
+  "chapter8": {
+    "id": "pricing",
+    "eyebrow": "CHAPTER 8",
+    "title": "Plans for every family",
+    "lead": "Choose the fit and start growing with Famixa.",
+    "cta": "Compare plans",
+    "ctaHref": "#pricing",
+    "perks": [
+      {
+        "icon": "shield",
+        "title": "Safe & secure",
+        "hint": "Family data is protected with care"
+      },
+      {
+        "icon": "refresh",
+        "title": "Flexible upgrades",
+        "hint": "Change plans anytime"
+      },
+      {
+        "icon": "support",
+        "title": "Dedicated support",
+        "hint": "The Famixa team walks with you"
+      }
+    ],
+    "plans": [
+      {
+        "name": "Free",
+        "tagline": "Try Famixa · up to 1 child",
+        "price": "0₫",
+        "period": "/ forever",
+        "tone": "start",
+        "badge": null,
+        "cta": "Start free",
+        "items": [
+          "Daily rhythm (core routine)",
+          "Weekly insight",
+          "Up to 1 child",
+          "No card required"
+        ]
+      },
+      {
+        "name": "Growth",
+        "tagline": "Family Growth Plan · up to 2 children",
+        "price": "99,000₫",
+        "period": "/ month",
+        "tone": "peace",
+        "badge": null,
+        "cta": "Upgrade Growth",
+        "items": [
+          "Everything in Free",
+          "Family timeline",
+          "Behavior Twin",
+          "Adaptive AI suggestions",
+          "Up to 2 children"
+        ]
+      },
+      {
+        "name": "Peace",
+        "tagline": "Family Peace Plan · unlimited children",
+        "price": "199,000₫",
+        "period": "/ month",
+        "tone": "growth",
+        "badge": "Popular",
+        "cta": "Start 30-day trial",
+        "items": [
+          "Everything in Growth",
+          "AI Parenting Coach",
+          "ROP / Growth Report",
+          "AI Letter + Family Replay",
+          "In-home screen agreements",
+          "Unlimited children"
+        ]
+      },
+      {
+        "name": "AI+",
+        "tagline": "Deep AI companionship · unlimited children",
+        "price": "399,000₫",
+        "period": "/ month",
+        "tone": "thrive",
+        "badge": null,
+        "cta": "Upgrade AI+",
+        "items": [
+          "Everything in Peace",
+          "Weekly Deep Playbook",
+          "Richer Letter & Replay",
+          "Expanded adaptive scan",
+          "Unlimited children"
+        ]
+      }
+    ]
+  },
+  "faq": {
+    "id": "blog",
+    "eyebrow": "FAQ",
+    "title": "Frequently asked questions.",
+    "lead": "Short answers to what parents usually ask first.",
+    "items": [
+      {
+        "q": "Is Famixa a chore-tracking app for kids?",
+        "a": "No. Famixa measures household progress (less nagging, more self-drive) — not rankings or grades for children."
+      },
+      {
+        "q": "How much time do parents need each day?",
+        "a": "Designed for ≤ 1 minute: Morning Brief highlights one focus, Decision Inbox reviews in seconds."
+      },
+      {
+        "q": "Is Fami an AI chatbot for kids?",
+        "a": "Fami is a companion mascot — not an LLM chatbot talking to children. AI supports parents with observation and suggestions."
+      },
+      {
+        "q": "Is family data safe?",
+        "a": "Yes. Data is protected under KIT Technology's privacy policy; you control access within the family."
+      },
+      {
+        "q": "Which plan should we start with?",
+        "a": "Free to try the daily rhythm. The 30-day trial unlocks Peace (Pro). Choose Growth for Timeline/Twin; Peace for Coach & evidence; AI+ for Deep Playbook."
+      }
+    ]
+  },
+  "finalCta": {
+    "title": "Every family is a journey.",
+    "titleAccent": "journey.",
+    "brandLine": "With you in every small step",
+    "lead": "Families don't need to be perfect.\nJust grow together, one day at a time.",
+    "cta": "Start your family's journey",
+    "image": {
+      "src": "/images/cta-campfire.png",
+      "alt": "A family and Fami by the campfire"
+    }
+  },
+  "footer": {
+    "blurb": "Walking with families on the journey of whole-child growth — with Famixa.",
+    "solutions": [
+      { "href": "#ai-coach", "label": "AI Coach" },
+      { "href": "#method", "label": "3Q Method" },
+      { "href": "#method", "label": "Behavior OS" },
+      { "href": "#growth", "label": "Family Growth" },
+      { "href": "#pricing", "label": "Challenge & Rewards" }
+    ],
+    "resources": [
+      { "href": "#testimonials", "label": "Stories" },
+      { "href": "#testimonials", "label": "Parenting insights" },
+      { "href": "https://home.famixa.vn", "label": "How to use" },
+      { "href": "#testimonials", "label": "Famixa community" },
+      { "href": "#pricing", "label": "Events & workshops" }
+    ],
+    "about": [
+      { "href": "#about", "label": "About us" },
+      { "href": "#about", "label": "Careers" },
+      { "href": "#about", "label": "Contact" },
+      { "href": "#about", "label": "Privacy policy" },
+      { "href": "#about", "label": "Terms of use" }
+    ],
+    "newsletter": {
+      "title": "Get the Famixa newsletter",
+      "lead": "Parenting insights and the latest from Famixa.",
+      "placeholder": "Your email"
+    },
+    "company": {
+      "heading": "A product of KIT Technology",
+      "name": "KIT Media & Technology Co., Ltd.",
+      "address": "Ho Xuong Rong New Urban Area, Phan Dinh Phung Ward, Thai Nguyen, Vietnam"
+    },
+    "copyrightSuffix": "Famixa. All rights reserved.",
+    "madeWith": "Made with ♥ by KIT Technology"
+  }
+}

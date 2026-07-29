@@ -46,7 +46,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           export CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-db0d4500b2d1fd3d607105da7d4f931d}"
-          npx --yes wrangler@4 pages deploy famixa-site/dist \
+          npx --yes wrangler@4 pages deploy famixa-site/out \
             --project-name=famixa \
             --branch=main \
             --commit-dirty=true

@@ -1,0 +1,582 @@
+{
+  "_id": "landing-vi",
+  "_type": "landingPage",
+  "locale": "vi",
+  "appUrl": "https://home.famixa.vn",
+  "seo": {
+    "title": "Famixa — AI Human Growth OS for Families",
+    "description": "AI giúp con tự giác. Cha mẹ không còn phải nhắc mỗi ngày. Famixa — người bạn đồng hành AI cho gia đình Việt.",
+    "ogImage": "/images/hero-family.png",
+    "keywords": [
+      "Famixa",
+      "AI gia đình",
+      "nuôi dạy con",
+      "tự giác",
+      "Family OS",
+      "Fami"
+    ]
+  },
+  "brand": {
+    "name": "Famixa",
+    "tagline": "AI Human Growth OS for Families",
+    "logo": "/images/logo-fami.svg"
+  },
+  "storyChapters": [
+    {
+      "id": "hero",
+      "label": "Mở đầu"
+    },
+    {
+      "id": "giai-phap",
+      "label": "Fami"
+    },
+    {
+      "id": "ai-coach",
+      "label": "Lắng nghe"
+    },
+    {
+      "id": "moments",
+      "label": "Khoảnh khắc"
+    },
+    {
+      "id": "growth",
+      "label": "Hành trình"
+    },
+    {
+      "id": "method",
+      "label": "Công nghệ"
+    },
+    {
+      "id": "video",
+      "label": "Vòng lặp"
+    },
+    {
+      "id": "testimonials",
+      "label": "Cha mẹ"
+    },
+    {
+      "id": "pricing",
+      "label": "Gói"
+    },
+    {
+      "id": "blog",
+      "label": "FAQ"
+    },
+    {
+      "id": "final-cta",
+      "label": "Bắt đầu"
+    }
+  ],
+  "nav": {
+    "links": [
+      {
+        "href": "#giai-phap",
+        "label": "Giải pháp"
+      },
+      {
+        "href": "#ai-coach",
+        "label": "AI Coach"
+      },
+      {
+        "href": "#method",
+        "label": "3Q Method"
+      },
+      {
+        "href": "#growth",
+        "label": "Family Growth"
+      },
+      {
+        "href": "#testimonials",
+        "label": "Blog"
+      },
+      {
+        "href": "#about",
+        "label": "Về Famixa"
+      }
+    ],
+    "login": "Đăng nhập",
+    "cta": "Bắt đầu miễn phí"
+  },
+  "hero": {
+    "badge": "AI HUMAN GROWTH OS FOR FAMILIES",
+    "titleLine1": "AI giúp con tự giác.",
+    "titleLine2": "Cha mẹ không còn phải nhắc mỗi ngày.",
+    "lead": "Famixa là người bạn đồng hành AI thấu hiểu từng gia đình, giúp cha mẹ nhẹ nhõm, con cái tự giác và gia đình có thêm nhiều thời gian chất lượng bên nhau.",
+    "primaryCta": "Bắt đầu hành trình",
+    "secondaryCta": "Xem video",
+    "secondaryHref": "#video",
+    "image": {
+      "src": "/images/hero-family.png",
+      "alt": "Gia đình trước Famixa — cha mẹ mệt mỏi khi phải nhắc con mỗi ngày"
+    },
+    "bubbles": [
+      {
+        "text": "Học đi con...\nLàm bài chưa?\nSao lại xem\nđiện thoại nữa?",
+        "left": "33%",
+        "top": "20%",
+        "width": "20%",
+        "tail": "br"
+      },
+      {
+        "text": "Nhắc mãi mà\ncon vẫn không\nthay đổi...",
+        "left": "71%",
+        "top": "18.5%",
+        "width": "18%",
+        "tail": "bl"
+      }
+    ],
+    "proof": [
+      {
+        "title": "Trial 30 ngày",
+        "sub": "Trải nghiệm Peace",
+        "icon": "sparkles"
+      },
+      {
+        "title": "Miễn phí bắt đầu",
+        "sub": "Gói Free sẵn sàng",
+        "icon": "heart"
+      },
+      {
+        "title": "Bảo mật",
+        "sub": "Dữ liệu gia đình",
+        "icon": "shield"
+      },
+      {
+        "title": "Made in Vietnam",
+        "sub": "Vì gia đình Việt",
+        "icon": "sprout"
+      }
+    ]
+  },
+  "chapter1": {
+    "id": "giai-phap",
+    "eyebrow": "CHƯƠNG 1",
+    "title": "Fami\nxuất hiện",
+    "lead": "Một hạt mầm nhỏ bé bắt đầu hành trình kết nối yêu thương.",
+    "cta": "Xem thêm",
+    "ctaHref": "#ai-coach",
+    "image": {
+      "src": "/images/fami-appear.png",
+      "alt": "Fami — hạt mầm linh hồn sáng"
+    },
+    "bridgeQuote": "Từ một hạt mầm nhỏ bé, Fami đồng hành cùng gia đình bạn trên hành trình nuôi dưỡng hạnh phúc mỗi ngày."
+  },
+  "chapter2": {
+    "id": "ai-coach",
+    "eyebrow": "CHƯƠNG 2",
+    "title": "Fami lắng nghe\nvà thấu hiểu",
+    "lead": "Fami quan sát, thấu hiểu thói quen, cảm xúc và nhịp sống riêng của từng gia đình.",
+    "steps": [
+      {
+        "title": "Quan sát",
+        "body": "Lắng nghe bằng sự tinh tế",
+        "icon": "eye"
+      },
+      {
+        "title": "Thấu hiểu",
+        "body": "Hiểu cảm xúc và nhu cầu",
+        "icon": "heart"
+      },
+      {
+        "title": "Đề xuất",
+        "body": "Gợi ý phù hợp, kịp thời",
+        "icon": "lightbulb"
+      },
+      {
+        "title": "Đồng hành",
+        "body": "Cùng gia đình mỗi ngày",
+        "icon": "users"
+      }
+    ]
+  },
+  "chapter3": {
+    "id": "moments",
+    "eyebrow": "CHƯƠNG 3",
+    "title": "Đồng hành trong mọi khoảnh khắc",
+    "lead": "Từ những việc nhỏ mỗi ngày, Fami giúp con hình thành thói quen tốt một cách tự nhiên.",
+    "cta": "Xem chi tiết",
+    "ctaHref": "#method",
+    "moments": [
+      {
+        "title": "Giờ đi ngủ",
+        "body": "Ngủ đúng giờ, ngủ ngon, sáng dậy tự nhiên.",
+        "tag": "Buổi tối",
+        "icon": "moon",
+        "tone": "night",
+        "image": {
+          "src": "/images/moment-sleep.png",
+          "alt": "Giờ đi ngủ với Fami"
+        }
+      },
+      {
+        "title": "Giờ học tập",
+        "body": "Tập trung hơn, chủ động hơn mỗi ngày.",
+        "tag": "Học tập",
+        "icon": "book",
+        "tone": "study",
+        "image": {
+          "src": "/images/moment-study.png",
+          "alt": "Giờ học tập với Fami"
+        }
+      },
+      {
+        "title": "Việc nhà",
+        "body": "Tự giác chia sẻ việc nhà cùng bố mẹ.",
+        "tag": "Gia đình",
+        "icon": "home",
+        "tone": "home",
+        "image": {
+          "src": "/images/moment-chores.png",
+          "alt": "Việc nhà với Fami"
+        }
+      },
+      {
+        "title": "Thời gian gia đình",
+        "body": "Ít thiết bị hơn, nhiều tiếng cười hơn.",
+        "tag": "Cuối tuần",
+        "icon": "heart",
+        "tone": "weekend",
+        "image": {
+          "src": "/images/moment-family.png",
+          "alt": "Thời gian gia đình với Fami"
+        }
+      }
+    ],
+    "trust": [
+      {
+        "icon": "shield",
+        "title": "An toàn & đáng tin cậy",
+        "body": "Bảo mật tuyệt đối thông tin gia đình"
+      },
+      {
+        "icon": "chart",
+        "title": "Khoa học & cá nhân hóa",
+        "body": "Đề xuất phù hợp với độ tuổi và nhu cầu của con"
+      },
+      {
+        "icon": "smile",
+        "title": "AI thấu hiểu trẻ",
+        "body": "Đồng hành và gợi ý đúng lúc, đúng cách"
+      },
+      {
+        "icon": "users",
+        "title": "Cả gia đình cùng phát triển",
+        "body": "Gắn kết yêu thương, nuôi dưỡng hạnh phúc"
+      }
+    ]
+  },
+  "chapter4": {
+    "id": "growth",
+    "eyebrow": "CHƯƠNG 4",
+    "title": "Hành trình trưởng thành của gia đình bạn",
+    "titleAccent": "gia đình bạn",
+    "lead": "Mỗi bước tiến nhỏ hôm nay là nền tảng cho hạnh phúc mai sau.",
+    "cta": "Xem hành trình",
+    "ctaHref": "#pricing",
+    "image": {
+      "src": "/images/ch4-stages-art.png",
+      "alt": "Hành trình Fami từ hạt mầm đến cây trưởng thành"
+    },
+    "stages": [
+      {
+        "title": "Hạt mầm",
+        "hint": "Bắt đầu\nkết nối",
+        "icon": "droplet",
+        "image": {
+          "src": "/images/journey/stage-seed-cut.png",
+          "alt": "Hạt mầm Fami"
+        }
+      },
+      {
+        "title": "Nảy mầm",
+        "hint": "Hình thành\nthói quen",
+        "icon": "sprout",
+        "image": {
+          "src": "/images/journey/stage-sprout-cut.png",
+          "alt": "Nảy mầm Fami"
+        }
+      },
+      {
+        "title": "Fami nhỏ",
+        "hint": "Con bắt đầu\ntự giác",
+        "icon": "sprout",
+        "image": {
+          "src": "/images/journey/stage-fami-small-cut.png",
+          "alt": "Fami nhỏ"
+        }
+      },
+      {
+        "title": "Fami lớn",
+        "hint": "Gia đình thấu hiểu\nnhau hơn",
+        "icon": "sparkles",
+        "image": {
+          "src": "/images/journey/stage-fami-big-cut.png",
+          "alt": "Fami lớn"
+        }
+      },
+      {
+        "title": "Cây trưởng thành",
+        "hint": "Hạnh phúc trở thành nền tảng",
+        "icon": "tree",
+        "image": {
+          "src": "/images/journey/stage-tree-cut.png",
+          "alt": "Cây trưởng thành"
+        }
+      }
+    ]
+  },
+  "chapter5": {
+    "id": "method",
+    "eyebrow": "CHƯƠNG 5",
+    "title": "Công nghệ tinh tế, trải nghiệm đơn giản",
+    "lead": "Giao diện thân thiện, đẹp mắt và dễ sử dụng cho cả gia đình.",
+    "cta": "Khám phá sản phẩm",
+    "quote": "Hôm nay cả nhà cùng cố gắng nhé! 💚",
+    "image": {
+      "src": "/images/chapter5-scene.png",
+      "alt": "Chương 5 — Công nghệ tinh tế trên laptop, tablet, điện thoại và Fami"
+    }
+  },
+  "chapter6": {
+    "id": "video",
+    "eyebrow": "CHƯƠNG 6",
+    "title": "Vòng lặp tăng trưởng độc quyền của Famixa",
+    "titleAccent": "của Famixa",
+    "lead": "Fami và gia đình cùng học hỏi, cùng tiến bộ mỗi ngày.",
+    "cta": "Tìm hiểu thêm",
+    "ctaHref": "#pricing",
+    "image": {
+      "src": "/images/chapter6-loop-cards.png",
+      "alt": "Vòng lặp tăng trưởng Famixa: Quan sát, Thấu hiểu, Đề xuất, Gia đình thực hành, AI học hỏi"
+    },
+    "mascot": {
+      "src": "/images/loop/fami-center.png",
+      "alt": "Fami"
+    },
+    "mascotLabel": "Fami",
+    "mascotTagline": "Growing together",
+    "loop": [
+      { "title": "Quan sát", "hint": "Hành vi & cảm xúc" },
+      { "title": "Thấu hiểu", "hint": "Nhu cầu riêng" },
+      { "title": "Đề xuất", "hint": "Giải pháp phù hợp" },
+      { "title": "Gia đình thực hành", "hint": "Hình thành thói quen" },
+      { "title": "AI học hỏi", "hint": "Ngày càng chính xác" }
+    ]
+  },
+  "chapter7": {
+    "id": "testimonials",
+    "eyebrow": "CHƯƠNG 7",
+    "title": "Cha mẹ nói gì về Famixa?",
+    "titleAccent": "Famixa?",
+    "lead": "Những câu chuyện thật từ các gia đình Việt.",
+    "cta": "Xem thêm câu chuyện",
+    "ctaHref": "#pricing",
+    "mascot": {
+      "src": "/images/fami-testimonial.png",
+      "alt": "Fami"
+    },
+    "mascotLabel": "Fami",
+    "mascotTagline": "Luôn đồng hành cùng gia đình bạn",
+    "quotes": [
+      {
+        "name": "Chị Lan Anh",
+        "place": "Hà Nội",
+        "text": "Nhắc ít đi mà con vẫn tự giác hơn mỗi ngày. Gia đình mình nhẹ nhàng và vui vẻ hơn rất nhiều.",
+        "highlights": ["tự giác"],
+        "rating": 5,
+        "image": {
+          "src": "/images/quote-lan-card.png",
+          "alt": "Gia đình chị Lan Anh"
+        }
+      },
+      {
+        "name": "Anh Minh Hoàng",
+        "place": "TP. Hồ Chí Minh",
+        "text": "Famixa hiểu con hơn cả bố mẹ. Những gợi ý rất đúng lúc và thiết thực.",
+        "highlights": ["hiểu con"],
+        "rating": 5,
+        "image": {
+          "src": "/images/quote-minh-card.png",
+          "alt": "Gia đình anh Minh Hoàng"
+        }
+      },
+      {
+        "name": "Chị Thu Thảo",
+        "place": "Đà Nẵng",
+        "text": "Morning Brief mỗi sáng là thói quen tuyệt vời của cả gia đình mình.",
+        "highlights": ["thói quen tuyệt vời"],
+        "rating": 5,
+        "image": {
+          "src": "/images/quote-thu-card.png",
+          "alt": "Gia đình chị Thu Thảo"
+        }
+      }
+    ]
+  },
+  "chapter8": {
+    "id": "pricing",
+    "eyebrow": "CHƯƠNG 8",
+    "title": "Gói đồng hành cho mọi gia đình",
+    "lead": "Chọn gói phù hợp và bắt đầu hành trình trưởng thành cùng Famixa.",
+    "cta": "So sánh chi tiết",
+    "ctaHref": "#pricing",
+    "perks": [
+      {
+        "icon": "shield",
+        "title": "An toàn & bảo mật",
+        "hint": "Dữ liệu gia đình được bảo vệ tuyệt đối"
+      },
+      {
+        "icon": "refresh",
+        "title": "Linh hoạt nâng cấp",
+        "hint": "Thay đổi gói bất cứ lúc nào"
+      },
+      {
+        "icon": "support",
+        "title": "Hỗ trợ tận tâm",
+        "hint": "Đội ngũ Famixa luôn đồng hành"
+      }
+    ],
+    "plans": [
+      {
+        "name": "Free",
+        "tagline": "Trải nghiệm Famixa · tối đa 1 trẻ",
+        "price": "0đ",
+        "period": "/ vĩnh viễn",
+        "tone": "start",
+        "badge": null,
+        "cta": "Bắt đầu miễn phí",
+        "items": [
+          "Nhịp ngày (core routine)",
+          "Insight tuần",
+          "Tối đa 1 trẻ",
+          "Không cần thẻ để bắt đầu"
+        ]
+      },
+      {
+        "name": "Growth",
+        "tagline": "Family Growth Plan · tối đa 2 trẻ",
+        "price": "99.000đ",
+        "period": "/ tháng",
+        "tone": "peace",
+        "badge": null,
+        "cta": "Nâng cấp Growth",
+        "items": [
+          "Tất cả Free",
+          "Timeline kỷ niệm nhà",
+          "Behavior Twin",
+          "AI đề xuất thích nghi",
+          "Tối đa 2 trẻ"
+        ]
+      },
+      {
+        "name": "Peace",
+        "tagline": "Family Peace Plan · không giới hạn trẻ",
+        "price": "199.000đ",
+        "period": "/ tháng",
+        "tone": "growth",
+        "badge": "Phổ biến",
+        "cta": "Dùng thử 30 ngày",
+        "items": [
+          "Tất cả Growth",
+          "AI Parenting Coach",
+          "ROP / Growth Report",
+          "AI Letter + Family Replay",
+          "Thỏa thuận screen trong nhà",
+          "Không giới hạn số trẻ"
+        ]
+      },
+      {
+        "name": "AI+",
+        "tagline": "Đồng hành AI chuyên sâu · không giới hạn trẻ",
+        "price": "399.000đ",
+        "period": "/ tháng",
+        "tone": "thrive",
+        "badge": null,
+        "cta": "Nâng AI+",
+        "items": [
+          "Tất cả Peace",
+          "Weekly Deep Playbook",
+          "Letter & Replay sâu hơn",
+          "Adaptive scan mở rộng",
+          "Không giới hạn số trẻ"
+        ]
+      }
+    ]
+  },
+  "faq": {
+    "id": "blog",
+    "eyebrow": "FAQ",
+    "title": "Câu hỏi thường gặp.",
+    "lead": "Ngắn gọn — đúng thứ cha mẹ quan tâm trước khi bắt đầu.",
+    "items": [
+      {
+        "q": "Famixa có phải app chấm việc cho con không?",
+        "a": "Không. Famixa đo tiến bộ nhà (bớt nhắc, thêm tự giác) — không xếp hạng hay điểm con."
+      },
+      {
+        "q": "Bố mẹ mất bao nhiêu thời gian mỗi ngày?",
+        "a": "Thiết kế cho ≤ 1 phút: Morning Brief một việc cần chú ý, Decision Inbox duyệt trong vài giây."
+      },
+      {
+        "q": "Fami là AI chat với con sao?",
+        "a": "Fami là mascot / hạt mầm đồng hành — không phải chatbot LLM nói chuyện với trẻ. AI hỗ trợ bố mẹ quan sát và đề xuất."
+      },
+      {
+        "q": "Dữ liệu gia đình có an toàn không?",
+        "a": "Có. Dữ liệu được bảo vệ theo chính sách bảo mật của KIT Technology; bạn kiểm soát quyền truy cập trong gia đình."
+      },
+      {
+        "q": "Gói nào phù hợp để bắt đầu?",
+        "a": "Free để trải nghiệm nhịp ngày. Trial 30 ngày = quyền Peace (Pro). Growth khi cần Timeline/Twin; Peace khi cần Coach & chứng cứ; AI+ khi cần Deep Playbook."
+      }
+    ]
+  },
+  "finalCta": {
+    "title": "Mỗi gia đình là một hành trình.",
+    "titleAccent": "hành trình.",
+    "brandLine": "Đồng hành trong từng bước nhỏ",
+    "lead": "Gia đình không cần hoàn hảo.\nChỉ cần cùng nhau trưởng thành mỗi ngày.",
+    "cta": "Bắt đầu hành trình của bạn",
+    "image": {
+      "src": "/images/cta-campfire.png",
+      "alt": "Gia đình và Fami bên lửa trại"
+    }
+  },
+  "footer": {
+    "blurb": "Đồng hành cùng gia đình Việt trên hành trình phát triển toàn diện, cùng Famixa.",
+    "solutions": [
+      { "href": "#ai-coach", "label": "AI Coach" },
+      { "href": "#method", "label": "3Q Method" },
+      { "href": "#method", "label": "Behavior OS" },
+      { "href": "#growth", "label": "Family Growth" },
+      { "href": "#pricing", "label": "Challenge & Rewards" }
+    ],
+    "resources": [
+      { "href": "#testimonials", "label": "Blog" },
+      { "href": "#testimonials", "label": "Kiến thức nuôi dạy con" },
+      { "href": "https://home.famixa.vn", "label": "Hướng dẫn sử dụng" },
+      { "href": "#testimonials", "label": "Cộng đồng Famixa" },
+      { "href": "#pricing", "label": "Sự kiện & Workshop" }
+    ],
+    "about": [
+      { "href": "#about", "label": "Về chúng tôi" },
+      { "href": "#about", "label": "Tuyển dụng" },
+      { "href": "#about", "label": "Liên hệ" },
+      { "href": "#about", "label": "Chính sách bảo mật" },
+      { "href": "#about", "label": "Điều khoản sử dụng" }
+    ],
+    "newsletter": {
+      "title": "Nhận bản tin Famixa",
+      "lead": "Nhận kiến thức nuôi dạy con và thông tin mới nhất từ Famixa.",
+      "placeholder": "Email của bạn"
+    },
+    "company": {
+      "heading": "Sản phẩm của KIT Technology",
+      "name": "Công ty TNHH Truyền thông và Công nghệ KIT",
+      "address": "KĐT Hồ Xương Rồng, P. Phan Đình Phùng, Thái Nguyên"
+    },
+    "copyrightSuffix": "Famixa. All rights reserved.",
+    "madeWith": "Made with ♥ by KIT Technology"
+  }
+}

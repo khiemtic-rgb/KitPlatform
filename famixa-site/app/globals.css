@@ -1,0 +1,138 @@
+@import 'tailwindcss';
+
+@source "../app/**/*.{js,ts,jsx,tsx,mdx}";
+@source "../components/**/*.{js,ts,jsx,tsx,mdx}";
+@source "../content/**/*.{js,ts,jsx,tsx,json}";
+@source "../lib/**/*.{js,ts,jsx,tsx}";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --color-famixa-primary: #1fa45a;
+  --color-famixa-dark: #103b2b;
+  --color-famixa-bg: #fbf8f1;
+  --color-famixa-text: #1d1d1f;
+  --color-famixa-secondary: #666666;
+  --color-famixa-border: #e7ece8;
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.06);
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-20: 20px;
+  --radius-32: 32px;
+}
+
+/* ——— Light (default) ——— */
+:root,
+[data-theme='light'] {
+  --color-primary: #1fa45a;
+  --color-dark: #103b2b;
+  --color-bg: #ffffff;
+  --color-bg-elevated: #ffffff;
+  --color-page: #fbf8f1;
+  --color-text: #1d1d1f;
+  --color-secondary: #666666;
+  --color-border: #e7ece8;
+  --color-muted: #eaf5ee;
+  --color-warm: #fbf8f1;
+  --color-mint: #eaf5ee;
+  --color-white: #ffffff;
+  --color-icon-bg: #e8f3ec;
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.06);
+  --overlay: rgba(8, 28, 20, 0.78);
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-20: 20px;
+  --radius-32: 32px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-48: 48px;
+  --space-64: 64px;
+  --space-96: 96px;
+  --max: 1180px;
+  --font: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --type-hero: clamp(2rem, 4.5vw, 4rem);
+  --type-section: clamp(1.6rem, 3.2vw, 2.5rem);
+  --type-card: 1.375rem;
+  --type-body: 1.125rem;
+  --type-small: 0.875rem;
+  color-scheme: light;
+}
+
+/* ——— Dark ——— */
+[data-theme='dark'] {
+  --color-primary: #3dd68c;
+  --color-dark: #0a1f17;
+  --color-bg: #0c1410;
+  --color-bg-elevated: #15201a;
+  --color-text: #f2f5f3;
+  --color-secondary: #a3b1a9;
+  --color-border: #24332b;
+  --color-muted: #1a2921;
+  --color-warm: #1a1710;
+  --color-mint: #12241c;
+  --color-white: #15201a;
+  --color-icon-bg: #1a2921;
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --overlay: rgba(0, 0, 0, 0.72);
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: var(--font);
+  background: var(--color-page, var(--color-bg));
+  color: var(--color-text);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+[data-theme='dark'] body {
+  background: var(--color-bg);
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+a {
+  text-decoration: none;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+/* Story scroll active chapter highlight */
+[data-story-active='true'] {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+  outline-offset: 8px;
+  border-radius: var(--radius-20);
+}
+
+@media (max-width: 767px) {
+  :root {
+    --type-body: 1rem;
+    --type-card: 1.2rem;
+  }
+}

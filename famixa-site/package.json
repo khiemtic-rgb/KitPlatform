@@ -1,18 +1,30 @@
 {
   "name": "famixa-site",
-  "type": "module",
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "private": true,
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "astro dev --host localhost --port 4322",
-    "build": "astro build",
-    "preview": "astro preview --host localhost --port 4322",
-    "astro": "astro"
+    "dev": "next dev --port 3002",
+    "build": "next build",
+    "start": "next start --port 3002",
+    "lint": "next lint"
   },
   "dependencies": {
-    "@astrojs/sitemap": "^3.7.0",
-    "astro": "^6.4.7"
+    "framer-motion": "^12.23.12",
+    "lucide-react": "^0.539.0",
+    "next": "^15.5.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.12",
+    "@types/node": "^22.17.2",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "playwright": "^1.49.0",
+    "tailwindcss": "^4.1.12",
+    "typescript": "^5.9.2"
   }
 }
