@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "generatedAt": "2026-07-29T00:00:00.000Z",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "summary": {
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 0,
+    "last24hPageViews": 0,
+    "last24hRequests": 0
+  },
+  "hourly": [],
+  "daily": [],
+  "topPages": []
+}

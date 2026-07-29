@@ -54,3 +54,16 @@ npm run build    # writes ./out
 Cloudflare Pages project `famixa` — `pages_build_output_dir: ./out` (see `wrangler.jsonc`).
 
 Root `/` redirects to `/vi/`. CTA → `https://home.famixa.vn`.
+
+## Xem thống kê trên web
+
+Trang: **https://famixa.vn/vi/thong-ke** — mật khẩu mặc định **`famixa2026`** (đổi trong `lib/stats-config.ts`).
+
+- **Tải lại:** gọi `/api/stats` (Cloudflare Pages Function) — cần `STATS_VIEW_KEY` trên project `famixa` (= cùng mật khẩu).
+- **Dự phòng:** `public/stats-snapshot.json` cập nhật qua GitHub Actions mỗi 6 giờ (`Famixa update stats`).
+
+**Cloudflare Pages** (Settings → Variables, Production): `STATS_VIEW_KEY`, `CF_ZONE_ID` (zone famixa.vn), `CLOUDFLARE_API_TOKEN` (Analytics Read).
+
+**GitHub Secrets:** `CF_ANALYTICS_API_TOKEN` hoặc `CLOUDFLARE_API_TOKEN`; tuỳ chọn `FAMIXA_CF_ZONE_ID`, `FAMIXA_CF_DEPLOY_HOOK`.
+
+**Web Analytics (thu thập):** set `NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN` khi build nếu dùng Cloudflare Web Analytics beacon.

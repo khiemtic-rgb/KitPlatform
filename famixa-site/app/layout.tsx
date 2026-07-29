@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { CloudflareAnalytics } from '@/components/seo/CloudflareAnalytics';
 import { SITE_NAME, absoluteUrl, DEFAULT_OG_IMAGE } from '@/lib/site';
 import './globals.css';
 
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-sans antialiased">
         <ThemeProvider>{children}</ThemeProvider>
+        <CloudflareAnalytics />
       </body>
     </html>
   );

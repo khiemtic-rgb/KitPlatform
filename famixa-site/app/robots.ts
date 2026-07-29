@@ -8,6 +8,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
+      disallow: ['/vi/thong-ke/', '/vi/thong-ke'],
     },
     sitemap: `${SITE_URL.replace(/\/$/, '')}/sitemap.xml`,
     host: SITE_URL.replace(/\/$/, ''),
