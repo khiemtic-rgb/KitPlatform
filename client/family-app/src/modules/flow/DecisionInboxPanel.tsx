@@ -138,7 +138,24 @@ export function DecisionInboxPanel({
 
   const count = inbox?.totalCount ?? 0;
   const limit = maxItems ?? (variant === 'homeB4' ? 2 : 8);
-  const items = sortForOneMinute(inbox?.items ?? []).slice(0, limit);
+  const rawItems = sortForOneMinute(inbox?.items ?? []);
+  const items = (() => {
+    const seenId = new Set<string>();
+    const seenSoft = new Set<string>();
+    const out: DecisionItem[] = [];
+    for (const item of rawItems) {
+      const idKey = `${item.kind}:${item.id}`;
+      if (seenId.has(idKey)) continue;
+      // Trùng title cùng loại (thường là AI proposal seed lặp) — chỉ hiện 1.
+      const softKey = `${item.kind}:${item.titleVi.trim().toLowerCase()}`;
+      if (seenSoft.has(softKey)) continue;
+      seenId.add(idKey);
+      seenSoft.add(softKey);
+      out.push(item);
+      if (out.length >= limit) break;
+    }
+    return out;
+  })();
   const etaSec = estimateSeconds(count);
   const approveLabel = (item: DecisionItem) =>
     item.kind === 'ai_proposal' ? 'Áp dụng' : 'Đồng ý';

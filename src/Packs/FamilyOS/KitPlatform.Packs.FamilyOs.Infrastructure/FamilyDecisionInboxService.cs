@@ -198,6 +198,11 @@ internal sealed class FamilyDecisionInboxService : IFamilyDecisionInboxService
             .OrderByDescending(i => i.Kind == FamilyDecisionKinds.ChildRequest
                                     || i.Kind == FamilyDecisionKinds.AiProposal)
             .ThenByDescending(i => i.CreatedAt)
+            .GroupBy(i =>
+                i.Kind == FamilyDecisionKinds.AiProposal
+                    ? $"{i.Kind}:{NormalizeTitle(i.TitleVi)}"
+                    : $"{i.Kind}:{i.Id}")
+            .Select(g => g.First())
             .Take(30)
             .ToList();
 
@@ -210,6 +215,9 @@ internal sealed class FamilyDecisionInboxService : IFamilyDecisionInboxService
 
         return new FamilyDecisionInboxDto(n, headline, items);
     }
+
+    private static string NormalizeTitle(string? title) =>
+        (title ?? string.Empty).Trim().ToLowerInvariant();
 
     private static string ShortName(string name)
     {

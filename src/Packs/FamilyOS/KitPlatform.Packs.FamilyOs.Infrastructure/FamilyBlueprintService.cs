@@ -43,6 +43,27 @@ internal sealed class FamilyBlueprintService : IFamilyBlueprintService
         var isTeaser = pack.TierCode is FamilyPlanTiers.Free;
         var row = await _repo.GetAsync(familyId, cancellationToken);
 
+        // Auto-hydrate from onboarding when Blueprint row is missing (Setup Wizard đã xong).
+        if (row is null)
+        {
+            try
+            {
+                var onboarding = await _values.GetOnboardingAsync(familyId, cancellationToken);
+                if (onboarding is not null && !string.IsNullOrWhiteSpace(onboarding.PayloadJson))
+                {
+                    await HydrateFromOnboardingAsync(
+                        familyId,
+                        new FamilyBlueprintHydrateRequest(onboarding.PayloadJson),
+                        cancellationToken);
+                    row = await _repo.GetAsync(familyId, cancellationToken);
+                }
+            }
+            catch
+            {
+                // Best-effort — DNA card still returns empty state.
+            }
+        }
+
         return FamilyBlueprintHydrator.ToDnaCard(
             familyId,
             row?.LayersJson,

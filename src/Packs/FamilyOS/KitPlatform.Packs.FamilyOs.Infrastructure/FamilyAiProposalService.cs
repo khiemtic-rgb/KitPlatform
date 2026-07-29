@@ -226,7 +226,7 @@ internal sealed class FamilyAiProposalService : IFamilyAiProposalService
                                 routineId = routine.Id,
                                 deactivateTemplateIds = candidates.Select(c => c.Id).ToArray(),
                             }),
-                            $"routine_trim:{routine.Id:D}:{resolved.FlowDate:yyyy-MM-dd}:{active.Count}",
+                            $"routine_trim:{routine.Id:D}:{resolved.FlowDate:yyyy-MM-dd}",
                             null,
                             cancellationToken);
                         if (dto is not null) created++;

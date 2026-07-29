@@ -2470,14 +2470,16 @@ body:has(.app-shell.is-kid) {
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.4;
-  color: #2a2550;
-  font-weight: 600;
+  color: #1f1a40;
+  font-weight: 650;
 }
 
 .ph-coach-based {
   margin: 4px 0 0;
   font-size: 0.78rem;
   line-height: 1.35;
+  color: #4a6b63;
+  font-weight: 700;
 }
 
 .nudge-btn {
@@ -2555,6 +2557,10 @@ body:has(.app-shell.is-kid) {
   padding: 16px;
 }
 
+body:has(.sheet-backdrop) {
+  overflow: hidden;
+}
+
 .billing-banner {
   display: flex;
   align-items: center;
@@ -2600,6 +2606,11 @@ body:has(.app-shell.is-kid) {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sheet h2 {
@@ -8572,13 +8583,6 @@ body:has(.app-shell.is-kid) {
   font-size: 0.82rem;
   font-weight: 750;
   color: rgba(255, 255, 255, 0.85);
-}
-
-.ph-coach-based {
-  margin: 0 0 10px;
-  font-size: 0.8rem;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.72);
 }
 
 .ph-coach-avoid,
@@ -14636,21 +14640,30 @@ body:has(.app-shell.is-kid) {
 }
 
 .home-v2-tabbar { z-index: 45; }
-.ph-tabbar--b5 .ph-tab.is-on { color: #00a859; }
+.ph-tabbar--b5 .ph-tab.is-on { color: #1d6a6a; }
 .ph-tabbar--b5 .ph-tab-add {
   width: 54px;
   height: 54px;
   margin-top: -20px;
   border-radius: 50%;
-  background: #00a859;
+  background: #1d6a6a;
   color: #fff;
-  box-shadow: 0 10px 22px rgba(0,168,89,.35);
+  box-shadow: 0 10px 22px rgba(29,106,106,.35);
 }
-.ph-tabbar--b5 .ph-tab-add > span { font-size: 1.7rem; line-height: 1; }
+.ph-tabbar--b5 .ph-tab-add > span,
+.ph-tabbar--b5 .ph-tab-add > svg { font-size: 1.7rem; line-height: 1; }
+.ph-tabbar--b5 .ph-tab > svg {
+  color: inherit;
+  display: block;
+}
+.ph-b4-icon-btn svg {
+  color: #1d6a6a;
+  display: block;
+}
 
 .ph-b4-explore-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   padding: 12px 8px;
   border-radius: 18px;
@@ -14681,7 +14694,9 @@ body:has(.app-shell.is-kid) {
   font-style: normal;
   font-size: 1.25rem;
   background: #f8fafc;
+  color: #1d6a6a;
 }
+.ph-b4-explore-row i svg { display: block; }
 .ph-b4-explore-row i.is-green { background: #ecfdf5; }
 .ph-b4-explore-row i.is-pink { background: #fdf2f8; }
 .ph-b4-explore-row i.is-purple { background: #f5f3ff; }

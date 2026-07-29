@@ -24,6 +24,8 @@ export type HomeBrief = {
   bulletsVi: string[];
   primaryAction: HomeBriefAction;
   eveningCheckinHintVi?: string;
+  /** Evening: count of morning overdue tasks collapsed in priority list. */
+  eveningOverdueCount?: number;
 };
 
 export type HomeBriefAttentionLite = {
@@ -41,13 +43,13 @@ function localHour(localTime?: string | null, fallback = new Date()): number {
 }
 
 /**
- * P0.5 Home Brief — prioritize Attention when present; else coach tip.
- * P2: optional memoryWinVi becomes first bullet when not in Attention mode.
+ * P0.5 Home Brief — morning: Attention first; evening: 3Q / khoảnh khắc trước việc sáng còn mở.
  */
 export function buildHomeBrief(input: {
   pulse: ParentPulse;
   coach: ParentCoachTip;
   attentionCount: number;
+  overdueCount?: number;
   topAttention?: HomeBriefAttentionLite | null;
   localTime?: string | null;
   eveningCheckinDone?: boolean;
@@ -57,6 +59,7 @@ export function buildHomeBrief(input: {
   const hour = localHour(input.localTime);
   const period: HomeBriefPeriod = hour >= 17 ? 'evening' : 'morning';
   const { pulse, coach } = input;
+  const overdueCount = input.overdueCount ?? 0;
 
   let bullets = [pulse.nudgeLineVi, pulse.autonomyLineVi, pulse.peaceLineVi]
     .map((b) => b.trim())
@@ -72,7 +75,30 @@ export function buildHomeBrief(input: {
 
   let primaryAction: HomeBriefAction;
 
-  if (input.attentionCount > 0 && input.topAttention) {
+  if (period === 'evening' && !input.eveningCheckinDone) {
+    // Evening priority: 3Q trước việc sáng còn mở.
+    if (overdueCount > 0) {
+      moodLineVi =
+        overdueCount === 1
+          ? 'Còn 1 việc ban ngày mở — tối nay ưu tiên 3 câu phản hồi.'
+          : `Còn ${overdueCount} việc ban ngày mở — tối nay ưu tiên 3 câu phản hồi.`;
+    }
+    primaryAction = {
+      kind: 'evening_checkin',
+      titleVi: '3 câu tối',
+      doThisVi: 'Trả lời 3 câu phản hồi nhanh',
+      reasonVi: 'Giúp Famixa học nhịp nhà — chỉ mất khoảng 20 giây.',
+    };
+  } else if (period === 'evening' && input.memoryWinVi?.trim()) {
+    const win = input.memoryWinVi.trim();
+    moodLineVi = `Hôm nay có khoảnh khắc đáng nhớ — ${win}`;
+    primaryAction = {
+      kind: 'coach',
+      titleVi: 'Khoảnh khắc',
+      doThisVi: 'Xem / lưu khoảnh khắc gia đình',
+      reasonVi: win,
+    };
+  } else if (input.attentionCount > 0 && input.topAttention) {
     const a = input.topAttention;
     const verb =
       a.kind === 'awaiting'
@@ -94,13 +120,6 @@ export function buildHomeBrief(input: {
         a.detailVi ||
         'Famixa xếp việc nóng lên trước tip Coach — xong rồi Brief sẽ gợi ý nhẹ tay hơn.',
     };
-  } else if (period === 'evening' && !input.eveningCheckinDone) {
-    primaryAction = {
-      kind: 'evening_checkin',
-      titleVi: '3 câu tối',
-      doThisVi: 'Trả lời 3 câu phản hồi nhanh',
-      reasonVi: 'Giúp Famixa học nhịp nhà — chỉ mất khoảng 20 giây.',
-    };
   } else {
     primaryAction = {
       kind: 'coach',
@@ -114,15 +133,13 @@ export function buildHomeBrief(input: {
   }
 
   const win = input.memoryWinVi?.trim();
-  if (win && primaryAction.kind !== 'attention') {
+  if (win && primaryAction.kind !== 'attention' && primaryAction.kind !== 'evening_checkin') {
     bullets = [win, ...bullets.filter((b) => b !== win)].slice(0, 3);
-    if (period === 'evening' && primaryAction.kind !== 'evening_checkin') {
-      moodLineVi = `Hôm nay có khoảnh khắc đáng nhớ — ${win}`;
-    }
+  } else if (win && primaryAction.kind === 'evening_checkin') {
+    bullets = [win, ...bullets.filter((b) => b !== win)].slice(0, 3);
   }
 
   let eveningCheckinHintVi: string | undefined;
-  // Only show as secondary hint when primary is already something else (attention/coach).
   if (
     period === 'evening' &&
     !input.eveningCheckinDone &&
@@ -139,5 +156,6 @@ export function buildHomeBrief(input: {
     bulletsVi: bullets,
     primaryAction,
     eveningCheckinHintVi,
+    eveningOverdueCount: period === 'evening' ? overdueCount : undefined,
   };
 }
