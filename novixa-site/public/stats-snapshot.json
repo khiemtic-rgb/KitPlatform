@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-28T19:54:40.391Z",
+  "generatedAt": "2026-07-29T03:43:00.683Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 381,
-    "last24hPageViews": 354,
-    "last24hRequests": 1075
+    "todayVisitors": 213,
+    "todayPageViews": 133,
+    "todayRequests": 370,
+    "last24hVisitors": 405,
+    "last24hPageViews": 368,
+    "last24hRequests": 1034
   },
   "hourly": [
-    {
-      "time": "2026-07-27T20:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-27T21:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-07-27T22:00:00Z",
-      "visitors": 4,
-      "requests": 7
-    },
-    {
-      "time": "2026-07-27T23:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-07-28T00:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
-    {
-      "time": "2026-07-28T01:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-07-28T02:00:00Z",
-      "visitors": 11,
-      "requests": 102
-    },
-    {
-      "time": "2026-07-28T03:00:00Z",
-      "visitors": 172,
-      "requests": 292
-    },
     {
       "time": "2026-07-28T04:00:00Z",
       "visitors": 23,
@@ -130,6 +90,46 @@
       "time": "2026-07-28T19:00:00Z",
       "visitors": 4,
       "requests": 16
+    },
+    {
+      "time": "2026-07-28T20:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-07-28T21:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-28T22:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-07-28T23:00:00Z",
+      "visitors": 8,
+      "requests": 8
+    },
+    {
+      "time": "2026-07-29T00:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-07-29T01:00:00Z",
+      "visitors": 148,
+      "requests": 234
+    },
+    {
+      "time": "2026-07-29T02:00:00Z",
+      "visitors": 63,
+      "requests": 113
+    },
+    {
+      "time": "2026-07-29T03:00:00Z",
+      "visitors": 15,
+      "requests": 19
     }
   ],
   "daily": [
@@ -165,70 +165,76 @@
     },
     {
       "date": "2026-07-28",
-      "visitors": 376,
-      "pageViews": 348,
-      "requests": 1052
+      "visitors": 380,
+      "pageViews": 357,
+      "requests": 1070
+    },
+    {
+      "date": "2026-07-29",
+      "visitors": 213,
+      "pageViews": 133,
+      "requests": 370
     }
   ],
   "topPages": [
     {
-      "path": "/vi/tin-tuc/van-hanh-nha-thuoc-la-gi-khai-niem-tuong-quen-ma-xa-la-voi-nhieu-chu-nha-thuoc/",
-      "views": 126
-    },
-    {
-      "path": "/images/tin-tuc/van-hanh-nha-thuoc.png",
-      "views": 110
-    },
-    {
-      "path": "/cdn-cgi/rum",
-      "views": 96
-    },
-    {
       "path": "/vi/tin-tuc/recognition-giup-giu-chan-nhan-vien-nha-thuoc-nhu-the-nao/",
-      "views": 88
+      "views": 94
     },
     {
       "path": "/images/tin-tuc/giup-giu-chan-nhan-vien.png",
-      "views": 64
+      "views": 73
+    },
+    {
+      "path": "/vi/tin-tuc/career-path-tao-dong-luc-phat-trien-ra-sao/",
+      "views": 71
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 68
+    },
+    {
+      "path": "/images/tin-tuc/chu-nha-thuoc-ban-ron.png",
+      "views": 66
+    },
+    {
+      "path": "/vi/tin-tuc/vi-sao-chu-nha-thuoc-luon-ban-nhung-hieu-qua-khong-cao/",
+      "views": 56
+    },
+    {
+      "path": "/vi/tin-tuc/van-hanh-nha-thuoc-la-gi-khai-niem-tuong-quen-ma-xa-la-voi-nhieu-chu-nha-thuoc/",
+      "views": 45
+    },
+    {
+      "path": "/images/tin-tuc/dong-luc-phat-trien.png",
+      "views": 36
+    },
+    {
+      "path": "/images/tin-tuc/van-hanh-nha-thuoc.png",
+      "views": 34
     },
     {
       "path": "/images/tin-tuc/lo-trinh-l0-l6-cua-novixa-academy.png",
-      "views": 41
+      "views": 32
     },
     {
       "path": "/images/tin-tuc/lap-ke-hoach-nha-thuoc.png",
-      "views": 39
+      "views": 27
     },
     {
       "path": "/robots.txt",
-      "views": 28
+      "views": 27
     },
     {
       "path": "/",
-      "views": 26
-    },
-    {
-      "path": "/vi/",
-      "views": 25
-    },
-    {
-      "path": "/images/tin-tuc/sai-lam-khi-dao-tao-nhan-vien-moi.png",
-      "views": 22
-    },
-    {
-      "path": "/@fs/root/.env",
-      "views": 21
+      "views": 24
     },
     {
       "path": "/.env.bak",
       "views": 21
     },
     {
-      "path": "/settings",
-      "views": 21
-    },
-    {
-      "path": "/__/firebase/init.json",
+      "path": "/@fs/root/.env",
       "views": 21
     }
   ]
