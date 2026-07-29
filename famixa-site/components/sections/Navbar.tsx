@@ -29,7 +29,7 @@ const UI = {
   },
 } as const;
 
-/** Header: Fami logo · nav · locale · login · CTA */
+/** Header: Famixa logo lockup · nav · locale · login · CTA */
 export function Navbar({ content, brand, appUrl, locale }: Props) {
   const [open, setOpen] = useState(false);
   const ui = UI[locale];
@@ -38,22 +38,14 @@ export function Navbar({ content, brand, appUrl, locale }: Props) {
   return (
     <header className="sticky top-0 z-40 border-b border-[#E8E6DF]/70 bg-[#FBF8F1]/95 backdrop-blur-sm">
       <Container className="flex min-h-[72px] items-center gap-5 md:min-h-[78px]">
-        <a href={homeHref} className="flex shrink-0 items-center gap-3">
+        <a href={homeHref} className="flex shrink-0 items-center" aria-label={brand.name}>
           <img
             src={brand.logo}
-            alt=""
-            width={48}
-            height={48}
-            className="h-11 w-11 drop-shadow-[0_4px_12px_rgba(123,194,74,0.35)] md:h-12 md:w-12"
+            alt={brand.name}
+            width={200}
+            height={170}
+            className="h-11 w-auto max-w-[200px] object-contain object-left md:h-12 md:max-w-[220px]"
           />
-          <span>
-            <strong className="block text-[1.25rem] font-extrabold leading-none tracking-[-0.02em] text-[#103B2B]">
-              {brand.name}
-            </strong>
-            <span className="mt-1.5 hidden text-[0.65rem] font-medium leading-tight text-[#5A7A68] sm:block">
-              {brand.tagline}
-            </span>
-          </span>
         </a>
 
         <nav

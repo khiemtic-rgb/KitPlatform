@@ -12,17 +12,21 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: `${SITE_NAME} — AI Human Growth OS for Families`,
+    default: `${SITE_NAME} — AI giúp gia đình hạnh phúc hơn mỗi ngày`,
     template: `%s | ${SITE_NAME}`,
   },
   description:
-    'AI giúp con tự giác. Cha mẹ không còn phải nhắc mỗi ngày. Famixa — người bạn đồng hành AI cho gia đình Việt.',
+    'AI giúp gia đình hạnh phúc hơn mỗi ngày. Famixa — người bạn đồng hành AI cho gia đình Việt.',
   metadataBase: new URL('https://famixa.vn'),
   keywords: ['Famixa', 'AI gia đình', 'nuôi dạy con', 'tự giác', 'Family OS', 'Fami'],
   authors: [{ name: 'KIT Technology' }],
+  icons: {
+    icon: [{ url: '/favicon-32.png', sizes: '32x32', type: 'image/png' }],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
   openGraph: {
-    title: `${SITE_NAME} — AI Human Growth OS for Families`,
-    description: 'AI giúp con tự giác. Cha mẹ không còn phải nhắc mỗi ngày.',
+    title: `${SITE_NAME} — AI giúp gia đình hạnh phúc hơn mỗi ngày`,
+    description: 'AI giúp gia đình hạnh phúc hơn mỗi ngày.',
     url: absoluteUrl('/vi/'),
     siteName: SITE_NAME,
     images: [{ url: absoluteUrl(DEFAULT_OG_IMAGE), width: 1200, height: 630, alt: SITE_NAME }],
@@ -31,8 +35,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${SITE_NAME} — AI Human Growth OS for Families`,
-    description: 'AI giúp con tự giác. Cha mẹ không còn phải nhắc mỗi ngày.',
+    title: `${SITE_NAME} — AI giúp gia đình hạnh phúc hơn mỗi ngày`,
+    description: 'AI giúp gia đình hạnh phúc hơn mỗi ngày.',
     images: [absoluteUrl(DEFAULT_OG_IMAGE)],
   },
   robots: {

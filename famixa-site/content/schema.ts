@@ -47,7 +47,10 @@ export type LandingDocument = {
   brand: {
     name: string;
     tagline: string;
+    /** Full lockup (icon + wordmark) */
     logo: string;
+    /** Icon-only mark for compact / dark surfaces */
+    logoMark?: string;
   };
   appUrl: string;
   storyChapters: Array<{

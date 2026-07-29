@@ -80,12 +80,16 @@ export function Footer({ content, brand, appUrl, locale }: Props) {
           {/* Top: brand + 3 link columns */}
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-7">
             <div>
-              <div className="mb-3 flex items-center gap-2.5">
-                <img src={brand.logo} alt="" width={40} height={40} className="h-10 w-10" />
-                <div>
-                  <strong className="block text-[1.1rem] font-extrabold text-white">{brand.name}</strong>
-                  <span className="text-[0.72rem] text-white/60">{brand.tagline}</span>
-                </div>
+              <div className="mb-3">
+                <img
+                  src={brand.logoMark || brand.logo}
+                  alt={brand.name}
+                  width={48}
+                  height={48}
+                  className="h-12 w-12 rounded-2xl bg-white object-contain p-1 shadow-[0_4px_14px_rgba(0,0,0,0.18)]"
+                />
+                <strong className="mt-3 block text-[1.1rem] font-extrabold text-white">{brand.name}</strong>
+                <span className="mt-1 block text-[0.72rem] leading-snug text-white/60">{brand.tagline}</span>
               </div>
               <p className="m-0 max-w-[17rem] text-[0.88rem] leading-[1.6] text-white/70">
                 {content.blurb}

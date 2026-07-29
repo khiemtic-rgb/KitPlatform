@@ -4,7 +4,7 @@
   "locale": "en",
   "appUrl": "https://home.famixa.vn",
   "seo": {
-    "title": "Famixa — AI Human Growth OS for Families",
+    "title": "Famixa — AI helps families happier every day",
     "description": "AI helps kids build self-discipline. Parents stop nagging every day. Famixa — an AI companion for growing families.",
     "ogImage": "/images/hero-family.png",
     "keywords": [
@@ -18,8 +18,9 @@
   },
   "brand": {
     "name": "Famixa",
-    "tagline": "AI Human Growth OS for Families",
-    "logo": "/images/logo-fami.svg"
+    "tagline": "AI helps families happier every day",
+    "logo": "/images/logo-famixa-nav.png",
+    "logoMark": "/images/logo-famixa-icon.png"
   },
   "storyChapters": [
     { "id": "hero", "label": "Opening" },
@@ -47,7 +48,7 @@
     "cta": "Start free"
   },
   "hero": {
-    "badge": "AI HUMAN GROWTH OS FOR FAMILIES",
+    "badge": "AI HELPS FAMILIES HAPPIER EVERY DAY",
     "titleLine1": "AI helps kids build self-discipline.",
     "titleLine2": "Parents stop nagging every day.",
     "lead": "Famixa is an AI companion that understands each family — easing parents, helping kids grow more self-driven, and giving everyone more quality time together.",

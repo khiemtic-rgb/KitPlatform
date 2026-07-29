@@ -4,7 +4,7 @@
   "locale": "vi",
   "appUrl": "https://home.famixa.vn",
   "seo": {
-    "title": "Famixa — AI Human Growth OS for Families",
+    "title": "Famixa — AI giúp gia đình hạnh phúc hơn mỗi ngày",
     "description": "AI giúp con tự giác. Cha mẹ không còn phải nhắc mỗi ngày. Famixa — người bạn đồng hành AI cho gia đình Việt.",
     "ogImage": "/images/hero-family.png",
     "keywords": [
@@ -18,8 +18,9 @@
   },
   "brand": {
     "name": "Famixa",
-    "tagline": "AI Human Growth OS for Families",
-    "logo": "/images/logo-fami.svg"
+    "tagline": "AI giúp gia đình hạnh phúc hơn mỗi ngày",
+    "logo": "/images/logo-famixa-nav.png",
+    "logoMark": "/images/logo-famixa-icon.png"
   },
   "storyChapters": [
     {
@@ -98,7 +99,7 @@
     "cta": "Bắt đầu miễn phí"
   },
   "hero": {
-    "badge": "AI HUMAN GROWTH OS FOR FAMILIES",
+    "badge": "AI GIÚP GIA ĐÌNH HẠNH PHÚC HƠN MỖI NGÀY",
     "titleLine1": "AI giúp con tự giác.",
     "titleLine2": "Cha mẹ không còn phải nhắc mỗi ngày.",
     "lead": "Famixa là người bạn đồng hành AI thấu hiểu từng gia đình, giúp cha mẹ nhẹ nhõm, con cái tự giác và gia đình có thêm nhiều thời gian chất lượng bên nhau.",
