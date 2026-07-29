@@ -11,7 +11,7 @@
 | **Lý do gate VPS** | Chờ Pharmacy audit (`DEMO_PHARMACY`) xong trước khi `apply-family-os-pilot` |
 | **Unpark trigger** | User 2026-07-28: thực hiện 1→5 (unify tip + unpark lớp local + smoke + AFE) |
 | **Rule Cursor** | `.cursor/rules/family-os-parked.mdc` |
-| **Mig lớp mới** | `240`–`248` trong `migration-files.family-os.txt` (Behavior OS, currency, PSE, packaging) |
+| **Mig lớp mới** | `240`–`249` trong `migration-files.family-os.txt` (Behavior OS, currency, PSE, packaging, Blueprint) |
 | **Deploy VPS** | Chỉ khi user bảo rõ + Pharmacy gate mở |
 
 Pilot đã ship trước đó vẫn giữ trên VPS (`family.kittech.vn`); ACTIVE local **không** đồng nghĩa đã ship Behavior/PSE lên prod.

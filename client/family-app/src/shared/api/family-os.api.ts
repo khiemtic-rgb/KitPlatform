@@ -1520,6 +1520,136 @@ export async function deleteFamilyOnboarding(familyId: string): Promise<void> {
   await http.delete(`/family-os/families/${familyId}/value/onboarding`);
 }
 
+export interface FamilyDnaCard {
+  familyId: string;
+  hasBlueprint: boolean;
+  isTeaser: boolean;
+  tierCode: string;
+  stageLabelVi?: string;
+  valuesLabelsVi: string[];
+  focusLabelsVi: string[];
+  nextStepVi?: string;
+  upgradeHintVi?: string;
+  calibrationPhaseCode?: string;
+  calibrationLabelVi?: string;
+  coachTipVi?: string;
+  needsCalibrationCapture?: boolean;
+  careValueVi?: string;
+  growthBalanceLabelVi?: string;
+  primaryWorryCode?: string;
+}
+
+export interface FamilyBlueprint {
+  familyId: string;
+  layersJson: string;
+  dnaJson: string;
+  schemaVersion: number;
+  hydratedAt?: string;
+  updatedAt?: string;
+}
+
+function mapDnaCard(r: Row): FamilyDnaCard {
+  return {
+    familyId: String(r.familyId ?? r.FamilyId ?? ''),
+    hasBlueprint: Boolean(r.hasBlueprint ?? r.HasBlueprint),
+    isTeaser: Boolean(r.isTeaser ?? r.IsTeaser),
+    tierCode: String(r.tierCode ?? r.TierCode ?? 'free'),
+    stageLabelVi:
+      r.stageLabelVi != null || r.StageLabelVi != null
+        ? String(r.stageLabelVi ?? r.StageLabelVi)
+        : undefined,
+    valuesLabelsVi: asArray(r.valuesLabelsVi ?? r.ValuesLabelsVi).map((x) => String(x)),
+    focusLabelsVi: asArray(r.focusLabelsVi ?? r.FocusLabelsVi).map((x) => String(x)),
+    nextStepVi:
+      r.nextStepVi != null || r.NextStepVi != null
+        ? String(r.nextStepVi ?? r.NextStepVi)
+        : undefined,
+    upgradeHintVi:
+      r.upgradeHintVi != null || r.UpgradeHintVi != null
+        ? String(r.upgradeHintVi ?? r.UpgradeHintVi)
+        : undefined,
+    calibrationPhaseCode:
+      r.calibrationPhaseCode != null || r.CalibrationPhaseCode != null
+        ? String(r.calibrationPhaseCode ?? r.CalibrationPhaseCode)
+        : undefined,
+    calibrationLabelVi:
+      r.calibrationLabelVi != null || r.CalibrationLabelVi != null
+        ? String(r.calibrationLabelVi ?? r.CalibrationLabelVi)
+        : undefined,
+    coachTipVi:
+      r.coachTipVi != null || r.CoachTipVi != null
+        ? String(r.coachTipVi ?? r.CoachTipVi)
+        : undefined,
+    needsCalibrationCapture: Boolean(
+      r.needsCalibrationCapture ?? r.NeedsCalibrationCapture ?? false,
+    ),
+    careValueVi:
+      r.careValueVi != null || r.CareValueVi != null
+        ? String(r.careValueVi ?? r.CareValueVi)
+        : undefined,
+    growthBalanceLabelVi:
+      r.growthBalanceLabelVi != null || r.GrowthBalanceLabelVi != null
+        ? String(r.growthBalanceLabelVi ?? r.GrowthBalanceLabelVi)
+        : undefined,
+    primaryWorryCode:
+      r.primaryWorryCode != null || r.PrimaryWorryCode != null
+        ? String(r.primaryWorryCode ?? r.PrimaryWorryCode)
+        : undefined,
+  };
+}
+
+export async function fetchFamilyDnaCard(familyId: string): Promise<FamilyDnaCard> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/blueprint/dna`);
+  return mapDnaCard(data);
+}
+
+export async function captureFamilyCalibration(
+  familyId: string,
+  input: {
+    schoolContextCode?: string;
+    selfViewCode?: string;
+    peerShockCode?: string;
+    childShortName?: string;
+    noteVi?: string;
+    resourceBandCode?: string;
+    primaryWorryCode?: string;
+  },
+): Promise<FamilyDnaCard> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/blueprint/calibration`, {
+    schoolContextCode: input.schoolContextCode ?? null,
+    selfViewCode: input.selfViewCode ?? null,
+    peerShockCode: input.peerShockCode ?? null,
+    childShortName: input.childShortName ?? null,
+    noteVi: input.noteVi ?? null,
+    resourceBandCode: input.resourceBandCode ?? null,
+    primaryWorryCode: input.primaryWorryCode ?? null,
+  });
+  return mapDnaCard(data);
+}
+
+export async function hydrateFamilyBlueprint(
+  familyId: string,
+  onboardingPayloadJson?: string,
+): Promise<FamilyBlueprint> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/blueprint/hydrate`, {
+    onboardingPayloadJson: onboardingPayloadJson ?? null,
+  });
+  return {
+    familyId: String(data.familyId ?? data.FamilyId ?? familyId),
+    layersJson: String(data.layersJson ?? data.LayersJson ?? '{}'),
+    dnaJson: String(data.dnaJson ?? data.DnaJson ?? '{}'),
+    schemaVersion: Number(data.schemaVersion ?? data.SchemaVersion ?? 1),
+    hydratedAt:
+      data.hydratedAt != null || data.HydratedAt != null
+        ? String(data.hydratedAt ?? data.HydratedAt)
+        : undefined,
+    updatedAt:
+      data.updatedAt != null || data.UpdatedAt != null
+        ? String(data.updatedAt ?? data.UpdatedAt)
+        : undefined,
+  };
+}
+
 export interface TeamChildSlice {
   memberId: string;
   displayName: string;

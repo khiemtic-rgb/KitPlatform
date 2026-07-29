@@ -7,15 +7,18 @@ internal sealed class FamilyValueService : IFamilyValueService
     private readonly FamilyValueRepository _repo;
     private readonly FamilyGraphRepository _families;
     private readonly IFamilyBehaviorService _behavior;
+    private readonly IFamilyBlueprintService _blueprint;
 
     public FamilyValueService(
         FamilyValueRepository repo,
         FamilyGraphRepository families,
-        IFamilyBehaviorService behavior)
+        IFamilyBehaviorService behavior,
+        IFamilyBlueprintService blueprint)
     {
         _repo = repo;
         _families = families;
         _behavior = behavior;
+        _blueprint = blueprint;
     }
 
     public async Task<FamilyValueStateDto> GetStateAsync(
@@ -121,6 +124,19 @@ internal sealed class FamilyValueService : IFamilyValueService
 
         var completedAt = request.CompletedAt ?? DateTimeOffset.UtcNow;
         await _repo.UpsertOnboardingAsync(familyId, request.PayloadJson, completedAt, cancellationToken);
+
+        // Wave A: keep Blueprint DNA in sync with onboarding (best-effort).
+        try
+        {
+            await _blueprint.HydrateFromOnboardingAsync(
+                familyId,
+                new FamilyBlueprintHydrateRequest(request.PayloadJson),
+                cancellationToken);
+        }
+        catch
+        {
+            // Blueprint table may be missing pre-mig 249; onboarding still succeeds.
+        }
     }
 
     public async Task ClearOnboardingAsync(

@@ -14819,3 +14819,250 @@ body:has(.app-shell.is-kid) {
   color: #64748b;
   font-weight: 650;
 }
+
+/* Family Growth Blueprint™ — DNA card (Wave A) */
+.famixa-dna {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #f0fdf4 0%, #ecfeff 55%, #f8fafc 100%);
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  box-shadow: 0 8px 20px rgba(22, 53, 47, 0.05);
+}
+.famixa-dna.is-empty,
+.famixa-dna.is-teaser {
+  background: linear-gradient(160deg, #fffbeb 0%, #f8fafc 100%);
+  border-color: rgba(245, 158, 11, 0.22);
+}
+.famixa-dna-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.famixa-dna-head strong {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #14532d;
+}
+.famixa-dna-head em {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 0.7rem;
+  font-weight: 750;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+}
+.famixa-dna-muted {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #64748b;
+  font-weight: 650;
+  line-height: 1.45;
+}
+.famixa-dna-grid {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.famixa-dna-grid > div {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 8px;
+  align-items: start;
+}
+.famixa-dna-grid dt {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+.famixa-dna-grid dd {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+}
+.famixa-dna-grid .is-next dd {
+  font-weight: 650;
+  color: #166534;
+}
+.famixa-dna-lock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(146, 64, 14, 0.25);
+}
+.famixa-dna-lock p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #92400e;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.famixa-dna-cta {
+  align-self: flex-start;
+  border: 1px solid #86efac;
+  background: #fff;
+  color: #166534;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.famixa-dna.is-teaser .famixa-dna-cta,
+.famixa-dna.is-empty .famixa-dna-cta {
+  border-color: #fcd34d;
+  color: #b45309;
+}
+.famixa-dna.is-shock {
+  border-color: rgba(244, 63, 94, 0.22);
+  background: linear-gradient(160deg, #fff1f2 0%, #f8fafc 100%);
+}
+.famixa-dna-tip {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #334155;
+  font-weight: 650;
+}
+.famixa-dna-care {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: #14532d;
+  font-weight: 700;
+}
+.famixa-dna-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.famixa-dna-cta.is-soft {
+  border-color: #99f6e4;
+  color: #0f766e;
+}
+
+.famixa-cal-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: end center;
+}
+.famixa-cal-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(15, 23, 42, 0.45);
+}
+.famixa-cal-panel {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: min(88vh, 720px);
+  overflow: auto;
+  padding: 18px 16px 22px;
+  border-radius: 22px 22px 0 0;
+  background: #fff;
+  box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.18);
+}
+.famixa-cal-panel header strong {
+  display: block;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+.famixa-cal-panel header p {
+  margin: 4px 0 12px;
+  font-size: 0.82rem;
+  color: #64748b;
+  font-weight: 650;
+}
+.famixa-cal-panel fieldset {
+  border: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.famixa-cal-panel legend {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #475569;
+}
+.famixa-cal-panel label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  cursor: pointer;
+}
+.famixa-cal-panel label.is-on {
+  border-color: #5eead4;
+  background: #f0fdfa;
+}
+.famixa-cal-panel label b {
+  display: block;
+  font-size: 0.88rem;
+  color: #0f172a;
+}
+.famixa-cal-panel label em {
+  display: block;
+  margin-top: 2px;
+  font-style: normal;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 650;
+}
+.famixa-cal-err {
+  margin: 0 0 8px;
+  color: #b91c1c;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.famixa-cal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.famixa-cal-actions button {
+  border-radius: 999px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.famixa-cal-actions .is-ghost {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+}
+.famixa-cal-actions .is-primary {
+  border: none;
+  background: #0d9488;
+  color: #fff;
+}
+.famixa-cal-actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+

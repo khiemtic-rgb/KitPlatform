@@ -9,19 +9,22 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
     private readonly FamilyDayFlowRepository _dayFlows;
     private readonly FamilyValueRepository _value;
     private readonly IFamilyCommercialService _commercial;
+    private readonly IFamilyBlueprintService _blueprint;
 
     public FamilyBehaviorService(
         FamilyBehaviorRepository repo,
         FamilyGraphRepository families,
         FamilyDayFlowRepository dayFlows,
         FamilyValueRepository value,
-        IFamilyCommercialService commercial)
+        IFamilyCommercialService commercial,
+        IFamilyBlueprintService blueprint)
     {
         _repo = repo;
         _families = families;
         _dayFlows = dayFlows;
         _value = value;
         _commercial = commercial;
+        _blueprint = blueprint;
     }
 
     public async Task<HabitProgressDto?> SyncHabitAfterProgressAsync(
@@ -834,6 +837,18 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
             ?? ctx;
         var confidence = await RecalculateAndPersistConfidenceAsync(
             familyId, ctx, cancellationToken);
+
+        if (confidence.IllusionRisk)
+        {
+            try
+            {
+                await _blueprint.NoteIllusionRiskAsync(familyId, cancellationToken);
+            }
+            catch
+            {
+                // Blueprint may be missing pre-mig 249 — retrieval still succeeds.
+            }
+        }
 
         return new RetrievalCheckResultDto(
             commitmentId,

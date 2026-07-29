@@ -39,12 +39,15 @@ import {
   type BehaviorCoach,
   fetchFamilySubscription,
   type FamilySubscription,
+  fetchFamilyDnaCard,
+  type FamilyDnaCard,
   fetchParentSuccessEveningCheckin,
   type ParentSuccessCheckin,
   fetchParentCoachActedToday,
   recordParentCoachActed,
 } from '@/shared/api/family-os.api';
 import { DecisionInboxPanel } from '@/modules/flow/DecisionInboxPanel';
+import { FamilyDnaCardView } from '@/modules/flow/FamilyDnaCard';
 import { FamilyChallengeCard } from '@/modules/flow/FamilyChallengeCard';
 import { ParentGoalsPanel } from '@/modules/flow/ParentGoalsPanel';
 import { FamilyModeSheet } from '@/modules/flow/FamilyModeSheet';
@@ -562,6 +565,8 @@ export function ParentBoardView({
   const [coachInsight, setCoachInsight] = useState<FamilyCoachInsight | null>(null);
   const [behaviorCoach, setBehaviorCoach] = useState<BehaviorCoach | null>(null);
   const [subscription, setSubscription] = useState<FamilySubscription | null>(null);
+  const [dnaCard, setDnaCard] = useState<FamilyDnaCard | null>(null);
+  const [dnaLoading, setDnaLoading] = useState(true);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallReason, setPaywallReason] = useState<string | null>(null);
   const [eveningCheckin, setEveningCheckin] = useState<ParentSuccessCheckin | null>(null);
@@ -759,6 +764,24 @@ export function ParentBoardView({
       cancelled = true;
     };
   }, [familyId, flow.flowDate, flow.doneCount]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDnaLoading(true);
+    void fetchFamilyDnaCard(familyId)
+      .then((d) => {
+        if (!cancelled) setDnaCard(d);
+      })
+      .catch(() => {
+        if (!cancelled) setDnaCard(null);
+      })
+      .finally(() => {
+        if (!cancelled) setDnaLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId, flow.flowDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2110,6 +2133,21 @@ export function ParentBoardView({
           ) : (
             <BillingBanner familyId={familyId} />
           )}
+
+          <FamilyDnaCardView
+            familyId={familyId}
+            dna={dnaCard}
+            loading={dnaLoading}
+            onDnaChange={(d) => setDnaCard(d)}
+            onUpgrade={() => {
+              setPaywallReason(
+                dnaCard?.upgradeHintVi ||
+                  'Nâng Family Peace Plan để xem Focus & bước tiếp theo.',
+              );
+              setPaywallOpen(true);
+            }}
+            onSetup={() => navigate('/onboarding')}
+          />
 
           <nav className="ph-b4-explore-row" aria-label="Lối tắt tính năng">
             <button type="button" onClick={openCoachOrPaywall}>

@@ -45,4 +45,5 @@
 246_pack_family_parent_success_p2.sql
 247_pack_family_parent_coach_acted.sql
 248_pack_family_commercial_packaging_v1.sql
+249_pack_family_blueprint.sql
 # Optional (owner ALTER tenants CHECK): 192a_pack_family_os_vertical_owner.sql

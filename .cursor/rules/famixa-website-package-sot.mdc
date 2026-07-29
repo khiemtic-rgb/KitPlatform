@@ -1,0 +1,26 @@
+---
+description: Famixa website/pricing copy must source 4-pack content from SoT docs (not invent tiers).
+globs: famixa-site/**/*
+alwaysApply: false
+---
+
+# Famixa website ← package SoT
+
+Khi làm / sửa **website, landing, pricing, so sánh gói** Famixa:
+
+1. Đọc trước: `docs/novixa/03-solution/famixa-package-website-memo-v1.md`
+2. SoT gói: `docs/novixa/03-solution/family-commercial-packaging-v1.md`
+3. DNA / cảm nhận gói: `docs/novixa/03-solution/famixa-dna-blueprint-roadmap-v1.md`
+4. Self-calibration (không pitch “chữa tự ti”): `docs/novixa/03-solution/famixa-self-calibration-playbook-v1.md`
+5. Growth Balance (quan tâm có phương pháp · 3 lệch): `docs/novixa/03-solution/famixa-growth-balance-v1.md`
+6. Nếu lệch → ưu tiên code `FamilyPlanCapabilityMatrix` (`FamilyCapabilityContracts.cs`)
+
+## Không được
+
+- Bịa giá, max trẻ, capability, outcome name
+- Đặt Plus làm hero (hero = **Pro / Peace Plan 199k**)
+- Promise MDM / chat LLM tự do / đo Screen Time máy
+
+## 4 gói (nhắc nhanh)
+
+Free · Plus 99k · **Pro 199k (hero)** · AI+ 399k — Trial 30d = Pro.
