@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-29T09:10:58.035Z",
+  "generatedAt": "2026-07-29T14:33:21.965Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 265,
-    "todayPageViews": 187,
-    "todayRequests": 652,
-    "last24hVisitors": 338,
-    "last24hPageViews": 280,
-    "last24hRequests": 990
+    "todayVisitors": 304,
+    "todayPageViews": 257,
+    "todayRequests": 790,
+    "last24hVisitors": 332,
+    "last24hPageViews": 288,
+    "last24hRequests": 862
   },
   "hourly": [
-    {
-      "time": "2026-07-28T10:00:00Z",
-      "visitors": 18,
-      "requests": 21
-    },
-    {
-      "time": "2026-07-28T11:00:00Z",
-      "visitors": 12,
-      "requests": 12
-    },
-    {
-      "time": "2026-07-28T12:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
-    {
-      "time": "2026-07-28T13:00:00Z",
-      "visitors": 14,
-      "requests": 208
-    },
-    {
-      "time": "2026-07-28T14:00:00Z",
-      "visitors": 16,
-      "requests": 16
-    },
     {
       "time": "2026-07-28T15:00:00Z",
       "visitors": 10,
@@ -128,8 +103,33 @@
     },
     {
       "time": "2026-07-29T09:00:00Z",
+      "visitors": 9,
+      "requests": 12
+    },
+    {
+      "time": "2026-07-29T10:00:00Z",
+      "visitors": 13,
+      "requests": 22
+    },
+    {
+      "time": "2026-07-29T11:00:00Z",
       "visitors": 5,
       "requests": 5
+    },
+    {
+      "time": "2026-07-29T12:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-07-29T13:00:00Z",
+      "visitors": 25,
+      "requests": 60
+    },
+    {
+      "time": "2026-07-29T14:00:00Z",
+      "visitors": 9,
+      "requests": 37
     }
   ],
   "daily": [
@@ -171,31 +171,19 @@
     },
     {
       "date": "2026-07-29",
-      "visitors": 265,
-      "pageViews": 187,
-      "requests": 652
+      "visitors": 304,
+      "pageViews": 257,
+      "requests": 790
     }
   ],
   "topPages": [
-    {
-      "path": "/vi/tin-tuc/recognition-giup-giu-chan-nhan-vien-nha-thuoc-nhu-the-nao/",
-      "views": 94
-    },
-    {
-      "path": "/images/tin-tuc/giup-giu-chan-nhan-vien.png",
-      "views": 84
-    },
     {
       "path": "/vi/tin-tuc/career-path-tao-dong-luc-phat-trien-ra-sao/",
       "views": 81
     },
     {
-      "path": "/cdn-cgi/rum",
-      "views": 73
-    },
-    {
       "path": "/images/tin-tuc/chu-nha-thuoc-ban-ron.png",
-      "views": 69
+      "views": 70
     },
     {
       "path": "/vi/tin-tuc/vi-sao-chu-nha-thuoc-luon-ban-nhung-hieu-qua-khong-cao/",
@@ -203,39 +191,51 @@
     },
     {
       "path": "/images/tin-tuc/dong-luc-phat-trien.png",
-      "views": 49
+      "views": 54
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 46
     },
     {
       "path": "/images/tin-tuc/van-hanh-nha-thuoc.png",
+      "views": 37
+    },
+    {
+      "path": "/images/tin-tuc/giup-giu-chan-nhan-vien.png",
       "views": 35
     },
     {
-      "path": "/.env.bak",
-      "views": 29
-    },
-    {
       "path": "/images/tin-tuc/lap-ke-hoach-nha-thuoc.png",
-      "views": 27
+      "views": 30
     },
     {
       "path": "/robots.txt",
-      "views": 27
+      "views": 26
     },
     {
       "path": "/images/tin-tuc/lo-trinh-l0-l6-cua-novixa-academy.png",
-      "views": 25
+      "views": 24
     },
     {
-      "path": "/settings",
-      "views": 21
+      "path": "/vi/giai-phap/",
+      "views": 18
     },
     {
-      "path": "/@fs/root/.env",
-      "views": 21
+      "path": "/.htpasswd",
+      "views": 18
     },
     {
-      "path": "/__/firebase/init.json",
-      "views": 21
+      "path": "/graphql/console",
+      "views": 18
+    },
+    {
+      "path": "/",
+      "views": 18
+    },
+    {
+      "path": "/v1/graphql",
+      "views": 18
     }
   ]
 }
