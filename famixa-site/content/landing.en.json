@@ -346,7 +346,7 @@
       {
         "name": "Premium",
         "tagline": "Growing family signals · up to 2 children",
-        "price": "US$4.99",
+        "price": "$4.99",
         "period": "/ month",
         "tone": "peace",
         "badge": null,
@@ -362,7 +362,7 @@
       {
         "name": "Pro",
         "tagline": "AI coaching & evidence · unlimited children",
-        "price": "US$9.99",
+        "price": "$9.99",
         "period": "/ month",
         "tone": "growth",
         "badge": "Popular",
@@ -379,7 +379,7 @@
       {
         "name": "Family Plus",
         "tagline": "Deep AI companionship · unlimited children",
-        "price": "US$19.99",
+        "price": "$19.99",
         "period": "/ month",
         "tone": "thrive",
         "badge": null,

@@ -329,7 +329,7 @@ const en: SpecialtyBundle = {
     appCta: 'Start on Famixa',
     columns: ['Family', 'Premium', 'Pro', 'Family Plus'],
     rows: [
-      { label: 'Price / month', free: 'Free', growth: 'US$4.99', peace: 'US$9.99', aiPlus: 'US$19.99' },
+      { label: 'Price / month', free: 'Free', growth: '$4.99', peace: '$9.99', aiPlus: '$19.99' },
       { label: 'Max children', free: '1', growth: '2', peace: 'Unlimited', aiPlus: 'Unlimited' },
       { label: 'Core daily rhythm', free: true, growth: true, peace: true, aiPlus: true },
       { label: 'Weekly insight', free: true, growth: true, peace: true, aiPlus: true },
