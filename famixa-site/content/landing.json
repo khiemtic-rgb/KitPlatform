@@ -61,7 +61,7 @@
     },
     {
       "id": "blog",
-      "label": "FAQ"
+      "label": "Hỏi đáp"
     },
     {
       "id": "final-cta",
@@ -76,19 +76,19 @@
       },
       {
         "href": "#ai-coach",
-        "label": "AI Coach"
-      },
-      {
-        "href": "#method",
-        "label": "3Q Method"
+        "label": "Lắng nghe"
       },
       {
         "href": "#growth",
-        "label": "Family Growth"
+        "label": "Hành trình"
+      },
+      {
+        "href": "#method",
+        "label": "Công nghệ"
       },
       {
         "href": "#testimonials",
-        "label": "Blog"
+        "label": "Câu chuyện"
       },
       {
         "href": "#about",
@@ -128,7 +128,7 @@
     ],
     "proof": [
       {
-        "title": "Trial 30 ngày",
+        "title": "Dùng thử 30 ngày",
         "sub": "Trải nghiệm Peace",
         "icon": "sparkles"
       },
@@ -355,7 +355,7 @@
       "alt": "Fami"
     },
     "mascotLabel": "Fami",
-    "mascotTagline": "Growing together",
+    "mascotTagline": "Cùng nhau trưởng thành",
     "loop": [
       { "title": "Quan sát", "hint": "Hành vi & cảm xúc" },
       { "title": "Thấu hiểu", "hint": "Nhu cầu riêng" },
@@ -404,7 +404,7 @@
       {
         "name": "Chị Thu Thảo",
         "place": "Đà Nẵng",
-        "text": "Morning Brief mỗi sáng là thói quen tuyệt vời của cả gia đình mình.",
+        "text": "Tóm tắt buổi sáng mỗi ngày đã thành thói quen tuyệt vời của cả nhà mình.",
         "highlights": ["thói quen tuyệt vời"],
         "rating": 5,
         "image": {
@@ -448,15 +448,15 @@
         "badge": null,
         "cta": "Bắt đầu miễn phí",
         "items": [
-          "Nhịp ngày (core routine)",
-          "Insight tuần",
+          "Nhịp ngày của gia đình",
+          "Nhận xét tuần",
           "Tối đa 1 trẻ",
           "Không cần thẻ để bắt đầu"
         ]
       },
       {
         "name": "Growth",
-        "tagline": "Family Growth Plan · tối đa 2 trẻ",
+        "tagline": "Gói phát triển gia đình · tối đa 2 trẻ",
         "price": "99.000đ",
         "period": "/ tháng",
         "tone": "peace",
@@ -464,15 +464,15 @@
         "cta": "Nâng cấp Growth",
         "items": [
           "Tất cả Free",
-          "Timeline kỷ niệm nhà",
-          "Behavior Twin",
+          "Dòng thời gian kỷ niệm nhà",
+          "Bản đôi hành vi (Behavior Twin)",
           "AI đề xuất thích nghi",
           "Tối đa 2 trẻ"
         ]
       },
       {
         "name": "Peace",
-        "tagline": "Family Peace Plan · không giới hạn trẻ",
+        "tagline": "Gói bình yên gia đình · không giới hạn trẻ",
         "price": "199.000đ",
         "period": "/ tháng",
         "tone": "growth",
@@ -480,10 +480,10 @@
         "cta": "Dùng thử 30 ngày",
         "items": [
           "Tất cả Growth",
-          "AI Parenting Coach",
-          "ROP / Growth Report",
-          "AI Letter + Family Replay",
-          "Thỏa thuận screen trong nhà",
+          "Huấn luyện AI cho cha mẹ",
+          "Báo cáo tăng trưởng",
+          "Thư AI + xem lại khoảnh khắc nhà",
+          "Thỏa thuận dùng thiết bị trong nhà",
           "Không giới hạn số trẻ"
         ]
       },
@@ -497,9 +497,9 @@
         "cta": "Nâng AI+",
         "items": [
           "Tất cả Peace",
-          "Weekly Deep Playbook",
-          "Letter & Replay sâu hơn",
-          "Adaptive scan mở rộng",
+          "Playbook sâu theo tuần",
+          "Thư & xem lại sâu hơn",
+          "Quét thích nghi mở rộng",
           "Không giới hạn số trẻ"
         ]
       }
@@ -507,7 +507,7 @@
   },
   "faq": {
     "id": "blog",
-    "eyebrow": "FAQ",
+    "eyebrow": "HỎI ĐÁP",
     "title": "Câu hỏi thường gặp.",
     "lead": "Ngắn gọn — đúng thứ cha mẹ quan tâm trước khi bắt đầu.",
     "items": [
@@ -517,11 +517,11 @@
       },
       {
         "q": "Bố mẹ mất bao nhiêu thời gian mỗi ngày?",
-        "a": "Thiết kế cho ≤ 1 phút: Morning Brief một việc cần chú ý, Decision Inbox duyệt trong vài giây."
+        "a": "Thiết kế cho ≤ 1 phút: tóm tắt buổi sáng nêu một việc cần chú ý, hộp quyết định duyệt trong vài giây."
       },
       {
         "q": "Fami là AI chat với con sao?",
-        "a": "Fami là mascot / hạt mầm đồng hành — không phải chatbot LLM nói chuyện với trẻ. AI hỗ trợ bố mẹ quan sát và đề xuất."
+        "a": "Fami là mascot / hạt mầm đồng hành — không phải chatbot nói chuyện với trẻ. AI hỗ trợ bố mẹ quan sát và đề xuất."
       },
       {
         "q": "Dữ liệu gia đình có an toàn không?",
@@ -529,7 +529,7 @@
       },
       {
         "q": "Gói nào phù hợp để bắt đầu?",
-        "a": "Free để trải nghiệm nhịp ngày. Trial 30 ngày = quyền Peace (Pro). Growth khi cần Timeline/Twin; Peace khi cần Coach & chứng cứ; AI+ khi cần Deep Playbook."
+        "a": "Free để trải nghiệm nhịp ngày. Dùng thử 30 ngày = quyền Peace (Pro). Growth khi cần dòng thời gian / bản đôi hành vi; Peace khi cần huấn luyện AI & chứng cứ; AI+ khi cần playbook sâu theo tuần."
       }
     ]
   },
@@ -547,18 +547,18 @@
   "footer": {
     "blurb": "Đồng hành cùng gia đình Việt trên hành trình phát triển toàn diện, cùng Famixa.",
     "solutions": [
-      { "href": "#ai-coach", "label": "AI Coach" },
-      { "href": "#method", "label": "3Q Method" },
-      { "href": "#method", "label": "Behavior OS" },
-      { "href": "#growth", "label": "Family Growth" },
-      { "href": "#pricing", "label": "Challenge & Rewards" }
+      { "href": "#ai-coach", "label": "Lắng nghe" },
+      { "href": "#method", "label": "Công nghệ" },
+      { "href": "#video", "label": "Vòng lặp tăng trưởng" },
+      { "href": "#growth", "label": "Hành trình" },
+      { "href": "#pricing", "label": "Gói đồng hành" }
     ],
     "resources": [
-      { "href": "#testimonials", "label": "Blog" },
+      { "href": "#testimonials", "label": "Câu chuyện" },
       { "href": "#testimonials", "label": "Kiến thức nuôi dạy con" },
       { "href": "https://home.famixa.vn", "label": "Hướng dẫn sử dụng" },
       { "href": "#testimonials", "label": "Cộng đồng Famixa" },
-      { "href": "#pricing", "label": "Sự kiện & Workshop" }
+      { "href": "#pricing", "label": "Sự kiện & hội thảo" }
     ],
     "about": [
       { "href": "#about", "label": "Về chúng tôi" },
@@ -577,7 +577,7 @@
       "name": "Công ty TNHH Truyền thông và Công nghệ KIT",
       "address": "KĐT Hồ Xương Rồng, P. Phan Đình Phùng, Thái Nguyên"
     },
-    "copyrightSuffix": "Famixa. All rights reserved.",
-    "madeWith": "Made with ♥ by KIT Technology"
+    "copyrightSuffix": "Famixa. Đã đăng ký bản quyền.",
+    "madeWith": "Tạo với ♥ bởi KIT Technology"
   }
 }

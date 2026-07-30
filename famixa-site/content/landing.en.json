@@ -38,9 +38,9 @@
   "nav": {
     "links": [
       { "href": "#giai-phap", "label": "Solution" },
-      { "href": "#ai-coach", "label": "AI Coach" },
-      { "href": "#method", "label": "3Q Method" },
-      { "href": "#growth", "label": "Family Growth" },
+      { "href": "#ai-coach", "label": "Listening" },
+      { "href": "#growth", "label": "Journey" },
+      { "href": "#method", "label": "Technology" },
       { "href": "#testimonials", "label": "Stories" },
       { "href": "#about", "label": "About Famixa" }
     ],
@@ -437,11 +437,11 @@
   "footer": {
     "blurb": "Walking with families on the journey of whole-child growth — with Famixa.",
     "solutions": [
-      { "href": "#ai-coach", "label": "AI Coach" },
-      { "href": "#method", "label": "3Q Method" },
-      { "href": "#method", "label": "Behavior OS" },
-      { "href": "#growth", "label": "Family Growth" },
-      { "href": "#pricing", "label": "Challenge & Rewards" }
+      { "href": "#ai-coach", "label": "Listening" },
+      { "href": "#method", "label": "Technology" },
+      { "href": "#video", "label": "Growth loop" },
+      { "href": "#growth", "label": "Journey" },
+      { "href": "#pricing", "label": "Plans" }
     ],
     "resources": [
       { "href": "#testimonials", "label": "Stories" },
