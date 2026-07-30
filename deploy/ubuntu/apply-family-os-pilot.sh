@@ -48,15 +48,30 @@ fi
 
 chown -R www-data:www-data "$WEB_ROOT"
 
-log "Apply FamilyOS migrations (192-199, no demo seed)"
-source "$CONFIG_DIR/secrets.generated" 2>/dev/null || true
+log "Apply FamilyOS migrations (manifest family-os.txt, no demo seed)"
+# Prefer postgres peer auth — avoids api.env password quoting / URI-reserved chars.
 CS=$(grep '^ConnectionStrings__Default=' "$CONFIG_DIR/api.env" | cut -d= -f2-)
-DB_USER=$(echo "$CS" | sed -n 's/.*Username=\([^;]*\).*/\1/p')
 DB_NAME=$(echo "$CS" | sed -n 's/.*Database=\([^;]*\).*/\1/p')
-DB_PASS=$(echo "$CS" | sed -n 's/.*Password=\([^;]*\).*/\1/p')
-[[ -n "$DB_USER" && -n "$DB_NAME" && -n "$DB_PASS" ]] || die "Khong parse duoc ConnectionStrings__Default"
-CONN="postgresql://${DB_USER}:${DB_PASS}@127.0.0.1:5432/${DB_NAME}"
-bash "$OPT/run-family-os-migrations-prod.sh" "$CONN"
+[[ -n "$DB_NAME" ]] || die "Khong parse duoc Database tu ConnectionStrings__Default"
+LIST="$OPT/migration-files.family-os.txt"
+[[ -f "$LIST" ]] || die "Thieu $LIST"
+MIGRATIONS="$OPT/migrations"
+while IFS= read -r line || [[ -n "$line" ]]; do
+  line="${line//$'\r'/}"
+  file="$(echo "$line" | sed 's/#.*//' | xargs || true)"
+  [[ -z "$file" ]] && continue
+  path="$MIGRATIONS/$file"
+  [[ -f "$path" ]] || die "Missing $path"
+  echo ">> $file"
+  sudo -u postgres psql -d "$DB_NAME" -v ON_ERROR_STOP=1 -f "$path"
+done < "$LIST"
+tables=$(sudo -u postgres psql -d "$DB_NAME" -t -A -c "SELECT count(*) FROM information_schema.tables WHERE table_schema='pack_family'")
+echo "=== Done: pack_family tables=$tables ==="
+# Peer-auth migs run as postgres — re-grant app roles so new tables are readable.
+if [[ -f "$MIGRATIONS/250_pack_family_app_role_grants.sql" ]]; then
+  log "Grant pack_family -> pharmacore/kitplatform"
+  sudo -u postgres psql -d "$DB_NAME" -v ON_ERROR_STOP=1 -f "$MIGRATIONS/250_pack_family_app_role_grants.sql"
+fi
 
 log "CORS — them https://${FAMILY_HOST}"
 bash "$OPT/ensure-novixa-cors-env.sh" "$CONFIG_DIR/api.env"

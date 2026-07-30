@@ -1,28 +1,28 @@
 ---
-description: Family OS ACTIVE local — VPS pilot vẫn gated Pharmacy
+description: Family OS ACTIVE — VPS pilot đã ship khi user bảo deploy
 alwaysApply: true
 ---
 
-# Family OS — ACTIVE (local) / VPS gated (2026-07-28)
+# Family OS — ACTIVE (local + VPS pilot) (2026-07-30)
 
-**Trạng thái:** **ACTIVE trên local tip** — epic Behavior OS / PSE / Brief được tiếp tục trên máy local.  
-**VPS / `family.kittech.vn`:** vẫn **không** deploy pilot mới cho đến khi Pharmacy audit (`DEMO_PHARMACY`) xong **và** user bảo rõ deploy.
+**Trạng thái:** **ACTIVE** trên local tip và **đã deploy pilot** lên `family.kittech.vn` (user yêu cầu rõ, cut `e28eb90` + mig peer-auth).  
+**Pharmacy audit freeze** vẫn hiệu lực cho tenant `DEMO_PHARMACY` / `NT_XUANHOA` — không gộp Family + Pharmacy auth trong một PR.
 
 ## Được làm
 
-- Tiếp epic Family OS trên local: `client/family-app`, `src/Packs/FamilyOS`, Admin `/family-os`, mig `240`–`248` qua `migration-files.family-os.txt`.
+- Tiếp epic Family OS trên local: `client/family-app`, `src/Packs/FamilyOS`, Admin `/family-os`, mig qua `migration-files.family-os.txt`.
 - Commit local; smoke `DEMO_FAMILY` trên `:5290` / `:5178`.
-- Hotfix prod đã báo lỗi (có ticket / user chỉ rõ).
+- Deploy VPS Family **chỉ** khi user bảo rõ (`scripts/deploy-family-os-pilot-vps.ps1`); mig ưu tiên `sudo -u postgres psql` (tránh password URI trong `api.env`).
 
-## Không làm (cho đến khi deploy được phép)
+## Không làm
 
-- Không `apply-family-os-pilot` / hàng loạt mig `pack_family` trên VPS.
 - Không gộp commit Family OS + Pharmacy auth trong một PR.
-- Không push `origin/main` chỉ để “ship” Family nếu Pharmacy freeze còn hiệu lực — trừ khi user bảo push/deploy.
+- Không đụng `NT_XUANHOA` / seed Pharmacy ngoài `DEMO_PHARMACY`.
+- Không push/deploy “vì tiện” khi Pharmacy freeze còn và user chưa bảo.
 
 ## SoT
 
-- Nguồn chuẩn vẫn `origin/main` sau khi push; trước push tip local có Behavior/PSE/nav.
+- Nguồn chuẩn = `origin/main` sau khi push.
 - Mig pilot: `deploy/ubuntu/migration-files.family-os.txt` (không gộp `migration-files.prod.txt`).
 
 ## Bối cảnh
