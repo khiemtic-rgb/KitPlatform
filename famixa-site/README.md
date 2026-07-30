@@ -67,3 +67,15 @@ Trang: **https://famixa.vn/vi/thong-ke** — mật khẩu mặc định **`famix
 **GitHub Secrets:** `CF_ANALYTICS_API_TOKEN` hoặc `CLOUDFLARE_API_TOKEN`; tuỳ chọn `FAMIXA_CF_ZONE_ID`, `FAMIXA_CF_DEPLOY_HOOK`.
 
 **Web Analytics (thu thập):** set `NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN` khi build nếu dùng Cloudflare Web Analytics beacon.
+
+## Chuyên trang P0
+
+| VI | EN |
+|----|----|
+| `/vi/goi/` | `/en/plans/` |
+| `/vi/cau-chuyen/` | `/en/stories/` |
+| `/vi/ve-famixa/` | `/en/about/` |
+| `/vi/chinh-sach-bao-mat/` | `/en/privacy/` |
+| `/vi/dieu-khoan/` | `/en/terms/` |
+
+Nội dung: `content/specialty.ts`. CTA “So sánh chi tiết” / “Xem thêm câu chuyện” / footer legal trỏ các route này.

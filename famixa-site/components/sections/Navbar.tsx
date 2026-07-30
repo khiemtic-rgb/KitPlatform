@@ -12,6 +12,10 @@ type Props = {
   brand: LandingContent['brand'];
   appUrl: string;
   locale: AppLocale;
+  /** When set, VI/EN switch stays on the same specialty page. */
+  localeHrefs?: { vi: string; en: string };
+  /** Prefix bare #anchors with /{locale}/ (needed off the landing page). */
+  resolveHashLinks?: boolean;
 };
 
 const UI = {
@@ -30,11 +34,22 @@ const UI = {
 } as const;
 
 /** Header: Famixa mark · nav · locale · login · CTA */
-export function Navbar({ content, brand, appUrl, locale }: Props) {
+export function Navbar({
+  content,
+  brand,
+  appUrl,
+  locale,
+  localeHrefs,
+  resolveHashLinks = false,
+}: Props) {
   const [open, setOpen] = useState(false);
   const ui = UI[locale];
   const homeHref = `/${locale}/`;
   const mark = brand.logoMark || brand.logo;
+  const viHref = localeHrefs?.vi ?? '/vi/';
+  const enHref = localeHrefs?.en ?? '/en/';
+  const linkHref = (href: string) =>
+    resolveHashLinks && href.startsWith('#') ? `/${locale}/${href}` : href;
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#E8E6DF]/70 bg-[#FBF8F1]/95 backdrop-blur-sm">
@@ -59,7 +74,7 @@ export function Navbar({ content, brand, appUrl, locale }: Props) {
           {content.links.map((l) => (
             <a
               key={l.href}
-              href={l.href}
+              href={linkHref(l.href)}
               className="whitespace-nowrap transition-colors hover:text-[#1FA45A]"
             >
               {l.label}
@@ -74,7 +89,7 @@ export function Navbar({ content, brand, appUrl, locale }: Props) {
             aria-label={ui.langAria}
           >
             <a
-              href="/vi/"
+              href={viHref}
               className={
                 locale === 'vi'
                   ? 'rounded-[10px] bg-[#103B2B] px-2.5 py-1.5 text-white'
@@ -85,7 +100,7 @@ export function Navbar({ content, brand, appUrl, locale }: Props) {
               VI
             </a>
             <a
-              href="/en/"
+              href={enHref}
               className={
                 locale === 'en'
                   ? 'rounded-[10px] bg-[#103B2B] px-2.5 py-1.5 text-white'
@@ -127,7 +142,7 @@ export function Navbar({ content, brand, appUrl, locale }: Props) {
             {content.links.map((l) => (
               <a
                 key={l.href}
-                href={l.href}
+                href={linkHref(l.href)}
                 className="rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-[#EAF5EE]"
                 onClick={() => setOpen(false)}
               >
@@ -136,7 +151,7 @@ export function Navbar({ content, brand, appUrl, locale }: Props) {
             ))}
             <div className="mt-2 flex items-center gap-2 px-1 sm:hidden" role="group" aria-label={ui.langAria}>
               <a
-                href="/vi/"
+                href={viHref}
                 className={
                   locale === 'vi'
                     ? 'rounded-lg bg-[#103B2B] px-3 py-1.5 text-xs font-bold text-white'
@@ -146,7 +161,7 @@ export function Navbar({ content, brand, appUrl, locale }: Props) {
                 VI
               </a>
               <a
-                href="/en/"
+                href={enHref}
                 className={
                   locale === 'en'
                     ? 'rounded-lg bg-[#103B2B] px-3 py-1.5 text-xs font-bold text-white'

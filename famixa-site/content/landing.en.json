@@ -41,8 +41,8 @@
       { "href": "#ai-coach", "label": "Listening" },
       { "href": "#growth", "label": "Journey" },
       { "href": "#method", "label": "Technology" },
-      { "href": "#testimonials", "label": "Stories" },
-      { "href": "#about", "label": "About Famixa" }
+      { "href": "/en/stories/", "label": "Stories" },
+      { "href": "/en/about/", "label": "About Famixa" }
     ],
     "login": "Log in",
     "cta": "Start free"
@@ -261,7 +261,7 @@
     "titleAccent": "Famixa?",
     "lead": "Real stories from Vietnamese families.",
     "cta": "More stories",
-    "ctaHref": "#pricing",
+    "ctaHref": "/en/stories/",
     "mascot": {
       "src": "/images/fami-testimonial.png",
       "alt": "Fami"
@@ -310,7 +310,7 @@
     "title": "Plans for every family",
     "lead": "Choose the fit and start growing with Famixa.",
     "cta": "Compare plans",
-    "ctaHref": "#pricing",
+    "ctaHref": "/en/plans/",
     "perks": [
       {
         "icon": "shield",
@@ -441,21 +441,17 @@
       { "href": "#method", "label": "Technology" },
       { "href": "#video", "label": "Growth loop" },
       { "href": "#growth", "label": "Journey" },
-      { "href": "#pricing", "label": "Plans" }
+      { "href": "/en/plans/", "label": "Plans" }
     ],
     "resources": [
-      { "href": "#testimonials", "label": "Stories" },
-      { "href": "#testimonials", "label": "Parenting insights" },
-      { "href": "https://home.famixa.vn", "label": "How to use" },
-      { "href": "#testimonials", "label": "Famixa community" },
-      { "href": "#pricing", "label": "Events & workshops" }
+      { "href": "/en/stories/", "label": "Stories" },
+      { "href": "https://home.famixa.vn", "label": "How to use" }
     ],
     "about": [
-      { "href": "#about", "label": "About us" },
-      { "href": "#about", "label": "Careers" },
-      { "href": "#about", "label": "Contact" },
-      { "href": "#about", "label": "Privacy policy" },
-      { "href": "#about", "label": "Terms of use" }
+      { "href": "/en/about/", "label": "About us" },
+      { "href": "/en/about/", "label": "Contact" },
+      { "href": "/en/privacy/", "label": "Privacy policy" },
+      { "href": "/en/terms/", "label": "Terms of use" }
     ],
     "newsletter": {
       "title": "Get the Famixa newsletter",

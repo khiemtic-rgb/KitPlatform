@@ -87,11 +87,11 @@
         "label": "Công nghệ"
       },
       {
-        "href": "#testimonials",
+        "href": "/vi/cau-chuyen/",
         "label": "Câu chuyện"
       },
       {
-        "href": "#about",
+        "href": "/vi/ve-famixa/",
         "label": "Về Famixa"
       }
     ],
@@ -371,7 +371,7 @@
     "titleAccent": "Famixa?",
     "lead": "Những câu chuyện thật từ các gia đình Việt.",
     "cta": "Xem thêm câu chuyện",
-    "ctaHref": "#pricing",
+    "ctaHref": "/vi/cau-chuyen/",
     "mascot": {
       "src": "/images/fami-testimonial.png",
       "alt": "Fami"
@@ -420,7 +420,7 @@
     "title": "Gói đồng hành cho mọi gia đình",
     "lead": "Chọn gói phù hợp và bắt đầu hành trình trưởng thành cùng Famixa.",
     "cta": "So sánh chi tiết",
-    "ctaHref": "#pricing",
+    "ctaHref": "/vi/goi/",
     "perks": [
       {
         "icon": "shield",
@@ -551,21 +551,17 @@
       { "href": "#method", "label": "Công nghệ" },
       { "href": "#video", "label": "Vòng lặp tăng trưởng" },
       { "href": "#growth", "label": "Hành trình" },
-      { "href": "#pricing", "label": "Gói đồng hành" }
+      { "href": "/vi/goi/", "label": "Gói đồng hành" }
     ],
     "resources": [
-      { "href": "#testimonials", "label": "Câu chuyện" },
-      { "href": "#testimonials", "label": "Kiến thức nuôi dạy con" },
-      { "href": "https://home.famixa.vn", "label": "Hướng dẫn sử dụng" },
-      { "href": "#testimonials", "label": "Cộng đồng Famixa" },
-      { "href": "#pricing", "label": "Sự kiện & hội thảo" }
+      { "href": "/vi/cau-chuyen/", "label": "Câu chuyện" },
+      { "href": "https://home.famixa.vn", "label": "Hướng dẫn sử dụng" }
     ],
     "about": [
-      { "href": "#about", "label": "Về chúng tôi" },
-      { "href": "#about", "label": "Tuyển dụng" },
-      { "href": "#about", "label": "Liên hệ" },
-      { "href": "#about", "label": "Chính sách bảo mật" },
-      { "href": "#about", "label": "Điều khoản sử dụng" }
+      { "href": "/vi/ve-famixa/", "label": "Về chúng tôi" },
+      { "href": "/vi/ve-famixa/", "label": "Liên hệ" },
+      { "href": "/vi/chinh-sach-bao-mat/", "label": "Chính sách bảo mật" },
+      { "href": "/vi/dieu-khoan/", "label": "Điều khoản sử dụng" }
     ],
     "newsletter": {
       "title": "Nhận bản tin Famixa",
