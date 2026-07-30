@@ -26,9 +26,12 @@ type Props = {
 
 type SocialNetwork = NonNullable<LandingContent['footer']['social']>[number]['network'];
 
-const SOCIAL_ICONS: Record<SocialNetwork, LucideIcon> = {
+const SOCIAL_ICON_SRC: Partial<Record<SocialNetwork, string>> = {
+  zalo: '/images/social/zalo.png',
+};
+
+const SOCIAL_LUCIDE: Partial<Record<SocialNetwork, LucideIcon>> = {
   facebook: Facebook,
-  zalo: MessageCircle,
   tiktok: MessageCircle,
   youtube: MessageCircle,
   instagram: MessageCircle,
@@ -115,7 +118,8 @@ export function Footer({ content, brand, appUrl, locale }: Props) {
               </p>
               <div className="mt-5 flex gap-2.5" aria-label={t.socialAria}>
                 {social.map(({ href, label, network }) => {
-                  const Icon = SOCIAL_ICONS[network] ?? MessageCircle;
+                  const iconSrc = SOCIAL_ICON_SRC[network];
+                  const LucideIcon = SOCIAL_LUCIDE[network] ?? MessageCircle;
                   return (
                     <a
                       key={label}
@@ -125,7 +129,17 @@ export function Footer({ content, brand, appUrl, locale }: Props) {
                       rel="noopener noreferrer"
                       target="_blank"
                     >
-                      <Icon className="h-4 w-4" />
+                      {iconSrc ? (
+                        <img
+                          src={iconSrc}
+                          alt=""
+                          width={22}
+                          height={22}
+                          className="h-[22px] w-[22px] rounded-full object-cover"
+                        />
+                      ) : (
+                        <LucideIcon className="h-4 w-4" />
+                      )}
                     </a>
                   );
                 })}
