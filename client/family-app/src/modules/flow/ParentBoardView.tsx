@@ -114,6 +114,7 @@ import {
   warmTaskTip,
   voicePick,
 } from '@/shared/voice/family-voice';
+import { familyTeamHeroLine } from '@/modules/flow/teamPlay';
 import { FAMILY_MOODS, moodFromCode } from '@/shared/flow/family-moods';
 import {
   formatLateDuration,
@@ -451,6 +452,14 @@ type Props = {
   glance: AccountabilityGlance | null;
   /** Children in the family — used for focus dropdown on parent Home. */
   children?: Array<{ id: string; displayName: string }>;
+  /** House team-day snapshot (API or client derive) — hero never follows child picker. */
+  teamDay?: {
+    teamPercent: number;
+    remainingMissions: number;
+    teamComplete: boolean;
+    teamTotal: number;
+    heroMissionLine: string;
+  } | null;
   onMarkDone: (item: DayFlowCommitment) => void | Promise<void>;
   onReflect: (item: DayFlowCommitment, reason: SkipReasonCode) => void;
   onReopen: (item: DayFlowCommitment) => void;
@@ -488,6 +497,7 @@ export function ParentBoardView({
   consequenceEvents,
   glance,
   children: childrenProp = [],
+  teamDay = null,
   onMarkDone,
   onReflect: _onReflect,
   onReopen: _onReopen,
@@ -1122,15 +1132,19 @@ export function ParentBoardView({
   ]);
 
   /**
-   * Việc ưu tiên luôn thuộc về đúng 1 người — ưu tiên tên chủ việc thật, chỉ lùi
-   * về con đang chọn khi dữ liệu không nói ai.
+   * Việc ưu tiên luôn thuộc về đúng 1 người — tên chỉ hiện ở danh sách ưu tiên,
+   * không gắn lên hero nhà (Team Play Đợt A).
    */
-  const briefWho =
-    homeBrief.primaryAction.whoVi?.trim() ||
-    (effectiveChildFocus !== 'all' ? selectedChild?.name ?? null : null);
-  const briefWhoShort = briefWho
-    ? briefWho.trim().split(/\s+/).pop() || briefWho
-    : '';
+  // House hero uses team-day — never follows the "Đang xem" picker / lagging child name.
+  const houseTeamPercent = teamDay?.teamPercent ?? percent;
+  const houseTeamRemaining =
+    teamDay?.remainingMissions ?? Math.max(0, scopedTotal - scopedDone);
+  const houseTeamTotal = teamDay?.teamTotal ?? Math.max(scopedTotal, 0);
+  const houseTeamSummary = familyTeamHeroLine(
+    houseTeamPercent,
+    houseTeamRemaining,
+    houseTeamTotal,
+  );
   const briefTaskTone =
     homeBrief.primaryAction.kind === 'dna_setup'
       ? 'dna'
@@ -1961,16 +1975,18 @@ export function ParentBoardView({
               {renderChildPicker('module')}
             </div>
           ) : null}
+          {hasChildren ? (
+            <div className="ph-b4-team-line" aria-label="Tiến độ cả nhà hôm nay">
+              <span aria-hidden>👨‍👩‍👧‍👦</span>
+              <strong>{houseTeamSummary}</strong>
+            </div>
+          ) : null}
           <article className="ph-b4-brief" aria-label="Morning Brief">
             <div className="ph-b4-brief-main">
               <p className="ph-b4-brief-eyebrow">
                 <img className="ph-b4-brief-mark" src="/brand/fami-mark-48.png" alt="" aria-hidden />
                 {homeBrief.period === 'evening' ? 'Gợi ý tối' : 'Gợi ý sáng'}
-                {briefWho ? (
-                  <span className="ph-b4-brief-who"> · {briefWho}</span>
-                ) : childOptions.length > 1 ? (
-                  <span className="ph-b4-brief-who"> · Cả gia đình</span>
-                ) : null}
+                <span className="ph-b4-brief-who"> · Cả nhà</span>
               </p>
               <h2 className="ph-b4-brief-title">
                 {homeBrief.primaryAction.kind === 'dna_setup' ||
@@ -1978,9 +1994,13 @@ export function ParentBoardView({
                   ? homeBrief.moodLineVi
                   : homeBrief.period === 'evening'
                     ? 'Tối nay Famixa gợi ý một việc nhẹ.'
-                    : briefWho
-                      ? `Hôm nay ưu tiên 1 việc của ${briefWhoShort} trước.`
-                      : 'Hôm nay ưu tiên 1 việc trước.'}
+                    : houseTeamRemaining > 0
+                      ? houseTeamRemaining === 1
+                        ? 'Cả đội còn 1 việc nữa để hoàn thành ngày hôm nay.'
+                        : `Cả đội còn ${houseTeamRemaining} việc nữa để hoàn thành ngày hôm nay.`
+                      : houseTeamTotal > 0
+                        ? 'Mission Complete — cả đội đã xong ngày hôm nay.'
+                        : 'Hôm nay ưu tiên 1 việc trước.'}
               </h2>
               <div className={`ph-b4-brief-task is-${briefTaskTone}`}>
                 <span className="ph-b4-brief-check" aria-hidden>
@@ -1989,10 +2009,7 @@ export function ParentBoardView({
                 <div className="ph-b4-brief-task-body">
                   <strong>{homeBrief.primaryAction.doThisVi}</strong>
                   {homeBrief.primaryAction.statusVi ? (
-                    <em>
-                      {briefWho ? `${briefWho} · ` : ''}
-                      {homeBrief.primaryAction.statusVi}
-                    </em>
+                    <em>{homeBrief.primaryAction.statusVi}</em>
                   ) : null}
                 </div>
               </div>
@@ -2201,34 +2218,36 @@ export function ParentBoardView({
 
           <section
             className="ph-b4-progress"
-            aria-label={
-              effectiveChildFocus === 'all'
-                ? 'Tiến độ cả gia đình'
-                : `Tiến độ của ${selectedChild?.name ?? 'con'}`
-            }
+            aria-label="Tiến độ cả gia đình"
           >
             <header className="ph-b4-col-head">
               <h3>
-                <span aria-hidden>{effectiveChildFocus === 'all' ? '👨‍👩‍👧‍👦' : '🎯'}</span>{' '}
-                {effectiveChildFocus === 'all'
-                  ? 'Tiến độ cả gia đình'
-                  : `Tiến độ của ${selectedChild?.name ?? 'con'}`}
+                <span aria-hidden>👨‍👩‍👧‍👦</span> Tiến độ cả gia đình
               </h3>
             </header>
-            <p className="ph-b4-progress-copy">
-              {familyProgressLine(scopedDone, Math.max(scopedTotal, 0))}
-            </p>
+            <p className="ph-b4-progress-copy">{houseTeamSummary}</p>
             <div className="ph-b4-progress-row">
               <div className="ph-b4-segments" aria-hidden>
-                {Array.from({ length: progressSegments.segs }, (_, idx) => (
-                  <i
-                    key={idx}
-                    className={idx < progressSegments.filled ? 'is-on' : undefined}
-                  />
-                ))}
+                {Array.from({ length: progressSegments.segs }, (_, idx) => {
+                  const filled = Math.round(
+                    (houseTeamPercent / 100) * progressSegments.segs,
+                  );
+                  return (
+                    <i
+                      key={idx}
+                      className={idx < filled ? 'is-on' : undefined}
+                    />
+                  );
+                })}
               </div>
-              <strong>{percent}%</strong>
+              <strong>{houseTeamPercent}%</strong>
             </div>
+            {effectiveChildFocus !== 'all' && selectedChild ? (
+              <p className="ph-b4-progress-child">
+                Đang xem {selectedChild.name}:{' '}
+                {familyProgressLine(scopedDone, Math.max(scopedTotal, 0))}
+              </p>
+            ) : null}
             <button
               type="button"
               className="ph-b4-see-all"

@@ -572,6 +572,17 @@ export function TodayFlowPage() {
           consequenceEvents={events}
           glance={glance}
           children={familyChildren}
+          teamDay={
+            teamSnapshot
+              ? {
+                  teamPercent: teamSnapshot.teamPercent,
+                  remainingMissions: teamSnapshot.remainingMissions,
+                  teamComplete: teamSnapshot.teamComplete,
+                  teamTotal: teamSnapshot.teamTotal,
+                  heroMissionLine: teamSnapshot.heroMissionLine,
+                }
+              : null
+          }
           onMarkDone={(item) => void markDone(item, undefined, true)}
           onReflect={(item, reason) => void markReflect(item, reason)}
           onReopen={(item) => void reopenCommitment(item)}

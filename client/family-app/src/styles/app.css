@@ -16137,6 +16137,30 @@ body:has(.sheet-backdrop) {
   border: 1px solid rgba(26, 92, 69, 0.12);
 }
 
+.ph-b4-team-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: linear-gradient(120deg, #eef6f1 0%, #e8f0fb 100%);
+  border: 1px solid rgba(26, 92, 69, 0.1);
+  color: #14352c;
+  font-size: 0.92rem;
+}
+
+.ph-b4-team-line strong {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ph-b4-progress-child {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #5a7a6c;
+}
+
 .ph-b4-focus-label {
   font-size: 0.82rem;
   font-weight: 700;

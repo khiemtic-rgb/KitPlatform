@@ -38,6 +38,18 @@ test.describe('kid screen', () => {
     }
   });
 
+  test('home shows Nhà mình team strip with team percent', async ({ page }) => {
+    await login(page);
+    await pickChild(page);
+    await page.locator('.kv2-tabbar').getByRole('button', { name: 'Trang chủ' }).click();
+    await page.waitForTimeout(800);
+
+    const strip = page.locator('.kv2-movie-strip');
+    await expect(strip).toBeVisible();
+    await expect(strip).toContainText(/Nhà mình/);
+    await expect(strip.locator('strong')).toContainText(/%/);
+  });
+
   test('garden preview shows the same plant state as the full garden', async ({ page }) => {
     await login(page);
     await pickChild(page);
@@ -101,6 +113,27 @@ test.describe('parent screen', () => {
       parentName,
       'Parent Home rebuilt the family label from child nicknames instead of session familyName',
     ).toBe(whoName);
+  });
+
+  test('home hero is house-first: team line + no lagging-child name on brief title', async ({
+    page,
+  }) => {
+    await login(page);
+    await pickParent(page);
+    await page.locator('.ph-tabbar').getByRole('button', { name: 'Trang chủ' }).click();
+    await page.waitForTimeout(800);
+
+    const teamLine = page.locator('.ph-b4-team-line');
+    await expect(teamLine).toBeVisible();
+    await expect(teamLine).toContainText(/Cả nhà hôm nay/);
+
+    const brief = page.locator('.ph-b4-brief');
+    await expect(brief.locator('.ph-b4-brief-who')).toContainText('Cả nhà');
+
+    const title = (await brief.locator('.ph-b4-brief-title').innerText()).trim();
+    expect(title, 'brief title still names a child on the house hero').not.toMatch(
+      /ưu tiên 1 việc của \S+ trước/,
+    );
   });
 
   test('priority awaiting uses wait icon, not a done checkmark', async ({ page }) => {

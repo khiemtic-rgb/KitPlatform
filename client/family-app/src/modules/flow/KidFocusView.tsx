@@ -1064,6 +1064,7 @@ export function KidFocusView({
   teamRemaining = 0,
   teamComplete = false,
   teamFromApi = false,
+  teamMissionLine,
   softLockActive = false,
   softLockLabel,
   familyId,
@@ -2008,10 +2009,13 @@ export function KidFocusView({
   }, [doNowItems, items, short, foxySpeech]);
 
   const movieStripLabel = useMemo(() => {
+    if (teamMissionLine?.trim()) {
+      return teamMissionLine.replace(/^[🎯🎉]\s*/, '');
+    }
     if (teamComplete || unlockLeft === 0) return 'Sẵn sàng mở khóa!';
-    if (unlockLeft === 1) return 'Chỉ còn 1 việc nữa thôi!';
-    return `Chỉ còn ${unlockLeft} việc nữa thôi!`;
-  }, [teamComplete, unlockLeft]);
+    if (unlockLeft === 1) return 'Cả đội còn 1 việc nữa để hoàn thành ngày hôm nay.';
+    return `Cả đội còn ${unlockLeft} việc nữa để hoàn thành ngày hôm nay.`;
+  }, [teamComplete, unlockLeft, teamMissionLine]);
 
   useEffect(() => {
     if (tab !== 'home') setHomePane('hub');
@@ -2329,12 +2333,12 @@ export function KidFocusView({
 
               <aside
                 className={`kv2-movie-strip${teamComplete ? ' is-ready' : ''}`}
-                aria-label="Tiến độ Movie Night — đêm xem phim cả nhà"
+                aria-label="Nhà mình — tiến độ đội hôm nay"
               >
-                <span aria-hidden>🍿</span>
+                <span aria-hidden>👨‍👩‍👧‍👦</span>
                 <div className="kv2-movie-strip-copy">
                   <strong>
-                    <EnTerm en="Movie Night" vi="Đêm xem phim cả nhà" /> · {unlockPct}%
+                    Nhà mình · {unlockPct}%
                   </strong>
                   <em>{movieStripLabel}</em>
                 </div>
@@ -2807,10 +2811,10 @@ export function KidFocusView({
             </div>
             <div className="kv2-m-goal">
               <span className="kv2-m-goal-pop" aria-hidden>
-                🍿
+                👨‍👩‍👧‍👦
               </span>
               <div className="kv2-m-goal-copy">
-                <span className="kv2-m-goal-eyebrow">Đang tiến gần đến mục tiêu!</span>
+                <span className="kv2-m-goal-eyebrow">Nhà mình</span>
                 <strong className="kv2-m-goal-pct">{unlockPct}%</strong>
                 <div className="kv2-m-segs" aria-hidden>
                   {Array.from({ length: missionSegs }, (_, i) => (

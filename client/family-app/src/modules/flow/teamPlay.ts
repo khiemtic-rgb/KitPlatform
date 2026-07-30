@@ -54,6 +54,14 @@ export function buildTeamDayFromChildren(children: TeamChildSlice[]): TeamDaySna
   };
 }
 
+/** Fixed house line for parent Home — never names a lagging child. */
+export function familyTeamHeroLine(percent: number, remaining: number, teamTotal = 1): string {
+  if (teamTotal <= 0) return 'Cả nhà hôm nay chưa có Mission.';
+  if (remaining <= 0) return `Cả nhà hôm nay ${percent}% · đã xong ngày.`;
+  if (remaining === 1) return `Cả nhà hôm nay ${percent}% · còn 1 việc.`;
+  return `Cả nhà hôm nay ${percent}% · còn ${remaining} việc.`;
+}
+
 export function slicesFromCommitments(
   children: { id: string; name: string }[],
   commitments: CommitmentLike[],
