@@ -113,10 +113,10 @@ export function Chapters45({ chapter4, chapter5, appUrl, locale }: Props) {
           id={chapter5.id}
           className="relative scroll-mt-24 overflow-hidden rounded-[28px] border border-[#D5E2D4]/80 shadow-[0_10px_36px_rgba(16,59,43,0.08)] sm:rounded-[32px] md:rounded-[36px]"
         >
-          {/* Nền scenic — desktop only */}
+          {/* Nền scenic — desktop only (ẩn/hiện trên wrapper, không dùng lg:hidden trên img) */}
           <div className="absolute inset-0 hidden overflow-hidden lg:block" aria-hidden>
             <img
-              src={`${chapter5.image.src}?v=16`}
+              src={`${chapter5.image.src}?v=17`}
               alt=""
               width={1024}
               height={441}
@@ -127,20 +127,18 @@ export function Chapters45({ chapter4, chapter5, appUrl, locale }: Props) {
           </div>
 
           <div className="relative grid min-h-0 lg:min-h-[440px] lg:grid-cols-[minmax(220px,0.34fr)_minmax(0,0.66fr)] xl:min-h-[480px]">
-            {/* Mobile: ảnh trên — desktop: spacer (art absolute) */}
-            <div className="relative order-1 min-h-[210px] overflow-hidden sm:min-h-[240px] lg:order-2 lg:min-h-full">
+            {/* Mobile: ảnh trên — wrapper lg:hidden (globals img{display:block} ghi đè lg:hidden trên img) */}
+            <div className="relative order-1 min-h-[210px] overflow-hidden sm:min-h-[240px] lg:hidden">
               <img
-                src={`${chapter5.image.src}?v=16`}
-                alt=""
+                src={`${chapter5.image.src}?v=17`}
+                alt={chapter5.image.alt}
                 width={1024}
                 height={441}
-                className="absolute inset-0 h-full w-full object-cover object-[82%_44%] lg:hidden"
+                className="absolute inset-0 h-full w-full object-cover object-[82%_44%]"
                 loading="lazy"
-                aria-hidden
               />
-              <span className="sr-only">{chapter5.image.alt}</span>
               {chapter5.quote ? (
-                <div className="absolute right-[5%] top-[10%] z-[2] flex min-h-[4.25rem] w-[10.5rem] items-center justify-center rounded-[1.15rem] bg-white px-3.5 pb-3.5 pt-2 text-center text-[0.66rem] font-medium leading-snug text-[#1A2E28] shadow-[0_6px_18px_rgba(16,59,43,0.14)] sm:min-h-[4.5rem] sm:w-[11rem] sm:text-[0.7rem] lg:hidden">
+                <div className="absolute right-[5%] top-[10%] z-[2] flex min-h-[4.25rem] w-[10.5rem] items-center justify-center rounded-[1.15rem] bg-white px-3.5 pb-3.5 pt-2 text-center text-[0.66rem] font-medium leading-snug text-[#1A2E28] shadow-[0_6px_18px_rgba(16,59,43,0.14)] sm:min-h-[4.5rem] sm:w-[11rem] sm:text-[0.7rem]">
                   <span className="block max-w-[9.5em]">{chapter5.quote}</span>
                   <span
                     className="pointer-events-none absolute bottom-[-8px] left-[36%] h-4 w-4 rotate-45 bg-white"
@@ -165,6 +163,9 @@ export function Chapters45({ chapter4, chapter5, appUrl, locale }: Props) {
                 </PillCta>
               </div>
             </div>
+
+            {/* Desktop: cột phải trống — nền scenic từ absolute layer */}
+            <div className="relative hidden lg:order-2 lg:block lg:min-h-full" aria-hidden />
           </div>
 
           {/* Bubble desktop */}

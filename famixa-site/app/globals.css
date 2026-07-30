@@ -104,10 +104,12 @@ body {
   background: var(--color-bg);
 }
 
-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
+@layer base {
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
 }
 
 a {
