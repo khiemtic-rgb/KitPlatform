@@ -71,28 +71,24 @@
   "nav": {
     "links": [
       {
-        "href": "#giai-phap",
-        "label": "Giải pháp"
+        "href": "#hero",
+        "label": "Vấn đề"
       },
       {
-        "href": "#ai-coach",
-        "label": "Lắng nghe"
+        "href": "#giai-phap",
+        "label": "Fami"
       },
       {
         "href": "#growth",
         "label": "Hành trình"
       },
       {
-        "href": "#method",
-        "label": "Công nghệ"
-      },
-      {
         "href": "/vi/cau-chuyen/",
         "label": "Câu chuyện"
       },
       {
-        "href": "/vi/ve-famixa/",
-        "label": "Về Famixa"
+        "href": "/vi/goi/",
+        "label": "Bảng giá"
       }
     ],
     "login": "Đăng nhập",

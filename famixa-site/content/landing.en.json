@@ -37,12 +37,11 @@
   ],
   "nav": {
     "links": [
-      { "href": "#giai-phap", "label": "Solution" },
-      { "href": "#ai-coach", "label": "Listening" },
+      { "href": "#hero", "label": "The problem" },
+      { "href": "#giai-phap", "label": "Fami" },
       { "href": "#growth", "label": "Journey" },
-      { "href": "#method", "label": "Technology" },
       { "href": "/en/stories/", "label": "Stories" },
-      { "href": "/en/about/", "label": "About Famixa" }
+      { "href": "/en/plans/", "label": "Pricing" }
     ],
     "login": "Log in",
     "cta": "Start free"
