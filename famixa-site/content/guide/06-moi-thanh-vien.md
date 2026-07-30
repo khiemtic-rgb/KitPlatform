@@ -32,7 +32,7 @@ Khoảng **1 phút** tạo mã + thời gian gửi tin nhắn.
 2. Sheet **Mời tham gia nhà** hiện **Mã mời**, hạn dùng, số lần  
 3. **Sao chép mã** hoặc **Chia sẻ… (Zalo / Messenger…)** hoặc **Gửi SMS**
 
-[Ảnh minh họa: 05-moi-tham-gia-sheet]
+![Sheet Mời tham gia nhà — mã mời và chia sẻ](/images/guide/05-moi-tham-gia-sheet.png)
 
 ### Cách B — Từ Quản trị
 
@@ -41,7 +41,7 @@ Khoảng **1 phút** tạo mã + thời gian gửi tin nhắn.
 - Sao chép · Chia sẻ · **Tạo mã mới**  
 - Có **QR Code** để người kia nhìn / quét  
 
-[Ảnh minh họa: 08-ma-nha]
+![Quản trị → Mã nhà — sao chép, chia sẻ, QR](/images/guide/08-ma-nha.png)
 
 ### Người được mời làm gì?
 

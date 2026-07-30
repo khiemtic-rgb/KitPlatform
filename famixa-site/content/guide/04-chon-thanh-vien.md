@@ -30,7 +30,7 @@ Dưới **30 giây**.
 
 Bạn thấy thương hiệu Famixa, tên nhà, và gợi ý ngắn từ trợ lý.
 
-[Ảnh minh họa: 04-chon-thanh-vien]
+![Màn Xin chào! — chọn bố/mẹ hoặc con](/images/guide/04-chon-thanh-vien.png)
 
 ### Bước 2 — Chạm đúng thẻ tên
 

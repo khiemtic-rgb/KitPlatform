@@ -30,7 +30,7 @@ Khoảng **2 phút** mỗi người.
 
 **Quản trị gia đình → Thành viên**.
 
-[Ảnh minh họa: 07-thanh-vien]
+![Quản trị → Thành viên — danh sách và form thêm](/images/guide/07-thanh-vien.png)
 
 ### Bước 2 — Nhập tên và vai trò
 

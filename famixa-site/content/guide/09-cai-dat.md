@@ -30,7 +30,7 @@ Khoảng **2–4 phút**.
 
 Đầu trang: tên nhà, nhãn gói (ví dụ Dùng thử Pro / Ân hạn / Peace), nút **Gia hạn gói**.
 
-[Ảnh minh họa: 10-cai-dat]
+![Tài khoản & Cài đặt — gói, nhắc việc, PIN](/images/guide/10-cai-dat.png)
 
 ### Bước 2 — Nhắc việc
 

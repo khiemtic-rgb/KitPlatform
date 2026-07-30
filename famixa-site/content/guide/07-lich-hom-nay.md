@@ -30,7 +30,7 @@ Xem tổng quan: **1 phút**. Làm việc: theo từng mục.
 
 Sau khi chạm tên trên **Xin chào!**, app mở màn **Hôm nay** (lịch việc trong ngày).
 
-[Ảnh minh họa: 11-lich-hom-nay]
+![Màn Hôm nay — lịch việc trong ngày](/images/guide/11-lich-hom-nay.png)
 
 ### Bước 2 — Bố/mẹ
 

@@ -32,7 +32,7 @@ Khoảng **3–5 phút**.
 **Xin chào! → Quản lý → Routine**  
 (hoặc Quản trị gia đình → Routine)
 
-[Ảnh minh họa: 09-routine]
+![Quản trị → Routine — chế độ và chỉnh nhẹ](/images/guide/09-routine.png)
 
 ### Bước 2 — Xem đang dùng
 
