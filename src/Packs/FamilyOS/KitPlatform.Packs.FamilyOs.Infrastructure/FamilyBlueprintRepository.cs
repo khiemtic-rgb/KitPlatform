@@ -188,7 +188,7 @@ internal static class FamilyBlueprintHydrator
 
         using var doc = JsonDocument.Parse(dnaJson);
         var root = doc.RootElement;
-        var stage = ReadString(root, "stageLabelVi");
+        var stage = ResolveStageLabelVi(ReadString(root, "stageLabelVi"), layersJson);
         var values = ReadStringArray(root, "valuesLabelsVi");
         var focus = ReadStringArray(root, "focusLabelsVi");
         var next = composed.HasPlaybookSignal
@@ -537,15 +537,64 @@ internal static class FamilyBlueprintHydrator
         }
     }
 
+    /// <summary>
+    /// Chuẩn 4 bậc học đường VN — label DNA / onboarding phải khớp đúng bộ này.
+    /// </summary>
     private static (string Code, string LabelVi) StageFromAgeBand(string ageBand) =>
         ageBand switch
         {
-            "4-6" => ("preschool", "Mầm non / chuẩn bị lớp 1"),
-            "7-9" => ("primary_early", "Tiểu học (đầu cấp)"),
-            "10-12" => ("primary_late", "Tiểu học / tiền trung học"),
-            "13+" => ("teen", "Gia đình tuổi teen"),
-            _ => ("primary_early", "Tiểu học"),
+            "4-6" => ("preschool", "Mầm non"),
+            "7-9" => ("primary", "Tiểu học"),
+            "10-12" => ("lower_secondary", "Trung học cơ sở"),
+            "13+" => ("upper_secondary", "Trung học phổ thông"),
+            _ => ("primary", "Tiểu học"),
         };
+
+    /// <summary>Map nhãn cũ trong DNA JSON → 4 bậc chuẩn (không cần re-onboard).</summary>
+    private static string CanonicalSchoolStageLabelVi(string? labelVi) =>
+        (labelVi ?? "").Trim().ToLowerInvariant() switch
+        {
+            var s when s.Contains("mầm non") || s.Contains("mam non") || s.Contains("chuẩn bị lớp")
+                => "Mầm non",
+            var s when s.Contains("phổ thông") || s.Contains("thpt") || s.Contains("tuổi teen") || s.Contains("teen")
+                => "Trung học phổ thông",
+            var s when s.Contains("cơ sở") || s.Contains("thcs") || s.Contains("tiền trung")
+                => "Trung học cơ sở",
+            var s when s.Contains("tiểu học") || s.Contains("đầu cấp") || s.Contains("primary")
+                => "Tiểu học",
+            var s when string.IsNullOrWhiteSpace(s) => "",
+            _ => labelVi!.Trim(),
+        };
+
+    private static string? ReadPrimaryAgeBand(string? layersJson)
+    {
+        if (string.IsNullOrWhiteSpace(layersJson) || layersJson is "{}") return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(layersJson);
+            if (!doc.RootElement.TryGetProperty("profile", out var profile)) return null;
+            if (profile.TryGetProperty("primaryAgeBand", out var band)
+                && band.ValueKind == JsonValueKind.String)
+            {
+                var s = band.GetString()?.Trim();
+                return string.IsNullOrWhiteSpace(s) ? null : s;
+            }
+        }
+        catch (JsonException)
+        {
+            /* ignore */
+        }
+
+        return null;
+    }
+
+    private static string ResolveStageLabelVi(string? dnaStageLabel, string? layersJson)
+    {
+        var ageBand = ReadPrimaryAgeBand(layersJson);
+        if (!string.IsNullOrWhiteSpace(ageBand))
+            return StageFromAgeBand(ageBand).LabelVi;
+        return CanonicalSchoolStageLabelVi(dnaStageLabel);
+    }
 
     private static List<(string Code, string LabelVi)> BuildValues(
         IReadOnlyList<string> priorities,

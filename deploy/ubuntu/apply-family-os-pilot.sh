@@ -118,6 +118,12 @@ server {
         try_files \$uri \$uri/ /index.html;
     }
 
+    # Brand icons keep stable filenames, so they must revalidate instead of
+    # being pinned by the immutable rule below (phones kept the old logo).
+    location ~* ^/(favicon[^/]*|apple-touch-icon[^/]*|icon-[0-9]+\\.png|icon\\.svg)\$ {
+        add_header Cache-Control "no-cache, must-revalidate";
+    }
+
     location ~* \\.(css|png|jpg|jpeg|gif|ico|svg|woff2?)\$ {
         expires 7d;
         add_header Cache-Control "public, immutable";

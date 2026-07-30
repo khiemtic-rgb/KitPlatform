@@ -7,41 +7,83 @@ import { fileURLToPath } from 'node:url';
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
+// Same stamp lands in the bundle and in /version.json, so a stale client can
+// detect it is behind and force a reload instead of waiting for the SW.
+const BUILD_STAMP = process.env.VITE_APP_BUILD || new Date().toISOString();
+
 function familyAppVersionJson() {
   return {
     name: 'family-app-version-json',
     closeBundle() {
       const outDir = path.resolve(rootDir, 'dist');
-      const build = process.env.VITE_APP_BUILD || new Date().toISOString();
-      writeFileSync(`${outDir}/version.json`, JSON.stringify({ build }));
+      writeFileSync(`${outDir}/version.json`, JSON.stringify({ build: BUILD_STAMP }));
+    },
+  };
+}
+
+function familyAppIconCacheBust() {
+  return {
+    name: 'family-app-icon-cache-bust',
+    transformIndexHtml(html: string) {
+      return html.replaceAll('__APP_BUILD__', encodeURIComponent(BUILD_STAMP));
     },
   };
 }
 
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_APP_BUILD': JSON.stringify(BUILD_STAMP),
+  },
   plugins: [
     react(),
     familyAppVersionJson(),
+    familyAppIconCacheBust(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon.svg'],
+      includeAssets: [
+        'favicon.ico',
+        'favicon-32.png',
+        'favicon-48.png',
+        'apple-touch-icon.png',
+        'icon-192.png',
+        'icon-512.png',
+        'brand/fami-mark-48.png',
+      ],
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
       manifest: {
-        name: 'FamilyOS',
-        short_name: 'FamilyOS',
-        description: 'One Family. One Plan. One Daily Flow.',
-        theme_color: '#1d6a6a',
-        background_color: '#f3f7f4',
+        name: 'Famixa',
+        short_name: 'Famixa',
+        description: 'AI giúp gia đình hạnh phúc hơn mỗi ngày',
+        theme_color: '#0B5C3A',
+        background_color: '#ffffff',
         display: 'standalone',
         lang: 'vi',
         start_url: '/',
         icons: [
           {
-            src: '/icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
+            src: '/favicon-32.png',
+            sizes: '32x32',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png',
             purpose: 'any',
           },
         ],

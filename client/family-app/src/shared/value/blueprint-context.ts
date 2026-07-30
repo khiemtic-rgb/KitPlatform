@@ -1,5 +1,6 @@
 import type { FamilyDnaCard } from '@/shared/api/family-os.api';
 import type { FamilyPlaybookId } from '@/shared/value/family-playbook-ids';
+import { canonicalSchoolStageLabelVi } from '@/shared/onboarding/onboarding';
 
 /**
  * Wave B — Blueprint-first voice helpers.
@@ -162,7 +163,8 @@ export function dnaCaptionForHealth(
   const { becauseVi } = becauseFromDna(dna);
   if (becauseVi) return becauseVi;
   if (dna?.hasBlueprint && dna.stageLabelVi) {
-    return joinVi([`Giai đoạn ${dna.stageLabelVi}`, ...(dna.focusLabelsVi ?? []).slice(0, 1)]);
+    const stage = canonicalSchoolStageLabelVi(dna.stageLabelVi) || dna.stageLabelVi;
+    return joinVi([`Giai đoạn ${stage}`, ...(dna.focusLabelsVi ?? []).slice(0, 1)]);
   }
   return null;
 }

@@ -1964,9 +1964,7 @@ export function ParentBoardView({
           <article className="ph-b4-brief" aria-label="Morning Brief">
             <div className="ph-b4-brief-main">
               <p className="ph-b4-brief-eyebrow">
-                <span className="ph-b4-spark" aria-hidden>
-                  ✦
-                </span>
+                <img className="ph-b4-brief-mark" src="/brand/fami-mark-48.png" alt="" aria-hidden />
                 {homeBrief.period === 'evening' ? 'Gợi ý tối' : 'Gợi ý sáng'}
                 {briefWho ? (
                   <span className="ph-b4-brief-who"> · {briefWho}</span>
@@ -2028,17 +2026,6 @@ export function ParentBoardView({
                       ? 'Xác nhận ngay'
                       : 'Thực hiện ngay'}
               </button>
-            </div>
-            <div className="ph-b4-brief-art" aria-hidden>
-              <img
-                src="/home/morning-brief-art.png"
-                alt=""
-                width={180}
-                height={180}
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.display = 'none';
-                }}
-              />
             </div>
           </article>
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FamilyDnaCard } from '@/shared/api/family-os.api';
 import { CalibrationCaptureSheet } from '@/modules/flow/CalibrationCaptureSheet';
+import { canonicalSchoolStageLabelVi } from '@/shared/onboarding/onboarding';
 
 type Props = {
   familyId: string;
@@ -138,12 +139,15 @@ export function FamilyDnaCardView({
         ) : null}
 
         <dl className="famixa-dna-grid">
-          {dna.stageLabelVi ? (
-            <div>
-              <dt>Độ tuổi</dt>
-              <dd>{dna.stageLabelVi}</dd>
-            </div>
-          ) : null}
+          {(() => {
+            const stage = canonicalSchoolStageLabelVi(dna.stageLabelVi);
+            return stage ? (
+              <div>
+                <dt>Độ tuổi</dt>
+                <dd>{stage}</dd>
+              </div>
+            ) : null;
+          })()}
           {values.length > 0 ? (
             <div>
               <dt>Nhà mình quý</dt>

@@ -87,12 +87,26 @@ export function clearOnboardingProfile(familyId: string) {
   });
 }
 
+/** Chuẩn 4 bậc học đường VN — label DNA / onboarding / coach phải khớp. */
 export const AGE_OPTIONS: Array<{ value: AgeBand; label: string; hint: string }> = [
-  { value: '4-6', label: '4–6 tuổi', hint: 'Việc ngắn, hình ảnh, khen ngay' },
-  { value: '7-9', label: '7–9 tuổi', hint: '1 việc tiếp theo + phần thưởng nhà' },
-  { value: '10-12', label: '10–12 tuổi', hint: 'Tự chủ hơn, ít nhắc hơn' },
-  { value: '13+', label: '13+ tuổi', hint: 'Thỏa thuận rõ, tôn trọng không gian' },
+  { value: '4-6', label: 'Mầm non', hint: '4–6 tuổi · việc ngắn, hình ảnh, khen ngay' },
+  { value: '7-9', label: 'Tiểu học', hint: '7–9 tuổi · 1 việc tiếp theo + phần thưởng nhà' },
+  { value: '10-12', label: 'Trung học cơ sở', hint: '10–12 tuổi · tự chủ hơn, ít nhắc hơn' },
+  { value: '13+', label: 'Trung học phổ thông', hint: '13+ tuổi · thỏa thuận rõ, tôn trọng không gian' },
 ];
+
+/** Map nhãn DNA cũ → 4 bậc chuẩn (SPA fallback trước khi API hydrate lại). */
+export function canonicalSchoolStageLabelVi(label: string | null | undefined): string {
+  const raw = (label ?? '').trim();
+  if (!raw) return '';
+  const s = raw.toLowerCase();
+  if (s.includes('mầm non') || s.includes('mam non') || s.includes('chuẩn bị lớp')) return 'Mầm non';
+  if (s.includes('phổ thông') || s.includes('thpt') || s.includes('tuổi teen') || s.includes('teen'))
+    return 'Trung học phổ thông';
+  if (s.includes('cơ sở') || s.includes('thcs') || s.includes('tiền trung')) return 'Trung học cơ sở';
+  if (s.includes('tiểu học') || s.includes('đầu cấp') || s.includes('primary')) return 'Tiểu học';
+  return raw;
+}
 
 export const STRUGGLE_OPTIONS: Array<{ value: StruggleCode; label: string; icon: string }> = [
   { value: 'morning_forget', label: 'Hay quên việc buổi sáng', icon: '☀️' },
