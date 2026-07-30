@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { buildCheckoutPath } from '@/shared/api/payment.api';
 import type { FamilySubscription } from '@/shared/api/family-os.api';
 import {
@@ -52,6 +52,7 @@ export function PaywallSheet({
   forcePlanCode,
 }: Props) {
   const navigate = useNavigate();
+  const location = useLocation();
   if (!open) return null;
 
   const { planCode, targetTier } = resolveUpgrade(subscription, forcePlanCode);
@@ -89,7 +90,7 @@ export function PaywallSheet({
         subjectType: 'family',
         subjectId: familyId,
         planCode,
-        returnPath: '/who',
+        returnPath: `${location.pathname}${location.search}`,
       }),
     );
   };

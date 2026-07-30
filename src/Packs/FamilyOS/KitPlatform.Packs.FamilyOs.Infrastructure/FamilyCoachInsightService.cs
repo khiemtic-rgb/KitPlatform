@@ -11,17 +11,20 @@ internal sealed class FamilyCoachInsightService : IFamilyCoachInsightService
     private readonly FamilyGraphRepository _families;
     private readonly IFamilyDayFlowService _dayFlows;
     private readonly IFamilyCommercialService _commercial;
+    private readonly IFamilyBlueprintService _blueprint;
 
     public FamilyCoachInsightService(
         FamilyCoachInsightRepository repo,
         FamilyGraphRepository families,
         IFamilyDayFlowService dayFlows,
-        IFamilyCommercialService commercial)
+        IFamilyCommercialService commercial,
+        IFamilyBlueprintService blueprint)
     {
         _repo = repo;
         _families = families;
         _dayFlows = dayFlows;
         _commercial = commercial;
+        _blueprint = blueprint;
     }
 
     public async Task<FamilyCoachInsightDto> GetInsightAsync(
@@ -47,13 +50,69 @@ internal sealed class FamilyCoachInsightService : IFamilyCoachInsightService
         var history = await _repo.ListHistoryAsync(
             familyId, historyFrom, date, family.Timezone, cancellationToken);
 
-        return Compose(flow, history, date);
+        string? blueprintBecause = null;
+        var blueprintSparse = false;
+        try
+        {
+            var dna = await _blueprint.GetDnaCardAsync(familyId, cancellationToken);
+            blueprintSparse = !dna.HasBlueprint;
+            blueprintBecause = blueprintSparse ? null : BuildBlueprintBecause(dna);
+            // HasBlueprint but empty signals → still treat as sparse for playbook PB0020
+            if (!blueprintSparse && string.IsNullOrWhiteSpace(blueprintBecause)
+                && dna.ValuesLabelsVi.Count == 0
+                && dna.FocusLabelsVi.Count == 0
+                && string.IsNullOrWhiteSpace(dna.StageLabelVi))
+            {
+                blueprintSparse = true;
+            }
+        }
+        catch
+        {
+            blueprintSparse = true;
+        }
+
+        return Compose(flow, history, date, blueprintBecause, blueprintSparse);
+    }
+
+    /// <summary>Wave B — cite DNA values/focus/stage; never invent.</summary>
+    internal static string? BuildBlueprintBecause(FamilyDnaCardDto dna)
+    {
+        if (!dna.HasBlueprint) return null;
+
+        var values = dna.ValuesLabelsVi.Where(v => !string.IsNullOrWhiteSpace(v)).Take(2).ToList();
+        var focus = dna.FocusLabelsVi.Where(v => !string.IsNullOrWhiteSpace(v)).Take(2).ToList();
+
+        if (values.Count > 0 || focus.Count > 0)
+        {
+            var parts = new List<string>();
+            if (values.Count == 1) parts.Add($"chọn giá trị {values[0]}");
+            else if (values.Count > 1) parts.Add($"chọn {string.Join(" & ", values)}");
+            if (focus.Count == 1) parts.Add($"đang tập trung {focus[0]}");
+            else if (focus.Count > 1) parts.Add($"đang tập trung {string.Join(" & ", focus)}");
+            return $"Vì nhà bạn {string.Join(" và ", parts)}.";
+        }
+
+        if (!string.IsNullOrWhiteSpace(dna.StageLabelVi))
+            return $"Vì nhà bạn đang ở giai đoạn {dna.StageLabelVi.Trim()}.";
+
+        if (!string.IsNullOrWhiteSpace(dna.NextStepVi))
+            return $"Vì bước tiếp theo của nhà bạn: {dna.NextStepVi.Trim()}";
+
+        if (!string.IsNullOrWhiteSpace(dna.CalibrationLabelVi))
+            return $"Vì nhịp nhà bạn: {dna.CalibrationLabelVi.Trim()}.";
+
+        if (!string.IsNullOrWhiteSpace(dna.GrowthBalanceLabelVi))
+            return $"Vì nhịp nhà bạn: {dna.GrowthBalanceLabelVi.Trim()}.";
+
+        return null;
     }
 
     internal static FamilyCoachInsightDto Compose(
         DayFlowDto flow,
         IReadOnlyList<FamilyCoachInsightRepository.HistoryRow> history,
-        DateOnly date)
+        DateOnly date,
+        string? blueprintBecauseVi = null,
+        bool blueprintSparse = false)
     {
         var total = flow.TotalCommitments;
         var done = flow.DoneCount;
@@ -223,6 +282,24 @@ internal sealed class FamilyCoachInsightService : IFamilyCoachInsightService
             ctaLabel = "Xem hôm nay";
         }
 
+        // Wave B: attach Blueprint because onto proposal when present.
+        if (!string.IsNullOrWhiteSpace(blueprintBecauseVi) && !string.IsNullOrWhiteSpace(proposal)
+            && !proposal.Contains("Vì nhà bạn", StringComparison.Ordinal))
+        {
+            proposal = $"{proposal} {blueprintBecauseVi}";
+        }
+        else if (!string.IsNullOrWhiteSpace(blueprintBecauseVi) && string.IsNullOrWhiteSpace(proposal))
+        {
+            proposal = blueprintBecauseVi;
+            proposalCode ??= FamilyCoachProposalCodes.OpenToday;
+        }
+
+        var playbookId = FamilyPlaybookIds.Resolve(
+            proposalCode,
+            focusTitle,
+            patternForgotCount,
+            blueprintSparse);
+
         return new FamilyCoachInsightDto(
             date,
             headline,
@@ -242,7 +319,9 @@ internal sealed class FamilyCoachInsightService : IFamilyCoachInsightService
             open,
             total,
             patternForgotCount,
-            PatternWindowDays);
+            PatternWindowDays,
+            blueprintBecauseVi,
+            playbookId);
     }
 
     private static bool MatchesKey(CommitmentDto c, PatternAgg p) =>

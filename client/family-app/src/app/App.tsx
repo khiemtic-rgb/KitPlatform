@@ -7,6 +7,10 @@ import { TodayFlowPage } from '@/modules/flow/TodayFlowPage';
 import { OnboardingPage } from '@/modules/onboarding/OnboardingPage';
 import { CheckoutPage } from '@/modules/pay/CheckoutPage';
 import { FamilyAdminPage } from '@/modules/admin/FamilyAdminPage';
+import { FamilyMembersPage } from '@/modules/admin/FamilyMembersPage';
+import { FamilyRoutinePage } from '@/modules/admin/FamilyRoutinePage';
+import { FamilyInvitePage } from '@/modules/admin/FamilyInvitePage';
+import { FamilySettingsPage } from '@/modules/admin/FamilySettingsPage';
 
 function RequireParent({ children }: { children: ReactNode }) {
   const token = useSessionStore((s) => s.accessToken);
@@ -33,10 +37,12 @@ export function App() {
   const location = useLocation();
   const kidMode = member?.roleCode === 'child';
   const homeMode = location.pathname === '/who';
+  const unlockMode = location.pathname === '/unlock';
+  const adminMode = location.pathname.startsWith('/family-admin');
 
   return (
     <div
-      className={`app-shell${kidMode ? ' is-kid' : ''}${homeMode ? ' is-home' : ''}`}
+      className={`app-shell${kidMode ? ' is-kid' : ''}${homeMode ? ' is-home' : ''}${unlockMode ? ' is-unlock' : ''}${adminMode ? ' is-admin' : ''}`}
     >
       <Routes>
         <Route path="/unlock" element={<ParentUnlockPage />} />
@@ -71,6 +77,38 @@ export function App() {
           element={
             <RequireParent>
               <FamilyAdminPage />
+            </RequireParent>
+          }
+        />
+        <Route
+          path="/family-admin/members"
+          element={
+            <RequireParent>
+              <FamilyMembersPage />
+            </RequireParent>
+          }
+        />
+        <Route
+          path="/family-admin/routine"
+          element={
+            <RequireParent>
+              <FamilyRoutinePage />
+            </RequireParent>
+          }
+        />
+        <Route
+          path="/family-admin/invite"
+          element={
+            <RequireParent>
+              <FamilyInvitePage />
+            </RequireParent>
+          }
+        />
+        <Route
+          path="/family-admin/settings"
+          element={
+            <RequireParent>
+              <FamilySettingsPage />
             </RequireParent>
           }
         />

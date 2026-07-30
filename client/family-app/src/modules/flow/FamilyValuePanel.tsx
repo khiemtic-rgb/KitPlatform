@@ -4,6 +4,7 @@ import type {
   DayFlow,
   FamilyAiLetter,
   FamilyAiWinsDigest,
+  FamilyDnaCard,
   FamilyMemoryEntry,
   FamilyReplay,
   FamilySubscription,
@@ -36,8 +37,10 @@ import { getOnboardingProfile, GOAL_OPTIONS } from '@/shared/onboarding/onboardi
 import {
   buildParentingCoachFaqs,
   formatCoachShare,
+  type ParentingCoachScope,
 } from '@/shared/value/parenting-coach';
 import { resolveParentCoach } from '@/shared/value/resolve-parenting-coach';
+import { dnaCaptionForHealth } from '@/shared/value/blueprint-context';
 import { isCapabilityPaywallError } from '@/shared/billing/capability-error';
 
 type Props = {
@@ -46,13 +49,52 @@ type Props = {
   flow: DayFlow;
   glance: AccountabilityGlance | null;
   nudgeToday: number;
+  coachScope?: ParentingCoachScope;
   momentCount: number;
   onOpenPaywall?: (reasonVi?: string) => void;
   parentMembershipId?: string;
   eveningCheckin?: ParentSuccessCheckin | null;
   onEveningCheckinChange?: (row: ParentSuccessCheckin) => void;
+  /** Wave B — DNA card for Blueprint-first Coach / Health caption. */
+  dna?: FamilyDnaCard | null;
   /** Deep-link target: fv-3q | fv-rop | … */
   focusAnchorId?: string | null;
+  /** Màn đang mở — để header tab hiển thị tiêu đề + nút quay lại. */
+  view?: FvView;
+  onViewChange?: (view: FvView) => void;
+};
+
+/** Một màn một mục tiêu: hub gọn, chi tiết mở riêng. */
+export type FvView =
+  | 'hub'
+  | 'coach'
+  | 'q3'
+  | 'rop'
+  | 'weekly'
+  | 'letter'
+  | 'replay'
+  | 'timeline'
+  | 'recognition';
+
+const VIEW_BY_ANCHOR: Record<string, FvView> = {
+  'fv-3q': 'q3',
+  'fv-rop': 'rop',
+  'fv-ai-letter': 'letter',
+  'fv-replay': 'replay',
+  'fv-ai-wins': 'recognition',
+  'fv-parent-achv': 'recognition',
+};
+
+/** Tiêu đề header cho từng màn con — dùng chung với header tab Báo cáo. */
+export const FV_DETAIL_TITLES: Record<Exclude<FvView, 'hub'>, [string, string]> = {
+  coach: ['Famixa đồng hành', 'Coach cho nhịp nhà mình'],
+  q3: ['3Q tối', 'Ba câu nhanh — nhịp nhà hôm nay'],
+  rop: ['Growth Report · ROP', 'Tăng trưởng bố mẹ theo hành vi'],
+  weekly: ['Insight tuần này', 'Gương tuần — phản ánh, không chấm điểm'],
+  letter: ['Letter tháng', 'Thư Famixa gửi bố mẹ'],
+  replay: ['Family Replay', 'Kỷ niệm tháng dạng chữ'],
+  timeline: ['Timeline kỷ niệm', 'Nhật ký trưởng thành cả nhà'],
+  recognition: ['Wins & Ghi nhận', 'Khoảnh khắc đáng nhớ · ghi nhận bố mẹ'],
 };
 
 export function FamilyValuePanel({
@@ -61,12 +103,16 @@ export function FamilyValuePanel({
   flow,
   glance,
   nudgeToday,
+  coachScope,
   momentCount,
   onOpenPaywall,
   parentMembershipId,
   eveningCheckin,
   onEveningCheckinChange,
+  dna = null,
   focusAnchorId = null,
+  view: viewProp,
+  onViewChange,
 }: Props) {
   const [serverWeekly, setServerWeekly] = useState<FamilyWeeklyInsight | null>(null);
   const [rop, setRop] = useState<ParentSuccessRop | null>(null);
@@ -86,25 +132,28 @@ export function FamilyValuePanel({
   const [qQualityTime, setQQualityTime] = useState(false);
   const [checkinBusy, setCheckinBusy] = useState(false);
   const [checkinMsg, setCheckinMsg] = useState<string | null>(null);
+  const [viewLocal, setViewLocal] = useState<FvView>(
+    () => (focusAnchorId ? VIEW_BY_ANCHOR[focusAnchorId] : undefined) ?? 'hub',
+  );
+  const view = viewProp ?? viewLocal;
+  const setView = (next: FvView) => {
+    setViewLocal(next);
+    onViewChange?.(next);
+  };
 
   useEffect(() => {
     if (!focusAnchorId) return;
-    let tries = 0;
-    let timer = 0;
-    const run = () => {
-      const el = document.getElementById(focusAnchorId);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        el.classList.add('is-spotlight');
-        window.setTimeout(() => el.classList.remove('is-spotlight'), 2200);
-        return;
-      }
-      tries += 1;
-      if (tries < 12) timer = window.setTimeout(run, 80);
-    };
-    timer = window.setTimeout(run, 40);
-    return () => window.clearTimeout(timer);
-  }, [focusAnchorId, parentMembershipId, rop, ropBlocked]);
+    const mapped = VIEW_BY_ANCHOR[focusAnchorId];
+    if (!mapped) return;
+    setViewLocal(mapped);
+    onViewChange?.(mapped);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusAnchorId]);
+
+  useEffect(() => {
+    if (view === 'hub') return;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [view]);
 
   useEffect(() => {
     let cancelled = false;
@@ -312,15 +361,21 @@ export function FamilyValuePanel({
             flow,
             glance,
             nudgeToday,
-            focusChildName: getOnboardingProfile(familyId)?.childName,
+            focusChildName:
+              coachScope?.kind === 'child'
+                ? coachScope.childName
+                : getOnboardingProfile(familyId)?.childName,
+            scope: coachScope,
             coachInsight: null,
             familyTwin: null,
             behaviorCoach: null,
+            dna,
           })
         : null,
-    [familyId, flow, glance, nudgeToday, canCoach],
+    [familyId, flow, glance, nudgeToday, canCoach, dna, coachScope],
   );
   const coach = resolvedCoach?.primary ?? null;
+  const healthDnaCaption = useMemo(() => dnaCaptionForHealth(dna), [dna]);
 
   const faqs = useMemo(
     () =>
@@ -376,7 +431,7 @@ export function FamilyValuePanel({
       .join('');
     w.document.write(`<!doctype html><html><head><title>ROP Famixa</title>
       <style>
-        body{font-family:Georgia,serif;padding:32px;color:#14352c;line-height:1.45}
+        body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:32px;color:#14352c;line-height:1.45}
         h1{font-size:1.6rem;margin:0 0 8px}
         .sub{color:#5a7268;margin-bottom:24px}
         table{width:100%;border-collapse:collapse;margin:16px 0}
@@ -398,19 +453,257 @@ export function FamilyValuePanel({
     window.setTimeout(() => w.print(), 300);
   };
 
+  const weeklyLine = serverWeekly
+    ? (serverWeekly.mirror.reflections[0] ??
+      serverWeekly.highlights[0] ??
+      `${serverWeekly.dataDays}/${serverWeekly.days} ngày có dữ liệu`)
+    : `Tự giác ${weeklyLocal.autonomyDeltaPct >= 0 ? '+' : ''}${weeklyLocal.autonomyDeltaPct}% · ${weeklyLocal.nudgeThisWeek} lần nhắc tuần này`;
+
+  type HubRow = {
+    view: FvView;
+    icon: string;
+    title: string;
+    hint: string;
+    locked: boolean;
+  };
+
+  const hubRows: HubRow[] = [];
+  if (report) {
+    hubRows.push({
+      view: 'rop',
+      icon: '📘',
+      title: 'Growth Report · ROP',
+      hint:
+        report.growthScore != null
+          ? `Growth ${report.growthScore}/100 · ${report.daySpan} ngày`
+          : `${report.daySpan} ngày · tăng trưởng bố mẹ`,
+      locked: false,
+    });
+  } else if (ropBlocked || !canGrowth) {
+    hubRows.push({
+      view: 'rop',
+      icon: '📘',
+      title: 'Growth Report · ROP',
+      hint: 'Đo bớt nhắc / con chủ động hơn',
+      locked: true,
+    });
+  }
+  if (aiLetter) {
+    hubRows.push({
+      view: 'letter',
+      icon: '💌',
+      title: `Letter · ${aiLetter.monthLabelVi}`,
+      hint: 'Thư tháng cho bố mẹ',
+      locked: false,
+    });
+  } else if (letterBlocked) {
+    hubRows.push({
+      view: 'letter',
+      icon: '💌',
+      title: 'Letter tháng',
+      hint: 'Thư tháng cho bố mẹ',
+      locked: true,
+    });
+  }
+  if (replay) {
+    hubRows.push({
+      view: 'replay',
+      icon: '🎬',
+      title: 'Family Replay',
+      hint: `${replay.scenes.length} cảnh kỷ niệm tháng`,
+      locked: false,
+    });
+  } else if (replayBlocked) {
+    hubRows.push({
+      view: 'replay',
+      icon: '🎬',
+      title: 'Family Replay',
+      hint: 'Replay chữ kỷ niệm tháng',
+      locked: true,
+    });
+  }
+  if (journey && journey.length > 0) {
+    hubRows.push({
+      view: 'timeline',
+      icon: '🗓️',
+      title: 'Timeline kỷ niệm',
+      hint: `${journey.length} mốc trưởng thành`,
+      locked: false,
+    });
+  } else if (timelineBlocked) {
+    hubRows.push({
+      view: 'timeline',
+      icon: '🗓️',
+      title: 'Timeline kỷ niệm',
+      hint: 'Nhật ký trưởng thành cả nhà',
+      locked: true,
+    });
+  }
+  if (winsDigest || achievements) {
+    hubRows.push({
+      view: 'recognition',
+      icon: '🌟',
+      title: 'Wins & Ghi nhận bố mẹ',
+      hint: winsDigest?.headlineVi || 'Ghi nhận nhẹ · không xếp hạng',
+      locked: false,
+    });
+  }
+
   return (
-    <div className="fv-stack">
-      {focusAnchorId === 'fv-3q' || focusAnchorId === 'fv-rop' ? (
-        <p className="fv-focus-banner" role="status">
-          {focusAnchorId === 'fv-3q'
-            ? 'Đang mở · 3Q tối — phản hồi nhanh nhịp nhà'
-            : 'Đang mở · Family Report (ROP) — tăng trưởng bố mẹ'}
-        </p>
+    <div className={`fv-stack${view === 'hub' ? ' is-hub' : ''}`}>
+      {view === 'hub' ? (
+        <>
+          <section className="fv-hero" id="fv-health">
+            <p className="fv-eyebrow">
+              KPI cốt lõi{health.fromServer ? ' · đo từ dữ liệu thật' : ''}
+            </p>
+            <div className="fv-hero-main">
+              <div className="fv-hero-score">
+                <strong>{health.score}</strong>
+                <span>/100</span>
+              </div>
+              <div className="fv-hero-copy">
+                <h2>Family Health Score</h2>
+                <p className="fv-hero-label">{health.label}</p>
+                {health.deltaVsYesterday != null ? (
+                  <p className="fv-delta">
+                    {health.deltaVsYesterday >= 0 ? '↑' : '↓'}{' '}
+                    {Math.abs(health.deltaVsYesterday)} so với hôm qua
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            <div className="fv-hero-track" aria-hidden>
+              <b style={{ width: `${health.score}%` }} />
+            </div>
+            <p className="fv-promise">{health.promiseLine}</p>
+            {healthDnaCaption ? (
+              <p className="fv-dna-because muted">{healthDnaCaption}</p>
+            ) : null}
+            <details className="fv-hero-detail">
+              <summary>Chi tiết chỉ số</summary>
+              <div className="fv-bars">
+                {(
+                  [
+                    ['Hoàn thành', health.breakdown.completion],
+                    ['Ít phải nhắc', health.breakdown.nudgeCalm],
+                    ['Streak', health.breakdown.streak],
+                    ['Tự giác đúng giờ', health.breakdown.autonomy],
+                    ...(health.breakdown.parentProgress != null
+                      ? ([['Bố mẹ cùng làm', health.breakdown.parentProgress]] as const)
+                      : []),
+                  ] as ReadonlyArray<readonly [string, number]>
+                ).map(([label, value]) => (
+                  <div key={label} className="fv-bar-row">
+                    <span>{label}</span>
+                    <i>
+                      <b style={{ width: `${value}%` }} />
+                    </i>
+                    <em>{value}</em>
+                  </div>
+                ))}
+              </div>
+            </details>
+          </section>
+
+          {coach && resolvedCoach ? (
+            <section className="fv-card fv-hub-ai">
+              <p className="fv-eyebrow">🤖 Hôm nay Famixa đề xuất</p>
+              <h2 className="fv-hub-ai-title">{coach.doThis}</h2>
+              <p className="fv-promise">{coach.insight}</p>
+              <div className="fv-actions">
+                <button type="button" className="pill" onClick={() => setView('coach')}>
+                  Xem cách làm
+                </button>
+              </div>
+            </section>
+          ) : (
+            <section className="fv-card fv-hub-ai fv-teaser">
+              <p className="fv-eyebrow">🤖 Famixa đồng hành</p>
+              <h2 className="fv-hub-ai-title">Coach giúp bớt nhắc, nhẹ tay hơn</h2>
+              <div className="fv-actions">
+                <button
+                  type="button"
+                  className="pill"
+                  onClick={() =>
+                    openUpgrade(
+                      subscription?.upgradeHintVi ||
+                        'Nâng Family Peace Plan để mở AI Parenting Coach.',
+                    )
+                  }
+                >
+                  Xem Peace Plan · 199.000đ
+                </button>
+              </div>
+            </section>
+          )}
+
+          <ul className="fv-hub-list">
+            <li>
+              <button type="button" className="fv-hub-row" onClick={() => setView('weekly')}>
+                <span className="fv-hub-row-ico" aria-hidden>
+                  💡
+                </span>
+                <span className="fv-hub-row-body">
+                  <strong>Insight tuần này</strong>
+                  <em>{weeklyLine}</em>
+                </span>
+                <span className="fv-hub-row-go" aria-hidden>
+                  ›
+                </span>
+              </button>
+            </li>
+            {parentMembershipId ? (
+              <li>
+                <button type="button" className="fv-hub-row" onClick={() => setView('q3')}>
+                  <span className="fv-hub-row-ico" aria-hidden>
+                    🎯
+                  </span>
+                  <span className="fv-hub-row-body">
+                    <strong>3Q tối</strong>
+                    <em>
+                      {eveningCheckin
+                        ? eveningCheckin.reflectionVi || 'Đã trả lời hôm nay'
+                        : 'Chưa trả lời — mất 15 giây'}
+                    </em>
+                  </span>
+                  <span className="fv-hub-row-go" aria-hidden>
+                    ›
+                  </span>
+                </button>
+              </li>
+            ) : null}
+            {hubRows.map((row) => (
+              <li key={row.view}>
+                <button
+                  type="button"
+                  className={`fv-hub-row${row.locked ? ' is-locked' : ''}`}
+                  onClick={() => setView(row.view)}
+                >
+                  <span className="fv-hub-row-ico" aria-hidden>
+                    {row.icon}
+                  </span>
+                  <span className="fv-hub-row-body">
+                    <strong>{row.title}</strong>
+                    <em>{row.hint}</em>
+                  </span>
+                  {row.locked ? (
+                    <span className="fv-hub-row-lock">Peace Plan</span>
+                  ) : (
+                    <span className="fv-hub-row-go" aria-hidden>
+                      ›
+                    </span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
       ) : null}
-      {onboard && !onboard.skipped ? (
+      {view === 'hub' && onboard && !onboard.skipped ? (
         <section className="fv-card" style={{ background: 'linear-gradient(145deg,#eef8f2,#fff)' }}>
           <p className="fv-eyebrow">Mục tiêu Onboarding 30 ngày</p>
-          <h2 style={{ margin: 0, fontFamily: 'Fraunces, Georgia, serif', fontSize: '1.15rem' }}>
+          <h2 style={{ margin: 0, fontSize: '1.1rem' }}>
             {onboard.childName}
             {goalLabel ? ` · ${goalLabel}` : ''}
           </h2>
@@ -420,12 +713,8 @@ export function FamilyValuePanel({
         </section>
       ) : null}
 
-      {coach && resolvedCoach ? (
+      {view === 'coach' && coach && resolvedCoach ? (
         <section className="fv-card fv-coach">
-          <header className="fv-head">
-            <h2>Famixa đồng hành</h2>
-            <p>{resolvedCoach.sourceLabelVi}</p>
-          </header>
           <p className="fv-label">{coach.childProfile}</p>
           <p className="fv-promise">{coach.insight}</p>
           <p className="fv-ai">
@@ -452,90 +741,11 @@ export function FamilyValuePanel({
             </button>
           </div>
         </section>
-      ) : (
-        <section className="fv-card fv-coach fv-teaser">
-          <header className="fv-head">
-            <h2>Famixa đồng hành</h2>
-            <p>Có trong Family Peace Plan</p>
-          </header>
-          <p className="fv-promise">
-            Coach giúp bớt nhắc và nhẹ tay hơn — không mở trên Free/Plus.
-          </p>
-          <div className="fv-actions">
-            <button
-              type="button"
-              className="pill"
-              onClick={() =>
-                openUpgrade(
-                  subscription?.upgradeHintVi ||
-                    'Nâng Family Peace Plan để mở AI Parenting Coach.',
-                )
-              }
-            >
-              Xem Peace Plan · 199.000đ
-            </button>
-          </div>
-        </section>
-      )}
+      ) : null}
 
-      <section className="fv-card fv-health">
-        <p className="fv-eyebrow">
-          KPI cốt lõi · lý do trả phí
-          {health.fromServer ? ' · đo từ dữ liệu thật' : ''}
-        </p>
-        <div className="fv-health-row">
-          <div
-            className="fv-ring"
-            style={{ background: `conic-gradient(#2f9e7b ${health.score}%, #d7ebe3 0)` }}
-          >
-            <div className="fv-ring-inner">
-              <strong>{health.score}</strong>
-              <span>/100</span>
-            </div>
-          </div>
-          <div>
-            <h2>Family Health Score</h2>
-            <p className="fv-label">{health.label}</p>
-            {health.deltaVsYesterday != null ? (
-              <p className="fv-delta">
-                {health.deltaVsYesterday >= 0 ? '↑' : '↓'} {Math.abs(health.deltaVsYesterday)} so
-                với hôm qua
-              </p>
-            ) : null}
-            <p className="fv-promise">{health.promiseLine}</p>
-          </div>
-        </div>
-        <div className="fv-bars">
-          {(
-            [
-              ['Hoàn thành', health.breakdown.completion],
-              ['Ít phải nhắc', health.breakdown.nudgeCalm],
-              ['Streak', health.breakdown.streak],
-              ['Tự giác đúng giờ', health.breakdown.autonomy],
-              ...(health.breakdown.parentProgress != null
-                ? ([['Bố mẹ cùng làm', health.breakdown.parentProgress]] as const)
-                : []),
-            ] as ReadonlyArray<readonly [string, number]>
-          ).map(([label, value]) => (
-            <div key={label} className="fv-bar-row">
-              <span>{label}</span>
-              <i>
-                <b style={{ width: `${value}%` }} />
-              </i>
-              <em>{value}</em>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {parentMembershipId ? (
-        <section
-          className={`fv-card${focusAnchorId === 'fv-3q' ? ' is-spotlight' : ''}`}
-          id="fv-3q"
-          style={{ order: focusAnchorId === 'fv-3q' ? -2 : undefined }}
-        >
+      {view === 'q3' && parentMembershipId ? (
+        <section className="fv-card" id="fv-3q">
           <header className="fv-head">
-            <p className="fv-eyebrow">Famixa · 3 câu tối</p>
             <h2>
               {eveningCheckin ? 'Đã trả lời hôm nay' : 'Hôm nay nhà mình thế nào?'}
             </h2>
@@ -582,28 +792,18 @@ export function FamilyValuePanel({
             </button>
           </div>
         </section>
-      ) : focusAnchorId === 'fv-3q' ? (
-        <section
-          className="fv-card is-spotlight"
-          id="fv-3q"
-          style={{ order: -2 }}
-        >
+      ) : view === 'q3' ? (
+        <section className="fv-card" id="fv-3q">
           <header className="fv-head">
-            <p className="fv-eyebrow">Famixa · 3 câu tối</p>
             <h2>Cần hồ sơ bố/mẹ để trả lời 3Q</h2>
             <p>Chọn thành viên bố/mẹ rồi mở lại 3Q tối nhé.</p>
           </header>
         </section>
       ) : null}
 
-      {report ? (
-        <section
-          className={`fv-card${focusAnchorId === 'fv-rop' ? ' is-spotlight' : ''}`}
-          id="fv-rop"
-          style={{ order: focusAnchorId === 'fv-rop' ? -2 : undefined }}
-        >
+      {view === 'rop' && report ? (
+        <section className="fv-card" id="fv-rop">
           <header className="fv-head">
-            <h2>ROP · Return on Parenting</h2>
             <p>Growth Report từ behavior_event — không phải số sao / routine</p>
           </header>
           <div className="fv-actions" style={{ marginBottom: 12 }}>
@@ -704,14 +904,9 @@ export function FamilyValuePanel({
             </button>
           </div>
         </section>
-      ) : ropBlocked || !canGrowth ? (
-        <section
-          className={`fv-card fv-teaser${focusAnchorId === 'fv-rop' ? ' is-spotlight' : ''}`}
-          id="fv-rop"
-          style={{ order: focusAnchorId === 'fv-rop' ? -2 : undefined }}
-        >
+      ) : view === 'rop' && (ropBlocked || !canGrowth) ? (
+        <section className="fv-card fv-teaser" id="fv-rop">
           <header className="fv-head">
-            <h2>ROP · Return on Parenting</h2>
             <p>Có trong Family Peace Plan</p>
           </header>
           <p className="fv-promise">
@@ -734,9 +929,9 @@ export function FamilyValuePanel({
         </section>
       ) : null}
 
+      {view === 'weekly' ? (
       <section className="fv-card fv-weekly">
         <header className="fv-head">
-          <h2>{serverWeekly ? 'Gương tuần' : 'AI Weekly Review'}</h2>
           <p>
             {serverWeekly
               ? `${serverWeekly.periodStart} → ${serverWeekly.periodEnd} · ${serverWeekly.dataDays}/${serverWeekly.days} ngày có dữ liệu · phản ánh, không chấm điểm`
@@ -885,8 +1080,9 @@ export function FamilyValuePanel({
           </>
         )}
       </section>
+      ) : null}
 
-      {winsDigest ? (
+      {view === 'recognition' && winsDigest ? (
         <section className="fv-card" id="fv-ai-wins">
           <header className="fv-head">
             <h2>Famixa · Wins</h2>
@@ -911,7 +1107,7 @@ export function FamilyValuePanel({
         </section>
       ) : null}
 
-      {aiLetter ? (
+      {view === 'letter' && aiLetter ? (
         <section className="fv-card" id="fv-ai-letter">
           <header className="fv-head">
             <h2>Famixa · Letter · {aiLetter.monthLabelVi}</h2>
@@ -959,7 +1155,7 @@ export function FamilyValuePanel({
             </button>
           </div>
         </section>
-      ) : letterBlocked ? (
+      ) : view === 'letter' && letterBlocked ? (
         <section className="fv-card fv-teaser" id="fv-ai-letter">
           <header className="fv-head">
             <h2>Famixa · Letter</h2>
@@ -978,7 +1174,7 @@ export function FamilyValuePanel({
         </section>
       ) : null}
 
-      {replay ? (
+      {view === 'replay' && replay ? (
         <section className="fv-card" id="fv-replay">
           <header className="fv-head">
             <h2>{replay.titleVi}</h2>
@@ -1019,7 +1215,7 @@ export function FamilyValuePanel({
             </button>
           </div>
         </section>
-      ) : replayBlocked ? (
+      ) : view === 'replay' && replayBlocked ? (
         <section className="fv-card fv-teaser" id="fv-replay">
           <header className="fv-head">
             <h2>Family Replay</h2>
@@ -1038,7 +1234,7 @@ export function FamilyValuePanel({
         </section>
       ) : null}
 
-      {achievements ? (
+      {view === 'recognition' && achievements ? (
         <section className="fv-card" id="fv-parent-achv">
           <header className="fv-head">
             <h2>Famixa · Ghi nhận bố mẹ</h2>
@@ -1063,8 +1259,8 @@ export function FamilyValuePanel({
         </section>
       ) : null}
 
-      {journey && journey.length > 0 ? (
-        <section className="fv-card">
+      {view === 'timeline' && journey && journey.length > 0 ? (
+        <section className="fv-card" id="fv-timeline">
           <header className="fv-head">
             <h2>Family Timeline</h2>
             <p>
@@ -1087,8 +1283,8 @@ export function FamilyValuePanel({
             ))}
           </ol>
         </section>
-      ) : timelineBlocked ? (
-        <section className="fv-card fv-teaser">
+      ) : view === 'timeline' && timelineBlocked ? (
+        <section className="fv-card fv-teaser" id="fv-timeline">
           <header className="fv-head">
             <h2>Family Timeline</h2>
             <p>Có trong Family Growth Plan (Plus)</p>

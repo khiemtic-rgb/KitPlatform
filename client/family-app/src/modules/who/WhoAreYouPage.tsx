@@ -14,7 +14,6 @@ import {
   type FamilySubscription,
   type TeamUnlock,
 } from '@/shared/api/family-os.api';
-import { buildCheckoutPath } from '@/shared/api/payment.api';
 import { useSessionStore } from '@/shared/auth/session.store';
 import { isOnboardingDone } from '@/shared/onboarding/onboarding';
 import { hydrateFamilyValueState } from '@/shared/value/value-sync';
@@ -276,19 +275,11 @@ export function WhoAreYouPage() {
   };
 
   const goCheckout = () => {
-    if (!familyId) return;
-    navigate(
-      buildCheckoutPath({
-        productCode: 'family_os',
-        subjectType: 'family',
-        subjectId: familyId,
-        planCode: 'family_pro_month',
-        returnPath: '/who',
-      }),
-    );
+    navigate('/family-admin/settings#billing');
   };
 
   const goAdmin = () => navigate('/family-admin');
+  const goSettings = () => navigate('/family-admin/settings');
 
   const showInviteError = (msg: string) => {
     setInviteErrorToast(msg);
@@ -667,11 +658,21 @@ export function WhoAreYouPage() {
           >
             <h3>Tuỳ chọn gia đình</h3>
             <p className="muted">
-              Quản trị trên điện thoại — thành viên, việc hôm nay, chế độ gia đình.
+              Tài khoản, thông báo, gia hạn và quản trị nhà trên một chỗ.
             </p>
             <button
               type="button"
               className="btn btn-primary"
+              onClick={() => {
+                setMoreOpen(false);
+                goSettings();
+              }}
+            >
+              Tài khoản / Cài đặt
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost"
               onClick={() => {
                 setMoreOpen(false);
                 goAdmin();
@@ -687,7 +688,7 @@ export function WhoAreYouPage() {
                 goCheckout();
               }}
             >
-              Gói & thanh toán
+              Gói &amp; gia hạn
             </button>
             <button
               type="button"

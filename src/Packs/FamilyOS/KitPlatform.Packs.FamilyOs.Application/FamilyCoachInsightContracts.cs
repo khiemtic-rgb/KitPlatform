@@ -22,7 +22,11 @@ public sealed record FamilyCoachInsightDto(
     int OpenCount,
     int TotalCount,
     int PatternForgotCount,
-    int PatternWindowDays);
+    int PatternWindowDays,
+    /// <summary>Wave B — "Vì nhà bạn…" from Blueprint DNA when present.</summary>
+    string? BlueprintBecauseVi = null,
+    /// <summary>Wave B — stable playbook id (PB0001…).</summary>
+    string? PlaybookId = null);
 
 public static class FamilyCoachProposalCodes
 {

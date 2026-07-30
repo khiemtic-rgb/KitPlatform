@@ -1,9 +1,17 @@
 import type { ParentPulse } from '@/shared/value/parent-pulse';
 import type { ParentCoachTip } from '@/shared/value/resolve-parenting-coach';
+import type { FamilyDnaCard } from '@/shared/api/family-os.api';
+import {
+  becauseFromDna,
+  isBlueprintSparse,
+  sparseDnaCta,
+  withBlueprintBecause,
+} from '@/shared/value/blueprint-context';
+import { resolvePlaybookId } from '@/shared/value/family-playbook-ids';
 
 export type HomeBriefPeriod = 'morning' | 'evening';
 
-export type HomeBriefActionKind = 'attention' | 'coach' | 'evening_checkin';
+export type HomeBriefActionKind = 'attention' | 'coach' | 'evening_checkin' | 'dna_setup';
 
 export type HomeBriefAttentionKind = 'awaiting' | 'overdue' | 'consequence';
 
@@ -15,6 +23,8 @@ export type HomeBriefAction = {
   /** When kind=attention — drive CTA behavior. */
   attentionKind?: HomeBriefAttentionKind;
   attentionId?: string;
+  /** Wave B playbook id when known. */
+  playbookId?: string;
 };
 
 export type HomeBrief = {
@@ -44,6 +54,7 @@ function localHour(localTime?: string | null, fallback = new Date()): number {
 
 /**
  * P0.5 Home Brief — morning: Attention first; evening: 3Q / khoảnh khắc trước việc sáng còn mở.
+ * Wave B: annotate reason/bullets from Blueprint DNA when present; sparse → PB0020 CTA.
  */
 export function buildHomeBrief(input: {
   pulse: ParentPulse;
@@ -55,11 +66,15 @@ export function buildHomeBrief(input: {
   eveningCheckinDone?: boolean;
   /** Today memory win line, e.g. "Lần đầu: tự học". */
   memoryWinVi?: string | null;
+  /** Wave B — DNA card. */
+  dna?: FamilyDnaCard | null;
 }): HomeBrief {
   const hour = localHour(input.localTime);
   const period: HomeBriefPeriod = hour >= 17 ? 'evening' : 'morning';
   const { pulse, coach } = input;
   const overdueCount = input.overdueCount ?? 0;
+  const sparse = isBlueprintSparse(input.dna);
+  const sparseCta = sparse ? sparseDnaCta() : null;
 
   let bullets = [pulse.nudgeLineVi, pulse.autonomyLineVi, pulse.peaceLineVi]
     .map((b) => b.trim())
@@ -76,7 +91,6 @@ export function buildHomeBrief(input: {
   let primaryAction: HomeBriefAction;
 
   if (period === 'evening' && !input.eveningCheckinDone) {
-    // Evening priority: 3Q trước việc sáng còn mở.
     if (overdueCount > 0) {
       moodLineVi =
         overdueCount === 1
@@ -97,6 +111,7 @@ export function buildHomeBrief(input: {
       titleVi: 'Khoảnh khắc',
       doThisVi: 'Xem / lưu khoảnh khắc gia đình',
       reasonVi: win,
+      playbookId: coach.playbookId,
     };
   } else if (input.attentionCount > 0 && input.topAttention) {
     const a = input.topAttention;
@@ -118,7 +133,20 @@ export function buildHomeBrief(input: {
       doThisVi: a.titleVi,
       reasonVi:
         a.detailVi ||
-        'Famixa xếp việc nóng lên trước tip Coach — xong rồi Brief sẽ gợi ý nhẹ tay hơn.',
+        'Việc này đang gấp hơn gợi ý thường ngày — xong việc này thì hôm nay sẽ nhẹ hẳn.',
+      playbookId:
+        a.kind === 'awaiting'
+          ? 'PB0007'
+          : resolvePlaybookId({ focusTitle: a.titleVi }) || undefined,
+    };
+  } else if (sparseCta) {
+    moodLineVi = sparseCta.moodLineVi;
+    primaryAction = {
+      kind: 'dna_setup',
+      titleVi: sparseCta.titleVi,
+      doThisVi: sparseCta.doThisVi,
+      reasonVi: sparseCta.reasonVi,
+      playbookId: sparseCta.playbookId,
     };
   } else {
     primaryAction = {
@@ -129,6 +157,7 @@ export function buildHomeBrief(input: {
           : coach.titleVi || 'Gợi ý tối',
       reasonVi: coach.insight,
       doThisVi: coach.doThis,
+      playbookId: coach.playbookId,
     };
   }
 
@@ -147,6 +176,21 @@ export function buildHomeBrief(input: {
   ) {
     eveningCheckinHintVi =
       'Tối nay: 3 câu phản hồi nhanh — giúp Famixa học nhịp nhà.';
+  }
+
+  // Wave B: Blueprint-first — reason + optional because bullet (never invent when sparse).
+  const { becauseVi } = becauseFromDna(input.dna);
+  if (!sparse) {
+    primaryAction = {
+      ...primaryAction,
+      reasonVi: withBlueprintBecause(primaryAction.reasonVi, input.dna),
+    };
+    if (becauseVi && !bullets.some((b) => b.includes('Vì nhà bạn'))) {
+      bullets = [becauseVi, ...bullets].slice(0, 3);
+    }
+  } else if (sparseCta && primaryAction.kind !== 'dna_setup') {
+    // Hot path (attention/3Q) still shows sparse hint as bullet — not fake because.
+    bullets = [sparseCta.reasonVi, ...bullets].slice(0, 3);
   }
 
   return {

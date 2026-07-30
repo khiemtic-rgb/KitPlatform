@@ -61,17 +61,15 @@ import {
 } from '@/shared/nudge/nudge-stats';
 import { QuickNudgeButton } from '@/shared/ui/QuickNudgeButton';
 import { ScreenBoundaryPanel } from '@/shared/ui/ScreenBoundaryPanel';
-import { ResetParentPinPanel } from '@/shared/ui/ResetParentPinPanel';
-import { isScreenBoundaryCode } from '@/shared/screen/screenBoundary';
 import {
   avatarEmoji,
   inferGenderFromName,
 } from '@/shared/ui/avatarGender';
 import { withEvidenceAuth } from '@/shared/upload/evidence-url';
-import { clearOnboardingProfile } from '@/shared/onboarding/onboarding';
 import { buildParentPulse } from '@/shared/value/parent-pulse';
 import { resolveParentCoach } from '@/shared/value/resolve-parenting-coach';
 import { buildHomeBrief } from '@/shared/value/home-brief';
+import { becauseFromDna } from '@/shared/value/blueprint-context';
 import {
   IconBell,
   IconDiary,
@@ -89,10 +87,13 @@ import {
   buildHomeFamilyFeed,
   pickMemoryWinVi,
 } from '@/shared/value/home-family-feed';
-import { FamilyValuePanel } from '@/modules/flow/FamilyValuePanel';
+import {
+  FamilyValuePanel,
+  FV_DETAIL_TITLES,
+  type FvView,
+} from '@/modules/flow/FamilyValuePanel';
 import { BillingBanner } from '@/shared/ui/BillingBanner';
 import { PaywallSheet } from '@/shared/ui/PaywallSheet';
-import { buildCheckoutPath } from '@/shared/api/payment.api';
 import {
   getApiErrorMessage,
   isCapabilityPaywallError,
@@ -104,7 +105,11 @@ import {
   type FamilyMemory,
 } from '@/shared/flow/family-memories';
 import {
+  diaryDaySummaryLine,
+  diaryTaskNote,
+  familyProgressLine,
   parentRoleFromName,
+  parentSupportLabel,
   warmTaskSupportNote,
   warmTaskTip,
   voicePick,
@@ -340,36 +345,6 @@ function diaryTag(title: string): { label: string; tone: string } {
   return { label: 'Nhiệm vụ', tone: 'lilac' };
 }
 
-function diaryNote(title: string, childShort: string, done: boolean): string {
-  const t = title.toLowerCase();
-  if (t.includes('đánh răng')) {
-    return done
-      ? `${childShort} đã tự đánh răng mà không cần mẹ nhắc!`
-      : `${childShort} cần hoàn thành đánh răng`;
-  }
-  if (t.includes('đọc') || t.includes('sách')) {
-    return done
-      ? `${childShort} đọc sách rất chăm chỉ hôm nay`
-      : `Thời gian đọc sách của ${childShort}`;
-  }
-  if (t.includes('tưới') || t.includes('cây')) {
-    return done
-      ? `${childShort} đã tưới cây giúp mẹ rất tốt`
-      : `${childShort} sẽ tưới cây giúp mẹ`;
-  }
-  if (t.includes('ngủ')) {
-    return done
-      ? `${childShort} đi ngủ đúng giờ — giấc ngủ ngon!`
-      : `${childShort} sắp đến giờ đi ngủ`;
-  }
-  if (t.includes('gia đình') || t.includes('cùng')) {
-    return `Khoảnh khắc ấm áp bên gia đình`;
-  }
-  return done
-    ? `${childShort} đã hoàn thành «${title}» rất tốt!`
-    : `${childShort} đang làm «${title}»`;
-}
-
 function formatWindow(start?: string, end?: string): string | null {
   if (!start && !end) return null;
   const clean = (value?: string) => (value ? value.slice(0, 5) : '');
@@ -476,12 +451,6 @@ type Props = {
   glance: AccountabilityGlance | null;
   /** Children in the family — used for focus dropdown on parent Home. */
   children?: Array<{ id: string; displayName: string }>;
-  parentPushSubscribed?: boolean;
-  onEnableParentPush?: () => void;
-  offerLocalReminders?: boolean;
-  onEnableLocalReminders?: () => void;
-  inAppChimeEnabled?: boolean;
-  onToggleInAppChime?: () => void;
   onMarkDone: (item: DayFlowCommitment) => void | Promise<void>;
   onReflect: (item: DayFlowCommitment, reason: SkipReasonCode) => void;
   onReopen: (item: DayFlowCommitment) => void;
@@ -519,12 +488,6 @@ export function ParentBoardView({
   consequenceEvents,
   glance,
   children: childrenProp = [],
-  parentPushSubscribed = false,
-  onEnableParentPush,
-  offerLocalReminders = false,
-  onEnableLocalReminders,
-  inAppChimeEnabled = true,
-  onToggleInAppChime,
   onMarkDone,
   onReflect: _onReflect,
   onReopen: _onReopen,
@@ -559,9 +522,9 @@ export function ParentBoardView({
     return 'home';
   });
   const [valueFocus, setValueFocus] = useState<string | null>(null);
+  const [valueView, setValueView] = useState<FvView>('hub');
   const [verifiedTick, setVerifiedTick] = useState(0);
   const [nudgeTick, setNudgeTick] = useState(0);
-  const [moreOpen, setMoreOpen] = useState(false);
   const [childFocus, setChildFocus] = useState<string>('');
   const [childMenuOpen, setChildMenuOpen] = useState(false);
   const [teamUnlocks, setTeamUnlocks] = useState<TeamUnlock[]>([]);
@@ -934,6 +897,17 @@ export function ParentBoardView({
     effectiveChildFocus === 'all'
       ? null
       : childOptions.find((c) => c.key === effectiveChildFocus) ?? null;
+  const coachScope = useMemo(
+    () =>
+      effectiveChildFocus === 'all'
+        ? ({ kind: 'family', labelVi: 'Cả nhà' } as const)
+        : ({
+            kind: 'child',
+            labelVi: selectedChild?.name ?? 'Con',
+            childName: selectedChild?.name ?? 'Con',
+          } as const),
+    [effectiveChildFocus, selectedChild?.name],
+  );
   const parentAvatar =
     greetName(viewerName) === 'mẹ'
       ? '👩'
@@ -943,13 +917,6 @@ export function ParentBoardView({
 
   const pendingEvents = useMemo(
     () => consequenceEvents.filter((e) => e.status === 'pending_confirm'),
-    [consequenceEvents],
-  );
-  const appliedScreen = useMemo(
-    () =>
-      consequenceEvents.filter(
-        (e) => e.status === 'applied' && isScreenBoundaryCode(e.consequenceCode),
-      ),
     [consequenceEvents],
   );
 
@@ -1036,9 +1003,11 @@ export function ParentBoardView({
         glance,
         nudgeToday,
         focusChildName: selectedChild?.name ?? null,
+        scope: coachScope,
         coachInsight,
         familyTwin,
         behaviorCoach,
+        dna: dnaCard,
       }),
     [
       familyId,
@@ -1046,10 +1015,12 @@ export function ParentBoardView({
       scopedCommitments,
       glance,
       nudgeToday,
+      coachScope,
       selectedChild?.name,
       coachInsight,
       familyTwin,
       behaviorCoach,
+      dnaCard,
     ],
   );
 
@@ -1124,6 +1095,7 @@ export function ParentBoardView({
       localTime: flow.localTime,
       eveningCheckinDone: Boolean(eveningCheckin),
       memoryWinVi,
+      dna: dnaCard,
     });
   }, [
     parentPulse,
@@ -1134,6 +1106,7 @@ export function ParentBoardView({
     selectedChild?.name,
     focusChild?.name,
     memoryWinVi,
+    dnaCard,
   ]);
 
   const homeAttention = useMemo(() => {
@@ -1212,18 +1185,6 @@ export function ParentBoardView({
     return Math.max(0, Math.ceil((t - Date.now()) / (24 * 60 * 60 * 1000)));
   }, [subscription]);
 
-  const goPeaceCheckout = () => {
-    navigate(
-      buildCheckoutPath({
-        productCode: 'family_os',
-        subjectType: 'family',
-        subjectId: familyId,
-        planCode: subscription?.recommendedUpgradePlanCode || 'family_pro_month',
-        returnPath: '/today',
-      }),
-    );
-  };
-
   const buckets = useMemo(() => {
     const done: DayFlowCommitment[] = [];
     const waiting: DayFlowCommitment[] = [];
@@ -1288,10 +1249,26 @@ export function ParentBoardView({
     });
   };
 
-  const openSettings = () => {
-    setMoreOpen(true);
+  /** Rời board sang trang khác: nhớ tab đang xem để khi bấm "Quay lại" không rơi về Home. */
+  const leaveBoard = (to: string) => {
+    try {
+      sessionStorage.setItem('famixa.parentTab', tab);
+    } catch {
+      /* ignore */
+    }
+    navigate(to);
   };
 
+  const openSettings = () => {
+    leaveBoard('/family-admin/settings');
+  };
+
+  const openAccountSettings = (hash?: string) => {
+    leaveBoard(hash ? `/family-admin/settings#${hash}` : '/family-admin/settings');
+  };
+
+  /** Nhà chưa có thành viên con → không giả định "Con" trong copy. */
+  const hasChildren = childOptions.length > 0;
   const childShort =
     (selectedChild?.name ?? focusChild?.name ?? 'Con').trim().split(/\s+/).pop() || 'Con';
   const childAvatar = avatarEmoji(
@@ -1373,6 +1350,13 @@ export function ParentBoardView({
         const wait = state === 'awaiting_check';
         const skipped = item.status === 'skipped';
         const tag = diaryTag(item.title);
+        const noteStatus = done
+          ? 'done'
+          : wait
+            ? 'awaiting'
+            : skipped
+              ? 'skipped'
+              : 'pending';
         return {
           item,
           part: diaryDayPart(item),
@@ -1381,7 +1365,7 @@ export function ParentBoardView({
           wait,
           skipped,
           pending: !done && !wait && !skipped,
-          note: diaryNote(item.title, childShort, done),
+          note: diaryTaskNote(item.title, childShort, noteStatus, parentRole),
           reward: parentDisplayDelta(item),
           starLabel: item.starLabelVi
             ? normalizeLateStarLabelVi(item.starLabelVi)
@@ -1394,7 +1378,7 @@ export function ParentBoardView({
       });
     if (diaryFilter === 'all') return rows;
     return rows.filter((r) => r.category === diaryFilter);
-  }, [scopedCommitments, flow.flowDate, verifiedTick, childShort, diaryFilter]);
+  }, [scopedCommitments, flow.flowDate, verifiedTick, childShort, diaryFilter, parentRole]);
 
   const diaryVisible = diaryExpanded ? diaryEntries : diaryEntries.slice(0, 5);
   const diaryStarsEarned = useMemo(
@@ -1413,6 +1397,10 @@ export function ParentBoardView({
         })
         .reduce((s, c) => s + (c.projectedStarDelta ?? parentDisplayDelta(c)), 0),
     [scopedCommitments, flow.flowDate, verifiedTick],
+  );
+  const diarySummary = useMemo(
+    () => diaryDaySummaryLine(childShort, scopedDone, Math.max(scopedTotal, 0)),
+    [childShort, scopedDone, scopedTotal],
   );
 
   const diaryPrettyMemories = useMemo(() => {
@@ -1540,6 +1528,25 @@ export function ParentBoardView({
     effectiveChildFocus === 'all'
       ? 'Cả nhà'
       : selectedChild?.name ?? childShort;
+
+  const renderNoChildNotice = () => (
+    <section className="ph-nochild" role="status">
+      <span className="ph-nochild-art" aria-hidden>
+        👶
+      </span>
+      <div className="ph-nochild-copy">
+        <strong>Nhà mình chưa thêm con</strong>
+        <p>Thêm con để Famixa giao việc, ghi nhật ký và tính sao thưởng.</p>
+      </div>
+      <button
+        type="button"
+        className="ph-nochild-cta"
+        onClick={() => leaveBoard('/family-admin/members')}
+      >
+        Thêm con
+      </button>
+    </section>
+  );
 
   const renderChildPicker = (tone: 'home' | 'module' = 'home') => (
     <div
@@ -1744,11 +1751,18 @@ export function ParentBoardView({
 
   const goReportHub = () => {
     setValueFocus(null);
+    setValueView('hub');
     setTab('value');
   };
 
   const runBriefPrimary = () => {
     const action = homeBrief.primaryAction;
+    if (action.kind === 'dna_setup') {
+      const el = document.getElementById('famixa-dna') || document.querySelector('.famixa-dna');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      leaveBoard('/onboarding');
+      return;
+    }
     if (action.kind === 'evening_checkin') {
       goValueAnchor('fv-3q');
       return;
@@ -1775,6 +1789,10 @@ export function ParentBoardView({
 
   const runBriefReason = () => {
     const action = homeBrief.primaryAction;
+    if (action.kind === 'dna_setup') {
+      leaveBoard('/onboarding');
+      return;
+    }
     if (action.kind === 'evening_checkin') {
       goValueAnchor('fv-3q');
       return;
@@ -1850,8 +1868,8 @@ export function ParentBoardView({
           <button
             type="button"
             className="ph-b4-icon-btn"
-            aria-label="Cài đặt"
-            aria-expanded={moreOpen}
+            aria-label="Tài khoản / Cài đặt"
+            title="Tài khoản / Cài đặt"
             onClick={openSettings}
           >
             <IconSettings size={20} />
@@ -1862,6 +1880,7 @@ export function ParentBoardView({
 
       {tab === 'home' ? (
         <div className="ph-b4-home">
+          {!hasChildren ? renderNoChildNotice() : null}
           <article className="ph-b4-brief" aria-label="Morning Brief">
             <div className="ph-b4-brief-main">
               <p className="ph-b4-brief-eyebrow">
@@ -1871,21 +1890,42 @@ export function ParentBoardView({
                 {homeBrief.period === 'evening' ? 'EVENING BRIEF' : 'MORNING BRIEF'}
               </p>
               <h2 className="ph-b4-brief-title">
-                {homeBrief.period === 'evening'
-                  ? homeBrief.primaryAction.kind === 'evening_checkin'
-                    ? 'Tối nay chỉ có 1 việc bạn nên làm.'
-                    : 'Tối nay Famixa gợi ý một việc nhẹ.'
-                  : 'Hôm nay chỉ có 1 việc bạn nên làm.'}
+                {homeBrief.primaryAction.kind === 'dna_setup'
+                  ? homeBrief.moodLineVi
+                  : homeBrief.period === 'evening'
+                    ? homeBrief.primaryAction.kind === 'evening_checkin'
+                      ? 'Tối nay ưu tiên 1 việc trước.'
+                      : 'Tối nay Famixa gợi ý một việc nhẹ.'
+                    : 'Hôm nay ưu tiên 1 việc trước.'}
               </h2>
               <div className="ph-b4-brief-task">
                 <span className="ph-b4-brief-check" aria-hidden>
-                  ✓
+                  {homeBrief.primaryAction.kind === 'dna_setup' ? '🧬' : '✓'}
                 </span>
                 <strong>{homeBrief.primaryAction.doThisVi}</strong>
               </div>
+              {(() => {
+                const because = becauseFromDna(dnaCard).becauseVi;
+                const line =
+                  homeBrief.primaryAction.kind === 'dna_setup'
+                    ? homeBrief.primaryAction.reasonVi
+                    : because ||
+                      homeBrief.bulletsVi.find(
+                        (b) => b.includes('Vì nhà bạn') || b.includes('Famixa chưa biết'),
+                      );
+                if (!line) return null;
+                return (
+                  <p
+                    className="ph-b4-brief-because"
+                    data-playbook={homeBrief.primaryAction.playbookId || undefined}
+                  >
+                    {line}
+                  </p>
+                );
+              })()}
               <button type="button" className="ph-b4-brief-cta" onClick={runBriefPrimary}>
                 <span aria-hidden>⚡</span>
-                Thực hiện ngay
+                {homeBrief.primaryAction.kind === 'dna_setup' ? 'Hoàn tất DNA' : 'Thực hiện ngay'}
               </button>
             </div>
             <div className="ph-b4-brief-art" aria-hidden>
@@ -1992,12 +2032,17 @@ export function ParentBoardView({
                         </li>
                       );
                     }
-                    const label =
+                    const clock = a.item.windowEnd ? a.item.windowEnd.slice(0, 5) : '';
+                    const meta =
                       a.kind === 'awaiting'
-                        ? 'Cần xác nhận'
+                        ? 'Con báo đã xong · chạm để xác nhận'
                         : a.kind === 'overdue'
-                          ? 'Chưa xong / quá giờ'
-                          : 'Cần chú ý';
+                          ? clock
+                            ? `Quá giờ · lẽ ra xong trước ${clock}`
+                            : 'Đã quá giờ — chưa xong'
+                          : clock
+                            ? `Cần chú ý · trước ${clock}`
+                            : 'Cần chú ý';
                     return (
                       <li key={a.id}>
                         <button
@@ -2016,12 +2061,7 @@ export function ParentBoardView({
                           </span>
                           <span>
                             <strong>{a.item.title}</strong>
-                            <em>
-                              {label}
-                              {a.item.windowEnd
-                                ? ` · trước ${a.item.windowEnd.slice(0, 5)}`
-                                : ''}
-                            </em>
+                            <em>{meta}</em>
                           </span>
                           <i aria-hidden />
                         </button>
@@ -2064,14 +2104,24 @@ export function ParentBoardView({
             />
           </div>
 
-          <section className="ph-b4-progress" aria-label="Tiến độ cả nhà">
+          <section
+            className="ph-b4-progress"
+            aria-label={
+              effectiveChildFocus === 'all'
+                ? 'Tiến độ cả nhà'
+                : `Tiến độ ${selectedChild?.name ?? 'của con'}`
+            }
+          >
             <header className="ph-b4-col-head">
               <h3>
-                <span aria-hidden>👨‍👩‍👧‍👦</span> TIẾN ĐỘ CẢ NHÀ
+                <span aria-hidden>{effectiveChildFocus === 'all' ? '👨‍👩‍👧‍👦' : '🎯'}</span>{' '}
+                {effectiveChildFocus === 'all'
+                  ? 'TIẾN ĐỘ CẢ NHÀ'
+                  : `TIẾN ĐỘ ${(selectedChild?.name ?? 'CỦA CON').toLocaleUpperCase('vi')}`}
               </h3>
             </header>
             <p className="ph-b4-progress-copy">
-              {scopedDone}/{Math.max(scopedTotal, 0)} việc quan trọng đã hoàn thành hôm nay
+              {familyProgressLine(scopedDone, Math.max(scopedTotal, 0))}
             </p>
             <div className="ph-b4-progress-row">
               <div className="ph-b4-segments" aria-hidden>
@@ -2165,13 +2215,31 @@ export function ParentBoardView({
                   <em className="ph-b4-plan-pill">Còn {peaceDaysLeft} ngày</em>
                 ) : null}
               </div>
-              <button type="button" onClick={goPeaceCheckout}>
+              <button type="button" onClick={() => openAccountSettings('billing')}>
                 Gia hạn ›
               </button>
             </section>
           ) : (
             <BillingBanner familyId={familyId} />
           )}
+
+          <button
+            type="button"
+            className="ph-b4-account"
+            onClick={() => openAccountSettings()}
+            aria-label="Tài khoản và cài đặt gia đình"
+          >
+            <span className="ph-b4-account-ico" aria-hidden>
+              ⚙️
+            </span>
+            <span className="ph-b4-account-copy">
+              <strong>Tài khoản / Cài đặt</strong>
+              <em>Gia hạn · thông báo · mã PIN · rời nhà</em>
+            </span>
+            <span className="ph-b4-account-go" aria-hidden>
+              ›
+            </span>
+          </button>
 
           <FamilyDnaCardView
             familyId={familyId}
@@ -2185,7 +2253,7 @@ export function ParentBoardView({
               );
               setPaywallOpen(true);
             }}
-            onSetup={() => navigate('/onboarding')}
+            onSetup={() => leaveBoard('/onboarding')}
           />
 
           <nav className="ph-b4-explore-row" aria-label="Lối tắt tính năng">
@@ -2223,11 +2291,19 @@ export function ParentBoardView({
             <div>
               <h1>Nhiệm vụ</h1>
               <p>
-                Đang xem: <strong>{childFocusLabel}</strong>
+                {hasChildren ? (
+                  <>
+                    Đang xem: <strong>{childFocusLabel}</strong>
+                  </>
+                ) : (
+                  <>Chưa có con trong nhà</>
+                )}
               </p>
             </div>
             <div className="ph-tasks-actions">{renderChildPicker('module')}</div>
           </header>
+
+          {!hasChildren ? renderNoChildNotice() : null}
 
           <div className="ph-tasks-tabs" role="tablist" aria-label="Lọc nhiệm vụ">
             {(
@@ -2235,7 +2311,7 @@ export function ParentBoardView({
                 { key: 'all' as const, label: 'Tất cả', count: scopedTotal, tone: 'purple' },
                 {
                   key: 'need_help' as const,
-                  label: 'Cần mẹ hỗ trợ',
+                  label: parentSupportLabel(parentRole),
                   count: needHelpItems.length,
                   tone: 'orange',
                 },
@@ -2313,17 +2389,19 @@ export function ParentBoardView({
             </div>
             <div className="ph-tasks-bubble">
               <p>
-                {voicePick(`${flow.flowDate}:tasks-banner:${needHelpItems.length}`, [
-                  needHelpItems.length === 0
-                    ? `${parentRole === 'bố' ? 'Bố' : parentRole === 'mẹ' ? 'Mẹ' : 'Bố mẹ'} ơi, hôm nay ${childShort} đang giữ nhịp ổn! 💪`
-                    : `${parentRole === 'bố' ? 'Bố' : parentRole === 'mẹ' ? 'Mẹ' : 'Bố mẹ'} ơi, hôm nay ${childShort} có ${needHelpItems.length} việc cần hỗ trợ nhẹ nhé! 💪`,
-                  needHelpItems.length === 0
-                    ? `Không việc nóng — ${childShort} đang tự chủ tốt hôm nay.`
-                    : `Chỉ ${needHelpItems.length} việc cần ${parentRole} — khoảng 15 giây mỗi việc.`,
-                  needHelpItems.length === 0
-                    ? `Tiến độ ${percent}% — nhà mình đang đi đúng hướng.`
-                    : `Ưu tiên ${needHelpItems.length} việc nóng của ${childShort}, rồi dừng.`,
-                ])}
+                {!hasChildren
+                  ? 'Chưa có con trong nhà — thêm con để Famixa giao việc hằng ngày.'
+                  : voicePick(`${flow.flowDate}:tasks-banner:${needHelpItems.length}`, [
+                      needHelpItems.length === 0
+                        ? `${parentRole === 'bố' ? 'Bố' : parentRole === 'mẹ' ? 'Mẹ' : 'Bố mẹ'} ơi, hôm nay ${childShort} đang giữ nhịp ổn! 💪`
+                        : `${parentRole === 'bố' ? 'Bố' : parentRole === 'mẹ' ? 'Mẹ' : 'Bố mẹ'} ơi, hôm nay ${childShort} có ${needHelpItems.length} việc cần hỗ trợ nhẹ nhé! 💪`,
+                      needHelpItems.length === 0
+                        ? `Không việc nóng — ${childShort} đang tự chủ tốt hôm nay.`
+                        : `Chỉ ${needHelpItems.length} việc cần ${parentRole} — khoảng 15 giây mỗi việc.`,
+                      needHelpItems.length === 0
+                        ? `Tiến độ ${percent}% — nhà mình đang đi đúng hướng.`
+                        : `Ưu tiên ${needHelpItems.length} việc nóng của ${childShort}, rồi dừng.`,
+                    ])}
               </p>
             </div>
             <div className="ph-tasks-progress">
@@ -2344,7 +2422,7 @@ export function ParentBoardView({
             <section className="ph-tasks-sec">
               <header className="ph-tasks-sec-head">
                 <h2>
-                  <span aria-hidden>🚨</span> Cần mẹ hỗ trợ
+                  <span aria-hidden>🚨</span> {parentSupportLabel(parentRole)}
                   <b className="is-red">{needHelpItems.length}</b>
                 </h2>
                 <button
@@ -2504,7 +2582,11 @@ export function ParentBoardView({
                       </li>
                     ))}
                   {waitingChildItems.length === 0 ? (
-                    <li className="ph-empty-soft">Không còn việc chờ con làm.</li>
+                    <li className="ph-empty-soft">
+                      {hasChildren
+                        ? 'Không còn việc chờ con làm.'
+                        : 'Chưa có con trong nhà — thêm con để giao việc.'}
+                    </li>
                   ) : null}
                 </ul>
               ) : null}
@@ -2586,58 +2668,56 @@ export function ParentBoardView({
             <button
               type="button"
               className="ph-report-back"
-              aria-label="Về trang chủ"
-              onClick={() => setTab('home')}
+              aria-label={valueView === 'hub' ? 'Về trang chủ' : 'Về báo cáo'}
+              onClick={() => {
+                if (valueView === 'hub') {
+                  setTab('home');
+                  return;
+                }
+                setValueFocus(null);
+                setValueView('hub');
+              }}
             >
               ‹
             </button>
             <div className="ph-report-titles">
               <h1>
-                {valueFocus === 'fv-3q'
-                  ? '3Q tối'
-                  : valueFocus === 'fv-rop'
-                    ? 'ROP · Family Report'
-                    : 'Báo cáo gia đình'}
+                {valueView === 'hub'
+                  ? 'Báo cáo gia đình'
+                  : FV_DETAIL_TITLES[valueView][0]}
               </h1>
               <p>
-                {valueFocus === 'fv-3q'
-                  ? 'Ba câu hỏi nhanh — nhịp nhà hôm nay'
-                  : valueFocus === 'fv-rop'
-                    ? 'Tăng trưởng bố mẹ theo hành vi'
-                    : 'ROP · 3Q · ghi nhận · replay'}
+                {valueView === 'hub'
+                  ? 'Sức khỏe nhà · AI đề xuất · mở từng mục khi cần'
+                  : FV_DETAIL_TITLES[valueView][1]}
               </p>
             </div>
             <div className="ph-report-tools">{renderChildPicker('module')}</div>
           </header>
-          {!valueFocus ? (
-            <div className="ph-report-jumps" aria-label="Mục trong báo cáo">
-              <button type="button" onClick={() => goValueAnchor('fv-rop')}>
-                📘 ROP
-              </button>
-              <button type="button" onClick={() => goValueAnchor('fv-3q')}>
-                🎯 3Q tối
-              </button>
-              <button type="button" onClick={() => setTab('diary')}>
-                📖 Nhật ký →
-              </button>
-            </div>
-          ) : null}
+          {!hasChildren && valueView === 'hub' ? renderNoChildNotice() : null}
           <div className="ph-report-body">
             <FamilyValuePanel
               familyId={familyId}
               familyName={familyName}
-              flow={flow}
+              flow={{ ...flow, commitments: scopedCommitments }}
               glance={glance}
               nudgeToday={nudgeToday}
+              coachScope={coachScope}
               momentCount={savedMemories.length + childGratitudes.length}
               onOpenPaywall={(reason) => openPaywall(reason)}
               parentMembershipId={parentMembershipId}
               eveningCheckin={eveningCheckin}
               onEveningCheckinChange={setEveningCheckin}
+              dna={dnaCard}
               focusAnchorId={valueFocus}
+              view={valueView}
+              onViewChange={setValueView}
             />
           </div>
-          <p className="ph-report-diary-hint">
+          <p
+            className="ph-report-diary-hint"
+            hidden={valueView !== 'hub'}
+          >
             Muốn xem timeline việc & kỷ niệm?{' '}
             <button type="button" className="ph-text-link" onClick={() => setTab('diary')}>
               Mở Nhật ký →
@@ -2665,12 +2745,15 @@ export function ParentBoardView({
             </button>
             <div className="ph-diary-titles">
               <h1>
-                Nhật ký của {childShort} <span aria-hidden>💜</span>
+                {hasChildren ? `Nhật ký của ${childShort}` : 'Nhật ký gia đình'}{' '}
+                <span aria-hidden>💜</span>
               </h1>
-              <p>Đang xem: {childFocusLabel}</p>
+              <p>{hasChildren ? `Đang xem: ${childFocusLabel}` : 'Chưa có con trong nhà'}</p>
             </div>
             <div className="ph-diary-tools">{renderChildPicker('module')}</div>
           </header>
+
+          {!hasChildren ? renderNoChildNotice() : null}
 
           <div
             ref={diaryDatesRef}
@@ -2753,11 +2836,20 @@ export function ParentBoardView({
                   </span>
                   <div>
                     <p>
-                      Tuyệt vời! {childShort} đã hoàn thành{' '}
-                      <strong>
-                        {scopedDone}/{Math.max(scopedTotal, 1)}
-                      </strong>{' '}
-                      việc
+                      {hasChildren ? (
+                        <>
+                          {diarySummary.prefix}
+                          {diarySummary.ratio ? (
+                            <>
+                              {' '}
+                              <strong>{diarySummary.ratio}</strong>
+                              {diarySummary.suffix ? ` ${diarySummary.suffix}` : ''}
+                            </>
+                          ) : null}
+                        </>
+                      ) : (
+                        <>Chưa có con — thêm con để nhật ký bắt đầu ghi việc mỗi ngày.</>
+                      )}
                     </p>
                     <em>
                       +{diaryStarsEarned} ⭐
@@ -2779,7 +2871,9 @@ export function ParentBoardView({
                 </p>
               ) : diaryEntries.length === 0 ? (
                 <p className="ph-diary-empty">
-                  Hôm nay chưa có trang nhật ký — khi {childShort} làm việc, nhật ký sẽ hiện ở đây.
+                  {hasChildren
+                    ? `Hôm nay chưa có trang nhật ký — khi ${childShort} làm việc, nhật ký sẽ hiện ở đây.`
+                    : 'Chưa có con trong nhà — thêm con để Famixa ghi nhật ký mỗi ngày.'}
                 </p>
               ) : (
                 <ol className="ph-diary-timeline">
@@ -2892,6 +2986,7 @@ export function ParentBoardView({
             </div>
 
             <aside className="ph-diary-widgets">
+              {hasChildren ? (
               <article className="ph-diary-mood">
                 <header className="ph-diary-side-head">
                   <h3>Tâm trạng của {childShort}</h3>
@@ -2927,9 +3022,10 @@ export function ParentBoardView({
                     )}
                   </>
                 ) : (
-                  <p className="ph-diary-mood-bubble">Con chưa ghi tâm trạng hôm nay</p>
+                  <p className="ph-diary-mood-bubble">{childShort} chưa ghi tâm trạng hôm nay</p>
                 )}
               </article>
+              ) : null}
 
               <article className="ph-diary-moment">
                 <header className="ph-diary-side-head">
@@ -3129,7 +3225,9 @@ export function ParentBoardView({
                 Kho báu · điểm &amp; thưởng <span aria-hidden>✨</span>
               </h1>
               <p>
-                {childShort} · đang xem {childFocusLabel}
+                {hasChildren
+                  ? `${childShort} · đang xem ${childFocusLabel}`
+                  : 'Chưa có con trong nhà'}
                 {' · '}
                 <button type="button" className="ph-text-link" onClick={() => setTab('challenge')}>
                   Challenge →
@@ -3149,6 +3247,8 @@ export function ParentBoardView({
             </div>
           </header>
 
+          {!hasChildren ? renderNoChildNotice() : null}
+
           <article className="ph-treasure-hero">
             <div className="ph-treasure-chest" aria-hidden>
               🧰
@@ -3157,7 +3257,7 @@ export function ParentBoardView({
               <div className="ph-treasure-stars">
                 <span aria-hidden>⭐</span>
                 <strong>{rewardPoints.toLocaleString('vi-VN')}</strong>
-                <em>Sao của {childShort}</em>
+                <em>{hasChildren ? `Sao của ${childShort}` : 'Sao của nhà'}</em>
               </div>
               <p className="ph-treasure-level">
                 <span aria-hidden>👑</span> Level {treasureLevel} · Explorer
@@ -3347,7 +3447,7 @@ export function ParentBoardView({
 
             <article className="ph-treasure-badges" id="ph-treasure-badges">
               <header className="ph-treasure-sec-head is-compact">
-                <h3>HUY HIỆU CỦA {childShort.toUpperCase()}</h3>
+                <h3>{hasChildren ? `HUY HIỆU CỦA ${childShort.toUpperCase()}` : 'HUY HIỆU'}</h3>
                 <button
                   type="button"
                   className="ph-text-link"
@@ -3482,106 +3582,6 @@ export function ParentBoardView({
               )}
             </div>
           </section>
-        </div>
-      ) : null}
-
-      {moreOpen ? (
-        <div
-          className="sheet-backdrop"
-          role="presentation"
-          onClick={() => setMoreOpen(false)}
-        >
-          <div
-            className="sheet ph-more-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Cài đặt máy · mã bố mẹ"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2>Cài đặt máy · mã bố mẹ</h2>
-            <div className="ph-more-body">
-              <button
-                type="button"
-                className="pill"
-                onClick={() => {
-                  setMoreOpen(false);
-                  navigate('/who');
-                }}
-              >
-                Thành viên / đổi người
-              </button>
-              <button
-                type="button"
-                className="pill"
-                onClick={() => {
-                  setMoreOpen(false);
-                  navigate('/family-admin');
-                }}
-              >
-                Quản trị gia đình
-              </button>
-              {!parentPushSubscribed && onEnableParentPush ? (
-                <button type="button" className="pill" onClick={onEnableParentPush}>
-                  Bật nhắc push phụ huynh
-                </button>
-              ) : null}
-              {offerLocalReminders && onEnableLocalReminders ? (
-                <button type="button" className="pill is-soft" onClick={onEnableLocalReminders}>
-                  Bật nhắc trên máy (trình duyệt)
-                </button>
-              ) : null}
-              {onToggleInAppChime ? (
-                <button
-                  type="button"
-                  className={`pill${inAppChimeEnabled ? '' : ' is-soft'}`}
-                  onClick={onToggleInAppChime}
-                >
-                  {inAppChimeEnabled
-                    ? 'Chuông trong app khi đến giờ: Bật'
-                    : 'Chuông trong app khi đến giờ: Tắt'}
-                </button>
-              ) : null}
-              <p className="muted" style={{ margin: '4px 0 0', fontSize: '0.82rem' }}>
-                Push / nhắc trình duyệt dùng âm thanh hệ thống. Chuông trong app chỉ
-                phát khi đang mở Daily Flow.
-              </p>
-              <ResetParentPinPanel />
-              {appliedScreen.length > 0 ? (
-                <ScreenBoundaryPanel
-                  flowDate={flow.flowDate}
-                  labelVi={appliedScreen[0]?.labelVi}
-                  compact
-                  title="Checklist cấu hình máy"
-                  body="Chỉ mở khi thỏa thuận màn hình đang áp dụng."
-                />
-              ) : null}
-              <button
-                type="button"
-                className="pill is-soft"
-                onClick={() => {
-                  clearOnboardingProfile(familyId);
-                  navigate('/onboarding');
-                }}
-              >
-                Chạy lại AI Onboarding
-              </button>
-              <button
-                type="button"
-                className="pill is-soft"
-                onClick={() =>
-                  void shareOrCopyNudge(
-                    `Nhà hôm nay: ${flow.doneCount}/${flow.totalCommitments}. Đã nhắc ${nudgeToday} lần.`,
-                    { preferShare: true },
-                  )
-                }
-              >
-                Chia sẻ nhanh lên Zalo
-              </button>
-              <button type="button" className="pill" onClick={() => setMoreOpen(false)}>
-                Đóng
-              </button>
-            </div>
-          </div>
         </div>
       ) : null}
 
@@ -3774,6 +3774,8 @@ export function ParentBoardView({
             <h2>Famixa đồng hành</h2>
             <p className="muted ph-coach-based" style={{ marginTop: 0 }}>
               {resolvedCoach.sourceLabelVi}
+              {' · '}
+              {resolvedCoach.scopeLabelVi}
               {resolvedCoach.tips.length > 1
                 ? ` · ${resolvedCoach.tips.length}/2 gợi ý hôm nay`
                 : ' · tối đa 2 gợi ý/ngày'}
@@ -3804,7 +3806,9 @@ export function ParentBoardView({
                   </div>
                 ) : null}
                 {tip.basedOn ? (
-                  <p className="muted ph-coach-based">Dựa trên: {tip.basedOn}</p>
+                  <p className="muted ph-coach-based" data-playbook={tip.playbookId || undefined}>
+                    Vì sao Famixa nói vậy: {tip.basedOn}
+                  </p>
                 ) : null}
                 {parentMembershipId ? (
                   <div className="ph-coach-act">

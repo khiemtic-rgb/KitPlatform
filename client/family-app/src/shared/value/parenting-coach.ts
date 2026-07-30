@@ -28,6 +28,10 @@ export type ParentingCoachAdvice = {
   confidence: number;
 };
 
+export type ParentingCoachScope =
+  | { kind: 'family'; labelVi: string }
+  | { kind: 'child'; labelVi: string; childName: string };
+
 export type ParentingCoachFaq = {
   id: string;
   question: string;
@@ -203,11 +207,25 @@ export function buildParentingCoach(input: {
   glance: AccountabilityGlance | null;
   nudgeToday: number;
   focusChildName?: string | null;
+  scope?: ParentingCoachScope;
 }): ParentingCoachAdvice {
-  const { familyId, flow, glance, nudgeToday, focusChildName } = input;
-  const profile = getOnboardingProfile(familyId);
-  const who =
-    shortName(focusChildName || profile?.childName || 'Con');
+  const { familyId, flow, glance, nudgeToday, focusChildName, scope } = input;
+  const savedProfile = getOnboardingProfile(familyId);
+  const isFamilyScope = scope?.kind === 'family';
+  const selectedName =
+    scope?.kind === 'child' ? scope.childName : focusChildName;
+  const normalizedSelected = shortName(selectedName || '').toLocaleLowerCase('vi');
+  const normalizedProfile = shortName(savedProfile?.childName || '').toLocaleLowerCase('vi');
+  // Onboarding belongs to one child. Never apply that child's age/goals to another child or Cả nhà.
+  const profile =
+    !isFamilyScope &&
+    savedProfile &&
+    (!normalizedSelected || normalizedSelected === normalizedProfile)
+      ? savedProfile
+      : null;
+  const who = isFamilyScope
+    ? 'Cả nhà'
+    : shortName(selectedName || profile?.childName || 'Con');
   const struggles = profile?.struggles ?? [];
   const age = profile?.ageBand;
   const goal = profile?.goal;
@@ -235,9 +253,13 @@ export function buildParentingCoach(input: {
     .filter(Boolean)
     .join(', ');
 
-  const childProfile = profile && !profile.skipped
-    ? `${who}${ageLabel ? ` · ${ageLabel}` : ''}${struggleLabels ? ` · khó: ${struggleLabels}` : ''}${goalLabel ? ` · mục tiêu 30 ngày: ${goalLabel}` : ''}`
-    : `${who} · chưa onboard đầy đủ — Foxy dùng dữ liệu ngày hôm nay`;
+  const doneToday = flow.commitments.filter((c) => c.status === 'done').length;
+  const totalToday = flow.commitments.length;
+  const childProfile = isFamilyScope
+    ? `Cả nhà · hôm nay ${doneToday}/${totalToday} việc đã xong`
+    : profile && !profile.skipped
+      ? `${who}${ageLabel ? ` · ${ageLabel}` : ''}${struggleLabels ? ` · khó: ${struggleLabels}` : ''}${goalLabel ? ` · mục tiêu 30 ngày: ${goalLabel}` : ''}`
+      : `${who} · hôm nay ${doneToday}/${totalToday} việc đã xong`;
 
   const date = flow.flowDate;
 
@@ -248,7 +270,7 @@ export function buildParentingCoach(input: {
       const tip = struggleAdvice(linked, who, date);
       return {
         childProfile,
-        basedOn: `Hôm nay «${hot.title}» đang ${hot.reminderState === 'overdue' ? 'quá giờ' : 'đến giờ'} · khớp khó khăn onboarding · đã nhắc ${nudgeToday} lần hôm nay.`,
+        basedOn: `Hôm nay «${hot.title}» đang ${hot.reminderState === 'overdue' ? 'quá giờ' : 'đến giờ'} · khớp khó khăn đã ghi nhận${isFamilyScope ? ` · cả nhà đã nhắc ${nudgeToday} lần` : ''}.`,
         insight: tip.insight,
         doThis: tip.doThis,
         avoid: tip.avoid,
@@ -258,7 +280,7 @@ export function buildParentingCoach(input: {
     }
     return {
       childProfile,
-      basedOn: `«${hot.title}» (${hot.memberName?.trim() || who}) đang cần can thiệp · nhắc hôm nay: ${nudgeToday}.`,
+      basedOn: `«${hot.title}» (${hot.memberName?.trim() || who}) đang cần hỗ trợ${isFamilyScope ? ` · cả nhà đã nhắc ${nudgeToday} lần hôm nay` : ''}.`,
       insight: voicePick(`${date}:hot:i:${hot.id}`, [
         `${who} đang kẹt ở «${hot.title}» — ưu tiên một việc này trước, đừng mở cả list.`,
         `Việc nóng hôm nay là «${hot.title}». Xử lý xong rồi hãy nhìn việc khác.`,
@@ -279,7 +301,7 @@ export function buildParentingCoach(input: {
   }
 
   // 2) Goal-oriented when day is calm
-  if (goal === 'fewer_nudges' && nudgeToday >= 3) {
+  if (isFamilyScope && goal === 'fewer_nudges' && nudgeToday >= 3) {
     return {
       childProfile,
       basedOn: `Mục tiêu onboarding là giảm nhắc · hôm nay đã nhắc ${nudgeToday} lần.`,
@@ -313,7 +335,7 @@ export function buildParentingCoach(input: {
     }
   }
 
-  if (lateHeavy) {
+  if (isFamilyScope && lateHeavy) {
     return {
       childProfile,
       basedOn: '7 ngày gần đây: nhiều ngày còn việc mở/xong muộn.',
@@ -367,15 +389,19 @@ export function buildParentingCoach(input: {
 
   return {
     childProfile,
-    basedOn: `Nhịp hôm nay ổn · ước lượng nhắc 7 ngày ≈ ${weekNudge}.`,
+    basedOn: isFamilyScope
+      ? `Nhịp hôm nay ổn · ước lượng cả nhà nhắc 7 ngày khoảng ${weekNudge} lần.`
+      : `${who} hôm nay chưa có việc nóng cần bố mẹ can thiệp.`,
     insight: voicePick(`${date}:calm:i:${goal ?? 'na'}`, [
       goal === 'more_autonomy'
         ? `${who} đang có không gian tự giác — giữ khoảng cách can thiệp.`
         : `Foxy chưa thấy việc nóng — lúc giữ thói quen, không mở rộng checklist.`,
       `Ngày đang êm. Đây là lúc ${who} luyện tự chủ, không phải lúc “quản lý thêm”.`,
-      weekNudge <= 3
+      isFamilyScope && weekNudge <= 3
         ? `Tuần này nhắc khá ít (~${weekNudge}) — nhà mình đang đi đúng hướng.`
-        : `Nhịp hôm nay ổn; tuần vẫn còn ~${weekNudge} lần nhắc — giữ nhẹ tay.`,
+        : isFamilyScope
+          ? `Nhịp hôm nay ổn; tuần vẫn còn khoảng ${weekNudge} lần nhắc — giữ nhẹ tay.`
+          : `${who} chưa có việc nóng — giữ nhịp nhẹ và để con tự chủ.`,
     ]),
     doThis: voicePick(`${date}:calm:d:${goal ?? 'na'}`, [
       goal === 'quality_time'

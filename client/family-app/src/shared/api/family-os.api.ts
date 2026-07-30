@@ -1055,6 +1055,12 @@ export interface FamilyCoachInsight {
   skippedCount: number;
   openCount: number;
   totalCount: number;
+  /** Wave B — "Vì nhà bạn…" from Blueprint DNA. */
+  blueprintBecauseVi?: string;
+  /** Wave B — stable playbook id PB0001… */
+  playbookId?: string;
+  focusCommitmentTitle?: string;
+  patternForgotCount?: number;
 }
 
 export async function fetchFamilyCoachInsight(
@@ -1095,6 +1101,22 @@ export async function fetchFamilyCoachInsight(
     skippedCount: Number(data.skippedCount ?? data.SkippedCount ?? 0),
     openCount: Number(data.openCount ?? data.OpenCount ?? 0),
     totalCount: Number(data.totalCount ?? data.TotalCount ?? 0),
+    blueprintBecauseVi:
+      data.blueprintBecauseVi != null || data.BlueprintBecauseVi != null
+        ? String(data.blueprintBecauseVi ?? data.BlueprintBecauseVi)
+        : undefined,
+    playbookId:
+      data.playbookId != null || data.PlaybookId != null
+        ? String(data.playbookId ?? data.PlaybookId)
+        : undefined,
+    focusCommitmentTitle:
+      data.focusCommitmentTitle != null || data.FocusCommitmentTitle != null
+        ? String(data.focusCommitmentTitle ?? data.FocusCommitmentTitle)
+        : undefined,
+    patternForgotCount:
+      data.patternForgotCount != null || data.PatternForgotCount != null
+        ? Number(data.patternForgotCount ?? data.PatternForgotCount)
+        : undefined,
   };
 }
 

@@ -37,7 +37,7 @@ export function FamilyDnaCardView({
   if (!dna?.hasBlueprint) {
     return (
       <>
-        <section className="famixa-dna is-empty" aria-label="DNA gia đình">
+        <section className="famixa-dna is-empty" id="famixa-dna" aria-label="DNA gia đình">
           <header className="famixa-dna-head">
             <span aria-hidden>🧬</span>
             <strong>DNA nhà bạn</strong>
@@ -77,6 +77,7 @@ export function FamilyDnaCardView({
   return (
     <>
       <section
+        id="famixa-dna"
         className={`famixa-dna${dna.isTeaser ? ' is-teaser' : ''}${
           dna.calibrationPhaseCode === 'peer_shock' ? ' is-shock' : ''
         }`}

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchFamilySubscription, type FamilySubscription } from '@/shared/api/family-os.api';
-import { buildCheckoutPath } from '@/shared/api/payment.api';
 import { outcomeNameForTier, tierFromPlanCode } from '@/shared/billing/famixa-plan-copy';
 
 const TRIAL_WARN_DAYS = 7;
@@ -116,15 +115,7 @@ export function BillingBanner({ familyId }: { familyId: string }) {
           : 'Gia hạn';
 
   const goCheckout = () => {
-    navigate(
-      buildCheckoutPath({
-        productCode: 'family_os',
-        subjectType: 'family',
-        subjectId: familyId,
-        planCode: upgradePlan,
-        returnPath: '/who',
-      }),
-    );
+    navigate('/family-admin/settings#billing');
   };
 
   return (

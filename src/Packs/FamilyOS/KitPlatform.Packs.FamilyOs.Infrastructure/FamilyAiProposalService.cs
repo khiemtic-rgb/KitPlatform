@@ -219,8 +219,8 @@ internal sealed class FamilyAiProposalService : IFamilyAiProposalService
                         var dto = await TryCreateAsync(
                             familyId,
                             FamilyAiProposalKinds.RoutineTrim,
-                            $"Routine 「{routine.DisplayName}」 hơi dày — bỏ {candidates.Count} việc?",
-                            $"AI gợi ý tạm ẩn {titles}. Áp dụng từ ngày mai — hôm nay giữ nguyên. Bạn chỉ cần 👍.",
+                            $"Lịch 「{routine.DisplayName}」 đang hơi nhiều việc — bớt {candidates.Count} việc?",
+                            $"Famixa đề xuất tạm ẩn {titles}. Áp dụng từ ngày mai, hôm nay giữ nguyên. Bạn chỉ cần bấm Áp dụng.",
                             JsonSerializer.Serialize(new
                             {
                                 routineId = routine.Id,

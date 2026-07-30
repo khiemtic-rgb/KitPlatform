@@ -18,6 +18,36 @@ export function parentRoleFromName(name: string): ParentRole {
   return 'bố mẹ';
 }
 
+/** Infer address from guardian display names in the household. */
+export function parentRoleFromMembers(
+  names: Array<string | null | undefined>,
+): ParentRole {
+  let hasMom = false;
+  let hasDad = false;
+  for (const raw of names) {
+    const role = parentRoleFromName(raw ?? '');
+    if (role === 'mẹ') hasMom = true;
+    else if (role === 'bố') hasDad = true;
+  }
+  if (hasMom && hasDad) return 'bố mẹ';
+  if (hasMom) return 'mẹ';
+  if (hasDad) return 'bố';
+  return 'bố mẹ';
+}
+
+/** "mẹ" → "Mẹ", "bố mẹ" → "Bố mẹ" — dùng đầu câu. */
+export function capitalizeParentRole(role: ParentRole): string {
+  if (!role) return 'Bố mẹ';
+  return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+/** Nhãn ngắn trên chip/filter — luôn trung tính khi chưa rõ. */
+export function parentSupportLabel(role: ParentRole): string {
+  if (role === 'mẹ') return 'Cần mẹ hỗ trợ';
+  if (role === 'bố') return 'Cần bố hỗ trợ';
+  return 'Cần bố mẹ hỗ trợ';
+}
+
 /** Deterministic index — same seed always yields same pick. */
 export function voicePickIndex(seed: string, poolLength: number): number {
   if (poolLength <= 0) return 0;
@@ -123,6 +153,123 @@ export function buildFoxyNotice(s: ProgressSignals): string {
   ]);
 }
 
+/** Match việc theo ngữ cảnh — tránh nhầm "cây"/"học"/"rang" lung tung. */
+export function taskKindOf(title: string):
+  | 'wake'
+  | 'brush'
+  | 'read'
+  | 'pack'
+  | 'sleep'
+  | 'study'
+  | 'garden'
+  | 'tidy'
+  | 'meal'
+  | 'other' {
+  const t = title.toLowerCase().trim();
+  if (
+    t === 'dậy' ||
+    t.includes('thức dậy') ||
+    t.includes('ngủ dậy') ||
+    /\bdậy sớm\b/.test(t) ||
+    /^dậy\b/.test(t)
+  ) {
+    return 'wake';
+  }
+  if (t.includes('đánh răng') || t.includes('dánh răng') || t.includes('danh rang')) return 'brush';
+  if (t.includes('đi ngủ') || t.includes('ngủ sớm') || /(^|\s)ngủ(\s|$)/.test(t)) return 'sleep';
+  if (
+    t.includes('cặp sách') ||
+    t.includes('chuẩn bị cặp') ||
+    t.includes('balo') ||
+    (t.includes('cặp') && (t.includes('chuẩn bị') || t.includes('sách')))
+  ) {
+    return 'pack';
+  }
+  if (t.includes('tưới') || t.includes('chăm cây') || t.includes('vườn')) {
+    return 'garden';
+  }
+  if (t.includes('đọc sách') || t.includes('đọc truyện') || (t.includes('đọc') && t.includes('sách'))) {
+    return 'read';
+  }
+  if (t.includes('bài tập') || t.includes('học bài') || t.includes('làm bài') || t.includes('ôn bài')) {
+    return 'study';
+  }
+  if (t.includes('dọn phòng') || t.includes('dọn nhà') || t.includes('gấp quần') || t.includes('dọn')) {
+    return 'tidy';
+  }
+  if (
+    t.includes('ăn sáng') ||
+    t.includes('ăn trưa') ||
+    t.includes('ăn tối') ||
+    t.includes('uống sữa') ||
+    t.includes('ăn cơm') ||
+    t.includes('ăn xế')
+  ) {
+    return 'meal';
+  }
+  return 'other';
+}
+
+/** Trạng thái nhật ký — quyết định từ ngữ, không đoán "đang làm". */
+export type DiaryNoteStatus = 'done' | 'pending' | 'awaiting' | 'skipped';
+
+/**
+ * Tổng kết ngày: khớp tiến độ thật.
+ * 0/12 → không "Tuyệt vời"; xong hết → mới khen.
+ */
+export function diaryDaySummaryLine(
+  childShort: string,
+  done: number,
+  total: number,
+): { prefix: string; ratio: string | null; suffix: string } {
+  const who = childShort;
+  const t = Math.max(0, total);
+  const d = Math.max(0, done);
+  if (t === 0) {
+    return { prefix: `Hôm nay chưa có việc cho ${who}`, ratio: null, suffix: '' };
+  }
+  const ratio = `${d}/${t}`;
+  if (d <= 0) {
+    return {
+      prefix: `Hôm nay ${who} chưa hoàn thành việc nào`,
+      ratio,
+      suffix: '',
+    };
+  }
+  if (d >= t) {
+    return {
+      prefix: `Tuyệt vời! ${who} đã hoàn thành hết`,
+      ratio,
+      suffix: 'việc',
+    };
+  }
+  const left = t - d;
+  if (d / t >= 0.6) {
+    return {
+      prefix: `Tiến bộ tốt — ${who} đã hoàn thành`,
+      ratio,
+      suffix: `việc · còn ${left} việc`,
+    };
+  }
+  return {
+    prefix: `${who} đã hoàn thành`,
+    ratio,
+    suffix: `việc · còn ${left} việc`,
+  };
+}
+
+/**
+ * Câu tiến độ cả nhà trên Home — nói đúng trạng thái, không khen khi chưa có gì xong.
+ */
+export function familyProgressLine(done: number, total: number): string {
+  const t = Math.max(0, total);
+  const d = Math.min(Math.max(0, done), t);
+  if (t === 0) return 'Hôm nay chưa có việc nào được giao';
+  if (d <= 0) return `Chưa việc nào xong — ${t} việc đang chờ hôm nay`;
+  if (d >= t) return `Cả nhà đã xong hết ${t} việc hôm nay`;
+  return `Đã xong ${d}/${t} việc — còn ${t - d} việc hôm nay`;
+}
+
 export function warmTaskSupportNote(input: {
   title: string;
   childShort: string;
@@ -132,7 +279,7 @@ export function warmTaskSupportNote(input: {
   itemId: string;
 }): string {
   const { title, childShort: who, parentRole: parent, kind, flowDate, itemId } = input;
-  const t = title.toLowerCase();
+  const kindTask = taskKindOf(title);
   const seed = `${flowDate}:${itemId}:${kind}`;
 
   if (kind === 'awaiting') {
@@ -143,25 +290,25 @@ export function warmTaskSupportNote(input: {
     ]);
   }
 
-  if (t.includes('cặp') || t.includes('balo')) {
+  if (kindTask === 'pack') {
     return voicePick(seed, [
       `${who} dễ quên cặp — tối chuẩn bị một lần sẽ cứu sáng mai`,
       `«${title}» hay bị trễ. ${parent} chỉ cần neo “sau ăn tối” là đủ`,
     ]);
   }
-  if (t.includes('đánh răng')) {
+  if (kindTask === 'brush') {
     return voicePick(seed, [
       `${who} với đánh răng cần neo gần giường — nhắc tối đa 1 lần`,
       `Đánh răng đang nóng. Nhắc nhẹ rồi để ${who} tự làm`,
     ]);
   }
-  if (t.includes('ngủ')) {
+  if (kindTask === 'sleep') {
     return voicePick(seed, [
       `Giờ ngủ lệch sẽ kéo quên sáng — giữ neo cố định giúp ${who}`,
       `«${title}» ảnh hưởng cả ngày mai. Nhắc một lần, không đàm phán lại`,
     ]);
   }
-  if (t.includes('đọc') || t.includes('sách') || t.includes('bài') || t.includes('học')) {
+  if (kindTask === 'read' || kindTask === 'study') {
     return voicePick(seed, [
       `${who} cần khung 20 phút yên — xong thì tick ngay để nhận sao`,
       `Học/đọc đang chờ. Timer ngắn hiệu quả hơn ngồi soi`,
@@ -190,30 +337,91 @@ export function warmTaskTip(input: {
   itemId: string;
 }): string {
   const { title, childShort: who, parentRole: parent, flowDate, itemId } = input;
-  const t = title.toLowerCase();
+  const kindTask = taskKindOf(title);
   const seed = `${flowDate}:${itemId}:tip`;
+  const Parent = capitalizeParentRole(parent);
 
-  if (t.includes('đánh răng')) {
+  if (kindTask === 'brush') {
     return voicePick(seed, [
       'Neo bàn chải gần giường — xong là tick ngay',
       `${who} tự làm được nếu có neo rõ`,
     ]);
   }
-  if (t.includes('đọc') || t.includes('sách')) {
+  if (kindTask === 'read') {
     return voicePick(seed, [
       '10–20 phút là đủ — khen cụ thể khi xong',
       `Đọc cùng ${parent === 'bố mẹ' ? 'nhà' : parent} cũng là kỷ niệm`,
     ]);
   }
-  if (t.includes('cặp') || t.includes('balo') || t.includes('dọn')) {
+  if (kindTask === 'pack' || kindTask === 'tidy') {
     return voicePick(seed, [
       'Làm một lần vào tối — sáng sẽ nhẹ',
       'Chia nhỏ: sách / áo / hộp cơm',
     ]);
   }
+  if (kindTask === 'garden') {
+    return voicePick(seed, [
+      `${who} tưới cây giúp nhà — khen cụ thể khi xong`,
+      'Một lần tưới đủ nước là được — không cần nhắc lại',
+    ]);
+  }
   return voicePick(seed, [
-    `${parent.charAt(0).toUpperCase()}${parent.slice(1)} tin ${who} làm được`,
+    `${Parent} tin ${who} làm được`,
     'Một việc một lúc — không cần hoàn hảo',
     'Xong rồi tick ngay để cả nhà thấy tiến bộ',
   ]);
+}
+
+/** Nhật ký — câu phụ khớp trạng thái thật (chưa làm ≠ đang làm ≠ đã xong). */
+export function diaryTaskNote(
+  title: string,
+  childShort: string,
+  status: DiaryNoteStatus | boolean,
+  parentRole: ParentRole = 'bố mẹ',
+): string {
+  const who = childShort;
+  const parent = parentRole;
+  const kind = taskKindOf(title);
+  const state: DiaryNoteStatus =
+    typeof status === 'boolean' ? (status ? 'done' : 'pending') : status;
+  const titleLower = title.trim().toLowerCase();
+
+  if (state === 'skipped') {
+    return `${who} chưa làm được «${title}» lần này`;
+  }
+
+  if (state === 'awaiting') {
+    return `${who} đã báo xong «${title}» — đang chờ ${parent} kiểm tra`;
+  }
+
+  if (state === 'done') {
+    if (kind === 'wake') return `${who} đã dậy đúng giờ`;
+    if (kind === 'brush') return `${who} đã tự đánh răng mà không cần ${parent} nhắc!`;
+    if (kind === 'read') return `${who} đọc sách rất chăm chỉ hôm nay`;
+    if (kind === 'garden') return `${who} đã tưới cây giúp nhà rất tốt`;
+    if (kind === 'sleep') return `${who} đi ngủ đúng giờ — giấc ngủ ngon!`;
+    if (kind === 'pack') return `${who} đã chuẩn bị cặp xong`;
+    if (kind === 'study') return `${who} đã hoàn thành bài học`;
+    if (kind === 'tidy') return `${who} đã dọn xong «${title}»`;
+    if (kind === 'meal') return `${who} đã ${titleLower} xong`;
+    if (titleLower.includes('gia đình') || titleLower.includes('cùng')) {
+      return 'Khoảnh khắc ấm áp bên gia đình';
+    }
+    return `${who} đã hoàn thành «${title}» rất tốt!`;
+  }
+
+  // pending — chưa bắt đầu / chưa xong: không dùng "đang làm"
+  if (kind === 'wake') return `${who} chưa dậy`;
+  if (kind === 'brush') return `${who} cần hoàn thành đánh răng`;
+  if (kind === 'read') return `${who} chưa đọc sách`;
+  if (kind === 'garden') return `${who} chưa tưới cây`;
+  if (kind === 'sleep') return `${who} sắp đến giờ đi ngủ`;
+  if (kind === 'pack') return `${who} cần chuẩn bị cặp`;
+  if (kind === 'study') return `${who} chưa làm bài`;
+  if (kind === 'tidy') return `${who} chưa dọn «${title}»`;
+  if (kind === 'meal') return `${who} chưa ${titleLower}`;
+  if (titleLower.includes('gia đình') || titleLower.includes('cùng')) {
+    return `Chưa tới khoảnh khắc «${title}»`;
+  }
+  return `${who} chưa làm «${title}»`;
 }

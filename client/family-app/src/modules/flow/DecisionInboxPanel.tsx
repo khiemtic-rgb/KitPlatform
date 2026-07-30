@@ -34,8 +34,22 @@ function estimateSeconds(count: number): number {
 function headlineForCount(count: number): string {
   if (count <= 0) return 'Không việc cần duyệt — nghỉ ngơi đi.';
   const sec = estimateSeconds(count);
-  if (count === 1) return `AI cần bạn · 1 việc · khoảng ${sec} giây`;
-  return `AI cần bạn · ${count} việc · khoảng ${sec} giây · mục tiêu ≤1 phút`;
+  if (count === 1) return `Famixa cần bạn · 1 việc · khoảng ${sec} giây`;
+  return `Famixa cần bạn · ${count} việc · khoảng ${sec} giây · mục tiêu ≤1 phút`;
+}
+
+/** Soft-rewrite đề xuất cũ trong DB — không đụng SoT server. */
+function friendlyDecisionCopy(text: string | null | undefined): string {
+  const raw = (text ?? '').trim();
+  if (!raw) return '';
+  return raw
+    .replace(
+      /Routine\s*[「"]([^」"]+)[」"]\s*hơi dày\s*[—–-]\s*bỏ\s*(\d+)\s*việc\?/gi,
+      'Lịch 「$1」 đang hơi nhiều việc — bớt $2 việc?',
+    )
+    .replace(/AI gợi ý tạm ẩn/gi, 'Famixa đề xuất tạm ẩn')
+    .replace(/Bạn chỉ cần 👍\.?/g, 'Bạn chỉ cần bấm Áp dụng.')
+    .replace(/^AI cần bạn/i, 'Famixa cần bạn');
 }
 
 function sortForOneMinute(items: DecisionItem[]): DecisionItem[] {
@@ -168,10 +182,10 @@ export function DecisionInboxPanel({
         <section className="ph-b4-inbox is-empty-afe" aria-label="Decision Inbox">
           <header className="ph-b4-col-head">
             <h3>
-              <span aria-hidden>🤖</span> DECISION INBOX
+              <span aria-hidden>🤖</span> CẦN BẠN DUYỆT
             </h3>
           </header>
-          <p className="ph-b4-empty">Không đề xuất cần duyệt · mục tiêu ≤1 phút/ngày.</p>
+          <p className="ph-b4-empty">Không có đề xuất nào đang chờ bạn.</p>
           <button type="button" className="ph-b4-see-all" onClick={onOpenMode}>
             Đổi chế độ nhà (1 chạm) ›
           </button>
@@ -182,11 +196,11 @@ export function DecisionInboxPanel({
       <section className="ph-b4-inbox" aria-label="Decision Inbox">
         <header className="ph-b4-col-head">
           <h3>
-            <span aria-hidden>🤖</span> DECISION INBOX
+            <span aria-hidden>🤖</span> CẦN BẠN DUYỆT
             {count > 0 ? <i>{Math.min(count, 9)}</i> : null}
           </h3>
           {count > 0 ? (
-            <em className="ph-b4-inbox-eta">~{etaSec}s · ≤1 phút</em>
+            <em className="ph-b4-inbox-eta">khoảng {etaSec} giây</em>
           ) : null}
         </header>
         {items.length === 0 ? (
@@ -197,7 +211,7 @@ export function DecisionInboxPanel({
               const yesFirst = preferApprove(item);
               return (
                 <li key={`${item.kind}-${item.id}`}>
-                  <p>{item.titleVi}</p>
+                  <p>{friendlyDecisionCopy(item.titleVi)}</p>
                   <div className="ph-b4-inbox-btns">
                     {yesFirst ? (
                       <>
@@ -262,12 +276,12 @@ export function DecisionInboxPanel({
     <section className="ph-block ph-decision-inbox">
       <header className="ph-block-head">
         <h2>
-          AI CẦN BẠN
+          CẦN BẠN DUYỆT
           {count > 0 ? <span className="ph-pill-count">{Math.min(count, 9)}</span> : null}
         </h2>
       </header>
       <p className="ph-digest-promise" role="status">
-        {inbox?.headlineVi ?? headlineForCount(count) ?? 'Đang tải…'}
+        {friendlyDecisionCopy(inbox?.headlineVi) || headlineForCount(count) || 'Đang tải…'}
       </p>
       {count > 0 ? (
         <p className="ph-afe-eta" role="status">
@@ -290,11 +304,11 @@ export function DecisionInboxPanel({
             return (
               <li key={`${item.kind}-${item.id}`} className="ph-decision-card">
                 <div className="ph-decision-card-body">
-                  <strong>{item.titleVi}</strong>
-                  <p>{item.bodyVi}</p>
+                  <strong>{friendlyDecisionCopy(item.titleVi)}</strong>
+                  <p>{friendlyDecisionCopy(item.bodyVi)}</p>
                   {item.recommend ? (
                     <span className={`ph-decision-rec rec-${item.recommend}`}>
-                      AI gợi ý:{' '}
+                      Famixa gợi ý:{' '}
                       {item.recommend === 'approve'
                         ? 'Đồng ý'
                         : item.recommend === 'reject'

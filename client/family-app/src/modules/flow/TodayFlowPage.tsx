@@ -23,22 +23,7 @@ import {
   type TeamDay,
 } from '@/shared/api/family-os.api';
 import { useSessionStore } from '@/shared/auth/session.store';
-import {
-  ensureNotificationPermission,
-  notifyDueCommitments,
-  shouldOfferNotificationOptIn,
-} from '@/shared/reminders/localReminders';
-import {
-  isInAppChimeEnabled,
-  playInAppDueChime,
-  setInAppChimeEnabled,
-} from '@/shared/reminders/inAppChime';
-import {
-  fetchParentPushStatus,
-  isParentPushSupported,
-  registerParentPushSubscription,
-  subscribeParentPush,
-} from '@/shared/push/parentPush';
+import { notifyDueCommitments } from '@/shared/reminders/localReminders';
 import { ParentPinSheet } from '@/shared/ui/ParentPinSheet';
 import { useHoldAction } from '@/shared/ui/useHoldAction';
 import { KidFocusView } from '@/modules/flow/KidFocusView';
@@ -48,6 +33,27 @@ import { RetrievalCheckSheet } from '@/modules/flow/RetrievalCheckSheet';
 import { buildTeamDayFromChildren, slicesFromCommitments } from '@/modules/flow/teamPlay';
 import { isScreenBoundaryCode } from '@/shared/screen/screenBoundary';
 import { hydrateFamilyValueState } from '@/shared/value/value-sync';
+import { getApiErrorMessage } from '@/shared/billing/capability-error';
+import { parentRoleFromMembers } from '@/shared/voice/family-voice';
+
+/** Stub when ensure day-flow fails — parent Báo cáo / Nhật ký still usable. */
+function emptyDayFlow(familyId: string): DayFlow {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return {
+    id: '',
+    familyId,
+    routineName: '',
+    flowDate: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+    totalCommitments: 0,
+    doneCount: 0,
+    pendingCount: 0,
+    dueNowCount: 0,
+    overdueCount: 0,
+    upcomingCount: 0,
+    commitments: [],
+  };
+}
 
 export function TodayFlowPage() {
   const navigate = useNavigate();
@@ -67,10 +73,10 @@ export function TodayFlowPage() {
   const [pinOpen, setPinOpen] = useState(false);
   const [pinPurpose, setPinPurpose] = useState<'switch' | 'unlock'>('switch');
   const [softLockBypassed, setSoftLockBypassed] = useState(false);
-  const [offerReminders, setOfferReminders] = useState(() => shouldOfferNotificationOptIn());
-  const [parentPushSubscribed, setParentPushSubscribed] = useState(false);
-  const [inAppChime, setInAppChime] = useState(() => isInAppChimeEnabled());
   const [familyChildren, setFamilyChildren] = useState<
+    Array<{ id: string; displayName: string }>
+  >([]);
+  const [familyParents, setFamilyParents] = useState<
     Array<{ id: string; displayName: string }>
   >([]);
   const [onboardBanner, setOnboardBanner] = useState<string | null>(null);
@@ -116,21 +122,30 @@ export function TodayFlowPage() {
     void fetchFamilies()
       .then((families) => {
         const family = families.find((f) => f.id === familyId) ?? families[0];
-        const kids = (family?.members ?? [])
+        const members = family?.members ?? [];
+        const kids = members
           .filter((m) => m.roleCode === 'child')
           .map((m) => ({ id: m.id, displayName: m.displayName }));
+        const parents = members
+          .filter((m) => m.roleCode !== 'child')
+          .map((m) => ({ id: m.id, displayName: m.displayName }));
         setFamilyChildren(kids);
+        setFamilyParents(parents);
       })
-      .catch(() => setFamilyChildren([]));
+      .catch(() => {
+        setFamilyChildren([]);
+        setFamilyParents([]);
+      });
   }, [familyId]);
 
   const load = useCallback(async (silent = false) => {
     if (!familyId) return;
     if (!silent) setLoading(true);
-    setError(null);
+    if (!silent) setError(null);
     try {
       const day = await ensureDayFlow(familyId);
       setFlow(day);
+      setError(null);
       const [ev, gl, team] = await Promise.all([
         fetchConsequenceEvents(familyId, day.flowDate),
         fetchAccountabilityGlance(familyId),
@@ -160,7 +175,32 @@ export function TodayFlowPage() {
         if (!silent) setError('Phiên đăng nhập hết hạn. Bố mẹ mở khóa lại nhé.');
         return;
       }
-      if (!silent) setError('Chưa mở được ngày hôm nay. Thử lại nhé.');
+
+      const apiMsg = getApiErrorMessage(err);
+      const current = useSessionStore.getState().member;
+      const asParent = current?.roleCode !== 'child';
+
+      // Parent: don't block Báo cáo / Nhật ký when day-flow can't open (e.g. no routine yet).
+      if (asParent) {
+        setFlow((prev) => prev ?? emptyDayFlow(familyId));
+        try {
+          const gl = await fetchAccountabilityGlance(familyId);
+          setGlance(gl);
+        } catch {
+          /* glance optional */
+        }
+        if (!silent) {
+          const noRoutine = /routine/i.test(apiMsg) || apiMsg.includes('Chưa có routine');
+          setError(
+            noRoutine
+              ? 'Nhà mình chưa có lịch việc hằng ngày. Bấm “Thiết lập cho nhà” để Famixa gợi ý vài việc phù hợp — chỉ mất 1 phút.'
+              : apiMsg || 'Chưa mở được ngày hôm nay. Thử lại nhé.',
+          );
+        }
+        return;
+      }
+
+      if (!silent) setError(apiMsg || 'Chưa mở được ngày hôm nay. Thử lại nhé.');
     } finally {
       if (!silent) setLoading(false);
     }
@@ -177,6 +217,11 @@ export function TodayFlowPage() {
   }, [familyId, load]);
 
   const isChild = member?.roleCode === 'child';
+
+  const householdParentRole = useMemo(
+    () => parentRoleFromMembers(familyParents.map((p) => p.displayName)),
+    [familyParents],
+  );
 
   const kidItems = useMemo(() => {
     if (!flow || !member || !isChild) return [] as DayFlowCommitment[];
@@ -240,55 +285,6 @@ export function TodayFlowPage() {
   }, [softLockActive, goWho]);
 
   const hold = useHoldAction(requestSwitchUser);
-
-  useEffect(() => {
-    if (!familyId || !member || member.roleCode === 'child') return;
-    void fetchParentPushStatus(familyId, member.id)
-      .then((s) => setParentPushSubscribed(s.subscribed))
-      .catch(() => setParentPushSubscribed(false));
-  }, [familyId, member]);
-
-  const enableParentPush = async () => {
-    if (!familyId || !member) return;
-    try {
-      if (!isParentPushSupported()) {
-        setError('Trình duyệt không hỗ trợ Web Push.');
-        return;
-      }
-      const status = await fetchParentPushStatus(familyId, member.id);
-      if (!status.supported || !status.publicKey) {
-        setError('Push chưa cấu hình trên server.');
-        return;
-      }
-      await Notification.requestPermission();
-      const sub = await subscribeParentPush(status.publicKey);
-      await registerParentPushSubscription(familyId, {
-        membershipId: member.id,
-        ...sub,
-      });
-      setParentPushSubscribed(true);
-      setOfferReminders(false);
-    } catch {
-      setError('Chưa bật được nhắc push. Thử lại trên Chrome/Edge (HTTPS hoặc localhost).');
-    }
-  };
-
-  const enableReminders = async () => {
-    const permission = await ensureNotificationPermission();
-    setOfferReminders(shouldOfferNotificationOptIn());
-    if (permission === 'granted' && flow) {
-      notifyDueCommitments(flow, {
-        memberId: isChild ? member?.id : undefined,
-      });
-    }
-  };
-
-  const toggleInAppChime = () => {
-    const next = !isInAppChimeEnabled();
-    setInAppChimeEnabled(next);
-    setInAppChime(next);
-    if (next) void playInAppDueChime();
-  };
 
   const markDone = async (
     item: DayFlowCommitment,
@@ -434,10 +430,60 @@ export function TodayFlowPage() {
   };
 
   if (!member) return null;
+  const isNoRoutineNotice =
+    !isChild && Boolean(error && /lịch việc|routine|onboarding/i.test(error));
 
   return (
     <>
-      {error ? (
+      {error && isNoRoutineNotice ? (
+        <section className="dayflow-setup-notice" role="status" aria-live="polite">
+          <div className="dayflow-setup-main">
+            <div className="dayflow-setup-art" aria-hidden>
+              📋
+            </div>
+            <div className="dayflow-setup-copy">
+              <h2>Nhà mình chưa có lịch việc hằng ngày.</h2>
+              <p>
+                Bấm “Thiết lập cho nhà” để Famixa gợi ý vài việc phù hợp —{' '}
+                <strong>chỉ mất 1 phút.</strong>
+              </p>
+            </div>
+          </div>
+          <div className="dayflow-setup-actions">
+            <button
+              type="button"
+              className="dayflow-setup-btn is-primary"
+              onClick={() => navigate('/onboarding')}
+            >
+              <span aria-hidden>🪄</span>
+              Thiết lập cho nhà
+            </button>
+            <button
+              type="button"
+              className="dayflow-setup-btn is-retry"
+              onClick={() => void load()}
+            >
+              <span aria-hidden>↻</span>
+              Thử lại
+            </button>
+            <button
+              type="button"
+              className="dayflow-setup-btn is-unlock"
+              onClick={() => {
+                useSessionStore.getState().clear();
+                navigate('/unlock', { replace: true });
+              }}
+            >
+              <span aria-hidden>🔒</span>
+              Mở khóa lại
+            </button>
+          </div>
+          <p className="dayflow-setup-note">
+            <span aria-hidden>ⓘ</span>
+            Thiết lập giúp AI gợi ý lịch phù hợp hơn cho gia đình bạn.
+          </p>
+        </section>
+      ) : error ? (
         <div className="banner-error" style={{ display: 'grid', gap: 10 }}>
           <div>{error}</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -474,6 +520,7 @@ export function TodayFlowPage() {
       {flow && isChild ? (
         <KidFocusView
           childName={member.displayName}
+          parentRole={householdParentRole}
           items={kidItems}
           busyId={busyId}
           celebrating={celebrating}
@@ -522,12 +569,6 @@ export function TodayFlowPage() {
           consequenceEvents={events}
           glance={glance}
           children={familyChildren}
-          parentPushSubscribed={parentPushSubscribed}
-          onEnableParentPush={() => void enableParentPush()}
-          offerLocalReminders={offerReminders}
-          onEnableLocalReminders={() => void enableReminders()}
-          inAppChimeEnabled={inAppChime}
-          onToggleInAppChime={toggleInAppChime}
           onMarkDone={(item) => void markDone(item, undefined, true)}
           onReflect={(item, reason) => void markReflect(item, reason)}
           onReopen={(item) => void reopenCommitment(item)}

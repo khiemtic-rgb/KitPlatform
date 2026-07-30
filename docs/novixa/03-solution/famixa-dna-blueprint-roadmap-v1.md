@@ -226,3 +226,4 @@ Next step · “Hôm nay thử hỏi con học được gì — thay vì điểm
 4. **Website / pricing:** đọc [`famixa-package-website-memo-v1.md`](./famixa-package-website-memo-v1.md) trước khi sửa `famixa-site`.
 5. **Self-calibration (bubble → cú sốc tự tin):** SoT [`famixa-self-calibration-playbook-v1.md`](./famixa-self-calibration-playbook-v1.md) · code `FamilySelfCalibration` · checklist nâng cấp §7 trong playbook.
 6. **Growth Balance (quan tâm có phương pháp · tránh tự ti / thiếu phấn đấu / dễ hư):** SoT [`famixa-growth-balance-v1.md`](./famixa-growth-balance-v1.md) · code `FamilyGrowthBalance`.
+7. **Wave B — Blueprint-first (2 tuần):** SoT [`famixa-wave-b-blueprint-first-2w-v1.md`](./famixa-wave-b-blueprint-first-2w-v1.md) · gap matrix [`famixa-blueprint-domain-gap-matrix-v1.md`](./famixa-blueprint-domain-gap-matrix-v1.md) · B1: Coach / Brief / CoachInsight đọc DNA (`blueprint-context.ts`, `FamilyCoachInsightService`).
