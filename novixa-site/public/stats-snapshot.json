@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-29T19:46:01.064Z",
+  "generatedAt": "2026-07-30T03:31:34.327Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 335,
-    "last24hPageViews": 269,
-    "last24hRequests": 872
+    "todayVisitors": 164,
+    "todayPageViews": 90,
+    "todayRequests": 243,
+    "last24hVisitors": 281,
+    "last24hPageViews": 217,
+    "last24hRequests": 729
   },
   "hourly": [
-    {
-      "time": "2026-07-28T20:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-07-28T21:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-07-28T22:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-07-28T23:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
-    {
-      "time": "2026-07-29T00:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-07-29T01:00:00Z",
-      "visitors": 148,
-      "requests": 234
-    },
-    {
-      "time": "2026-07-29T02:00:00Z",
-      "visitors": 63,
-      "requests": 113
-    },
-    {
-      "time": "2026-07-29T03:00:00Z",
-      "visitors": 21,
-      "requests": 25
-    },
     {
       "time": "2026-07-29T04:00:00Z",
       "visitors": 10,
@@ -125,6 +85,41 @@
       "time": "2026-07-29T19:00:00Z",
       "visitors": 3,
       "requests": 4
+    },
+    {
+      "time": "2026-07-29T21:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-07-29T22:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-07-29T23:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-07-30T00:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-07-30T01:00:00Z",
+      "visitors": 7,
+      "requests": 13
+    },
+    {
+      "time": "2026-07-30T02:00:00Z",
+      "visitors": 149,
+      "requests": 211
+    },
+    {
+      "time": "2026-07-30T03:00:00Z",
+      "visitors": 13,
+      "requests": 15
     }
   ],
   "daily": [
@@ -160,51 +155,53 @@
     },
     {
       "date": "2026-07-29",
-      "visitors": 328,
-      "pageViews": 260,
-      "requests": 854
+      "visitors": 332,
+      "pageViews": 261,
+      "requests": 862
+    },
+    {
+      "date": "2026-07-30",
+      "visitors": 164,
+      "pageViews": 90,
+      "requests": 243
     }
   ],
   "topPages": [
     {
-      "path": "/vi/tin-tuc/career-path-tao-dong-luc-phat-trien-ra-sao/",
-      "views": 81
+      "path": "/vi/tin-tuc/checklist-giup-giam-sai-sot-trong-van-hanh/",
+      "views": 83
     },
     {
-      "path": "/images/tin-tuc/chu-nha-thuoc-ban-ron.png",
-      "views": 72
-    },
-    {
-      "path": "/vi/tin-tuc/vi-sao-chu-nha-thuoc-luon-ban-nhung-hieu-qua-khong-cao/",
-      "views": 57
-    },
-    {
-      "path": "/images/tin-tuc/dong-luc-phat-trien.png",
+      "path": "/images/tin-tuc/checklist-giup-giam-sai-sot.png",
       "views": 56
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 46
-    },
-    {
-      "path": "/images/tin-tuc/van-hanh-nha-thuoc.png",
-      "views": 39
-    },
-    {
-      "path": "/images/tin-tuc/giup-giu-chan-nhan-vien.png",
-      "views": 35
+      "views": 37
     },
     {
       "path": "/images/tin-tuc/lap-ke-hoach-nha-thuoc.png",
+      "views": 34
+    },
+    {
+      "path": "/images/tin-tuc/van-hanh-nha-thuoc.png",
+      "views": 31
+    },
+    {
+      "path": "/images/tin-tuc/giup-giu-chan-nhan-vien.png",
       "views": 31
     },
     {
       "path": "/robots.txt",
-      "views": 25
+      "views": 24
+    },
+    {
+      "path": "/images/tin-tuc/dong-luc-phat-trien.png",
+      "views": 23
     },
     {
       "path": "/images/tin-tuc/lo-trinh-l0-l6-cua-novixa-academy.png",
-      "views": 23
+      "views": 19
     },
     {
       "path": "/graphql/console",
@@ -215,16 +212,20 @@
       "views": 18
     },
     {
-      "path": "/vi/giai-phap/",
-      "views": 18
-    },
-    {
       "path": "/v1/graphql",
       "views": 18
     },
     {
       "path": "/.git-credentials",
       "views": 18
+    },
+    {
+      "path": "/vi/giai-phap/",
+      "views": 18
+    },
+    {
+      "path": "/",
+      "views": 16
     }
   ]
 }
