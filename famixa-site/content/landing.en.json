@@ -55,22 +55,22 @@
     "secondaryCta": "Watch video",
     "secondaryHref": "#video",
     "image": {
-      "src": "/images/hero-family.png",
-      "alt": "A family before Famixa — parents exhausted from daily reminders"
+      "src": "/images/banner-right.png",
+      "alt": "A happy family with Fami — kids self-driven, parents at ease"
     },
     "bubbles": [
       {
-        "text": "Go study...\nHomework done?\nWhy the phone\nagain?",
-        "left": "33%",
-        "top": "20%",
-        "width": "20%",
+        "text": "Kids are more\nself-driven!",
+        "left": "24%",
+        "top": "3%",
+        "width": "22%",
         "tail": "br"
       },
       {
-        "text": "I keep saying it\nand nothing\nchanges...",
-        "left": "71%",
-        "top": "18.5%",
-        "width": "18%",
+        "text": "No more daily\nnagging!",
+        "left": "88%",
+        "top": "2.5%",
+        "width": "21%",
         "tail": "bl"
       }
     ],
@@ -429,8 +429,8 @@
     "lead": "Families don't need to be perfect.\nJust grow together, one day at a time.",
     "cta": "Start your family's journey",
     "image": {
-      "src": "/images/cta-campfire.png",
-      "alt": "A family and Fami by the campfire"
+      "src": "/images/banner-right.png",
+      "alt": "A happy family with Fami — kids self-driven, parents at ease"
     }
   },
   "footer": {

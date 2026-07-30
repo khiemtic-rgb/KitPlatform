@@ -71,7 +71,7 @@ export function Hero({ content, appUrl, locale }: Props) {
           <div className="relative z-10 min-w-0 self-center">
             <div className="relative w-full [container-type:inline-size]">
               <img
-                src={`${content.image.src}?v=i18n-bubbles`}
+                src={`${content.image.src}?v=happy-bubbles-5`}
                 alt={content.image.alt}
                 width={1536}
                 height={1024}
@@ -90,26 +90,26 @@ export function Hero({ content, appUrl, locale }: Props) {
               {(content.bubbles ?? []).map((b) => (
                 <div
                   key={`${b.left}-${b.top}-${locale}`}
-                  className="absolute z-[2] -translate-x-1/2 -translate-y-1/2"
+                  className="absolute z-[2] -translate-x-1/2"
                   style={{ left: b.left, top: b.top, width: b.width }}
                   title={t.bubbleCopyHint}
                 >
                   <div
                     className={[
-                      'relative flex aspect-[1.48/1] w-full items-center justify-center rounded-[48%] border border-[#E8DFD0] bg-[#FBF6EC]',
-                      'px-[12%] py-[10%] text-center shadow-[0_6px_18px_rgba(61,43,31,0.12)]',
+                      'relative flex w-full items-center justify-center rounded-[1.35rem] border border-[#EDE8DF] bg-white',
+                      'px-[14%] py-[12%] text-center shadow-[0_6px_18px_rgba(61,43,31,0.12)]',
                       b.tail === 'bl'
-                        ? 'after:absolute after:bottom-[-6%] after:left-[28%] after:h-[18%] after:w-[18%] after:rotate-45 after:rounded-[3px] after:border-b after:border-r after:border-[#E8DFD0] after:bg-[#FBF6EC] after:content-[""]'
+                        ? 'after:absolute after:bottom-[-7px] after:left-[26%] after:h-3.5 after:w-3.5 after:rotate-45 after:rounded-[2px] after:border-b after:border-r after:border-[#EDE8DF] after:bg-white after:content-[""]'
                         : b.tail === 'br'
-                          ? 'after:absolute after:bottom-[-6%] after:right-[28%] after:h-[18%] after:w-[18%] after:rotate-45 after:rounded-[3px] after:border-b after:border-r after:border-[#E8DFD0] after:bg-[#FBF6EC] after:content-[""]'
-                          : 'after:absolute after:bottom-[-7%] after:left-1/2 after:h-[16%] after:w-[16%] after:-translate-x-1/2 after:rotate-45 after:rounded-[3px] after:border-b after:border-r after:border-[#E8DFD0] after:bg-[#FBF6EC] after:content-[""]',
+                          ? 'after:absolute after:bottom-[-7px] after:right-[26%] after:h-3.5 after:w-3.5 after:rotate-45 after:rounded-[2px] after:border-b after:border-r after:border-[#EDE8DF] after:bg-white after:content-[""]'
+                          : 'after:absolute after:bottom-[-7px] after:left-1/2 after:h-3.5 after:w-3.5 after:-translate-x-1/2 after:rotate-45 after:rounded-[2px] after:border-b after:border-r after:border-[#EDE8DF] after:bg-white after:content-[""]',
                     ].join(' ')}
                   >
                     <p
                       className="relative z-[1] m-0 w-full select-text font-bold tracking-[-0.015em] text-[#3D2B1F]"
                       style={{
-                        fontSize: 'clamp(0.48rem, 1.45cqw, 0.78rem)',
-                        lineHeight: 1.22,
+                        fontSize: 'clamp(0.68rem, 1.85cqw, 0.95rem)',
+                        lineHeight: 1.25,
                         whiteSpace: 'pre-line',
                       }}
                     >

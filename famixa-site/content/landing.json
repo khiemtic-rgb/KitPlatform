@@ -103,22 +103,22 @@
     "secondaryCta": "Xem video",
     "secondaryHref": "#video",
     "image": {
-      "src": "/images/hero-family.png",
-      "alt": "Gia đình trước Famixa — cha mẹ mệt mỏi khi phải nhắc con mỗi ngày"
+      "src": "/images/banner-right.png",
+      "alt": "Gia đình hạnh phúc với Fami — con tự giác, cha mẹ nhẹ nhõm"
     },
     "bubbles": [
       {
-        "text": "Học đi con...\nLàm bài chưa?\nSao lại xem\nđiện thoại nữa?",
-        "left": "33%",
-        "top": "20%",
-        "width": "20%",
+        "text": "Con tự giác hơn\nmỗi ngày rồi!",
+        "left": "24%",
+        "top": "3%",
+        "width": "22%",
         "tail": "br"
       },
       {
-        "text": "Nhắc mãi mà\ncon vẫn không\nthay đổi...",
-        "left": "71%",
-        "top": "18.5%",
-        "width": "18%",
+        "text": "Bố mẹ không còn\nphải nhắc nữa!",
+        "left": "88%",
+        "top": "2.5%",
+        "width": "21%",
         "tail": "bl"
       }
     ],
@@ -536,8 +536,8 @@
     "lead": "Gia đình không cần hoàn hảo.\nChỉ cần cùng nhau trưởng thành mỗi ngày.",
     "cta": "Bắt đầu hành trình của bạn",
     "image": {
-      "src": "/images/cta-campfire.png",
-      "alt": "Gia đình và Fami bên lửa trại"
+      "src": "/images/banner-right.png",
+      "alt": "Gia đình hạnh phúc với Fami — con tự giác, cha mẹ nhẹ nhõm"
     }
   },
   "footer": {
