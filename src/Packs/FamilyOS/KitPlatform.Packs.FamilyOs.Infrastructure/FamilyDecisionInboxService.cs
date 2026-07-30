@@ -79,7 +79,9 @@ internal sealed class FamilyDecisionInboxService : IFamilyDecisionInboxService
                 items.Add(new FamilyDecisionItemDto(
                     FamilyDecisionKinds.ConsequenceConfirm,
                     e.Id.ToString("D"),
-                    "Xác nhận thỏa thuận màn hình / hậu quả",
+                    string.IsNullOrWhiteSpace(e.MemberName)
+                        ? "Xác nhận thỏa thuận màn hình / hậu quả"
+                        : $"{ShortName(e.MemberName)} · xác nhận thỏa thuận màn hình",
                     string.IsNullOrWhiteSpace(e.LabelVi) ? e.ConsequenceCode : e.LabelVi,
                     "approve",
                     e.MemberId,
@@ -124,14 +126,15 @@ internal sealed class FamilyDecisionInboxService : IFamilyDecisionInboxService
             foreach (var r in redemptions.Where(r =>
                          string.Equals(r.Status, "pending", StringComparison.OrdinalIgnoreCase)))
             {
+                var who = string.IsNullOrWhiteSpace(r.MemberName) ? "Con" : ShortName(r.MemberName);
                 items.Add(new FamilyDecisionItemDto(
                     FamilyDecisionKinds.RewardFulfill,
                     r.Id.ToString("D"),
-                    $"Đổi quà · {r.Title}",
-                    $"{r.Icon} {r.StarCost} sao — con đang chờ nhận.",
+                    $"{who} đổi quà · {r.Title}",
+                    $"{r.Icon} {r.StarCost} sao — {who} đang chờ nhận.",
                     "approve",
-                    null,
-                    null,
+                    r.MemberId,
+                    r.MemberName,
                     r.CreatedAt,
                     "redemption",
                     r.Id));

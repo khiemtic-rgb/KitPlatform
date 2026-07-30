@@ -66,7 +66,9 @@ export function PaywallSheet({
   const isFree = !subscription?.isEntitled || subscription?.tierCode === 'free';
   const isPlus = subscription?.tierCode === 'plus' && subscription.isEntitled;
   const isPro = subscription?.tierCode === 'pro' && subscription.isEntitled;
-  const isTrial = subscription?.status === 'trial' && subscription.isEntitled;
+  const isTrial =
+    (subscription?.status === 'trial' || subscription?.status === 'trial_grace') &&
+    subscription.isEntitled;
   const benefits = targetTier === 'ai_plus' ? AI_PLUS_BENEFITS : PRO_BENEFITS;
 
   const defaultReason =

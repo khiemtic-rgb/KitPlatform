@@ -11,12 +11,16 @@ import {
   fetchMemberMood,
   upsertMemberMood,
   redeemReward,
+  fetchScreenWallet,
+  fetchChildRequests,
   type RewardCatalogItem,
   type RewardRedemption,
   type TeamUnlock,
   type AccountabilityDayGlance,
   type DayFlowCommitment,
   type SkipReasonCode,
+  type ScreenWallet,
+  type ChildRequest,
 } from '@/shared/api/family-os.api';
 import { ChildScreenRequestSheet } from '@/modules/flow/ChildScreenRequestSheet';
 import { ChildMissionRequestSheet } from '@/modules/flow/ChildMissionRequestSheet';
@@ -91,6 +95,52 @@ function kidMissionUxState(
 type DayPart = 'all' | 'morning' | 'afternoon' | 'evening' | 'done';
 type KidTab = 'home' | 'tasks' | 'rewards' | 'log';
 type KidHomePane = 'hub' | 'praise' | 'streak' | 'garden' | 'ask' | 'challenge';
+
+function requestStatusLabel(status: string): string {
+  switch (status) {
+    case 'pending':
+      return 'Chờ bố mẹ duyệt';
+    case 'approved':
+      return 'Đã đồng ý';
+    case 'partial':
+      return 'Đồng ý một phần';
+    case 'rejected':
+      return 'Từ chối';
+    case 'expired':
+      return 'Hết hạn';
+    default:
+      return status;
+  }
+}
+
+function requestKindLabel(req: ChildRequest): string {
+  if (req.kind === 'day_mission') {
+    return req.titleVi ? `Đề xuất việc «${req.titleVi}»` : 'Đề xuất việc hôm nay';
+  }
+  if (req.kind === 'screen_minutes' || !req.kind) {
+    const mins = req.grantedMinutes ?? req.amountMinutes;
+    return mins != null ? `Xin +${mins} phút màn hình` : 'Xin thêm phút màn hình';
+  }
+  return req.titleVi || 'Đề xuất gửi bố mẹ';
+}
+
+function EnTerm({
+  en,
+  vi,
+  as = 'span',
+}: {
+  en: string;
+  vi: string;
+  as?: 'span' | 'strong' | 'h2' | 'em';
+}) {
+  const Tag = as;
+  return (
+    <span className="kv2-en-term">
+      <Tag className="kv2-en-term-main">{en}</Tag>
+      <em className="kv2-en-term-vi">{vi}</em>
+    </span>
+  );
+}
 
 function formatWindow(start?: string, end?: string): string | null {
   if (!start && !end) return null;
@@ -1039,6 +1089,9 @@ export function KidFocusView({
   const [screenRequestOpen, setScreenRequestOpen] = useState(false);
   const [missionRequestOpen, setMissionRequestOpen] = useState(false);
   const [screenRequestToast, setScreenRequestToast] = useState<string | null>(null);
+  const [screenWallet, setScreenWallet] = useState<ScreenWallet | null>(null);
+  const [childRequests, setChildRequests] = useState<ChildRequest[]>([]);
+  const [askReloadTick, setAskReloadTick] = useState(0);
   const [moodIdx, setMoodIdx] = useState(3);
   const [moodNote, setMoodNote] = useState('');
   const [moodSaving, setMoodSaving] = useState(false);
@@ -1080,6 +1133,18 @@ export function KidFocusView({
   useEffect(() => {
     setLocalStars(starBalance);
   }, [starBalance]);
+
+  useEffect(() => {
+    if (!treasureSheet && !journalSheet && !active) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (treasureSheet) setTreasureSheet(null);
+      else if (journalSheet) setJournalSheet(null);
+      else setActive(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [treasureSheet, journalSheet, active]);
 
   useEffect(() => {
     if (!familyId) return;
@@ -1131,6 +1196,34 @@ export function KidFocusView({
       cancelled = true;
     };
   }, [familyId, flowDate, teamComplete]);
+
+  useEffect(() => {
+    if (!familyId || !childMemberId) {
+      setScreenWallet(null);
+      setChildRequests([]);
+      return;
+    }
+    let cancelled = false;
+    void Promise.all([
+      fetchScreenWallet(familyId).catch(() => [] as ScreenWallet[]),
+      fetchChildRequests(familyId, { memberId: childMemberId }).catch(
+        () => [] as ChildRequest[],
+      ),
+    ]).then(([wallets, requests]) => {
+      if (cancelled) return;
+      setScreenWallet(
+        wallets.find((w) => w.memberId === childMemberId) ?? wallets[0] ?? null,
+      );
+      setChildRequests(
+        [...requests].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        ),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId, childMemberId, askReloadTick, homePane]);
 
   useEffect(() => {
     if (!familyId || !childMemberId || !flowDate) {
@@ -1261,11 +1354,14 @@ export function KidFocusView({
   const countAfternoon = items.filter((i) => dayPartOf(i) === 'afternoon').length;
   const countEvening = items.filter((i) => dayPartOf(i) === 'evening').length;
 
-  const challengeTarget = 3;
-  const challengeDone = Math.min(challengeTarget, doneCount);
-  const challengePct = Math.round((challengeDone / challengeTarget) * 100);
   const missionSegs = 7;
   const missionFilled = Math.round((unlockPct / 100) * missionSegs);
+
+  const recentAsks = useMemo(() => childRequests.slice(0, 4), [childRequests]);
+  const pendingAskCount = useMemo(
+    () => childRequests.filter((r) => r.status === 'pending').length,
+    [childRequests],
+  );
 
   const garden = useMemo(
     () =>
@@ -1283,6 +1379,26 @@ export function KidFocusView({
       }),
     [trulyDone],
   );
+
+  const gardenBloom = useMemo(() => {
+    const name = shortChildName(childName);
+    const goal = 3;
+    const healthy = garden.filter((g) => g.mood === 'healthy').length;
+    const reached = healthy >= goal;
+    const remaining = Math.max(0, goal - healthy);
+    return {
+      goal,
+      healthy,
+      reached,
+      remaining,
+      pct: Math.min(100, Math.round((healthy / goal) * 100)),
+      label: reached
+        ? `Vườn của ${name} đã nở! ${healthy} cây khỏe hôm nay 🌸`
+        : healthy > 0
+          ? `Còn ${remaining} cây khỏe nữa là vườn nở 🌸`
+          : 'Làm việc đúng giờ để vườn nở hoa 🌸',
+    };
+  }, [garden, childName]);
 
   const gardenSlots = useMemo(() => {
     const unlocked = garden.slice(0, 4);
@@ -1583,6 +1699,16 @@ export function KidFocusView({
     const hasRedeem = redemptions.length > 0;
     return [
       {
+        id: 'garden-bloom',
+        icon: '🌸',
+        label: 'Vườn nở',
+        unlocked: gardenBloom.reached,
+        progress: gardenBloom.pct,
+        hint: gardenBloom.reached
+          ? 'Đã mở khóa nhờ 3 cây khỏe trong ngày!'
+          : `Còn ${gardenBloom.remaining} cây khỏe nữa`,
+      },
+      {
         id: 'first',
         icon: '🎁',
         label: 'Đổi quà đầu tiên',
@@ -1626,7 +1752,7 @@ export function KidFocusView({
             : `Cả nhà hoàn thành ${Math.max(0, 100 - unlockPct)}% nữa`,
       },
     ];
-  }, [redemptions.length, stars, streak, teamComplete, unlockPct]);
+  }, [redemptions.length, stars, streak, unlockPct, gardenBloom]);
 
   const bigAchievements = useMemo(() => {
     const movieTimes = teamUnlocks.filter((u) => u.status === 'confirmed').length;
@@ -1639,7 +1765,10 @@ export function KidFocusView({
         icon: '🎬',
         title: 'Movie Night',
         value: movieTimes > 0 ? `${movieTimes} lần` : '—',
-        note: movieTimes > 0 ? 'Cả nhà cùng vui!' : 'Hoàn thành nhiệm vụ nhóm nhé!',
+        note:
+          movieTimes > 0
+            ? 'Đêm xem phim cả nhà — đã mở!'
+            : 'Đêm xem phim cả nhà · hoàn thành nhiệm vụ nhóm nhé!',
       },
       {
         id: 'read',
@@ -1658,7 +1787,12 @@ export function KidFocusView({
         icon: '🌱',
         title: 'Khu vườn',
         value: `Cấp ${explorerLevel}`,
-        note: doneCount > 0 ? 'Cây đã lớn rất nhanh!' : 'Bắt đầu từ nhiệm vụ đầu tiên!',
+        note:
+          gardenBloom.healthy > 0
+            ? `${gardenBloom.healthy} cây khỏe hôm nay!`
+            : doneCount > 0
+              ? 'Cây đã trồng — làm đúng giờ để khỏe hơn!'
+              : 'Bắt đầu từ nhiệm vụ đầu tiên!',
       },
       {
         id: 'foxy',
@@ -1675,7 +1809,7 @@ export function KidFocusView({
         note: starBalanceNote(stars),
       },
     ];
-  }, [teamUnlocks, trulyDone, explorerLevel, doneCount, short, stars, parentRole]);
+  }, [teamUnlocks, trulyDone, explorerLevel, doneCount, short, stars, parentRole, gardenBloom.healthy]);
 
   const handleRedeem = async (item: (typeof redeemCatalog)[number]) => {
     if (item.isSpecial || item.cost == null) {
@@ -1841,20 +1975,17 @@ export function KidFocusView({
     0,
   );
 
-  const upcoming = useMemo(
-    () =>
-      pendingItems
-        .filter((c) => !nextMission || c.id !== nextMission.id)
-        .slice(0, 3),
-    [pendingItems, nextMission],
-  );
-
   const createdBits = useMemo(() => {
     const bits: Array<{ icon: string; text: string }> = [];
-    if (doneCount > 0) {
+    if (gardenBloom.healthy > 0) {
       bits.push({
         icon: '🌱',
-        text: `Khu vườn của ${short} có ${Math.min(doneCount, 8)} cây hôm nay!`,
+        text: `Khu vườn của ${short} có ${gardenBloom.healthy} cây khỏe hôm nay!`,
+      });
+    } else if (doneCount > 0) {
+      bits.push({
+        icon: '🌱',
+        text: `Khu vườn của ${short} đã có cây — làm đúng giờ để cây khỏe hơn nhé!`,
       });
     }
     if (todayStarsEarned > 0) {
@@ -1864,7 +1995,7 @@ export function KidFocusView({
       });
     }
     return bits.slice(0, 2);
-  }, [doneCount, short, todayStarsEarned]);
+  }, [gardenBloom.healthy, doneCount, short, todayStarsEarned]);
 
   const foxyHomeLine = useMemo(() => {
     const hot =
@@ -1958,12 +2089,12 @@ export function KidFocusView({
           <div className="kh-soft-lock-inner">
             <span aria-hidden>🔒</span>
             <div>
-              <strong>Soft-lock · thỏa thuận nhà</strong>
+              <strong>Tạm khóa theo thỏa thuận nhà</strong>
               <p>
                 {softLockLabel
                   ? `Đang áp dụng: ${softLockLabel}. `
                   : 'Đang áp dụng thỏa thuận màn hình. '}
-                Con vẫn làm Mission được. Đổi người cần mã bố mẹ.
+                Con vẫn làm việc được. Đổi người cần mã bố mẹ.
               </p>
             </div>
             <button type="button" className="pill" onClick={onOpenParentPin}>
@@ -2019,10 +2150,12 @@ export function KidFocusView({
             ) : null}
           </span>
           {tab === 'rewards' ? (
-            <span className="kv2-pill kv2-level" title="Cấp độ">
+            <span className="kv2-pill kv2-level" title="Cấp độ Explorer">
               <span aria-hidden>🏔️</span>
-              <strong>Level {explorerLevel}</strong>
-              <em className="kv2-stars-label">Explorer</em>
+              <span className="kv2-en-term is-pill">
+                <em className="kv2-en-term-main">Level {explorerLevel}</em>
+                <em className="kv2-en-term-vi">Cấp độ Explorer</em>
+              </span>
             </span>
           ) : tab === 'log' ? (
             <span className="kv2-pill kv2-streak" title="Chuỗi ngày">
@@ -2031,9 +2164,12 @@ export function KidFocusView({
               <em className="kv2-stars-label">Ngày liên tiếp</em>
             </span>
           ) : (
-            <span className="kv2-pill kv2-movie-mini" title="Movie Night">
+            <span className="kv2-pill kv2-movie-mini" title="Movie Night — đêm xem phim cả nhà">
               <span aria-hidden>❤️</span>
-              <em>Movie Night</em>
+              <span className="kv2-en-term is-pill">
+                <em className="kv2-en-term-main">Movie Night</em>
+                <em className="kv2-en-term-vi">Đêm xem phim</em>
+              </span>
               <i className="kv2-mini-bar" aria-hidden>
                 <b style={{ width: `${unlockPct}%` }} />
               </i>
@@ -2068,7 +2204,7 @@ export function KidFocusView({
               title="Bố mẹ"
               onClick={onOpenParentPin}
             >
-              <span aria-hidden>🔔</span>
+              <span aria-hidden>👤</span>
             </button>
           )}
         </div>
@@ -2085,12 +2221,12 @@ export function KidFocusView({
                 {homePane === 'praise'
                   ? 'Lời khen hôm nay'
                   : homePane === 'streak'
-                    ? `Streak của ${short}`
+                    ? `Chuỗi ngày tốt của ${short}`
                     : homePane === 'garden'
                       ? `Khu vườn của ${short}`
                       : homePane === 'ask'
                         ? `Xin ${parentRole}`
-                        : 'Challenge tuần này'}
+                        : 'Thử thách tuần này'}
               </strong>
             </header>
           ) : null}
@@ -2193,11 +2329,13 @@ export function KidFocusView({
 
               <aside
                 className={`kv2-movie-strip${teamComplete ? ' is-ready' : ''}`}
-                aria-label="Tiến độ Movie Night"
+                aria-label="Tiến độ Movie Night — đêm xem phim cả nhà"
               >
                 <span aria-hidden>🍿</span>
                 <div className="kv2-movie-strip-copy">
-                  <strong>Movie Night · {unlockPct}%</strong>
+                  <strong>
+                    <EnTerm en="Movie Night" vi="Đêm xem phim cả nhà" /> · {unlockPct}%
+                  </strong>
                   <em>{movieStripLabel}</em>
                 </div>
                 <i className="kv2-mini-bar" aria-hidden>
@@ -2205,7 +2343,132 @@ export function KidFocusView({
                 </i>
               </aside>
 
-              <ul className="kv2-hub-list" aria-label="Thêm cho con">
+              <section className="kv2-home-rewards" aria-label="Động lực hôm nay">
+                <article className="kv2-praise is-compact">
+                  <button
+                    type="button"
+                    className="kv2-compact-head"
+                    onClick={() => openHomePane('praise')}
+                  >
+                    <span>
+                      <span aria-hidden>❤️</span> Lời khen hôm nay
+                    </span>
+                    <span aria-hidden>›</span>
+                  </button>
+                  <div className="kv2-praise-bubble">
+                    <p>{praiseLine}</p>
+                  </div>
+                  <div className="kv2-praise-foot">
+                    <span className="kv2-mom" aria-hidden>
+                      🦊
+                    </span>
+                    <span>Foxy kể</span>
+                    <button
+                      type="button"
+                      className={`kv2-thanks${thanksSent ? ' is-sent' : ''}`}
+                      disabled={thanksSending || thanksSent}
+                      onClick={() => void sendThanks()}
+                    >
+                      <span aria-hidden>{thanksSent ? '✓' : '💖'}</span>{' '}
+                      {thanksSending
+                        ? 'Đang gửi…'
+                        : thanksSent
+                          ? 'Đã gửi'
+                          : `Cảm ơn ${parentRole}!`}
+                    </button>
+                  </div>
+                  {thanksError ? (
+                    <p className="kv2-thanks-error" role="alert">
+                      {thanksError}
+                    </p>
+                  ) : null}
+                </article>
+
+                <article className="kv2-streak is-compact">
+                  <button
+                    type="button"
+                    className="kv2-compact-head"
+                    onClick={() => openHomePane('streak')}
+                  >
+                    <span>
+                      <span aria-hidden>🔥</span>{' '}
+                      {streak > 0 ? `${streak} ngày liên tiếp` : 'Bắt đầu chuỗi ngày tốt'}
+                    </span>
+                    <span aria-hidden>›</span>
+                  </button>
+                  <div className="kv2-streak-days">
+                    {weekDays.map((d) => (
+                      <div
+                        key={d.key}
+                        className={`kv2-day${d.on ? ' is-on' : ''}${d.isToday ? ' is-today' : ''}`}
+                      >
+                        <span className="kv2-day-dot" aria-hidden>
+                          {d.isToday ? '⭐' : d.on ? '✓' : '·'}
+                        </span>
+                        <em>{d.isToday ? 'Nay' : d.label}</em>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              </section>
+
+              <button
+                type="button"
+                className={`kv2-garden-preview${gardenBloom.reached ? ' is-bloom' : ''}`}
+                onClick={() => openHomePane('garden')}
+              >
+                <span className="kv2-garden-preview-head">
+                  <span>
+                    <span aria-hidden>{gardenBloom.reached ? '🌸' : '🌱'}</span>{' '}
+                    Khu vườn của {short}
+                  </span>
+                  <span aria-hidden>›</span>
+                </span>
+                <span className="kv2-garden-preview-plants" aria-hidden>
+                  {gardenSlots.slice(0, 5).map((g) => (
+                    <span
+                      key={g.id}
+                      className={`kv2-pot is-mini${g.locked ? ' is-locked' : ''}${
+                        !g.locked && g.mood === 'wilted'
+                          ? ' is-wilted'
+                          : !g.locked && g.mood === 'neutral'
+                            ? ' is-neutral'
+                            : ''
+                      }`}
+                    >
+                      <span className="kv2-pot-avatar">
+                        <span
+                          className={`kv2-pot-plant${
+                            !g.locked && g.mood === 'wilted'
+                              ? ' is-wilted'
+                              : !g.locked && g.mood === 'neutral'
+                                ? ' is-neutral'
+                                : ''
+                          }`}
+                        >
+                          {g.plant}
+                        </span>
+                        <span className="kv2-pot-vessel">🟫</span>
+                        <span className="kv2-pot-badge">{g.badge}</span>
+                      </span>
+                    </span>
+                  ))}
+                </span>
+                <span className="kv2-garden-preview-foot">
+                  <span>{gardenBloom.label}</span>
+                  <i aria-hidden>
+                    <b style={{ width: `${gardenBloom.pct}%` }} />
+                  </i>
+                  <em>
+                    {gardenBloom.reached
+                      ? 'Huy hiệu Vườn nở đã mở!'
+                      : `${gardenBloom.healthy}/${gardenBloom.goal} cây khỏe`}
+                  </em>
+                </span>
+              </button>
+
+              <p className="kv2-more-label">KHÁM PHÁ THÊM</p>
+              <ul className="kv2-hub-list" aria-label="Khám phá thêm">
                 {familyId && childMemberId ? (
                   <li>
                     <button
@@ -2217,7 +2480,7 @@ export function KidFocusView({
                         🏁
                       </span>
                       <span className="kv2-hub-row-body">
-                        <strong>Challenge tuần này</strong>
+                        <EnTerm en="Challenge" vi="Thử thách tuần này" as="strong" />
                         <em>Cùng cả nhà giữ nhịp</em>
                       </span>
                       <span className="kv2-hub-row-go" aria-hidden>
@@ -2226,66 +2489,6 @@ export function KidFocusView({
                     </button>
                   </li>
                 ) : null}
-                <li>
-                  <button
-                    type="button"
-                    className="kv2-hub-row"
-                    onClick={() => openHomePane('praise')}
-                  >
-                    <span className="kv2-hub-row-ico" aria-hidden>
-                      ❤️
-                    </span>
-                    <span className="kv2-hub-row-body">
-                      <strong>Lời khen hôm nay</strong>
-                      <em>{praiseLine.slice(0, 42)}{praiseLine.length > 42 ? '…' : ''}</em>
-                    </span>
-                    <span className="kv2-hub-row-go" aria-hidden>
-                      ›
-                    </span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    className="kv2-hub-row"
-                    onClick={() => openHomePane('streak')}
-                  >
-                    <span className="kv2-hub-row-ico" aria-hidden>
-                      🔥
-                    </span>
-                    <span className="kv2-hub-row-body">
-                      <strong>Streak của {short}</strong>
-                      <em>
-                        {streak > 0 ? `${streak} ngày liên tiếp` : 'Bắt đầu chuỗi hôm nay'}
-                      </em>
-                    </span>
-                    <span className="kv2-hub-row-go" aria-hidden>
-                      ›
-                    </span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    className="kv2-hub-row"
-                    onClick={() => openHomePane('garden')}
-                  >
-                    <span className="kv2-hub-row-ico" aria-hidden>
-                      🌱
-                    </span>
-                    <span className="kv2-hub-row-body">
-                      <strong>Khu vườn của {short}</strong>
-                      <em>
-                        {doneCount > 0
-                          ? `${Math.min(doneCount, 8)} cây hôm nay`
-                          : 'Làm việc để trồng cây'}
-                      </em>
-                    </span>
-                    <span className="kv2-hub-row-go" aria-hidden>
-                      ›
-                    </span>
-                  </button>
-                </li>
                 {familyId && childMemberId ? (
                   <li>
                     <button
@@ -2298,29 +2501,12 @@ export function KidFocusView({
                       </span>
                       <span className="kv2-hub-row-body">
                         <strong>Xin {parentRole}</strong>
-                        <em>Đề xuất việc · thêm phút màn hình</em>
-                      </span>
-                      <span className="kv2-hub-row-go" aria-hidden>
-                        ›
-                      </span>
-                    </button>
-                  </li>
-                ) : null}
-                {upcoming.length > 0 ? (
-                  <li>
-                    <button
-                      type="button"
-                      className="kv2-hub-row"
-                      onClick={() => setTab('tasks')}
-                    >
-                      <span className="kv2-hub-row-ico" aria-hidden>
-                        📋
-                      </span>
-                      <span className="kv2-hub-row-body">
-                        <strong>Việc sắp tới</strong>
                         <em>
-                          {upcoming[0]?.title}
-                          {upcoming.length > 1 ? ` · +${upcoming.length - 1}` : ''}
+                          {pendingAskCount > 0
+                            ? `${pendingAskCount} đề xuất đang chờ duyệt`
+                            : screenWallet?.status === 'active'
+                              ? `Ví tuần còn ${screenWallet.remainingMinutes} phút`
+                              : 'Đề xuất việc · thêm phút màn hình'}
                         </em>
                       </span>
                       <span className="kv2-hub-row-go" aria-hidden>
@@ -2355,9 +2541,9 @@ export function KidFocusView({
                 </div>
                 <div className="kv2-praise-foot">
                   <span className="kv2-mom" aria-hidden>
-                    {parentRole === 'bố' ? '👨' : parentRole === 'mẹ' ? '👩' : '👨‍👩‍👧'}
+                    🦊
                   </span>
-                  <span>Lời khen hôm nay</span>
+                  <span>Foxy kể</span>
                   <button
                     type="button"
                     className={`kv2-thanks${thanksSent ? ' is-sent' : ''}`}
@@ -2385,7 +2571,8 @@ export function KidFocusView({
             <div className="kv2-home-drill">
               <article className="kv2-streak">
                 <p className="kv2-section-label">
-                  <span aria-hidden>🔥</span> STREAK CỦA {short.toUpperCase()}
+                  <span aria-hidden>🔥</span>{' '}
+                  <EnTerm en="Streak" vi={`Chuỗi ngày tốt của ${short}`} />
                 </p>
                 <h3>{streak > 0 ? `${streak} ngày liên tiếp!` : streakEmpty.headline}</h3>
                 <div className="kv2-streak-days">
@@ -2410,13 +2597,13 @@ export function KidFocusView({
 
           {homePane === 'garden' ? (
             <div className="kv2-home-drill">
-              <section className="kv2-garden">
+              <section className={`kv2-garden${gardenBloom.reached ? ' is-bloom' : ''}`}>
                 <header>
                   <h2>
                     KHU VƯỜN CỦA {short.toUpperCase()}
                     <span
                       className="kv2-help"
-                      title="Mỗi việc xong = một cây mới"
+                      title="Mỗi việc xong = một cây. Đúng giờ (đủ sao) = cây khỏe. Đủ 3 cây khỏe thì vườn nở!"
                       aria-label="Gợi ý"
                     >
                       ?
@@ -2426,6 +2613,20 @@ export function KidFocusView({
                     Xem nhật ký
                   </button>
                 </header>
+                <div className={`kv2-bloom${gardenBloom.reached ? ' is-on' : ''}`}>
+                  <div className="kv2-bloom-top">
+                    <span className="kv2-bloom-face" aria-hidden>
+                      {gardenBloom.reached ? '🌸' : '🌱'}
+                    </span>
+                    <p>{gardenBloom.label}</p>
+                  </div>
+                  <i className="kv2-bloom-bar" aria-hidden>
+                    <b style={{ width: `${gardenBloom.pct}%` }} />
+                  </i>
+                  <em className="kv2-bloom-meta">
+                    {gardenBloom.healthy}/{gardenBloom.goal} cây khỏe
+                  </em>
+                </div>
                 {createdBits.length > 0 ? (
                   <div className="kv2-created-row" style={{ marginBottom: 12 }}>
                     {createdBits.map((b) => (
@@ -2440,7 +2641,13 @@ export function KidFocusView({
                   {gardenSlots.map((g) => (
                     <div
                       key={g.id}
-                      className={`kv2-pot${g.locked ? ' is-locked' : ''}`}
+                      className={`kv2-pot${g.locked ? ' is-locked' : ''}${
+                        !g.locked && g.mood === 'wilted'
+                          ? ' is-wilted'
+                          : !g.locked && g.mood === 'neutral'
+                            ? ' is-neutral'
+                            : ''
+                      }`}
                       title={g.label}
                     >
                       <div className="kv2-pot-avatar" aria-hidden>
@@ -2484,6 +2691,32 @@ export function KidFocusView({
                 <p className="kv2-ask-lead">
                   Chọn một việc — {parentRole} sẽ nhận đề xuất và trả lời.
                 </p>
+
+                <div
+                  className={`kv2-wallet-card${
+                    screenWallet?.status === 'active' ? ' is-active' : ''
+                  }`}
+                >
+                  <span aria-hidden>📱</span>
+                  <div>
+                    {screenWallet?.status === 'active' ? (
+                      <>
+                        <strong>Ví tuần còn {screenWallet.remainingMinutes} phút</strong>
+                        <p>
+                          Thỏa thuận nhà — không khóa máy. Xin thêm phút để {parentRole} duyệt.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <strong>Phút màn hình theo thỏa thuận nhà</strong>
+                        <p>
+                          Famixa không khóa máy. Xin thêm phút → {parentRole} duyệt trong hộp thư.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+
                 <div className="kv2-ask-row">
                   <button
                     type="button"
@@ -2500,8 +2733,34 @@ export function KidFocusView({
                     Xin thêm phút màn hình
                   </button>
                 </div>
+
+                {recentAsks.length > 0 ? (
+                  <ul className="kv2-ask-status" aria-label="Trạng thái đề xuất">
+                    {recentAsks.map((req) => (
+                      <li
+                        key={req.id}
+                        className={`kv2-ask-status-item is-${req.status || 'pending'}`}
+                      >
+                        <div>
+                          <strong>{requestKindLabel(req)}</strong>
+                          <em>
+                            {req.status === 'approved' && req.grantedMinutes != null
+                              ? `Đã cộng +${req.grantedMinutes} phút`
+                              : req.status === 'partial' && req.grantedMinutes != null
+                                ? `Đồng ý +${req.grantedMinutes} phút`
+                                : requestStatusLabel(req.status)}
+                          </em>
+                        </div>
+                        <span>{requestStatusLabel(req.status)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="kv2-ask-empty">Chưa có đề xuất nào — gửi thử một cái nhé.</p>
+                )}
+
                 {screenRequestToast ? (
-                  <p className="kv2-thanks-error" role="status">
+                  <p className="kv2-ask-toast" role="status">
                     {screenRequestToast}
                   </p>
                 ) : null}
@@ -2539,8 +2798,11 @@ export function KidFocusView({
             </div>
             <div className="kv2-m-bubble">
               <p>
-                {short} đang làm rất tốt! Hoàn thành nhiệm vụ để cùng cả nhà mở Movie Night
-                nhé! 🎬
+                {doNowItems.length > 0
+                  ? `${short} ơi, còn ${doNowItems.length} việc cần làm ngay — Foxy cổ vũ con! 💪`
+                  : remaining > 0
+                    ? `${short} đang làm rất tốt! Còn ${remaining} việc nữa để cùng cả nhà mở đêm xem phim nhé! 🎬`
+                    : `${short} đã xong hết hôm nay — cùng cả nhà mở đêm xem phim nhé! 🎬`}
               </p>
             </div>
             <div className="kv2-m-goal">
@@ -2869,23 +3131,25 @@ export function KidFocusView({
 
           <aside className="kv2-m-challenge">
             <span className="kv2-m-challenge-bulb" aria-hidden>
-              💡
+              🍿
             </span>
             <div className="kv2-m-challenge-copy">
-              <strong>Tiến độ hôm nay</strong>
+              <strong>
+                <EnTerm en="Movie Night" vi="Đêm xem phim cả nhà" />
+              </strong>
               <p>
                 {dayClosed
                   ? 'Con đã xong phần việc hôm nay — tuyệt vời!'
-                  : `Hoàn thành thêm việc để cả nhà gần Movie Night hơn (${unlockPct}%)`}
+                  : teamComplete || unlockLeft === 0
+                    ? 'Sẵn sàng mở khóa — nhờ bố mẹ xác nhận!'
+                    : `Còn ${unlockLeft} việc nữa để cả nhà gần hơn (${unlockPct}%)`}
               </p>
               <div className="kv2-m-challenge-bar" aria-hidden>
-                <b style={{ width: `${challengePct}%` }} />
+                <b style={{ width: `${unlockPct}%` }} />
               </div>
             </div>
             <div className="kv2-m-challenge-side">
-              <em>
-                {challengeDone} / {challengeTarget}
-              </em>
+              <em>{unlockPct}%</em>
               <span aria-hidden>🎬</span>
             </div>
           </aside>
@@ -2910,7 +3174,7 @@ export function KidFocusView({
                 <span className="kv2-t-play">▶</span>
               </div>
               <div className="kv2-t-family-copy">
-                <h2>Movie Night</h2>
+                <EnTerm en="Movie Night" vi="Đêm xem phim cả nhà" as="h2" />
                 <div className="kv2-t-family-bar">
                   <i aria-hidden>
                     <b style={{ width: `${unlockPct}%` }} />
@@ -2927,9 +3191,14 @@ export function KidFocusView({
                 <button
                   type="button"
                   className="kv2-t-detail"
-                  onClick={() => setTab('home')}
+                  onClick={() => {
+                    setFilter(teamComplete || unlockLeft === 0 ? 'done' : 'all');
+                    setTab('tasks');
+                  }}
                 >
-                  Xem chi tiết →
+                  {teamComplete || unlockLeft === 0
+                    ? 'Xem việc đã xong →'
+                    : 'Xem việc còn lại →'}
                 </button>
               </div>
               <div className="kv2-t-family-chest" aria-hidden>
@@ -2992,15 +3261,15 @@ export function KidFocusView({
           </section>
 
           <div className="kv2-t-mid">
-            <article className="kv2-t-mystery">
-              <h3>KHO BÁU BÍ MẬT</h3>
+            <article className="kv2-t-mystery is-secondary">
+              <h3>SẮP TỚI</h3>
               <div className="kv2-t-mystery-body">
                 <span className="kv2-t-mystery-ico" aria-hidden>
                   📦
                 </span>
                 <div>
-                  <strong>Mystery Box</strong>
-                  <p>Mở khi đạt {formatStars(mysteryTarget)} ⭐</p>
+                  <EnTerm en="Mystery Box" vi="Hộp bí mật" as="strong" />
+                  <p>Đang xây — chưa đổi được. Mục tiêu {formatStars(mysteryTarget)} ⭐</p>
                   <div className="kv2-t-mystery-bar" aria-hidden>
                     <b style={{ width: `${mysteryPct}%` }} />
                   </div>
@@ -3763,14 +4032,20 @@ export function KidFocusView({
             memberId={childMemberId}
             open={screenRequestOpen}
             onClose={() => setScreenRequestOpen(false)}
-            onSubmitted={(msg) => setScreenRequestToast(msg)}
+            onSubmitted={(msg) => {
+              setScreenRequestToast(msg);
+              setAskReloadTick((n) => n + 1);
+            }}
           />
           <ChildMissionRequestSheet
             familyId={familyId}
             memberId={childMemberId}
             open={missionRequestOpen}
             onClose={() => setMissionRequestOpen(false)}
-            onSubmitted={(msg) => setScreenRequestToast(msg)}
+            onSubmitted={(msg) => {
+              setScreenRequestToast(msg);
+              setAskReloadTick((n) => n + 1);
+            }}
           />
         </>
       ) : null}

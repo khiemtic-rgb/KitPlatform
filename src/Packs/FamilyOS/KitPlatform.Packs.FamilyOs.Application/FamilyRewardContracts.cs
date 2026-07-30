@@ -27,7 +27,9 @@ public sealed record RewardRedemptionDto(
     int StarCost,
     string Status,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? FulfilledAt);
+    DateTimeOffset? FulfilledAt,
+    Guid? MemberId = null,
+    string? MemberName = null);
 
 public sealed record RewardRedeemRequest(Guid CatalogId);
 

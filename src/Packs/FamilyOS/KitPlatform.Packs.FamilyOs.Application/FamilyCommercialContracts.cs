@@ -67,6 +67,8 @@ public sealed record FamilySubscriptionDto(
     int? TrialDaysRemaining = null,
     /// <summary>Configured trial length used for progress bar (remaining / total).</summary>
     int? TrialDaysTotal = null,
+    /// <summary>Days left in post-trial soft grace (null when not in grace).</summary>
+    int? TrialGraceDaysRemaining = null,
     string? TierCode = null,
     string? DisplayNameVi = null,
     string? OutcomeNameVi = null,
@@ -85,6 +87,8 @@ public sealed record VerifyParentPinRequest(string Pin);
 public static class FamilySubscriptionStatuses
 {
     public const string Trial = "trial";
+    /// <summary>Trial calendar ended but soft grace still entitled (Pro).</summary>
+    public const string TrialGrace = "trial_grace";
     public const string Active = "active";
     public const string PastDue = "past_due";
     public const string Expired = "expired";

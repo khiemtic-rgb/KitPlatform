@@ -7,60 +7,60 @@ import {
 const WORRY_OPTIONS = [
   {
     value: 'tu_ti',
-    label: 'Con tự ti / sợ thử',
-    hint: 'Rút lui sau khi thấy bạn giỏi hơn',
+    label: 'Con hay tự ti / ngại thử',
+    hint: 'Gặp bạn giỏi hơn là muốn rút lui',
   },
   {
     value: 'thieu_phan_dau',
-    label: 'Con thiếu phấn đấu / tưởng mình khá',
-    hint: 'Lướt bài, né khó, ảo giác',
+    label: 'Con chưa chịu cố / tưởng mình khá',
+    hint: 'Hay lướt bài, né chỗ khó',
   },
   {
     value: 'de_hu',
-    label: 'Chiều quá / sợ con dễ hư',
-    hint: 'Thiếu khung, thương = chiều',
+    label: 'Sợ chiều quá / con dễ hư',
+    hint: 'Thương nhiều nhưng thiếu khung nhẹ',
   },
   {
     value: 'balance_ok',
-    label: 'Đang giữ cân bằng ổn',
-    hint: 'Muốn giữ nhịp hiện diện + tiêu chuẩn vừa',
+    label: 'Nhà đang giữ nhịp ổn',
+    hint: 'Muốn giữ vừa ấm vừa có giới hạn vừa phải',
   },
 ] as const;
 
 const RESOURCE_OPTIONS = [
   { value: 'tight', label: 'Ít thời gian / điều kiện eo hẹp' },
-  { value: 'moderate', label: 'Trung bình — đủ giữ nhịp nhẹ' },
-  { value: 'abundant', label: 'Dư thời gian / điều kiện hơn' },
+  { value: 'moderate', label: 'Vừa đủ — giữ được nhịp nhẹ' },
+  { value: 'abundant', label: 'Thoải mái hơn về thời gian / điều kiện' },
 ] as const;
 
 const SCHOOL_OPTIONS = [
   {
     value: 'bubble_easy',
     label: 'Ít gặp bạn trường khác / ít thi ngoài',
-    hint: 'Dễ tạo “ảo giác khá” nếu ít đối chiếu',
+    hint: 'Dễ tưởng mình khá nếu ít được so với ngoài',
   },
   {
     value: 'mixed',
-    label: 'Thỉnh thoảng có đối chiếu ngoài',
-    hint: 'Có giao lưu / đề ngoài mức vừa',
+    label: 'Thỉnh thoảng có giao lưu / đề ngoài',
+    hint: 'Có đối chiếu vừa phải',
   },
   {
     value: 'competitive',
     label: 'Hay thi / cạnh tranh với môi trường khó hơn',
-    hint: 'Đối chiếu ngoài thường xuyên',
+    hint: 'Thường xuyên gặp bạn / đề ngoài',
   },
 ] as const;
 
 const SELF_VIEW_OPTIONS = [
-  { value: 'overestimates', label: 'Con thường tự đánh giá cao hơn thực lực' },
+  { value: 'overestimates', label: 'Con hay tự đánh giá cao hơn thực lực' },
   { value: 'calibrated', label: 'Con đánh giá khá sát' },
-  { value: 'underestimates', label: 'Con thường tự đánh giá thấp / thiếu tự tin' },
+  { value: 'underestimates', label: 'Con hay tự đánh giá thấp / thiếu tự tin' },
 ] as const;
 
 const PEER_SHOCK_OPTIONS = [
   { value: 'none', label: 'Chưa thấy cú sốc' },
   { value: 'mild', label: 'Có chạnh lòng nhẹ khi gặp bạn ngoài' },
-  { value: 'sharp', label: 'Sụp tự tin rõ sau khi đối chiếu ngoài' },
+  { value: 'sharp', label: 'Sụp tự tin rõ sau khi gặp bạn / đề ngoài' },
 ] as const;
 
 type Props = {
@@ -103,12 +103,17 @@ export function CalibrationCaptureSheet({ familyId, open, onClose, onSaved }: Pr
   };
 
   return (
-    <div className="famixa-cal-sheet" role="dialog" aria-modal="true" aria-label="Quan tâm có phương pháp">
+    <div
+      className="famixa-cal-sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Điều bố mẹ đang quan tâm"
+    >
       <button type="button" className="famixa-cal-backdrop" aria-label="Đóng" onClick={onClose} />
       <div className="famixa-cal-panel">
         <header>
-          <strong>Quan tâm có phương pháp — đúng nhà bạn</strong>
-          <p>Không xếp hạng. Giúp tránh tự ti · thiếu phấn đấu · dễ hư.</p>
+          <strong>Điều bố mẹ đang quan tâm — đúng nhà mình</strong>
+          <p>Không so sánh xếp hạng. Giúp tránh tự ti · thiếu cố gắng · dễ hư.</p>
         </header>
 
         <fieldset>

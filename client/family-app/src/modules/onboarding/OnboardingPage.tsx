@@ -30,13 +30,91 @@ type Step =
   | 'priority'
   | 'preview';
 
+const iconProps = {
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.9,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+  'aria-hidden': true,
+};
+
+const HeartIcon = () => (
+  <svg {...iconProps}>
+    <path d="M19 14c1.5-1.46 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.04 3 5.5l7 7Z" />
+  </svg>
+);
+
+const TargetIcon = () => (
+  <svg {...iconProps}>
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="12" cy="12" r="4.6" />
+    <circle cx="12" cy="12" r="1" />
+  </svg>
+);
+
+const CalendarIcon = () => (
+  <svg {...iconProps}>
+    <rect x="3.2" y="5" width="17.6" height="16" rx="3" />
+    <path d="M8 3v4M16 3v4M3.2 10.5h17.6" />
+  </svg>
+);
+
+const SparkleIcon = () => (
+  <svg {...iconProps}>
+    <path d="M12 3.5 13.8 8.2 18.5 10 13.8 11.8 12 16.5 10.2 11.8 5.5 10 10.2 8.2Z" />
+    <path d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7Z" />
+  </svg>
+);
+
+const ClockIcon = () => (
+  <svg {...iconProps}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7.4V12l3 1.9" />
+  </svg>
+);
+
+const ShieldIcon = () => (
+  <svg {...iconProps}>
+    <path d="M12 21.5s7.5-3.6 7.5-9.3V5.6L12 2.5 4.5 5.6v6.6c0 5.7 7.5 9.3 7.5 9.3Z" />
+    <path d="m9.2 12.2 2 2 3.6-3.9" />
+  </svg>
+);
+
+const CaretIcon = () => (
+  <svg {...iconProps} className="ob-family-caret">
+    <path d="m6.5 9.5 5.5 5.5 5.5-5.5" />
+  </svg>
+);
+
+const WELCOME_POINTS = [
+  {
+    icon: <HeartIcon />,
+    title: 'Hiểu tuổi & khó khăn của con',
+    hint: 'Nắm rõ giai đoạn phát triển và điều con cần.',
+  },
+  {
+    icon: <TargetIcon />,
+    title: 'Sinh starter cho con',
+    hint: 'Bố/mẹ cũng có thể đặt mục tiêu phù hợp.',
+  },
+  {
+    icon: <CalendarIcon />,
+    title: '30 ngày: ít nhắc · tự giác · cả nhà cùng làm gương',
+    hint: 'Tạo thói quen bền vững và gắn kết.',
+  },
+];
+
 export function OnboardingPage() {
   const navigate = useNavigate();
   const familyId = useSessionStore((s) => s.familyId);
   const familyName = useSessionStore((s) => s.familyName);
   const member = useSessionStore((s) => s.member);
+  const setFamily = useSessionStore((s) => s.setFamily);
 
   const [step, setStep] = useState<Step>('welcome');
+  const [families, setFamilies] = useState<{ id: string; name: string }[]>([]);
   const [children, setChildren] = useState<FamilyMembership[]>([]);
   const [childId, setChildId] = useState('');
   const [childName, setChildName] = useState('');
@@ -59,8 +137,9 @@ export function OnboardingPage() {
       return;
     }
     void fetchFamilies()
-      .then((families) => {
-        const family = families.find((f) => f.id === familyId) ?? families[0];
+      .then((list) => {
+        setFamilies(list.map((f) => ({ id: f.id, name: f.displayName })));
+        const family = list.find((f) => f.id === familyId) ?? list[0];
         const kids = (family?.members ?? []).filter((m) => m.roleCode === 'child');
         setChildren(kids);
         if (kids[0] && !childId) {
@@ -132,9 +211,13 @@ export function OnboardingPage() {
   };
 
   const onSkip = async () => {
-    if (!familyId) return;
-    await skipOnboarding(familyId, { childId, childName, ageBand, struggles, goal });
-    navigate('/today', { replace: true });
+    try {
+      if (familyId) {
+        await skipOnboarding(familyId, { childId, childName, ageBand, struggles, goal });
+      }
+    } finally {
+      navigate('/today', { replace: true });
+    }
   };
 
   if (!familyId) return null;
@@ -143,33 +226,85 @@ export function OnboardingPage() {
     <section className="ob-page">
       <header className="ob-top">
         <p className="ob-brand">Famixa</p>
-        <p className="ob-family">{familyName ?? 'Gia đình mình'}</p>
+        {families.length > 1 ? (
+          <div className="ob-family-switch">
+            <span>{familyName ?? 'Gia đình mình'}</span>
+            <CaretIcon />
+            <select
+              aria-label="Đổi gia đình"
+              value={familyId}
+              onChange={(e) => {
+                const next = families.find((f) => f.id === e.target.value);
+                if (next) setFamily({ familyId: next.id, familyName: next.name });
+              }}
+            >
+              {families.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <p className="ob-family">{familyName ?? 'Gia đình mình'}</p>
+        )}
       </header>
 
       {step === 'welcome' ? (
-        <article className="ob-card">
-          <div className="ob-fox" aria-hidden>
-            🦊
-          </div>
-          <h1>Foxy giúp cả nhà cùng đổi</h1>
-          <p>
-            Chỉ vài câu hỏi — Famixa sinh nhịp sống vừa sức cho cả gia đình. Không cần checklist dài.
+        <>
+          <article className="ob-card ob-welcome">
+            <div className="ob-hero">
+              <div className="ob-hero-fox" aria-hidden>
+                <img src="/home/foxy-avatar.png" alt="" />
+              </div>
+              <div className="ob-hero-copy">
+                <h1>
+                  Foxy giúp cả nhà <span>cùng đổi!</span>
+                </h1>
+                <p>
+                  Chỉ vài câu hỏi — Famixa sinh nhịp sống vừa sức cho cả gia đình. Không cần
+                  checklist dài.
+                </p>
+              </div>
+            </div>
+
+            <ul className="ob-value-list">
+              {WELCOME_POINTS.map((point) => (
+                <li key={point.title}>
+                  <span className="ob-value-icon" aria-hidden>
+                    {point.icon}
+                  </span>
+                  <span className="ob-value-copy">
+                    <strong>{point.title}</strong>
+                    <em>{point.hint}</em>
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            {isOnboardingDone(familyId) ? (
+              <p className="ob-note">Bạn đã setup trước đó — có thể chạy lại để tinh chỉnh.</p>
+            ) : null}
+
+            <button
+              type="button"
+              className="ob-cta is-primary"
+              onClick={() => setStep('child')}
+            >
+              <SparkleIcon />
+              Bắt đầu với Foxy
+            </button>
+            <button type="button" className="ob-cta is-skip" onClick={() => void onSkip()}>
+              <ClockIcon />
+              Bỏ qua lần này
+            </button>
+          </article>
+
+          <p className="ob-privacy">
+            <ShieldIcon />
+            Thông tin của bạn luôn được bảo mật và an toàn.
           </p>
-          <ul className="ob-bullets">
-            <li>Hiểu tuổi & khó khăn của con</li>
-            <li>Sinh starter cho con — bố/mẹ cũng có thể đặt mục tiêu</li>
-            <li>30 ngày: ít nhắc · tự giác · cả nhà cùng làm gương</li>
-          </ul>
-          {isOnboardingDone(familyId) ? (
-            <p className="ob-note">Bạn đã setup trước đó — có thể chạy lại để tinh chỉnh.</p>
-          ) : null}
-          <button type="button" className="btn btn-primary" onClick={() => setStep('child')}>
-            Bắt đầu với Foxy
-          </button>
-          <button type="button" className="pill is-soft" onClick={() => void onSkip()}>
-            Bỏ qua lần này
-          </button>
-        </article>
+        </>
       ) : null}
 
       {step === 'child' ? (

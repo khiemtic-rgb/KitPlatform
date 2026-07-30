@@ -1,28 +1,47 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   addFamilyMember,
+  createFamilyInvite,
   fetchFamilies,
   fetchFamilySubscription,
+  formatFamilyInviteShare,
   updateFamilyMember,
+  type FamilyInvite,
   type FamilyMembership,
   type FamilySubscription,
 } from '@/shared/api/family-os.api';
 import { buildCheckoutPath } from '@/shared/api/payment.api';
 import { getApiErrorMessage, isCapabilityPaywallError } from '@/shared/billing/capability-error';
+import { shareOrCopyNudge } from '@/shared/nudge/nudge';
 import { useSessionStore } from '@/shared/auth/session.store';
+import { avatarEmoji, inferGenderFromName } from '@/shared/ui/avatarGender';
 import { FamilyAdminShell, ROLE_LABEL } from '@/modules/admin/FamilyAdminShell';
 
+function memberEmoji(m: FamilyMembership): string {
+  return avatarEmoji(inferGenderFromName(m.displayName), m.roleCode);
+}
+
+function roleSelectClass(roleCode: string): string {
+  if (roleCode === 'child') return 'is-child';
+  if (roleCode === 'guardian' || roleCode === 'caregiver') return 'is-parent';
+  return 'is-other';
+}
+
 export function FamilyMembersPage() {
-  const navigate = useNavigate();
   const familyId = useSessionStore((s) => s.familyId);
+  const familyName = useSessionStore((s) => s.familyName);
+  const selfId = useSessionStore((s) => s.member?.id);
   const [members, setMembers] = useState<FamilyMembership[]>([]);
   const [subscription, setSubscription] = useState<FamilySubscription | null>(null);
+  const [invite, setInvite] = useState<FamilyInvite | null>(null);
+  const [inviteBusy, setInviteBusy] = useState(false);
   const [newName, setNewName] = useState('');
   const [newRole, setNewRole] = useState('child');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [menuId, setMenuId] = useState<string | null>(null);
 
   const children = useMemo(
     () => members.filter((m) => m.roleCode === 'child'),
@@ -42,15 +61,41 @@ export function FamilyMembersPage() {
     setSubscription(await fetchFamilySubscription(familyId).catch(() => null));
   }, [familyId]);
 
+  const loadInvite = useCallback(async () => {
+    if (!familyId) return;
+    setInviteBusy(true);
+    try {
+      setInvite(
+        await createFamilyInvite(familyId, {
+          roleCode: 'guardian',
+          maxUses: 3,
+          validDays: 7,
+        }),
+      );
+    } catch {
+      setInvite(null);
+    } finally {
+      setInviteBusy(false);
+    }
+  }, [familyId]);
+
   useEffect(() => {
     void reload().catch(() => setError('Không tải được thành viên.'));
-  }, [reload]);
+    void loadInvite();
+  }, [reload, loadInvite]);
 
   useEffect(() => {
     if (!toast) return;
     const t = window.setTimeout(() => setToast(null), 2800);
     return () => window.clearTimeout(t);
   }, [toast]);
+
+  useEffect(() => {
+    if (!menuId) return;
+    const close = () => setMenuId(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [menuId]);
 
   const onAdd = async () => {
     if (!familyId || !newName.trim()) return;
@@ -99,6 +144,7 @@ export function FamilyMembersPage() {
 
   const onDeactivate = async (m: FamilyMembership) => {
     if (!familyId) return;
+    setMenuId(null);
     if (!window.confirm(`Ẩn thành viên «${m.displayName}» khỏi nhà?`)) return;
     setBusy(true);
     setError(null);
@@ -113,8 +159,37 @@ export function FamilyMembersPage() {
     }
   };
 
+  const onCopyCode = async () => {
+    if (!invite) return;
+    try {
+      await shareOrCopyNudge(invite.code);
+      setToast('Đã sao chép mã nhà.');
+    } catch {
+      setToast('Chưa copy được — chọn mã và copy tay.');
+    }
+  };
+
+  const onShareCode = async () => {
+    if (!invite) return;
+    try {
+      const text = formatFamilyInviteShare({
+        code: invite.code,
+        familyName,
+        expiresAt: invite.expiresAt,
+      });
+      const how = await shareOrCopyNudge(text, { preferShare: true });
+      setToast(how === 'shared' ? 'Đã mở chia sẻ.' : 'Đã sao chép nội dung mời.');
+    } catch {
+      setToast('Chưa chia sẻ được — thử Sao chép.');
+    }
+  };
+
   return (
-    <FamilyAdminShell title="Thành viên" subtitle="Thêm · đổi vai · mời vào nhà">
+    <FamilyAdminShell
+      title="Thành viên"
+      subtitle="Thêm, đổi vai trò và mời vào nhà"
+      backTo="/family-admin/settings"
+    >
       {toast ? (
         <p className="ph-action-toast" role="status">
           {toast}
@@ -122,56 +197,122 @@ export function FamilyMembersPage() {
       ) : null}
       {error ? <p className="banner-error">{error}</p> : null}
 
-      <section className="fa-card">
-        <h2>Danh sách</h2>
-        <ul className="fa-member-list">
+      <section className="fa-card fa-mem-card">
+        <header className="fa-mem-card-head">
+          <span className="fa-mem-ico" aria-hidden>
+            👥
+          </span>
+          <div>
+            <h2>Danh sách thành viên</h2>
+            <p>Quản lý các thành viên trong gia đình</p>
+          </div>
+        </header>
+
+        <ul className="fa-mem-list">
           {members.length === 0 ? (
             <li className="fa-empty-row">
               <strong>Chưa có thành viên</strong>
               <span>Thêm bố/mẹ hoặc con bên dưới</span>
             </li>
           ) : (
-            members.map((m) => (
-              <li key={m.id} className="fa-member-row">
-                <div>
-                  <strong>{m.displayName}</strong>
-                  <span>{ROLE_LABEL[m.roleCode] ?? m.roleCode}</span>
-                </div>
-                <div className="fa-member-actions">
-                  <select
-                    value={m.roleCode}
-                    disabled={busy}
-                    aria-label={`Vai trò ${m.displayName}`}
-                    onChange={(e) => void onRoleChange(m, e.target.value)}
-                  >
-                    <option value="child">Con</option>
-                    <option value="guardian">Bố/Mẹ</option>
-                    <option value="caregiver">Người chăm sóc</option>
-                    <option value="viewer">Xem</option>
-                  </select>
-                  <button type="button" className="pill is-soft" disabled={busy} onClick={() => void onDeactivate(m)}>
-                    Ẩn
-                  </button>
-                </div>
-              </li>
-            ))
+            members.map((m) => {
+              const isSelf = m.id === selfId;
+              return (
+                <li key={m.id} className="fa-mem-row">
+                  <span className="fa-mem-avatar" aria-hidden>
+                    {memberEmoji(m)}
+                  </span>
+                  <div className="fa-mem-body">
+                    <strong>
+                      {m.displayName}
+                      {isSelf ? <i className="fa-mem-you">Bạn</i> : null}
+                    </strong>
+                    <em>Vai trò: {ROLE_LABEL[m.roleCode] ?? m.roleCode}</em>
+                  </div>
+                  <label className={`fa-mem-role ${roleSelectClass(m.roleCode)}`}>
+                    <span aria-hidden>
+                      {m.roleCode === 'child' ? '🧒' : m.roleCode === 'viewer' ? '👁' : '👑'}
+                    </span>
+                    <select
+                      value={m.roleCode}
+                      disabled={busy}
+                      aria-label={`Vai trò ${m.displayName}`}
+                      onChange={(e) => void onRoleChange(m, e.target.value)}
+                    >
+                      <option value="child">Con</option>
+                      <option value="guardian">Bố/Mẹ</option>
+                      <option value="caregiver">Người chăm sóc</option>
+                      <option value="viewer">Xem</option>
+                    </select>
+                  </label>
+                  <div className="fa-mem-more">
+                    <button
+                      type="button"
+                      className="fa-mem-dots"
+                      aria-label={`Tuỳ chọn ${m.displayName}`}
+                      disabled={busy || isSelf}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuId((id) => (id === m.id ? null : m.id));
+                      }}
+                    >
+                      ⋯
+                    </button>
+                    {menuId === m.id ? (
+                      <div className="fa-mem-menu" role="menu">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          disabled={busy}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void onDeactivate(m);
+                          }}
+                        >
+                          Ẩn khỏi nhà
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })
           )}
         </ul>
       </section>
 
-      <section className="fa-card">
-        <h2>Thêm thành viên</h2>
-        <div className="fa-add-row">
+      <section className="fa-card fa-mem-card">
+        <header className="fa-mem-card-head">
+          <span className="fa-mem-ico" aria-hidden>
+            ➕
+          </span>
+          <div>
+            <h2>Thêm thành viên</h2>
+            <p>Mời thêm thành viên vào gia đình</p>
+          </div>
+        </header>
+        <div className="fa-mem-add">
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="Tên thành viên mới"
+            placeholder="Nhập tên thành viên"
+            aria-label="Tên thành viên mới"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void onAdd();
+            }}
           />
-          <select value={newRole} onChange={(e) => setNewRole(e.target.value)}>
-            <option value="child">Con</option>
-            <option value="guardian">Bố/Mẹ</option>
-            <option value="caregiver">Người chăm sóc</option>
-          </select>
+          <label className={`fa-mem-role ${roleSelectClass(newRole)}`}>
+            <span aria-hidden>{newRole === 'child' ? '🧒' : '👑'}</span>
+            <select
+              value={newRole}
+              onChange={(e) => setNewRole(e.target.value)}
+              aria-label="Vai trò thành viên mới"
+            >
+              <option value="child">Con</option>
+              <option value="guardian">Bố/Mẹ</option>
+              <option value="caregiver">Người chăm sóc</option>
+            </select>
+          </label>
           <button
             type="button"
             className="btn btn-primary"
@@ -199,12 +340,53 @@ export function FamilyMembersPage() {
         ) : null}
       </section>
 
-      <section className="fa-card fa-card-action">
-        <h2>Mời bằng mã nhà</h2>
-        <p className="fa-hint">Bố/mẹ kia hoặc ông bà vào app → Gia nhập nhà bằng mã.</p>
-        <button type="button" className="btn btn-primary" onClick={() => navigate('/family-admin/invite')}>
-          Mở mã nhà →
+      <section className="fa-card fa-mem-card">
+        <header className="fa-mem-card-head">
+          <span className="fa-mem-ico" aria-hidden>
+            🔑
+          </span>
+          <div>
+            <h2>Mời bằng mã nhà</h2>
+            <p>Người khác dùng mã này để gia nhập nhà của bạn</p>
+          </div>
+        </header>
+
+        <div className="fa-mem-code-box">
+          <span className="fa-mem-code-ico" aria-hidden>
+            🏡
+          </span>
+          <div>
+            <em>Mã nhà của bạn</em>
+            <strong aria-live="polite">
+              {inviteBusy && !invite ? '…' : invite?.code ?? 'Chưa tạo được mã'}
+            </strong>
+          </div>
+          <button
+            type="button"
+            className="pill"
+            disabled={!invite || inviteBusy}
+            onClick={() => void onCopyCode()}
+          >
+            Sao chép
+          </button>
+        </div>
+
+        <button
+          type="button"
+          className="fa-mem-share"
+          disabled={!invite || inviteBusy}
+          onClick={() => void onShareCode()}
+        >
+          Chia sẻ mã nhà
         </button>
+
+        <div className="fa-mem-safe">
+          <div>
+            <strong>Mã nhà giúp gia đình kết nối an toàn</strong>
+            <p>Chỉ những người có mã này mới có thể tham gia vào nhà của bạn.</p>
+          </div>
+          <span aria-hidden>🛡️</span>
+        </div>
       </section>
     </FamilyAdminShell>
   );

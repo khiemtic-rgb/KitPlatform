@@ -231,5 +231,7 @@ internal sealed class FamilyRewardService : IFamilyRewardService
             row.StarCost,
             row.Status,
             row.CreatedAt,
-            row.FulfilledAt);
+            row.FulfilledAt,
+            row.MemberId,
+            row.MemberName);
 }

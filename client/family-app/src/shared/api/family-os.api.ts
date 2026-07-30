@@ -345,6 +345,8 @@ export interface FamilySubscription {
   isEntitled: boolean;
   trialDaysRemaining?: number;
   trialDaysTotal?: number;
+  /** Days left in post-trial soft grace (Pro still entitled). */
+  trialGraceDaysRemaining?: number;
   tierCode?: string;
   displayNameVi?: string;
   outcomeNameVi?: string;
@@ -372,6 +374,7 @@ export interface FamilyCheckout {
 function mapSubscription(r: Row): FamilySubscription {
   const remainingRaw = r.trialDaysRemaining ?? r.TrialDaysRemaining;
   const totalRaw = r.trialDaysTotal ?? r.TrialDaysTotal;
+  const graceRaw = r.trialGraceDaysRemaining ?? r.TrialGraceDaysRemaining;
   const maxChildrenRaw = r.maxChildren ?? r.MaxChildren;
   return {
     familyId: String(r.familyId ?? r.FamilyId ?? ''),
@@ -392,6 +395,8 @@ function mapSubscription(r: Row): FamilySubscription {
         : undefined,
     trialDaysTotal:
       totalRaw != null && totalRaw !== '' ? Number(totalRaw) : undefined,
+    trialGraceDaysRemaining:
+      graceRaw != null && graceRaw !== '' ? Number(graceRaw) : undefined,
     tierCode:
       r.tierCode != null || r.TierCode != null
         ? String(r.tierCode ?? r.TierCode)
@@ -3461,6 +3466,19 @@ export async function createChildRequest(
 ): Promise<ChildRequest> {
   const { data } = await http.post<Row>(`/family-os/families/${familyId}/requests`, body);
   return mapChildRequest(data);
+}
+
+export async function fetchChildRequests(
+  familyId: string,
+  opts?: { status?: string; memberId?: string },
+): Promise<ChildRequest[]> {
+  const { data } = await http.get<unknown>(`/family-os/families/${familyId}/requests`, {
+    params: {
+      status: opts?.status,
+      memberId: opts?.memberId,
+    },
+  });
+  return asArray(data).map(mapChildRequest);
 }
 
 export async function addAdHocCommitment(

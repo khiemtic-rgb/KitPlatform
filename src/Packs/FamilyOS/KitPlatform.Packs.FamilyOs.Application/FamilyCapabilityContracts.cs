@@ -107,9 +107,9 @@ public static class FamilyPlanCapabilityMatrix
             return FamilyPlanTiers.Free;
 
         var code = (planCode ?? "").Trim().ToLowerInvariant();
-        if (status is FamilySubscriptionStatuses.Trial
+        if (status is FamilySubscriptionStatuses.Trial or FamilySubscriptionStatuses.TrialGrace
             || code is FamilyPlanCodes.StarterTrial)
-            return FamilyPlanTiers.Pro; // trial shows hero value
+            return FamilyPlanTiers.Pro; // trial + grace show hero Peace Plan value
 
         return code switch
         {

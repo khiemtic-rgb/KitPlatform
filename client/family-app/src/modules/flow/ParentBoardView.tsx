@@ -570,6 +570,7 @@ export function ParentBoardView({
   const [fulfillBusyId, setFulfillBusyId] = useState<string | null>(null);
   const [familyMoods, setFamilyMoods] = useState<FamilyMemberMood[]>([]);
   const [treasureHistoryOpen, setTreasureHistoryOpen] = useState(false);
+  const [inboxAllOpen, setInboxAllOpen] = useState(false);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
   const childMenuRef = useRef<HTMLDivElement>(null);
   const diaryDatesRef = useRef<HTMLDivElement>(null);
@@ -888,7 +889,14 @@ export function ParentBoardView({
   const scopedTotal = scopedCommitments.length;
   const percent =
     scopedTotal > 0 ? Math.round((scopedDone / scopedTotal) * 100) : 0;
-  const unlockGap = Math.max(0, Math.min(3, Math.max(0, flow.totalCommitments - flow.doneCount)));
+  /** Movie Night progress is team unlock %, not today's per-child task %. */
+  const moviePct = Math.max(
+    0,
+    Math.min(100, todayUnlock?.teamPercent ?? percent),
+  );
+  const movieMembersLeft = todayUnlock
+    ? Math.max(0, todayUnlock.teamTotal - todayUnlock.teamDone)
+    : Math.max(0, Math.min(3, Math.max(0, flow.totalCommitments - flow.doneCount)));
   const focusChild =
     effectiveChildFocus === 'all'
       ? [...allMembers].sort((a, b) => b.done - a.done)[0]
@@ -1076,6 +1084,10 @@ export function ParentBoardView({
             top.kind === 'consequence'
               ? top.event.labelVi
               : top.item.title,
+          whoVi:
+            top.kind === 'consequence'
+              ? top.event.memberName?.trim() || undefined
+              : top.item.memberName?.trim() || undefined,
           detailVi:
             top.kind === 'consequence'
               ? `${(top.event.memberName?.trim() || who)} · chờ quyết định`
@@ -1108,6 +1120,37 @@ export function ParentBoardView({
     memoryWinVi,
     dnaCard,
   ]);
+
+  /**
+   * Việc ưu tiên luôn thuộc về đúng 1 người — ưu tiên tên chủ việc thật, chỉ lùi
+   * về con đang chọn khi dữ liệu không nói ai.
+   */
+  const briefWho =
+    homeBrief.primaryAction.whoVi?.trim() ||
+    (effectiveChildFocus !== 'all' ? selectedChild?.name ?? null : null);
+  const briefWhoShort = briefWho
+    ? briefWho.trim().split(/\s+/).pop() || briefWho
+    : '';
+  const briefTaskTone =
+    homeBrief.primaryAction.kind === 'dna_setup'
+      ? 'dna'
+      : homeBrief.primaryAction.attentionKind === 'awaiting'
+        ? 'awaiting'
+        : homeBrief.primaryAction.attentionKind === 'overdue'
+          ? 'overdue'
+          : homeBrief.primaryAction.attentionKind === 'consequence'
+            ? 'decide'
+            : 'tip';
+  const briefTaskIcon =
+    briefTaskTone === 'dna'
+      ? '🧬'
+      : briefTaskTone === 'awaiting'
+        ? '⏳'
+        : briefTaskTone === 'overdue'
+          ? '⏰'
+          : briefTaskTone === 'decide'
+            ? '⚖️'
+            : '💡';
 
   const homeAttention = useMemo(() => {
     if (homeBrief.period !== 'evening') return attentionItems.slice(0, 3);
@@ -1177,6 +1220,9 @@ export function ParentBoardView({
 
   const peaceDaysLeft = useMemo(() => {
     if (!subscription) return null;
+    if (subscription.status === 'trial_grace') {
+      return subscription.trialGraceDaysRemaining ?? null;
+    }
     if (subscription.trialDaysRemaining != null) return subscription.trialDaysRemaining;
     const iso = subscription.trialEndsAt || subscription.currentPeriodEnd;
     if (!iso) return null;
@@ -1271,11 +1317,6 @@ export function ParentBoardView({
   const hasChildren = childOptions.length > 0;
   const childShort =
     (selectedChild?.name ?? focusChild?.name ?? 'Con').trim().split(/\s+/).pop() || 'Con';
-  const childAvatar = avatarEmoji(
-    inferGenderFromName(selectedChild?.name ?? focusChild?.name ?? childShort),
-    'child',
-  );
-
   const diaryDays = useMemo(() => {
     const base = new Date(`${flow.flowDate}T12:00:00`);
     if (Number.isNaN(base.getTime())) return [];
@@ -1365,7 +1406,13 @@ export function ParentBoardView({
           wait,
           skipped,
           pending: !done && !wait && !skipped,
-          note: diaryTaskNote(item.title, childShort, noteStatus, parentRole),
+          who: item.memberName?.trim() || (hasChildren ? childShort : ''),
+          note: diaryTaskNote(
+            item.title,
+            item.memberName?.trim() || childShort,
+            noteStatus,
+            parentRole,
+          ),
           reward: parentDisplayDelta(item),
           starLabel: item.starLabelVi
             ? normalizeLateStarLabelVi(item.starLabelVi)
@@ -1378,7 +1425,15 @@ export function ParentBoardView({
       });
     if (diaryFilter === 'all') return rows;
     return rows.filter((r) => r.category === diaryFilter);
-  }, [scopedCommitments, flow.flowDate, verifiedTick, childShort, diaryFilter, parentRole]);
+  }, [
+    scopedCommitments,
+    flow.flowDate,
+    verifiedTick,
+    childShort,
+    hasChildren,
+    diaryFilter,
+    parentRole,
+  ]);
 
   const diaryVisible = diaryExpanded ? diaryEntries : diaryEntries.slice(0, 5);
   const diaryStarsEarned = useMemo(
@@ -1529,6 +1584,15 @@ export function ParentBoardView({
       ? 'Cả nhà'
       : selectedChild?.name ?? childShort;
 
+  /**
+   * Sao / quà luôn thuộc về đúng 1 con (`treasureMemberId`). Khi đang xem "Cả nhà"
+   * con này có thể khác con trong Brief — nên nhãn Kho báu phải bám treasureMemberId.
+   */
+  const treasureChildName =
+    childOptions.find((c) => c.key === treasureMemberId)?.name ?? '';
+  const treasureShort =
+    treasureChildName.trim().split(/\s+/).pop() || childShort;
+
   const renderNoChildNotice = () => (
     <section className="ph-nochild" role="status">
       <span className="ph-nochild-art" aria-hidden>
@@ -1621,7 +1685,7 @@ export function ParentBoardView({
   const treasureMemories = useMemo(
     () =>
       buildFamilyMemories({
-        childShort,
+        childShort: treasureShort,
         redemptions: childRedemptions,
         teamUnlocks,
         doneItems: scopedCommitments.filter((c) => c.status === 'done'),
@@ -1637,7 +1701,7 @@ export function ParentBoardView({
         redemptionId:
           m.id.startsWith('redeem-') ? m.id.slice('redeem-'.length) : undefined,
       })),
-    [childRedemptions, teamUnlocks, scopedCommitments, childShort, savedMemories],
+    [childRedemptions, teamUnlocks, scopedCommitments, treasureShort, savedMemories],
   );
 
   const treasureFamilyGoals = useMemo(() => {
@@ -1675,13 +1739,13 @@ export function ParentBoardView({
           id: todayUnlock.id,
           icon: '🍿',
           title: todayUnlock.labelVi || 'Movie Night',
-          pct: percent,
+          pct: moviePct,
           locked: false,
         },
       ];
     }
     return [];
-  }, [teamUnlocks, flow.flowDate, percent, todayUnlock]);
+  }, [teamUnlocks, flow.flowDate, moviePct, todayUnlock]);
 
   const bigAchievements = useMemo(() => {
     const movieTimes = teamUnlocks.filter((u) => u.status === 'confirmed').length;
@@ -1698,7 +1762,7 @@ export function ParentBoardView({
       {
         id: 'a2',
         icon: '📘',
-        title: 'Đọc sách cùng mẹ',
+        title: `Đọc sách cùng ${parentRole}`,
         value: readTimes > 0 ? `${readTimes} lần` : '—',
       },
       {
@@ -1720,7 +1784,7 @@ export function ParentBoardView({
         value: `${rewardPoints.toLocaleString('vi-VN')}`,
       },
     ];
-  }, [teamUnlocks, scopedCommitments, explorerLevel, rewardPoints]);
+  }, [teamUnlocks, scopedCommitments, explorerLevel, rewardPoints, parentRole]);
 
   const hasCap = (cap: string) => {
     const caps = subscription?.capabilities;
@@ -1779,6 +1843,10 @@ export function ParentBoardView({
       }
       if (hit.kind === 'awaiting') {
         void verifyItem(hit.item).catch(() => undefined);
+        return;
+      }
+      if (hit.kind === 'consequence') {
+        setInboxAllOpen(true);
         return;
       }
       scrollToMissions('need_help');
@@ -1851,6 +1919,7 @@ export function ParentBoardView({
               {familyName || 'Gia đình mình'}
               <span aria-hidden>▾</span>
             </button>
+            <p className="ph-b4-date">{formatFlowDay(flow.flowDate)}</p>
           </div>
         </div>
         <div className="ph-b4-top-right">
@@ -1881,28 +1950,53 @@ export function ParentBoardView({
       {tab === 'home' ? (
         <div className="ph-b4-home">
           {!hasChildren ? renderNoChildNotice() : null}
+          {hasChildren ? (
+            <div className="ph-b4-focus-bar" aria-label="Đang xem thành viên nào">
+              <span className="ph-b4-focus-label">
+                Đang xem
+                {childOptions.length > 1 ? (
+                  <em> · {childOptions.length} con</em>
+                ) : null}
+              </span>
+              {renderChildPicker('module')}
+            </div>
+          ) : null}
           <article className="ph-b4-brief" aria-label="Morning Brief">
             <div className="ph-b4-brief-main">
               <p className="ph-b4-brief-eyebrow">
                 <span className="ph-b4-spark" aria-hidden>
                   ✦
                 </span>
-                {homeBrief.period === 'evening' ? 'EVENING BRIEF' : 'MORNING BRIEF'}
+                {homeBrief.period === 'evening' ? 'Gợi ý tối' : 'Gợi ý sáng'}
+                {briefWho ? (
+                  <span className="ph-b4-brief-who"> · {briefWho}</span>
+                ) : childOptions.length > 1 ? (
+                  <span className="ph-b4-brief-who"> · Cả gia đình</span>
+                ) : null}
               </p>
               <h2 className="ph-b4-brief-title">
-                {homeBrief.primaryAction.kind === 'dna_setup'
+                {homeBrief.primaryAction.kind === 'dna_setup' ||
+                homeBrief.primaryAction.kind === 'evening_checkin'
                   ? homeBrief.moodLineVi
                   : homeBrief.period === 'evening'
-                    ? homeBrief.primaryAction.kind === 'evening_checkin'
-                      ? 'Tối nay ưu tiên 1 việc trước.'
-                      : 'Tối nay Famixa gợi ý một việc nhẹ.'
-                    : 'Hôm nay ưu tiên 1 việc trước.'}
+                    ? 'Tối nay Famixa gợi ý một việc nhẹ.'
+                    : briefWho
+                      ? `Hôm nay ưu tiên 1 việc của ${briefWhoShort} trước.`
+                      : 'Hôm nay ưu tiên 1 việc trước.'}
               </h2>
-              <div className="ph-b4-brief-task">
+              <div className={`ph-b4-brief-task is-${briefTaskTone}`}>
                 <span className="ph-b4-brief-check" aria-hidden>
-                  {homeBrief.primaryAction.kind === 'dna_setup' ? '🧬' : '✓'}
+                  {briefTaskIcon}
                 </span>
-                <strong>{homeBrief.primaryAction.doThisVi}</strong>
+                <div className="ph-b4-brief-task-body">
+                  <strong>{homeBrief.primaryAction.doThisVi}</strong>
+                  {homeBrief.primaryAction.statusVi ? (
+                    <em>
+                      {briefWho ? `${briefWho} · ` : ''}
+                      {homeBrief.primaryAction.statusVi}
+                    </em>
+                  ) : null}
+                </div>
               </div>
               {(() => {
                 const because = becauseFromDna(dnaCard).becauseVi;
@@ -1925,7 +2019,14 @@ export function ParentBoardView({
               })()}
               <button type="button" className="ph-b4-brief-cta" onClick={runBriefPrimary}>
                 <span aria-hidden>⚡</span>
-                {homeBrief.primaryAction.kind === 'dna_setup' ? 'Hoàn tất DNA' : 'Thực hiện ngay'}
+                {homeBrief.primaryAction.kind === 'dna_setup'
+                  ? 'Hoàn tất DNA'
+                  : homeBrief.primaryAction.kind === 'evening_checkin'
+                    ? 'Trả lời 3 câu'
+                    : homeBrief.primaryAction.kind === 'attention' &&
+                        homeBrief.primaryAction.attentionKind === 'awaiting'
+                      ? 'Xác nhận ngay'
+                      : 'Thực hiện ngay'}
               </button>
             </div>
             <div className="ph-b4-brief-art" aria-hidden>
@@ -1968,7 +2069,7 @@ export function ParentBoardView({
                   </>
                 ) : (
                   <>
-                    Gợi ý từ AI: 3Q tối giúp duy trì thói quen tốt.{' '}
+                    Gợi ý Famixa: 3 câu tối giúp duy trì thói quen tốt.{' '}
                     <em>Xem gợi ý phù hợp với gia đình →</em>
                   </>
                 )}
@@ -1980,7 +2081,10 @@ export function ParentBoardView({
             <section className="ph-b4-priority" id="ph-brief-attn" aria-label="Ưu tiên hôm nay">
               <header className="ph-b4-col-head">
                 <h3>
-                  <span aria-hidden>🎯</span> ƯU TIÊN HÔM NAY
+                  <span aria-hidden>🎯</span>{' '}
+                  {effectiveChildFocus === 'all'
+                    ? 'Ưu tiên hôm nay'
+                    : `Ưu tiên của ${selectedChild?.name ?? childShort}`}
                 </h3>
               </header>
               {homeAttention.length === 0 &&
@@ -2002,7 +2106,7 @@ export function ParentBoardView({
                           <strong>
                             {homeBrief.eveningOverdueCount} việc sáng còn mở
                           </strong>
-                          <em>Gộp xem trong Nhiệm vụ — tối nay ưu tiên 3Q</em>
+                          <em>Gộp xem trong Nhiệm vụ — tối nay ưu tiên 3 câu phản hồi</em>
                         </span>
                         <i aria-hidden />
                       </button>
@@ -2015,10 +2119,10 @@ export function ParentBoardView({
                           <button
                             type="button"
                             className="ph-b4-priority-item"
-                            onClick={() => scrollToMissions('need_help')}
+                            onClick={() => setInboxAllOpen(true)}
                           >
                             <span className="ph-b4-priority-ico" aria-hidden>
-                              !
+                              ⚖️
                             </span>
                             <span>
                               <strong>{a.event.labelVi}</strong>
@@ -2033,7 +2137,10 @@ export function ParentBoardView({
                       );
                     }
                     const clock = a.item.windowEnd ? a.item.windowEnd.slice(0, 5) : '';
-                    const meta =
+                    const who =
+                      a.item.memberName?.trim() ||
+                      (effectiveChildFocus !== 'all' ? selectedChild?.name : null);
+                    const metaBase =
                       a.kind === 'awaiting'
                         ? 'Con báo đã xong · chạm để xác nhận'
                         : a.kind === 'overdue'
@@ -2043,6 +2150,7 @@ export function ParentBoardView({
                           : clock
                             ? `Cần chú ý · trước ${clock}`
                             : 'Cần chú ý';
+                    const meta = who ? `${who} · ${metaBase}` : metaBase;
                     return (
                       <li key={a.id}>
                         <button
@@ -2057,7 +2165,7 @@ export function ParentBoardView({
                           }}
                         >
                           <span className="ph-b4-priority-ico" aria-hidden>
-                            {a.kind === 'awaiting' ? '✓' : '·'}
+                            {a.kind === 'awaiting' ? '⏳' : a.kind === 'overdue' ? '⏰' : '·'}
                           </span>
                           <span>
                             <strong>{a.item.title}</strong>
@@ -2099,7 +2207,7 @@ export function ParentBoardView({
                 setInboxTick((t) => t + 1);
                 onRefreshFlow?.();
               }}
-              onSeeAll={() => scrollToMissions('need_help')}
+              onSeeAll={() => setInboxAllOpen(true)}
               onOpenMode={() => setModeSheetOpen(true)}
             />
           </div>
@@ -2108,16 +2216,16 @@ export function ParentBoardView({
             className="ph-b4-progress"
             aria-label={
               effectiveChildFocus === 'all'
-                ? 'Tiến độ cả nhà'
-                : `Tiến độ ${selectedChild?.name ?? 'của con'}`
+                ? 'Tiến độ cả gia đình'
+                : `Tiến độ của ${selectedChild?.name ?? 'con'}`
             }
           >
             <header className="ph-b4-col-head">
               <h3>
                 <span aria-hidden>{effectiveChildFocus === 'all' ? '👨‍👩‍👧‍👦' : '🎯'}</span>{' '}
                 {effectiveChildFocus === 'all'
-                  ? 'TIẾN ĐỘ CẢ NHÀ'
-                  : `TIẾN ĐỘ ${(selectedChild?.name ?? 'CỦA CON').toLocaleUpperCase('vi')}`}
+                  ? 'Tiến độ cả gia đình'
+                  : `Tiến độ của ${selectedChild?.name ?? 'con'}`}
               </h3>
             </header>
             <p className="ph-b4-progress-copy">
@@ -2245,11 +2353,16 @@ export function ParentBoardView({
             familyId={familyId}
             dna={dnaCard}
             loading={dnaLoading}
+            houseScopeNote={
+              childOptions.length > 1
+                ? 'Cả gia đình (cho tất cả các con)'
+                : dnaCard?.growthBalanceLabelVi || null
+            }
             onDnaChange={(d) => setDnaCard(d)}
             onUpgrade={() => {
               setPaywallReason(
                 dnaCard?.upgradeHintVi ||
-                  'Nâng Family Peace Plan để xem Focus & bước tiếp theo.',
+                  'Nâng Peace Plan để xem việc nhà đang tập cùng con và bước nhỏ tiếp theo.',
               );
               setPaywallOpen(true);
             }}
@@ -2267,7 +2380,7 @@ export function ParentBoardView({
               <i className="is-purple" aria-hidden>
                 <IconTarget size={18} />
               </i>
-              3Q tối
+              3 câu tối
             </button>
             <button type="button" onClick={() => setTab('rewards')}>
               <i className="is-yellow" aria-hidden>
@@ -2442,6 +2555,7 @@ export function ParentBoardView({
                     const deadline = item.windowEnd
                       ? `Trước ${item.windowEnd.slice(0, 5)}`
                       : lateLabel(item, flow.localTime);
+                    const itemWho = item.memberName?.trim() || childShort;
                     return (
                       <li key={item.id} className="ph-task-card is-help">
                         <span className="ph-task-card-ico" aria-hidden>
@@ -2449,10 +2563,16 @@ export function ParentBoardView({
                         </span>
                         <div className="ph-task-card-body">
                           <strong>{item.title}</strong>
+                          <span className="ph-task-owner">
+                            <span aria-hidden>
+                              {avatarEmoji(inferGenderFromName(itemWho), 'child')}
+                            </span>
+                            {itemWho}
+                          </span>
                           <p>
                             {warmTaskSupportNote({
                               title: item.title,
-                              childShort,
+                              childShort: itemWho,
                               parentRole,
                               kind,
                               flowDate: flow.flowDate,
@@ -2474,13 +2594,17 @@ export function ParentBoardView({
                             >
                               <img
                                 src={withEvidenceAuth(item.evidenceUrl)}
-                                alt={`Ảnh ${childShort} gửi — ${item.title}`}
+                                alt={`Ảnh ${itemWho} gửi — ${item.title}`}
                                 className="evidence-thumb is-board"
                               />
                             </a>
                           ) : null}
-                          <span className="ph-task-who" aria-hidden>
-                            {parentAvatar}
+                          <span
+                            className="ph-task-who"
+                            title={itemWho}
+                            aria-label={`Việc của ${itemWho}`}
+                          >
+                            {avatarEmoji(inferGenderFromName(itemWho), 'child')}
                           </span>
                           {kind === 'awaiting' ? (
                             <button
@@ -2513,7 +2637,9 @@ export function ParentBoardView({
                     );
                   })}
                 {needHelpItems.length === 0 ? (
-                  <li className="ph-empty-soft">Không có việc cần mẹ hỗ trợ ngay.</li>
+                  <li className="ph-empty-soft">
+                    Không có việc cần {parentRole} hỗ trợ ngay.
+                  </li>
                 ) : null}
               </ul>
             </section>
@@ -2538,17 +2664,25 @@ export function ParentBoardView({
                 <ul className="ph-tasks-cards">
                   {(missionFilter === 'waiting_child' ? filteredMissions : waitingChildItems)
                     .slice(0, missionFilter === 'all' ? 3 : 20)
-                    .map((item) => (
+                    .map((item) => {
+                      const itemWho = item.memberName?.trim() || childShort;
+                      return (
                       <li key={item.id} className="ph-task-card is-wait">
                         <span className="ph-task-card-ico" aria-hidden>
                           {taskIcon(item.title)}
                         </span>
                         <div className="ph-task-card-body">
                           <strong>{item.title}</strong>
+                          <span className="ph-task-owner">
+                            <span aria-hidden>
+                              {avatarEmoji(inferGenderFromName(itemWho), 'child')}
+                            </span>
+                            {itemWho}
+                          </span>
                           <p>
                             {warmTaskTip({
                               title: item.title,
-                              childShort,
+                              childShort: itemWho,
                               parentRole,
                               flowDate: flow.flowDate,
                               itemId: item.id,
@@ -2562,8 +2696,12 @@ export function ParentBoardView({
                           ) : null}
                         </div>
                         <div className="ph-task-card-side">
-                          <span className="ph-task-who" aria-hidden>
-                            {childAvatar}
+                          <span
+                            className="ph-task-who"
+                            title={itemWho}
+                            aria-label={`Việc của ${itemWho}`}
+                          >
+                            {avatarEmoji(inferGenderFromName(itemWho), 'child')}
                           </span>
                           <QuickNudgeButton
                             items={item}
@@ -2580,7 +2718,8 @@ export function ParentBoardView({
                           />
                         </div>
                       </li>
-                    ))}
+                      );
+                    })}
                   {waitingChildItems.length === 0 ? (
                     <li className="ph-empty-soft">
                       {hasChildren
@@ -2624,6 +2763,7 @@ export function ParentBoardView({
                   .slice(0, missionFilter === 'all' ? 4 : 30)
                   .map((item) => {
                     const clock = formatClock(item.completedAt);
+                    const itemWho = item.memberName?.trim() || childShort;
                     return (
                       <li key={item.id} className="ph-task-card is-done">
                         <span className="ph-task-card-ico" aria-hidden>
@@ -2631,10 +2771,16 @@ export function ParentBoardView({
                         </span>
                         <div className="ph-task-card-body">
                           <strong>{item.title}</strong>
+                          <span className="ph-task-owner">
+                            <span aria-hidden>
+                              {avatarEmoji(inferGenderFromName(itemWho), 'child')}
+                            </span>
+                            {itemWho}
+                          </span>
                           <p>
                             {warmTaskTip({
                               title: item.title,
-                              childShort,
+                              childShort: itemWho,
                               parentRole,
                               flowDate: flow.flowDate,
                               itemId: item.id,
@@ -2642,8 +2788,12 @@ export function ParentBoardView({
                           </p>
                         </div>
                         <div className="ph-task-card-side">
-                          <span className="ph-task-who" aria-hidden>
-                            {childAvatar}
+                          <span
+                            className="ph-task-who"
+                            title={itemWho}
+                            aria-label={`Việc của ${itemWho}`}
+                          >
+                            {avatarEmoji(inferGenderFromName(itemWho), 'child')}
                           </span>
                           <span className="ph-task-status is-ok">
                             Hoàn thành{clock ? ` lúc ${clock}` : ''}
@@ -2922,6 +3072,14 @@ export function ParentBoardView({
                                 <span className="ph-diary-status is-pending">Chưa xong</span>
                               )}
                             </div>
+                            {entry.who && childOptions.length > 1 ? (
+                              <span className="ph-task-owner">
+                                <span aria-hidden>
+                                  {avatarEmoji(inferGenderFromName(entry.who), 'child')}
+                                </span>
+                                {entry.who}
+                              </span>
+                            ) : null}
                             <p>{entry.note}</p>
                             <span className={`ph-diary-tag tone-${entry.tag.tone}`}>
                               {entry.tag.label}
@@ -3016,8 +3174,8 @@ export function ParentBoardView({
                         {focusedChildMood.moodCode === 'love' || focusedChildMood.moodCode === 'happy'
                           ? `${childShort} rất vui khi được ở bên gia đình hôm nay! 💜`
                           : focusedChildMood.moodCode === 'ok'
-                            ? `${childShort} hơi bình thường — mẹ dành thêm thời gian nhé.`
-                            : `${childShort} cần mẹ động viên thêm hôm nay.`}
+                            ? `${childShort} hơi bình thường — ${parentRole} dành thêm thời gian nhé.`
+                            : `${childShort} cần ${parentRole} động viên thêm hôm nay.`}
                       </p>
                     )}
                   </>
@@ -3226,7 +3384,7 @@ export function ParentBoardView({
               </h1>
               <p>
                 {hasChildren
-                  ? `${childShort} · đang xem ${childFocusLabel}`
+                  ? `Sao & quà của ${treasureChildName || treasureShort}`
                   : 'Chưa có con trong nhà'}
                 {' · '}
                 <button type="button" className="ph-text-link" onClick={() => setTab('challenge')}>
@@ -3257,7 +3415,7 @@ export function ParentBoardView({
               <div className="ph-treasure-stars">
                 <span aria-hidden>⭐</span>
                 <strong>{rewardPoints.toLocaleString('vi-VN')}</strong>
-                <em>{hasChildren ? `Sao của ${childShort}` : 'Sao của nhà'}</em>
+                <em>{hasChildren ? `Sao của ${treasureShort}` : 'Sao của nhà'}</em>
               </div>
               <p className="ph-treasure-level">
                 <span aria-hidden>👑</span> Level {treasureLevel} · Explorer
@@ -3304,17 +3462,21 @@ export function ParentBoardView({
                 <p>Cả nhà cùng xem phim yêu thích</p>
                 <div className="ph-treasure-family-bar">
                   <i aria-hidden>
-                    <b style={{ width: `${percent}%` }} />
+                    <b style={{ width: `${moviePct}%` }} />
                   </i>
-                  <em>{percent}%</em>
+                  <em>{moviePct}%</em>
                 </div>
                 <span>
                   {todayUnlock?.status === 'pending_confirm'
-                    ? 'Sẵn sàng mở — mẹ xác nhận nhé!'
+                    ? `Sẵn sàng mở — ${parentRole} xác nhận nhé!`
                     : todayUnlock?.status === 'confirmed'
                       ? 'Đã mở thưởng — cả nhà tận hưởng!'
-                      : unlockGap > 0
-                        ? `Chỉ còn ${unlockGap} nhiệm vụ nữa!`
+                      : movieMembersLeft > 0
+                        ? todayUnlock
+                          ? movieMembersLeft === 1
+                            ? 'Chỉ còn 1 thành viên nữa!'
+                            : `Chỉ còn ${movieMembersLeft} thành viên nữa!`
+                          : `Chỉ còn ${movieMembersLeft} nhiệm vụ nữa!`
                         : 'Đang tiến gần phần thưởng chung'}
                 </span>
                 {todayUnlock?.status === 'pending_confirm' ? (
@@ -3338,7 +3500,7 @@ export function ParentBoardView({
                   </div>
                 ) : (
                   <p className="muted ph-treasure-detail-note">
-                    Tiến độ Movie Night: {percent}%
+                    Tiến độ Movie Night: {moviePct}%
                     {todayUnlock?.status === 'confirmed' ? ' — đã mở thưởng!' : ''}
                   </p>
                 )}
@@ -3414,8 +3576,8 @@ export function ParentBoardView({
                       disabled
                       aria-label={
                         rewardPoints >= (item.cost ?? 0)
-                          ? `${childShort} đủ sao để đổi trên màn hình con`
-                          : `${childShort} chưa đủ sao`
+                          ? `${treasureShort} đủ sao để đổi trên màn hình con`
+                          : `${treasureShort} chưa đủ sao`
                       }
                     >
                       {rewardPoints >= (item.cost ?? 0) ? 'Con có thể đổi' : 'Chưa đủ sao'}
@@ -3447,7 +3609,11 @@ export function ParentBoardView({
 
             <article className="ph-treasure-badges" id="ph-treasure-badges">
               <header className="ph-treasure-sec-head is-compact">
-                <h3>{hasChildren ? `HUY HIỆU CỦA ${childShort.toUpperCase()}` : 'HUY HIỆU'}</h3>
+                <h3>
+                  {hasChildren
+                    ? `Huy hiệu của ${treasureShort}`
+                    : 'Huy hiệu nhà mình'}
+                </h3>
                 <button
                   type="button"
                   className="ph-text-link"
@@ -3629,6 +3795,56 @@ export function ParentBoardView({
         </button>
       </nav>
 
+      {inboxAllOpen ? (
+        <div
+          className="sheet-backdrop"
+          role="presentation"
+          onClick={() => setInboxAllOpen(false)}
+        >
+          <div
+            className="sheet ph-inbox-all-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Tất cả đề xuất cần duyệt"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DecisionInboxPanel
+              variant="default"
+              maxItems={30}
+              familyId={familyId}
+              parentMembershipId={parentMembershipId}
+              refreshKey={`all-${flow.flowDate}-${inboxTick}`}
+              onApproveStars={async (commitmentId) => {
+                await approveCommitmentStars(familyId, commitmentId);
+                markParentVerified(flow.flowDate, commitmentId);
+                setVerifiedTick((t) => t + 1);
+              }}
+              onConsequence={async (eventId, status) => {
+                const guide = await onDecideConsequence(eventId, status);
+                if (guide) setSoftGuide(guide);
+              }}
+              onTeamUnlock={(unlockId, status) => onDecideUnlockById(unlockId, status)}
+              onRewardFulfill={(id) => handleFulfillRedemption(id)}
+              onChanged={() => {
+                setInboxTick((t) => t + 1);
+                onRefreshFlow?.();
+              }}
+              onOpenMode={() => {
+                setInboxAllOpen(false);
+                setModeSheetOpen(true);
+              }}
+            />
+            <button
+              type="button"
+              className="pill is-soft"
+              onClick={() => setInboxAllOpen(false)}
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {treasureHistoryOpen ? (
         <div
           className="sheet-backdrop"
@@ -3642,7 +3858,9 @@ export function ParentBoardView({
             aria-label="Lịch sử đổi quà"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2>Lịch sử đổi quà</h2>
+            <h2>
+              Lịch sử đổi quà{treasureChildName ? ` · ${treasureChildName}` : ''}
+            </h2>
             {childRedemptions.length === 0 ? (
               <p className="muted">Chưa có lần đổi quà nào.</p>
             ) : (

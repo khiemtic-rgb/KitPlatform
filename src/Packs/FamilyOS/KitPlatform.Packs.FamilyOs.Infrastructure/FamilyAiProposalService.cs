@@ -216,10 +216,27 @@ internal sealed class FamilyAiProposalService : IFamilyAiProposalService
                     if (candidates.Count > 0)
                     {
                         var titles = string.Join(", ", candidates.Select(c => $"「{c.Title}」"));
+
+                        // Bố mẹ phải biết bớt việc của ai — gắn chủ sở hữu nếu các việc
+                        // này cùng thuộc một con; nhiều con thì để phạm vi cả nhà.
+                        var ownerIds = candidates
+                            .Select(c => c.MemberId)
+                            .Where(id => id.HasValue)
+                            .Select(id => id!.Value)
+                            .Distinct()
+                            .ToList();
+                        Guid? ownerId = ownerIds.Count == 1 ? ownerIds[0] : null;
+                        var ownerName = ownerId is null
+                            ? null
+                            : members.FirstOrDefault(m => m.Id == ownerId.Value)?.DisplayName;
+                        var whoPrefix = string.IsNullOrWhiteSpace(ownerName)
+                            ? string.Empty
+                            : $"{ShortName(ownerName)} · ";
+
                         var dto = await TryCreateAsync(
                             familyId,
                             FamilyAiProposalKinds.RoutineTrim,
-                            $"Lịch 「{routine.DisplayName}」 đang hơi nhiều việc — bớt {candidates.Count} việc?",
+                            $"{whoPrefix}Lịch 「{routine.DisplayName}」 đang hơi nhiều việc — bớt {candidates.Count} việc?",
                             $"Famixa đề xuất tạm ẩn {titles}. Áp dụng từ ngày mai, hôm nay giữ nguyên. Bạn chỉ cần bấm Áp dụng.",
                             JsonSerializer.Serialize(new
                             {
@@ -227,7 +244,7 @@ internal sealed class FamilyAiProposalService : IFamilyAiProposalService
                                 deactivateTemplateIds = candidates.Select(c => c.Id).ToArray(),
                             }),
                             $"routine_trim:{routine.Id:D}:{resolved.FlowDate:yyyy-MM-dd}",
-                            null,
+                            ownerId,
                             cancellationToken);
                         if (dto is not null) created++;
                     }

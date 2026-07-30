@@ -52,6 +52,11 @@ function friendlyDecisionCopy(text: string | null | undefined): string {
     .replace(/^AI cần bạn/i, 'Famixa cần bạn');
 }
 
+/** Ai liên quan — bố mẹ phải thấy ngay đề xuất này của con nào. */
+function whoLabel(item: DecisionItem): string {
+  return item.memberName?.trim() || 'Cả gia đình';
+}
+
 function sortForOneMinute(items: DecisionItem[]): DecisionItem[] {
   const rank = (item: DecisionItem) => {
     if (item.recommend === 'approve') return 0;
@@ -114,7 +119,7 @@ export function DecisionInboxPanel({
           decidedByMemberId: parentMembershipId,
           decision: approve ? 'approve' : 'reject',
         });
-        setToast(approve ? 'Đã áp dụng đề xuất AI' : 'Đã bỏ qua đề xuất');
+        setToast(approve ? 'Đã áp dụng đề xuất Famixa' : 'Đã bỏ qua đề xuất');
       } else if (item.kind === 'awaiting_stars' && approve) {
         if (!onApproveStars) throw new Error('missing_approve_stars');
         await onApproveStars(item.id);
@@ -182,7 +187,7 @@ export function DecisionInboxPanel({
         <section className="ph-b4-inbox is-empty-afe" aria-label="Decision Inbox">
           <header className="ph-b4-col-head">
             <h3>
-              <span aria-hidden>🤖</span> CẦN BẠN DUYỆT
+              <span aria-hidden>🤖</span> Cần bạn duyệt
             </h3>
           </header>
           <p className="ph-b4-empty">Không có đề xuất nào đang chờ bạn.</p>
@@ -196,7 +201,7 @@ export function DecisionInboxPanel({
       <section className="ph-b4-inbox" aria-label="Decision Inbox">
         <header className="ph-b4-col-head">
           <h3>
-            <span aria-hidden>🤖</span> CẦN BẠN DUYỆT
+            <span aria-hidden>🤖</span> Cần bạn duyệt
             {count > 0 ? <i>{Math.min(count, 9)}</i> : null}
           </h3>
           {count > 0 ? (
@@ -211,6 +216,7 @@ export function DecisionInboxPanel({
               const yesFirst = preferApprove(item);
               return (
                 <li key={`${item.kind}-${item.id}`}>
+                  <span className="ph-inbox-who">{whoLabel(item)}</span>
                   <p>{friendlyDecisionCopy(item.titleVi)}</p>
                   <div className="ph-b4-inbox-btns">
                     {yesFirst ? (
@@ -276,7 +282,7 @@ export function DecisionInboxPanel({
     <section className="ph-block ph-decision-inbox">
       <header className="ph-block-head">
         <h2>
-          CẦN BẠN DUYỆT
+          Cần bạn duyệt
           {count > 0 ? <span className="ph-pill-count">{Math.min(count, 9)}</span> : null}
         </h2>
       </header>
@@ -304,6 +310,7 @@ export function DecisionInboxPanel({
             return (
               <li key={`${item.kind}-${item.id}`} className="ph-decision-card">
                 <div className="ph-decision-card-body">
+                  <span className="ph-inbox-who">{whoLabel(item)}</span>
                   <strong>{friendlyDecisionCopy(item.titleVi)}</strong>
                   <p>{friendlyDecisionCopy(item.bodyVi)}</p>
                   {item.recommend ? (

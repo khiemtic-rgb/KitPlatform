@@ -12,7 +12,7 @@ import {
 } from '@/shared/api/family-os.api';
 import { useSessionStore } from '@/shared/auth/session.store';
 
-type Mode = 'login' | 'register' | 'join';
+type Mode = 'login' | 'register';
 type LoginStyle = 'email' | 'tenant';
 
 function apiError(err: unknown, fallback: string): string {
@@ -102,20 +102,6 @@ function IconHome() {
   );
 }
 
-function IconPhone() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden>
-      <path
-        d="M8.2 4.8h2.4l1.2 3.2-1.6 1a10.5 10.5 0 0 0 4.8 4.8l1-1.6 3.2 1.2v2.4c0 .9-.7 1.7-1.6 1.8-7.2.6-13.2-5.4-12.6-12.6.1-.9.9-1.6 1.8-1.6z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function IconTag() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden>
@@ -143,32 +129,42 @@ function IconEye({ off }: { off?: boolean }) {
   );
 }
 
-function IconInfo() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden>
-      <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M12 10.5v5M12 7.8h.01" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
+const LAST_EMAIL_KEY = 'famixa.lastEmail';
+
+function readLastEmail(): string {
+  try {
+    return (localStorage.getItem(LAST_EMAIL_KEY) || '').trim();
+  } catch {
+    return '';
+  }
+}
+
+function rememberEmail(email: string) {
+  try {
+    const mail = email.trim().toLowerCase();
+    if (mail.includes('@')) localStorage.setItem(LAST_EMAIL_KEY, mail);
+  } catch {
+    /* ignore */
+  }
 }
 
 export function ParentUnlockPage() {
   const navigate = useNavigate();
   const setParentSession = useSessionStore((s) => s.setParentSession);
   const setFamily = useSessionStore((s) => s.setFamily);
-  const [mode, setMode] = useState<Mode>('register');
+  const lastEmail = readLastEmail();
+  const [mode, setMode] = useState<Mode>(lastEmail ? 'login' : 'register');
   const [loginStyle, setLoginStyle] = useState<LoginStyle>('email');
+  const [showAdvancedLogin, setShowAdvancedLogin] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
   const [tenantCode, setTenantCode] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [parentPin, setParentPin] = useState('1234');
+  const [parentPin] = useState('1234');
   const [parentDisplayName, setParentDisplayName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(lastEmail);
   const [inviteCode, setInviteCode] = useState('');
-  const [phone, setPhone] = useState('');
-  const [referralCode, setReferralCode] = useState('');
-  const [acceptedTerms, setAcceptedTerms] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [choiceToken, setChoiceToken] = useState<string | null>(null);
@@ -180,6 +176,12 @@ export function ParentUnlockPage() {
     setError(null);
     setChoiceToken(null);
     setWorkspaces([]);
+    if (next === 'register') setLoginStyle('email');
+  };
+
+  const openInviteOnRegister = () => {
+    switchMode('register');
+    setShowInvite(true);
   };
 
   const finish = async (input: {
@@ -189,7 +191,11 @@ export function ParentUnlockPage() {
     parentPin: string;
     familyId?: string;
     familyName?: string;
+    emailHint?: string;
   }) => {
+    if (input.emailHint) rememberEmail(input.emailHint);
+    else if (email.trim()) rememberEmail(email);
+
     setParentSession({
       accessToken: input.accessToken,
       refreshToken: input.refreshToken,
@@ -228,6 +234,7 @@ export function ParentUnlockPage() {
       refreshToken: result.refreshToken,
       tenantCode: result.tenantCode || tenantCode,
       parentPin,
+      emailHint: email,
     });
   };
 
@@ -250,6 +257,7 @@ export function ParentUnlockPage() {
         refreshToken: session.refreshToken,
         tenantCode: session.tenantCode,
         parentPin,
+        emailHint: email,
       });
     } catch (err) {
       setError(apiError(err, 'Không chọn được workspace'));
@@ -263,20 +271,17 @@ export function ParentUnlockPage() {
     setLoading(true);
     setError(null);
     try {
-      if (mode === 'register' && !acceptedTerms) {
-        throw new Error('Cần đồng ý Điều khoản sử dụng và Chính sách bảo mật.');
-      }
       if (!/^\d{4}$/.test(parentPin)) {
         throw new Error('Mã bố mẹ phải gồm 4 chữ số');
       }
-      if ((mode === 'register' || mode === 'join') && password.trim().length < 8) {
+      if (mode === 'register' && password.trim().length < 8) {
         throw new Error('Mật khẩu tối thiểu 8 ký tự');
       }
 
       if (mode === 'login') {
         if (loginStyle === 'email') {
           const mail = email.trim().toLowerCase();
-          if (!mail.includes('@')) throw new Error('Nhập email KitPlatform');
+          if (!mail.includes('@')) throw new Error('Nhập email của bạn');
           const result = await loginFamilyByEmail({ email: mail, password });
           await handleLoginResult(result);
           return;
@@ -287,12 +292,13 @@ export function ParentUnlockPage() {
       }
 
       const displayName = parentDisplayName.trim();
+      if (!displayName) throw new Error('Nhập họ và tên bố/mẹ');
       const mail = email.trim().toLowerCase();
+      if (!mail.includes('@')) throw new Error('Nhập email hợp lệ');
       const derivedUser = username.trim() || usernameFromEmail(mail);
       const houseCode = inviteCode.trim().toUpperCase();
 
-      // Register form with mã nhà → join (giữ & nâng cấp cùng nhà)
-      if (mode === 'register' && houseCode) {
+      if (houseCode) {
         const joined = await acceptFamilyInvite({
           code: houseCode,
           parentDisplayName: displayName,
@@ -308,33 +314,13 @@ export function ParentUnlockPage() {
           parentPin,
           familyId: joined.familyId,
           familyName: joined.familyName,
+          emailHint: mail,
         });
         return;
       }
 
-      if (mode === 'register') {
-        const created = await registerFamily({
-          familyName: `Nhà của ${displayName}`,
-          parentDisplayName: displayName,
-          username: derivedUser,
-          email: mail,
-          password,
-          parentPin,
-        });
-        // phone + referralCode: UI sẵn; API gắn sau khi nâng cấp
-        await finish({
-          accessToken: created.accessToken,
-          refreshToken: created.refreshToken,
-          tenantCode: created.tenantCode,
-          parentPin,
-          familyId: created.familyId,
-          familyName: created.familyName,
-        });
-        return;
-      }
-
-      const joined = await acceptFamilyInvite({
-        code: houseCode,
+      const created = await registerFamily({
+        familyName: `Nhà của ${displayName}`,
         parentDisplayName: displayName,
         username: derivedUser,
         email: mail,
@@ -342,12 +328,13 @@ export function ParentUnlockPage() {
         parentPin,
       });
       await finish({
-        accessToken: joined.accessToken,
-        refreshToken: joined.refreshToken,
-        tenantCode: joined.tenantCode,
+        accessToken: created.accessToken,
+        refreshToken: created.refreshToken,
+        tenantCode: created.tenantCode,
         parentPin,
-        familyId: joined.familyId,
-        familyName: joined.familyName,
+        familyId: created.familyId,
+        familyName: created.familyName,
+        emailHint: mail,
       });
     } catch (err) {
       setError(apiError(err, 'Không mở được FamilyOS'));
@@ -384,49 +371,43 @@ export function ParentUnlockPage() {
       <section className="fx-auth-card">
         {error ? <div className="banner-error">{error}</div> : null}
 
-        {choiceToken ? (
-          <div className="stack">
-            <p className="muted" style={{ margin: 0 }}>
-              Tài khoản Kit có nhiều workspace. Chọn nhà Famixa (hoặc đơn vị) để vào.
-            </p>
-            <div className="stack" style={{ gap: 8 }}>
-              {workspaces.map((w) => (
-                <label
-                  key={w.userId}
-                  className="field"
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 10,
-                    border:
-                      selectedUserId === w.userId
-                        ? '1px solid var(--brand, #1d6a6a)'
-                        : '1px solid transparent',
-                    borderRadius: 8,
-                    padding: 8,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="workspace"
-                    checked={selectedUserId === w.userId}
-                    onChange={() => setSelectedUserId(w.userId)}
-                  />
-                  <span>
-                    <strong>{w.tenantName}</strong>
-                    <span className="muted">
-                      {' '}
-                      · {w.tenantCode} · {productLabel(w.productCode)}
-                    </span>
-                  </span>
-                </label>
-              ))}
+        {choiceToken && workspaces.length > 0 ? (
+          <div className="fx-auth-form">
+            <div className="fx-auth-card-head">
+              <span className="fx-auth-head-icon" aria-hidden>
+                <IconHome />
+              </span>
+              <div>
+                <h1>Chọn nhà</h1>
+                <p>Email này thuộc nhiều workspace — chọn nhà Famixa để tiếp tục.</p>
+              </div>
             </div>
-            <button className="btn btn-primary" type="button" disabled={loading} onClick={onSelectWorkspace}>
-              {loading ? 'Đang vào…' : 'Vào workspace đã chọn'}
+            <ul className="fx-workspace-list">
+              {workspaces.map((w) => (
+                <li key={w.userId}>
+                  <button
+                    type="button"
+                    className={selectedUserId === w.userId ? 'is-on' : undefined}
+                    onClick={() => setSelectedUserId(w.userId)}
+                  >
+                    <strong>{w.tenantName || w.tenantCode}</strong>
+                    <em>
+                      {w.tenantCode}
+                      {w.productCode ? ` · ${productLabel(w.productCode)}` : ''}
+                    </em>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              className="fx-auth-submit"
+              disabled={loading || !selectedUserId}
+              onClick={() => void onSelectWorkspace()}
+            >
+              {loading ? 'Đang vào…' : 'Tiếp tục →'}
             </button>
-            <button className="btn" type="button" onClick={() => { setChoiceToken(null); setWorkspaces([]); }}>
+            <button type="button" className="fx-auth-text-btn" onClick={() => switchMode(mode)}>
               Quay lại
             </button>
           </div>
@@ -437,8 +418,8 @@ export function ParentUnlockPage() {
                 <IconUser />
               </span>
               <div>
-                <h1>Tạo tài khoản</h1>
-                <p>Bắt đầu hành trình trưởng thành cùng gia đình bạn.</p>
+                <h1>Tạo nhà Famixa</h1>
+                <p>Chỉ cần 3 thông tin — vào dùng ngay trong 30 giây.</p>
               </div>
             </div>
 
@@ -507,88 +488,55 @@ export function ParentUnlockPage() {
               </div>
             </label>
 
-            <label className="fx-field">
-              <span>Mã nhà (nếu đã có)</span>
-              <div className="fx-input">
-                <span className="fx-input-ico">
-                  <IconHome />
-                </span>
-                <input
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  autoComplete="off"
-                  placeholder="Nhập mã nhà nếu bạn đã nhận từ gia đình"
-                  spellCheck={false}
-                />
-                <span
-                  className="fx-input-action is-static"
-                  title="Có mã nhà → gia nhập nhà hiện có. Để trống → tạo nhà mới."
-                >
-                  <IconInfo />
-                </span>
-              </div>
-            </label>
-
-            <div className="fx-auth-divider" role="separator">
-              <span>Tùy chọn (không bắt buộc)</span>
+            <div className="fx-auth-optional">
+              <button
+                type="button"
+                className={`fx-auth-optional-toggle${showInvite ? ' is-open' : ''}`}
+                aria-expanded={showInvite}
+                onClick={() => setShowInvite((v) => !v)}
+              >
+                <span>Có mã mời từ nhà sẵn có?</span>
+                <em>{showInvite ? 'Thu gọn' : 'Nhập mã'}</em>
+              </button>
+              {showInvite ? (
+                <label className="fx-field">
+                  <span>Mã nhà / mã mời</span>
+                  <div className="fx-input">
+                    <span className="fx-input-ico">
+                      <IconHome />
+                    </span>
+                    <input
+                      value={inviteCode}
+                      onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                      autoComplete="off"
+                      placeholder="Để trống nếu tạo nhà mới"
+                      spellCheck={false}
+                    />
+                  </div>
+                  <small className="fx-field-hint">
+                    Có mã → vào nhà hiện có. Để trống → tạo nhà mới.
+                  </small>
+                </label>
+              ) : null}
             </div>
-
-            <label className="fx-field">
-              <span>Số điện thoại</span>
-              <div className="fx-input">
-                <span className="fx-input-ico">
-                  <IconPhone />
-                </span>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  autoComplete="tel"
-                  placeholder="Để Famixa hỗ trợ khi cần"
-                />
-              </div>
-            </label>
-
-            <label className="fx-field">
-              <span>Mã giới thiệu</span>
-              <div className="fx-input">
-                <span className="fx-input-ico">
-                  <IconTag />
-                </span>
-                <input
-                  value={referralCode}
-                  onChange={(e) => setReferralCode(e.target.value)}
-                  autoComplete="off"
-                  placeholder="Nếu có"
-                  spellCheck={false}
-                />
-              </div>
-              <small className="fx-field-hint">Mã từ bạn bè / đối tác (không phải mã nhà)</small>
-            </label>
 
             <button className="fx-auth-submit" type="submit" disabled={loading}>
               {loading ? 'Đang xử lý…' : registerCta}
             </button>
 
-            <label className="fx-terms">
-              <input
-                type="checkbox"
-                checked={acceptedTerms}
-                onChange={(e) => setAcceptedTerms(e.target.checked)}
-              />
-              <span>
-                Bằng việc tạo tài khoản, bạn đồng ý với{' '}
-                <a href="https://famixa.vn" target="_blank" rel="noreferrer">
-                  Điều khoản sử dụng
-                </a>{' '}
-                và{' '}
-                <a href="https://famixa.vn" target="_blank" rel="noreferrer">
-                  Chính sách bảo mật
-                </a>
-              </span>
-            </label>
+            <p className="fx-auth-legal">
+              Bằng việc tiếp tục, bạn đồng ý với{' '}
+              <a href="https://famixa.vn" target="_blank" rel="noreferrer">
+                Điều khoản
+              </a>{' '}
+              và{' '}
+              <a href="https://famixa.vn" target="_blank" rel="noreferrer">
+                Bảo mật
+              </a>
+              .
+            </p>
 
-            <div className="fx-auth-footer">
+            <div className="fx-auth-footer is-single">
               <button type="button" className="fx-auth-footer-link" onClick={() => switchMode('login')}>
                 <span className="fx-auth-footer-ico" aria-hidden>
                   <IconUser />
@@ -597,155 +545,38 @@ export function ParentUnlockPage() {
                   Đã có tài khoản? <strong>Đăng nhập →</strong>
                 </span>
               </button>
-              <button type="button" className="fx-auth-footer-link" onClick={() => switchMode('join')}>
-                <span className="fx-auth-footer-ico" aria-hidden>
-                  <IconHome />
-                </span>
-                <span>
-                  Đã có mã nhà? <strong>Gia nhập nhà →</strong>
-                </span>
-              </button>
             </div>
           </form>
         ) : (
-          <form className="fx-auth-form fx-auth-form--alt" onSubmit={onSubmit}>
+          <form className="fx-auth-form" onSubmit={onSubmit}>
             <div className="fx-auth-card-head">
               <span className="fx-auth-head-icon" aria-hidden>
-                {mode === 'login' ? <IconUser /> : <IconHome />}
+                <IconUser />
               </span>
               <div>
-                <h1>{mode === 'login' ? 'Đăng nhập' : 'Gia nhập nhà'}</h1>
-                <p>
-                  {mode === 'login'
-                    ? 'Một email Kit dùng chung Pharmacy / Famixa — nếu có nhiều nơi sẽ hỏi chọn workspace.'
-                    : 'Nhập mã nhà và tạo tài khoản phụ huynh để vào cùng nhà.'}
-                </p>
+                <h1>Đăng nhập</h1>
+                <p>Email và mật khẩu — vào lịch nhà ngay.</p>
               </div>
             </div>
 
-            {mode === 'login' ? (
-              <>
-                <div className="fx-auth-mode-tabs">
-                  <button
-                    type="button"
-                    className={loginStyle === 'email' ? 'is-on' : undefined}
-                    onClick={() => setLoginStyle('email')}
-                  >
-                    Email Kit
-                  </button>
-                  <button
-                    type="button"
-                    className={loginStyle === 'tenant' ? 'is-on' : undefined}
-                    onClick={() => setLoginStyle('tenant')}
-                  >
-                    Mã gia đình
-                  </button>
-                </div>
-                {loginStyle === 'email' ? (
-                  <label className="fx-field">
-                    <span>Email KitPlatform</span>
-                    <div className="fx-input">
-                      <span className="fx-input-ico">
-                        <IconMail />
-                      </span>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        autoComplete="email"
-                        placeholder="ban@email.com"
-                        required
-                      />
-                    </div>
-                  </label>
-                ) : (
-                  <>
-                    <label className="fx-field">
-                      <span>Mã gia đình</span>
-                      <div className="fx-input">
-                        <span className="fx-input-ico">
-                          <IconHome />
-                        </span>
-                        <input
-                          value={tenantCode}
-                          onChange={(e) => setTenantCode(e.target.value.toUpperCase())}
-                          autoComplete="organization"
-                          placeholder="VD: FOS_NHAXYZ123"
-                          required
-                        />
-                      </div>
-                    </label>
-                    <label className="fx-field">
-                      <span>Tài khoản phụ huynh</span>
-                      <div className="fx-input">
-                        <span className="fx-input-ico">
-                          <IconUser />
-                        </span>
-                        <input
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          autoComplete="username"
-                          required
-                        />
-                      </div>
-                    </label>
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                <label className="fx-field">
-                  <span>
-                    Mã nhà <em>*</em>
-                  </span>
-                  <div className="fx-input">
-                    <span className="fx-input-ico">
-                      <IconHome />
-                    </span>
-                    <input
-                      value={inviteCode}
-                      onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                      required
-                      placeholder="Nhập mã nhà"
-                      spellCheck={false}
-                    />
-                  </div>
-                </label>
-                <label className="fx-field">
-                  <span>
-                    Họ và tên bố/mẹ <em>*</em>
-                  </span>
-                  <div className="fx-input">
-                    <span className="fx-input-ico">
-                      <IconUser />
-                    </span>
-                    <input
-                      value={parentDisplayName}
-                      onChange={(e) => setParentDisplayName(e.target.value)}
-                      required
-                      placeholder="Nhập họ và tên"
-                    />
-                  </div>
-                </label>
-                <label className="fx-field">
-                  <span>
-                    Email <em>*</em>
-                  </span>
-                  <div className="fx-input">
-                    <span className="fx-input-ico">
-                      <IconMail />
-                    </span>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      placeholder="you@email.com"
-                    />
-                  </div>
-                </label>
-              </>
-            )}
+            <label className="fx-field">
+              <span>
+                Email <em>*</em>
+              </span>
+              <div className="fx-input">
+                <span className="fx-input-ico">
+                  <IconMail />
+                </span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  placeholder="ban@email.com"
+                  required={loginStyle === 'email'}
+                />
+              </div>
+            </label>
 
             <label className="fx-field">
               <span>
@@ -759,9 +590,9 @@ export function ParentUnlockPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  autoComplete="current-password"
                   required
-                  placeholder={mode === 'login' ? 'Mật khẩu' : 'Tối thiểu 8 ký tự'}
+                  placeholder="Mật khẩu"
                 />
                 <button
                   type="button"
@@ -774,30 +605,59 @@ export function ParentUnlockPage() {
               </div>
             </label>
 
-            <label className="fx-field">
-              <span>Mã bố mẹ (4 số)</span>
-              <div className="fx-input">
-                <span className="fx-input-ico">
-                  <IconLock />
-                </span>
-                <input
-                  inputMode="numeric"
-                  pattern="\d{4}"
-                  maxLength={4}
-                  value={parentPin}
-                  onChange={(e) => setParentPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                  autoComplete="off"
-                  required
-                />
-              </div>
-            </label>
+            <div className="fx-auth-optional">
+              <button
+                type="button"
+                className={`fx-auth-optional-toggle${showAdvancedLogin ? ' is-open' : ''}`}
+                aria-expanded={showAdvancedLogin}
+                onClick={() => {
+                  setShowAdvancedLogin((v) => {
+                    const next = !v;
+                    setLoginStyle(next ? 'tenant' : 'email');
+                    return next;
+                  });
+                }}
+              >
+                <span>Cách khác (mã gia đình)</span>
+                <em>{showAdvancedLogin ? 'Thu gọn' : 'Mở'}</em>
+              </button>
+              {showAdvancedLogin ? (
+                <>
+                  <label className="fx-field">
+                    <span>Mã gia đình</span>
+                    <div className="fx-input">
+                      <span className="fx-input-ico">
+                        <IconHome />
+                      </span>
+                      <input
+                        value={tenantCode}
+                        onChange={(e) => setTenantCode(e.target.value.toUpperCase())}
+                        autoComplete="organization"
+                        placeholder="VD: FOS_NHAXYZ123"
+                        required={loginStyle === 'tenant'}
+                      />
+                    </div>
+                  </label>
+                  <label className="fx-field">
+                    <span>Tài khoản phụ huynh</span>
+                    <div className="fx-input">
+                      <span className="fx-input-ico">
+                        <IconUser />
+                      </span>
+                      <input
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        autoComplete="username"
+                        required={loginStyle === 'tenant'}
+                      />
+                    </div>
+                  </label>
+                </>
+              ) : null}
+            </div>
 
             <button className="fx-auth-submit" type="submit" disabled={loading}>
-              {loading
-                ? 'Đang xử lý…'
-                : mode === 'login'
-                  ? 'Mở cho cả nhà →'
-                  : 'Gia nhập nhà →'}
+              {loading ? 'Đang xử lý…' : 'Vào nhà →'}
             </button>
 
             <div className="fx-auth-footer">
@@ -806,28 +666,17 @@ export function ParentUnlockPage() {
                   <IconHome />
                 </span>
                 <span>
-                  Chưa có nhà? <strong>Tạo tài khoản →</strong>
+                  Chưa có nhà? <strong>Tạo nhà →</strong>
                 </span>
               </button>
-              {mode === 'login' ? (
-                <button type="button" className="fx-auth-footer-link" onClick={() => switchMode('join')}>
-                  <span className="fx-auth-footer-ico" aria-hidden>
-                    <IconHome />
-                  </span>
-                  <span>
-                    Đã có mã nhà? <strong>Gia nhập nhà →</strong>
-                  </span>
-                </button>
-              ) : (
-                <button type="button" className="fx-auth-footer-link" onClick={() => switchMode('login')}>
-                  <span className="fx-auth-footer-ico" aria-hidden>
-                    <IconUser />
-                  </span>
-                  <span>
-                    Đã có tài khoản? <strong>Đăng nhập →</strong>
-                  </span>
-                </button>
-              )}
+              <button type="button" className="fx-auth-footer-link" onClick={openInviteOnRegister}>
+                <span className="fx-auth-footer-ico" aria-hidden>
+                  <IconTag />
+                </span>
+                <span>
+                  Có mã mời? <strong>Gia nhập →</strong>
+                </span>
+              </button>
             </div>
           </form>
         )}

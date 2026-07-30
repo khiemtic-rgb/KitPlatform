@@ -59,6 +59,7 @@ export function TodayFlowPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const familyId = useSessionStore((s) => s.familyId);
+  const sessionFamilyName = useSessionStore((s) => s.familyName);
   const member = useSessionStore((s) => s.member);
   const setMember = useSessionStore((s) => s.setMember);
   const verifyParentPin = useSessionStore((s) => s.verifyParentPin);
@@ -561,9 +562,11 @@ export function TodayFlowPage() {
           familyId={familyId!}
           parentMembershipId={member.id}
           familyName={
-            familyChildren.length > 0
-              ? `Gia đình ${familyChildren.map((c) => c.displayName.split(/\s+/).pop()).join(' · ')}`
-              : 'Nhà mình'
+            sessionFamilyName?.trim()
+              ? sessionFamilyName.trim()
+              : familyChildren.length > 0
+                ? `Gia đình ${familyChildren.map((c) => c.displayName.split(/\s+/).pop()).join(' · ')}`
+                : 'Nhà mình'
           }
           busyId={busyId}
           consequenceEvents={events}

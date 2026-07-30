@@ -29,15 +29,9 @@ import {
   isCapabilityPaywallError,
   getApiErrorMessage,
 } from '@/shared/billing/capability-error';
+import { buildTrialLifecycle } from '@/shared/billing/trial-lifecycle';
 
 type MemberTone = 'pink' | 'blue' | 'purple' | 'green' | 'teal';
-
-function daysUntil(iso?: string): number | null {
-  if (!iso) return null;
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return null;
-  return Math.max(0, Math.ceil((t - Date.now()) / (24 * 60 * 60 * 1000)));
-}
 
 function ageYears(dob?: string): number | null {
   if (!dob) return null;
@@ -243,10 +237,8 @@ export function WhoAreYouPage() {
         ? 'Gia đình mình ơi! Hôm nay nhịp đang ổn — chạm tên để xem lịch ngày.'
         : 'Gia đình mình ơi! Chạm tên để mở lịch ngày — bố/mẹ quản trị, con làm việc.';
 
-  const trialDaysLeft =
-    sub?.trialDaysRemaining ?? daysUntil(sub?.trialEndsAt) ?? null;
-  const isTrial = sub?.status === 'trial';
-  const showBilling = !sub || isTrial || !sub.isEntitled;
+  const trialLife = buildTrialLifecycle(sub);
+  const showBilling = trialLife.showCard;
 
   const pick = async (picked: FamilyMembership) => {
     setMember(picked);
@@ -521,35 +513,29 @@ export function WhoAreYouPage() {
       ) : null}
 
       {showBilling ? (
-        <section className="home-v2-trial" aria-label="Gói Family OS">
+        <section
+          className={`home-v2-trial${trialLife.warn ? ' is-warn' : ''}${
+            trialLife.urgency === 'grace' || trialLife.urgency === 'day0' ? ' is-urgent' : ''
+          }`}
+          aria-label="Gói Family OS"
+        >
           <div className="home-v2-trial-cal" aria-hidden>
-            <strong>{isTrial && trialDaysLeft != null ? trialDaysLeft : '✦'}</strong>
-            <span>ngày</span>
+            <strong>
+              {trialLife.daysLeft != null ? trialLife.daysLeft : trialLife.phase === 'free' ? '✦' : '✦'}
+            </strong>
+            <span>{trialLife.phase === 'grace' ? 'ân hạn' : 'ngày'}</span>
           </div>
           <div className="home-v2-trial-copy">
-            <p>
-              {isTrial && trialDaysLeft != null
-                ? `Dùng thử · còn ${trialDaysLeft} ngày`
-                : sub && !sub.isEntitled
-                  ? 'Gói đã hết hạn'
-                  : 'Gói Family OS'}
-            </p>
-            <em>
-              {sub && !sub.isEntitled
-                ? sub.upgradeHintVi ||
-                  'Nâng Family Peace Plan để mở Coach, ROP và Letter.'
-                : isTrial
-                  ? 'Nâng cấp Pro để mở khóa toàn bộ tính năng.'
-                  : 'Cả nhà cùng thói quen — nâng cấp khi sẵn sàng.'}
-            </em>
+            <p>{trialLife.title}</p>
+            <em>{trialLife.message}</em>
           </div>
           <button type="button" className="home-v2-trial-cta" onClick={goCheckout}>
             <span aria-hidden>👑</span>
-            {sub && !sub.isEntitled
+            {trialLife.phase === 'free'
               ? 'Peace Plan'
-              : isTrial
+              : trialLife.phase === 'grace'
                 ? 'Giữ Peace Plan'
-                : 'Nâng cấp'}
+                : 'Giữ Peace Plan'}
           </button>
         </section>
       ) : null}

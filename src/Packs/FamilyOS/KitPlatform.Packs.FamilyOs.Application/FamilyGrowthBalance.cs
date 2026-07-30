@@ -23,8 +23,8 @@ public static class FamilyGrowthBalance
             (code ?? "").Trim().ToLowerInvariant() switch
             {
                 Tight => "Ít thời gian / điều kiện eo hẹp",
-                Moderate => "Trung bình — đủ để giữ nhịp nhẹ",
-                Abundant => "Dư thời gian / điều kiện hơn",
+                Moderate => "Vừa đủ — giữ được nhịp nhẹ",
+                Abundant => "Thoải mái hơn về thời gian / điều kiện",
                 _ => "Chưa rõ",
             };
     }
@@ -45,10 +45,10 @@ public static class FamilyGrowthBalance
         public static string LabelVi(string? code) =>
             (code ?? "").Trim().ToLowerInvariant() switch
             {
-                TuTi => "Lo con tự ti / sợ thử",
-                ThieuPhanDau => "Lo con thiếu phấn đấu / ảo giác khá",
+                TuTi => "Lo con hay tự ti / ngại thử",
+                ThieuPhanDau => "Lo con chưa chịu cố / tưởng mình khá",
                 DeHu => "Lo chiều quá / con dễ hư",
-                BalanceOk => "Đang giữ cân bằng",
+                BalanceOk => "Nhà đang giữ nhịp ổn",
                 _ => "Chưa chọn",
             };
     }
@@ -100,9 +100,9 @@ public static class FamilyGrowthBalance
                 label,
                 care,
                 band is ResourceBands.Tight
-                    ? $"Hôm nay chỉ cần 1 việc nhỏ {who} làm được — bạn khen đúng việc đó (30 giây)."
+                    ? $"Hôm nay chỉ cần 1 việc nhỏ {who} làm được — bạn khen đúng việc đó (khoảng nửa phút)."
                     : $"Chuỗi 3 ngày: mỗi ngày {who} một việc vừa sức + hỏi “con làm thế nào?” — không hỏi xếp hạng.",
-                "Tự tin đến từ việc làm được, không từ lời ‘con giỏi hơn bạn’. Quan tâm lúc này là đứng cạnh, không đè.",
+                "Tự tin đến từ việc làm được, không từ lời ‘con giỏi hơn bạn’. Lúc này bố mẹ đứng cạnh, không đè.",
                 "Tránh so sánh / mắng năng lực / nhồi đề để ‘bù’."),
 
             WorryCodes.ThieuPhanDau => new Guidance(
@@ -110,7 +110,7 @@ public static class FamilyGrowthBalance
                 label,
                 care,
                 $"Hôm nay hỏi {who} giải thích lại 1 ý vừa học — khen khi chịu khó làm rõ, không khen ‘giỏi nhất’.",
-                "Thiếu phấn đấu hay bắt đầu từ ảo giác khá. Quan tâm = giữ tiêu chuẩn vừa sức + bằng chứng, không phải mắng lười.",
+                "Con tưởng mình khá dễ dẫn tới ít chịu cố. Quan tâm = giữ mức vừa sức + nhìn việc thật, không phải mắng lười.",
                 "Tránh khen sáo hoặc buông hết chuẩn vì sợ con buồn."),
 
             WorryCodes.DeHu => new Guidance(
@@ -118,23 +118,23 @@ public static class FamilyGrowthBalance
                 label,
                 care,
                 $"Chọn 1 thỏa thuận nhỏ với {who} hôm nay (giờ / việc / màn hình) — thương nhưng giữ khung; bạn chỉ 👍 khi đúng.",
-                "Thương con không phải chiều mọi ý. Quan tâm có giá trị khi vừa ấm vừa có giới hạn nhà mình.",
+                "Thương con không phải chiều mọi ý. Quan tâm có ý nghĩa khi vừa ấm vừa có giới hạn nhà mình.",
                 "Tránh chỉ chiều cảm xúc hoặc chỉ siết không giải thích."),
 
             WorryCodes.BalanceOk => new Guidance(
                 worry,
                 label,
                 care,
-                $"Giữ nhịp: hiện diện ngắn + 1 tiêu chuẩn vừa với {who} — không thêm checklist.",
-                "Nhà bạn đang gần điểm cân bằng. Quan tâm tiếp tục bằng hiện diện đều, không phải thêm áp lực.",
+                $"Giữ nhịp: hiện diện ngắn + 1 tiêu chuẩn vừa với {who} — không thêm việc cho rối.",
+                "Nhà bạn đang gần điểm ổn. Cứ tiếp tục hiện diện đều, không cần thêm áp lực.",
                 "Đừng nới thành nuông hoặc siết thành đè chỉ vì một ngày lệch."),
 
             _ => new Guidance(
                 WorryCodes.Unknown,
                 label,
                 care,
-                "Chọn lo lớn nhất của nhà (tự ti / thiếu phấn đấu / dễ hư) — Famixa gợi ý bước vừa nhà bạn.",
-                "Quan tâm có giá trị khi đúng nhà bạn: không công thức chung, không xếp hạng.",
+                "Chọn lo lớn nhất của nhà (tự ti / chưa chịu cố / dễ hư) — Famixa gợi ý bước vừa nhà bạn.",
+                "Quan tâm có ý nghĩa khi đúng nhà bạn: không công thức chung, không xếp hạng.",
                 "Đừng bắt đầu bằng so sánh với nhà khác."),
         };
     }
@@ -145,19 +145,19 @@ public static class FamilyGrowthBalance
         var baseLine = band switch
         {
             ResourceBands.Tight =>
-                "Nhà ít thời gian vẫn quan tâm được: 1 phút hiện diện đúng việc đáng hơn 1 giờ mắng.",
+                "Nhà ít thời gian vẫn quan tâm được: 1 phút đúng việc đáng hơn 1 giờ mắng.",
             ResourceBands.Abundant =>
                 "Nhiều điều kiện không thay được hiện diện có khung — quan tâm là tiêu chuẩn rõ + thương thật.",
             ResourceBands.Moderate =>
-                "Quan tâm có giá trị khi vừa ấm vừa có khung nhẹ — đúng nhịp nhà bạn, không theo nhà khác.",
+                "Quan tâm có ý nghĩa khi vừa ấm vừa có khung nhẹ — đúng nhịp nhà mình, không chạy theo nhà khác.",
             _ =>
-                "Mỗi nhà quan tâm một kiểu. Famixa giúp bạn quan tâm có phương pháp — không phải quản lý con như checklist.",
+                "Mỗi nhà quan tâm một kiểu. Famixa giúp bố mẹ quan tâm đúng nhịp nhà mình — không phải quản lý con như danh sách việc.",
         };
 
         return worry switch
         {
             WorryCodes.TuTi => baseLine + " Ưu tiên dựng lại tự tin bằng việc làm được.",
-            WorryCodes.ThieuPhanDau => baseLine + " Ưu tiên bằng chứng học thật, không ảo giác khá.",
+            WorryCodes.ThieuPhanDau => baseLine + " Ưu tiên nhìn việc học thật, không để con tưởng mình khá.",
             WorryCodes.DeHu => baseLine + " Ưu tiên thương kèm thỏa thuận rõ.",
             _ => baseLine,
         };

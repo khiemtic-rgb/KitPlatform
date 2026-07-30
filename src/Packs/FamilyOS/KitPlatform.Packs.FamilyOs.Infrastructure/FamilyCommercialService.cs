@@ -34,6 +34,9 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
     private int TrialDays =>
         _billing.TrialDays > 0 ? _billing.TrialDays : 30;
 
+    /// <summary>Soft Pro entitlement after trialEndsAt before Free (matches past_due grace).</summary>
+    private const int TrialGraceDays = 3;
+
     public async Task<FamilyRegisterResponse> RegisterAsync(
         FamilyRegisterRequest request,
         CancellationToken cancellationToken = default)
@@ -624,7 +627,9 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
         }
 
         var status = NormalizeSubscriptionStatus(row);
-        var entitled = status is FamilySubscriptionStatuses.Trial or FamilySubscriptionStatuses.Active;
+        var entitled = status is FamilySubscriptionStatuses.Trial
+            or FamilySubscriptionStatuses.TrialGrace
+            or FamilySubscriptionStatuses.Active;
         if (status == FamilySubscriptionStatuses.PastDue
             && row.CurrentPeriodEnd is DateTime grace
             && grace.AddDays(3) >= DateTime.UtcNow)
@@ -634,6 +639,7 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
 
         int? trialDaysRemaining = null;
         int? trialDaysTotal = null;
+        int? trialGraceDaysRemaining = null;
         if (status == FamilySubscriptionStatuses.Trial && row.TrialEndsAt is DateTime trialEnd)
         {
             var endUtc = DateTime.SpecifyKind(trialEnd, DateTimeKind.Utc);
@@ -655,6 +661,22 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
             if (trialDaysTotal is int total && trialDaysRemaining > total)
                 trialDaysRemaining = total;
         }
+        else if (status == FamilySubscriptionStatuses.TrialGrace && row.TrialEndsAt is DateTime graceEnd)
+        {
+            var endUtc = DateTime.SpecifyKind(graceEnd, DateTimeKind.Utc);
+            var graceUntil = endUtc.AddDays(TrialGraceDays);
+            trialGraceDaysRemaining = Math.Max(
+                0,
+                (int)Math.Ceiling((graceUntil - DateTime.UtcNow).TotalDays));
+            trialDaysRemaining = 0;
+            trialDaysTotal = TrialDays;
+            if (row.CreatedAt is DateTime created)
+            {
+                var startUtc = DateTime.SpecifyKind(created, DateTimeKind.Utc);
+                var span = (int)Math.Round((endUtc - startUtc).TotalDays);
+                if (span > 0) trialDaysTotal = span;
+            }
+        }
 
         return EnrichSubscription(
             new FamilySubscriptionDto(
@@ -665,7 +687,8 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
                 row.CurrentPeriodEnd is DateTime p ? new DateTimeOffset(DateTime.SpecifyKind(p, DateTimeKind.Utc)) : null,
                 entitled,
                 trialDaysRemaining,
-                trialDaysTotal));
+                trialDaysTotal,
+                trialGraceDaysRemaining));
     }
 
     public Task<FamilyCapabilityPackDto> GetCapabilityPackAsync(
@@ -1008,10 +1031,15 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
     private static string NormalizeSubscriptionStatus(SubscriptionRow row)
     {
         var status = (row.Status ?? "").Trim().ToLowerInvariant();
-        if (status == FamilySubscriptionStatuses.Trial
-            && row.TrialEndsAt is DateTime ends
-            && ends < DateTime.UtcNow)
+        if (status == FamilySubscriptionStatuses.Trial && row.TrialEndsAt is DateTime ends)
+        {
+            var endUtc = DateTime.SpecifyKind(ends, DateTimeKind.Utc);
+            if (endUtc >= DateTime.UtcNow)
+                return FamilySubscriptionStatuses.Trial;
+            if (endUtc.AddDays(TrialGraceDays) >= DateTime.UtcNow)
+                return FamilySubscriptionStatuses.TrialGrace;
             return FamilySubscriptionStatuses.Expired;
+        }
         if (status == FamilySubscriptionStatuses.Active
             && row.CurrentPeriodEnd is DateTime periodEnd
             && periodEnd < DateTime.UtcNow)

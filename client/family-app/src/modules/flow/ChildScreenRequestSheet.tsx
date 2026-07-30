@@ -96,11 +96,13 @@ export function ChildScreenRequestSheet({
         </header>
         {wallet && wallet.status === 'active' ? (
           <p className="ph-sheet-lead">
-            Ví tuần còn <strong>{wallet.remainingMinutes}</strong> phút (thỏa thuận nhà — không đo
-            máy).
+            Ví tuần còn <strong>{wallet.remainingMinutes}</strong> phút. Đây là thỏa thuận nhà —
+            Famixa không khóa máy.
           </p>
         ) : (
-          <p className="ph-sheet-lead">Nêu lý do rõ — AI giúp bố mẹ quyết nhanh.</p>
+          <p className="ph-sheet-lead">
+            Xin thêm phút theo thỏa thuận nhà (không khóa máy). Nêu lý do rõ — bố mẹ quyết nhanh.
+          </p>
         )}
 
         <div className="ph-request-amounts">

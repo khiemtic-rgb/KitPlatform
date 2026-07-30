@@ -140,7 +140,7 @@ export function FamilyAdminHubPage() {
         <HubCard
           icon="⚙️"
           title="Tài khoản / Cài đặt"
-          subtitle="Gói · thông báo · PIN · rời nhà"
+          subtitle="Gói · nhắc việc · PIN · đăng xuất"
           onClick={() => navigate('/family-admin/settings')}
         />
       </div>

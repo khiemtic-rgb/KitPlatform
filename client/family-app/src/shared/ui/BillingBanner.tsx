@@ -1,20 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchFamilySubscription, type FamilySubscription } from '@/shared/api/family-os.api';
 import { outcomeNameForTier, tierFromPlanCode } from '@/shared/billing/famixa-plan-copy';
-
-const TRIAL_WARN_DAYS = 7;
+import { buildTrialLifecycle } from '@/shared/billing/trial-lifecycle';
 
 function daysUntil(iso?: string): number | null {
   if (!iso) return null;
-  const t = DateParseSafe(iso);
-  if (t == null) return null;
-  return Math.ceil((t - Date.now()) / (24 * 60 * 60 * 1000));
-}
-
-function DateParseSafe(iso: string): number | null {
   const t = Date.parse(iso);
-  return Number.isNaN(t) ? null : t;
+  if (Number.isNaN(t)) return null;
+  return Math.ceil((t - Date.now()) / (24 * 60 * 60 * 1000));
 }
 
 export function BillingBanner({ familyId }: { familyId: string }) {
@@ -35,21 +29,19 @@ export function BillingBanner({ familyId }: { familyId: string }) {
     };
   }, [familyId]);
 
+  const trial = useMemo(() => buildTrialLifecycle(sub), [sub]);
+
   if (!sub) return null;
 
-  const trialDays = daysUntil(sub.trialEndsAt);
   const periodDays = daysUntil(sub.currentPeriodEnd);
   const tier = (sub.tierCode ?? 'free') as string;
-  const showFree = tier === 'free' || !sub.isEntitled;
-  const showTrial = sub.isEntitled && sub.status === 'trial';
-  const showTrialEnding =
-    showTrial && trialDays != null && trialDays <= TRIAL_WARN_DAYS;
   const showPeriodEnding =
     sub.isEntitled &&
     sub.status === 'active' &&
     periodDays != null &&
-    periodDays <= TRIAL_WARN_DAYS;
-  const showPlusNudge = sub.isEntitled && tier === 'plus' && !showPeriodEnding;
+    periodDays <= 7;
+  const showPlusNudge =
+    sub.isEntitled && tier === 'plus' && !showPeriodEnding && trial.phase === 'paid';
   const showProAiNudge =
     sub.isEntitled &&
     tier === 'pro' &&
@@ -57,14 +49,9 @@ export function BillingBanner({ familyId }: { familyId: string }) {
     !showPeriodEnding &&
     Boolean(sub.recommendedUpgradePlanCode);
 
-  // Quiet only for healthy AI+ (top tier) or quiet Pro without upgrade hint.
-  if (
-    !showFree &&
-    !showTrial &&
-    !showPeriodEnding &&
-    !showPlusNudge &&
-    !showProAiNudge
-  ) {
+  const showTrialCard = trial.showCard && (trial.phase === 'trial' || trial.phase === 'grace' || trial.phase === 'free');
+
+  if (!showTrialCard && !showPeriodEnding && !showPlusNudge && !showProAiNudge) {
     return null;
   }
 
@@ -75,44 +62,35 @@ export function BillingBanner({ familyId }: { familyId: string }) {
   const upgradeTier = tierFromPlanCode(upgradePlan);
   const upgradeOutcome = outcomeNameForTier(upgradeTier);
 
-  const message = showFree
-    ? sub.upgradeHintVi ||
-      'Free: routine cơ bản. Nâng Family Peace Plan để mở Coach, ROP và Letter.'
-    : showTrial
-      ? trialDays != null
-        ? `Dùng thử ${planLabel} — còn khoảng ${trialDays} ngày (trải nghiệm tầng Pro).`
-        : `Đang dùng thử ${planLabel}.`
-      : showPlusNudge
-        ? sub.upgradeHintVi ||
-          'Plus đã mở Twin/Timeline. Nâng Peace Plan để mở Coach, ROP và Letter.'
-        : showProAiNudge
-          ? sub.upgradeHintVi ||
-            'Peace Plan đang chạy. AI+ thêm playbook tuần và đề xuất sâu hơn.'
-          : periodDays != null
-            ? `${planLabel} đang hoạt động — còn khoảng ${periodDays} ngày.`
-            : `${planLabel} đang hoạt động.`;
-
-  const title = showFree
-    ? 'Gói Free'
-    : showTrialEnding || showPeriodEnding
+  const title = showTrialCard
+    ? trial.title
+    : showPeriodEnding
       ? 'Sắp hết hạn'
-      : showTrial
-        ? 'Dùng thử Pro'
-        : showPlusNudge
-          ? 'Family Growth Plan'
-          : showProAiNudge
-            ? 'Family Peace Plan'
-            : planLabel;
+      : showPlusNudge
+        ? 'Family Growth Plan'
+        : showProAiNudge
+          ? 'Family Peace Plan'
+          : planLabel;
 
-  const actionLabel = showTrial
-    ? 'Giữ Family Peace Plan · 199.000đ'
+  const message = showTrialCard
+    ? trial.message
+    : showPlusNudge
+      ? sub.upgradeHintVi ||
+        'Plus đã mở Twin/Timeline. Nâng Peace Plan để mở Coach, ROP và Letter.'
+      : showProAiNudge
+        ? sub.upgradeHintVi ||
+          'Peace Plan đang chạy. AI+ thêm playbook tuần và đề xuất sâu hơn.'
+        : periodDays != null
+          ? `${planLabel} đang hoạt động — còn khoảng ${periodDays} ngày.`
+          : `${planLabel} đang hoạt động.`;
+
+  const actionLabel = showTrialCard
+    ? trial.cta
     : showPlusNudge
       ? 'Nâng Peace Plan · 199.000đ'
       : showProAiNudge
         ? `Xem ${upgradeOutcome}`
-        : showFree
-          ? 'Nâng Family Peace Plan · 199.000đ'
-          : 'Gia hạn';
+        : 'Gia hạn';
 
   const goCheckout = () => {
     navigate('/family-admin/settings#billing');
@@ -121,10 +99,8 @@ export function BillingBanner({ familyId }: { familyId: string }) {
   return (
     <div
       className={`billing-banner${
-        showFree || showTrialEnding || showPeriodEnding || showPlusNudge
-          ? ' is-warn'
-          : ''
-      }`}
+        trial.warn || showPeriodEnding || showPlusNudge ? ' is-warn' : ''
+      }${trial.urgency === 'grace' || trial.urgency === 'day0' ? ' is-urgent' : ''}`}
     >
       <div>
         <strong>{title}</strong>

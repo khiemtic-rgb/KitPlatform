@@ -116,6 +116,8 @@ internal sealed class FamilyRewardRepository
             SELECT
                 r.id AS Id,
                 r.catalog_id AS CatalogId,
+                r.member_id AS MemberId,
+                m.display_name AS MemberName,
                 c.title AS Title,
                 c.icon AS Icon,
                 r.star_cost AS StarCost,
@@ -126,6 +128,8 @@ internal sealed class FamilyRewardRepository
             INNER JOIN pack_family.reward_catalog c
                 ON c.tenant_id = r.tenant_id
                AND c.id = r.catalog_id
+            LEFT JOIN pack_family.membership m
+                ON m.id = r.member_id AND m.tenant_id = r.tenant_id AND m.deleted_at IS NULL
             WHERE r.tenant_id = @TenantId
               AND r.family_id = @FamilyId
               AND (@MemberId IS NULL OR r.member_id = @MemberId)
@@ -148,6 +152,8 @@ internal sealed class FamilyRewardRepository
             SELECT
                 r.id AS Id,
                 r.catalog_id AS CatalogId,
+                r.member_id AS MemberId,
+                m.display_name AS MemberName,
                 c.title AS Title,
                 c.icon AS Icon,
                 r.star_cost AS StarCost,
@@ -158,6 +164,8 @@ internal sealed class FamilyRewardRepository
             INNER JOIN pack_family.reward_catalog c
                 ON c.tenant_id = r.tenant_id
                AND c.id = r.catalog_id
+            LEFT JOIN pack_family.membership m
+                ON m.id = r.member_id AND m.tenant_id = r.tenant_id AND m.deleted_at IS NULL
             WHERE r.tenant_id = @TenantId
               AND r.family_id = @FamilyId
               AND r.id = @RedemptionId
@@ -393,6 +401,8 @@ internal sealed class FamilyRewardRepository
     {
         public Guid Id { get; init; }
         public Guid CatalogId { get; init; }
+        public Guid? MemberId { get; init; }
+        public string? MemberName { get; init; }
         public string Title { get; init; } = "";
         public string Icon { get; init; } = "🎁";
         public int StarCost { get; init; }

@@ -23,6 +23,10 @@ export type HomeBriefAction = {
   /** When kind=attention — drive CTA behavior. */
   attentionKind?: HomeBriefAttentionKind;
   attentionId?: string;
+  /** Việc này của ai — bố mẹ phải biết trước khi bấm. */
+  whoVi?: string;
+  /** Trạng thái thật của việc, tránh hiểu nhầm là đã xong. */
+  statusVi?: string;
   /** Wave B playbook id when known. */
   playbookId?: string;
 };
@@ -43,6 +47,7 @@ export type HomeBriefAttentionLite = {
   id: string;
   titleVi: string;
   detailVi?: string;
+  whoVi?: string;
 };
 
 function localHour(localTime?: string | null, fallback = new Date()): number {
@@ -131,6 +136,13 @@ export function buildHomeBrief(input: {
       attentionId: a.id,
       titleVi: verb,
       doThisVi: a.titleVi,
+      whoVi: a.whoVi,
+      statusVi:
+        a.kind === 'awaiting'
+          ? 'Con báo đã xong — chờ bạn xác nhận'
+          : a.kind === 'overdue'
+            ? 'Chưa xong — đã quá giờ'
+            : 'Chờ bạn quyết định',
       reasonVi:
         a.detailVi ||
         'Việc này đang gấp hơn gợi ý thường ngày — xong việc này thì hôm nay sẽ nhẹ hẳn.',
