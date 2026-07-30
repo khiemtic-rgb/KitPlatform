@@ -225,8 +225,10 @@ export type LandingDocument = {
     solutions: CmsLink[];
     resources: CmsLink[];
     about: CmsLink[];
+    /** Temporary social / chat contacts — editable in landing JSON */
+    social?: Array<{ href: string; label: string; network: 'facebook' | 'zalo' | 'tiktok' | 'youtube' | 'instagram' }>;
     newsletter: { title: string; lead: string; placeholder: string };
-    company: { heading?: string; name: string; address: string };
+    company: { heading?: string; name: string; address: string; contactLine?: string };
     copyrightSuffix: string;
     madeWith: string;
   };

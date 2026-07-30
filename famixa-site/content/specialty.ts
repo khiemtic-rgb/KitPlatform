@@ -258,6 +258,7 @@ const vi: SpecialtyBundle = {
         heading: '6. Liên hệ',
         body: [
           'Công ty TNHH Truyền thông và Công nghệ KIT — KĐT Hồ Xương Rồng, P. Phan Đình Phùng, Thái Nguyên.',
+          'Tạm thời: Fanpage Facebook https://www.facebook.com/famixa.vn · Zalo 0984.660.399 · Tư vấn qua chat Zalo.',
         ],
       },
     ],
@@ -490,6 +491,7 @@ const en: SpecialtyBundle = {
         heading: '6. Contact',
         body: [
           'KIT Media & Technology Co., Ltd. — Ho Xuong Rong New Urban Area, Phan Dinh Phung Ward, Thai Nguyen, Vietnam.',
+          'Temporary: Facebook page https://www.facebook.com/famixa.vn · Zalo 0984.660.399 · Chat consultation via Zalo.',
         ],
       },
     ],

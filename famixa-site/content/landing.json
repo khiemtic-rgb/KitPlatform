@@ -555,9 +555,13 @@
     ],
     "about": [
       { "href": "/vi/ve-famixa/", "label": "Về chúng tôi" },
-      { "href": "/vi/ve-famixa/", "label": "Liên hệ" },
+      { "href": "https://zalo.me/0984660399", "label": "Liên hệ (chat)" },
       { "href": "/vi/chinh-sach-bao-mat/", "label": "Chính sách bảo mật" },
       { "href": "/vi/dieu-khoan/", "label": "Điều khoản sử dụng" }
+    ],
+    "social": [
+      { "href": "https://www.facebook.com/famixa.vn", "label": "Facebook", "network": "facebook" },
+      { "href": "https://zalo.me/0984660399", "label": "Zalo chat", "network": "zalo" }
     ],
     "newsletter": {
       "title": "Nhận bản tin Famixa",
@@ -567,7 +571,8 @@
     "company": {
       "heading": "Sản phẩm của KIT Technology",
       "name": "Công ty TNHH Truyền thông và Công nghệ KIT",
-      "address": "KĐT Hồ Xương Rồng, P. Phan Đình Phùng, Thái Nguyên"
+      "address": "KĐT Hồ Xương Rồng, P. Phan Đình Phùng, Thái Nguyên",
+      "contactLine": "Fanpage Facebook · Zalo 0984.660.399 · Tư vấn qua chat"
     },
     "copyrightSuffix": "Famixa. Đã đăng ký bản quyền.",
     "madeWith": "Tạo với ♥ bởi KIT Technology"

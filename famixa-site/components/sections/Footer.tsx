@@ -5,12 +5,11 @@ import {
   BookOpen,
   Facebook,
   Heart,
-  Instagram,
   Leaf,
   Mail,
   MapPin,
+  MessageCircle,
   UserRound,
-  Youtube,
   type LucideIcon,
 } from 'lucide-react';
 import { Container } from '@/components/ui/Container';
@@ -25,13 +24,15 @@ type Props = {
   locale: AppLocale;
 };
 
-function TikTokIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
-      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.2a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.75a8.19 8.19 0 0 0 4.76 1.52V6.84a4.84 4.84 0 0 1-1-.15Z" />
-    </svg>
-  );
-}
+type SocialNetwork = NonNullable<LandingContent['footer']['social']>[number]['network'];
+
+const SOCIAL_ICONS: Record<SocialNetwork, LucideIcon> = {
+  facebook: Facebook,
+  zalo: MessageCircle,
+  tiktok: MessageCircle,
+  youtube: MessageCircle,
+  instagram: MessageCircle,
+};
 
 type LinkItem = { href: string; label: string };
 
@@ -59,6 +60,9 @@ function LinkColumn({
             <a
               href={l.href}
               className="flex items-center gap-2.5 py-2.5 text-[0.88rem] text-white/75 transition-colors hover:text-white"
+              {...(l.href.startsWith('http')
+                ? { target: '_blank', rel: 'noopener noreferrer' }
+                : {})}
             >
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#7DCF8A]" aria-hidden />
               {l.label}
@@ -73,6 +77,21 @@ function LinkColumn({
 /** Footer — mẫu mới: 4 cột + hộp newsletter/công ty + copyright giữa */
 export function Footer({ content, brand, appUrl, locale }: Props) {
   const t = ui(locale);
+  const social =
+    content.social ??
+    ([
+      {
+        href: 'https://www.facebook.com/famixa.vn',
+        label: 'Facebook',
+        network: 'facebook' as const,
+      },
+      {
+        href: 'https://zalo.me/0984660399',
+        label: 'Zalo chat',
+        network: 'zalo' as const,
+      },
+    ] as const);
+
   return (
     <footer id="about" className="mt-0 bg-[#FBF8F1] pb-8 pt-6 md:pb-10 md:pt-7">
       <Container>
@@ -95,23 +114,21 @@ export function Footer({ content, brand, appUrl, locale }: Props) {
                 {content.blurb}
               </p>
               <div className="mt-5 flex gap-2.5" aria-label={t.socialAria}>
-                {[
-                  { href: 'https://facebook.com', label: 'Facebook', Icon: Facebook },
-                  { href: 'https://tiktok.com', label: 'TikTok', Icon: TikTokIcon },
-                  { href: 'https://youtube.com', label: 'YouTube', Icon: Youtube },
-                  { href: 'https://instagram.com', label: 'Instagram', Icon: Instagram },
-                ].map(({ href, label, Icon }) => (
-                  <a
-                    key={label}
-                    href={href}
-                    className="grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white/85 transition-colors hover:border-[#7DCF8A]/50 hover:bg-white/10 hover:text-white"
-                    aria-label={label}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    <Icon className="h-4 w-4" />
-                  </a>
-                ))}
+                {social.map(({ href, label, network }) => {
+                  const Icon = SOCIAL_ICONS[network] ?? MessageCircle;
+                  return (
+                    <a
+                      key={label}
+                      href={href}
+                      className="grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white/85 transition-colors hover:border-[#7DCF8A]/50 hover:bg-white/10 hover:text-white"
+                      aria-label={label}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      <Icon className="h-4 w-4" />
+                    </a>
+                  );
+                })}
               </div>
             </div>
 
@@ -169,6 +186,11 @@ export function Footer({ content, brand, appUrl, locale }: Props) {
               <p className="mt-2 mb-0 text-[0.84rem] leading-[1.5] text-white/60">
                 {content.company.address}
               </p>
+              {content.company.contactLine ? (
+                <p className="mt-2.5 mb-0 text-[0.84rem] leading-[1.5] text-[#A8E0B4]">
+                  {content.company.contactLine}
+                </p>
+              ) : null}
             </div>
           </div>
 
