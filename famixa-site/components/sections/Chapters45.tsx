@@ -113,21 +113,45 @@ export function Chapters45({ chapter4, chapter5, appUrl, locale }: Props) {
           id={chapter5.id}
           className="relative scroll-mt-24 overflow-hidden rounded-[28px] border border-[#D5E2D4]/80 shadow-[0_10px_36px_rgba(16,59,43,0.08)] sm:rounded-[32px] md:rounded-[36px]"
         >
-          {/* Full scenic background — đẩy devices lên, tránh cắt đáy laptop */}
-          <div className="absolute inset-0 overflow-hidden" aria-hidden>
+          {/* Nền scenic — desktop only */}
+          <div className="absolute inset-0 hidden overflow-hidden lg:block" aria-hidden>
             <img
-              src={`${chapter5.image.src}?v=12`}
+              src={`${chapter5.image.src}?v=15`}
               alt=""
-              width={1536}
-              height={1024}
-              className="absolute left-0 top-0 h-[128%] w-full object-cover object-[70%_86%] -translate-y-[16%] sm:h-[132%] sm:-translate-y-[18%] lg:h-[136%] lg:object-[68%_90%] lg:-translate-y-[20%]"
+              width={1024}
+              height={441}
+              className="absolute inset-0 h-full w-full object-cover object-[76%_48%]"
               loading="lazy"
             />
-            <div className="absolute inset-y-0 left-0 w-[55%] bg-gradient-to-r from-[#E8F2E4]/94 via-[#E8F2E4]/70 to-transparent sm:w-[46%] lg:w-[38%]" />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#E8F2E4]/30 via-transparent via-[20%] to-transparent" />
           </div>
 
-          <div className="relative grid min-h-[300px] sm:min-h-[360px] lg:min-h-[440px] xl:min-h-[480px] lg:grid-cols-[minmax(220px,0.34fr)_minmax(0,0.66fr)]">
-            <div className="relative z-[1] flex min-w-0 flex-col justify-center px-6 py-8 sm:px-8 sm:py-10 md:px-10 md:py-12 lg:pr-2">
+          <div className="relative grid min-h-0 lg:min-h-[440px] lg:grid-cols-[minmax(220px,0.34fr)_minmax(0,0.66fr)] xl:min-h-[480px]">
+            {/* Mobile: ảnh trên — desktop: spacer (art absolute) */}
+            <div className="relative order-1 min-h-[210px] overflow-hidden sm:min-h-[240px] lg:order-2 lg:min-h-full">
+              <img
+                src={`${chapter5.image.src}?v=15`}
+                alt=""
+                width={1024}
+                height={441}
+                className="absolute inset-0 h-full w-full object-cover object-[82%_44%] lg:hidden"
+                loading="lazy"
+                aria-hidden
+              />
+              <span className="sr-only">{chapter5.image.alt}</span>
+              {chapter5.quote ? (
+                <div className="absolute right-[5%] top-[10%] z-[2] flex min-h-[4.25rem] w-[10.5rem] items-center justify-center rounded-[1.15rem] bg-white px-3.5 pb-3.5 pt-2 text-center text-[0.66rem] font-medium leading-snug text-[#1A2E28] shadow-[0_6px_18px_rgba(16,59,43,0.14)] sm:min-h-[4.5rem] sm:w-[11rem] sm:text-[0.7rem] lg:hidden">
+                  <span className="block max-w-[9.5em]">{chapter5.quote}</span>
+                  <span
+                    className="pointer-events-none absolute bottom-[-8px] left-[36%] h-4 w-4 rotate-45 bg-white"
+                    aria-hidden
+                  />
+                </div>
+              ) : null}
+            </div>
+
+            {/* Copy — mobile: nền solid dưới ảnh; desktop: panel mờ */}
+            <div className="relative z-[1] order-2 flex min-w-0 flex-col justify-center bg-[#E8F2E4] px-6 py-8 sm:px-8 sm:py-10 lg:order-1 lg:max-w-[17.5rem] lg:rounded-[1.35rem] lg:bg-[#E8F2E4]/86 lg:px-9 lg:py-10 lg:shadow-[0_8px_28px_rgba(16,59,43,0.06)] lg:ring-1 lg:ring-white/75 xl:max-w-[18rem]">
               <ChapterBadge>{chapter5.eyebrow}</ChapterBadge>
               <h2 className="m-0 mt-3 max-w-[12.5em] font-extrabold tracking-[-0.03em] text-[#103B2B] text-[clamp(1.45rem,2.4vw,1.95rem)] leading-[1.18]">
                 {chapter5.title}
@@ -141,24 +165,18 @@ export function Chapters45({ chapter4, chapter5, appUrl, locale }: Props) {
                 </PillCta>
               </div>
             </div>
-
-            <div className="relative min-h-[220px] sm:min-h-[280px] lg:min-h-full">
-              <span className="sr-only">{chapter5.image.alt}</span>
-              {/* Bubble HTML phủ kín chữ baked trên ảnh (không vá ảnh → không lộ vết) */}
-              {chapter5.quote ? (
-                <div
-                  className="absolute z-[2] flex min-h-[5.75rem] w-[13rem] -translate-x-1/2 items-center justify-center rounded-[1.25rem] bg-white px-5 pb-5 pt-3 text-center text-[0.72rem] font-medium leading-snug text-[#1A2E28] shadow-[0_6px_18px_rgba(16,59,43,0.14)] sm:min-h-[6rem] sm:w-[13.75rem] sm:px-5 sm:text-[0.78rem]"
-                  style={{ left: '85%', top: '22%' }}
-                >
-                  <span className="block max-w-[11em]">{chapter5.quote}</span>
-                  <span
-                    className="pointer-events-none absolute bottom-[-9px] left-[36%] h-5 w-5 rotate-45 bg-white"
-                    aria-hidden
-                  />
-                </div>
-              ) : null}
-            </div>
           </div>
+
+          {/* Bubble desktop */}
+          {chapter5.quote ? (
+            <div className="absolute left-[84%] top-[18%] z-[2] hidden min-h-[6rem] w-[13.75rem] -translate-x-1/2 items-center justify-center rounded-[1.25rem] bg-white px-5 pb-5 pt-3 text-center text-[0.78rem] font-medium leading-snug text-[#1A2E28] shadow-[0_6px_18px_rgba(16,59,43,0.14)] lg:flex">
+              <span className="block max-w-[11em]">{chapter5.quote}</span>
+              <span
+                className="pointer-events-none absolute bottom-[-9px] left-[36%] h-5 w-5 rotate-45 bg-white"
+                aria-hidden
+              />
+            </div>
+          ) : null}
         </article>
       </Container>
     </section>

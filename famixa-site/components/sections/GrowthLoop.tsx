@@ -27,7 +27,7 @@ const STEP_ICONS = [
 function LoopArrows() {
   return (
     <svg
-      className="pointer-events-none absolute inset-0 z-0 h-full w-full overflow-visible"
+      className="pointer-events-none absolute inset-0 z-0 hidden h-full w-full overflow-visible lg:block"
       viewBox="0 0 760 264"
       fill="none"
       preserveAspectRatio="none"
@@ -118,7 +118,7 @@ export function GrowthLoop({ content, locale }: Props) {
       <Container>
         <article
           id={content.id}
-          className="scroll-mt-24 overflow-visible rounded-[28px] bg-white px-5 py-7 shadow-[0_10px_36px_rgba(16,59,43,0.06)] sm:rounded-[32px] sm:px-8 sm:py-9 md:rounded-[36px] md:px-9 md:py-10"
+          className="scroll-mt-24 overflow-hidden rounded-[28px] bg-white px-5 py-7 shadow-[0_10px_36px_rgba(16,59,43,0.06)] sm:rounded-[32px] sm:px-8 sm:py-9 md:rounded-[36px] md:px-9 md:py-10 lg:overflow-visible"
         >
           <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:gap-5 xl:gap-6">
             {/* Trái */}
@@ -136,15 +136,16 @@ export function GrowthLoop({ content, locale }: Props) {
               </div>
             </div>
 
-            {/* Phải — lệch trái một chút so với mép phải card */}
-            <div className="min-w-0 flex-1 overflow-visible lg:flex lg:justify-start lg:pl-0 lg:pr-2 xl:pr-4">
-              <div
-                className="relative mx-auto w-fit max-w-full overflow-visible px-1 pb-11 pt-[5.75rem] sm:pb-12 sm:pt-24 lg:mx-0 lg:-translate-x-3 xl:-translate-x-5"
-                data-ch6-loop
-              >
-                <LoopArrows />
+            {/* Phải — cuộn ngang trong card trên mobile */}
+            <div className="min-w-0 w-full flex-1 overflow-hidden lg:flex lg:justify-start lg:overflow-visible lg:pl-0 lg:pr-2 xl:pr-4">
+              <div className="min-w-0 w-full max-w-full overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch] lg:overflow-visible">
+                <div
+                  className="relative mx-auto w-max max-w-none px-2 pb-10 pt-8 sm:px-3 sm:pb-12 sm:pt-16 lg:mx-0 lg:w-fit lg:max-w-full lg:px-1 lg:pb-12 lg:pt-24 lg:-translate-x-3 xl:-translate-x-5"
+                  data-ch6-loop
+                >
+                  <LoopArrows />
 
-                <ol className="relative z-[1] m-0 flex list-none items-center gap-1.5 overflow-visible p-0 sm:gap-2 md:gap-2">
+                  <ol className="relative z-[1] m-0 flex list-none items-center gap-2 overflow-visible p-0 sm:gap-2">
                   {steps.slice(0, 2).map((step, i) => (
                     <li key={step.title} className="shrink-0">
                       <StepCard index={i} title={step.title} hint={step.hint} />
@@ -178,6 +179,7 @@ export function GrowthLoop({ content, locale }: Props) {
                     </li>
                   ))}
                 </ol>
+                </div>
               </div>
             </div>
           </div>

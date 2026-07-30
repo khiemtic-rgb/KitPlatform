@@ -23,14 +23,14 @@ export function FinalCTA({ content, brand, appUrl }: Props) {
     <section id="final-cta" className="scroll-mt-24 bg-[#FBF8F1] pb-0 pt-0">
       <Container>
         <div className="relative overflow-hidden rounded-[28px] bg-[#FDFBF7] shadow-[0_12px_40px_rgba(16,59,43,0.1)] sm:rounded-[32px] md:rounded-[36px]">
-          {/* Desktop: art ghim full-bleed mép phải/đáy card — không hở chân */}
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-0 hidden w-[56%] md:block lg:w-[58%]">
+          {/* Desktop: art ghim full-bleed mép phải/đáy card */}
+          <div className="pointer-events-none absolute inset-0 right-0 left-auto z-0 hidden w-[56%] overflow-hidden md:block lg:w-[58%]">
             <img
-              src={`${content.image.src}?v=7`}
+              src={`${content.image.src}?v=8`}
               alt=""
               width={1536}
               height={1024}
-              className="absolute inset-0 h-full w-full max-w-none object-cover object-[58%_68%]"
+              className="block h-full w-full min-h-full object-cover object-[55%_100%]"
               loading="lazy"
               aria-hidden
             />
@@ -87,16 +87,16 @@ export function FinalCTA({ content, brand, appUrl }: Props) {
 
             {/* Mobile: ảnh dưới; desktop: spacer (art absolute phía trên) */}
             <div
-              className="relative min-h-[260px] md:min-h-full"
+              className="relative min-h-[260px] overflow-hidden md:min-h-full"
               role="img"
               aria-label={content.image.alt}
             >
               <img
-                src={`${content.image.src}?v=7`}
+                src={`${content.image.src}?v=8`}
                 alt=""
                 width={1536}
                 height={1024}
-                className="absolute inset-0 h-full w-full max-w-none object-cover object-[58%_68%] md:hidden"
+                className="block h-full w-full min-h-full object-cover object-[55%_100%] md:hidden"
                 loading="lazy"
                 aria-hidden
               />
