@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/site';
 import { SPECIALTY } from '@/lib/specialty-routes';
+import { getGuideArticles } from '@/lib/guide/content';
 
 export const dynamic = 'force-static';
 
@@ -60,5 +61,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }),
   );
 
-  return [...home, ...specialty, ...specialtyEn];
+  const guide: MetadataRoute.Sitemap = [
+    {
+      url: `${base}/vi/huong-dan/`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    ...getGuideArticles().map((article) => ({
+      url: `${base}${article.slug}/`,
+      lastModified: new Date(article.last_verified),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+  ];
+
+  return [...home, ...specialty, ...specialtyEn, ...guide];
 }

@@ -416,3 +416,99 @@ input {
   margin: 0;
   color: var(--color-secondary);
 }
+
+/* Family Guide — mobile-first Markdown content */
+.guide-prose {
+  color: #41534a;
+  font-size: 1rem;
+  line-height: 1.72;
+}
+
+.guide-prose > :first-child {
+  margin-top: 0;
+}
+
+.guide-prose h2,
+.guide-prose h3 {
+  color: #103b2b;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.guide-prose h2 {
+  margin: 2.25rem 0 0.8rem;
+  font-size: clamp(1.25rem, 2.5vw, 1.55rem);
+}
+
+.guide-prose h3 {
+  margin: 1.65rem 0 0.6rem;
+  font-size: 1.08rem;
+}
+
+.guide-prose p {
+  margin: 0.75rem 0;
+}
+
+.guide-prose a {
+  color: #168a49;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: #a8ddb9;
+  text-underline-offset: 3px;
+}
+
+.guide-prose ul,
+.guide-prose ol {
+  margin: 0.85rem 0;
+  padding-left: 1.4rem;
+}
+
+.guide-prose li {
+  margin: 0.4rem 0;
+}
+
+.guide-prose strong {
+  color: #183e2d;
+}
+
+.guide-prose table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.guide-prose th,
+.guide-prose td {
+  min-width: 8rem;
+  border: 1px solid #dfe9e2;
+  padding: 0.7rem 0.8rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.guide-prose th {
+  background: #edf8f0;
+  color: #103b2b;
+}
+
+.guide-prose img {
+  margin: 1.15rem 0;
+  border: 1px solid #e2e9e4;
+  border-radius: 1rem;
+  box-shadow: 0 8px 22px rgba(16, 59, 43, 0.08);
+}
+
+.guide-image-placeholder {
+  display: block;
+  margin: 1.15rem 0;
+  border: 1px dashed #a6cfb0;
+  border-radius: 1rem;
+  background: #f2faf4;
+  padding: 1rem 1.1rem;
+  color: #487158;
+  font-size: 0.9rem;
+  font-style: italic;
+}

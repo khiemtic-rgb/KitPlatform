@@ -551,7 +551,7 @@
     ],
     "resources": [
       { "href": "/vi/cau-chuyen/", "label": "Câu chuyện" },
-      { "href": "https://home.famixa.vn", "label": "Hướng dẫn sử dụng" }
+      { "href": "/vi/huong-dan/", "label": "Hướng dẫn sử dụng" }
     ],
     "about": [
       { "href": "/vi/ve-famixa/", "label": "Về chúng tôi" },
