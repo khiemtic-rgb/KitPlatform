@@ -75,8 +75,8 @@
       }
     ],
     "proof": [
-      { "title": "30-day trial", "sub": "Experience Peace", "icon": "sparkles" },
-      { "title": "Start free", "sub": "Free plan ready", "icon": "heart" },
+      { "title": "30-day trial", "sub": "Experience Pro", "icon": "sparkles" },
+      { "title": "Start free", "sub": "Family plan ready", "icon": "heart" },
       { "title": "Private by design", "sub": "Family data protected", "icon": "shield" },
       { "title": "Made in Vietnam", "sub": "Built for real families", "icon": "sprout" }
     ]
@@ -329,10 +329,10 @@
     ],
     "plans": [
       {
-        "name": "Free",
+        "name": "Family",
         "tagline": "Try Famixa · up to 1 child",
-        "price": "0₫",
-        "period": "/ forever",
+        "price": "Free",
+        "period": "",
         "tone": "start",
         "badge": null,
         "cta": "Start free",
@@ -344,15 +344,15 @@
         ]
       },
       {
-        "name": "Growth",
-        "tagline": "Family Growth Plan · up to 2 children",
-        "price": "99,000₫",
+        "name": "Premium",
+        "tagline": "Growing family signals · up to 2 children",
+        "price": "US$4.99",
         "period": "/ month",
         "tone": "peace",
         "badge": null,
-        "cta": "Upgrade Growth",
+        "cta": "Upgrade Premium",
         "items": [
-          "Everything in Free",
+          "Everything in Family",
           "Family timeline",
           "Behavior Twin",
           "Adaptive AI suggestions",
@@ -360,32 +360,32 @@
         ]
       },
       {
-        "name": "Peace",
-        "tagline": "Family Peace Plan · unlimited children",
-        "price": "199,000₫",
+        "name": "Pro",
+        "tagline": "AI coaching & evidence · unlimited children",
+        "price": "US$9.99",
         "period": "/ month",
         "tone": "growth",
         "badge": "Popular",
         "cta": "Start 30-day trial",
         "items": [
-          "Everything in Growth",
+          "Everything in Premium",
           "AI Parenting Coach",
-          "ROP / Growth Report",
+          "Growth Report",
           "AI Letter + Family Replay",
           "In-home screen agreements",
           "Unlimited children"
         ]
       },
       {
-        "name": "AI+",
+        "name": "Family Plus",
         "tagline": "Deep AI companionship · unlimited children",
-        "price": "399,000₫",
+        "price": "US$19.99",
         "period": "/ month",
         "tone": "thrive",
         "badge": null,
-        "cta": "Upgrade AI+",
+        "cta": "Upgrade Family Plus",
         "items": [
-          "Everything in Peace",
+          "Everything in Pro",
           "Weekly Deep Playbook",
           "Richer Letter & Replay",
           "Expanded adaptive scan",
@@ -418,7 +418,7 @@
       },
       {
         "q": "Which plan should we start with?",
-        "a": "Free to try the daily rhythm. The 30-day trial unlocks Peace (Pro). Choose Growth for Timeline/Twin; Peace for Coach & evidence; AI+ for Deep Playbook."
+        "a": "Start with Family (Free) for the daily rhythm. The 30-day trial unlocks Pro. Choose Premium for Timeline/Twin; Pro for Coach & evidence; Family Plus for Deep Playbook."
       }
     ]
   },

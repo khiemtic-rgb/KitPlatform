@@ -317,19 +317,19 @@ const en: SpecialtyBundle = {
     seo: {
       title: 'Compare Famixa plans',
       description:
-        'Compare Free, Growth, Peace, and AI+ using the Family Plan Capability Matrix. 30-day trial = Peace entitlements.',
+        'Compare Family, Premium, Pro, and Family Plus — international pricing. 30-day trial = Pro entitlements.',
     },
     eyebrow: 'PRICING',
     title: 'Choose the right companion plan',
-    lead: 'Start free. Try Peace (Pro) for 30 days. Upgrade when your family needs deeper evidence and AI coaching.',
-    trialNote: '30-day trial = full Peace (Pro) entitlements. Free does not require a card.',
+    lead: 'Start free on Family. Try Pro for 30 days. Upgrade when your family needs deeper evidence and AI coaching.',
+    trialNote: '30-day trial = full Pro entitlements. Family (Free) does not require a card.',
     matrixTitle: 'Capability matrix by plan',
-    matrixCaption: 'Source: FamilyPlanCapabilityMatrix — aligned with packaging SoT.',
+    matrixCaption: 'Source: FamilyPlanCapabilityMatrix — aligned with packaging SoT. Display names are international.',
     backCta: 'Back to home',
     appCta: 'Start on Famixa',
-    columns: ['Free', 'Growth', 'Peace', 'AI+'],
+    columns: ['Family', 'Premium', 'Pro', 'Family Plus'],
     rows: [
-      { label: 'Price / month', free: '0đ', growth: '99,000đ', peace: '199,000đ', aiPlus: '399,000đ' },
+      { label: 'Price / month', free: 'Free', growth: 'US$4.99', peace: 'US$9.99', aiPlus: 'US$19.99' },
       { label: 'Max children', free: '1', growth: '2', peace: 'Unlimited', aiPlus: 'Unlimited' },
       { label: 'Core daily rhythm', free: true, growth: true, peace: true, aiPlus: true },
       { label: 'Weekly insight', free: true, growth: true, peace: true, aiPlus: true },
@@ -342,7 +342,7 @@ const en: SpecialtyBundle = {
       { label: 'In-home screen agreement', free: false, growth: false, peace: true, aiPlus: true },
       { label: 'AI letter + family replay', free: false, growth: false, peace: true, aiPlus: true },
       { label: 'Parent success check-in', free: false, growth: false, peace: true, aiPlus: true },
-      { label: 'Weekly deep playbook (AI+)', free: false, growth: false, peace: false, aiPlus: true },
+      { label: 'Weekly deep playbook', free: false, growth: false, peace: false, aiPlus: true },
     ],
   },
   stories: {
@@ -518,8 +518,8 @@ const en: SpecialtyBundle = {
       {
         heading: '3. Accounts & plans',
         body: [
-          'You are responsible for account security. Free / Growth / Peace / AI+ entitlements are described on the plans page and in-app and may change with reasonable notice.',
-          'A 30-day trial, when offered, grants Peace entitlements for the trial period under current commercial policy.',
+          'You are responsible for account security. Family / Premium / Pro / Family Plus entitlements are described on the plans page and in-app and may change with reasonable notice.',
+          'A 30-day trial, when offered, grants Pro entitlements for the trial period under current commercial policy.',
         ],
       },
       {
