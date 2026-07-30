@@ -71,7 +71,7 @@ export function Hero({ content, appUrl, locale }: Props) {
           <div className="relative z-10 min-w-0 self-center">
             <div className="relative w-full [container-type:inline-size]">
               <img
-                src={`${content.image.src}?v=sample3`}
+                src={`${content.image.src}?v=i18n-bubbles`}
                 alt={content.image.alt}
                 width={1536}
                 height={1024}
@@ -85,34 +85,37 @@ export function Hero({ content, appUrl, locale }: Props) {
                 fetchPriority="high"
               />
               {/*
-                Ô thoại nhìn = ảnh mẫu (baked).
-                Lớp HTML trong suốt phía trên để bôi đen / copy được.
+                Ô thoại HTML theo locale — đè chữ baked trong PNG (VI cố định trong ảnh).
               */}
               {(content.bubbles ?? []).map((b) => (
                 <div
-                  key={`${b.left}-${b.top}`}
-                  className="absolute z-[2] -translate-x-1/2 -translate-y-1/2 cursor-text select-text"
+                  key={`${b.left}-${b.top}-${locale}`}
+                  className="absolute z-[2] -translate-x-1/2 -translate-y-1/2"
                   style={{ left: b.left, top: b.top, width: b.width }}
                   title={t.bubbleCopyHint}
                 >
-                  <p
-                    className="m-0 w-full text-center font-bold tracking-[-0.015em]"
-                    style={{
-                      aspectRatio: '1.48 / 1',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 'clamp(0.48rem, 1.45cqw, 0.78rem)',
-                      lineHeight: 1.22,
-                      padding: '11% 12%',
-                      whiteSpace: 'pre-line',
-                      color: 'transparent',
-                      userSelect: 'text',
-                      WebkitUserSelect: 'text',
-                    }}
+                  <div
+                    className={[
+                      'relative flex aspect-[1.48/1] w-full items-center justify-center rounded-[48%] border border-[#E8DFD0] bg-[#FBF6EC]',
+                      'px-[12%] py-[10%] text-center shadow-[0_6px_18px_rgba(61,43,31,0.12)]',
+                      b.tail === 'bl'
+                        ? 'after:absolute after:bottom-[-6%] after:left-[28%] after:h-[18%] after:w-[18%] after:rotate-45 after:rounded-[3px] after:border-b after:border-r after:border-[#E8DFD0] after:bg-[#FBF6EC] after:content-[""]'
+                        : b.tail === 'br'
+                          ? 'after:absolute after:bottom-[-6%] after:right-[28%] after:h-[18%] after:w-[18%] after:rotate-45 after:rounded-[3px] after:border-b after:border-r after:border-[#E8DFD0] after:bg-[#FBF6EC] after:content-[""]'
+                          : 'after:absolute after:bottom-[-7%] after:left-1/2 after:h-[16%] after:w-[16%] after:-translate-x-1/2 after:rotate-45 after:rounded-[3px] after:border-b after:border-r after:border-[#E8DFD0] after:bg-[#FBF6EC] after:content-[""]',
+                    ].join(' ')}
                   >
-                    {b.text}
-                  </p>
+                    <p
+                      className="relative z-[1] m-0 w-full select-text font-bold tracking-[-0.015em] text-[#3D2B1F]"
+                      style={{
+                        fontSize: 'clamp(0.48rem, 1.45cqw, 0.78rem)',
+                        lineHeight: 1.22,
+                        whiteSpace: 'pre-line',
+                      }}
+                    >
+                      {b.text}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
