@@ -3,18 +3,19 @@
 **Mã:** NVX-OPS-FAMILY-SYNC-01 · **Ngày:** 2026-07-24  
 **Liên quan:** [pharmacy-rbac-deploy-sync-runbook-v1.md](./pharmacy-rbac-deploy-sync-runbook-v1.md) · [pharmacy-pos-customer-incidents-v1.md](./pharmacy-pos-customer-incidents-v1.md) · `.cursor/rules/family-os-deploy-sync.mdc`
 
-### §0. Trạng thái epic — ACTIVE local / VPS gated (2026-07-28)
+### §0. Trạng thái epic — ACTIVE local + VPS pilot (2026-07-30)
 
 | | |
 |---|---|
-| **Status** | **ACTIVE (local)** — Behavior OS / PSE / Brief / nav trên tip local; **VPS pilot vẫn gated** |
-| **Lý do gate VPS** | Chờ Pharmacy audit (`DEMO_PHARMACY`) xong trước khi `apply-family-os-pilot` |
-| **Unpark trigger** | User 2026-07-28: thực hiện 1→5 (unify tip + unpark lớp local + smoke + AFE) |
+| **Status** | **ACTIVE** — tip local + pilot `family.kittech.vn` đã ship Behavior/PSE (user yêu cầu deploy) |
+| **SoT tip** | `origin/main` ≥ `bd78782` (grant `250`) / SPA+API cut `e28eb90` |
 | **Rule Cursor** | `.cursor/rules/family-os-parked.mdc` |
-| **Mig lớp mới** | `240`–`249` trong `migration-files.family-os.txt` (Behavior OS, currency, PSE, packaging, Blueprint) |
-| **Deploy VPS** | Chỉ khi user bảo rõ + Pharmacy gate mở |
+| **Mig lớp mới** | `240`–`250` trong `migration-files.family-os.txt` (+ `250` app-role grants) |
+| **Deploy VPS** | Chỉ khi user bảo rõ; **không** gộp Pharmacy auth WIP |
+| **Mig trên VPS** | `sudo -u postgres psql` (peer auth) — tránh password URI trong `api.env` |
+| **Bắt buộc sau mig peer-auth** | Chạy `250_pack_family_app_role_grants.sql` (GRANT `pharmacore`/`kitplatform`) — thiếu → `42501` / “Lỗi truy vấn database” trên day-flow |
 
-Pilot đã ship trước đó vẫn giữ trên VPS (`family.kittech.vn`); ACTIVE local **không** đồng nghĩa đã ship Behavior/PSE lên prod.
+Pharmacy audit freeze (`DEMO_PHARMACY` / `NT_XUANHOA`) vẫn hiệu lực cho tenant Pharmacy.
 
 ---
 
@@ -89,8 +90,19 @@ Tất cả migration dưới đây ship trong **`e55247f`**. Manifest pilot: `de
 Chạy mig Family OS:
 
 ```bash
-bash /opt/kit-platform/run-family-os-migrations-prod.sh "$CONN"
-# hoặc qua apply-family-os-pilot.sh (tự gọi script trên)
+# Prefer (prod VPS): peer auth — apply-family-os-pilot.sh đã dùng đường này
+sudo -u postgres psql -d novixa_prod -v ON_ERROR_STOP=1 -f /opt/kit-platform/migrations/<file>.sql
+# hoặc apply-family-os-pilot.sh (rsync + mig peer-auth + GRANT 250)
+# Fallback libpq (password có ký tự đặc biệt → đừng build URI):
+#   PGHOST=127.0.0.1 PGUSER=... PGDATABASE=... PGPASSWORD=... \
+#   bash /opt/kit-platform/run-family-os-migrations-prod.sh
+```
+
+Sau mỗi đợt mig tạo bảng mới dưới role `postgres`, xác nhận:
+
+```sql
+SELECT has_table_privilege('pharmacore', 'pack_family.commitment_reflection', 'SELECT');
+-- true
 ```
 
 ### 4.2 CRLF pitfall (Windows → VPS)

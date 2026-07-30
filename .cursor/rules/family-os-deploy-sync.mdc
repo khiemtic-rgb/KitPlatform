@@ -17,10 +17,11 @@ Khi sửa Family OS pack, `family-app`, Admin modules `/family-os`, hoặc scrip
 ## Nguyên tắc
 
 - **SoT = `origin/main`**, không phải VPS.
-- **PARK (2026-07-27):** xem `.cursor/rules/family-os-parked.mdc` — không epic/deploy pilot mới trừ khi user unpark.
+- Trạng thái epic: `.cursor/rules/family-os-parked.mdc` — deploy VPS **chỉ** khi user bảo rõ; không gộp Pharmacy auth WIP.
 - Mig Family OS qua **`deploy/ubuntu/migration-files.family-os.txt`** — **không** gộp vào `migration-files.prod.txt` trừ khi được duyệt off-hours.
-- Commit + push **trước** deploy pilot; không deploy working tree dirty.
+- Commit + push **trước** deploy pilot; không deploy working tree dirty (stash Pharmacy WIP).
 - Windows → VPS: manifest có thể CRLF — runner phải strip `\r` (`b76f547`).
+- VPS mig: ưu tiên **`sudo -u postgres psql`** (peer auth). Sau mig: **`250_pack_family_app_role_grants.sql`** (GRANT `pharmacore`/`kitplatform`) — thiếu → `42501` day-flow.
 
 ## Không regress Pharmacy
 
@@ -34,7 +35,8 @@ Khi sửa Family OS pack, `family-app`, Admin modules `/family-os`, hoặc scrip
 ## Verify
 
 - `https://family.kittech.vn` + `https://api.novixa.vn/api/health`
-- Bảng `pack_family.*` sau mig
+- `POST .../day-flows/ensure` OK (không “Lỗi truy vấn database”)
+- Bảng `pack_family.*` sau mig + `has_table_privilege('pharmacore', ...)`
 - Hard refresh SPA sau deploy
 
 Chi tiết: `docs/novixa/03-operations/family-os-sync-runbook-v1.md`
