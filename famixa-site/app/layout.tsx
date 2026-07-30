@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://famixa.vn'),
   keywords: ['Famixa', 'AI gia đình', 'nuôi dạy con', 'tự giác', 'Family OS', 'Fami'],
   authors: [{ name: 'KIT Technology' }],
+  verification: {
+    google: 'QbJjZhXwYn_fYpEseSq_rdyuVObSQIsFL_1rR5_K9WI',
+  },
   icons: {
     icon: [{ url: '/favicon-32.png', sizes: '32x32', type: 'image/png' }],
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
