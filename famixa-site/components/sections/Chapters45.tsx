@@ -116,7 +116,7 @@ export function Chapters45({ chapter4, chapter5, appUrl, locale }: Props) {
           {/* Nền scenic — desktop only */}
           <div className="absolute inset-0 hidden overflow-hidden lg:block" aria-hidden>
             <img
-              src={`${chapter5.image.src}?v=15`}
+              src={`${chapter5.image.src}?v=16`}
               alt=""
               width={1024}
               height={441}
@@ -130,7 +130,7 @@ export function Chapters45({ chapter4, chapter5, appUrl, locale }: Props) {
             {/* Mobile: ảnh trên — desktop: spacer (art absolute) */}
             <div className="relative order-1 min-h-[210px] overflow-hidden sm:min-h-[240px] lg:order-2 lg:min-h-full">
               <img
-                src={`${chapter5.image.src}?v=15`}
+                src={`${chapter5.image.src}?v=16`}
                 alt=""
                 width={1024}
                 height={441}
