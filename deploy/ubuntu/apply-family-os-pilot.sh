@@ -10,8 +10,12 @@ WEB_ROOT="/var/www/kit-platform"
 OPT="/opt/kit-platform"
 CONFIG_DIR="/etc/kit-platform"
 FAMILY_HOST="${FAMILY_HOST:-family.kittech.vn}"
+# Public brand host must stay on the same vhost + cert (SAN), or phones show ERR_CERT_COMMON_NAME_INVALID.
+FAMILY_ALT_HOST="${FAMILY_ALT_HOST:-home.famixa.vn}"
+FAMILY_HOSTS="${FAMILY_HOSTS:-$FAMILY_ALT_HOST $FAMILY_HOST}"
 API_PROXY_HOST="${API_PROXY_HOST:-api.novixa.vn}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-care@novixa.vn}"
+FAMILY_CERT_DIR="${FAMILY_CERT_DIR:-/etc/letsencrypt/live/family.kittech.vn}"
 
 log() { echo -e "\n\033[1;36m==>\033[0m $*"; }
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -76,19 +80,15 @@ fi
 log "CORS — them https://${FAMILY_HOST}"
 bash "$OPT/ensure-novixa-cors-env.sh" "$CONFIG_DIR/api.env"
 
-log "Nginx site rieng cho ${FAMILY_HOST} (khong ghi de kit-platform SSL)"
+log "Nginx site rieng cho ${FAMILY_HOSTS} (khong ghi de kit-platform SSL)"
 mkdir -p /etc/nginx/snippets
 if [[ -f "$OPT/nginx-pwa-cache.conf" ]]; then
   cp "$OPT/nginx-pwa-cache.conf" /etc/nginx/snippets/pwa-cache.conf
 elif [[ -f "$UPLOAD/deploy/ubuntu/nginx-pwa-cache.conf" ]]; then
   cp "$UPLOAD/deploy/ubuntu/nginx-pwa-cache.conf" /etc/nginx/snippets/pwa-cache.conf
 fi
-cat > /etc/nginx/sites-available/family-kittech <<EOF
-server {
-    listen 80;
-    listen [::]:80;
-    server_name ${FAMILY_HOST};
 
+FAMILY_LOCATIONS=$(cat <<EOF
     root ${WEB_ROOT}/family-app;
     index index.html;
     client_max_body_size 8m;
@@ -128,8 +128,52 @@ server {
         expires 7d;
         add_header Cache-Control "public, immutable";
     }
+EOF
+)
+
+if [[ -f "$FAMILY_CERT_DIR/fullchain.pem" && -f "$FAMILY_CERT_DIR/privkey.pem" ]]; then
+  # Prefer the dual-SAN cert. Never let certbot --nginx -d \$FAMILY_HOST alone
+  # create a single-name cert that breaks home.famixa.vn.
+  cat > /etc/nginx/sites-available/family-kittech <<EOF
+server {
+    server_name ${FAMILY_HOSTS};
+
+${FAMILY_LOCATIONS}
+
+    listen [::]:443 ssl;
+    listen 443 ssl;
+    ssl_certificate ${FAMILY_CERT_DIR}/fullchain.pem;
+    ssl_certificate_key ${FAMILY_CERT_DIR}/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+    if (\$host = ${FAMILY_HOST}) {
+        return 301 https://\$host\$request_uri;
+    }
+    if (\$host = ${FAMILY_ALT_HOST}) {
+        return 301 https://\$host\$request_uri;
+    }
+
+    listen 80;
+    listen [::]:80;
+    server_name ${FAMILY_HOSTS};
+    return 404;
 }
 EOF
+else
+  cat > /etc/nginx/sites-available/family-kittech <<EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${FAMILY_HOSTS};
+
+${FAMILY_LOCATIONS}
+}
+EOF
+fi
+
 ln -sf /etc/nginx/sites-available/family-kittech /etc/nginx/sites-enabled/family-kittech
 nginx -t
 systemctl reload nginx
@@ -142,32 +186,42 @@ systemctl is-active --quiet kit-platform-api || {
   die "kit-platform-api khong khoi dong"
 }
 
-if [[ "${SKIP_CERTBOT:-}" != "1" ]]; then
-  log "Certbot SSL cho ${FAMILY_HOST}"
+if [[ "${SKIP_CERTBOT:-}" != "1" && ! -f "$FAMILY_CERT_DIR/fullchain.pem" ]]; then
+  log "Certbot SSL cho ${FAMILY_HOSTS}"
   if ! command -v certbot >/dev/null 2>&1; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
     apt-get install -y -qq certbot python3-certbot-nginx
   fi
-  # DNS must already point family.kittech.vn -> this VPS
-  if getent ahosts "$FAMILY_HOST" >/dev/null 2>&1; then
-    certbot --nginx -d "$FAMILY_HOST" \
+  cert_args=()
+  for h in $FAMILY_HOSTS; do
+    if getent ahosts "$h" >/dev/null 2>&1; then
+      cert_args+=(-d "$h")
+    else
+      echo "WARN: DNS $h chua resolve — bo qua host nay"
+    fi
+  done
+  if ((${#cert_args[@]} > 0)); then
+    certbot --nginx "${cert_args[@]}" \
+      --cert-name family.kittech.vn \
       --non-interactive --agree-tos -m "$CERTBOT_EMAIL" --redirect || \
-      echo "WARN: certbot that bai — kiem tra DNS A ${FAMILY_HOST}"
+      echo "WARN: certbot that bai — kiem tra DNS A ${FAMILY_HOSTS}"
   else
-    echo "WARN: DNS ${FAMILY_HOST} chua resolve — bo qua certbot"
+    echo "WARN: Khong host Family nao resolve — bo qua certbot"
   fi
+else
+  log "SSL — dung cert san co ${FAMILY_CERT_DIR} (SAN: ${FAMILY_HOSTS})"
 fi
 
 log "Smoke nhanh"
 curl -sf "http://127.0.0.1:5000/api/health" | head -c 200 || true
 echo
-curl -sf -o /dev/null -w "family HTTP %{http_code}\n" "http://${FAMILY_HOST}/" || \
-  curl -sf -o /dev/null -w "family local file OK\n" -H "Host: ${FAMILY_HOST}" http://127.0.0.1/ || true
+curl -sf -o /dev/null -w "family HTTPS %{http_code}\n" "https://${FAMILY_HOST}/" || true
+curl -sf -o /dev/null -w "famixa HTTPS %{http_code}\n" "https://${FAMILY_ALT_HOST}/" || true
 
 echo
 echo "=== FamilyOS pilot apply xong ==="
-echo "  SPA : https://${FAMILY_HOST}/"
+echo "  SPA : https://${FAMILY_HOST}/  |  https://${FAMILY_ALT_HOST}/"
 echo "  Admin FamilyOS: https://admin.novixa.vn (tenant co module family_os)"
 echo "  Schema: pack_family (192-199) — KHONG seed DEMO_FAMILY"
 echo "  Tao tenant FamilyOS qua Admin /setup hoac platform provisioning"
