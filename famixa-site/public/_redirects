@@ -1,2 +1,4 @@
 / /vi/ 301
 /index.html /vi/ 301
+/admin /admin/ 301
+/admin/ /admin/index.html 200
