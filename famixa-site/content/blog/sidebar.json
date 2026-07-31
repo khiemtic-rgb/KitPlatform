@@ -1,0 +1,167 @@
+{
+  "nuoi-day": {
+    "tip": {
+      "quote": "Con không cần cha mẹ hoàn hảo — con cần cha mẹ hiện diện, bình tĩnh và sẵn sàng thử lại.",
+      "linkLabel": "Xem thêm",
+      "linkPath": "/today"
+    },
+    "todayChecklist": {
+      "title": "Gia đình hôm nay",
+      "subtitle": "Gợi ý nhỏ từ Famixa",
+      "items": [
+        "15 phút trò chuyện không màn hình",
+        "Ăn tối cùng nhau",
+        "Đọc sách 20 phút trước khi ngủ",
+        "Một lời khen cụ thể cho con"
+      ]
+    },
+    "challenge": {
+      "title": "Thử thách gia đình",
+      "description": "Ăn tối cùng nhau ít nhất 4 buổi/tuần",
+      "ctaLabel": "Tham gia cùng Famixa",
+      "ctaPath": "/unlock"
+    },
+    "coachTips": {
+      "title": "AI Coach gợi ý",
+      "items": [
+        "Ôm con 10 giây trước khi nhắc việc",
+        "Hỏi con: hôm nay con thấy thế nào?",
+        "Cảm ơn vợ/chồng một việc nhỏ"
+      ],
+      "linkLabel": "Xem thêm gợi ý",
+      "linkPath": "/today"
+    }
+  },
+  "routine": {
+    "tip": {
+      "quote": "Routine tốt không làm nhà cứng nhắc — nó giúp mọi người biết hôm nay bắt đầu từ đâu.",
+      "linkLabel": "Xem thêm",
+      "linkPath": "/today"
+    },
+    "todayChecklist": {
+      "title": "Gia đình hôm nay",
+      "subtitle": "Nhịp nhẹ cho cả nhà",
+      "items": [
+        "Chuẩn bị đồ đi học tối hôm trước",
+        "5 phút xem lịch cùng nhau sáng nay",
+        "Điểm danh routine buổi tối",
+        "Chuẩn bị giấc ngủ 30 phút trước khi ngủ"
+      ]
+    },
+    "challenge": {
+      "title": "Thử thách gia đình",
+      "description": "Hoàn thành routine buổi sáng 5 ngày liên tiếp",
+      "ctaLabel": "Bắt đầu routine",
+      "ctaPath": "/onboarding"
+    },
+    "coachTips": {
+      "title": "AI Coach gợi ý",
+      "items": [
+        "Chọn 1 việc routine, làm ổn trước đã",
+        "Để con tự tick khi xong việc",
+        "Cuối tuần cùng nhìn lại tuần vừa qua"
+      ],
+      "linkLabel": "Xem thêm gợi ý",
+      "linkPath": "/family-admin/routine"
+    }
+  },
+  "man-hinh": {
+    "tip": {
+      "quote": "Thỏa thuận rõ ràng giúp con biết khi nào được dùng máy — thay vì chỉ biết khi nào bị lấy đi.",
+      "linkLabel": "Xem thêm",
+      "linkPath": "/today"
+    },
+    "todayChecklist": {
+      "title": "Gia đình hôm nay",
+      "subtitle": "Cân bằng màn hình",
+      "items": [
+        "Nói rõ giờ dùng màn hình hôm nay",
+        "Không dùng máy trong bữa ăn",
+        "Tắt màn hình 1 giờ trước khi ngủ",
+        "Cùng chọn 1 hoạt động không màn hình"
+      ]
+    },
+    "challenge": {
+      "title": "Thử thách gia đình",
+      "description": "Giữ đúng thỏa thuận màn hình cả tuần",
+      "ctaLabel": "Tạo thỏa thuận",
+      "ctaPath": "/unlock"
+    },
+    "coachTips": {
+      "title": "AI Coach gợi ý",
+      "items": [
+        "Hỏi con muốn dùng máy để làm gì",
+        "Đặt hẹn giờ thay vì cấm đột ngột",
+        "Khen con khi tự tắt đúng giờ"
+      ],
+      "linkLabel": "Xem thêm gợi ý",
+      "linkPath": "/today"
+    }
+  },
+  "tu-giac": {
+    "tip": {
+      "quote": "Tự giác không sinh ra từ lời nhắc nhiều — nó lớn lên từ cảm giác được tin và được thử.",
+      "linkLabel": "Xem thêm",
+      "linkPath": "/today"
+    },
+    "todayChecklist": {
+      "title": "Gia đình hôm nay",
+      "subtitle": "Giao việc nhỏ, tin con làm",
+      "items": [
+        "Giao 1 việc con tự làm được",
+        "Chờ 30 giây trước khi nhắc lại",
+        "Hỏi con cần giúp gì thay vì làm hộ",
+        "Ghi nhận nỗ lực, không chỉ kết quả"
+      ]
+    },
+    "challenge": {
+      "title": "Thử thách gia đình",
+      "description": "Con tự hoàn thành 1 việc hàng ngày trong 7 ngày",
+      "ctaLabel": "Theo dõi trong app",
+      "ctaPath": "/unlock"
+    },
+    "coachTips": {
+      "title": "AI Coach gợi ý",
+      "items": [
+        "Chia việc thành bước nhỏ hơn",
+        "Để con chọn thứ tự làm việc",
+        "Cuối ngày hỏi: con tự hào điều gì?"
+      ],
+      "linkLabel": "Xem thêm gợi ý",
+      "linkPath": "/today"
+    }
+  },
+  "famixa": {
+    "tip": {
+      "quote": "Famixa không thay bạn nuôi con — app giúp cả nhà cùng nhìn một nhịp, bớt nhắc và bớt cãi.",
+      "linkLabel": "Mở app",
+      "linkPath": "/unlock"
+    },
+    "todayChecklist": {
+      "title": "Gia đình hôm nay",
+      "subtitle": "Bắt đầu với Famixa",
+      "items": [
+        "Thêm thành viên gia đình",
+        "Tạo routine đầu tiên",
+        "Thử thách tuần cho cả nhà",
+        "Xem lịch hôm nay trên app"
+      ]
+    },
+    "challenge": {
+      "title": "Thử thách gia đình",
+      "description": "Dùng thử Famixa 30 ngày — xây nhịp nhà nhẹ hơn",
+      "ctaLabel": "Dùng thử miễn phí",
+      "ctaPath": "/unlock"
+    },
+    "coachTips": {
+      "title": "AI Coach gợi ý",
+      "items": [
+        "Bắt đầu với 2–3 việc routine, đừng thêm quá nhiều",
+        "Mời con cùng chọn icon việc",
+        "Xem Home Brief mỗi sáng 2 phút"
+      ],
+      "linkLabel": "Xem hướng dẫn",
+      "linkPath": "/onboarding"
+    }
+  }
+}

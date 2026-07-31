@@ -10,10 +10,11 @@ type Props = {
   eyebrow?: string;
   title: string;
   lead?: string;
+  wide?: boolean;
   children: ReactNode;
 };
 
-export async function BlogShell({ eyebrow = 'GÓC CHA MẸ', title, lead, children }: Props) {
+export async function BlogShell({ eyebrow = 'GÓC CHA MẸ', title, lead, wide = false, children }: Props) {
   const content = await getLandingContent('vi');
 
   return (
@@ -21,7 +22,7 @@ export async function BlogShell({ eyebrow = 'GÓC CHA MẸ', title, lead, childr
       <LocaleHtmlLang locale="vi" />
       <Navbar content={content.nav} brand={content.brand} appUrl={content.appUrl} locale="vi" resolveHashLinks />
       <main className="bg-[#FBF8F1] pb-16 pt-10 md:pb-20 md:pt-12">
-        <Container className="max-w-[980px]">
+        <Container className={wide ? 'max-w-[1180px]' : 'max-w-[980px]'}>
           <ChapterBadge>{eyebrow}</ChapterBadge>
           <h1 className="m-0 mt-3.5 font-extrabold tracking-[-0.03em] text-[#103B2B] text-[clamp(1.8rem,3.5vw,2.6rem)] leading-[1.16]">
             {title}

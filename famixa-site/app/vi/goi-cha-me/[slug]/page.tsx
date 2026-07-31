@@ -44,7 +44,7 @@ export default async function Page({ params }: Props) {
   const landing = await getLandingContent('vi');
   const related = getBlogArticles()
     .filter((item) => item.routeSlug !== article.routeSlug && item.category === article.category)
-    .slice(0, 2);
+    .slice(0, 3);
 
   return <BlogArticlePage article={article} appUrl={landing.appUrl} related={related} />;
 }
