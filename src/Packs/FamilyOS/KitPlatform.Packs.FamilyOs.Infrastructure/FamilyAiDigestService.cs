@@ -14,6 +14,9 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
         FamilyMemoryKinds.Gratitude,
         FamilyMemoryKinds.Photo,
         FamilyMemoryKinds.Manual,
+        FamilyMemoryKinds.Help,
+        FamilyMemoryKinds.TeamDay,
+        FamilyMemoryKinds.ParentHabit,
     };
 
     private readonly IFamilyMemoryService _memories;
@@ -398,6 +401,9 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
             FamilyMemoryKinds.TeamUnlock => "🎬",
             FamilyMemoryKinds.Reward => "🎁",
             FamilyMemoryKinds.FirstTime => "🌱",
+            FamilyMemoryKinds.Help => "🤝",
+            FamilyMemoryKinds.TeamDay => "🏠",
+            FamilyMemoryKinds.ParentHabit => "🌿",
             _ => "✨",
         };
 }

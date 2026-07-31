@@ -92,6 +92,15 @@ public sealed class FamilyOsBillingController : ControllerBase
         }
     }
 
+    /// <summary>Ops — all Family OS trial/interest signups across tenants (ledger, no tenant filter).</summary>
+    [Authorize]
+    [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]
+    [HttpGet("ops/trial-signups")]
+    [ProducesResponseType(typeof(FamilyOsTrialSignupListDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<FamilyOsTrialSignupListDto>> ListTrialSignups(
+        CancellationToken cancellationToken) =>
+        Ok(await _commercial.ListTrialSignupsAsync(cancellationToken));
+
     /// <summary>Ops-only — extend a family's trial by N days (Admin → Billing).</summary>
     [Authorize(Policy = PaymentPolicies.OpsActivate)]
     [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]

@@ -242,6 +242,11 @@ const FamilyOsBillingPage = lazy(() =>
     default: m.FamilyOsBillingPage,
   })),
 );
+const FamilyOsTrialSignupsPage = lazy(() =>
+  import('@/modules/family-os/FamilyOsTrialSignupsPage').then((m) => ({
+    default: m.FamilyOsTrialSignupsPage,
+  })),
+);
 const FamilyOsRewardsPage = lazy(() =>
   import('@/modules/family-os/FamilyOsRewardsPage').then((m) => ({
     default: m.FamilyOsRewardsPage,
@@ -926,6 +931,7 @@ export function AppRouter() {
                 <Route path="roles" element={<RoleListPage />} />
                 <Route path="platform-pack" element={<PlatformPackSettingsPage />} />
                 <Route path="billing" element={<FamilyOsBillingPage />} />
+                <Route path="trial-signups" element={<FamilyOsTrialSignupsPage />} />
                 <Route path="pos-settings" element={<ReceiptSettingsPage />} />
                 <Route path="customer-app-settings" element={<CustomerAppSettingsPage />} />
                 <Route path="audit-log" element={<AuditLogListPage />} />

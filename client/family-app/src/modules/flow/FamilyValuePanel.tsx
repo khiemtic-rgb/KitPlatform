@@ -25,6 +25,9 @@ import {
   fetchFamilyReplay,
   fetchFamilySubscription,
   upsertParentSuccessEveningCheckin,
+  fetchFamilyRituals,
+  checkinFamilyRitual,
+  type FamilyRitual,
 } from '@/shared/api/family-os.api';
 import { shareOrCopyNudge } from '@/shared/nudge/nudge';
 import { computeFamilyHealthScore } from '@/shared/value/family-health-score';
@@ -132,6 +135,8 @@ export function FamilyValuePanel({
   const [qQualityTime, setQQualityTime] = useState(false);
   const [checkinBusy, setCheckinBusy] = useState(false);
   const [checkinMsg, setCheckinMsg] = useState<string | null>(null);
+  const [rituals, setRituals] = useState<FamilyRitual[]>([]);
+  const [ritualBusy, setRitualBusy] = useState<string | null>(null);
   const [viewLocal, setViewLocal] = useState<FvView>(
     () => (focusAnchorId ? VIEW_BY_ANCHOR[focusAnchorId] : undefined) ?? 'hub',
   );
@@ -170,6 +175,13 @@ export function FamilyValuePanel({
       })
       .catch(() => {
         if (!cancelled) setServerWeekly(null);
+      });
+    void fetchFamilyRituals(familyId, flow.flowDate)
+      .then((rows) => {
+        if (!cancelled) setRituals(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setRituals([]);
       });
     return () => {
       cancelled = true;
@@ -791,6 +803,43 @@ export function FamilyValuePanel({
               {eveningCheckin ? 'Cập nhật' : 'Gửi Famixa'}
             </button>
           </div>
+          {rituals.length > 0 ? (
+            <div className="ph-ritual-card" style={{ marginTop: 14 }}>
+              <p className="ph-ritual-label">
+                Ritual tuần này ·{' '}
+                <strong>
+                  {rituals.filter((r) => r.doneThisPeriod).length}/{rituals.length}
+                </strong>
+              </p>
+              <ul className="ph-ritual-list">
+                {rituals.map((r) => (
+                  <li key={r.code}>
+                    <button
+                      type="button"
+                      className={r.doneThisPeriod ? 'is-done' : undefined}
+                      disabled={r.doneThisPeriod || ritualBusy === r.code}
+                      onClick={() => {
+                        setRitualBusy(r.code);
+                        void checkinFamilyRitual(familyId, {
+                          ritualCode: r.code,
+                          notedBy: parentMembershipId,
+                        })
+                          .then((row) => {
+                            setRituals((prev) =>
+                              prev.map((x) => (x.code === r.code ? row : x)),
+                            );
+                          })
+                          .finally(() => setRitualBusy(null));
+                      }}
+                    >
+                      <span aria-hidden>{r.doneThisPeriod ? '✓' : '○'}</span>
+                      {r.labelVi}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </section>
       ) : view === 'q3' ? (
         <section className="fv-card" id="fv-3q">

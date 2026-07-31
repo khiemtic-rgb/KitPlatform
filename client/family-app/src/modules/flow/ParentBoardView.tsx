@@ -8,8 +8,18 @@ import {
   type SkipReasonCode,
   type SoftLockGuide,
   type TeamUnlock,
+  type TeamNudgeCandidate,
+  type TeamNudgeTemplate,
   confirmTeamUnlock,
   fetchTeamUnlocks,
+  fetchTeamNudgeFromCandidates,
+  createTeamNudge,
+  sendTeamNudge,
+  fetchCooperationScore,
+  fetchFamilyRituals,
+  checkinFamilyRitual,
+  type CooperationScore,
+  type FamilyRitual,
   fetchChildGratitude,
   markChildGratitudeRead,
   approveCommitmentStars,
@@ -114,7 +124,12 @@ import {
   warmTaskTip,
   voicePick,
 } from '@/shared/voice/family-voice';
-import { familyTeamHeroLine } from '@/modules/flow/teamPlay';
+import {
+  NUDGE_TEMPLATE_OPTIONS,
+  familyTeamHeroLine,
+  nudgeMessagePreview,
+  roleMatrixBriefTip,
+} from '@/modules/flow/teamPlay';
 import { FAMILY_MOODS, moodFromCode } from '@/shared/flow/family-moods';
 import {
   formatLateDuration,
@@ -581,6 +596,30 @@ export function ParentBoardView({
   const [familyMoods, setFamilyMoods] = useState<FamilyMemberMood[]>([]);
   const [treasureHistoryOpen, setTreasureHistoryOpen] = useState(false);
   const [inboxAllOpen, setInboxAllOpen] = useState(false);
+  const [siblingNudgeOpen, setSiblingNudgeOpen] = useState(false);
+  const [nudgeCandidates, setNudgeCandidates] = useState<TeamNudgeCandidate[]>([]);
+  const [nudgeFromId, setNudgeFromId] = useState('');
+  const [nudgeToId, setNudgeToId] = useState('');
+  const [nudgeTemplate, setNudgeTemplate] = useState<TeamNudgeTemplate>('cheer_up');
+  const [nudgeBusy, setNudgeBusy] = useState(false);
+  const [nudgeError, setNudgeError] = useState<string | null>(null);
+  const [nudgeToast, setNudgeToast] = useState<string | null>(null);
+  const nudgePreview = useMemo(() => {
+    const shortOf = (id: string, fallback: string) => {
+      const name = nudgeCandidates.find((c) => c.memberId === id)?.displayName?.trim();
+      if (!name) return fallback;
+      const parts = name.split(' ').filter(Boolean);
+      return parts.length ? parts[parts.length - 1] : name;
+    };
+    return nudgeMessagePreview(
+      nudgeTemplate,
+      shortOf(nudgeFromId, 'anh/chị'),
+      shortOf(nudgeToId, 'em'),
+    );
+  }, [nudgeCandidates, nudgeFromId, nudgeToId, nudgeTemplate]);
+  const [coopScore, setCoopScore] = useState<CooperationScore | null>(null);
+  const [rituals, setRituals] = useState<FamilyRitual[]>([]);
+  const [ritualBusy, setRitualBusy] = useState<string | null>(null);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
   const childMenuRef = useRef<HTMLDivElement>(null);
   const diaryDatesRef = useRef<HTMLDivElement>(null);
@@ -641,6 +680,102 @@ export function ParentBoardView({
       cancelled = true;
     };
   }, [familyId, flow.flowDate, flow.doneCount, flow.pendingCount]);
+
+  useEffect(() => {
+    if (!nudgeToast) return;
+    const t = window.setTimeout(() => setNudgeToast(null), 3200);
+    return () => window.clearTimeout(t);
+  }, [nudgeToast]);
+
+  useEffect(() => {
+    if (!familyId) return;
+    let cancelled = false;
+    void fetchCooperationScore(familyId, 'week')
+      .then((row) => {
+        if (!cancelled) setCoopScore(row);
+      })
+      .catch(() => {
+        if (!cancelled) setCoopScore(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId, flow.flowDate, flow.doneCount, flow.pendingCount]);
+
+  useEffect(() => {
+    if (!familyId) return;
+    let cancelled = false;
+    void fetchFamilyRituals(familyId, flow.flowDate)
+      .then((rows) => {
+        if (!cancelled) setRituals(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setRituals([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId, flow.flowDate]);
+
+  const markRitualDone = async (code: string) => {
+    setRitualBusy(code);
+    try {
+      const row = await checkinFamilyRitual(familyId, {
+        ritualCode: code,
+        notedBy: parentMembershipId,
+      });
+      setRituals((prev) => prev.map((r) => (r.code === code ? row : r)));
+    } catch {
+      // keep checklist
+    } finally {
+      setRitualBusy(null);
+    }
+  };
+
+  const openSiblingNudgeSheet = async () => {
+    setNudgeError(null);
+    setSiblingNudgeOpen(true);
+    try {
+      const rows = await fetchTeamNudgeFromCandidates(familyId, flow.flowDate);
+      setNudgeCandidates(rows);
+      const inviters = rows.filter((r) => r.canInvite);
+      const fromId = inviters[0]?.memberId ?? '';
+      setNudgeFromId(fromId);
+      const toId =
+        rows.find((r) => r.memberId !== fromId && !r.missionsComplete)?.memberId ??
+        rows.find((r) => r.memberId !== fromId)?.memberId ??
+        '';
+      setNudgeToId(toId);
+      setNudgeTemplate(houseTeamRemaining === 1 ? 'one_left' : 'cheer_up');
+    } catch {
+      setNudgeCandidates([]);
+      setNudgeError('Chưa tải được danh sách anh/chị em.');
+    }
+  };
+
+  const submitSiblingNudge = async () => {
+    if (!nudgeFromId || !nudgeToId) {
+      setNudgeError('Chọn anh/chị gửi và em nhận.');
+      return;
+    }
+    setNudgeBusy(true);
+    setNudgeError(null);
+    try {
+      const draft = await createTeamNudge(familyId, {
+        fromMemberId: nudgeFromId,
+        toMemberId: nudgeToId,
+        templateCode: nudgeTemplate,
+        flowDate: flow.flowDate,
+      });
+      await sendTeamNudge(familyId, draft.id);
+      setSiblingNudgeOpen(false);
+      setNudgeToast('Đã gửi lời nhắc anh/chị em.');
+    } catch (e) {
+      setNudgeError(getApiErrorMessage(e) || 'Không gửi được lời nhắc.');
+    } finally {
+      setNudgeBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!familyId) return;
@@ -1968,7 +2103,7 @@ export function ParentBoardView({
             <div className="ph-b4-focus-bar" aria-label="Đang xem thành viên nào">
               <span className="ph-b4-focus-label">
                 Đang xem
-                {childOptions.length > 1 ? (
+                {effectiveChildFocus === 'all' && childOptions.length > 1 ? (
                   <em> · {childOptions.length} con</em>
                 ) : null}
               </span>
@@ -2015,6 +2150,7 @@ export function ParentBoardView({
               </div>
               {(() => {
                 const because = becauseFromDna(dnaCard).becauseVi;
+                const roleTip = roleMatrixBriefTip(dnaCard?.stageLabelVi);
                 const line =
                   homeBrief.primaryAction.kind === 'dna_setup'
                     ? homeBrief.primaryAction.reasonVi
@@ -2022,13 +2158,13 @@ export function ParentBoardView({
                       homeBrief.bulletsVi.find(
                         (b) => b.includes('Vì nhà bạn') || b.includes('Famixa chưa biết'),
                       );
-                if (!line) return null;
+                if (!line && !roleTip) return null;
                 return (
                   <p
                     className="ph-b4-brief-because"
                     data-playbook={homeBrief.primaryAction.playbookId || undefined}
                   >
-                    {line}
+                    {[line, roleTip].filter(Boolean).join(' · ')}
                   </p>
                 );
               })()}
@@ -2045,6 +2181,30 @@ export function ParentBoardView({
               </button>
             </div>
           </article>
+
+          {hasChildren && childOptions.length >= 2 && houseTeamRemaining >= 1 ? (
+            <button
+              type="button"
+              className="ph-sibling-nudge-cta"
+              onClick={() => void openSiblingNudgeSheet()}
+            >
+              <span className="ph-sibling-nudge-ico" aria-hidden>
+                🤝
+              </span>
+              <span>
+                Mời anh/chị nhắc em
+                <em>Lời nhắc cố định — không gọi tên ai trên bảng nhà</em>
+              </span>
+              <i className="ph-sibling-nudge-chev" aria-hidden>
+                ›
+              </i>
+            </button>
+          ) : null}
+          {nudgeToast ? (
+            <p className="ph-sibling-nudge-toast" role="status">
+              {nudgeToast}
+            </p>
+          ) : null}
 
           {(homeBrief.eveningCheckinHintVi ||
             homeBrief.period === 'evening' ||
@@ -2256,6 +2416,71 @@ export function ParentBoardView({
               Xem chi tiết ›
             </button>
           </section>
+
+          {coopScore ? (
+            <section className="ph-coop-card" aria-label="Điểm hợp tác tuần này">
+              <header className="ph-b4-col-head ph-coop-head">
+                <h3>
+                  <span className="ph-coop-ico" aria-hidden>
+                    🏆
+                  </span>{' '}
+                  Hợp tác tuần này
+                </h3>
+                <strong className="ph-coop-score">{coopScore.total}/100</strong>
+              </header>
+              <div className="ph-coop-bar" aria-hidden>
+                <i style={{ width: `${Math.min(100, Math.max(0, coopScore.total))}%` }} />
+              </div>
+              <p className="ph-coop-copy">
+                {coopScore.headlineVi || 'Cả nhà đang giữ nhịp cùng nhau.'}
+              </p>
+              {coopScore.sparkline.length > 0 ? (
+                <div className="ph-coop-spark" aria-hidden>
+                  {coopScore.sparkline.map((p) => (
+                    <i
+                      key={p.scoreDate}
+                      style={{ height: `${Math.max(12, p.total)}%` }}
+                      title={`${p.scoreDate}: ${p.total}`}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
+          {rituals.length > 0 ? (
+            <section className="ph-ritual-card" aria-label="Ritual của bố mẹ tuần này">
+              <header className="ph-b4-col-head ph-ritual-head">
+                <h3>
+                  <span className="ph-ritual-ico" aria-hidden>
+                    🌿
+                  </span>{' '}
+                  Ritual của bố mẹ
+                </h3>
+                <strong className="ph-ritual-count">
+                  {rituals.filter((r) => r.doneThisPeriod).length}/{rituals.length}
+                </strong>
+              </header>
+              <ul className="ph-ritual-list">
+                {rituals.map((r) => (
+                  <li key={r.code}>
+                    <button
+                      type="button"
+                      className={r.doneThisPeriod ? 'is-done' : undefined}
+                      disabled={r.doneThisPeriod || ritualBusy === r.code}
+                      onClick={() => void markRitualDone(r.code)}
+                    >
+                      <span className="ph-ritual-check" aria-hidden>
+                        {r.doneThisPeriod ? '✓' : ''}
+                      </span>
+                      <span className="ph-ritual-text">{r.labelVi}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p className="ph-ritual-foot">Tách khỏi % đội con — nhịp riêng của bố mẹ.</p>
+            </section>
+          ) : null}
 
           {(homeMoment || todayUnlock) ? (
             <div className="ph-b4-bottom-grid">
@@ -4196,6 +4421,142 @@ export function ParentBoardView({
                 onClick={() => setAddMemoryOpen(false)}
               >
                 Huỷ
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {siblingNudgeOpen ? (
+        <div
+          className="sheet-backdrop"
+          role="presentation"
+          onClick={() => !nudgeBusy && setSiblingNudgeOpen(false)}
+        >
+          <div
+            className="sheet ph-sibling-nudge-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mời anh chị nhắc em"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="ph-nudge-head">
+              <span className="ph-nudge-head-ico" aria-hidden>
+                🤝
+              </span>
+              <div>
+                <h2>Mời anh/chị nhắc em</h2>
+                <p>Lời nhắc cố định, giọng cổ vũ — anh/chị không duyệt thay bố mẹ.</p>
+              </div>
+              <button
+                type="button"
+                className="ph-nudge-close"
+                aria-label="Đóng"
+                disabled={nudgeBusy}
+                onClick={() => setSiblingNudgeOpen(false)}
+              >
+                ✕
+              </button>
+            </header>
+
+            <div className="ph-nudge-form">
+              <label className="ph-nudge-field">
+                <span className="ph-nudge-label">Anh/chị gửi</span>
+                <span className="ph-nudge-select">
+                  <select
+                    value={nudgeFromId}
+                    onChange={(e) => setNudgeFromId(e.target.value)}
+                    disabled={nudgeBusy}
+                  >
+                    <option value="">Chọn con đã xong việc…</option>
+                    {nudgeCandidates
+                      .filter((c) => c.canInvite)
+                      .map((c) => (
+                        <option key={c.memberId} value={c.memberId}>
+                          {c.displayName}
+                          {c.missionsComplete ? ' · đã xong' : ''}
+                        </option>
+                      ))}
+                  </select>
+                  <i aria-hidden>▾</i>
+                </span>
+                <span className="ph-nudge-hint">
+                  Chỉ hiện con đã xong việc hoặc lớn hơn — tránh nhắc kiểu trách móc.
+                </span>
+              </label>
+
+              <label className="ph-nudge-field">
+                <span className="ph-nudge-label">Em nhận</span>
+                <span className="ph-nudge-select">
+                  <select
+                    value={nudgeToId}
+                    onChange={(e) => setNudgeToId(e.target.value)}
+                    disabled={nudgeBusy}
+                  >
+                    <option value="">Chọn con sẽ nhận lời nhắc…</option>
+                    {nudgeCandidates
+                      .filter((c) => c.memberId !== nudgeFromId)
+                      .map((c) => (
+                        <option key={c.memberId} value={c.memberId}>
+                          {c.displayName}
+                        </option>
+                      ))}
+                  </select>
+                  <i aria-hidden>▾</i>
+                </span>
+              </label>
+            </div>
+
+            <fieldset className="ph-sibling-nudge-templates">
+              <legend className="ph-nudge-label">Chọn lời nhắc</legend>
+              {NUDGE_TEMPLATE_OPTIONS.map((opt) => (
+                <label
+                  key={opt.code}
+                  className={`ph-nudge-option${nudgeTemplate === opt.code ? ' is-on' : ''}`}
+                >
+                  <input
+                    type="radio"
+                    name="nudge-template"
+                    checked={nudgeTemplate === opt.code}
+                    onChange={() => setNudgeTemplate(opt.code)}
+                    disabled={nudgeBusy}
+                  />
+                  <span className="ph-nudge-radio" aria-hidden />
+                  <span className="ph-nudge-option-text">
+                    <strong>{opt.title}</strong>
+                    <em>{opt.hint}</em>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+
+            <div className="ph-nudge-preview">
+              <span className="ph-nudge-preview-label">Em sẽ thấy</span>
+              <p>“{nudgePreview}”</p>
+            </div>
+
+            {nudgeError ? (
+              <p className="banner-error" role="alert">
+                {nudgeError}
+              </p>
+            ) : null}
+
+            <div className="ph-nudge-actions">
+              <button
+                type="button"
+                className="ph-nudge-btn is-ghost"
+                disabled={nudgeBusy}
+                onClick={() => setSiblingNudgeOpen(false)}
+              >
+                Huỷ
+              </button>
+              <button
+                type="button"
+                className="ph-nudge-btn is-primary"
+                disabled={nudgeBusy || !nudgeFromId || !nudgeToId}
+                onClick={() => void submitSiblingNudge()}
+              >
+                {nudgeBusy ? 'Đang gửi…' : 'Gửi lời nhắc'}
               </button>
             </div>
           </div>

@@ -80,6 +80,32 @@ public sealed record FamilySubscriptionDto(
 /// <summary>Ops-only: extend a family's trial by N days (Admin → Billing).</summary>
 public sealed record ExtendFamilyTrialRequest(int ExtraDays);
 
+/// <summary>Cross-tenant Family OS trial / interest signup (ops ledger).</summary>
+public sealed record FamilyOsTrialSignupDto(
+    Guid Id,
+    Guid TenantId,
+    string TenantCode,
+    Guid FamilyId,
+    string FamilyName,
+    string ParentDisplayName,
+    string Email,
+    string Username,
+    int MemberCount,
+    string PlanCode,
+    string Status,
+    DateTimeOffset? TrialEndsAt,
+    string Source,
+    DateTimeOffset RegisteredAt,
+    int? TrialDaysRemaining);
+
+public sealed record FamilyOsTrialSignupListDto(
+    int Total,
+    int TrialActive,
+    int TrialExpired,
+    int PaidActive,
+    int Other,
+    IReadOnlyList<FamilyOsTrialSignupDto> Items);
+
 public sealed record SetParentPinRequest(string Pin);
 
 public sealed record VerifyParentPinRequest(string Pin);
@@ -136,6 +162,10 @@ public interface IFamilyCommercialService
     Task<FamilySubscriptionDto> ExtendTrialAsync(
         Guid familyId,
         ExtendFamilyTrialRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Ops-only: all Family OS trial/interest signups across tenants.</summary>
+    Task<FamilyOsTrialSignupListDto> ListTrialSignupsAsync(
         CancellationToken cancellationToken = default);
 
     Task SetParentPinAsync(

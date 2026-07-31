@@ -353,7 +353,16 @@ export function FamilyOsBillingPage() {
           type="info"
           showIcon
           message="Số ngày dùng thử áp dụng cho gia đình đăng ký MỚI"
-          description="Chỉnh 'Ngày dùng thử' bên dưới sẽ có hiệu lực ngay, không cần restart server. Gia đình hiện có không đổi — dùng nút gia hạn ở bảng dưới. Thao tác lưu gói / gia hạn cần quyền payment.ops.activate (PLATFORM_OPS)."
+          description={
+            <>
+              Chỉnh &apos;Ngày dùng thử&apos; bên dưới sẽ có hiệu lực ngay, không cần restart server.
+              Gia đình hiện có không đổi — dùng nút gia hạn ở bảng dưới. Thao tác lưu gói / gia hạn
+              cần quyền payment.ops.activate (PLATFORM_OPS).{' '}
+              <Typography.Link href="/system/trial-signups">
+                Xem tất cả đăng ký dùng thử (cross-tenant) →
+              </Typography.Link>
+            </>
+          }
         />
 
         <Card title="Gói bán (Kit Payment · family_os)" size="small">

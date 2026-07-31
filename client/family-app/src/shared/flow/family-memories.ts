@@ -94,6 +94,12 @@ function defaultIconForKind(kind: string): string {
       return '🎁';
     case 'first_time':
       return '🌱';
+    case 'help':
+      return '🤝';
+    case 'team_day':
+      return '🏠';
+    case 'parent_habit':
+      return '🌿';
     default:
       return '💛';
   }

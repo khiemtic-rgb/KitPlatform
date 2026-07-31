@@ -47,4 +47,8 @@
 248_pack_family_commercial_packaging_v1.sql
 249_pack_family_blueprint.sql
 250_pack_family_app_role_grants.sql
+251_pack_family_team_nudge.sql
+252_pack_family_cooperation_score.sql
+253_pack_family_ritual.sql
+254_pack_family_trial_signup_ledger.sql
 # Optional (owner ALTER tenants CHECK): 192a_pack_family_os_vertical_owner.sql

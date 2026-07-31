@@ -10,10 +10,14 @@ public static class FamilyMemoryKinds
     public const string Reward = "reward";
     public const string FirstTime = "first_time";
     public const string Manual = "manual";
+    public const string Help = "help";
+    public const string TeamDay = "team_day";
+    public const string ParentHabit = "parent_habit";
 
     public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         BeautifulDay, StreakMilestone, Gratitude, Photo, TeamUnlock, Reward, FirstTime, Manual,
+        Help, TeamDay, ParentHabit,
     };
 }
 

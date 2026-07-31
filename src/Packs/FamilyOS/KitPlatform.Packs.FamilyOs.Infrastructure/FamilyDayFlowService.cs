@@ -209,11 +209,24 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
 
             try
             {
-                await _teamUnlocks.EnsurePendingAsync(familyId, flowDate, cancellationToken);
+                var pending = await _teamUnlocks.EnsurePendingAsync(familyId, flowDate, cancellationToken);
+                if (pending is not null)
+                {
+                    await _memories.TryCaptureAsync(
+                        _tenant.TenantId,
+                        familyId,
+                        flowDate,
+                        FamilyMemoryKinds.TeamDay,
+                        "Mission Complete — cả đội xong ngày",
+                        noteVi: "Nhà mình cùng hoàn thành mission hôm nay.",
+                        icon: "🏠",
+                        sourceRef: $"team-day:{familyId:D}:{flowDate:yyyy-MM-dd}",
+                        cancellationToken: cancellationToken);
+                }
             }
             catch
             {
-                // Unlock ensure is best-effort — never block progress updates
+                // Unlock / team_day memory is best-effort — never block progress updates
             }
         }
 

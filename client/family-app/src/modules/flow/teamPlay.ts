@@ -62,6 +62,54 @@ export function familyTeamHeroLine(percent: number, remaining: number, teamTotal
   return `Cả nhà hôm nay ${percent}% · còn ${remaining} việc.`;
 }
 
+/** Light DNA/brief tip from school stage — sibling nudge roles (Đợt D). */
+export function roleMatrixBriefTip(stageLabelVi?: string | null): string | null {
+  const s = (stageLabelVi ?? '').toLowerCase();
+  if (!s.trim()) return null;
+  if (s.includes('mầm') || s.includes('nhà trẻ') || s.includes('mẫu giáo')) {
+    return 'Con nhỏ chủ yếu được nhắc nhẹ — chưa mời làm người gửi lời nhắc.';
+  }
+  if (s.includes('tiểu')) {
+    return 'Tiểu học: khi đã xong 100% có thể nhắc em — giữ giọng cổ vũ, không duyệt thay bố mẹ.';
+  }
+  if (s.includes('thcs') || s.includes('trung học cơ')) {
+    return 'THCS: ưu tiên con đã xong / lớn hơn làm người nhắc anh chị em.';
+  }
+  if (s.includes('thpt') || s.includes('trung học phổ')) {
+    return 'THPT: con lớn có thể dẫn đội bằng lời nhắc ngắn — vẫn không gắn tên lên hero nhà.';
+  }
+  return null;
+}
+
+export type NudgeTemplateOption = {
+  code: 'cheer_up' | 'one_left' | 'you_got_this';
+  title: string;
+  hint: string;
+};
+
+/** Fixed nudge phrasings — same set the API accepts (FamilyTeamNudgeTemplates). */
+export const NUDGE_TEMPLATE_OPTIONS: NudgeTemplateOption[] = [
+  { code: 'cheer_up', title: 'Nhắc nhẹ', hint: 'Rủ nhau cùng xong ngày hôm nay' },
+  { code: 'one_left', title: 'Còn 1 việc nữa thôi', hint: 'Khi cả đội gần về đích' },
+  { code: 'you_got_this', title: 'Tin em làm được', hint: 'Cổ vũ khi em đang ngại bắt đầu' },
+];
+
+/** Mirrors FamilyTeamNudgeTemplates.MessageVi so the sheet can preview the exact text. */
+export function nudgeMessagePreview(
+  template: string,
+  fromShort: string,
+  toShort: string,
+): string {
+  switch (template) {
+    case 'one_left':
+      return `${toShort} ơi, cả đội còn 1 việc nữa thôi — ${fromShort} cổ vũ em!`;
+    case 'you_got_this':
+      return `${toShort} cố lên nhé! ${fromShort} tin em làm được.`;
+    default:
+      return `${toShort} ơi, ${fromShort} nhắc nhẹ — mình cùng xong ngày hôm nay nhé!`;
+  }
+}
+
 export function slicesFromCommitments(
   children: { id: string; name: string }[],
   commitments: CommitmentLike[],

@@ -301,6 +301,117 @@ if ($parentId) {
 }
 
 Write-Host ""
+Write-Host "=== Team Play B/C/D (nudge · coop score · ritual) ===" -ForegroundColor Cyan
+
+$children = @()
+foreach ($m in $members) {
+    $role = $m.roleCode
+    if (-not $role) { $role = $m.RoleCode }
+    if ($role -eq "child") {
+        $cid = $m.id
+        if (-not $cid) { $cid = $m.Id }
+        $children += $cid
+    }
+}
+
+try {
+    $cands = Invoke-RestMethod -Uri "$ApiBase/api/family-os/families/$familyId/team-nudges/from-candidates?flowDate=$flowDate" -Headers $headers
+    Ok "team-nudges/from-candidates count=$(@($cands).Count)"
+}
+catch {
+    Bad "from-candidates: $($_.Exception.Message)"
+    $cands = @()
+}
+
+if (@($children).Count -ge 2) {
+    $inviters = @($cands | Where-Object {
+            $can = $_.canInvite
+            if ($null -eq $can) { $can = $_.CanInvite }
+            [bool]$can
+        })
+    if ($inviters.Count -eq 0 -and $commitments.Count -gt 0) {
+        $firstChild = $children[0]
+        foreach ($c in $commitments) {
+            $mid = $c.memberId
+            if (-not $mid) { $mid = $c.MemberId }
+            $st = $c.status
+            if (-not $st) { $st = $c.Status }
+            $cid = $c.id
+            if (-not $cid) { $cid = $c.Id }
+            if ($mid -eq $firstChild -and $st -ne "done" -and $st -ne "skipped") {
+                try {
+                    $null = Invoke-RestMethod -Method Patch -Uri "$ApiBase/api/family-os/families/$familyId/commitments/$cid" -Headers $headers -ContentType "application/json" -Body (@{ status = "done" } | ConvertTo-Json)
+                }
+                catch { }
+            }
+        }
+        $cands = Invoke-RestMethod -Uri "$ApiBase/api/family-os/families/$familyId/team-nudges/from-candidates?flowDate=$flowDate" -Headers $headers
+        $inviters = @($cands | Where-Object {
+                $can = $_.canInvite
+                if ($null -eq $can) { $can = $_.CanInvite }
+                [bool]$can
+            })
+    }
+
+    if ($inviters.Count -gt 0) {
+        $fromId = $inviters[0].memberId
+        if (-not $fromId) { $fromId = $inviters[0].MemberId }
+        $toId = ($children | Where-Object { $_ -ne $fromId } | Select-Object -First 1)
+        try {
+            $draft = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/family-os/families/$familyId/team-nudges" -Headers $headers -ContentType "application/json" -Body (@{
+                    fromMemberId = $fromId
+                    toMemberId   = $toId
+                    templateCode = "cheer_up"
+                    flowDate     = $flowDate
+                } | ConvertTo-Json)
+            $nid = $draft.id
+            if (-not $nid) { $nid = $draft.Id }
+            $null = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/family-os/families/$familyId/team-nudges/$nid/send" -Headers $headers
+            $ack = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/family-os/families/$familyId/team-nudges/$nid/ack" -Headers $headers -ContentType "application/json" -Body (@{ status = "thanks" } | ConvertTo-Json)
+            $ast = $ack.status
+            if (-not $ast) { $ast = $ack.Status }
+            if ($ast -eq "thanks") { Ok "team-nudge send+ack thanks" } else { Bad "ack status=$ast" }
+        }
+        catch {
+            Bad "team-nudge: $($_.Exception.Message)"
+        }
+    }
+    else {
+        Info "skip team-nudge (no inviter eligible)"
+    }
+}
+else {
+    Info "skip team-nudge (need >=2 children)"
+}
+
+try {
+    $coop = Invoke-RestMethod -Uri "$ApiBase/api/family-os/families/$familyId/cooperation-score?period=week" -Headers $headers
+    $total = $coop.total
+    if ($null -eq $total) { $total = $coop.Total }
+    if ($null -ne $total) { Ok "cooperation-score total=$total" } else { Bad "cooperation-score missing total" }
+}
+catch {
+    Bad "cooperation-score: $($_.Exception.Message)"
+}
+
+try {
+    $rituals = Invoke-RestMethod -Uri "$ApiBase/api/family-os/families/$familyId/rituals" -Headers $headers
+    if (@($rituals).Count -ge 3) { Ok "rituals seeded count=$(@($rituals).Count)" } else { Bad "rituals count=$(@($rituals).Count)" }
+    $code = $rituals[0].code
+    if (-not $code) { $code = $rituals[0].Code }
+    $chk = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/family-os/families/$familyId/rituals/checkin" -Headers $headers -ContentType "application/json" -Body (@{
+            ritualCode = $code
+            notedBy    = $parentId
+        } | ConvertTo-Json)
+    $done = $chk.doneThisPeriod
+    if ($null -eq $done) { $done = $chk.DoneThisPeriod }
+    if ($done) { Ok "ritual checkin $code" } else { Bad "ritual checkin not done" }
+}
+catch {
+    Bad "ritual: $($_.Exception.Message)"
+}
+
+Write-Host ""
 if ($script:FailCount -eq 0) {
     Write-Host "SMOKE OK" -ForegroundColor Green
     Write-Host "Checklist: docs/novixa/03-solution/family-os-smoke-checklist-v1.md"

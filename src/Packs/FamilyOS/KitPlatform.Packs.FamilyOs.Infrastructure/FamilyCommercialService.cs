@@ -259,6 +259,46 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
             },
             tx);
 
+        var memberCount = 1
+            + (string.IsNullOrWhiteSpace(request.Child1Name) ? 0 : 1)
+            + (string.IsNullOrWhiteSpace(request.Child2Name) ? 0 : 1);
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO public.family_os_trial_signup (
+                tenant_id, tenant_code, family_id, family_name,
+                parent_display_name, email, username, member_count,
+                plan_code, status, trial_ends_at, source, registered_at
+            )
+            VALUES (
+                @TenantId, @TenantCode, @FamilyId, @FamilyName,
+                @ParentName, @Email, @Username, @MemberCount,
+                'starter_trial', 'trial', @TrialEnds, 'self_register', NOW()
+            )
+            ON CONFLICT (family_id) DO UPDATE SET
+                family_name = EXCLUDED.family_name,
+                parent_display_name = EXCLUDED.parent_display_name,
+                email = EXCLUDED.email,
+                username = EXCLUDED.username,
+                member_count = EXCLUDED.member_count,
+                plan_code = EXCLUDED.plan_code,
+                status = EXCLUDED.status,
+                trial_ends_at = EXCLUDED.trial_ends_at,
+                updated_at = NOW()
+            """,
+            new
+            {
+                TenantId = tenantId,
+                TenantCode = tenantCode,
+                FamilyId = familyId,
+                FamilyName = familyName,
+                ParentName = parentName,
+                Email = email,
+                Username = username,
+                MemberCount = memberCount,
+                TrialEnds = trialEnds.UtcDateTime,
+            },
+            tx);
+
         await _kitAccounts.EnsureAccountForUserAsync(
             userId,
             tenantId,
@@ -903,9 +943,151 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
             new { FamilyId = familyId, TenantId = _tenant.TenantId },
             tx);
 
+        await conn.ExecuteAsync(
+            """
+            UPDATE public.family_os_trial_signup l
+            SET status = s.status,
+                plan_code = s.plan_code,
+                trial_ends_at = s.trial_ends_at,
+                updated_at = NOW()
+            FROM pack_family.family_subscription s
+            WHERE l.family_id = s.family_id
+              AND s.family_id = @FamilyId
+              AND s.tenant_id = @TenantId
+            """,
+            new { FamilyId = familyId, TenantId = _tenant.TenantId },
+            tx);
+
         await tx.CommitAsync(cancellationToken);
 
         return await GetSubscriptionAsync(familyId, cancellationToken);
+    }
+
+    public async Task<FamilyOsTrialSignupListDto> ListTrialSignupsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+
+        // Refresh ledger statuses from live subscription when RLS allows (same-tenant rows).
+        // Cross-tenant rows stay as last written; migration/register keep the ledger populated.
+        try
+        {
+            await conn.ExecuteAsync(
+                """
+                UPDATE public.family_os_trial_signup l
+                SET status = s.status,
+                    plan_code = s.plan_code,
+                    trial_ends_at = s.trial_ends_at,
+                    member_count = GREATEST(
+                        l.member_count,
+                        COALESCE((
+                            SELECT COUNT(*)::int
+                            FROM pack_family.membership m
+                            WHERE m.family_id = l.family_id AND m.deleted_at IS NULL
+                        ), l.member_count)
+                    ),
+                    updated_at = NOW()
+                FROM pack_family.family_subscription s
+                WHERE s.family_id = l.family_id
+                """);
+        }
+        catch
+        {
+            // Best-effort refresh — never block the ops list.
+        }
+
+        var rows = (await conn.QueryAsync<TrialSignupRow>(
+            """
+            SELECT
+                id AS Id,
+                tenant_id AS TenantId,
+                tenant_code AS TenantCode,
+                family_id AS FamilyId,
+                family_name AS FamilyName,
+                parent_display_name AS ParentDisplayName,
+                email AS Email,
+                username AS Username,
+                member_count AS MemberCount,
+                plan_code AS PlanCode,
+                status AS Status,
+                trial_ends_at AS TrialEndsAt,
+                source AS Source,
+                registered_at AS RegisteredAt
+            FROM public.family_os_trial_signup
+            ORDER BY registered_at DESC
+            LIMIT 500
+            """)).AsList();
+
+        var now = DateTime.UtcNow;
+        var items = rows.Select(r =>
+        {
+            int? remaining = null;
+            if (r.TrialEndsAt is DateTime ends)
+            {
+                var endUtc = DateTime.SpecifyKind(ends, DateTimeKind.Utc);
+                remaining = Math.Max(0, (int)Math.Ceiling((endUtc - now).TotalDays));
+            }
+
+            var status = (r.Status ?? "").Trim().ToLowerInvariant();
+            if (status == FamilySubscriptionStatuses.Trial
+                && r.TrialEndsAt is DateTime te
+                && DateTime.SpecifyKind(te, DateTimeKind.Utc) < now)
+            {
+                status = FamilySubscriptionStatuses.Expired;
+                remaining = 0;
+            }
+
+            return new FamilyOsTrialSignupDto(
+                r.Id,
+                r.TenantId,
+                r.TenantCode ?? "",
+                r.FamilyId,
+                r.FamilyName ?? "",
+                r.ParentDisplayName ?? "",
+                r.Email ?? "",
+                r.Username ?? "",
+                r.MemberCount,
+                r.PlanCode ?? "starter_trial",
+                status,
+                r.TrialEndsAt is DateTime t
+                    ? new DateTimeOffset(DateTime.SpecifyKind(t, DateTimeKind.Utc))
+                    : null,
+                r.Source ?? "self_register",
+                new DateTimeOffset(DateTime.SpecifyKind(r.RegisteredAt, DateTimeKind.Utc)),
+                remaining);
+        }).ToList();
+
+        var trialActive = items.Count(i => i.Status == FamilySubscriptionStatuses.Trial);
+        var trialExpired = items.Count(i => i.Status == FamilySubscriptionStatuses.Expired);
+        var paidActive = items.Count(i =>
+            i.Status is FamilySubscriptionStatuses.Active or FamilySubscriptionStatuses.PastDue);
+        var other = items.Count - trialActive - trialExpired - paidActive;
+
+        return new FamilyOsTrialSignupListDto(
+            items.Count,
+            trialActive,
+            trialExpired,
+            paidActive,
+            Math.Max(0, other),
+            items);
+    }
+
+    private sealed class TrialSignupRow
+    {
+        public Guid Id { get; init; }
+        public Guid TenantId { get; init; }
+        public string? TenantCode { get; init; }
+        public Guid FamilyId { get; init; }
+        public string? FamilyName { get; init; }
+        public string? ParentDisplayName { get; init; }
+        public string? Email { get; init; }
+        public string? Username { get; init; }
+        public int MemberCount { get; init; }
+        public string? PlanCode { get; init; }
+        public string? Status { get; init; }
+        public DateTime? TrialEndsAt { get; init; }
+        public string? Source { get; init; }
+        public DateTime RegisteredAt { get; init; }
     }
 
     public async Task SetParentPinAsync(

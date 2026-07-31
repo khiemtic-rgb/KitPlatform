@@ -1,3 +1,4 @@
+using KitPlatform.Application.Abstractions;
 using KitPlatform.Packs.FamilyOs;
 
 namespace KitPlatform.Packs.FamilyOs.Infrastructure;
@@ -10,13 +11,19 @@ internal sealed class FamilyParentGoalService : IFamilyParentGoalService
 
     private readonly FamilyParentGoalRepository _repo;
     private readonly FamilyGraphRepository _families;
+    private readonly IFamilyMemoryService _memories;
+    private readonly ITenantContext _tenant;
 
     public FamilyParentGoalService(
         FamilyParentGoalRepository repo,
-        FamilyGraphRepository families)
+        FamilyGraphRepository families,
+        IFamilyMemoryService memories,
+        ITenantContext tenant)
     {
         _repo = repo;
         _families = families;
+        _memories = memories;
+        _tenant = tenant;
     }
 
     public async Task<IReadOnlyList<ParentGoalDto>> ListForMemberAsync(
@@ -130,6 +137,28 @@ internal sealed class FamilyParentGoalService : IFamilyParentGoalService
                 break;
             default:
                 throw new InvalidOperationException("Trạng thái check-in phải là done | skip | clear.");
+        }
+
+        if (status == ParentGoalCheckinStatuses.Done)
+        {
+            try
+            {
+                await _memories.TryCaptureAsync(
+                    _tenant.TenantId,
+                    familyId,
+                    date,
+                    FamilyMemoryKinds.ParentHabit,
+                    $"Bố/mẹ: {goal.Title}",
+                    noteVi: "Thói quen bố mẹ tuần này — tách khỏi % đội con.",
+                    icon: "🌿",
+                    sourceRef: $"parent-habit:{goalId:D}:{date:yyyy-MM-dd}",
+                    memberId: goal.MemberId,
+                    cancellationToken: cancellationToken);
+            }
+            catch
+            {
+                // Best-effort journal.
+            }
         }
 
         var row = await _repo.GetAsync(familyId, goalId, cancellationToken) ?? goal;

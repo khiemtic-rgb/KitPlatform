@@ -23,11 +23,15 @@ function kindFromMemory(kind: string): JourneyMilestone['kind'] {
     case 'first_time':
       return 'first';
     case 'team_unlock':
+    case 'team_day':
     case 'reward':
+    case 'help':
       return 'family';
     case 'gratitude':
     case 'photo':
       return 'moment';
+    case 'parent_habit':
+      return 'habit';
     default:
       return 'habit';
   }
@@ -50,6 +54,12 @@ function iconFromMemory(m: FamilyMemoryEntry): string {
       return '🎁';
     case 'first_time':
       return '🌱';
+    case 'help':
+      return '🤝';
+    case 'team_day':
+      return '🏠';
+    case 'parent_habit':
+      return '🌿';
     default:
       return '✨';
   }

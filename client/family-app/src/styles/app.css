@@ -16154,6 +16154,565 @@ body:has(.sheet-backdrop) {
   letter-spacing: -0.01em;
 }
 
+.ph-coop-card,
+.ph-ritual-card {
+  padding: 14px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(26, 51, 68, 0.06);
+  box-shadow: 0 6px 18px rgba(22, 53, 47, 0.05);
+}
+
+.ph-coop-head,
+.ph-ritual-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ph-coop-ico,
+.ph-ritual-ico {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  font-size: 0.85rem;
+}
+
+.ph-coop-ico {
+  background: #fef3c7;
+}
+
+.ph-ritual-ico {
+  background: #dcfce7;
+}
+
+.ph-coop-score {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #16a34a;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ph-coop-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #eef2f0;
+  overflow: hidden;
+}
+
+.ph-coop-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4ade80, #16a34a);
+}
+
+.ph-coop-copy {
+  margin: 8px 0 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #14352c;
+}
+
+.ph-coop-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 28px;
+  margin-top: 10px;
+}
+
+.ph-coop-spark i {
+  flex: 1;
+  display: block;
+  border-radius: 4px 4px 2px 2px;
+  background: rgba(22, 163, 74, 0.28);
+  min-height: 4px;
+}
+
+.ph-ritual-count {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #16a34a;
+  white-space: nowrap;
+}
+
+.ph-ritual-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.ph-ritual-list button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(26, 51, 68, 0.07);
+  background: #f8faf9;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #14352c;
+  cursor: pointer;
+}
+
+.ph-ritual-check {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: 7px;
+  border: 2px solid #cbd5d0;
+  background: #fff;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.ph-ritual-list button.is-done {
+  background: #f0fdf4;
+  border-color: rgba(22, 163, 74, 0.22);
+  color: #166534;
+  cursor: default;
+}
+
+.ph-ritual-list button.is-done .ph-ritual-check {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+.ph-ritual-foot {
+  margin: 10px 0 0;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #6b857e;
+}
+
+.ph-sibling-nudge-cta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 60%);
+  text-align: left;
+  cursor: pointer;
+  color: #14352c;
+  box-shadow: 0 6px 18px rgba(22, 53, 47, 0.05);
+}
+
+.ph-sibling-nudge-ico {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  background: #dcfce7;
+  font-size: 1.05rem;
+}
+
+.ph-sibling-nudge-cta > span:nth-child(2) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.ph-sibling-nudge-cta em {
+  font-style: normal;
+  font-weight: 500;
+  font-size: 0.78rem;
+  color: #6b857e;
+}
+
+.ph-sibling-nudge-chev {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-size: 1.2rem;
+  color: #16a34a;
+}
+
+.ph-sibling-nudge-toast {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: #f0fdf4;
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  color: #166534;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.ph-sibling-nudge-sheet {
+  gap: 14px;
+  padding: 18px 18px 16px;
+}
+
+.ph-nudge-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ph-nudge-head-ico {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  background: #dcfce7;
+  font-size: 1.2rem;
+}
+
+.ph-nudge-head > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.ph-nudge-head h2 {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #14352c;
+}
+
+.ph-nudge-head p {
+  margin: 3px 0 0;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #6b857e;
+  line-height: 1.35;
+}
+
+.ph-nudge-close {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(26, 51, 68, 0.1);
+  background: #fff;
+  color: #6b857e;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ph-nudge-close:hover:not(:disabled) {
+  background: #f5f7f6;
+  color: #14352c;
+}
+
+.ph-nudge-form {
+  display: grid;
+  gap: 12px;
+}
+
+.ph-nudge-field {
+  display: grid;
+  gap: 6px;
+}
+
+.ph-nudge-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #3f5f54;
+}
+
+.ph-nudge-hint {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: #8aa39a;
+  line-height: 1.35;
+}
+
+.ph-nudge-select {
+  position: relative;
+  display: block;
+}
+
+.ph-nudge-select > select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 40px 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(26, 51, 68, 0.14);
+  background: #fff;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #14352c;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ph-nudge-select > select:focus-visible {
+  outline: none;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.16);
+}
+
+.ph-nudge-select > select:disabled {
+  background: #f5f7f6;
+  color: #8aa39a;
+  cursor: not-allowed;
+}
+
+.ph-nudge-select > i {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-style: normal;
+  font-size: 0.9rem;
+  color: #16a34a;
+}
+
+.ph-sibling-nudge-templates {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.ph-sibling-nudge-templates legend {
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.ph-nudge-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(26, 51, 68, 0.1);
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.ph-nudge-option:hover {
+  border-color: rgba(22, 163, 74, 0.35);
+}
+
+.ph-nudge-option.is-on {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.ph-nudge-option input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.ph-nudge-radio {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #cbd5d0;
+  background: #fff;
+  display: inline-block;
+  position: relative;
+}
+
+.ph-nudge-option.is-on .ph-nudge-radio {
+  border-color: #16a34a;
+}
+
+.ph-nudge-option.is-on .ph-nudge-radio::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: #16a34a;
+}
+
+.ph-nudge-option input:focus-visible + .ph-nudge-radio {
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.16);
+}
+
+.ph-nudge-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ph-nudge-option-text strong {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #14352c;
+}
+
+.ph-nudge-option-text em {
+  font-style: normal;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #6b857e;
+}
+
+.ph-nudge-preview {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f6faf8;
+  border: 1px dashed rgba(22, 163, 74, 0.28);
+}
+
+.ph-nudge-preview-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #16a34a;
+}
+
+.ph-nudge-preview p {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #14352c;
+  line-height: 1.4;
+}
+
+.ph-nudge-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.ph-nudge-btn {
+  flex: 1;
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease, background 0.15s ease;
+}
+
+.ph-nudge-btn.is-primary {
+  flex: 1.6;
+  background: linear-gradient(180deg, #22b35c 0%, #16a34a 100%);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(22, 163, 74, 0.24);
+}
+
+.ph-nudge-btn.is-primary:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.ph-nudge-btn.is-ghost {
+  background: #fff;
+  border-color: rgba(26, 51, 68, 0.14);
+  color: #4a6b63;
+}
+
+.ph-nudge-btn.is-ghost:hover:not(:disabled) {
+  background: #f5f7f6;
+}
+
+.ph-nudge-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.kv2-sibling-nudge-inbox {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 0;
+}
+
+.kv2-sibling-nudge-card {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fff8ef 0%, #eef6ff 100%);
+  border: 1px solid rgba(40, 70, 110, 0.1);
+}
+
+.kv2-sibling-nudge-eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #3d5a80;
+}
+
+.kv2-sibling-nudge-msg {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1c2a3a;
+}
+
+.kv2-sibling-nudge-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.kv2-cheer-offer {
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 65%);
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  box-shadow: 0 6px 18px rgba(22, 53, 47, 0.05);
+  display: grid;
+  gap: 10px;
+}
+
+.kv2-cheer-offer-copy {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: #14352c;
+}
+
+.kv2-cheer-toast {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #f0fdf4;
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  color: #166534;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .ph-b4-progress-child {
   margin: 8px 0 0;
   font-size: 0.78rem;

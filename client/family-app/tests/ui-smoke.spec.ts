@@ -29,7 +29,7 @@ test.describe('kid screen', () => {
     await pickChild(page);
 
     for (const tab of KID_TABS) {
-      await page.locator('.kv2-tabbar').getByRole('button', { name: tab }).click();
+      await page.locator('.kv2-tabbar .kv2-tab', { hasText: tab }).first().click();
       await page.waitForTimeout(1200);
 
       await expectNoScrollLock(page, `kid/${tab}`);

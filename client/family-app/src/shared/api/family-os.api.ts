@@ -1819,6 +1819,128 @@ export async function confirmTeamUnlock(
   return mapTeamUnlock(data);
 }
 
+export type TeamNudgeStatus = 'draft' | 'sent' | 'seen' | 'thanks' | 'deferred' | string;
+export type TeamNudgeTemplate = 'cheer_up' | 'one_left' | 'you_got_this';
+
+export interface TeamNudge {
+  id: string;
+  familyId: string;
+  flowDate: string;
+  fromMemberId: string;
+  fromName: string;
+  toMemberId: string;
+  toName: string;
+  commitmentId?: string;
+  templateCode: TeamNudgeTemplate | string;
+  messageVi: string;
+  status: TeamNudgeStatus;
+  sentAt?: string;
+  ackAt?: string;
+  createdAt: string;
+}
+
+export interface TeamNudgeCandidate {
+  memberId: string;
+  displayName: string;
+  stageCode: string;
+  canInvite: boolean;
+  missionsComplete: boolean;
+}
+
+function mapTeamNudge(r: Row): TeamNudge {
+  return {
+    id: String(r.id ?? r.Id ?? ''),
+    familyId: String(r.familyId ?? r.FamilyId ?? ''),
+    flowDate: String(r.flowDate ?? r.FlowDate ?? ''),
+    fromMemberId: String(r.fromMemberId ?? r.FromMemberId ?? ''),
+    fromName: String(r.fromName ?? r.FromName ?? ''),
+    toMemberId: String(r.toMemberId ?? r.ToMemberId ?? ''),
+    toName: String(r.toName ?? r.ToName ?? ''),
+    commitmentId:
+      r.commitmentId != null || r.CommitmentId != null
+        ? String(r.commitmentId ?? r.CommitmentId)
+        : undefined,
+    templateCode: String(r.templateCode ?? r.TemplateCode ?? 'cheer_up'),
+    messageVi: String(r.messageVi ?? r.MessageVi ?? ''),
+    status: String(r.status ?? r.Status ?? ''),
+    sentAt:
+      r.sentAt != null || r.SentAt != null ? String(r.sentAt ?? r.SentAt) : undefined,
+    ackAt: r.ackAt != null || r.AckAt != null ? String(r.ackAt ?? r.AckAt) : undefined,
+    createdAt: String(r.createdAt ?? r.CreatedAt ?? ''),
+  };
+}
+
+function mapTeamNudgeCandidate(r: Row): TeamNudgeCandidate {
+  return {
+    memberId: String(r.memberId ?? r.MemberId ?? ''),
+    displayName: String(r.displayName ?? r.DisplayName ?? ''),
+    stageCode: String(r.stageCode ?? r.StageCode ?? ''),
+    canInvite: Boolean(r.canInvite ?? r.CanInvite ?? false),
+    missionsComplete: Boolean(r.missionsComplete ?? r.MissionsComplete ?? false),
+  };
+}
+
+export async function fetchTeamNudges(
+  familyId: string,
+  opts?: { flowDate?: string; forMemberId?: string },
+): Promise<TeamNudge[]> {
+  const { data } = await http.get<unknown>(`/family-os/families/${familyId}/team-nudges`, {
+    params: { flowDate: opts?.flowDate, forMemberId: opts?.forMemberId },
+  });
+  return asArray(data).map(mapTeamNudge);
+}
+
+export async function fetchTeamNudgeFromCandidates(
+  familyId: string,
+  flowDate?: string,
+): Promise<TeamNudgeCandidate[]> {
+  const { data } = await http.get<unknown>(
+    `/family-os/families/${familyId}/team-nudges/from-candidates`,
+    { params: { flowDate } },
+  );
+  return asArray(data).map(mapTeamNudgeCandidate);
+}
+
+export async function createTeamNudge(
+  familyId: string,
+  input: {
+    fromMemberId: string;
+    toMemberId: string;
+    templateCode: TeamNudgeTemplate;
+    flowDate?: string;
+    commitmentId?: string;
+  },
+): Promise<TeamNudge> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/team-nudges`, {
+    fromMemberId: input.fromMemberId,
+    toMemberId: input.toMemberId,
+    templateCode: input.templateCode,
+    flowDate: input.flowDate ?? null,
+    commitmentId: input.commitmentId ?? null,
+  });
+  return mapTeamNudge(data);
+}
+
+export async function sendTeamNudge(familyId: string, nudgeId: string): Promise<TeamNudge> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/team-nudges/${nudgeId}/send`,
+    null,
+  );
+  return mapTeamNudge(data);
+}
+
+export async function ackTeamNudge(
+  familyId: string,
+  nudgeId: string,
+  status: 'seen' | 'thanks' | 'deferred',
+): Promise<TeamNudge> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/team-nudges/${nudgeId}/ack`,
+    { status },
+  );
+  return mapTeamNudge(data);
+}
+
 export interface ChildGratitude {
   id: string;
   familyId: string;
@@ -1905,7 +2027,104 @@ export type FamilyMemoryKind =
   | 'team_unlock'
   | 'reward'
   | 'first_time'
-  | 'manual';
+  | 'manual'
+  | 'help'
+  | 'team_day'
+  | 'parent_habit';
+
+export interface CooperationScore {
+  period: string;
+  from: string;
+  to: string;
+  total: number;
+  headlineVi: string;
+  pillars: {
+    teamCompletion: number;
+    familyStreak: number;
+    helpEachOther: number;
+    teamUnlock: number;
+    familyHarmony: number;
+  };
+  sparkline: Array<{ scoreDate: string; total: number }>;
+}
+
+export interface FamilyRitual {
+  code: string;
+  labelVi: string;
+  cadence: string;
+  doneThisPeriod: boolean;
+  periodStart: string;
+  doneAt?: string;
+}
+
+export async function fetchFamilyRituals(
+  familyId: string,
+  asOf?: string,
+): Promise<FamilyRitual[]> {
+  const { data } = await http.get<unknown>(`/family-os/families/${familyId}/rituals`, {
+    params: { asOf },
+  });
+  return asArray(data).map((r) => ({
+    code: String(r.code ?? r.Code ?? ''),
+    labelVi: String(r.labelVi ?? r.LabelVi ?? ''),
+    cadence: String(r.cadence ?? r.Cadence ?? 'weekly'),
+    doneThisPeriod: Boolean(r.doneThisPeriod ?? r.DoneThisPeriod ?? false),
+    periodStart: String(r.periodStart ?? r.PeriodStart ?? ''),
+    doneAt:
+      r.doneAt != null || r.DoneAt != null ? String(r.doneAt ?? r.DoneAt) : undefined,
+  }));
+}
+
+export async function checkinFamilyRitual(
+  familyId: string,
+  input: { ritualCode: string; notedBy?: string; noteVi?: string },
+): Promise<FamilyRitual> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/rituals/checkin`, {
+    ritualCode: input.ritualCode,
+    notedBy: input.notedBy ?? null,
+    noteVi: input.noteVi ?? null,
+  });
+  return {
+    code: String(data.code ?? data.Code ?? ''),
+    labelVi: String(data.labelVi ?? data.LabelVi ?? ''),
+    cadence: String(data.cadence ?? data.Cadence ?? 'weekly'),
+    doneThisPeriod: Boolean(data.doneThisPeriod ?? data.DoneThisPeriod ?? true),
+    periodStart: String(data.periodStart ?? data.PeriodStart ?? ''),
+    doneAt:
+      data.doneAt != null || data.DoneAt != null
+        ? String(data.doneAt ?? data.DoneAt)
+        : undefined,
+  };
+}
+
+export async function fetchCooperationScore(
+  familyId: string,
+  period: 'week' | 'month' = 'week',
+): Promise<CooperationScore> {
+  const { data } = await http.get<Row>(
+    `/family-os/families/${familyId}/cooperation-score`,
+    { params: { period } },
+  );
+  const pillars = (data.pillars ?? data.Pillars ?? {}) as Row;
+  return {
+    period: String(data.period ?? data.Period ?? period),
+    from: String(data.from ?? data.From ?? ''),
+    to: String(data.to ?? data.To ?? ''),
+    total: Number(data.total ?? data.Total ?? 0),
+    headlineVi: String(data.headlineVi ?? data.HeadlineVi ?? ''),
+    pillars: {
+      teamCompletion: Number(pillars.teamCompletion ?? pillars.TeamCompletion ?? 0),
+      familyStreak: Number(pillars.familyStreak ?? pillars.FamilyStreak ?? 0),
+      helpEachOther: Number(pillars.helpEachOther ?? pillars.HelpEachOther ?? 0),
+      teamUnlock: Number(pillars.teamUnlock ?? pillars.TeamUnlock ?? 0),
+      familyHarmony: Number(pillars.familyHarmony ?? pillars.FamilyHarmony ?? 0),
+    },
+    sparkline: asArray(data.sparkline ?? data.Sparkline).map((r) => ({
+      scoreDate: String(r.scoreDate ?? r.ScoreDate ?? ''),
+      total: Number(r.total ?? r.Total ?? 0),
+    })),
+  };
+}
 
 export interface FamilyMemoryEntry {
   id: string;

@@ -13,9 +13,11 @@ import {
   fetchFamilyOsOverview,
   fetchTeamDay,
   fetchTeamUnlocks,
+  fetchCooperationScore,
   type AccountabilityDayGlance,
   type AccountabilityGlance,
   type ChildGratitude,
+  type CooperationScore,
   type DayFlow,
   type DayFlowCommitment,
   type FamilyCoachInsight,
@@ -578,6 +580,7 @@ export function FamilyOsOverviewPage() {
   const [coach, setCoach] = useState<FamilyCoachInsight | null>(null);
   const [teamDay, setTeamDay] = useState<TeamDay | null>(null);
   const [teamUnlocks, setTeamUnlocks] = useState<TeamUnlock[]>([]);
+  const [coopScore, setCoopScore] = useState<CooperationScore | null>(null);
   const [gratitudes, setGratitudes] = useState<ChildGratitude[]>([]);
   const [moods, setMoods] = useState<FamilyMemberMood[]>([]);
   const [dayOpen, setDayOpen] = useState(false);
@@ -598,19 +601,21 @@ export function FamilyOsOverviewPage() {
         setCoach(null);
         setTeamDay(null);
         setTeamUnlocks([]);
+        setCoopScore(null);
         setGratitudes([]);
         setMoods([]);
         return;
       }
       const day = await ensureDayFlow(first.id);
       setFlow(day);
-      const [gl, insight, team, unlockRows, thanks, moodRows] = await Promise.all([
+      const [gl, insight, team, unlockRows, coop, thanks, moodRows] = await Promise.all([
         fetchAccountabilityGlance(first.id),
         fetchCoachInsight(first.id, day.flowDate),
         fetchTeamDay(first.id, day.flowDate),
         fetchTeamUnlocks(first.id, day.flowDate, true).then(() =>
           fetchTeamUnlocks(first.id),
         ),
+        fetchCooperationScore(first.id, 'week').catch(() => null),
         fetchChildGratitude(first.id, day.flowDate).catch(() => [] as ChildGratitude[]),
         fetchFamilyMoods(first.id, day.flowDate).catch(() => [] as FamilyMemberMood[]),
       ]);
@@ -618,6 +623,7 @@ export function FamilyOsOverviewPage() {
       setCoach(insight);
       setTeamDay(team);
       setTeamUnlocks(unlockRows);
+      setCoopScore(coop);
       setGratitudes(thanks);
       setMoods(moodRows);
     } catch (error) {
@@ -839,12 +845,13 @@ export function FamilyOsOverviewPage() {
             <span style={{ width: `${teamSnapshot.teamPercent}%` }} />
           </div>
           <p className="fo-team-mission">{teamSnapshot.heroMissionLine}</p>
-          <div className="fo-coop-row" title="Chuỗi nhà từ API accountability-glance">
-            <small>Chuỗi & ngày đẹp</small>
-            <strong>{glance?.currentStreak ?? 0} ngày</strong>
+          <div className="fo-coop-row" title="Cooperation Score (API live)">
+            <small>Hợp tác tuần này</small>
+            <strong>{coopScore ? `${coopScore.total}/100` : '—'}</strong>
             <span className="fo-coop-parts">
-              🌟{weekBeautiful} ngày đẹp tuần này
-              {glance?.todayIsBeautifulDay ? ' · hôm nay ✓' : ''}
+              {coopScore?.headlineVi
+                ? coopScore.headlineVi
+                : `🌟${weekBeautiful} ngày đẹp · chuỗi ${glance?.currentStreak ?? 0}`}
             </span>
           </div>
           {nudgeCandidate ? (

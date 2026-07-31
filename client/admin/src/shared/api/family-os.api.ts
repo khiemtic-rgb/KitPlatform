@@ -1350,6 +1350,59 @@ export async function fetchTeamDay(familyId: string, flowDate?: string): Promise
   };
 }
 
+export interface CooperationScore {
+  period: string;
+  from: string;
+  to: string;
+  total: number;
+  headlineVi: string;
+  pillars: {
+    teamCompletion: number;
+    familyStreak: number;
+    helpEachOther: number;
+    teamUnlock: number;
+    familyHarmony: number;
+  };
+  sparkline: Array<{ scoreDate: string; total: number }>;
+}
+
+export async function fetchCooperationScore(
+  familyId: string,
+  period: 'week' | 'month' = 'week',
+): Promise<CooperationScore> {
+  const { data } = await http.get<UnknownRow>(
+    `/family-os/families/${familyId}/cooperation-score`,
+    { params: { period } },
+  );
+  const pillars = (data.pillars ?? data.Pillars ?? {}) as UnknownRow;
+  const sparkRaw = Array.isArray(data.sparkline)
+    ? data.sparkline
+    : Array.isArray(data.Sparkline)
+      ? data.Sparkline
+      : [];
+  return {
+    period: String(data.period ?? data.Period ?? period),
+    from: String(data.from ?? data.From ?? ''),
+    to: String(data.to ?? data.To ?? ''),
+    total: Number(data.total ?? data.Total ?? 0),
+    headlineVi: String(data.headlineVi ?? data.HeadlineVi ?? ''),
+    pillars: {
+      teamCompletion: Number(pillars.teamCompletion ?? pillars.TeamCompletion ?? 0),
+      familyStreak: Number(pillars.familyStreak ?? pillars.FamilyStreak ?? 0),
+      helpEachOther: Number(pillars.helpEachOther ?? pillars.HelpEachOther ?? 0),
+      teamUnlock: Number(pillars.teamUnlock ?? pillars.TeamUnlock ?? 0),
+      familyHarmony: Number(pillars.familyHarmony ?? pillars.FamilyHarmony ?? 0),
+    },
+    sparkline: sparkRaw.map((row) => {
+      const r = row as UnknownRow;
+      return {
+        scoreDate: String(r.scoreDate ?? r.ScoreDate ?? ''),
+        total: Number(r.total ?? r.Total ?? 0),
+      };
+    }),
+  };
+}
+
 export async function fetchTeamUnlocks(
   familyId: string,
   flowDate?: string,
@@ -1580,4 +1633,67 @@ export async function extendFamilyTrial(
     { extraDays },
   );
   return mapFamilySubscription(data);
+}
+
+export interface FamilyOsTrialSignup {
+  id: string;
+  tenantId: string;
+  tenantCode: string;
+  familyId: string;
+  familyName: string;
+  parentDisplayName: string;
+  email: string;
+  username: string;
+  memberCount: number;
+  planCode: string;
+  status: string;
+  trialEndsAt?: string;
+  source: string;
+  registeredAt: string;
+  trialDaysRemaining?: number;
+}
+
+export interface FamilyOsTrialSignupList {
+  total: number;
+  trialActive: number;
+  trialExpired: number;
+  paidActive: number;
+  other: number;
+  items: FamilyOsTrialSignup[];
+}
+
+function mapTrialSignup(row: UnknownRow): FamilyOsTrialSignup {
+  const trialEnds = row.trialEndsAt ?? row.TrialEndsAt;
+  const remaining = row.trialDaysRemaining ?? row.TrialDaysRemaining;
+  return {
+    id: String(row.id ?? row.Id ?? ''),
+    tenantId: String(row.tenantId ?? row.TenantId ?? ''),
+    tenantCode: String(row.tenantCode ?? row.TenantCode ?? ''),
+    familyId: String(row.familyId ?? row.FamilyId ?? ''),
+    familyName: String(row.familyName ?? row.FamilyName ?? ''),
+    parentDisplayName: String(row.parentDisplayName ?? row.ParentDisplayName ?? ''),
+    email: String(row.email ?? row.Email ?? ''),
+    username: String(row.username ?? row.Username ?? ''),
+    memberCount: Number(row.memberCount ?? row.MemberCount ?? 0),
+    planCode: String(row.planCode ?? row.PlanCode ?? ''),
+    status: String(row.status ?? row.Status ?? ''),
+    trialEndsAt: trialEnds != null ? String(trialEnds) : undefined,
+    source: String(row.source ?? row.Source ?? ''),
+    registeredAt: String(row.registeredAt ?? row.RegisteredAt ?? ''),
+    trialDaysRemaining: remaining != null ? Number(remaining) : undefined,
+  };
+}
+
+/** Cross-tenant Family OS trial / interest signups (ops ledger). */
+export async function fetchFamilyOsTrialSignups(): Promise<FamilyOsTrialSignupList> {
+  const { data } = await http.get<UnknownRow>(`/family-os/ops/trial-signups`);
+  const itemsRaw = (data.items ?? data.Items ?? []) as UnknownRow[];
+  return {
+    total: Number(data.total ?? data.Total ?? itemsRaw.length),
+    trialActive: Number(data.trialActive ?? data.TrialActive ?? 0),
+    trialExpired: Number(data.trialExpired ?? data.TrialExpired ?? 0),
+    paidActive: Number(data.paidActive ?? data.PaidActive ?? 0),
+    other: Number(data.other ?? data.Other ?? 0),
+    items: itemsRaw.map(mapTrialSignup),
+  };
 }

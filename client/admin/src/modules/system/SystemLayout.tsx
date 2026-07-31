@@ -9,6 +9,7 @@ import {
   MobileOutlined,
   PrinterOutlined,
   SafetyCertificateOutlined,
+  UserAddOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { resolveAdminVertical } from '@/modules/registry';
@@ -46,6 +47,13 @@ export function SystemLayout() {
         label: t('billing'),
         path: '/system/billing',
         icon: <CreditCardOutlined />,
+        familyOnly: true as const,
+      },
+      {
+        key: 'trial-signups',
+        label: 'Đăng ký dùng thử',
+        path: '/system/trial-signups',
+        icon: <UserAddOutlined />,
         familyOnly: true as const,
       },
       {

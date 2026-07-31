@@ -47,6 +47,10 @@ public static class FamilyOsPackDependencyInjection
         services.AddScoped<IFamilyBlueprintService, FamilyBlueprintService>();
         services.AddScoped<FamilyTeamUnlockRepository>();
         services.AddScoped<IFamilyTeamUnlockService, FamilyTeamUnlockService>();
+        services.AddScoped<FamilyTeamNudgeRepository>();
+        services.AddScoped<IFamilyTeamNudgeService, FamilyTeamNudgeService>();
+        services.AddScoped<IFamilyCooperationScoreService, FamilyCooperationScoreService>();
+        services.AddScoped<IFamilyRitualService, FamilyRitualService>();
         services.AddScoped<FamilyGratitudeRepository>();
         services.AddScoped<IFamilyGratitudeService, FamilyGratitudeService>();
         services.AddScoped<FamilyStarLedgerRepository>();

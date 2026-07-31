@@ -8,6 +8,11 @@ import {
   fetchRewardCatalog,
   fetchRewardRedemptions,
   fetchTeamUnlocks,
+  fetchTeamNudges,
+  fetchTeamNudgeFromCandidates,
+  createTeamNudge,
+  sendTeamNudge,
+  ackTeamNudge,
   fetchMemberMood,
   upsertMemberMood,
   redeemReward,
@@ -16,12 +21,16 @@ import {
   type RewardCatalogItem,
   type RewardRedemption,
   type TeamUnlock,
+  type TeamNudge,
+  type TeamNudgeCandidate,
+  type TeamNudgeTemplate,
   type AccountabilityDayGlance,
   type DayFlowCommitment,
   type SkipReasonCode,
   type ScreenWallet,
   type ChildRequest,
 } from '@/shared/api/family-os.api';
+import { getApiErrorMessage } from '@/shared/billing/capability-error';
 import { ChildScreenRequestSheet } from '@/modules/flow/ChildScreenRequestSheet';
 import { ChildMissionRequestSheet } from '@/modules/flow/ChildMissionRequestSheet';
 import { withEvidenceAuth } from '@/shared/upload/evidence-url';
@@ -47,6 +56,7 @@ import {
   FAMILY_MEMORY_VISIBLE,
 } from '@/shared/flow/family-memories';
 import { FAMILY_MOODS, moodIndexFromCode } from '@/shared/flow/family-moods';
+import { NUDGE_TEMPLATE_OPTIONS, nudgeMessagePreview } from '@/modules/flow/teamPlay';
 import { isParentVerified } from '@/shared/nudge/nudge-stats';
 import { FamilyChallengeCard } from '@/modules/flow/FamilyChallengeCard';
 import {
@@ -1097,6 +1107,16 @@ export function KidFocusView({
   const [moodNote, setMoodNote] = useState('');
   const [moodSaving, setMoodSaving] = useState(false);
   const [moodLoaded, setMoodLoaded] = useState(false);
+  const [inboxNudges, setInboxNudges] = useState<TeamNudge[]>([]);
+  const [nudgeAckBusy, setNudgeAckBusy] = useState<string | null>(null);
+  const [nudgeCandidates, setNudgeCandidates] = useState<TeamNudgeCandidate[]>([]);
+  const [cheerOpen, setCheerOpen] = useState(false);
+  const [cheerToId, setCheerToId] = useState('');
+  const [cheerTemplate, setCheerTemplate] = useState<TeamNudgeTemplate>('cheer_up');
+  const [cheerBusy, setCheerBusy] = useState(false);
+  const [cheerError, setCheerError] = useState<string | null>(null);
+  const [cheerToast, setCheerToast] = useState<string | null>(null);
+  const [nudgeReloadTick, setNudgeReloadTick] = useState(0);
   const [journalToast, setJournalToast] = useState<string | null>(null);
   const [momentIdx, setMomentIdx] = useState(0);
   const [journalDayIdx, setJournalDayIdx] = useState(5);
@@ -1134,6 +1154,115 @@ export function KidFocusView({
   useEffect(() => {
     setLocalStars(starBalance);
   }, [starBalance]);
+
+  useEffect(() => {
+    if (!familyId || !childMemberId) {
+      setInboxNudges([]);
+      setNudgeCandidates([]);
+      return;
+    }
+    let cancelled = false;
+    void fetchTeamNudges(familyId, { flowDate, forMemberId: childMemberId })
+      .then((rows) => {
+        if (cancelled) return;
+        setInboxNudges(
+          rows.filter(
+            (n) =>
+              n.toMemberId === childMemberId &&
+              (n.status === 'sent' || n.status === 'seen'),
+          ),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setInboxNudges([]);
+      });
+    void fetchTeamNudgeFromCandidates(familyId, flowDate)
+      .then((rows) => {
+        if (!cancelled) setNudgeCandidates(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setNudgeCandidates([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId, childMemberId, flowDate, nudgeReloadTick, teamRemaining, items.length]);
+
+  useEffect(() => {
+    if (!cheerToast) return;
+    const t = window.setTimeout(() => setCheerToast(null), 2800);
+    return () => window.clearTimeout(t);
+  }, [cheerToast]);
+
+  const meNudgeCand = useMemo(
+    () => nudgeCandidates.find((c) => c.memberId === childMemberId) ?? null,
+    [nudgeCandidates, childMemberId],
+  );
+  const cheerTargets = useMemo(
+    () =>
+      nudgeCandidates.filter(
+        (c) => c.memberId !== childMemberId && !c.missionsComplete,
+      ),
+    [nudgeCandidates, childMemberId],
+  );
+  const cheerPreview = useMemo(() => {
+    const to = cheerTargets.find((c) => c.memberId === cheerToId)?.displayName;
+    return nudgeMessagePreview(
+      cheerTemplate,
+      shortChildName(childName),
+      to ? shortChildName(to) : 'em',
+    );
+  }, [cheerTargets, cheerToId, cheerTemplate, childName]);
+  const showCheerOffer =
+    Boolean(meNudgeCand?.canInvite) &&
+    teamRemaining >= 1 &&
+    cheerTargets.length > 0 &&
+    !teamComplete;
+
+  const openCheerSheet = () => {
+    setCheerError(null);
+    setCheerTemplate(teamRemaining === 1 ? 'one_left' : 'cheer_up');
+    setCheerToId(cheerTargets[0]?.memberId ?? '');
+    setCheerOpen(true);
+  };
+
+  const submitCheer = async () => {
+    if (!childMemberId || !cheerToId) {
+      setCheerError('Chọn anh/chị em để cổ vũ.');
+      return;
+    }
+    setCheerBusy(true);
+    setCheerError(null);
+    try {
+      const draft = await createTeamNudge(familyId, {
+        fromMemberId: childMemberId,
+        toMemberId: cheerToId,
+        templateCode: cheerTemplate,
+        flowDate: flowDate || undefined,
+      });
+      await sendTeamNudge(familyId, draft.id);
+      setCheerOpen(false);
+      setCheerToast('Đã gửi lời cổ vũ — cả đội cảm ơn con!');
+      setNudgeReloadTick((n) => n + 1);
+    } catch (e) {
+      setCheerError(getApiErrorMessage(e) || 'Chưa gửi được — thử lại nhé.');
+    } finally {
+      setCheerBusy(false);
+    }
+  };
+
+  const ackInboxNudge = async (nudgeId: string, status: 'thanks' | 'seen') => {
+    setNudgeAckBusy(nudgeId);
+    try {
+      await ackTeamNudge(familyId, nudgeId, status);
+      setInboxNudges((prev) => prev.filter((n) => n.id !== nudgeId));
+      setNudgeReloadTick((n) => n + 1);
+    } catch {
+      // keep banner
+    } finally {
+      setNudgeAckBusy(null);
+    }
+  };
 
   useEffect(() => {
     if (!treasureSheet && !journalSheet && !active) return;
@@ -2346,6 +2475,54 @@ export function KidFocusView({
                   <b style={{ width: `${unlockPct}%` }} />
                 </i>
               </aside>
+
+              {inboxNudges.length > 0 ? (
+                <section className="kv2-sibling-nudge-inbox" aria-label="Tin từ anh chị">
+                  {inboxNudges.map((n) => (
+                    <article key={n.id} className="kv2-sibling-nudge-card">
+                      <p className="kv2-sibling-nudge-eyebrow">
+                        Tin từ {n.fromName.trim() || 'anh/chị'}
+                      </p>
+                      <p className="kv2-sibling-nudge-msg">{n.messageVi}</p>
+                      <div className="kv2-sibling-nudge-actions">
+                        <button
+                          type="button"
+                          className="kv2-do"
+                          disabled={nudgeAckBusy === n.id}
+                          onClick={() => void ackInboxNudge(n.id, 'thanks')}
+                        >
+                          Cảm ơn
+                        </button>
+                        <button
+                          type="button"
+                          className="kv2-do-photo is-link"
+                          disabled={nudgeAckBusy === n.id}
+                          onClick={() => void ackInboxNudge(n.id, 'seen')}
+                        >
+                          Đã xem
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </section>
+              ) : null}
+
+              {showCheerOffer ? (
+                <article className="kv2-cheer-offer" aria-label="Cổ vũ cả nhà">
+                  <p className="kv2-cheer-offer-copy">
+                    Cả nhà còn {teamRemaining} việc — muốn cổ vũ anh/chị em?
+                  </p>
+                  <button type="button" className="kv2-do" onClick={openCheerSheet}>
+                    Gửi lời cổ vũ
+                  </button>
+                </article>
+              ) : null}
+
+              {cheerToast ? (
+                <p className="kv2-cheer-toast" role="status">
+                  {cheerToast}
+                </p>
+              ) : null}
 
               <section className="kv2-home-rewards" aria-label="Động lực hôm nay">
                 <article className="kv2-praise is-compact">
@@ -4028,6 +4205,112 @@ export function KidFocusView({
           e.target.value = '';
         }}
       />
+
+      {cheerOpen ? (
+        <div
+          className="sheet-backdrop kv2-action-sheet"
+          role="presentation"
+          onClick={() => !cheerBusy && setCheerOpen(false)}
+        >
+          <div
+            className="sheet kh-action-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Gửi lời cổ vũ"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="ph-nudge-head">
+              <span className="ph-nudge-head-ico" aria-hidden>
+                🤝
+              </span>
+              <div>
+                <h2>Gửi lời cổ vũ</h2>
+                <p>Lời nhắc cố định — mình cổ vũ nhau, không nhắc thay bố mẹ.</p>
+              </div>
+              <button
+                type="button"
+                className="ph-nudge-close"
+                aria-label="Đóng"
+                disabled={cheerBusy}
+                onClick={() => setCheerOpen(false)}
+              >
+                ✕
+              </button>
+            </header>
+
+            <label className="ph-nudge-field">
+              <span className="ph-nudge-label">Gửi tới</span>
+              <span className="ph-nudge-select">
+                <select
+                  value={cheerToId}
+                  onChange={(e) => setCheerToId(e.target.value)}
+                  disabled={cheerBusy}
+                >
+                  {cheerTargets.map((c) => (
+                    <option key={c.memberId} value={c.memberId}>
+                      {c.displayName}
+                    </option>
+                  ))}
+                </select>
+                <i aria-hidden>▾</i>
+              </span>
+            </label>
+
+            <fieldset className="ph-sibling-nudge-templates">
+              <legend className="ph-nudge-label">Chọn lời cổ vũ</legend>
+              {NUDGE_TEMPLATE_OPTIONS.map((opt) => (
+                <label
+                  key={opt.code}
+                  className={`ph-nudge-option${cheerTemplate === opt.code ? ' is-on' : ''}`}
+                >
+                  <input
+                    type="radio"
+                    name="kid-cheer-template"
+                    checked={cheerTemplate === opt.code}
+                    onChange={() => setCheerTemplate(opt.code)}
+                    disabled={cheerBusy}
+                  />
+                  <span className="ph-nudge-radio" aria-hidden />
+                  <span className="ph-nudge-option-text">
+                    <strong>{opt.title}</strong>
+                    <em>{opt.hint}</em>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+
+            <div className="ph-nudge-preview">
+              <span className="ph-nudge-preview-label">Em sẽ thấy</span>
+              <p>“{cheerPreview}”</p>
+            </div>
+
+            {cheerError ? (
+              <p className="banner-error" role="alert">
+                {cheerError}
+              </p>
+            ) : null}
+
+            <div className="ph-nudge-actions">
+              <button
+                type="button"
+                className="ph-nudge-btn is-ghost"
+                disabled={cheerBusy}
+                onClick={() => setCheerOpen(false)}
+              >
+                Để sau
+              </button>
+              <button
+                type="button"
+                className="ph-nudge-btn is-primary"
+                disabled={cheerBusy || !cheerToId}
+                onClick={() => void submitCheer()}
+              >
+                {cheerBusy ? 'Đang gửi…' : 'Gửi lời cổ vũ'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {familyId && childMemberId ? (
         <>
