@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
+  Alert,
   AutoComplete,
   Button,
   Card,
@@ -102,6 +103,8 @@ export function InventoryCountPage() {
   const [approving, setApproving] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [approveModalOpen, setApproveModalOpen] = useState(false);
+  const [approveAttempted, setApproveAttempted] = useState(false);
+  const [batchProbeDone, setBatchProbeDone] = useState(false);
 
   const entriesMissingBatch = entries.filter((e) => !e.batchId);
   const canApprove = previewByBatch.length > 0 && entriesMissingBatch.length === 0;
@@ -114,6 +117,9 @@ export function InventoryCountPage() {
     }
     return null;
   }, [entriesMissingBatch.length, previewByBatch.length, t]);
+
+  const showNoBatchHint =
+    Boolean(activeProductId) && batchProbeDone && batchOptions.length === 0;
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -179,8 +185,10 @@ export function InventoryCountPage() {
       if (!detail?.warehouseId) {
         setBatchOptions([]);
         setSelectedBatchId(undefined);
+        setBatchProbeDone(true);
         return {};
       }
+      setBatchProbeDone(false);
       try {
         const result = await fetchStockBatches({
           warehouseId: detail.warehouseId,
@@ -214,6 +222,8 @@ export function InventoryCountPage() {
         setBatchOptions([]);
         setSelectedBatchId(undefined);
         return {};
+      } finally {
+        setBatchProbeDone(true);
       }
     },
     [detail?.warehouseId],
@@ -311,46 +321,88 @@ export function InventoryCountPage() {
     return null;
   };
 
-  const handleAddDraftLine = async () => {
+  const clearProductInput = () => {
+    setProductSearch('');
+    setActiveProductId(null);
+    setActiveUnitName(null);
+    setSelectedBatchId(undefined);
+    setBatchOptions([]);
+    setProductOptions([]);
+    setBatchProbeDone(false);
+    setQuantity(1);
+  };
+
+  const buildResolvedLine = async (): Promise<DraftLine | null> => {
     if (!productSearch.trim()) {
       message.warning(t('messages.scanOrSelectProduct'));
-      return;
+      return null;
     }
     if (quantity <= 0) {
       message.warning(t('messages.quantityMustBePositive'));
-      return;
+      return null;
     }
 
     const resolved = await resolveActiveProduct();
     if (!resolved) {
       message.warning(t('messages.selectFromSuggestions'));
-      return;
+      return null;
     }
 
     const batchId = resolved.batchId ?? selectedBatchId;
     if (!batchId) {
       message.warning(t('messages.noBatchAtWarehouse'));
-      return;
+      return null;
     }
 
     const batchLabel =
       batchOptions.find((b) => b.value === batchId)?.label ?? resolved.batchLabel ?? batchId;
-    setDraftLines((prev) => [
-      ...prev,
-      {
-        key: nextDraftKey(),
-        productId: resolved.productId,
-        productLabel: resolved.label,
-        batchId,
-        batchLabel,
-        quantity,
-        unitName: resolved.unitName ?? undefined,
-        zone: zone.trim() || undefined,
-        scannedBarcode: resolved.scannedBarcode,
-      },
-    ]);
+    return {
+      key: nextDraftKey(),
+      productId: resolved.productId,
+      productLabel: resolved.label,
+      batchId,
+      batchLabel,
+      quantity,
+      unitName: resolved.unitName ?? undefined,
+      zone: zone.trim() || undefined,
+      scannedBarcode: resolved.scannedBarcode,
+    };
+  };
+
+  const handleAddDraftLine = async () => {
+    const line = await buildResolvedLine();
+    if (!line) return;
+    setDraftLines((prev) => [...prev, line]);
     setQuantity(1);
     message.success(t('messages.addedToDraft'));
+  };
+
+  const handleRecordNow = async () => {
+    if (!id) return;
+    const line = await buildResolvedLine();
+    if (!line) return;
+
+    setSubmitting(true);
+    try {
+      await addCountEntries(id, [
+        {
+          productId: line.productId,
+          batchId: line.batchId,
+          quantity: line.quantity,
+          scannedBarcode: line.scannedBarcode,
+          zone: line.zone,
+        },
+      ]);
+      clearProductInput();
+      message.success(t('messages.entryRecordedNow'));
+      await load();
+    } catch (error) {
+      if (isAxiosError(error)) {
+        message.error(apiErrorMessage(error, t('messages.recordFailed')));
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleRemoveDraftLine = (key: string) => {
@@ -377,13 +429,7 @@ export function InventoryCountPage() {
         })),
       );
       setDraftLines([]);
-      setProductSearch('');
-      setActiveProductId(null);
-      setActiveUnitName(null);
-      setSelectedBatchId(undefined);
-      setBatchOptions([]);
-      setProductOptions([]);
-      setQuantity(1);
+      clearProductInput();
       message.success(t('messages.entriesRecorded', { count: lineCount }));
       await load();
     } catch (error) {
@@ -428,9 +474,11 @@ export function InventoryCountPage() {
 
   const openApproveConfirm = () => {
     if (!canApprove) {
+      setApproveAttempted(true);
       message.warning(approveBlockReason ?? t('approveBlock.cannotApprove'));
       return;
     }
+    setApproveAttempted(false);
     setApproveModalOpen(true);
   };
 
@@ -511,7 +559,7 @@ export function InventoryCountPage() {
   if (!id) return null;
 
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto' }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         <Space wrap>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/inventory/adjustments')}>
@@ -564,7 +612,7 @@ export function InventoryCountPage() {
               <Tag>{adjustmentStatusLabel(detail.status)}</Tag>
               <span>{formatDisplayDate(detail.adjustmentDate)}</span>
             </Space>
-            {detail.status === 2 && approveBlockReason && (
+            {detail.status === 2 && approveAttempted && approveBlockReason && (
               <Typography.Paragraph type="danger" style={{ marginBottom: 0, marginTop: 12 }}>
                 {approveBlockReason}{t('approveBlock.beforeApprove')}
               </Typography.Paragraph>
@@ -588,51 +636,87 @@ export function InventoryCountPage() {
         {detail?.status === 2 && (
           <Card title={<><ScanOutlined /> {t('step2Title')}</>} size="small">
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              <AutoComplete
-                style={{ width: '100%' }}
-                size="large"
-                placeholder={t('scanPlaceholder')}
-                value={productSearch}
-                options={productOptions}
-                onChange={(value) => {
-                  setProductSearch(value);
-                  setActiveProductId(null);
-                  setActiveUnitName(null);
-                  setSelectedBatchId(undefined);
-                  setBatchOptions([]);
+              <Typography.Text type="secondary">{t('countHint')}</Typography.Text>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 8,
+                  width: '100%',
+                  alignItems: 'stretch',
+                  flexWrap: 'nowrap',
                 }}
-                onSelect={(value, option) => {
-                  const picked = option as ProductSearchOption;
-                  void applyProductContext(String(value), String(picked.label ?? value), picked.unitName ?? null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') void handleAddDraftLine();
-                }}
-                disabled={submitting || resolving}
-                notFoundContent={
-                  productSearch.trim() ? t('notFound.noProducts') : t('notFound.typeToSearch')
-                }
-              />
-              {activeProductId && (
-                <Select
+              >
+                <AutoComplete
+                  style={{ flex: '1 1 auto', minWidth: 280 }}
                   size="large"
-                  showSearch
-                  optionFilterProp="label"
-                  placeholder={t('batchPlaceholder')}
-                  value={selectedBatchId}
-                  options={batchOptions}
-                  onChange={(value) => setSelectedBatchId(value)}
-                  style={{ width: '100%' }}
-                  disabled={submitting || batchOptions.length === 0}
-                  notFoundContent={t('notFound.noBatchesAtWarehouse')}
+                  placeholder={t('scanPlaceholder')}
+                  value={productSearch}
+                  options={productOptions}
+                  onChange={(value) => {
+                    setProductSearch(value);
+                    setActiveProductId(null);
+                    setActiveUnitName(null);
+                    setSelectedBatchId(undefined);
+                    setBatchOptions([]);
+                    setBatchProbeDone(false);
+                  }}
+                  onSelect={(value, option) => {
+                    const picked = option as ProductSearchOption;
+                    void applyProductContext(String(value), String(picked.label ?? value), picked.unitName ?? null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void handleRecordNow();
+                  }}
+                  disabled={submitting || resolving}
+                  notFoundContent={
+                    productSearch.trim() ? t('notFound.noProducts') : t('notFound.typeToSearch')
+                  }
+                />
+                {activeProductId && batchOptions.length > 0 && (
+                  <Select
+                    size="large"
+                    showSearch
+                    optionFilterProp="label"
+                    placeholder={t('batchPlaceholder')}
+                    value={selectedBatchId}
+                    options={batchOptions}
+                    onChange={(value) => setSelectedBatchId(value)}
+                    style={{ flex: '0 0 420px', width: 420 }}
+                    disabled={submitting}
+                  />
+                )}
+              </div>
+              {showNoBatchHint && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message={t('noBatchHintTitle')}
+                  description={
+                    <Space direction="vertical" size={4}>
+                      <span>{t('noBatchHintBody')}</span>
+                      <Space wrap>
+                        <Link to="/inventory/opening-balance">{t('goOpeningBalance')}</Link>
+                        <Link to="/procurement/goods-receipts">{t('goGoodsReceipt')}</Link>
+                      </Space>
+                    </Space>
+                  }
                 />
               )}
-              <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'stretch', flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 8,
+                  width: '100%',
+                  alignItems: 'stretch',
+                  flexWrap: 'nowrap',
+                }}
+              >
                 <InputNumber
                   size="large"
                   value={quantity}
                   onChange={(v) => setQuantity(Number(v ?? 1))}
-                  style={{ width: 200, flex: '0 0 auto' }}
+                  onPressEnter={() => void handleRecordNow()}
+                  style={{ width: 180, flex: '0 0 auto' }}
                   addonBefore={ts('quantityAbbr')}
                   addonAfter={activeUnitName ?? '—'}
                   {...quantityInputNumberProps}
@@ -642,27 +726,40 @@ export function InventoryCountPage() {
                   placeholder={t('zonePlaceholder')}
                   value={zone}
                   onChange={(e) => setZone(e.target.value)}
-                  style={{ flex: '1 1 200px', minWidth: 200 }}
+                  onPressEnter={() => void handleRecordNow()}
+                  style={{ flex: '1 1 auto', minWidth: 160 }}
                 />
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<CheckOutlined />}
+                  loading={submitting || resolving}
+                  disabled={showNoBatchHint}
+                  onClick={() => void handleRecordNow()}
+                  style={{ flex: '0 0 auto' }}
+                >
+                  {t('recordNow')}
+                </Button>
                 <Button
                   size="large"
                   icon={<PlusOutlined />}
                   loading={resolving}
+                  disabled={submitting || showNoBatchHint}
                   onClick={() => void handleAddDraftLine()}
                   style={{ flex: '0 0 auto' }}
                 >
-                  {ts('addLine')}
+                  {t('addToDraft')}
                 </Button>
-                <Button
-                  type="primary"
-                  size="large"
-                  loading={submitting}
-                  disabled={draftLines.length === 0}
-                  onClick={() => void handleSubmitDraft()}
-                  style={{ flex: '0 0 auto' }}
-                >
-                  {t('recordEntries', { count: draftLines.length })}
-                </Button>
+                {draftLines.length > 0 && (
+                  <Button
+                    size="large"
+                    loading={submitting}
+                    onClick={() => void handleSubmitDraft()}
+                    style={{ flex: '0 0 auto' }}
+                  >
+                    {t('recordEntries', { count: draftLines.length })}
+                  </Button>
+                )}
               </div>
             </Space>
           </Card>

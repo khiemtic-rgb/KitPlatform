@@ -83,7 +83,9 @@ export function ProductListPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkLinkingSdk, setBulkLinkingSdk] = useState(false);
-  const [productSuggestions, setProductSuggestions] = useState<{ value: string; label: string }[]>([]);
+  const [productSuggestions, setProductSuggestions] = useState<
+    { value: string; label: string; productId: string; productName: string }[]
+  >([]);
   const [nationalDrugLive, setNationalDrugLive] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -176,8 +178,12 @@ export function ProductListPage() {
           if (cancelled) return;
           setProductSuggestions(
             (data.items ?? []).map((p) => ({
-              value: p.primaryBarcode || p.productCode || p.productName,
+              // Unique option value (code+name). Do NOT prefer barcode alone — selecting it
+              // used to search by barcode/code while API only matched product_name.
+              value: `${p.productCode} — ${p.productName}`,
               label: `${p.productCode} — ${p.productName}${p.primaryBarcode ? ` · ${p.primaryBarcode}` : ''}`,
+              productId: p.id,
+              productName: p.productName,
             })),
           );
         })
@@ -190,14 +196,6 @@ export function ProductListPage() {
       window.clearTimeout(timer);
     };
   }, [searchInput]);
-
-  const selectSuggestedProduct = (value: string) => {
-    const text = value.trim();
-    if (!text) return;
-    setSearchInput(text);
-    setPage(1);
-    setSearch(text);
-  };
 
   const applySearch = () => {
     setPage(1);
@@ -216,6 +214,23 @@ export function ProductListPage() {
       setDrawerOpen(true);
     } catch {
       msg.error(t('messages.detailLoadFailed'));
+    }
+  };
+
+  const selectSuggestedProduct = (
+    _value: string,
+    option?: { productId?: string; productName?: string; value?: string; label?: string },
+  ) => {
+    const productName = (option?.productName ?? '').trim();
+    const productId = option?.productId;
+    const text = productName || String(_value).trim();
+    if (!text) return;
+    setSearchInput(text);
+    setPage(1);
+    setSearch(text);
+    setProductSuggestions([]);
+    if (productId) {
+      void openEdit(productId);
     }
   };
 
@@ -391,7 +406,14 @@ export function ProductListPage() {
               style={{ width: 280 }}
               options={productSuggestions}
               value={searchInput}
-              onSelect={(value) => selectSuggestedProduct(String(value))}
+              onSelect={(value, option) =>
+                selectSuggestedProduct(String(value), option as {
+                  productId?: string;
+                  productName?: string;
+                  value?: string;
+                  label?: string;
+                })
+              }
               onChange={(value) => {
                 setSearchInput(value);
                 if (!value) {

@@ -51,6 +51,8 @@ internal sealed class CatalogRepository
         var where = $"""
             WHERE p.tenant_id = @TenantId AND p.deleted_at IS NULL
               AND (@Search IS NULL OR p.product_name ILIKE @SearchPattern
+                   OR p.product_code ILIKE @SearchPattern
+                   OR COALESCE(p.generic_name, '') ILIKE @SearchPattern
                    OR EXISTS (SELECT 1 FROM product_barcodes b WHERE b.product_id = p.id AND b.status = 1 AND b.barcode ILIKE @SearchPattern))
               {extraWhere}
             """;
