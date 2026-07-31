@@ -68,8 +68,8 @@ export type LandingDocument = {
     titleLine2: string;
     lead: string;
     primaryCta: string;
-    secondaryCta: string;
-    secondaryHref: string;
+    secondaryCta?: string;
+    secondaryHref?: string;
     image: CmsImage;
     /** Speech bubbles trên ảnh hero — text HTML (sửa trong landing.json) */
     bubbles?: Array<{

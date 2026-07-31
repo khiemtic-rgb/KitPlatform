@@ -53,8 +53,6 @@ const data = {
     titleLine2: 'Cha mẹ không còn phải nhắc mỗi ngày.',
     lead: 'Famixa là người bạn đồng hành AI thấu hiểu từng gia đình, giúp cha mẹ nhẹ nhõm, con cái tự giác và gia đình có thêm thời gian chất lượng bên nhau.',
     primaryCta: 'Bắt đầu hành trình',
-    secondaryCta: 'Xem video',
-    secondaryHref: '#video',
     image: { src: '/images/hero-family.png', alt: 'Gia đình bên Fami — trước khi có Famixa' },
     proof: [
       { title: 'Trial 30 ngày', sub: 'Trải nghiệm Peace', icon: 'sparkles' },

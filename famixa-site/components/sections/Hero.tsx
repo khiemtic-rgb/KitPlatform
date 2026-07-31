@@ -54,16 +54,18 @@ export function Hero({ content, appUrl, locale }: Props) {
                 {content.primaryCta}
                 <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
               </Button>
-              <Button
-                href={content.secondaryHref}
-                variant="ghost"
-                className="!min-h-[50px] !rounded-full !border-[#D5D8D4] !bg-white !px-5 !text-[0.95rem] !font-bold !text-[#1D1D1F] !shadow-[0_2px_10px_rgba(16,59,43,0.04)]"
-              >
-                <span className="grid h-7 w-7 place-items-center rounded-full border-[1.5px] border-[#1FA45A] text-[#1FA45A]">
-                  <Play className="h-3 w-3 fill-current" />
-                </span>
-                {content.secondaryCta}
-              </Button>
+              {content.secondaryCta && content.secondaryHref ? (
+                <Button
+                  href={content.secondaryHref}
+                  variant="ghost"
+                  className="!min-h-[50px] !rounded-full !border-[#D5D8D4] !bg-white !px-5 !text-[0.95rem] !font-bold !text-[#1D1D1F] !shadow-[0_2px_10px_rgba(16,59,43,0.04)]"
+                >
+                  <span className="grid h-7 w-7 place-items-center rounded-full border-[1.5px] border-[#1FA45A] text-[#1FA45A]">
+                    <Play className="h-3 w-3 fill-current" />
+                  </span>
+                  {content.secondaryCta}
+                </Button>
+              ) : null}
             </div>
           </div>
 
