@@ -1,5 +1,5 @@
 import { ArrowLeft, ArrowRight, CalendarDays, ExternalLink } from 'lucide-react';
-import { GuideMarkdown } from '@/components/guide/GuideMarkdown';
+import { BlogMarkdown } from '@/components/blog/BlogMarkdown';
 import { BlogShell } from '@/components/blog/BlogShell';
 import { getBlogCategoryLabel } from '@/lib/blog/categories';
 import type { BlogDocument } from '@/lib/blog/content';
@@ -39,7 +39,7 @@ export function BlogArticlePage({ article, appUrl, related = [] }: Props) {
             <p className="m-0 text-[1.05rem] font-medium leading-[1.65] text-[#29493A]">{article.description}</p>
           ) : null}
           <div className={article.description ? 'mt-6' : undefined}>
-            <GuideMarkdown content={article.body} />
+            <BlogMarkdown content={article.body} />
           </div>
         </article>
       </div>

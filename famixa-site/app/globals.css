@@ -514,3 +514,42 @@ input {
   font-size: 0.9rem;
   font-style: italic;
 }
+
+/* Blog — nút CTA trong nội dung markdown */
+.blog-prose .blog-cta-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 1.75rem 0 0.5rem;
+}
+
+.blog-prose a.blog-cta-btn {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  gap: 0.65rem;
+  border-radius: 9999px;
+  background: #103b2b;
+  padding: 0.65rem 0.4rem 0.65rem 1.25rem;
+  color: #fff !important;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-decoration: none !important;
+  box-shadow: 0 10px 24px rgba(16, 59, 43, 0.28);
+  transition: filter 0.2s ease;
+}
+
+.blog-prose a.blog-cta-btn:hover {
+  filter: brightness(1.08);
+}
+
+.blog-prose .blog-cta-icon {
+  display: grid;
+  height: 2rem;
+  width: 2rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: #fff;
+  color: #1fa45a;
+  font-size: 1rem;
+  line-height: 1;
+}

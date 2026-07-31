@@ -92,4 +92,6 @@ collections:
       - label: Nội dung
         name: body
         widget: markdown
-        hint: Dùng heading ##, danh sách *, in đậm **text**.
+        hint: >
+          Heading ##, danh sách *, in đậm **text**.
+          Link app [Khám phá Famixa](https://home.famixa.vn/) hoặc dán URL trần — web tự hiện thành nút CTA đẹp.
