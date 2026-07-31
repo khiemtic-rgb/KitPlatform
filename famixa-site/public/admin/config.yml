@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://unpkg.com/@sveltia/cms/schema/sveltia-cms.json
+# Famixa CMS — đăng bài tại https://famixa.vn/admin/
+
+locale: vi
+
+backend:
+  name: github
+  repo: khiemtic-rgb/KitPlatform
+  branch: main
+  auth_methods: [token]
+  commit_messages:
+    create: 'cms(famixa): thêm bài "{{slug}}"'
+    update: 'cms(famixa): cập nhật bài "{{slug}}"'
+    delete: 'cms(famixa): xóa bài "{{slug}}"'
+    uploadMedia: 'cms(famixa): tải ảnh "{{path}}"'
+    deleteMedia: 'cms(famixa): xóa ảnh "{{path}}"'
+
+media_folder: famixa-site/public/images/blog
+public_folder: /images/blog
+
+slug:
+  encoding: ascii
+  clean_accents: true
+  sanitize_replacement: '-'
+
+collections:
+  - name: goi_cha_me
+    label: Góc cha mẹ
+    label_singular: Bài viết
+    description: Bài blog chia sẻ hàng ngày — hiện tại /vi/goi-cha-me/
+    folder: famixa-site/content/blog
+    create: true
+    delete: true
+    extension: md
+    format: frontmatter
+    slug: '{{slug}}'
+    identifier_field: title
+    summary: '{{title}} — {{category}} — {{pubDate}}'
+    sortable_fields:
+      fields: [pubDate, title, category]
+      default:
+        field: pubDate
+        direction: descending
+    view_groups:
+      - label: Theo chủ đề
+        field: category
+    fields:
+      - label: Tiêu đề
+        name: title
+        widget: string
+        hint: Hiện trên trang bài và Google.
+      - label: Slug (tên file)
+        name: slug
+        widget: string
+        hint: Chỉ chữ thường, gạch ngang. Ví dụ routine-buoi-sang. URL sẽ là /vi/goi-cha-me/slug/
+      - label: Mô tả ngắn
+        name: description
+        widget: text
+        required: false
+        hint: Bỏ trống → web tự cắt ~160 ký tự đầu nội dung.
+      - label: Chủ đề
+        name: category
+        widget: select
+        required: true
+        default: nuoi-day
+        options:
+          - { label: Nuôi dạy có phương pháp, value: nuoi-day }
+          - { label: Nhịp sinh hoạt, value: routine }
+          - { label: Màn hình & thiết bị, value: man-hinh }
+          - { label: Tự giác & trưởng thành, value: tu-giac }
+          - { label: Dùng Famixa, value: famixa }
+      - label: Ảnh hiển thị
+        name: image
+        widget: image
+        required: true
+        choose_url: false
+        hint: Thumbnail + đầu bài. Khuyến nghị 1200×630 px.
+      - label: Ngày đăng
+        name: pubDate
+        widget: datetime
+        date_format: YYYY-MM-DD
+        time_format: false
+        format: YYYY-MM-DD
+        hint: Bài có ngày sau hôm nay sẽ ẩn đến đúng ngày (giờ VN).
+      - label: Bản nháp
+        name: draft
+        widget: boolean
+        default: false
+        hint: Bật → bài không hiện trên web dù đã lưu.
+      - label: Ngôn ngữ
+        name: lang
+        widget: select
+        options:
+          - { label: Tiếng Việt, value: vi }
+        default: vi
+      - label: Nội dung
+        name: body
+        widget: markdown
+        hint: Dùng heading ##, danh sách *, in đậm **text**.

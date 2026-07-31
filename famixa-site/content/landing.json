@@ -550,6 +550,7 @@
       { "href": "/vi/goi/", "label": "Gói đồng hành" }
     ],
     "resources": [
+      { "href": "/vi/goi-cha-me/", "label": "Góc cha mẹ" },
       { "href": "/vi/cau-chuyen/", "label": "Câu chuyện" },
       { "href": "/vi/huong-dan/", "label": "Hướng dẫn sử dụng" }
     ],

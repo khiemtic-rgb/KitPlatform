@@ -74,8 +74,42 @@ Trang: **https://famixa.vn/vi/thong-ke** — mật khẩu mặc định **`famix
 |----|----|
 | `/vi/goi/` | `/en/plans/` |
 | `/vi/cau-chuyen/` | `/en/stories/` |
+| `/vi/goi-cha-me/` | _(VI only — blog)_ |
+| `/vi/huong-dan/` | _(VI only — guide)_ |
 | `/vi/ve-famixa/` | `/en/about/` |
 | `/vi/chinh-sach-bao-mat/` | `/en/privacy/` |
 | `/vi/dieu-khoan/` | `/en/terms/` |
 
-Nội dung: `content/specialty.ts`. CTA “So sánh chi tiết” / “Xem thêm câu chuyện” / footer legal trỏ các route này.
+Nội dung chuyên trang: `content/specialty.ts`. Blog: `content/blog/*.md`. Hướng dẫn: `content/guide/*.md`.
+
+## Blog — Góc cha mẹ
+
+| URL | Mô tả |
+|-----|--------|
+| `/vi/goi-cha-me/` | Hub bài viết |
+| `/vi/goi-cha-me/[slug]/` | Bài chi tiết |
+
+- SoT: `content/blog/*.md` (frontmatter + markdown body)
+- Loader: `lib/blog/content.ts`
+- UI: `components/blog/*`
+- Chủ đề: `lib/blog/categories.ts`
+- Bài `draft: true` hoặc `pubDate` tương lai (giờ VN) sẽ ẩn trên web
+
+## CMS đăng bài (Sveltia)
+
+| URL | Mô tả |
+|-----|--------|
+| **https://famixa.vn/admin/** | Giao diện đăng bài |
+| `public/admin/config.yml` | Schema collection |
+| `public/admin/HUONG-DAN.md` | Hướng dẫn nhanh |
+
+Đăng nhập bằng **GitHub Access Token** (Contents: Read/Write trên repo `KitPlatform`). Lưu bài → commit lên `main` → Cloudflare Pages tự build.
+
+**Phân vai nội dung:**
+
+| Mục | Cách sửa |
+|-----|----------|
+| Góc cha mẹ (blog) | CMS `/admin/` |
+| Câu chuyện | `content/specialty.ts` |
+| Hướng dẫn app | `content/guide/*.md` |
+| Landing | `content/landing.json` |

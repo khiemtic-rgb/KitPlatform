@@ -2,7 +2,7 @@
 
 @source "../app/**/*.{js,ts,jsx,tsx,mdx}";
 @source "../components/**/*.{js,ts,jsx,tsx,mdx}";
-@source "../content/**/*.{js,ts,jsx,tsx,json}";
+@source "../content/blog/**/*.{md,json}";
 @source "../lib/**/*.{js,ts,jsx,tsx}";
 
 @theme {

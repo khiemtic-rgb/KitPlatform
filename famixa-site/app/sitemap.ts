@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/site';
 import { SPECIALTY } from '@/lib/specialty-routes';
 import { getGuideArticles } from '@/lib/guide/content';
+import { getBlogArticles, getBlogHubMeta } from '@/lib/blog/content';
 
 export const dynamic = 'force-static';
 
@@ -76,5 +77,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
   ];
 
-  return [...home, ...specialty, ...specialtyEn, ...guide];
+  const blogHub = getBlogHubMeta();
+  const blog: MetadataRoute.Sitemap = [
+    {
+      url: `${base}${blogHub.slug}`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    ...getBlogArticles().map((article) => ({
+      url: `${base}${article.slug}/`,
+      lastModified: new Date(article.pubDate),
+      changeFrequency: 'monthly' as const,
+      priority: 0.75,
+    })),
+  ];
+
+  return [...home, ...specialty, ...specialtyEn, ...guide, ...blog];
 }
