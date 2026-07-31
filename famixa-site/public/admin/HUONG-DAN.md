@@ -16,7 +16,7 @@ Tài khoản GitHub phải có quyền **Write** trên repo `khiemtic-rgb/KitPla
 ## Đăng bài mỗi ngày
 
 1. Chọn **Góc cha mẹ** → **New**.
-2. Điền **Tiêu đề**, **Slug** (tên file, ví dụ `routine-chieu-thu`).
+2. Điền **Tiêu đề** — URL/file tự sinh (bỏ dấu, gạch ngang). Ví dụ *5 phút buổi sáng...* → `/vi/goi-cha-me/5-phut-buoi-sang/`.
 3. Chọn **Chủ đề**, upload **Ảnh hiển thị** (1200×630 khuyến nghị).
 4. Chọn **Ngày đăng** — có thể hẹn ngày tương lai, bài sẽ tự ẩn đến đúng ngày (giờ VN).
 5. Viết **Nội dung** (markdown).

@@ -33,7 +33,7 @@ collections:
     delete: true
     extension: md
     format: frontmatter
-    slug: '{{slug}}'
+    slug: '{{title}}'
     identifier_field: title
     summary: '{{title}} — {{category}} — {{pubDate}}'
     sortable_fields:
@@ -48,11 +48,7 @@ collections:
       - label: Tiêu đề
         name: title
         widget: string
-        hint: Hiện trên trang bài và Google.
-      - label: Slug (tên file)
-        name: slug
-        widget: string
-        hint: Chỉ chữ thường, gạch ngang. Ví dụ routine-buoi-sang. URL sẽ là /vi/goi-cha-me/slug/
+        hint: Hiện trên trang bài và Google. URL tự tạo từ tiêu đề (vd. "5 phút buổi sáng..." → 5-phut-buoi-sang...).
       - label: Mô tả ngắn
         name: description
         widget: text
