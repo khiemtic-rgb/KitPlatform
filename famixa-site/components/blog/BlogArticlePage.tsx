@@ -31,8 +31,13 @@ export function BlogArticlePage({ article, appUrl, related = [] }: Props) {
       </div>
 
       <div className="overflow-hidden rounded-[24px] border border-[#E5EAE6] bg-white shadow-[0_8px_28px_rgba(16,59,43,0.05)]">
-        <div className="aspect-[16/9] max-h-[420px] overflow-hidden bg-[#F3F0E8]">
-          <img src={article.image} alt="" className="h-full w-full object-cover" loading="eager" />
+        <div className="overflow-hidden bg-[#F3F0E8]">
+          <img
+            src={article.image}
+            alt=""
+            className="block h-auto w-full max-h-[min(560px,72vh)] object-contain object-top"
+            loading="eager"
+          />
         </div>
         <article className="px-5 py-7 sm:px-8 sm:py-9">
           {article.description ? (
