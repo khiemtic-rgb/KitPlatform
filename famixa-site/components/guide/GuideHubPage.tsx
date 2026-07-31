@@ -1,10 +1,10 @@
 import { ArrowRight, Clock3, Sparkles } from 'lucide-react';
 import { GuideShell } from '@/components/guide/GuideShell';
-import { getGuideArticles, getGuideHub } from '@/lib/guide/content';
+import { getGuideHubArticles, getGuideHub } from '@/lib/guide/content';
 
 export async function GuideHubPage() {
   const hub = getGuideHub();
-  const articles = getGuideArticles();
+  const articles = getGuideHubArticles();
 
   return (
     <GuideShell

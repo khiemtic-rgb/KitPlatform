@@ -11,6 +11,8 @@ export type GuideFrontmatter = {
   title: string;
   slug: string;
   status: GuideStatus;
+  /** false = ẩn khỏi hub / next-step; trang vẫn truy cập trực tiếp nếu cần */
+  hub?: boolean;
   persona: 'parent';
   plan_note: string;
   last_verified: string;
@@ -64,6 +66,10 @@ export function getGuideHub() {
 
 export function getGuideArticles() {
   return getArticleFilenames().map(readGuideFile);
+}
+
+export function getGuideHubArticles() {
+  return getGuideArticles().filter((article) => article.hub !== false);
 }
 
 export function getGuideArticle(routeSlug: string) {

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/site';
 import { SPECIALTY } from '@/lib/specialty-routes';
-import { getGuideArticles } from '@/lib/guide/content';
+import { getGuideHubArticles } from '@/lib/guide/content';
 import { getBlogArticles, getBlogHubMeta } from '@/lib/blog/content';
 
 export const dynamic = 'force-static';
@@ -69,7 +69,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.85,
     },
-    ...getGuideArticles().map((article) => ({
+    ...getGuideHubArticles().map((article) => ({
       url: `${base}${article.slug}/`,
       lastModified: new Date(article.last_verified),
       changeFrequency: 'monthly' as const,

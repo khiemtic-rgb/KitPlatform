@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { GuideArticlePage } from '@/components/guide/GuideArticlePage';
-import { getGuideArticle, getGuideArticles, getGuideRouteSlugs } from '@/lib/guide/content';
+import { getGuideArticle, getGuideHubArticles, getGuideRouteSlugs } from '@/lib/guide/content';
 import { absoluteUrl } from '@/lib/site';
 
 type Props = {
@@ -34,7 +34,7 @@ export default async function Page({ params }: Props) {
 
   if (!article) notFound();
 
-  const articles = getGuideArticles();
+  const articles = getGuideHubArticles();
   const index = articles.findIndex((item) => item.routeSlug === article.routeSlug);
 
   return <GuideArticlePage article={article} nextArticle={articles[index + 1]} />;

@@ -20,10 +20,8 @@ Mỗi bài trả lời: *Sau khi đọc xong, mình sẽ làm được gì?*
 3. [Gia nhập bằng mã mời](/vi/huong-dan/gia-nhap-bang-ma)  
 4. [Chọn ai đang dùng](/vi/huong-dan/chon-thanh-vien)  
 5. [Thêm thành viên](/vi/huong-dan/them-thanh-vien)  
-6. [Mời người thân (Mã nhà)](/vi/huong-dan/moi-thanh-vien)  
-7. [Lịch hôm nay](/vi/huong-dan/lich-hom-nay)  
-8. [Routine đầu tiên](/vi/huong-dan/routine-dau-tien)  
-9. [Tài khoản & Cài đặt](/vi/huong-dan/cai-dat)  
+6. [Lịch hôm nay](/vi/huong-dan/lich-hom-nay)  
+7. [Routine đầu tiên](/vi/huong-dan/routine-dau-tien)  
 
 ## Lộ trình 15 phút ngày đầu
 

@@ -2,6 +2,7 @@
 title: Mời người thân tham gia nhà (Mã nhà)
 slug: /vi/huong-dan/moi-thanh-vien
 status: draft
+hub: false
 persona: parent
 plan_note: trial
 last_verified: 2026-07-30

@@ -2,6 +2,7 @@
 title: Tài khoản và cài đặt cơ bản
 slug: /vi/huong-dan/cai-dat
 status: draft
+hub: false
 persona: parent
 plan_note: any
 last_verified: 2026-07-30
