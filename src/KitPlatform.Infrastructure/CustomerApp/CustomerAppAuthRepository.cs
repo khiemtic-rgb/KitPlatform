@@ -278,6 +278,27 @@ internal sealed class CustomerAppAuthRepository
         return await conn.QuerySingleOrDefaultAsync<CustomerAccountRecord>(sql, new { AccountId = accountId });
     }
 
+    /// <summary>CRM pharmacy_relation for Soft Refill / app gates (default member if unset).</summary>
+    public async Task<string> GetPharmacyRelationAsync(
+        Guid tenantId,
+        Guid customerId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT COALESCE(NULLIF(TRIM(c.pharmacy_relation), ''), 'member')
+            FROM customers c
+            WHERE c.tenant_id = @TenantId
+              AND c.id = @CustomerId
+              AND c.deleted_at IS NULL
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var relation = await conn.ExecuteScalarAsync<string?>(
+            sql,
+            new { TenantId = tenantId, CustomerId = customerId });
+        return string.IsNullOrWhiteSpace(relation) ? "member" : relation.Trim().ToLowerInvariant();
+    }
+
     public async Task<bool> UpdatePreferredLocaleAsync(
         Guid accountId,
         string locale,
