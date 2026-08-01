@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-01T03:52:22.509Z",
+  "generatedAt": "2026-08-01T08:34:43.177Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 37,
-    "todayPageViews": 12,
-    "todayRequests": 83,
-    "last24hVisitors": 323,
-    "last24hPageViews": 264,
-    "last24hRequests": 816
+    "todayVisitors": 191,
+    "todayPageViews": 120,
+    "todayRequests": 412,
+    "last24hVisitors": 301,
+    "last24hPageViews": 229,
+    "last24hRequests": 801
   },
   "hourly": [
-    {
-      "time": "2026-07-31T04:00:00Z",
-      "visitors": 33,
-      "requests": 35
-    },
-    {
-      "time": "2026-07-31T05:00:00Z",
-      "visitors": 20,
-      "requests": 28
-    },
-    {
-      "time": "2026-07-31T06:00:00Z",
-      "visitors": 18,
-      "requests": 36
-    },
-    {
-      "time": "2026-07-31T07:00:00Z",
-      "visitors": 117,
-      "requests": 188
-    },
-    {
-      "time": "2026-07-31T08:00:00Z",
-      "visitors": 38,
-      "requests": 46
-    },
     {
       "time": "2026-07-31T09:00:00Z",
       "visitors": 27,
@@ -128,8 +103,33 @@
     },
     {
       "time": "2026-08-01T03:00:00Z",
-      "visitors": 16,
+      "visitors": 20,
+      "requests": 26
+    },
+    {
+      "time": "2026-08-01T04:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-08-01T05:00:00Z",
+      "visitors": 18,
       "requests": 22
+    },
+    {
+      "time": "2026-08-01T06:00:00Z",
+      "visitors": 17,
+      "requests": 74
+    },
+    {
+      "time": "2026-08-01T07:00:00Z",
+      "visitors": 125,
+      "requests": 190
+    },
+    {
+      "time": "2026-08-01T08:00:00Z",
+      "visitors": 18,
+      "requests": 27
     }
   ],
   "daily": [
@@ -171,55 +171,47 @@
     },
     {
       "date": "2026-08-01",
-      "visitors": 37,
-      "pageViews": 12,
-      "requests": 83
+      "visitors": 191,
+      "pageViews": 120,
+      "requests": 412
     }
   ],
   "topPages": [
     {
       "path": "/vi/tin-tuc/nhung-sai-lam-am-tham-ngon-loi-nhuan-khi-dieu-hanh-nha-thuoc/",
-      "views": 143
+      "views": 82
     },
     {
-      "path": "/images/tin-tuc/nhung-sai-lam-pho-bien.png",
-      "views": 83
+      "path": "/vi/tin-tuc/competency-score-thay-doi-cach-danh-gia-nhan-vien/",
+      "views": 78
     },
     {
-      "path": "/vi/tin-tuc/cach-xay-dung-quy-trinh-van-hanh-cho-nha-thuoc-tu-dau-tu-hon-loan-den-tu-dong-hoa/",
-      "views": 52
+      "path": "/images/tin-tuc/thay-doi-cach-danh-gia-nhan-vien.png",
+      "views": 63
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 44
+      "views": 52
     },
     {
       "path": "/vi/",
       "views": 41
     },
     {
-      "path": "/images/tin-tuc/cach-xay-dung-quy-trinh-van-hanh.png",
-      "views": 32
+      "path": "/images/tin-tuc/nhung-sai-lam-pho-bien.png",
+      "views": 29
     },
     {
-      "path": "/images/tin-tuc/giup-danh-gia-nang-luc-thuc-te.png",
-      "views": 26
+      "path": "/images/tin-tuc/cach-xay-dung-quy-trinh-van-hanh.png",
+      "views": 28
     },
     {
       "path": "/",
+      "views": 27
+    },
+    {
+      "path": "/images/tin-tuc/giup-danh-gia-nang-luc-thuc-te.png",
       "views": 24
-    },
-    {
-      "path": "/robots.txt",
-      "views": 23
-    },
-    {
-      "path": "/settings.json",
-      "views": 21
-    },
-    {
-      "path": "/dev/.env",
-      "views": 21
     },
     {
       "path": "/_next/static/buildManifest.js",
@@ -231,6 +223,14 @@
     },
     {
       "path": "/docker/.env",
+      "views": 21
+    },
+    {
+      "path": "/settings.json",
+      "views": 21
+    },
+    {
+      "path": "/dev/.env",
       "views": 21
     },
     {
