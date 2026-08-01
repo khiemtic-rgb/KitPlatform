@@ -1,5 +1,18 @@
 ---
 import { homeLanding as h } from '../../lib/home-landing';
+
+const whyIcons = [
+  // CRM
+  '<path d="M12 12a3.5 3.5 0 1 0-3.5-3.5A3.5 3.5 0 0 0 12 12Zm0 1.5c-3.2 0-6 1.6-6 3.5V18h12v-1c0-1.9-2.8-3.5-6-3.5Z"/>',
+  // FEFO / box
+  '<path d="M4.5 7.5 12 3.5l7.5 4v9L12 20.5 4.5 16.5v-9Zm7.5 2.2L7 7.2v7.9l5 2.7 5-2.7V7.2l-5 2.5Z"/>',
+  // App / phone
+  '<path d="M8 3.5h8A1.5 1.5 0 0 1 17.5 5v14a1.5 1.5 0 0 1-1.5 1.5H8A1.5 1.5 0 0 1 6.5 19V5A1.5 1.5 0 0 1 8 3.5Zm0 2v10.5h8V5.5H8Zm4 13a1 1 0 1 0-1-1 1 1 0 0 0 1 1Z"/>',
+  // AI / spark
+  '<path d="M12 3.5 13.2 8l4.3 1.2L13.2 10.4 12 14.9l-1.2-4.5L6.5 9.2 10.8 8 12 3.5Zm5.5 8.5.7 2.5 2.5.7-2.5.7-.7 2.5-.7-2.5-2.5-.7 2.5-.7.7-2.5Z"/>',
+  // Cloud
+  '<path d="M8.5 17.5h8.2a3.3 3.3 0 0 0 .4-6.6 4.5 4.5 0 0 0-8.7-1.4A3.6 3.6 0 0 0 8.5 17.5Z"/>',
+] as const;
 ---
 
 <section class="hl-why section" aria-labelledby="hl-why-title">
@@ -7,9 +20,9 @@ import { homeLanding as h } from '../../lib/home-landing';
     <h2 id="hl-why-title" class="hl-why__title">{h.why.title}</h2>
     <ul class="hl-why__stats">
       {
-        h.why.stats.map((stat) => (
+        h.why.stats.map((stat, i) => (
           <li>
-            <span class="hl-why__ico" aria-hidden="true" />
+            <span class="hl-why__ico" aria-hidden="true" set:html={`<svg viewBox="0 0 24 24" fill="currentColor">${whyIcons[i]}</svg>`} />
             <strong>{stat.value}</strong>
             <span>{stat.label}</span>
           </li>
@@ -20,10 +33,14 @@ import { homeLanding as h } from '../../lib/home-landing';
     <div class="hl-eco" id="ecosystem">
       <h2 class="hl-eco__title">{h.ecosystem.title}</h2>
       <div class="hl-eco__diagram" aria-hidden="true">
+        <span class="hl-eco__ring hl-eco__ring--outer"></span>
+        <span class="hl-eco__ring hl-eco__ring--inner"></span>
+        <span class="hl-eco__line hl-eco__line--t"></span>
+        <span class="hl-eco__line hl-eco__line--bl"></span>
+        <span class="hl-eco__line hl-eco__line--br"></span>
         <span class="hl-eco__node hl-eco__node--top">{h.ecosystem.nodes[0]}</span>
         <span class="hl-eco__node hl-eco__node--left">{h.ecosystem.nodes[1]}</span>
         <span class="hl-eco__node hl-eco__node--right">{h.ecosystem.nodes[2]}</span>
-        <span class="hl-eco__ring" />
         <span class="hl-eco__core">{h.ecosystem.center}</span>
       </div>
     </div>

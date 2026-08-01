@@ -19,6 +19,10 @@
   text-decoration: none;
 }
 
+.home-page .section {
+  padding: clamp(2.5rem, 5vw, 4rem) 0;
+}
+
 .hl-btn {
   display: inline-flex;
   align-items: center;
@@ -159,13 +163,19 @@
 
 .hl-hero__stat-ico {
   flex-shrink: 0;
-  width: 2.1rem;
-  height: 2.1rem;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 35% 35%, #7ddea8, transparent 55%),
-    var(--hl-green-soft);
-  border: 2px solid rgba(22, 199, 132, 0.35);
+  background: var(--hl-green-soft);
+  color: var(--hl-green-dark);
+  border: 1px solid rgba(22, 199, 132, 0.28);
+}
+
+.hl-hero__stat-ico svg {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .hl-hero__stat-text {
@@ -212,6 +222,7 @@
   padding: 1.25rem 1.15rem 1.35rem;
   box-shadow: 0 12px 30px rgba(11, 31, 51, 0.045);
   min-height: 100%;
+  overflow: hidden;
 }
 
 .hl-card h2 {
@@ -246,8 +257,11 @@
   border-radius: 50%;
   background: var(--hl-blue-soft);
   color: var(--hl-blue);
-  font-size: 1rem;
-  font-weight: 700;
+}
+
+.hl-pain-ico svg {
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .hl-pain-grid strong {
@@ -292,8 +306,8 @@
 .hl-orbit__node {
   position: absolute;
   z-index: 1;
-  max-width: 6.5rem;
-  padding: 0.4rem 0.55rem;
+  width: 5.6rem;
+  padding: 0.4rem 0.35rem;
   border-radius: 999px;
   background: var(--hl-green-soft);
   color: var(--hl-green-dark);
@@ -304,10 +318,10 @@
   box-shadow: 0 4px 12px rgba(11, 31, 51, 0.06);
 }
 
-.hl-orbit__node--1 { top: 0; left: 50%; transform: translateX(-50%); }
-.hl-orbit__node--2 { top: 50%; right: 0; transform: translateY(-50%); }
-.hl-orbit__node--3 { bottom: 0; left: 50%; transform: translateX(-50%); }
-.hl-orbit__node--4 { top: 50%; left: 0; transform: translateY(-50%); }
+.hl-orbit__node--1 { top: 2%; left: 50%; transform: translateX(-50%); }
+.hl-orbit__node--2 { top: 50%; right: 1%; transform: translateY(-50%); }
+.hl-orbit__node--3 { bottom: 2%; left: 50%; transform: translateX(-50%); }
+.hl-orbit__node--4 { top: 50%; left: 1%; transform: translateY(-50%); }
 
 /* Lifecycle ring */
 .hl-cycle-ring {
@@ -343,28 +357,29 @@
 .hl-cycle-ring__step {
   position: absolute;
   z-index: 1;
-  width: 5.6rem;
+  width: 5.2rem;
   text-align: center;
 }
 
 .hl-cycle-ring__step span {
   display: inline-block;
-  padding: 0.35rem 0.45rem;
+  max-width: 100%;
+  padding: 0.3rem 0.35rem;
   border-radius: 999px;
   background: #f1f5f9;
   border: 1px solid var(--hl-border);
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   font-weight: 650;
-  line-height: 1.25;
+  line-height: 1.2;
   color: var(--hl-navy);
 }
 
 .hl-cycle-ring__step--1 { top: 0; left: 50%; transform: translateX(-50%); }
-.hl-cycle-ring__step--2 { top: 18%; right: 0; }
-.hl-cycle-ring__step--3 { bottom: 18%; right: 0; }
+.hl-cycle-ring__step--2 { top: 20%; right: 0; }
+.hl-cycle-ring__step--3 { bottom: 20%; right: 0; }
 .hl-cycle-ring__step--4 { bottom: 0; left: 50%; transform: translateX(-50%); }
-.hl-cycle-ring__step--5 { bottom: 18%; left: 0; }
-.hl-cycle-ring__step--6 { top: 18%; left: 0; }
+.hl-cycle-ring__step--5 { bottom: 20%; left: 0; }
+.hl-cycle-ring__step--6 { top: 20%; left: 0; }
 
 .hl-cycle-ring::before {
   content: '';
@@ -396,6 +411,7 @@
   border-radius: var(--hl-radius);
   border: 1px solid var(--hl-border);
   min-height: 100%;
+  height: 100%;
 }
 
 .hl-panel--people {
@@ -521,6 +537,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  min-height: 16rem;
   padding: 1rem;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.07);
@@ -593,11 +610,19 @@
 }
 
 .hl-why__ico {
-  width: 2rem;
-  height: 2rem;
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
   border-radius: 50%;
   background: var(--hl-green-soft);
-  border: 2px solid rgba(22, 199, 132, 0.3);
+  color: var(--hl-green-dark);
+  border: 1px solid rgba(22, 199, 132, 0.28);
+}
+
+.hl-why__ico svg {
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .hl-why__stats strong {
@@ -618,27 +643,70 @@
 
 .hl-eco__diagram {
   position: relative;
-  min-height: 260px;
+  min-height: 280px;
   border-radius: var(--hl-radius);
-  background: #fff;
+  background:
+    radial-gradient(circle at 50% 52%, rgba(37, 99, 235, 0.06), transparent 42%),
+    #fff;
   border: 1px solid var(--hl-border);
   display: grid;
   place-items: center;
   padding: 1.5rem;
+  overflow: hidden;
 }
 
 .hl-eco__ring {
   position: absolute;
-  width: min(72%, 240px);
-  aspect-ratio: 1;
-  border: 2px dashed #c9d6e8;
   border-radius: 50%;
+  border: 2px dashed #c9d6e8;
+  pointer-events: none;
+}
+
+.hl-eco__ring--outer {
+  width: min(78%, 260px);
+  aspect-ratio: 1;
+}
+
+.hl-eco__ring--inner {
+  width: min(48%, 150px);
+  aspect-ratio: 1;
+  border-style: solid;
+  border-color: #e2eaf4;
+}
+
+.hl-eco__line {
+  position: absolute;
+  width: 2px;
+  height: 3.2rem;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.35), rgba(22, 199, 132, 0.45));
+  border-radius: 2px;
+  z-index: 1;
+}
+
+.hl-eco__line--t {
+  top: 28%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.hl-eco__line--bl {
+  bottom: 28%;
+  left: 32%;
+  transform: rotate(48deg);
+  background: linear-gradient(180deg, rgba(22, 199, 132, 0.45), rgba(37, 99, 235, 0.35));
+}
+
+.hl-eco__line--br {
+  bottom: 28%;
+  right: 32%;
+  transform: rotate(-48deg);
+  background: linear-gradient(180deg, rgba(22, 199, 132, 0.45), rgba(37, 99, 235, 0.35));
 }
 
 .hl-eco__core {
   position: relative;
   z-index: 2;
-  padding: 0.85rem 1.15rem;
+  padding: 0.9rem 1.2rem;
   border-radius: 999px;
   background: var(--hl-blue);
   color: #fff;
@@ -651,17 +719,18 @@
 .hl-eco__node {
   position: absolute;
   z-index: 2;
-  padding: 0.55rem 0.9rem;
+  padding: 0.55rem 0.95rem;
   border-radius: 999px;
   background: var(--hl-green-soft);
   color: var(--hl-green-dark);
   font-weight: 700;
   font-size: 0.82rem;
+  box-shadow: 0 6px 16px rgba(11, 31, 51, 0.06);
 }
 
-.hl-eco__node--top { top: 1.1rem; left: 50%; transform: translateX(-50%); }
-.hl-eco__node--left { bottom: 1.35rem; left: 1.25rem; }
-.hl-eco__node--right { bottom: 1.35rem; right: 1.25rem; }
+.hl-eco__node--top { top: 1rem; left: 50%; transform: translateX(-50%); }
+.hl-eco__node--left { bottom: 1.15rem; left: 8%; }
+.hl-eco__node--right { bottom: 1.15rem; right: 8%; }
 
 /* Pricing */
 .hl-pricing__box {

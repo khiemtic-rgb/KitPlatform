@@ -1,5 +1,11 @@
 ---
 import { homeLanding as h } from '../../lib/home-landing';
+
+const heroIcons = [
+  '<path d="M4 5h16v3H4V5Zm0 5h10v9H4v-9Zm12 0h4v9h-4v-9Z"/>',
+  '<path d="M8 3.5h8A1.5 1.5 0 0 1 17.5 5v14a1.5 1.5 0 0 1-1.5 1.5H8A1.5 1.5 0 0 1 6.5 19V5A1.5 1.5 0 0 1 8 3.5Zm4 14.2a1 1 0 1 0-1-1 1 1 0 0 0 1 1Z"/>',
+  '<path d="M12 3.5 13.2 8l4.3 1.2L13.2 10.4 12 14.9l-1.2-4.5L6.5 9.2 10.8 8 12 3.5Z"/>',
+] as const;
 ---
 
 <section class="hl-hero" aria-labelledby="hl-hero-title">
@@ -33,9 +39,13 @@ import { homeLanding as h } from '../../lib/home-landing';
   <div class="container">
     <ul class="hl-hero__stats">
       {
-        h.hero.stats.map((stat) => (
+        h.hero.stats.map((stat, i) => (
           <li>
-            <span class="hl-hero__stat-ico" aria-hidden="true" />
+            <span
+              class="hl-hero__stat-ico"
+              aria-hidden="true"
+              set:html={`<svg viewBox="0 0 24 24" fill="currentColor">${heroIcons[i]}</svg>`}
+            />
             <span class="hl-hero__stat-text">
               <strong>{stat.value}</strong>
               <span>{stat.label}</span>

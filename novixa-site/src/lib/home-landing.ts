@@ -46,10 +46,10 @@ export const homeLanding = {
     steps: [
       'Khám bệnh',
       'Kê đơn',
-      'Mua tại nhà thuốc',
-      'Chăm sóc Novixa',
-      'Nhắc uống / theo dõi',
-      'Mua lại dễ dàng',
+      'Nhà thuốc',
+      'CSKH Novixa',
+      'Nhắc uống',
+      'Mua lại',
     ],
   },
 
