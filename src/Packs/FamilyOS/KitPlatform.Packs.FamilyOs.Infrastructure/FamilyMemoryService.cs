@@ -30,6 +30,7 @@ internal sealed class FamilyMemoryService : IFamilyMemoryService
         DateOnly? to = null,
         bool favoritesOnly = false,
         int limit = 60,
+        Guid? memberId = null,
         CancellationToken cancellationToken = default)
     {
         await _commercial.EnsureCapabilityAsync(
@@ -38,7 +39,7 @@ internal sealed class FamilyMemoryService : IFamilyMemoryService
             throw new InvalidOperationException("Không tìm thấy gia đình.");
 
         var rows = await _repo.ListAsync(
-            familyId, from, to, favoritesOnly, Math.Clamp(limit, 1, MaxLimit), cancellationToken);
+            familyId, from, to, favoritesOnly, Math.Clamp(limit, 1, MaxLimit), memberId, cancellationToken);
         return rows.Select(Map).ToList();
     }
 
@@ -140,7 +141,7 @@ internal sealed class FamilyMemoryService : IFamilyMemoryService
         var bestStreak = await _repo.GetBestStreakAsync(familyId, rangeFrom, rangeTo, cancellationToken);
 
         var highlights = await _repo.ListAsync(
-            familyId, rangeFrom, rangeTo, favoritesOnly: false, limit: 12, cancellationToken);
+            familyId, rangeFrom, rangeTo, favoritesOnly: false, limit: 12, memberId: null, cancellationToken);
 
         return new FamilyMemoryRecapDto(
             rangeFrom,

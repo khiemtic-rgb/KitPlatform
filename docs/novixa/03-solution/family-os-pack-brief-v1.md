@@ -12,6 +12,7 @@
 
 Tagline: **One Family. One Plan. One Daily Flow.**  
 Bổ sung (Team Play): **Not “I finished.” — “We finished.”** — xem [family-team-play-v1.md](./family-team-play-v1.md).  
+Bổ sung (Relationship Engine): **AI đề xuất — người nói — app chuyển lời** · Member Home cá nhân hóa — xem [relationship-engine-v1.md](./relationship-engine-v1.md).  
 Bổ sung (AFE): **Gia đình không học Famixa — Famixa học từng gia đình.** — xem [adaptive-family-engine-v1.md](./adaptive-family-engine-v1.md). Cha mẹ duyệt vài giây; con đề xuất có trách nhiệm; không cấu hình Rule theo ngày.
 
 Vấn đề không phải “quên việc” (Todo/Calendar đã làm được). Vấn đề là **không có cơ chế thực thi cam kết chung của cả nhà**.

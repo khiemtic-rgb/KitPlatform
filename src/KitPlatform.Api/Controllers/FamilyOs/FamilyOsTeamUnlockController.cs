@@ -46,7 +46,10 @@ public sealed class FamilyOsTeamUnlockController : ControllerBase
         try
         {
             if (ensure)
+            {
                 await _team.EnsurePendingAsync(familyId, flowDate, cancellationToken);
+                await _team.EnsureSiblingComboPendingAsync(familyId, flowDate, cancellationToken);
+            }
             return Ok(await _team.ListAsync(familyId, flowDate, cancellationToken));
         }
         catch (InvalidOperationException ex)

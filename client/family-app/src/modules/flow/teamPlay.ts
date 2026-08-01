@@ -82,7 +82,7 @@ export function roleMatrixBriefTip(stageLabelVi?: string | null): string | null 
 }
 
 export type NudgeTemplateOption = {
-  code: 'cheer_up' | 'one_left' | 'you_got_this';
+  code: 'cheer_up' | 'one_left' | 'you_got_this' | 'thanks_back';
   title: string;
   hint: string;
 };
@@ -105,9 +105,17 @@ export function nudgeMessagePreview(
       return `${toShort} ơi, cả đội còn 1 việc nữa thôi — ${fromShort} cổ vũ em!`;
     case 'you_got_this':
       return `${toShort} cố lên nhé! ${fromShort} tin em làm được.`;
+    case 'thanks_back':
+      return `${toShort} ơi, cảm ơn lời nhắc hôm nay — ${fromShort} nhớ ơn anh/chị!`;
     default:
       return `${toShort} ơi, ${fromShort} nhắc nhẹ — mình cùng xong ngày hôm nay nhé!`;
   }
+}
+
+export const SIBLING_COMBO_REWARD = 'sibling_combo_highfive';
+
+export function isSiblingComboUnlock(rewardCode?: string | null): boolean {
+  return (rewardCode ?? '').toLowerCase() === SIBLING_COMBO_REWARD;
 }
 
 export function slicesFromCommitments(

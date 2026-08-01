@@ -155,6 +155,108 @@ internal sealed class FamilyTeamUnlockService : IFamilyTeamUnlockService
         return row is null ? null : Map(row);
     }
 
+    public async Task<FamilyTeamUnlockDto?> EnsureSiblingComboPendingAsync(
+        Guid familyId,
+        DateOnly? flowDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        var team = await GetTeamDayAsync(familyId, flowDate, cancellationToken);
+        if (team.DayFlowId is null)
+            return null;
+
+        var family = await _families.GetFamilyAsync(familyId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+        var today = DateOnly.FromDateTime(FamilyTimeZones.NowIn(family.Timezone).DateTime);
+        var date = flowDate ?? today;
+        var flow = await _dayFlows.GetByDateAsync(familyId, date, cancellationToken);
+        if (flow is null)
+            return null;
+
+        var members = await _families.ListMembersAsync(familyId, cancellationToken);
+        var childIds = members
+            .Where(m => m.RoleCode.Equals("child", StringComparison.OrdinalIgnoreCase))
+            .Select(m => m.Id)
+            .ToHashSet();
+        if (childIds.Count < 2)
+            return null;
+
+        var commitments = await _dayFlows.ListCommitmentsAsync(flow.Id, cancellationToken);
+        var pair = FindSiblingPairDone(commitments, childIds);
+        if (pair is null)
+            return null;
+
+        var rewardCode = FamilySiblingComboUnlock.RewardCode;
+        var label = string.IsNullOrWhiteSpace(pair.Value.Title)
+            ? FamilySiblingComboUnlock.DefaultLabelVi
+            : $"High-five: {pair.Value.Title}";
+        if (label.Length > 120)
+            label = label[..117] + "…";
+
+        await _repo.UpsertPendingAsync(
+            familyId,
+            team.DayFlowId.Value,
+            team.FlowDate,
+            rewardCode,
+            label,
+            agreementId: null,
+            teamDone: pair.Value.MemberCount,
+            teamTotal: pair.Value.MemberCount,
+            teamPercent: 100,
+            cancellationToken);
+
+        var list = await _repo.ListAsync(familyId, team.FlowDate, cancellationToken);
+        var row = list.FirstOrDefault(r =>
+            r.RewardCode.Equals(rewardCode, StringComparison.OrdinalIgnoreCase));
+        return row is null ? null : Map(row);
+    }
+
+    /// <summary>
+    /// Same normalized mission title, done by ≥2 distinct children today = "commitment cặp".
+    /// </summary>
+    private static (string Title, int MemberCount)? FindSiblingPairDone(
+        IReadOnlyList<FamilyDayFlowRepository.CommitmentRow> commitments,
+        HashSet<Guid> childIds)
+    {
+        var done = commitments
+            .Where(c =>
+                c.Status == FamilyCommitmentStatuses.Done
+                && c.MemberId is Guid mid
+                && childIds.Contains(mid)
+                && !string.IsNullOrWhiteSpace(c.Title))
+            .ToList();
+        if (done.Count < 2)
+            return null;
+
+        var best = done
+            .GroupBy(c => NormalizeMissionTitle(c.Title))
+            .Where(g => !string.IsNullOrEmpty(g.Key))
+            .Select(g =>
+            {
+                var members = g.Select(c => c.MemberId!.Value).Distinct().ToList();
+                var title = g.Select(c => (c.Title ?? "").Trim())
+                    .OrderByDescending(t => t.Length)
+                    .FirstOrDefault() ?? "";
+                return (Title: title, MemberCount: members.Count, Key: g.Key);
+            })
+            .Where(x => x.MemberCount >= 2)
+            .OrderByDescending(x => x.MemberCount)
+            .ThenByDescending(x => x.Title.Length)
+            .FirstOrDefault();
+
+        if (best.MemberCount < 2)
+            return null;
+        return (best.Title, best.MemberCount);
+    }
+
+    private static string NormalizeMissionTitle(string? title)
+    {
+        if (string.IsNullOrWhiteSpace(title)) return "";
+        var t = title.Trim().ToLowerInvariant();
+        while (t.Contains("  ", StringComparison.Ordinal))
+            t = t.Replace("  ", " ", StringComparison.Ordinal);
+        return t.TrimEnd('.', '!', '?', '…');
+    }
+
     public async Task<FamilyTeamUnlockDto> DecideAsync(
         Guid familyId,
         Guid unlockId,

@@ -13,6 +13,16 @@ import {
   createTeamNudge,
   sendTeamNudge,
   ackTeamNudge,
+  fetchRelationshipTriggers,
+  fetchParentVoice,
+  ackParentVoice,
+  fetchEveningCircle,
+  answerEveningCircle,
+  fetchWeeklyStory,
+  type RelationshipTrigger,
+  type ParentVoiceMessage,
+  type EveningCircle,
+  type WeeklyStory,
   fetchMemberMood,
   upsertMemberMood,
   redeemReward,
@@ -56,7 +66,13 @@ import {
   FAMILY_MEMORY_VISIBLE,
 } from '@/shared/flow/family-memories';
 import { FAMILY_MOODS, moodIndexFromCode } from '@/shared/flow/family-moods';
-import { NUDGE_TEMPLATE_OPTIONS, nudgeMessagePreview } from '@/modules/flow/teamPlay';
+import { NUDGE_TEMPLATE_OPTIONS, isSiblingComboUnlock, nudgeMessagePreview } from '@/modules/flow/teamPlay';
+import {
+  isCheerSiblingTrigger,
+  isThankParentTrigger,
+  parentVoiceIcon,
+  primaryRelationshipTrigger,
+} from '@/modules/flow/memberPersonalize';
 import { isParentVerified } from '@/shared/nudge/nudge-stats';
 import { FamilyChallengeCard } from '@/modules/flow/FamilyChallengeCard';
 import {
@@ -353,17 +369,17 @@ function livingFoxy(
   const short = childName.split(/\s+/).pop() || childName;
   if (justCelebrated) {
     const cheers = [
-      `Wowww!! ${short} giỏi quá! Foxy tự hào lắm!`,
-      `Yeah!! ${short} làm tốt lắm — Foxy vui quá!`,
-      `${short} giỏi quá! Foxy tự hào lắm! 🦊`,
+      `Wowww!! ${short} làm tốt quá! Bố/mẹ sẽ rất vui khi nghe tin này.`,
+      `Yeah!! ${short} xong rồi — Foxy chỉ nhắc nhẹ, lời khen thật từ bố mẹ ấm hơn!`,
+      `${short} giỏi quá! Báo bố/mẹ một câu nhé — Foxy đứng cạnh thôi. 🦊`,
     ];
     return stablePick(`${short}:celebrate`, cheers);
   }
-  if (teamComplete) return `🎉 Cả nhà mở được Movie Night rồi! Cảm ơn ${short}!`;
+  if (teamComplete) return `🎉 Cả nhà mở được Movie Night rồi! Nhờ ${short} và cả đội!`;
   if (remaining === 0 && teamRemaining > 0) {
-    return `${short} xong phần mình rồi! Cả đội còn ${teamRemaining} việc — Foxy chờ Movie Night!`;
+    return `${short} xong phần mình rồi! Cả đội còn ${teamRemaining} việc — Foxy cổ vũ cả nhà!`;
   }
-  if (remaining === 0) return `${short} ơi, hôm nay con đã giúp Foxy hết sức rồi!`;
+  if (remaining === 0) return `${short} ơi, hôm nay con đã giúp cả nhà rất nhiều!`;
   if (remaining === 1) return `${short} ơi. Con chỉ còn 1 việc nữa. Mình cùng cố nhé!`;
   if (remaining === 2) return `${short} ơi. Con chỉ còn 2 việc nữa. Mình cùng cố nhé!`;
   if (nextTitle) return `${short} ơi, tiếp theo mình làm «${nextTitle}» giúp cả nhà nhé!`;
@@ -512,15 +528,15 @@ const STREAK_EMPTY_OPEN_NOTES = [
 ];
 
 const STREAK_EMPTY_FRESH_NOTES = [
-  'Bắt đầu từ hôm nay — Foxy luôn ủng hộ con! 💪',
-  'Hôm nay là ngày mới — Foxy tin con làm được! 💪',
-  'Mỗi ngày một chút — Foxy luôn bên con! 💪',
+  'Bắt đầu từ hôm nay — Foxy ở cạnh cổ vũ! 💪',
+  'Hôm nay là ngày mới — mình cùng làm từng bước! 💪',
+  'Mỗi ngày một chút — lời khen thật từ bố/mẹ ấm hơn! 💪',
 ];
 
 const STREAK_ACTIVE_NOTES: Array<(short: string) => string> = [
-  (short) => `Giữ vững nha ${short}! Foxy luôn ủng hộ con! 💪`,
+  (short) => `Giữ vững nha ${short}! Foxy cổ vũ con! 💪`,
   (short) => `${short} đang làm rất tốt — tiếp tục nha! 🔥`,
-  (short) => `Chuỗi đang đẹp lắm ${short} — Foxy tự hào! 🌟`,
+  (short) => `Chuỗi đang đẹp lắm ${short} — báo bố/mẹ nghe nhé! 🌟`,
 ];
 
 function onTimeCelebrateHeadlines(parent: ParentRole): string[] {
@@ -543,14 +559,14 @@ function lateCelebrateHeadlines(parent: ParentRole): string[] {
 }
 
 const ON_TIME_CELEBRATE_SUBLINES: Array<(title: string) => string> = [
-  (title) => `«${title}» đã giúp Foxy thêm một bước!`,
-  (title) => `«${title}» xong — Foxy vui lắm!`,
-  (title) => `Foxy ghi nhận «${title}» của con!`,
+  (title) => `«${title}» xong — cả nhà gần đích hơn!`,
+  (title) => `«${title}» xong rồi — nhớ kể bố/mẹ nghe nhé!`,
+  (title) => `Foxy ghi nhận «${title}» — lời khen thật từ bố/mẹ ấm hơn.`,
 ];
 
 const LATE_CELEBRATE_SUBLINES: Array<(title: string) => string> = [
   (title) => `«${title}» xong rồi — lần sau đúng giờ hơn nhé!`,
-  (title) => `Foxy thấy con đã cố với «${title}»!`,
+  (title) => `Con đã cố với «${title}» — Foxy đứng cạnh cổ vũ!`,
   (title) => `«${title}» hoàn thành — mai mình sớm hơn nha!`,
 ];
 
@@ -1108,6 +1124,13 @@ export function KidFocusView({
   const [moodSaving, setMoodSaving] = useState(false);
   const [moodLoaded, setMoodLoaded] = useState(false);
   const [inboxNudges, setInboxNudges] = useState<TeamNudge[]>([]);
+  const [parentVoiceInbox, setParentVoiceInbox] = useState<ParentVoiceMessage[]>([]);
+  const [voiceAckBusy, setVoiceAckBusy] = useState<string | null>(null);
+  const [kidRelTriggers, setKidRelTriggers] = useState<RelationshipTrigger[]>([]);
+  const [eveningCircle, setEveningCircle] = useState<EveningCircle | null>(null);
+  const [circleAnswer, setCircleAnswer] = useState('');
+  const [circleBusy, setCircleBusy] = useState(false);
+  const [weeklyStory, setWeeklyStory] = useState<WeeklyStory | null>(null);
   const [nudgeAckBusy, setNudgeAckBusy] = useState<string | null>(null);
   const [nudgeCandidates, setNudgeCandidates] = useState<TeamNudgeCandidate[]>([]);
   const [cheerOpen, setCheerOpen] = useState(false);
@@ -1135,6 +1158,11 @@ export function KidFocusView({
   const [thanksSending, setThanksSending] = useState(false);
   const [thanksSent, setThanksSent] = useState(false);
   const [thanksError, setThanksError] = useState<string | null>(null);
+  const [thanksBackOffer, setThanksBackOffer] = useState<{
+    toMemberId: string;
+    toName: string;
+  } | null>(null);
+  const [thanksBackBusy, setThanksBackBusy] = useState(false);
   const [missionDoneError, setMissionDoneError] = useState<string | null>(null);
   const [localStars, setLocalStars] = useState(starBalance);
   const [rewardCatalog, setRewardCatalog] = useState<RewardCatalogItem[]>([]);
@@ -1159,6 +1187,10 @@ export function KidFocusView({
     if (!familyId || !childMemberId) {
       setInboxNudges([]);
       setNudgeCandidates([]);
+      setParentVoiceInbox([]);
+      setKidRelTriggers([]);
+      setEveningCircle(null);
+      setWeeklyStory(null);
       return;
     }
     let cancelled = false;
@@ -1175,6 +1207,38 @@ export function KidFocusView({
       })
       .catch(() => {
         if (!cancelled) setInboxNudges([]);
+      });
+    void fetchParentVoice(familyId, { forMemberId: childMemberId, flowDate })
+      .then((rows) => {
+        if (cancelled) return;
+        setParentVoiceInbox(rows.filter((v) => v.status === 'sent' || v.status === 'read'));
+      })
+      .catch(() => {
+        if (!cancelled) setParentVoiceInbox([]);
+      });
+    void fetchRelationshipTriggers(familyId, childMemberId, flowDate)
+      .then((rows) => {
+        if (!cancelled) setKidRelTriggers(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setKidRelTriggers([]);
+      });
+    void fetchEveningCircle(familyId, {
+      forMemberId: childMemberId,
+      flowDate,
+    })
+      .then((row) => {
+        if (!cancelled) setEveningCircle(row);
+      })
+      .catch(() => {
+        if (!cancelled) setEveningCircle(null);
+      });
+    void fetchWeeklyStory(familyId, flowDate)
+      .then((row) => {
+        if (!cancelled) setWeeklyStory(row);
+      })
+      .catch(() => {
+        if (!cancelled) setWeeklyStory(null);
       });
     void fetchTeamNudgeFromCandidates(familyId, flowDate)
       .then((rows) => {
@@ -1213,16 +1277,38 @@ export function KidFocusView({
       to ? shortChildName(to) : 'em',
     );
   }, [cheerTargets, cheerToId, cheerTemplate, childName]);
+  const kidPrimaryTrigger = useMemo(
+    () => primaryRelationshipTrigger(kidRelTriggers),
+    [kidRelTriggers],
+  );
   const showCheerOffer =
-    Boolean(meNudgeCand?.canInvite) &&
-    teamRemaining >= 1 &&
-    cheerTargets.length > 0 &&
-    !teamComplete;
+    (Boolean(meNudgeCand?.canInvite) &&
+      teamRemaining >= 1 &&
+      cheerTargets.length > 0 &&
+      !teamComplete) ||
+    (kidPrimaryTrigger != null && isCheerSiblingTrigger(kidPrimaryTrigger.code));
+
+  const cheerOfferCopy = useMemo(() => {
+    if (kidPrimaryTrigger && isCheerSiblingTrigger(kidPrimaryTrigger.code)) {
+      return kidPrimaryTrigger.bodyVi;
+    }
+    const target =
+      kidPrimaryTrigger?.toMemberName ||
+      cheerTargets[0]?.displayName ||
+      'anh/chị em';
+    const short = shortChildName(target);
+    return `Cả nhà còn ${teamRemaining} việc — muốn cổ vũ ${short}?`;
+  }, [kidPrimaryTrigger, cheerTargets, teamRemaining]);
 
   const openCheerSheet = () => {
     setCheerError(null);
     setCheerTemplate(teamRemaining === 1 ? 'one_left' : 'cheer_up');
-    setCheerToId(cheerTargets[0]?.memberId ?? '');
+    const prefer =
+      kidPrimaryTrigger?.toMemberId &&
+      cheerTargets.some((c) => c.memberId === kidPrimaryTrigger.toMemberId)
+        ? kidPrimaryTrigger.toMemberId
+        : cheerTargets[0]?.memberId ?? '';
+    setCheerToId(prefer);
     setCheerOpen(true);
   };
 
@@ -1252,15 +1338,81 @@ export function KidFocusView({
   };
 
   const ackInboxNudge = async (nudgeId: string, status: 'thanks' | 'seen') => {
+    const source = inboxNudges.find((n) => n.id === nudgeId);
     setNudgeAckBusy(nudgeId);
     try {
       await ackTeamNudge(familyId, nudgeId, status);
       setInboxNudges((prev) => prev.filter((n) => n.id !== nudgeId));
       setNudgeReloadTick((n) => n + 1);
+      if (
+        status === 'thanks' &&
+        source &&
+        source.templateCode !== 'thanks_back' &&
+        source.fromMemberId
+      ) {
+        setThanksBackOffer({
+          toMemberId: source.fromMemberId,
+          toName: source.fromName.trim() || 'anh/chị',
+        });
+      }
     } catch {
       // keep banner
     } finally {
       setNudgeAckBusy(null);
+    }
+  };
+
+  const sendThanksBack = async () => {
+    if (!childMemberId || !thanksBackOffer || thanksBackBusy) return;
+    setThanksBackBusy(true);
+    try {
+      const draft = await createTeamNudge(familyId, {
+        fromMemberId: childMemberId,
+        toMemberId: thanksBackOffer.toMemberId,
+        templateCode: 'thanks_back',
+        flowDate: flowDate || undefined,
+      });
+      await sendTeamNudge(familyId, draft.id);
+      setCheerToast(
+        `Đã gửi cảm ơn ${thanksBackOffer.toName.split(/\s+/).filter(Boolean).slice(-1)[0] || 'anh/chị'}!`,
+      );
+      setThanksBackOffer(null);
+      setNudgeReloadTick((n) => n + 1);
+    } catch (e) {
+      setCheerToast(getApiErrorMessage(e) || 'Chưa gửi được cảm ơn — thử lại nhé.');
+    } finally {
+      setThanksBackBusy(false);
+    }
+  };
+
+  const ackVoiceMessage = async (messageId: string, status: 'read' | 'thanks') => {
+    setVoiceAckBusy(messageId);
+    try {
+      await ackParentVoice(familyId, messageId, status);
+      setParentVoiceInbox((prev) => prev.filter((n) => n.id !== messageId));
+      setNudgeReloadTick((n) => n + 1);
+    } catch {
+      // keep
+    } finally {
+      setVoiceAckBusy(null);
+    }
+  };
+
+  const submitKidEveningCircle = async () => {
+    if (!childMemberId || !circleAnswer.trim() || circleBusy) return;
+    setCircleBusy(true);
+    try {
+      const row = await answerEveningCircle(familyId, {
+        memberId: childMemberId,
+        answerVi: circleAnswer.trim(),
+        flowDate: flowDate || undefined,
+      });
+      setEveningCircle(row);
+      setCircleAnswer('');
+    } catch {
+      // keep
+    } finally {
+      setCircleBusy(false);
     }
   };
 
@@ -1443,6 +1595,16 @@ export function KidFocusView({
   const unlockLeft = teamComplete
     ? 0
     : Math.max(0, teamRemaining > 0 ? teamRemaining : remaining);
+
+  const todayComboUnlock = useMemo(() => {
+    const sameDay = teamUnlocks.filter(
+      (u) => (!flowDate || u.flowDate === flowDate) && isSiblingComboUnlock(u.rewardCode),
+    );
+    return (
+      sameDay.find((u) => u.status === 'pending_confirm' || u.status === 'confirmed') ??
+      null
+    );
+  }, [teamUnlocks, flowDate]);
 
   const filteredPending = useMemo(() => {
     if (filter === 'done') return [] as DayFlowCommitment[];
@@ -2128,6 +2290,20 @@ export function KidFocusView({
   }, [gardenBloom.healthy, doneCount, short, todayStarsEarned]);
 
   const foxyHomeLine = useMemo(() => {
+    const unreadVoice = parentVoiceInbox.find((v) => v.status === 'sent');
+    if (unreadVoice) {
+      const who = unreadVoice.fromMemberName.trim() || 'bố/mẹ';
+      return `${who} đang muốn nói điều gì đó với ${short} — mở lời bên dưới nhé.`;
+    }
+    if (kidPrimaryTrigger?.code === 'parent_voice_inbox') {
+      return `${kidPrimaryTrigger.titleVi} — Famixa chỉ chuyển lời, không nói thay.`;
+    }
+    if (kidPrimaryTrigger && isCheerSiblingTrigger(kidPrimaryTrigger.code)) {
+      return kidPrimaryTrigger.titleVi;
+    }
+    if (kidPrimaryTrigger && isThankParentTrigger(kidPrimaryTrigger.code) && !thanksSent) {
+      return kidPrimaryTrigger.bodyVi;
+    }
     const hot =
       doNowItems[0] ?? items.find((c) => c.status !== 'done' && c.status !== 'skipped');
     if (hot?.motivationCueVi) return hot.motivationCueVi;
@@ -2135,7 +2311,15 @@ export function KidFocusView({
       return `Foxy tin ${short} tự làm được — ít nhắc hơn hôm nay.`;
     }
     return foxySpeech;
-  }, [doNowItems, items, short, foxySpeech]);
+  }, [
+    parentVoiceInbox,
+    kidPrimaryTrigger,
+    thanksSent,
+    doNowItems,
+    items,
+    short,
+    foxySpeech,
+  ]);
 
   const movieStripLabel = useMemo(() => {
     if (teamMissionLine?.trim()) {
@@ -2476,28 +2660,95 @@ export function KidFocusView({
                 </i>
               </aside>
 
-              {inboxNudges.length > 0 ? (
-                <section className="kv2-sibling-nudge-inbox" aria-label="Tin từ anh chị">
-                  {inboxNudges.map((n) => (
-                    <article key={n.id} className="kv2-sibling-nudge-card">
+              <article className="kv2-member-me" aria-label={`Góc của ${short}`}>
+                <p className="kv2-member-me-eyebrow">Góc của {short}</p>
+                <p className="kv2-member-me-line">
+                  {parentVoiceInbox[0]
+                    ? `${parentVoiceInbox[0].fromMemberName.trim() || 'Bố/Mẹ'} vừa gửi lời — đọc bên dưới nhé.`
+                    : doneCount > 0
+                      ? `Hôm nay ${short} đã xong ${doneCount} việc. Một lời cảm ơn bố/mẹ sẽ làm ngày ấm hơn.`
+                      : items.length > 0
+                        ? `Đây là ngày của ${short} — làm từng việc nhỏ, Foxy ở cạnh.`
+                        : `Chào ${short}. Hôm nay nhà mình chưa gắn việc — vẫn có thể gửi lời ấm cho bố mẹ.`}
+                </p>
+              </article>
+
+              {eveningCircle ? (
+                <section className="kv2-circle-card" aria-label="Evening Circle">
+                  <p className="kv2-member-me-eyebrow">⭐ Cả nhà tối nay</p>
+                  <p className="kv2-circle-prompt">{eveningCircle.promptVi}</p>
+                  {eveningCircle.answers.length > 0 ? (
+                    <ul className="kv2-circle-answers">
+                      {eveningCircle.answers.map((a) => (
+                        <li key={a.memoryId}>
+                          <strong>{a.memberName}</strong>
+                          <span>{a.answerVi}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {!eveningCircle.alreadyAnswered ? (
+                    <div className="kv2-circle-compose">
+                      <textarea
+                        rows={2}
+                        maxLength={280}
+                        value={circleAnswer}
+                        onChange={(e) => setCircleAnswer(e.target.value)}
+                        placeholder={`${short} muốn nói gì?`}
+                        disabled={circleBusy}
+                      />
+                      <button
+                        type="button"
+                        className="kv2-do"
+                        disabled={circleBusy || !circleAnswer.trim()}
+                        onClick={() => void submitKidEveningCircle()}
+                      >
+                        {circleBusy ? 'Đang gửi…' : 'Gửi câu trả lời'}
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="kv2-circle-done">Bạn đã trả lời tối nay — cảm ơn {short}!</p>
+                  )}
+                </section>
+              ) : null}
+
+              {weeklyStory ? (
+                <section className="kv2-weekly-lite" aria-label="Tuần này nhà mình">
+                  <p className="kv2-member-me-eyebrow">📖 Tuần này nhà mình</p>
+                  <p className="kv2-weekly-lite-head">{weeklyStory.headlineVi}</p>
+                  <ul>
+                    {weeklyStory.lines.slice(0, 3).map((line, idx) => (
+                      <li key={`${line.textVi}-${idx}`}>
+                        <span aria-hidden>{line.icon}</span> {line.textVi}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+
+              {parentVoiceInbox.length > 0 ? (
+                <section className="kv2-sibling-nudge-inbox" aria-label="Lời từ bố mẹ">
+                  {parentVoiceInbox.map((n) => (
+                    <article key={n.id} className="kv2-sibling-nudge-card kv2-parent-voice-card">
                       <p className="kv2-sibling-nudge-eyebrow">
-                        Tin từ {n.fromName.trim() || 'anh/chị'}
+                        <span aria-hidden>{parentVoiceIcon(n.templateCode)}</span> Lời từ{' '}
+                        {n.fromMemberName.trim() || 'bố/mẹ'}
                       </p>
-                      <p className="kv2-sibling-nudge-msg">{n.messageVi}</p>
+                      <p className="kv2-sibling-nudge-msg">{n.bodyVi}</p>
                       <div className="kv2-sibling-nudge-actions">
                         <button
                           type="button"
                           className="kv2-do"
-                          disabled={nudgeAckBusy === n.id}
-                          onClick={() => void ackInboxNudge(n.id, 'thanks')}
+                          disabled={voiceAckBusy === n.id}
+                          onClick={() => void ackVoiceMessage(n.id, 'thanks')}
                         >
                           Cảm ơn
                         </button>
                         <button
                           type="button"
                           className="kv2-do-photo is-link"
-                          disabled={nudgeAckBusy === n.id}
-                          onClick={() => void ackInboxNudge(n.id, 'seen')}
+                          disabled={voiceAckBusy === n.id}
+                          onClick={() => void ackVoiceMessage(n.id, 'read')}
                         >
                           Đã xem
                         </button>
@@ -2507,11 +2758,105 @@ export function KidFocusView({
                 </section>
               ) : null}
 
+              {inboxNudges.length > 0 ? (
+                <section className="kv2-sibling-nudge-inbox" aria-label="Tin từ anh chị">
+                  {inboxNudges.map((n) => (
+                    <article key={n.id} className="kv2-sibling-nudge-card">
+                      <p className="kv2-sibling-nudge-eyebrow">
+                        {n.templateCode === 'thanks_back'
+                          ? `Cảm ơn từ ${n.fromName.trim() || 'em'}`
+                          : `Tin từ ${n.fromName.trim() || 'anh/chị'}`}
+                      </p>
+                      <p className="kv2-sibling-nudge-msg">{n.messageVi}</p>
+                      <div className="kv2-sibling-nudge-actions">
+                        {n.templateCode === 'thanks_back' ? (
+                          <button
+                            type="button"
+                            className="kv2-do"
+                            disabled={nudgeAckBusy === n.id}
+                            onClick={() => void ackInboxNudge(n.id, 'seen')}
+                          >
+                            Đã nhận
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              className="kv2-do"
+                              disabled={nudgeAckBusy === n.id}
+                              onClick={() => void ackInboxNudge(n.id, 'thanks')}
+                            >
+                              Cảm ơn
+                            </button>
+                            <button
+                              type="button"
+                              className="kv2-do-photo is-link"
+                              disabled={nudgeAckBusy === n.id}
+                              onClick={() => void ackInboxNudge(n.id, 'seen')}
+                            >
+                              Đã xem
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </section>
+              ) : null}
+
+              {thanksBackOffer ? (
+                <article className="kv2-thanks-back" aria-label="Gửi cảm ơn anh chị">
+                  <p className="kv2-thanks-back-copy">
+                    Gửi một lời cảm ơn ngắn tới{' '}
+                    <strong>
+                      {shortChildName(thanksBackOffer.toName) || 'anh/chị'}
+                    </strong>
+                    ?
+                  </p>
+                  <p className="kv2-thanks-back-preview">
+                    “
+                    {nudgeMessagePreview(
+                      'thanks_back',
+                      shortChildName(childName),
+                      shortChildName(thanksBackOffer.toName) || 'anh/chị',
+                    )}
+                    ”
+                  </p>
+                  <div className="kv2-sibling-nudge-actions">
+                    <button
+                      type="button"
+                      className="kv2-do"
+                      disabled={thanksBackBusy}
+                      onClick={() => void sendThanksBack()}
+                    >
+                      {thanksBackBusy ? 'Đang gửi…' : 'Gửi cảm ơn'}
+                    </button>
+                    <button
+                      type="button"
+                      className="kv2-do-photo is-link"
+                      disabled={thanksBackBusy}
+                      onClick={() => setThanksBackOffer(null)}
+                    >
+                      Để sau
+                    </button>
+                  </div>
+                </article>
+              ) : null}
+
+              {todayComboUnlock ? (
+                <article className="kv2-combo-card" aria-label="High-five anh chị">
+                  <p className="kv2-combo-copy">
+                    <span aria-hidden>🙌</span>{' '}
+                    {todayComboUnlock.status === 'confirmed'
+                      ? todayComboUnlock.labelVi || 'High-five đôi anh chị đã mở!'
+                      : `${todayComboUnlock.labelVi || 'High-five đôi anh chị'} — nhờ bố/mẹ xác nhận nhé!`}
+                  </p>
+                </article>
+              ) : null}
+
               {showCheerOffer ? (
                 <article className="kv2-cheer-offer" aria-label="Cổ vũ cả nhà">
-                  <p className="kv2-cheer-offer-copy">
-                    Cả nhà còn {teamRemaining} việc — muốn cổ vũ anh/chị em?
-                  </p>
+                  <p className="kv2-cheer-offer-copy">{cheerOfferCopy}</p>
                   <button type="button" className="kv2-do" onClick={openCheerSheet}>
                     Gửi lời cổ vũ
                   </button>
@@ -2541,9 +2886,13 @@ export function KidFocusView({
                   </div>
                   <div className="kv2-praise-foot">
                     <span className="kv2-mom" aria-hidden>
-                      🦊
+                      {parentVoiceInbox[0] ? '❤️' : '🦊'}
                     </span>
-                    <span>Foxy kể</span>
+                    <span>
+                      {parentVoiceInbox[0]
+                        ? `Lời từ ${parentVoiceInbox[0].fromMemberName.trim() || 'bố/mẹ'}`
+                        : 'Foxy gợi ý — lời thật từ bố/mẹ ấm hơn'}
+                    </span>
                     <button
                       type="button"
                       className={`kv2-thanks${thanksSent ? ' is-sent' : ''}`}

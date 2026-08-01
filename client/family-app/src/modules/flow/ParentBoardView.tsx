@@ -22,6 +22,18 @@ import {
   type FamilyRitual,
   fetchChildGratitude,
   markChildGratitudeRead,
+  fetchRelationshipTriggers,
+  fetchRelationshipTriggerStates,
+  sendParentVoice,
+  fetchParentVoice,
+  ackParentVoice,
+  type ParentVoiceMessage,
+  fetchEveningCircle,
+  answerEveningCircle,
+  fetchWeeklyStory,
+  type RelationshipTrigger,
+  type EveningCircle,
+  type WeeklyStory,
   approveCommitmentStars,
   fetchMemberStarBalance,
   fetchRewardCatalog,
@@ -56,6 +68,8 @@ import {
   type ParentSuccessCheckin,
   fetchParentCoachActedToday,
   recordParentCoachActed,
+  patchFamilyBlueprintLayers,
+  fetchFamilyBlueprint,
 } from '@/shared/api/family-os.api';
 import { DecisionInboxPanel } from '@/modules/flow/DecisionInboxPanel';
 import { FamilyDnaCardView } from '@/modules/flow/FamilyDnaCard';
@@ -80,6 +94,15 @@ import { buildParentPulse } from '@/shared/value/parent-pulse';
 import { resolveParentCoach } from '@/shared/value/resolve-parenting-coach';
 import { buildHomeBrief } from '@/shared/value/home-brief';
 import { becauseFromDna } from '@/shared/value/blueprint-context';
+import {
+  becauseFromSoftPrefs,
+  hasSoftCalAnsweredThisWeek,
+  markSoftCalAnsweredThisWeek,
+  parseLayersJson,
+  softCalAnswerPatch,
+  softCalQuestionForWeek,
+  type SoftCalQuestion,
+} from '@/shared/value/soft-calibration';
 import {
   IconBell,
   IconDiary,
@@ -127,9 +150,29 @@ import {
 import {
   NUDGE_TEMPLATE_OPTIONS,
   familyTeamHeroLine,
+  isSiblingComboUnlock,
   nudgeMessagePreview,
   roleMatrixBriefTip,
 } from '@/modules/flow/teamPlay';
+import {
+  filterVisibleParentTriggers,
+  hydrateRelTriggerStates,
+  isAdultVoiceTrigger,
+  isBirthdayWishTrigger,
+  isParentVoiceTrigger,
+  isUnsentOpenedTrigger,
+  markRelTriggerDismissed,
+  markRelTriggerOpened,
+  markRelTriggerSent,
+  parentVoiceIcon,
+  primaryRelationshipTrigger,
+} from '@/modules/flow/memberPersonalize';
+import {
+  ADULT_VOICE_TEMPLATES,
+  BIRTHDAY_PICKER_OPTIONS,
+  formatWeeklyStoryShare,
+  shortMemberName,
+} from '@/modules/flow/relationshipGraph';
 import { FAMILY_MOODS, moodFromCode } from '@/shared/flow/family-moods';
 import {
   formatLateDuration,
@@ -467,6 +510,8 @@ type Props = {
   glance: AccountabilityGlance | null;
   /** Children in the family — used for focus dropdown on parent Home. */
   children?: Array<{ id: string; displayName: string }>;
+  /** Other guardians/caregivers — P1.9 adult voice. */
+  parents?: Array<{ id: string; displayName: string }>;
   /** House team-day snapshot (API or client derive) — hero never follows child picker. */
   teamDay?: {
     teamPercent: number;
@@ -512,6 +557,7 @@ export function ParentBoardView({
   consequenceEvents,
   glance,
   children: childrenProp = [],
+  parents: parentsProp = [],
   teamDay = null,
   onMarkDone,
   onReflect: _onReflect,
@@ -604,6 +650,30 @@ export function ParentBoardView({
   const [nudgeBusy, setNudgeBusy] = useState(false);
   const [nudgeError, setNudgeError] = useState<string | null>(null);
   const [nudgeToast, setNudgeToast] = useState<string | null>(null);
+  const [relTriggers, setRelTriggers] = useState<RelationshipTrigger[]>([]);
+  const [relTriggerReload, setRelTriggerReload] = useState(0);
+  const [voiceSheetOpen, setVoiceSheetOpen] = useState(false);
+  const [voiceDraft, setVoiceDraft] = useState('');
+  const [voiceToId, setVoiceToId] = useState('');
+  const [voiceTemplate, setVoiceTemplate] = useState('praise');
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [voiceToast, setVoiceToast] = useState<string | null>(null);
+  const [voiceTargetKind, setVoiceTargetKind] = useState<'child' | 'adult'>('child');
+  const [birthdayPick, setBirthdayPick] = useState<string | null>(null);
+  const [partnerInbox, setPartnerInbox] = useState<ParentVoiceMessage[]>([]);
+  const [partnerAckBusy, setPartnerAckBusy] = useState<string | null>(null);
+  const [diaryMemberFilter, setDiaryMemberFilter] = useState<string>('all');
+  const [relUiTick, setRelUiTick] = useState(0);
+  const [eveningCircle, setEveningCircle] = useState<EveningCircle | null>(null);
+  const [circleAnswer, setCircleAnswer] = useState('');
+  const [circleBusy, setCircleBusy] = useState(false);
+  const [weeklyStory, setWeeklyStory] = useState<WeeklyStory | null>(null);
+  const [softCalDismissed, setSoftCalDismissed] = useState(false);
+  const [softCalBusy, setSoftCalBusy] = useState(false);
+  const [softCalToast, setSoftCalToast] = useState<string | null>(null);
+  const [softLayers, setSoftLayers] = useState<Record<string, unknown>>({});
+  const softCalQuestion = useMemo(() => softCalQuestionForWeek(), []);
   const nudgePreview = useMemo(() => {
     const shortOf = (id: string, fallback: string) => {
       const name = nudgeCandidates.find((c) => c.memberId === id)?.displayName?.trim();
@@ -688,6 +758,106 @@ export function ParentBoardView({
   }, [nudgeToast]);
 
   useEffect(() => {
+    if (!voiceToast) return;
+    const t = window.setTimeout(() => setVoiceToast(null), 3200);
+    return () => window.clearTimeout(t);
+  }, [voiceToast]);
+
+  useEffect(() => {
+    if (!softCalToast) return;
+    const t = window.setTimeout(() => setSoftCalToast(null), 3200);
+    return () => window.clearTimeout(t);
+  }, [softCalToast]);
+
+  useEffect(() => {
+    if (!familyId || !parentMembershipId) {
+      setSoftLayers({});
+      return;
+    }
+    let cancelled = false;
+    void fetchFamilyBlueprint(familyId)
+      .then((bp) => {
+        if (!cancelled) setSoftLayers(parseLayersJson(bp?.layersJson));
+      })
+      .catch(() => {
+        if (!cancelled) setSoftLayers({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId, parentMembershipId]);
+
+  useEffect(() => {
+    if (!familyId || !parentMembershipId) {
+      setRelTriggers([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [rows, states] = await Promise.all([
+          fetchRelationshipTriggers(familyId, parentMembershipId, flow.flowDate),
+          fetchRelationshipTriggerStates(
+            familyId,
+            parentMembershipId,
+            flow.flowDate,
+          ).catch(() => [] as Awaited<ReturnType<typeof fetchRelationshipTriggerStates>>),
+        ]);
+        if (cancelled) return;
+        hydrateRelTriggerStates(
+          familyId,
+          parentMembershipId,
+          flow.flowDate,
+          states,
+        );
+        setRelTriggers(rows);
+        setRelUiTick((n) => n + 1);
+      } catch {
+        if (!cancelled) setRelTriggers([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    familyId,
+    parentMembershipId,
+    flow.flowDate,
+    flow.doneCount,
+    flow.pendingCount,
+    relTriggerReload,
+  ]);
+
+  useEffect(() => {
+    if (!familyId) {
+      setEveningCircle(null);
+      setWeeklyStory(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchEveningCircle(familyId, {
+      forMemberId: parentMembershipId,
+      flowDate: flow.flowDate,
+    })
+      .then((row) => {
+        if (!cancelled) setEveningCircle(row);
+      })
+      .catch(() => {
+        if (!cancelled) setEveningCircle(null);
+      });
+    void fetchWeeklyStory(familyId, flow.flowDate)
+      .then((row) => {
+        if (!cancelled) setWeeklyStory(row);
+      })
+      .catch(() => {
+        if (!cancelled) setWeeklyStory(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId, parentMembershipId, flow.flowDate, flow.doneCount, relTriggerReload]);
+
+  useEffect(() => {
     if (!familyId) return;
     let cancelled = false;
     void fetchCooperationScore(familyId, 'week')
@@ -729,6 +899,25 @@ export function ParentBoardView({
       // keep checklist
     } finally {
       setRitualBusy(null);
+    }
+  };
+
+  const submitEveningCircle = async () => {
+    if (!parentMembershipId || !circleAnswer.trim() || circleBusy) return;
+    setCircleBusy(true);
+    try {
+      const row = await answerEveningCircle(familyId, {
+        memberId: parentMembershipId,
+        answerVi: circleAnswer.trim(),
+        flowDate: flow.flowDate,
+      });
+      setEveningCircle(row);
+      setCircleAnswer('');
+      setRelTriggerReload((n) => n + 1);
+    } catch {
+      // keep
+    } finally {
+      setCircleBusy(false);
     }
   };
 
@@ -777,13 +966,161 @@ export function ParentBoardView({
     }
   };
 
+  const activeRelTrigger = useMemo(() => {
+    if (!parentMembershipId) return null;
+    const visible = filterVisibleParentTriggers(
+      familyId,
+      parentMembershipId,
+      flow.flowDate,
+      relTriggers,
+    );
+    if (effectiveChildFocus !== 'all') {
+      const focused = visible.find((t) => t.toMemberId === effectiveChildFocus);
+      if (focused) return focused;
+    }
+    return primaryRelationshipTrigger(visible);
+  }, [relTriggers, effectiveChildFocus, familyId, parentMembershipId, flow.flowDate, relUiTick]);
+
+  const voiceUnsent = Boolean(
+    parentMembershipId &&
+      activeRelTrigger &&
+      isUnsentOpenedTrigger(
+        familyId,
+        parentMembershipId,
+        flow.flowDate,
+        activeRelTrigger,
+      ),
+  );
+
+  const openParentVoiceSheet = (trigger?: RelationshipTrigger | null) => {
+    const t = trigger ?? activeRelTrigger;
+    if (!parentMembershipId) return;
+    setVoiceError(null);
+    setBirthdayPick(null);
+    if (t && isParentVoiceTrigger(t.code)) {
+      const adult = isAdultVoiceTrigger(t.code);
+      setVoiceTargetKind(adult ? 'adult' : 'child');
+      setVoiceToId(t.toMemberId ?? '');
+      setVoiceTemplate(
+        t.templateCode ??
+          (adult ? 'thanks_partner' : isBirthdayWishTrigger(t.code) ? 'birthday' : 'praise'),
+      );
+      const draft = t.draftBodyVi ?? '';
+      setVoiceDraft(draft);
+      markRelTriggerOpened(familyId, parentMembershipId, flow.flowDate, t, draft);
+      setRelUiTick((n) => n + 1);
+    } else {
+      setVoiceTargetKind('child');
+      const firstChild =
+        effectiveChildFocus !== 'all'
+          ? childOptions.find((c) => c.key === effectiveChildFocus)
+          : childOptions[0];
+      setVoiceToId(firstChild?.key ?? '');
+      setVoiceTemplate('custom');
+      const short =
+        firstChild?.name?.trim().split(/\s+/).filter(Boolean).slice(-1)[0] || 'con';
+      setVoiceDraft(`${short} ơi, hôm nay mẹ/bố nghĩ đến con.`);
+    }
+    setVoiceSheetOpen(true);
+  };
+
+  const dismissParentVoiceTrigger = () => {
+    if (!parentMembershipId || !activeRelTrigger) return;
+    markRelTriggerDismissed(
+      familyId,
+      parentMembershipId,
+      flow.flowDate,
+      activeRelTrigger,
+    );
+    setRelUiTick((n) => n + 1);
+  };
+
+  const answerSoftCal = async (question: SoftCalQuestion, code: string) => {
+    if (!familyId || softCalBusy) return;
+    setSoftCalBusy(true);
+    try {
+      const bp = await patchFamilyBlueprintLayers(
+        familyId,
+        softCalAnswerPatch(question, code),
+      );
+      setSoftLayers(parseLayersJson(bp.layersJson));
+      markSoftCalAnsweredThisWeek(familyId);
+      setSoftCalDismissed(true);
+      setSoftCalToast('Đã nhớ — Famixa sẽ gợi ý đúng nhà mình hơn.');
+    } catch {
+      setSoftCalToast('Chưa lưu được. Thử lại sau nhé.');
+    } finally {
+      setSoftCalBusy(false);
+    }
+  };
+
+  const submitParentVoice = async () => {
+    if (!parentMembershipId || !voiceToId || !voiceDraft.trim()) {
+      setVoiceError(
+        voiceTargetKind === 'adult'
+          ? 'Chọn người nhận và nhập lời gửi.'
+          : 'Chọn con và nhập lời gửi.',
+      );
+      return;
+    }
+    setVoiceBusy(true);
+    setVoiceError(null);
+    try {
+      await sendParentVoice(familyId, {
+        fromMemberId: parentMembershipId,
+        toMemberId: voiceToId,
+        templateCode: voiceTemplate || 'custom',
+        bodyVi: voiceDraft.trim(),
+        flowDate: flow.flowDate,
+      });
+      const picked = BIRTHDAY_PICKER_OPTIONS.find((o) => o.code === birthdayPick);
+      if (picked?.treatTitleVi) {
+        try {
+          await createFamilyMemory(familyId, {
+            titleVi: picked.treatTitleVi,
+            flowDate: flow.flowDate,
+            memberId: voiceToId,
+            kind: 'reward',
+            noteVi: voiceDraft.trim(),
+            icon: '🎂',
+          });
+        } catch {
+          /* optional treat memory */
+        }
+      }
+      if (activeRelTrigger) {
+        markRelTriggerSent(
+          familyId,
+          parentMembershipId,
+          flow.flowDate,
+          activeRelTrigger,
+        );
+      }
+      setVoiceSheetOpen(false);
+      setVoiceToast(
+        voiceTargetKind === 'adult'
+          ? 'Đã gửi lời tới người cùng chăm nhà.'
+          : 'Đã gửi lời tới con — bạn là người nói.',
+      );
+      setRelTriggerReload((n) => n + 1);
+      setRelUiTick((n) => n + 1);
+    } catch (e) {
+      setVoiceError(getApiErrorMessage(e) || 'Chưa gửi được. Thử lại nhé.');
+    } finally {
+      setVoiceBusy(false);
+    }
+  };
+
   useEffect(() => {
     if (!familyId) return;
     let cancelled = false;
     void (async () => {
       try {
         const [rows, recap] = await Promise.all([
-          fetchFamilyMemories(familyId, { limit: 40 }),
+          fetchFamilyMemories(familyId, {
+            limit: 40,
+            memberId: diaryMemberFilter !== 'all' ? diaryMemberFilter : undefined,
+          }),
           fetchFamilyMemoryRecap(familyId).catch(() => null),
         ]);
         if (cancelled) return;
@@ -799,7 +1136,60 @@ export function ParentBoardView({
     return () => {
       cancelled = true;
     };
-  }, [familyId, flow.flowDate, flow.doneCount]);
+  }, [familyId, flow.flowDate, flow.doneCount, diaryMemberFilter]);
+
+  useEffect(() => {
+    if (!familyId || !parentMembershipId) {
+      setPartnerInbox([]);
+      return;
+    }
+    let cancelled = false;
+    void fetchParentVoice(familyId, {
+      forMemberId: parentMembershipId,
+      flowDate: flow.flowDate,
+    })
+      .then((rows) => {
+        if (!cancelled) {
+          setPartnerInbox(rows.filter((r) => r.status === 'sent'));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPartnerInbox([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId, parentMembershipId, flow.flowDate, relTriggerReload]);
+
+  const adultOptions = useMemo(
+    () => parentsProp.filter((p) => p.id !== parentMembershipId),
+    [parentsProp, parentMembershipId],
+  );
+
+  const ackPartnerVoice = async (messageId: string, status: 'read' | 'thanks') => {
+    setPartnerAckBusy(messageId);
+    try {
+      await ackParentVoice(familyId, messageId, status);
+      setPartnerInbox((prev) => prev.filter((n) => n.id !== messageId));
+      setRelTriggerReload((n) => n + 1);
+    } catch {
+      /* keep */
+    } finally {
+      setPartnerAckBusy(null);
+    }
+  };
+
+  const applyBirthdayPick = (code: string) => {
+    const opt = BIRTHDAY_PICKER_OPTIONS.find((o) => o.code === code);
+    if (!opt) return;
+    setBirthdayPick(code);
+    setVoiceTemplate('birthday');
+    const childName =
+      childOptions.find((c) => c.key === voiceToId)?.name ||
+      activeRelTrigger?.toMemberName ||
+      'con';
+    setVoiceDraft(opt.draftVi(shortMemberName(childName), 'Bố/Mẹ'));
+  };
 
   const openMemoriesSheet = () => setDiaryMemoriesOpen(true);
 
@@ -977,13 +1367,24 @@ export function ParentBoardView({
     };
   }, [familyId, flow.flowDate, flow.doneCount, parentMembershipId]);
 
-  const todayUnlock = useMemo(
-    () =>
-      teamUnlocks.find((u) => u.flowDate === flow.flowDate) ??
-      teamUnlocks[0] ??
-      null,
-    [teamUnlocks, flow.flowDate],
-  );
+  const todayUnlock = useMemo(() => {
+    const sameDay = teamUnlocks.filter((u) => u.flowDate === flow.flowDate);
+    const movie =
+      sameDay.find((u) => !isSiblingComboUnlock(u.rewardCode)) ??
+      teamUnlocks.find((u) => !isSiblingComboUnlock(u.rewardCode));
+    return movie ?? null;
+  }, [teamUnlocks, flow.flowDate]);
+
+  const todayComboUnlock = useMemo(() => {
+    const sameDay = teamUnlocks.filter(
+      (u) => u.flowDate === flow.flowDate && isSiblingComboUnlock(u.rewardCode),
+    );
+    return (
+      sameDay.find((u) => u.status === 'pending_confirm') ??
+      sameDay[0] ??
+      null
+    );
+  }, [teamUnlocks, flow.flowDate]);
 
   const onDecideUnlockById = async (
     unlockId: string,
@@ -1464,6 +1865,12 @@ export function ParentBoardView({
 
   /** Nhà chưa có thành viên con → không giả định "Con" trong copy. */
   const hasChildren = childOptions.length > 0;
+  const showSoftCal =
+    Boolean(familyId) &&
+    Boolean(parentMembershipId) &&
+    hasChildren &&
+    !softCalDismissed &&
+    !hasSoftCalAnsweredThisWeek(familyId);
   const childShort =
     (selectedChild?.name ?? focusChild?.name ?? 'Con').trim().split(/\s+/).pop() || 'Con';
   const diaryDays = useMemo(() => {
@@ -2149,7 +2556,8 @@ export function ParentBoardView({
                 </div>
               </div>
               {(() => {
-                const because = becauseFromDna(dnaCard).becauseVi;
+                const because =
+                  becauseFromSoftPrefs(softLayers) || becauseFromDna(dnaCard).becauseVi;
                 const roleTip = roleMatrixBriefTip(dnaCard?.stageLabelVi);
                 const line =
                   homeBrief.primaryAction.kind === 'dna_setup'
@@ -2181,6 +2589,128 @@ export function ParentBoardView({
               </button>
             </div>
           </article>
+
+          {showSoftCal ? (
+            <section className="ph-soft-cal" aria-label="Famixa hỏi nhẹ">
+              <p className="ph-soft-cal-q">{softCalQuestion.questionVi}</p>
+              <div className="ph-soft-cal-opts">
+                {softCalQuestion.options.map((o) => (
+                  <button
+                    key={o.code}
+                    type="button"
+                    className="ph-soft-cal-chip"
+                    disabled={softCalBusy}
+                    onClick={() => void answerSoftCal(softCalQuestion, o.code)}
+                  >
+                    {o.labelVi}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="ph-rel-trigger-dismiss"
+                disabled={softCalBusy}
+                onClick={() => setSoftCalDismissed(true)}
+              >
+                Để tuần sau
+              </button>
+            </section>
+          ) : null}
+          {softCalToast ? (
+            <p className="ph-sibling-nudge-toast" role="status">
+              {softCalToast}
+            </p>
+          ) : null}
+
+          {partnerInbox.length > 0 ? (
+            <section className="ph-partner-inbox" aria-label="Lời từ người cùng chăm">
+              {partnerInbox.map((n) => (
+                <article key={n.id} className="ph-partner-inbox-card">
+                  <p className="ph-partner-inbox-eyebrow">
+                    <span aria-hidden>{parentVoiceIcon(n.templateCode)}</span> Lời từ{' '}
+                    {n.fromMemberName.trim() || 'bố/mẹ'}
+                  </p>
+                  <p className="ph-partner-inbox-msg">{n.bodyVi}</p>
+                  <div className="ph-combo-actions">
+                    <button
+                      type="button"
+                      className="ph-nudge-btn is-primary"
+                      disabled={partnerAckBusy === n.id}
+                      onClick={() => void ackPartnerVoice(n.id, 'thanks')}
+                    >
+                      Cảm ơn
+                    </button>
+                    <button
+                      type="button"
+                      className="ph-nudge-btn"
+                      disabled={partnerAckBusy === n.id}
+                      onClick={() => void ackPartnerVoice(n.id, 'read')}
+                    >
+                      Đã xem
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </section>
+          ) : null}
+
+          {activeRelTrigger && isParentVoiceTrigger(activeRelTrigger.code) && parentMembershipId ? (
+            <div
+              className={`ph-rel-trigger-wrap${activeRelTrigger.isGolden ? ' is-golden' : ''}${voiceUnsent ? ' is-unsent' : ''}`}
+            >
+              <button
+                type="button"
+                className="ph-rel-trigger-cta"
+                onClick={() => openParentVoiceSheet(activeRelTrigger)}
+              >
+                <span className="ph-rel-trigger-ico" aria-hidden>
+                  {voiceUnsent ? '✨' : parentVoiceIcon(activeRelTrigger.templateCode)}
+                </span>
+                <span>
+                  {voiceUnsent
+                    ? `Còn 1 chạm — ${(activeRelTrigger.toMemberName || 'con').trim()} chưa nhận lời`
+                    : activeRelTrigger.titleVi}
+                  <em>
+                    {voiceUnsent
+                      ? 'Bạn đã soạn lời nhưng chưa gửi.'
+                      : activeRelTrigger.bodyVi}
+                  </em>
+                </span>
+                <i className="ph-sibling-nudge-chev" aria-hidden>
+                  ›
+                </i>
+              </button>
+              <button
+                type="button"
+                className="ph-rel-trigger-dismiss"
+                onClick={dismissParentVoiceTrigger}
+              >
+                Để sau
+              </button>
+            </div>
+          ) : parentMembershipId && hasChildren ? (
+            <button
+              type="button"
+              className="ph-rel-trigger-cta"
+              onClick={() => openParentVoiceSheet(null)}
+            >
+              <span className="ph-rel-trigger-ico" aria-hidden>
+                ❤️
+              </span>
+              <span>
+                Gửi một lời ấm tới con
+                <em>Bạn nói — Famixa chỉ chuyển lời. Không cần chờ mốc streak.</em>
+              </span>
+              <i className="ph-sibling-nudge-chev" aria-hidden>
+                ›
+              </i>
+            </button>
+          ) : null}
+          {voiceToast ? (
+            <p className="ph-sibling-nudge-toast" role="status">
+              {voiceToast}
+            </p>
+          ) : null}
 
           {hasChildren && childOptions.length >= 2 && houseTeamRemaining >= 1 ? (
             <button
@@ -2448,6 +2978,46 @@ export function ParentBoardView({
             </section>
           ) : null}
 
+          {todayComboUnlock ? (
+            <section className="ph-combo-card" aria-label="High-five anh chị">
+              <header className="ph-b4-col-head">
+                <h3>
+                  <span aria-hidden>🙌</span> High-five đôi anh chị
+                </h3>
+              </header>
+              <p className="ph-combo-copy">
+                {todayComboUnlock.labelVi || 'Hai con cùng xong một việc — thưởng đội nhỏ.'}
+              </p>
+              <em className="ph-combo-meta">
+                {todayComboUnlock.status === 'confirmed'
+                  ? 'Đã mở thưởng đội nhỏ'
+                  : todayComboUnlock.status === 'pending_confirm'
+                    ? 'Chờ bố/mẹ xác nhận · không gắn bảng xếp hạng cá nhân'
+                    : 'Đã để sau'}
+              </em>
+              {todayComboUnlock.status === 'pending_confirm' && parentMembershipId ? (
+                <div className="ph-combo-actions">
+                  <button
+                    type="button"
+                    className="ph-nudge-btn is-primary"
+                    disabled={unlockBusy}
+                    onClick={() => void onDecideUnlockById(todayComboUnlock.id, 'confirmed')}
+                  >
+                    {unlockBusy ? 'Đang lưu…' : 'Mở thưởng đội nhỏ'}
+                  </button>
+                  <button
+                    type="button"
+                    className="ph-nudge-btn"
+                    disabled={unlockBusy}
+                    onClick={() => void onDecideUnlockById(todayComboUnlock.id, 'deferred')}
+                  >
+                    Để sau
+                  </button>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
           {rituals.length > 0 ? (
             <section className="ph-ritual-card" aria-label="Ritual của bố mẹ tuần này">
               <header className="ph-b4-col-head ph-ritual-head">
@@ -2479,6 +3049,99 @@ export function ParentBoardView({
                 ))}
               </ul>
               <p className="ph-ritual-foot">Tách khỏi % đội con — nhịp riêng của bố mẹ.</p>
+            </section>
+          ) : null}
+
+          {eveningCircle ? (
+            <section className="ph-circle-card" aria-label="Evening Circle">
+              <header className="ph-b4-col-head">
+                <h3>
+                  <span aria-hidden>⭐</span> Evening Circle
+                </h3>
+              </header>
+              <p className="ph-circle-prompt">{eveningCircle.promptVi}</p>
+              {eveningCircle.answers.length > 0 ? (
+                <ul className="ph-circle-answers">
+                  {eveningCircle.answers.map((a) => (
+                    <li key={a.memoryId}>
+                      <strong>{a.memberName}</strong>
+                      <span>{a.answerVi}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="ph-circle-empty">Chưa ai trả lời — một câu ngắn là đủ.</p>
+              )}
+              {parentMembershipId && !eveningCircle.alreadyAnswered ? (
+                <div className="ph-circle-compose">
+                  <textarea
+                    rows={2}
+                    maxLength={280}
+                    value={circleAnswer}
+                    onChange={(e) => setCircleAnswer(e.target.value)}
+                    placeholder="Câu trả lời của bạn…"
+                    disabled={circleBusy}
+                  />
+                  <button
+                    type="button"
+                    className="ph-nudge-btn is-primary"
+                    disabled={circleBusy || !circleAnswer.trim()}
+                    onClick={() => void submitEveningCircle()}
+                  >
+                    {circleBusy ? 'Đang lưu…' : 'Gửi câu trả lời'}
+                  </button>
+                </div>
+              ) : parentMembershipId && eveningCircle.alreadyAnswered ? (
+                <p className="ph-circle-empty">Bạn đã trả lời tối nay — cảm ơn.</p>
+              ) : null}
+            </section>
+          ) : null}
+
+          {weeklyStory ? (
+            <section className="ph-weekly-story" aria-label="Câu chuyện tuần này">
+              <header className="ph-b4-col-head">
+                <h3>
+                  <span aria-hidden>📖</span> Câu chuyện tuần này
+                </h3>
+              </header>
+              <p className="ph-weekly-headline">{weeklyStory.headlineVi}</p>
+              <ul className="ph-weekly-lines">
+                {weeklyStory.lines.map((line, idx) => (
+                  <li key={`${line.textVi}-${idx}`}>
+                    <span aria-hidden>{line.icon}</span>
+                    <span>{line.textVi}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="ph-ritual-foot">Không phải % việc — là cách nhà mình đã gần nhau.</p>
+              <button
+                type="button"
+                className="ph-nudge-btn"
+                style={{ marginTop: 8 }}
+                onClick={() =>
+                  void shareOrCopyNudge(
+                    formatWeeklyStoryShare({
+                      familyName,
+                      headlineVi: weeklyStory.headlineVi,
+                      lines: weeklyStory.lines,
+                    }),
+                    { preferShare: true },
+                  )
+                    .then((mode) =>
+                      showActionToast(
+                        mode === 'shared'
+                          ? 'Đã mở chia sẻ cho ông bà / người thân'
+                          : 'Đã copy — dán Zalo gửi ông bà nhé',
+                      ),
+                    )
+                    .catch((err) => {
+                      if (err instanceof DOMException && err.name === 'AbortError') return;
+                      showActionToast('Chưa chia sẻ được — thử lại nhé');
+                    })
+                }
+              >
+                Gửi ông bà / người thân
+              </button>
             </section>
           ) : null}
 
@@ -3205,6 +3868,26 @@ export function ParentBoardView({
               <span aria-hidden>{diaryFavoritesOnly ? '❤️' : '▾'}</span>{' '}
               {diaryFavoritesOnly ? 'Đã tim' : 'Lọc'}
             </button>
+          </div>
+
+          <div className="ph-diary-filters" aria-label="Memory lens theo thành viên">
+            <button
+              type="button"
+              className={`ph-diary-chip${diaryMemberFilter === 'all' ? ' is-on' : ''}`}
+              onClick={() => setDiaryMemberFilter('all')}
+            >
+              Cả nhà
+            </button>
+            {childOptions.map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                className={`ph-diary-chip${diaryMemberFilter === c.key ? ' is-on' : ''}`}
+                onClick={() => setDiaryMemberFilter(c.key)}
+              >
+                Của {shortMemberName(c.name)}
+              </button>
+            ))}
           </div>
 
           <div className="ph-diary-layout">
@@ -4421,6 +5104,165 @@ export function ParentBoardView({
                 onClick={() => setAddMemoryOpen(false)}
               >
                 Huỷ
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {voiceSheetOpen ? (
+        <div
+          className="sheet-backdrop"
+          role="presentation"
+          onClick={() => !voiceBusy && setVoiceSheetOpen(false)}
+        >
+          <div
+            className="sheet ph-sibling-nudge-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label={voiceTargetKind === 'adult' ? 'Gửi lời tới người cùng chăm' : 'Gửi lời tới con'}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="ph-nudge-head">
+              <span className="ph-nudge-head-ico" aria-hidden>
+                {parentVoiceIcon(voiceTemplate)}
+              </span>
+              <div>
+                <h2>
+                  {voiceTargetKind === 'adult'
+                    ? 'Gửi lời tới người cùng chăm'
+                    : activeRelTrigger && isBirthdayWishTrigger(activeRelTrigger.code)
+                      ? 'Chúc sinh nhật'
+                      : 'Gửi lời tới con'}
+                </h2>
+                <p>Bạn là người nói — Famixa chỉ chuyển lời.</p>
+              </div>
+              <button
+                type="button"
+                className="ph-nudge-close"
+                aria-label="Đóng"
+                disabled={voiceBusy}
+                onClick={() => setVoiceSheetOpen(false)}
+              >
+                ✕
+              </button>
+            </header>
+
+            <div className="ph-nudge-form">
+              <label className="ph-nudge-field">
+                <span className="ph-nudge-label">Gửi tới</span>
+                <span className="ph-nudge-select">
+                  <select
+                    value={voiceToId}
+                    onChange={(e) => setVoiceToId(e.target.value)}
+                    disabled={voiceBusy}
+                  >
+                    <option value="">
+                      {voiceTargetKind === 'adult' ? 'Chọn người…' : 'Chọn con…'}
+                    </option>
+                    {voiceTargetKind === 'adult'
+                      ? adultOptions.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.displayName}
+                          </option>
+                        ))
+                      : childOptions.map((c) => (
+                          <option key={c.key} value={c.key}>
+                            {c.name}
+                          </option>
+                        ))}
+                  </select>
+                  <i aria-hidden>▾</i>
+                </span>
+              </label>
+
+              {voiceTargetKind === 'adult' ? (
+                <fieldset className="ph-sibling-nudge-templates">
+                  <legend className="ph-nudge-label">Kiểu lời</legend>
+                  {ADULT_VOICE_TEMPLATES.map((opt) => (
+                    <label
+                      key={opt.code}
+                      className={`ph-nudge-option${voiceTemplate === opt.code ? ' is-on' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="adult-voice-template"
+                        checked={voiceTemplate === opt.code}
+                        disabled={voiceBusy}
+                        onChange={() => {
+                          setVoiceTemplate(opt.code);
+                          const toName =
+                            adultOptions.find((a) => a.id === voiceToId)?.displayName || 'bạn';
+                          const short = shortMemberName(toName);
+                          if (opt.code === 'thanks_partner') {
+                            setVoiceDraft(`${short} ơi, cảm ơn hôm nay mình cùng giữ nhà nhé.`);
+                          } else if (opt.code === 'help_offer') {
+                            setVoiceDraft(`${short} ơi, tối nay để mình phụ một việc nhé?`);
+                          } else {
+                            setVoiceDraft(`${short} ơi, hôm nay mình nhớ đến nhau.`);
+                          }
+                        }}
+                      />
+                      <span>
+                        <b>{opt.labelVi}</b>
+                        <em>{opt.hint}</em>
+                      </span>
+                    </label>
+                  ))}
+                </fieldset>
+              ) : null}
+
+              {activeRelTrigger && isBirthdayWishTrigger(activeRelTrigger.code) ? (
+                <div className="ph-soft-cal-opts" role="group" aria-label="Chọn lời chúc">
+                  {BIRTHDAY_PICKER_OPTIONS.map((o) => (
+                    <button
+                      key={o.code}
+                      type="button"
+                      className={`ph-soft-cal-chip${birthdayPick === o.code ? ' is-on' : ''}`}
+                      disabled={voiceBusy}
+                      onClick={() => applyBirthdayPick(o.code)}
+                    >
+                      {o.labelVi}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              <label className="ph-nudge-field">
+                <span className="ph-nudge-label">Lời của bạn</span>
+                <textarea
+                  className="ph-voice-textarea"
+                  rows={3}
+                  maxLength={380}
+                  value={voiceDraft}
+                  disabled={voiceBusy}
+                  onChange={(e) => setVoiceDraft(e.target.value)}
+                />
+              </label>
+            </div>
+
+            {voiceError ? (
+              <p className="banner-error" role="alert">
+                {voiceError}
+              </p>
+            ) : null}
+
+            <div className="ph-nudge-actions">
+              <button
+                type="button"
+                className="ph-nudge-btn is-ghost"
+                disabled={voiceBusy}
+                onClick={() => setVoiceSheetOpen(false)}
+              >
+                Để sau
+              </button>
+              <button
+                type="button"
+                className="ph-nudge-btn is-primary"
+                disabled={voiceBusy || !voiceToId || !voiceDraft.trim()}
+                onClick={() => void submitParentVoice()}
+              >
+                {voiceBusy ? 'Đang gửi…' : 'Gửi lời'}
               </button>
             </div>
           </div>

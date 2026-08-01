@@ -24,10 +24,18 @@ public static class FamilyTeamNudgeTemplates
     public const string CheerUp = "cheer_up";
     public const string OneLeft = "one_left";
     public const string YouGotThis = "you_got_this";
+    /// <summary>P1.6 — em gửi cảm ơn anh/chị sau ack thanks.</summary>
+    public const string ThanksBack = "thanks_back";
 
     public static readonly HashSet<string> All = new(StringComparer.OrdinalIgnoreCase)
     {
-        CheerUp, OneLeft, YouGotThis,
+        CheerUp, OneLeft, YouGotThis, ThanksBack,
+    };
+
+    /// <summary>Templates that skip CanInvite / age gates (reciprocal thank only).</summary>
+    public static readonly HashSet<string> Reciprocal = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ThanksBack,
     };
 
     public static string MessageVi(string templateCode, string fromShort, string toShort) =>
@@ -35,6 +43,7 @@ public static class FamilyTeamNudgeTemplates
         {
             OneLeft => $"{toShort} ơi, cả đội còn 1 việc nữa thôi — {fromShort} cổ vũ em!",
             YouGotThis => $"{toShort} cố lên nhé! {fromShort} tin em làm được.",
+            ThanksBack => $"{toShort} ơi, cảm ơn lời nhắc hôm nay — {fromShort} nhớ ơn anh/chị!",
             _ => $"{toShort} ơi, {fromShort} nhắc nhẹ — mình cùng xong ngày hôm nay nhé!",
         };
 }

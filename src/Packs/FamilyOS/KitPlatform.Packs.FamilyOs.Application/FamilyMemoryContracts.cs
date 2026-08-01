@@ -13,11 +13,13 @@ public static class FamilyMemoryKinds
     public const string Help = "help";
     public const string TeamDay = "team_day";
     public const string ParentHabit = "parent_habit";
+    public const string ParentVoice = "parent_voice";
+    public const string EveningCircle = "evening_circle";
 
     public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         BeautifulDay, StreakMilestone, Gratitude, Photo, TeamUnlock, Reward, FirstTime, Manual,
-        Help, TeamDay, ParentHabit,
+        Help, TeamDay, ParentHabit, ParentVoice, EveningCircle,
     };
 }
 
@@ -65,6 +67,7 @@ public interface IFamilyMemoryService
         DateOnly? to = null,
         bool favoritesOnly = false,
         int limit = 60,
+        Guid? memberId = null,
         CancellationToken cancellationToken = default);
 
     Task<FamilyMemoryDto> CreateAsync(

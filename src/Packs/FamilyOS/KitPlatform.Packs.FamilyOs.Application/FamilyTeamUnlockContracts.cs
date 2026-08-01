@@ -17,6 +17,13 @@ public static class FamilyTeamUnlockStatuses
     };
 }
 
+/// <summary>P1.6 light Team Unlock when 2+ kids both done the same paired mission title.</summary>
+public static class FamilySiblingComboUnlock
+{
+    public const string RewardCode = "sibling_combo_highfive";
+    public const string DefaultLabelVi = "High-five đôi anh chị";
+}
+
 public sealed record FamilyTeamDayDto(
     DateOnly FlowDate,
     Guid? DayFlowId,
@@ -72,6 +79,12 @@ public interface IFamilyTeamUnlockService
 
     /// <summary>Create pending unlock when team day is complete; no-op otherwise.</summary>
     Task<FamilyTeamUnlockDto?> EnsurePendingAsync(
+        Guid familyId,
+        DateOnly? flowDate = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>P1.6 — light unlock when 2+ children both done the same mission title today.</summary>
+    Task<FamilyTeamUnlockDto?> EnsureSiblingComboPendingAsync(
         Guid familyId,
         DateOnly? flowDate = null,
         CancellationToken cancellationToken = default);

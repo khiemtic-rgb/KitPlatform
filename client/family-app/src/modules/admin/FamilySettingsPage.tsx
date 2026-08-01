@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   fetchFamilies,
+  fetchFamilyBlueprint,
   fetchFamilySubscription,
+  patchFamilyBlueprintLayers,
   type FamilyMembership,
   type FamilySubscription,
 } from '@/shared/api/family-os.api';
@@ -30,6 +32,15 @@ import { avatarEmoji, inferGenderFromName } from '@/shared/ui/avatarGender';
 import { ResetParentPinPanel } from '@/shared/ui/ResetParentPinPanel';
 import { buildTrialLifecycle } from '@/shared/billing/trial-lifecycle';
 import { FamilyAdminShell, ROLE_LABEL } from '@/modules/admin/FamilyAdminShell';
+import {
+  CHILD_PRAISE_OPTIONS,
+  CONTEXT_CHIP_OPTIONS,
+  contextChipsPatch,
+  memberPraisePatch,
+  parseLayersJson,
+  readContextChips,
+  readMemberPraiseStyle,
+} from '@/shared/value/soft-calibration';
 
 const MASTER_REMINDERS_KEY = 'famixa.reminders.master.v1';
 const APP_VERSION = 'v1.0.0';
@@ -79,6 +90,15 @@ export function FamilySettingsPage() {
   const [notifyMsg, setNotifyMsg] = useState<string | null>(null);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [pinOpen, setPinOpen] = useState(false);
+  const [contextChips, setContextChips] = useState<string[]>([]);
+  const [memberPraise, setMemberPraise] = useState<Record<string, string>>({});
+  const [houseBusy, setHouseBusy] = useState(false);
+  const [houseMsg, setHouseMsg] = useState<string | null>(null);
+
+  const childMembers = useMemo(
+    () => members.filter((m) => m.roleCode === 'child'),
+    [members],
+  );
 
   const reloadSub = useCallback(async () => {
     if (!familyId) {
@@ -123,11 +143,86 @@ export function FamilySettingsPage() {
     }
   }, [familyId, member]);
 
+  const reloadHouseContext = useCallback(async () => {
+    if (!familyId) {
+      setContextChips([]);
+      setMemberPraise({});
+      return;
+    }
+    try {
+      const bp = await fetchFamilyBlueprint(familyId);
+      const layers = parseLayersJson(bp?.layersJson);
+      setContextChips(readContextChips(layers));
+      const praise: Record<string, string> = {};
+      for (const m of members.filter((x) => x.roleCode === 'child')) {
+        const style = readMemberPraiseStyle(layers, m.id);
+        if (style) praise[m.id] = style;
+      }
+      setMemberPraise(praise);
+    } catch {
+      setContextChips([]);
+      setMemberPraise({});
+    }
+  }, [familyId, members]);
+
   useEffect(() => {
     void reloadSub();
     void reloadPush();
     void reloadMembers();
   }, [reloadSub, reloadPush, reloadMembers]);
+
+  useEffect(() => {
+    void reloadHouseContext();
+  }, [reloadHouseContext]);
+
+  const toggleContextChip = async (code: string) => {
+    if (!familyId || houseBusy) return;
+    const prev = contextChips;
+    const next = contextChips.includes(code)
+      ? contextChips.filter((c) => c !== code)
+      : [...contextChips, code];
+    setContextChips(next);
+    setHouseBusy(true);
+    setHouseMsg(null);
+    try {
+      await patchFamilyBlueprintLayers(familyId, contextChipsPatch(next));
+      setHouseMsg('Đã cập nhật bối cảnh nhà mình.');
+    } catch {
+      setContextChips(prev);
+      setHouseMsg('Chưa lưu được. Thử lại sau.');
+    } finally {
+      setHouseBusy(false);
+    }
+  };
+
+  const setChildPraise = async (memberId: string, code: string) => {
+    if (!familyId || houseBusy) return;
+    const prev = memberPraise[memberId];
+    const nextCode = prev === code ? '' : code;
+    setMemberPraise((m) => {
+      const copy = { ...m };
+      if (nextCode) copy[memberId] = nextCode;
+      else delete copy[memberId];
+      return copy;
+    });
+    if (!nextCode) return;
+    setHouseBusy(true);
+    setHouseMsg(null);
+    try {
+      await patchFamilyBlueprintLayers(familyId, memberPraisePatch(memberId, nextCode));
+      setHouseMsg('Đã nhớ cách động viên từng con.');
+    } catch {
+      setMemberPraise((m) => {
+        const copy = { ...m };
+        if (prev) copy[memberId] = prev;
+        else delete copy[memberId];
+        return copy;
+      });
+      setHouseMsg('Chưa lưu được. Thử lại sau.');
+    } finally {
+      setHouseBusy(false);
+    }
+  };
 
   useEffect(() => {
     const hash = window.location.hash.replace('#', '');
@@ -141,7 +236,6 @@ export function FamilySettingsPage() {
       if (hash === 'pin') setPinOpen(true);
     });
   }, []);
-
   const trialLife = useMemo(() => buildTrialLifecycle(subscription), [subscription]);
 
   const peaceDays = useMemo(() => {
@@ -442,7 +536,68 @@ export function FamilySettingsPage() {
         ) : null}
       </section>
 
-      {/* 3. Nhà & thành viên — không lặp tên/ảnh hero */}
+      {/* 3. Famixa hiểu nhà mình — progressive chips (không thu nhập) */}
+      <section className="fa-card" id="fa-set-house-dna">
+        <h2>
+          <span aria-hidden>🌿</span> Famixa hiểu nhà mình
+        </h2>
+        <p className="fa-hint">
+          Vài chip bối cảnh — không hỏi thu nhập. Giúp gợi ý đúng nhịp nhà bạn.
+        </p>
+        <div className="fa-house-chips" role="group" aria-label="Bối cảnh nhà">
+          {CONTEXT_CHIP_OPTIONS.map((o) => {
+            const on = contextChips.includes(o.code);
+            return (
+              <button
+                key={o.code}
+                type="button"
+                className={`fa-house-chip${on ? ' is-on' : ''}`}
+                aria-pressed={on}
+                disabled={houseBusy || !familyId}
+                onClick={() => void toggleContextChip(o.code)}
+              >
+                {o.labelVi}
+              </button>
+            );
+          })}
+        </div>
+        {childMembers.length > 0 ? (
+          <div className="fa-house-kids">
+            <strong>Cách động viên từng con</strong>
+            {childMembers.map((m) => (
+              <div key={m.id} className="fa-house-kid-row">
+                <em>
+                  {memberEmoji(m)} {m.displayName}
+                </em>
+                <div className="fa-house-chips" role="group">
+                  {CHILD_PRAISE_OPTIONS.map((o) => {
+                    const on = memberPraise[m.id] === o.code;
+                    return (
+                      <button
+                        key={o.code}
+                        type="button"
+                        className={`fa-house-chip is-soft${on ? ' is-on' : ''}`}
+                        aria-pressed={on}
+                        disabled={houseBusy || !familyId}
+                        onClick={() => void setChildPraise(m.id, o.code)}
+                      >
+                        {o.labelVi}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {houseMsg ? (
+          <p className="fa-hint" role="status">
+            {houseMsg}
+          </p>
+        ) : null}
+      </section>
+
+      {/* 4. Nhà & thành viên — không lặp tên/ảnh hero */}
       <section className="fa-card" id="fa-set-house">
         <h2>
           <span aria-hidden>🏠</span> Nhà &amp; thành viên
@@ -505,7 +660,7 @@ export function FamilySettingsPage() {
         </button>
       </section>
 
-      {/* 4. An toàn & hỗ trợ */}
+      {/* 5. An toàn & hỗ trợ */}
       <section className="fa-card" id="fa-set-leave">
         <h2>
           <span aria-hidden>🛡️</span> An toàn &amp; hỗ trợ

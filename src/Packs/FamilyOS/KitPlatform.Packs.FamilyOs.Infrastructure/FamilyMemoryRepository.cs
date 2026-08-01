@@ -47,6 +47,7 @@ internal sealed class FamilyMemoryRepository
         DateOnly? to,
         bool favoritesOnly,
         int limit,
+        Guid? memberId,
         CancellationToken cancellationToken)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -60,6 +61,7 @@ internal sealed class FamilyMemoryRepository
               AND (@From::date IS NULL OR m.flow_date >= @From::date)
               AND (@To::date IS NULL OR m.flow_date <= @To::date)
               AND (NOT @FavoritesOnly OR m.is_favorite)
+              AND (@MemberId::uuid IS NULL OR m.member_id = @MemberId::uuid)
             ORDER BY m.happened_at DESC
             LIMIT @Limit
             """,
@@ -70,6 +72,7 @@ internal sealed class FamilyMemoryRepository
                 From = from,
                 To = to,
                 FavoritesOnly = favoritesOnly,
+                MemberId = memberId,
                 Limit = limit,
             });
         return rows.AsList();

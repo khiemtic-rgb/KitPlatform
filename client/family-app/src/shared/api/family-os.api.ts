@@ -1,5 +1,9 @@
 import { http } from '@/shared/api/http';
 import { normalizeLateStarLabelVi } from '@/shared/flow/late-duration';
+import {
+  deepMergeLayers,
+  parseLayersJson,
+} from '@/shared/value/soft-calibration';
 
 type Row = Record<string, unknown>;
 
@@ -1677,6 +1681,57 @@ export async function hydrateFamilyBlueprint(
   };
 }
 
+function mapFamilyBlueprint(data: Row, familyId: string): FamilyBlueprint {
+  return {
+    familyId: String(data.familyId ?? data.FamilyId ?? familyId),
+    layersJson: String(data.layersJson ?? data.LayersJson ?? '{}'),
+    dnaJson: String(data.dnaJson ?? data.DnaJson ?? '{}'),
+    schemaVersion: Number(data.schemaVersion ?? data.SchemaVersion ?? 1),
+    hydratedAt:
+      data.hydratedAt != null || data.HydratedAt != null
+        ? String(data.hydratedAt ?? data.HydratedAt)
+        : undefined,
+    updatedAt:
+      data.updatedAt != null || data.UpdatedAt != null
+        ? String(data.updatedAt ?? data.UpdatedAt)
+        : undefined,
+  };
+}
+
+export async function fetchFamilyBlueprint(familyId: string): Promise<FamilyBlueprint | null> {
+  try {
+    const { data } = await http.get<Row>(`/family-os/families/${familyId}/blueprint`);
+    if (!data) return null;
+    return mapFamilyBlueprint(data, familyId);
+  } catch {
+    return null;
+  }
+}
+
+/** Upsert layers. Prefer patchFamilyBlueprintLayers for nested keys (server merge is shallow). */
+export async function putFamilyBlueprintLayers(
+  familyId: string,
+  layersJson: string,
+  replace = false,
+): Promise<FamilyBlueprint> {
+  const { data } = await http.put<Row>(`/family-os/families/${familyId}/blueprint`, {
+    layersJson,
+    dnaJson: null,
+    replace,
+  });
+  return mapFamilyBlueprint(data, familyId);
+}
+
+/** Client deep-merge then replace layers (keeps dna). */
+export async function patchFamilyBlueprintLayers(
+  familyId: string,
+  patch: Record<string, unknown>,
+): Promise<FamilyBlueprint> {
+  const existing = await fetchFamilyBlueprint(familyId);
+  const merged = deepMergeLayers(parseLayersJson(existing?.layersJson), patch);
+  return putFamilyBlueprintLayers(familyId, JSON.stringify(merged), true);
+}
+
 export interface TeamChildSlice {
   memberId: string;
   displayName: string;
@@ -1820,7 +1875,7 @@ export async function confirmTeamUnlock(
 }
 
 export type TeamNudgeStatus = 'draft' | 'sent' | 'seen' | 'thanks' | 'deferred' | string;
-export type TeamNudgeTemplate = 'cheer_up' | 'one_left' | 'you_got_this';
+export type TeamNudgeTemplate = 'cheer_up' | 'one_left' | 'you_got_this' | 'thanks_back';
 
 export interface TeamNudge {
   id: string;
@@ -2019,6 +2074,335 @@ export async function markChildGratitudeRead(
   await http.post(`/family-os/families/${familyId}/gratitude/${gratitudeId}/read`);
 }
 
+/** Relationship Engine P0 — max 2 triggers / viewer / day. */
+export type RelationshipTrigger = {
+  code: string;
+  titleVi: string;
+  bodyVi: string;
+  ctaLabelVi: string;
+  toMemberId?: string;
+  toMemberName?: string;
+  draftBodyVi?: string;
+  templateCode?: string;
+  whyNow: string;
+  isGolden?: boolean;
+};
+
+export type ParentVoiceMessage = {
+  id: string;
+  familyId: string;
+  fromMemberId: string;
+  fromMemberName: string;
+  toMemberId: string;
+  toMemberName: string;
+  flowDate: string;
+  templateCode: string;
+  bodyVi: string;
+  status: string;
+  sentAt: string;
+  ackAt?: string;
+};
+
+function mapRelationshipTrigger(r: Row): RelationshipTrigger {
+  return {
+    code: String(r.code ?? r.Code ?? ''),
+    titleVi: String(r.titleVi ?? r.TitleVi ?? ''),
+    bodyVi: String(r.bodyVi ?? r.BodyVi ?? ''),
+    ctaLabelVi: String(r.ctaLabelVi ?? r.CtaLabelVi ?? 'Gửi'),
+    toMemberId:
+      r.toMemberId != null || r.ToMemberId != null
+        ? String(r.toMemberId ?? r.ToMemberId)
+        : undefined,
+    toMemberName:
+      r.toMemberName != null || r.ToMemberName != null
+        ? String(r.toMemberName ?? r.ToMemberName)
+        : undefined,
+    draftBodyVi:
+      r.draftBodyVi != null || r.DraftBodyVi != null
+        ? String(r.draftBodyVi ?? r.DraftBodyVi)
+        : undefined,
+    templateCode:
+      r.templateCode != null || r.TemplateCode != null
+        ? String(r.templateCode ?? r.TemplateCode)
+        : undefined,
+    whyNow: String(r.whyNow ?? r.WhyNow ?? ''),
+    isGolden: Boolean(r.isGolden ?? r.IsGolden ?? false),
+  };
+}
+
+function mapParentVoice(r: Row): ParentVoiceMessage {
+  return {
+    id: String(r.id ?? r.Id ?? ''),
+    familyId: String(r.familyId ?? r.FamilyId ?? ''),
+    fromMemberId: String(r.fromMemberId ?? r.FromMemberId ?? ''),
+    fromMemberName: String(r.fromMemberName ?? r.FromMemberName ?? ''),
+    toMemberId: String(r.toMemberId ?? r.ToMemberId ?? ''),
+    toMemberName: String(r.toMemberName ?? r.ToMemberName ?? ''),
+    flowDate: String(r.flowDate ?? r.FlowDate ?? ''),
+    templateCode: String(r.templateCode ?? r.TemplateCode ?? 'praise'),
+    bodyVi: String(r.bodyVi ?? r.BodyVi ?? ''),
+    status: String(r.status ?? r.Status ?? 'sent'),
+    sentAt: String(r.sentAt ?? r.SentAt ?? ''),
+    ackAt: r.ackAt != null || r.AckAt != null ? String(r.ackAt ?? r.AckAt) : undefined,
+  };
+}
+
+export async function fetchRelationshipTriggers(
+  familyId: string,
+  forMemberId: string,
+  flowDate?: string,
+): Promise<RelationshipTrigger[]> {
+  const { data } = await http.get<unknown>(
+    `/family-os/families/${familyId}/relationship/triggers`,
+    { params: { forMemberId, flowDate } },
+  );
+  return asArray(data).map((r) => mapRelationshipTrigger(r as Row));
+}
+
+/** P1.2 — persisted trigger UI state (opened / dismissed / sent). */
+export type RelationshipTriggerState = {
+  id: string;
+  familyId: string;
+  viewerMemberId: string;
+  flowDate: string;
+  triggerCode: string;
+  toMemberId?: string;
+  state: 'opened' | 'dismissed' | 'sent' | string;
+  draftBodyVi?: string;
+  templateCode?: string;
+  titleVi?: string;
+  bodyVi?: string;
+  updatedAt: string;
+};
+
+function mapRelationshipTriggerState(r: Row): RelationshipTriggerState {
+  return {
+    id: String(r.id ?? r.Id ?? ''),
+    familyId: String(r.familyId ?? r.FamilyId ?? ''),
+    viewerMemberId: String(r.viewerMemberId ?? r.ViewerMemberId ?? ''),
+    flowDate: String(r.flowDate ?? r.FlowDate ?? ''),
+    triggerCode: String(r.triggerCode ?? r.TriggerCode ?? ''),
+    toMemberId:
+      r.toMemberId != null || r.ToMemberId != null
+        ? String(r.toMemberId ?? r.ToMemberId)
+        : undefined,
+    state: String(r.state ?? r.State ?? ''),
+    draftBodyVi:
+      r.draftBodyVi != null || r.DraftBodyVi != null
+        ? String(r.draftBodyVi ?? r.DraftBodyVi)
+        : undefined,
+    templateCode:
+      r.templateCode != null || r.TemplateCode != null
+        ? String(r.templateCode ?? r.TemplateCode)
+        : undefined,
+    titleVi:
+      r.titleVi != null || r.TitleVi != null ? String(r.titleVi ?? r.TitleVi) : undefined,
+    bodyVi: r.bodyVi != null || r.BodyVi != null ? String(r.bodyVi ?? r.BodyVi) : undefined,
+    updatedAt: String(r.updatedAt ?? r.UpdatedAt ?? ''),
+  };
+}
+
+export async function fetchRelationshipTriggerStates(
+  familyId: string,
+  viewerMemberId: string,
+  flowDate?: string,
+): Promise<RelationshipTriggerState[]> {
+  const { data } = await http.get<unknown>(
+    `/family-os/families/${familyId}/relationship/trigger-states`,
+    { params: { viewerMemberId, flowDate } },
+  );
+  return asArray(data).map((r) => mapRelationshipTriggerState(r as Row));
+}
+
+export async function upsertRelationshipTriggerState(
+  familyId: string,
+  input: {
+    viewerMemberId: string;
+    triggerCode: string;
+    state: 'opened' | 'dismissed' | 'sent';
+    toMemberId?: string;
+    flowDate?: string;
+    draftBodyVi?: string;
+    templateCode?: string;
+    titleVi?: string;
+    bodyVi?: string;
+  },
+): Promise<RelationshipTriggerState> {
+  const { data } = await http.put<Row>(
+    `/family-os/families/${familyId}/relationship/trigger-states`,
+    {
+      viewerMemberId: input.viewerMemberId,
+      triggerCode: input.triggerCode,
+      state: input.state,
+      toMemberId: input.toMemberId ?? null,
+      flowDate: input.flowDate ?? null,
+      draftBodyVi: input.draftBodyVi ?? null,
+      templateCode: input.templateCode ?? null,
+      titleVi: input.titleVi ?? null,
+      bodyVi: input.bodyVi ?? null,
+    },
+  );
+  return mapRelationshipTriggerState(data);
+}
+
+export async function fetchParentVoice(
+  familyId: string,
+  opts?: { forMemberId?: string; fromMemberId?: string; flowDate?: string },
+): Promise<ParentVoiceMessage[]> {
+  const { data } = await http.get<unknown>(`/family-os/families/${familyId}/parent-voice`, {
+    params: {
+      forMemberId: opts?.forMemberId,
+      fromMemberId: opts?.fromMemberId,
+      flowDate: opts?.flowDate,
+    },
+  });
+  return asArray(data).map((r) => mapParentVoice(r as Row));
+}
+
+export async function sendParentVoice(
+  familyId: string,
+  input: {
+    fromMemberId: string;
+    toMemberId: string;
+    templateCode: string;
+    bodyVi: string;
+    flowDate?: string;
+  },
+): Promise<ParentVoiceMessage> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/parent-voice`, {
+    fromMemberId: input.fromMemberId,
+    toMemberId: input.toMemberId,
+    templateCode: input.templateCode,
+    bodyVi: input.bodyVi,
+    flowDate: input.flowDate ?? null,
+  });
+  return mapParentVoice(data);
+}
+
+export async function ackParentVoice(
+  familyId: string,
+  messageId: string,
+  status: 'read' | 'thanks',
+): Promise<void> {
+  await http.post(`/family-os/families/${familyId}/parent-voice/${messageId}/ack`, { status });
+}
+
+export type EveningCircleAnswer = {
+  memoryId: string;
+  memberId: string;
+  memberName: string;
+  answerVi: string;
+  happenedAt: string;
+};
+
+export type EveningCircle = {
+  flowDate: string;
+  promptVi: string;
+  alreadyAnswered: boolean;
+  answers: EveningCircleAnswer[];
+};
+
+export type WeeklyStoryLine = {
+  icon: string;
+  textVi: string;
+  memoryId?: string;
+};
+
+export type WeeklyStory = {
+  from: string;
+  to: string;
+  headlineVi: string;
+  parentVoiceCount: number;
+  helpCount: number;
+  gratitudeCount: number;
+  ritualCount: number;
+  streakMilestoneCount: number;
+  eveningCircleCount: number;
+  lines: WeeklyStoryLine[];
+};
+
+function mapEveningCircle(r: Row): EveningCircle {
+  const answersRaw = (r.answers ?? r.Answers ?? []) as unknown[];
+  return {
+    flowDate: String(r.flowDate ?? r.FlowDate ?? ''),
+    promptVi: String(r.promptVi ?? r.PromptVi ?? ''),
+    alreadyAnswered: Boolean(r.alreadyAnswered ?? r.AlreadyAnswered ?? false),
+    answers: asArray(answersRaw).map((a) => {
+      const row = a as Row;
+      return {
+        memoryId: String(row.memoryId ?? row.MemoryId ?? ''),
+        memberId: String(row.memberId ?? row.MemberId ?? ''),
+        memberName: String(row.memberName ?? row.MemberName ?? ''),
+        answerVi: String(row.answerVi ?? row.AnswerVi ?? ''),
+        happenedAt: String(row.happenedAt ?? row.HappenedAt ?? ''),
+      };
+    }),
+  };
+}
+
+function mapWeeklyStory(r: Row): WeeklyStory {
+  const linesRaw = (r.lines ?? r.Lines ?? []) as unknown[];
+  return {
+    from: String(r.from ?? r.From ?? ''),
+    to: String(r.to ?? r.To ?? ''),
+    headlineVi: String(r.headlineVi ?? r.HeadlineVi ?? ''),
+    parentVoiceCount: Number(r.parentVoiceCount ?? r.ParentVoiceCount ?? 0),
+    helpCount: Number(r.helpCount ?? r.HelpCount ?? 0),
+    gratitudeCount: Number(r.gratitudeCount ?? r.GratitudeCount ?? 0),
+    ritualCount: Number(r.ritualCount ?? r.RitualCount ?? 0),
+    streakMilestoneCount: Number(r.streakMilestoneCount ?? r.StreakMilestoneCount ?? 0),
+    eveningCircleCount: Number(r.eveningCircleCount ?? r.EveningCircleCount ?? 0),
+    lines: asArray(linesRaw).map((line) => {
+      const row = line as Row;
+      return {
+        icon: String(row.icon ?? row.Icon ?? '🌱'),
+        textVi: String(row.textVi ?? row.TextVi ?? ''),
+        memoryId:
+          row.memoryId != null || row.MemoryId != null
+            ? String(row.memoryId ?? row.MemoryId)
+            : undefined,
+      };
+    }),
+  };
+}
+
+export async function fetchEveningCircle(
+  familyId: string,
+  opts?: { forMemberId?: string; flowDate?: string },
+): Promise<EveningCircle> {
+  const { data } = await http.get<Row>(
+    `/family-os/families/${familyId}/relationship/evening-circle`,
+    { params: { forMemberId: opts?.forMemberId, flowDate: opts?.flowDate } },
+  );
+  return mapEveningCircle(data);
+}
+
+export async function answerEveningCircle(
+  familyId: string,
+  input: { memberId: string; answerVi: string; flowDate?: string },
+): Promise<EveningCircle> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/relationship/evening-circle`,
+    {
+      memberId: input.memberId,
+      answerVi: input.answerVi,
+      flowDate: input.flowDate ?? null,
+    },
+  );
+  return mapEveningCircle(data);
+}
+
+export async function fetchWeeklyStory(
+  familyId: string,
+  asOf?: string,
+): Promise<WeeklyStory> {
+  const { data } = await http.get<Row>(
+    `/family-os/families/${familyId}/relationship/weekly-story`,
+    { params: { asOf } },
+  );
+  return mapWeeklyStory(data);
+}
+
 export type FamilyMemoryKind =
   | 'beautiful_day'
   | 'streak_milestone'
@@ -2030,7 +2414,9 @@ export type FamilyMemoryKind =
   | 'manual'
   | 'help'
   | 'team_day'
-  | 'parent_habit';
+  | 'parent_habit'
+  | 'parent_voice'
+  | 'evening_circle';
 
 export interface CooperationScore {
   period: string;
@@ -2178,7 +2564,13 @@ function mapFamilyMemory(r: Row): FamilyMemoryEntry {
 
 export async function fetchFamilyMemories(
   familyId: string,
-  params?: { from?: string; to?: string; favoritesOnly?: boolean; limit?: number },
+  params?: {
+    from?: string;
+    to?: string;
+    favoritesOnly?: boolean;
+    limit?: number;
+    memberId?: string;
+  },
 ): Promise<FamilyMemoryEntry[]> {
   const { data } = await http.get<unknown>(`/family-os/families/${familyId}/memories`, {
     params: {
@@ -2186,6 +2578,7 @@ export async function fetchFamilyMemories(
       to: params?.to,
       favoritesOnly: params?.favoritesOnly,
       limit: params?.limit,
+      memberId: params?.memberId,
     },
   });
   return asArray(data).map((r) => mapFamilyMemory(r as Row));
@@ -3557,11 +3950,23 @@ export const CHILD_REQUEST_REASONS = [
 
 export const FAMILY_MODE_OPTIONS = [
   { value: 'normal', label: 'Bình thường', hint: 'Theo lịch năm học' },
-  { value: 'summer', label: 'Nghỉ hè', hint: 'Nhịp nhẹ hơn' },
-  { value: 'exam', label: 'Thi học kỳ', hint: 'Ưu tiên học' },
-  { value: 'travel', label: 'Du lịch', hint: 'Tạm đổi routine' },
+  {
+    value: 'summer',
+    label: 'Nghỉ hè',
+    hint: 'Nhịp nhẹ · ưu tiên rủ chơi chung',
+  },
+  {
+    value: 'exam',
+    label: 'Thi học kỳ',
+    hint: 'Ưu tiên ôm / động viên — bớt áp lực',
+  },
+  { value: 'travel', label: 'Du lịch', hint: 'Tạm đổi routine · lời ấm' },
   { value: 'weekend', label: 'Cuối tuần', hint: 'T7–CN' },
-  { value: 'holiday', label: 'Nghỉ lễ', hint: 'Vài ngày' },
+  {
+    value: 'holiday',
+    label: 'Nghỉ lễ',
+    hint: 'Vài ngày · gợi ý chơi chung',
+  },
 ] as const;
 
 function mapDecisionItem(r: Row): DecisionItem {

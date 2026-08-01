@@ -17,6 +17,8 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
         FamilyMemoryKinds.Help,
         FamilyMemoryKinds.TeamDay,
         FamilyMemoryKinds.ParentHabit,
+        FamilyMemoryKinds.ParentVoice,
+        FamilyMemoryKinds.EveningCircle,
     };
 
     private readonly IFamilyMemoryService _memories;
@@ -55,7 +57,7 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
 
         var cap = Math.Clamp(limit, 1, 30);
         var rows = await _memories.ListAsync(
-            familyId, start, end, favoritesOnly: false, limit: 80, cancellationToken);
+            familyId, start, end, favoritesOnly: false, limit: 80, cancellationToken: cancellationToken);
 
         var wins = rows
             .Where(m => WinKinds.Contains(m.Kind))
@@ -234,7 +236,7 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
 
         var letter = await GetMonthlyLetterAsync(familyId, periodStart, cancellationToken);
         var memories = await _memories.ListAsync(
-            familyId, periodStart, periodEnd, favoritesOnly: false, limit: 60, cancellationToken);
+            familyId, periodStart, periodEnd, favoritesOnly: false, limit: 60, cancellationToken: cancellationToken);
         var rop = await _parentSuccess.GetRopAsync(familyId, days: 30, asOf: periodEnd, cancellationToken);
 
         var scenes = new List<FamilyReplaySceneDto>
@@ -404,6 +406,8 @@ internal sealed class FamilyAiDigestService : IFamilyAiDigestService
             FamilyMemoryKinds.Help => "🤝",
             FamilyMemoryKinds.TeamDay => "🏠",
             FamilyMemoryKinds.ParentHabit => "🌿",
+            FamilyMemoryKinds.ParentVoice => "❤️",
+            FamilyMemoryKinds.EveningCircle => "⭐",
             _ => "✨",
         };
 }

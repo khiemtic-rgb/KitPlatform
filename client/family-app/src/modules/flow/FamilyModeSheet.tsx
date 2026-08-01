@@ -82,7 +82,8 @@ export function FamilyModeSheet({
           </button>
         </header>
         <p className="ph-sheet-lead">
-          1 chạm đổi nhịp nhà · mục tiêu ≤1 phút. AI chỉnh Routine theo lịch — không cần Settings.
+          1 chạm đổi nhịp nhà · mục tiêu ≤1 phút. AI chỉnh Routine theo lịch — và ưu tiên lời
+          ấm / động viên đúng mùa (thi · nghỉ hè).
         </p>
         <ul className="ph-mode-list">
           {FAMILY_MODE_OPTIONS.map((opt) => (

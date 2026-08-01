@@ -277,6 +277,37 @@ internal sealed class FamilyCalendarPeriodRepository
     }
 
     /// <summary>
+    /// Highest-priority active period covering the date (no weekday slot required).
+    /// </summary>
+    public async Task<PeriodRow?> GetActiveCoveringAsync(
+        Guid familyId,
+        DateOnly flowDate,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<PeriodRow>(
+            """
+            SELECT
+                id AS Id, family_id AS FamilyId, code AS Code,
+                display_name AS DisplayName, kind AS Kind,
+                start_date AS StartDate, end_date AS EndDate,
+                priority AS Priority, is_active AS IsActive, notes AS Notes
+            FROM pack_family.calendar_period
+            WHERE tenant_id = @TenantId
+              AND family_id = @FamilyId
+              AND deleted_at IS NULL
+              AND is_active
+              AND @FlowDate BETWEEN start_date AND end_date
+            ORDER BY
+                priority DESC,
+                (end_date - start_date) ASC,
+                created_at ASC
+            LIMIT 1
+            """,
+            new { TenantId, FamilyId = familyId, FlowDate = flowDate });
+    }
+
+    /// <summary>
     /// Highest-priority active period covering the date that has a slot for the ISO weekday.
     /// Tie-break: shorter range first, then lower sort_order.
     /// </summary>

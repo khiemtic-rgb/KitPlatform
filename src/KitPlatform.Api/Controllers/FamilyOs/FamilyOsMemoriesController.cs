@@ -25,12 +25,13 @@ public sealed class FamilyOsMemoriesController : ControllerBase
         [FromQuery] DateOnly? to,
         [FromQuery] bool favoritesOnly = false,
         [FromQuery] int limit = 60,
+        [FromQuery] Guid? memberId = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
             return Ok(await _memories.ListAsync(
-                familyId, from, to, favoritesOnly, limit, cancellationToken));
+                familyId, from, to, favoritesOnly, limit, memberId, cancellationToken));
         }
         catch (InvalidOperationException ex)
         {

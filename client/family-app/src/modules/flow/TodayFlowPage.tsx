@@ -572,6 +572,7 @@ export function TodayFlowPage() {
           consequenceEvents={events}
           glance={glance}
           children={familyChildren}
+          parents={familyParents}
           teamDay={
             teamSnapshot
               ? {

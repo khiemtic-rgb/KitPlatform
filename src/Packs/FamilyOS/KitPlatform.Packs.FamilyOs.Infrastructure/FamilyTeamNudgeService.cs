@@ -96,16 +96,25 @@ internal sealed class FamilyTeamNudgeService : IFamilyTeamNudgeService
             || !to.RoleCode.Equals("child", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Chỉ anh/chị em (child) mới gửi/nhận nudge.");
 
-        var candidates = await ListFromCandidatesAsync(familyId, date, cancellationToken);
-        var fromCand = candidates.FirstOrDefault(c => c.MemberId == from.Id);
-        if (fromCand is null || !fromCand.CanInvite)
-            throw new InvalidOperationException(
-                "Con này chưa đủ điều kiện mời nhắc (cần xong mission hoặc đủ tuổi).");
+        var isThanksBack = FamilyTeamNudgeTemplates.Reciprocal.Contains(template);
+        if (isThanksBack)
+        {
+            await EnsureThanksBackAllowedAsync(
+                familyId, date, from.Id, to.Id, cancellationToken);
+        }
+        else
+        {
+            var candidates = await ListFromCandidatesAsync(familyId, date, cancellationToken);
+            var fromCand = candidates.FirstOrDefault(c => c.MemberId == from.Id);
+            if (fromCand is null || !fromCand.CanInvite)
+                throw new InvalidOperationException(
+                    "Con này chưa đủ điều kiện mời nhắc (cần xong mission hoặc đủ tuổi).");
 
-        var toStage = FamilyTeamRoleMatrix.StageFromDateOfBirth(to.DateOfBirth, date);
-        if (!FamilyTeamRoleMatrix.PreferAsInviter(fromCand.StageCode, toStage)
-            && !fromCand.MissionsComplete)
-            throw new InvalidOperationException("Ưu tiên anh/chị đã xong hoặc lớn hơn làm người nhắc.");
+            var toStage = FamilyTeamRoleMatrix.StageFromDateOfBirth(to.DateOfBirth, date);
+            if (!FamilyTeamRoleMatrix.PreferAsInviter(fromCand.StageCode, toStage)
+                && !fromCand.MissionsComplete)
+                throw new InvalidOperationException("Ưu tiên anh/chị đã xong hoặc lớn hơn làm người nhắc.");
+        }
 
         var message = FamilyTeamNudgeTemplates.MessageVi(
             template, ShortName(from.DisplayName), ShortName(to.DisplayName));
@@ -136,11 +145,15 @@ internal sealed class FamilyTeamNudgeService : IFamilyTeamNudgeService
         if (existing.Status != FamilyTeamNudgeStatuses.Draft)
             throw new InvalidOperationException("Chỉ gửi được nudge ở trạng thái draft.");
 
-        var sentCount = await _repo.CountSentTodayAsync(
-            familyId, existing.FromMemberId, existing.FlowDate, cancellationToken);
-        if (sentCount >= MaxSentPerFromPerDay)
-            throw new InvalidOperationException(
-                $"Mỗi con chỉ gửi tối đa {MaxSentPerFromPerDay} lời nhắc / ngày.");
+        var isThanksBack = FamilyTeamNudgeTemplates.Reciprocal.Contains(existing.TemplateCode);
+        if (!isThanksBack)
+        {
+            var sentCount = await _repo.CountSentTodayAsync(
+                familyId, existing.FromMemberId, existing.FlowDate, cancellationToken);
+            if (sentCount >= MaxSentPerFromPerDay)
+                throw new InvalidOperationException(
+                    $"Mỗi con chỉ gửi tối đa {MaxSentPerFromPerDay} lời nhắc / ngày.");
+        }
 
         var updated = await _repo.MarkSentAsync(familyId, nudgeId, cancellationToken)
             ?? throw new InvalidOperationException("Không gửi được nudge.");
@@ -195,6 +208,37 @@ internal sealed class FamilyTeamNudgeService : IFamilyTeamNudgeService
         }
 
         return Map(updated);
+    }
+
+    /// <summary>
+    /// thanks_back only after the recipient already ack'd the reverse nudge as thanks;
+    /// at most one thanks_back per pair per day.
+    /// </summary>
+    private async Task EnsureThanksBackAllowedAsync(
+        Guid familyId,
+        DateOnly flowDate,
+        Guid fromMemberId,
+        Guid toMemberId,
+        CancellationToken cancellationToken)
+    {
+        var rows = await _repo.ListAsync(familyId, flowDate, forMemberId: null, cancellationToken);
+        var alreadySent = rows.Any(r =>
+            r.TemplateCode.Equals(FamilyTeamNudgeTemplates.ThanksBack, StringComparison.OrdinalIgnoreCase)
+            && r.FromMemberId == fromMemberId
+            && r.ToMemberId == toMemberId
+            && !r.Status.Equals(FamilyTeamNudgeStatuses.Draft, StringComparison.OrdinalIgnoreCase)
+            && !r.Status.Equals(FamilyTeamNudgeStatuses.Deferred, StringComparison.OrdinalIgnoreCase));
+        if (alreadySent)
+            throw new InvalidOperationException("Hôm nay đã gửi cảm ơn anh/chị này rồi.");
+
+        var priorThanks = rows.Any(r =>
+            r.FromMemberId == toMemberId
+            && r.ToMemberId == fromMemberId
+            && r.Status.Equals(FamilyTeamNudgeStatuses.Thanks, StringComparison.OrdinalIgnoreCase)
+            && !r.TemplateCode.Equals(FamilyTeamNudgeTemplates.ThanksBack, StringComparison.OrdinalIgnoreCase));
+        if (!priorThanks)
+            throw new InvalidOperationException(
+                "Chỉ gửi cảm ơn sau khi đã nhấn Cảm ơn lời nhắc từ anh/chị.");
     }
 
     private static string ShortName(string displayName)
