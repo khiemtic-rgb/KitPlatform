@@ -83,6 +83,7 @@ export function OwnerCockpitPage() {
 
   const sales = data?.overview.sales;
   const inv = data?.overview.inventory;
+  const o2o = data?.overview.o2o;
   const extras = data?.salesExtras;
   const invX = data?.inventoryExtras;
   const cust = data?.customers;
@@ -263,6 +264,16 @@ export function OwnerCockpitPage() {
         {t('sections.customers')}
       </Typography.Title>
       <Row gutter={[12, 12]}>
+        <Col xs={24} sm={12} lg={8}>
+          <Tile
+            title={t('growth.tile.title')}
+            value={o2o?.refillOpportunityCount ?? 0}
+            hint={t('growth.tile.hint')}
+            to="/success/growth"
+            icon={<RiseOutlined />}
+            tone={(o2o?.refillOpportunityCount ?? 0) > 0 ? 'warning' : 'info'}
+          />
+        </Col>
         <Col xs={24} sm={12} lg={8}>
           <Tile
             title={t('kpi.newCustomers')}

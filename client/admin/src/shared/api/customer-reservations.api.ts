@@ -67,6 +67,7 @@ export interface CustomerReservationPosLoad {
   customerId: string;
   warehouseId: string;
   notes?: string | null;
+  sourceRepurchaseSuggestionId?: string | null;
   lines: Array<{
     productId: string;
     productCode: string;
@@ -197,6 +198,9 @@ export async function loadCustomerReservationForPos(id: string) {
     customerId: String(data.customerId ?? data.CustomerId ?? ''),
     warehouseId: String(data.warehouseId ?? data.WarehouseId ?? ''),
     notes: (data.notes ?? data.Notes) as string | null | undefined,
+    sourceRepurchaseSuggestionId: (data.sourceRepurchaseSuggestionId ??
+      data.SourceRepurchaseSuggestionId ??
+      null) as string | null,
     lines,
   } satisfies CustomerReservationPosLoad;
 }

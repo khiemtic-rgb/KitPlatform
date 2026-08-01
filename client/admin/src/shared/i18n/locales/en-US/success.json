@@ -145,5 +145,44 @@
       "inProgress": "In progress",
       "completed": "Done"
     }
+  },
+  "growth": {
+    "title": "Growth Desk",
+    "subtitle": "{{count}} refill opportunities today · {{date}}",
+    "tip": "Call customers due for refill, or tap Care now to create a staff draft for the counter.",
+    "refresh": "Refresh",
+    "backCockpit": "← Owner cockpit",
+    "loadFailed": "Could not load Growth Desk",
+    "empty": "No opportunities in this bucket",
+    "careNow": "Care now",
+    "call": "Call",
+    "careCreated": "Draft {{draft}} created",
+    "careAlreadyOpen": "Open draft already exists: {{draft}}",
+    "careFailed": "Could not create care draft",
+    "daysOverdue": "{{days}} days overdue",
+    "buckets": {
+      "refillOverdue": "Overdue refill",
+      "refillDue": "Due today",
+      "snoozedExpiring": "Snooze expiring"
+    },
+    "columns": {
+      "customer": "Customer",
+      "order": "Order / regimen",
+      "due": "Due date",
+      "lastBuy": "Last purchase",
+      "actions": "Actions"
+    },
+    "weekly": {
+      "title": "Weekly refill report",
+      "range": "{{start}} → {{end}}",
+      "due": "Due",
+      "notified": "Notified",
+      "converted": "Converted",
+      "revenue": "Attributed revenue"
+    },
+    "tile": {
+      "title": "Upsell opportunity today",
+      "hint": "Refill opportunities on Growth Desk"
+    }
   }
 }

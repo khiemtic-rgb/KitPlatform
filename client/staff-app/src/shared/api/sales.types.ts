@@ -224,6 +224,8 @@ export interface CreateSalePayload {
   orderDiscountValue?: number;
   loyaltyDiscountAmount?: number;
   customerVoucherId?: string;
+  orderReminderLabel?: string | null;
+  orderReminderDaysSupply?: number;
   items: {
     productId: string;
     productUnitId: string;

@@ -10,13 +10,25 @@ public sealed record CustomerAdminListItemDto(
     DateTimeOffset CreatedAt,
     Guid? CustomerGroupId = null,
     string? CustomerGroupName = null,
-    decimal GroupDiscountPercent = 0);
+    decimal GroupDiscountPercent = 0,
+    bool HasAppAccount = false,
+    DateTimeOffset? AppLastLoginAt = null,
+    string AcquisitionSource = CustomerAcquisitionSources.Counter,
+    string PharmacyRelation = CustomerPharmacyRelations.Member);
 
 public sealed record PagedCustomersResult(
     IReadOnlyList<CustomerAdminListItemDto> Items,
     int Total,
     int Page,
     int PageSize);
+
+/// <summary>CRM split: counts by pharmacy_relation for the current tenant.</summary>
+public sealed record CustomerPharmacyRelationSummaryDto(
+    int Prospect,
+    int Member,
+    int Revoked,
+    int Total,
+    int HasAppAccount);
 
 public sealed record SimilarCustomerMemberDto(
     Guid Id,
@@ -74,7 +86,11 @@ public sealed record CustomerDetailDto(
     string? ClinicalNotes = null,
     Guid? CustomerGroupId = null,
     string? CustomerGroupName = null,
-    decimal GroupDiscountPercent = 0);
+    decimal GroupDiscountPercent = 0,
+    string AcquisitionSource = CustomerAcquisitionSources.Counter,
+    string PharmacyRelation = CustomerPharmacyRelations.Member,
+    DateTimeOffset? PharmacyVerifiedAt = null,
+    string? PharmacyVerifiedVia = null);
 
 public sealed record CustomerOrderListItemDto(
     Guid Id,
@@ -102,6 +118,7 @@ public sealed record CreateCustomerRequest(
     string? EmergencyContactName = null,
     string? EmergencyContactPhone = null,
     string? ClinicalNotes = null,
+    string? AcquisitionSource = null,
     Guid? CustomerGroupId = null);
 
 public sealed record UpdateCustomerRequest(
@@ -120,5 +137,7 @@ public sealed record UpdateCustomerRequest(
     string? EmergencyContactPhone = null,
     string? ClinicalNotes = null,
     Guid? CustomerGroupId = null);
+
+public sealed record MarkPharmacyMemberRequest(string? VerifiedVia = null);
 
 public sealed record NextCustomerCodeDto(string CustomerCode);

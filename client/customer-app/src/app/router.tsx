@@ -3,6 +3,9 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Spin } from 'antd';
 import { AuthGuard, GuestGuard } from '@/shared/auth/AuthGuard';
 import { AuthSessionValidator } from '@/shared/auth/AuthSessionValidator';
+import { VerifyAccountProvider } from '@/shared/auth/VerifyAccountProvider';
+import { PharmacyLinkProvider } from '@/shared/config/PharmacyLinkProvider';
+import { PharmacyLinkRequired } from '@/shared/components/PharmacyLinkGate';
 
 const CustomerAppLayout = lazy(() =>
   import('@/shared/components/CustomerAppLayout').then((m) => ({ default: m.CustomerAppLayout })),
@@ -46,7 +49,11 @@ const MyMedicationPage = lazy(() =>
 const PharmacyHubPage = lazy(() =>
   import('@/modules/pharmacy/PharmacyHubPage').then((m) => ({ default: m.PharmacyHubPage })),
 );
+const CareTimelinePage = lazy(() =>
+  import('@/modules/timeline/CareTimelinePage').then((m) => ({ default: m.CareTimelinePage })),
+);
 const AiHealthPage = lazy(() => import('@/modules/ai/AiHealthPage').then((m) => ({ default: m.AiHealthPage })));
+const RxEntryPage = lazy(() => import('@/modules/rx/RxEntryPage').then((m) => ({ default: m.RxEntryPage })));
 
 function RouteFallback() {
   return (
@@ -63,155 +70,189 @@ function SuspenseRoute({ children }: { children: ReactNode }) {
 export function AppRouter() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<RouteFallback />}>
-        <Routes>
-          <Route element={<GuestGuard />}>
-            <Route
-              path="/login"
-              element={
-                <SuspenseRoute>
-                  <OtpLoginPage />
-                </SuspenseRoute>
-              }
-            />
-          </Route>
+      <PharmacyLinkProvider>
+        <VerifyAccountProvider>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route element={<GuestGuard />}>
+                <Route
+                  path="/login"
+                  element={
+                    <SuspenseRoute>
+                      <OtpLoginPage />
+                    </SuspenseRoute>
+                  }
+                />
+              </Route>
 
-          <Route element={<AuthGuard />}>
-            <Route
-              element={
-                <AuthSessionValidator>
-                  <SuspenseRoute>
-                    <CustomerAppLayout />
-                  </SuspenseRoute>
-                </AuthSessionValidator>
-              }
-            >
               <Route
-                index
+                path="/rx"
                 element={
                   <SuspenseRoute>
-                    <HomePage />
+                    <RxEntryPage />
                   </SuspenseRoute>
                 }
               />
-              <Route
-                path="loyalty"
-                element={
-                  <SuspenseRoute>
-                    <LoyaltyPage />
-                  </SuspenseRoute>
-                }
-              />
-              <Route
-                path="reminders"
-                element={
-                  <SuspenseRoute>
-                    <RemindersPage />
-                  </SuspenseRoute>
-                }
-              />
-              <Route
-                path="chat"
-                element={
-                  <SuspenseRoute>
-                    <ChatPage />
-                  </SuspenseRoute>
-                }
-              />
-              <Route
-                path="orders"
-                element={
-                  <SuspenseRoute>
-                    <DraftOrdersPage />
-                  </SuspenseRoute>
-                }
-              />
-              <Route
-                path="profile"
-                element={
-                  <SuspenseRoute>
-                    <ProfilePage />
-                  </SuspenseRoute>
-                }
-              />
-              <Route
-                path="notifications"
-                element={
-                  <SuspenseRoute>
-                    <NotificationsPage />
-                  </SuspenseRoute>
-                }
-              />
-              <Route
-                path="addresses"
-                element={
-                  <SuspenseRoute>
-                    <AddressesPage />
-                  </SuspenseRoute>
-                }
-              />
-              <Route
-                path="receivables"
-                element={
-                  <SuspenseRoute>
-                    <ReceivablesPage />
-                  </SuspenseRoute>
-                }
-              />
-              <Route
-                path="reservations"
-                element={
-                  <SuspenseRoute>
-                    <ReservationsPage />
-                  </SuspenseRoute>
-                }
-              />
-              <Route
-                path="health"
-                element={
-                  <SuspenseRoute>
-                    <HealthWalletPage />
-                  </SuspenseRoute>
-                }
-              />
-              <Route
-                path="family"
-                element={
-                  <SuspenseRoute>
-                    <FamilyPage />
-                  </SuspenseRoute>
-                }
-              />
-              <Route
-                path="medications"
-                element={
-                  <SuspenseRoute>
-                    <MyMedicationPage />
-                  </SuspenseRoute>
-                }
-              />
-              <Route
-                path="pharmacy"
-                element={
-                  <SuspenseRoute>
-                    <PharmacyHubPage />
-                  </SuspenseRoute>
-                }
-              />
-              <Route
-                path="ai"
-                element={
-                  <SuspenseRoute>
-                    <AiHealthPage />
-                  </SuspenseRoute>
-                }
-              />
-            </Route>
-          </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
+              {/* Shell chung: care browse được ở Level 0 (guest); commerce vẫn AuthGuard. */}
+              <Route
+                element={
+                  <AuthSessionValidator>
+                    <SuspenseRoute>
+                      <CustomerAppLayout />
+                    </SuspenseRoute>
+                  </AuthSessionValidator>
+                }
+              >
+                <Route
+                  index
+                  element={
+                    <SuspenseRoute>
+                      <HomePage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="reminders"
+                  element={
+                    <SuspenseRoute>
+                      <RemindersPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="health"
+                  element={
+                    <SuspenseRoute>
+                      <HealthWalletPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="family"
+                  element={
+                    <SuspenseRoute>
+                      <FamilyPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="medications"
+                  element={
+                    <SuspenseRoute>
+                      <MyMedicationPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route path="pharmacy" element={<Navigate to="/prescriptions" replace />} />
+                <Route
+                  path="prescriptions"
+                  element={
+                    <SuspenseRoute>
+                      <PharmacyHubPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="timeline"
+                  element={
+                    <SuspenseRoute>
+                      <CareTimelinePage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="ai"
+                  element={
+                    <SuspenseRoute>
+                      <AiHealthPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="profile"
+                  element={
+                    <SuspenseRoute>
+                      <ProfilePage />
+                    </SuspenseRoute>
+                  }
+                />
+
+                <Route element={<AuthGuard />}>
+                  <Route
+                    path="loyalty"
+                    element={
+                      <SuspenseRoute>
+                        <PharmacyLinkRequired>
+                          <LoyaltyPage />
+                        </PharmacyLinkRequired>
+                      </SuspenseRoute>
+                    }
+                  />
+                  <Route
+                    path="chat"
+                    element={
+                      <SuspenseRoute>
+                        <PharmacyLinkRequired>
+                          <ChatPage />
+                        </PharmacyLinkRequired>
+                      </SuspenseRoute>
+                    }
+                  />
+                  <Route
+                    path="orders"
+                    element={
+                      <SuspenseRoute>
+                        <PharmacyLinkRequired>
+                          <DraftOrdersPage />
+                        </PharmacyLinkRequired>
+                      </SuspenseRoute>
+                    }
+                  />
+                  <Route
+                    path="notifications"
+                    element={
+                      <SuspenseRoute>
+                        <NotificationsPage />
+                      </SuspenseRoute>
+                    }
+                  />
+                  <Route
+                    path="addresses"
+                    element={
+                      <SuspenseRoute>
+                        <AddressesPage />
+                      </SuspenseRoute>
+                    }
+                  />
+                  <Route
+                    path="receivables"
+                    element={
+                      <SuspenseRoute>
+                        <PharmacyLinkRequired>
+                          <ReceivablesPage />
+                        </PharmacyLinkRequired>
+                      </SuspenseRoute>
+                    }
+                  />
+                  <Route
+                    path="reservations"
+                    element={
+                      <SuspenseRoute>
+                        <PharmacyLinkRequired>
+                          <ReservationsPage />
+                        </PharmacyLinkRequired>
+                      </SuspenseRoute>
+                    }
+                  />
+                </Route>
+              </Route>
+
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </VerifyAccountProvider>
+      </PharmacyLinkProvider>
     </BrowserRouter>
   );
 }

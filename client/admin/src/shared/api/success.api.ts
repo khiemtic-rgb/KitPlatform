@@ -102,7 +102,114 @@ function normalizeOverview(row: UnknownRow): DashboardOverview {
       draftOrdersAwaitingCount: num(o2o.draftOrdersAwaitingCount ?? o2o.DraftOrdersAwaitingCount),
       reservationsAwaitingCount: num(o2o.reservationsAwaitingCount ?? o2o.ReservationsAwaitingCount),
       chatUnreadCount: num(o2o.chatUnreadCount ?? o2o.ChatUnreadCount),
+      refillOpportunityCount: num(o2o.refillOpportunityCount ?? o2o.RefillOpportunityCount),
     },
+  };
+}
+
+export type GrowthOpportunityBucket = 'refill_due' | 'refill_overdue' | 'snoozed_expiring';
+
+export interface GrowthOpportunityItem {
+  suggestionId: string;
+  customerId: string;
+  customerName: string;
+  customerPhone?: string | null;
+  orderLabel?: string | null;
+  orderNumber: string;
+  suggestedForDate?: string | null;
+  orderDate?: string | null;
+  daysOverdue?: number | null;
+  bucket: GrowthOpportunityBucket | string;
+  status: string;
+}
+
+export interface GrowthOpportunitiesToday {
+  businessDate: string;
+  totalCount: number;
+  refillDue: GrowthOpportunityItem[];
+  refillOverdue: GrowthOpportunityItem[];
+  snoozedExpiring: GrowthOpportunityItem[];
+}
+
+export interface GrowthCareNowResult {
+  suggestionId: string;
+  draftOrderId: string;
+  draftNumber: string;
+  customerId: string;
+  careActionId: string;
+  alreadyHadOpenDraft: boolean;
+}
+
+export interface GrowthWeeklyRefillReport {
+  weekStart: string;
+  weekEnd: string;
+  dueCount: number;
+  notifiedCount: number;
+  convertedCount: number;
+  attributedRevenue: number;
+}
+
+function normalizeOpportunity(row: UnknownRow): GrowthOpportunityItem {
+  return {
+    suggestionId: String(row.suggestionId ?? row.SuggestionId ?? ''),
+    customerId: String(row.customerId ?? row.CustomerId ?? ''),
+    customerName: String(row.customerName ?? row.CustomerName ?? ''),
+    customerPhone: (row.customerPhone ?? row.CustomerPhone) as string | null | undefined,
+    orderLabel: (row.orderLabel ?? row.OrderLabel) as string | null | undefined,
+    orderNumber: String(row.orderNumber ?? row.OrderNumber ?? ''),
+    suggestedForDate: (row.suggestedForDate ?? row.SuggestedForDate) as string | null | undefined,
+    orderDate: (row.orderDate ?? row.OrderDate) as string | null | undefined,
+    daysOverdue: (row.daysOverdue ?? row.DaysOverdue) as number | null | undefined,
+    bucket: String(row.bucket ?? row.Bucket ?? ''),
+    status: String(row.status ?? row.Status ?? ''),
+  };
+}
+
+export async function fetchGrowthOpportunitiesToday(): Promise<GrowthOpportunitiesToday> {
+  const { data } = await http.get<UnknownRow>('/success/growth/opportunities/today');
+  const row = data as UnknownRow;
+  return {
+    businessDate: String(row.businessDate ?? row.BusinessDate ?? ''),
+    totalCount: num(row.totalCount ?? row.TotalCount),
+    refillDue: ((row.refillDue ?? row.RefillDue ?? []) as UnknownRow[]).map(normalizeOpportunity),
+    refillOverdue: ((row.refillOverdue ?? row.RefillOverdue ?? []) as UnknownRow[]).map(
+      normalizeOpportunity,
+    ),
+    snoozedExpiring: ((row.snoozedExpiring ?? row.SnoozedExpiring ?? []) as UnknownRow[]).map(
+      normalizeOpportunity,
+    ),
+  };
+}
+
+export async function postGrowthCareNow(suggestionId: string): Promise<GrowthCareNowResult> {
+  const { data } = await http.post<UnknownRow>(
+    `/success/growth/opportunities/${suggestionId}/care-now`,
+  );
+  const row = data as UnknownRow;
+  return {
+    suggestionId: String(row.suggestionId ?? row.SuggestionId ?? suggestionId),
+    draftOrderId: String(row.draftOrderId ?? row.DraftOrderId ?? ''),
+    draftNumber: String(row.draftNumber ?? row.DraftNumber ?? ''),
+    customerId: String(row.customerId ?? row.CustomerId ?? ''),
+    careActionId: String(row.careActionId ?? row.CareActionId ?? ''),
+    alreadyHadOpenDraft: Boolean(row.alreadyHadOpenDraft ?? row.AlreadyHadOpenDraft),
+  };
+}
+
+export async function fetchGrowthWeeklyRefillReport(
+  weekStart?: string,
+): Promise<GrowthWeeklyRefillReport> {
+  const { data } = await http.get<UnknownRow>('/success/growth/reports/weekly-refill', {
+    params: weekStart ? { weekStart } : undefined,
+  });
+  const row = data as UnknownRow;
+  return {
+    weekStart: String(row.weekStart ?? row.WeekStart ?? ''),
+    weekEnd: String(row.weekEnd ?? row.WeekEnd ?? ''),
+    dueCount: num(row.dueCount ?? row.DueCount),
+    notifiedCount: num(row.notifiedCount ?? row.NotifiedCount),
+    convertedCount: num(row.convertedCount ?? row.ConvertedCount),
+    attributedRevenue: num(row.attributedRevenue ?? row.AttributedRevenue),
   };
 }
 

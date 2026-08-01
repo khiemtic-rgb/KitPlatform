@@ -75,6 +75,7 @@ internal sealed class CustomerReservationService : ICustomerReservationService
             request.FulfillmentType == CustomerReservationFulfillmentTypes.Delivery ? request.AddressId : null,
             request.Notes?.Trim(),
             warehouseId,
+            request.SourceRepurchaseSuggestionId,
             conn,
             tx,
             cancellationToken);
@@ -229,6 +230,7 @@ internal sealed class CustomerReservationService : ICustomerReservationService
             header.CustomerId,
             header.WarehouseId,
             header.Notes,
+            header.SourceRepurchaseSuggestionId,
             lineRows.Select(item => new CustomerReservationPosLineDto(
                 item.ProductId,
                 item.ProductCode,
@@ -262,8 +264,10 @@ internal sealed class CustomerReservationService : ICustomerReservationService
     }
 
     private static bool IsPosLoadableStatus(short status) =>
-        status is CustomerReservationStatuses.Confirmed or CustomerReservationStatuses.Ready
-        || status is CustomerReservationStatuses.Collected;
+        status is CustomerReservationStatuses.Pending
+            or CustomerReservationStatuses.Confirmed
+            or CustomerReservationStatuses.Ready
+            or CustomerReservationStatuses.Collected;
 
     private static void ValidateCreateRequest(CreateCustomerReservationRequest request)
     {

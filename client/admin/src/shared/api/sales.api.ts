@@ -260,6 +260,7 @@ export async function searchCustomers(search?: string): Promise<CustomerListItem
         : null,
     customerGroupName: (row.customerGroupName ?? row.CustomerGroupName) as string | null | undefined,
     groupDiscountPercent: Number(row.groupDiscountPercent ?? row.GroupDiscountPercent ?? 0),
+    pharmacyRelation: String(row.pharmacyRelation ?? row.PharmacyRelation ?? 'member'),
   }));
 }
 

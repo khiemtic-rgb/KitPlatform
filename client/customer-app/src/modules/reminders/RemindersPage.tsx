@@ -29,12 +29,13 @@ import {
 } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   acceptRepurchaseSuggestion,
   createReminder,
   dismissRepurchaseSuggestion,
   getApiErrorMessage,
+  reorderRepurchaseSuggestion,
   respondMedicationReminder,
   searchProducts,
   snoozeRepurchaseSuggestion,
@@ -46,6 +47,7 @@ import {
   FormModalLabel,
   FormModalTip,
 } from '@/shared/components/CustomerFormModal';
+import { usePharmacyLink } from '@/shared/config/PharmacyLinkProvider';
 import type {
   CustomerProductSearchItem,
   FamilyMember,
@@ -64,6 +66,8 @@ import type { MedSkipReasonCode } from '@/shared/care/med-skip-reasons';
 import { SkipReasonModal } from '@/modules/reminders/SkipReasonModal';
 import { MissedMedicationAlert } from '@/modules/reminders/DueRemindersPanel';
 import { RepurchaseCard } from '@/modules/reminders/RepurchaseCard';
+import { PharmacyLinkSoftBanner } from '@/shared/components/PharmacyLinkGate';
+import { useVerifyAccount } from '@/shared/auth/VerifyAccountProvider';
 import { familyRoleLabel } from '@/shared/i18n/family-role-label';
 import './RemindersPage.css';
 
@@ -125,11 +129,11 @@ function formatFamilyMemberLabel(
 }
 
 function isVisibleSuggestion(item: RepurchaseSuggestion) {
-  if (item.status === 'dismissed' || item.status === 'expired') return false;
+  if (item.status === 'dismissed' || item.status === 'expired' || item.status === 'converted') return false;
   if (item.status === 'snoozed' && item.snoozedUntil) {
     return dayjs().isAfter(dayjs(item.snoozedUntil));
   }
-  return item.status === 'pending';
+  return item.status === 'pending' || item.status === 'snoozed';
 }
 
 function relativeTime(iso: string | null | undefined, t: (k: string, o?: Record<string, unknown>) => string) {
@@ -146,13 +150,24 @@ function relativeTime(iso: string | null | undefined, t: (k: string, o?: Record<
 export function RemindersPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { branding } = useCustomerBranding();
+  const { requireAuth } = useVerifyAccount();
+  const { requireLink } = usePharmacyLink();
   const { familyRelationship, day } = useCustomerLabels();
   const dayOptions = useDayOptions();
   const { data: overview, isLoading, error, refetch } = useRemindersOverviewQuery();
   const [items, setItems] = useState<MedicationReminder[]>([]);
   const [includeInactive, setIncludeInactive] = useState(false);
-  const [tab, setTab] = useState<HubTab>('all');
+  const initialTab = (searchParams.get('tab') as HubTab | null) ?? 'all';
+  const [tab, setTab] = useState<HubTab>(
+    initialTab === 'due' ||
+      initialTab === 'schedule' ||
+      initialTab === 'repurchase' ||
+      initialTab === 'all'
+      ? initialTab
+      : 'all',
+  );
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<MedicationReminder | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -177,6 +192,13 @@ export function RemindersPage() {
     assertUniqueReminderIds(ordered);
     setItems(ordered);
   }, [overview]);
+
+  useEffect(() => {
+    const next = searchParams.get('tab');
+    if (next === 'due' || next === 'schedule' || next === 'repurchase' || next === 'all') {
+      setTab(next);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!error) return;
@@ -228,6 +250,7 @@ export function RemindersPage() {
   };
 
   const openCreate = () => {
+    if (!requireAuth(t('verifyAccount.intentSaveSchedule'))) return;
     setEditing(null);
     form.setFieldsValue({
       productId: undefined,
@@ -384,6 +407,27 @@ export function RemindersPage() {
     }
   };
 
+  const onRepurchaseReorder = async (id: string) => {
+    if (!requireLink(t('pharmacyLink.intentReserve'))) return;
+    setRepurchaseActingId(id);
+    try {
+      const result = await reorderRepurchaseSuggestion(id);
+      message.success(
+        t('repurchase.reordered', { number: result.reservationNumber || result.reservationId }),
+      );
+      void refetch();
+      if (result.reservationId) {
+        navigate(`/reservations?focus=${encodeURIComponent(result.reservationId)}`);
+      } else {
+        navigate('/reservations');
+      }
+    } catch (err) {
+      message.error(getApiErrorMessage(err, t('repurchase.reorderFailed')));
+    } finally {
+      setRepurchaseActingId(null);
+    }
+  };
+
   const familySelectOptions = familyMembers.map((member) => ({
     value: member.id,
     label: formatFamilyMemberLabel(member, familyRelationship, t),
@@ -449,6 +493,7 @@ export function RemindersPage() {
       </header>
 
       <div className="reminders-hub-sheet">
+        <PharmacyLinkSoftBanner />
         <div className="reminders-hub-banner">
           <div className="reminders-hub-banner-main">
             <span className="reminders-hub-banner-icon">
@@ -663,6 +708,7 @@ export function RemindersPage() {
                     key={`rep-${item.id}`}
                     item={item}
                     busy={repurchaseActingId === item.id}
+                    onReorder={() => void onRepurchaseReorder(item.id)}
                     onCreate={
                       item.drinkRemindersCreatedAt
                         ? undefined

@@ -11,7 +11,8 @@ public sealed record CustomerListItemDto(
     decimal CurrentOutstanding = 0,
     Guid? CustomerGroupId = null,
     string? CustomerGroupName = null,
-    decimal GroupDiscountPercent = 0);
+    decimal GroupDiscountPercent = 0,
+    string PharmacyRelation = "member");
 
 public sealed record PosBatchHintDto(
     Guid BatchId,

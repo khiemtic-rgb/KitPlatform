@@ -12,7 +12,8 @@
     "procurement": "Procurement",
     "receivables": "Customer AR",
     "lowStock": "Low stock",
-    "appDrafts": "App orders"
+    "appDrafts": "App orders",
+    "growthDesk": "Growth Desk"
   },
   "workspaceHint": {
     "title": "Two Novixa workspaces",
@@ -101,6 +102,10 @@
     },
     "chatUnread": {
       "title": "Unread chat"
+    },
+    "refillOpportunity": {
+      "title": "Upsell opportunity today",
+      "hint": "Refill opportunities · Growth Desk"
     }
   }
 }

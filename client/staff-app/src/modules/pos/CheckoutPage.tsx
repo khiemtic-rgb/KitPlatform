@@ -4,6 +4,7 @@ import {
   Alert,
   Button,
   Collapse,
+  Input,
   InputNumber,
   Select,
   Space,
@@ -37,6 +38,7 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import { formatMoney } from '@/shared/utils/money';
 import { priceCart, roundMoney } from '@/modules/sales/pos-pricing';
 import { buildCreateSalePayload, buildDraftCompletePayload } from '@/modules/sales/pos-sale-payload';
+import { defaultOrderReminderLabel } from '@/modules/sales/order-reminder-label';
 import { validateCartBatchLabels } from '@/modules/sales/pos-batch';
 import {
   canOfferLoyaltyRedeem,
@@ -118,6 +120,9 @@ export function CheckoutPage() {
   const [redeemDiscountAmount, setRedeemDiscountAmount] = useState(0);
   const [payments, setPayments] = useState<PosCheckoutPaymentLine[]>([]);
   const [saving, setSaving] = useState(false);
+  const [orderReminderEnabled, setOrderReminderEnabled] = useState(false);
+  const [orderReminderLabel, setOrderReminderLabel] = useState(() => defaultOrderReminderLabel());
+  const [orderReminderDaysSupply, setOrderReminderDaysSupply] = useState(30);
 
   useEffect(() => {
     if (cart.length === 0) navigate('/pos', { replace: true });
@@ -290,6 +295,14 @@ export function CheckoutPage() {
         }
       }
 
+      const orderReminder =
+        customer?.id && orderReminderEnabled && orderReminderDaysSupply >= 1
+          ? {
+              label: orderReminderLabel.trim() || defaultOrderReminderLabel(),
+              daysSupply: orderReminderDaysSupply,
+            }
+          : undefined;
+
       const payloadBase = buildCreateSalePayload(
         warehouseId,
         customer?.id,
@@ -300,6 +313,7 @@ export function CheckoutPage() {
         loyaltyDiscount > 0 ? loyaltyDiscount : undefined,
         selectedVoucherId,
         loadedPrescriptionId ?? undefined,
+        orderReminder,
       );
       await previewPosAllocation({ warehouseId, items: payloadBase.items });
 
@@ -317,6 +331,7 @@ export function CheckoutPage() {
               loyaltyDiscount > 0 ? loyaltyDiscount : undefined,
               selectedVoucherId,
               loadedPrescriptionId ?? undefined,
+              orderReminder,
             ),
           })
         : await createSale({
@@ -383,6 +398,50 @@ export function CheckoutPage() {
           Khách: {customer ? `${customer.fullName} · ${customer.phone}` : 'Khách lẻ'}
           {customer?.allowCredit ? ' · được ghi nợ' : customer ? ' · không được nợ' : ''}
         </Typography.Text>
+
+        {customer ? (
+          <div className="checkout-panel" style={{ marginBottom: 16 }}>
+            <Space align="center" style={{ marginBottom: 8, width: '100%', justifyContent: 'space-between' }}>
+              <Typography.Text strong>Lịch nhắc hết đơn</Typography.Text>
+              <Switch
+                checked={orderReminderEnabled}
+                disabled={saving}
+                checkedChildren="Bật"
+                unCheckedChildren="Tắt"
+                onChange={(checked) => {
+                  setOrderReminderEnabled(checked);
+                  if (checked && !orderReminderLabel.trim()) {
+                    setOrderReminderLabel(defaultOrderReminderLabel());
+                  }
+                }}
+              />
+            </Space>
+            {orderReminderEnabled ? (
+              <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  Tạo gợi ý mua lại + nhắc uống khi hết liệu trình.
+                </Typography.Text>
+                <Input
+                  maxLength={120}
+                  value={orderReminderLabel}
+                  disabled={saving}
+                  placeholder={defaultOrderReminderLabel()}
+                  onChange={(e) => setOrderReminderLabel(e.target.value)}
+                />
+                <Space align="center">
+                  <Typography.Text type="secondary">Số ngày dùng</Typography.Text>
+                  <InputNumber
+                    min={1}
+                    max={730}
+                    value={orderReminderDaysSupply}
+                    disabled={saving}
+                    onChange={(value) => setOrderReminderDaysSupply(Math.max(1, Number(value ?? 30)))}
+                  />
+                </Space>
+              </Space>
+            ) : null}
+          </div>
+        ) : null}
 
         {customer && !customer.allowCredit && canEditCustomerCredit ? (
           <Alert

@@ -24,6 +24,53 @@
   min-width: 0;
 }
 
+.home-v2-guest {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ecfdf5, #f0fdfa);
+  border: 1px solid #99f6e4;
+}
+
+.home-v2-guest-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f766e;
+}
+
+.home-v2-guest-body {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #334155;
+}
+
+.home-v2-guest-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.home-v2-guest-cta {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: #0f766e;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.home-v2-guest-cta--secondary {
+  background: #fff;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+}
+
 .home-v2-greeting {
   margin: 0;
   font-size: 17px;
@@ -797,11 +844,43 @@
   }
 }
 
-/* Shortcuts */
+/* Care hubs + secondary services */
 .home-v2-shortcuts {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
+}
+
+.home-v2-shortcuts--hubs {
+  margin-bottom: 10px;
+}
+
+.home-v2-services {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.home-v2-service {
+  flex: 1 1 0;
+  min-width: 0;
+  border: none;
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 12px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.home-v2-service--gated {
+  opacity: 0.55;
 }
 
 .home-v2-shortcut {

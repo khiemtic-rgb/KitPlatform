@@ -162,6 +162,21 @@
       "updateDraft": "Update draft",
       "selectCustomerBeforeSend": "Select customer before sending to app"
     },
+    "counterOtp": {
+      "button": "App code",
+      "title": "Customer app login code",
+      "issue": "Generate code",
+      "issueAgain": "Generate new code",
+      "issued": "Code ready — read it to the customer",
+      "issueFailed": "Could not generate OTP",
+      "activeMessage": "Read this code aloud for the customer to enter in the app",
+      "expiresAt": "Expires at {{time}}",
+      "hint": "Single-use, ~5 minutes. No Zalo/SMS in this phase.",
+      "waiting": "No code yet",
+      "waitingHint": "Click Generate code, then read the 6 digits to the customer at the counter.",
+      "loading": "Loading…",
+      "disabled": "Counter OTP is off (ExposePilotOtpInAdmin). Contact admin."
+    },
     "alerts": {
       "editingDraft": "Editing draft {{number}}",
       "editingDraftDesc": "Adjust cart then Update draft, or Checkout to complete.",
@@ -182,7 +197,9 @@
       "appDraftModeDesc": "Build cart → Send to customer. Customer reviews on app; pay at counter on pickup.",
       "completedTitle": "Completed {{orderNumber}}",
       "printInvoice": "Print invoice",
-      "viewOrders": "View orders"
+      "viewOrders": "View orders",
+      "refillBadgeTitle": "Refill order (Smart Refill)",
+      "refillBadgeDesc": "Cart loaded from an app reorder reservation. Complete sale to close the refill loop."
     },
     "messages": {
       "loadDraftFailed": "Could not load draft order",
@@ -192,7 +209,15 @@
       "draftLoadedCart": "Loaded {{number}} into cart — click Checkout when ready",
       "reservationLoadedCheckout": "Loaded {{number}} — opening checkout...",
       "reservationLoadedCart": "Loaded {{number}} into cart — click Checkout when ready",
+      "refillLoadedCheckout": "Loaded refill {{number}} — opening checkout...",
+      "refillLoadedCart": "Loaded refill {{number}} into cart — click Checkout when ready",
       "customerSelected": "Selected {{name}} ({{code}})",
+      "prospectTitle": "Confirm pharmacy customer?",
+      "prospectBody": "{{name}} ({{phone}}) signed up in the app and is not yet a pharmacy member. Confirm so they get full purchase access?",
+      "prospectConfirm": "Confirm as member",
+      "prospectSkip": "Later",
+      "prospectMarked": "{{name}} marked as pharmacy customer",
+      "prospectMarkFailed": "Could not mark pharmacy customer",
       "draftNotDraft": "Order is no longer a draft",
       "loadDraftOrderFailed": "Could not load draft order",
       "noDiscountPermission": "Account cannot apply discounts",

@@ -11,14 +11,16 @@ import {
   getApiErrorMessage,
 } from '@/shared/api/customer-app.api';
 import type { ActiveMedication, FamilyMember, RepurchaseSuggestion } from '@/shared/api/customer-app.types';
+import { useAuthStore } from '@/shared/auth/auth.store';
 import { RepurchaseSuggestionsPanel } from '@/modules/reminders/RepurchaseSuggestionsPanel';
+import { PharmacyLinkSoftBanner } from '@/shared/components/PharmacyLinkGate';
 import '@/shared/components/EntryPage.css';
 import './MyMedicationPage.css';
 
 type FamilyFilter = 'all' | 'self' | string;
 
 function isVisibleRepurchase(item: RepurchaseSuggestion) {
-  if (item.status === 'dismissed' || item.status === 'expired') return false;
+  if (item.status === 'dismissed' || item.status === 'expired' || item.status === 'converted') return false;
   if (item.status === 'snoozed' && item.snoozedUntil) {
     return dayjs().isAfter(dayjs(item.snoozedUntil));
   }
@@ -125,6 +127,11 @@ export function MyMedicationPage() {
   );
 
   const load = useCallback(async () => {
+    if (!useAuthStore.getState().isAuthenticated()) {
+      setLoading(false);
+      setItems([]);
+      return;
+    }
     setLoading(true);
     setActiveMedsUnavailable(false);
     try {
@@ -178,6 +185,7 @@ export function MyMedicationPage() {
 
       <h1 className="entry-page-title">{t('medications.title')}</h1>
       <p className="entry-page-intro">{t('medications.intro')}</p>
+      <PharmacyLinkSoftBanner />
 
       <div className="med-filter">
         <span className="entry-label">{t('medications.filterLabel')}</span>

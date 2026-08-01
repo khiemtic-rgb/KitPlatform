@@ -9,6 +9,7 @@ import {
   fetchFamilyMembers,
   fetchRepurchaseSuggestions,
   getApiErrorMessage,
+  reorderRepurchaseSuggestion,
   snoozeRepurchaseSuggestion,
 } from '@/shared/api/customer-app.api';
 import { FAMILY_RELATIONSHIP_LABELS, type FamilyMember, type RepurchaseSuggestion } from '@/shared/api/customer-app.types';
@@ -18,15 +19,17 @@ import {
   FormModalLabel,
 } from '@/shared/components/CustomerFormModal';
 import { useCustomerLabels } from '@/shared/i18n/useCustomerLabels';
+import { usePharmacyLink } from '@/shared/config/PharmacyLinkProvider';
 import { RepurchaseCard } from '@/modules/reminders/RepurchaseCard';
 import './RepurchaseSuggestionsPanel.css';
+import { useNavigate } from 'react-router-dom';
 
 function isVisibleSuggestion(item: RepurchaseSuggestion) {
-  if (item.status === 'dismissed' || item.status === 'expired') return false;
+  if (item.status === 'dismissed' || item.status === 'expired' || item.status === 'converted') return false;
   if (item.status === 'snoozed' && item.snoozedUntil) {
     return dayjs().isAfter(dayjs(item.snoozedUntil));
   }
-  return item.status === 'pending';
+  return item.status === 'pending' || item.status === 'snoozed';
 }
 
 export function RepurchaseSuggestionsPanel({
@@ -41,6 +44,8 @@ export function RepurchaseSuggestionsPanel({
   suggestionsLoading?: boolean;
 }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { requireLink } = usePharmacyLink();
   const { familyRelationship } = useCustomerLabels();
   const controlled = suggestions !== undefined;
   const [items, setItems] = useState<RepurchaseSuggestion[]>([]);
@@ -113,6 +118,28 @@ export function RepurchaseSuggestionsPanel({
     }
   };
 
+  const onReorder = async (id: string) => {
+    if (!requireLink(t('pharmacyLink.intentReserve'))) return;
+    setActingId(id);
+    try {
+      const result = await reorderRepurchaseSuggestion(id);
+      patchItem(result.suggestion);
+      message.success(
+        t('repurchase.reordered', { number: result.reservationNumber || result.reservationId }),
+      );
+      onAccepted?.();
+      if (result.reservationId) {
+        navigate(`/reservations?focus=${encodeURIComponent(result.reservationId)}`);
+      } else {
+        navigate('/reservations');
+      }
+    } catch (error) {
+      message.error(getApiErrorMessage(error, t('repurchase.reorderFailed')));
+    } finally {
+      setActingId(null);
+    }
+  };
+
   const onDismiss = async (id: string) => {
     setActingId(id);
     try {
@@ -168,6 +195,7 @@ export function RepurchaseSuggestionsPanel({
               key={item.id}
               item={item}
               busy={actingId === item.id}
+              onReorder={() => void onReorder(item.id)}
               onCreate={
                 item.drinkRemindersCreatedAt ? undefined : () => openAccept(item.id)
               }

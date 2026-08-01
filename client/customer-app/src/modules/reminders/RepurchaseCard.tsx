@@ -41,12 +41,14 @@ function isSupplyExpired(item: RepurchaseSuggestion, remain: { remaining: number
 export function RepurchaseCard({
   item,
   busy,
+  onReorder,
   onCreate,
   onSnooze,
   onDismiss,
 }: {
   item: RepurchaseSuggestion;
   busy?: boolean;
+  onReorder?: () => void;
   onCreate?: () => void;
   onSnooze: () => void;
   onDismiss: () => void;
@@ -54,12 +56,17 @@ export function RepurchaseCard({
   const { t } = useTranslation();
   const reminderCreated = Boolean(item.drinkRemindersCreatedAt);
   const showCreate = !reminderCreated && Boolean(onCreate);
+  const showReorder = Boolean(onReorder) && item.status !== 'converted';
   const orderLine = t('repurchase.orderLine', { orderNumber: item.orderNumber });
   const datedTitle = repurchaseDatedTitle(item, (date) => t('repurchase.orderDatedTitle', { date }));
   const title = repurchaseCardTitle(item, { orderLine, datedTitle });
   const remain = remainingSupply(item);
   const expired = isSupplyExpired(item, remain);
   const stamp = stampDate(item);
+
+  const secondaryClass = showCreate
+    ? 'rp-card-actions-row rp-card-actions-row--three'
+    : 'rp-card-actions-row rp-card-actions-row--two';
 
   return (
     <article className="rp-card">
@@ -119,36 +126,49 @@ export function RepurchaseCard({
         </div>
       </div>
 
-      <div className={`rp-card-actions${showCreate ? '' : ' rp-card-actions--two'}`}>
-        {showCreate ? (
+      <div className="rp-card-actions">
+        {showReorder ? (
           <button
             type="button"
-            className="rp-card-btn rp-card-btn--primary"
+            className="rp-card-btn rp-card-btn--reorder"
             disabled={busy}
-            onClick={onCreate}
+            onClick={onReorder}
           >
-            <BellOutlined />
-            {t('repurchase.createReminder')}
+            <ShoppingCartOutlined />
+            {t('repurchase.reorder')}
           </button>
         ) : null}
-        <button
-          type="button"
-          className="rp-card-btn rp-card-btn--snooze"
-          disabled={busy}
-          onClick={onSnooze}
-        >
-          <CalendarOutlined />
-          {t('repurchase.snooze3Days')}
-        </button>
-        <button
-          type="button"
-          className="rp-card-btn rp-card-btn--dismiss"
-          disabled={busy}
-          onClick={onDismiss}
-        >
-          <DeleteOutlined />
-          {t('repurchase.dismiss')}
-        </button>
+        <div className={secondaryClass}>
+          {showCreate ? (
+            <button
+              type="button"
+              className="rp-card-btn rp-card-btn--primary"
+              disabled={busy}
+              onClick={onCreate}
+            >
+              <BellOutlined />
+              {t('repurchase.createReminder')}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="rp-card-btn rp-card-btn--snooze"
+            disabled={busy}
+            onClick={onSnooze}
+          >
+            <CalendarOutlined />
+            {t('repurchase.snooze3Days')}
+          </button>
+          <button
+            type="button"
+            className="rp-card-btn rp-card-btn--dismiss"
+            disabled={busy}
+            onClick={onDismiss}
+          >
+            <DeleteOutlined />
+            {t('repurchase.dismiss')}
+          </button>
+        </div>
       </div>
     </article>
   );

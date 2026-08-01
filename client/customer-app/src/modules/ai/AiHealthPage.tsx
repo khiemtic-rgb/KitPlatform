@@ -22,6 +22,13 @@ import {
 import type { ActiveMedication, AiHealthAskResponse } from '@/shared/api/customer-app.types';
 import { BrandingLogo } from '@/shared/components/BrandingLogo';
 import { useCustomerBranding } from '@/shared/config/BrandingProvider';
+import { useAuthStore } from '@/shared/auth/auth.store';
+import { useVerifyAccount } from '@/shared/auth/VerifyAccountProvider';
+import {
+  aiAsksRemainingToday,
+  isPharmacyMemberRelation,
+  recordAiAskToday,
+} from '@/shared/care/care-tier';
 import './AiHealthPage.css';
 
 type ChatTurn = {
@@ -35,6 +42,10 @@ export function AiHealthPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { branding } = useCustomerBranding();
+  const { requireAuth } = useVerifyAccount();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
+  const profile = useAuthStore((s) => s.profile);
+  const isMember = isPharmacyMemberRelation(profile?.pharmacyRelation);
   const [searchParams, setSearchParams] = useSearchParams();
   const productIdFromUrl = searchParams.get('productId');
   const promptFromUrl = searchParams.get('q');
@@ -54,6 +65,11 @@ export function AiHealthPage() {
   );
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setMeds([]);
+      setMedsLoading(false);
+      return;
+    }
     let cancelled = false;
     setMedsLoading(true);
     void fetchActiveMedications()
@@ -74,7 +90,7 @@ export function AiHealthPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (productIdFromUrl) {
@@ -111,12 +127,21 @@ export function AiHealthPage() {
   const send = async (question: string) => {
     const q = question.trim();
     if (!q || sending) return;
+    if (!requireAuth(t('verifyAccount.intentAi'))) return;
+    if (!isMember) {
+      const left = aiAsksRemainingToday(profile?.customerId, false);
+      if (left !== null && left <= 0) {
+        message.warning(t('ai.careTierLimit', { max: 5 }));
+        return;
+      }
+    }
     setSending(true);
     const userTurn: ChatTurn = { id: `u-${Date.now()}`, role: 'user', text: q };
     setTurns((prev) => [...prev, userTurn]);
     setDraft('');
     try {
       const response = await askAiHealth(q, selectedProductId);
+      if (!isMember) recordAiAskToday(profile?.customerId);
       setTurns((prev) => [
         ...prev,
         { id: `a-${Date.now()}`, role: 'assistant', text: response.answer, meta: response },
@@ -175,6 +200,14 @@ export function AiHealthPage() {
           <div>
             <h1 className="ai-hub-title">{t('ai.title')}</h1>
             <p className="ai-hub-intro-text">{t('ai.intro')}</p>
+            {!isMember ? (
+              <p className="ai-hub-intro-text" style={{ marginTop: 6, opacity: 0.85 }}>
+                {t('ai.careTierHint', {
+                  max: 5,
+                  left: aiAsksRemainingToday(profile?.customerId, false) ?? 0,
+                })}
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -213,7 +246,7 @@ export function AiHealthPage() {
             <div className="ai-hub-empty-meds">
               <div className="ai-hub-empty-meds-title">{t('ai.noMedsTitle')}</div>
               <div className="ai-hub-empty-meds-desc">{t('ai.noMedsDesc')}</div>
-              <Link to="/orders" className="ai-hub-empty-meds-cta">
+              <Link to="/reminders" className="ai-hub-empty-meds-cta">
                 {t('ai.orderMeds')}
               </Link>
             </div>

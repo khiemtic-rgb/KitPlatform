@@ -153,15 +153,24 @@
 }
 
 .rp-card-actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid #eef2f7;
 }
 
-.rp-card-actions--two {
+.rp-card-actions-row {
+  display: grid;
+  gap: 8px;
+}
+
+.rp-card-actions-row--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.rp-card-actions-row--two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -184,6 +193,18 @@
 .rp-card-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.rp-card-btn--reorder {
+  width: 100%;
+  border: 1px solid #16a34a;
+  background: #16a34a;
+  color: #fff;
+}
+
+.rp-card-btn--reorder:hover:not(:disabled) {
+  background: #15803d;
+  border-color: #15803d;
 }
 
 .rp-card-btn--primary {

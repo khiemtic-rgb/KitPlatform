@@ -4,7 +4,6 @@ import {
   CalendarOutlined,
   CheckCircleOutlined,
   CheckOutlined,
-  EditOutlined,
   FileTextOutlined,
   FireFilled,
   GiftOutlined,
@@ -14,7 +13,9 @@ import {
   MessageOutlined,
   PlusOutlined,
   RightOutlined,
+  RobotOutlined,
   ShoppingOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import { Badge, message } from 'antd';
 import dayjs from 'dayjs';
@@ -42,8 +43,10 @@ import {
 } from '@/shared/api/customer-app.types';
 import { prefetchPrimaryTabOverviews, useChatOverviewQuery } from '@/shared/api/overview-queries';
 import { useAuthStore } from '@/shared/auth/auth.store';
+import { useVerifyAccount } from '@/shared/auth/VerifyAccountProvider';
 import { BrandingLogo } from '@/shared/components/BrandingLogo';
 import { useCustomerBranding } from '@/shared/config/BrandingProvider';
+import { usePharmacyLink } from '@/shared/config/PharmacyLinkProvider';
 import { useCustomerNotificationCount } from '@/shared/hooks/useCustomerNotificationCount';
 import { useCustomerLabels } from '@/shared/i18n/useCustomerLabels';
 import { familyRoleLabel, resolveFamilyGender } from '@/shared/i18n/family-role-label';
@@ -152,7 +155,10 @@ export function HomePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const profile = useAuthStore((s) => s.profile);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
   const { branding } = useCustomerBranding();
+  const { requireLink, linked } = usePharmacyLink();
+  const { requireAuth } = useVerifyAccount();
   const notificationCount = useCustomerNotificationCount();
   const { data: chatOverview } = useChatOverviewQuery();
 
@@ -213,6 +219,10 @@ export function HomePage() {
 
   const load = useCallback(
     async (options?: { silent?: boolean }) => {
+      if (!useAuthStore.getState().isAuthenticated()) {
+        setStatsLoading(false);
+        return;
+      }
       if (!options?.silent) setStatsLoading(true);
       try {
         try {
@@ -262,6 +272,7 @@ export function HomePage() {
   );
 
   const loadCareExtras = useCallback(async () => {
+    if (!useAuthStore.getState().isAuthenticated()) return;
     try {
       const [due, members, familyDue] = await Promise.all([
         fetchDueReminders(),
@@ -284,9 +295,10 @@ export function HomePage() {
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, isAuthenticated]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     let idleId: number | undefined;
     let timeoutId: number | undefined;
     const run = () => {
@@ -304,7 +316,7 @@ export function HomePage() {
       }
       if (timeoutId !== undefined) window.clearTimeout(timeoutId);
     };
-  }, [loadCareExtras, queryClient]);
+  }, [isAuthenticated, loadCareExtras, queryClient]);
 
   const markTaken = async (reminderId: string) => {
     setActingId(reminderId);
@@ -430,12 +442,42 @@ export function HomePage() {
   const showScoreWarn = adherence.showMissedAlert;
   const showScoreOk = !showScoreWarn && adherence.scheduledToday > 0;
 
-  const shortcuts = [
-    { to: '/reminders', label: t('home.shortcutReminders'), icon: <MedicineBoxOutlined />, tone: 'teal' },
-    { to: '/orders', label: t('home.shortcutOrderMeds'), icon: <ShoppingOutlined />, tone: 'green' },
-    { to: '/chat', label: t('home.shortcutChatPharm'), icon: <MessageOutlined />, tone: 'blue' },
-    { to: '/health', label: t('home.shortcutHealthRecord'), icon: <HeartOutlined />, tone: 'orange' },
-    { to: '/loyalty', label: t('home.shortcutPoints'), icon: <GiftOutlined />, tone: 'purple' },
+  /** Hub chính: chăm sóc — không cần liên kết NT. */
+  const careHubs = [
+    { to: '/health', label: t('home.hubHealth'), icon: <HeartOutlined />, tone: 'orange' },
+    { to: '/medications', label: t('home.hubMedications'), icon: <MedicineBoxOutlined />, tone: 'teal' },
+    { to: '/reminders', label: t('home.hubReminders'), icon: <BellOutlined />, tone: 'orange' },
+    { to: '/prescriptions', label: t('home.hubPrescriptions'), icon: <PrescriptionIcon />, tone: 'green' },
+    { to: '/ai', label: t('home.hubAi'), icon: <RobotOutlined />, tone: 'purple' },
+    { to: '/family', label: t('home.hubFamily'), icon: <TeamOutlined />, tone: 'blue' },
+  ] as const;
+
+  /** Dịch vụ nhà thuốc — soft-gate khi chưa member. */
+  const serviceShortcuts = [
+    {
+      to: '/orders',
+      label: t('home.shortcutOrderMeds'),
+      icon: <ShoppingOutlined />,
+      tone: 'green',
+      needsLink: true,
+      intent: t('pharmacyLink.intentOrders'),
+    },
+    {
+      to: '/chat',
+      label: t('home.shortcutChat'),
+      icon: <MessageOutlined />,
+      tone: 'blue',
+      needsLink: true,
+      intent: t('pharmacyLink.intentChat'),
+    },
+    {
+      to: '/loyalty',
+      label: t('home.shortcutPoints'),
+      icon: <GiftOutlined />,
+      tone: 'purple',
+      needsLink: true,
+      intent: t('pharmacyLink.intentLoyalty'),
+    },
   ] as const;
 
   const activityRows = useMemo(() => {
@@ -494,14 +536,38 @@ export function HomePage() {
             <div className="home-v2-tagline">{t('home.careTagline')}</div>
           </div>
         </div>
-        <Link to="/notifications" aria-label={t('home.notifications')}>
-          <Badge count={notificationCount} size="small" offset={[-2, 4]}>
+        <Link
+          to={isAuthenticated ? '/notifications' : '/login'}
+          aria-label={t('home.notifications')}
+          onClick={(e) => {
+            if (!isAuthenticated) {
+              e.preventDefault();
+              requireAuth(t('verifyAccount.intentSync'));
+            }
+          }}
+        >
+          <Badge count={isAuthenticated ? notificationCount : 0} size="small" offset={[-2, 4]}>
             <span className="home-v2-bell">
               <BellOutlined />
             </span>
           </Badge>
         </Link>
       </header>
+
+      {!isAuthenticated ? (
+        <section className="home-v2-guest" aria-label={t('home.guestBannerAria')}>
+          <p className="home-v2-guest-title">{t('home.guestWelcome')}</p>
+          <p className="home-v2-guest-body">{t('home.guestWelcomeBody')}</p>
+          <div className="home-v2-guest-actions">
+            <button type="button" className="home-v2-guest-cta" onClick={() => navigate('/health?add=prescription')}>
+              {t('home.guestTryRx')}
+            </button>
+            <button type="button" className="home-v2-guest-cta home-v2-guest-cta--secondary" onClick={() => navigate('/ai')}>
+              {t('home.guestTryAi')}
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <section className="home-v2-hero" aria-label={t('home.heroAria')}>
         <div className="home-v2-hero-leaf" aria-hidden />
@@ -582,7 +648,7 @@ export function HomePage() {
               )
             )}
             <div className="home-v2-hero-footer">
-              <button type="button" onClick={() => navigate('/reminders')}>
+              <button type="button" onClick={() => navigate('/medications')}>
                 {t('home.viewAllSchedule')} <RightOutlined />
               </button>
             </div>
@@ -655,6 +721,48 @@ export function HomePage() {
           <div className="home-v2-bar">
             <span style={{ width: `${medPct}%` }} />
           </div>
+        </div>
+      </section>
+
+      <section aria-label={t('home.careHubsAria')}>
+        <div className="home-v2-section-head">
+          <h3 className="home-v2-section-title">{t('home.careHubs')}</h3>
+        </div>
+        <div className="home-v2-shortcuts home-v2-shortcuts--hubs">
+          {careHubs.map((item) => (
+            <button
+              key={item.to}
+              type="button"
+              className="home-v2-shortcut"
+              onClick={() => navigate(item.to)}
+            >
+              <span className={`home-v2-shortcut-icon home-v2-shortcut-icon--${item.tone}`}>
+                {item.icon}
+              </span>
+              <span className="home-v2-shortcut-label">{item.label}</span>
+            </button>
+          ))}
+        </div>
+        <div className="home-v2-services">
+          <div className="home-v2-section-head" style={{ marginBottom: 8 }}>
+            <h3 className="home-v2-section-title">{t('home.pharmacyServices')}</h3>
+          </div>
+          {serviceShortcuts.map((item) => (
+            <button
+              key={item.to}
+              type="button"
+              className={`home-v2-service${item.needsLink && !linked ? ' home-v2-service--gated' : ''}`}
+              onClick={() => {
+                if (item.needsLink && !requireLink(item.intent)) return;
+                navigate(item.to);
+              }}
+            >
+              <span className={`home-v2-service-icon home-v2-shortcut-icon--${item.tone}`}>
+                {item.icon}
+              </span>
+              <span>{item.label}</span>
+            </button>
+          ))}
         </div>
       </section>
 
@@ -757,32 +865,8 @@ export function HomePage() {
 
       <section>
         <div className="home-v2-section-head">
-          <h3 className="home-v2-section-title">{t('home.shortcuts')}</h3>
-          <button type="button" className="home-v2-link" onClick={() => navigate('/profile')}>
-            <EditOutlined /> {t('home.editShortcuts')}
-          </button>
-        </div>
-        <div className="home-v2-shortcuts">
-          {shortcuts.map((item) => (
-            <button
-              key={item.to}
-              type="button"
-              className="home-v2-shortcut"
-              onClick={() => navigate(item.to)}
-            >
-              <span className={`home-v2-shortcut-icon home-v2-shortcut-icon--${item.tone}`}>
-                {item.icon}
-              </span>
-              <span className="home-v2-shortcut-label">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <div className="home-v2-section-head">
           <h3 className="home-v2-section-title">{t('home.activityTitle')}</h3>
-          <button type="button" className="home-v2-link" onClick={() => navigate('/orders')}>
+          <button type="button" className="home-v2-link" onClick={() => navigate('/timeline')}>
             {t('home.viewAll')} <RightOutlined />
           </button>
         </div>
@@ -795,7 +879,19 @@ export function HomePage() {
                 key={row.key}
                 type="button"
                 className="home-v2-activity-item"
-                onClick={() => navigate(row.to)}
+                onClick={() => {
+                  if (
+                    (row.kind === 'order' || row.kind === 'chat') &&
+                    !requireLink(
+                      row.kind === 'order'
+                        ? t('pharmacyLink.intentOrders')
+                        : t('pharmacyLink.intentChat'),
+                    )
+                  ) {
+                    return;
+                  }
+                  navigate(row.to);
+                }}
               >
                 <span
                   className={`home-v2-activity-icon ${

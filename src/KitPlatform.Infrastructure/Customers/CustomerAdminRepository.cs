@@ -27,6 +27,7 @@ internal sealed class CustomerAdminRepository
         string? search,
         int page,
         int pageSize,
+        string? pharmacyRelation,
         CancellationToken cancellationToken)
     {
         var conditions = new List<string> { "c.tenant_id = @TenantId", "c.deleted_at IS NULL" };
@@ -37,6 +38,13 @@ internal sealed class CustomerAdminRepository
         {
             conditions.Add(KernelPartyReader.CustomerSearchFilter);
             args.Add("Search", $"%{search.Trim()}%");
+        }
+
+        if (!string.IsNullOrWhiteSpace(pharmacyRelation)
+            && CustomerPharmacyRelations.IsKnown(pharmacyRelation.Trim().ToLowerInvariant()))
+        {
+            conditions.Add("c.pharmacy_relation = @PharmacyRelation");
+            args.Add("PharmacyRelation", pharmacyRelation.Trim().ToLowerInvariant());
         }
 
         var where = string.Join(" AND ", conditions);
@@ -51,6 +59,10 @@ internal sealed class CustomerAdminRepository
                 {KernelPartyReader.CustomerListSelect}
             FROM customers c
             {KernelPartyReader.CustomerPartyJoins}
+            LEFT JOIN customer_accounts ca
+                ON ca.customer_id = c.id
+               AND ca.tenant_id = c.tenant_id
+               AND ca.status = 1
             WHERE {where}
             ORDER BY FullName
             LIMIT @PageSize OFFSET @Offset
@@ -64,6 +76,52 @@ internal sealed class CustomerAdminRepository
         var rows = await conn.QueryAsync<CustomerListRow>(listSql, args);
         var items = rows.Select(MapListItem).ToList();
         return (items, total);
+    }
+
+    public async Task<CustomerPharmacyRelationSummaryDto> GetPharmacyRelationSummaryAsync(
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+                COUNT(*) FILTER (
+                    WHERE lower(coalesce(nullif(trim(c.pharmacy_relation), ''), 'member')) = 'prospect'
+                )::int AS Prospect,
+                COUNT(*) FILTER (
+                    WHERE lower(coalesce(nullif(trim(c.pharmacy_relation), ''), 'member')) = 'member'
+                )::int AS Member,
+                COUNT(*) FILTER (
+                    WHERE lower(coalesce(nullif(trim(c.pharmacy_relation), ''), 'member')) = 'revoked'
+                )::int AS Revoked,
+                COUNT(*)::int AS Total,
+                COUNT(*) FILTER (
+                    WHERE EXISTS (
+                        SELECT 1 FROM customer_accounts ca
+                        WHERE ca.customer_id = c.id
+                          AND ca.tenant_id = c.tenant_id
+                          AND ca.status = 1
+                    )
+                )::int AS HasAppAccount
+            FROM customers c
+            WHERE c.tenant_id = @TenantId
+              AND c.deleted_at IS NULL
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var row = await conn.QuerySingleAsync<RelationSummaryRow>(sql, new { TenantId });
+        return new CustomerPharmacyRelationSummaryDto(
+            row.Prospect,
+            row.Member,
+            row.Revoked,
+            row.Total,
+            row.HasAppAccount);
+    }
+
+    private sealed class RelationSummaryRow
+    {
+        public int Prospect { get; init; }
+        public int Member { get; init; }
+        public int Revoked { get; init; }
+        public int Total { get; init; }
+        public int HasAppAccount { get; init; }
     }
 
     public async Task<SimilarCustomerClustersResult> GetSimilarClustersAsync(
@@ -507,13 +565,23 @@ internal sealed class CustomerAdminRepository
         Guid? excludeCustomerId,
         CancellationToken cancellationToken)
     {
+        // Match exact or digit-normalized forms (legacy +84 / spaced phones).
         const string sql = """
             SELECT EXISTS(
-                SELECT 1 FROM customers
-                WHERE tenant_id = @TenantId
-                  AND phone = @Phone
-                  AND deleted_at IS NULL
-                  AND (@ExcludeCustomerId IS NULL OR id <> @ExcludeCustomerId)
+                SELECT 1 FROM customers c
+                WHERE c.tenant_id = @TenantId
+                  AND c.deleted_at IS NULL
+                  AND (@ExcludeCustomerId IS NULL OR c.id <> @ExcludeCustomerId)
+                  AND (
+                      c.phone = @Phone
+                      OR (
+                          CASE
+                              WHEN regexp_replace(coalesce(c.phone, ''), '[^0-9]', '', 'g') ~ '^84[0-9]{8,}$'
+                                  THEN '0' || substring(regexp_replace(coalesce(c.phone, ''), '[^0-9]', '', 'g') from 3)
+                              ELSE regexp_replace(coalesce(c.phone, ''), '[^0-9]', '', 'g')
+                          END
+                      ) = @Phone
+                  )
             )
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -555,6 +623,10 @@ internal sealed class CustomerAdminRepository
         string? emergencyContactPhone,
         string? clinicalNotes,
         Guid? customerGroupId,
+        string acquisitionSource,
+        string pharmacyRelation,
+        string? pharmacyVerifiedVia,
+        Guid? pharmacyVerifiedBy,
         CancellationToken cancellationToken)
     {
         var customerId = Guid.NewGuid();
@@ -576,19 +648,23 @@ internal sealed class CustomerAdminRepository
 
         // Phone on file → allow credit by default (ops can disable per customer later).
         var allowCredit = HasUsablePhone(phone);
+        var isMember = CustomerPharmacyRelations.IsMember(pharmacyRelation);
+        DateTime? verifiedAt = isMember ? DateTime.UtcNow : null;
 
         const string sql = """
             INSERT INTO customers (
                 id, tenant_id, party_id, customer_code, full_name, phone, email, date_of_birth, gender, status,
                 allow_credit, credit_limit,
                 address_line, id_number, emergency_contact_name, emergency_contact_phone, clinical_notes,
-                customer_group_id
+                customer_group_id,
+                acquisition_source, pharmacy_relation, pharmacy_verified_at, pharmacy_verified_via, pharmacy_verified_by
             )
             VALUES (
                 @CustomerId, @TenantId, @PartyId, @CustomerCode, @FullName, @Phone, @Email, @DateOfBirth, @Gender, 1,
                 @AllowCredit, NULL,
                 @AddressLine, @IdNumber, @EmergencyContactName, @EmergencyContactPhone, @ClinicalNotes,
-                @CustomerGroupId
+                @CustomerGroupId,
+                @AcquisitionSource, @PharmacyRelation, @PharmacyVerifiedAt, @PharmacyVerifiedVia, @PharmacyVerifiedBy
             )
             RETURNING id
             """;
@@ -613,6 +689,11 @@ internal sealed class CustomerAdminRepository
                 EmergencyContactPhone = emergencyContactPhone,
                 ClinicalNotes = clinicalNotes,
                 CustomerGroupId = customerGroupId,
+                AcquisitionSource = acquisitionSource,
+                PharmacyRelation = pharmacyRelation,
+                PharmacyVerifiedAt = verifiedAt,
+                PharmacyVerifiedVia = isMember ? pharmacyVerifiedVia : null,
+                PharmacyVerifiedBy = isMember ? pharmacyVerifiedBy : null,
             },
             tx);
 
@@ -707,6 +788,37 @@ internal sealed class CustomerAdminRepository
         return rows > 0;
     }
 
+    public async Task<bool> MarkPharmacyMemberAsync(
+        Guid customerId,
+        string verifiedVia,
+        Guid? verifiedByUserId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE customers
+            SET pharmacy_relation = @Relation,
+                pharmacy_verified_at = COALESCE(pharmacy_verified_at, NOW()),
+                pharmacy_verified_via = @VerifiedVia,
+                pharmacy_verified_by = COALESCE(@VerifiedBy, pharmacy_verified_by),
+                updated_at = NOW()
+            WHERE id = @CustomerId
+              AND tenant_id = @TenantId
+              AND deleted_at IS NULL
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.ExecuteAsync(
+            sql,
+            new
+            {
+                CustomerId = customerId,
+                TenantId,
+                Relation = CustomerPharmacyRelations.Member,
+                VerifiedVia = verifiedVia,
+                VerifiedBy = verifiedByUserId,
+            });
+        return rows > 0;
+    }
+
     private static CustomerAdminListItemDto MapListItem(CustomerListRow row) =>
         new(
             row.Id,
@@ -718,7 +830,15 @@ internal sealed class CustomerAdminRepository
             ToOffset(row.CreatedAt),
             row.CustomerGroupId,
             row.CustomerGroupName,
-            row.GroupDiscountPercent);
+            row.GroupDiscountPercent,
+            row.HasAppAccount,
+            row.AppLastLoginAt.HasValue ? ToOffset(row.AppLastLoginAt.Value) : null,
+            string.IsNullOrWhiteSpace(row.AcquisitionSource)
+                ? CustomerAcquisitionSources.Counter
+                : row.AcquisitionSource,
+            string.IsNullOrWhiteSpace(row.PharmacyRelation)
+                ? CustomerPharmacyRelations.Member
+                : row.PharmacyRelation);
 
     private static CustomerDetailDto MapDetail(CustomerDetailRow row) =>
         new(
@@ -743,7 +863,15 @@ internal sealed class CustomerAdminRepository
             row.ClinicalNotes,
             row.CustomerGroupId,
             row.CustomerGroupName,
-            row.GroupDiscountPercent);
+            row.GroupDiscountPercent,
+            string.IsNullOrWhiteSpace(row.AcquisitionSource)
+                ? CustomerAcquisitionSources.Counter
+                : row.AcquisitionSource,
+            string.IsNullOrWhiteSpace(row.PharmacyRelation)
+                ? CustomerPharmacyRelations.Member
+                : row.PharmacyRelation,
+            row.PharmacyVerifiedAt.HasValue ? ToOffset(row.PharmacyVerifiedAt.Value) : null,
+            row.PharmacyVerifiedVia);
 
     private static CustomerOrderListItemDto MapOrder(CustomerOrderRow row) =>
         new(
@@ -780,6 +908,10 @@ internal sealed class CustomerAdminRepository
         public Guid? CustomerGroupId { get; init; }
         public string? CustomerGroupName { get; init; }
         public decimal GroupDiscountPercent { get; init; }
+        public bool HasAppAccount { get; init; }
+        public DateTime? AppLastLoginAt { get; init; }
+        public string? AcquisitionSource { get; init; }
+        public string? PharmacyRelation { get; init; }
     }
 
     private sealed class SimilarNameRow
@@ -829,6 +961,10 @@ internal sealed class CustomerAdminRepository
         public Guid? CustomerGroupId { get; init; }
         public string? CustomerGroupName { get; init; }
         public decimal GroupDiscountPercent { get; init; }
+        public string? AcquisitionSource { get; init; }
+        public string? PharmacyRelation { get; init; }
+        public DateTime? PharmacyVerifiedAt { get; init; }
+        public string? PharmacyVerifiedVia { get; init; }
     }
 
     private sealed class CustomerOrderRow

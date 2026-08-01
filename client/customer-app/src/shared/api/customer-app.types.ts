@@ -6,6 +6,10 @@ export interface CustomerProfile {
   fullName: string;
   phone: string;
   preferredLocale?: string | null;
+  /** Server: prospect | member | revoked */
+  pharmacyRelation?: string | null;
+  acquisitionSource?: string | null;
+  avatarUrl?: string | null;
 }
 
 export interface CustomerLoginResponse {
@@ -427,8 +431,6 @@ export const DAY_LABELS: Record<number, string> = {
   7: 'CN',
 };
 
-export const DEFAULT_TENANT_CODE = 'DEMO_PHARMACY';
-
 export interface RepurchaseSuggestion {
   id: string;
   salesOrderId: string;
@@ -440,6 +442,15 @@ export interface RepurchaseSuggestion {
   suggestedForDate: string | null;
   snoozedUntil: string | null;
   drinkRemindersCreatedAt: string | null;
+  convertedAt: string | null;
+  convertedReservationId: string | null;
+  convertedSalesOrderId: string | null;
+}
+
+export interface ReorderRepurchaseResult {
+  suggestion: RepurchaseSuggestion;
+  reservationId: string;
+  reservationNumber: string;
 }
 
 export interface FamilyMember {
@@ -575,4 +586,5 @@ export interface AiHealthAskResponse {
   confidence: string;
   suggestChat: boolean;
   disclaimer: string;
+  asksRemainingToday?: number | null;
 }

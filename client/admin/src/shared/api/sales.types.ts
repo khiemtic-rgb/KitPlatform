@@ -31,6 +31,8 @@ export type CustomerListItem = Req<S['CustomerListItemDto'], 'id' | 'customerCod
   customerGroupId?: string | null;
   customerGroupName?: string | null;
   groupDiscountPercent?: number;
+  /** Server pharmacy link: prospect | member | revoked */
+  pharmacyRelation?: string;
 };
 
 export type PosBatchHint = Req<PosBatchHintDto, 'batchId' | 'batchNumber' | 'quantityAvailable' | 'isSuggested'>;

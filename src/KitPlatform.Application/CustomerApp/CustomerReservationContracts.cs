@@ -25,7 +25,8 @@ public sealed record CreateCustomerReservationRequest(
     short FulfillmentType,
     Guid? AddressId,
     string? Notes,
-    IReadOnlyList<CustomerReservationLineRequest> Items);
+    IReadOnlyList<CustomerReservationLineRequest> Items,
+    Guid? SourceRepurchaseSuggestionId = null);
 
 public sealed record CustomerReservationLineDto(
     Guid Id,
@@ -96,6 +97,7 @@ public sealed record CustomerReservationPosLoadDto(
     Guid CustomerId,
     Guid WarehouseId,
     string? Notes,
+    Guid? SourceRepurchaseSuggestionId,
     IReadOnlyList<CustomerReservationPosLineDto> Lines);
 
 public sealed record LinkCustomerReservationRequest(Guid SalesOrderId);

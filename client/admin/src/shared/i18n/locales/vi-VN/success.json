@@ -145,5 +145,44 @@
       "inProgress": "Đang làm",
       "completed": "Xong"
     }
+  },
+  "growth": {
+    "title": "Growth Desk",
+    "subtitle": "Hôm nay có {{count}} cơ hội tái mua · {{date}}",
+    "tip": "Gọi / nhắn khách sắp hết thuốc, hoặc bấm Chăm sóc ngay để tạo draft refill vào quầy.",
+    "refresh": "Làm mới",
+    "backCockpit": "← Cockpit chủ NT",
+    "loadFailed": "Không tải được Growth Desk",
+    "empty": "Không có cơ hội trong nhóm này",
+    "careNow": "Chăm sóc ngay",
+    "call": "Gọi",
+    "careCreated": "Đã tạo draft {{draft}}",
+    "careAlreadyOpen": "Đã có draft mở {{draft}}",
+    "careFailed": "Không tạo được draft chăm sóc",
+    "daysOverdue": "Trễ {{days}} ngày",
+    "buckets": {
+      "refillOverdue": "Quá hạn tái mua",
+      "refillDue": "Đến hạn hôm nay",
+      "snoozedExpiring": "Snooze sắp hết"
+    },
+    "columns": {
+      "customer": "Khách",
+      "order": "Đơn / liệu trình",
+      "due": "Ngày due",
+      "lastBuy": "Mua lần trước",
+      "actions": "Thao tác"
+    },
+    "weekly": {
+      "title": "Báo cáo tuần refill",
+      "range": "{{start}} → {{end}}",
+      "due": "Due",
+      "notified": "Đã nhắc",
+      "converted": "Đã chuyển đổi",
+      "revenue": "DT attributed"
+    },
+    "tile": {
+      "title": "Có thể bán thêm hôm nay",
+      "hint": "Cơ hội refill trên Growth Desk"
+    }
   }
 }

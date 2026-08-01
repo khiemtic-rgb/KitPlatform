@@ -24,8 +24,9 @@ internal sealed class CustomerNotificationTextService : ICustomerNotificationTex
             [CustomerNotificationTextKeys.CareDueBody] = "Đến giờ {when}.{note}",
             [CustomerNotificationTextKeys.CareScheduledTitle] = "Đã lên lịch nhắc",
             [CustomerNotificationTextKeys.CareScheduledBody] = "{title} — {when}",
-            [CustomerNotificationTextKeys.RepurchaseTitle] = "Đơn thuốc sắp hết",
-            [CustomerNotificationTextKeys.RepurchaseBody] = "{orderLabel} — dự kiến cần mua lại khoảng {dateLabel}.",
+            [CustomerNotificationTextKeys.RepurchaseTitle] = "Còn thuốc không?",
+            [CustomerNotificationTextKeys.RepurchaseBody] =
+                "{orderLabel} — dự kiến hết khoảng {dateLabel}. Mở app để đặt lại nhanh.",
             [CustomerNotificationTextKeys.DateToday] = "hôm nay",
             [CustomerNotificationTextKeys.AdherenceMissedTitle] = "Bạn bỏ liều vài ngày gần đây",
             [CustomerNotificationTextKeys.AdherenceMissedBody] =
@@ -55,8 +56,9 @@ internal sealed class CustomerNotificationTextService : ICustomerNotificationTex
             [CustomerNotificationTextKeys.CareDueBody] = "Due at {when}.{note}",
             [CustomerNotificationTextKeys.CareScheduledTitle] = "Reminder scheduled",
             [CustomerNotificationTextKeys.CareScheduledBody] = "{title} — {when}",
-            [CustomerNotificationTextKeys.RepurchaseTitle] = "Running low on medication",
-            [CustomerNotificationTextKeys.RepurchaseBody] = "{orderLabel} — refill expected around {dateLabel}.",
+            [CustomerNotificationTextKeys.RepurchaseTitle] = "Still have enough medicine?",
+            [CustomerNotificationTextKeys.RepurchaseBody] =
+                "{orderLabel} — expected to run out around {dateLabel}. Open the app to reorder.",
             [CustomerNotificationTextKeys.DateToday] = "today",
             [CustomerNotificationTextKeys.AdherenceMissedTitle] = "Missed doses recently",
             [CustomerNotificationTextKeys.AdherenceMissedBody] =

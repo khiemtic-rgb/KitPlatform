@@ -143,4 +143,10 @@
 236_customer_adherence_skip_reason.sql
 237_demo_pharmacy_audit_handoff.sql
 238_demo_pharmacy_audit_slim_nav.sql
+255_customer_pharmacy_relation.sql
+256_customer_avatar_url.sql
+260_repurchase_smart_refill_converted.sql
+261_smart_refill_push_and_reservation_source.sql
+262_repurchase_converted_sales_order.sql
+263_growth_care_actions.sql
 seed-prod/001_base_permissions.sql

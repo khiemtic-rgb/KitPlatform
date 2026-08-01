@@ -224,6 +224,13 @@ function PharmacyDashboardPage() {
         icon: <RiseOutlined />,
         primary: false,
       });
+      items.push({
+        key: 'growth-desk',
+        label: t('quickActions.growthDesk'),
+        to: '/success/growth',
+        icon: <RiseOutlined />,
+        primary: false,
+      });
     }
     if (canSalesOps) {
       items.push({
@@ -289,6 +296,16 @@ function PharmacyDashboardPage() {
         tone: (o2o?.draftOrdersAwaitingCount ?? 0) > 0 ? 'warning' : 'default',
       });
     }
+    if (canAccessOwnerCockpit && !auditSlimNav) {
+      tiles.push({
+        title: t('kpis.refillOpportunity.title'),
+        value: o2o?.refillOpportunityCount ?? '—',
+        icon: <RiseOutlined />,
+        to: '/success/growth',
+        hint: t('kpis.refillOpportunity.hint'),
+        tone: (o2o?.refillOpportunityCount ?? 0) > 0 ? 'warning' : 'default',
+      });
+    }
     if (canCatalog) {
       tiles.push({
         title: t('kpis.products.title'),
@@ -349,6 +366,8 @@ function PharmacyDashboardPage() {
     }
     return tiles;
   }, [
+    auditSlimNav,
+    canAccessOwnerCockpit,
     canCatalog,
     canInventory,
     canProcurement,

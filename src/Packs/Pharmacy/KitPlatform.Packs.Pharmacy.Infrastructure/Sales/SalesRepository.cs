@@ -109,7 +109,8 @@ internal sealed class SalesRepository
                 ), 0) AS CurrentOutstanding,
                 c.customer_group_id AS CustomerGroupId,
                 cg.group_name AS CustomerGroupName,
-                COALESCE(cg.discount_percent, 0) AS GroupDiscountPercent
+                COALESCE(cg.discount_percent, 0) AS GroupDiscountPercent,
+                COALESCE(NULLIF(TRIM(c.pharmacy_relation), ''), 'member') AS PharmacyRelation
             FROM customers c
             LEFT JOIN customer_groups cg
                 ON cg.id = c.customer_group_id

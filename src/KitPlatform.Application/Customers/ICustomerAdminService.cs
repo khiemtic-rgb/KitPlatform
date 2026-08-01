@@ -6,6 +6,10 @@ public interface ICustomerAdminService
         string? search,
         int page,
         int pageSize,
+        CancellationToken cancellationToken = default,
+        string? pharmacyRelation = null);
+
+    Task<CustomerPharmacyRelationSummaryDto> GetPharmacyRelationSummaryAsync(
         CancellationToken cancellationToken = default);
 
     Task<SimilarCustomerClustersResult> GetSimilarClustersAsync(
@@ -33,6 +37,12 @@ public interface ICustomerAdminService
     Task<CustomerDetailDto?> UpdateAsync(
         Guid customerId,
         UpdateCustomerRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<CustomerDetailDto?> MarkPharmacyMemberAsync(
+        Guid customerId,
+        string? verifiedVia,
+        Guid? verifiedByUserId,
         CancellationToken cancellationToken = default);
 
     Task<string> GetNextCustomerCodeAsync(CancellationToken cancellationToken = default);

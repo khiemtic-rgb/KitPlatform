@@ -29,6 +29,9 @@ const DashboardPage = lazy(() =>
 const OwnerCockpitPage = lazy(() =>
   import('@/modules/success/OwnerCockpitPage').then((m) => ({ default: m.OwnerCockpitPage })),
 );
+const GrowthDeskPage = lazy(() =>
+  import('@/modules/success/GrowthDeskPage').then((m) => ({ default: m.GrowthDeskPage })),
+);
 const ShiftChecklistPage = lazy(() =>
   import('@/modules/success/ShiftChecklistPage').then((m) => ({ default: m.ShiftChecklistPage })),
 );
@@ -489,6 +492,14 @@ export function AppRouter() {
                 element={
                   <SuspenseRoute>
                     <OwnerCockpitPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="success/growth"
+                element={
+                  <SuspenseRoute>
+                    <GrowthDeskPage />
                   </SuspenseRoute>
                 }
               />

@@ -2,6 +2,8 @@ import axios from 'axios';
 import { http } from '@/shared/api/http';
 import { apiOfflineHint } from '@/shared/api/api-network';
 import i18n from '@/shared/i18n';
+import { useAuthStore } from '@/shared/auth/auth.store';
+import { loadStoredTenantCode } from '@/shared/config/app-brand';
 import type {
   CreateMedicationReminderRequest,
   CustomerChatMessage,
@@ -32,6 +34,24 @@ export async function requestOtp(phone: string, tenantCode: string) {
   return data;
 }
 
+export type CustomerOtpDelivery = {
+  delivery: 'counter' | 'outbound' | string;
+  expireMinutes: number;
+  counterStaffReadsCode: boolean;
+};
+
+export async function fetchOtpDelivery(tenantCode?: string): Promise<CustomerOtpDelivery> {
+  const code = (tenantCode || loadStoredTenantCode()).trim().toUpperCase();
+  const { data } = await http.get<Record<string, unknown>>('/auth/otp-delivery', {
+    params: code ? { tenantCode: code } : undefined,
+  });
+  return {
+    delivery: String(data.delivery ?? data.Delivery ?? 'outbound'),
+    expireMinutes: Number(data.expireMinutes ?? data.ExpireMinutes ?? 5),
+    counterStaffReadsCode: Boolean(data.counterStaffReadsCode ?? data.CounterStaffReadsCode),
+  };
+}
+
 export async function verifyOtp(phone: string, code: string, tenantCode: string) {
   const { data } = await http.post<CustomerLoginResponse>('/auth/verify-otp', {
     phone,
@@ -52,6 +72,27 @@ export async function fetchProfile() {
 
 export async function updatePreferredLocale(preferredLocale: string) {
   const { data } = await http.patch<CustomerProfile>('/auth/locale', { preferredLocale });
+  return data;
+}
+
+export async function updateCustomerProfile(payload: { fullName?: string; avatarUrl?: string }) {
+  const { data } = await http.patch<CustomerProfile>('/auth/profile', payload);
+  return data;
+}
+
+export async function uploadCustomerAvatar(file: File) {
+  const form = new FormData();
+  form.append('file', file);
+  const { data } = await http.post<CustomerProfile>('/auth/avatar', form);
+  return data;
+}
+
+/** Self-confirm pharmacy membership (QR scan / partner invite link) so soft-gate unlocks commerce. */
+export async function confirmPharmacyLink(verifiedVia?: 'qr_scan' | 'invite', tenantCode?: string) {
+  const { data } = await http.post<CustomerProfile>('/auth/pharmacy-link', {
+    verifiedVia: verifiedVia ?? 'qr_scan',
+    tenantCode: tenantCode ?? undefined,
+  });
   return data;
 }
 
@@ -106,8 +147,18 @@ function normalizeProductSearchItem(row: Record<string, unknown>) {
 }
 
 export async function searchProducts(search?: string, page = 1, pageSize = 20) {
+  const token = useAuthStore.getState().accessToken;
+  const tenantCode = !token ? loadStoredTenantCode().trim().toUpperCase() : undefined;
+  if (!token && !tenantCode) {
+    throw new Error('Cần mã nhà thuốc để tìm thuốc (guest).');
+  }
   const { data } = await http.get<Record<string, unknown>>('/catalog/products', {
-    params: { search: search?.trim() || undefined, page, pageSize },
+    params: {
+      search: search?.trim() || undefined,
+      page,
+      pageSize,
+      ...(tenantCode ? { tenantCode } : {}),
+    },
   });
   const rawItems = (data.items ?? data.Items ?? []) as Record<string, unknown>[];
   return {
@@ -529,6 +580,13 @@ function normalizeRepurchase(row: Record<string, unknown>) {
     drinkRemindersCreatedAt: (row.drinkRemindersCreatedAt ?? row.DrinkRemindersCreatedAt ?? null) as
       | string
       | null,
+    convertedAt: (row.convertedAt ?? row.ConvertedAt ?? null) as string | null,
+    convertedReservationId: (row.convertedReservationId ?? row.ConvertedReservationId ?? null) as
+      | string
+      | null,
+    convertedSalesOrderId: (row.convertedSalesOrderId ?? row.ConvertedSalesOrderId ?? null) as
+      | string
+      | null,
   };
 }
 
@@ -558,6 +616,16 @@ export async function snoozeRepurchaseSuggestion(id: string, snoozedUntil: strin
     snoozedUntil,
   });
   return normalizeRepurchase(data);
+}
+
+export async function reorderRepurchaseSuggestion(id: string) {
+  const { data } = await http.post<Record<string, unknown>>(`/repurchase-suggestions/${id}/reorder`);
+  const suggestionRaw = (data.suggestion ?? data.Suggestion ?? data) as Record<string, unknown>;
+  return {
+    suggestion: normalizeRepurchase(suggestionRaw),
+    reservationId: String(data.reservationId ?? data.ReservationId ?? ''),
+    reservationNumber: String(data.reservationNumber ?? data.ReservationNumber ?? ''),
+  };
 }
 
 function normalizeFamilyMember(row: Record<string, unknown>) {
@@ -906,6 +974,10 @@ export async function askAiHealth(question: string, productId?: string) {
     confidence: String(data.confidence ?? data.Confidence ?? 'low'),
     suggestChat: Boolean(data.suggestChat ?? data.SuggestChat ?? false),
     disclaimer: String(data.disclaimer ?? data.Disclaimer ?? ''),
+    asksRemainingToday:
+      data.asksRemainingToday != null || data.AsksRemainingToday != null
+        ? Number(data.asksRemainingToday ?? data.AsksRemainingToday)
+        : null,
   };
 }
 

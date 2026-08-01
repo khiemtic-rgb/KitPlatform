@@ -9,29 +9,35 @@ internal sealed class CustomerRepurchaseRepository
 
     public CustomerRepurchaseRepository(IDbConnectionFactory db) => _db = db;
 
+    private const string SuggestionSelect = """
+        SELECT
+            rs.id AS Id,
+            rs.sales_order_id AS SalesOrderId,
+            rs.sales_order_item_id AS SalesOrderItemId,
+            so.order_number AS OrderNumber,
+            rs.order_label AS OrderLabel,
+            rs.status AS Status,
+            so.order_date AS OrderDate,
+            so.reminder_days_supply AS ReminderDaysSupply,
+            rs.suggested_for_date AS SuggestedForDate,
+            rs.snoozed_until AS SnoozedUntil,
+            rs.drink_reminders_created_at AS DrinkRemindersCreatedAt,
+            rs.converted_at AS ConvertedAt,
+            rs.converted_reservation_id AS ConvertedReservationId,
+            rs.converted_sales_order_id AS ConvertedSalesOrderId,
+            rs.created_at AS CreatedAt,
+            rs.updated_at AS UpdatedAt
+        FROM repurchase_suggestions rs
+        INNER JOIN sales_orders so ON so.id = rs.sales_order_id
+        """;
+
     public async Task<IReadOnlyList<CustomerRepurchaseSuggestionRow>> ListAsync(
         Guid tenantId,
         Guid customerId,
         Guid accountId,
         CancellationToken cancellationToken)
     {
-        const string sql = """
-            SELECT
-                rs.id AS Id,
-                rs.sales_order_id AS SalesOrderId,
-                rs.sales_order_item_id AS SalesOrderItemId,
-                so.order_number AS OrderNumber,
-                rs.order_label AS OrderLabel,
-                rs.status AS Status,
-                so.order_date AS OrderDate,
-                so.reminder_days_supply AS ReminderDaysSupply,
-                rs.suggested_for_date AS SuggestedForDate,
-                rs.snoozed_until AS SnoozedUntil,
-                rs.drink_reminders_created_at AS DrinkRemindersCreatedAt,
-                rs.created_at AS CreatedAt,
-                rs.updated_at AS UpdatedAt
-            FROM repurchase_suggestions rs
-            INNER JOIN sales_orders so ON so.id = rs.sales_order_id
+        var sql = SuggestionSelect + """
             WHERE rs.tenant_id = @TenantId
               AND rs.customer_id = @CustomerId
               AND rs.customer_account_id = @AccountId
@@ -54,23 +60,7 @@ internal sealed class CustomerRepurchaseRepository
         Guid suggestionId,
         CancellationToken cancellationToken)
     {
-        const string sql = """
-            SELECT
-                rs.id AS Id,
-                rs.sales_order_id AS SalesOrderId,
-                rs.sales_order_item_id AS SalesOrderItemId,
-                so.order_number AS OrderNumber,
-                rs.order_label AS OrderLabel,
-                rs.status AS Status,
-                so.order_date AS OrderDate,
-                so.reminder_days_supply AS ReminderDaysSupply,
-                rs.suggested_for_date AS SuggestedForDate,
-                rs.snoozed_until AS SnoozedUntil,
-                rs.drink_reminders_created_at AS DrinkRemindersCreatedAt,
-                rs.created_at AS CreatedAt,
-                rs.updated_at AS UpdatedAt
-            FROM repurchase_suggestions rs
-            INNER JOIN sales_orders so ON so.id = rs.sales_order_id
+        var sql = SuggestionSelect + """
             WHERE rs.id = @SuggestionId
               AND rs.tenant_id = @TenantId
               AND rs.customer_id = @CustomerId
@@ -85,6 +75,30 @@ internal sealed class CustomerRepurchaseRepository
             CustomerId = customerId,
             AccountId = accountId,
         });
+    }
+
+    public async Task<IReadOnlyList<RepurchaseOrderLineRow>> ListOrderLinesAsync(
+        Guid tenantId,
+        Guid salesOrderId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+                soi.product_id AS ProductId,
+                soi.quantity AS Quantity
+            FROM sales_order_items soi
+            INNER JOIN sales_orders so ON so.id = soi.sales_order_id
+            WHERE soi.sales_order_id = @SalesOrderId
+              AND so.tenant_id = @TenantId
+            ORDER BY soi.id
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return (await conn.QueryAsync<RepurchaseOrderLineRow>(sql, new
+        {
+            SalesOrderId = salesOrderId,
+            TenantId = tenantId,
+        })).ToList();
     }
 
     public async Task AcceptAsync(
@@ -204,6 +218,40 @@ internal sealed class CustomerRepurchaseRepository
         await tx.CommitAsync(cancellationToken);
     }
 
+    public async Task<bool> MarkConvertedAsync(
+        Guid tenantId,
+        Guid customerId,
+        Guid accountId,
+        Guid suggestionId,
+        Guid reservationId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE repurchase_suggestions
+            SET status = 'converted',
+                converted_at = NOW(),
+                converted_reservation_id = @ReservationId,
+                snoozed_until = NULL,
+                updated_at = NOW()
+            WHERE id = @SuggestionId
+              AND tenant_id = @TenantId
+              AND customer_id = @CustomerId
+              AND customer_account_id = @AccountId
+              AND status IN ('pending', 'snoozed')
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.ExecuteAsync(sql, new
+        {
+            SuggestionId = suggestionId,
+            TenantId = tenantId,
+            CustomerId = customerId,
+            AccountId = accountId,
+            ReservationId = reservationId,
+        });
+        return rows > 0;
+    }
+
     public async Task<bool> UpdateStatusAsync(
         Guid tenantId,
         Guid customerId,
@@ -224,6 +272,7 @@ internal sealed class CustomerRepurchaseRepository
               AND tenant_id = @TenantId
               AND customer_id = @CustomerId
               AND customer_account_id = @AccountId
+              AND status IN ('pending', 'snoozed')
             """;
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -254,6 +303,9 @@ internal sealed class CustomerRepurchaseSuggestionRow
     public DateOnly? SuggestedForDate { get; set; }
     public DateTime? SnoozedUntil { get; set; }
     public DateTime? DrinkRemindersCreatedAt { get; set; }
+    public DateTime? ConvertedAt { get; set; }
+    public Guid? ConvertedReservationId { get; set; }
+    public Guid? ConvertedSalesOrderId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
@@ -263,4 +315,10 @@ internal sealed class RepurchaseAcceptRow
     public Guid Id { get; set; }
     public Guid SalesOrderId { get; set; }
     public DateTime? DrinkRemindersCreatedAt { get; set; }
+}
+
+internal sealed class RepurchaseOrderLineRow
+{
+    public Guid ProductId { get; set; }
+    public decimal Quantity { get; set; }
 }

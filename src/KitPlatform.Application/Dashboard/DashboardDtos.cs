@@ -29,4 +29,5 @@ public sealed record DashboardProcurementSnapshotDto(
 public sealed record DashboardO2oSnapshotDto(
     int DraftOrdersAwaitingCount,
     int ReservationsAwaitingCount,
-    int ChatUnreadCount);
+    int ChatUnreadCount,
+    int RefillOpportunityCount = 0);

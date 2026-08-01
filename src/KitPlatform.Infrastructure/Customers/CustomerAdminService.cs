@@ -17,14 +17,24 @@ internal sealed class CustomerAdminService : ICustomerAdminService
         string? search,
         int page,
         int pageSize,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? pharmacyRelation = null)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var (items, total) = await _repository.ListAsync(search, page, pageSize, cancellationToken);
+        var (items, total) = await _repository.ListAsync(
+            search,
+            page,
+            pageSize,
+            pharmacyRelation,
+            cancellationToken);
         return new PagedCustomersResult(items, total, page, pageSize);
     }
+
+    public Task<CustomerPharmacyRelationSummaryDto> GetPharmacyRelationSummaryAsync(
+        CancellationToken cancellationToken = default) =>
+        _repository.GetPharmacyRelationSummaryAsync(cancellationToken);
 
     public Task<SimilarCustomerClustersResult> GetSimilarClustersAsync(
         double similarityThreshold = 0.8,
@@ -64,7 +74,9 @@ internal sealed class CustomerAdminService : ICustomerAdminService
     {
         ValidateNameAndPhone(request.FullName, request.Phone);
 
-        var phone = NormalizePhone(request.Phone);
+        var phone = CustomerPhoneNormalizer.Normalize(request.Phone);
+        if (!CustomerPhoneNormalizer.IsValid(phone))
+            throw new InvalidOperationException("Số điện thoại không hợp lệ.");
         if (await _repository.PhoneExistsAsync(phone, excludeCustomerId: null, cancellationToken))
             throw new InvalidOperationException("Số điện thoại đã được dùng cho khách hàng khác.");
 
@@ -76,6 +88,10 @@ internal sealed class CustomerAdminService : ICustomerAdminService
             throw new InvalidOperationException($"Mã khách hàng «{code}» đã tồn tại — chọn mã khác hoặc để trống để hệ thống tự sinh.");
 
         var groupId = await ResolveGroupIdAsync(request.CustomerGroupId, cancellationToken);
+        var acquisition = ResolveAcquisitionSource(request.AcquisitionSource);
+        var isAppSelf = acquisition == CustomerAcquisitionSources.AppSelf;
+        var relation = isAppSelf ? CustomerPharmacyRelations.Prospect : CustomerPharmacyRelations.Member;
+        var verifiedVia = isAppSelf ? null : CustomerPharmacyVerifiedVia.StaffMark;
 
         var id = await _repository.CreateAsync(
             code,
@@ -90,6 +106,10 @@ internal sealed class CustomerAdminService : ICustomerAdminService
             NormalizeOptional(request.EmergencyContactPhone),
             NormalizeOptional(request.ClinicalNotes),
             groupId,
+            acquisition,
+            relation,
+            verifiedVia,
+            pharmacyVerifiedBy: null,
             cancellationToken);
 
         return (await _repository.GetAsync(id, cancellationToken))!;
@@ -105,7 +125,9 @@ internal sealed class CustomerAdminService : ICustomerAdminService
         if (await _repository.GetAsync(customerId, cancellationToken) is null)
             return null;
 
-        var phone = NormalizePhone(request.Phone);
+        var phone = CustomerPhoneNormalizer.Normalize(request.Phone);
+        if (!CustomerPhoneNormalizer.IsValid(phone))
+            throw new InvalidOperationException("Số điện thoại không hợp lệ.");
         if (await _repository.PhoneExistsAsync(phone, customerId, cancellationToken))
             throw new InvalidOperationException("Số điện thoại đã được dùng cho khách hàng khác.");
 
@@ -137,6 +159,31 @@ internal sealed class CustomerAdminService : ICustomerAdminService
         return updated ? await _repository.GetAsync(customerId, cancellationToken) : null;
     }
 
+    public async Task<CustomerDetailDto?> MarkPharmacyMemberAsync(
+        Guid customerId,
+        string? verifiedVia,
+        Guid? verifiedByUserId,
+        CancellationToken cancellationToken = default)
+    {
+        if (await _repository.GetAsync(customerId, cancellationToken) is null)
+            return null;
+
+        var via = string.IsNullOrWhiteSpace(verifiedVia)
+            ? CustomerPharmacyVerifiedVia.StaffMark
+            : verifiedVia.Trim().ToLowerInvariant();
+        if (via is not (
+            CustomerPharmacyVerifiedVia.StaffMark
+            or CustomerPharmacyVerifiedVia.QrScan
+            or CustomerPharmacyVerifiedVia.FirstSale
+            or CustomerPharmacyVerifiedVia.Invite))
+        {
+            throw new InvalidOperationException("Hình thức xác nhận khách nhà thuốc không hợp lệ.");
+        }
+
+        var ok = await _repository.MarkPharmacyMemberAsync(customerId, via, verifiedByUserId, cancellationToken);
+        return ok ? await _repository.GetAsync(customerId, cancellationToken) : null;
+    }
+
     public Task<string> GetNextCustomerCodeAsync(CancellationToken cancellationToken = default) =>
         _repository.GenerateCustomerCodeAsync(cancellationToken);
 
@@ -157,7 +204,15 @@ internal sealed class CustomerAdminService : ICustomerAdminService
             throw new InvalidOperationException("Số điện thoại không được để trống.");
     }
 
-    private static string NormalizePhone(string phone) => phone.Trim();
+    private static string ResolveAcquisitionSource(string? source)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+            return CustomerAcquisitionSources.Counter;
+        var value = source.Trim().ToLowerInvariant();
+        if (!CustomerAcquisitionSources.IsKnown(value))
+            throw new InvalidOperationException("Nguồn tạo khách không hợp lệ.");
+        return value;
+    }
 
     private static string NormalizeCustomerCode(string customerCode) =>
         customerCode.Trim().ToUpperInvariant();

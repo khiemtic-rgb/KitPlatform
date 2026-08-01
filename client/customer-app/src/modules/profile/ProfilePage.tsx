@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Alert, Button, Spin, Switch, Tag, message } from 'antd';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Alert, Button, Form, Input, Spin, Switch, Tag, message } from 'antd';
 import {
   BellOutlined,
   CameraOutlined,
   DollarOutlined,
+  EditOutlined,
   EnvironmentOutlined,
   GiftOutlined,
   HeartOutlined,
@@ -30,6 +31,8 @@ import {
   logoutApi,
   registerPushSubscription,
   unregisterPushSubscription,
+  updateCustomerProfile,
+  uploadCustomerAvatar,
   upsertConsents,
 } from '@/shared/api/customer-app.api';
 import {
@@ -39,15 +42,25 @@ import {
   type PushSubscriptionStatus,
 } from '@/shared/api/customer-app.types';
 import { useAuthStore } from '@/shared/auth/auth.store';
+import { useVerifyAccount } from '@/shared/auth/VerifyAccountProvider';
 import { clearCustomerCachedData } from '@/shared/api/customer-session-cleanup';
 import { shouldHidePageErrorForOfflineApi } from '@/shared/components/ApiHealthBanner';
 import { BrandingLogo } from '@/shared/components/BrandingLogo';
+import {
+  CustomerFormModal,
+  FormModalFooter,
+  FormModalLabel,
+} from '@/shared/components/CustomerFormModal';
 import { useCustomerBranding } from '@/shared/config/BrandingProvider';
+import { usePharmacyLink } from '@/shared/config/PharmacyLinkProvider';
 import { useApiHealth, useRetryWhenApiOnline } from '@/shared/api/useApiHealth';
 import { isPushSupported, requestNotificationPermission, subscribePush, unsubscribePush } from '@/shared/push/push-client';
 import { useCustomerNotificationCount } from '@/shared/hooks/useCustomerNotificationCount';
 import { useCustomerLabels } from '@/shared/i18n/useCustomerLabels';
+import { withCustomerUploadAuth } from '@/shared/utils/upload-url';
+import { apiPath } from '@/shared/api/api-base';
 import './ProfilePage.css';
+import '@/shared/components/PharmacyLinkSheet.css';
 
 const APP_PUSH_CHANNEL = 4;
 const CARE_REMINDER_PURPOSE = 2;
@@ -142,12 +155,22 @@ function ConsentToggleRow({
 export function ProfilePage() {
   const { t } = useTranslation();
   const { branding } = useCustomerBranding();
+  const { linked, partnerName, tenantCode, paused, requireLink, pauseLink, linkNow, openLinkSheet } =
+    usePharmacyLink();
+  const { requireAuth } = useVerifyAccount();
   const { consentChannel, consentPurpose } = useCustomerLabels();
   const profile = useAuthStore((s) => s.profile);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
+  const setProfile = useAuthStore((s) => s.setProfile);
   const { online } = useApiHealth();
   const refreshToken = useAuthStore((s) => s.refreshToken);
   const clearSession = useAuthStore((s) => s.clearSession);
   const navigate = useNavigate();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [nameModalOpen, setNameModalOpen] = useState(false);
+  const [nameSaving, setNameSaving] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [nameForm] = Form.useForm<{ fullName: string }>();
   const [consentRows, setConsentRows] = useState<ConsentRow[]>(() => mergeCareReminderConsents([]));
   const [consentLoading, setConsentLoading] = useState(true);
   const [consentLoadError, setConsentLoadError] = useState<string | null>(null);
@@ -335,6 +358,47 @@ export function ProfilePage() {
     }
   };
 
+  const openNameModal = () => {
+    nameForm.setFieldsValue({ fullName: profile?.fullName || '' });
+    setNameModalOpen(true);
+  };
+
+  const onSaveName = async (fullName: string) => {
+    const trimmed = fullName.trim();
+    if (trimmed.length < 2) {
+      message.warning(t('profile.editNameRequired'));
+      return;
+    }
+    setNameSaving(true);
+    try {
+      const updated = await updateCustomerProfile({ fullName: trimmed });
+      setProfile(updated);
+      setNameModalOpen(false);
+      message.success(t('profile.editNameSaved'));
+    } catch (error) {
+      message.error(getApiErrorMessage(error, t('profile.editNameFailed')));
+    } finally {
+      setNameSaving(false);
+    }
+  };
+
+  const onAvatarSelected = async (file: File) => {
+    if (file.size > 2 * 1024 * 1024) {
+      message.warning(t('profile.avatarHint'));
+      return;
+    }
+    setAvatarSaving(true);
+    try {
+      const updated = await uploadCustomerAvatar(file);
+      setProfile(updated);
+      message.success(t('profile.avatarSaved'));
+    } catch (error) {
+      message.error(getApiErrorMessage(error, t('profile.avatarFailed')));
+    } finally {
+      setAvatarSaving(false);
+    }
+  };
+
   const onLogout = async () => {
     try {
       if (refreshToken) {
@@ -374,10 +438,13 @@ export function ProfilePage() {
     {
       key: 'loyalty',
       title: t('profile.loyalty'),
-      sub: t('profile.loyaltySub'),
+      sub: linked ? t('profile.loyaltySub') : t('pharmacyLink.notLinkedShort'),
       icon: <GiftOutlined />,
       tone: 'amber',
-      onClick: () => navigate('/loyalty'),
+      onClick: () => {
+        if (!requireLink(t('pharmacyLink.intentLoyalty'))) return;
+        navigate('/loyalty');
+      },
     },
     {
       key: 'family',
@@ -398,10 +465,12 @@ export function ProfilePage() {
     {
       key: 'pharmacy',
       title: t('profile.myPharmacy'),
-      sub: t('profile.myPharmacySub'),
+      sub: linked
+        ? partnerName || tenantCode || t('profile.myPharmacySub')
+        : t('pharmacyLink.notLinkedShort'),
       icon: <ShopOutlined />,
       tone: 'teal',
-      onClick: () => navigate('/pharmacy'),
+      onClick: () => navigate('/prescriptions'),
     },
     {
       key: 'ai',
@@ -430,10 +499,13 @@ export function ProfilePage() {
     {
       key: 'receivables',
       title: t('profile.receivables'),
-      sub: t('profile.receivablesSub'),
+      sub: linked ? t('profile.receivablesSub') : t('pharmacyLink.notLinkedShort'),
       icon: <DollarOutlined />,
       tone: 'amber',
-      onClick: () => navigate('/receivables'),
+      onClick: () => {
+        if (!requireLink(t('pharmacyLink.intentReceivables'))) return;
+        navigate('/receivables');
+      },
       wide: true,
     },
     {
@@ -453,6 +525,36 @@ export function ProfilePage() {
   const headerStyle = {
     background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})`,
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="profile-hub">
+        <header className="profile-hub-header" style={headerStyle}>
+          <div className="profile-hub-header-top">
+            <div className="profile-hub-brand">
+              <BrandingLogo logoUrl={branding.logoUrl} />
+              <div>
+                <div className="profile-hub-brand-title">{branding.appName}</div>
+                <div className="profile-hub-tagline">{t('verifyAccount.guestProfileTagline')}</div>
+              </div>
+            </div>
+          </div>
+        </header>
+        <div className="profile-hub-sheet">
+          <h1 className="profile-hub-section-title">{t('verifyAccount.guestProfileTitle')}</h1>
+          <p style={{ color: '#64748b', lineHeight: 1.5 }}>{t('verifyAccount.guestProfileBody')}</p>
+          <button
+            type="button"
+            className="pls-btn pls-btn--primary"
+            style={{ width: '100%', marginTop: 16 }}
+            onClick={() => requireAuth(t('verifyAccount.intentSync'))}
+          >
+            {t('verifyAccount.cta')}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="profile-hub">
@@ -479,27 +581,116 @@ export function ProfilePage() {
 
         <section className="profile-hub-account-card">
           <div className="profile-hub-account-top">
-            <div className="profile-hub-avatar" aria-hidden>
-              <UserOutlined />
+            <button
+              type="button"
+              className="profile-hub-avatar"
+              aria-label={t('profile.avatarChange')}
+              disabled={avatarSaving}
+              onClick={() => avatarInputRef.current?.click()}
+            >
+              {profile?.avatarUrl ? (
+                <img
+                  className="profile-hub-avatar-img"
+                  src={apiPath(withCustomerUploadAuth(profile.avatarUrl) || profile.avatarUrl)}
+                  alt=""
+                />
+              ) : (
+                <UserOutlined />
+              )}
               <span className="profile-hub-avatar-cam">
                 <CameraOutlined />
               </span>
-            </div>
+            </button>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              hidden
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (file) void onAvatarSelected(file);
+              }}
+            />
           </div>
 
           <div className="profile-hub-info-grid">
-            <div className="profile-hub-info-cell">
+            <button
+              type="button"
+              className="profile-hub-info-cell profile-hub-info-cell--action"
+              onClick={openNameModal}
+            >
               <span className="profile-hub-info-label">{t('profile.fullName')}</span>
-              <span className="profile-hub-info-value">{profile?.fullName || '—'}</span>
-            </div>
+              <span className="profile-hub-info-value">
+                {profile?.fullName || '—'}
+                <EditOutlined className="profile-hub-info-edit" />
+              </span>
+            </button>
             <div className="profile-hub-info-cell">
               <span className="profile-hub-info-label">{t('profile.phone')}</span>
               <span className="profile-hub-info-value">{profile?.phone || '—'}</span>
             </div>
-            <div className="profile-hub-info-cell">
+            <button
+              type="button"
+              className="profile-hub-info-cell profile-hub-info-cell--action"
+              onClick={() => {
+                if (linked) return;
+                openLinkSheet(t('pharmacyLink.intentServices'));
+              }}
+              disabled={linked}
+              title={linked ? undefined : t('profile.pharmacyTapHint')}
+            >
               <span className="profile-hub-info-label">{t('profile.pharmacy')}</span>
-              <span className="profile-hub-info-value">{profile?.tenantCode || '—'}</span>
-            </div>
+              <span className="profile-hub-info-value">
+                {linked
+                  ? partnerName || profile?.tenantCode || '—'
+                  : t('pharmacyLink.notLinkedShort')}
+              </span>
+            </button>
+          </div>
+        </section>
+
+        <section className="profile-hub-card profile-hub-partner-card">
+          <h2 className="profile-hub-card-title">{t('pharmacyLink.profileCardTitle')}</h2>
+          <p className="profile-hub-partner-status">
+            {linked
+              ? t('pharmacyLink.profileLinked', {
+                  name: partnerName || tenantCode || profile?.tenantCode || '—',
+                })
+              : paused
+                ? t('pharmacyLink.profilePaused')
+                : t('pharmacyLink.profileUnlinked')}
+          </p>
+          <div className="profile-hub-partner-actions">
+            {linked ? (
+              <Button
+                danger
+                onClick={() => {
+                  pauseLink();
+                  message.success(t('pharmacyLink.pausedToast'));
+                }}
+              >
+                {t('pharmacyLink.pause')}
+              </Button>
+            ) : (
+              <Button
+                type="primary"
+                onClick={() => {
+                  if (paused) {
+                    linkNow(tenantCode || profile?.tenantCode || undefined);
+                    message.success(t('pharmacyLink.resumedToast'));
+                    return;
+                  }
+                  if (tenantCode || profile?.tenantCode) {
+                    linkNow(tenantCode || profile?.tenantCode || undefined);
+                    return;
+                  }
+                  openLinkSheet(t('pharmacyLink.intentServices'));
+                }}
+              >
+                {paused ? t('pharmacyLink.resume') : t('pharmacyLink.scanQr')}
+              </Button>
+            )}
           </div>
         </section>
 
@@ -662,6 +853,35 @@ export function ProfilePage() {
           {t('profile.logout')}
         </button>
       </div>
+
+      <CustomerFormModal
+        open={nameModalOpen}
+        onCancel={() => setNameModalOpen(false)}
+        title={t('profile.editNameTitle')}
+        subtitle={t('profile.editNameSub')}
+        icon={<UserOutlined />}
+        footer={
+          <FormModalFooter
+            onCancel={() => setNameModalOpen(false)}
+            onOk={() => nameForm.submit()}
+            okText={t('profile.editNameSave')}
+            confirmLoading={nameSaving}
+          />
+        }
+      >
+        <Form form={nameForm} layout="vertical" onFinish={(values) => void onSaveName(values.fullName)}>
+          <Form.Item
+            name="fullName"
+            label={<FormModalLabel required>{t('profile.fullName')}</FormModalLabel>}
+            rules={[
+              { required: true, message: t('profile.editNameRequired') },
+              { min: 2, message: t('profile.editNameRequired') },
+            ]}
+          >
+            <Input size="large" maxLength={255} placeholder={t('profile.editNamePlaceholder')} />
+          </Form.Item>
+        </Form>
+      </CustomerFormModal>
     </div>
   );
 }

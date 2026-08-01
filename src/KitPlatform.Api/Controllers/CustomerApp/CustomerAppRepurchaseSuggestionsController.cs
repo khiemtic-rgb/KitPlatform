@@ -59,6 +59,28 @@ public sealed class CustomerAppRepurchaseSuggestionsController : ControllerBase
         }
     }
 
+    [HttpPost("{id:guid}/reorder")]
+    [ProducesResponseType(typeof(ReorderRepurchaseSuggestionResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Reorder(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _repurchase.ReorderAsync(
+                _customer.TenantId,
+                _customer.CustomerId,
+                _customer.CustomerAccountId,
+                id,
+                cancellationToken);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPost("{id:guid}/dismiss")]
     [ProducesResponseType(typeof(CustomerRepurchaseSuggestionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

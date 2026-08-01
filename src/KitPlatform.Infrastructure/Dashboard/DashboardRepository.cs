@@ -214,10 +214,29 @@ internal sealed class DashboardRepository
                 COALESCE((
                     SELECT SUM(staff_unread_count)::int FROM customer_chat_threads
                     WHERE tenant_id = @TenantId
-                ), 0) AS ChatUnreadCount
+                ), 0) AS ChatUnreadCount,
+                COALESCE((
+                    SELECT COUNT(*)::int FROM repurchase_suggestions rs
+                    WHERE rs.tenant_id = @TenantId
+                      AND (
+                            (rs.status = 'pending'
+                             AND rs.suggested_for_date IS NOT NULL
+                             AND rs.suggested_for_date <= (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date)
+                         OR (rs.status = 'snoozed'
+                             AND (
+                                 rs.snoozed_until IS NULL
+                                 OR (rs.snoozed_until AT TIME ZONE 'Asia/Ho_Chi_Minh')::date
+                                     <= (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date
+                             ))
+                      )
+                ), 0) AS RefillOpportunityCount
             """;
 
-        var o2o = await conn.QuerySingleAsync<(int DraftOrdersAwaitingCount, int ReservationsAwaitingCount, int ChatUnreadCount)>(
+        var o2o = await conn.QuerySingleAsync<(
+            int DraftOrdersAwaitingCount,
+            int ReservationsAwaitingCount,
+            int ChatUnreadCount,
+            int RefillOpportunityCount)>(
             o2oSql,
             new
             {
@@ -243,6 +262,7 @@ internal sealed class DashboardRepository
             new DashboardO2oSnapshotDto(
                 o2o.DraftOrdersAwaitingCount,
                 o2o.ReservationsAwaitingCount,
-                o2o.ChatUnreadCount));
+                o2o.ChatUnreadCount,
+                o2o.RefillOpportunityCount));
     }
 }

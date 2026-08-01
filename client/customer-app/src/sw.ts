@@ -54,17 +54,22 @@ self.addEventListener('push', (event: PushEvent) => {
   );
 });
 
+function resolveNotificationUrl(data: unknown): string {
+  const payload = data as { type?: string; url?: string } | undefined;
+  const url = typeof payload?.url === 'string' ? payload.url.trim() : '';
+  if (url.startsWith('/')) return url;
+
+  if (payload?.type === 'staff_chat_reply') return '/chat';
+  if (payload?.type === 'customer_draft_order') return '/orders';
+  if (payload?.type === 'repurchase_due') return '/reminders?tab=repurchase';
+  return '/reminders';
+}
+
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
   event.waitUntil(
     (async () => {
-      const payload = event.notification.data as { type?: string; url?: string } | undefined;
-      const targetUrl =
-        payload?.type === 'staff_chat_reply' || payload?.url === '/chat'
-          ? '/chat'
-          : payload?.type === 'customer_draft_order' || payload?.url === '/orders'
-            ? '/orders'
-            : '/reminders';
+      const targetUrl = resolveNotificationUrl(event.notification.data);
 
       const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
       for (const client of clients) {

@@ -19,7 +19,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, CreditCardOutlined, ClockCircleOutlined, PlusOutlined, PrinterOutlined, RollbackOutlined, SaveOutlined, SendOutlined, ShoppingCartOutlined, UnorderedListOutlined, UserAddOutlined } from '@ant-design/icons';
 import { fetchWarehouses, fetchActiveCountingSession } from '@/shared/api/inventory.api';
 import type { Warehouse, AdjustmentListItem } from '@/shared/api/inventory.types';
-import { fetchCustomer } from '@/shared/api/customer-admin.api';
+import { fetchCustomer, markCustomerPharmacyMember } from '@/shared/api/customer-admin.api';
 import { createSale, completeDraftSale, fetchBatchModeSettings, fetchPosCustomerLoyalty, fetchPosCustomerVouchers, fetchPosStockBulk, fetchRxSettings, fetchSalesOrder, lookupPosProduct, openSalesShift, previewPosAllocation, reportRxPosBlock, searchCustomers, searchPosProducts, updateDraftSale, type TenantBatchModeValue, type TenantRxSettings } from '@/shared/api/sales.api';
 import {
   isShiftAlreadyOpenError,
@@ -34,6 +34,7 @@ import { useCanSalesPos } from '@/shared/auth/usePermission';
 import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 import { PosCheckoutModal } from '@/modules/sales/PosCheckoutModal';
 import { PosCartQuantityInput } from '@/modules/sales/PosCartQuantityInput';
+import { PosCounterOtpButton } from '@/modules/sales/PosCounterOtpButton';
 import { formatSuggestedBatch } from '@/modules/sales/pos-batch-display';
 import {
   initialBatchLabelForMode,
@@ -113,11 +114,12 @@ function guessPhoneOrName(query: string): { phone?: string; name?: string } {
 export function PosPage() {
   const { t } = useTranslation('sales');
   const { t: tc } = useTranslation('common');
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const canWrite = useCanSalesPos();
   const auditSlimNav = useAuditSlimNav();
+  const prospectPromptedRef = useRef<Set<string>>(new Set());
   const { canDiscount, maxPercent, unlimited } = useSalesDiscountPolicy();
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehouseId, setWarehouseId] = useState<string>();
@@ -135,6 +137,7 @@ export function PosPage() {
   const [customerDraftOrders, setCustomerDraftOrders] = useState<CustomerDraftOrderListItem[]>([]);
   const [loadedCustomerDraftOrderId, setLoadedCustomerDraftOrderId] = useState<string>();
   const [loadedCustomerReservationId, setLoadedCustomerReservationId] = useState<string>();
+  const [loadedRefillSuggestionId, setLoadedRefillSuggestionId] = useState<string>();
   const [loadedPrescriptionId, setLoadedPrescriptionId] = useState<string>();
   const [loadedPrescriptionCode, setLoadedPrescriptionCode] = useState<string>();
   const [loadedConnectHandoffId, setLoadedConnectHandoffId] = useState<string>();
@@ -236,6 +239,7 @@ export function PosPage() {
   }, [customerId, pricing.totalAmount]);
 
   // Auto order % discount from customer group (staff may override)
+  // + soft when selected customer is still app prospect
   useEffect(() => {
     if (!customerId) {
       setOrderDiscount((prev) =>
@@ -258,6 +262,59 @@ export function PosPage() {
             prev.discountType === SALES_DISCOUNT_TYPES.Percent ? {} : prev,
           );
         }
+
+        setCustomers((prev) =>
+          upsertPosCustomers(prev, {
+            id: c.id,
+            customerCode: c.customerCode,
+            fullName: c.fullName,
+            phone: c.phone,
+            allowCredit: c.allowCredit,
+            creditLimit: c.creditLimit ?? undefined,
+            customerGroupId: c.customerGroupId,
+            customerGroupName: c.customerGroupName,
+            groupDiscountPercent: c.groupDiscountPercent,
+            pharmacyRelation: c.pharmacyRelation,
+          }),
+        );
+
+        const relation = (c.pharmacyRelation ?? 'member').toLowerCase();
+        if (
+          canWrite &&
+          (relation === 'prospect' || relation === 'revoked') &&
+          !prospectPromptedRef.current.has(c.id)
+        ) {
+          prospectPromptedRef.current.add(c.id);
+          modal.confirm({
+            title: t('pos.messages.prospectTitle'),
+            content: t('pos.messages.prospectBody', { name: c.fullName, phone: c.phone }),
+            okText: t('pos.messages.prospectConfirm'),
+            cancelText: t('pos.messages.prospectSkip'),
+            onOk: async () => {
+              try {
+                const updated = await markCustomerPharmacyMember(c.id, 'first_sale');
+                setCustomers((prev) =>
+                  upsertPosCustomers(prev, {
+                    id: updated.id,
+                    customerCode: updated.customerCode,
+                    fullName: updated.fullName,
+                    phone: updated.phone,
+                    allowCredit: updated.allowCredit,
+                    creditLimit: updated.creditLimit ?? undefined,
+                    customerGroupId: updated.customerGroupId,
+                    customerGroupName: updated.customerGroupName,
+                    groupDiscountPercent: updated.groupDiscountPercent,
+                    pharmacyRelation: updated.pharmacyRelation,
+                  }),
+                );
+                message.success(t('pos.messages.prospectMarked', { name: updated.fullName }));
+              } catch (error) {
+                message.error(apiErrorMessage(error, t('pos.messages.prospectMarkFailed')));
+                throw error;
+              }
+            },
+          });
+        }
       })
       .catch(() => {
         /* optional — sale can proceed without group autofill */
@@ -265,7 +322,7 @@ export function PosPage() {
     return () => {
       cancelled = true;
     };
-  }, [customerId]);
+  }, [canWrite, customerId, message, modal, t]);
 
   useEffect(() => {
     if (!customerId) {
@@ -335,6 +392,7 @@ export function PosPage() {
       setOrderDiscount(orderDiscountFromCustomerDraft(payload));
       setLoadedCustomerDraftOrderId(payload.draftOrderId);
       setLoadedCustomerReservationId(undefined);
+      setLoadedRefillSuggestionId(undefined);
       setLoadedPrescriptionId(undefined);
       setLoadedPrescriptionCode(undefined);
       setCustomerAppDraftMode(false);
@@ -366,6 +424,7 @@ export function PosPage() {
       setCart(await loadCustomerReservationCartLines(payload));
       setOrderDiscount({});
       setLoadedCustomerReservationId(payload.reservationId);
+      setLoadedRefillSuggestionId(payload.sourceRepurchaseSuggestionId || undefined);
       setLoadedCustomerDraftOrderId(undefined);
       setLoadedPrescriptionId(undefined);
       setLoadedPrescriptionCode(undefined);
@@ -378,9 +437,17 @@ export function PosPage() {
         setOpenShift(await loadOpenShiftForWarehouse(payload.warehouseId));
         pendingAutoCheckoutRef.current = true;
         setAutoCheckoutTick((t) => t + 1);
-        message.success(t('pos.messages.reservationLoadedCheckout', { number: payload.reservationNumber }));
+        message.success(
+          payload.sourceRepurchaseSuggestionId
+            ? t('pos.messages.refillLoadedCheckout', { number: payload.reservationNumber })
+            : t('pos.messages.reservationLoadedCheckout', { number: payload.reservationNumber }),
+        );
       } else {
-        message.success(t('pos.messages.reservationLoadedCart', { number: payload.reservationNumber }));
+        message.success(
+          payload.sourceRepurchaseSuggestionId
+            ? t('pos.messages.refillLoadedCart', { number: payload.reservationNumber })
+            : t('pos.messages.reservationLoadedCart', { number: payload.reservationNumber }),
+        );
       }
     } catch (error) {
       pendingAutoCheckoutRef.current = false;
@@ -392,6 +459,7 @@ export function PosPage() {
     async (payload: RxPrescriptionPosLoad) => {
       setLoadedCustomerDraftOrderId(undefined);
       setLoadedCustomerReservationId(undefined);
+      setLoadedRefillSuggestionId(undefined);
       setActiveCustomerDraft(null);
       setCustomerAppDraftMode(false);
       setEditingDraftId(null);
@@ -440,6 +508,7 @@ export function PosPage() {
         const result = await loadConnectHandoffForPos(handoffId, warehouseId, batchMode);
         setLoadedCustomerDraftOrderId(undefined);
         setLoadedCustomerReservationId(undefined);
+        setLoadedRefillSuggestionId(undefined);
         setActiveCustomerDraft(null);
         setCustomerAppDraftMode(false);
         setEditingDraftId(null);
@@ -510,6 +579,7 @@ export function PosPage() {
     setOrderDiscount({});
     setLoadedCustomerDraftOrderId(undefined);
     setLoadedCustomerReservationId(undefined);
+    setLoadedRefillSuggestionId(undefined);
     setLoadedPrescriptionId(undefined);
     setLoadedPrescriptionCode(undefined);
     setLoadedConnectHandoffId(undefined);
@@ -1609,6 +1679,14 @@ export function PosPage() {
           })}
         />
       )}
+      {loadedCustomerReservationId && loadedRefillSuggestionId ? (
+        <Alert
+          type="success"
+          showIcon
+          message={t('pos.alerts.refillBadgeTitle')}
+          description={t('pos.alerts.refillBadgeDesc')}
+        />
+      ) : null}
       {loadedPrescriptionId && loadedPrescriptionCode ? (
         <Alert
           type="success"
@@ -1707,6 +1785,7 @@ export function PosPage() {
                 </Tooltip>
               ) : null}
             </Space.Compact>
+            <PosCounterOtpButton customerId={customerId} canWrite={canWrite} />
             {!editingDraftId && !auditSlimNav ? (
               <Space align="center" size={8} className="pos-page__app-draft-toggle">
                 <Switch

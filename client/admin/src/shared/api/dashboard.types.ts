@@ -25,6 +25,7 @@ export type DashboardO2oSnapshot = {
   draftOrdersAwaitingCount: number;
   reservationsAwaitingCount: number;
   chatUnreadCount: number;
+  refillOpportunityCount: number;
 };
 
 export type DashboardOverview = {

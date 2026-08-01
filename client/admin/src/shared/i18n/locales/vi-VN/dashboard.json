@@ -12,7 +12,8 @@
     "procurement": "Mua hàng",
     "receivables": "Công nợ KH",
     "lowStock": "Tồn thấp",
-    "appDrafts": "Đơn app"
+    "appDrafts": "Đơn app",
+    "growthDesk": "Growth Desk"
   },
   "workspaceHint": {
     "title": "Hai màn hình Novixa",
@@ -101,6 +102,10 @@
     },
     "chatUnread": {
       "title": "Chat chưa đọc"
+    },
+    "refillOpportunity": {
+      "title": "Có thể bán thêm hôm nay",
+      "hint": "Cơ hội refill · Growth Desk"
     }
   }
 }

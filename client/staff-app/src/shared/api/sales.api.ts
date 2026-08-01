@@ -481,6 +481,8 @@ export async function completeDraftSale(
     loyaltyDiscountAmount?: number;
     customerVoucherId?: string;
     prescriptionId?: string;
+    orderReminderLabel?: string | null;
+    orderReminderDaysSupply?: number;
     items?: CreateSalePayload['items'];
   },
 ): Promise<SalesOrderDetail> {
@@ -499,6 +501,12 @@ export async function completeDraftSale(
       : {}),
     ...(options.customerVoucherId ? { customerVoucherId: options.customerVoucherId } : {}),
     ...(options.prescriptionId ? { prescriptionId: options.prescriptionId } : {}),
+    ...(options.orderReminderDaysSupply != null && options.orderReminderDaysSupply >= 1
+      ? {
+          orderReminderLabel: options.orderReminderLabel ?? null,
+          orderReminderDaysSupply: options.orderReminderDaysSupply,
+        }
+      : {}),
   });
   const rawItems = (data.items ?? data.Items ?? []) as Record<string, unknown>[];
   return normalizeOrder(row(data), rawItems);

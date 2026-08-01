@@ -342,7 +342,7 @@ internal sealed class CustomerPushService : ICustomerPushService
                     title,
                     body,
                     "medication",
-                    "/medications",
+                    "/reminders?tab=repurchase",
                     new { type = "repurchase_due", repurchaseId = row.RepurchaseId },
                     cancellationToken))
             {
@@ -447,7 +447,7 @@ internal sealed class CustomerPushService : ICustomerPushService
         {
             title,
             body,
-            data = new { url = href, category },
+            data = BuildPushData(href, category, payload),
         });
 
         var staleEndpoints = new List<string>();
@@ -878,6 +878,35 @@ internal sealed class CustomerPushService : ICustomerPushService
         var vapid = new VapidDetails(_options.Subject, _options.PublicKey, _options.PrivateKey);
         var client = new WebPushClient();
         return client.SendNotificationAsync(pushSubscription, payload, vapid, cancellationToken);
+    }
+
+    private static Dictionary<string, object?> BuildPushData(string href, string category, object payload)
+    {
+        var map = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["url"] = href,
+            ["category"] = category,
+        };
+
+        try
+        {
+            using var doc = JsonDocument.Parse(JsonSerializer.Serialize(payload));
+            if (doc.RootElement.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                {
+                    if (prop.NameEquals("url") || prop.NameEquals("category"))
+                        continue;
+                    map[prop.Name] = prop.Value.Deserialize<object?>();
+                }
+            }
+        }
+        catch
+        {
+            // Payload merge is best-effort; url/category still deliver.
+        }
+
+        return map;
     }
 
     private static List<StoredPushSubscription> ParseSubscriptions(string? json)

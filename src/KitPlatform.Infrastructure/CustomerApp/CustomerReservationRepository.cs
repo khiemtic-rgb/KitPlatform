@@ -115,15 +115,18 @@ internal sealed class CustomerReservationRepository
         Guid? addressId,
         string? notes,
         Guid warehouseId,
+        Guid? sourceRepurchaseSuggestionId,
         IDbConnection conn,
         IDbTransaction tx,
         CancellationToken cancellationToken)
     {
         const string sql = """
             INSERT INTO customer_reservations (
-                tenant_id, customer_id, reservation_number, status, fulfillment_type, address_id, notes, warehouse_id
+                tenant_id, customer_id, reservation_number, status, fulfillment_type,
+                address_id, notes, warehouse_id, source_repurchase_suggestion_id
             ) VALUES (
-                @TenantId, @CustomerId, @ReservationNumber, @Status, @FulfillmentType, @AddressId, @Notes, @WarehouseId
+                @TenantId, @CustomerId, @ReservationNumber, @Status, @FulfillmentType,
+                @AddressId, @Notes, @WarehouseId, @SourceRepurchaseSuggestionId
             )
             RETURNING id
             """;
@@ -137,6 +140,7 @@ internal sealed class CustomerReservationRepository
             AddressId = addressId,
             Notes = notes,
             WarehouseId = warehouseId,
+            SourceRepurchaseSuggestionId = sourceRepurchaseSuggestionId,
         }, tx);
     }
 
@@ -460,7 +464,8 @@ internal sealed class CustomerReservationRepository
                 r.ready_at AS ReadyAt,
                 r.collected_at AS CollectedAt,
                 r.sales_order_id AS SalesOrderId,
-                so.order_number AS SalesOrderNumber
+                so.order_number AS SalesOrderNumber,
+                r.source_repurchase_suggestion_id AS SourceRepurchaseSuggestionId
             FROM customer_reservations r
             LEFT JOIN sales_orders so ON so.id = r.sales_order_id
             WHERE r.id = @ReservationId AND r.tenant_id = @TenantId
@@ -480,14 +485,18 @@ internal sealed class CustomerReservationRepository
         CancellationToken cancellationToken)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+
         var rows = await conn.ExecuteAsync("""
             UPDATE customer_reservations r SET
                 status = @Collected,
+                confirmed_at = COALESCE(r.confirmed_at, NOW()),
+                ready_at = COALESCE(r.ready_at, NOW()),
                 collected_at = COALESCE(r.collected_at, NOW()),
                 sales_order_id = @SalesOrderId
             WHERE r.id = @ReservationId AND r.tenant_id = @TenantId
               AND r.sales_order_id IS NULL
-              AND r.status IN (@Confirmed, @Ready, @Collected)
+              AND r.status IN (@Pending, @Confirmed, @Ready, @Collected)
               AND EXISTS (
                   SELECT 1 FROM sales_orders so
                   WHERE so.id = @SalesOrderId AND so.tenant_id = @TenantId
@@ -498,10 +507,36 @@ internal sealed class CustomerReservationRepository
             ReservationId = reservationId,
             TenantId = tenantId,
             SalesOrderId = salesOrderId,
+            Pending = CustomerReservationStatuses.Pending,
             Confirmed = CustomerReservationStatuses.Confirmed,
             Ready = CustomerReservationStatuses.Ready,
             Collected = CustomerReservationStatuses.Collected,
-        });
+        }, tx);
+
+        if (rows > 0)
+        {
+            await conn.ExecuteAsync("""
+                UPDATE repurchase_suggestions rs
+                SET status = 'converted',
+                    converted_at = COALESCE(rs.converted_at, NOW()),
+                    converted_reservation_id = COALESCE(rs.converted_reservation_id, r.id),
+                    converted_sales_order_id = @SalesOrderId,
+                    snoozed_until = NULL,
+                    updated_at = NOW()
+                FROM customer_reservations r
+                WHERE r.id = @ReservationId
+                  AND r.tenant_id = @TenantId
+                  AND rs.id = r.source_repurchase_suggestion_id
+                  AND rs.tenant_id = r.tenant_id
+                """, new
+            {
+                ReservationId = reservationId,
+                TenantId = tenantId,
+                SalesOrderId = salesOrderId,
+            }, tx);
+        }
+
+        await tx.CommitAsync(cancellationToken);
         return rows > 0;
     }
 
@@ -648,6 +683,7 @@ internal sealed record ReservationHeaderRow
     public DateTime? CollectedAt { get; init; }
     public Guid? SalesOrderId { get; init; }
     public string? SalesOrderNumber { get; init; }
+    public Guid? SourceRepurchaseSuggestionId { get; init; }
 }
 
 internal sealed record ReservationLineRow

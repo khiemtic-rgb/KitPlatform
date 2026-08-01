@@ -12,6 +12,7 @@ import {
   PlusOutlined,
   RightOutlined,
   SafetyCertificateOutlined,
+  ShareAltOutlined,
   TeamOutlined,
   UserAddOutlined,
   UserOutlined,
@@ -37,6 +38,13 @@ import {
   FormModalTip,
 } from '@/shared/components/CustomerFormModal';
 import { useCustomerBranding } from '@/shared/config/BrandingProvider';
+import { loadStoredTenantCode } from '@/shared/config/app-brand';
+import { useAuthStore } from '@/shared/auth/auth.store';
+import { useVerifyAccount } from '@/shared/auth/VerifyAccountProvider';
+import {
+  CARE_FAMILY_MAX_WITHOUT_MEMBER,
+  isPharmacyMemberRelation,
+} from '@/shared/care/care-tier';
 import { FAMILY_GENDER, familyRoleLabel, resolveFamilyGender } from '@/shared/i18n/family-role-label';
 import { useCustomerLabels } from '@/shared/i18n/useCustomerLabels';
 import './FamilyPage.css';
@@ -85,13 +93,60 @@ export function FamilyPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { branding } = useCustomerBranding();
+  const { requireAuth } = useVerifyAccount();
   const { familyRelationship } = useCustomerLabels();
   const [items, setItems] = useState<FamilyMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [editing, setEditing] = useState<FamilyMember | null>(null);
   const [togglingNotifyId, setTogglingNotifyId] = useState<string | null>(null);
   const [form] = Form.useForm();
+  const profile = useAuthStore((s) => s.profile);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
+
+  const inviteLink = useMemo(() => {
+    const tenant = (profile?.tenantCode || loadStoredTenantCode()).trim().toUpperCase();
+    const base = typeof window !== 'undefined' ? window.location.origin : '';
+    const url = new URL(`${base}/login`);
+    if (tenant) url.searchParams.set('tenant', tenant);
+    url.searchParams.set('next', '/family');
+    return url.toString();
+  }, [profile?.tenantCode]);
+
+  const inviteText = useMemo(
+    () =>
+      t('family.inviteShareText', {
+        name: profile?.fullName || t('home.guestName'),
+        link: inviteLink,
+      }),
+    [inviteLink, profile?.fullName, t],
+  );
+
+  const copyInvite = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteText);
+      message.success(t('family.inviteCopied'));
+    } catch {
+      message.info(inviteLink);
+    }
+  };
+
+  const shareInvite = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: t('family.inviteTitle'),
+          text: inviteText,
+          url: inviteLink,
+        });
+        return;
+      } catch {
+        /* fall through */
+      }
+    }
+    await copyInvite();
+  };
 
   const relationshipOptions = useMemo(
     () =>
@@ -111,6 +166,11 @@ export function FamilyPage() {
   );
 
   const load = useCallback(async () => {
+    if (!useAuthStore.getState().isAuthenticated()) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const rows = await fetchFamilyMembers();
@@ -124,9 +184,17 @@ export function FamilyPage() {
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, isAuthenticated]);
 
   const openCreate = () => {
+    if (!requireAuth(t('verifyAccount.intentFamily'))) return;
+    const relation = useAuthStore.getState().profile?.pharmacyRelation;
+    if (!isPharmacyMemberRelation(relation) && items.length >= CARE_FAMILY_MAX_WITHOUT_MEMBER) {
+      message.warning(
+        t('family.careTierLimit', { max: CARE_FAMILY_MAX_WITHOUT_MEMBER }),
+      );
+      return;
+    }
     setEditing(null);
     form.setFieldsValue({
       relationship: 'parent',
@@ -188,8 +256,10 @@ export function FamilyPage() {
           { ...created, notifyCaregiver: Boolean(values.notifyCaregiver) },
         ]);
         message.success(t('family.memberAdded'));
+        setModalOpen(false);
+        setInviteOpen(true);
       }
-      setModalOpen(false);
+      if (editing) setModalOpen(false);
     } catch (error) {
       message.error(getApiErrorMessage(error, t('family.saveFailed')));
     }
@@ -269,9 +339,25 @@ export function FamilyPage() {
             <h1 className="family-hub-title">{t('family.title')}</h1>
             <p className="family-hub-intro">{t('family.hubIntro')}</p>
           </div>
-          <button type="button" className="family-hub-add" onClick={openCreate}>
-            <PlusOutlined />
-            {t('family.addMember')}
+          <div className="family-hub-top-actions">
+            <button type="button" className="family-hub-invite" onClick={() => setInviteOpen(true)}>
+              <ShareAltOutlined />
+              {t('family.inviteCta')}
+            </button>
+            <button type="button" className="family-hub-add" onClick={openCreate}>
+              <PlusOutlined />
+              {t('family.addMember')}
+            </button>
+          </div>
+        </div>
+
+        <div className="family-hub-share-card">
+          <div className="family-hub-share-copy">
+            <strong>{t('family.shareTitle')}</strong>
+            <span>{t('family.shareBody')}</span>
+          </div>
+          <button type="button" className="family-hub-share-btn" onClick={() => setInviteOpen(true)}>
+            {t('family.inviteCta')}
           </button>
         </div>
 
@@ -324,6 +410,7 @@ export function FamilyPage() {
                     onChange={(checked) => void toggleNotify(item, checked)}
                   />
                 </div>
+                <p className="family-hub-notify-hint">{t('family.notifyCaregiverHint')}</p>
 
                 <div className="family-hub-actions">
                   <button type="button" className="family-hub-btn family-hub-btn--edit" onClick={() => openEdit(item)}>
@@ -437,6 +524,34 @@ export function FamilyPage() {
             }
           />
         </Form>
+      </CustomerFormModal>
+
+      <CustomerFormModal
+        open={inviteOpen}
+        onCancel={() => setInviteOpen(false)}
+        icon={<ShareAltOutlined />}
+        title={t('family.inviteTitle')}
+        subtitle={t('family.inviteSub')}
+        footer={
+          <div className="family-invite-footer">
+            <button type="button" className="cfm-btn cfm-btn--ghost" onClick={() => setInviteOpen(false)}>
+              {t('common.close')}
+            </button>
+            <button type="button" className="cfm-btn cfm-btn--primary" onClick={() => void shareInvite()}>
+              {t('family.inviteShare')}
+            </button>
+          </div>
+        }
+      >
+        <ol className="family-invite-steps">
+          <li>{t('family.inviteStep1')}</li>
+          <li>{t('family.inviteStep2')}</li>
+          <li>{t('family.inviteStep3')}</li>
+        </ol>
+        <div className="family-invite-link">{inviteLink}</div>
+        <button type="button" className="family-invite-copy" onClick={() => void copyInvite()}>
+          {t('family.inviteCopy')}
+        </button>
       </CustomerFormModal>
     </div>
   );

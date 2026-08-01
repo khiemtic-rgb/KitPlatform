@@ -44,6 +44,7 @@ function normalizeO2o(data: Record<string, unknown>) {
     draftOrdersAwaitingCount: num(data, 'draftOrdersAwaitingCount', 'DraftOrdersAwaitingCount'),
     reservationsAwaitingCount: num(data, 'reservationsAwaitingCount', 'ReservationsAwaitingCount'),
     chatUnreadCount: num(data, 'chatUnreadCount', 'ChatUnreadCount'),
+    refillOpportunityCount: num(data, 'refillOpportunityCount', 'RefillOpportunityCount'),
   };
 }
 
