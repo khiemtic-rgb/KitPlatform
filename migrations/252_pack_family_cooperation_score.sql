@@ -1,27 +1,8 @@
--- KitPlatform 252: FamilyOS Cooperation Score + team memory kinds (TP4)
+-- KitPlatform 252: FamilyOS Cooperation Score (TP4)
 -- Depends on: 231, 251
 -- Local / family-os pilot manifest only.
-
--- Widen family_memory.kind for team journal signals.
-ALTER TABLE pack_family.family_memory
-    DROP CONSTRAINT IF EXISTS ck_family_memory_kind;
-
-ALTER TABLE pack_family.family_memory
-    ADD CONSTRAINT ck_family_memory_kind CHECK (
-        kind IN (
-            'beautiful_day',
-            'streak_milestone',
-            'gratitude',
-            'photo',
-            'team_unlock',
-            'reward',
-            'first_time',
-            'manual',
-            'help',
-            'team_day',
-            'parent_habit'
-        )
-    );
+-- Note: do NOT rewrite ck_family_memory_kind here — later RE migs (257/258)
+-- widen it; re-applying a narrow CHECK on every pilot deploy would fail.
 
 CREATE TABLE IF NOT EXISTS pack_family.cooperation_score_day (
     id               UUID PRIMARY KEY DEFAULT kit_uuid_v7(),

@@ -20,7 +20,8 @@ ALTER TABLE pack_family.family_memory
             'help',
             'team_day',
             'parent_habit',
-            'parent_voice'
+            'parent_voice',
+            'evening_circle'
         )
     );
 
