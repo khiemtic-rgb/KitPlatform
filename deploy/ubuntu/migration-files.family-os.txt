@@ -56,4 +56,5 @@
 259_pack_family_sibling_chemistry.sql
 260_pack_family_adult_voice_birthday.sql
 264_pack_family_relationship_trigger_state.sql
+265_pack_family_relationship_push_kind.sql
 # Optional (owner ALTER tenants CHECK): 192a_pack_family_os_vertical_owner.sql

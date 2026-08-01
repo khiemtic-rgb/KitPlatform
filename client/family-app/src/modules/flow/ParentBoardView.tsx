@@ -84,6 +84,10 @@ import {
   previousCalendarDate,
 } from '@/shared/nudge/nudge-stats';
 import { QuickNudgeButton } from '@/shared/ui/QuickNudgeButton';
+import {
+  canRemindChildNow,
+  remindChildIdleLabel,
+} from '@/shared/reminders/remind-window';
 import { ScreenBoundaryPanel } from '@/shared/ui/ScreenBoundaryPanel';
 import {
   avatarEmoji,
@@ -2523,6 +2527,102 @@ export function ParentBoardView({
               <strong>{houseTeamSummary}</strong>
             </div>
           ) : null}
+
+          {partnerInbox.length > 0 || (parentMembershipId && hasChildren) ? (
+          <section className="ph-rel-strip" aria-label="Gắn kết hôm nay">
+            <p className="ph-rel-strip-eyebrow">Gắn kết · trước việc nhà</p>
+            {partnerInbox.length > 0 ? (
+              <div className="ph-partner-inbox" aria-label="Lời từ người cùng chăm">
+                {partnerInbox.map((n) => (
+                  <article key={n.id} className="ph-partner-inbox-card">
+                    <p className="ph-partner-inbox-eyebrow">
+                      <span aria-hidden>{parentVoiceIcon(n.templateCode)}</span> Lời từ{' '}
+                      {n.fromMemberName.trim() || 'bố/mẹ'}
+                    </p>
+                    <p className="ph-partner-inbox-msg">{n.bodyVi}</p>
+                    <div className="ph-combo-actions">
+                      <button
+                        type="button"
+                        className="ph-nudge-btn is-primary"
+                        disabled={partnerAckBusy === n.id}
+                        onClick={() => void ackPartnerVoice(n.id, 'thanks')}
+                      >
+                        Cảm ơn
+                      </button>
+                      <button
+                        type="button"
+                        className="ph-nudge-btn"
+                        disabled={partnerAckBusy === n.id}
+                        onClick={() => void ackPartnerVoice(n.id, 'read')}
+                      >
+                        Đã xem
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+
+            {activeRelTrigger && isParentVoiceTrigger(activeRelTrigger.code) && parentMembershipId ? (
+              <div
+                className={`ph-rel-trigger-wrap${activeRelTrigger.isGolden ? ' is-golden' : ''}${voiceUnsent ? ' is-unsent' : ''}`}
+              >
+                <button
+                  type="button"
+                  className="ph-rel-trigger-cta"
+                  onClick={() => openParentVoiceSheet(activeRelTrigger)}
+                >
+                  <span className="ph-rel-trigger-ico" aria-hidden>
+                    {voiceUnsent ? '✨' : parentVoiceIcon(activeRelTrigger.templateCode)}
+                  </span>
+                  <span>
+                    {voiceUnsent
+                      ? `Còn 1 chạm — ${(activeRelTrigger.toMemberName || 'con').trim()} chưa nhận lời`
+                      : activeRelTrigger.titleVi}
+                    <em>
+                      {voiceUnsent
+                        ? 'Bạn đã soạn lời nhưng chưa gửi.'
+                        : activeRelTrigger.bodyVi}
+                    </em>
+                  </span>
+                  <i className="ph-sibling-nudge-chev" aria-hidden>
+                    ›
+                  </i>
+                </button>
+                <button
+                  type="button"
+                  className="ph-rel-trigger-dismiss"
+                  onClick={dismissParentVoiceTrigger}
+                >
+                  Để sau
+                </button>
+              </div>
+            ) : parentMembershipId && hasChildren ? (
+              <button
+                type="button"
+                className="ph-rel-trigger-cta"
+                onClick={() => openParentVoiceSheet(null)}
+              >
+                <span className="ph-rel-trigger-ico" aria-hidden>
+                  ❤️
+                </span>
+                <span>
+                  Gửi một lời ấm tới con
+                  <em>Bạn nói — Famixa chỉ chuyển lời. Không cần chờ mốc streak.</em>
+                </span>
+                <i className="ph-sibling-nudge-chev" aria-hidden>
+                  ›
+                </i>
+              </button>
+            ) : null}
+            {voiceToast ? (
+              <p className="ph-sibling-nudge-toast" role="status">
+                {voiceToast}
+              </p>
+            ) : null}
+          </section>
+          ) : null}
+
           <article className="ph-b4-brief" aria-label="Morning Brief">
             <div className="ph-b4-brief-main">
               <p className="ph-b4-brief-eyebrow">
@@ -2619,96 +2719,6 @@ export function ParentBoardView({
           {softCalToast ? (
             <p className="ph-sibling-nudge-toast" role="status">
               {softCalToast}
-            </p>
-          ) : null}
-
-          {partnerInbox.length > 0 ? (
-            <section className="ph-partner-inbox" aria-label="Lời từ người cùng chăm">
-              {partnerInbox.map((n) => (
-                <article key={n.id} className="ph-partner-inbox-card">
-                  <p className="ph-partner-inbox-eyebrow">
-                    <span aria-hidden>{parentVoiceIcon(n.templateCode)}</span> Lời từ{' '}
-                    {n.fromMemberName.trim() || 'bố/mẹ'}
-                  </p>
-                  <p className="ph-partner-inbox-msg">{n.bodyVi}</p>
-                  <div className="ph-combo-actions">
-                    <button
-                      type="button"
-                      className="ph-nudge-btn is-primary"
-                      disabled={partnerAckBusy === n.id}
-                      onClick={() => void ackPartnerVoice(n.id, 'thanks')}
-                    >
-                      Cảm ơn
-                    </button>
-                    <button
-                      type="button"
-                      className="ph-nudge-btn"
-                      disabled={partnerAckBusy === n.id}
-                      onClick={() => void ackPartnerVoice(n.id, 'read')}
-                    >
-                      Đã xem
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </section>
-          ) : null}
-
-          {activeRelTrigger && isParentVoiceTrigger(activeRelTrigger.code) && parentMembershipId ? (
-            <div
-              className={`ph-rel-trigger-wrap${activeRelTrigger.isGolden ? ' is-golden' : ''}${voiceUnsent ? ' is-unsent' : ''}`}
-            >
-              <button
-                type="button"
-                className="ph-rel-trigger-cta"
-                onClick={() => openParentVoiceSheet(activeRelTrigger)}
-              >
-                <span className="ph-rel-trigger-ico" aria-hidden>
-                  {voiceUnsent ? '✨' : parentVoiceIcon(activeRelTrigger.templateCode)}
-                </span>
-                <span>
-                  {voiceUnsent
-                    ? `Còn 1 chạm — ${(activeRelTrigger.toMemberName || 'con').trim()} chưa nhận lời`
-                    : activeRelTrigger.titleVi}
-                  <em>
-                    {voiceUnsent
-                      ? 'Bạn đã soạn lời nhưng chưa gửi.'
-                      : activeRelTrigger.bodyVi}
-                  </em>
-                </span>
-                <i className="ph-sibling-nudge-chev" aria-hidden>
-                  ›
-                </i>
-              </button>
-              <button
-                type="button"
-                className="ph-rel-trigger-dismiss"
-                onClick={dismissParentVoiceTrigger}
-              >
-                Để sau
-              </button>
-            </div>
-          ) : parentMembershipId && hasChildren ? (
-            <button
-              type="button"
-              className="ph-rel-trigger-cta"
-              onClick={() => openParentVoiceSheet(null)}
-            >
-              <span className="ph-rel-trigger-ico" aria-hidden>
-                ❤️
-              </span>
-              <span>
-                Gửi một lời ấm tới con
-                <em>Bạn nói — Famixa chỉ chuyển lời. Không cần chờ mốc streak.</em>
-              </span>
-              <i className="ph-sibling-nudge-chev" aria-hidden>
-                ›
-              </i>
-            </button>
-          ) : null}
-          {voiceToast ? (
-            <p className="ph-sibling-nudge-toast" role="status">
-              {voiceToast}
             </p>
           ) : null}
 
@@ -3511,7 +3521,7 @@ export function ParentBoardView({
                                 ? 'Đang…'
                                 : taskCtaLabel(item.title, kind, flow.flowDate)}
                             </button>
-                          ) : (
+                          ) : canRemindChildNow(item) ? (
                             <QuickNudgeButton
                               items={item}
                               familyId={familyId}
@@ -3525,6 +3535,10 @@ export function ParentBoardView({
                                 );
                               }}
                             />
+                          ) : (
+                            <span className="ph-task-cta is-muted" aria-label="Chưa tới giờ nhắc">
+                              {remindChildIdleLabel(item)}
+                            </span>
                           )}
                         </div>
                       </li>
@@ -3597,19 +3611,25 @@ export function ParentBoardView({
                           >
                             {avatarEmoji(inferGenderFromName(itemWho), 'child')}
                           </span>
-                          <QuickNudgeButton
-                            items={item}
-                            familyId={familyId}
-                            flowDate={flow.flowDate}
-                            label="Nhắc con"
-                            className="ph-task-cta is-nudge"
-                            onNudged={(count) => {
-                              onParentNudged(count);
-                              showActionToast(
-                                'Đã copy tin nhắc — dán Zalo/Messenger gửi cho con',
-                              );
-                            }}
-                          />
+                          {canRemindChildNow(item) ? (
+                            <QuickNudgeButton
+                              items={item}
+                              familyId={familyId}
+                              flowDate={flow.flowDate}
+                              label="Nhắc con"
+                              className="ph-task-cta is-nudge"
+                              onNudged={(count) => {
+                                onParentNudged(count);
+                                showActionToast(
+                                  'Đã copy tin nhắc — dán Zalo/Messenger gửi cho con',
+                                );
+                              }}
+                            />
+                          ) : (
+                            <span className="ph-task-cta is-muted" aria-label="Chưa tới giờ nhắc">
+                              {remindChildIdleLabel(item)}
+                            </span>
+                          )}
                         </div>
                       </li>
                       );

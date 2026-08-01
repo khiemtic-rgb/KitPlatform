@@ -58,11 +58,19 @@ function isHot(c: DayFlowCommitment): boolean {
   if (c.reminderSuppressed) return false;
   if (c.allowChildChime === false) return false;
   if (c.interventionLevel === 'observe_only') return false;
-  return isOpen(c) && (c.reminderState === 'due_now' || c.reminderState === 'overdue');
+  // Align with server UpcomingLead (30m): upcoming + due_now + overdue.
+  return (
+    isOpen(c) &&
+    (c.reminderState === 'upcoming' ||
+      c.reminderState === 'due_now' ||
+      c.reminderState === 'overdue')
+  );
 }
 
 function notifyTitle(c: DayFlowCommitment): string {
-  return c.reminderState === 'overdue' ? 'Quá giờ rồi' : 'Đến giờ rồi';
+  if (c.reminderState === 'overdue') return 'Quá giờ rồi';
+  if (c.reminderState === 'upcoming') return 'Sắp tới giờ';
+  return 'Đến giờ rồi';
 }
 
 function notifyBody(c: DayFlowCommitment): string {

@@ -128,10 +128,71 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
         if (byFamily.Count == 0)
             return sent;
 
+        // P1.14 lite: human signal first; then ≤1 alert push/family/day (voice | due | digest).
+        sent += await DispatchRelationshipVoiceAsync(byFamily, cancellationToken);
         if (_reminderOptions.HotCommitmentPushEnabled)
             sent += await DispatchHotCommitmentsAsync(byFamily, cancellationToken);
         sent += await DispatchApprovalDigestsAsync(byFamily, cancellationToken);
         sent += await DispatchEveningDigestsAsync(byFamily, cancellationToken);
+        return sent;
+    }
+
+    private async Task<int> DispatchRelationshipVoiceAsync(
+        IReadOnlyDictionary<Guid, List<FamilyOsParentPushRepository.SubscriptionRow>> byFamily,
+        CancellationToken cancellationToken)
+    {
+        var unread = await _repo.ListUnreadParentVoicesAsync(cancellationToken);
+        var sent = 0;
+        var seenFamily = new HashSet<Guid>();
+
+        foreach (var row in unread)
+        {
+            if (!seenFamily.Add(row.FamilyId))
+                continue;
+            if (!byFamily.TryGetValue(row.FamilyId, out var subs) || subs.Count == 0)
+                continue;
+
+            var localNow = FamilyTimeZones.NowIn(row.Timezone);
+            var today = DateOnly.FromDateTime(localNow.DateTime);
+            if (row.FlowDate != today)
+                continue;
+
+            if (await _repo.HasAlertDispatchTodayAsync(
+                    row.TenantId, row.FamilyId, today, cancellationToken))
+                continue;
+
+            var who = string.IsNullOrWhiteSpace(row.FromMemberName)
+                ? "Người cùng chăm"
+                : row.FromMemberName.Trim();
+            var preview = string.IsNullOrWhiteSpace(row.BodyPreview)
+                ? "Có một lời ấm chưa đọc."
+                : row.BodyPreview.Trim();
+            var summary = $"relationship_voice:{row.MessageId:N}";
+
+            var inserted = await _repo.TryInsertDispatchAsync(
+                row.TenantId,
+                row.FamilyId,
+                today,
+                "relationship_voice",
+                null,
+                summary,
+                cancellationToken);
+            if (!inserted)
+                continue;
+
+            var preferred = subs.Where(s => s.MembershipId == row.ToMemberId).ToList();
+            var targets = preferred.Count > 0 ? preferred : subs;
+
+            if (await SendToSubscriptionsAsync(
+                    targets,
+                    $"{who} gửi lời cho bạn",
+                    preview,
+                    "/today",
+                    "familyos_relationship_voice",
+                    cancellationToken))
+                sent++;
+        }
+
         return sent;
     }
 
@@ -186,15 +247,26 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
         var opens = await _repo.ListOpenCommitmentsAsync(cancellationToken);
         var sent = 0;
 
+        var alertedFamilies = new HashSet<Guid>();
+
         foreach (var row in opens)
         {
             if (!byFamily.TryGetValue(row.FamilyId, out var subs) || subs.Count == 0)
+                continue;
+            if (alertedFamilies.Contains(row.FamilyId))
                 continue;
 
             var localNow = FamilyTimeZones.NowIn(row.Timezone);
             var today = DateOnly.FromDateTime(localNow.DateTime);
             if (row.FlowDate != today)
                 continue;
+
+            if (await _repo.HasAlertDispatchTodayAsync(
+                    row.TenantId, row.FamilyId, today, cancellationToken))
+            {
+                alertedFamilies.Add(row.FamilyId);
+                continue;
+            }
 
             var localTime = TimeOnly.FromTimeSpan(localNow.TimeOfDay);
             var (state, label) = FamilyCommitmentReminder.Evaluate(
@@ -205,6 +277,7 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
                 row.HabitStage,
                 row.ReminderSuppressed);
 
+            // Alert push: due_now / overdue only (upcoming stays in-app; not early-task spam).
             if (state is not (FamilyReminderStates.DueNow or FamilyReminderStates.Overdue))
                 continue;
 
@@ -275,6 +348,7 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
                     subs, title, body, "/today", "familyos_parent_reminder", cancellationToken))
             {
                 sent++;
+                alertedFamilies.Add(row.FamilyId);
                 try
                 {
                     await _value.IncrementNudgeAsync(row.FamilyId, row.FlowDate, 1, cancellationToken);
@@ -314,6 +388,10 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
                 continue;
 
             var today = DateOnly.FromDateTime(localNow.DateTime);
+            if (await _repo.HasAlertDispatchTodayAsync(
+                    family.TenantId, family.FamilyId, today, cancellationToken))
+                continue;
+
             var pending = await _repo.ListPendingApprovalsAsync(
                 family.TenantId, family.FamilyId, today, cancellationToken);
 
@@ -382,6 +460,10 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
                 continue;
 
             var today = DateOnly.FromDateTime(localNow.DateTime);
+            if (await _repo.HasAlertDispatchTodayAsync(
+                    family.TenantId, family.FamilyId, today, cancellationToken))
+                continue;
+
             var candidates = await _repo.ListDigestCandidatesAsync(
                 family.TenantId, family.FamilyId, today, cancellationToken);
 

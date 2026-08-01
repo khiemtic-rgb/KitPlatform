@@ -7,8 +7,8 @@ public static class FamilyReminderStates
     public const string DueNow = "due_now";
     public const string Overdue = "overdue";
 
-    /// <summary>Lead time before window_start to surface "sắp tới".</summary>
-    public static readonly TimeSpan UpcomingLead = TimeSpan.FromMinutes(15);
+    /// <summary>Lead time before window_start to surface "sắp tới" / Nhắc con (pilot: cố định 30 phút).</summary>
+    public static readonly TimeSpan UpcomingLead = TimeSpan.FromMinutes(30);
 
     /// <summary>When only window_start exists, treat as due until this duration after start.</summary>
     public static readonly TimeSpan OpenWindowGrace = TimeSpan.FromMinutes(45);

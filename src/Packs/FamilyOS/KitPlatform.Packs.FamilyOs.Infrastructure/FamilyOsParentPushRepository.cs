@@ -439,6 +439,82 @@ internal sealed class FamilyOsParentPushRepository
         }
     }
 
+    /// <summary>
+    /// True if family already got an alert-class push today (cap ≈ 1/day: voice / due / digest).
+    /// Surprises (gratitude, milestones) are excluded.
+    /// </summary>
+    public async Task<bool> HasAlertDispatchTodayAsync(
+        Guid tenantId,
+        Guid familyId,
+        DateOnly flowDate,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.ExecuteScalarAsync<bool>(
+            """
+            SELECT EXISTS(
+                SELECT 1
+                FROM pack_family.reminder_dispatch d
+                WHERE d.tenant_id = @TenantId
+                  AND d.family_id = @FamilyId
+                  AND d.flow_date = @FlowDate
+                  AND d.kind IN (
+                      'due_now',
+                      'overdue',
+                      'relationship_voice',
+                      'approval_digest',
+                      'evening_digest'
+                  )
+            )
+            """,
+            new { TenantId = tenantId, FamilyId = familyId, FlowDate = flowDate });
+    }
+
+    /// <summary>Unread partner/parent voice (status=sent) for guardian/caregiver recipients.</summary>
+    public async Task<IReadOnlyList<UnreadVoiceRow>> ListUnreadParentVoicesAsync(
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<UnreadVoiceRow>(
+            """
+            SELECT
+                v.id AS MessageId,
+                v.tenant_id AS TenantId,
+                v.family_id AS FamilyId,
+                v.flow_date AS FlowDate,
+                f.timezone AS Timezone,
+                v.to_member_id AS ToMemberId,
+                fm.display_name AS FromMemberName,
+                LEFT(v.body_vi, 140) AS BodyPreview
+            FROM pack_family.parent_voice_message v
+            INNER JOIN pack_family.family f
+              ON f.id = v.family_id AND f.tenant_id = v.tenant_id
+             AND f.deleted_at IS NULL AND f.status = 'active'
+            INNER JOIN pack_family.membership fm
+              ON fm.id = v.from_member_id AND fm.tenant_id = v.tenant_id AND fm.deleted_at IS NULL
+            INNER JOIN pack_family.membership tm
+              ON tm.id = v.to_member_id AND tm.tenant_id = v.tenant_id AND tm.deleted_at IS NULL
+            WHERE v.deleted_at IS NULL
+              AND v.status = 'sent'
+              AND tm.role_code IN ('guardian', 'caregiver')
+            ORDER BY v.sent_at DESC
+            LIMIT 200
+            """);
+        return rows.AsList();
+    }
+
+    internal sealed class UnreadVoiceRow
+    {
+        public Guid MessageId { get; init; }
+        public Guid TenantId { get; init; }
+        public Guid FamilyId { get; init; }
+        public DateOnly FlowDate { get; init; }
+        public string Timezone { get; init; } = "Asia/Ho_Chi_Minh";
+        public Guid ToMemberId { get; init; }
+        public string? FromMemberName { get; init; }
+        public string BodyPreview { get; init; } = "";
+    }
+
     internal sealed class SubscriptionRow
     {
         public Guid Id { get; init; }
