@@ -16,16 +16,6 @@ import { homeLanding as h } from '../../lib/home-landing';
         </a>
         <a class="hl-btn hl-btn--ghost" href={h.hero.secondaryHref}>{h.hero.secondaryCta}</a>
       </div>
-      <ul class="hl-hero__stats">
-        {
-          h.hero.stats.map((stat) => (
-            <li>
-              <strong>{stat.value}</strong>
-              <span>{stat.label}</span>
-            </li>
-          ))
-        }
-      </ul>
     </div>
 
     <div class="hl-hero__visual">
@@ -38,5 +28,21 @@ import { homeLanding as h } from '../../lib/home-landing';
         decoding="async"
       />
     </div>
+  </div>
+
+  <div class="container">
+    <ul class="hl-hero__stats">
+      {
+        h.hero.stats.map((stat) => (
+          <li>
+            <span class="hl-hero__stat-ico" aria-hidden="true" />
+            <span class="hl-hero__stat-text">
+              <strong>{stat.value}</strong>
+              <span>{stat.label}</span>
+            </span>
+          </li>
+        ))
+      }
+    </ul>
   </div>
 </section>

@@ -3,16 +3,14 @@ import { homeLanding as h } from '../../lib/home-landing';
 ---
 
 <section class="hl-audience section" aria-label="Lợi ích theo đối tượng">
-  <div class="container hl-audience__stack">
+  <div class="container hl-audience__grid">
     <article class="hl-panel hl-panel--people" id="nguoi-dan">
-      <div class="hl-panel__copy">
-        <h2>{h.people.title}</h2>
-        <ul>
-          {h.people.items.map((item) => <li>{item}</li>)}
-        </ul>
-        <a class="hl-btn hl-btn--green" href={h.people.ctaHref}>{h.people.cta}</a>
-      </div>
-      <div class="hl-panel__visual hl-panel__visual--phone" aria-hidden="true">
+      <h2>{h.people.title}</h2>
+      <ul>
+        {h.people.items.map((item) => <li>{item}</li>)}
+      </ul>
+      <a class="hl-btn hl-btn--green" href={h.people.ctaHref}>{h.people.cta}</a>
+      <div class="hl-panel__visual" aria-hidden="true">
         <div class="hl-phone">
           <p class="hl-phone__brand">Novixa</p>
           <p class="hl-phone__line">Hồ sơ sức khỏe</p>
@@ -23,14 +21,12 @@ import { homeLanding as h } from '../../lib/home-landing';
     </article>
 
     <article class="hl-panel hl-panel--pharmacy" id="nha-thuoc">
-      <div class="hl-panel__copy">
-        <h2>{h.pharmacy.title}</h2>
-        <ul>
-          {h.pharmacy.items.map((item) => <li>{item}</li>)}
-        </ul>
-        <a class="hl-btn hl-btn--primary" href={h.pharmacy.ctaHref}>{h.pharmacy.cta} →</a>
-      </div>
-      <div class="hl-panel__visual hl-panel__visual--tablet" aria-hidden="true">
+      <h2>{h.pharmacy.title}</h2>
+      <ul>
+        {h.pharmacy.items.map((item) => <li>{item}</li>)}
+      </ul>
+      <a class="hl-btn hl-btn--primary" href={h.pharmacy.ctaHref}>{h.pharmacy.cta} →</a>
+      <div class="hl-panel__visual" aria-hidden="true">
         <div class="hl-tablet">
           <p class="hl-tablet__title">Dashboard nhà thuốc</p>
           <div class="hl-tablet__bars">
@@ -41,13 +37,15 @@ import { homeLanding as h } from '../../lib/home-landing';
     </article>
 
     <article class="hl-panel hl-panel--ai" id="ai-health">
-      <div class="hl-panel__copy">
-        <h2>{h.aiChat.title}</h2>
-        <div class="hl-chat" role="img" aria-label="Giao diện chat Novixa AI">
-          <p class="hl-chat__bot"><strong>Novixa AI</strong> {h.aiChat.greeting}</p>
-          <div class="hl-chat__prompts">
-            {h.aiChat.prompts.map((prompt) => <span>{prompt}</span>)}
-          </div>
+      <h2>{h.aiChat.title}</h2>
+      <div class="hl-chat" role="img" aria-label="Giao diện chat Novixa AI">
+        <p class="hl-chat__bot">
+          <strong>Novixa AI</strong>
+          <br />
+          {h.aiChat.greeting}
+        </p>
+        <div class="hl-chat__prompts">
+          {h.aiChat.prompts.map((prompt) => <span>{prompt}</span>)}
         </div>
       </div>
     </article>

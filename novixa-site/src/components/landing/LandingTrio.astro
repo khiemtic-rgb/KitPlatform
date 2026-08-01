@@ -1,47 +1,56 @@
 ---
 import { homeLanding as h } from '../../lib/home-landing';
+
+const painIcons = ['↻', '📣', '⌛', '👤', '💬', '◫'];
 ---
 
 <section class="hl-trio section" aria-label="Vấn đề, giải pháp và vòng đời khách hàng">
   <div class="container hl-trio__grid">
-    <article class="hl-card">
+    <article class="hl-card hl-card--pain">
       <h2>{h.problems.title}</h2>
-      <ul class="hl-icon-grid">
+      <ul class="hl-pain-grid">
         {
-          h.problems.items.map((item) => (
+          h.problems.items.map((item, i) => (
             <li>
-              <span class="hl-icon hl-icon--blue" aria-hidden="true">!</span>
-              <div>
-                <strong>{item.title}</strong>
-                <p>{item.desc}</p>
-              </div>
+              <span class="hl-pain-ico" aria-hidden="true">
+                {painIcons[i] ?? '•'}
+              </span>
+              <strong>{item.title}</strong>
             </li>
           ))
         }
       </ul>
     </article>
 
-    <article class="hl-card">
+    <article class="hl-card hl-card--solution">
       <h2>{h.solutions.title}</h2>
-      <div class="hl-orbit">
-        <div class="hl-orbit__core" aria-hidden="true">N</div>
-        <ul>
-          {
-            h.solutions.items.map((item) => (
-              <li>
-                <strong>{item.title}</strong>
-                <p>{item.desc}</p>
-              </li>
-            ))
-          }
-        </ul>
+      <div class="hl-orbit" aria-hidden="true">
+        <div class="hl-orbit__ring" />
+        <div class="hl-orbit__core">N</div>
+        {
+          h.solutions.items.map((item, i) => (
+            <span class={`hl-orbit__node hl-orbit__node--${i + 1}`}>{item.title}</span>
+          ))
+        }
       </div>
+      <ul class="sr-only">
+        {h.solutions.items.map((item) => <li>{item.title}</li>)}
+      </ul>
     </article>
 
-    <article class="hl-card">
+    <article class="hl-card hl-card--cycle">
       <h2>{h.lifecycle.title}</h2>
-      <ol class="hl-cycle">
-        {h.lifecycle.steps.map((step) => <li>{step}</li>)}
+      <ol class="hl-cycle-ring" aria-label="Vòng đời khách hàng">
+        {
+          h.lifecycle.steps.map((step, i) => (
+            <li class={`hl-cycle-ring__step hl-cycle-ring__step--${i + 1}`}>
+              <span>{step}</span>
+            </li>
+          ))
+        }
+        <li class="hl-cycle-ring__hub" aria-hidden="true">
+          <span>Novixa</span>
+        </li>
       </ol>
     </article>
   </div>

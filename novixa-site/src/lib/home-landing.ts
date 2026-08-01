@@ -22,11 +22,11 @@ export const homeLanding = {
   problems: {
     title: 'Nhà thuốc đang gặp những vấn đề gì?',
     items: [
-      { title: 'Khách mua một lần rồi thôi', desc: 'Khó giữ khách quay lại mua thuốc định kỳ.' },
+      { title: 'Khách chỉ mua một lần', desc: 'Khó giữ khách quay lại mua thuốc định kỳ.' },
       { title: 'Marketing kém hiệu quả', desc: 'Chi phí cao nhưng khó đo lường kết quả.' },
-      { title: 'Hàng cận date / tồn ứ', desc: 'Thất thoát do không theo dõi FEFO tốt.' },
-      { title: 'Nhân viên tư vấn chưa đồng đều', desc: 'Thiếu quy trình và công cụ hỗ trợ bán.' },
-      { title: 'Chăm sóc sau bán thủ công', desc: 'Nhắc uống thuốc, tái mua phụ thuộc nhớ cá nhân.' },
+      { title: 'Hàng cận hạn / tồn ứ', desc: 'Thất thoát do không theo dõi FEFO tốt.' },
+      { title: 'NV tư vấn chưa đồng đều', desc: 'Thiếu quy trình và công cụ hỗ trợ bán.' },
+      { title: 'CSKH sau bán thủ công', desc: 'Nhắc uống thuốc, tái mua phụ thuộc nhớ cá nhân.' },
       { title: 'Dữ liệu phân mảnh', desc: 'POS, kho, CRM và app khách không liền mạch.' },
     ],
   },

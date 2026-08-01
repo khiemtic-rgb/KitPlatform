@@ -9,19 +9,12 @@ const n = m.nav;
 
 const isHome = path === `${base}/` || path === base || path === '/';
 const knowledgeActive =
-  path.startsWith(`${base}/kien-thuc`) || path.startsWith(`${base}/tin-tuc`);
+  path.startsWith(`${base}/kien-thuc`) ||
+  (path.startsWith(`${base}/tin-tuc`) && !path.includes('tai-lieu'));
+const docsActive = path.startsWith(`${base}/tai-lieu`);
 const pharmacyActive = path.startsWith(`${base}/giai-phap`);
 const peopleActive = path.startsWith(`${base}/giai-phap/app-khach-hang`);
 const contactActive = path.startsWith(`${base}/lien-he`);
-
-const links = [
-  { href: `${base}/`, label: n.home, active: isHome },
-  { href: `${base}/#nha-thuoc`, label: n.forPharmacy, active: pharmacyActive && !peopleActive },
-  { href: `${base}/#nguoi-dan`, label: n.forPeople, active: peopleActive },
-  { href: `${base}/kien-thuc/`, label: n.resources, active: knowledgeActive, dropdown: true },
-  { href: `${base}/#bang-gia`, label: n.pricing, active: false },
-  { href: `${base}/lien-he/`, label: n.contact, active: contactActive },
-] as const;
 ---
 
 <header class="site-header" data-site-header>
@@ -44,38 +37,68 @@ const links = [
     </button>
 
     <nav id="site-nav" class="nav" data-nav aria-label="Menu chính">
-      {
-        links.map((link) =>
-          'dropdown' in link && link.dropdown ? (
-            <div class="nav-item nav-item--dropdown" data-dropdown class:list={{ active: link.active }}>
-              <button
-                type="button"
-                class="nav-trigger"
-                aria-expanded="false"
-                aria-haspopup="true"
-                aria-controls="knowledge-dropdown"
-                data-dropdown-trigger
-                class:list={{ active: link.active }}
-              >
-                {link.label}
-                <span class="nav-chevron" aria-hidden="true">▾</span>
-              </button>
-              <div id="knowledge-dropdown" class="nav-dropdown" role="menu" aria-label="Kiến thức" data-dropdown-panel>
-                <a href={`${base}/kien-thuc/`} role="menuitem">Tổng quan</a>
-                {KNOWLEDGE_CATEGORIES.map((cat) => (
-                  <a href={newsCategoryPath(cat.id)} role="menuitem">
-                    {cat.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <a href={link.href} class:list={{ active: link.active }}>
-              {link.label}
-            </a>
-          ),
-        )
-      }
+      <a href={`${base}/`} class:list={{ active: isHome }}>{n.home}</a>
+      <a href={`${base}/#nha-thuoc`} class:list={{ active: pharmacyActive && !peopleActive }}>{n.forPharmacy}</a>
+      <a href={`${base}/#nguoi-dan`} class:list={{ active: peopleActive }}>{n.forPeople}</a>
+
+      <div class="nav-item nav-item--dropdown" data-dropdown class:list={{ active: knowledgeActive }}>
+        <button
+          type="button"
+          class="nav-trigger"
+          aria-expanded="false"
+          aria-haspopup="true"
+          aria-controls="knowledge-dropdown"
+          data-dropdown-trigger
+          class:list={{ active: knowledgeActive }}
+        >
+          {n.resources}
+          <span class="nav-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div id="knowledge-dropdown" class="nav-dropdown" role="menu" aria-label="Kiến thức" data-dropdown-panel>
+          <a href={`${base}/kien-thuc/`} role="menuitem">Tổng quan</a>
+          {
+            KNOWLEDGE_CATEGORIES.map((cat) => (
+              <a href={newsCategoryPath(cat.id)} role="menuitem">
+                {cat.label}
+              </a>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="nav-item nav-item--dropdown" data-dropdown class:list={{ active: docsActive }}>
+        <button
+          type="button"
+          class="nav-trigger"
+          aria-expanded="false"
+          aria-haspopup="true"
+          aria-controls="docs-dropdown"
+          data-dropdown-trigger
+          class:list={{ active: docsActive }}
+        >
+          {n.docs}
+          <span class="nav-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div id="docs-dropdown" class="nav-dropdown" role="menu" aria-label="Thư viện nhà thuốc" data-dropdown-panel>
+          <a
+            href={`${base}/tai-lieu/`}
+            role="menuitem"
+            class:list={{ active: docsActive && !path.includes('/van-ban-phap-luat') }}
+          >
+            Tài liệu nhà thuốc
+          </a>
+          <a
+            href={`${base}/tai-lieu/van-ban-phap-luat/`}
+            role="menuitem"
+            class:list={{ active: path.includes('/van-ban-phap-luat') }}
+          >
+            Văn bản pháp luật
+          </a>
+        </div>
+      </div>
+
+      <a href={`${base}/#bang-gia`}>{n.pricing}</a>
+      <a href={`${base}/lien-he/`} class:list={{ active: contactActive }}>{n.contact}</a>
     </nav>
 
     <div class="nav-actions">
@@ -91,7 +114,7 @@ const links = [
   const nav = document.querySelector('[data-nav]');
   const dropdownItems = [...document.querySelectorAll('[data-dropdown]')];
 
-  const isDesktopNav = () => window.matchMedia('(min-width: 1181px)').matches;
+  const isDesktopNav = () => window.matchMedia('(min-width: 1361px)').matches;
 
   const syncHeader = () => {
     header?.classList.toggle('is-scrolled', window.scrollY > 12);

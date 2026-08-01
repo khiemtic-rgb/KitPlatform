@@ -3,27 +3,27 @@ import { homeLanding as h } from '../../lib/home-landing';
 ---
 
 <section class="hl-why section" aria-labelledby="hl-why-title">
-  <div class="container hl-why__grid">
-    <div>
-      <h2 id="hl-why-title">{h.why.title}</h2>
-      <ul class="hl-why__stats">
-        {
-          h.why.stats.map((stat) => (
-            <li>
-              <strong>{stat.value}</strong>
-              <span>{stat.label}</span>
-            </li>
-          ))
-        }
-      </ul>
-    </div>
+  <div class="container">
+    <h2 id="hl-why-title" class="hl-why__title">{h.why.title}</h2>
+    <ul class="hl-why__stats">
+      {
+        h.why.stats.map((stat) => (
+          <li>
+            <span class="hl-why__ico" aria-hidden="true" />
+            <strong>{stat.value}</strong>
+            <span>{stat.label}</span>
+          </li>
+        ))
+      }
+    </ul>
 
     <div class="hl-eco" id="ecosystem">
-      <h2>{h.ecosystem.title}</h2>
+      <h2 class="hl-eco__title">{h.ecosystem.title}</h2>
       <div class="hl-eco__diagram" aria-hidden="true">
-        <span class="hl-eco__node">{h.ecosystem.nodes[0]}</span>
-        <span class="hl-eco__node">{h.ecosystem.nodes[1]}</span>
-        <span class="hl-eco__node">{h.ecosystem.nodes[2]}</span>
+        <span class="hl-eco__node hl-eco__node--top">{h.ecosystem.nodes[0]}</span>
+        <span class="hl-eco__node hl-eco__node--left">{h.ecosystem.nodes[1]}</span>
+        <span class="hl-eco__node hl-eco__node--right">{h.ecosystem.nodes[2]}</span>
+        <span class="hl-eco__ring" />
         <span class="hl-eco__core">{h.ecosystem.center}</span>
       </div>
     </div>
