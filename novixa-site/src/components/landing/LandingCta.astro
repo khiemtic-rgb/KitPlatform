@@ -1,0 +1,16 @@
+---
+import { homeLanding as h } from '../../lib/home-landing';
+---
+
+<section class="hl-cta">
+  <div class="container hl-cta__inner">
+    <div class="hl-cta__copy">
+      <h2>{h.cta.title}</h2>
+      <p>{h.cta.subtitle}</p>
+      <div class="hl-cta__actions">
+        <a class="hl-btn hl-btn--light" href={h.cta.primaryHref}>{h.cta.primary}</a>
+        <a class="hl-btn hl-btn--outline-light" href={h.cta.secondaryHref}>{h.cta.secondary}</a>
+      </div>
+    </div>
+  </div>
+</section>

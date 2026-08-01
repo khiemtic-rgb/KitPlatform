@@ -1,0 +1,45 @@
+---
+import { formatNewsDate } from '../../lib/newsDate';
+import { resolveArticleImage } from '../../lib/articleSeo';
+import { newsCategoryPath, getNewsCategory } from '../../lib/news-categories';
+import { homeLanding as h } from '../../lib/home-landing';
+
+const { posts = [] } = Astro.props;
+---
+
+<section class="hl-knowledge section" id="tin-tuc" aria-labelledby="hl-knowledge-title">
+  <div class="container">
+    <div class="hl-knowledge__head">
+      <h2 id="hl-knowledge-title">{h.knowledge.title}</h2>
+      <a href={h.knowledge.href}>{h.knowledge.cta} →</a>
+    </div>
+
+    {
+      posts.length > 0 ? (
+        <div class="hl-knowledge__grid">
+          {posts.map((post) => {
+            const cat = getNewsCategory(post.data.category);
+            return (
+              <article class="hl-knowledge__card">
+                <a class="hl-knowledge__thumb" href={`/vi/tin-tuc/${post.id}/`} tabindex="-1" aria-hidden="true">
+                  <img src={resolveArticleImage(post.id, post.data.image)} alt="" loading="lazy" decoding="async" />
+                </a>
+                {cat && (
+                  <a class="hl-knowledge__cat" href={newsCategoryPath(cat.id)}>
+                    {cat.label}
+                  </a>
+                )}
+                <h3>
+                  <a href={`/vi/tin-tuc/${post.id}/`}>{post.data.title}</a>
+                </h3>
+                <p class="hl-knowledge__date">{formatNewsDate(post.data.pubDate)}</p>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <p class="section-intro">Chưa có bài tin mới — vui lòng quay lại sau.</p>
+      )
+    }
+  </div>
+</section>

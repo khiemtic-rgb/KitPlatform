@@ -1,0 +1,42 @@
+---
+import { homeLanding as h } from '../../lib/home-landing';
+---
+
+<section class="hl-hero" aria-labelledby="hl-hero-title">
+  <div class="container hl-hero__grid">
+    <div class="hl-hero__copy">
+      <h1 id="hl-hero-title" class="hl-hero__title">
+        {h.hero.titleBefore}<em>{h.hero.titleHighlight1}</em>{h.hero.titleMid}<em>{h.hero.titleHighlight2}</em>
+      </h1>
+      <p class="hl-hero__lead">{h.hero.lead}</p>
+      <div class="hl-hero__actions">
+        <a class="hl-btn hl-btn--primary" href={h.hero.primaryHref} target="_blank" rel="noopener noreferrer">
+          {h.hero.primaryCta}
+          <span aria-hidden="true">→</span>
+        </a>
+        <a class="hl-btn hl-btn--ghost" href={h.hero.secondaryHref}>{h.hero.secondaryCta}</a>
+      </div>
+      <ul class="hl-hero__stats">
+        {
+          h.hero.stats.map((stat) => (
+            <li>
+              <strong>{stat.value}</strong>
+              <span>{stat.label}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div class="hl-hero__visual">
+      <img
+        src="/images/hero/home-devices.png"
+        alt="Giao diện Novixa trên máy tính và điện thoại"
+        width="1400"
+        height="1000"
+        loading="eager"
+        decoding="async"
+      />
+    </div>
+  </div>
+</section>

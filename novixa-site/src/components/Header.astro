@@ -6,32 +6,21 @@ const m = t('vi');
 const base = '/vi';
 const path = Astro.url.pathname;
 const n = m.nav;
-const companyNewsPath = newsCategoryPath('tin-tuc-novixa');
-const companyNewsActive = path.startsWith(companyNewsPath);
-const knowledgeActive =
-  (path.startsWith(`${base}/kien-thuc`) && !companyNewsActive) ||
-  (path.startsWith(`${base}/tin-tuc`) && !companyNewsActive);
-const companyActive = path.startsWith(`${base}/ve-chung-toi`) || companyNewsActive;
 
-const products = [
-  {
-    href: `${base}/giai-phap/`,
-    name: 'Novixa Pharmacy',
-    tone: 'green',
-    icon: 'pharmacy',
-  },
-  {
-    href: `${base}/#connect`,
-    name: 'Novixa Connect',
-    tone: 'blue',
-    icon: 'connect',
-  },
-  {
-    href: `${base}/#clinic`,
-    name: 'Novixa Clinic',
-    tone: 'violet',
-    icon: 'clinic',
-  },
+const isHome = path === `${base}/` || path === base || path === '/';
+const knowledgeActive =
+  path.startsWith(`${base}/kien-thuc`) || path.startsWith(`${base}/tin-tuc`);
+const pharmacyActive = path.startsWith(`${base}/giai-phap`);
+const peopleActive = path.startsWith(`${base}/giai-phap/app-khach-hang`);
+const contactActive = path.startsWith(`${base}/lien-he`);
+
+const links = [
+  { href: `${base}/`, label: n.home, active: isHome },
+  { href: `${base}/#nha-thuoc`, label: n.forPharmacy, active: pharmacyActive && !peopleActive },
+  { href: `${base}/#nguoi-dan`, label: n.forPeople, active: peopleActive },
+  { href: `${base}/kien-thuc/`, label: n.resources, active: knowledgeActive, dropdown: true },
+  { href: `${base}/#bang-gia`, label: n.pricing, active: false },
+  { href: `${base}/lien-he/`, label: n.contact, active: contactActive },
 ] as const;
 ---
 
@@ -47,13 +36,7 @@ const products = [
       </span>
     </a>
 
-    <button
-      type="button"
-      class="nav-toggle"
-      aria-expanded="false"
-      aria-controls="site-nav"
-      data-nav-toggle
-    >
+    <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" data-nav-toggle>
       <span class="sr-only">{n.menuOpen}</span>
       <span class="nav-toggle-bar" aria-hidden="true"></span>
       <span class="nav-toggle-bar" aria-hidden="true"></span>
@@ -61,256 +44,41 @@ const products = [
     </button>
 
     <nav id="site-nav" class="nav" data-nav aria-label="Menu chính">
-      <a href={`${base}/#platform`}>{n.platform}</a>
-
-      <div class="nav-item nav-item--mega" data-mega>
-        <button
-          type="button"
-          class="nav-trigger"
-          aria-expanded="false"
-          aria-haspopup="true"
-          aria-controls="eco-mega"
-          data-mega-trigger
-        >
-          {n.ecosystem}
-          <span class="nav-chevron" aria-hidden="true">▾</span>
-        </button>
-
-        <div id="eco-mega" class="mega" role="region" aria-label="Hệ sinh thái Novixa" data-mega-panel>
-          <div class="mega__inner">
-            <div class="mega__copy">
-              <p class="mega__title">Novixa Healthcare Ecosystem</p>
-              <p class="mega__desc">
-                Kết nối và vận hành hệ sinh thái Nhà thuốc – Phòng khám – Bệnh nhân trên một nền tảng duy nhất.
-              </p>
-              <a class="mega__link" href={`${base}/#ecosystem`}>Xem tổng quan hệ sinh thái →</a>
-            </div>
-
-            <div class="mega__diagram">
-              <a class="mega__platform" href={`${base}/#platform`}>
-                <svg class="mega__platform-ico" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path
-                    d="M4 7.5A2.5 2.5 0 016.5 5h11A2.5 2.5 0 0120 7.5v9a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 16.5v-9z"
-                    stroke="currentColor"
-                    stroke-width="1.6"
-                  ></path>
-                  <path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
-                </svg>
-                <span>NOVIXA Healthcare Platform</span>
-              </a>
-
-              <div class="mega__products">
-                {
-                  products.map((p) => (
-                    <a class={`mega__product mega__product--${p.tone}`} href={p.href}>
-                      <span class={`mega__product-ico mega__product-ico--${p.tone}`} aria-hidden="true">
-                        {p.icon === 'pharmacy' && (
-                          <svg viewBox="0 0 24 24" fill="none">
-                            <path
-                              d="M7 4h10v4a5 5 0 01-5 5 5 5 0 01-5-5V4z"
-                              stroke="currentColor"
-                              stroke-width="1.6"
-                              stroke-linejoin="round"
-                            />
-                            <path d="M9 21h6M12 13v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                            <path d="M9 7h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                          </svg>
-                        )}
-                        {p.icon === 'connect' && (
-                          <svg viewBox="0 0 24 24" fill="none">
-                            <circle cx="6.5" cy="7" r="2.25" stroke="currentColor" stroke-width="1.6" />
-                            <circle cx="17.5" cy="7" r="2.25" stroke="currentColor" stroke-width="1.6" />
-                            <circle cx="12" cy="17" r="2.25" stroke="currentColor" stroke-width="1.6" />
-                            <path
-                              d="M8.3 8.5l2.4 6M15.7 8.5l-2.4 6"
-                              stroke="currentColor"
-                              stroke-width="1.6"
-                              stroke-linecap="round"
-                            />
-                          </svg>
-                        )}
-                        {p.icon === 'clinic' && (
-                          <svg viewBox="0 0 24 24" fill="none">
-                            <path
-                              d="M4 10.5V20h16v-9.5L12 4 4 10.5z"
-                              stroke="currentColor"
-                              stroke-width="1.6"
-                              stroke-linejoin="round"
-                            />
-                            <path d="M10 20v-5h4v5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                            <path d="M12 9v4M10 11h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                          </svg>
-                        )}
-                      </span>
-                      <span class="mega__product-name">{p.name}</span>
-                    </a>
-                  ))
-                }
-              </div>
-
-              <div class="mega__shared">
-                <a class="mega__chip" href={`${base}/giai-phap/app-khach-hang/`}>
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <rect x="8" y="3" width="8" height="18" rx="2" stroke="currentColor" stroke-width="1.6"></rect>
-                    <path d="M11 5.5h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
-                  </svg>
-                  Customer App
-                </a>
-                <a class="mega__chip mega__chip--ai" href={`${base}/danh-gia/`}>
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M9 5a3 3 0 00-3 3v1a2 2 0 01-2 2 2 2 0 000 4 2 2 0 012 2v1a3 3 0 003 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
-                    <path d="M15 5a3 3 0 013 3v1a2 2 0 012 2 2 2 0 010 4 2 2 0 01-2 2v1a3 3 0 01-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
-                  </svg>
-                  AI Health Check
-                </a>
-                <a class="mega__chip mega__chip--ai" href={`${base}/giai-phap/ai-copilot/`}>
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <rect x="4" y="7" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6"></rect>
-                    <path d="M8 11h2M14 11h2M9 14h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
-                    <path d="M9 7V5M15 7V5M9 19v-2M15 19v-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
-                  </svg>
-                  AI Healthcare Platform
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <a href={`${base}/#solutions`}>{n.solutions}</a>
-      <a href={`${base}/#enterprise`}>{n.enterprise}</a>
-
-      <div
-        class="nav-item nav-item--dropdown"
-        data-dropdown
-        class:list={{ active: path.startsWith(`${base}/tai-lieu`) }}
-      >
-        <button
-          type="button"
-          class="nav-trigger"
-          aria-expanded="false"
-          aria-haspopup="true"
-          aria-controls="docs-dropdown"
-          data-dropdown-trigger
-          class:list={{ active: path.startsWith(`${base}/tai-lieu`) }}
-        >
-          {n.docs}
-          <span class="nav-chevron" aria-hidden="true">▾</span>
-        </button>
-        <div id="docs-dropdown" class="nav-dropdown" role="menu" aria-label="Thư viện" data-dropdown-panel>
-          <a
-            href={`${base}/tai-lieu/`}
-            role="menuitem"
-            class:list={{ active: path.startsWith(`${base}/tai-lieu`) && !path.includes('/van-ban-phap-luat') }}
-          >
-            Cẩm nang nhà thuốc
-          </a>
-          <a
-            href={`${base}/tai-lieu/van-ban-phap-luat/`}
-            role="menuitem"
-            class:list={{ active: path.includes('/van-ban-phap-luat') }}
-          >
-            Văn bản pháp luật
-          </a>
-        </div>
-      </div>
-
-      <div
-        class="nav-item nav-item--dropdown"
-        data-dropdown
-        class:list={{ active: knowledgeActive }}
-      >
-        <button
-          type="button"
-          class="nav-trigger"
-          aria-expanded="false"
-          aria-haspopup="true"
-          aria-controls="knowledge-dropdown"
-          data-dropdown-trigger
-          class:list={{ active: knowledgeActive }}
-        >
-          {n.resources}
-          <span class="nav-chevron" aria-hidden="true">▾</span>
-        </button>
-        <div
-          id="knowledge-dropdown"
-          class="nav-dropdown"
-          role="menu"
-          aria-label="Kiến thức nhà thuốc"
-          data-dropdown-panel
-        >
-          <a href={`${base}/kien-thuc/`} role="menuitem" class:list={{ active: path === `${base}/kien-thuc/` || path === `${base}/kien-thuc` }}>
-            Tổng quan
-          </a>
-          {
-            KNOWLEDGE_CATEGORIES.map((cat) => (
-              <a
-                href={newsCategoryPath(cat.id)}
-                role="menuitem"
-                class:list={{ active: path.startsWith(newsCategoryPath(cat.id)) }}
+      {
+        links.map((link) =>
+          'dropdown' in link && link.dropdown ? (
+            <div class="nav-item nav-item--dropdown" data-dropdown class:list={{ active: link.active }}>
+              <button
+                type="button"
+                class="nav-trigger"
+                aria-expanded="false"
+                aria-haspopup="true"
+                aria-controls="knowledge-dropdown"
+                data-dropdown-trigger
+                class:list={{ active: link.active }}
               >
-                {cat.label}
-              </a>
-            ))
-          }
-        </div>
-      </div>
-      <div
-        class="nav-item nav-item--dropdown"
-        data-dropdown
-        class:list={{ active: companyActive }}
-      >
-        <button
-          type="button"
-          class="nav-trigger"
-          aria-expanded="false"
-          aria-haspopup="true"
-          aria-controls="company-dropdown"
-          data-dropdown-trigger
-          class:list={{ active: companyActive }}
-        >
-          {n.company}
-          <span class="nav-chevron" aria-hidden="true">▾</span>
-        </button>
-        <div
-          id="company-dropdown"
-          class="nav-dropdown"
-          role="menu"
-          aria-label="Về Novixa"
-          data-dropdown-panel
-        >
-          <a
-            href={`${base}/ve-chung-toi/`}
-            role="menuitem"
-            class:list={{ active: path.startsWith(`${base}/ve-chung-toi`) }}
-          >
-            Giới thiệu
-          </a>
-          <a
-            href={companyNewsPath}
-            role="menuitem"
-            class:list={{ active: companyNewsActive }}
-          >
-            Tin tức Novixa
-          </a>
-        </div>
-      </div>
+                {link.label}
+                <span class="nav-chevron" aria-hidden="true">▾</span>
+              </button>
+              <div id="knowledge-dropdown" class="nav-dropdown" role="menu" aria-label="Kiến thức" data-dropdown-panel>
+                <a href={`${base}/kien-thuc/`} role="menuitem">Tổng quan</a>
+                {KNOWLEDGE_CATEGORIES.map((cat) => (
+                  <a href={newsCategoryPath(cat.id)} role="menuitem">
+                    {cat.label}
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <a href={link.href} class:list={{ active: link.active }}>
+              {link.label}
+            </a>
+          ),
+        )
+      }
     </nav>
 
     <div class="nav-actions">
-      <a
-        href={`${base}/danh-gia/`}
-        class="nav-health-check"
-        class:list={{ active: path.startsWith(`${base}/danh-gia`) || path.includes('health-check') }}
-      >
-        <span class="nav-health-check__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M9 5a3 3 0 00-3 3v1a2 2 0 01-2 2 2 2 0 000 4 2 2 0 012 2v1a3 3 0 003 3"></path>
-            <path d="M15 5a3 3 0 013 3v1a2 2 0 012 2 2 2 0 010 4 2 2 0 01-2 2v1a3 3 0 01-3 3"></path>
-          </svg>
-        </span>
-        <span class="nav-health-check__label">{n.assess}</span>
-      </a>
       <a href="https://app.novixa.vn" class="nav-login">{n.login}</a>
       <a href={`${base}/lien-he/`} class="nav-cta">{n.demo}</a>
     </div>
@@ -321,9 +89,6 @@ const products = [
   const header = document.querySelector('[data-site-header]');
   const toggle = document.querySelector('[data-nav-toggle]');
   const nav = document.querySelector('[data-nav]');
-  const mega = document.querySelector('[data-mega]');
-  const megaTrigger = document.querySelector('[data-mega-trigger]');
-  const megaPanel = document.querySelector('[data-mega-panel]');
   const dropdownItems = [...document.querySelectorAll('[data-dropdown]')];
 
   const isDesktopNav = () => window.matchMedia('(min-width: 1181px)').matches;
@@ -332,30 +97,7 @@ const products = [
     header?.classList.toggle('is-scrolled', window.scrollY > 12);
   };
 
-  const megaTimer = { id: null };
   const dropdownTimers = new WeakMap();
-
-  const setOpen = (el, trigger, open, timerRef, { immediate = false } = {}) => {
-    window.clearTimeout(timerRef.id);
-
-    if (open) {
-      el?.classList.add('is-open');
-      trigger?.setAttribute('aria-expanded', 'true');
-      return;
-    }
-
-    const close = () => {
-      el?.classList.remove('is-open');
-      trigger?.setAttribute('aria-expanded', 'false');
-    };
-
-    if (immediate || !isDesktopNav()) {
-      close();
-      return;
-    }
-
-    timerRef.id = window.setTimeout(close, 220);
-  };
 
   const getDropdownTimer = (el) => {
     let timer = dropdownTimers.get(el);
@@ -366,17 +108,31 @@ const products = [
     return timer;
   };
 
-  const setMegaOpen = (open, opts) => setOpen(mega, megaTrigger, open, megaTimer, opts);
+  const setOpen = (el, trigger, open, timerRef, { immediate = false } = {}) => {
+    window.clearTimeout(timerRef.id);
+    if (open) {
+      el?.classList.add('is-open');
+      trigger?.setAttribute('aria-expanded', 'true');
+      return;
+    }
+    const close = () => {
+      el?.classList.remove('is-open');
+      trigger?.setAttribute('aria-expanded', 'false');
+    };
+    if (immediate || !isDesktopNav()) {
+      close();
+      return;
+    }
+    timerRef.id = window.setTimeout(close, 220);
+  };
 
   const closeAllDropdowns = (opts) => {
     dropdownItems.forEach((item) => {
-      const trigger = item.querySelector('[data-dropdown-trigger]');
-      setOpen(item, trigger, false, getDropdownTimer(item), opts);
+      setOpen(item, item.querySelector('[data-dropdown-trigger]'), false, getDropdownTimer(item), opts);
     });
   };
 
   const setDropdownOpen = (item, open, opts) => {
-    const trigger = item.querySelector('[data-dropdown-trigger]');
     if (open) {
       dropdownItems.forEach((other) => {
         if (other === item) return;
@@ -384,9 +140,8 @@ const products = [
           immediate: true,
         });
       });
-      setMegaOpen(false, { immediate: true });
     }
-    setOpen(item, trigger, open, getDropdownTimer(item), opts);
+    setOpen(item, item.querySelector('[data-dropdown-trigger]'), open, getDropdownTimer(item), opts);
   };
 
   syncHeader();
@@ -396,79 +151,30 @@ const products = [
     const open = header?.classList.toggle('nav-open');
     nav?.classList.toggle('is-open', Boolean(open));
     toggle.setAttribute('aria-expanded', String(Boolean(open)));
-    if (!open) {
-      setMegaOpen(false, { immediate: true });
-      closeAllDropdowns({ immediate: true });
-    }
-  });
-
-  mega?.addEventListener('pointerenter', () => {
-    if (isDesktopNav()) {
-      closeAllDropdowns({ immediate: true });
-      setMegaOpen(true);
-    }
-  });
-
-  mega?.addEventListener('pointerleave', (event) => {
-    if (!isDesktopNav()) return;
-    const next = event.relatedTarget;
-    if (next instanceof Node && mega.contains(next)) return;
-    setMegaOpen(false);
-  });
-
-  megaPanel?.addEventListener('pointerenter', () => {
-    if (isDesktopNav()) setMegaOpen(true);
-  });
-
-  megaTrigger?.addEventListener('click', (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const next = !mega?.classList.contains('is-open');
-    if (next) closeAllDropdowns({ immediate: true });
-    setMegaOpen(Boolean(next), { immediate: true });
-  });
-
-  mega?.addEventListener('focusin', () => setMegaOpen(true, { immediate: true }));
-  mega?.addEventListener('focusout', (event) => {
-    const next = event.relatedTarget;
-    if (next instanceof Node && mega.contains(next)) return;
-    setMegaOpen(false);
+    if (!open) closeAllDropdowns({ immediate: true });
   });
 
   dropdownItems.forEach((item) => {
     const trigger = item.querySelector('[data-dropdown-trigger]');
-
     item.addEventListener('pointerenter', () => {
       if (isDesktopNav()) setDropdownOpen(item, true);
     });
-
     item.addEventListener('pointerleave', (event) => {
       if (!isDesktopNav()) return;
       const next = event.relatedTarget;
       if (next instanceof Node && item.contains(next)) return;
       setDropdownOpen(item, false);
     });
-
     trigger?.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
-      const next = !item.classList.contains('is-open');
-      setDropdownOpen(item, Boolean(next), { immediate: true });
-    });
-
-    item.addEventListener('focusin', () => setDropdownOpen(item, true, { immediate: true }));
-    item.addEventListener('focusout', (event) => {
-      const next = event.relatedTarget;
-      if (next instanceof Node && item.contains(next)) return;
-      setDropdownOpen(item, false);
+      setDropdownOpen(item, !item.classList.contains('is-open'), { immediate: true });
     });
   });
 
   document.addEventListener('pointerdown', (event) => {
     if (!(event.target instanceof Node)) return;
-    if (mega?.contains(event.target)) return;
     if (dropdownItems.some((item) => item.contains(event.target))) return;
-    if (mega?.classList.contains('is-open')) setMegaOpen(false, { immediate: true });
     closeAllDropdowns({ immediate: true });
   });
 
@@ -477,15 +183,11 @@ const products = [
       header?.classList.remove('nav-open');
       nav.classList.remove('is-open');
       toggle?.setAttribute('aria-expanded', 'false');
-      setMegaOpen(false, { immediate: true });
       closeAllDropdowns({ immediate: true });
     });
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      setMegaOpen(false, { immediate: true });
-      closeAllDropdowns({ immediate: true });
-    }
+    if (event.key === 'Escape') closeAllDropdowns({ immediate: true });
   });
 </script>

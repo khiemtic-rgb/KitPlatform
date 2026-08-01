@@ -1,5 +1,6 @@
 ---
 import { t } from '../i18n';
+import { KNOWLEDGE_CATEGORIES, newsCategoryPath } from '../lib/news-categories';
 
 const m = t('vi');
 const c = m.contact;
@@ -10,42 +11,38 @@ const zaloUrl = c.zaloPhone ? `https://zalo.me/${c.zaloPhone}` : '/vi/lien-he/';
 
 const columns = [
   {
-    title: 'Nền tảng',
+    title: 'Dành cho nhà thuốc',
     links: [
-      { href: '/vi/', label: 'Overview' },
-      { href: '/vi/#ecosystem', label: 'Architecture' },
-      { href: '/vi/giai-phap/ai-copilot/', label: 'AI Platform' },
-      { href: '/vi/#enterprise', label: 'API & Integration' },
-      { href: '/vi/#enterprise', label: 'Security' },
+      { href: '/vi/giai-phap/', label: 'Giải pháp' },
+      { href: '/vi/#bang-gia', label: 'Bảng giá' },
+      { href: '/vi/lien-he/', label: 'Đăng ký demo' },
+      { href: '/vi/tai-lieu/', label: 'Hướng dẫn / tài liệu' },
     ],
   },
   {
-    title: 'Giải pháp',
+    title: 'Dành cho người dân',
     links: [
-      { href: '/vi/giai-phap/', label: 'Novixa Pharmacy' },
-      { href: '/vi/#connect', label: 'Novixa Connect' },
-      { href: '/vi/#clinic', label: 'Novixa Clinic' },
-      { href: '/vi/giai-phap/app-khach-hang/', label: 'Customer App' },
+      { href: '/vi/giai-phap/app-khach-hang/', label: 'Tải app' },
+      { href: '/vi/giai-phap/app-khach-hang/', label: 'Hướng dẫn sử dụng' },
+      { href: '/vi/lien-he/', label: 'Câu hỏi thường gặp' },
     ],
   },
   {
-    title: 'Kiến thức nhà thuốc',
+    title: 'Kiến thức',
     links: [
       { href: '/vi/kien-thuc/', label: 'Tổng quan' },
-      { href: '/vi/kien-thuc/quan-tri-nha-thuoc/', label: 'Quản trị nhà thuốc' },
-      { href: '/vi/kien-thuc/van-hanh/', label: 'Vận hành nhà thuốc' },
-      { href: '/vi/kien-thuc/novixa-academy/', label: 'Novixa Academy' },
-      { href: '/vi/tai-lieu/', label: 'Cẩm nang nhà thuốc' },
-      { href: '/vi/danh-gia/', label: 'AI Health Check' },
+      ...KNOWLEDGE_CATEGORIES.slice(0, 4).map((cat) => ({
+        href: newsCategoryPath(cat.id),
+        label: cat.label,
+      })),
     ],
   },
   {
-    title: 'Về Novixa',
+    title: 'Hỗ trợ',
     links: [
-      { href: '/vi/ve-chung-toi/', label: 'Giới thiệu' },
-      { href: '/vi/kien-thuc/tin-tuc-novixa/', label: 'Tin tức Novixa' },
-      { href: '/vi/#clinic', label: 'Đối tác' },
-      { href: '/vi/lien-he/', label: 'Liên hệ' },
+      { href: '/vi/lien-he/', label: 'Trung tâm hỗ trợ' },
+      { href: '/vi/lien-he/', label: 'Chính sách bảo mật' },
+      { href: '/vi/lien-he/', label: 'Điều khoản sử dụng' },
     ],
   },
 ];
@@ -62,7 +59,7 @@ const columns = [
         </span>
       </a>
       <p>
-        Nền tảng kết nối và vận hành hệ sinh thái Nhà thuốc – Phòng khám – Bệnh nhân.
+        Nền tảng AI kết nối nhà thuốc – người dân – phòng khám, giúp tăng khách quay lại và chăm sóc sức khỏe cộng đồng.
       </p>
       <div class="footer-social">
         {
@@ -85,18 +82,9 @@ const columns = [
         <a class="footer-social__btn" href={zaloUrl} target="_blank" rel="noopener noreferrer" aria-label="Zalo">
           <span aria-hidden="true">Z</span>
         </a>
-        <a class="footer-social__btn" href="/vi/lien-he/" aria-label="YouTube">
+        <a class="footer-social__btn" href={`mailto:${c.emailAddress}`} aria-label="Email">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path
-              d="M19.6 7.2a2.3 2.3 0 00-1.6-1.6C16.5 5.2 12 5.2 12 5.2s-4.5 0-6 .4A2.3 2.3 0 004.4 7.2 24 24 0 004 12a24 24 0 00.4 4.8 2.3 2.3 0 001.6 1.6c1.5.4 6 .4 6 .4s4.5 0 6-.4a2.3 2.3 0 001.6-1.6A24 24 0 0020 12a24 24 0 00-.4-4.8zM10.2 14.8V9.2L14.8 12l-4.6 2.8z"
-            />
-          </svg>
-        </a>
-        <a class="footer-social__btn" href="/vi/lien-he/" aria-label="LinkedIn">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path
-              d="M7.2 9.5H4.8V19h2.4V9.5zM6 4.8a1.4 1.4 0 100 2.8A1.4 1.4 0 006 4.8zM19.2 19h-2.4v-4.8c0-1.3-.5-2.1-1.6-2.1-.9 0-1.4.6-1.6 1.2-.1.2-.1.5-.1.8V19h-2.4V9.5h2.4v1.3c.4-.7 1.2-1.6 2.9-1.6 2.1 0 3.6 1.4 3.6 4.3V19z"
-            />
+            <path d="M4 6h16v12H4V6zm8 6.7L5.8 8h12.4L12 12.7z" />
           </svg>
         </a>
       </div>
@@ -117,12 +105,7 @@ const columns = [
         <div class="footer-column">
           <h2>{column.title}</h2>
           {column.links.map((link) => (
-            <a
-              class="footer-link"
-              href={link.href}
-              target={link.href.startsWith('http') ? '_blank' : undefined}
-              rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-            >
+            <a class="footer-link" href={link.href}>
               {link.label}
             </a>
           ))}
@@ -130,35 +113,12 @@ const columns = [
       ))
     }
 
-    <div class="footer-column footer-news">
-      <p class="footer-news__title">Nhận tin tức mới nhất từ Novixa</p>
-      <form
-        class="footer-newsletter"
-        action={`https://formsubmit.co/${encodeURIComponent(c.emailAddress)}`}
-        method="POST"
-      >
-        <input type="hidden" name="_subject" value="Novixa newsletter signup" />
-        <input type="hidden" name="_captcha" value="false" />
-        <label class="sr-only" for="footer-email">Email</label>
-        <input
-          id="footer-email"
-          name="email"
-          type="email"
-          required
-          placeholder="Email của bạn"
-          autocomplete="email"
-        />
-        <button type="submit" aria-label="Đăng ký nhận tin">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M4 8.5l7.2 3.6L20 6.5 11.2 19l-.8-5.2L4 8.5z"
-              stroke="#fff"
-              stroke-width="1.8"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-      </form>
+    <div class="footer-column footer-contact">
+      <h2>Liên hệ</h2>
+      <a class="footer-link" href={`tel:${c.phoneTel}`}>{c.phoneDisplay}</a>
+      <a class="footer-link" href={`mailto:${c.emailAddress}`}>{c.emailAddress}</a>
+      <a class="footer-link" href="https://novixa.vn/" target="_blank" rel="noopener noreferrer">novixa.vn</a>
+      <p class="footer-address">{co.address}</p>
       <p class="footer-copy">© {year} Novixa. All rights reserved.</p>
     </div>
   </div>
@@ -276,57 +236,6 @@ const columns = [
     text-transform: uppercase;
   }
 
-  .footer-news__title {
-    margin: 0 0 0.85rem;
-    color: #fff;
-    font-size: 0.95rem;
-    font-weight: 700;
-    line-height: 1.35;
-  }
-
-  .footer-newsletter {
-    display: flex;
-    align-items: stretch;
-    overflow: hidden;
-    border-radius: 10px;
-    background: #fff;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
-  }
-
-  .footer-newsletter input {
-    flex: 1;
-    min-width: 0;
-    border: 0;
-    background: #fff;
-    color: #0b1f33;
-    padding: 0.7rem 0.85rem;
-    font-size: 0.88rem;
-  }
-
-  .footer-newsletter input:focus {
-    outline: none;
-  }
-
-  .footer-newsletter button {
-    display: grid;
-    place-items: center;
-    border: 0;
-    width: 2.75rem;
-    background: #16c784;
-    color: #fff;
-    cursor: pointer;
-    transition: background 150ms ease;
-  }
-
-  .footer-newsletter button:hover {
-    background: #12a86e;
-  }
-
-  .footer-newsletter button svg {
-    width: 1.1rem;
-    height: 1.1rem;
-  }
-
   .footer-link {
     display: block;
     color: #a9bfd5;
@@ -341,6 +250,13 @@ const columns = [
   .footer-link--inline {
     display: inline;
     margin: 0;
+  }
+
+  .footer-address {
+    margin: 0.65rem 0 0;
+    color: #7f94a8;
+    font-size: 0.8rem;
+    line-height: 1.5;
   }
 
   .footer-copy {

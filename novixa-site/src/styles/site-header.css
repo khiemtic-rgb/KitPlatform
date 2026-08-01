@@ -240,6 +240,11 @@
   color: #0f2747;
 }
 
+.nav > a.active {
+  color: #16c784;
+  box-shadow: inset 0 -2px 0 #16c784;
+}
+
 /* Ecosystem mega menu */
 .mega {
   position: absolute;
