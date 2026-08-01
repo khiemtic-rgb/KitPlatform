@@ -1,0 +1,68 @@
+---
+import { homeLanding as h } from '../../lib/home-landing';
+
+const flowIcons = [
+  // Two people
+  '<path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M8.8 12.8a2.8 2.8 0 1 0-2.8-2.8 2.8 2.8 0 0 0 2.8 2.8Zm6.6 0a2.8 2.8 0 1 0-2.8-2.8 2.8 2.8 0 0 0 2.8 2.8ZM3.5 19v-.7c0-1.9 1.9-3.2 5.3-3.2a7 7 0 0 1 2.2.3M20.5 19v-.7c0-1.9-1.9-3.2-5.3-3.2a7 7 0 0 0-2.1.3"/>',
+  // Chat
+  '<path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M6.2 17.5 5 19.2V8A2 2 0 0 1 7 6h10a2 2 0 0 1 2 2v5.8a2 2 0 0 1-2 2H9Z"/><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" d="M9 10.2h6.2M9 12.8h4"/>',
+  // Heart
+  '<path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M12 19s-6.6-4.1-6.6-8.7A3.7 3.7 0 0 1 12 7.8a3.7 3.7 0 0 1 6.6 2.5C18.6 14.9 12 19 12 19Z"/>',
+  // Growth chart
+  '<path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M5 18.2h14M7.4 14.8V18M11 11V18M14.6 13V18M18.2 8.2V18M8 10.2l3.8-3.4 3 2.2 4-4.4"/>',
+] as const;
+---
+
+<section class="hl-flow section" aria-labelledby="hl-flow-title">
+  <div class="container">
+    <header class="hl-head">
+      <p class="hl-eyebrow">{h.flow.eyebrow}</p>
+      <h2 id="hl-flow-title" class="hl-title">
+        {h.flow.titleBefore}<em>{h.flow.titleHighlight}</em>
+      </h2>
+      <p class="hl-lead">{h.flow.lead}</p>
+    </header>
+
+    <ol class="hl-flow__track">
+      {
+        h.flow.steps.map((step, i) => (
+          <>
+            <li class="hl-flow__step">
+              <div class="hl-flow__icon-wrap">
+                <span class="hl-flow__num" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <span
+                  class="hl-flow__circle"
+                  aria-hidden="true"
+                  set:html={`<svg viewBox="0 0 24 24">${flowIcons[i]}</svg>`}
+                />
+              </div>
+              <strong>{step.title}</strong>
+              <p>{step.desc}</p>
+            </li>
+            {i < h.flow.steps.length - 1 ? (
+              <li class="hl-flow__sep" aria-hidden="true">
+                →
+              </li>
+            ) : (
+              <li class="hl-flow__sep hl-flow__sep--eq" aria-hidden="true">
+                =
+              </li>
+            )}
+          </>
+        ))
+      }
+      <li class="hl-flow__brand">
+        <div class="hl-flow__icon-wrap">
+          <span class="hl-flow__circle hl-flow__circle--brand" aria-hidden="true">
+            <img src="/images/logo.png" alt="" width="48" height="48" decoding="async" />
+            <span class="hl-flow__brand-name">NOVIXA</span>
+          </span>
+        </div>
+        <strong>{h.flow.brandTitle}</strong>
+        <p>{h.flow.brandTagline}</p>
+      </li>
+    </ol>
+  </div>
+</section>

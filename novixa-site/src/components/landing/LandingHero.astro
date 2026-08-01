@@ -1,33 +1,49 @@
 ---
 import { homeLanding as h } from '../../lib/home-landing';
 
-const heroIcons = [
-  '<path d="M4 5h16v3H4V5Zm0 5h10v9H4v-9Zm12 0h4v9h-4v-9Z"/>',
-  '<path d="M8 3.5h8A1.5 1.5 0 0 1 17.5 5v14a1.5 1.5 0 0 1-1.5 1.5H8A1.5 1.5 0 0 1 6.5 19V5A1.5 1.5 0 0 1 8 3.5Zm4 14.2a1 1 0 1 0-1-1 1 1 0 0 0 1 1Z"/>',
-  '<path d="M12 3.5 13.2 8l4.3 1.2L13.2 10.4 12 14.9l-1.2-4.5L6.5 9.2 10.8 8 12 3.5Z"/>',
+const icon = (d: string) =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+
+const statIcons = [
+  // POS · Kho · CRM — dashboard panels
+  icon('<path d="M4 6.5h16v3H4v-3Zm0 5h10v6.5H4V11.5Zm12 0h4V18h-4v-6.5Z"/>'),
+  // App khách hàng — phone
+  icon(
+    '<rect x="7" y="3.5" width="10" height="17" rx="2"/><path d="M10 17.5h4"/><path d="M9.5 6.5h5v8.5h-5V6.5Z"/>',
+  ),
+  // AI đồng hành — spark
+  icon('<path d="M12 3.5 13.2 8l4.3 1.2L13.2 10.4 12 14.9l-1.2-4.5L6.5 9.2 10.8 8 12 3.5Z"/><path d="m17 14 .7 2.3L20 17l-2.3.7L17 20l-.7-2.3L14 17l2.3-.7L17 14Z"/>'),
+  // 24/7 — headset
+  icon(
+    '<path d="M5.2 11.2a6.8 6.8 0 0 1 13.6 0v3.2a1.8 1.8 0 0 1-1.8 1.8h-.7"/><path d="M5.2 11.2v3.2a1.8 1.8 0 0 0 1.8 1.8h.7"/><path d="M10 19.2h4"/><circle cx="12" cy="8.2" r="2"/>',
+  ),
 ] as const;
 ---
 
 <section class="hl-hero" aria-labelledby="hl-hero-title">
   <div class="container hl-hero__grid">
     <div class="hl-hero__copy">
+      <p class="hl-badge">{h.hero.badge}</p>
       <h1 id="hl-hero-title" class="hl-hero__title">
-        {h.hero.titleBefore}<em>{h.hero.titleHighlight1}</em>{h.hero.titleMid}<em>{h.hero.titleHighlight2}</em>
+        {h.hero.titleBefore}<em class="hl-em--green">{h.hero.titleHighlight1}</em>{h.hero.titleMid}<em class="hl-em--blue">{h.hero.titleHighlight2}</em>
       </h1>
       <p class="hl-hero__lead">{h.hero.lead}</p>
       <div class="hl-hero__actions">
-        <a class="hl-btn hl-btn--primary" href={h.hero.primaryHref} target="_blank" rel="noopener noreferrer">
+        <a class="hl-btn hl-btn--green" href={h.hero.primaryHref}>
           {h.hero.primaryCta}
           <span aria-hidden="true">→</span>
         </a>
-        <a class="hl-btn hl-btn--ghost" href={h.hero.secondaryHref}>{h.hero.secondaryCta}</a>
+        <a class="hl-btn hl-btn--outline" href={h.hero.secondaryHref}>{h.hero.secondaryCta}</a>
       </div>
+      <ul class="hl-hero__trusts">
+        {h.hero.trusts.map((item) => <li>{item}</li>)}
+      </ul>
     </div>
 
     <div class="hl-hero__visual">
       <img
-        src="/images/hero/home-devices.png"
-        alt="Giao diện Novixa trên máy tính và điện thoại"
+        src="/images/hero/dashboard-desktop.png"
+        alt="Dashboard Novixa trên máy tính và điện thoại"
         width="1400"
         height="1000"
         loading="eager"
@@ -35,18 +51,16 @@ const heroIcons = [
       />
     </div>
   </div>
+</section>
 
+<section class="hl-stats" aria-label="Điểm mạnh Novixa">
   <div class="container">
-    <ul class="hl-hero__stats">
+    <ul class="hl-stats__list">
       {
         h.hero.stats.map((stat, i) => (
           <li>
-            <span
-              class="hl-hero__stat-ico"
-              aria-hidden="true"
-              set:html={`<svg viewBox="0 0 24 24" fill="currentColor">${heroIcons[i]}</svg>`}
-            />
-            <span class="hl-hero__stat-text">
+            <span class="hl-stats__ico" aria-hidden="true" set:html={statIcons[i]} />
+            <span class="hl-stats__text">
               <strong>{stat.value}</strong>
               <span>{stat.label}</span>
             </span>

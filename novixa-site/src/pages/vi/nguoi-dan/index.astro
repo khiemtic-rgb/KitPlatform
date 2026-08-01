@@ -1,0 +1,324 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import { peopleLanding as p } from '../../../lib/people-landing';
+import '../../../styles/global.css';
+import '../../../styles/people-landing.css';
+
+const whyIcons = [
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M9 12h6M9 8h6m-8.5 12h11A1.5 1.5 0 0 0 19 18.5v-13A1.5 1.5 0 0 0 17.5 4h-11A1.5 1.5 0 0 0 5 5.5v13A1.5 1.5 0 0 0 6.5 20Z"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5A8.5 8.5 0 0 0 12 3.5Zm0 2.7V12l3.8 2.2"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M5.5 7.5h8.8l2.2 3V17a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 4 17V9a1.5 1.5 0 0 1 1.5-1.5Zm8.8 0V10H18"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M8.5 10.5a2.8 2.8 0 1 0-2.8-2.8 2.8 2.8 0 0 0 2.8 2.8Zm7.2 0a2.4 2.4 0 1 0-2.4-2.4 2.4 2.4 0 0 0 2.4 2.4ZM4.2 19v-.7c0-1.9 1.9-3.2 4.3-3.2h0c.8 0 1.5.2 2.1.5M19.5 19v-.7c0-1.7-1.6-2.9-3.6-2.9h0a3.8 3.8 0 0 0-1.8.4"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M8.5 11a2.6 2.6 0 1 0-2.6-2.6A2.6 2.6 0 0 0 8.5 11Zm7 0a2.6 2.6 0 1 0-2.6-2.6A2.6 2.6 0 0 0 15.5 11ZM4.5 19v-.8c0-2 2-3.4 4-3.4h0c.7 0 1.4.2 2 .5M19.5 19v-.8c0-2-2-3.4-4-3.4h0a4 4 0 0 0-2 .5"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 3.2l7 2.8v5.2c0 4.6-2.9 8-7 9.6-4.1-1.6-7-5-7-9.6V6l7-2.8z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M9 12.1l2 2 4.2-4.2"/>',
+] as const;
+
+const journeyIcons = [
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M9 12h6M9 8h6m-8.5 12h11A1.5 1.5 0 0 0 19 18.5v-13A1.5 1.5 0 0 0 17.5 4h-11A1.5 1.5 0 0 0 5 5.5v13A1.5 1.5 0 0 0 6.5 20Z"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5A8.5 8.5 0 0 0 12 3.5Zm0 2.7V12l3.8 2.2"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M5 18h14M7.5 14V18M11 10V18M14.5 12.5V18M18 8V18M8.2 10.2l3.3-3 2.4 1.8 3.8-3.8"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M5.5 7.5h8.8l2.2 3V17a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 4 17V9a1.5 1.5 0 0 1 1.5-1.5Zm8.8 0V10H18"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 4.5 14 9h5l-4 3.2 1.5 5L12 14.5 7.5 17.2 9 12.2 5 9h5L12 4.5Z"/>',
+] as const;
+
+const statsIcons = [
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M8.5 11a2.6 2.6 0 1 0-2.6-2.6A2.6 2.6 0 0 0 8.5 11Zm7 0a2.6 2.6 0 1 0-2.6-2.6A2.6 2.6 0 0 0 15.5 11ZM4.5 19v-.8c0-2 2-3.4 4-3.4h0c.7 0 1.4.2 2 .5M19.5 19v-.8c0-2-2-3.4-4-3.4h0a4 4 0 0 0-2 .5"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M5 19.5h14M7 19.5V10l5-4 5 4v9.5M10 19.5v-4h4v4"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5A8.5 8.5 0 0 0 12 3.5Zm0 2.7V12l3.8 2.2"/>',
+] as const;
+
+const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(p.cta.qrHref)}`;
+---
+
+<BaseLayout title={p.meta.title} description={p.meta.description} canonicalPath="/vi/nguoi-dan/">
+  <Header slot="header" />
+
+  <div class="pd-page">
+    <section class="pd-hero" aria-labelledby="pd-hero-title">
+      <div class="container pd-hero__grid">
+        <div>
+          <p class="pd-eyebrow">
+            <span class="pd-eyebrow__icon" aria-hidden="true">♥</span>
+            {p.hero.eyebrow}
+          </p>
+          <h1 id="pd-hero-title" class="pd-hero__title">
+            <span class="pd-hero__title-line">{p.hero.titleLine1}</span>
+            <span class="pd-hero__title-line pd-hero__title-line--accent">{p.hero.titleLine2}</span>
+          </h1>
+          <p class="pd-hero__lead">{p.hero.lead}</p>
+          <div class="pd-hero__actions">
+            <a class="pd-btn pd-btn--green" href={p.hero.primaryHref}>
+              {p.hero.primary}
+              <span aria-hidden="true">→</span>
+            </a>
+            <a class="pd-btn pd-btn--video" href={p.hero.secondaryHref}>
+              {p.hero.secondary}
+              <span class="pd-btn__play" aria-hidden="true">▶</span>
+            </a>
+          </div>
+          <div class="pd-hero__stores">
+            <span class="pd-hero__stores-label">{p.hero.storesLabel}</span>
+            {
+              p.cta.stores.map((store) => (
+                <a class="pd-store" href={store.href} target="_blank" rel="noopener noreferrer">
+                  {store.label === 'App Store' ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+                      <path d="M3.6 2.3A1.5 1.5 0 0 0 3 3.5v17a1.5 1.5 0 0 0 .6 1.2l.1.05L13.2 12 3.7 2.25l-.1.05ZM14.1 12.9l2.5 1.45-3.2 1.85-2.4-1.4 3.1-1.9Zm3.3-1.9 2.2 1.27c.7.4.7 1.4 0 1.8l-2.2 1.27-2.6-1.5 2.6-1.5v-.34ZM13.4 9.8l3.2 1.85-2.5 1.45-3.1-1.9 2.4-1.4Z" />
+                    </svg>
+                  )}
+                  <span>
+                    {store.label === 'App Store' ? 'Download on the' : 'GET IT ON'}
+                    <strong>{store.label}</strong>
+                  </span>
+                </a>
+              ))
+            }
+          </div>
+        </div>
+
+        <div
+          class="pd-hero__visual"
+          role="img"
+          aria-label="Minh họa ứng dụng Novixa: nhắc uống thuốc, đặt thuốc, tư vấn dược sĩ và theo dõi sức khỏe gia đình"
+        >
+          <div class="pd-leaf pd-leaf--left"></div>
+          <div class="pd-leaf pd-leaf--right"></div>
+
+          <div class="pd-phone pd-phone--back">
+            <div class="pd-phone__notch"></div>
+            <div class="pd-phone__screen pd-phone__screen--remind">
+              <p class="pd-remind__title">{p.hero.phoneRemind.title}</p>
+              <p class="pd-remind__name">{p.hero.phoneRemind.name}</p>
+              <p class="pd-remind__meta">{p.hero.phoneRemind.instruction}</p>
+              <p class="pd-remind__time">{p.hero.phoneRemind.time}</p>
+              <p class="pd-remind__status">{p.hero.phoneRemind.status}</p>
+              <span class="pd-remind__cta">{p.hero.phoneRemind.cta}</span>
+              <p class="pd-remind__snooze">{p.hero.phoneRemind.snooze}</p>
+            </div>
+          </div>
+
+          <div class="pd-phone pd-phone--front">
+            <div class="pd-phone__notch"></div>
+            <div class="pd-phone__screen">
+              <p class="pd-home__hi">{p.hero.phoneHome.greeting}</p>
+              <div class="pd-home__banner">
+                <span class="pd-home__heart">♥</span>
+                <span>{p.hero.phoneHome.banner}</span>
+              </div>
+              <div class="pd-home__actions">
+                {p.hero.phoneHome.actions.map((label) => (
+                  <div class="pd-home__action">
+                    <span class="pd-home__action-icon"></span>
+                    <span>{label}</span>
+                  </div>
+                ))}
+              </div>
+              <div class="pd-home__scripts">
+                <div class="pd-home__scripts-head">
+                  <strong>{p.hero.phoneHome.scriptsTitle}</strong>
+                  <span>Xem tất cả</span>
+                </div>
+                {p.hero.phoneHome.scripts.map((item) => (
+                  <div class={`pd-home__script pd-home__script--${item.tone}`}>
+                    <span class="pd-home__pill"></span>
+                    <div>
+                      <strong>{item.name}</strong>
+                      <small>{item.meta}</small>
+                    </div>
+                    <em>{item.time}</em>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <ul class="pd-floats">
+            {p.hero.floats.map((item) => (
+              <li class={`pd-float pd-float--${item.tone}`}>
+                <span class="pd-float__dot"></span>
+                {item.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="pd-why-title">
+      <div class="container">
+        <div class="pd-head">
+          <h2 id="pd-why-title">{p.why.title}</h2>
+        </div>
+        <div class="pd-why__grid">
+          {
+            p.why.items.map((item, i) => (
+              <article class={`pd-why-card pd-why-card--${item.tone}`}>
+                <div class="pd-why-card__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" set:html={whyIcons[i]} />
+                </div>
+                <h3>{item.title}</h3>
+                <p>{item.desc}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="section pd-journey" aria-labelledby="pd-journey-title">
+      <div class="container">
+        <div class="pd-head">
+          <h2 id="pd-journey-title">{p.journey.title}</h2>
+        </div>
+        <ol class="pd-journey__track">
+          {
+            p.journey.steps.map((step, i) => (
+              <li class="pd-journey__step">
+                <div class="pd-journey__icon" aria-hidden="true">
+                  <span class="pd-journey__num">{i + 1}</span>
+                  <svg viewBox="0 0 24 24" set:html={journeyIcons[i]} />
+                </div>
+                <span class="pd-journey__label">{step}</span>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <section class="section" id={p.features.id} aria-labelledby="pd-feat-title">
+      <div class="container">
+        <div class="pd-head">
+          <h2 id="pd-feat-title">{p.features.title}</h2>
+        </div>
+        <div class="pd-feat__grid">
+          <div class="pd-feat__phone">
+            <img
+              src={p.features.imageLeft}
+              alt={p.features.imageLeftAlt}
+              width="720"
+              height="960"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+          <ul class="pd-feat__list">
+            {
+              p.features.items.map((item) => (
+                <li class="pd-feat__item">
+                  <span class="pd-feat__check" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M5 12.5 10 17.5 19 7" />
+                    </svg>
+                  </span>
+                  <div>
+                    <h3>{item.title}</h3>
+                    <p>{item.desc}</p>
+                  </div>
+                </li>
+              ))
+            }
+          </ul>
+          <div class="pd-feat__phone pd-feat__phone--right">
+            <img
+              src={p.features.imageRight}
+              alt={p.features.imageRightAlt}
+              width="720"
+              height="960"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="pd-social-title">
+      <div class="container">
+        <div class="pd-head pd-head--nowrap">
+          <h2 id="pd-social-title">{p.social.title}</h2>
+        </div>
+        <div class="pd-social__grid">
+          {
+            p.social.quotes.map((q) => (
+              <article class="pd-quote">
+                <div class="pd-quote__stars" aria-label="5 sao">★★★★★</div>
+                <p class="pd-quote__text">“{q.quote}”</p>
+                <div class="pd-quote__person">
+                  <span class="pd-quote__avatar" aria-hidden="true">{q.name.charAt(0)}</span>
+                  <div>
+                    <p class="pd-quote__name">{q.name}</p>
+                    <p class="pd-quote__role">{q.role}</p>
+                  </div>
+                </div>
+              </article>
+            ))
+          }
+          <aside class="pd-stats" aria-label="Điểm nổi bật">
+            {
+              p.social.stats.map((stat, i) => (
+                <div class="pd-stats__item">
+                  <span class="pd-stats__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" set:html={statsIcons[i]} />
+                  </span>
+                  <div>
+                    <p class="pd-stats__value">{stat.value}</p>
+                    <p class="pd-stats__label">{stat.label}</p>
+                  </div>
+                </div>
+              ))
+            }
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="pd-cta" id={p.cta.id} aria-labelledby="pd-cta-title">
+      <div class="container pd-cta__grid">
+        <div class="pd-cta__media">
+          <img
+            src={p.cta.image}
+            alt={p.cta.imageAlt}
+            width="720"
+            height="900"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+        <div class="pd-cta__copy">
+          <h2 id="pd-cta-title">{p.cta.title}</h2>
+          <p>{p.cta.lead}</p>
+          <div class="pd-cta__stores">
+            {
+              p.cta.stores.map((store) => (
+                <a class="pd-store" href={store.href} target="_blank" rel="noopener noreferrer">
+                  <span>
+                    Tải trên
+                    <strong>{store.label}</strong>
+                  </span>
+                </a>
+              ))
+            }
+          </div>
+        </div>
+        <div class="pd-cta__qr">
+          <a href={p.cta.qrHref} target="_blank" rel="noopener noreferrer">
+            <div class="pd-cta__qr-frame">
+              <img src={qrUrl} alt="Mã QR tải ứng dụng Novixa" width="120" height="120" loading="lazy" />
+            </div>
+            <p class="pd-cta__qr-label">{p.cta.qrLabel}</p>
+          </a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <Footer slot="footer" />
+</BaseLayout>

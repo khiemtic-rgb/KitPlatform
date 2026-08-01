@@ -1,0 +1,100 @@
+---
+import NewsListItem from './NewsListItem.astro';
+import { formatNewsDate } from '../lib/newsDate';
+import { postDescription } from '../lib/newsExcerpt';
+import '../styles/knowledge-list.css';
+
+interface PostLike {
+  id: string;
+  data: {
+    title: string;
+    pubDate: Date;
+    image?: string;
+    description?: string;
+    excerpt?: string;
+  };
+}
+
+interface Props {
+  title: string;
+  intro: string;
+  posts: PostLike[];
+  newLabel: string;
+}
+
+const { title, intro, posts, newLabel } = Astro.props;
+const recent = posts.slice(0, 5);
+---
+
+<section class="kn-page">
+  <div class="container">
+    <header class="kn-page__header">
+      <h1 class="kn-page__title">{title}</h1>
+      <p class="kn-page__intro">{intro}</p>
+    </header>
+
+    <div class="kn-page__layout">
+      <div class="kn-page__main">
+        {
+          posts.length > 0 ? (
+            <ul class="news-list">
+              {posts.map((post) => (
+                <NewsListItem
+                  slug={post.id}
+                  title={post.data.title}
+                  description={postDescription(post)}
+                  pubDate={post.data.pubDate}
+                  image={post.data.image}
+                  newLabel={newLabel}
+                />
+              ))}
+            </ul>
+          ) : (
+            <p class="kn-empty">Chưa có bài viết — vui lòng quay lại sau.</p>
+          )
+        }
+      </div>
+
+      <aside class="kn-aside" aria-label="Thông tin bổ sung">
+        <div class="kn-card kn-cta">
+          <h2>Dùng thử Novixa</h2>
+          <p>Đăng ký demo để xem cách vận hành nhà thuốc trên một nền tảng.</p>
+          <a class="kn-cta__btn" href="/vi/lien-he/">
+            Đăng ký demo
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+
+        {
+          recent.length > 0 && (
+            <div class="kn-card">
+              <h2>Bài mới nhất</h2>
+              <ul class="kn-recent">
+                {recent.map((post) => (
+                  <li>
+                    <a href={`/vi/tin-tuc/${post.id}/`}>{post.data.title}</a>
+                    <time datetime={post.data.pubDate.toISOString()}>
+                      {formatNewsDate(post.data.pubDate)}
+                    </time>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+        }
+
+        <div class="kn-card">
+          <h2>Tài liệu nhà thuốc</h2>
+          <ul class="kn-docs">
+            <li>
+              <a href="/vi/tai-lieu/">Tài liệu nhà thuốc</a>
+            </li>
+            <li>
+              <a href="/vi/tai-lieu/van-ban-phap-luat/">Văn bản pháp luật</a>
+            </li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>

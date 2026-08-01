@@ -1,6 +1,5 @@
 ---
 import { t } from '../i18n';
-import { KNOWLEDGE_CATEGORIES, newsCategoryPath } from '../lib/news-categories';
 
 const m = t('vi');
 const c = m.contact;
@@ -13,42 +12,35 @@ const columns = [
   {
     title: 'Dành cho nhà thuốc',
     links: [
-      { href: '/vi/giai-phap/', label: 'Giải pháp' },
-      { href: '/vi/#bang-gia', label: 'Bảng giá' },
+      { href: '/vi/nha-thuoc/', label: 'Tổng quan' },
+      { href: '/vi/giai-phap-chi-phi/', label: 'Giải pháp & chi phí' },
+      // Tạm ẩn: { href: '/vi/giai-phap/', label: 'Modules giải pháp' },
       { href: '/vi/lien-he/', label: 'Đăng ký demo' },
-    ],
-  },
-  {
-    title: 'Thư viện nhà thuốc',
-    links: [
-      { href: '/vi/tai-lieu/', label: 'Tài liệu nhà thuốc' },
-      { href: '/vi/tai-lieu/van-ban-phap-luat/', label: 'Văn bản pháp luật' },
     ],
   },
   {
     title: 'Dành cho người dân',
     links: [
-      { href: '/vi/giai-phap/app-khach-hang/', label: 'Tải app' },
-      { href: '/vi/giai-phap/app-khach-hang/', label: 'Hướng dẫn sử dụng' },
-      { href: '/vi/lien-he/', label: 'Câu hỏi thường gặp' },
+      { href: '/vi/nguoi-dan/', label: 'Tổng quan' },
+      { href: '/vi/nguoi-dan/#pd-cta', label: 'Tải ứng dụng' },
+      { href: '/vi/nguoi-dan/#pd-features', label: 'Tính năng nổi bật' },
+      { href: '/vi/lien-he/#faq', label: 'Câu hỏi thường gặp' },
     ],
   },
   {
-    title: 'Kiến thức',
+    title: 'Tài nguyên',
     links: [
-      { href: '/vi/kien-thuc/', label: 'Tổng quan' },
-      ...KNOWLEDGE_CATEGORIES.slice(0, 4).map((cat) => ({
-        href: newsCategoryPath(cat.id),
-        label: cat.label,
-      })),
+      { href: '/vi/kien-thuc/', label: 'Kiến thức nhà thuốc' },
+      { href: '/vi/tai-lieu/', label: 'Tài liệu nhà thuốc' },
+      { href: '/vi/tai-lieu/van-ban-phap-luat/', label: 'Văn bản pháp luật' },
     ],
   },
   {
     title: 'Hỗ trợ',
     links: [
-      { href: '/vi/lien-he/', label: 'Trung tâm hỗ trợ' },
-      { href: '/vi/lien-he/', label: 'Chính sách bảo mật' },
-      { href: '/vi/lien-he/', label: 'Điều khoản sử dụng' },
+      { href: '/vi/lien-he/', label: 'Liên hệ' },
+      { href: '/vi/chinh-sach-bao-mat/', label: 'Chính sách bảo mật' },
+      { href: '/vi/dieu-khoan-su-dung/', label: 'Điều khoản sử dụng' },
     ],
   },
 ];
@@ -140,8 +132,8 @@ const columns = [
 
   .footer-grid {
     display: grid;
-    gap: 2rem 1.35rem;
-    grid-template-columns: 1.35fr repeat(5, minmax(0, 0.85fr)) 1.1fr;
+    gap: 2rem 1.75rem;
+    grid-template-columns: 1.4fr repeat(4, minmax(0, 1fr)) 1.15fr;
     align-items: start;
   }
 
@@ -275,9 +267,24 @@ const columns = [
     .footer-grid {
       grid-template-columns: 1fr 1fr 1fr;
     }
+
+    .footer-brand {
+      grid-column: 1 / -1;
+    }
   }
 
   @media (max-width: 700px) {
+    .footer-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .footer-brand,
+    .footer-contact {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 480px) {
     .footer-grid {
       grid-template-columns: 1fr;
     }

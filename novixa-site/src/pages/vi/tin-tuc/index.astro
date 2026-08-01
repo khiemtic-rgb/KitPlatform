@@ -2,79 +2,21 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
+import KnowledgeListing from '../../../components/KnowledgeListing.astro';
 import { getCollection } from 'astro:content';
 import { sortPublishedNews } from '../../../lib/newsDate';
-import NewsListItem from '../../../components/NewsListItem.astro';
-import { KNOWLEDGE_CATEGORIES, newsCategoryPath } from '../../../lib/news-categories';
-import { postDescription } from '../../../lib/newsExcerpt';
+import { getNewsCategory } from '../../../lib/news-categories';
 import { t } from '../../../i18n';
 import '../../../styles/global.css';
 
 const m = t('vi');
 const posts = sortPublishedNews(await getCollection('tinTuc')).filter(
-  (p) => (p.data.category ?? 'tin-tuc-novixa') !== 'tin-tuc-novixa',
+  (p) => getNewsCategory(p.data.category).navGroup === 'knowledge',
 );
 ---
 
 <BaseLayout title="Kiến thức nhà thuốc" description={m.news.intro} canonicalPath="/vi/tin-tuc/">
   <Header slot="header" />
-  <section class="section">
-    <div class="container">
-      <h1 class="section-title">Kiến thức nhà thuốc</h1>
-      <p class="section-intro">{m.news.intro}</p>
-
-      <nav class="knowledge-cat-nav" aria-label="Nhóm kiến thức">
-        <a href="/vi/kien-thuc/">Tổng quan</a>
-        {
-          KNOWLEDGE_CATEGORIES.map((cat) => (
-            <a href={newsCategoryPath(cat.id)}>{cat.label}</a>
-          ))
-        }
-      </nav>
-
-      <ul class="news-list">
-        {
-          posts.map((post) => (
-            <NewsListItem
-              slug={post.id}
-              title={post.data.title}
-              description={postDescription(post)}
-              pubDate={post.data.pubDate}
-              image={post.data.image}
-              newLabel={m.news.newBadge}
-            />
-          ))
-        }
-      </ul>
-    </div>
-  </section>
+  <KnowledgeListing title="Kiến thức nhà thuốc" intro={m.news.intro} posts={posts} newLabel={m.news.newBadge} />
   <Footer slot="footer" />
 </BaseLayout>
-
-<style>
-  .knowledge-cat-nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 1.25rem 0 1.75rem;
-  }
-
-  .knowledge-cat-nav a {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.35rem 0.75rem;
-    border: 1px solid var(--color-border);
-    border-radius: 999px;
-    font-size: 0.85rem;
-    text-decoration: none;
-    color: var(--color-text, #243447);
-    background: #fff;
-  }
-
-  .knowledge-cat-nav a:hover,
-  .knowledge-cat-nav a.active {
-    border-color: var(--color-primary, #1a7a4c);
-    color: var(--color-primary, #1a7a4c);
-    background: color-mix(in srgb, var(--color-primary, #1a7a4c) 8%, white);
-  }
-</style>

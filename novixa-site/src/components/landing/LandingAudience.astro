@@ -2,51 +2,41 @@
 import { homeLanding as h } from '../../lib/home-landing';
 ---
 
-<section class="hl-audience section" aria-label="Lợi ích theo đối tượng">
+<section class="hl-audience section" aria-label="Đối tượng sử dụng">
   <div class="container hl-audience__grid">
-    <article class="hl-panel hl-panel--people" id="nguoi-dan">
-      <h2>{h.people.title}</h2>
-      <ul>
-        {h.people.items.map((item) => <li>{item}</li>)}
-      </ul>
-      <a class="hl-btn hl-btn--green" href={h.people.ctaHref}>{h.people.cta}</a>
-      <div class="hl-panel__visual" aria-hidden="true">
-        <div class="hl-phone">
-          <p class="hl-phone__brand">Novixa</p>
-          <p class="hl-phone__line">Hồ sơ sức khỏe</p>
-          <p class="hl-phone__line">Nhắc uống thuốc</p>
-          <p class="hl-phone__line">Tái mua đơn</p>
-        </div>
+    <article class="hl-card-aud hl-card-aud--pharmacy" id="nha-thuoc">
+      <div class="hl-card-aud__media">
+        <img src={h.pharmacy.image} alt={h.pharmacy.imageAlt} width="720" height="960" loading="lazy" decoding="async" />
+      </div>
+      <div class="hl-card-aud__copy">
+        <p class="hl-card-aud__eyebrow">{h.pharmacy.eyebrow}</p>
+        <h2 class="hl-card-aud__heading">{h.pharmacy.heading}</h2>
+        <p class="hl-card-aud__lead">{h.pharmacy.title}</p>
+        <ul>
+          {h.pharmacy.items.map((item) => <li>{item}</li>)}
+        </ul>
+        <a class="hl-btn hl-btn--green" href={h.pharmacy.ctaHref}>
+          {h.pharmacy.cta}
+          <span aria-hidden="true">→</span>
+        </a>
       </div>
     </article>
 
-    <article class="hl-panel hl-panel--pharmacy" id="nha-thuoc">
-      <h2>{h.pharmacy.title}</h2>
-      <ul>
-        {h.pharmacy.items.map((item) => <li>{item}</li>)}
-      </ul>
-      <a class="hl-btn hl-btn--primary" href={h.pharmacy.ctaHref}>{h.pharmacy.cta} →</a>
-      <div class="hl-panel__visual" aria-hidden="true">
-        <div class="hl-tablet">
-          <p class="hl-tablet__title">Dashboard nhà thuốc</p>
-          <div class="hl-tablet__bars">
-            <span></span><span></span><span></span><span></span>
-          </div>
-        </div>
+    <article class="hl-card-aud hl-card-aud--people" id="nguoi-dan">
+      <div class="hl-card-aud__copy">
+        <p class="hl-card-aud__eyebrow">{h.people.eyebrow}</p>
+        <h2 class="hl-card-aud__heading">{h.people.heading}</h2>
+        <p class="hl-card-aud__lead">{h.people.title}</p>
+        <ul>
+          {h.people.items.map((item) => <li>{item}</li>)}
+        </ul>
+        <a class="hl-btn hl-btn--primary" href={h.people.ctaHref}>
+          {h.people.cta}
+          <span aria-hidden="true">→</span>
+        </a>
       </div>
-    </article>
-
-    <article class="hl-panel hl-panel--ai" id="ai-health">
-      <h2>{h.aiChat.title}</h2>
-      <div class="hl-chat" role="img" aria-label="Giao diện chat Novixa AI">
-        <p class="hl-chat__bot">
-          <strong>Novixa AI</strong>
-          <br />
-          {h.aiChat.greeting}
-        </p>
-        <div class="hl-chat__prompts">
-          {h.aiChat.prompts.map((prompt) => <span>{prompt}</span>)}
-        </div>
+      <div class="hl-card-aud__media">
+        <img src={h.people.image} alt={h.people.imageAlt} width="720" height="960" loading="lazy" decoding="async" />
       </div>
     </article>
   </div>

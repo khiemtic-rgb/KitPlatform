@@ -1,0 +1,221 @@
+/* Listing Kiến thức nhà thuốc — 2 cột + sidebar */
+
+.kn-page {
+  --kn-navy: #0f2747;
+  --kn-muted: #64748b;
+  --kn-border: #e8eef3;
+  --kn-green: #16c784;
+  --kn-green-dark: #12a86e;
+  --kn-green-soft: #e8f9f1;
+  padding: clamp(2.5rem, 5vw, 3.5rem) 0 clamp(3.5rem, 7vw, 5rem);
+}
+
+.kn-page__header {
+  margin-bottom: 2rem;
+  max-width: 46rem;
+}
+
+.kn-page__title {
+  margin: 0;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: var(--kn-navy);
+}
+
+.kn-page__intro {
+  margin: 0.65rem 0 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--kn-muted);
+  max-width: 52ch;
+}
+
+.kn-page__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 2.25rem;
+  align-items: start;
+}
+
+.kn-page__main .news-list {
+  margin: 0;
+}
+
+.kn-page__main .news-list-item {
+  padding: 1.25rem 0;
+}
+
+.kn-page__main .news-list-item:first-child {
+  padding-top: 0;
+}
+
+.kn-page__main .news-title-row a {
+  color: var(--kn-navy);
+  font-size: 1.05rem;
+}
+
+.kn-page__main .news-title-row a:hover {
+  color: var(--kn-green-dark);
+}
+
+.kn-page__main .news-meta {
+  color: var(--kn-muted) !important;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.kn-page__main .news-desc {
+  margin-top: 0.35rem;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--kn-muted);
+}
+
+.kn-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  position: sticky;
+  top: 5.5rem;
+}
+
+.kn-card {
+  padding: 1.15rem 1.2rem;
+  border: 1px solid var(--kn-border);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(15, 39, 71, 0.04);
+}
+
+.kn-card h2 {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--kn-navy);
+}
+
+.kn-cta {
+  background: linear-gradient(145deg, #0b7a52 0%, #12a86e 55%, #16c784 100%);
+  border: none;
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(18, 168, 110, 0.22);
+}
+
+.kn-cta h2 {
+  color: #fff;
+  margin-bottom: 0.45rem;
+}
+
+.kn-cta p {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.kn-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 42px;
+  padding: 0.65rem 1.1rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #0b7a52;
+  font-size: 0.875rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.kn-cta__btn:hover {
+  transform: translateY(-1px);
+  background: #f3fbf7;
+  color: #0b7a52;
+  text-decoration: none;
+}
+
+.kn-recent {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kn-recent li + li {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--kn-border);
+}
+
+.kn-recent a {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--kn-navy);
+  text-decoration: none;
+}
+
+.kn-recent a:hover {
+  color: var(--kn-green-dark);
+  text-decoration: none;
+}
+
+.kn-recent time {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--kn-muted);
+  text-transform: uppercase;
+}
+
+.kn-docs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kn-docs li + li {
+  margin-top: 0.45rem;
+}
+
+.kn-docs a {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--kn-muted);
+  text-decoration: none;
+}
+
+.kn-docs a:hover {
+  color: var(--kn-green-dark);
+  text-decoration: none;
+}
+
+.kn-empty {
+  margin: 0;
+  color: var(--kn-muted);
+  font-size: 0.95rem;
+}
+
+@media (max-width: 900px) {
+  .kn-page__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .kn-aside {
+    position: static;
+    order: 2;
+  }
+
+  .kn-page__main {
+    order: 1;
+  }
+}

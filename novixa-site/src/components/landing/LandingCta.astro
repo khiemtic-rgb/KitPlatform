@@ -1,16 +1,51 @@
 ---
 import { homeLanding as h } from '../../lib/home-landing';
+
+const trustIcons: Record<(typeof h.cta.trusts)[number]['icon'], string> = {
+  shield: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2l7 2.8v5.2c0 4.6-2.9 8-7 9.6-4.1-1.6-7-5-7-9.6V6l7-2.8z"/><path d="M9 12.1l2 2 4.2-4.2"/></svg>`,
+  easy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3.5" width="19" height="13" rx="2"/><path d="M8 20.5h8M12 16.5v4"/><path d="M10.2 8.2l5.6 3.2-2.4.7-1.1 2.5-2.1-6.4z"/></svg>`,
+  stable: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3.5" width="19" height="13" rx="2"/><path d="M8 20.5h8M12 16.5v4"/><circle cx="16.8" cy="13.8" r="3.1" fill="#fff"/><path d="M15.4 13.8l1 1 2-2.1"/></svg>`,
+  support: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.2" r="2.4"/><path d="M8.2 14.2a4.2 4.2 0 017.6 0"/><path d="M5.2 11.2v3.6a1.8 1.8 0 001.8 1.8h.8"/><path d="M18.8 11.2v3.6a1.8 1.8 0 01-1.8 1.8h-.8"/><path d="M5.2 11.2a6.8 6.8 0 0113.6 0"/><path d="M10.2 19.2h3.6"/></svg>`,
+};
 ---
 
-<section class="hl-cta">
-  <div class="container hl-cta__inner">
-    <div class="hl-cta__copy">
-      <h2>{h.cta.title}</h2>
-      <p>{h.cta.subtitle}</p>
+<section class="hl-cta section" id="bang-gia" aria-labelledby="hl-cta-title">
+  <div class="container">
+    <div class="hl-cta__banner">
+      <div class="hl-cta__copy">
+        <h2 id="hl-cta-title">{h.cta.title}</h2>
+        <p>{h.cta.subtitle}</p>
+      </div>
+
       <div class="hl-cta__actions">
         <a class="hl-btn hl-btn--light" href={h.cta.primaryHref}>{h.cta.primary}</a>
         <a class="hl-btn hl-btn--outline-light" href={h.cta.secondaryHref}>{h.cta.secondary}</a>
       </div>
+
+      <div class="hl-cta__visual">
+        <img
+          src="/images/hero/dashboard-desktop.png"
+          alt="Giao diện Novixa trên laptop và điện thoại"
+          width="900"
+          height="680"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
     </div>
+
+    <ul class="hl-cta__trusts">
+      {
+        h.cta.trusts.map((item) => (
+          <li>
+            <span class="hl-cta__trust-icon" set:html={trustIcons[item.icon]} />
+            <div>
+              <strong>{item.title}</strong>
+              <p>{item.desc}</p>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
   </div>
 </section>

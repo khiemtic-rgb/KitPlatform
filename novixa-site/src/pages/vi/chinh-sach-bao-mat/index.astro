@@ -1,0 +1,198 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import { t } from '../../../i18n';
+import '../../../styles/global.css';
+
+const m = t('vi');
+const c = m.contact;
+const co = m.company;
+const updated = '01/08/2026';
+
+const title = 'Chính sách bảo mật';
+const description =
+  'Chính sách bảo mật của Novixa — cách chúng tôi thu thập, sử dụng và bảo vệ thông tin khi bạn sử dụng website và dịch vụ.';
+---
+
+<BaseLayout title={title} description={description} canonicalPath="/vi/chinh-sach-bao-mat/">
+  <Header slot="header" />
+
+  <section class="section legal-page">
+    <div class="container legal-wrap">
+      <nav class="legal-crumb" aria-label="Breadcrumb">
+        <a href="/vi/">Trang chủ</a>
+        <span aria-hidden="true">›</span>
+        <span>{title}</span>
+      </nav>
+
+      <h1>{title}</h1>
+      <p class="legal-updated">Cập nhật lần cuối: {updated}</p>
+
+      <div class="prose legal-body">
+        <p>
+          Chính sách này mô tả cách <strong>Novixa</strong> (sản phẩm của {co.legalName}, MST {co.taxId})
+          thu thập, sử dụng và bảo vệ thông tin khi bạn truy cập website{' '}
+          <a href="https://novixa.vn/">novixa.vn</a> hoặc liên hệ đăng ký tư vấn / demo.
+        </p>
+
+        <h2>1. Phạm vi áp dụng</h2>
+        <p>
+          Chính sách áp dụng cho thông tin thu thập qua website Novixa, form liên hệ, kênh hotline / email /
+          Zalo / fanpage liên kết trên website, và các trang con thuộc novixa.vn.
+        </p>
+        <p>
+          Chính sách không thay thế thỏa thuận bảo mật dữ liệu vận hành (nếu có) khi nhà thuốc triển khai phần mềm
+          Novixa tại cơ sở — các cam kết đó sẽ được quy định riêng trong hợp đồng / phụ lục dịch vụ.
+        </p>
+
+        <h2>2. Thông tin chúng tôi có thể thu thập</h2>
+        <ul>
+          <li>
+            <strong>Thông tin bạn gửi chủ động:</strong> họ tên, số điện thoại, email, vai trò, quy mô nhà thuốc,
+            nội dung nhu cầu / tin nhắn qua form hoặc kênh liên hệ.
+          </li>
+          <li>
+            <strong>Thông tin kỹ thuật cơ bản:</strong> địa chỉ IP, loại trình duyệt, trang đã xem, thời điểm truy
+            cập — phục vụ vận hành, bảo mật và cải thiện website (có thể qua công cụ phân tích / máy chủ hosting).
+          </li>
+          <li>
+            <strong>Cookie / bộ nhớ trình duyệt:</strong> dùng để ghi nhớ tùy chọn giao diện hoặc đo lường hiệu quả
+            trang (nếu được bật). Bạn có thể chặn cookie trong trình duyệt; một số tính năng có thể bị ảnh hưởng.
+          </li>
+        </ul>
+
+        <h2>3. Mục đích sử dụng</h2>
+        <ul>
+          <li>Phản hồi yêu cầu liên hệ, tư vấn giải pháp và sắp xếp demo.</li>
+          <li>Gửi thông tin sản phẩm / cập nhật liên quan khi bạn đã đồng ý được liên hệ.</li>
+          <li>Vận hành, bảo mật, phòng chống gian lận và cải thiện trải nghiệm website.</li>
+          <li>Tuân thủ nghĩa vụ pháp lý khi có yêu cầu hợp lệ từ cơ quan có thẩm quyền.</li>
+        </ul>
+        <p>Chúng tôi không bán thông tin cá nhân của bạn cho bên thứ ba vì mục đích marketing không liên quan.</p>
+
+        <h2>4. Chia sẻ thông tin</h2>
+        <p>Thông tin có thể được xử lý / lưu trữ thông qua các nhà cung cấp dịch vụ cần thiết để vận hành, ví dụ:</p>
+        <ul>
+          <li>Hosting / hạ tầng website và email.</li>
+          <li>Dịch vụ gửi form (ví dụ Formsubmit) khi bạn gửi form trên website.</li>
+          <li>Công cụ phân tích hoặc bản đồ nhúng (nếu trang có sử dụng).</li>
+        </ul>
+        <p>
+          Các bên này chỉ được xử lý thông tin trong phạm vi cung cấp dịch vụ. Chúng tôi cũng có thể chia sẻ khi
+          pháp luật yêu cầu hoặc để bảo vệ quyền lợi hợp pháp của Novixa / người dùng.
+        </p>
+
+        <h2>5. Lưu trữ và bảo mật</h2>
+        <p>
+          Chúng tôi áp dụng các biện pháp kỹ thuật và tổ chức phù hợp để hạn chế truy cập trái phép, mất mát hoặc
+          sử dụng sai mục đích. Không hệ thống nào bảo mật tuyệt đối 100%; nếu phát hiện sự cố ảnh hưởng dữ liệu
+          của bạn, chúng tôi sẽ xử lý và thông báo theo quy định pháp luật áp dụng.
+        </p>
+        <p>
+          Thông tin liên hệ được lưu trong thời gian cần thiết để phục vụ tư vấn / chăm sóc và nghĩa vụ pháp lý,
+          sau đó có thể được xóa hoặc ẩn danh hóa.
+        </p>
+
+        <h2>6. Quyền của bạn</h2>
+        <p>Trong phạm vi pháp luật Việt Nam cho phép, bạn có thể yêu cầu:</p>
+        <ul>
+          <li>Được biết thông tin cá nhân chúng tôi đang lưu liên quan đến bạn.</li>
+          <li>Chỉnh sửa thông tin không chính xác.</li>
+          <li>Rút đồng ý nhận liên hệ tư vấn / marketing (nếu đã đồng ý trước đó).</li>
+          <li>Yêu cầu xóa hoặc hạn chế xử lý trong các trường hợp phù hợp.</li>
+        </ul>
+        <p>
+          Gửi yêu cầu tới email{' '}
+          <a href={`mailto:${c.emailAddress}`}>{c.emailAddress}</a>
+          {' '}hoặc hotline{' '}
+          <a href={`tel:${c.phoneTel}`}>{c.phoneDisplay}</a>. Chúng tôi sẽ phản hồi trong thời gian hợp lý.
+        </p>
+
+        <h2>7. Liên kết ngoài</h2>
+        <p>
+          Website có thể chứa liên kết tới bên thứ ba (fanpage, Zalo, bản đồ, trang đối tác…). Chính sách bảo mật
+          của các trang đó do bên thứ ba tự chịu trách nhiệm.
+        </p>
+
+        <h2>8. Trẻ em</h2>
+        <p>
+          Website Novixa hướng tới chủ nhà thuốc / doanh nghiệp và không nhắm đến trẻ em dưới 16 tuổi. Nếu bạn cho
+          rằng chúng tôi đã thu thập thông tin của trẻ em không phù hợp, vui lòng liên hệ để được hỗ trợ xóa.
+        </p>
+
+        <h2>9. Thay đổi chính sách</h2>
+        <p>
+          Novixa có thể cập nhật Chính sách bảo mật theo thời gian. Phiên bản mới sẽ được đăng trên trang này kèm
+          ngày cập nhật. Việc tiếp tục sử dụng website sau khi chính sách thay đổi đồng nghĩa bạn đã nắm thông tin
+          cập nhật (trừ khi pháp luật yêu cầu hình thức đồng ý khác).
+        </p>
+
+        <h2>10. Liên hệ</h2>
+        <p>
+          <strong>{co.legalName}</strong><br />
+          {co.address}<br />
+          Email: <a href={`mailto:${c.emailAddress}`}>{c.emailAddress}</a><br />
+          Hotline: <a href={`tel:${c.phoneTel}`}>{c.phoneDisplay}</a><br />
+          Website: <a href="https://novixa.vn/">novixa.vn</a>
+        </p>
+        <p>
+          Xem thêm trang <a href="/vi/lien-he/">Liên hệ</a> để gửi yêu cầu tư vấn hoặc hỗ trợ.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .legal-page {
+    padding-top: clamp(2rem, 4vw, 2.75rem);
+  }
+
+  .legal-wrap {
+    max-width: 760px;
+  }
+
+  .legal-crumb {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    margin: 0 0 1rem;
+    font-size: 0.8125rem;
+    color: var(--color-muted);
+  }
+
+  .legal-crumb a {
+    color: var(--color-muted);
+  }
+
+  .legal-crumb a:hover {
+    color: var(--color-primary, #0b7a52);
+  }
+
+  .legal-page h1 {
+    margin: 0 0 0.5rem;
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    color: var(--color-text);
+  }
+
+  .legal-updated {
+    margin: 0 0 1.75rem;
+    font-size: 0.875rem;
+    color: var(--color-muted);
+  }
+
+  .legal-body {
+    max-width: none;
+  }
+
+  .legal-body h2 {
+    margin-top: 1.75rem;
+  }
+</style>

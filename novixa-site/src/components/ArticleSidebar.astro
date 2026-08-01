@@ -1,0 +1,73 @@
+---
+import { articleSidebar as s } from '../lib/article-sidebar';
+import { formatNewsDate } from '../lib/newsDate';
+
+interface RecentPost {
+  id: string;
+  data: { title: string; pubDate: Date };
+}
+
+interface Props {
+  recent?: RecentPost[];
+}
+
+const { recent = [] } = Astro.props;
+---
+
+<aside class="ad-aside" aria-label="Thông tin sản phẩm Novixa">
+  <div class="ad-card ad-cta">
+    <h2>{s.cta.title}</h2>
+    <p>{s.cta.lead}</p>
+    <a class="ad-cta__btn" href={s.cta.primaryHref}>
+      {s.cta.primary}
+      <span aria-hidden="true">→</span>
+    </a>
+  </div>
+
+  <div class="ad-card">
+    <h2>{s.products.title}</h2>
+    <ul class="ad-products">
+      {
+        s.products.items.map((item) => (
+          <li>
+            <a href={item.href}>
+              <span class="ad-products__title">{item.title}</span>
+              <span class="ad-products__desc">{item.desc}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  {
+    recent.length > 0 && (
+      <div class="ad-card">
+        <h2>{s.recentTitle}</h2>
+        <ul class="ad-recent">
+          {recent.map((post) => (
+            <li>
+              <a href={`/vi/tin-tuc/${post.id}/`}>{post.data.title}</a>
+              <time datetime={post.data.pubDate.toISOString()}>
+                {formatNewsDate(post.data.pubDate)}
+              </time>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+
+  <div class="ad-card">
+    <h2>{s.docs.title}</h2>
+    <ul class="ad-links">
+      {
+        s.docs.items.map((item) => (
+          <li>
+            <a href={item.href}>{item.title}</a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</aside>

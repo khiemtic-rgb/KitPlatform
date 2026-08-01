@@ -3,14 +3,17 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import ArticleCta from '../../../components/ArticleCta.astro';
+import ArticleSidebar from '../../../components/ArticleSidebar.astro';
 import { getCollection, render } from 'astro:content';
 import { filterPublishedPosts } from '../../../lib/publishedNews';
-import { formatNewsDate } from '../../../lib/newsDate';
+import { formatNewsDate, sortPublishedNews } from '../../../lib/newsDate';
 import { resolveArticleImage, buildArticleJsonLd } from '../../../lib/articleSeo';
 import { postDescription } from '../../../lib/newsExcerpt';
 import { getNewsCategory, newsCategoryPath } from '../../../lib/news-categories';
+import { articleSidebar } from '../../../lib/article-sidebar';
 import { t } from '../../../i18n';
 import '../../../styles/global.css';
+import '../../../styles/article-detail.css';
 
 export async function getStaticPaths() {
   const posts = filterPublishedPosts(await getCollection('tinTuc'));
@@ -34,6 +37,10 @@ const categoryHref = newsCategoryPath(category.id);
 const backHref = category.navGroup === 'company' ? categoryHref : '/vi/kien-thuc/';
 const backLabel =
   category.navGroup === 'company' ? '← Quay lại Tin tức Novixa' : m.news.back;
+
+const recent = sortPublishedNews(await getCollection('tinTuc'))
+  .filter((p) => p.id !== post.id && getNewsCategory(p.data.category).navGroup === 'knowledge')
+  .slice(0, articleSidebar.recentCount);
 ---
 
 <BaseLayout
@@ -46,46 +53,34 @@ const backLabel =
   jsonLd={jsonLd}
 >
   <Header slot="header" />
-  <article class="section" itemscope itemtype="https://schema.org/Article">
-    <div class="container prose">
-      <p><a href={backHref}>{backLabel}</a></p>
-      <h1 itemprop="headline">{post.data.title}</h1>
-      <p class="news-meta">
-        <a href={categoryHref}>{category.label}</a>
-        <span aria-hidden="true"> · </span>
-        <time datetime={publishedTime} itemprop="datePublished">{formatNewsDate(post.data.pubDate)}</time>
-      </p>
-      <figure class="article-hero-image">
-        <img
-          src={ogImage}
-          alt={`${post.data.title} — Novixa`}
-          width="1200"
-          height="630"
-          loading="eager"
-          itemprop="image"
-        />
-      </figure>
-      <div itemprop="articleBody">
-        <Content />
+  <article class="ad-page" itemscope itemtype="https://schema.org/Article">
+    <div class="container ad-layout">
+      <div class="ad-main">
+        <a class="ad-back" href={backHref}>{backLabel}</a>
+        <h1 itemprop="headline">{post.data.title}</h1>
+        <p class="ad-meta">
+          <a href={categoryHref}>{category.label}</a>
+          <span aria-hidden="true"> · </span>
+          <time datetime={publishedTime} itemprop="datePublished">{formatNewsDate(post.data.pubDate)}</time>
+        </p>
+        <figure class="ad-hero">
+          <img
+            src={ogImage}
+            alt={`${post.data.title} — Novixa`}
+            width="1200"
+            height="630"
+            loading="eager"
+            itemprop="image"
+          />
+        </figure>
+        <div class="ad-body prose" itemprop="articleBody">
+          <Content />
+        </div>
+        <ArticleCta />
       </div>
-      <ArticleCta />
+
+      <ArticleSidebar recent={recent} />
     </div>
   </article>
   <Footer slot="footer" />
 </BaseLayout>
-
-<style>
-  .article-hero-image {
-    margin: 1.25rem 0 1.75rem;
-    border-radius: var(--radius);
-    overflow: hidden;
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow);
-  }
-
-  .article-hero-image img {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-</style>

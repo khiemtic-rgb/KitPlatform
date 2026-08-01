@@ -12,14 +12,14 @@
     "solutions": "Giải pháp",
     "forPharmacy": "Dành cho nhà thuốc",
     "forPeople": "Dành cho người dân",
-    "pricing": "Bảng giá",
+    "pricing": "Giải pháp & chi phí",
     "enterprise": "Enterprise",
-    "resources": "Kiến thức",
-    "docs": "Thư viện nhà thuốc",
+    "resources": "Kiến thức nhà thuốc",
+    "docs": "Tài liệu nhà thuốc",
     "company": "Về Novixa",
     "customers": "Enterprise",
     "about": "Về Novixa",
-    "news": "Kiến thức",
+    "news": "Kiến thức nhà thuốc",
     "contact": "Liên hệ",
     "login": "Đăng nhập",
     "demo": "Đăng ký demo",
@@ -107,7 +107,7 @@
       },
       {
         "q": "Sao chưa có bảng giá đầy đủ trên website?",
-        "a": "Chúng tôi đang trong giai đoạn founding với số lượng có giới hạn. Giá chi tiết theo quy mô (một cửa hay chuỗi) sẽ trao đổi trong buổi demo và chốt rõ khi ký — Bảng giá chi tiết sẽ được cập nhật sau giai đoạn founding."
+        "a": "Chúng tôi đang trong giai đoạn founding với số lượng có giới hạn. Chi phí theo quy mô (một cửa hay chuỗi) sẽ trao đổi trong buổi demo và chốt rõ khi ký — xem định hướng tại trang Giải pháp & chi phí."
       }
     ]
   },
@@ -193,7 +193,7 @@
     "emailAddress": "care@novixa.vn",
     "facebookLabel": "Fanpage Facebook",
     "facebookPageName": "Novixa",
-    "facebookUrl": "https://www.facebook.com/novixa68",
+    "facebookUrl": "https://www.facebook.com/novixa.health",
     "formNote": "Nội dung form được gửi tới email Novixa. Ghi “FOUNDING” trong tin nhắn nếu bạn muốn đăng ký Early Access.",
     "successTitle": "Đã gửi tin nhắn",
     "successMessage": "Cảm ơn bạn! Chúng tôi sẽ phản hồi qua số điện thoại hoặc email bạn cung cấp.",

@@ -1,0 +1,37 @@
+---
+import { homeLanding as h } from '../../lib/home-landing';
+import { painArts, painIcons } from '../../lib/pain-art';
+---
+
+<section class="hl-pain section" aria-labelledby="hl-pain-title">
+  <div class="container">
+    <header class="hl-head">
+      <p class="hl-eyebrow">{h.problems.eyebrow}</p>
+      <h2 id="hl-pain-title" class="hl-title">
+        {h.problems.titleBefore}<em>{h.problems.titleHighlight}</em>{h.problems.titleAfter}
+      </h2>
+      <p class="hl-lead">{h.problems.lead}</p>
+    </header>
+
+    <ul class="hl-pain__grid">
+      {
+        h.problems.items.map((item, i) => (
+          <li class={`hl-pain-card hl-pain-card--${item.tone}`}>
+            <div class="hl-pain-card__body">
+              <span
+                class="hl-pain-card__ico"
+                aria-hidden="true"
+                set:html={`<svg viewBox="0 0 24 24" fill="currentColor">${painIcons[i]}</svg>`}
+              />
+              <div class="hl-pain-card__copy">
+                <h3>{item.title}</h3>
+                <p>{item.desc}</p>
+              </div>
+            </div>
+            <div class="hl-pain-card__art" aria-hidden="true" set:html={painArts[i]} />
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

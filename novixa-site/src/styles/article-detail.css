@@ -1,0 +1,262 @@
+/* Trang chi tiết tin — cột bài + sidebar sản phẩm */
+
+.ad-page {
+  --ad-navy: #0f2747;
+  --ad-muted: #64748b;
+  --ad-border: #e8eef3;
+  --ad-green: #16c784;
+  --ad-green-deep: #0b7a52;
+  --ad-green-soft: #e8f9f1;
+  padding: clamp(2rem, 4vw, 3rem) 0 clamp(3.5rem, 7vw, 5rem);
+}
+
+.ad-page .container {
+  max-width: 1120px;
+}
+
+.ad-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 2.25rem;
+  align-items: start;
+}
+
+.ad-main {
+  min-width: 0;
+}
+
+.ad-back {
+  display: inline-flex;
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ad-green-deep);
+}
+
+.ad-back:hover {
+  color: var(--ad-green);
+  text-decoration: none;
+}
+
+.ad-main h1 {
+  margin: 0 0 0.65rem;
+  font-size: clamp(1.55rem, 3vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.22;
+  color: var(--ad-navy);
+}
+
+.ad-meta {
+  margin: 0 0 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ad-muted);
+}
+
+.ad-meta a {
+  color: var(--ad-green-deep);
+}
+
+.ad-meta a:hover {
+  text-decoration: none;
+  color: var(--ad-green);
+}
+
+.ad-hero {
+  margin: 0 0 1.75rem;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--ad-border);
+  box-shadow: 0 8px 24px rgba(15, 39, 71, 0.06);
+}
+
+.ad-hero img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ad-body.prose {
+  max-width: none;
+}
+
+.ad-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  position: sticky;
+  top: 5.5rem;
+}
+
+.ad-card {
+  padding: 1.15rem 1.2rem;
+  border: 1px solid var(--ad-border);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(15, 39, 71, 0.04);
+}
+
+.ad-card h2 {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ad-navy);
+}
+
+.ad-cta {
+  background: linear-gradient(145deg, #0b7a52 0%, #12a86e 55%, #16c784 100%);
+  border: none;
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(18, 168, 110, 0.22);
+}
+
+.ad-cta h2 {
+  color: #fff;
+  margin-bottom: 0.4rem;
+}
+
+.ad-cta p {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.ad-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 42px;
+  padding: 0.65rem 1.1rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #0b7a52;
+  font-size: 0.875rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.ad-cta__btn:hover {
+  background: #f3fbf7;
+  color: #0b7a52;
+  text-decoration: none;
+}
+
+.ad-products {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ad-products li + li {
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--ad-border);
+}
+
+.ad-products a {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.ad-products a:hover .ad-products__title {
+  color: var(--ad-green-deep);
+}
+
+.ad-products__title {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--ad-navy);
+  line-height: 1.35;
+  transition: color 0.15s;
+}
+
+.ad-products__desc {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--ad-muted);
+}
+
+.ad-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ad-links li + li {
+  margin-top: 0.4rem;
+}
+
+.ad-links a {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ad-muted);
+  text-decoration: none;
+}
+
+.ad-links a:hover {
+  color: var(--ad-green-deep);
+  text-decoration: none;
+}
+
+.ad-recent {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ad-recent li + li {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--ad-border);
+}
+
+.ad-recent a {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ad-navy);
+  text-decoration: none;
+}
+
+.ad-recent a:hover {
+  color: var(--ad-green-deep);
+  text-decoration: none;
+}
+
+.ad-recent time {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ad-muted);
+}
+
+@media (max-width: 900px) {
+  .ad-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ad-aside {
+    position: static;
+    order: 2;
+  }
+
+  .ad-main {
+    order: 1;
+  }
+}

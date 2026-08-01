@@ -1,0 +1,78 @@
+---
+import { homeLanding as h } from '../../lib/home-landing';
+
+const ecoIcons = [
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5h15M6.5 19.5V9.2L12 5l5.5 4.2v10.3M9.2 19.5v-5.2h5.6v5.2"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M8 8.5a2.2 2.2 0 1 0-2.2-2.2A2.2 2.2 0 0 0 8 8.5Zm8 0a2.2 2.2 0 1 0-2.2-2.2A2.2 2.2 0 0 0 16 8.5ZM8 16.8a2.2 2.2 0 1 0-2.2-2.2A2.2 2.2 0 0 0 8 16.8Zm8 0a2.2 2.2 0 1 0-2.2-2.2A2.2 2.2 0 0 0 16 16.8ZM9.8 7.2l4.4 0M7.2 9.8l0 3.8M16.8 9.8v3.8M9.8 15.4h4.4"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4.8 19.5h14.4M6.5 19.5V8.2h11v11.3M10 11.2h4M10 14.2h4M12 5.2v3"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M8.5 11a2.6 2.6 0 1 0-2.6-2.6A2.6 2.6 0 0 0 8.5 11Zm7 0a2.6 2.6 0 1 0-2.6-2.6A2.6 2.6 0 0 0 15.5 11ZM4.2 19v-.8c0-2 2-3.4 4.3-3.4h0c.8 0 1.5.2 2.1.4M19.8 19v-.8c0-2-2-3.4-4.3-3.4h0a4 4 0 0 0-2.1.4M12 19v-2.2"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M8 9.2h9.2l2.3 3.2v5.1A1.8 1.8 0 0 1 17.7 19H8A1.8 1.8 0 0 1 6.2 17.5V11A1.8 1.8 0 0 1 8 9.2Zm9 0V12h3"/>',
+  '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M8 12.8 5.5 10a2 2 0 0 1 2.8-2.8L10 11m6 1.8 2.5-2.8a2 2 0 1 0-2.8-2.8L14 11m-5.2 2.2 2.4 2.4a2.2 2.2 0 0 0 3.1 0l.9-.9"/>',
+] as const;
+
+const ecoArts = [
+  `<svg viewBox="0 0 160 100" fill="none" aria-hidden="true"><rect x="48" y="38" width="64" height="48" rx="8" fill="#86efac"/><rect x="58" y="28" width="44" height="18" rx="6" fill="#16c784"/><rect x="70" y="58" width="20" height="28" rx="4" fill="#fff"/><circle cx="80" cy="22" r="8" fill="#4ade80"/></svg>`,
+  `<svg viewBox="0 0 160 100" fill="none" aria-hidden="true"><rect x="30" y="48" width="28" height="36" rx="6" fill="#93c5fd"/><rect x="66" y="36" width="28" height="48" rx="6" fill="#60a5fa"/><rect x="102" y="48" width="28" height="36" rx="6" fill="#93c5fd"/><path d="M44 48v-8h32v8M88 48v-8h32v8" stroke="#2563eb" stroke-width="3"/></svg>`,
+  `<svg viewBox="0 0 160 100" fill="none" aria-hidden="true"><rect x="40" y="34" width="80" height="52" rx="10" fill="#6ee7b7"/><rect x="56" y="22" width="48" height="20" rx="8" fill="#16c784"/><path d="M72 48h16M80 40v16" stroke="#fff" stroke-width="4" stroke-linecap="round"/><rect x="68" y="62" width="24" height="24" rx="4" fill="#ecfdf5"/></svg>`,
+  `<svg viewBox="0 0 160 100" fill="none" aria-hidden="true"><circle cx="80" cy="62" r="28" fill="#ddd6fe"/><circle cx="62" cy="40" r="10" fill="#a78bfa"/><circle cx="98" cy="40" r="10" fill="#8b5cf6"/><circle cx="80" cy="34" r="11" fill="#c4b5fd"/><path d="M68 62h24v10H68z" fill="#7c3aed"/></svg>`,
+  `<svg viewBox="0 0 160 100" fill="none" aria-hidden="true"><rect x="38" y="28" width="40" height="58" rx="8" fill="#fdba74"/><rect x="44" y="36" width="28" height="40" rx="4" fill="#fff7ed"/><circle cx="112" cy="68" r="18" fill="#fb923c"/><rect x="98" y="58" width="36" height="12" rx="6" fill="#ea580c"/></svg>`,
+  `<svg viewBox="0 0 160 100" fill="none" aria-hidden="true"><rect x="36" y="34" width="40" height="40" rx="8" fill="#93c5fd" transform="rotate(-12 56 54)"/><rect x="84" y="34" width="40" height="40" rx="8" fill="#60a5fa" transform="rotate(12 104 54)"/><circle cx="80" cy="54" r="10" fill="#1d4ed8"/></svg>`,
+] as const;
+
+const ecoStatIcons = [
+  // POS · CRM panels
+  '<path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4.5 6h15v3.2H4.5V6Zm0 5.2H14V19H4.5v-7.8Zm11.2 0H19.5V19h-3.8v-7.8Z"/>',
+  // multi model / branches
+  '<path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 5.2v5.2M7.2 18.5V12h9.6v6.5M9.5 12V9.2h5V12"/>',
+  // cloud
+  '<path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8.2 17.5h8.4a3.2 3.2 0 0 0 .4-6.4 4.4 4.4 0 0 0-8.5-1.2A3.5 3.5 0 0 0 8.2 17.5Z"/>',
+  // partnership / handshake growth
+  '<path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M5 17.8V9.5h2.2V17.8H5Zm4.4 0V7.2h2.2v10.6H9.4Zm4.4 0v-5.4h2.2v5.4H13.8Zm4.4 0V8.4H20v9.4h-2.2Z"/>',
+] as const;
+---
+
+<section class="hl-eco section" id="ecosystem" aria-labelledby="hl-eco-title">
+  <div class="container">
+    <header class="hl-head">
+      <p class="hl-eyebrow">{h.ecosystem.eyebrow}</p>
+      <h2 id="hl-eco-title" class="hl-title">{h.ecosystem.title}</h2>
+      <p class="hl-lead">{h.ecosystem.lead}</p>
+    </header>
+
+    <ul class="hl-eco__grid">
+      {
+        h.ecosystem.cards.map((card, i) => (
+          <li class={`hl-eco-card hl-eco-card--${card.tone}`}>
+            <span
+              class="hl-eco-card__ico"
+              aria-hidden="true"
+              set:html={`<svg viewBox="0 0 24 24">${ecoIcons[i]}</svg>`}
+            />
+            <h3>{card.title}</h3>
+            <p>{card.desc}</p>
+            <a href={card.href}>{h.ecosystem.cta} →</a>
+            <div class="hl-eco-card__art" aria-hidden="true" set:html={ecoArts[i]} />
+          </li>
+        ))
+      }
+    </ul>
+
+    <ul class="hl-eco__stats">
+      {
+        h.ecosystem.stats.map((stat, i) => (
+          <li>
+            <span
+              class={`hl-eco__stat-ico hl-eco__stat-ico--${i + 1}`}
+              aria-hidden="true"
+              set:html={`<svg viewBox="0 0 24 24">${ecoStatIcons[i]}</svg>`}
+            />
+            <span class="hl-eco__stat-text">
+              <strong>{stat.value}</strong>
+              <span>{stat.label}</span>
+            </span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

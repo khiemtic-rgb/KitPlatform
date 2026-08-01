@@ -2,10 +2,10 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-import FoundingEarlyAccess from '../../components/FoundingEarlyAccess.astro';
-import FoundingFaq from '../../components/FoundingFaq.astro';
 import { t } from '../../i18n';
+import { contactLanding as p } from '../../lib/contact-landing';
 import '../../styles/global.css';
+import '../../styles/contact-landing.css';
 
 const m = t('vi');
 const c = m.contact;
@@ -16,278 +16,255 @@ const nextUrl = new URL(Astro.url);
 nextUrl.searchParams.set('sent', '1');
 nextUrl.hash = 'contact-form';
 
-function toZaloLink(phone) {
-  const digits = phone.replace(/\D/g, '');
-  if (!digits) return '';
-  const intl = digits.startsWith('84') ? digits : `84${digits.replace(/^0/, '')}`;
-  return `https://zalo.me/${intl}`;
-}
+const mapQuery = encodeURIComponent(co.address);
+const mapEmbed = `https://maps.google.com/maps?q=${mapQuery}&z=15&output=embed`;
+const directionsUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
-const zaloLink = toZaloLink(c.zaloPhone || c.phoneTel);
-const telLink = c.phoneTel ? `tel:${c.phoneTel.replace(/\s/g, '')}` : '';
-const hasFacebook = Boolean(c.facebookUrl?.trim());
-const hasZalo = Boolean(zaloLink);
-const hasPhone = Boolean(c.phoneTel?.trim());
+const icon = (d: string) =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+
+const hiIcons = [
+  icon('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
+  icon('<path d="M13 3.5 5.5 12H11l-.8 8.5L18.5 12H13V3.5z"/>'),
+  icon(
+    '<path d="M12 3.2 19 6v5.2c0 4.6-2.9 8-7 9.6-4.1-1.6-7-5-7-9.6V6l7-2.8z"/><path d="m9 12.1 2 2 4.2-4.2"/>',
+  ),
+] as const;
+
+const infoIcons = [
+  icon('<path d="M22 16.9v2a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h2a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L7.1 9.5a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6A2 2 0 0 1 22 16.9z"/>'),
+  icon('<path d="M4 6h16v12H4V6zm8 6.7L5.8 8h12.4L12 12.7z"/>'),
+  icon('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
+  icon(
+    '<path d="M5.2 11.2a6.8 6.8 0 0 1 13.6 0v3.2a1.8 1.8 0 0 1-1.8 1.8h-.7"/><path d="M5.2 11.2v3.2a1.8 1.8 0 0 0 1.8 1.8h.7"/><circle cx="12" cy="8.2" r="2.2"/>',
+  ),
+] as const;
+
+const whyIcons = [
+  icon('<path d="M12 3.2 19 6v5.2c0 4.6-2.9 8-7 9.6-4.1-1.6-7-5-7-9.6V6l7-2.8z"/><path d="m9 12.1 2 2 4.2-4.2"/>'),
+  icon(
+    '<path d="M5.2 11.2a6.8 6.8 0 0 1 13.6 0v3.2a1.8 1.8 0 0 1-1.8 1.8h-.7"/><path d="M5.2 11.2v3.2a1.8 1.8 0 0 0 1.8 1.8h.7"/><circle cx="12" cy="8.2" r="2.2"/><path d="M10 19.2h4"/>',
+  ),
+  icon('<path d="M12 4v2"/><path d="M8 8.5a4 4 0 0 1 8 0v1H8v-1z"/><path d="M6.5 9.5h11v2.2l-1.3.8v5H7.8v-5l-1.3-.8V9.5z"/><path d="M9.5 20h5"/>'),
+  icon('<path d="M5 18h14M7.5 14V18M11 10V18M14.5 12.5V18M18 8V18M8.2 10.2l3.3-3 2.4 1.8 3.8-3.8"/>'),
+  icon('<path d="M12 3.5 14 9h5l-4 3.2 1.5 5L12 14.5 7.5 17.2 9 12.2 5 9h5L12 3.5Z"/>'),
+] as const;
 ---
 
-<BaseLayout title={c.title} description={c.intro}>
+<BaseLayout title={p.meta.title} description={p.meta.description} canonicalPath="/vi/lien-he/">
   <Header slot="header" />
-  <section class="section">
-    <div class="container">
-      <h1 class="section-title">{c.title}</h1>
-      <p class="section-intro">{c.intro}</p>
 
-      <FoundingEarlyAccess m={m.founding} contactHref="#contact-form" compact />
+  <div class="ct-page">
+    <section class="ct-hero" aria-labelledby="ct-hero-title">
+      <div class="container">
+        <nav class="ct-crumb" aria-label="Breadcrumb">
+          <a href="/vi/">Trang chủ</a>
+          <span aria-hidden="true">›</span>
+          <span>Liên hệ</span>
+        </nav>
 
-      {
-        sent && (
-          <div class="contact-alert" role="status">
-            <strong>{c.successTitle}</strong>
-            <p>{c.successMessage}</p>
-          </div>
-        )
-      }
-
-      <div class="contact-grid">
-        <aside class="card contact-channels">
-          <h2 class="contact-block-title">{c.channelsTitle}</h2>
-
-          {
-            hasPhone && (
-              <div class="contact-channel">
-                <span class="contact-channel-label">{c.phoneLabel}</span>
-                <a class="contact-channel-value" href={telLink}>
-                  {c.phoneDisplay || c.phoneTel}
-                </a>
-              </div>
-            )
-          }
-
-          {
-            !hasPhone && c.phoneDisplay && (
-              <div class="contact-channel">
-                <span class="contact-channel-label">{c.phoneLabel}</span>
-                <span class="contact-channel-value">{c.phoneDisplay}</span>
-              </div>
-            )
-          }
-
-          <div class="contact-channel">
-            <span class="contact-channel-label">{c.emailLabel}</span>
-            <a class="contact-channel-value" href={`mailto:${c.emailAddress}`}>
-              {c.emailAddress}
-            </a>
+        <div class="ct-hero__grid">
+          <div>
+            <p class="ct-eyebrow">{p.hero.eyebrow}</p>
+            <h1 id="ct-hero-title" class="ct-hero__title">
+              {p.hero.titleBefore}<em>{p.hero.titleAccent}</em>{p.hero.titleAfter}
+            </h1>
+            <p class="ct-hero__lead">{p.hero.lead}</p>
+            <ul class="ct-hero__highlights">
+              {
+                p.hero.highlights.map((item, i) => (
+                  <li class={`ct-hi ct-hi--${item.tone}`}>
+                    <span class="ct-hi__icon" aria-hidden="true" set:html={hiIcons[i]} />
+                    <span>{item.title}</span>
+                  </li>
+                ))
+              }
+            </ul>
           </div>
 
-          <div class="contact-actions">
+          <div class="ct-form-card" id={p.form.id}>
+            <h2>
+              {p.form.titleBefore}<em>{p.form.titleAccent}</em>
+            </h2>
+
             {
-              hasZalo && (
-                <a
-                  class="btn btn-zalo"
-                  href={zaloLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {c.zaloLabel}
-                </a>
+              sent && (
+                <div class="ct-alert" role="status">
+                  <strong>{c.successTitle}</strong>
+                  <p>{c.successMessage}</p>
+                </div>
               )
             }
-            {
-              hasFacebook && (
-                <a
-                  class="btn btn-facebook"
-                  href={c.facebookUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {c.facebookLabel}
-                  {c.facebookPageName ? ` — ${c.facebookPageName}` : ''}
-                </a>
-              )
-            }
+
+            <form
+              class="ct-form"
+              method="POST"
+              action={`https://formsubmit.co/${encodeURIComponent(c.emailAddress)}`}
+            >
+              <input type="hidden" name="_subject" value="Đăng ký tư vấn / Demo từ novixa.vn" />
+              <input type="hidden" name="_captcha" value="false" />
+              <input type="hidden" name="_template" value="table" />
+              <input type="hidden" name="_next" value={nextUrl.toString()} />
+              <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off" />
+
+              <div class="ct-field">
+                <label for="name">{p.form.name} *</label>
+                <input id="name" name="name" type="text" required autocomplete="name" />
+              </div>
+
+              <div class="ct-field-row">
+                <div class="ct-field">
+                  <label for="phone">{p.form.phone} *</label>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    required
+                    autocomplete="tel"
+                    inputmode="tel"
+                  />
+                </div>
+                <div class="ct-field">
+                  <label for="email">{p.form.email}</label>
+                  <input id="email" name="email" type="email" autocomplete="email" />
+                </div>
+              </div>
+
+              <div class="ct-field-row">
+                <div class="ct-field">
+                  <label for="role">{p.form.role}</label>
+                  <select id="role" name="role">
+                    <option value="">{p.form.rolePlaceholder}</option>
+                    {p.form.roleOptions.map((opt) => <option value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+                <div class="ct-field">
+                  <label for="scale">{p.form.scale}</label>
+                  <select id="scale" name="scale">
+                    <option value="">{p.form.scalePlaceholder}</option>
+                    {p.form.scaleOptions.map((opt) => <option value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div class="ct-field">
+                <label for="message">{p.form.needs} *</label>
+                <textarea
+                  id="message"
+                  name="message"
+                  required
+                  placeholder={p.form.needsPlaceholder}
+                ></textarea>
+              </div>
+
+              <label class="ct-consent">
+                <input type="checkbox" name="consent" value="yes" required />
+                <span>{p.form.consent}</span>
+              </label>
+
+              <button class="ct-btn ct-btn--green ct-btn--block" type="submit">{p.form.submit}</button>
+              <p class="ct-form-note">{p.form.note}</p>
+            </form>
           </div>
-
-          {hasZalo && <p class="contact-hint">{c.zaloHint}</p>}
-
-          <div class="contact-company">
-            <div class="contact-channel">
-              <span class="contact-channel-label">{co.addressLabel}</span>
-              <p class="contact-channel-value contact-address">{co.address}</p>
-            </div>
-
-            <div class="contact-channel">
-              <span class="contact-channel-label">{co.legalNameLabel}</span>
-              <p class="contact-channel-value">{co.legalName}</p>
-            </div>
-
-            <div class="contact-channel">
-              <span class="contact-channel-label">{co.taxIdLabel}</span>
-              <p class="contact-channel-value">{co.taxId}</p>
-            </div>
-
-            <p class="contact-provider">
-              {co.providerLabel}{' '}
-              <a href={co.providerUrl} target="_blank" rel="noopener noreferrer">{co.providerName}</a>
-            </p>
-          </div>
-        </aside>
-
-        <div class="card contact-form-wrap" id="contact-form">
-          <h2 class="contact-block-title">{c.formTitle}</h2>
-          <form
-            class="contact-form"
-            method="POST"
-            action={`https://formsubmit.co/${encodeURIComponent(c.emailAddress)}`}
-          >
-            <input type="hidden" name="_subject" value="Liên hệ từ novixa.vn" />
-            <input type="hidden" name="_captcha" value="false" />
-            <input type="hidden" name="_template" value="table" />
-            <input type="hidden" name="_next" value={nextUrl.toString()} />
-            <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off" />
-
-            <label for="name">{c.name} *</label>
-            <input id="name" name="name" type="text" required autocomplete="name" />
-
-            <label for="phone">{c.phone} *</label>
-            <input
-              id="phone"
-              name="phone"
-              type="tel"
-              required
-              autocomplete="tel"
-              inputmode="tel"
-            />
-
-            <label for="email">{c.email}</label>
-            <input id="email" name="email" type="email" autocomplete="email" />
-
-            <label for="message">{c.message} *</label>
-            <textarea id="message" name="message" required></textarea>
-
-            <button class="btn btn-primary" type="submit">{c.submit}</button>
-            <p class="contact-form-note">{c.formNote}</p>
-          </form>
         </div>
       </div>
+    </section>
 
-      <FoundingFaq m={m.foundingFaq} />
-    </div>
-  </section>
+    <section class="ct-info" aria-labelledby="ct-info-title">
+      <div class="container ct-info__grid">
+        <div class="ct-info-card">
+          <h2 id="ct-info-title">{p.info.title}</h2>
+          <ul class="ct-info-list">
+            {
+              p.info.items.map((item, i) => (
+                <li>
+                  <span class="ct-info-list__icon" aria-hidden="true" set:html={infoIcons[i]} />
+                  <div>
+                    <strong>{item.label}</strong>
+                    {'valueKey' in item && item.valueKey === 'phone' ? (
+                      <a href={`tel:${c.phoneTel}`}>{c.phoneDisplay}</a>
+                    ) : 'valueKey' in item && item.valueKey === 'email' ? (
+                      <a href={`mailto:${c.emailAddress}`}>{c.emailAddress}</a>
+                    ) : (
+                      <span>{'value' in item ? item.value : ''}</span>
+                    )}
+                  </div>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
+        <div class="ct-info-card">
+          <h2>{p.office.title}</h2>
+          <p class="ct-office__addr">{co.address}</p>
+          <a
+            class="ct-btn ct-btn--outline"
+            href={directionsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {p.office.directions}
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+
+        <div class="ct-map">
+          <iframe
+            title="Bản đồ văn phòng Novixa"
+            src={mapEmbed}
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </div>
+    </section>
+
+    <section class="ct-why" aria-labelledby="ct-why-title">
+      <div class="container">
+        <h2 id="ct-why-title" class="ct-why__title">{p.why.title}</h2>
+        <div class="ct-why__grid">
+          {
+            p.why.items.map((item, i) => (
+              <article class="ct-why-card">
+                <div class="ct-why-card__icon" aria-hidden="true" set:html={whyIcons[i]} />
+                <h3>{item.title}</h3>
+                <p>{item.desc}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="ct-faq" id={p.faq.id} aria-labelledby="ct-faq-title">
+      <div class="container ct-faq__grid">
+        <div>
+          <h2 id="ct-faq-title" class="ct-faq__title">{p.faq.title}</h2>
+          <p class="ct-faq__lead">Những câu hỏi nhà thuốc thường hỏi trước khi đăng ký demo.</p>
+        </div>
+        <div class="ct-faq__list">
+          {
+            p.faq.items.map((item, i) => (
+              <details class="ct-faq__item" open={i === 0}>
+                <summary>{item.q}</summary>
+                <p>
+                  {item.a}
+                  {'linkHref' in item && item.linkHref ? (
+                    <>
+                      {' '}
+                      <a href={item.linkHref}>{item.linkLabel}</a>.
+                    </>
+                  ) : null}
+                </p>
+              </details>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+  </div>
+
   <Footer slot="footer" />
 </BaseLayout>
-
-<style>
-  .contact-grid {
-    display: grid;
-    gap: 1.5rem;
-    grid-template-columns: 1fr;
-    align-items: start;
-  }
-
-  @media (min-width: 768px) {
-    .contact-grid {
-      grid-template-columns: minmax(260px, 340px) 1fr;
-    }
-  }
-
-  .contact-block-title {
-    margin: 0 0 1.25rem;
-    font-size: 1.15rem;
-    color: var(--color-primary);
-  }
-
-  .contact-channel {
-    margin-bottom: 1rem;
-  }
-
-  .contact-channel-label {
-    display: block;
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--color-muted);
-    margin-bottom: 0.2rem;
-  }
-
-  .contact-channel-value {
-    font-size: 1.05rem;
-    font-weight: 600;
-  }
-
-  .contact-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-    margin-top: 1.25rem;
-  }
-
-  .contact-hint {
-    margin: 0.75rem 0 0;
-    font-size: 0.85rem;
-    color: var(--color-muted);
-  }
-
-  .contact-company {
-    margin-top: 1.5rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--color-border, #e2e8f0);
-  }
-
-  .contact-address {
-    font-weight: 500;
-    font-size: 0.95rem;
-    line-height: 1.5;
-  }
-
-  .contact-provider {
-    margin: 1rem 0 0;
-    font-size: 0.85rem;
-    color: var(--color-muted);
-  }
-
-  .contact-provider a {
-    color: var(--color-primary);
-    font-weight: 600;
-  }
-
-  .contact-form-note {
-    margin: 0.75rem 0 0;
-    font-size: 0.82rem;
-    color: var(--color-muted);
-  }
-
-  .contact-alert {
-    background: #ecfdf5;
-    border: 1px solid #6ee7b7;
-    border-radius: var(--radius);
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.5rem;
-    max-width: 720px;
-  }
-
-  .contact-alert p {
-    margin: 0.35rem 0 0;
-    color: #065f46;
-  }
-
-  .btn-zalo {
-    background: #0068ff;
-    color: #fff;
-  }
-
-  .btn-zalo:hover {
-    color: #fff;
-    text-decoration: none;
-  }
-
-  .btn-facebook {
-    background: #1877f2;
-    color: #fff;
-  }
-
-  .btn-facebook:hover {
-    color: #fff;
-    text-decoration: none;
-  }
-</style>

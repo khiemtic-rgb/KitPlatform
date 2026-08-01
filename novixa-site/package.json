@@ -8,9 +8,9 @@
   "scripts": {
     "sync:assets": "node scripts/sync-brand-assets.mjs",
     "prebuild": "npm run sync:assets && npm run generate:news-images:svg",
-    "dev": "npm run sync:assets && astro dev --host localhost --port 4321",
+    "dev": "npm run sync:assets && astro dev --host 127.0.0.1 --port 4321",
     "build": "astro build && node scripts/postbuild-sitemap.mjs",
-    "preview": "astro preview --host localhost --port 4321",
+    "preview": "astro preview --host 127.0.0.1 --port 4321",
     "astro": "astro",
     "import:news": "node scripts/import-tin-tuc.mjs",
     "publish:news": "node scripts/auto-publish-news.mjs",

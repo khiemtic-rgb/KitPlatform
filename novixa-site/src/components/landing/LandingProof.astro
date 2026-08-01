@@ -1,0 +1,27 @@
+---
+import { homeLanding as h } from '../../lib/home-landing';
+---
+
+<section class="hl-proof section" aria-labelledby="hl-proof-title">
+  <div class="container hl-proof__grid">
+    <blockquote class="hl-proof__quote">
+      <span class="hl-proof__mark" aria-hidden="true">“</span>
+      <p id="hl-proof-title">{h.proof.quote}</p>
+      <footer>
+        <strong>{h.proof.quoteBy}</strong>
+        <span>{h.proof.quoteRole}</span>
+      </footer>
+    </blockquote>
+
+    <ul class="hl-proof__stats">
+      {
+        h.proof.stats.map((stat) => (
+          <li>
+            <strong>{stat.value}</strong>
+            <span>{stat.label}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

@@ -1,0 +1,215 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import { t } from '../../../i18n';
+import '../../../styles/global.css';
+
+const m = t('vi');
+const c = m.contact;
+const co = m.company;
+const updated = '01/08/2026';
+
+const title = 'Điều khoản sử dụng';
+const description =
+  'Điều khoản sử dụng website và dịch vụ giới thiệu Novixa — quyền, nghĩa vụ và giới hạn trách nhiệm khi bạn truy cập novixa.vn.';
+---
+
+<BaseLayout title={title} description={description} canonicalPath="/vi/dieu-khoan-su-dung/">
+  <Header slot="header" />
+
+  <section class="section legal-page">
+    <div class="container legal-wrap">
+      <nav class="legal-crumb" aria-label="Breadcrumb">
+        <a href="/vi/">Trang chủ</a>
+        <span aria-hidden="true">›</span>
+        <span>{title}</span>
+      </nav>
+
+      <h1>{title}</h1>
+      <p class="legal-updated">Cập nhật lần cuối: {updated}</p>
+
+      <div class="prose legal-body">
+        <p>
+          Chào mừng bạn đến với website <strong>Novixa</strong> tại{' '}
+          <a href="https://novixa.vn/">novixa.vn</a>. Khi truy cập hoặc sử dụng website, bạn đồng ý với các điều
+          khoản dưới đây. Nếu không đồng ý, vui lòng ngừng sử dụng website.
+        </p>
+        <p>
+          Novixa là sản phẩm của <strong>{co.legalName}</strong> (MST {co.taxId}), địa chỉ: {co.address}.
+        </p>
+
+        <h2>1. Định nghĩa</h2>
+        <ul>
+          <li>
+            <strong>Website:</strong> các trang thuộc tên miền novixa.vn và đường dẫn phụ liên quan do Novixa vận
+            hành.
+          </li>
+          <li>
+            <strong>Người dùng:</strong> cá nhân / tổ chức truy cập website, gửi form liên hệ hoặc sử dụng nội dung
+            công khai.
+          </li>
+          <li>
+            <strong>Dịch vụ phần mềm Novixa:</strong> giải pháp vận hành nhà thuốc (POS, kho, CRM…) được cung cấp
+            theo hợp đồng riêng — không tự động hình thành chỉ vì bạn xem website.
+          </li>
+        </ul>
+
+        <h2>2. Mục đích website</h2>
+        <p>
+          Website cung cấp thông tin giới thiệu sản phẩm, kiến thức nhà thuốc, tài liệu công khai và kênh đăng ký
+          tư vấn / demo. Nội dung mang tính tham khảo marketing và hỗ trợ quyết định; không phải tư vấn y khoa,
+          tư vấn pháp lý chuyên sâu hay cam kết kết quả kinh doanh cụ thể.
+        </p>
+
+        <h2>3. Tài khoản và đăng ký demo</h2>
+        <p>
+          Khi gửi form liên hệ hoặc đăng ký demo, bạn cam kết cung cấp thông tin trung thực, chính xác trong phạm
+          vi cần thiết. Novixa có quyền từ chối hoặc ngừng liên hệ nếu thông tin giả mạo, spam hoặc sử dụng sai mục
+          đích.
+        </p>
+        <p>
+          Việc truy cập hệ thống phần mềm Novixa (app / admin) có thể yêu cầu tài khoản riêng theo thỏa thuận triển
+          khai — điều khoản tài khoản vận hành sẽ được quy định trong hợp đồng hoặc điều khoản sản phẩm tương ứng.
+        </p>
+
+        <h2>4. Quyền sở hữu trí tuệ</h2>
+        <p>
+          Toàn bộ nội dung trên website (nhãn hiệu Novixa, logo, giao diện, bài viết, hình ảnh, tài liệu công bố…)
+          thuộc quyền sở hữu của Novixa / {co.providerName} hoặc bên cấp phép hợp pháp, trừ khi ghi chú khác.
+        </p>
+        <p>
+          Bạn được xem và tải tài liệu công khai cho mục đích nội bộ hợp pháp của nhà thuốc / tổ chức mình. Không
+          được sao chép, chỉnh sửa, phân phối lại, bán hoặc sử dụng thương mại ngoài phạm vi cho phép mà không có
+          sự đồng ý bằng văn bản.
+        </p>
+
+        <h2>5. Hành vi bị cấm</h2>
+        <ul>
+          <li>Xâm nhập, phá hoại, làm quá tải hệ thống hoặc thu thập dữ liệu trái phép.</li>
+          <li>Gửi nội dung độc hại, lừa đảo, spam hoặc vi phạm pháp luật Việt Nam.</li>
+          <li>Mạo danh Novixa, nhân viên Novixa hoặc bên thứ ba.</li>
+          <li>Sử dụng nội dung website theo cách gây hiểu nhầm về mối quan hệ đại lý / đối tác nếu chưa được ủy quyền.</li>
+        </ul>
+
+        <h2>6. Liên kết và dịch vụ bên thứ ba</h2>
+        <p>
+          Website có thể chứa liên kết tới Zalo, Facebook, bản đồ, Formsubmit, kho ứng dụng hoặc trang đối tác.
+          Novixa không kiểm soát toàn bộ nội dung / chính sách của bên thứ ba và không chịu trách nhiệm về thiệt hại
+          phát sinh từ việc bạn sử dụng các dịch vụ đó.
+        </p>
+
+        <h2>7. Miễn trừ và giới hạn trách nhiệm</h2>
+        <ul>
+          <li>
+            Website và nội dung được cung cấp trên cơ sở “nguyên trạng”. Novixa nỗ lực duy trì thông tin chính xác
+            nhưng không cam kết mọi nội dung luôn đầy đủ, không lỗi hoặc không gián đoạn.
+          </li>
+          <li>
+            Trong phạm vi pháp luật cho phép, Novixa không chịu trách nhiệm đối với thiệt hại gián tiếp, mất dữ liệu,
+            mất lợi nhuận phát sinh từ việc sử dụng hoặc không sử dụng được website.
+          </li>
+          <li>
+            Các cam kết về hiệu năng, thời gian triển khai, chi phí phần mềm Novixa chỉ có hiệu lực khi được ghi
+            nhận trong báo giá / hợp đồng đã ký.
+          </li>
+        </ul>
+
+        <h2>8. Giá và báo giá</h2>
+        <p>
+          Thông tin trên trang Giải pháp & chi phí mang tính định hướng theo quy mô. Báo giá chính thức được cung
+          cấp sau buổi tư vấn / demo và có thể thay đổi theo phạm vi triển khai thực tế.
+        </p>
+
+        <h2>9. Bảo mật thông tin</h2>
+        <p>
+          Việc thu thập và xử lý thông tin cá nhân khi bạn dùng website được mô tả tại{' '}
+          <a href="/vi/chinh-sach-bao-mat/">Chính sách bảo mật</a>. Bằng việc gửi form, bạn xác nhận đã đọc và hiểu
+          nội dung liên quan đến việc Novixa liên hệ lại.
+        </p>
+
+        <h2>10. Thay đổi điều khoản</h2>
+        <p>
+          Novixa có thể cập nhật Điều khoản sử dụng theo thời gian. Bản mới sẽ được đăng trên trang này kèm ngày
+          cập nhật. Việc tiếp tục sử dụng website sau khi điều khoản thay đổi đồng nghĩa bạn chấp nhận phiên bản
+          cập nhật (trừ khi pháp luật yêu cầu hình thức đồng ý khác).
+        </p>
+
+        <h2>11. Luật áp dụng và giải quyết tranh chấp</h2>
+        <p>
+          Điều khoản này được điều chỉnh bởi pháp luật Việt Nam. Mọi tranh chấp phát sinh liên quan đến việc sử
+          dụng website sẽ ưu tiên giải quyết thông qua thương lượng; nếu không đạt được thỏa thuận, tranh chấp sẽ
+          được đưa ra cơ quan có thẩm quyền tại Việt Nam.
+        </p>
+
+        <h2>12. Liên hệ</h2>
+        <p>
+          <strong>{co.legalName}</strong><br />
+          {co.address}<br />
+          Email: <a href={`mailto:${c.emailAddress}`}>{c.emailAddress}</a><br />
+          Hotline: <a href={`tel:${c.phoneTel}`}>{c.phoneDisplay}</a><br />
+          Website: <a href="https://novixa.vn/">novixa.vn</a>
+        </p>
+        <p>
+          Trang liên quan:{' '}
+          <a href="/vi/chinh-sach-bao-mat/">Chính sách bảo mật</a>
+          {' · '}
+          <a href="/vi/lien-he/">Liên hệ</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .legal-page {
+    padding-top: clamp(2rem, 4vw, 2.75rem);
+  }
+
+  .legal-wrap {
+    max-width: 760px;
+  }
+
+  .legal-crumb {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    margin: 0 0 1rem;
+    font-size: 0.8125rem;
+    color: var(--color-muted);
+  }
+
+  .legal-crumb a {
+    color: var(--color-muted);
+  }
+
+  .legal-crumb a:hover {
+    color: var(--color-primary, #0b7a52);
+  }
+
+  .legal-page h1 {
+    margin: 0 0 0.5rem;
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    color: var(--color-text);
+  }
+
+  .legal-updated {
+    margin: 0 0 1.75rem;
+    font-size: 0.875rem;
+    color: var(--color-muted);
+  }
+
+  .legal-body {
+    max-width: none;
+  }
+
+  .legal-body h2 {
+    margin-top: 1.75rem;
+  }
+</style>

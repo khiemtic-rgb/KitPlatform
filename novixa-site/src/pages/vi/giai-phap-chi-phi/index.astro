@@ -1,0 +1,254 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import { pricingLanding as p } from '../../../lib/pricing-landing';
+import '../../../styles/global.css';
+import '../../../styles/pricing-landing.css';
+
+const icon = (d: string) =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+
+const tierIcons = [
+  icon(
+    '<path d="M4 19.5h16M6 19.5V9.2L12 5l6 4.2v10.3"/><path d="M10 19.5v-4h4v4"/><path d="M9.5 12h5"/>',
+  ),
+  icon(
+    '<path d="M3.5 19.5h17"/><path d="M5 19.5V10l4-3 4 3v9.5"/><path d="M13 19.5V11l3.5-2.5L20 11v8.5"/><path d="M7.5 13h2M15.5 13h2"/>',
+  ),
+  icon(
+    '<path d="M4 20h16V9.5L12 4 4 9.5V20z"/><path d="M9 20v-5h6v5"/><path d="M9 11h.01M12 11h.01M15 11h.01M9 14.5h.01M15 14.5h.01"/>',
+  ),
+] as const;
+
+const includeIcons = [
+  icon('<path d="M12 3.5v10"/><path d="m8.5 9.5 3.5 4 3.5-4"/><path d="M5 17.5h14v3H5z"/>'),
+  icon(
+    '<path d="M8 7h9.5a2 2 0 0 1 2 2v9.5a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/><path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4H16"/><path d="M10 12h6M10 15.5h4"/>',
+  ),
+  icon(
+    '<circle cx="12" cy="8" r="3"/><path d="M5.5 19.5v-.8c0-2.3 2.4-4 6.5-4s6.5 1.7 6.5 4v.8"/><path d="M16.5 7.2 18 5.8l2 2"/>',
+  ),
+  icon(
+    '<path d="M5.2 11.2a6.8 6.8 0 0 1 13.6 0v3.2a1.8 1.8 0 0 1-1.8 1.8h-.7"/><path d="M5.2 11.2v3.2a1.8 1.8 0 0 0 1.8 1.8h.7"/><circle cx="12" cy="8.2" r="2.2"/><path d="M10 19.2h4"/>',
+  ),
+  icon('<path d="M12 4v3M12 17v3M4.9 7.2l2.2 2.2M16.9 14.6l2.2 2.2M4 12h3M17 12h3M4.9 16.8l2.2-2.2M16.9 9.4l2.2-2.2"/><circle cx="12" cy="12" r="3.2"/>'),
+  icon(
+    '<path d="M12 3.2 19 6v5.2c0 4.6-2.9 8-7 9.6-4.1-1.6-7-5-7-9.6V6l7-2.8z"/><path d="m9 12.1 2 2 4.2-4.2"/>',
+  ),
+  icon(
+    '<path d="M5 7.5h14v10.5H5z"/><path d="M5 11h14"/><path d="M9 7.5V5.8a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1.7"/><path d="m10 14.5 1.5 1.5 3-3"/>',
+  ),
+  icon(
+    '<rect x="3" y="5" width="11" height="9" rx="1.5"/><rect x="12" y="11" width="9" height="8" rx="1.5"/><path d="M6.5 18.5h4"/>',
+  ),
+] as const;
+
+const roadmapIcons = [
+  icon('<path d="M5 18h14M7.5 14V18M11 10V18M14.5 12.5V18M18 8V18"/>'),
+  icon(
+    '<path d="M8.5 11a2.6 2.6 0 1 0-2.6-2.6A2.6 2.6 0 0 0 8.5 11Zm7 0a2.6 2.6 0 1 0-2.6-2.6A2.6 2.6 0 0 0 15.5 11Z"/><path d="M4.5 19v-.8c0-2 2-3.4 4-3.4h0c.7 0 1.4.2 2 .5M19.5 19v-.8c0-2-2-3.4-4-3.4h0a4 4 0 0 0-2 .5"/>',
+  ),
+  icon('<path d="M5 18h14M7.5 14V18M11 10V18M14.5 12.5V18M18 8V18M8.2 10.2l3.3-3 2.4 1.8 3.8-3.8"/>'),
+  icon('<path d="M12 3.5 14 9h5l-4 3.2 1.5 5L12 14.5 7.5 17.2 9 12.2 5 9h5L12 3.5Z"/>'),
+] as const;
+
+const heroCheckIcons = [
+  icon('<path d="M9 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm7.5 0a2.5 2.5 0 1 0-2.5-2.5 2.5 2.5 0 0 0 2.5 2.5Z"/><path d="M3.8 19v-.7C3.8 16.2 6 14.5 9 14.5c.9 0 1.7.2 2.4.5M20.2 19v-.7c0-1.8-1.7-3.1-3.8-3.1a4.2 4.2 0 0 0-2 .5"/><path d="m10.5 8.2 1.2 1.2 2.5-2.5"/>'),
+  icon('<path d="M13 3.5 5.5 12H11l-.8 8.5L18.5 12H13V3.5z"/>'),
+  icon('<path d="M12 3.2 19 6v5.2c0 4.6-2.9 8-7 9.6-4.1-1.6-7-5-7-9.6V6l7-2.8z"/><path d="M8.5 12.5h7M12 9v7"/>'),
+] as const;
+
+const techIcons = [
+  icon('<path d="M4 16.5 12 4l8 12.5H4z"/><path d="M8.5 16.5 12 10l3.5 6.5"/>'),
+  icon('<path d="M12 3.2 19 6v5.2c0 4.6-2.9 8-7 9.6-4.1-1.6-7-5-7-9.6V6l7-2.8z"/>'),
+  icon('<path d="M8 8h8v8H8z"/><path d="M8 12h8M12 8v8"/><path d="M5 10v4M19 10v4"/>'),
+  icon('<rect x="3" y="5" width="11" height="9" rx="1.5"/><rect x="12" y="11" width="9" height="8" rx="1.5"/>'),
+] as const;
+---
+
+<BaseLayout title={p.meta.title} description={p.meta.description} canonicalPath="/vi/giai-phap-chi-phi/">
+  <Header slot="header" />
+
+  <div class="pr-page">
+    <section class="pr-hero" aria-labelledby="pr-hero-title">
+      <div class="container">
+        <nav class="pr-crumb" aria-label="Breadcrumb">
+          <a href="/vi/">Trang chủ</a>
+          <span aria-hidden="true">›</span>
+          <span>Giải pháp & chi phí</span>
+        </nav>
+
+        <div class="pr-hero__grid">
+          <div>
+            <h1 id="pr-hero-title" class="pr-hero__title">{p.hero.title}</h1>
+            <p class="pr-hero__lead">{p.hero.lead}</p>
+            <ul class="pr-hero__checks">
+              {
+                p.hero.checks.map((item, i) => (
+                  <li>
+                    <span class="pr-hero__check-icon" set:html={heroCheckIcons[i]} />
+                    {item}
+                  </li>
+                ))
+              }
+            </ul>
+            <div class="pr-hero__actions">
+              <a class="pr-btn pr-btn--green" href={p.hero.primaryHref}>{p.hero.primary}</a>
+              <a class="pr-btn pr-btn--outline" href={p.hero.secondaryHref}>{p.hero.secondary}</a>
+            </div>
+          </div>
+          <div class="pr-hero__visual">
+            <img
+              src={p.hero.image}
+              alt={p.hero.imageAlt}
+              width="1200"
+              height="900"
+              loading="eager"
+              decoding="async"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="pr-tiers-title">
+      <div class="container">
+        <div class="pr-head">
+          <h2 id="pr-tiers-title">{p.tiers.title}</h2>
+        </div>
+        <div class="pr-tiers__grid">
+          {
+            p.tiers.items.map((tier, i) => (
+              <article class={`pr-tier pr-tier--${tier.tone}`}>
+                <div class="pr-tier__icon" aria-hidden="true" set:html={tierIcons[i]} />
+                <h3>{tier.name}</h3>
+                <p class="pr-tier__scale">{tier.scale}</p>
+                <p class="pr-tier__desc">{tier.desc}</p>
+                <ul class="pr-tier__list">
+                  {tier.features.map((f) => (
+                    <li>{f}</li>
+                  ))}
+                </ul>
+                <div class="pr-tier__actions">
+                  <a class="pr-btn pr-btn--tier" href={p.tiers.ctaHref}>
+                    {p.tiers.cta}
+                  </a>
+                  <a class="pr-tier__quote" href={p.tiers.quoteHref}>
+                    {p.tiers.quoteLabel}
+                  </a>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+        <p class="pr-tier__note">{p.tiers.note}</p>
+      </div>
+    </section>
+
+    <section class="section pr-includes" aria-labelledby="pr-includes-title">
+      <div class="container">
+        <div class="pr-head">
+          <h2 id="pr-includes-title">{p.includes.title}</h2>
+        </div>
+        <div class="pr-includes__grid">
+          {
+            p.includes.items.map((item, i) => (
+              <article class="pr-inc">
+                <div class="pr-inc__icon" aria-hidden="true" set:html={includeIcons[i]} />
+                <h3>{item.title}</h3>
+                <p>{item.desc}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="pr-roadmap-title">
+      <div class="container">
+        <div class="pr-head pr-head--nowrap">
+          <h2 id="pr-roadmap-title">{p.roadmap.title}</h2>
+        </div>
+        <ol class="pr-roadmap__track">
+          {
+            p.roadmap.steps.map((step, i) => (
+              <li class="pr-roadmap__step">
+                <span class="pr-roadmap__icon" aria-hidden="true" set:html={roadmapIcons[i]} />
+                <span class="pr-roadmap__num">{i + 1}</span>
+                <h3>{step.title}</h3>
+                <p>{step.desc}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="pr-social-title">
+      <div class="container">
+        <div class="pr-head">
+          <h2 id="pr-social-title">{p.social.title}</h2>
+        </div>
+        <div class="pr-social__grid">
+          {
+            p.social.quotes.map((q) => (
+              <article class="pr-quote">
+                <div class="pr-quote__stars" aria-label="5 sao">★★★★★</div>
+                <p class="pr-quote__text">“{q.quote}”</p>
+                <p class="pr-quote__name">{q.name}</p>
+                <p class="pr-quote__role">{q.role}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="pr-tech-title">
+      <div class="container">
+        <div class="pr-head">
+          <h2 id="pr-tech-title">{p.tech.title}</h2>
+        </div>
+        <div class="pr-tech__row">
+          {
+            p.tech.items.map((item, i) => (
+              <span class="pr-tech__item">
+                <span class="pr-tech__icon" aria-hidden="true" set:html={techIcons[i]} />
+                {item}
+              </span>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="pr-cta" aria-labelledby="pr-cta-title">
+      <div class="container pr-cta__grid">
+        <div class="pr-cta__media">
+          <img
+            src={p.cta.image}
+            alt={p.cta.imageAlt}
+            width="720"
+            height="900"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+        <div>
+          <h2 id="pr-cta-title">{p.cta.title}</h2>
+          <p class="pr-cta__lead">{p.cta.lead}</p>
+          <div class="pr-cta__actions">
+            <a class="pr-btn pr-btn--light" href={p.cta.primaryHref}>{p.cta.primary}</a>
+            <a class="pr-btn pr-btn--ghost-light" href={p.cta.secondaryHref}>{p.cta.secondary}</a>
+          </div>
+          <ul class="pr-cta__trusts">
+            {p.cta.trusts.map((t) => <li>{t}</li>)}
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <Footer slot="footer" />
+</BaseLayout>

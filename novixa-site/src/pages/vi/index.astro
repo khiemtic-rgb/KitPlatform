@@ -3,21 +3,18 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import LandingHero from '../../components/landing/LandingHero.astro';
-import LandingTrio from '../../components/landing/LandingTrio.astro';
+import LandingPain from '../../components/landing/LandingPain.astro';
+import LandingFlow from '../../components/landing/LandingFlow.astro';
 import LandingAudience from '../../components/landing/LandingAudience.astro';
-import LandingWhy from '../../components/landing/LandingWhy.astro';
-import LandingKnowledge from '../../components/landing/LandingKnowledge.astro';
+import LandingEcosystem from '../../components/landing/LandingEcosystem.astro';
 import LandingCta from '../../components/landing/LandingCta.astro';
 import { t } from '../../i18n';
 import { buildSiteGraphStructuredData } from '../../lib/site-structured-data';
-import { getCollection } from 'astro:content';
-import { sortPublishedNews } from '../../lib/newsDate';
 import '../../styles/global.css';
 import '../../styles/home-landing.css';
 
 const m = t('vi');
 const jsonLd = buildSiteGraphStructuredData();
-const posts = sortPublishedNews(await getCollection('tinTuc')).slice(0, 5);
 ---
 
 <BaseLayout
@@ -30,10 +27,10 @@ const posts = sortPublishedNews(await getCollection('tinTuc')).slice(0, 5);
 
   <div class="home-page">
     <LandingHero />
-    <LandingTrio />
+    <LandingPain />
+    <LandingFlow />
     <LandingAudience />
-    <LandingWhy />
-    <LandingKnowledge posts={posts} />
+    <LandingEcosystem />
     <LandingCta />
   </div>
 
