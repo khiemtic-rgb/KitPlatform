@@ -550,6 +550,62 @@ internal static class FamilyBlueprintHydrator
             _ => ("primary", "Tiểu học"),
         };
 
+    /// <summary>
+    /// Prefer child DOBs over stale onboarding ageBand (Setup Wizard often defaults to 7-9).
+    /// Uses the oldest child so a teen house is not stuck on "Tiểu học".
+    /// </summary>
+    public static string? ResolvePrimaryAgeBandFromChildDobs(
+        IEnumerable<DateOnly?> childDateOfBirths,
+        DateOnly asOf)
+    {
+        var yearsList = new List<int>();
+        foreach (var dob in childDateOfBirths)
+        {
+            if (dob is null) continue;
+            var years = asOf.Year - dob.Value.Year;
+            if (asOf < dob.Value.AddYears(years)) years--;
+            if (years >= 0) yearsList.Add(years);
+        }
+
+        if (yearsList.Count == 0) return null;
+        return AgeBandFromYears(yearsList.Max());
+    }
+
+    public static string LabelViFromAgeBand(string ageBand) => StageFromAgeBand(ageBand).LabelVi;
+
+    public static string AgeBandFromYears(int years) =>
+        years switch
+        {
+            <= 6 => "4-6",
+            <= 9 => "7-9",
+            <= 12 => "10-12",
+            _ => "13+",
+        };
+
+    /// <summary>Patch profile.primaryAgeBand + stage + dna.stageLabelVi when DOB-derived band differs.</summary>
+    public static (string LayersJson, string DnaJson) ApplyPrimaryAgeBand(
+        string? layersJson,
+        string? dnaJson,
+        string ageBand)
+    {
+        var (code, label) = StageFromAgeBand(ageBand);
+        var layers = JsonNode.Parse(string.IsNullOrWhiteSpace(layersJson) ? "{}" : layersJson) as JsonObject
+            ?? new JsonObject();
+        var profile = layers["profile"] as JsonObject ?? new JsonObject();
+        profile["primaryAgeBand"] = ageBand;
+        layers["profile"] = profile;
+        layers["stage"] = new JsonObject
+        {
+            ["code"] = code,
+            ["labelVi"] = label,
+        };
+
+        var dna = JsonNode.Parse(string.IsNullOrWhiteSpace(dnaJson) ? "{}" : dnaJson) as JsonObject
+            ?? new JsonObject();
+        dna["stageLabelVi"] = label;
+        return (layers.ToJsonString(), dna.ToJsonString());
+    }
+
     /// <summary>Map nhãn cũ trong DNA JSON → 4 bậc chuẩn (không cần re-onboard).</summary>
     private static string CanonicalSchoolStageLabelVi(string? labelVi) =>
         (labelVi ?? "").Trim().ToLowerInvariant() switch
@@ -565,6 +621,8 @@ internal static class FamilyBlueprintHydrator
             var s when string.IsNullOrWhiteSpace(s) => "",
             _ => labelVi!.Trim(),
         };
+
+    public static string? ReadPrimaryAgeBandPublic(string? layersJson) => ReadPrimaryAgeBand(layersJson);
 
     private static string? ReadPrimaryAgeBand(string? layersJson)
     {

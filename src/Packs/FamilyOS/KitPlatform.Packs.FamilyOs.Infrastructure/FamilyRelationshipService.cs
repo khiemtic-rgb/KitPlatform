@@ -378,6 +378,7 @@ internal sealed class FamilyRelationshipService : IFamilyRelationshipService
     public async Task<FamilyWeeklyStoryDto> GetWeeklyStoryAsync(
         Guid familyId,
         DateOnly? asOf = null,
+        Guid? forMemberId = null,
         CancellationToken cancellationToken = default)
     {
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
@@ -386,6 +387,12 @@ internal sealed class FamilyRelationshipService : IFamilyRelationshipService
         var today = DateOnly.FromDateTime(FamilyTimeZones.NowIn(family.Timezone).DateTime);
         var end = asOf ?? today;
         var start = StartOfWeekMonday(end);
+
+        if (forMemberId is Guid memberId)
+        {
+            return await BuildChildWeeklyStoryAsync(
+                familyId, memberId, start, end, cancellationToken);
+        }
 
         var rows = await _memories.ListAsync(
             familyId, start, end, favoritesOnly: false, limit: 120, cancellationToken: cancellationToken);
@@ -426,6 +433,114 @@ internal sealed class FamilyRelationshipService : IFamilyRelationshipService
         var headline = totalWarm > 0
             ? $"Tuần này nhà mình đã nói chuyện với nhau {totalWarm} lần."
             : "Tuần này Famixa đang chờ những khoảnh khắc nhà mình.";
+
+        return new FamilyWeeklyStoryDto(
+            start,
+            end,
+            headline,
+            voice,
+            help,
+            gratitude,
+            ritual,
+            streak,
+            circle,
+            lines);
+    }
+
+    /// <summary>
+    /// Kid home: week story scoped to one child so Huy/Nhi don't see the same household totals.
+    /// </summary>
+    private async Task<FamilyWeeklyStoryDto> BuildChildWeeklyStoryAsync(
+        Guid familyId,
+        Guid memberId,
+        DateOnly start,
+        DateOnly end,
+        CancellationToken cancellationToken)
+    {
+        var members = await _families.ListMembersAsync(familyId, cancellationToken);
+        var child = members.FirstOrDefault(m => m.Id == memberId)
+            ?? throw new InvalidOperationException("forMemberId không thuộc gia đình.");
+        var shortName = ShortName(child.DisplayName);
+
+        var voice = 0;
+        var cheerIn = 0;
+        var cheerOut = 0;
+        var thanksIn = 0;
+        for (var d = start; d <= end; d = d.AddDays(1))
+        {
+            var dayVoices = await _voice.ListAsync(
+                familyId, memberId, fromMemberId: null, flowDate: d, cancellationToken);
+            voice += dayVoices.Count(v =>
+                v.ToMemberId == memberId
+                && !string.Equals(v.Status, "draft", StringComparison.OrdinalIgnoreCase));
+
+            var dayNudges = await _nudges.ListAsync(familyId, d, memberId, cancellationToken);
+            foreach (var n in dayNudges)
+            {
+                if (string.Equals(n.Status, FamilyTeamNudgeStatuses.Draft, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(n.Status, FamilyTeamNudgeStatuses.Deferred, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var isThanksBack = string.Equals(
+                    n.TemplateCode, FamilyTeamNudgeTemplates.ThanksBack, StringComparison.OrdinalIgnoreCase);
+                if (n.ToMemberId == memberId)
+                {
+                    if (isThanksBack) thanksIn++;
+                    else cheerIn++;
+                }
+                else if (n.FromMemberId == memberId && !isThanksBack)
+                {
+                    cheerOut++;
+                }
+            }
+        }
+
+        var mine = await _memories.ListAsync(
+            familyId,
+            start,
+            end,
+            favoritesOnly: false,
+            limit: 80,
+            memberId: memberId,
+            cancellationToken: cancellationToken);
+
+        int CountMine(string kind) =>
+            mine.Count(m => string.Equals(m.Kind, kind, StringComparison.OrdinalIgnoreCase));
+
+        var gratitude = CountMine(FamilyMemoryKinds.Gratitude);
+        var circle = CountMine(FamilyMemoryKinds.EveningCircle);
+        var streak = CountMine(FamilyMemoryKinds.StreakMilestone);
+        var ritual = 0; // household ritual — không gán cho từng con
+        var help = cheerIn + cheerOut; // sibling bond involving this child
+
+        var lines = new List<FamilyWeeklyStoryLineDto>();
+        if (voice > 0)
+            lines.Add(new("❤️", $"{voice} lời bố/mẹ gửi riêng tới {shortName}", null));
+        if (cheerIn > 0)
+            lines.Add(new("💛", $"{cheerIn} lần anh/chị cổ vũ {shortName}", null));
+        if (cheerOut > 0)
+            lines.Add(new("🤝", $"{cheerOut} lần {shortName} cổ vũ anh/chị", null));
+        if (thanksIn > 0)
+            lines.Add(new("💌", $"{thanksIn} lời cảm ơn gửi tới {shortName}", null));
+        if (gratitude > 0)
+            lines.Add(new("💖", $"{gratitude} lần {shortName} cảm ơn bố/mẹ", null));
+        if (circle > 0)
+            lines.Add(new("⭐", $"{circle} câu Evening Circle của {shortName}", null));
+        if (streak > 0)
+            lines.Add(new("🔥", $"{streak} mốc streak của {shortName}", null));
+
+        if (lines.Count == 0)
+        {
+            lines.Add(new(
+                "🌱",
+                $"Tuần này {shortName} chưa có nhiều khoảnh khắc riêng — một lời ấm cũng đủ bắt đầu.",
+                null));
+        }
+
+        var totalWarm = voice + cheerIn + cheerOut + thanksIn + gratitude + circle;
+        var headline = totalWarm > 0
+            ? $"Tuần này {shortName} đã có {totalWarm} khoảnh khắc gắn kết."
+            : $"Tuần này Famixa đang chờ khoảnh khắc riêng của {shortName}.";
 
         return new FamilyWeeklyStoryDto(
             start,

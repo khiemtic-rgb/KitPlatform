@@ -64,7 +64,37 @@ internal sealed class FamilyBlueprintService : IFamilyBlueprintService
             }
         }
 
-        return FamilyBlueprintHydrator.ToDnaCard(
+        // DNA stage used to stick to onboarding ageBand (often default 7-9 → Tiểu học).
+        // When children have DOB, recompute from the oldest child and persist if stale.
+        var members = await _families.ListMembersAsync(familyId, cancellationToken);
+        var childDobs = members
+            .Where(m =>
+                string.Equals(m.RoleCode, "child", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(m.RoleCode, "kid", StringComparison.OrdinalIgnoreCase))
+            .Select(m => m.DateOfBirth);
+        var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
+        var dobAgeBand = FamilyBlueprintHydrator.ResolvePrimaryAgeBandFromChildDobs(childDobs, asOf);
+        if (dobAgeBand is not null && row is not null)
+        {
+            var currentBand = FamilyBlueprintHydrator.ReadPrimaryAgeBandPublic(row.LayersJson);
+            if (!string.Equals(currentBand, dobAgeBand, StringComparison.OrdinalIgnoreCase))
+            {
+                var (layers, dna) = FamilyBlueprintHydrator.ApplyPrimaryAgeBand(
+                    row.LayersJson,
+                    row.DnaJson,
+                    dobAgeBand);
+                await _repo.UpsertAsync(
+                    familyId,
+                    layers,
+                    dna,
+                    FamilyBlueprintSchema.CurrentVersion,
+                    hydratedAt: row.HydratedAt,
+                    cancellationToken);
+                row = await _repo.GetAsync(familyId, cancellationToken) ?? row;
+            }
+        }
+
+        var card = FamilyBlueprintHydrator.ToDnaCard(
             familyId,
             row?.LayersJson,
             row?.DnaJson,
@@ -74,6 +104,15 @@ internal sealed class FamilyBlueprintService : IFamilyBlueprintService
             upgradeHintVi: isTeaser
                 ? "Nâng Family Peace Plan để xem Focus & bước tiếp theo — AI hiểu nhà bạn sâu hơn."
                 : pack.UpgradeHintVi);
+
+        if (dobAgeBand is not null)
+        {
+            var label = FamilyBlueprintHydrator.LabelViFromAgeBand(dobAgeBand);
+            if (!string.Equals(card.StageLabelVi, label, StringComparison.Ordinal))
+                return card with { StageLabelVi = label };
+        }
+
+        return card;
     }
 
     public async Task<FamilyBlueprintDto> UpsertAsync(
@@ -129,14 +168,24 @@ internal sealed class FamilyBlueprintService : IFamilyBlueprintService
         }
 
         var members = await _families.ListMembersAsync(familyId, cancellationToken);
-        var childCount = members.Count(m =>
-            string.Equals(m.RoleCode, "child", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(m.RoleCode, "kid", StringComparison.OrdinalIgnoreCase));
+        var childMembers = members
+            .Where(m =>
+                string.Equals(m.RoleCode, "child", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(m.RoleCode, "kid", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var childCount = childMembers.Count;
 
         var (layers, dna) = FamilyBlueprintHydrator.FromOnboardingPayload(
             payload!,
             family.Timezone,
             childCount);
+
+        // Prefer real DOBs over wizard ageBand default (often "7-9").
+        var dobBand = FamilyBlueprintHydrator.ResolvePrimaryAgeBandFromChildDobs(
+            childMembers.Select(m => m.DateOfBirth),
+            DateOnly.FromDateTime(DateTime.UtcNow));
+        if (dobBand is not null)
+            (layers, dna) = FamilyBlueprintHydrator.ApplyPrimaryAgeBand(layers, dna, dobBand);
 
         var existing = await _repo.GetAsync(familyId, cancellationToken);
         // Keep L3/L4 calibration if already captured; refresh L1/L6/L8 from onboarding.

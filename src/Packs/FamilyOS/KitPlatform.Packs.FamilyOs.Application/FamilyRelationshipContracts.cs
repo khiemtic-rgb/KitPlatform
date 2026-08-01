@@ -216,5 +216,6 @@ public interface IFamilyRelationshipService
     Task<FamilyWeeklyStoryDto> GetWeeklyStoryAsync(
         Guid familyId,
         DateOnly? asOf = null,
+        Guid? forMemberId = null,
         CancellationToken cancellationToken = default);
 }

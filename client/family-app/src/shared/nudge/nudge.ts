@@ -109,16 +109,22 @@ async function copyText(text: string): Promise<'copied'> {
   return 'copied';
 }
 
-/** Copy nudge text by default. Only open system Share when preferShare is set. */
+/** Windows desktop Share often pops an awkward OS window — keep clipboard there. */
+function canUseSystemShare(): boolean {
+  if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') return false;
+  const ua = navigator.userAgent || '';
+  const isWindows = /Windows/i.test(ua);
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  if (isWindows && !isMobile) return false;
+  return true;
+}
+
+/** Copy nudge text by default. Only open system Share when preferShare is set (and safe). */
 export async function shareOrCopyNudge(
   text: string,
   options?: ShareOrCopyOptions,
 ): Promise<'shared' | 'copied'> {
-  if (
-    options?.preferShare &&
-    typeof navigator !== 'undefined' &&
-    typeof navigator.share === 'function'
-  ) {
+  if (options?.preferShare && canUseSystemShare()) {
     try {
       await navigator.share({ text });
       return 'shared';

@@ -31,6 +31,7 @@ import {
   fetchEveningCircle,
   answerEveningCircle,
   fetchWeeklyStory,
+  fetchTeamNudges,
   type RelationshipTrigger,
   type EveningCircle,
   type WeeklyStory,
@@ -142,6 +143,7 @@ import {
   type FamilyMemory,
 } from '@/shared/flow/family-memories';
 import {
+  capitalizeParentRole,
   diaryDaySummaryLine,
   diaryTaskNote,
   familyProgressLine,
@@ -169,6 +171,7 @@ import {
   markRelTriggerOpened,
   markRelTriggerSent,
   parentVoiceIcon,
+  parentVoiceKindLabelVi,
   primaryRelationshipTrigger,
 } from '@/modules/flow/memberPersonalize';
 import {
@@ -657,6 +660,8 @@ export function ParentBoardView({
   const [relTriggers, setRelTriggers] = useState<RelationshipTrigger[]>([]);
   const [relTriggerReload, setRelTriggerReload] = useState(0);
   const [voiceSheetOpen, setVoiceSheetOpen] = useState(false);
+  /** True only when sheet opened from an RE trigger card (not free compose). */
+  const [voiceSheetFromTrigger, setVoiceSheetFromTrigger] = useState(false);
   const [voiceDraft, setVoiceDraft] = useState('');
   const [voiceToId, setVoiceToId] = useState('');
   const [voiceTemplate, setVoiceTemplate] = useState('praise');
@@ -664,6 +669,9 @@ export function ParentBoardView({
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [voiceToast, setVoiceToast] = useState<string | null>(null);
   const [voiceTargetKind, setVoiceTargetKind] = useState<'child' | 'adult'>('child');
+  /** Outbound parent→child voices that kids thanked — close the loop on parent home. */
+  const [voiceThanksReceipts, setVoiceThanksReceipts] = useState<ParentVoiceMessage[]>([]);
+  const [dismissedVoiceThanksIds, setDismissedVoiceThanksIds] = useState<string[]>([]);
   const [birthdayPick, setBirthdayPick] = useState<string | null>(null);
   const [partnerInbox, setPartnerInbox] = useState<ParentVoiceMessage[]>([]);
   const [partnerAckBusy, setPartnerAckBusy] = useState<string | null>(null);
@@ -673,6 +681,19 @@ export function ParentBoardView({
   const [circleAnswer, setCircleAnswer] = useState('');
   const [circleBusy, setCircleBusy] = useState(false);
   const [weeklyStory, setWeeklyStory] = useState<WeeklyStory | null>(null);
+  const [weekReviewOpen, setWeekReviewOpen] = useState(false);
+  const [weekReviewLoading, setWeekReviewLoading] = useState(false);
+  const [weekReviewError, setWeekReviewError] = useState<string | null>(null);
+  const [weekReviewMoments, setWeekReviewMoments] = useState<
+    Array<{
+      id: string;
+      icon: string;
+      kindLabel: string;
+      titleVi: string;
+      bodyVi?: string;
+      at: string;
+    }>
+  >([]);
   const [softCalDismissed, setSoftCalDismissed] = useState(false);
   const [softCalBusy, setSoftCalBusy] = useState(false);
   const [softCalToast, setSoftCalToast] = useState<string | null>(null);
@@ -979,8 +1000,8 @@ export function ParentBoardView({
       relTriggers,
     );
     if (effectiveChildFocus !== 'all') {
-      const focused = visible.find((t) => t.toMemberId === effectiveChildFocus);
-      if (focused) return focused;
+      // Don't surface another child's / partner trigger while focused on one child.
+      return visible.find((t) => t.toMemberId === effectiveChildFocus) ?? null;
     }
     return primaryRelationshipTrigger(visible);
   }, [relTriggers, effectiveChildFocus, familyId, parentMembershipId, flow.flowDate, relUiTick]);
@@ -996,12 +1017,108 @@ export function ParentBoardView({
       ),
   );
 
-  const openParentVoiceSheet = (trigger?: RelationshipTrigger | null) => {
-    const t = trigger ?? activeRelTrigger;
+  /**
+   * @param trigger — gợi ý RE đang mở (CTA trigger).
+   * @param compose — soạn tự do: luôn mở đúng đích, KHÔNG kế thừa activeRelTrigger
+   *   (trước đây `openParentVoiceSheet(null)` vẫn fallback trigger adult → dropdown chỉ còn mẹ).
+   */
+  const openParentWeekReview = async () => {
+    if (!weeklyStory) return;
+    setWeekReviewOpen(true);
+    setWeekReviewLoading(true);
+    setWeekReviewError(null);
+    const from = weeklyStory.from;
+    const to = weeklyStory.to;
+    const inWeek = (d?: string) => {
+      const day = (d ?? '').slice(0, 10);
+      if (!day) return false;
+      return day >= from && day <= to;
+    };
+    try {
+      const [voices, nudges, memories] = await Promise.all([
+        fetchParentVoice(familyId),
+        fetchTeamNudges(familyId),
+        fetchFamilyMemories(familyId, { from, to, limit: 100 }).catch(
+          () => [] as FamilyMemoryEntry[],
+        ),
+      ]);
+      const moments: Array<{
+        id: string;
+        icon: string;
+        kindLabel: string;
+        titleVi: string;
+        bodyVi?: string;
+        at: string;
+      }> = [];
+
+      for (const v of voices) {
+        if (!inWeek(v.flowDate) && !inWeek(v.sentAt)) continue;
+        const toName = shortMemberName(v.toMemberName || 'con');
+        moments.push({
+          id: `voice-${v.id}`,
+          icon: parentVoiceIcon(v.templateCode),
+          kindLabel: parentVoiceKindLabelVi(v.templateCode),
+          titleVi: `${shortMemberName(v.fromMemberName || 'Bố/mẹ')} → ${toName}`,
+          bodyVi: v.bodyVi,
+          at: v.sentAt || v.flowDate,
+        });
+      }
+
+      for (const n of nudges) {
+        if (!inWeek(n.flowDate) && !inWeek(n.sentAt) && !inWeek(n.createdAt)) continue;
+        if (n.status === 'draft' || n.status === 'deferred') continue;
+        const isThanks = n.templateCode === 'thanks_back';
+        moments.push({
+          id: `nudge-${n.id}`,
+          icon: isThanks ? '💌' : '💛',
+          kindLabel: isThanks ? 'Cảm ơn anh chị' : 'Cổ vũ anh chị',
+          titleVi: `${shortMemberName(n.fromName)} → ${shortMemberName(n.toName)}`,
+          bodyVi: n.messageVi,
+          at: n.sentAt || n.createdAt || n.flowDate,
+        });
+      }
+
+      for (const m of memories) {
+        if (
+          m.kind !== 'gratitude' &&
+          m.kind !== 'evening_circle' &&
+          m.kind !== 'parent_voice' &&
+          m.kind !== 'help'
+        ) {
+          continue;
+        }
+        // Prefer live voice/nudge rows when body already listed.
+        if (m.kind === 'parent_voice' || m.kind === 'help') continue;
+        moments.push({
+          id: `mem-${m.id}`,
+          icon: m.icon || (m.kind === 'gratitude' ? '💖' : '⭐'),
+          kindLabel: m.kind === 'gratitude' ? 'Cảm ơn bố/mẹ' : 'Evening Circle',
+          titleVi: m.titleVi,
+          bodyVi: m.noteVi,
+          at: m.happenedAt || m.flowDate,
+        });
+      }
+
+      moments.sort((a, b) => b.at.localeCompare(a.at));
+      setWeekReviewMoments(moments);
+    } catch {
+      setWeekReviewError('Chưa tải được tuần này — thử lại nhé.');
+      setWeekReviewMoments([]);
+    } finally {
+      setWeekReviewLoading(false);
+    }
+  };
+
+  const openParentVoiceSheet = (
+    trigger?: RelationshipTrigger | null,
+    compose?: 'child' | 'adult',
+  ) => {
     if (!parentMembershipId) return;
+    const t = compose ? null : (trigger ?? activeRelTrigger);
     setVoiceError(null);
     setBirthdayPick(null);
     if (t && isParentVoiceTrigger(t.code)) {
+      setVoiceSheetFromTrigger(true);
       const adult = isAdultVoiceTrigger(t.code);
       setVoiceTargetKind(adult ? 'adult' : 'child');
       setVoiceToId(t.toMemberId ?? '');
@@ -1013,7 +1130,16 @@ export function ParentBoardView({
       setVoiceDraft(draft);
       markRelTriggerOpened(familyId, parentMembershipId, flow.flowDate, t, draft);
       setRelUiTick((n) => n + 1);
+    } else if (compose === 'adult') {
+      setVoiceSheetFromTrigger(false);
+      setVoiceTargetKind('adult');
+      const firstAdult = adultOptions[0];
+      setVoiceToId(firstAdult?.id ?? '');
+      setVoiceTemplate('thanks_partner');
+      const short = shortMemberName(firstAdult?.displayName || 'bạn');
+      setVoiceDraft(`${short} ơi, cảm ơn hôm nay mình cùng giữ nhà nhé.`);
     } else {
+      setVoiceSheetFromTrigger(false);
       setVoiceTargetKind('child');
       const firstChild =
         effectiveChildFocus !== 'all'
@@ -1023,7 +1149,8 @@ export function ParentBoardView({
       setVoiceTemplate('custom');
       const short =
         firstChild?.name?.trim().split(/\s+/).filter(Boolean).slice(-1)[0] || 'con';
-      setVoiceDraft(`${short} ơi, hôm nay mẹ/bố nghĩ đến con.`);
+      const roleWord = parentRoleFromName(viewerName);
+      setVoiceDraft(`${short} ơi, hôm nay ${roleWord} nghĩ đến con.`);
     }
     setVoiceSheetOpen(true);
   };
@@ -1092,7 +1219,11 @@ export function ParentBoardView({
           /* optional treat memory */
         }
       }
-      if (activeRelTrigger) {
+      if (
+        voiceSheetFromTrigger &&
+        activeRelTrigger &&
+        activeRelTrigger.toMemberId === voiceToId
+      ) {
         markRelTriggerSent(
           familyId,
           parentMembershipId,
@@ -1100,6 +1231,7 @@ export function ParentBoardView({
           activeRelTrigger,
         );
       }
+      setVoiceSheetFromTrigger(false);
       setVoiceSheetOpen(false);
       setVoiceToast(
         voiceTargetKind === 'adult'
@@ -1160,6 +1292,18 @@ export function ParentBoardView({
       .catch(() => {
         if (!cancelled) setPartnerInbox([]);
       });
+    void fetchParentVoice(familyId, {
+      fromMemberId: parentMembershipId,
+      flowDate: flow.flowDate,
+    })
+      .then((rows) => {
+        if (!cancelled) {
+          setVoiceThanksReceipts(rows.filter((r) => r.status === 'thanks'));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setVoiceThanksReceipts([]);
+      });
     return () => {
       cancelled = true;
     };
@@ -1175,6 +1319,11 @@ export function ParentBoardView({
     try {
       await ackParentVoice(familyId, messageId, status);
       setPartnerInbox((prev) => prev.filter((n) => n.id !== messageId));
+      setVoiceToast(
+        status === 'thanks'
+          ? 'Đã gửi cảm ơn người cùng chăm nhà.'
+          : 'Đã xem lời từ người cùng chăm.',
+      );
       setRelTriggerReload((n) => n + 1);
     } catch {
       /* keep */
@@ -1192,7 +1341,8 @@ export function ParentBoardView({
       childOptions.find((c) => c.key === voiceToId)?.name ||
       activeRelTrigger?.toMemberName ||
       'con';
-    setVoiceDraft(opt.draftVi(shortMemberName(childName), 'Bố/Mẹ'));
+    const roleLabel = capitalizeParentRole(parentRoleFromName(viewerName));
+    setVoiceDraft(opt.draftVi(shortMemberName(childName), roleLabel));
   };
 
   const openMemoriesSheet = () => setDiaryMemoriesOpen(true);
@@ -2528,16 +2678,53 @@ export function ParentBoardView({
             </div>
           ) : null}
 
-          {partnerInbox.length > 0 || (parentMembershipId && hasChildren) ? (
+          {partnerInbox.length > 0 ||
+          voiceThanksReceipts.some((r) => !dismissedVoiceThanksIds.includes(r.id)) ||
+          (parentMembershipId && hasChildren) ||
+          weeklyStory ? (
           <section className="ph-rel-strip" aria-label="Gắn kết hôm nay">
-            <p className="ph-rel-strip-eyebrow">Gắn kết · trước việc nhà</p>
+            <p className="ph-rel-strip-eyebrow">💛 Gắn kết nhà mình · trước việc nhà</p>
+
+            {voiceThanksReceipts.filter((r) => !dismissedVoiceThanksIds.includes(r.id)).length >
+            0 ? (
+              <div className="ph-partner-inbox" aria-label="Con vừa cảm ơn lời của bạn">
+                {voiceThanksReceipts
+                  .filter((r) => !dismissedVoiceThanksIds.includes(r.id))
+                  .map((n) => (
+                    <article key={n.id} className="ph-partner-inbox-card">
+                      <p className="ph-partner-inbox-eyebrow">
+                        <span aria-hidden>💛</span> Con vừa cảm ơn lời của bạn
+                      </p>
+                      <p className="ph-partner-inbox-msg">
+                        {shortMemberName(n.toMemberName || 'Con')} đã cảm ơn:{' '}
+                        “{n.bodyVi.trim().slice(0, 120)}
+                        {n.bodyVi.trim().length > 120 ? '…' : ''}”
+                      </p>
+                      <div className="ph-combo-actions">
+                        <button
+                          type="button"
+                          className="ph-nudge-btn is-primary"
+                          onClick={() =>
+                            setDismissedVoiceThanksIds((prev) =>
+                              prev.includes(n.id) ? prev : [...prev, n.id],
+                            )
+                          }
+                        >
+                          Đã biết
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+              </div>
+            ) : null}
+
             {partnerInbox.length > 0 ? (
               <div className="ph-partner-inbox" aria-label="Lời từ người cùng chăm">
                 {partnerInbox.map((n) => (
                   <article key={n.id} className="ph-partner-inbox-card">
                     <p className="ph-partner-inbox-eyebrow">
                       <span aria-hidden>{parentVoiceIcon(n.templateCode)}</span> Lời từ{' '}
-                      {n.fromMemberName.trim() || 'bố/mẹ'}
+                      {n.fromMemberName.trim() || 'bố/mẹ'} — trả lời ngay
                     </p>
                     <p className="ph-partner-inbox-msg">{n.bodyVi}</p>
                     <div className="ph-combo-actions">
@@ -2598,23 +2785,94 @@ export function ParentBoardView({
                 </button>
               </div>
             ) : parentMembershipId && hasChildren ? (
-              <button
-                type="button"
-                className="ph-rel-trigger-cta"
-                onClick={() => openParentVoiceSheet(null)}
-              >
-                <span className="ph-rel-trigger-ico" aria-hidden>
-                  ❤️
-                </span>
-                <span>
-                  Gửi một lời ấm tới con
-                  <em>Bạn nói — Famixa chỉ chuyển lời. Không cần chờ mốc streak.</em>
-                </span>
-                <i className="ph-sibling-nudge-chev" aria-hidden>
-                  ›
-                </i>
-              </button>
+              <div className="ph-rel-compose-stack">
+                <button
+                  type="button"
+                  className="ph-rel-trigger-cta"
+                  onClick={() => openParentVoiceSheet(null, 'child')}
+                >
+                  <span className="ph-rel-trigger-ico" aria-hidden>
+                    ❤️
+                  </span>
+                  <span>
+                    {effectiveChildFocus !== 'all'
+                      ? `Gửi một lời ấm tới ${
+                          childOptions.find((c) => c.key === effectiveChildFocus)?.name
+                            ?.split(/\s+/)
+                            .filter(Boolean)
+                            .slice(-1)[0] || 'con'
+                        }`
+                      : 'Gửi một lời ấm tới con'}
+                    <em>Bạn nói — Famixa chỉ chuyển lời. Không cần chờ mốc streak.</em>
+                  </span>
+                  <i className="ph-sibling-nudge-chev" aria-hidden>
+                    ›
+                  </i>
+                </button>
+                {adultOptions.length > 0 ? (
+                  <button
+                    type="button"
+                    className="ph-rel-compose-adult"
+                    onClick={() => openParentVoiceSheet(null, 'adult')}
+                  >
+                    Gửi lời tới người cùng chăm ›
+                  </button>
+                ) : null}
+              </div>
             ) : null}
+
+            {weeklyStory ? (
+              <article className="ph-bond-week" aria-label="Câu chuyện tuần này">
+                <p className="ph-bond-week-eyebrow">📖 Tuần này nhà mình</p>
+                <p className="ph-bond-week-head">{weeklyStory.headlineVi}</p>
+                <ul className="ph-bond-week-lines">
+                  {weeklyStory.lines.slice(0, 3).map((line, idx) => (
+                    <li key={`${line.textVi}-${idx}`}>
+                      <span aria-hidden>{line.icon}</span>
+                      <span>{line.textVi}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="ph-bond-week-actions">
+                  <button
+                    type="button"
+                    className="ph-nudge-btn"
+                    onClick={() => void openParentWeekReview()}
+                  >
+                    Xem lại lời tuần này
+                  </button>
+                  {parentMembershipId && hasChildren ? (
+                    <button
+                      type="button"
+                      className="ph-nudge-btn is-primary"
+                      onClick={() => openParentVoiceSheet(null, 'child')}
+                    >
+                      Gửi thêm lời tới con
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="ph-nudge-btn"
+                    onClick={() =>
+                      void shareOrCopyNudge(
+                        formatWeeklyStoryShare({
+                          familyName,
+                          headlineVi: weeklyStory.headlineVi,
+                          lines: weeklyStory.lines,
+                        }),
+                      )
+                        .then(() =>
+                          showActionToast('Đã copy — mở Zalo dán gửi ông bà nhé'),
+                        )
+                        .catch(() => showActionToast('Chưa copy được — thử lại nhé'))
+                    }
+                  >
+                    Copy gửi ông bà
+                  </button>
+                </div>
+              </article>
+            ) : null}
+
             {voiceToast ? (
               <p className="ph-sibling-nudge-toast" role="status">
                 {voiceToast}
@@ -3104,54 +3362,6 @@ export function ParentBoardView({
               ) : parentMembershipId && eveningCircle.alreadyAnswered ? (
                 <p className="ph-circle-empty">Bạn đã trả lời tối nay — cảm ơn.</p>
               ) : null}
-            </section>
-          ) : null}
-
-          {weeklyStory ? (
-            <section className="ph-weekly-story" aria-label="Câu chuyện tuần này">
-              <header className="ph-b4-col-head">
-                <h3>
-                  <span aria-hidden>📖</span> Câu chuyện tuần này
-                </h3>
-              </header>
-              <p className="ph-weekly-headline">{weeklyStory.headlineVi}</p>
-              <ul className="ph-weekly-lines">
-                {weeklyStory.lines.map((line, idx) => (
-                  <li key={`${line.textVi}-${idx}`}>
-                    <span aria-hidden>{line.icon}</span>
-                    <span>{line.textVi}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="ph-ritual-foot">Không phải % việc — là cách nhà mình đã gần nhau.</p>
-              <button
-                type="button"
-                className="ph-nudge-btn"
-                style={{ marginTop: 8 }}
-                onClick={() =>
-                  void shareOrCopyNudge(
-                    formatWeeklyStoryShare({
-                      familyName,
-                      headlineVi: weeklyStory.headlineVi,
-                      lines: weeklyStory.lines,
-                    }),
-                    { preferShare: true },
-                  )
-                    .then((mode) =>
-                      showActionToast(
-                        mode === 'shared'
-                          ? 'Đã mở chia sẻ cho ông bà / người thân'
-                          : 'Đã copy — dán Zalo gửi ông bà nhé',
-                      ),
-                    )
-                    .catch((err) => {
-                      if (err instanceof DOMException && err.name === 'AbortError') return;
-                      showActionToast('Chưa chia sẻ được — thử lại nhé');
-                    })
-                }
-              >
-                Gửi ông bà / người thân
-              </button>
             </section>
           ) : null}
 
@@ -5124,6 +5334,79 @@ export function ParentBoardView({
                 onClick={() => setAddMemoryOpen(false)}
               >
                 Huỷ
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {weekReviewOpen ? (
+        <div
+          className="sheet-backdrop"
+          role="presentation"
+          onClick={() => setWeekReviewOpen(false)}
+        >
+          <div
+            className="sheet ph-sibling-nudge-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Xem lại tuần nhà mình"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="ph-nudge-head">
+              <span className="ph-nudge-head-ico" aria-hidden>
+                📖
+              </span>
+              <div>
+                <h2>Tuần này nhà mình</h2>
+                {weeklyStory ? (
+                  <p>
+                    {weeklyStory.from.slice(5)} → {weeklyStory.to.slice(5)} · đọc lại lời thật
+                  </p>
+                ) : (
+                  <p>Đọc lại lời bố mẹ, anh chị và cảm ơn trong tuần.</p>
+                )}
+              </div>
+              <button
+                type="button"
+                className="ph-nudge-close"
+                aria-label="Đóng"
+                onClick={() => setWeekReviewOpen(false)}
+              >
+                ✕
+              </button>
+            </header>
+            {weekReviewLoading ? (
+              <p className="muted">Đang tải lời tuần này…</p>
+            ) : weekReviewError ? (
+              <p className="banner-error" role="alert">
+                {weekReviewError}
+              </p>
+            ) : weekReviewMoments.length === 0 ? (
+              <p className="muted">
+                Tuần này chưa ghi lời gắn kết — gửi một lời tới con rồi xem lại ở đây.
+              </p>
+            ) : (
+              <div className="ph-week-review-list">
+                {weekReviewMoments.map((m) => (
+                  <article key={m.id} className="ph-week-review-card">
+                    <p className="ph-week-review-kind">
+                      <span aria-hidden>{m.icon}</span> {m.kindLabel}
+                    </p>
+                    <p className="ph-week-review-title">{m.titleVi}</p>
+                    {m.bodyVi ? <p className="ph-week-review-body">{m.bodyVi}</p> : null}
+                    <p className="ph-week-review-at">{m.at.slice(0, 16).replace('T', ' · ')}</p>
+                  </article>
+                ))}
+              </div>
+            )}
+            <div className="ph-nudge-actions">
+              <button
+                type="button"
+                className="ph-nudge-btn is-primary"
+                onClick={() => setWeekReviewOpen(false)}
+              >
+                Đóng
               </button>
             </div>
           </div>

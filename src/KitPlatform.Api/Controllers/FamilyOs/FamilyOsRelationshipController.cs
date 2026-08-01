@@ -182,11 +182,13 @@ public sealed class FamilyOsRelationshipController : ControllerBase
     public async Task<ActionResult<FamilyWeeklyStoryDto>> GetWeeklyStory(
         Guid familyId,
         [FromQuery] DateOnly? asOf,
+        [FromQuery] Guid? forMemberId,
         CancellationToken cancellationToken)
     {
         try
         {
-            return Ok(await _relationship.GetWeeklyStoryAsync(familyId, asOf, cancellationToken));
+            return Ok(await _relationship.GetWeeklyStoryAsync(
+                familyId, asOf, forMemberId, cancellationToken));
         }
         catch (InvalidOperationException ex)
         {

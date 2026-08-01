@@ -2395,10 +2395,11 @@ export async function answerEveningCircle(
 export async function fetchWeeklyStory(
   familyId: string,
   asOf?: string,
+  forMemberId?: string,
 ): Promise<WeeklyStory> {
   const { data } = await http.get<Row>(
     `/family-os/families/${familyId}/relationship/weekly-story`,
-    { params: { asOf } },
+    { params: { asOf, forMemberId } },
   );
   return mapWeeklyStory(data);
 }

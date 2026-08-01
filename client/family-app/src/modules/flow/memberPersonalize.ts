@@ -259,7 +259,7 @@ export function isThankParentTrigger(code: string): boolean {
 }
 
 export function parentVoiceIcon(templateCode?: string): string {
-  switch (templateCode) {
+  switch ((templateCode ?? '').trim().toLowerCase()) {
     case 'encourage':
       return '🌿';
     case 'thanks_partner':
@@ -268,8 +268,37 @@ export function parentVoiceIcon(templateCode?: string): string {
       return '🤲';
     case 'birthday':
       return '🎂';
+    case 'praise':
+      return '⭐';
     default:
-      return '❤️';
+      return '💌';
+  }
+}
+
+/** Visual skin class suffix for kid bond voice cards (birthday ≠ encourage). */
+export function parentVoiceSkin(templateCode?: string): 'birthday' | 'encourage' | 'praise' | 'custom' {
+  switch ((templateCode ?? '').trim().toLowerCase()) {
+    case 'birthday':
+      return 'birthday';
+    case 'encourage':
+      return 'encourage';
+    case 'praise':
+      return 'praise';
+    default:
+      return 'custom';
+  }
+}
+
+export function parentVoiceKindLabelVi(templateCode?: string): string {
+  switch ((templateCode ?? '').trim().toLowerCase()) {
+    case 'birthday':
+      return 'Sinh nhật';
+    case 'encourage':
+      return 'Cổ vũ';
+    case 'praise':
+      return 'Khen ngợi';
+    default:
+      return 'Gửi riêng';
   }
 }
 
