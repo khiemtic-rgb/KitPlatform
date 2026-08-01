@@ -140,7 +140,8 @@
 
 .hl-hero__stats strong {
   color: var(--hl-navy);
-  font-size: 1.15rem;
+  font-size: clamp(0.95rem, 1.6vw, 1.1rem);
+  line-height: 1.25;
 }
 
 .hl-hero__stats span {

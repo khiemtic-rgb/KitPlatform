@@ -13,9 +13,9 @@ export const homeLanding = {
     secondaryCta: 'Đăng ký demo',
     secondaryHref: '/vi/lien-he/',
     stats: [
-      { value: '500+', label: 'Nhà thuốc tin dùng' },
-      { value: '50.000+', label: 'Người dân sử dụng' },
-      { value: '99.9%', label: 'Uptime hệ thống' },
+      { value: 'POS · Kho · CRM', label: 'Vận hành trên một nền tảng' },
+      { value: 'App khách hàng', label: 'Nhắc uống thuốc & tái mua' },
+      { value: 'AI đồng hành', label: 'Hỗ trợ tư vấn & chăm sóc' },
     ],
   },
 
@@ -86,13 +86,13 @@ export const homeLanding = {
   },
 
   why: {
-    title: 'Vì sao hàng trăm nhà thuốc chọn Novixa?',
+    title: 'Vì sao nhà thuốc chọn Novixa?',
     stats: [
-      { value: '+15%', label: 'Doanh thu trung bình' },
-      { value: '+30%', label: 'Khách hàng quay lại' },
-      { value: '80%', label: 'Thời gian vận hành tiết kiệm' },
-      { value: '99.9%', label: 'An toàn dữ liệu' },
-      { value: '24/7', label: 'Hỗ trợ đồng hành' },
+      { value: 'CRM', label: 'Giữ chân khách quay lại' },
+      { value: 'FEFO', label: 'Kiểm soát lô & hạn dùng' },
+      { value: 'App', label: 'Chăm sóc sau bán tự động' },
+      { value: 'AI', label: 'Hỗ trợ tư vấn tại quầy' },
+      { value: 'Cloud', label: 'Triển khai nhanh, dữ liệu an toàn' },
     ],
   },
 
