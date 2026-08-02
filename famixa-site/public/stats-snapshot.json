@@ -1,14 +1,14 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-02T08:07:55.296Z",
+  "generatedAt": "2026-08-02T08:42:23.465Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 113,
-    "todayPageViews": 54,
-    "todayRequests": 378,
-    "last24hVisitors": 132,
-    "last24hPageViews": 66,
-    "last24hRequests": 520
+    "todayVisitors": 115,
+    "todayPageViews": 57,
+    "todayRequests": 405,
+    "last24hVisitors": 134,
+    "last24hPageViews": 69,
+    "last24hRequests": 547
   },
   "hourly": [
     {
@@ -125,6 +125,11 @@
       "time": "2026-08-02T07:00:00Z",
       "visitors": 4,
       "requests": 22
+    },
+    {
+      "time": "2026-08-02T08:00:00Z",
+      "visitors": 3,
+      "requests": 27
     }
   ],
   "daily": [
@@ -160,19 +165,19 @@
     },
     {
       "date": "2026-08-02",
-      "visitors": 113,
-      "pageViews": 54,
-      "requests": 378
+      "visitors": 115,
+      "pageViews": 57,
+      "requests": 405
     }
   ],
   "topPages": [
     {
-      "path": "/vi/goi-cha-me/10-sai-lam-pho-bien-khi-nuoi-day-con-ma-cha-me-hien-dai-rat-de-mac-phai/",
-      "views": 38
+      "path": "/cdn-cgi/rum",
+      "views": 42
     },
     {
-      "path": "/cdn-cgi/rum",
-      "views": 36
+      "path": "/vi/goi-cha-me/10-sai-lam-pho-bien-khi-nuoi-day-con-ma-cha-me-hien-dai-rat-de-mac-phai/",
+      "views": 38
     },
     {
       "path": "/images/blog/10-sai-lam-pho-bien-khi-nuoi-day-con.png",
@@ -183,19 +188,15 @@
       "views": 24
     },
     {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 20
-    },
-    {
       "path": "/images/ch4-stages-art.png",
       "views": 19
     },
     {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 18
+      "path": "/robots.txt",
+      "views": 17
     },
     {
-      "path": "/robots.txt",
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
       "views": 17
     },
     {
@@ -203,7 +204,11 @@
       "views": 16
     },
     {
-      "path": "/vi/",
+      "path": "/stats-snapshot.json",
+      "views": 16
+    },
+    {
+      "path": "/vi/thong-ke/",
       "views": 16
     },
     {
@@ -215,16 +220,16 @@
       "views": 15
     },
     {
-      "path": "/images/hero-family.png",
+      "path": "/api/stats",
       "views": 15
     },
     {
-      "path": "/images/fami-appear.png",
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
       "views": 14
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 13
+      "path": "/vi/",
+      "views": 14
     }
   ]
 }
