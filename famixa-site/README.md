@@ -62,9 +62,16 @@ Trang: **https://famixa.vn/vi/thong-ke** — mật khẩu mặc định **`famix
 - **Tải lại:** gọi `/api/stats` (Cloudflare Pages Function) — cần `STATS_VIEW_KEY` trên project `famixa` (= cùng mật khẩu).
 - **Dự phòng:** `public/stats-snapshot.json` cập nhật qua GitHub Actions mỗi 6 giờ (`Famixa update stats`).
 
-**Cloudflare Pages** (Settings → Variables, Production): `STATS_VIEW_KEY`, `CF_ZONE_ID` (zone famixa.vn), `CLOUDFLARE_API_TOKEN` (Analytics Read).
+**Cloudflare Pages** (Settings → Variables, Production): `STATS_VIEW_KEY`, `CF_ZONE_ID`, `CLOUDFLARE_API_TOKEN` — giá trị zone/token của **famixa.vn**; sau khi sửa → **Retry deployment**.
 
-**GitHub Secrets:** `CF_ANALYTICS_API_TOKEN` hoặc `CLOUDFLARE_API_TOKEN`; tuỳ chọn `FAMIXA_CF_ZONE_ID`, `FAMIXA_CF_DEPLOY_HOOK`.
+**GitHub Secrets (Famixa — tên riêng, không trùng Novixa):**
+
+| Secret | Bắt buộc | Ghi chú |
+|--------|----------|---------|
+| `FAMIXA_CF_ZONE_ID` | **Có** | Zone ID **famixa.vn** (khác `CF_ZONE_ID` của novixa) |
+| `FAMIXA_CF_ANALYTICS_API_TOKEN` | **Khuyến nghị** | Token **chỉ** famixa.vn → Analytics Read (tránh trùng quyền novixa) |
+| `CLOUDFLARE_API_TOKEN` hoặc `CF_ANALYTICS_API_TOKEN` | Dự phòng | Chỉ dùng nếu token có Analytics Read **cả hai** zone |
+| `FAMIXA_CF_DEPLOY_HOOK` | Tuỳ chọn | Deploy hook project famixa |
 
 **Web Analytics (thu thập):** set `NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN` khi build nếu dùng Cloudflare Web Analytics beacon.
 

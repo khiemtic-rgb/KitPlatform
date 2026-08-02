@@ -1,6 +1,6 @@
 /**
  * Fetch Cloudflare zone analytics → public/stats-snapshot.json
- * Env: FAMIXA_CF_ZONE_ID (ưu tiên) hoặc resolve famixa.vn; CF_ANALYTICS_API_TOKEN | CLOUDFLARE_API_TOKEN
+ * Env: FAMIXA_CF_ZONE_ID; FAMIXA_CF_ANALYTICS_API_TOKEN (ưu tiên) | CF_ANALYTICS_API_TOKEN | CLOUDFLARE_API_TOKEN
  */
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -87,13 +87,15 @@ async function resolveZoneId(token) {
   });
   if (!res.ok) {
     throw new Error(
-      `Không list được zone ${ZONE_NAME} (HTTP ${res.status}). Set FAMIXA_CF_ZONE_ID.`,
+      `Không list được zone ${ZONE_NAME} (HTTP ${res.status}). Thêm GitHub Secret FAMIXA_CF_ZONE_ID (Zone ID famixa.vn).`,
     );
   }
   const payload = await res.json();
   const zoneId = payload.result?.[0]?.id;
   if (!zoneId) {
-    throw new Error(`Không tìm thấy zone ${ZONE_NAME}. Set FAMIXA_CF_ZONE_ID.`);
+    throw new Error(
+      `Không tìm thấy zone ${ZONE_NAME}. Thêm GitHub Secret FAMIXA_CF_ZONE_ID (Zone ID famixa.vn).`,
+    );
   }
   console.log('fetch-stats-snapshot: zone', zoneId);
   return zoneId;
@@ -101,10 +103,14 @@ async function resolveZoneId(token) {
 
 async function fetchStats() {
   const token =
-    process.env.CF_ANALYTICS_API_TOKEN?.trim() || process.env.CLOUDFLARE_API_TOKEN?.trim();
+    process.env.FAMIXA_CF_ANALYTICS_API_TOKEN?.trim() ||
+    process.env.CF_ANALYTICS_API_TOKEN?.trim() ||
+    process.env.CLOUDFLARE_API_TOKEN?.trim();
 
   if (!token) {
-    console.error('fetch-stats-snapshot: missing CLOUDFLARE_API_TOKEN (cần quyền Analytics Read)');
+    console.error(
+      'fetch-stats-snapshot: missing token — set FAMIXA_CF_ANALYTICS_API_TOKEN (Analytics Read, zone famixa.vn)',
+    );
     process.exit(1);
   }
 
@@ -147,12 +153,15 @@ async function fetchStats() {
   const payload = await res.json();
   if (payload.errors?.length) {
     const msg = payload.errors.map((e) => e.message).join('; ');
+    const hint = msg.includes('analytics.read')
+      ? ' Token thiếu Zone Analytics Read cho famixa.vn — tạo FAMIXA_CF_ANALYTICS_API_TOKEN riêng hoặc sửa token Cloudflare.'
+      : '';
     writeSnapshot({
       ok: false,
-      error: msg,
+      error: msg + hint,
       generatedAt: now.toISOString(),
     });
-    console.error('fetch-stats-snapshot GraphQL:', msg);
+    console.error('fetch-stats-snapshot GraphQL:', msg + hint);
     process.exit(1);
   }
 
