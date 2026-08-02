@@ -78,6 +78,12 @@ import {
   type KidMemoryFilter,
 } from '@/shared/flow/family-memories';
 import { FAMILY_MOODS, moodIndexFromCode } from '@/shared/flow/family-moods';
+import {
+  CHILD_VOICE_DEFAULTS,
+  CHILD_VOICE_HARDEST_OPTIONS,
+  CHILD_VOICE_WANT_OPTIONS,
+  CHILD_VOICE_WEEK_COPY,
+} from '@/shared/flow/child-voice-week';
 import { NUDGE_TEMPLATE_OPTIONS, isSiblingComboUnlock, nudgeMessagePreview } from '@/modules/flow/teamPlay';
 import {
   isCheerSiblingTrigger,
@@ -1143,8 +1149,8 @@ export function KidFocusView({
   const [cheerTemplate, setCheerTemplate] = useState<TeamNudgeTemplate>('cheer_up');
   const [cheerBusy, setCheerBusy] = useState(false);
   const [cheerError, setCheerError] = useState<string | null>(null);
-  const [kidVoiceHardest, setKidVoiceHardest] = useState('evening');
-  const [kidVoiceWant, setKidVoiceWant] = useState('praise');
+  const [kidVoiceHardest, setKidVoiceHardest] = useState<string>(CHILD_VOICE_DEFAULTS.hardest);
+  const [kidVoiceWant, setKidVoiceWant] = useState<string>(CHILD_VOICE_DEFAULTS.want);
   const [kidVoiceWish, setKidVoiceWish] = useState('');
   const [kidVoiceBusy, setKidVoiceBusy] = useState(false);
   const [kidVoiceDone, setKidVoiceDone] = useState(false);
@@ -4448,29 +4454,29 @@ export function KidFocusView({
               <div className="kv2-t-sec-head">
                 <div>
                   <h3>
-                    <span aria-hidden>💬</span> ĐIỀU CON MUỐN NÓI
+                    <span aria-hidden>💬</span> {CHILD_VOICE_WEEK_COPY.title}
                   </h3>
-                  <p>Không phải kiểm tra — chỉ để nhà mình hiểu con hơn một chút.</p>
+                  <p>{CHILD_VOICE_WEEK_COPY.subtitle}</p>
                 </div>
               </div>
               {kidVoiceDone ? (
                 <div className="kv2-t-voice is-done">
-                  <p>Cảm ơn con đã chia sẻ. Bố mẹ sẽ lắng nghe và thử cách dịu hơn.</p>
+                  <p>{CHILD_VOICE_WEEK_COPY.kidDone}</p>
                 </div>
               ) : (
                 <div className="kv2-t-voice">
                   <label className="kv2-t-voice-field">
-                    <span>Tuần này việc nào hơi khó với con?</span>
+                    <span>{CHILD_VOICE_WEEK_COPY.hardestLabel}</span>
                     <span className="kv2-t-voice-select">
                       <select
                         value={kidVoiceHardest}
                         onChange={(e) => setKidVoiceHardest(e.target.value)}
                       >
-                        <option value="evening">Buổi tối / hơi mệt</option>
-                        <option value="subject">Học / môn khó</option>
-                        <option value="alone">Làm một mình</option>
-                        <option value="long">Việc hơi dài</option>
-                        <option value="other">Khác</option>
+                        {CHILD_VOICE_HARDEST_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
                       </select>
                       <em className="kv2-t-voice-chevron" aria-hidden>
                         ⌄
@@ -4478,17 +4484,17 @@ export function KidFocusView({
                     </span>
                   </label>
                   <label className="kv2-t-voice-field">
-                    <span>Con thấy bố mẹ giúp kiểu nào dễ chịu hơn?</span>
+                    <span>{CHILD_VOICE_WEEK_COPY.wantLabel}</span>
                     <span className="kv2-t-voice-select">
                       <select
                         value={kidVoiceWant}
                         onChange={(e) => setKidVoiceWant(e.target.value)}
                       >
-                        <option value="less_remind">Nhắc ít hơn một chút</option>
-                        <option value="praise">Khen khi con tự làm</option>
-                        <option value="together">Cùng làm một đoạn ngắn</option>
-                        <option value="choose_time">Cho con chọn giờ</option>
-                        <option value="friends">Có người cùng làm</option>
+                        {CHILD_VOICE_WANT_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
                       </select>
                       <em className="kv2-t-voice-chevron" aria-hidden>
                         ⌄
@@ -4496,12 +4502,12 @@ export function KidFocusView({
                     </span>
                   </label>
                   <label className="kv2-t-voice-field">
-                    <span>Con muốn đề xuất gì thêm không?</span>
+                    <span>{CHILD_VOICE_WEEK_COPY.wishLabel}</span>
                     <input
                       value={kidVoiceWish}
                       onChange={(e) => setKidVoiceWish(e.target.value)}
                       maxLength={200}
-                      placeholder="Ví dụ: muốn giữ giờ đọc sách… (tuỳ chọn)"
+                      placeholder={CHILD_VOICE_WEEK_COPY.wishPlaceholder}
                     />
                   </label>
                   <button
@@ -4519,12 +4525,14 @@ export function KidFocusView({
                       })
                         .then(() => setKidVoiceDone(true))
                         .catch(() =>
-                          setTreasureToast('Chưa gửi được — thử lại sau nhé.'),
+                          setTreasureToast(CHILD_VOICE_WEEK_COPY.sendFailed),
                         )
                         .finally(() => setKidVoiceBusy(false));
                     }}
                   >
-                    {kidVoiceBusy ? 'Đang gửi…' : 'Gửi lời của con'}
+                    {kidVoiceBusy
+                      ? CHILD_VOICE_WEEK_COPY.submitting
+                      : CHILD_VOICE_WEEK_COPY.submit}
                   </button>
                 </div>
               )}

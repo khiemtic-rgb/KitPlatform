@@ -82,7 +82,12 @@ optgroup {
 .app-shell.is-kid {
   --tap: 72px;
   width: min(100%, 1100px);
-  padding: max(10px, env(safe-area-inset-top)) 12px 0;
+  /* constant() = iOS 11.0–11.2; env() = modern. Keep notch clear on X/XS/11. */
+  padding-top: max(12px, constant(safe-area-inset-top));
+  padding-top: max(12px, env(safe-area-inset-top, 0px));
+  padding-right: 10px;
+  padding-bottom: 0;
+  padding-left: 10px;
   gap: 0;
 }
 
@@ -8744,6 +8749,15 @@ body:has(.sheet-backdrop) {
   background: linear-gradient(160deg, #f7f4ff, #fff);
 }
 
+/* Child voice on Insight — reuse treasure droplist skin */
+.fv-child-voice .kv2-t-voice {
+  margin-top: 0;
+}
+
+.fv-child-voice .kv2-t-sec-head h3 {
+  letter-spacing: 0.02em;
+}
+
 .fv-weekly-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -9375,10 +9389,12 @@ body:has(.sheet-backdrop) {
   --kv2-ink: #2a2f6a;
   --kv2-muted: #6b7199;
   --kv2-card: rgba(255, 255, 255, 0.92);
+  --kv2-tabbar-clearance: 96px;
   position: relative;
   gap: 12px;
-  padding: 8px 10px 0;
-  padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  padding: 6px 8px 0;
+  padding-bottom: calc(var(--kv2-tabbar-clearance) + constant(safe-area-inset-bottom));
+  padding-bottom: calc(var(--kv2-tabbar-clearance) + env(safe-area-inset-bottom, 0px));
   color: var(--kv2-ink);
   font-family: var(--font-ui);
   background:
@@ -9477,17 +9493,21 @@ body:has(.sheet-backdrop) {
   flex-shrink: 0;
   max-width: 100%;
   min-width: 0;
+  align-self: center;
 }
 
 .kv2-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   background: #fff;
   border-radius: 999px;
   padding: 8px 12px;
+  min-height: 42px;
   font-weight: 600;
   font-size: 0.92rem;
+  line-height: 1.15;
   box-shadow: 0 4px 14px rgba(50, 40, 100, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.8);
   flex-shrink: 0;
@@ -9531,8 +9551,8 @@ body:has(.sheet-backdrop) {
 }
 
 .kv2-bell {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   border: none;
   background: #fff;
@@ -9543,6 +9563,8 @@ body:has(.sheet-backdrop) {
   display: grid;
   place-items: center;
   flex-shrink: 0;
+  align-self: center;
+  padding: 0;
 }
 
 .kv2-home {
@@ -11408,21 +11430,27 @@ article.kv2-streak,
 
 .kv2-tabbar {
   position: fixed;
-  left: 50%;
-  bottom: calc(10px + env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  width: min(520px, calc(100% - 20px));
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: min(520px, 100%);
+  margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr auto 1fr 1fr;
-  align-items: flex-end;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 28px;
-  padding: 8px 10px 10px;
-  box-shadow: 0 12px 36px rgba(40, 30, 90, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 22px 22px 0 0;
+  /* Safe area inside the bar so labels sit above the home indicator */
+  padding: 10px 8px max(16px, constant(safe-area-inset-bottom));
+  padding: 10px 8px max(16px, env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -8px 28px rgba(40, 30, 90, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-bottom: none;
   z-index: 40;
   pointer-events: auto;
+  box-sizing: border-box;
 }
 
 .kv2-tab {
@@ -11431,8 +11459,10 @@ article.kv2-streak,
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 6px 4px;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 2px 2px;
+  min-height: 48px;
   font: inherit;
   color: #8b90b0;
   cursor: pointer;
@@ -11455,6 +11485,7 @@ article.kv2-streak,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.1;
 }
 
 .kv2-tab.is-on {
@@ -11462,9 +11493,9 @@ article.kv2-streak,
 }
 
 .kv2-fab {
-  width: 58px;
-  height: 58px;
-  margin: 0 4px 6px;
+  width: 56px;
+  height: 56px;
+  margin: -20px 2px 0;
   border-radius: 50%;
   border: 4px solid #fff;
   background: linear-gradient(145deg, #8b6cff, #5b3fd4);
@@ -11475,7 +11506,9 @@ article.kv2-streak,
   box-shadow: 0 10px 24px rgba(90, 60, 220, 0.45);
   display: grid;
   place-items: center;
-  transform: translateY(-14px);
+  align-self: start;
+  padding: 0;
+  transform: none;
 }
 
 .kid-v2 .kh-board,
@@ -11491,7 +11524,7 @@ article.kv2-streak,
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 12px;
   position: relative;
   z-index: 1;
 }
@@ -12138,6 +12171,8 @@ article.kv2-streak,
   line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
+  align-self: center;
+  padding: 0;
   box-shadow: 0 4px 12px rgba(200, 80, 120, 0.2);
 }
 
@@ -12153,15 +12188,18 @@ article.kv2-streak,
   line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
+  align-self: center;
+  padding: 0;
   box-shadow: 0 4px 14px rgba(50, 40, 100, 0.1);
 }
 
 .kv2-level {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
   line-height: 1.15;
   color: #3d6b9a;
+  min-height: 42px;
 }
 
 .kv2-level strong {
@@ -14078,7 +14116,7 @@ article.kv2-streak,
   .kv2-stars:has(.kv2-stars-label),
   .kv2-pill.kv2-streak:has(.kv2-stars-label) {
     padding: 5px 8px;
-    min-height: 44px;
+    min-height: 40px;
   }
 
   .kv2-stars-label {
@@ -14091,6 +14129,10 @@ article.kv2-streak,
   .kv2-gift {
     width: 40px;
     height: 40px;
+  }
+
+  .kv2-pill {
+    min-height: 40px;
   }
 }
 
@@ -14129,15 +14171,19 @@ article.kv2-streak,
   }
 
   .kv2-tabbar {
-    width: calc(100% - 12px);
-    gap: 2px;
-    padding: 6px 6px 8px;
-    border-radius: 24px;
+    width: 100%;
+    max-width: 100%;
+    gap: 0;
+    padding: 8px 4px max(16px, constant(safe-area-inset-bottom));
+    padding: 8px 4px max(16px, env(safe-area-inset-bottom, 0px));
+    border-radius: 18px 18px 0 0;
   }
 
   .kv2-tab {
-    padding: 4px 2px;
+    padding: 2px 1px;
     min-width: 0;
+    min-height: 44px;
+    gap: 2px;
   }
 
   .kv2-tab span {
@@ -14147,15 +14193,31 @@ article.kv2-streak,
   }
 
   .kv2-tab em {
-    font-size: 0.58rem;
+    font-size: 0.55rem;
   }
 
   .kv2-fab {
-    width: 52px;
-    height: 52px;
-    margin: 0 2px 4px;
-    font-size: 1.35rem;
-    transform: translateY(-10px);
+    width: 50px;
+    height: 50px;
+    margin: -16px 1px 0;
+    font-size: 1.3rem;
+    transform: none;
+  }
+
+  .kv2-pill {
+    min-height: 40px;
+    padding: 6px 9px;
+  }
+
+  .kv2-level .kv2-en-term-vi {
+    display: none;
+  }
+
+  .kv2-gear,
+  .kv2-gift,
+  .kv2-bell {
+    width: 40px;
+    height: 40px;
   }
 
   .kv2-upcoming li {
@@ -18058,7 +18120,7 @@ article.kv2-streak,
   position: fixed;
   left: 12px;
   right: 12px;
-  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--kv2-tabbar-clearance, 96px) + env(safe-area-inset-bottom, 0px));
   z-index: 60;
   margin: 0;
   padding: 12px 14px;

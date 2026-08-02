@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSessionStore } from '@/shared/auth/session.store';
 import { ParentUnlockPage } from '@/modules/unlock/ParentUnlockPage';
@@ -39,6 +39,14 @@ export function App() {
   const homeMode = location.pathname === '/who';
   const unlockMode = location.pathname === '/unlock';
   const adminMode = location.pathname.startsWith('/family-admin');
+
+  useEffect(() => {
+    const theme = document.querySelector('meta[name="theme-color"]');
+    if (theme) {
+      /* Match kid sky gradient — avoids green strip clashing with notch/status bar. */
+      theme.setAttribute('content', kidMode ? '#b8dff8' : '#0B5C3A');
+    }
+  }, [kidMode]);
 
   return (
     <div

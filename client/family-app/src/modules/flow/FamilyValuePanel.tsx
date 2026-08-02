@@ -50,6 +50,12 @@ import {
 import { resolveParentCoach } from '@/shared/value/resolve-parenting-coach';
 import { dnaCaptionForHealth } from '@/shared/value/blueprint-context';
 import { isCapabilityPaywallError } from '@/shared/billing/capability-error';
+import {
+  CHILD_VOICE_DEFAULTS,
+  CHILD_VOICE_HARDEST_OPTIONS,
+  CHILD_VOICE_WANT_OPTIONS,
+  CHILD_VOICE_WEEK_COPY,
+} from '@/shared/flow/child-voice-week';
 
 type Props = {
   familyId: string;
@@ -145,8 +151,8 @@ export function FamilyValuePanel({
   const [ritualBusy, setRitualBusy] = useState<string | null>(null);
   const [weekPlaybook, setWeekPlaybook] = useState<WeekPlaybook | null>(null);
   const [familyTwin, setFamilyTwin] = useState<FamilyBehaviorTwin | null>(null);
-  const [voiceHardest, setVoiceHardest] = useState('evening');
-  const [voiceWant, setVoiceWant] = useState('praise');
+  const [voiceHardest, setVoiceHardest] = useState<string>(CHILD_VOICE_DEFAULTS.hardest);
+  const [voiceWant, setVoiceWant] = useState<string>(CHILD_VOICE_DEFAULTS.want);
   const [voiceWish, setVoiceWish] = useState('');
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [voiceMsg, setVoiceMsg] = useState<string | null>(null);
@@ -456,7 +462,7 @@ export function FamilyValuePanel({
       });
       setWeekPlaybook(refreshed);
     } catch {
-      setVoiceMsg('Chưa gửi được — thử lại sau nhé.');
+      setVoiceMsg(CHILD_VOICE_WEEK_COPY.sendFailed);
     } finally {
       setVoiceBusy(false);
     }
@@ -1286,73 +1292,87 @@ export function FamilyValuePanel({
               </div>
             ) : null}
 
-            <div style={{ marginTop: 16 }}>
-              <h3 style={{ margin: '0 0 6px', fontSize: '1rem' }}>
-                Con nói nhẹ với nhà
-              </h3>
-              <p className="fv-promise" style={{ marginTop: 0 }}>
-                Không phải kiểm tra — lắng nghe để thử cách đồng hành dịu hơn.
-              </p>
+            <div className="fv-child-voice" style={{ marginTop: 16 }}>
+              <div className="kv2-t-sec-head" style={{ marginBottom: 10 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1rem' }}>
+                    <span aria-hidden>💬</span> {CHILD_VOICE_WEEK_COPY.title}
+                  </h3>
+                  <p className="fv-promise" style={{ marginTop: 6, marginBottom: 0 }}>
+                    {CHILD_VOICE_WEEK_COPY.subtitle}
+                  </p>
+                </div>
+              </div>
               {weekPlaybook.childVoice?.submittedAt ? (
-                <ul className="fv-outcomes">
-                  {(weekPlaybook.childVoice.parentTipsVi.length
-                    ? weekPlaybook.childVoice.parentTipsVi
-                    : ['Đã nhận tiếng nói tuần này.']
-                  ).map((t) => (
-                    <li key={t}>
-                      <span aria-hidden>💬</span>
-                      {t}
-                    </li>
-                  ))}
-                </ul>
+                <div className="kv2-t-voice is-done">
+                  <ul className="fv-outcomes" style={{ margin: 0 }}>
+                    {(weekPlaybook.childVoice.parentTipsVi.length
+                      ? weekPlaybook.childVoice.parentTipsVi
+                      : ['Đã nhận tiếng nói tuần này.']
+                    ).map((t) => (
+                      <li key={t}>
+                        <span aria-hidden>💬</span>
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ) : voiceMemberId ? (
-                <div style={{ display: 'grid', gap: 8 }}>
-                  <label>
-                    Việc khó nhất tuần này
-                    <select
-                      value={voiceHardest}
-                      onChange={(e) => setVoiceHardest(e.target.value)}
-                      style={{ display: 'block', width: '100%', marginTop: 4 }}
-                    >
-                      <option value="evening">Buổi tối / mệt</option>
-                      <option value="subject">Môn / việc học khó</option>
-                      <option value="alone">Làm một mình</option>
-                      <option value="long">Việc quá dài</option>
-                      <option value="other">Khác</option>
-                    </select>
+                <div className="kv2-t-voice">
+                  <label className="kv2-t-voice-field">
+                    <span>{CHILD_VOICE_WEEK_COPY.hardestLabel}</span>
+                    <span className="kv2-t-voice-select">
+                      <select
+                        value={voiceHardest}
+                        onChange={(e) => setVoiceHardest(e.target.value)}
+                      >
+                        {CHILD_VOICE_HARDEST_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <em className="kv2-t-voice-chevron" aria-hidden>
+                        ⌄
+                      </em>
+                    </span>
                   </label>
-                  <label>
-                    Con muốn bố mẹ…
-                    <select
-                      value={voiceWant}
-                      onChange={(e) => setVoiceWant(e.target.value)}
-                      style={{ display: 'block', width: '100%', marginTop: 4 }}
-                    >
-                      <option value="less_remind">Nhắc ít hơn</option>
-                      <option value="praise">Khen khi con tự làm</option>
-                      <option value="together">Cùng làm một đoạn</option>
-                      <option value="choose_time">Cho chọn giờ</option>
-                      <option value="friends">Có người cùng / nhóm</option>
-                      <option value="other">Khác</option>
-                    </select>
+                  <label className="kv2-t-voice-field">
+                    <span>{CHILD_VOICE_WEEK_COPY.wantLabel}</span>
+                    <span className="kv2-t-voice-select">
+                      <select
+                        value={voiceWant}
+                        onChange={(e) => setVoiceWant(e.target.value)}
+                      >
+                        {CHILD_VOICE_WANT_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <em className="kv2-t-voice-chevron" aria-hidden>
+                        ⌄
+                      </em>
+                    </span>
                   </label>
-                  <label>
-                    Mong muốn ngắn (tuỳ chọn)
+                  <label className="kv2-t-voice-field">
+                    <span>{CHILD_VOICE_WEEK_COPY.wishLabel}</span>
                     <input
                       value={voiceWish}
                       onChange={(e) => setVoiceWish(e.target.value)}
-                      placeholder="Giữ / bỏ / thêm gì tuần tới?"
-                      maxLength={280}
-                      style={{ display: 'block', width: '100%', marginTop: 4 }}
+                      placeholder={CHILD_VOICE_WEEK_COPY.wishPlaceholder}
+                      maxLength={200}
                     />
                   </label>
                   <button
                     type="button"
-                    className="primary"
+                    className="kv2-t-voice-btn"
                     disabled={voiceBusy}
                     onClick={() => void submitVoice()}
                   >
-                    {voiceBusy ? 'Đang lưu…' : 'Lưu tiếng nói tuần này'}
+                    {voiceBusy
+                      ? CHILD_VOICE_WEEK_COPY.submitting
+                      : CHILD_VOICE_WEEK_COPY.submit}
                   </button>
                   {voiceMsg ? <p className="fv-promise">{voiceMsg}</p> : null}
                 </div>
