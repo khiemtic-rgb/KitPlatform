@@ -1,16 +1,230 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-29T00:00:00.000Z",
+  "generatedAt": "2026-08-02T08:07:55.296Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 0,
-    "last24hPageViews": 0,
-    "last24hRequests": 0
+    "todayVisitors": 113,
+    "todayPageViews": 54,
+    "todayRequests": 378,
+    "last24hVisitors": 132,
+    "last24hPageViews": 66,
+    "last24hRequests": 520
   },
-  "hourly": [],
-  "daily": [],
-  "topPages": []
+  "hourly": [
+    {
+      "time": "2026-08-01T09:00:00Z",
+      "visitors": 6,
+      "requests": 33
+    },
+    {
+      "time": "2026-08-01T10:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-01T11:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-01T12:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-01T13:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-08-01T14:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-01T15:00:00Z",
+      "visitors": 6,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-01T16:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-01T17:00:00Z",
+      "visitors": 2,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-01T18:00:00Z",
+      "visitors": 2,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-01T19:00:00Z",
+      "visitors": 1,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-01T20:00:00Z",
+      "visitors": 3,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-01T21:00:00Z",
+      "visitors": 2,
+      "requests": 54
+    },
+    {
+      "time": "2026-08-01T22:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-01T23:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-02T00:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-08-02T01:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-08-02T02:00:00Z",
+      "visitors": 3,
+      "requests": 53
+    },
+    {
+      "time": "2026-08-02T03:00:00Z",
+      "visitors": 103,
+      "requests": 181
+    },
+    {
+      "time": "2026-08-02T04:00:00Z",
+      "visitors": 4,
+      "requests": 70
+    },
+    {
+      "time": "2026-08-02T05:00:00Z",
+      "visitors": 2,
+      "requests": 47
+    },
+    {
+      "time": "2026-08-02T06:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-02T07:00:00Z",
+      "visitors": 4,
+      "requests": 22
+    }
+  ],
+  "daily": [
+    {
+      "date": "2026-07-28",
+      "visitors": 225,
+      "pageViews": 743,
+      "requests": 1458
+    },
+    {
+      "date": "2026-07-29",
+      "visitors": 126,
+      "pageViews": 917,
+      "requests": 2094
+    },
+    {
+      "date": "2026-07-30",
+      "visitors": 258,
+      "pageViews": 269,
+      "requests": 2740
+    },
+    {
+      "date": "2026-07-31",
+      "visitors": 199,
+      "pageViews": 163,
+      "requests": 1104
+    },
+    {
+      "date": "2026-08-01",
+      "visitors": 204,
+      "pageViews": 103,
+      "requests": 725
+    },
+    {
+      "date": "2026-08-02",
+      "visitors": 113,
+      "pageViews": 54,
+      "requests": 378
+    }
+  ],
+  "topPages": [
+    {
+      "path": "/vi/goi-cha-me/10-sai-lam-pho-bien-khi-nuoi-day-con-ma-cha-me-hien-dai-rat-de-mac-phai/",
+      "views": 38
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 36
+    },
+    {
+      "path": "/images/blog/10-sai-lam-pho-bien-khi-nuoi-day-con.png",
+      "views": 24
+    },
+    {
+      "path": "/",
+      "views": 24
+    },
+    {
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 20
+    },
+    {
+      "path": "/images/ch4-stages-art.png",
+      "views": 19
+    },
+    {
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 18
+    },
+    {
+      "path": "/robots.txt",
+      "views": 17
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 16
+    },
+    {
+      "path": "/vi/",
+      "views": 16
+    },
+    {
+      "path": "/_next/static/chunks/977-9a1479e294eb83c3.js",
+      "views": 15
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 15
+    },
+    {
+      "path": "/images/hero-family.png",
+      "views": 15
+    },
+    {
+      "path": "/images/fami-appear.png",
+      "views": 14
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 13
+    }
+  ]
 }
