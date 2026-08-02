@@ -56,6 +56,8 @@ import {
   type FamilyScore,
   fetchFamilyBehaviorTwin,
   type FamilyBehaviorTwin,
+  fetchWeekPlaybook,
+  type WeekPlaybook,
   fetchFamilyCoachInsight,
   type FamilyCoachInsight,
   fetchBehaviorCoach,
@@ -138,6 +140,7 @@ import {
 } from '@/shared/billing/capability-error';
 import {
   buildFamilyMemories,
+  isMovieNightUnlock,
   FAMILY_MEMORY_EMPTY,
   FAMILY_MEMORY_VISIBLE,
   type FamilyMemory,
@@ -176,6 +179,7 @@ import {
 } from '@/modules/flow/memberPersonalize';
 import {
   ADULT_VOICE_TEMPLATES,
+  defaultChildVoiceDraftVi,
   BIRTHDAY_PICKER_OPTIONS,
   formatWeeklyStoryShare,
   shortMemberName,
@@ -615,6 +619,7 @@ export function ParentBoardView({
   const [modeSheetOpen, setModeSheetOpen] = useState(false);
   const [familyScore, setFamilyScore] = useState<FamilyScore | null>(null);
   const [familyTwin, setFamilyTwin] = useState<FamilyBehaviorTwin | null>(null);
+  const [weekPlaybook, setWeekPlaybook] = useState<WeekPlaybook | null>(null);
   const [coachInsight, setCoachInsight] = useState<FamilyCoachInsight | null>(null);
   const [behaviorCoach, setBehaviorCoach] = useState<BehaviorCoach | null>(null);
   const [subscription, setSubscription] = useState<FamilySubscription | null>(null);
@@ -1150,7 +1155,20 @@ export function ParentBoardView({
       const short =
         firstChild?.name?.trim().split(/\s+/).filter(Boolean).slice(-1)[0] || 'con';
       const roleWord = parentRoleFromName(viewerName);
-      setVoiceDraft(`${short} ơi, hôm nay ${roleWord} nghĩ đến con.`);
+      const childCommitments = scopedCommitments.filter(
+        (c) => !firstChild?.key || c.memberId === firstChild.key,
+      );
+      const childDone = childCommitments.filter((c) => c.status === 'done').length;
+      setVoiceDraft(
+        defaultChildVoiceDraftVi({
+          childShort: short,
+          parentRole: roleWord,
+          doneCount: childDone,
+          totalCount: childCommitments.length,
+          streak,
+          teamComplete: Boolean(teamDay?.teamComplete),
+        }),
+      );
     }
     setVoiceSheetOpen(true);
   };
@@ -1477,6 +1495,18 @@ export function ParentBoardView({
       .catch(() => {
         if (!cancelled) setFamilyTwin(null);
       });
+    const playbookMemberId =
+      effectiveChildFocus !== 'all' ? effectiveChildFocus : undefined;
+    void fetchWeekPlaybook(familyId, {
+      memberId: playbookMemberId,
+      asOf: flow.flowDate,
+    })
+      .then((p) => {
+        if (!cancelled) setWeekPlaybook(p);
+      })
+      .catch(() => {
+        if (!cancelled) setWeekPlaybook(null);
+      });
     void fetchFamilyCoachInsight(familyId, flow.flowDate)
       .then((c) => {
         if (!cancelled) setCoachInsight(c);
@@ -1519,7 +1549,13 @@ export function ParentBoardView({
     return () => {
       cancelled = true;
     };
-  }, [familyId, flow.flowDate, flow.doneCount, parentMembershipId]);
+  }, [
+    familyId,
+    flow.flowDate,
+    flow.doneCount,
+    parentMembershipId,
+    effectiveChildFocus,
+  ]);
 
   const todayUnlock = useMemo(() => {
     const sameDay = teamUnlocks.filter((u) => u.flowDate === flow.flowDate);
@@ -1613,8 +1649,9 @@ export function ParentBoardView({
             kind: 'child',
             labelVi: selectedChild?.name ?? 'Con',
             childName: selectedChild?.name ?? 'Con',
+            childMemberId: selectedChild?.key,
           } as const),
-    [effectiveChildFocus, selectedChild?.name],
+    [effectiveChildFocus, selectedChild?.name, selectedChild?.key],
   );
   const parentAvatar =
     greetName(viewerName) === 'mẹ'
@@ -2457,43 +2494,49 @@ export function ParentBoardView({
     return [];
   }, [teamUnlocks, flow.flowDate, moviePct, todayUnlock]);
 
+  /** Only earned — hide locked goals from treasure strip. */
   const bigAchievements = useMemo(() => {
-    const movieTimes = teamUnlocks.filter((u) => u.status === 'confirmed').length;
+    const movieTimes = teamUnlocks.filter(
+      (u) => u.status === 'confirmed' && isMovieNightUnlock(u),
+    ).length;
     const readTimes = scopedCommitments.filter(
       (c) => c.status === 'done' && /đọc|sách/i.test(c.title),
     ).length;
-    return [
-      {
+    const rows: Array<{ id: string; icon: string; title: string; value: string }> =
+      [];
+    if (movieTimes > 0) {
+      rows.push({
         id: 'a1',
         icon: '🎬',
         title: 'Movie Night',
-        value: movieTimes > 0 ? `${movieTimes} lần` : '—',
-      },
-      {
+        value: `${movieTimes} lần`,
+      });
+    }
+    if (readTimes > 0) {
+      rows.push({
         id: 'a2',
         icon: '📘',
         title: `Đọc sách cùng ${parentRole}`,
-        value: readTimes > 0 ? `${readTimes} lần` : '—',
-      },
-      {
+        value: `${readTimes} lần`,
+      });
+    }
+    if (explorerLevel > 1) {
+      rows.push({
         id: 'a3',
         icon: '🌱',
         title: 'Khu vườn',
         value: `Cấp ${explorerLevel}`,
-      },
-      {
+      });
+    }
+    if (rewardPoints > 0) {
+      rows.push({
         id: 'a4',
-        icon: '🦊',
-        title: 'Foxy',
-        value: `${rewardPoints.toLocaleString('vi-VN')} — ${starBalanceNote(rewardPoints)}`,
-      },
-      {
-        id: 'a5',
         icon: '⭐',
-        title: 'Sao đã tích lũy',
-        value: `${rewardPoints.toLocaleString('vi-VN')}`,
-      },
-    ];
+        title: 'Sao · Foxy',
+        value: `${rewardPoints.toLocaleString('vi-VN')} — ${starBalanceNote(rewardPoints)}`,
+      });
+    }
+    return rows;
   }, [teamUnlocks, scopedCommitments, explorerLevel, rewardPoints, parentRole]);
 
   const hasCap = (cap: string) => {
@@ -2947,6 +2990,36 @@ export function ParentBoardView({
               </button>
             </div>
           </article>
+
+          {weekPlaybook?.parentStrategyTipVi ? (
+            <button
+              type="button"
+              className="ph-week-tip"
+              aria-label="Gợi ý đồng hành tuần này"
+              onClick={() => goValueAnchor('fv-weekly')}
+            >
+              <span className="ph-week-tip-ico" aria-hidden>
+                🌱
+              </span>
+              <span className="ph-week-tip-body">
+                <strong>Tuần này thử một cách nhẹ</strong>
+                <em>
+                  {weekPlaybook.patternTitleVi
+                    ? `${weekPlaybook.patternTitleVi} · `
+                    : ''}
+                  {weekPlaybook.parentStrategyTipVi}
+                </em>
+                {weekPlaybook.childVoice?.submittedAt ? (
+                  <i>Con đã gửi lời tuần này — xem tip →</i>
+                ) : (
+                  <i>Xem pattern & tiếng nói của con →</i>
+                )}
+              </span>
+              <span className="ph-week-tip-chev" aria-hidden>
+                ›
+              </span>
+            </button>
+          ) : null}
 
           {showSoftCal ? (
             <section className="ph-soft-cal" aria-label="Famixa hỏi nhẹ">
@@ -4758,43 +4831,60 @@ export function ParentBoardView({
                     ? `Huy hiệu của ${treasureShort}`
                     : 'Huy hiệu nhà mình'}
                 </h3>
-                <button
-                  type="button"
-                  className="ph-text-link"
-                  onClick={() => {
-                    const unlocked = [
-                      childRedemptions.length > 0,
-                      rewardPoints >= 100,
-                      rewardPoints >= 500,
-                      (glance?.currentStreak ?? 0) >= 3,
-                      percent >= 100,
-                    ].filter(Boolean).length;
-                    showTreasureToast(
-                      unlocked === 0
-                        ? 'Chưa mở huy hiệu nào — làm việc và đổi quà để mở nhé'
-                        : `Đã mở ${unlocked}/5 huy hiệu`,
-                    );
-                  }}
-                >
-                  Tóm tắt →
-                </button>
               </header>
-              <ul>
-                {(
+              {(() => {
+                const earned = (
                   [
-                    { id: 'b1', icon: '🎁', label: 'Đổi quà đầu tiên', unlocked: childRedemptions.length > 0 },
-                    { id: 'b2', icon: '⭐', label: '100 sao', unlocked: rewardPoints >= 100 },
-                    { id: 'b3', icon: '💎', label: '500 sao', unlocked: rewardPoints >= 500 },
-                    { id: 'b4', icon: '🔥', label: 'Chuỗi ngày tốt', unlocked: (glance?.currentStreak ?? 0) >= 3 },
-                    { id: 'b5', icon: '🏆', label: 'Team Champion', unlocked: percent >= 100 },
+                    {
+                      id: 'b1',
+                      icon: '🎁',
+                      label: 'Đổi quà đầu tiên',
+                      unlocked: childRedemptions.length > 0,
+                    },
+                    {
+                      id: 'b2',
+                      icon: '⭐',
+                      label: '100 sao',
+                      unlocked: rewardPoints >= 100,
+                    },
+                    {
+                      id: 'b3',
+                      icon: '💎',
+                      label: '500 sao',
+                      unlocked: rewardPoints >= 500,
+                    },
+                    {
+                      id: 'b4',
+                      icon: '🔥',
+                      label: 'Chuỗi ngày tốt',
+                      unlocked: (glance?.currentStreak ?? 0) >= 3,
+                    },
+                    {
+                      id: 'b5',
+                      icon: '🏆',
+                      label: 'Team Champion',
+                      unlocked: percent >= 100,
+                    },
                   ] as const
-                ).map((b) => (
-                  <li key={b.id} className={b.unlocked ? 'is-on' : 'is-off'}>
-                    <span aria-hidden>{b.icon}</span>
-                    <em>{b.label}</em>
-                  </li>
-                ))}
-              </ul>
+                ).filter((b) => b.unlocked);
+                if (earned.length === 0) {
+                  return (
+                    <p className="muted" style={{ margin: '8px 4px 0', fontSize: '0.85rem' }}>
+                      Chưa có huy hiệu — làm việc / đổi quà để mở dần.
+                    </p>
+                  );
+                }
+                return (
+                  <ul>
+                    {earned.map((b) => (
+                      <li key={b.id} className="is-on">
+                        <span aria-hidden>{b.icon}</span>
+                        <em>{b.label}</em>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              })()}
             </article>
           </div>
 
@@ -4803,27 +4893,35 @@ export function ParentBoardView({
               <h2>
                 <span aria-hidden>🏅</span> THÀNH TỰU LỚN
               </h2>
-              <button
-                type="button"
-                className="ph-text-link"
-                onClick={() =>
-                  document
-                    .getElementById('ph-treasure-badges')
-                    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                }
-              >
-                Xem huy hiệu →
-              </button>
+              {bigAchievements.length > 0 ? (
+                <button
+                  type="button"
+                  className="ph-text-link"
+                  onClick={() =>
+                    document
+                      .getElementById('ph-treasure-badges')
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }
+                >
+                  Xem huy hiệu →
+                </button>
+              ) : null}
             </header>
-            <div className="ph-treasure-achieve">
-              {bigAchievements.map((a) => (
-                <article key={a.id}>
-                  <span aria-hidden>{a.icon}</span>
-                  <strong>{a.title}</strong>
-                  <em>{a.value}</em>
-                </article>
-              ))}
-            </div>
+            {bigAchievements.length === 0 ? (
+              <p className="muted" style={{ margin: '4px 0 0', fontSize: '0.85rem' }}>
+                Chưa có thành tựu — khi mở Movie Night, đọc sách hoặc tích sao sẽ hiện ở đây.
+              </p>
+            ) : (
+              <div className="ph-treasure-achieve">
+                {bigAchievements.map((a) => (
+                  <article key={a.id}>
+                    <span aria-hidden>{a.icon}</span>
+                    <strong>{a.title}</strong>
+                    <em>{a.value}</em>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="ph-treasure-sec">

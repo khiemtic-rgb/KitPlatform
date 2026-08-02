@@ -47,3 +47,34 @@ export function shortMemberName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   return parts.length ? parts[parts.length - 1]! : name.trim() || 'bạn';
 }
+
+/**
+ * Default draft when parent opens “gửi lời cho con” without a trigger.
+ * Prefer situational / ask-for-share over generic “nghĩ đến con”.
+ */
+export function defaultChildVoiceDraftVi(input: {
+  childShort: string;
+  parentRole: string;
+  doneCount?: number;
+  totalCount?: number;
+  streak?: number;
+  teamComplete?: boolean;
+}): string {
+  const c = (input.childShort || 'con').trim() || 'con';
+  const pRaw = (input.parentRole || 'bố mẹ').trim().toLowerCase();
+  const p = pRaw === 'bố' || pRaw === 'mẹ' ? pRaw : 'bố mẹ';
+  const done = Math.max(0, input.doneCount ?? 0);
+  const total = Math.max(0, input.totalCount ?? 0);
+  const streak = Math.max(0, input.streak ?? 0);
+
+  if (input.teamComplete || (total > 0 && done >= total && done > 0)) {
+    return `${c} ơi, hôm nay con giữ nhịp cả ngày — ${p} thấy rồi, tự hào lắm.`;
+  }
+  if (done > 0) {
+    return `${c} ơi, ${p} thấy con đã xong ${done} việc rồi — cố thêm một chút nữa nhé.`;
+  }
+  if (streak >= 2) {
+    return `${c} ơi, chuỗi ${streak} ngày của con ${p} đang theo dõi — giữ nhẹ nhàng thôi.`;
+  }
+  return `${c} ơi, tối nay kể ${p} nghe một điều vui trong ngày của con nhé?`;
+}

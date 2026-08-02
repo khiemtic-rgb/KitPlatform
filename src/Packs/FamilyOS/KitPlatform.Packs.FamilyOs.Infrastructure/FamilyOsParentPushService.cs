@@ -310,7 +310,9 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
                     SkipReason: null,
                     nudgesUsed,
                     nudgeBudget,
-                    FamilyObserveOnly: observeOnly));
+                    FamilyObserveOnly: observeOnly,
+                    WindowEnd: row.WindowEnd,
+                    Title: row.Title));
 
             if (!decision.AllowParentPush)
             {

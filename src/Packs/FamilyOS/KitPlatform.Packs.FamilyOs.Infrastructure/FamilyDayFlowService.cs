@@ -631,7 +631,9 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
                 c.SkipReason,
                 parentNudgesUsedToday,
                 parentNudgeBudget,
-                FamilyObserveOnly: familyObserveOnly));
+                FamilyObserveOnly: familyObserveOnly,
+                WindowEnd: c.WindowEnd,
+                Title: c.Title));
 
         return new CommitmentDto(
             c.Id,
@@ -706,7 +708,9 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
                 : intervention.ParentAdviceVi,
             null,
             null,
-            null);
+            null,
+            intervention.BehaviorPatternCode,
+            intervention.BehaviorTacticCode);
     }
 
     /// <summary>Attach evening prediction bands after mapping (Wave 4).</summary>

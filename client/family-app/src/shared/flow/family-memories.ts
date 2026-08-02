@@ -4,6 +4,7 @@ import type {
   RewardRedemption,
   TeamUnlock,
 } from '@/shared/api/family-os.api';
+import { isSiblingComboUnlock } from '@/modules/flow/teamPlay';
 
 export type FamilyMemory = {
   id: string;
@@ -17,7 +18,61 @@ export type FamilyMemory = {
   /** Present when this card comes from pack_family.family_memory. */
   entry?: FamilyMemoryEntry;
   photoUrl?: string;
+  /** Kind for kid album filters (saved entry.kind or synthetic). */
+  filterKind?: string;
 };
+
+/** UI chip "Movie Night" maps to this filter value (legacy id kept for sheet state). */
+export type KidMemoryFilter = 'all' | 'team_unlock' | 'parent_voice' | 'beautiful_day';
+
+/** True only for Movie Night — not High-five / sibling combo / other team unlocks. */
+export function isMovieNightMemoryText(
+  title: string,
+  _icon?: string | null,
+  rewardCode?: string | null,
+): boolean {
+  if (rewardCode && isSiblingComboUnlock(rewardCode)) return false;
+  const t = title.toLowerCase();
+  // Title wins over misleading 🍿 icons stored on other team unlocks.
+  if (/high-?\s*five|highfive|sibling_combo/i.test(t)) return false;
+  if (rewardCode && /movie/i.test(rewardCode)) return true;
+  return /movie\s*night|\bmovie\b|đêm xem phim|(^|[^a-z])phim\b/i.test(t);
+}
+
+export function isMovieNightUnlock(u: {
+  rewardCode?: string | null;
+  labelVi?: string | null;
+}): boolean {
+  return isMovieNightMemoryText(u.labelVi ?? '', null, u.rewardCode);
+}
+
+export function memoryFilterKindOf(m: FamilyMemory): string {
+  if (m.filterKind) return m.filterKind;
+  if (m.entry?.kind) return m.entry.kind;
+  if (m.id.startsWith('unlock-')) return 'team_other';
+  if (m.id.startsWith('redeem-')) return 'reward';
+  if (m.id.startsWith('milestone-garden')) return 'first_time';
+  if (m.id.startsWith('milestone-read')) return 'first_time';
+  return 'manual';
+}
+
+export function matchesKidMemoryFilter(m: FamilyMemory, filter: KidMemoryFilter): boolean {
+  if (filter === 'all') return true;
+  const kind = memoryFilterKindOf(m);
+  if (filter === 'team_unlock') {
+    return kind === 'movie_night' || isMovieNightMemoryText(m.title, m.icon);
+  }
+  if (filter === 'parent_voice') return kind === 'parent_voice';
+  if (filter === 'beautiful_day') {
+    return (
+      kind === 'beautiful_day' ||
+      kind === 'first_time' ||
+      m.icon === '🌸' ||
+      /vườn|đã nở/i.test(m.title)
+    );
+  }
+  return true;
+}
 
 export const FAMILY_MEMORY_VISIBLE = 4;
 const NEW_DAYS = 7;
@@ -66,19 +121,32 @@ function milestoneKind(title: string): 'garden' | 'read' | null {
 
 export function memoryFromSaved(entry: FamilyMemoryEntry, now = new Date()): FamilyMemory {
   const at = entry.happenedAt || entry.flowDate;
+  const icon = entry.icon || defaultIconForKind(entry.kind, entry.titleVi);
+  let filterKind: string = entry.kind;
+  if (entry.kind === 'team_unlock') {
+    filterKind = isMovieNightMemoryText(entry.titleVi, icon) ? 'movie_night' : 'team_other';
+  }
   return {
     id: `saved-${entry.id}`,
-    icon: entry.icon || defaultIconForKind(entry.kind),
+    icon,
     title: entry.titleVi,
     date: formatMemoryDate(entry.flowDate || at),
     sortAt: parseSortTime(at),
     isNew: isRecent(at, now) || entry.isFavorite,
     entry,
     photoUrl: entry.photoUrl,
+    filterKind,
   };
 }
 
-function defaultIconForKind(kind: string): string {
+/** Garden bloom / “vườn nở” moments for kid history. */
+export function isGardenBloomMemory(entry: FamilyMemoryEntry): boolean {
+  if (entry.icon === '🌸') return true;
+  if (/vườn.*nở|đã nở|vườn nở/i.test(entry.titleVi)) return true;
+  return entry.kind === 'first_time' && /vườn/i.test(entry.titleVi);
+}
+
+function defaultIconForKind(kind: string, titleVi = ''): string {
   switch (kind) {
     case 'beautiful_day':
       return '🌤️';
@@ -89,7 +157,7 @@ function defaultIconForKind(kind: string): string {
     case 'photo':
       return '📸';
     case 'team_unlock':
-      return '🍿';
+      return isMovieNightMemoryText(titleVi) ? '🍿' : '🎉';
     case 'reward':
       return '🎁';
     case 'first_time':
@@ -152,6 +220,7 @@ export function buildFamilyMemories(opts: {
       sortAt: parseSortTime(at),
       isNew: isRecent(at, now),
       pending,
+      filterKind: 'reward',
     });
   }
 
@@ -169,6 +238,7 @@ export function buildFamilyMemories(opts: {
           ? `${label} — chờ xác nhận`
           : `${label} cả nhà`;
     if (seenTitles.has(normalizeTitle(title))) continue;
+    const movie = isMovieNightMemoryText(title, null, u.rewardCode);
     out.push({
       id: `unlock-${u.id}`,
       icon: teamUnlockIcon(u),
@@ -178,6 +248,7 @@ export function buildFamilyMemories(opts: {
       isNew: isRecent(at, now),
       pending,
       locked: pending,
+      filterKind: movie ? 'movie_night' : 'team_other',
     });
   }
 
@@ -198,6 +269,7 @@ export function buildFamilyMemories(opts: {
       date: formatMemoryDate(at),
       sortAt: parseSortTime(at),
       isNew: isRecent(at, now),
+      filterKind: 'first_time',
     });
   }
 

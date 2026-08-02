@@ -470,7 +470,10 @@ internal sealed class FamilyOsParentPushRepository
             new { TenantId = tenantId, FamilyId = familyId, FlowDate = flowDate });
     }
 
-    /// <summary>Unread partner/parent voice (status=sent) for guardian/caregiver recipients.</summary>
+    /// <summary>
+    /// Unread human voice (status=sent) for any recipient — parent↔parent hoặc bố mẹ→con.
+    /// Cap 1 alert/family/day still applied by DispatchRelationshipVoiceAsync.
+    /// </summary>
     public async Task<IReadOnlyList<UnreadVoiceRow>> ListUnreadParentVoicesAsync(
         CancellationToken cancellationToken)
     {
@@ -496,7 +499,7 @@ internal sealed class FamilyOsParentPushRepository
               ON tm.id = v.to_member_id AND tm.tenant_id = v.tenant_id AND tm.deleted_at IS NULL
             WHERE v.deleted_at IS NULL
               AND v.status = 'sent'
-              AND tm.role_code IN ('guardian', 'caregiver')
+              AND tm.role_code IN ('guardian', 'caregiver', 'child')
             ORDER BY v.sent_at DESC
             LIMIT 200
             """);

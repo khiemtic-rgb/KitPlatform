@@ -536,6 +536,17 @@ internal sealed class FamilyBehaviorRepository
         DateTimeOffset toUtc,
         CancellationToken cancellationToken)
     {
+        return await CountFamilyEventsAsync(
+            familyId, FamilyBehaviorEventTypes.ParentNudge, fromUtc, toUtc, cancellationToken);
+    }
+
+    public async Task<int> CountFamilyEventsAsync(
+        Guid familyId,
+        string eventType,
+        DateTimeOffset fromUtc,
+        DateTimeOffset toUtc,
+        CancellationToken cancellationToken)
+    {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         return await conn.ExecuteScalarAsync<int>(
             """
@@ -543,11 +554,190 @@ internal sealed class FamilyBehaviorRepository
             FROM pack_family.behavior_event
             WHERE tenant_id = @TenantId
               AND family_id = @FamilyId
-              AND event_type = 'parent_nudge'
+              AND event_type = @EventType
               AND occurred_at >= @FromUtc
               AND occurred_at < @ToUtc
             """,
-            new { TenantId, FamilyId = familyId, FromUtc = fromUtc, ToUtc = toUtc });
+            new
+            {
+                TenantId,
+                FamilyId = familyId,
+                EventType = eventType,
+                FromUtc = fromUtc,
+                ToUtc = toUtc,
+            });
+    }
+
+    public async Task<WeekPlaybookRow?> GetWeekPlaybookAsync(
+        Guid familyId,
+        Guid? memberId,
+        DateOnly weekStart,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<WeekPlaybookRow>(
+            """
+            SELECT
+                id AS Id,
+                family_id AS FamilyId,
+                member_id AS MemberId,
+                week_start AS WeekStart,
+                pattern_code AS PatternCode,
+                tactic_code AS TacticCode,
+                last_failed_tactic AS LastFailedTactic,
+                parent_strategy_tip_vi AS ParentStrategyTipVi,
+                child_voice_json::text AS ChildVoiceJson,
+                child_voice_at AS ChildVoiceAt,
+                updated_at AS UpdatedAt
+            FROM pack_family.behavior_week_playbook
+            WHERE tenant_id = @TenantId
+              AND family_id = @FamilyId
+              AND week_start = @WeekStart
+              AND (
+                    (@MemberId IS NULL AND member_id IS NULL)
+                    OR member_id = @MemberId
+                  )
+            LIMIT 1
+            """,
+            new { TenantId, FamilyId = familyId, MemberId = memberId, WeekStart = weekStart });
+    }
+
+    public async Task<WeekPlaybookRow> UpsertWeekPlaybookAsync(
+        Guid familyId,
+        Guid? memberId,
+        DateOnly weekStart,
+        string? patternCode,
+        string? tacticCode,
+        string? lastFailedTactic,
+        string? parentStrategyTipVi,
+        string? childVoiceJson,
+        DateTimeOffset? childVoiceAt,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var existing = await conn.QuerySingleOrDefaultAsync<WeekPlaybookRow>(
+            """
+            SELECT
+                id AS Id,
+                family_id AS FamilyId,
+                member_id AS MemberId,
+                week_start AS WeekStart,
+                pattern_code AS PatternCode,
+                tactic_code AS TacticCode,
+                last_failed_tactic AS LastFailedTactic,
+                parent_strategy_tip_vi AS ParentStrategyTipVi,
+                child_voice_json::text AS ChildVoiceJson,
+                child_voice_at AS ChildVoiceAt,
+                updated_at AS UpdatedAt
+            FROM pack_family.behavior_week_playbook
+            WHERE tenant_id = @TenantId
+              AND family_id = @FamilyId
+              AND week_start = @WeekStart
+              AND (
+                    (@MemberId IS NULL AND member_id IS NULL)
+                    OR member_id = @MemberId
+                  )
+            LIMIT 1
+            """,
+            new { TenantId, FamilyId = familyId, MemberId = memberId, WeekStart = weekStart });
+
+        if (existing is null)
+        {
+            return await conn.QuerySingleAsync<WeekPlaybookRow>(
+                """
+                INSERT INTO pack_family.behavior_week_playbook (
+                    tenant_id, family_id, member_id, week_start,
+                    pattern_code, tactic_code, last_failed_tactic,
+                    parent_strategy_tip_vi, child_voice_json, child_voice_at
+                )
+                VALUES (
+                    @TenantId, @FamilyId, @MemberId, @WeekStart,
+                    @PatternCode, @TacticCode, @LastFailedTactic,
+                    @ParentStrategyTipVi,
+                    CAST(COALESCE(@ChildVoiceJson, '{}') AS jsonb),
+                    @ChildVoiceAt
+                )
+                RETURNING
+                    id AS Id,
+                    family_id AS FamilyId,
+                    member_id AS MemberId,
+                    week_start AS WeekStart,
+                    pattern_code AS PatternCode,
+                    tactic_code AS TacticCode,
+                    last_failed_tactic AS LastFailedTactic,
+                    parent_strategy_tip_vi AS ParentStrategyTipVi,
+                    child_voice_json::text AS ChildVoiceJson,
+                    child_voice_at AS ChildVoiceAt,
+                    updated_at AS UpdatedAt
+                """,
+                new
+                {
+                    TenantId,
+                    FamilyId = familyId,
+                    MemberId = memberId,
+                    WeekStart = weekStart,
+                    PatternCode = patternCode,
+                    TacticCode = tacticCode,
+                    LastFailedTactic = lastFailedTactic,
+                    ParentStrategyTipVi = parentStrategyTipVi,
+                    ChildVoiceJson = childVoiceJson,
+                    ChildVoiceAt = childVoiceAt,
+                });
+        }
+
+        return await conn.QuerySingleAsync<WeekPlaybookRow>(
+            """
+            UPDATE pack_family.behavior_week_playbook
+            SET
+                pattern_code = COALESCE(@PatternCode, pattern_code),
+                tactic_code = COALESCE(@TacticCode, tactic_code),
+                last_failed_tactic = COALESCE(@LastFailedTactic, last_failed_tactic),
+                parent_strategy_tip_vi = COALESCE(@ParentStrategyTipVi, parent_strategy_tip_vi),
+                child_voice_json = CASE
+                    WHEN @ChildVoiceJson IS NULL THEN child_voice_json
+                    ELSE CAST(@ChildVoiceJson AS jsonb)
+                END,
+                child_voice_at = COALESCE(@ChildVoiceAt, child_voice_at),
+                updated_at = NOW()
+            WHERE id = @Id
+            RETURNING
+                id AS Id,
+                family_id AS FamilyId,
+                member_id AS MemberId,
+                week_start AS WeekStart,
+                pattern_code AS PatternCode,
+                tactic_code AS TacticCode,
+                last_failed_tactic AS LastFailedTactic,
+                parent_strategy_tip_vi AS ParentStrategyTipVi,
+                child_voice_json::text AS ChildVoiceJson,
+                child_voice_at AS ChildVoiceAt,
+                updated_at AS UpdatedAt
+            """,
+            new
+            {
+                existing.Id,
+                PatternCode = patternCode,
+                TacticCode = tacticCode,
+                LastFailedTactic = lastFailedTactic,
+                ParentStrategyTipVi = parentStrategyTipVi,
+                ChildVoiceJson = childVoiceJson,
+                ChildVoiceAt = childVoiceAt,
+            });
+    }
+
+    internal sealed class WeekPlaybookRow
+    {
+        public Guid Id { get; init; }
+        public Guid FamilyId { get; init; }
+        public Guid? MemberId { get; init; }
+        public DateOnly WeekStart { get; init; }
+        public string? PatternCode { get; init; }
+        public string? TacticCode { get; init; }
+        public string? LastFailedTactic { get; init; }
+        public string? ParentStrategyTipVi { get; init; }
+        public string? ChildVoiceJson { get; init; }
+        public DateTimeOffset? ChildVoiceAt { get; init; }
+        public DateTimeOffset UpdatedAt { get; init; }
     }
 
     internal sealed class TemplateHabitRow

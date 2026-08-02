@@ -71,6 +71,10 @@ public static class FamilyBehaviorEventTypes
     public const string ObserveModeExited = "observe_mode_exited";
     public const string DependenceWarned = "dependence_warned";
     public const string ParentCoachActed = "parent_coach_acted";
+    public const string PatternDetected = "pattern_detected";
+    public const string TacticRotated = "tactic_rotated";
+    public const string ChildVoiceSubmitted = "child_voice_submitted";
+    public const string ParentStrategyTip = "parent_strategy_tip";
 }
 
 public static class FamilyReflectionPrompts

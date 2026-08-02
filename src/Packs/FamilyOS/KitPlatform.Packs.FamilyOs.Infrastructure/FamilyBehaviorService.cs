@@ -1,3 +1,4 @@
+using System.Text.Json;
 using KitPlatform.Packs.FamilyOs;
 
 namespace KitPlatform.Packs.FamilyOs.Infrastructure;
@@ -282,6 +283,19 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
         }
 
         var rows = await _dayFlows.ListCommitmentsAsync(flow.Id, cancellationToken);
+        var weekStart = FamilyBehaviorPatterns.WeekStart(date);
+        var playbookByMember = new Dictionary<Guid, FamilyBehaviorRepository.WeekPlaybookRow>();
+        FamilyBehaviorRepository.WeekPlaybookRow? familyPlaybook = null;
+        try
+        {
+            familyPlaybook = await _repo.GetWeekPlaybookAsync(
+                familyId, memberId: null, weekStart, cancellationToken);
+        }
+        catch
+        {
+            // table may not exist yet before mig 267
+        }
+
         var hints = new List<BehaviorCoachMemberHintDto>();
         foreach (var c in rows)
         {
@@ -292,6 +306,46 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
                 c.Status, c.WindowStart, c.WindowEnd, localTime, c.HabitStage, c.ReminderSuppressed);
             if (state is FamilyReminderStates.None)
                 continue;
+
+            string? weekPattern = familyPlaybook?.PatternCode;
+            string? weekTactic = familyPlaybook?.TacticCode;
+            if (c.MemberId is Guid mid)
+            {
+                if (!playbookByMember.TryGetValue(mid, out var memberBook))
+                {
+                    try
+                    {
+                        memberBook = await _repo.GetWeekPlaybookAsync(
+                            familyId, mid, weekStart, cancellationToken);
+                    }
+                    catch
+                    {
+                        memberBook = null;
+                    }
+
+                    if (memberBook is not null)
+                        playbookByMember[mid] = memberBook;
+                }
+
+                weekPattern = memberBook?.PatternCode ?? weekPattern;
+                weekTactic = memberBook?.TacticCode ?? weekTactic;
+            }
+
+            var inferred = FamilyBehaviorPatterns.InferCode(
+                new FamilyBehaviorPatterns.InferSignals(
+                    c.WindowEnd,
+                    state,
+                    FamilyLearningMission.IsLearningTitle(c.Title),
+                    c.Title,
+                    c.HabitStage,
+                    c.HabitStreakDays,
+                    nudgesUsed,
+                    c.SkipReason));
+            var useWeekTactic =
+                inferred is not null
+                && weekPattern is not null
+                && string.Equals(inferred, weekPattern, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(weekTactic);
 
             var decision = FamilyMotivationIntervention.Decide(
                 new FamilyMotivationIntervention.Input(
@@ -304,7 +358,11 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
                     c.SkipReason,
                     nudgesUsed,
                     budget,
-                    FamilyObserveOnly: observeOnly));
+                    FamilyObserveOnly: observeOnly,
+                    WindowEnd: c.WindowEnd,
+                    Title: c.Title,
+                    ForcedPatternCode: useWeekTactic ? weekPattern : null,
+                    ForcedTacticCode: useWeekTactic ? weekTactic : null));
 
             if (decision.InterventionLevel is FamilyInterventionLevels.None)
                 continue;
@@ -320,7 +378,9 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
                 decision.AllowParentPush,
                 string.IsNullOrWhiteSpace(decision.MotivationCueVi)
                     ? null
-                    : decision.MotivationCueVi));
+                    : decision.MotivationCueVi,
+                decision.BehaviorPatternCode,
+                decision.BehaviorTacticCode));
         }
 
         return new BehaviorCoachDto(
@@ -976,6 +1036,329 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
             label,
             level,
             needsQuiz);
+    }
+
+    public async Task<WeekPlaybookDto> GetWeekPlaybookAsync(
+        Guid familyId,
+        Guid? memberId = null,
+        DateOnly? asOf = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Free+ weekly insight surface — no Twin cap required for pattern cards.
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.WeeklyInsight, cancellationToken);
+
+        var family = await _families.GetFamilyAsync(familyId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+
+        var localNow = FamilyTimeZones.NowIn(family.Timezone);
+        var today = asOf ?? DateOnly.FromDateTime(localNow.DateTime);
+        var weekStart = FamilyBehaviorPatterns.WeekStart(today);
+        var weekLocal = localNow.AddDays(-(today.DayNumber - weekStart.DayNumber));
+        var fromUtc = new DateTimeOffset(
+            weekLocal.Year, weekLocal.Month, weekLocal.Day, 0, 0, 0, weekLocal.Offset)
+            .ToUniversalTime();
+        var toUtc = fromUtc.AddDays(7);
+
+        var nudges = await _repo.CountFamilyEventsAsync(
+            familyId, FamilyBehaviorEventTypes.ParentNudge, fromUtc, toUtc, cancellationToken);
+        var selfStarts = await _repo.CountFamilyEventsAsync(
+            familyId, FamilyBehaviorEventTypes.SelfStart, fromUtc, toUtc, cancellationToken);
+
+        FamilyBehaviorRepository.WeekPlaybookRow? row = null;
+        try
+        {
+            row = await _repo.GetWeekPlaybookAsync(familyId, memberId, weekStart, cancellationToken);
+        }
+        catch
+        {
+            // mig 267 may not be applied yet
+        }
+
+        // Infer primary pattern from today's open commitments if none stored.
+        string? patternCode = row?.PatternCode;
+        string? tacticCode = row?.TacticCode;
+        if (string.IsNullOrWhiteSpace(patternCode))
+        {
+            var flow = await _dayFlows.GetByDateAsync(familyId, today, cancellationToken);
+            if (flow is not null)
+            {
+                var localTime = TimeOnly.FromTimeSpan(localNow.TimeOfDay);
+                var commitments = await _dayFlows.ListCommitmentsAsync(flow.Id, cancellationToken);
+                foreach (var c in commitments.Where(x =>
+                             memberId is null || x.MemberId == memberId))
+                {
+                    if (c.Status is FamilyCommitmentStatuses.Done or FamilyCommitmentStatuses.Skipped)
+                        continue;
+                    var (state, _) = FamilyCommitmentReminder.Evaluate(
+                        c.Status, c.WindowStart, c.WindowEnd, localTime, c.HabitStage, c.ReminderSuppressed);
+                    patternCode = FamilyBehaviorPatterns.InferCode(
+                        new FamilyBehaviorPatterns.InferSignals(
+                            c.WindowEnd,
+                            state,
+                            FamilyLearningMission.IsLearningTitle(c.Title),
+                            c.Title,
+                            c.HabitStage,
+                            c.HabitStreakDays,
+                            nudges > 14 ? 3 : nudges / 5,
+                            c.SkipReason));
+                    if (patternCode is not null) break;
+                }
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(patternCode) && string.IsNullOrWhiteSpace(tacticCode))
+        {
+            tacticCode = FamilyBehaviorPatterns.PickTacticCode(
+                patternCode!, today, memberId, row?.LastFailedTactic);
+        }
+
+        var strategyTip = row?.ParentStrategyTipVi
+            ?? FamilyBehaviorPatterns.ParentStrategyTipVi(
+                patternCode, tacticCode, nudges, selfStarts);
+
+        if (row is null || string.IsNullOrWhiteSpace(row.ParentStrategyTipVi)
+            || string.IsNullOrWhiteSpace(row.PatternCode))
+        {
+            try
+            {
+                row = await _repo.UpsertWeekPlaybookAsync(
+                    familyId,
+                    memberId,
+                    weekStart,
+                    patternCode,
+                    tacticCode,
+                    lastFailedTactic: null,
+                    strategyTip,
+                    childVoiceJson: null,
+                    childVoiceAt: null,
+                    cancellationToken);
+
+                await _repo.InsertBehaviorEventAsync(
+                    familyId,
+                    memberId,
+                    FamilyBehaviorEventTypes.ParentStrategyTip,
+                    commitmentId: null,
+                    templateId: null,
+                    new { patternCode, tacticCode, tip = strategyTip, weekStart },
+                    cancellationToken);
+                if (patternCode is not null)
+                {
+                    await _repo.InsertBehaviorEventAsync(
+                        familyId,
+                        memberId,
+                        FamilyBehaviorEventTypes.PatternDetected,
+                        commitmentId: null,
+                        templateId: null,
+                        new { patternCode, tacticCode, weekStart },
+                        cancellationToken);
+                }
+            }
+            catch
+            {
+                // best-effort until mig 267
+            }
+        }
+
+        var pattern = FamilyBehaviorPatterns.Get(patternCode);
+        var tactic = FamilyBehaviorPatterns.GetTactic(patternCode, tacticCode);
+        var childVoice = ParseChildVoice(row?.ChildVoiceJson, memberId ?? row?.MemberId, weekStart, row?.ChildVoiceAt);
+
+        var catalog = FamilyBehaviorPatterns.Catalog
+            .Select(p => ToPatternCard(p))
+            .ToList();
+        var active = new List<BehaviorPatternCardDto>();
+        if (pattern is not null)
+        {
+            active.Add(ToPatternCard(pattern, tacticCode, tactic));
+        }
+
+        return new WeekPlaybookDto(
+            weekStart,
+            today,
+            pattern?.Code,
+            pattern?.TitleVi,
+            pattern?.WhyVi,
+            tactic?.Code,
+            tactic?.LabelVi,
+            tactic?.ChildCueVi,
+            tactic?.ParentAdviceVi,
+            strategyTip,
+            childVoice,
+            catalog,
+            active,
+            nudges,
+            selfStarts);
+    }
+
+    public async Task<ChildVoiceWeekDto> SubmitChildVoiceWeekAsync(
+        Guid familyId,
+        SubmitChildVoiceWeekRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await _commercial.EnsureCapabilityAsync(
+            familyId, FamilyCapabilityCodes.WeeklyInsight, cancellationToken);
+
+        if (request.MemberId == Guid.Empty)
+            throw new InvalidOperationException("Thiếu thành viên con.");
+
+        var family = await _families.GetFamilyAsync(familyId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+
+        var localNow = FamilyTimeZones.NowIn(family.Timezone);
+        var today = DateOnly.FromDateTime(localNow.DateTime);
+        var weekStart = request.WeekStart ?? FamilyBehaviorPatterns.WeekStart(today);
+
+        var hardest = NormalizeChoice(request.HardestCode, ["evening", "subject", "alone", "long", "other"]);
+        var want = NormalizeChoice(
+            request.WantParentCode,
+            ["less_remind", "praise", "together", "choose_time", "friends", "other"]);
+        var wish = Truncate(request.WishVi, 280);
+        var tips = FamilyBehaviorPatterns.TipsFromChildVoice(hardest, want, wish);
+        var submittedAt = DateTimeOffset.UtcNow;
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            hardestCode = hardest,
+            wantParentCode = want,
+            wishVi = wish,
+            parentTipsVi = tips,
+            submittedAt,
+        });
+
+        var weekLocal = localNow.AddDays(-(today.DayNumber - weekStart.DayNumber));
+        var fromUtc = new DateTimeOffset(
+            weekLocal.Year, weekLocal.Month, weekLocal.Day, 0, 0, 0, weekLocal.Offset)
+            .ToUniversalTime();
+        var toUtc = fromUtc.AddDays(7);
+        var nudges = await _repo.CountFamilyEventsAsync(
+            familyId, FamilyBehaviorEventTypes.ParentNudge, fromUtc, toUtc, cancellationToken);
+        var selfStarts = await _repo.CountFamilyEventsAsync(
+            familyId, FamilyBehaviorEventTypes.SelfStart, fromUtc, toUtc, cancellationToken);
+
+        var existing = await _repo.GetWeekPlaybookAsync(
+            familyId, request.MemberId, weekStart, cancellationToken);
+        var patternCode = existing?.PatternCode;
+        var tacticCode = existing?.TacticCode;
+        if (want is "less_remind" or "choose_time")
+            patternCode ??= FamilyBehaviorPatternCodes.NudgeDependent;
+        else if (want is "together" or "friends")
+            patternCode ??= FamilyBehaviorPatternCodes.SocialBoost;
+        else if (hardest == "evening")
+            patternCode ??= FamilyBehaviorPatternCodes.EveningFatigue;
+        else if (hardest == "subject")
+            patternCode ??= FamilyBehaviorPatternCodes.SubjectAvoidance;
+
+        if (!string.IsNullOrWhiteSpace(patternCode) && string.IsNullOrWhiteSpace(tacticCode))
+        {
+            tacticCode = FamilyBehaviorPatterns.PickTacticCode(
+                patternCode!, today, request.MemberId, existing?.LastFailedTactic);
+        }
+
+        var strategyTip = tips.FirstOrDefault()
+            ?? FamilyBehaviorPatterns.ParentStrategyTipVi(patternCode, tacticCode, nudges, selfStarts);
+
+        await _repo.UpsertWeekPlaybookAsync(
+            familyId,
+            request.MemberId,
+            weekStart,
+            patternCode,
+            tacticCode,
+            lastFailedTactic: null,
+            strategyTip,
+            payload,
+            submittedAt,
+            cancellationToken);
+
+        try
+        {
+            await _repo.InsertBehaviorEventAsync(
+                familyId,
+                request.MemberId,
+                FamilyBehaviorEventTypes.ChildVoiceSubmitted,
+                commitmentId: null,
+                templateId: null,
+                new { weekStart, hardest, want, wish, tips },
+                cancellationToken);
+        }
+        catch
+        {
+            // best-effort
+        }
+
+        return new ChildVoiceWeekDto(
+            request.MemberId,
+            weekStart,
+            hardest,
+            want,
+            wish,
+            tips,
+            submittedAt);
+    }
+
+    private static BehaviorPatternCardDto ToPatternCard(
+        BehaviorPatternDef pattern,
+        string? activeTacticCode = null,
+        BehaviorTacticDef? activeTactic = null) =>
+        new(
+            pattern.Code,
+            pattern.TitleVi,
+            pattern.WhyVi,
+            activeTactic?.Code ?? activeTacticCode,
+            activeTactic?.LabelVi,
+            activeTactic?.ChildCueVi,
+            activeTactic?.ParentAdviceVi,
+            pattern.Tactics.Select(t => t.LabelVi).ToList());
+
+    private static ChildVoiceWeekDto? ParseChildVoice(
+        string? json,
+        Guid? memberId,
+        DateOnly weekStart,
+        DateTimeOffset? submittedAt)
+    {
+        if (string.IsNullOrWhiteSpace(json) || json is "{}")
+            return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            var tips = new List<string>();
+            if (root.TryGetProperty("parentTipsVi", out var tipsEl) && tipsEl.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var t in tipsEl.EnumerateArray())
+                {
+                    if (t.ValueKind == JsonValueKind.String)
+                        tips.Add(t.GetString() ?? "");
+                }
+            }
+
+            return new ChildVoiceWeekDto(
+                memberId,
+                weekStart,
+                root.TryGetProperty("hardestCode", out var h) ? h.GetString() : null,
+                root.TryGetProperty("wantParentCode", out var w) ? w.GetString() : null,
+                root.TryGetProperty("wishVi", out var wish) ? wish.GetString() : null,
+                tips,
+                submittedAt);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? NormalizeChoice(string? raw, string[] allowed)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var v = raw.Trim().ToLowerInvariant();
+        return allowed.Contains(v) ? v : "other";
+    }
+
+    private static string? Truncate(string? raw, int max)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var t = raw.Trim();
+        return t.Length <= max ? t : t[..max];
     }
 
     private static IReadOnlyList<RetrievalQuestionDto> BuildRetrievalQuestions() =>

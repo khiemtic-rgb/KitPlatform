@@ -75,6 +75,9 @@ export interface DayFlowCommitment {
   eveningRiskBand?: string;
   eveningRiskLabelVi?: string;
   eveningRiskActionVi?: string;
+  /** S1–S2 behavior pattern / tactic */
+  behaviorPatternCode?: string;
+  behaviorTacticCode?: string;
 }
 
 export const REFLECTION_PROMPT_OPTIONS = [
@@ -637,6 +640,14 @@ function mapCommitment(c: Row): DayFlowCommitment {
       c.eveningRiskActionVi != null || c.EveningRiskActionVi != null
         ? String(c.eveningRiskActionVi ?? c.EveningRiskActionVi)
         : undefined,
+    behaviorPatternCode:
+      c.behaviorPatternCode != null || c.BehaviorPatternCode != null
+        ? String(c.behaviorPatternCode ?? c.BehaviorPatternCode)
+        : undefined,
+    behaviorTacticCode:
+      c.behaviorTacticCode != null || c.BehaviorTacticCode != null
+        ? String(c.behaviorTacticCode ?? c.BehaviorTacticCode)
+        : undefined,
   };
 }
 
@@ -645,10 +656,7 @@ export interface CommitmentProgressResult {
   memberStarBalance?: number;
 }
 
-export async function ensureDayFlow(familyId: string, forceRebuild = false): Promise<DayFlow> {
-  const { data } = await http.post<Row>(`/family-os/families/${familyId}/day-flows/ensure`, {
-    forceRebuild,
-  });
+function mapDayFlow(data: Row): DayFlow {
   return {
     id: String(data.id ?? data.Id),
     familyId: String(data.familyId ?? data.FamilyId ?? ''),
@@ -666,6 +674,30 @@ export async function ensureDayFlow(familyId: string, forceRebuild = false): Pro
         : undefined,
     commitments: asArray(data.commitments ?? data.Commitments).map(mapCommitment),
   };
+}
+
+export async function ensureDayFlow(
+  familyId: string,
+  forceRebuild = false,
+  flowDate?: string,
+): Promise<DayFlow> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/day-flows/ensure`, {
+    forceRebuild,
+    flowDate: flowDate ?? null,
+  });
+  return mapDayFlow(data);
+}
+
+/** GET existing day flow for a date; null if never materialized. */
+export async function fetchDayFlow(
+  familyId: string,
+  flowDate: string,
+): Promise<DayFlow | null> {
+  const res = await http.get<Row>(`/family-os/families/${familyId}/day-flows/${flowDate}`, {
+    validateStatus: (s) => s === 200 || s === 404,
+  });
+  if (res.status === 404 || !res.data) return null;
+  return mapDayFlow(res.data as Row);
 }
 
 export async function uploadCommitmentEvidence(
@@ -809,6 +841,8 @@ export interface BehaviorCoachHint {
   parentAdviceVi: string;
   allowParentPush: boolean;
   motivationCueVi?: string;
+  behaviorPatternCode?: string;
+  behaviorTacticCode?: string;
 }
 
 export interface BehaviorCoach {
@@ -850,6 +884,14 @@ export async function fetchBehaviorCoach(
       motivationCueVi:
         h.motivationCueVi != null || h.MotivationCueVi != null
           ? String(h.motivationCueVi ?? h.MotivationCueVi)
+          : undefined,
+      behaviorPatternCode:
+        h.behaviorPatternCode != null || h.BehaviorPatternCode != null
+          ? String(h.behaviorPatternCode ?? h.BehaviorPatternCode)
+          : undefined,
+      behaviorTacticCode:
+        h.behaviorTacticCode != null || h.BehaviorTacticCode != null
+          ? String(h.behaviorTacticCode ?? h.BehaviorTacticCode)
           : undefined,
     })),
   };
@@ -1048,6 +1090,180 @@ export async function fetchFamilyBehaviorTwin(familyId: string): Promise<FamilyB
     observeOnlyActive: Boolean(data.observeOnlyActive ?? data.ObserveOnlyActive ?? false),
     policy: mapRetirementPolicy(policyRaw),
     children,
+  };
+}
+
+export interface BehaviorPatternCard {
+  code: string;
+  titleVi: string;
+  whyVi: string;
+  activeTacticCode?: string;
+  activeTacticLabelVi?: string;
+  childCueVi?: string;
+  parentAdviceVi?: string;
+  tacticLabelsVi: string[];
+}
+
+export interface ChildVoiceWeek {
+  memberId?: string;
+  weekStart: string;
+  hardestCode?: string;
+  wantParentCode?: string;
+  wishVi?: string;
+  parentTipsVi: string[];
+  submittedAt?: string;
+}
+
+export interface WeekPlaybook {
+  weekStart: string;
+  asOfDate: string;
+  patternCode?: string;
+  patternTitleVi?: string;
+  patternWhyVi?: string;
+  tacticCode?: string;
+  tacticLabelVi?: string;
+  childCueVi?: string;
+  parentAdviceVi?: string;
+  parentStrategyTipVi: string;
+  childVoice?: ChildVoiceWeek | null;
+  catalog: BehaviorPatternCard[];
+  activePatterns: BehaviorPatternCard[];
+  parentNudgesThisWeek: number;
+  selfStartsThisWeek: number;
+}
+
+function mapPatternCard(p: Row): BehaviorPatternCard {
+  const tactics = p.tacticLabelsVi ?? p.TacticLabelsVi;
+  return {
+    code: String(p.code ?? p.Code ?? ''),
+    titleVi: String(p.titleVi ?? p.TitleVi ?? ''),
+    whyVi: String(p.whyVi ?? p.WhyVi ?? ''),
+    activeTacticCode:
+      p.activeTacticCode != null || p.ActiveTacticCode != null
+        ? String(p.activeTacticCode ?? p.ActiveTacticCode)
+        : undefined,
+    activeTacticLabelVi:
+      p.activeTacticLabelVi != null || p.ActiveTacticLabelVi != null
+        ? String(p.activeTacticLabelVi ?? p.ActiveTacticLabelVi)
+        : undefined,
+    childCueVi:
+      p.childCueVi != null || p.ChildCueVi != null
+        ? String(p.childCueVi ?? p.ChildCueVi)
+        : undefined,
+    parentAdviceVi:
+      p.parentAdviceVi != null || p.ParentAdviceVi != null
+        ? String(p.parentAdviceVi ?? p.ParentAdviceVi)
+        : undefined,
+    tacticLabelsVi: Array.isArray(tactics) ? tactics.map((x) => String(x)) : [],
+  };
+}
+
+function mapChildVoice(v: Row | null | undefined): ChildVoiceWeek | null {
+  if (!v) return null;
+  const tips = v.parentTipsVi ?? v.ParentTipsVi;
+  return {
+    memberId:
+      v.memberId != null || v.MemberId != null ? String(v.memberId ?? v.MemberId) : undefined,
+    weekStart: String(v.weekStart ?? v.WeekStart ?? ''),
+    hardestCode:
+      v.hardestCode != null || v.HardestCode != null
+        ? String(v.hardestCode ?? v.HardestCode)
+        : undefined,
+    wantParentCode:
+      v.wantParentCode != null || v.WantParentCode != null
+        ? String(v.wantParentCode ?? v.WantParentCode)
+        : undefined,
+    wishVi:
+      v.wishVi != null || v.WishVi != null ? String(v.wishVi ?? v.WishVi) : undefined,
+    parentTipsVi: Array.isArray(tips) ? tips.map((x) => String(x)) : [],
+    submittedAt:
+      v.submittedAt != null || v.SubmittedAt != null
+        ? String(v.submittedAt ?? v.SubmittedAt)
+        : undefined,
+  };
+}
+
+export async function fetchWeekPlaybook(
+  familyId: string,
+  opts?: { memberId?: string; asOf?: string },
+): Promise<WeekPlaybook> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/behavior/week-playbook`, {
+    params: {
+      memberId: opts?.memberId,
+      asOf: opts?.asOf,
+    },
+  });
+  const catalog = asArray(data.catalog ?? data.Catalog).map(mapPatternCard);
+  const active = asArray(data.activePatterns ?? data.ActivePatterns).map(mapPatternCard);
+  const voiceRaw = (data.childVoice ?? data.ChildVoice) as Row | null | undefined;
+  return {
+    weekStart: String(data.weekStart ?? data.WeekStart ?? ''),
+    asOfDate: String(data.asOfDate ?? data.AsOfDate ?? ''),
+    patternCode:
+      data.patternCode != null || data.PatternCode != null
+        ? String(data.patternCode ?? data.PatternCode)
+        : undefined,
+    patternTitleVi:
+      data.patternTitleVi != null || data.PatternTitleVi != null
+        ? String(data.patternTitleVi ?? data.PatternTitleVi)
+        : undefined,
+    patternWhyVi:
+      data.patternWhyVi != null || data.PatternWhyVi != null
+        ? String(data.patternWhyVi ?? data.PatternWhyVi)
+        : undefined,
+    tacticCode:
+      data.tacticCode != null || data.TacticCode != null
+        ? String(data.tacticCode ?? data.TacticCode)
+        : undefined,
+    tacticLabelVi:
+      data.tacticLabelVi != null || data.TacticLabelVi != null
+        ? String(data.tacticLabelVi ?? data.TacticLabelVi)
+        : undefined,
+    childCueVi:
+      data.childCueVi != null || data.ChildCueVi != null
+        ? String(data.childCueVi ?? data.ChildCueVi)
+        : undefined,
+    parentAdviceVi:
+      data.parentAdviceVi != null || data.ParentAdviceVi != null
+        ? String(data.parentAdviceVi ?? data.ParentAdviceVi)
+        : undefined,
+    parentStrategyTipVi: String(
+      data.parentStrategyTipVi ?? data.ParentStrategyTipVi ?? '',
+    ),
+    childVoice: mapChildVoice(voiceRaw),
+    catalog,
+    activePatterns: active,
+    parentNudgesThisWeek: Number(
+      data.parentNudgesThisWeek ?? data.ParentNudgesThisWeek ?? 0,
+    ),
+    selfStartsThisWeek: Number(data.selfStartsThisWeek ?? data.SelfStartsThisWeek ?? 0),
+  };
+}
+
+export async function submitChildVoiceWeek(
+  familyId: string,
+  body: {
+    memberId: string;
+    weekStart?: string;
+    hardestCode?: string;
+    wantParentCode?: string;
+    wishVi?: string;
+  },
+): Promise<ChildVoiceWeek> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/behavior/child-voice`,
+    {
+      memberId: body.memberId,
+      weekStart: body.weekStart,
+      hardestCode: body.hardestCode,
+      wantParentCode: body.wantParentCode,
+      wishVi: body.wishVi,
+    },
+  );
+  return mapChildVoice(data) ?? {
+    memberId: body.memberId,
+    weekStart: body.weekStart ?? '',
+    parentTipsVi: [],
   };
 }
 

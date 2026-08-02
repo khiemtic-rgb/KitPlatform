@@ -11,6 +11,7 @@ internal sealed class FamilyTeamNudgeService : IFamilyTeamNudgeService
     private readonly FamilyGraphRepository _families;
     private readonly IFamilyTeamUnlockService _team;
     private readonly IFamilyMemoryService _memories;
+    private readonly IFamilyOsParentPushService _parentPush;
     private readonly ITenantContext _tenant;
 
     public FamilyTeamNudgeService(
@@ -18,12 +19,14 @@ internal sealed class FamilyTeamNudgeService : IFamilyTeamNudgeService
         FamilyGraphRepository families,
         IFamilyTeamUnlockService team,
         IFamilyMemoryService memories,
+        IFamilyOsParentPushService parentPush,
         ITenantContext tenant)
     {
         _repo = repo;
         _families = families;
         _team = team;
         _memories = memories;
+        _parentPush = parentPush;
         _tenant = tenant;
     }
 
@@ -159,6 +162,49 @@ internal sealed class FamilyTeamNudgeService : IFamilyTeamNudgeService
             ?? throw new InvalidOperationException("Không gửi được nudge.");
         if (updated.Status != FamilyTeamNudgeStatuses.Sent)
             throw new InvalidOperationException("Không gửi được nudge.");
+
+        try
+        {
+            var fromShort = ShortName(updated.FromName);
+            var toShort = ShortName(updated.ToName);
+            if (isThanksBack)
+            {
+                await _parentPush.TryNotifyFamilyAsync(
+                    _tenant.TenantId,
+                    familyId,
+                    updated.FlowDate,
+                    kind: "relationship_thanks",
+                    title: $"{fromShort} vừa cảm ơn bạn",
+                    body: updated.MessageVi.Length > 140
+                        ? updated.MessageVi[..137] + "…"
+                        : updated.MessageVi,
+                    url: "/today",
+                    dataType: "familyos_relationship_thanks",
+                    payloadSummary: $"nudge_thanks:{updated.Id:N}",
+                    preferMembershipId: updated.ToMemberId,
+                    cancellationToken: cancellationToken);
+            }
+            else
+            {
+                // Sibling cheer — light human signal (shares relationship_voice daily cap).
+                await _parentPush.TryNotifyFamilyAsync(
+                    _tenant.TenantId,
+                    familyId,
+                    updated.FlowDate,
+                    kind: "relationship_voice",
+                    title: $"{fromShort} gửi lời cổ vũ",
+                    body: $"{toShort} ơi — {fromShort} nhắc nhẹ cả đội hôm nay.",
+                    url: "/today",
+                    dataType: "familyos_relationship_voice",
+                    payloadSummary: $"nudge_cheer:{updated.Id:N}",
+                    preferMembershipId: updated.ToMemberId,
+                    cancellationToken: cancellationToken);
+            }
+        }
+        catch
+        {
+            // Nudge already sent — push must not fail the request.
+        }
 
         return Map(updated);
     }

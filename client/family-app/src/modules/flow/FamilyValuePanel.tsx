@@ -27,7 +27,12 @@ import {
   upsertParentSuccessEveningCheckin,
   fetchFamilyRituals,
   checkinFamilyRitual,
+  fetchWeekPlaybook,
+  submitChildVoiceWeek,
+  fetchFamilyBehaviorTwin,
   type FamilyRitual,
+  type WeekPlaybook,
+  type FamilyBehaviorTwin,
 } from '@/shared/api/family-os.api';
 import { shareOrCopyNudge } from '@/shared/nudge/nudge';
 import { computeFamilyHealthScore } from '@/shared/value/family-health-score';
@@ -86,6 +91,7 @@ const VIEW_BY_ANCHOR: Record<string, FvView> = {
   'fv-replay': 'replay',
   'fv-ai-wins': 'recognition',
   'fv-parent-achv': 'recognition',
+  'fv-weekly': 'weekly',
 };
 
 /** Tiêu đề header cho từng màn con — dùng chung với header tab Báo cáo. */
@@ -137,6 +143,13 @@ export function FamilyValuePanel({
   const [checkinMsg, setCheckinMsg] = useState<string | null>(null);
   const [rituals, setRituals] = useState<FamilyRitual[]>([]);
   const [ritualBusy, setRitualBusy] = useState<string | null>(null);
+  const [weekPlaybook, setWeekPlaybook] = useState<WeekPlaybook | null>(null);
+  const [familyTwin, setFamilyTwin] = useState<FamilyBehaviorTwin | null>(null);
+  const [voiceHardest, setVoiceHardest] = useState('evening');
+  const [voiceWant, setVoiceWant] = useState('praise');
+  const [voiceWish, setVoiceWish] = useState('');
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const [voiceMsg, setVoiceMsg] = useState<string | null>(null);
   const [viewLocal, setViewLocal] = useState<FvView>(
     () => (focusAnchorId ? VIEW_BY_ANCHOR[focusAnchorId] : undefined) ?? 'hub',
   );
@@ -183,10 +196,35 @@ export function FamilyValuePanel({
       .catch(() => {
         if (!cancelled) setRituals([]);
       });
+    const childId =
+      coachScope && coachScope.kind === 'child'
+        ? coachScope.childMemberId
+        : undefined;
+    void fetchWeekPlaybook(familyId, {
+      memberId: childId,
+      asOf: flow.flowDate,
+    })
+      .then((p) => {
+        if (!cancelled) setWeekPlaybook(p);
+      })
+      .catch(() => {
+        if (!cancelled) setWeekPlaybook(null);
+      });
+    void fetchFamilyBehaviorTwin(familyId)
+      .then((t) => {
+        if (!cancelled) setFamilyTwin(t);
+      })
+      .catch(() => {
+        if (!cancelled) setFamilyTwin(null);
+      });
     return () => {
       cancelled = true;
     };
-  }, [familyId, flow.flowDate]);
+  }, [
+    familyId,
+    flow.flowDate,
+    coachScope,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -379,13 +417,50 @@ export function FamilyValuePanel({
                 : getOnboardingProfile(familyId)?.childName,
             scope: coachScope,
             coachInsight: null,
-            familyTwin: null,
+            familyTwin,
             behaviorCoach: null,
             dna,
           })
         : null,
-    [familyId, flow, glance, nudgeToday, canCoach, dna, coachScope],
+    [familyId, flow, glance, nudgeToday, canCoach, dna, coachScope, familyTwin],
   );
+
+  const voiceMemberId = useMemo(() => {
+    if (coachScope?.kind === 'child' && coachScope.childMemberId) {
+      return coachScope.childMemberId;
+    }
+    const fromFlow = flow.commitments.find((c) => c.memberId)?.memberId;
+    return fromFlow ?? null;
+  }, [coachScope, flow.commitments]);
+
+  const submitVoice = async () => {
+    if (!voiceMemberId || voiceBusy) return;
+    setVoiceBusy(true);
+    setVoiceMsg(null);
+    try {
+      const row = await submitChildVoiceWeek(familyId, {
+        memberId: voiceMemberId,
+        weekStart: weekPlaybook?.weekStart,
+        hardestCode: voiceHardest,
+        wantParentCode: voiceWant,
+        wishVi: voiceWish.trim() || undefined,
+      });
+      setVoiceMsg(
+        row.parentTipsVi[0]
+          ? `Đã lưu — gợi ý: ${row.parentTipsVi[0]}`
+          : 'Đã lưu tiếng nói tuần này.',
+      );
+      const refreshed = await fetchWeekPlaybook(familyId, {
+        memberId: voiceMemberId,
+        asOf: flow.flowDate,
+      });
+      setWeekPlaybook(refreshed);
+    } catch {
+      setVoiceMsg('Chưa gửi được — thử lại sau nhé.');
+    } finally {
+      setVoiceBusy(false);
+    }
+  };
   const coach = resolvedCoach?.primary ?? null;
   const healthDnaCaption = useMemo(() => dnaCaptionForHealth(dna), [dna]);
 
@@ -1128,6 +1203,165 @@ export function FamilyValuePanel({
             <p className="fv-promise">{weeklyLocal.coachNote}</p>
           </>
         )}
+
+        {weekPlaybook ? (
+          <div className="fv-playbook" style={{ marginTop: 16 }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: '1rem' }}>
+              Pattern & chiến thuật tuần
+            </h3>
+            <p className="fv-promise" style={{ marginTop: 0 }}>
+              {weekPlaybook.patternTitleVi
+                ? `${weekPlaybook.patternTitleVi} — ${weekPlaybook.patternWhyVi ?? ''}`
+                : 'Chưa thấy pattern rõ — giữ nhịp và quan sát thêm.'}
+            </p>
+            {weekPlaybook.tacticLabelVi ? (
+              <p className="fv-ai">
+                <strong>Đang thử:</strong> {weekPlaybook.tacticLabelVi}
+                {weekPlaybook.parentAdviceVi ? ` · ${weekPlaybook.parentAdviceVi}` : ''}
+              </p>
+            ) : null}
+            <p className="fv-ai">
+              <strong>Gợi ý bố mẹ tuần này:</strong> {weekPlaybook.parentStrategyTipVi}
+            </p>
+            <em style={{ fontSize: '0.8rem', opacity: 0.75 }}>
+              Nhắc tuần này {weekPlaybook.parentNudgesThisWeek} · Con tự mở{' '}
+              {weekPlaybook.selfStartsThisWeek} — không tăng nhắc, chỉ đổi cách.
+            </em>
+
+            {weekPlaybook.activePatterns.length > 0 ? (
+              <ul className="fv-outcomes" style={{ marginTop: 10 }}>
+                {weekPlaybook.activePatterns.map((p) => (
+                  <li key={p.code}>
+                    <span aria-hidden>🔎</span>
+                    <span>
+                      <strong>{p.titleVi}</strong> — {p.whyVi}
+                      {p.activeTacticLabelVi ? ` · ${p.activeTacticLabelVi}` : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
+            {familyTwin ? (
+              <div style={{ marginTop: 14 }}>
+                <h3 style={{ margin: '0 0 6px', fontSize: '1rem' }}>
+                  Tín hiệu nhà (Twin lite)
+                </h3>
+                <p className="fv-promise" style={{ marginTop: 0 }}>
+                  {familyTwin.disclaimerVi ||
+                    'Mô hình tín hiệu — không đánh giá tính cách.'}
+                </p>
+                <div className="fv-weekly-grid">
+                  <div>
+                    <span>Bình yên</span>
+                    <strong>{familyTwin.familyPeaceIndex}</strong>
+                  </div>
+                  <div>
+                    <span>Tự chủ</span>
+                    <strong>{familyTwin.familyAutonomyIndex}</strong>
+                  </div>
+                  <div>
+                    <span>Can thiệp</span>
+                    <strong>{familyTwin.parentalInterventionIndex}</strong>
+                  </div>
+                </div>
+                <p className="fv-ai">
+                  <strong>{familyTwin.retirementLabelVi}</strong>
+                  {familyTwin.retirementAdviceVi
+                    ? ` — ${familyTwin.retirementAdviceVi}`
+                    : ''}
+                </p>
+                {familyTwin.children[0]?.dimensions?.length ? (
+                  <ul className="fv-outcomes">
+                    {familyTwin.children[0].dimensions.slice(0, 4).map((d) => (
+                      <li key={d.code}>
+                        <span aria-hidden>·</span>
+                        <span>
+                          {d.labelVi}: {d.score} — {d.whyVi}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
+
+            <div style={{ marginTop: 16 }}>
+              <h3 style={{ margin: '0 0 6px', fontSize: '1rem' }}>
+                Con nói nhẹ với nhà
+              </h3>
+              <p className="fv-promise" style={{ marginTop: 0 }}>
+                Không phải kiểm tra — lắng nghe để thử cách đồng hành dịu hơn.
+              </p>
+              {weekPlaybook.childVoice?.submittedAt ? (
+                <ul className="fv-outcomes">
+                  {(weekPlaybook.childVoice.parentTipsVi.length
+                    ? weekPlaybook.childVoice.parentTipsVi
+                    : ['Đã nhận tiếng nói tuần này.']
+                  ).map((t) => (
+                    <li key={t}>
+                      <span aria-hidden>💬</span>
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+              ) : voiceMemberId ? (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  <label>
+                    Việc khó nhất tuần này
+                    <select
+                      value={voiceHardest}
+                      onChange={(e) => setVoiceHardest(e.target.value)}
+                      style={{ display: 'block', width: '100%', marginTop: 4 }}
+                    >
+                      <option value="evening">Buổi tối / mệt</option>
+                      <option value="subject">Môn / việc học khó</option>
+                      <option value="alone">Làm một mình</option>
+                      <option value="long">Việc quá dài</option>
+                      <option value="other">Khác</option>
+                    </select>
+                  </label>
+                  <label>
+                    Con muốn bố mẹ…
+                    <select
+                      value={voiceWant}
+                      onChange={(e) => setVoiceWant(e.target.value)}
+                      style={{ display: 'block', width: '100%', marginTop: 4 }}
+                    >
+                      <option value="less_remind">Nhắc ít hơn</option>
+                      <option value="praise">Khen khi con tự làm</option>
+                      <option value="together">Cùng làm một đoạn</option>
+                      <option value="choose_time">Cho chọn giờ</option>
+                      <option value="friends">Có người cùng / nhóm</option>
+                      <option value="other">Khác</option>
+                    </select>
+                  </label>
+                  <label>
+                    Mong muốn ngắn (tuỳ chọn)
+                    <input
+                      value={voiceWish}
+                      onChange={(e) => setVoiceWish(e.target.value)}
+                      placeholder="Giữ / bỏ / thêm gì tuần tới?"
+                      maxLength={280}
+                      style={{ display: 'block', width: '100%', marginTop: 4 }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="primary"
+                    disabled={voiceBusy}
+                    onClick={() => void submitVoice()}
+                  >
+                    {voiceBusy ? 'Đang lưu…' : 'Lưu tiếng nói tuần này'}
+                  </button>
+                  {voiceMsg ? <p className="fv-promise">{voiceMsg}</p> : null}
+                </div>
+              ) : (
+                <p className="fv-promise">Chọn một con trên board để gửi tiếng nói tuần.</p>
+              )}
+            </div>
+          </div>
+        ) : null}
       </section>
       ) : null}
 

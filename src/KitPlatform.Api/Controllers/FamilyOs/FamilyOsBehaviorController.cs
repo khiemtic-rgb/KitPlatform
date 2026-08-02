@@ -181,6 +181,46 @@ public sealed class FamilyOsBehaviorController : ControllerBase
         }
     }
 
+    /// <summary>S1–S4 — week playbook: patterns, tactic, parent tip, child voice.</summary>
+    [HttpGet("behavior/week-playbook")]
+    [ProducesResponseType(typeof(WeekPlaybookDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<WeekPlaybookDto>> GetWeekPlaybook(
+        Guid familyId,
+        [FromQuery] Guid? memberId,
+        [FromQuery] DateOnly? asOf,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _behavior.GetWeekPlaybookAsync(
+                familyId, memberId, asOf, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { code = "validation_error", message = ex.Message });
+        }
+    }
+
+    [HttpPost("behavior/child-voice")]
+    [ProducesResponseType(typeof(ChildVoiceWeekDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ChildVoiceWeekDto>> SubmitChildVoice(
+        Guid familyId,
+        [FromBody] SubmitChildVoiceWeekRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _behavior.SubmitChildVoiceWeekAsync(
+                familyId, request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { code = "validation_error", message = ex.Message });
+        }
+    }
+
     /// <summary>Wave 3 — child self-start (autonomy signal → in_progress).</summary>
     [HttpPost("commitments/{commitmentId:guid}/self-start")]
     [ProducesResponseType(typeof(CommitmentDto), StatusCodes.Status200OK)]

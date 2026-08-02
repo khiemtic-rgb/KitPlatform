@@ -14,6 +14,7 @@ internal sealed class FamilyRelationshipService : IFamilyRelationshipService
     private readonly IFamilyMemoryService _memories;
     private readonly FamilyCalendarPeriodRepository _periods;
     private readonly FamilyBlueprintRepository _blueprint;
+    private readonly IFamilyOsParentPushService _parentPush;
     private readonly ITenantContext _tenant;
 
     public FamilyRelationshipService(
@@ -26,6 +27,7 @@ internal sealed class FamilyRelationshipService : IFamilyRelationshipService
         IFamilyMemoryService memories,
         FamilyCalendarPeriodRepository periods,
         FamilyBlueprintRepository blueprint,
+        IFamilyOsParentPushService parentPush,
         ITenantContext tenant)
     {
         _voice = voice;
@@ -37,6 +39,7 @@ internal sealed class FamilyRelationshipService : IFamilyRelationshipService
         _memories = memories;
         _periods = periods;
         _blueprint = blueprint;
+        _parentPush = parentPush;
         _tenant = tenant;
     }
 
@@ -270,6 +273,28 @@ internal sealed class FamilyRelationshipService : IFamilyRelationshipService
             // Memory is best-effort.
         }
 
+        try
+        {
+            // Event push (dedupe 1 relationship_voice / family / day). Worker also scans unread.
+            var preview = body.Length > 140 ? body[..137] + "…" : body;
+            await _parentPush.TryNotifyFamilyAsync(
+                _tenant.TenantId,
+                familyId,
+                date,
+                kind: "relationship_voice",
+                title: $"{ParentLabel(from.DisplayName)} gửi lời cho bạn",
+                body: preview,
+                url: "/today",
+                dataType: "familyos_relationship_voice",
+                payloadSummary: $"relationship_voice:{id:N}",
+                preferMembershipId: to.Id,
+                cancellationToken: cancellationToken);
+        }
+        catch
+        {
+            // Voice already saved — push must not fail the request.
+        }
+
         return MapVoice(row);
     }
 
@@ -286,8 +311,41 @@ internal sealed class FamilyRelationshipService : IFamilyRelationshipService
         if (!FamilyParentVoiceStatuses.Ack.Contains(status))
             throw new InvalidOperationException("status ack phải là read hoặc thanks.");
 
+        var before = await _voice.GetAsync(familyId, messageId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy lời gửi hoặc đã xác nhận.");
+
         if (!await _voice.AckAsync(familyId, messageId, status, cancellationToken))
             throw new InvalidOperationException("Không tìm thấy lời gửi hoặc đã xác nhận.");
+
+        if (!string.Equals(status, FamilyParentVoiceStatuses.Thanks, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        try
+        {
+            var who = ShortName(before.ToMemberName);
+            var preview = string.IsNullOrWhiteSpace(before.BodyVi)
+                ? $"{who} vừa cảm ơn lời của bạn."
+                : before.BodyVi.Trim();
+            if (preview.Length > 140)
+                preview = preview[..137] + "…";
+
+            await _parentPush.TryNotifyFamilyAsync(
+                _tenant.TenantId,
+                familyId,
+                before.FlowDate,
+                kind: "relationship_thanks",
+                title: $"{who} vừa cảm ơn lời của bạn",
+                body: preview,
+                url: "/today",
+                dataType: "familyos_relationship_thanks",
+                payloadSummary: $"relationship_thanks:{before.Id:N}",
+                preferMembershipId: before.FromMemberId,
+                cancellationToken: cancellationToken);
+        }
+        catch
+        {
+            // Ack already saved — push must not fail the request.
+        }
     }
 
     private static readonly string[] EveningPrompts =
@@ -816,18 +874,26 @@ internal sealed class FamilyRelationshipService : IFamilyRelationshipService
                     familyId, viewer.Id, warm.Child.Id, date, null, cancellationToken))
             {
                 var shortChild = ShortName(warm.Child.DisplayName);
+                var parentLow = parentLabel.ToLowerInvariant();
+                var doneCount = Math.Max(0, warm.Total - warm.Open);
                 var draft = season.IsPlaySeason
-                    ? $"{shortChild} ơi, chiều nay mình chơi gì với {parentLabel.ToLowerInvariant()} nhé?"
-                    : $"{shortChild} ơi, hôm nay {parentLabel.ToLowerInvariant()} nghĩ đến con.";
+                    ? $"{shortChild} ơi, chiều nay mình chơi gì với {parentLow} nhé?"
+                    : doneCount > 0
+                        ? $"{shortChild} ơi, {parentLow} thấy con đã xong {doneCount} việc rồi — kể {parentLow} nghe việc nào vui nhất nhé?"
+                        : $"{shortChild} ơi, tối nay kể {parentLow} nghe một điều vui trong ngày của con nhé?";
                 ranked.Add((hasParentVoiceTrigger ? Math.Max(rankWarm, 3) : rankWarm,
                     new FamilyRelationshipTriggerDto(
                         FamilyRelationshipTriggerCodes.WarmCheckin,
                         season.IsPlaySeason
                             ? $"Rủ {shortChild} chơi chung một chút"
-                            : $"Gửi một lời ấm tới {shortChild}",
+                            : doneCount > 0
+                                ? $"Nhắc {shortChild} kể về việc vừa xong"
+                                : $"Mời {shortChild} kể một điều vui hôm nay",
                         season.IsPlaySeason
                             ? "Nghỉ hè / nghỉ lễ — một ritual chơi chung ấm hơn checklist."
-                            : $"Không cần lý do lớn — một câu của {parentLabel.ToLowerInvariant()} hôm nay cũng đủ gần hơn.",
+                            : doneCount > 0
+                                ? $"Gắn lời với việc {shortChild} vừa làm — cụ thể hơn lời chung chung."
+                                : $"Một câu hỏi mở giúp {parentLow} nghe con kể — hợp hoàn cảnh hơn «nghĩ đến con».",
                         season.IsPlaySeason ? "Gửi lời rủ chơi" : "Gửi lời",
                         warm.Child.Id,
                         warm.Child.DisplayName,

@@ -30,7 +30,13 @@ export type ParentingCoachAdvice = {
 
 export type ParentingCoachScope =
   | { kind: 'family'; labelVi: string }
-  | { kind: 'child'; labelVi: string; childName: string };
+  | {
+      kind: 'child';
+      labelVi: string;
+      childName: string;
+      /** Optional — used by week playbook / child voice. */
+      childMemberId?: string;
+    };
 
 export type ParentingCoachFaq = {
   id: string;

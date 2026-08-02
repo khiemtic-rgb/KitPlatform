@@ -539,6 +539,7 @@ export function TodayFlowPage() {
           softLockLabel={softLockEvent?.labelVi}
           familyId={familyId!}
           childMemberId={member.id}
+          dateOfBirth={member.dateOfBirth}
           starBalance={starBalance}
           onStarBalanceChange={setStarBalance}
           onDone={(item, evidenceUrl) => markDone(item, evidenceUrl)}

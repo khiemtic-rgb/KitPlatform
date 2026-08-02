@@ -66,7 +66,52 @@ public sealed record BehaviorCoachMemberHintDto(
     string InterventionLabelVi,
     string ParentAdviceVi,
     bool AllowParentPush,
-    string? MotivationCueVi);
+    string? MotivationCueVi,
+    string? BehaviorPatternCode = null,
+    string? BehaviorTacticCode = null);
+
+public sealed record BehaviorPatternCardDto(
+    string Code,
+    string TitleVi,
+    string WhyVi,
+    string? ActiveTacticCode,
+    string? ActiveTacticLabelVi,
+    string? ChildCueVi,
+    string? ParentAdviceVi,
+    IReadOnlyList<string> TacticLabelsVi);
+
+public sealed record ChildVoiceWeekDto(
+    Guid? MemberId,
+    DateOnly WeekStart,
+    string? HardestCode,
+    string? WantParentCode,
+    string? WishVi,
+    IReadOnlyList<string> ParentTipsVi,
+    DateTimeOffset? SubmittedAt);
+
+public sealed record SubmitChildVoiceWeekRequest(
+    Guid MemberId,
+    DateOnly? WeekStart = null,
+    string? HardestCode = null,
+    string? WantParentCode = null,
+    string? WishVi = null);
+
+public sealed record WeekPlaybookDto(
+    DateOnly WeekStart,
+    DateOnly AsOfDate,
+    string? PatternCode,
+    string? PatternTitleVi,
+    string? PatternWhyVi,
+    string? TacticCode,
+    string? TacticLabelVi,
+    string? ChildCueVi,
+    string? ParentAdviceVi,
+    string ParentStrategyTipVi,
+    ChildVoiceWeekDto? ChildVoice,
+    IReadOnlyList<BehaviorPatternCardDto> Catalog,
+    IReadOnlyList<BehaviorPatternCardDto> ActivePatterns,
+    int ParentNudgesThisWeek,
+    int SelfStartsThisWeek);
 
 public sealed record BehaviorCoachDto(
     DateOnly FlowDate,
@@ -198,5 +243,16 @@ public interface IFamilyBehaviorService
         Guid familyId,
         Guid commitmentId,
         SubmitRetrievalCheckRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<WeekPlaybookDto> GetWeekPlaybookAsync(
+        Guid familyId,
+        Guid? memberId = null,
+        DateOnly? asOf = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ChildVoiceWeekDto> SubmitChildVoiceWeekAsync(
+        Guid familyId,
+        SubmitChildVoiceWeekRequest request,
         CancellationToken cancellationToken = default);
 }

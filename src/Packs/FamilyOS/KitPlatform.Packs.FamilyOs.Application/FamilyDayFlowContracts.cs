@@ -72,7 +72,9 @@ public sealed record CommitmentDto(
     string? ParentAdviceVi = null,
     string? EveningRiskBand = null,
     string? EveningRiskLabelVi = null,
-    string? EveningRiskActionVi = null);
+    string? EveningRiskActionVi = null,
+    string? BehaviorPatternCode = null,
+    string? BehaviorTacticCode = null);
 
 public sealed record EnsureDayFlowRequest(
     DateOnly? FlowDate,
