@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-02T03:54:54.657Z",
+  "generatedAt": "2026-08-02T08:37:44.120Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 149,
-    "todayPageViews": 100,
-    "todayRequests": 230,
-    "last24hVisitors": 503,
-    "last24hPageViews": 548,
-    "last24hRequests": 1261
+    "todayVisitors": 221,
+    "todayPageViews": 167,
+    "todayRequests": 350,
+    "last24hVisitors": 468,
+    "last24hPageViews": 491,
+    "last24hRequests": 1025
   },
   "hourly": [
-    {
-      "time": "2026-08-01T04:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-01T05:00:00Z",
-      "visitors": 18,
-      "requests": 22
-    },
-    {
-      "time": "2026-08-01T06:00:00Z",
-      "visitors": 17,
-      "requests": 74
-    },
-    {
-      "time": "2026-08-01T07:00:00Z",
-      "visitors": 125,
-      "requests": 190
-    },
-    {
-      "time": "2026-08-01T08:00:00Z",
-      "visitors": 36,
-      "requests": 71
-    },
     {
       "time": "2026-08-01T09:00:00Z",
       "visitors": 26,
@@ -128,8 +103,33 @@
     },
     {
       "time": "2026-08-02T03:00:00Z",
-      "visitors": 86,
-      "requests": 120
+      "visitors": 97,
+      "requests": 135
+    },
+    {
+      "time": "2026-08-02T04:00:00Z",
+      "visitors": 19,
+      "requests": 21
+    },
+    {
+      "time": "2026-08-02T05:00:00Z",
+      "visitors": 18,
+      "requests": 21
+    },
+    {
+      "time": "2026-08-02T06:00:00Z",
+      "visitors": 18,
+      "requests": 18
+    },
+    {
+      "time": "2026-08-02T07:00:00Z",
+      "visitors": 28,
+      "requests": 41
+    },
+    {
+      "time": "2026-08-02T08:00:00Z",
+      "visitors": 6,
+      "requests": 6
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-08-02",
-      "visitors": 149,
-      "pageViews": 100,
-      "requests": 230
+      "visitors": 221,
+      "pageViews": 167,
+      "requests": 350
     }
   ],
   "topPages": [
     {
       "path": "/vi/tin-tuc/so-tay-quan-tri-chu-nha-thuoc-nen-lam-gi-moi-ngay-de-van-hanh-tu-chu/",
-      "views": 280
-    },
-    {
-      "path": "/vi/tin-tuc/competency-score-thay-doi-cach-danh-gia-nhan-vien/",
-      "views": 193
+      "views": 341
     },
     {
       "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-gi-moi-ngay.png",
-      "views": 153
+      "views": 158
+    },
+    {
+      "path": "/vi/tin-tuc/competency-score-thay-doi-cach-danh-gia-nhan-vien/",
+      "views": 113
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 102
-    },
-    {
-      "path": "/images/tin-tuc/thay-doi-cach-danh-gia-nhan-vien.png",
-      "views": 92
+      "views": 66
     },
     {
       "path": "/images/logo.png",
-      "views": 43
+      "views": 42
+    },
+    {
+      "path": "/images/tin-tuc/thay-doi-cach-danh-gia-nhan-vien.png",
+      "views": 34
     },
     {
       "path": "/",
-      "views": 33
+      "views": 32
     },
     {
       "path": "/robots.txt",
-      "views": 22
-    },
-    {
-      "path": "/images/tin-tuc/cach-xay-dung-quy-trinh-van-hanh.png",
-      "views": 21
+      "views": 25
     },
     {
       "path": "/vi/",
-      "views": 21
+      "views": 20
+    },
+    {
+      "path": "/images/tin-tuc/cach-xay-dung-quy-trinh-van-hanh.png",
+      "views": 19
     },
     {
       "path": "/api/stats",
       "views": 19
     },
     {
+      "path": "/sitemap-index.xml",
+      "views": 12
+    },
+    {
       "path": "/images/tin-tuc/nhung-sai-lam-pho-bien.png",
-      "views": 18
+      "views": 12
     },
     {
       "path": "/favicon.svg",
-      "views": 16
-    },
-    {
-      "path": "/images/tin-tuc/giup-danh-gia-nang-luc-thuc-te.png",
-      "views": 16
+      "views": 11
     },
     {
       "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 15
+      "views": 11
     }
   ]
 }
