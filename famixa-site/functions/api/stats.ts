@@ -32,6 +32,20 @@ type GraphQlResponse = {
   errors?: Array<{ message?: string }>;
 };
 
+type StatsHourRow = {
+  time: string;
+  visitors: number;
+  requests: number;
+  pageViews: number;
+};
+
+type StatsDayRow = {
+  date: string;
+  visitors: number;
+  pageViews: number;
+  requests: number;
+};
+
 const STATS_QUERY = `
 query FamixaStats($zoneTag: String!, $hStart: Time!, $hEnd: Time!, $dStart: Date!, $dEnd: Date!) {
   viewer {
@@ -78,14 +92,6 @@ query FamixaStats($zoneTag: String!, $hStart: Time!, $hEnd: Time!, $dStart: Date
 }
 `;
 
-import {
-  buildTodaySummary,
-  mapDailyRows,
-  mapHourlyRows,
-  mergeDailyWithVnToday,
-  vnDateString,
-} from '../_lib/stats-vn-today';
-
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
@@ -94,6 +100,19 @@ function json(data: unknown, status = 200): Response {
       'Cache-Control': 'no-store',
     },
   });
+}
+
+function vnDateString(date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+function vnDateOfIso(isoTime: string): string {
+  return vnDateString(new Date(isoTime));
 }
 
 function addDays(dateStr: string, days: number): string {
@@ -105,6 +124,85 @@ function addDays(dateStr: string, days: number): string {
 
 function toIsoTime(date: Date): string {
   return date.toISOString();
+}
+
+function mapHourlyRows(
+  hours?: Array<{
+    dimensions?: { datetime?: string };
+    uniq?: { uniques?: number };
+    sum?: { requests?: number; pageViews?: number };
+  }>,
+): StatsHourRow[] {
+  return (hours ?? []).map((row) => ({
+    time: row.dimensions?.datetime ?? '',
+    visitors: row.uniq?.uniques ?? 0,
+    requests: row.sum?.requests ?? 0,
+    pageViews: row.sum?.pageViews ?? 0,
+  }));
+}
+
+function mapDailyRows(
+  days?: Array<{
+    dimensions?: { date?: string };
+    uniq?: { uniques?: number };
+    sum?: { requests?: number; pageViews?: number };
+  }>,
+): StatsDayRow[] {
+  return (days ?? []).map((row) => ({
+    date: row.dimensions?.date ?? '',
+    visitors: row.uniq?.uniques ?? 0,
+    pageViews: row.sum?.pageViews ?? 0,
+    requests: row.sum?.requests ?? 0,
+  }));
+}
+
+function aggregateVnToday(hourly: StatsHourRow[], todayVn: string): StatsDayRow {
+  const rows = hourly.filter((row) => row.time && vnDateOfIso(row.time) === todayVn);
+  return {
+    date: todayVn,
+    visitors: rows.reduce((sum, row) => sum + row.visitors, 0),
+    pageViews: rows.reduce((sum, row) => sum + row.pageViews, 0),
+    requests: rows.reduce((sum, row) => sum + row.requests, 0),
+  };
+}
+
+function buildTodaySummary(hourly: StatsHourRow[], daily: StatsDayRow[], todayVn: string) {
+  const dailyToday = daily.find((row) => row.date === todayVn);
+  const fromHours = aggregateVnToday(hourly, todayVn);
+
+  if (dailyToday && (dailyToday.requests > 0 || dailyToday.visitors > 0)) {
+    return {
+      todayVisitors: dailyToday.visitors,
+      todayPageViews: dailyToday.pageViews,
+      todayRequests: dailyToday.requests,
+    };
+  }
+
+  return {
+    todayVisitors: fromHours.visitors,
+    todayPageViews: fromHours.pageViews,
+    todayRequests: fromHours.requests,
+  };
+}
+
+function mergeDailyWithVnToday(
+  daily: StatsDayRow[],
+  hourly: StatsHourRow[],
+  todayVn: string,
+): StatsDayRow[] {
+  const fromHours = aggregateVnToday(hourly, todayVn);
+  const withoutToday = daily.filter((row) => row.date !== todayVn);
+  const merged = [...withoutToday];
+
+  if (fromHours.requests > 0 || fromHours.visitors > 0 || fromHours.pageViews > 0) {
+    merged.push(fromHours);
+  } else {
+    const dailyToday = daily.find((row) => row.date === todayVn);
+    if (dailyToday) merged.push(dailyToday);
+  }
+
+  merged.sort((a, b) => a.date.localeCompare(b.date));
+  return merged.slice(-7);
 }
 
 function readAuth(request: Request): string | null {
@@ -173,7 +271,11 @@ async function fetchZoneStats(env: CfEnv) {
       last24hPageViews: hourTotal?.sum?.pageViews ?? 0,
       last24hRequests: hourTotal?.sum?.requests ?? 0,
     },
-    hourly: hourly.map(({ time, visitors, requests }) => ({ time, visitors, requests })),
+    hourly: hourly.map((row) => ({
+      time: row.time,
+      visitors: row.visitors,
+      requests: row.requests,
+    })),
     daily: dailyWithToday,
     topPages: (zone.topPages ?? []).map((row) => ({
       path: row.dimensions?.clientRequestPath ?? '/',
@@ -219,8 +321,7 @@ export const onRequestGet: PagesFunction<CfEnv> = async (context) => {
     if (message === 'MISSING_CONFIG') {
       return json(
         {
-          error:
-            'Chưa cấu hình CF_ZONE_ID hoặc CLOUDFLARE_API_TOKEN trên Cloudflare Pages.',
+          error: 'Chưa cấu hình CF_ZONE_ID hoặc CLOUDFLARE_API_TOKEN trên Cloudflare Pages.',
           configured: envStatus(context.env),
           hint: 'Thêm CF_ZONE_ID (zone famixa.vn) và CLOUDFLARE_API_TOKEN (Analytics Read), rồi Retry deployment.',
         },
