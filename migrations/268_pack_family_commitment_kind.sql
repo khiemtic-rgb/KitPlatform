@@ -1,12 +1,11 @@
--- KitPlatform 268: Evidence P0 — commitment_kind + evidence_policy
+-- KitPlatform 268: Evidence P0 - commitment_kind + evidence_policy
 -- Layer: Pack:FamilyOS
--- Depends on: 241_pack_family_behavior_os_wave2.sql, 199_pack_family_commitment_evidence.sql
 -- Manifest: migration-files.family-os.txt only
 
 ALTER TABLE pack_family.commitment_template
   ADD COLUMN IF NOT EXISTS commitment_kind VARCHAR(32) NOT NULL DEFAULT 'chore';
 
-DO 
+DO $mig$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint WHERE conname = 'ck_commitment_template_kind'
@@ -15,7 +14,8 @@ BEGIN
       ADD CONSTRAINT ck_commitment_template_kind
       CHECK (commitment_kind IN ('chore', 'study_focus', 'relation'));
   END IF;
-END ;
+END
+$mig$;
 
 COMMENT ON COLUMN pack_family.commitment_template.commitment_kind IS
   'Evidence P0: chore | study_focus | relation';
@@ -26,7 +26,7 @@ ALTER TABLE pack_family.commitment
   ADD COLUMN IF NOT EXISTS evidence_satisfied_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS evidence_satisfied_by VARCHAR(32);
 
-DO 
+DO $mig$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint WHERE conname = 'ck_commitment_kind'
@@ -42,7 +42,8 @@ BEGIN
       ADD CONSTRAINT ck_commitment_evidence_policy
       CHECK (evidence_policy IN ('optional', 'required_soft', 'required_hard'));
   END IF;
-END ;
+END
+$mig$;
 
 COMMENT ON COLUMN pack_family.commitment.commitment_kind IS
   'Evidence P0 snapshot from template.';
