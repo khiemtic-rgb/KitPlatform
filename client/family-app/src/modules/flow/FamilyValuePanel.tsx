@@ -28,7 +28,6 @@ import {
   fetchFamilyRituals,
   checkinFamilyRitual,
   fetchWeekPlaybook,
-  submitChildVoiceWeek,
   fetchFamilyBehaviorTwin,
   type FamilyRitual,
   type WeekPlaybook,
@@ -51,10 +50,9 @@ import { resolveParentCoach } from '@/shared/value/resolve-parenting-coach';
 import { dnaCaptionForHealth } from '@/shared/value/blueprint-context';
 import { isCapabilityPaywallError } from '@/shared/billing/capability-error';
 import {
-  CHILD_VOICE_DEFAULTS,
-  CHILD_VOICE_HARDEST_OPTIONS,
-  CHILD_VOICE_WANT_OPTIONS,
   CHILD_VOICE_WEEK_COPY,
+  childVoiceHardestLabel,
+  childVoiceWantLabel,
 } from '@/shared/flow/child-voice-week';
 
 type Props = {
@@ -151,11 +149,6 @@ export function FamilyValuePanel({
   const [ritualBusy, setRitualBusy] = useState<string | null>(null);
   const [weekPlaybook, setWeekPlaybook] = useState<WeekPlaybook | null>(null);
   const [familyTwin, setFamilyTwin] = useState<FamilyBehaviorTwin | null>(null);
-  const [voiceHardest, setVoiceHardest] = useState<string>(CHILD_VOICE_DEFAULTS.hardest);
-  const [voiceWant, setVoiceWant] = useState<string>(CHILD_VOICE_DEFAULTS.want);
-  const [voiceWish, setVoiceWish] = useState('');
-  const [voiceBusy, setVoiceBusy] = useState(false);
-  const [voiceMsg, setVoiceMsg] = useState<string | null>(null);
   const [viewLocal, setViewLocal] = useState<FvView>(
     () => (focusAnchorId ? VIEW_BY_ANCHOR[focusAnchorId] : undefined) ?? 'hub',
   );
@@ -439,34 +432,6 @@ export function FamilyValuePanel({
     return fromFlow ?? null;
   }, [coachScope, flow.commitments]);
 
-  const submitVoice = async () => {
-    if (!voiceMemberId || voiceBusy) return;
-    setVoiceBusy(true);
-    setVoiceMsg(null);
-    try {
-      const row = await submitChildVoiceWeek(familyId, {
-        memberId: voiceMemberId,
-        weekStart: weekPlaybook?.weekStart,
-        hardestCode: voiceHardest,
-        wantParentCode: voiceWant,
-        wishVi: voiceWish.trim() || undefined,
-      });
-      setVoiceMsg(
-        row.parentTipsVi[0]
-          ? `Đã lưu — gợi ý: ${row.parentTipsVi[0]}`
-          : 'Đã lưu tiếng nói tuần này.',
-      );
-      const refreshed = await fetchWeekPlaybook(familyId, {
-        memberId: voiceMemberId,
-        asOf: flow.flowDate,
-      });
-      setWeekPlaybook(refreshed);
-    } catch {
-      setVoiceMsg(CHILD_VOICE_WEEK_COPY.sendFailed);
-    } finally {
-      setVoiceBusy(false);
-    }
-  };
   const coach = resolvedCoach?.primary ?? null;
   const healthDnaCaption = useMemo(() => dnaCaptionForHealth(dna), [dna]);
 
@@ -1299,85 +1264,56 @@ export function FamilyValuePanel({
                     <span aria-hidden>💬</span> {CHILD_VOICE_WEEK_COPY.title}
                   </h3>
                   <p className="fv-promise" style={{ marginTop: 6, marginBottom: 0 }}>
-                    {CHILD_VOICE_WEEK_COPY.subtitle}
+                    {CHILD_VOICE_WEEK_COPY.parentSubtitle}
                   </p>
                 </div>
               </div>
               {weekPlaybook.childVoice?.submittedAt ? (
                 <div className="kv2-t-voice is-done">
                   <ul className="fv-outcomes" style={{ margin: 0 }}>
+                    {childVoiceHardestLabel(weekPlaybook.childVoice.hardestCode) ? (
+                      <li>
+                        <span aria-hidden>💬</span>
+                        <span>
+                          <strong>Khó tuần này:</strong>{' '}
+                          {childVoiceHardestLabel(weekPlaybook.childVoice.hardestCode)}
+                        </span>
+                      </li>
+                    ) : null}
+                    {childVoiceWantLabel(weekPlaybook.childVoice.wantParentCode) ? (
+                      <li>
+                        <span aria-hidden>🤲</span>
+                        <span>
+                          <strong>Con muốn bố mẹ:</strong>{' '}
+                          {childVoiceWantLabel(weekPlaybook.childVoice.wantParentCode)}
+                        </span>
+                      </li>
+                    ) : null}
+                    {weekPlaybook.childVoice.wishVi?.trim() ? (
+                      <li>
+                        <span aria-hidden>✨</span>
+                        <span>
+                          <strong>Đề xuất:</strong> {weekPlaybook.childVoice.wishVi.trim()}
+                        </span>
+                      </li>
+                    ) : null}
                     {(weekPlaybook.childVoice.parentTipsVi.length
                       ? weekPlaybook.childVoice.parentTipsVi
-                      : ['Đã nhận tiếng nói tuần này.']
+                      : []
                     ).map((t) => (
                       <li key={t}>
-                        <span aria-hidden>💬</span>
-                        {t}
+                        <span aria-hidden>·</span>
+                        <span>{t}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
-              ) : voiceMemberId ? (
-                <div className="kv2-t-voice">
-                  <label className="kv2-t-voice-field">
-                    <span>{CHILD_VOICE_WEEK_COPY.hardestLabel}</span>
-                    <span className="kv2-t-voice-select">
-                      <select
-                        value={voiceHardest}
-                        onChange={(e) => setVoiceHardest(e.target.value)}
-                      >
-                        {CHILD_VOICE_HARDEST_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                      <em className="kv2-t-voice-chevron" aria-hidden>
-                        ⌄
-                      </em>
-                    </span>
-                  </label>
-                  <label className="kv2-t-voice-field">
-                    <span>{CHILD_VOICE_WEEK_COPY.wantLabel}</span>
-                    <span className="kv2-t-voice-select">
-                      <select
-                        value={voiceWant}
-                        onChange={(e) => setVoiceWant(e.target.value)}
-                      >
-                        {CHILD_VOICE_WANT_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                      <em className="kv2-t-voice-chevron" aria-hidden>
-                        ⌄
-                      </em>
-                    </span>
-                  </label>
-                  <label className="kv2-t-voice-field">
-                    <span>{CHILD_VOICE_WEEK_COPY.wishLabel}</span>
-                    <input
-                      value={voiceWish}
-                      onChange={(e) => setVoiceWish(e.target.value)}
-                      placeholder={CHILD_VOICE_WEEK_COPY.wishPlaceholder}
-                      maxLength={200}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className="kv2-t-voice-btn"
-                    disabled={voiceBusy}
-                    onClick={() => void submitVoice()}
-                  >
-                    {voiceBusy
-                      ? CHILD_VOICE_WEEK_COPY.submitting
-                      : CHILD_VOICE_WEEK_COPY.submit}
-                  </button>
-                  {voiceMsg ? <p className="fv-promise">{voiceMsg}</p> : null}
-                </div>
               ) : (
-                <p className="fv-promise">Chọn một con trên board để gửi tiếng nói tuần.</p>
+                <p className="fv-promise">
+                  {voiceMemberId
+                    ? CHILD_VOICE_WEEK_COPY.parentWaiting
+                    : 'Chọn một con trên board để xem lời tuần này.'}
+                </p>
               )}
             </div>
           </div>

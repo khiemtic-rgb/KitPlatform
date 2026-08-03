@@ -3,6 +3,8 @@
 export const CHILD_VOICE_WEEK_COPY = {
   title: 'ĐIỀU CON MUỐN NÓI',
   subtitle: 'Không phải kiểm tra — chỉ để nhà mình hiểu con hơn một chút.',
+  parentSubtitle: 'Lời con gửi tuần này — bố mẹ chỉ lắng nghe, không trả lời thay con.',
+  parentWaiting: 'Con chưa gửi lời tuần này. Nhắc nhẹ trên app của con khi tiện — đừng điền hộ.',
   hardestLabel: 'Tuần này việc nào hơi khó với con?',
   wantLabel: 'Con thấy bố mẹ giúp kiểu nào dễ chịu hơn?',
   wishLabel: 'Con muốn đề xuất gì thêm không?',
@@ -33,3 +35,13 @@ export const CHILD_VOICE_DEFAULTS = {
   hardest: 'evening',
   want: 'praise',
 } as const;
+
+export function childVoiceHardestLabel(code?: string | null): string | undefined {
+  if (!code) return undefined;
+  return CHILD_VOICE_HARDEST_OPTIONS.find((o) => o.value === code)?.label ?? code;
+}
+
+export function childVoiceWantLabel(code?: string | null): string | undefined {
+  if (!code) return undefined;
+  return CHILD_VOICE_WANT_OPTIONS.find((o) => o.value === code)?.label ?? code;
+}
