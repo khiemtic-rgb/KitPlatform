@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-03T04:04:36.248Z",
+  "generatedAt": "2026-08-03T10:12:02.495Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 152,
-    "todayPageViews": 75,
-    "todayRequests": 443,
-    "last24hVisitors": 191,
-    "last24hPageViews": 104,
-    "last24hRequests": 750
+    "todayVisitors": 158,
+    "todayPageViews": 342,
+    "todayRequests": 922,
+    "last24hVisitors": 179,
+    "last24hPageViews": 350,
+    "last24hRequests": 1039
   },
   "hourly": [
-    {
-      "time": "2026-08-02T05:00:00Z",
-      "visitors": 2,
-      "requests": 47
-    },
-    {
-      "time": "2026-08-02T06:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-02T07:00:00Z",
-      "visitors": 4,
-      "requests": 22
-    },
-    {
-      "time": "2026-08-02T08:00:00Z",
-      "visitors": 5,
-      "requests": 45
-    },
-    {
-      "time": "2026-08-02T09:00:00Z",
-      "visitors": 20,
-      "requests": 82
-    },
-    {
-      "time": "2026-08-02T10:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
     {
       "time": "2026-08-02T11:00:00Z",
       "visitors": 1,
@@ -120,6 +90,41 @@
       "time": "2026-08-03T03:00:00Z",
       "visitors": 6,
       "requests": 58
+    },
+    {
+      "time": "2026-08-03T04:00:00Z",
+      "visitors": 5,
+      "requests": 29
+    },
+    {
+      "time": "2026-08-03T05:00:00Z",
+      "visitors": 2,
+      "requests": 13
+    },
+    {
+      "time": "2026-08-03T06:00:00Z",
+      "visitors": 6,
+      "requests": 69
+    },
+    {
+      "time": "2026-08-03T07:00:00Z",
+      "visitors": 2,
+      "requests": 142
+    },
+    {
+      "time": "2026-08-03T08:00:00Z",
+      "visitors": 4,
+      "requests": 180
+    },
+    {
+      "time": "2026-08-03T09:00:00Z",
+      "visitors": 4,
+      "requests": 51
+    },
+    {
+      "time": "2026-08-03T10:00:00Z",
+      "visitors": 1,
+      "requests": 6
     }
   ],
   "daily": [
@@ -161,47 +166,43 @@
     },
     {
       "date": "2026-08-03",
-      "visitors": 182,
-      "pageViews": 79,
-      "requests": 493
+      "visitors": 206,
+      "pageViews": 347,
+      "requests": 983
     }
   ],
   "topPages": [
     {
-      "path": "/cdn-cgi/rum",
-      "views": 89
-    },
-    {
       "path": "/vi/goi-cha-me/vi-sao-con-khong-nghe-loi-giai-ma-tam-ly-va-giai-phap-de-con-tu-giac/",
-      "views": 67
+      "views": 195
     },
     {
-      "path": "/api/stats",
-      "views": 56
+      "path": "/vi/goi-cha-me/",
+      "views": 137
     },
     {
-      "path": "/stats-snapshot.json",
-      "views": 50
+      "path": "/feed.json",
+      "views": 131
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 45
     },
     {
       "path": "/images/blog/vi-sao-con-khong-nghe-loi.png",
-      "views": 39
+      "views": 43
     },
     {
-      "path": "/vi/thong-ke/",
-      "views": 31
+      "path": "/api/stats",
+      "views": 40
     },
     {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 30
+      "path": "/stats-snapshot.json",
+      "views": 29
     },
     {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 25
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 22
+      "path": "/sitemap.xml",
+      "views": 26
     },
     {
       "path": "/_next/static/css/4e38ee1c6419eb50.css",
@@ -209,10 +210,10 @@
     },
     {
       "path": "/robots.txt",
-      "views": 21
+      "views": 20
     },
     {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "path": "/_next/static/media/8e9860b6e62d6359-s.woff2",
       "views": 19
     },
     {
@@ -220,12 +221,16 @@
       "views": 18
     },
     {
-      "path": "/_next/static/media/8e9860b6e62d6359-s.woff2",
-      "views": 17
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 18
     },
     {
       "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
       "views": 17
+    },
+    {
+      "path": "/vi/thong-ke/",
+      "views": 16
     }
   ]
 }
