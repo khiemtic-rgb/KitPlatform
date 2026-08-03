@@ -11,7 +11,7 @@ import {
   mapHourlyRows,
   mergeDailyWithVnToday,
   vnDateString,
-} from '../lib/stats-vn-today.mjs';
+} from '../lib/stats-vn-today.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');

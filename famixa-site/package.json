@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start --port 3002",
     "lint": "next lint",
-    "fetch:stats-snapshot": "node scripts/fetch-stats-snapshot.mjs",
+    "fetch:stats-snapshot": "node --experimental-strip-types scripts/fetch-stats-snapshot.mjs",
     "shot:guide-unlock": "node scripts/shot-guide-unlock.mjs",
     "shot:guide-session": "node scripts/shot-guide-session.mjs"
   },

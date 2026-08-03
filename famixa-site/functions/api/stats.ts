@@ -84,7 +84,7 @@ import {
   mapHourlyRows,
   mergeDailyWithVnToday,
   vnDateString,
-} from '../../lib/stats-vn-today.mjs';
+} from '../../lib/stats-vn-today';
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {

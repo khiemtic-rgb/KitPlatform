@@ -1,6 +1,32 @@
 ﻿// Cloudflare daily buckets use UTC; VN calendar day needs hourly rollup after midnight +7.
 
-export function vnDateString(date = new Date()) {
+export type StatsHourRow = {
+  time: string;
+  visitors: number;
+  requests: number;
+  pageViews: number;
+};
+
+export type StatsDayRow = {
+  date: string;
+  visitors: number;
+  pageViews: number;
+  requests: number;
+};
+
+type CfHour = {
+  dimensions?: { datetime?: string };
+  uniq?: { uniques?: number };
+  sum?: { requests?: number; pageViews?: number };
+};
+
+type CfDay = {
+  dimensions?: { date?: string };
+  uniq?: { uniques?: number };
+  sum?: { requests?: number; pageViews?: number };
+};
+
+export function vnDateString(date: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Ho_Chi_Minh',
     year: 'numeric',
@@ -9,11 +35,11 @@ export function vnDateString(date = new Date()) {
   }).format(date);
 }
 
-export function vnDateOfIso(isoTime) {
+export function vnDateOfIso(isoTime: string): string {
   return vnDateString(new Date(isoTime));
 }
 
-export function mapHourlyRows(hours) {
+export function mapHourlyRows(hours: CfHour[] | undefined): StatsHourRow[] {
   return (hours ?? []).map((row) => ({
     time: row.dimensions?.datetime ?? '',
     visitors: row.uniq?.uniques ?? 0,
@@ -22,7 +48,7 @@ export function mapHourlyRows(hours) {
   }));
 }
 
-export function mapDailyRows(days) {
+export function mapDailyRows(days: CfDay[] | undefined): StatsDayRow[] {
   return (days ?? []).map((row) => ({
     date: row.dimensions?.date ?? '',
     visitors: row.uniq?.uniques ?? 0,
@@ -31,7 +57,7 @@ export function mapDailyRows(days) {
   }));
 }
 
-export function aggregateVnToday(hourly, todayVn) {
+export function aggregateVnToday(hourly: StatsHourRow[], todayVn: string): StatsDayRow {
   const rows = hourly.filter((row) => row.time && vnDateOfIso(row.time) === todayVn);
   return {
     date: todayVn,
@@ -41,7 +67,7 @@ export function aggregateVnToday(hourly, todayVn) {
   };
 }
 
-export function buildTodaySummary(hourly, daily, todayVn) {
+export function buildTodaySummary(hourly: StatsHourRow[], daily: StatsDayRow[], todayVn: string) {
   const dailyToday = daily.find((row) => row.date === todayVn);
   const fromHours = aggregateVnToday(hourly, todayVn);
 
@@ -60,7 +86,11 @@ export function buildTodaySummary(hourly, daily, todayVn) {
   };
 }
 
-export function mergeDailyWithVnToday(daily, hourly, todayVn) {
+export function mergeDailyWithVnToday(
+  daily: StatsDayRow[],
+  hourly: StatsHourRow[],
+  todayVn: string,
+): StatsDayRow[] {
   const fromHours = aggregateVnToday(hourly, todayVn);
   const withoutToday = daily.filter((row) => row.date !== todayVn);
   const merged = [...withoutToday];
