@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-03T15:23:34.395Z",
+  "generatedAt": "2026-08-03T20:08:11.592Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 167,
-    "todayPageViews": 399,
-    "todayRequests": 1048,
-    "last24hVisitors": 177,
-    "last24hPageViews": 404,
-    "last24hRequests": 1109
+    "todayVisitors": 8,
+    "todayPageViews": 2,
+    "todayRequests": 12,
+    "last24hVisitors": 188,
+    "last24hPageViews": 459,
+    "last24hRequests": 1167
   },
   "hourly": [
-    {
-      "time": "2026-08-02T17:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-02T18:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-02T19:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-02T20:00:00Z",
-      "visitors": 6,
-      "requests": 40
-    },
     {
       "time": "2026-08-02T21:00:00Z",
       "visitors": 5,
@@ -120,15 +100,34 @@
       "time": "2026-08-03T14:00:00Z",
       "visitors": 3,
       "requests": 57
+    },
+    {
+      "time": "2026-08-03T15:00:00Z",
+      "visitors": 18,
+      "requests": 88
+    },
+    {
+      "time": "2026-08-03T16:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-03T17:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-03T18:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-03T19:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
-    {
-      "date": "2026-07-28",
-      "visitors": 225,
-      "pageViews": 743,
-      "requests": 1458
-    },
     {
       "date": "2026-07-29",
       "visitors": 126,
@@ -161,35 +160,41 @@
     },
     {
       "date": "2026-08-03",
-      "visitors": 224,
-      "pageViews": 404,
-      "requests": 1109
+      "visitors": 184,
+      "pageViews": 456,
+      "requests": 1152
+    },
+    {
+      "date": "2026-08-04",
+      "visitors": 8,
+      "pageViews": 2,
+      "requests": 12
     }
   ],
   "topPages": [
     {
       "path": "/vi/goi-cha-me/vi-sao-con-khong-nghe-loi-giai-ma-tam-ly-va-giai-phap-de-con-tu-giac/",
-      "views": 221
+      "views": 247
     },
     {
       "path": "/vi/goi-cha-me/",
-      "views": 163
+      "views": 189
     },
     {
       "path": "/feed.json",
-      "views": 157
+      "views": 183
+    },
+    {
+      "path": "/images/blog/vi-sao-con-khong-nghe-loi.png",
+      "views": 48
     },
     {
       "path": "/cdn-cgi/rum",
       "views": 48
     },
     {
-      "path": "/images/blog/vi-sao-con-khong-nghe-loi.png",
-      "views": 47
-    },
-    {
       "path": "/api/stats",
-      "views": 36
+      "views": 38
     },
     {
       "path": "/sitemap.xml",
@@ -200,11 +205,15 @@
       "views": 25
     },
     {
-      "path": "/_next/static/css/4e38ee1c6419eb50.css",
-      "views": 21
+      "path": "/",
+      "views": 22
     },
     {
       "path": "/robots.txt",
+      "views": 22
+    },
+    {
+      "path": "/_next/static/css/4e38ee1c6419eb50.css",
       "views": 21
     },
     {
@@ -212,20 +221,16 @@
       "views": 20
     },
     {
-      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
+      "path": "/vi/thong-ke/",
       "views": 19
     },
     {
-      "path": "/vi/thong-ke/",
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
       "views": 19
     },
     {
       "path": "/_next/static/media/8e9860b6e62d6359-s.woff2",
       "views": 19
-    },
-    {
-      "path": "/",
-      "views": 18
     }
   ]
 }
