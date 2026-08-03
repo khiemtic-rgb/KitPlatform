@@ -5,6 +5,13 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  buildTodaySummary,
+  mapDailyRows,
+  mapHourlyRows,
+  mergeDailyWithVnToday,
+  vnDateString,
+} from '../lib/stats-vn-today.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
@@ -22,7 +29,7 @@ query FamixaStats($zoneTag: String!, $hStart: Time!, $hEnd: Time!, $dStart: Date
       ) {
         dimensions { datetime }
         uniq { uniques }
-        sum { requests }
+        sum { requests, pageViews }
       }
       hourTotal: httpRequests1hGroups(
         limit: 1
@@ -56,15 +63,6 @@ query FamixaStats($zoneTag: String!, $hStart: Time!, $hEnd: Time!, $dStart: Date
   }
 }
 `;
-
-function vnDateString(date = new Date()) {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Ho_Chi_Minh',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(date);
-}
 
 function addDays(dateStr, days) {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -176,31 +174,23 @@ async function fetchStats() {
   }
 
   const hourTotal = zone.hourTotal?.[0];
-  const todayRow = zone.days?.find((row) => row.dimensions?.date === today);
+  const hourly = mapHourlyRows(zone.hours);
+  const daily = mapDailyRows(zone.days);
+  const todaySummary = buildTodaySummary(hourly, daily, today);
+  const dailyWithToday = mergeDailyWithVnToday(daily, hourly, today);
 
   writeSnapshot({
     ok: true,
     generatedAt: now.toISOString(),
     timezone: 'Asia/Ho_Chi_Minh',
     summary: {
-      todayVisitors: todayRow?.uniq?.uniques ?? 0,
-      todayPageViews: todayRow?.sum?.pageViews ?? 0,
-      todayRequests: todayRow?.sum?.requests ?? 0,
+      ...todaySummary,
       last24hVisitors: hourTotal?.uniq?.uniques ?? 0,
       last24hPageViews: hourTotal?.sum?.pageViews ?? 0,
       last24hRequests: hourTotal?.sum?.requests ?? 0,
     },
-    hourly: (zone.hours ?? []).map((row) => ({
-      time: row.dimensions?.datetime ?? '',
-      visitors: row.uniq?.uniques ?? 0,
-      requests: row.sum?.requests ?? 0,
-    })),
-    daily: (zone.days ?? []).map((row) => ({
-      date: row.dimensions?.date ?? '',
-      visitors: row.uniq?.uniques ?? 0,
-      pageViews: row.sum?.pageViews ?? 0,
-      requests: row.sum?.requests ?? 0,
-    })),
+    hourly: hourly.map(({ time, visitors, requests }) => ({ time, visitors, requests })),
+    daily: dailyWithToday,
     topPages: (zone.topPages ?? []).map((row) => ({
       path: row.dimensions?.clientRequestPath ?? '/',
       views: row.count ?? 0,
