@@ -42,6 +42,7 @@ import {
   fetchRewardRedemptions,
   fulfillRewardRedemption,
   fetchFamilyMoods,
+  upsertMemberMood,
   fetchFamilyMemories,
   fetchFamilyMemoryRecap,
   createFamilyMemory,
@@ -76,6 +77,17 @@ import {
   fetchFamilyBlueprint,
 } from '@/shared/api/family-os.api';
 import { DecisionInboxPanel } from '@/modules/flow/DecisionInboxPanel';
+import { TodayOpenStack, type TodayOpenCtaEvent } from '@/modules/flow/TodayOpenStack';
+import {
+  buildMemoryYarn,
+  buildPendingActions,
+  buildSeenSignals,
+  buildWarmthPulse,
+  dismissWarmth,
+  dismissYarn,
+  isRitualDone,
+  markRitualDone as markTodayOpenRitualDone,
+} from '@/modules/flow/todayOpenSequence';
 import { FamilyDnaCardView } from '@/modules/flow/FamilyDnaCard';
 import { FamilyChallengeCard } from '@/modules/flow/FamilyChallengeCard';
 import { ParentGoalsPanel } from '@/modules/flow/ParentGoalsPanel';
@@ -735,6 +747,8 @@ export function ParentBoardView({
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
   /** Preview nội dung trước khi xác nhận cam kết / duyệt sao. */
   const [verifyPreview, setVerifyPreview] = useState<DayFlowCommitment | null>(null);
+  const [openSeqTick, setOpenSeqTick] = useState(0);
+  const [openRitualBusy, setOpenRitualBusy] = useState(false);
   const [verifyListOpen, setVerifyListOpen] = useState(false);
   const [verifyCheckTodays, setVerifyCheckTodays] = useState(false);
   const [verifyCheckWindow, setVerifyCheckWindow] = useState(false);
@@ -2108,6 +2122,131 @@ export function ParentBoardView({
     });
   };
 
+  const openStackWarmth = useMemo(() => {
+    void openSeqTick;
+    return buildWarmthPulse({
+      role: 'parent',
+      flowDate: flow.flowDate,
+      memberId: parentMembershipId || 'parent',
+      voiceThanks: voiceThanksReceipts,
+      memories: savedMemories,
+      weeklyStory,
+      familyName,
+    });
+  }, [
+    openSeqTick,
+    flow.flowDate,
+    parentMembershipId,
+    voiceThanksReceipts,
+    savedMemories,
+    weeklyStory,
+    familyName,
+  ]);
+
+  const openStackPending = useMemo(
+    () =>
+      buildPendingActions({
+        role: 'parent',
+        commitments: scopedCommitments,
+        partnerInbox,
+      }),
+    [scopedCommitments, partnerInbox],
+  );
+
+  const openStackSeen = useMemo(
+    () =>
+      buildSeenSignals({
+        role: 'parent',
+        voiceThanks: voiceThanksReceipts,
+        awaitingCount: awaitingVerifyItems.length,
+        commitments: scopedCommitments,
+      }),
+    [voiceThanksReceipts, awaitingVerifyItems.length, scopedCommitments],
+  );
+
+  const openStackYarn = useMemo(() => {
+    void openSeqTick;
+    return buildMemoryYarn({
+      role: 'parent',
+      flowDate: flow.flowDate,
+      memberId: parentMembershipId || 'parent',
+      commitments: scopedCommitments,
+      memories: savedMemories,
+    });
+  }, [openSeqTick, flow.flowDate, parentMembershipId, scopedCommitments, savedMemories]);
+
+  const openStackRitualDone = useMemo(() => {
+    void openSeqTick;
+    return isRitualDone(parentMembershipId || 'parent', flow.flowDate);
+  }, [openSeqTick, parentMembershipId, flow.flowDate]);
+
+  const handleOpenStackCta = (ev: TodayOpenCtaEvent) => {
+    if (ev.kind === 'dismiss' || ev.kind === 'dismiss_thanks') {
+      dismissWarmth(parentMembershipId || 'parent', flow.flowDate);
+      if (ev.kind === 'dismiss_thanks' && ev.id) {
+        setDismissedVoiceThanksIds((prev) => (prev.includes(ev.id!) ? prev : [...prev, ev.id!]));
+      }
+      setOpenSeqTick((n) => n + 1);
+      return;
+    }
+    if (ev.kind === 'verify_evidence' || ev.kind === 'approve_stars') {
+      const hit =
+        (ev.id ? scopedCommitments.find((c) => c.id === ev.id) : null) ??
+        awaitingVerifyItems[0] ??
+        null;
+      if (hit) openVerifyPreview(hit);
+      else scrollToMissions('need_help');
+      return;
+    }
+    if (ev.kind === 'open_voice') {
+      setVoiceSheetOpen(true);
+      return;
+    }
+    if (ev.kind === 'ack_partner_voice' && ev.id) {
+      void ackParentVoice(familyId, ev.id, 'read').then(() => setInboxTick((n) => n + 1));
+      return;
+    }
+    if (ev.kind === 'open_memory') {
+      setTab('diary');
+      return;
+    }
+    if (ev.kind === 'scroll_missions') {
+      scrollToMissions('need_help');
+    }
+  };
+
+  const handleOpenStackRitual = async (moodCode: string, warmLineVi: string) => {
+    if (!parentMembershipId || openRitualBusy) return;
+    setOpenRitualBusy(true);
+    try {
+      await upsertMemberMood(familyId, parentMembershipId, {
+        flowDate: flow.flowDate,
+        moodCode,
+        note: warmLineVi,
+      });
+      const toChild =
+        effectiveChildFocus !== 'all'
+          ? childOptions.find((c) => c.key === effectiveChildFocus)
+          : childOptions[0];
+      if (toChild?.key) {
+        await sendParentVoice(familyId, {
+          fromMemberId: parentMembershipId,
+          toMemberId: toChild.key,
+          templateCode: 'praise',
+          bodyVi: warmLineVi,
+          flowDate: flow.flowDate,
+        });
+      }
+      markTodayOpenRitualDone(parentMembershipId, flow.flowDate);
+      setOpenSeqTick((n) => n + 1);
+      setActionToast('Đã gửi ấm cho nhà 💛');
+    } catch {
+      setActionToast('Chưa gửi được — thử lại nhé');
+    } finally {
+      setOpenRitualBusy(false);
+    }
+  };
+
   /** Rời board sang trang khác: nhớ tab đang xem để khi bấm "Quay lại" không rơi về Home. */
   const leaveBoard = (to: string) => {
     try {
@@ -2803,6 +2942,24 @@ export function ParentBoardView({
               <span aria-hidden>👨‍👩‍👧‍👦</span>
               <strong>{houseTeamSummary}</strong>
             </div>
+          ) : null}
+
+          {hasChildren ? (
+            <TodayOpenStack
+              role="parent"
+              warmth={openStackWarmth}
+              pending={openStackPending}
+              seen={openStackSeen}
+              yarn={openStackYarn}
+              ritualDone={openStackRitualDone}
+              ritualBusy={openRitualBusy}
+              onCta={handleOpenStackCta}
+              onRitualComplete={handleOpenStackRitual}
+              onDismissYarn={() => {
+                dismissYarn(parentMembershipId || 'parent', flow.flowDate);
+                setOpenSeqTick((n) => n + 1);
+              }}
+            />
           ) : null}
 
           {partnerInbox.length > 0 ||

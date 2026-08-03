@@ -51,6 +51,17 @@ import {
 import { getApiErrorMessage } from '@/shared/billing/capability-error';
 import { ChildScreenRequestSheet } from '@/modules/flow/ChildScreenRequestSheet';
 import { ChildMissionRequestSheet } from '@/modules/flow/ChildMissionRequestSheet';
+import { TodayOpenStack, type TodayOpenCtaEvent } from '@/modules/flow/TodayOpenStack';
+import {
+  buildMemoryYarn,
+  buildPendingActions,
+  buildSeenSignals,
+  buildWarmthPulse,
+  dismissWarmth,
+  dismissYarn,
+  isRitualDone,
+  markRitualDone,
+} from '@/modules/flow/todayOpenSequence';
 import { withEvidenceAuth } from '@/shared/upload/evidence-url';
 import {
   avatarEmoji,
@@ -1162,6 +1173,8 @@ export function KidFocusView({
   const [moodNote, setMoodNote] = useState('');
   const [moodSaving, setMoodSaving] = useState(false);
   const [moodLoaded, setMoodLoaded] = useState(false);
+  const [openSeqTick, setOpenSeqTick] = useState(0);
+  const [ritualBusy, setRitualBusy] = useState(false);
   const [inboxNudges, setInboxNudges] = useState<TeamNudge[]>([]);
   const [parentVoiceInbox, setParentVoiceInbox] = useState<ParentVoiceMessage[]>([]);
   const [voiceAckBusy, setVoiceAckBusy] = useState<string | null>(null);
@@ -2853,6 +2866,108 @@ export function KidFocusView({
   const primaryParentVoice = unreadParentVoices[0] ?? null;
   const queuedParentVoiceCount = Math.max(0, unreadParentVoices.length - 1);
 
+  const openStackWarmth = useMemo(() => {
+    void openSeqTick;
+    return buildWarmthPulse({
+      role: 'child',
+      flowDate,
+      memberId: childMemberId || 'child',
+      unreadParentVoice: primaryParentVoice,
+      memories: savedMemories,
+      weeklyStory,
+    });
+  }, [
+    openSeqTick,
+    flowDate,
+    childMemberId,
+    primaryParentVoice,
+    savedMemories,
+    weeklyStory,
+  ]);
+
+  const openStackPending = useMemo(
+    () =>
+      buildPendingActions({
+        role: 'child',
+        commitments: items,
+        unreadParentVoice: primaryParentVoice,
+      }),
+    [items, primaryParentVoice],
+  );
+
+  const openStackSeen = useMemo(
+    () =>
+      buildSeenSignals({
+        role: 'child',
+        unreadParentVoice: primaryParentVoice,
+        commitments: items,
+      }),
+    [primaryParentVoice, items],
+  );
+
+  const openStackYarn = useMemo(() => {
+    void openSeqTick;
+    return buildMemoryYarn({
+      role: 'child',
+      flowDate,
+      memberId: childMemberId || 'child',
+      commitments: items,
+      memories: savedMemories,
+    });
+  }, [openSeqTick, flowDate, childMemberId, items, savedMemories]);
+
+  const openStackRitualDone = useMemo(() => {
+    void openSeqTick;
+    return isRitualDone(childMemberId || 'child', flowDate);
+  }, [openSeqTick, childMemberId, flowDate]);
+
+  const handleOpenStackCta = (ev: TodayOpenCtaEvent) => {
+    if (ev.kind === 'dismiss' || ev.kind === 'dismiss_thanks') {
+      dismissWarmth(childMemberId || 'child', flowDate);
+      setOpenSeqTick((n) => n + 1);
+      return;
+    }
+    if (ev.kind === 'ack_parent_voice' && ev.id) {
+      void ackVoiceMessage(ev.id, 'thanks');
+      return;
+    }
+    if (ev.kind === 'open_memory') {
+      setTab('log');
+      return;
+    }
+    if (ev.kind === 'scroll_missions') {
+      setTab('tasks');
+      window.requestAnimationFrame(() => {
+        document.querySelector('.kv2-missions')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  };
+
+  const handleOpenStackRitual = async (moodCode: string, warmLineVi: string) => {
+    if (!childMemberId || ritualBusy) return;
+    setRitualBusy(true);
+    try {
+      await upsertMemberMood(familyId, childMemberId, {
+        flowDate,
+        moodCode,
+        note: warmLineVi,
+      });
+      await sendChildGratitude(familyId, {
+        fromMemberId: childMemberId,
+        flowDate,
+        messageVi: warmLineVi,
+        praiseContext: 'Nghi thức ấm đầu ngày',
+      });
+      markRitualDone(childMemberId, flowDate);
+      setOpenSeqTick((n) => n + 1);
+      setTreasureToast('Đã gửi ấm cho nhà 💛');
+    } catch {
+      setTreasureToast('Chưa gửi được — thử lại nhé');
+    } finally {
+      setRitualBusy(false);
+    }
+  };
+
   /** One unread sibling nudge at a time (align with parent-voice queue). */
   const unreadSiblingNudges = useMemo(() => {
     return inboxNudges
@@ -3296,6 +3411,24 @@ export function KidFocusView({
                   <b style={{ width: `${unlockPct}%` }} />
                 </i>
               </aside>
+
+              {tab === 'home' ? (
+                <TodayOpenStack
+                  role="child"
+                  warmth={openStackWarmth}
+                  pending={openStackPending}
+                  seen={openStackSeen}
+                  yarn={openStackYarn}
+                  ritualDone={openStackRitualDone}
+                  ritualBusy={ritualBusy}
+                  onCta={handleOpenStackCta}
+                  onRitualComplete={handleOpenStackRitual}
+                  onDismissYarn={() => {
+                    dismissYarn(childMemberId || 'child', flowDate);
+                    setOpenSeqTick((n) => n + 1);
+                  }}
+                />
+              ) : null}
 
               {/* Human bond first — one unread voice + reply CTAs before chores noise */}
               {primaryParentVoice ||
