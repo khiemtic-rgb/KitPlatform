@@ -1,4 +1,4 @@
-﻿// Cloudflare daily buckets use UTC; VN calendar day needs hourly rollup after midnight +7.
+// Cloudflare daily buckets use UTC; VN calendar day needs hourly rollup after midnight +7.
 
 export type StatsHourRow = {
   time: string;
@@ -35,7 +35,7 @@ export function vnDateString(date: Date = new Date()): string {
   }).format(date);
 }
 
-export function vnDateOfIso(isoTime: string): string {
+function vnDateOfIso(isoTime: string): string {
   return vnDateString(new Date(isoTime));
 }
 
@@ -57,7 +57,7 @@ export function mapDailyRows(days: CfDay[] | undefined): StatsDayRow[] {
   }));
 }
 
-export function aggregateVnToday(hourly: StatsHourRow[], todayVn: string): StatsDayRow {
+function aggregateVnToday(hourly: StatsHourRow[], todayVn: string): StatsDayRow {
   const rows = hourly.filter((row) => row.time && vnDateOfIso(row.time) === todayVn);
   return {
     date: todayVn,
