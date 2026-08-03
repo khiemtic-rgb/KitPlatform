@@ -1525,6 +1525,65 @@ export async function verifyCommitmentEvidence(
   };
 }
 
+export const EVIDENCE_REJECT_REASONS = [
+  {
+    code: 'wrong_content',
+    labelVi: 'Nội dung không khớp cam kết',
+  },
+  {
+    code: 'not_study',
+    labelVi: 'Không thấy bài / vở / màn hình học',
+  },
+  {
+    code: 'not_todays',
+    labelVi: 'Không phải bài hôm nay',
+  },
+  {
+    code: 'unclear',
+    labelVi: 'Ảnh chưa rõ — cần gửi lại',
+  },
+] as const;
+
+export type EvidenceRejectReasonCode = (typeof EVIDENCE_REJECT_REASONS)[number]['code'];
+
+export function evidenceRejectChildMessageVi(
+  code: EvidenceRejectReasonCode | string,
+  commitmentTitle: string,
+): string {
+  const title = (commitmentTitle || 'việc học').trim() || 'việc học';
+  switch (code) {
+    case 'wrong_content':
+      return `Ảnh «${title}» chưa khớp nội dung cam kết. Con gửi lại bài / vở / màn hình học đúng việc nhé.`;
+    case 'not_study':
+      return `Ảnh «${title}» chưa thấy bài học. Con chụp lại vở / sách / màn hình đang học giúp bố mẹ nhé.`;
+    case 'not_todays':
+      return `Ảnh «${title}» có vẻ không phải bài hôm nay. Con gửi bằng chứng của hôm nay giúp bố mẹ nhé.`;
+    case 'unclear':
+      return `Ảnh «${title}» chưa rõ. Con gửi lại ảnh rõ hơn để bố mẹ xác nhận được sao nhé.`;
+    default:
+      return `Bằng chứng «${title}» chưa đạt. Con gửi lại giúp bố mẹ nhé.`;
+  }
+}
+
+export async function rejectCommitmentEvidence(
+  familyId: string,
+  commitmentId: string,
+  input: { reasonCode: EvidenceRejectReasonCode | string; note?: string },
+): Promise<CommitmentProgressResult> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/commitments/${commitmentId}/reject-evidence`,
+    {
+      reasonCode: input.reasonCode,
+      note: input.note ?? null,
+    },
+  );
+  const commitment = mapCommitment(data);
+  return {
+    commitment,
+    memberStarBalance: commitment.memberStarBalance,
+  };
+}
+
 export async function setCommitmentEvidencePolicy(
   familyId: string,
   commitmentId: string,

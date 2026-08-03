@@ -37,6 +37,10 @@ import {
   type WeeklyStory,
   approveCommitmentStars,
   verifyCommitmentEvidence,
+  rejectCommitmentEvidence,
+  EVIDENCE_REJECT_REASONS,
+  evidenceRejectChildMessageVi,
+  type EvidenceRejectReasonCode,
   fetchMemberStarBalance,
   fetchRewardCatalog,
   fetchRewardRedemptions,
@@ -754,6 +758,8 @@ export function ParentBoardView({
   const [verifyCheckWindow, setVerifyCheckWindow] = useState(false);
   const [verifyCheckMatch, setVerifyCheckMatch] = useState(false);
   const [verifyOverrideDuration, setVerifyOverrideDuration] = useState(false);
+  const [verifyRejectReason, setVerifyRejectReason] = useState<EvidenceRejectReasonCode | ''>('');
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const childMenuRef = useRef<HTMLDivElement>(null);
   const diaryDatesRef = useRef<HTMLDivElement>(null);
@@ -2104,12 +2110,63 @@ export function ParentBoardView({
     }
   };
 
+  const rejectEvidenceItem = async (item: DayFlowCommitment) => {
+    if (!verifyRejectReason) {
+      setVerifyError('Chọn lý do từ chối để con biết cần gửi lại gì.');
+      return;
+    }
+    if (rejectingId === item.id || verifyingId === item.id) return;
+    setRejectingId(item.id);
+    setVerifyError(null);
+    try {
+      await rejectCommitmentEvidence(familyId, item.id, {
+        reasonCode: verifyRejectReason,
+      });
+      if (parentMembershipId && item.memberId) {
+        try {
+          await sendParentVoice(familyId, {
+            fromMemberId: parentMembershipId,
+            toMemberId: item.memberId,
+            templateCode: 'encourage',
+            bodyVi: evidenceRejectChildMessageVi(verifyRejectReason, item.title),
+            flowDate: flow.flowDate,
+          });
+        } catch {
+          /* voice best-effort */
+        }
+      }
+      onRefreshFlow?.();
+      setInboxTick((n) => n + 1);
+      const next = awaitingVerifyItems.find((c) => c.id !== item.id) ?? null;
+      if (next) {
+        openVerifyPreview(next);
+        showDiaryToast(`Đã yêu cầu «${item.title}» gửi lại · còn mục cần duyệt`);
+      } else {
+        setVerifyPreview(null);
+        setVerifyListOpen(false);
+        showDiaryToast(`Đã yêu cầu con gửi lại bằng chứng «${item.title}»`);
+      }
+    } catch (err) {
+      const msg =
+        err && typeof err === 'object' && 'response' in err
+          ? String(
+              (err as { response?: { data?: { message?: string } } }).response?.data
+                ?.message ?? '',
+            )
+          : '';
+      setVerifyError(msg || 'Chưa từ chối được — thử lại nhé.');
+    } finally {
+      setRejectingId(null);
+    }
+  };
+
   const openVerifyPreview = (item: DayFlowCommitment) => {
     setVerifyListOpen(false);
     setVerifyCheckTodays(false);
     setVerifyCheckWindow(false);
     setVerifyCheckMatch(false);
     setVerifyOverrideDuration(false);
+    setVerifyRejectReason('');
     setVerifyError(null);
     setVerifyPreview(item);
   };
@@ -5568,6 +5625,25 @@ export function ParentBoardView({
                       ) : null}
                     </fieldset>
                   ) : null}
+                  {needsEvidence ? (
+                    <fieldset className="ph-verify-reject">
+                      <legend>Nếu chưa đạt — chọn lý do gửi lại</legend>
+                      {EVIDENCE_REJECT_REASONS.map((r) => (
+                        <label key={r.code}>
+                          <input
+                            type="radio"
+                            name={`verify-reject-${item.id}`}
+                            checked={verifyRejectReason === r.code}
+                            onChange={() => {
+                              setVerifyRejectReason(r.code);
+                              setVerifyError(null);
+                            }}
+                          />
+                          {r.labelVi}
+                        </label>
+                      ))}
+                    </fieldset>
+                  ) : null}
                   {verifyError ? (
                     <p className="ph-verify-error" role="alert">
                       {verifyError}
@@ -5584,12 +5660,28 @@ export function ParentBoardView({
                     >
                       Để sau
                     </button>
+                    {needsEvidence ? (
+                      <button
+                        type="button"
+                        className="btn ph-verify-reject-btn"
+                        disabled={
+                          !verifyRejectReason ||
+                          rejectingId === item.id ||
+                          verifyingId === item.id ||
+                          busyId === item.id
+                        }
+                        onClick={() => void rejectEvidenceItem(item)}
+                      >
+                        {rejectingId === item.id ? 'Đang gửi…' : 'Yêu cầu gửi lại'}
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       className="btn btn-primary"
                       disabled={
                         busyId === item.id ||
                         verifyingId === item.id ||
+                        rejectingId === item.id ||
                         (needsEvidence &&
                           (!verifyCheckTodays ||
                             !verifyCheckWindow ||

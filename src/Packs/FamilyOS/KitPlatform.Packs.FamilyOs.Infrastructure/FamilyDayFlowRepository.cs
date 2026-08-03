@@ -704,6 +704,33 @@ internal sealed class FamilyDayFlowRepository
             new { TenantId, CommitmentId = commitmentId });
     }
 
+    public async Task RejectEvidenceForResubmitAsync(
+        Guid commitmentId,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(
+            """
+            UPDATE pack_family.commitment
+            SET status = CASE
+                    WHEN status = 'done' THEN 'in_progress'
+                    ELSE status
+                END,
+                completed_at = NULL,
+                evidence_url = NULL,
+                evidence_uploaded_at = NULL,
+                evidence_satisfied_at = NULL,
+                evidence_satisfied_by = NULL,
+                pending_star_delta = NULL,
+                pending_star_tier = NULL,
+                pending_star_late_minutes = NULL,
+                star_computed_at = NULL,
+                updated_at = NOW()
+            WHERE tenant_id = @TenantId AND id = @CommitmentId AND deleted_at IS NULL
+            """,
+            new { TenantId, CommitmentId = commitmentId });
+    }
+
     public async Task MarkEvidenceSatisfiedAsync(
         Guid commitmentId,
         string satisfiedBy,

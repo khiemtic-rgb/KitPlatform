@@ -141,6 +141,31 @@ public sealed class FamilyOsDayFlowsController : ControllerBase
         }
     }
 
+    /// <summary>Parent rejects study evidence — clears photo so child re-uploads.</summary>
+    [HttpPost("~/api/family-os/families/{familyId:guid}/commitments/{commitmentId:guid}/reject-evidence")]
+    [ProducesResponseType(typeof(CommitmentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<CommitmentDto>> RejectEvidence(
+        Guid familyId,
+        Guid commitmentId,
+        [FromBody] RejectCommitmentEvidenceRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var commitment = await _dayFlows.RejectCommitmentEvidenceAsync(
+                familyId,
+                commitmentId,
+                request ?? new RejectCommitmentEvidenceRequest(""),
+                cancellationToken);
+            return Ok(commitment);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(MapDayFlowError(ex));
+        }
+    }
+
     /// <summary>Set evidence_policy on a day commitment (pilot A4 / required_hard).</summary>
     [HttpPost("~/api/family-os/families/{familyId:guid}/commitments/{commitmentId:guid}/evidence-policy")]
     [ProducesResponseType(typeof(CommitmentDto), StatusCodes.Status200OK)]

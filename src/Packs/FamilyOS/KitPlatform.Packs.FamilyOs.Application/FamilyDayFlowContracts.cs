@@ -109,6 +109,50 @@ public sealed record VerifyCommitmentEvidenceRequest(
     bool OverrideDuration = false,
     string? Note = null);
 
+/// <summary>P0.8 — parent rejects photo evidence; child must re-upload.</summary>
+public static class FamilyEvidenceRejectReasons
+{
+    public const string WrongContent = "wrong_content";
+    public const string NotStudy = "not_study";
+    public const string NotTodays = "not_todays";
+    public const string Unclear = "unclear";
+
+    public static readonly HashSet<string> All = new(StringComparer.OrdinalIgnoreCase)
+    {
+        WrongContent, NotStudy, NotTodays, Unclear,
+    };
+
+    public static string LabelVi(string? code) =>
+        (code ?? "").Trim().ToLowerInvariant() switch
+        {
+            WrongContent => "Nội dung không khớp cam kết",
+            NotStudy => "Không thấy bài / vở / màn hình học",
+            NotTodays => "Không phải bài hôm nay",
+            Unclear => "Ảnh chưa rõ — cần gửi lại",
+            _ => "Bằng chứng chưa đạt",
+        };
+
+    public static string ChildMessageVi(string? code, string commitmentTitle)
+    {
+        var title = string.IsNullOrWhiteSpace(commitmentTitle) ? "việc học" : commitmentTitle.Trim();
+        return (code ?? "").Trim().ToLowerInvariant() switch
+        {
+            WrongContent =>
+                $"Ảnh «{title}» chưa khớp nội dung cam kết. Con gửi lại bài / vở / màn hình học đúng việc nhé.",
+            NotStudy =>
+                $"Ảnh «{title}» chưa thấy bài học. Con chụp lại vở / sách / màn hình đang học giúp bố mẹ nhé.",
+            NotTodays =>
+                $"Ảnh «{title}» có vẻ không phải bài hôm nay. Con gửi bằng chứng của hôm nay giúp bố mẹ nhé.",
+            Unclear =>
+                $"Ảnh «{title}» chưa rõ. Con gửi lại ảnh rõ hơn để bố mẹ xác nhận được sao nhé.",
+            _ =>
+                $"Bằng chứng «{title}» chưa đạt. Con gửi lại giúp bố mẹ nhé.",
+        };
+    }
+}
+
+public sealed record RejectCommitmentEvidenceRequest(string ReasonCode, string? Note = null);
+
 public sealed record AddAdHocCommitmentRequest(
     DateOnly? FlowDate,
     Guid? MemberId,
@@ -176,6 +220,13 @@ public interface IFamilyDayFlowService
         Guid familyId,
         Guid commitmentId,
         VerifyCommitmentEvidenceRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Parent rejects photo evidence — clear upload so child re-submits.</summary>
+    Task<CommitmentDto> RejectCommitmentEvidenceAsync(
+        Guid familyId,
+        Guid commitmentId,
+        RejectCommitmentEvidenceRequest request,
         CancellationToken cancellationToken = default);
 
     /// <summary>Pilot / P0: set evidence_policy on a day commitment (e.g. required_hard).</summary>

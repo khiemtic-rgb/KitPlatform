@@ -18603,6 +18603,45 @@ article.kv2-streak,
   font-weight: 600;
   color: #b42318;
 }
+
+.ph-verify-reject {
+  margin: 12px 0 0;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px dashed rgba(180, 90, 70, 0.35);
+  background: #fff8f5;
+}
+.ph-verify-reject legend {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #7a3d2e;
+  padding: 0 4px;
+}
+.ph-verify-reject label {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #3d332e;
+  line-height: 1.35;
+  cursor: pointer;
+}
+.ph-verify-reject input {
+  margin-top: 3px;
+}
+.ph-verify-reject-btn {
+  background: #fff;
+  border: 1px solid rgba(180, 90, 70, 0.45);
+  color: #8a3f2e;
+}
+.ph-verify-reject-btn:disabled {
+  opacity: 0.45;
+}
+.ph-verify-actions {
+  flex-wrap: wrap;
+}
+
 .ph-verify-actions {
   display: flex;
   flex-wrap: wrap;

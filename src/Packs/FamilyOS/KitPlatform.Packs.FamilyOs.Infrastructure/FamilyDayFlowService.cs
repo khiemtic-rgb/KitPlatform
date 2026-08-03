@@ -493,6 +493,50 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             null);
     }
 
+    public async Task<CommitmentDto> RejectCommitmentEvidenceAsync(
+        Guid familyId,
+        Guid commitmentId,
+        RejectCommitmentEvidenceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
+
+        var reason = (request.ReasonCode ?? "").Trim().ToLowerInvariant();
+        if (!FamilyEvidenceRejectReasons.All.Contains(reason))
+            throw new InvalidOperationException(
+                "reasonCode phải là wrong_content | not_study | not_todays | unclear.");
+
+        var existing = await _repo.GetCommitmentForFamilyAsync(familyId, commitmentId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy commitment.");
+
+        if (string.IsNullOrWhiteSpace(existing.EvidenceUrl)
+            && existing.EvidenceSatisfiedAt is null
+            && existing.Status != FamilyCommitmentStatuses.Done)
+        {
+            throw new InvalidOperationException("Chưa có bằng chứng để từ chối.");
+        }
+
+        await _repo.RejectEvidenceForResubmitAsync(commitmentId, cancellationToken);
+
+        var family = await _families.GetFamilyAsync(familyId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+        var reloaded = await _repo.GetCommitmentForFamilyAsync(familyId, commitmentId, cancellationToken)
+            ?? existing;
+        var localNow = FamilyTimeZones.NowIn(family.Timezone);
+        var flowDate = reloaded.FlowDate ?? DateOnly.FromDateTime(localNow.DateTime);
+        var tierSettings = await ResolveTierSettingsAsync(familyId, cancellationToken);
+
+        return MapCommitment(
+            reloaded,
+            TimeOnly.FromTimeSpan(localNow.TimeOfDay),
+            flowDate,
+            family.Timezone,
+            null,
+            tierSettings,
+            localNow,
+            null);
+    }
+
     public async Task<CommitmentDto> SetCommitmentEvidencePolicyAsync(
         Guid familyId,
         Guid commitmentId,
