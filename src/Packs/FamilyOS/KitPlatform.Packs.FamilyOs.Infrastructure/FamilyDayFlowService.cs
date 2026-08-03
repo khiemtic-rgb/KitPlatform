@@ -416,7 +416,16 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             commitmentId, FamilyEvidenceSatisfiedBy.ParentVerify, cancellationToken);
 
         if (existing.Status == FamilyCommitmentStatuses.Done)
-            return await ApproveCommitmentStarsAsync(familyId, commitmentId, cancellationToken);
+        {
+            try
+            {
+                return await ApproveCommitmentStarsAsync(familyId, commitmentId, cancellationToken);
+            }
+            catch (InvalidOperationException)
+            {
+                // Evidence mark is the P0 contract; star post may fail (no member / budget).
+            }
+        }
 
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
@@ -426,15 +435,42 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         var flowDate = reloaded.FlowDate
             ?? DateOnly.FromDateTime(localNow.DateTime);
         var tierSettings = await ResolveTierSettingsAsync(familyId, cancellationToken);
+
+        StarAwardResult? awardForMap = null;
+        int? memberBalance = null;
+        if (reloaded.MemberId is Guid mid)
+        {
+            try
+            {
+                memberBalance = await _stars.GetMemberBalanceAsync(familyId, mid, cancellationToken);
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        if (reloaded.PendingStarDelta is int pending)
+        {
+            awardForMap = new StarAwardResult(
+                pending,
+                reloaded.PendingStarTier ?? FamilyStarTiers.OnTime,
+                reloaded.PendingStarLateMinutes,
+                FamilyStarCalculator.FormatLabelVi(
+                    pending,
+                    reloaded.PendingStarLateMinutes,
+                    reloaded.PendingStarTier ?? FamilyStarTiers.OnTime));
+        }
+
         return MapCommitment(
             reloaded,
             TimeOnly.FromTimeSpan(localNow.TimeOfDay),
             flowDate,
             family.Timezone,
-            null,
+            awardForMap,
             tierSettings,
             localNow,
-            null);
+            memberBalance);
     }
 
     public async Task<CommitmentDto> AddAdHocCommitmentAsync(
