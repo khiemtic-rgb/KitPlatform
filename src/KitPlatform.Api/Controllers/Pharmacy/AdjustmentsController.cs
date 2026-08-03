@@ -43,8 +43,15 @@ public sealed class AdjustmentsController : ControllerBase
         [FromBody] CreateCountingSessionRequest request,
         CancellationToken cancellationToken)
     {
-        var item = await _inventory.CreateCountingSessionAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(Get), new { id = item.Id }, item);
+        try
+        {
+            var item = await _inventory.CreateCountingSessionAsync(request, cancellationToken);
+            return CreatedAtAction(nameof(Get), new { id = item.Id }, item);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpGet("active-counting")]
@@ -76,8 +83,17 @@ public sealed class AdjustmentsController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<AdjustmentCountEntryDto>>> AddCountEntries(
         Guid id,
         [FromBody] AddCountEntriesRequest request,
-        CancellationToken cancellationToken) =>
-        Ok(await _inventory.AddCountEntriesAsync(id, request, cancellationToken));
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _inventory.AddCountEntriesAsync(id, request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 
     [HttpDelete("{id:guid}/count-entries/{entryId:guid}")]
     [Authorize(Policy = InventoryPolicies.Write)]

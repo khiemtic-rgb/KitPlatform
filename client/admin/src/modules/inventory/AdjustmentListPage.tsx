@@ -24,6 +24,7 @@ import {
   approveAdjustment,
   createAdjustment,
   createCountingSession,
+  fetchActiveCountingSession,
   fetchAdjustment,
   fetchAdjustments,
   fetchStockBatches,
@@ -111,7 +112,10 @@ export function AdjustmentListPage() {
 
   const openCreateSession = () => {
     sessionForm.resetFields();
-    sessionForm.setFieldsValue({ countType: 'periodic' });
+    sessionForm.setFieldsValue({
+      countType: 'periodic',
+      warehouseId: warehouses[0]?.id,
+    });
     setPrepareAcknowledged(false);
     setSessionDrawerOpen(true);
   };
@@ -124,6 +128,15 @@ export function AdjustmentListPage() {
     try {
       const values = await sessionForm.validateFields();
       setSaving(true);
+
+      const active = await fetchActiveCountingSession(values.warehouseId);
+      if (active) {
+        message.info(t('messages.sessionAlreadyOpen', { number: active.adjustmentNumber }));
+        setSessionDrawerOpen(false);
+        navigate(`/inventory/adjustments/${active.id}/count`);
+        return;
+      }
+
       const created = await createCountingSession({
         warehouseId: values.warehouseId,
         reason: buildCountReason(values.countType, values.reasonNote),
@@ -132,9 +145,17 @@ export function AdjustmentListPage() {
       setSessionDrawerOpen(false);
       navigate(`/inventory/adjustments/${created.id}/count`);
     } catch (error) {
-      if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, t('messages.sessionCreateFailed')));
+      // Ant Design validateFields rejects with { errorFields } — not Axios.
+      if (
+        error &&
+        typeof error === 'object' &&
+        'errorFields' in error &&
+        Array.isArray((error as { errorFields?: unknown[] }).errorFields)
+      ) {
+        message.warning(t('messages.sessionFormIncomplete'));
+        return;
       }
+      message.error(apiErrorMessage(error, t('messages.sessionCreateFailed')));
     } finally {
       setSaving(false);
     }
@@ -377,6 +398,11 @@ export function AdjustmentListPage() {
         }
       >
         <Form form={sessionForm} layout="vertical">
+          {warehouses.length === 0 ? (
+            <Typography.Paragraph type="danger">
+              {t('messages.noWarehouse')}
+            </Typography.Paragraph>
+          ) : null}
           <Form.Item name="warehouseId" label={t('countWarehouse')} rules={[{ required: true }]}>
             <Select
               options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
