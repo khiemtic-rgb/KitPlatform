@@ -75,6 +75,12 @@ public static class FamilyBehaviorEventTypes
     public const string TacticRotated = "tactic_rotated";
     public const string ChildVoiceSubmitted = "child_voice_submitted";
     public const string ParentStrategyTip = "parent_strategy_tip";
+    /// <summary>Evidence P0: hard gate blocked done without evidence.</summary>
+    public const string CommitmentEvidenceGateBlocked = "commitment_evidence_gate_blocked";
+    /// <summary>Evidence P0: min evidence first met (photo | retrieval | parent_verify).</summary>
+    public const string CommitmentEvidenceSatisfied = "commitment_evidence_satisfied";
+    /// <summary>Evidence P0: kind assigned on ad-hoc / materialize.</summary>
+    public const string CommitmentKindAssigned = "commitment_kind_assigned";
 }
 
 public static class FamilyReflectionPrompts

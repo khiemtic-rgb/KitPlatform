@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using KitPlatform.Api.Authorization;
-using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.Core;
 using KitPlatform.Packs.FamilyOs;
 
@@ -13,76 +12,52 @@ namespace KitPlatform.Api.Controllers.FamilyOs;
 [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]
 public sealed class FamilyOsEvidenceController : ControllerBase
 {
-    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".jpg", ".jpeg", ".png", ".webp",
-    };
+    private readonly IFamilyEvidenceUploadService _uploads;
 
-    private const long MaxFileBytes = 5 * 1024 * 1024;
+    public FamilyOsEvidenceController(IFamilyEvidenceUploadService uploads) => _uploads = uploads;
 
-    private readonly IFamilyGraphService _families;
-    private readonly ITenantContext _tenant;
-    private readonly IWebHostEnvironment _environment;
-
-    public FamilyOsEvidenceController(
-        IFamilyGraphService families,
-        ITenantContext tenant,
-        IWebHostEnvironment environment)
-    {
-        _families = families;
-        _tenant = tenant;
-        _environment = environment;
-    }
-
-    /// <summary>Upload photo proof for a completed commitment (JPG/PNG/WebP, max 5 MB).</summary>
+    /// <summary>Upload photo proof (P0.6 hard gates + P0.7 soft warnings).</summary>
     [HttpPost("evidence")]
-    [RequestSizeLimit(MaxFileBytes)]
-    [RequestFormLimits(MultipartBodyLengthLimit = MaxFileBytes)]
+    [RequestSizeLimit(5 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 5 * 1024 * 1024)]
     [ProducesResponseType(typeof(FamilyEvidenceUploadResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<FamilyEvidenceUploadResult>> Upload(
         Guid familyId,
         IFormFile file,
+        [FromForm] Guid? memberId,
         CancellationToken cancellationToken)
     {
         try
         {
-            _ = await _families.GetFamilyAsync(familyId, cancellationToken)
-                ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+            if (file is null)
+                return BadRequest(new { code = "validation_error", message = "Chon anh de tai len." });
 
-            var url = await SaveEvidenceAsync(file, cancellationToken);
-            return Ok(new FamilyEvidenceUploadResult(url));
+            await using var stream = file.OpenReadStream();
+            var result = await _uploads.SaveAsync(
+                familyId,
+                memberId,
+                stream,
+                file.FileName,
+                file.Length,
+                cancellationToken);
+            return Ok(result);
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { code = "validation_error", message = ex.Message });
+            var code = ex.Message.Contains("giong anh da nop", StringComparison.OrdinalIgnoreCase)
+                    || ex.Message.Contains("gi\u1ed1ng", StringComparison.OrdinalIgnoreCase)
+                ? FamilyEvidenceImageProbe.DuplicateCode
+                : ex.Message.Contains("nho", StringComparison.OrdinalIgnoreCase)
+                    || ex.Message.Contains("nh\u1ecf", StringComparison.OrdinalIgnoreCase)
+                    ? FamilyEvidenceImageProbe.TinyImageCode
+                    : "validation_error";
+            // Prefer exact message mapping via known VI helpers
+            if (ex.Message == FamilyEvidenceImageProbe.HardBlockMessageVi(FamilyEvidenceImageProbe.DuplicateCode))
+                code = FamilyEvidenceImageProbe.DuplicateCode;
+            else if (ex.Message == FamilyEvidenceImageProbe.HardBlockMessageVi(FamilyEvidenceImageProbe.TinyImageCode))
+                code = FamilyEvidenceImageProbe.TinyImageCode;
+            return BadRequest(new { code, message = ex.Message });
         }
-    }
-
-    private async Task<string> SaveEvidenceAsync(IFormFile file, CancellationToken cancellationToken)
-    {
-        if (file.Length == 0)
-            throw new InvalidOperationException("Chọn ảnh để tải lên.");
-
-        if (file.Length > MaxFileBytes)
-            throw new InvalidOperationException("Ảnh tối đa 5 MB.");
-
-        var extension = Path.GetExtension(file.FileName);
-        if (string.IsNullOrWhiteSpace(extension) || !AllowedExtensions.Contains(extension))
-            throw new InvalidOperationException("Chỉ hỗ trợ ảnh JPG, PNG hoặc WebP.");
-
-        var tenantFolder = _tenant.TenantId.ToString("N");
-        var directory = Path.Combine(_environment.ContentRootPath, "uploads", "family-os", tenantFolder);
-        Directory.CreateDirectory(directory);
-
-        var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
-        var fullPath = Path.Combine(directory, fileName);
-
-        await using (var stream = System.IO.File.Create(fullPath))
-        {
-            await file.CopyToAsync(stream, cancellationToken);
-        }
-
-        return $"/uploads/family-os/{tenantFolder}/{fileName}";
     }
 }

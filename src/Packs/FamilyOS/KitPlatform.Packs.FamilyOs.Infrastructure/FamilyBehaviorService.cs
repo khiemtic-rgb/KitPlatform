@@ -877,8 +877,50 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
 
         try
         {
+            var dayRow = await _dayFlows.GetCommitmentForFamilyAsync(
+                familyId, commitmentId, cancellationToken);
+            if (dayRow is not null
+                && FamilyEvidenceGate.RequiresEvidence(dayRow.CommitmentKind, dayRow.EvidencePolicy))
+            {
+                var family = await _families.GetFamilyAsync(familyId, cancellationToken);
+                var now = family is not null
+                    ? FamilyTimeZones.NowIn(family.Timezone)
+                    : DateTimeOffset.UtcNow;
+                if (!FamilyEvidenceGate.MeetsMinStudyDuration(
+                        dayRow.StartedAt,
+                        dayRow.ExpectedDurationMinutes,
+                        now,
+                        overrideDuration: false))
+                {
+                    throw new InvalidOperationException(FamilyEvidenceGate.DurationNotMetMessageVi);
+                }
+            }
+
+            var firstSatisfy = dayRow?.EvidenceSatisfiedAt is null;
             await _dayFlows.MarkEvidenceSatisfiedAsync(
                 commitmentId, FamilyEvidenceSatisfiedBy.Retrieval, cancellationToken);
+            if (firstSatisfy)
+            {
+                await _repo.InsertBehaviorEventAsync(
+                    familyId,
+                    ctx.MemberId,
+                    FamilyBehaviorEventTypes.CommitmentEvidenceSatisfied,
+                    commitmentId,
+                    ctx.TemplateId,
+                    new
+                    {
+                        commitmentId,
+                        kind = FamilyCommitmentKinds.Normalize(dayRow?.CommitmentKind),
+                        policy = FamilyEvidencePolicies.Normalize(dayRow?.EvidencePolicy),
+                        via = FamilyEvidenceSatisfiedBy.Retrieval,
+                        flowDate = ctx.FlowDate,
+                    },
+                    cancellationToken);
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            throw;
         }
         catch
         {

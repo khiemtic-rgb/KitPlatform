@@ -150,6 +150,28 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
                 existing.EvidenceSatisfiedBy);
             if (!request.ParentOverride && FamilyEvidenceGate.BlocksDone(preGate))
             {
+                try
+                {
+                    await _behaviorRepo.InsertBehaviorEventAsync(
+                        familyId,
+                        existing.MemberId,
+                        FamilyBehaviorEventTypes.CommitmentEvidenceGateBlocked,
+                        existing.Id,
+                        existing.TemplateId,
+                        new
+                        {
+                            commitmentId = existing.Id,
+                            kind = FamilyCommitmentKinds.Normalize(existing.CommitmentKind),
+                            policy = FamilyEvidencePolicies.Normalize(existing.EvidencePolicy),
+                            flowDate = existing.FlowDate,
+                        },
+                        cancellationToken);
+                }
+                catch
+                {
+                    // metric best-effort
+                }
+
                 throw new InvalidOperationException(FamilyEvidenceGate.EvidenceRequiredMessageVi);
             }
 
@@ -175,8 +197,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
 
         if (status == FamilyCommitmentStatuses.Done && !string.IsNullOrWhiteSpace(evidenceUrl))
         {
-            await _repo.MarkEvidenceSatisfiedAsync(
-                existing.Id, FamilyEvidenceSatisfiedBy.Photo, cancellationToken);
+            // P0.5: photo = submitted only. Stars need parent checklist or retrieval.
         }
 
         var reloaded = await _repo.GetCommitmentForFamilyAsync(familyId, updated.Id, cancellationToken)
@@ -358,8 +379,8 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         if (existing.EvidenceSatisfiedAt is null
             && FamilyEvidenceGate.RequiresEvidence(existing.CommitmentKind, existing.EvidencePolicy))
         {
-            await _repo.MarkEvidenceSatisfiedAsync(
-                commitmentId, FamilyEvidenceSatisfiedBy.ParentVerify, cancellationToken);
+            throw new InvalidOperationException(
+                "Cam kết học cần xác nhận bằng chứng (checklist) trước khi duyệt sao.");
         }
 
         StarAwardDto? starAward;
@@ -405,6 +426,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
     public async Task<CommitmentDto> VerifyCommitmentEvidenceAsync(
         Guid familyId,
         Guid commitmentId,
+        VerifyCommitmentEvidenceRequest request,
         CancellationToken cancellationToken = default)
     {
         await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
@@ -412,8 +434,35 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         var existing = await _repo.GetCommitmentForFamilyAsync(familyId, commitmentId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy commitment.");
 
+        if (!request.IsTodaysWork || !request.WithinCommitmentWindow || !request.MatchesCommitment)
+            throw new InvalidOperationException(FamilyEvidenceGate.ChecklistIncompleteMessageVi);
+
+        var family = await _families.GetFamilyAsync(familyId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+        var localNow = FamilyTimeZones.NowIn(family.Timezone);
+
+        if (FamilyEvidenceGate.RequiresEvidence(existing.CommitmentKind, existing.EvidencePolicy)
+            && !FamilyEvidenceGate.MeetsMinStudyDuration(
+                existing.StartedAt,
+                existing.ExpectedDurationMinutes,
+                localNow,
+                request.OverrideDuration))
+        {
+            throw new InvalidOperationException(FamilyEvidenceGate.DurationNotMetMessageVi);
+        }
+
+        var wasUnsatisfied = existing.EvidenceSatisfiedAt is null;
         await _repo.MarkEvidenceSatisfiedAsync(
             commitmentId, FamilyEvidenceSatisfiedBy.ParentVerify, cancellationToken);
+        if (wasUnsatisfied)
+        {
+            await TryEmitEvidenceSatisfiedAsync(
+                familyId,
+                existing,
+                FamilyEvidenceSatisfiedBy.ParentVerify,
+                existing.FlowDate,
+                cancellationToken);
+        }
 
         if (existing.Status == FamilyCommitmentStatuses.Done)
         {
@@ -427,6 +476,42 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             }
         }
 
+        var reloaded = await _repo.GetCommitmentForFamilyAsync(familyId, commitmentId, cancellationToken)
+            ?? existing;
+        var flowDate = reloaded.FlowDate
+            ?? DateOnly.FromDateTime(localNow.DateTime);
+        var tierSettings = await ResolveTierSettingsAsync(familyId, cancellationToken);
+
+        return MapCommitment(
+            reloaded,
+            TimeOnly.FromTimeSpan(localNow.TimeOfDay),
+            flowDate,
+            family.Timezone,
+            null,
+            tierSettings,
+            localNow,
+            null);
+    }
+
+    public async Task<CommitmentDto> SetCommitmentEvidencePolicyAsync(
+        Guid familyId,
+        Guid commitmentId,
+        SetCommitmentEvidencePolicyRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
+
+        var existing = await _repo.GetCommitmentForFamilyAsync(familyId, commitmentId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy commitment.");
+
+        var raw = (request.EvidencePolicy ?? "").Trim().ToLowerInvariant();
+        if (!FamilyEvidencePolicies.All.Contains(raw))
+            throw new InvalidOperationException(
+                "evidencePolicy phải là optional | required_soft | required_hard.");
+        var policy = FamilyEvidencePolicies.Normalize(raw);
+
+        await _repo.SetEvidencePolicyAsync(commitmentId, policy, cancellationToken);
+
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
         var reloaded = await _repo.GetCommitmentForFamilyAsync(familyId, commitmentId, cancellationToken)
@@ -436,41 +521,15 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             ?? DateOnly.FromDateTime(localNow.DateTime);
         var tierSettings = await ResolveTierSettingsAsync(familyId, cancellationToken);
 
-        StarAwardResult? awardForMap = null;
-        int? memberBalance = null;
-        if (reloaded.MemberId is Guid mid)
-        {
-            try
-            {
-                memberBalance = await _stars.GetMemberBalanceAsync(familyId, mid, cancellationToken);
-            }
-            catch
-            {
-                // ignore
-            }
-        }
-
-        if (reloaded.PendingStarDelta is int pending)
-        {
-            awardForMap = new StarAwardResult(
-                pending,
-                reloaded.PendingStarTier ?? FamilyStarTiers.OnTime,
-                reloaded.PendingStarLateMinutes,
-                FamilyStarCalculator.FormatLabelVi(
-                    pending,
-                    reloaded.PendingStarLateMinutes,
-                    reloaded.PendingStarTier ?? FamilyStarTiers.OnTime));
-        }
-
         return MapCommitment(
             reloaded,
             TimeOnly.FromTimeSpan(localNow.TimeOfDay),
             flowDate,
             family.Timezone,
-            awardForMap,
+            null,
             tierSettings,
             localNow,
-            memberBalance);
+            null);
     }
 
     public async Task<CommitmentDto> AddAdHocCommitmentAsync(
@@ -525,6 +584,29 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
 
         var row = await _repo.GetCommitmentForFamilyAsync(familyId, id, cancellationToken)
             ?? throw new InvalidOperationException("Không tạo được việc hôm nay.");
+
+        try
+        {
+            await _behaviorRepo.InsertBehaviorEventAsync(
+                familyId,
+                row.MemberId,
+                FamilyBehaviorEventTypes.CommitmentKindAssigned,
+                row.Id,
+                row.TemplateId,
+                new
+                {
+                    commitmentId = row.Id,
+                    kind = FamilyCommitmentKinds.Normalize(row.CommitmentKind),
+                    policy = FamilyEvidencePolicies.Normalize(row.EvidencePolicy),
+                    via = "ad_hoc",
+                    flowDate,
+                },
+                cancellationToken);
+        }
+        catch
+        {
+            // metric best-effort
+        }
 
         var localNow = FamilyTimeZones.NowIn(family.Timezone);
         var tierSettings = await ResolveTierSettingsAsync(familyId, cancellationToken);
@@ -816,7 +898,18 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             satisfied,
             c.EvidenceSatisfiedAt,
             FamilyEvidenceGate.InferSatisfiedBy(gateSignals),
-            FamilyEvidenceGate.GateLabelVi(gateSignals));
+            FamilyEvidenceGate.GateLabelVi(gateSignals),
+            c.StartedAt,
+            !FamilyEvidenceGate.RequiresEvidence(kind, policy)
+                || FamilyEvidenceGate.MeetsMinStudyDuration(
+                    c.StartedAt,
+                    c.ExpectedDurationMinutes,
+                    localNow ?? DateTimeOffset.UtcNow,
+                    overrideDuration: false),
+            FamilyEvidenceGate.MinRequiredDurationMinutes(c.ExpectedDurationMinutes),
+            FamilyEvidenceGate.RequiresEvidence(kind, policy)
+                && !satisfied
+                && FamilyEvidenceGate.HasSubmittedPhoto(gateSignals));
     }
 
     private static FamilyEvidenceGate.Signals GateSignals(FamilyDayFlowRepository.CommitmentRow c) =>
@@ -858,6 +951,37 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
                 ? pred.SuggestedActionVi
                 : null,
         };
+    }
+
+    private async Task TryEmitEvidenceSatisfiedAsync(
+        Guid familyId,
+        FamilyDayFlowRepository.CommitmentRow commitment,
+        string via,
+        DateOnly? flowDate,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _behaviorRepo.InsertBehaviorEventAsync(
+                familyId,
+                commitment.MemberId,
+                FamilyBehaviorEventTypes.CommitmentEvidenceSatisfied,
+                commitment.Id,
+                commitment.TemplateId,
+                new
+                {
+                    commitmentId = commitment.Id,
+                    kind = FamilyCommitmentKinds.Normalize(commitment.CommitmentKind),
+                    policy = FamilyEvidencePolicies.Normalize(commitment.EvidencePolicy),
+                    via,
+                    flowDate,
+                },
+                cancellationToken);
+        }
+        catch
+        {
+            // metric best-effort
+        }
     }
 
     /// <summary>Screen Wallet earn rules — reading / movement titles.</summary>

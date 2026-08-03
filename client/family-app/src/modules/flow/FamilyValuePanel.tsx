@@ -512,9 +512,11 @@ export function FamilyValuePanel({
   };
 
   const weeklyLine = serverWeekly
-    ? (serverWeekly.mirror.reflections[0] ??
-      serverWeekly.highlights[0] ??
-      `${serverWeekly.dataDays}/${serverWeekly.days} ngày có dữ liệu`)
+    ? (serverWeekly.studyFocusDoneCount ?? 0) > 0
+      ? `Cam kết học: ${serverWeekly.studyFocusDoneWithEvidenceCount ?? 0}/${serverWeekly.studyFocusDoneCount} có bằng chứng`
+      : (serverWeekly.mirror.reflections[0] ??
+        serverWeekly.highlights[0] ??
+        `${serverWeekly.dataDays}/${serverWeekly.days} ngày có dữ liệu`)
     : `Tự giác ${weeklyLocal.autonomyDeltaPct >= 0 ? '+' : ''}${weeklyLocal.autonomyDeltaPct}% · ${weeklyLocal.nudgeThisWeek} lần nhắc tuần này`;
 
   type HubRow = {

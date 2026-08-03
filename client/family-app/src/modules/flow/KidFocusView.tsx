@@ -3,6 +3,8 @@ import {
   SKIP_REASON_OPTIONS,
   skipReasonLabel,
   uploadCommitmentEvidence,
+  getMorningNote,
+  type MorningNote,
   fetchChildGratitude,
   sendChildGratitude,
   fetchRewardCatalog,
@@ -128,6 +130,15 @@ function needsParentApproval(item: DayFlowCommitment): boolean {
   if (NEED_APPROVAL_RE.test(item.title)) return true;
   if (TRUST_CHILD_RE.test(item.title)) return false;
   return Boolean(item.evidenceUrl);
+}
+
+function isStudyFocus(item: DayFlowCommitment): boolean {
+  return item.commitmentKind === 'study_focus';
+}
+
+/** Soft/hard study that still needs photo / retrieval / parent verify for stars. */
+function studyNeedsEvidence(item: DayFlowCommitment): boolean {
+  return isStudyFocus(item) && item.evidenceSatisfied === false;
 }
 
 function kidMissionUxState(
@@ -1082,7 +1093,16 @@ type Props = {
   onDone: (
     item: DayFlowCommitment,
     evidenceUrl?: string,
-  ) => Promise<{ starDelta?: number; starLabelVi?: string; memberStarBalance?: number } | void>;
+  ) => Promise<{
+    starDelta?: number;
+    starLabelVi?: string;
+    memberStarBalance?: number;
+    starPosted?: boolean;
+    evidenceSatisfied?: boolean;
+    evidenceGateLabelVi?: string;
+    evidenceSubmitted?: boolean;
+    evidenceUrl?: string;
+  } | void>;
   onReflect: (item: DayFlowCommitment, reason: SkipReasonCode) => void;
   onSelfStart?: (item: DayFlowCommitment) => void | Promise<void>;
   onHoldSwitchStart: () => void;
@@ -1172,6 +1192,8 @@ export function KidFocusView({
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [evidencePreview, setEvidencePreview] = useState<string | null>(null);
   const [evidenceError, setEvidenceError] = useState<string | null>(null);
+  const [evidenceSoftWarn, setEvidenceSoftWarn] = useState<string | null>(null);
+  const [morningNote, setMorningNote] = useState<MorningNote | null>(null);
   const [uploading, setUploading] = useState(false);
   const [celebrate, setCelebrate] = useState<{
     title: string;
@@ -1298,6 +1320,24 @@ export function KidFocusView({
       cancelled = true;
     };
   }, [familyId, childMemberId, flowDate, nudgeReloadTick, teamRemaining, items.length]);
+
+  useEffect(() => {
+    if (!familyId || !childMemberId || !flowDate) {
+      setMorningNote(null);
+      return;
+    }
+    let cancelled = false;
+    void getMorningNote(familyId, childMemberId, flowDate)
+      .then((n) => {
+        if (!cancelled) setMorningNote(n);
+      })
+      .catch(() => {
+        if (!cancelled) setMorningNote(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId, childMemberId, flowDate, items.length]);
 
   useEffect(() => {
     if (!cheerToast) return;
@@ -1812,13 +1852,17 @@ export function KidFocusView({
     return doneItems.filter((i) => dayPartOf(i) === filter);
   }, [doneItems, filter]);
 
-  const doNowItems = useMemo(
-    () =>
-      filteredPending.filter(
-        (c) => c.reminderState === 'overdue' || c.reminderState === 'due_now',
-      ),
-    [filteredPending],
-  );
+  const doNowItems = useMemo(() => {
+    const base = filteredPending.filter(
+      (c) => c.reminderState === 'overdue' || c.reminderState === 'due_now',
+    );
+    // Cam kết học lên trước để con thấy khác việc nhà.
+    return [...base].sort((a, b) => {
+      const as = isStudyFocus(a) ? 0 : 1;
+      const bs = isStudyFocus(b) ? 0 : 1;
+      return as - bs;
+    });
+  }, [filteredPending]);
   const soonItems = useMemo(
     () =>
       filteredPending.filter(
@@ -2044,15 +2088,31 @@ export function KidFocusView({
     setMissionDoneError(null);
     try {
       const result = await onDone(item);
-      const delta = result?.starDelta ?? 0;
+      const posted = Boolean(result?.starPosted);
+      const delta = posted ? (result?.starDelta ?? 0) : 0;
       setCelebrate({
         title: item.title,
         stars: delta,
-        labelVi: result?.starLabelVi,
+        labelVi: posted
+          ? result?.starLabelVi
+          : result?.evidenceGateLabelVi ??
+            (item.commitmentKind === 'study_focus'
+              ? result?.evidenceSubmitted || item.evidenceUrl
+                ? 'Đã nộp ảnh — chờ bố mẹ xác nhận bài hôm nay'
+                : 'Đã ghi — chờ bằng chứng để nhận sao'
+              : result?.starLabelVi),
       });
       setFoxyGlow(true);
-    } catch {
-      setMissionDoneError('Chưa lưu được — thử lại nhé.');
+    } catch (err) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message ?? '').trim()
+          : '';
+      setMissionDoneError(
+        msg && msg !== 'commitment_done_failed'
+          ? msg
+          : 'Chưa lưu được — thử lại nhé.',
+      );
     }
   };
 
@@ -2099,15 +2159,33 @@ export function KidFocusView({
     try {
       let url: string | undefined;
       if (evidenceFile) {
-        url = await uploadCommitmentEvidence(familyId, evidenceFile);
+        const uploaded = await uploadCommitmentEvidence(
+          familyId,
+          evidenceFile,
+          childMemberId,
+        );
+        url = uploaded.url;
+        if (uploaded.warningMessageVi) {
+          setEvidenceSoftWarn(uploaded.warningMessageVi);
+        } else {
+          setEvidenceSoftWarn(null);
+        }
       }
       const result = await onDone(active, url);
       closeAction();
-      const delta = result?.starDelta ?? 0;
+      const posted = Boolean(result?.starPosted);
+      const delta = posted ? (result?.starDelta ?? 0) : 0;
       setCelebrate({
         title: finishedTitle,
         stars: delta,
-        labelVi: result?.starLabelVi,
+        labelVi: posted
+          ? result?.starLabelVi
+          : result?.evidenceGateLabelVi ??
+            (active.commitmentKind === 'study_focus'
+              ? result?.evidenceSubmitted || active.evidenceUrl || url
+                ? 'Đã nộp ảnh — chờ bố mẹ xác nhận bài hôm nay'
+                : 'Đã ghi — chờ bằng chứng để nhận sao'
+              : result?.starLabelVi),
       });
       setFoxyGlow(true);
     } catch {
@@ -2958,6 +3036,14 @@ export function KidFocusView({
             )}
           </div>
         </div>
+        {morningNote?.bodyVi && (tab === 'home' || tab === 'tasks') ? (
+          <article className="kv2-morning-note" aria-label="Lời nhắc đầu ngày">
+            <p className="kv2-morning-note-eyebrow">
+              <span aria-hidden>🦊</span> Lời nhắc buổi sáng
+            </p>
+            <p>{morningNote.bodyVi}</p>
+          </article>
+        ) : null}
         <div className="kv2-top-pills">
           <span className="kv2-pill kv2-stars" title="Sao">
             <span aria-hidden>⭐</span>
@@ -3084,34 +3170,86 @@ export function KidFocusView({
                           </p>
                         ) : null}
                         <MissionStarBadge item={nextMission} className="kv2-next-stars" />
+                        {studyNeedsEvidence(nextMission) ? (
+                          <p className="kv2-study-hint">
+                            📚 Ảnh chỉ là nộp bài — bố mẹ xác nhận mới được sao
+                          </p>
+                        ) : null}
                       </div>
                     </div>
-                    <div className="kv2-next-actions is-primary-only">
-                      <button
-                        type="button"
-                        className="kv2-do"
-                        disabled={
-                          busyId === nextMission.id ||
-                          uploading ||
-                          !canCompleteNow(nextMission, localTime)
-                        }
-                        onClick={() => void quickDoneMission(nextMission)}
-                      >
-                        <span aria-hidden>✓</span>{' '}
-                        {busyId === nextMission.id ? 'Đang gửi…' : 'Mình đã làm'}
-                      </button>
-                      <button
-                        type="button"
-                        className="kv2-do-photo is-link"
-                        disabled={
-                          busyId === nextMission.id ||
-                          uploading ||
-                          !canCompleteNow(nextMission, localTime)
-                        }
-                        onClick={() => beginEvidencePick(nextMission)}
-                      >
-                        <span aria-hidden>📷</span> Đính kèm ảnh
-                      </button>
+                    <div
+                      className={`kv2-next-actions${
+                        studyNeedsEvidence(nextMission) ? '' : ' is-primary-only'
+                      }`}
+                    >
+                      {studyNeedsEvidence(nextMission) ? (
+                        <>
+                          <button
+                            type="button"
+                            className="kv2-do"
+                            disabled={
+                              busyId === nextMission.id ||
+                              uploading ||
+                              !canCompleteNow(nextMission, localTime)
+                            }
+                            onClick={() => beginEvidencePick(nextMission)}
+                          >
+                            <span aria-hidden>📷</span>{' '}
+                            {uploading && busyId === nextMission.id
+                              ? 'Đang gửi ảnh…'
+                              : 'Gửi ảnh đã học'}
+                          </button>
+                          {nextMission.evidencePolicy !== 'hard' ? (
+                            <button
+                              type="button"
+                              className="kv2-do-photo is-link"
+                              disabled={
+                                busyId === nextMission.id ||
+                                uploading ||
+                                !canCompleteNow(nextMission, localTime)
+                              }
+                              onClick={() => void quickDoneMission(nextMission)}
+                            >
+                              <span aria-hidden>✓</span>{' '}
+                              {busyId === nextMission.id
+                                ? 'Đang gửi…'
+                                : 'Đã học · chờ bằng chứng'}
+                            </button>
+                          ) : (
+                            <p className="kv2-study-hard-note muted">
+                              Chế độ cứng: bắt buộc ảnh mới hoàn thành
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            className="kv2-do"
+                            disabled={
+                              busyId === nextMission.id ||
+                              uploading ||
+                              !canCompleteNow(nextMission, localTime)
+                            }
+                            onClick={() => void quickDoneMission(nextMission)}
+                          >
+                            <span aria-hidden>✓</span>{' '}
+                            {busyId === nextMission.id ? 'Đang gửi…' : 'Mình đã làm'}
+                          </button>
+                          <button
+                            type="button"
+                            className="kv2-do-photo is-link"
+                            disabled={
+                              busyId === nextMission.id ||
+                              uploading ||
+                              !canCompleteNow(nextMission, localTime)
+                            }
+                            onClick={() => beginEvidencePick(nextMission)}
+                          >
+                            <span aria-hidden>📷</span> Đính kèm ảnh
+                          </button>
+                        </>
+                      )}
                     </div>
                     {missionDoneError ? (
                       <p className="kv2-do-error" role="alert">
@@ -4016,13 +4154,15 @@ export function KidFocusView({
                             <div className="kv2-m-featured-copy">
                               <strong>
                                 {item.title}
-                                {item.commitmentKind === 'study_focus' ? (
+                                {item.commitmentKind === 'study_focus' &&
+                                item.evidenceSatisfied === false ? (
                                   <span className="kv2-m-badge is-wait" style={{ marginLeft: 8 }}>
                                     📚 Cần bằng chứng
                                   </span>
                                 ) : null}
                               </strong>
-                              {item.commitmentKind === 'study_focus' ? (
+                              {item.commitmentKind === 'study_focus' &&
+                              item.evidenceSatisfied === false ? (
                                 <span className="kv2-m-habit">
                                   {item.evidenceGateLabelVi ??
                                     'Không phải kiểm tra để bắt lỗi — để nhà mình tin lời cam kết.'}
@@ -4084,29 +4224,71 @@ export function KidFocusView({
                                 Bắt đầu rồi
                               </button>
                             ) : null}
-                            <button
-                              type="button"
-                              className="kv2-m-cta"
-                              disabled={
-                                busyId === item.id ||
-                                !canCompleteNow(item, localTime)
-                              }
-                              onClick={() => void quickDoneMission(item)}
-                            >
-                              {busyId === item.id ? 'Đang gửi…' : 'Mình đã làm'}
-                            </button>
-                            <button
-                              type="button"
-                              className="kv2-m-photo-btn"
-                              disabled={
-                                busyId === item.id ||
-                                uploading ||
-                                !canCompleteNow(item, localTime)
-                              }
-                              onClick={() => beginEvidencePick(item)}
-                            >
-                              <span aria-hidden>📷</span> Đính kèm ảnh đã làm
-                            </button>
+                            {studyNeedsEvidence(item) ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="kv2-m-cta"
+                                  disabled={
+                                    busyId === item.id ||
+                                    uploading ||
+                                    !canCompleteNow(item, localTime)
+                                  }
+                                  onClick={() => beginEvidencePick(item)}
+                                >
+                                  <span aria-hidden>📷</span>{' '}
+                                  {uploading && busyId === item.id
+                                    ? 'Đang gửi ảnh…'
+                                    : 'Gửi ảnh đã học'}
+                                </button>
+                                {item.evidencePolicy !== 'hard' ? (
+                                  <button
+                                    type="button"
+                                    className="kv2-m-photo-btn"
+                                    disabled={
+                                      busyId === item.id ||
+                                      uploading ||
+                                      !canCompleteNow(item, localTime)
+                                    }
+                                    onClick={() => void quickDoneMission(item)}
+                                  >
+                                    {busyId === item.id
+                                      ? 'Đang gửi…'
+                                      : 'Đã học · chờ bằng chứng'}
+                                  </button>
+                                ) : (
+                                  <span className="kv2-m-habit">
+                                    Chế độ cứng: bắt buộc ảnh
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  className="kv2-m-cta"
+                                  disabled={
+                                    busyId === item.id ||
+                                    !canCompleteNow(item, localTime)
+                                  }
+                                  onClick={() => void quickDoneMission(item)}
+                                >
+                                  {busyId === item.id ? 'Đang gửi…' : 'Mình đã làm'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="kv2-m-photo-btn"
+                                  disabled={
+                                    busyId === item.id ||
+                                    uploading ||
+                                    !canCompleteNow(item, localTime)
+                                  }
+                                  onClick={() => beginEvidencePick(item)}
+                                >
+                                  <span aria-hidden>📷</span> Đính kèm ảnh đã làm
+                                </button>
+                              </>
+                            )}
                           </div>
                         </article>
                       ))
@@ -4147,16 +4329,15 @@ export function KidFocusView({
                           <div className="kv2-m-row-body">
                             <strong>
                               {item.title}
-                              {item.commitmentKind === 'study_focus' ? (
+                              {item.commitmentKind === 'study_focus' &&
+                              item.evidenceSatisfied === false ? (
                                 <span className="kv2-m-badge is-wait" style={{ marginLeft: 8 }}>
                                   📚 Cần bằng chứng
                                 </span>
                               ) : null}
                             </strong>
-                            {item.commitmentKind === 'study_focus' && item.evidenceGateLabelVi ? (
-                              <span className="kv2-m-time muted">{item.evidenceGateLabelVi}</span>
-                            ) : null}
-                            {item.commitmentKind === 'study_focus' ? (
+                            {item.commitmentKind === 'study_focus' &&
+                            item.evidenceSatisfied === false ? (
                               <span className="kv2-m-time muted">
                                 {item.evidenceGateLabelVi ??
                                   'Cần ảnh, câu hỏi nhớ bài, hoặc bố mẹ xác nhận để nhận sao.'}
@@ -4169,7 +4350,9 @@ export function KidFocusView({
                           <span className="kv2-m-badge is-wait">
                             {item.commitmentKind === 'study_focus' &&
                             item.evidenceSatisfied === false
-                              ? 'Chờ bằng chứng'
+                              ? item.evidenceSubmitted || item.evidenceUrl
+                                ? 'Đã nộp · chờ bố mẹ'
+                                : 'Chờ bằng chứng'
                               : 'Chờ kiểm tra'}
                           </span>
                         </li>
@@ -4205,7 +4388,14 @@ export function KidFocusView({
                           {taskIcon(item.title)}
                         </span>
                         <div className="kv2-m-row-body">
-                          <strong>{item.title}</strong>
+                          <strong>
+                            {item.title}
+                            {studyNeedsEvidence(item) ? (
+                              <span className="kv2-m-badge is-wait" style={{ marginLeft: 8 }}>
+                                📚 Cần bằng chứng
+                              </span>
+                            ) : null}
+                          </strong>
                           <span className="kv2-m-time">
                             {earlyCompleteBlockReason(item, localTime) ??
                               minutesUntilExcited(item) ??
@@ -4214,7 +4404,12 @@ export function KidFocusView({
                                 : formatWindow(item.windowStart, item.windowEnd) ??
                                   'Trong ngày')}
                           </span>
-                          {earlyCompleteBlockReason(item, localTime) ? (
+                          {studyNeedsEvidence(item) ? (
+                            <span className="kv2-m-time muted">
+                              {item.evidenceGateLabelVi ??
+                                'Gửi ảnh bài đã làm để nhận sao — không chỉ tick.'}
+                            </span>
+                          ) : earlyCompleteBlockReason(item, localTime) ? (
                             <span className="kv2-m-time muted">
                               {countdownUntilWindow(item, localTime) ?? 'Chờ đến giờ nhé'}
                             </span>
@@ -4222,32 +4417,69 @@ export function KidFocusView({
                         </div>
                         <MissionStarBadge item={item} />
                         <div className="kv2-m-row-actions">
-                          <button
-                            type="button"
-                            className="kv2-m-mini-photo"
-                            disabled={
-                              busyId === item.id ||
-                              uploading ||
-                              !canCompleteNow(item, localTime)
-                            }
-                            onClick={() => beginEvidencePick(item)}
-                            aria-label={`Đính kèm ảnh ${item.title} đã làm`}
-                          >
-                            📷
-                          </button>
-                          <button
-                            type="button"
-                            className="kv2-m-mini-do"
-                            disabled={
-                              busyId === item.id ||
-                              uploading ||
-                              !canCompleteNow(item, localTime)
-                            }
-                            onClick={() => void quickDoneMission(item)}
-                            aria-label={`Làm ${item.title}`}
-                          >
-                            {busyId === item.id ? '…' : 'Làm'}
-                          </button>
+                          {studyNeedsEvidence(item) ? (
+                            <>
+                              <button
+                                type="button"
+                                className="kv2-m-mini-do"
+                                disabled={
+                                  busyId === item.id ||
+                                  uploading ||
+                                  !canCompleteNow(item, localTime)
+                                }
+                                onClick={() => beginEvidencePick(item)}
+                                aria-label={`Gửi ảnh đã học: ${item.title}`}
+                                title="Gửi ảnh đã học"
+                              >
+                                📷 Ảnh
+                              </button>
+                              {item.evidencePolicy !== 'hard' ? (
+                                <button
+                                  type="button"
+                                  className="kv2-m-mini-photo"
+                                  disabled={
+                                    busyId === item.id ||
+                                    uploading ||
+                                    !canCompleteNow(item, localTime)
+                                  }
+                                  onClick={() => void quickDoneMission(item)}
+                                  aria-label={`Đã học chờ bằng chứng: ${item.title}`}
+                                  title="Đã học · chờ bằng chứng"
+                                >
+                                  {busyId === item.id ? '…' : 'Chờ'}
+                                </button>
+                              ) : null}
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                className="kv2-m-mini-photo"
+                                disabled={
+                                  busyId === item.id ||
+                                  uploading ||
+                                  !canCompleteNow(item, localTime)
+                                }
+                                onClick={() => beginEvidencePick(item)}
+                                aria-label={`Đính kèm ảnh ${item.title} đã làm`}
+                              >
+                                📷
+                              </button>
+                              <button
+                                type="button"
+                                className="kv2-m-mini-do"
+                                disabled={
+                                  busyId === item.id ||
+                                  uploading ||
+                                  !canCompleteNow(item, localTime)
+                                }
+                                onClick={() => void quickDoneMission(item)}
+                                aria-label={`Làm ${item.title}`}
+                              >
+                                {busyId === item.id ? '…' : 'Làm'}
+                              </button>
+                            </>
+                          )}
                         </div>
                       </li>
                     ))}
@@ -5003,7 +5235,9 @@ export function KidFocusView({
           aria-label={
             nextMission
               ? canCompleteNow(nextMission, localTime)
-                ? `Làm ${nextMission.title}`
+                ? studyNeedsEvidence(nextMission)
+                  ? `Gửi ảnh đã học: ${nextMission.title}`
+                  : `Làm ${nextMission.title}`
                 : earlyCompleteBlockReason(nextMission, localTime) ||
                   countdownUntilWindow(nextMission, localTime) ||
                   `Chưa tới giờ: ${nextMission.title}`
@@ -5014,10 +5248,16 @@ export function KidFocusView({
               ? earlyCompleteBlockReason(nextMission, localTime) ||
                 countdownUntilWindow(nextMission, localTime) ||
                 'Chưa tới giờ làm việc này'
-              : undefined
+              : nextMission && studyNeedsEvidence(nextMission)
+                ? 'Gửi ảnh đã học để nhận sao'
+                : undefined
           }
           onClick={() => {
             if (nextMission && canCompleteNow(nextMission, localTime)) {
+              if (studyNeedsEvidence(nextMission)) {
+                beginEvidencePick(nextMission);
+                return;
+              }
               void quickDoneMission(nextMission);
               return;
             }
@@ -5028,7 +5268,7 @@ export function KidFocusView({
             setTab('rewards');
           }}
         >
-          <span aria-hidden>⭐</span>
+          <span aria-hidden>{nextMission && studyNeedsEvidence(nextMission) ? '📷' : '⭐'}</span>
         </button>
         <button
           type="button"
@@ -5495,11 +5735,20 @@ export function KidFocusView({
                 {countdownUntilWindow(active, localTime) ?? 'Chờ đến giờ nhé'}
               </p>
             ) : null}
+            {studyNeedsEvidence(active) ? (
+              <p className="kv2-study-hint">
+                📚 Ảnh chỉ là nộp bài — bố mẹ xác nhận (đúng bài hôm nay) mới được sao
+              </p>
+            ) : null}
             {!askReason ? (
               <>
                 <button
                   type="button"
-                  className="kv2-do-photo kv2-sheet-photo"
+                  className={
+                    studyNeedsEvidence(active)
+                      ? 'btn btn-primary kid-done'
+                      : 'kv2-do-photo kv2-sheet-photo'
+                  }
                   disabled={
                     busyId === active.id ||
                     uploading ||
@@ -5507,28 +5756,67 @@ export function KidFocusView({
                   }
                   onClick={() => beginEvidencePick(active)}
                 >
-                  {evidenceFile ? 'Đổi ảnh đã làm' : '📷 Đính kèm ảnh đã làm'}
+                  {evidenceFile
+                    ? 'Đổi ảnh đã học'
+                    : studyNeedsEvidence(active)
+                      ? '📷 Gửi ảnh đã học'
+                      : '📷 Đính kèm ảnh đã làm'}
                 </button>
                 {evidencePreview ? (
                   <img src={evidencePreview} alt="Ảnh đã chọn" className="evidence-thumb" />
                 ) : (
                   <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-                    Tuỳ chọn — chụp hoặc chọn ảnh từ thư viện để bố mẹ xem.
+                    {studyNeedsEvidence(active)
+                      ? active.evidencePolicy === 'hard'
+                        ? 'Chế độ cứng: bắt buộc ảnh + xác nhận bố mẹ.'
+                        : 'Gửi ảnh để bố mẹ kiểm «bài hôm nay». Soft: tick được nhưng sao chờ xác nhận.'
+                      : 'Tuỳ chọn — chụp hoặc chọn ảnh từ thư viện để bố mẹ xem.'}
                   </p>
                 )}
                 {evidenceError ? <div className="banner-error">{evidenceError}</div> : null}
-                <button
-                  type="button"
-                  className="btn btn-primary kid-done"
-                  disabled={
-                    busyId === active.id ||
-                    uploading ||
-                    !canCompleteNow(active, localTime)
-                  }
-                  onClick={() => void submitDone()}
-                >
-                  {uploading || busyId === active.id ? 'Đang lưu…' : 'Mình đã làm!'}
-                </button>
+                {evidenceSoftWarn ? (
+                  <p className="kv2-evidence-soft-warn" role="status">
+                    {evidenceSoftWarn}
+                  </p>
+                ) : null}
+                {studyNeedsEvidence(active) && active.evidencePolicy === 'hard' ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary kid-done"
+                    disabled={
+                      busyId === active.id ||
+                      uploading ||
+                      !evidenceFile ||
+                      !canCompleteNow(active, localTime)
+                    }
+                    onClick={() => void submitDone()}
+                  >
+                    {uploading || busyId === active.id ? 'Đang lưu…' : 'Gửi ảnh & xong!'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className={
+                      studyNeedsEvidence(active)
+                        ? 'kv2-do-photo kv2-sheet-photo'
+                        : 'btn btn-primary kid-done'
+                    }
+                    disabled={
+                      busyId === active.id ||
+                      uploading ||
+                      !canCompleteNow(active, localTime)
+                    }
+                    onClick={() => void submitDone()}
+                  >
+                    {uploading || busyId === active.id
+                      ? 'Đang lưu…'
+                      : studyNeedsEvidence(active)
+                        ? evidenceFile
+                          ? 'Gửi ảnh & xong!'
+                          : 'Đã học · chờ bằng chứng'
+                        : 'Mình đã làm!'}
+                  </button>
+                )}
                 <button
                   type="button"
                   className="pill is-soft"

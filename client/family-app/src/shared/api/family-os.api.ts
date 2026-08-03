@@ -85,6 +85,13 @@ export interface DayFlowCommitment {
   evidenceSatisfiedAt?: string;
   evidenceSatisfiedBy?: string;
   evidenceGateLabelVi?: string;
+  /** Evidence P0.5 */
+  startedAt?: string;
+  expectedDurationMinutes?: number;
+  studyDurationMet?: boolean;
+  studyMinDurationMinutes?: number;
+  /** Photo submitted but not yet parent/retrieval-satisfied */
+  evidenceSubmitted?: boolean;
 }
 
 export const REFLECTION_PROMPT_OPTIONS = [
@@ -661,9 +668,15 @@ function mapCommitment(c: Row): DayFlowCommitment {
     evidencePolicy: String(
       c.evidencePolicy ?? c.EvidencePolicy ?? 'optional',
     ).toLowerCase(),
-    evidenceSatisfied: Boolean(
-      c.evidenceSatisfied ?? c.EvidenceSatisfied ?? true,
-    ),
+    evidenceSatisfied: (() => {
+      const kind = String(
+        c.commitmentKind ?? c.CommitmentKind ?? 'chore',
+      ).toLowerCase();
+      const raw = c.evidenceSatisfied ?? c.EvidenceSatisfied;
+      if (raw != null) return Boolean(raw);
+      // Missing field: study_focus must not default to satisfied.
+      return kind !== 'study_focus';
+    })(),
     evidenceSatisfiedAt:
       c.evidenceSatisfiedAt != null || c.EvidenceSatisfiedAt != null
         ? String(c.evidenceSatisfiedAt ?? c.EvidenceSatisfiedAt)
@@ -676,6 +689,26 @@ function mapCommitment(c: Row): DayFlowCommitment {
       c.evidenceGateLabelVi != null || c.EvidenceGateLabelVi != null
         ? String(c.evidenceGateLabelVi ?? c.EvidenceGateLabelVi)
         : undefined,
+    startedAt:
+      c.startedAt != null || c.StartedAt != null
+        ? String(c.startedAt ?? c.StartedAt)
+        : undefined,
+    expectedDurationMinutes: (() => {
+      const raw = c.expectedDurationMinutes ?? c.ExpectedDurationMinutes;
+      return raw != null && raw !== '' ? Number(raw) : undefined;
+    })(),
+    studyDurationMet: (() => {
+      const raw = c.studyDurationMet ?? c.StudyDurationMet;
+      return raw == null ? true : Boolean(raw);
+    })(),
+    studyMinDurationMinutes: (() => {
+      const raw = c.studyMinDurationMinutes ?? c.StudyMinDurationMinutes;
+      return raw != null && raw !== '' ? Number(raw) : undefined;
+    })(),
+    evidenceSubmitted: (() => {
+      const raw = c.evidenceSubmitted ?? c.EvidenceSubmitted;
+      return raw == null ? false : Boolean(raw);
+    })(),
   };
 }
 
@@ -728,18 +761,84 @@ export async function fetchDayFlow(
   return mapDayFlow(res.data as Row);
 }
 
+export type EvidenceUploadResult = {
+  url: string;
+  looksLikeStudy?: boolean;
+  warningCodes?: string[];
+  warningMessageVi?: string;
+};
+
 export async function uploadCommitmentEvidence(
   familyId: string,
   file: File,
-): Promise<string> {
+  memberId?: string,
+): Promise<EvidenceUploadResult> {
   const form = new FormData();
   form.append('file', file);
+  if (memberId) form.append('memberId', memberId);
   const { data } = await http.post<Row>(`/family-os/families/${familyId}/evidence`, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   const url = String(data.url ?? data.Url ?? '');
-  if (!url) throw new Error('Upload không trả về URL');
-  return url;
+  if (!url) throw new Error('Upload khong tra ve URL');
+  const rawWarn = data.warningCodes ?? data.WarningCodes;
+  const warningCodes = Array.isArray(rawWarn)
+    ? (rawWarn as unknown[]).map(String)
+    : undefined;
+  return {
+    url,
+    looksLikeStudy:
+      data.looksLikeStudy != null || data.LooksLikeStudy != null
+        ? Boolean(data.looksLikeStudy ?? data.LooksLikeStudy)
+        : true,
+    warningCodes,
+    warningMessageVi:
+      data.warningMessageVi != null || data.WarningMessageVi != null
+        ? String(data.warningMessageVi ?? data.WarningMessageVi)
+        : undefined,
+  };
+}
+
+export type MorningNote = {
+  flowDate: string;
+  memberId?: string;
+  bodyVi: string;
+  tone: string;
+  focusTitles: string[];
+  ageYears: number;
+  ageBand: string;
+  parentNudgesLast7Days: number;
+  recentStudyDoneRate: number;
+  isTemplate: boolean;
+};
+
+export async function getMorningNote(
+  familyId: string,
+  memberId?: string,
+  date?: string,
+): Promise<MorningNote> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/morning-note`, {
+    params: {
+      memberId: memberId || undefined,
+      date: date || undefined,
+    },
+  });
+  const titles = data.focusTitles ?? data.FocusTitles ?? [];
+  return {
+    flowDate: String(data.flowDate ?? data.FlowDate ?? ''),
+    memberId:
+      data.memberId != null || data.MemberId != null
+        ? String(data.memberId ?? data.MemberId)
+        : undefined,
+    bodyVi: String(data.bodyVi ?? data.BodyVi ?? ''),
+    tone: String(data.tone ?? data.Tone ?? 'encourage'),
+    focusTitles: Array.isArray(titles) ? titles.map(String) : [],
+    ageYears: Number(data.ageYears ?? data.AgeYears ?? 0),
+    ageBand: String(data.ageBand ?? data.AgeBand ?? 'unknown'),
+    parentNudgesLast7Days: Number(data.parentNudgesLast7Days ?? data.ParentNudgesLast7Days ?? 0),
+    recentStudyDoneRate: Number(data.recentStudyDoneRate ?? data.RecentStudyDoneRate ?? 0.5),
+    isTemplate: Boolean(data.isTemplate ?? data.IsTemplate ?? true),
+  };
 }
 
 export async function updateCommitmentProgress(
@@ -1401,9 +1500,39 @@ export async function approveCommitmentStars(
 export async function verifyCommitmentEvidence(
   familyId: string,
   commitmentId: string,
+  checklist: {
+    isTodaysWork: boolean;
+    withinCommitmentWindow: boolean;
+    matchesCommitment: boolean;
+    overrideDuration?: boolean;
+    note?: string;
+  },
 ): Promise<CommitmentProgressResult> {
   const { data } = await http.post<Row>(
     `/family-os/families/${familyId}/commitments/${commitmentId}/verify-evidence`,
+    {
+      isTodaysWork: checklist.isTodaysWork,
+      withinCommitmentWindow: checklist.withinCommitmentWindow,
+      matchesCommitment: checklist.matchesCommitment,
+      overrideDuration: checklist.overrideDuration ?? false,
+      note: checklist.note ?? null,
+    },
+  );
+  const commitment = mapCommitment(data);
+  return {
+    commitment,
+    memberStarBalance: commitment.memberStarBalance,
+  };
+}
+
+export async function setCommitmentEvidencePolicy(
+  familyId: string,
+  commitmentId: string,
+  evidencePolicy: 'optional' | 'required_soft' | 'required_hard' | string,
+): Promise<CommitmentProgressResult> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/commitments/${commitmentId}/evidence-policy`,
+    { evidencePolicy },
   );
   const commitment = mapCommitment(data);
   return {
@@ -3134,6 +3263,12 @@ export interface FamilyWeeklyInsight {
     trend: string;
   }>;
   highlights: string[];
+  /** Evidence P0 pilot metrics */
+  studyFocusDoneCount?: number;
+  studyFocusDoneWithEvidenceCount?: number;
+  studyEvidenceRate?: number;
+  studyTickOnlyStarPosts?: number;
+  evidenceGateBlockedCount?: number;
   /** Family Mirror — reflective weekly view (opt-in parents only). */
   mirror: {
     child: {
@@ -3294,6 +3429,22 @@ function mapWeeklyInsight(data: Row): FamilyWeeklyInsight {
       const raw = data.highlights ?? data.Highlights;
       return Array.isArray(raw) ? raw.map((x) => String(x)) : [];
     })(),
+    studyFocusDoneCount: Number(
+      data.studyFocusDoneCount ?? data.StudyFocusDoneCount ?? 0,
+    ),
+    studyFocusDoneWithEvidenceCount: Number(
+      data.studyFocusDoneWithEvidenceCount ?? data.StudyFocusDoneWithEvidenceCount ?? 0,
+    ),
+    studyEvidenceRate:
+      data.studyEvidenceRate != null || data.StudyEvidenceRate != null
+        ? Number(data.studyEvidenceRate ?? data.StudyEvidenceRate)
+        : undefined,
+    studyTickOnlyStarPosts: Number(
+      data.studyTickOnlyStarPosts ?? data.StudyTickOnlyStarPosts ?? 0,
+    ),
+    evidenceGateBlockedCount: Number(
+      data.evidenceGateBlockedCount ?? data.EvidenceGateBlockedCount ?? 0,
+    ),
     mirror: mapWeeklyMirror(data.mirror ?? data.Mirror),
   };
 }

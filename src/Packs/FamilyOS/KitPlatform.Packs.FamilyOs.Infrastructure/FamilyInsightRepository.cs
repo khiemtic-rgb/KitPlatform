@@ -56,7 +56,9 @@ internal sealed class FamilyInsightRepository
                          )
                      )
                     THEN TRUE ELSE FALSE
-                END AS IsLateDone
+                END AS IsLateDone,
+                COALESCE(NULLIF(TRIM(c.commitment_kind), ''), 'chore') AS CommitmentKind,
+                c.evidence_satisfied_at AS EvidenceSatisfiedAt
             FROM pack_family.day_flow d
             INNER JOIN pack_family.commitment c
               ON c.day_flow_id = d.id
@@ -244,6 +246,8 @@ internal sealed class FamilyInsightRepository
         public string? Priority { get; init; }
         public int StarDelta { get; init; }
         public bool IsLateDone { get; init; }
+        public string CommitmentKind { get; init; } = FamilyCommitmentKinds.Chore;
+        public DateTimeOffset? EvidenceSatisfiedAt { get; init; }
     }
 
     internal sealed class ReminderDayRow

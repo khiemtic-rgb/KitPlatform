@@ -11,17 +11,20 @@ internal sealed class FamilyInsightService : IFamilyInsightService
     private readonly FamilyGraphRepository _families;
     private readonly IFamilyChallengeService _challenges;
     private readonly IFamilyCommercialService _commercial;
+    private readonly FamilyBehaviorRepository _behavior;
 
     public FamilyInsightService(
         FamilyInsightRepository repo,
         FamilyGraphRepository families,
         IFamilyChallengeService challenges,
-        IFamilyCommercialService commercial)
+        IFamilyCommercialService commercial,
+        FamilyBehaviorRepository behavior)
     {
         _repo = repo;
         _families = families;
         _challenges = challenges;
         _commercial = commercial;
+        _behavior = behavior;
     }
 
     public async Task<FamilyWeeklyReportDto> GetWeeklyReportAsync(
@@ -121,6 +124,44 @@ internal sealed class FamilyInsightService : IFamilyInsightService
             ? $"Dữ liệu {dataDays.Count}/{days} ngày — báo cáo đầy đủ hơn khi cả nhà dùng liên tục."
             : null;
 
+        var studyDone = current.Where(r =>
+            IsDone(r)
+            && FamilyCommitmentKinds.Normalize(r.CommitmentKind) == FamilyCommitmentKinds.StudyFocus)
+            .ToList();
+        var studyWithEvidence = studyDone.Count(r => r.EvidenceSatisfiedAt is not null);
+        var studyTickOnlyStars = studyDone.Count(r =>
+            r.EvidenceSatisfiedAt is null && r.StarDelta > 0);
+        double? studyEvidenceRate = studyDone.Count > 0
+            ? Math.Round(studyWithEvidence * 1.0 / studyDone.Count, 3)
+            : null;
+
+        var tz = FamilyTimeZones.Resolve(family.Timezone);
+        var fromUtc = new DateTimeOffset(
+            TimeZoneInfo.ConvertTimeToUtc(periodStart.ToDateTime(TimeOnly.MinValue), tz));
+        var toUtc = new DateTimeOffset(
+            TimeZoneInfo.ConvertTimeToUtc(periodEnd.AddDays(1).ToDateTime(TimeOnly.MinValue), tz));
+        var gateBlocked = 0;
+        try
+        {
+            gateBlocked = await _behavior.CountFamilyEventsAsync(
+                familyId,
+                FamilyBehaviorEventTypes.CommitmentEvidenceGateBlocked,
+                fromUtc,
+                toUtc,
+                cancellationToken);
+        }
+        catch
+        {
+            // best-effort metric
+        }
+
+        if (studyDone.Count > 0 && studyEvidenceRate is double rate)
+        {
+            highlights.Insert(
+                0,
+                $"Cam kết học: {studyWithEvidence}/{studyDone.Count} có bằng chứng ({rate * 100:0}%).");
+        }
+
         return new FamilyWeeklyReportDto(
             familyId,
             family.Timezone,
@@ -145,7 +186,12 @@ internal sealed class FamilyInsightService : IFamilyInsightService
             members,
             habits,
             highlights,
-            mirror);
+            mirror,
+            studyDone.Count,
+            studyWithEvidence,
+            studyEvidenceRate,
+            studyTickOnlyStars,
+            gateBlocked);
     }
 
     private static bool IsDone(FamilyInsightRepository.InsightRow r) =>

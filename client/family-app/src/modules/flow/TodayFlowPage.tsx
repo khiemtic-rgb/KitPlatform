@@ -328,6 +328,9 @@ export function TodayFlowPage() {
         starDelta: result.commitment.starDelta,
         starLabelVi: result.commitment.starLabelVi,
         memberStarBalance: result.memberStarBalance,
+        starPosted: result.commitment.starPosted,
+        evidenceSatisfied: result.commitment.evidenceSatisfied,
+        evidenceGateLabelVi: result.commitment.evidenceGateLabelVi,
       };
     } catch (err) {
       const msg =
@@ -338,7 +341,7 @@ export function TodayFlowPage() {
             ).trim()
           : '';
       setError(msg || 'Chưa lưu được. Chạm lại giúp mình.');
-      throw new Error('commitment_done_failed');
+      throw new Error(msg || 'commitment_done_failed');
     } finally {
       setBusyId(null);
     }

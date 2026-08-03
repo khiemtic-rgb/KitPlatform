@@ -61,16 +61,32 @@ public static class FamilyEvidenceSatisfiedBy
     public const string DeviceSignal = "device_signal";
 }
 
-/// <summary>Evidence P0 — gate stars / hard-block done for study_focus.</summary>
+/// <summary>Evidence P0/P0.5 — gate stars / hard-block done for study_focus.</summary>
 public static class FamilyEvidenceGate
 {
     public const string EvidenceRequiredCode = "evidence_required";
 
     public const string EvidenceRequiredMessageVi =
-        "Cam kết học cần bằng chứng (ảnh, tự kiểm tra nhớ bài, hoặc bố mẹ xác nhận) trước khi tính hoàn thành đủ.";
+        "Cam kết học cần bằng chứng (ảnh được xác nhận, tự kiểm tra nhớ bài, hoặc bố mẹ xác nhận) trước khi tính hoàn thành đủ.";
 
     public const string SoftGateLabelVi =
-        "Cần ảnh, câu hỏi nhớ bài, hoặc bố mẹ xác nhận để nhận sao.";
+        "Ảnh chỉ là nộp bài — cần bố mẹ xác nhận (đúng bài hôm nay) hoặc câu hỏi nhớ bài mới được sao.";
+
+    public const string HardGateLabelVi =
+        "Chặn hoàn thành — cần xác nhận bằng chứng đúng cam kết (không chỉ ảnh).";
+
+    public const string DurationNotMetCode = "duration_not_met";
+
+    public const string DurationNotMetMessageVi =
+        "Chưa đủ thời lượng cam kết (khoảng 70% thời gian dự kiến). Con học thêm hoặc bố mẹ xác nhận vượt thời lượng.";
+
+    public const string ChecklistIncompleteCode = "checklist_incomplete";
+
+    public const string ChecklistIncompleteMessageVi =
+        "Cần xác nhận đủ 3 mục: bài hôm nay, đúng khung giờ, đúng nội dung cam kết.";
+
+    /// <summary>P0.5 — minimum fraction of expected duration before evidence can satisfy.</summary>
+    public const double MinDurationFraction = 0.7;
 
     public sealed record Signals(
         string CommitmentKind,
@@ -89,6 +105,10 @@ public static class FamilyEvidenceGate
             && p != FamilyEvidencePolicies.Optional;
     }
 
+    /// <summary>
+    /// P0.5: photo URL alone does NOT satisfy study_focus.
+    /// Only evidence_satisfied_at (set by retrieval / parent_verify checklist) counts.
+    /// </summary>
     public static bool IsSatisfied(Signals s)
     {
         var policy = FamilyEvidencePolicies.Normalize(s.EvidencePolicy);
@@ -108,23 +128,41 @@ public static class FamilyEvidenceGate
         if (policy == FamilyEvidencePolicies.Optional)
             return true;
 
-        if (s.EvidenceSatisfiedAt is not null)
+        return s.EvidenceSatisfiedAt is not null;
+    }
+
+    /// <summary>True when study photo was uploaded but not yet parent/retrieval-satisfied.</summary>
+    public static bool HasSubmittedPhoto(Signals s) =>
+        !string.IsNullOrWhiteSpace(s.EvidenceUrl);
+
+    public static bool MeetsMinStudyDuration(
+        DateTimeOffset? startedAt,
+        int? expectedDurationMinutes,
+        DateTimeOffset now,
+        bool overrideDuration)
+    {
+        if (overrideDuration)
             return true;
-        if (!string.IsNullOrWhiteSpace(s.EvidenceUrl))
+        if (expectedDurationMinutes is null or <= 0)
             return true;
-        if (s.HasRetrievalCheck)
-            return true;
-        return false;
+        if (startedAt is null)
+            return false;
+        var min = TimeSpan.FromMinutes(expectedDurationMinutes.Value * MinDurationFraction);
+        return now - startedAt.Value >= min;
+    }
+
+    public static int? MinRequiredDurationMinutes(int? expectedDurationMinutes)
+    {
+        if (expectedDurationMinutes is null or <= 0)
+            return null;
+        return (int)Math.Ceiling(expectedDurationMinutes.Value * MinDurationFraction);
     }
 
     public static string? InferSatisfiedBy(Signals s)
     {
         if (!string.IsNullOrWhiteSpace(s.EvidenceSatisfiedBy))
             return s.EvidenceSatisfiedBy;
-        if (!string.IsNullOrWhiteSpace(s.EvidenceUrl))
-            return FamilyEvidenceSatisfiedBy.Photo;
-        if (s.HasRetrievalCheck)
-            return FamilyEvidenceSatisfiedBy.Retrieval;
+        // Do not infer photo from URL — photo is submit-only until verified.
         return null;
     }
 
@@ -139,7 +177,11 @@ public static class FamilyEvidenceGate
     {
         if (!RequiresEvidence(s.CommitmentKind, s.EvidencePolicy))
             return null;
-        return IsSatisfied(s) ? null : SoftGateLabelVi;
+        if (IsSatisfied(s))
+            return null;
+        return FamilyEvidencePolicies.Normalize(s.EvidencePolicy) == FamilyEvidencePolicies.RequiredHard
+            ? HardGateLabelVi
+            : SoftGateLabelVi;
     }
 
     public static string InferKindFromTitle(string? title) =>

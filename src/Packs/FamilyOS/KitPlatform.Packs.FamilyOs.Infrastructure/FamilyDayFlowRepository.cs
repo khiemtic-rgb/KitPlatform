@@ -356,6 +356,7 @@ internal sealed class FamilyDayFlowRepository
                 c.status AS Status,
                 c.skip_reason AS SkipReason,
                 c.completed_at AS CompletedAt,
+                c.started_at AS StartedAt,
                 c.priority AS Priority,
                 c.expected_duration_minutes AS ExpectedDurationMinutes,
                 c.context_anchor AS ContextAnchor,
@@ -495,6 +496,7 @@ internal sealed class FamilyDayFlowRepository
                 c.skip_reason AS SkipReason,
                 c.completed_at AS CompletedAt,
                 d.flow_date AS FlowDate,
+                c.started_at AS StartedAt,
                 c.priority AS Priority,
                 c.expected_duration_minutes AS ExpectedDurationMinutes,
                 c.context_anchor AS ContextAnchor,
@@ -560,6 +562,11 @@ internal sealed class FamilyDayFlowRepository
                     WHEN @Status IN ('pending', 'in_progress', 'skipped') THEN NULL
                     ELSE completed_at
                 END,
+                started_at = CASE
+                    WHEN @Status IN ('in_progress', 'done') THEN COALESCE(started_at, NOW())
+                    WHEN @Status = 'pending' THEN NULL
+                    ELSE started_at
+                END,
                 pending_star_delta = CASE
                     WHEN @Status IN ('pending', 'in_progress', 'skipped') THEN NULL
                     ELSE pending_star_delta
@@ -608,6 +615,7 @@ internal sealed class FamilyDayFlowRepository
                 status AS Status,
                 skip_reason AS SkipReason,
                 completed_at AS CompletedAt,
+                started_at AS StartedAt,
                 priority AS Priority,
                 expected_duration_minutes AS ExpectedDurationMinutes,
                 context_anchor AS ContextAnchor,
@@ -713,6 +721,22 @@ internal sealed class FamilyDayFlowRepository
             new { TenantId, CommitmentId = commitmentId, By = satisfiedBy });
     }
 
+    public async Task SetEvidencePolicyAsync(
+        Guid commitmentId,
+        string evidencePolicy,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(
+            """
+            UPDATE pack_family.commitment
+            SET evidence_policy = @Policy,
+                updated_at = NOW()
+            WHERE tenant_id = @TenantId AND id = @CommitmentId AND deleted_at IS NULL
+            """,
+            new { TenantId, CommitmentId = commitmentId, Policy = evidencePolicy });
+    }
+
     internal sealed record DayFlowRow
     {
         public Guid Id { get; init; }
@@ -744,6 +768,7 @@ internal sealed class FamilyDayFlowRepository
         public string Status { get; init; } = "";
         public string? SkipReason { get; init; }
         public DateTimeOffset? CompletedAt { get; init; }
+        public DateTimeOffset? StartedAt { get; init; }
         public DateOnly? FlowDate { get; init; }
         public string Priority { get; init; } = FamilyCommitmentPriorities.Normal;
         public int? ExpectedDurationMinutes { get; init; }

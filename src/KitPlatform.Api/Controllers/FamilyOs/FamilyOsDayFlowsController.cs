@@ -119,19 +119,20 @@ public sealed class FamilyOsDayFlowsController : ControllerBase
         }
     }
 
-    /// <summary>Parent confirms evidence for study_focus (marks satisfied + posts pending stars).</summary>
+    /// <summary>Parent confirms evidence for study_focus (checklist + marks satisfied + posts pending stars).</summary>
     [HttpPost("~/api/family-os/families/{familyId:guid}/commitments/{commitmentId:guid}/verify-evidence")]
     [ProducesResponseType(typeof(CommitmentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CommitmentDto>> VerifyEvidence(
         Guid familyId,
         Guid commitmentId,
+        [FromBody] VerifyCommitmentEvidenceRequest request,
         CancellationToken cancellationToken)
     {
         try
         {
             var commitment = await _dayFlows.VerifyCommitmentEvidenceAsync(
-                familyId, commitmentId, cancellationToken);
+                familyId, commitmentId, request ?? new VerifyCommitmentEvidenceRequest(false, false, false), cancellationToken);
             return Ok(commitment);
         }
         catch (InvalidOperationException ex)
@@ -140,8 +141,36 @@ public sealed class FamilyOsDayFlowsController : ControllerBase
         }
     }
 
-    private static object MapDayFlowError(InvalidOperationException ex) =>
-        string.Equals(ex.Message, FamilyEvidenceGate.EvidenceRequiredMessageVi, StringComparison.Ordinal)
-            ? new { code = FamilyEvidenceGate.EvidenceRequiredCode, message = ex.Message }
-            : new { code = "validation_error", message = ex.Message };
+    /// <summary>Set evidence_policy on a day commitment (pilot A4 / required_hard).</summary>
+    [HttpPost("~/api/family-os/families/{familyId:guid}/commitments/{commitmentId:guid}/evidence-policy")]
+    [ProducesResponseType(typeof(CommitmentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<CommitmentDto>> SetEvidencePolicy(
+        Guid familyId,
+        Guid commitmentId,
+        [FromBody] SetCommitmentEvidencePolicyRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var commitment = await _dayFlows.SetCommitmentEvidencePolicyAsync(
+                familyId, commitmentId, request, cancellationToken);
+            return Ok(commitment);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(MapDayFlowError(ex));
+        }
+    }
+
+    private static object MapDayFlowError(InvalidOperationException ex)
+    {
+        if (string.Equals(ex.Message, FamilyEvidenceGate.EvidenceRequiredMessageVi, StringComparison.Ordinal))
+            return new { code = FamilyEvidenceGate.EvidenceRequiredCode, message = ex.Message };
+        if (string.Equals(ex.Message, FamilyEvidenceGate.DurationNotMetMessageVi, StringComparison.Ordinal))
+            return new { code = FamilyEvidenceGate.DurationNotMetCode, message = ex.Message };
+        if (string.Equals(ex.Message, FamilyEvidenceGate.ChecklistIncompleteMessageVi, StringComparison.Ordinal))
+            return new { code = FamilyEvidenceGate.ChecklistIncompleteCode, message = ex.Message };
+        return new { code = "validation_error", message = ex.Message };
+    }
 }

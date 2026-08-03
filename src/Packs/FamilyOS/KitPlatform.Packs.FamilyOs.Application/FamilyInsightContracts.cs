@@ -31,7 +31,17 @@ public sealed record FamilyWeeklyReportDto(
     IReadOnlyList<FamilyWeeklyHabitDto> Habits,
     IReadOnlyList<string> Highlights,
     /// <summary>Family Mirror — reflective weekly view (opt-in parents only).</summary>
-    FamilyMirrorDto Mirror);
+    FamilyMirrorDto Mirror,
+    /// <summary>Evidence P0: done study_focus in period.</summary>
+    int StudyFocusDoneCount = 0,
+    /// <summary>Evidence P0: subset with evidence_satisfied_at.</summary>
+    int StudyFocusDoneWithEvidenceCount = 0,
+    /// <summary>Evidence P0: withEvidence / done (null when done=0).</summary>
+    double? StudyEvidenceRate = null,
+    /// <summary>Must stay 0: star ledger posted for study_focus before evidence.</summary>
+    int StudyTickOnlyStarPosts = 0,
+    /// <summary>Hard-gate blocked ticks in period (behavior_event).</summary>
+    int EvidenceGateBlockedCount = 0);
 
 /// <summary>
 /// Family Health Score — weighted blend of measurable signals only.

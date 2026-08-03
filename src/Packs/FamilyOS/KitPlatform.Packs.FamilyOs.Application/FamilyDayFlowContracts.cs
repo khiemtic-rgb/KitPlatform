@@ -80,7 +80,13 @@ public sealed record CommitmentDto(
     bool EvidenceSatisfied = true,
     DateTimeOffset? EvidenceSatisfiedAt = null,
     string? EvidenceSatisfiedBy = null,
-    string? EvidenceGateLabelVi = null);
+    string? EvidenceGateLabelVi = null,
+    DateTimeOffset? StartedAt = null,
+    /// <summary>P0.5 — true when duration gate ok (or N/A). Study only.</summary>
+    bool StudyDurationMet = true,
+    int? StudyMinDurationMinutes = null,
+    /// <summary>P0.5 — photo uploaded but not yet parent/retrieval-satisfied.</summary>
+    bool EvidenceSubmitted = false);
 
 public sealed record EnsureDayFlowRequest(
     DateOnly? FlowDate,
@@ -93,6 +99,16 @@ public sealed record UpdateCommitmentProgressRequest(
     string? EvidenceUrl = null,
     bool ParentOverride = false);
 
+public sealed record SetCommitmentEvidencePolicyRequest(string EvidencePolicy);
+
+/// <summary>P0.5 — parent checklist before study evidence counts for stars.</summary>
+public sealed record VerifyCommitmentEvidenceRequest(
+    bool IsTodaysWork,
+    bool WithinCommitmentWindow,
+    bool MatchesCommitment,
+    bool OverrideDuration = false,
+    string? Note = null);
+
 public sealed record AddAdHocCommitmentRequest(
     DateOnly? FlowDate,
     Guid? MemberId,
@@ -103,7 +119,6 @@ public sealed record AddAdHocCommitmentRequest(
     int? ExpectedDurationMinutes = null,
     string? Priority = null);
 
-public sealed record FamilyEvidenceUploadResult(string Url);
 
 /// <summary>F2.5 L2 — structured reflection reasons (not free-text punishment).</summary>
 public static class FamilySkipReasons
@@ -156,10 +171,18 @@ public interface IFamilyDayFlowService
         Guid commitmentId,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Parent confirms evidence for study_focus (marks satisfied + posts pending stars).</summary>
+    /// <summary>Parent confirms evidence for study_focus (checklist + marks satisfied + posts pending stars).</summary>
     Task<CommitmentDto> VerifyCommitmentEvidenceAsync(
         Guid familyId,
         Guid commitmentId,
+        VerifyCommitmentEvidenceRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Pilot / P0: set evidence_policy on a day commitment (e.g. required_hard).</summary>
+    Task<CommitmentDto> SetCommitmentEvidencePolicyAsync(
+        Guid familyId,
+        Guid commitmentId,
+        SetCommitmentEvidencePolicyRequest request,
         CancellationToken cancellationToken = default);
 
     /// <summary>One-off mission for a day (template_id null). Survives routine rebuild.</summary>

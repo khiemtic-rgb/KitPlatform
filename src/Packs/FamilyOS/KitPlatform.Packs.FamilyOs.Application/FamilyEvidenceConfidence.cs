@@ -60,23 +60,56 @@ public static class FamilyRetrievalAnswers
 /// <summary>Heuristic: learning-like titles get a light retrieval check.</summary>
 public static class FamilyLearningMission
 {
-    private static readonly string[] Keywords =
+    /// <summary>Folded (ASCII, no diacritics) keywords — also matches accented VI.</summary>
+    private static readonly string[] FoldedKeywords =
     [
-        "học", "bài", "toán", "văn", "lý", "hóa", "sinh", "sử", "địa",
-        "tiếng", "anh", "đọc", "viết", "homework", "study", "english",
-        "math", "lesson", "ôn", "kiểm tra", "bài tập",
+        "hoc", "bai tap", "bai", "toan", "van", "ly", "hoa", "sinh", "su", "dia",
+        "tieng", "anh", "doc", "viet", "homework", "study", "english",
+        "math", "lesson", "on bai", "kiem tra", "on toan", "on van",
+    ];
+
+    /// <summary>Commute / get-ready phrases that contain "hoc" but are not study_focus.</summary>
+    private static readonly string[] FoldedCommute =
+    [
+        "di hoc", "den truong", "toi truong", "den lop", "len truong", "ve truong",
     ];
 
     public static bool IsLearningTitle(string? title)
     {
-        var t = (title ?? "").Trim().ToLowerInvariant();
+        var raw = (title ?? "").Trim();
+        if (raw.Length == 0) return false;
+        var t = FoldAscii(raw);
         if (t.Length == 0) return false;
-        foreach (var k in Keywords)
+        foreach (var c in FoldedCommute)
+        {
+            if (t == c
+                || t.StartsWith(c + " ", StringComparison.Ordinal)
+                || t.EndsWith(" " + c, StringComparison.Ordinal)
+                || t.Contains(" " + c + " ", StringComparison.Ordinal))
+                return false;
+        }
+        foreach (var k in FoldedKeywords)
         {
             if (t.Contains(k, StringComparison.Ordinal))
                 return true;
         }
+        // bare "ôn" (fold "on" is too broad for English)
+        if (raw.Contains("ôn", StringComparison.OrdinalIgnoreCase))
+            return true;
         return false;
+    }
+
+    internal static string FoldAscii(string value)
+    {
+        var formD = value.ToLowerInvariant().Normalize(System.Text.NormalizationForm.FormD);
+        var sb = new System.Text.StringBuilder(formD.Length);
+        foreach (var ch in formD)
+        {
+            var cat = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
+            if (cat != System.Globalization.UnicodeCategory.NonSpacingMark)
+                sb.Append(ch);
+        }
+        return sb.ToString().Normalize(System.Text.NormalizationForm.FormC);
     }
 }
 

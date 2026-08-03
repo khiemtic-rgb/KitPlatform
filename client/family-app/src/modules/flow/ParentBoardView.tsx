@@ -733,6 +733,14 @@ export function ParentBoardView({
   const [rituals, setRituals] = useState<FamilyRitual[]>([]);
   const [ritualBusy, setRitualBusy] = useState<string | null>(null);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  /** Preview nội dung trước khi xác nhận cam kết / duyệt sao. */
+  const [verifyPreview, setVerifyPreview] = useState<DayFlowCommitment | null>(null);
+  const [verifyListOpen, setVerifyListOpen] = useState(false);
+  const [verifyCheckTodays, setVerifyCheckTodays] = useState(false);
+  const [verifyCheckWindow, setVerifyCheckWindow] = useState(false);
+  const [verifyCheckMatch, setVerifyCheckMatch] = useState(false);
+  const [verifyOverrideDuration, setVerifyOverrideDuration] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
   const childMenuRef = useRef<HTMLDivElement>(null);
   const diaryDatesRef = useRef<HTMLDivElement>(null);
 
@@ -2004,6 +2012,7 @@ export function ParentBoardView({
     () => [...buckets.open, ...buckets.waiting],
     [buckets.open, buckets.waiting],
   );
+  const awaitingVerifyItems = useMemo(() => buckets.waiting, [buckets.waiting]);
   const waitingChildItems = useMemo(() => buckets.upcoming, [buckets.upcoming]);
   const doneTodayItems = useMemo(() => buckets.done, [buckets.done]);
 
@@ -2020,6 +2029,7 @@ export function ParentBoardView({
       throw new Error('approve_stars_busy');
     }
     setVerifyingId(item.id);
+    setVerifyError(null);
     try {
       if (isOpen(item)) {
         await Promise.resolve(onMarkDone(item));
@@ -2027,7 +2037,16 @@ export function ParentBoardView({
       const needsEvidenceVerify =
         item.commitmentKind === 'study_focus' && item.evidenceSatisfied === false;
       if (needsEvidenceVerify) {
-        await verifyCommitmentEvidence(familyId, item.id);
+        if (!verifyCheckTodays || !verifyCheckWindow || !verifyCheckMatch) {
+          setVerifyError('Cần tick đủ 3 mục xác nhận trước khi duyệt.');
+          throw new Error('checklist_incomplete');
+        }
+        await verifyCommitmentEvidence(familyId, item.id, {
+          isTodaysWork: verifyCheckTodays,
+          withinCommitmentWindow: verifyCheckWindow,
+          matchesCommitment: verifyCheckMatch,
+          overrideDuration: verifyOverrideDuration,
+        });
         onRefreshFlow?.();
       } else if (onApproveStars) {
         await onApproveStars(item);
@@ -2037,17 +2056,48 @@ export function ParentBoardView({
       }
       markParentVerified(flow.flowDate, item.id);
       setVerifiedTick((t) => t + 1);
-      showDiaryToast(
-        needsEvidenceVerify
-          ? `Đã xác nhận cam kết «${item.title}»!`
-          : `Đã xác nhận «${item.title}»!`,
-      );
+      const next =
+        awaitingVerifyItems.find((c) => c.id !== item.id) ?? null;
+      if (next) {
+        openVerifyPreview(next);
+        showDiaryToast(
+          needsEvidenceVerify
+            ? `Đã xác nhận «${item.title}» · còn mục cần duyệt`
+            : `Đã xác nhận «${item.title}» · còn mục cần duyệt`,
+        );
+      } else {
+        setVerifyPreview(null);
+        setVerifyListOpen(false);
+        showDiaryToast(
+          needsEvidenceVerify
+            ? `Đã xác nhận cam kết «${item.title}»!`
+            : `Đã xác nhận «${item.title}»!`,
+        );
+      }
     } catch (err) {
-      showDiaryToast('Chưa duyệt được sao — thử lại nhé.');
+      const msg =
+        err && typeof err === 'object' && 'response' in err
+          ? String(
+              (err as { response?: { data?: { message?: string } } }).response?.data
+                ?.message ?? '',
+            )
+          : '';
+      if (msg) setVerifyError(msg);
+      else if (!verifyError) showDiaryToast('Chưa duyệt được sao — thử lại nhé.');
       throw err;
     } finally {
       setVerifyingId(null);
     }
+  };
+
+  const openVerifyPreview = (item: DayFlowCommitment) => {
+    setVerifyListOpen(false);
+    setVerifyCheckTodays(false);
+    setVerifyCheckWindow(false);
+    setVerifyCheckMatch(false);
+    setVerifyOverrideDuration(false);
+    setVerifyError(null);
+    setVerifyPreview(item);
   };
 
   const scrollToMissions = (filter: MissionFilter = 'all') => {
@@ -2226,6 +2276,18 @@ export function ParentBoardView({
     () => diaryDaySummaryLine(childShort, scopedDone, Math.max(scopedTotal, 0)),
     [childShort, scopedDone, scopedTotal],
   );
+  const studyEvidenceLine = useMemo(() => {
+    const study = scopedCommitments.filter((c) => c.commitmentKind === 'study_focus');
+    if (study.length === 0) return null;
+    const done = study.filter((c) => c.status === 'done');
+    const withEv = done.filter((c) => c.evidenceSatisfied);
+    return {
+      total: study.length,
+      done: done.length,
+      withEvidence: withEv.length,
+      waiting: done.length - withEv.length + study.filter((c) => c.status !== 'done').length,
+    };
+  }, [scopedCommitments]);
 
   const diaryPrettyMemories = useMemo(() => {
     const all = buildFamilyMemories({
@@ -2617,7 +2679,7 @@ export function ParentBoardView({
         return;
       }
       if (hit.kind === 'awaiting') {
-        void verifyItem(hit.item).catch(() => undefined);
+        openVerifyPreview(hit.item);
         return;
       }
       if (hit.kind === 'consequence') {
@@ -2967,7 +3029,50 @@ export function ParentBoardView({
                         ? 'Mission Complete — cả đội đã xong ngày hôm nay.'
                         : 'Hôm nay ưu tiên 1 việc trước.'}
               </h2>
-              <div className={`ph-b4-brief-task is-${briefTaskTone}`}>
+              <div
+                className={`ph-b4-brief-task is-${briefTaskTone}${
+                  homeBrief.primaryAction.kind === 'attention' &&
+                  homeBrief.primaryAction.attentionKind === 'awaiting'
+                    ? ' is-tap'
+                    : ''
+                }`}
+                role={
+                  homeBrief.primaryAction.kind === 'attention' &&
+                  homeBrief.primaryAction.attentionKind === 'awaiting'
+                    ? 'button'
+                    : undefined
+                }
+                tabIndex={
+                  homeBrief.primaryAction.kind === 'attention' &&
+                  homeBrief.primaryAction.attentionKind === 'awaiting'
+                    ? 0
+                    : undefined
+                }
+                onClick={() => {
+                  if (
+                    homeBrief.primaryAction.kind === 'attention' &&
+                    homeBrief.primaryAction.attentionKind === 'awaiting'
+                  ) {
+                    const hit =
+                      attentionItems.find((x) => x.id === homeBrief.primaryAction.attentionId) ??
+                      attentionItems.find((x) => x.kind === 'awaiting');
+                    if (hit?.kind === 'awaiting') openVerifyPreview(hit.item);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter' && e.key !== ' ') return;
+                  if (
+                    homeBrief.primaryAction.kind === 'attention' &&
+                    homeBrief.primaryAction.attentionKind === 'awaiting'
+                  ) {
+                    e.preventDefault();
+                    const hit =
+                      attentionItems.find((x) => x.id === homeBrief.primaryAction.attentionId) ??
+                      attentionItems.find((x) => x.kind === 'awaiting');
+                    if (hit?.kind === 'awaiting') openVerifyPreview(hit.item);
+                  }
+                }}
+              >
                 <span className="ph-b4-brief-check" aria-hidden>
                   {briefTaskIcon}
                 </span>
@@ -3007,7 +3112,7 @@ export function ParentBoardView({
                     ? 'Trả lời 3 câu'
                     : homeBrief.primaryAction.kind === 'attention' &&
                         homeBrief.primaryAction.attentionKind === 'awaiting'
-                      ? 'Xác nhận ngay'
+                      ? 'Xem & xác nhận'
                       : 'Thực hiện ngay'}
               </button>
             </div>
@@ -3199,7 +3304,10 @@ export function ParentBoardView({
                       (effectiveChildFocus !== 'all' ? selectedChild?.name : null);
                     const metaBase =
                       a.kind === 'awaiting'
-                        ? 'Con báo đã xong · chạm để xác nhận'
+                        ? a.item.commitmentKind === 'study_focus' &&
+                          a.item.evidenceSatisfied === false
+                          ? 'Con báo đã xong · chờ bằng chứng / xác nhận'
+                          : 'Con báo đã xong · chạm để xác nhận'
                         : a.kind === 'overdue'
                           ? clock
                             ? `Quá giờ · lẽ ra xong trước ${clock}`
@@ -3215,7 +3323,7 @@ export function ParentBoardView({
                           className="ph-b4-priority-item"
                           onClick={() => {
                             if (a.kind === 'awaiting') {
-                              void verifyItem(a.item).catch(() => undefined);
+                              openVerifyPreview(a.item);
                               return;
                             }
                             scrollToMissions('need_help');
@@ -3820,11 +3928,11 @@ export function ParentBoardView({
                               type="button"
                               className="ph-task-cta is-check"
                               disabled={busyId === item.id || verifyingId === item.id}
-                              onClick={() => void verifyItem(item)}
+                              onClick={() => openVerifyPreview(item)}
                             >
                               {busyId === item.id || verifyingId === item.id
                                 ? 'Đang…'
-                                : taskCtaLabel(item.title, kind, flow.flowDate)}
+                                : 'Xem & xác nhận'}
                             </button>
                           ) : canRemindChildNow(item) ? (
                             <QuickNudgeButton
@@ -4244,6 +4352,12 @@ export function ParentBoardView({
                       +{diaryStarsEarned} ⭐
                       {diaryStarsPending > 0 ? ` (+${diaryStarsPending} chờ duyệt)` : ''}
                     </em>
+                    {studyEvidenceLine && studyEvidenceLine.done > 0 ? (
+                      <em style={{ display: 'block', marginTop: 4 }}>
+                        Cam kết học: {studyEvidenceLine.withEvidence}/{studyEvidenceLine.done} có
+                        bằng chứng
+                      </em>
+                    ) : null}
                   </div>
                 </div>
               </article>
@@ -4294,7 +4408,26 @@ export function ParentBoardView({
                           )}
                           <em>{entry.time}</em>
                         </div>
-                        <article className="ph-diary-card">
+                        <article
+                          className={`ph-diary-card${entry.wait ? ' is-tap' : ''}`}
+                          role={entry.wait ? 'button' : undefined}
+                          tabIndex={entry.wait ? 0 : undefined}
+                          onClick={
+                            entry.wait
+                              ? () => openVerifyPreview(entry.item)
+                              : undefined
+                          }
+                          onKeyDown={
+                            entry.wait
+                              ? (e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    openVerifyPreview(entry.item);
+                                  }
+                                }
+                              : undefined
+                          }
+                        >
                           <span className={`ph-diary-ico tone-${entry.tone}`} aria-hidden>
                             {taskIcon(entry.item.title)}
                           </span>
@@ -4304,7 +4437,12 @@ export function ParentBoardView({
                               {entry.done ? (
                                 <span className="ph-diary-status is-ok">Hoàn thành</span>
                               ) : entry.wait ? (
-                                <span className="ph-diary-status is-wait">Chờ kiểm tra</span>
+                                <span className="ph-diary-status is-wait">
+                                  {entry.item.commitmentKind === 'study_focus' &&
+                                  entry.item.evidenceSatisfied === false
+                                    ? 'Chờ bằng chứng'
+                                    : 'Chờ kiểm tra'}
+                                </span>
                               ) : entry.skipped ? (
                                 <span className="ph-diary-status is-skip">Bỏ qua</span>
                               ) : (
@@ -4320,11 +4458,22 @@ export function ParentBoardView({
                               </span>
                             ) : null}
                             <p>{entry.note}</p>
+                            {entry.wait && entry.item.commitmentKind === 'study_focus' ? (
+                              <p className="muted" style={{ marginTop: 4, fontSize: '0.82rem' }}>
+                                {entry.item.evidenceUrl
+                                  ? 'Có ảnh đính kèm — chạm để xem trước khi xác nhận.'
+                                  : 'Chưa có ảnh — xem chi tiết rồi xác nhận nếu tin lời con.'}
+                              </p>
+                            ) : null}
                             <span className={`ph-diary-tag tone-${entry.tag.tone}`}>
                               {entry.tag.label}
                             </span>
                           </div>
-                          <div className="ph-diary-card-side">
+                          <div
+                            className="ph-diary-card-side"
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                          >
                             {entry.item.evidenceUrl ? (
                               <a
                                 className="ph-diary-photo"
@@ -4356,11 +4505,11 @@ export function ParentBoardView({
                                 disabled={
                                   busyId === entry.item.id || verifyingId === entry.item.id
                                 }
-                                onClick={() => void verifyItem(entry.item)}
+                                onClick={() => openVerifyPreview(entry.item)}
                               >
                                 {busyId === entry.item.id || verifyingId === entry.item.id
                                   ? 'Đang…'
-                                  : 'Kiểm tra'}
+                                  : 'Xem & xác nhận'}
                               </button>
                             ) : null}
                           </div>
@@ -5105,6 +5254,207 @@ export function ParentBoardView({
             >
               Đóng
             </button>
+          </div>
+        </div>
+      ) : null}
+
+      {verifyPreview ? (
+        <div
+          className="sheet-backdrop"
+          role="presentation"
+          onClick={() => setVerifyPreview(null)}
+        >
+          <div
+            className="sheet ph-verify-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Xem trước rồi xác nhận"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {(() => {
+              const item = verifyPreview;
+              const who = item.memberName?.trim() || childShort;
+              const isStudy = item.commitmentKind === 'study_focus';
+              const needsEvidence =
+                isStudy && item.evidenceSatisfied === false;
+              const photo = withEvidenceAuth(item.evidenceUrl);
+              const queue = awaitingVerifyItems;
+              const idx = Math.max(
+                0,
+                queue.findIndex((c) => c.id === item.id),
+              );
+              const queuePos = queue.some((c) => c.id === item.id) ? idx + 1 : 1;
+              const queueTotal = Math.max(queue.length, 1);
+              return (
+                <>
+                  <div className="ph-verify-top">
+                    <p className="ph-verify-eyebrow">Xem trước · rồi mới xác nhận</p>
+                    {queue.length > 1 ? (
+                      <button
+                        type="button"
+                        className="ph-verify-queue-btn"
+                        onClick={() => setVerifyListOpen((v) => !v)}
+                      >
+                        {verifyListOpen
+                          ? 'Ẩn danh sách'
+                          : `${queuePos}/${queueTotal} · Xem các mục cần duyệt`}
+                      </button>
+                    ) : null}
+                  </div>
+                  {verifyListOpen && queue.length > 1 ? (
+                    <ul className="ph-verify-queue" aria-label="Các mục cần duyệt">
+                      {queue.map((c, i) => {
+                        const cWho = c.memberName?.trim() || childShort;
+                        const on = c.id === item.id;
+                        return (
+                          <li key={c.id}>
+                            <button
+                              type="button"
+                              className={`ph-verify-queue-item${on ? ' is-on' : ''}`}
+                              onClick={() => {
+                                setVerifyPreview(c);
+                                setVerifyListOpen(false);
+                              }}
+                            >
+                              <strong>
+                                {i + 1}. {c.title}
+                              </strong>
+                              <em>
+                                {cWho}
+                                {c.commitmentKind === 'study_focus' ? ' · 📚 Học' : ''}
+                                {c.evidenceUrl ? ' · có ảnh' : ' · chưa ảnh'}
+                              </em>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                  <h2>{item.title}</h2>
+                  <p className="ph-verify-meta">
+                    <span aria-hidden>
+                      {avatarEmoji(inferGenderFromName(who), 'child')}
+                    </span>{' '}
+                    {who}
+                    {item.windowStart || item.windowEnd
+                      ? ` · ${formatWindow(item.windowStart, item.windowEnd) ?? ''}`
+                      : ''}
+                  </p>
+                  {isStudy ? (
+                    <span className="ph-verify-chip">📚 Cam kết học</span>
+                  ) : null}
+                  {photo ? (
+                    <a
+                      className="ph-verify-photo"
+                      href={photo}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <img src={photo} alt={`Ảnh ${who} gửi — ${item.title}`} />
+                      <em>Chạm để xem ảnh lớn</em>
+                    </a>
+                  ) : (
+                    <div className="ph-verify-empty">
+                      <strong>Chưa có ảnh đính kèm</strong>
+                      <p>
+                        {needsEvidence
+                          ? 'Con đã báo xong. Xác nhận nghĩa là bạn tin lời cam kết — sao mới được cộng.'
+                          : 'Không bắt buộc ảnh với việc này. Bạn vẫn có thể xác nhận nếu đã kiểm tra ngoài đời.'}
+                      </p>
+                    </div>
+                  )}
+                  {item.evidenceGateLabelVi ? (
+                    <p className="ph-verify-gate">{item.evidenceGateLabelVi}</p>
+                  ) : null}
+                  {needsEvidence ? (
+                    <fieldset className="ph-verify-checklist">
+                      <legend>Xác nhận bằng chứng (bắt buộc)</legend>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={verifyCheckTodays}
+                          onChange={(e) => setVerifyCheckTodays(e.target.checked)}
+                        />
+                        Đây là bài / vở / màn hình học <strong>hôm nay</strong>
+                      </label>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={verifyCheckWindow}
+                          onChange={(e) => setVerifyCheckWindow(e.target.checked)}
+                        />
+                        Con làm <strong>trong khung cam kết</strong> (hoặc gần đúng)
+                      </label>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={verifyCheckMatch}
+                          onChange={(e) => setVerifyCheckMatch(e.target.checked)}
+                        />
+                        Nội dung <strong>khớp</strong> việc trên cam kết
+                      </label>
+                      {item.studyDurationMet === false ? (
+                        <label className="ph-verify-duration">
+                          <input
+                            type="checkbox"
+                            checked={verifyOverrideDuration}
+                            onChange={(e) => setVerifyOverrideDuration(e.target.checked)}
+                          />
+                          Chưa đủ ~{item.studyMinDurationMinutes ?? '?'} phút — tôi vẫn xác nhận
+                          (ghi nhận vượt thời lượng)
+                        </label>
+                      ) : item.expectedDurationMinutes ? (
+                        <p className="muted ph-verify-duration-ok">
+                          Thời lượng tối thiểu ~{item.studyMinDurationMinutes} phút
+                          {item.startedAt ? ' · đã bắt đầu' : ' · chưa bấm bắt đầu'}
+                        </p>
+                      ) : null}
+                    </fieldset>
+                  ) : null}
+                  {verifyError ? (
+                    <p className="ph-verify-error" role="alert">
+                      {verifyError}
+                    </p>
+                  ) : null}
+                  <div className="ph-verify-actions">
+                    <button
+                      type="button"
+                      className="pill is-soft"
+                      onClick={() => {
+                        setVerifyPreview(null);
+                        setVerifyListOpen(false);
+                      }}
+                    >
+                      Để sau
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      disabled={
+                        busyId === item.id ||
+                        verifyingId === item.id ||
+                        (needsEvidence &&
+                          (!verifyCheckTodays ||
+                            !verifyCheckWindow ||
+                            !verifyCheckMatch ||
+                            (item.studyDurationMet === false && !verifyOverrideDuration)))
+                      }
+                      onClick={() => void verifyItem(item).catch(() => undefined)}
+                    >
+                      {busyId === item.id || verifyingId === item.id
+                        ? 'Đang xác nhận…'
+                        : needsEvidence
+                          ? queue.length > 1
+                            ? 'Xác nhận · mục tiếp'
+                            : 'Xác nhận cam kết học'
+                          : queue.length > 1
+                            ? 'Xác nhận · mục tiếp'
+                            : 'Xác nhận & duyệt sao'}
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       ) : null}
