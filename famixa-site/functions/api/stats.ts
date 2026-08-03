@@ -2,6 +2,8 @@ type CfEnv = {
   STATS_VIEW_KEY?: string;
   CF_ZONE_ID?: string;
   CLOUDFLARE_API_TOKEN?: string;
+  FAMIXA_CF_ZONE_ID?: string;
+  FAMIXA_CF_ANALYTICS_API_TOKEN?: string;
 };
 
 type GraphQlResponse = {
@@ -211,9 +213,17 @@ function readAuth(request: Request): string | null {
   return new URL(request.url).searchParams.get('key')?.trim() ?? null;
 }
 
+function resolveZoneId(env: CfEnv): string | undefined {
+  return env.FAMIXA_CF_ZONE_ID?.trim() || env.CF_ZONE_ID?.trim();
+}
+
+function resolveAnalyticsToken(env: CfEnv): string | undefined {
+  return env.FAMIXA_CF_ANALYTICS_API_TOKEN?.trim() || env.CLOUDFLARE_API_TOKEN?.trim();
+}
+
 async function fetchZoneStats(env: CfEnv) {
-  const zoneId = env.CF_ZONE_ID?.trim();
-  const token = env.CLOUDFLARE_API_TOKEN?.trim();
+  const zoneId = resolveZoneId(env);
+  const token = resolveAnalyticsToken(env);
   if (!zoneId || !token) {
     throw new Error('MISSING_CONFIG');
   }
@@ -287,8 +297,8 @@ async function fetchZoneStats(env: CfEnv) {
 function envStatus(env: CfEnv) {
   return {
     STATS_VIEW_KEY: Boolean(env.STATS_VIEW_KEY?.trim()),
-    CF_ZONE_ID: Boolean(env.CF_ZONE_ID?.trim()),
-    CLOUDFLARE_API_TOKEN: Boolean(env.CLOUDFLARE_API_TOKEN?.trim()),
+    CF_ZONE_ID: Boolean(resolveZoneId(env)),
+    CLOUDFLARE_API_TOKEN: Boolean(resolveAnalyticsToken(env)),
   };
 }
 
@@ -321,9 +331,9 @@ export const onRequestGet: PagesFunction<CfEnv> = async (context) => {
     if (message === 'MISSING_CONFIG') {
       return json(
         {
-          error: 'Chưa cấu hình CF_ZONE_ID hoặc CLOUDFLARE_API_TOKEN trên Cloudflare Pages.',
+          error: 'Chưa cấu hình zone/token Analytics trên Cloudflare Pages.',
           configured: envStatus(context.env),
-          hint: 'Thêm CF_ZONE_ID (zone famixa.vn) và CLOUDFLARE_API_TOKEN (Analytics Read), rồi Retry deployment.',
+          hint: 'Thêm FAMIXA_CF_ZONE_ID + FAMIXA_CF_ANALYTICS_API_TOKEN (hoặc CF_ZONE_ID + CLOUDFLARE_API_TOKEN), rồi Retry deployment.',
         },
         503,
       );
