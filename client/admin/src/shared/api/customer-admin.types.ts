@@ -98,6 +98,8 @@ export interface CustomerDetail {
   customerGroupId?: string | null;
   customerGroupName?: string | null;
   groupDiscountPercent?: number;
+  /** CRM: prospect | member | revoked */
+  pharmacyRelation?: string;
 }
 
 export interface CustomerPilotOtpStatus {

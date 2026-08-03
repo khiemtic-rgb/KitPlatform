@@ -169,6 +169,29 @@ public sealed class CustomersController : ControllerBase
         return status is null ? NotFound() : Ok(status);
     }
 
+    /// <summary>Confirm prospect/revoked CRM link → pharmacy member (POS first sale / staff mark).</summary>
+    [HttpPost("{customerId:guid}/pharmacy-member")]
+    [Authorize(Policy = SalesPolicies.Write)]
+    public async Task<ActionResult<CustomerDetailDto>> MarkPharmacyMember(
+        Guid customerId,
+        [FromBody] MarkPharmacyMemberRequest? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var item = await _admin.MarkPharmacyMemberAsync(
+                customerId,
+                request?.VerifiedVia,
+                _tenant.UserId,
+                cancellationToken);
+            return item is null ? NotFound() : Ok(item);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("{customerId:guid}/orders")]
     [Authorize(Policy = SalesPolicies.Read)]
     public async Task<ActionResult<PagedCustomerOrdersResult>> GetOrders(

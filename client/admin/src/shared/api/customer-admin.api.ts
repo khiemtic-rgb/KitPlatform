@@ -75,6 +75,7 @@ function normalizeDetail(row: Record<string, unknown>): CustomerDetail {
         : null,
     customerGroupName: (row.customerGroupName ?? row.CustomerGroupName) as string | null | undefined,
     groupDiscountPercent: Number(row.groupDiscountPercent ?? row.GroupDiscountPercent ?? 0),
+    pharmacyRelation: String(row.pharmacyRelation ?? row.PharmacyRelation ?? 'member'),
   };
 }
 
@@ -242,6 +243,16 @@ export async function fetchCustomerPilotOtp(customerId: string): Promise<Custome
     expiresAt: (data.expiresAt ?? data.ExpiresAt) as string | null,
     createdAt: (data.createdAt ?? data.CreatedAt) as string | null,
   };
+}
+
+export async function markCustomerPharmacyMember(
+  customerId: string,
+  verifiedVia: string = 'staff_mark',
+): Promise<CustomerDetail> {
+  const { data } = await http.post<Record<string, unknown>>(`/customers/${customerId}/pharmacy-member`, {
+    verifiedVia,
+  });
+  return normalizeDetail(data);
 }
 
 export async function fetchNextCustomerCode(): Promise<string> {
