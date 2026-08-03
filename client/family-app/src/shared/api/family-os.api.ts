@@ -78,6 +78,13 @@ export interface DayFlowCommitment {
   /** S1–S2 behavior pattern / tactic */
   behaviorPatternCode?: string;
   behaviorTacticCode?: string;
+  /** Evidence P0 */
+  commitmentKind?: 'chore' | 'study_focus' | 'relation' | string;
+  evidencePolicy?: 'optional' | 'required_soft' | 'required_hard' | string;
+  evidenceSatisfied?: boolean;
+  evidenceSatisfiedAt?: string;
+  evidenceSatisfiedBy?: string;
+  evidenceGateLabelVi?: string;
 }
 
 export const REFLECTION_PROMPT_OPTIONS = [
@@ -647,6 +654,27 @@ function mapCommitment(c: Row): DayFlowCommitment {
     behaviorTacticCode:
       c.behaviorTacticCode != null || c.BehaviorTacticCode != null
         ? String(c.behaviorTacticCode ?? c.BehaviorTacticCode)
+        : undefined,
+    commitmentKind: String(
+      c.commitmentKind ?? c.CommitmentKind ?? 'chore',
+    ).toLowerCase(),
+    evidencePolicy: String(
+      c.evidencePolicy ?? c.EvidencePolicy ?? 'optional',
+    ).toLowerCase(),
+    evidenceSatisfied: Boolean(
+      c.evidenceSatisfied ?? c.EvidenceSatisfied ?? true,
+    ),
+    evidenceSatisfiedAt:
+      c.evidenceSatisfiedAt != null || c.EvidenceSatisfiedAt != null
+        ? String(c.evidenceSatisfiedAt ?? c.EvidenceSatisfiedAt)
+        : undefined,
+    evidenceSatisfiedBy:
+      c.evidenceSatisfiedBy != null || c.EvidenceSatisfiedBy != null
+        ? String(c.evidenceSatisfiedBy ?? c.EvidenceSatisfiedBy)
+        : undefined,
+    evidenceGateLabelVi:
+      c.evidenceGateLabelVi != null || c.EvidenceGateLabelVi != null
+        ? String(c.evidenceGateLabelVi ?? c.EvidenceGateLabelVi)
         : undefined,
   };
 }
@@ -1370,6 +1398,20 @@ export async function approveCommitmentStars(
   };
 }
 
+export async function verifyCommitmentEvidence(
+  familyId: string,
+  commitmentId: string,
+): Promise<CommitmentProgressResult> {
+  const { data } = await http.post<Row>(
+    `/family-os/families/${familyId}/commitments/${commitmentId}/verify-evidence`,
+  );
+  const commitment = mapCommitment(data);
+  return {
+    commitment,
+    memberStarBalance: commitment.memberStarBalance,
+  };
+}
+
 export async function fetchMemberStarBalance(
   familyId: string,
   memberId: string,
@@ -1500,6 +1542,7 @@ export interface CommitmentTemplateDto {
   isActive: boolean;
   priority?: string;
   starReward?: number;
+  commitmentKind?: 'chore' | 'study_focus' | 'relation' | string;
 }
 
 export interface FamilyRoutineDto {
@@ -1531,6 +1574,9 @@ function mapTemplate(t: Row): CommitmentTemplateDto {
     priority:
       t.priority != null || t.Priority != null ? String(t.priority ?? t.Priority) : undefined,
     starReward: Number(t.starReward ?? t.StarReward ?? 0) || undefined,
+    commitmentKind: String(
+      t.commitmentKind ?? t.CommitmentKind ?? 'chore',
+    ).toLowerCase(),
   };
 }
 
@@ -1629,6 +1675,7 @@ export async function updateCommitmentTemplate(
     isActive: boolean;
     priority?: string;
     starReward?: number;
+    commitmentKind?: string;
   },
 ): Promise<CommitmentTemplateDto> {
   const { data } = await http.patch<Row>(
@@ -1643,6 +1690,7 @@ export async function updateCommitmentTemplate(
       isActive: input.isActive,
       priority: input.priority ?? 'normal',
       starReward: input.starReward ?? null,
+      commitmentKind: input.commitmentKind ?? null,
     },
   );
   return mapTemplate(data);

@@ -22,7 +22,8 @@ internal sealed class FamilyRoutineRepository
         allow_early_complete AS AllowEarlyComplete,
         early_lead_minutes AS EarlyLeadMinutes,
         on_time_grace_minutes AS OnTimeGraceMinutes,
-        star_reward AS StarReward
+        star_reward AS StarReward,
+        COALESCE(NULLIF(TRIM(commitment_kind), ''), 'chore') AS CommitmentKind
         """;
     public async Task<bool> FamilyExistsAsync(Guid familyId, CancellationToken cancellationToken)
     {
@@ -130,6 +131,7 @@ internal sealed class FamilyRoutineRepository
         int earlyLeadMinutes,
         int onTimeGraceMinutes,
         int starReward,
+        string commitmentKind,
         CancellationToken cancellationToken)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -139,13 +141,15 @@ internal sealed class FamilyRoutineRepository
                 tenant_id, routine_id, member_id, title, description,
                 window_start, window_end, sort_order,
                 priority, expected_duration_minutes, context_anchor, depends_on_template_ids,
-                allow_early_complete, early_lead_minutes, on_time_grace_minutes, star_reward
+                allow_early_complete, early_lead_minutes, on_time_grace_minutes, star_reward,
+                commitment_kind
             )
             VALUES (
                 @TenantId, @RoutineId, @MemberId, @Title, @Description,
                 @WindowStart, @WindowEnd, @SortOrder,
                 @Priority, @ExpectedDurationMinutes, @ContextAnchor, @DependsOnTemplateIds,
-                @AllowEarlyComplete, @EarlyLeadMinutes, @OnTimeGraceMinutes, @StarReward
+                @AllowEarlyComplete, @EarlyLeadMinutes, @OnTimeGraceMinutes, @StarReward,
+                @CommitmentKind
             )
             RETURNING {TemplateSelect}
             """,
@@ -167,6 +171,7 @@ internal sealed class FamilyRoutineRepository
                 EarlyLeadMinutes = earlyLeadMinutes,
                 OnTimeGraceMinutes = onTimeGraceMinutes,
                 StarReward = starReward,
+                CommitmentKind = commitmentKind,
             });
     }
     public async Task<RoutineRow?> UpdateRoutineAsync(
@@ -244,6 +249,7 @@ internal sealed class FamilyRoutineRepository
         int earlyLeadMinutes,
         int onTimeGraceMinutes,
         int starReward,
+        string commitmentKind,
         CancellationToken cancellationToken)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -265,6 +271,7 @@ internal sealed class FamilyRoutineRepository
                 early_lead_minutes = @EarlyLeadMinutes,
                 on_time_grace_minutes = @OnTimeGraceMinutes,
                 star_reward = @StarReward,
+                commitment_kind = @CommitmentKind,
                 updated_at = NOW()
             WHERE tenant_id = @TenantId
               AND routine_id = @RoutineId
@@ -292,6 +299,7 @@ internal sealed class FamilyRoutineRepository
                 EarlyLeadMinutes = earlyLeadMinutes,
                 OnTimeGraceMinutes = onTimeGraceMinutes,
                 StarReward = starReward,
+                CommitmentKind = commitmentKind,
             });
     }
     public async Task<bool> SoftDeleteTemplateAsync(
@@ -360,5 +368,6 @@ internal sealed class FamilyRoutineRepository
         public int EarlyLeadMinutes { get; init; }
         public int OnTimeGraceMinutes { get; init; }
         public int StarReward { get; init; }
+        public string CommitmentKind { get; init; } = FamilyCommitmentKinds.Chore;
     }
 }

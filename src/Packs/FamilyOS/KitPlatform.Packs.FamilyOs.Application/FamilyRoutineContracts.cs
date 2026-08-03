@@ -26,7 +26,8 @@ public sealed record CommitmentTemplateDto(
     bool AllowEarlyComplete,
     int EarlyLeadMinutes,
     int OnTimeGraceMinutes,
-    int StarReward);
+    int StarReward,
+    string CommitmentKind = FamilyCommitmentKinds.Chore);
 public sealed record CreateRoutineRequest(
     string Code,
     string DisplayName,
@@ -48,7 +49,8 @@ public sealed record CreateCommitmentTemplateRequest(
     bool? AllowEarlyComplete = null,
     int? EarlyLeadMinutes = null,
     int? OnTimeGraceMinutes = null,
-    int? StarReward = null);
+    int? StarReward = null,
+    string? CommitmentKind = null);
 public sealed record AddCommitmentTemplateRequest(
     string Title,
     string? Description,
@@ -63,7 +65,8 @@ public sealed record AddCommitmentTemplateRequest(
     bool? AllowEarlyComplete = null,
     int? EarlyLeadMinutes = null,
     int? OnTimeGraceMinutes = null,
-    int? StarReward = null);
+    int? StarReward = null,
+    string? CommitmentKind = null);
 public sealed record UpdateRoutineRequest(
     string? DisplayName,
     string? Kind,
@@ -86,7 +89,8 @@ public sealed record UpdateCommitmentTemplateRequest(
     bool? AllowEarlyComplete = null,
     int? EarlyLeadMinutes = null,
     int? OnTimeGraceMinutes = null,
-    int? StarReward = null);
+    int? StarReward = null,
+    string? CommitmentKind = null);
 public interface IFamilyRoutineService
 {
     Task<IReadOnlyList<RoutineDto>> ListRoutinesAsync(

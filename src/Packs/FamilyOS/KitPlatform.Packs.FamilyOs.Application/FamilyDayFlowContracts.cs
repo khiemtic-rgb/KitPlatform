@@ -74,7 +74,13 @@ public sealed record CommitmentDto(
     string? EveningRiskLabelVi = null,
     string? EveningRiskActionVi = null,
     string? BehaviorPatternCode = null,
-    string? BehaviorTacticCode = null);
+    string? BehaviorTacticCode = null,
+    string CommitmentKind = FamilyCommitmentKinds.Chore,
+    string EvidencePolicy = FamilyEvidencePolicies.Optional,
+    bool EvidenceSatisfied = true,
+    DateTimeOffset? EvidenceSatisfiedAt = null,
+    string? EvidenceSatisfiedBy = null,
+    string? EvidenceGateLabelVi = null);
 
 public sealed record EnsureDayFlowRequest(
     DateOnly? FlowDate,
@@ -146,6 +152,12 @@ public interface IFamilyDayFlowService
         CancellationToken cancellationToken = default);
 
     Task<CommitmentDto> ApproveCommitmentStarsAsync(
+        Guid familyId,
+        Guid commitmentId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Parent confirms evidence for study_focus (marks satisfied + posts pending stars).</summary>
+    Task<CommitmentDto> VerifyCommitmentEvidenceAsync(
         Guid familyId,
         Guid commitmentId,
         CancellationToken cancellationToken = default);

@@ -94,7 +94,7 @@ public sealed class FamilyOsDayFlowsController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { code = "validation_error", message = ex.Message });
+            return BadRequest(MapDayFlowError(ex));
         }
     }
 
@@ -115,7 +115,33 @@ public sealed class FamilyOsDayFlowsController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { code = "validation_error", message = ex.Message });
+            return BadRequest(MapDayFlowError(ex));
         }
     }
+
+    /// <summary>Parent confirms evidence for study_focus (marks satisfied + posts pending stars).</summary>
+    [HttpPost("~/api/family-os/families/{familyId:guid}/commitments/{commitmentId:guid}/verify-evidence")]
+    [ProducesResponseType(typeof(CommitmentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<CommitmentDto>> VerifyEvidence(
+        Guid familyId,
+        Guid commitmentId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var commitment = await _dayFlows.VerifyCommitmentEvidenceAsync(
+                familyId, commitmentId, cancellationToken);
+            return Ok(commitment);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(MapDayFlowError(ex));
+        }
+    }
+
+    private static object MapDayFlowError(InvalidOperationException ex) =>
+        string.Equals(ex.Message, FamilyEvidenceGate.EvidenceRequiredMessageVi, StringComparison.Ordinal)
+            ? new { code = FamilyEvidenceGate.EvidenceRequiredCode, message = ex.Message }
+            : new { code = "validation_error", message = ex.Message };
 }

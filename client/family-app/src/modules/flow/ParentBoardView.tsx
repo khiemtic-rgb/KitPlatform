@@ -36,6 +36,7 @@ import {
   type EveningCircle,
   type WeeklyStory,
   approveCommitmentStars,
+  verifyCommitmentEvidence,
   fetchMemberStarBalance,
   fetchRewardCatalog,
   fetchRewardRedemptions,
@@ -424,7 +425,11 @@ function formatWindow(start?: string, end?: string): string | null {
 
 function taskCtaLabel(title: string, kind: 'overdue' | 'awaiting', flowDate: string): string {
   if (kind === 'awaiting') {
-    return voicePick(`${flowDate}:cta:await:${title}`, ['Kiểm tra', 'Xác nhận', 'Duyệt sao']);
+    return voicePick(`${flowDate}:cta:await:${title}`, [
+      'Xác nhận cam kết',
+      'Xác nhận',
+      'Duyệt sao',
+    ]);
   }
   const t = title.toLowerCase();
   if (t.includes('cặp') || t.includes('balo') || t.includes('dọn')) {
@@ -488,6 +493,13 @@ function missionUxState(
   void verifiedTick;
   if (item.status === 'skipped') return 'skipped';
   if (item.status === 'done') {
+    if (
+      item.commitmentKind === 'study_focus' &&
+      item.evidenceSatisfied === false &&
+      !item.starPosted
+    ) {
+      return 'awaiting_check';
+    }
     if (
       needsParentApproval(item) &&
       item.evidenceUrl &&
@@ -2012,14 +2024,24 @@ export function ParentBoardView({
       if (isOpen(item)) {
         await Promise.resolve(onMarkDone(item));
       }
-      if (onApproveStars) {
+      const needsEvidenceVerify =
+        item.commitmentKind === 'study_focus' && item.evidenceSatisfied === false;
+      if (needsEvidenceVerify) {
+        await verifyCommitmentEvidence(familyId, item.id);
+        onRefreshFlow?.();
+      } else if (onApproveStars) {
         await onApproveStars(item);
       } else {
         await approveCommitmentStars(familyId, item.id);
+        onRefreshFlow?.();
       }
       markParentVerified(flow.flowDate, item.id);
       setVerifiedTick((t) => t + 1);
-      showDiaryToast(`Đã xác nhận «${item.title}»!`);
+      showDiaryToast(
+        needsEvidenceVerify
+          ? `Đã xác nhận cam kết «${item.title}»!`
+          : `Đã xác nhận «${item.title}»!`,
+      );
     } catch (err) {
       showDiaryToast('Chưa duyệt được sao — thử lại nhé.');
       throw err;

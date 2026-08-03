@@ -137,6 +137,13 @@ function kidMissionUxState(
   if (item.status === 'skipped') return 'skipped';
   if (item.status === 'done') {
     if (
+      item.commitmentKind === 'study_focus' &&
+      item.evidenceSatisfied === false &&
+      !item.starPosted
+    ) {
+      return 'awaiting_check';
+    }
+    if (
       needsParentApproval(item) &&
       item.evidenceUrl &&
       !isParentVerified(flowDate, item.id)
@@ -309,7 +316,8 @@ function gardenPlantForStars(
 }
 
 /** Overlay badge on the pot face (mockup: lock / book / heart). */
-function gardenBadge(title: string): string {
+function gardenBadge(title: string, commitmentKind?: string): string {
+  if (commitmentKind === 'study_focus') return '📚';
   const t = title.toLowerCase();
   if (t.includes('đọc') || t.includes('sách')) return '📖';
   if (t.includes('giúp') || t.includes('mẹ') || t.includes('bố')) return '💖';
@@ -1851,7 +1859,7 @@ export function KidFocusView({
           id: c.id,
           plant,
           mood,
-          badge: gardenBadge(c.title),
+          badge: gardenBadge(c.title, c.commitmentKind),
           stars,
           label: c.title,
         };
@@ -4006,7 +4014,20 @@ export function KidFocusView({
                               {taskIcon(item.title)}
                             </span>
                             <div className="kv2-m-featured-copy">
-                              <strong>{item.title}</strong>
+                              <strong>
+                                {item.title}
+                                {item.commitmentKind === 'study_focus' ? (
+                                  <span className="kv2-m-badge is-wait" style={{ marginLeft: 8 }}>
+                                    📚 Cần bằng chứng
+                                  </span>
+                                ) : null}
+                              </strong>
+                              {item.commitmentKind === 'study_focus' ? (
+                                <span className="kv2-m-habit">
+                                  {item.evidenceGateLabelVi ??
+                                    'Không phải kiểm tra để bắt lỗi — để nhà mình tin lời cam kết.'}
+                                </span>
+                              ) : null}
                               <span
                                 className="kv2-m-habit"
                                 title={`Chuỗi ${item.habitStreakDays ?? 0} ngày`}
@@ -4124,13 +4145,33 @@ export function KidFocusView({
                             {taskIcon(item.title)}
                           </span>
                           <div className="kv2-m-row-body">
-                            <strong>{item.title}</strong>
-                            {lateNote ? (
+                            <strong>
+                              {item.title}
+                              {item.commitmentKind === 'study_focus' ? (
+                                <span className="kv2-m-badge is-wait" style={{ marginLeft: 8 }}>
+                                  📚 Cần bằng chứng
+                                </span>
+                              ) : null}
+                            </strong>
+                            {item.commitmentKind === 'study_focus' && item.evidenceGateLabelVi ? (
+                              <span className="kv2-m-time muted">{item.evidenceGateLabelVi}</span>
+                            ) : null}
+                            {item.commitmentKind === 'study_focus' ? (
+                              <span className="kv2-m-time muted">
+                                {item.evidenceGateLabelVi ??
+                                  'Cần ảnh, câu hỏi nhớ bài, hoặc bố mẹ xác nhận để nhận sao.'}
+                              </span>
+                            ) : lateNote ? (
                               <span className="kv2-m-time muted">{lateNote}</span>
                             ) : null}
                           </div>
                           <MissionStarBadge item={item} />
-                          <span className="kv2-m-badge is-wait">Chờ kiểm tra</span>
+                          <span className="kv2-m-badge is-wait">
+                            {item.commitmentKind === 'study_focus' &&
+                            item.evidenceSatisfied === false
+                              ? 'Chờ bằng chứng'
+                              : 'Chờ kiểm tra'}
+                          </span>
                         </li>
                       );
                     })}

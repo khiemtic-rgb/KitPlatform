@@ -11,6 +11,7 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
     private readonly FamilyValueRepository _value;
     private readonly IFamilyCommercialService _commercial;
     private readonly IFamilyBlueprintService _blueprint;
+    private readonly IFamilyStarService _stars;
 
     public FamilyBehaviorService(
         FamilyBehaviorRepository repo,
@@ -18,7 +19,8 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
         FamilyDayFlowRepository dayFlows,
         FamilyValueRepository value,
         IFamilyCommercialService commercial,
-        IFamilyBlueprintService blueprint)
+        IFamilyBlueprintService blueprint,
+        IFamilyStarService stars)
     {
         _repo = repo;
         _families = families;
@@ -26,6 +28,7 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
         _value = value;
         _commercial = commercial;
         _blueprint = blueprint;
+        _stars = stars;
     }
 
     public async Task<HabitProgressDto?> SyncHabitAfterProgressAsync(
@@ -871,6 +874,29 @@ internal sealed class FamilyBehaviorService : IFamilyBehaviorService
             recall,
             preview.IllusionRisk,
             cancellationToken);
+
+        try
+        {
+            await _dayFlows.MarkEvidenceSatisfiedAsync(
+                commitmentId, FamilyEvidenceSatisfiedBy.Retrieval, cancellationToken);
+        }
+        catch
+        {
+            // pre-mig 268 may lack columns — retrieval check still persists
+        }
+
+        if (ctx.Status == FamilyCommitmentStatuses.Done)
+        {
+            try
+            {
+                await _stars.SyncCommitmentStarsAsync(
+                    familyId, commitmentId, FamilyCommitmentStatuses.Done, cancellationToken);
+            }
+            catch
+            {
+                // best-effort star sync after evidence
+            }
+        }
 
         try
         {

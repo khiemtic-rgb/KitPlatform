@@ -71,6 +71,7 @@ internal sealed class FamilyRoutineService : IFamilyRoutineService
                     template.EarlyLeadMinutes,
                     template.OnTimeGraceMinutes,
                     template.StarReward,
+                    template.CommitmentKind,
                     cancellationToken);
             }
         }
@@ -137,6 +138,7 @@ internal sealed class FamilyRoutineService : IFamilyRoutineService
             request.EarlyLeadMinutes,
             request.OnTimeGraceMinutes,
             request.StarReward,
+            request.CommitmentKind,
             cancellationToken);
         return MapTemplate(row);
     }
@@ -192,6 +194,7 @@ internal sealed class FamilyRoutineService : IFamilyRoutineService
             request.StarReward ?? (existing.StarReward > 0
                 ? existing.StarReward
                 : FamilyStarCalculator.InferStarReward(title)),
+            ResolveCommitmentKind(request.CommitmentKind, title, existing.CommitmentKind),
             cancellationToken)
             ?? throw new InvalidOperationException("Không cập nhật được commitment template.");
         return MapTemplate(updated);
@@ -232,6 +235,7 @@ internal sealed class FamilyRoutineService : IFamilyRoutineService
         int? earlyLeadMinutes,
         int? onTimeGraceMinutes,
         int? starReward,
+        string? commitmentKind,
         CancellationToken cancellationToken)
     {
         var name = (title ?? "").Trim();
@@ -269,7 +273,16 @@ internal sealed class FamilyRoutineService : IFamilyRoutineService
             timing.EarlyLeadMinutes,
             timing.OnTimeGraceMinutes,
             resolvedStarReward,
+            ResolveCommitmentKind(commitmentKind, name, null),
             cancellationToken);
+    }
+    private static string ResolveCommitmentKind(string? requested, string title, string? existing)
+    {
+        if (!string.IsNullOrWhiteSpace(requested))
+            return FamilyCommitmentKinds.Normalize(requested);
+        if (!string.IsNullOrWhiteSpace(existing))
+            return FamilyCommitmentKinds.Normalize(existing);
+        return FamilyEvidenceGate.InferKindFromTitle(title);
     }
     private static (bool AllowEarlyComplete, int EarlyLeadMinutes, int OnTimeGraceMinutes) ResolveTimingFields(
         bool allowEarlyComplete,
@@ -425,5 +438,6 @@ internal sealed class FamilyRoutineService : IFamilyRoutineService
             t.AllowEarlyComplete,
             t.EarlyLeadMinutes,
             t.OnTimeGraceMinutes,
-            t.StarReward > 0 ? t.StarReward : FamilyStarCalculator.InferStarReward(t.Title));
+            t.StarReward > 0 ? t.StarReward : FamilyStarCalculator.InferStarReward(t.Title),
+            FamilyCommitmentKinds.Normalize(t.CommitmentKind));
 }

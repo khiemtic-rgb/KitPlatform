@@ -59,4 +59,5 @@
 265_pack_family_relationship_push_kind.sql
 266_pack_family_relationship_thanks_push.sql
 267_pack_family_behavior_week_playbook.sql
+268_pack_family_commitment_kind.sql
 # Optional (owner ALTER tenants CHECK): 192a_pack_family_os_vertical_owner.sql

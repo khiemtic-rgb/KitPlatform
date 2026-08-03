@@ -52,6 +52,31 @@ internal sealed class FamilyStarService : IFamilyStarService
             award.LateMinutes,
             cancellationToken);
 
+        var gate = EvidenceSignals(commitment);
+        // study_focus + required_*: hold ledger until evidence / parent verify.
+        if (FamilyEvidenceGate.GatesStars(gate))
+        {
+            var held = await _ledger.GetBalancesByKindAsync(familyId, memberId, cancellationToken);
+            return new StarAwardDto(
+                award.Delta,
+                held.Total,
+                award.Tier,
+                award.LateMinutes,
+                award.LabelVi,
+                kind,
+                held.Growth,
+                held.Responsibility,
+                held.Kindness,
+                message);
+        }
+
+        // Evidence-satisfied study_focus may post without title-based hold.
+        if (FamilyCommitmentKinds.Normalize(commitment.CommitmentKind) == FamilyCommitmentKinds.StudyFocus
+            && FamilyEvidenceGate.IsSatisfied(gate))
+        {
+            return await PostPendingStarsAsync(familyId, commitmentId, kind, message, cancellationToken);
+        }
+
         if (!FamilyCommitmentReview.NeedsParentApproval(commitment.Title, commitment.EvidenceUrl))
             return await PostPendingStarsAsync(familyId, commitmentId, kind, message, cancellationToken);
 
@@ -158,7 +183,12 @@ internal sealed class FamilyStarService : IFamilyStarService
 
         if (commitment.PendingStarDelta is not null)
         {
-            if (!FamilyCommitmentReview.NeedsParentApproval(commitment.Title, commitment.EvidenceUrl))
+            var gate = EvidenceSignals(commitment);
+            if (!FamilyEvidenceGate.GatesStars(gate)
+                && (FamilyCommitmentKinds.Normalize(commitment.CommitmentKind)
+                        == FamilyCommitmentKinds.StudyFocus
+                    || !FamilyCommitmentReview.NeedsParentApproval(
+                        commitment.Title, commitment.EvidenceUrl)))
             {
                 await PostPendingStarsAsync(
                     familyId,
@@ -173,6 +203,16 @@ internal sealed class FamilyStarService : IFamilyStarService
         await SyncCommitmentStarsAsync(
             familyId, commitmentId, FamilyCommitmentStatuses.Done, cancellationToken);
     }
+
+    private static FamilyEvidenceGate.Signals EvidenceSignals(
+        FamilyDayFlowRepository.CommitmentRow c) =>
+        new(
+            c.CommitmentKind,
+            c.EvidencePolicy,
+            c.EvidenceUrl,
+            c.HasRetrievalCheck,
+            c.EvidenceSatisfiedAt,
+            c.EvidenceSatisfiedBy);
 
     public async Task<IReadOnlyDictionary<Guid, StarAwardResult>> GetCommitmentAwardsAsync(
         IEnumerable<Guid> commitmentIds,

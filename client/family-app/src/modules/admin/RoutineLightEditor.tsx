@@ -32,6 +32,7 @@ export function RoutineLightEditor({
   const [start, setStart] = useState('16:00');
   const [end, setEnd] = useState('17:00');
   const [active, setActive] = useState(true);
+  const [commitmentKind, setCommitmentKind] = useState('chore');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -64,6 +65,7 @@ export function RoutineLightEditor({
     setStart(t.windowStart?.slice(0, 5) || '07:00');
     setEnd(t.windowEnd?.slice(0, 5) || '08:00');
     setActive(t.isActive);
+    setCommitmentKind(t.commitmentKind || 'chore');
     setError(null);
   };
 
@@ -82,6 +84,7 @@ export function RoutineLightEditor({
         isActive: active,
         priority: editing.priority,
         starReward: editing.starReward,
+        commitmentKind,
       });
       setTemplates((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
       setEditing(null);
@@ -128,7 +131,11 @@ export function RoutineLightEditor({
                 disabled={!editable}
                 onClick={() => openEdit(t)}
               >
-                <strong>{t.title}</strong>
+                <strong>
+                  {t.title}
+                  {t.commitmentKind === 'study_focus' ? ' · 📚 Học' : ''}
+                  {t.commitmentKind === 'relation' ? ' · Quan hệ' : ''}
+                </strong>
                 <span>
                   {fmtWindow(t.windowStart)}–{fmtWindow(t.windowEnd)}
                   {!t.isActive ? ' · đang ẩn' : ''}
@@ -141,6 +148,34 @@ export function RoutineLightEditor({
                     Tên việc
                     <input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
                   </label>
+                  <fieldset className="fa-field">
+                    <legend>Loại cam kết</legend>
+                    <div className="fa-time-row" style={{ flexWrap: 'wrap', gap: 8 }}>
+                      {(
+                        [
+                          ['chore', 'Việc nhà'],
+                          ['study_focus', 'Học / tập trung'],
+                          ['relation', 'Quan hệ'],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <label key={value} className="fa-check">
+                          <input
+                            type="radio"
+                            name={`kind-${t.id}`}
+                            checked={commitmentKind === value}
+                            onChange={() => setCommitmentKind(value)}
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                    {commitmentKind === 'study_focus' ? (
+                      <p className="ph-sheet-lead" style={{ marginTop: 8 }}>
+                        Tick một mình chưa đủ để nhận sao — cần ảnh, câu hỏi nhớ bài, hoặc bố mẹ
+                        xác nhận.
+                      </p>
+                    ) : null}
+                  </fieldset>
                   <div className="fa-time-row">
                     <label className="fa-field">
                       Từ

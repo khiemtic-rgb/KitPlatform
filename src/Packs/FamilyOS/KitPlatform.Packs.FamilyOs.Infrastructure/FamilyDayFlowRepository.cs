@@ -168,7 +168,8 @@ internal sealed class FamilyDayFlowRepository
                 priority, expected_duration_minutes, context_anchor, depends_on_template_ids,
                 allow_early_complete, early_lead_minutes, on_time_grace_minutes, star_reward,
                 habit_stage, reminder_suppressed,
-                currency_category, eligible_for_stars, star_kind, plan_target
+                currency_category, eligible_for_stars, star_kind, plan_target,
+                commitment_kind, evidence_policy
             )
             SELECT
                 @TenantId,
@@ -193,7 +194,13 @@ internal sealed class FamilyDayFlowRepository
                 t.currency_category,
                 t.eligible_for_stars,
                 t.star_kind,
-                t.plan_target
+                t.plan_target,
+                COALESCE(NULLIF(TRIM(t.commitment_kind), ''), 'chore'),
+                CASE
+                    WHEN COALESCE(NULLIF(TRIM(t.commitment_kind), ''), 'chore') = 'study_focus'
+                        THEN 'required_soft'
+                    ELSE 'optional'
+                END
             FROM pack_family.commitment_template t
             WHERE t.tenant_id = @TenantId
               AND t.routine_id = @RoutineId
@@ -268,7 +275,8 @@ internal sealed class FamilyDayFlowRepository
                 priority, expected_duration_minutes, context_anchor, depends_on_template_ids,
                 allow_early_complete, early_lead_minutes, on_time_grace_minutes, star_reward,
                 habit_stage, reminder_suppressed,
-                currency_category, eligible_for_stars, star_kind, plan_target
+                currency_category, eligible_for_stars, star_kind, plan_target,
+                commitment_kind, evidence_policy
             )
             SELECT
                 @TenantId,
@@ -293,7 +301,13 @@ internal sealed class FamilyDayFlowRepository
                 t.currency_category,
                 t.eligible_for_stars,
                 t.star_kind,
-                t.plan_target
+                t.plan_target,
+                COALESCE(NULLIF(TRIM(t.commitment_kind), ''), 'chore'),
+                CASE
+                    WHEN COALESCE(NULLIF(TRIM(t.commitment_kind), ''), 'chore') = 'study_focus'
+                        THEN 'required_soft'
+                    ELSE 'optional'
+                END
             FROM pack_family.commitment_template t
             WHERE t.tenant_id = @TenantId
               AND t.routine_id = @RoutineId
@@ -370,7 +384,11 @@ internal sealed class FamilyDayFlowRepository
                 COALESCE(c.plan_target, t.plan_target) AS PlanTarget,
                 c.actual_progress AS ActualProgress,
                 c.allocated_base_stars AS AllocatedBaseStars,
-                d.flow_date AS FlowDate
+                d.flow_date AS FlowDate,
+                COALESCE(NULLIF(TRIM(c.commitment_kind), ''), 'chore') AS CommitmentKind,
+                COALESCE(NULLIF(TRIM(c.evidence_policy), ''), 'optional') AS EvidencePolicy,
+                c.evidence_satisfied_at AS EvidenceSatisfiedAt,
+                c.evidence_satisfied_by AS EvidenceSatisfiedBy
             FROM pack_family.commitment c
             INNER JOIN pack_family.day_flow d ON d.id = c.day_flow_id
             LEFT JOIN pack_family.membership m ON m.id = c.member_id
@@ -406,13 +424,15 @@ internal sealed class FamilyDayFlowRepository
                 tenant_id, day_flow_id, template_id, member_id, title, description,
                 window_start, window_end, sort_order, status,
                 priority, expected_duration_minutes, context_anchor, depends_on_template_ids,
-                allow_early_complete, early_lead_minutes, on_time_grace_minutes, star_reward
+                allow_early_complete, early_lead_minutes, on_time_grace_minutes, star_reward,
+                commitment_kind, evidence_policy
             )
             VALUES (
                 @TenantId, @DayFlowId, NULL, @MemberId, @Title, @Description,
                 @WindowStart, @WindowEnd, @SortOrder, 'pending',
                 @Priority, @ExpectedDurationMinutes, 'child_proposal', '{}'::uuid[],
-                TRUE, 30, 15, @StarReward
+                TRUE, 30, 15, @StarReward,
+                @CommitmentKind, @EvidencePolicy
             )
             RETURNING id
             """,
@@ -430,6 +450,9 @@ internal sealed class FamilyDayFlowRepository
                 Priority = priority,
                 ExpectedDurationMinutes = expectedDurationMinutes,
                 StarReward = starReward,
+                CommitmentKind = FamilyEvidenceGate.InferKindFromTitle(title),
+                EvidencePolicy = FamilyCommitmentKinds.DefaultPolicy(
+                    FamilyEvidenceGate.InferKindFromTitle(title)),
             });
     }
 
@@ -499,7 +522,11 @@ internal sealed class FamilyDayFlowRepository
                 COALESCE(c.star_kind, t.star_kind) AS StarKind,
                 COALESCE(c.plan_target, t.plan_target) AS PlanTarget,
                 c.actual_progress AS ActualProgress,
-                c.allocated_base_stars AS AllocatedBaseStars
+                c.allocated_base_stars AS AllocatedBaseStars,
+                COALESCE(NULLIF(TRIM(c.commitment_kind), ''), 'chore') AS CommitmentKind,
+                COALESCE(NULLIF(TRIM(c.evidence_policy), ''), 'optional') AS EvidencePolicy,
+                c.evidence_satisfied_at AS EvidenceSatisfiedAt,
+                c.evidence_satisfied_by AS EvidenceSatisfiedBy
             FROM pack_family.commitment c
             INNER JOIN pack_family.day_flow d ON d.id = c.day_flow_id
             LEFT JOIN pack_family.membership m ON m.id = c.member_id
@@ -669,6 +696,23 @@ internal sealed class FamilyDayFlowRepository
             new { TenantId, CommitmentId = commitmentId });
     }
 
+    public async Task MarkEvidenceSatisfiedAsync(
+        Guid commitmentId,
+        string satisfiedBy,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(
+            """
+            UPDATE pack_family.commitment
+            SET evidence_satisfied_at = COALESCE(evidence_satisfied_at, NOW()),
+                evidence_satisfied_by = COALESCE(NULLIF(TRIM(evidence_satisfied_by), ''), @By),
+                updated_at = NOW()
+            WHERE tenant_id = @TenantId AND id = @CommitmentId AND deleted_at IS NULL
+            """,
+            new { TenantId, CommitmentId = commitmentId, By = satisfiedBy });
+    }
+
     internal sealed record DayFlowRow
     {
         public Guid Id { get; init; }
@@ -729,5 +773,9 @@ internal sealed class FamilyDayFlowRepository
         public int? PlanTarget { get; init; }
         public int? ActualProgress { get; init; }
         public int? AllocatedBaseStars { get; init; }
+        public string CommitmentKind { get; init; } = FamilyCommitmentKinds.Chore;
+        public string EvidencePolicy { get; init; } = FamilyEvidencePolicies.Optional;
+        public DateTimeOffset? EvidenceSatisfiedAt { get; init; }
+        public string? EvidenceSatisfiedBy { get; init; }
     }
 }

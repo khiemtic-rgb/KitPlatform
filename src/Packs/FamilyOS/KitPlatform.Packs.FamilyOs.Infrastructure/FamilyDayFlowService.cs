@@ -141,6 +141,18 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         {
             evidenceUrl = NormalizeEvidenceUrl(request.EvidenceUrl, _tenant.TenantId);
 
+            var preGate = new FamilyEvidenceGate.Signals(
+                existing.CommitmentKind,
+                existing.EvidencePolicy,
+                evidenceUrl ?? existing.EvidenceUrl,
+                existing.HasRetrievalCheck,
+                existing.EvidenceSatisfiedAt,
+                existing.EvidenceSatisfiedBy);
+            if (!request.ParentOverride && FamilyEvidenceGate.BlocksDone(preGate))
+            {
+                throw new InvalidOperationException(FamilyEvidenceGate.EvidenceRequiredMessageVi);
+            }
+
             if (!request.ParentOverride &&
                 FamilyCommitmentTiming.IsTooEarlyToComplete(
                     existing.AllowEarlyComplete,
@@ -160,6 +172,12 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         var updated = await _repo.UpdateCommitmentStatusAsync(
             existing.Id, status, skipReason, evidenceUrl, cancellationToken)
             ?? throw new InvalidOperationException("Không cập nhật được commitment.");
+
+        if (status == FamilyCommitmentStatuses.Done && !string.IsNullOrWhiteSpace(evidenceUrl))
+        {
+            await _repo.MarkEvidenceSatisfiedAsync(
+                existing.Id, FamilyEvidenceSatisfiedBy.Photo, cancellationToken);
+        }
 
         var reloaded = await _repo.GetCommitmentForFamilyAsync(familyId, updated.Id, cancellationToken)
             ?? updated;
@@ -337,6 +355,13 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         var existing = await _repo.GetCommitmentForFamilyAsync(familyId, commitmentId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy commitment.");
 
+        if (existing.EvidenceSatisfiedAt is null
+            && FamilyEvidenceGate.RequiresEvidence(existing.CommitmentKind, existing.EvidencePolicy))
+        {
+            await _repo.MarkEvidenceSatisfiedAsync(
+                commitmentId, FamilyEvidenceSatisfiedBy.ParentVerify, cancellationToken);
+        }
+
         StarAwardDto? starAward;
         try
         {
@@ -375,6 +400,41 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             tierSettings,
             localNow,
             starAward.Balance);
+    }
+
+    public async Task<CommitmentDto> VerifyCommitmentEvidenceAsync(
+        Guid familyId,
+        Guid commitmentId,
+        CancellationToken cancellationToken = default)
+    {
+        await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
+
+        var existing = await _repo.GetCommitmentForFamilyAsync(familyId, commitmentId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy commitment.");
+
+        await _repo.MarkEvidenceSatisfiedAsync(
+            commitmentId, FamilyEvidenceSatisfiedBy.ParentVerify, cancellationToken);
+
+        if (existing.Status == FamilyCommitmentStatuses.Done)
+            return await ApproveCommitmentStarsAsync(familyId, commitmentId, cancellationToken);
+
+        var family = await _families.GetFamilyAsync(familyId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
+        var reloaded = await _repo.GetCommitmentForFamilyAsync(familyId, commitmentId, cancellationToken)
+            ?? existing;
+        var localNow = FamilyTimeZones.NowIn(family.Timezone);
+        var flowDate = reloaded.FlowDate
+            ?? DateOnly.FromDateTime(localNow.DateTime);
+        var tierSettings = await ResolveTierSettingsAsync(familyId, cancellationToken);
+        return MapCommitment(
+            reloaded,
+            TimeOnly.FromTimeSpan(localNow.TimeOfDay),
+            flowDate,
+            family.Timezone,
+            null,
+            tierSettings,
+            localNow,
+            null);
     }
 
     public async Task<CommitmentDto> AddAdHocCommitmentAsync(
@@ -620,6 +680,10 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         }
 
         var isLearning = FamilyLearningMission.IsLearningTitle(c.Title);
+        var kind = FamilyCommitmentKinds.Normalize(c.CommitmentKind);
+        var policy = FamilyEvidencePolicies.Normalize(c.EvidencePolicy);
+        var gateSignals = GateSignals(c);
+        var satisfied = FamilyEvidenceGate.IsSatisfied(gateSignals);
         var intervention = FamilyMotivationIntervention.Decide(
             new FamilyMotivationIntervention.Input(
                 c.Status,
@@ -710,8 +774,23 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             null,
             null,
             intervention.BehaviorPatternCode,
-            intervention.BehaviorTacticCode);
+            intervention.BehaviorTacticCode,
+            kind,
+            policy,
+            satisfied,
+            c.EvidenceSatisfiedAt,
+            FamilyEvidenceGate.InferSatisfiedBy(gateSignals),
+            FamilyEvidenceGate.GateLabelVi(gateSignals));
     }
+
+    private static FamilyEvidenceGate.Signals GateSignals(FamilyDayFlowRepository.CommitmentRow c) =>
+        new(
+            c.CommitmentKind,
+            c.EvidencePolicy,
+            c.EvidenceUrl,
+            c.HasRetrievalCheck,
+            c.EvidenceSatisfiedAt,
+            c.EvidenceSatisfiedBy);
 
     /// <summary>Attach evening prediction bands after mapping (Wave 4).</summary>
     private static CommitmentDto WithEveningPrediction(
