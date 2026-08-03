@@ -1,26 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-03T02:29:46.555Z",
+  "generatedAt": "2026-08-03T04:04:36.248Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 139,
-    "todayPageViews": 58,
-    "todayRequests": 308,
-    "last24hVisitors": 248,
-    "last24hPageViews": 135,
-    "last24hRequests": 878
+    "todayVisitors": 152,
+    "todayPageViews": 75,
+    "todayRequests": 443,
+    "last24hVisitors": 191,
+    "last24hPageViews": 104,
+    "last24hRequests": 750
   },
   "hourly": [
-    {
-      "time": "2026-08-02T03:00:00Z",
-      "visitors": 103,
-      "requests": 181
-    },
-    {
-      "time": "2026-08-02T04:00:00Z",
-      "visitors": 4,
-      "requests": 70
-    },
     {
       "time": "2026-08-02T05:00:00Z",
       "visitors": 2,
@@ -123,8 +113,13 @@
     },
     {
       "time": "2026-08-03T02:00:00Z",
-      "visitors": 136,
-      "requests": 299
+      "visitors": 148,
+      "requests": 364
+    },
+    {
+      "time": "2026-08-03T03:00:00Z",
+      "visitors": 6,
+      "requests": 58
     }
   ],
   "daily": [
@@ -166,58 +161,50 @@
     },
     {
       "date": "2026-08-03",
-      "visitors": 164,
-      "pageViews": 63,
-      "requests": 370
+      "visitors": 182,
+      "pageViews": 79,
+      "requests": 493
     }
   ],
   "topPages": [
     {
       "path": "/cdn-cgi/rum",
-      "views": 88
+      "views": 89
     },
     {
       "path": "/vi/goi-cha-me/vi-sao-con-khong-nghe-loi-giai-ma-tam-ly-va-giai-phap-de-con-tu-giac/",
-      "views": 59
-    },
-    {
-      "path": "/vi/goi-cha-me/10-sai-lam-pho-bien-khi-nuoi-day-con-ma-cha-me-hien-dai-rat-de-mac-phai/",
-      "views": 44
-    },
-    {
-      "path": "/images/blog/10-sai-lam-pho-bien-khi-nuoi-day-con.png",
-      "views": 38
-    },
-    {
-      "path": "/images/blog/vi-sao-con-khong-nghe-loi.png",
-      "views": 35
-    },
-    {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 33
+      "views": 67
     },
     {
       "path": "/api/stats",
-      "views": 31
+      "views": 56
     },
     {
       "path": "/stats-snapshot.json",
+      "views": 50
+    },
+    {
+      "path": "/images/blog/vi-sao-con-khong-nghe-loi.png",
+      "views": 39
+    },
+    {
+      "path": "/vi/thong-ke/",
       "views": 31
     },
     {
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 30
+    },
+    {
       "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 29
+      "views": 25
     },
     {
       "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 26
-    },
-    {
-      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
       "views": 22
     },
     {
-      "path": "/images/blog/lam-cha-me-co-phai-hoc-khong.png",
+      "path": "/_next/static/css/4e38ee1c6419eb50.css",
       "views": 21
     },
     {
@@ -226,11 +213,19 @@
     },
     {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 21
+      "views": 19
     },
     {
-      "path": "/images/social/zalo.png",
-      "views": 20
+      "path": "/",
+      "views": 18
+    },
+    {
+      "path": "/_next/static/media/8e9860b6e62d6359-s.woff2",
+      "views": 17
+    },
+    {
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
+      "views": 17
     }
   ]
 }
