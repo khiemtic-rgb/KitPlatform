@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-03T10:07:24.615Z",
+  "generatedAt": "2026-08-03T15:18:19.033Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 303,
-    "todayPageViews": 617,
-    "todayRequests": 933,
-    "last24hVisitors": 359,
-    "last24hPageViews": 673,
-    "last24hRequests": 1066
+    "todayVisitors": 410,
+    "todayPageViews": 801,
+    "todayRequests": 1300,
+    "last24hVisitors": 429,
+    "last24hPageViews": 813,
+    "last24hRequests": 1343
   },
   "hourly": [
-    {
-      "time": "2026-08-02T11:00:00Z",
-      "visitors": 20,
-      "requests": 23
-    },
-    {
-      "time": "2026-08-02T12:00:00Z",
-      "visitors": 17,
-      "requests": 17
-    },
-    {
-      "time": "2026-08-02T13:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-02T14:00:00Z",
-      "visitors": 29,
-      "requests": 30
-    },
-    {
-      "time": "2026-08-02T15:00:00Z",
-      "visitors": 12,
-      "requests": 12
-    },
     {
       "time": "2026-08-02T16:00:00Z",
       "visitors": 8,
@@ -128,8 +103,33 @@
     },
     {
       "time": "2026-08-03T10:00:00Z",
-      "visitors": 1,
-      "requests": 6
+      "visitors": 10,
+      "requests": 16
+    },
+    {
+      "time": "2026-08-03T11:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-03T12:00:00Z",
+      "visitors": 117,
+      "requests": 183
+    },
+    {
+      "time": "2026-08-03T13:00:00Z",
+      "visitors": 68,
+      "requests": 96
+    },
+    {
+      "time": "2026-08-03T14:00:00Z",
+      "visitors": 14,
+      "requests": 69
+    },
+    {
+      "time": "2026-08-03T15:00:00Z",
+      "visitors": 4,
+      "requests": 5
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-08-03",
-      "visitors": 303,
-      "pageViews": 617,
-      "requests": 933
+      "visitors": 410,
+      "pageViews": 801,
+      "requests": 1300
     }
   ],
   "topPages": [
     {
-      "path": "/vi/tin-tuc/so-tay-quan-tri-chu-nha-thuoc-nen-lam-gi-moi-tuan-de-duy-tri-da-tang-truong/",
-      "views": 150
-    },
-    {
       "path": "/vi/tin-tuc/",
-      "views": 135
+      "views": 161
     },
     {
       "path": "/vi/tin-tuc/nhung-cong-viec-chu-nha-thuoc-co-the-va-bat-buoc-phai-giao-cho-nhan-vien/",
-      "views": 133
+      "views": 161
     },
     {
       "path": "/feed.json",
-      "views": 128
+      "views": 153
     },
     {
-      "path": "/vi/tin-tuc/tu-du-lieu-hoc-tap-den-quyet-dinh-thang-tien/",
-      "views": 70
+      "path": "/vi/tin-tuc/so-tay-quan-tri-chu-nha-thuoc-nen-lam-gi-moi-tuan-de-duy-tri-da-tang-truong/",
+      "views": 151
+    },
+    {
+      "path": "/vi/tin-tuc/so-tay-quan-tri-chu-nha-thuoc-nen-lam-gi-moi-thang-de-kiem-soat-dong-tien-va-mo-rong-quy-mo/",
+      "views": 101
     },
     {
       "path": "/images/tin-tuc/chu-nha-thuoc-lam-moi-tuan.png",
-      "views": 70
+      "views": 83
     },
     {
-      "path": "/images/tin-tuc/thay-doi-cach-danh-gia-nhan-vien.png",
+      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
+      "views": 57
+    },
+    {
+      "path": "/cdn-cgi/rum",
       "views": 43
     },
     {
       "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-gi-moi-ngay.png",
-      "views": 36
+      "views": 39
+    },
+    {
+      "path": "/images/tin-tuc/thay-doi-cach-danh-gia-nhan-vien.png",
+      "views": 37
+    },
+    {
+      "path": "/vi/tin-tuc/tu-du-lieu-hoc-tap-den-quyet-dinh-thang-tien/",
+      "views": 34
     },
     {
       "path": "/images/tin-tuc/tu-du-lieu-hoc-tap-den-thang-tien.png",
-      "views": 27
-    },
-    {
-      "path": "/robots.txt",
-      "views": 22
-    },
-    {
-      "path": "/cdn-cgi/rum",
-      "views": 21
+      "views": 29
     },
     {
       "path": "/",
-      "views": 19
+      "views": 25
     },
     {
-      "path": "/sitemap-index.xml",
-      "views": 17
-    },
-    {
-      "path": "/vi/",
-      "views": 14
+      "path": "/robots.txt",
+      "views": 21
     },
     {
       "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 13
+      "views": 19
     }
   ]
 }
