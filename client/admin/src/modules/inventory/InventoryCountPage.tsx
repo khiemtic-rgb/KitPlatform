@@ -372,7 +372,7 @@ export function InventoryCountPage() {
   const handleAddDraftLine = async () => {
     const line = await buildResolvedLine();
     if (!line) return;
-    setDraftLines((prev) => [...prev, line]);
+    setDraftLines((prev) => [line, ...prev]);
     setQuantity(1);
     message.success(t('messages.addedToDraft'));
   };
