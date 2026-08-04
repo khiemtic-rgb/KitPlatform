@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-04T14:40:44.686Z",
+  "generatedAt": "2026-08-04T19:58:13.632Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 409,
-    "todayPageViews": 353,
-    "todayRequests": 902,
-    "last24hVisitors": 477,
-    "last24hPageViews": 510,
-    "last24hRequests": 1164
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 499,
+    "last24hPageViews": 420,
+    "last24hRequests": 1096
   },
   "hourly": [
-    {
-      "time": "2026-08-03T15:00:00Z",
-      "visitors": 71,
-      "requests": 144
-    },
-    {
-      "time": "2026-08-03T16:00:00Z",
-      "visitors": 10,
-      "requests": 39
-    },
-    {
-      "time": "2026-08-03T17:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-03T18:00:00Z",
-      "visitors": 10,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-03T19:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
     {
       "time": "2026-08-03T20:00:00Z",
       "visitors": 3,
@@ -128,17 +103,36 @@
     },
     {
       "time": "2026-08-04T14:00:00Z",
-      "visitors": 22,
-      "requests": 23
+      "visitors": 35,
+      "requests": 36
+    },
+    {
+      "time": "2026-08-04T15:00:00Z",
+      "visitors": 35,
+      "requests": 36
+    },
+    {
+      "time": "2026-08-04T16:00:00Z",
+      "visitors": 9,
+      "requests": 9
+    },
+    {
+      "time": "2026-08-04T17:00:00Z",
+      "visitors": 13,
+      "requests": 19
+    },
+    {
+      "time": "2026-08-04T18:00:00Z",
+      "visitors": 42,
+      "requests": 56
+    },
+    {
+      "time": "2026-08-04T19:00:00Z",
+      "visitors": 7,
+      "requests": 7
     }
   ],
   "daily": [
-    {
-      "date": "2026-07-29",
-      "visitors": 332,
-      "pageViews": 261,
-      "requests": 862
-    },
     {
       "date": "2026-07-30",
       "visitors": 440,
@@ -171,71 +165,71 @@
     },
     {
       "date": "2026-08-04",
-      "visitors": 409,
-      "pageViews": 353,
-      "requests": 902
+      "visitors": 490,
+      "pageViews": 390,
+      "requests": 1040
     }
   ],
   "topPages": [
     {
       "path": "/vi/tin-tuc/nhung-cong-viec-chu-nha-thuoc-co-the-va-bat-buoc-phai-giao-cho-nhan-vien/",
-      "views": 184
+      "views": 173
     },
     {
       "path": "/vi/tin-tuc/so-tay-quan-tri-chu-nha-thuoc-nen-lam-gi-moi-thang-de-kiem-soat-dong-tien-va-mo-rong-quy-mo/",
-      "views": 126
+      "views": 98
     },
     {
       "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
-      "views": 88
+      "views": 96
     },
     {
       "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
-      "views": 79
+      "views": 78
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 72
-    },
-    {
-      "path": "/feed.json",
-      "views": 46
-    },
-    {
-      "path": "/vi/tin-tuc/",
-      "views": 38
+      "views": 74
     },
     {
       "path": "/images/tin-tuc/chu-nha-thuoc-lam-moi-tuan.png",
-      "views": 36
-    },
-    {
-      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-gi-moi-ngay.png",
-      "views": 31
+      "views": 34
     },
     {
       "path": "/",
-      "views": 31
-    },
-    {
-      "path": "/vi/",
-      "views": 28
+      "views": 30
     },
     {
       "path": "/robots.txt",
-      "views": 26
+      "views": 25
     },
     {
-      "path": "/images/tin-tuc/giup-danh-gia-nang-luc-thuc-te.png",
-      "views": 23
+      "path": "/vi/",
+      "views": 25
+    },
+    {
+      "path": "/feed.json",
+      "views": 22
     },
     {
       "path": "/images/tin-tuc/tu-du-lieu-hoc-tap-den-thang-tien.png",
-      "views": 20
+      "views": 22
     },
     {
       "path": "/images/tin-tuc/cach-xay-dung-quy-trinh-van-hanh.png",
-      "views": 19
+      "views": 21
+    },
+    {
+      "path": "/images/tin-tuc/giup-danh-gia-nang-luc-thuc-te.png",
+      "views": 21
+    },
+    {
+      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-gi-moi-ngay.png",
+      "views": 21
+    },
+    {
+      "path": "/images/tin-tuc/thay-doi-cach-danh-gia-nhan-vien.png",
+      "views": 17
     }
   ]
 }
