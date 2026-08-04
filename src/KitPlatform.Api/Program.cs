@@ -467,6 +467,12 @@ app.Use(async (context, next) =>
             ".png" => "image/png",
             ".webp" => "image/webp",
             ".jpg" or ".jpeg" => "image/jpeg",
+            ".webm" => "audio/webm",
+            ".m4a" => "audio/mp4",
+            ".mp3" => "audio/mpeg",
+            ".ogg" => "audio/ogg",
+            ".aac" => "audio/aac",
+            ".wav" => "audio/wav",
             _ => "application/octet-stream",
         };
         await context.Response.SendFileAsync(filePath);

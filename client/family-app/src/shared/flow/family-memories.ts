@@ -23,7 +23,7 @@ export type FamilyMemory = {
 };
 
 /** UI chip "Movie Night" maps to this filter value (legacy id kept for sheet state). */
-export type KidMemoryFilter = 'all' | 'team_unlock' | 'parent_voice' | 'beautiful_day';
+export type KidMemoryFilter = 'all' | 'team_unlock' | 'parent_voice' | 'beautiful_day' | 'kid_moment';
 
 /** True only for Movie Night — not High-five / sibling combo / other team unlocks. */
 export function isMovieNightMemoryText(
@@ -63,6 +63,7 @@ export function matchesKidMemoryFilter(m: FamilyMemory, filter: KidMemoryFilter)
     return kind === 'movie_night' || isMovieNightMemoryText(m.title, m.icon);
   }
   if (filter === 'parent_voice') return kind === 'parent_voice';
+  if (filter === 'kid_moment') return kind === 'kid_moment';
   if (filter === 'beautiful_day') {
     return (
       kind === 'beautiful_day' ||

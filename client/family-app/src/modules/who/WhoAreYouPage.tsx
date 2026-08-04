@@ -232,7 +232,7 @@ export function WhoAreYouPage() {
 
   const aiLine =
     pendingOpen > 0
-      ? `Gia đình mình ơi! Hôm nay có ${pendingOpen} nhiệm vụ đang chờ hoàn thành nhé!`
+      ? `Gia đình mình ơi! Hôm nay có ${pendingOpen} việc trong kế hoạch đang chờ nhé!`
       : day && day.totalCommitments > 0
         ? 'Gia đình mình ơi! Hôm nay nhịp đang ổn — chạm tên để xem lịch ngày.'
         : 'Gia đình mình ơi! Chạm tên để mở lịch ngày — bố/mẹ quản trị, con làm việc.';

@@ -8,8 +8,8 @@ import {
   readWhoFamilyName,
 } from './helpers';
 
-const KID_TABS = ['Trang chủ', 'Nhiệm vụ', 'Kho báu', 'Nhật ký'];
-const PARENT_TABS = ['Trang chủ', 'Nhiệm vụ', 'Nhật ký'];
+const KID_TABS = ['Trang chủ', 'Kế hoạch', 'Kho báu', 'Nhật ký'];
+const PARENT_TABS = ['Trang chủ', 'Kế hoạch', 'Nhật ký'];
 
 async function pickChild(page: Page): Promise<void> {
   await page.locator('.home-v2-member').first().click();
@@ -174,7 +174,7 @@ test.describe('parent screen', () => {
     // Prefer team/member framing when unlock exists, not day-task leftover.
     if (/Chỉ còn \d+/.test(body)) {
       expect(body, 'Movie Night still counts day tasks instead of team members').toMatch(
-        /thành viên|nhiệm vụ/,
+        /thành viên|việc|kế hoạch/,
       );
     }
   });

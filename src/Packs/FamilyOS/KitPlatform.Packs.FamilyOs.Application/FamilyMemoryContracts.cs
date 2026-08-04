@@ -15,11 +15,13 @@ public static class FamilyMemoryKinds
     public const string ParentHabit = "parent_habit";
     public const string ParentVoice = "parent_voice";
     public const string EveningCircle = "evening_circle";
+    /// <summary>Child photo/voice moment for family warmth — not study evidence.</summary>
+    public const string KidMoment = "kid_moment";
 
     public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         BeautifulDay, StreakMilestone, Gratitude, Photo, TeamUnlock, Reward, FirstTime, Manual,
-        Help, TeamDay, ParentHabit, ParentVoice, EveningCircle,
+        Help, TeamDay, ParentHabit, ParentVoice, EveningCircle, KidMoment,
     };
 }
 

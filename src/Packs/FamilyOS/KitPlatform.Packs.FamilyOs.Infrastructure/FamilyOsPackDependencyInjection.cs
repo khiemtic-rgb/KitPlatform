@@ -25,6 +25,7 @@ public static class FamilyOsPackDependencyInjection
         services.AddScoped<IFamilyDayFlowService, FamilyDayFlowService>();
         services.AddScoped<FamilyEvidenceUploadRepository>();
         services.AddScoped<IFamilyEvidenceUploadService, FamilyEvidenceUploadService>();
+        services.AddScoped<IFamilyMomentUploadService, FamilyMomentUploadService>();
         services.AddScoped<IFamilyMorningNoteService, FamilyMorningNoteService>();
         services.AddScoped<FamilyBehaviorRepository>();
         services.AddScoped<IFamilyBehaviorService, FamilyBehaviorService>();

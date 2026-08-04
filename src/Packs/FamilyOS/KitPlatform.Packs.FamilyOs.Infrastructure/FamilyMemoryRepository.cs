@@ -96,6 +96,35 @@ internal sealed class FamilyMemoryRepository
             new { TenantId, FamilyId = familyId, MemoryId = memoryId });
     }
 
+    public async Task<int> CountByKindOnDateAsync(
+        Guid familyId,
+        Guid? memberId,
+        DateOnly flowDate,
+        string kind,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.ExecuteScalarAsync<int>(
+            """
+            SELECT COUNT(*)::int
+            FROM pack_family.family_memory
+            WHERE tenant_id = @TenantId
+              AND family_id = @FamilyId
+              AND deleted_at IS NULL
+              AND kind = @Kind
+              AND flow_date = @FlowDate
+              AND (@MemberId::uuid IS NULL OR member_id = @MemberId::uuid)
+            """,
+            new
+            {
+                TenantId,
+                FamilyId = familyId,
+                MemberId = memberId,
+                FlowDate = flowDate,
+                Kind = kind,
+            });
+    }
+
     public async Task<Guid> InsertAsync(
         Guid familyId,
         Guid? memberId,

@@ -54,14 +54,17 @@ internal sealed class FamilyMemoryService : IFamilyMemoryService
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 
         var title = (request.TitleVi ?? "").Trim();
-        if (string.IsNullOrWhiteSpace(title))
+        var kindEarly = string.IsNullOrWhiteSpace(request.Kind)
+            ? FamilyMemoryKinds.Manual
+            : request.Kind.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(title) && kindEarly != FamilyMemoryKinds.KidMoment)
             throw new InvalidOperationException("Tiêu đề kỷ niệm bắt buộc.");
+        if (string.IsNullOrWhiteSpace(title))
+            title = "Khoảnh khắc nhà mình";
         if (title.Length > 200)
             title = title[..200];
 
-        var kind = string.IsNullOrWhiteSpace(request.Kind)
-            ? FamilyMemoryKinds.Manual
-            : request.Kind.Trim().ToLowerInvariant();
+        var kind = kindEarly;
         if (!FamilyMemoryKinds.All.Contains(kind))
             throw new InvalidOperationException("Loại kỷ niệm không hợp lệ.");
 
@@ -75,15 +78,41 @@ internal sealed class FamilyMemoryService : IFamilyMemoryService
         var today = DateOnly.FromDateTime(FamilyTimeZones.NowIn(family.Timezone).DateTime);
         var flowDate = request.FlowDate ?? today;
 
+        var photoUrl = Trim(request.PhotoUrl, 500);
+        var icon = Trim(request.Icon, 16);
+        var noteVi = Trim(request.NoteVi, 600);
+
+        if (kind == FamilyMemoryKinds.KidMoment)
+        {
+            if (request.MemberId is null)
+                throw new InvalidOperationException("Khoảnh khắc cần gắn với thành viên gửi.");
+            if (string.IsNullOrWhiteSpace(photoUrl)
+                || !photoUrl.StartsWith("/uploads/family-os/", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(
+                    "Khoảnh khắc cần ảnh/giọng từ API moment-media FamilyOS.");
+
+            var count = await _repo.CountByKindOnDateAsync(
+                familyId, request.MemberId, flowDate, FamilyMemoryKinds.KidMoment, cancellationToken);
+            if (count >= 3)
+                throw new InvalidOperationException(
+                    "Hôm nay đã gửi đủ 3 khoảnh khắc — mai gửi tiếp nhé.");
+
+            var isAudio = IsAudioMomentUrl(photoUrl) || icon == "🎤" || string.Equals(icon, "mic", StringComparison.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(icon))
+                icon = isAudio ? "🎤" : "📷";
+            if (string.IsNullOrWhiteSpace(title) || title.Length < 2)
+                title = isAudio ? "Giọng nói nhà mình" : "Khoảnh khắc nhà mình";
+        }
+
         var id = await _repo.InsertAsync(
             familyId,
             request.MemberId,
             flowDate,
             kind,
             title,
-            Trim(request.NoteVi, 600),
-            Trim(request.Icon, 16),
-            Trim(request.PhotoUrl, 500),
+            noteVi,
+            icon,
+            photoUrl,
             sourceRef: null,
             happenedAt: null,
             cancellationToken);
@@ -217,7 +246,20 @@ internal sealed class FamilyMemoryService : IFamilyMemoryService
             : $"Nhà mình có {body}.";
     }
 
-    private static string? Trim(string? value, int maxLen)
+    
+    private static bool IsAudioMomentUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return false;
+        var path = url.Split('?', 2)[0];
+        return path.EndsWith(".webm", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith(".m4a", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith(".aac", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith(".wav", StringComparison.OrdinalIgnoreCase);
+    }
+
+private static string? Trim(string? value, int maxLen)
     {
         if (string.IsNullOrWhiteSpace(value)) return null;
         var trimmed = value.Trim();

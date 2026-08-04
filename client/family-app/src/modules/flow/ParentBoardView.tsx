@@ -79,9 +79,14 @@ import {
   recordParentCoachActed,
   patchFamilyBlueprintLayers,
   fetchFamilyBlueprint,
+  resolveCalendarRoutine,
+  type ResolvedCalendarRoutine,
 } from '@/shared/api/family-os.api';
 import { DecisionInboxPanel } from '@/modules/flow/DecisionInboxPanel';
 import { TodayOpenStack, type TodayOpenCtaEvent } from '@/modules/flow/TodayOpenStack';
+import { ParentKidMomentSheet } from '@/modules/flow/ParentKidMomentSheet';
+import { ParentHomeStoryBody } from '@/modules/flow/ParentHomeStoryBody';
+import { isKidMomentSeen, markKidMomentSeen } from '@/modules/flow/kidMomentAck';
 import {
   buildMemoryYarn,
   buildPendingActions,
@@ -92,6 +97,14 @@ import {
   isRitualDone,
   markRitualDone as markTodayOpenRitualDone,
 } from '@/modules/flow/todayOpenSequence';
+import {
+  buildPlanTimeline,
+  ritualCadenceLabel,
+  studyCalendarHints,
+  unlockStatusLabelVi,
+  upcomingBirthdays,
+  type PlanGroupId,
+} from '@/modules/flow/planGroups';
 import { FamilyDnaCardView } from '@/modules/flow/FamilyDnaCard';
 import { FamilyChallengeCard } from '@/modules/flow/FamilyChallengeCard';
 import { ParentGoalsPanel } from '@/modules/flow/ParentGoalsPanel';
@@ -134,7 +147,6 @@ import {
   IconPlus,
   IconReport,
   IconRobot,
-  IconSettings,
   IconStar,
   IconTarget,
   IconTasks,
@@ -197,6 +209,7 @@ import {
 import {
   ADULT_VOICE_TEMPLATES,
   defaultChildVoiceDraftVi,
+  childVoiceDraftForIntent,
   BIRTHDAY_PICKER_OPTIONS,
   formatWeeklyStoryShare,
   shortMemberName,
@@ -429,7 +442,7 @@ function diaryTag(title: string): { label: string; tone: string } {
   if (t.includes('cùng') || t.includes('gia đình') || t.includes('movie')) {
     return { label: 'Khoảnh khắc', tone: 'pink' };
   }
-  return { label: 'Nhiệm vụ', tone: 'lilac' };
+  return { label: 'Kế hoạch', tone: 'lilac' };
 }
 
 function formatWindow(start?: string, end?: string): string | null {
@@ -548,9 +561,9 @@ type Props = {
   consequenceEvents: ConsequenceEvent[];
   glance: AccountabilityGlance | null;
   /** Children in the family — used for focus dropdown on parent Home. */
-  children?: Array<{ id: string; displayName: string }>;
+  children?: Array<{ id: string; displayName: string; dateOfBirth?: string }>;
   /** Other guardians/caregivers — P1.9 adult voice. */
-  parents?: Array<{ id: string; displayName: string }>;
+  parents?: Array<{ id: string; displayName: string; dateOfBirth?: string }>;
   /** House team-day snapshot (API or client derive) — hero never follows child picker. */
   teamDay?: {
     teamPercent: number;
@@ -581,7 +594,7 @@ function commitmentMatchesChild(c: DayFlowCommitment, childKey: string): boolean
 }
 
 function starBalanceNote(balance: number): string {
-  if (balance <= 0) return 'Con chưa có sao — khích lệ nhiệm vụ nhé!';
+  if (balance <= 0) return 'Con chưa có sao — khích lệ kế hoạch hôm nay nhé!';
   if (balance < 100) return 'Đang tích lũy!';
   return 'Tiến bộ tuyệt vời!';
 }
@@ -693,6 +706,8 @@ export function ParentBoardView({
   const [relTriggers, setRelTriggers] = useState<RelationshipTrigger[]>([]);
   const [relTriggerReload, setRelTriggerReload] = useState(0);
   const [voiceSheetOpen, setVoiceSheetOpen] = useState(false);
+  const [kidMomentSheetId, setKidMomentSheetId] = useState<string | null>(null);
+  const [kidMomentSeenTick, setKidMomentSeenTick] = useState(0);
   /** True only when sheet opened from an RE trigger card (not free compose). */
   const [voiceSheetFromTrigger, setVoiceSheetFromTrigger] = useState(false);
   const [voiceDraft, setVoiceDraft] = useState('');
@@ -748,6 +763,8 @@ export function ParentBoardView({
   const [coopScore, setCoopScore] = useState<CooperationScore | null>(null);
   const [rituals, setRituals] = useState<FamilyRitual[]>([]);
   const [ritualBusy, setRitualBusy] = useState<string | null>(null);
+  const [planGroup, setPlanGroup] = useState<PlanGroupId>('today');
+  const [calendarRoutine, setCalendarRoutine] = useState<ResolvedCalendarRoutine | null>(null);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
   /** Preview nội dung trước khi xác nhận cam kết / duyệt sao. */
   const [verifyPreview, setVerifyPreview] = useState<DayFlowCommitment | null>(null);
@@ -779,10 +796,13 @@ export function ParentBoardView({
   }, [childrenProp, flow.commitments]);
 
   const effectiveChildFocus =
-    childFocus || (childOptions.length > 0 ? childOptions[0].key : 'all');
+    childFocus ||
+    (childOptions.length > 1 ? 'all' : childOptions.length > 0 ? childOptions[0].key : 'all');
 
   useEffect(() => {
-    if (!childFocus && childOptions[0]) setChildFocus(childOptions[0].key);
+    if (!childFocus && childOptions.length > 0) {
+      setChildFocus(childOptions.length > 1 ? 'all' : childOptions[0].key);
+    }
   }, [childFocus, childOptions]);
 
   useEffect(() => {
@@ -952,10 +972,21 @@ export function ParentBoardView({
       .catch(() => {
         if (!cancelled) setRituals([]);
       });
+    void resolveCalendarRoutine(familyId, flow.flowDate)
+      .then((row) => {
+        if (!cancelled) setCalendarRoutine(row);
+      })
+      .catch(() => {
+        if (!cancelled) setCalendarRoutine(null);
+      });
     return () => {
       cancelled = true;
     };
   }, [familyId, flow.flowDate]);
+
+  useEffect(() => {
+    if (tab !== 'tasks') setPlanGroup('today');
+  }, [tab]);
 
   const markRitualDone = async (code: string) => {
     setRitualBusy(code);
@@ -1210,6 +1241,44 @@ export function ParentBoardView({
         }),
       );
     }
+    setVoiceSheetOpen(true);
+  };
+
+  const openHomeAiVoiceSheet = (opts?: {
+    toMemberId?: string;
+    intent?: 'encourage' | 'praise' | 'soft' | 'moment';
+    taskTitle?: string;
+  }) => {
+    if (!parentMembershipId) return;
+    setVoiceError(null);
+    setBirthdayPick(null);
+    setVoiceSheetFromTrigger(false);
+    setVoiceTargetKind('child');
+
+    const child =
+      (opts?.toMemberId
+        ? childOptions.find((c) => c.key === opts.toMemberId)
+        : undefined) ??
+      (effectiveChildFocus !== 'all'
+        ? childOptions.find((c) => c.key === effectiveChildFocus)
+        : undefined) ??
+      childOptions[0];
+
+    setVoiceToId(child?.key ?? '');
+    const short = shortMemberName(child?.name || 'con');
+    const roleWord = parentRoleFromName(viewerName);
+    const intent = opts?.intent ?? 'soft';
+    setVoiceTemplate(
+      intent === 'encourage' ? 'encourage' : intent === 'praise' ? 'praise' : 'custom',
+    );
+    setVoiceDraft(
+      childVoiceDraftForIntent({
+        childShort: short,
+        parentRole: roleWord,
+        intent,
+        taskTitle: opts?.taskTitle,
+      }),
+    );
     setVoiceSheetOpen(true);
   };
 
@@ -2179,6 +2248,28 @@ export function ParentBoardView({
     });
   };
 
+
+  const unreadKidMoments = useMemo(() => {
+    void kidMomentSeenTick;
+    const viewer = parentMembershipId || 'parent';
+    return savedMemories
+      .filter(
+        (m) =>
+          m.kind === 'kid_moment' &&
+          m.flowDate === flow.flowDate &&
+          !isKidMomentSeen(viewer, m.id),
+      )
+      .sort((a, b) => String(b.happenedAt).localeCompare(String(a.happenedAt)));
+  }, [savedMemories, flow.flowDate, parentMembershipId, kidMomentSeenTick]);
+
+  const focusedKidMoment = useMemo(
+    () =>
+      (kidMomentSheetId
+        ? savedMemories.find((m) => m.id === kidMomentSheetId)
+        : null) ?? unreadKidMoments[0] ?? null,
+    [kidMomentSheetId, savedMemories, unreadKidMoments],
+  );
+
   const openStackWarmth = useMemo(() => {
     void openSeqTick;
     return buildWarmthPulse({
@@ -2189,6 +2280,7 @@ export function ParentBoardView({
       memories: savedMemories,
       weeklyStory,
       familyName,
+      unreadKidMoments,
     });
   }, [
     openSeqTick,
@@ -2198,6 +2290,7 @@ export function ParentBoardView({
     savedMemories,
     weeklyStory,
     familyName,
+    unreadKidMoments,
   ]);
 
   const openStackPending = useMemo(
@@ -2206,8 +2299,9 @@ export function ParentBoardView({
         role: 'parent',
         commitments: scopedCommitments,
         partnerInbox,
+        unreadKidMoments,
       }),
-    [scopedCommitments, partnerInbox],
+    [scopedCommitments, partnerInbox, unreadKidMoments],
   );
 
   const openStackSeen = useMemo(
@@ -2217,8 +2311,9 @@ export function ParentBoardView({
         voiceThanks: voiceThanksReceipts,
         awaitingCount: awaitingVerifyItems.length,
         commitments: scopedCommitments,
+        kidMoments: unreadKidMoments,
       }),
-    [voiceThanksReceipts, awaitingVerifyItems.length, scopedCommitments],
+    [voiceThanksReceipts, awaitingVerifyItems.length, scopedCommitments, unreadKidMoments],
   );
 
   const openStackYarn = useMemo(() => {
@@ -2257,6 +2352,16 @@ export function ParentBoardView({
     }
     if (ev.kind === 'open_voice') {
       setVoiceSheetOpen(true);
+      return;
+    }
+    if (ev.kind === 'open_kid_moment' || ev.kind === 'ack_kid_moment') {
+      const id = ev.id || unreadKidMoments[0]?.id || null;
+      if (id) {
+        setKidMomentSheetId(id);
+        markKidMomentSeen(parentMembershipId || 'parent', id);
+        setKidMomentSeenTick((n) => n + 1);
+        setOpenSeqTick((n) => n + 1);
+      }
       return;
     }
     if (ev.kind === 'ack_partner_voice' && ev.id) {
@@ -2332,6 +2437,74 @@ export function ParentBoardView({
     !hasSoftCalAnsweredThisWeek(familyId);
   const childShort =
     (selectedChild?.name ?? focusChild?.name ?? 'Con').trim().split(/\s+/).pop() || 'Con';
+
+  const planTimeline = useMemo(
+    () => buildPlanTimeline(scopedCommitments, childShort),
+    [scopedCommitments, childShort],
+  );
+
+  const planChallengeRows = useMemo(() => {
+    const sorted = [...teamUnlocks].sort((a, b) => b.flowDate.localeCompare(a.flowDate));
+    const seen = new Set<string>();
+    const out: TeamUnlock[] = [];
+    for (const u of sorted) {
+      const key = `${u.rewardCode}:${u.flowDate}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(u);
+      if (out.length >= 6) break;
+    }
+    return out;
+  }, [teamUnlocks]);
+
+  const planCalendarItems = useMemo(() => {
+    const members = [
+      ...childrenProp.map((c) => ({
+        id: c.id,
+        displayName: c.displayName,
+        dateOfBirth: c.dateOfBirth,
+      })),
+      ...parentsProp.map((p) => ({
+        id: p.id,
+        displayName: p.displayName,
+        dateOfBirth: p.dateOfBirth,
+      })),
+    ];
+    const birthdays = upcomingBirthdays(members, flow.flowDate, 60);
+    const study = studyCalendarHints(scopedCommitments);
+    const period =
+      calendarRoutine &&
+      (calendarRoutine.periodDisplayName || calendarRoutine.routineDisplayName)
+        ? [
+            {
+              id: `period-${calendarRoutine.routineId || 'main'}`,
+              kind: 'period' as const,
+              titleVi:
+                calendarRoutine.periodDisplayName ||
+                calendarRoutine.routineDisplayName ||
+                'Nhịp lịch nhà',
+              whenVi: calendarRoutine.periodKind
+                ? `Chu kỳ · ${calendarRoutine.periodKind}`
+                : 'Đang áp dụng',
+              metaVi: calendarRoutine.routineDisplayName
+                ? `Routine: ${calendarRoutine.routineDisplayName}`
+                : undefined,
+            },
+          ]
+        : [];
+    return [...period, ...birthdays, ...study];
+  }, [childrenProp, parentsProp, flow.flowDate, scopedCommitments, calendarRoutine]);
+
+  const goPlanGroup = (id: PlanGroupId) => {
+    setPlanGroup(id);
+    window.requestAnimationFrame(() => {
+      document.getElementById(`plan-${id}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  };
+
   const diaryDays = useMemo(() => {
     const base = new Date(`${flow.flowDate}T12:00:00`);
     if (Number.isNaN(base.getTime())) return [];
@@ -2639,14 +2812,20 @@ export function ParentBoardView({
     </section>
   );
 
-  const renderChildPicker = (tone: 'home' | 'module' = 'home') => (
+  const renderChildPicker = (tone: 'home' | 'module' | 'home-compact' = 'home') => (
     <div
-      className={`ph-child-picker${tone === 'module' ? ' is-module' : ''}`}
+      className={`ph-child-picker${
+        tone === 'module' || tone === 'home-compact' ? ' is-module' : ''
+      }${tone === 'home-compact' ? ' is-home-compact' : ''}`}
       ref={childMenuRef}
     >
       <button
         type="button"
-        className={tone === 'module' ? 'ph-child-picker-btn' : 'ph-cal-btn'}
+        className={
+          tone === 'module' || tone === 'home-compact'
+            ? 'ph-child-picker-btn'
+            : 'ph-cal-btn'
+        }
         aria-haspopup="listbox"
         aria-expanded={childMenuOpen}
         aria-label="Chọn thành viên đang xem"
@@ -2658,7 +2837,18 @@ export function ParentBoardView({
             ? '🏡'
             : avatarEmoji(inferGenderFromName(childFocusLabel), 'child')}
         </span>
-        {tone === 'module' ? <em>{childFocusLabel}</em> : null}
+        {tone === 'module' || tone === 'home-compact' ? (
+          <em>
+            {tone === 'home-compact' ? (
+              <>
+                <b>Đang xem</b> {childFocusLabel}
+              </>
+            ) : (
+              childFocusLabel
+            )}
+          </em>
+        ) : null}
+        {tone === 'home-compact' ? <i aria-hidden>▾</i> : null}
       </button>
       {childMenuOpen ? (
         <ul className="ph-child-menu" role="listbox" aria-label="Chọn thành viên">
@@ -2935,73 +3125,182 @@ export function ParentBoardView({
       ) : null}
 
       {tab === 'home' ? (
-      <header className="ph-b4-top">
-        <div className="ph-b4-identity">
-          <div className="ph-b4-avatar" aria-hidden>
-            {parentAvatar}
+        <header className="ph-b4-top phs-top--mock">
+          <div className="phs-brand" aria-label="Famixa Family OS">
+            <img className="phs-brand-mark" src="/brand/fami-mark-48.png" alt="" />
+            <div>
+              <strong>Famixa</strong>
+              <em>Family OS</em>
+            </div>
           </div>
-          <div>
-            <h1 className="ph-b4-hello">
-              Xin chào, {parentHelloLabel} <span aria-hidden>👋</span>
-            </h1>
+          <div className="ph-b4-top-right">
             <button
               type="button"
-              className="ph-b4-family"
-              onClick={() => setModeSheetOpen(true)}
+              className="ph-b4-icon-btn"
+              aria-label="Việc cần xử lý"
+              onClick={() => scrollToMissions('need_help')}
             >
-              {familyName || 'Gia đình mình'}
-              <span aria-hidden>▾</span>
+              <IconBell size={20} />
+              {attentionItems.length > 0 ? (
+                <i>{Math.min(attentionItems.length, 9)}</i>
+              ) : null}
             </button>
-            <p className="ph-b4-date">{formatFlowDay(flow.flowDate)}</p>
+            <button
+              type="button"
+              className="phs-profile"
+              onClick={openSettings}
+              aria-label="Tài khoản / Cài đặt"
+            >
+              <span className="phs-profile-avatar" aria-hidden>
+                {parentAvatar}
+              </span>
+              <span className="phs-profile-name">
+                {parentHelloLabel}
+                <i aria-hidden>▾</i>
+              </span>
+            </button>
           </div>
-        </div>
-        <div className="ph-b4-top-right">
-          <button
-            type="button"
-            className="ph-b4-icon-btn"
-            aria-label="Việc cần xử lý"
-            onClick={() => scrollToMissions('need_help')}
-          >
-            <IconBell size={20} />
-            {attentionItems.length > 0 ? (
-              <i>{Math.min(attentionItems.length, 9)}</i>
-            ) : null}
-          </button>
-          <button
-            type="button"
-            className="ph-b4-icon-btn"
-            aria-label="Tài khoản / Cài đặt"
-            title="Tài khoản / Cài đặt"
-            onClick={openSettings}
-          >
-            <IconSettings size={20} />
-          </button>
-        </div>
-      </header>
+        </header>
       ) : null}
 
       {tab === 'home' ? (
-        <div className="ph-b4-home">
+        <div className="ph-b4-home ph-home-story">
           {!hasChildren ? renderNoChildNotice() : null}
           {hasChildren ? (
-            <div className="ph-b4-focus-bar" aria-label="Đang xem thành viên nào">
-              <span className="ph-b4-focus-label">
-                Đang xem
-                {effectiveChildFocus === 'all' && childOptions.length > 1 ? (
-                  <em> · {childOptions.length} con</em>
-                ) : null}
-              </span>
-              {renderChildPicker('module')}
-            </div>
-          ) : null}
-          {hasChildren ? (
-            <div className="ph-b4-team-line" aria-label="Tiến độ cả nhà hôm nay">
-              <span aria-hidden>👨‍👩‍👧‍👦</span>
-              <strong>{houseTeamSummary}</strong>
-            </div>
+            childOptions.length <= 3 ? (
+              <nav className="phs-child-rail" aria-label="Đang xem thành viên nào">
+                <button
+                  type="button"
+                  className={effectiveChildFocus === 'all' ? 'is-on' : undefined}
+                  onClick={() => setChildFocus('all')}
+                >
+                  Cả nhà
+                </button>
+                {childOptions.map((c) => {
+                  const short =
+                    c.name.trim().split(/\s+/).filter(Boolean).pop() || c.name;
+                  return (
+                    <button
+                      key={c.key}
+                      type="button"
+                      className={effectiveChildFocus === c.key ? 'is-on' : undefined}
+                      onClick={() => setChildFocus(c.key)}
+                      title={c.name}
+                    >
+                      <span aria-hidden>
+                        {avatarEmoji(inferGenderFromName(c.name), 'child')}
+                      </span>
+                      {short}
+                    </button>
+                  );
+                })}
+              </nav>
+            ) : (
+              <div className="phs-child-compact" aria-label="Đang xem thành viên nào">
+                {renderChildPicker('home-compact')}
+                <em className="phs-child-compact-hint">
+                  {childOptions.length} con · chọn để lọc kế hoạch
+                </em>
+              </div>
+            )
           ) : null}
 
+          <ParentHomeStoryBody
+            parentHelloLabel={parentHelloLabel}
+            period={homeBrief.period}
+            moodLineVi={homeBrief.moodLineVi}
+            houseTeamPercent={
+              effectiveChildFocus === 'all' ? houseTeamPercent : percent
+            }
+            houseTeamRemaining={
+              effectiveChildFocus === 'all'
+                ? houseTeamRemaining
+                : Math.max(0, scopedTotal - scopedDone)
+            }
+            houseTeamTotal={
+              effectiveChildFocus === 'all' ? houseTeamTotal : scopedTotal
+            }
+            houseTeamSummary={
+              effectiveChildFocus === 'all'
+                ? houseTeamSummary
+                : scopedTotal > 0
+                  ? `${childFocusLabel}: ${scopedDone}/${scopedTotal} việc hôm nay`
+                  : `${childFocusLabel}: chưa có việc hôm nay`
+            }
+            attentionItems={attentionItems}
+            unreadKidMoments={
+              effectiveChildFocus === 'all'
+                ? unreadKidMoments
+                : unreadKidMoments.filter(
+                    (m) =>
+                      m.memberId === effectiveChildFocus ||
+                      m.memberName?.trim() === selectedChild?.name,
+                  )
+            }
+            savedMemories={
+              effectiveChildFocus === 'all'
+                ? savedMemories
+                : savedMemories.filter(
+                    (m) =>
+                      !m.memberId ||
+                      m.memberId === effectiveChildFocus ||
+                      m.memberName?.trim() === selectedChild?.name,
+                  )
+            }
+            childGratitudes={
+              effectiveChildFocus === 'all'
+                ? childGratitudes
+                : childGratitudes.filter(
+                    (g) =>
+                      g.fromMemberId === effectiveChildFocus ||
+                      g.fromMemberName?.trim() === selectedChild?.name,
+                  )
+            }
+            familyMoods={familyMoods}
+            rituals={rituals}
+            todayUnlock={todayUnlock}
+            coachInsight={coach?.insight || null}
+            coachDoThis={coach?.doThis || null}
+            focusLabel={childFocusLabel}
+            focusAll={effectiveChildFocus === 'all'}
+            children={childrenProp}
+            childProgress={childrenProp.map((c) => {
+              const items = flow.commitments.filter(
+                (x) =>
+                  x.memberId === c.id ||
+                  x.memberName?.trim() === c.displayName.trim(),
+              );
+              const done = items.filter((x) => x.status === 'done').length;
+              const total = items.length;
+              return {
+                id: c.id,
+                name: shortMemberName(c.displayName),
+                done,
+                total,
+                percent: total > 0 ? Math.round((done / total) * 100) : 0,
+              };
+            })}
+            onOpenPlan={() => setTab('tasks')}
+            onOpenTasks={() => setTab('tasks')}
+            onOpenVoice={(opts) => {
+              openHomeAiVoiceSheet(opts);
+            }}
+            onOpenKidMoment={(id) => {
+              setKidMomentSheetId(id);
+              markKidMomentSeen(parentMembershipId || 'parent', id);
+              setKidMomentSeenTick((n) => n + 1);
+              setOpenSeqTick((n) => n + 1);
+            }}
+            onOpenVerify={(item) => openVerifyPreview(item)}
+            onOpenDiary={() => setTab('diary')}
+            onOpenChallenge={() => setTab('challenge')}
+            onOpenRewards={() => setTab('rewards')}
+            onOpenValue={() => goReportHub()}
+            onOpenCoach={openCoachOrPaywall}
+          />
+
           {hasChildren ? (
+            <div className="phs-soft-slot" hidden aria-hidden>
             <TodayOpenStack
               role="parent"
               warmth={openStackWarmth}
@@ -3017,6 +3316,7 @@ export function ParentBoardView({
                 setOpenSeqTick((n) => n + 1);
               }}
             />
+            </div>
           ) : null}
 
           {partnerInbox.length > 0 ||
@@ -3222,7 +3522,7 @@ export function ParentBoardView({
           </section>
           ) : null}
 
-          <article className="ph-b4-brief" aria-label="Morning Brief">
+          <article className="ph-b4-brief phs-hero-brief" aria-label="Morning Brief">
             <div className="ph-b4-brief-main">
               <p className="ph-b4-brief-eyebrow">
                 <img className="ph-b4-brief-mark" src="/brand/fami-mark-48.png" alt="" aria-hidden />
@@ -3453,21 +3753,21 @@ export function ParentBoardView({
             </button>
           ) : null}
 
-          <div className="ph-b4-mid">
-            <section className="ph-b4-priority" id="ph-brief-attn" aria-label="Ưu tiên hôm nay">
+
+          
+          <div className="ph-b4-mid phs-legacy-mid">
+            <section className="ph-b4-priority phs-need" id="ph-brief-attn" aria-label="Nhà cần bạn">
               <header className="ph-b4-col-head">
                 <h3>
                   <span aria-hidden>🎯</span>{' '}
-                  {effectiveChildFocus === 'all'
-                    ? 'Ưu tiên hôm nay'
-                    : `Ưu tiên của ${selectedChild?.name ?? childShort}`}
+                  Nhà cần bạn
                 </h3>
               </header>
               {homeAttention.length === 0 &&
               !(homeBrief.period === 'evening' && (homeBrief.eveningOverdueCount ?? 0) > 0) ? (
                 <p className="ph-b4-empty">Không việc nóng — nhà đang ổn.</p>
               ) : (
-                <ul className="ph-b4-priority-list">
+                <ul className="ph-b4-priority-list phs-need-list">
                   {homeBrief.period === 'evening' && (homeBrief.eveningOverdueCount ?? 0) > 0 ? (
                     <li>
                       <button
@@ -3482,7 +3782,7 @@ export function ParentBoardView({
                           <strong>
                             {homeBrief.eveningOverdueCount} việc sáng còn mở
                           </strong>
-                          <em>Gộp xem trong Nhiệm vụ — tối nay ưu tiên 3 câu phản hồi</em>
+                          <em>Gộp xem trong Kế hoạch — tối nay ưu tiên 3 câu phản hồi</em>
                         </span>
                         <i aria-hidden />
                       </button>
@@ -3590,6 +3890,13 @@ export function ParentBoardView({
               onOpenMode={() => setModeSheetOpen(true)}
             />
           </div>
+
+
+          
+
+          
+
+          
 
           <section
             className="ph-b4-progress"
@@ -3933,7 +4240,7 @@ export function ParentBoardView({
         <div className="ph-tasks" id="ph-missions">
           <header className="ph-tasks-top">
             <div>
-              <h1>Nhiệm vụ</h1>
+              <h1>Kế hoạch hôm nay</h1>
               <p>
                 {hasChildren ? (
                   <>
@@ -3949,7 +4256,57 @@ export function ParentBoardView({
 
           {!hasChildren ? renderNoChildNotice() : null}
 
-          <div className="ph-tasks-tabs" role="tablist" aria-label="Lọc nhiệm vụ">
+
+          <nav className="ph-plan-rail" aria-label="Nhóm trong kế hoạch nhà">
+            {(
+              [
+                { id: 'today' as const, icon: '⭐', label: 'Việc hôm nay' },
+                { id: 'routine' as const, icon: '🔁', label: 'Routine' },
+                { id: 'challenge' as const, icon: '🎯', label: 'Challenge' },
+                { id: 'calendar' as const, icon: '📆', label: 'Lịch gia đình' },
+              ] as const
+            ).map((g) => (
+              <button
+                key={g.id}
+                type="button"
+                className={`ph-plan-rail-item${planGroup === g.id ? ' is-on' : ''}`}
+                onClick={() => goPlanGroup(g.id)}
+              >
+                <span aria-hidden>{g.icon}</span>
+                {g.label}
+              </button>
+            ))}
+          </nav>
+
+          <div id="plan-today" className="ph-plan-block">
+          <header className="ph-plan-block-head">
+            <h2>
+              <span aria-hidden>⭐</span> Việc hôm nay
+            </h2>
+            <p>Lịch sinh hoạt đến hạn hôm nay — không phải todo lạnh.</p>
+          </header>
+
+          {planTimeline.length > 0 ? (
+            <ol className="ph-plan-timeline" aria-label="Nhịp sinh hoạt hôm nay">
+              {planTimeline.slice(0, 8).map((row) => (
+                <li key={row.id} className={row.done ? 'is-done' : undefined}>
+                  <time>{row.time}</time>
+                  <div>
+                    <strong>{row.title}</strong>
+                    <em>{row.who}</em>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="ph-empty-soft">
+              {hasChildren
+                ? 'Chưa có việc trong lịch hôm nay.'
+                : 'Thêm con để Famixa dựng nhịp sinh hoạt hằng ngày.'}
+            </p>
+          )}
+
+          <div className="ph-tasks-tabs" role="tablist" aria-label="Lọc kế hoạch hôm nay">
             {(
               [
                 { key: 'all' as const, label: 'Tất cả', count: scopedTotal, tone: 'purple' },
@@ -4034,7 +4391,7 @@ export function ParentBoardView({
             <div className="ph-tasks-bubble">
               <p>
                 {!hasChildren
-                  ? 'Chưa có con trong nhà — thêm con để Famixa giao việc hằng ngày.'
+                  ? 'Chưa có con trong nhà — thêm con để Famixa dựng nhịp sinh hoạt hằng ngày.'
                   : voicePick(`${flow.flowDate}:tasks-banner:${needHelpItems.length}`, [
                       needHelpItems.length === 0
                         ? `${parentRole === 'bố' ? 'Bố' : parentRole === 'mẹ' ? 'Mẹ' : 'Bố mẹ'} ơi, hôm nay ${childShort} đang giữ nhịp ổn! 💪`
@@ -4049,7 +4406,7 @@ export function ParentBoardView({
               </p>
             </div>
             <div className="ph-tasks-progress">
-              <span>Tiến độ nhiệm vụ hôm nay</span>
+              <span>Tiến độ kế hoạch hôm nay</span>
               <strong>
                 {scopedDone} / {Math.max(scopedTotal, 1)}
               </strong>
@@ -4350,6 +4707,180 @@ export function ParentBoardView({
               </ul>
             </section>
           )}
+          </div>
+
+          <section id="plan-routine" className="ph-plan-block">
+            <header className="ph-plan-block-head">
+              <h2>
+                <span aria-hidden>🔁</span> Routine
+              </h2>
+              <p>
+                {calendarRoutine?.routineDisplayName
+                  ? `Nhịp lặp · ${calendarRoutine.routineDisplayName}`
+                  : 'Nhịp lặp mỗi ngày / mỗi tuần của nhà.'}
+              </p>
+            </header>
+            <ul className="ph-plan-ritual-list">
+              {rituals.length === 0 ? (
+                <li className="ph-empty-soft">
+                  Chưa có routine — mở chế độ nhà (hè / thi / du lịch) để Famixa chỉnh nhịp.
+                </li>
+              ) : (
+                rituals.map((r) => (
+                  <li key={r.code} className={r.doneThisPeriod ? 'is-done' : undefined}>
+                    <div>
+                      <strong>{r.labelVi}</strong>
+                      <em>
+                        {ritualCadenceLabel(r.cadence)}
+                        {r.doneThisPeriod
+                          ? r.doneAt
+                            ? ` · xong ${r.doneAt.slice(0, 10)}`
+                            : ' · đã xong kỳ này'
+                          : ' · đang chờ nhà hoàn tất'}
+                      </em>
+                    </div>
+                    {r.doneThisPeriod ? (
+                      <span className="ph-plan-ritual-done" aria-label="Đã check-in">
+                        ✓
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="ph-plan-cta is-soft"
+                        disabled={ritualBusy === r.code}
+                        onClick={() => void markRitualDone(r.code)}
+                      >
+                        {ritualBusy === r.code ? 'Đang…' : 'Check-in'}
+                      </button>
+                    )}
+                  </li>
+                ))
+              )}
+            </ul>
+            <div className="ph-plan-inline-actions">
+              <button type="button" className="ph-text-link" onClick={() => setModeSheetOpen(true)}>
+                Đổi chế độ nhà →
+              </button>
+              <button type="button" className="ph-text-link" onClick={() => goReportHub()}>
+                Xem nhịp nhà trong Gia đình →
+              </button>
+            </div>
+          </section>
+
+          <section id="plan-challenge" className="ph-plan-block">
+            <header className="ph-plan-block-head">
+              <h2>
+                <span aria-hidden>🎯</span> Challenge
+              </h2>
+              <p>Thử thách cả nhà — giữ nhịp kết nối, không phải đua KPI.</p>
+            </header>
+            {todayUnlock ? (
+              <article className="ph-plan-challenge-card">
+                <strong>{todayUnlock.labelVi || 'Challenge đang mở'}</strong>
+                <p>
+                  {todayUnlock.teamDone}/{Math.max(todayUnlock.teamTotal, 1)} thành viên ·{' '}
+                  {todayUnlock.teamPercent}%
+                  {todayUnlock.status === 'confirmed'
+                    ? ' · đã mở'
+                    : todayUnlock.status === 'pending_confirm'
+                      ? ' · chờ duyệt'
+                      : ''}
+                </p>
+                <div className="ph-plan-bar" aria-hidden>
+                  <b style={{ width: `${Math.min(100, todayUnlock.teamPercent)}%` }} />
+                </div>
+                <button type="button" className="ph-plan-cta" onClick={() => setTab('challenge')}>
+                  Mở Challenge →
+                </button>
+              </article>
+            ) : null}
+            {todayComboUnlock ? (
+              <article className="ph-plan-challenge-card is-combo">
+                <strong>{todayComboUnlock.labelVi || 'Combo anh chị em'}</strong>
+                <p>
+                  {unlockStatusLabelVi(todayComboUnlock.status)} ·{' '}
+                  {todayComboUnlock.teamDone}/{Math.max(todayComboUnlock.teamTotal, 1)}
+                </p>
+                <button type="button" className="ph-plan-cta" onClick={() => setTab('challenge')}>
+                  Xem Combo →
+                </button>
+              </article>
+            ) : null}
+            {planChallengeRows.length > 0 ? (
+              <ul className="ph-plan-soft-list">
+                {planChallengeRows.map((u) => (
+                  <li key={u.id}>
+                    <strong>
+                      {u.labelVi || u.rewardCode}{' '}
+                      <span className="ph-plan-soft-date">{u.flowDate.slice(8, 10)}/
+                      {u.flowDate.slice(5, 7)}</span>
+                    </strong>
+                    <em>
+                      {unlockStatusLabelVi(u.status)} · {u.teamPercent}%
+                    </em>
+                  </li>
+                ))}
+              </ul>
+            ) : !todayUnlock ? (
+              <div className="ph-plan-empty-card">
+                <p>Chưa có challenge đang chạy.</p>
+                <button type="button" className="ph-plan-cta" onClick={() => setTab('challenge')}>
+                  Xem gợi ý Challenge →
+                </button>
+              </div>
+            ) : null}
+          </section>
+
+          <section id="plan-calendar" className="ph-plan-block">
+            <header className="ph-plan-block-head">
+              <h2>
+                <span aria-hidden>📆</span> Lịch gia đình
+              </h2>
+              <p>Sinh nhật, học thêm, chu kỳ năm học / du lịch — một chỗ cho nhịp đời nhà.</p>
+            </header>
+            {planCalendarItems.length > 0 ? (
+              <ul className="ph-plan-cal-list">
+                {planCalendarItems.map((item) => (
+                  <li key={item.id} className={`is-${item.kind}`}>
+                    <span className="ph-plan-cal-ico" aria-hidden>
+                      {item.kind === 'birthday'
+                        ? '🎂'
+                        : item.kind === 'period'
+                          ? '🌿'
+                          : item.kind === 'study'
+                            ? '📚'
+                            : '📌'}
+                    </span>
+                    <div>
+                      <strong>{item.titleVi}</strong>
+                      <em>{item.whenVi}</em>
+                      {item.metaVi ? <p>{item.metaVi}</p> : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="ph-plan-empty-card">
+                <p>
+                  Chưa có mốc lịch — thêm ngày sinh cho thành viên hoặc bật chế độ nhà (hè / du lịch).
+                </p>
+              </div>
+            )}
+            <div className="ph-plan-inline-actions">
+              <button type="button" className="ph-plan-cta is-soft" onClick={() => setModeSheetOpen(true)}>
+                Đổi nhịp lịch nhà
+              </button>
+              <button
+                type="button"
+                className="ph-text-link"
+                onClick={() => {
+                  setTab('diary');
+                }}
+              >
+                Mở Nhật ký theo ngày →
+              </button>
+            </div>
+          </section>
         </div>
       ) : null}
 
@@ -4479,7 +5010,7 @@ export function ParentBoardView({
             {(
               [
                 { id: 'all', icon: '▦', label: 'Tất cả' },
-                { id: 'tasks', icon: '📋', label: 'Nhiệm vụ' },
+                { id: 'tasks', icon: '📅', label: 'Kế hoạch' },
                 { id: 'moments', icon: '❤️', label: 'Khoảnh khắc' },
                 { id: 'health', icon: '😊', label: 'Sức khỏe' },
                 { id: 'study', icon: '📚', label: 'Học tập' },
@@ -5078,7 +5609,7 @@ export function ParentBoardView({
                           ? movieMembersLeft === 1
                             ? 'Chỉ còn 1 thành viên nữa!'
                             : `Chỉ còn ${movieMembersLeft} thành viên nữa!`
-                          : `Chỉ còn ${movieMembersLeft} nhiệm vụ nữa!`
+                          : `Chỉ còn ${movieMembersLeft} việc nữa!`
                         : 'Đang tiến gần phần thưởng chung'}
                 </span>
                 {todayUnlock?.status === 'pending_confirm' ? (
@@ -5111,7 +5642,7 @@ export function ParentBoardView({
 
             <div className="ph-treasure-goals" id="ph-treasure-family-goals">
               {treasureFamilyGoals.length === 0 ? (
-                <p className="ph-empty-soft">Chưa có phần thưởng nhóm — hoàn thành nhiệm vụ cả nhà nhé!</p>
+                <p className="ph-empty-soft">Chưa có phần thưởng nhóm — giữ nhịp kế hoạch cả nhà nhé!</p>
               ) : (
                 treasureFamilyGoals.map((g) => (
                   <article key={g.id} className="ph-treasure-goal">
@@ -5378,7 +5909,7 @@ export function ParentBoardView({
         </div>
       ) : null}
 
-      <nav className="ph-tabbar ph-tabbar--b5" aria-label="Điều hướng bố mẹ">
+            <nav className="ph-tabbar ph-tabbar--b5 phs-tabbar--mock" aria-label="Điều hướng bố mẹ">
         <button
           type="button"
           className={`ph-tab${tab === 'home' ? ' is-on' : ''}`}
@@ -5393,24 +5924,16 @@ export function ParentBoardView({
           onClick={() => setTab('tasks')}
         >
           <IconTasks size={22} />
-          Nhiệm vụ
+          Kế hoạch
         </button>
         <button
           type="button"
           className="ph-tab ph-tab-add"
-          aria-label="Thêm kỷ niệm"
-          title="Thêm kỷ niệm gia đình"
+          aria-label="Thêm nhanh cho nhà"
+          title="Thêm nhanh: kỷ niệm, ghi chú cho nhà"
           onClick={() => setAddMemoryOpen(true)}
         >
           <IconPlus size={26} />
-        </button>
-        <button
-          type="button"
-          className={`ph-tab${tab === 'value' ? ' is-on' : ''}`}
-          onClick={goReportHub}
-        >
-          <IconReport size={22} />
-          Báo cáo
         </button>
         <button
           type="button"
@@ -5419,6 +5942,14 @@ export function ParentBoardView({
         >
           <IconDiary size={22} />
           Nhật ký
+        </button>
+        <button
+          type="button"
+          className={`ph-tab${tab === 'value' ? ' is-on' : ''}`}
+          onClick={goReportHub}
+        >
+          <IconReport size={22} />
+          Gia đình
         </button>
       </nav>
 
@@ -6011,7 +6542,7 @@ export function ParentBoardView({
             className="sheet"
             role="dialog"
             aria-modal="true"
-            aria-label="Thêm kỷ niệm"
+            aria-label="Thêm nhanh cho nhà"
             onClick={(e) => e.stopPropagation()}
           >
             <h2>Thêm kỷ niệm gia đình</h2>
@@ -6132,7 +6663,26 @@ export function ParentBoardView({
         </div>
       ) : null}
 
-      {voiceSheetOpen ? (
+      
+      <ParentKidMomentSheet
+        open={Boolean(kidMomentSheetId)}
+        familyId={familyId}
+        parentMembershipId={parentMembershipId || ''}
+        flowDate={flow.flowDate}
+        memory={focusedKidMoment}
+        onClose={() => setKidMomentSheetId(null)}
+        onSeen={(id) => {
+          markKidMomentSeen(parentMembershipId || 'parent', id);
+          setKidMomentSeenTick((n) => n + 1);
+          setOpenSeqTick((n) => n + 1);
+        }}
+        onUpdated={(m) => {
+          setSavedMemories((prev) => prev.map((x) => (x.id === m.id ? m : x)));
+        }}
+        onToast={(msg) => setActionToast(msg)}
+      />
+
+{voiceSheetOpen ? (
         <div
           className="sheet-backdrop"
           role="presentation"
@@ -6176,7 +6726,25 @@ export function ParentBoardView({
                 <span className="ph-nudge-select">
                   <select
                     value={voiceToId}
-                    onChange={(e) => setVoiceToId(e.target.value)}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      setVoiceToId(id);
+                      if (voiceTargetKind !== 'child' || !id) return;
+                      const child = childOptions.find((c) => c.key === id);
+                      const intent =
+                        voiceTemplate === 'encourage'
+                          ? ('encourage' as const)
+                          : voiceTemplate === 'praise'
+                            ? ('praise' as const)
+                            : ('soft' as const);
+                      setVoiceDraft(
+                        childVoiceDraftForIntent({
+                          childShort: shortMemberName(child?.name || 'con'),
+                          parentRole: parentRoleFromName(viewerName),
+                          intent,
+                        }),
+                      );
+                    }}
                     disabled={voiceBusy}
                   >
                     <option value="">
@@ -6260,6 +6828,7 @@ export function ParentBoardView({
                   disabled={voiceBusy}
                   onChange={(e) => setVoiceDraft(e.target.value)}
                 />
+                <em className="ph-voice-hint">Gợi ý sẵn — sửa nếu muốn rồi gửi luôn.</em>
               </label>
             </div>
 

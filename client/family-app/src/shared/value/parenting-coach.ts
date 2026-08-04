@@ -414,7 +414,7 @@ export function buildParentingCoach(input: {
         ? 'Chọn 10 phút đọc/kể chuyện hoặc Movie Night nếu đủ điều kiện mở khóa.'
         : 'Giữ 1 neo cố định (đánh răng hoặc cặp). Chỉ can thiệp khi quá giờ.',
       `Khen một việc ${who} đã làm tốt hôm nay — cụ thể, không chung chung.`,
-      'Nếu rảnh: lưu một kỷ niệm ngắn. Không cần thêm nhiệm vụ.',
+      'Nếu rảnh: lưu một kỷ niệm ngắn. Không cần thêm việc mới.',
     ]),
     avoid: voicePick(`${date}:calm:a`, [
       'Tránh thêm việc “cho chắc” khi ngày đang êm.',

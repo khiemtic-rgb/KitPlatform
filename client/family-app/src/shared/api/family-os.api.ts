@@ -768,6 +768,32 @@ export type EvidenceUploadResult = {
   warningMessageVi?: string;
 };
 
+
+export type MomentMediaUploadResult = {
+  url: string;
+  mediaKind: 'photo' | 'audio';
+};
+
+export async function uploadFamilyMomentMedia(
+  familyId: string,
+  file: File,
+  memberId?: string,
+): Promise<MomentMediaUploadResult> {
+  const form = new FormData();
+  form.append('file', file);
+  if (memberId) form.append('memberId', memberId);
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/moment-media`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  const url = String(data.url ?? data.Url ?? '');
+  if (!url) throw new Error('Upload khong tra ve URL');
+  const rawKind = String(data.mediaKind ?? data.MediaKind ?? 'photo').toLowerCase();
+  return {
+    url,
+    mediaKind: rawKind === 'audio' ? 'audio' : 'photo',
+  };
+}
+
 export async function uploadCommitmentEvidence(
   familyId: string,
   file: File,
@@ -2869,7 +2895,8 @@ export type FamilyMemoryKind =
   | 'team_day'
   | 'parent_habit'
   | 'parent_voice'
-  | 'evening_circle';
+  | 'evening_circle'
+  | 'kid_moment';
 
 export interface CooperationScore {
   period: string;

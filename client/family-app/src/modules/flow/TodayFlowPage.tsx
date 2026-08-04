@@ -75,10 +75,10 @@ export function TodayFlowPage() {
   const [pinPurpose, setPinPurpose] = useState<'switch' | 'unlock'>('switch');
   const [softLockBypassed, setSoftLockBypassed] = useState(false);
   const [familyChildren, setFamilyChildren] = useState<
-    Array<{ id: string; displayName: string }>
+    Array<{ id: string; displayName: string; dateOfBirth?: string }>
   >([]);
   const [familyParents, setFamilyParents] = useState<
-    Array<{ id: string; displayName: string }>
+    Array<{ id: string; displayName: string; dateOfBirth?: string }>
   >([]);
   const [onboardBanner, setOnboardBanner] = useState<string | null>(null);
   const [starBalance, setStarBalance] = useState(0);
@@ -126,10 +126,18 @@ export function TodayFlowPage() {
         const members = family?.members ?? [];
         const kids = members
           .filter((m) => m.roleCode === 'child')
-          .map((m) => ({ id: m.id, displayName: m.displayName }));
+          .map((m) => ({
+            id: m.id,
+            displayName: m.displayName,
+            dateOfBirth: m.dateOfBirth,
+          }));
         const parents = members
           .filter((m) => m.roleCode !== 'child')
-          .map((m) => ({ id: m.id, displayName: m.displayName }));
+          .map((m) => ({
+            id: m.id,
+            displayName: m.displayName,
+            dateOfBirth: m.dateOfBirth,
+          }));
         setFamilyChildren(kids);
         setFamilyParents(parents);
       })

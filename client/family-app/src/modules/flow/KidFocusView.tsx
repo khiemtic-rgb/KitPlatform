@@ -51,6 +51,7 @@ import {
 import { getApiErrorMessage } from '@/shared/billing/capability-error';
 import { ChildScreenRequestSheet } from '@/modules/flow/ChildScreenRequestSheet';
 import { ChildMissionRequestSheet } from '@/modules/flow/ChildMissionRequestSheet';
+import { KidMomentSheet } from '@/modules/flow/KidMomentSheet';
 import { TodayOpenStack, type TodayOpenCtaEvent } from '@/modules/flow/TodayOpenStack';
 import {
   buildMemoryYarn,
@@ -900,7 +901,7 @@ function formatStars(n: number): string {
 }
 
 function starBalanceNote(balance: number): string {
-  if (balance <= 0) return 'Hoàn thành nhiệm vụ để kiếm sao nhé!';
+  if (balance <= 0) return 'Giữ kế hoạch hôm nay để kiếm sao nhé!';
   if (balance < 100) return 'Đang tích lũy — cố lên!';
   if (balance < 500) return 'Tiến bộ tuyệt vời!';
   return 'Quá tuyệt vời!';
@@ -1198,6 +1199,7 @@ export function KidFocusView({
   const [cheerToast, setCheerToast] = useState<string | null>(null);
   const [nudgeReloadTick, setNudgeReloadTick] = useState(0);
   const [journalToast, setJournalToast] = useState<string | null>(null);
+  const [kidMomentSheetOpen, setKidMomentSheetOpen] = useState(false);
   const [momentIdx, setMomentIdx] = useState(0);
   const [journalDayIdx, setJournalDayIdx] = useState(5);
   const [active, setActive] = useState<DayFlowCommitment | null>(null);
@@ -2733,12 +2735,23 @@ export function KidFocusView({
     [albumMemories, memoryFilter],
   );
 
+
+  const kidMomentsToday = useMemo(
+    () =>
+      savedMemories.filter(
+        (m) => m.kind === 'kid_moment' && m.memberId === childMemberId && m.flowDate === flowDate,
+      ),
+    [savedMemories, childMemberId, flowDate],
+  );
+  const kidMomentsRemainingToday = Math.max(0, 3 - kidMomentsToday.length);
+
   const memoryFilterChips = useMemo(() => {
     const chips: Array<[KidMemoryFilter, string]> = [
       ['all', 'Tất cả'],
       ['team_unlock', 'Movie Night'],
     ];
     if (parentVoiceAlbum.length > 0) chips.push(['parent_voice', 'Lời bố mẹ']);
+    if (kidMomentsToday.length > 0) chips.push(['kid_moment', 'Khoảnh khắc']);
     chips.push(['beautiful_day', 'Vườn / ngày đẹp']);
     return chips;
   }, [parentVoiceAlbum.length]);
@@ -3123,9 +3136,9 @@ export function KidFocusView({
             {tab === 'tasks' ? (
               <>
                 <h1 className="kv2-hello">
-                  Nhiệm vụ của {short} <span aria-hidden>✨</span>
+                  Kế hoạch của {short} <span aria-hidden>✨</span>
                 </h1>
-                <p className="kv2-date">Cùng cố gắng nhé! 💪</p>
+                <p className="kv2-date">Cùng giữ nhịp hôm nay nhé! 💪</p>
               </>
             ) : tab === 'rewards' ? (
               <>
@@ -3159,6 +3172,18 @@ export function KidFocusView({
             <p>{morningNote.bodyVi}</p>
           </article>
         ) : null}
+        {(tab === 'home' || tab === 'log') ? (
+          <button
+            type="button"
+            className="kv2-moment-send is-home"
+            onClick={() => setKidMomentSheetOpen(true)}
+            disabled={kidMomentsRemainingToday <= 0}
+          >
+            {kidMomentsRemainingToday > 0
+              ? `Gửi khoảnh khắc cho nhà · còn ${kidMomentsRemainingToday}`
+              : 'Mai gửi khoảnh khắc tiếp nhé'}
+          </button>
+        ) : null}
         <div className="kv2-top-pills">
           <span className="kv2-pill kv2-stars" title="Sao">
             <span aria-hidden>⭐</span>
@@ -3184,12 +3209,12 @@ export function KidFocusView({
           ) : (
             <span
               className="kv2-pill kv2-movie-mini"
-              title="Tiến độ nhiệm vụ nhóm hôm nay"
+              title="Tiến độ kế hoạch nhóm hôm nay"
             >
               <span aria-hidden>👨‍👩‍👧‍👦</span>
               <span className="kv2-en-term is-pill">
                 <em className="kv2-en-term-main">Nhà mình</em>
-                <em className="kv2-en-term-vi">Nhiệm vụ nhóm</em>
+                <em className="kv2-en-term-vi">Kế hoạch nhóm</em>
               </span>
               <i className="kv2-mini-bar" aria-hidden>
                 <b style={{ width: `${unlockPct}%` }} />
@@ -4149,10 +4174,10 @@ export function KidFocusView({
         </div>
       ) : null}
 
-      {/* Full checklist only on Tasks tab — mockup Nhiệm vụ */}
+      {/* Full checklist on Plan tab — Kế hoạch (not todo) */}
       {tab === 'tasks' ? (
         <div className="kv2-missions">
-          <div className="kv2-m-filters" role="tablist" aria-label="Lọc nhiệm vụ">
+          <div className="kv2-m-filters" role="tablist" aria-label="Lọc kế hoạch hôm nay">
             {filters.map((f) => (
               <button
                 key={f.key}
@@ -4634,7 +4659,7 @@ export function KidFocusView({
               👨‍👩‍👧‍👦
             </span>
             <div className="kv2-m-challenge-copy">
-              <strong>Nhà mình · nhiệm vụ nhóm</strong>
+              <strong>Nhà mình · kế hoạch nhóm</strong>
               <p>
                 {dayClosed
                   ? 'Con đã xong phần việc hôm nay — tuyệt vời!'
@@ -4676,7 +4701,7 @@ export function KidFocusView({
               <div className="kv2-t-family-copy">
                 <h2>{todayTeamRewardLabel}</h2>
                 <p className="muted" style={{ margin: '0 0 8px', fontSize: '0.82rem' }}>
-                  Tiến độ nhiệm vụ nhóm hôm nay
+                  Tiến độ kế hoạch nhóm hôm nay
                 </p>
                 <div className="kv2-t-family-bar">
                   <i aria-hidden>
@@ -4688,8 +4713,8 @@ export function KidFocusView({
                   {teamComplete || unlockLeft === 0
                     ? 'Sẵn sàng mở khóa — nhờ bố mẹ xác nhận!'
                     : unlockLeft === 1
-                      ? 'Chỉ còn 1 nhiệm vụ nữa!'
-                      : `Chỉ còn ${unlockLeft} nhiệm vụ nữa!`}
+                      ? 'Chỉ còn 1 việc nữa!'
+                      : `Chỉ còn ${unlockLeft} việc nữa!`}
                 </p>
                 <button
                   type="button"
@@ -5360,7 +5385,7 @@ export function KidFocusView({
           onClick={() => setTab('tasks')}
         >
           <span aria-hidden>📋</span>
-          <em>Nhiệm vụ</em>
+          <em>Kế hoạch</em>
         </button>
         <button
           type="button"
@@ -5539,7 +5564,7 @@ export function KidFocusView({
                 <p className="muted">
                   {confirmedMovieUnlocks.length > 0
                     ? `Cả nhà đã mở ${confirmedMovieUnlocks.length} lần — xem lại bên dưới.`
-                    : 'Chưa mở Movie Night — hoàn thành nhiệm vụ nhóm để mở lần đầu.'}
+                    : 'Chưa mở Movie Night — giữ kế hoạch nhóm để mở lần đầu.'}
                 </p>
                 <div className="kv2-j-sheet-list">
                   {confirmedMovieUnlocks.length === 0 ? (
@@ -6127,7 +6152,22 @@ export function KidFocusView({
               setAskReloadTick((n) => n + 1);
             }}
           />
-          <ChildMissionRequestSheet
+          
+          <KidMomentSheet
+            familyId={familyId}
+            memberId={childMemberId}
+            memberName={short}
+            flowDate={flowDate}
+            open={kidMomentSheetOpen}
+            remainingToday={kidMomentsRemainingToday}
+            onClose={() => setKidMomentSheetOpen(false)}
+            onCreated={(entry) => {
+              setSavedMemories((prev) => [entry, ...prev]);
+              setJournalToast('Đã gửi khoảnh khắc — bố mẹ sẽ nhìn thấy.');
+              window.setTimeout(() => setJournalToast(null), 3200);
+            }}
+          />
+<ChildMissionRequestSheet
             familyId={familyId}
             memberId={childMemberId}
             open={missionRequestOpen}

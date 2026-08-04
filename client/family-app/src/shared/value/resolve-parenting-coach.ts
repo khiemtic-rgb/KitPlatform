@@ -84,7 +84,7 @@ function avoidFromProposal(
   if (proposal && /chuyển|neo|sau/.test(proposal.toLowerCase())) {
     return 'Đừng chỉ nhắc thêm — hãy chỉnh khung giờ nếu pattern đang lặp.';
   }
-  return 'Tránh mở cả list nhiệm vụ khi đang nóng — một việc, một lời nhắc.';
+  return 'Tránh mở cả list kế hoạch khi đang nóng — một việc, một lời nhắc.';
 }
 
 function styleFromSlot(slot: CoachTipSlot): string {

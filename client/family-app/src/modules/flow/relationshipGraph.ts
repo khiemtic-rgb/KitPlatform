@@ -78,3 +78,32 @@ export function defaultChildVoiceDraftVi(input: {
   }
   return `${c} ơi, tối nay kể ${p} nghe một điều vui trong ngày của con nhé?`;
 }
+
+/** Prefill when opening voice sheet from Home AI cards. */
+export function childVoiceDraftForIntent(input: {
+  childShort: string;
+  parentRole: string;
+  intent: 'encourage' | 'praise' | 'soft' | 'moment';
+  taskTitle?: string;
+}): string {
+  const c = (input.childShort || 'con').trim() || 'con';
+  const pRaw = (input.parentRole || 'bố mẹ').trim().toLowerCase();
+  const p = pRaw === 'bố' || pRaw === 'mẹ' ? pRaw : 'bố mẹ';
+  const task = (input.taskTitle || '').trim();
+
+  switch (input.intent) {
+    case 'encourage':
+      return task
+        ? `${c} ơi, ${p} biết «${task}» hơi khó — mình cùng giữ nhẹ nhé, ${p} ở đây với con.`
+        : `${c} ơi, hôm nay hơi chùng đúng không? ${p} ở đây với con — làm một việc nhỏ thôi cũng được.`;
+    case 'praise':
+      return task
+        ? `${c} ơi, ${p} thấy con đã xong «${task}» rồi — tự hào lắm, giỏi lắm!`
+        : `${c} ơi, ${p} thấy con cố gắng hôm nay — tự hào lắm!`;
+    case 'moment':
+      return `${c} ơi, ${p} đã nhìn thấy khoảnh khắc của con rồi — cảm ơn con đã chia sẻ nhé.`;
+    case 'soft':
+    default:
+      return `${c} ơi, ${p} nghĩ đến con và muốn gửi một lời ấm — hôm nay con ổn chứ?`;
+  }
+}

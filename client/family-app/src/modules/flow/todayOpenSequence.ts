@@ -17,7 +17,9 @@ export type TodayOpenCtaKind =
   | 'scroll_missions'
   | 'open_memory'
   | 'dismiss'
-  | 'dismiss_thanks';
+  | 'dismiss_thanks'
+  | 'open_kid_moment'
+  | 'ack_kid_moment';
 
 export type WarmthPulse = {
   id: string;
@@ -179,10 +181,32 @@ export function buildWarmthPulse(input: {
   memories?: FamilyMemoryEntry[];
   weeklyStory?: WeeklyStory | null;
   familyName?: string;
+  unreadKidMoments?: FamilyMemoryEntry[];
 }): WarmthPulse | null {
   if (isWarmthDismissed(input.memberId, input.flowDate)) return null;
 
   if (input.role === 'parent') {
+    const moment = (input.unreadKidMoments ?? [])[0];
+    if (moment) {
+      const who = shortMemberName(moment.memberName || 'Con');
+      const audio = (moment.icon === '🎤' || moment.icon === 'mic') ||
+        /\.(webm|m4a|mp3|ogg|aac|wav)(\?|$)/i.test(moment.photoUrl || '');
+      return {
+        id: `warm-moment-${moment.id}`,
+        icon: audio ? '🎤' : '📷',
+        eyebrowVi: 'Nhà cần bạn',
+        titleVi: `${who} vừa gửi một khoảnh khắc`,
+        bodyVi: moment.noteVi?.trim()
+          ? `"${moment.noteVi.trim().slice(0, 120)}${moment.noteVi.length > 120 ? '…' : ''}"`
+          : audio
+            ? 'Một câu nói nhỏ — bố/mẹ nhìn thấy là đủ ấm.'
+            : 'Một ảnh nhỏ — không phải bài tập, chỉ muốn nhà thấy.',
+        ctaLabelVi: 'Nhìn thấy con',
+        cta: 'open_kid_moment',
+        ctaId: moment.id,
+      };
+    }
+
     const thanks = (input.voiceThanks ?? []).find((v) => !v.ackAt);
     if (thanks) {
       const child = shortMemberName(thanks.toMemberName || 'Con');
@@ -235,7 +259,7 @@ export function buildWarmthPulse(input: {
       eyebrowVi: input.weeklyStory!.headlineVi || 'Câu chuyện tuần',
       titleVi: line.textVi,
       bodyVi: 'Một sợi nhớ nhỏ — nhà mình đang gắn kết từng ngày.',
-      ctaLabelVi: input.role === 'parent' ? 'Gửi lời ấm' : 'Làm nhiệm vụ',
+      ctaLabelVi: input.role === 'parent' ? 'Gửi lời ấm' : 'Giữ kế hoạch',
       cta: input.role === 'parent' ? 'open_voice' : 'scroll_missions',
     };
   }
@@ -264,12 +288,27 @@ export function buildPendingActions(input: {
   commitments: DayFlowCommitment[];
   partnerInbox?: ParentVoiceMessage[];
   unreadParentVoice?: ParentVoiceMessage | null;
+  unreadKidMoments?: FamilyMemoryEntry[];
   max?: number;
 }): PendingAction[] {
   const max = input.max ?? 3;
   const out: PendingAction[] = [];
 
   if (input.role === 'parent') {
+    for (const m of input.unreadKidMoments ?? []) {
+      const who = shortMemberName(m.memberName || 'Con');
+      out.push({
+        id: `pend-moment-${m.id}`,
+        icon: '💙',
+        titleVi: `Nhà cần bạn nhìn khoảnh khắc của ${who}`,
+        detailVi: m.noteVi?.trim() || m.titleVi,
+        ctaLabelVi: 'Nhìn thấy',
+        cta: 'open_kid_moment',
+        ctaId: m.id,
+        priority: 0,
+      });
+    }
+
     for (const c of input.commitments) {
       if (!isAwaitingParentCheck(c)) continue;
       const who = shortMemberName(c.memberName || 'Con');
@@ -354,6 +393,7 @@ export function buildSeenSignals(input: {
   unreadParentVoice?: ParentVoiceMessage | null;
   awaitingCount?: number;
   commitments?: DayFlowCommitment[];
+  kidMoments?: FamilyMemoryEntry[];
   now?: Date;
 }): SeenSignal[] {
   const out: SeenSignal[] = [];
@@ -361,6 +401,21 @@ export function buildSeenSignals(input: {
   const commitments = input.commitments ?? [];
 
   if (input.role === 'parent') {
+    const km = (input.kidMoments ?? [])
+      .slice()
+      .sort((a, b) => String(b.happenedAt).localeCompare(String(a.happenedAt)))[0];
+    if (km) {
+      const rel = formatRelativeVi(km.happenedAt, now);
+      const who = shortMemberName(km.memberName || 'Con');
+      out.push({
+        id: `seen-moment-${km.id}`,
+        icon: '📷',
+        textVi: rel
+          ? `${who} gửi khoảnh khắc ${rel} — nhà cần bạn nhìn thấy`
+          : `${who} vừa gửi khoảnh khắc — nhà cần bạn nhìn thấy`,
+      });
+    }
+
     const waiting = commitments
       .filter((c) => (c.evidenceSubmitted || Boolean(c.evidenceUrl)) && !c.evidenceSatisfied)
       .map((c) => ({
