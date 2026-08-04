@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-04T09:18:32.574Z",
+  "generatedAt": "2026-08-04T14:57:47.652Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 165,
-    "todayPageViews": 127,
-    "todayRequests": 544,
-    "last24hVisitors": 196,
-    "last24hPageViews": 255,
-    "last24hRequests": 817
+    "todayVisitors": 187,
+    "todayPageViews": 142,
+    "todayRequests": 637,
+    "last24hVisitors": 212,
+    "last24hPageViews": 209,
+    "last24hRequests": 778
   },
   "hourly": [
-    {
-      "time": "2026-08-03T10:00:00Z",
-      "visitors": 5,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-03T11:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-03T12:00:00Z",
-      "visitors": 3,
-      "requests": 16
-    },
-    {
-      "time": "2026-08-03T13:00:00Z",
-      "visitors": 6,
-      "requests": 43
-    },
-    {
-      "time": "2026-08-03T14:00:00Z",
-      "visitors": 3,
-      "requests": 57
-    },
     {
       "time": "2026-08-03T15:00:00Z",
       "visitors": 18,
@@ -128,8 +103,33 @@
     },
     {
       "time": "2026-08-04T09:00:00Z",
-      "visitors": 2,
-      "requests": 2
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-04T10:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-04T11:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-04T12:00:00Z",
+      "visitors": 28,
+      "requests": 70
+    },
+    {
+      "time": "2026-08-04T13:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-04T14:00:00Z",
+      "visitors": 3,
+      "requests": 6
     }
   ],
   "daily": [
@@ -171,27 +171,23 @@
     },
     {
       "date": "2026-08-04",
-      "visitors": 205,
-      "pageViews": 139,
-      "requests": 593
+      "visitors": 250,
+      "pageViews": 154,
+      "requests": 686
     }
   ],
   "topPages": [
     {
+      "path": "/vi/goi-cha-me/khen-con-the-nao-de-con-tu-tin-nghe-thuat-khen-ngoi-dung-cach-phu-huynh-nen-biet/",
+      "views": 60
+    },
+    {
       "path": "/vi/goi-cha-me/",
-      "views": 87
+      "views": 47
     },
     {
       "path": "/feed.json",
-      "views": 84
-    },
-    {
-      "path": "/vi/goi-cha-me/vi-sao-con-khong-nghe-loi-giai-ma-tam-ly-va-giai-phap-de-con-tu-giac/",
-      "views": 68
-    },
-    {
-      "path": "/vi/goi-cha-me/khen-con-the-nao-de-con-tu-tin-nghe-thuat-khen-ngoi-dung-cach-phu-huynh-nen-biet/",
-      "views": 60
+      "views": 44
     },
     {
       "path": "/images/blog/khen-con-de-con-tu-tin.png",
@@ -199,42 +195,46 @@
     },
     {
       "path": "/vi/",
-      "views": 33
+      "views": 34
     },
     {
-      "path": "/robots.txt",
-      "views": 23
-    },
-    {
-      "path": "/cdn-cgi/rum",
-      "views": 23
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 20
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 20
-    },
-    {
-      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 20
+      "path": "/vi/goi-cha-me/vi-sao-con-khong-nghe-loi-giai-ma-tam-ly-va-giai-phap-de-con-tu-giac/",
+      "views": 28
     },
     {
       "path": "/",
+      "views": 26
+    },
+    {
+      "path": "/robots.txt",
+      "views": 24
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 21
+    },
+    {
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
       "views": 18
     },
     {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "path": "/cdn-cgi/rum",
       "views": 18
     },
     {
-      "path": "/api/stats",
-      "views": 16
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 18
+    },
+    {
+      "path": "/images/moment-study.png",
+      "views": 15
     },
     {
       "path": "/_next/static/chunks/977-9a1479e294eb83c3.js",
+      "views": 15
+    },
+    {
+      "path": "/api/stats",
       "views": 15
     }
   ]
