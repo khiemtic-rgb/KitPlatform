@@ -1858,6 +1858,7 @@ export async function addCommitmentTemplate(
     windowEnd?: string;
     sortOrder?: number;
     priority?: string;
+    commitmentKind?: string;
   },
 ): Promise<CommitmentTemplateDto> {
   const { data } = await http.post<Row>(
@@ -1870,6 +1871,7 @@ export async function addCommitmentTemplate(
       windowEnd: input.windowEnd ?? null,
       sortOrder: input.sortOrder ?? 0,
       priority: input.priority ?? 'normal',
+      commitmentKind: input.commitmentKind ?? null,
     },
   );
   return mapTemplate(data);
@@ -4762,4 +4764,112 @@ export async function spendScreenWallet(
 export async function fetchFamilyScore(familyId: string): Promise<FamilyScore> {
   const { data } = await http.get<Row>(`/family-os/families/${familyId}/family-score`);
   return mapFamilyScore(data);
+}
+
+/** Daily Digital Mirror M1 — agent heartbeat + evening summary */
+export type FamilyMirrorAppSlice = {
+  appKey: string;
+  appLabel: string;
+  kind: string;
+  seconds: number;
+};
+
+export type FamilyMirrorParentNote = {
+  id: string;
+  memberId: string;
+  flowDate: string;
+  fromMembershipId: string;
+  fromMemberName: string;
+  tone: string;
+  bodyVi: string;
+  createdAt: string;
+};
+
+export type FamilyMirrorDay = {
+  flowDate: string;
+  memberId: string;
+  memberName: string;
+  agentOnline: boolean;
+  lastHeartbeatAt: string | null;
+  lastForegroundApp: string | null;
+  topApps: FamilyMirrorAppSlice[];
+  totalSeconds: number;
+  insightVi: string | null;
+  suggestedActions: string[];
+  parentNotes: FamilyMirrorParentNote[];
+};
+
+function mapMirrorApp(r: Row): FamilyMirrorAppSlice {
+  return {
+    appKey: String(r.appKey ?? r.AppKey ?? ''),
+    appLabel: String(r.appLabel ?? r.AppLabel ?? ''),
+    kind: String(r.kind ?? r.Kind ?? 'app'),
+    seconds: Number(r.seconds ?? r.Seconds ?? 0),
+  };
+}
+
+function mapMirrorNote(r: Row): FamilyMirrorParentNote {
+  return {
+    id: String(r.id ?? r.Id ?? ''),
+    memberId: String(r.memberId ?? r.MemberId ?? ''),
+    flowDate: String(r.flowDate ?? r.FlowDate ?? ''),
+    fromMembershipId: String(r.fromMembershipId ?? r.FromMembershipId ?? ''),
+    fromMemberName: String(r.fromMemberName ?? r.FromMemberName ?? ''),
+    tone: String(r.tone ?? r.Tone ?? ''),
+    bodyVi: String(r.bodyVi ?? r.BodyVi ?? ''),
+    createdAt: String(r.createdAt ?? r.CreatedAt ?? ''),
+  };
+}
+
+function mapMirrorDay(r: Row): FamilyMirrorDay {
+  const apps = asArray(r.topApps ?? r.TopApps).map((x) => mapMirrorApp(x as Row));
+  const notes = asArray(r.parentNotes ?? r.ParentNotes).map((x) => mapMirrorNote(x as Row));
+  const actions = asArray(r.suggestedActions ?? r.SuggestedActions).map((x) => String(x));
+  const hb = r.lastHeartbeatAt ?? r.LastHeartbeatAt;
+  return {
+    flowDate: String(r.flowDate ?? r.FlowDate ?? ''),
+    memberId: String(r.memberId ?? r.MemberId ?? ''),
+    memberName: String(r.memberName ?? r.MemberName ?? ''),
+    agentOnline: Boolean(r.agentOnline ?? r.AgentOnline),
+    lastHeartbeatAt: hb != null ? String(hb) : null,
+    lastForegroundApp:
+      r.lastForegroundApp != null || r.LastForegroundApp != null
+        ? String(r.lastForegroundApp ?? r.LastForegroundApp)
+        : null,
+    topApps: apps,
+    totalSeconds: Number(r.totalSeconds ?? r.TotalSeconds ?? 0),
+    insightVi:
+      r.insightVi != null || r.InsightVi != null
+        ? String(r.insightVi ?? r.InsightVi)
+        : null,
+    suggestedActions: actions,
+    parentNotes: notes,
+  };
+}
+
+export async function fetchMirrorDay(
+  familyId: string,
+  opts?: { memberId?: string; flowDate?: string },
+): Promise<FamilyMirrorDay> {
+  const { data } = await http.get<Row>(`/family-os/families/${familyId}/mirror/day`, {
+    params: {
+      memberId: opts?.memberId,
+      flowDate: opts?.flowDate,
+    },
+  });
+  return mapMirrorDay(data);
+}
+
+export async function postMirrorParentNote(
+  familyId: string,
+  body: {
+    memberId: string;
+    fromMembershipId: string;
+    tone: 'praise' | 'soft' | 'renegotiate';
+    bodyVi: string;
+    flowDate?: string;
+  },
+): Promise<FamilyMirrorParentNote> {
+  const { data } = await http.post<Row>(`/family-os/families/${familyId}/mirror/notes`, body);
+  return mapMirrorNote(data);
 }

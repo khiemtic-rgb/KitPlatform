@@ -133,6 +133,13 @@ export function ResetParentPinPanel() {
         setStep('next');
         return;
       }
+      if (digits === '1234') {
+        setError('Chọn mã khác 1234 để tránh mã mặc định.');
+        setDigits('');
+        setPending('');
+        setStep('next');
+        return;
+      }
       setParentPin(digits);
       resetLocal();
       setStep('done');

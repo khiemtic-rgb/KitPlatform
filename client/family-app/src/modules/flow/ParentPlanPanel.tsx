@@ -7,6 +7,8 @@ import type {
 import { QuickNudgeButton } from '@/shared/ui/QuickNudgeButton';
 import { avatarEmoji, inferGenderFromName } from '@/shared/ui/avatarGender';
 import { canRemindChildNow, remindChildIdleLabel } from '@/shared/reminders/remind-window';
+import type { PlanCalendarItem } from '@/modules/flow/planGroups';
+import { unlockStatusLabelVi } from '@/modules/flow/planGroups';
 
 type PlanGroup = 'today' | 'routine' | 'challenge' | 'calendar';
 export type PlanMissionFilter = 'all' | 'need_help' | 'waiting_child' | 'done';
@@ -30,6 +32,8 @@ type Props = {
   doneTodayItems: DayFlowCommitment[];
   rituals: FamilyRitual[];
   todayUnlock: TeamUnlock | null;
+  challengeRows?: TeamUnlock[];
+  calendarItems?: PlanCalendarItem[];
   calendarSummary?: string;
   busyId: string | null;
   verifyingId: string | null;
@@ -453,9 +457,11 @@ export function ParentPlanPanel(props: Props) {
             <div>
               <strong>Challenge đang tham gia</strong>
               <em>
-                {props.todayUnlock
-                  ? `${props.todayUnlock.labelVi || 'Challenge'} · ${props.todayUnlock.teamPercent}%`
-                  : '2 challenge đang tiến hành'}
+                {(props.challengeRows?.length ?? 0) > 0
+                  ? `${props.challengeRows!.length} challenge đang theo dõi`
+                  : props.todayUnlock
+                    ? `${props.todayUnlock.labelVi || 'Challenge'} · ${props.todayUnlock.teamPercent}%`
+                    : 'Chưa có challenge đang chạy'}
               </em>
             </div>
             <span className="pp-acc-meta">
@@ -474,9 +480,25 @@ export function ParentPlanPanel(props: Props) {
                   <b style={{ width: `${Math.min(100, props.todayUnlock.teamPercent)}%` }} />
                 </div>
               </>
-            ) : (
+            ) : null}
+            {(props.challengeRows ?? []).length > 0 ? (
+              <ul className="pp-soft-list">
+                {(props.challengeRows ?? []).slice(0, 4).map((u) => (
+                  <li key={`${u.rewardCode}-${u.flowDate}`}>
+                    <div>
+                      <strong>{u.labelVi || u.rewardCode}</strong>
+                      <em>
+                        {unlockStatusLabelVi(u.status)} · {u.teamDone}/
+                        {Math.max(u.teamTotal, 1)}
+                      </em>
+                    </div>
+                    <span className="pp-check">{u.teamPercent}%</span>
+                  </li>
+                ))}
+              </ul>
+            ) : !props.todayUnlock ? (
               <p>Chọn hoạt động gia đình để giữ nhịp kết nối.</p>
-            )}
+            ) : null}
             <button type="button" className="pp-row-cta" onClick={props.onOpenChallenge}>
               Mở Challenge →
             </button>
@@ -495,7 +517,11 @@ export function ParentPlanPanel(props: Props) {
           <summary>
             <div>
               <strong>Lịch gia đình</strong>
-              <em>{props.calendarSummary || '3 sự kiện sắp tới'}</em>
+              <em>
+                {(props.calendarItems?.length ?? 0) > 0
+                  ? `${props.calendarItems!.length} sự kiện sắp tới`
+                  : props.calendarSummary || 'Sự kiện & nhịp đời nhà'}
+              </em>
             </div>
             <span className="pp-acc-meta">
               <em className="pp-acc-go">Xem chi tiết</em>
@@ -503,9 +529,34 @@ export function ParentPlanPanel(props: Props) {
             </span>
           </summary>
           <div className="pp-challenge">
-            <p>
-              Xem lại theo ngày trong Nhật ký — sinh nhật, học thêm và chế độ nhà sẽ gom dần vào đây.
-            </p>
+            {(props.calendarItems ?? []).length > 0 ? (
+              <ul className="pp-soft-list">
+                {(props.calendarItems ?? []).slice(0, 6).map((item) => (
+                  <li key={item.id}>
+                    <div>
+                      <strong>{item.titleVi}</strong>
+                      <em>
+                        {item.whenVi}
+                        {item.metaVi ? ` · ${item.metaVi}` : ''}
+                      </em>
+                    </div>
+                    <span aria-hidden>
+                      {item.kind === 'birthday'
+                        ? '🎂'
+                        : item.kind === 'period'
+                          ? '🌿'
+                          : item.kind === 'study'
+                            ? '📚'
+                            : '📌'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>
+                Chưa có mốc lịch — thêm ngày sinh hoặc bật chế độ nhà (hè / du lịch).
+              </p>
+            )}
             <button type="button" className="pp-row-cta is-soft" onClick={props.onOpenDiary}>
               Mở Nhật ký theo ngày →
             </button>

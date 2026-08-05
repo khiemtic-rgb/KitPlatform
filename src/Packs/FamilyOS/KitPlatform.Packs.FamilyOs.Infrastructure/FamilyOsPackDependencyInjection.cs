@@ -87,6 +87,8 @@ public static class FamilyOsPackDependencyInjection
         services.AddScoped<IFamilyChildRequestService, FamilyChildRequestService>();
         services.AddScoped<IFamilyAiProposalService, FamilyAiProposalService>();
         services.AddScoped<IFamilyDecisionInboxService, FamilyDecisionInboxService>();
+        services.AddScoped<FamilyDigitalMirrorRepository>();
+        services.AddScoped<IFamilyDigitalMirrorService, FamilyDigitalMirrorService>();
 
         if (configuration is not null)
         {

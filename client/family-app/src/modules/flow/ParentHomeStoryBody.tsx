@@ -45,7 +45,6 @@ type Props = {
   focusLabel?: string;
   /** True when parent focuses whole house — diversify AI cards across kids. */
   focusAll?: boolean;
-  children?: Array<{ id: string; displayName: string }>;
   /** Per-child plan progress — used in “Cả nhà” metrics card. */
   childProgress?: Array<{
     id: string;
@@ -584,16 +583,6 @@ export function ParentHomeStoryBody(props: Props) {
             </button>
           ) : null}
         </header>
-        {focusAll && (props.children?.length ?? 0) > 1 ? (
-          <p className="phs-ai-kids" aria-label="Các con trong nhà">
-            {(props.children ?? []).map((c) => (
-              <span key={c.id} className="phs-ai-kid-chip">
-                <i aria-hidden>{childFace(c.displayName)}</i>
-                {shortMemberName(c.displayName)}
-              </span>
-            ))}
-          </p>
-        ) : null}
         <div className="phs-hscroll phs-ai-row" role="list">
           {aiCards.map((c) => (
             <article key={c.id} className={`phs-ai-card is-${c.tone}`} role="listitem">

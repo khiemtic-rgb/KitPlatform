@@ -98,16 +98,16 @@ const VIEW_BY_ANCHOR: Record<string, FvView> = {
   'fv-weekly': 'weekly',
 };
 
-/** Tiêu đề header cho từng màn con — dùng chung với header tab Báo cáo. */
+/** Tiêu đề drill-in trong tab Gia đình (bố mẹ) — VI-first. */
 export const FV_DETAIL_TITLES: Record<Exclude<FvView, 'hub'>, [string, string]> = {
   coach: ['Famixa đồng hành', 'Coach cho nhịp nhà mình'],
-  q3: ['3Q tối', 'Ba câu nhanh — nhịp nhà hôm nay'],
-  rop: ['Growth Report · ROP', 'Tăng trưởng bố mẹ theo hành vi'],
+  q3: ['3 câu tối', 'Ba câu nhanh — nhịp nhà hôm nay'],
+  rop: ['Báo cáo tăng trưởng', 'ROP — tăng trưởng bố mẹ theo hành vi'],
   weekly: ['Insight tuần này', 'Gương tuần — phản ánh, không chấm điểm'],
-  letter: ['Letter tháng', 'Thư Famixa gửi bố mẹ'],
-  replay: ['Family Replay', 'Kỷ niệm tháng dạng chữ'],
-  timeline: ['Timeline kỷ niệm', 'Nhật ký trưởng thành cả nhà'],
-  recognition: ['Wins & Ghi nhận', 'Khoảnh khắc đáng nhớ · ghi nhận bố mẹ'],
+  letter: ['Thư tháng', 'Thư Famixa gửi bố mẹ'],
+  replay: ['Khoảnh khắc tháng', 'Kỷ niệm tháng dạng chữ'],
+  timeline: ['Hành trình kỷ niệm', 'Nhật ký trưởng thành cả nhà'],
+  recognition: ['Ghi nhận & thành tựu', 'Khoảnh khắc đáng nhớ · ghi nhận bố mẹ'],
 };
 
 export function FamilyValuePanel({
@@ -489,7 +489,7 @@ export function FamilyValuePanel({
       .join('');
     w.document.write(`<!doctype html><html><head><title>ROP Famixa</title>
       <style>
-        body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:32px;color:#14352c;line-height:1.45}
+        body{font-family:'Segoe UI',system-ui,-apple-system,BlinkMacSystemFont,Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif;padding:32px;color:#14352c;line-height:1.3333;-webkit-font-smoothing:antialiased}
         h1{font-size:1.6rem;margin:0 0 8px}
         .sub{color:#5a7268;margin-bottom:24px}
         table{width:100%;border-collapse:collapse;margin:16px 0}

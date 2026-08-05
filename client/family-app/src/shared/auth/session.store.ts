@@ -54,7 +54,7 @@ export const useSessionStore = create<SessionState>()(
       setFamily: ({ familyId, familyName }) => set({ familyId, familyName }),
       setMember: (member) => set({ member }),
       setParentPin: (pin) => {
-        if (/^\d{4}$/.test(pin)) set({ parentPin: pin });
+        if (/^\d{4}$/.test(pin) && pin !== '1234') set({ parentPin: pin });
       },
       verifyParentPin: (pin) => pin === (get().parentPin || DEFAULT_PIN),
       clear: () =>

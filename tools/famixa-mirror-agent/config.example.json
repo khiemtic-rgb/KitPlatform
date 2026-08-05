@@ -1,0 +1,8 @@
+{
+  "apiBaseUrl": "http://localhost:5290",
+  "familyId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01",
+  "childMemberId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaab03",
+  "accessToken": "PASTE_BEARER_TOKEN_FROM_PARENT_LOGIN",
+  "deviceId": "",
+  "deviceLabel": "PC học của con"
+}

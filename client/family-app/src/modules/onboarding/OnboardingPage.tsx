@@ -195,22 +195,29 @@ export function OnboardingPage() {
         replace: true,
         state: { onboardingAdded: result.added, onboardingChild: childName },
       });
-    } catch {
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        (err instanceof Error ? err.message : null);
       setError(
-        'Chưa gắn được routine lên server. Đã lưu hồ sơ onboarding — bạn vẫn vào Home được.',
+        msg ||
+          'Chưa gắn được routine lên server. Thử lại — chưa vào Home khi lịch chưa sẵn sàng.',
       );
-      await syncSaveOnboarding(familyId, {
-        ...answers,
-        completedAt: new Date().toISOString(),
-        missionTitles: plan.missions.map((m) => m.title),
-      });
-      window.setTimeout(() => navigate('/today', { replace: true }), 1200);
+      try {
+        await syncSaveOnboarding(familyId, {
+          ...answers,
+          completedAt: new Date().toISOString(),
+          missionTitles: plan.missions.map((m) => m.title),
+        });
+      } catch {
+        /* profile save optional */
+      }
     } finally {
       setBusy(false);
     }
   };
 
-  const onSkip = async () => {
+const onSkip = async () => {
     try {
       if (familyId) {
         await skipOnboarding(familyId, { childId, childName, ageBand, struggles, goal });

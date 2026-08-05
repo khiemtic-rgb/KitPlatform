@@ -98,16 +98,16 @@ import {
   markRitualDone as markTodayOpenRitualDone,
 } from '@/modules/flow/todayOpenSequence';
 import {
-  buildPlanTimeline,
-  ritualCadenceLabel,
   studyCalendarHints,
-  unlockStatusLabelVi,
   upcomingBirthdays,
-  type PlanGroupId,
 } from '@/modules/flow/planGroups';
 import { FamilyDnaCardView } from '@/modules/flow/FamilyDnaCard';
 import { FamilyChallengeCard } from '@/modules/flow/FamilyChallengeCard';
 import { ParentGoalsPanel } from '@/modules/flow/ParentGoalsPanel';
+import { ParentPlanPanel } from '@/modules/flow/ParentPlanPanel';
+import { ParentDiaryPanel } from '@/modules/flow/ParentDiaryPanel';
+import { ParentFamilyPanel } from '@/modules/flow/ParentFamilyPanel';
+import type { DiaryLens } from '@/modules/flow/ParentDiaryPanel';
 import { FamilyModeSheet } from '@/modules/flow/FamilyModeSheet';
 import { shareOrCopyNudge } from '@/shared/nudge/nudge';
 import {
@@ -116,12 +116,8 @@ import {
   markParentVerified,
   previousCalendarDate,
 } from '@/shared/nudge/nudge-stats';
-import { QuickNudgeButton } from '@/shared/ui/QuickNudgeButton';
-import {
-  canRemindChildNow,
-  remindChildIdleLabel,
-} from '@/shared/reminders/remind-window';
 import { ScreenBoundaryPanel } from '@/shared/ui/ScreenBoundaryPanel';
+import { DailyMirrorEmptyPanel } from '@/shared/ui/DailyMirrorEmptyPanel';
 import {
   avatarEmoji,
   inferGenderFromName,
@@ -145,7 +141,7 @@ import {
   IconDiary,
   IconHome,
   IconPlus,
-  IconReport,
+  IconMembers,
   IconRobot,
   IconStar,
   IconTarget,
@@ -176,14 +172,11 @@ import {
 } from '@/shared/flow/family-memories';
 import {
   capitalizeParentRole,
-  diaryDaySummaryLine,
   diaryTaskNote,
   familyProgressLine,
   parentRoleFromName,
-  parentSupportLabel,
   warmTaskSupportNote,
   warmTaskTip,
-  voicePick,
 } from '@/shared/voice/family-voice';
 import {
   NUDGE_TEMPLATE_OPTIONS,
@@ -214,9 +207,7 @@ import {
   formatWeeklyStoryShare,
   shortMemberName,
 } from '@/modules/flow/relationshipGraph';
-import { FAMILY_MOODS, moodFromCode } from '@/shared/flow/family-moods';
 import {
-  formatLateDuration,
   formatLateDurationCaption,
   normalizeLateStarLabelVi,
   stripLateStarSuffixVi,
@@ -225,7 +216,6 @@ import {
 const WEEKDAYS_VI = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
 const DIARY_WD_SHORT = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const DIARY_STAR = 10;
-const DIARY_MOODS = FAMILY_MOODS;
 
 const TRUST_CHILD_RE =
   /đánh răng|ăn sáng|ăn trưa|ăn tối|uống sữa|đi ngủ|ngủ|đi học|mặc|đồng phục|tắm|rửa mặt|rửa tay/i;
@@ -233,22 +223,13 @@ const NEED_APPROVAL_RE =
   /bài tập|học|dọn|phòng|luyện|đàn|piano|gấp|quần áo|đọc sách|viết|ôn|balo|cặp|chơi đàn/i;
 
 type MissionFilter = 'all' | 'need_help' | 'waiting_child' | 'done';
-type DiaryFilter = 'all' | 'tasks' | 'moments' | 'health' | 'study';
+type DiaryFilter = 'all' | 'moments' | 'words' | 'achievements' | 'events' | 'memories';
 type ParentTab = 'home' | 'tasks' | 'rewards' | 'value' | 'diary' | 'challenge';
 
 function needsParentApproval(item: DayFlowCommitment): boolean {
   if (NEED_APPROVAL_RE.test(item.title)) return true;
   if (TRUST_CHILD_RE.test(item.title)) return false;
   return Boolean(item.evidenceUrl);
-}
-
-function formatFlowDay(flowDate: string): string {
-  const d = new Date(`${flowDate}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return flowDate;
-  const weekday = WEEKDAYS_VI[d.getDay()] ?? '';
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  return `${weekday}, ${dd}/${mm}/${d.getFullYear()}`;
 }
 
 function formatClock(iso?: string): string | null {
@@ -259,24 +240,6 @@ function formatClock(iso?: string): string | null {
     return m ? m[1] : null;
   }
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-function minutesLate(item: DayFlowCommitment, localTime?: string): number | null {
-  if (!item.windowEnd || !localTime) return null;
-  const [eh, em] = item.windowEnd.slice(0, 5).split(':').map(Number);
-  const [nh, nm] = localTime.slice(0, 5).split(':').map(Number);
-  if (![eh, em, nh, nm].every(Number.isFinite)) return null;
-  const late = nh * 60 + nm - (eh * 60 + em);
-  return late > 0 ? late : null;
-}
-
-function lateLabel(item: DayFlowCommitment, localTime?: string): string {
-  if (item.reminderState === 'due_now') return 'Đến giờ rồi';
-  if (item.reminderState !== 'overdue') return 'Chưa làm trong ngày';
-  const mins = minutesLate(item, localTime);
-  if (mins == null) return 'Quá giờ từ sáng';
-  if (mins >= 180) return 'Quá giờ từ sáng';
-  return `Trễ ${formatLateDuration(mins)}`;
 }
 
 const LATE_ZERO_STAR_TIERS = new Set([
@@ -412,9 +375,11 @@ function diaryIconTone(title: string): string {
   return 'lilac';
 }
 
-function diaryCategory(title: string): Exclude<DiaryFilter, 'all'> {
+function diaryCategory(title: string): Exclude<DiaryFilter, 'all' | 'words' | 'memories'> {
   const t = title.toLowerCase();
-  if (t.includes('đọc') || t.includes('học') || t.includes('bài') || t.includes('sách')) return 'study';
+  if (t.includes('đọc') || t.includes('học') || t.includes('bài') || t.includes('sách')) {
+    return 'achievements';
+  }
   if (
     t.includes('đánh răng') ||
     t.includes('ngủ') ||
@@ -422,10 +387,10 @@ function diaryCategory(title: string): Exclude<DiaryFilter, 'all'> {
     t.includes('ăn') ||
     t.includes('rửa')
   ) {
-    return 'health';
+    return 'events';
   }
   if (t.includes('cùng') || t.includes('gia đình') || t.includes('movie')) return 'moments';
-  return 'tasks';
+  return 'achievements';
 }
 
 function diaryTag(title: string): { label: string; tone: string } {
@@ -450,32 +415,6 @@ function formatWindow(start?: string, end?: string): string | null {
   const clean = (value?: string) => (value ? value.slice(0, 5) : '');
   if (start && end) return `${clean(start)} – ${clean(end)}`;
   return clean(start || end);
-}
-
-function taskCtaLabel(title: string, kind: 'overdue' | 'awaiting', flowDate: string): string {
-  if (kind === 'awaiting') {
-    return voicePick(`${flowDate}:cta:await:${title}`, [
-      'Xác nhận cam kết',
-      'Xác nhận',
-      'Duyệt sao',
-    ]);
-  }
-  const t = title.toLowerCase();
-  if (t.includes('cặp') || t.includes('balo') || t.includes('dọn')) {
-    return voicePick(`${flowDate}:cta:tidy`, ['Hỗ trợ ngay', 'Neo tối nay', 'Nhắc nhẹ']);
-  }
-  if (t.includes('ngủ') || t.includes('thói quen')) {
-    return voicePick(`${flowDate}:cta:sleep`, ['Nhắc giờ ngủ', 'Giữ neo giờ', 'Nhắc nhẹ']);
-  }
-  return voicePick(`${flowDate}:cta:nudge:${title}`, ['Nhắc ngay', 'Nhắc con', 'Gửi nhắc']);
-}
-
-function greetName(viewerName: string): string {
-  const n = viewerName.trim();
-  if (!n) return 'bố mẹ';
-  if (/^mẹ/i.test(n) || /mẹ$/i.test(n)) return 'mẹ';
-  if (/^bố/i.test(n) || /bố$/i.test(n) || /^ba/i.test(n)) return 'bố';
-  return n;
 }
 
 type MemberSnap = {
@@ -653,7 +592,6 @@ export function ParentBoardView({
   const [teamUnlocks, setTeamUnlocks] = useState<TeamUnlock[]>([]);
   const [unlockBusy, setUnlockBusy] = useState(false);
   const [unlockMsg, setUnlockMsg] = useState<string | null>(null);
-  const [waitingOpen, setWaitingOpen] = useState(true);
   const [treasureToast, setTreasureToast] = useState<string | null>(null);
   const [diaryToast, setDiaryToast] = useState<string | null>(null);
   const [actionToast, setActionToast] = useState<string | null>(null);
@@ -676,7 +614,6 @@ export function ParentBoardView({
   const [diaryDayIdx, setDiaryDayIdx] = useState(2);
   const [diaryFilter, setDiaryFilter] = useState<DiaryFilter>('all');
   const [diaryExpanded, setDiaryExpanded] = useState(false);
-  const [diaryMomentIdx, setDiaryMomentIdx] = useState(0);
   const [diaryMemoriesOpen, setDiaryMemoriesOpen] = useState(false);
   const [childGratitudes, setChildGratitudes] = useState<ChildGratitude[]>([]);
   const [savedMemories, setSavedMemories] = useState<FamilyMemoryEntry[]>([]);
@@ -723,7 +660,7 @@ export function ParentBoardView({
   const [birthdayPick, setBirthdayPick] = useState<string | null>(null);
   const [partnerInbox, setPartnerInbox] = useState<ParentVoiceMessage[]>([]);
   const [partnerAckBusy, setPartnerAckBusy] = useState<string | null>(null);
-  const [diaryMemberFilter, setDiaryMemberFilter] = useState<string>('all');
+  const [diaryMemberFilter] = useState<string>('all');
   const [relUiTick, setRelUiTick] = useState(0);
   const [eveningCircle, setEveningCircle] = useState<EveningCircle | null>(null);
   const [circleAnswer, setCircleAnswer] = useState('');
@@ -763,7 +700,6 @@ export function ParentBoardView({
   const [coopScore, setCoopScore] = useState<CooperationScore | null>(null);
   const [rituals, setRituals] = useState<FamilyRitual[]>([]);
   const [ritualBusy, setRitualBusy] = useState<string | null>(null);
-  const [planGroup, setPlanGroup] = useState<PlanGroupId>('today');
   const [calendarRoutine, setCalendarRoutine] = useState<ResolvedCalendarRoutine | null>(null);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
   /** Preview nội dung trước khi xác nhận cam kết / duyệt sao. */
@@ -983,10 +919,6 @@ export function ParentBoardView({
       cancelled = true;
     };
   }, [familyId, flow.flowDate]);
-
-  useEffect(() => {
-    if (tab !== 'tasks') setPlanGroup('today');
-  }, [tab]);
 
   const markRitualDone = async (code: string) => {
     setRitualBusy(code);
@@ -1762,13 +1694,6 @@ export function ParentBoardView({
           } as const),
     [effectiveChildFocus, selectedChild?.name, selectedChild?.key],
   );
-  const parentAvatar =
-    greetName(viewerName) === 'mẹ'
-      ? '👩'
-      : greetName(viewerName) === 'bố'
-        ? '👨'
-        : avatarEmoji(inferGenderFromName(viewerName), 'parent');
-
   const pendingEvents = useMemo(
     () => consequenceEvents.filter((e) => e.status === 'pending_confirm'),
     [consequenceEvents],
@@ -1848,6 +1773,12 @@ export function ParentBoardView({
   ]);
 
   const parentRole = useMemo(() => parentRoleFromName(viewerName), [viewerName]);
+  const parentAvatar =
+    parentRole === 'mẹ'
+      ? '👩'
+      : parentRole === 'bố'
+        ? '👨'
+        : avatarEmoji(inferGenderFromName(viewerName), 'parent');
 
   const resolvedCoach = useMemo(
     () =>
@@ -2105,13 +2036,6 @@ export function ParentBoardView({
   const waitingChildItems = useMemo(() => buckets.upcoming, [buckets.upcoming]);
   const doneTodayItems = useMemo(() => buckets.done, [buckets.done]);
 
-  const filteredMissions = useMemo(() => {
-    if (missionFilter === 'done') return doneTodayItems;
-    if (missionFilter === 'need_help') return needHelpItems;
-    if (missionFilter === 'waiting_child') return waitingChildItems;
-    return [...needHelpItems, ...waitingChildItems, ...doneTodayItems];
-  }, [missionFilter, needHelpItems, waitingChildItems, doneTodayItems]);
-
   const verifyItem = async (item: DayFlowCommitment) => {
     if (verifyingId === item.id) return;
     if (busyId && busyId !== item.id) {
@@ -2244,7 +2168,15 @@ export function ParentBoardView({
     setTab('tasks');
     setMissionFilter(filter);
     window.requestAnimationFrame(() => {
-      document.getElementById('ph-missions')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const sectionId =
+        filter === 'need_help'
+          ? 'pp-priority'
+          : filter === 'waiting_child'
+            ? 'pp-next'
+            : filter === 'done'
+              ? 'pp-done'
+              : 'pp-plan';
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   };
 
@@ -2438,11 +2370,6 @@ export function ParentBoardView({
   const childShort =
     (selectedChild?.name ?? focusChild?.name ?? 'Con').trim().split(/\s+/).pop() || 'Con';
 
-  const planTimeline = useMemo(
-    () => buildPlanTimeline(scopedCommitments, childShort),
-    [scopedCommitments, childShort],
-  );
-
   const planChallengeRows = useMemo(() => {
     const sorted = [...teamUnlocks].sort((a, b) => b.flowDate.localeCompare(a.flowDate));
     const seen = new Set<string>();
@@ -2495,16 +2422,6 @@ export function ParentBoardView({
     return [...period, ...birthdays, ...study];
   }, [childrenProp, parentsProp, flow.flowDate, scopedCommitments, calendarRoutine]);
 
-  const goPlanGroup = (id: PlanGroupId) => {
-    setPlanGroup(id);
-    window.requestAnimationFrame(() => {
-      document.getElementById(`plan-${id}`)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    });
-  };
-
   const diaryDays = useMemo(() => {
     const base = new Date(`${flow.flowDate}T12:00:00`);
     if (Number.isNaN(base.getTime())) return [];
@@ -2556,16 +2473,6 @@ export function ParentBoardView({
     };
   }, [familyId, moodFetchDate, flow.doneCount]);
 
-  const focusedChildMood = useMemo(() => {
-    if (!treasureMemberId) return null;
-    return familyMoods.find((m) => m.memberId === treasureMemberId) ?? null;
-  }, [familyMoods, treasureMemberId]);
-
-  const focusedMoodDisplay = useMemo(
-    () => (focusedChildMood ? moodFromCode(focusedChildMood.moodCode) : null),
-    [focusedChildMood],
-  );
-
   const diaryEntries = useMemo(() => {
     const rows = [...scopedCommitments]
       .sort((a, b) => {
@@ -2612,6 +2519,20 @@ export function ParentBoardView({
         };
       });
     if (diaryFilter === 'all') return rows;
+    if (diaryFilter === 'memories' || diaryFilter === 'words') return [];
+    if (diaryFilter === 'moments') {
+      return rows.filter(
+        (r) => r.category === 'moments' || Boolean(r.item.evidenceUrl),
+      );
+    }
+    if (diaryFilter === 'achievements') {
+      return rows.filter((r) => r.done || r.wait);
+    }
+    if (diaryFilter === 'events') {
+      return rows.filter(
+        (r) => r.category === 'events' || r.category === 'moments' || r.tag.tone === 'pink',
+      );
+    }
     return rows.filter((r) => r.category === diaryFilter);
   }, [
     scopedCommitments,
@@ -2622,41 +2543,6 @@ export function ParentBoardView({
     diaryFilter,
     parentRole,
   ]);
-
-  const diaryVisible = diaryExpanded ? diaryEntries : diaryEntries.slice(0, 5);
-  const diaryStarsEarned = useMemo(
-    () =>
-      scopedCommitments
-        .filter((c) => c.status === 'done' && c.starPosted)
-        .reduce((s, c) => s + (c.starDelta ?? 0), 0),
-    [scopedCommitments],
-  );
-  const diaryStarsPending = useMemo(
-    () =>
-      scopedCommitments
-        .filter((c) => {
-          const state = missionUxState(c, flow.flowDate, verifiedTick);
-          return state === 'awaiting_check' || (c.status === 'done' && !c.starPosted);
-        })
-        .reduce((s, c) => s + (c.projectedStarDelta ?? parentDisplayDelta(c)), 0),
-    [scopedCommitments, flow.flowDate, verifiedTick],
-  );
-  const diarySummary = useMemo(
-    () => diaryDaySummaryLine(childShort, scopedDone, Math.max(scopedTotal, 0)),
-    [childShort, scopedDone, scopedTotal],
-  );
-  const studyEvidenceLine = useMemo(() => {
-    const study = scopedCommitments.filter((c) => c.commitmentKind === 'study_focus');
-    if (study.length === 0) return null;
-    const done = study.filter((c) => c.status === 'done');
-    const withEv = done.filter((c) => c.evidenceSatisfied);
-    return {
-      total: study.length,
-      done: done.length,
-      withEvidence: withEv.length,
-      waiting: done.length - withEv.length + study.filter((c) => c.status !== 'done').length,
-    };
-  }, [scopedCommitments]);
 
   const diaryPrettyMemories = useMemo(() => {
     const all = buildFamilyMemories({
@@ -2691,10 +2577,6 @@ export function ParentBoardView({
       })),
     [diaryPrettyMemories],
   );
-
-  useEffect(() => {
-    setDiaryMomentIdx(0);
-  }, [diaryFeatureMoments.length, effectiveChildFocus]);
 
   const diaryMemoriesVisible = useMemo(
     () => diaryPrettyMemories.slice(0, FAMILY_MEMORY_VISIBLE),
@@ -2766,17 +2648,6 @@ export function ParentBoardView({
     } finally {
       setAddMemoryBusy(false);
     }
-  };
-
-  const goDiaryDay = (delta: -1 | 1) => {
-    setTab('diary');
-    setDiaryDayIdx((idx) => {
-      const next = Math.min(Math.max(idx + delta, 0), Math.max(diaryDays.length - 1, 0));
-      return next;
-    });
-    window.setTimeout(() => {
-      diaryDatesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 50);
   };
 
   const childFocusLabel =
@@ -2890,7 +2761,7 @@ export function ParentBoardView({
                 }}
               >
                 <span aria-hidden>🔄</span>
-                Sang màn hình con…
+                Đổi sang màn hình con…
               </button>
             </li>
           ) : null}
@@ -2898,6 +2769,9 @@ export function ParentBoardView({
       ) : null}
     </div>
   );
+
+  /** Picker Cả nhà (menu có «Đổi sang màn hình con») — dùng chung mọi tab bố/mẹ */
+  const renderMemberChrome = () => renderChildPicker('module');
 
   const treasureMemories = useMemo(
     () =>
@@ -3033,10 +2907,25 @@ export function ParentBoardView({
 
   const goValueAnchor = (anchorId: string) => {
     setValueFocus(anchorId);
+    const mapped =
+      anchorId === 'fv-3q'
+        ? 'q3'
+        : anchorId === 'fv-rop'
+          ? 'rop'
+          : anchorId === 'fv-ai-letter'
+            ? 'letter'
+            : anchorId === 'fv-replay'
+              ? 'replay'
+              : anchorId === 'fv-ai-wins' || anchorId === 'fv-parent-achv'
+                ? 'recognition'
+                : anchorId === 'fv-weekly'
+                  ? 'weekly'
+                  : 'hub';
+    setValueView(mapped);
     setTab('value');
   };
 
-  const goReportHub = () => {
+  const goFamilyHub = () => {
     setValueFocus(null);
     setValueView('hub');
     setTab('value');
@@ -3126,13 +3015,18 @@ export function ParentBoardView({
 
       {tab === 'home' ? (
         <header className="ph-b4-top phs-top--mock">
-          <div className="phs-brand" aria-label="Famixa Family OS">
+          <button
+            type="button"
+            className="phs-brand"
+            aria-label="Famixa Family OS — mở cài đặt"
+            onClick={openSettings}
+          >
             <img className="phs-brand-mark" src="/brand/fami-mark-48.png" alt="" />
             <div>
               <strong>Famixa</strong>
               <em>Family OS</em>
             </div>
-          </div>
+          </button>
           <div className="ph-b4-top-right">
             <button
               type="button"
@@ -3145,11 +3039,13 @@ export function ParentBoardView({
                 <i>{Math.min(attentionItems.length, 9)}</i>
               ) : null}
             </button>
+            {renderMemberChrome()}
             <button
               type="button"
               className="phs-profile"
               onClick={openSettings}
-              aria-label="Tài khoản / Cài đặt"
+              aria-label={`Tài khoản ${parentHelloLabel} / Cài đặt`}
+              title="Cài đặt"
             >
               <span className="phs-profile-avatar" aria-hidden>
                 {parentAvatar}
@@ -3196,12 +3092,9 @@ export function ParentBoardView({
                 })}
               </nav>
             ) : (
-              <div className="phs-child-compact" aria-label="Đang xem thành viên nào">
-                {renderChildPicker('home-compact')}
-                <em className="phs-child-compact-hint">
-                  {childOptions.length} con · chọn để lọc kế hoạch
-                </em>
-              </div>
+              <p className="phs-child-compact-hint phs-child-compact-hint--solo">
+                Đang xem <b>{childFocusLabel}</b> · đổi ở góc phải
+              </p>
             )
           ) : null}
 
@@ -3263,7 +3156,6 @@ export function ParentBoardView({
             coachDoThis={coach?.doThis || null}
             focusLabel={childFocusLabel}
             focusAll={effectiveChildFocus === 'all'}
-            children={childrenProp}
             childProgress={childrenProp.map((c) => {
               const items = flow.commitments.filter(
                 (x) =>
@@ -3295,9 +3187,22 @@ export function ParentBoardView({
             onOpenDiary={() => setTab('diary')}
             onOpenChallenge={() => setTab('challenge')}
             onOpenRewards={() => setTab('rewards')}
-            onOpenValue={() => goReportHub()}
+            onOpenValue={() => goFamilyHub()}
             onOpenCoach={openCoachOrPaywall}
           />
+
+          {hasChildren ? (
+            <DailyMirrorEmptyPanel
+              familyId={familyId}
+              childShort={childShort}
+              childMemberId={selectedChild?.key ?? null}
+              parentMembershipId={parentMembershipId ?? null}
+              parentLabel={parentHelloLabel}
+              compact
+              dismissible
+              onToast={showActionToast}
+            />
+          ) : null}
 
           {hasChildren ? (
             <div className="phs-soft-slot" hidden aria-hidden>
@@ -4237,1220 +4142,204 @@ export function ParentBoardView({
       ) : null}
 
       {tab === 'tasks' ? (
-        <div className="ph-tasks" id="ph-missions">
-          <header className="ph-tasks-top">
-            <div>
-              <h1>Kế hoạch hôm nay</h1>
-              <p>
-                {hasChildren ? (
-                  <>
-                    Đang xem: <strong>{childFocusLabel}</strong>
-                  </>
-                ) : (
-                  <>Chưa có con trong nhà</>
-                )}
-              </p>
-            </div>
-            <div className="ph-tasks-actions">{renderChildPicker('module')}</div>
-          </header>
-
-          {!hasChildren ? renderNoChildNotice() : null}
-
-
-          <nav className="ph-plan-rail" aria-label="Nhóm trong kế hoạch nhà">
-            {(
-              [
-                { id: 'today' as const, icon: '⭐', label: 'Việc hôm nay' },
-                { id: 'routine' as const, icon: '🔁', label: 'Routine' },
-                { id: 'challenge' as const, icon: '🎯', label: 'Challenge' },
-                { id: 'calendar' as const, icon: '📆', label: 'Lịch gia đình' },
-              ] as const
-            ).map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                className={`ph-plan-rail-item${planGroup === g.id ? ' is-on' : ''}`}
-                onClick={() => goPlanGroup(g.id)}
-              >
-                <span aria-hidden>{g.icon}</span>
-                {g.label}
-              </button>
-            ))}
-          </nav>
-
-          <div id="plan-today" className="ph-plan-block">
-          <header className="ph-plan-block-head">
-            <h2>
-              <span aria-hidden>⭐</span> Việc hôm nay
-            </h2>
-            <p>Lịch sinh hoạt đến hạn hôm nay — không phải todo lạnh.</p>
-          </header>
-
-          {planTimeline.length > 0 ? (
-            <ol className="ph-plan-timeline" aria-label="Nhịp sinh hoạt hôm nay">
-              {planTimeline.slice(0, 8).map((row) => (
-                <li key={row.id} className={row.done ? 'is-done' : undefined}>
-                  <time>{row.time}</time>
-                  <div>
-                    <strong>{row.title}</strong>
-                    <em>{row.who}</em>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="ph-empty-soft">
-              {hasChildren
-                ? 'Chưa có việc trong lịch hôm nay.'
-                : 'Thêm con để Famixa dựng nhịp sinh hoạt hằng ngày.'}
-            </p>
-          )}
-
-          <div className="ph-tasks-tabs" role="tablist" aria-label="Lọc kế hoạch hôm nay">
-            {(
-              [
-                { key: 'all' as const, label: 'Tất cả', count: scopedTotal, tone: 'purple' },
-                {
-                  key: 'need_help' as const,
-                  label: parentSupportLabel(parentRole),
-                  count: needHelpItems.length,
-                  tone: 'orange',
-                },
-                {
-                  key: 'waiting_child' as const,
-                  label: 'Chờ con hoàn thành',
-                  count: waitingChildItems.length,
-                  tone: 'blue',
-                },
-                {
-                  key: 'done' as const,
-                  label: 'Đã hoàn thành',
-                  count: doneTodayItems.length,
-                  tone: 'green',
-                },
-              ] as const
-            ).map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                role="tab"
-                aria-selected={missionFilter === t.key}
-                className={`ph-tasks-tab tone-${t.tone}${missionFilter === t.key ? ' is-on' : ''}`}
-                onClick={() => setMissionFilter(t.key)}
-              >
-                {t.label} <b>{t.count}</b>
-              </button>
-            ))}
-          </div>
-
-          <div className="ph-tasks-date">
-            <button
-              type="button"
-              className="ph-tasks-nav"
-              aria-label="Xem ngày trước"
-              title="Xem ngày trước"
-              onClick={() => goDiaryDay(-1)}
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              className="ph-tasks-date-pill"
-              onClick={() => {
-                setTab('diary');
-                const todayIdx = diaryDays.findIndex((d) => d.isToday);
-                if (todayIdx >= 0) setDiaryDayIdx(todayIdx);
-                window.setTimeout(() => {
-                  diaryDatesRef.current?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                  });
-                }, 50);
-              }}
-            >
-              <span aria-hidden>📅</span>
-              Hôm nay, {flow.flowDate.slice(8, 10)}/{flow.flowDate.slice(5, 7)}/
-              {flow.flowDate.slice(0, 4)}
-              <em aria-hidden>▾</em>
-            </button>
-            <button
-              type="button"
-              className="ph-tasks-nav"
-              aria-label="Xem ngày sau"
-              title="Xem ngày sau"
-              onClick={() => goDiaryDay(1)}
-            >
-              ›
-            </button>
-          </div>
-
-          <article className="ph-tasks-banner">
-            <div className="ph-tasks-foxy" aria-hidden>
-              🦊
-            </div>
-            <div className="ph-tasks-bubble">
-              <p>
-                {!hasChildren
-                  ? 'Chưa có con trong nhà — thêm con để Famixa dựng nhịp sinh hoạt hằng ngày.'
-                  : voicePick(`${flow.flowDate}:tasks-banner:${needHelpItems.length}`, [
-                      needHelpItems.length === 0
-                        ? `${parentRole === 'bố' ? 'Bố' : parentRole === 'mẹ' ? 'Mẹ' : 'Bố mẹ'} ơi, hôm nay ${childShort} đang giữ nhịp ổn! 💪`
-                        : `${parentRole === 'bố' ? 'Bố' : parentRole === 'mẹ' ? 'Mẹ' : 'Bố mẹ'} ơi, hôm nay ${childShort} có ${needHelpItems.length} việc cần hỗ trợ nhẹ nhé! 💪`,
-                      needHelpItems.length === 0
-                        ? `Không việc nóng — ${childShort} đang tự chủ tốt hôm nay.`
-                        : `Chỉ ${needHelpItems.length} việc cần ${parentRole} — khoảng 15 giây mỗi việc.`,
-                      needHelpItems.length === 0
-                        ? `Tiến độ ${percent}% — nhà mình đang đi đúng hướng.`
-                        : `Ưu tiên ${needHelpItems.length} việc nóng của ${childShort}, rồi dừng.`,
-                    ])}
-              </p>
-            </div>
-            <div className="ph-tasks-progress">
-              <span>Tiến độ kế hoạch hôm nay</span>
-              <strong>
-                {scopedDone} / {Math.max(scopedTotal, 1)}
-              </strong>
-              <div className="ph-tasks-bar" aria-hidden>
-                <b style={{ width: `${percent}%` }} />
-              </div>
-              <em>
-                <span aria-hidden>🏆</span> {percent}%
-              </em>
-            </div>
-          </article>
-
-          {(missionFilter === 'all' || missionFilter === 'need_help') && (
-            <section className="ph-tasks-sec">
-              <header className="ph-tasks-sec-head">
-                <h2>
-                  <span aria-hidden>🚨</span> {parentSupportLabel(parentRole)}
-                  <b className="is-red">{needHelpItems.length}</b>
-                </h2>
-                <button
-                  type="button"
-                  className="ph-text-link"
-                  onClick={() => setMissionFilter('need_help')}
-                >
-                  Xem tất cả →
-                </button>
-              </header>
-              <ul className="ph-tasks-cards">
-                {(missionFilter === 'need_help' ? filteredMissions : needHelpItems)
-                  .slice(0, missionFilter === 'all' ? 3 : 20)
-                  .map((item) => {
-                    const state = missionUxState(item, flow.flowDate, verifiedTick);
-                    const kind = state === 'awaiting_check' ? 'awaiting' : 'overdue';
-                    const deadline = item.windowEnd
-                      ? `Trước ${item.windowEnd.slice(0, 5)}`
-                      : lateLabel(item, flow.localTime);
-                    const itemWho = item.memberName?.trim() || childShort;
-                    return (
-                      <li key={item.id} className="ph-task-card is-help">
-                        <span className="ph-task-card-ico" aria-hidden>
-                          {taskIcon(item.title)}
-                        </span>
-                        <div className="ph-task-card-body">
-                          <strong>{item.title}</strong>
-                          <span className="ph-task-owner">
-                            <span aria-hidden>
-                              {avatarEmoji(inferGenderFromName(itemWho), 'child')}
-                            </span>
-                            {itemWho}
-                          </span>
-                          <p>
-                            {warmTaskSupportNote({
-                              title: item.title,
-                              childShort: itemWho,
-                              parentRole,
-                              kind,
-                              flowDate: flow.flowDate,
-                              itemId: item.id,
-                            })}
-                          </p>
-                          <em>
-                            <span aria-hidden>🕒</span> {deadline}
-                          </em>
-                        </div>
-                        <div className="ph-task-card-side">
-                          {kind === 'awaiting' && item.evidenceUrl ? (
-                            <a
-                              className="ph-task-evidence"
-                              href={withEvidenceAuth(item.evidenceUrl)}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <img
-                                src={withEvidenceAuth(item.evidenceUrl)}
-                                alt={`Ảnh ${itemWho} gửi — ${item.title}`}
-                                className="evidence-thumb is-board"
-                              />
-                            </a>
-                          ) : null}
-                          <span
-                            className="ph-task-who"
-                            title={itemWho}
-                            aria-label={`Việc của ${itemWho}`}
-                          >
-                            {avatarEmoji(inferGenderFromName(itemWho), 'child')}
-                          </span>
-                          {kind === 'awaiting' ? (
-                            <button
-                              type="button"
-                              className="ph-task-cta is-check"
-                              disabled={busyId === item.id || verifyingId === item.id}
-                              onClick={() => openVerifyPreview(item)}
-                            >
-                              {busyId === item.id || verifyingId === item.id
-                                ? 'Đang…'
-                                : 'Xem & xác nhận'}
-                            </button>
-                          ) : canRemindChildNow(item) ? (
-                            <QuickNudgeButton
-                              items={item}
-                              familyId={familyId}
-                              flowDate={flow.flowDate}
-                              label={taskCtaLabel(item.title, kind, flow.flowDate)}
-                              className="ph-task-cta is-nudge"
-                              onNudged={(count) => {
-                                onParentNudged(count);
-                                showActionToast(
-                                  'Đã chuẩn bị tin nhắc — gửi Zalo/Messenger cho con',
-                                );
-                              }}
-                            />
-                          ) : (
-                            <span className="ph-task-cta is-muted" aria-label="Chưa tới giờ nhắc">
-                              {remindChildIdleLabel(item)}
-                            </span>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                {needHelpItems.length === 0 ? (
-                  <li className="ph-empty-soft">
-                    Không có việc cần {parentRole} hỗ trợ ngay.
-                  </li>
-                ) : null}
-              </ul>
-            </section>
-          )}
-
-          {(missionFilter === 'all' || missionFilter === 'waiting_child') && (
-            <section className="ph-tasks-sec">
-              <header className="ph-tasks-sec-head">
-                <h2>
-                  <span aria-hidden>⏱️</span> Chờ con hoàn thành
-                  <b className="is-blue">{waitingChildItems.length}</b>
-                </h2>
-                <button
-                  type="button"
-                  className="ph-text-link"
-                  onClick={() => setMissionFilter('waiting_child')}
-                >
-                  Xem tất cả →
-                </button>
-              </header>
-              {waitingOpen ? (
-                <ul className="ph-tasks-cards">
-                  {(missionFilter === 'waiting_child' ? filteredMissions : waitingChildItems)
-                    .slice(0, missionFilter === 'all' ? 3 : 20)
-                    .map((item) => {
-                      const itemWho = item.memberName?.trim() || childShort;
-                      return (
-                      <li key={item.id} className="ph-task-card is-wait">
-                        <span className="ph-task-card-ico" aria-hidden>
-                          {taskIcon(item.title)}
-                        </span>
-                        <div className="ph-task-card-body">
-                          <strong>{item.title}</strong>
-                          <span className="ph-task-owner">
-                            <span aria-hidden>
-                              {avatarEmoji(inferGenderFromName(itemWho), 'child')}
-                            </span>
-                            {itemWho}
-                          </span>
-                          <p>
-                            {warmTaskTip({
-                              title: item.title,
-                              childShort: itemWho,
-                              parentRole,
-                              flowDate: flow.flowDate,
-                              itemId: item.id,
-                            })}
-                          </p>
-                          {item.windowStart || item.windowEnd ? (
-                            <em>
-                              <span aria-hidden>🕒</span>{' '}
-                              {formatWindow(item.windowStart, item.windowEnd)}
-                            </em>
-                          ) : null}
-                        </div>
-                        <div className="ph-task-card-side">
-                          <span
-                            className="ph-task-who"
-                            title={itemWho}
-                            aria-label={`Việc của ${itemWho}`}
-                          >
-                            {avatarEmoji(inferGenderFromName(itemWho), 'child')}
-                          </span>
-                          {canRemindChildNow(item) ? (
-                            <QuickNudgeButton
-                              items={item}
-                              familyId={familyId}
-                              flowDate={flow.flowDate}
-                              label="Nhắc con"
-                              className="ph-task-cta is-nudge"
-                              onNudged={(count) => {
-                                onParentNudged(count);
-                                showActionToast(
-                                  'Đã copy tin nhắc — dán Zalo/Messenger gửi cho con',
-                                );
-                              }}
-                            />
-                          ) : (
-                            <span className="ph-task-cta is-muted" aria-label="Chưa tới giờ nhắc">
-                              {remindChildIdleLabel(item)}
-                            </span>
-                          )}
-                        </div>
-                      </li>
-                      );
-                    })}
-                  {waitingChildItems.length === 0 ? (
-                    <li className="ph-empty-soft">
-                      {hasChildren
-                        ? 'Không còn việc chờ con làm.'
-                        : 'Chưa có con trong nhà — thêm con để giao việc.'}
-                    </li>
-                  ) : null}
-                </ul>
-              ) : null}
-              {waitingChildItems.length > 3 &&
-              (missionFilter === 'all' || missionFilter === 'waiting_child') ? (
-                <button
-                  type="button"
-                  className="ph-tasks-expand"
-                  onClick={() => setWaitingOpen((v) => !v)}
-                  aria-label={waitingOpen ? 'Thu gọn' : 'Mở rộng'}
-                >
-                  {waitingOpen ? '▴' : '▾'}
-                </button>
-              ) : null}
-            </section>
-          )}
-
-          {(missionFilter === 'all' || missionFilter === 'done') && (
-            <section className="ph-tasks-sec">
-              <header className="ph-tasks-sec-head">
-                <h2>
-                  <span aria-hidden>✅</span> Đã hoàn thành hôm nay
-                  <b className="is-green">{doneTodayItems.length}</b>
-                </h2>
-                <button
-                  type="button"
-                  className="ph-text-link"
-                  onClick={() => setMissionFilter('done')}
-                >
-                  Xem tất cả →
-                </button>
-              </header>
-              <ul className="ph-tasks-cards">
-                {(missionFilter === 'done' ? filteredMissions : doneTodayItems)
-                  .slice(0, missionFilter === 'all' ? 4 : 30)
-                  .map((item) => {
-                    const clock = formatClock(item.completedAt);
-                    const itemWho = item.memberName?.trim() || childShort;
-                    return (
-                      <li key={item.id} className="ph-task-card is-done">
-                        <span className="ph-task-card-ico" aria-hidden>
-                          {taskIcon(item.title)}
-                        </span>
-                        <div className="ph-task-card-body">
-                          <strong>{item.title}</strong>
-                          <span className="ph-task-owner">
-                            <span aria-hidden>
-                              {avatarEmoji(inferGenderFromName(itemWho), 'child')}
-                            </span>
-                            {itemWho}
-                          </span>
-                          <p>
-                            {warmTaskTip({
-                              title: item.title,
-                              childShort: itemWho,
-                              parentRole,
-                              flowDate: flow.flowDate,
-                              itemId: item.id,
-                            })}
-                          </p>
-                        </div>
-                        <div className="ph-task-card-side">
-                          <span
-                            className="ph-task-who"
-                            title={itemWho}
-                            aria-label={`Việc của ${itemWho}`}
-                          >
-                            {avatarEmoji(inferGenderFromName(itemWho), 'child')}
-                          </span>
-                          <span className="ph-task-status is-ok">
-                            Hoàn thành{clock ? ` lúc ${clock}` : ''}
-                            <i aria-hidden>✓</i>
-                          </span>
-                        </div>
-                      </li>
-                    );
-                  })}
-                {doneTodayItems.length === 0 ? (
-                  <li className="ph-empty-soft">Hôm nay chưa có việc hoàn thành.</li>
-                ) : null}
-              </ul>
-            </section>
-          )}
-          </div>
-
-          <section id="plan-routine" className="ph-plan-block">
-            <header className="ph-plan-block-head">
-              <h2>
-                <span aria-hidden>🔁</span> Routine
-              </h2>
-              <p>
-                {calendarRoutine?.routineDisplayName
-                  ? `Nhịp lặp · ${calendarRoutine.routineDisplayName}`
-                  : 'Nhịp lặp mỗi ngày / mỗi tuần của nhà.'}
-              </p>
-            </header>
-            <ul className="ph-plan-ritual-list">
-              {rituals.length === 0 ? (
-                <li className="ph-empty-soft">
-                  Chưa có routine — mở chế độ nhà (hè / thi / du lịch) để Famixa chỉnh nhịp.
-                </li>
-              ) : (
-                rituals.map((r) => (
-                  <li key={r.code} className={r.doneThisPeriod ? 'is-done' : undefined}>
-                    <div>
-                      <strong>{r.labelVi}</strong>
-                      <em>
-                        {ritualCadenceLabel(r.cadence)}
-                        {r.doneThisPeriod
-                          ? r.doneAt
-                            ? ` · xong ${r.doneAt.slice(0, 10)}`
-                            : ' · đã xong kỳ này'
-                          : ' · đang chờ nhà hoàn tất'}
-                      </em>
-                    </div>
-                    {r.doneThisPeriod ? (
-                      <span className="ph-plan-ritual-done" aria-label="Đã check-in">
-                        ✓
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="ph-plan-cta is-soft"
-                        disabled={ritualBusy === r.code}
-                        onClick={() => void markRitualDone(r.code)}
-                      >
-                        {ritualBusy === r.code ? 'Đang…' : 'Check-in'}
-                      </button>
-                    )}
-                  </li>
-                ))
-              )}
-            </ul>
-            <div className="ph-plan-inline-actions">
-              <button type="button" className="ph-text-link" onClick={() => setModeSheetOpen(true)}>
-                Đổi chế độ nhà →
-              </button>
-              <button type="button" className="ph-text-link" onClick={() => goReportHub()}>
-                Xem nhịp nhà trong Gia đình →
-              </button>
-            </div>
-          </section>
-
-          <section id="plan-challenge" className="ph-plan-block">
-            <header className="ph-plan-block-head">
-              <h2>
-                <span aria-hidden>🎯</span> Challenge
-              </h2>
-              <p>Thử thách cả nhà — giữ nhịp kết nối, không phải đua KPI.</p>
-            </header>
-            {todayUnlock ? (
-              <article className="ph-plan-challenge-card">
-                <strong>{todayUnlock.labelVi || 'Challenge đang mở'}</strong>
-                <p>
-                  {todayUnlock.teamDone}/{Math.max(todayUnlock.teamTotal, 1)} thành viên ·{' '}
-                  {todayUnlock.teamPercent}%
-                  {todayUnlock.status === 'confirmed'
-                    ? ' · đã mở'
-                    : todayUnlock.status === 'pending_confirm'
-                      ? ' · chờ duyệt'
-                      : ''}
-                </p>
-                <div className="ph-plan-bar" aria-hidden>
-                  <b style={{ width: `${Math.min(100, todayUnlock.teamPercent)}%` }} />
-                </div>
-                <button type="button" className="ph-plan-cta" onClick={() => setTab('challenge')}>
-                  Mở Challenge →
-                </button>
-              </article>
-            ) : null}
-            {todayComboUnlock ? (
-              <article className="ph-plan-challenge-card is-combo">
-                <strong>{todayComboUnlock.labelVi || 'Combo anh chị em'}</strong>
-                <p>
-                  {unlockStatusLabelVi(todayComboUnlock.status)} ·{' '}
-                  {todayComboUnlock.teamDone}/{Math.max(todayComboUnlock.teamTotal, 1)}
-                </p>
-                <button type="button" className="ph-plan-cta" onClick={() => setTab('challenge')}>
-                  Xem Combo →
-                </button>
-              </article>
-            ) : null}
-            {planChallengeRows.length > 0 ? (
-              <ul className="ph-plan-soft-list">
-                {planChallengeRows.map((u) => (
-                  <li key={u.id}>
-                    <strong>
-                      {u.labelVi || u.rewardCode}{' '}
-                      <span className="ph-plan-soft-date">{u.flowDate.slice(8, 10)}/
-                      {u.flowDate.slice(5, 7)}</span>
-                    </strong>
-                    <em>
-                      {unlockStatusLabelVi(u.status)} · {u.teamPercent}%
-                    </em>
-                  </li>
-                ))}
-              </ul>
-            ) : !todayUnlock ? (
-              <div className="ph-plan-empty-card">
-                <p>Chưa có challenge đang chạy.</p>
-                <button type="button" className="ph-plan-cta" onClick={() => setTab('challenge')}>
-                  Xem gợi ý Challenge →
-                </button>
-              </div>
-            ) : null}
-          </section>
-
-          <section id="plan-calendar" className="ph-plan-block">
-            <header className="ph-plan-block-head">
-              <h2>
-                <span aria-hidden>📆</span> Lịch gia đình
-              </h2>
-              <p>Sinh nhật, học thêm, chu kỳ năm học / du lịch — một chỗ cho nhịp đời nhà.</p>
-            </header>
-            {planCalendarItems.length > 0 ? (
-              <ul className="ph-plan-cal-list">
-                {planCalendarItems.map((item) => (
-                  <li key={item.id} className={`is-${item.kind}`}>
-                    <span className="ph-plan-cal-ico" aria-hidden>
-                      {item.kind === 'birthday'
-                        ? '🎂'
-                        : item.kind === 'period'
-                          ? '🌿'
-                          : item.kind === 'study'
-                            ? '📚'
-                            : '📌'}
-                    </span>
-                    <div>
-                      <strong>{item.titleVi}</strong>
-                      <em>{item.whenVi}</em>
-                      {item.metaVi ? <p>{item.metaVi}</p> : null}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="ph-plan-empty-card">
-                <p>
-                  Chưa có mốc lịch — thêm ngày sinh cho thành viên hoặc bật chế độ nhà (hè / du lịch).
-                </p>
-              </div>
-            )}
-            <div className="ph-plan-inline-actions">
-              <button type="button" className="ph-plan-cta is-soft" onClick={() => setModeSheetOpen(true)}>
-                Đổi nhịp lịch nhà
-              </button>
-              <button
-                type="button"
-                className="ph-text-link"
-                onClick={() => {
-                  setTab('diary');
-                }}
-              >
-                Mở Nhật ký theo ngày →
-              </button>
-            </div>
-          </section>
-        </div>
+        <ParentPlanPanel
+          flowDate={flow.flowDate}
+          localTime={flow.localTime}
+          familyId={familyId}
+          parentHelloLabel={parentHelloLabel}
+          parentRole={parentRole}
+          childFocusLabel={childFocusLabel}
+          hasChildren={hasChildren}
+          childPicker={renderMemberChrome()}
+          noChildNotice={renderNoChildNotice()}
+          attentionCount={attentionItems.length}
+          onOpenAttention={() => scrollToMissions('need_help')}
+          scopedDone={scopedDone}
+          scopedTotal={scopedTotal}
+          needHelpItems={needHelpItems}
+          waitingChildItems={waitingChildItems}
+          doneTodayItems={doneTodayItems}
+          rituals={rituals}
+          todayUnlock={todayUnlock}
+          challengeRows={planChallengeRows}
+          calendarItems={planCalendarItems}
+          calendarSummary={
+            planCalendarItems.length > 0
+              ? `${planCalendarItems.length} sự kiện sắp tới`
+              : 'Sự kiện & nhịp đời nhà'
+          }
+          busyId={busyId}
+          verifyingId={verifyingId}
+          ritualBusy={ritualBusy}
+          missionFilter={missionFilter}
+          onOpenVerify={(item) => openVerifyPreview(item)}
+          onParentNudged={onParentNudged}
+          onToast={showActionToast}
+          onOpenChallenge={() => setTab('challenge')}
+          onOpenDiary={() => setTab('diary')}
+          onMarkRitual={(code) => void markRitualDone(code)}
+          onOpenModeSheet={() => setModeSheetOpen(true)}
+          taskIcon={taskIcon}
+          warmTip={(item, who) =>
+            warmTaskTip({
+              title: item.title,
+              childShort: who,
+              parentRole,
+              flowDate: flow.flowDate,
+              itemId: item.id,
+            })
+          }
+          warmSupport={(item, who, kind) =>
+            warmTaskSupportNote({
+              title: item.title,
+              childShort: who,
+              parentRole,
+              kind,
+              flowDate: flow.flowDate,
+              itemId: item.id,
+            })
+          }
+          needsParentCheck={(item) =>
+            missionUxState(item, flow.flowDate, verifiedTick) === 'awaiting_check'
+          }
+        />
       ) : null}
 
       {tab === 'value' ? (
-        <div className="ph-report">
-          <header className="ph-report-top">
-            <button
-              type="button"
-              className="ph-report-back"
-              aria-label={valueView === 'hub' ? 'Về trang chủ' : 'Về báo cáo'}
-              onClick={() => {
-                if (valueView === 'hub') {
-                  setTab('home');
-                  return;
-                }
-                setValueFocus(null);
-                setValueView('hub');
-              }}
-            >
-              ‹
-            </button>
-            <div className="ph-report-titles">
-              <h1>
-                {valueView === 'hub'
-                  ? 'Báo cáo gia đình'
-                  : FV_DETAIL_TITLES[valueView][0]}
-              </h1>
-              <p>
-                {valueView === 'hub'
-                  ? 'Sức khỏe nhà · AI đề xuất · mở từng mục khi cần'
-                  : FV_DETAIL_TITLES[valueView][1]}
-              </p>
+        valueView === 'hub' ? (
+          <ParentFamilyPanel
+            familyName={familyName}
+            parentHelloLabel={parentHelloLabel}
+            childPicker={renderMemberChrome()}
+            noChildNotice={renderNoChildNotice()}
+            hasChildren={hasChildren}
+            attentionCount={attentionItems.length}
+            pulse={parentPulse}
+            scopedDone={scopedDone}
+            scopedTotal={scopedTotal}
+            momentsCount={savedMemories.length + childGratitudes.length}
+            coachTips={resolvedCoach.tips}
+            twin={familyTwin}
+            dna={dnaCard}
+            weekPlaybook={weekPlaybook}
+            coachInsightHeadline={coachInsight?.headline || coach?.insight || null}
+            moments={diaryFeatureMoments.map((m) => ({
+              id: m.id,
+              title: m.title,
+              subtitle: m.caption,
+              icon: m.icon,
+              photoUrl: m.memory.photoUrl,
+            }))}
+            onOpenAttention={() => scrollToMissions('need_help')}
+            onOpenProfile={openSettings}
+            onOpenWeeklyPlan={() => setValueView('weekly')}
+            onOpenCoach={() => setValueView('coach')}
+            onOpenMoments={() => {
+              setTab('diary');
+              openMemoriesSheet();
+            }}
+            onOpenExplore={(view) => setValueView(view)}
+          />
+        ) : (
+          <div className="ph-report">
+            <header className="ph-report-top">
+              <button
+                type="button"
+                className="ph-report-back"
+                aria-label="Về Gia đình"
+                onClick={() => {
+                  setValueFocus(null);
+                  setValueView('hub');
+                }}
+              >
+                ‹
+              </button>
+              <div className="ph-report-titles">
+                <h1>{FV_DETAIL_TITLES[valueView][0]}</h1>
+                <p>{FV_DETAIL_TITLES[valueView][1]}</p>
+              </div>
+              <div className="ph-report-tools">{renderMemberChrome()}</div>
+            </header>
+            <div className="ph-report-body">
+              <FamilyValuePanel
+                familyId={familyId}
+                familyName={familyName}
+                flow={{ ...flow, commitments: scopedCommitments }}
+                glance={glance}
+                nudgeToday={nudgeToday}
+                coachScope={coachScope}
+                momentCount={savedMemories.length + childGratitudes.length}
+                onOpenPaywall={(reason) => openPaywall(reason)}
+                parentMembershipId={parentMembershipId}
+                eveningCheckin={eveningCheckin}
+                onEveningCheckinChange={setEveningCheckin}
+                dna={dnaCard}
+                focusAnchorId={valueFocus}
+                view={valueView}
+                onViewChange={setValueView}
+              />
             </div>
-            <div className="ph-report-tools">{renderChildPicker('module')}</div>
-          </header>
-          {!hasChildren && valueView === 'hub' ? renderNoChildNotice() : null}
-          <div className="ph-report-body">
-            <FamilyValuePanel
-              familyId={familyId}
-              familyName={familyName}
-              flow={{ ...flow, commitments: scopedCommitments }}
-              glance={glance}
-              nudgeToday={nudgeToday}
-              coachScope={coachScope}
-              momentCount={savedMemories.length + childGratitudes.length}
-              onOpenPaywall={(reason) => openPaywall(reason)}
-              parentMembershipId={parentMembershipId}
-              eveningCheckin={eveningCheckin}
-              onEveningCheckinChange={setEveningCheckin}
-              dna={dnaCard}
-              focusAnchorId={valueFocus}
-              view={valueView}
-              onViewChange={setValueView}
-            />
           </div>
-          <p
-            className="ph-report-diary-hint"
-            hidden={valueView !== 'hub'}
-          >
-            Muốn xem timeline việc & kỷ niệm?{' '}
-            <button type="button" className="ph-text-link" onClick={() => setTab('diary')}>
-              Mở Nhật ký →
-            </button>
-          </p>
-        </div>
+        )
       ) : null}
 
       {tab === 'diary' ? (
-        <div className="ph-diary">
-          {diaryToast ? (
-            <div className="ph-diary-toast" role="status">
-              {diaryToast}
-            </div>
-          ) : null}
-
-          <header className="ph-diary-top">
-            <button
-              type="button"
-              className="ph-diary-back"
-              aria-label="Về trang chủ"
-              onClick={() => setTab('home')}
-            >
-              ‹
-            </button>
-            <div className="ph-diary-titles">
-              <h1>
-                {hasChildren ? `Nhật ký của ${childShort}` : 'Nhật ký gia đình'}{' '}
-                <span aria-hidden>💜</span>
-              </h1>
-              <p>{hasChildren ? `Đang xem: ${childFocusLabel}` : 'Chưa có con trong nhà'}</p>
-            </div>
-            <div className="ph-diary-tools">{renderChildPicker('module')}</div>
-          </header>
-
-          {!hasChildren ? renderNoChildNotice() : null}
-
-          <div
-            ref={diaryDatesRef}
-            className="ph-diary-dates"
-            role="tablist"
-            aria-label="Chọn ngày"
-          >
-            {diaryDays.map((d, i) => (
-              <button
-                key={d.key}
-                type="button"
-                role="tab"
-                aria-selected={i === diaryDayIdx}
-                aria-disabled={!d.isToday}
-                title={d.isToday ? d.fullLabel : 'Nhật ký các ngày khác sẽ mở khi có lịch sử lưu'}
-                className={`ph-diary-date${i === diaryDayIdx ? ' is-on' : ''}${
-                  d.isToday ? '' : ' is-muted'
-                }`}
-                disabled={!d.isToday}
-                onClick={() => {
-                  if (!d.isToday) return;
-                  setDiaryDayIdx(i);
-                  setDiaryExpanded(false);
-                }}
-              >
-                {d.shortLabel}
-              </button>
-            ))}
-          </div>
-
-          <div className="ph-diary-filters">
-            {(
-              [
-                { id: 'all', icon: '▦', label: 'Tất cả' },
-                { id: 'tasks', icon: '📅', label: 'Kế hoạch' },
-                { id: 'moments', icon: '❤️', label: 'Khoảnh khắc' },
-                { id: 'health', icon: '😊', label: 'Sức khỏe' },
-                { id: 'study', icon: '📚', label: 'Học tập' },
-              ] as const
-            ).map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                className={`ph-diary-chip${diaryFilter === f.id ? ' is-on' : ''}`}
-                onClick={() => {
-                  setDiaryFilter(f.id);
-                  setDiaryExpanded(false);
-                }}
-              >
-                <span aria-hidden>{f.icon}</span> {f.label}
-              </button>
-            ))}
-            <button
-              type="button"
-              className={`ph-diary-chip is-filter${diaryFavoritesOnly ? ' is-on' : ''}`}
-              aria-pressed={diaryFavoritesOnly}
-              title={
-                diaryFavoritesOnly
-                  ? 'Đang chỉ hiện kỷ niệm đã gắn tim — bấm để xem tất cả'
-                  : 'Chỉ hiện kỷ niệm đã gắn tim'
-              }
-              onClick={() => {
-                setDiaryFavoritesOnly((v) => !v);
-                setDiaryFilter('moments');
-                setDiaryExpanded(false);
-              }}
-            >
-              <span aria-hidden>{diaryFavoritesOnly ? '❤️' : '▾'}</span>{' '}
-              {diaryFavoritesOnly ? 'Đã tim' : 'Lọc'}
-            </button>
-          </div>
-
-          <div className="ph-diary-filters" aria-label="Memory lens theo thành viên">
-            <button
-              type="button"
-              className={`ph-diary-chip${diaryMemberFilter === 'all' ? ' is-on' : ''}`}
-              onClick={() => setDiaryMemberFilter('all')}
-            >
-              Cả nhà
-            </button>
-            {childOptions.map((c) => (
-              <button
-                key={c.key}
-                type="button"
-                className={`ph-diary-chip${diaryMemberFilter === c.key ? ' is-on' : ''}`}
-                onClick={() => setDiaryMemberFilter(c.key)}
-              >
-                Của {shortMemberName(c.name)}
-              </button>
-            ))}
-          </div>
-
-          <div className="ph-diary-layout">
-            <aside className="ph-diary-side">
-              <article className="ph-diary-summary">
-                <h3>Tổng kết ngày</h3>
-                <div className="ph-diary-summary-body">
-                  <span className="ph-diary-trophy" aria-hidden>
-                    🏆
-                  </span>
-                  <div>
-                    <p>
-                      {hasChildren ? (
-                        <>
-                          {diarySummary.prefix}
-                          {diarySummary.ratio ? (
-                            <>
-                              {' '}
-                              <strong>{diarySummary.ratio}</strong>
-                              {diarySummary.suffix ? ` ${diarySummary.suffix}` : ''}
-                            </>
-                          ) : null}
-                        </>
-                      ) : (
-                        <>Chưa có con — thêm con để nhật ký bắt đầu ghi việc mỗi ngày.</>
-                      )}
-                    </p>
-                    <em>
-                      +{diaryStarsEarned} ⭐
-                      {diaryStarsPending > 0 ? ` (+${diaryStarsPending} chờ duyệt)` : ''}
-                    </em>
-                    {studyEvidenceLine && studyEvidenceLine.done > 0 ? (
-                      <em style={{ display: 'block', marginTop: 4 }}>
-                        Cam kết học: {studyEvidenceLine.withEvidence}/{studyEvidenceLine.done} có
-                        bằng chứng
-                      </em>
-                    ) : null}
-                  </div>
-                </div>
-              </article>
-            </aside>
-
-            <div className="ph-diary-main">
-              <h2 className="ph-diary-day-title">
-                {selectedDiaryDay?.fullLabel ?? formatFlowDay(flow.flowDate)}
-              </h2>
-
-              {selectedDiaryDay && !selectedDiaryDay.isToday ? (
-                <p className="ph-diary-empty">
-                  Đang xem hôm nay — lịch sử nhật ký các ngày khác sẽ mở sau khi hệ thống lưu đủ dữ liệu.
-                </p>
-              ) : diaryEntries.length === 0 ? (
-                <p className="ph-diary-empty">
-                  {hasChildren
-                    ? `Hôm nay chưa có trang nhật ký — khi ${childShort} làm việc, nhật ký sẽ hiện ở đây.`
-                    : 'Chưa có con trong nhà — thêm con để Famixa ghi nhật ký mỗi ngày.'}
-                </p>
-              ) : (
-                <ol className="ph-diary-timeline">
-                  {diaryVisible.map((entry, idx) => {
-                    const prevPart = idx > 0 ? diaryVisible[idx - 1].part : null;
-                    const showPart = entry.part !== prevPart;
-                    const partIcon =
-                      entry.part === 'morning' ? '☀️' : entry.part === 'evening' ? '🌙' : '🌤️';
-                    const partText =
-                      entry.part === 'morning'
-                        ? 'Sáng'
-                        : entry.part === 'evening'
-                          ? 'Tối'
-                          : 'Chiều';
-                    return (
-                      <li
-                        key={entry.item.id}
-                        className={`ph-diary-node${entry.done ? ' is-done' : ''}${
-                          entry.wait ? ' is-wait' : ''
-                        }`}
-                      >
-                        <div className="ph-diary-rail" aria-hidden>
-                          {showPart ? (
-                            <span className={`ph-diary-part is-${entry.part}`}>
-                              {partIcon} {partText}
-                            </span>
-                          ) : (
-                            <span className="ph-diary-dot" />
-                          )}
-                          <em>{entry.time}</em>
-                        </div>
-                        <article
-                          className={`ph-diary-card${entry.wait ? ' is-tap' : ''}`}
-                          role={entry.wait ? 'button' : undefined}
-                          tabIndex={entry.wait ? 0 : undefined}
-                          onClick={
-                            entry.wait
-                              ? () => openVerifyPreview(entry.item)
-                              : undefined
-                          }
-                          onKeyDown={
-                            entry.wait
-                              ? (e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    openVerifyPreview(entry.item);
-                                  }
-                                }
-                              : undefined
-                          }
-                        >
-                          <span className={`ph-diary-ico tone-${entry.tone}`} aria-hidden>
-                            {taskIcon(entry.item.title)}
-                          </span>
-                          <div className="ph-diary-card-body">
-                            <div className="ph-diary-card-head">
-                              <strong>{entry.item.title}</strong>
-                              {entry.done ? (
-                                <span className="ph-diary-status is-ok">Hoàn thành</span>
-                              ) : entry.wait ? (
-                                <span className="ph-diary-status is-wait">
-                                  {entry.item.commitmentKind === 'study_focus' &&
-                                  entry.item.evidenceSatisfied === false
-                                    ? 'Chờ bằng chứng'
-                                    : 'Chờ kiểm tra'}
-                                </span>
-                              ) : entry.skipped ? (
-                                <span className="ph-diary-status is-skip">Bỏ qua</span>
-                              ) : (
-                                <span className="ph-diary-status is-pending">Chưa xong</span>
-                              )}
-                            </div>
-                            {entry.who && childOptions.length > 1 ? (
-                              <span className="ph-task-owner">
-                                <span aria-hidden>
-                                  {avatarEmoji(inferGenderFromName(entry.who), 'child')}
-                                </span>
-                                {entry.who}
-                              </span>
-                            ) : null}
-                            <p>{entry.note}</p>
-                            {entry.wait && entry.item.commitmentKind === 'study_focus' ? (
-                              <p className="muted" style={{ marginTop: 4, fontSize: '0.82rem' }}>
-                                {entry.item.evidenceUrl
-                                  ? 'Có ảnh đính kèm — chạm để xem trước khi xác nhận.'
-                                  : 'Chưa có ảnh — xem chi tiết rồi xác nhận nếu tin lời con.'}
-                              </p>
-                            ) : null}
-                            <span className={`ph-diary-tag tone-${entry.tag.tone}`}>
-                              {entry.tag.label}
-                            </span>
-                          </div>
-                          <div
-                            className="ph-diary-card-side"
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => e.stopPropagation()}
-                          >
-                            {entry.item.evidenceUrl ? (
-                              <a
-                                className="ph-diary-photo"
-                                href={withEvidenceAuth(entry.item.evidenceUrl)}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                <img
-                                  src={withEvidenceAuth(entry.item.evidenceUrl)}
-                                  alt={`Ảnh ${entry.item.title}`}
-                                />
-                              </a>
-                            ) : (
-                              <div className="ph-diary-photo is-placeholder" aria-hidden>
-                                {taskIcon(entry.item.title)}
-                              </div>
-                            )}
-                            {entry.done ? (
-                              <span className="ph-diary-stars">
-                                {entry.starLabel}
-                                {entry.lateCaption ? (
-                                  <small className="muted ph-diary-late">{entry.lateCaption}</small>
-                                ) : null}
-                              </span>
-                            ) : entry.wait ? (
-                              <button
-                                type="button"
-                                className="ph-diary-mini-cta"
-                                disabled={
-                                  busyId === entry.item.id || verifyingId === entry.item.id
-                                }
-                                onClick={() => openVerifyPreview(entry.item)}
-                              >
-                                {busyId === entry.item.id || verifyingId === entry.item.id
-                                  ? 'Đang…'
-                                  : 'Xem & xác nhận'}
-                              </button>
-                            ) : null}
-                          </div>
-                        </article>
-                      </li>
-                    );
-                  })}
-                </ol>
-              )}
-
-              {selectedDiaryDay?.isToday && diaryEntries.length > 5 ? (
-                <button
-                  type="button"
-                  className="ph-diary-more"
-                  onClick={() => setDiaryExpanded((v) => !v)}
-                >
-                  {diaryExpanded ? 'Thu gọn' : 'Xem thêm'} <span aria-hidden>▾</span>
-                </button>
-              ) : null}
-            </div>
-
-            <aside className="ph-diary-widgets">
-              {hasChildren ? (
-              <article className="ph-diary-mood">
-                <header className="ph-diary-side-head">
-                  <h3>Tâm trạng của {childShort}</h3>
-                  {focusedChildMood && focusedMoodDisplay ? (
-                    <span className="ph-diary-mood-current">
-                      {focusedMoodDisplay.emoji} {focusedMoodDisplay.label}
-                    </span>
-                  ) : null}
-                </header>
-                {focusedChildMood && focusedMoodDisplay ? (
-                  <>
-                    <div className="ph-diary-mood-row" aria-label="Tâm trạng con">
-                      {DIARY_MOODS.map((m) => (
-                        <span
-                          key={m.code}
-                          className={m.code === focusedChildMood.moodCode ? 'is-on' : undefined}
-                          aria-hidden
-                        >
-                          {m.emoji}
-                        </span>
-                      ))}
-                    </div>
-                    {focusedChildMood.note?.trim() ? (
-                      <p className="ph-diary-mood-bubble">{focusedChildMood.note.trim()}</p>
-                    ) : (
-                      <p className="ph-diary-mood-bubble">
-                        {focusedChildMood.moodCode === 'love' || focusedChildMood.moodCode === 'happy'
-                          ? `${childShort} rất vui khi được ở bên gia đình hôm nay! 💜`
-                          : focusedChildMood.moodCode === 'ok'
-                            ? `${childShort} hơi bình thường — ${parentRole} dành thêm thời gian nhé.`
-                            : `${childShort} cần ${parentRole} động viên thêm hôm nay.`}
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <p className="ph-diary-mood-bubble">{childShort} chưa ghi tâm trạng hôm nay</p>
-                )}
-              </article>
-              ) : null}
-
-              <article className="ph-diary-moment">
-                <header className="ph-diary-side-head">
-                  <h3>Khoảnh khắc đáng nhớ</h3>
-                  <button
-                    type="button"
-                    className="ph-text-link"
-                    onClick={openMemoriesSheet}
-                    disabled={diaryPrettyMemories.length === 0}
-                  >
-                    Xem tất cả →
-                  </button>
-                </header>
-                {diaryFeatureMoments.length === 0 ? (
-                  <p className="ph-empty-soft">{FAMILY_MEMORY_EMPTY}</p>
-                ) : (
-                  <>
-                <div className="ph-diary-moment-card">
-                  <button
-                    type="button"
-                    className={
-                      diaryFeatureMoments[diaryMomentIdx]?.memory.entry?.isFavorite
-                        ? 'ph-diary-moment-heart is-on'
-                        : 'ph-diary-moment-heart'
-                    }
-                    aria-label={
-                      diaryFeatureMoments[diaryMomentIdx]?.memory.entry?.isFavorite
-                        ? 'Bỏ thích'
-                        : 'Lưu / thích kỷ niệm'
-                    }
-                    disabled={
-                      memoryHeartBusy === diaryFeatureMoments[diaryMomentIdx]?.memory.id
-                    }
-                    onClick={() => {
-                      const mem = diaryFeatureMoments[diaryMomentIdx]?.memory;
-                      if (mem) void heartMemory(mem);
-                    }}
-                  >
-                    {diaryFeatureMoments[diaryMomentIdx]?.memory.entry?.isFavorite
-                      ? '❤️'
-                      : '🤍'}
-                  </button>
-                  <div className="ph-diary-moment-art" aria-hidden>
-                    {diaryFeatureMoments[diaryMomentIdx]?.memory.photoUrl ? (
-                      <img
-                        src={withEvidenceAuth(
-                          diaryFeatureMoments[diaryMomentIdx]!.memory.photoUrl!,
-                        )}
-                        alt=""
-                        className="ph-memory-photo"
-                      />
-                    ) : (
-                      diaryFeatureMoments[diaryMomentIdx]?.icon
-                    )}
-                  </div>
-                  <strong>{diaryFeatureMoments[diaryMomentIdx]?.title}</strong>
-                  <em>{diaryFeatureMoments[diaryMomentIdx]?.date}</em>
-                  <p>{diaryFeatureMoments[diaryMomentIdx]?.caption}</p>
-                </div>
-                <div className="ph-diary-dots" role="tablist" aria-label="Chuyển khoảnh khắc">
-                  {diaryFeatureMoments.map((m, i) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={i === diaryMomentIdx}
-                      className={i === diaryMomentIdx ? 'is-on' : undefined}
-                      onClick={() => setDiaryMomentIdx(i)}
-                    />
-                  ))}
-                </div>
-                  </>
-                )}
-              </article>
-            </aside>
-          </div>
-
-          <section className="ph-diary-pretty">
-            <header className="ph-diary-sec-head">
-              <h2>Kỷ niệm đẹp</h2>
-              {diaryPrettyMemories.length > FAMILY_MEMORY_VISIBLE ? (
-                <button
-                  type="button"
-                  className="ph-text-link"
-                  onClick={() => setDiaryMemoriesOpen(true)}
-                >
-                  Xem tất cả →
-                </button>
-              ) : null}
-            </header>
-            <div className="ph-diary-pretty-row">
-              {diaryMemoriesVisible.length === 0 ? (
-                <p className="ph-empty-soft">{FAMILY_MEMORY_EMPTY}</p>
-              ) : (
-                diaryMemoriesVisible.map((m) => (
-                  <article
-                    key={m.id}
-                    className={`ph-diary-pretty-card${m.locked ? ' is-locked' : ''}`}
-                  >
-                    {m.isNew ? <span className="ph-diary-mem-new">Mới</span> : null}
-                    <div className="ph-diary-pretty-art">
-                      {m.photoUrl ? (
-                        <img
-                          src={withEvidenceAuth(m.photoUrl)}
-                          alt=""
-                          className="ph-memory-photo"
-                        />
-                      ) : (
-                        <span aria-hidden>{m.icon}</span>
-                      )}
-                      <button
-                        type="button"
-                        className={
-                          m.entry?.isFavorite
-                            ? 'ph-diary-pretty-heart is-on'
-                            : 'ph-diary-pretty-heart'
-                        }
-                        aria-label={
-                          m.entry?.isFavorite ? 'Bỏ thích' : 'Lưu / thích kỷ niệm'
-                        }
-                        disabled={memoryHeartBusy === m.id}
-                        onClick={() => void heartMemory(m)}
-                      >
-                        {m.entry?.isFavorite ? '❤️' : '🤍'}
-                      </button>
-                    </div>
-                    <strong>{m.title}</strong>
-                    <em>{m.date}</em>
-                  </article>
-                ))
-              )}
-            </div>
-          </section>
-        </div>
+        <ParentDiaryPanel
+          toast={diaryToast}
+          childPicker={renderMemberChrome()}
+          noChildNotice={renderNoChildNotice()}
+          hasChildren={hasChildren}
+          attentionCount={attentionItems.length}
+          onOpenAttention={() => scrollToMissions('need_help')}
+          childShort={childShort}
+          scopedDone={scopedDone}
+          scopedTotal={scopedTotal}
+          momentsCount={diaryFeatureMoments.length}
+          diaryDays={diaryDays}
+          diaryDayIdx={diaryDayIdx}
+          onSelectDay={(i) => {
+            setDiaryDayIdx(i);
+            setDiaryExpanded(false);
+          }}
+          datesRef={(el) => {
+            diaryDatesRef.current = el;
+          }}
+          lens={diaryFilter as DiaryLens}
+          onLens={(lens) => {
+            setDiaryFilter(lens);
+            setDiaryExpanded(false);
+            if (lens === 'memories') setDiaryFavoritesOnly(false);
+          }}
+          entries={diaryEntries}
+          entriesExpanded={diaryExpanded}
+          onToggleExpand={() => setDiaryExpanded((v) => !v)}
+          moments={diaryFeatureMoments}
+          memories={diaryMemoriesVisible}
+          memoryHeartBusy={memoryHeartBusy}
+          busyId={busyId}
+          verifyingId={verifyingId}
+          coachInsight={coach?.insight || null}
+          onOpenVerify={(item) => openVerifyPreview(item)}
+          onHeartMemory={(mem) => void heartMemory(mem)}
+          onOpenMemories={openMemoriesSheet}
+          onOpenStoryDetail={() => setTab('value')}
+          onOpenReport={() => {
+            setTab('value');
+            setValueView('hub');
+          }}
+          taskIcon={taskIcon}
+          withEvidenceAuth={withEvidenceAuth}
+          mirrorPanel={
+            <DailyMirrorEmptyPanel
+              familyId={familyId}
+              childShort={childShort}
+              childMemberId={selectedChild?.key ?? null}
+              parentMembershipId={parentMembershipId ?? null}
+              parentLabel={parentHelloLabel}
+              onToast={showActionToast}
+            />
+          }
+        />
       ) : null}
 
       {tab === 'challenge' ? (
@@ -5526,7 +4415,7 @@ export function ParentBoardView({
               </p>
             </div>
             <div className="ph-treasure-top-actions">
-              {renderChildPicker('module')}
+              <div className="ph-treasure-chrome-row">{renderMemberChrome()}</div>
               <button
                 type="button"
                 className="ph-treasure-history"
@@ -5946,9 +4835,9 @@ export function ParentBoardView({
         <button
           type="button"
           className={`ph-tab${tab === 'value' ? ' is-on' : ''}`}
-          onClick={goReportHub}
+          onClick={goFamilyHub}
         >
-          <IconReport size={22} />
+          <IconMembers size={22} />
           Gia đình
         </button>
       </nav>

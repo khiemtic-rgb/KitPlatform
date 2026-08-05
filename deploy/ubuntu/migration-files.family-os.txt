@@ -64,4 +64,5 @@
 270_pack_family_commitment_started_at.sql
 271_pack_family_evidence_upload.sql
 272_pack_family_kid_moment.sql
+273_pack_family_digital_mirror.sql
 # Optional (owner ALTER tenants CHECK): 192a_pack_family_os_vertical_owner.sql

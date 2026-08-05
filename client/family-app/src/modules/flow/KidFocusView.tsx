@@ -52,14 +52,19 @@ import { getApiErrorMessage } from '@/shared/billing/capability-error';
 import { ChildScreenRequestSheet } from '@/modules/flow/ChildScreenRequestSheet';
 import { ChildMissionRequestSheet } from '@/modules/flow/ChildMissionRequestSheet';
 import { KidMomentSheet } from '@/modules/flow/KidMomentSheet';
-import { TodayOpenStack, type TodayOpenCtaEvent } from '@/modules/flow/TodayOpenStack';
+import { KidHomeHub } from '@/modules/flow/KidHomeHub';
+import { DailyMirrorEmptyPanel } from '@/shared/ui/DailyMirrorEmptyPanel';
+import { KidPlanHub } from '@/modules/flow/KidPlanHub';
+import { KidTreasureHub } from '@/modules/flow/KidTreasureHub';
+import { KidDiaryHub } from '@/modules/flow/KidDiaryHub';
+import { KidFamilyHub } from '@/modules/flow/KidFamilyHub';
+import { type TodayOpenCtaEvent } from '@/modules/flow/TodayOpenStack';
 import {
   buildMemoryYarn,
   buildPendingActions,
   buildSeenSignals,
   buildWarmthPulse,
   dismissWarmth,
-  dismissYarn,
   isRitualDone,
   markRitualDone,
 } from '@/modules/flow/todayOpenSequence';
@@ -104,29 +109,21 @@ import {
   isThankParentTrigger,
   parentVoiceIcon,
   parentVoiceKindLabelVi,
-  parentVoiceSkin,
   primaryRelationshipTrigger,
 } from '@/modules/flow/memberPersonalize';
 import { isParentVerified } from '@/shared/nudge/nudge-stats';
 import { FamilyChallengeCard } from '@/modules/flow/FamilyChallengeCard';
 import {
   capitalizeParentRole,
-  diaryDaySummaryLine,
   diaryTaskNote,
-  parentRoleFromName,
   taskKindOf,
   type ParentRole,
 } from '@/shared/voice/family-voice';
 import {
-  bondStripEyebrowVi,
   careAgeBandFromDob,
   cheerOfferCopyForBand,
   cheerPreviewAudienceVi,
-  homeDoneEmptyCopyVi,
-  kidSeenParentCtaVi,
-  kidThanksParentCtaVi,
   livingFoxyForBand,
-  parentVoiceCardEyebrowVi,
   parentVoiceHomeLineForBand,
   tasksFoxyBannerVi,
 } from '@/shared/care/care-age-tone';
@@ -183,7 +180,7 @@ function kidMissionUxState(
 }
 
 type DayPart = 'all' | 'morning' | 'afternoon' | 'evening' | 'done';
-type KidTab = 'home' | 'tasks' | 'rewards' | 'log';
+type KidTab = 'home' | 'tasks' | 'rewards' | 'log' | 'family';
 type KidHomePane = 'hub' | 'praise' | 'streak' | 'garden' | 'ask' | 'challenge';
 type AchievementSheet = 'movie' | 'garden' | 'read' | null;
 
@@ -1158,6 +1155,7 @@ export function KidFocusView({
 }: Props) {
   const careBand = useMemo(() => careAgeBandFromDob(dateOfBirth), [dateOfBirth]);
   const [tab, setTab] = useState<KidTab>('home');
+  const [famiSheetOpen, setFamiSheetOpen] = useState(false);
   const [homePane, setHomePane] = useState<KidHomePane>('hub');
   const [filter, setFilter] = useState<DayPart>('all');
   const [nowOpen, setNowOpen] = useState(true);
@@ -1246,6 +1244,7 @@ export function KidFocusView({
   const [redeemBusyId, setRedeemBusyId] = useState<string | null>(null);
   const [treasureSheet, setTreasureSheet] = useState<'rewards' | 'badges' | null>(null);
   const [journalSheet, setJournalSheet] = useState<'memories' | 'moments' | null>(null);
+  const [diaryDayPickerOpen, setDiaryDayPickerOpen] = useState(false);
   const [achievementSheet, setAchievementSheet] = useState<AchievementSheet>(null);
   const [memoryFilter, setMemoryFilter] = useState<KidMemoryFilter>('all');
   const [savedMemories, setSavedMemories] = useState<FamilyMemoryEntry[]>([]);
@@ -1649,11 +1648,19 @@ export function KidFocusView({
   };
 
   useEffect(() => {
-    if (!treasureSheet && !journalSheet && !achievementSheet && !active && !weekReviewOpen)
+    if (
+      !treasureSheet &&
+      !journalSheet &&
+      !achievementSheet &&
+      !active &&
+      !weekReviewOpen &&
+      !diaryDayPickerOpen
+    )
       return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
-      if (weekReviewOpen) setWeekReviewOpen(false);
+      if (diaryDayPickerOpen) setDiaryDayPickerOpen(false);
+      else if (weekReviewOpen) setWeekReviewOpen(false);
       else if (achievementSheet) setAchievementSheet(null);
       else if (treasureSheet) setTreasureSheet(null);
       else if (journalSheet) setJournalSheet(null);
@@ -1661,7 +1668,14 @@ export function KidFocusView({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [treasureSheet, journalSheet, achievementSheet, active, weekReviewOpen]);
+  }, [
+    treasureSheet,
+    journalSheet,
+    achievementSheet,
+    active,
+    weekReviewOpen,
+    diaryDayPickerOpen,
+  ]);
 
   useEffect(() => {
     if (!familyId) return;
@@ -2684,12 +2698,6 @@ export function KidFocusView({
     parentRole,
   ]);
 
-  const activeJournalSummary = useMemo(() => {
-    const done = journalEntries.filter((e) => e.done).length;
-    const totalJ = journalEntries.length;
-    return diaryDaySummaryLine(short, done, Math.max(totalJ, 0));
-  }, [journalEntries, short]);
-
   const familyMemories = useMemo(
     () =>
       buildFamilyMemories({
@@ -2744,6 +2752,147 @@ export function KidFocusView({
     [savedMemories, childMemberId, flowDate],
   );
   const kidMomentsRemainingToday = Math.max(0, 3 - kidMomentsToday.length);
+
+  /** AI-style journal story — memorable highlights, not chore counts */
+  const journalStoryParagraphs = useMemo(() => {
+    const paras: string[] = [];
+    const doneTitles = journalIsToday
+      ? trulyDone.map((c) => c.title)
+      : journalEntries.filter((e) => e.done).map((e) => e.item.title);
+    const brush = doneTitles.find((t) => /đánh răng/i.test(t));
+    const love = parentVoiceInbox[0];
+    const badge = earnedBadges[0];
+    const hasPhoto =
+      kidMomentsToday.some((m) => m.photoUrl) ||
+      journalEntries.some((e) => Boolean(e.item.evidenceUrl));
+    const hasHighlight = Boolean(brush || love || badge || hasPhoto || doneTitles.length > 0);
+
+    if (hasHighlight) {
+      paras.push(
+        journalIsToday
+          ? `Hôm nay ${short} đã thật tuyệt!`
+          : `${short} đã có một ngày đáng nhớ.`,
+      );
+    }
+    if (brush) {
+      paras.push(
+        journalIsToday
+          ? `Con đã tự giác đánh răng mà không cần nhắc.`
+          : `${short} đã tự giác đánh răng trong ngày này.`,
+      );
+    }
+    if (love) {
+      const from = (love.fromMemberName || parentRole).trim();
+      paras.push(`${from} cũng khen con rất nhiều! Fami giữ lời yêu thương này cho ${short}.`);
+    }
+    if (badge) {
+      paras.push(`Con mở được huy hiệu «${badge.label}».`);
+    }
+    if (hasPhoto && paras.length < 4) {
+      paras.push(`Còn một khoảnh khắc ảnh đẹp — đáng để xem lại sau này.`);
+    }
+    if (!brush && !love && !badge && doneTitles.length > 0) {
+      paras.push(
+        `Con đã hoàn thành «${doneTitles[0]}» — một bước nhỏ trong hành trình lớn lên.`,
+      );
+    }
+    if (paras.length === 0) {
+      paras.push(
+        journalIsToday
+          ? `${short} ơi — khi con làm việc tốt, nhận lời khen hoặc có ảnh đẹp, Fami sẽ kể chuyện ở đây.`
+          : `Ngày này chưa có câu chuyện đáng nhớ được lưu.`,
+      );
+    } else if (journalIsToday) {
+      paras.push(`Fami rất tự hào về ${short}! 🥰`);
+    }
+    return paras.slice(0, 5);
+  }, [
+    journalIsToday,
+    trulyDone,
+    journalEntries,
+    parentVoiceInbox,
+    earnedBadges,
+    kidMomentsToday,
+    short,
+    parentRole,
+  ]);
+
+  /** Day timeline for diary — chronological highlights */
+  const journalMilestones = useMemo(() => {
+    type Row = {
+      id: string;
+      icon: string;
+      time: string;
+      title: string;
+      tag: string;
+      done: boolean;
+      sort: string;
+    };
+
+    const tagFor = (title: string, evidence?: string | null) => {
+      if (evidence) return 'Ảnh';
+      if (/đánh răng|tự giác/i.test(title)) return 'Tự giác';
+      if (/ăn sáng|ăn trưa|ăn tối|uống sữa/i.test(title)) return 'Ngoan';
+      if (/cặp|balo|đi học|chuẩn bị/i.test(title)) return 'Sẵn sàng';
+      if (/đọc/i.test(title)) return '20 phút';
+      if (/ngủ|đi ngủ/i.test(title)) return 'Giỏi quá!';
+      if (/giúp|dọn/i.test(title)) return 'Giỏi';
+      return 'Xong';
+    };
+
+    const fromTasks = journalEntries
+      .filter((e) => e.done)
+      .map((e) => {
+        const title = e.item.title;
+        return {
+          id: `tl-${e.item.id}`,
+          icon: taskIcon(title),
+          time: e.time || '--:--',
+          title,
+          tag: tagFor(title, e.item.evidenceUrl),
+          done: true,
+          sort: `${journalFlowDate}T${e.time || '00:00'}:00`,
+        } satisfies Row;
+      })
+      .sort((a, b) => a.sort.localeCompare(b.sort));
+
+    if (fromTasks.length > 0) {
+      return fromTasks.slice(0, 5).map(({ sort: _s, ...rest }) => rest);
+    }
+
+    const rows: Row[] = [];
+    for (const v of parentVoiceInbox.slice(0, 2)) {
+      const from = (v.fromMemberName || parentRole).trim();
+      rows.push({
+        id: `ms-love-${v.id}`,
+        icon: '💌',
+        time: v.sentAt ? v.sentAt.slice(11, 16) : 'Hôm nay',
+        title: `${from} gửi lời yêu thương`,
+        tag: 'Thư',
+        done: true,
+        sort: v.sentAt || `${v.flowDate}T12:00:00`,
+      });
+    }
+    for (const m of kidMomentsToday.slice(0, 2)) {
+      rows.push({
+        id: `ms-moment-${m.id}`,
+        icon: '📷',
+        time: (m.happenedAt || '').slice(11, 16) || 'Ảnh',
+        title: m.titleVi || 'Khoảnh khắc của con',
+        tag: 'Ảnh',
+        done: true,
+        sort: m.happenedAt || m.flowDate || '',
+      });
+    }
+    rows.sort((a, b) => a.sort.localeCompare(b.sort));
+    return rows.slice(0, 5).map(({ sort: _s, ...rest }) => rest);
+  }, [
+    journalEntries,
+    journalFlowDate,
+    parentVoiceInbox,
+    parentRole,
+    kidMomentsToday,
+  ]);
 
   const memoryFilterChips = useMemo(() => {
     const chips: Array<[KidMemoryFilter, string]> = [
@@ -3105,6 +3254,92 @@ export function KidFocusView({
     }
   };
 
+  const sendThanksSticker = async (emoji: string) => {
+    if (!childMemberId || thanksSending || thanksSent) return;
+    setThanksSending(true);
+    setThanksError(null);
+    try {
+      const res = await sendChildGratitude(familyId, {
+        fromMemberId: childMemberId,
+        flowDate: flowDate || undefined,
+        praiseContext: `Sticker ${emoji} từ ${short}`,
+      });
+      setThanksSent(true);
+      {
+        const Parent = capitalizeParentRole(parentRole);
+        setTreasureToast(
+          res.alreadySent
+            ? `${Parent} đã nhận lời cảm ơn hôm nay rồi! ${emoji}`
+            : `Đã gửi sticker ${emoji} tới ${parentRole}!`,
+        );
+      }
+    } catch {
+      setThanksError('Chưa gửi được — thử lại nhé.');
+    } finally {
+      setThanksSending(false);
+    }
+  };
+
+
+  // Keep drill/open-stack helpers live for future panes (home hub uses mock layout).
+  void [
+    formatLongDate,
+    dayPartLabel,
+    voiceAckBusy,
+    eveningCircle,
+    nudgeAckBusy,
+    showCheerOffer,
+    cheerOfferCopy,
+    openCheerSheet,
+    ackInboxNudge,
+    sendThanksBack,
+    submitKidEveningCircle,
+    openWeekReview,
+    todayComboUnlock,
+    pendingAskCount,
+    queuedParentVoiceCount,
+    openStackWarmth,
+    openStackPending,
+    openStackSeen,
+    openStackYarn,
+    openStackRitualDone,
+    handleOpenStackCta,
+    handleOpenStackRitual,
+    primarySiblingNudge,
+    queuedSiblingNudgeCount,
+    movieStripLabel,
+    filter,
+    setFilter,
+    filters,
+    nowOpen,
+    setNowOpen,
+    waitOpen,
+    setWaitOpen,
+    soonOpen,
+    setSoonOpen,
+    filteredDone,
+    soonItems,
+    waitingCheckItems,
+    missionSegs,
+    missionFilled,
+    countMorning,
+    countAfternoon,
+    countEvening,
+    countAll,
+    minutesUntilExcited,
+    taskTip,
+    MissionStarBadge,
+    onSelfStart,
+    dayClosed,
+    morningNote,
+    todayTeamRewardLabel,
+    journalFeatureMoments,
+    momentIdx,
+    setMomentIdx,
+    kidSkipLabel,
+    openHomePane,
+  ];
+
   return (
     <section className={`kid-home kid-v2${celebrating || celebrate ? ' is-pop' : ''}`}>
       {softLockActive ? (
@@ -3132,128 +3367,117 @@ export function KidFocusView({
           <div className={`kv2-avatar ${avatarToneClass(gender)}`} aria-hidden>
             {avatar}
           </div>
-          <div>
+          <div className="kv2-identity-copy">
             {tab === 'tasks' ? (
               <>
                 <h1 className="kv2-hello">
-                  Kế hoạch của {short} <span aria-hidden>✨</span>
+                  Kế hoạch <span aria-hidden>☀️</span>
                 </h1>
-                <p className="kv2-date">Cùng giữ nhịp hôm nay nhé! 💪</p>
+                <p className="kv2-date">Chào {short} — ngày đẹp để tỏa sáng</p>
               </>
             ) : tab === 'rewards' ? (
               <>
                 <h1 className="kv2-hello">
-                  Kho báu của {short} <span aria-hidden>✨</span>
+                  Kho báu <span aria-hidden>✨</span>
                 </h1>
-                <p className="kv2-date">Mỗi việc tốt, một kho báu lớn! 🧡</p>
+                <p className="kv2-date">Nỗ lực của {short} rất đáng tự hào</p>
+              </>
+            ) : tab === 'family' ? (
+              <>
+                <h1 className="kv2-hello">
+                  Gia đình <span aria-hidden>▾</span>
+                </h1>
+                <p className="kv2-date">Cùng nhau yêu thương — nhà {short}</p>
               </>
             ) : tab === 'log' ? (
               <>
                 <h1 className="kv2-hello">
-                  Nhật ký của {short} <span aria-hidden>✨</span>
+                  Nhật ký <span aria-hidden>✨</span>
                 </h1>
-                <p className="kv2-date">Những khoảnh khắc tuyệt vời mỗi ngày ❤️</p>
+                <p className="kv2-date">Mỗi ngày một bước tiến của {short}</p>
               </>
             ) : (
               <>
                 <h1 className="kv2-hello">
                   Chào {short}! <span aria-hidden>👋</span>
                 </h1>
-                <p className="kv2-date">{formatLongDate()}</p>
+                <p className="kv2-date">Fami vui khi gặp con</p>
               </>
             )}
           </div>
         </div>
-        {morningNote?.bodyVi && (tab === 'home' || tab === 'tasks') ? (
-          <article className="kv2-morning-note" aria-label="Lời nhắc đầu ngày">
-            <p className="kv2-morning-note-eyebrow">
-              <span aria-hidden>🦊</span> Lời nhắc buổi sáng
-            </p>
-            <p>{morningNote.bodyVi}</p>
-          </article>
-        ) : null}
-        {(tab === 'home' || tab === 'log') ? (
+
+        {tab === 'tasks' ? (
           <button
             type="button"
-            className="kv2-moment-send is-home"
-            onClick={() => setKidMomentSheetOpen(true)}
-            disabled={kidMomentsRemainingToday <= 0}
+            className="kv2-switch kv2-gift"
+            aria-label="Phần thưởng"
+            title="Phần thưởng"
+            onClick={() => setTab('rewards')}
           >
-            {kidMomentsRemainingToday > 0
-              ? `Gửi khoảnh khắc cho nhà · còn ${kidMomentsRemainingToday}`
-              : 'Mai gửi khoảnh khắc tiếp nhé'}
+            <span aria-hidden>🎁</span>
           </button>
-        ) : null}
+        ) : tab === 'rewards' ? (
+          <button
+            type="button"
+            className="kv2-switch kv2-gear"
+            aria-label="Cài đặt bố mẹ"
+            title="Bố mẹ"
+            onClick={onOpenParentPin}
+          >
+            <span aria-hidden>⚙️</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={`kv2-switch kv2-bell${
+              unreadParentVoices.length + unreadSiblingNudges.length > 0 ? ' has-dot' : ''
+            }`}
+            aria-label="Đổi sang bố mẹ"
+            title="Bố mẹ"
+            onClick={onOpenParentPin}
+          >
+            <span aria-hidden>👤</span>
+          </button>
+        )}
+
         <div className="kv2-top-pills">
-          <span className="kv2-pill kv2-stars" title="Sao">
+          <span className="kv2-pill kv2-stars" title={`Sao của ${short}: ${formatStars(stars)}`}>
             <span aria-hidden>⭐</span>
             <strong>{formatStars(stars)}</strong>
-            {tab === 'tasks' || tab === 'rewards' || tab === 'log' ? (
-              <em className="kv2-stars-label">Sao của {short}</em>
-            ) : null}
           </span>
           {tab === 'rewards' ? (
-            <span className="kv2-pill kv2-level" title="Cấp độ Explorer">
-              <span aria-hidden>🏔️</span>
-              <span className="kv2-en-term is-pill">
-                <em className="kv2-en-term-main">Level {explorerLevel}</em>
-                <em className="kv2-en-term-vi">Cấp độ Explorer</em>
-              </span>
+            <span className="kv2-pill kv2-level" title="Quà bí mật từ Fami">
+              <span aria-hidden>🎁</span>
+              <strong>Quà bí mật</strong>
             </span>
           ) : tab === 'log' ? (
-            <span className="kv2-pill kv2-streak" title="Chuỗi ngày">
+            <button
+              type="button"
+              className="kv2-pill kv2-streak"
+              title="Chọn ngày nhật ký"
+              aria-haspopup="dialog"
+              aria-expanded={diaryDayPickerOpen}
+              onClick={() => setDiaryDayPickerOpen(true)}
+            >
               <span aria-hidden>📅</span>
-              <strong>{streak}</strong>
-              <em className="kv2-stars-label">Ngày liên tiếp</em>
-            </span>
-          ) : (
+              <strong>
+                {selectedJournalDay.isToday
+                  ? 'Hôm nay'
+                  : selectedJournalDay.shortLabel.replace(/^.*?(\d{2}\/\d{2}).*$/, '$1')}
+              </strong>
+            </button>
+          ) : tab === 'tasks' ? null : (
             <span
               className="kv2-pill kv2-movie-mini"
-              title="Tiến độ kế hoạch nhóm hôm nay"
+              title={`Kế hoạch nhóm hôm nay: ${unlockPct}%`}
             >
               <span aria-hidden>👨‍👩‍👧‍👦</span>
-              <span className="kv2-en-term is-pill">
-                <em className="kv2-en-term-main">Nhà mình</em>
-                <em className="kv2-en-term-vi">Kế hoạch nhóm</em>
-              </span>
               <i className="kv2-mini-bar" aria-hidden>
                 <b style={{ width: `${unlockPct}%` }} />
               </i>
               <strong>{unlockPct}%</strong>
             </span>
-          )}
-          {tab === 'tasks' ? (
-            <button
-              type="button"
-              className="kv2-gift"
-              aria-label="Phần thưởng"
-              title="Phần thưởng"
-              onClick={() => setTab('rewards')}
-            >
-              <span aria-hidden>🎁</span>
-            </button>
-          ) : tab === 'rewards' ? (
-            <button
-              type="button"
-              className="kv2-gear"
-              aria-label="Cài đặt bố mẹ"
-              title="Bố mẹ"
-              onClick={onOpenParentPin}
-            >
-              <span aria-hidden>⚙️</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              className={`kv2-bell${
-                unreadParentVoices.length + unreadSiblingNudges.length > 0 ? ' has-dot' : ''
-              }`}
-              aria-label="Đổi sang bố mẹ"
-              title="Bố mẹ"
-              onClick={onOpenParentPin}
-            >
-              <span aria-hidden>👤</span>
-            </button>
           )}
         </div>
       </header>
@@ -3281,631 +3505,142 @@ export function KidFocusView({
 
           {homePane === 'hub' ? (
             <>
-              <article className="kv2-next is-hero">
-                <p className="kv2-section-label">
-                  <span aria-hidden>✨</span> NHIỆM VỤ TIẾP THEO
-                </p>
-                {nextMission ? (
-                  <>
-                    <div className="kv2-next-body">
-                      <div
-                        className={`kv2-next-art tone-${taskIconTone(nextMission.title)}`}
-                        aria-hidden
-                      >
-                        <span className="kv2-emoji-bounce">{taskIcon(nextMission.title)}</span>
-                      </div>
-                      <div>
-                        <h2>{nextMission.title}</h2>
-                        <p className="kv2-next-part">{dayPartLabel(nextMission)}</p>
-                        <p className="kv2-next-timer">
-                          <span aria-hidden>⏰</span>{' '}
-                          {earlyCompleteBlockReason(nextMission, localTime) ??
-                            minutesUntilExcited(nextMission) ??
-                            formatWindow(nextMission.windowStart, nextMission.windowEnd) ??
-                            'Trong ngày'}
-                        </p>
-                        {earlyCompleteBlockReason(nextMission, localTime) ? (
-                          <p className="kv2-early-wait muted">
-                            {countdownUntilWindow(nextMission, localTime) ?? 'Chờ đến giờ nhé'}
-                          </p>
-                        ) : null}
-                        <MissionStarBadge item={nextMission} className="kv2-next-stars" />
-                        {studyNeedsEvidence(nextMission) ? (
-                          <p className="kv2-study-hint">
-                            📚 Ảnh chỉ là nộp bài — bố mẹ xác nhận mới được sao
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div
-                      className={`kv2-next-actions${
-                        studyNeedsEvidence(nextMission) ? '' : ' is-primary-only'
-                      }`}
-                    >
-                      {studyNeedsEvidence(nextMission) ? (
-                        <>
-                          <button
-                            type="button"
-                            className="kv2-do"
-                            disabled={
-                              busyId === nextMission.id ||
-                              uploading ||
-                              !canCompleteNow(nextMission, localTime)
-                            }
-                            onClick={() => beginEvidencePick(nextMission)}
-                          >
-                            <span aria-hidden>📷</span>{' '}
-                            {uploading && busyId === nextMission.id
-                              ? 'Đang gửi ảnh…'
-                              : 'Gửi ảnh đã học'}
-                          </button>
-                          {nextMission.evidencePolicy !== 'hard' ? (
-                            <button
-                              type="button"
-                              className="kv2-do-photo is-link"
-                              disabled={
-                                busyId === nextMission.id ||
-                                uploading ||
-                                !canCompleteNow(nextMission, localTime)
-                              }
-                              onClick={() => void quickDoneMission(nextMission)}
-                            >
-                              <span aria-hidden>✓</span>{' '}
-                              {busyId === nextMission.id
-                                ? 'Đang gửi…'
-                                : 'Đã học · chờ bằng chứng'}
-                            </button>
-                          ) : (
-                            <p className="kv2-study-hard-note muted">
-                              Chế độ cứng: bắt buộc ảnh mới hoàn thành
-                            </p>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            type="button"
-                            className="kv2-do"
-                            disabled={
-                              busyId === nextMission.id ||
-                              uploading ||
-                              !canCompleteNow(nextMission, localTime)
-                            }
-                            onClick={() => void quickDoneMission(nextMission)}
-                          >
-                            <span aria-hidden>✓</span>{' '}
-                            {busyId === nextMission.id ? 'Đang gửi…' : 'Mình đã làm'}
-                          </button>
-                          <button
-                            type="button"
-                            className="kv2-do-photo is-link"
-                            disabled={
-                              busyId === nextMission.id ||
-                              uploading ||
-                              !canCompleteNow(nextMission, localTime)
-                            }
-                            onClick={() => beginEvidencePick(nextMission)}
-                          >
-                            <span aria-hidden>📷</span> Đính kèm ảnh
-                          </button>
-                        </>
-                      )}
-                    </div>
-                    {missionDoneError ? (
-                      <p className="kv2-do-error" role="alert">
-                        {missionDoneError}
-                      </p>
-                    ) : null}
-                  </>
-                ) : (
-                  <div className="kv2-next-done">
-                    <div className="kv2-next-art tone-gold kv2-done-pulse" aria-hidden>
-                      <span className="kv2-emoji-bounce">🏆</span>
-                    </div>
-                    <div>
-                      <h2>Xong phần của con rồi!</h2>
-                      <p>{homeDoneEmptyCopyVi(careBand, teamComplete, teamRemaining)}</p>
-                    </div>
-                  </div>
-                )}
-              </article>
-
-              <article className={`kv2-foxy is-strip${foxyGlow ? ' is-glow' : ''}`}>
-                <div className="kv2-foxy-row">
-                  <div className="kv2-foxy-mascot" aria-hidden>
-                    <span className="kv2-fox-face">🦊</span>
-                  </div>
-                  <div className="kv2-foxy-bubble">
-                    <p>{foxyHomeLine}</p>
-                  </div>
-                </div>
-              </article>
-
-              <aside
-                className={`kv2-movie-strip${teamComplete ? ' is-ready' : ''}`}
-                aria-label="Nhà mình — tiến độ đội hôm nay"
-              >
-                <span aria-hidden>👨‍👩‍👧‍👦</span>
-                <div className="kv2-movie-strip-copy">
-                  <strong>
-                    Nhà mình · {unlockPct}%
-                  </strong>
-                  <em>{movieStripLabel}</em>
-                </div>
-                <i className="kv2-mini-bar" aria-hidden>
-                  <b style={{ width: `${unlockPct}%` }} />
-                </i>
-              </aside>
-
-              {tab === 'home' ? (
-                <TodayOpenStack
-                  role="child"
-                  warmth={openStackWarmth}
-                  pending={openStackPending}
-                  seen={openStackSeen}
-                  yarn={openStackYarn}
-                  ritualDone={openStackRitualDone}
-                  ritualBusy={ritualBusy}
-                  onCta={handleOpenStackCta}
-                  onRitualComplete={handleOpenStackRitual}
-                  onDismissYarn={() => {
-                    dismissYarn(childMemberId || 'child', flowDate);
-                    setOpenSeqTick((n) => n + 1);
-                  }}
+              {childMemberId ? (
+                <DailyMirrorEmptyPanel
+                  familyId={familyId}
+                  childShort={short}
+                  childMemberId={childMemberId}
+                  parentLabel={parentRole}
+                  viewer="kid"
+                  compact
                 />
               ) : null}
-
-              {/* Human bond first — one unread voice + reply CTAs before chores noise */}
-              {primaryParentVoice ||
-              weeklyStory ||
-              showCheerOffer ||
-              (doneCount > 0 && !thanksSent) ? (
-                <section className="kv2-bond-strip" aria-label="Gắn kết nhà mình">
-                  <p className="kv2-bond-strip-eyebrow">
-                    <span aria-hidden>💛</span> {bondStripEyebrowVi(short, careBand)}
-                  </p>
-
-                  {primaryParentVoice ? (
-                    <div
-                      className="kv2-bond-voices"
-                      aria-label={parentVoiceCardEyebrowVi(short, careBand)}
-                    >
-                      <article
-                        key={primaryParentVoice.id}
-                        className={`kv2-bond-voice-card is-${parentVoiceSkin(primaryParentVoice.templateCode)}`}
-                        data-voice-skin={parentVoiceSkin(primaryParentVoice.templateCode)}
-                      >
-                        <p className="kv2-bond-voice-eyebrow">
-                          <span aria-hidden>
-                            {parentVoiceIcon(primaryParentVoice.templateCode)}
-                          </span>{' '}
-                          {parentVoiceCardEyebrowVi(short, careBand)}
-                        </p>
-                        <p className="kv2-bond-voice-meta">
-                          Từ {primaryParentVoice.fromMemberName.trim() || 'bố/mẹ'} ·{' '}
-                          {parentVoiceKindLabelVi(primaryParentVoice.templateCode)}
-                        </p>
-                        <p className="kv2-bond-voice-msg">{primaryParentVoice.bodyVi}</p>
-                        <div className="kv2-bond-voice-actions">
-                          <button
-                            type="button"
-                            className="kv2-do"
-                            disabled={voiceAckBusy === primaryParentVoice.id}
-                            onClick={() =>
-                              void ackVoiceMessage(primaryParentVoice.id, 'thanks')
-                            }
-                          >
-                            {kidThanksParentCtaVi(
-                              parentRoleFromName(
-                                primaryParentVoice.fromMemberName || parentRole,
-                              ),
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            className="kv2-do-photo is-link"
-                            disabled={voiceAckBusy === primaryParentVoice.id}
-                            onClick={() => void ackVoiceMessage(primaryParentVoice.id, 'read')}
-                          >
-                            {kidSeenParentCtaVi(
-                              parentRoleFromName(
-                                primaryParentVoice.fromMemberName || parentRole,
-                              ),
-                            )}
-                          </button>
-                        </div>
-                        {queuedParentVoiceCount > 0 ? (
-                          <p className="kv2-bond-voice-queue" aria-live="polite">
-                            Còn {queuedParentVoiceCount} lời nữa — hiện sau khi {short} trả lời
-                            lời này.
-                          </p>
-                        ) : null}
-                      </article>
-                    </div>
-                  ) : null}
-
-                  {showCheerOffer ? (
-                    <article className="kv2-bond-cta-card" aria-label="Cổ vũ cả nhà">
-                      <p>{cheerOfferCopy}</p>
-                      <button type="button" className="kv2-do" onClick={openCheerSheet}>
-                        Gửi lời cổ vũ
-                      </button>
-                    </article>
-                  ) : null}
-
-                  {!primaryParentVoice && doneCount > 0 && !thanksSent ? (
-                    <article className="kv2-bond-cta-card" aria-label="Cảm ơn bố mẹ">
-                      <p>
-                        Hôm nay {short} đã xong {doneCount} việc — gửi một lời cảm ơn{' '}
-                        {parentRole} để nhà ấm hơn.
-                      </p>
-                      <button
-                        type="button"
-                        className="kv2-do"
-                        disabled={thanksSending}
-                        onClick={() => void sendThanks()}
-                      >
-                        {thanksSending
-                          ? 'Đang gửi…'
-                          : `${kidThanksParentCtaVi(parentRole)}!`}
-                      </button>
-                    </article>
-                  ) : null}
-
-                  {weeklyStory ? (
-                    <article className="kv2-bond-week" aria-label={`Tuần này của ${short}`}>
-                      <p className="kv2-bond-week-eyebrow">📖 Tuần này của {short}</p>
-                      <p className="kv2-bond-week-head">{weeklyStory.headlineVi}</p>
-                      <ul>
-                        {weeklyStory.lines.slice(0, 3).map((line, idx) => (
-                          <li key={`${line.textVi}-${idx}`}>
-                            <span aria-hidden>{line.icon}</span> {line.textVi}
-                          </li>
-                        ))}
-                      </ul>
-                      <button
-                        type="button"
-                        className="kv2-do is-secondary"
-                        onClick={() => void openWeekReview()}
-                      >
-                        Xem lại lời tuần này ›
-                      </button>
-                    </article>
-                  ) : null}
-                </section>
-              ) : null}
-
-              {eveningCircle ? (
-                <section className="kv2-circle-card" aria-label="Evening Circle">
-                  <p className="kv2-member-me-eyebrow">⭐ Cả nhà tối nay</p>
-                  <p className="kv2-circle-prompt">{eveningCircle.promptVi}</p>
-                  {eveningCircle.answers.length > 0 ? (
-                    <ul className="kv2-circle-answers">
-                      {eveningCircle.answers.map((a) => (
-                        <li key={a.memoryId}>
-                          <strong>{a.memberName}</strong>
-                          <span>{a.answerVi}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  {!eveningCircle.alreadyAnswered ? (
-                    <div className="kv2-circle-compose">
-                      <textarea
-                        rows={2}
-                        maxLength={280}
-                        value={circleAnswer}
-                        onChange={(e) => setCircleAnswer(e.target.value)}
-                        placeholder={`${short} muốn nói gì?`}
-                        disabled={circleBusy}
-                      />
-                      <button
-                        type="button"
-                        className="kv2-do"
-                        disabled={circleBusy || !circleAnswer.trim()}
-                        onClick={() => void submitKidEveningCircle()}
-                      >
-                        {circleBusy ? 'Đang gửi…' : 'Gửi câu trả lời'}
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="kv2-circle-done">Bạn đã trả lời tối nay — cảm ơn {short}!</p>
-                  )}
-                </section>
-              ) : null}
-
-              {primarySiblingNudge ? (
-                <section className="kv2-sibling-nudge-inbox" aria-label="Tin từ anh chị">
-                  <article
-                    key={primarySiblingNudge.id}
-                    className="kv2-sibling-nudge-card"
-                  >
-                    <p className="kv2-sibling-nudge-eyebrow">
-                      {primarySiblingNudge.templateCode === 'thanks_back'
-                        ? `Cảm ơn từ ${primarySiblingNudge.fromName.trim() || 'em'}`
-                        : `Tin từ ${primarySiblingNudge.fromName.trim() || 'anh/chị'}`}
-                    </p>
-                    <p className="kv2-sibling-nudge-msg">{primarySiblingNudge.messageVi}</p>
-                    <div className="kv2-sibling-nudge-actions">
-                      {primarySiblingNudge.templateCode === 'thanks_back' ? (
-                        <button
-                          type="button"
-                          className="kv2-do"
-                          disabled={nudgeAckBusy === primarySiblingNudge.id}
-                          onClick={() => void ackInboxNudge(primarySiblingNudge.id, 'seen')}
-                        >
-                          Đã nhận
-                        </button>
-                      ) : (
-                        <>
-                          <button
-                            type="button"
-                            className="kv2-do"
-                            disabled={nudgeAckBusy === primarySiblingNudge.id}
-                            onClick={() => void ackInboxNudge(primarySiblingNudge.id, 'thanks')}
-                          >
-                            Cảm ơn
-                          </button>
-                          <button
-                            type="button"
-                            className="kv2-do-photo is-link"
-                            disabled={nudgeAckBusy === primarySiblingNudge.id}
-                            onClick={() => void ackInboxNudge(primarySiblingNudge.id, 'seen')}
-                          >
-                            Đã xem
-                          </button>
-                        </>
-                      )}
-                    </div>
-                    {queuedSiblingNudgeCount > 0 ? (
-                      <p className="kv2-bond-voice-queue" aria-live="polite">
-                        Còn {queuedSiblingNudgeCount} tin nữa — hiện sau khi {short} trả lời tin
-                        này.
-                      </p>
-                    ) : null}
-                  </article>
-                </section>
-              ) : null}
-
-              {thanksBackOffer ? (
-                <article className="kv2-thanks-back" aria-label="Gửi cảm ơn anh chị">
-                  <p className="kv2-thanks-back-copy">
-                    Gửi một lời cảm ơn ngắn tới{' '}
-                    <strong>
-                      {shortChildName(thanksBackOffer.toName) || 'anh/chị'}
-                    </strong>
-                    ?
-                  </p>
-                  <p className="kv2-thanks-back-preview">
-                    “
-                    {nudgeMessagePreview(
-                      'thanks_back',
-                      shortChildName(childName),
-                      shortChildName(thanksBackOffer.toName) || 'anh/chị',
-                    )}
-                    ”
-                  </p>
-                  <div className="kv2-sibling-nudge-actions">
-                    <button
-                      type="button"
-                      className="kv2-do"
-                      disabled={thanksBackBusy}
-                      onClick={() => void sendThanksBack()}
-                    >
-                      {thanksBackBusy ? 'Đang gửi…' : 'Gửi cảm ơn'}
-                    </button>
-                    <button
-                      type="button"
-                      className="kv2-do-photo is-link"
-                      disabled={thanksBackBusy}
-                      onClick={() => setThanksBackOffer(null)}
-                    >
-                      Để sau
-                    </button>
-                  </div>
-                </article>
-              ) : null}
-
-              {todayComboUnlock ? (
-                <article className="kv2-combo-card" aria-label="High-five anh chị">
-                  <p className="kv2-combo-copy">
-                    <span aria-hidden>🙌</span>{' '}
-                    {todayComboUnlock.status === 'confirmed'
-                      ? todayComboUnlock.labelVi || 'High-five đôi anh chị đã mở!'
-                      : `${todayComboUnlock.labelVi || 'High-five đôi anh chị'} — nhờ bố/mẹ xác nhận nhé!`}
-                  </p>
-                </article>
-              ) : null}
-
-              {cheerToast ? (
-                <p className="kv2-cheer-toast is-float" role="status">
-                  {cheerToast}
-                </p>
-              ) : null}
-
-              <section className="kv2-home-rewards" aria-label="Động lực hôm nay">
-                <article className="kv2-praise is-compact">
-                  <button
-                    type="button"
-                    className="kv2-compact-head"
-                    onClick={() => openHomePane('praise')}
-                  >
-                    <span>
-                      <span aria-hidden>❤️</span> Lời khen hôm nay
-                    </span>
-                    <span aria-hidden>›</span>
-                  </button>
-                  <div className="kv2-praise-bubble">
-                    <p>{praiseLine}</p>
-                  </div>
-                  <div className="kv2-praise-foot">
-                    <span className="kv2-mom" aria-hidden>
-                      {primaryParentVoice
-                        ? parentVoiceIcon(primaryParentVoice.templateCode)
-                        : '🦊'}
-                    </span>
-                    <span>
-                      {primaryParentVoice
-                        ? `${parentVoiceCardEyebrowVi(short, careBand)} · từ ${primaryParentVoice.fromMemberName.trim() || 'bố/mẹ'}`
-                        : 'Foxy gợi ý — lời thật từ bố/mẹ ấm hơn'}
-                    </span>
-                    {!(doneCount > 0 && !thanksSent && !primaryParentVoice) ? (
-                      <button
-                        type="button"
-                        className={`kv2-thanks${thanksSent ? ' is-sent' : ''}`}
-                        disabled={thanksSending || thanksSent}
-                        onClick={() => void sendThanks()}
-                      >
-                        <span aria-hidden>{thanksSent ? '✓' : '💖'}</span>{' '}
-                        {thanksSending
-                          ? 'Đang gửi…'
-                          : thanksSent
-                            ? 'Đã gửi'
-                            : `${kidThanksParentCtaVi(parentRole)}!`}
-                      </button>
-                    ) : null}
-                  </div>
-                  {thanksError ? (
-                    <p className="kv2-thanks-error" role="alert">
-                      {thanksError}
-                    </p>
-                  ) : null}
-                </article>
-
-                <article className="kv2-streak is-compact">
-                  <button
-                    type="button"
-                    className="kv2-compact-head"
-                    onClick={() => openHomePane('streak')}
-                  >
-                    <span>
-                      <span aria-hidden>🔥</span>{' '}
-                      {streak > 0 ? `${streak} ngày liên tiếp` : 'Bắt đầu chuỗi ngày tốt'}
-                    </span>
-                    <span aria-hidden>›</span>
-                  </button>
-                  <div className="kv2-streak-days">
-                    {weekDays.map((d) => (
-                      <div
-                        key={d.key}
-                        className={`kv2-day${d.on ? ' is-on' : ''}${d.isToday ? ' is-today' : ''}`}
-                      >
-                        <span className="kv2-day-dot" aria-hidden>
-                          {d.isToday ? '⭐' : d.on ? '✓' : '·'}
-                        </span>
-                        <em>{d.isToday ? 'Nay' : d.label}</em>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              </section>
-
-              <button
-                type="button"
-                className={`kv2-garden-preview${gardenBloom.reached ? ' is-bloom' : ''}`}
-                onClick={() => openHomePane('garden')}
-              >
-                <span className="kv2-garden-preview-head">
-                  <span>
-                    <span aria-hidden>{gardenBloom.reached ? '🌸' : '🌱'}</span>{' '}
-                    Khu vườn của {short}
-                  </span>
-                  <span aria-hidden>›</span>
-                </span>
-                <span className="kv2-garden-preview-plants" aria-hidden>
-                  {gardenSlots.slice(0, 5).map((g) => (
-                    <span
-                      key={g.id}
-                      className={`kv2-pot is-mini${g.locked ? ' is-locked' : ''}${
-                        !g.locked && g.mood === 'wilted'
-                          ? ' is-wilted'
-                          : !g.locked && g.mood === 'neutral'
-                            ? ' is-neutral'
-                            : ''
-                      }`}
-                    >
-                      <span className="kv2-pot-avatar">
-                        <span
-                          className={`kv2-pot-plant${
-                            !g.locked && g.mood === 'wilted'
-                              ? ' is-wilted'
-                              : !g.locked && g.mood === 'neutral'
-                                ? ' is-neutral'
-                                : ''
-                          }`}
-                        >
-                          {g.plant}
-                        </span>
-                        <span className="kv2-pot-vessel">🟫</span>
-                        <span className="kv2-pot-badge">{g.badge}</span>
-                      </span>
-                    </span>
-                  ))}
-                </span>
-                <span className="kv2-garden-preview-foot">
-                  <span>{gardenBloom.label}</span>
-                  <i aria-hidden>
-                    <b style={{ width: `${gardenBloom.pct}%` }} />
-                  </i>
-                  <em>
-                    {lifetimeBloomDays > 0
-                      ? gardenBloom.reached
-                        ? 'Hôm nay vườn nở · huy hiệu đã mở'
-                        : `Đã từng nở ${lifetimeBloomDays} lần · hôm nay ${gardenBloom.healthy}/${gardenBloom.goal}`
-                      : `${gardenBloom.healthy}/${gardenBloom.goal} cây khỏe`}
-                  </em>
-                </span>
-              </button>
-
-              <p className="kv2-more-label">KHÁM PHÁ THÊM</p>
-              <ul className="kv2-hub-list" aria-label="Khám phá thêm">
-                {familyId && childMemberId ? (
-                  <li>
-                    <button
-                      type="button"
-                      className="kv2-hub-row"
-                      onClick={() => openHomePane('challenge')}
-                    >
-                      <span className="kv2-hub-row-ico" aria-hidden>
-                        🏁
-                      </span>
-                      <span className="kv2-hub-row-body">
-                        <EnTerm en="Challenge" vi="Thử thách tuần này" as="strong" />
-                        <em>Cùng cả nhà giữ nhịp</em>
-                      </span>
-                      <span className="kv2-hub-row-go" aria-hidden>
-                        ›
-                      </span>
-                    </button>
-                  </li>
-                ) : null}
-                {familyId && childMemberId ? (
-                  <li>
-                    <button
-                      type="button"
-                      className="kv2-hub-row"
-                      onClick={() => openHomePane('ask')}
-                    >
-                      <span className="kv2-hub-row-ico" aria-hidden>
-                        🙋
-                      </span>
-                      <span className="kv2-hub-row-body">
-                        <strong>Xin {parentRole}</strong>
-                        <em>
-                          {pendingAskCount > 0
-                            ? `${pendingAskCount} đề xuất đang chờ duyệt`
-                            : screenWallet?.status === 'active'
-                              ? `Ví tuần còn ${screenWallet.remainingMinutes} phút`
-                              : 'Đề xuất việc · thêm phút màn hình'}
-                        </em>
-                      </span>
-                      <span className="kv2-hub-row-go" aria-hidden>
-                        ›
-                      </span>
-                    </button>
-                  </li>
-                ) : null}
-              </ul>
+            <KidHomeHub
+              shortName={short}
+              parentRole={parentRole}
+              remaining={remaining}
+              doneCount={doneCount}
+              total={total}
+              unlockLeft={unlockLeft}
+              explorerLevel={explorerLevel}
+              streak={streak}
+              levelProgress={{
+                have: stars % 40,
+                need: 40,
+              }}
+              badgeUnlocked={doneCount >= 3 || streak >= 3}
+              nextMission={nextMission}
+              todayItems={[...trulyDone, ...pendingItems].sort((a, b) => {
+                const aw = a.windowStart || a.windowEnd || '99:99';
+                const bw = b.windowStart || b.windowEnd || '99:99';
+                return aw.localeCompare(bw);
+              })}
+              busyId={busyId}
+              uploading={uploading}
+              missionDoneError={missionDoneError}
+              primaryParentVoice={primaryParentVoice}
+              thanksSent={thanksSent}
+              thanksSending={thanksSending}
+              foxyLine={foxyHomeLine}
+              taskIcon={taskIcon}
+              durationLabel={(item) => {
+                if (!item.windowStart || !item.windowEnd) return null;
+                const [sh, sm] = item.windowStart.slice(0, 5).split(':').map(Number);
+                const [eh, em] = item.windowEnd.slice(0, 5).split(':').map(Number);
+                if (![sh, sm, eh, em].every(Number.isFinite)) return null;
+                const mins = eh * 60 + em - (sh * 60 + sm);
+                if (mins > 0 && mins <= 180) return `${mins} phút`;
+                return null;
+              }}
+              clockLabel={(item) =>
+                formatWindow(item.windowStart, item.windowEnd) ??
+                (item.windowStart ? item.windowStart.slice(0, 5) : 'Trong ngày')
+              }
+              starRewardOf={(item) => item.projectedStarDelta ?? item.starReward ?? 10}
+              studyNeedsEvidence={studyNeedsEvidence}
+              onStartNow={() => {
+                if (nextMission && canCompleteNow(nextMission, localTime)) {
+                  if (studyNeedsEvidence(nextMission)) {
+                    beginEvidencePick(nextMission);
+                    return;
+                  }
+                  void quickDoneMission(nextMission);
+                  return;
+                }
+                if (nextMission) {
+                  openAction(nextMission);
+                  return;
+                }
+                setTab('tasks');
+              }}
+              onStartNext={() => {
+                if (!nextMission) return;
+                if (studyNeedsEvidence(nextMission)) {
+                  beginEvidencePick(nextMission);
+                  return;
+                }
+                if (canCompleteNow(nextMission, localTime)) {
+                  void quickDoneMission(nextMission);
+                  return;
+                }
+                openAction(nextMission);
+              }}
+              onOpenAllToday={() => setTab('tasks')}
+              onStartItem={(item) => {
+                if (studyNeedsEvidence(item)) {
+                  beginEvidencePick(item);
+                  return;
+                }
+                if (canCompleteNow(item, localTime)) {
+                  void quickDoneMission(item);
+                  return;
+                }
+                openAction(item);
+              }}
+              onOpenAchievements={() => openTreasureSheet('badges')}
+              onSendSticker={(emoji) => void sendThanksSticker(emoji)}
+              onOpenMoments={() => setTab('log')}
+              onOpenSurprise={() => setTab('rewards')}
+              onAckVoiceThanks={() => {
+                if (primaryParentVoice) {
+                  void ackVoiceMessage(primaryParentVoice.id, 'thanks');
+                }
+                setTab('log');
+              }}
+              momentPreview={(() => {
+                const photo =
+                  kidMomentsToday.find((m) => m.photoUrl)?.photoUrl ??
+                  items.find((i) => i.evidenceUrl)?.evidenceUrl ??
+                  null;
+                const img = photo ? withEvidenceAuth(photo) ?? null : null;
+                if (primaryParentVoice) {
+                  const name = (primaryParentVoice.fromMemberName || parentRole).trim();
+                  return {
+                    title: `${name} vừa khen con`,
+                    body: primaryParentVoice.bodyVi,
+                    imageUrl: img,
+                  };
+                }
+                const snap = kidMomentsToday[0];
+                if (snap) {
+                  return {
+                    title: snap.titleVi || 'Khoảnh khắc của con',
+                    body: snap.noteVi || 'Con vừa lưu một khoảnh khắc dễ thương!',
+                    imageUrl: (snap.photoUrl ? withEvidenceAuth(snap.photoUrl) : img) ?? null,
+                  };
+                }
+                const love = parentVoiceInbox[0];
+                if (love) {
+                  const name = (love.fromMemberName || parentRole).trim();
+                  return {
+                    title: `${name} vừa nhắn con`,
+                    body: love.bodyVi,
+                    imageUrl: img,
+                  };
+                }
+                return null;
+              })()}
+            />
             </>
           ) : null}
 
@@ -4174,723 +3909,148 @@ export function KidFocusView({
         </div>
       ) : null}
 
-      {/* Full checklist on Plan tab — Kế hoạch (not todo) */}
+            {/* Plan tab — mock Fami kế hoạch */}
       {tab === 'tasks' ? (
-        <div className="kv2-missions">
-          <div className="kv2-m-filters" role="tablist" aria-label="Lọc kế hoạch hôm nay">
-            {filters.map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                role="tab"
-                aria-selected={filter === f.key}
-                className={`kv2-m-filter${filter === f.key ? ' is-on' : ''}${
-                  f.key === 'done' ? ' is-done' : ''
-                }`}
-                onClick={() => setFilter(f.key)}
-              >
-                <span aria-hidden>{f.icon}</span>
-                <em>{f.label}</em>
-                {f.count != null ? <b>{f.count}</b> : null}
-              </button>
-            ))}
-          </div>
-
-          <article className="kv2-m-banner">
-            <div className="kv2-m-foxy" aria-hidden>
-              🦊
-            </div>
-            <div className="kv2-m-bubble">
-              <p>{tasksFoxyBannerVi(short, careBand, doNowItems.length, remaining)}</p>
-            </div>
-            <div className="kv2-m-goal">
-              <span className="kv2-m-goal-pop" aria-hidden>
-                👨‍👩‍👧‍👦
-              </span>
-              <div className="kv2-m-goal-copy">
-                <span className="kv2-m-goal-eyebrow">Nhà mình</span>
-                <strong className="kv2-m-goal-pct">{unlockPct}%</strong>
-                <div className="kv2-m-segs" aria-hidden>
-                  {Array.from({ length: missionSegs }, (_, i) => (
-                    <span key={i} className={i < missionFilled ? 'is-on' : undefined} />
-                  ))}
-                </div>
-                <em>
-                  {teamComplete || unlockLeft === 0
-                    ? 'Sẵn sàng mở khóa!'
-                    : unlockLeft === 1
-                      ? 'Chỉ còn 1 việc nữa thôi!'
-                      : `Chỉ còn ${unlockLeft} việc nữa thôi!`}
-                </em>
-              </div>
-            </div>
-          </article>
-
-          {filter === 'done' ? (
-            <section className="kv2-m-sec">
-              <button
-                type="button"
-                className="kv2-m-sec-head"
-                onClick={() => setSoonOpen((v) => !v)}
-              >
-                <span>
-                  <span aria-hidden>✅</span> ĐÃ XONG ({filteredDone.length})
-                </span>
-                <span aria-hidden>{soonOpen ? '▴' : '▾'}</span>
-              </button>
-              {soonOpen ? (
-                <ul className="kv2-m-list">
-                  {filteredDone.map((item) => {
-                    const skipped = item.status === 'skipped';
-                    const lateNote = skipped ? null : lateStarCaption(item, flowDate);
-                    return (
-                      <li key={item.id} className="kv2-m-row is-done">
-                        <span
-                          className={`kv2-m-ico tone-${taskIconTone(item.title)}`}
-                          aria-hidden
-                        >
-                          {taskIcon(item.title)}
-                        </span>
-                        <div className="kv2-m-row-body">
-                          <strong>{item.title}</strong>
-                          {lateNote ? (
-                            <span className="kv2-m-time muted">{lateNote}</span>
-                          ) : (
-                            <span>
-                              {skipped
-                                ? kidSkipLabel(item.skipReason)
-                                : formatWindow(item.windowStart, item.windowEnd) ?? 'Đã xong'}
-                            </span>
-                          )}
-                        </div>
-                        {!skipped ? (
-                          <MissionStarBadge item={item} />
-                        ) : (
-                          <span className="kv2-m-badge is-miss">Bỏ qua</span>
-                        )}
-                      </li>
-                    );
-                  })}
-                  {filteredDone.length === 0 ? (
-                    <li className="kv2-m-empty">Chưa có việc xong hôm nay — làm tiếp nhé!</li>
-                  ) : null}
-                </ul>
-              ) : null}
-            </section>
-          ) : (
-            <>
-              <section className="kv2-m-sec">
-                <button
-                  type="button"
-                  className="kv2-m-sec-head"
-                  onClick={() => setNowOpen((v) => !v)}
-                >
-                  <span>
-                    <span aria-hidden>⏰</span> VIỆC CẦN LÀM NGAY
-                    {doNowItems.length ? ` (${doNowItems.length})` : ''}
-                  </span>
-                  <span aria-hidden>{nowOpen ? '▴' : '▾'}</span>
-                </button>
-                {nowOpen ? (
-                  <div className="kv2-m-now">
-                    {doNowItems.length === 0 ? (
-                      <p className="kv2-m-empty soft">
-                        {dayClosed
-                          ? 'Xong hết rồi — Foxy ôm bạn cái! 🦊'
-                          : 'Không có việc gấp — xem phần sắp tới nhé!'}
-                      </p>
-                    ) : (
-                      doNowItems.map((item) => (
-                        <article key={item.id} className="kv2-m-featured">
-                          <div className="kv2-m-featured-top">
-                            <span
-                              className={`kv2-m-featured-ico tone-${taskIconTone(item.title)}`}
-                              aria-hidden
-                            >
-                              {taskIcon(item.title)}
-                            </span>
-                            <div className="kv2-m-featured-copy">
-                              <strong>
-                                {item.title}
-                                {item.commitmentKind === 'study_focus' &&
-                                item.evidenceSatisfied === false ? (
-                                  <span className="kv2-m-badge is-wait" style={{ marginLeft: 8 }}>
-                                    📚 Cần bằng chứng
-                                  </span>
-                                ) : null}
-                              </strong>
-                              {item.commitmentKind === 'study_focus' &&
-                              item.evidenceSatisfied === false ? (
-                                <span className="kv2-m-habit">
-                                  {item.evidenceGateLabelVi ??
-                                    'Không phải kiểm tra để bắt lỗi — để nhà mình tin lời cam kết.'}
-                                </span>
-                              ) : null}
-                              <span
-                                className="kv2-m-habit"
-                                title={`Chuỗi ${item.habitStreakDays ?? 0} ngày`}
-                              >
-                                {item.reminderSuppressed || item.interventionLevel === 'observe_only'
-                                  ? '✨ '
-                                  : ''}
-                                Behavior · {item.habitStageLabelVi || 'Mới'}
-                                {item.habitStreakDays && item.habitStreakDays > 1
-                                  ? ` · ${item.habitStreakDays} ngày`
-                                  : ''}
-                                {item.interventionLabelVi
-                                  ? ` · ${item.interventionLabelVi}`
-                                  : ''}
-                              </span>
-                              {item.status === 'done' && item.confidenceLabelVi ? (
-                                <span
-                                  className="kv2-m-habit"
-                                  title={item.evidenceLevelLabelVi ?? 'Độ tin cậy hoàn thành'}
-                                >
-                                  {item.confidenceLabelVi}
-                                  {item.confidenceScore != null ? ` · ${item.confidenceScore}` : ''}
-                                </span>
-                              ) : null}
-                              <p>
-                                {item.motivationCueVi
-                                  ? item.motivationCueVi
-                                  : `Behavior OS: ${taskTip(item.title)}`}
-                              </p>
-                              {item.eveningRiskBand === 'high' ||
-                              item.eveningRiskBand === 'medium' ? (
-                                <span className="kv2-m-habit" title={item.eveningRiskActionVi}>
-                                  Buổi tối · rủi ro {item.eveningRiskLabelVi?.toLowerCase() ?? ''}
-                                </span>
-                              ) : null}
-                              <span className="kv2-m-urgency">
-                                <span aria-hidden>⏱</span>
-                                {minutesUntilExcited(item) ??
-                                  minutesUntil(item) ??
-                                  formatWindow(item.windowStart, item.windowEnd) ??
-                                  'Làm ngay nhé!'}
-                              </span>
-                            </div>
-                            <MissionStarBadge item={item} className="is-featured" />
-                          </div>
-                          <div className="kv2-m-featured-actions">
-                            {item.status === 'pending' && onSelfStart ? (
-                              <button
-                                type="button"
-                                className="kv2-m-photo-btn"
-                                disabled={busyId === item.id}
-                                onClick={() => void onSelfStart(item)}
-                              >
-                                Bắt đầu rồi
-                              </button>
-                            ) : null}
-                            {studyNeedsEvidence(item) ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className="kv2-m-cta"
-                                  disabled={
-                                    busyId === item.id ||
-                                    uploading ||
-                                    !canCompleteNow(item, localTime)
-                                  }
-                                  onClick={() => beginEvidencePick(item)}
-                                >
-                                  <span aria-hidden>📷</span>{' '}
-                                  {uploading && busyId === item.id
-                                    ? 'Đang gửi ảnh…'
-                                    : 'Gửi ảnh đã học'}
-                                </button>
-                                {item.evidencePolicy !== 'hard' ? (
-                                  <button
-                                    type="button"
-                                    className="kv2-m-photo-btn"
-                                    disabled={
-                                      busyId === item.id ||
-                                      uploading ||
-                                      !canCompleteNow(item, localTime)
-                                    }
-                                    onClick={() => void quickDoneMission(item)}
-                                  >
-                                    {busyId === item.id
-                                      ? 'Đang gửi…'
-                                      : 'Đã học · chờ bằng chứng'}
-                                  </button>
-                                ) : (
-                                  <span className="kv2-m-habit">
-                                    Chế độ cứng: bắt buộc ảnh
-                                  </span>
-                                )}
-                              </>
-                            ) : (
-                              <>
-                                <button
-                                  type="button"
-                                  className="kv2-m-cta"
-                                  disabled={
-                                    busyId === item.id ||
-                                    !canCompleteNow(item, localTime)
-                                  }
-                                  onClick={() => void quickDoneMission(item)}
-                                >
-                                  {busyId === item.id ? 'Đang gửi…' : 'Mình đã làm'}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="kv2-m-photo-btn"
-                                  disabled={
-                                    busyId === item.id ||
-                                    uploading ||
-                                    !canCompleteNow(item, localTime)
-                                  }
-                                  onClick={() => beginEvidencePick(item)}
-                                >
-                                  <span aria-hidden>📷</span> Đính kèm ảnh đã làm
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </article>
-                      ))
-                    )}
-                    {missionDoneError ? (
-                      <p className="kv2-do-error" role="alert">
-                        {missionDoneError}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-              </section>
-
-              <section className="kv2-m-sec">
-                <button
-                  type="button"
-                  className="kv2-m-sec-head"
-                  onClick={() => setWaitOpen((v) => !v)}
-                >
-                  <span>
-                    <span aria-hidden>⌛</span> CHỜ MẸ KIỂM TRA
-                    {waitingCheckItems.length ? ` (${waitingCheckItems.length})` : ''}
-                  </span>
-                  <span aria-hidden>{waitOpen ? '▴' : '▾'}</span>
-                </button>
-                {waitOpen ? (
-                  <ul className="kv2-m-list">
-                    {waitingCheckItems.map((item) => {
-                      const lateNote = lateStarCaption(item, flowDate);
-                      return (
-                        <li key={item.id} className="kv2-m-row">
-                          <span
-                            className={`kv2-m-ico tone-${taskIconTone(item.title)}`}
-                            aria-hidden
-                          >
-                            {taskIcon(item.title)}
-                          </span>
-                          <div className="kv2-m-row-body">
-                            <strong>
-                              {item.title}
-                              {item.commitmentKind === 'study_focus' &&
-                              item.evidenceSatisfied === false ? (
-                                <span className="kv2-m-badge is-wait" style={{ marginLeft: 8 }}>
-                                  📚 Cần bằng chứng
-                                </span>
-                              ) : null}
-                            </strong>
-                            {item.commitmentKind === 'study_focus' &&
-                            item.evidenceSatisfied === false ? (
-                              <span className="kv2-m-time muted">
-                                {item.evidenceGateLabelVi ??
-                                  'Cần ảnh, câu hỏi nhớ bài, hoặc bố mẹ xác nhận để nhận sao.'}
-                              </span>
-                            ) : lateNote ? (
-                              <span className="kv2-m-time muted">{lateNote}</span>
-                            ) : null}
-                          </div>
-                          <MissionStarBadge item={item} />
-                          <span className="kv2-m-badge is-wait">
-                            {item.commitmentKind === 'study_focus' &&
-                            item.evidenceSatisfied === false
-                              ? item.evidenceSubmitted || item.evidenceUrl
-                                ? 'Đã nộp · chờ bố mẹ'
-                                : 'Chờ bằng chứng'
-                              : 'Chờ kiểm tra'}
-                          </span>
-                        </li>
-                      );
-                    })}
-                    {waitingCheckItems.length === 0 ? (
-                      <li className="kv2-m-empty">Chưa có việc chờ kiểm tra.</li>
-                    ) : null}
-                  </ul>
-                ) : null}
-              </section>
-
-              <section className="kv2-m-sec">
-                <button
-                  type="button"
-                  className="kv2-m-sec-head"
-                  onClick={() => setSoonOpen((v) => !v)}
-                >
-                  <span>
-                    <span aria-hidden>📅</span> VIỆC SẮP TỚI
-                    {soonItems.length ? ` (${soonItems.length})` : ''}
-                  </span>
-                  <span aria-hidden>{soonOpen ? '▴' : '▾'}</span>
-                </button>
-                {soonOpen ? (
-                  <ul className="kv2-m-list">
-                    {soonItems.map((item) => (
-                      <li key={item.id} className="kv2-m-row is-soon">
-                        <span
-                          className={`kv2-m-ico tone-${taskIconTone(item.title)}`}
-                          aria-hidden
-                        >
-                          {taskIcon(item.title)}
-                        </span>
-                        <div className="kv2-m-row-body">
-                          <strong>
-                            {item.title}
-                            {studyNeedsEvidence(item) ? (
-                              <span className="kv2-m-badge is-wait" style={{ marginLeft: 8 }}>
-                                📚 Cần bằng chứng
-                              </span>
-                            ) : null}
-                          </strong>
-                          <span className="kv2-m-time">
-                            {earlyCompleteBlockReason(item, localTime) ??
-                              minutesUntilExcited(item) ??
-                              (item.windowStart
-                                ? item.windowStart.slice(0, 5)
-                                : formatWindow(item.windowStart, item.windowEnd) ??
-                                  'Trong ngày')}
-                          </span>
-                          {studyNeedsEvidence(item) ? (
-                            <span className="kv2-m-time muted">
-                              {item.evidenceGateLabelVi ??
-                                'Gửi ảnh bài đã làm để nhận sao — không chỉ tick.'}
-                            </span>
-                          ) : earlyCompleteBlockReason(item, localTime) ? (
-                            <span className="kv2-m-time muted">
-                              {countdownUntilWindow(item, localTime) ?? 'Chờ đến giờ nhé'}
-                            </span>
-                          ) : null}
-                        </div>
-                        <MissionStarBadge item={item} />
-                        <div className="kv2-m-row-actions">
-                          {studyNeedsEvidence(item) ? (
-                            <>
-                              <button
-                                type="button"
-                                className="kv2-m-mini-do"
-                                disabled={
-                                  busyId === item.id ||
-                                  uploading ||
-                                  !canCompleteNow(item, localTime)
-                                }
-                                onClick={() => beginEvidencePick(item)}
-                                aria-label={`Gửi ảnh đã học: ${item.title}`}
-                                title="Gửi ảnh đã học"
-                              >
-                                📷 Ảnh
-                              </button>
-                              {item.evidencePolicy !== 'hard' ? (
-                                <button
-                                  type="button"
-                                  className="kv2-m-mini-photo"
-                                  disabled={
-                                    busyId === item.id ||
-                                    uploading ||
-                                    !canCompleteNow(item, localTime)
-                                  }
-                                  onClick={() => void quickDoneMission(item)}
-                                  aria-label={`Đã học chờ bằng chứng: ${item.title}`}
-                                  title="Đã học · chờ bằng chứng"
-                                >
-                                  {busyId === item.id ? '…' : 'Chờ'}
-                                </button>
-                              ) : null}
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                className="kv2-m-mini-photo"
-                                disabled={
-                                  busyId === item.id ||
-                                  uploading ||
-                                  !canCompleteNow(item, localTime)
-                                }
-                                onClick={() => beginEvidencePick(item)}
-                                aria-label={`Đính kèm ảnh ${item.title} đã làm`}
-                              >
-                                📷
-                              </button>
-                              <button
-                                type="button"
-                                className="kv2-m-mini-do"
-                                disabled={
-                                  busyId === item.id ||
-                                  uploading ||
-                                  !canCompleteNow(item, localTime)
-                                }
-                                onClick={() => void quickDoneMission(item)}
-                                aria-label={`Làm ${item.title}`}
-                              >
-                                {busyId === item.id ? '…' : 'Làm'}
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                    {soonItems.length === 0 ? (
-                      <li className="kv2-m-empty">
-                        {dayClosed
-                          ? 'Không còn việc sắp tới — tuyệt quá!'
-                          : 'Chưa có việc sắp tới trong bộ lọc này.'}
-                      </li>
-                    ) : null}
-                  </ul>
-                ) : null}
-              </section>
-            </>
-          )}
-
-          <aside className="kv2-m-challenge">
-            <span className="kv2-m-challenge-bulb" aria-hidden>
-              👨‍👩‍👧‍👦
-            </span>
-            <div className="kv2-m-challenge-copy">
-              <strong>Nhà mình · kế hoạch nhóm</strong>
-              <p>
-                {dayClosed
-                  ? 'Con đã xong phần việc hôm nay — tuyệt vời!'
-                  : teamComplete || unlockLeft === 0
-                    ? `Sẵn sàng mở «${todayTeamRewardLabel}» — nhờ bố mẹ xác nhận!`
-                    : `Còn ${unlockLeft} việc nữa để cả nhà gần phần thưởng nhóm (${unlockPct}%)`}
-              </p>
-              <div className="kv2-m-challenge-bar" aria-hidden>
-                <b style={{ width: `${unlockPct}%` }} />
-              </div>
-            </div>
-            <div className="kv2-m-challenge-side">
-              <em>{unlockPct}%</em>
-              <span aria-hidden>🏆</span>
-            </div>
-          </aside>
-        </div>
+        <KidPlanHub
+          shortName={short}
+          remaining={remaining}
+          doneCount={doneCount}
+          total={total}
+          nextMission={nextMission}
+          todayItems={[...trulyDone, ...pendingItems].sort((a, b) => {
+            const aw = a.windowStart || a.windowEnd || '99:99';
+            const bw = b.windowStart || b.windowEnd || '99:99';
+            return aw.localeCompare(bw);
+          })}
+          busyId={busyId}
+          uploading={uploading}
+          missionDoneError={missionDoneError}
+          famiLine={tasksFoxyBannerVi(short, careBand, doNowItems.length, remaining)}
+          challengeHave={Math.min(10, Math.max(0, streak + doneCount))}
+          challengeNeed={10}
+          challengeSlot={
+            familyId && childMemberId ? (
+              <FamilyChallengeCard
+                familyId={familyId}
+                memberId={childMemberId}
+                isParent={false}
+                compact
+              />
+            ) : null
+          }
+          dayPartOf={dayPartOf}
+          taskIcon={taskIcon}
+          taskIconTone={taskIconTone}
+          clockLabel={(item) =>
+            item.windowStart
+              ? item.windowStart.slice(0, 5)
+              : formatWindow(item.windowStart, item.windowEnd) ?? 'Trong ngày'
+          }
+          durationLabel={(item) => {
+            if (!item.windowStart || !item.windowEnd) return null;
+            const [sh, sm] = item.windowStart.slice(0, 5).split(':').map(Number);
+            const [eh, em] = item.windowEnd.slice(0, 5).split(':').map(Number);
+            if (![sh, sm, eh, em].every(Number.isFinite)) return null;
+            const mins = eh * 60 + em - (sh * 60 + sm);
+            if (mins > 0 && mins <= 180) return `${mins} phút`;
+            return null;
+          }}
+          starHint={(item) => {
+            const n = item.projectedStarDelta ?? item.starReward ?? 10;
+            return n > 0 ? `+${n} sao` : '+sao';
+          }}
+          studyNeedsEvidence={studyNeedsEvidence}
+          onStartNext={() => {
+            if (!nextMission) return;
+            if (studyNeedsEvidence(nextMission)) {
+              beginEvidencePick(nextMission);
+              return;
+            }
+            if (canCompleteNow(nextMission, localTime)) {
+              void quickDoneMission(nextMission);
+              return;
+            }
+            openAction(nextMission);
+          }}
+          onOpenRewards={() => setTab('rewards')}
+          onTalkFami={() => setTab('home')}
+          onStartItem={(item) => {
+            if (studyNeedsEvidence(item)) {
+              beginEvidencePick(item);
+              return;
+            }
+            if (canCompleteNow(item, localTime)) {
+              void quickDoneMission(item);
+              return;
+            }
+            openAction(item);
+          }}
+        />
       ) : null}
 
       {tab === 'rewards' ? (
-        <div className="kv2-treasure">
-          {treasureToast ? (
-            <div className="kv2-t-toast" role="status">
-              {treasureToast}
-            </div>
-          ) : null}
-
-          <article className={`kv2-t-family${teamComplete ? ' is-ready' : ''}`}>
-            <span className="kv2-t-family-badge">
-              <span aria-hidden>★</span> PHẦN THƯỞNG CẢ GIA ĐÌNH
-            </span>
-            <div className="kv2-t-family-body">
-              <div className="kv2-t-family-art" aria-hidden>
-                <span className="kv2-t-popcorn">
-                  {/movie|phim/i.test(todayTeamRewardLabel) ? '🍿' : '🏆'}
-                </span>
-                <span className="kv2-t-play">▶</span>
-              </div>
-              <div className="kv2-t-family-copy">
-                <h2>{todayTeamRewardLabel}</h2>
-                <p className="muted" style={{ margin: '0 0 8px', fontSize: '0.82rem' }}>
-                  Tiến độ kế hoạch nhóm hôm nay
-                </p>
-                <div className="kv2-t-family-bar">
-                  <i aria-hidden>
-                    <b style={{ width: `${unlockPct}%` }} />
-                  </i>
-                  <strong>{unlockPct}%</strong>
-                </div>
-                <p>
-                  {teamComplete || unlockLeft === 0
-                    ? 'Sẵn sàng mở khóa — nhờ bố mẹ xác nhận!'
-                    : unlockLeft === 1
-                      ? 'Chỉ còn 1 việc nữa!'
-                      : `Chỉ còn ${unlockLeft} việc nữa!`}
-                </p>
-                <button
-                  type="button"
-                  className="kv2-t-detail"
-                  onClick={() => {
-                    setFilter(teamComplete || unlockLeft === 0 ? 'done' : 'all');
-                    setTab('tasks');
-                  }}
-                >
-                  {teamComplete || unlockLeft === 0
-                    ? 'Xem việc đã xong →'
-                    : 'Xem việc còn lại →'}
-                </button>
-              </div>
-              <div className="kv2-t-family-chest" aria-hidden>
-                <span>🧰</span>
-                <aside className="kv2-t-sticky">
-                  <span>❤️</span>
-                  <p>Cả nhà cùng hoàn thành để mở khóa phần thưởng nhé!</p>
-                </aside>
-              </div>
-            </div>
-          </article>
-
-          <section className="kv2-t-sec">
-            <div className="kv2-t-sec-head">
-              <div>
-                <h3>
-                  <span aria-hidden>⭐</span> ĐỔI THƯỞNG BẰNG SAO
-                </h3>
-                <p>Bố mẹ đã thiết lập các phần thưởng cho con</p>
-              </div>
-              <button
-                type="button"
-                className="kv2-t-link"
-                onClick={() => openTreasureSheet('rewards')}
-              >
-                Xem tất cả →
-              </button>
-            </div>
-            <div className="kv2-t-redeem">
-              {treasureLoading && redeemCatalog.length === 0 ? (
-                <p className="muted" style={{ padding: '8px 4px' }}>Đang tải quà…</p>
-              ) : null}
-              {redeemCatalog.map((item) => {
-                const busy = redeemBusyId === item.id;
-                return (
-                  <article key={item.id} className={`kv2-t-card tone-${item.tone}`}>
-                    <span className="kv2-t-card-ico" aria-hidden>
-                      {item.icon}
-                    </span>
-                    <strong>{item.title}</strong>
-                    <em>
-                      {item.cost == null ? '??? ⭐' : (
-                        <>
-                          <span aria-hidden>⭐</span> {item.cost}
-                        </>
-                      )}
-                    </em>
-                    <button
-                      type="button"
-                      className={`kv2-t-card-cta${item.canRedeem ? ' is-active' : ' is-save'}`}
-                      disabled={busy || !item.canRedeem}
-                      onClick={() => void handleRedeem(item)}
-                      title={
-                        item.isSpecial
-                          ? 'Phần này bố mẹ giữ — con chưa đổi được'
-                          : undefined
-                      }
-                    >
-                      {busy ? 'Đang đổi…' : item.ctaLabel}
-                    </button>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-
-          <div className="kv2-t-mid">
-            <article className="kv2-t-mystery is-secondary">
-              <h3>SẮP TỚI</h3>
-              <div className="kv2-t-mystery-body">
-                <span className="kv2-t-mystery-ico" aria-hidden>
-                  📦
-                </span>
-                <div>
-                  <EnTerm en="Mystery Box" vi="Hộp bí mật" as="strong" />
-                  <p>Đang xây — chưa đổi được. Mục tiêu {formatStars(mysteryTarget)} ⭐</p>
-                  <div className="kv2-t-mystery-bar" aria-hidden>
-                    <b style={{ width: `${mysteryPct}%` }} />
-                  </div>
-                  <em>
-                    {formatStars(mysteryHave)} / {formatStars(mysteryTarget)}
-                  </em>
-                </div>
-              </div>
-            </article>
-
-            <article className="kv2-t-badges">
-              <div className="kv2-t-sec-head is-compact">
-                <h3>HUY HIỆU CỦA {short.toUpperCase()}</h3>
-                {earnedBadges.length > 0 ? (
-                  <button
-                    type="button"
-                    className="kv2-t-link"
-                    onClick={() => openTreasureSheet('badges')}
-                  >
-                    Xem tất cả →
-                  </button>
-                ) : null}
-              </div>
-              {earnedBadges.length === 0 ? (
-                <p className="muted" style={{ margin: '8px 4px 0', fontSize: '0.85rem' }}>
-                  Chưa có huy hiệu — làm việc / giữ nhịp để mở dần nhé.
-                </p>
-              ) : (
-                <ul className="kv2-t-badge-row">
-                  {earnedBadges.map((b) => (
-                    <li key={b.id} className="is-on" title={b.hint}>
-                      <span aria-hidden>{b.icon}</span>
-                      <em>{b.label}</em>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </article>
-          </div>
-
-          <section className="kv2-t-sec">
-            <div className="kv2-t-sec-head">
-              <h3>
-                <span aria-hidden>👑</span> THÀNH TỰU LỚN
-              </h3>
-            </div>
-            {bigAchievements.length === 0 ? (
-              <p className="muted" style={{ margin: '4px 0 0', fontSize: '0.85rem' }}>
-                Chưa có thành tựu — khi mở Movie Night, vườn nở hoặc đọc sách sẽ hiện ở đây.
-              </p>
-            ) : (
-              <div className="kv2-t-achieve">
-                {bigAchievements.map((a) => {
-                  const onOpen = () => {
-                    if (a.id === 'mn') openAchievementSheet('movie');
-                    else if (a.id === 'garden') openAchievementSheet('garden');
-                    else if (a.id === 'read') openAchievementSheet('read');
-                    else if (a.id === 'stars') openTreasureSheet('rewards');
-                  };
-                  return (
-                    <button
-                      key={a.id}
-                      type="button"
-                      className="kv2-t-achieve-card is-tap"
-                      onClick={onOpen}
-                    >
-                      <span aria-hidden>{a.icon}</span>
-                      <strong>{a.title}</strong>
-                      <b>{a.value}</b>
-                      <em>{a.note}</em>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          {childMemberId ? (
-            <section className="kv2-t-sec">
-              <div className="kv2-t-sec-head">
-                <div>
-                  <h3>
-                    <span aria-hidden>💬</span> {CHILD_VOICE_WEEK_COPY.title}
-                  </h3>
-                  <p>{CHILD_VOICE_WEEK_COPY.subtitle}</p>
-                </div>
-              </div>
-              {kidVoiceDone ? (
+        <KidTreasureHub
+          shortName={short}
+          stars={stars}
+          remaining={remaining}
+          streak={streak}
+          weekDays={weekDays}
+          toast={treasureToast}
+          loading={treasureLoading}
+          catalog={redeemCatalog}
+          redeemBusyId={redeemBusyId}
+          badges={kidBadges}
+          achievements={bigAchievements}
+          memories={treasureMemoriesVisible.map((m) => ({
+            id: m.id,
+            icon: m.icon,
+            title: m.title,
+            date: m.date,
+            imageUrl: m.photoUrl ? withEvidenceAuth(m.photoUrl) : null,
+          }))}
+          memoriesEmpty={FAMILY_MEMORY_EMPTY}
+          hasMoreMemories={familyMemories.length > FAMILY_MEMORY_VISIBLE}
+          mysteryHave={mysteryHave}
+          mysteryTarget={mysteryTarget}
+          mysteryPct={mysteryPct}
+          surpriseReady={remaining === 0 || streak >= 2}
+          formatStars={formatStars}
+          wishText={kidVoiceWish}
+          wishStep={kidVoiceDone ? 4 : kidVoiceWish.trim() ? 1 : 0}
+          wishStepTotal={4}
+          onContinue={() => setTab('tasks')}
+          onRedeem={(item) =>
+            void handleRedeem(item as (typeof redeemCatalog)[number])
+          }
+          onOpenAllRewards={() => openTreasureSheet('rewards')}
+          onOpenAllBadges={() => openTreasureSheet('badges')}
+          onOpenAchievement={(id) => {
+            if (id === 'mn') openAchievementSheet('movie');
+            else if (id === 'garden') openAchievementSheet('garden');
+            else if (id === 'read') openAchievementSheet('read');
+            else openTreasureSheet('rewards');
+          }}
+          onOpenMemories={() => openJournalSheet('memories')}
+          onOpenMystery={() => {
+            if (mysteryPct >= 100) {
+              showTreasureToast('Fami mở hộp bí mật… có thể là sticker, thư mẹ hoặc video! 🎁');
+              return;
+            }
+            showTreasureToast(
+              `Còn ${Math.max(0, mysteryTarget - mysteryHave)} điểm khám phá nữa — không phải mua, là mở dần! ✨`,
+            );
+          }}
+          onOpenSurprise={() => {
+            if (remaining === 0 || streak >= 2) {
+              showTreasureToast('Fami gửi lời chúc bất ngờ — con làm tốt lắm! 💜');
+              return;
+            }
+            showTreasureToast('Làm nốt việc hôm nay để Fami mở quà bất ngờ nhé!');
+          }}
+          onWishQuick={(text) => setKidVoiceWish(text)}
+          wishSlot={
+            childMemberId ? (
+              kidVoiceDone ? (
                 <div className="kv2-t-voice is-done">
                   <p>{CHILD_VOICE_WEEK_COPY.kidDone}</p>
                 </div>
@@ -4966,408 +4126,290 @@ export function KidFocusView({
                       : CHILD_VOICE_WEEK_COPY.submit}
                   </button>
                 </div>
-              )}
-            </section>
-          ) : null}
-
-          <section className="kv2-t-sec">
-            <div className="kv2-t-sec-head">
-              <h3>
-                <span aria-hidden>❤️</span> KỶ NIỆM ĐÁNG NHỚ
-              </h3>
-            </div>
-            <div className="kv2-t-memories">
-              {treasureMemoriesVisible.length === 0 ? (
-                <p className="muted" style={{ padding: '12px 4px', margin: 0 }}>
-                  {FAMILY_MEMORY_EMPTY}
-                </p>
-              ) : (
-                <ol className="kv2-t-timeline">
-                  {treasureMemoriesVisible.map((m) => (
-                    <li key={m.id}>
-                      <span className="kv2-t-dot" aria-hidden />
-                      <span className="kv2-t-mem-ico" aria-hidden>
-                        {m.icon}
-                      </span>
-                      <strong>{m.title}</strong>
-                      <em>{m.date}</em>
-                    </li>
-                  ))}
-                </ol>
-              )}
-              {familyMemories.length > FAMILY_MEMORY_VISIBLE ? (
-                <button
-                  type="button"
-                  className="kv2-t-link"
-                  style={{ marginTop: 8 }}
-                  onClick={() => openJournalSheet('memories')}
-                >
-                  Xem tất cả →
-                </button>
-              ) : null}
-            </div>
-          </section>
-        </div>
+              )
+            ) : null
+          }
+        />
       ) : null}
 
       {tab === 'log' ? (
-        <div className="kv2-journal">
-          {journalToast ? (
-            <div className="kv2-t-toast" role="status">
-              {journalToast}
-            </div>
-          ) : null}
+        <KidDiaryHub
+          shortName={short}
+          parentRole={parentRole}
+          dayTitle={selectedJournalDay.fullLabel}
+          dayLabelShort={selectedJournalDay.shortLabel}
+          isToday={journalIsToday}
+          loading={journalHistoryLoading && !journalIsToday}
+          error={journalHistoryError && !journalIsToday ? journalHistoryError : null}
+          toast={journalToast}
+          storyParagraphs={journalStoryParagraphs}
+          storyPhotoUrl={(() => {
+            const hit =
+              kidMomentsToday.find((m) => m.photoUrl)?.photoUrl ??
+              journalEntries.find((e) => e.item.evidenceUrl)?.item.evidenceUrl;
+            return hit ? withEvidenceAuth(hit) : null;
+          })()}
+          days={journalDays}
+          dayIdx={Math.min(journalDayIdx, journalDays.length - 1)}
+          moments={[
+            ...kidMomentsToday.map((m, i) => ({
+              id: m.id,
+              kind: 'photo' as const,
+              icon: '📷',
+              title: m.titleVi || 'Khoảnh khắc của con',
+              time: (m.happenedAt || m.flowDate || '').slice(11, 16) || 'Hôm nay',
+              imageUrl: m.photoUrl ? withEvidenceAuth(m.photoUrl) : null,
+              starred: i === 0,
+            })),
+            ...journalEntries
+              .filter((e) => e.item.evidenceUrl)
+              .slice(0, 4)
+              .map((e) => {
+                const title = e.item.title;
+                const kind = /vẽ|tranh/i.test(title)
+                  ? ('draw' as const)
+                  : /video|quay/i.test(title)
+                    ? ('video' as const)
+                    : ('photo' as const);
+                return {
+                  id: `ev-${e.item.id}`,
+                  kind,
+                  icon: taskIcon(title),
+                  title,
+                  time: e.time,
+                  imageUrl: withEvidenceAuth(e.item.evidenceUrl!),
+                  starred: /đánh răng/i.test(title),
+                };
+              }),
+          ]}
+          prides={[
+            ...earnedBadges.slice(0, 2).map((b) => ({
+              id: b.id,
+              icon: b.icon || '🛡️',
+              title: 'Huy hiệu mới',
+              subtitle: b.label,
+              when: journalIsToday ? 'Hôm nay' : selectedJournalDay.shortLabel,
+            })),
+            ...(trulyDone.some((c) => /đánh răng|tự giác/i.test(c.title))
+              ? [
+                  {
+                    id: 'first-brush',
+                    icon: '🌱',
+                    title: 'Lần đầu tiên',
+                    subtitle: 'Tự giác',
+                    when: journalIsToday ? 'Hôm nay' : selectedJournalDay.shortLabel,
+                  },
+                ]
+              : []),
+            ...(doneCount > 0
+              ? [
+                  {
+                    id: 'done-day',
+                    icon: '🚀',
+                    title: 'Hoàn thành',
+                    subtitle:
+                      doneCount >= 10
+                        ? '10 việc trong ngày'
+                        : `${doneCount} việc trong ngày`,
+                    when: journalIsToday ? 'Hôm nay' : selectedJournalDay.shortLabel,
+                  },
+                ]
+              : []),
+          ].slice(0, 3)}
+          loves={parentVoiceInbox.slice(0, 2).map((v) => {
+            const name = (v.fromMemberName || parentRole).trim();
+            const lower = name.toLowerCase();
+            const tone =
+              lower.includes('mẹ') || lower.includes('me')
+                ? ('mom' as const)
+                : lower.includes('bố') || lower.includes('bo')
+                  ? ('dad' as const)
+                  : ('other' as const);
+            const fromLabel =
+              tone === 'mom'
+                ? 'Mẹ vừa khen'
+                : tone === 'dad'
+                  ? 'Bố vừa gửi'
+                  : `${name} vừa gửi`;
+            return {
+              id: v.id,
+              fromLabel,
+              body: v.bodyVi,
+              when: v.sentAt
+                ? `Hôm nay ${v.sentAt.slice(11, 16)}`
+                : v.flowDate || 'Gần đây',
+              tone,
+            };
+          })}
+          timeline={journalMilestones}
+          memories={journalMemoriesVisible.map((m) => ({
+            id: m.id,
+            icon: m.icon,
+            title: m.title,
+            date: m.date,
+            imageUrl: m.photoUrl ? withEvidenceAuth(m.photoUrl) : null,
+          }))}
+          memoriesEmpty={FAMILY_MEMORY_EMPTY}
+          hasMoreMemories={familyMemories.length > FAMILY_MEMORY_VISIBLE}
+          moods={MOODS}
+          moodIdx={moodIdx}
+          moodLoaded={moodLoaded}
+          moodSaving={moodSaving}
+          canSaveMood={Boolean(childMemberId)}
+          onPickDay={setJournalDayIdx}
+          onPrevDay={() => setJournalDayIdx((i) => Math.max(0, i - 1))}
+          onNextDay={() =>
+            setJournalDayIdx((i) => Math.min(journalDays.length - 1, i + 1))
+          }
+          onListenStory={() =>
+            setJournalToast(
+              journalIsToday
+                ? 'Fami đang kể lại câu chuyện hôm nay 💚'
+                : 'Fami đang kể lại ngày này 💚',
+            )
+          }
+          onOpenMoments={() => openJournalSheet('moments')}
+          onAddMoment={() => setKidMomentSheetOpen(true)}
+          onOpenPrides={() => setTab('rewards')}
+          onOpenLoves={() => openJournalSheet('memories', 'parent_voice')}
+          onOpenTimeline={() => {
+            document
+              .querySelector('.kdiary-dayline')
+              ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }}
+          onOpenMemories={() => openJournalSheet('memories')}
+          onMoodPick={setMoodIdx}
+          onSaveMood={() => void saveMoodEntry()}
+          onPlayLove={(id) => void ackVoiceMessage(id, 'thanks')}
+          footerSlot={
+            softLockActive ? (
+              <button type="button" className="pill" onClick={onOpenParentPin}>
+                Nhập mã bố mẹ để đổi người
+              </button>
+            ) : (
+              <button
+                type="button"
+                className={`pill hold-pill kv2-j-hold${holdHolding ? ' is-holding' : ''}`}
+                style={{ ['--hold' as string]: holdProgress } as CSSProperties}
+                onPointerDown={(e) => {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  onHoldSwitchStart();
+                }}
+                onPointerUp={onHoldSwitchCancel}
+                onPointerCancel={onHoldSwitchCancel}
+                onPointerLeave={onHoldSwitchCancel}
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                <span className="hold-fill" aria-hidden />
+                <span>{holdHolding ? 'Giữ tiếp…' : 'Giữ để đổi người (bố mẹ)'}</span>
+              </button>
+            )
+          }
+        />
+      ) : null}
 
-          <div className="kv2-j-dates">
-            <button
-              type="button"
-              className="kv2-j-nav"
-              aria-label="Ngày trước"
-              disabled={journalDayIdx <= 0}
-              onClick={() => setJournalDayIdx((i) => Math.max(0, i - 1))}
-            >
-              ‹
-            </button>
-            <div className="kv2-j-date-scroll" role="tablist" aria-label="Chọn ngày">
-              {journalDays.map((d, i) => (
-                <button
-                  key={d.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={i === journalDayIdx}
-                  title={d.fullLabel}
-                  className={`kv2-j-chip${i === journalDayIdx ? ' is-on' : ''}${
-                    d.isToday ? '' : ' is-past'
-                  }`}
-                  onClick={() => setJournalDayIdx(i)}
-                >
-                  {d.shortLabel}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="kv2-j-nav"
-              aria-label="Ngày sau"
-              disabled={journalDayIdx >= journalDays.length - 1}
-              onClick={() =>
-                setJournalDayIdx((i) => Math.min(journalDays.length - 1, i + 1))
-              }
-            >
-              ›
-            </button>
-          </div>
-
-          <div className="kv2-j-layout">
-            <div className="kv2-j-main">
-              <h2 className="kv2-j-day-title">{selectedJournalDay.fullLabel}</h2>
-              {!journalIsToday ? (
-                <p className="kv2-j-readonly-note muted">Chỉ xem lại — không làm lại việc ngày cũ.</p>
-              ) : null}
-
-              {journalHistoryLoading && !journalIsToday ? (
-                <p className="kv2-j-empty soft">Đang mở nhật ký ngày này…</p>
-              ) : journalHistoryError && !journalIsToday ? (
-                <p className="kv2-j-empty soft">{journalHistoryError}</p>
-              ) : (
-                <ol className="kv2-j-timeline">
-                  {journalEntries.length === 0 ? (
-                    <li className="kv2-j-empty">
-                      {journalIsToday
-                        ? 'Hôm nay chưa có trang nhật ký — làm việc đầu tiên rồi quay lại nhé!'
-                        : 'Ngày này chưa có nhật ký — nhà chưa chạy lịch hôm đó.'}
-                    </li>
-                  ) : (
-                    journalEntries.map((entry, idx) => {
-                      const prevPart = idx > 0 ? journalEntries[idx - 1].part : null;
-                      const showPart = entry.part !== prevPart;
-                      const partIcon =
-                        entry.part === 'morning' ? '☀️' : entry.part === 'evening' ? '🌙' : '🌤️';
-                      const partText =
-                        entry.part === 'morning'
-                          ? 'Sáng'
-                          : entry.part === 'evening'
-                            ? 'Tối'
-                            : 'Chiều';
-                      return (
-                        <li
-                          key={entry.item.id}
-                          className={`kv2-j-node${entry.done ? ' is-done' : ''}${
-                            entry.wait ? ' is-wait' : ''
-                          }${entry.skipped ? ' is-skip' : ''}${entry.pending ? ' is-pending' : ''}`}
-                        >
-                          <div className="kv2-j-rail" aria-hidden>
-                            {showPart ? (
-                              <span className="kv2-j-part">
-                                {partIcon} {partText}
-                              </span>
-                            ) : (
-                              <span className="kv2-j-dot" />
-                            )}
-                            <em className="kv2-j-time">{entry.time}</em>
-                          </div>
-                          <article className="kv2-j-card">
-                            <span
-                              className={`kv2-j-ico tone-${taskIconTone(entry.item.title)}`}
-                              aria-hidden
-                            >
-                              {taskIcon(entry.item.title)}
-                            </span>
-                            <div className="kv2-j-card-body">
-                              <strong>{entry.item.title}</strong>
-                              {entry.done ? (
-                                <span
-                                  className={`kv2-j-status is-ok${entry.isLate ? ' is-late' : ''}`}
-                                >
-                                  {entry.statusLine}
-                                </span>
-                              ) : entry.wait ? (
-                                <span className="kv2-j-status is-wait">
-                                  Đang chờ {parentRole} kiểm tra
-                                </span>
-                              ) : entry.skipped ? (
-                                <span className="kv2-j-status is-skip">
-                                  {kidSkipLabel(entry.item.skipReason)}
-                                </span>
-                              ) : (
-                                <span className="kv2-j-status is-pending">Chưa hoàn thành</span>
-                              )}
-                              <p>{entry.note}</p>
-                              {entry.lateCaption ? (
-                                <em className="kv2-j-late-cap">{entry.lateCaption}</em>
-                              ) : null}
-                            </div>
-                            <div className="kv2-j-card-side">
-                              {entry.item.evidenceUrl ? (
-                                <a
-                                  className="kv2-j-photo"
-                                  href={withEvidenceAuth(entry.item.evidenceUrl)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  <img
-                                    src={withEvidenceAuth(entry.item.evidenceUrl)}
-                                    alt={`Ảnh ${entry.item.title}`}
-                                  />
-                                </a>
-                              ) : (
-                                <div className="kv2-j-photo is-placeholder" aria-hidden>
-                                  {taskIcon(entry.item.title)}
-                                </div>
-                              )}
-                              {entry.done ? (
-                                <span
-                                  className={`kv2-j-star-badge${starBadgeClass(entry.reward)}`}
-                                >
-                                  {formatStarBadge(entry.reward)}
-                                </span>
-                              ) : entry.wait ? (
-                                <span className="kv2-j-star-badge is-wait">
-                                  Chờ kiểm tra
-                                </span>
-                              ) : entry.pending && journalIsToday ? (
-                                <button
-                                  type="button"
-                                  className="kv2-j-do-btn"
-                                  onClick={() => openAction(entry.item)}
-                                >
-                                  Làm ngay
-                                </button>
-                              ) : entry.pending ? (
-                                <span className="kv2-j-star-badge is-wait">Đã qua</span>
-                              ) : null}
-                            </div>
-                          </article>
-                        </li>
-                      );
-                    })
-                  )}
-                </ol>
-              )}
-
-              <section className="kv2-j-mem-sec">
-                <div className="kv2-t-sec-head">
-                  <h3>Kỷ niệm đẹp của gia đình</h3>
-                  {familyMemories.length > FAMILY_MEMORY_VISIBLE ? (
-                    <button
-                      type="button"
-                      className="kv2-t-link"
-                      onClick={() => openJournalSheet('memories')}
-                    >
-                      Xem tất cả →
-                    </button>
-                  ) : null}
-                </div>
-                <div className="kv2-j-mem-row">
-                  {journalMemoriesVisible.length === 0 ? (
-                    <p className="kv2-j-empty soft">{FAMILY_MEMORY_EMPTY}</p>
-                  ) : (
-                    journalMemoriesVisible.map((m) => (
-                      <article
-                        key={m.id}
-                        className={`kv2-j-mem-card${m.locked ? ' is-locked' : ''}`}
-                      >
-                        {m.isNew ? <span className="kv2-j-new">Mới</span> : null}
-                        <span aria-hidden>{m.icon}</span>
-                        <strong>{m.title}</strong>
-                        <em>{m.date}</em>
-                      </article>
-                    ))
-                  )}
-                </div>
-              </section>
-            </div>
-
-            <aside className="kv2-j-side">
-              <article className="kv2-j-summary">
-                <span className="kv2-j-trophy" aria-hidden>
-                  🏆
-                </span>
-                <div>
-                  <p>
-                    {activeJournalSummary.prefix}
-                    {activeJournalSummary.ratio ? (
-                      <>
-                        {' '}
-                        <strong>{activeJournalSummary.ratio}</strong>
-                        {activeJournalSummary.suffix ? ` ${activeJournalSummary.suffix}` : ''}
-                      </>
-                    ) : null}
-                  </p>
-                  <div className="kv2-j-summary-meta">
-                    <span>
-                      {journalIsToday
-                        ? `${formatStarDelta(todayStarsEarned)} ⭐`
-                        : `${journalEntries.filter((e) => e.done).length} việc xong`}
-                    </span>
-                    <em>{journalIsToday ? 'Hôm nay' : 'Xem lại'}</em>
-                  </div>
-                </div>
-              </article>
-
-              <article className="kv2-j-mood">
-                <h3>Tâm trạng của {short}</h3>
-                <p className="kv2-j-mood-ask">
-                  {journalIsToday
-                    ? 'Con cảm thấy thế nào hôm nay?'
-                    : 'Tâm trạng chỉ ghi cho hôm nay.'}
-                </p>
-                {journalIsToday ? (
-                  <>
-                    <div className="kv2-j-mood-pick" aria-label="Chọn tâm trạng">
-                      <span className="kv2-j-mood-current">
-                        {MOODS[moodIdx].emoji} {MOODS[moodIdx].label}
-                      </span>
-                      <div className="kv2-j-mood-row">
-                        {MOODS.map((m, i) => (
-                          <button
-                            key={m.code}
-                            type="button"
-                            className={i === moodIdx ? 'is-on' : undefined}
-                            aria-label={m.label}
-                            aria-pressed={i === moodIdx}
-                            onClick={() => setMoodIdx(i)}
-                          >
-                            {m.emoji}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <label className="kv2-j-mood-note">
-                      <span className="sr-only">Ghi chú nhật ký</span>
-                      <textarea
-                        rows={3}
-                        placeholder="Con muốn kể thêm gì không?"
-                        value={moodNote}
-                        onChange={(e) => setMoodNote(e.target.value)}
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      className="kv2-j-save"
-                      disabled={!moodLoaded || moodSaving || !childMemberId}
-                      onClick={() => void saveMoodEntry()}
-                    >
-                      {moodSaving ? 'Đang lưu…' : 'Lưu nhật ký'}
-                    </button>
-                  </>
-                ) : (
-                  <p className="muted" style={{ margin: '8px 0 0' }}>
-                    Chọn «Hôm nay» để ghi tâm trạng.
-                  </p>
-                )}
-              </article>
-
-              <article className="kv2-j-moment">
-                <div className="kv2-t-sec-head is-compact">
-                  <h3>Khoảnh khắc đáng nhớ</h3>
-                  <button
-                    type="button"
-                    className="kv2-t-link"
-                    onClick={() => {
-                      if (journalFeatureMoments.length > 0) openJournalSheet('moments');
-                    }}
-                    disabled={journalFeatureMoments.length === 0}
-                  >
-                    Xem tất cả →
-                  </button>
-                </div>
-                {journalFeatureMoments.length === 0 ? (
-                  <p className="kv2-j-empty soft">{FAMILY_MEMORY_EMPTY}</p>
-                ) : (
-                  <>
-                <div className="kv2-j-moment-card">
-                  <span className="kv2-j-moment-heart" aria-hidden>
-                    ❤️
-                  </span>
-                  <div className="kv2-j-moment-art" aria-hidden>
-                    {journalFeatureMoments[momentIdx]?.icon}
-                  </div>
-                  <strong>{journalFeatureMoments[momentIdx]?.title}</strong>
-                  <em>{journalFeatureMoments[momentIdx]?.date}</em>
-                  <p>{journalFeatureMoments[momentIdx]?.caption}</p>
-                </div>
-                <div className="kv2-j-dots" role="tablist" aria-label="Chuyển khoảnh khắc">
-                  {journalFeatureMoments.map((m, i) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={i === momentIdx}
-                      className={i === momentIdx ? 'is-on' : undefined}
-                      onClick={() => setMomentIdx(i)}
-                    />
-                  ))}
-                </div>
-                  </>
-                )}
-              </article>
-
-              {softLockActive ? (
-                <button type="button" className="pill" onClick={onOpenParentPin}>
-                  Nhập mã bố mẹ để đổi người
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={`pill hold-pill kv2-j-hold${holdHolding ? ' is-holding' : ''}`}
-                  style={{ ['--hold' as string]: holdProgress } as CSSProperties}
-                  onPointerDown={(e) => {
-                    e.currentTarget.setPointerCapture(e.pointerId);
-                    onHoldSwitchStart();
-                  }}
-                  onPointerUp={onHoldSwitchCancel}
-                  onPointerCancel={onHoldSwitchCancel}
-                  onPointerLeave={onHoldSwitchCancel}
-                  onContextMenu={(e) => e.preventDefault()}
-                >
-                  <span className="hold-fill" aria-hidden />
-                  <span>{holdHolding ? 'Giữ tiếp…' : 'Giữ để đổi người (bố mẹ)'}</span>
-                </button>
-              )}
-            </aside>
-          </div>
-        </div>
+      {tab === 'family' ? (
+        <KidFamilyHub
+          shortName={short}
+          parentRole={parentRole}
+          unlockPct={unlockPct}
+          unlockLeft={unlockLeft}
+          doneCount={doneCount}
+          total={total}
+          streak={streak}
+          teamComplete={teamComplete}
+          primaryParentVoice={primaryParentVoice}
+          weeklyStory={weeklyStory}
+          doneTitles={trulyDone.map((c) => c.title)}
+          prides={[
+            ...earnedBadges.slice(0, 2).map((b) => ({
+              id: b.id,
+              icon: b.icon || '🏅',
+              title: 'Huy hiệu',
+              subtitle: b.label,
+            })),
+            ...(trulyDone.some((c) => /đánh răng|tự giác/i.test(c.title))
+              ? [
+                  {
+                    id: 'pride-brush',
+                    icon: '🌱',
+                    title: 'Tự giác',
+                    subtitle: 'Đánh răng / giữ nhịp',
+                  },
+                ]
+              : []),
+            ...(doneCount > 0
+              ? [
+                  {
+                    id: 'pride-done',
+                    icon: '⭐',
+                    title: 'Việc tốt',
+                    subtitle: `${doneCount} việc hôm nay`,
+                  },
+                ]
+              : []),
+            ...(primaryParentVoice
+              ? [
+                  {
+                    id: 'pride-love',
+                    icon: '💌',
+                    title: 'Lời yêu thương',
+                    subtitle: (primaryParentVoice.fromMemberName || parentRole).trim(),
+                  },
+                ]
+              : []),
+          ].slice(0, 4)}
+          memories={journalMemoriesVisible.slice(0, 4).map((m) => ({
+            id: m.id,
+            icon: m.icon,
+            title: m.title,
+            date: m.date,
+            imageUrl: m.photoUrl ? withEvidenceAuth(m.photoUrl) : null,
+          }))}
+          onDoSuggestion={() => {
+            if (primaryParentVoice) {
+              void ackVoiceMessage(primaryParentVoice.id, 'thanks');
+              return;
+            }
+            setTab('tasks');
+          }}
+          onOpenDiary={() => setTab('log')}
+          onOpenMemories={() => {
+            setTab('log');
+            openJournalSheet('memories');
+          }}
+          onOpenRewards={() => setTab('rewards')}
+          onOpenPlan={() => setTab('tasks')}
+          onPlayLove={() => {
+            if (primaryParentVoice) void ackVoiceMessage(primaryParentVoice.id, 'read');
+            setTab('log');
+          }}
+          footerSlot={
+            softLockActive ? (
+              <p className="kfam-note">
+                Đang khóa theo thỏa thuận nhà
+                {softLockLabel ? ` · ${softLockLabel}` : ''}.
+              </p>
+            ) : (
+              <button
+                type="button"
+                className={`pill hold-pill kv2-j-hold${holdHolding ? ' is-holding' : ''}`}
+                style={{ ['--hold' as string]: holdProgress } as CSSProperties}
+                onPointerDown={(e) => {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  onHoldSwitchStart();
+                }}
+                onPointerUp={onHoldSwitchCancel}
+                onPointerCancel={onHoldSwitchCancel}
+                onPointerLeave={onHoldSwitchCancel}
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                <span className="hold-fill" aria-hidden />
+                <span>{holdHolding ? 'Giữ tiếp…' : 'Giữ để đổi người (bố mẹ)'}</span>
+              </button>
+            )
+          }
+        />
       ) : null}
 
       <nav className="kv2-tabbar" aria-label="Điều hướng">
@@ -5384,57 +4426,18 @@ export function KidFocusView({
           className={`kv2-tab${tab === 'tasks' ? ' is-on' : ''}`}
           onClick={() => setTab('tasks')}
         >
-          <span aria-hidden>📋</span>
+          <span aria-hidden>📅</span>
           <em>Kế hoạch</em>
         </button>
         <button
           type="button"
-          className="kv2-fab"
-          aria-label={
-            nextMission
-              ? canCompleteNow(nextMission, localTime)
-                ? studyNeedsEvidence(nextMission)
-                  ? `Gửi ảnh đã học: ${nextMission.title}`
-                  : `Làm ${nextMission.title}`
-                : earlyCompleteBlockReason(nextMission, localTime) ||
-                  countdownUntilWindow(nextMission, localTime) ||
-                  `Chưa tới giờ: ${nextMission.title}`
-              : 'Kho báu'
-          }
-          title={
-            nextMission && !canCompleteNow(nextMission, localTime)
-              ? earlyCompleteBlockReason(nextMission, localTime) ||
-                countdownUntilWindow(nextMission, localTime) ||
-                'Chưa tới giờ làm việc này'
-              : nextMission && studyNeedsEvidence(nextMission)
-                ? 'Gửi ảnh đã học để nhận sao'
-                : undefined
-          }
-          onClick={() => {
-            if (nextMission && canCompleteNow(nextMission, localTime)) {
-              if (studyNeedsEvidence(nextMission)) {
-                beginEvidencePick(nextMission);
-                return;
-              }
-              void quickDoneMission(nextMission);
-              return;
-            }
-            if (nextMission) {
-              openAction(nextMission);
-              return;
-            }
-            setTab('rewards');
-          }}
+          className={`kv2-fab is-fami${famiSheetOpen ? ' is-on' : ''}`}
+          aria-label="Fami — trợ lý nhanh"
+          title="Fami giúp con làm tiếp"
+          onClick={() => setFamiSheetOpen(true)}
         >
-          <span aria-hidden>{nextMission && studyNeedsEvidence(nextMission) ? '📷' : '⭐'}</span>
-        </button>
-        <button
-          type="button"
-          className={`kv2-tab${tab === 'rewards' ? ' is-on' : ''}`}
-          onClick={() => setTab('rewards')}
-        >
-          <span aria-hidden>🧰</span>
-          <em>Kho báu</em>
+          <span aria-hidden>🌱</span>
+          <em className="kv2-fab-label">Fami</em>
         </button>
         <button
           type="button"
@@ -5444,7 +4447,100 @@ export function KidFocusView({
           <span aria-hidden>📖</span>
           <em>Nhật ký</em>
         </button>
+        <button
+          type="button"
+          className={`kv2-tab${tab === 'family' ? ' is-on' : ''}`}
+          onClick={() => setTab('family')}
+        >
+          <span aria-hidden>👨‍👩‍👧</span>
+          <em>Gia đình</em>
+        </button>
       </nav>
+
+      {famiSheetOpen ? (
+        <div
+          className="sheet-backdrop"
+          role="presentation"
+          onClick={() => setFamiSheetOpen(false)}
+        >
+          <div
+            className="ph-sheet khub-fami-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Fami"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="ph-sheet-head">
+              <div>
+                <h2>
+                  <span aria-hidden>🌱</span> Fami giúp con
+                </h2>
+                <p className="khub-fami-sub">Chọn một việc nhanh — Fami đi cùng</p>
+              </div>
+              <button
+                type="button"
+                className="ph-sheet-close"
+                onClick={() => setFamiSheetOpen(false)}
+                aria-label="Đóng"
+              >
+                ×
+              </button>
+            </header>
+            <div className="khub-fami-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setFamiSheetOpen(false);
+                  setTab('home');
+                  if (nextMission) openAction(nextMission);
+                }}
+              >
+                <span aria-hidden>💬</span> Xin gợi ý việc tiếp theo
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFamiSheetOpen(false);
+                  setTab('log');
+                }}
+              >
+                <span aria-hidden>📖</span> Nghe Fami kể chuyện
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFamiSheetOpen(false);
+                  setTab('rewards');
+                }}
+              >
+                <span aria-hidden>🎁</span> Kho báu / Quà bí mật
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFamiSheetOpen(false);
+                  setTab('family');
+                }}
+              >
+                <span aria-hidden>👨‍👩‍👧</span> Xem Gia đình
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFamiSheetOpen(false);
+                  if (primaryParentVoice) {
+                    void ackVoiceMessage(primaryParentVoice.id, 'read');
+                  } else {
+                    setTab('log');
+                  }
+                }}
+              >
+                <span aria-hidden>💌</span> Đọc thư của {parentRole}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {celebrate ? (
         <div className="ka-celebrate" role="status" onClick={dismissCelebrate}>
@@ -5686,6 +4782,69 @@ export function KidFocusView({
                 </div>
               </>
             ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {diaryDayPickerOpen ? (
+        <div
+          className="sheet-backdrop kv2-action-sheet kv2-t-sheet-backdrop"
+          role="presentation"
+          onPointerDown={handleBackdropPointerDown}
+          onClick={(e) => {
+            if (e.target !== e.currentTarget || !backdropPointerDown.current) return;
+            setDiaryDayPickerOpen(false);
+          }}
+        >
+          <div
+            className="sheet kv2-t-sheet kv2-j-sheet kv2-diary-day-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Chọn ngày nhật ký"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2>📅 Chọn ngày nhật ký</h2>
+            <p className="kv2-diary-day-hint">Xem lại 6 ngày gần nhất của {short}</p>
+            <div className="kv2-diary-day-list" role="listbox" aria-label="Ngày nhật ký">
+              {[...journalDays].reverse().map((d) => {
+                const idx = journalDays.findIndex((x) => x.key === d.key);
+                const on = idx === Math.min(journalDayIdx, journalDays.length - 1);
+                return (
+                  <button
+                    key={d.key}
+                    type="button"
+                    role="option"
+                    aria-selected={on}
+                    className={`kv2-diary-day-row${on ? ' is-on' : ''}${
+                      d.isToday ? ' is-today' : ''
+                    }`}
+                    onClick={() => {
+                      setJournalDayIdx(idx);
+                      setDiaryDayPickerOpen(false);
+                      window.requestAnimationFrame(() => {
+                        document
+                          .querySelector('.kdiary-dates')
+                          ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                      });
+                    }}
+                  >
+                    <span aria-hidden>{d.isToday ? '🌟' : '📖'}</span>
+                    <div>
+                      <strong>{d.isToday ? 'Hôm nay' : d.shortLabel}</strong>
+                      <em>{d.fullLabel}</em>
+                    </div>
+                    {on ? <b>Đang xem</b> : null}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              className="pill is-soft"
+              onClick={() => setDiaryDayPickerOpen(false)}
+            >
+              Đóng
+            </button>
           </div>
         </div>
       ) : null}

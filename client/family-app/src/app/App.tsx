@@ -11,6 +11,8 @@ import { FamilyMembersPage } from '@/modules/admin/FamilyMembersPage';
 import { FamilyRoutinePage } from '@/modules/admin/FamilyRoutinePage';
 import { FamilyInvitePage } from '@/modules/admin/FamilyInvitePage';
 import { FamilySettingsPage } from '@/modules/admin/FamilySettingsPage';
+import { ForceParentPinGate } from '@/shared/ui/ForceParentPinGate';
+import { OnlineStatusBanner } from '@/shared/ui/OnlineStatusBanner';
 
 function RequireParent({ children }: { children: ReactNode }) {
   const token = useSessionStore((s) => s.accessToken);
@@ -52,6 +54,8 @@ export function App() {
     <div
       className={`app-shell${kidMode ? ' is-kid' : ''}${homeMode ? ' is-home' : ''}${unlockMode ? ' is-unlock' : ''}${adminMode ? ' is-admin' : ''}`}
     >
+      <OnlineStatusBanner />
+      <ForceParentPinGate />
       <Routes>
         <Route path="/unlock" element={<ParentUnlockPage />} />
         <Route

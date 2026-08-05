@@ -14,6 +14,7 @@
 | **Deploy VPS** | Chỉ khi user bảo rõ; **không** gộp Pharmacy auth WIP |
 | **Mig trên VPS** | `sudo -u postgres psql` (peer auth) — tránh password URI trong `api.env` |
 | **Bắt buộc sau mig peer-auth** | Chạy `250_pack_family_app_role_grants.sql` (GRANT `pharmacore`/`kitplatform`) — thiếu → `42501` / “Lỗi truy vấn database” trên day-flow |
+| **Đại trà / GA** | Chưa mở — xem [family-os-ga-checklist-v1.md](./family-os-ga-checklist-v1.md) |
 
 Pharmacy audit freeze (`DEMO_PHARMACY` / `NT_XUANHOA`) vẫn hiệu lực cho tenant Pharmacy.
 

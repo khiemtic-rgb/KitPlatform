@@ -45,6 +45,9 @@ Accountability (trách nhiệm với cam kết) là **khác biệt dài hạn** 
 | 7 | **Family Coach** | Quan sát → nhớ → đề xuất quyết định (không chat LLM) | ✅ C1+C2 Daily Insight + Memory 7 ngày; 🔜 C3 đồng hành cả ngày |
 | 8 | **Family Team Play** | Điểm đội · Team Streak · Unlock · Sibling nudge · Cooperation Score | 🟡 Brief + prototype UI TP0–TP1 — [family-team-play-v1.md](./family-team-play-v1.md) |
 | 9 | **Screen Boundary (A+B)** | PIN + soft-lock trong app · Screen Agreement deep-link OS (không firewall) | 🟡 Brief + prototype — [family-screen-boundary-v1.md](./family-screen-boundary-v1.md) |
+| 10 | **Daily Digital Mirror** | Tổng kết app/web cuối ngày (~22:30) · nhắc/khen · không khóa | 🟢 M1 local — [daily-digital-mirror-v1.md](./daily-digital-mirror-v1.md) |
+
+**Design philosophy (bắt buộc đọc trước khi thiết kế):** [famixa-product-design-manifesto-v2.md](./famixa-product-design-manifesto-v2.md).
 | 10 | **Adaptive Family Engine (AFE)** | Setup Wizard · Decision Inbox · Child Proposal · Family Mode · Screen Wallet thỏa thuận · Adaptive đề xuất | 🟡 Epic — [adaptive-family-engine-v1.md](./adaptive-family-engine-v1.md) |
 
 ### 2.0 Family Coach (thesis)

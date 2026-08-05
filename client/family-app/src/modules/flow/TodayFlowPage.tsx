@@ -293,7 +293,13 @@ export function TodayFlowPage() {
     goWho();
   }, [softLockActive, goWho]);
 
-  const hold = useHoldAction(requestSwitchUser);
+  /** Kid → parent gate: always require PIN (same path as header 👤). */
+  const requestParentGate = useCallback(() => {
+    setPinPurpose(softLockActive ? 'unlock' : 'switch');
+    setPinOpen(true);
+  }, [softLockActive]);
+
+  const hold = useHoldAction(requestParentGate);
 
   const markDone = async (
     item: DayFlowCommitment,
@@ -567,7 +573,7 @@ export function TodayFlowPage() {
         />
       ) : null}
 
-      {flow && !isChild ? (
+      {flow && !isChild && !isNoRoutineNotice ? (
         <ParentBoardView
           flow={flow}
           viewerName={member.displayName}
@@ -612,7 +618,7 @@ export function TodayFlowPage() {
         hint={
           softLockActive
             ? 'Soft-lock đang bật — nhập 4 số để mở khóa / đổi người'
-            : 'Nhập 4 số để đổi người'
+            : 'Nhập 4 số để chuyển sang bố mẹ / chọn người'
         }
         verify={verifyParentPin}
         onClose={() => setPinOpen(false)}
