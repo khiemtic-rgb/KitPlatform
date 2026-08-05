@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-05T09:07:22.355Z",
+  "generatedAt": "2026-08-05T14:37:39.809Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 335,
-    "todayPageViews": 161,
-    "todayRequests": 554,
-    "last24hVisitors": 512,
-    "last24hPageViews": 315,
-    "last24hRequests": 929
+    "todayVisitors": 411,
+    "todayPageViews": 233,
+    "todayRequests": 713,
+    "last24hVisitors": 508,
+    "last24hPageViews": 301,
+    "last24hRequests": 898
   },
   "hourly": [
-    {
-      "time": "2026-08-04T10:00:00Z",
-      "visitors": 56,
-      "requests": 69
-    },
-    {
-      "time": "2026-08-04T11:00:00Z",
-      "visitors": 27,
-      "requests": 36
-    },
-    {
-      "time": "2026-08-04T12:00:00Z",
-      "visitors": 21,
-      "requests": 32
-    },
-    {
-      "time": "2026-08-04T13:00:00Z",
-      "visitors": 16,
-      "requests": 17
-    },
-    {
-      "time": "2026-08-04T14:00:00Z",
-      "visitors": 35,
-      "requests": 36
-    },
     {
       "time": "2026-08-04T15:00:00Z",
       "visitors": 35,
@@ -123,8 +98,33 @@
     },
     {
       "time": "2026-08-05T09:00:00Z",
-      "visitors": 2,
-      "requests": 2
+      "visitors": 35,
+      "requests": 39
+    },
+    {
+      "time": "2026-08-05T10:00:00Z",
+      "visitors": 17,
+      "requests": 19
+    },
+    {
+      "time": "2026-08-05T11:00:00Z",
+      "visitors": 18,
+      "requests": 21
+    },
+    {
+      "time": "2026-08-05T12:00:00Z",
+      "visitors": 24,
+      "requests": 24
+    },
+    {
+      "time": "2026-08-05T13:00:00Z",
+      "visitors": 38,
+      "requests": 45
+    },
+    {
+      "time": "2026-08-05T14:00:00Z",
+      "visitors": 11,
+      "requests": 13
     }
   ],
   "daily": [
@@ -166,27 +166,23 @@
     },
     {
       "date": "2026-08-05",
-      "visitors": 335,
-      "pageViews": 161,
-      "requests": 554
+      "visitors": 411,
+      "pageViews": 233,
+      "requests": 713
     }
   ],
   "topPages": [
     {
-      "path": "/vi/tin-tuc/nhung-cong-viec-chu-nha-thuoc-co-the-va-bat-buoc-phai-giao-cho-nhan-vien/",
-      "views": 107
-    },
-    {
       "path": "/vi/tin-tuc/quy-trinh-ban-thuoc-chuyen-nghiep-tai-nha-thuoc-hien-dai-gom-nhung-buoc-nao/",
-      "views": 93
+      "views": 154
     },
     {
       "path": "/images/tin-tuc/khi-nao-nen-chuan-hoa-quy-trinh.png",
-      "views": 75
+      "views": 89
     },
     {
       "path": "/images/tin-tuc/quy-trinh-ban-thuoc.png",
-      "views": 60
+      "views": 74
     },
     {
       "path": "/vi/tin-tuc/khi-nao-nha-thuoc-cua-ban-thuc-su-can-chuan-hoa-quy-trinh/",
@@ -194,43 +190,47 @@
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 52
+      "views": 50
     },
     {
       "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
-      "views": 51
+      "views": 46
+    },
+    {
+      "path": "/vi/tin-tuc/nhung-cong-viec-chu-nha-thuoc-co-the-va-bat-buoc-phai-giao-cho-nhan-vien/",
+      "views": 36
     },
     {
       "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
-      "views": 38
+      "views": 35
     },
     {
       "path": "/images/tin-tuc/chu-nha-thuoc-lam-moi-tuan.png",
       "views": 29
     },
     {
-      "path": "/",
-      "views": 27
-    },
-    {
       "path": "/robots.txt",
-      "views": 22
-    },
-    {
-      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-gi-moi-ngay.png",
-      "views": 20
-    },
-    {
-      "path": "/images/tin-tuc/thay-doi-cach-danh-gia-nhan-vien.png",
-      "views": 19
+      "views": 21
     },
     {
       "path": "/images/tin-tuc/tu-du-lieu-hoc-tap-den-thang-tien.png",
-      "views": 18
+      "views": 19
     },
     {
-      "path": "/images/tin-tuc/giup-danh-gia-nang-luc-thuc-te.png",
+      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-gi-moi-ngay.png",
       "views": 17
+    },
+    {
+      "path": "/feed.json",
+      "views": 17
+    },
+    {
+      "path": "/images/tin-tuc/thay-doi-cach-danh-gia-nhan-vien.png",
+      "views": 17
+    },
+    {
+      "path": "/favicon.svg",
+      "views": 14
     }
   ]
 }
