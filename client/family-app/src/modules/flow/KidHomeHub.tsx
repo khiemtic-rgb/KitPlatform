@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { DayFlowCommitment, ParentVoiceMessage } from '@/shared/api/family-os.api';
+import { KidNotifyOptInCard } from '@/shared/ui/KidNotifyOptInCard';
 
 type Props = {
   shortName: string;
@@ -213,6 +214,8 @@ export function KidHomeHub(props: Props) {
           Bắt đầu ngay 🚀
         </button>
       </article>
+
+      <KidNotifyOptInCard shortName={props.shortName} />
 
       {/* Việc tiếp theo — nhất */}
       <section className="khub-next" aria-label="Việc tiếp theo">
