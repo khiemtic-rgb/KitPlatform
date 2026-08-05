@@ -62,6 +62,9 @@ $utf8 = New-Object System.Text.UTF8Encoding $false
 [System.IO.File]::WriteAllText($tmpSh, ($remoteCmd -replace "`r`n", "`n"), $utf8)
 & $pscp -batch -pw $pass $tmpSh "${SshTarget}:/tmp/apply-family-os-pilot-remote.sh"
 & $plink -batch -pw $pass $SshTarget "sed -i 's/\r$//' /tmp/apply-family-os-pilot-remote.sh; bash /tmp/apply-family-os-pilot-remote.sh"
+if ($LASTEXITCODE -ne 0) {
+    throw "Remote apply-family-os-pilot failed: $LASTEXITCODE"
+}
 
 Write-Host "`nFamilyOS pilot deploy done." -ForegroundColor Green
 Write-Host "  https://family.kittech.vn" -ForegroundColor Yellow

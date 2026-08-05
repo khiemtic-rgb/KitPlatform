@@ -63,30 +63,15 @@ ALTER TABLE pack_family.behavior_event
         'observe_mode_entered',
         'observe_mode_exited',
         'dependence_warned',
-        'parent_coach_acted'
+        'parent_coach_acted',
+        'pattern_detected',
+        'tactic_rotated',
+        'child_voice_submitted',
+        'parent_strategy_tip',
+        'commitment_evidence_gate_blocked',
+        'commitment_evidence_satisfied',
+        'commitment_kind_assigned'
     ));
-
--- =============================================================================
--- Illusion-of-learning retrieval check (2 MCQs, learning missions only)
--- =============================================================================
-CREATE TABLE IF NOT EXISTS pack_family.commitment_retrieval_check (
-    id              UUID PRIMARY KEY DEFAULT kit_uuid_v7(),
-    tenant_id       UUID NOT NULL REFERENCES public.tenants(id),
-    family_id       UUID NOT NULL REFERENCES pack_family.family(id),
-    commitment_id   UUID NOT NULL REFERENCES pack_family.commitment(id),
-    member_id       UUID REFERENCES pack_family.membership(id),
-    method_answer   VARCHAR(32) NOT NULL,
-    recall_answer   VARCHAR(32) NOT NULL,
-    illusion_risk   BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT uq_commitment_retrieval_check UNIQUE (commitment_id),
-    CONSTRAINT ck_retrieval_method CHECK (method_answer IN (
-        'skim', 'practice', 'retrieve'
-    )),
-    CONSTRAINT ck_retrieval_recall CHECK (recall_answer IN (
-        'can_explain', 'vaguely', 'need_review'
-    ))
-);
 
 CREATE INDEX IF NOT EXISTS ix_commitment_retrieval_family
     ON pack_family.commitment_retrieval_check (family_id, created_at DESC);

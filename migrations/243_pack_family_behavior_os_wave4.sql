@@ -28,7 +28,14 @@ ALTER TABLE pack_family.behavior_event
         'observe_mode_entered',
         'observe_mode_exited',
         'dependence_warned',
-        'parent_coach_acted'
+        'parent_coach_acted',
+        'pattern_detected',
+        'tactic_rotated',
+        'child_voice_submitted',
+        'parent_strategy_tip',
+        'commitment_evidence_gate_blocked',
+        'commitment_evidence_satisfied',
+        'commitment_kind_assigned'
     ));
 
 CREATE TABLE IF NOT EXISTS pack_family.behavior_twin_snapshot (
