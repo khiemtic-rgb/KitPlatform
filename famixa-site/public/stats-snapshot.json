@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-05T14:43:41.348Z",
+  "generatedAt": "2026-08-05T20:07:19.128Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 173,
-    "todayPageViews": 92,
-    "todayRequests": 411,
-    "last24hVisitors": 184,
-    "last24hPageViews": 110,
-    "last24hRequests": 463
+    "todayVisitors": 43,
+    "todayPageViews": 6,
+    "todayRequests": 78,
+    "last24hVisitors": 223,
+    "last24hPageViews": 114,
+    "last24hRequests": 532
   },
   "hourly": [
-    {
-      "time": "2026-08-04T15:00:00Z",
-      "visitors": 6,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-04T16:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-04T17:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-04T18:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-04T19:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-04T20:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
     {
       "time": "2026-08-04T21:00:00Z",
       "visitors": 3,
@@ -128,17 +98,36 @@
     },
     {
       "time": "2026-08-05T14:00:00Z",
-      "visitors": 1,
-      "requests": 1
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-05T15:00:00Z",
+      "visitors": 4,
+      "requests": 9
+    },
+    {
+      "time": "2026-08-05T16:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-05T17:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-05T18:00:00Z",
+      "visitors": 38,
+      "requests": 70
+    },
+    {
+      "time": "2026-08-05T19:00:00Z",
+      "visitors": 3,
+      "requests": 4
     }
   ],
   "daily": [
-    {
-      "date": "2026-07-30",
-      "visitors": 258,
-      "pageViews": 269,
-      "requests": 2740
-    },
     {
       "date": "2026-07-31",
       "visitors": 199,
@@ -172,8 +161,14 @@
     {
       "date": "2026-08-05",
       "visitors": 215,
-      "pageViews": 108,
-      "requests": 450
+      "pageViews": 99,
+      "requests": 502
+    },
+    {
+      "date": "2026-08-06",
+      "visitors": 43,
+      "pageViews": 6,
+      "requests": 78
     }
   ],
   "topPages": [
@@ -183,31 +178,31 @@
     },
     {
       "path": "/images/blog/phat-con-de-khong-bi-ton-thuong.png",
-      "views": 55
+      "views": 56
     },
     {
       "path": "/cdn-cgi/rum",
       "views": 30
     },
     {
+      "path": "/",
+      "views": 22
+    },
+    {
       "path": "/vi/goi-cha-me/",
       "views": 20
     },
     {
-      "path": "/feed.json",
-      "views": 18
-    },
-    {
       "path": "/robots.txt",
-      "views": 17
+      "views": 20
     },
     {
       "path": "/vi/",
-      "views": 17
+      "views": 19
     },
     {
-      "path": "/",
-      "views": 15
+      "path": "/feed.json",
+      "views": 18
     },
     {
       "path": "/sitemap.xml",
@@ -215,27 +210,27 @@
     },
     {
       "path": "/api/stats",
-      "views": 12
+      "views": 11
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 11
+    },
+    {
+      "path": "/_next/static/chunks/718-2b1effa4778d9f77.js",
+      "views": 10
     },
     {
       "path": "/images/blog/10-sai-lam-pho-bien-khi-nuoi-day-con.png",
       "views": 9
     },
     {
-      "path": "/images/blog/lam-cha-me-co-phai-hoc-khong.png",
+      "path": "/images/moment-study.png",
       "views": 9
     },
     {
-      "path": "/images/moment-family.png",
-      "views": 8
-    },
-    {
       "path": "/images/moment-chores.png",
-      "views": 8
-    },
-    {
-      "path": "/images/moment-study.png",
-      "views": 8
+      "views": 9
     }
   ]
 }
