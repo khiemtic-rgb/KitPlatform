@@ -1,10 +1,52 @@
 ---
-import SimplePage from '../layouts/SimplePage.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { resolveTenant } from '../lib/tenant';
+import '../styles/storefront.css';
+
+const tenant = resolveTenant(Astro.request);
 ---
 
-<SimplePage
-  title="Sản phẩm"
-  heading="Sản phẩm"
-  body="Xem và đặt sản phẩm trên App Novixa để được hỗ trợ đúng nhà thuốc của bạn, theo dõi đơn và lịch sử mua hàng."
-  path="/san-pham"
-/>
+<BaseLayout
+  tenant={tenant}
+  title={`Sản phẩm — ${tenant.brand.name}`}
+  description="Xem và đặt sản phẩm trên App Novixa"
+>
+  <SiteHeader tenant={tenant} currentPath="/san-pham" />
+  <main class="sf-page">
+    <div class="sf-container">
+      <div class="sf-section__head">
+        <div>
+          <p class="sf-eyebrow">Danh mục nổi bật</p>
+          <h1>Sản phẩm</h1>
+        </div>
+        <a href={tenant.appPromo.appUrl}>Đặt trên App</a>
+      </div>
+      <p class="sf-lead">
+        Giá và tồn kho theo thời điểm trên App Novixa. Đặt hàng để được nhà thuốc {tenant.brand.shortName} hỗ trợ đúng đơn.
+      </p>
+      <div class="sf-products" style="margin-top: 1.5rem">
+        {
+          tenant.products.map((p) => (
+            <a class="sf-product" href={p.href}>
+              <img src={p.imageUrl} alt={p.name} loading="lazy" />
+              <div class="sf-product__body">
+                <div class="sf-product__cat">{p.category}</div>
+                <h3>{p.name}</h3>
+                <div class="sf-product__row">
+                  <span class="sf-product__price">{p.price}</span>
+                  <span class="sf-product__cart" aria-hidden="true">+</span>
+                </div>
+              </div>
+            </a>
+          ))
+        }
+      </div>
+      <div class="sf-page-cta">
+        <a class="sf-btn sf-btn--primary" href={tenant.appPromo.appUrl}>Xem tất cả trên App</a>
+      </div>
+    </div>
+  </main>
+  <SiteFooter tenant={tenant} />
+</BaseLayout>

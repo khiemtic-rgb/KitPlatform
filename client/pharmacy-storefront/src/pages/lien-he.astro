@@ -1,13 +1,83 @@
 ---
-import SimplePage from '../layouts/SimplePage.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
 import { resolveTenant } from '../lib/tenant';
+import '../styles/storefront.css';
 
 const tenant = resolveTenant(Astro.request);
+const { contact } = tenant.pages;
+const phone = tenant.contact.phone.replace(/[^\d+]/g, '');
+const phoneHref = phone.length >= 8 ? `tel:${phone}` : tenant.appPromo.appUrl;
 ---
 
-<SimplePage
-  title="Liên hệ"
-  heading="Liên hệ"
-  body={`${tenant.contact.address}. ${tenant.contact.hours}. Điện thoại: ${tenant.contact.phone} · Email: ${tenant.contact.email}`}
-  path="/lien-he"
-/>
+<BaseLayout
+  tenant={tenant}
+  title={`Liên hệ — ${tenant.brand.name}`}
+  description={contact.intro}
+>
+  <SiteHeader tenant={tenant} currentPath="/lien-he" />
+  <main class="sf-page">
+    <div class="sf-container">
+      <p class="sf-eyebrow">Hỗ trợ khách hàng</p>
+      <h1>Liên hệ</h1>
+      <p class="sf-lead">{contact.intro}</p>
+
+      <div class="sf-contact-grid">
+        <section class="sf-content-card">
+          <h2>Thông tin</h2>
+          <dl class="sf-dl">
+            <div>
+              <dt>Địa chỉ</dt>
+              <dd>{tenant.contact.address}</dd>
+            </div>
+            <div>
+              <dt>Giờ mở cửa</dt>
+              <dd>{tenant.contact.hours}</dd>
+            </div>
+            <div>
+              <dt>Điện thoại</dt>
+              <dd><a href={phoneHref}>{tenant.contact.phone}</a></dd>
+            </div>
+            <div>
+              <dt>Email</dt>
+              <dd><a href={`mailto:${tenant.contact.email}`}>{tenant.contact.email}</a></dd>
+            </div>
+          </dl>
+          <div class="sf-page-cta">
+            <a class="sf-btn sf-btn--primary" href={tenant.appPromo.appUrl}>Chat / đặt trên App</a>
+            {
+              tenant.contact.social.zalo ? (
+                <a class="sf-btn sf-btn--ghost" href={tenant.contact.social.zalo} target="_blank" rel="noreferrer">
+                  Zalo
+                </a>
+              ) : null
+            }
+          </div>
+        </section>
+
+        <section class="sf-content-card">
+          <h2>Chi nhánh</h2>
+          {
+            tenant.contact.branches && tenant.contact.branches.length > 0 ? (
+              <ul class="sf-branch-list">
+                {tenant.contact.branches.map((b) => (
+                  <li>
+                    <strong>{b.name}</strong>
+                    <span>{b.address}</span>
+                    {b.hours ? <span>{b.hours}</span> : null}
+                    {b.phone ? <span>{b.phone}</span> : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>{tenant.contact.address}</p>
+            )
+          }
+          {contact.mapNote ? <p class="sf-muted">{contact.mapNote}</p> : null}
+        </section>
+      </div>
+    </div>
+  </main>
+  <SiteFooter tenant={tenant} />
+</BaseLayout>

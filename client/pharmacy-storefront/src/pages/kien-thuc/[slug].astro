@@ -1,26 +1,48 @@
 ---
-import SimplePage from '../../layouts/SimplePage.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import { resolveTenant } from '../../lib/tenant';
+import { listTenants } from '../../tenants/registry';
+import '../../styles/storefront.css';
 
 export function getStaticPaths() {
-  return [
-    { params: { slug: 'phong-cam-cum' } },
-    { params: { slug: 'kiem-soat-huyet-ap' } },
-    { params: { slug: 'gap-duoc-si' } },
-  ];
+  const slugs = new Set<string>();
+  for (const tenant of listTenants()) {
+    for (const article of tenant.articles) {
+      if (article.slug) slugs.add(article.slug);
+    }
+  }
+  return [...slugs].map((slug) => ({ params: { slug } }));
 }
 
+const tenant = resolveTenant(Astro.request);
 const slug = Astro.params.slug ?? '';
-const titles: Record<string, string> = {
-  'phong-cam-cum': 'Cách phòng cảm cúm hiệu quả mùa giao mùa',
-  'kiem-soat-huyet-ap': '5 thói quen giúp kiểm soát huyết áp',
-  'gap-duoc-si': 'Khi nào nên gặp dược sĩ trước khi tự mua thuốc?',
-};
-const heading = titles[slug] ?? 'Kiến thức sức khỏe';
+const article = tenant.articles.find((a) => a.slug === slug || a.href.endsWith(`/${slug}`));
+const title = article?.title ?? 'Kiến thức sức khỏe';
+const paragraphs = article?.body ?? [
+  'Bài viết đang được cập nhật. Bạn có thể đặt thuốc hoặc trao đổi với dược sĩ trên App Novixa.',
+];
 ---
 
-<SimplePage
-  title={heading}
-  heading={heading}
-  body="Bài viết đầy đủ sẽ được quản lý qua CMS ở giai đoạn sau. Hiện tại bạn có thể đặt thuốc hoặc trao đổi với dược sĩ trên App Novixa."
-  path="/kien-thuc"
-/>
+<BaseLayout tenant={tenant} title={`${title} — ${tenant.brand.name}`} description={article?.excerpt ?? title}>
+  <SiteHeader tenant={tenant} currentPath="/kien-thuc" />
+  <main class="sf-page">
+    <article class="sf-container sf-prose">
+      <p class="sf-eyebrow"><a href="/kien-thuc">← Kiến thức sức khỏe</a></p>
+      <h1>{title}</h1>
+      {article?.date ? <time class="sf-muted" datetime={article.date}>{article.date}</time> : null}
+      {
+        article?.imageUrl ? (
+          <img class="sf-article-hero" src={article.imageUrl} alt="" loading="eager" />
+        ) : null
+      }
+      {paragraphs.map((p) => <p>{p}</p>)}
+      <div class="sf-page-cta">
+        <a class="sf-btn sf-btn--primary" href={tenant.appPromo.appUrl}>Tư vấn trên App Novixa</a>
+        <a class="sf-btn sf-btn--ghost" href="/kien-thuc">Bài khác</a>
+      </div>
+    </article>
+  </main>
+  <SiteFooter tenant={tenant} />
+</BaseLayout>

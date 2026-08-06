@@ -7,16 +7,23 @@ interface Props {
 
 const { tenant } = Astro.props;
 const year = new Date().getFullYear();
+const phoneHref = `tel:${tenant.contact.phone.replace(/[^\d+]/g, '')}`;
 ---
 
 <footer class="sf-footer">
   <div class="sf-container sf-footer__grid">
     <div>
-      <h3>{tenant.brand.name}</h3>
+      {
+        tenant.brand.logoUrl ? (
+          <img class="sf-footer__logo" src={tenant.brand.logoUrl} alt={tenant.brand.name} width="180" height="50" />
+        ) : (
+          <h3>{tenant.brand.name}</h3>
+        )
+      }
       <p>{tenant.footer.mission}</p>
       <p>{tenant.contact.address}</p>
       <p>
-        <a href={`tel:${tenant.contact.phone.replace(/\s/g, '')}`}>{tenant.contact.phone}</a>
+        <a href={phoneHref}>{tenant.contact.phone}</a>
         <br />
         <a href={`mailto:${tenant.contact.email}`}>{tenant.contact.email}</a>
       </p>

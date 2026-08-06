@@ -1,10 +1,59 @@
 ---
-import SimplePage from '../layouts/SimplePage.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { resolveTenant } from '../lib/tenant';
+import '../styles/storefront.css';
+
+const tenant = resolveTenant(Astro.request);
+const { about } = tenant.pages;
 ---
 
-<SimplePage
-  title="Giới thiệu"
-  heading="Giới thiệu"
-  body="Nhà thuốc Xuân Hòa đồng hành chăm sóc sức khỏe gia đình với thuốc chính hãng và tư vấn dược sĩ tận tâm. Nội dung chi tiết sẽ được cập nhật qua CMS ở giai đoạn sau."
-  path="/gioi-thieu"
-/>
+<BaseLayout
+  tenant={tenant}
+  title={`Giới thiệu — ${tenant.brand.name}`}
+  description={about.intro}
+>
+  <SiteHeader tenant={tenant} currentPath="/gioi-thieu" />
+  <main class="sf-page">
+    <div class="sf-container sf-prose">
+      <p class="sf-eyebrow">Về chúng tôi</p>
+      <h1>Giới thiệu {tenant.brand.shortName}</h1>
+      <p class="sf-lead">{about.intro}</p>
+
+      <div class="sf-section-cards">
+        {
+          about.sections.map((section) => (
+            <section class="sf-content-card" id={section.id}>
+              <h2>{section.title}</h2>
+              <p>{section.body}</p>
+            </section>
+          ))
+        }
+      </div>
+
+      {
+        tenant.contact.branches && tenant.contact.branches.length > 0 ? (
+          <section class="sf-content-card" id="chi-nhanh">
+            <h2>Hệ thống chi nhánh</h2>
+            <ul class="sf-branch-list">
+              {tenant.contact.branches.map((b) => (
+                <li>
+                  <strong>{b.name}</strong>
+                  <span>{b.address}</span>
+                  {b.hours ? <span>{b.hours}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null
+      }
+
+      <div class="sf-page-cta">
+        <a class="sf-btn sf-btn--primary" href={tenant.appPromo.appUrl}>Đặt thuốc trên App</a>
+        <a class="sf-btn sf-btn--ghost" href="/lien-he">Liên hệ</a>
+      </div>
+    </div>
+  </main>
+  <SiteFooter tenant={tenant} />
+</BaseLayout>

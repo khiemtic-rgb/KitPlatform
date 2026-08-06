@@ -42,11 +42,25 @@ const serviceIcons: Record<string, string> = {
     <div class="sf-hero__media">
       <img src={tenant.hero.imageUrl} alt={`${tenant.brand.name} — tư vấn dược sĩ`} loading="eager" />
       <div class="sf-app-card">
-        <strong>{tenant.appPromo.title}</strong>
-        <div class="sf-app-card__links">
-          <a href={tenant.appPromo.appUrl}>Mở App Novixa</a>
-          <a href={tenant.appPromo.appStoreUrl}>App Store</a>
-          <a href={tenant.appPromo.playStoreUrl}>Google Play</a>
+        {
+          tenant.appPromo.qrImageUrl ? (
+            <img
+              class="sf-app-card__qr"
+              src={tenant.appPromo.qrImageUrl}
+              alt="QR mở App Novixa"
+              width="72"
+              height="72"
+              loading="lazy"
+            />
+          ) : null
+        }
+        <div class="sf-app-card__copy">
+          <strong>{tenant.appPromo.title}</strong>
+          <div class="sf-app-card__links">
+            <a href={tenant.appPromo.appUrl}>Mở App Novixa</a>
+            <a href={tenant.appPromo.appStoreUrl}>App Store</a>
+            <a href={tenant.appPromo.playStoreUrl}>Google Play</a>
+          </div>
         </div>
       </div>
     </div>

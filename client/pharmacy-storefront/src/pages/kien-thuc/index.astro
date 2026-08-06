@@ -16,15 +16,19 @@ const tenant = resolveTenant(Astro.request);
   <SiteHeader tenant={tenant} currentPath="/kien-thuc" />
   <main class="sf-page">
     <div class="sf-container">
+      <p class="sf-eyebrow">Góc chuyên môn</p>
       <h1>Kiến thức sức khỏe</h1>
-      <p>Thông tin hữu ích từ đội ngũ dược sĩ — đặt thuốc và nhắc uống thuốc trên App Novixa.</p>
-      <div class="sf-articles" style="margin-top: 2rem">
+      <p class="sf-lead">
+        Thông tin hữu ích từ đội ngũ dược sĩ {tenant.brand.shortName}. Nội dung mang tính tham khảo — luôn hỏi dược sĩ khi dùng thuốc.
+      </p>
+      <div class="sf-articles sf-articles--stack" style="margin-top: 2rem">
         {
           tenant.articles.map((a) => (
-            <a class="sf-article" href={a.href}>
+            <a class="sf-article sf-article--lg" href={a.href}>
               {a.imageUrl ? <img src={a.imageUrl} alt="" loading="lazy" /> : <div />}
               <div>
                 <h3>{a.title}</h3>
+                {a.excerpt ? <p class="sf-muted">{a.excerpt}</p> : null}
                 <time datetime={a.date}>{a.date}</time>
               </div>
             </a>

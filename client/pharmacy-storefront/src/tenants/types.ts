@@ -31,11 +31,15 @@ export interface PharmacyProduct {
 }
 
 export interface PharmacyArticle {
+  /** URL slug segment, e.g. phong-cam-cum */
+  slug: string;
   title: string;
   date: string;
   excerpt?: string;
   imageUrl?: string;
   href: string;
+  /** Article body paragraphs */
+  body?: string[];
 }
 
 export interface PharmacyStat {
@@ -56,6 +60,19 @@ export interface PharmacySocial {
   youtube?: string;
 }
 
+export interface PharmacyBranch {
+  name: string;
+  address: string;
+  hours?: string;
+  phone?: string;
+}
+
+export interface PharmacyPageSection {
+  id: string;
+  title: string;
+  body: string;
+}
+
 export interface PharmacyTenantConfig {
   id: string;
   slug: string;
@@ -68,6 +85,8 @@ export interface PharmacyTenantConfig {
     name: string;
     shortName: string;
     logoText: string;
+    /** Optional public logo URL (preferred over logoText mark) */
+    logoUrl?: string;
     primaryColor: string;
     accentColor: string;
   };
@@ -78,6 +97,8 @@ export interface PharmacyTenantConfig {
     phone: string;
     email: string;
     social: PharmacySocial;
+    /** Optional multi-branch list for Liên hệ / Giới thiệu */
+    branches?: PharmacyBranch[];
   };
 
   nav: PharmacyNavItem[];
@@ -111,6 +132,17 @@ export interface PharmacyTenantConfig {
     bullets: string[];
     stats: PharmacyStat[];
     phoneMockImageUrl?: string;
+  };
+
+  pages: {
+    about: {
+      intro: string;
+      sections: PharmacyPageSection[];
+    };
+    contact: {
+      intro: string;
+      mapNote?: string;
+    };
   };
 
   footer: {

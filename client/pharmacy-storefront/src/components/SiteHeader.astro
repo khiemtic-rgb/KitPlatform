@@ -7,7 +7,14 @@ interface Props {
 }
 
 const { tenant, currentPath = '/' } = Astro.props;
-const phoneHref = `tel:${tenant.contact.phone.replace(/\s/g, '')}`;
+const phoneDigits = tenant.contact.phone.replace(/[^\d+]/g, '');
+const phoneHref =
+  phoneDigits.length >= 8 ? `tel:${phoneDigits}` : tenant.appPromo.appUrl;
+const isCurrent = (href: string) => {
+  if (href === '/') return currentPath === '/';
+  if (href.startsWith('/#')) return false;
+  return currentPath === href || currentPath.startsWith(`${href}/`);
+};
 ---
 
 <div class="sf-topbar">
@@ -35,19 +42,78 @@ const phoneHref = `tel:${tenant.contact.phone.replace(/\s/g, '')}`;
 
 <header class="sf-header">
   <div class="sf-container sf-header__inner">
-    <a class="sf-logo" href="/">
-      <span class="sf-logo__mark">{tenant.brand.logoText}</span>
-      <span>{tenant.brand.name}</span>
+    <a class="sf-logo" href="/" aria-label={tenant.brand.name}>
+      {
+        tenant.brand.logoUrl ? (
+          <img class="sf-logo__img" src={tenant.brand.logoUrl} alt={tenant.brand.name} width="200" height="56" />
+        ) : (
+          <>
+            <span class="sf-logo__mark">{tenant.brand.logoText}</span>
+            <span class="sf-logo__name">{tenant.brand.name}</span>
+          </>
+        )
+      }
     </a>
     <nav class="sf-nav" aria-label="Chính">
       {
         tenant.nav.map((item) => (
-          <a href={item.href} aria-current={item.href === currentPath ? 'page' : undefined}>
+          <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
             {item.label}
           </a>
         ))
       }
     </nav>
-    <a class="sf-btn sf-btn--primary" href={tenant.appPromo.appUrl}>Đặt thuốc</a>
+    <div class="sf-header__actions">
+      <a class="sf-btn sf-btn--primary sf-header__cta" href={tenant.appPromo.appUrl}>Đặt thuốc</a>
+      <button
+        type="button"
+        class="sf-nav-toggle"
+        aria-expanded="false"
+        aria-controls="sf-mobile-nav"
+        data-sf-nav-toggle
+      >
+        <span class="sf-nav-toggle__bars" aria-hidden="true"></span>
+        <span class="sf-visually-hidden">Menu</span>
+      </button>
+    </div>
+  </div>
+  <div class="sf-mobile-nav" id="sf-mobile-nav" data-sf-mobile-nav hidden>
+    <div class="sf-container sf-mobile-nav__inner">
+      {
+        tenant.nav.map((item) => (
+          <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
+            {item.label}
+          </a>
+        ))
+      }
+      <a class="sf-btn sf-btn--primary" href={tenant.appPromo.appUrl}>Đặt thuốc ngay</a>
+    </div>
   </div>
 </header>
+
+<script>
+  function bindNav() {
+    const toggle = document.querySelector('[data-sf-nav-toggle]');
+    const panel = document.querySelector('[data-sf-mobile-nav]');
+    if (!(toggle instanceof HTMLButtonElement) || !(panel instanceof HTMLElement)) return;
+
+    const setOpen = (open: boolean) => {
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggle.classList.toggle('is-open', open);
+      if (open) panel.removeAttribute('hidden');
+      else panel.setAttribute('hidden', '');
+    };
+
+    toggle.addEventListener('click', () => {
+      const open = toggle.getAttribute('aria-expanded') !== 'true';
+      setOpen(open);
+    });
+
+    panel.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => setOpen(false));
+    });
+  }
+
+  bindNav();
+  document.addEventListener('astro:page-load', bindNav);
+</script>
