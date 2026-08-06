@@ -48,24 +48,6 @@ function usernameFromEmail(email: string): string {
   return cleaned || 'parent';
 }
 
-function FamixaMark() {
-  return (
-    <svg className="fx-logo-mark" viewBox="0 0 40 40" aria-hidden>
-      <circle cx="20" cy="20" r="20" fill="#1a5c45" />
-      <path
-        d="M20 8.5c-1.2 3.2-5.2 5.4-8.2 5.8 1.8 1.2 3.2 3.2 3.6 5.6C18.2 17.2 20 14.8 20 14.8s1.8 2.4 4.6 4.6c.4-2.4 1.8-4.4 3.6-5.6-3-.4-7-2.6-8.2-5.8z"
-        fill="#7dcf8a"
-      />
-      <path
-        d="M13.5 22.5h13v8.2c0 1.2-.9 2.1-2.1 2.1h-8.8c-1.2 0-2.1-.9-2.1-2.1v-8.2z"
-        fill="#fff"
-      />
-      <path d="M11.8 22.8 L20 15.2l8.2 7.6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <rect x="18.2" y="26.2" width="3.6" height="4.4" rx="0.6" fill="#1a5c45" />
-    </svg>
-  );
-}
-
 function IconUser() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden>
@@ -153,7 +135,7 @@ export function ParentUnlockPage() {
   const setParentSession = useSessionStore((s) => s.setParentSession);
   const setFamily = useSessionStore((s) => s.setFamily);
   const lastEmail = readLastEmail();
-  const [mode, setMode] = useState<Mode>(lastEmail ? 'login' : 'register');
+  const [mode, setMode] = useState<Mode>('login');
   const [loginStyle, setLoginStyle] = useState<LoginStyle>('email');
   const [showAdvancedLogin, setShowAdvancedLogin] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
@@ -348,24 +330,26 @@ export function ParentUnlockPage() {
 
   return (
     <div className="fx-auth">
-      <header className="fx-auth-brand">
-        <div className="fx-auth-brand-row">
-          <div className="fx-auth-brand-lockup">
-            <FamixaMark />
-            <div>
-              <div className="fx-auth-wordmark">Famixa</div>
-              <p className="fx-auth-tagline">Một nhà · Một kế hoạch · Một ngày</p>
-            </div>
-          </div>
+      <div className="fx-auth-atmosphere" aria-hidden>
+        <span className="fx-auth-leaf is-a" />
+        <span className="fx-auth-leaf is-b" />
+        <span className="fx-auth-leaf is-c" />
+      </div>
+
+      <header className="fx-auth-hero">
+        <div className="fx-auth-brand-lockup">
           <img
             className="fx-auth-mascot"
-            src="/unlock/fami-mascot.png"
+            src="/brand/fami-mascot-mark.png"
             alt=""
-            width={88}
-            height={88}
+            width={64}
+            height={64}
             decoding="async"
           />
+          <span className="fx-auth-wordmark">Famixa</span>
         </div>
+        <p className="fx-auth-promise">Mỗi ngày nhà mình gần nhau hơn một chút</p>
+        <p className="fx-auth-tagline">Một nhà · Một kế hoạch · Một ngày</p>
       </header>
 
       <section className="fx-auth-card">
@@ -374,9 +358,6 @@ export function ParentUnlockPage() {
         {choiceToken && workspaces.length > 0 ? (
           <div className="fx-auth-form">
             <div className="fx-auth-card-head">
-              <span className="fx-auth-head-icon" aria-hidden>
-                <IconHome />
-              </span>
               <div>
                 <h1>Chọn nhà</h1>
                 <p>Email này thuộc nhiều workspace — chọn nhà Famixa để tiếp tục.</p>
@@ -414,12 +395,9 @@ export function ParentUnlockPage() {
         ) : mode === 'register' ? (
           <form className="fx-auth-form" onSubmit={onSubmit}>
             <div className="fx-auth-card-head">
-              <span className="fx-auth-head-icon" aria-hidden>
-                <IconUser />
-              </span>
               <div>
                 <h1>Tạo nhà Famixa</h1>
-                <p>Chỉ cần 3 thông tin — vào dùng ngay trong 30 giây.</p>
+                <p>Ba bước ngắn — vào dùng ngay.</p>
               </div>
             </div>
 
@@ -550,33 +528,75 @@ export function ParentUnlockPage() {
         ) : (
           <form className="fx-auth-form" onSubmit={onSubmit}>
             <div className="fx-auth-card-head">
-              <span className="fx-auth-head-icon" aria-hidden>
-                <IconUser />
-              </span>
               <div>
                 <h1>Đăng nhập</h1>
-                <p>Email và mật khẩu — vào lịch nhà ngay.</p>
+                <p>
+                  {loginStyle === 'tenant'
+                    ? 'Mã gia đình · tài khoản · mật khẩu.'
+                    : 'Chào bố mẹ — vào nhà chỉ với email.'}
+                </p>
               </div>
             </div>
 
-            <label className="fx-field">
-              <span>
-                Email <em>*</em>
-              </span>
-              <div className="fx-input">
-                <span className="fx-input-ico">
-                  <IconMail />
+            {loginStyle === 'email' ? (
+              <label className="fx-field">
+                <span>
+                  Email <em>*</em>
                 </span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  placeholder="ban@email.com"
-                  required={loginStyle === 'email'}
-                />
-              </div>
-            </label>
+                <div className="fx-input">
+                  <span className="fx-input-ico">
+                    <IconMail />
+                  </span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                    placeholder="ban@email.com"
+                    required
+                  />
+                </div>
+              </label>
+            ) : null}
+
+            {loginStyle === 'tenant' ? (
+              <>
+                <label className="fx-field">
+                  <span>
+                    Mã gia đình <em>*</em>
+                  </span>
+                  <div className="fx-input">
+                    <span className="fx-input-ico">
+                      <IconHome />
+                    </span>
+                    <input
+                      value={tenantCode}
+                      onChange={(e) => setTenantCode(e.target.value.toUpperCase())}
+                      autoComplete="organization"
+                      placeholder="VD: DEMO_FAMILY"
+                      required
+                    />
+                  </div>
+                </label>
+                <label className="fx-field">
+                  <span>
+                    Tài khoản phụ huynh <em>*</em>
+                  </span>
+                  <div className="fx-input">
+                    <span className="fx-input-ico">
+                      <IconUser />
+                    </span>
+                    <input
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      autoComplete="username"
+                      placeholder="VD: admin"
+                      required
+                    />
+                  </div>
+                </label>
+              </>
+            ) : null}
 
             <label className="fx-field">
               <span>
@@ -618,42 +638,11 @@ export function ParentUnlockPage() {
                   });
                 }}
               >
-                <span>Cách khác (mã gia đình)</span>
-                <em>{showAdvancedLogin ? 'Thu gọn' : 'Mở'}</em>
+                <span>
+                  {showAdvancedLogin ? 'Đăng nhập bằng email' : 'Cách khác (mã gia đình)'}
+                </span>
+                <em>{showAdvancedLogin ? 'Dùng email' : 'Mở'}</em>
               </button>
-              {showAdvancedLogin ? (
-                <>
-                  <label className="fx-field">
-                    <span>Mã gia đình</span>
-                    <div className="fx-input">
-                      <span className="fx-input-ico">
-                        <IconHome />
-                      </span>
-                      <input
-                        value={tenantCode}
-                        onChange={(e) => setTenantCode(e.target.value.toUpperCase())}
-                        autoComplete="organization"
-                        placeholder="VD: FOS_NHAXYZ123"
-                        required={loginStyle === 'tenant'}
-                      />
-                    </div>
-                  </label>
-                  <label className="fx-field">
-                    <span>Tài khoản phụ huynh</span>
-                    <div className="fx-input">
-                      <span className="fx-input-ico">
-                        <IconUser />
-                      </span>
-                      <input
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        autoComplete="username"
-                        required={loginStyle === 'tenant'}
-                      />
-                    </div>
-                  </label>
-                </>
-              ) : null}
             </div>
 
             <button className="fx-auth-submit" type="submit" disabled={loading}>
