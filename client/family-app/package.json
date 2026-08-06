@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File ../../scripts/ensure-api.ps1 && vite",
     "dev:vite": "vite",
+    "dev:remote-api": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test:ui": "playwright test",

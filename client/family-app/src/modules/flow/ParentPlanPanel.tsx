@@ -9,6 +9,7 @@ import { avatarEmoji, inferGenderFromName } from '@/shared/ui/avatarGender';
 import { canRemindChildNow, remindChildIdleLabel } from '@/shared/reminders/remind-window';
 import type { PlanCalendarItem } from '@/modules/flow/planGroups';
 import { unlockStatusLabelVi } from '@/modules/flow/planGroups';
+import { shortPersonName } from '@/shared/voice/family-voice';
 
 type PlanGroup = 'today' | 'routine' | 'challenge' | 'calendar';
 export type PlanMissionFilter = 'all' | 'need_help' | 'waiting_child' | 'done';
@@ -20,6 +21,8 @@ type Props = {
   parentHelloLabel: string;
   parentRole: string;
   childFocusLabel: string;
+  /** When viewing whole family, surface member name under each task title. */
+  showMemberOnRow?: boolean;
   hasChildren: boolean;
   childPicker: ReactNode;
   noChildNotice: ReactNode;
@@ -141,27 +144,38 @@ export function ParentPlanPanel(props: Props) {
     mode: 'priority' | 'next',
   ) => {
     const who = item.memberName?.trim() || props.childFocusLabel;
+    const whoShort = shortPersonName(who);
+    const showWho = Boolean(props.showMemberOnRow && item.memberName?.trim());
+    const emoji = avatarEmoji(inferGenderFromName(who), 'child');
     const pill = statusPill(item, props.localTime);
     const awaiting =
       mode === 'priority' && props.needsParentCheck(item) && Boolean(item.evidenceUrl);
     const kind: 'awaiting' | 'overdue' = awaiting ? 'awaiting' : 'overdue';
     return (
-      <li key={item.id} className={`pp-row is-${mode}`}>
+      <li key={item.id} className={`pp-row is-${mode}${showWho ? ' has-who' : ''}`}>
         <time className="pp-row-time">{timeLabel(item)}</time>
         <span className="pp-row-ico" aria-hidden>
           {props.taskIcon(item.title)}
         </span>
         <div className="pp-row-body">
           <strong>{item.title}</strong>
+          {showWho ? (
+            <span className="pp-row-who-line" aria-label={`Việc của ${who}`}>
+              <i aria-hidden>{emoji}</i>
+              <em>{whoShort}</em>
+            </span>
+          ) : null}
           <p>
             {mode === 'priority'
               ? props.warmSupport(item, who, kind)
               : props.warmTip(item, who)}
           </p>
         </div>
-        <span className="pp-row-who" title={who} aria-label={`Việc của ${who}`}>
-          {avatarEmoji(inferGenderFromName(who), 'child')}
-        </span>
+        {!showWho ? (
+          <span className="pp-row-who" title={who} aria-label={`Việc của ${who}`}>
+            {emoji}
+          </span>
+        ) : null}
         <div className="pp-row-side">
           <span className={`pp-pill is-${pill.tone}`}>{pill.label}</span>
           {awaiting ? (
@@ -369,6 +383,9 @@ export function ParentPlanPanel(props: Props) {
           <ul className="pp-list is-done">
             {props.doneTodayItems.map((item) => {
               const who = item.memberName?.trim() || props.childFocusLabel;
+              const whoShort = shortPersonName(who);
+              const showWho = Boolean(props.showMemberOnRow && item.memberName?.trim());
+              const emoji = avatarEmoji(inferGenderFromName(who), 'child');
               return (
                 <li key={`done-${item.id}`} className="pp-row is-done">
                   <span className="pp-row-ico" aria-hidden>
@@ -376,7 +393,14 @@ export function ParentPlanPanel(props: Props) {
                   </span>
                   <div className="pp-row-body">
                     <strong>{item.title}</strong>
-                    <p>{who}</p>
+                    {showWho ? (
+                      <span className="pp-row-who-line" aria-label={`Việc của ${who}`}>
+                        <i aria-hidden>{emoji}</i>
+                        <em>{whoShort}</em>
+                      </span>
+                    ) : (
+                      <p>{who}</p>
+                    )}
                   </div>
                   <span className="pp-pill is-ok">Xong</span>
                 </li>

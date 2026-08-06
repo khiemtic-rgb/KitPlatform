@@ -7,10 +7,11 @@ import type {
   ChildGratitude,
   TeamUnlock,
 } from '@/shared/api/family-os.api';
-import { withEvidenceAuth } from '@/shared/upload/evidence-url';
+import { SoftEvidenceImg } from '@/shared/ui/SoftEvidenceImg';
 import { isKidMomentAudio } from '@/modules/flow/kidMomentAck';
 import { shortMemberName } from '@/modules/flow/relationshipGraph';
 import { avatarEmoji, inferGenderFromName } from '@/shared/ui/avatarGender';
+import { memoryFromSaved, pickDistinctMemories } from '@/shared/flow/family-memories';
 
 export type ParentHomeAttention =
   | {
@@ -446,9 +447,17 @@ export function ParentHomeStoryBody(props: Props) {
   });
 
   const momentCards: ReactNode[] = [];
+  const seenMomentTitles = new Set<string>();
+  const rememberTitle = (title: string) => {
+    const key = title.trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!key || seenMomentTitles.has(key)) return false;
+    seenMomentTitles.add(key);
+    return true;
+  };
+
   for (const m of props.unreadKidMoments.slice(0, 3)) {
+    if (!rememberTitle(m.noteVi || m.titleVi || '')) continue;
     const audio = isKidMomentAudio(m);
-    const src = m.photoUrl ? withEvidenceAuth(m.photoUrl) : undefined;
     momentCards.push(
       <button
         key={`u-${m.id}`}
@@ -461,12 +470,12 @@ export function ParentHomeStoryBody(props: Props) {
           <div className="phs-moment-audio" aria-hidden>
             ▶ ▁▃▅▇▅▃▁
           </div>
-        ) : src ? (
-          <img src={src} alt="" />
         ) : (
-          <span className="phs-moment-ph" aria-hidden>
-            📷
-          </span>
+          <SoftEvidenceImg
+            url={m.photoUrl}
+            fallback="📷"
+            fallbackClassName="phs-moment-ph"
+          />
         )}
         <strong className="phs-moment-title">{m.noteVi || m.titleVi}</strong>
         <em className="phs-moment-meta">{shortMemberName(m.memberName || 'Con')}</em>
@@ -474,6 +483,7 @@ export function ParentHomeStoryBody(props: Props) {
     );
   }
   for (const g of props.childGratitudes.slice(0, 2)) {
+    if (!rememberTitle(g.messageVi || '')) continue;
     momentCards.push(
       <button
         key={`g-${g.id}`}
@@ -490,11 +500,20 @@ export function ParentHomeStoryBody(props: Props) {
       </button>,
     );
   }
-  for (const m of props.savedMemories
-    .filter((x) => x.kind !== 'kid_moment' || !props.unreadKidMoments.some((u) => u.id === x.id))
-    .slice(0, 4)) {
+  const distinctSaved = pickDistinctMemories(
+    props.savedMemories
+      .filter(
+        (x) =>
+          x.kind !== 'kid_moment' || !props.unreadKidMoments.some((u) => u.id === x.id),
+      )
+      .map((e) => memoryFromSaved(e)),
+    4,
+  );
+  for (const mem of distinctSaved) {
+    const m = mem.entry;
+    if (!m) continue;
+    if (!rememberTitle(m.titleVi || mem.title)) continue;
     const audio = isKidMomentAudio(m);
-    const src = m.photoUrl && !audio ? withEvidenceAuth(m.photoUrl) : undefined;
     momentCards.push(
       <button
         key={m.id}
@@ -505,12 +524,16 @@ export function ParentHomeStoryBody(props: Props) {
         <span className="phs-moment-label">
           {audio ? 'Giọng nói' : m.kind === 'parent_voice' ? 'Lời khen' : 'Kỷ niệm'}
         </span>
-        {src ? (
-          <img src={src} alt="" />
-        ) : (
+        {audio ? (
           <span className="phs-moment-ph" aria-hidden>
-            {m.icon || '✨'}
+            {m.icon || '🎤'}
           </span>
+        ) : (
+          <SoftEvidenceImg
+            url={m.photoUrl}
+            fallback={m.icon || '✨'}
+            fallbackClassName="phs-moment-ph"
+          />
         )}
         <strong className="phs-moment-title">{m.titleVi}</strong>
         <em className="phs-moment-meta">{m.noteVi || m.memberName || ''}</em>

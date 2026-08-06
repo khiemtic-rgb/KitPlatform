@@ -91,6 +91,23 @@ export function formatMemoryDate(iso: string): string {
   return iso;
 }
 
+/** Relative chip for diary memory cards (“3 ngày trước”, not list index). */
+export function memoryRelativeAgoLabel(sortAt: number, now = new Date()): string {
+  if (!sortAt || sortAt <= 0) return 'Gần đây';
+  const diffMs = now.getTime() - sortAt;
+  if (diffMs < 0) return 'Gần đây';
+  const days = Math.floor(diffMs / 86_400_000);
+  if (days <= 0) return 'Hôm nay';
+  if (days === 1) return 'Hôm qua';
+  if (days < 7) return `${days} ngày trước`;
+  const weeks = Math.floor(days / 7);
+  if (days < 30) return weeks <= 1 ? '1 tuần trước' : `${weeks} tuần trước`;
+  const months = Math.floor(days / 30.4375);
+  if (months < 12) return months <= 1 ? '1 tháng trước' : `${months} tháng trước`;
+  const years = Math.floor(days / 365.25);
+  return years <= 1 ? '1 năm trước' : `${years} năm trước`;
+}
+
 function parseSortTime(iso: string): number {
   const t = new Date(iso).getTime();
   if (!Number.isNaN(t)) return t;
@@ -284,6 +301,36 @@ export function buildFamilyMemories(opts: {
 
 function normalizeTitle(title: string): string {
   return title.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/** Prefer favorited / photo / newer when several cards share the same title. */
+export function pickDistinctMemories(items: FamilyMemory[], limit: number): FamilyMemory[] {
+  const score = (m: FamilyMemory) =>
+    (m.entry?.isFavorite ? 8 : 0) +
+    (m.photoUrl?.trim() ? 4 : 0) +
+    (m.isNew ? 1 : 0);
+
+  const bestByTitle = new Map<string, FamilyMemory>();
+  for (const m of items) {
+    const key = normalizeTitle(m.title);
+    const prev = bestByTitle.get(key);
+    if (!prev || score(m) > score(prev) || (score(m) === score(prev) && m.sortAt > prev.sortAt)) {
+      bestByTitle.set(key, m);
+    }
+  }
+
+  const out: FamilyMemory[] = [];
+  const used = new Set<string>();
+  for (const m of items) {
+    const key = normalizeTitle(m.title);
+    if (used.has(key)) continue;
+    const best = bestByTitle.get(key);
+    if (!best) continue;
+    used.add(key);
+    out.push(best);
+    if (out.length >= limit) break;
+  }
+  return out;
 }
 
 export const FAMILY_MEMORY_EMPTY =

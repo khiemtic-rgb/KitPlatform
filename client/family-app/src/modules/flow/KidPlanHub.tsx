@@ -106,15 +106,19 @@ export function KidPlanHub(props: Props) {
   const nextPart = props.nextMission ? props.dayPartOf(props.nextMission) : null;
 
   const [openParts, setOpenParts] = useState<Record<KidPlanDayPart, boolean>>({
-    morning: true,
-    afternoon: true,
-    evening: true,
+    morning: false,
+    afternoon: false,
+    evening: false,
   });
   const [doneOpen, setDoneOpen] = useState(false);
 
   useEffect(() => {
-    if (!nextPart) return;
-    setOpenParts((prev) => ({ ...prev, [nextPart]: true }));
+    // Mở đúng chặng có việc tiếp theo; chặng đã xong thu gọn để trang không trống/loãng.
+    setOpenParts({
+      morning: nextPart === 'morning',
+      afternoon: nextPart === 'afternoon',
+      evening: nextPart === 'evening' || nextPart == null,
+    });
   }, [nextPart, nextId]);
 
   const dayPct = Math.max(
@@ -319,52 +323,60 @@ export function KidPlanHub(props: Props) {
                   </button>
 
                   {expanded ? (
-                    <ul className="kplan-stage-list">
-                      {group.items.map((item) => {
-                        const mark = stepMarkOf(item, nextId);
-                        const badge = stepBadge(mark);
-                        const clock = stepClock(item) || props.clockLabel(item);
-                        const actionable = mark === 'next' || mark === 'todo';
-                        const busyThis =
-                          props.busyId === item.id || (props.uploading && actionable);
-                        return (
-                          <li key={item.id} className={`kplan-step-wrap is-${mark}`}>
-                            <button
-                              type="button"
-                              className={`kplan-step is-${mark}${
-                                actionable ? ' is-action' : ' is-idle'
-                              }`}
-                              disabled={busyThis && actionable}
-                              onClick={() => {
-                                if (actionable) props.onStartItem(item);
-                              }}
-                              aria-label={
-                                actionable
-                                  ? `${mark === 'next' ? 'Bắt đầu' : 'Làm'} ${item.title}`
-                                  : mark === 'wait'
-                                    ? `${item.title} — chờ xác nhận`
-                                    : `${item.title} — đã xong`
-                              }
-                            >
-                              <span className="kplan-step-dot" aria-hidden>
-                                {stepGlyph(mark)}
-                              </span>
-                              <span
-                                className={`kplan-step-ico tone-${props.taskIconTone(item.title)}`}
-                                aria-hidden
+                    group.open.length > 0 ? (
+                      <ul className="kplan-stage-list">
+                        {group.open.map((item) => {
+                          const mark = stepMarkOf(item, nextId);
+                          const badge = stepBadge(mark);
+                          const clock = stepClock(item) || props.clockLabel(item);
+                          const actionable = mark === 'next' || mark === 'todo';
+                          const busyThis =
+                            props.busyId === item.id || (props.uploading && actionable);
+                          return (
+                            <li key={item.id} className={`kplan-step-wrap is-${mark}`}>
+                              <button
+                                type="button"
+                                className={`kplan-step is-${mark}${
+                                  actionable ? ' is-action' : ' is-idle'
+                                }`}
+                                disabled={busyThis && actionable}
+                                onClick={() => {
+                                  if (actionable) props.onStartItem(item);
+                                }}
+                                aria-label={
+                                  actionable
+                                    ? `${mark === 'next' ? 'Bắt đầu' : 'Làm'} ${item.title}`
+                                    : mark === 'wait'
+                                      ? `${item.title} — chờ xác nhận`
+                                      : `${item.title} — đã xong`
+                                }
                               >
-                                {props.taskIcon(item.title)}
-                              </span>
-                              <strong className="kplan-step-title">{item.title}</strong>
-                              <time className="kplan-step-time">{clock}</time>
-                              <span className={`kplan-step-badge tone-${badge.tone}`}>
-                                {badge.label}
-                              </span>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                                <span className="kplan-step-dot" aria-hidden>
+                                  {stepGlyph(mark)}
+                                </span>
+                                <span
+                                  className={`kplan-step-ico tone-${props.taskIconTone(item.title)}`}
+                                  aria-hidden
+                                >
+                                  {props.taskIcon(item.title)}
+                                </span>
+                                <strong className="kplan-step-title">{item.title}</strong>
+                                <time className="kplan-step-time">{clock}</time>
+                                <span className={`kplan-step-badge tone-${badge.tone}`}>
+                                  {badge.label}
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <p className="kplan-stage-cleared">
+                        {group.allDone
+                          ? 'Đã chinh phục chặng này — xem mục Đã hoàn thành bên dưới.'
+                          : 'Chưa có việc trong chặng này.'}
+                      </p>
+                    )
                   ) : null}
                 </section>
               );

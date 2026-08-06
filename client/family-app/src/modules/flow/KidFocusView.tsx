@@ -2049,6 +2049,11 @@ export function KidFocusView({
     setMissionDoneError(null);
   }, [nextMission?.id, tab]);
 
+  useEffect(() => {
+    if (tab !== 'tasks') return;
+    window.scrollTo(0, 0);
+  }, [tab]);
+
   const resetEvidenceDraft = () => {
     setEvidenceFile(null);
     if (evidencePreview) URL.revokeObjectURL(evidencePreview);

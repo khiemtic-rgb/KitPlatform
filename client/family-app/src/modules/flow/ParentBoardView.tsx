@@ -117,6 +117,7 @@ import {
   previousCalendarDate,
 } from '@/shared/nudge/nudge-stats';
 import { ScreenBoundaryPanel } from '@/shared/ui/ScreenBoundaryPanel';
+import { SoftEvidenceImg } from '@/shared/ui/SoftEvidenceImg';
 import { DailyMirrorEmptyPanel } from '@/shared/ui/DailyMirrorEmptyPanel';
 import {
   avatarEmoji,
@@ -168,6 +169,7 @@ import {
   isMovieNightUnlock,
   FAMILY_MEMORY_EMPTY,
   FAMILY_MEMORY_VISIBLE,
+  pickDistinctMemories,
   type FamilyMemory,
 } from '@/shared/flow/family-memories';
 import {
@@ -2565,7 +2567,7 @@ export function ParentBoardView({
 
   const diaryFeatureMoments = useMemo(
     () =>
-      diaryPrettyMemories.slice(0, 5).map((m) => ({
+      pickDistinctMemories(diaryPrettyMemories, 5).map((m) => ({
         id: m.id,
         icon: m.icon,
         title: m.title,
@@ -2579,7 +2581,7 @@ export function ParentBoardView({
   );
 
   const diaryMemoriesVisible = useMemo(
-    () => diaryPrettyMemories.slice(0, FAMILY_MEMORY_VISIBLE),
+    () => pickDistinctMemories(diaryPrettyMemories, FAMILY_MEMORY_VISIBLE),
     [diaryPrettyMemories],
   );
 
@@ -4011,13 +4013,12 @@ export function ParentBoardView({
                       openMemoriesSheet();
                     }}
                   >
-                    {homeMoment.photoUrl ? (
-                      <img src={homeMoment.photoUrl} alt="" />
-                    ) : (
-                      <span className="ph-b4-moment-ph" aria-hidden>
-                        🏆
-                      </span>
-                    )}
+                    <SoftEvidenceImg
+                      url={homeMoment.photoUrl}
+                      fallback="🏆"
+                      fallbackClassName="ph-b4-moment-ph"
+                      auth={withEvidenceAuth}
+                    />
                     <strong>{homeMoment.titleVi}</strong>
                     {homeMoment.detailVi ? <em>{homeMoment.detailVi}</em> : null}
                   </button>
@@ -4149,6 +4150,7 @@ export function ParentBoardView({
           parentHelloLabel={parentHelloLabel}
           parentRole={parentRole}
           childFocusLabel={childFocusLabel}
+          showMemberOnRow={effectiveChildFocus === 'all'}
           hasChildren={hasChildren}
           childPicker={renderMemberChrome()}
           noChildNotice={renderNoChildNotice()}
@@ -5201,10 +5203,11 @@ export function ParentBoardView({
                     className={`ph-diary-mem-sheet-card${m.locked ? ' is-locked' : ''}`}
                   >
                     {m.photoUrl ? (
-                      <img
-                        src={withEvidenceAuth(m.photoUrl)}
-                        alt=""
+                      <SoftEvidenceImg
+                        url={m.photoUrl}
+                        fallback={m.icon}
                         className="ph-diary-mem-sheet-photo"
+                        auth={withEvidenceAuth}
                       />
                     ) : (
                       <span aria-hidden>{m.icon}</span>

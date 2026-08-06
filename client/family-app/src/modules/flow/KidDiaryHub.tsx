@@ -1,4 +1,5 @@
 import { useMemo, useRef, type ReactNode } from 'react';
+import { SoftEvidenceImg } from '@/shared/ui/SoftEvidenceImg';
 
 const STORY_HL_RE =
   /(tự giác đánh răng|đánh răng|huy hiệu|lời yêu thương|đọc sách|giúp mẹ|giúp bố|không cần nhắc)/gi;
@@ -272,7 +273,11 @@ export function KidDiaryHub(props: Props) {
             onClick={props.onOpenMoments}
             aria-label="Xem khoảnh khắc"
           >
-            <img src={polaroidUrl} alt="" decoding="async" />
+            <SoftEvidenceImg
+              url={polaroidUrl}
+              fallback={heroMoment?.icon || '📷'}
+              auth={(u) => u?.trim() || undefined}
+            />
             <i className="kdiary-tale-pin" aria-hidden>
               ♥
             </i>
@@ -356,10 +361,13 @@ export function KidDiaryHub(props: Props) {
                           <i>{m.duration || '0:18'}</i>
                         </div>
                       </div>
-                    ) : m.imageUrl ? (
-                      <img src={m.imageUrl} alt="" decoding="async" />
                     ) : (
-                      <span className="kdiary-mcard-fallback">{m.icon || meta.badgeIcon}</span>
+                      <SoftEvidenceImg
+                        url={m.imageUrl}
+                        fallback={m.icon || meta.badgeIcon}
+                        fallbackClassName="kdiary-mcard-fallback"
+                        auth={(u) => u?.trim() || undefined}
+                      />
                     )}
                     {m.kind === 'video' ? (
                       <i className="kdiary-mcard-play" aria-hidden>
@@ -636,11 +644,12 @@ export function KidDiaryHub(props: Props) {
             props.memories.map((m) => (
               <article key={m.id} className="kdiary-album-card" role="listitem">
                 <div className="kdiary-album-media" aria-hidden>
-                  {m.imageUrl ? (
-                    <img src={m.imageUrl} alt="" decoding="async" />
-                  ) : (
-                    <span className="kdiary-album-fallback">{m.icon || '📸'}</span>
-                  )}
+                  <SoftEvidenceImg
+                    url={m.imageUrl}
+                    fallback={m.icon || '📸'}
+                    fallbackClassName="kdiary-album-fallback"
+                    auth={(u) => u?.trim() || undefined}
+                  />
                 </div>
                 <div className="kdiary-album-cap">
                   <strong>{m.title}</strong>

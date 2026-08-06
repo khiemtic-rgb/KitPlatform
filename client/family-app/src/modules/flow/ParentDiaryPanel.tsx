@@ -1,7 +1,10 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { DayFlowCommitment } from '@/shared/api/family-os.api';
 import type { FamilyMemory } from '@/shared/flow/family-memories';
-import { FAMILY_MEMORY_EMPTY } from '@/shared/flow/family-memories';
+import {
+  FAMILY_MEMORY_EMPTY,
+  memoryRelativeAgoLabel,
+} from '@/shared/flow/family-memories';
 import { avatarEmoji, inferGenderFromName } from '@/shared/ui/avatarGender';
 import { isKidMomentAudio } from '@/modules/flow/kidMomentAck';
 
@@ -104,14 +107,25 @@ function momentKindIcon(mem: FamilyMemory): string {
   return mem.icon || '✨';
 }
 
-function memoryAgoLabel(date: string, idx: number): string {
-  const raw = (date || '').toLowerCase();
-  if (raw.includes('năm')) return date;
-  if (raw.includes('tháng')) return date;
-  if (idx === 0) return 'Gần đây';
-  if (idx === 1) return '1 năm trước';
-  if (idx === 2) return '2 năm trước';
-  return `${idx} năm trước`;
+function MemoryCardArt(props: {
+  photoUrl?: string;
+  icon: string;
+  withEvidenceAuth: (url?: string | null) => string | undefined;
+  audio?: boolean;
+  emojiClassName?: string;
+}) {
+  const src = props.photoUrl ? props.withEvidenceAuth(props.photoUrl) : undefined;
+  const [failed, setFailed] = useState(false);
+  const [seenSrc, setSeenSrc] = useState(src);
+  if (seenSrc !== src) {
+    setSeenSrc(src);
+    setFailed(false);
+  }
+  if (!src || failed) {
+    if (props.audio) return <span className="pd-wave">♪ ▄ ▅ ▆ ▅ ▄</span>;
+    return <span className={props.emojiClassName}>{props.icon}</span>;
+  }
+  return <img src={src} alt="" onError={() => setFailed(true)} />;
 }
 
 export function ParentDiaryPanel(props: Props) {
@@ -362,9 +376,6 @@ export function ParentDiaryPanel(props: Props) {
           ) : (
             <div className="pd-hscroll" role="list">
               {momentCards.map((m) => {
-                const photo = m.memory.photoUrl
-                  ? props.withEvidenceAuth(m.memory.photoUrl)
-                  : undefined;
                 const audio = isKidMomentAudio({
                   icon: m.memory.entry?.icon || m.memory.icon,
                   photoUrl: m.memory.photoUrl || m.memory.entry?.photoUrl,
@@ -386,13 +397,13 @@ export function ParentDiaryPanel(props: Props) {
                       {m.memory.entry?.isFavorite ? '❤️' : '🤍'}
                     </button>
                     <div className={`pd-moment-art${audio ? ' is-audio' : ''}`} aria-hidden>
-                      {photo ? (
-                        <img src={photo} alt="" />
-                      ) : audio ? (
-                        <span className="pd-wave">♪ ▄ ▅ ▆ ▅ ▄</span>
-                      ) : (
-                        <span className="pd-moment-emoji">{m.icon}</span>
-                      )}
+                      <MemoryCardArt
+                        photoUrl={m.memory.photoUrl}
+                        icon={m.icon}
+                        withEvidenceAuth={props.withEvidenceAuth}
+                        audio={audio}
+                        emojiClassName="pd-moment-emoji"
+                      />
                     </div>
                     <strong>{m.title}</strong>
                     <em>{m.caption}</em>
@@ -520,17 +531,19 @@ export function ParentDiaryPanel(props: Props) {
             <p className="pd-empty">{FAMILY_MEMORY_EMPTY}</p>
           ) : (
             <div className="pd-hscroll" role="list">
-              {props.memories.slice(0, 8).map((m, idx) => {
-                const photo = m.photoUrl ? props.withEvidenceAuth(m.photoUrl) : undefined;
-                return (
+              {props.memories.slice(0, 8).map((m) => (
                   <article
                     key={m.id}
                     className={`pd-memory${m.locked ? ' is-locked' : ''}`}
                     role="listitem"
                   >
-                    <span className="pd-memory-ago">{memoryAgoLabel(m.date, idx)}</span>
+                    <span className="pd-memory-ago">{memoryRelativeAgoLabel(m.sortAt)}</span>
                     <div className="pd-memory-art" aria-hidden>
-                      {photo ? <img src={photo} alt="" /> : <span>{m.icon}</span>}
+                      <MemoryCardArt
+                        photoUrl={m.photoUrl}
+                        icon={m.icon}
+                        withEvidenceAuth={props.withEvidenceAuth}
+                      />
                     </div>
                     <strong>{m.title}</strong>
                     <button
@@ -545,8 +558,7 @@ export function ParentDiaryPanel(props: Props) {
                       {m.entry?.isFavorite ? '❤️' : '🤍'}
                     </button>
                   </article>
-                );
-              })}
+                ))}
             </div>
           )}
         </section>
