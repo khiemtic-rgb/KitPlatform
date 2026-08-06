@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-06T03:47:56.080Z",
+  "generatedAt": "2026-08-06T09:19:42.963Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 162,
-    "todayPageViews": 62,
-    "todayRequests": 328,
-    "last24hVisitors": 257,
-    "last24hPageViews": 126,
-    "last24hRequests": 704
+    "todayVisitors": 224,
+    "todayPageViews": 110,
+    "todayRequests": 570,
+    "last24hVisitors": 273,
+    "last24hPageViews": 131,
+    "last24hRequests": 795
   },
   "hourly": [
-    {
-      "time": "2026-08-05T04:00:00Z",
-      "visitors": 9,
-      "requests": 33
-    },
-    {
-      "time": "2026-08-05T05:00:00Z",
-      "visitors": 12,
-      "requests": 23
-    },
-    {
-      "time": "2026-08-05T06:00:00Z",
-      "visitors": 9,
-      "requests": 15
-    },
-    {
-      "time": "2026-08-05T07:00:00Z",
-      "visitors": 4,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-05T08:00:00Z",
-      "visitors": 12,
-      "requests": 44
-    },
-    {
-      "time": "2026-08-05T09:00:00Z",
-      "visitors": 9,
-      "requests": 24
-    },
     {
       "time": "2026-08-05T10:00:00Z",
       "visitors": 3,
@@ -123,8 +93,38 @@
     },
     {
       "time": "2026-08-06T03:00:00Z",
-      "visitors": 104,
-      "requests": 149
+      "visitors": 105,
+      "requests": 151
+    },
+    {
+      "time": "2026-08-06T04:00:00Z",
+      "visitors": 4,
+      "requests": 9
+    },
+    {
+      "time": "2026-08-06T05:00:00Z",
+      "visitors": 33,
+      "requests": 87
+    },
+    {
+      "time": "2026-08-06T06:00:00Z",
+      "visitors": 6,
+      "requests": 17
+    },
+    {
+      "time": "2026-08-06T07:00:00Z",
+      "visitors": 4,
+      "requests": 9
+    },
+    {
+      "time": "2026-08-06T08:00:00Z",
+      "visitors": 25,
+      "requests": 100
+    },
+    {
+      "time": "2026-08-06T09:00:00Z",
+      "visitors": 3,
+      "requests": 18
     }
   ],
   "daily": [
@@ -166,55 +166,51 @@
     },
     {
       "date": "2026-08-06",
-      "visitors": 235,
-      "pageViews": 82,
-      "requests": 528
+      "visitors": 311,
+      "pageViews": 130,
+      "requests": 770
     }
   ],
   "topPages": [
     {
       "path": "/vi/goi-cha-me/lam-guong-quan-trong-hon-day-bao-dua-tre-khong-nghe-nhung-gioi-cha-me-noi-tre-nhin-nhung-tac-cha-me-lam/",
-      "views": 61
-    },
-    {
-      "path": "/cdn-cgi/rum",
-      "views": 34
+      "views": 83
     },
     {
       "path": "/images/blog/lam-guong-quan-trong-hon-day-bao.png",
-      "views": 24
+      "views": 56
     },
     {
-      "path": "/vi/goi-cha-me/",
-      "views": 23
+      "path": "/cdn-cgi/rum",
+      "views": 44
     },
     {
       "path": "/",
-      "views": 23
+      "views": 34
     },
     {
-      "path": "/images/blog/phat-con-de-khong-bi-ton-thuong.png",
-      "views": 23
+      "path": "/vi/goi-cha-me/",
+      "views": 24
     },
     {
       "path": "/vi/",
+      "views": 23
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
       "views": 22
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 19
-    },
-    {
-      "path": "/robots.txt",
-      "views": 19
     },
     {
       "path": "/feed.json",
       "views": 18
     },
     {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
       "views": 18
+    },
+    {
+      "path": "/robots.txt",
+      "views": 16
     },
     {
       "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
@@ -225,11 +221,15 @@
       "views": 15
     },
     {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 15
+      "path": "/images/moment-sleep.png",
+      "views": 14
     },
     {
-      "path": "/vi/goi-cha-me/phat-con-the-nao-de-con-khong-ton-thuong-ky-luat-tich-cuc-trong-gia-dinh-modern/",
+      "path": "/_next/static/chunks/app/vi/page-b0e96d1fb6cc5bef.js",
+      "views": 14
+    },
+    {
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
       "views": 14
     }
   ]
