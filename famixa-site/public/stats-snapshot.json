@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-06T09:19:42.963Z",
+  "generatedAt": "2026-08-06T14:43:47.361Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 224,
-    "todayPageViews": 110,
-    "todayRequests": 570,
-    "last24hVisitors": 273,
-    "last24hPageViews": 131,
-    "last24hRequests": 795
+    "todayVisitors": 255,
+    "todayPageViews": 112,
+    "todayRequests": 631,
+    "last24hVisitors": 300,
+    "last24hPageViews": 133,
+    "last24hRequests": 843
   },
   "hourly": [
-    {
-      "time": "2026-08-05T10:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-05T11:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-05T12:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-05T13:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-05T14:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
     {
       "time": "2026-08-05T15:00:00Z",
       "visitors": 4,
@@ -123,8 +98,33 @@
     },
     {
       "time": "2026-08-06T09:00:00Z",
-      "visitors": 3,
-      "requests": 18
+      "visitors": 15,
+      "requests": 30
+    },
+    {
+      "time": "2026-08-06T10:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-06T11:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-06T12:00:00Z",
+      "visitors": 14,
+      "requests": 31
+    },
+    {
+      "time": "2026-08-06T13:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-06T14:00:00Z",
+      "visitors": 2,
+      "requests": 3
     }
   ],
   "daily": [
@@ -166,19 +166,19 @@
     },
     {
       "date": "2026-08-06",
-      "visitors": 311,
-      "pageViews": 130,
-      "requests": 770
+      "visitors": 353,
+      "pageViews": 132,
+      "requests": 831
     }
   ],
   "topPages": [
     {
       "path": "/vi/goi-cha-me/lam-guong-quan-trong-hon-day-bao-dua-tre-khong-nghe-nhung-gioi-cha-me-noi-tre-nhin-nhung-tac-cha-me-lam/",
-      "views": 83
+      "views": 84
     },
     {
       "path": "/images/blog/lam-guong-quan-trong-hon-day-bao.png",
-      "views": 56
+      "views": 62
     },
     {
       "path": "/cdn-cgi/rum",
@@ -186,18 +186,18 @@
     },
     {
       "path": "/",
-      "views": 34
+      "views": 33
     },
     {
       "path": "/vi/goi-cha-me/",
-      "views": 24
-    },
-    {
-      "path": "/vi/",
       "views": 23
     },
     {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 23
+    },
+    {
+      "path": "/vi/",
       "views": 22
     },
     {
@@ -206,10 +206,10 @@
     },
     {
       "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 18
+      "views": 17
     },
     {
-      "path": "/robots.txt",
+      "path": "/_next/static/chunks/718-2b1effa4778d9f77.js",
       "views": 16
     },
     {
@@ -217,20 +217,20 @@
       "views": 16
     },
     {
-      "path": "/_next/static/chunks/718-2b1effa4778d9f77.js",
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
       "views": 15
     },
     {
       "path": "/images/moment-sleep.png",
-      "views": 14
+      "views": 15
     },
     {
-      "path": "/_next/static/chunks/app/vi/page-b0e96d1fb6cc5bef.js",
-      "views": 14
+      "path": "/robots.txt",
+      "views": 13
     },
     {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 14
+      "path": "/images/banner-right.png",
+      "views": 13
     }
   ]
 }
