@@ -7,133 +7,347 @@ interface Props {
 
 const { tenant } = Astro.props;
 
-const serviceIcons: Record<string, string> = {
-  cart: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M6 6 5 3H2"/></svg>`,
-  chat: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 1 1 18 0z"/></svg>`,
-  delivery: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h11v10H3z"/><path d="M14 10h4l3 3v4h-7"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="17.5" cy="18.5" r="1.5"/></svg>`,
-  pulse: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>`,
+const trustIcons: Record<string, string> = {
+  badge: `<svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="23" stroke="#C8E0D6" stroke-width="1.5" fill="#fff"/><path d="M24 12.5 15.5 16v7.5c0 6.2 4 10.4 8.5 12 4.5-1.6 8.5-5.8 8.5-12V16L24 12.5z" fill="#004D40"/><path d="m19.8 24.2 2.7 2.7 5.7-5.9" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  advisor: `<svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="23" stroke="#C8E0D6" stroke-width="1.5" fill="#fff"/><circle cx="24" cy="18.5" r="4.5" fill="#004D40"/><path d="M13.5 33c1.4-4.8 5-7.2 10.5-7.2s9.1 2.4 10.5 7.2" fill="#0A7A5C"/></svg>`,
+  scooter: `<svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="23" stroke="#C8E0D6" stroke-width="1.5" fill="#fff"/><circle cx="16.5" cy="31" r="2.8" fill="#004D40"/><circle cx="32.5" cy="31" r="2.8" fill="#004D40"/><path d="M19 31h10.5l3.2-10H27" stroke="#004D40" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 21h5" stroke="#0A7A5C" stroke-width="2" stroke-linecap="round"/></svg>`,
+  privacy: `<svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="23" stroke="#C8E0D6" stroke-width="1.5" fill="#fff"/><path d="M24 12.8 15.8 16.2v7.2c0 5.7 3.7 9.6 8.2 11.1 4.5-1.5 8.2-5.4 8.2-11.1v-7.2L24 12.8z" fill="#004D40"/><rect x="21.2" y="22" width="5.6" height="6.2" rx="1.2" fill="#7DCEA0"/><path d="M22.4 22v-1.6a1.6 1.6 0 1 1 3.2 0V22" stroke="#7DCEA0" stroke-width="1.6"/></svg>`,
 };
+
+const statIcons: Record<string, string> = {
+  pharmacist: `<svg width="28" height="28" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="11" r="4" stroke="#004D40" stroke-width="1.8"/><path d="M8.5 25c1.2-4.2 4.2-6.2 7.5-6.2s6.3 2 7.5 6.2" stroke="#004D40" stroke-width="1.8" stroke-linecap="round"/><path d="M22 10h5M24.5 7.5v5" stroke="#0A7A5C" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  orders: `<svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect x="8" y="5" width="14" height="20" rx="2" stroke="#004D40" stroke-width="1.8"/><path d="M12 11h6M12 15h6M12 19h4" stroke="#0A7A5C" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+  heart: `<svg width="28" height="28" viewBox="0 0 32 32" fill="none"><path d="M16 26s-8.5-5.2-8.5-11A4.8 4.8 0 0 1 16 12.2 4.8 4.8 0 0 1 24.5 15C24.5 20.8 16 26 16 26z" fill="#E8F5EF" stroke="#004D40" stroke-width="1.7" stroke-linejoin="round"/></svg>`,
+};
+
+const serviceIcons: Record<string, string> = {
+  chat: `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="#E7F3EF"/><path d="M20 24.5A4.5 4.5 0 0 1 24.5 20H39a4.5 4.5 0 0 1 4.5 4.5v11A4.5 4.5 0 0 1 39 40h-8.2L24 46.2V40h-.5A4.5 4.5 0 0 1 19 35.5v-11z" fill="#fff" stroke="#004D40" stroke-width="2"/><circle cx="28" cy="30" r="1.6" fill="#0A7A5C"/><circle cx="32.5" cy="30" r="1.6" fill="#0A7A5C"/><circle cx="37" cy="30" r="1.6" fill="#0A7A5C"/></svg>`,
+  rx: `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="#E7F3EF"/><rect x="22" y="15" width="18" height="28" rx="3" fill="#fff" stroke="#004D40" stroke-width="2"/><path d="M27 24h8M27 29.5h8M27 35h5" stroke="#0A7A5C" stroke-width="2" stroke-linecap="round"/><circle cx="41.5" cy="40.5" r="7" fill="#004D40"/><path d="m38.8 40.5 1.8 1.8 3.6-3.8" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  delivery: `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="#E7F3EF"/><path d="M14 26h18v16H14z" fill="#fff" stroke="#004D40" stroke-width="2"/><path d="M32 30h7.5L46 36.5V42H32" fill="#fff" stroke="#004D40" stroke-width="2" stroke-linejoin="round"/><circle cx="21.5" cy="44.5" r="3.4" fill="#004D40"/><circle cx="40.5" cy="44.5" r="3.4" fill="#004D40"/><path d="M18 22h8" stroke="#0A7A5C" stroke-width="2" stroke-linecap="round"/></svg>`,
+  health: `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="#E7F3EF"/><rect x="20" y="16" width="16" height="26" rx="3" fill="#fff" stroke="#004D40" stroke-width="2"/><path d="M24.5 24h7M24.5 29.5h7" stroke="#0A7A5C" stroke-width="2" stroke-linecap="round"/><rect x="34" y="28" width="14" height="20" rx="3" fill="#fff" stroke="#004D40" stroke-width="2"/><path d="M41 33.5v9M36.5 38h9" stroke="#004D40" stroke-width="2.1" stroke-linecap="round"/><circle cx="41" cy="38" r="4.2" fill="#E7F3EF" stroke="#0A7A5C" stroke-width="1.6"/></svg>`,
+  family: `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="#E7F3EF"/><circle cx="25" cy="24" r="5" fill="#fff" stroke="#004D40" stroke-width="2"/><circle cx="40" cy="24" r="5" fill="#fff" stroke="#004D40" stroke-width="2"/><path d="M15.5 44c1.6-6 5.3-9 9.5-9s7.9 3 9.5 9" fill="#fff" stroke="#004D40" stroke-width="2" stroke-linecap="round"/><path d="M30.5 44c1.6-6 5.3-9 9.5-9s7.9 3 9.5 9" fill="#fff" stroke="#004D40" stroke-width="2" stroke-linecap="round"/><circle cx="32.5" cy="20.5" r="4.2" fill="#0A7A5C"/></svg>`,
+  gift: `<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="#E7F3EF"/><rect x="17" y="30" width="30" height="18" rx="3" fill="#fff" stroke="#004D40" stroke-width="2"/><path d="M15.5 30h33v-5h-33z" fill="#E7F3EF" stroke="#004D40" stroke-width="2"/><path d="M32 25v23" stroke="#004D40" stroke-width="2"/><path d="M32 25c-3.2-4.5-8-4.2-8-1.2 0 2.8 4.6 4.2 8 1.2zm0 0c3.2-4.5 8-4.2 8-1.2 0 2.8-4.6 4.2-8 1.2z" fill="#0A7A5C" stroke="#004D40" stroke-width="1.6" stroke-linejoin="round"/></svg>`,
+};
+
+const iconBag = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M7 8h11l-1 9H8.5L7 8z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/><path d="M7 8 6 5H3"/></svg>`;
+const iconPhone = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="8" y="3.5" width="8" height="17" rx="1.8"/><path d="M11 18.2h2"/></svg>`;
+const iconChevron = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg>`;
+const iconCartMini = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M6 6 5 3H2"/></svg>`;
+const badgeAppStore = `<svg width="120" height="40" viewBox="0 0 120 40" aria-hidden="true"><rect width="120" height="40" rx="7" fill="#0b0b0b"/><path fill="#fff" d="M24.4 20.3c0-2.4 1.3-4.5 3.2-5.6-.2-.7-.7-1.7-1.4-2.4-1.2-1.2-2.9-1.3-3.6-1.3-1.5.1-3 .9-3.8.9-.8 0-2.1-.9-3.5-.8-1.8.1-3.4 1-4.3 2.6-1.8 3.2-.5 7.9 1.3 10.5.9 1.3 2 2.7 3.4 2.7 1.3 0 1.9-.9 3.5-.9s2.1.9 3.5.9c1.5 0 2.4-1.3 3.3-2.6.7-.9 1.2-1.9 1.4-2.4-1.4-.6-2.4-2-2.4-3.6zm-2.3-8.1c.7-.9 1.2-2.1 1.1-3.3-1.1.1-2.4.7-3.2 1.6-.7.8-1.3 2.1-1.1 3.3 1.2.1 2.4-.6 3.2-1.6z"/><text x="38" y="15.5" fill="#fff" font-size="7.2" font-family="system-ui,-apple-system,sans-serif">Tải về trên</text><text x="38" y="28.5" fill="#fff" font-size="13.5" font-family="system-ui,-apple-system,sans-serif" font-weight="700">App Store</text></svg>`;
+const badgePlay = `<svg width="135" height="40" viewBox="0 0 135 40" aria-hidden="true"><rect width="135" height="40" rx="7" fill="#0b0b0b"/><path fill="#EA4335" d="M12.2 8.4 22.6 19l-4.1 4.1-8.8-5V9.8c0-.7.4-1.2 1-.1.4z"/><path fill="#FBBC04" d="m22.6 19 4.1 2.3c.7.4.7 1.1 0 1.5l-4.1 2.3-4.1-4.1 4.1-2z"/><path fill="#4285F4" d="M9.7 30.2c-.6.3-1.2-.1-1.2-.8V10.6c0-.7.6-1.1 1.2-.8l11.5 6.5-4.1 4.1-7.4 9.8z"/><path fill="#34A853" d="m18.5 23.1 4.1 4.1-11.7 3.5c-.4.1-.8 0-1.1-.2l8.7-7.4z"/><text x="34" y="15.5" fill="#fff" font-size="6.6" font-family="system-ui,sans-serif" letter-spacing=".4">TẢI NỘI DUNG TRÊN</text><text x="34" y="28.5" fill="#fff" font-size="13.2" font-family="system-ui,sans-serif" font-weight="700">Google Play</text></svg>`;
+
+const formatArticleDate = (iso: string) => {
+  const [y, m, d] = iso.split('-');
+  if (!y || !m || !d) return iso;
+  return `${d}/${m}/${y}`;
+};
+
+const trustBandIcons: Record<string, string> = {
+  badge: `<svg viewBox="0 0 40 40" fill="none"><path d="M20 6.5 10 10.5v8.2c0 7 4.4 11.7 10 13.5 5.6-1.8 10-6.5 10-13.5v-8.2L20 6.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m15.8 20.2 2.8 2.8 5.8-6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  pharmacist: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="14" r="4.2" stroke="currentColor" stroke-width="1.8"/><path d="M11.5 30c1.4-5 4.8-7.4 8.5-7.4s7.1 2.4 8.5 7.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M26 12.5h5M28.5 10v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+  customers: `<svg viewBox="0 0 40 40" fill="none"><circle cx="14" cy="15" r="3.3" stroke="currentColor" stroke-width="1.7"/><circle cx="26" cy="15" r="3.3" stroke="currentColor" stroke-width="1.7"/><circle cx="20" cy="12.5" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M7.8 29c1-3.6 3.2-5.2 6.2-5.2 1.4 0 2.6.4 3.5 1.1M22.5 24.9c.9-.7 2.1-1.1 3.5-1.1 3 0 5.2 1.6 6.2 5.2M14.2 24.2c1.1-3.2 3.4-4.7 5.8-4.7s4.7 1.5 5.8 4.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+  hours: `<svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="10.5" stroke="currentColor" stroke-width="1.8"/><path d="M20 14.5V20l4 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M28.5 11.5A13 13 0 1 1 11 28.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M28.5 8v4.2h-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+
+const appFeatureIcons: Record<string, string> = {
+  history: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="6.5" y="3.5" width="12.5" height="18.5" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M10 9h5.5M10 12.5h5.5M10 16h3.5" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/><circle cx="19.2" cy="19.2" r="4.4" fill="#fff" stroke="currentColor" stroke-width="1.55"/><path d="m17.4 19.2 1.25 1.25 2.45-2.55" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  bell: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="15.2" r="7.4" stroke="currentColor" stroke-width="1.7"/><path d="M14 11v4.5l2.8 1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 7.2V5.4M19.6 7.6l1.4-1.5M22.2 12.2h1.8" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/></svg>`,
+  pulse: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 23s-7.2-4.4-7.2-9.4A3.9 3.9 0 0 1 14 10.4 3.9 3.9 0 0 1 21.2 13.6C21.2 18.6 14 23 14 23z" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round"/><path d="M4 14.5h4.2l2-5.2 3.3 10.6 2.2-5.4H24" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  family: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="9.2" r="3.5" stroke="currentColor" stroke-width="1.7"/><path d="M7.2 22.2c1.2-4 3.8-5.9 6.8-5.9s5.6 1.9 6.8 5.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M20.2 7.4a4.6 4.6 0 0 1 0 7.2" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/></svg>`,
+  chat: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M10.2 7.4c1.1-.9 2.4-1.2 3.5-.7l1.1.5c.7.3 1 1.1.7 1.8l-.85 2.1c-.2.5-.1 1.1.3 1.45l1.5 1.35c.4.35 1 .4 1.5.15l2-.95c.7-.35 1.55-.1 1.9.55l.55 1.05c.45.85.15 1.9-.7 2.4l-1.55.95c-2.5 1.5-5.7.95-7.7-1.25L9.7 14.2c-1.85-2.05-2.1-5.1-.55-7.45l.55-.75c.35-.5 1-.7 1.5-.6z" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round"/><path d="M18.4 6.6c1.15-.15 2.25.4 2.85 1.35.5.8.55 1.8.2 2.65" stroke="currentColor" stroke-width="1.45" stroke-linecap="round"/><path d="M19.6 5.4c.35-.1.75 0 1 .3.25.3.3.7.15 1.05" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+  cart: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M5.8 7.8h16.8l-1.55 9.2H8L5.8 7.8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="10.2" cy="21.3" r="1.4" fill="currentColor"/><circle cx="18.6" cy="21.3" r="1.4" fill="currentColor"/><path d="M5.8 7.8 4.6 4.8H2.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+};
+
+const iconDownload = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v11"/><path d="m8 10 4 4 4-4"/><path d="M5 19h14"/><path d="M4 21h16"/></svg>`;
+
+const platformFeatureIcons: Record<string, string> = {
+  seo: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="8" y="11" width="32" height="24" rx="3" stroke="currentColor" stroke-width="2"/><path d="M8 17h32" stroke="currentColor" stroke-width="2"/><circle cx="13.5" cy="14" r="1.2" fill="currentColor"/><circle cx="17.5" cy="14" r="1.2" fill="currentColor"/><circle cx="21.5" cy="14" r="1.2" fill="currentColor"/><path d="M15 29h10M15 24h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+  sync: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M16 14h16l2.5 7V36a2.5 2.5 0 0 1-2.5 2.5H16A2.5 2.5 0 0 1 13.5 36V16.5A2.5 2.5 0 0 1 16 14z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M16 21h18.5" stroke="currentColor" stroke-width="2"/><path d="M24 9v5M28.5 11 24 15.5 19.5 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="31" r="4" stroke="currentColor" stroke-width="2"/><path d="M24 29v4.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  care: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="16" y="8" width="16" height="28" rx="3.5" stroke="currentColor" stroke-width="2"/><path d="M21.5 12h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="24" cy="31.5" r="1.4" fill="currentColor"/><path d="M34.5 17c2.6 1.3 4.2 3.4 4.2 6s-1.6 4.7-4.2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M37.5 19c1.5.9 2.4 2.2 2.4 4s-.9 3.1-2.4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+};
+
+const escapeHtml = (s: string) =>
+  s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+
+const trustBandTitleHtml = (() => {
+  const title = tenant.trustBand.title;
+  const hi = tenant.trustBand.titleHighlight;
+  if (!hi || !title.includes(hi)) return escapeHtml(title);
+  const i = title.indexOf(hi);
+  return `${escapeHtml(title.slice(0, i))}<em>${escapeHtml(hi)}</em>${escapeHtml(title.slice(i + hi.length))}`;
+})();
+
+const appTitleHtml = (() => {
+  const title = tenant.appSection.title;
+  const hi = tenant.appSection.titleHighlight;
+  if (!hi || !title.includes(hi)) return escapeHtml(title);
+  const i = title.indexOf(hi);
+  return `${escapeHtml(title.slice(0, i))}<em>${escapeHtml(hi)}</em>${escapeHtml(title.slice(i + hi.length))}`;
+})();
+
+const platformLeadHtml = (() => {
+  const lead = tenant.platformPromo.ctaLead ?? '';
+  const hi = tenant.platformPromo.ctaLeadHighlight;
+  if (!lead) return '';
+  if (!hi || !lead.includes(hi)) return escapeHtml(lead);
+  const i = lead.indexOf(hi);
+  return `${escapeHtml(lead.slice(0, i))}<strong>${escapeHtml(hi)}</strong>${escapeHtml(lead.slice(i + hi.length))}`;
+})();
 ---
 
+<!-- HERO -->
 <section class="sf-hero">
-  <div class="sf-container sf-hero__grid">
-    <div>
-      <h1>{tenant.hero.headline}</h1>
-      <p class="sf-hero__sub">{tenant.hero.subhead}</p>
-      <ul class="sf-trust">
-        {
-          tenant.hero.trustItems.map((item) => (
-            <li>
-              <span class="sf-trust__dot" />
-              {item.label}
-            </li>
-          ))
-        }
-      </ul>
-      <div class="sf-hero__actions">
-        <a class="sf-btn sf-btn--primary" href={tenant.hero.ctaPrimary.href}>
-          {tenant.hero.ctaPrimary.label}
-        </a>
-        <a class="sf-btn sf-btn--ghost" href={tenant.hero.ctaSecondary.href}>
-          {tenant.hero.ctaSecondary.label}
-        </a>
+  <div class="sf-container">
+    <div class="sf-hero__banner">
+      <div class="sf-hero__leaf" aria-hidden="true"></div>
+      <div class="sf-hero__copy">
+        <h1>{tenant.hero.headline}</h1>
+        <p class="sf-hero__sub">{tenant.hero.subhead}</p>
+        <ul class="sf-hero__trust">
+          {
+            tenant.hero.trustItems.map((item) => (
+              <li>
+                <span class="sf-hero__trust-icon" set:html={trustIcons[item.icon] ?? trustIcons.badge} />
+                <span class="sf-hero__trust-text">
+                  <strong>{item.label}</strong>
+                  {item.sublabel ? <small>{item.sublabel}</small> : null}
+                </span>
+              </li>
+            ))
+          }
+        </ul>
+        <div class="sf-hero__actions">
+          <a class="sf-btn sf-btn--primary sf-btn--icon" href={tenant.hero.ctaPrimary.href}>
+            <span class="sf-btn__icon" set:html={iconBag} />
+            {tenant.hero.ctaPrimary.label}
+          </a>
+          <a class="sf-btn sf-btn--ghost sf-btn--icon" href={tenant.hero.ctaSecondary.href}>
+            <span class="sf-btn__icon" set:html={iconPhone} />
+            {tenant.hero.ctaSecondary.label}
+          </a>
+        </div>
+      </div>
+      <div class="sf-hero__media">
+        <div class="sf-hero__photo">
+          <img
+            src={tenant.hero.imageUrl}
+            alt={`${tenant.brand.name} — tư vấn dược sĩ`}
+            width="1200"
+            height="760"
+            loading="eager"
+          />
+        </div>
+        <ul class="sf-hero__stats">
+          {
+            tenant.hero.heroStats.map((s) => (
+              <li>
+                {s.icon ? (
+                  <span class="sf-hero__stat-icon" set:html={statIcons[s.icon] ?? statIcons.heart} />
+                ) : null}
+                <span class="sf-hero__stat-text">
+                  {s.value ? <strong>{s.value}</strong> : <strong>{s.label}</strong>}
+                  <small>{s.value ? s.label : s.sublabel}</small>
+                </span>
+              </li>
+            ))
+          }
+        </ul>
       </div>
     </div>
-    <div class="sf-hero__media">
-      <img src={tenant.hero.imageUrl} alt={`${tenant.brand.name} — tư vấn dược sĩ`} loading="eager" />
-      <div class="sf-app-card">
+  </div>
+</section>
+
+<!-- TRUST BAND -->
+<section class="sf-trustband">
+  <div class="sf-container">
+    <div class="sf-trustband__card">
+      <h2 class="sf-trustband__title" set:html={trustBandTitleHtml} />
+      <div class="sf-trustband__grid">
         {
-          tenant.appPromo.qrImageUrl ? (
-            <img
-              class="sf-app-card__qr"
-              src={tenant.appPromo.qrImageUrl}
-              alt="QR mở App Novixa"
-              width="72"
-              height="72"
-              loading="lazy"
-            />
-          ) : null
+          tenant.trustBand.items.map((item) => (
+            <div class="sf-trustband__item">
+              <span class="sf-trustband__icon" set:html={trustBandIcons[item.icon ?? ''] ?? trustBandIcons.badge} />
+              <div class="sf-trustband__text">
+                <span class="sf-trustband__label">{item.label}</span>
+                <strong class="sf-trustband__value">{item.value}</strong>
+                {item.sublabel ? <small class="sf-trustband__note">{item.sublabel}</small> : null}
+              </div>
+            </div>
+          ))
         }
-        <div class="sf-app-card__copy">
-          <strong>{tenant.appPromo.title}</strong>
-          <div class="sf-app-card__links">
-            <a href={tenant.appPromo.appUrl}>Mở App Novixa</a>
-            <a href={tenant.appPromo.appStoreUrl}>App Store</a>
-            <a href={tenant.appPromo.playStoreUrl}>Google Play</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- APP -->
+<section class="sf-section" id="app">
+  <div class="sf-container sf-app">
+    <div class="sf-app__visual">
+      <div class="sf-app__phone" aria-hidden="true">
+        <div class="sf-phone">
+          <div class="sf-phone__notch"></div>
+          <div class="sf-phone__screen">
+            <div class="sf-phone__header">
+              <div class="sf-phone__hello">
+                Xin chào, <strong>Nguyễn Văn A</strong>
+              </div>
+              <div class="sf-phone__header-icons">
+                <span></span><span></span>
+              </div>
+              <div class="sf-phone__members">
+                <div class="sf-phone__member is-active"><i></i><b>Bố</b></div>
+                <div class="sf-phone__member"><i></i><b>Mẹ</b></div>
+                <div class="sf-phone__member"><i></i><b>Con gái</b></div>
+                <div class="sf-phone__member"><i></i><b>Ông</b></div>
+                <div class="sf-phone__member"><i></i><b>Bà</b></div>
+              </div>
+            </div>
+            <div class="sf-phone__body">
+              <div class="sf-phone__section-title">Nhắc uống thuốc</div>
+              <div class="sf-phone__med">
+                <i></i>
+                <div>
+                  <strong>08:00</strong>
+                  <em>Amoxicillin 500mg</em>
+                  <small>Uống 1 viên</small>
+                </div>
+                <button type="button" tabindex="-1">Đã uống</button>
+              </div>
+              <div class="sf-phone__med">
+                <i></i>
+                <div>
+                  <strong>19:00</strong>
+                  <em>Vitamin D3</em>
+                  <small>Uống 1 viên</small>
+                </div>
+                <button type="button" tabindex="-1">Đã uống</button>
+              </div>
+            </div>
+            <nav class="sf-phone__nav">
+              <span class="is-active">Trang chủ</span>
+              <span>Đơn thuốc</span>
+              <span>Thông báo</span>
+              <span>Cá nhân</span>
+            </nav>
           </div>
+        </div>
+      </div>
+      <img
+        class="sf-app__family"
+        src={tenant.appSection.familyImageUrl}
+        alt="Gia đình dùng App Novixa"
+        width="1008"
+        height="819"
+        loading="lazy"
+      />
+    </div>
+    <div class="sf-app__copy">
+      <h2 set:html={appTitleHtml} />
+      <div class="sf-app__features">
+        {
+          tenant.appSection.features.map((f) => (
+            <div class="sf-app__feature">
+              <span class="sf-app__feature-icon" set:html={appFeatureIcons[f.icon] ?? appFeatureIcons.pulse} />
+              <p>{f.title}</p>
+            </div>
+          ))
+        }
+      </div>
+      <div class="sf-app__cta">
+        <a class="sf-btn sf-btn--primary sf-btn--icon" href={tenant.appPromo.appUrl}>
+          <span class="sf-btn__icon" set:html={iconDownload} />
+          Tải App Novixa ngay
+        </a>
+        <div class="sf-app__stores">
+          <a class="sf-store" href={tenant.appPromo.appStoreUrl} aria-label="App Store" set:html={badgeAppStore} />
+          <a class="sf-store" href={tenant.appPromo.playStoreUrl} aria-label="Google Play" set:html={badgePlay} />
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="sf-section" id="dich-vu">
-  <div class="sf-container sf-split">
-    <div>
-      <div class="sf-section__head">
-        <h2>Dịch vụ của chúng tôi</h2>
-      </div>
-      <div class="sf-services">
-        {
-          tenant.services.map((s) => (
-            <article class="sf-service">
-              <div class="sf-service__icon" set:html={serviceIcons[s.icon] ?? '◆'} />
-              <h3>{s.title}</h3>
-              <p>{s.description}</p>
-            </article>
-          ))
-        }
-      </div>
+<!-- SERVICES -->
+<section class="sf-section sf-section--muted" id="dich-vu">
+  <div class="sf-container">
+    <h2 class="sf-section-title sf-section-title--center">Dịch vụ của chúng tôi</h2>
+    <div class="sf-services-grid">
+      {
+        tenant.services.map((s) => (
+          <article class="sf-service-card">
+            <div class="sf-service-card__icon" set:html={serviceIcons[s.icon] ?? serviceIcons.rx} />
+            <h3>{s.title}</h3>
+            <p>{s.description}</p>
+          </article>
+        ))
+      }
     </div>
-    <aside class="sf-why">
-      <h2>Vì sao chọn {tenant.brand.shortName}?</h2>
-      <ul>
-        {tenant.whyUs.map((item) => <li>{item}</li>)}
-      </ul>
-    </aside>
   </div>
 </section>
 
-<section class="sf-section sf-section--muted" id="san-pham">
+<!-- PRODUCTS -->
+<section class="sf-section" id="san-pham">
   <div class="sf-container">
     <div class="sf-section__head">
       <h2>Sản phẩm phổ biến</h2>
       <a href={tenant.appPromo.appUrl}>Xem tất cả</a>
     </div>
-    <div class="sf-products">
-      {
-        tenant.products.map((p) => (
-          <a class="sf-product" href={p.href}>
-            <img src={p.imageUrl} alt={p.name} loading="lazy" />
-            <div class="sf-product__body">
-              <div class="sf-product__cat">{p.category}</div>
-              <h3>{p.name}</h3>
-              <div class="sf-product__row">
-                <span class="sf-product__price">{p.price}</span>
-                <span class="sf-product__cart" aria-hidden="true">+</span>
+    <div class="sf-products-wrap">
+      <button type="button" class="sf-carousel-btn sf-carousel-btn--prev" data-sf-product-prev aria-label="Trước">
+        <span set:html={iconChevron} />
+      </button>
+      <div class="sf-products" data-sf-product-track>
+        {
+          tenant.products.map((p) => (
+            <a class="sf-product" href={p.href}>
+              <div class="sf-product__media">
+                <img
+                  src={p.imageUrl || '/brand/products/default.png?v=1'}
+                  alt={p.name}
+                  loading="lazy"
+                  onerror="this.onerror=null;this.src='/brand/products/default.png?v=1'"
+                />
               </div>
-            </div>
-          </a>
-        ))
-      }
+              <div class="sf-product__body">
+                <h3>{p.name}</h3>
+                <div class="sf-product__cat">{p.category}</div>
+                <div class="sf-product__row">
+                  <span class="sf-product__price">{p.price}</span>
+                  <span class="sf-product__cart" aria-hidden="true" set:html={iconCartMini} />
+                </div>
+              </div>
+            </a>
+          ))
+        }
+      </div>
+      <button type="button" class="sf-carousel-btn sf-carousel-btn--next" data-sf-product-next aria-label="Tiếp">
+        <span set:html={iconChevron} />
+      </button>
     </div>
   </div>
 </section>
 
-<section class="sf-section" id="kien-thuc">
+<!-- KNOWLEDGE -->
+<section class="sf-section sf-section--muted" id="kien-thuc">
   <div class="sf-container">
     <div class="sf-section__head">
       <h2>Kiến thức sức khỏe</h2>
-      <a href="/kien-thuc">Xem tất cả</a>
+      <a href="/kien-thuc">Xem tất cả bài viết</a>
     </div>
-    <div class="sf-articles">
+    <div class="sf-knowledge-grid">
       {
         tenant.articles.map((a) => (
-          <a class="sf-article" href={a.href}>
-            {a.imageUrl ? <img src={a.imageUrl} alt="" loading="lazy" /> : <div />}
-            <div>
+          <a class="sf-knowledge-card" href={a.href}>
+            <img
+              src={a.imageUrl || '/brand/articles/default.png?v=1'}
+              alt=""
+              loading="lazy"
+              onerror="this.onerror=null;this.src='/brand/articles/default.png?v=1'"
+            />
+            <div class="sf-knowledge-card__body">
               <h3>{a.title}</h3>
-              <time datetime={a.date}>{a.date}</time>
+              <time datetime={a.date}>{formatArticleDate(a.date)}</time>
             </div>
           </a>
         ))
@@ -142,33 +356,130 @@ const serviceIcons: Record<string, string> = {
   </div>
 </section>
 
-<section class="sf-section sf-section--muted" id="app">
-  <div class="sf-container sf-appband">
-    <div>
-      <div class="sf-section__head">
-        <h2>Quản lý sức khỏe gia đình với App Novixa</h2>
+<!-- PLATFORM -->
+<section class="sf-platform">
+  <div class="sf-container">
+    <div class="sf-platform__card">
+      <div class="sf-platform__intro">
+        {tenant.platformPromo.eyebrow ? <p class="sf-platform__eyebrow">{tenant.platformPromo.eyebrow}</p> : null}
+        <h2>{tenant.platformPromo.title}</h2>
+        {tenant.platformPromo.subtitle ? <p class="sf-platform__subtitle">{tenant.platformPromo.subtitle}</p> : null}
+        {
+          tenant.platformPromo.features?.length ? (
+            <ul class="sf-platform__features">
+              {tenant.platformPromo.features.map((f) => (
+                <li>
+                  <span class="sf-platform__feature-icon" set:html={platformFeatureIcons[f.icon] ?? platformFeatureIcons.seo} />
+                  <span>{f.title}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null
+        }
       </div>
-      <ul>
-        {tenant.appSection.bullets.map((b) => <li>{b}</li>)}
-      </ul>
-      <a class="sf-btn sf-btn--primary" href={tenant.appPromo.appUrl}>Tải App Novixa ngay</a>
-    </div>
-    <div class="sf-appband__phone">
-      {
-        tenant.appSection.phoneMockImageUrl ? (
-          <img src={tenant.appSection.phoneMockImageUrl} alt="Giao diện App Novixa" loading="lazy" />
-        ) : null
-      }
-    </div>
-    <div class="sf-stats">
-      {
-        tenant.appSection.stats.map((s) => (
-          <div class="sf-stat">
-            <strong>{s.value}</strong>
-            <span>{s.label}</span>
+
+      <div class="sf-platform__visual" aria-hidden="true">
+        <div class="sf-platform-devices">
+          <div class="sf-platform-browser">
+            <div class="sf-platform-browser__bar">
+              <span></span><span></span><span></span>
+              <em>xuanhoa.novixa.vn</em>
+            </div>
+            <div class="sf-platform-browser__screen">
+              <div class="sf-platform-browser__hero">
+                <small>Nhà thuốc Xuân Hòa</small>
+                <strong>Chăm sóc sức khỏe gia đình</strong>
+                <b>Đặt thuốc ngay</b>
+              </div>
+              <div class="sf-platform-browser__grid">
+                <article>
+                  <i></i>
+                  <em>Vitamin C</em>
+                </article>
+                <article>
+                  <i></i>
+                  <em>Omega 3</em>
+                </article>
+                <article>
+                  <i></i>
+                  <em>Canxi</em>
+                </article>
+                <article>
+                  <i></i>
+                  <em>Kẽm</em>
+                </article>
+                <article>
+                  <i></i>
+                  <em>DHA</em>
+                </article>
+                <article>
+                  <i></i>
+                  <em>Men vi sinh</em>
+                </article>
+              </div>
+            </div>
           </div>
-        ))
-      }
+          <div class="sf-platform-phone">
+            <div class="sf-platform-phone__notch"></div>
+            <div class="sf-platform-phone__screen">
+              <div class="sf-platform-phone__header">
+                <div class="sf-platform-phone__hello">Xin chào,</div>
+                <strong>Nguyễn Văn A</strong>
+              </div>
+              <div class="sf-platform-phone__body">
+                <div class="sf-platform-phone__title">Nhắc uống thuốc</div>
+                <div class="sf-platform-phone__med">
+                  <b>08:00</b>
+                  <em>Amoxicillin</em>
+                </div>
+                <div class="sf-platform-phone__med">
+                  <b>19:00</b>
+                  <em>Vitamin D3</em>
+                </div>
+              </div>
+              <nav class="sf-platform-phone__nav">
+                <span class="is-active">Trang</span>
+                <span>Đơn</span>
+                <span>TB</span>
+                <span>Tôi</span>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sf-platform__cta">
+        {tenant.platformPromo.ctaLead ? <p class="sf-platform__lead" set:html={platformLeadHtml} /> : null}
+        <div class="sf-platform__actions">
+          <a class="sf-btn sf-btn--primary" href={tenant.platformPromo.ctaPrimary.href}>
+            {tenant.platformPromo.ctaPrimary.label}
+          </a>
+          <a class="sf-btn sf-btn--ghost sf-btn--icon" href={tenant.platformPromo.ctaSecondary.href}>
+            {tenant.platformPromo.ctaSecondary.label}
+            <span class="sf-btn__icon" set:html={iconChevron} />
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 </section>
+
+<script>
+  function bindProductCarousel() {
+    const track = document.querySelector('[data-sf-product-track]');
+    const prev = document.querySelector('[data-sf-product-prev]');
+    const next = document.querySelector('[data-sf-product-next]');
+    if (!(track instanceof HTMLElement) || !(prev instanceof HTMLButtonElement) || !(next instanceof HTMLButtonElement)) {
+      return;
+    }
+    const scrollByCard = (dir) => {
+      const card = track.querySelector('.sf-product');
+      const step = card instanceof HTMLElement ? card.offsetWidth + 16 : 220;
+      track.scrollBy({ left: dir * step, behavior: 'smooth' });
+    };
+    prev.addEventListener('click', () => scrollByCard(-1));
+    next.addEventListener('click', () => scrollByCard(1));
+  }
+  bindProductCarousel();
+  document.addEventListener('astro:page-load', bindProductCarousel);
+</script>

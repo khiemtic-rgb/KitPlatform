@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320" fill="none">
+  <rect width="320" height="320" rx="24" fill="#FDECEC"/>
+  <rect x="96" y="88" width="128" height="144" rx="14" fill="#DC2626"/>
+  <rect x="96" y="88" width="128" height="42" rx="14" fill="#B91C1C"/>
+  <text x="160" y="116" text-anchor="middle" fill="#fff" font-family="system-ui,sans-serif" font-size="15" font-weight="700">PANADOL</text>
+  <rect x="118" y="148" width="84" height="48" rx="8" fill="#fff" opacity=".95"/>
+  <text x="160" y="170" text-anchor="middle" fill="#B91C1C" font-family="system-ui,sans-serif" font-size="14" font-weight="700">EXTRA</text>
+  <text x="160" y="188" text-anchor="middle" fill="#7F1D1D" font-family="system-ui,sans-serif" font-size="10">Gi£m au</text>
+</svg>

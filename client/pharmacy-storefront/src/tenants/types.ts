@@ -9,6 +9,8 @@ export interface PharmacyNavItem {
 export interface PharmacyTrustItem {
   icon: string;
   label: string;
+  /** Optional second line under label (hero trust strip) */
+  sublabel?: string;
 }
 
 export interface PharmacyCta {
@@ -31,20 +33,28 @@ export interface PharmacyProduct {
 }
 
 export interface PharmacyArticle {
-  /** URL slug segment, e.g. phong-cam-cum */
   slug: string;
   title: string;
   date: string;
   excerpt?: string;
   imageUrl?: string;
   href: string;
-  /** Article body paragraphs */
   body?: string[];
 }
 
 export interface PharmacyStat {
   value: string;
   label: string;
+  /** Optional second line / supporting text */
+  sublabel?: string;
+  /** Optional icon key for hero stats strip */
+  icon?: string;
+}
+
+export interface PharmacyFeature {
+  icon: string;
+  title: string;
+  description?: string;
 }
 
 export interface PharmacyFooterLinks {
@@ -58,6 +68,7 @@ export interface PharmacySocial {
   whatsapp?: string;
   tiktok?: string;
   youtube?: string;
+  instagram?: string;
 }
 
 export interface PharmacyBranch {
@@ -76,16 +87,13 @@ export interface PharmacyPageSection {
 export interface PharmacyTenantConfig {
   id: string;
   slug: string;
-  /** Platform tenant code, e.g. NT_XUANHOA */
   tenantCode: string;
-  /** Hostnames / host substrings that resolve to this tenant */
   hosts: string[];
 
   brand: {
     name: string;
     shortName: string;
     logoText: string;
-    /** Optional public logo URL (preferred over logoText mark) */
     logoUrl?: string;
     primaryColor: string;
     accentColor: string;
@@ -97,7 +105,6 @@ export interface PharmacyTenantConfig {
     phone: string;
     email: string;
     social: PharmacySocial;
-    /** Optional multi-branch list for Liên hệ / Giới thiệu */
     branches?: PharmacyBranch[];
   };
 
@@ -110,6 +117,16 @@ export interface PharmacyTenantConfig {
     trustItems: PharmacyTrustItem[];
     ctaPrimary: PharmacyCta;
     ctaSecondary: PharmacyCta;
+    /** Floating strip under hero photo */
+    heroStats: PharmacyStat[];
+  };
+
+  /** Trust card under hero */
+  trustBand: {
+    title: string;
+    /** Number/phrase to highlight green inside title */
+    titleHighlight?: string;
+    items: PharmacyStat[];
   };
 
   appPromo: {
@@ -117,21 +134,37 @@ export interface PharmacyTenantConfig {
     qrImageUrl?: string;
     appStoreUrl: string;
     playStoreUrl: string;
-    /** Deep link into Novixa app with tenant query */
     appUrl: string;
   };
 
   services: PharmacyService[];
   whyUs: string[];
-  /** Sample catalog products (home showcase) */
   products: PharmacyProduct[];
-  /** Sample knowledge / news articles */
   articles: PharmacyArticle[];
 
   appSection: {
-    bullets: string[];
-    stats: PharmacyStat[];
+    title: string;
+    titleHighlight?: string;
+    features: PharmacyFeature[];
+    /** Combined phone+family art (preferred when set) */
+    visualImageUrl?: string;
     phoneMockImageUrl?: string;
+    familyImageUrl?: string;
+  };
+
+  platformPromo: {
+    eyebrow?: string;
+    title: string;
+    subtitle?: string;
+    /** @deprecated prefer features */
+    body?: string;
+    bullets?: string[];
+    features?: PharmacyFeature[];
+    ctaLead?: string;
+    ctaLeadHighlight?: string;
+    ctaPrimary: PharmacyCta;
+    ctaSecondary: PharmacyCta;
+    imageUrl?: string;
   };
 
   pages: {
@@ -148,8 +181,11 @@ export interface PharmacyTenantConfig {
   footer: {
     aboutLinks: PharmacyFooterLinks[];
     supportLinks: PharmacyFooterLinks[];
-    knowledgeLinks: PharmacyFooterLinks[];
+    categoryLinks: PharmacyFooterLinks[];
+    tagline?: string;
     mission: string;
+    newsletterNote?: string;
+    copyright?: string;
   };
 
   poweredBy: {

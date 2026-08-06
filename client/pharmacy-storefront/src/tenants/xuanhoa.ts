@@ -1,7 +1,7 @@
 import type { PharmacyTenantConfig } from './types';
 
 const APP = 'https://app.novixa.vn/?tenantCode=NT_XUANHOA';
-const QR = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(APP)}`;
+const NOVIXA = 'https://novixa.vn';
 
 /** Nhà thuốc Xuân Hòa — config white-label (đổi file / đăng ký host = NT mới). */
 export const xuanhoa: PharmacyTenantConfig = {
@@ -15,27 +15,28 @@ export const xuanhoa: PharmacyTenantConfig = {
     shortName: 'Xuân Hòa',
     logoText: 'XH',
     logoUrl: '/brand/xuanhoa-logo.png',
-    primaryColor: '#0a6b45',
-    accentColor: '#2f9e44',
+    primaryColor: '#004d40',
+    accentColor: '#0a7a5c',
   },
 
   contact: {
-    address: 'Số 30, đường Xuân Hoà, phường Phan Đình Phùng, tỉnh Thái Nguyên',
-    hours: 'Mở cửa 7:00 – 22:00 mỗi ngày',
+    address: 'Số 30, đường Xuân Hòa, phường Phan Đình Phùng, tỉnh Thái Nguyên',
+    hours: '07:00 - 22:00 (Tất cả các ngày)',
     phone: '0914.960.069',
-    email: 'care@xuanhoa.novixa.vn',
+    email: 'xuanhoa.pharmacy@gmail.com',
     social: {
       facebook: 'https://facebook.com/',
       zalo: 'https://zalo.me/0914960069',
       whatsapp: 'https://wa.me/84914960069',
-      tiktok: undefined,
-      youtube: undefined,
+      tiktok: 'https://www.tiktok.com/',
+      youtube: 'https://youtube.com/',
+      instagram: 'https://instagram.com/',
     },
     branches: [
       {
         name: 'Nhà thuốc Xuân Hòa',
-        address: 'Số 30, đường Xuân Hoà, phường Phan Đình Phùng, tỉnh Thái Nguyên',
-        hours: '7:00 – 22:00',
+        address: 'Số 30, đường Xuân Hòa, phường Phan Đình Phùng, tỉnh Thái Nguyên',
+        hours: '07:00 - 22:00',
         phone: '0914.960.069',
       },
     ],
@@ -45,31 +46,58 @@ export const xuanhoa: PharmacyTenantConfig = {
     { key: 'home', label: 'Trang chủ', href: '/' },
     { key: 'about', label: 'Giới thiệu', href: '/gioi-thieu' },
     { key: 'products', label: 'Sản phẩm', href: '/san-pham' },
-    { key: 'knowledge', label: 'Kiến thức sức khỏe', href: '/kien-thuc' },
-    { key: 'order', label: 'Đặt thuốc', href: APP },
     { key: 'services', label: 'Dịch vụ', href: '/#dich-vu' },
+    { key: 'knowledge', label: 'Kiến thức sức khỏe', href: '/kien-thuc' },
     { key: 'contact', label: 'Liên hệ', href: '/lien-he' },
   ],
 
   hero: {
-    headline: 'Đồng hành chăm sóc sức khỏe gia đình bạn',
+    headline: 'Nhà thuốc số đồng hành cùng sức khỏe gia đình',
     subhead:
-      'Thuốc chính hãng · tư vấn dược sĩ tận tâm · đặt hàng và quản lý sức khỏe gia đình trên App Novixa.',
-    imageUrl:
-      'https://images.unsplash.com/photo-1576602976047-174e57a47881?auto=format&fit=crop&w=1200&q=80',
+      'Mua thuốc chính hãng, theo dõi sức khỏe, nhắc uống thuốc và kết nối trực tiếp với dược sĩ trong một ứng dụng.',
+    imageUrl: '/brand/xuanhoa-hero.png?v=13',
     trustItems: [
-      { icon: 'shield', label: 'Thuốc chính hãng' },
-      { icon: 'heart', label: 'Tư vấn tận tâm' },
-      { icon: 'truck', label: 'Giao hàng nhanh' },
-      { icon: 'lock', label: 'Bảo mật dữ liệu' },
+      { icon: 'badge', label: 'Thuốc chính hãng', sublabel: 'Đạt chuẩn GPP' },
+      { icon: 'advisor', label: 'Dược sĩ tận tâm', sublabel: 'Tư vấn 1-1' },
+      { icon: 'scooter', label: 'Giao hàng nhanh', sublabel: 'Giao tận nơi' },
+      { icon: 'privacy', label: 'Bảo mật thông tin', sublabel: 'An toàn tuyệt đối' },
     ],
     ctaPrimary: { label: 'Đặt thuốc ngay', href: APP },
     ctaSecondary: { label: 'Tải App Novixa', href: APP },
+    heroStats: [
+      {
+        icon: 'pharmacist',
+        value: '',
+        label: 'Dược sĩ chuyên môn cao',
+        sublabel: 'Tận tâm vì sức khỏe bạn',
+      },
+      {
+        icon: 'orders',
+        value: '15.000+',
+        label: 'đơn thuốc đã phục vụ',
+      },
+      {
+        icon: 'heart',
+        value: '98%',
+        label: 'khách hàng hài lòng',
+      },
+    ],
+  },
+
+  trustBand: {
+    title: 'Được hơn 3.500 gia đình tin tưởng và lựa chọn',
+    titleHighlight: '3.500',
+    items: [
+      { icon: 'badge', label: 'Thành lập từ', value: '2015' },
+      { icon: 'pharmacist', label: 'Đội ngũ', value: '15+ dược sĩ' },
+      { icon: 'customers', label: 'Phục vụ', value: '3.500+ khách hàng' },
+      { icon: 'hours', label: 'Mở cửa', value: '07:00 - 22:00', sublabel: 'tất cả các ngày' },
+    ],
   },
 
   appPromo: {
-    title: 'Quản lý sức khỏe cả gia đình với App Novixa',
-    qrImageUrl: QR,
+    title: 'Quản lý sức khỏe cả gia đình dễ dàng hơn với App Novixa',
+    qrImageUrl: '/brand/xuanhoa-app-qr.png',
     appStoreUrl: APP,
     playStoreUrl: APP,
     appUrl: APP,
@@ -77,62 +105,86 @@ export const xuanhoa: PharmacyTenantConfig = {
 
   services: [
     {
-      title: 'Đặt thuốc nhanh',
-      description: 'Gửi đơn thuốc hoặc đặt lại từ lịch sử mua trên App Novixa.',
-      icon: 'cart',
-    },
-    {
-      title: 'Tư vấn trực tuyến',
-      description: 'Chat / gọi dược sĩ khi cần hỗ trợ dùng thuốc an toàn.',
+      title: 'Tư vấn sức khỏe',
+      description: 'Dược sĩ tư vấn 1-1 tận tâm qua chat hoặc tại quầy',
       icon: 'chat',
     },
     {
-      title: 'Giao tận nơi',
-      description: 'Giao nhanh trong khu vực — theo dõi trạng thái đơn trên app.',
+      title: 'Đặt thuốc nhanh',
+      description: 'Gửi đơn thuốc hoặc đặt lại chỉ trong vài bước',
+      icon: 'rx',
+    },
+    {
+      title: 'Giao hàng tận nơi',
+      description: 'Giao nhanh nội thành, theo dõi trạng thái đơn',
       icon: 'delivery',
     },
     {
       title: 'Theo dõi sức khỏe',
-      description: 'Lịch sử mua, nhắc uống thuốc và hồ sơ gia đình trên Novixa.',
-      icon: 'pulse',
+      description: 'Lưu chỉ số, nhắc uống thuốc theo liệu trình',
+      icon: 'health',
+    },
+    {
+      title: 'Hồ sơ gia đình',
+      description: 'Quản lý thuốc và lịch sử mua cho cả nhà',
+      icon: 'family',
+    },
+    {
+      title: 'Tích điểm & ưu đãi',
+      description: 'Tích lũy điểm thưởng, nhận ưu đãi theo mùa',
+      icon: 'gift',
     },
   ],
 
   whyUs: [
-    'Hơn 15 năm đồng hành cùng khách hàng địa phương',
-    'Dược sĩ chuyên môn, tư vấn dễ hiểu',
-    'Thuốc chính hãng, nguồn gốc rõ ràng',
-    'Giá minh bạch, hóa đơn đầy đủ',
-    'Không ngừng cải tiến dịch vụ với nền tảng Novixa',
+    'Hơn 15 năm phục vụ cộng đồng',
+    'Dược sĩ chuyên môn cao',
+    'Sản phẩm đa dạng, chính hãng',
+    'Giá cả minh bạch, hợp lý',
+    'Không ngừng cải thiện dịch vụ',
   ],
 
   products: [
     {
-      name: 'Eugica Fort',
-      category: 'Hô hấp',
-      price: 'Từ 48.000đ',
-      imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80',
+      name: 'Eugica Green',
+      category: 'Hỗ trợ điều trị ho',
+      price: '45.000đ',
+      imageUrl: '/brand/products/cough.png?v=1',
       href: APP,
     },
     {
       name: 'Panadol Extra',
-      category: 'Giảm đau hạ sốt',
-      price: 'Từ 32.000đ',
-      imageUrl: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?auto=format&fit=crop&w=400&q=80',
+      category: 'Giảm đau - Hạ sốt',
+      price: '32.000đ',
+      imageUrl: '/brand/products/pain.png?v=1',
       href: APP,
     },
     {
-      name: 'Vitamin tổng hợp',
-      category: 'Vitamin',
-      price: 'Liên hệ / đặt trên App',
-      imageUrl: 'https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&w=400&q=80',
+      name: 'Vitabiotics Wellwoman',
+      category: 'Vitamin tổng hợp',
+      price: '350.000đ',
+      imageUrl: '/brand/products/vitamin.png?v=1',
       href: APP,
     },
     {
-      name: 'Máy đo huyết áp',
-      category: 'Thiết bị',
-      price: 'Liên hệ / đặt trên App',
-      imageUrl: 'https://images.unsplash.com/photo-1615486511484-92e172cc4fe0?auto=format&fit=crop&w=400&q=80',
+      name: 'Accu-Chek Instant',
+      category: 'Máy đo đường huyết',
+      price: '820.000đ',
+      imageUrl: '/brand/products/device.png?v=1',
+      href: APP,
+    },
+    {
+      name: 'Hapacol 650',
+      category: 'Giảm đau - Hạ sốt',
+      price: '35.000đ',
+      imageUrl: '/brand/products/pain.png?v=1',
+      href: APP,
+    },
+    {
+      name: 'Berocca Performance',
+      category: 'Vitamin & khoáng chất',
+      price: '125.000đ',
+      imageUrl: '/brand/products/vitamin.png?v=1',
       href: APP,
     },
   ],
@@ -140,66 +192,83 @@ export const xuanhoa: PharmacyTenantConfig = {
   articles: [
     {
       slug: 'phong-cam-cum',
-      title: 'Cách phòng cảm cúm hiệu quả mùa giao mùa',
-      date: '2026-08-01',
-      excerpt: 'Những thói quen đơn giản giúp gia đình giảm nguy cơ cảm cúm.',
-      imageUrl: 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?auto=format&fit=crop&w=200&q=80',
+      title: 'Cách phòng ngừa cảm cúm khi thời tiết thay đổi',
+      date: '2024-05-20',
+      excerpt: 'Những thói quen đơn giản giúp gia đình giảm nguy cơ cảm cúm khi giao mùa.',
+      imageUrl: '/brand/articles/default.png?v=1',
       href: '/kien-thuc/phong-cam-cum',
       body: [
-        'Mùa giao mùa, virus cảm cúm dễ lây lan trong gia đình, trường học và nơi làm việc. Phòng bệnh đúng cách giúp giảm nguy cơ và giảm gánh nặng điều trị.',
-        'Rửa tay thường xuyên bằng xà phòng, che miệng khi ho/hắt hơi, và hạn chế đưa tay lên mặt là các bước đơn giản nhưng hiệu quả.',
-        'Giữ nhà thoáng, ngủ đủ giấc, uống đủ nước và ăn đủ chất giúp cơ thể có sức đề kháng tốt hơn.',
-        'Nếu có người cao tuổi, trẻ nhỏ hoặc bệnh nền trong nhà, hãy hỏi dược sĩ về biện pháp phòng ngừa phù hợp — bao gồm khi nào cần đến cơ sở y tế.',
-        'Nhà thuốc Xuân Hòa hỗ trợ tư vấn dùng thuốc cảm an toàn trên App Novixa và tại quầy. Không tự ý phối nhiều loại giảm đau/hạ sốt cùng lúc.',
+        'Mùa giao mùa, virus cảm cúm dễ lây lan. Phòng bệnh đúng cách giúp giảm nguy cơ và gánh nặng điều trị.',
+        'Rửa tay thường xuyên, che miệng khi ho/hắt hơi, hạn chế đưa tay lên mặt.',
+        'Giữ nhà thoáng, ngủ đủ, uống đủ nước và ăn đủ chất.',
+        'Nhà thuốc Xuân Hòa hỗ trợ tư vấn dùng thuốc cảm an toàn trên App Novixa và tại quầy.',
       ],
     },
     {
       slug: 'kiem-soat-huyet-ap',
-      title: '5 thói quen giúp kiểm soát huyết áp',
-      date: '2026-07-20',
+      title: '5 thói quen giúp kiểm soát huyết áp hiệu quả',
+      date: '2024-05-18',
       excerpt: 'Ăn uống, vận động và theo dõi chỉ số tại nhà đúng cách.',
-      imageUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=200&q=80',
+      imageUrl: '/brand/articles/default.png?v=1',
       href: '/kien-thuc/kiem-soat-huyet-ap',
       body: [
-        'Tăng huyết áp thường diễn biến thầm lặng. Theo dõi và duy trì thói quen lành mạnh giúp giảm biến chứng tim mạch, đột quỵ.',
-        '1) Đo huyết áp đúng cách tại nhà theo lịch bác sĩ/dược sĩ hướng dẫn, ghi lại chỉ số để theo dõi xu hướng.',
-        '2) Giảm muối, hạn chế đồ ăn chế biến sẵn; ưu tiên rau xanh, trái cây và nguồn đạm lành mạnh.',
-        '3) Vận động đều đặn (đi bộ nhanh 30 phút/ngày khi được phép) và giữ cân nặng hợp lý.',
-        '4) Hạn chế rượu bia, bỏ thuốc lá; ngủ đủ và giảm stress.',
-        '5) Uống thuốc huyết áp đúng giờ theo chỉ định — không tự ý ngưng khi thấy “ổn”. Liên hệ dược sĩ Xuân Hòa nếu quên liều hoặc có tác dụng phụ.',
+        'Tăng huyết áp thường diễn biến thầm lặng. Duy trì thói quen lành mạnh giúp giảm biến chứng.',
+        'Đo huyết áp đúng cách, giảm muối, vận động đều, hạn chế rượu bia và tuân thủ thuốc theo chỉ định.',
+      ],
+    },
+    {
+      slug: 'dinh-duong-tieu-duong',
+      title: 'Dinh dưỡng cho người tiểu đường: Nguyên tắc vàng',
+      date: '2024-05-16',
+      excerpt: 'Nguyên tắc vàng giúp ổn định đường huyết qua bữa ăn hàng ngày.',
+      imageUrl: '/brand/articles/default.png?v=1',
+      href: '/kien-thuc/dinh-duong-tieu-duong',
+      body: [
+        'Chế độ ăn đóng vai trò quan trọng trong kiểm soát đường huyết.',
+        'Ưu tiên chất xơ, kiểm soát tinh bột, hạn chế đường thêm; hỏi dược sĩ trước khi dùng thực phẩm chức năng.',
       ],
     },
     {
       slug: 'gap-duoc-si',
       title: 'Khi nào nên gặp dược sĩ trước khi tự mua thuốc?',
-      date: '2026-07-10',
+      date: '2024-03-15',
       excerpt: 'Dấu hiệu giúp bạn biết lúc nào cần tư vấn chuyên môn.',
-      imageUrl: 'https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?auto=format&fit=crop&w=200&q=80',
+      imageUrl: '/brand/articles/default.png?v=1',
       href: '/kien-thuc/gap-duoc-si',
       body: [
-        'Nhiều thuốc bán tại nhà thuốc vẫn cần tư vấn để dùng đúng và tránh tương tác.',
-        'Nên hỏi dược sĩ khi: đang mang thai/cho con bú; có bệnh nền (gan, thận, tim, tiểu đường); đang dùng nhiều loại thuốc; dị ứng thuốc trước đây.',
-        'Trẻ em, người cao tuổi, và người vừa xuất viện cũng nên được hướng dẫn liều và cách dùng cụ thể.',
-        'Nếu triệu chứng kéo dài, có sốt cao, khó thở, đau ngực hoặc đột ngột nặng hơn — hãy đến cơ sở y tế, không chỉ dựa vào thuốc giảm triệu chứng.',
-        'Trên App Novixa bạn có thể chat với nhà thuốc Xuân Hòa để được hỗ trợ nhanh trước khi đến quầy.',
+        'Nên hỏi dược sĩ khi mang thai, có bệnh nền, đang dùng nhiều thuốc hoặc dị ứng thuốc trước đây.',
+        'Trẻ em, người cao tuổi và người vừa xuất viện cần hướng dẫn liều cụ thể.',
       ],
     },
   ],
 
   appSection: {
-    bullets: [
-      'Lịch sử mua hàng và đặt lại nhanh',
-      'Nhắc uống thuốc theo liệu trình',
-      'Theo dõi sức khỏe & hồ sơ gia đình',
-      'Kết nối trực tiếp với nhà thuốc Xuân Hòa',
+    title: 'Quản lý sức khỏe cả gia đình dễ dàng hơn với App Novixa',
+    titleHighlight: 'App Novixa',
+    features: [
+      { icon: 'history', title: 'Lưu lịch sử mua thuốc và đơn thuốc' },
+      { icon: 'bell', title: 'Nhắc uống thuốc đúng giờ' },
+      { icon: 'pulse', title: 'Theo dõi chỉ số sức khỏe' },
+      { icon: 'family', title: 'Quản lý hồ sơ sức khỏe gia đình' },
+      { icon: 'chat', title: 'Kết nối trực tiếp với dược sĩ' },
+      { icon: 'cart', title: 'Đặt thuốc nhanh giao tận nơi' },
     ],
-    stats: [
-      { value: '15+', label: 'Năm đồng hành' },
-      { value: 'TN', label: 'Phục vụ Thái Nguyên' },
-      { value: '24/7', label: 'Hỗ trợ qua App' },
+    familyImageUrl: '/brand/family-health.png?v=7',
+  },
+
+  platformPromo: {
+    eyebrow: 'Website này được tạo tự động bởi',
+    title: 'Novixa Digital Pharmacy Platform',
+    subtitle: 'Nền tảng chuyển đổi số toàn diện cho nhà thuốc',
+    features: [
+      { icon: 'seo', title: 'Website chuyên nghiệp chuẩn SEO' },
+      { icon: 'sync', title: 'Đồng bộ quản lý bán hàng kho & khách hàng' },
+      { icon: 'care', title: 'Kết nối App, chăm sóc khách hàng toàn diện' },
     ],
-    phoneMockImageUrl:
-      'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=600&q=80',
+    ctaLead: 'Tạo website đẹp như Nhà thuốc Xuân Hòa cho nhà thuốc của bạn chỉ trong 5 phút!',
+    ctaLeadHighlight: 'Nhà thuốc Xuân Hòa',
+    ctaPrimary: { label: 'Xem demo nhà thuốc', href: NOVIXA },
+    ctaSecondary: { label: 'Đăng ký ngay', href: `${NOVIXA}/vi/lien-he/` },
   },
 
   pages: {
@@ -210,29 +279,29 @@ export const xuanhoa: PharmacyTenantConfig = {
         {
           id: 'su-menh',
           title: 'Sứ mệnh',
-          body: 'Mang đến dịch vụ nhà thuốc gần gũi, minh bạch và an toàn — từ tư vấn tại quầy đến đặt thuốc, nhắc uống thuốc trên App Novixa.',
+          body: 'Mang đến dịch vụ nhà thuốc gần gũi, minh bạch và an toàn — từ tư vấn tại quầy đến đặt thuốc trên App Novixa.',
         },
         {
           id: 'doi-ngu',
           title: 'Đội ngũ dược sĩ',
-          body: 'Đội ngũ được đào tạo chuyên môn, sẵn sàng giải thích cách dùng thuốc dễ hiểu, hỗ trợ khách hàng chọn lựa phù hợp và nhắc các trường hợp cần gặp bác sĩ.',
+          body: 'Đội ngũ được đào tạo chuyên môn, sẵn sàng giải thích cách dùng thuốc dễ hiểu.',
         },
         {
           id: 'giay-phep',
           title: 'Giấy phép & cam kết',
-          body: 'Nhà thuốc tuân thủ quy định kinh doanh dược. Thông tin giấy phép chi tiết có thể bổ sung trên trang này hoặc xuất trình tại quầy khi khách yêu cầu.',
+          body: 'Nhà thuốc tuân thủ quy định kinh doanh dược. Thông tin giấy phép có thể bổ sung trên trang hoặc tại quầy.',
         },
         {
           id: 'cong-nghe',
           title: 'Vận hành trên Novixa',
-          body: 'Xuân Hòa dùng Novixa cho POS, kho, khách hàng và App — giúp hóa đơn rõ ràng, theo dõi đơn hàng và kết nối bền vững với từng gia đình.',
+          body: 'Xuân Hòa dùng Novixa cho POS, kho, khách hàng và App — hóa đơn rõ ràng, kết nối bền vững với từng gia đình.',
         },
       ],
     },
     contact: {
       intro:
-        'Liên hệ nhà thuốc Xuân Hòa để được tư vấn, đặt thuốc hoặc hỗ trợ dùng App Novixa. Ưu tiên chat/đặt hàng trên App để được phục vụ nhanh theo đúng nhà thuốc của bạn.',
-      mapNote: 'Số 30, đường Xuân Hoà, phường Phan Đình Phùng, tỉnh Thái Nguyên.',
+        'Liên hệ nhà thuốc Xuân Hòa để được tư vấn, đặt thuốc hoặc hỗ trợ dùng App Novixa.',
+      mapNote: 'Số 30, đường Xuân Hòa, phường Phan Đình Phùng, tỉnh Thái Nguyên.',
     },
   },
 
@@ -241,29 +310,31 @@ export const xuanhoa: PharmacyTenantConfig = {
       { label: 'Giới thiệu', href: '/gioi-thieu' },
       { label: 'Đội ngũ dược sĩ', href: '/gioi-thieu#doi-ngu' },
       { label: 'Giấy phép kinh doanh', href: '/gioi-thieu#giay-phep' },
-      { label: 'Tuyển dụng', href: '/lien-he' },
+    ],
+    categoryLinks: [
+      { label: 'Giới thiệu', href: '/gioi-thieu' },
+      { label: 'Sản phẩm', href: '/san-pham' },
+      { label: 'Dịch vụ', href: '/#dich-vu' },
+      { label: 'Kiến thức sức khỏe', href: '/kien-thuc' },
+      { label: 'Liên hệ', href: '/lien-he' },
     ],
     supportLinks: [
       { label: 'Hướng dẫn đặt thuốc', href: APP },
       { label: 'Chính sách giao hàng', href: '/lien-he' },
-      { label: 'Đổi trả', href: '/lien-he' },
-      { label: 'Bảo mật', href: 'https://novixa.vn/vi/chinh-sach-bao-mat/' },
-      { label: 'Điều khoản', href: 'https://novixa.vn/vi/dieu-khoan-su-dung/' },
+      { label: 'Chính sách đổi trả', href: '/lien-he' },
+      { label: 'Chính sách bảo mật', href: 'https://novixa.vn/vi/chinh-sach-bao-mat/' },
+      { label: 'Điều khoản sử dụng', href: 'https://novixa.vn/vi/dieu-khoan-su-dung/' },
     ],
-    knowledgeLinks: [
-      { label: 'Tin sức khỏe', href: '/kien-thuc' },
-      { label: 'Bệnh thường gặp', href: '/kien-thuc' },
-      { label: 'Cách dùng thuốc', href: '/kien-thuc' },
-      { label: 'Dinh dưỡng', href: '/kien-thuc' },
-      { label: 'Sống khỏe', href: '/kien-thuc' },
-    ],
+    tagline: 'Đồng hành sức khỏe gia đình',
     mission:
-      'Nhà thuốc Xuân Hòa đồng hành chăm sóc sức khỏe gia đình — thuốc chính hãng, tư vấn tận tâm, hiện diện số trên nền tảng Novixa.',
+      'Nhà thuốc Xuân Hòa cam kết cung cấp sản phẩm chính hãng, tư vấn tận tâm và dịch vụ chăm sóc sức khỏe toàn diện.',
+    newsletterNote: 'Nhận thông tin khuyến mãi và kiến thức sức khỏe mới nhất từ Nhà thuốc Xuân Hòa.',
+    copyright: 'Tất cả quyền được bảo lưu.',
   },
 
   poweredBy: {
     label: 'POWERED BY NOVIXA',
-    href: 'https://novixa.vn',
-    blurb: 'Nhà thuốc vận hành trên nền tảng Novixa — POS, App khách, CRM và hiện diện số trong một hệ thống.',
+    href: NOVIXA,
+    blurb: 'Nhà thuốc vận hành trên nền tảng Novixa — POS, App khách, CRM và hiện diện số.',
   },
 };

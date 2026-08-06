@@ -26,11 +26,18 @@ const tenant = resolveTenant(Astro.request);
       <p class="sf-lead">
         Giá và tồn kho theo thời điểm trên App Novixa. Đặt hàng để được nhà thuốc {tenant.brand.shortName} hỗ trợ đúng đơn.
       </p>
-      <div class="sf-products" style="margin-top: 1.5rem">
+      <div class="sf-products sf-products--grid" style="margin-top: 1.5rem">
         {
           tenant.products.map((p) => (
             <a class="sf-product" href={p.href}>
-              <img src={p.imageUrl} alt={p.name} loading="lazy" />
+              <div class="sf-product__media">
+                <img
+                  src={p.imageUrl || '/brand/products/default.png?v=1'}
+                  alt={p.name}
+                  loading="lazy"
+                  onerror="this.onerror=null;this.src='/brand/products/default.png?v=1'"
+                />
+              </div>
               <div class="sf-product__body">
                 <div class="sf-product__cat">{p.category}</div>
                 <h3>{p.name}</h3>
