@@ -1,0 +1,26 @@
+---
+import SimplePage from '../../layouts/SimplePage.astro';
+
+export function getStaticPaths() {
+  return [
+    { params: { slug: 'phong-cam-cum' } },
+    { params: { slug: 'kiem-soat-huyet-ap' } },
+    { params: { slug: 'gap-duoc-si' } },
+  ];
+}
+
+const slug = Astro.params.slug ?? '';
+const titles: Record<string, string> = {
+  'phong-cam-cum': 'Cách phòng cảm cúm hiệu quả mùa giao mùa',
+  'kiem-soat-huyet-ap': '5 thói quen giúp kiểm soát huyết áp',
+  'gap-duoc-si': 'Khi nào nên gặp dược sĩ trước khi tự mua thuốc?',
+};
+const heading = titles[slug] ?? 'Kiến thức sức khỏe';
+---
+
+<SimplePage
+  title={heading}
+  heading={heading}
+  body="Bài viết đầy đủ sẽ được quản lý qua CMS ở giai đoạn sau. Hiện tại bạn có thể đặt thuốc hoặc trao đổi với dược sĩ trên App Novixa."
+  path="/kien-thuc"
+/>

@@ -1,0 +1,160 @@
+---
+import type { PharmacyTenantConfig } from '../tenants/types';
+
+interface Props {
+  tenant: PharmacyTenantConfig;
+}
+
+const { tenant } = Astro.props;
+
+const serviceIcons: Record<string, string> = {
+  cart: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M6 6 5 3H2"/></svg>`,
+  chat: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 1 1 18 0z"/></svg>`,
+  delivery: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h11v10H3z"/><path d="M14 10h4l3 3v4h-7"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="17.5" cy="18.5" r="1.5"/></svg>`,
+  pulse: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>`,
+};
+---
+
+<section class="sf-hero">
+  <div class="sf-container sf-hero__grid">
+    <div>
+      <h1>{tenant.hero.headline}</h1>
+      <p class="sf-hero__sub">{tenant.hero.subhead}</p>
+      <ul class="sf-trust">
+        {
+          tenant.hero.trustItems.map((item) => (
+            <li>
+              <span class="sf-trust__dot" />
+              {item.label}
+            </li>
+          ))
+        }
+      </ul>
+      <div class="sf-hero__actions">
+        <a class="sf-btn sf-btn--primary" href={tenant.hero.ctaPrimary.href}>
+          {tenant.hero.ctaPrimary.label}
+        </a>
+        <a class="sf-btn sf-btn--ghost" href={tenant.hero.ctaSecondary.href}>
+          {tenant.hero.ctaSecondary.label}
+        </a>
+      </div>
+    </div>
+    <div class="sf-hero__media">
+      <img src={tenant.hero.imageUrl} alt={`${tenant.brand.name} — tư vấn dược sĩ`} loading="eager" />
+      <div class="sf-app-card">
+        <strong>{tenant.appPromo.title}</strong>
+        <div class="sf-app-card__links">
+          <a href={tenant.appPromo.appUrl}>Mở App Novixa</a>
+          <a href={tenant.appPromo.appStoreUrl}>App Store</a>
+          <a href={tenant.appPromo.playStoreUrl}>Google Play</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sf-section" id="dich-vu">
+  <div class="sf-container sf-split">
+    <div>
+      <div class="sf-section__head">
+        <h2>Dịch vụ của chúng tôi</h2>
+      </div>
+      <div class="sf-services">
+        {
+          tenant.services.map((s) => (
+            <article class="sf-service">
+              <div class="sf-service__icon" set:html={serviceIcons[s.icon] ?? '◆'} />
+              <h3>{s.title}</h3>
+              <p>{s.description}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+    <aside class="sf-why">
+      <h2>Vì sao chọn {tenant.brand.shortName}?</h2>
+      <ul>
+        {tenant.whyUs.map((item) => <li>{item}</li>)}
+      </ul>
+    </aside>
+  </div>
+</section>
+
+<section class="sf-section sf-section--muted" id="san-pham">
+  <div class="sf-container">
+    <div class="sf-section__head">
+      <h2>Sản phẩm phổ biến</h2>
+      <a href={tenant.appPromo.appUrl}>Xem tất cả</a>
+    </div>
+    <div class="sf-products">
+      {
+        tenant.products.map((p) => (
+          <a class="sf-product" href={p.href}>
+            <img src={p.imageUrl} alt={p.name} loading="lazy" />
+            <div class="sf-product__body">
+              <div class="sf-product__cat">{p.category}</div>
+              <h3>{p.name}</h3>
+              <div class="sf-product__row">
+                <span class="sf-product__price">{p.price}</span>
+                <span class="sf-product__cart" aria-hidden="true">+</span>
+              </div>
+            </div>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<section class="sf-section" id="kien-thuc">
+  <div class="sf-container">
+    <div class="sf-section__head">
+      <h2>Kiến thức sức khỏe</h2>
+      <a href="/kien-thuc">Xem tất cả</a>
+    </div>
+    <div class="sf-articles">
+      {
+        tenant.articles.map((a) => (
+          <a class="sf-article" href={a.href}>
+            {a.imageUrl ? <img src={a.imageUrl} alt="" loading="lazy" /> : <div />}
+            <div>
+              <h3>{a.title}</h3>
+              <time datetime={a.date}>{a.date}</time>
+            </div>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<section class="sf-section sf-section--muted" id="app">
+  <div class="sf-container sf-appband">
+    <div>
+      <div class="sf-section__head">
+        <h2>Quản lý sức khỏe gia đình với App Novixa</h2>
+      </div>
+      <ul>
+        {tenant.appSection.bullets.map((b) => <li>{b}</li>)}
+      </ul>
+      <a class="sf-btn sf-btn--primary" href={tenant.appPromo.appUrl}>Tải App Novixa ngay</a>
+    </div>
+    <div class="sf-appband__phone">
+      {
+        tenant.appSection.phoneMockImageUrl ? (
+          <img src={tenant.appSection.phoneMockImageUrl} alt="Giao diện App Novixa" loading="lazy" />
+        ) : null
+      }
+    </div>
+    <div class="sf-stats">
+      {
+        tenant.appSection.stats.map((s) => (
+          <div class="sf-stat">
+            <strong>{s.value}</strong>
+            <span>{s.label}</span>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>

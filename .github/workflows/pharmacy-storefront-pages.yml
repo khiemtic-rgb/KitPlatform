@@ -1,0 +1,91 @@
+# Cloudflare Pages: pharmacy white-label storefront → xuanhoa.novixa.vn
+name: Pharmacy storefront Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'client/pharmacy-storefront/**'
+      - '.github/workflows/pharmacy-storefront-pages.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: client/pharmacy-storefront/package-lock.json
+
+      - name: Build pharmacy-storefront
+        working-directory: client/pharmacy-storefront
+        env:
+          PUBLIC_STOREFRONT_TENANT: xuanhoa
+        run: |
+          npm ci
+          npm run build
+
+      - name: Create Pages project if missing
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          export CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-db0d4500b2d1fd3d607105da7d4f931d}"
+          npx --yes wrangler@4 pages project list > /tmp/projects.txt || true
+          cat /tmp/projects.txt
+          if grep -qE '(^|[^a-z-])pharmacy-storefront([^a-z-]|$)' /tmp/projects.txt; then
+            echo "Project pharmacy-storefront already listed"
+          else
+            npx --yes wrangler@4 pages project create pharmacy-storefront --production-branch=main
+          fi
+
+      - name: Deploy production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-db0d4500b2d1fd3d607105da7d4f931d}"
+          npx --yes wrangler@4 pages deploy client/pharmacy-storefront/dist \
+            --project-name=pharmacy-storefront \
+            --branch=main \
+            --commit-dirty=true
+
+      - name: Attach custom domain xuanhoa.novixa.vn
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-db0d4500b2d1fd3d607105da7d4f931d}"
+          TOKEN="${CLOUDFLARE_API_TOKEN:?Missing CLOUDFLARE_API_TOKEN}"
+          PROJECT=pharmacy-storefront
+          API="https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/pages/projects/${PROJECT}/domains"
+          domain="xuanhoa.novixa.vn"
+          echo "=== domain $domain ==="
+          RESP=$(curl -sS -X POST "$API" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "{\"name\":\"${domain}\"}")
+          echo "$RESP"
+          echo "$RESP" | python3 -c '
+          import json,sys
+          d=json.load(sys.stdin)
+          if d.get("success"):
+            print("added", d["result"].get("name"), d["result"].get("status"))
+            sys.exit(0)
+          errs=d.get("errors") or []
+          msg=json.dumps(errs)
+          # already exists is OK
+          if "already" in msg.lower() or any(e.get("code") in (8000014, 8000015, 8000032) for e in errs):
+            print("domain already attached (ok)")
+            sys.exit(0)
+          sys.exit(1)
+          '

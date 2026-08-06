@@ -1,0 +1,37 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import { resolveTenant } from '../../lib/tenant';
+import '../../styles/storefront.css';
+
+const tenant = resolveTenant(Astro.request);
+---
+
+<BaseLayout
+  tenant={tenant}
+  title={`Kiến thức sức khỏe — ${tenant.brand.name}`}
+  description="Bài viết sức khỏe từ nhà thuốc"
+>
+  <SiteHeader tenant={tenant} currentPath="/kien-thuc" />
+  <main class="sf-page">
+    <div class="sf-container">
+      <h1>Kiến thức sức khỏe</h1>
+      <p>Thông tin hữu ích từ đội ngũ dược sĩ — đặt thuốc và nhắc uống thuốc trên App Novixa.</p>
+      <div class="sf-articles" style="margin-top: 2rem">
+        {
+          tenant.articles.map((a) => (
+            <a class="sf-article" href={a.href}>
+              {a.imageUrl ? <img src={a.imageUrl} alt="" loading="lazy" /> : <div />}
+              <div>
+                <h3>{a.title}</h3>
+                <time datetime={a.date}>{a.date}</time>
+              </div>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </main>
+  <SiteFooter tenant={tenant} />
+</BaseLayout>

@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import HomePage from '../components/HomePage.astro';
+import { resolveTenant } from '../lib/tenant';
+import '../styles/storefront.css';
+
+const tenant = resolveTenant(Astro.request);
+---
+
+<BaseLayout
+  tenant={tenant}
+  title={`${tenant.brand.name} — Nhà thuốc số`}
+  description={tenant.footer.mission}
+>
+  <SiteHeader tenant={tenant} currentPath="/" />
+  <main>
+    <HomePage tenant={tenant} />
+  </main>
+  <SiteFooter tenant={tenant} />
+</BaseLayout>

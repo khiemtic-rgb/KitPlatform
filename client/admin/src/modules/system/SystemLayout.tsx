@@ -6,6 +6,7 @@ import {
   CloudOutlined,
   CreditCardOutlined,
   FileSearchOutlined,
+  GlobalOutlined,
   MobileOutlined,
   PrinterOutlined,
   SafetyCertificateOutlined,
@@ -71,6 +72,13 @@ export function SystemLayout() {
         pharmacyOnly: true as const,
         requiresCustomerApp: true as const,
       },
+      {
+        key: 'storefront-settings',
+        label: t('storefrontSettings'),
+        path: '/system/storefront-settings',
+        icon: <GlobalOutlined />,
+        pharmacyOnly: true as const,
+      },
       { key: 'audit-log', label: t('auditLog'), path: '/system/audit-log', icon: <FileSearchOutlined /> },
     ];
 
@@ -107,7 +115,8 @@ export function SystemLayout() {
 
     const onPharmacyOnlyTab =
       location.pathname.startsWith('/system/pos-settings') ||
-      location.pathname.startsWith('/system/customer-app-settings');
+      location.pathname.startsWith('/system/customer-app-settings') ||
+      location.pathname.startsWith('/system/storefront-settings');
     if (adminVertical !== 'pharmacy' && onPharmacyOnlyTab) {
       navigate('/system/platform-pack', { replace: true });
       return;

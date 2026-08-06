@@ -348,6 +348,9 @@ const ReceiptSettingsPage = lazy(() =>
 const CustomerAppSettingsPage = lazy(() =>
   import('@/modules/sales/CustomerAppSettingsPage').then((m) => ({ default: m.CustomerAppSettingsPage })),
 );
+const StorefrontSettingsPage = lazy(() =>
+  import('@/modules/system/StorefrontSettingsPage').then((m) => ({ default: m.StorefrontSettingsPage })),
+);
 const LoyaltySettingsPage = lazy(() =>
   import('@/modules/sales/LoyaltySettingsPage').then((m) => ({ default: m.LoyaltySettingsPage })),
 );
@@ -945,6 +948,7 @@ export function AppRouter() {
                 <Route path="trial-signups" element={<FamilyOsTrialSignupsPage />} />
                 <Route path="pos-settings" element={<ReceiptSettingsPage />} />
                 <Route path="customer-app-settings" element={<CustomerAppSettingsPage />} />
+                <Route path="storefront-settings" element={<StorefrontSettingsPage />} />
                 <Route path="audit-log" element={<AuditLogListPage />} />
                 <Route
                   path="assessment-leads"

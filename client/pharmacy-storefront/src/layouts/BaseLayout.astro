@@ -1,0 +1,55 @@
+---
+import type { PharmacyTenantConfig } from '../tenants/types';
+
+interface Props {
+  tenant: PharmacyTenantConfig;
+  title?: string;
+  description?: string;
+}
+
+const { tenant, title, description } = Astro.props;
+const pageTitle = title ?? tenant.brand.name;
+const pageDescription = description ?? tenant.footer.mission;
+const primary = tenant.brand.primaryColor;
+const accent = tenant.brand.accentColor;
+---
+
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={pageDescription} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <title>{pageTitle}</title>
+    <style is:global define:vars={{ primary, accent }}>
+      :root {
+        --color-primary: var(--primary);
+        --color-accent: var(--accent);
+        --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: var(--font-sans);
+        color: #14231f;
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body data-tenant={tenant.slug} data-tenant-code={tenant.tenantCode}>
+    <slot />
+  </body>
+</html>

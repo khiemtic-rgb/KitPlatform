@@ -1,0 +1,13 @@
+---
+import SimplePage from '../layouts/SimplePage.astro';
+import { resolveTenant } from '../lib/tenant';
+
+const tenant = resolveTenant(Astro.request);
+---
+
+<SimplePage
+  title="Liên hệ"
+  heading="Liên hệ"
+  body={`${tenant.contact.address}. ${tenant.contact.hours}. Điện thoại: ${tenant.contact.phone} · Email: ${tenant.contact.email}`}
+  path="/lien-he"
+/>

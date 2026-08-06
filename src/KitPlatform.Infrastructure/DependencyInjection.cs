@@ -143,6 +143,8 @@ public static class DependencyInjection
         services.AddScoped<ILoyaltyAdminService, LoyaltyAdminService>();
 
         services.AddScoped<ITenantSettingsService, TenantSettingsService>();
+        services.AddScoped<Pharmacy.PharmacyStorefrontRepository>();
+        services.AddScoped<Application.Pharmacy.IPharmacyStorefrontService, Pharmacy.PharmacyStorefrontService>();
         services.AddScoped<WorkspacePackProvisioner>();
         services.AddScoped<ITenantPlatformSettings, TenantPlatformSettingsService>();
         services.AddScoped<IIntegrationOutboxWriter, IntegrationOutboxWriter>();

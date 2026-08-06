@@ -1,0 +1,53 @@
+---
+import type { PharmacyTenantConfig } from '../tenants/types';
+
+interface Props {
+  tenant: PharmacyTenantConfig;
+  currentPath?: string;
+}
+
+const { tenant, currentPath = '/' } = Astro.props;
+const phoneHref = `tel:${tenant.contact.phone.replace(/\s/g, '')}`;
+---
+
+<div class="sf-topbar">
+  <div class="sf-container sf-topbar__inner">
+    <span>{tenant.contact.address} · {tenant.contact.hours}</span>
+    <div class="sf-topbar__right">
+      {
+        tenant.contact.social.facebook && (
+          <a href={tenant.contact.social.facebook} target="_blank" rel="noreferrer">
+            Facebook
+          </a>
+        )
+      }
+      {
+        tenant.contact.social.zalo && (
+          <a href={tenant.contact.social.zalo} target="_blank" rel="noreferrer">
+            Zalo
+          </a>
+        )
+      }
+      <a href={phoneHref}><strong>{tenant.contact.phone}</strong></a>
+    </div>
+  </div>
+</div>
+
+<header class="sf-header">
+  <div class="sf-container sf-header__inner">
+    <a class="sf-logo" href="/">
+      <span class="sf-logo__mark">{tenant.brand.logoText}</span>
+      <span>{tenant.brand.name}</span>
+    </a>
+    <nav class="sf-nav" aria-label="Chính">
+      {
+        tenant.nav.map((item) => (
+          <a href={item.href} aria-current={item.href === currentPath ? 'page' : undefined}>
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+    <a class="sf-btn sf-btn--primary" href={tenant.appPromo.appUrl}>Đặt thuốc</a>
+  </div>
+</header>

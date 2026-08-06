@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { resolveTenant } from '../lib/tenant';
+import '../styles/storefront.css';
+
+interface Props {
+  title: string;
+  heading: string;
+  body: string;
+  path: string;
+}
+
+const tenant = resolveTenant(Astro.request);
+const { title, heading, body, path } = Astro.props;
+---
+
+<BaseLayout tenant={tenant} title={`${heading} — ${tenant.brand.name}`} description={body}>
+  <SiteHeader tenant={tenant} currentPath={path} />
+  <main class="sf-page">
+    <div class="sf-container">
+      <h1>{heading}</h1>
+      <p>{body}</p>
+      <p style="margin-top:1.5rem">
+        <a class="sf-btn sf-btn--primary" href={tenant.appPromo.appUrl}>Mở App Novixa</a>
+      </p>
+      <slot />
+    </div>
+  </main>
+  <SiteFooter tenant={tenant} />
+</BaseLayout>
