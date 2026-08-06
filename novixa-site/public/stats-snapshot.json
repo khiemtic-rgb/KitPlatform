@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-06T03:41:17.514Z",
+  "generatedAt": "2026-08-06T09:07:46.091Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 222,
-    "todayPageViews": 109,
-    "todayRequests": 308,
-    "last24hVisitors": 513,
-    "last24hPageViews": 352,
-    "last24hRequests": 958
+    "todayVisitors": 348,
+    "todayPageViews": 295,
+    "todayRequests": 718,
+    "last24hVisitors": 479,
+    "last24hPageViews": 418,
+    "last24hRequests": 994
   },
   "hourly": [
-    {
-      "time": "2026-08-05T04:00:00Z",
-      "visitors": 21,
-      "requests": 24
-    },
-    {
-      "time": "2026-08-05T05:00:00Z",
-      "visitors": 21,
-      "requests": 29
-    },
-    {
-      "time": "2026-08-05T06:00:00Z",
-      "visitors": 10,
-      "requests": 11
-    },
-    {
-      "time": "2026-08-05T07:00:00Z",
-      "visitors": 24,
-      "requests": 29
-    },
-    {
-      "time": "2026-08-05T08:00:00Z",
-      "visitors": 159,
-      "requests": 241
-    },
-    {
-      "time": "2026-08-05T09:00:00Z",
-      "visitors": 35,
-      "requests": 39
-    },
     {
       "time": "2026-08-05T10:00:00Z",
       "visitors": 17,
@@ -128,8 +98,33 @@
     },
     {
       "time": "2026-08-06T03:00:00Z",
-      "visitors": 68,
-      "requests": 76
+      "visitors": 94,
+      "requests": 106
+    },
+    {
+      "time": "2026-08-06T04:00:00Z",
+      "visitors": 40,
+      "requests": 45
+    },
+    {
+      "time": "2026-08-06T05:00:00Z",
+      "visitors": 44,
+      "requests": 52
+    },
+    {
+      "time": "2026-08-06T06:00:00Z",
+      "visitors": 21,
+      "requests": 56
+    },
+    {
+      "time": "2026-08-06T07:00:00Z",
+      "visitors": 20,
+      "requests": 23
+    },
+    {
+      "time": "2026-08-06T08:00:00Z",
+      "visitors": 47,
+      "requests": 203
     }
   ],
   "daily": [
@@ -171,71 +166,71 @@
     },
     {
       "date": "2026-08-06",
-      "visitors": 222,
-      "pageViews": 109,
-      "requests": 308
+      "visitors": 348,
+      "pageViews": 295,
+      "requests": 718
     }
   ],
   "topPages": [
     {
       "path": "/vi/tin-tuc/quy-trinh-ban-thuoc-chuyen-nghiep-tai-nha-thuoc-hien-dai-gom-nhung-buoc-nao/",
-      "views": 210
-    },
-    {
-      "path": "/images/tin-tuc/quy-trinh-ban-thuoc.png",
-      "views": 93
+      "views": 137
     },
     {
       "path": "/vi/tin-tuc/lam-sao-de-ban-dung-thuoc-va-dung-nhu-cau-cua-nguoi-benh/",
-      "views": 90
-    },
-    {
-      "path": "/cdn-cgi/rum",
-      "views": 64
+      "views": 133
     },
     {
       "path": "/images/tin-tuc/lam-sao-de-ban-dung-thuoc.png",
-      "views": 61
+      "views": 79
     },
     {
-      "path": "/images/tin-tuc/khi-nao-nen-chuan-hoa-quy-trinh.png",
-      "views": 49
+      "path": "/cdn-cgi/rum",
+      "views": 56
     },
     {
       "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
-      "views": 41
+      "views": 42
     },
     {
-      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
+      "path": "/images/tin-tuc/quy-trinh-ban-thuoc.png",
+      "views": 42
+    },
+    {
+      "path": "/",
+      "views": 42
+    },
+    {
+      "path": "/images/tin-tuc/khi-nao-nen-chuan-hoa-quy-trinh.png",
       "views": 38
     },
     {
-      "path": "/images/tin-tuc/chu-nha-thuoc-lam-moi-tuan.png",
-      "views": 30
+      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
+      "views": 32
+    },
+    {
+      "path": "/vi/",
+      "views": 32
+    },
+    {
+      "path": "/cdn-cgi/l/email-protection",
+      "views": 32
     },
     {
       "path": "/robots.txt",
-      "views": 24
+      "views": 26
     },
     {
       "path": "/feed.json",
       "views": 18
     },
     {
-      "path": "/images/logo.png",
+      "path": "/images/tin-tuc/chu-nha-thuoc-lam-moi-tuan.png",
       "views": 15
     },
     {
-      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-gi-moi-ngay.png",
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
       "views": 14
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 13
-    },
-    {
-      "path": "/",
-      "views": 12
     }
   ]
 }
