@@ -27,6 +27,12 @@ public static class SalesAuthorizationExtensions
                 AdminTokenRules.IsAdminPrincipal(ctx.User)
                 && (HasAny(ctx, "sales.customers", "sales.write") || ctx.User.IsInRole("ADMIN"))));
 
+        options.AddPolicy(SalesPolicies.PosOrCustomers, policy =>
+            policy.RequireAssertion(ctx =>
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && (HasAny(ctx, "sales.pos", "sales.customers", "sales.write")
+                    || ctx.User.IsInRole("ADMIN"))));
+
         options.AddPolicy(SalesPolicies.Settings, policy =>
             policy.RequireAssertion(ctx =>
                 AdminTokenRules.IsAdminPrincipal(ctx.User)

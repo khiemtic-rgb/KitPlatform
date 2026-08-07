@@ -128,7 +128,7 @@ public sealed class CustomersController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = SalesPolicies.Write)]
+    [Authorize(Policy = SalesPolicies.PosOrCustomers)]
     public async Task<ActionResult<CustomerDetailDto>> Create(
         [FromBody] CreateCustomerRequest request,
         CancellationToken cancellationToken)
@@ -170,7 +170,7 @@ public sealed class CustomersController : ControllerBase
         Ok(await _appLogin.ListAsync(status, cancellationToken));
 
     [HttpPost("app-login-requests/{requestId:guid}/approve")]
-    [Authorize(Policy = SalesPolicies.Write)]
+    [Authorize(Policy = SalesPolicies.Customers)]
     public async Task<ActionResult<ApproveCustomerAppLoginResult>> ApproveAppLoginRequest(
         Guid requestId,
         CancellationToken cancellationToken)
@@ -186,7 +186,7 @@ public sealed class CustomersController : ControllerBase
     }
 
     [HttpPost("app-login-requests/{requestId:guid}/reject")]
-    [Authorize(Policy = SalesPolicies.Write)]
+    [Authorize(Policy = SalesPolicies.Customers)]
     public async Task<IActionResult> RejectAppLoginRequest(
         Guid requestId,
         [FromBody] RejectCustomerAppLoginRequest? body,
@@ -253,7 +253,7 @@ public sealed class CustomersController : ControllerBase
 
     /// <summary>Confirm prospect/revoked CRM link → pharmacy member (POS first sale / staff mark).</summary>
     [HttpPost("{customerId:guid}/pharmacy-member")]
-    [Authorize(Policy = SalesPolicies.Write)]
+    [Authorize(Policy = SalesPolicies.PosOrCustomers)]
     public async Task<ActionResult<CustomerDetailDto>> MarkPharmacyMember(
         Guid customerId,
         [FromBody] MarkPharmacyMemberRequest? request,
