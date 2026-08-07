@@ -126,6 +126,8 @@ public sealed record TransferItemDto(
     string ProductCode,
     string ProductName,
     string BatchNumber,
+    DateOnly? ExpiryDate,
+    string? UnitName,
     decimal Quantity);
 
 public sealed record TransferDetailDto(

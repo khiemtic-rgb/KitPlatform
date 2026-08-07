@@ -13196,6 +13196,9 @@ export interface components {
             productCode?: string | null;
             productName?: string | null;
             batchNumber?: string | null;
+            /** Format: date */
+            expiryDate?: string | null;
+            unitName?: string | null;
             /** Format: double */
             quantity?: number;
         };

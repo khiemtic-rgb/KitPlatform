@@ -100,9 +100,17 @@ export type TransferListItem = Req<
   | 'itemCount'
 >;
 
-export type TransferItem = Req<
+export type TransferItem = Pick<
   TransferItemDto,
-  'id' | 'batchId' | 'productId' | 'productCode' | 'productName' | 'batchNumber' | 'quantity'
+  | 'id'
+  | 'batchId'
+  | 'productId'
+  | 'productCode'
+  | 'productName'
+  | 'batchNumber'
+  | 'expiryDate'
+  | 'unitName'
+  | 'quantity'
 >;
 
 export type TransferDetail = Omit<

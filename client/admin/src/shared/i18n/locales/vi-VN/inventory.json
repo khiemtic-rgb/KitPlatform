@@ -208,10 +208,24 @@
     "selectToWarehouse": "Chọn kho nhận",
     "productPlaceholder": "Sản phẩm",
     "batchPlaceholder": "Lô hàng",
+    "addItem": "Thêm hàng",
+    "lineList": "Hàng đã thêm",
+    "clickToEdit": "Bấm vào một dòng để sửa dòng đó.",
+    "editingLine": "Đang sửa dòng",
+    "saveLine": "Lưu dòng",
+    "unit": "ĐVT",
+    "qty": "SL",
+    "qtyBase": "SL quy đổi",
+    "emptyLines": "Chưa thêm hàng nào",
+    "convertedQtyHint": "Quy đổi ≈ {{qty}} đơn vị tồn · tối đa {{available}}",
     "validation": {
       "selectProduct": "Chọn SP",
       "selectBatch": "Chọn lô",
-      "quantity": "SL"
+      "selectUnit": "Chọn ĐVT",
+      "quantity": "Nhập số lượng",
+      "exceedStock": "Vượt tồn lô (cần {{qty}}, còn {{available}})",
+      "sameWarehouse": "Kho xuất và kho nhận phải khác nhau",
+      "emptyLines": "Thêm ít nhất một dòng hàng"
     },
     "notFound": {
       "noStockProducts": "Không có SP tồn",

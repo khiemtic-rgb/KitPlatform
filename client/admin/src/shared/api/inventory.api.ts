@@ -113,6 +113,8 @@ function normalizeTransferDetail(data: Record<string, unknown>): TransferDetail 
       productCode: String(row.productCode ?? row.ProductCode ?? ''),
       productName: String(row.productName ?? row.ProductName ?? ''),
       batchNumber: String(row.batchNumber ?? row.BatchNumber ?? ''),
+      expiryDate: (row.expiryDate ?? row.ExpiryDate) as string | undefined,
+      unitName: (row.unitName ?? row.UnitName) as string | undefined,
       quantity: Number(row.quantity ?? row.Quantity ?? 0),
     })),
   };

@@ -1203,6 +1203,10 @@ internal sealed class InventoryRepository
                 p.product_code AS ProductCode,
                 p.product_name AS ProductName,
                 b.batch_number AS BatchNumber,
+                b.expiry_date AS ExpiryDate,
+                (SELECT u.unit_name FROM product_units u
+                 WHERE u.product_id = p.id AND u.is_sale_unit = TRUE AND u.status = 1
+                 ORDER BY u.is_base_unit DESC, u.unit_name LIMIT 1) AS UnitName,
                 i.quantity AS Quantity
             FROM inventory_transfer_items i
             INNER JOIN products p ON p.id = i.product_id

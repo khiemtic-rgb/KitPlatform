@@ -208,10 +208,24 @@
     "selectToWarehouse": "Select destination warehouse",
     "productPlaceholder": "Product",
     "batchPlaceholder": "Batch",
+    "addItem": "Add item",
+    "lineList": "Added items",
+    "clickToEdit": "Click a row to edit that item.",
+    "editingLine": "Editing line",
+    "saveLine": "Save line",
+    "unit": "Unit",
+    "qty": "Qty",
+    "qtyBase": "Base qty",
+    "emptyLines": "No items added yet",
+    "convertedQtyHint": "Converted ≈ {{qty}} stock units · max {{available}}",
     "validation": {
       "selectProduct": "Select product",
       "selectBatch": "Select batch",
-      "quantity": "Qty"
+      "selectUnit": "Select unit",
+      "quantity": "Enter quantity",
+      "exceedStock": "Exceeds batch stock (need {{qty}}, available {{available}})",
+      "sameWarehouse": "Source and destination warehouses must differ",
+      "emptyLines": "Add at least one line"
     },
     "notFound": {
       "noStockProducts": "No products in stock",
