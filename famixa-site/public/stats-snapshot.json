@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-06T14:43:47.361Z",
+  "generatedAt": "2026-08-07T00:21:34.424Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 255,
-    "todayPageViews": 112,
-    "todayRequests": 631,
-    "last24hVisitors": 300,
-    "last24hPageViews": 133,
-    "last24hRequests": 843
+    "todayVisitors": 3,
+    "todayPageViews": 1,
+    "todayRequests": 3,
+    "last24hVisitors": 294,
+    "last24hPageViews": 127,
+    "last24hRequests": 688
   },
   "hourly": [
-    {
-      "time": "2026-08-05T15:00:00Z",
-      "visitors": 4,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-05T16:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-05T17:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-05T18:00:00Z",
-      "visitors": 38,
-      "requests": 70
-    },
-    {
-      "time": "2026-08-05T19:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-05T20:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-05T21:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-05T22:00:00Z",
-      "visitors": 4,
-      "requests": 84
-    },
-    {
-      "time": "2026-08-05T23:00:00Z",
-      "visitors": 4,
-      "requests": 36
-    },
     {
       "time": "2026-08-06T01:00:00Z",
       "visitors": 4,
@@ -123,17 +78,61 @@
     },
     {
       "time": "2026-08-06T14:00:00Z",
-      "visitors": 2,
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-06T15:00:00Z",
+      "visitors": 8,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-06T16:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-06T17:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-06T18:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-06T19:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-06T20:00:00Z",
+      "visitors": 6,
+      "requests": 11
+    },
+    {
+      "time": "2026-08-06T21:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-06T22:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-06T23:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-07T00:00:00Z",
+      "visitors": 3,
       "requests": 3
     }
   ],
   "daily": [
-    {
-      "date": "2026-07-31",
-      "visitors": 199,
-      "pageViews": 163,
-      "requests": 1104
-    },
     {
       "date": "2026-08-01",
       "visitors": 204,
@@ -166,19 +165,25 @@
     },
     {
       "date": "2026-08-06",
-      "visitors": 353,
-      "pageViews": 132,
-      "requests": 831
+      "visitors": 291,
+      "pageViews": 126,
+      "requests": 685
+    },
+    {
+      "date": "2026-08-07",
+      "visitors": 32,
+      "pageViews": 11,
+      "requests": 38
     }
   ],
   "topPages": [
     {
       "path": "/vi/goi-cha-me/lam-guong-quan-trong-hon-day-bao-dua-tre-khong-nghe-nhung-gioi-cha-me-noi-tre-nhin-nhung-tac-cha-me-lam/",
-      "views": 84
+      "views": 77
     },
     {
       "path": "/images/blog/lam-guong-quan-trong-hon-day-bao.png",
-      "views": 62
+      "views": 64
     },
     {
       "path": "/cdn-cgi/rum",
@@ -186,51 +191,51 @@
     },
     {
       "path": "/",
-      "views": 33
-    },
-    {
-      "path": "/vi/goi-cha-me/",
-      "views": 23
+      "views": 25
     },
     {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 23
-    },
-    {
-      "path": "/vi/",
-      "views": 22
-    },
-    {
-      "path": "/feed.json",
       "views": 18
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "path": "/vi/",
+      "views": 18
+    },
+    {
+      "path": "/vi/goi-cha-me/",
       "views": 17
     },
     {
-      "path": "/_next/static/chunks/718-2b1effa4778d9f77.js",
-      "views": 16
-    },
-    {
-      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 16
-    },
-    {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 15
-    },
-    {
       "path": "/images/moment-sleep.png",
-      "views": 15
+      "views": 16
+    },
+    {
+      "path": "/images/quote-lan-card.png",
+      "views": 13
+    },
+    {
+      "path": "/_next/static/chunks/app/vi/goi-cha-me/%5Bslug%5D/page-2d062270f9ff84b4.js",
+      "views": 13
+    },
+    {
+      "path": "/images/blog/phat-con-de-khong-bi-ton-thuong.png",
+      "views": 12
+    },
+    {
+      "path": "/feed.json",
+      "views": 12
+    },
+    {
+      "path": "/images/loop/02-heart.png",
+      "views": 12
     },
     {
       "path": "/robots.txt",
-      "views": 13
+      "views": 11
     },
     {
       "path": "/images/banner-right.png",
-      "views": 13
+      "views": 11
     }
   ]
 }
