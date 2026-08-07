@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-07T13:41:12.301Z",
+  "generatedAt": "2026-08-07T19:17:03.634Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 440,
-    "todayPageViews": 284,
-    "todayRequests": 929,
-    "last24hVisitors": 568,
-    "last24hPageViews": 542,
-    "last24hRequests": 1296
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 494,
+    "last24hPageViews": 333,
+    "last24hRequests": 1119
   },
   "hourly": [
-    {
-      "time": "2026-08-06T14:00:00Z",
-      "visitors": 7,
-      "requests": 14
-    },
-    {
-      "time": "2026-08-06T15:00:00Z",
-      "visitors": 13,
-      "requests": 32
-    },
-    {
-      "time": "2026-08-06T16:00:00Z",
-      "visitors": 95,
-      "requests": 185
-    },
-    {
-      "time": "2026-08-06T17:00:00Z",
-      "visitors": 9,
-      "requests": 32
-    },
-    {
-      "time": "2026-08-06T18:00:00Z",
-      "visitors": 11,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-06T19:00:00Z",
-      "visitors": 4,
-      "requests": 63
-    },
     {
       "time": "2026-08-06T20:00:00Z",
       "visitors": 3,
@@ -130,15 +100,34 @@
       "time": "2026-08-07T13:00:00Z",
       "visitors": 11,
       "requests": 11
+    },
+    {
+      "time": "2026-08-07T14:00:00Z",
+      "visitors": 10,
+      "requests": 17
+    },
+    {
+      "time": "2026-08-07T15:00:00Z",
+      "visitors": 14,
+      "requests": 31
+    },
+    {
+      "time": "2026-08-07T16:00:00Z",
+      "visitors": 30,
+      "requests": 91
+    },
+    {
+      "time": "2026-08-07T17:00:00Z",
+      "visitors": 7,
+      "requests": 9
+    },
+    {
+      "time": "2026-08-07T18:00:00Z",
+      "visitors": 12,
+      "requests": 13
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-01",
-      "visitors": 469,
-      "pageViews": 461,
-      "requests": 1119
-    },
     {
       "date": "2026-08-02",
       "visitors": 387,
@@ -171,71 +160,71 @@
     },
     {
       "date": "2026-08-07",
-      "visitors": 440,
-      "pageViews": 284,
-      "requests": 929
+      "visitors": 483,
+      "pageViews": 313,
+      "requests": 1090
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 138
+      "views": 151
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 108
+      "views": 118
     },
     {
       "path": "/vi/tin-tuc/nhung-loi-thuong-gap-khi-tu-van-khach-hang-tai-nha-thuoc-va-cach-khac-phuc/",
-      "views": 96
+      "views": 97
     },
     {
       "path": "/images/tin-tuc/nhung-loi-thuong-gap-khach-hang.png",
-      "views": 60
+      "views": 63
     },
     {
       "path": "/robots.txt",
-      "views": 32
+      "views": 28
     },
     {
       "path": "/images/tin-tuc/khi-nao-nen-chuan-hoa-quy-trinh.png",
-      "views": 25
+      "views": 27
     },
     {
       "path": "/favicon.svg",
-      "views": 23
-    },
-    {
-      "path": "/images/tin-tuc/lam-sao-de-ban-dung-thuoc.png",
       "views": 22
     },
     {
       "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 21
-    },
-    {
-      "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
-      "views": 21
+      "views": 22
     },
     {
       "path": "/images/tin-tuc/quy-trinh-ban-thuoc.png",
       "views": 21
     },
     {
+      "path": "/brand/family-health.png",
+      "views": 20
+    },
+    {
+      "path": "/vi/",
+      "views": 20
+    },
+    {
+      "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
+      "views": 19
+    },
+    {
+      "path": "/images/tin-tuc/lam-sao-de-ban-dung-thuoc.png",
+      "views": 19
+    },
+    {
       "path": "/feed.json",
       "views": 18
     },
     {
-      "path": "/api/stats",
-      "views": 16
-    },
-    {
-      "path": "/brand/xuanhoa-logo.png",
-      "views": 16
-    },
-    {
       "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
-      "views": 15
+      "views": 18
     }
   ]
 }
