@@ -1,0 +1,446 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <title>NOVIXA-WP-001 — Từ Quản lý đến Phát triển</title>
+  <style>
+    @page { size: A4; margin: 16mm 18mm 14mm 18mm; }
+    @page cover { margin: 0; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; color: #1a1f24;
+      font-family: "Times New Roman", Times, "Noto Serif", serif;
+      font-size: 13pt; line-height: 1.45; background: #fff;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .cover {
+      page: cover; page-break-after: always; min-height: 297mm;
+      padding: 22mm 22mm 20mm; background: #0f2f38; color: #f4f1ea;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .cover-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .cover-brand { display: flex; align-items: center; gap: 12px; }
+    .cover-brand img {
+      width: 52px; height: 52px; object-fit: contain;
+      background: #fff; border-radius: 6px; padding: 4px;
+    }
+    .cover-brand-name { font-size: 16pt; font-weight: bold; letter-spacing: 0.04em; }
+    .cover-meta-code { font-size: 10.5pt; letter-spacing: 0.06em; opacity: 0.9; text-align: right; }
+    .cover-mid { padding: 28mm 0 18mm; }
+    .cover-eyebrow {
+      font-size: 11pt; letter-spacing: 0.14em; text-transform: uppercase;
+      opacity: 0.85; margin-bottom: 14pt;
+    }
+    .cover h1, .cover-title {
+      font-size: 28pt; line-height: 1.2; font-weight: bold;
+      margin: 0 0 14pt; max-width: 150mm; color: #f4f1ea;
+    }
+    .cover-subtitle {
+      font-size: 14pt; line-height: 1.4; opacity: 0.95;
+      max-width: 148mm; margin: 0 0 22pt; font-style: italic;
+    }
+    .cover-rule { width: 42mm; height: 2px; background: #c4a35a; margin: 0 0 18pt; border: 0; }
+    .cover-lede { font-size: 13pt; max-width: 150mm; line-height: 1.5; opacity: 0.95; }
+    .cover-bottom {
+      border-top: 1px solid rgba(244, 241, 234, 0.25); padding-top: 14pt;
+      display: flex; justify-content: space-between; gap: 16px; font-size: 10.5pt; opacity: 0.9;
+    }
+    .doc-header {
+      display: flex; justify-content: space-between; align-items: baseline;
+      border-bottom: 1.2pt solid #0f2f38; padding-bottom: 6pt; margin-bottom: 16pt;
+      font-size: 10pt; color: #44515a;
+    }
+    .doc-header strong { color: #0f2f38; font-size: 10.5pt; }
+    h1 { font-size: 18pt; line-height: 1.25; margin: 0 0 6pt; color: #0f2f38; }
+    .subhead { font-size: 12.5pt; font-style: italic; color: #44515a; margin: 0 0 14pt; }
+    .meta-box { width: 100%; border-collapse: collapse; margin: 0 0 14pt; font-size: 11.5pt; }
+    .meta-box th, .meta-box td {
+      border: 0.7pt solid #c9d1d6; padding: 5pt 8pt; text-align: left; vertical-align: top;
+    }
+    .meta-box th { width: 32%; background: #eef3f4; color: #0f2f38; font-weight: bold; }
+    .callout {
+      border-left: 3.5pt solid #c4a35a; background: #f7f4ec;
+      padding: 8pt 11pt; margin: 0 0 14pt;
+    }
+    .callout p { margin: 0 0 4pt; }
+    .callout p:last-child { margin: 0; }
+    h2 {
+      font-size: 14.5pt; color: #0f2f38; margin: 16pt 0 7pt;
+      page-break-after: avoid; border-bottom: 0.6pt solid #d5dee2; padding-bottom: 3pt;
+    }
+    h3 { font-size: 13pt; color: #1a1f24; margin: 11pt 0 4pt; page-break-after: avoid; }
+    p { margin: 0 0 7pt; orphans: 3; widows: 3; }
+    ul, ol { margin: 0 0 9pt; padding-left: 18pt; }
+    li { margin: 0 0 3pt; }
+    .flow {
+      text-align: center; font-weight: bold; margin: 8pt 0 10pt; padding: 8pt;
+      background: #eef3f4; border: 0.7pt solid #c9d1d6;
+    }
+    blockquote {
+      margin: 8pt 0 12pt; padding: 8pt 12pt; border-left: 3pt solid #0f2f38;
+      background: #f3f7f8; font-style: italic;
+    }
+    blockquote p { margin: 0 0 4pt; }
+    blockquote p:last-child { margin: 0; }
+    table.data {
+      width: 100%; border-collapse: collapse; margin: 6pt 0 12pt;
+      font-size: 12pt; page-break-inside: avoid;
+    }
+    table.data th, table.data td {
+      border: 0.7pt solid #b7c3c9; padding: 5pt 7pt; vertical-align: top;
+    }
+    table.data th { background: #0f2f38; color: #f4f1ea; font-weight: bold; text-align: left; }
+    table.data tr:nth-child(even) td { background: #f7fafb; }
+    .check {
+      width: 11pt; height: 11pt; border: 1pt solid #334048;
+      display: inline-block; vertical-align: -1pt; margin-right: 2pt;
+    }
+    .footer-note {
+      margin-top: 16pt; padding-top: 8pt; border-top: 0.7pt solid #c9d1d6;
+      font-size: 10.5pt; color: #44515a;
+    }
+    .page-break { page-break-before: always; }
+    .avoid-break { page-break-inside: avoid; }
+  </style>
+</head>
+<body>
+
+  <section class="cover">
+    <div class="cover-top">
+      <div class="cover-brand">
+        <img src="logo.png" alt="Novixa" />
+        <div class="cover-brand-name">NOVIXA</div>
+      </div>
+      <div class="cover-meta-code">
+        NOVIXA-WP-001-EB<br />
+        Executive Brief · v1.5
+      </div>
+    </div>
+    <div class="cover-mid">
+      <div class="cover-eyebrow">White Paper · Phân tích ngành</div>
+      <h1 class="cover-title">Từ Quản lý đến Phát triển</h1>
+      <p class="cover-subtitle">Sau khi đã có phần mềm bán hàng — nhà thuốc còn thiếu gì để lớn lên?</p>
+      <hr class="cover-rule" />
+      <p class="cover-lede">
+        Phần mềm quản lý bán hàng đã giúp nhiều nhà thuốc <strong>bán được đơn</strong>.
+        Nhiều chủ đang quan tâm thêm hướng <strong>bán được đơn kế tiếp</strong>
+        — từ chính những khách đã từng mua.
+      </p>
+    </div>
+    <div class="cover-bottom">
+      <div>
+        Dành cho chủ nhà thuốc · dược sĩ chủ · quản lý chuỗi nhỏ<br />
+        Tài liệu giới thiệu tư duy sản phẩm — không phải bảng giá
+      </div>
+      <div style="text-align:right">
+        Thời gian đọc: 8–10 phút<br />
+        Ngày xuất bản: 05/08/2026<br />
+        novixa.vn
+      </div>
+    </div>
+  </section>
+
+  <main class="doc">
+    <div class="doc-header">
+      <div><strong>Novixa</strong> · NOVIXA-WP-001 · Executive Brief</div>
+      <div>Từ Quản lý đến Phát triển</div>
+    </div>
+
+    <h1>Từ Quản lý đến Phát triển</h1>
+    <p class="subhead">Sau khi đã có phần mềm bán hàng — nhà thuốc còn thiếu gì để lớn lên?</p>
+
+    <table class="meta-box">
+      <tr><th>Mã tài liệu</th><td>NOVIXA-WP-001-EB</td></tr>
+      <tr><th>Loại</th><td>Bản đọc nhanh cho chủ nhà thuốc</td></tr>
+      <tr><th>Phiên bản</th><td>1.5 · 05/08/2026</td></tr>
+      <tr><th>Thời gian đọc</th><td>Khoảng 8–10 phút</td></tr>
+    </table>
+
+    <div class="callout">
+      <p>Đây là <strong>tài liệu để đối chiếu</strong> với thực tế nhà thuốc mình. Khi đọc những trang sau, anh/chị có thể tự hỏi nhẹ:</p>
+      <p><em>Nhà thuốc mình đang dừng nhiều ở việc quản lý bán hàng từng ngày — hay cũng đã bắt đầu phát triển từ những khách từng tin tưởng và quay lại?</em></p>
+      <p>Không có đáp án đúng hay sai — tùy giai đoạn từng nhà thuốc.</p>
+    </div>
+
+    <h2>1. Có thể bắt đầu từ đây</h2>
+    <p>Trên thị trường, phần mềm quản lý bán hàng đã giúp rất nhiều nhà thuốc <strong>bán được đơn</strong> — nhanh hơn, rõ hơn, ít nhầm hơn. Đó là bước tiến đáng kể.</p>
+    <p>Nhiều chủ sau một thời gian vận hành ổn định thường quan tâm thêm một hướng khác: làm sao để từ những khách đã từng mua, nhà thuốc có thêm cơ hội <strong>bán được đơn kế tiếp</strong>.</p>
+    <p>Novixa được xây quanh hướng đó — song song với việc tôn trọng những gì phần mềm quản lý đã và đang làm tốt. Có thể hình dung đơn giản: sau lớp quản lý, còn một lớp <strong>phát triển</strong>.</p>
+
+    <h2>2. Phần mềm bán hàng đã giúp chủ được gì?</h2>
+    <p>Nhờ phần mềm quầy, nhà thuốc hôm nay thường dễ thở hơn nhiều so với ngày sổ tay. Nhiều chủ đã có thể:</p>
+    <ul>
+      <li>Bán nhanh hơn, ít nhầm hơn</li>
+      <li>Theo dõi tồn kho theo thời gian thực</li>
+      <li>Kiểm soát thuốc theo lô và hạn dùng</li>
+      <li>Theo dõi doanh thu hằng ngày</li>
+      <li>Quản lý nhân viên và lịch sử giao dịch</li>
+    </ul>
+    <p>Những việc này gần như là nền tảng. Thiếu chúng, vận hành hằng ngày sẽ rất vất vả. Vì vậy chuyện phát triển sau bán — nếu có — cũng nên được nhìn như lớp xây thêm trên nền tảng ấy, chứ không phải thay thế nền tảng.</p>
+
+    <h2>3. Thị trường đã thay đổi — bài toán cũng thay đổi</h2>
+    <p>Bán đúng thuốc, đúng giá và phục vụ tốt vẫn rất quan trọng. Nhưng cạnh tranh hôm nay còn nằm ở chỗ khác:</p>
+    <ul>
+      <li>Nhà thuốc ngày càng nhiều · chuỗi lớn mạnh nhanh</li>
+      <li>Người dân có nhiều lựa chọn hơn</li>
+      <li>Khách quan tâm hơn đến trải nghiệm <strong>sau khi</strong> mua thuốc</li>
+    </ul>
+    <p>Cạnh tranh không còn chỉ là giá hay vị trí.<br />
+    Còn là khả năng tạo <strong>sự tin tưởng</strong> và giữ <strong>mối quan hệ lâu dài</strong>.</p>
+    <p>Khi vận hành đã ổn, nhiều chủ bắt đầu hỏi những câu không còn thuộc về quản lý:</p>
+    <ul>
+      <li>Tháng này có bao nhiêu khách quay lại?</li>
+      <li>Bao nhiêu doanh thu đến từ khách cũ?</li>
+      <li>Ai sắp cần mua thuốc tiếp?</li>
+      <li>Ai đã lâu không quay lại?</li>
+    </ul>
+    <p>Đó là câu hỏi về <strong>phát triển</strong>.</p>
+
+    <h2>4. Phục vụ rất nhiều lượt mua — nhưng bao nhiêu người quay lại?</h2>
+    <p>Giả sử trung bình <strong>80 lượt mua mỗi ngày</strong>:</p>
+    <ul>
+      <li>Khoảng 2.400 lượt/tháng</li>
+      <li>Gần 29.000 lượt/năm</li>
+    </ul>
+    <p>Điều đáng quan tâm không chỉ là có bao nhiêu lượt. Mà là: <strong>bao nhiêu người quay lại</strong>.</p>
+    <p>Nhiều nhóm sản phẩm có chu kỳ mua tiếp: huyết áp · tiểu đường · vitamin · canxi · sữa · TPCN theo liệu trình…</p>
+    <p>Nếu được chăm sóc đúng lúc — khả năng quay lại cao hơn.<br />
+    Nếu không — họ mua ở nơi khác. Đó là chuyện rất bình thường.</p>
+
+    <h3>Ví dụ minh họa <em>(không phải thống kê ngành)</em></h3>
+    <p>Trong khoảng 20 khách/ngày có khả năng mua lặp, nếu mỗi ngày chỉ mất <strong>2 người</strong> không quay lại:</p>
+    <ul>
+      <li>Một năm mất khoảng <strong>730 lượt mua</strong></li>
+      <li>Với đơn trung bình 300.000đ ≈ <strong>219 triệu đồng/năm</strong></li>
+    </ul>
+    <p>Chỉ một thay đổi nhỏ trong tỷ lệ quay lại cũng tạo khác biệt lớn.</p>
+    <p>Trong khi đó, tìm khách mới mỗi tháng để bù khách cũ — sẽ ngày càng mệt.<br />
+    Khách đã từng mua đã biết địa chỉ, đã có trải nghiệm, đã có chút tin tưởng. Giữ họ thường dễ hơn thuyết phục người hoàn toàn mới.</p>
+
+    <h2>5. Một hóa đơn có thể kết thúc — hoặc bắt đầu</h2>
+    <p class="flow">Khách đến → tư vấn → bán → thanh toán → in hóa đơn → kết thúc</p>
+    <p>Đối với quản lý bán hàng, vậy là xong.<br />
+    Nhưng một hóa đơn còn chứa: ai mua · mua gì · bao nhiêu · ngày nào · và thường cả <strong>khoảng thời gian có thể cần mua tiếp</strong>.</p>
+    <table class="data">
+      <thead>
+        <tr><th style="width:40%">Cách nhìn</th><th>Sau hóa đơn</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Quản lý giao dịch</td><td>Công việc kết thúc</td></tr>
+        <tr><td>Phát triển mối quan hệ</td><td>Còn việc: nhớ khách · theo dõi chu kỳ · chăm đúng lúc <em>(khi khách đồng ý)</em></td></tr>
+      </tbody>
+    </table>
+    <p>Dữ liệu chỉ tạo giá trị khi giúp chủ trả lời:</p>
+    <blockquote><p>Hôm nay nên quan tâm đến khách hàng nào?</p></blockquote>
+
+    <h2>6. Phát triển nhìn bằng mắt thường — năm việc gần gũi</h2>
+    <p>Với nhiều chủ, “phát triển” không nhất thiết đồng nghĩa với công nghệ cao. Nó thường là những việc rất đời thường:</p>
+    <ol>
+      <li><strong>Biết ai sắp hết thuốc</strong> — bớt phụ thuộc vào việc khách có tự nhớ hay không</li>
+      <li><strong>Có việc rõ mỗi sáng</strong> — ngoài việc xem hôm qua bán bao nhiêu</li>
+      <li><strong>Nuôi khách cũ</strong> song song với việc tìm khách mới</li>
+      <li><strong>Nhân viên biết việc sau bán</strong> — có danh sách gợi ý, bớt làm theo cảm tính</li>
+      <li><strong>Chủ có thêm số liệu khi điều hành</strong> — ví dụ khách cũ đóng góp bao nhiêu, chỗ nào đang dễ vuột khách</li>
+    </ol>
+
+    <div class="avoid-break">
+      <h3>Hình dung một buổi sáng</h3>
+      <p>Trước khi mở cửa, chủ có thể thấy kiểu:</p>
+      <ul>
+        <li>12 khách có thể sắp hết thuốc điều trị</li>
+        <li>8 khách đã hơn 60 ngày chưa quay lại</li>
+        <li>5 khách đã đặt thuốc trước</li>
+        <li>3 sản phẩm nên ưu tiên vì hạn còn ngắn</li>
+      </ul>
+      <p>Đó không phải báo cáo để đọc cho vui. Đó là <strong>việc có thể làm ngay</strong>.</p>
+    </div>
+
+    <table class="data">
+      <thead>
+        <tr>
+          <th style="width:50%">Chỉ quản lý bán hàng</th>
+          <th>Có thêm lớp phát triển</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Biết hôm qua bán được bao nhiêu</td><td>Biết hôm nay nên chăm ai</td></tr>
+        <tr><td>Hóa đơn xong là xong</td><td>Hóa đơn xong là bắt đầu vòng tiếp</td></tr>
+        <tr><td>Chờ khách tự nhớ đường quay lại</td><td>Chủ động tạo lý do khách quay lại</td></tr>
+        <tr><td>Mệt vì phải có khách mới liên tục</td><td>Bền hơn vì khách cũ nuôi doanh thu</td></tr>
+      </tbody>
+    </table>
+
+    <h2>7. Novixa muốn đồng hành ở chỗ nào?</h2>
+    <p>Chúng tôi không đề nghị anh/chị bỏ phần mềm bán hàng chỉ vì “đổi mới”.<br />
+    Cũng không đặt mục tiêu làm thay đổi thói quen bán tại quầy mà anh/chị đã quen.</p>
+    <p>Hướng Novixa quan tâm là mở rộng giá trị trên <strong>cùng một nền</strong>:</p>
+    <ol>
+      <li><strong>Bán hàng – kho – lô – hạn dùng</strong> vẫn là phần nền cần vững</li>
+      <li><strong>Sau khi bán</strong>, dữ liệu đơn hàng có thể thành gợi ý chăm khách, mua tiếp, và bảng việc cho chủ / nhân viên</li>
+      <li><strong>Sổ sức khỏe số của gia đình</strong> — giúp người dân có việc hữu ích mỗi ngày (nhắc thuốc, hồ sơ từng thành viên, lịch sử…); nhà thuốc trở thành <strong>người bạn đồng hành sức khỏe của gia đình</strong></li>
+    </ol>
+    <p>Có thể hình dung hai câu hỏi bổ sung cho nhau:</p>
+    <blockquote>
+      <p>Phần mềm quản lý vẫn trả lời tốt: <em>“Hôm qua nhà thuốc đã bán được gì?”</em></p>
+      <p>Lớp phát triển cố gắng trả lời thêm: <em>“Hôm nay có những việc nào đáng ưu tiên — và gia đình khách có được đồng hành sau khi ra khỏi cửa không?”</em></p>
+    </blockquote>
+    <p>Chuỗi việc gần gũi thường là:</p>
+    <blockquote>
+      <p><em>Bán đúng → nhớ khách → chăm đúng lúc → khách quay lại → bán tiếp.</em></p>
+    </blockquote>
+    <p>Vì sao vẫn bắt đầu từ quầy bán? Vì việc chăm sóc sau bán cần dữ liệu chính xác. Nếu bán một chỗ, khách một chỗ, sổ sức khỏe một chỗ khác, số liệu dễ lệch. Nhiều chủ cẩn trọng thường thích mô hình một nguồn số — ít phần mềm rời hơn.</p>
+    <p>Có thể nhìn tổng thể theo hướng này (không phải thay POS, mà đặt POS vào đúng tầng nền):</p>
+    <pre style="font-family:Consolas,'Courier New',monospace;font-size:11.5pt;line-height:1.45;background:#f7f7f5;border:1px solid #e5e5e0;padding:12px 14px;margin:12px 0;white-space:pre-wrap;">Người dân / gia đình gắn bó hơn
+        ▲
+Sổ sức khỏe số · đồng hành hằng ngày
+        ▲
+Nhà thuốc = người bạn đồng hành của gia đình
+        ▲
+POS + Quản lý vận hành</pre>
+    <p>Đó không chỉ là phần mềm quản lý hay CRM.<br />
+    Đó là hướng xây <strong>nền tảng gắn kết sức khỏe</strong> — kết nối người dân, gia đình và nhà thuốc. Một hệ sinh thái mà người dân chủ động dùng mỗi ngày tạo rào cản cạnh tranh lớn hơn POS đơn thuần.</p>
+    <p><em>Không thay bác sĩ · không khám · không kê đơn. Bản đầy đủ: Chương 10 + Phụ lục F–J.</em></p>
+
+    <h2>8. Nhiều chủ quan tâm trước hết đến sự yên tâm</h2>
+    <p>Khi cân nhắc thay đổi hệ thống, câu hỏi đầu tiên thường gần với:</p>
+    <ul>
+      <li>Có phải nhập lại toàn bộ không?</li>
+      <li>Nhân viên có phải học lại từ đầu không?</li>
+      <li>Đang bán có bị gián đoạn không?</li>
+      <li>Khi có sự cố thì ai đồng hành hỗ trợ?</li>
+    </ul>
+    <p>Điều này dễ hiểu. Với nhiều nhà thuốc, chi phí thật sự cần cân nhắc không chỉ nằm trên báo giá — mà còn là <strong>rủi ro trong lúc chuyển đổi</strong>.</p>
+    <p>Hướng triển khai mà chúng tôi ưu tiên là đi từng bước: khảo sát → chuyển dữ liệu → đào tạo → chạy chính thức có người hỗ trợ. Mục tiêu gần hơn với sự ổn định lâu dài, hơn là cài đặt cho nhanh.</p>
+    <p>Và xin nói rõ để anh/chị yên tâm về ranh giới nghề:</p>
+    <ul>
+      <li>Novixa không thay bác sĩ · không khám · không chữa bệnh hộ</li>
+      <li>Không để máy tự kê đơn</li>
+      <li>Máy hỗ trợ nhớ việc và nhìn số — quyết định nghề vẫn thuộc về người</li>
+    </ul>
+
+    <h2>9. Chi phí cơ hội: những gì không hiện trên báo cáo</h2>
+    <p>Nhà thuốc có thể mất khách từng người một — rất âm thầm.<br />
+    Không có “sự cố”. Doanh thu ngày vẫn chạy. Nhưng tăng trưởng bị khoét dần.</p>
+    <p>Mỗi ngày chỉ cần bỏ lỡ vài cơ hội mua lại — sau một tháng đã là cả trăm cơ hội.<br />
+    Không biết thì cũng không hành động.</p>
+    <p>Chủ không cần thêm việc.<br />
+    Chủ cần biết: <strong>hôm nay bắt đầu từ đâu</strong>.</p>
+
+    <h2>10. Kết lại — và nếu anh/chị muốn xem thử</h2>
+    <p>Hai ý có thể mang về đối chiếu với nhà thuốc mình:</p>
+    <ol>
+      <li>Phần mềm bán hàng thường giúp rất tốt việc <strong>quản lý bán hàng từng ngày</strong>.</li>
+      <li>Lớp phát triển quan tâm thêm việc <strong>nuôi khách để có thêm đơn kế tiếp</strong>.</li>
+    </ol>
+    <p>Nếu tiện, anh/chị có thể tự hỏi:</p>
+    <blockquote>
+      <p><em>Nhà thuốc mình hiện đang mạnh ở chốt đơn trong ngày đến mức nào — và còn bao nhiêu khoảng trống với khách cũ sau khi họ đã ra khỏi cửa?</em></p>
+    </blockquote>
+
+    <h3>Nếu muốn xem thử</h3>
+    <p>Không cần cam kết lớn ngay.</p>
+    <p>Chỉ khoảng <strong>20–30 phút</strong>, trên dữ liệu gần với nhà thuốc mình, anh/chị có thể xem:</p>
+    <ul>
+      <li>Màn hình việc gợi ý cần làm hôm nay</li>
+      <li>Cách nhận biết khách sắp cần mua tiếp</li>
+      <li>Cách nhìn doanh thu từ khách quay lại</li>
+    </ul>
+    <p>Thấy hợp thì có thể trao đổi bước tiếp.<br />
+    Chưa tới thời điểm cũng không sao — đôi khi chỉ cần một cách nhìn mới đã đủ hữu ích.</p>
+
+    <div class="page-break"></div>
+    <div class="doc-header">
+      <div><strong>Novixa</strong> · NOVIXA-WP-001 · Phụ lục</div>
+      <div>Tự kiểm nhanh</div>
+    </div>
+
+    <h2>Phụ lục nhanh — Tự kiểm khi in</h2>
+    <table class="data">
+      <thead>
+        <tr>
+          <th style="width:6%">#</th>
+          <th>Câu hỏi</th>
+          <th style="width:12%">Có</th>
+          <th style="width:16%">Một phần</th>
+          <th style="width:12%">Chưa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Mỗi sáng tôi biết hôm nay nên chăm / đón khách nào không?</td>
+          <td><span class="check"></span></td>
+          <td><span class="check"></span></td>
+          <td><span class="check"></span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Tôi biết tuần này ai sắp hết thuốc / cần mua tiếp không?</td>
+          <td><span class="check"></span></td>
+          <td><span class="check"></span></td>
+          <td><span class="check"></span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Tôi biết tháng này khách cũ đóng góp bao nhiêu không?</td>
+          <td><span class="check"></span></td>
+          <td><span class="check"></span></td>
+          <td><span class="check"></span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Nhân viên có việc rõ sau khi bán, không chỉ thu tiền?</td>
+          <td><span class="check"></span></td>
+          <td><span class="check"></span></td>
+          <td><span class="check"></span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Chăm khách và bán hàng có cùng một nguồn số không?</td>
+          <td><span class="check"></span></td>
+          <td><span class="check"></span></td>
+          <td><span class="check"></span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>Tôi đang mệt vì phải tìm khách mới liên tục không?</td>
+          <td><span class="check"></span></td>
+          <td><span class="check"></span></td>
+          <td><span class="check"></span></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Nhiều cột “Chưa” ở câu 1–3–6 → đang mạnh bán ngày, nhưng <strong>chưa có lớp để phát triển</strong>.</p>
+
+    <h3>Nếu anh/chị là khách hàng?</h3>
+    <table class="data">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Nhà thuốc chỉ bán xong là hết</th>
+          <th>Nhà thuốc còn nhớ và chăm sau bán</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>30 ngày sau</td>
+          <td>Tự nhớ quay lại</td>
+          <td>Được nhắc đúng lúc <em>(nếu đồng ý)</em></td>
+        </tr>
+        <tr>
+          <td>Muốn mua lại</td>
+          <td>Phải nhớ tên thuốc</td>
+          <td>Có lịch sử tham khảo</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Nếu chính mình là khách — trải nghiệm nào khiến mình muốn quay lại?</p>
+
+    <div class="footer-note">
+      <p><strong>Novixa</strong> · White Paper series · Dành cho chủ nhà thuốc.</p>
+      <p>Tài liệu không thay thế tư vấn y khoa / pháp lý.</p>
+      <p>Liên hệ / xem thử: <strong>novixa.vn</strong> · Mã: <strong>NOVIXA-WP-001-EB</strong></p>
+    </div>
+  </main>
+</body>
+</html>

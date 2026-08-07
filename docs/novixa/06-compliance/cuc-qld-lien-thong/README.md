@@ -32,6 +32,8 @@ Bộ tài liệu này trình bày đặc tả kỹ thuật phần mềm **Novixa
 
 **Bản Word (nộp hồ sơ):** thư mục [`word/`](./word/) — chạy `.\export-word.ps1` để tái tạo.
 
+**Trang bìa PDF:** [`word/NVX-CQD-00-Trang-bia.pdf`](./word/NVX-CQD-00-Trang-bia.pdf) — chỉ các hạng mục nộp Bộ (logo KIT, tiêu đề hồ sơ đề nghị, phần mềm Novixa, đơn vị đề nghị, địa điểm/ngày, phiên bản). Tái tạo: `node .\print\generate-cover-pdf.mjs` (cần Playwright Chromium).
+
 ---
 
 ## 3. Phụ lục ảnh chụp màn hình (PL-B)
