@@ -21,7 +21,9 @@ ALTER TABLE pack_family.family_memory
             'team_day',
             'parent_habit',
             'parent_voice',
-            'evening_circle'
+            'evening_circle',
+            -- Include later kinds so replaying this mig after 272 (or pilot data) stays idempotent.
+            'kid_moment'
         )
     );
 
