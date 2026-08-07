@@ -46,9 +46,10 @@ export function resolvePharmacyLinkState(
     return { linked, tenantCode, paused };
   }
 
-  // Legacy fallback (profile chưa có field): tenant + local flag.
+  // Legacy fallback (profile chưa có field): chỉ linked khi local flag bật rõ.
+  // Tránh guest/branding tenant (NT_*) được coi là đã liên kết → nhảy vào AuthGuard /orders|/chat.
   const paused = Boolean(tenantCode) && enabled === false;
-  const linked = Boolean(tenantCode) && enabled !== false;
+  const linked = Boolean(tenantCode) && enabled === true;
   return { linked, tenantCode, paused };
 }
 
