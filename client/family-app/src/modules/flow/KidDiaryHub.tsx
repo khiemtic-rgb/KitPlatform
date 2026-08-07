@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { SoftEvidenceImg } from '@/shared/ui/SoftEvidenceImg';
 
 const STORY_HL_RE =
@@ -150,6 +150,7 @@ export function KidDiaryHub(props: Props) {
   const canNext = props.dayIdx < props.days.length - 1;
   const momentsTrackRef = useRef<HTMLDivElement | null>(null);
   const [famiTipOpen, setFamiTipOpen] = useState(false);
+  const [momentsNav, setMomentsNav] = useState({ prev: false, next: false });
 
   const moodOrder = useMemo(() => {
     const prefer = ['love', 'happy', 'ok', 'mad', 'sad'];
@@ -181,10 +182,44 @@ export function KidDiaryHub(props: Props) {
 
   const momentCards = props.moments.slice(0, 8);
 
+  const syncMomentsNav = () => {
+    const el = momentsTrackRef.current;
+    if (!el) {
+      setMomentsNav({ prev: false, next: false });
+      return;
+    }
+    const max = Math.max(0, el.scrollWidth - el.clientWidth);
+    const left = el.scrollLeft;
+    setMomentsNav({
+      prev: left > 4,
+      next: left < max - 4,
+    });
+  };
+
+  useEffect(() => {
+    const el = momentsTrackRef.current;
+    if (!el) return;
+    syncMomentsNav();
+    const onScroll = () => syncMomentsNav();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(syncMomentsNav) : null;
+    ro?.observe(el);
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      ro?.disconnect();
+    };
+  }, [momentCards.length]);
+
   const scrollMoments = (dir: -1 | 1) => {
     const el = momentsTrackRef.current;
     if (!el) return;
-    el.scrollBy({ left: dir * Math.min(220, el.clientWidth * 0.7), behavior: 'smooth' });
+    const card = el.querySelector('.kdiary-mcard') as HTMLElement | null;
+    const styles = getComputedStyle(el);
+    const gap = Number.parseFloat(styles.columnGap || styles.gap || '12') || 12;
+    const step = (card?.offsetWidth || Math.round(el.clientWidth / 2)) + gap;
+    el.scrollBy({ left: dir * step, behavior: 'smooth' });
+    // Sync after smooth scroll settles
+    window.setTimeout(syncMomentsNav, 320);
   };
 
   return (
@@ -313,11 +348,12 @@ export function KidDiaryHub(props: Props) {
           </button>
         </header>
 
-        <div className="kdiary-moments-wrap">
+        <div className={`kdiary-moments-wrap${momentsNav.prev || momentsNav.next ? ' is-scrollable' : ''}`}>
           <button
             type="button"
             className="kdiary-moments-nav is-prev"
             aria-label="Khoảnh khắc trước"
+            disabled={!momentsNav.prev}
             onClick={() => scrollMoments(-1)}
           >
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
@@ -419,6 +455,7 @@ export function KidDiaryHub(props: Props) {
             type="button"
             className="kdiary-moments-nav is-next"
             aria-label="Khoảnh khắc sau"
+            disabled={!momentsNav.next}
             onClick={() => scrollMoments(1)}
           >
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>

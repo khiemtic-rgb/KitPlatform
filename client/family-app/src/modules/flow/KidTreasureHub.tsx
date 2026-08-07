@@ -208,6 +208,7 @@ export function KidTreasureHub(props: Props) {
   const [zoomBadge, setZoomBadge] = useState<TreasureBadge | null>(null);
   const [pickedWish, setPickedWish] = useState<string | null>(null);
   const [memPage, setMemPage] = useState(0);
+  const [albumNav, setAlbumNav] = useState({ prev: false, next: false });
   const albumRef = useRef<HTMLDivElement | null>(null);
 
   const wishTotal = props.wishStepTotal ?? 4;
@@ -224,35 +225,52 @@ export function KidTreasureHub(props: Props) {
     : `${wishStep}/${wishTotal} bước đã hoàn thành`;
   const memCount = props.memories.length;
 
+  const syncAlbumNav = () => {
+    const el = albumRef.current;
+    if (!el) {
+      setAlbumNav({ prev: false, next: false });
+      return;
+    }
+    const max = Math.max(0, el.scrollWidth - el.clientWidth);
+    const left = el.scrollLeft;
+    setAlbumNav({
+      prev: left > 4,
+      next: left < max - 4,
+    });
+    const card = el.querySelector('.ktre-mem') as HTMLElement | null;
+    if (!card || memCount <= 0) {
+      setMemPage(0);
+      return;
+    }
+    const styles = getComputedStyle(el);
+    const gap = Number.parseFloat(styles.columnGap || styles.gap || '10') || 10;
+    const step = Math.max(1, card.offsetWidth + gap);
+    setMemPage(Math.min(memCount - 1, Math.max(0, Math.round(left / step))));
+  };
+
   useEffect(() => {
     const el = albumRef.current;
     if (!el) return;
-    const onScroll = () => {
-      const card = el.querySelector('.ktre-mem') as HTMLElement | null;
-      if (!card) return;
-      const styles = getComputedStyle(el);
-      const gap = Number.parseFloat(styles.columnGap || styles.gap || '10') || 10;
-      const step = Math.max(1, card.offsetWidth + gap);
-      setMemPage(Math.min(memCount - 1, Math.max(0, Math.round(el.scrollLeft / step))));
-    };
+    syncAlbumNav();
+    const onScroll = () => syncAlbumNav();
     el.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => el.removeEventListener('scroll', onScroll);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(syncAlbumNav) : null;
+    ro?.observe(el);
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      ro?.disconnect();
+    };
   }, [memCount]);
 
   const scrollAlbum = (dir: 1 | -1) => {
     const el = albumRef.current;
     if (!el) return;
-    const cards = Array.from(el.querySelectorAll<HTMLElement>('.ktre-mem'));
-    if (cards.length === 0) return;
+    const card = el.querySelector('.ktre-mem') as HTMLElement | null;
     const styles = getComputedStyle(el);
     const gap = Number.parseFloat(styles.columnGap || styles.gap || '10') || 10;
-    const step = Math.max(1, cards[0]!.offsetWidth + gap);
-    const current = Math.round(el.scrollLeft / step);
-    const next = Math.max(0, Math.min(cards.length - 1, current + dir));
-    const targetLeft = cards[next]!.offsetLeft - cards[0]!.offsetLeft;
-    el.scrollTo({ left: targetLeft, behavior: 'smooth' });
-    setMemPage(next);
+    const step = (card?.offsetWidth || Math.round(el.clientWidth / 2)) + gap;
+    el.scrollBy({ left: dir * step, behavior: 'smooth' });
+    window.setTimeout(syncAlbumNav, 320);
   };
 
   const primary = useMemo(() => {
@@ -822,22 +840,22 @@ export function KidTreasureHub(props: Props) {
           {props.memories.length === 0 ? (
             <p className="ktre-empty ktre-panel-body">{props.memoriesEmpty}</p>
           ) : (
-            <div className="ktre-album-wrap">
-              {memCount > 1 ? (
-                <button
-                  type="button"
-                  className="ktre-album-nav is-prev"
-                  aria-label="Kỷ niệm trước"
-                  disabled={memPage <= 0}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    scrollAlbum(-1);
-                  }}
-                >
-                  ‹
-                </button>
-              ) : null}
+            <div
+              className={`ktre-album-wrap${albumNav.prev || albumNav.next ? ' is-scrollable' : ''}`}
+            >
+              <button
+                type="button"
+                className="ktre-album-nav is-prev"
+                aria-label="Kỷ niệm trước"
+                disabled={!albumNav.prev}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  scrollAlbum(-1);
+                }}
+              >
+                ‹
+              </button>
               <div className="ktre-album" ref={albumRef}>
                 {props.memories.map((m) => {
                   const video = Boolean(m.isVideo);
@@ -868,21 +886,19 @@ export function KidTreasureHub(props: Props) {
                   );
                 })}
               </div>
-              {memCount > 1 ? (
-                <button
-                  type="button"
-                  className="ktre-album-nav is-next"
-                  aria-label="Xem kỷ niệm tiếp"
-                  disabled={memPage >= memCount - 1}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    scrollAlbum(1);
-                  }}
-                >
-                  ›
-                </button>
-              ) : null}
+              <button
+                type="button"
+                className="ktre-album-nav is-next"
+                aria-label="Xem kỷ niệm tiếp"
+                disabled={!albumNav.next}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  scrollAlbum(1);
+                }}
+              >
+                ›
+              </button>
               {memCount > 1 ? (
                 <div className="ktre-album-dots" aria-hidden>
                   {props.memories.slice(0, 6).map((m, i) => (

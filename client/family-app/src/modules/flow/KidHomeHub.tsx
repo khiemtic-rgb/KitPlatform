@@ -211,16 +211,16 @@ export function KidHomeHub(props: Props) {
               <span className="khub-gift-copy">
                 {giftLeft > 0 ? (
                   <>
-                    Chỉ còn <strong>{giftLeft} việc</strong> nữa để mở{' '}
-                    <strong>Kho báu</strong> 🎁
+                    Còn <strong>{giftLeft} việc</strong> để mở <strong>Kho báu</strong> 🎁
                   </>
                 ) : teamGiftLeft > 0 ? (
                   <>
-                    Việc của con xong — cả nhà còn <strong>{teamGiftLeft} việc</strong> để mở phần
-                    thưởng nhóm
+                    Cả nhà còn <strong>{teamGiftLeft} việc</strong> để mở thưởng nhóm 🎁
                   </>
                 ) : (
-                  <>Chạm để xem <strong>lời chúc / tiến độ</strong> từ Fami 🎁</>
+                  <>
+                    Chạm xem <strong>lời chúc</strong> từ Fami 🎁
+                  </>
                 )}
               </span>
             </button>
