@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-07T03:25:25.951Z",
+  "generatedAt": "2026-08-07T07:50:10.473Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 152,
-    "todayPageViews": 60,
-    "todayRequests": 269,
-    "last24hVisitors": 278,
-    "last24hPageViews": 124,
-    "last24hRequests": 624
+    "todayVisitors": 187,
+    "todayPageViews": 92,
+    "todayRequests": 422,
+    "last24hVisitors": 275,
+    "last24hPageViews": 117,
+    "last24hRequests": 655
   },
   "hourly": [
-    {
-      "time": "2026-08-06T04:00:00Z",
-      "visitors": 4,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-06T05:00:00Z",
-      "visitors": 33,
-      "requests": 87
-    },
-    {
-      "time": "2026-08-06T06:00:00Z",
-      "visitors": 6,
-      "requests": 17
-    },
-    {
-      "time": "2026-08-06T07:00:00Z",
-      "visitors": 4,
-      "requests": 9
-    },
     {
       "time": "2026-08-06T08:00:00Z",
       "visitors": 25,
@@ -128,8 +108,28 @@
     },
     {
       "time": "2026-08-07T03:00:00Z",
-      "visitors": 2,
-      "requests": 2
+      "visitors": 8,
+      "requests": 14
+    },
+    {
+      "time": "2026-08-07T04:00:00Z",
+      "visitors": 5,
+      "requests": 16
+    },
+    {
+      "time": "2026-08-07T05:00:00Z",
+      "visitors": 15,
+      "requests": 65
+    },
+    {
+      "time": "2026-08-07T06:00:00Z",
+      "visitors": 7,
+      "requests": 13
+    },
+    {
+      "time": "2026-08-07T07:00:00Z",
+      "visitors": 13,
+      "requests": 47
     }
   ],
   "daily": [
@@ -171,15 +171,15 @@
     },
     {
       "date": "2026-08-07",
-      "visitors": 182,
-      "pageViews": 70,
-      "requests": 304
+      "visitors": 228,
+      "pageViews": 102,
+      "requests": 457
     }
   ],
   "topPages": [
     {
       "path": "/vi/goi-cha-me/cach-xay-dung-quy-tac-trong-gia-dinh-de-con-tu-giac-chap-hanh-khong-can-cam-doan/",
-      "views": 54
+      "views": 65
     },
     {
       "path": "/images/blog/lam-guong-quan-trong-hon-day-bao.png",
@@ -187,19 +187,11 @@
     },
     {
       "path": "/images/blog/xay-dung-quy-tac-trong-gia-dinh.png",
-      "views": 34
+      "views": 38
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 28
-    },
-    {
-      "path": "/vi/goi-cha-me/lam-guong-quan-trong-hon-day-bao-dua-tre-khong-nghe-nhung-gioi-cha-me-noi-tre-nhin-nhung-tac-cha-me-lam/",
-      "views": 23
-    },
-    {
-      "path": "/",
-      "views": 23
+      "views": 32
     },
     {
       "path": "/vi/goi-cha-me/",
@@ -210,32 +202,40 @@
       "views": 18
     },
     {
+      "path": "/vi/",
+      "views": 17
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 17
+    },
+    {
+      "path": "/",
+      "views": 17
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 16
+    },
+    {
       "path": "/images/loop/02-heart.png",
       "views": 15
     },
     {
-      "path": "/vi/",
-      "views": 15
-    },
-    {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 15
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "path": "/images/blog/phat-con-de-khong-bi-ton-thuong.png",
       "views": 14
     },
     {
-      "path": "/images/moment-sleep.png",
-      "views": 12
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
+      "views": 14
     },
     {
-      "path": "/images/blog/phat-con-de-khong-bi-ton-thuong.png",
-      "views": 12
+      "path": "/api/stats",
+      "views": 13
     },
     {
-      "path": "/_next/static/chunks/app/vi/goi-cha-me/%5Bslug%5D/page-2d062270f9ff84b4.js",
-      "views": 12
+      "path": "/images/moment-chores.png",
+      "views": 13
     }
   ]
 }
