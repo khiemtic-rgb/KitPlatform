@@ -19,6 +19,7 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import { useCanSalesCustomers, useCanSalesCustomersMerge } from '@/shared/auth/usePermission';
 import { CustomerFormDrawer } from '@/modules/customer/CustomerFormDrawer';
 import { CustomerImportCard } from '@/modules/customer/CustomerImportCard';
+import { CustomerAppLoginRequestsCard } from '@/modules/customer/CustomerAppLoginRequestsCard';
 import { useCustomerEnums } from '@/shared/i18n/use-customer-enums';
 import { formatDisplayDate } from '@/shared/utils/date';
 
@@ -419,6 +420,7 @@ export function CustomerListPage() {
               label: t('tabs.list'),
               children: (
                 <>
+                  <CustomerAppLoginRequestsCard />
                   {canWrite ? (
                     <Card size="small" title={t('importTitle')} style={{ marginBottom: 16 }}>
                       <CustomerImportCard onImported={load} />

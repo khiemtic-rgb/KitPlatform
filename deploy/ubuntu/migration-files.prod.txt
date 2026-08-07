@@ -151,3 +151,4 @@
 263_growth_care_actions.sql
 seed-prod/001_base_permissions.sql
 274_pharmacy_storefront_profiles.sql
+275_customer_app_login_requests.sql

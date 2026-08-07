@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Popover, Space, Spin, Typography } from 'antd';
+import { Alert, Button, Popover, Space, Spin, Typography, message } from 'antd';
 import { MobileOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { fetchCustomerPilotOtp } from '@/shared/api/customer-admin.api';
+import {
+  fetchCustomer,
+  fetchCustomerPilotOtp,
+  issueCounterPilotOtp,
+} from '@/shared/api/customer-admin.api';
 import type { CustomerPilotOtpStatus } from '@/shared/api/customer-admin.types';
+import { apiErrorMessage } from '@/shared/api/api-error';
 
 const POLL_MS = 4000;
 
@@ -18,6 +23,8 @@ export function PosCounterOtpButton({ customerId, canWrite }: Props) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<CustomerPilotOtpStatus | null>(null);
   const [loading, setLoading] = useState(false);
+  const [issuing, setIssuing] = useState(false);
+  const [issuedCode, setIssuedCode] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!customerId) {
@@ -41,10 +48,30 @@ export function PosCounterOtpButton({ customerId, canWrite }: Props) {
     return () => window.clearInterval(timer);
   }, [open, customerId, load]);
 
+  const onIssue = async () => {
+    if (!customerId) return;
+    setIssuing(true);
+    try {
+      const detail = await fetchCustomer(customerId);
+      const res = await issueCounterPilotOtp({
+        phone: detail.phone,
+        fullName: detail.fullName,
+      });
+      setIssuedCode(res.pilotCode ?? null);
+      message.success(res.message || t('issued'));
+      await load();
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('issueFailed')));
+    } finally {
+      setIssuing(false);
+    }
+  };
+
   if (!customerId || !canWrite) {
     return null;
   }
 
+  const displayCode = issuedCode || status?.code;
   const expiresLabel =
     status?.expiresAt != null ? dayjs(status.expiresAt).format('HH:mm:ss') : null;
 
@@ -54,7 +81,7 @@ export function PosCounterOtpButton({ customerId, canWrite }: Props) {
         <Spin size="small" tip={t('loading')} />
       ) : !status?.enabled ? (
         <Alert type="warning" showIcon message={t('disabled')} />
-      ) : status.code ? (
+      ) : displayCode ? (
         <Space direction="vertical" size="small" style={{ width: '100%' }}>
           <Alert
             type="success"
@@ -66,7 +93,7 @@ export function PosCounterOtpButton({ customerId, canWrite }: Props) {
                   level={3}
                   style={{ margin: 0, letterSpacing: 6, fontFamily: 'monospace' }}
                 >
-                  {status.code}
+                  {displayCode}
                 </Typography.Title>
                 {expiresLabel ? (
                   <Typography.Text type="secondary">{t('expiresAt', { time: expiresLabel })}</Typography.Text>
@@ -75,9 +102,17 @@ export function PosCounterOtpButton({ customerId, canWrite }: Props) {
             }
           />
           <Typography.Text type="secondary">{t('hint')}</Typography.Text>
+          <Button size="small" loading={issuing} onClick={() => void onIssue()}>
+            {t('issueAgain')}
+          </Button>
         </Space>
       ) : (
-        <Alert type="info" showIcon message={t('waiting')} description={t('waitingHint')} />
+        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          <Alert type="info" showIcon message={t('waiting')} description={t('waitingHint')} />
+          <Button type="primary" size="small" loading={issuing} onClick={() => void onIssue()}>
+            {t('issue')}
+          </Button>
+        </Space>
       )}
     </div>
   );
@@ -87,9 +122,11 @@ export function PosCounterOtpButton({ customerId, canWrite }: Props) {
       title={t('title')}
       trigger="click"
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setIssuedCode(null);
+      }}
       content={content}
-      placement="bottomLeft"
     >
       <Button icon={<MobileOutlined />}>{t('button')}</Button>
     </Popover>

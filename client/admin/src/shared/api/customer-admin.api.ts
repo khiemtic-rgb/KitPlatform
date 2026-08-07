@@ -245,6 +245,116 @@ export async function fetchCustomerPilotOtp(customerId: string): Promise<Custome
   };
 }
 
+export type CustomerAppLoginRequest = {
+  id: string;
+  phone: string;
+  customerId?: string | null;
+  customerName?: string | null;
+  channel: string;
+  status: string;
+  referralCodeUsed?: string | null;
+  requestedAt: string;
+  reviewedAt?: string | null;
+  rejectReason?: string | null;
+};
+
+export async function fetchCustomerAppLoginRequests(status = 'pending'): Promise<CustomerAppLoginRequest[]> {
+  const { data } = await http.get<unknown>('/customers/app-login-requests', { params: { status } });
+  const rows = Array.isArray(data) ? data : ((data as { items?: unknown[] })?.items ?? []);
+  return (rows as Record<string, unknown>[]).map((row) => ({
+    id: String(row.id ?? row.Id),
+    phone: String(row.phone ?? row.Phone ?? ''),
+    customerId: (row.customerId ?? row.CustomerId) != null ? String(row.customerId ?? row.CustomerId) : null,
+    customerName: (row.customerName ?? row.CustomerName) as string | null | undefined,
+    channel: String(row.channel ?? row.Channel ?? ''),
+    status: String(row.status ?? row.Status ?? ''),
+    referralCodeUsed: (row.referralCodeUsed ?? row.ReferralCodeUsed) as string | null | undefined,
+    requestedAt: String(row.requestedAt ?? row.RequestedAt ?? ''),
+    reviewedAt: (row.reviewedAt ?? row.ReviewedAt) as string | null | undefined,
+    rejectReason: (row.rejectReason ?? row.RejectReason) as string | null | undefined,
+  }));
+}
+
+export type ApproveCustomerAppLoginResult = {
+  requestId: string;
+  customerId: string;
+  phone: string;
+  pilotCode?: string | null;
+  expiresAt?: string | null;
+  message: string;
+};
+
+export async function approveCustomerAppLoginRequest(
+  requestId: string,
+): Promise<ApproveCustomerAppLoginResult> {
+  const { data } = await http.post<Record<string, unknown>>(
+    `/customers/app-login-requests/${requestId}/approve`,
+  );
+  return {
+    requestId: String(data.requestId ?? data.RequestId ?? requestId),
+    customerId: String(data.customerId ?? data.CustomerId ?? ''),
+    phone: String(data.phone ?? data.Phone ?? ''),
+    pilotCode: (data.pilotCode ?? data.PilotCode) != null ? String(data.pilotCode ?? data.PilotCode) : null,
+    expiresAt: (data.expiresAt ?? data.ExpiresAt) as string | null,
+    message: String(data.message ?? data.Message ?? ''),
+  };
+}
+
+export async function rejectCustomerAppLoginRequest(requestId: string, reason?: string): Promise<void> {
+  await http.post(`/customers/app-login-requests/${requestId}/reject`, { reason });
+}
+
+export type CustomerAppAuthSettings = {
+  hasCounterPin: boolean;
+  hasInviteCode: boolean;
+  inviteCodeHint?: string | null;
+};
+
+export async function fetchCustomerAppAuthSettings(): Promise<CustomerAppAuthSettings> {
+  const { data } = await http.get<Record<string, unknown>>('/customers/app-auth-settings');
+  return {
+    hasCounterPin: Boolean(data.hasCounterPin ?? data.HasCounterPin),
+    hasInviteCode: Boolean(data.hasInviteCode ?? data.HasInviteCode),
+    inviteCodeHint: (data.inviteCodeHint ?? data.InviteCodeHint) as string | null | undefined,
+  };
+}
+
+export async function updateCustomerAppAuthSettings(payload: {
+  counterPin?: string | null;
+  inviteCode?: string | null;
+  clearCounterPin?: boolean;
+  clearInviteCode?: boolean;
+}): Promise<CustomerAppAuthSettings> {
+  const { data } = await http.put<Record<string, unknown>>('/customers/app-auth-settings', payload);
+  return {
+    hasCounterPin: Boolean(data.hasCounterPin ?? data.HasCounterPin),
+    hasInviteCode: Boolean(data.hasInviteCode ?? data.HasInviteCode),
+    inviteCodeHint: (data.inviteCodeHint ?? data.InviteCodeHint) as string | null | undefined,
+  };
+}
+
+export type IssueCounterPilotOtpResult = {
+  customerId: string;
+  phone: string;
+  pilotCode?: string | null;
+  expiresAt?: string | null;
+  message: string;
+};
+
+export async function issueCounterPilotOtp(payload: {
+  phone: string;
+  fullName?: string;
+}): Promise<IssueCounterPilotOtpResult> {
+  const { data } = await http.post<Record<string, unknown>>('/customers/issue-counter-otp', payload);
+  return {
+    customerId: String(data.customerId ?? data.CustomerId ?? ''),
+    phone: String(data.phone ?? data.Phone ?? ''),
+    pilotCode: (data.pilotCode ?? data.PilotCode) != null ? String(data.pilotCode ?? data.PilotCode) : null,
+    expiresAt: (data.expiresAt ?? data.ExpiresAt) as string | null,
+    message: String(data.message ?? data.Message ?? ''),
+  };
+}
+
 export async function markCustomerPharmacyMember(
   customerId: string,
   verifiedVia: string = 'staff_mark',

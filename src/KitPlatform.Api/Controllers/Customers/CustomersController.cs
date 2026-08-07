@@ -18,6 +18,7 @@ public sealed class CustomersController : ControllerBase
     private readonly ICustomerImportService _import;
     private readonly ICustomerLoyaltyService _loyalty;
     private readonly ICustomerPilotOtpAdminService _pilotOtp;
+    private readonly ICustomerAppLoginAdminService _appLogin;
     private readonly ITenantContext _tenant;
 
     public CustomersController(
@@ -27,6 +28,7 @@ public sealed class CustomersController : ControllerBase
         ICustomerImportService import,
         ICustomerLoyaltyService loyalty,
         ICustomerPilotOtpAdminService pilotOtp,
+        ICustomerAppLoginAdminService appLogin,
         ITenantContext tenant)
     {
         _consents = consents;
@@ -35,6 +37,7 @@ public sealed class CustomersController : ControllerBase
         _import = import;
         _loyalty = loyalty;
         _pilotOtp = pilotOtp;
+        _appLogin = appLogin;
         _tenant = tenant;
     }
 
@@ -152,6 +155,85 @@ public sealed class CustomersController : ControllerBase
         {
             var item = await _admin.UpdateAsync(customerId, request, cancellationToken);
             return item is null ? NotFound() : Ok(item);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("app-login-requests")]
+    [Authorize(Policy = SalesPolicies.Customers)]
+    public async Task<ActionResult<IReadOnlyList<CustomerAppLoginRequestDto>>> ListAppLoginRequests(
+        [FromQuery] string? status = "pending",
+        CancellationToken cancellationToken = default) =>
+        Ok(await _appLogin.ListAsync(status, cancellationToken));
+
+    [HttpPost("app-login-requests/{requestId:guid}/approve")]
+    [Authorize(Policy = SalesPolicies.Write)]
+    public async Task<ActionResult<ApproveCustomerAppLoginResult>> ApproveAppLoginRequest(
+        Guid requestId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _appLogin.ApproveAsync(requestId, _tenant.UserId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("app-login-requests/{requestId:guid}/reject")]
+    [Authorize(Policy = SalesPolicies.Write)]
+    public async Task<IActionResult> RejectAppLoginRequest(
+        Guid requestId,
+        [FromBody] RejectCustomerAppLoginRequest? body,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _appLogin.RejectAsync(requestId, _tenant.UserId, body?.Reason, cancellationToken);
+            return Ok(new { message = "Đã từ chối yêu cầu." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("app-auth-settings")]
+    [Authorize(Policy = SalesPolicies.Settings)]
+    public async Task<ActionResult<CustomerAppAuthSettingsDto>> GetAppAuthSettings(
+        CancellationToken cancellationToken) =>
+        Ok(await _appLogin.GetSettingsAsync(cancellationToken));
+
+    [HttpPut("app-auth-settings")]
+    [Authorize(Policy = SalesPolicies.Settings)]
+    public async Task<ActionResult<CustomerAppAuthSettingsDto>> UpdateAppAuthSettings(
+        [FromBody] UpdateCustomerAppAuthSettingsRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _appLogin.UpdateSettingsAsync(request, _tenant.UserId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("issue-counter-otp")]
+    [Authorize(Policy = SalesPolicies.Pos)]
+    public async Task<ActionResult<IssueCounterPilotOtpResult>> IssueCounterOtp(
+        [FromBody] IssueCounterPilotOtpRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _appLogin.IssueCounterOtpAsync(request, cancellationToken));
         }
         catch (InvalidOperationException ex)
         {

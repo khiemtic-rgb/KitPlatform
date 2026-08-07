@@ -26,10 +26,17 @@ import type {
 import { CUSTOMER_APP_CHAT_CONSENT } from '@/shared/api/customer-app.types';
 import { normalizeReminder, normalizeReminderList } from '@/shared/api/reminder-normalize';
 
-export async function requestOtp(phone: string, tenantCode: string) {
+export async function requestOtp(
+  phone: string,
+  tenantCode: string,
+  options?: { channel?: 'counter' | 'remote'; counterPin?: string; inviteCode?: string },
+) {
   const { data } = await http.post<CustomerOtpSentResponse>('/auth/request-otp', {
     phone,
     tenantCode,
+    channel: options?.channel ?? 'remote',
+    counterPin: options?.counterPin,
+    inviteCode: options?.inviteCode,
   });
   return data;
 }

@@ -76,6 +76,7 @@ public static class DependencyInjection
         services.AddScoped<CustomerAppAuthRepository>();
         services.AddSingleton<CustomerAppJwtTokenService>();
         services.AddScoped<ICustomerAppAuthService, CustomerAppAuthService>();
+        services.AddScoped<ICustomerAppLoginAdminService, CustomerAppLoginAdminService>();
         services.AddScoped<ICustomerPilotOtpAdminService, CustomerPilotOtpAdminService>();
 
         services.AddScoped<CustomerLoyaltyRepository>();

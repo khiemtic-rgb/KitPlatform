@@ -244,6 +244,35 @@
   margin-bottom: 16px;
 }
 
+.otp-login-channel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.otp-login-channel-btn {
+  border: 1px solid var(--ol-line);
+  background: #fff;
+  color: var(--ol-ink);
+  border-radius: 12px;
+  padding: 10px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.otp-login-channel-btn.is-active {
+  border-color: var(--ol-teal);
+  background: var(--ol-mint);
+  color: var(--ol-teal-deep);
+}
+
+.otp-login-pending {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .otp-login-label {
   display: block;
   margin-bottom: 8px;

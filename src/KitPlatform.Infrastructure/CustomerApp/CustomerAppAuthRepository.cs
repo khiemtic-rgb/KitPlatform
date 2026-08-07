@@ -3,6 +3,7 @@ using System.Text;
 using Dapper;
 using KitPlatform.Infrastructure.Auth;
 using KitPlatform.Infrastructure.Data;
+using KitPlatform.Infrastructure.Kernel.Party;
 
 namespace KitPlatform.Infrastructure.CustomerApp;
 
@@ -22,6 +23,18 @@ internal sealed class CustomerAppAuthRepository
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         return await conn.QuerySingleOrDefaultAsync<TenantPhoneRow>(sql, new { TenantCode = tenantCode });
+    }
+
+    public async Task<TenantPhoneRow?> ResolveTenantByIdAsync(Guid tenantId, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT id AS TenantId, tenant_code AS TenantCode
+            FROM tenants
+            WHERE id = @TenantId AND deleted_at IS NULL AND status = 1
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<TenantPhoneRow>(sql, new { TenantId = tenantId });
     }
 
     public async Task<CustomerAccountRecord?> FindAccountByPhoneAsync(
@@ -112,7 +125,7 @@ internal sealed class CustomerAppAuthRepository
         return await conn.QuerySingleOrDefaultAsync<DateTime?>(sql, new { TenantId = tenantId, Phone = phone });
     }
 
-    public async Task InsertOtpChallengeAsync(
+    public async Task<Guid> InsertOtpChallengeAsync(
         Guid tenantId,
         string phone,
         string codeHash,
@@ -123,10 +136,11 @@ internal sealed class CustomerAppAuthRepository
         const string sql = """
             INSERT INTO customer_otp_challenges (tenant_id, phone, code_hash, expires_at, pilot_code)
             VALUES (@TenantId, @Phone, @CodeHash, @ExpiresAt, @PilotCode)
+            RETURNING id
             """;
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        await conn.ExecuteAsync(sql, new
+        return await conn.QuerySingleAsync<Guid>(sql, new
         {
             TenantId = tenantId,
             Phone = phone,
@@ -135,6 +149,355 @@ internal sealed class CustomerAppAuthRepository
             PilotCode = pilotCode,
         });
     }
+
+    public async Task<CustomerPhoneLookupRow?> FindCustomerByPhoneAsync(
+        Guid tenantId,
+        string phone,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT id AS CustomerId, full_name AS FullName
+            FROM customers
+            WHERE tenant_id = @TenantId AND phone = @Phone AND deleted_at IS NULL
+            LIMIT 1
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<CustomerPhoneLookupRow>(
+            sql,
+            new { TenantId = tenantId, Phone = phone });
+    }
+
+    public async Task<TenantCustomerAppAuthRow?> GetTenantAppAuthAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+                counter_pin_hash AS CounterPinHash,
+                invite_code_hash AS InviteCodeHash,
+                invite_code_hint AS InviteCodeHint
+            FROM tenant_customer_app_auth
+            WHERE tenant_id = @TenantId
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<TenantCustomerAppAuthRow>(
+            sql,
+            new { TenantId = tenantId });
+    }
+
+    public async Task UpsertTenantAppAuthAsync(
+        Guid tenantId,
+        string? counterPinHash,
+        string? inviteCodeHash,
+        string? inviteCodeHint,
+        bool clearCounterPin,
+        bool clearInviteCode,
+        Guid? updatedByUserId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            INSERT INTO tenant_customer_app_auth (
+                tenant_id, counter_pin_hash, invite_code_hash, invite_code_hint, updated_at, updated_by_user_id
+            )
+            VALUES (
+                @TenantId, @CounterPinHash, @InviteCodeHash, @InviteCodeHint, NOW(), @UpdatedBy
+            )
+            ON CONFLICT (tenant_id) DO UPDATE SET
+                counter_pin_hash = CASE
+                    WHEN @ClearCounterPin THEN NULL
+                    WHEN @CounterPinHash IS NOT NULL THEN @CounterPinHash
+                    ELSE tenant_customer_app_auth.counter_pin_hash
+                END,
+                invite_code_hash = CASE
+                    WHEN @ClearInviteCode THEN NULL
+                    WHEN @InviteCodeHash IS NOT NULL THEN @InviteCodeHash
+                    ELSE tenant_customer_app_auth.invite_code_hash
+                END,
+                invite_code_hint = CASE
+                    WHEN @ClearInviteCode THEN NULL
+                    WHEN @InviteCodeHint IS NOT NULL THEN @InviteCodeHint
+                    ELSE tenant_customer_app_auth.invite_code_hint
+                END,
+                updated_at = NOW(),
+                updated_by_user_id = @UpdatedBy
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(sql, new
+        {
+            TenantId = tenantId,
+            CounterPinHash = clearCounterPin ? null : counterPinHash,
+            InviteCodeHash = clearInviteCode ? null : inviteCodeHash,
+            InviteCodeHint = clearInviteCode ? null : inviteCodeHint,
+            ClearCounterPin = clearCounterPin,
+            ClearInviteCode = clearInviteCode,
+            UpdatedBy = updatedByUserId,
+        });
+    }
+
+    public async Task<Guid> CreateProspectCustomerAsync(
+        Guid tenantId,
+        string phone,
+        string fullName,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+
+        const string nextCodeSql = """
+            SELECT COALESCE(MAX(
+                CASE
+                    WHEN customer_code ~ '^KH[0-9]+$'
+                    THEN CAST(SUBSTRING(customer_code FROM 3) AS INT)
+                END
+            ), 0) + 1
+            FROM customers
+            WHERE tenant_id = @TenantId
+            """;
+        var next = await conn.ExecuteScalarAsync<int>(
+            new CommandDefinition(nextCodeSql, new { TenantId = tenantId }, tx, cancellationToken: cancellationToken));
+        var customerCode = $"KH{next:D3}";
+        var customerId = Guid.NewGuid();
+
+        var partyId = await KernelPartyWriter.CreateCustomerPartyFirstAsync(
+            conn,
+            tx,
+            tenantId,
+            customerId,
+            customerCode,
+            fullName,
+            phone,
+            email: null,
+            workspaceId: null,
+            cancellationToken);
+
+        const string insertSql = """
+            INSERT INTO customers (
+                id, tenant_id, party_id, customer_code, full_name, phone, email, status,
+                allow_credit, credit_limit,
+                acquisition_source, pharmacy_relation
+            )
+            VALUES (
+                @CustomerId, @TenantId, @PartyId, @CustomerCode, @FullName, @Phone, NULL, 1,
+                TRUE, NULL,
+                'app_self', 'prospect'
+            )
+            """;
+
+        await conn.ExecuteAsync(new CommandDefinition(insertSql, new
+        {
+            CustomerId = customerId,
+            TenantId = tenantId,
+            PartyId = partyId,
+            CustomerCode = customerCode,
+            FullName = fullName,
+            Phone = phone,
+        }, tx, cancellationToken: cancellationToken));
+
+        await tx.CommitAsync(cancellationToken);
+        return customerId;
+    }
+
+    public async Task MarkCustomerAsCounterMemberAsync(
+        Guid tenantId,
+        Guid customerId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE customers
+            SET acquisition_source = 'counter',
+                pharmacy_relation = 'member',
+                pharmacy_verified_at = COALESCE(pharmacy_verified_at, NOW()),
+                pharmacy_verified_via = COALESCE(pharmacy_verified_via, 'staff_mark')
+            WHERE id = @CustomerId AND tenant_id = @TenantId AND deleted_at IS NULL
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(sql, new { CustomerId = customerId, TenantId = tenantId });
+    }
+
+    public async Task<CustomerAppLoginRequestRow?> FindPendingLoginRequestAsync(
+        Guid tenantId,
+        string phone,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+                id AS Id,
+                tenant_id AS TenantId,
+                phone AS Phone,
+                customer_id AS CustomerId,
+                channel AS Channel,
+                status AS Status,
+                referral_code_used AS ReferralCodeUsed,
+                otp_challenge_id AS OtpChallengeId,
+                requested_at AS RequestedAt,
+                reviewed_at AS ReviewedAt,
+                reviewed_by_user_id AS ReviewedByUserId,
+                reject_reason AS RejectReason
+            FROM customer_app_login_requests
+            WHERE tenant_id = @TenantId
+              AND phone = @Phone
+              AND status = 'pending'
+            ORDER BY requested_at DESC
+            LIMIT 1
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<CustomerAppLoginRequestRow>(
+            sql,
+            new { TenantId = tenantId, Phone = phone });
+    }
+
+    public async Task<Guid> InsertLoginRequestAsync(
+        Guid tenantId,
+        string phone,
+        Guid? customerId,
+        string channel,
+        string status,
+        string? referralCodeUsed,
+        Guid? otpChallengeId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            INSERT INTO customer_app_login_requests (
+                tenant_id, phone, customer_id, channel, status, referral_code_used, otp_challenge_id
+            )
+            VALUES (
+                @TenantId, @Phone, @CustomerId, @Channel, @Status, @ReferralCodeUsed, @OtpChallengeId
+            )
+            RETURNING id
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleAsync<Guid>(sql, new
+        {
+            TenantId = tenantId,
+            Phone = phone,
+            CustomerId = customerId,
+            Channel = channel,
+            Status = status,
+            ReferralCodeUsed = referralCodeUsed,
+            OtpChallengeId = otpChallengeId,
+        });
+    }
+
+    public async Task<IReadOnlyList<CustomerAppLoginRequestListRow>> ListLoginRequestsAsync(
+        Guid tenantId,
+        string? status,
+        CancellationToken cancellationToken)
+    {
+        var sql = """
+            SELECT
+                r.id AS Id,
+                r.phone AS Phone,
+                r.customer_id AS CustomerId,
+                c.full_name AS CustomerName,
+                r.channel AS Channel,
+                r.status AS Status,
+                r.referral_code_used AS ReferralCodeUsed,
+                r.requested_at AS RequestedAt,
+                r.reviewed_at AS ReviewedAt,
+                r.reject_reason AS RejectReason
+            FROM customer_app_login_requests r
+            LEFT JOIN customers c ON c.id = r.customer_id AND c.deleted_at IS NULL
+            WHERE r.tenant_id = @TenantId
+            """;
+        if (!string.IsNullOrWhiteSpace(status))
+            sql += " AND r.status = @Status";
+        sql += " ORDER BY r.requested_at DESC LIMIT 100";
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<CustomerAppLoginRequestListRow>(
+            sql,
+            new { TenantId = tenantId, Status = status?.Trim().ToLowerInvariant() });
+        return rows.AsList();
+    }
+
+    public async Task<CustomerAppLoginRequestRow?> GetLoginRequestAsync(
+        Guid tenantId,
+        Guid requestId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+                id AS Id,
+                tenant_id AS TenantId,
+                phone AS Phone,
+                customer_id AS CustomerId,
+                channel AS Channel,
+                status AS Status,
+                referral_code_used AS ReferralCodeUsed,
+                otp_challenge_id AS OtpChallengeId,
+                requested_at AS RequestedAt,
+                reviewed_at AS ReviewedAt,
+                reviewed_by_user_id AS ReviewedByUserId,
+                reject_reason AS RejectReason
+            FROM customer_app_login_requests
+            WHERE tenant_id = @TenantId AND id = @Id
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<CustomerAppLoginRequestRow>(
+            sql,
+            new { TenantId = tenantId, Id = requestId });
+    }
+
+    public async Task MarkLoginRequestApprovedAsync(
+        Guid requestId,
+        Guid otpChallengeId,
+        Guid reviewedByUserId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE customer_app_login_requests
+            SET status = 'approved',
+                otp_challenge_id = @OtpChallengeId,
+                reviewed_at = NOW(),
+                reviewed_by_user_id = @ReviewedBy
+            WHERE id = @Id AND status = 'pending'
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(sql, new
+        {
+            Id = requestId,
+            OtpChallengeId = otpChallengeId,
+            ReviewedBy = reviewedByUserId,
+        });
+    }
+
+    public async Task MarkLoginRequestRejectedAsync(
+        Guid requestId,
+        Guid reviewedByUserId,
+        string? reason,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE customer_app_login_requests
+            SET status = 'rejected',
+                reviewed_at = NOW(),
+                reviewed_by_user_id = @ReviewedBy,
+                reject_reason = @Reason
+            WHERE id = @Id AND status = 'pending'
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(sql, new
+        {
+            Id = requestId,
+            ReviewedBy = reviewedByUserId,
+            Reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim(),
+        });
+    }
+
+    public static string HashSecret(string value) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value.Trim())));
+
+    public static string NormalizeInviteCode(string? code) =>
+        (code ?? string.Empty).Trim().ToUpperInvariant();
 
     public async Task<PilotOtpRow?> GetActivePilotOtpAsync(
         Guid tenantId,

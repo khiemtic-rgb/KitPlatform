@@ -80,10 +80,14 @@ export function OtpLoginPage() {
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState(import.meta.env.DEV ? '0909123456' : '');
   const [tenantCode, setTenantCode] = useState(initialTenant.code || DEFAULT_TENANT_CODE);
+  const [channel, setChannel] = useState<'counter' | 'remote'>('counter');
+  const [counterPin, setCounterPin] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [pilotCode, setPilotCode] = useState<string | null>(null);
   const [expiresInSeconds, setExpiresInSeconds] = useState(0);
   const [otpCode, setOtpCode] = useState('');
   const [agreed, setAgreed] = useState(true);
+  const [pendingApproval, setPendingApproval] = useState(false);
   const tenantLocked = initialTenant.locked || isTenantCodeLocked();
   const setSession = useAuthStore((s) => s.setSession);
   const navigate = useNavigate();
@@ -122,6 +126,7 @@ export function OtpLoginPage() {
     setPilotCode(null);
     setExpiresInSeconds(0);
     setOtpCode('');
+    setPendingApproval(false);
   };
 
   const onRequestOtp = async (event: FormEvent) => {
@@ -135,6 +140,10 @@ export function OtpLoginPage() {
       message.warning(t('auth.consentRequired'));
       return;
     }
+    if (channel === 'counter' && !counterPin.trim()) {
+      message.warning(t('auth.counterPinRequired'));
+      return;
+    }
     setLoading(true);
     try {
       const code = resolvedTenant();
@@ -143,8 +152,22 @@ export function OtpLoginPage() {
         return;
       }
       saveStoredTenantCode(code);
-      const res = await requestOtp(normalized, code);
+      const res = await requestOtp(normalized, code, {
+        channel,
+        counterPin: channel === 'counter' ? counterPin.trim() : undefined,
+        inviteCode: channel === 'remote' ? inviteCode.trim() || undefined : undefined,
+      });
       message.success(res.message || t('auth.otpSent'));
+      const status = (res.status || 'otp_sent').toLowerCase();
+      if (status === 'pending_approval') {
+        setPendingApproval(true);
+        setPilotCode(null);
+        setOtpCode('');
+        setExpiresInSeconds(0);
+        setStep(1);
+        return;
+      }
+      setPendingApproval(false);
       setPilotCode(res.pilotCode?.trim() || null);
       setExpiresInSeconds(res.expiresInSeconds);
       setOtpCode(res.pilotCode?.trim() || '');
@@ -272,6 +295,63 @@ export function OtpLoginPage() {
               </div>
             ) : null}
 
+            <div className="otp-login-field">
+              <span className="otp-login-label">{t('auth.channelLabel')}</span>
+              <div className="otp-login-channel" role="group" aria-label={t('auth.channelLabel')}>
+                <button
+                  type="button"
+                  className={`otp-login-channel-btn${channel === 'counter' ? ' is-active' : ''}`}
+                  onClick={() => setChannel('counter')}
+                >
+                  {t('auth.channelCounter')}
+                </button>
+                <button
+                  type="button"
+                  className={`otp-login-channel-btn${channel === 'remote' ? ' is-active' : ''}`}
+                  onClick={() => setChannel('remote')}
+                >
+                  {t('auth.channelRemote')}
+                </button>
+              </div>
+            </div>
+
+            {channel === 'counter' ? (
+              <div className="otp-login-field">
+                <label className="otp-login-label" htmlFor="otp-counter-pin">
+                  {t('auth.counterPinLabel')}
+                  <em>*</em>
+                </label>
+                <div className="otp-login-input">
+                  <SafetyOutlined className="otp-login-input-icon" />
+                  <input
+                    id="otp-counter-pin"
+                    value={counterPin}
+                    onChange={(e) => setCounterPin(e.target.value)}
+                    placeholder={t('auth.counterPinPlaceholder')}
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="otp-login-field">
+                <label className="otp-login-label" htmlFor="otp-invite">
+                  {t('auth.inviteCodeLabel')}
+                </label>
+                <div className="otp-login-input">
+                  <ShopOutlined className="otp-login-input-icon" />
+                  <input
+                    id="otp-invite"
+                    value={inviteCode}
+                    onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                    placeholder={t('auth.inviteCodePlaceholder')}
+                    autoCapitalize="characters"
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                </div>
+              </div>
+            )}
+
             <label className={`otp-login-consent${agreed ? ' is-checked' : ''}`}>
               <input
                 type="checkbox"
@@ -298,6 +378,25 @@ export function OtpLoginPage() {
               {t('auth.sendOtp')}
             </button>
           </form>
+        ) : pendingApproval ? (
+          <div className="otp-login-pending">
+            <p className="otp-login-pilot-label">{t('auth.pendingTitle')}</p>
+            <p className="otp-login-otp-note">{t('auth.pendingBody')}</p>
+            <button
+              type="button"
+              className="otp-login-submit"
+              onClick={() => {
+                setPendingApproval(false);
+                setOtpCode('');
+              }}
+            >
+              <SafetyOutlined />
+              {t('auth.pendingContinue')}
+            </button>
+            <button type="button" className="otp-login-back" onClick={resetOtpStep}>
+              {t('auth.changePhone')}
+            </button>
+          </div>
         ) : (
           <form onSubmit={(e) => void onVerifyOtp(e)}>
             <p className="otp-login-otp-note">

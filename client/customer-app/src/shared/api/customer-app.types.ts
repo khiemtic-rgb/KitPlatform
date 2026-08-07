@@ -24,6 +24,7 @@ export interface CustomerOtpSentResponse {
   cooldownSeconds: number;
   message: string;
   pilotCode?: string | null;
+  status?: 'otp_sent' | 'pending_approval' | string;
 }
 
 export interface LoyaltyTier {

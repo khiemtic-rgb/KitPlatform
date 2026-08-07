@@ -53,30 +53,181 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
         var tenant = await _repo.ResolveTenantAsync(tenantCode, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy nhà thuốc hoặc nhà thuốc đã ngừng hoạt động.");
 
+        var channel = (request.Channel ?? CustomerAppOtpChannels.Remote).Trim().ToLowerInvariant();
+        if (channel is not (CustomerAppOtpChannels.Counter or CustomerAppOtpChannels.Remote))
+            throw new InvalidOperationException("Kênh đăng nhập không hợp lệ.");
+
+        var authCfg = await _repo.GetTenantAppAuthAsync(tenant.TenantId, cancellationToken);
+
+        if (channel == CustomerAppOtpChannels.Counter)
+            return await RequestCounterOtpAsync(tenant, phone, request.CounterPin, authCfg, cancellationToken);
+
+        return await RequestRemoteOtpAsync(tenant, phone, request.InviteCode, authCfg, cancellationToken);
+    }
+
+    private async Task<CustomerOtpSentResponse> RequestCounterOtpAsync(
+        TenantPhoneRow tenant,
+        string phone,
+        string? counterPin,
+        TenantCustomerAppAuthRow? authCfg,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(authCfg?.CounterPinHash))
+            throw new InvalidOperationException(
+                "Nhà thuốc chưa cấu hình mã quầy. Vui lòng nhờ nhân viên đăng ký giúp.");
+
+        var pin = (counterPin ?? string.Empty).Trim();
+        if (pin.Length == 0)
+            throw new InvalidOperationException("Vui lòng nhập mã quầy.");
+
+        if (!string.Equals(
+                CustomerAppAuthRepository.HashSecret(pin),
+                authCfg.CounterPinHash,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Mã quầy không đúng.");
+        }
+
         var account = await _repo.EnsureAccountForCustomerPhoneAsync(
             tenant.TenantId, tenant.TenantCode, phone, cancellationToken)
             ?? throw new InvalidOperationException(
-                "Số điện thoại chưa được đăng ký tại nhà thuốc. Vui lòng liên hệ quầy.");
+                "Số điện thoại chưa có trên hệ thống nhà thuốc. Nhờ nhân viên tạo khách tại quầy trước.");
 
-        var lastCreated = await _repo.GetLatestOtpCreatedAtAsync(tenant.TenantId, phone, cancellationToken);
-        if (lastCreated.HasValue)
+        await EnforceOtpCooldownAsync(tenant.TenantId, phone, cancellationToken);
+        var (code, expiresAt, challengeId) = await CreateOtpChallengeAsync(
+            tenant, phone, exposeOnCustomerApp: true, cancellationToken);
+
+        await _repo.InsertLoginRequestAsync(
+            tenant.TenantId,
+            phone,
+            account.CustomerId,
+            CustomerAppOtpChannels.Counter,
+            CustomerAppLoginRequestStatuses.Approved,
+            referralCodeUsed: null,
+            challengeId,
+            cancellationToken);
+
+        _logger.LogInformation(
+            "Counter OTP issued for {Phone} (tenant {Tenant}, account {AccountId})",
+            phone,
+            tenant.TenantCode,
+            account.AccountId);
+
+        return new CustomerOtpSentResponse(
+            _settings.OtpExpireMinutes * 60,
+            _settings.OtpCooldownSeconds,
+            "Mã đăng nhập hiển thị bên dưới. Không chia sẻ cho người khác.",
+            code,
+            CustomerAppOtpResponseStatuses.OtpSent);
+    }
+
+    private async Task<CustomerOtpSentResponse> RequestRemoteOtpAsync(
+        TenantPhoneRow tenant,
+        string phone,
+        string? inviteCode,
+        TenantCustomerAppAuthRow? authCfg,
+        CancellationToken cancellationToken)
+    {
+        var pending = await _repo.FindPendingLoginRequestAsync(tenant.TenantId, phone, cancellationToken);
+        if (pending is not null)
         {
-            var elapsed = DateTime.UtcNow - lastCreated.Value.ToUniversalTime();
-            if (elapsed.TotalSeconds < _settings.OtpCooldownSeconds)
-            {
-                var wait = _settings.OtpCooldownSeconds - (int)elapsed.TotalSeconds;
-                throw new InvalidOperationException($"Vui lòng đợi {wait}s trước khi gửi lại mã OTP.");
-            }
+            return new CustomerOtpSentResponse(
+                0,
+                _settings.OtpCooldownSeconds,
+                "Yêu cầu đang chờ nhà thuốc xác nhận. Nhân viên sẽ gọi và gửi mã đăng nhập.",
+                PilotCode: null,
+                CustomerAppOtpResponseStatuses.PendingApproval);
         }
 
+        var existing = await _repo.FindCustomerByPhoneAsync(tenant.TenantId, phone, cancellationToken);
+        Guid customerId;
+        string? referralUsed = null;
+
+        if (existing is not null)
+        {
+            customerId = existing.CustomerId;
+        }
+        else
+        {
+            var normalizedInvite = CustomerAppAuthRepository.NormalizeInviteCode(inviteCode);
+            if (string.IsNullOrWhiteSpace(authCfg?.InviteCodeHash) || string.IsNullOrWhiteSpace(normalizedInvite))
+            {
+                throw new InvalidOperationException(
+                    "Số chưa có trên hệ thống. Nhập mã giới thiệu từ nhà thuốc hoặc đăng ký tại quầy.");
+            }
+
+            if (!string.Equals(
+                    CustomerAppAuthRepository.HashSecret(normalizedInvite),
+                    authCfg.InviteCodeHash,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Mã giới thiệu không đúng.");
+            }
+
+            var fullName = $"Khách app {phone[^4..]}";
+            customerId = await _repo.CreateProspectCustomerAsync(
+                tenant.TenantId, phone, fullName, cancellationToken);
+            referralUsed = normalizedInvite;
+        }
+
+        await _repo.EnsureAccountForCustomerPhoneAsync(
+            tenant.TenantId, tenant.TenantCode, phone, cancellationToken);
+
+        await _repo.InsertLoginRequestAsync(
+            tenant.TenantId,
+            phone,
+            customerId,
+            CustomerAppOtpChannels.Remote,
+            CustomerAppLoginRequestStatuses.Pending,
+            referralUsed,
+            otpChallengeId: null,
+            cancellationToken);
+
+        _logger.LogInformation(
+            "Remote login request pending for {Phone} (tenant {Tenant}, customer {CustomerId})",
+            phone,
+            tenant.TenantCode,
+            customerId);
+
+        return new CustomerOtpSentResponse(
+            0,
+            _settings.OtpCooldownSeconds,
+            "Đã gửi yêu cầu. Nhà thuốc sẽ gọi xác nhận và gửi mã đăng nhập (Zalo/tin nhắn).",
+            PilotCode: null,
+            CustomerAppOtpResponseStatuses.PendingApproval);
+    }
+
+    private async Task EnforceOtpCooldownAsync(Guid tenantId, string phone, CancellationToken cancellationToken)
+    {
+        var lastCreated = await _repo.GetLatestOtpCreatedAtAsync(tenantId, phone, cancellationToken);
+        if (!lastCreated.HasValue)
+            return;
+
+        var elapsed = DateTime.UtcNow - lastCreated.Value.ToUniversalTime();
+        if (elapsed.TotalSeconds < _settings.OtpCooldownSeconds)
+        {
+            var wait = _settings.OtpCooldownSeconds - (int)elapsed.TotalSeconds;
+            throw new InvalidOperationException($"Vui lòng đợi {wait}s trước khi gửi lại mã OTP.");
+        }
+    }
+
+    internal async Task<(string Code, DateTime ExpiresAt, Guid ChallengeId)> CreateOtpChallengeAsync(
+        TenantPhoneRow tenant,
+        string phone,
+        bool exposeOnCustomerApp,
+        CancellationToken cancellationToken)
+    {
         var code = CustomerAppAuthRepository.GenerateOtpCode();
         if (_env.IsDevelopment() && !string.IsNullOrWhiteSpace(_settings.DevBypassCode))
             code = _settings.DevBypassCode.Trim();
 
         var expiresAt = DateTime.UtcNow.AddMinutes(_settings.OtpExpireMinutes);
-        var storePilotCode = _settings.ExposePilotOtpInAdmin || _settings.ExposePilotOtpOnCustomerApp;
-        var pilotCode = storePilotCode ? code : null;
-        await _repo.InsertOtpChallengeAsync(
+        var storePilot =
+            _settings.ExposePilotOtpInAdmin
+            || _settings.ExposePilotOtpOnCustomerApp
+            || exposeOnCustomerApp;
+        var pilotCode = storePilot ? code : null;
+        var challengeId = await _repo.InsertOtpChallengeAsync(
             tenant.TenantId,
             phone,
             CustomerAppAuthRepository.HashOtp(code),
@@ -84,40 +235,22 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
             pilotCode,
             cancellationToken);
 
-        await _otpSender.SendOtpAsync(
-            phone,
-            tenant.TenantCode,
-            code,
-            _settings.OtpExpireMinutes,
-            cancellationToken);
-
-        _logger.LogInformation(
-            "Customer OTP requested for {Phone} (tenant {Tenant}, account {AccountId})",
-            phone,
-            tenant.TenantCode,
-            account.AccountId);
-
-        string message;
-        string? responsePilotCode = null;
-        if (_settings.ExposePilotOtpOnCustomerApp)
+        try
         {
-            message = "Mã đăng nhập hiển thị bên dưới. Không chia sẻ cho người khác.";
-            responsePilotCode = code;
+            await _otpSender.SendOtpAsync(
+                phone,
+                tenant.TenantCode,
+                code,
+                _settings.OtpExpireMinutes,
+                cancellationToken);
         }
-        else if (_env.IsDevelopment())
+        catch (Exception ex)
         {
-            message = "Đã gửi mã OTP (dev: xem log API hoặc dùng mã bypass).";
-        }
-        else
-        {
-            message = "Đã gửi mã OTP qua SMS. Vui lòng kiểm tra tin nhắn.";
+            // Pilot without SMS gateway: still keep challenge for admin/counter display.
+            _logger.LogWarning(ex, "OTP SMS send failed for {Phone}; continuing with pilot display", phone);
         }
 
-        return new CustomerOtpSentResponse(
-            _settings.OtpExpireMinutes * 60,
-            _settings.OtpCooldownSeconds,
-            message,
-            responsePilotCode);
+        return (code, expiresAt, challengeId);
     }
 
     public async Task<CustomerLoginResponse?> VerifyOtpAsync(

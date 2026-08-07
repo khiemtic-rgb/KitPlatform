@@ -75,3 +75,36 @@ internal sealed record PilotOtpRow(
     string Code,
     DateTime ExpiresAt,
     DateTime CreatedAt);
+
+internal sealed record TenantCustomerAppAuthRow(
+    string? CounterPinHash,
+    string? InviteCodeHash,
+    string? InviteCodeHint);
+
+internal sealed record CustomerPhoneLookupRow(Guid CustomerId, string FullName);
+
+internal sealed record CustomerAppLoginRequestRow(
+    Guid Id,
+    Guid TenantId,
+    string Phone,
+    Guid? CustomerId,
+    string Channel,
+    string Status,
+    string? ReferralCodeUsed,
+    Guid? OtpChallengeId,
+    DateTime RequestedAt,
+    DateTime? ReviewedAt,
+    Guid? ReviewedByUserId,
+    string? RejectReason);
+
+internal sealed record CustomerAppLoginRequestListRow(
+    Guid Id,
+    string Phone,
+    Guid? CustomerId,
+    string? CustomerName,
+    string Channel,
+    string Status,
+    string? ReferralCodeUsed,
+    DateTime RequestedAt,
+    DateTime? ReviewedAt,
+    string? RejectReason);
