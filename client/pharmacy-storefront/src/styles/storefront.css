@@ -94,9 +94,9 @@
 
 .sf-logo__img {
   display: block;
-  height: 2.6rem;
+  height: 3rem;
   width: auto;
-  max-width: 11rem;
+  max-width: 13.5rem;
   object-fit: contain;
 }
 
@@ -1547,10 +1547,11 @@
 
 .sf-footer__logo {
   display: block;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: auto;
+  height: 3.6rem;
+  max-width: 14rem;
   object-fit: contain;
-  filter: brightness(0) invert(1);
+  filter: none;
   flex-shrink: 0;
 }
 

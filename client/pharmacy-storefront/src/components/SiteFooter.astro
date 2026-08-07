@@ -37,12 +37,26 @@ const socialLinks = socialOrder
   <div class="sf-container sf-footer__grid">
     <div class="sf-footer__brand">
       <div class="sf-footer__brand-head">
-        <div class="sf-footer__brand-text">
-          <strong>NHÀ THUỐC</strong>
-          <b>{tenant.brand.shortName.toUpperCase()}</b>
-        </div>
+        {
+          tenant.brand.logoUrl ? (
+            <img
+              class="sf-footer__logo"
+              src={tenant.brand.logoUrl}
+              alt={tenant.brand.name}
+              width="220"
+              height="75"
+            />
+          ) : (
+            <div class="sf-footer__brand-text">
+              <strong>NHÀ THUỐC</strong>
+              <b>{tenant.brand.shortName.toUpperCase()}</b>
+            </div>
+          )
+        }
       </div>
-      {tenant.footer.tagline ? <p class="sf-footer__tagline">{tenant.footer.tagline}</p> : null}
+      {tenant.footer.tagline && !tenant.brand.logoUrl ? (
+        <p class="sf-footer__tagline">{tenant.footer.tagline}</p>
+      ) : null}
       <p class="sf-footer__mission">{tenant.footer.mission}</p>
       {
         socialLinks.length ? (

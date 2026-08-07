@@ -14,6 +14,7 @@ export const xuanhoa: PharmacyTenantConfig = {
     name: 'Nhà thuốc Xuân Hòa',
     shortName: 'Xuân Hòa',
     logoText: 'XH',
+    logoUrl: '/brand/xuanhoa-logo.png?v=2',
     primaryColor: '#004d40',
     accentColor: '#0a7a5c',
   },
