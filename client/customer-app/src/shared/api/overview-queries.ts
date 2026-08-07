@@ -184,27 +184,37 @@ export function chatOverviewQueryOptions() {
   });
 }
 
+function useIsCustomerAuthed() {
+  return useAuthStore((s) => Boolean(s.accessToken));
+}
+
 export function useOrdersOverviewQuery() {
-  return useQuery(ordersOverviewQueryOptions());
+  const enabled = useIsCustomerAuthed();
+  return useQuery({ ...ordersOverviewQueryOptions(), enabled });
 }
 
 export function useRemindersOverviewQuery() {
-  return useQuery(remindersOverviewQueryOptions());
+  const enabled = useIsCustomerAuthed();
+  return useQuery({ ...remindersOverviewQueryOptions(), enabled });
 }
 
 export function useChatOverviewQuery() {
-  return useQuery(chatOverviewQueryOptions());
+  const enabled = useIsCustomerAuthed();
+  return useQuery({ ...chatOverviewQueryOptions(), enabled });
 }
 
 export function prefetchOrdersOverview(client: QueryClient) {
+  if (!useAuthStore.getState().accessToken) return Promise.resolve();
   return client.prefetchQuery(ordersOverviewQueryOptions());
 }
 
 export function prefetchRemindersOverview(client: QueryClient) {
+  if (!useAuthStore.getState().accessToken) return Promise.resolve();
   return client.prefetchQuery(remindersOverviewQueryOptions());
 }
 
 export function prefetchChatOverview(client: QueryClient) {
+  if (!useAuthStore.getState().accessToken) return Promise.resolve();
   return client.prefetchQuery(chatOverviewQueryOptions());
 }
 

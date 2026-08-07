@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchServerNotifications } from '@/shared/api/customer-app.api';
+import { useAuthStore } from '@/shared/auth/auth.store';
 import {
   subscribeCustomerNotifications,
   unreadCustomerNotificationCount,
@@ -8,10 +9,15 @@ import {
 const SERVER_POLL_MS = 60_000;
 
 export function useCustomerNotificationCount() {
+  const isAuthenticated = useAuthStore((s) => Boolean(s.accessToken));
   const [count, setCount] = useState(0);
 
   const refresh = useCallback(async () => {
     const localUnread = unreadCustomerNotificationCount();
+    if (!useAuthStore.getState().accessToken) {
+      setCount(localUnread);
+      return;
+    }
     try {
       const { unreadCount } = await fetchServerNotifications(1);
       setCount(localUnread + unreadCount);
@@ -21,6 +27,10 @@ export function useCustomerNotificationCount() {
   }, []);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setCount(unreadCustomerNotificationCount());
+      return;
+    }
     void refresh();
     const onLocalChange = () => void refresh();
     const onServerChange = () => void refresh();
@@ -32,7 +42,7 @@ export function useCustomerNotificationCount() {
       window.removeEventListener('server-notifications-changed', onServerChange);
       window.clearInterval(timer);
     };
-  }, [refresh]);
+  }, [isAuthenticated, refresh]);
 
   return count;
 }

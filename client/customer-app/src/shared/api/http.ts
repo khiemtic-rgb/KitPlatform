@@ -31,6 +31,12 @@ http.interceptors.response.use(
     const status = error.response?.status;
 
     if (status === 401 && original && !original.url?.includes('/auth/')) {
+      const { accessToken, refreshToken } = useAuthStore.getState();
+      // Guest / anonymous browse: never bounce to login on protected-API 401.
+      if (!accessToken && !refreshToken) {
+        return Promise.reject(error);
+      }
+
       if (original._retry) {
         forceCustomerLogout();
         return Promise.reject(error);
