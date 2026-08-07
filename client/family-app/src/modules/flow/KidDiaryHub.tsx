@@ -1,4 +1,4 @@
-import { useMemo, useRef, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { SoftEvidenceImg } from '@/shared/ui/SoftEvidenceImg';
 
 const STORY_HL_RE =
@@ -106,6 +106,7 @@ type Props = {
   moodLoaded: boolean;
   moodSaving: boolean;
   canSaveMood: boolean;
+  moodNote: string;
   footerSlot?: ReactNode;
   onPickDay: (idx: number) => void;
   onPrevDay: () => void;
@@ -118,8 +119,10 @@ type Props = {
   onOpenTimeline: () => void;
   onOpenMemories: () => void;
   onMoodPick: (idx: number) => void;
+  onMoodNoteChange: (note: string) => void;
   onSaveMood: () => void;
   onPlayLove?: (id: string) => void;
+  famiMoodTip?: string;
 };
 
 const KIND_META: Record<
@@ -128,9 +131,9 @@ const KIND_META: Record<
 > = {
   photo: { label: 'Ảnh', tone: 'amber', badgeIcon: '📷' },
   video: { label: 'Video', tone: 'violet', badgeIcon: '🎬' },
-  voice: { label: 'Voice', tone: 'teal', badgeIcon: '🎙' },
+  voice: { label: 'Giọng nói', tone: 'teal', badgeIcon: '🎙' },
   draw: { label: 'Vẽ tranh', tone: 'green', badgeIcon: '🌸' },
-  other: { label: 'Moment', tone: 'lilac', badgeIcon: '✨' },
+  other: { label: 'Khoảnh khắc', tone: 'lilac', badgeIcon: '✨' },
 };
 
 /** Diary UI labels — keep API codes from FAMILY_MOODS */
@@ -146,6 +149,7 @@ export function KidDiaryHub(props: Props) {
   const canPrev = props.dayIdx > 0;
   const canNext = props.dayIdx < props.days.length - 1;
   const momentsTrackRef = useRef<HTMLDivElement | null>(null);
+  const [famiTipOpen, setFamiTipOpen] = useState(false);
 
   const moodOrder = useMemo(() => {
     const prefer = ['love', 'happy', 'ok', 'mad', 'sad'];
@@ -262,7 +266,7 @@ export function KidDiaryHub(props: Props) {
           </header>
           <p className="kdiary-tale-body">{highlightStory(taleText)}</p>
           <button type="button" className="kdiary-tale-listen" onClick={props.onListenStory}>
-            <span aria-hidden>▶</span> Nghe lại câu chuyện
+            <span aria-hidden>▶</span> Nghe Fami đọc chuyện
           </button>
         </div>
 
@@ -340,10 +344,13 @@ export function KidDiaryHub(props: Props) {
                 i === 0 ||
                 /đánh răng|tự giác/i.test(m.title);
               return (
-                <article
+                <button
                   key={m.id}
+                  type="button"
                   className={`kdiary-mcard tone-${meta.tone}`}
                   role="listitem"
+                  onClick={props.onOpenMoments}
+                  aria-label={`Xem khoảnh khắc: ${m.title}`}
                 >
                   <div className={`kdiary-mcard-media is-${m.kind}`} aria-hidden>
                     <span className="kdiary-mcard-badge">
@@ -358,13 +365,14 @@ export function KidDiaryHub(props: Props) {
                         </div>
                         <div className="kdiary-mcard-voice-bar">
                           <em>▶</em>
-                          <i>{m.duration || '0:18'}</i>
+                          {m.duration ? <i>{m.duration}</i> : <i>Giọng nói</i>}
                         </div>
                       </div>
                     ) : (
                       <SoftEvidenceImg
                         url={m.imageUrl}
                         fallback={m.icon || meta.badgeIcon}
+                        className="kdiary-mcard-img"
                         fallbackClassName="kdiary-mcard-fallback"
                         auth={(u) => u?.trim() || undefined}
                       />
@@ -386,10 +394,13 @@ export function KidDiaryHub(props: Props) {
                         {m.time}
                       </em>
                     ) : (
-                      <em>Voice · {m.duration || m.time}</em>
+                      <em>
+                        Giọng nói
+                        {m.duration ? ` · ${m.duration}` : m.time ? ` · ${m.time}` : ''}
+                      </em>
                     )}
                   </div>
-                </article>
+                </button>
               );
             })}
             <button
@@ -477,26 +488,35 @@ export function KidDiaryHub(props: Props) {
                   ).toUpperCase();
                 return (
                   <article key={l.id} className={`kdiary-love-row is-${l.tone}`}>
-                    <div className="kdiary-love-avatar" aria-hidden>
-                      {initial}
-                    </div>
-                    <div className="kdiary-love-copy">
-                      <strong>
-                        <i aria-hidden>{l.tone === 'dad' ? '💙' : '💗'}</i>
-                        {l.fromLabel}
-                      </strong>
-                      <p>«{l.body}»</p>
-                      <em>{l.when}</em>
-                    </div>
                     <button
                       type="button"
-                      className="kdiary-love-play"
-                      aria-label="Nghe lời yêu thương"
+                      className="kdiary-love-hit"
                       onClick={() => props.onPlayLove?.(l.id)}
+                      aria-label={`Đọc lời từ ${l.fromLabel}`}
                     >
-                      <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden>
-                        <path d="M8 5.5v13l11-6.5L8 5.5z" fill="currentColor" />
-                      </svg>
+                      <span className="kdiary-love-avatar" aria-hidden>
+                        {initial}
+                      </span>
+                      <span className="kdiary-love-copy">
+                        <strong>
+                          <i aria-hidden>{l.tone === 'dad' ? '💙' : '💗'}</i>
+                          {l.fromLabel}
+                        </strong>
+                        <span className="kdiary-love-body">«{l.body}»</span>
+                        <em>{l.when}</em>
+                      </span>
+                      <span className="kdiary-love-play" aria-hidden>
+                        <svg viewBox="0 0 24 24" width="16" height="16">
+                          <path
+                            d="M9 5.5L15.5 12 9 18.5"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
                     </button>
                   </article>
                 );
@@ -515,10 +535,21 @@ export function KidDiaryHub(props: Props) {
               ? 'Con cảm thấy thế nào về ngày hôm nay?'
               : 'Ngày đó con cảm thấy thế nào?'}
           </h2>
-          <em>
-            <span aria-hidden>💡</span> Gợi ý từ Fami
-          </em>
+          <button
+            type="button"
+            className="kdiary-link is-purple kdiary-fami-tip-btn"
+            aria-expanded={famiTipOpen}
+            onClick={() => setFamiTipOpen((v) => !v)}
+          >
+            <span aria-hidden>💡</span> {famiTipOpen ? 'Ẩn gợi ý' : 'Gợi ý từ Fami'}
+          </button>
         </header>
+        {famiTipOpen ? (
+          <p className="kdiary-fami-tip" role="status">
+            {props.famiMoodTip ??
+              'Chạm một mặt cười thật gần với cảm xúc con — Fami lắng nghe, không chấm điểm.'}
+          </p>
+        ) : null}
 
         {props.isToday ? (
           <>
@@ -559,6 +590,22 @@ export function KidDiaryHub(props: Props) {
                 />
               </aside>
             </div>
+            <label className="kdiary-feel-note">
+              <span>Muốn kể Fami nghe thêm không? (không bắt buộc)</span>
+              <textarea
+                value={props.moodNote}
+                onChange={(e) => props.onMoodNoteChange(e.target.value.slice(0, 280))}
+                rows={3}
+                maxLength={280}
+                placeholder="Ví dụ: Hôm nay vui vì… / hơi mệt vì…"
+              />
+              <em>{props.moodNote.trim().length}/280</em>
+            </label>
+            <div className="kdiary-feel-extra">
+              <button type="button" className="kdiary-feel-chip" onClick={props.onAddMoment}>
+                <span aria-hidden>📷</span> Thêm ảnh khoảnh khắc
+              </button>
+            </div>
             <button
               type="button"
               className="kdiary-feel-save"
@@ -581,7 +628,7 @@ export function KidDiaryHub(props: Props) {
             {props.isToday ? 'Dòng thời gian hôm nay' : 'Dòng thời gian ngày này'}
           </h2>
           <button type="button" className="kdiary-link is-purple" onClick={props.onOpenTimeline}>
-            Xem tất cả ›
+            Xem kế hoạch ›
           </button>
         </header>
         {props.loading ? (

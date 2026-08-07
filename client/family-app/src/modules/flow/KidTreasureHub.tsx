@@ -79,12 +79,15 @@ type Props = {
   wishText?: string;
   wishStep?: number;
   wishStepTotal?: number;
+  /** Already submitted this week's voice/wish */
+  wishDone?: boolean;
   formatStars: (n: number) => string;
   onContinue: () => void;
   onRedeem: (item: TreasureCatalogItem) => void;
   onOpenAllRewards: () => void;
   onOpenAllBadges: () => void;
   onOpenAchievement: (id: string) => void;
+  onOpenAllAchievements: () => void;
   onOpenMemories: () => void;
   onOpenMystery: () => void;
   onOpenSurprise: () => void;
@@ -160,41 +163,43 @@ function rewardVisual(
 }
 
 function deriveCollections(badges: TreasureBadge[]): TreasureCollection[] {
-  const measure = (
-    ids: string[],
-    emoji: string,
-    title: string,
-    tone: TreasureCollection['tone'],
-  ): TreasureCollection => {
-    const set = badges.filter((b) => ids.includes(b.id));
-    const avg = set.length ? set.reduce((s, b) => s + b.progress, 0) / set.length : 0;
-    const need = 30;
-    return {
-      id: title,
-      emoji,
-      title,
-      have: Math.round((avg / 100) * need),
-      need,
-      tone,
-      locked: false,
-      badgeIds: ids,
-    };
-  };
-  return [
-    measure(['streak', 'garden-bloom'], '⭐', 'Chăm chỉ', 'gold'),
-    measure(['stars100', 'stars500'], '📚', 'Ham học', 'green'),
-    measure(['first', 'team'], '💗', 'Tốt bụng', 'pink'),
-    measure(['team', 'garden-bloom'], '👟', 'Thể thao', 'blue'),
-    {
+  const tones: Array<TreasureCollection['tone']> = ['gold', 'green', 'pink', 'blue'];
+  const real = badges.slice(0, 4).map((b, i) => ({
+    id: b.id,
+    emoji: b.icon || '🏅',
+    title: b.label,
+    have: b.unlocked ? 1 : 0,
+    need: 1,
+    tone: tones[i % tones.length]!,
+    locked: false,
+    badgeIds: [b.id],
+  }));
+  if (real.length === 0) {
+    return [
+      {
+        id: 'mystery',
+        emoji: '🔒',
+        title: 'Bí ẩn',
+        have: 0,
+        need: 1,
+        tone: 'mystery',
+        locked: true,
+      },
+    ];
+  }
+  if (real.length < 4) {
+    real.push({
       id: 'mystery',
       emoji: '🔒',
       title: 'Bí ẩn',
       have: 0,
-      need: 30,
+      need: 1,
       tone: 'mystery',
       locked: true,
-    },
-  ];
+      badgeIds: [],
+    });
+  }
+  return real;
 }
 
 export function KidTreasureHub(props: Props) {
@@ -211,7 +216,12 @@ export function KidTreasureHub(props: Props) {
   const displayWish =
     pickedWish?.trim() ||
     props.wishText?.trim() ||
-    `Con ước được đi sở thú cùng gia đình`;
+    (props.wishDone
+      ? 'Ước nguyện tuần này đã gửi cho bố mẹ'
+      : 'Chưa có ước nguyện — bấm Gửi ước nguyện nhé');
+  const progressLabel = props.wishDone
+    ? 'Đã gửi cho bố mẹ'
+    : `${wishStep}/${wishTotal} bước đã hoàn thành`;
   const memCount = props.memories.length;
 
   useEffect(() => {
@@ -494,7 +504,7 @@ export function KidTreasureHub(props: Props) {
         </section>
       </div>
 
-      {/* 4. Bí mật + Surprise — theo mẫu sinh động */}
+      {/* 4. Bí mật + Surprise — cùng khung cân đối */}
       <div className="ktre-promo">
         <article className={`ktre-promo-card is-mystery${mysteryReady ? ' is-ready' : ''}`}>
           <header className="ktre-promo-head">
@@ -503,18 +513,21 @@ export function KidTreasureHub(props: Props) {
             </span>
             <em>Kho báu bí mật</em>
           </header>
-          <div className="ktre-promo-body is-mystery-layout">
+          <div className="ktre-promo-body">
             <div className="ktre-promo-art" aria-hidden>
-              <img src="/mascot/mystery-chest.png?v=2" alt="" width={120} height={120} decoding="async" />
+              <img src="/mascot/mystery-chest.png?v=2" alt="" width={96} height={96} decoding="async" />
             </div>
             <div className="ktre-promo-copy">
               <strong>Hộp quà bí mật</strong>
-              <p>Hộp quà bí mật đang chờ {props.shortName}!</p>
-              <button type="button" className="ktre-promo-cta is-split" onClick={props.onOpenMystery}>
-                <span>{mysteryReady ? 'Mở ngay' : 'Sắp mở'}</span>
-                <em aria-hidden>⭐ 50 ⭐</em>
-              </button>
+              <p>
+                {mysteryReady
+                  ? 'Đủ điểm — Fami ghi nhận; bố mẹ mở cùng con.'
+                  : `Tiến độ ${props.mysteryHave}/${props.mysteryTarget} — chạm để xem.`}
+              </p>
             </div>
+            <button type="button" className="ktre-promo-cta" onClick={props.onOpenMystery}>
+              {mysteryReady ? 'Xem ghi chú' : 'Xem tiến độ'}
+            </button>
           </div>
         </article>
 
@@ -525,22 +538,27 @@ export function KidTreasureHub(props: Props) {
             </span>
             <em>Quà bí mật</em>
           </header>
-          <div className="ktre-promo-body is-surprise-layout">
-            <div className="ktre-promo-copy">
-              <p>Fami có một món quà đang chờ {props.shortName} nè!</p>
-              <button type="button" className="ktre-promo-cta" onClick={props.onOpenSurprise}>
-                Xem ngay
-              </button>
-            </div>
+          <div className="ktre-promo-body">
             <div className="ktre-promo-art" aria-hidden>
               <img
                 src="/mascot/fami-surprise-gift.png?v=2"
                 alt=""
-                width={120}
-                height={120}
+                width={96}
+                height={96}
                 decoding="async"
               />
             </div>
+            <div className="ktre-promo-copy">
+              <strong>Quà từ Fami</strong>
+              <p>
+                {surpriseReady
+                  ? 'Fami sẵn sàng gửi lời chúc — chạm để xem.'
+                  : `Làm xong việc hôm nay hoặc giữ chuỗi ngày tốt nhé.`}
+              </p>
+            </div>
+            <button type="button" className="ktre-promo-cta" onClick={props.onOpenSurprise}>
+              {surpriseReady ? 'Xem lời chúc' : 'Xem tiến độ'}
+            </button>
           </div>
         </article>
       </div>
@@ -595,7 +613,15 @@ export function KidTreasureHub(props: Props) {
                     {locked ? '🔒' : c.emoji}
                   </span>
                   <strong>{c.title}</strong>
-                  <em>{locked ? '???' : `${c.have}/${c.need}`}</em>
+                  <em>
+                    {locked
+                      ? '???'
+                      : c.need === 1
+                        ? c.have >= 1
+                          ? 'Đã có'
+                          : 'Chưa có'
+                        : `${c.have}/${c.need}`}
+                  </em>
                 </button>
               );
             })}
@@ -627,7 +653,7 @@ export function KidTreasureHub(props: Props) {
               <button
                 type="button"
                 className="ktre-link"
-                onClick={() => props.onOpenAchievement(props.achievements[0]!.id)}
+                onClick={props.onOpenAllAchievements}
               >
                 Xem tất cả
               </button>
@@ -706,23 +732,18 @@ export function KidTreasureHub(props: Props) {
                 setWishOpen(true);
               }}
             >
-              Xem tất cả
+              {props.wishDone ? 'Xem lại' : 'Mở form'}
             </button>
           </header>
 
           <div className="ktre-panel-body">
             <article className="ktre-wish-card">
-              <button type="button" className="ktre-wish-heart" aria-label="Yêu thích ước mơ">
-                ♥
-              </button>
               <div className="ktre-wish-env" aria-hidden>
                 <span>💌</span>
               </div>
               <div className="ktre-wish-body">
                 <p>{displayWish}</p>
-                <em>
-                  {wishStep}/{wishTotal} bước đã hoàn thành
-                </em>
+                <em>{progressLabel}</em>
                 <div className="ktre-wish-bar" aria-hidden>
                   <b style={{ width: `${wishPct}%` }} />
                 </div>
@@ -730,55 +751,36 @@ export function KidTreasureHub(props: Props) {
             </article>
           </div>
 
-          <div className="ktre-wish-acts" aria-label="Gửi ước mơ">
+          <div className="ktre-wish-primary">
             <button
               type="button"
-              className="tone-write"
+              className="ktre-wish-send"
               onClick={() => {
                 setWishDraw(false);
                 setWishOpen(true);
               }}
             >
-              <i aria-hidden>✏️</i>
-              <em>Viết ước mơ</em>
+              <span aria-hidden>💝</span>
+              {props.wishDone ? 'Xem ước nguyện đã gửi' : 'Gửi ước nguyện'}
             </button>
-            <button
-              type="button"
-              className="tone-draw"
-              onClick={() => {
-                setWishOpen(false);
-                setWishDraw((v) => !v);
-              }}
-            >
-              <i aria-hidden>🖌️</i>
-              <em>Vẽ ước mơ</em>
-            </button>
-            <button
-              type="button"
-              className="tone-voice"
-              onClick={() => {
-                setWishDraw(false);
-                setWishOpen(true);
-              }}
-            >
-              <i aria-hidden>🎙️</i>
-              <em>Gửi voice</em>
-            </button>
-            <button
-              type="button"
-              className="tone-view"
-              onClick={() => {
-                setWishDraw(false);
-                setWishOpen(true);
-              }}
-            >
-              <i aria-hidden>💝</i>
-              <em>Xem ước mơ</em>
-            </button>
+            {!props.wishDone ? (
+              <button
+                type="button"
+                className="ktre-wish-hint"
+                onClick={() => {
+                  setWishOpen(false);
+                  setWishDraw((v) => !v);
+                }}
+                aria-expanded={wishDraw}
+              >
+                <span aria-hidden>✨</span>
+                {wishDraw ? 'Ẩn gợi ý' : 'Gợi ý nhanh'}
+              </button>
+            ) : null}
           </div>
 
-          {wishDraw ? (
-            <div className="ktre-wish-stickers" aria-label="Chọn sticker ước muốn">
+          {wishDraw && !props.wishDone ? (
+            <div className="ktre-wish-stickers" aria-label="Gợi ý ước nguyện nhanh">
               {WISH_STICKERS.map((s) => (
                 <button
                   key={s.label}
@@ -787,6 +789,7 @@ export function KidTreasureHub(props: Props) {
                   onClick={() => {
                     onPickWish(s.text);
                     setWishDraw(false);
+                    setWishOpen(true);
                   }}
                 >
                   <span aria-hidden>{s.emoji}</span>
@@ -836,8 +839,8 @@ export function KidTreasureHub(props: Props) {
                 </button>
               ) : null}
               <div className="ktre-album" ref={albumRef}>
-                {props.memories.map((m, i) => {
-                  const video = m.isVideo ?? i === 1;
+                {props.memories.map((m) => {
+                  const video = Boolean(m.isVideo);
                   return (
                     <button
                       key={m.id}

@@ -84,7 +84,7 @@ export function FamilyModeSheet({
         <p className="ph-sheet-lead">
           Đổi nhịp <strong>cả nhà</strong> · mục tiêu ≤1 phút. AI gắn lịch mẫu theo mùa
           (thi · nghỉ hè). Việc riêng từng con chỉnh ở{' '}
-          <strong>Quản trị → Routine</strong> (chip Cả nhà / từng con).
+          <strong>Quản trị → Thói quen</strong> (chip Cả nhà / từng con).
         </p>
         <ul className="ph-mode-list">
           {FAMILY_MODE_OPTIONS.map((opt) => (

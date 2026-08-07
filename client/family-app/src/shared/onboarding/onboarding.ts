@@ -120,7 +120,7 @@ export const STRUGGLE_OPTIONS: Array<{ value: StruggleCode; label: string; icon:
 export const GOAL_OPTIONS: Array<{ value: GoalCode; label: string; icon: string }> = [
   { value: 'fewer_nudges', label: 'Giảm số lần phải nhắc', icon: '🔔' },
   { value: 'more_autonomy', label: 'Con tự giác hơn', icon: '🌟' },
-  { value: 'quality_time', label: 'Thêm thời gian chất lượng (Movie Night / đọc)', icon: '🎬' },
+  { value: 'quality_time', label: 'Thêm thời gian chất lượng (Đêm xem phim / đọc)', icon: '🎬' },
   { value: 'bedtime', label: 'Giữ giờ đi ngủ ổn định', icon: '😴' },
 ];
 
@@ -297,6 +297,6 @@ export function buildStarterPlan(answers: OnboardingAnswers): {
   return {
     missions: trimmed,
     focusLine: `30 ngày tới: tập trung «${goalLabel.toLowerCase()}» cho ${short}.`,
-    coachPitch: `Foxy hiểu ${short} (${AGE_OPTIONS.find((a) => a.value === ageBand)?.label}). Khó khăn lớn: ${struggleLabel}. Mình bắt đầu với ${trimmed.length} việc vừa sức — không nhồi checklist.`,
+    coachPitch: `Famixa hiểu ${short} (${AGE_OPTIONS.find((a) => a.value === ageBand)?.label}). Khó khăn lớn: ${struggleLabel}. Mình bắt đầu với ${trimmed.length} việc vừa sức — không nhồi checklist.`,
   };
 }

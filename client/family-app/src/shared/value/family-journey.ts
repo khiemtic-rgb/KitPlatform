@@ -133,7 +133,7 @@ export function buildFamilyJourney(input: {
       date: firstBeautiful.date,
       icon: '🏆',
       title: 'Ngày đẹp đầu tiên',
-      detail: 'Cả nhà giữ được cam kết — Movie Night gần hơn.',
+      detail: 'Cả nhà giữ được cam kết — Đêm xem phim gần hơn.',
       kind: 'streak',
     });
   }

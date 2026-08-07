@@ -32,10 +32,15 @@ type Props = {
   onOpenAllToday: () => void;
   onStartItem: (item: DayFlowCommitment) => void;
   onOpenAchievements: () => void;
+  onOpenStreak: () => void;
+  onOpenLevel: () => void;
+  /** Prefer sticker thanks over reading praise (e.g. Family «Gửi cảm ơn»). */
+  preferStickers?: boolean;
   onSendSticker: (emoji: string) => void;
   onAckVoiceThanks: () => void;
   onOpenMoments: () => void;
   onOpenSurprise: () => void;
+  onOpenAsk: () => void;
   momentPreview: {
     title: string;
     body: string;
@@ -67,7 +72,7 @@ function markGlyph(m: RowMark): string {
 function statusBadge(m: RowMark): { label: string; tone: string } {
   if (m === 'done') return { label: 'Đã xong 😊', tone: 'done' };
   if (m === 'next') return { label: 'Tiếp theo', tone: 'next' };
-  if (m === 'wait') return { label: 'Chờ xác nhận', tone: 'wait' };
+  if (m === 'wait') return { label: 'Chờ bố mẹ xem', tone: 'wait' };
   return { label: 'Chưa làm', tone: 'todo' };
 }
 
@@ -111,7 +116,8 @@ export function KidHomeHub(props: Props) {
     0,
     Math.min(100, Math.round((props.levelProgress.have / Math.max(props.levelProgress.need, 1)) * 100)),
   );
-  const giftLeft = props.remaining > 0 ? props.remaining : Math.max(0, props.unlockLeft);
+  const giftLeft = Math.max(0, props.remaining);
+  const teamGiftLeft = Math.max(0, props.unlockLeft);
   const [dayTip, setDayTip] = useState<string | null>(null);
 
   useEffect(() => {
@@ -135,10 +141,16 @@ export function KidHomeHub(props: Props) {
 
   /** One “Fami đang chờ” reason only — why kids open the app. */
   const waitMode = useMemo(() => {
+    if (props.preferStickers && !props.thanksSent) return 'sticker' as const;
     if (props.primaryParentVoice) return 'praise' as const;
     if (props.doneCount > 0 && !props.thanksSent) return 'sticker' as const;
     return 'idle' as const;
-  }, [props.primaryParentVoice, props.doneCount, props.thanksSent]);
+  }, [
+    props.preferStickers,
+    props.primaryParentVoice,
+    props.doneCount,
+    props.thanksSent,
+  ]);
 
   const list = props.todayItems.slice(0, 5);
   const showSurprise = props.remaining === 0 || props.unlockLeft === 0 || props.doneCount >= 2;
@@ -155,7 +167,7 @@ export function KidHomeHub(props: Props) {
       return;
     }
     if (m === 'wait') {
-      setDayTip('Đã nộp — chờ bố mẹ xác nhận sao nhé!');
+      setDayTip('Đã nộp — chờ bố mẹ xem sao nhé!');
       return;
     }
     if (rowBusy) return;
@@ -184,7 +196,7 @@ export function KidHomeHub(props: Props) {
 
           <div className="khub-hero-side">
             <div className="khub-level">
-              <strong>Level {props.explorerLevel} ⭐</strong>
+              <strong>Cấp độ {props.explorerLevel} ⭐</strong>
               <div className="khub-bar" aria-hidden>
                 <b style={{ width: `${pct}%` }} />
               </div>
@@ -200,10 +212,15 @@ export function KidHomeHub(props: Props) {
                 {giftLeft > 0 ? (
                   <>
                     Chỉ còn <strong>{giftLeft} việc</strong> nữa để mở{' '}
-                    <strong>quà hôm nay</strong> 🎁
+                    <strong>Kho báu</strong> 🎁
+                  </>
+                ) : teamGiftLeft > 0 ? (
+                  <>
+                    Việc của con xong — cả nhà còn <strong>{teamGiftLeft} việc</strong> để mở phần
+                    thưởng nhóm
                   </>
                 ) : (
-                  <>Quà hôm nay đã sẵn sàng — chạm để mở! 🎁</>
+                  <>Chạm để xem <strong>lời chúc / tiến độ</strong> từ Fami 🎁</>
                 )}
               </span>
             </button>
@@ -359,7 +376,11 @@ export function KidHomeHub(props: Props) {
       </section>
 
       {/* Fami đang chờ — khích lệ + sticker */}
-      <aside className={`khub-wait is-${waitMode}`} aria-label="Fami đang chờ con">
+      <aside
+        className={`khub-wait is-${waitMode}`}
+        aria-label="Fami đang chờ con"
+        data-khub-wait={waitMode}
+      >
         <div className="khub-wait-fami" aria-hidden>
           <img
             className="khub-wait-fami-img"
@@ -390,25 +411,16 @@ export function KidHomeHub(props: Props) {
             </>
           ) : waitMode === 'sticker' ? (
             <>
-              <p className="khub-wait-line">Con vừa làm rất tốt 💚</p>
-              <p className="khub-wait-ask">
-                Con muốn gửi {props.parentRole} một sticker không?
+              <p className="khub-wait-line">
+                {props.preferStickers && props.primaryParentVoice
+                  ? `${(props.primaryParentVoice.fromMemberName || props.parentRole).trim()} vừa khen con 💚`
+                  : 'Con vừa làm rất tốt 💚'}
               </p>
-              <div className="khub-sticker-row" role="group" aria-label="Chọn sticker">
-                {STICKERS.map((s, i) => (
-                  <button
-                    key={s}
-                    type="button"
-                    className="khub-sticker"
-                    style={{ animationDelay: `${i * 0.12}s` }}
-                    disabled={props.thanksSending}
-                    onClick={() => props.onSendSticker(s)}
-                    aria-label={`Gửi sticker ${s}`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
+              <p className="khub-wait-ask">
+                {props.preferStickers
+                  ? `Gửi ${props.parentRole} một sticker cảm ơn nhé!`
+                  : `Con muốn gửi ${props.parentRole} một sticker không?`}
+              </p>
               {props.thanksSending ? (
                 <p className="khub-wait-sending" role="status">
                   Đang gửi tới {props.parentRole}…
@@ -427,6 +439,23 @@ export function KidHomeHub(props: Props) {
             </>
           )}
         </div>
+
+        {waitMode === 'sticker' ? (
+          <div className="khub-sticker-row" role="group" aria-label="Chọn sticker">
+            {STICKERS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                className="khub-sticker"
+                disabled={props.thanksSending}
+                onClick={() => props.onSendSticker(s)}
+                aria-label={`Gửi sticker ${s}`}
+              >
+                <span aria-hidden>{s}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
       </aside>
 
       {/* Thành tích của con */}
@@ -441,7 +470,12 @@ export function KidHomeHub(props: Props) {
         </div>
 
         <div className="khub-ach-grid">
-          <article className="khub-ach-card tone-fire">
+          <button
+            type="button"
+            className="khub-ach-card tone-fire"
+            onClick={props.onOpenStreak}
+            aria-label="Xem chuỗi ngày tốt"
+          >
             <span className="khub-ach-ico" aria-hidden>
               🔥
             </span>
@@ -457,22 +491,32 @@ export function KidHomeHub(props: Props) {
                 </span>
               ))}
             </div>
-          </article>
+          </button>
 
-          <article className="khub-ach-card tone-level">
+          <button
+            type="button"
+            className="khub-ach-card tone-level"
+            onClick={props.onOpenLevel}
+            aria-label={`Xem cấp độ ${props.explorerLevel}`}
+          >
             <span className="khub-ach-shield" aria-hidden>
               {props.explorerLevel}
             </span>
             <p className="khub-ach-label">
-              <strong>Level {props.explorerLevel}</strong>
-              <em>Tiến gần Level {nextLevel}</em>
+              <strong>Cấp độ {props.explorerLevel}</strong>
+              <em>Tiến gần cấp {nextLevel}</em>
             </p>
             <div className="khub-ach-bar" aria-hidden>
               <b style={{ width: `${levelPct}%` }} />
             </div>
-          </article>
+          </button>
 
-          <article className={`khub-ach-card tone-badge${props.badgeUnlocked ? ' is-won' : ''}`}>
+          <button
+            type="button"
+            className={`khub-ach-card tone-badge${props.badgeUnlocked ? ' is-won' : ''}`}
+            onClick={props.onOpenAchievements}
+            aria-label="Xem huy hiệu"
+          >
             <span className="khub-ach-ico" aria-hidden>
               🏅
             </span>
@@ -484,7 +528,7 @@ export function KidHomeHub(props: Props) {
                 {props.badgeUnlocked ? 'Đã đạt được' : 'Sắp mở khóa'}
               </em>
             </p>
-          </article>
+          </button>
         </div>
       </section>
 
@@ -533,21 +577,30 @@ export function KidHomeHub(props: Props) {
               <p>Khi {props.parentRole} khen con, khoảnh khắc sẽ hiện ở đây!</p>
             </div>
             <button type="button" className="khub-moment-cta" onClick={props.onOpenMoments}>
-              <span aria-hidden>📷</span> Nhật ký
+              <span aria-hidden>📖</span> Nhật ký
             </button>
           </article>
         )}
       </section>
+
+      <button type="button" className="khub-ask-chip" onClick={props.onOpenAsk}>
+        <span aria-hidden>🙋</span>
+        <span>
+          <strong>Xin {props.parentRole} giúp</strong>
+          <em>Đề xuất việc hoặc xin thêm phút</em>
+        </span>
+        <span aria-hidden>›</span>
+      </button>
 
       {/* Điều bất ngờ — không phải ngày nào cũng có */}
       {showSurprise ? (
         <button type="button" className="khub-surprise" onClick={props.onOpenSurprise}>
           <span aria-hidden>🎁</span>
           <span>
-            <strong>Fami có một điều bất ngờ</strong>
-            <em>Mở ra xem thử nhé</em>
+            <strong>Fami có lời chúc cho con</strong>
+            <em>Xem tiến độ hoặc lời chúc nhé</em>
           </span>
-          <i>Mở</i>
+          <i>Xem</i>
         </button>
       ) : null}
     </div>

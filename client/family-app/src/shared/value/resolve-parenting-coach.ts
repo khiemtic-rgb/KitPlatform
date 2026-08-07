@@ -314,7 +314,7 @@ function tipFromLocalFallback(input: {
 
 /**
  * P0b: server coach-insight (+ Twin evening / behavior coach) = SoT.
- * Local Foxy heuristic only if server tips missing.
+ * Local Famixa heuristic only if server tips missing.
  * Wave B: always annotate with Blueprint DNA when present.
  * Hard cap: 2 tips.
  */

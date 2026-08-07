@@ -35,7 +35,7 @@ export function FamilyChallengeCard({ familyId, memberId, isParent, compact }: P
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          'Không tải được Challenge.',
+          'Không tải được thử thách.',
       );
     } finally {
       setLoading(false);
@@ -62,7 +62,7 @@ export function FamilyChallengeCard({ familyId, memberId, isParent, compact }: P
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          'Không mở được Challenge.',
+          'Không mở được thử thách.',
       );
     } finally {
       setBusy(false);
@@ -79,7 +79,7 @@ export function FamilyChallengeCard({ familyId, memberId, isParent, compact }: P
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          'Không check-in được.',
+          'Không ghi nhận được.',
       );
     } finally {
       setBusy(false);
@@ -89,7 +89,7 @@ export function FamilyChallengeCard({ familyId, memberId, isParent, compact }: P
   if (loading) {
     return (
       <section className={`fc-card${compact ? ' is-compact' : ''}`}>
-        <p className="muted">Đang tải Challenge…</p>
+        <p className="muted">Đang tải thử thách…</p>
       </section>
     );
   }
@@ -99,12 +99,12 @@ export function FamilyChallengeCard({ familyId, memberId, isParent, compact }: P
     return (
       <section className={`fc-card${compact ? ' is-compact' : ''}`}>
         <header className="fc-head">
-          <h3>Challenge cả nhà</h3>
-          <p className="muted">Bố · Mẹ · Con · Ăn tối cùng → Movie Night</p>
+          <h3>Thử thách cả nhà</h3>
+          <p className="muted">Bố · Mẹ · Con · Ăn tối cùng → mở thưởng xem phim cuối tuần</p>
         </header>
         {error ? <p className="fc-error">{error}</p> : null}
         <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void accept()}>
-          Bắt đầu Challenge tuần này
+          Bắt đầu thử thách tuần này
         </button>
       </section>
     );
@@ -123,7 +123,7 @@ export function FamilyChallengeCard({ familyId, memberId, isParent, compact }: P
           <h3>{challenge.title}</h3>
           <p className="muted">
             {challenge.weekStart} → {challenge.weekEnd} · {challenge.legsComplete}/
-            {challenge.legsTotal} chân · thưởng {challenge.rewardLabel}
+            {challenge.legsTotal} mục · thưởng {challenge.rewardLabel}
           </p>
         </div>
         <strong className="fc-pct">{pct}%</strong>
@@ -137,7 +137,7 @@ export function FamilyChallengeCard({ familyId, memberId, isParent, compact }: P
 
       {done ? (
         <p className="fc-done-msg">
-          Cả nhà đủ chân — mở {challenge.rewardLabel} trên tab Thưởng nhé!
+          Cả nhà đủ mục tuần — mở {challenge.rewardLabel} trên tab Thưởng nhé!
         </p>
       ) : null}
 

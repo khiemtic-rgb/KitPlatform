@@ -551,9 +551,9 @@ const PRAISE_FALLBACK: Array<(short: string, parent: ParentRole) => string> = [
 ];
 
 const STREAK_EMPTY_LATE_NOTES = [
-  'Làm đúng giờ để mở ngày đẹp — Foxy tin con làm được! 💪',
-  'Mai mình thử đúng giờ hơn — Foxy luôn ủng hộ con! 💪',
-  'Giờ giấc sẽ mượt dần thôi — Foxy tin con làm được! 💪',
+  'Làm đúng giờ để mở ngày đẹp — Fami tin con làm được! 💪',
+  'Mai mình thử đúng giờ hơn — Fami luôn ủng hộ con! 💪',
+  'Giờ giấc sẽ mượt dần thôi — Fami tin con làm được! 💪',
 ];
 
 const STREAK_EMPTY_OPEN_NOTES = [
@@ -563,13 +563,13 @@ const STREAK_EMPTY_OPEN_NOTES = [
 ];
 
 const STREAK_EMPTY_FRESH_NOTES = [
-  'Bắt đầu từ hôm nay — Foxy ở cạnh cổ vũ! 💪',
+  'Bắt đầu từ hôm nay — Fami ở cạnh cổ vũ! 💪',
   'Hôm nay là ngày mới — mình cùng làm từng bước! 💪',
   'Mỗi ngày một chút — lời khen thật từ bố/mẹ ấm hơn! 💪',
 ];
 
 const STREAK_ACTIVE_NOTES: Array<(short: string) => string> = [
-  (short) => `Giữ vững nha ${short}! Foxy cổ vũ con! 💪`,
+  (short) => `Giữ vững nha ${short}! Fami cổ vũ con! 💪`,
   (short) => `${short} đang làm rất tốt — tiếp tục nha! 🔥`,
   (short) => `Chuỗi đang đẹp lắm ${short} — báo bố/mẹ nghe nhé! 🌟`,
 ];
@@ -596,12 +596,12 @@ function lateCelebrateHeadlines(parent: ParentRole): string[] {
 const ON_TIME_CELEBRATE_SUBLINES: Array<(title: string) => string> = [
   (title) => `«${title}» xong — cả nhà gần đích hơn!`,
   (title) => `«${title}» xong rồi — nhớ kể bố/mẹ nghe nhé!`,
-  (title) => `Foxy ghi nhận «${title}» — lời khen thật từ bố/mẹ ấm hơn.`,
+  (title) => `Fami ghi nhận «${title}» — lời khen thật từ bố/mẹ ấm hơn.`,
 ];
 
 const LATE_CELEBRATE_SUBLINES: Array<(title: string) => string> = [
   (title) => `«${title}» xong rồi — lần sau đúng giờ hơn nhé!`,
-  (title) => `Con đã cố với «${title}» — Foxy đứng cạnh cổ vũ!`,
+  (title) => `Con đã cố với «${title}» — Fami đứng cạnh cổ vũ!`,
   (title) => `«${title}» hoàn thành — mai mình sớm hơn nha!`,
 ];
 
@@ -779,7 +779,7 @@ function taskTip(title: string): string {
   if (t.includes('đọc') || t.includes('sách')) return 'Thời gian đọc sách thú vị!';
   if (t.includes('ăn')) return 'Ăn ngon để có sức khỏe nhé!';
   if (t.includes('mặc') || t.includes('đồng phục')) return 'Mặc gọn gàng thật đẹp!';
-  return 'Cố lên — Foxy tin con làm được!';
+  return 'Cố lên — Fami tin con làm được!';
 }
 
 function commitmentStars(item: DayFlowCommitment): number {
@@ -1244,8 +1244,11 @@ export function KidFocusView({
   const [redeemBusyId, setRedeemBusyId] = useState<string | null>(null);
   const [treasureSheet, setTreasureSheet] = useState<'rewards' | 'badges' | null>(null);
   const [journalSheet, setJournalSheet] = useState<'memories' | 'moments' | null>(null);
+  const [loveLetterId, setLoveLetterId] = useState<string | null>(null);
   const [diaryDayPickerOpen, setDiaryDayPickerOpen] = useState(false);
   const [achievementSheet, setAchievementSheet] = useState<AchievementSheet>(null);
+  const [promoSheet, setPromoSheet] = useState<'mystery' | 'surprise' | null>(null);
+  const [homePreferStickers, setHomePreferStickers] = useState(false);
   const [memoryFilter, setMemoryFilter] = useState<KidMemoryFilter>('all');
   const [savedMemories, setSavedMemories] = useState<FamilyMemoryEntry[]>([]);
   const [movieRemindBusy, setMovieRemindBusy] = useState(false);
@@ -1266,6 +1269,24 @@ export function KidFocusView({
   useEffect(() => {
     setLocalStars(starBalance);
   }, [starBalance]);
+
+  useEffect(() => {
+    if (!homePreferStickers || tab !== 'home' || homePane !== 'hub') return;
+    let cancelled = false;
+    const tryScroll = () => {
+      if (cancelled) return;
+      document
+        .querySelector('[data-khub-wait="sticker"]')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+    const t0 = window.setTimeout(tryScroll, 50);
+    const t1 = window.setTimeout(tryScroll, 280);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t0);
+      window.clearTimeout(t1);
+    };
+  }, [homePreferStickers, tab, homePane]);
 
   useEffect(() => {
     if (!familyId || !childMemberId) {
@@ -1358,6 +1379,12 @@ export function KidFocusView({
     const t = window.setTimeout(() => setCheerToast(null), 2800);
     return () => window.clearTimeout(t);
   }, [cheerToast]);
+
+  useEffect(() => {
+    if (!journalToast) return;
+    const t = window.setTimeout(() => setJournalToast(null), 2800);
+    return () => window.clearTimeout(t);
+  }, [journalToast]);
 
   const meNudgeCand = useMemo(
     () => nudgeCandidates.find((c) => c.memberId === childMemberId) ?? null,
@@ -1652,6 +1679,7 @@ export function KidFocusView({
       !treasureSheet &&
       !journalSheet &&
       !achievementSheet &&
+      !promoSheet &&
       !active &&
       !weekReviewOpen &&
       !diaryDayPickerOpen
@@ -1661,6 +1689,7 @@ export function KidFocusView({
       if (e.key !== 'Escape') return;
       if (diaryDayPickerOpen) setDiaryDayPickerOpen(false);
       else if (weekReviewOpen) setWeekReviewOpen(false);
+      else if (promoSheet) setPromoSheet(null);
       else if (achievementSheet) setAchievementSheet(null);
       else if (treasureSheet) setTreasureSheet(null);
       else if (journalSheet) setJournalSheet(null);
@@ -1672,6 +1701,7 @@ export function KidFocusView({
     treasureSheet,
     journalSheet,
     achievementSheet,
+    promoSheet,
     active,
     weekReviewOpen,
     diaryDayPickerOpen,
@@ -2014,8 +2044,8 @@ export function KidFocusView({
       } else {
         const Parent = capitalizeParentRole(parentRole);
         const movieNight = [
-          `${Parent} rất vui vì ${short} đang giúp cả nhà mở Movie Night! ❤️`,
-          `${short} đang giúp cả nhà gần Movie Night hơn — ${parentRole} tự hào! 🎬`,
+          `${Parent} rất vui vì ${short} đang giúp cả nhà mở Đêm xem phim! ❤️`,
+          `${short} đang giúp cả nhà gần Đêm xem phim hơn — ${parentRole} tự hào! 🎬`,
         ];
         picks.push(stablePick(`${flowDate}:${short}:movie`, movieNight));
       }
@@ -2132,7 +2162,7 @@ export function KidFocusView({
           : result?.evidenceGateLabelVi ??
             (item.commitmentKind === 'study_focus'
               ? result?.evidenceSubmitted || item.evidenceUrl
-                ? 'Đã nộp ảnh — chờ bố mẹ xác nhận bài hôm nay'
+                ? 'Đã nộp ảnh — chờ bố mẹ xem bài hôm nay'
                 : 'Đã ghi — chờ bằng chứng để nhận sao'
               : result?.starLabelVi),
       });
@@ -2217,7 +2247,7 @@ export function KidFocusView({
           : result?.evidenceGateLabelVi ??
             (active.commitmentKind === 'study_focus'
               ? result?.evidenceSubmitted || active.evidenceUrl || url
-                ? 'Đã nộp ảnh — chờ bố mẹ xác nhận bài hôm nay'
+                ? 'Đã nộp ảnh — chờ bố mẹ xem bài hôm nay'
                 : 'Đã ghi — chờ bằng chứng để nhận sao'
               : result?.starLabelVi),
       });
@@ -2334,7 +2364,7 @@ export function KidFocusView({
       sameDay.find((u) => u.status === 'pending_confirm' || u.status === 'confirmed') ??
       sameDay[0];
     const label = hit?.labelVi?.trim();
-    if (label && isMovieNightUnlock(hit!)) return 'Movie Night';
+    if (label && isMovieNightUnlock(hit!)) return 'Đêm xem phim';
     if (label) return label;
     return 'Phần thưởng nhóm';
   }, [teamUnlocks, flowDate]);
@@ -2428,7 +2458,7 @@ export function KidFocusView({
       rows.push({
         id: 'mn',
         icon: '🎬',
-        title: 'Movie Night',
+        title: 'Đêm xem phim',
         value: `${movieTimes} lần`,
         note: 'Đêm xem phim cả nhà — đã mở!',
       });
@@ -2463,7 +2493,7 @@ export function KidFocusView({
       rows.push({
         id: 'stars',
         icon: '⭐',
-        title: 'Sao · Foxy',
+        title: 'Sao · Fami',
         value: formatStars(stars),
         note: `${starBalanceNote(stars)} · bạn thân của ${short}`,
       });
@@ -2500,7 +2530,7 @@ export function KidFocusView({
       setLocalStars(result.balance);
       onStarBalanceChange?.(result.balance);
       setRedemptions((prev) => [result.redemption, ...prev.filter((r) => r.id !== result.redemption.id)]);
-      showTreasureToast(`Đã đổi «${item.title}» — nhờ bố mẹ xác nhận nhé! ⭐`);
+      showTreasureToast(`Đã đổi «${item.title}» — nhờ bố mẹ xem giúp nhé! ⭐`);
     } catch (err) {
       const msg =
         err && typeof err === 'object' && 'response' in err
@@ -2548,11 +2578,11 @@ export function KidFocusView({
       await createChildRequest(familyId, {
         memberId: childMemberId,
         kind: 'movie_night',
-        titleVi: 'Nhắc bố/mẹ tổ chức lại Movie Night',
+        titleVi: 'Nhắc bố/mẹ tổ chức lại Đêm xem phim',
         reasonNote: `${short} muốn cả nhà xem phim lại.`,
         flowDate: flowDate || undefined,
       });
-      showTreasureToast(`Đã nhắc ${parentRole} tổ chức lại Movie Night!`);
+      showTreasureToast(`Đã nhắc ${parentRole} tổ chức lại Đêm xem phim!`);
       closeAchievementSheet();
       setAskReloadTick((n) => n + 1);
     } catch (err) {
@@ -2822,6 +2852,41 @@ export function KidFocusView({
     parentRole,
   ]);
 
+  const speakJournalStory = () => {
+    const text = journalStoryParagraphs.join(' ').replace(/\s+/g, ' ').trim();
+    if (!text) {
+      showJournalToast('Chưa có câu chuyện để đọc.');
+      return;
+    }
+    try {
+      const synth = window.speechSynthesis;
+      if (!synth) {
+        showJournalToast('Máy này chưa nghe được — con đọc chữ trên màn hình nhé.');
+        return;
+      }
+      synth.cancel();
+      const utter = new SpeechSynthesisUtterance(text.slice(0, 600));
+      utter.lang = 'vi-VN';
+      utter.rate = 0.92;
+      utter.onstart = () => showJournalToast('Fami đang đọc chuyện… 🔊');
+      utter.onerror = () =>
+        showJournalToast('Chưa đọc được — con xem câu chuyện trên màn hình nhé.');
+      synth.speak(utter);
+    } catch {
+      showJournalToast('Chưa đọc được — con xem câu chuyện trên màn hình nhé.');
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      try {
+        window.speechSynthesis?.cancel();
+      } catch {
+        /* ignore */
+      }
+    };
+  }, []);
+
   /** Day timeline for diary — chronological highlights */
   const journalMilestones = useMemo(() => {
     type Row = {
@@ -2902,7 +2967,7 @@ export function KidFocusView({
   const memoryFilterChips = useMemo(() => {
     const chips: Array<[KidMemoryFilter, string]> = [
       ['all', 'Tất cả'],
-      ['team_unlock', 'Movie Night'],
+      ['team_unlock', 'Đêm xem phim'],
     ];
     if (parentVoiceAlbum.length > 0) chips.push(['parent_voice', 'Lời bố mẹ']);
     if (kidMomentsToday.length > 0) chips.push(['kid_moment', 'Khoảnh khắc']);
@@ -2978,17 +3043,43 @@ export function KidFocusView({
     [familyMemories],
   );
 
-  const journalFeatureMoments = useMemo(
-    () =>
-      familyMemories.slice(0, 5).map((m) => ({
-        id: m.id,
-        icon: m.icon,
-        title: m.title,
-        date: m.date,
-        caption: m.pending ? 'Chờ bố mẹ xác nhận' : 'Kỷ niệm gia đình',
-      })),
-    [familyMemories],
-  );
+  const journalFeatureMoments = useMemo(() => {
+    const fromKid = kidMomentsToday.map((m) => ({
+      id: m.id,
+      icon: '📷',
+      title: m.titleVi || 'Khoảnh khắc của con',
+      date: (m.happenedAt || m.flowDate || '').slice(11, 16) || 'Hôm nay',
+      caption: 'Khoảnh khắc con gửi hôm nay',
+    }));
+    const fromEvidence = journalEntries
+      .filter((e) => Boolean(e.item.evidenceUrl))
+      .slice(0, 6)
+      .map((e) => ({
+        id: `ev-${e.item.id}`,
+        icon: taskIcon(e.item.title),
+        title: e.item.title,
+        date: e.time || 'Hôm nay',
+        caption: e.done
+          ? 'Ảnh việc đã làm'
+          : e.item.starPosted === false || e.item.evidenceSatisfied === false
+            ? 'Chờ bố mẹ xem'
+            : 'Ảnh việc đã làm',
+      }));
+    const seen = new Set<string>();
+    const merged: Array<{
+      id: string;
+      icon: string;
+      title: string;
+      date: string;
+      caption: string;
+    }> = [];
+    for (const row of [...fromKid, ...fromEvidence]) {
+      if (seen.has(row.id)) continue;
+      seen.add(row.id);
+      merged.push(row);
+    }
+    return merged.slice(0, 8);
+  }, [kidMomentsToday, journalEntries]);
 
   const treasureMemoriesVisible = journalMemoriesVisible;
 
@@ -3105,7 +3196,7 @@ export function KidFocusView({
     if (ev.kind === 'scroll_missions') {
       setTab('tasks');
       window.requestAnimationFrame(() => {
-        document.querySelector('.kv2-missions')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.querySelector('.kplan')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     }
   };
@@ -3155,7 +3246,7 @@ export function KidFocusView({
       );
     }
     if (kidPrimaryTrigger?.code === 'parent_voice_inbox') {
-      return `${kidPrimaryTrigger.titleVi} — Famixa chỉ chuyển lời, không nói thay.`;
+      return `${kidPrimaryTrigger.titleVi} — Fami chỉ chuyển lời, không nói thay.`;
     }
     if (kidPrimaryTrigger && isCheerSiblingTrigger(kidPrimaryTrigger.code)) {
       return kidPrimaryTrigger.titleVi;
@@ -3167,7 +3258,7 @@ export function KidFocusView({
       doNowItems[0] ?? items.find((c) => c.status !== 'done' && c.status !== 'skipped');
     if (hot?.motivationCueVi) return hot.motivationCueVi;
     if (hot?.reminderSuppressed || hot?.interventionLevel === 'observe_only') {
-      return `Foxy tin ${short} tự làm được — ít nhắc hơn hôm nay.`;
+      return `Fami tin ${short} tự làm được — ít nhắc hơn hôm nay.`;
     }
     return foxySpeech;
   }, [
@@ -3270,6 +3361,7 @@ export function KidFocusView({
         praiseContext: `Sticker ${emoji} từ ${short}`,
       });
       setThanksSent(true);
+      setHomePreferStickers(false);
       {
         const Parent = capitalizeParentRole(parentRole);
         setTreasureToast(
@@ -3412,17 +3504,7 @@ export function KidFocusView({
           </div>
         </div>
 
-        {tab === 'tasks' ? (
-          <button
-            type="button"
-            className="kv2-switch kv2-gift"
-            aria-label="Phần thưởng"
-            title="Phần thưởng"
-            onClick={() => setTab('rewards')}
-          >
-            <span aria-hidden>🎁</span>
-          </button>
-        ) : tab === 'rewards' ? (
+        {tab === 'rewards' ? (
           <button
             type="button"
             className="kv2-switch kv2-gear"
@@ -3451,12 +3533,24 @@ export function KidFocusView({
             <span aria-hidden>⭐</span>
             <strong>{formatStars(stars)}</strong>
           </span>
-          {tab === 'rewards' ? (
+          {tab !== 'rewards' ? (
+            <button
+              type="button"
+              className="kv2-pill kv2-treasure-pill"
+              title="Mở kho báu"
+              aria-label="Kho báu"
+              onClick={() => setTab('rewards')}
+            >
+              <span aria-hidden>🎁</span>
+              <strong>Kho báu</strong>
+            </button>
+          ) : (
             <span className="kv2-pill kv2-level" title="Quà bí mật từ Fami">
               <span aria-hidden>🎁</span>
               <strong>Quà bí mật</strong>
             </span>
-          ) : tab === 'log' ? (
+          )}
+          {tab === 'log' ? (
             <button
               type="button"
               className="kv2-pill kv2-streak"
@@ -3472,7 +3566,7 @@ export function KidFocusView({
                   : selectedJournalDay.shortLabel.replace(/^.*?(\d{2}\/\d{2}).*$/, '$1')}
               </strong>
             </button>
-          ) : tab === 'tasks' ? null : (
+          ) : tab === 'home' || tab === 'family' ? (
             <span
               className="kv2-pill kv2-movie-mini"
               title={`Kế hoạch nhóm hôm nay: ${unlockPct}%`}
@@ -3483,7 +3577,7 @@ export function KidFocusView({
               </i>
               <strong>{unlockPct}%</strong>
             </span>
-          )}
+          ) : null}
         </div>
       </header>
 
@@ -3603,14 +3697,26 @@ export function KidFocusView({
                 openAction(item);
               }}
               onOpenAchievements={() => openTreasureSheet('badges')}
+              onOpenStreak={() => openHomePane('streak')}
+              onOpenLevel={() => setTab('rewards')}
+              preferStickers={homePreferStickers}
               onSendSticker={(emoji) => void sendThanksSticker(emoji)}
-              onOpenMoments={() => setTab('log')}
-              onOpenSurprise={() => setTab('rewards')}
+              onOpenMoments={() => {
+                setTab('log');
+                openJournalSheet('moments');
+              }}
+              onOpenSurprise={() => {
+                setTab('rewards');
+                setPromoSheet('surprise');
+              }}
+              onOpenAsk={() => openHomePane('ask')}
               onAckVoiceThanks={() => {
                 if (primaryParentVoice) {
-                  void ackVoiceMessage(primaryParentVoice.id, 'thanks');
+                  setLoveLetterId(primaryParentVoice.id);
+                  if (primaryParentVoice.status === 'sent') {
+                    void ackVoiceMessage(primaryParentVoice.id, 'read');
+                  }
                 }
-                setTab('log');
               }}
               momentPreview={(() => {
                 const photo =
@@ -3673,7 +3779,7 @@ export function KidFocusView({
                   <span className="kv2-mom" aria-hidden>
                     🦊
                   </span>
-                  <span>Foxy kể</span>
+                  <span>Fami kể</span>
                   <button
                     type="button"
                     className={`kv2-thanks${thanksSent ? ' is-sent' : ''}`}
@@ -3830,7 +3936,7 @@ export function KidFocusView({
             <div className="kv2-home-drill">
               <article className="kv2-praise">
                 <p className="kv2-section-label">
-                  <span aria-hidden>🙋</span> XIN {parentRole.toUpperCase()}
+                  <span aria-hidden>🙋</span> Xin {parentRole} giúp
                 </p>
                 <p className="kv2-ask-lead">
                   Chọn một việc — {parentRole} sẽ nhận đề xuất và trả lời.
@@ -3854,7 +3960,7 @@ export function KidFocusView({
                       <>
                         <strong>Phút màn hình theo thỏa thuận nhà</strong>
                         <p>
-                          Famixa không khóa máy. Xin thêm phút → {parentRole} duyệt trong hộp thư.
+                          Fami không khóa máy. Xin thêm phút → {parentRole} xem trong hộp thư.
                         </p>
                       </>
                     )}
@@ -3931,8 +4037,6 @@ export function KidFocusView({
           uploading={uploading}
           missionDoneError={missionDoneError}
           famiLine={tasksFoxyBannerVi(short, careBand, doNowItems.length, remaining)}
-          challengeHave={Math.min(10, Math.max(0, streak + doneCount))}
-          challengeNeed={10}
           challengeSlot={
             familyId && childMemberId ? (
               <FamilyChallengeCard
@@ -3978,7 +4082,7 @@ export function KidFocusView({
             openAction(nextMission);
           }}
           onOpenRewards={() => setTab('rewards')}
-          onTalkFami={() => setTab('home')}
+          onTalkFami={() => setFamiSheetOpen(true)}
           onStartItem={(item) => {
             if (studyNeedsEvidence(item)) {
               beginEvidencePick(item);
@@ -4023,6 +4127,7 @@ export function KidFocusView({
           wishText={kidVoiceWish}
           wishStep={kidVoiceDone ? 4 : kidVoiceWish.trim() ? 1 : 0}
           wishStepTotal={4}
+          wishDone={kidVoiceDone}
           onContinue={() => setTab('tasks')}
           onRedeem={(item) =>
             void handleRedeem(item as (typeof redeemCatalog)[number])
@@ -4035,23 +4140,10 @@ export function KidFocusView({
             else if (id === 'read') openAchievementSheet('read');
             else openTreasureSheet('rewards');
           }}
+          onOpenAllAchievements={() => openJournalSheet('memories')}
           onOpenMemories={() => openJournalSheet('memories')}
-          onOpenMystery={() => {
-            if (mysteryPct >= 100) {
-              showTreasureToast('Fami mở hộp bí mật… có thể là sticker, thư mẹ hoặc video! 🎁');
-              return;
-            }
-            showTreasureToast(
-              `Còn ${Math.max(0, mysteryTarget - mysteryHave)} điểm khám phá nữa — không phải mua, là mở dần! ✨`,
-            );
-          }}
-          onOpenSurprise={() => {
-            if (remaining === 0 || streak >= 2) {
-              showTreasureToast('Fami gửi lời chúc bất ngờ — con làm tốt lắm! 💜');
-              return;
-            }
-            showTreasureToast('Làm nốt việc hôm nay để Fami mở quà bất ngờ nhé!');
-          }}
+          onOpenMystery={() => setPromoSheet('mystery')}
+          onOpenSurprise={() => setPromoSheet('surprise')}
           onWishQuick={(text) => setKidVoiceWish(text)}
           wishSlot={
             childMemberId ? (
@@ -4261,31 +4353,36 @@ export function KidFocusView({
           moodLoaded={moodLoaded}
           moodSaving={moodSaving}
           canSaveMood={Boolean(childMemberId)}
+          moodNote={moodNote}
           onPickDay={setJournalDayIdx}
           onPrevDay={() => setJournalDayIdx((i) => Math.max(0, i - 1))}
           onNextDay={() =>
             setJournalDayIdx((i) => Math.min(journalDays.length - 1, i + 1))
           }
-          onListenStory={() =>
-            setJournalToast(
-              journalIsToday
-                ? 'Fami đang kể lại câu chuyện hôm nay 💚'
-                : 'Fami đang kể lại ngày này 💚',
-            )
-          }
+          onListenStory={() => speakJournalStory()}
           onOpenMoments={() => openJournalSheet('moments')}
           onAddMoment={() => setKidMomentSheetOpen(true)}
           onOpenPrides={() => setTab('rewards')}
           onOpenLoves={() => openJournalSheet('memories', 'parent_voice')}
-          onOpenTimeline={() => {
-            document
-              .querySelector('.kdiary-dayline')
-              ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          }}
+          onOpenTimeline={() => setTab('tasks')}
           onOpenMemories={() => openJournalSheet('memories')}
           onMoodPick={setMoodIdx}
+          onMoodNoteChange={setMoodNote}
           onSaveMood={() => void saveMoodEntry()}
-          onPlayLove={(id) => void ackVoiceMessage(id, 'thanks')}
+          famiMoodTip={
+            remaining > 0
+              ? `Hôm nay còn ${remaining} việc — kể Fami nghe cảm xúc thật của con trước khi nghỉ cũng được.`
+              : doneCount > 0
+                ? 'Một ngày nhiều cố gắng — chọn mặt cười gần nhất với con nhất nhé.'
+                : 'Không có đáp án đúng/sai. Fami chỉ muốn lắng nghe con.'
+          }
+          onPlayLove={(id) => {
+            const voice = parentVoiceInbox.find((v) => v.id === id);
+            setLoveLetterId(id);
+            if (voice && voice.status === 'sent') {
+              void ackVoiceMessage(id, 'read');
+            }
+          }}
           footerSlot={
             softLockActive ? (
               <button type="button" className="pill" onClick={onOpenParentPin}>
@@ -4373,7 +4470,9 @@ export function KidFocusView({
           }))}
           onDoSuggestion={() => {
             if (primaryParentVoice) {
-              void ackVoiceMessage(primaryParentVoice.id, 'thanks');
+              setHomePreferStickers(true);
+              setTab('home');
+              setHomePane('hub');
               return;
             }
             setTab('tasks');
@@ -4386,7 +4485,13 @@ export function KidFocusView({
           onOpenRewards={() => setTab('rewards')}
           onOpenPlan={() => setTab('tasks')}
           onPlayLove={() => {
-            if (primaryParentVoice) void ackVoiceMessage(primaryParentVoice.id, 'read');
+            if (primaryParentVoice) {
+              setLoveLetterId(primaryParentVoice.id);
+              if (primaryParentVoice.status === 'sent') {
+                void ackVoiceMessage(primaryParentVoice.id, 'read');
+              }
+              return;
+            }
             setTab('log');
           }}
           footerSlot={
@@ -4497,6 +4602,16 @@ export function KidFocusView({
                 onClick={() => {
                   setFamiSheetOpen(false);
                   setTab('home');
+                  openHomePane('ask');
+                }}
+              >
+                <span aria-hidden>🙋</span> Xin {parentRole} giúp
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFamiSheetOpen(false);
+                  setTab('home');
                   if (nextMission) openAction(nextMission);
                 }}
               >
@@ -4507,6 +4622,7 @@ export function KidFocusView({
                 onClick={() => {
                   setFamiSheetOpen(false);
                   setTab('log');
+                  window.setTimeout(() => speakJournalStory(), 120);
                 }}
               >
                 <span aria-hidden>📖</span> Nghe Fami kể chuyện
@@ -4518,7 +4634,7 @@ export function KidFocusView({
                   setTab('rewards');
                 }}
               >
-                <span aria-hidden>🎁</span> Kho báu / Quà bí mật
+                <span aria-hidden>🎁</span> Mở Kho báu
               </button>
               <button
                 type="button"
@@ -4534,9 +4650,13 @@ export function KidFocusView({
                 onClick={() => {
                   setFamiSheetOpen(false);
                   if (primaryParentVoice) {
-                    void ackVoiceMessage(primaryParentVoice.id, 'read');
+                    setLoveLetterId(primaryParentVoice.id);
+                    if (primaryParentVoice.status === 'sent') {
+                      void ackVoiceMessage(primaryParentVoice.id, 'read');
+                    }
                   } else {
                     setTab('log');
+                    setJournalToast('Chưa có thư — khi bố mẹ gửi, con đọc ở Nhật ký nhé.');
                   }
                 }}
               >
@@ -4650,7 +4770,7 @@ export function KidFocusView({
             aria-modal="true"
             aria-label={
               achievementSheet === 'movie'
-                ? 'Movie Night'
+                ? 'Đêm xem phim'
                 : achievementSheet === 'garden'
                   ? 'Khu vườn'
                   : 'Đọc sách'
@@ -4660,12 +4780,12 @@ export function KidFocusView({
             {achievementSheet === 'movie' ? (
               <>
                 <h2>
-                  <span aria-hidden>🎬</span> Movie Night
+                  <span aria-hidden>🎬</span> Đêm xem phim
                 </h2>
                 <p className="muted">
                   {confirmedMovieUnlocks.length > 0
                     ? `Cả nhà đã mở ${confirmedMovieUnlocks.length} lần — xem lại bên dưới.`
-                    : 'Chưa mở Movie Night — giữ kế hoạch nhóm để mở lần đầu.'}
+                    : 'Chưa mở Đêm xem phim — giữ kế hoạch nhóm để mở lần đầu.'}
                 </p>
                 <div className="kv2-j-sheet-list">
                   {confirmedMovieUnlocks.length === 0 ? (
@@ -4675,7 +4795,7 @@ export function KidFocusView({
                       <article key={u.id} className="kv2-j-sheet-card">
                         <span aria-hidden>🍿</span>
                         <div>
-                          <strong>{u.labelVi || 'Movie Night'}</strong>
+                          <strong>{u.labelVi || 'Đêm xem phim'}</strong>
                           <em>{formatMemoryDate(u.confirmedAt || u.flowDate)}</em>
                         </div>
                       </article>
@@ -4701,7 +4821,7 @@ export function KidFocusView({
                       openJournalSheet('memories', 'team_unlock');
                     }}
                   >
-                    Xem kỷ niệm Movie Night
+                    Xem kỷ niệm Đêm xem phim
                   </button>
                   <button type="button" className="pill is-soft" onClick={closeAchievementSheet}>
                     Đóng
@@ -4715,7 +4835,7 @@ export function KidFocusView({
                   <span aria-hidden>🌱</span> Khu vườn của {short}
                 </h2>
                 <p className="muted">
-                  Plot hôm nay chơi theo ngày. Các lần vườn nở lưu trong kỷ niệm.
+                  Vườn hôm nay chơi theo ngày. Các lần nở hoa được lưu trong kỷ niệm.
                 </p>
                 <div className="kv2-j-sheet-list">
                   {gardenBloomHistory.length === 0 ? (
@@ -4787,6 +4907,94 @@ export function KidFocusView({
                 </div>
               </>
             ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {promoSheet ? (
+        <div
+          className="sheet-backdrop kv2-action-sheet kv2-t-sheet-backdrop"
+          role="presentation"
+          onPointerDown={handleBackdropPointerDown}
+          onClick={(e) => {
+            if (e.target !== e.currentTarget || !backdropPointerDown.current) return;
+            setPromoSheet(null);
+          }}
+        >
+          <div
+            className="sheet kv2-t-sheet kv2-promo-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label={promoSheet === 'mystery' ? 'Hộp quà bí mật' : 'Quà từ Fami'}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {promoSheet === 'mystery' ? (
+              <>
+                <h2>
+                  <span aria-hidden>❓</span> Hộp quà bí mật
+                </h2>
+                <p className="muted">
+                  {mysteryPct >= 100
+                    ? `Đủ ${mysteryTarget} điểm khám phá — Fami đã ghi nhận! Phần thưởng do bố mẹ mở cùng con.`
+                    : `Tiến độ: ${mysteryHave}/${mysteryTarget} điểm khám phá. Còn ${Math.max(0, mysteryTarget - mysteryHave)} điểm nữa nhé.`}
+                </p>
+                <div className="kv2-promo-bar" aria-hidden>
+                  <b style={{ width: `${Math.min(100, mysteryPct)}%` }} />
+                </div>
+                <p className="kv2-promo-note">
+                  {mysteryPct >= 100
+                    ? 'Không tự mở trong app — nhờ bố/mẹ cùng mở khi sẵn sàng.'
+                    : 'Làm việc tốt mỗi ngày để tích điểm — Fami không hứa quà giả.'}
+                </p>
+              </>
+            ) : (
+              <>
+                <h2>
+                  <span aria-hidden>🎁</span> Quà từ Fami
+                </h2>
+                <p className="muted">
+                  {remaining === 0 || streak >= 2
+                    ? 'Fami gửi lời chúc: con làm tốt lắm hôm nay! 💜'
+                    : `Tiến độ: còn ${remaining} việc hôm nay (hoặc giữ chuỗi ngày tốt ≥ 2).`}
+                </p>
+                <div className="kv2-promo-bar" aria-hidden>
+                  <b
+                    style={{
+                      width: `${
+                        remaining === 0 || streak >= 2
+                          ? 100
+                          : Math.min(
+                              99,
+                              Math.round(
+                                (Math.max(0, total - remaining) / Math.max(total, 1)) * 100,
+                              ),
+                            )
+                      }%`,
+                    }}
+                  />
+                </div>
+                <p className="kv2-promo-note">
+                  {remaining === 0 || streak >= 2
+                    ? 'Đây là lời chúc từ Fami — món quà thật do bố mẹ giữ.'
+                    : 'Xong việc hôm nay hoặc giữ chuỗi ngày tốt để Fami gửi lời chúc.'}
+                </p>
+              </>
+            )}
+            <div className="kv2-achieve-actions">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  setPromoSheet(null);
+                  setTab('rewards');
+                }}
+              >
+                Về Kho báu
+              </button>
+              <button type="button" className="pill is-soft" onClick={() => setPromoSheet(null)}>
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
@@ -4916,7 +5124,9 @@ export function KidFocusView({
             ) : (
               <div className="kv2-j-sheet-list">
                 {journalFeatureMoments.length === 0 ? (
-                  <p className="muted">{FAMILY_MEMORY_EMPTY}</p>
+                  <p className="muted">
+                    Chưa có khoảnh khắc hôm nay — thêm ảnh hoặc hoàn thành việc có ảnh sẽ hiện ở đây.
+                  </p>
                 ) : (
                   journalFeatureMoments.map((m) => (
                     <article key={m.id} className="kv2-j-sheet-card is-moment">
@@ -4939,6 +5149,63 @@ export function KidFocusView({
           </div>
         </div>
       ) : null}
+
+      {loveLetterId ? (() => {
+        const letter = parentVoiceInbox.find((v) => v.id === loveLetterId);
+        const from = (letter?.fromMemberName || parentRole).trim();
+        const lower = from.toLowerCase();
+        const isDad = lower.includes('bố') || lower.includes('bo');
+        const isMom = lower.includes('mẹ') || lower.includes('me');
+        return (
+          <div
+            className="sheet-backdrop kv2-action-sheet kv2-t-sheet-backdrop"
+            role="presentation"
+            onClick={() => setLoveLetterId(null)}
+          >
+            <div
+              className={`sheet kv2-t-sheet kdiary-love-sheet${isDad ? ' is-dad' : isMom ? ' is-mom' : ''}`}
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Lời từ ${from}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="kdiary-love-sheet-eyebrow" aria-hidden>
+                {isDad ? '💙' : '💗'} Lời yêu thương
+              </p>
+              <h2>{from} gửi cho {short}</h2>
+              <blockquote className="kdiary-love-sheet-body">
+                {letter?.bodyVi?.trim() || 'Fami chưa đọc được nội dung lời này.'}
+              </blockquote>
+              <em className="kdiary-love-sheet-when">
+                {letter?.sentAt
+                  ? `Hôm nay ${letter.sentAt.slice(11, 16)}`
+                  : letter?.flowDate || 'Gần đây'}
+              </em>
+              <div className="kdiary-love-sheet-actions">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={voiceAckBusy === loveLetterId}
+                  onClick={() => {
+                    void ackVoiceMessage(loveLetterId, 'thanks');
+                    setLoveLetterId(null);
+                    setJournalToast(`Đã gửi cảm ơn ${from}!`);
+                  }}
+                >
+                  Cảm ơn {isDad ? 'bố' : isMom ? 'mẹ' : from} 💚
+                </button>
+                <button
+                  type="button"
+                  className="pill is-soft"
+                  onClick={() => setLoveLetterId(null)}
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })() : null}
 
       {treasureSheet ? (
         <div
@@ -5042,7 +5309,7 @@ export function KidFocusView({
             aria-label={active.title}
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="kh-cue-mini">Cùng giúp Foxy nào</p>
+            <p className="kh-cue-mini">Cùng làm với Fami nào</p>
             <h2>
               <span aria-hidden>{taskIcon(active.title)}</span> {active.title}
             </h2>
@@ -5059,7 +5326,7 @@ export function KidFocusView({
             ) : null}
             {studyNeedsEvidence(active) ? (
               <p className="kv2-study-hint">
-                📚 Ảnh chỉ là nộp bài — bố mẹ xác nhận (đúng bài hôm nay) mới được sao
+                📚 Ảnh chỉ là nộp bài — bố mẹ xem (đúng bài hôm nay) mới có sao
               </p>
             ) : null}
             {!askReason ? (
@@ -5090,8 +5357,8 @@ export function KidFocusView({
                   <p className="muted" style={{ margin: 0, fontSize: 13 }}>
                     {studyNeedsEvidence(active)
                       ? active.evidencePolicy === 'hard'
-                        ? 'Chế độ cứng: bắt buộc ảnh + xác nhận bố mẹ.'
-                        : 'Gửi ảnh để bố mẹ kiểm «bài hôm nay». Soft: tick được nhưng sao chờ xác nhận.'
+                        ? 'Việc này cần ảnh — bố mẹ xem xong mới có sao.'
+                        : 'Gửi ảnh để bố mẹ kiểm bài hôm nay. Có thể tick trước, sao chờ bố mẹ xem.'
                       : 'Tuỳ chọn — chụp hoặc chọn ảnh từ thư viện để bố mẹ xem.'}
                   </p>
                 )}

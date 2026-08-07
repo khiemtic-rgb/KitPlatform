@@ -3617,7 +3617,7 @@ function mapWeeklyMirror(raw: unknown): FamilyWeeklyInsight['mirror'] {
         challengeId: String(id),
         title: String(c.title ?? c.Title ?? ''),
         status: String(c.status ?? c.Status ?? ''),
-        rewardLabel: String(c.rewardLabel ?? c.RewardLabel ?? 'Movie Night'),
+        rewardLabel: String(c.rewardLabel ?? c.RewardLabel ?? 'Đêm xem phim'),
         legsComplete: Number(c.legsComplete ?? c.LegsComplete ?? 0),
         legsTotal: Number(c.legsTotal ?? c.LegsTotal ?? 0),
       };
@@ -4309,7 +4309,7 @@ function mapChallenge(r: Row): FamilyChallenge {
     status: String(r.status ?? r.Status ?? ''),
     title: String(r.title ?? r.Title ?? ''),
     rewardCode: String(r.rewardCode ?? r.RewardCode ?? ''),
-    rewardLabel: String(r.rewardLabel ?? r.RewardLabel ?? 'Movie Night'),
+    rewardLabel: String(r.rewardLabel ?? r.RewardLabel ?? 'Đêm xem phim'),
     acceptedBy: acceptedBy != null ? String(acceptedBy) : undefined,
     completedAt: completedAt != null ? String(completedAt) : undefined,
     unlockId: unlockId != null ? String(unlockId) : undefined,

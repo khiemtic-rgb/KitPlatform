@@ -157,7 +157,7 @@ export function buildTransformationReport(input: {
     },
     {
       id: 'moments',
-      label: 'Ngày đẹp / Movie Night',
+      label: 'Ngày đẹp / Đêm xem phim',
       before: Math.max(0, Math.floor(beautifulDays / 3)),
       after: movieNights,
       deltaLabel: `${movieNights} lần chất lượng`,
@@ -177,7 +177,7 @@ export function buildTransformationReport(input: {
   if (nudgeDropPct >= 15) outcomesHit.push('Số lần phải nhắc con đã giảm rõ.');
   if (autoDelta >= 8) outcomesHit.push('Tỷ lệ tự giác hoàn thành đã tăng.');
   if (movieNights >= 1 || momentCountToday > 0) {
-    outcomesHit.push('Gia đình có thêm thời gian chất lượng (Movie Night / khoảnh khắc chung).');
+    outcomesHit.push('Gia đình có thêm thời gian chất lượng (Đêm xem phim / khoảnh khắc chung).');
   }
   if (outcomesHit.length === 0) {
     outcomesHit.push('Đang thu thập dữ liệu — dùng đủ 14–30 ngày để thấy 3 kết quả đo được.');

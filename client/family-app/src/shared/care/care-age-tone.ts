@@ -60,7 +60,7 @@ export function livingFoxyForBand(
   if (remaining === 0 && teamRemaining > 0) {
     return teen
       ? `${shortName} xong phần mình. Đội còn ${teamRemaining} việc — có muốn cổ vũ anh/chị em?`
-      : `${shortName} xong phần mình rồi! Cả đội còn ${teamRemaining} việc — Foxy cổ vũ cả nhà!`;
+      : `${shortName} xong phần mình rồi! Cả đội còn ${teamRemaining} việc — Fami cổ vũ cả nhà!`;
   }
   if (remaining === 0) {
     return teen
@@ -102,7 +102,7 @@ export function tasksFoxyBannerVi(
   if (doNowCount > 0) {
     return teen
       ? `Còn ${doNowCount} việc cần làm ngay.`
-      : `${shortName} ơi, còn ${doNowCount} việc cần làm ngay — Foxy cổ vũ con! 💪`;
+      : `${shortName} ơi, còn ${doNowCount} việc cần làm ngay — Fami cổ vũ con! 💪`;
   }
   if (remaining > 0) {
     return teen
@@ -130,7 +130,7 @@ export function homeDoneEmptyCopyVi(
       ? `Đội còn ${teamRemaining} việc — phần của bạn đã xong.`
       : `Cả đội còn ${teamRemaining} việc — con đã giúp cả nhà rất nhiều.`;
   }
-  return teen ? 'Hôm nay bạn đã giữ nhịp tốt.' : 'Foxy ôm bạn cái! Nghỉ ngơi vui vẻ nhé.';
+  return teen ? 'Hôm nay bạn đã giữ nhịp tốt.' : 'Fami ôm bạn cái! Nghỉ ngơi vui vẻ nhé.';
 }
 
 export function cheerPreviewAudienceVi(band: CareAgeBand, targetShort: string): string {

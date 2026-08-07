@@ -101,7 +101,7 @@ export function TodayFlowPage() {
       const n = st.onboardingAdded ?? 0;
       setOnboardBanner(
         n > 0
-          ? `Foxy đã gắn ${n} việc starter cho ${st.onboardingChild}. Theo dõi Health Score 30 ngày tới nhé!`
+          ? `Famixa đã gắn ${n} việc khởi đầu cho ${st.onboardingChild}. Theo dõi điểm sức khỏe gia đình 30 ngày tới nhé!`
           : `Hồ sơ onboarding của ${st.onboardingChild} đã sẵn sàng. Các việc trùng tên đã được giữ nguyên.`,
       );
       navigate(location.pathname, { replace: true, state: null });
@@ -526,7 +526,7 @@ export function TodayFlowPage() {
           <div>{onboardBanner}</div>
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>
             Việc mới gắn vào routine — Day Flow hôm nay nếu đã mở sẽ giữ cam kết cũ; từ ngày
-            mai (hoặc sau khi reset ngày) sẽ thấy đủ starter.
+            mai (hoặc sau khi reset ngày) sẽ thấy đủ việc khởi đầu.
           </p>
           <button type="button" className="pill is-soft" onClick={() => setOnboardBanner(null)}>
             Đã hiểu
@@ -617,7 +617,7 @@ export function TodayFlowPage() {
         title="Mã bố mẹ"
         hint={
           softLockActive
-            ? 'Soft-lock đang bật — nhập 4 số để mở khóa / đổi người'
+            ? 'Nhà đang tạm khóa nhẹ — nhập 4 số để mở / đổi người'
             : 'Nhập 4 số để chuyển sang bố mẹ / chọn người'
         }
         verify={verifyParentPin}

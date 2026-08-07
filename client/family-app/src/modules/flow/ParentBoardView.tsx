@@ -1668,7 +1668,7 @@ export function ParentBoardView({
   const scopedTotal = scopedCommitments.length;
   const percent =
     scopedTotal > 0 ? Math.round((scopedDone / scopedTotal) * 100) : 0;
-  /** Movie Night progress is team unlock %, not today's per-child task %. */
+  /** Đêm xem phim progress is team unlock %, not today's per-child task %. */
   const moviePct = Math.max(
     0,
     Math.min(100, todayUnlock?.teamPercent ?? percent),
@@ -2416,7 +2416,7 @@ export function ParentBoardView({
                 ? `Chu kỳ · ${calendarRoutine.periodKind}`
                 : 'Đang áp dụng',
               metaVi: calendarRoutine.routineDisplayName
-                ? `Routine: ${calendarRoutine.routineDisplayName}`
+                ? `Thói quen: ${calendarRoutine.routineDisplayName}`
                 : undefined,
             },
           ]
@@ -2831,7 +2831,7 @@ export function ParentBoardView({
         {
           id: todayUnlock.id,
           icon: '🍿',
-          title: todayUnlock.labelVi || 'Movie Night',
+          title: todayUnlock.labelVi || 'Đêm xem phim',
           pct: moviePct,
           locked: false,
         },
@@ -2854,7 +2854,7 @@ export function ParentBoardView({
       rows.push({
         id: 'a1',
         icon: '🎬',
-        title: 'Movie Night',
+        title: 'Đêm xem phim',
         value: `${movieTimes} lần`,
       });
     }
@@ -2878,7 +2878,7 @@ export function ParentBoardView({
       rows.push({
         id: 'a4',
         icon: '⭐',
-        title: 'Sao · Foxy',
+        title: 'Sao tích lũy',
         value: `${rewardPoints.toLocaleString('vi-VN')} — ${starBalanceNote(rewardPoints)}`,
       });
     }
@@ -4026,9 +4026,9 @@ export function ParentBoardView({
               ) : null}
 
               {todayUnlock ? (
-                <section className="ph-b4-challenge" aria-label="Challenge đang diễn ra">
+                <section className="ph-b4-challenge" aria-label="Thử thách đang diễn ra">
                   <header className="ph-b4-col-head">
-                    <h3>CHALLENGE ĐANG DIỄN RA</h3>
+                    <h3>THỬ THÁCH ĐANG DIỄN RA</h3>
                   </header>
                   <button
                     type="button"
@@ -4038,7 +4038,7 @@ export function ParentBoardView({
                     <span className="ph-b4-challenge-pop" aria-hidden>
                       🍿
                     </span>
-                    <strong>{todayUnlock.labelVi || 'Movie Night'}</strong>
+                    <strong>{todayUnlock.labelVi || 'Đêm xem phim'}</strong>
                     <p>Cùng xem phim và thưởng thức cuối tuần cùng gia đình!</p>
                     <em>
                       {todayUnlock.teamDone}/{Math.max(todayUnlock.teamTotal, 1)} thành viên
@@ -4136,7 +4136,7 @@ export function ParentBoardView({
               <i className="is-pink" aria-hidden>
                 <IconTrophy size={18} />
               </i>
-              Challenge
+              Thử thách
             </button>
           </nav>
         </div>
@@ -4356,7 +4356,7 @@ export function ParentBoardView({
               ‹
             </button>
             <div className="ph-challenge-titles">
-              <h1>Challenge &amp; mục tiêu</h1>
+              <h1>Thử thách &amp; mục tiêu</h1>
               <p>Thử thách tuần · mục tiêu bố mẹ làm gương</p>
             </div>
           </header>
@@ -4374,7 +4374,7 @@ export function ParentBoardView({
               />
             </div>
           ) : (
-            <p className="ph-empty-soft">Cần hồ sơ bố/mẹ để mở Challenge.</p>
+            <p className="ph-empty-soft">Cần hồ sơ bố/mẹ để mở thử thách.</p>
           )}
           <p className="ph-challenge-hint">
             Đổi sao / quà ở{' '}
@@ -4412,7 +4412,7 @@ export function ParentBoardView({
                   : 'Chưa có con trong nhà'}
                 {' · '}
                 <button type="button" className="ph-text-link" onClick={() => setTab('challenge')}>
-                  Challenge →
+                  Thử thách →
                 </button>
               </p>
             </div>
@@ -4442,7 +4442,7 @@ export function ParentBoardView({
                 <em>{hasChildren ? `Sao của ${treasureShort}` : 'Sao của nhà'}</em>
               </div>
               <p className="ph-treasure-level">
-                <span aria-hidden>👑</span> Level {treasureLevel} · Explorer
+                <span aria-hidden>👑</span> Cấp {treasureLevel} · Nhà khám phá
               </p>
               <div className="ph-treasure-xp">
                 <i aria-hidden>
@@ -4450,7 +4450,7 @@ export function ParentBoardView({
                 </i>
               </div>
               <span className="ph-treasure-xp-label">
-                {treasureXpHave.toLocaleString('vi-VN')} / 3.000 sao để lên level tiếp
+                {treasureXpHave.toLocaleString('vi-VN')} / 3.000 sao để lên cấp tiếp
               </span>
             </div>
             <div className="ph-treasure-badge" aria-hidden>
@@ -4482,7 +4482,7 @@ export function ParentBoardView({
                 🍿
               </div>
               <div className="ph-treasure-family-copy">
-                <strong>{todayUnlock?.labelVi ?? 'Movie Night'}</strong>
+                <strong>{todayUnlock?.labelVi ?? 'Đêm xem phim'}</strong>
                 <p>Cả nhà cùng xem phim yêu thích</p>
                 <div className="ph-treasure-family-bar">
                   <i aria-hidden>
@@ -4524,7 +4524,7 @@ export function ParentBoardView({
                   </div>
                 ) : (
                   <p className="muted ph-treasure-detail-note">
-                    Tiến độ Movie Night: {moviePct}%
+                    Tiến độ Đêm xem phim: {moviePct}%
                     {todayUnlock?.status === 'confirmed' ? ' — đã mở thưởng!' : ''}
                   </p>
                 )}
@@ -4716,7 +4716,7 @@ export function ParentBoardView({
             </header>
             {bigAchievements.length === 0 ? (
               <p className="muted" style={{ margin: '4px 0 0', fontSize: '0.85rem' }}>
-                Chưa có thành tựu — khi mở Movie Night, đọc sách hoặc tích sao sẽ hiện ở đây.
+                Chưa có thành tựu — khi mở Đêm xem phim, đọc sách hoặc tích sao sẽ hiện ở đây.
               </p>
             ) : (
               <div className="ph-treasure-achieve">

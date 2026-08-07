@@ -22,10 +22,10 @@ export type FamilyMemory = {
   filterKind?: string;
 };
 
-/** UI chip "Movie Night" maps to this filter value (legacy id kept for sheet state). */
+/** UI chip "Đêm xem phim" maps to this filter value (legacy id kept for sheet state). */
 export type KidMemoryFilter = 'all' | 'team_unlock' | 'parent_voice' | 'beautiful_day' | 'kid_moment';
 
-/** True only for Movie Night — not High-five / sibling combo / other team unlocks. */
+/** True only for Đêm xem phim — not High-five / sibling combo / other team unlocks. */
 export function isMovieNightMemoryText(
   title: string,
   _icon?: string | null,
@@ -246,7 +246,7 @@ export function buildFamilyMemories(opts: {
     if (u.status === 'deferred') continue;
     const at = u.confirmedAt ?? `${u.flowDate}T12:00:00`;
     const pending = u.status === 'pending_confirm';
-    const label = u.labelVi || 'Movie Night';
+    const label = u.labelVi || 'Đêm xem phim';
     const title =
       voice === 'kid'
         ? pending
@@ -334,4 +334,4 @@ export function pickDistinctMemories(items: FamilyMemory[], limit: number): Fami
 }
 
 export const FAMILY_MEMORY_EMPTY =
-  'Chưa có kỷ niệm — khi nhà làm Movie Night, đổi quà hoặc có ngày đẹp sẽ hiện ở đây';
+  'Chưa có kỷ niệm — khi nhà mở Đêm xem phim, đổi quà hoặc có ngày đẹp sẽ hiện ở đây';

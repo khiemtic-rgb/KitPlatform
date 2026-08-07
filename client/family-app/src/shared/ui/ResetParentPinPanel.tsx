@@ -154,7 +154,7 @@ export function ResetParentPinPanel() {
           <span className="muted">4 số · trên máy này</span>
         </div>
         <p className="muted screen-bound-body">
-          Dùng khi đổi người, soft-lock, hoặc đăng xuất thiết bị. Không lưu trên server.
+          Dùng khi đổi người, khóa nhẹ, hoặc đăng xuất thiết bị. Không lưu trên server.
         </p>
         {step === 'done' ? (
           <p className="muted" style={{ margin: '0 0 8px', color: 'var(--brand)' }}>

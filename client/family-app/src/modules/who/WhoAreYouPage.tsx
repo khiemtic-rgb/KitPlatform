@@ -480,7 +480,7 @@ export function WhoAreYouPage() {
           <div className="home-v2-challenge-copy">
             <p className="home-v2-challenge-kicker">Family Challenge</p>
             <h2>
-              {unlock.labelVi || 'Movie Night'} <span aria-hidden>🍿</span>
+              {unlock.labelVi || 'Đêm xem phim'} <span aria-hidden>🍿</span>
             </h2>
             <p>
               {unlock.teamDone}/{Math.max(unlock.teamTotal, 1)} thành viên ·{' '}

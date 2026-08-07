@@ -700,7 +700,7 @@ export function ParentHomeStoryBody(props: Props) {
             <span className="phs-metric-visual is-trophy" aria-hidden>
               <span className="phs-metric-glyph">🏆</span>
             </span>
-            <span className="phs-metric-label">Challenge</span>
+            <span className="phs-metric-label">Thử thách</span>
             <em className="phs-metric-desc">
               {props.todayUnlock
                 ? props.todayUnlock.labelVi || 'Thử thách đang mở'
@@ -712,7 +712,7 @@ export function ParentHomeStoryBody(props: Props) {
             <span className="phs-metric-visual is-routine" aria-hidden>
               <span className="phs-metric-routine" />
             </span>
-            <span className="phs-metric-label">Routine</span>
+            <span className="phs-metric-label">Thói quen</span>
             <em className="phs-metric-desc">
               {props.rituals[0]
                 ? `${props.rituals[0].labelVi}${

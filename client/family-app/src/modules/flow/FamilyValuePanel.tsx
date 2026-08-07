@@ -464,7 +464,7 @@ export function FamilyValuePanel({
     } catch (err: unknown) {
       if (isCapabilityPaywallError(err)) {
         openUpgrade(
-          'Evening check-in có trong Peace Plan — nâng gói để Famixa học nhịp nhà.',
+          'Gửi nhịp tối có trong Peace Plan — nâng gói để Famixa học nhịp nhà.',
         );
       } else {
         setCheckinMsg('Chưa lưu được — thử lại nhé.');
@@ -532,10 +532,10 @@ export function FamilyValuePanel({
     hubRows.push({
       view: 'rop',
       icon: '📘',
-      title: 'Growth Report · ROP',
+      title: 'Báo cáo tăng trưởng · ROP',
       hint:
         report.growthScore != null
-          ? `Growth ${report.growthScore}/100 · ${report.daySpan} ngày`
+          ? `Tăng trưởng ${report.growthScore}/100 · ${report.daySpan} ngày`
           : `${report.daySpan} ngày · tăng trưởng bố mẹ`,
       locked: false,
     });
@@ -543,7 +543,7 @@ export function FamilyValuePanel({
     hubRows.push({
       view: 'rop',
       icon: '📘',
-      title: 'Growth Report · ROP',
+      title: 'Báo cáo tăng trưởng · ROP',
       hint: 'Đo bớt nhắc / con chủ động hơn',
       locked: true,
     });
@@ -552,7 +552,7 @@ export function FamilyValuePanel({
     hubRows.push({
       view: 'letter',
       icon: '💌',
-      title: `Letter · ${aiLetter.monthLabelVi}`,
+      title: `Thư tháng · ${aiLetter.monthLabelVi}`,
       hint: 'Thư tháng cho bố mẹ',
       locked: false,
     });
@@ -560,7 +560,7 @@ export function FamilyValuePanel({
     hubRows.push({
       view: 'letter',
       icon: '💌',
-      title: 'Letter tháng',
+      title: 'Thư tháng Famixa',
       hint: 'Thư tháng cho bố mẹ',
       locked: true,
     });
@@ -569,7 +569,7 @@ export function FamilyValuePanel({
     hubRows.push({
       view: 'replay',
       icon: '🎬',
-      title: 'Family Replay',
+      title: 'Xem lại tháng',
       hint: `${replay.scenes.length} cảnh kỷ niệm tháng`,
       locked: false,
     });
@@ -577,8 +577,8 @@ export function FamilyValuePanel({
     hubRows.push({
       view: 'replay',
       icon: '🎬',
-      title: 'Family Replay',
-      hint: 'Replay chữ kỷ niệm tháng',
+      title: 'Xem lại tháng',
+      hint: 'Kỷ niệm tháng bằng chữ',
       locked: true,
     });
   }
@@ -603,7 +603,7 @@ export function FamilyValuePanel({
     hubRows.push({
       view: 'recognition',
       icon: '🌟',
-      title: 'Wins & Ghi nhận bố mẹ',
+      title: 'Ghi nhận & lời khen bố mẹ',
       hint: winsDigest?.headlineVi || 'Ghi nhận nhẹ · không xếp hạng',
       locked: false,
     });
@@ -615,7 +615,7 @@ export function FamilyValuePanel({
         <>
           <section className="fv-hero" id="fv-health">
             <p className="fv-eyebrow">
-              KPI cốt lõi{health.fromServer ? ' · đo từ dữ liệu thật' : ''}
+              Chỉ số cốt lõi{health.fromServer ? ' · đo từ dữ liệu thật' : ''}
             </p>
             <div className="fv-hero-main">
               <div className="fv-hero-score">
@@ -623,7 +623,7 @@ export function FamilyValuePanel({
                 <span>/100</span>
               </div>
               <div className="fv-hero-copy">
-                <h2>Family Health Score</h2>
+                <h2>Điểm sức khỏe gia đình</h2>
                 <p className="fv-hero-label">{health.label}</p>
                 {health.deltaVsYesterday != null ? (
                   <p className="fv-delta">
@@ -647,7 +647,7 @@ export function FamilyValuePanel({
                   [
                     ['Hoàn thành', health.breakdown.completion],
                     ['Ít phải nhắc', health.breakdown.nudgeCalm],
-                    ['Streak', health.breakdown.streak],
+                    ['Chuỗi ngày', health.breakdown.streak],
                     ['Tự giác đúng giờ', health.breakdown.autonomy],
                     ...(health.breakdown.parentProgress != null
                       ? ([['Bố mẹ cùng làm', health.breakdown.parentProgress]] as const)
@@ -1007,7 +1007,7 @@ export function FamilyValuePanel({
             <p>Có trong Family Peace Plan</p>
           </header>
           <p className="fv-promise">
-            Growth Report đo “bớt nhắc / con chủ động hơn” — không mở trên Free/Plus.
+            Báo cáo tăng trưởng đo “bớt nhắc / con chủ động hơn” — không mở trên Free/Plus.
           </p>
           <div className="fv-actions">
             <button
@@ -1016,7 +1016,7 @@ export function FamilyValuePanel({
               onClick={() =>
                 openUpgrade(
                   subscription?.upgradeHintVi ||
-                    'Nâng Family Peace Plan để mở Growth Report (ROP).',
+                    'Nâng Family Peace Plan để mở báo cáo tăng trưởng (ROP).',
                 )
               }
             >
@@ -1053,7 +1053,7 @@ export function FamilyValuePanel({
                     ? `${Math.round(serverWeekly.mirror.child.completionRate * 100)}% routine`
                     : 'chưa có dữ liệu'}
                   {serverWeekly.mirror.child.bestStreakDays > 0
-                    ? ` · streak ${serverWeekly.mirror.child.bestStreakDays} ngày`
+                    ? ` · chuỗi ${serverWeekly.mirror.child.bestStreakDays} ngày`
                     : ''}
                 </em>
               </article>
@@ -1089,7 +1089,7 @@ export function FamilyValuePanel({
                 </strong>
                 <em>
                   {serverWeekly.mirror.challenge
-                    ? `Challenge · ${serverWeekly.mirror.challenge.rewardLabel}`
+                    ? `Thử thách · ${serverWeekly.mirror.challenge.rewardLabel}`
                     : serverWeekly.mirror.household.remindersTracked
                       ? `${serverWeekly.mirror.household.reminderCount} lần nhắc trong kỳ`
                       : 'chưa theo dõi nhắc'}
@@ -1136,7 +1136,7 @@ export function FamilyValuePanel({
                       {m.completionRate != null ? ` · ${Math.round(m.completionRate * 100)}%` : ''}
                     </strong>
                     <em>
-                      streak {m.currentStreakDays} ngày · {m.starsEarned} sao
+                      chuỗi {m.currentStreakDays} ngày · {m.starsEarned} sao
                     </em>
                   </article>
                 ))}
@@ -1326,7 +1326,7 @@ export function FamilyValuePanel({
       {view === 'recognition' && winsDigest ? (
         <section className="fv-card" id="fv-ai-wins">
           <header className="fv-head">
-            <h2>Famixa · Wins</h2>
+            <h2>Famixa · Ghi nhận tuần</h2>
             <p>{winsDigest.subheadVi || 'Khoảnh khắc đáng nhớ · từ Family Memory'}</p>
           </header>
           <p className="fv-promise">{winsDigest.headlineVi}</p>
@@ -1351,7 +1351,7 @@ export function FamilyValuePanel({
       {view === 'letter' && aiLetter ? (
         <section className="fv-card" id="fv-ai-letter">
           <header className="fv-head">
-            <h2>Famixa · Letter · {aiLetter.monthLabelVi}</h2>
+            <h2>Famixa · Thư tháng · {aiLetter.monthLabelVi}</h2>
             <p>Thư tháng cho bố mẹ — screenshot-worthy</p>
           </header>
           <p className="fv-label">{aiLetter.greetingVi}</p>
@@ -1392,14 +1392,14 @@ export function FamilyValuePanel({
                 void shareOrCopyNudge(formatFamilyAiLetterShare(aiLetter), { preferShare: true })
               }
             >
-              Chia sẻ Letter
+              Chia sẻ thư tháng
             </button>
           </div>
         </section>
       ) : view === 'letter' && letterBlocked ? (
         <section className="fv-card fv-teaser" id="fv-ai-letter">
           <header className="fv-head">
-            <h2>Famixa · Letter</h2>
+            <h2>Famixa · Thư tháng</h2>
             <p>Có trong Family Peace Plan</p>
           </header>
           <p className="fv-promise">Thư tháng cho bố mẹ — mở khi nâng Peace Plan.</p>
@@ -1407,7 +1407,7 @@ export function FamilyValuePanel({
             <button
               type="button"
               className="pill"
-              onClick={() => openUpgrade('Nâng Peace Plan để mở AI Letter hàng tháng.')}
+              onClick={() => openUpgrade('Nâng Peace Plan để mở thư tháng AI cho bố mẹ.')}
             >
               Xem Peace Plan · 199.000đ
             </button>
@@ -1459,15 +1459,15 @@ export function FamilyValuePanel({
       ) : view === 'replay' && replayBlocked ? (
         <section className="fv-card fv-teaser" id="fv-replay">
           <header className="fv-head">
-            <h2>Family Replay</h2>
+            <h2>Xem lại tháng</h2>
             <p>Có trong Family Peace Plan</p>
           </header>
-          <p className="fv-promise">Replay chữ tháng — mở khi nâng Peace Plan.</p>
+          <p className="fv-promise">Kỷ niệm tháng bằng chữ — mở khi nâng Peace Plan.</p>
           <div className="fv-actions">
             <button
               type="button"
               className="pill"
-              onClick={() => openUpgrade('Nâng Peace Plan để mở Family Replay.')}
+              onClick={() => openUpgrade('Nâng Peace Plan để mở xem lại tháng.')}
             >
               Xem Peace Plan · 199.000đ
             </button>

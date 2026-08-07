@@ -113,7 +113,7 @@ function struggleAdvice(
         insight: voicePick(seed + ':i', [
           `Hôm nay pattern đánh răng của ${who} lại hiện — đúng điểm khó trong hồ sơ nhà mình.`,
           `${who} đang kẹt ở đánh răng; đây là việc “nhỏ nhưng hay thành cuộc chiến”.`,
-          `Foxy thấy đánh răng đang nóng với ${who} — đừng mở rộng sang việc khác trước.`,
+          `Famixa thấy đánh răng đang nóng với ${who} — đừng mở rộng sang việc khác trước.`,
         ]),
         doThis: voicePick(seed + ':d', [
           'Đặt bàn chải gần giường; neo “xuống giường là đánh răng”; nhắc tối đa 1 lần.',
@@ -163,7 +163,7 @@ function struggleAdvice(
         ]),
         doThis: voicePick(seed + ':d', [
           'Thỏa thuận “xong việc rồi mới mở”; tắt màn hình trước ngủ 30 phút.',
-          'Nhắc một lần + dùng soft-lock đã thỏa thuận — không cãi qua lại.',
+          'Nhắc một lần + dùng khóa nhẹ đã thỏa thuận — không cãi qua lại.',
         ]),
         avoid: voicePick(seed + ':a', [
           'Đừng cấm đột ngột không báo trước — dùng thỏa thuận nhà.',
@@ -290,7 +290,7 @@ export function buildParentingCoach(input: {
       insight: voicePick(`${date}:hot:i:${hot.id}`, [
         `${who} đang kẹt ở «${hot.title}» — ưu tiên một việc này trước, đừng mở cả list.`,
         `Việc nóng hôm nay là «${hot.title}». Xử lý xong rồi hãy nhìn việc khác.`,
-        `Foxy thấy «${hot.title}» đang kéo năng lượng nhà mình — một lời nhắc nhẹ là đủ.`,
+        `Famixa thấy «${hot.title}» đang kéo năng lượng nhà mình — một lời nhắc nhẹ là đủ.`,
       ]),
       doThis: voicePick(`${date}:hot:d:${hot.id}`, [
         'Nhắc nhẹ một lần trên app, rồi dừng. Khi xong: khen cụ thể.',
@@ -368,10 +368,10 @@ export function buildParentingCoach(input: {
       insight: voicePick(`${date}:done:i:${streak}`, [
         `${who} vừa hoàn thành nhịp ngày — lúc củng cố, không phải lúc soi lỗi.`,
         `Ngày sạch việc! Chuỗi ${streak || 1} ngày — đây là tiến bộ đáng giữ.`,
-        `Foxy thấy nhà mình xong việc mà ít căng. Ghi nhận khoảnh khắc này.`,
+        `Famixa thấy nhà mình xong việc mà ít căng. Ghi nhận khoảnh khắc này.`,
       ]),
       doThis: voicePick(`${date}:done:d`, [
-        'Một lời khen cụ thể + lưu kỷ niệm. Movie Night nếu cả nhà sẵn sàng.',
+        'Một lời khen cụ thể + lưu kỷ niệm. Đêm xem phim nếu cả nhà sẵn sàng.',
         'Hỏi “hôm nay con tự hào điều gì nhất?” — 1 phút cũng đủ ấm.',
         'Không giao thêm việc. Chỉ khen + ở bên.',
       ]),
@@ -401,7 +401,7 @@ export function buildParentingCoach(input: {
     insight: voicePick(`${date}:calm:i:${goal ?? 'na'}`, [
       goal === 'more_autonomy'
         ? `${who} đang có không gian tự giác — giữ khoảng cách can thiệp.`
-        : `Foxy chưa thấy việc nóng — lúc giữ thói quen, không mở rộng checklist.`,
+        : `Famixa chưa thấy việc nóng — lúc giữ thói quen, không mở rộng checklist.`,
       `Ngày đang êm. Đây là lúc ${who} luyện tự chủ, không phải lúc “quản lý thêm”.`,
       isFamilyScope && weekNudge <= 3
         ? `Tuần này nhắc khá ít (~${weekNudge}) — nhà mình đang đi đúng hướng.`
@@ -411,7 +411,7 @@ export function buildParentingCoach(input: {
     ]),
     doThis: voicePick(`${date}:calm:d:${goal ?? 'na'}`, [
       goal === 'quality_time'
-        ? 'Chọn 10 phút đọc/kể chuyện hoặc Movie Night nếu đủ điều kiện mở khóa.'
+        ? 'Chọn 10 phút đọc/kể chuyện hoặc Đêm xem phim nếu đủ điều kiện mở khóa.'
         : 'Giữ 1 neo cố định (đánh răng hoặc cặp). Chỉ can thiệp khi quá giờ.',
       `Khen một việc ${who} đã làm tốt hôm nay — cụ thể, không chung chung.`,
       'Nếu rảnh: lưu một kỷ niệm ngắn. Không cần thêm việc mới.',
@@ -443,7 +443,7 @@ export function buildParentingCoachFaqs(input: {
     },
     {
       id: 'why',
-      question: 'Foxy kết luận dựa trên gì?',
+      question: 'Famixa kết luận dựa trên gì?',
       answer: `${advice.basedOn} Độ tin cậy ~${advice.confidence}%.`,
     },
     {
@@ -481,7 +481,7 @@ export function buildParentingCoachFaqs(input: {
 
 export function formatCoachShare(advice: ParentingCoachAdvice): string {
   return [
-    '🦊 Famixa Family Coach',
+    '🤖 Famixa Family Coach',
     advice.childProfile,
     '',
     `Dựa trên: ${advice.basedOn}`,

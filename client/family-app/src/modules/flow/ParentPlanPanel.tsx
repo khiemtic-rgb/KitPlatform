@@ -250,8 +250,8 @@ export function ParentPlanPanel(props: Props) {
         {(
           [
             { id: 'today' as const, icon: '⭐', label: 'Việc hôm nay' },
-            { id: 'routine' as const, icon: '🔁', label: 'Routine' },
-            { id: 'challenge' as const, icon: '🎯', label: 'Challenge' },
+            { id: 'routine' as const, icon: '🔁', label: 'Thói quen' },
+            { id: 'challenge' as const, icon: '🎯', label: 'Thử thách' },
             { id: 'calendar' as const, icon: '📆', label: 'Lịch gia đình' },
           ] as const
         ).map((g) => (
@@ -422,11 +422,11 @@ export function ParentPlanPanel(props: Props) {
         >
           <summary>
             <div>
-              <strong>Routine hôm nay</strong>
+              <strong>Thói quen hôm nay</strong>
               <em>
                 {props.rituals.length > 0
                   ? `${ritualsDone}/${props.rituals.length} đã hoàn thành`
-                  : 'Chưa có routine'}
+                  : 'Chưa có thói quen'}
               </em>
             </div>
             <span className="pp-acc-meta">
@@ -436,7 +436,7 @@ export function ParentPlanPanel(props: Props) {
           </summary>
           <ul className="pp-soft-list">
             {props.rituals.length === 0 ? (
-              <li className="pp-empty">Mở chế độ nhà để Famixa chỉnh nhịp routine.</li>
+              <li className="pp-empty">Mở chế độ nhà để Famixa chỉnh nhịp thói quen.</li>
             ) : (
               props.rituals.map((r) => (
                 <li key={r.code}>
@@ -479,12 +479,12 @@ export function ParentPlanPanel(props: Props) {
         >
           <summary>
             <div>
-              <strong>Challenge đang tham gia</strong>
+              <strong>Thử thách đang tham gia</strong>
               <em>
                 {(props.challengeRows?.length ?? 0) > 0
                   ? `${props.challengeRows!.length} challenge đang theo dõi`
                   : props.todayUnlock
-                    ? `${props.todayUnlock.labelVi || 'Challenge'} · ${props.todayUnlock.teamPercent}%`
+                    ? `${props.todayUnlock.labelVi || 'Thử thách'} · ${props.todayUnlock.teamPercent}%`
                     : 'Chưa có challenge đang chạy'}
               </em>
             </div>
@@ -496,7 +496,7 @@ export function ParentPlanPanel(props: Props) {
           <div className="pp-challenge">
             {props.todayUnlock ? (
               <>
-                <strong>{props.todayUnlock.labelVi || 'Challenge'}</strong>
+                <strong>{props.todayUnlock.labelVi || 'Thử thách'}</strong>
                 <p>
                   {props.todayUnlock.teamDone}/{Math.max(props.todayUnlock.teamTotal, 1)} thành viên
                 </p>
@@ -524,7 +524,7 @@ export function ParentPlanPanel(props: Props) {
               <p>Chọn hoạt động gia đình để giữ nhịp kết nối.</p>
             ) : null}
             <button type="button" className="pp-row-cta" onClick={props.onOpenChallenge}>
-              Mở Challenge →
+              Mở thử thách →
             </button>
           </div>
         </details>

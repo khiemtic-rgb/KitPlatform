@@ -97,7 +97,7 @@ export function ChildScreenRequestSheet({
         {wallet && wallet.status === 'active' ? (
           <p className="ph-sheet-lead">
             Ví tuần còn <strong>{wallet.remainingMinutes}</strong> phút. Đây là thỏa thuận nhà —
-            Famixa không khóa máy.
+            Fami không khóa máy.
           </p>
         ) : (
           <p className="ph-sheet-lead">

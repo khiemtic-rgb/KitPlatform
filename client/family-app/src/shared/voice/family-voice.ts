@@ -81,7 +81,7 @@ function daySeed(flowDate: string, slot: string): string {
   return `${flowDate}:${slot}`;
 }
 
-/** Foxy strip on parent home — celebrates change, not the same line every day. */
+/** Famixa strip on parent home — celebrates change, not the same line every day. */
 export function buildFoxyNotice(s: ProgressSignals): string {
   const who = s.childShort;
   const parent = s.parentRole;
@@ -111,7 +111,7 @@ export function buildFoxyNotice(s: ProgressSignals): string {
     return voicePick(daySeed(s.flowDate, 'foxy-nudge-high'), [
       `Hôm nay đã nhắc ${s.nudgeToday} lần — hãy chọn 1 việc nóng rồi dừng.`,
       `${s.nudgeToday} lần nhắc rồi. Mỗi lần thêm dễ thành cuộc chiến — ưu tiên một việc.`,
-      `Foxy thấy hơi nhiều lần nhắc (${s.nudgeToday}). Một lời nhẹ + chờ ${who} tự làm.`,
+      `Famixa thấy hơi nhiều lần nhắc (${s.nudgeToday}). Một lời nhẹ + chờ ${who} tự làm.`,
     ]);
   }
 
@@ -127,7 +127,7 @@ export function buildFoxyNotice(s: ProgressSignals): string {
     return voicePick(daySeed(s.flowDate, `foxy-streak-${s.streak}`), [
       `Chuỗi ${s.streak} ngày đẹp — nhà mình đang lớn lên từng ngày.`,
       `${s.streak} ngày giữ nhịp rồi. Đừng phá bằng checklist mới hôm nay.`,
-      `Foxy ghi nhận chuỗi ${s.streak} ngày. Khen cụ thể quan trọng hơn thêm việc.`,
+      `Famixa ghi nhận chuỗi ${s.streak} ngày. Khen cụ thể quan trọng hơn thêm việc.`,
     ]);
   }
 
@@ -148,7 +148,7 @@ export function buildFoxyNotice(s: ProgressSignals): string {
 
   return voicePick(daySeed(s.flowDate, 'foxy-calm'), [
     `Nhịp hôm nay đang ổn. Chỉ can thiệp khi việc quá giờ.`,
-    `Foxy chưa thấy việc nóng — giữ thói quen, đừng mở rộng checklist.`,
+    `Famixa chưa thấy việc nóng — giữ thói quen, đừng mở rộng checklist.`,
     `${who} đang có không gian tự giác. ${parent.charAt(0).toUpperCase()}${parent.slice(1)} đứng lùi một bước cũng là hỗ trợ.`,
   ]);
 }

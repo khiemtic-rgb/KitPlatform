@@ -15,8 +15,6 @@ type Props = {
   missionDoneError: string | null;
   famiLine: string;
   challengeSlot?: ReactNode;
-  challengeHave: number;
-  challengeNeed: number;
   dayPartOf: (item: DayFlowCommitment) => KidPlanDayPart;
   taskIcon: (title: string) => string;
   taskIconTone: (title: string) => string;
@@ -91,7 +89,7 @@ function stepGlyph(m: StepMark): string {
 function stepBadge(m: StepMark): { label: string; tone: string } {
   if (m === 'done') return { label: 'Đã xong', tone: 'done' };
   if (m === 'next') return { label: 'Tiếp theo', tone: 'next' };
-  if (m === 'wait') return { label: 'Chờ xác nhận', tone: 'wait' };
+  if (m === 'wait') return { label: 'Chờ bố mẹ xem', tone: 'wait' };
   return { label: 'Chưa làm', tone: 'todo' };
 }
 
@@ -161,16 +159,6 @@ export function KidPlanHub(props: Props) {
   const togglePart = (key: KidPlanDayPart) => {
     setOpenParts((prev) => ({ ...prev, [key]: !prev[key] }));
   };
-
-  const challengeSlots = props.challengeNeed <= 8 ? Math.max(props.challengeNeed, 1) : 7;
-  const challengeFilled =
-    props.challengeNeed <= 8
-      ? Math.min(challengeSlots, props.challengeHave)
-      : Math.min(
-          challengeSlots,
-          Math.round((props.challengeHave / Math.max(props.challengeNeed, 1)) * challengeSlots),
-        );
-  const challengeComplete = props.challengeHave >= props.challengeNeed && props.challengeNeed > 0;
 
   const nextBusy =
     Boolean(props.nextMission) &&
@@ -439,39 +427,23 @@ export function KidPlanHub(props: Props) {
         ) : null}
       </section>
 
-      {/* Challenge — star track + quà */}
+      {/* Challenge — FamilyChallengeCard thật (không meter giả) */}
       <section className="kplan-challenge" aria-label="Thử thách tuần này">
-        <div className="kplan-challenge-main">
-          <header className="kplan-challenge-head">
-            <span className="kplan-challenge-mark" aria-hidden>
-              📋
-            </span>
-            <div className="kplan-challenge-copy">
-              <strong>Thử thách tuần này 🏆</strong>
-              <em>Kiên trì mỗi ngày – Tích lũy điểm thưởng!</em>
-            </div>
-            <b className="kplan-challenge-score">
-              {props.challengeHave} / {props.challengeNeed}
-            </b>
-          </header>
-
-          <div
-            className="kplan-challenge-stars"
-            aria-hidden
-            style={{ ['--slots' as string]: String(challengeSlots) }}
-          >
-            <i className="kplan-challenge-rail" />
-            {Array.from({ length: challengeSlots }, (_, i) => {
-              const state =
-                i < challengeFilled ? 'done' : i === challengeFilled && !challengeComplete ? 'now' : 'todo';
-              return (
-                <span key={i} className={`kplan-challenge-star is-${state}`}>
-                  ★
-                </span>
-              );
-            })}
+        {props.challengeSlot ? (
+          <div className="kplan-challenge-slot is-solo">{props.challengeSlot}</div>
+        ) : (
+          <div className="kplan-challenge-main">
+            <header className="kplan-challenge-head">
+              <span className="kplan-challenge-mark" aria-hidden>
+                🏆
+              </span>
+              <div className="kplan-challenge-copy">
+                <strong>Thử thách tuần này</strong>
+                <em>Khi nhà mình mở thử thách — Fami hiện ở đây.</em>
+              </div>
+            </header>
           </div>
-        </div>
+        )}
 
         <aside className="kplan-challenge-prize">
           <div className="kplan-challenge-gift" aria-hidden>
@@ -481,10 +453,6 @@ export function KidPlanHub(props: Props) {
             Xem phần thưởng
           </button>
         </aside>
-
-        {props.challengeSlot ? (
-          <div className="kplan-challenge-slot">{props.challengeSlot}</div>
-        ) : null}
       </section>
 
       <aside className="kplan-nudge" aria-label="Fami nhắc nhẹ">
@@ -498,7 +466,7 @@ export function KidPlanHub(props: Props) {
           <p>{props.famiLine}</p>
         </div>
         <button type="button" className="kplan-nudge-cta" onClick={props.onTalkFami}>
-          💬 Nhắn với Fami ›
+          💬 Hỏi Fami ›
         </button>
       </aside>
     </div>
