@@ -427,6 +427,23 @@
   color: var(--ol-muted);
 }
 
+.otp-login-footers {
+  margin-top: 22px;
+}
+
+.otp-login-footers .otp-login-footer {
+  margin-top: 0;
+}
+
+.otp-login-footers .otp-login-footer + .otp-login-footer {
+  margin-top: 10px;
+}
+
+.otp-login-footer--guest button {
+  font-weight: 700;
+  color: #0f766e;
+}
+
 .otp-login-footer a,
 .otp-login-footer button {
   border: none;

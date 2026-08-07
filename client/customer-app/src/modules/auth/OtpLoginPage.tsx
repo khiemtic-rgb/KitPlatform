@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type MouseEvent } from 'react';
 import {
   CheckOutlined,
   EnvironmentOutlined,
@@ -38,6 +38,23 @@ function formatPhoneDisplay(raw: string) {
 
 function digitsOnly(value: string) {
   return value.replace(/\D/g, '');
+}
+
+/** Normalize VN mobile for zalo.me / tel links. */
+function normalizePartnerPhone(raw: string) {
+  let digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('84') && digits.length >= 11) {
+    digits = `0${digits.slice(2)}`;
+  }
+  return digits;
+}
+
+const LEGAL_TERMS_URL = 'https://novixa.vn/vi/dieu-khoan-su-dung/';
+const LEGAL_PRIVACY_URL = 'https://novixa.vn/vi/chinh-sach-bao-mat/';
+
+function openLegalLink(event: MouseEvent<HTMLAnchorElement>) {
+  // Keep checkbox state when user taps legal links inside the consent label.
+  event.stopPropagation();
 }
 
 function ShieldLogo() {
@@ -200,12 +217,18 @@ export function OtpLoginPage() {
   };
 
   const contactPharmacy = () => {
-    const phoneNumber = branding.supportPhone?.replace(/\s/g, '');
+    const phoneNumber = branding.supportPhone
+      ? normalizePartnerPhone(branding.supportPhone)
+      : '';
     if (phoneNumber) {
-      window.location.href = `tel:${phoneNumber}`;
+      window.open(`https://zalo.me/${phoneNumber}`, '_blank', 'noopener,noreferrer');
       return;
     }
     message.info(t('auth.contactPharmacyHint'));
+  };
+
+  const continueAsGuest = () => {
+    navigate('/', { replace: true });
   };
 
   return (
@@ -363,11 +386,21 @@ export function OtpLoginPage() {
               </span>
               <span className="otp-login-consent-text">
                 {t('auth.consentBefore')}{' '}
-                <a href="#terms" onClick={(e) => e.preventDefault()}>
+                <a
+                  href={LEGAL_TERMS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={openLegalLink}
+                >
                   {t('auth.termsOfUse')}
                 </a>{' '}
                 {t('auth.consentAnd')}{' '}
-                <a href="#privacy" onClick={(e) => e.preventDefault()}>
+                <a
+                  href={LEGAL_PRIVACY_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={openLegalLink}
+                >
                   {t('auth.privacyPolicy')}
                 </a>
               </span>
@@ -452,12 +485,19 @@ export function OtpLoginPage() {
         )}
 
         {step === 0 ? (
-          <p className="otp-login-footer">
-            {t('auth.noAccount')}{' '}
-            <button type="button" onClick={contactPharmacy}>
-              {t('auth.contactPharmacy')}
-            </button>
-          </p>
+          <div className="otp-login-footers">
+            <p className="otp-login-footer">
+              {t('auth.noAccount')}{' '}
+              <button type="button" onClick={contactPharmacy}>
+                {t('auth.contactPharmacy')}
+              </button>
+            </p>
+            <p className="otp-login-footer otp-login-footer--guest">
+              <button type="button" onClick={continueAsGuest}>
+                {t('auth.tryWithoutLogin')}
+              </button>
+            </p>
+          </div>
         ) : null}
 
         {import.meta.env.DEV ? (
