@@ -115,7 +115,8 @@ FAMILY_LOCATIONS=$(cat <<EOF
     }
 
     location / {
-        # Do NOT use $uri/ — real asset dirs (e.g. former /unlock/) become 403.
+        # Do NOT use try_files with a trailing-slash URI form — real asset dirs
+        # (e.g. former /unlock/) become 403.
         try_files \$uri /index.html;
     }
 
