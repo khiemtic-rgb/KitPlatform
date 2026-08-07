@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-07T13:46:15.330Z",
+  "generatedAt": "2026-08-07T19:26:32.775Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 207,
-    "todayPageViews": 96,
-    "todayRequests": 460,
-    "last24hVisitors": 244,
-    "last24hPageViews": 110,
-    "last24hRequests": 517
+    "todayVisitors": 11,
+    "todayPageViews": 1,
+    "todayRequests": 12,
+    "last24hVisitors": 288,
+    "last24hPageViews": 139,
+    "last24hRequests": 656
   },
   "hourly": [
-    {
-      "time": "2026-08-06T14:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-06T15:00:00Z",
-      "visitors": 8,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-06T16:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-06T17:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-06T18:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-06T19:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
     {
       "time": "2026-08-06T20:00:00Z",
       "visitors": 6,
@@ -128,17 +98,41 @@
     },
     {
       "time": "2026-08-07T13:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-07T14:00:00Z",
+      "visitors": 60,
+      "requests": 71
+    },
+    {
+      "time": "2026-08-07T15:00:00Z",
+      "visitors": 3,
+      "requests": 44
+    },
+    {
+      "time": "2026-08-07T16:00:00Z",
+      "visitors": 10,
+      "requests": 45
+    },
+    {
+      "time": "2026-08-07T17:00:00Z",
+      "visitors": 6,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-07T18:00:00Z",
       "visitors": 4,
-      "requests": 5
+      "requests": 4
+    },
+    {
+      "time": "2026-08-07T19:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-01",
-      "visitors": 204,
-      "pageViews": 103,
-      "requests": 725
-    },
     {
       "date": "2026-08-02",
       "visitors": 153,
@@ -171,26 +165,48 @@
     },
     {
       "date": "2026-08-07",
-      "visitors": 258,
-      "pageViews": 106,
-      "requests": 495
+      "visitors": 276,
+      "pageViews": 133,
+      "requests": 634
+    },
+    {
+      "date": "2026-08-08",
+      "visitors": 11,
+      "pageViews": 1,
+      "requests": 12
     }
   ],
   "topPages": [
     {
       "path": "/vi/goi-cha-me/cach-xay-dung-quy-tac-trong-gia-dinh-de-con-tu-giac-chap-hanh-khong-can-cam-doan/",
-      "views": 65
+      "views": 69
     },
     {
       "path": "/images/blog/xay-dung-quy-tac-trong-gia-dinh.png",
-      "views": 41
+      "views": 46
     },
     {
       "path": "/cdn-cgi/rum",
+      "views": 28
+    },
+    {
+      "path": "/vi/",
       "views": 22
     },
     {
-      "path": "/feed.json",
+      "path": "/",
+      "views": 21
+    },
+    {
+      "path": "/robots.txt",
+      "views": 20
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 19
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
       "views": 18
     },
     {
@@ -198,44 +214,28 @@
       "views": 18
     },
     {
-      "path": "/vi/",
+      "path": "/feed.json",
       "views": 18
     },
     {
       "path": "/images/blog/lam-guong-quan-trong-hon-day-bao.png",
-      "views": 17
+      "views": 18
     },
     {
-      "path": "/robots.txt",
-      "views": 17
-    },
-    {
-      "path": "/",
+      "path": "/api/stats",
       "views": 16
     },
     {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
       "views": 15
     },
     {
       "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 13
+      "views": 14
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "path": "/images/moment-chores.png",
       "views": 12
-    },
-    {
-      "path": "/api/stats",
-      "views": 12
-    },
-    {
-      "path": "/images/quote-thu-card.png",
-      "views": 11
-    },
-    {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 11
     }
   ]
 }
