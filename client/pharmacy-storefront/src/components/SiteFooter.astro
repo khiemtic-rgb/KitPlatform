@@ -18,15 +18,11 @@ const iconArrow = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path
 const socialIcons: Record<string, string> = {
   facebook: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 8.5h2V6h-2c-1.9 0-3.2 1.3-3.2 3.3V11H9v2.5h1.8V19h2.7v-5.5H16l.4-2.5h-2.9V9.4c0-.6.3-.9.9-.9z" fill="currentColor"/></svg>`,
   zalo: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7.2 8.8h3.4V16H8.5v-5.4H7.2V8.8zm4.2 0H14c1.7 0 2.8 1 2.8 2.5S15.7 14 14 14h-1.3v2h-1.3V8.8zm1.3 1.7v1.8H14c.6 0 1-.4 1-.9s-.4-.9-1-.9h-1.3zM17 8.8h1.3V16H17V8.8z" fill="currentColor"/></svg>`,
-  youtube: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19.6 8.2a2 2 0 0 0-1.4-1.4C16.8 6.4 12 6.4 12 6.4s-4.8 0-6.2.4A2 2 0 0 0 4.4 8.2 21 21 0 0 0 4 12a21 21 0 0 0 .4 3.8 2 2 0 0 0 1.4 1.4c1.4.4 6.2.4 6.2.4s4.8 0 6.2-.4a2 2 0 0 0 1.4-1.4A21 21 0 0 0 20 12a21 21 0 0 0-.4-3.8z" stroke="currentColor" stroke-width="1.5"/><path d="m10.6 14.4 4-2.4-4-2.4v4.8z" fill="currentColor"/></svg>`,
-  tiktok: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14.2 6.2c.7 1.5 2 2.5 3.7 2.8v2.3c-1.3-.05-2.5-.45-3.5-1.15v4.7c0 2.5-2 4.5-4.5 4.5S5.4 17.35 5.4 14.85 7.4 10.35 9.9 10.35c.3 0 .6.03.9.1v2.4a2.2 2.2 0 0 0-.9-.2c-1.2 0-2.2 1-2.2 2.2s1 2.2 2.2 2.2 2.2-1 2.2-2.2V6.2h2z" fill="currentColor"/></svg>`,
 };
 
 const socialOrder = [
   { key: 'facebook' as const, label: 'Facebook' },
   { key: 'zalo' as const, label: 'Zalo' },
-  { key: 'youtube' as const, label: 'YouTube' },
-  { key: 'tiktok' as const, label: 'TikTok' },
 ];
 
 const socialLinks = socialOrder
@@ -41,13 +37,6 @@ const socialLinks = socialOrder
   <div class="sf-container sf-footer__grid">
     <div class="sf-footer__brand">
       <div class="sf-footer__brand-head">
-        {
-          tenant.brand.logoUrl ? (
-            <img class="sf-footer__logo" src={tenant.brand.logoUrl} alt="" width="48" height="48" />
-          ) : (
-            <span class="sf-footer__mark">{tenant.brand.logoText}</span>
-          )
-        }
         <div class="sf-footer__brand-text">
           <strong>NHÀ THUỐC</strong>
           <b>{tenant.brand.shortName.toUpperCase()}</b>

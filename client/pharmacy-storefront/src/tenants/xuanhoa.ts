@@ -14,7 +14,6 @@ export const xuanhoa: PharmacyTenantConfig = {
     name: 'Nhà thuốc Xuân Hòa',
     shortName: 'Xuân Hòa',
     logoText: 'XH',
-    logoUrl: '/brand/xuanhoa-logo.png',
     primaryColor: '#004d40',
     accentColor: '#0a7a5c',
   },
@@ -25,12 +24,8 @@ export const xuanhoa: PharmacyTenantConfig = {
     phone: '0914.960.069',
     email: 'xuanhoa.pharmacy@gmail.com',
     social: {
-      facebook: 'https://facebook.com/',
+      facebook: 'https://www.facebook.com/nhathuocxuanhoa',
       zalo: 'https://zalo.me/0914960069',
-      whatsapp: 'https://wa.me/84914960069',
-      tiktok: 'https://www.tiktok.com/',
-      youtube: 'https://youtube.com/',
-      instagram: 'https://instagram.com/',
     },
     branches: [
       {
