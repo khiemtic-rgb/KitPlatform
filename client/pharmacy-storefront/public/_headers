@@ -1,9 +1,6 @@
+# Host-specific SSR HTML — do not share across *.novixa.vn
 /*
-  X-Content-Type-Options: nosniff
-  Cache-Control: public, max-age=0, must-revalidate
-
-/_astro/*
-  Cache-Control: public, max-age=31536000, immutable
-
-/brand/*
-  Cache-Control: public, max-age=604800, must-revalidate
+  Cache-Control: private, no-store, max-age=0, must-revalidate
+  CDN-Cache-Control: no-store
+  Cloudflare-CDN-Cache-Control: no-store
+  Vary: Host
