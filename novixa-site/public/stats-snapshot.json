@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-08T07:16:43.318Z",
+  "generatedAt": "2026-08-08T13:13:38.552Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 270,
-    "todayPageViews": 266,
-    "todayRequests": 1033,
-    "last24hVisitors": 455,
-    "last24hPageViews": 377,
-    "last24hRequests": 1521
+    "todayVisitors": 473,
+    "todayPageViews": 441,
+    "todayRequests": 1928,
+    "last24hVisitors": 548,
+    "last24hPageViews": 494,
+    "last24hRequests": 2184
   },
   "hourly": [
-    {
-      "time": "2026-08-07T08:00:00Z",
-      "visitors": 13,
-      "requests": 14
-    },
-    {
-      "time": "2026-08-07T09:00:00Z",
-      "visitors": 47,
-      "requests": 95
-    },
-    {
-      "time": "2026-08-07T10:00:00Z",
-      "visitors": 26,
-      "requests": 78
-    },
-    {
-      "time": "2026-08-07T11:00:00Z",
-      "visitors": 23,
-      "requests": 24
-    },
-    {
-      "time": "2026-08-07T12:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-07T13:00:00Z",
-      "visitors": 11,
-      "requests": 11
-    },
     {
       "time": "2026-08-07T14:00:00Z",
       "visitors": 10,
@@ -128,8 +98,38 @@
     },
     {
       "time": "2026-08-08T07:00:00Z",
-      "visitors": 28,
-      "requests": 110
+      "visitors": 97,
+      "requests": 556
+    },
+    {
+      "time": "2026-08-08T08:00:00Z",
+      "visitors": 42,
+      "requests": 97
+    },
+    {
+      "time": "2026-08-08T09:00:00Z",
+      "visitors": 14,
+      "requests": 69
+    },
+    {
+      "time": "2026-08-08T10:00:00Z",
+      "visitors": 99,
+      "requests": 195
+    },
+    {
+      "time": "2026-08-08T11:00:00Z",
+      "visitors": 27,
+      "requests": 41
+    },
+    {
+      "time": "2026-08-08T12:00:00Z",
+      "visitors": 35,
+      "requests": 39
+    },
+    {
+      "time": "2026-08-08T13:00:00Z",
+      "visitors": 6,
+      "requests": 6
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-08-08",
-      "visitors": 270,
-      "pageViews": 266,
-      "requests": 1033
+      "visitors": 473,
+      "pageViews": 441,
+      "requests": 1928
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 212
+      "views": 343
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 197
+      "views": 301
     },
     {
       "path": "/vi/tin-tuc/cach-giam-thoi-gian-phuc-vu-moi-khach-tai-nha-thuoc-ma-khong-lam-giam-chat-luong-tu-van/",
-      "views": 118
-    },
-    {
-      "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
-      "views": 55
-    },
-    {
-      "path": "/favicon.svg",
-      "views": 48
-    },
-    {
-      "path": "/brand/family-health.png",
-      "views": 32
-    },
-    {
-      "path": "/robots.txt",
-      "views": 32
-    },
-    {
-      "path": "/brand/products/hapacol-pain.jpg",
-      "views": 29
+      "views": 133
     },
     {
       "path": "/brand/xuanhoa-logo.png",
-      "views": 27
+      "views": 102
+    },
+    {
+      "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
+      "views": 73
+    },
+    {
+      "path": "/favicon.svg",
+      "views": 72
     },
     {
       "path": "/vi/",
-      "views": 26
+      "views": 58
     },
     {
-      "path": "/brand/products/wellwoman-vitamin.jpg",
-      "views": 26
+      "path": "/_astro/storefront.CUqIdUG9.css",
+      "views": 56
+    },
+    {
+      "path": "/brand/family-health.png",
+      "views": 39
+    },
+    {
+      "path": "/robots.txt",
+      "views": 34
     },
     {
       "path": "/brand/xuanhoa-hero.png",
-      "views": 25
+      "views": 29
     },
     {
-      "path": "/images/tin-tuc/nhung-loi-thuong-gap-khach-hang.png",
-      "views": 24
+      "path": "/brand/products/hapacol-pain.jpg",
+      "views": 28
     },
     {
-      "path": "/images/tin-tuc/quy-trinh-ban-thuoc.png",
-      "views": 24
+      "path": "/brand/products/wellwoman-vitamin.jpg",
+      "views": 28
     },
     {
       "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 23
+      "views": 26
+    },
+    {
+      "path": "/images/tin-tuc/quy-trinh-ban-thuoc.png",
+      "views": 25
     }
   ]
 }
