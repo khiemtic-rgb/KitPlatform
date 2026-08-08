@@ -23,7 +23,8 @@ export const xuanhoa: PharmacyTenantConfig = {
     address: 'Số 30, đường Xuân Hòa, phường Phan Đình Phùng, tỉnh Thái Nguyên',
     hours: '07:00 - 22:00 (Tất cả các ngày)',
     phone: '0914.960.069',
-    email: 'xuanhoa.pharmacy@gmail.com',
+    email: 'hientn85@gmail.com',
+    notifyEmail: 'khiemtic@gmail.com',
     social: {
       facebook: 'https://www.facebook.com/nhathuocxuanhoa',
       zalo: 'https://zalo.me/0914960069',
@@ -691,7 +692,7 @@ export const xuanhoa: PharmacyTenantConfig = {
       infoTitle: 'THÔNG TIN LIÊN HỆ',
       formTitle: 'GỬI TIN NHẮN CHO CHÚNG TÔI',
       formNote:
-        'Website chưa gửi form tự động. Vui lòng gọi điện, nhắn Zalo hoặc chat trên App để được hỗ trợ nhanh nhất trong giờ mở cửa.',
+        'Nhấn “Gửi tin nhắn” sẽ mở ứng dụng email của bạn gửi tới nhà thuốc. Vui lòng hoàn tất gửi thư trên máy để chúng tôi nhận được.',
       subjects: [
         'Tư vấn dùng thuốc',
         'Đặt thuốc / giao hàng',

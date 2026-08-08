@@ -185,6 +185,8 @@ export interface PharmacyTenantConfig {
     hours: string;
     phone: string;
     email: string;
+    /** Internal notify address (BCC). Never render on the public site. */
+    notifyEmail?: string;
     social: PharmacySocial;
     branches?: PharmacyBranch[];
   };
