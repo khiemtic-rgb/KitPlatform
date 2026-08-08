@@ -1,9 +1,9 @@
 # KitPlatform Pharmacy Storefront
 
-White-label pharmacy websites (Astro static → Cloudflare Pages).
+Multi-tenant pharmacy websites (Astro → **Cloudflare Workers** SSR).
 
-- **Pilot live:** https://xuanhoa.novixa.vn (`NT_XUANHOA`)
-- **Self-serve CMS:** Admin → Hệ thống → Website NT (content API ready; Host-based SSR needs Cloudflare Workers migration — Astro 7 adapter is Workers-only)
+- **Pilot:** https://xuanhoa.novixa.vn (static registry dual-run; do not treat as CMS template for others)
+- **Other pharmacies:** Host `{slug}.novixa.vn` → published CMS only; unpublished → soft 404 (never Xuân Hòa)
 
 ## Local development
 
@@ -13,24 +13,17 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:4330](http://localhost:4330). Build-time tenant **xuanhoa** (`PUBLIC_STOREFRONT_TENANT`).
-
 | Env | Purpose |
 |-----|---------|
-| `PUBLIC_STOREFRONT_TENANT` | Registry slug baked into static HTML (default `xuanhoa`) |
-
-| Script | Mô tả |
-|--------|--------|
-| `npm run dev` | Dev server port **4330** |
-| `npm run build` | Static build → `dist/` |
-| `npm run preview` | Preview static build |
+| `PUBLIC_STOREFRONT_TENANT` | Dev fallback slug (default `xuanhoa`) |
+| `PUBLIC_API_BASE_URL` | Public CMS API origin |
 
 ## Deploy
 
-Workflow: [`.github/workflows/pharmacy-storefront-pages.yml`](../../.github/workflows/pharmacy-storefront-pages.yml)
+Workflow [`.github/workflows/pharmacy-storefront-pages.yml`](../../.github/workflows/pharmacy-storefront-pages.yml):
 
-- Static Astro build (`PUBLIC_STOREFRONT_TENANT=xuanhoa`)
-- Deploys Pages project `pharmacy-storefront`
-- Attaches `xuanhoa.novixa.vn`
+1. `astro build` with `@astrojs/cloudflare`
+2. `wrangler deploy` (Workers — not Pages Functions)
+3. Attach `xuanhoa.novixa.vn` + `demo-pharmacy.novixa.vn` as Worker custom domains
 
-> **Note:** Multi-tenant `{slug}.novixa.vn` from CMS publish requires migrating this app to **Cloudflare Workers** (`wrangler deploy`). Astro 7 `@astrojs/cloudflare` no longer supports Pages Functions.
+Admin CMS: Hệ thống → Website NT → Publish.

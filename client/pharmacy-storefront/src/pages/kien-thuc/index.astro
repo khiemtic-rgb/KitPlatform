@@ -5,7 +5,9 @@ import SiteFooter from '../../components/SiteFooter.astro';
 import { loadTenant } from '../../lib/load-tenant';
 import '../../styles/storefront.css';
 
-const tenant = loadTenant();
+const tenantOrRedirect = await loadTenant(Astro);
+if (tenantOrRedirect instanceof Response) return tenantOrRedirect;
+const tenant = tenantOrRedirect;
 const page = tenant.pages.knowledge;
 const articles = [...tenant.articles].sort((a, b) => (a.date < b.date ? 1 : -1));
 const featured = articles[0];

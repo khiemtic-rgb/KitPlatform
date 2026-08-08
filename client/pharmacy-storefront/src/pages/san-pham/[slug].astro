@@ -5,12 +5,9 @@ import SiteFooter from '../../components/SiteFooter.astro';
 import { loadTenant } from '../../lib/load-tenant';
 import '../../styles/storefront.css';
 
-export function getStaticPaths() {
-  const tenant = loadTenant();
-  return tenant.products.map((p) => ({ params: { slug: p.slug } }));
-}
-
-const tenant = loadTenant();
+const tenantOrRedirect = await loadTenant(Astro);
+if (tenantOrRedirect instanceof Response) return tenantOrRedirect;
+const tenant = tenantOrRedirect;
 const slug = Astro.params.slug ?? '';
 const product = tenant.products.find((p) => p.slug === slug);
 const appUrl = tenant.appPromo.appUrl;

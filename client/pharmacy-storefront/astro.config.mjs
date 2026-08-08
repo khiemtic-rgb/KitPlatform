@@ -1,10 +1,15 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import cloudflare from '@astrojs/cloudflare';
 
-// Static Pages deploy (Astro 7 Cloudflare adapter is Workers-only).
-// Multi-tenant Host SSR will return via wrangler deploy (Workers) later.
+// Cloudflare Workers SSR (Astro 7 adapter is Workers-only — not Pages Functions).
 export default defineConfig({
-  site: 'https://xuanhoa.novixa.vn',
+  site: 'https://novixa.vn',
+  output: 'server',
+  adapter: cloudflare({
+    imageService: 'compile',
+  }),
+  session: false,
   trailingSlash: 'ignore',
   server: {
     port: 4330,
