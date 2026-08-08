@@ -39,6 +39,9 @@ const accent = tenant.brand.accentColor;
       *::after {
         box-sizing: border-box;
       }
+      html {
+        overflow-x: clip;
+      }
       html,
       body {
         margin: 0;
@@ -46,6 +49,12 @@ const accent = tenant.brand.accentColor;
         font-family: var(--font-sans);
         color: #14231f;
         background: #fff;
+      }
+      img,
+      video,
+      svg {
+        max-width: 100%;
+        height: auto;
       }
     </style>
   </head>
