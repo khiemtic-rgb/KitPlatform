@@ -22,6 +22,15 @@ type Props = {
   thanksSent: boolean;
   thanksSending: boolean;
   foxyLine: string;
+  /** School Season — landing copy + soft overdue labels. */
+  schoolSeason?: {
+    kicker: string;
+    bubble: string;
+    ctaLabel: string | null;
+    phase: string;
+    quiet: boolean;
+  } | null;
+  softOverdueById?: Record<string, string>;
   taskIcon: (title: string) => string;
   durationLabel: (item: DayFlowCommitment) => string | null;
   clockLabel: (item: DayFlowCommitment) => string;
@@ -41,6 +50,7 @@ type Props = {
   onOpenMoments: () => void;
   onOpenSurprise: () => void;
   onOpenAsk: () => void;
+  onSchoolCta?: () => void;
   momentPreview: {
     title: string;
     body: string;
@@ -126,8 +136,9 @@ export function KidHomeHub(props: Props) {
     return () => window.clearTimeout(t);
   }, [dayTip]);
 
-  const heroLine =
-    props.remaining > 0 ? (
+  const heroLine = props.schoolSeason ? (
+    <>{props.schoolSeason.bubble}</>
+  ) : props.remaining > 0 ? (
       <>
         Hôm nay chúng mình cùng cố gắng nhé!
         <br />
@@ -176,6 +187,19 @@ export function KidHomeHub(props: Props) {
 
   return (
     <div className="khub">
+      {props.schoolSeason ? (
+        <div
+          className={`khub-school-banner${props.schoolSeason.quiet ? ' is-quiet' : ''}`}
+          role="status"
+        >
+          <em>{props.schoolSeason.kicker}</em>
+          {props.schoolSeason.ctaLabel && props.onSchoolCta ? (
+            <button type="button" className="khub-school-cta" onClick={props.onSchoolCta}>
+              {props.schoolSeason.ctaLabel}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {/* Hero — Fami | bubble | level+quà | CTA */}
       <article className="khub-hero">
         <div className="khub-hero-main">
@@ -227,8 +251,20 @@ export function KidHomeHub(props: Props) {
           </div>
         </div>
 
-        <button type="button" className="khub-cta" onClick={props.onStartNow}>
-          Bắt đầu ngay 🚀
+        <button
+          type="button"
+          className="khub-cta"
+          onClick={
+            props.schoolSeason?.ctaLabel && props.onSchoolCta
+              ? props.onSchoolCta
+              : props.onStartNow
+          }
+        >
+          {props.schoolSeason?.quiet
+            ? 'Fami đang im — chạm khi về nhà'
+            : props.schoolSeason?.ctaLabel
+              ? `${props.schoolSeason.ctaLabel} 🚀`
+              : 'Bắt đầu ngay 🚀'}
         </button>
       </article>
 
@@ -317,7 +353,10 @@ export function KidHomeHub(props: Props) {
           <ul className="khub-list">
             {list.map((item) => {
               const m = markOf(item, nextId);
-              const badge = statusBadge(m);
+              const soft = props.softOverdueById?.[item.id];
+              const badge = soft
+                ? { label: soft, tone: 'wait' }
+                : statusBadge(m);
               const clock = itemClock(item);
               const stars =
                 m === 'done' ? (item.starDelta ?? 0) : props.starRewardOf(item);

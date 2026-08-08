@@ -92,6 +92,9 @@ export interface DayFlowCommitment {
   studyMinDurationMinutes?: number;
   /** Photo submitted but not yet parent/retrieval-satisfied */
   evidenceSubmitted?: boolean;
+  /** SCH-02 — server-derived school phase for commitment owner */
+  schoolPhase?: string;
+  schoolQuiet?: boolean;
 }
 
 export const REFLECTION_PROMPT_OPTIONS = [
@@ -122,6 +125,13 @@ export interface DayFlow {
   upcomingCount: number;
   localTime?: string;
   commitments: DayFlowCommitment[];
+  /** SCH-02 — phase/quiet per child */
+  schoolMembers?: Array<{
+    memberId: string;
+    phase: string;
+    quietNow: boolean;
+    quietEnd: string;
+  }>;
 }
 
 export const SKIP_REASON_OPTIONS = [
@@ -709,6 +719,11 @@ function mapCommitment(c: Row): DayFlowCommitment {
       const raw = c.evidenceSubmitted ?? c.EvidenceSubmitted;
       return raw == null ? false : Boolean(raw);
     })(),
+    schoolPhase:
+      c.schoolPhase != null || c.SchoolPhase != null
+        ? String(c.schoolPhase ?? c.SchoolPhase)
+        : undefined,
+    schoolQuiet: Boolean(c.schoolQuiet ?? c.SchoolQuiet ?? false),
   };
 }
 
@@ -734,6 +749,12 @@ function mapDayFlow(data: Row): DayFlow {
         ? String(data.localTime ?? data.LocalTime)
         : undefined,
     commitments: asArray(data.commitments ?? data.Commitments).map(mapCommitment),
+    schoolMembers: asArray(data.schoolMembers ?? data.SchoolMembers).map((r) => ({
+      memberId: String(r.memberId ?? r.MemberId ?? ''),
+      phase: String(r.phase ?? r.Phase ?? ''),
+      quietNow: Boolean(r.quietNow ?? r.QuietNow ?? false),
+      quietEnd: String(r.quietEnd ?? r.QuietEnd ?? ''),
+    })).filter((m) => m.memberId),
   };
 }
 
@@ -2210,6 +2231,126 @@ export async function patchFamilyBlueprintLayers(
   const existing = await fetchFamilyBlueprint(familyId);
   const merged = deepMergeLayers(parseLayersJson(existing?.layersJson), patch);
   return putFamilyBlueprintLayers(familyId, JSON.stringify(merged), true);
+}
+
+/** SCH-02 — one child schedule + derived phase/quiet. */
+export type FamilySchoolScheduleMember = {
+  memberId: string;
+  displayName?: string;
+  schedule: {
+    schemaVersion: number;
+    seasonOn: boolean;
+    mode: string;
+    weekdays: number[];
+    schoolStart: string;
+    schoolEnd: string;
+    hasExtraClass: boolean;
+    extraEnd?: string;
+    source: string;
+    updatedAt: string;
+    updatedByMemberId?: string;
+  } | null;
+  derived: {
+    phase: string;
+    quietNow: boolean;
+    quietEnd: string;
+    asOf: string;
+    timeZone: string;
+  };
+};
+
+export type FamilySchoolQuietMap = {
+  asOf: string;
+  timeZone: string;
+  members: Array<{
+    memberId: string;
+    displayName?: string;
+    quietNow: boolean;
+    phase: string;
+    quietEnd: string;
+  }>;
+};
+
+function mapSchoolDerived(raw: Row): FamilySchoolScheduleMember['derived'] {
+  return {
+    phase: String(raw.phase ?? raw.Phase ?? 'season_off'),
+    quietNow: Boolean(raw.quietNow ?? raw.QuietNow ?? false),
+    quietEnd: String(raw.quietEnd ?? raw.QuietEnd ?? '07:00'),
+    asOf: String(raw.asOf ?? raw.AsOf ?? ''),
+    timeZone: String(raw.timeZone ?? raw.TimeZone ?? 'Asia/Ho_Chi_Minh'),
+  };
+}
+
+function mapSchoolPayload(raw: Row | null | undefined): FamilySchoolScheduleMember['schedule'] {
+  if (!raw) return null;
+  const weekdays = asArray(raw.weekdays ?? raw.Weekdays)
+    .map((x) => Number(x))
+    .filter((n) => n >= 1 && n <= 7);
+  return {
+    schemaVersion: Number(raw.schemaVersion ?? raw.SchemaVersion ?? 1) || 1,
+    seasonOn: Boolean(raw.seasonOn ?? raw.SeasonOn ?? true),
+    mode: String(raw.mode ?? raw.Mode ?? 'full'),
+    weekdays: weekdays.length > 0 ? weekdays : [1, 2, 3, 4, 5],
+    schoolStart: String(raw.schoolStart ?? raw.SchoolStart ?? '07:00'),
+    schoolEnd: String(raw.schoolEnd ?? raw.SchoolEnd ?? '16:30'),
+    hasExtraClass: Boolean(raw.hasExtraClass ?? raw.HasExtraClass ?? false),
+    extraEnd:
+      raw.extraEnd != null || raw.ExtraEnd != null
+        ? String(raw.extraEnd ?? raw.ExtraEnd)
+        : undefined,
+    source: String(raw.source ?? raw.Source ?? 'parent_settings'),
+    updatedAt: String(raw.updatedAt ?? raw.UpdatedAt ?? ''),
+    updatedByMemberId:
+      raw.updatedByMemberId != null || raw.UpdatedByMemberId != null
+        ? String(raw.updatedByMemberId ?? raw.UpdatedByMemberId)
+        : undefined,
+  };
+}
+
+export async function fetchMemberSchoolSchedule(
+  familyId: string,
+  memberId: string,
+  asOf?: string,
+): Promise<FamilySchoolScheduleMember> {
+  const { data } = await http.get<Row>(
+    `/family-os/families/${familyId}/members/${memberId}/school-schedule`,
+    { params: asOf ? { asOf } : undefined },
+  );
+  const derivedRaw = (data.derived ?? data.Derived ?? {}) as Row;
+  const scheduleRaw = (data.schedule ?? data.Schedule) as Row | null | undefined;
+  return {
+    memberId: String(data.memberId ?? data.MemberId ?? memberId),
+    displayName:
+      data.displayName != null || data.DisplayName != null
+        ? String(data.displayName ?? data.DisplayName)
+        : undefined,
+    schedule: mapSchoolPayload(scheduleRaw),
+    derived: mapSchoolDerived(derivedRaw),
+  };
+}
+
+export async function fetchSchoolQuietMap(
+  familyId: string,
+  asOf?: string,
+): Promise<FamilySchoolQuietMap> {
+  const { data } = await http.get<Row>(
+    `/family-os/families/${familyId}/school-schedule/quiet-map`,
+    { params: asOf ? { asOf } : undefined },
+  );
+  return {
+    asOf: String(data.asOf ?? data.AsOf ?? ''),
+    timeZone: String(data.timeZone ?? data.TimeZone ?? 'Asia/Ho_Chi_Minh'),
+    members: asArray(data.members ?? data.Members).map((r) => ({
+      memberId: String(r.memberId ?? r.MemberId ?? ''),
+      displayName:
+        r.displayName != null || r.DisplayName != null
+          ? String(r.displayName ?? r.DisplayName)
+          : undefined,
+      quietNow: Boolean(r.quietNow ?? r.QuietNow ?? false),
+      phase: String(r.phase ?? r.Phase ?? 'season_off'),
+      quietEnd: String(r.quietEnd ?? r.QuietEnd ?? ''),
+    })).filter((m) => m.memberId),
+  };
 }
 
 export interface TeamChildSlice {

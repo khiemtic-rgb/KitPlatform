@@ -88,6 +88,11 @@ import { ParentKidMomentSheet } from '@/modules/flow/ParentKidMomentSheet';
 import { ParentHomeStoryBody } from '@/modules/flow/ParentHomeStoryBody';
 import { isKidMomentSeen, markKidMomentSeen } from '@/modules/flow/kidMomentAck';
 import {
+  isSchoolQuietNow,
+  resolveSchoolPhase,
+  resolveSchoolSchedule,
+} from '@/shared/school/school-season';
+import {
   buildMemoryYarn,
   buildPendingActions,
   buildSeenSignals,
@@ -3099,6 +3104,22 @@ export function ParentBoardView({
               </p>
             )
           ) : null}
+
+          {selectedChild ? (() => {
+            const sch = resolveSchoolSchedule(selectedChild.key, familyId);
+            const phase = resolveSchoolPhase(sch);
+            if (!sch.seasonOn || sch.mode === 'off' || phase === 'weekend') return null;
+            const quiet = isSchoolQuietNow(sch);
+            return (
+              <p className="ph-school-tip" role="status">
+                {quiet
+                  ? `${selectedChild.name}: đang giờ học — Fami không nhắc trên máy. Sáng vội: bạn chạm xác nhận giúp khi thấy con xong việc.`
+                  : phase === 'after_school' || phase === 'evening'
+                    ? `${selectedChild.name}: tan học — ưu tiên một thắng nhỏ và lời khen ngày dài, tránh chồng nhắc học thêm.`
+                    : `${selectedChild.name}: mùa học bật · chỉnh giờ tại Cài đặt › Mùa học của con.`}
+              </p>
+            );
+          })() : null}
 
           <ParentHomeStoryBody
             parentHelloLabel={parentHelloLabel}

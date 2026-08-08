@@ -18,6 +18,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
     private readonly IFamilyBehaviorService _behavior;
     private readonly FamilyValueRepository _value;
     private readonly FamilyBehaviorRepository _behaviorRepo;
+    private readonly FamilyBlueprintRepository _blueprint;
     private readonly ITenantContext _tenant;
 
     public FamilyDayFlowService(
@@ -34,6 +35,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         IFamilyBehaviorService behavior,
         FamilyValueRepository value,
         FamilyBehaviorRepository behaviorRepo,
+        FamilyBlueprintRepository blueprint,
         ITenantContext tenant)
     {
         _repo = repo;
@@ -49,6 +51,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         _behavior = behavior;
         _value = value;
         _behaviorRepo = behaviorRepo;
+        _blueprint = blueprint;
         _tenant = tenant;
     }
 
@@ -715,17 +718,51 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             // budget lookup is best-effort
         }
 
+        string? layersJson = null;
+        try
+        {
+            layersJson = (await _blueprint.GetAsync(flow.FamilyId, cancellationToken))?.LayersJson;
+        }
+        catch
+        {
+            // school schedule lookup best-effort
+        }
+
+        var schoolByMember = new Dictionary<Guid, FamilyMemberSchoolPhaseDto>();
+        if (!string.IsNullOrWhiteSpace(layersJson))
+        {
+            foreach (var mid in commitments
+                         .Select(c => c.MemberId)
+                         .Where(id => id is Guid)
+                         .Cast<Guid>()
+                         .Distinct())
+            {
+                var schedule = FamilySchoolSchedule.ReadMemberSchedule(layersJson, mid);
+                if (schedule is null) continue;
+                var derived = FamilySchoolSchedule.Derive(schedule, localNow, timezone);
+                schoolByMember[mid] = new FamilyMemberSchoolPhaseDto(
+                    mid, derived.Phase, derived.QuietNow, derived.QuietEnd);
+            }
+        }
+
         var mapped = commitments
             .Select(c =>
             {
                 ledgerAwards.TryGetValue(c.Id, out var award);
+                FamilyMemberSchoolPhaseDto? school = null;
+                if (c.MemberId is Guid mid)
+                    schoolByMember.TryGetValue(mid, out school);
+                var schoolQuiet = school?.QuietNow ?? false;
+
                 return WithEveningPrediction(
                     MapCommitment(
                         c, localTime, flow.FlowDate, timezone, award, tierSettings, localNow,
                         memberStarBalance: null,
                         parentNudgesUsedToday: nudgesUsed,
                         familyObserveOnly: observeOnly,
-                        parentNudgeBudget: nudgeBudget),
+                        parentNudgeBudget: nudgeBudget,
+                        schoolQuiet: schoolQuiet,
+                        schoolPhase: school?.Phase),
                     localTime,
                     memberSignals: null);
             })
@@ -748,7 +785,8 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             mapped.Count(c => c.ReminderState == FamilyReminderStates.Overdue),
             mapped.Count(c => c.ReminderState == FamilyReminderStates.Upcoming),
             localTime,
-            mapped);
+            mapped,
+            schoolByMember.Count > 0 ? schoolByMember.Values.ToList() : null);
     }
 
     private async Task<FamilyStarTierSettings> ResolveTierSettingsAsync(
@@ -770,7 +808,9 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         int? memberStarBalance = null,
         int parentNudgesUsedToday = 0,
         bool familyObserveOnly = false,
-        int parentNudgeBudget = FamilyMotivationIntervention.DefaultParentNudgeBudgetPerDay)
+        int parentNudgeBudget = FamilyMotivationIntervention.DefaultParentNudgeBudgetPerDay,
+        bool schoolQuiet = false,
+        string? schoolPhase = null)
     {
         var (state, label) = FamilyCommitmentReminder.Evaluate(
             c.Status,
@@ -859,7 +899,8 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
                 parentNudgeBudget,
                 FamilyObserveOnly: familyObserveOnly,
                 WindowEnd: c.WindowEnd,
-                Title: c.Title));
+                Title: c.Title,
+                SchoolQuiet: schoolQuiet));
 
         return new CommitmentDto(
             c.Id,
@@ -953,7 +994,9 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
             FamilyEvidenceGate.MinRequiredDurationMinutes(c.ExpectedDurationMinutes),
             FamilyEvidenceGate.RequiresEvidence(kind, policy)
                 && !satisfied
-                && FamilyEvidenceGate.HasSubmittedPhoto(gateSignals));
+                && FamilyEvidenceGate.HasSubmittedPhoto(gateSignals),
+            schoolQuiet ? schoolPhase ?? FamilySchoolPhases.AtSchool : schoolPhase,
+            schoolQuiet);
     }
 
     private static FamilyEvidenceGate.Signals GateSignals(FamilyDayFlowRepository.CommitmentRow c) =>

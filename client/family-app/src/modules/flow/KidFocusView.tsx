@@ -127,6 +127,15 @@ import {
   parentVoiceHomeLineForBand,
   tasksFoxyBannerVi,
 } from '@/shared/care/care-age-tone';
+import {
+  isSchoolQuietNow,
+  morningCatchUpItems,
+  pickHeroEveningTask,
+  resolveSchoolPhase,
+  resolveSchoolSchedule,
+  schoolLandingCopy,
+  softOverdueLabel,
+} from '@/shared/school/school-season';
 
 const TRUST_CHILD_RE =
   /đánh răng|ăn sáng|ăn trưa|ăn tối|uống sữa|đi ngủ|ngủ|đi học|mặc|đồng phục|tắm|rửa mặt|rửa tay/i;
@@ -1871,6 +1880,56 @@ export function KidFocusView({
   const doneCount = trulyDone.length;
   const total = items.length;
   const remaining = pendingItems.length;
+
+  const schoolSchedule = useMemo(() => {
+    if (!childMemberId) return null;
+    return resolveSchoolSchedule(childMemberId, familyId);
+  }, [childMemberId, familyId]);
+
+  const schoolPhase = useMemo(
+    () => resolveSchoolPhase(schoolSchedule),
+    [schoolSchedule, localTime],
+  );
+
+  const schoolHero = useMemo(
+    () => pickHeroEveningTask(pendingItems, schoolPhase),
+    [pendingItems, schoolPhase],
+  );
+
+  const schoolMorningLeft = useMemo(
+    () => morningCatchUpItems(pendingItems, schoolPhase),
+    [pendingItems, schoolPhase],
+  );
+
+  const schoolLanding = useMemo(() => {
+    if (!schoolSchedule?.seasonOn || schoolSchedule.mode === 'off') return null;
+    if (schoolPhase === 'weekend' || schoolPhase === 'season_off') return null;
+    const kidShort = shortChildName(childName);
+    return schoolLandingCopy(kidShort, schoolPhase, {
+      morningLeft: schoolMorningLeft.length,
+      heroTitle: schoolHero?.title ?? null,
+      remaining,
+    });
+  }, [
+    schoolSchedule,
+    schoolPhase,
+    childName,
+    schoolMorningLeft.length,
+    schoolHero?.title,
+    remaining,
+  ]);
+
+  const softOverdueById = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const c of pendingItems) {
+      const label = softOverdueLabel(c, schoolPhase);
+      if (label) map[c.id] = label;
+    }
+    return map;
+  }, [pendingItems, schoolPhase]);
+
+  const homeNextMission = schoolHero ?? nextMission;
+
   const dayClosed = total > 0 && remaining === 0;
   const stars = localStars;
   const unlockPct = Math.max(
@@ -3628,7 +3687,7 @@ export function KidFocusView({
                 need: 40,
               }}
               badgeUnlocked={doneCount >= 3 || streak >= 3}
-              nextMission={nextMission}
+              nextMission={homeNextMission}
               todayItems={[...trulyDone, ...pendingItems].sort((a, b) => {
                 const aw = a.windowStart || a.windowEnd || '99:99';
                 const bw = b.windowStart || b.windowEnd || '99:99';
@@ -3641,6 +3700,37 @@ export function KidFocusView({
               thanksSent={thanksSent}
               thanksSending={thanksSending}
               foxyLine={foxyHomeLine}
+              schoolSeason={
+                schoolLanding
+                  ? {
+                      kicker: schoolLanding.kicker,
+                      bubble: schoolLanding.bubble,
+                      ctaLabel: schoolLanding.ctaLabel,
+                      phase: schoolPhase,
+                      quiet: isSchoolQuietNow(schoolSchedule),
+                    }
+                  : null
+              }
+              softOverdueById={softOverdueById}
+              onSchoolCta={() => {
+                if (schoolHero) {
+                  if (studyNeedsEvidence(schoolHero)) {
+                    beginEvidencePick(schoolHero);
+                    return;
+                  }
+                  if (canCompleteNow(schoolHero, localTime)) {
+                    void quickDoneMission(schoolHero);
+                    return;
+                  }
+                  openAction(schoolHero);
+                  return;
+                }
+                if (schoolMorningLeft[0]) {
+                  openAction(schoolMorningLeft[0]);
+                  return;
+                }
+                setTab('tasks');
+              }}
               taskIcon={taskIcon}
               durationLabel={(item) => {
                 if (!item.windowStart || !item.windowEnd) return null;

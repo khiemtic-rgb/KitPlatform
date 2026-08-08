@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   fetchFamilies,
   fetchFamilyBlueprint,
   fetchFamilySubscription,
+  fetchSchoolQuietMap,
   patchFamilyBlueprintLayers,
   type FamilyMembership,
   type FamilySubscription,
@@ -41,6 +42,16 @@ import {
   readContextChips,
   readMemberPraiseStyle,
 } from '@/shared/value/soft-calibration';
+import {
+  SCHOOL_MODE_OPTIONS,
+  hydrateSchoolSchedulesFromLayers,
+  resolveSchoolSchedule,
+  saveSchoolSchedule,
+  schoolPhaseLabelVi,
+  syncSaveSchoolSchedule,
+  type SchoolDayMode,
+  type SchoolSeasonSchedule,
+} from '@/shared/school/school-season';
 
 const MASTER_REMINDERS_KEY = 'famixa.reminders.master.v1';
 const APP_VERSION = 'v1.0.0';
@@ -94,6 +105,14 @@ export function FamilySettingsPage() {
   const [memberPraise, setMemberPraise] = useState<Record<string, string>>({});
   const [houseBusy, setHouseBusy] = useState(false);
   const [houseMsg, setHouseMsg] = useState<string | null>(null);
+  const [schoolByChild, setSchoolByChild] = useState<Record<string, SchoolSeasonSchedule>>(
+    {},
+  );
+  const [schoolMsg, setSchoolMsg] = useState<string | null>(null);
+  const [schoolPhaseByChild, setSchoolPhaseByChild] = useState<
+    Record<string, { phase: string; quietNow: boolean; quietEnd: string }>
+  >({});
+  const schoolSyncTimers = useRef<Record<string, number>>({});
 
   const childMembers = useMemo(
     () => members.filter((m) => m.roleCode === 'child'),
@@ -147,23 +166,65 @@ export function FamilySettingsPage() {
     if (!familyId) {
       setContextChips([]);
       setMemberPraise({});
+      setSchoolByChild({});
+      setSchoolPhaseByChild({});
       return;
     }
     try {
       const bp = await fetchFamilyBlueprint(familyId);
       const layers = parseLayersJson(bp?.layersJson);
       setContextChips(readContextChips(layers));
+      const kids = members.filter((x) => x.roleCode === 'child');
       const praise: Record<string, string> = {};
-      for (const m of members.filter((x) => x.roleCode === 'child')) {
+      for (const m of kids) {
         const style = readMemberPraiseStyle(layers, m.id);
         if (style) praise[m.id] = style;
       }
       setMemberPraise(praise);
+
+      const { byMember, toPush } = hydrateSchoolSchedulesFromLayers(
+        familyId,
+        kids.map((m) => m.id),
+        layers,
+      );
+      setSchoolByChild(byMember);
+      // SCH-01a: push local-only / newer local schedules to blueprint
+      for (const sch of toPush) {
+        void syncSaveSchoolSchedule(familyId, sch, member?.id).catch(() => {
+          /* keep local mirror; next open retries */
+        });
+      }
+
+      try {
+        const quiet = await fetchSchoolQuietMap(familyId);
+        const phases: Record<string, { phase: string; quietNow: boolean; quietEnd: string }> = {};
+        for (const m of quiet.members) {
+          phases[m.memberId] = {
+            phase: m.phase,
+            quietNow: m.quietNow,
+            quietEnd: m.quietEnd,
+          };
+        }
+        setSchoolPhaseByChild(phases);
+      } catch {
+        setSchoolPhaseByChild({});
+      }
     } catch {
       setContextChips([]);
       setMemberPraise({});
+      setSchoolPhaseByChild({});
+      const kidsFallback = members.filter((x) => x.roleCode === 'child');
+      if (kidsFallback.length > 0) {
+        const fallback: Record<string, SchoolSeasonSchedule> = {};
+        for (const m of kidsFallback) {
+          fallback[m.id] = resolveSchoolSchedule(m.id, familyId);
+        }
+        setSchoolByChild(fallback);
+      } else {
+        setSchoolByChild({});
+      }
     }
-  }, [familyId, members]);
+  }, [familyId, members, member?.id]);
 
   useEffect(() => {
     void reloadSub();
@@ -174,6 +235,64 @@ export function FamilySettingsPage() {
   useEffect(() => {
     void reloadHouseContext();
   }, [reloadHouseContext]);
+
+  useEffect(() => {
+    const timers = schoolSyncTimers.current;
+    return () => {
+      for (const id of Object.keys(timers)) {
+        window.clearTimeout(timers[id]);
+      }
+    };
+  }, []);
+
+  const patchChildSchool = (
+    memberId: string,
+    patch: Partial<SchoolSeasonSchedule>,
+  ) => {
+    const prev =
+      schoolByChild[memberId] ?? resolveSchoolSchedule(memberId, familyId);
+    const next: SchoolSeasonSchedule = {
+      ...prev,
+      ...patch,
+      memberId,
+      source: 'parent_settings',
+      updatedByMemberId: member?.id,
+      updatedAt: new Date().toISOString(),
+      schemaVersion: 1,
+    };
+    saveSchoolSchedule(next);
+    setSchoolByChild((s) => ({ ...s, [memberId]: next }));
+    setSchoolMsg('Đã lưu lịch mùa học — Fami im lặng đúng giờ từng con.');
+    window.setTimeout(() => setSchoolMsg(null), 2800);
+
+    if (!familyId) return;
+    window.clearTimeout(schoolSyncTimers.current[memberId]);
+    schoolSyncTimers.current[memberId] = window.setTimeout(() => {
+      void syncSaveSchoolSchedule(familyId, next, member?.id)
+        .then(async (saved) => {
+          setSchoolByChild((s) => ({ ...s, [memberId]: saved }));
+          try {
+            const quiet = await fetchSchoolQuietMap(familyId);
+            const phases: Record<string, { phase: string; quietNow: boolean; quietEnd: string }> =
+              {};
+            for (const row of quiet.members) {
+              phases[row.memberId] = {
+                phase: row.phase,
+                quietNow: row.quietNow,
+                quietEnd: row.quietEnd,
+              };
+            }
+            setSchoolPhaseByChild(phases);
+          } catch {
+            /* keep previous phase badge */
+          }
+        })
+        .catch(() => {
+          setSchoolMsg('Đã lưu trên máy — chưa đồng bộ cloud. Thử lại sau.');
+          window.setTimeout(() => setSchoolMsg(null), 3200);
+        });
+    }, 400);
+  };
 
   const toggleContextChip = async (code: string) => {
     if (!familyId || houseBusy) return;
@@ -593,6 +712,133 @@ export function FamilySettingsPage() {
         {houseMsg ? (
           <p className="fa-hint" role="status">
             {houseMsg}
+          </p>
+        ) : null}
+      </section>
+
+      {/* 3b. Mùa học — quiet hours + động viên tối */}
+      <section className="fa-card" id="fa-set-school-season">
+        <h2>
+          <span aria-hidden>🎒</span> Mùa học của con
+        </h2>
+        <p className="fa-hint">
+          Giờ học Fami im lặng (không nhắc trên máy). Sáng vội / tan học mới ghi nhận. Mỗi con một
+          lịch.
+        </p>
+        {childMembers.length === 0 ? (
+          <p className="fa-hint">Thêm thành viên trẻ để chỉnh lịch học.</p>
+        ) : (
+          <div className="fa-school-list">
+            {childMembers.map((m) => {
+              const sch =
+                schoolByChild[m.id] ?? resolveSchoolSchedule(m.id, familyId);
+              const live = schoolPhaseByChild[m.id];
+              return (
+                <div key={m.id} className="fa-school-card">
+                  <strong>
+                    {memberEmoji(m)} {m.displayName}
+                  </strong>
+                  {live ? (
+                    <p
+                      className={`fa-hint fa-school-phase${live.quietNow ? ' is-quiet' : ''}`}
+                      role="status"
+                    >
+                      Bây giờ: {schoolPhaseLabelVi(live.phase)}
+                      {live.quietNow && live.quietEnd
+                        ? ` · im tới ${live.quietEnd}`
+                        : ''}
+                    </p>
+                  ) : null}
+                  <div className="fa-house-chips" role="group" aria-label="Chế độ học">
+                    {SCHOOL_MODE_OPTIONS.map((o) => {
+                      const selected =
+                        o.value === 'off'
+                          ? !sch.seasonOn || sch.mode === 'off'
+                          : sch.seasonOn && sch.mode === o.value;
+                      return (
+                        <button
+                          key={o.value}
+                          type="button"
+                          className={`fa-house-chip${selected ? ' is-on' : ''}`}
+                          aria-pressed={selected}
+                          title={o.hint}
+                          onClick={() => {
+                            if (o.value === 'off') {
+                              patchChildSchool(m.id, { seasonOn: false, mode: 'off' });
+                            } else {
+                              patchChildSchool(m.id, {
+                                seasonOn: true,
+                                mode: o.value as SchoolDayMode,
+                              });
+                            }
+                          }}
+                        >
+                          {o.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {sch.seasonOn && sch.mode !== 'off' ? (
+                    <div className="fa-school-times">
+                      <label>
+                        Vào học
+                        <input
+                          type="time"
+                          value={sch.schoolStart}
+                          onChange={(e) =>
+                            patchChildSchool(m.id, { schoolStart: e.target.value })
+                          }
+                        />
+                      </label>
+                      <label>
+                        Tan học
+                        <input
+                          type="time"
+                          value={sch.schoolEnd}
+                          onChange={(e) =>
+                            patchChildSchool(m.id, { schoolEnd: e.target.value })
+                          }
+                        />
+                      </label>
+                      <label className="fa-school-extra">
+                        <input
+                          type="checkbox"
+                          checked={sch.hasExtraClass}
+                          onChange={(e) =>
+                            patchChildSchool(m.id, {
+                              hasExtraClass: e.target.checked,
+                              extraEnd: e.target.checked
+                                ? sch.extraEnd || '18:30'
+                                : undefined,
+                            })
+                          }
+                        />
+                        Có học thêm
+                      </label>
+                      {sch.hasExtraClass ? (
+                        <label>
+                          Xong học thêm
+                          <input
+                            type="time"
+                            value={sch.extraEnd || '18:30'}
+                            onChange={(e) =>
+                              patchChildSchool(m.id, { extraEnd: e.target.value })
+                            }
+                          />
+                        </label>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="fa-hint">Đang nghỉ mùa học — nhắc việc bình thường.</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {schoolMsg ? (
+          <p className="fa-hint" role="status">
+            {schoolMsg}
           </p>
         ) : null}
       </section>

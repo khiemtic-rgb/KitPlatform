@@ -81,11 +81,14 @@ function notifyBody(c: DayFlowCommitment): string {
 /**
  * Fire system notifications (with sound) + optional in-app chime for due_now / overdue.
  * Dedupes once per commitment state per day (session).
+ * Skips entirely during school quiet bubble (School Season).
  */
 export function notifyDueCommitments(
   flow: DayFlow,
-  opts?: { memberId?: string },
+  opts?: { memberId?: string; schoolQuiet?: boolean },
 ): number {
+  if (opts?.schoolQuiet) return 0;
+
   const notified = readSet(storageKey(flow.flowDate));
   const chimed = readSet(chimeStorageKey(flow.flowDate));
   let fired = 0;

@@ -147,6 +147,7 @@ internal sealed class FamilyOsParentPushRepository
                 c.window_start AS WindowStart,
                 c.window_end AS WindowEnd,
                 c.completed_at AS CompletedAt,
+                c.member_id AS MemberId,
                 m.display_name AS MemberName,
                 m.role_code AS MemberRole,
                 COALESCE(t.habit_stage, c.habit_stage, 'new') AS HabitStage,
@@ -166,6 +167,24 @@ internal sealed class FamilyOsParentPushRepository
               AND c.status IN ('pending', 'in_progress')
             """);
         return rows.AsList();
+    }
+
+    /// <summary>SCH-01c — load blueprint layers for quiet-hour filter (cross-tenant worker).</summary>
+    public async Task<string?> GetBlueprintLayersJsonAsync(
+        Guid tenantId,
+        Guid familyId,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<string?>(
+            """
+            SELECT layers_json::text
+            FROM pack_family.family_blueprint
+            WHERE tenant_id = @TenantId
+              AND family_id = @FamilyId
+              AND deleted_at IS NULL
+            """,
+            new { TenantId = tenantId, FamilyId = familyId });
     }
 
     public async Task<IReadOnlyList<DigestItemRow>> ListDigestCandidatesAsync(
@@ -542,6 +561,7 @@ internal sealed class FamilyOsParentPushRepository
         public TimeOnly? WindowStart { get; init; }
         public TimeOnly? WindowEnd { get; init; }
         public DateTimeOffset? CompletedAt { get; init; }
+        public Guid? MemberId { get; init; }
         public string? MemberName { get; init; }
         public string? MemberRole { get; init; }
         public string? HabitStage { get; init; }

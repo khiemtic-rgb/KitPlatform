@@ -63,7 +63,9 @@ public static class FamilyMotivationIntervention
         TimeOnly? WindowEnd = null,
         string? Title = null,
         string? ForcedPatternCode = null,
-        string? ForcedTacticCode = null);
+        string? ForcedTacticCode = null,
+        /// <summary>SCH-01c — child is in school quiet bubble (at_school).</summary>
+        bool SchoolQuiet = false);
 
     public sealed record Decision(
         string MotivationDriver,
@@ -88,6 +90,19 @@ public static class FamilyMotivationIntervention
                 AllowParentPush: false,
                 AllowChildChime: false,
                 ParentAdviceVi: "");
+        }
+
+        // SCH-01c — hot parent push + kid chime off while at school (incl. học thêm).
+        if (i.SchoolQuiet)
+        {
+            return new Decision(
+                FamilyMotivationDrivers.Rest,
+                "Đang giờ học — Fami im lặng, mình ghi nhận khi tan học nhé.",
+                FamilyInterventionLevels.ObserveOnly,
+                FamilyInterventionLevels.LabelVi(FamilyInterventionLevels.ObserveOnly),
+                AllowParentPush: false,
+                AllowChildChime: false,
+                ParentAdviceVi: "Con đang ở giờ học — không nhắc push; đợi tan học rồi động viên một việc.");
         }
 
         var stage = (i.HabitStage ?? FamilyHabitStages.New).Trim().ToLowerInvariant();

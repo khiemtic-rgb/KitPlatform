@@ -6,6 +6,7 @@ import {
   fetchAccountabilityGlance,
   fetchConsequenceEvents,
   fetchFamilies,
+  fetchFamilyBlueprint,
   fetchMemberStarBalance,
   fetchTeamDay,
   updateCommitmentProgress,
@@ -24,6 +25,12 @@ import {
 } from '@/shared/api/family-os.api';
 import { useSessionStore } from '@/shared/auth/session.store';
 import { notifyDueCommitments } from '@/shared/reminders/localReminders';
+import {
+  hydrateSchoolSchedulesFromLayers,
+  isSchoolQuietNow,
+  resolveSchoolSchedule,
+  syncSaveSchoolSchedule,
+} from '@/shared/school/school-season';
 import { ParentPinSheet } from '@/shared/ui/ParentPinSheet';
 import { useHoldAction } from '@/shared/ui/useHoldAction';
 import { KidFocusView } from '@/modules/flow/KidFocusView';
@@ -33,6 +40,7 @@ import { RetrievalCheckSheet } from '@/modules/flow/RetrievalCheckSheet';
 import { buildTeamDayFromChildren, slicesFromCommitments } from '@/modules/flow/teamPlay';
 import { isScreenBoundaryCode } from '@/shared/screen/screenBoundary';
 import { hydrateFamilyValueState } from '@/shared/value/value-sync';
+import { parseLayersJson } from '@/shared/value/soft-calibration';
 import { getApiErrorMessage } from '@/shared/billing/capability-error';
 import { parentRoleFromMembers } from '@/shared/voice/family-voice';
 
@@ -119,6 +127,34 @@ export function TodayFlowPage() {
   }, [familyId]);
 
   useEffect(() => {
+    if (!familyId || familyChildren.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const bp = await fetchFamilyBlueprint(familyId);
+        if (cancelled) return;
+        const layers = parseLayersJson(bp?.layersJson);
+        const { toPush } = hydrateSchoolSchedulesFromLayers(
+          familyId,
+          familyChildren.map((c) => c.id),
+          layers,
+        );
+        for (const sch of toPush) {
+          if (cancelled) return;
+          await syncSaveSchoolSchedule(familyId, sch).catch(() => {
+            /* offline / next open retries */
+          });
+        }
+      } catch {
+        /* local schedule still used */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId, familyChildren]);
+
+  useEffect(() => {
     if (!familyId) return;
     void fetchFamilies()
       .then((families) => {
@@ -174,6 +210,10 @@ export function TodayFlowPage() {
       }
       notifyDueCommitments(day, {
         memberId: current?.roleCode === 'child' ? current.id : undefined,
+        schoolQuiet:
+          current?.roleCode === 'child' && familyId
+            ? isSchoolQuietNow(resolveSchoolSchedule(current.id, familyId))
+            : false,
       });
     } catch (err) {
       const status =

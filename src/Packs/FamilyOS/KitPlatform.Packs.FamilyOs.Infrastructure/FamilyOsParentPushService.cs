@@ -248,6 +248,7 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
         var sent = 0;
 
         var alertedFamilies = new HashSet<Guid>();
+        var layersCache = new Dictionary<(Guid TenantId, Guid FamilyId), string?>();
 
         foreach (var row in opens)
         {
@@ -281,6 +282,9 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
             if (state is not (FamilyReminderStates.DueNow or FamilyReminderStates.Overdue))
                 continue;
 
+            var schoolQuiet = await IsChildSchoolQuietAsync(
+                row, localNow, layersCache, cancellationToken);
+
             var nudgesUsed = 0;
             var observeOnly = false;
             var nudgeBudget = FamilyMotivationIntervention.DefaultParentNudgeBudgetPerDay;
@@ -312,7 +316,8 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
                     nudgeBudget,
                     FamilyObserveOnly: observeOnly,
                     WindowEnd: row.WindowEnd,
-                    Title: row.Title));
+                    Title: row.Title,
+                    SchoolQuiet: schoolQuiet));
 
             if (!decision.AllowParentPush)
             {
@@ -323,7 +328,7 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
                         row.CommitmentId,
                         memberId: null,
                         allowed: false,
-                        reason: decision.InterventionLevel,
+                        reason: schoolQuiet ? "school_quiet" : decision.InterventionLevel,
                         cancellationToken);
                 }
                 catch
@@ -370,6 +375,41 @@ internal sealed class FamilyOsParentPushService : IFamilyOsParentPushService
         }
 
         return sent;
+    }
+
+    private async Task<bool> IsChildSchoolQuietAsync(
+        FamilyOsParentPushRepository.OpenCommitmentRow row,
+        DateTimeOffset localNow,
+        Dictionary<(Guid TenantId, Guid FamilyId), string?> layersCache,
+        CancellationToken cancellationToken)
+    {
+        if (row.MemberId is not Guid memberId || memberId == Guid.Empty)
+            return false;
+        if (!string.Equals(row.MemberRole, FamilyMembershipRoles.Child, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var key = (row.TenantId, row.FamilyId);
+        if (!layersCache.TryGetValue(key, out var layersJson))
+        {
+            try
+            {
+                layersJson = await _repo.GetBlueprintLayersJsonAsync(
+                    row.TenantId, row.FamilyId, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "School schedule layers lookup failed for family {FamilyId}", row.FamilyId);
+                layersJson = null;
+            }
+
+            layersCache[key] = layersJson;
+        }
+
+        if (string.IsNullOrWhiteSpace(layersJson))
+            return false;
+
+        var schedule = FamilySchoolSchedule.ReadMemberSchedule(layersJson, memberId);
+        return FamilySchoolSchedule.IsQuietNow(schedule, localNow, row.Timezone);
     }
 
     private async Task<int> DispatchApprovalDigestsAsync(

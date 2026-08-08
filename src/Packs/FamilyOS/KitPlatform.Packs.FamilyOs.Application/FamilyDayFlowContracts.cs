@@ -14,7 +14,9 @@ public sealed record DayFlowDto(
     int OverdueCount,
     int UpcomingCount,
     TimeOnly LocalTime,
-    IReadOnlyList<CommitmentDto> Commitments);
+    IReadOnlyList<CommitmentDto> Commitments,
+    /// <summary>SCH-02 — phase/quiet snapshot per child (empty when no schedule).</summary>
+    IReadOnlyList<FamilyMemberSchoolPhaseDto>? SchoolMembers = null);
 
 public sealed record CommitmentDto(
     Guid Id,
@@ -86,7 +88,10 @@ public sealed record CommitmentDto(
     bool StudyDurationMet = true,
     int? StudyMinDurationMinutes = null,
     /// <summary>P0.5 — photo uploaded but not yet parent/retrieval-satisfied.</summary>
-    bool EvidenceSubmitted = false);
+    bool EvidenceSubmitted = false,
+    /// <summary>SCH-02 — current school phase for commitment owner (if child).</summary>
+    string? SchoolPhase = null,
+    bool SchoolQuiet = false);
 
 public sealed record EnsureDayFlowRequest(
     DateOnly? FlowDate,
