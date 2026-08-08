@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-08T13:13:38.552Z",
+  "generatedAt": "2026-08-08T19:00:00.120Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 473,
-    "todayPageViews": 441,
-    "todayRequests": 1928,
-    "last24hVisitors": 548,
-    "last24hPageViews": 494,
-    "last24hRequests": 2184
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 653,
+    "last24hPageViews": 582,
+    "last24hRequests": 2469
   },
   "hourly": [
-    {
-      "time": "2026-08-07T14:00:00Z",
-      "visitors": 10,
-      "requests": 17
-    },
-    {
-      "time": "2026-08-07T15:00:00Z",
-      "visitors": 14,
-      "requests": 31
-    },
-    {
-      "time": "2026-08-07T16:00:00Z",
-      "visitors": 30,
-      "requests": 91
-    },
-    {
-      "time": "2026-08-07T17:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-07T18:00:00Z",
-      "visitors": 12,
-      "requests": 13
-    },
     {
       "time": "2026-08-07T19:00:00Z",
       "visitors": 6,
@@ -128,17 +103,36 @@
     },
     {
       "time": "2026-08-08T13:00:00Z",
-      "visitors": 6,
-      "requests": 6
+      "visitors": 29,
+      "requests": 39
+    },
+    {
+      "time": "2026-08-08T14:00:00Z",
+      "visitors": 69,
+      "requests": 132
+    },
+    {
+      "time": "2026-08-08T15:00:00Z",
+      "visitors": 69,
+      "requests": 114
+    },
+    {
+      "time": "2026-08-08T16:00:00Z",
+      "visitors": 83,
+      "requests": 137
+    },
+    {
+      "time": "2026-08-08T17:00:00Z",
+      "visitors": 16,
+      "requests": 20
+    },
+    {
+      "time": "2026-08-08T18:00:00Z",
+      "visitors": 10,
+      "requests": 10
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-02",
-      "visitors": 387,
-      "pageViews": 313,
-      "requests": 721
-    },
     {
       "date": "2026-08-03",
       "visitors": 473,
@@ -171,71 +165,71 @@
     },
     {
       "date": "2026-08-08",
-      "visitors": 473,
-      "pageViews": 441,
-      "requests": 1928
+      "visitors": 618,
+      "pageViews": 558,
+      "requests": 2373
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 343
+      "views": 340
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 301
+      "views": 318
+    },
+    {
+      "path": "/brand/xuanhoa-logo.png",
+      "views": 168
     },
     {
       "path": "/vi/tin-tuc/cach-giam-thoi-gian-phuc-vu-moi-khach-tai-nha-thuoc-ma-khong-lam-giam-chat-luong-tu-van/",
       "views": 133
     },
     {
-      "path": "/brand/xuanhoa-logo.png",
-      "views": 102
-    },
-    {
       "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
-      "views": 73
+      "views": 87
     },
     {
       "path": "/favicon.svg",
       "views": 72
     },
     {
-      "path": "/vi/",
-      "views": 58
+      "path": "/_astro/storefront.CUqIdUG9.css",
+      "views": 69
     },
     {
-      "path": "/_astro/storefront.CUqIdUG9.css",
+      "path": "/vi/health-check/",
       "views": 56
     },
     {
-      "path": "/brand/family-health.png",
-      "views": 39
+      "path": "/vi/",
+      "views": 54
     },
     {
       "path": "/robots.txt",
-      "views": 34
+      "views": 45
     },
     {
-      "path": "/brand/xuanhoa-hero.png",
+      "path": "/brand/family-health.png",
+      "views": 33
+    },
+    {
+      "path": "/images/tin-tuc/quy-trinh-ban-thuoc.png",
       "views": 29
-    },
-    {
-      "path": "/brand/products/hapacol-pain.jpg",
-      "views": 28
     },
     {
       "path": "/brand/products/wellwoman-vitamin.jpg",
       "views": 28
     },
     {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 26
+      "path": "/brand/xuanhoa-hero.png",
+      "views": 27
     },
     {
-      "path": "/images/tin-tuc/quy-trinh-ban-thuoc.png",
-      "views": 25
+      "path": "/brand/products/hapacol-pain.jpg",
+      "views": 26
     }
   ]
 }
