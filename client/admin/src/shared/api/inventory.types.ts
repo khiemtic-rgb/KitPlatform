@@ -31,7 +31,10 @@ export type StockBatch = Req<
   | 'quantityAvailable'
   | 'quantityReceived'
   | 'status'
-> & Pick<StockBatchListItemDto, 'saleUnitName'>;
+> &
+  Pick<StockBatchListItemDto, 'saleUnitName'> & {
+    expiryDate?: string;
+  };
 
 export type PagedStockBatches = Omit<Req<PagedStockBatchesResult, 'total' | 'page' | 'pageSize'>, 'items'> & {
   items: StockBatch[];

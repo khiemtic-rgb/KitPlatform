@@ -19,7 +19,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { isAxiosError } from 'axios';
-import { PlusOutlined, ReloadOutlined, EyeOutlined, CheckOutlined, TeamOutlined } from '@ant-design/icons';
+import { PlusOutlined, ReloadOutlined, EyeOutlined, CheckOutlined, TeamOutlined, AppstoreOutlined } from '@ant-design/icons';
 import {
   approveAdjustment,
   createAdjustment,
@@ -38,7 +38,14 @@ import type {
   Warehouse,
 } from '@/shared/api/inventory.types';
 import { formatDisplayDate } from '@/shared/utils/date';
+import { formatDisplayQuantity } from '@/shared/utils/money';
+import { InventoryCountBatchPickModal } from '@/modules/inventory/InventoryCountBatchPickModal';
 import { InventoryCountWorkflowSteps } from '@/modules/inventory/InventoryCountWorkflowSteps';
+import {
+  expiryToneColor,
+  getExpiryTone,
+  sortBatchesForCount,
+} from '@/modules/inventory/inventory-count-batch-sort';
 import {
   buildCountReason,
   getCountReasonPresets,
@@ -47,7 +54,7 @@ import {
 import { useInventoryEnums } from '@/shared/i18n/use-inventory-enums';
 
 interface AdjustmentLineForm {
-  batchId: string;
+  batchId?: string;
   actualQuantity: number;
   note?: string;
 }
@@ -75,7 +82,11 @@ export function AdjustmentListPage() {
   const [sessionForm] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [prepareAcknowledged, setPrepareAcknowledged] = useState(false);
+  const [batchPickOpen, setBatchPickOpen] = useState(false);
+  /** null = thêm dòng mới từ modal; số = gắn vào dòng Form.List hiện có */
+  const [batchPickFieldIndex, setBatchPickFieldIndex] = useState<number | null>(null);
   const warehouseId = Form.useWatch('warehouseId', form);
+  const formItems = Form.useWatch('items', form) as AdjustmentLineForm[] | undefined;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,14 +111,74 @@ export function AdjustmentListPage() {
       return;
     }
     fetchStockBatches({ warehouseId, page: 1, pageSize: 200 })
-      .then((r) => setWarehouseBatches(r.items))
+      .then((r) => setWarehouseBatches(sortBatchesForCount(r.items)))
       .catch(() => setWarehouseBatches([]));
   }, [warehouseId]);
 
+  const batchById = useMemo(() => {
+    const map = new Map<string, StockBatch>();
+    for (const b of warehouseBatches) map.set(b.id, b);
+    return map;
+  }, [warehouseBatches]);
+
   const openCreate = () => {
     form.resetFields();
-    form.setFieldsValue({ items: [{ actualQuantity: 0 }] });
+    form.setFieldsValue({ items: [] });
     setDrawerOpen(true);
+  };
+
+  const openBatchPick = (fieldIndex: number | null) => {
+    if (!warehouseId) {
+      message.warning(t('validation.selectWarehouseFirst'));
+      return;
+    }
+    if (warehouseBatches.length === 0) {
+      message.warning(t('validation.noBatchesInWarehouse'));
+      return;
+    }
+    setBatchPickFieldIndex(fieldIndex);
+    setBatchPickOpen(true);
+  };
+
+  const handleBatchPickConfirm = (selected: StockBatch[]) => {
+    setBatchPickOpen(false);
+    if (selected.length === 0) return;
+
+    const current = [...((form.getFieldValue('items') as AdjustmentLineForm[] | undefined) ?? [])];
+    const usedIds = new Set(
+      current.map((r) => r.batchId).filter((id): id is string => Boolean(id)),
+    );
+
+    const toLine = (b: StockBatch): AdjustmentLineForm => ({
+      batchId: b.id,
+      actualQuantity: Math.max(0, b.quantityAvailable),
+    });
+
+    if (batchPickFieldIndex != null && batchPickFieldIndex >= 0 && batchPickFieldIndex < current.length) {
+      const [first, ...rest] = selected;
+      current[batchPickFieldIndex] = toLine(first);
+      usedIds.add(first.id);
+      for (const b of rest) {
+        if (usedIds.has(b.id)) continue;
+        current.push(toLine(b));
+        usedIds.add(b.id);
+      }
+      form.setFieldsValue({ items: current });
+    } else {
+      const next = [...current];
+      for (const b of selected) {
+        if (usedIds.has(b.id)) continue;
+        next.push(toLine(b));
+        usedIds.add(b.id);
+      }
+      form.setFieldsValue({ items: next.length > 0 ? next : selected.map(toLine) });
+    }
+
+    message.success(
+      selected.length === 1
+        ? t('messages.batchSelected', { batch: selected[0].batchNumber })
+        : t('messages.batchesAdded', { count: selected.length }),
+    );
   };
 
   const openCreateSession = () => {
@@ -177,11 +248,13 @@ export function AdjustmentListPage() {
       const created = await createAdjustment({
         warehouseId: values.warehouseId,
         reason: values.reason,
-        items: (values.items as AdjustmentLineForm[]).map((i) => ({
-          batchId: i.batchId,
-          actualQuantity: i.actualQuantity,
-          note: i.note,
-        })),
+        items: (values.items as AdjustmentLineForm[])
+          .filter((i) => i.batchId)
+          .map((i) => ({
+            batchId: i.batchId!,
+            actualQuantity: i.actualQuantity,
+            note: i.note,
+          })),
       });
       message.success(t('messages.createSuccess', { number: created.adjustmentNumber }));
       setDrawerOpen(false);
@@ -316,7 +389,7 @@ export function AdjustmentListPage() {
 
       <Drawer
         title={t('createBatchTitle')}
-        width={600}
+        width={880}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         extra={
@@ -329,59 +402,156 @@ export function AdjustmentListPage() {
         }
       >
         <Form form={form} layout="vertical">
+          <Typography.Paragraph type="secondary" style={{ marginTop: 0, fontSize: 13 }}>
+            {t('batchDrawerTip')}
+          </Typography.Paragraph>
           <Form.Item name="warehouseId" label={t('countWarehouse')} rules={[{ required: true }]}>
             <Select
               options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
               placeholder={t('selectWarehouse')}
+              onChange={() => form.setFieldsValue({ items: [] })}
             />
           </Form.Item>
           <Form.Item name="reason" label={ts('reason')}>
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.List name="items">
-            {(fields, { add, remove }) => (
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(280px, 1fr) 112px 80px 72px 64px',
+              gap: 10,
+              marginBottom: 8,
+              fontSize: 12,
+              color: '#64748b',
+              fontWeight: 600,
+            }}
+          >
+            <span>{t('columns.batch')}</span>
+            <span>{t('columns.actualQty')}</span>
+            <span>{t('columns.systemQty')}</span>
+            <span>{t('columns.variance')}</span>
+            <span />
+          </div>
+
+          <Form.List
+            name="items"
+            rules={[
+              {
+                validator: async (_, value) => {
+                  if (!value || value.length === 0) {
+                    return Promise.reject(new Error(t('validation.atLeastOneBatch')));
+                  }
+                },
+              },
+            ]}
+          >
+            {(fields, { remove }, { errors }) => (
               <>
-                {fields.map((field) => (
-                  <Space key={field.key} align="start" style={{ display: 'flex', marginBottom: 8 }}>
-                    <Form.Item
-                      {...field}
-                      name={[field.name, 'batchId']}
-                      rules={[{ required: true, message: t('validation.selectBatch') }]}
-                      style={{ width: 300, marginBottom: 0 }}
+                {fields.map((field) => {
+                  const row = formItems?.[field.name];
+                  const batch = row?.batchId ? batchById.get(row.batchId) : undefined;
+                  const sysQty = batch?.quantityAvailable ?? null;
+                  const actual = Number(row?.actualQuantity ?? 0);
+                  const variance = sysQty == null ? null : actual - sysQty;
+                  const tone = getExpiryTone(batch?.expiryDate);
+                  return (
+                    <div
+                      key={field.key}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'minmax(280px, 1fr) 112px 80px 72px 64px',
+                        gap: 10,
+                        marginBottom: 8,
+                        alignItems: 'start',
+                      }}
                     >
-                      <Select
-                        placeholder={ts('batchAbbr')}
-                        options={warehouseBatches.map((b) => ({
-                          value: b.id,
-                          label: t('batchOptionLabel', {
-                            code: b.productCode,
-                            batch: b.batchNumber,
-                            qty: b.quantityAvailable,
-                          }),
-                        }))}
-                      />
-                    </Form.Item>
-                    <Form.Item
-                      {...field}
-                      name={[field.name, 'actualQuantity']}
-                      rules={[{ required: true, message: t('validation.actualQuantity') }]}
-                      style={{ width: 110, marginBottom: 0 }}
-                    >
-                      <InputNumber min={0} style={{ width: '100%' }} />
-                    </Form.Item>
-                    <Button type="text" danger onClick={() => remove(field.name)}>
-                      {tc('actions.delete')}
-                    </Button>
-                  </Space>
-                ))}
-                <Button type="dashed" onClick={() => add({ actualQuantity: 0 })} block>
-                  {ts('addLine')}
+                      <Form.Item
+                        {...field}
+                        name={[field.name, 'batchId']}
+                        rules={[{ required: true, message: t('validation.selectBatch') }]}
+                        style={{ marginBottom: 0 }}
+                      >
+                        <BatchPickTrigger
+                          label={
+                            batch
+                              ? t('batchOptionLabel', {
+                                  code: batch.productCode,
+                                  batch: batch.batchNumber,
+                                  qty: batch.quantityAvailable,
+                                })
+                              : t('pickBatch')
+                          }
+                          expiryColor={expiryToneColor(tone)}
+                          onClick={() => openBatchPick(field.name)}
+                          disabled={!warehouseId}
+                        />
+                      </Form.Item>
+                      <Form.Item
+                        {...field}
+                        name={[field.name, 'actualQuantity']}
+                        rules={[{ required: true, message: t('validation.actualQuantity') }]}
+                        style={{ marginBottom: 0 }}
+                      >
+                        <InputNumber min={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                      <div style={{ lineHeight: '32px', color: '#64748b' }}>
+                        {sysQty == null ? '—' : formatDisplayQuantity(sysQty)}
+                      </div>
+                      <div
+                        style={{
+                          lineHeight: '32px',
+                          fontWeight: 600,
+                          color:
+                            variance == null || variance === 0
+                              ? '#64748b'
+                              : variance > 0
+                                ? '#389e0d'
+                                : '#cf1322',
+                        }}
+                      >
+                        {variance == null
+                          ? '—'
+                          : `${variance > 0 ? '+' : ''}${formatDisplayQuantity(variance)}`}
+                      </div>
+                      <Button type="text" danger onClick={() => remove(field.name)}>
+                        {tc('actions.delete')}
+                      </Button>
+                    </div>
+                  );
+                })}
+                <Button
+                  type="primary"
+                  ghost
+                  icon={<AppstoreOutlined />}
+                  onClick={() => openBatchPick(null)}
+                  block
+                  disabled={!warehouseId}
+                  style={{ marginTop: fields.length > 0 ? 4 : 0 }}
+                >
+                  {t('pickBatches')}
                 </Button>
+                <Form.ErrorList errors={errors} />
               </>
             )}
           </Form.List>
         </Form>
       </Drawer>
+
+      <InventoryCountBatchPickModal
+        open={batchPickOpen}
+        productLabel={
+          warehouses.find((w) => w.id === warehouseId)?.warehouseName ?? t('countWarehouse')
+        }
+        batches={warehouseBatches}
+        initialSelectedIds={
+          batchPickFieldIndex != null && formItems?.[batchPickFieldIndex]?.batchId
+            ? [formItems[batchPickFieldIndex].batchId!]
+            : []
+        }
+        onCancel={() => setBatchPickOpen(false)}
+        onConfirm={handleBatchPickConfirm}
+      />
 
       <Drawer
         title={t('sessionStep1Title')}
@@ -479,5 +649,40 @@ export function AdjustmentListPage() {
         )}
       </Drawer>
     </>
+  );
+}
+
+/** Trigger Form.Item (value/onChange) — mở modal chọn lô thay vì Select. */
+function BatchPickTrigger({
+  label,
+  expiryColor,
+  onClick,
+  disabled,
+  value,
+}: {
+  label: string;
+  expiryColor?: string;
+  onClick: () => void;
+  disabled?: boolean;
+  value?: string;
+  onChange?: (v?: string) => void;
+}) {
+  const hasValue = Boolean(value);
+  return (
+    <Button
+      block
+      disabled={disabled}
+      onClick={onClick}
+      style={{
+        textAlign: 'left',
+        height: 'auto',
+        minHeight: 32,
+        whiteSpace: 'normal',
+        borderColor: hasValue && expiryColor ? expiryColor : undefined,
+        color: hasValue && expiryColor && expiryColor !== '#64748b' ? expiryColor : undefined,
+      }}
+    >
+      {label}
+    </Button>
   );
 }

@@ -8,7 +8,6 @@ import {
   Card,
   Input,
   InputNumber,
-  Select,
   Space,
   Table,
   Tag,
@@ -18,6 +17,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
+  AppstoreOutlined,
   ArrowLeftOutlined,
   CheckOutlined,
   DeleteOutlined,
@@ -49,10 +49,17 @@ import { useInventoryEnums } from '@/shared/i18n/use-inventory-enums';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayQuantity, quantityInputNumberProps } from '@/shared/utils/money';
 import { InventoryCountApproveModal } from '@/modules/inventory/InventoryCountApproveModal';
+import { InventoryCountBatchPickModal } from '@/modules/inventory/InventoryCountBatchPickModal';
 import { InventoryCountWorkflowSteps } from '@/modules/inventory/InventoryCountWorkflowSteps';
 import { countVarianceSummary } from '@/modules/inventory/inventory-count-workflow';
+import {
+  expiryToneColor,
+  getExpiryTone,
+  sortBatchesForCount,
+} from '@/modules/inventory/inventory-count-batch-sort';
 import { printInventoryCountSheet } from '@/shared/print/inventory-count-print';
 import { useAuthStore } from '@/shared/auth/auth.store';
+import type { StockBatch } from '@/shared/api/inventory.types';
 
 interface ProductSearchOption {
   value: string;
@@ -95,6 +102,8 @@ export function InventoryCountPage() {
   const [activeUnitName, setActiveUnitName] = useState<string | null>(null);
   const [selectedBatchId, setSelectedBatchId] = useState<string | undefined>();
   const [batchOptions, setBatchOptions] = useState<{ value: string; label: string }[]>([]);
+  const [productBatches, setProductBatches] = useState<StockBatch[]>([]);
+  const [batchPickOpen, setBatchPickOpen] = useState(false);
   const [productOptions, setProductOptions] = useState<ProductSearchOption[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [zone, setZone] = useState('');
@@ -184,6 +193,7 @@ export function InventoryCountPage() {
     ): Promise<{ batchId?: string; batchLabel?: string }> => {
       if (!detail?.warehouseId) {
         setBatchOptions([]);
+        setProductBatches([]);
         setSelectedBatchId(undefined);
         setBatchProbeDone(true);
         return {};
@@ -194,10 +204,11 @@ export function InventoryCountPage() {
           warehouseId: detail.warehouseId,
           productId,
           page: 1,
-          pageSize: 50,
+          pageSize: 100,
         });
-        const options = result.items.map((b) => {
-          const inv = inventoryT();
+        const sorted = sortBatchesForCount(result.items);
+        const inv = inventoryT();
+        const options = sorted.map((b) => {
           const expiry = b.expiryDate
             ? inv('shared.expirySuffix', { date: formatDisplayDate(b.expiryDate) })
             : '';
@@ -210,16 +221,21 @@ export function InventoryCountPage() {
             }),
           };
         });
+        setProductBatches(sorted);
         setBatchOptions(options);
 
-        const batchId = preferredBatchId && options.some((o) => o.value === preferredBatchId)
-          ? preferredBatchId
-          : options[0]?.value;
-        setSelectedBatchId(batchId);
-        const batchLabel = batchId ? options.find((o) => o.value === batchId)?.label : undefined;
-        return { batchId, batchLabel };
+        const preferInStock =
+          preferredBatchId && sorted.some((b) => b.id === preferredBatchId)
+            ? preferredBatchId
+            : sorted.find((b) => b.quantityAvailable > 0)?.id ?? sorted[0]?.id;
+        setSelectedBatchId(preferInStock);
+        const batchLabel = preferInStock
+          ? options.find((o) => o.value === preferInStock)?.label
+          : undefined;
+        return { batchId: preferInStock, batchLabel };
       } catch {
         setBatchOptions([]);
+        setProductBatches([]);
         setSelectedBatchId(undefined);
         return {};
       } finally {
@@ -327,9 +343,68 @@ export function InventoryCountPage() {
     setActiveUnitName(null);
     setSelectedBatchId(undefined);
     setBatchOptions([]);
+    setProductBatches([]);
     setProductOptions([]);
     setBatchProbeDone(false);
     setQuantity(1);
+  };
+
+  const selectedBatchSummary = useMemo(() => {
+    if (!selectedBatchId) return null;
+    const batch = productBatches.find((b) => b.id === selectedBatchId);
+    if (!batch) {
+      return batchOptions.find((b) => b.value === selectedBatchId)?.label ?? selectedBatchId;
+    }
+    return batch.batchNumber;
+  }, [selectedBatchId, productBatches, batchOptions]);
+
+  const handleBatchPickConfirm = (selected: StockBatch[]) => {
+    setBatchPickOpen(false);
+    if (selected.length === 0) return;
+
+    const inv = inventoryT();
+    const toLabel = (b: StockBatch) => {
+      const expiry = b.expiryDate
+        ? inv('shared.expirySuffix', { date: formatDisplayDate(b.expiryDate) })
+        : '';
+      return inv('shared.batchWithExpiry', {
+        number: b.batchNumber,
+        expiry,
+        qty: formatDisplayQuantity(b.quantityAvailable),
+      });
+    };
+
+    // Một lô: gắn vào dòng đang đếm (Lưu đếm).
+    if (selected.length === 1) {
+      setSelectedBatchId(selected[0].id);
+      message.success(t('messages.batchSelected', { batch: selected[0].batchNumber }));
+      return;
+    }
+
+    // Nhiều lô: đẩy vào dòng chờ với SL hiện tại (mặc định = tồn hệ thống nếu SL=1 hoặc chưa đổi? dùng quantity).
+    if (quantity <= 0) {
+      message.warning(t('messages.quantityMustBePositive'));
+      setSelectedBatchId(selected[0].id);
+      return;
+    }
+    if (!activeProductId) {
+      message.warning(t('messages.scanOrSelectProduct'));
+      return;
+    }
+
+    const lines: DraftLine[] = selected.map((b) => ({
+      key: nextDraftKey(),
+      productId: activeProductId,
+      productLabel: productSearch,
+      batchId: b.id,
+      batchLabel: toLabel(b),
+      quantity,
+      unitName: activeUnitName ?? undefined,
+      zone: zone.trim() || undefined,
+    }));
+    setDraftLines((prev) => [...lines, ...prev]);
+    setSelectedBatchId(selected[0].id);
+    message.success(t('messages.batchesAddedToDraft', { count: lines.length }));
   };
 
   const buildResolvedLine = async (): Promise<DraftLine | null> => {
@@ -658,6 +733,7 @@ export function InventoryCountPage() {
                     setActiveUnitName(null);
                     setSelectedBatchId(undefined);
                     setBatchOptions([]);
+                    setProductBatches([]);
                     setBatchProbeDone(false);
                   }}
                   onSelect={(value, option) => {
@@ -673,17 +749,35 @@ export function InventoryCountPage() {
                   }
                 />
                 {activeProductId && batchOptions.length > 0 && (
-                  <Select
+                  <Button
                     size="large"
-                    showSearch
-                    optionFilterProp="label"
-                    placeholder={t('batchPlaceholder')}
-                    value={selectedBatchId}
-                    options={batchOptions}
-                    onChange={(value) => setSelectedBatchId(value)}
-                    style={{ flex: '0 0 420px', width: 420 }}
+                    icon={<AppstoreOutlined />}
+                    onClick={() => setBatchPickOpen(true)}
                     disabled={submitting}
-                  />
+                    style={{ flex: '0 0 420px', width: 420, textAlign: 'left' }}
+                  >
+                    {selectedBatchSummary ? (
+                      <span>
+                        {t('selectedBatchPrefix')}{' '}
+                        <strong
+                          style={{
+                            color: expiryToneColor(
+                              getExpiryTone(
+                                productBatches.find((b) => b.id === selectedBatchId)?.expiryDate,
+                              ),
+                            ),
+                          }}
+                        >
+                          {selectedBatchSummary}
+                        </strong>
+                        {productBatches.length > 1
+                          ? ` · ${t('pickBatchesHint', { count: productBatches.length })}`
+                          : ''}
+                      </span>
+                    ) : (
+                      t('pickBatches')
+                    )}
+                  </Button>
                 )}
               </div>
               {showNoBatchHint && (
@@ -818,6 +912,15 @@ export function InventoryCountPage() {
         previewLines={previewByBatch}
         onCancel={() => setApproveModalOpen(false)}
         onConfirm={() => void handleApprove()}
+      />
+
+      <InventoryCountBatchPickModal
+        open={batchPickOpen}
+        productLabel={productSearch || t('step2Title')}
+        batches={productBatches}
+        initialSelectedIds={selectedBatchId ? [selectedBatchId] : []}
+        onCancel={() => setBatchPickOpen(false)}
+        onConfirm={handleBatchPickConfirm}
       />
     </div>
   );

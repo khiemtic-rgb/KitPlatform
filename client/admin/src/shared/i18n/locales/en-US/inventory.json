@@ -246,14 +246,15 @@
   },
   "adjustmentList": {
     "workflowTitle": "Standard count workflow (4 steps)",
-    "workflowIntro": "<strong>Count session</strong> (many products, multiple counters): open session → count → reconcile → approve on Count screen. <strong>Batch document</strong>: known variances on a few batches — create document with actual qty → approve from list.",
+    "workflowIntro": "<strong>Count session</strong> (many products, multiple counters): open session → count → reconcile → approve on Count screen. <strong>Quick batch count</strong>: known variances on a few batches — enter counted qty → save → approve from list.",
     "title": "Stock count documents",
     "countSession": "Count session",
-    "batchDocument": "Batch document",
-    "createBatchTitle": "Create batch count document",
+    "batchDocument": "Quick batch count",
+    "createBatchTitle": "Enter actual quantities by batch",
+    "batchDrawerTip": "Select batches to adjust → edit «Counted» if different from system stock → Save. Approve from the list to update inventory.",
     "sessionStep1Title": "Step 1 — Open count session",
     "startCounting": "Start counting",
-    "countWarehouse": "Count warehouse",
+    "countWarehouse": "Warehouse being counted",
     "selectWarehouse": "Select warehouse",
     "countType": "Count type",
     "reasonNote": "Additional notes",
@@ -262,10 +263,21 @@
     "detailTitle": "Count details",
     "detailTitleWithNumber": "Document {{number}}",
     "countScreen": "Count screen",
-    "batchOptionLabel": "{{code}} / {{batch}} (Sys {{qty}})",
+    "pickBatch": "Click to select batch…",
+    "pickBatches": "Add batches to count",
+    "batchOptionLabel": "{{code}} / {{batch}} (sys {{qty}})",
+    "columns": {
+      "batch": "Product / batch",
+      "actualQty": "Counted",
+      "systemQty": "On system",
+      "variance": "Diff"
+    },
     "validation": {
       "selectBatch": "Select batch",
-      "actualQuantity": "Actual qty"
+      "actualQuantity": "Enter counted qty",
+      "selectWarehouseFirst": "Select a warehouse first",
+      "noBatchesInWarehouse": "No stock batches in this warehouse",
+      "atLeastOneBatch": "Add at least one batch"
     },
     "sessionInProgressHint": "Session in progress — go to <strong>Count</strong>, complete steps 2–3 then <strong>Approve</strong> (step 4) with checklist.",
     "messages": {
@@ -280,7 +292,9 @@
       "createSuccess": "Created document {{number}}",
       "createFailed": "Could not create document",
       "approveSuccess": "Count approved",
-      "approveFailed": "Could not approve document"
+      "approveFailed": "Could not approve document",
+      "batchSelected": "Selected batch {{batch}}",
+      "batchesAdded": "Added {{count}} batches"
     }
   },
   "inventoryCount": {
@@ -295,11 +309,16 @@
     "draftTitle": "Pending lines",
     "scanPlaceholder": "Scan barcode or type code / product name",
     "batchPlaceholder": "Batch · expiry (FEFO default)",
+    "pickBatches": "Select count batches",
+    "pickBatchesHint": "{{count}} batches",
+    "pickBatchesTooltip": "Pick one or more batches — FEFO, near-expiry warnings",
+    "pickBatchesShort": "Batches",
+    "selectedBatchPrefix": "Batch",
     "zonePlaceholder": "Note (zone being counted)",
     "recordNow": "Save count",
     "addToDraft": "Add pending line",
     "recordEntries": "Save pending ({{count}})",
-    "countHint": "Scan or pick a product → enter qty → Save count (into session now). Or Add pending line, then Save pending once.",
+    "countHint": "Scan or pick a product → Select batches (multi OK) → enter qty → Save count. Multi-batch goes to pending lines.",
     "noBatchHintTitle": "No batch for this product at the count warehouse",
     "noBatchHintBody": "Create stock (batch) before counting this SKU. Choose one:",
     "goOpeningBalance": "Opening balance",
@@ -327,6 +346,8 @@
       "quantityMustBePositive": "Quantity must be greater than 0",
       "selectFromSuggestions": "Select a product from suggestions or scan the correct barcode",
       "noBatchAtWarehouse": "No batch at warehouse for this product — cannot record",
+      "batchSelected": "Selected batch {{batch}}",
+      "batchesAddedToDraft": "Added {{count}} batches to pending lines",
       "addedToDraft": "Added to pending lines — not saved to session yet",
       "noDraftLines": "No pending lines to save",
       "entriesRecorded": "Saved {{count}} count line(s) to session",
@@ -336,6 +357,26 @@
       "entryDeleteFailed": "Could not delete line",
       "approveSuccess": "Count approved — stock updated",
       "approveFailed": "Could not approve document"
+    }
+  },
+  "inventoryCountBatchPick": {
+    "title": "Select batches to record counted qty",
+    "searchPlaceholder": "Search by batch number",
+    "hideZeroStock": "Hide zero-stock batches",
+    "legendTitle": "Expiry:",
+    "legendOk": "In date",
+    "legendNear": "Near expiry (≤{{days}} days)",
+    "legendExpired": "Expired",
+    "zeroStock": "Qty 0",
+    "selectedCount": "{{count}} selected",
+    "exit": "Close",
+    "confirm": "Done",
+    "empty": "No matching batches",
+    "expiredWarning": "{{count}} selected batch(es) are expired — you can still record, but double-check.",
+    "columns": {
+      "batchNumber": "Batch no.",
+      "expiry": "Expiry",
+      "stock": "On system"
     }
   },
   "inventoryCountApproveModal": {

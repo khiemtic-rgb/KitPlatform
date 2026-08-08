@@ -246,14 +246,15 @@
   },
   "adjustmentList": {
     "workflowTitle": "Quy trình kiểm kê chuẩn (4 bước)",
-    "workflowIntro": "<strong>Phiên kiểm kê</strong> (nhiều SP, nhiều người): mở phiên → đếm → đối chiếu → duyệt trên màn Đếm. <strong>Phiếu theo lô</strong>: lệch vài lô đã biết — tạo phiếu nhập SL thực tế → duyệt tại danh sách.",
+    "workflowIntro": "<strong>Phiên kiểm kê</strong> (nhiều SP, nhiều người): mở phiên → đếm → đối chiếu → duyệt trên màn Đếm. <strong>Kiểm kê nhanh theo lô</strong>: đã biết vài lô lệch — nhập số đếm được → lưu phiếu → duyệt tại danh sách.",
     "title": "Phiếu kiểm kê",
     "countSession": "Phiên kiểm kê",
-    "batchDocument": "Phiếu theo lô",
-    "createBatchTitle": "Tạo phiếu kiểm kê theo lô",
+    "batchDocument": "Kiểm kê nhanh theo lô",
+    "createBatchTitle": "Nhập số lượng thực tế theo lô",
+    "batchDrawerTip": "Chọn lô cần chỉnh → sửa cột «Đếm được» nếu khác tồn trên máy → Lưu. Duyệt phiếu ở danh sách để cập nhật tồn.",
     "sessionStep1Title": "Bước 1 — Mở phiên kiểm kê",
     "startCounting": "Bắt đầu đếm",
-    "countWarehouse": "Kho kiểm kê",
+    "countWarehouse": "Kho đang kiểm",
     "selectWarehouse": "Chọn kho",
     "countType": "Loại kiểm kê",
     "reasonNote": "Ghi chú thêm",
@@ -262,10 +263,21 @@
     "detailTitle": "Chi tiết kiểm kê",
     "detailTitleWithNumber": "Phiếu {{number}}",
     "countScreen": "Màn đếm",
-    "batchOptionLabel": "{{code}} / {{batch}} (HT {{qty}})",
+    "pickBatch": "Bấm để chọn lô…",
+    "pickBatches": "Thêm lô cần kiểm",
+    "batchOptionLabel": "{{code}} / {{batch}} (máy {{qty}})",
+    "columns": {
+      "batch": "Mã SP / số lô",
+      "actualQty": "Đếm được",
+      "systemQty": "Trên máy",
+      "variance": "Lệch"
+    },
     "validation": {
       "selectBatch": "Chọn lô",
-      "actualQuantity": "SL thực"
+      "actualQuantity": "Nhập số đếm được",
+      "selectWarehouseFirst": "Chọn kho trước",
+      "noBatchesInWarehouse": "Kho chưa có lô tồn",
+      "atLeastOneBatch": "Thêm ít nhất một lô"
     },
     "sessionInProgressHint": "Phiên đang kiểm — vào màn <strong>Đếm</strong>, hoàn tất bước 2–3 rồi <strong>Duyệt</strong> (bước 4) kèm checklist.",
     "messages": {
@@ -280,7 +292,9 @@
       "createSuccess": "Đã tạo phiếu {{number}}",
       "createFailed": "Không tạo được phiếu",
       "approveSuccess": "Đã duyệt kiểm kê",
-      "approveFailed": "Không duyệt được phiếu"
+      "approveFailed": "Không duyệt được phiếu",
+      "batchSelected": "Đã chọn lô {{batch}}",
+      "batchesAdded": "Đã thêm {{count}} lô"
     }
   },
   "inventoryCount": {
@@ -295,11 +309,16 @@
     "draftTitle": "Dòng chờ lưu",
     "scanPlaceholder": "Quét barcode hoặc gõ mã / tên thuốc",
     "batchPlaceholder": "Số lô · hạn dùng (mặc định FEFO)",
+    "pickBatches": "Chọn lô kiểm hàng",
+    "pickBatchesHint": "{{count}} lô",
+    "pickBatchesTooltip": "Chọn một hoặc nhiều lô — FEFO, cảnh báo cận hạn",
+    "pickBatchesShort": "Chọn lô",
+    "selectedBatchPrefix": "Lô",
     "zonePlaceholder": "Ghi chú (Khu vực đang kiểm kê)",
     "recordNow": "Lưu đếm",
     "addToDraft": "Thêm dòng chờ",
     "recordEntries": "Lưu dòng chờ ({{count}})",
-    "countHint": "Quét hoặc chọn SP → nhập SL → Lưu đếm (vào phiên ngay). Hoặc Thêm dòng chờ rồi Lưu dòng chờ một lần.",
+    "countHint": "Quét hoặc chọn SP → Chọn lô (có thể nhiều lô) → nhập SL → Lưu đếm. Nhiều lô sẽ vào dòng chờ.",
     "noBatchHintTitle": "SP này chưa có lô tại kho đang kiểm",
     "noBatchHintBody": "Cần tạo tồn (lô) trước khi đếm SP này. Chọn một trong hai cách:",
     "goOpeningBalance": "Tồn đầu kỳ",
@@ -327,6 +346,8 @@
       "quantityMustBePositive": "Số lượng phải lớn hơn 0",
       "selectFromSuggestions": "Chọn sản phẩm từ danh sách gợi ý hoặc quét đúng barcode",
       "noBatchAtWarehouse": "SP này chưa có lô tại kho — không thể ghi nhận",
+      "batchSelected": "Đã chọn lô {{batch}}",
+      "batchesAddedToDraft": "Đã thêm {{count}} lô vào dòng chờ",
       "addedToDraft": "Đã thêm vào dòng chờ — chưa lưu vào phiên",
       "noDraftLines": "Chưa có dòng chờ để lưu",
       "entriesRecorded": "Đã lưu {{count}} dòng đếm vào phiên",
@@ -336,6 +357,26 @@
       "entryDeleteFailed": "Không xóa được dòng",
       "approveSuccess": "Đã duyệt kiểm kê — tồn kho đã được cập nhật",
       "approveFailed": "Không duyệt được phiếu"
+    }
+  },
+  "inventoryCountBatchPick": {
+    "title": "Chọn lô để ghi số lượng đếm",
+    "searchPlaceholder": "Tìm theo số lô",
+    "hideZeroStock": "Ẩn lô hết tồn",
+    "legendTitle": "Hạn dùng:",
+    "legendOk": "Còn hạn",
+    "legendNear": "Cận hạn (≤{{days}} ngày)",
+    "legendExpired": "Hết hạn",
+    "zeroStock": "Tồn 0",
+    "selectedCount": "Đã chọn {{count}} lô",
+    "exit": "Thoát",
+    "confirm": "Chọn xong",
+    "empty": "Không có lô phù hợp",
+    "expiredWarning": "Đang chọn {{count}} lô đã hết hạn — vẫn có thể ghi nhưng nên kiểm tra lại.",
+    "columns": {
+      "batchNumber": "Số lô",
+      "expiry": "Hết hạn",
+      "stock": "Tồn trên máy"
     }
   },
   "inventoryCountApproveModal": {
