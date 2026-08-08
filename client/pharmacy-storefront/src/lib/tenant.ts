@@ -1,31 +1,173 @@
 import type { PharmacyTenantConfig } from '../tenants/types';
 import { getTenantByHost, getTenantBySlug } from '../tenants/registry';
+import { mapPublicContentToTenant } from './content-mapper';
 
 const DEFAULT_SLUG =
   (typeof import.meta.env.PUBLIC_STOREFRONT_TENANT === 'string' &&
     import.meta.env.PUBLIC_STOREFRONT_TENANT.trim()) ||
   'xuanhoa';
 
+const API_BASE =
+  (typeof import.meta.env.PUBLIC_API_BASE_URL === 'string' &&
+    import.meta.env.PUBLIC_API_BASE_URL.trim().replace(/\/$/, '')) ||
+  '';
+
+/** Pilot static dual-run only — never reuse for other subdomains. */
+const PILOT_STATIC_SLUG = 'xuanhoa';
+
+export class StorefrontNotFoundError extends Error {
+  constructor(message = 'Storefront not found') {
+    super(message);
+    this.name = 'StorefrontNotFoundError';
+  }
+}
+
 /**
- * Resolve white-label tenant from request Host (dev / future SSR),
- * falling back to PUBLIC_STOREFRONT_TENANT (default: xuanhoa).
- *
- * Static prerender cannot read Host; production multi-host routing
- * needs SSR (adapter) or per-tenant builds via PUBLIC_STOREFRONT_TENANT.
+ * Prefer the public custom hostname (*.novixa.vn) over pages.dev /
+ * X-Forwarded-Host when Cloudflare or the adapter rewrites Host.
  */
-export function resolveTenant(request: Request): PharmacyTenantConfig {
+function resolveRequestHost(request: Request): string {
+  const forwarded = request.headers.get('x-forwarded-host')?.split(',')[0]?.trim() ?? '';
+  const hostHeader = request.headers.get('host')?.trim() ?? '';
+  let urlHost = '';
+  try {
+    urlHost = new URL(request.url).host;
+  } catch {
+    // ignore
+  }
+
+  const candidates = [forwarded, hostHeader, urlHost]
+    .map((h) => h.toLowerCase().split(':')[0] ?? '')
+    .filter(Boolean);
+
+  const novixa = candidates.find((h) => h.endsWith('.novixa.vn') && h !== 'novixa.vn');
+  return novixa ?? candidates[0] ?? '';
+}
+
+function slugFromHost(host: string): string | undefined {
+  const h = host.trim().toLowerCase().split(':')[0] ?? '';
+  if (!h || h === 'localhost' || h === '127.0.0.1') return undefined;
+  if (h.endsWith('.pages.dev')) return undefined;
+  if (h.endsWith('.novixa.vn')) {
+    const sub = h.slice(0, -'.novixa.vn'.length);
+    if (sub && !sub.includes('.')) return sub;
+  }
+  if (h.endsWith('.localhost')) {
+    const sub = h.slice(0, -'.localhost'.length);
+    if (sub) return sub;
+  }
+  return undefined;
+}
+
+function previewTokenFromRequest(request: Request): string | undefined {
+  try {
+    const url = new URL(request.url);
+    const token = url.searchParams.get('previewToken')?.trim();
+    return token || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function fetchPublishedBySlug(slug: string): Promise<PharmacyTenantConfig | null> {
+  if (!API_BASE) return null;
+  try {
+    const res = await fetch(`${API_BASE}/api/public/pharmacy-storefront?slug=${encodeURIComponent(slug)}`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`Storefront API ${res.status}`);
+    const data = (await res.json()) as {
+      slug?: string;
+      tenantCode?: string;
+      tenantName?: string;
+      content?: Record<string, unknown>;
+    };
+    return mapPublicContentToTenant({
+      slug: String(data.slug ?? slug),
+      tenantCode: String(data.tenantCode ?? ''),
+      tenantName: String(data.tenantName ?? ''),
+      content: data.content ?? {},
+    });
+  } catch (err) {
+    console.error('[storefront] public API failed', err);
+    return null;
+  }
+}
+
+async function fetchPreviewByToken(token: string): Promise<PharmacyTenantConfig | null> {
+  if (!API_BASE) return null;
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/public/pharmacy-storefront/preview?token=${encodeURIComponent(token)}`,
+      { headers: { Accept: 'application/json' }, cache: 'no-store' },
+    );
+    if (res.status === 404 || res.status === 401) return null;
+    if (!res.ok) throw new Error(`Storefront preview API ${res.status}`);
+    const data = (await res.json()) as {
+      slug?: string;
+      tenantCode?: string;
+      tenantName?: string;
+      content?: Record<string, unknown>;
+    };
+    return mapPublicContentToTenant({
+      slug: String(data.slug ?? 'preview'),
+      tenantCode: String(data.tenantCode ?? ''),
+      tenantName: String(data.tenantName ?? ''),
+      content: data.content ?? {},
+      isPreview: true,
+    });
+  } catch (err) {
+    console.error('[storefront] preview API failed', err);
+    return null;
+  }
+}
+
+/**
+ * Resolve white-label tenant from request Host (SSR).
+ * Other slugs never fall back to Xuân Hòa static content.
+ * Optional `?previewToken=` loads draft CMS content.
+ */
+export async function resolveTenant(request: Request): Promise<PharmacyTenantConfig> {
+  const previewToken = previewTokenFromRequest(request);
+  if (previewToken) {
+    const preview = await fetchPreviewByToken(previewToken);
+    if (preview) return preview;
+    throw new StorefrontNotFoundError('Preview token invalid or expired');
+  }
+
+  const host = resolveRequestHost(request);
+  const hostSlug = slugFromHost(host);
+
+  if (hostSlug) {
+    const fromApi = await fetchPublishedBySlug(hostSlug);
+    if (fromApi) return fromApi;
+
+    // Dual-run: ONLY the Xuân Hòa pilot may use static registry
+    if (hostSlug === PILOT_STATIC_SLUG) {
+      const pilot = getTenantBySlug(PILOT_STATIC_SLUG) ?? getTenantByHost(host);
+      if (pilot) return pilot;
+    }
+
+    throw new StorefrontNotFoundError(`No published storefront for ${hostSlug}`);
+  }
+
+  // Local / dev without subdomain
   if (import.meta.env.DEV) {
-    const host = request.headers.get('host') ?? '';
     const byHost = host ? getTenantByHost(host) : undefined;
     if (byHost) return byHost;
+
+    if (API_BASE) {
+      const fromApi = await fetchPublishedBySlug(DEFAULT_SLUG);
+      if (fromApi) return fromApi;
+    }
+
+    const byEnv = getTenantBySlug(DEFAULT_SLUG);
+    if (byEnv) return byEnv;
+
+    const fallback = getTenantBySlug(PILOT_STATIC_SLUG);
+    if (fallback) return fallback;
   }
 
-  const byEnv = getTenantBySlug(DEFAULT_SLUG);
-  if (byEnv) return byEnv;
-
-  const fallback = getTenantBySlug('xuanhoa');
-  if (!fallback) {
-    throw new Error('No pharmacy storefront tenants registered');
-  }
-  return fallback;
+  throw new StorefrontNotFoundError(`No storefront hostname: ${host || '(empty)'}`);
 }

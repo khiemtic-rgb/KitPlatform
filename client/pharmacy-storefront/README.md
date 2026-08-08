@@ -1,8 +1,10 @@
 # KitPlatform Pharmacy Storefront
 
-Multi-tenant white-label pharmacy storefronts (Astro). Mỗi nhà thuốc = một file config dưới `src/tenants/`; Host (hoặc `PUBLIC_STOREFRONT_TENANT`) chọn brand.
+Multi-tenant white-label pharmacy websites (Astro + Cloudflare Pages SSR).
 
-Pilot subdomain: **https://xuanhoa.novixa.vn** · tenant code `NT_XUANHOA`.
+- **Template / pilot:** https://xuanhoa.novixa.vn (`NT_XUANHOA`)
+- **Self-serve:** Admin → Hệ thống → Website NT → seed Core → checklist Publish → `{slug}.novixa.vn`
+- Runtime resolves Host → `GET /api/public/pharmacy-storefront?slug=` then merges with template defaults.
 
 ## Local development
 
@@ -12,55 +14,65 @@ npm install
 npm run dev
 ```
 
-Mở [http://localhost:4330](http://localhost:4330). Mặc định tenant **xuanhoa**.
+Open [http://localhost:4330](http://localhost:4330). Default registry tenant **xuanhoa**.
+
+| Env | Purpose |
+|-----|---------|
+| `PUBLIC_STOREFRONT_TENANT` | Fallback slug when Host has no subdomain (default `xuanhoa`) |
+| `PUBLIC_API_BASE_URL` | KitPlatform API origin for published profiles (e.g. `https://api.novixa.vn`) |
 
 | Script | Mô tả |
 |--------|--------|
 | `npm run dev` | Dev server port **4330** |
-| `npm run build` | Production build |
-| `npm run preview` | Preview build port **4330** |
+| `npm run build` | Cloudflare SSR build → `dist/` |
+| `npm run preview` | Local preview of SSR build |
 
-## Cấu trúc
+## Structure
 
 ```
 src/
   tenants/
-    types.ts       # PharmacyTenantConfig
-    xuanhoa.ts     # Nội dung / brand NT Xuân Hòa
-    registry.ts    # Đăng ký tenant + match Host
-  lib/tenant.ts    # resolveTenant(request)
-  components/      # Header, Footer, Home sections
-  layouts/         # BaseLayout, SimplePage
-  pages/           # /, /gioi-thieu, /san-pham, /kien-thuc, /lien-he
-  styles/storefront.css
+    types.ts          # PharmacyTenantConfig
+    xuanhoa.ts        # Pilot content + merge template source
+    template-seed.ts  # Generic Core defaults from xuanhoa
+    registry.ts       # Static fallback tenants
+  lib/
+    tenant.ts         # Host → API / registry resolve
+    content-mapper.ts # Public JSON → PharmacyTenantConfig
+    load-tenant.ts    # Page helper + 404
+  pages/              # Core routes (+ /404)
 ```
 
-## Thêm nhà thuốc mới (ít sửa code)
+## Onboard a pharmacy (no code)
 
-1. Copy `src/tenants/xuanhoa.ts` → `src/tenants/<slug>.ts`, sửa brand, màu, contact, copy, CTA App (`?tenantCode=...`), hosts.
-2. Trong `registry.ts`: import, thêm vào `tenants[]`, thêm `hostMatchers` (`includes: '<slug>'`).
-3. DNS: trỏ `<slug>.novixa.vn` (hoặc domain trong `hosts`) về deployment storefront.
-4. (Tuỳ chọn) `PUBLIC_STOREFRONT_TENANT=<slug>` khi build/static không đọc được Host.
+1. Admin → **Website NT** (`/system/storefront-settings`).
+2. **Áp dụng mẫu Core** (seed) → điền brand / liên hệ / SP / dịch vụ.
+3. Tab **Xuất bản**: checklist xanh → bật Publish → Save.
+4. DNS: `{slug}.novixa.vn` must hit the Pages project (see wildcard below).
+5. Open `https://{slug}.novixa.vn`.
 
-Không cần fork layout — UI đọc từ `PharmacyTenantConfig`.
+API:
 
-## Deploy pilot `xuanhoa.novixa.vn`
+- Admin: `GET/PUT /api/pharmacy/storefront-profile`, `POST .../seed-default`, `POST .../publish-readiness` (`sales.read` / `sales.write`)
+- Public: `GET /api/public/pharmacy-storefront?slug=` (published only; short CDN cache)
 
-**Track:** Cloudflare Pages (cùng mô hình `novixa-site` / `famixa-site`) — **không** đi qua `deploy-update-vps.ps1`.
+DB: `migrations/274_pharmacy_storefront_profiles.sql`.
 
-1. Secrets GitHub: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (đã dùng cho marketing sites).
-2. Chạy workflow [`.github/workflows/pharmacy-storefront-pages.yml`](../../.github/workflows/pharmacy-storefront-pages.yml) (`workflow_dispatch` hoặc push đổi `client/pharmacy-storefront/**`).
-3. Workflow build `dist/`, tạo project Pages `pharmacy-storefront` nếu chưa có, deploy, gắn domain `xuanhoa.novixa.vn`.
-4. DNS zone `novixa.vn`: Cloudflare sẽ hướng dẫn CNAME Pages (thường tự gắn khi domain trên cùng account).
-5. Local preview: `npm run preview` → http://localhost:4330/
+## Deploy
 
-`wrangler.jsonc` trong thư mục này: project name `pharmacy-storefront`, output `./dist`.
+Workflow: [`.github/workflows/pharmacy-storefront-pages.yml`](../../.github/workflows/pharmacy-storefront-pages.yml)
 
-### CMS Admin
+- Builds with `@astrojs/cloudflare` (`output: server`)
+- Sets `PUBLIC_API_BASE_URL=https://api.novixa.vn`
+- Deploys Pages project `pharmacy-storefront`
+- Attaches `xuanhoa.novixa.vn`
 
-- Admin: **Hệ thống → Website NT** (`/system/storefront-settings`) — brand, contact, hero, publish.
-- API admin: `GET/PUT /api/pharmacy/storefront-profile` (cần `sales.read` / `sales.write`).
-- API public: `GET /api/public/pharmacy-storefront?slug=xuanhoa` hoặc `?tenantCode=NT_XUANHOA` (chỉ khi `isPublished`).
-- Phase 1: site static vẫn đọc file `src/tenants/*.ts`. CMS lưu DB để đồng bộ / SSR ở bước sau (contract JSON ≈ `PharmacyTenantConfig`).
+### Wildcard DNS (`*.novixa.vn`)
 
-Migration: `migrations/274_pharmacy_storefront_profiles.sql`.
+For self-serve subdomains without attaching each hostname in CI:
+
+1. Cloudflare DNS for `novixa.vn`: CNAME `*` → `{project}.pages.dev` (or the Pages target Cloudflare shows), proxy on.
+2. Cloudflare Pages → Custom domains → add `*.novixa.vn` (or rely on wildcard CNAME to Pages).
+3. Each published Admin slug then resolves as `{slug}.novixa.vn` without a new deploy.
+
+Pilot/static registry tenants (e.g. file `xuanhoa.ts`) remain fallback when the public API is unreachable.

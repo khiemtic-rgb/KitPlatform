@@ -341,33 +341,37 @@ const platformLeadHtml = (() => {
   </div>
 </section>
 
-<!-- KNOWLEDGE -->
-<section class="sf-section sf-section--muted" id="kien-thuc">
-  <div class="sf-container">
-    <div class="sf-section__head">
-      <h2>Kiến thức sức khỏe</h2>
-      <a href="/kien-thuc">Xem tất cả bài viết</a>
-    </div>
-    <div class="sf-knowledge-grid">
-      {
-        tenant.articles.map((a) => (
-          <a class="sf-knowledge-card" href={a.href}>
-            <img
-              src={a.imageUrl || '/brand/articles/default.png?v=1'}
-              alt=""
-              loading="lazy"
-              onerror="this.onerror=null;this.src='/brand/articles/default.png?v=1'"
-            />
-            <div class="sf-knowledge-card__body">
-              <h3>{a.title}</h3>
-              <time datetime={a.date}>{formatArticleDate(a.date)}</time>
-            </div>
-          </a>
-        ))
-      }
-    </div>
-  </div>
-</section>
+<!-- KNOWLEDGE (Core package: hide when empty — Plus tenants keep articles) -->
+{
+  tenant.articles?.length > 0 ? (
+    <section class="sf-section sf-section--muted" id="kien-thuc">
+      <div class="sf-container">
+        <div class="sf-section__head">
+          <h2>Kiến thức sức khỏe</h2>
+          <a href="/kien-thuc">Xem tất cả bài viết</a>
+        </div>
+        <div class="sf-knowledge-grid">
+          {
+            tenant.articles.map((a) => (
+              <a class="sf-knowledge-card" href={a.href}>
+                <img
+                  src={a.imageUrl || '/brand/articles/default.png?v=1'}
+                  alt=""
+                  loading="lazy"
+                  onerror="this.onerror=null;this.src='/brand/articles/default.png?v=1'"
+                />
+                <div class="sf-knowledge-card__body">
+                  <h3>{a.title}</h3>
+                  <time datetime={a.date}>{formatArticleDate(a.date)}</time>
+                </div>
+              </a>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+  ) : null
+}
 
 <!-- PLATFORM -->
 <section class="sf-platform">
@@ -396,13 +400,13 @@ const platformLeadHtml = (() => {
           <div class="sf-platform-browser">
             <div class="sf-platform-browser__bar">
               <span></span><span></span><span></span>
-              <em>xuanhoa.novixa.vn</em>
+              <em>{tenant.hosts?.[0] || `${tenant.slug}.novixa.vn`}</em>
             </div>
             <div class="sf-platform-browser__screen">
               <div class="sf-platform-browser__hero">
-                <small>Nhà thuốc Xuân Hòa</small>
-                <strong>Chăm sóc sức khỏe gia đình</strong>
-                <b>Đặt thuốc ngay</b>
+                <small>{tenant.brand.name}</small>
+                <strong>{tenant.hero.headline || 'Chăm sóc sức khỏe gia đình'}</strong>
+                <b>{tenant.hero.ctaPrimary?.label || 'Đặt thuốc ngay'}</b>
               </div>
               <div class="sf-platform-browser__grid">
                 <article>

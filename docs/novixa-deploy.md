@@ -21,7 +21,10 @@ Tài liệu thực hành deploy ERP Novixa (KitPlatform) lên VPS — bổ sung 
 
 Marketing: `https://novixa.vn` / `www` — Cloudflare Pages, **không** gọi API từ browser (không cần CORS).
 
-Pharmacy storefront (pilot): `https://xuanhoa.novixa.vn` — Cloudflare Pages project `pharmacy-storefront` (`client/pharmacy-storefront`), workflow `.github/workflows/pharmacy-storefront-pages.yml`. Không nằm trong ERP VPS deploy.
+Pharmacy storefront (gói Website NT): Cloudflare Pages SSR project `pharmacy-storefront` (`client/pharmacy-storefront`), workflow `.github/workflows/pharmacy-storefront-pages.yml`. Resolves `{slug}.novixa.vn` → `GET https://api.novixa.vn/api/public/pharmacy-storefront?slug=`. Admin CMS: Hệ thống → Website NT. Không nằm trong ERP VPS deploy.
+
+**Wildcard:** CNAME `*.novixa.vn` → Pages project (see `client/pharmacy-storefront/README.md`) so each published slug works without per-tenant CI domain steps. Pilot host: `xuanhoa.novixa.vn`.
+
 
 **CORS:** `Cors__AllowedOrigins__*` trong `api.env` **thay thế** toàn bộ list appsettings. Phải đủ 6 SPA ở trên. Deploy chạy `ensure-novixa-cors-env.sh`; API Production còn union `RequiredNovixaSpaOrigins`. Verify: `.\scripts\verify-novixa-cors.ps1`.
 

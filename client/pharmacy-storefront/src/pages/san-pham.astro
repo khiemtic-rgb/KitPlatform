@@ -2,10 +2,12 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
-import { resolveTenant } from '../lib/tenant';
+import { loadTenant } from '../lib/load-tenant';
 import '../styles/storefront.css';
 
-const tenant = resolveTenant(Astro.request);
+const tenantOrRedirect = await loadTenant(Astro);
+if (tenantOrRedirect instanceof Response) return tenantOrRedirect;
+const tenant = tenantOrRedirect;
 const page = tenant.pages.products;
 const appUrl = tenant.appPromo.appUrl;
 const collage = tenant.products.slice(0, 4);

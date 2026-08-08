@@ -19,13 +19,13 @@ export function getTenantBySlug(slug: string): PharmacyTenantConfig | undefined 
 
 export function getTenantByHost(host: string): PharmacyTenantConfig | undefined {
   const h = host.trim().toLowerCase().split(':')[0] ?? '';
-  const byHostList = tenants.find((t) =>
-    t.hosts.some((candidate) => h === candidate.toLowerCase() || h.includes(candidate.toLowerCase())),
-  );
+  // Exact host match only — never substring (avoids wrong tenant for other *.novixa.vn hosts)
+  const byHostList = tenants.find((t) => t.hosts.some((candidate) => h === candidate.toLowerCase()));
   if (byHostList) return byHostList;
 
   for (const m of hostMatchers) {
-    if (h.includes(m.includes)) return m.tenant;
+    // Exact subdomain label or exact hostname contains matcher as full label only
+    if (h === m.includes || h.startsWith(`${m.includes}.`)) return m.tenant;
   }
   return undefined;
 }

@@ -2,10 +2,12 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
-import { resolveTenant } from '../lib/tenant';
+import { loadTenant } from '../lib/load-tenant';
 import '../styles/storefront.css';
 
-const tenant = resolveTenant(Astro.request);
+const tenantOrRedirect = await loadTenant(Astro);
+if (tenantOrRedirect instanceof Response) return tenantOrRedirect;
+const tenant = tenantOrRedirect;
 const page = tenant.pages.services;
 const appUrl = tenant.appPromo.appUrl;
 
@@ -100,7 +102,7 @@ const iconChat = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path 
                 <h3>{item.title}</h3>
                 <p>{item.description}</p>
                 <ul>
-                  {item.bullets.map((b) => (
+                  {(item.bullets ?? []).map((b) => (
                     <li>
                       <span set:html={iconCheck} />
                       <span>{b}</span>

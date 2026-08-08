@@ -2,7 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
-import { resolveTenant } from '../lib/tenant';
+import { loadTenant } from '../lib/load-tenant';
 import '../styles/storefront.css';
 
 interface Props {
@@ -12,7 +12,9 @@ interface Props {
   path: string;
 }
 
-const tenant = resolveTenant(Astro.request);
+const tenantOrRedirect = await loadTenant(Astro);
+if (tenantOrRedirect instanceof Response) return tenantOrRedirect;
+const tenant = tenantOrRedirect;
 const { title, heading, body, path } = Astro.props;
 ---
 

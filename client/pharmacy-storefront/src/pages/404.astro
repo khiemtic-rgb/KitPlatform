@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getTenantBySlug } from '../tenants/registry';
+import '../styles/storefront.css';
+
+const fallback = getTenantBySlug('xuanhoa')!;
+---
+
+<BaseLayout tenant={fallback} title="Không tìm thấy nhà thuốc" description="Website nhà thuốc chưa được xuất bản.">
+  <main class="sf-container" style="padding: 4rem 1rem; text-align: center;">
+    <h1>Website chưa sẵn sàng</h1>
+    <p>Nhà thuốc này chưa xuất bản trang, hoặc địa chỉ không đúng.</p>
+    <p><a class="sf-btn sf-btn--primary" href="https://novixa.vn">Về Novixa</a></p>
+  </main>
+</BaseLayout>
