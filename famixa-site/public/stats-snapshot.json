@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-08T07:27:09.560Z",
+  "generatedAt": "2026-08-08T13:25:14.474Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 139,
-    "todayPageViews": 79,
-    "todayRequests": 361,
-    "last24hVisitors": 242,
-    "last24hPageViews": 136,
-    "last24hRequests": 611
+    "todayVisitors": 164,
+    "todayPageViews": 81,
+    "todayRequests": 404,
+    "last24hVisitors": 247,
+    "last24hPageViews": 134,
+    "last24hRequests": 616
   },
   "hourly": [
-    {
-      "time": "2026-08-07T08:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-07T09:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-07T10:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-07T11:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-07T12:00:00Z",
-      "visitors": 4,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-07T13:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
     {
       "time": "2026-08-07T14:00:00Z",
       "visitors": 60,
@@ -128,8 +98,38 @@
     },
     {
       "time": "2026-08-08T07:00:00Z",
+      "visitors": 4,
+      "requests": 11
+    },
+    {
+      "time": "2026-08-08T08:00:00Z",
+      "visitors": 13,
+      "requests": 16
+    },
+    {
+      "time": "2026-08-08T09:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-08T10:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-08T11:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-08T12:00:00Z",
+      "visitors": 2,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-08T13:00:00Z",
       "visitors": 1,
-      "requests": 2
+      "requests": 1
     }
   ],
   "daily": [
@@ -171,9 +171,9 @@
     },
     {
       "date": "2026-08-08",
-      "visitors": 185,
-      "pageViews": 96,
-      "requests": 413
+      "visitors": 216,
+      "pageViews": 98,
+      "requests": 456
     }
   ],
   "topPages": [
@@ -183,54 +183,54 @@
     },
     {
       "path": "/images/blog/khi-cha-me-bat-dong-trong-nuoi-day-con.png",
-      "views": 42
+      "views": 49
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 34
+      "views": 33
     },
     {
       "path": "/robots.txt",
-      "views": 28
-    },
-    {
-      "path": "/feed.json",
-      "views": 18
+      "views": 24
     },
     {
       "path": "/vi/goi-cha-me/",
       "views": 18
     },
     {
+      "path": "/feed.json",
+      "views": 18
+    },
+    {
       "path": "/sitemap.xml",
-      "views": 17
-    },
-    {
-      "path": "/images/blog/xay-dung-quy-tac-trong-gia-dinh.png",
-      "views": 17
-    },
-    {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 17
+      "views": 16
     },
     {
       "path": "/api/stats",
       "views": 16
     },
     {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
       "views": 15
     },
     {
-      "path": "/vi/",
-      "views": 15
+      "path": "/images/blog/xay-dung-quy-tac-trong-gia-dinh.png",
+      "views": 14
     },
     {
       "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 15
+      "views": 13
     },
     {
       "path": "/_next/static/chunks/app/vi/goi-cha-me/%5Bslug%5D/page-2d062270f9ff84b4.js",
+      "views": 13
+    },
+    {
+      "path": "/images/logo-famixa-icon.png",
+      "views": 13
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
       "views": 13
     },
     {
