@@ -6,9 +6,7 @@ import { loadTenant } from '../lib/load-tenant';
 import { buildMailto } from '../lib/mailto';
 import '../styles/storefront.css';
 
-const tenantOrRedirect = await loadTenant(Astro);
-if (tenantOrRedirect instanceof Response) return tenantOrRedirect;
-const tenant = tenantOrRedirect;
+const tenant = loadTenant();
 const page = tenant.pages.contact;
 const phoneDigits = tenant.contact.phone.replace(/[^\d+]/g, '');
 const phoneHref = phoneDigits.length >= 8 ? `tel:${phoneDigits}` : tenant.appPromo.appUrl;

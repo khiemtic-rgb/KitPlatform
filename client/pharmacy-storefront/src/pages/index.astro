@@ -6,9 +6,7 @@ import HomePage from '../components/HomePage.astro';
 import { loadTenant } from '../lib/load-tenant';
 import '../styles/storefront.css';
 
-const tenantOrRedirect = await loadTenant(Astro);
-if (tenantOrRedirect instanceof Response) return tenantOrRedirect;
-const tenant = tenantOrRedirect;
+const tenant = loadTenant();
 ---
 
 <BaseLayout

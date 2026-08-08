@@ -12,9 +12,7 @@ interface Props {
   path: string;
 }
 
-const tenantOrRedirect = await loadTenant(Astro);
-if (tenantOrRedirect instanceof Response) return tenantOrRedirect;
-const tenant = tenantOrRedirect;
+const tenant = loadTenant();
 const { title, heading, body, path } = Astro.props;
 ---
 

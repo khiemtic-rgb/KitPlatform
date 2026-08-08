@@ -5,9 +5,12 @@ import SiteFooter from '../../components/SiteFooter.astro';
 import { loadTenant } from '../../lib/load-tenant';
 import '../../styles/storefront.css';
 
-const tenantOrRedirect = await loadTenant(Astro);
-if (tenantOrRedirect instanceof Response) return tenantOrRedirect;
-const tenant = tenantOrRedirect;
+export function getStaticPaths() {
+  const tenant = loadTenant();
+  return tenant.articles.map((a) => ({ params: { slug: a.slug } }));
+}
+
+const tenant = loadTenant();
 const slug = Astro.params.slug ?? '';
 const articles = [...tenant.articles].sort((a, b) => (a.date < b.date ? 1 : -1));
 const index = articles.findIndex((a) => a.slug === slug || a.href.endsWith(`/${slug}`));
