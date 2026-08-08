@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-08T02:22:39.214Z",
+  "generatedAt": "2026-08-08T07:16:43.318Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 16,
-    "todayPageViews": 8,
-    "todayRequests": 27,
-    "last24hVisitors": 434,
-    "last24hPageViews": 271,
-    "last24hRequests": 982
+    "todayVisitors": 270,
+    "todayPageViews": 266,
+    "todayRequests": 1033,
+    "last24hVisitors": 455,
+    "last24hPageViews": 377,
+    "last24hRequests": 1521
   },
   "hourly": [
-    {
-      "time": "2026-08-07T03:00:00Z",
-      "visitors": 31,
-      "requests": 88
-    },
-    {
-      "time": "2026-08-07T04:00:00Z",
-      "visitors": 177,
-      "requests": 281
-    },
-    {
-      "time": "2026-08-07T05:00:00Z",
-      "visitors": 29,
-      "requests": 42
-    },
-    {
-      "time": "2026-08-07T06:00:00Z",
-      "visitors": 21,
-      "requests": 31
-    },
-    {
-      "time": "2026-08-07T07:00:00Z",
-      "visitors": 15,
-      "requests": 26
-    },
     {
       "time": "2026-08-07T08:00:00Z",
       "visitors": 13,
@@ -128,8 +103,33 @@
     },
     {
       "time": "2026-08-08T02:00:00Z",
-      "visitors": 1,
-      "requests": 1
+      "visitors": 127,
+      "requests": 224
+    },
+    {
+      "time": "2026-08-08T03:00:00Z",
+      "visitors": 29,
+      "requests": 35
+    },
+    {
+      "time": "2026-08-08T04:00:00Z",
+      "visitors": 36,
+      "requests": 145
+    },
+    {
+      "time": "2026-08-08T05:00:00Z",
+      "visitors": 31,
+      "requests": 39
+    },
+    {
+      "time": "2026-08-08T06:00:00Z",
+      "visitors": 54,
+      "requests": 455
+    },
+    {
+      "time": "2026-08-08T07:00:00Z",
+      "visitors": 28,
+      "requests": 110
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-08-08",
-      "visitors": 16,
-      "pageViews": 8,
-      "requests": 27
+      "visitors": 270,
+      "pageViews": 266,
+      "requests": 1033
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 161
+      "views": 212
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 113
+      "views": 197
     },
     {
-      "path": "/vi/tin-tuc/nhung-loi-thuong-gap-khi-tu-van-khach-hang-tai-nha-thuoc-va-cach-khac-phuc/",
-      "views": 92
+      "path": "/vi/tin-tuc/cach-giam-thoi-gian-phuc-vu-moi-khach-tai-nha-thuoc-ma-khong-lam-giam-chat-luong-tu-van/",
+      "views": 118
     },
     {
-      "path": "/images/tin-tuc/nhung-loi-thuong-gap-khach-hang.png",
-      "views": 59
-    },
-    {
-      "path": "/brand/family-health.png",
-      "views": 34
-    },
-    {
-      "path": "/robots.txt",
-      "views": 33
-    },
-    {
-      "path": "/images/tin-tuc/khi-nao-nen-chuan-hoa-quy-trinh.png",
-      "views": 25
+      "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
+      "views": 55
     },
     {
       "path": "/favicon.svg",
-      "views": 23
+      "views": 48
+    },
+    {
+      "path": "/brand/family-health.png",
+      "views": 32
+    },
+    {
+      "path": "/robots.txt",
+      "views": 32
+    },
+    {
+      "path": "/brand/products/hapacol-pain.jpg",
+      "views": 29
+    },
+    {
+      "path": "/brand/xuanhoa-logo.png",
+      "views": 27
+    },
+    {
+      "path": "/vi/",
+      "views": 26
+    },
+    {
+      "path": "/brand/products/wellwoman-vitamin.jpg",
+      "views": 26
+    },
+    {
+      "path": "/brand/xuanhoa-hero.png",
+      "views": 25
+    },
+    {
+      "path": "/images/tin-tuc/nhung-loi-thuong-gap-khach-hang.png",
+      "views": 24
+    },
+    {
+      "path": "/images/tin-tuc/quy-trinh-ban-thuoc.png",
+      "views": 24
     },
     {
       "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
       "views": 23
-    },
-    {
-      "path": "/vi/",
-      "views": 22
-    },
-    {
-      "path": "/brand/xuanhoa-logo.png",
-      "views": 20
-    },
-    {
-      "path": "/brand/products/hapacol-pain.jpg",
-      "views": 20
-    },
-    {
-      "path": "/brand/articles/phong-cam-cum.jpg",
-      "views": 20
-    },
-    {
-      "path": "/images/tin-tuc/quy-trinh-ban-thuoc.png",
-      "views": 19
-    },
-    {
-      "path": "/images/tin-tuc/lam-sao-de-ban-dung-thuoc.png",
-      "views": 18
     }
   ]
 }
