@@ -34,7 +34,7 @@ jobs:
           npm ci
           npm run build
 
-      - name: Deploy Worker (production)
+      - name: Deploy Worker with zone routes
         working-directory: client/pharmacy-storefront
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -42,9 +42,10 @@ jobs:
         run: |
           set -euo pipefail
           export CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-db0d4500b2d1fd3d607105da7d4f931d}"
+          # Ensure user wrangler routes merge into generated worker config
           npx --yes wrangler@4 deploy --config dist/server/wrangler.json
 
-      - name: Detach conflicting Pages custom domains
+      - name: Ensure Pages domains exist as DNS origin fallback
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -53,44 +54,25 @@ jobs:
           ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-db0d4500b2d1fd3d607105da7d4f931d}"
           TOKEN="${CLOUDFLARE_API_TOKEN:?Missing CLOUDFLARE_API_TOKEN}"
           PROJECT=pharmacy-storefront
+          API="https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/pages/projects/${PROJECT}/domains"
           for domain in xuanhoa.novixa.vn demo-pharmacy.novixa.vn; do
-            echo "=== detach Pages domain $domain (ignore if missing) ==="
-            curl -sS -X DELETE \
-              "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/pages/projects/${PROJECT}/domains/${domain}" \
-              -H "Authorization: Bearer ${TOKEN}" || true
-            echo
-          done
-
-      - name: Attach Worker custom domains
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set -euo pipefail
-          ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-db0d4500b2d1fd3d607105da7d4f931d}"
-          TOKEN="${CLOUDFLARE_API_TOKEN:?Missing CLOUDFLARE_API_TOKEN}"
-          SERVICE=pharmacy-storefront
-          ZONE_ID=$(curl -sS "https://api.cloudflare.com/client/v4/zones?name=novixa.vn" \
-            -H "Authorization: Bearer ${TOKEN}" | python3 -c 'import json,sys; d=json.load(sys.stdin); print((d.get("result") or [{}])[0].get("id",""))')
-          echo "zone=$ZONE_ID"
-          test -n "$ZONE_ID"
-          for hostname in xuanhoa.novixa.vn demo-pharmacy.novixa.vn; do
-            echo "=== worker domain $hostname ==="
-            RESP=$(curl -sS -X PUT \
-              "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/workers/domains" \
+            echo "=== Pages domain $domain ==="
+            RESP=$(curl -sS -X POST "$API" \
               -H "Authorization: Bearer ${TOKEN}" \
               -H "Content-Type: application/json" \
-              --data "{\"hostname\":\"${hostname}\",\"service\":\"${SERVICE}\",\"environment\":\"production\",\"zone_id\":\"${ZONE_ID}\"}")
+              --data "{\"name\":\"${domain}\"}")
             echo "$RESP"
             echo "$RESP" | python3 -c '
           import json,sys
           d=json.load(sys.stdin)
           if d.get("success"):
-            print("ok", d.get("result",{}).get("hostname"))
+            print("added", d["result"].get("name"))
             sys.exit(0)
           errs=d.get("errors") or []
+          codes={e.get("code") for e in errs}
           msg=json.dumps(errs).lower()
-          if "already" in msg or any(e.get("code") in (100004, 100020) for e in errs):
+          # already attached / already exists
+          if codes & {8000014, 8000015, 8000032, 8000018} or "already" in msg:
             print("domain already attached (ok)")
             sys.exit(0)
           sys.exit(1)

@@ -4,5 +4,10 @@
   "compatibility_date": "2025-01-01",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
-  "preview_urls": true
+  "preview_urls": true,
+  // Zone routes intercept *.novixa.vn at the edge (works with existing DNS CNAMEs).
+  "routes": [
+    { "pattern": "xuanhoa.novixa.vn/*", "zone_name": "novixa.vn" },
+    { "pattern": "demo-pharmacy.novixa.vn/*", "zone_name": "novixa.vn" }
+  ]
 }
