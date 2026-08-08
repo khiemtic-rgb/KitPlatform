@@ -243,6 +243,28 @@ export type ReportIntelligence = {
     intro: string;
     rows: { problem: string; module: string; benefit: string; kpiTarget: string }[];
   } | null;
+  ownerPack?: OwnerPack | null;
+};
+
+export type OwnerPack = {
+  overallHeadline: string;
+  maturityLabel: string;
+  overallScorePct: number;
+  strengths: { title: string; body: string; areaCode?: string | null }[];
+  pains: {
+    title: string;
+    businessConsequence: string;
+    areaCode?: string | null;
+    sourceHint?: string | null;
+  }[];
+  oneThingFirst: string;
+  actions30Days: { title: string; who: string; when: string; doneWhen: string }[];
+  pilotHinge: {
+    recommendedFocus: string;
+    focusOptions: string[];
+    howToTalk: string;
+  };
+  nextStepCta: string;
 };
 
 function sessionStorageKey(submissionId: string) {
@@ -355,10 +377,14 @@ export async function fetchReport(id: string) {
   return data;
 }
 
-export async function fetchReportPdf(id: string): Promise<Blob> {
+export async function fetchReportPdf(
+  id: string,
+  kind: 'owner' | 'consulting' | 'executive' | 'appendix' = 'owner',
+): Promise<Blob> {
   try {
     const { data, headers } = await api.get<Blob>(`/submissions/${id}/report.pdf`, {
       headers: sessionHeader(id),
+      params: { kind },
       responseType: 'blob',
       timeout: 300_000,
     });

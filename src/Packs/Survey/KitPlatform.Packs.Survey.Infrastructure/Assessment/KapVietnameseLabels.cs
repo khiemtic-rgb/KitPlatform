@@ -41,6 +41,7 @@ internal static class KapVietnameseLabels
         KapReportPdfKind.Executive => "BÁO CÁO ĐIỀU HÀNH",
         KapReportPdfKind.Consulting => "BÁO CÁO TƯ VẤN CHUYỂN ĐỔI SỐ",
         KapReportPdfKind.Appendix => "PHỤ LỤC KỸ THUẬT",
+        KapReportPdfKind.Owner => "ĐÁNH GIÁ NHANH NHÀ THUỐC",
         _ => ReportTitle,
     };
 }

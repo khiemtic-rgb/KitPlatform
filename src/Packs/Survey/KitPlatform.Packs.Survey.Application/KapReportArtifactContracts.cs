@@ -15,6 +15,8 @@ public enum KapReportPdfKind
     Executive,
     Consulting,
     Appendix,
+    /// <summary>Short owner-facing pack (plain language, pain-led, Pilot hinge).</summary>
+    Owner,
 }
 
 public sealed record KapReportArtifactDto(
@@ -405,4 +407,40 @@ public sealed record AssessmentReportIntelligenceDto(
     KapCrossCategoryInsightDto? CrossCategoryInsight = null,
     KapNarrativeCascadeDto? InactionCascade = null,
     KapNarrativeCascadeDto? ImplementationJourney = null,
-    KapWhyNovixaDto? WhyNovixa = null);
+    KapWhyNovixaDto? WhyNovixa = null,
+    /// <summary>Owner-facing summary (presentation layer; not persisted in artifact).</summary>
+    AssessmentOwnerPackDto? OwnerPack = null);
+
+/// <summary>Báo cáo ngắn cho chủ nhà thuốc — dễ đọc, tập trung nỗi đau & bước Pilot.</summary>
+public sealed record AssessmentOwnerPackDto(
+    string OverallHeadline,
+    string MaturityLabel,
+    decimal OverallScorePct,
+    IReadOnlyList<AssessmentOwnerPointDto> Strengths,
+    IReadOnlyList<AssessmentOwnerPainDto> Pains,
+    string OneThingFirst,
+    IReadOnlyList<AssessmentOwnerActionDto> Actions30Days,
+    AssessmentOwnerPilotHingeDto PilotHinge,
+    string NextStepCta);
+
+public sealed record AssessmentOwnerPointDto(
+    string Title,
+    string Body,
+    string? AreaCode = null);
+
+public sealed record AssessmentOwnerPainDto(
+    string Title,
+    string BusinessConsequence,
+    string? AreaCode = null,
+    string? SourceHint = null);
+
+public sealed record AssessmentOwnerActionDto(
+    string Title,
+    string Who,
+    string When,
+    string DoneWhen);
+
+public sealed record AssessmentOwnerPilotHingeDto(
+    string RecommendedFocus,
+    IReadOnlyList<string> FocusOptions,
+    string HowToTalk);

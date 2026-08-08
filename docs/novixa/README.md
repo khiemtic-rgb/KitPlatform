@@ -4,6 +4,11 @@
 > **Mục đích:** Vận hành ra mắt, triển khai, bán hàng và mở rộng — không chỉ trình bày.  
 > **Sản phẩm kỹ thuật:** KitPlatform (ERP lõi) · **Thương hiệu:** Novixa · **Website:** [novixa.vn](https://novixa.vn)
 
+**Active focus (2026-08-08):** Pharmacy Health Check — website storefront tạm dừng.  
+Handoff: [02-product/handoff-website-pause-pharmacy-health-check-2026-08-08.md](./02-product/handoff-website-pause-pharmacy-health-check-2026-08-08.md) ·  
+Phân tích GTM: [04-gtm/gtm-001-pharmacy-health-check-sales-pilot-paid-analysis-v1.md](./04-gtm/gtm-001-pharmacy-health-check-sales-pilot-paid-analysis-v1.md) ·  
+UX báo cáo chủ NT: [02-product/phc-owner-report-ux-sales-ready-v1.md](./02-product/phc-owner-report-ux-sales-ready-v1.md)
+
 **Entry point thống nhất (Launch 10 DOC + Operations):** [**DOC-MASTER-INDEX.md**](./DOC-MASTER-INDEX.md)
 
 ---

@@ -513,6 +513,7 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
         {
             KapReportPdfKind.Executive => $"kap-executive-{submissionId:N}.pdf",
             KapReportPdfKind.Appendix => $"kap-appendix-{submissionId:N}.pdf",
+            KapReportPdfKind.Owner => $"kap-owner-{submissionId:N}.pdf",
             _ => $"kap-consulting-{submissionId:N}.pdf",
         };
 

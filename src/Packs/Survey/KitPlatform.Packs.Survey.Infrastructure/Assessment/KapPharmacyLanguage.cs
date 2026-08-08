@@ -45,8 +45,8 @@ internal static class KapPharmacyLanguage
     {
         >= 7.5m => "mức khá — duy trì và tinh chỉnh dần",
         >= 5.5m => "mức trung bình — nên cải thiện trong 1–2 tháng",
-        >= 3.5m => "mức yếu — ưu tiên xử lý sớm",
-        _ => "mức rất yếu — ảnh hưởng trực tiếp tới lợi nhuận và rủi ro GPP",
+        >= 3.5m => "còn khoảng trống — nên ưu tiên xử lý sớm",
+        _ => "cần củng cố nền tảng — ảnh hưởng tới lợi nhuận và an toàn thuốc",
     };
 
     public static string AssessmentLine(string code, string? name, decimal scoreOutOf4)

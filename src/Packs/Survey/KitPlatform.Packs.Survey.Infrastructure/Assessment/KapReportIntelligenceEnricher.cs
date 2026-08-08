@@ -41,7 +41,7 @@ internal static class KapReportIntelligenceEnricher
                 intel.Maturity, intel.RootCauses, intel.Risks, intel.Opportunities,
                 intel.Benchmark, brief, ext.NovixaReadiness, ext.GapAnalysis, intel.PriorityMatrix);
 
-            return Normalize(new AssessmentReportIntelligenceDto(
+            return AttachOwnerPack(report, Normalize(new AssessmentReportIntelligenceDto(
                 KapReportArtifactSchema.Version,
                 intel.Maturity, intel.Swot, intel.RootCauses,
                 intel.Benchmark is not null
@@ -59,13 +59,13 @@ internal static class KapReportIntelligenceEnricher
                 bundle.CrossCategoryInsight,
                 bundle.InactionCascade,
                 bundle.ImplementationJourney,
-                bundle.WhyNovixa));
+                bundle.WhyNovixa)));
         }
 
         if (brief != intel.ConsultingBrief)
         {
             var actionPlan = KapActionPlanBuilder.Build(report.Recommendations, intel.Roadmap, brief);
-            return Normalize(intel with { ConsultingBrief = brief, ActionPlan = actionPlan });
+            return AttachOwnerPack(report, Normalize(intel with { ConsultingBrief = brief, ActionPlan = actionPlan }));
         }
 
         if (intel.ActionPlan is null && brief is not null)
@@ -75,8 +75,13 @@ internal static class KapReportIntelligenceEnricher
         }
 
         intel = EnsureConsultingIntelligence(intel, orgName, orgScale, scores);
-        return Normalize(intel);
+        return AttachOwnerPack(report, Normalize(intel));
     }
+
+    private static AssessmentReportIntelligenceDto AttachOwnerPack(
+        AssessmentFullReportDto report,
+        AssessmentReportIntelligenceDto intel) =>
+        intel with { OwnerPack = KapOwnerPackBuilder.Build(report, intel) };
 
     private static AssessmentReportIntelligenceDto EnsureConsultingIntelligence(
         AssessmentReportIntelligenceDto intel,

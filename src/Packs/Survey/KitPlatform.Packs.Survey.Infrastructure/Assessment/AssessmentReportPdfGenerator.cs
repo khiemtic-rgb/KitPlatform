@@ -46,6 +46,9 @@ internal static class AssessmentReportPdfGenerator
                 case KapReportPdfKind.Appendix:
                     BuildAppendixPdf(container, report, intel, orgName);
                     break;
+                case KapReportPdfKind.Owner:
+                    BuildOwnerPdf(container, report, intel, orgName);
+                    break;
                 default:
                     BuildConsultingPdf(container, report, intel, orgName);
                     break;
@@ -102,6 +105,110 @@ internal static class AssessmentReportPdfGenerator
                 RenderRiskRegister(col, intel.RiskRegister, maxItems: 5);
                 RenderClosingCta(col, intel);
             });
+    }
+
+    private static void BuildOwnerPdf(
+        IDocumentContainer container,
+        AssessmentFullReportDto report,
+        AssessmentReportIntelligenceDto intel,
+        string orgName)
+    {
+        var pack = intel.OwnerPack ?? KapOwnerPackBuilder.Build(report, intel);
+
+        AddPage(container, orgName, report, KapReportPdfKind.Owner, col =>
+        {
+            col.Item().PaddingTop(36).Text("ĐÁNH GIÁ NHANH NHÀ THUỐC").Bold().FontSize(Fs(18)).FontColor(Brand);
+            col.Item().PaddingTop(6).Text(orgName).Bold().FontSize(Fs(16));
+            col.Item().PaddingTop(6)
+                .Text($"Ngày: {report.CompletedAt?.ToString("dd/MM/yyyy") ?? "—"} · Mã: {report.SubmissionId.ToString()[..8].ToUpperInvariant()}")
+                .FontSize(Fs(9)).FontColor(TextMuted);
+            col.Item().PaddingTop(14)
+                .Text("Báo cáo giúp anh/chị nhìn rõ điểm mạnh và việc nên ưu tiên — không phải tài liệu kỹ thuật.")
+                .FontSize(Fs(10)).FontColor(TextMuted).LineHeight(1.35f);
+        });
+
+        AddSectionPage(container, orgName, report, KapReportPdfKind.Owner, "KẾT QUẢ TÓM TẮT", col =>
+        {
+            col.Item().Background(BrandLight).Padding(12).Column(box =>
+            {
+                box.Item().Text($"Mức tổng: {Math.Round(pack.OverallScorePct):0}/100 · {pack.MaturityLabel}")
+                    .Bold().FontSize(Fs(12)).FontColor(Brand);
+                box.Item().PaddingTop(4).Text(V(pack.OverallHeadline)).FontSize(Fs(10)).LineHeight(1.35f);
+            });
+
+            col.Item().PaddingTop(12).Text("ĐANG LÀM TỐT").Bold().FontSize(Fs(11)).FontColor(Brand);
+            foreach (var s in pack.Strengths.Take(3))
+            {
+                col.Item().PaddingTop(4).Text($"✓ {V(s.Title)}").Bold().FontSize(Fs(10));
+                col.Item().PaddingTop(1).Text(V(s.Body)).FontSize(Fs(9)).FontColor(TextMuted).LineHeight(1.3f);
+            }
+
+            col.Item().PaddingTop(12).Text("NỖI ĐAU / CƠ HỘI LỚN").Bold().FontSize(Fs(11)).FontColor(Accent);
+            var i = 1;
+            foreach (var p in pack.Pains.Take(3))
+            {
+                col.Item().PaddingTop(6).Text($"{i:00}. {V(p.Title)}").Bold().FontSize(Fs(10));
+                col.Item().PaddingTop(1).Text($"→ {V(p.BusinessConsequence)}").FontSize(Fs(9)).LineHeight(1.35f);
+                i++;
+            }
+
+            col.Item().PaddingTop(12).Background(Colors.Orange.Lighten4).Padding(10).Column(box =>
+            {
+                box.Item().Text("NÊN LÀM TRƯỚC (30 ngày)").Bold().FontSize(Fs(10));
+                box.Item().PaddingTop(3).Text(V(pack.OneThingFirst)).FontSize(Fs(10)).LineHeight(1.35f);
+            });
+        });
+
+        AddSectionPage(container, orgName, report, KapReportPdfKind.Owner, "SÁU GÓC NHÌN ĐƠN GIẢN", col =>
+        {
+            col.Item().Text("Mỗi dòng là một mặt hoạt động — không cần biết thuật ngữ kỹ thuật.")
+                .FontSize(Fs(9)).FontColor(TextMuted);
+            RenderPharmacyScoreBars(col, report.CategoryScores);
+        });
+
+        AddSectionPage(container, orgName, report, KapReportPdfKind.Owner, "VIỆC LÀM TRONG 30 NGÀY", col =>
+        {
+            if (pack.Actions30Days.Count == 0)
+            {
+                col.Item().Text(V(pack.OneThingFirst)).FontSize(Fs(10));
+                return;
+            }
+
+            foreach (var a in pack.Actions30Days)
+            {
+                col.Item().PaddingTop(8).Border(1).BorderColor(Colors.Grey.Lighten2).Padding(8).Column(c =>
+                {
+                    c.Item().Text(V(a.Title)).Bold().FontSize(Fs(10));
+                    c.Item().PaddingTop(3).Text($"Ai làm: {V(a.Who)}").FontSize(Fs(9));
+                    c.Item().Text($"Khi nào: {V(a.When)}").FontSize(Fs(9));
+                    c.Item().Text($"Xong khi: {V(a.DoneWhen)}").FontSize(Fs(9)).FontColor(TextMuted);
+                });
+            }
+        });
+
+        AddSectionPage(container, orgName, report, KapReportPdfKind.Owner, "NẾU MUỐN CÓ NGƯỜI ĐỒNG HÀNH", col =>
+        {
+            col.Item().Text(V(pack.PilotHinge.HowToTalk)).FontSize(Fs(10)).LineHeight(1.4f);
+            col.Item().PaddingTop(10).Text("Hướng đồng hành phù hợp (Pilot 30 ngày):")
+                .Bold().FontSize(Fs(10)).FontColor(Brand);
+            col.Item().PaddingTop(4).Text(V(pack.PilotHinge.RecommendedFocus)).Bold().FontSize(Fs(11));
+
+            col.Item().PaddingTop(8).Text("Có thể chọn một trong:").FontSize(Fs(9)).FontColor(TextMuted);
+            foreach (var opt in pack.PilotHinge.FocusOptions)
+                col.Item().PaddingTop(3).Text($"• {V(opt)}").FontSize(Fs(9));
+
+            col.Item().PaddingTop(12).Background(BrandLight).Padding(10).Column(box =>
+            {
+                box.Item().Text("Pilot không phải dùng thử phần mềm vô thời hạn.")
+                    .Bold().FontSize(Fs(9));
+                box.Item().PaddingTop(3)
+                    .Text("Pilot = kiểm chứng 1–2 việc trên trong 30 ngày. Phí Pilot thường tính vào tháng đầu nếu anh/chị tiếp tục.")
+                    .FontSize(Fs(9)).LineHeight(1.35f);
+            });
+
+            col.Item().PaddingTop(14).AlignCenter().Text(V(pack.NextStepCta))
+                .Bold().FontSize(Fs(11)).FontColor(Brand);
+        });
     }
 
     private static void BuildConsultingPdf(

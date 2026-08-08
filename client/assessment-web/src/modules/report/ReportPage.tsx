@@ -1,73 +1,45 @@
 import { useEffect, useState } from 'react';
-
 import { Link, useParams } from 'react-router-dom';
-
-import { Button, Spin, Typography, message } from 'antd';
-
+import { Button, Collapse, Spin, Typography, message } from 'antd';
 import { fetchReport, fetchReportPdf, triggerPdfDownload, type FullReport } from '@/shared/api/assessment.api';
-
 import { OverallScoreHero } from '@/shared/score/score-display';
-
 import { ReportIntelligenceSections } from '@/modules/report/ReportIntelligenceSections';
-
-
+import { OwnerPackPanel } from '@/modules/report/OwnerPackPanel';
 
 const { Title, Paragraph } = Typography;
 
-
-
 export function ReportPage() {
-
   const { id = '' } = useParams();
-
   const [report, setReport] = useState<FullReport | null>(null);
-
   const [loading, setLoading] = useState(true);
-
-  const [downloadingPdf, setDownloadingPdf] = useState(false);
-
-
+  const [downloadingOwner, setDownloadingOwner] = useState(false);
+  const [downloadingFull, setDownloadingFull] = useState(false);
 
   useEffect(() => {
-
     let cancelled = false;
-
     (async () => {
-
       try {
-
         const data = await fetchReport(id);
-
         if (!cancelled) setReport(data);
-
       } catch {
-
         message.error('Báo cáo chưa mở khóa hoặc session hết hạn.');
-
       } finally {
-
         if (!cancelled) setLoading(false);
-
       }
-
     })();
-
     return () => {
-
       cancelled = true;
-
     };
-
   }, [id]);
 
-  async function handleDownloadPdf() {
+  async function downloadPdf(kind: 'owner' | 'consulting', fileName: string) {
     if (!report?.pdf.available) return;
-
-    setDownloadingPdf(true);
+    const setLoadingPdf = kind === 'owner' ? setDownloadingOwner : setDownloadingFull;
+    setLoadingPdf(true);
     try {
-      const blob = await fetchReportPdf(id);
-      triggerPdfDownload(blob, `kap-bao-cao-${id}.pdf`);
-      message.success('Đã tải báo cáo PDF.');
+      const blob = await fetchReportPdf(id, kind);
+      triggerPdfDownload(blob, fileName);
+      message.success(kind === 'owner' ? 'Đã tải bản dễ đọc cho chủ nhà thuốc.' : 'Đã tải báo cáo đầy đủ.');
     } catch (err: unknown) {
       const msg =
         err instanceof Error
@@ -75,114 +47,86 @@ export function ReportPage() {
           : 'Không tải được PDF. Vui lòng thử lại hoặc kiểm tra kết nối mạng.';
       message.error(msg);
     } finally {
-      setDownloadingPdf(false);
+      setLoadingPdf(false);
     }
   }
 
   if (loading) {
-
     return (
-
       <div className="page-shell" style={{ textAlign: 'center', paddingTop: '4rem' }}>
-
         <Spin size="large" />
-
       </div>
-
     );
-
   }
-
-
 
   if (!report) {
-
     return (
-
       <div className="page-shell">
-
         <Paragraph>Không tải được báo cáo.</Paragraph>
-
         <Link to={`/results/${id}/unlock`}>Mở khóa báo cáo</Link>
-
       </div>
-
     );
-
   }
 
-
+  const ownerPack = report.intelligence?.ownerPack ?? null;
 
   return (
-
     <div className="page-shell page-shell-report">
-
-      <Title level={3}>Báo cáo tư vấn chuyển đổi số</Title>
-
+      <Title level={3}>Kết quả đánh giá nhà thuốc</Title>
       <Paragraph type="secondary">
-
-        Phân tích AI · {report.templateCode} · dữ liệu khảo sát của bạn
-
+        Bản dễ hiểu cho chủ nhà thuốc · {report.templateCode}
       </Paragraph>
 
-
-
       <div className="score-card score-card-hero">
-
         <OverallScoreHero scorePct={report.overallPct} />
-
       </div>
 
+      {ownerPack ? <OwnerPackPanel pack={ownerPack} /> : null}
 
+      {report.pdf.available ? (
+        <div style={{ display: 'grid', gap: 8, marginBottom: '1rem' }}>
+          <Button
+            type="primary"
+            block
+            size="large"
+            loading={downloadingOwner}
+            onClick={() => void downloadPdf('owner', `danh-gia-nha-thuoc-${id.slice(0, 8)}.pdf`)}
+          >
+            {downloadingOwner ? 'Đang tạo PDF…' : 'Tải bản dễ đọc (khuyến nghị)'}
+          </Button>
+          <Button
+            block
+            loading={downloadingFull}
+            onClick={() => void downloadPdf('consulting', `kap-bao-cao-day-du-${id.slice(0, 8)}.pdf`)}
+          >
+            {downloadingFull ? 'Đang tạo PDF đầy đủ…' : 'Tải báo cáo tư vấn đầy đủ (tuỳ chọn)'}
+          </Button>
+        </div>
+      ) : null}
 
       {report.intelligence ? (
-
-        <ReportIntelligenceSections report={report} intelligence={report.intelligence} />
-
+        <Collapse
+          items={[
+            {
+              key: 'full',
+              label: 'Xem phân tích chi tiết hơn (biểu đồ & tư vấn đầy đủ)',
+              children: (
+                <ReportIntelligenceSections report={report} intelligence={report.intelligence} />
+              ),
+            },
+          ]}
+        />
       ) : (
-
         <div className="score-card">
-
           <Paragraph>
-
             Báo cáo chi tiết đang được xử lý. Vui lòng tải PDF hoặc tải lại trang sau vài giây.
-
           </Paragraph>
-
         </div>
-
       )}
-
-
-
-      {report.pdf.available && (
-
-        <Button
-          type="primary"
-          block
-          size="large"
-          loading={downloadingPdf}
-          onClick={() => void handleDownloadPdf()}
-        >
-
-          {downloadingPdf ? 'Đang tạo báo cáo PDF…' : 'Tải báo cáo PDF (đầy đủ)'}
-
-        </Button>
-
-      )}
-
-
 
       <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-
         <Link to="/thank-you">Hoàn tất</Link>
-
       </div>
-
     </div>
-
   );
-
 }
-
-

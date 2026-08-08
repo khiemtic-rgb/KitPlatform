@@ -7,6 +7,7 @@ public static class KapReportPdfKindParser
         {
             "executive" or "exec" => KapReportPdfKind.Executive,
             "appendix" or "technical" => KapReportPdfKind.Appendix,
+            "owner" or "owner_v1" or "chu" or "short" => KapReportPdfKind.Owner,
             "consulting" or "full" or "" or null => KapReportPdfKind.Consulting,
             _ => KapReportPdfKind.Consulting,
         };
