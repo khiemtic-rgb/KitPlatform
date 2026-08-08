@@ -1,0 +1,180 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { resolveTenant } from '../lib/tenant';
+import '../styles/storefront.css';
+
+const tenant = resolveTenant(Astro.request);
+const page = tenant.pages.services;
+const appUrl = tenant.appPromo.appUrl;
+
+const trustIcons: Record<string, string> = {
+  pharmacist: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><circle cx="20" cy="14" r="4.2" stroke="currentColor" stroke-width="1.8"/><path d="M11.5 30c1.4-5 4.8-7.4 8.5-7.4s7.1 2.4 8.5 7.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M26 12.5h5M28.5 10v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+  badge: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 6.5 10 10.5v8.2c0 7 4.4 11.7 10 13.5 5.6-1.8 10-6.5 10-13.5v-8.2L20 6.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m15.8 20.2 2.8 2.8 5.8-6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  scooter: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><circle cx="14" cy="27" r="3" stroke="currentColor" stroke-width="1.7"/><circle cx="28" cy="27" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M16.5 27H25l2.8-9H23" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 18h4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+  hours: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><circle cx="20" cy="20" r="10.5" stroke="currentColor" stroke-width="1.8"/><path d="M20 14.5V20l4 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+
+const featureIcons: Record<string, string> = {
+  chat: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M14 16.5A4.5 4.5 0 0 1 18.5 12H32a4.5 4.5 0 0 1 4.5 4.5v10A4.5 4.5 0 0 1 32 31h-7.2L19 37v-6h-.5A4.5 4.5 0 0 1 14 26.5v-10z" stroke="currentColor" stroke-width="2"/><circle cx="22" cy="22" r="1.4" fill="currentColor"/><circle cx="26.5" cy="22" r="1.4" fill="currentColor"/><circle cx="31" cy="22" r="1.4" fill="currentColor"/></svg>`,
+  delivery: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M10 20h16v14H10z" stroke="currentColor" stroke-width="2"/><path d="M26 24h7l5 5.5V34H26" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="16" cy="36" r="2.8" stroke="currentColor" stroke-width="2"/><circle cx="34" cy="36" r="2.8" stroke="currentColor" stroke-width="2"/></svg>`,
+  rx: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="15" y="10" width="15" height="24" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M19 18h7M19 23h7M19 28h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="33" cy="31" r="6" stroke="currentColor" stroke-width="2"/><path d="m30.8 31 1.5 1.5 3-3.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  bell: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 12a9 9 0 0 0-9 9v5.2l-2.2 3.8h22.4L33 26.2V21a9 9 0 0 0-9-9z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M21 34a3 3 0 0 0 6 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+  health: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="14" y="11" width="14" height="22" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M18 19h6M18 24h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="26" y="20" width="12" height="16" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M32 25v6M29 28h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+  cart: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M12 14h4l3.2 16h15.6l3-10H18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22" cy="35" r="2.2" fill="currentColor"/><circle cx="33" cy="35" r="2.2" fill="currentColor"/></svg>`,
+  family: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="18" cy="18" r="4" stroke="currentColor" stroke-width="2"/><circle cx="30" cy="18" r="4" stroke="currentColor" stroke-width="2"/><path d="M10 34c1.4-5 4.6-7.5 8-7.5s6.6 2.5 8 7.5M22 34c1.4-5 4.6-7.5 8-7.5s6.6 2.5 8 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+};
+
+const processIcons: Record<string, string> = {
+  choose: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><rect x="8" y="10" width="24" height="20" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M13 17h14M13 22h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  consult: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><circle cx="20" cy="14" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M11 30c1.3-4.8 4.5-7 9-7s7.7 2.2 9 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M27 12h5M29.5 9.5v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+  deliver: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M8 16h14v12H8z" stroke="currentColor" stroke-width="1.8"/><path d="M22 19h6l4 4.5V28H22" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="13" cy="30" r="2.3" stroke="currentColor" stroke-width="1.7"/><circle cx="29" cy="30" r="2.3" stroke="currentColor" stroke-width="1.7"/></svg>`,
+  care: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 31s-7.2-4.4-7.2-9.5A4 4 0 0 1 20 18.2 4 4 0 0 1 27.2 21.5C27.2 26.6 20 31 20 31z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+};
+
+const bannerIcons: Record<string, string> = {
+  convenient: `<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="10" y="4" width="12" height="24" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M14 24h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+  fast: `<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M7 17h8l-2 8 12-12h-8l2-8L7 17z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>`,
+  save: `<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M16 11v10M12.5 14.5h5.2a2.3 2.3 0 0 1 0 4.6H12.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+  safe: `<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 5.5 7.5 9v7.2c0 5.8 3.7 9.7 8.5 11.2 4.8-1.5 8.5-5.4 8.5-11.2V9L16 5.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m12.5 16 2.4 2.4 4.8-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+
+const iconCheck = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="#0A7A5C"/><path d="m6.4 10.2 2.2 2.2 4.8-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const iconPhone = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="6" y="2.5" width="8" height="15" rx="1.8" stroke="currentColor" stroke-width="1.6"/><path d="M9 14.5h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const iconChat = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H14a2.5 2.5 0 0 1 2.5 2.5v6A2.5 2.5 0 0 1 14 14H9l-3.5 2.8V14H6.5A2.5 2.5 0 0 1 4 11.5v-6z" stroke="currentColor" stroke-width="1.5"/></svg>`;
+---
+
+<BaseLayout
+  tenant={tenant}
+  title={`Dịch vụ — ${tenant.brand.name}`}
+  description={page.hero.body}
+>
+  <SiteHeader tenant={tenant} currentPath="/dich-vu" />
+  <main class="sf-svc">
+    <section class="sf-svc-hero">
+      <div class="sf-svc-hero__media">
+        <img src={page.hero.imageUrl} alt={page.hero.imageAlt} width="1400" height="640" loading="eager" />
+      </div>
+      <div class="sf-container sf-svc-hero__copy">
+        <p class="sf-eyebrow">{page.hero.eyebrow}</p>
+        <h1>{page.hero.title}</h1>
+        <p>{page.hero.body}</p>
+        <div class="sf-svc-hero__actions">
+          <a class="sf-btn sf-btn--primary sf-btn--icon" href={page.hero.ctaPrimary.href}>
+            <span class="sf-btn__icon" set:html={iconPhone} />
+            {page.hero.ctaPrimary.label}
+          </a>
+          <a class="sf-btn sf-btn--ghost sf-btn--icon" href={page.hero.ctaSecondary.href}>
+            <span class="sf-btn__icon" set:html={iconChat} />
+            {page.hero.ctaSecondary.label}
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="sf-svc-trust" aria-label="Cam kết dịch vụ">
+      <div class="sf-container sf-svc-trust__grid">
+        {
+          page.trustItems.map((item) => (
+            <div class="sf-svc-trust__item">
+              <span class="sf-svc-trust__icon" set:html={trustIcons[item.icon] ?? trustIcons.badge} />
+              <strong>{item.label}</strong>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="sf-svc-featured" id="dich-vu" aria-labelledby="svc-featured-title">
+      <div class="sf-container">
+        <div class="sf-svc-featured__head">
+          <h2 id="svc-featured-title">{page.featuredTitle}</h2>
+          <p>{page.featuredSubtitle}</p>
+        </div>
+        <div class="sf-svc-featured__grid">
+          {
+            page.featured.map((item) => (
+              <article class:list={['sf-svc-card', `sf-svc-card--${item.tone ?? 'green'}`]} id={item.id}>
+                <div class="sf-svc-card__icon" set:html={featureIcons[item.icon] ?? featureIcons.chat} />
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+                <ul>
+                  {item.bullets.map((b) => (
+                    <li>
+                      <span set:html={iconCheck} />
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+                <a class="sf-svc-card__link" href={appUrl}>
+                  Đặt trên App →
+                </a>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="sf-svc-process" aria-labelledby="svc-process-title">
+      <div class="sf-container">
+        <div class="sf-svc-featured__head">
+          <h2 id="svc-process-title">{page.processTitle}</h2>
+          <p>{page.processSubtitle}</p>
+        </div>
+        <ol class="sf-svc-process__grid">
+          {
+            page.process.map((step, index) => (
+              <li class="sf-svc-process__item">
+                <div class="sf-svc-process__num">{String(index + 1).padStart(2, '0')}</div>
+                <div class="sf-svc-process__icon" set:html={processIcons[step.icon] ?? processIcons.choose} />
+                <h3>{step.title}</h3>
+                <p>{step.description}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <section class="sf-svc-banner" aria-labelledby="svc-banner-title">
+      <div class="sf-container sf-svc-banner__grid">
+        <div class="sf-svc-banner__phone" aria-hidden="true">
+          <div class="sf-svc-banner__screen">
+            <strong>App Novixa</strong>
+            <small>Đặt thuốc · Chat dược sĩ</small>
+            <span>Mở ngay</span>
+          </div>
+        </div>
+        <div class="sf-svc-banner__copy">
+          <h2 id="svc-banner-title">{page.appBanner.title}</h2>
+          <p>{page.appBanner.body}</p>
+          {
+            tenant.appPromo.qrImageUrl ? (
+              <div class="sf-svc-banner__qr">
+                <img src={tenant.appPromo.qrImageUrl} alt="QR tải App Novixa" width="108" height="108" loading="lazy" />
+                <span>Quét mã để tải App</span>
+              </div>
+            ) : null
+          }
+          <a class="sf-btn sf-svc-banner__cta" href={page.appBanner.cta.href}>{page.appBanner.cta.label}</a>
+        </div>
+        <div class="sf-svc-banner__highlights">
+          {
+            page.appBanner.highlights.map((item) => (
+              <div class="sf-svc-banner__hi">
+                <span set:html={bannerIcons[item.icon] ?? bannerIcons.safe} />
+                <div>
+                  <strong>{item.label}</strong>
+                  <small>{item.description}</small>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+  <SiteFooter tenant={tenant} />
+</BaseLayout>

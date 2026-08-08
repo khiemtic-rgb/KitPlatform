@@ -6,54 +6,343 @@ import { resolveTenant } from '../lib/tenant';
 import '../styles/storefront.css';
 
 const tenant = resolveTenant(Astro.request);
+const page = tenant.pages.products;
+const appUrl = tenant.appPromo.appUrl;
+const collage = tenant.products.slice(0, 4);
+
+const badgeLabels: Record<string, string> = {
+  authentic: 'Chính hãng',
+  bestseller: 'Best Seller',
+  new: 'Mới',
+};
+
+const trustIcons: Record<string, string> = {
+  badge: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 6.5 10 10.5v8.2c0 7 4.4 11.7 10 13.5 5.6-1.8 10-6.5 10-13.5v-8.2L20 6.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m15.8 20.2 2.8 2.8 5.8-6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  advisor: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><circle cx="20" cy="14" r="4.2" stroke="currentColor" stroke-width="1.8"/><path d="M11.5 30c1.4-5 4.8-7.4 8.5-7.4s7.1 2.4 8.5 7.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M26 12.5h5M28.5 10v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+  scooter: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><circle cx="14" cy="27" r="3" stroke="currentColor" stroke-width="1.7"/><circle cx="28" cy="27" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M16.5 27H25l2.8-9H23" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 18h4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+  return: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M14 16H10v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 16a11 11 0 1 1 3.2 7.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+};
+
+const heroTrustIcons: Record<string, string> = {
+  badge: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="23" stroke="#C8E0D6" stroke-width="1.5" fill="#fff"/><path d="M24 12.5 15.5 16v7.5c0 6.2 4 10.4 8.5 12 4.5-1.6 8.5-5.8 8.5-12V16L24 12.5z" fill="#004D40"/><path d="m19.8 24.2 2.7 2.7 5.7-5.9" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  advisor: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="23" stroke="#C8E0D6" stroke-width="1.5" fill="#fff"/><circle cx="24" cy="18.5" r="4.5" fill="#004D40"/><path d="M13.5 33c1.4-4.8 5-7.2 10.5-7.2s9.1 2.4 10.5 7.2" fill="#0A7A5C"/></svg>`,
+  scooter: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="23" stroke="#C8E0D6" stroke-width="1.5" fill="#fff"/><circle cx="16.5" cy="31" r="2.8" fill="#004D40"/><circle cx="32.5" cy="31" r="2.8" fill="#004D40"/><path d="M19 31h10.5l3.2-10H27" stroke="#004D40" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 21h5" stroke="#0A7A5C" stroke-width="2" stroke-linecap="round"/></svg>`,
+};
+
+const needIcons: Record<string, string> = {
+  cold: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="#E7F3EF"/><path d="M24 14v20M16.5 18.5l15 11M16.5 29.5l15-11" stroke="#004D40" stroke-width="2" stroke-linecap="round"/></svg>`,
+  pain: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="#E7F3EF"/><circle cx="24" cy="24" r="9" stroke="#004D40" stroke-width="2"/><path d="M24 18v6l4 2" stroke="#0A7A5C" stroke-width="2" stroke-linecap="round"/></svg>`,
+  digest: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="#E7F3EF"/><path d="M17 18c0 8 5 12 7 14 2-2 7-6 7-14" stroke="#004D40" stroke-width="2" stroke-linecap="round"/><path d="M20 18h8" stroke="#0A7A5C" stroke-width="2" stroke-linecap="round"/></svg>`,
+  heart: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="#E7F3EF"/><path d="M24 34s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 32 23c0 6-8 11-8 11z" stroke="#004D40" stroke-width="2" stroke-linejoin="round"/></svg>`,
+  diabetes: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="#E7F3EF"/><path d="M24 14c-5 7-7 11-7 15a7 7 0 0 0 14 0c0-4-2-8-7-15z" stroke="#004D40" stroke-width="2" stroke-linejoin="round"/></svg>`,
+  joint: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="#E7F3EF"/><circle cx="18" cy="24" r="4" stroke="#004D40" stroke-width="2"/><circle cx="30" cy="24" r="4" stroke="#004D40" stroke-width="2"/><path d="M22 24h4" stroke="#0A7A5C" stroke-width="2"/></svg>`,
+  mom: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="#E7F3EF"/><circle cx="20" cy="20" r="4" stroke="#004D40" stroke-width="2"/><circle cx="29" cy="22" r="3" stroke="#0A7A5C" stroke-width="2"/><path d="M13 33c1.2-4 4-6 7-6s5.8 2 7 6" stroke="#004D40" stroke-width="2" stroke-linecap="round"/></svg>`,
+  aid: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="#E7F3EF"/><rect x="15" y="15" width="18" height="18" rx="3" stroke="#004D40" stroke-width="2"/><path d="M24 19v10M19 24h10" stroke="#0A7A5C" stroke-width="2" stroke-linecap="round"/></svg>`,
+};
+
+const iconSearch = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+const iconCheck = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#0A7A5C"/><path d="m8.2 12.2 2.5 2.5 5.2-5.4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const iconDetail = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2.5 12S6.5 5.5 12 5.5 21.5 12 21.5 12 17.5 18.5 12 18.5 2.5 12 2.5 12z"/></svg>`;
+const iconOrder = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M6 6 5 3H2"/></svg>`;
 ---
 
 <BaseLayout
   tenant={tenant}
   title={`Sản phẩm — ${tenant.brand.name}`}
-  description="Xem và đặt sản phẩm trên App Novixa"
+  description={page.hero.body}
 >
   <SiteHeader tenant={tenant} currentPath="/san-pham" />
-  <main class="sf-page">
-    <div class="sf-container">
-      <div class="sf-section__head">
-        <div>
-          <p class="sf-eyebrow">Danh mục nổi bật</p>
-          <h1>Sản phẩm</h1>
+  <main class="sf-catalog">
+    <section class="sf-catalog-hero">
+      <div class="sf-container sf-catalog-hero__grid">
+        <div class="sf-catalog-hero__copy">
+          <h1>{page.hero.title}</h1>
+          <ul class="sf-catalog-hero__bullets">
+            {page.hero.bullets.map((item) => <li>{item}</li>)}
+          </ul>
+          <p class="sf-catalog-hero__body">{page.hero.body}</p>
+          <div class="sf-catalog-hero__actions">
+            <a class="sf-btn sf-btn--primary" href={page.hero.ctaPrimary.href}>{page.hero.ctaPrimary.label}</a>
+            <a class="sf-btn sf-btn--ghost" href={page.hero.ctaSecondary.href}>{page.hero.ctaSecondary.label}</a>
+          </div>
+          <ul class="sf-catalog-hero__trust">
+            {
+              page.hero.trustItems.map((item) => (
+                <li>
+                  <span class="sf-catalog-hero__trust-icon" set:html={heroTrustIcons[item.icon] ?? heroTrustIcons.badge} />
+                  <span>{item.label}</span>
+                </li>
+              ))
+            }
+          </ul>
         </div>
-        <a href={tenant.appPromo.appUrl}>Đặt trên App</a>
+        <div class="sf-catalog-hero__media" aria-hidden="true">
+          <div class="sf-catalog-collage">
+            {
+              collage.map((p, i) => (
+                <figure class={`sf-catalog-collage__item sf-catalog-collage__item--${i + 1}`}>
+                  <img src={p.imageUrl} alt="" width="200" height="200" loading="eager" />
+                </figure>
+              ))
+            }
+            <div class="sf-catalog-phone">
+              <div class="sf-catalog-phone__screen">
+                <strong>Đặt thuốc nhanh</strong>
+                <small>App Novixa</small>
+                <span>Giao tận nơi</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <p class="sf-lead">
-        Giá và tồn kho theo thời điểm trên App Novixa. Đặt hàng để được nhà thuốc {tenant.brand.shortName} hỗ trợ đúng đơn.
-      </p>
-      <div class="sf-products sf-products--grid" style="margin-top: 1.5rem">
-        {
-          tenant.products.map((p) => (
-            <a class="sf-product" href={p.href}>
-              <div class="sf-product__media">
-                <img
-                  src={p.imageUrl || '/brand/products/default.png?v=1'}
-                  alt={p.name}
-                  loading="lazy"
-                  onerror="this.onerror=null;this.src='/brand/products/default.png?v=1'"
-                />
-              </div>
-              <div class="sf-product__body">
-                <div class="sf-product__cat">{p.category}</div>
-                <h3>{p.name}</h3>
-                <div class="sf-product__row">
-                  <span class="sf-product__price">{p.price}</span>
-                  <span class="sf-product__cart" aria-hidden="true">+</span>
+    </section>
+
+    <section class="sf-catalog-tools" id="danh-muc">
+      <div class="sf-container">
+        <form class="sf-catalog-search" role="search" data-sf-catalog-search>
+          <label class="sf-visually-hidden" for="sf-catalog-q">Tìm sản phẩm</label>
+          <span class="sf-catalog-search__icon" set:html={iconSearch} />
+          <input
+            id="sf-catalog-q"
+            type="search"
+            name="q"
+            placeholder={page.searchPlaceholder}
+            autocomplete="off"
+            data-sf-catalog-q
+          />
+          <button class="sf-btn sf-btn--primary" type="submit">Tìm kiếm</button>
+        </form>
+
+        <div class="sf-catalog-pills" role="tablist" aria-label="Lọc danh mục">
+          {
+            page.pills.map((pill, index) => (
+              <button
+                type="button"
+                class:list={['sf-catalog-pill', { 'is-active': index === 0 }]}
+                role="tab"
+                aria-selected={index === 0 ? 'true' : 'false'}
+                data-sf-catalog-pill
+                data-kind={pill.kind}
+              >
+                {pill.label}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="sf-catalog-grid-section" id="san-pham-noi-bat" aria-labelledby="catalog-grid-title">
+      <div class="sf-container">
+        <div class="sf-section__head">
+          <h2 id="catalog-grid-title">{page.gridTitle}</h2>
+          <a href={appUrl}>Xem tất cả trên App →</a>
+        </div>
+
+        <div class="sf-catalog-grid" data-sf-catalog-grid>
+          {
+            tenant.products.map((p) => (
+              <article
+                class="sf-catalog-card"
+                data-sf-catalog-card
+                data-name={p.name}
+                data-category={p.category}
+                data-kind={p.kind ?? ''}
+              >
+                {p.badge ? (
+                  <span class:list={['sf-catalog-card__badge', `sf-catalog-card__badge--${p.badge}`]}>
+                    {badgeLabels[p.badge] ?? p.badge}
+                  </span>
+                ) : null}
+                <a class="sf-catalog-card__media" href={p.href}>
+                  <img
+                    src={p.imageUrl || '/brand/products/default.png?v=1'}
+                    alt={p.name}
+                    width="280"
+                    height="220"
+                    loading="lazy"
+                    onerror="this.onerror=null;this.src='/brand/products/default.png?v=1'"
+                  />
+                </a>
+                <div class="sf-catalog-card__body">
+                  <div class="sf-catalog-card__cat">{p.category}</div>
+                  <h3>
+                    <a href={p.href}>{p.name}</a>
+                  </h3>
+                  <div class="sf-catalog-card__price">{p.price}</div>
+                  <div class="sf-catalog-card__actions">
+                    <a class="sf-catalog-card__cta sf-catalog-card__cta--ghost" href={p.href}>
+                      <span class="sf-catalog-card__cta-icon" set:html={iconDetail} />
+                      Xem chi tiết
+                    </a>
+                    <a class="sf-catalog-card__cta" href={appUrl}>
+                      <span class="sf-catalog-card__cta-icon" set:html={iconOrder} />
+                      Đặt hàng
+                    </a>
+                  </div>
                 </div>
-              </div>
-            </a>
+              </article>
+            ))
+          }
+        </div>
+        <p class="sf-catalog-empty" data-sf-catalog-empty hidden>{page.emptyMessage}</p>
+      </div>
+    </section>
+
+    <section class="sf-catalog-needs" aria-labelledby="catalog-needs-title">
+      <div class="sf-container">
+        <div class="sf-section__head">
+          <h2 id="catalog-needs-title">{page.needsTitle}</h2>
+          <a href="#danh-muc">Xem tất cả →</a>
+        </div>
+        <div class="sf-catalog-needs__grid">
+          {
+            page.needs.map((need) => (
+              <button
+                type="button"
+                class="sf-catalog-need"
+                data-sf-catalog-need
+                data-filter={need.filter}
+              >
+                <span class="sf-catalog-need__icon" set:html={needIcons[need.icon] ?? needIcons.aid} />
+                <span>{need.label}</span>
+              </button>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="sf-catalog-app" aria-labelledby="catalog-app-title">
+      <div class="sf-container sf-catalog-app__grid">
+        <div class="sf-catalog-app__copy">
+          <h2 id="catalog-app-title">{tenant.appSection.title}</h2>
+          <ul class="sf-catalog-app__list">
+            {
+              tenant.appSection.features.map((f) => (
+                <li>
+                  <span set:html={iconCheck} />
+                  <span>{f.title}</span>
+                </li>
+              ))
+            }
+          </ul>
+          <a class="sf-btn sf-btn--primary" href={appUrl}>Tải App Novixa ngay</a>
+        </div>
+        <div class="sf-catalog-app__visual">
+          {
+            tenant.appSection.familyImageUrl ? (
+              <img
+                src={tenant.appSection.familyImageUrl}
+                alt="Gia đình dùng App Novixa"
+                width="520"
+                height="360"
+                loading="lazy"
+              />
+            ) : null
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="sf-catalog-trust" aria-label="Cam kết nhà thuốc">
+      <div class="sf-container sf-catalog-trust__grid">
+        {
+          page.trustBlocks.map((block) => (
+            <article class="sf-catalog-trust__item">
+              <div class="sf-catalog-trust__icon" set:html={trustIcons[block.icon] ?? trustIcons.badge} />
+              <h3>{block.title}</h3>
+              <p>{block.description}</p>
+            </article>
           ))
         }
       </div>
-      <div class="sf-page-cta">
-        <a class="sf-btn sf-btn--primary" href={tenant.appPromo.appUrl}>Xem tất cả trên App</a>
-      </div>
-    </div>
+    </section>
   </main>
   <SiteFooter tenant={tenant} />
 </BaseLayout>
+
+<script>
+  function initCatalogFilters() {
+    const qInput = document.querySelector('[data-sf-catalog-q]');
+    const form = document.querySelector('[data-sf-catalog-search]');
+    const pills = Array.from(document.querySelectorAll('[data-sf-catalog-pill]'));
+    const needs = Array.from(document.querySelectorAll('[data-sf-catalog-need]'));
+    const cards = Array.from(document.querySelectorAll('[data-sf-catalog-card]'));
+    const empty = document.querySelector('[data-sf-catalog-empty]');
+    if (!(qInput instanceof HTMLInputElement) || cards.length === 0) return;
+
+    let activeKind = '';
+    let needFilter = '';
+
+    const apply = () => {
+      const q = qInput.value.trim().toLowerCase();
+      let visible = 0;
+      for (const card of cards) {
+        if (!(card instanceof HTMLElement)) continue;
+        const name = (card.dataset.name || '').toLowerCase();
+        const category = (card.dataset.category || '').toLowerCase();
+        const kind = card.dataset.kind || '';
+        const hay = `${name} ${category}`;
+        const matchQ = !q || hay.includes(q);
+        const matchKind = !activeKind || kind === activeKind;
+        const matchNeed = !needFilter || hay.includes(needFilter.toLowerCase());
+        const show = matchQ && matchKind && matchNeed;
+        card.hidden = !show;
+        if (show) visible += 1;
+      }
+      if (empty instanceof HTMLElement) empty.hidden = visible > 0;
+    };
+
+    const setPill = (kind) => {
+      activeKind = kind;
+      needFilter = '';
+      for (const pill of pills) {
+        if (!(pill instanceof HTMLElement)) continue;
+        const on = (pill.dataset.kind || '') === kind;
+        pill.classList.toggle('is-active', on);
+        pill.setAttribute('aria-selected', on ? 'true' : 'false');
+      }
+      apply();
+    };
+
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      needFilter = '';
+      apply();
+      document.getElementById('san-pham-noi-bat')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    qInput.addEventListener('input', () => {
+      needFilter = '';
+      apply();
+    });
+
+    for (const pill of pills) {
+      pill.addEventListener('click', () => {
+        if (!(pill instanceof HTMLElement)) return;
+        setPill(pill.dataset.kind || '');
+        document.getElementById('san-pham-noi-bat')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+
+    for (const need of needs) {
+      need.addEventListener('click', () => {
+        if (!(need instanceof HTMLElement)) return;
+        activeKind = '';
+        needFilter = need.dataset.filter || '';
+        qInput.value = '';
+        for (const pill of pills) {
+          if (!(pill instanceof HTMLElement)) continue;
+          const on = (pill.dataset.kind || '') === '';
+          pill.classList.toggle('is-active', on);
+          pill.setAttribute('aria-selected', on ? 'true' : 'false');
+        }
+        apply();
+        document.getElementById('san-pham-noi-bat')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  }
+
+  initCatalogFilters();
+</script>

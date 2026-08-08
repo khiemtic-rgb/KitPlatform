@@ -18,31 +18,256 @@ export function getStaticPaths() {
 
 const tenant = resolveTenant(Astro.request);
 const slug = Astro.params.slug ?? '';
-const article = tenant.articles.find((a) => a.slug === slug || a.href.endsWith(`/${slug}`));
-const title = article?.title ?? 'Kiến thức sức khỏe';
-const paragraphs = article?.body ?? [
-  'Bài viết đang được cập nhật. Bạn có thể đặt thuốc hoặc trao đổi với dược sĩ trên App Novixa.',
-];
+const articles = [...tenant.articles].sort((a, b) => (a.date < b.date ? 1 : -1));
+const index = articles.findIndex((a) => a.slug === slug || a.href.endsWith(`/${slug}`));
+const article = index >= 0 ? articles[index] : undefined;
+
+if (!article) {
+  return Astro.redirect('/kien-thuc');
+}
+
+const title = article.title;
+const sections = article.sections ?? [];
+const paragraphs =
+  article.body ??
+  (sections.length === 0
+    ? ['Bài viết đang được cập nhật. Bạn có thể đặt thuốc hoặc trao đổi với dược sĩ trên App Novixa.']
+    : []);
+const prev = index < articles.length - 1 ? articles[index + 1] : undefined;
+const next = index > 0 ? articles[index - 1] : undefined;
+const related = articles.filter((a) => a.slug !== article.slug).slice(0, 5);
+const appUrl = tenant.appPromo.appUrl;
+const phoneDigits = tenant.contact.phone.replace(/[^\d+]/g, '');
+const phoneHref = phoneDigits.length >= 8 ? `tel:${phoneDigits}` : appUrl;
+const zaloHref = tenant.contact.social.zalo;
+const pageUrl = `https://${tenant.hosts[0] ?? 'xuanhoa.novixa.vn'}${article.href}`;
+const fbShare = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`;
+
+function formatDate(iso: string) {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+const iconClock = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M10 6.5V10l2.5 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const iconCal = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3.5" y="4.5" width="13" height="12" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 8h13M7 3v3M13 3v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const iconCheck = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="#0A7A5C"/><path d="m6.4 10.2 2.2 2.2 4.8-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const iconChat = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H14a2.5 2.5 0 0 1 2.5 2.5v6A2.5 2.5 0 0 1 14 14H9l-3.5 2.8V14H6.5A2.5 2.5 0 0 1 4 11.5v-6z" stroke="currentColor" stroke-width="1.5"/></svg>`;
+const iconPhone = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M6.5 3.8c.3-.3.8-.4 1.2-.2l1.7.7c.4.2.7.6.6 1.1l-.3 1.6a.8.8 0 0 1-.5.6l-1 .3a8 8 0 0 0 3.7 3.7l.3-1a.8.8 0 0 1 .6-.5l1.6-.3c.5-.1.9.2 1.1.6l.7 1.7c.2.4.1.9-.2 1.2l-.9.9c-.3.3-.8.5-1.3.4C7.8 14.7 5.2 12.1 4.7 8c-.1-.5.1-1 .4-1.3l.9-.9z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
 ---
 
-<BaseLayout tenant={tenant} title={`${title} — ${tenant.brand.name}`} description={article?.excerpt ?? title}>
+<BaseLayout tenant={tenant} title={`${title} — ${tenant.brand.name}`} description={article.excerpt ?? title}>
   <SiteHeader tenant={tenant} currentPath="/kien-thuc" />
-  <main class="sf-page">
-    <article class="sf-container sf-prose">
-      <p class="sf-eyebrow"><a href="/kien-thuc">← Kiến thức sức khỏe</a></p>
-      <h1>{title}</h1>
-      {article?.date ? <time class="sf-muted" datetime={article.date}>{article.date}</time> : null}
-      {
-        article?.imageUrl ? (
-          <img class="sf-article-hero" src={article.imageUrl} alt="" loading="eager" />
-        ) : null
-      }
-      {paragraphs.map((p) => <p>{p}</p>)}
-      <div class="sf-page-cta">
-        <a class="sf-btn sf-btn--primary" href={tenant.appPromo.appUrl}>Tư vấn trên App Novixa</a>
-        <a class="sf-btn sf-btn--ghost" href="/kien-thuc">Bài khác</a>
+  <main class="sf-article">
+    <div class="sf-container">
+      <nav class="sf-article-breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Trang chủ</a>
+        <span>/</span>
+        <a href="/kien-thuc">Kiến thức sức khỏe</a>
+        {article.categoryLabel ? (
+          <>
+            <span>/</span>
+            <span>{article.categoryLabel}</span>
+          </>
+        ) : null}
+        <span>/</span>
+        <strong>{title}</strong>
+      </nav>
+
+      <div class="sf-article-layout">
+        <article class="sf-article-main">
+          {article.categoryLabel ? <p class="sf-article-cat">{article.categoryLabel}</p> : null}
+          <h1>{title}</h1>
+
+          <div class="sf-article-meta">
+            <span class="sf-article-meta__author">Đội ngũ dược sĩ {tenant.brand.shortName}</span>
+            {
+              article.readingMinutes ? (
+                <span>
+                  <span set:html={iconClock} />
+                  {article.readingMinutes} phút đọc
+                </span>
+              ) : null
+            }
+            <time datetime={article.date}>
+              <span set:html={iconCal} />
+              {formatDate(article.date)}
+            </time>
+          </div>
+
+          {
+            article.imageUrl ? (
+              <img class="sf-article-cover" src={article.imageUrl} alt="" width="960" height="540" loading="eager" />
+            ) : null
+          }
+
+          {
+            article.excerpt ? (
+              <p class="sf-article-lead">{article.excerpt}</p>
+            ) : null
+          }
+
+          {
+            sections.length > 0 ? (
+              <nav class="sf-article-toc" aria-label="Nội dung chính">
+                <strong>Nội dung chính</strong>
+                <ol>
+                  {sections.map((section, i) => (
+                    <li>
+                      <a href={`#${section.id}`}>
+                        {i + 1}. {section.title}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </nav>
+            ) : null
+          }
+
+          <div class="sf-article-body">
+            {paragraphs.map((p) => <p>{p}</p>)}
+            {
+              sections.map((section, i) => (
+                <section id={section.id} class="sf-article-section">
+                  <h2>
+                    {i + 1}. {section.title}
+                  </h2>
+                  {section.paragraphs?.map((p) => <p>{p}</p>)}
+                  {section.bullets && section.bullets.length > 0 ? (
+                    <ul class="sf-article-bullets">
+                      {section.bullets.map((b) => (
+                        <li>
+                          <span set:html={iconCheck} />
+                          <span>{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </section>
+              ))
+            }
+            <p class="sf-article-disclaimer">
+              Nội dung mang tính tham khảo. Không thay thế tư vấn trực tiếp từ dược sĩ hoặc bác sĩ khi dùng thuốc.
+            </p>
+          </div>
+
+          <div class="sf-article-share">
+            <span>Chia sẻ:</span>
+            <a href={fbShare} target="_blank" rel="noreferrer">Facebook</a>
+            {zaloHref ? (
+              <a href={zaloHref} target="_blank" rel="noreferrer">
+                Zalo
+              </a>
+            ) : null}
+            <button type="button" data-sf-copy-link data-url={pageUrl}>
+              Sao chép liên kết
+            </button>
+          </div>
+
+          <div class="sf-article-nav">
+            {
+              prev ? (
+                <a class="sf-article-nav__item" href={prev.href}>
+                  <small>← Bài trước</small>
+                  <strong>{prev.title}</strong>
+                </a>
+              ) : (
+                <span />
+              )
+            }
+            {
+              next ? (
+                <a class="sf-article-nav__item sf-article-nav__item--next" href={next.href}>
+                  <small>Bài tiếp theo →</small>
+                  <strong>{next.title}</strong>
+                </a>
+              ) : null
+            }
+          </div>
+        </article>
+
+        <aside class="sf-article-aside">
+          <div class="sf-article-consult">
+            <h3>Dược sĩ tư vấn</h3>
+            <p>Cần hỏi trước khi dùng thuốc? Liên hệ nhà thuốc trong giờ mở cửa.</p>
+            <img src={tenant.hero.imageUrl} alt="" width="120" height="120" loading="lazy" />
+            <a class="sf-btn sf-btn--primary sf-btn--icon" href={appUrl}>
+              <span class="sf-btn__icon" set:html={iconChat} />
+              Chat với dược sĩ
+            </a>
+            <a class="sf-btn sf-btn--ghost sf-btn--icon" href={phoneHref}>
+              <span class="sf-btn__icon" set:html={iconPhone} />
+              Gọi {tenant.contact.phone}
+            </a>
+          </div>
+
+          <div class="sf-article-aside__card">
+            <h3>Đọc tiếp</h3>
+            <ol class="sf-article-related">
+              {
+                related.map((a, i) => (
+                  <li>
+                    <span>{String(i + 1).padStart(2, '0')}</span>
+                    <a href={a.href}>
+                      {a.imageUrl ? <img src={a.imageUrl} alt="" width="56" height="56" loading="lazy" /> : null}
+                      <strong>{a.title}</strong>
+                    </a>
+                  </li>
+                ))
+              }
+            </ol>
+            <a class="sf-article-aside__more" href="/kien-thuc">Xem tất cả bài viết →</a>
+          </div>
+
+          <div class="sf-article-aside__card sf-article-aside__card--app">
+            <h3>Quản lý sức khỏe trên App Novixa</h3>
+            <ul>
+              {
+                tenant.appSection.features.slice(0, 4).map((f) => (
+                  <li>
+                    <span set:html={iconCheck} />
+                    <span>{f.title}</span>
+                  </li>
+                ))
+              }
+            </ul>
+            {
+              tenant.appPromo.qrImageUrl ? (
+                <img
+                  class="sf-article-aside__qr"
+                  src={tenant.appPromo.qrImageUrl}
+                  alt="QR App Novixa"
+                  width="96"
+                  height="96"
+                  loading="lazy"
+                />
+              ) : null
+            }
+            <a class="sf-btn sf-article-aside__cta" href={appUrl}>Tải App ngay</a>
+          </div>
+        </aside>
       </div>
-    </article>
+    </div>
   </main>
   <SiteFooter tenant={tenant} />
 </BaseLayout>
+
+<script>
+  function initCopyLink() {
+    const btn = document.querySelector('[data-sf-copy-link]');
+    if (!(btn instanceof HTMLButtonElement)) return;
+    btn.addEventListener('click', async () => {
+      const url = btn.dataset.url || window.location.href;
+      try {
+        await navigator.clipboard.writeText(url);
+        btn.textContent = 'Đã sao chép';
+        window.setTimeout(() => {
+          btn.textContent = 'Sao chép liên kết';
+        }, 1600);
+      } catch {
+        btn.textContent = 'Không sao chép được';
+      }
+    });
+  }
+  initCopyLink();
+</script>

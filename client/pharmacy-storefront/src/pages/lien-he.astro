@@ -6,78 +6,239 @@ import { resolveTenant } from '../lib/tenant';
 import '../styles/storefront.css';
 
 const tenant = resolveTenant(Astro.request);
-const { contact } = tenant.pages;
-const phone = tenant.contact.phone.replace(/[^\d+]/g, '');
-const phoneHref = phone.length >= 8 ? `tel:${phone}` : tenant.appPromo.appUrl;
+const page = tenant.pages.contact;
+const phoneDigits = tenant.contact.phone.replace(/[^\d+]/g, '');
+const phoneHref = phoneDigits.length >= 8 ? `tel:${phoneDigits}` : tenant.appPromo.appUrl;
+const zaloHref = tenant.contact.social.zalo;
+const appUrl = tenant.appPromo.appUrl;
+
+const infoIcons = {
+  pin: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s6.5-5.2 6.5-10.2A6.5 6.5 0 0 0 5.5 10.8C5.5 15.8 12 21 12 21z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10.5" r="2.2" stroke="currentColor" stroke-width="1.8"/></svg>`,
+  phone: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8.2 4.8c.4-.4 1-.5 1.5-.3l2.1.9c.6.2 1 .8.9 1.4l-.4 2.1c-.1.5.1 1 .5 1.3l1.6 1.3c.4.3.9.3 1.3 0l2-.9c.6-.3 1.3-.1 1.7.4l1.1 1.5c.4.6.3 1.4-.3 1.8l-1.7 1.2c-2.4 1.6-5.6 1.1-7.8-1.2L8 12.1C5.9 9.8 5.5 6.7 7.1 4.4l.5-.7c.3-.4.8-.6 1.3-.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>`,
+  clock: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.2" stroke="currentColor" stroke-width="1.8"/><path d="M12 8.2V12l3 1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  mail: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="6.5" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="m5.5 8.2 6.5 4.5 6.5-4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+
+const reasonIcons: Record<string, string> = {
+  consult: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M10 14.5A4.5 4.5 0 0 1 14.5 10H26a4.5 4.5 0 0 1 4.5 4.5v8A4.5 4.5 0 0 1 26 27h-6.5L14 32v-5h-.5A4.5 4.5 0 0 1 9 22.5v-8z" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="19" r="1.2" fill="currentColor"/><circle cx="21" cy="19" r="1.2" fill="currentColor"/><circle cx="25" cy="19" r="1.2" fill="currentColor"/></svg>`,
+  accurate: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 6.5 10 10.5v8.2c0 7 4.4 11.7 10 13.5 5.6-1.8 10-6.5 10-13.5v-8.2L20 6.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m15.8 20.2 2.8 2.8 5.8-6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  fast: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><circle cx="20" cy="20" r="10.5" stroke="currentColor" stroke-width="1.8"/><path d="M20 14.5V20l4 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  care: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 31s-7.2-4.4-7.2-9.5A4 4 0 0 1 20 18.2 4 4 0 0 1 27.2 21.5C27.2 26.6 20 31 20 31z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+};
+
+const iconSend = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.5 10.2 16 4.5l-3.2 11.2-3.1-3.4L3.5 10.2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9.7 12.3 16 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const iconPerson = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="9" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M6.5 19c1.2-3.8 3.8-5.5 5.5-5.5S16.3 15.2 17.5 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 ---
 
 <BaseLayout
   tenant={tenant}
   title={`Liên hệ — ${tenant.brand.name}`}
-  description={contact.intro}
+  description={page.intro}
 >
   <SiteHeader tenant={tenant} currentPath="/lien-he" />
-  <main class="sf-page">
-    <div class="sf-container">
-      <p class="sf-eyebrow">Hỗ trợ khách hàng</p>
-      <h1>Liên hệ</h1>
-      <p class="sf-lead">{contact.intro}</p>
-
-      <div class="sf-contact-grid">
-        <section class="sf-content-card">
-          <h2>Thông tin</h2>
-          <dl class="sf-dl">
-            <div>
-              <dt>Địa chỉ</dt>
-              <dd>{tenant.contact.address}</dd>
-            </div>
-            <div>
-              <dt>Giờ mở cửa</dt>
-              <dd>{tenant.contact.hours}</dd>
-            </div>
-            <div>
-              <dt>Điện thoại</dt>
-              <dd><a href={phoneHref}>{tenant.contact.phone}</a></dd>
-            </div>
-            <div>
-              <dt>Email</dt>
-              <dd><a href={`mailto:${tenant.contact.email}`}>{tenant.contact.email}</a></dd>
-            </div>
-          </dl>
-          <div class="sf-page-cta">
-            <a class="sf-btn sf-btn--primary" href={tenant.appPromo.appUrl}>Chat / đặt trên App</a>
+  <main class="sf-contact">
+    <section class="sf-contact-hero">
+      <div class="sf-container sf-contact-hero__grid">
+        <div class="sf-contact-hero__copy">
+          <p class="sf-eyebrow">{page.hero.eyebrow}</p>
+          <h1>{page.hero.title}</h1>
+          <p class="sf-contact-hero__sub">{page.hero.subtitle}</p>
+          <p class="sf-contact-hero__body">{page.hero.body}</p>
+          <div class="sf-contact-hero__actions">
+            <a class="sf-btn sf-btn--primary" href={phoneHref}>Gọi {tenant.contact.phone}</a>
             {
-              tenant.contact.social.zalo ? (
-                <a class="sf-btn sf-btn--ghost" href={tenant.contact.social.zalo} target="_blank" rel="noreferrer">
-                  Zalo
+              zaloHref ? (
+                <a class="sf-btn sf-btn--ghost" href={zaloHref} target="_blank" rel="noreferrer">
+                  Nhắn Zalo
                 </a>
-              ) : null
+              ) : (
+                <a class="sf-btn sf-btn--ghost" href={appUrl}>
+                  Chat trên App
+                </a>
+              )
             }
           </div>
-        </section>
+        </div>
+        <div class="sf-contact-hero__media">
+          <img src={page.hero.imageUrl} alt={page.hero.imageAlt} width="720" height="520" loading="eager" />
+          <aside class="sf-contact-float">
+            <span class="sf-contact-float__icon" set:html={iconPerson} />
+            <div>
+              <strong>{page.hero.floatingCard.title}</strong>
+              <p>{page.hero.floatingCard.description}</p>
+              <a href={phoneHref}>{tenant.contact.phone}</a>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
 
-        <section class="sf-content-card">
-          <h2>Chi nhánh</h2>
+    <section class="sf-contact-main">
+      <div class="sf-container sf-contact-main__grid">
+        <div class="sf-contact-info">
+          <h2>{page.infoTitle}</h2>
+          <div class="sf-contact-info__grid">
+            <div class="sf-contact-info__item">
+              <span set:html={infoIcons.pin} />
+              <div>
+                <strong>Địa chỉ</strong>
+                <p>{tenant.contact.address}</p>
+              </div>
+            </div>
+            <div class="sf-contact-info__item">
+              <span set:html={infoIcons.phone} />
+              <div>
+                <strong>Điện thoại</strong>
+                <p>
+                  <a href={phoneHref}>{tenant.contact.phone}</a>
+                  <small>Hỗ trợ trong giờ mở cửa</small>
+                </p>
+              </div>
+            </div>
+            <div class="sf-contact-info__item">
+              <span set:html={infoIcons.clock} />
+              <div>
+                <strong>Giờ mở cửa</strong>
+                <p>{tenant.contact.hours}</p>
+              </div>
+            </div>
+            <div class="sf-contact-info__item">
+              <span set:html={infoIcons.mail} />
+              <div>
+                <strong>Email</strong>
+                <p>
+                  <a href={`mailto:${tenant.contact.email}`}>{tenant.contact.email}</a>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="sf-contact-map">
+            {
+              page.mapEmbedUrl ? (
+                <iframe
+                  title="Bản đồ Nhà thuốc Xuân Hòa"
+                  src={page.mapEmbedUrl}
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                />
+              ) : (
+                <div class="sf-contact-map__fallback">
+                  <p>{page.mapNote ?? tenant.contact.address}</p>
+                </div>
+              )
+            }
+            <a class="sf-btn sf-btn--primary sf-contact-map__btn" href={page.directionsUrl} target="_blank" rel="noreferrer">
+              {page.directionsLabel}
+            </a>
+          </div>
+
           {
             tenant.contact.branches && tenant.contact.branches.length > 0 ? (
-              <ul class="sf-branch-list">
-                {tenant.contact.branches.map((b) => (
-                  <li>
-                    <strong>{b.name}</strong>
-                    <span>{b.address}</span>
-                    {b.hours ? <span>{b.hours}</span> : null}
-                    {b.phone ? <span>{b.phone}</span> : null}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>{tenant.contact.address}</p>
-            )
+              <div class="sf-contact-branches">
+                <h3>Chi nhánh</h3>
+                <ul class="sf-branch-list">
+                  {tenant.contact.branches.map((b) => (
+                    <li>
+                      <strong>{b.name}</strong>
+                      <span>{b.address}</span>
+                      {b.hours ? <span>{b.hours}</span> : null}
+                      {b.phone ? <span>{b.phone}</span> : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null
           }
-          {contact.mapNote ? <p class="sf-muted">{contact.mapNote}</p> : null}
-        </section>
+        </div>
+
+        <div class="sf-contact-form-wrap">
+          <h2>{page.formTitle}</h2>
+          <form class="sf-contact-form" data-sf-contact-form>
+            <div class="sf-contact-form__row">
+              <label>
+                <span>Họ và tên *</span>
+                <input type="text" name="name" autocomplete="name" required />
+              </label>
+              <label>
+                <span>Số điện thoại *</span>
+                <input type="tel" name="phone" autocomplete="tel" required />
+              </label>
+            </div>
+            <div class="sf-contact-form__row">
+              <label>
+                <span>Email</span>
+                <input type="email" name="email" autocomplete="email" />
+              </label>
+              <label>
+                <span>Chủ đề *</span>
+                <select name="subject" required>
+                  <option value="">Chọn chủ đề</option>
+                  {page.subjects.map((s) => (
+                    <option value={s}>{s}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <label>
+              <span>Nội dung tin nhắn *</span>
+              <textarea name="message" rows="5" required />
+            </label>
+            <label class="sf-contact-form__check">
+              <input type="checkbox" name="agree" required />
+              <span>Tôi đồng ý để nhà thuốc liên hệ lại theo thông tin đã cung cấp.</span>
+            </label>
+            <button class="sf-btn sf-btn--primary sf-contact-form__submit" type="submit">
+              <span set:html={iconSend} />
+              Gửi tin nhắn
+            </button>
+            <p class="sf-contact-form__note" data-sf-contact-note>{page.formNote}</p>
+            <div class="sf-contact-form__alt">
+              <a class="sf-btn sf-btn--ghost" href={phoneHref}>Gọi ngay</a>
+              {
+                zaloHref ? (
+                  <a class="sf-btn sf-btn--ghost" href={zaloHref} target="_blank" rel="noreferrer">
+                    Zalo
+                  </a>
+                ) : null
+              }
+              <a class="sf-btn sf-btn--ghost" href={appUrl}>App Novixa</a>
+            </div>
+          </form>
+
+          <div class="sf-contact-reasons">
+            <h3>{page.reasonsTitle}</h3>
+            <div class="sf-contact-reasons__grid">
+              {
+                page.reasons.map((r) => (
+                  <article>
+                    <span set:html={reasonIcons[r.icon] ?? reasonIcons.consult} />
+                    <strong>{r.title}</strong>
+                    <p>{r.description}</p>
+                  </article>
+                ))
+              }
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   </main>
   <SiteFooter tenant={tenant} />
 </BaseLayout>
+
+<script>
+  function initContactForm() {
+    const form = document.querySelector('[data-sf-contact-form]');
+    const note = document.querySelector('[data-sf-contact-note]');
+    if (!(form instanceof HTMLFormElement)) return;
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (note instanceof HTMLElement) {
+        note.hidden = false;
+        note.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+  }
+  initContactForm();
+</script>

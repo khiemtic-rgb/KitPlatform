@@ -6,36 +6,190 @@ import { resolveTenant } from '../../lib/tenant';
 import '../../styles/storefront.css';
 
 const tenant = resolveTenant(Astro.request);
+const page = tenant.pages.knowledge;
+const articles = [...tenant.articles].sort((a, b) => (a.date < b.date ? 1 : -1));
+const featured = articles[0];
+const featuredSide = articles.slice(1, 4);
+const sidebarList = articles.slice(0, 5);
+const appUrl = tenant.appPromo.appUrl;
+
+function formatDate(iso: string) {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+const tipIcons: Record<string, string> = {
+  water: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 8c-5 7-8 11-8 15a8 8 0 0 0 16 0c0-4-3-8-8-15z" stroke="currentColor" stroke-width="1.8"/></svg>`,
+  veg: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M20 30V16M20 16c-4-1-8 1-9 5 5 0 8 2 9 5 1-3 4-5 9-5-1-4-5-6-9-5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+  move: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><circle cx="20" cy="11" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M12 30l5-10 3 5 3-8 5 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  sleep: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M10 26h20M12 26v-4a8 8 0 0 1 16 0v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 30h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  wash: `<svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M14 18c0-3.3 2.7-6 6-6s6 2.7 6 6v2H14v-2z" stroke="currentColor" stroke-width="1.8"/><path d="M12 22h16v4a4 4 0 0 1-4 4h-8a4 4 0 0 1-4-4v-4z" stroke="currentColor" stroke-width="1.8"/></svg>`,
+};
+
+const iconClock = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M10 6.5V10l2.5 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const iconCal = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3.5" y="4.5" width="13" height="12" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 8h13M7 3v3M13 3v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const iconCheck = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="#0A7A5C"/><path d="m6.4 10.2 2.2 2.2 4.8-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 ---
 
 <BaseLayout
   tenant={tenant}
   title={`Kiến thức sức khỏe — ${tenant.brand.name}`}
-  description="Bài viết sức khỏe từ nhà thuốc"
+  description={page.hero.subtitle}
 >
   <SiteHeader tenant={tenant} currentPath="/kien-thuc" />
-  <main class="sf-page">
-    <div class="sf-container">
-      <p class="sf-eyebrow">Góc chuyên môn</p>
-      <h1>Kiến thức sức khỏe</h1>
-      <p class="sf-lead">
-        Thông tin hữu ích từ đội ngũ dược sĩ {tenant.brand.shortName}. Nội dung mang tính tham khảo — luôn hỏi dược sĩ khi dùng thuốc.
-      </p>
-      <div class="sf-articles sf-articles--stack" style="margin-top: 2rem">
-        {
-          tenant.articles.map((a) => (
-            <a class="sf-article sf-article--lg" href={a.href}>
-              {a.imageUrl ? <img src={a.imageUrl} alt="" loading="lazy" /> : <div />}
-              <div>
-                <h3>{a.title}</h3>
-                {a.excerpt ? <p class="sf-muted">{a.excerpt}</p> : null}
-                <time datetime={a.date}>{a.date}</time>
-              </div>
-            </a>
-          ))
-        }
+  <main class="sf-know">
+    <section class="sf-know-hero sf-know-hero--simple">
+      <div class="sf-container sf-know-hero__inner">
+        <h1>{page.hero.title}</h1>
+        <p>{page.hero.subtitle}</p>
       </div>
-    </div>
+    </section>
+
+    <section class="sf-know-main" id="bai-viet">
+      <div class="sf-container sf-know-main__grid">
+        <div class="sf-know-content">
+          <div class="sf-section__head">
+            <h2>{page.listTitle}</h2>
+          </div>
+
+          {
+            featured ? (
+              <div class="sf-know-featured">
+                <a class="sf-know-feature-card sf-know-feature-card--lg" href={featured.href}>
+                  {featured.imageUrl ? (
+                    <img src={featured.imageUrl} alt="" loading="lazy" />
+                  ) : (
+                    <div class="sf-know-feature-card__ph" />
+                  )}
+                  <div class="sf-know-feature-card__body">
+                    {featured.categoryLabel ? <span class="sf-know-tag">{featured.categoryLabel}</span> : null}
+                    <h3>{featured.title}</h3>
+                    {featured.excerpt ? <p>{featured.excerpt}</p> : null}
+                    <div class="sf-know-meta">
+                      {featured.readingMinutes ? (
+                        <span>
+                          <span set:html={iconClock} />
+                          {featured.readingMinutes} phút đọc
+                        </span>
+                      ) : null}
+                      <time datetime={featured.date}>
+                        <span set:html={iconCal} />
+                        {formatDate(featured.date)}
+                      </time>
+                    </div>
+                  </div>
+                </a>
+                <div class="sf-know-featured__side">
+                  {featuredSide.map((a) => (
+                    <a class="sf-know-feature-card sf-know-feature-card--sm" href={a.href}>
+                      {a.imageUrl ? (
+                        <img src={a.imageUrl} alt="" loading="lazy" />
+                      ) : (
+                        <div class="sf-know-feature-card__ph" />
+                      )}
+                      <div class="sf-know-feature-card__body">
+                        {a.categoryLabel ? <span class="sf-know-tag">{a.categoryLabel}</span> : null}
+                        <h3>{a.title}</h3>
+                        <div class="sf-know-meta">
+                          {a.readingMinutes ? (
+                            <span>
+                              <span set:html={iconClock} />
+                              {a.readingMinutes} phút
+                            </span>
+                          ) : null}
+                          <time datetime={a.date}>
+                            <span set:html={iconCal} />
+                            {formatDate(a.date)}
+                          </time>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p class="sf-know-empty">Chưa có bài viết. Nội dung sẽ được cập nhật sớm.</p>
+            )
+          }
+        </div>
+
+        <aside class="sf-know-aside">
+          <div class="sf-know-aside__card">
+            <h3>{page.sidebarTitle}</h3>
+            <ol class="sf-know-aside__list">
+              {
+                sidebarList.map((a, i) => (
+                  <li>
+                    <span class="sf-know-aside__num">{String(i + 1).padStart(2, '0')}</span>
+                    <a href={a.href}>
+                      {a.imageUrl ? <img src={a.imageUrl} alt="" width="56" height="56" loading="lazy" /> : null}
+                      <span>
+                        <strong>{a.title}</strong>
+                        {a.categoryLabel ? <small>{a.categoryLabel}</small> : null}
+                      </span>
+                    </a>
+                  </li>
+                ))
+              }
+            </ol>
+          </div>
+
+          <div class="sf-know-aside__card sf-know-aside__card--news">
+            <h3>{page.newsletter.title}</h3>
+            <form class="sf-know-newsform" onsubmit="return false;">
+              <label class="sf-visually-hidden" for="sf-know-email">Email</label>
+              <input id="sf-know-email" type="email" placeholder={page.newsletter.placeholder} />
+              <button class="sf-btn sf-btn--primary" type="button">{page.newsletter.ctaLabel}</button>
+            </form>
+            <p class="sf-know-newsform__note">{page.newsletter.note}</p>
+          </div>
+
+          <div class="sf-know-aside__card sf-know-aside__card--app">
+            <h3>Quản lý sức khỏe dễ dàng trên App Novixa</h3>
+            <ul>
+              {
+                tenant.appSection.features.slice(0, 4).map((f) => (
+                  <li>
+                    <span set:html={iconCheck} />
+                    <span>{f.title}</span>
+                  </li>
+                ))
+              }
+            </ul>
+            {
+              tenant.appPromo.qrImageUrl ? (
+                <img
+                  class="sf-know-aside__qr"
+                  src={tenant.appPromo.qrImageUrl}
+                  alt="QR App Novixa"
+                  width="96"
+                  height="96"
+                  loading="lazy"
+                />
+              ) : null
+            }
+            <a class="sf-btn sf-know-aside__cta" href={appUrl}>Tải App ngay</a>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="sf-know-tips" aria-labelledby="know-tips-title">
+      <div class="sf-container">
+        <h2 id="know-tips-title">{page.tipsTitle}</h2>
+        <div class="sf-know-tips__grid">
+          {
+            page.tips.map((tip) => (
+              <article class="sf-know-tip">
+                <span set:html={tipIcons[tip.icon] ?? tipIcons.water} />
+                <p>{tip.text}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
   </main>
   <SiteFooter tenant={tenant} />
 </BaseLayout>

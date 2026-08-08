@@ -32,7 +32,8 @@ const serviceIcons: Record<string, string> = {
 const iconBag = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M7 8h11l-1 9H8.5L7 8z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/><path d="M7 8 6 5H3"/></svg>`;
 const iconPhone = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="8" y="3.5" width="8" height="17" rx="1.8"/><path d="M11 18.2h2"/></svg>`;
 const iconChevron = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg>`;
-const iconCartMini = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M6 6 5 3H2"/></svg>`;
+const iconDetail = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2.5 12S6.5 5.5 12 5.5 21.5 12 21.5 12 17.5 18.5 12 18.5 2.5 12 2.5 12z"/></svg>`;
+const iconOrder = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M6 6 5 3H2"/></svg>`;
 const badgeAppStore = `<svg width="120" height="40" viewBox="0 0 120 40" aria-hidden="true"><rect width="120" height="40" rx="7" fill="#0b0b0b"/><path fill="#fff" d="M24.4 20.3c0-2.4 1.3-4.5 3.2-5.6-.2-.7-.7-1.7-1.4-2.4-1.2-1.2-2.9-1.3-3.6-1.3-1.5.1-3 .9-3.8.9-.8 0-2.1-.9-3.5-.8-1.8.1-3.4 1-4.3 2.6-1.8 3.2-.5 7.9 1.3 10.5.9 1.3 2 2.7 3.4 2.7 1.3 0 1.9-.9 3.5-.9s2.1.9 3.5.9c1.5 0 2.4-1.3 3.3-2.6.7-.9 1.2-1.9 1.4-2.4-1.4-.6-2.4-2-2.4-3.6zm-2.3-8.1c.7-.9 1.2-2.1 1.1-3.3-1.1.1-2.4.7-3.2 1.6-.7.8-1.3 2.1-1.1 3.3 1.2.1 2.4-.6 3.2-1.6z"/><text x="38" y="15.5" fill="#fff" font-size="7.2" font-family="system-ui,-apple-system,sans-serif">Tải về trên</text><text x="38" y="28.5" fill="#fff" font-size="13.5" font-family="system-ui,-apple-system,sans-serif" font-weight="700">App Store</text></svg>`;
 const badgePlay = `<svg width="135" height="40" viewBox="0 0 135 40" aria-hidden="true"><rect width="135" height="40" rx="7" fill="#0b0b0b"/><path fill="#EA4335" d="M12.2 8.4 22.6 19l-4.1 4.1-8.8-5V9.8c0-.7.4-1.2 1-.1.4z"/><path fill="#FBBC04" d="m22.6 19 4.1 2.3c.7.4.7 1.1 0 1.5l-4.1 2.3-4.1-4.1 4.1-2z"/><path fill="#4285F4" d="M9.7 30.2c-.6.3-1.2-.1-1.2-.8V10.6c0-.7.6-1.1 1.2-.8l11.5 6.5-4.1 4.1-7.4 9.8z"/><path fill="#34A853" d="m18.5 23.1 4.1 4.1-11.7 3.5c-.4.1-.8 0-1.1-.2l8.7-7.4z"/><text x="34" y="15.5" fill="#fff" font-size="6.6" font-family="system-ui,sans-serif" letter-spacing=".4">TẢI NỘI DUNG TRÊN</text><text x="34" y="28.5" fill="#fff" font-size="13.2" font-family="system-ui,sans-serif" font-weight="700">Google Play</text></svg>`;
 
@@ -271,7 +272,10 @@ const platformLeadHtml = (() => {
 <!-- SERVICES -->
 <section class="sf-section sf-section--muted" id="dich-vu">
   <div class="sf-container">
-    <h2 class="sf-section-title sf-section-title--center">Dịch vụ của chúng tôi</h2>
+    <div class="sf-section__head">
+      <h2 class="sf-section-title">Dịch vụ của chúng tôi</h2>
+      <a href="/dich-vu">Xem tất cả dịch vụ</a>
+    </div>
     <div class="sf-services-grid">
       {
         tenant.services.map((s) => (
@@ -291,7 +295,7 @@ const platformLeadHtml = (() => {
   <div class="sf-container">
     <div class="sf-section__head">
       <h2>Sản phẩm phổ biến</h2>
-      <a href={tenant.appPromo.appUrl}>Xem tất cả</a>
+      <a href="/san-pham">Xem tất cả</a>
     </div>
     <div class="sf-products-wrap">
       <button type="button" class="sf-carousel-btn sf-carousel-btn--prev" data-sf-product-prev aria-label="Trước">
@@ -299,25 +303,34 @@ const platformLeadHtml = (() => {
       </button>
       <div class="sf-products" data-sf-product-track>
         {
-          tenant.products.map((p) => (
-            <a class="sf-product" href={p.href}>
-              <div class="sf-product__media">
+          tenant.products.slice(0, 5).map((p) => (
+            <article class="sf-product">
+              <a class="sf-product__media" href={p.href}>
                 <img
                   src={p.imageUrl || '/brand/products/default.png?v=1'}
                   alt={p.name}
                   loading="lazy"
                   onerror="this.onerror=null;this.src='/brand/products/default.png?v=1'"
                 />
-              </div>
+              </a>
               <div class="sf-product__body">
-                <h3>{p.name}</h3>
                 <div class="sf-product__cat">{p.category}</div>
-                <div class="sf-product__row">
-                  <span class="sf-product__price">{p.price}</span>
-                  <span class="sf-product__cart" aria-hidden="true" set:html={iconCartMini} />
+                <h3>
+                  <a href={p.href}>{p.name}</a>
+                </h3>
+                <div class="sf-product__price">{p.price}</div>
+                <div class="sf-product__actions">
+                  <a class="sf-product__cta sf-product__cta--ghost" href={p.href}>
+                    <span class="sf-product__cta-icon" set:html={iconDetail} />
+                    Xem chi tiết
+                  </a>
+                  <a class="sf-product__cta" href={tenant.appPromo.appUrl}>
+                    <span class="sf-product__cta-icon" set:html={iconOrder} />
+                    Đặt hàng
+                  </a>
                 </div>
               </div>
-            </a>
+            </article>
           ))
         }
       </div>
@@ -464,22 +477,51 @@ const platformLeadHtml = (() => {
   </div>
 </section>
 
-<script>
-  function bindProductCarousel() {
-    const track = document.querySelector('[data-sf-product-track]');
-    const prev = document.querySelector('[data-sf-product-prev]');
-    const next = document.querySelector('[data-sf-product-next]');
-    if (!(track instanceof HTMLElement) || !(prev instanceof HTMLButtonElement) || !(next instanceof HTMLButtonElement)) {
-      return;
+<script is:inline>
+  (function () {
+    function bindProductCarousel() {
+      var track = document.querySelector('[data-sf-product-track]');
+      var prev = document.querySelector('[data-sf-product-prev]');
+      var next = document.querySelector('[data-sf-product-next]');
+      if (!track || !prev || !next) return;
+      if (track.getAttribute('data-sf-bound') === '1') return;
+      track.setAttribute('data-sf-bound', '1');
+
+      function step() {
+        var card = track.querySelector('.sf-product');
+        if (!card) return 280;
+        var styles = window.getComputedStyle(track);
+        var gap = parseFloat(styles.columnGap || styles.gap || '16') || 16;
+        return card.getBoundingClientRect().width + gap;
+      }
+
+      function update() {
+        var max = track.scrollWidth - track.clientWidth;
+        var canScroll = max > 2;
+        prev.disabled = !canScroll || track.scrollLeft <= 2;
+        next.disabled = !canScroll || track.scrollLeft >= max - 2;
+        prev.style.visibility = canScroll ? '' : 'hidden';
+        next.style.visibility = canScroll ? '' : 'hidden';
+      }
+
+      prev.addEventListener('click', function (e) {
+        e.preventDefault();
+        track.scrollBy({ left: -step(), behavior: 'smooth' });
+      });
+      next.addEventListener('click', function (e) {
+        e.preventDefault();
+        track.scrollBy({ left: step(), behavior: 'smooth' });
+      });
+      track.addEventListener('scroll', update, { passive: true });
+      window.addEventListener('resize', update);
+      update();
     }
-    const scrollByCard = (dir) => {
-      const card = track.querySelector('.sf-product');
-      const step = card instanceof HTMLElement ? card.offsetWidth + 16 : 220;
-      track.scrollBy({ left: dir * step, behavior: 'smooth' });
-    };
-    prev.addEventListener('click', () => scrollByCard(-1));
-    next.addEventListener('click', () => scrollByCard(1));
-  }
-  bindProductCarousel();
-  document.addEventListener('astro:page-load', bindProductCarousel);
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bindProductCarousel);
+    } else {
+      bindProductCarousel();
+    }
+    document.addEventListener('astro:page-load', bindProductCarousel);
+  })();
 </script>

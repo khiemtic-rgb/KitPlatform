@@ -1,0 +1,358 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import { resolveTenant } from '../../lib/tenant';
+import { listTenants } from '../../tenants/registry';
+import '../../styles/storefront.css';
+
+export function getStaticPaths() {
+  const slugs = new Set<string>();
+  for (const tenant of listTenants()) {
+    for (const product of tenant.products) {
+      if (product.slug) slugs.add(product.slug);
+    }
+  }
+  return [...slugs].map((slug) => ({ params: { slug } }));
+}
+
+const tenant = resolveTenant(Astro.request);
+const slug = Astro.params.slug ?? '';
+const product = tenant.products.find((p) => p.slug === slug);
+const appUrl = tenant.appPromo.appUrl;
+const phoneDigits = tenant.contact.phone.replace(/[^\d+]/g, '');
+const phoneHref = phoneDigits.length >= 8 ? `tel:${phoneDigits}` : appUrl;
+
+const badgeLabels: Record<string, string> = {
+  authentic: 'Chính hãng',
+  bestseller: 'Best Seller',
+  new: 'Mới',
+};
+
+const iconDetail = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2.5 12S6.5 5.5 12 5.5 21.5 12 21.5 12 17.5 18.5 12 18.5 2.5 12 2.5 12z"/></svg>`;
+const iconOrder = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M6 6 5 3H2"/></svg>`;
+
+if (!product) {
+  return Astro.redirect('/san-pham');
+}
+
+const gallery = product.gallery?.length ? product.gallery : [product.imageUrl];
+const related = tenant.products
+  .filter((p) => p.slug !== product.slug && (p.kind === product.kind || p.category === product.category))
+  .slice(0, 4);
+const relatedFallback =
+  related.length > 0
+    ? related
+    : tenant.products.filter((p) => p.slug !== product.slug).slice(0, 4);
+
+const trustItems = [
+  { icon: 'badge', label: 'Cam kết chính hãng' },
+  { icon: 'return', label: 'Đổi trả dễ dàng' },
+  { icon: 'scooter', label: 'Giao hàng nhanh' },
+];
+
+const trustIcons: Record<string, string> = {
+  badge: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 5 6.5v5.5c0 4.8 3 8 7 9.3 4-1.3 7-4.5 7-9.3V6.5L12 3.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m9.2 12 1.9 1.9 3.8-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  return: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 8H5V5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 8a8 8 0 1 1 2.4 5.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+  scooter: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="7.5" cy="17" r="2" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="17" r="2" stroke="currentColor" stroke-width="1.7"/><path d="M9 17h6.5L18 10h-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  gpp: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 5 6.5v5.5c0 4.8 3 8 7 9.3 4-1.3 7-4.5 7-9.3V6.5L12 3.5z" stroke="currentColor" stroke-width="1.7"/><path d="m9.2 12 1.9 1.9 3.8-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+  care: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20s-6-3.7-6-8a3.4 3.4 0 0 1 6-2.2A3.4 3.4 0 0 1 18 12c0 4.3-6 8-6 8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>`,
+  privacy: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6" y="10" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8.5 10V8a3.5 3.5 0 0 1 7 0v2" stroke="currentColor" stroke-width="1.7"/></svg>`,
+};
+
+const iconCheck = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="#0A7A5C"/><path d="m6.4 10.2 2.2 2.2 4.8-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const iconCart = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 5h2l1.8 9h8.4l1.6-6H7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="16.2" r="1.1" fill="currentColor"/><circle cx="14.2" cy="16.2" r="1.1" fill="currentColor"/></svg>`;
+const iconChat = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H14a2.5 2.5 0 0 1 2.5 2.5v6A2.5 2.5 0 0 1 14 14H9l-3.5 2.8V14H6.5A2.5 2.5 0 0 1 4 11.5v-6z" stroke="currentColor" stroke-width="1.5"/></svg>`;
+
+const description = product.shortDescription ?? `${product.name} — ${product.category} tại ${tenant.brand.name}`;
+---
+
+<BaseLayout tenant={tenant} title={`${product.name} — ${tenant.brand.name}`} description={description}>
+  <SiteHeader tenant={tenant} currentPath="/san-pham" />
+  <main class="sf-pdp">
+    <div class="sf-container">
+      <nav class="sf-pdp-breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Trang chủ</a>
+        <span>/</span>
+        <a href="/san-pham">Sản phẩm</a>
+        <span>/</span>
+        <span>{product.category}</span>
+        <span>/</span>
+        <strong>{product.name}</strong>
+      </nav>
+
+      <section class="sf-pdp-hero">
+        <div class="sf-pdp-gallery">
+          <div class="sf-pdp-gallery__main">
+            <img src={gallery[0]} alt={product.name} width="640" height="640" loading="eager" />
+          </div>
+          {
+            gallery.length > 1 ? (
+              <div class="sf-pdp-gallery__thumbs">
+                {gallery.map((src, i) => (
+                  <button type="button" class:list={[{ 'is-active': i === 0 }]} data-sf-pdp-thumb data-src={src}>
+                    <img src={src} alt="" width="88" height="88" loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            ) : null
+          }
+        </div>
+
+        <div class="sf-pdp-buy">
+          <div class="sf-pdp-buy__tags">
+            <span class="sf-pdp-tag">{product.category}</span>
+            {
+              product.badge ? (
+                <span class:list={['sf-pdp-tag', 'sf-pdp-tag--badge', `sf-pdp-tag--${product.badge}`]}>
+                  {badgeLabels[product.badge] ?? product.badge}
+                </span>
+              ) : (
+                <span class="sf-pdp-tag sf-pdp-tag--badge">Chính hãng</span>
+              )
+            }
+          </div>
+          <h1>{product.name}</h1>
+          {product.shortDescription ? <p class="sf-pdp-buy__desc">{product.shortDescription}</p> : null}
+
+          <div class="sf-pdp-price">
+            <strong>
+              {product.price}
+              {product.priceUnit ? <span>{product.priceUnit}</span> : null}
+            </strong>
+            {product.packInfo ? <small>({product.packInfo})</small> : null}
+          </div>
+
+          <p class="sf-pdp-stock">
+            Giá và tình trạng hàng theo thời điểm trên App / tại quầy.
+          </p>
+
+          <div class="sf-pdp-actions">
+            <a class="sf-btn sf-btn--primary sf-btn--icon" href={appUrl}>
+              <span class="sf-btn__icon" set:html={iconCart} />
+              Đặt thuốc ngay trên App
+            </a>
+            <a class="sf-btn sf-btn--ghost sf-btn--icon" href="/lien-he">
+              <span class="sf-btn__icon" set:html={iconChat} />
+              Tư vấn dược sĩ
+            </a>
+          </div>
+
+          <ul class="sf-pdp-trust">
+            {
+              trustItems.map((item) => (
+                <li>
+                  <span set:html={trustIcons[item.icon] ?? trustIcons.badge} />
+                  <span>{item.label}</span>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </section>
+
+      <section class="sf-pdp-detail">
+        <div class="sf-pdp-detail__main">
+          <div class="sf-pdp-tabs" role="tablist" aria-label="Thông tin sản phẩm">
+            <button type="button" class="is-active" role="tab" aria-selected="true" data-sf-pdp-tab data-tab="info">
+              Thông tin sản phẩm
+            </button>
+            <button type="button" role="tab" aria-selected="false" data-sf-pdp-tab data-tab="usage">
+              Cách dùng - Liều dùng
+            </button>
+            <button type="button" role="tab" aria-selected="false" data-sf-pdp-tab data-tab="notes">
+              Lưu ý
+            </button>
+          </div>
+
+          <div class="sf-pdp-panel is-active" data-sf-pdp-panel="info">
+            {
+              product.specs && product.specs.length > 0 ? (
+                <table class="sf-pdp-table">
+                  <tbody>
+                    {product.specs.map((row) => (
+                      <tr>
+                        <th scope="row">{row.label}</th>
+                        <td>{row.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p class="sf-muted">Thông tin chi tiết đang được cập nhật. Vui lòng hỏi dược sĩ tại quầy hoặc trên App.</p>
+              )
+            }
+            <p class="sf-pdp-disclaimer">
+              {product.disclaimer ??
+                'Nội dung mang tính tham khảo theo thông tin công bố trên bao bì. Luôn đọc kỹ hướng dẫn sử dụng và hỏi dược sĩ trước khi dùng thuốc.'}
+            </p>
+          </div>
+
+          <div class="sf-pdp-panel" data-sf-pdp-panel="usage" hidden>
+            {
+              product.usage && product.usage.length > 0 ? (
+                <ul class="sf-pdp-list">
+                  {product.usage.map((item) => (
+                    <li>
+                      <span set:html={iconCheck} />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p class="sf-muted">Vui lòng xem hướng dẫn trên bao bì hoặc hỏi dược sĩ.</p>
+              )
+            }
+          </div>
+
+          <div class="sf-pdp-panel" data-sf-pdp-panel="notes" hidden>
+            {
+              product.notes && product.notes.length > 0 ? (
+                <ul class="sf-pdp-list">
+                  {product.notes.map((item) => (
+                    <li>
+                      <span set:html={iconCheck} />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p class="sf-muted">Hãy hỏi dược sĩ nếu bạn đang mang thai, có bệnh nền hoặc dùng nhiều thuốc cùng lúc.</p>
+              )
+            }
+          </div>
+        </div>
+
+        <aside class="sf-pdp-aside">
+          <div class="sf-pdp-consult">
+            <img src={tenant.hero.imageUrl} alt="" width="120" height="120" loading="lazy" />
+            <div>
+              <strong>Cần tư vấn trước khi dùng?</strong>
+              <p>Dược sĩ hỗ trợ trong giờ mở cửa {tenant.contact.hours}.</p>
+              <a class="sf-btn sf-btn--primary" href={phoneHref}>{tenant.contact.phone}</a>
+              <a class="sf-btn sf-btn--ghost" href={appUrl}>Chat trên App</a>
+            </div>
+          </div>
+          <ul class="sf-pdp-certs">
+            <li>
+              <span set:html={trustIcons.gpp} />
+              <span>Nhà thuốc đạt chuẩn GPP</span>
+            </li>
+            <li>
+              <span set:html={trustIcons.care} />
+              <span>Tư vấn tận tâm</span>
+            </li>
+            <li>
+              <span set:html={trustIcons.privacy} />
+              <span>Bảo mật thông tin</span>
+            </li>
+          </ul>
+        </aside>
+      </section>
+
+      {
+        relatedFallback.length > 0 ? (
+          <section class="sf-pdp-related" aria-labelledby="pdp-related-title">
+            <div class="sf-section__head">
+              <h2 id="pdp-related-title">Sản phẩm tương tự</h2>
+              <a href="/san-pham">Xem tất cả →</a>
+            </div>
+            <div class="sf-catalog-grid sf-pdp-related__grid">
+              {relatedFallback.map((p) => (
+                <article class="sf-catalog-card">
+                  {p.badge ? (
+                    <span class:list={['sf-catalog-card__badge', `sf-catalog-card__badge--${p.badge}`]}>
+                      {badgeLabels[p.badge] ?? p.badge}
+                    </span>
+                  ) : null}
+                  <a class="sf-catalog-card__media" href={p.href}>
+                    <img src={p.imageUrl} alt={p.name} width="280" height="220" loading="lazy" />
+                  </a>
+                  <div class="sf-catalog-card__body">
+                    <div class="sf-catalog-card__cat">{p.category}</div>
+                    <h3>
+                      <a href={p.href}>{p.name}</a>
+                    </h3>
+                    <div class="sf-catalog-card__price">{p.price}</div>
+                    <div class="sf-catalog-card__actions">
+                      <a class="sf-catalog-card__cta sf-catalog-card__cta--ghost" href={p.href}>
+                        <span class="sf-catalog-card__cta-icon" set:html={iconDetail} />
+                        Xem chi tiết
+                      </a>
+                      <a class="sf-catalog-card__cta" href={appUrl}>
+                        <span class="sf-catalog-card__cta-icon" set:html={iconOrder} />
+                        Đặt hàng
+                      </a>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null
+      }
+    </div>
+
+    <section class="sf-pdp-app">
+      <div class="sf-container sf-pdp-app__grid">
+        <div>
+          <h2>Quản lý sức khỏe dễ dàng trên App Novixa</h2>
+          <ul>
+            {
+              tenant.appSection.features.slice(0, 5).map((f) => (
+                <li>
+                  <span set:html={iconCheck} />
+                  <span>{f.title}</span>
+                </li>
+              ))
+            }
+          </ul>
+          <a class="sf-btn sf-btn--primary" href={appUrl}>Tải App Novixa ngay</a>
+        </div>
+        {
+          tenant.appPromo.qrImageUrl ? (
+            <img src={tenant.appPromo.qrImageUrl} alt="QR App Novixa" width="120" height="120" loading="lazy" />
+          ) : null
+        }
+      </div>
+    </section>
+  </main>
+  <SiteFooter tenant={tenant} />
+</BaseLayout>
+
+<script>
+  function initProductDetail() {
+    const main = document.querySelector('.sf-pdp-gallery__main img');
+    const thumbs = Array.from(document.querySelectorAll('[data-sf-pdp-thumb]'));
+    for (const thumb of thumbs) {
+      thumb.addEventListener('click', () => {
+        if (!(thumb instanceof HTMLElement) || !(main instanceof HTMLImageElement)) return;
+        const src = thumb.dataset.src;
+        if (!src) return;
+        main.src = src;
+        for (const t of thumbs) t.classList.toggle('is-active', t === thumb);
+      });
+    }
+
+    const tabs = Array.from(document.querySelectorAll('[data-sf-pdp-tab]'));
+    const panels = Array.from(document.querySelectorAll('[data-sf-pdp-panel]'));
+    for (const tab of tabs) {
+      tab.addEventListener('click', () => {
+        if (!(tab instanceof HTMLElement)) return;
+        const id = tab.dataset.tab;
+        for (const t of tabs) {
+          const on = t === tab;
+          t.classList.toggle('is-active', on);
+          t.setAttribute('aria-selected', on ? 'true' : 'false');
+        }
+        for (const panel of panels) {
+          if (!(panel instanceof HTMLElement)) continue;
+          const on = panel.getAttribute('data-sf-pdp-panel') === id;
+          panel.classList.toggle('is-active', on);
+          panel.hidden = !on;
+        }
+      });
+    }
+  }
+  initProductDetail();
+</script>
