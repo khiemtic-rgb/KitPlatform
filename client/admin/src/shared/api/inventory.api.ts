@@ -336,6 +336,11 @@ export async function approveAdjustment(id: string): Promise<AdjustmentDetail> {
   return normalizeAdjustmentDetail(data);
 }
 
+export async function cancelAdjustment(id: string): Promise<AdjustmentDetail> {
+  const { data } = await http.post<Record<string, unknown>>(`/inventory/adjustments/${id}/cancel`);
+  return normalizeAdjustmentDetail(data);
+}
+
 function normalizeCountEntry(row: Record<string, unknown>): AdjustmentCountEntry {
   return {
     id: String(row.id ?? row.Id),

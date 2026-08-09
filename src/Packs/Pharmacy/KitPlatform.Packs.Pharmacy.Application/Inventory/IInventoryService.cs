@@ -49,6 +49,7 @@ public interface IInventoryService
     Task<AdjustmentDetailDto?> GetAdjustmentAsync(Guid id, CancellationToken cancellationToken = default);
     Task<AdjustmentDetailDto> CreateAdjustmentAsync(CreateAdjustmentRequest request, CancellationToken cancellationToken = default);
     Task<AdjustmentDetailDto?> ApproveAdjustmentAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<AdjustmentDetailDto?> CancelAdjustmentAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<AdjustmentDetailDto> CreateCountingSessionAsync(
         CreateCountingSessionRequest request,

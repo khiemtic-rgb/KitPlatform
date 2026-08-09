@@ -3,6 +3,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Alert,
+  App,
   AutoComplete,
   Button,
   Card,
@@ -13,7 +14,6 @@ import {
   Tag,
   Tooltip,
   Typography,
-  message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -25,12 +25,14 @@ import {
   PrinterOutlined,
   ReloadOutlined,
   ScanOutlined,
+  StopOutlined,
 } from '@ant-design/icons';
 import { isAxiosError } from 'axios';
 import { fetchProducts } from '@/shared/api/catalog.api';
 import {
   addCountEntries,
   approveAdjustment,
+  cancelAdjustment,
   deleteCountEntry,
   fetchAdjustment,
   fetchCountEntries,
@@ -86,6 +88,7 @@ function nextDraftKey() {
 export function InventoryCountPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { message, modal } = App.useApp();
   const tenantCode = useAuthStore((s) => s.user?.tenantCode);
   const { t } = useTranslation('inventory', { keyPrefix: 'inventoryCount' });
   const { t: ts } = useTranslation('inventory', { keyPrefix: 'shared' });
@@ -564,6 +567,28 @@ export function InventoryCountPage() {
     setApproveModalOpen(true);
   };
 
+  const handleCancelSession = () => {
+    if (!id || !detail) return;
+    modal.confirm({
+      title: t('messages.cancelConfirmTitle'),
+      content: t('messages.cancelConfirmBody'),
+      okText: t('messages.cancelConfirmOk'),
+      okButtonProps: { danger: true },
+      cancelText: t('messages.cancelConfirmKeep'),
+      centered: true,
+      onOk: async () => {
+        try {
+          await cancelAdjustment(id);
+          message.success(t('messages.cancelSuccess'));
+          navigate('/inventory/adjustments');
+        } catch (error) {
+          message.error(apiErrorMessage(error, t('messages.cancelFailed')));
+          throw error;
+        }
+      },
+    });
+  };
+
   const varianceSummary = countVarianceSummary(previewByBatch);
 
   const previewColumns: ColumnsType<AdjustmentCountPreviewLine> = [
@@ -685,6 +710,11 @@ export function InventoryCountPage() {
                 {tc('actions.approve')}
               </Button>
             </Tooltip>
+          )}
+          {detail && detail.status === 2 && (
+            <Button danger icon={<StopOutlined />} onClick={handleCancelSession}>
+              {ts('cancel')}
+            </Button>
           )}
         </Space>
 

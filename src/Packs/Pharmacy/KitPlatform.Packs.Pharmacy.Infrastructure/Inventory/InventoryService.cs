@@ -302,6 +302,31 @@ internal sealed class InventoryService : IInventoryService
         return detail;
     }
 
+    public async Task<AdjustmentDetailDto?> CancelAdjustmentAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var before = await _repository.GetAdjustmentAsync(id, cancellationToken);
+        if (before is null) return null;
+        await _branchAccess.EnsureWarehouseAccessAsync(before.WarehouseId, cancellationToken);
+        await _repository.CancelAdjustmentAsync(id, cancellationToken);
+        var detail = await _repository.GetAdjustmentAsync(id, cancellationToken);
+        if (detail is not null)
+        {
+            await _audit.WriteAsync(
+                "inventory_adjustment",
+                id,
+                "cancel",
+                new
+                {
+                    detail.AdjustmentNumber,
+                    detail.WarehouseId,
+                    reason = before.Reason,
+                    previousStatus = before.Status,
+                },
+                cancellationToken);
+        }
+        return detail;
+    }
+
     public async Task<AdjustmentDetailDto> CreateCountingSessionAsync(
         CreateCountingSessionRequest request,
         CancellationToken cancellationToken = default)

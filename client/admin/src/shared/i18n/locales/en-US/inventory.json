@@ -282,7 +282,8 @@
     "sessionInProgressHint": "Session in progress — go to <strong>Count</strong>, complete steps 2–3 then <strong>Approve</strong> (step 4) with checklist.",
     "messages": {
       "loadFailed": "Could not load count documents",
-      "prepareRequired": "Confirm count preparation (step 1) before opening a session",
+      "prepareRequiredTitle": "Preparation not confirmed",
+      "prepareRequired": "Tick «Notified that sales / receiving are restricted at this warehouse during the count» before clicking Start counting.",
       "sessionCreateSuccess": "Opened session {{number}}",
       "sessionCreateFailed": "Could not open count session",
       "sessionAlreadyOpen": "Warehouse already has open session {{number}} — resume counting.",
@@ -293,6 +294,12 @@
       "createFailed": "Could not create document",
       "approveSuccess": "Count approved",
       "approveFailed": "Could not approve document",
+      "cancelSuccess": "Cancelled {{number}} — you can open a new session",
+      "cancelFailed": "Could not cancel document",
+      "cancelConfirmTitle": "Cancel count document?",
+      "cancelConfirmBody": "{{number}} will become Cancelled. Unapproved count lines will not change stock. The warehouse can start a new count.",
+      "cancelConfirmOk": "Confirm cancel",
+      "cancelConfirmKeep": "Keep session",
       "batchSelected": "Selected batch {{batch}}",
       "batchesAdded": "Added {{count}} batches"
     }
@@ -358,7 +365,13 @@
       "entryDeleted": "Line deleted",
       "entryDeleteFailed": "Could not delete line",
       "approveSuccess": "Count approved — stock updated",
-      "approveFailed": "Could not approve document"
+      "approveFailed": "Could not approve document",
+      "cancelSuccess": "Count session cancelled",
+      "cancelFailed": "Could not cancel document",
+      "cancelConfirmTitle": "Cancel count session?",
+      "cancelConfirmBody": "Session will become Cancelled without changing stock. You can open a new session for this warehouse.",
+      "cancelConfirmOk": "Confirm cancel",
+      "cancelConfirmKeep": "Keep session"
     }
   },
   "inventoryCountBatchPick": {

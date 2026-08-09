@@ -131,4 +131,19 @@ public sealed class AdjustmentsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = InventoryPolicies.Write)]
+    public async Task<ActionResult<AdjustmentDetailDto>> Cancel(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var item = await _inventory.CancelAdjustmentAsync(id, cancellationToken);
+            return item is null ? NotFound() : Ok(item);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

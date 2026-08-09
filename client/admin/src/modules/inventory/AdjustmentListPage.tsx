@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
+  App,
   Button,
   Card,
   Checkbox,
@@ -15,13 +16,13 @@ import {
   Table,
   Tag,
   Typography,
-  message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { isAxiosError } from 'axios';
-import { PlusOutlined, ReloadOutlined, EyeOutlined, CheckOutlined, TeamOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { PlusOutlined, ReloadOutlined, EyeOutlined, CheckOutlined, TeamOutlined, AppstoreOutlined, StopOutlined } from '@ant-design/icons';
 import {
   approveAdjustment,
+  cancelAdjustment,
   createAdjustment,
   createCountingSession,
   fetchActiveCountingSession,
@@ -61,6 +62,7 @@ interface AdjustmentLineForm {
 
 export function AdjustmentListPage() {
   const navigate = useNavigate();
+  const { message, modal } = App.useApp();
   const { t, i18n } = useTranslation('inventory', { keyPrefix: 'adjustmentList' });
   const { t: ts } = useTranslation('inventory', { keyPrefix: 'shared' });
   const { t: tc } = useTranslation('common');
@@ -82,6 +84,7 @@ export function AdjustmentListPage() {
   const [sessionForm] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [prepareAcknowledged, setPrepareAcknowledged] = useState(false);
+  const [prepareAckError, setPrepareAckError] = useState(false);
   const [batchPickOpen, setBatchPickOpen] = useState(false);
   /** null = thêm dòng mới từ modal; số = gắn vào dòng Form.List hiện có */
   const [batchPickFieldIndex, setBatchPickFieldIndex] = useState<number | null>(null);
@@ -99,7 +102,7 @@ export function AdjustmentListPage() {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, message]);
 
   useEffect(() => {
     load();
@@ -188,14 +191,22 @@ export function AdjustmentListPage() {
       warehouseId: warehouses[0]?.id,
     });
     setPrepareAcknowledged(false);
+    setPrepareAckError(false);
     setSessionDrawerOpen(true);
   };
 
   const handleCreateSession = async () => {
     if (!prepareAcknowledged) {
-      message.warning(t('messages.prepareRequired'));
+      setPrepareAckError(true);
+      modal.warning({
+        title: t('messages.prepareRequiredTitle'),
+        content: t('messages.prepareRequired'),
+        okText: tc('actions.close'),
+        centered: true,
+      });
       return;
     }
+    setPrepareAckError(false);
     try {
       const values = await sessionForm.validateFields();
       setSaving(true);
@@ -281,6 +292,30 @@ export function AdjustmentListPage() {
     }
   };
 
+  const handleCancel = (row: Pick<AdjustmentListItem, 'id' | 'adjustmentNumber'>) => {
+    modal.confirm({
+      title: t('messages.cancelConfirmTitle'),
+      content: t('messages.cancelConfirmBody', { number: row.adjustmentNumber }),
+      okText: t('messages.cancelConfirmOk'),
+      okButtonProps: { danger: true },
+      cancelText: t('messages.cancelConfirmKeep'),
+      centered: true,
+      onOk: async () => {
+        try {
+          await cancelAdjustment(row.id);
+          message.success(t('messages.cancelSuccess', { number: row.adjustmentNumber }));
+          if (detail?.id === row.id) {
+            setDetail(await fetchAdjustment(row.id));
+          }
+          await load();
+        } catch (error) {
+          message.error(apiErrorMessage(error, t('messages.cancelFailed')));
+          throw error;
+        }
+      },
+    });
+  };
+
   const columns: ColumnsType<AdjustmentListItem> = [
     { title: ts('documentNumber'), dataIndex: 'adjustmentNumber', width: 130 },
     { title: ts('warehouse'), dataIndex: 'warehouseName' },
@@ -304,7 +339,7 @@ export function AdjustmentListPage() {
     {
       title: tc('fields.actions'),
       key: 'actions',
-      width: 220,
+      width: 280,
       render: (_, row) => (
         <Space size={4} onClick={(e) => e.stopPropagation()}>
           {row.status === 2 && (
@@ -333,6 +368,16 @@ export function AdjustmentListPage() {
               onClick={() => handleApprove(row.id)}
             >
               {tc('actions.approve')}
+            </Tag>
+          )}
+          {(row.status === 1 || row.status === 2) && (
+            <Tag
+              color="red"
+              icon={<StopOutlined />}
+              style={{ cursor: 'pointer', margin: 0 }}
+              onClick={() => handleCancel(row)}
+            >
+              {ts('cancel')}
             </Tag>
           )}
         </Space>
@@ -585,9 +630,29 @@ export function AdjustmentListPage() {
           <Form.Item name="reasonNote" label={t('reasonNote')}>
             <Input.TextArea rows={2} placeholder={t('reasonNotePlaceholder')} />
           </Form.Item>
-          <Checkbox checked={prepareAcknowledged} onChange={(e) => setPrepareAcknowledged(e.target.checked)}>
-            {t('prepareAcknowledge')}
-          </Checkbox>
+          <div
+            style={{
+              padding: 12,
+              borderRadius: 8,
+              border: prepareAckError ? '1px solid #ff4d4f' : '1px solid transparent',
+              background: prepareAckError ? '#fff2f0' : undefined,
+            }}
+          >
+            <Checkbox
+              checked={prepareAcknowledged}
+              onChange={(e) => {
+                setPrepareAcknowledged(e.target.checked);
+                if (e.target.checked) setPrepareAckError(false);
+              }}
+            >
+              {t('prepareAcknowledge')}
+            </Checkbox>
+            {prepareAckError ? (
+              <Typography.Paragraph type="danger" style={{ margin: '8px 0 0', fontSize: 13 }}>
+                {t('messages.prepareRequired')}
+              </Typography.Paragraph>
+            ) : null}
+          </div>
         </Form>
       </Drawer>
 
@@ -609,6 +674,9 @@ export function AdjustmentListPage() {
                   {tc('actions.approve')}
                 </Button>
               )}
+              <Button danger icon={<StopOutlined />} onClick={() => handleCancel(detail)}>
+                {ts('cancel')}
+              </Button>
             </Space>
           ) : null
         }

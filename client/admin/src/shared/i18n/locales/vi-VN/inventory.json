@@ -282,7 +282,8 @@
     "sessionInProgressHint": "Phiên đang kiểm — vào màn <strong>Đếm</strong>, hoàn tất bước 2–3 rồi <strong>Duyệt</strong> (bước 4) kèm checklist.",
     "messages": {
       "loadFailed": "Không tải được phiếu kiểm kê",
-      "prepareRequired": "Xác nhận đã chuẩn bị kiểm kê (bước 1) trước khi mở phiên",
+      "prepareRequiredTitle": "Chưa xác nhận chuẩn bị kiểm kê",
+      "prepareRequired": "Hãy tick vào ô «Đã thông báo hạn chế bán hàng / nhập xuất tại kho trong lúc kiểm kê» trước khi bấm Bắt đầu đếm.",
       "sessionCreateSuccess": "Đã mở phiên {{number}}",
       "sessionCreateFailed": "Không mở được phiên kiểm kê",
       "sessionAlreadyOpen": "Kho đang có phiên {{number}} — tiếp tục đếm.",
@@ -293,6 +294,12 @@
       "createFailed": "Không tạo được phiếu",
       "approveSuccess": "Đã duyệt kiểm kê",
       "approveFailed": "Không duyệt được phiếu",
+      "cancelSuccess": "Đã hủy phiếu {{number}} — có thể mở phiên mới",
+      "cancelFailed": "Không hủy được phiếu",
+      "cancelConfirmTitle": "Hủy phiếu kiểm kê?",
+      "cancelConfirmBody": "Phiếu {{number}} sẽ chuyển sang Đã hủy. Dòng đếm chưa duyệt sẽ không áp vào tồn. Kho được mở lại để kiểm kê mới.",
+      "cancelConfirmOk": "Xác nhận hủy",
+      "cancelConfirmKeep": "Giữ phiên",
       "batchSelected": "Đã chọn lô {{batch}}",
       "batchesAdded": "Đã thêm {{count}} lô"
     }
@@ -358,7 +365,13 @@
       "entryDeleted": "Đã xóa dòng",
       "entryDeleteFailed": "Không xóa được dòng",
       "approveSuccess": "Đã duyệt kiểm kê — tồn kho đã được cập nhật",
-      "approveFailed": "Không duyệt được phiếu"
+      "approveFailed": "Không duyệt được phiếu",
+      "cancelSuccess": "Đã hủy phiên kiểm kê",
+      "cancelFailed": "Không hủy được phiếu",
+      "cancelConfirmTitle": "Hủy phiên kiểm kê?",
+      "cancelConfirmBody": "Phiên sẽ chuyển sang Đã hủy, không cập nhật tồn. Có thể mở phiên mới cho kho này.",
+      "cancelConfirmOk": "Xác nhận hủy",
+      "cancelConfirmKeep": "Giữ phiên"
     }
   },
   "inventoryCountBatchPick": {

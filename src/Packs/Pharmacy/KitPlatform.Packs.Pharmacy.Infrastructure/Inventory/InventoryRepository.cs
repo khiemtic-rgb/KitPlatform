@@ -1447,6 +1447,43 @@ internal sealed class InventoryRepository
         }, tx);
     }
 
+    public async Task CancelAdjustmentAsync(Guid adjustmentId, CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+
+        const string headerSql = """
+            SELECT id AS Id, status AS Status
+            FROM inventory_adjustments
+            WHERE id = @Id AND tenant_id = @TenantId
+            FOR UPDATE
+            """;
+        var header = await conn.QuerySingleOrDefaultAsync<(Guid Id, short Status)>(
+            headerSql, new { Id = adjustmentId, TenantId }, tx);
+        if (header.Id == Guid.Empty)
+            throw new InvalidOperationException("Phiếu kiểm kê không tồn tại.");
+
+        if (header.Status == AdjustmentStatuses.Approved)
+            throw new InvalidOperationException("Phiếu đã duyệt — không thể hủy.");
+        if (header.Status == AdjustmentStatuses.Cancelled)
+            throw new InvalidOperationException("Phiếu đã hủy.");
+
+        // Draft / Counting only — chưa chạm tồn; hủy nhả unique phiên kiểm đang mở theo kho.
+        const string updateSql = """
+            UPDATE inventory_adjustments SET
+                status = @Status, updated_at = NOW()
+            WHERE id = @Id AND tenant_id = @TenantId
+            """;
+        await conn.ExecuteAsync(updateSql, new
+        {
+            Id = adjustmentId,
+            TenantId,
+            Status = AdjustmentStatuses.Cancelled,
+        }, tx);
+
+        await tx.CommitAsync(cancellationToken);
+    }
+
     public async Task ApproveAdjustmentAsync(Guid adjustmentId, Guid approvedBy, CancellationToken cancellationToken)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
