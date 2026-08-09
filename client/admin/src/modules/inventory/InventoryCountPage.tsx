@@ -352,10 +352,11 @@ export function InventoryCountPage() {
   const selectedBatchSummary = useMemo(() => {
     if (!selectedBatchId) return null;
     const batch = productBatches.find((b) => b.id === selectedBatchId);
-    if (!batch) {
-      return batchOptions.find((b) => b.value === selectedBatchId)?.label ?? selectedBatchId;
-    }
-    return batch.batchNumber;
+    if (batch) return batch.batchNumber;
+    const optLabel = batchOptions.find((b) => b.value === selectedBatchId)?.label;
+    // Options label may be "3333 · HSD … · tồn …" — only show the batch number on the button.
+    if (optLabel) return optLabel.split('·')[0]?.trim() || optLabel;
+    return selectedBatchId;
   }, [selectedBatchId, productBatches, batchOptions]);
 
   const handleBatchPickConfirm = (selected: StockBatch[]) => {
@@ -381,12 +382,7 @@ export function InventoryCountPage() {
       return;
     }
 
-    // Nhiều lô: đẩy vào dòng chờ với SL hiện tại (mặc định = tồn hệ thống nếu SL=1 hoặc chưa đổi? dùng quantity).
-    if (quantity <= 0) {
-      message.warning(t('messages.quantityMustBePositive'));
-      setSelectedBatchId(selected[0].id);
-      return;
-    }
+    // Nhiều lô: mỗi lô → 1 dòng chờ, SL mặc định = tồn hệ thống (chỉnh trên bảng trước khi Lưu dòng chờ).
     if (!activeProductId) {
       message.warning(t('messages.scanOrSelectProduct'));
       return;
@@ -398,7 +394,7 @@ export function InventoryCountPage() {
       productLabel: productSearch,
       batchId: b.id,
       batchLabel: toLabel(b),
-      quantity,
+      quantity: Math.max(0, Number(b.quantityAvailable) || 0),
       unitName: activeUnitName ?? undefined,
       zone: zone.trim() || undefined,
     }));
@@ -484,9 +480,20 @@ export function InventoryCountPage() {
     setDraftLines((prev) => prev.filter((line) => line.key !== key));
   };
 
+  const handleDraftQuantityChange = (key: string, next: number | null) => {
+    const qty = Number(next ?? 0);
+    setDraftLines((prev) =>
+      prev.map((line) => (line.key === key ? { ...line, quantity: qty } : line)),
+    );
+  };
+
   const handleSubmitDraft = async () => {
     if (!id || draftLines.length === 0) {
       message.warning(t('messages.noDraftLines'));
+      return;
+    }
+    if (draftLines.some((line) => line.quantity <= 0)) {
+      message.warning(t('messages.quantityMustBePositive'));
       return;
     }
 
@@ -597,7 +604,23 @@ export function InventoryCountPage() {
   const draftColumns: ColumnsType<DraftLine> = [
     { title: ts('productAbbr'), dataIndex: 'productLabel', ellipsis: true },
     { title: ts('batchAbbr'), dataIndex: 'batchLabel', ellipsis: true },
-    { title: ts('quantityAbbr'), dataIndex: 'quantity', width: 72, align: 'right', render: (v: number) => formatDisplayQuantity(v) },
+    {
+      title: ts('quantityAbbr'),
+      dataIndex: 'quantity',
+      width: 110,
+      align: 'right',
+      render: (v: number, row) => (
+        <InputNumber
+          size="small"
+          {...quantityInputNumberProps}
+          min={0}
+          value={v}
+          disabled={submitting}
+          style={{ width: '100%' }}
+          onChange={(next) => handleDraftQuantityChange(row.key, next)}
+        />
+      ),
+    },
     { title: ts('zone'), dataIndex: 'zone', width: 120, ellipsis: true, render: (v) => v ?? '—' },
     {
       title: '',
@@ -754,11 +777,11 @@ export function InventoryCountPage() {
                     icon={<AppstoreOutlined />}
                     onClick={() => setBatchPickOpen(true)}
                     disabled={submitting}
+                    title={t('pickBatchesTooltip')}
                     style={{ flex: '0 0 420px', width: 420, textAlign: 'left' }}
                   >
                     {selectedBatchSummary ? (
                       <span>
-                        {t('selectedBatchPrefix')}{' '}
                         <strong
                           style={{
                             color: expiryToneColor(
@@ -768,14 +791,18 @@ export function InventoryCountPage() {
                             ),
                           }}
                         >
-                          {selectedBatchSummary}
+                          {t('selectedBatchLabel', { batch: selectedBatchSummary })}
                         </strong>
-                        {productBatches.length > 1
-                          ? ` · ${t('pickBatchesHint', { count: productBatches.length })}`
-                          : ''}
                       </span>
                     ) : (
-                      t('pickBatches')
+                      <span>
+                        {t('pickBatchesShort')}
+                        {productBatches.length > 0 ? (
+                          <span style={{ color: '#64748b', fontWeight: 400, marginLeft: 6 }}>
+                            {t('batchesAvailableHint', { count: productBatches.length })}
+                          </span>
+                        ) : null}
+                      </span>
                     )}
                   </Button>
                 )}

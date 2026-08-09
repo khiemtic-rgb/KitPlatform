@@ -6,7 +6,6 @@ import {
   Card,
   Drawer,
   Form,
-  Input,
   InputNumber,
   Popconfirm,
   Space,
@@ -66,6 +65,7 @@ import { printGoodsReceipt } from '@/shared/print/grn-print';
 import { ProductUnitSelect } from '@/modules/procurement/ProductUnitSelect';
 import { ProductSearchSelect } from '@/modules/procurement/ProductSearchSelect';
 import { PoUnitPriceField } from '@/modules/procurement/PoUnitPriceField';
+import { GrnBatchNumberField } from '@/modules/procurement/GrnBatchNumberField';
 import { PharmaExpiryPicker } from '@/shared/ui/PharmaDatePicker';
 import { GoodsReceiptFilterBar } from '@/modules/procurement/GoodsReceiptFilterBar';
 import { formatDisplayDate } from '@/shared/utils/date';
@@ -168,6 +168,7 @@ export function GoodsReceiptListPage() {
   const [poEditOpen, setPoEditOpen] = useState(false);
   const purchaseOrderId = Form.useWatch('purchaseOrderId', form);
   const supplierId = Form.useWatch('supplierId', form);
+  const warehouseId = Form.useWatch('warehouseId', form) as string | undefined;
 
   const loadMasterData = useCallback(async () => {
     const [sup, wh, prod, pos, pendingPos, vat] = await Promise.all([
@@ -510,7 +511,7 @@ export function GoodsReceiptListPage() {
       <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
         {t('manualLinesHint')}
       </Typography.Text>
-      {fields.map((field) => (
+      {fields.map((field, index) => (
         <Form.Item key={field.key} noStyle shouldUpdate>
           {() => {
             const productId = form.getFieldValue(['items', field.name, 'productId']) as string | undefined;
@@ -525,6 +526,18 @@ export function GoodsReceiptListPage() {
                   borderBottom: '1px solid #f0f0f0',
                 }}
               >
+                <div
+                  style={{
+                    flex: '0 0 28px',
+                    paddingTop: 30,
+                    textAlign: 'center',
+                    color: '#64748b',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                  title={tShared('columns.stt')}
+                >
+                  {index + 1}
+                </div>
                 <Form.Item
                   {...field}
                   name={[field.name, 'productId']}
@@ -554,9 +567,17 @@ export function GoodsReceiptListPage() {
                   name={[field.name, 'batchNumber']}
                   label={tShared('columns.batchNumber')}
                   rules={[{ required: true, message: tVal('enterBatch') }]}
-                  style={{ flex: '0 0 100px', marginBottom: 0 }}
+                  style={{ flex: '0 0 140px', marginBottom: 0 }}
                 >
-                  <Input placeholder={tShared('columns.batchShort')} />
+                  <GrnBatchNumberField
+                    warehouseId={warehouseId}
+                    productId={productId}
+                    onPickExisting={(batch) => {
+                      if (batch.expiryDate) {
+                        form.setFieldValue(['items', field.name, 'expiryDate'], batch.expiryDate);
+                      }
+                    }}
+                  />
                 </Form.Item>
                 <Form.Item
                   {...field}
@@ -755,6 +776,7 @@ export function GoodsReceiptListPage() {
                   <GrnPoLinesEditor
                     form={form}
                     supplierId={supplierId}
+                    warehouseId={warehouseId}
                     linkedPo={linkedPo}
                     fields={fields}
                     remove={remove}

@@ -6,6 +6,7 @@ import type { FormListFieldData } from 'antd/es/form/FormList';
 import type { FormInstance } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { grnLineNetTotal } from '@/modules/procurement/grn-pricing';
+import { GrnBatchNumberField } from '@/modules/procurement/GrnBatchNumberField';
 import { GrnLineDiscountFields } from '@/modules/procurement/GrnPricingPanel';
 import { PROCUREMENT_MONEY_COL_WIDTH } from '@/modules/procurement/GrnPoTaxSummary';
 import { ProcurementQuantityCell } from '@/modules/procurement/procurement-quantity-cell';
@@ -14,7 +15,7 @@ import { PharmaExpiryPicker } from '@/shared/ui/PharmaDatePicker';
 import type { PurchaseOrderDetail } from '@/shared/api/procurement.types';
 import { formatDisplayMoney, formatDisplayQuantity, quantityInputNumberProps } from '@/shared/utils/money';
 
-export interface GrnLineFormRow {
+export interface GrnLineFormProps {
   purchaseOrderItemId?: string;
   productId: string;
   productUnitId: string;
@@ -35,6 +36,7 @@ const TABLE_HEADER_HEIGHT = 39;
 interface GrnPoLinesEditorProps {
   form: FormInstance;
   supplierId?: string;
+  warehouseId?: string;
   linkedPo?: PurchaseOrderDetail | null;
   fields: FormListFieldData[];
   remove: (index: number) => void;
@@ -44,6 +46,7 @@ interface GrnPoLinesEditorProps {
 export function GrnPoLinesEditor({
   form,
   supplierId,
+  warehouseId,
   fields,
   remove,
   maxScrollY = 520,
@@ -51,7 +54,7 @@ export function GrnPoLinesEditor({
   const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
   const { t: tVal } = useTranslation('procurement', { keyPrefix: 'shared.validation' });
   const { t: tLines } = useTranslation('procurement', { keyPrefix: 'shared.lines' });
-  const watchedItems = Form.useWatch('items', form) as GrnLineFormRow[] | undefined;
+  const watchedItems = Form.useWatch('items', form) as GrnLineFormProps[] | undefined;
 
   const tableScrollY = useMemo(() => {
     const naturalHeight = fields.length * ROW_HEIGHT + TABLE_HEADER_HEIGHT;
@@ -59,6 +62,14 @@ export function GrnPoLinesEditor({
   }, [fields.length, maxScrollY]);
 
   const columns: ColumnsType<FormListFieldData> = [
+    {
+      title: tShared('columns.stt'),
+      width: 44,
+      align: 'center',
+      render: (_v, _field, index) => (
+        <span style={{ color: '#64748b', fontVariantNumeric: 'tabular-nums' }}>{index + 1}</span>
+      ),
+    },
     {
       title: tShared('columns.product'),
       ellipsis: true,
@@ -135,16 +146,27 @@ export function GrnPoLinesEditor({
     },
     {
       title: tShared('columns.batchNumber'),
-      width: 88,
-      render: (_, field) => (
-        <Form.Item
-          name={[field.name, 'batchNumber']}
-          rules={[{ required: true, message: tVal('enterBatch') }]}
-          style={{ marginBottom: 0 }}
-        >
-          <Input placeholder={tShared('columns.batchShort')} />
-        </Form.Item>
-      ),
+      width: 128,
+      render: (_, field) => {
+        const productId = watchedItems?.[field.name]?.productId;
+        return (
+          <Form.Item
+            name={[field.name, 'batchNumber']}
+            rules={[{ required: true, message: tVal('enterBatch') }]}
+            style={{ marginBottom: 0 }}
+          >
+            <GrnBatchNumberField
+              warehouseId={warehouseId}
+              productId={productId}
+              onPickExisting={(batch) => {
+                if (batch.expiryDate) {
+                  form.setFieldValue(['items', field.name, 'expiryDate'], batch.expiryDate);
+                }
+              }}
+            />
+          </Form.Item>
+        );
+      },
     },
     {
       title: tShared('columns.expiry'),
