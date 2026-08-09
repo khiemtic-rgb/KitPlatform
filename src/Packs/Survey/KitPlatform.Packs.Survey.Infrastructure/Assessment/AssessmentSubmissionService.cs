@@ -330,7 +330,7 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
             request.RespondentName.Trim(),
             phone,
             request.RespondentEmail.Trim(),
-            request.RespondentOrgName.Trim(),
+            string.IsNullOrWhiteSpace(request.RespondentOrgName) ? null : request.RespondentOrgName.Trim(),
             request.RespondentNote?.Trim(),
             request.ConsentMarketing);
 
@@ -689,11 +689,11 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
                 statusCode: 400);
         }
 
-        if (string.IsNullOrWhiteSpace(request.RespondentOrgName) || request.RespondentOrgName.Trim().Length < 2)
+        if (!string.IsNullOrWhiteSpace(request.RespondentOrgName) && request.RespondentOrgName.Trim().Length < 2)
         {
             throw new AssessmentException(
                 AssessmentErrorCodes.ValidationError,
-                "respondentOrgName bắt buộc (tối thiểu 2 ký tự).",
+                "respondentOrgName tối thiểu 2 ký tự (nếu điền).",
                 statusCode: 400);
         }
 

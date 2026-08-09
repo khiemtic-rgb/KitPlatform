@@ -362,10 +362,10 @@ export async function captureLead(
     respondentName: string;
     respondentPhone: string;
     respondentEmail: string;
-    respondentOrgName: string;
+    respondentOrgName?: string;
     respondentNote?: string;
     consentMarketing: boolean;
-    orgScale: string;
+    orgScale?: string;
   },
 ) {
   const { data } = await api.post(`/submissions/${id}/capture-lead`, payload, { headers: sessionHeader(id) });

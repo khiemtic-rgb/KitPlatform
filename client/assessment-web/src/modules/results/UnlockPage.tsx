@@ -10,8 +10,8 @@ type FormValues = {
   respondentName: string;
   respondentPhone: string;
   respondentEmail: string;
-  respondentOrgName: string;
-  orgScale: string;
+  respondentOrgName?: string;
+  orgScale?: string;
   respondentNote?: string;
   consentMarketing: boolean;
 };
@@ -33,8 +33,13 @@ export function UnlockPage() {
     setLoading(true);
     try {
       await captureLead(id, {
-        ...values,
-        orgScale: values.orgScale || 'small',
+        respondentName: values.respondentName,
+        respondentPhone: values.respondentPhone,
+        respondentEmail: values.respondentEmail,
+        respondentOrgName: values.respondentOrgName?.trim() || undefined,
+        orgScale: values.orgScale || undefined,
+        respondentNote: values.respondentNote,
+        consentMarketing: values.consentMarketing,
       });
       message.success('Cảm ơn! Báo cáo đã sẵn sàng.');
       navigate(`/report/${id}`);
@@ -48,13 +53,15 @@ export function UnlockPage() {
   }
 
   function onFinishFailed() {
-    message.warning('Vui lòng điền đầy đủ các trường bắt buộc (đánh dấu *).');
+    message.warning('Vui lòng điền họ tên, số điện thoại và email.');
   }
 
   return (
     <div className="page-shell">
       <Title level={3}>Nhận báo cáo chi tiết</Title>
-      <Paragraph type="secondary">Thông tin giúp Novixa gửi báo cáo và tư vấn phù hợp.</Paragraph>
+      <Paragraph type="secondary">
+        Chỉ cần họ tên, SĐT và email — Novixa gửi báo cáo và liên hệ tư vấn khi bạn muốn.
+      </Paragraph>
 
       <Form
         layout="vertical"
@@ -85,19 +92,14 @@ export function UnlockPage() {
           <Input placeholder="owner@example.com" />
         </Form.Item>
         <Form.Item
-          label="Tên nhà thuốc / cơ sở"
+          label="Tên nhà thuốc / cơ sở (tuỳ chọn)"
           name="respondentOrgName"
-          rules={[{ required: true, min: 2, message: 'Nhập tên cơ sở' }]}
+          rules={[{ min: 2, message: 'Tối thiểu 2 ký tự nếu điền' }]}
         >
           <Input placeholder="Nhà thuốc ABC" />
         </Form.Item>
-        <Form.Item
-          label="Quy mô cơ sở"
-          name="orgScale"
-          initialValue="small"
-          rules={[{ required: true, message: 'Chọn quy mô nhà thuốc' }]}
-        >
-          <Select placeholder="Chọn quy mô nhà thuốc" options={ORG_SCALE_OPTIONS} />
+        <Form.Item label="Quy mô cơ sở (tuỳ chọn)" name="orgScale">
+          <Select allowClear placeholder="Chọn nếu muốn" options={ORG_SCALE_OPTIONS} />
         </Form.Item>
         <Form.Item label="Ghi chú (tuỳ chọn)" name="respondentNote">
           <Input.TextArea rows={3} placeholder="Muốn tư vấn phần mềm quản lý..." />

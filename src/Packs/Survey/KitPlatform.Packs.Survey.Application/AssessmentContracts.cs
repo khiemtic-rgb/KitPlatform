@@ -123,7 +123,7 @@ public sealed record CaptureAssessmentLeadRequest(
     string RespondentName,
     string RespondentPhone,
     string RespondentEmail,
-    string RespondentOrgName,
+    string? RespondentOrgName,
     string? RespondentNote,
     bool ConsentMarketing,
     string? OrgScale = null);

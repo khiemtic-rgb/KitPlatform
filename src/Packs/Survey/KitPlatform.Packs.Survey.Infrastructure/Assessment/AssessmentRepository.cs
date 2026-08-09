@@ -463,7 +463,7 @@ internal sealed class AssessmentRepository
         string name,
         string phone,
         string email,
-        string orgName,
+        string? orgName,
         string? note,
         bool consentMarketing)
     {

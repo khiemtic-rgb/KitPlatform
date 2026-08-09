@@ -75,7 +75,7 @@ internal static class SurveySubmissionWriter
         string name,
         string phone,
         string email,
-        string orgName,
+        string? orgName,
         CancellationToken cancellationToken = default)
     {
         const string sql = """
