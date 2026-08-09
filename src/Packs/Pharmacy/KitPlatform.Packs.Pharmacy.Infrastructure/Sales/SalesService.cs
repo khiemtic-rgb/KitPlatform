@@ -37,6 +37,7 @@ internal sealed class SalesService : ISalesService
     }
 
     private SalesDiscountPolicy DiscountPolicy => _permissions.GetSalesDiscountPolicy();
+    private bool AllowPriceOverride => _permissions.GetSalesPriceOverridePolicy().CanOverride;
 
     public Task<IReadOnlyList<CustomerListItemDto>> SearchCustomersAsync(
         string? search = null,
@@ -142,8 +143,8 @@ internal sealed class SalesService : ISalesService
     {
         await _branchAccess.EnsureWarehouseAccessAsync(request.WarehouseId, cancellationToken);
         var id = request.SaveAsDraft
-            ? await _repository.CreateDraftSaleAsync(request, _tenant.UserId, DiscountPolicy, cancellationToken)
-            : await _repository.CreateCompletedSaleAsync(request, _tenant.UserId, DiscountPolicy, cancellationToken);
+            ? await _repository.CreateDraftSaleAsync(request, _tenant.UserId, DiscountPolicy, AllowPriceOverride, cancellationToken)
+            : await _repository.CreateCompletedSaleAsync(request, _tenant.UserId, DiscountPolicy, AllowPriceOverride, cancellationToken);
         var order = (await _repository.GetSalesOrderAsync(id, cancellationToken, freshSale: !request.SaveAsDraft))!;
         await _audit.WriteAsync(
             "sales_order",
@@ -163,7 +164,7 @@ internal sealed class SalesService : ISalesService
         var existing = await _repository.GetSalesOrderAsync(id, cancellationToken);
         if (existing is null) return null;
         await _branchAccess.EnsureWarehouseAccessAsync(existing.WarehouseId, cancellationToken);
-        var updated = await _repository.UpdateDraftSaleAsync(id, request, DiscountPolicy, cancellationToken);
+        var updated = await _repository.UpdateDraftSaleAsync(id, request, DiscountPolicy, AllowPriceOverride, cancellationToken);
         if (!updated) return null;
         var order = await _repository.GetSalesOrderAsync(id, cancellationToken);
         if (order is not null)
@@ -187,7 +188,7 @@ internal sealed class SalesService : ISalesService
         var existing = await _repository.GetSalesOrderAsync(id, cancellationToken);
         if (existing is null) return null;
         await _branchAccess.EnsureWarehouseAccessAsync(existing.WarehouseId, cancellationToken);
-        var completed = await _repository.CompleteDraftSaleAsync(id, request, DiscountPolicy, cancellationToken);
+        var completed = await _repository.CompleteDraftSaleAsync(id, request, DiscountPolicy, AllowPriceOverride, cancellationToken);
         if (!completed) return null;
         var order = await _repository.GetSalesOrderAsync(id, cancellationToken, freshSale: true);
         if (order is not null)
@@ -337,8 +338,9 @@ internal sealed class SalesService : ISalesService
         short priceType,
         SaleDiscountInput? orderDiscount,
         SalesDiscountPolicy discountPolicy,
-        CancellationToken cancellationToken = default) =>
-        _repository.PriceSaleLinesAsync(items, priceType, orderDiscount, discountPolicy, cancellationToken);
+        CancellationToken cancellationToken = default,
+        bool allowPriceOverride = false) =>
+        _repository.PriceSaleLinesAsync(items, priceType, orderDiscount, discountPolicy, allowPriceOverride, cancellationToken);
 
     public Task ReportRxPosBlockAsync(
         ReportRxPosBlockRequest request,

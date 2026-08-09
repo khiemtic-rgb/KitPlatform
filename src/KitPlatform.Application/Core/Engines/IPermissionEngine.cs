@@ -13,4 +13,7 @@ public interface IPermissionEngine
 
     /// <summary>BR-PRC-002: staff discount limits from permissions.</summary>
     SalesDiscountPolicy GetSalesDiscountPolicy();
+
+    /// <summary>Allow POS line unit price different from catalog (sales.price.override or ADMIN).</summary>
+    SalesPriceOverridePolicy GetSalesPriceOverridePolicy();
 }

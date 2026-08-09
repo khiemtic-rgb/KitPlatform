@@ -45,6 +45,7 @@ export async function loadDraftCartLines(order: SalesOrderDetail): Promise<CartL
       unitName: item.unitName,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
+      catalogUnitPrice: item.unitPrice,
       stockAvailable,
       discountType: item.discountType as SalesDiscountType | undefined,
       discountValue: item.discountValue,

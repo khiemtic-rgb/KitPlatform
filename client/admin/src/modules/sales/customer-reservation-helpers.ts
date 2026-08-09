@@ -26,6 +26,7 @@ export async function loadCustomerReservationCartLines(
       unitName: item.unitName,
       quantity: item.quantity,
       unitPrice,
+      catalogUnitPrice: unitPrice,
       stockAvailable,
     });
   }

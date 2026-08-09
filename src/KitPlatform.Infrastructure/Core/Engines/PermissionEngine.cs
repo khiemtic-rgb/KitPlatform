@@ -17,4 +17,7 @@ internal sealed class PermissionEngine : IPermissionEngine
 
     public SalesDiscountPolicy GetSalesDiscountPolicy()
         => SalesDiscountPolicy.FromPermissions(_user.Permissions, IsAdmin());
+
+    public SalesPriceOverridePolicy GetSalesPriceOverridePolicy()
+        => SalesPriceOverridePolicy.FromPermissions(_user.Permissions, IsAdmin());
 }

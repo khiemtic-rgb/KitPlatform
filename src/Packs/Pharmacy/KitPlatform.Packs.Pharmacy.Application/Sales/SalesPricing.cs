@@ -37,6 +37,12 @@ public sealed record SalesDiscountPolicy(bool CanApply, bool Unlimited, decimal 
     }
 }
 
+public sealed record SalesPriceOverridePolicy(bool CanOverride)
+{
+    public static SalesPriceOverridePolicy FromPermissions(IReadOnlyList<string> permissions, bool isAdmin)
+        => new(isAdmin || permissions.Contains(SalesPriceOverridePermissions.Override));
+}
+
 public static class SalesPricing
 {
     public static decimal ComputeDiscountAmount(decimal basis, short? discountType, decimal? discountValue)

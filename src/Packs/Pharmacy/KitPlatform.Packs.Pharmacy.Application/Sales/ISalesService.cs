@@ -113,7 +113,8 @@ public interface ISalesService
         short priceType,
         SaleDiscountInput? orderDiscount,
         SalesDiscountPolicy discountPolicy,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        bool allowPriceOverride = false);
 
     Task ReportRxPosBlockAsync(
         ReportRxPosBlockRequest request,

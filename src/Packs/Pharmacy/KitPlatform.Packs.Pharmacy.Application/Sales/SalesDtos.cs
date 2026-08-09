@@ -92,7 +92,9 @@ public sealed record CreateSaleLineRequest(
     short? DiscountType = null,
     decimal? DiscountValue = null,
     string? BatchNumber = null,
-    Guid? PrescriptionLineId = null);
+    Guid? PrescriptionLineId = null,
+    /// <summary>Đơn giá bán trên dòng. Null = lấy bảng giá. Khác catalog cần sales.price.override.</summary>
+    decimal? UnitPrice = null);
 
 public sealed record CompleteDraftSaleRequest(
     IReadOnlyList<CreateSalePaymentRequest>? Payments = null,

@@ -11,6 +11,8 @@ function resolveLineBatchNumber(line: CartLine): string | undefined {
 export function buildSaleLineItems(cart: CartLine[]) {
   return cart.map((line) => {
     const batchNumber = resolveLineBatchNumber(line);
+    const catalog = line.catalogUnitPrice ?? line.unitPrice;
+    const priceOverride = Math.abs(line.unitPrice - catalog) > 0.009;
     return {
       productId: line.productId,
       productUnitId: line.productUnitId,
@@ -20,6 +22,7 @@ export function buildSaleLineItems(cart: CartLine[]) {
         ? { discountType: line.discountType, discountValue: line.discountValue ?? 0 }
         : {}),
       ...(line.prescriptionLineId ? { prescriptionLineId: line.prescriptionLineId } : {}),
+      ...(priceOverride ? { unitPrice: line.unitPrice } : {}),
     };
   });
 }

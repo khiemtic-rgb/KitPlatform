@@ -20,6 +20,14 @@ public static class SalesDiscountPermissions
     public const string Unlimited = "sales.discount.unlimited";
 }
 
+public static class SalesPriceOverridePermissions
+{
+    /// <summary>Sửa đơn giá trên dòng POS (khác bảng giá catalog).</summary>
+    public const string Override = "sales.price.override";
+    /// <summary>Báo cáo / quản lý giá vượt khung (UI quản trị; không bắt buộc khi bán).</summary>
+    public const string Manage = "sales.price.manage";
+}
+
 public static class SalesDiscountLimits
 {
     public const decimal StaffMaxPercent = 10m;

@@ -120,7 +120,7 @@ export function PosPage() {
   const canWrite = useCanSalesPos();
   const auditSlimNav = useAuditSlimNav();
   const prospectPromptedRef = useRef<Set<string>>(new Set());
-  const { canDiscount, maxPercent, unlimited } = useSalesDiscountPolicy();
+  const { canDiscount, maxPercent, unlimited, canPriceOverride } = useSalesDiscountPolicy();
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehouseId, setWarehouseId] = useState<string>();
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
@@ -486,6 +486,7 @@ export function PosPage() {
             unitName: line.unitName ?? '',
             quantity: Number(line.qtyRemaining),
             unitPrice: line.unitPrice,
+            catalogUnitPrice: line.unitPrice,
             dispensingClass: line.lineDispensingClass,
             stockAvailable: line.stockAvailable,
             prescriptionLineId: line.prescriptionLineId,
@@ -1063,6 +1064,7 @@ export function PosPage() {
               unitName: item.unitName,
               quantity: 1,
               unitPrice: item.unitPrice,
+              catalogUnitPrice: item.unitPrice,
               dispensingClass: item.dispensingClass,
               stockAvailable: item.stockAvailable,
               batchHints: item.batchHints,
@@ -1490,12 +1492,27 @@ export function PosPage() {
     {
       title: t('pos.columns.unitPrice'),
       dataIndex: 'unitPrice',
-      width: 92,
+      width: canPriceOverride ? 110 : 92,
       align: 'right',
       className: 'pos-cart-col-money',
-      render: (v: number) => (
-        <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDisplayMoney(v)}</span>
-      ),
+      render: (v: number, row) =>
+        canPriceOverride ? (
+          <InputNumber
+            disabled={!canWrite || cartLocked}
+            value={v}
+            {...moneyInputNumberPropsAllowZeroSuffix}
+            style={{ ...moneyInputNumberStyle, width: 96 }}
+            onChange={(unitPrice) =>
+              setCart((prev) =>
+                prev.map((l) =>
+                  l.key === row.key ? { ...l, unitPrice: Number(unitPrice ?? 0) } : l,
+                ),
+              )
+            }
+          />
+        ) : (
+          <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDisplayMoney(v)}</span>
+        ),
     },
     ...(canDiscount
       ? ([
@@ -1584,7 +1601,7 @@ export function PosPage() {
         />
       ),
     },
-  ], [t, canWrite, cartLocked, batchMode, canDiscount, message]);
+  ], [t, canWrite, cartLocked, batchMode, canDiscount, canPriceOverride, message]);
 
   const handleOpenShift = async (openingCash: number) => {
     if (!warehouseId) {

@@ -217,6 +217,7 @@ export async function loadConnectHandoffForPos(
       unitName: product.unitName,
       quantity: qty,
       unitPrice: product.unitPrice,
+      catalogUnitPrice: product.unitPrice,
       dispensingClass: product.dispensingClass,
       stockAvailable: product.stockAvailable,
       batchHints: product.batchHints,

@@ -813,6 +813,7 @@ internal sealed class SalesRepository
         short priceType,
         SaleDiscountInput? orderDiscount,
         SalesDiscountPolicy discountPolicy,
+        bool allowPriceOverride,
         CancellationToken cancellationToken)
     {
         if (items.Count == 0)
@@ -820,7 +821,7 @@ internal sealed class SalesRepository
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
-        var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, items, priceType, cancellationToken);
+        var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, items, priceType, allowPriceOverride, cancellationToken);
         var pricing = _pricing.PriceSaleOrder(pricedInputs, orderDiscount);
         await EnforceSaleDiscountPolicyAsync(pricing, discountPolicy, cancellationToken: cancellationToken);
         await tx.CommitAsync(cancellationToken);
@@ -831,6 +832,7 @@ internal sealed class SalesRepository
         CreateSaleRequest request,
         Guid userId,
         SalesDiscountPolicy discountPolicy,
+        bool allowPriceOverride,
         CancellationToken cancellationToken)
     {
         if (request.Items.Count == 0)
@@ -845,7 +847,7 @@ internal sealed class SalesRepository
         var shiftId = await ResolveOpenShiftIdAsync(conn, tx, request.WarehouseId);
         var orderNumber = await _inventory.NextDocumentNumberAsync(conn, tx, "SO", "sales_orders", cancellationToken);
 
-        var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, request.Items, request.PriceType, cancellationToken);
+        var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, request.Items, request.PriceType, allowPriceOverride, cancellationToken);
         var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
             conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
         var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
@@ -1033,6 +1035,7 @@ internal sealed class SalesRepository
         CreateSaleRequest request,
         Guid userId,
         SalesDiscountPolicy discountPolicy,
+        bool allowPriceOverride,
         CancellationToken cancellationToken)
     {
         if (request.Items.Count == 0)
@@ -1043,7 +1046,7 @@ internal sealed class SalesRepository
 
         var (branchId, employeeId) = await ResolveSaleContextAsync(conn, tx, request.WarehouseId, request.CustomerId, userId);
         var orderNumber = await _inventory.NextDocumentNumberAsync(conn, tx, "SO", "sales_orders", cancellationToken);
-        var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, request.Items, request.PriceType, cancellationToken);
+        var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, request.Items, request.PriceType, allowPriceOverride, cancellationToken);
         var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
             conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
         var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
@@ -1079,6 +1082,7 @@ internal sealed class SalesRepository
         Guid id,
         UpdateDraftSaleRequest request,
         SalesDiscountPolicy discountPolicy,
+        bool allowPriceOverride,
         CancellationToken cancellationToken)
     {
         if (request.Items.Count == 0)
@@ -1093,7 +1097,7 @@ internal sealed class SalesRepository
         if (status != SalesOrderStatuses.Draft)
             throw new InvalidOperationException("Chỉ sửa được đơn ở trạng thái Nháp.");
 
-        var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, request.Items, request.PriceType, cancellationToken);
+        var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, request.Items, request.PriceType, allowPriceOverride, cancellationToken);
         var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
             conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
         var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
@@ -1148,6 +1152,7 @@ internal sealed class SalesRepository
         Guid id,
         CompleteDraftSaleRequest? request,
         SalesDiscountPolicy discountPolicy,
+        bool allowPriceOverride,
         CancellationToken cancellationToken)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -1182,6 +1187,7 @@ internal sealed class SalesRepository
             const string draftItemsSql = """
                 SELECT
                     product_id AS ProductId, product_unit_id AS ProductUnitId, quantity AS Quantity,
+                    unit_price AS UnitPrice,
                     discount_type AS DiscountType, discount_value AS DiscountValue,
                     prescription_line_id AS PrescriptionLineId
                 FROM sales_order_items WHERE sales_order_id = @OrderId
@@ -1194,7 +1200,8 @@ internal sealed class SalesRepository
                     row.DiscountType,
                     row.DiscountValue,
                     null,
-                    row.PrescriptionLineId))
+                    row.PrescriptionLineId,
+                    row.UnitPrice))
                 .ToList();
         }
 
@@ -1206,7 +1213,7 @@ internal sealed class SalesRepository
         var orderDiscount = syncFromRequest
             ? new SaleDiscountInput(request!.OrderDiscountType, request.OrderDiscountValue)
             : new SaleDiscountInput(header.OrderDiscountType, header.OrderDiscountValue);
-        var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, saleItems, header.PriceType, cancellationToken);
+        var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, saleItems, header.PriceType, allowPriceOverride, cancellationToken);
         var pricing = _pricing.PriceSaleOrder(pricedInputs, orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
@@ -2118,6 +2125,7 @@ internal sealed class SalesRepository
         IDbTransaction tx,
         IReadOnlyList<CreateSaleLineRequest> items,
         short priceType,
+        bool allowPriceOverride,
         CancellationToken cancellationToken)
     {
         var result = new List<(CreateSaleLineRequest, decimal, decimal)>();
@@ -2152,7 +2160,22 @@ internal sealed class SalesRepository
             if (unitPrice is null or <= 0)
                 throw new InvalidOperationException($"Chưa có giá bán cho sản phẩm {line.ProductId}.");
 
-            result.Add((line, unitPrice.Value, unit.ConversionFactor));
+            var catalogPrice = unitPrice.Value;
+            var resolvedPrice = catalogPrice;
+            if (line.UnitPrice is decimal requested && requested > 0)
+            {
+                var rounded = Math.Round(requested, 0, MidpointRounding.AwayFromZero);
+                if (Math.Abs(rounded - catalogPrice) > 0.009m)
+                {
+                    if (!allowPriceOverride)
+                        throw new InvalidOperationException("Không có quyền sửa giá bán trên đơn.");
+                    if (rounded <= 0)
+                        throw new InvalidOperationException("Đơn giá bán phải lớn hơn 0.");
+                    resolvedPrice = rounded;
+                }
+            }
+
+            result.Add((line, resolvedPrice, unit.ConversionFactor));
         }
 
         return result;
@@ -3131,6 +3154,7 @@ internal sealed class SalesRepository
         public Guid ProductId { get; init; }
         public Guid ProductUnitId { get; init; }
         public decimal Quantity { get; init; }
+        public decimal? UnitPrice { get; init; }
         public short? DiscountType { get; init; }
         public decimal? DiscountValue { get; init; }
         public Guid? PrescriptionLineId { get; init; }

@@ -12,7 +12,9 @@ export function useSalesDiscountPolicy() {
       isAdmin || (user?.permissions?.includes('sales.discount.unlimited') ?? false);
     const canDiscount = unlimited || (user?.permissions?.includes('sales.discount') ?? false);
     const maxPercent = unlimited ? 100 : canDiscount ? STAFF_MAX_PERCENT : 0;
+    const canPriceOverride =
+      isAdmin || (user?.permissions?.includes('sales.price.override') ?? false);
 
-    return { canDiscount, unlimited, maxPercent };
+    return { canDiscount, unlimited, maxPercent, canPriceOverride };
   }, [user]);
 }

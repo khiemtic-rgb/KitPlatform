@@ -307,6 +307,8 @@ export interface CartLine {
   unitName: string;
   quantity: number;
   unitPrice: number;
+  /** Giá catalog lúc thêm dòng — dùng phát hiện override */
+  catalogUnitPrice?: number;
   dispensingClass?: string;
   stockAvailable?: number;
   batchHints?: PosBatchHint[];

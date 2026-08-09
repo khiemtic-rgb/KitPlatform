@@ -67,7 +67,7 @@ export function PosPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const user = useAuthStore((s) => s.user);
-  const { canDiscount, maxPercent } = useSalesDiscountPolicy();
+  const { canDiscount, maxPercent, canPriceOverride } = useSalesDiscountPolicy();
 
   const {
     warehouseId,
@@ -82,6 +82,7 @@ export function PosPage() {
     updateQuantity,
     updateBatchLabel,
     updateLineDiscount,
+    updateUnitPrice,
     removeLine,
     editingDraftId,
     editingDraftNumber,
@@ -324,6 +325,7 @@ export function PosPage() {
               unitName: line.unitName ?? '',
               quantity: line.qtyRemaining,
               unitPrice: line.unitPrice,
+              catalogUnitPrice: line.unitPrice,
               stockAvailable: line.stockAvailable,
               dispensingClass: line.lineDispensingClass,
               prescriptionLineId: line.prescriptionLineId,
@@ -384,6 +386,7 @@ export function PosPage() {
         unitName: product.unitName,
         quantity: 1,
         unitPrice: product.unitPrice,
+        catalogUnitPrice: product.unitPrice,
         dispensingClass: product.dispensingClass,
         stockAvailable: product.stockAvailable,
         batchHints: product.batchHints,
@@ -425,6 +428,7 @@ export function PosPage() {
             unitName: item.unitName,
             quantity: 1,
             unitPrice: item.unitPrice,
+            catalogUnitPrice: item.unitPrice,
             dispensingClass: item.dispensingClass,
             stockAvailable: item.stockAvailable,
             batchHints: item.batchHints,
@@ -679,7 +683,23 @@ export function PosPage() {
                 <div className="cart-line-info">
                   <Typography.Text strong>{line.productName}</Typography.Text>
                   <div style={{ fontSize: 12, color: '#64748b' }}>
-                    {line.productCode} · {formatMoney(line.unitPrice)}
+                    {line.productCode}
+                    {canPriceOverride ? (
+                      <>
+                        {' · '}
+                        <InputNumber
+                          size="small"
+                          min={0}
+                          value={line.unitPrice}
+                          controls={false}
+                          style={{ width: 88 }}
+                          onChange={(v) => updateUnitPrice(line.key, Number(v ?? 0))}
+                        />
+                        {' đ'}
+                      </>
+                    ) : (
+                      <> · {formatMoney(line.unitPrice)}</>
+                    )}
                   </div>
                   {showsBatchPicker(batchMode, line.batchHints) ? (
                     <Button

@@ -13,6 +13,8 @@ INSERT INTO permissions (permission_code, permission_name, module_name) VALUES
     ('sales.write', 'Bán hàng', 'Bán hàng'),
     ('sales.discount', 'Chiết khấu bán hàng (tối đa 10%)', 'Bán hàng'),
     ('sales.discount.unlimited', 'Chiết khấu không giới hạn', 'Bán hàng'),
+    ('sales.price.override', 'Sửa giá bán trên đơn POS', 'Bán hàng'),
+    ('sales.price.manage', 'Tổng hợp & đồng bộ giá vượt khung', 'Bán hàng'),
     ('sales.cancel', 'Hủy hóa đơn nháp (Loss gate)', 'Bán hàng'),
     ('sales.customers.merge', 'Gộp khách hàng trùng', 'Bán hàng'),
     ('inventory.approve', 'Duyệt điều chỉnh / xuất nội bộ tồn (Loss gate)', 'Kho'),

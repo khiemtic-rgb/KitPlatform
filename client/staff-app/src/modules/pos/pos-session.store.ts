@@ -34,6 +34,7 @@ interface PosSessionState {
   }) => void;
   clearDraftEdit: () => void;
   updateLineDiscount: (key: string, discountType?: number, discountValue?: number) => void;
+  updateUnitPrice: (key: string, unitPrice: number) => void;
   replaceCart: (lines: CartLine[]) => void;
   addLine: (line: CartLine) => void;
   updateQuantity: (key: string, quantity: number) => void;
@@ -138,6 +139,10 @@ export const usePosSession = create<PosSessionState>((set, get) => ({
             }
           : c,
       ),
+    }),
+  updateUnitPrice: (key, unitPrice) =>
+    set({
+      cart: get().cart.map((c) => (c.key === key ? { ...c, unitPrice } : c)),
     }),
   replaceCart: (lines) => set({ cart: lines }),
   addLine: (line) => {
