@@ -1,81 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-08T13:25:14.474Z",
+  "generatedAt": "2026-08-09T02:34:02.970Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 164,
-    "todayPageViews": 81,
-    "todayRequests": 404,
-    "last24hVisitors": 247,
-    "last24hPageViews": 134,
-    "last24hRequests": 616
+    "todayVisitors": 8,
+    "todayPageViews": 6,
+    "todayRequests": 20,
+    "last24hVisitors": 91,
+    "last24hPageViews": 47,
+    "last24hRequests": 228
   },
   "hourly": [
-    {
-      "time": "2026-08-07T14:00:00Z",
-      "visitors": 60,
-      "requests": 71
-    },
-    {
-      "time": "2026-08-07T15:00:00Z",
-      "visitors": 3,
-      "requests": 44
-    },
-    {
-      "time": "2026-08-07T16:00:00Z",
-      "visitors": 10,
-      "requests": 45
-    },
-    {
-      "time": "2026-08-07T17:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-07T18:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-07T19:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-07T20:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-07T21:00:00Z",
-      "visitors": 1,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-07T22:00:00Z",
-      "visitors": 6,
-      "requests": 16
-    },
-    {
-      "time": "2026-08-07T23:00:00Z",
-      "visitors": 6,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-08T00:00:00Z",
-      "visitors": 1,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-08T01:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-08T02:00:00Z",
-      "visitors": 122,
-      "requests": 271
-    },
     {
       "time": "2026-08-08T03:00:00Z",
       "visitors": 12,
@@ -128,17 +63,76 @@
     },
     {
       "time": "2026-08-08T13:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-08T14:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-08T15:00:00Z",
+      "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-08T16:00:00Z",
+      "visitors": 11,
+      "requests": 16
+    },
+    {
+      "time": "2026-08-08T17:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-08T18:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-08T19:00:00Z",
+      "visitors": 6,
+      "requests": 16
+    },
+    {
+      "time": "2026-08-08T20:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-08T21:00:00Z",
+      "visitors": 8,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-08T22:00:00Z",
+      "visitors": 3,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-08T23:00:00Z",
+      "visitors": 6,
+      "requests": 14
+    },
+    {
+      "time": "2026-08-09T00:00:00Z",
+      "visitors": 4,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-09T01:00:00Z",
+      "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-09T02:00:00Z",
       "visitors": 1,
       "requests": 1
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-02",
-      "visitors": 153,
-      "pageViews": 80,
-      "requests": 624
-    },
     {
       "date": "2026-08-03",
       "visitors": 190,
@@ -171,71 +165,77 @@
     },
     {
       "date": "2026-08-08",
-      "visitors": 216,
-      "pageViews": 98,
-      "requests": 456
+      "visitors": 204,
+      "pageViews": 101,
+      "requests": 488
+    },
+    {
+      "date": "2026-08-09",
+      "visitors": 40,
+      "pageViews": 25,
+      "requests": 74
     }
   ],
   "topPages": [
     {
       "path": "/vi/goi-cha-me/khi-cha-me-bat-dong-cach-day-con-lam-sao-de-khong-bien-ngoi-nha-thanh-toa-an/",
-      "views": 69
+      "views": 60
     },
     {
       "path": "/images/blog/khi-cha-me-bat-dong-trong-nuoi-day-con.png",
-      "views": 49
+      "views": 51
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 33
+      "views": 27
     },
     {
       "path": "/robots.txt",
-      "views": 24
+      "views": 26
     },
     {
       "path": "/vi/goi-cha-me/",
-      "views": 18
+      "views": 20
     },
     {
       "path": "/feed.json",
-      "views": 18
+      "views": 20
     },
     {
       "path": "/sitemap.xml",
       "views": 16
     },
     {
-      "path": "/api/stats",
-      "views": 16
-    },
-    {
       "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 15
-    },
-    {
-      "path": "/images/blog/xay-dung-quy-tac-trong-gia-dinh.png",
-      "views": 14
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
       "views": 13
     },
     {
-      "path": "/_next/static/chunks/app/vi/goi-cha-me/%5Bslug%5D/page-2d062270f9ff84b4.js",
-      "views": 13
-    },
-    {
-      "path": "/images/logo-famixa-icon.png",
-      "views": 13
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 13
+      "path": "/api/stats",
+      "views": 12
     },
     {
       "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 13
+      "views": 12
+    },
+    {
+      "path": "/vi/goi-cha-me/lam-sao-de-con-hop-tac-thay-vi-chong-doi-bi-quyet-chuyen-tu-cuong-nhau-sang-dong-hanh/",
+      "views": 11
+    },
+    {
+      "path": "/_next/static/chunks/app/vi/goi-cha-me/%5Bslug%5D/page-2d062270f9ff84b4.js",
+      "views": 11
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 10
+    },
+    {
+      "path": "/images/logo-famixa-icon.png",
+      "views": 10
+    },
+    {
+      "path": "/images/blog/phat-con-de-khong-bi-ton-thuong.png",
+      "views": 8
     }
   ]
 }
