@@ -173,11 +173,8 @@ export function UnlockPage() {
   return (
     <div className="unlock-page">
       <header className="unlock-topbar">
-        <a className="unlock-brand" href="https://novixa.vn/vi/">
-          <span className="unlock-brand__mark" aria-hidden>
-            N
-          </span>
-          <span>Novixa</span>
+        <a className="unlock-brand" href="https://novixa.vn/vi/" aria-label="Novixa">
+          <img className="unlock-brand__logo" src="/logo.png" alt="Novixa" width="140" height="40" />
         </a>
         <span className="unlock-privacy">
           <Icon d="M7 11V8a5 5 0 0110 0v3M6 11h12v10H6V11z" />

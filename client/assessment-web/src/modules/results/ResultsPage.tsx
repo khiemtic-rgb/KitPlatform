@@ -221,15 +221,17 @@ export function ResultsPage() {
   return (
     <div className="results-page">
       <header className="results-topbar">
-        <a className="results-brand" href="https://novixa.vn/vi/">
-          <span className="results-brand__mark" aria-hidden>
-            N
-          </span>
-          <span>Novixa</span>
+        <a className="results-brand" href="https://novixa.vn/vi/" aria-label="Novixa">
+          <img className="results-brand__logo" src="/logo.png" alt="Novixa" width="140" height="40" />
         </a>
         <button type="button" className="results-pdf-btn" onClick={goUnlock}>
-          <Icon d={ICON_PATH.pdf} />
-          Tải báo cáo (PDF)
+          <span className="results-pdf-btn__icon" aria-hidden>
+            <Icon d={ICON_PATH.pdf} size={16} />
+          </span>
+          <span className="results-pdf-btn__text">
+            <strong>Tải báo cáo PDF</strong>
+            <small>Bản đầy đủ sau khi xác nhận thông tin</small>
+          </span>
         </button>
       </header>
 
