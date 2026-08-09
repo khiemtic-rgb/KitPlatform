@@ -13,6 +13,7 @@ const knowledgeActive =
 const docsActive = path.startsWith(`${base}/tai-lieu`);
 const pharmacyActive = path.startsWith(`${base}/nha-thuoc`);
 const peopleActive = path.startsWith(`${base}/nguoi-dan`);
+const healthCheckActive = path.startsWith(`${base}/health-check`) || path.startsWith(`${base}/spa-health-check`);
 const pricingActive = path.startsWith(`${base}/giai-phap-chi-phi`);
 const contactActive = path.startsWith(`${base}/lien-he`);
 ---
@@ -39,6 +40,7 @@ const contactActive = path.startsWith(`${base}/lien-he`);
     <nav id="site-nav" class="nav" data-nav aria-label="Menu chính">
       <a href={`${base}/`} class:list={{ active: isHome }}>{n.home}</a>
       <a href={`${base}/nha-thuoc/`} class:list={{ active: pharmacyActive && !peopleActive }}>{n.forPharmacy}</a>
+      <a href={`${base}/health-check/`} class:list={{ active: healthCheckActive }}>{n.assess}</a>
       <a href={`${base}/nguoi-dan/`} class:list={{ active: peopleActive }}>{n.forPeople}</a>
       <a href={`${base}/kien-thuc/`} class:list={{ active: knowledgeActive }}>{n.resources}</a>
 

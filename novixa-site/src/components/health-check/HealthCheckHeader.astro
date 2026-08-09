@@ -3,29 +3,56 @@ import { ASSESSMENT, type AssessmentVertical } from '../../lib/assessment';
 
 interface Props {
   vertical?: AssessmentVertical;
+  /** landing = nav + CTA như mockup health-check1 */
+  variant?: 'badge' | 'landing';
 }
 
-const { vertical = 'pharmacy' } = Astro.props;
+const { vertical = 'pharmacy', variant = 'badge' } = Astro.props;
 const pack = ASSESSMENT[vertical];
+const isLanding = variant === 'landing';
+
+const nav = [
+  { href: '/vi/#giai-phap', label: 'Giải pháp' },
+  { href: '/vi/nha-thuoc/', label: 'Tính năng' },
+  { href: pack.landingPath, label: 'Health Check', active: true },
+  { href: '/vi/kien-thuc/', label: 'Kiến thức' },
+  { href: '/vi/ve-chung-toi/', label: 'Về Novixa' },
+];
 ---
 
-<header class="hc-header">
+<header class:list={['hc-header', { 'hc-header--landing': isLanding }]}>
   <div class="hc-container hc-header__inner">
     <a href="/vi/" class="hc-header__logo">
       <img src="/images/logo.png" alt="" width="32" height="32" decoding="async" />
       <span class="hc-header__brand">
         <strong>NOVIXA</strong>
-        <small>{pack.tagline}</small>
+        {!isLanding && <small>{pack.tagline}</small>}
       </span>
     </a>
-    <a class="hc-header__badge" href={pack.surveyUrl}>
-      <span class="hc-header__badge-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
-          <path d="M9 5a3 3 0 00-3 3v1a2 2 0 01-2 2 2 2 0 000 4 2 2 0 012 2v1a3 3 0 003 3"></path>
-          <path d="M15 5a3 3 0 013 3v1a2 2 0 012 2 2 2 0 010 4 2 2 0 01-2 2v1a3 3 0 01-3 3"></path>
-        </svg>
-      </span>
-      {pack.badgeLabel}
-    </a>
+
+    {
+      isLanding ? (
+        <>
+          <nav class="hc-header__nav" aria-label="Menu Health Check">
+            {nav.map((item) => (
+              <a href={item.href} class:list={{ 'is-active': item.active }} aria-current={item.active ? 'page' : undefined}>
+                {item.label}
+              </a>
+            ))}
+          </nav>
+          <a class="hc-header__cta" href={pack.surveyUrl}>Nhận Health Check miễn phí</a>
+        </>
+      ) : (
+        <a class="hc-header__badge" href={pack.surveyUrl}>
+          <span class="hc-header__badge-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+              <path d="M9 5a3 3 0 00-3 3v1a2 2 0 01-2 2 2 2 0 000 4 2 2 0 012 2v1a3 3 0 003 3" />
+              <path d="M15 5a3 3 0 013 3v1a2 2 0 012 2 2 2 0 010 4 2 2 0 01-2 2v1a3 3 0 01-3 3" />
+            </svg>
+          </span>
+          {pack.badgeLabel}
+        </a>
+      )
+    }
   </div>
 </header>
