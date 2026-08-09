@@ -689,11 +689,11 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
                 statusCode: 400);
         }
 
-        if (!string.IsNullOrWhiteSpace(request.RespondentOrgName) && request.RespondentOrgName.Trim().Length < 2)
+        if (string.IsNullOrWhiteSpace(request.RespondentOrgName) || request.RespondentOrgName.Trim().Length < 2)
         {
             throw new AssessmentException(
                 AssessmentErrorCodes.ValidationError,
-                "respondentOrgName tối thiểu 2 ký tự (nếu điền).",
+                "respondentOrgName bắt buộc (tối thiểu 2 ký tự).",
                 statusCode: 400);
         }
 
@@ -715,11 +715,11 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
                 statusCode: 400);
         }
 
-        if (!string.IsNullOrWhiteSpace(request.OrgScale) && !IsValidOrgScale(request.OrgScale))
+        if (string.IsNullOrWhiteSpace(request.OrgScale) || !IsValidOrgScale(request.OrgScale))
         {
             throw new AssessmentException(
                 AssessmentErrorCodes.ValidationError,
-                "orgScale không hợp lệ (micro, small, medium, large, chain).",
+                "orgScale bắt buộc (micro, small, medium, large, chain).",
                 statusCode: 400);
         }
     }

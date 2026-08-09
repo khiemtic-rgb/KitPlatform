@@ -987,3 +987,329 @@ a {
 .page-shell-report .roadmap-block {
   font-size: 1.02rem;
 }
+
+/* —— Unlock / lead capture (mockup chitiet-nhanbaocao) —— */
+.unlock-page {
+  --unlock-teal: #0f766e;
+  --unlock-ink: #0f172a;
+  --unlock-muted: #64748b;
+  --unlock-line: #e2e8f0;
+  --unlock-mint: #ecfdf5;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.25rem 1.1rem 3rem;
+  color: var(--unlock-ink);
+  background:
+    radial-gradient(ellipse 80% 50% at 10% 0%, #ccfbf166, transparent 55%),
+    radial-gradient(ellipse 70% 45% at 90% 10%, #a5f3fc55, transparent 50%),
+    #f8fafc;
+  min-height: 100vh;
+}
+
+.unlock-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.unlock-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--unlock-teal);
+  font-weight: 800;
+  font-size: 1.15rem;
+  text-decoration: none;
+}
+
+.unlock-brand__mark {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  background: var(--unlock-teal);
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.unlock-privacy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--unlock-line);
+  color: var(--unlock-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.unlock-hero {
+  text-align: center;
+  max-width: 44rem;
+  margin: 0 auto 2rem;
+}
+
+.unlock-hero__badge {
+  display: inline-flex;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: #ccfbf1;
+  color: var(--unlock-teal);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.unlock-hero__title {
+  margin: 0.9rem 0 0.65rem;
+  font-size: clamp(1.55rem, 3.2vw, 2.15rem);
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.unlock-hero__title em {
+  font-style: normal;
+  color: var(--unlock-teal);
+}
+
+.unlock-hero__sub {
+  margin: 0;
+  color: var(--unlock-muted);
+  font-size: 1rem;
+}
+
+.unlock-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.unlock-panel__title {
+  margin: 0 0 1rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.unlock-benefits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.unlock-benefits li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.unlock-benefits__icon {
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #99f6e4;
+  color: var(--unlock-teal);
+  flex-shrink: 0;
+}
+
+.unlock-benefits strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 0.15rem;
+}
+
+.unlock-benefits p {
+  margin: 0;
+  color: var(--unlock-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.unlock-commit {
+  margin-top: 1.35rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  background: var(--unlock-mint);
+  border: 1px solid #99f6e4;
+}
+
+.unlock-commit h3 {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  color: var(--unlock-teal);
+}
+
+.unlock-commit ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.unlock-commit li {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  font-size: 0.86rem;
+  color: #134e4a;
+}
+
+.unlock-commit li span {
+  color: var(--unlock-teal);
+  font-weight: 800;
+}
+
+.unlock-art {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  margin: 1.25rem auto 0;
+  height: auto;
+}
+
+.unlock-card {
+  background: #fff;
+  border: 1px solid var(--unlock-line);
+  border-radius: 18px;
+  padding: 1.35rem 1.35rem 1.5rem;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.06);
+}
+
+.unlock-section + .unlock-section {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.unlock-section__title {
+  margin: 0 0 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--unlock-ink);
+}
+
+.unlock-card .ant-form-item {
+  margin-bottom: 1rem;
+}
+
+.unlock-card .ant-form-item-extra {
+  font-size: 0.78rem;
+  color: var(--unlock-muted);
+  margin-top: 0.25rem;
+}
+
+.unlock-card .ant-input,
+.unlock-card .ant-input-affix-wrapper,
+.unlock-card textarea.ant-input {
+  border-radius: 10px;
+}
+
+.unlock-scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.unlock-scale__chip {
+  border: 1.5px solid var(--unlock-line);
+  background: #fff;
+  color: #334155;
+  border-radius: 999px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.unlock-scale__chip:hover {
+  border-color: #5eead4;
+  color: var(--unlock-teal);
+}
+
+.unlock-scale__chip.is-selected {
+  border-color: var(--unlock-teal);
+  background: var(--unlock-mint);
+  color: var(--unlock-teal);
+}
+
+.unlock-submit {
+  height: 3rem !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  margin-top: 0.25rem;
+}
+
+.unlock-eta {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: var(--unlock-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.unlock-eta svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  color: var(--unlock-teal);
+}
+
+.unlock-footer {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.35rem;
+  border-top: 1px solid var(--unlock-line);
+}
+
+.unlock-footer strong {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.unlock-footer p {
+  margin: 0;
+  color: var(--unlock-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .unlock-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .unlock-art {
+    display: none;
+  }
+
+  .unlock-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .unlock-privacy {
+    display: none;
+  }
+}
+
