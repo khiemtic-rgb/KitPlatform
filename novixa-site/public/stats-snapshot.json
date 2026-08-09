@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-09T13:17:04.511Z",
+  "generatedAt": "2026-08-09T19:02:45.397Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 436,
-    "todayPageViews": 392,
-    "todayRequests": 1548,
-    "last24hVisitors": 622,
-    "last24hPageViews": 532,
-    "last24hRequests": 2098
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 566,
+    "last24hPageViews": 460,
+    "last24hRequests": 1924
   },
   "hourly": [
-    {
-      "time": "2026-08-08T14:00:00Z",
-      "visitors": 69,
-      "requests": 132
-    },
-    {
-      "time": "2026-08-08T15:00:00Z",
-      "visitors": 69,
-      "requests": 114
-    },
-    {
-      "time": "2026-08-08T16:00:00Z",
-      "visitors": 83,
-      "requests": 137
-    },
-    {
-      "time": "2026-08-08T17:00:00Z",
-      "visitors": 16,
-      "requests": 20
-    },
-    {
-      "time": "2026-08-08T18:00:00Z",
-      "visitors": 10,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-08T19:00:00Z",
-      "visitors": 5,
-      "requests": 18
-    },
     {
       "time": "2026-08-08T20:00:00Z",
       "visitors": 10,
@@ -128,17 +98,36 @@
     },
     {
       "time": "2026-08-09T13:00:00Z",
-      "visitors": 7,
-      "requests": 7
+      "visitors": 34,
+      "requests": 66
+    },
+    {
+      "time": "2026-08-09T14:00:00Z",
+      "visitors": 72,
+      "requests": 102
+    },
+    {
+      "time": "2026-08-09T15:00:00Z",
+      "visitors": 16,
+      "requests": 28
+    },
+    {
+      "time": "2026-08-09T16:00:00Z",
+      "visitors": 31,
+      "requests": 35
+    },
+    {
+      "time": "2026-08-09T17:00:00Z",
+      "visitors": 13,
+      "requests": 23
+    },
+    {
+      "time": "2026-08-09T18:00:00Z",
+      "visitors": 6,
+      "requests": 10
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-03",
-      "visitors": 473,
-      "pageViews": 956,
-      "requests": 1557
-    },
     {
       "date": "2026-08-04",
       "visitors": 516,
@@ -171,54 +160,46 @@
     },
     {
       "date": "2026-08-09",
-      "visitors": 436,
-      "pageViews": 392,
-      "requests": 1548
+      "visitors": 542,
+      "pageViews": 433,
+      "requests": 1806
     }
   ],
   "topPages": [
-    {
-      "path": "/brand/xuanhoa-logo.png",
-      "views": 173
-    },
     {
       "path": "/vi/tin-tuc/chuan-hoa-quy-trinh-tiep-don-khach-nen-mong-tao-dung-niem-tin-tai-nha-thuoc-hien-dai/",
       "views": 157
     },
     {
-      "path": "/",
-      "views": 106
+      "path": "/brand/xuanhoa-logo.png",
+      "views": 110
     },
     {
-      "path": "/cdn-cgi/rum",
-      "views": 95
+      "path": "/",
+      "views": 108
     },
     {
       "path": "/images/tin-tuc/chuan-hoa-quy-trinh-tiep-don-khach.png",
-      "views": 83
+      "views": 92
     },
     {
-      "path": "/vi/health-check/",
+      "path": "/cdn-cgi/rum",
       "views": 76
     },
     {
       "path": "/robots.txt",
-      "views": 53
+      "views": 52
     },
     {
       "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
-      "views": 49
-    },
-    {
-      "path": "/images/tin-tuc/nhung-loi-thuong-gap-khach-hang.png",
-      "views": 30
-    },
-    {
-      "path": "/api/stats",
-      "views": 29
+      "views": 47
     },
     {
       "path": "/vi/",
+      "views": 29
+    },
+    {
+      "path": "/images/tin-tuc/nhung-loi-thuong-gap-khach-hang.png",
       "views": 27
     },
     {
@@ -226,16 +207,24 @@
       "views": 26
     },
     {
+      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
+      "views": 25
+    },
+    {
       "path": "/favicon.svg",
+      "views": 25
+    },
+    {
+      "path": "/api/stats",
       "views": 23
     },
     {
-      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
-      "views": 22
+      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-gi-moi-ngay.png",
+      "views": 23
     },
     {
-      "path": "/feed.json",
-      "views": 19
+      "path": "/vi/health-check/",
+      "views": 22
     }
   ]
 }
