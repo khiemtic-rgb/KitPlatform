@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-08T19:06:26.609Z",
+  "generatedAt": "2026-08-09T02:34:02.970Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
     "todayVisitors": 8,
-    "todayPageViews": 0,
-    "todayRequests": 8,
-    "last24hVisitors": 204,
-    "last24hPageViews": 98,
-    "last24hRequests": 479
+    "todayPageViews": 6,
+    "todayRequests": 20,
+    "last24hVisitors": 91,
+    "last24hPageViews": 47,
+    "last24hRequests": 228
   },
   "hourly": [
-    {
-      "time": "2026-08-07T20:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-07T21:00:00Z",
-      "visitors": 1,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-07T22:00:00Z",
-      "visitors": 6,
-      "requests": 16
-    },
-    {
-      "time": "2026-08-07T23:00:00Z",
-      "visitors": 6,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-08T00:00:00Z",
-      "visitors": 1,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-08T01:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-08T02:00:00Z",
-      "visitors": 122,
-      "requests": 271
-    },
     {
       "time": "2026-08-08T03:00:00Z",
       "visitors": 12,
@@ -128,8 +93,43 @@
     },
     {
       "time": "2026-08-08T19:00:00Z",
+      "visitors": 6,
+      "requests": 16
+    },
+    {
+      "time": "2026-08-08T20:00:00Z",
       "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-08-08T21:00:00Z",
+      "visitors": 8,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-08T22:00:00Z",
+      "visitors": 3,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-08T23:00:00Z",
+      "visitors": 6,
+      "requests": 14
+    },
+    {
+      "time": "2026-08-09T00:00:00Z",
+      "visitors": 4,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-09T01:00:00Z",
+      "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-09T02:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -165,41 +165,41 @@
     },
     {
       "date": "2026-08-08",
-      "visitors": 188,
-      "pageViews": 82,
-      "requests": 442
+      "visitors": 204,
+      "pageViews": 101,
+      "requests": 488
     },
     {
       "date": "2026-08-09",
-      "visitors": 8,
-      "pageViews": 0,
-      "requests": 8
+      "visitors": 40,
+      "pageViews": 25,
+      "requests": 74
     }
   ],
   "topPages": [
     {
       "path": "/vi/goi-cha-me/khi-cha-me-bat-dong-cach-day-con-lam-sao-de-khong-bien-ngoi-nha-thanh-toa-an/",
-      "views": 69
+      "views": 60
     },
     {
       "path": "/images/blog/khi-cha-me-bat-dong-trong-nuoi-day-con.png",
       "views": 51
     },
     {
-      "path": "/robots.txt",
-      "views": 29
-    },
-    {
       "path": "/cdn-cgi/rum",
       "views": 27
     },
     {
-      "path": "/feed.json",
-      "views": 18
+      "path": "/robots.txt",
+      "views": 26
     },
     {
       "path": "/vi/goi-cha-me/",
-      "views": 18
+      "views": 20
+    },
+    {
+      "path": "/feed.json",
+      "views": 20
     },
     {
       "path": "/sitemap.xml",
@@ -210,19 +210,23 @@
       "views": 13
     },
     {
+      "path": "/api/stats",
+      "views": 12
+    },
+    {
       "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
       "views": 12
     },
     {
-      "path": "/api/stats",
-      "views": 12
+      "path": "/vi/goi-cha-me/lam-sao-de-con-hop-tac-thay-vi-chong-doi-bi-quyet-chuyen-tu-cuong-nhau-sang-dong-hanh/",
+      "views": 11
     },
     {
       "path": "/_next/static/chunks/app/vi/goi-cha-me/%5Bslug%5D/page-2d062270f9ff84b4.js",
       "views": 11
     },
     {
-      "path": "/images/blog/xay-dung-quy-tac-trong-gia-dinh.png",
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
       "views": 10
     },
     {
@@ -230,12 +234,8 @@
       "views": 10
     },
     {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 10
-    },
-    {
-      "path": "/images/blog/vi-sao-con-khong-nghe-loi.png",
-      "views": 7
+      "path": "/images/blog/phat-con-de-khong-bi-ton-thuong.png",
+      "views": 8
     }
   ]
 }
