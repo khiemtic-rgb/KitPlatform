@@ -1,7 +1,8 @@
-import { Link } from 'react-router-dom';
 import { Button, Typography } from 'antd';
 
 const { Title, Paragraph } = Typography;
+
+const NOVIXA_HOME = 'https://novixa.vn/vi/';
 
 export function ThankYouPage() {
   return (
@@ -10,8 +11,8 @@ export function ThankYouPage() {
       <Paragraph>
         Novixa sẽ liên hệ nếu bạn đã gửi thông tin. Bạn có thể làm lại khảo sát bất cứ lúc nào.
       </Paragraph>
-      <Button type="primary">
-        <Link to="/">Về trang chủ</Link>
+      <Button type="primary" href={NOVIXA_HOME}>
+        Về trang chủ Novixa
       </Button>
     </div>
   );
