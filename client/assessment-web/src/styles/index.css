@@ -1308,6 +1308,12 @@ a {
   min-height: 44px;
 }
 
+.unlock-card textarea.ant-input {
+  min-height: 64px !important;
+  max-height: 96px;
+  resize: vertical;
+}
+
 .unlock-card .ant-input-affix-wrapper-lg {
   padding-inline: 12px;
 }

@@ -348,7 +348,7 @@ export function UnlockPage() {
                 extra="Ví dụ: muốn tối ưu tồn kho, tăng doanh thu, quản lý nhân sự..."
               >
                 <Input.TextArea
-                  rows={4}
+                  rows={2}
                   placeholder="Mô tả ngắn về nhà thuốc hoặc vấn đề bạn đang quan tâm..."
                 />
               </Form.Item>
@@ -373,7 +373,7 @@ export function UnlockPage() {
               className="unlock-submit"
               icon={<Icon d="M4 12l16-7-7 16-2-6-7-3z" size={18} />}
             >
-              Gửi &amp; xem báo cáo
+              Nhận &amp; xem báo cáo
             </Button>
 
             <div className="unlock-eta">
