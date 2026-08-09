@@ -248,7 +248,7 @@ internal sealed class ReportsService : IReportsService
     public async Task<ReportTableResultDto> RunProcurementPayablesSnapshotAsync(
         CancellationToken cancellationToken = default)
     {
-        var payables = await _payables.GetSummaryAsync(cancellationToken);
+        var payables = await _payables.GetSummaryAsync(null, cancellationToken);
         var rows = payables.Select(p => new Dictionary<string, object?>
         {
             ["supplierCode"] = p.SupplierCode,

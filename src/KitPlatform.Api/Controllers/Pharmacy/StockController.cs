@@ -20,20 +20,22 @@ public sealed class StockController : ControllerBase
         [FromQuery] Guid? warehouseId,
         [FromQuery] Guid? productId,
         [FromQuery] string? search,
+        [FromQuery] string? expiry,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default) =>
-        Ok(await _inventory.GetStockBatchesAsync(warehouseId, productId, search, page, pageSize, cancellationToken));
+        Ok(await _inventory.GetStockBatchesAsync(warehouseId, productId, search, expiry, page, pageSize, cancellationToken));
 
     [HttpGet("products")]
     [Authorize(Policy = InventoryPolicies.Read)]
     public async Task<ActionResult<PagedStockProductsResult>> Products(
         [FromQuery] Guid? warehouseId,
         [FromQuery] string? search,
+        [FromQuery] string? expiry,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default) =>
-        Ok(await _inventory.GetStockProductsAsync(warehouseId, search, page, pageSize, cancellationToken));
+        Ok(await _inventory.GetStockProductsAsync(warehouseId, search, expiry, page, pageSize, cancellationToken));
 
     [HttpGet("low-stock")]
     [Authorize(Policy = InventoryPolicies.Read)]

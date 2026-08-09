@@ -10,6 +10,8 @@ import {
   fetchStockProducts,
   fetchTransfer,
   fetchTransfers,
+  receiveTransfer,
+  shipTransfer,
 } from '@/shared/api/inventory.api';
 import { fetchWarehouses } from '@/shared/api/sales.api';
 import type { TransferDetail, TransferListItem } from '@/shared/api/inventory.types';
@@ -18,7 +20,10 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import { StaffPageHeader } from '@/shared/layout/StaffPageHeader';
 import { usePosSession } from '@/modules/pos/pos-session.store';
 import {
+  canCancelTransfer,
   canCompleteTransfer,
+  canReceiveTransfer,
+  canShipTransfer,
   transferStatusColor,
   transferStatusLabel,
 } from '@/modules/transfers/transfer-labels';
@@ -188,12 +193,18 @@ export function TransfersPage() {
   const posWarehouseId = usePosSession((s) => s.warehouseId);
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<TransferListItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<number | undefined>();
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<TransferDetail | null>(null);
   const [saving, setSaving] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [receiveOpen, setReceiveOpen] = useState(false);
+  const [receiveNotes, setReceiveNotes] = useState('');
+  const [receiveQtyByItem, setReceiveQtyByItem] = useState<Record<string, number>>({});
   const [form] = Form.useForm();
   const fromWarehouseId = Form.useWatch('fromWarehouseId', form) as string | undefined;
   const prevFromWarehouseRef = useRef<string | undefined>(undefined);
@@ -201,15 +212,19 @@ export function TransfersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [transfers, wh] = await Promise.all([fetchTransfers(), fetchWarehouses()]);
-      setItems(transfers);
+      const [paged, wh] = await Promise.all([
+        fetchTransfers({ status: statusFilter, page, pageSize: 20 }),
+        fetchWarehouses(),
+      ]);
+      setItems(paged.items);
+      setTotal(paged.total);
       setWarehouses(wh);
     } catch (error) {
       message.error(apiErrorMessage(error, 'Không tải được phiếu chuyển kho'));
     } finally {
       setLoading(false);
     }
-  }, [message]);
+  }, [message, statusFilter, page]);
 
   useEffect(() => {
     void load();
@@ -280,17 +295,76 @@ export function TransfersPage() {
     }
   };
 
-  const handleComplete = async (id: string) => {
+  const handleShip = async (id: string) => {
     setCompleting(true);
     try {
-      await completeTransfer(id);
-      message.success('Đã chốt chuyển kho');
+      await shipTransfer(id);
+      message.success('Đã gửi hàng — chờ kho nhận xác nhận');
       if (detail?.id === id) {
         setDetail(await fetchTransfer(id));
       }
       await load();
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không chốt được phiếu'));
+      message.error(apiErrorMessage(error, 'Không gửi được phiếu'));
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  const openReceive = (doc: TransferDetail) => {
+    const qty: Record<string, number> = {};
+    for (const line of doc.items) {
+      qty[line.id] = line.quantity;
+    }
+    setReceiveQtyByItem(qty);
+    setReceiveNotes('');
+    setReceiveOpen(true);
+  };
+
+  const handleReceiveConfirm = async () => {
+    if (!detail) return;
+    const hasShortage = detail.items.some(
+      (line) => (receiveQtyByItem[line.id] ?? line.quantity) < line.quantity,
+    );
+    if (hasShortage && !receiveNotes.trim()) {
+      message.warning('Khi nhận thiếu phải nhập ghi chú lý do lệch');
+      return;
+    }
+    setCompleting(true);
+    try {
+      const updated = await receiveTransfer(detail.id, {
+        notes: receiveNotes.trim() || undefined,
+        items: detail.items.map((line) => ({
+          transferItemId: line.id,
+          receivedQuantity: receiveQtyByItem[line.id] ?? line.quantity,
+        })),
+      });
+      setDetail(updated);
+      setReceiveOpen(false);
+      message.success(
+        hasShortage
+          ? 'Đã nhận có lệch — phần thiếu đã hoàn về kho xuất'
+          : 'Đã xác nhận nhận hàng',
+      );
+      await load();
+    } catch (error) {
+      message.error(apiErrorMessage(error, 'Không nhận được phiếu'));
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  const handleComplete = async (id: string) => {
+    setCompleting(true);
+    try {
+      await completeTransfer(id);
+      message.success('Đã gửi và nhận đủ (một bước)');
+      if (detail?.id === id) {
+        setDetail(await fetchTransfer(id));
+      }
+      await load();
+    } catch (error) {
+      message.error(apiErrorMessage(error, 'Không hoàn tất được phiếu'));
     } finally {
       setCompleting(false);
     }
@@ -304,6 +378,7 @@ export function TransfersPage() {
       if (detail?.id === id) {
         setDetail(await fetchTransfer(id));
       }
+      setReceiveOpen(false);
       await load();
     } catch (error) {
       message.error(apiErrorMessage(error, 'Không hủy được phiếu'));
@@ -322,13 +397,29 @@ export function TransfersPage() {
       <StaffPageHeader title="Chuyển kho" backTo="/" />
       <main className="staff-body">
         <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 12 }}>
-          Quy trình: tra tồn kho nguồn → tạo phiếu → chốt hoàn tất → bán tại kho đích.
+          Quy trình: tạo phiếu → Gửi (trừ kho xuất) → Nhận (cộng kho nhận). Cùng quản lý 2 kho có thể Gửi + nhận đủ một bước.
         </Typography.Text>
 
         <Space style={{ marginBottom: 12, width: '100%' }} wrap>
           <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
             Tải lại
           </Button>
+          <Select
+            allowClear
+            placeholder="Trạng thái"
+            style={{ minWidth: 140 }}
+            value={statusFilter}
+            onChange={(v) => {
+              setStatusFilter(v);
+              setPage(1);
+            }}
+            options={[
+              { value: 1, label: 'Chờ gửi' },
+              { value: 2, label: 'Đang chuyển' },
+              { value: 3, label: 'Hoàn tất' },
+              { value: 4, label: 'Đã hủy' },
+            ]}
+          />
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={warehouses.length < 2}>
             Tạo phiếu
           </Button>
@@ -352,7 +443,11 @@ export function TransfersPage() {
             >
               <div className="transfer-list-item-top">
                 <Typography.Text strong>{item.transferNumber}</Typography.Text>
-                <Tag color={transferStatusColor(item.status)}>{transferStatusLabel(item.status)}</Tag>
+                <Space size={4}>
+                  <Tag color={transferStatusColor(item.status, item.hasShortage)}>
+                    {transferStatusLabel(item.status, item.hasShortage)}
+                  </Tag>
+                </Space>
               </div>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 {item.fromWarehouseName} → {item.toWarehouseName}
@@ -363,6 +458,23 @@ export function TransfersPage() {
             </button>
           ))
         )}
+
+        {total > 20 ? (
+          <Space style={{ marginTop: 12 }}>
+            <Button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              Trước
+            </Button>
+            <Typography.Text type="secondary">
+              Trang {page}/{Math.max(1, Math.ceil(total / 20))}
+            </Typography.Text>
+            <Button
+              disabled={page >= Math.ceil(total / 20)}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Sau
+            </Button>
+          </Space>
+        ) : null}
       </main>
 
       <Drawer
@@ -422,14 +534,26 @@ export function TransfersPage() {
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         extra={
-          detail && canCompleteTransfer(detail.status) ? (
-            <Space>
+          detail && canCancelTransfer(detail.status) ? (
+            <Space wrap>
               <Button danger loading={completing} icon={<StopOutlined />} onClick={() => void handleCancel(detail.id)}>
                 Hủy
               </Button>
-              <Button type="primary" loading={completing} onClick={() => void handleComplete(detail.id)}>
-                Chốt hoàn tất
-              </Button>
+              {canShipTransfer(detail.status) ? (
+                <Button loading={completing} onClick={() => void handleShip(detail.id)}>
+                  Gửi hàng
+                </Button>
+              ) : null}
+              {canCompleteTransfer(detail.status) ? (
+                <Button type="primary" loading={completing} onClick={() => void handleComplete(detail.id)}>
+                  Gửi + nhận đủ
+                </Button>
+              ) : null}
+              {canReceiveTransfer(detail.status) ? (
+                <Button type="primary" loading={completing} onClick={() => openReceive(detail)}>
+                  Nhận hàng
+                </Button>
+              ) : null}
             </Space>
           ) : null
         }
@@ -445,23 +569,95 @@ export function TransfersPage() {
             <p>
               <strong>Trạng thái:</strong>{' '}
               <Tag color={transferStatusColor(detail.status)}>{transferStatusLabel(detail.status)}</Tag>
+              {detail.items.some(
+                (line) => line.receivedQuantity != null && line.receivedQuantity < line.quantity,
+              ) ? (
+                <Tag color="orange" style={{ marginLeft: 6 }}>
+                  Có nhận thiếu
+                </Tag>
+              ) : null}
             </p>
             {detail.notes ? (
               <p>
                 <strong>Ghi chú:</strong> {detail.notes}
               </p>
             ) : null}
+            {detail.receiveNotes ? (
+              <p>
+                <strong>Ghi chú nhận thiếu:</strong> {detail.receiveNotes}
+              </p>
+            ) : null}
             <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
               Chi tiết hàng
             </Typography.Text>
+            {detail.items.map((line) => {
+              const short =
+                line.receivedQuantity != null && line.receivedQuantity < line.quantity;
+              return (
+                <div key={line.id} className="cart-line" style={{ marginBottom: 8 }}>
+                  <Typography.Text strong>{line.productName}</Typography.Text>
+                  <Typography.Text
+                    type={short ? 'danger' : 'secondary'}
+                    style={{ display: 'block', fontSize: 12 }}
+                  >
+                    {line.productCode} · Lô {line.batchNumber} · SL phiếu {line.quantity}
+                    {line.receivedQuantity != null
+                      ? ` · SL nhận ${line.receivedQuantity}${short ? ' (thiếu)' : ''}`
+                      : ''}
+                  </Typography.Text>
+                </div>
+              );
+            })}
+          </>
+        ) : null}
+      </Drawer>
+
+      <Drawer
+        title="Xác nhận nhận hàng"
+        placement="bottom"
+        height="88%"
+        open={receiveOpen}
+        onClose={() => setReceiveOpen(false)}
+        extra={
+          <Button type="primary" loading={completing} onClick={() => void handleReceiveConfirm()}>
+            Xác nhận nhận
+          </Button>
+        }
+      >
+        {detail ? (
+          <>
+            <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 12 }}>
+              Nhập SL thực nhận (≤ SL phiếu). Phần thiếu hoàn về kho xuất; phải ghi chú khi thiếu.
+            </Typography.Text>
             {detail.items.map((line) => (
-              <div key={line.id} className="cart-line" style={{ marginBottom: 8 }}>
+              <div key={line.id} className="cart-line" style={{ marginBottom: 12 }}>
                 <Typography.Text strong>{line.productName}</Typography.Text>
-                <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
-                  {line.productCode} · Lô {line.batchNumber} · SL {line.quantity}
+                <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 6 }}>
+                  Lô {line.batchNumber} · SL phiếu {line.quantity}
                 </Typography.Text>
+                <InputNumber
+                  min={0}
+                  max={line.quantity}
+                  value={receiveQtyByItem[line.id] ?? line.quantity}
+                  onChange={(v) =>
+                    setReceiveQtyByItem((prev) => ({
+                      ...prev,
+                      [line.id]: typeof v === 'number' ? v : 0,
+                    }))
+                  }
+                  style={{ width: '100%' }}
+                  addonBefore="SL nhận"
+                />
               </div>
             ))}
+            <Form.Item label="Ghi chú lệch / nhận thiếu" style={{ marginTop: 8 }}>
+              <Input.TextArea
+                rows={3}
+                value={receiveNotes}
+                onChange={(e) => setReceiveNotes(e.target.value)}
+                placeholder="VD: Thiếu 2 vỉ khi kiểm lại"
+              />
+            </Form.Item>
           </>
         ) : null}
       </Drawer>

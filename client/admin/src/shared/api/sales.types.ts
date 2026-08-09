@@ -371,6 +371,8 @@ export interface CustomerPaymentListFilters {
   status?: number;
   dateFrom?: string;
   dateTo?: string;
+  paymentMethod?: number;
+  warehouseId?: string;
 }
 
 export type CustomerReceivablesAging = {

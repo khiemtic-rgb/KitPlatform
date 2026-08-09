@@ -7,6 +7,7 @@ import {
   Card,
   DatePicker,
   Descriptions,
+  Input,
   Select,
   Space,
   Table,
@@ -44,6 +45,10 @@ import { formatDisplayDate } from '@/shared/utils/date';
 
 const { RangePicker } = DatePicker;
 
+function todayRange(): [Dayjs, Dayjs] {
+  return [dayjs().startOf('day'), dayjs().endOf('day')];
+}
+
 export function SalesShiftReportPage() {
   const { t } = useTranslation('sales', { keyPrefix: 'shiftReport' });
   const { t: tPos } = useTranslation('sales', { keyPrefix: 'pos.messages' });
@@ -54,15 +59,19 @@ export function SalesShiftReportPage() {
   const [openShift, setOpenShift] = useState<SalesShiftDetail | null>(null);
   const [shifts, setShifts] = useState<SalesShiftListItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [openModal, setOpenModal] = useState(false);
   const [closeModal, setCloseModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [batchMode, setBatchMode] = useState<TenantBatchModeValue>('suggest');
 
-  const [range, setRange] = useState<[Dayjs, Dayjs]>(() => [
-    dayjs().startOf('day'),
-    dayjs().endOf('day'),
-  ]);
+  const [historySearchInput, setHistorySearchInput] = useState('');
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyWarehouseId, setHistoryWarehouseId] = useState<string | undefined>();
+  const [historyStatus, setHistoryStatus] = useState<number | undefined>();
+  const [historyDateRange, setHistoryDateRange] = useState<[Dayjs, Dayjs] | null>(null);
+
+  const [range, setRange] = useState<[Dayjs, Dayjs]>(() => todayRange());
   const [rangeSummary, setRangeSummary] = useState<SalesShiftSummary | null>(null);
   const [rangeLoading, setRangeLoading] = useState(false);
 
@@ -80,6 +89,28 @@ export function SalesShiftReportPage() {
     })();
   }, []);
 
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const hasSearch = Boolean(historySearch.trim());
+      const useDate = !hasSearch && historyDateRange != null;
+      setShifts(
+        await fetchSalesShifts({
+          search: historySearch.trim() || undefined,
+          status: historyStatus,
+          warehouseId: historyWarehouseId,
+          from: useDate ? historyDateRange![0].startOf('day').toISOString() : undefined,
+          to: useDate ? historyDateRange![1].startOf('day').add(1, 'day').toISOString() : undefined,
+          limit: 100,
+        }),
+      );
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('messages.loadHistoryFailed')));
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [historySearch, historyStatus, historyWarehouseId, historyDateRange, t, message]);
+
   const loadShiftState = useCallback(async () => {
     if (!warehouseId) return;
     setLoading(true);
@@ -88,19 +119,26 @@ export function SalesShiftReportPage() {
     } catch (error) {
       setOpenShift(null);
       message.error(apiErrorMessage(error, t('messages.loadCurrentFailed')));
-    }
-    try {
-      setShifts(await fetchSalesShifts(30));
-    } catch (error) {
-      message.error(apiErrorMessage(error, t('messages.loadHistoryFailed')));
     } finally {
       setLoading(false);
     }
-  }, [warehouseId, t]);
+  }, [warehouseId, t, message]);
 
   useEffect(() => {
     void loadShiftState();
   }, [loadShiftState]);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
+
+  const resetHistoryFilters = () => {
+    setHistorySearchInput('');
+    setHistorySearch('');
+    setHistoryWarehouseId(undefined);
+    setHistoryStatus(undefined);
+    setHistoryDateRange(null);
+  };
 
   const loadRangeSummary = useCallback(async () => {
     setRangeLoading(true);
@@ -112,7 +150,7 @@ export function SalesShiftReportPage() {
     } finally {
       setRangeLoading(false);
     }
-  }, [range, t]);
+  }, [range, t, message]);
 
   useEffect(() => {
     void loadRangeSummary();
@@ -129,7 +167,7 @@ export function SalesShiftReportPage() {
       setOpenShift(shift);
       setOpenModal(false);
       message.success(tPos('shiftOpened', { number: shift.shiftNumber }));
-      await loadShiftState();
+      await Promise.all([loadShiftState(), loadHistory()]);
     } catch (error) {
       if (isShiftAlreadyOpenError(error)) {
         const existing = await resolveOpenShiftForWarehouse(warehouseId);
@@ -155,7 +193,7 @@ export function SalesShiftReportPage() {
       setCloseModal(false);
       setOpenShift(null);
       message.success(t('messages.closeSuccess'));
-      await loadShiftState();
+      await Promise.all([loadShiftState(), loadHistory()]);
     } catch (error) {
       message.error(apiErrorMessage(error, t('messages.closeFailed')));
     } finally {
@@ -321,10 +359,65 @@ export function SalesShiftReportPage() {
       </Card>
 
       <Card title={t('history.title')} style={{ marginTop: 16 }}>
+        <Space wrap style={{ marginBottom: 12, width: '100%' }} size={8}>
+          <Input.Search
+            allowClear
+            placeholder={t('history.filters.searchPlaceholder')}
+            value={historySearchInput}
+            onChange={(e) => setHistorySearchInput(e.target.value)}
+            onSearch={(v) => setHistorySearch(v.trim())}
+            style={{ width: 200 }}
+          />
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder={t('history.filters.warehouse')}
+            style={{ width: 200 }}
+            value={historyWarehouseId}
+            onChange={setHistoryWarehouseId}
+            options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
+          />
+          <Select
+            allowClear
+            placeholder={t('history.filters.status')}
+            style={{ width: 140 }}
+            value={historyStatus}
+            onChange={setHistoryStatus}
+            options={[
+              { value: SALES_SHIFT_STATUSES.Open, label: t('currentShift.statusOpen') },
+              { value: SALES_SHIFT_STATUSES.Closed, label: t('currentShift.statusClosed') },
+            ]}
+          />
+          <RangePicker
+            allowClear
+            value={historyDateRange}
+            onChange={(value) => {
+              if (value?.[0] && value[1]) {
+                setHistoryDateRange([value[0].startOf('day'), value[1].endOf('day')]);
+              } else {
+                setHistoryDateRange(null);
+              }
+            }}
+            style={{ width: 260 }}
+            format="DD/MM/YYYY"
+            placeholder={[t('history.filters.dateFrom'), t('history.filters.dateTo')]}
+          />
+          <Button onClick={resetHistoryFilters}>{t('history.filters.clear')}</Button>
+          <Button
+            type="primary"
+            ghost
+            icon={<ReloadOutlined />}
+            loading={historyLoading}
+            onClick={() => void loadHistory()}
+          >
+            {t('history.filters.reload')}
+          </Button>
+        </Space>
         <Table
           rowKey="id"
           size="small"
-          loading={loading}
+          loading={historyLoading}
           dataSource={shifts}
           columns={shiftColumns}
           pagination={{ pageSize: 10 }}

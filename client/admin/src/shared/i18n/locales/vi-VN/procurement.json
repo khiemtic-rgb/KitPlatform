@@ -462,6 +462,23 @@
   "supplierPayables": {
     "title": "Công nợ nhà cung cấp",
     "intro": "Công nợ tính theo thành tiền dòng trên phiếu nhập (trước thuế GTGT). Tổng đơn đặt hàng sau thuế chỉ mang tính tham chiếu. Thanh toán không gắn phiếu nhập được bù trừ theo thứ tự nhập cũ nhất.",
+    "searchPlaceholder": "Mã hoặc tên NCC",
+    "filters": {
+      "warehouse": "Kho",
+      "agingAll": "Mọi tuổi nợ",
+      "agingCurrent": "Có nợ 0–30 ngày",
+      "aging31To60": "Có nợ 31–60 ngày",
+      "aging61To90": "Có nợ 61–90 ngày",
+      "agingOver90": "Có nợ > 90 ngày",
+      "balanceAll": "Mọi số dư",
+      "balancePayable": "Còn phải trả > 0",
+      "balanceCredit": "Có trả chưa phân bổ",
+      "balanceOver100k": "Phải trả ≥ 100.000",
+      "balanceOver500k": "Phải trả ≥ 500.000",
+      "balanceOver1m": "Phải trả ≥ 1.000.000",
+      "clear": "Xóa lọc",
+      "reload": "Tải lại"
+    },
     "detailDrawer": "Chi tiết công nợ",
     "detailDrawerWithName": "Công nợ — {{supplierName}}",
     "createPayment": "Tạo thanh toán",

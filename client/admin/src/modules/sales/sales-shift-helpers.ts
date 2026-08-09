@@ -32,7 +32,11 @@ export async function resolveOpenShiftForWarehouse(warehouseId: string): Promise
   }
 
   try {
-    const items = await fetchSalesShifts(50);
+    const items = await fetchSalesShifts({
+      limit: 50,
+      warehouseId,
+      status: SALES_SHIFT_STATUSES.Open,
+    });
     const openItem = items.find(
       (row) => row.warehouseId === warehouseId && row.status === SALES_SHIFT_STATUSES.Open,
     );

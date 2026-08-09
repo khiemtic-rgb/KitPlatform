@@ -108,6 +108,38 @@ public sealed record OpeningBalanceBatchListItemDto(
     bool CanVoid,
     string? VoidBlockReason);
 
+public sealed record TransferListFilter(
+    string? Search = null,
+    short? Status = null,
+    Guid? FromWarehouseId = null,
+    Guid? ToWarehouseId = null,
+    DateOnly? DateFrom = null,
+    DateOnly? DateTo = null,
+    bool? HasShortage = null,
+    int Page = 1,
+    int PageSize = 20);
+
+public sealed record PagedTransfersResult(
+    IReadOnlyList<TransferListItemDto> Items,
+    int Total,
+    int Page,
+    int PageSize);
+
+public sealed record AdjustmentListFilter(
+    string? Search = null,
+    short? Status = null,
+    Guid? WarehouseId = null,
+    DateOnly? DateFrom = null,
+    DateOnly? DateTo = null,
+    int Page = 1,
+    int PageSize = 20);
+
+public sealed record PagedAdjustmentsResult(
+    IReadOnlyList<AdjustmentListItemDto> Items,
+    int Total,
+    int Page,
+    int PageSize);
+
 public sealed record TransferListItemDto(
     Guid Id,
     string TransferNumber,
@@ -117,7 +149,8 @@ public sealed record TransferListItemDto(
     string ToWarehouseName,
     short Status,
     DateTime TransferDate,
-    int ItemCount);
+    int ItemCount,
+    bool HasShortage);
 
 public sealed record TransferItemDto(
     Guid Id,
@@ -128,7 +161,8 @@ public sealed record TransferItemDto(
     string BatchNumber,
     DateOnly? ExpiryDate,
     string? UnitName,
-    decimal Quantity);
+    decimal Quantity,
+    decimal? ReceivedQuantity);
 
 public sealed record TransferDetailDto(
     Guid Id,
@@ -140,6 +174,9 @@ public sealed record TransferDetailDto(
     short Status,
     DateTime TransferDate,
     string? Notes,
+    string? ReceiveNotes,
+    DateTime? ShippedAt,
+    DateTime? ReceivedAt,
     IReadOnlyList<TransferItemDto> Items);
 
 public sealed record CreateTransferItemRequest(Guid BatchId, decimal Quantity);
@@ -149,6 +186,12 @@ public sealed record CreateTransferRequest(
     Guid ToWarehouseId,
     string? Notes,
     IReadOnlyList<CreateTransferItemRequest> Items);
+
+public sealed record ReceiveTransferItemRequest(Guid TransferItemId, decimal ReceivedQuantity);
+
+public sealed record ReceiveTransferRequest(
+    string? Notes,
+    IReadOnlyList<ReceiveTransferItemRequest>? Items);
 
 public sealed record AdjustmentListItemDto(
     Guid Id,

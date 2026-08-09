@@ -21,17 +21,22 @@ export function StocktakePage() {
   const [loading, setLoading] = useState(true);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehouseId, setWarehouseId] = useState<string>();
-  const [sessions, setSessions] = useState<Awaited<ReturnType<typeof fetchAdjustments>>>([]);
+  const [sessions, setSessions] = useState<
+    Awaited<ReturnType<typeof fetchAdjustments>>['items']
+  >([]);
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [wh, adjustments] = await Promise.all([fetchWarehouses(), fetchAdjustments()]);
+      const [wh, paged] = await Promise.all([
+        fetchWarehouses(),
+        fetchAdjustments({ page: 1, pageSize: 100 }),
+      ]);
       setWarehouses(wh);
       setWarehouseId((prev) => prev ?? wh[0]?.id);
       setSessions(
-        adjustments.filter(
+        paged.items.filter(
           (row) => row.status === ADJUSTMENT_STATUS.Counting || row.status === ADJUSTMENT_STATUS.Draft,
         ),
       );

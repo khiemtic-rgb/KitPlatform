@@ -27,8 +27,10 @@ internal sealed class CustomerPaymentService : ICustomerPaymentService
         CustomerPaymentListFilter? filter = null,
         CancellationToken cancellationToken = default)
     {
-        var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(null, cancellationToken);
-        return await _repository.GetCustomerPaymentsAsync(filter ?? new CustomerPaymentListFilter(), allowed, cancellationToken);
+        filter ??= new CustomerPaymentListFilter();
+        var (scopedId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(filter.WarehouseId, cancellationToken);
+        var effective = filter with { WarehouseId = scopedId ?? filter.WarehouseId };
+        return await _repository.GetCustomerPaymentsAsync(effective, allowed, cancellationToken);
     }
 
     public async Task<CustomerPaymentListItemDto?> GetAsync(Guid id, CancellationToken cancellationToken = default)

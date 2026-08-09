@@ -22,7 +22,11 @@ import type {
   StockBatch,
   StockProductSummary,
   TransferDetail,
+  TransferListFilters,
   TransferListItem,
+  PagedTransfers,
+  AdjustmentListFilters,
+  PagedAdjustments,
   Warehouse,
 } from '@/shared/api/inventory.types';
 
@@ -97,6 +101,7 @@ function normalizeTransferListItem(row: Record<string, unknown>): TransferListIt
     status: Number(row.status ?? row.Status ?? 1),
     transferDate: String(row.transferDate ?? row.TransferDate ?? ''),
     itemCount: Number(row.itemCount ?? row.ItemCount ?? 0),
+    hasShortage: Boolean(row.hasShortage ?? row.HasShortage ?? false),
   };
 }
 
@@ -106,6 +111,9 @@ function normalizeTransferDetail(data: Record<string, unknown>): TransferDetail 
   return {
     ...base,
     notes: (data.notes ?? data.Notes) as string | undefined,
+    receiveNotes: (data.receiveNotes ?? data.ReceiveNotes) as string | undefined,
+    shippedAt: (data.shippedAt ?? data.ShippedAt) as string | undefined,
+    receivedAt: (data.receivedAt ?? data.ReceivedAt) as string | undefined,
     items: rawItems.map((row) => ({
       id: String(row.id ?? row.Id),
       batchId: String(row.batchId ?? row.BatchId),
@@ -116,6 +124,10 @@ function normalizeTransferDetail(data: Record<string, unknown>): TransferDetail 
       expiryDate: (row.expiryDate ?? row.ExpiryDate) as string | undefined,
       unitName: (row.unitName ?? row.UnitName) as string | undefined,
       quantity: Number(row.quantity ?? row.Quantity ?? 0),
+      receivedQuantity:
+        row.receivedQuantity == null && row.ReceivedQuantity == null
+          ? undefined
+          : Number(row.receivedQuantity ?? row.ReceivedQuantity),
     })),
   };
 }
@@ -201,6 +213,7 @@ export async function fetchStockBatches(params: {
   warehouseId?: string;
   productId?: string;
   search?: string;
+  expiry?: string;
   page?: number;
   pageSize?: number;
 }): Promise<PagedStockBatches> {
@@ -211,6 +224,7 @@ export async function fetchStockBatches(params: {
 export async function fetchStockProducts(params: {
   warehouseId?: string;
   search?: string;
+  expiry?: string;
   page?: number;
   pageSize?: number;
 }): Promise<PagedStockProducts> {
@@ -256,6 +270,15 @@ export async function fetchOpeningBalanceBatches(params?: {
   productId?: string;
   search?: string;
   status?: 'all' | 'voidable' | 'locked';
+  expiry?:
+    | 'all'
+    | 'within_1m'
+    | 'within_3m'
+    | 'within_6m'
+    | 'within_12m'
+    | 'expired'
+    | 'has_expiry'
+    | 'no_expiry';
   page?: number;
   pageSize?: number;
 }): Promise<PagedOpeningBalanceBatches> {
@@ -263,6 +286,7 @@ export async function fetchOpeningBalanceBatches(params?: {
     params: {
       ...params,
       status: params?.status && params.status !== 'all' ? params.status : undefined,
+      expiry: params?.expiry && params.expiry !== 'all' ? params.expiry : undefined,
     },
   });
   const items = ((data.items ?? data.Items ?? []) as Record<string, unknown>[]).map((row) =>
@@ -282,9 +306,24 @@ export async function voidOpeningBalanceBatch(batchId: string): Promise<void> {
   await http.delete(`/inventory/opening-balance/batches/${batchId}`);
 }
 
-export async function fetchTransfers(): Promise<TransferListItem[]> {
-  const { data } = await http.get<Record<string, unknown>[]>('/inventory/transfers');
-  return data.map((row) => normalizeTransferListItem(row));
+export async function fetchTransfers(filters?: TransferListFilters): Promise<PagedTransfers> {
+  const params: Record<string, string | number | boolean> = {};
+  if (filters) {
+    for (const [key, value] of Object.entries(filters)) {
+      if (value === undefined || value === '' || value === false) continue;
+      params[key] = value as string | number | boolean;
+    }
+  }
+  const { data } = await http.get<Record<string, unknown>>('/inventory/transfers', {
+    params: Object.keys(params).length > 0 ? params : undefined,
+  });
+  const rawItems = (data.items ?? data.Items ?? []) as Record<string, unknown>[];
+  return {
+    items: rawItems.map((row) => normalizeTransferListItem(row)),
+    total: Number(data.total ?? data.Total ?? 0),
+    page: Number(data.page ?? data.Page ?? 1),
+    pageSize: Number(data.pageSize ?? data.PageSize ?? rawItems.length),
+  };
 }
 
 export async function fetchTransfer(id: string): Promise<TransferDetail> {
@@ -307,14 +346,39 @@ export async function completeTransfer(id: string): Promise<TransferDetail> {
   return normalizeTransferDetail(data);
 }
 
+export async function shipTransfer(id: string): Promise<TransferDetail> {
+  const { data } = await http.post<Record<string, unknown>>(`/inventory/transfers/${id}/ship`);
+  return normalizeTransferDetail(data);
+}
+
+export async function receiveTransfer(
+  id: string,
+  payload?: {
+    notes?: string;
+    items?: { transferItemId: string; receivedQuantity: number }[];
+  },
+): Promise<TransferDetail> {
+  const { data } = await http.post<Record<string, unknown>>(`/inventory/transfers/${id}/receive`, payload ?? {});
+  return normalizeTransferDetail(data);
+}
+
 export async function cancelTransfer(id: string): Promise<TransferDetail> {
   const { data } = await http.post<Record<string, unknown>>(`/inventory/transfers/${id}/cancel`);
   return normalizeTransferDetail(data);
 }
 
-export async function fetchAdjustments(): Promise<AdjustmentListItem[]> {
-  const { data } = await http.get<Record<string, unknown>[]>('/inventory/adjustments');
-  return data.map((row) => normalizeAdjustmentListItem(row));
+export async function fetchAdjustments(filters?: AdjustmentListFilters): Promise<PagedAdjustments> {
+  const params: Record<string, string | number> = {};
+  if (filters) {
+    for (const [key, value] of Object.entries(filters)) {
+      if (value === undefined || value === '') continue;
+      params[key] = value as string | number;
+    }
+  }
+  const { data } = await http.get<Record<string, unknown>>('/inventory/adjustments', {
+    params: Object.keys(params).length > 0 ? params : undefined,
+  });
+  return normalizePaged(data, normalizeAdjustmentListItem);
 }
 
 export async function fetchAdjustment(id: string): Promise<AdjustmentDetail> {

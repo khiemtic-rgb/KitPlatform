@@ -4,6 +4,7 @@ import {
   Alert,
   Button,
   Card,
+  DatePicker,
   Descriptions,
   Drawer,
   Popconfirm,
@@ -22,6 +23,7 @@ import {
   CloseCircleOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
+import type { Dayjs } from 'dayjs';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   parseCustomerPaymentPrefill,
@@ -39,6 +41,8 @@ import {
   postCustomerPayment,
   searchCustomers,
 } from '@/shared/api/sales.api';
+import { fetchWarehouses } from '@/shared/api/inventory.api';
+import type { Warehouse } from '@/shared/api/inventory.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import type {
   CustomerListItem,
@@ -55,24 +59,32 @@ const emptyFilters: CustomerPaymentListFilters = {};
 const tableScroll = { x: 1000 };
 const alertStyle = { marginBottom: 16 };
 const statusSelectStyle = { width: 140 };
+const methodSelectStyle = { width: 160 };
+const warehouseSelectStyle = { width: 200 };
 const tableWrapClassName = 'sales-list-table-wrap';
 
 function CustomerPaymentListPageInner() {
   const { t } = useTranslation('sales', { keyPrefix: 'customerPayments' });
   const canWrite = useHasPermission('sales.write');
-  const { paymentMethodLabel, customerPaymentStatusLabel, customerPaymentStatusOptions } =
-    useSalesEnums();
+  const {
+    paymentMethodLabel,
+    customerPaymentStatusLabel,
+    customerPaymentStatusOptions,
+    collectionPaymentMethodOptions,
+  } = useSalesEnums();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const prefillHandled = useRef(false);
   const loadSeqRef = useRef(0);
   const [items, setItems] = useState<CustomerPaymentListItem[]>([]);
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [filters, setFilters] = useState<CustomerPaymentListFilters>(emptyFilters);
   const [customerInput, setCustomerInput] = useState('');
   const [documentInput, setDocumentInput] = useState('');
   const [appliedCustomer, setAppliedCustomer] = useState('');
   const [appliedDocument, setAppliedDocument] = useState('');
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [formPrefill, setFormPrefill] = useState<CustomerPaymentPrefill | undefined>();
   const [detailOpen, setDetailOpen] = useState(false);
@@ -95,13 +107,18 @@ function CustomerPaymentListPageInner() {
       nextFilters: CustomerPaymentListFilters,
       customerSearch: string,
       documentSearch: string,
+      nextDateRange: [Dayjs, Dayjs] | null,
     ) => {
       const seq = ++loadSeqRef.current;
       try {
+        const hasLookup = Boolean(customerSearch.trim() || documentSearch.trim());
+        const useDate = !hasLookup && nextDateRange != null;
         const rows = await fetchCustomerPayments({
           ...nextFilters,
           customerSearch: customerSearch.trim() || undefined,
           documentSearch: documentSearch.trim() || undefined,
+          dateFrom: useDate ? nextDateRange![0].format('YYYY-MM-DD') : undefined,
+          dateTo: useDate ? nextDateRange![1].format('YYYY-MM-DD') : undefined,
         });
         if (seq !== loadSeqRef.current) return;
         setFilters(nextFilters);
@@ -118,17 +135,18 @@ function CustomerPaymentListPageInner() {
 
   useEffect(() => {
     let cancelled = false;
-    void searchCustomers()
-      .then((rows) => {
+    void Promise.all([searchCustomers(), fetchWarehouses()])
+      .then(([customerRows, warehouseRows]) => {
         if (!cancelled) {
-          setCustomers(rows);
+          setCustomers(customerRows);
+          setWarehouses(warehouseRows);
           setReferenceReady(true);
         }
       })
       .catch(() => {
         if (!cancelled) setReferenceReady(true);
       });
-    void loadPayments(emptyFilters, '', '');
+    void loadPayments(emptyFilters, '', '', null);
     return () => {
       cancelled = true;
       loadSeqRef.current += 1;
@@ -181,20 +199,21 @@ function CustomerPaymentListPageInner() {
       const document = values.document.trim();
       setCustomerInput(customer);
       setDocumentInput(document);
-      void loadPayments(filters, customer, document);
+      void loadPayments(filters, customer, document, dateRange);
     },
-    [filters, loadPayments],
+    [filters, loadPayments, dateRange],
   );
 
   const resetFilters = useCallback(() => {
     setCustomerInput('');
     setDocumentInput('');
-    void loadPayments(emptyFilters, '', '');
+    setDateRange(null);
+    void loadPayments(emptyFilters, '', '', null);
   }, [loadPayments]);
 
   const reloadList = useCallback(() => {
-    void loadPayments(filters, appliedCustomer, appliedDocument);
-  }, [loadPayments, filters, appliedCustomer, appliedDocument]);
+    void loadPayments(filters, appliedCustomer, appliedDocument, dateRange);
+  }, [loadPayments, filters, appliedCustomer, appliedDocument, dateRange]);
 
   const openCreate = useCallback(() => {
     setFormPrefill(undefined);
@@ -228,9 +247,9 @@ function CustomerPaymentListPageInner() {
       closeFormDrawer();
       setDetail(saved);
       setDetailOpen(true);
-      void loadPayments(filters, appliedCustomer, appliedDocument);
+      void loadPayments(filters, appliedCustomer, appliedDocument, dateRange);
     },
-    [closeFormDrawer, loadPayments, filters, appliedCustomer, appliedDocument],
+    [closeFormDrawer, loadPayments, filters, appliedCustomer, appliedDocument, dateRange],
   );
 
   const handlePost = async (id: string) => {
@@ -239,7 +258,7 @@ function CustomerPaymentListPageInner() {
       const updated = await postCustomerPayment(id);
       message.success(t('messages.postSuccess'));
       setDetail(updated);
-      void loadPayments(filters, appliedCustomer, appliedDocument);
+      void loadPayments(filters, appliedCustomer, appliedDocument, dateRange);
     } catch (error) {
       message.error(apiErrorMessage(error, t('messages.postFailed')));
     } finally {
@@ -253,7 +272,7 @@ function CustomerPaymentListPageInner() {
       await cancelCustomerPayment(id);
       message.success(t('messages.cancelSuccess'));
       setDetailOpen(false);
-      void loadPayments(filters, appliedCustomer, appliedDocument);
+      void loadPayments(filters, appliedCustomer, appliedDocument, dateRange);
     } catch (error) {
       message.error(apiErrorMessage(error, t('messages.cancelFailed')));
     } finally {
@@ -333,7 +352,33 @@ function CustomerPaymentListPageInner() {
 
   const handleStatusChange = useCallback(
     (status?: number) => {
-      void loadPayments({ ...filters, status }, appliedCustomer, appliedDocument);
+      void loadPayments({ ...filters, status }, appliedCustomer, appliedDocument, dateRange);
+    },
+    [loadPayments, filters, appliedCustomer, appliedDocument, dateRange],
+  );
+
+  const handlePaymentMethodChange = useCallback(
+    (paymentMethod?: number) => {
+      void loadPayments({ ...filters, paymentMethod }, appliedCustomer, appliedDocument, dateRange);
+    },
+    [loadPayments, filters, appliedCustomer, appliedDocument, dateRange],
+  );
+
+  const handleWarehouseChange = useCallback(
+    (warehouseId?: string) => {
+      void loadPayments({ ...filters, warehouseId }, appliedCustomer, appliedDocument, dateRange);
+    },
+    [loadPayments, filters, appliedCustomer, appliedDocument, dateRange],
+  );
+
+  const handleDateRangeChange = useCallback(
+    (value: [Dayjs | null, Dayjs | null] | null) => {
+      const next =
+        value?.[0] && value[1]
+          ? ([value[0].startOf('day'), value[1].endOf('day')] as [Dayjs, Dayjs])
+          : null;
+      setDateRange(next);
+      void loadPayments(filters, appliedCustomer, appliedDocument, next);
     },
     [loadPayments, filters, appliedCustomer, appliedDocument],
   );
@@ -359,6 +404,24 @@ function CustomerPaymentListPageInner() {
           documentSuggestions={documentSuggestions}
           documentPlaceholder={t('filters.documentPlaceholder')}
         />
+        <DatePicker.RangePicker
+          allowClear
+          value={dateRange}
+          onChange={handleDateRangeChange}
+          style={{ width: 260 }}
+          format="DD/MM/YYYY"
+          placeholder={[t('filters.dateFrom'), t('filters.dateTo')]}
+        />
+        <Select
+          allowClear
+          showSearch
+          optionFilterProp="label"
+          placeholder={t('filters.warehouse')}
+          style={warehouseSelectStyle}
+          value={filters.warehouseId}
+          onChange={handleWarehouseChange}
+          options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
+        />
         <Select
           allowClear
           placeholder={t('filters.status')}
@@ -367,8 +430,16 @@ function CustomerPaymentListPageInner() {
           onChange={handleStatusChange}
           options={customerPaymentStatusOptions}
         />
+        <Select
+          allowClear
+          placeholder={t('filters.paymentMethod')}
+          style={methodSelectStyle}
+          value={filters.paymentMethod}
+          onChange={handlePaymentMethodChange}
+          options={collectionPaymentMethodOptions}
+        />
         <Button onClick={resetFilters}>{t('filters.clear')}</Button>
-        <Button icon={<ReloadOutlined />} onClick={reloadList}>
+        <Button type="primary" ghost icon={<ReloadOutlined />} onClick={reloadList}>
           {t('filters.reload')}
         </Button>
       </SalesListDualSearchWrap>

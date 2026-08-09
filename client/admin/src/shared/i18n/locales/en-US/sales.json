@@ -470,6 +470,9 @@
       "title": "Return receipts",
       "filters": {
         "documentPlaceholder": "Return no. / sale order",
+        "status": "Status",
+        "dateFrom": "From",
+        "dateTo": "To",
         "clear": "Clear filters",
         "reload": "Reload"
       },
@@ -546,6 +549,10 @@
     },
     "filters": {
       "status": "Status",
+      "paymentMethod": "Method",
+      "warehouse": "Warehouse",
+      "dateFrom": "From",
+      "dateTo": "To",
       "documentPlaceholder": "Receipt no. / sale order",
       "clear": "Clear filters",
       "reload": "Reload"
@@ -661,6 +668,15 @@
     },
     "history": {
       "title": "Shift history",
+      "filters": {
+        "searchPlaceholder": "e.g. SH-000004",
+        "warehouse": "Warehouse",
+        "status": "Status",
+        "dateFrom": "From",
+        "dateTo": "To",
+        "clear": "Clear filters",
+        "reload": "Reload"
+      },
       "columns": {
         "shiftNumber": "Shift no.",
         "warehouse": "Warehouse",
@@ -751,6 +767,24 @@
     "title": "Customer receivables",
     "intro": "Balances are based on outstanding amounts on completed sale orders. Unlinked collection receipts are applied to oldest orders when posted.",
     "searchPlaceholder": "Customer name or phone",
+    "filters": {
+      "warehouse": "Warehouse",
+      "aging": "Aging",
+      "agingAll": "All aging",
+      "agingCurrent": "Has 0–30 day balance",
+      "aging31To60": "Has 31–60 day balance",
+      "aging61To90": "Has 61–90 day balance",
+      "agingOver90": "Has > 90 day balance",
+      "balance": "Balance",
+      "balanceAll": "All balances",
+      "balanceReceivable": "Receivable > 0",
+      "balanceCredit": "Has unapplied credit",
+      "balanceOver100k": "Receivable ≥ 100,000",
+      "balanceOver500k": "Receivable ≥ 500,000",
+      "balanceOver1m": "Receivable ≥ 1,000,000",
+      "clear": "Clear filters",
+      "reload": "Reload"
+    },
     "clear": "Clear filters",
     "paginationTotal": "{{count}} customers",
     "summaryTotal": "Total",

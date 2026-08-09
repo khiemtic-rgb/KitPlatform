@@ -7,6 +7,7 @@ import {
   Descriptions,
   Drawer,
   Input,
+  Select,
   Space,
   Spin,
   Table,
@@ -14,8 +15,10 @@ import {
   message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { DollarOutlined, SearchOutlined } from '@ant-design/icons';
+import { DollarOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { fetchWarehouses } from '@/shared/api/inventory.api';
+import type { Warehouse } from '@/shared/api/inventory.types';
 import {
   fetchCustomerReceivables,
   fetchCustomerReceivablesDetail,
@@ -36,8 +39,34 @@ import { useHasPermission } from '@/shared/auth/usePermission';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
+type AgingFilter = 'all' | 'current' | '31_60' | '61_90' | 'over_90';
+type BalanceFilter =
+  | 'all'
+  | 'has_receivable'
+  | 'has_credit'
+  | 'over_100k'
+  | 'over_500k'
+  | 'over_1m';
+
 function agingCell(value: number) {
   return value > 0.009 ? formatDisplayMoney(value) : '—';
+}
+
+function matchesAging(row: CustomerReceivablesRow, aging: AgingFilter): boolean {
+  if (aging === 'all') return true;
+  if (aging === 'current') return row.aging.current > 0.009;
+  if (aging === '31_60') return row.aging.days31To60 > 0.009;
+  if (aging === '61_90') return row.aging.days61To90 > 0.009;
+  return row.aging.over90 > 0.009;
+}
+
+function matchesBalance(row: CustomerReceivablesRow, balance: BalanceFilter): boolean {
+  if (balance === 'all') return true;
+  if (balance === 'has_receivable') return row.totalReceivable > 0.009;
+  if (balance === 'has_credit') return row.unappliedCredit > 0.009;
+  if (balance === 'over_100k') return row.totalReceivable >= 100_000;
+  if (balance === 'over_500k') return row.totalReceivable >= 500_000;
+  return row.totalReceivable >= 1_000_000;
 }
 
 export function CustomerReceivablesPage() {
@@ -46,21 +75,33 @@ export function CustomerReceivablesPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<CustomerReceivablesRow[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [search, setSearch] = useState('');
+  const [warehouseId, setWarehouseId] = useState<string | undefined>();
+  const [agingFilter, setAgingFilter] = useState<AgingFilter>('all');
+  const [balanceFilter, setBalanceFilter] = useState<BalanceFilter>('all');
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detail, setDetail] = useState<CustomerReceivablesDetail | null>(null);
 
+  useEffect(() => {
+    void fetchWarehouses()
+      .then(setWarehouses)
+      .catch(() => {
+        /* optional */
+      });
+  }, []);
+
   const loadSummary = useCallback(async () => {
     setLoading(true);
     try {
-      setRows(await fetchCustomerReceivables());
+      setRows(await fetchCustomerReceivables({ warehouseId }));
     } catch (error) {
       message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, warehouseId]);
 
   useEffect(() => {
     void loadSummary();
@@ -73,11 +114,13 @@ export function CustomerReceivablesPage() {
 
   const filteredRows = useMemo(() => {
     const q = search.trim();
-    if (!q) return rows;
-    return rows.filter((row) =>
-      matchesCustomerNameOrPhone(q, row.customerName, row.customerPhone),
-    );
-  }, [rows, search]);
+    return rows.filter((row) => {
+      if (q && !matchesCustomerNameOrPhone(q, row.customerName, row.customerPhone)) return false;
+      if (!matchesAging(row, agingFilter)) return false;
+      if (!matchesBalance(row, balanceFilter)) return false;
+      return true;
+    });
+  }, [rows, search, agingFilter, balanceFilter]);
 
   const totals = useMemo(
     () =>
@@ -94,6 +137,13 @@ export function CustomerReceivablesPage() {
     [filteredRows],
   );
 
+  const resetFilters = () => {
+    setSearch('');
+    setWarehouseId(undefined);
+    setAgingFilter('all');
+    setBalanceFilter('all');
+  };
+
   const goToPayment = useCallback(
     (prefill: { customerId: string; salesOrderId?: string; amount?: number }) => {
       navigate(buildCustomerPaymentCreateUrl(prefill));
@@ -106,7 +156,7 @@ export function CustomerReceivablesPage() {
     setDetailLoading(true);
     setDetail(null);
     try {
-      setDetail(await fetchCustomerReceivablesDetail(customerId));
+      setDetail(await fetchCustomerReceivablesDetail(customerId, { warehouseId }));
     } catch (error) {
       message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
       setDetailOpen(false);
@@ -237,7 +287,7 @@ export function CustomerReceivablesPage() {
 
       <Space wrap style={filterBarStyle}>
         <AutoComplete
-          style={{ width: 280 }}
+          style={{ width: 260 }}
           options={searchSuggestions}
           value={search}
           filterOption={false}
@@ -250,7 +300,51 @@ export function CustomerReceivablesPage() {
             prefix={<SearchOutlined />}
           />
         </AutoComplete>
-        {search ? <Button onClick={() => setSearch('')}>{t('clear')}</Button> : null}
+        <Select
+          allowClear
+          showSearch
+          optionFilterProp="label"
+          placeholder={t('filters.warehouse')}
+          style={{ width: 200 }}
+          value={warehouseId}
+          onChange={setWarehouseId}
+          options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
+        />
+        <Select
+          style={{ width: 200 }}
+          value={agingFilter}
+          onChange={setAgingFilter}
+          options={[
+            { value: 'all', label: t('filters.agingAll') },
+            { value: 'current', label: t('filters.agingCurrent') },
+            { value: '31_60', label: t('filters.aging31To60') },
+            { value: '61_90', label: t('filters.aging61To90') },
+            { value: 'over_90', label: t('filters.agingOver90') },
+          ]}
+        />
+        <Select
+          style={{ width: 200 }}
+          value={balanceFilter}
+          onChange={setBalanceFilter}
+          options={[
+            { value: 'all', label: t('filters.balanceAll') },
+            { value: 'has_receivable', label: t('filters.balanceReceivable') },
+            { value: 'has_credit', label: t('filters.balanceCredit') },
+            { value: 'over_100k', label: t('filters.balanceOver100k') },
+            { value: 'over_500k', label: t('filters.balanceOver500k') },
+            { value: 'over_1m', label: t('filters.balanceOver1m') },
+          ]}
+        />
+        <Button onClick={resetFilters}>{t('filters.clear')}</Button>
+        <Button
+          type="primary"
+          ghost
+          icon={<ReloadOutlined />}
+          loading={loading}
+          onClick={() => void loadSummary()}
+        >
+          {t('filters.reload')}
+        </Button>
       </Space>
 
       <Table

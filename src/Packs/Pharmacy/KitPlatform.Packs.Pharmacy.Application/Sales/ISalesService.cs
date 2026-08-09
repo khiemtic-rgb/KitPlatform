@@ -76,6 +76,9 @@ public interface ISalesService
         string? search = null,
         string? customerSearch = null,
         string? documentSearch = null,
+        short? status = null,
+        DateTime? from = null,
+        DateTime? to = null,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<SalesReturnListItemDto>> GetSaleReturnsByOrderAsync(
@@ -89,6 +92,11 @@ public interface ISalesService
 
     Task<IReadOnlyList<SalesShiftListItemDto>> GetShiftsAsync(
         int limit = 50,
+        string? search = null,
+        short? status = null,
+        Guid? warehouseId = null,
+        DateTime? from = null,
+        DateTime? to = null,
         CancellationToken cancellationToken = default);
 
     Task<SalesShiftDetailDto?> GetOpenShiftAsync(

@@ -24,9 +24,12 @@ public sealed class CustomerPaymentsController : ControllerBase
         [FromQuery] short? status,
         [FromQuery] DateOnly? dateFrom,
         [FromQuery] DateOnly? dateTo,
+        [FromQuery] short? paymentMethod,
+        [FromQuery] Guid? warehouseId,
         CancellationToken cancellationToken = default) =>
         Ok(await _payments.GetAllAsync(
-            new CustomerPaymentListFilter(search, customerSearch, documentSearch, customerId, status, dateFrom, dateTo),
+            new CustomerPaymentListFilter(
+                search, customerSearch, documentSearch, customerId, status, dateFrom, dateTo, paymentMethod, warehouseId),
             cancellationToken));
 
     [HttpGet("{id:guid}")]

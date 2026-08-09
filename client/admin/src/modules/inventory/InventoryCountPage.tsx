@@ -411,8 +411,8 @@ export function InventoryCountPage() {
       message.warning(t('messages.scanOrSelectProduct'));
       return null;
     }
-    if (quantity <= 0) {
-      message.warning(t('messages.quantityMustBePositive'));
+    if (quantity < 0) {
+      message.warning(t('messages.quantityMustBeNonNegative'));
       return null;
     }
 
@@ -495,8 +495,8 @@ export function InventoryCountPage() {
       message.warning(t('messages.noDraftLines'));
       return;
     }
-    if (draftLines.some((line) => line.quantity <= 0)) {
-      message.warning(t('messages.quantityMustBePositive'));
+    if (draftLines.some((line) => line.quantity < 0)) {
+      message.warning(t('messages.quantityMustBeNonNegative'));
       return;
     }
 
@@ -865,12 +865,13 @@ export function InventoryCountPage() {
                 <InputNumber
                   size="large"
                   value={quantity}
-                  onChange={(v) => setQuantity(Number(v ?? 1))}
+                  onChange={(v) => setQuantity(Number(v ?? 0))}
                   onPressEnter={() => void handleRecordNow()}
                   style={{ width: 180, flex: '0 0 auto' }}
                   addonBefore={ts('quantityAbbr')}
                   addonAfter={activeUnitName ?? '—'}
                   {...quantityInputNumberProps}
+                  min={0}
                 />
                 <Input
                   size="large"

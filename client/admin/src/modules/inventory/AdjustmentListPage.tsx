@@ -7,6 +7,7 @@ import {
   Card,
   Checkbox,
   Collapse,
+  DatePicker,
   Drawer,
   Form,
   Input,
@@ -19,6 +20,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { isAxiosError } from 'axios';
+import type { Dayjs } from 'dayjs';
 import { PlusOutlined, ReloadOutlined, EyeOutlined, CheckOutlined, TeamOutlined, AppstoreOutlined, StopOutlined } from '@ant-design/icons';
 import {
   approveAdjustment,
@@ -66,7 +68,7 @@ export function AdjustmentListPage() {
   const { t, i18n } = useTranslation('inventory', { keyPrefix: 'adjustmentList' });
   const { t: ts } = useTranslation('inventory', { keyPrefix: 'shared' });
   const { t: tc } = useTranslation('common');
-  const { adjustmentStatusLabel } = useInventoryEnums();
+  const { adjustmentStatusLabel, adjustmentStatusOptions } = useInventoryEnums();
   const inventoryCountWorkflowSteps = useMemo(
     () => getInventoryCountWorkflowSteps(),
     [i18n.language],
@@ -74,6 +76,14 @@ export function AdjustmentListPage() {
   const countReasonPresets = useMemo(() => getCountReasonPresets(), [i18n.language]);
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<AdjustmentListItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<number | undefined>();
+  const [warehouseFilter, setWarehouseFilter] = useState<string | undefined>();
+  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehouseBatches, setWarehouseBatches] = useState<StockBatch[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -91,22 +101,48 @@ export function AdjustmentListPage() {
   const warehouseId = Form.useWatch('warehouseId', form);
   const formItems = Form.useWatch('items', form) as AdjustmentLineForm[] | undefined;
 
+  const warehouseOptions = useMemo(
+    () => warehouses.map((w) => ({ value: w.id, label: w.warehouseName })),
+    [warehouses],
+  );
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [adjustments, wh] = await Promise.all([fetchAdjustments(), fetchWarehouses()]);
-      setItems(adjustments);
+      const [paged, wh] = await Promise.all([
+        fetchAdjustments({
+          search: search.trim() || undefined,
+          status: statusFilter,
+          warehouseId: warehouseFilter,
+          dateFrom: dateRange?.[0] ? dateRange[0].format('YYYY-MM-DD') : undefined,
+          dateTo: dateRange?.[1] ? dateRange[1].format('YYYY-MM-DD') : undefined,
+          page,
+          pageSize,
+        }),
+        fetchWarehouses(),
+      ]);
+      setItems(paged.items);
+      setTotal(paged.total);
       setWarehouses(wh);
     } catch (error) {
       message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [t, message]);
+  }, [t, message, search, statusFilter, warehouseFilter, dateRange, page, pageSize]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const resetFilters = () => {
+    setSearchInput('');
+    setSearch('');
+    setStatusFilter(undefined);
+    setWarehouseFilter(undefined);
+    setDateRange(null);
+    setPage(1);
+  };
 
   useEffect(() => {
     if (!warehouseId) {
@@ -429,7 +465,70 @@ export function AdjustmentListPage() {
           </Space>
         }
       >
-        <Table rowKey="id" loading={loading} columns={columns} dataSource={items} pagination={false} />
+        <Space wrap style={{ marginBottom: 12, width: '100%' }} size={8}>
+          <Input.Search
+            allowClear
+            placeholder={t('filters.searchPlaceholder')}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onSearch={(v) => {
+              setSearch(v.trim());
+              setPage(1);
+            }}
+            style={{ width: 200 }}
+          />
+          <Select
+            allowClear
+            placeholder={t('filters.status')}
+            options={adjustmentStatusOptions}
+            value={statusFilter}
+            onChange={(v) => {
+              setStatusFilter(v);
+              setPage(1);
+            }}
+            style={{ width: 160 }}
+          />
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder={t('filters.warehouse')}
+            options={warehouseOptions}
+            value={warehouseFilter}
+            onChange={(v) => {
+              setWarehouseFilter(v);
+              setPage(1);
+            }}
+            style={{ width: 220 }}
+          />
+          <DatePicker.RangePicker
+            value={dateRange}
+            onChange={(v) => {
+              setDateRange(v);
+              setPage(1);
+            }}
+            format="DD-MM-YYYY"
+            placeholder={[t('filters.dateRange'), '']}
+          />
+          <Button onClick={resetFilters}>{t('filters.reset')}</Button>
+        </Space>
+        <Table
+          rowKey="id"
+          loading={loading}
+          columns={columns}
+          dataSource={items}
+          pagination={{
+            current: page,
+            pageSize,
+            total,
+            showSizeChanger: true,
+            showTotal: (count) => t('paginationTotal', { count: count.toLocaleString('vi-VN') }),
+            onChange: (p, ps) => {
+              setPage(p);
+              setPageSize(ps);
+            },
+          }}
+        />
       </Card>
 
       <Drawer

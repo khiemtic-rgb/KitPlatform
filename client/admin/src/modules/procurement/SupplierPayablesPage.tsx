@@ -1,16 +1,80 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Card, Descriptions, Drawer, Spin, Table, Typography, message } from 'antd';
+import {
+  AutoComplete,
+  Button,
+  Card,
+  Descriptions,
+  Drawer,
+  Input,
+  Select,
+  Space,
+  Spin,
+  Table,
+  Typography,
+  message,
+} from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { CreditCardOutlined } from '@ant-design/icons';
+import { CreditCardOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { fetchWarehouses } from '@/shared/api/inventory.api';
+import type { Warehouse } from '@/shared/api/inventory.types';
 import { fetchSupplierPayables, fetchSupplierPayablesDetail } from '@/shared/api/procurement.api';
 import type { SupplierPayablesDetail, SupplierPayablesDetailLine, SupplierPayablesRow } from '@/shared/api/procurement.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { buildSupplierPaymentCreateUrl } from '@/modules/procurement/supplier-payment-nav';
+import { filterBarStyle } from '@/modules/sales/sales-ui-styles';
 import { useProcurementWrite } from '@/shared/auth/usePermission';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
+
+type AgingFilter = 'all' | 'current' | '31_60' | '61_90' | 'over_90';
+type BalanceFilter =
+  | 'all'
+  | 'has_payable'
+  | 'has_credit'
+  | 'over_100k'
+  | 'over_500k'
+  | 'over_1m';
+
+function matchesAging(row: SupplierPayablesRow, aging: AgingFilter): boolean {
+  if (aging === 'all') return true;
+  if (aging === 'current') return row.aging.current > 0.009;
+  if (aging === '31_60') return row.aging.days31To60 > 0.009;
+  if (aging === '61_90') return row.aging.days61To90 > 0.009;
+  return row.aging.over90 > 0.009;
+}
+
+function matchesBalance(row: SupplierPayablesRow, balance: BalanceFilter): boolean {
+  if (balance === 'all') return true;
+  if (balance === 'has_payable') return row.totalPayable > 0.009;
+  if (balance === 'has_credit') return row.unappliedCredit > 0.009;
+  if (balance === 'over_100k') return row.totalPayable >= 100_000;
+  if (balance === 'over_500k') return row.totalPayable >= 500_000;
+  return row.totalPayable >= 1_000_000;
+}
+
+function matchesSupplierSearch(q: string, code: string, name: string): boolean {
+  const needle = q.trim().toLowerCase();
+  if (!needle) return true;
+  return code.toLowerCase().includes(needle) || name.toLowerCase().includes(needle);
+}
+
+function buildSupplierSearchSuggestions(rows: SupplierPayablesRow[], search: string) {
+  const needle = search.trim().toLowerCase();
+  const seen = new Set<string>();
+  const options: { value: string; label: string }[] = [];
+  for (const row of rows) {
+    const label = row.supplierCode ? `${row.supplierCode} — ${row.supplierName}` : row.supplierName;
+    const hay = `${row.supplierCode} ${row.supplierName}`.toLowerCase();
+    if (needle && !hay.includes(needle)) continue;
+    if (seen.has(row.supplierId)) continue;
+    seen.add(row.supplierId);
+    options.push({ value: row.supplierName, label });
+    if (options.length >= 12) break;
+  }
+  return options;
+}
 
 export function SupplierPayablesPage() {
   const { t } = useTranslation('procurement', { keyPrefix: 'supplierPayables' });
@@ -19,6 +83,11 @@ export function SupplierPayablesPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<SupplierPayablesRow[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [search, setSearch] = useState('');
+  const [warehouseId, setWarehouseId] = useState<string | undefined>();
+  const [agingFilter, setAgingFilter] = useState<AgingFilter>('all');
+  const [balanceFilter, setBalanceFilter] = useState<BalanceFilter>('all');
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detail, setDetail] = useState<SupplierPayablesDetail | null>(null);
@@ -29,24 +98,47 @@ export function SupplierPayablesPage() {
     [emDash],
   );
 
+  useEffect(() => {
+    void fetchWarehouses()
+      .then(setWarehouses)
+      .catch(() => {
+        /* optional */
+      });
+  }, []);
+
   const loadSummary = useCallback(async () => {
     setLoading(true);
     try {
-      setRows(await fetchSupplierPayables());
+      setRows(await fetchSupplierPayables({ warehouseId }));
     } catch (error) {
       message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, warehouseId]);
 
   useEffect(() => {
     void loadSummary();
   }, [loadSummary]);
 
+  const searchSuggestions = useMemo(
+    () => buildSupplierSearchSuggestions(rows, search),
+    [rows, search],
+  );
+
+  const filteredRows = useMemo(() => {
+    const q = search.trim();
+    return rows.filter((row) => {
+      if (q && !matchesSupplierSearch(q, row.supplierCode, row.supplierName)) return false;
+      if (!matchesAging(row, agingFilter)) return false;
+      if (!matchesBalance(row, balanceFilter)) return false;
+      return true;
+    });
+  }, [rows, search, agingFilter, balanceFilter]);
+
   const totals = useMemo(
     () =>
-      rows.reduce(
+      filteredRows.reduce(
         (acc, row) => ({
           payable: acc.payable + row.totalPayable,
           current: acc.current + row.aging.current,
@@ -56,15 +148,22 @@ export function SupplierPayablesPage() {
         }),
         { payable: 0, current: 0, days31To60: 0, days61To90: 0, over90: 0 },
       ),
-    [rows],
+    [filteredRows],
   );
+
+  const resetFilters = () => {
+    setSearch('');
+    setWarehouseId(undefined);
+    setAgingFilter('all');
+    setBalanceFilter('all');
+  };
 
   const openDetail = async (supplierId: string) => {
     setDetailOpen(true);
     setDetailLoading(true);
     setDetail(null);
     try {
-      setDetail(await fetchSupplierPayablesDetail(supplierId));
+      setDetail(await fetchSupplierPayablesDetail(supplierId, { warehouseId }));
     } catch (error) {
       message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
       setDetailOpen(false);
@@ -207,15 +306,77 @@ export function SupplierPayablesPage() {
         {t('intro')}
       </Typography.Paragraph>
 
+      <Space wrap style={filterBarStyle}>
+        <AutoComplete
+          style={{ width: 260 }}
+          options={searchSuggestions}
+          value={search}
+          filterOption={false}
+          onSelect={(value) => setSearch(String(value))}
+          onChange={(value) => setSearch(value)}
+        >
+          <Input
+            allowClear
+            placeholder={t('searchPlaceholder')}
+            prefix={<SearchOutlined />}
+          />
+        </AutoComplete>
+        <Select
+          allowClear
+          showSearch
+          optionFilterProp="label"
+          placeholder={t('filters.warehouse')}
+          style={{ width: 200 }}
+          value={warehouseId}
+          onChange={setWarehouseId}
+          options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
+        />
+        <Select
+          style={{ width: 200 }}
+          value={agingFilter}
+          onChange={setAgingFilter}
+          options={[
+            { value: 'all', label: t('filters.agingAll') },
+            { value: 'current', label: t('filters.agingCurrent') },
+            { value: '31_60', label: t('filters.aging31To60') },
+            { value: '61_90', label: t('filters.aging61To90') },
+            { value: 'over_90', label: t('filters.agingOver90') },
+          ]}
+        />
+        <Select
+          style={{ width: 200 }}
+          value={balanceFilter}
+          onChange={setBalanceFilter}
+          options={[
+            { value: 'all', label: t('filters.balanceAll') },
+            { value: 'has_payable', label: t('filters.balancePayable') },
+            { value: 'has_credit', label: t('filters.balanceCredit') },
+            { value: 'over_100k', label: t('filters.balanceOver100k') },
+            { value: 'over_500k', label: t('filters.balanceOver500k') },
+            { value: 'over_1m', label: t('filters.balanceOver1m') },
+          ]}
+        />
+        <Button onClick={resetFilters}>{t('filters.clear')}</Button>
+        <Button
+          type="primary"
+          ghost
+          icon={<ReloadOutlined />}
+          loading={loading}
+          onClick={() => void loadSummary()}
+        >
+          {t('filters.reload')}
+        </Button>
+      </Space>
+
       <Table
         rowKey="supplierId"
         loading={loading}
         columns={columns}
-        dataSource={rows}
+        dataSource={filteredRows}
         pagination={{ pageSize: 20, showTotal: (total) => tShared('pagination.suppliers', { count: total }) }}
         scroll={{ x: 1180 }}
         summary={() =>
-          rows.length > 0 ? (
+          filteredRows.length > 0 ? (
             <Table.Summary fixed>
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={3}>

@@ -68,8 +68,13 @@ public interface ISupplierPaymentService
 
 public interface ISupplierPayablesService
 {
-    Task<IReadOnlyList<SupplierPayablesRowDto>> GetSummaryAsync(CancellationToken cancellationToken = default);
-    Task<SupplierPayablesDetailDto?> GetDetailAsync(Guid supplierId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<SupplierPayablesRowDto>> GetSummaryAsync(
+        Guid? warehouseId = null,
+        CancellationToken cancellationToken = default);
+    Task<SupplierPayablesDetailDto?> GetDetailAsync(
+        Guid supplierId,
+        Guid? warehouseId = null,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IProcurementVatTreatmentService

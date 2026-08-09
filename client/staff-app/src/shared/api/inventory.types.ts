@@ -34,6 +34,42 @@ export type StockBatch = {
   quantityAvailable: number;
 };
 
+export type TransferListFilters = {
+  search?: string;
+  status?: number;
+  fromWarehouseId?: string;
+  toWarehouseId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  hasShortage?: boolean;
+  page?: number;
+  pageSize?: number;
+};
+
+export type PagedTransfers = {
+  items: TransferListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type AdjustmentListFilters = {
+  search?: string;
+  status?: number;
+  warehouseId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type PagedAdjustments = {
+  items: AdjustmentListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 export type TransferListItem = {
   id: string;
   transferNumber: string;
@@ -44,6 +80,7 @@ export type TransferListItem = {
   status: number;
   transferDate: string;
   itemCount: number;
+  hasShortage?: boolean;
 };
 
 export type TransferItem = {
@@ -54,10 +91,14 @@ export type TransferItem = {
   productName: string;
   batchNumber: string;
   quantity: number;
+  receivedQuantity?: number | null;
 };
 
 export type TransferDetail = TransferListItem & {
   notes?: string;
+  receiveNotes?: string;
+  shippedAt?: string;
+  receivedAt?: string;
   items: TransferItem[];
 };
 

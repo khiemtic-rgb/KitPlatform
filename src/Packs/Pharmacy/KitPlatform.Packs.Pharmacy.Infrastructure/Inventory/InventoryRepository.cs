@@ -183,6 +183,7 @@ internal sealed class InventoryRepository
         Guid[]? allowedWarehouseIds,
         Guid? productId,
         string? search,
+        string? expiry,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
@@ -194,6 +195,8 @@ internal sealed class InventoryRepository
         if (productId is not null) extra.Add("b.product_id = @ProductId");
         var searchClause = BuildProductStockSearchClause(search, out var searchParams);
         if (searchClause is not null) extra.Add(searchClause);
+        int? expiryMonths = null;
+        AppendExpiryFilter(extra, expiry, ref expiryMonths);
 
         var whereExtra = " AND " + string.Join(" AND ", extra);
 
@@ -239,6 +242,7 @@ internal sealed class InventoryRepository
             WarehouseId = warehouseId,
             AllowedWarehouseIds = allowedWarehouseIds,
             ProductId = productId,
+            ExpiryMonths = expiryMonths,
             PageSize = pageSize,
             Offset = offset,
         });
@@ -255,6 +259,7 @@ internal sealed class InventoryRepository
         Guid? warehouseId,
         Guid[]? allowedWarehouseIds,
         string? search,
+        string? expiry,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
@@ -262,9 +267,11 @@ internal sealed class InventoryRepository
         var offset = (page - 1) * pageSize;
         var hasSearch = !string.IsNullOrWhiteSpace(search);
         var searchClause = BuildProductStockSearchClause(search, out var searchParams, includeBatchNumber: !hasSearch);
+        int? expiryMonths = null;
+        var expiryConds = new List<string>();
+        AppendExpiryFilter(expiryConds, expiry, ref expiryMonths);
+        var hasExpiryFilter = expiryConds.Count > 0;
 
-        // Khi đang tìm theo tên/mã: hiện cả SP tồn 0 (để biết SP có trong danh mục nhưng chưa nhập / chưa Hoàn tất).
-        // Không tìm: chỉ SP còn tồn > 0 (giữ hiệu năng danh sách lớn).
         string warehouseFilter;
         if (warehouseId is not null)
             warehouseFilter = "AND b.warehouse_id = @WarehouseId";
@@ -275,7 +282,8 @@ internal sealed class InventoryRepository
 
         string countSql;
         string sql;
-        if (hasSearch && searchClause is not null)
+        // With expiry filter, always aggregate from matching batches (search path that lists zero-stock SP is skipped).
+        if (hasSearch && searchClause is not null && !hasExpiryFilter)
         {
             countSql = $"""
                 SELECT COUNT(*)::int
@@ -338,6 +346,7 @@ internal sealed class InventoryRepository
             if (warehouseId is not null) extra.Add("b.warehouse_id = @WarehouseId");
             else if (allowedWarehouseIds is { Length: > 0 }) extra.Add("b.warehouse_id = ANY(@AllowedWarehouseIds)");
             if (searchClause is not null) extra.Add(searchClause);
+            extra.AddRange(expiryConds);
             var whereExtra = " AND " + string.Join(" AND ", extra);
 
             countSql = $"""
@@ -379,6 +388,7 @@ internal sealed class InventoryRepository
             TenantId,
             WarehouseId = warehouseId,
             AllowedWarehouseIds = allowedWarehouseIds,
+            ExpiryMonths = expiryMonths,
             PageSize = pageSize,
             Offset = offset,
         });
@@ -389,6 +399,56 @@ internal sealed class InventoryRepository
         var total = await conn.QuerySingleAsync<int>(countSql, param);
         var items = (await conn.QueryAsync<StockProductSummaryDto>(sql, param)).ToList();
         return (items, total);
+    }
+
+    /// <summary>
+    /// Builds expiry predicates for inventory_batches (column default b.expiry_date).
+    /// Presets: within_1m|3m|6m|12m, expired, has_expiry, no_expiry.
+    /// </summary>
+    private static void AppendExpiryFilter(
+        List<string> conditions,
+        string? expiry,
+        ref int? expiryMonths,
+        string column = "b.expiry_date")
+    {
+        if (string.IsNullOrWhiteSpace(expiry))
+            return;
+
+        if (string.Equals(expiry, "expired", StringComparison.OrdinalIgnoreCase))
+        {
+            conditions.Add($"{column} IS NOT NULL AND {column} < CURRENT_DATE");
+            return;
+        }
+
+        if (string.Equals(expiry, "has_expiry", StringComparison.OrdinalIgnoreCase))
+        {
+            conditions.Add($"{column} IS NOT NULL");
+            return;
+        }
+
+        if (string.Equals(expiry, "no_expiry", StringComparison.OrdinalIgnoreCase))
+        {
+            conditions.Add($"{column} IS NULL");
+            return;
+        }
+
+        expiryMonths = expiry?.ToLowerInvariant() switch
+        {
+            "within_1m" => 1,
+            "within_3m" => 3,
+            "within_6m" => 6,
+            "within_12m" => 12,
+            _ => null,
+        };
+
+        if (expiryMonths is not null)
+        {
+            conditions.Add($"""
+                {column} IS NOT NULL
+                AND {column} >= CURRENT_DATE
+                AND {column} < (CURRENT_DATE + make_interval(months => @ExpiryMonths))::date
+                """);
+        }
     }
 
     /// <summary>
@@ -695,6 +755,7 @@ internal sealed class InventoryRepository
             Guid? productId,
             string? search,
             string? status,
+            string? expiry,
             int page,
             int pageSize,
             CancellationToken cancellationToken)
@@ -743,6 +804,45 @@ internal sealed class InventoryRepository
             extra.Add(canVoidSql);
         else if (string.Equals(status, "locked", StringComparison.OrdinalIgnoreCase))
             extra.Add($"NOT {canVoidSql}");
+
+        int? expiryMonths = null;
+        if (string.Equals(expiry, "expired", StringComparison.OrdinalIgnoreCase))
+        {
+            extra.Add("b.expiry_date IS NOT NULL AND b.expiry_date < CURRENT_DATE");
+        }
+        else if (string.Equals(expiry, "has_expiry", StringComparison.OrdinalIgnoreCase))
+        {
+            extra.Add("b.expiry_date IS NOT NULL");
+        }
+        else if (string.Equals(expiry, "no_expiry", StringComparison.OrdinalIgnoreCase))
+        {
+            extra.Add("b.expiry_date IS NULL");
+        }
+        else if (string.Equals(expiry, "within_1m", StringComparison.OrdinalIgnoreCase))
+        {
+            expiryMonths = 1;
+        }
+        else if (string.Equals(expiry, "within_3m", StringComparison.OrdinalIgnoreCase))
+        {
+            expiryMonths = 3;
+        }
+        else if (string.Equals(expiry, "within_6m", StringComparison.OrdinalIgnoreCase))
+        {
+            expiryMonths = 6;
+        }
+        else if (string.Equals(expiry, "within_12m", StringComparison.OrdinalIgnoreCase))
+        {
+            expiryMonths = 12;
+        }
+
+        if (expiryMonths is int)
+        {
+            extra.Add("""
+                b.expiry_date IS NOT NULL
+                AND b.expiry_date >= CURRENT_DATE
+                AND b.expiry_date < (CURRENT_DATE + make_interval(months => @ExpiryMonths))::date
+                """);
+        }
 
         var whereExtra = extra.Count > 0 ? " AND " + string.Join(" AND ", extra) : "";
         var scopeWhereExtra = scopeExtra.Count > 0 ? " AND " + string.Join(" AND ", scopeExtra) : "";
@@ -829,6 +929,7 @@ internal sealed class InventoryRepository
             AllowedWarehouseIds = allowedWarehouseIds,
             ProductId = productId,
             SearchPattern = searchPattern,
+            ExpiryMonths = expiryMonths,
             OpeningRef = StockReferenceTypes.OpeningBalance,
             VoidRef = StockReferenceTypes.OpeningBalanceVoid,
             TransferCancelled = TransferStatuses.Cancelled,
@@ -1038,83 +1139,34 @@ internal sealed class InventoryRepository
         await conn.ExecuteAsync(sql, new { TransferId = transferId, BatchId = batchId, ProductId = productId, Quantity = quantity }, tx);
     }
 
-    public async Task CompleteTransferAsync(Guid transferId, Guid approvedBy, CancellationToken cancellationToken)
+    public async Task ShipTransferAsync(Guid transferId, Guid shippedBy, CancellationToken cancellationToken)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+        await ShipTransferCoreAsync(conn, tx, transferId, shippedBy, cancellationToken);
+        await tx.CommitAsync(cancellationToken);
+    }
 
-        const string headerSql = """
-            SELECT id AS Id, from_warehouse_id AS FromWarehouseId, to_warehouse_id AS ToWarehouseId, status AS Status
-            FROM inventory_transfers
-            WHERE id = @Id AND tenant_id = @TenantId
-            FOR UPDATE
-            """;
-        var header = await conn.QuerySingleOrDefaultAsync<(Guid Id, Guid FromWarehouseId, Guid ToWarehouseId, short Status)>(
-            headerSql, new { Id = transferId, TenantId }, tx);
-        if (header.Id == Guid.Empty)
-            throw new InvalidOperationException("Phiếu điều chuyển không tồn tại.");
+    public async Task ReceiveTransferAsync(
+        Guid transferId,
+        Guid receivedBy,
+        string? receiveNotes,
+        IReadOnlyDictionary<Guid, decimal>? receivedByItemId,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+        await ReceiveTransferCoreAsync(conn, tx, transferId, receivedBy, receiveNotes, receivedByItemId, cancellationToken);
+        await tx.CommitAsync(cancellationToken);
+    }
 
-        if (header.Status == TransferStatuses.Completed)
-            throw new InvalidOperationException("Phiếu đã hoàn tất.");
-        if (header.Status == TransferStatuses.Cancelled)
-            throw new InvalidOperationException("Phiếu đã hủy.");
-
-        const string itemsSql = """
-            SELECT batch_id AS BatchId, product_id AS ProductId, quantity AS Quantity
-            FROM inventory_transfer_items WHERE transfer_id = @TransferId
-            """;
-        var items = (await conn.QueryAsync<(Guid BatchId, Guid ProductId, decimal Quantity)>(itemsSql, new { TransferId = transferId }, tx)).ToList();
-        if (items.Count == 0)
-            throw new InvalidOperationException("Phiếu không có dòng hàng.");
-
-        foreach (var item in items)
-        {
-            var source = await GetBatchForUpdateAsync(conn, tx, item.BatchId, cancellationToken)
-                ?? throw new InvalidOperationException("Lô nguồn không tồn tại.");
-
-            if (source.WarehouseId != header.FromWarehouseId)
-                throw new InvalidOperationException("Lô không thuộc kho xuất.");
-
-            await DecreaseBatchQuantityAsync(conn, tx, source.Id, item.Quantity, cancellationToken);
-
-            var destBatchId = await FindBatchIdByKeyAsync(
-                conn, tx, header.ToWarehouseId, source.ProductId, source.BatchNumber, cancellationToken);
-
-            if (destBatchId is Guid existingDest)
-            {
-                await IncreaseBatchQuantityAsync(conn, tx, existingDest, item.Quantity, cancellationToken);
-            }
-            else
-            {
-                destBatchId = await InsertBatchAsync(
-                    conn, tx, header.ToWarehouseId, source.ProductId, source.BatchNumber,
-                    source.ManufactureDate, source.ExpiryDate, source.UnitCost, item.Quantity, cancellationToken);
-            }
-
-            await InsertMovementAsync(
-                conn, tx, header.FromWarehouseId, source.Id, source.ProductId,
-                StockMovementTypes.Out, StockReferenceTypes.InventoryTransfer, transferId,
-                item.Quantity, source.UnitCost, null, cancellationToken);
-
-            await InsertMovementAsync(
-                conn, tx, header.ToWarehouseId, destBatchId!.Value, source.ProductId,
-                StockMovementTypes.In, StockReferenceTypes.InventoryTransfer, transferId,
-                item.Quantity, source.UnitCost, null, cancellationToken);
-        }
-
-        const string updateSql = """
-            UPDATE inventory_transfers SET
-                status = @Status, approved_by = @ApprovedBy, approved_at = NOW(), updated_at = NOW()
-            WHERE id = @Id AND tenant_id = @TenantId
-            """;
-        await conn.ExecuteAsync(updateSql, new
-        {
-            Id = transferId,
-            TenantId,
-            Status = TransferStatuses.Completed,
-            ApprovedBy = approvedBy,
-        }, tx);
-
+    /// <summary>Atomic Draft → Completed (ship OUT + receive full IN) for users with both warehouses.</summary>
+    public async Task CompleteTransferAsync(Guid transferId, Guid actorUserId, CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+        await ShipTransferCoreAsync(conn, tx, transferId, actorUserId, cancellationToken);
+        await ReceiveTransferCoreAsync(conn, tx, transferId, actorUserId, null, null, cancellationToken);
         await tx.CommitAsync(cancellationToken);
     }
 
@@ -1124,12 +1176,12 @@ internal sealed class InventoryRepository
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
 
         const string headerSql = """
-            SELECT id AS Id, status AS Status
+            SELECT id AS Id, from_warehouse_id AS FromWarehouseId, status AS Status
             FROM inventory_transfers
             WHERE id = @Id AND tenant_id = @TenantId
             FOR UPDATE
             """;
-        var header = await conn.QuerySingleOrDefaultAsync<(Guid Id, short Status)>(
+        var header = await conn.QuerySingleOrDefaultAsync<(Guid Id, Guid FromWarehouseId, short Status)>(
             headerSql, new { Id = transferId, TenantId }, tx);
         if (header.Id == Guid.Empty)
             throw new InvalidOperationException("Phiếu điều chuyển không tồn tại.");
@@ -1138,6 +1190,30 @@ internal sealed class InventoryRepository
             throw new InvalidOperationException("Phiếu đã hoàn tất — không thể hủy.");
         if (header.Status == TransferStatuses.Cancelled)
             throw new InvalidOperationException("Phiếu đã hủy.");
+
+        if (header.Status == TransferStatuses.Pending)
+        {
+            const string itemsSql = """
+                SELECT batch_id AS BatchId, product_id AS ProductId, quantity AS Quantity
+                FROM inventory_transfer_items WHERE transfer_id = @TransferId
+                """;
+            var items = (await conn.QueryAsync<(Guid BatchId, Guid ProductId, decimal Quantity)>(
+                itemsSql, new { TransferId = transferId }, tx)).ToList();
+
+            foreach (var item in items)
+            {
+                var source = await GetBatchForUpdateAsync(conn, tx, item.BatchId, cancellationToken)
+                    ?? throw new InvalidOperationException("Lô nguồn không tồn tại.");
+                if (source.WarehouseId != header.FromWarehouseId)
+                    throw new InvalidOperationException("Lô không thuộc kho xuất.");
+
+                await IncreaseBatchQuantityAsync(conn, tx, source.Id, item.Quantity, cancellationToken);
+                await InsertMovementAsync(
+                    conn, tx, header.FromWarehouseId, source.Id, source.ProductId,
+                    StockMovementTypes.In, StockReferenceTypes.InventoryTransfer, transferId,
+                    item.Quantity, source.UnitCost, "Hủy phiếu đang chuyển — hoàn tồn kho xuất", cancellationToken);
+            }
+        }
 
         const string updateSql = """
             UPDATE inventory_transfers SET
@@ -1154,27 +1230,332 @@ internal sealed class InventoryRepository
         await tx.CommitAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<TransferListItemDto>> GetTransfersAsync(CancellationToken cancellationToken)
+    private async Task ShipTransferCoreAsync(
+        IDbConnection conn,
+        IDbTransaction tx,
+        Guid transferId,
+        Guid shippedBy,
+        CancellationToken cancellationToken)
     {
-        const string sql = """
+        const string headerSql = """
+            SELECT id AS Id, from_warehouse_id AS FromWarehouseId, to_warehouse_id AS ToWarehouseId, status AS Status
+            FROM inventory_transfers
+            WHERE id = @Id AND tenant_id = @TenantId
+            FOR UPDATE
+            """;
+        var header = await conn.QuerySingleOrDefaultAsync<(Guid Id, Guid FromWarehouseId, Guid ToWarehouseId, short Status)>(
+            headerSql, new { Id = transferId, TenantId }, tx);
+        if (header.Id == Guid.Empty)
+            throw new InvalidOperationException("Phiếu điều chuyển không tồn tại.");
+
+        if (header.Status == TransferStatuses.Completed)
+            throw new InvalidOperationException("Phiếu đã hoàn tất.");
+        if (header.Status == TransferStatuses.Cancelled)
+            throw new InvalidOperationException("Phiếu đã hủy.");
+        if (header.Status == TransferStatuses.Pending)
+            throw new InvalidOperationException("Phiếu đã gửi — chờ kho nhận xác nhận.");
+        if (header.Status != TransferStatuses.Draft)
+            throw new InvalidOperationException("Chỉ gửi được phiếu ở trạng thái chờ gửi.");
+
+        const string itemsSql = """
+            SELECT batch_id AS BatchId, product_id AS ProductId, quantity AS Quantity
+            FROM inventory_transfer_items WHERE transfer_id = @TransferId
+            """;
+        var items = (await conn.QueryAsync<(Guid BatchId, Guid ProductId, decimal Quantity)>(
+            itemsSql, new { TransferId = transferId }, tx)).ToList();
+        if (items.Count == 0)
+            throw new InvalidOperationException("Phiếu không có dòng hàng.");
+
+        foreach (var item in items)
+        {
+            var source = await GetBatchForUpdateAsync(conn, tx, item.BatchId, cancellationToken)
+                ?? throw new InvalidOperationException("Lô nguồn không tồn tại.");
+
+            if (source.WarehouseId != header.FromWarehouseId)
+                throw new InvalidOperationException("Lô không thuộc kho xuất.");
+            if (source.QuantityAvailable < item.Quantity)
+                throw new InvalidOperationException($"Không đủ tồn lô {source.BatchNumber}.");
+
+            await DecreaseBatchQuantityAsync(conn, tx, source.Id, item.Quantity, cancellationToken);
+            await InsertMovementAsync(
+                conn, tx, header.FromWarehouseId, source.Id, source.ProductId,
+                StockMovementTypes.Out, StockReferenceTypes.InventoryTransfer, transferId,
+                item.Quantity, source.UnitCost, null, cancellationToken);
+        }
+
+        const string updateSql = """
+            UPDATE inventory_transfers SET
+                status = @Status,
+                shipped_by = @ShippedBy,
+                shipped_at = NOW(),
+                approved_by = @ShippedBy,
+                approved_at = NOW(),
+                updated_at = NOW()
+            WHERE id = @Id AND tenant_id = @TenantId
+            """;
+        await conn.ExecuteAsync(updateSql, new
+        {
+            Id = transferId,
+            TenantId,
+            Status = TransferStatuses.Pending,
+            ShippedBy = shippedBy,
+        }, tx);
+    }
+
+    private async Task ReceiveTransferCoreAsync(
+        IDbConnection conn,
+        IDbTransaction tx,
+        Guid transferId,
+        Guid receivedBy,
+        string? receiveNotes,
+        IReadOnlyDictionary<Guid, decimal>? receivedByItemId,
+        CancellationToken cancellationToken)
+    {
+        const string headerSql = """
+            SELECT id AS Id, from_warehouse_id AS FromWarehouseId, to_warehouse_id AS ToWarehouseId, status AS Status
+            FROM inventory_transfers
+            WHERE id = @Id AND tenant_id = @TenantId
+            FOR UPDATE
+            """;
+        var header = await conn.QuerySingleOrDefaultAsync<(Guid Id, Guid FromWarehouseId, Guid ToWarehouseId, short Status)>(
+            headerSql, new { Id = transferId, TenantId }, tx);
+        if (header.Id == Guid.Empty)
+            throw new InvalidOperationException("Phiếu điều chuyển không tồn tại.");
+
+        if (header.Status == TransferStatuses.Completed)
+            throw new InvalidOperationException("Phiếu đã hoàn tất.");
+        if (header.Status == TransferStatuses.Cancelled)
+            throw new InvalidOperationException("Phiếu đã hủy.");
+        if (header.Status != TransferStatuses.Pending)
+            throw new InvalidOperationException("Chỉ nhận được phiếu đang chuyển.");
+
+        const string itemsSql = """
+            SELECT id AS Id, batch_id AS BatchId, product_id AS ProductId, quantity AS Quantity
+            FROM inventory_transfer_items WHERE transfer_id = @TransferId
+            """;
+        var items = (await conn.QueryAsync<(Guid Id, Guid BatchId, Guid ProductId, decimal Quantity)>(
+            itemsSql, new { TransferId = transferId }, tx)).ToList();
+        if (items.Count == 0)
+            throw new InvalidOperationException("Phiếu không có dòng hàng.");
+
+        var resolved = new List<(Guid Id, Guid BatchId, Guid ProductId, decimal Quantity, decimal Received)>(items.Count);
+        var hasShortage = false;
+        foreach (var item in items)
+        {
+            var received = receivedByItemId is null
+                ? item.Quantity
+                : receivedByItemId.TryGetValue(item.Id, out var qty)
+                    ? qty
+                    : item.Quantity;
+
+            if (received < 0)
+                throw new InvalidOperationException("Số lượng nhận không được âm.");
+            if (received > item.Quantity)
+                throw new InvalidOperationException("Số lượng nhận không được vượt quá số lượng phiếu.");
+            if (received < item.Quantity)
+                hasShortage = true;
+
+            resolved.Add((item.Id, item.BatchId, item.ProductId, item.Quantity, received));
+        }
+
+        if (hasShortage && string.IsNullOrWhiteSpace(receiveNotes))
+            throw new InvalidOperationException("Khi nhận thiếu phải ghi chú lý do lệch.");
+
+        foreach (var item in resolved)
+        {
+            var source = await GetBatchForUpdateAsync(conn, tx, item.BatchId, cancellationToken)
+                ?? throw new InvalidOperationException("Lô nguồn không tồn tại.");
+
+            if (item.Received > 0)
+            {
+                var destBatchId = await FindBatchIdByKeyAsync(
+                    conn, tx, header.ToWarehouseId, source.ProductId, source.BatchNumber, cancellationToken);
+
+                if (destBatchId is Guid existingDest)
+                {
+                    await IncreaseBatchQuantityAsync(conn, tx, existingDest, item.Received, cancellationToken);
+                }
+                else
+                {
+                    destBatchId = await InsertBatchAsync(
+                        conn, tx, header.ToWarehouseId, source.ProductId, source.BatchNumber,
+                        source.ManufactureDate, source.ExpiryDate, source.UnitCost, item.Received, cancellationToken);
+                }
+
+                await InsertMovementAsync(
+                    conn, tx, header.ToWarehouseId, destBatchId!.Value, source.ProductId,
+                    StockMovementTypes.In, StockReferenceTypes.InventoryTransfer, transferId,
+                    item.Received, source.UnitCost, null, cancellationToken);
+            }
+
+            var shortage = item.Quantity - item.Received;
+            if (shortage > 0)
+            {
+                if (source.WarehouseId != header.FromWarehouseId)
+                    throw new InvalidOperationException("Lô không thuộc kho xuất.");
+
+                await IncreaseBatchQuantityAsync(conn, tx, source.Id, shortage, cancellationToken);
+                await InsertMovementAsync(
+                    conn, tx, header.FromWarehouseId, source.Id, source.ProductId,
+                    StockMovementTypes.In, StockReferenceTypes.InventoryTransfer, transferId,
+                    shortage, source.UnitCost, "Nhận thiếu — hoàn tồn kho xuất", cancellationToken);
+            }
+
+            await conn.ExecuteAsync(
+                """
+                UPDATE inventory_transfer_items
+                SET received_quantity = @ReceivedQuantity
+                WHERE id = @Id
+                """,
+                new { Id = item.Id, ReceivedQuantity = item.Received },
+                tx);
+        }
+
+        const string updateSql = """
+            UPDATE inventory_transfers SET
+                status = @Status,
+                received_by = @ReceivedBy,
+                received_at = NOW(),
+                receive_notes = @ReceiveNotes,
+                approved_by = @ReceivedBy,
+                approved_at = NOW(),
+                updated_at = NOW()
+            WHERE id = @Id AND tenant_id = @TenantId
+            """;
+        await conn.ExecuteAsync(updateSql, new
+        {
+            Id = transferId,
+            TenantId,
+            Status = TransferStatuses.Completed,
+            ReceivedBy = receivedBy,
+            ReceiveNotes = string.IsNullOrWhiteSpace(receiveNotes) ? null : receiveNotes.Trim(),
+        }, tx);
+    }
+
+    public async Task<(IReadOnlyList<TransferListItemDto> Items, int Total)> GetTransfersAsync(
+        TransferListFilter filter,
+        Guid[]? allowedWarehouseIds,
+        CancellationToken cancellationToken)
+    {
+        var page = Math.Max(1, filter.Page);
+        var pageSize = Math.Clamp(filter.PageSize, 1, 100);
+        var offset = (page - 1) * pageSize;
+
+        var conditions = new List<string> { "t.tenant_id = @TenantId" };
+        var parameters = new DynamicParameters();
+        parameters.Add("TenantId", TenantId);
+
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            conditions.Add("t.transfer_number ILIKE @Search");
+            parameters.Add("Search", $"%{filter.Search.Trim()}%");
+        }
+
+        if (filter.Status is short status)
+        {
+            conditions.Add("t.status = @Status");
+            parameters.Add("Status", status);
+        }
+
+        if (filter.FromWarehouseId is Guid fromWarehouseId)
+        {
+            conditions.Add("t.from_warehouse_id = @FromWarehouseId");
+            parameters.Add("FromWarehouseId", fromWarehouseId);
+        }
+
+        if (filter.ToWarehouseId is Guid toWarehouseId)
+        {
+            conditions.Add("t.to_warehouse_id = @ToWarehouseId");
+            parameters.Add("ToWarehouseId", toWarehouseId);
+        }
+
+        if (filter.DateFrom is DateOnly dateFrom)
+        {
+            conditions.Add("t.transfer_date >= @DateFrom");
+            parameters.Add("DateFrom", dateFrom.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+        }
+
+        if (filter.DateTo is DateOnly dateTo)
+        {
+            conditions.Add("t.transfer_date < @DateToExclusive");
+            parameters.Add("DateToExclusive", dateTo.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+        }
+
+        if (filter.HasShortage is true)
+        {
+            conditions.Add("""
+                EXISTS (
+                    SELECT 1 FROM inventory_transfer_items i
+                    WHERE i.transfer_id = t.id
+                      AND i.received_quantity IS NOT NULL
+                      AND i.received_quantity < i.quantity
+                )
+                """);
+        }
+        else if (filter.HasShortage is false)
+        {
+            conditions.Add("""
+                NOT EXISTS (
+                    SELECT 1 FROM inventory_transfer_items i
+                    WHERE i.transfer_id = t.id
+                      AND i.received_quantity IS NOT NULL
+                      AND i.received_quantity < i.quantity
+                )
+                """);
+        }
+
+        if (allowedWarehouseIds is { Length: > 0 })
+        {
+            conditions.Add("(t.from_warehouse_id = ANY(@AllowedWarehouseIds) OR t.to_warehouse_id = ANY(@AllowedWarehouseIds))");
+            parameters.Add("AllowedWarehouseIds", allowedWarehouseIds);
+        }
+
+        var where = string.Join(" AND ", conditions);
+        var countSql = $"""
+            SELECT COUNT(*)::int
+            FROM inventory_transfers t
+            WHERE {where}
+            """;
+        var sql = $"""
             SELECT
                 t.id AS Id,
                 t.transfer_number AS TransferNumber,
                 t.from_warehouse_id AS FromWarehouseId,
-                fw.warehouse_name AS FromWarehouseName,
+                CASE
+                    WHEN NULLIF(TRIM(fb.branch_name), '') IS NULL THEN fw.warehouse_name
+                    ELSE fw.warehouse_name || ' · ' || fb.branch_name
+                END AS FromWarehouseName,
                 t.to_warehouse_id AS ToWarehouseId,
-                tw.warehouse_name AS ToWarehouseName,
+                CASE
+                    WHEN NULLIF(TRIM(tb.branch_name), '') IS NULL THEN tw.warehouse_name
+                    ELSE tw.warehouse_name || ' · ' || tb.branch_name
+                END AS ToWarehouseName,
                 t.status AS Status,
                 t.transfer_date AS TransferDate,
-                (SELECT COUNT(*)::int FROM inventory_transfer_items i WHERE i.transfer_id = t.id) AS ItemCount
+                (SELECT COUNT(*)::int FROM inventory_transfer_items i WHERE i.transfer_id = t.id) AS ItemCount,
+                EXISTS (
+                    SELECT 1 FROM inventory_transfer_items i
+                    WHERE i.transfer_id = t.id
+                      AND i.received_quantity IS NOT NULL
+                      AND i.received_quantity < i.quantity
+                ) AS HasShortage
             FROM inventory_transfers t
             INNER JOIN warehouses fw ON fw.id = t.from_warehouse_id
             INNER JOIN warehouses tw ON tw.id = t.to_warehouse_id
-            WHERE t.tenant_id = @TenantId
-            ORDER BY t.transfer_date DESC
+            LEFT JOIN branches fb ON fb.id = fw.branch_id
+            LEFT JOIN branches tb ON tb.id = tw.branch_id
+            WHERE {where}
+            ORDER BY t.transfer_date DESC, t.transfer_number DESC
+            LIMIT @PageSize OFFSET @Offset
             """;
+
+        parameters.Add("PageSize", pageSize);
+        parameters.Add("Offset", offset);
+
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return (await conn.QueryAsync<TransferListItemDto>(sql, new { TenantId })).ToList();
+        var total = await conn.ExecuteScalarAsync<int>(countSql, parameters);
+        var items = (await conn.QueryAsync<TransferListItemDto>(sql, parameters)).ToList();
+        return (items, total);
     }
 
     public async Task<TransferDetailDto?> GetTransferAsync(Guid id, CancellationToken cancellationToken)
@@ -1184,15 +1565,26 @@ internal sealed class InventoryRepository
                 t.id AS Id,
                 t.transfer_number AS TransferNumber,
                 t.from_warehouse_id AS FromWarehouseId,
-                fw.warehouse_name AS FromWarehouseName,
+                CASE
+                    WHEN NULLIF(TRIM(fb.branch_name), '') IS NULL THEN fw.warehouse_name
+                    ELSE fw.warehouse_name || ' · ' || fb.branch_name
+                END AS FromWarehouseName,
                 t.to_warehouse_id AS ToWarehouseId,
-                tw.warehouse_name AS ToWarehouseName,
+                CASE
+                    WHEN NULLIF(TRIM(tb.branch_name), '') IS NULL THEN tw.warehouse_name
+                    ELSE tw.warehouse_name || ' · ' || tb.branch_name
+                END AS ToWarehouseName,
                 t.status AS Status,
                 t.transfer_date AS TransferDate,
-                t.notes AS Notes
+                t.notes AS Notes,
+                t.receive_notes AS ReceiveNotes,
+                t.shipped_at AS ShippedAt,
+                t.received_at AS ReceivedAt
             FROM inventory_transfers t
             INNER JOIN warehouses fw ON fw.id = t.from_warehouse_id
             INNER JOIN warehouses tw ON tw.id = t.to_warehouse_id
+            LEFT JOIN branches fb ON fb.id = fw.branch_id
+            LEFT JOIN branches tb ON tb.id = tw.branch_id
             WHERE t.id = @Id AND t.tenant_id = @TenantId
             """;
         const string itemsSql = """
@@ -1207,7 +1599,8 @@ internal sealed class InventoryRepository
                 (SELECT u.unit_name FROM product_units u
                  WHERE u.product_id = p.id AND u.is_sale_unit = TRUE AND u.status = 1
                  ORDER BY u.is_base_unit DESC, u.unit_name LIMIT 1) AS UnitName,
-                i.quantity AS Quantity
+                i.quantity AS Quantity,
+                i.received_quantity AS ReceivedQuantity
             FROM inventory_transfer_items i
             INNER JOIN products p ON p.id = i.product_id
             INNER JOIN inventory_batches b ON b.id = i.batch_id
@@ -1230,6 +1623,9 @@ internal sealed class InventoryRepository
             header.Status,
             header.TransferDate,
             header.Notes,
+            header.ReceiveNotes,
+            header.ShippedAt,
+            header.ReceivedAt,
             items);
     }
 
@@ -2006,9 +2402,65 @@ internal sealed class InventoryRepository
         }) > 0;
     }
 
-    public async Task<IReadOnlyList<AdjustmentListItemDto>> GetAdjustmentsAsync(CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<AdjustmentListItemDto> Items, int Total)> GetAdjustmentsAsync(
+        AdjustmentListFilter filter,
+        Guid[]? allowedWarehouseIds,
+        CancellationToken cancellationToken)
     {
-        const string sql = """
+        var page = Math.Max(1, filter.Page);
+        var pageSize = Math.Clamp(filter.PageSize, 1, 100);
+        var offset = (page - 1) * pageSize;
+
+        var conditions = new List<string> { "a.tenant_id = @TenantId" };
+        var parameters = new DynamicParameters();
+        parameters.Add("TenantId", TenantId);
+        parameters.Add("Counting", AdjustmentStatuses.Counting);
+        parameters.Add("PageSize", pageSize);
+        parameters.Add("Offset", offset);
+
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            conditions.Add("a.adjustment_number ILIKE @Search");
+            parameters.Add("Search", $"%{filter.Search.Trim()}%");
+        }
+
+        if (filter.Status is short status)
+        {
+            conditions.Add("a.status = @Status");
+            parameters.Add("Status", status);
+        }
+
+        if (filter.WarehouseId is Guid warehouseId)
+        {
+            conditions.Add("a.warehouse_id = @WarehouseId");
+            parameters.Add("WarehouseId", warehouseId);
+        }
+        else if (allowedWarehouseIds is { Length: > 0 })
+        {
+            conditions.Add("a.warehouse_id = ANY(@AllowedWarehouseIds)");
+            parameters.Add("AllowedWarehouseIds", allowedWarehouseIds);
+        }
+
+        if (filter.DateFrom is DateOnly dateFrom)
+        {
+            conditions.Add("a.adjustment_date >= @DateFrom");
+            parameters.Add("DateFrom", dateFrom.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+        }
+
+        if (filter.DateTo is DateOnly dateTo)
+        {
+            conditions.Add("a.adjustment_date < @DateToExclusive");
+            parameters.Add("DateToExclusive", dateTo.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+        }
+
+        var where = string.Join(" AND ", conditions);
+        var countSql = $"""
+            SELECT COUNT(*)::int
+            FROM inventory_adjustments a
+            INNER JOIN warehouses w ON w.id = a.warehouse_id
+            WHERE {where}
+            """;
+        var sql = $"""
             SELECT
                 a.id AS Id,
                 a.adjustment_number AS AdjustmentNumber,
@@ -2023,11 +2475,15 @@ internal sealed class InventoryRepository
                  END) AS ItemCount
             FROM inventory_adjustments a
             INNER JOIN warehouses w ON w.id = a.warehouse_id
-            WHERE a.tenant_id = @TenantId
-            ORDER BY a.adjustment_date DESC
+            WHERE {where}
+            ORDER BY a.adjustment_date DESC, a.adjustment_number DESC
+            LIMIT @PageSize OFFSET @Offset
             """;
+
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return (await conn.QueryAsync<AdjustmentListItemDto>(sql, new { TenantId, Counting = AdjustmentStatuses.Counting })).ToList();
+        var total = await conn.QuerySingleAsync<int>(countSql, parameters);
+        var items = (await conn.QueryAsync<AdjustmentListItemDto>(sql, parameters)).ToList();
+        return (items, total);
     }
 
     public async Task<AdjustmentDetailDto?> GetAdjustmentAsync(Guid id, CancellationToken cancellationToken)
@@ -2090,6 +2546,9 @@ internal sealed class InventoryRepository
         public short Status { get; init; }
         public DateTime TransferDate { get; init; }
         public string? Notes { get; init; }
+        public string? ReceiveNotes { get; init; }
+        public DateTime? ShippedAt { get; init; }
+        public DateTime? ReceivedAt { get; init; }
     }
 
     private sealed class AdjustmentHeaderRow

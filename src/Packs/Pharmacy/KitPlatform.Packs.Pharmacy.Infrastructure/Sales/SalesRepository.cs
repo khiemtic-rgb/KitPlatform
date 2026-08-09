@@ -1763,9 +1763,23 @@ internal sealed class SalesRepository
         string? search,
         string? customerSearch,
         string? documentSearch,
+        short? status,
+        DateTime? from,
+        DateTime? to,
         CancellationToken cancellationToken)
     {
         var searchFilter = BuildSalesReturnSearchFilter(search, customerSearch, documentSearch);
+        var statusFilter = status is short st
+            ? "AND r.status = @Status"
+            : string.Empty;
+        var dateFilter = from is not null && to is not null
+            ? "AND r.return_date >= @From AND r.return_date < @To"
+            : from is not null
+                ? "AND r.return_date >= @From"
+                : to is not null
+                    ? "AND r.return_date < @To"
+                    : string.Empty;
+
         var sql = $"""
             SELECT
                 r.id AS Id, r.return_number AS ReturnNumber, r.sales_order_id AS SalesOrderId,
@@ -1783,6 +1797,8 @@ internal sealed class SalesRepository
             ) t ON t.sales_return_id = r.id
             WHERE r.tenant_id = @TenantId
               {searchFilter}
+              {statusFilter}
+              {dateFilter}
             ORDER BY r.return_date DESC
             LIMIT @Limit
             """;
@@ -1804,6 +1820,9 @@ internal sealed class SalesRepository
             CustomerSearchDigits = customerSearchDigits,
             CustomerSearchDigitsPattern = BuildPhoneDigitsPattern(customerSearchDigits),
             DocumentSearchPattern = documentPattern,
+            Status = status,
+            From = from,
+            To = to,
             Limit = Math.Clamp(limit, 1, 200),
         });
         return rows.Select(r => new SalesReturnListItemDto(
@@ -1854,9 +1873,27 @@ internal sealed class SalesRepository
 
     public async Task<IReadOnlyList<SalesShiftListItemDto>> GetShiftsAsync(
         int limit,
+        string? search,
+        short? status,
+        Guid? warehouseId,
+        DateTime? from,
+        DateTime? to,
         CancellationToken cancellationToken)
     {
-        const string sql = """
+        var conditions = new List<string> { "s.tenant_id = @TenantId" };
+        if (!string.IsNullOrWhiteSpace(search))
+            conditions.Add("s.shift_number ILIKE @Search");
+        if (status is short st)
+            conditions.Add("s.status = @Status");
+        if (warehouseId is Guid wh)
+            conditions.Add("s.warehouse_id = @WarehouseId");
+        if (from is not null)
+            conditions.Add("s.opened_at >= @From");
+        if (to is not null)
+            conditions.Add("s.opened_at < @To");
+
+        var where = string.Join(" AND ", conditions);
+        var sql = $"""
             SELECT
                 s.id AS Id, s.shift_number AS ShiftNumber, s.warehouse_id AS WarehouseId,
                 w.warehouse_name AS WarehouseName,
@@ -1868,13 +1905,22 @@ internal sealed class SalesRepository
             INNER JOIN warehouses w ON w.id = s.warehouse_id
             INNER JOIN users u ON u.id = s.opened_by
             LEFT JOIN employees e ON e.id = u.employee_id
-            WHERE s.tenant_id = @TenantId
+            WHERE {where}
             ORDER BY s.opened_at DESC
             LIMIT @Limit
             """;
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return (await conn.QueryAsync<SalesShiftListItemDto>(sql, new { TenantId, Limit = limit })).ToList();
+        return (await conn.QueryAsync<SalesShiftListItemDto>(sql, new
+        {
+            TenantId,
+            Search = string.IsNullOrWhiteSpace(search) ? null : $"%{search.Trim()}%",
+            Status = status,
+            WarehouseId = warehouseId,
+            From = from,
+            To = to,
+            Limit = Math.Clamp(limit, 1, 200),
+        })).ToList();
     }
 
     public async Task<SalesShiftDetailDto?> GetOpenShiftAsync(
@@ -3355,6 +3401,18 @@ internal sealed class SalesRepository
         {
             conditions.Add("cp.payment_date < @DateTo");
             parameters.Add("DateTo", dateTo.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+        }
+
+        if (filter.PaymentMethod is short paymentMethod)
+        {
+            conditions.Add("cp.payment_method = @PaymentMethod");
+            parameters.Add("PaymentMethod", paymentMethod);
+        }
+
+        if (filter.WarehouseId is Guid warehouseId)
+        {
+            conditions.Add("so.warehouse_id = @WarehouseId");
+            parameters.Add("WarehouseId", warehouseId);
         }
 
         if (allowedWarehouseIds is { Length: > 0 })

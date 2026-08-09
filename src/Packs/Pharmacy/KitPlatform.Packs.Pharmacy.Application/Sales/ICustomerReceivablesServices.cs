@@ -3,10 +3,12 @@
 public interface ICustomerReceivablesService
 {
     Task<IReadOnlyList<CustomerReceivablesRowDto>> GetSummaryAsync(
+        Guid? warehouseId = null,
         CancellationToken cancellationToken = default);
 
     Task<CustomerReceivablesDetailDto?> GetDetailAsync(
         Guid customerId,
+        Guid? warehouseId = null,
         CancellationToken cancellationToken = default);
 }
 

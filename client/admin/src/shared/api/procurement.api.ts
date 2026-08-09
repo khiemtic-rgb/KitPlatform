@@ -597,13 +597,20 @@ function normalizePayablesRow(row: Record<string, unknown>) {
   };
 }
 
-export async function fetchSupplierPayables() {
-  const { data } = await http.get<Record<string, unknown>[]>('/procurement/supplier-payables');
+export async function fetchSupplierPayables(filters?: { warehouseId?: string }) {
+  const { data } = await http.get<Record<string, unknown>[]>('/procurement/supplier-payables', {
+    params: filters?.warehouseId ? { warehouseId: filters.warehouseId } : undefined,
+  });
   return data.map((row) => normalizePayablesRow(row));
 }
 
-export async function fetchSupplierPayablesDetail(supplierId: string) {
-  const { data } = await http.get<Record<string, unknown>>(`/procurement/supplier-payables/${supplierId}`);
+export async function fetchSupplierPayablesDetail(
+  supplierId: string,
+  filters?: { warehouseId?: string },
+) {
+  const { data } = await http.get<Record<string, unknown>>(`/procurement/supplier-payables/${supplierId}`, {
+    params: filters?.warehouseId ? { warehouseId: filters.warehouseId } : undefined,
+  });
   const lines = ((data.lines ?? data.Lines ?? []) as Record<string, unknown>[]).map((line) => ({
     goodsReceiptId: String(line.goodsReceiptId ?? line.GoodsReceiptId),
     grnNumber: String(line.grnNumber ?? line.GrnNumber ?? ''),

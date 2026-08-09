@@ -2,8 +2,10 @@ import { http } from '@/shared/api/http';
 import { isAxiosError } from 'axios';
 import type {
   AdjustmentCountEntry,
+  AdjustmentListFilters,
   AdjustmentListItem,
   InventoryBarcodeResolve,
+  PagedAdjustments,
   PagedStockBatches,
   PagedStockProducts,
   StockBatch,
@@ -56,6 +58,7 @@ function normalizeTransferListItem(row: Record<string, unknown>): TransferListIt
     status: Number(row.status ?? row.Status ?? 1),
     transferDate: String(row.transferDate ?? row.TransferDate ?? ''),
     itemCount: Number(row.itemCount ?? row.ItemCount ?? 0),
+    hasShortage: Boolean(row.hasShortage ?? row.HasShortage ?? false),
   };
 }
 
@@ -65,6 +68,9 @@ function normalizeTransferDetail(data: Record<string, unknown>): TransferDetail 
   return {
     ...base,
     notes: (data.notes ?? data.Notes) as string | undefined,
+    receiveNotes: (data.receiveNotes ?? data.ReceiveNotes) as string | undefined,
+    shippedAt: (data.shippedAt ?? data.ShippedAt) as string | undefined,
+    receivedAt: (data.receivedAt ?? data.ReceivedAt) as string | undefined,
     items: rawItems.map((row) => ({
       id: String(row.id ?? row.Id),
       batchId: String(row.batchId ?? row.BatchId),
@@ -73,6 +79,10 @@ function normalizeTransferDetail(data: Record<string, unknown>): TransferDetail 
       productName: String(row.productName ?? row.ProductName ?? ''),
       batchNumber: String(row.batchNumber ?? row.BatchNumber ?? ''),
       quantity: Number(row.quantity ?? row.Quantity ?? 0),
+      receivedQuantity:
+        row.receivedQuantity == null && row.ReceivedQuantity == null
+          ? undefined
+          : Number(row.receivedQuantity ?? row.ReceivedQuantity),
     })),
   };
 }
@@ -97,9 +107,34 @@ export async function fetchStockProducts(params: {
   return normalizePaged(data, normalizeStockProductSummary);
 }
 
-export async function fetchTransfers(): Promise<TransferListItem[]> {
-  const { data } = await http.get<Record<string, unknown>[]>('/inventory/transfers');
-  return data.map((row) => normalizeTransferListItem(row));
+export async function fetchTransfers(filters?: {
+  search?: string;
+  status?: number;
+  fromWarehouseId?: string;
+  toWarehouseId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  hasShortage?: boolean;
+  page?: number;
+  pageSize?: number;
+}): Promise<{ items: TransferListItem[]; total: number; page: number; pageSize: number }> {
+  const params: Record<string, string | number | boolean> = {};
+  if (filters) {
+    for (const [key, value] of Object.entries(filters)) {
+      if (value === undefined || value === '' || value === false) continue;
+      params[key] = value as string | number | boolean;
+    }
+  }
+  const { data } = await http.get<Record<string, unknown>>('/inventory/transfers', {
+    params: Object.keys(params).length > 0 ? params : undefined,
+  });
+  const rawItems = (data.items ?? data.Items ?? []) as Record<string, unknown>[];
+  return {
+    items: rawItems.map((row) => normalizeTransferListItem(row)),
+    total: Number(data.total ?? data.Total ?? 0),
+    page: Number(data.page ?? data.Page ?? 1),
+    pageSize: Number(data.pageSize ?? data.PageSize ?? rawItems.length),
+  };
 }
 
 export async function fetchTransfer(id: string): Promise<TransferDetail> {
@@ -119,6 +154,22 @@ export async function createTransfer(payload: {
 
 export async function completeTransfer(id: string): Promise<TransferDetail> {
   const { data } = await http.post<Record<string, unknown>>(`/inventory/transfers/${id}/complete`);
+  return normalizeTransferDetail(data);
+}
+
+export async function shipTransfer(id: string): Promise<TransferDetail> {
+  const { data } = await http.post<Record<string, unknown>>(`/inventory/transfers/${id}/ship`);
+  return normalizeTransferDetail(data);
+}
+
+export async function receiveTransfer(
+  id: string,
+  payload?: {
+    notes?: string;
+    items?: { transferItemId: string; receivedQuantity: number }[];
+  },
+): Promise<TransferDetail> {
+  const { data } = await http.post<Record<string, unknown>>(`/inventory/transfers/${id}/receive`, payload ?? {});
   return normalizeTransferDetail(data);
 }
 
@@ -152,9 +203,18 @@ function normalizeCountEntry(row: Record<string, unknown>): AdjustmentCountEntry
   };
 }
 
-export async function fetchAdjustments(): Promise<AdjustmentListItem[]> {
-  const { data } = await http.get<Record<string, unknown>[]>('/inventory/adjustments');
-  return data.map((row) => normalizeAdjustmentListItem(row));
+export async function fetchAdjustments(filters?: AdjustmentListFilters): Promise<PagedAdjustments> {
+  const params: Record<string, string | number> = {};
+  if (filters) {
+    for (const [key, value] of Object.entries(filters)) {
+      if (value === undefined || value === '') continue;
+      params[key] = value as string | number;
+    }
+  }
+  const { data } = await http.get<Record<string, unknown>>('/inventory/adjustments', {
+    params: Object.keys(params).length > 0 ? params : undefined,
+  });
+  return normalizePaged(data, normalizeAdjustmentListItem);
 }
 
 export async function fetchAdjustment(id: string): Promise<AdjustmentListItem> {

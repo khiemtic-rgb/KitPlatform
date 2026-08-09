@@ -441,6 +441,23 @@
   "supplierPayables": {
     "title": "Supplier payables",
     "intro": "Payables are based on goods receipt line totals (pre-VAT). Purchase order post-tax totals are reference only. Unlinked payments are applied to the oldest receipts first.",
+    "searchPlaceholder": "Supplier code or name",
+    "filters": {
+      "warehouse": "Warehouse",
+      "agingAll": "All aging",
+      "agingCurrent": "Has 0–30 day balance",
+      "aging31To60": "Has 31–60 day balance",
+      "aging61To90": "Has 61–90 day balance",
+      "agingOver90": "Has > 90 day balance",
+      "balanceAll": "All balances",
+      "balancePayable": "Payable > 0",
+      "balanceCredit": "Has unapplied credit",
+      "balanceOver100k": "Payable ≥ 100,000",
+      "balanceOver500k": "Payable ≥ 500,000",
+      "balanceOver1m": "Payable ≥ 1,000,000",
+      "clear": "Clear filters",
+      "reload": "Reload"
+    },
     "detailDrawer": "Payables detail",
     "detailDrawerWithName": "Payables — {{supplierName}}",
     "createPayment": "Create payment",

@@ -26,11 +26,12 @@ public sealed class OpeningBalanceController : ControllerBase
         [FromQuery] Guid? productId,
         [FromQuery] string? search,
         [FromQuery] string? status,
+        [FromQuery] string? expiry,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,
         CancellationToken cancellationToken = default) =>
         Ok(await _inventory.GetOpeningBalanceBatchesAsync(
-            warehouseId, productId, search, status, page, pageSize, cancellationToken));
+            warehouseId, productId, search, status, expiry, page, pageSize, cancellationToken));
 
     [HttpPost]
     [Authorize(Policy = InventoryPolicies.Write)]

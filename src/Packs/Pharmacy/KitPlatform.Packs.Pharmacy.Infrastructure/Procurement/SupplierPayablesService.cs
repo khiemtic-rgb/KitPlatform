@@ -15,9 +15,10 @@ internal sealed class SupplierPayablesService : ISupplierPayablesService
     }
 
     public async Task<IReadOnlyList<SupplierPayablesRowDto>> GetSummaryAsync(
+        Guid? warehouseId = null,
         CancellationToken cancellationToken = default)
     {
-        var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(null, cancellationToken);
+        var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
         var rows = await _repository.GetGrnPayableSourceRowsAsync(allowed, cancellationToken);
         var credits = await _repository.GetUnlinkedSupplierPaymentTotalsAsync(allowed, cancellationToken);
         return BuildSupplierGroups(rows, credits)
@@ -30,9 +31,10 @@ internal sealed class SupplierPayablesService : ISupplierPayablesService
 
     public async Task<SupplierPayablesDetailDto?> GetDetailAsync(
         Guid supplierId,
+        Guid? warehouseId = null,
         CancellationToken cancellationToken = default)
     {
-        var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(null, cancellationToken);
+        var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
         var rows = await _repository.GetGrnPayableSourceRowsAsync(allowed, cancellationToken);
         var credits = await _repository.GetUnlinkedSupplierPaymentTotalsAsync(allowed, cancellationToken);
         var group = BuildSupplierGroups(rows, credits)

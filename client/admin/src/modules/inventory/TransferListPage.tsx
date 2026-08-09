@@ -4,6 +4,7 @@ import {
   Alert,
   Button,
   Card,
+  DatePicker,
   Drawer,
   Empty,
   Form,
@@ -11,6 +12,7 @@ import {
   InputNumber,
   Select,
   Space,
+  Spin,
   Table,
   Tag,
   Typography,
@@ -18,6 +20,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { isAxiosError } from 'axios';
+import { type Dayjs } from 'dayjs';
 import {
   CheckCircleOutlined,
   DeleteOutlined,
@@ -28,6 +31,7 @@ import {
   PlusOutlined,
   ReloadOutlined,
   SaveOutlined,
+  SendOutlined,
   StopOutlined,
   SwapOutlined,
 } from '@ant-design/icons';
@@ -40,10 +44,12 @@ import {
   fetchTransfer,
   fetchTransfers,
   fetchWarehouses,
+  receiveTransfer,
+  shipTransfer,
 } from '@/shared/api/inventory.api';
 import { fetchProduct } from '@/shared/api/catalog.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
-import type { TransferDetail, TransferListItem, Warehouse } from '@/shared/api/inventory.types';
+import type { TransferDetail, TransferItem, TransferListItem, Warehouse } from '@/shared/api/inventory.types';
 import type { ProductUnit } from '@/shared/api/catalog.types';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayQuantity } from '@/shared/utils/money';
@@ -427,9 +433,19 @@ export function TransferListPage() {
   const { t } = useTranslation('inventory', { keyPrefix: 'transferList' });
   const { t: ts } = useTranslation('inventory', { keyPrefix: 'shared' });
   const { t: tc } = useTranslation('common');
-  const { transferStatusLabel } = useInventoryEnums();
+  const { transferStatusLabel, transferStatusOptions } = useInventoryEnums();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<TransferListItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<number | undefined>();
+  const [fromWarehouseFilter, setFromWarehouseFilter] = useState<string | undefined>();
+  const [toWarehouseFilter, setToWarehouseFilter] = useState<string | undefined>();
+  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  const [shortageOnly, setShortageOnly] = useState(false);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -441,24 +457,63 @@ export function TransferListPage() {
   const [composer, setComposer] = useState<LineEditorState>(emptyEditor);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<LineEditorState>(emptyEditor);
+  const [receiveOpen, setReceiveOpen] = useState(false);
+  const [receiveBusy, setReceiveBusy] = useState(false);
+  const [receiveNotes, setReceiveNotes] = useState('');
+  const [receiveQtyByItem, setReceiveQtyByItem] = useState<Record<string, number>>({});
+  const [actionBusyId, setActionBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [transfers, wh] = await Promise.all([fetchTransfers(), fetchWarehouses()]);
-      setItems(transfers);
+      const [paged, wh] = await Promise.all([
+        fetchTransfers({
+          search: search.trim() || undefined,
+          status: statusFilter,
+          fromWarehouseId: fromWarehouseFilter,
+          toWarehouseId: toWarehouseFilter,
+          dateFrom: dateRange?.[0] ? dateRange[0].format('YYYY-MM-DD') : undefined,
+          dateTo: dateRange?.[1] ? dateRange[1].format('YYYY-MM-DD') : undefined,
+          hasShortage: shortageOnly ? true : undefined,
+          page,
+          pageSize,
+        }),
+        fetchWarehouses(),
+      ]);
+      setItems(paged.items);
+      setTotal(paged.total);
       setWarehouses(wh);
     } catch (error) {
       message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [
+    t,
+    search,
+    statusFilter,
+    fromWarehouseFilter,
+    toWarehouseFilter,
+    dateRange,
+    shortageOnly,
+    page,
+    pageSize,
+  ]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  const resetFilters = () => {
+    setSearchInput('');
+    setSearch('');
+    setStatusFilter(undefined);
+    setFromWarehouseFilter(undefined);
+    setToWarehouseFilter(undefined);
+    setDateRange(null);
+    setShortageOnly(false);
+    setPage(1);
+  };
   useEffect(() => {
     if (!drawerOpen) return;
     setLines([]);
@@ -585,7 +640,81 @@ export function TransferListPage() {
     }
   };
 
+  const handleShip = async (id: string) => {
+    setActionBusyId(id);
+    try {
+      await shipTransfer(id);
+      message.success(t('messages.shipSuccess'));
+      if (detail?.id === id) {
+        setDetail(await fetchTransfer(id));
+      }
+      load();
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('messages.shipFailed')));
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
+  const openReceive = (doc: TransferDetail) => {
+    const qty: Record<string, number> = {};
+    for (const line of doc.items) {
+      qty[line.id] = line.quantity;
+    }
+    setReceiveQtyByItem(qty);
+    setReceiveNotes('');
+    setReceiveOpen(true);
+    if (detail?.id !== doc.id) {
+      setDetail(doc);
+    }
+  };
+
+  const handleOpenReceive = async (id: string) => {
+    try {
+      const doc = detail?.id === id ? detail : await fetchTransfer(id);
+      setDetail(doc);
+      setDetailOpen(true);
+      openReceive(doc);
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
+    }
+  };
+
+  const hasReceiveShortage = useMemo(() => {
+    if (!detail) return false;
+    return detail.items.some((line) => (receiveQtyByItem[line.id] ?? line.quantity) < line.quantity);
+  }, [detail, receiveQtyByItem]);
+
+  const handleReceiveConfirm = async () => {
+    if (!detail) return;
+    if (hasReceiveShortage && !receiveNotes.trim()) {
+      message.warning(t('messages.receiveNotesRequired'));
+      return;
+    }
+    setReceiveBusy(true);
+    try {
+      const updated = await receiveTransfer(detail.id, {
+        notes: receiveNotes.trim() || undefined,
+        items: detail.items.map((line) => ({
+          transferItemId: line.id,
+          receivedQuantity: receiveQtyByItem[line.id] ?? line.quantity,
+        })),
+      });
+      setDetail(updated);
+      setReceiveOpen(false);
+      message.success(
+        hasReceiveShortage ? t('messages.receiveSuccessWithShortage') : t('messages.receiveSuccess'),
+      );
+      load();
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('messages.receiveFailed')));
+    } finally {
+      setReceiveBusy(false);
+    }
+  };
+
   const handleComplete = async (id: string) => {
+    setActionBusyId(id);
     try {
       await completeTransfer(id);
       message.success(t('messages.completeSuccess'));
@@ -595,24 +724,37 @@ export function TransferListPage() {
       load();
     } catch (error) {
       message.error(apiErrorMessage(error, t('messages.completeFailed')));
+    } finally {
+      setActionBusyId(null);
     }
   };
 
   const handleCancel = async (id: string) => {
+    setActionBusyId(id);
     try {
       await cancelTransfer(id);
       message.success(t('messages.cancelSuccess'));
       if (detail?.id === id) {
         setDetail(await fetchTransfer(id));
       }
+      setReceiveOpen(false);
       load();
     } catch (error) {
       message.error(apiErrorMessage(error, t('messages.cancelFailed')));
+    } finally {
+      setActionBusyId(null);
     }
   };
 
   const lineColumns: ColumnsType<TransferDraftLine> = useMemo(
     () => [
+      {
+        title: ts('stt'),
+        key: 'stt',
+        width: 52,
+        align: 'center',
+        render: (_: unknown, __: TransferDraftLine, index: number) => index + 1,
+      },
       {
         title: ts('productName'),
         dataIndex: 'productLabel',
@@ -684,9 +826,25 @@ export function TransferListPage() {
     {
       title: tc('fields.status'),
       dataIndex: 'status',
-      width: 110,
-      render: (v: number) => (
-        <Tag color={v === 3 ? 'green' : v === 1 ? 'gold' : 'blue'}>{transferStatusLabel(v)}</Tag>
+      width: 200,
+      render: (v: number, row) => (
+        <Space size={4} wrap>
+          <Tag
+            color={
+              row.hasShortage && v === 3
+                ? 'orange'
+                : v === 3
+                  ? 'green'
+                  : v === 2
+                    ? 'processing'
+                    : v === 1
+                      ? 'gold'
+                      : 'default'
+            }
+          >
+            {row.hasShortage && v === 3 ? t('completedWithShortage') : transferStatusLabel(v)}
+          </Tag>
+        </Space>
       ),
     },
     {
@@ -699,43 +857,94 @@ export function TransferListPage() {
     {
       title: tc('fields.actions'),
       key: 'actions',
-      width: 160,
+      width: 280,
       render: (_, row) => (
-        <Space size={4} onClick={(e) => e.stopPropagation()}>
-          <Tag
-            color="blue"
-            icon={<EyeOutlined />}
-            style={{ cursor: 'pointer', margin: 0 }}
-            onClick={() => openDetail(row.id)}
-          >
-            {ts('detail')}
-          </Tag>
-          {row.status !== 3 && row.status !== 4 && (
-            <>
-              <Tag
-                color="green"
-                icon={<CheckCircleOutlined />}
-                style={{ cursor: 'pointer', margin: 0 }}
-                onClick={() => handleComplete(row.id)}
-              >
-                {ts('complete')}
-              </Tag>
-              <Tag
-                color="red"
-                icon={<StopOutlined />}
-                style={{ cursor: 'pointer', margin: 0 }}
-                onClick={() => handleCancel(row.id)}
-              >
-                {ts('cancel')}
-              </Tag>
-            </>
-          )}
-        </Space>
+        <Spin size="small" spinning={actionBusyId === row.id}>
+          <Space size={4} wrap onClick={(e) => e.stopPropagation()}>
+            <Tag
+              color="blue"
+              icon={<EyeOutlined />}
+              style={{ cursor: 'pointer', margin: 0 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                void openDetail(row.id);
+              }}
+            >
+              {ts('detail')}
+            </Tag>
+            {row.status === 1 && (
+              <>
+                <Tag
+                  color="cyan"
+                  icon={<SendOutlined />}
+                  style={{ cursor: 'pointer', margin: 0 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleShip(row.id);
+                  }}
+                >
+                  {t('ship')}
+                </Tag>
+                <Tag
+                  color="green"
+                  icon={<CheckCircleOutlined />}
+                  style={{ cursor: 'pointer', margin: 0 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleComplete(row.id);
+                  }}
+                >
+                  {t('completeShortcut')}
+                </Tag>
+                <Tag
+                  color="red"
+                  icon={<StopOutlined />}
+                  style={{ cursor: 'pointer', margin: 0 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleCancel(row.id);
+                  }}
+                >
+                  {ts('cancel')}
+                </Tag>
+              </>
+            )}
+            {row.status === 2 && (
+              <>
+                <Tag
+                  color="green"
+                  icon={<ImportOutlined />}
+                  style={{ cursor: 'pointer', margin: 0 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleOpenReceive(row.id);
+                  }}
+                >
+                  {t('receive')}
+                </Tag>
+                <Tag
+                  color="red"
+                  icon={<StopOutlined />}
+                  style={{ cursor: 'pointer', margin: 0 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleCancel(row.id);
+                  }}
+                >
+                  {ts('cancel')}
+                </Tag>
+              </>
+            )}
+          </Space>
+        </Spin>
       ),
     },
   ];
 
-  const warehouseOptions = warehouses.map((w) => ({ value: w.id, label: w.warehouseName }));
+  const warehouseOptions = warehouses.map((w) => ({
+    value: w.id,
+    label: w.branchName ? `${w.warehouseName} · ${w.branchName}` : w.warehouseName,
+  }));
 
   return (
     <>
@@ -757,12 +966,96 @@ export function TransferListPage() {
           </Space>
         }
       >
+        <Alert type="info" showIcon style={{ marginBottom: 12 }} message={t('workflowHint')} />
+        <Space wrap style={{ marginBottom: 12, width: '100%' }} size={8}>
+          <Input.Search
+            allowClear
+            placeholder={t('filters.searchPlaceholder')}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onSearch={(v) => {
+              setSearch(v.trim());
+              setPage(1);
+            }}
+            style={{ width: 200 }}
+          />
+          <Select
+            allowClear
+            placeholder={t('filters.status')}
+            options={transferStatusOptions}
+            value={statusFilter}
+            onChange={(v) => {
+              setStatusFilter(v);
+              setPage(1);
+            }}
+            style={{ width: 160 }}
+          />
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder={t('filters.fromWarehouse')}
+            options={warehouseOptions}
+            value={fromWarehouseFilter}
+            onChange={(v) => {
+              setFromWarehouseFilter(v);
+              setPage(1);
+            }}
+            style={{ width: 220 }}
+          />
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder={t('filters.toWarehouse')}
+            options={warehouseOptions}
+            value={toWarehouseFilter}
+            onChange={(v) => {
+              setToWarehouseFilter(v);
+              setPage(1);
+            }}
+            style={{ width: 220 }}
+          />
+          <DatePicker.RangePicker
+            value={dateRange}
+            onChange={(v) => {
+              setDateRange(v);
+              setPage(1);
+            }}
+            format="DD-MM-YYYY"
+            placeholder={[t('filters.dateRange'), '']}
+          />
+          <Select
+            value={shortageOnly ? 'yes' : 'all'}
+            onChange={(v) => {
+              setShortageOnly(v === 'yes');
+              setPage(1);
+            }}
+            options={[
+              { value: 'all', label: t('filters.all') },
+              { value: 'yes', label: t('filters.shortageOnly') },
+            ]}
+            style={{ width: 160 }}
+          />
+          <Button onClick={resetFilters}>{t('filters.reset')}</Button>
+        </Space>
         <Table
           rowKey="id"
           loading={loading}
           columns={columns}
           dataSource={items}
-          pagination={false}
+          pagination={{
+            current: page,
+            pageSize,
+            total,
+            showSizeChanger: true,
+            pageSizeOptions: [10, 20, 50, 100],
+            showTotal: (count) => t('paginationTotal', { count: count.toLocaleString('vi-VN') }),
+            onChange: (nextPage, nextPageSize) => {
+              setPage(nextPage);
+              setPageSize(nextPageSize);
+            },
+          }}
           onRow={(row) => ({
             onClick: () => void openDetail(row.id),
             style: { cursor: 'pointer' },
@@ -919,17 +1212,48 @@ export function TransferListPage() {
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         extra={
-          detail && detail.status !== 3 && detail.status !== 4 ? (
+          detail && detail.status === 1 ? (
             <Space>
-              <Button danger icon={<StopOutlined />} onClick={() => handleCancel(detail.id)}>
+              <Button
+                danger
+                icon={<StopOutlined />}
+                loading={actionBusyId === detail.id}
+                onClick={() => void handleCancel(detail.id)}
+              >
                 {ts('cancel')}
+              </Button>
+              <Button
+                icon={<SendOutlined />}
+                loading={actionBusyId === detail.id}
+                onClick={() => void handleShip(detail.id)}
+              >
+                {t('ship')}
               </Button>
               <Button
                 type="primary"
                 icon={<CheckCircleOutlined />}
-                onClick={() => handleComplete(detail.id)}
+                loading={actionBusyId === detail.id}
+                onClick={() => void handleComplete(detail.id)}
               >
-                {ts('complete')}
+                {t('completeShortcut')}
+              </Button>
+            </Space>
+          ) : detail && detail.status === 2 ? (
+            <Space>
+              <Button
+                danger
+                icon={<StopOutlined />}
+                loading={actionBusyId === detail.id}
+                onClick={() => void handleCancel(detail.id)}
+              >
+                {ts('cancel')}
+              </Button>
+              <Button
+                type="primary"
+                icon={<ImportOutlined />}
+                onClick={() => openReceive(detail)}
+              >
+                {t('receive')}
               </Button>
             </Space>
           ) : null
@@ -944,20 +1268,66 @@ export function TransferListPage() {
               <strong>{ts('toWarehouse')}:</strong> {detail.toWarehouseName}
             </p>
             <p>
-              <strong>{tc('fields.status')}:</strong> {transferStatusLabel(detail.status)}
+              <strong>{tc('fields.status')}:</strong>{' '}
+              <Space size={4}>
+                <Tag
+                  color={
+                    detail.status === 3
+                      ? 'green'
+                      : detail.status === 2
+                        ? 'processing'
+                        : detail.status === 1
+                          ? 'gold'
+                          : 'default'
+                  }
+                >
+                  {detail.status === 3 &&
+                  detail.items.some(
+                    (line) => line.receivedQuantity != null && line.receivedQuantity < line.quantity,
+                  )
+                    ? t('completedWithShortage')
+                    : transferStatusLabel(detail.status)}
+                </Tag>
+                {detail.items.some(
+                  (line) => line.receivedQuantity != null && line.receivedQuantity < line.quantity,
+                ) ? (
+                  <Tag color="orange">{t('shortageBadge')}</Tag>
+                ) : null}
+              </Space>
             </p>
             {detail.notes && (
               <p>
                 <strong>{ts('notes')}:</strong> {detail.notes}
               </p>
             )}
+            {detail.receiveNotes && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message={t('receiveNotes')}
+                description={detail.receiveNotes}
+              />
+            )}
             <Table
               rowKey="id"
               size="small"
               pagination={false}
-              scroll={{ x: 780 }}
+              scroll={{ x: 860 }}
               dataSource={detail.items}
+              rowClassName={(row) =>
+                row.receivedQuantity != null && row.receivedQuantity < row.quantity
+                  ? 'transfer-shortage-row'
+                  : ''
+              }
               columns={[
+                {
+                  title: ts('stt'),
+                  key: 'stt',
+                  width: 52,
+                  align: 'center',
+                  render: (_: unknown, __: TransferItem, index: number) => index + 1,
+                },
                 { title: ts('productCode'), dataIndex: 'productCode', width: 110 },
                 { title: ts('productName'), dataIndex: 'productName', ellipsis: true },
                 { title: ts('unit'), dataIndex: 'unitName', width: 70 },
@@ -969,16 +1339,113 @@ export function TransferListPage() {
                   render: (v?: string) => (v ? formatDisplayDate(v) : '—'),
                 },
                 {
-                  title: ts('quantityAbbr'),
+                  title: t('shippedQty'),
                   dataIndex: 'quantity',
-                  width: 80,
+                  width: 90,
                   align: 'right',
                   render: (v: number) => formatDisplayQuantity(v),
+                },
+                {
+                  title: t('receivedQty'),
+                  dataIndex: 'receivedQuantity',
+                  width: 110,
+                  align: 'right',
+                  render: (v: number | null | undefined, row: TransferItem) => {
+                    if (v == null) return '—';
+                    const short = v < row.quantity;
+                    return (
+                      <Typography.Text type={short ? 'danger' : undefined} strong={short}>
+                        {formatDisplayQuantity(v)}
+                        {short
+                          ? ` (${t('shortageRowHint', { qty: formatDisplayQuantity(row.quantity - v) })})`
+                          : ''}
+                      </Typography.Text>
+                    );
+                  },
                 },
               ]}
             />
           </>
         )}
+      </Drawer>
+
+      <Drawer
+        title={t('receiveTitle')}
+        width={720}
+        open={receiveOpen}
+        onClose={() => setReceiveOpen(false)}
+        extra={
+          <Space>
+            <Button onClick={() => setReceiveOpen(false)}>{tc('actions.cancel')}</Button>
+            <Button type="primary" loading={receiveBusy} onClick={() => void handleReceiveConfirm()}>
+              {t('receive')}
+            </Button>
+          </Space>
+        }
+      >
+        {detail ? (
+          <>
+            <Alert type="info" showIcon style={{ marginBottom: 12 }} message={t('receiveHint')} />
+            <Table
+              rowKey="id"
+              size="small"
+              pagination={false}
+              dataSource={detail.items}
+              columns={[
+                {
+                  title: ts('stt'),
+                  key: 'stt',
+                  width: 52,
+                  align: 'center',
+                  render: (_: unknown, __: TransferItem, index: number) => index + 1,
+                },
+                { title: ts('productName'), dataIndex: 'productName', ellipsis: true },
+                { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 110 },
+                {
+                  title: t('shippedQty'),
+                  dataIndex: 'quantity',
+                  width: 90,
+                  align: 'right',
+                  render: (v: number) => formatDisplayQuantity(v),
+                },
+                {
+                  title: t('receivedQty'),
+                  key: 'recv',
+                  width: 120,
+                  render: (_: unknown, row: TransferItem) => (
+                    <InputNumber
+                      min={0}
+                      max={row.quantity}
+                      value={receiveQtyByItem[row.id] ?? row.quantity}
+                      onChange={(v) =>
+                        setReceiveQtyByItem((prev) => ({
+                          ...prev,
+                          [row.id]: typeof v === 'number' ? v : 0,
+                        }))
+                      }
+                      style={{ width: '100%' }}
+                    />
+                  ),
+                },
+              ]}
+            />
+            <Form.Item
+              label={t('receiveNotes')}
+              required={hasReceiveShortage}
+              style={{ marginTop: 16 }}
+            >
+              <Input.TextArea
+                rows={3}
+                value={receiveNotes}
+                onChange={(e) => setReceiveNotes(e.target.value)}
+                placeholder={t('receiveNotesPlaceholder')}
+              />
+            </Form.Item>
+            {hasReceiveShortage ? (
+              <Typography.Text type="secondary">{t('shortageRestoredHint')}</Typography.Text>
+            ) : null}
+          </>
+        ) : null}
       </Drawer>
     </>
   );

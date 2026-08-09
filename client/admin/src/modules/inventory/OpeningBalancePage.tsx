@@ -55,6 +55,15 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 
 type OpeningStatusFilter = 'all' | 'voidable' | 'locked';
+type OpeningExpiryFilter =
+  | 'all'
+  | 'within_1m'
+  | 'within_3m'
+  | 'within_6m'
+  | 'within_12m'
+  | 'expired'
+  | 'has_expiry'
+  | 'no_expiry';
 
 interface LineRow {
   key: string;
@@ -150,6 +159,7 @@ export function OpeningBalancePage() {
   const [listSearchInput, setListSearchInput] = useState('');
   const [listSearch, setListSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<OpeningStatusFilter>('all');
+  const [expiryFilter, setExpiryFilter] = useState<OpeningExpiryFilter>('all');
   const [productFilterId, setProductFilterId] = useState<string | undefined>();
 
   const selectedWarehouse = warehouses.find((w) => w.id === warehouseId);
@@ -191,6 +201,7 @@ export function OpeningBalancePage() {
         productId: productFilterId,
         search: listSearch || undefined,
         status: statusFilter,
+        expiry: expiryFilter,
         page: openingPage,
         pageSize: openingPageSize,
       });
@@ -203,7 +214,7 @@ export function OpeningBalancePage() {
     } finally {
       setOpeningLoading(false);
     }
-  }, [warehouseId, productFilterId, listSearch, statusFilter, openingPage, openingPageSize, t]);
+  }, [warehouseId, productFilterId, listSearch, statusFilter, expiryFilter, openingPage, openingPageSize, t]);
 
   const loadLookups = useCallback(async () => {
     try {
@@ -903,6 +914,24 @@ export function OpeningBalancePage() {
               { value: 'locked', label: t('statusFilter.locked') },
             ]}
           />
+          <Select
+            style={{ width: 200 }}
+            value={expiryFilter}
+            onChange={(value) => {
+              setExpiryFilter(value);
+              setOpeningPage(1);
+            }}
+            options={[
+              { value: 'all', label: t('expiryFilter.all') },
+              { value: 'within_1m', label: t('expiryFilter.within1m') },
+              { value: 'within_3m', label: t('expiryFilter.within3m') },
+              { value: 'within_6m', label: t('expiryFilter.within6m') },
+              { value: 'within_12m', label: t('expiryFilter.within12m') },
+              { value: 'expired', label: t('expiryFilter.expired') },
+              { value: 'has_expiry', label: t('expiryFilter.hasExpiry') },
+              { value: 'no_expiry', label: t('expiryFilter.noExpiry') },
+            ]}
+          />
           <Space.Compact>
             <AutoComplete
               style={{ width: 260 }}
@@ -986,7 +1015,7 @@ export function OpeningBalancePage() {
           }}
           locale={{
             emptyText: warehouseId
-              ? listSearch || statusFilter !== 'all' || productFilterId
+              ? listSearch || statusFilter !== 'all' || expiryFilter !== 'all' || productFilterId
                 ? t('empty.noMatch')
                 : t('empty.noOpeningBalance')
               : t('empty.selectWarehouse'),

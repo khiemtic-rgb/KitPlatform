@@ -17,16 +17,18 @@ public sealed class CustomerReceivablesController : ControllerBase
     [HttpGet]
     [Authorize(Policy = SalesPolicies.Read)]
     public async Task<ActionResult<IReadOnlyList<CustomerReceivablesRowDto>>> Summary(
+        [FromQuery] Guid? warehouseId,
         CancellationToken cancellationToken) =>
-        Ok(await _receivables.GetSummaryAsync(cancellationToken));
+        Ok(await _receivables.GetSummaryAsync(warehouseId, cancellationToken));
 
     [HttpGet("{customerId:guid}")]
     [Authorize(Policy = SalesPolicies.Read)]
     public async Task<ActionResult<CustomerReceivablesDetailDto>> Detail(
         Guid customerId,
+        [FromQuery] Guid? warehouseId,
         CancellationToken cancellationToken)
     {
-        var detail = await _receivables.GetDetailAsync(customerId, cancellationToken);
+        var detail = await _receivables.GetDetailAsync(customerId, warehouseId, cancellationToken);
         return detail is null ? NotFound() : Ok(detail);
     }
 }

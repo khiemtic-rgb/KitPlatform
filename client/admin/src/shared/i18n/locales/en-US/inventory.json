@@ -8,7 +8,7 @@
       "5": "Returns warehouse"
     },
     "transferStatus": {
-      "1": "Pending",
+      "1": "Awaiting ship",
       "2": "In transit",
       "3": "Completed",
       "4": "Cancelled"
@@ -98,6 +98,7 @@
     "totalStock": "Total stock",
     "warehouseCount": "Warehouses",
     "batchCount": "Batches",
+    "stt": "No.",
     "productCode": "Product code",
     "productName": "Product name",
     "productCodeLabel": "Code: {{code}}",
@@ -187,6 +188,16 @@
     "filterByWarehouse": "Filter by warehouse",
     "searchSummary": "Search by product name or code…",
     "searchFefo": "Search by name, code, or batch…",
+    "expiryFilter": {
+      "all": "All expiry",
+      "within1m": "Expires within 1 month",
+      "within3m": "Expires within 3 months",
+      "within6m": "Expires within 6 months",
+      "within12m": "Expires within 12 months",
+      "expired": "Expired",
+      "hasExpiry": "Has expiry date",
+      "noExpiry": "No expiry date"
+    },
     "detailTitle": "Stock details",
     "detailTitleWithProduct": "Stock details — {{name}}",
     "viewFefo": "View by batch (FEFO)",
@@ -238,11 +249,44 @@
       "detailLoadFailed": "Could not load document details",
       "createSuccess": "Created document {{number}}",
       "createFailed": "Could not create document",
-      "completeSuccess": "Transfer completed",
+      "shipSuccess": "Shipped — waiting for destination to receive",
+      "shipFailed": "Could not ship transfer",
+      "receiveSuccess": "Receipt confirmed",
+      "receiveSuccessWithShortage": "Received with shortage — short qty restored to source",
+      "receiveFailed": "Could not receive transfer",
+      "receiveNotesRequired": "Shortage requires a variance note",
+      "completeSuccess": "Shipped and received in one step",
       "completeFailed": "Could not complete transfer",
       "cancelSuccess": "Transfer cancelled",
       "cancelFailed": "Could not cancel transfer"
-    }
+    },
+    "ship": "Ship",
+    "receive": "Receive",
+    "receiveTitle": "Confirm receipt",
+    "receiveHint": "Enter actual received qty (≤ shipped). Shortage returns to source. Over-receive is not allowed.",
+    "shippedQty": "Shipped qty",
+    "receivedQty": "Received qty",
+    "receiveNotes": "Variance / shortage note",
+    "receiveNotesPlaceholder": "e.g. Short 2 packs on count",
+    "completeShortcut": "Ship + receive full",
+    "workflowHint": "Multi-warehouse: Ship (source) → Receive (destination). Users with both warehouses can ship+receive in one step.",
+    "shortageRestoredHint": "Shortage restored to source warehouse",
+    "completedWithShortage": "Completed · with shortage",
+    "shortageBadge": "Shortage",
+    "shortageRowHint": "Short {{qty}} (restored to source)",
+    "filters": {
+      "search": "Document no.",
+      "searchPlaceholder": "e.g. TR-000011",
+      "status": "Status",
+      "fromWarehouse": "Source warehouse",
+      "toWarehouse": "Destination warehouse",
+      "dateRange": "Transfer date",
+      "hasShortage": "Has shortage",
+      "all": "All",
+      "shortageOnly": "Shortage only",
+      "reset": "Clear filters"
+    },
+    "paginationTotal": "{{count}} documents"
   },
   "adjustmentList": {
     "workflowTitle": "Standard count workflow (4 steps)",
@@ -279,6 +323,14 @@
       "noBatchesInWarehouse": "No stock batches in this warehouse",
       "atLeastOneBatch": "Add at least one batch"
     },
+    "filters": {
+      "searchPlaceholder": "e.g. ADJ-000009",
+      "status": "Status",
+      "warehouse": "Warehouse",
+      "dateRange": "Document date",
+      "reset": "Clear filters"
+    },
+    "paginationTotal": "{{count}} documents",
     "sessionInProgressHint": "Session in progress — go to <strong>Count</strong>, complete steps 2–3 then <strong>Approve</strong> (step 4) with checklist.",
     "messages": {
       "loadFailed": "Could not load count documents",
@@ -327,7 +379,7 @@
     "recordNow": "Save count",
     "addToDraft": "Add pending line",
     "recordEntries": "Save pending ({{count}})",
-    "countHint": "Main flow: pick one batch → enter counted qty → Save count (not 100 picks). Multi-select: pending lines start at on-hand per batch — edit qty in the table, then Save pending.",
+    "countHint": "Main flow: pick one batch → enter counted qty → Save count. Enter 0 if physically out of stock. Multi-select: pending lines start at on-hand per batch — edit qty in the table, then Save pending.",
     "noBatchHintTitle": "No batch for this product at the count warehouse",
     "noBatchHintBody": "Create stock (batch) before counting this SKU. Choose one:",
     "goOpeningBalance": "Opening balance",
@@ -353,6 +405,7 @@
       "loadFailed": "Could not load count session",
       "scanOrSelectProduct": "Scan barcode or select a product from the list",
       "quantityMustBePositive": "Quantity must be greater than 0",
+      "quantityMustBeNonNegative": "Counted quantity cannot be negative — enter 0 if physically out of stock",
       "selectFromSuggestions": "Select a product from suggestions or scan the correct barcode",
       "noBatchAtWarehouse": "No batch at warehouse for this product — cannot record",
       "batchSelected": "Selected batch {{batch}}",
@@ -505,6 +558,16 @@
       "all": "All statuses",
       "voidable": "No transactions",
       "locked": "Has transactions"
+    },
+    "expiryFilter": {
+      "all": "All expiry",
+      "within1m": "Expires within 1 month",
+      "within3m": "Expires within 3 months",
+      "within6m": "Expires within 6 months",
+      "within12m": "Expires within 12 months",
+      "expired": "Expired",
+      "hasExpiry": "Has expiry date",
+      "noExpiry": "No expiry date"
     },
     "emptyListHint": "No batches imported from this screen yet",
     "emptyListDescription": "The table below lists only stock saved via <strong>Save opening balance</strong> here (INV-008). Demo seed stock (Paracetamol, etc.) <strong>does not</strong> appear here — see <stockLink>Stock</stockLink> tab or \"Actual stock at warehouse\" below. After clicking <strong>Save opening balance</strong>, new batches appear in this table.",

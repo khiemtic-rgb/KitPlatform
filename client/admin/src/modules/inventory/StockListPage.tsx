@@ -27,6 +27,16 @@ import { formatDisplayMoney } from '@/shared/utils/money';
 
 type StockTab = 'summary' | 'fefo';
 
+type StockExpiryFilter =
+  | 'all'
+  | 'within_1m'
+  | 'within_3m'
+  | 'within_6m'
+  | 'within_12m'
+  | 'expired'
+  | 'has_expiry'
+  | 'no_expiry';
+
 function formatQty(value: number): string {
   return value.toLocaleString('vi-VN');
 }
@@ -47,6 +57,7 @@ export function StockListPage() {
   const [pageSize, setPageSize] = useState(20);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehouseId, setWarehouseId] = useState<string | undefined>();
+  const [expiryFilter, setExpiryFilter] = useState<StockExpiryFilter>('all');
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [fefoProductId, setFefoProductId] = useState<string | undefined>();
@@ -55,6 +66,8 @@ export function StockListPage() {
   const [detailProduct, setDetailProduct] = useState<StockProductSummary | null>(null);
   const [detailBatches, setDetailBatches] = useState<StockBatch[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  const expiryParam = expiryFilter === 'all' ? undefined : expiryFilter;
 
   const loadWarehouses = useCallback(async () => {
     try {
@@ -71,6 +84,7 @@ export function StockListPage() {
         const result = await fetchStockProducts({
           warehouseId,
           search: search || undefined,
+          expiry: expiryParam,
           page,
           pageSize,
         });
@@ -81,6 +95,7 @@ export function StockListPage() {
           warehouseId,
           productId: fefoProductId,
           search: fefoProductId ? undefined : search || undefined,
+          expiry: expiryParam,
           page,
           pageSize,
         });
@@ -92,7 +107,7 @@ export function StockListPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, warehouseId, search, fefoProductId, page, pageSize, t]);
+  }, [activeTab, warehouseId, search, expiryParam, fefoProductId, page, pageSize, t]);
 
   useEffect(() => {
     void loadWarehouses();
@@ -113,6 +128,7 @@ export function StockListPage() {
             const result = await fetchStockProducts({
               warehouseId,
               search: q,
+              expiry: expiryParam,
               page: 1,
               pageSize: 12,
             });
@@ -127,6 +143,7 @@ export function StockListPage() {
             const result = await fetchStockBatches({
               warehouseId,
               search: q,
+              expiry: expiryParam,
               page: 1,
               pageSize: 12,
             });
@@ -156,7 +173,7 @@ export function StockListPage() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [searchInput, activeTab, warehouseId, ts]);
+  }, [searchInput, activeTab, warehouseId, expiryParam, ts]);
 
   // Tự lọc bảng khi gõ tên — không cần nhớ mã hay bấm Tìm.
   useEffect(() => {
@@ -389,6 +406,24 @@ export function StockListPage() {
           setPage(1);
         }}
         options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
+      />
+      <Select
+        style={{ width: 220 }}
+        value={expiryFilter}
+        onChange={(value) => {
+          setExpiryFilter(value);
+          setPage(1);
+        }}
+        options={[
+          { value: 'all', label: t('expiryFilter.all') },
+          { value: 'within_1m', label: t('expiryFilter.within1m') },
+          { value: 'within_3m', label: t('expiryFilter.within3m') },
+          { value: 'within_6m', label: t('expiryFilter.within6m') },
+          { value: 'within_12m', label: t('expiryFilter.within12m') },
+          { value: 'expired', label: t('expiryFilter.expired') },
+          { value: 'has_expiry', label: t('expiryFilter.hasExpiry') },
+          { value: 'no_expiry', label: t('expiryFilter.noExpiry') },
+        ]}
       />
       <Space.Compact>
         <AutoComplete

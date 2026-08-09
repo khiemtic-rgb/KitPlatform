@@ -263,8 +263,11 @@ internal sealed class SalesService : ISalesService
         string? search = null,
         string? customerSearch = null,
         string? documentSearch = null,
+        short? status = null,
+        DateTime? from = null,
+        DateTime? to = null,
         CancellationToken cancellationToken = default) =>
-        _repository.GetSaleReturnsAsync(limit, search, customerSearch, documentSearch, cancellationToken);
+        _repository.GetSaleReturnsAsync(limit, search, customerSearch, documentSearch, status, from, to, cancellationToken);
 
     public Task<IReadOnlyList<SalesReturnListItemDto>> GetSaleReturnsByOrderAsync(
         Guid salesOrderId,
@@ -279,8 +282,13 @@ internal sealed class SalesService : ISalesService
 
     public Task<IReadOnlyList<SalesShiftListItemDto>> GetShiftsAsync(
         int limit = 50,
+        string? search = null,
+        short? status = null,
+        Guid? warehouseId = null,
+        DateTime? from = null,
+        DateTime? to = null,
         CancellationToken cancellationToken = default) =>
-        _repository.GetShiftsAsync(limit, cancellationToken);
+        _repository.GetShiftsAsync(limit, search, status, warehouseId, from, to, cancellationToken);
 
     public async Task<SalesShiftDetailDto?> GetOpenShiftAsync(
         Guid warehouseId,

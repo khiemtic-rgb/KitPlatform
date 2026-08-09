@@ -283,8 +283,11 @@ public sealed class SalesController : ControllerBase
         [FromQuery] string? search = null,
         [FromQuery] string? customerSearch = null,
         [FromQuery] string? documentSearch = null,
+        [FromQuery] short? status = null,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
         CancellationToken cancellationToken = default) =>
-        Ok(await _sales.GetSaleReturnsAsync(limit, search, customerSearch, documentSearch, cancellationToken));
+        Ok(await _sales.GetSaleReturnsAsync(limit, search, customerSearch, documentSearch, status, from, to, cancellationToken));
 
     [HttpGet("returns/{id:guid}")]
     [Authorize(Policy = SalesPolicies.Read)]
@@ -324,8 +327,13 @@ public sealed class SalesController : ControllerBase
     [Authorize(Policy = SalesPolicies.Read)]
     public async Task<ActionResult<IReadOnlyList<SalesShiftListItemDto>>> ListShifts(
         [FromQuery] int limit = 50,
+        [FromQuery] string? search = null,
+        [FromQuery] short? status = null,
+        [FromQuery] Guid? warehouseId = null,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
         CancellationToken cancellationToken = default) =>
-        Ok(await _sales.GetShiftsAsync(limit, cancellationToken));
+        Ok(await _sales.GetShiftsAsync(limit, search, status, warehouseId, from, to, cancellationToken));
 
     [HttpGet("shifts/current")]
     [Authorize(Policy = SalesPolicies.Read)]

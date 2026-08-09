@@ -692,6 +692,9 @@ export async function fetchSalesReturns(
     search?: string;
     customerSearch?: string;
     documentSearch?: string;
+    status?: number;
+    from?: string;
+    to?: string;
     limit?: number;
   },
 ): Promise<SalesReturnListItem[]> {
@@ -701,6 +704,9 @@ export async function fetchSalesReturns(
       ...(filters?.search?.trim() ? { search: filters.search.trim() } : {}),
       ...(filters?.customerSearch?.trim() ? { customerSearch: filters.customerSearch.trim() } : {}),
       ...(filters?.documentSearch?.trim() ? { documentSearch: filters.documentSearch.trim() } : {}),
+      ...(filters?.status != null ? { status: filters.status } : {}),
+      ...(filters?.from ? { from: filters.from } : {}),
+      ...(filters?.to ? { to: filters.to } : {}),
     },
   });
   return data.map((row) => normalizeSalesReturnListItem(row));
@@ -805,8 +811,28 @@ export async function fetchSalesShiftSummary(from: string, to: string): Promise<
   return normalizeSalesShiftSummary(data);
 }
 
-export async function fetchSalesShifts(limit = 50): Promise<SalesShiftListItem[]> {
-  const { data } = await http.get<Record<string, unknown>[]>('/sales/shifts', { params: { limit } });
+export async function fetchSalesShifts(
+  filtersOrLimit: number | {
+    search?: string;
+    status?: number;
+    warehouseId?: string;
+    from?: string;
+    to?: string;
+    limit?: number;
+  } = 50,
+): Promise<SalesShiftListItem[]> {
+  const filters =
+    typeof filtersOrLimit === 'number' ? { limit: filtersOrLimit } : filtersOrLimit;
+  const { data } = await http.get<Record<string, unknown>[]>('/sales/shifts', {
+    params: {
+      limit: filters.limit ?? 50,
+      ...(filters.search?.trim() ? { search: filters.search.trim() } : {}),
+      ...(filters.status != null ? { status: filters.status } : {}),
+      ...(filters.warehouseId ? { warehouseId: filters.warehouseId } : {}),
+      ...(filters.from ? { from: filters.from } : {}),
+      ...(filters.to ? { to: filters.to } : {}),
+    },
+  });
   return data.map(normalizeSalesShiftListItem);
 }
 
@@ -869,13 +895,22 @@ function normalizeReceivablesRow(row: Record<string, unknown>): CustomerReceivab
   };
 }
 
-export async function fetchCustomerReceivables(): Promise<CustomerReceivablesRow[]> {
-  const { data } = await http.get<Record<string, unknown>[]>('/sales/customer-receivables');
+export async function fetchCustomerReceivables(filters?: {
+  warehouseId?: string;
+}): Promise<CustomerReceivablesRow[]> {
+  const { data } = await http.get<Record<string, unknown>[]>('/sales/customer-receivables', {
+    params: filters?.warehouseId ? { warehouseId: filters.warehouseId } : undefined,
+  });
   return data.map((row) => normalizeReceivablesRow(row));
 }
 
-export async function fetchCustomerReceivablesDetail(customerId: string): Promise<CustomerReceivablesDetail> {
-  const { data } = await http.get<Record<string, unknown>>(`/sales/customer-receivables/${customerId}`);
+export async function fetchCustomerReceivablesDetail(
+  customerId: string,
+  filters?: { warehouseId?: string },
+): Promise<CustomerReceivablesDetail> {
+  const { data } = await http.get<Record<string, unknown>>(`/sales/customer-receivables/${customerId}`, {
+    params: filters?.warehouseId ? { warehouseId: filters.warehouseId } : undefined,
+  });
   const lines = ((data.lines ?? data.Lines ?? []) as Record<string, unknown>[]).map((line) => ({
     salesOrderId: String(line.salesOrderId ?? line.SalesOrderId),
     orderNumber: String(line.orderNumber ?? line.OrderNumber ?? ''),
@@ -918,6 +953,8 @@ function customerPaymentListParams(filters?: CustomerPaymentListFilters) {
   if (filters.status != null) params.status = filters.status;
   if (filters.dateFrom) params.dateFrom = filters.dateFrom;
   if (filters.dateTo) params.dateTo = filters.dateTo;
+  if (filters.paymentMethod != null) params.paymentMethod = filters.paymentMethod;
+  if (filters.warehouseId) params.warehouseId = filters.warehouseId;
   return Object.keys(params).length > 0 ? params : undefined;
 }
 

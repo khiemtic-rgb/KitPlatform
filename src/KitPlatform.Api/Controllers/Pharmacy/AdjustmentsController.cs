@@ -16,8 +16,18 @@ public sealed class AdjustmentsController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = InventoryPolicies.Read)]
-    public async Task<ActionResult<IReadOnlyList<AdjustmentListItemDto>>> List(CancellationToken cancellationToken) =>
-        Ok(await _inventory.GetAdjustmentsAsync(cancellationToken));
+    public async Task<ActionResult<PagedAdjustmentsResult>> List(
+        [FromQuery] string? search,
+        [FromQuery] short? status,
+        [FromQuery] Guid? warehouseId,
+        [FromQuery] DateOnly? dateFrom,
+        [FromQuery] DateOnly? dateTo,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default) =>
+        Ok(await _inventory.GetAdjustmentsAsync(
+            new AdjustmentListFilter(search, status, warehouseId, dateFrom, dateTo, page, pageSize),
+            cancellationToken));
 
     [HttpGet("{id:guid}")]
     [Authorize(Policy = InventoryPolicies.Read)]

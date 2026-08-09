@@ -8,7 +8,7 @@
       "5": "Kho trả hàng"
     },
     "transferStatus": {
-      "1": "Chờ xử lý",
+      "1": "Chờ gửi",
       "2": "Đang chuyển",
       "3": "Hoàn tất",
       "4": "Đã hủy"
@@ -98,6 +98,7 @@
     "totalStock": "Tổng tồn",
     "warehouseCount": "Số kho",
     "batchCount": "Số lô",
+    "stt": "STT",
     "productCode": "Mã SP",
     "productName": "Tên SP",
     "productCodeLabel": "Mã SP: {{code}}",
@@ -187,6 +188,16 @@
     "filterByWarehouse": "Lọc theo kho",
     "searchSummary": "Tìm theo tên SP hoặc mã…",
     "searchFefo": "Tìm theo tên SP, mã hoặc số lô…",
+    "expiryFilter": {
+      "all": "Mọi HSD",
+      "within1m": "Hết hạn trong 1 tháng",
+      "within3m": "Hết hạn trong 3 tháng",
+      "within6m": "Hết hạn trong 6 tháng",
+      "within12m": "Hết hạn trong 12 tháng",
+      "expired": "Đã hết hạn",
+      "hasExpiry": "Có HSD",
+      "noExpiry": "Không có HSD"
+    },
     "detailTitle": "Chi tiết tồn",
     "detailTitleWithProduct": "Chi tiết tồn — {{name}}",
     "viewFefo": "Xem theo lô FEFO",
@@ -238,11 +249,44 @@
       "detailLoadFailed": "Không tải được chi tiết phiếu",
       "createSuccess": "Đã tạo phiếu {{number}}",
       "createFailed": "Không tạo được phiếu",
-      "completeSuccess": "Đã hoàn tất điều chuyển",
+      "shipSuccess": "Đã gửi hàng — chờ kho nhận xác nhận",
+      "shipFailed": "Không gửi được phiếu",
+      "receiveSuccess": "Đã xác nhận nhận hàng",
+      "receiveSuccessWithShortage": "Đã nhận có lệch — phần thiếu đã hoàn về kho xuất",
+      "receiveFailed": "Không nhận được phiếu",
+      "receiveNotesRequired": "Khi nhận thiếu phải nhập ghi chú lý do lệch",
+      "completeSuccess": "Đã gửi và nhận đủ (một bước)",
       "completeFailed": "Không hoàn tất được phiếu",
       "cancelSuccess": "Đã hủy phiếu điều chuyển",
       "cancelFailed": "Không hủy được phiếu"
-    }
+    },
+    "ship": "Gửi hàng",
+    "receive": "Nhận hàng",
+    "receiveTitle": "Xác nhận nhận hàng",
+    "receiveHint": "Nhập SL thực nhận (≤ SL phiếu). Phần thiếu sẽ hoàn về kho xuất. Nhận thừa không được phép.",
+    "shippedQty": "SL phiếu",
+    "receivedQty": "SL nhận",
+    "receiveNotes": "Ghi chú lệch / nhận thiếu",
+    "receiveNotesPlaceholder": "VD: Thiếu 2 vỉ khi kiểm lại",
+    "completeShortcut": "Gửi + nhận đủ",
+    "workflowHint": "Chuỗi đa kho: Gửi (kho xuất) → Nhận (kho nhận). Cùng quản lý cả hai kho có thể Gửi + nhận đủ một bước.",
+    "shortageRestoredHint": "Phần thiếu đã hoàn về kho xuất",
+    "completedWithShortage": "Hoàn tất · có nhận thiếu",
+    "shortageBadge": "Có nhận thiếu",
+    "shortageRowHint": "Thiếu {{qty}} (đã hoàn kho xuất)",
+    "filters": {
+      "search": "Số phiếu",
+      "searchPlaceholder": "VD: TR-000011",
+      "status": "Trạng thái",
+      "fromWarehouse": "Kho xuất",
+      "toWarehouse": "Kho nhận",
+      "dateRange": "Ngày phiếu",
+      "hasShortage": "Có nhận thiếu",
+      "all": "Tất cả",
+      "shortageOnly": "Chỉ phiếu lệch",
+      "reset": "Xóa lọc"
+    },
+    "paginationTotal": "{{count}} phiếu"
   },
   "adjustmentList": {
     "workflowTitle": "Quy trình kiểm kê chuẩn (4 bước)",
@@ -279,6 +323,14 @@
       "noBatchesInWarehouse": "Kho chưa có lô tồn",
       "atLeastOneBatch": "Thêm ít nhất một lô"
     },
+    "filters": {
+      "searchPlaceholder": "VD: ADJ-000009",
+      "status": "Trạng thái",
+      "warehouse": "Kho",
+      "dateRange": "Ngày phiếu",
+      "reset": "Xóa lọc"
+    },
+    "paginationTotal": "{{count}} phiếu",
     "sessionInProgressHint": "Phiên đang kiểm — vào màn <strong>Đếm</strong>, hoàn tất bước 2–3 rồi <strong>Duyệt</strong> (bước 4) kèm checklist.",
     "messages": {
       "loadFailed": "Không tải được phiếu kiểm kê",
@@ -327,7 +379,7 @@
     "recordNow": "Lưu đếm",
     "addToDraft": "Thêm dòng chờ",
     "recordEntries": "Lưu dòng chờ ({{count}})",
-    "countHint": "Cách dùng chính: chọn 1 lô → nhập SL đếm được → Lưu đếm (không chọn 100 lần). Chọn nhiều lô: tạo dòng chờ với SL = tồn máy từng lô — sửa SL trên bảng rồi Lưu dòng chờ.",
+    "countHint": "Cách dùng: chọn 1 lô → nhập SL đếm được → Lưu đếm. Tồn thực tế hết thì nhập 0. Chọn nhiều lô: tạo dòng chờ (SL mặc định = tồn máy) — sửa SL trên bảng rồi Lưu dòng chờ.",
     "noBatchHintTitle": "SP này chưa có lô tại kho đang kiểm",
     "noBatchHintBody": "Cần tạo tồn (lô) trước khi đếm SP này. Chọn một trong hai cách:",
     "goOpeningBalance": "Tồn đầu kỳ",
@@ -353,6 +405,7 @@
       "loadFailed": "Không tải được phiên kiểm kê",
       "scanOrSelectProduct": "Quét barcode hoặc chọn sản phẩm từ danh sách",
       "quantityMustBePositive": "Số lượng phải lớn hơn 0",
+      "quantityMustBeNonNegative": "Số lượng đếm không được âm — nhập 0 nếu tồn thực tế hết",
       "selectFromSuggestions": "Chọn sản phẩm từ danh sách gợi ý hoặc quét đúng barcode",
       "noBatchAtWarehouse": "SP này chưa có lô tại kho — không thể ghi nhận",
       "batchSelected": "Đã chọn lô {{batch}}",
@@ -505,6 +558,16 @@
       "all": "Mọi trạng thái",
       "voidable": "Chưa phát sinh",
       "locked": "Đã phát sinh"
+    },
+    "expiryFilter": {
+      "all": "Mọi HSD",
+      "within1m": "Hết hạn trong 1 tháng",
+      "within3m": "Hết hạn trong 3 tháng",
+      "within6m": "Hết hạn trong 6 tháng",
+      "within12m": "Hết hạn trong 12 tháng",
+      "expired": "Đã hết hạn",
+      "hasExpiry": "Có HSD",
+      "noExpiry": "Không có HSD"
     },
     "emptyListHint": "Chưa có lô nhập từ màn này",
     "emptyListDescription": "Bảng dưới chỉ liệt kê hàng bạn <strong>Lưu nhập tồn</strong> tại đây (INV-008). Tồn demo từ seed (Paracetamol, …) <strong>không</strong> hiện ở đây — xem tab <stockLink>Tồn kho</stockLink> hoặc bảng \"Tồn thực tế tại kho\" bên dưới. Sau khi bấm <strong>Lưu nhập tồn</strong>, lô mới sẽ xuất hiện trong bảng này.",

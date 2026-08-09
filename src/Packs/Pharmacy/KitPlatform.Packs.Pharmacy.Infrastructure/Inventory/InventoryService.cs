@@ -85,6 +85,7 @@ internal sealed class InventoryService : IInventoryService
         Guid? warehouseId,
         Guid? productId,
         string? search,
+        string? expiry,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
@@ -93,13 +94,14 @@ internal sealed class InventoryService : IInventoryService
         pageSize = Math.Clamp(pageSize, 1, 100);
         var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
         var (items, total) = await _repository.GetStockBatchesAsync(
-            warehouseId, allowed, productId, search, page, pageSize, cancellationToken);
+            warehouseId, allowed, productId, search, expiry, page, pageSize, cancellationToken);
         return new PagedStockBatchesResult(items, total, page, pageSize);
     }
 
     public async Task<PagedStockProductsResult> GetStockProductsAsync(
         Guid? warehouseId,
         string? search,
+        string? expiry,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
@@ -108,7 +110,7 @@ internal sealed class InventoryService : IInventoryService
         pageSize = Math.Clamp(pageSize, 1, 100);
         var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
         var (items, total) = await _repository.GetStockProductsAsync(
-            warehouseId, allowed, search, page, pageSize, cancellationToken);
+            warehouseId, allowed, search, expiry, page, pageSize, cancellationToken);
         return new PagedStockProductsResult(items, total, page, pageSize);
     }
 
@@ -153,6 +155,7 @@ internal sealed class InventoryService : IInventoryService
         Guid? productId,
         string? search,
         string? status,
+        string? expiry,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
@@ -161,36 +164,38 @@ internal sealed class InventoryService : IInventoryService
         pageSize = Math.Clamp(pageSize, 1, 200);
         var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
         var (items, total, summaryTotal, summaryVoidable) = await _repository.GetOpeningBalanceBatchesAsync(
-            warehouseId, allowed, productId, search, status, page, pageSize, cancellationToken);
+            warehouseId, allowed, productId, search, status, expiry, page, pageSize, cancellationToken);
         return new PagedOpeningBalanceBatchesResult(items, total, page, pageSize, summaryTotal, summaryVoidable);
     }
 
     public Task VoidOpeningBalanceBatchAsync(Guid batchId, CancellationToken cancellationToken = default) =>
         _repository.VoidOpeningBalanceBatchAsync(batchId, cancellationToken);
 
-    public async Task<IReadOnlyList<TransferListItemDto>> GetTransfersAsync(CancellationToken cancellationToken = default)
+    public async Task<PagedTransfersResult> GetTransfersAsync(
+        TransferListFilter filter,
+        CancellationToken cancellationToken = default)
     {
-        var all = await _repository.GetTransfersAsync(cancellationToken);
+        filter ??= new TransferListFilter();
         var scope = await _branchAccess.GetScopeAsync(cancellationToken);
-        if (scope.Unrestricted)
-            return all;
-        var allowed = scope.WarehouseIds.ToHashSet();
-        return all.Where(t => allowed.Contains(t.FromWarehouseId) || allowed.Contains(t.ToWarehouseId)).ToList();
+        Guid[]? allowed = scope.Unrestricted ? null : scope.WarehouseIds.ToArray();
+        if (!scope.Unrestricted && (allowed is null || allowed.Length == 0))
+            return new PagedTransfersResult([], 0, Math.Max(1, filter.Page), Math.Clamp(filter.PageSize, 1, 100));
+
+        var (items, total) = await _repository.GetTransfersAsync(filter, allowed, cancellationToken);
+        return new PagedTransfersResult(items, total, Math.Max(1, filter.Page), Math.Clamp(filter.PageSize, 1, 100));
     }
 
     public async Task<TransferDetailDto?> GetTransferAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var item = await _repository.GetTransferAsync(id, cancellationToken);
         if (item is null) return null;
-        await _branchAccess.EnsureWarehouseAccessAsync(item.FromWarehouseId, cancellationToken);
-        await _branchAccess.EnsureWarehouseAccessAsync(item.ToWarehouseId, cancellationToken);
+        await EnsureAnyWarehouseAccessAsync(item.FromWarehouseId, item.ToWarehouseId, cancellationToken);
         return item;
     }
 
     public async Task<TransferDetailDto> CreateTransferAsync(CreateTransferRequest request, CancellationToken cancellationToken = default)
     {
         await _branchAccess.EnsureWarehouseAccessAsync(request.FromWarehouseId, cancellationToken);
-        await _branchAccess.EnsureWarehouseAccessAsync(request.ToWarehouseId, cancellationToken);
         if (request.FromWarehouseId == request.ToWarehouseId)
             throw new InvalidOperationException("Kho xuất và kho nhận phải khác nhau.");
         if (request.Items.Count == 0)
@@ -213,11 +218,40 @@ internal sealed class InventoryService : IInventoryService
         return (await _repository.GetTransferAsync(transferId, cancellationToken))!;
     }
 
+    public async Task<TransferDetailDto?> ShipTransferAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var existing = await _repository.GetTransferAsync(id, cancellationToken);
+        if (existing is null) return null;
+        await _branchAccess.EnsureWarehouseAccessAsync(existing.FromWarehouseId, cancellationToken);
+        await _repository.ShipTransferAsync(id, _tenant.UserId, cancellationToken);
+        return await _repository.GetTransferAsync(id, cancellationToken);
+    }
+
+    public async Task<TransferDetailDto?> ReceiveTransferAsync(
+        Guid id,
+        ReceiveTransferRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var existing = await _repository.GetTransferAsync(id, cancellationToken);
+        if (existing is null) return null;
+        await _branchAccess.EnsureWarehouseAccessAsync(existing.ToWarehouseId, cancellationToken);
+
+        IReadOnlyDictionary<Guid, decimal>? byItem = null;
+        if (request.Items is { Count: > 0 })
+        {
+            byItem = request.Items.ToDictionary(i => i.TransferItemId, i => i.ReceivedQuantity);
+        }
+
+        await _repository.ReceiveTransferAsync(id, _tenant.UserId, request.Notes, byItem, cancellationToken);
+        return await _repository.GetTransferAsync(id, cancellationToken);
+    }
+
     public async Task<TransferDetailDto?> CompleteTransferAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var existing = await _repository.GetTransferAsync(id, cancellationToken);
         if (existing is null) return null;
         await _branchAccess.EnsureWarehouseAccessAsync(existing.FromWarehouseId, cancellationToken);
+        await _branchAccess.EnsureWarehouseAccessAsync(existing.ToWarehouseId, cancellationToken);
         await _repository.CompleteTransferAsync(id, _tenant.UserId, cancellationToken);
         return await _repository.GetTransferAsync(id, cancellationToken);
     }
@@ -231,14 +265,39 @@ internal sealed class InventoryService : IInventoryService
         return await _repository.GetTransferAsync(id, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<AdjustmentListItemDto>> GetAdjustmentsAsync(CancellationToken cancellationToken = default)
+    private async Task EnsureAnyWarehouseAccessAsync(
+        Guid fromWarehouseId,
+        Guid toWarehouseId,
+        CancellationToken cancellationToken)
     {
-        var all = await _repository.GetAdjustmentsAsync(cancellationToken);
         var scope = await _branchAccess.GetScopeAsync(cancellationToken);
         if (scope.Unrestricted)
-            return all;
+            return;
         var allowed = scope.WarehouseIds.ToHashSet();
-        return all.Where(a => allowed.Contains(a.WarehouseId)).ToList();
+        if (!allowed.Contains(fromWarehouseId) && !allowed.Contains(toWarehouseId))
+            throw new UnauthorizedAccessException("Bạn không có quyền truy cập kho của phiếu này.");
+    }
+
+    public async Task<PagedAdjustmentsResult> GetAdjustmentsAsync(
+        AdjustmentListFilter filter,
+        CancellationToken cancellationToken = default)
+    {
+        filter ??= new AdjustmentListFilter();
+        var page = Math.Max(1, filter.Page);
+        var pageSize = Math.Clamp(filter.PageSize, 1, 100);
+        var scope = await _branchAccess.GetScopeAsync(cancellationToken);
+        Guid[]? allowed = scope.Unrestricted ? null : scope.WarehouseIds.ToArray();
+        if (!scope.Unrestricted && (allowed is null || allowed.Length == 0))
+            return new PagedAdjustmentsResult([], 0, page, pageSize);
+
+        if (filter.WarehouseId is Guid warehouseId && allowed is not null && !allowed.Contains(warehouseId))
+            return new PagedAdjustmentsResult([], 0, page, pageSize);
+
+        var (items, total) = await _repository.GetAdjustmentsAsync(
+            filter with { Page = page, PageSize = pageSize },
+            allowed,
+            cancellationToken);
+        return new PagedAdjustmentsResult(items, total, page, pageSize);
     }
 
     public async Task<AdjustmentDetailDto?> GetAdjustmentAsync(Guid id, CancellationToken cancellationToken = default)
@@ -365,8 +424,8 @@ internal sealed class InventoryService : IInventoryService
 
         foreach (var entry in request.Entries)
         {
-            if (entry.Quantity <= 0)
-                throw new InvalidOperationException("Số lượng đếm phải lớn hơn 0.");
+            if (entry.Quantity < 0)
+                throw new InvalidOperationException("Số lượng đếm không được âm (0 = hết tồn thực tế).");
             if (entry.BatchId is null || entry.BatchId == Guid.Empty)
                 throw new InvalidOperationException("Phải chọn lô khi ghi nhận đếm.");
         }

@@ -15,11 +15,12 @@ internal sealed class CustomerReceivablesService : ICustomerReceivablesService
     }
 
     public async Task<IReadOnlyList<CustomerReceivablesRowDto>> GetSummaryAsync(
+        Guid? warehouseId = null,
         CancellationToken cancellationToken = default)
     {
-        var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(null, cancellationToken);
-        var rows = await _repository.GetSalesOrderReceivableSourceRowsAsync(allowed, cancellationToken);
-        var credits = await _repository.GetUnlinkedCustomerPaymentTotalsAsync(allowed, cancellationToken);
+        var warehouseScope = await ResolveWarehouseScopeAsync(warehouseId, cancellationToken);
+        var rows = await _repository.GetSalesOrderReceivableSourceRowsAsync(warehouseScope, cancellationToken);
+        var credits = await _repository.GetUnlinkedCustomerPaymentTotalsAsync(warehouseScope, cancellationToken);
         return BuildCustomerGroups(rows, credits)
             .Select(BuildSummaryRow)
             .Where(x => x.TotalReceivable > 0.009m || x.UnappliedCredit > 0.009m)
@@ -30,11 +31,12 @@ internal sealed class CustomerReceivablesService : ICustomerReceivablesService
 
     public async Task<CustomerReceivablesDetailDto?> GetDetailAsync(
         Guid customerId,
+        Guid? warehouseId = null,
         CancellationToken cancellationToken = default)
     {
-        var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(null, cancellationToken);
-        var rows = await _repository.GetSalesOrderReceivableSourceRowsAsync(allowed, cancellationToken);
-        var credits = await _repository.GetUnlinkedCustomerPaymentTotalsAsync(allowed, cancellationToken);
+        var warehouseScope = await ResolveWarehouseScopeAsync(warehouseId, cancellationToken);
+        var rows = await _repository.GetSalesOrderReceivableSourceRowsAsync(warehouseScope, cancellationToken);
+        var credits = await _repository.GetUnlinkedCustomerPaymentTotalsAsync(warehouseScope, cancellationToken);
         var group = BuildCustomerGroups(rows, credits)
             .FirstOrDefault(x => x.CustomerId == customerId);
         if (group is null)
@@ -61,6 +63,16 @@ internal sealed class CustomerReceivablesService : ICustomerReceivablesService
             summary.UnappliedCredit,
             summary.Aging,
             lines);
+    }
+
+    private async Task<Guid[]?> ResolveWarehouseScopeAsync(
+        Guid? warehouseId,
+        CancellationToken cancellationToken)
+    {
+        var (scopedId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
+        if (scopedId is Guid id)
+            return [id];
+        return allowed;
     }
 
     private static CustomerReceivablesRowDto BuildSummaryRow(CustomerReceivablesGroup group)

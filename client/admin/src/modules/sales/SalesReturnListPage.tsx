@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Card, Space, Table, Tag, message } from 'antd';
+import { Button, Card, DatePicker, Select, Space, Table, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EyeOutlined, PrinterOutlined, ReloadOutlined } from '@ant-design/icons';
+import dayjs, { type Dayjs } from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import { fetchSalesReturn, fetchSalesReturns, searchCustomers } from '@/shared/api/sales.api';
 import type { CustomerListItem, SalesReturnListItem } from '@/shared/api/sales.types';
@@ -20,27 +21,47 @@ import { printSalesReturn } from '@/modules/sales/sales-return-print';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
+function todayRange(): [Dayjs, Dayjs] {
+  return [dayjs().startOf('day'), dayjs().endOf('day')];
+}
+
 export function SalesReturnListPage() {
   const { t } = useTranslation('sales', { keyPrefix: 'returns.list' });
   const canRead = useHasPermission('sales.read');
-  const { returnStatusLabel } = useSalesEnums();
+  const { returnStatusLabel, returnStatusOptions } = useSalesEnums();
   const navigate = useNavigate();
   const [items, setItems] = useState<SalesReturnListItem[]>([]);
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [customerQuery, setCustomerQuery] = useState('');
   const [documentQuery, setDocumentQuery] = useState('');
+  const [appliedCustomer, setAppliedCustomer] = useState('');
+  const [appliedDocument, setAppliedDocument] = useState('');
+  const [statusFilter, setStatusFilter] = useState<number | undefined>();
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(() => todayRange());
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailReturnId, setDetailReturnId] = useState<string | null>(null);
 
   const load = useCallback(
-    async (nextCustomerSearch: string, nextDocumentSearch: string) => {
+    async (
+      customerSearch: string = appliedCustomer,
+      documentSearch: string = appliedDocument,
+      nextStatus: number | undefined = statusFilter,
+      nextDateRange: [Dayjs, Dayjs] | null = dateRange,
+    ) => {
       setLoading(true);
       try {
+        const hasLookup = Boolean(customerSearch.trim() || documentSearch.trim());
+        // Tra cứu mã phiếu / khách: bỏ giới hạn ngày để tìm phiếu cũ.
+        const useDate = !hasLookup && nextDateRange != null;
         setItems(
           await fetchSalesReturns({
-            customerSearch: nextCustomerSearch.trim() || undefined,
-            documentSearch: nextDocumentSearch.trim() || undefined,
+            customerSearch: customerSearch.trim() || undefined,
+            documentSearch: documentSearch.trim() || undefined,
+            status: nextStatus,
+            from: useDate ? nextDateRange![0].startOf('day').toISOString() : undefined,
+            to: useDate ? nextDateRange![1].startOf('day').add(1, 'day').toISOString() : undefined,
+            limit: 100,
           }),
         );
       } catch (error) {
@@ -49,12 +70,12 @@ export function SalesReturnListPage() {
         setLoading(false);
       }
     },
-    [t],
+    [appliedCustomer, appliedDocument, statusFilter, dateRange, t],
   );
 
   useEffect(() => {
-    void load('', '');
-  }, [load]);
+    void load(appliedCustomer, appliedDocument, statusFilter, dateRange);
+  }, [load, appliedCustomer, appliedDocument, statusFilter, dateRange]);
 
   useEffect(() => {
     void searchCustomers()
@@ -86,13 +107,17 @@ export function SalesReturnListPage() {
     const document = values.document.trim();
     setCustomerQuery(customer);
     setDocumentQuery(document);
-    void load(customer, document);
+    setAppliedCustomer(customer);
+    setAppliedDocument(document);
   };
 
   const resetFilters = () => {
     setCustomerQuery('');
     setDocumentQuery('');
-    void load('', '');
+    setAppliedCustomer('');
+    setAppliedDocument('');
+    setStatusFilter(undefined);
+    setDateRange(todayRange());
   };
 
   const openDetail = (id: string) => {
@@ -205,12 +230,34 @@ export function SalesReturnListPage() {
           documentSuggestions={documentSuggestions}
           documentPlaceholder={t('filters.documentPlaceholder')}
         />
+        <Select
+          allowClear
+          placeholder={t('filters.status')}
+          style={{ width: 140 }}
+          value={statusFilter}
+          onChange={(value) => setStatusFilter(value)}
+          options={returnStatusOptions.map(({ value, label }) => ({ value, label }))}
+        />
+        <DatePicker.RangePicker
+          allowClear
+          value={dateRange}
+          onChange={(value) => {
+            if (value?.[0] && value[1]) {
+              setDateRange([value[0].startOf('day'), value[1].endOf('day')]);
+            } else {
+              setDateRange(null);
+            }
+          }}
+          style={{ width: 260 }}
+          format="DD/MM/YYYY"
+          placeholder={[t('filters.dateFrom'), t('filters.dateTo')]}
+        />
         <Button onClick={resetFilters}>{t('filters.clear')}</Button>
         <Button
           type="primary"
           ghost
           icon={<ReloadOutlined />}
-          onClick={() => void load(customerQuery, documentQuery)}
+          onClick={() => void load()}
           loading={loading}
         >
           {t('filters.reload')}

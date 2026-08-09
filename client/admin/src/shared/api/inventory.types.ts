@@ -101,9 +101,47 @@ export type TransferListItem = Req<
   | 'status'
   | 'transferDate'
   | 'itemCount'
->;
+> & {
+  hasShortage?: boolean;
+};
 
-export type TransferItem = Pick<
+export type TransferListFilters = {
+  search?: string;
+  status?: number;
+  fromWarehouseId?: string;
+  toWarehouseId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  hasShortage?: boolean;
+  page?: number;
+  pageSize?: number;
+};
+
+export type PagedTransfers = {
+  items: TransferListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type AdjustmentListFilters = {
+  search?: string;
+  status?: number;
+  warehouseId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type PagedAdjustments = {
+  items: AdjustmentListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type TransferItem = Req<
   TransferItemDto,
   | 'id'
   | 'batchId'
@@ -111,10 +149,10 @@ export type TransferItem = Pick<
   | 'productCode'
   | 'productName'
   | 'batchNumber'
-  | 'expiryDate'
-  | 'unitName'
   | 'quantity'
->;
+> & {
+  receivedQuantity?: number | null;
+};
 
 export type TransferDetail = Omit<
   Req<
@@ -132,6 +170,9 @@ export type TransferDetail = Omit<
 > & {
   items: TransferItem[];
   itemCount?: number;
+  receiveNotes?: string | null;
+  shippedAt?: string | null;
+  receivedAt?: string | null;
 };
 
 export type AdjustmentListItem = Req<

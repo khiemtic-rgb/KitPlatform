@@ -464,7 +464,9 @@ public sealed record CustomerPaymentListFilter(
     Guid? CustomerId = null,
     short? Status = null,
     DateOnly? DateFrom = null,
-    DateOnly? DateTo = null);
+    DateOnly? DateTo = null,
+    short? PaymentMethod = null,
+    Guid? WarehouseId = null);
 
 public sealed record SalesOrderPaymentLink(
     Guid Id,

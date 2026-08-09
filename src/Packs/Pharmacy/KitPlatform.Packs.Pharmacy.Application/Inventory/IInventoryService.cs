@@ -13,6 +13,7 @@ public interface IInventoryService
         Guid? warehouseId,
         Guid? productId,
         string? search,
+        string? expiry,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default);
@@ -20,6 +21,7 @@ public interface IInventoryService
     Task<PagedStockProductsResult> GetStockProductsAsync(
         Guid? warehouseId,
         string? search,
+        string? expiry,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default);
@@ -33,19 +35,22 @@ public interface IInventoryService
         Guid? productId,
         string? search,
         string? status,
+        string? expiry,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default);
 
     Task VoidOpeningBalanceBatchAsync(Guid batchId, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<TransferListItemDto>> GetTransfersAsync(CancellationToken cancellationToken = default);
+    Task<PagedTransfersResult> GetTransfersAsync(TransferListFilter filter, CancellationToken cancellationToken = default);
     Task<TransferDetailDto?> GetTransferAsync(Guid id, CancellationToken cancellationToken = default);
     Task<TransferDetailDto> CreateTransferAsync(CreateTransferRequest request, CancellationToken cancellationToken = default);
+    Task<TransferDetailDto?> ShipTransferAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<TransferDetailDto?> ReceiveTransferAsync(Guid id, ReceiveTransferRequest request, CancellationToken cancellationToken = default);
     Task<TransferDetailDto?> CompleteTransferAsync(Guid id, CancellationToken cancellationToken = default);
     Task<TransferDetailDto?> CancelTransferAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<AdjustmentListItemDto>> GetAdjustmentsAsync(CancellationToken cancellationToken = default);
+    Task<PagedAdjustmentsResult> GetAdjustmentsAsync(AdjustmentListFilter filter, CancellationToken cancellationToken = default);
     Task<AdjustmentDetailDto?> GetAdjustmentAsync(Guid id, CancellationToken cancellationToken = default);
     Task<AdjustmentDetailDto> CreateAdjustmentAsync(CreateAdjustmentRequest request, CancellationToken cancellationToken = default);
     Task<AdjustmentDetailDto?> ApproveAdjustmentAsync(Guid id, CancellationToken cancellationToken = default);

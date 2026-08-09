@@ -471,6 +471,9 @@
       "title": "Phiếu trả hàng",
       "filters": {
         "documentPlaceholder": "Số phiếu / đơn bán",
+        "status": "Trạng thái",
+        "dateFrom": "Từ ngày",
+        "dateTo": "Đến ngày",
         "clear": "Xóa lọc",
         "reload": "Tải lại"
       },
@@ -547,6 +550,10 @@
     },
     "filters": {
       "status": "Trạng thái",
+      "paymentMethod": "Hình thức",
+      "warehouse": "Kho",
+      "dateFrom": "Từ ngày",
+      "dateTo": "Đến ngày",
       "documentPlaceholder": "Số phiếu / đơn bán",
       "clear": "Xóa lọc",
       "reload": "Tải lại"
@@ -662,6 +669,15 @@
     },
     "history": {
       "title": "Lịch sử ca",
+      "filters": {
+        "searchPlaceholder": "VD: SH-000004",
+        "warehouse": "Kho",
+        "status": "Trạng thái",
+        "dateFrom": "Từ ngày",
+        "dateTo": "Đến ngày",
+        "clear": "Xóa lọc",
+        "reload": "Tải lại"
+      },
       "columns": {
         "shiftNumber": "Số ca",
         "warehouse": "Kho",
@@ -755,6 +771,24 @@
     "title": "Công nợ khách hàng",
     "intro": "Công nợ theo trường còn nợ trên đơn bán đã hoàn tất. Phiếu thu nợ không gắn đơn được bù trừ theo thứ tự đơn cũ nhất khi ghi sổ.",
     "searchPlaceholder": "Tên khách hoặc SĐT",
+    "filters": {
+      "warehouse": "Kho",
+      "aging": "Tuổi nợ",
+      "agingAll": "Mọi tuổi nợ",
+      "agingCurrent": "Có nợ 0–30 ngày",
+      "aging31To60": "Có nợ 31–60 ngày",
+      "aging61To90": "Có nợ 61–90 ngày",
+      "agingOver90": "Có nợ > 90 ngày",
+      "balance": "Số dư",
+      "balanceAll": "Mọi số dư",
+      "balanceReceivable": "Còn phải thu > 0",
+      "balanceCredit": "Có thu chưa phân bổ",
+      "balanceOver100k": "Phải thu ≥ 100.000",
+      "balanceOver500k": "Phải thu ≥ 500.000",
+      "balanceOver1m": "Phải thu ≥ 1.000.000",
+      "clear": "Xóa lọc",
+      "reload": "Tải lại"
+    },
     "clear": "Xóa lọc",
     "paginationTotal": "{{count}} khách hàng",
     "summaryTotal": "Tổng",
