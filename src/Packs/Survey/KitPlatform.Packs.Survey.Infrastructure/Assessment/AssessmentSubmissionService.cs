@@ -329,7 +329,7 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
             submissionId,
             request.RespondentName.Trim(),
             phone,
-            request.RespondentEmail.Trim(),
+            string.IsNullOrWhiteSpace(request.RespondentEmail) ? null : request.RespondentEmail.Trim(),
             string.IsNullOrWhiteSpace(request.RespondentOrgName) ? null : request.RespondentOrgName.Trim(),
             request.RespondentNote?.Trim(),
             request.ConsentMarketing);
@@ -706,9 +706,8 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
                 statusCode: 400);
         }
 
-        if (string.IsNullOrWhiteSpace(request.RespondentEmail)
-            || !request.RespondentEmail.Contains('@')
-            || request.RespondentEmail.Length < 5)
+        if (!string.IsNullOrWhiteSpace(request.RespondentEmail)
+            && (!request.RespondentEmail.Contains('@') || request.RespondentEmail.Trim().Length < 5))
         {
             throw new AssessmentException(
                 AssessmentErrorCodes.ValidationError,

@@ -122,7 +122,7 @@ public sealed record CompleteAssessmentResult(
 public sealed record CaptureAssessmentLeadRequest(
     string RespondentName,
     string RespondentPhone,
-    string RespondentEmail,
+    string? RespondentEmail,
     string? RespondentOrgName,
     string? RespondentNote,
     bool ConsentMarketing,

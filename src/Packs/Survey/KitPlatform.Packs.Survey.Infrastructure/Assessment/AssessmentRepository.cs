@@ -462,7 +462,7 @@ internal sealed class AssessmentRepository
         Guid submissionId,
         string name,
         string phone,
-        string email,
+        string? email,
         string? orgName,
         string? note,
         bool consentMarketing)

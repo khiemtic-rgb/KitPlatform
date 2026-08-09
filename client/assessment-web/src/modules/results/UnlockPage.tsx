@@ -9,7 +9,7 @@ const { Title, Paragraph } = Typography;
 type FormValues = {
   respondentName: string;
   respondentPhone: string;
-  respondentEmail: string;
+  respondentEmail?: string;
   respondentOrgName?: string;
   orgScale?: string;
   respondentNote?: string;
@@ -35,7 +35,7 @@ export function UnlockPage() {
       await captureLead(id, {
         respondentName: values.respondentName,
         respondentPhone: values.respondentPhone,
-        respondentEmail: values.respondentEmail,
+        respondentEmail: values.respondentEmail?.trim() || undefined,
         respondentOrgName: values.respondentOrgName?.trim() || undefined,
         orgScale: values.orgScale || undefined,
         respondentNote: values.respondentNote,
@@ -53,14 +53,14 @@ export function UnlockPage() {
   }
 
   function onFinishFailed() {
-    message.warning('Vui lòng điền họ tên, số điện thoại và email.');
+    message.warning('Vui lòng điền họ tên và số điện thoại.');
   }
 
   return (
     <div className="page-shell">
       <Title level={3}>Nhận báo cáo chi tiết</Title>
       <Paragraph type="secondary">
-        Chỉ cần họ tên, SĐT và email — Novixa gửi báo cáo và liên hệ tư vấn khi bạn muốn.
+        Chỉ cần họ tên và số điện thoại — phần còn lại tuỳ chọn.
       </Paragraph>
 
       <Form
@@ -85,9 +85,19 @@ export function UnlockPage() {
           <Input placeholder="0909123456" />
         </Form.Item>
         <Form.Item
-          label="Email"
+          label="Email (tuỳ chọn)"
           name="respondentEmail"
-          rules={[{ required: true, type: 'email', message: 'Email không hợp lệ' }]}
+          rules={[
+            {
+              validator: async (_, value?: string) => {
+                const v = value?.trim() ?? '';
+                if (!v) return;
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+                  throw new Error('Email không hợp lệ');
+                }
+              },
+            },
+          ]}
         >
           <Input placeholder="owner@example.com" />
         </Form.Item>

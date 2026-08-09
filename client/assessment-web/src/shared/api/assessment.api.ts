@@ -361,7 +361,7 @@ export async function captureLead(
   payload: {
     respondentName: string;
     respondentPhone: string;
-    respondentEmail: string;
+    respondentEmail?: string;
     respondentOrgName?: string;
     respondentNote?: string;
     consentMarketing: boolean;

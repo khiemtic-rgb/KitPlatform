@@ -74,7 +74,7 @@ internal static class SurveySubmissionWriter
         Guid assessmentSubmissionId,
         string name,
         string phone,
-        string email,
+        string? email,
         string? orgName,
         CancellationToken cancellationToken = default)
     {
