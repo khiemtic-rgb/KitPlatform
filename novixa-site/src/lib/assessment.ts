@@ -4,7 +4,7 @@ export const ASSESSMENT = {
   pharmacy: {
     id: 'pharmacy',
     landingPath: '/vi/health-check/',
-    surveyUrl: 'https://survey.novixa.vn/survey/d8348cb1-0a36-4c6e-b710-80dca15d9357',
+    surveyUrl: 'https://survey.novixa.vn/start',
     label: 'Nhà thuốc',
     tagline: 'Quản trị nhà thuốc thông minh',
     badgeLabel: 'AI HEALTH CHECK',
