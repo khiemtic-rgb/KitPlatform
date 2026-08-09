@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Spin, Typography, message } from 'antd';
+import { Spin, message } from 'antd';
 import {
   completeSubmission,
   fetchTemplate,
@@ -13,61 +13,54 @@ import {
 import { annotateInsightText } from '@/shared/score/score-display';
 import { visibleQuestions } from '@/shared/survey/survey-logic';
 
-const { Title, Text } = Typography;
+const OPTION_TONES = ['rose', 'amber', 'teal', 'blue', 'violet', 'indigo'] as const;
 
-function IconArrowLeft() {
+function Icon({ d, size = 16 }: { d: string; size?: number }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M19 12H5M12 19l-7-7 7-7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" aria-hidden>
+      <path d={d} stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
-function IconArrowRight() {
+const PATH = {
+  save: 'M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8',
+  back: 'M19 12H5M12 19l-7-7 7-7',
+  next: 'M5 12h14M12 5l7 7-7 7',
+  chart: 'M4 20V10M10 20V4M16 20v-8M22 20H2',
+  users: 'M12 12a4 4 0 100-8 4 4 0 000 8zM5 20c1.5-3.2 4-5 7-5s5.5 1.8 7 5',
+  bulb: 'M9 18h6M10 21h4M12 3a6 6 0 00-3 11.2V16h6v-1.8A6 6 0 0012 3z',
+  check: 'M5 13l4 4L19 7',
+  x: 'M7 7l10 10M17 7L7 17',
+  phone: 'M7 4h4l1.5 4-2 1.5a10 10 0 004.5 4.5L16.5 12l4 1.5V18a2 2 0 01-2 2A14 14 0 015 6a2 2 0 012-2z',
+  db: 'M4 7c0 1.7 3.6 3 8 3s8-1.3 8-3-3.6-3-8-3-8 1.3-8 3zm0 5c0 1.7 3.6 3 8 3s8-1.3 8-3M4 17c0 1.7 3.6 3 8 3s8-1.3 8-3',
+};
+
+function splitOptionLabel(label: string): { title: string; desc?: string } {
+  const annotated = annotateInsightText(label);
+  const parts = annotated.split(/\n+| — | – |: /).map((p) => p.trim()).filter(Boolean);
+  if (parts.length >= 2) return { title: parts[0], desc: parts.slice(1).join(' — ') };
+  return { title: annotated };
+}
+
+function OptionToneIcon({ index }: { index: number }) {
+  const tone = OPTION_TONES[index % OPTION_TONES.length];
+  const path =
+    index % 4 === 0 ? PATH.x : index % 4 === 1 ? PATH.phone : index % 4 === 2 ? PATH.users : PATH.db;
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M5 12h14M12 5l7 7-7 7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <span className="sq-option__tone" data-tone={tone} aria-hidden>
+      <Icon d={path} size={16} />
+    </span>
   );
 }
 
-function IconChart() {
+function QuestionArt() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M4 20V10M10 20V4M16 20v-8M22 20H2"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function IconSave() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M17 21v-8H7v8M7 3v5h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <svg className="sq-card__art" viewBox="0 0 96 72" role="img" aria-hidden>
+      <rect x="18" y="10" width="44" height="52" rx="6" fill="#ecfeff" stroke="#0f766e" strokeWidth="2" />
+      <path d="M28 24h24M28 34h18M28 44h20" stroke="#0f766e" strokeWidth="2" strokeLinecap="round" />
+      <rect x="52" y="28" width="28" height="34" rx="5" fill="#0f766e" opacity="0.9" />
+      <path d="M60 40h12M60 48h8" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -83,13 +76,11 @@ export function SurveyPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const categories = useMemo(() => (template ? groupQuestionsByCategory(template) : []), [template]);
-
   const allQuestions = useMemo(() => categories.flatMap((c) => c.questions), [categories]);
   const visibleAllQuestions = useMemo(
     () => visibleQuestions(allQuestions, answers),
     [allQuestions, answers],
   );
-
   const visibleCategories = useMemo(
     () =>
       categories
@@ -168,18 +159,15 @@ export function SurveyPage() {
       message.warning('Vui lòng chọn một đáp án.');
       return;
     }
-
     if (qIndex < currentCat.questions.length - 1) {
       setQIndex(qIndex + 1);
       return;
     }
-
     if (catIndex < visibleCategories.length - 1) {
       setCatIndex(catIndex + 1);
       setQIndex(0);
       return;
     }
-
     setSubmitting(true);
     try {
       const result = await completeSubmission(id);
@@ -209,7 +197,7 @@ export function SurveyPage() {
 
   if (loading || !currentQuestion || !currentCat) {
     return (
-      <div className="page-shell survey-page" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+      <div className="sq-page" style={{ textAlign: 'center', paddingTop: '4rem' }}>
         <Spin size="large" tip="Đang tải khảo sát..." />
       </div>
     );
@@ -217,142 +205,157 @@ export function SurveyPage() {
 
   const globalIndex =
     visibleCategories.slice(0, catIndex).reduce((n, c) => n + c.questions.length, 0) + qIndex + 1;
+  const atStart = catIndex === 0 && qIndex === 0;
+  const help =
+    currentQuestion.helpText?.trim() ||
+    'Chọn phương án mô tả đúng nhất với cách nhà thuốc đang vận hành.';
 
   return (
-    <div className="page-shell survey-page">
-      <div className="survey-top">
-        <button type="button" className="survey-exit" onClick={() => navigate('/')}>
-          <IconSave />
-          Lưu &amp; thoát
-        </button>
-        <Text type="secondary" className="survey-top-meta">
+    <div className="sq-page">
+      <header className="sq-topbar">
+        <div className="sq-topbar__left">
+          <a className="sq-brand" href="https://novixa.vn/vi/" aria-label="Novixa">
+            <img src="/logo.png" alt="Novixa" width="120" height="34" />
+          </a>
+          <button type="button" className="sq-exit" onClick={() => navigate('/')}>
+            <Icon d={PATH.save} size={14} />
+            Lưu &amp; thoát
+          </button>
+        </div>
+        <span className="sq-topbar__meta">
           Câu {globalIndex}/{visibleAllQuestions.length}
-        </Text>
-      </div>
+        </span>
+      </header>
 
-      <div className="survey-progress-wrap">
-        <div className="survey-progress-labels">
-          <Text type="secondary">Tiến độ hoàn thành</Text>
-          <Text strong style={{ color: '#0f766e' }}>
-            {progressPct}%
-          </Text>
+      <div className="sq-progress">
+        <div className="sq-progress__labels">
+          <span>Tiến độ hoàn thành</span>
+          <strong>{progressPct}%</strong>
         </div>
-        <div className="survey-progress-track">
-          <span className="survey-progress-fill" style={{ width: `${progressPct}%` }} />
+        <div className="sq-progress__track">
+          <span style={{ width: `${progressPct}%` }} />
         </div>
       </div>
 
-      <nav className="survey-steps" aria-label="Nhóm câu hỏi">
+      <nav className="sq-steps" aria-label="Nhóm câu hỏi">
         {visibleCategories.map((cat, idx) => {
           const stat = categoryAnswered[idx];
           const isActive = idx === catIndex;
-          const isDone = stat && stat.done === stat.total;
+          const isDone = Boolean(stat && stat.done === stat.total);
           return (
             <div
               key={cat.code}
-              className={[
-                'survey-step',
-                isActive ? 'survey-step--active' : '',
-                isDone ? 'survey-step--done' : '',
-              ]
+              className={['sq-step', isActive ? 'is-active' : '', isDone ? 'is-done' : '']
                 .filter(Boolean)
                 .join(' ')}
             >
-              <span className="survey-step-num">{isDone ? '✓' : idx + 1}</span>
-              <span className="survey-step-name">{cat.name}</span>
+              <span className="sq-step__num">{isDone && !isActive ? '✓' : idx + 1}</span>
+              <span className="sq-step__name">{cat.name}</span>
             </div>
           );
         })}
       </nav>
 
-      <article className="survey-card">
-        <div className="survey-card-meta">
-          <span className="survey-badge survey-badge--category">{currentCat.name}</span>
-          <span className="survey-badge survey-badge--code">Câu {currentQuestion.code}</span>
-          {!currentQuestion.scorable && (
-            <span className="survey-badge survey-badge--info">Không tính điểm · Hỗ trợ tư vấn</span>
-          )}
+      <article className="sq-card">
+        <div className="sq-card__head">
+          <div className="sq-card__meta">
+            <span className="sq-badge sq-badge--cat">
+              <Icon d={PATH.users} size={13} />
+              Nhóm: {currentCat.name}
+            </span>
+            <span className="sq-badge sq-badge--code">Câu {currentQuestion.code}</span>
+            {!currentQuestion.scorable ? (
+              <span className="sq-badge sq-badge--info">Không tính điểm · Hỗ trợ tư vấn</span>
+            ) : null}
+          </div>
+          <QuestionArt />
         </div>
 
-        <Title level={4} className="survey-question-title">
-          {annotateInsightText(currentQuestion.title)}
-        </Title>
+        <h1 className="sq-question">{annotateInsightText(currentQuestion.title)}</h1>
+        <p className="sq-help">{annotateInsightText(help)}</p>
 
-        <div className="survey-options" role="group" aria-label="Lựa chọn trả lời">
+        <div className="sq-options" role="group" aria-label="Lựa chọn trả lời">
           {currentQuestion.questionType === 'text' || currentQuestion.questionType === 'scale' ? (
             <textarea
-              className="survey-text-input"
-              rows={4}
+              className="sq-text"
+              rows={3}
               value={answers[currentQuestion.id] ?? ''}
               onChange={(e) => void persistAnswer(currentQuestion.id, { textValue: e.target.value })}
               placeholder={currentQuestion.helpText ?? 'Nhập câu trả lời...'}
             />
           ) : currentQuestion.questionType === 'multi_choice' ? (
-            currentQuestion.options.map((opt) => {
-              const selected = (answers[currentQuestion.id] ?? '').split(',').filter(Boolean).includes(opt.id);
+            currentQuestion.options.map((opt, idx) => {
+              const selected = (answers[currentQuestion.id] ?? '')
+                .split(',')
+                .filter(Boolean)
+                .includes(opt.id);
+              const { title, desc } = splitOptionLabel(opt.label);
               return (
                 <button
                   key={opt.id}
                   type="button"
-                  className={['survey-option', selected ? 'survey-option--selected' : '']
-                    .filter(Boolean)
-                    .join(' ')}
+                  className={['sq-option', selected ? 'is-selected' : ''].filter(Boolean).join(' ')}
                   onClick={() => {
                     const prev = (answers[currentQuestion.id] ?? '').split(',').filter(Boolean);
-                    const next = selected ? prev.filter((id) => id !== opt.id) : [...prev, opt.id];
+                    const next = selected ? prev.filter((x) => x !== opt.id) : [...prev, opt.id];
                     void persistAnswer(currentQuestion.id, { optionId: next[0] });
                     setAnswers((a) => ({ ...a, [currentQuestion.id]: next.join(',') }));
                   }}
                 >
-                  <span className="survey-option-label">{opt.label}</span>
+                  <OptionToneIcon index={idx} />
+                  <span className={['sq-option__radio', selected ? 'is-on' : ''].filter(Boolean).join(' ')} />
+                  <span className="sq-option__copy">
+                    <strong>{title}</strong>
+                    {desc ? <small>{desc}</small> : null}
+                  </span>
                 </button>
               );
             })
           ) : (
-            currentQuestion.options.map((opt) => {
+            currentQuestion.options.map((opt, idx) => {
               const selected = answers[currentQuestion.id] === opt.id;
+              const { title, desc } = splitOptionLabel(opt.label);
               return (
                 <button
                   key={opt.id}
                   type="button"
                   role="radio"
                   aria-checked={selected}
-                  className={['survey-option', selected ? 'survey-option--selected' : '']
-                    .filter(Boolean)
-                    .join(' ')}
+                  className={['sq-option', selected ? 'is-selected' : ''].filter(Boolean).join(' ')}
                   onClick={() => persistAnswer(currentQuestion.id, { optionId: opt.id })}
                 >
-                  <span className="survey-option-radio" aria-hidden />
-                  <span className="survey-option-label">{opt.label}</span>
+                  <OptionToneIcon index={idx} />
+                  <span className={['sq-option__radio', selected ? 'is-on' : ''].filter(Boolean).join(' ')} />
+                  <span className="sq-option__copy">
+                    <strong>{title}</strong>
+                    {desc ? <small>{desc}</small> : null}
+                  </span>
                 </button>
               );
             })
           )}
         </div>
-      </article>
 
-      <footer className="survey-footer">
-        <Button
-          size="large"
-          icon={<IconArrowLeft />}
-          disabled={catIndex === 0 && qIndex === 0}
-          onClick={goBack}
-          className="survey-btn-back"
-        >
-          Quay lại
-        </Button>
-        <Button
-          type="primary"
-          size="large"
-          loading={submitting}
-          onClick={goNext}
-          icon={isLastQuestion ? <IconChart /> : <IconArrowRight />}
-          iconPosition="end"
-          className="survey-btn-next"
-        >
-          {isLastQuestion ? 'Xem kết quả' : 'Tiếp theo'}
-        </Button>
-      </footer>
+        <footer className="sq-footer">
+          <button type="button" className="sq-btn sq-btn--back" disabled={atStart} onClick={goBack}>
+            <Icon d={PATH.back} size={15} />
+            Quay lại
+          </button>
+          <div className="sq-tip">
+            <Icon d={PATH.bulb} size={15} />
+            <span>Mẹo: Chọn phương án phản ánh đúng thực tế nhất để nhận kết quả đánh giá chính xác.</span>
+          </div>
+          <button
+            type="button"
+            className="sq-btn sq-btn--next"
+            disabled={submitting}
+            onClick={() => void goNext()}
+          >
+            {submitting ? 'Đang xử lý…' : isLastQuestion ? 'Xem kết quả' : 'Tiếp theo'}
+            <Icon d={isLastQuestion ? PATH.chart : PATH.next} size={15} />
+          </button>
+        </footer>
+      </article>
     </div>
   );
 }
