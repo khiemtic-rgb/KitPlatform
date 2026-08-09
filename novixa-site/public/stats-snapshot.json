@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-08T19:00:00.120Z",
+  "generatedAt": "2026-08-09T02:30:22.955Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 653,
-    "last24hPageViews": 582,
-    "last24hRequests": 2469
+    "todayVisitors": 79,
+    "todayPageViews": 9,
+    "todayRequests": 114,
+    "last24hVisitors": 634,
+    "last24hPageViews": 514,
+    "last24hRequests": 2373
   },
   "hourly": [
-    {
-      "time": "2026-08-07T19:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-07T20:00:00Z",
-      "visitors": 11,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-07T21:00:00Z",
-      "visitors": 5,
-      "requests": 49
-    },
-    {
-      "time": "2026-08-07T22:00:00Z",
-      "visitors": 10,
-      "requests": 16
-    },
-    {
-      "time": "2026-08-07T23:00:00Z",
-      "visitors": 9,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-08T00:00:00Z",
-      "visitors": 13,
-      "requests": 21
-    },
-    {
-      "time": "2026-08-08T01:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-08T02:00:00Z",
-      "visitors": 127,
-      "requests": 224
-    },
     {
       "time": "2026-08-08T03:00:00Z",
       "visitors": 29,
@@ -130,6 +90,46 @@
       "time": "2026-08-08T18:00:00Z",
       "visitors": 10,
       "requests": 10
+    },
+    {
+      "time": "2026-08-08T19:00:00Z",
+      "visitors": 5,
+      "requests": 18
+    },
+    {
+      "time": "2026-08-08T20:00:00Z",
+      "visitors": 10,
+      "requests": 74
+    },
+    {
+      "time": "2026-08-08T21:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-08T22:00:00Z",
+      "visitors": 14,
+      "requests": 17
+    },
+    {
+      "time": "2026-08-08T23:00:00Z",
+      "visitors": 20,
+      "requests": 22
+    },
+    {
+      "time": "2026-08-09T00:00:00Z",
+      "visitors": 39,
+      "requests": 70
+    },
+    {
+      "time": "2026-08-09T01:00:00Z",
+      "visitors": 21,
+      "requests": 21
+    },
+    {
+      "time": "2026-08-09T02:00:00Z",
+      "visitors": 21,
+      "requests": 23
     }
   ],
   "daily": [
@@ -165,39 +165,45 @@
     },
     {
       "date": "2026-08-08",
-      "visitors": 618,
-      "pageViews": 558,
-      "requests": 2373
+      "visitors": 652,
+      "pageViews": 585,
+      "requests": 2509
+    },
+    {
+      "date": "2026-08-09",
+      "visitors": 79,
+      "pageViews": 9,
+      "requests": 114
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 340
+      "views": 356
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 318
+      "views": 315
     },
     {
       "path": "/brand/xuanhoa-logo.png",
-      "views": 168
+      "views": 229
     },
     {
       "path": "/vi/tin-tuc/cach-giam-thoi-gian-phuc-vu-moi-khach-tai-nha-thuoc-ma-khong-lam-giam-chat-luong-tu-van/",
-      "views": 133
+      "views": 131
     },
     {
       "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
-      "views": 87
+      "views": 91
     },
     {
       "path": "/favicon.svg",
-      "views": 72
+      "views": 80
     },
     {
       "path": "/_astro/storefront.CUqIdUG9.css",
-      "views": 69
+      "views": 71
     },
     {
       "path": "/vi/health-check/",
@@ -205,15 +211,11 @@
     },
     {
       "path": "/vi/",
-      "views": 54
+      "views": 50
     },
     {
       "path": "/robots.txt",
-      "views": 45
-    },
-    {
-      "path": "/brand/family-health.png",
-      "views": 33
+      "views": 47
     },
     {
       "path": "/images/tin-tuc/quy-trinh-ban-thuoc.png",
@@ -228,8 +230,12 @@
       "views": 27
     },
     {
-      "path": "/brand/products/hapacol-pain.jpg",
+      "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
       "views": 26
+    },
+    {
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 25
     }
   ]
 }
