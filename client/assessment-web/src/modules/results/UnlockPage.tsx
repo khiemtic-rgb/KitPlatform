@@ -126,33 +126,14 @@ function ScaleField({
   onChange?: (value: string) => void;
 }) {
   return (
-    <div className="unlock-scale-field">
-      <Select
-        size="large"
-        value={value}
-        onChange={onChange}
-        placeholder="Chọn quy mô phù hợp"
-        options={SCALE_CHIPS.map((c) => ({ value: c.value, label: c.label }))}
-        className="unlock-scale-select"
-      />
-      <div className="unlock-scale" role="radiogroup" aria-label="Quy mô cơ sở">
-        {SCALE_CHIPS.map((chip) => {
-          const selected = value === chip.value;
-          return (
-            <button
-              key={chip.value}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              className={['unlock-scale__chip', selected ? 'is-selected' : ''].filter(Boolean).join(' ')}
-              onClick={() => onChange?.(chip.value)}
-            >
-              {chip.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <Select
+      size="middle"
+      value={value}
+      onChange={onChange}
+      placeholder="Chọn quy mô phù hợp"
+      options={SCALE_CHIPS.map((c) => ({ value: c.value, label: c.label }))}
+      className="unlock-scale-select"
+    />
   );
 }
 
@@ -272,7 +253,7 @@ export function UnlockPage() {
                 rules={[{ required: true, min: 2, message: 'Nhập họ và tên' }]}
               >
                 <Input
-                  size="large"
+                  size="middle"
                   placeholder="Nhập họ và tên của bạn"
                   autoComplete="name"
                   prefix={<Icon d="M12 12a4 4 0 100-8 4 4 0 000 8zM5 20c1.5-3.2 4-5 7-5s5.5 1.8 7 5" />}
@@ -285,7 +266,7 @@ export function UnlockPage() {
                 extra="Chuyên gia sẽ liên hệ tư vấn cho bạn"
               >
                 <Input
-                  size="large"
+                  size="middle"
                   placeholder="Nhập số điện thoại"
                   inputMode="tel"
                   autoComplete="tel"
@@ -309,7 +290,7 @@ export function UnlockPage() {
                 ]}
               >
                 <Input
-                  size="large"
+                  size="middle"
                   placeholder="Nhập email"
                   autoComplete="email"
                   prefix={<Icon d="M4 6h16v12H4V6zm0 0l8 7 8-7" />}
@@ -328,7 +309,7 @@ export function UnlockPage() {
                 rules={[{ required: true, min: 2, message: 'Nhập tên nhà thuốc hoặc cơ sở' }]}
               >
                 <Input
-                  size="large"
+                  size="middle"
                   placeholder="Nhập tên nhà thuốc hoặc cơ sở"
                   prefix={<Icon d="M4 20V9l8-5 8 5v11H4zm5-4h6" />}
                 />

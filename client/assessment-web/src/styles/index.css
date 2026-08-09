@@ -1303,19 +1303,42 @@ a {
 .unlock-card .ant-input,
 .unlock-card textarea.ant-input,
 .unlock-card .ant-select-selector {
-  border-radius: 10px !important;
+  border-radius: 8px !important;
   border-color: #ccd0d5 !important;
-  min-height: 44px;
+  min-height: 36px !important;
+}
+
+.unlock-card .ant-input-affix-wrapper {
+  padding-block: 4px !important;
+}
+
+.unlock-card .ant-select-single .ant-select-selector {
+  height: 36px !important;
+  align-items: center;
+}
+
+.unlock-card .ant-select-selection-item,
+.unlock-card .ant-select-selection-placeholder {
+  line-height: 34px !important;
 }
 
 .unlock-card textarea.ant-input {
-  min-height: 64px !important;
-  max-height: 96px;
+  min-height: 56px !important;
+  max-height: 88px;
   resize: vertical;
+  padding-block: 6px !important;
 }
 
 .unlock-card .ant-input-affix-wrapper-lg {
-  padding-inline: 12px;
+  padding-inline: 11px;
+}
+
+.unlock-card .ant-form-item {
+  margin-bottom: 0.75rem;
+}
+
+.unlock-scale-select {
+  width: 100%;
 }
 
 .unlock-card .ant-input-prefix {
@@ -1336,42 +1359,8 @@ a {
   box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.15) !important;
 }
 
-.unlock-scale-field {
-  display: grid;
-  gap: 0.65rem;
-}
-
 .unlock-scale-select {
   width: 100%;
-}
-
-.unlock-scale {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.unlock-scale__chip {
-  border: 1.5px solid #ccd0d5;
-  background: #fff;
-  color: #050505;
-  border-radius: 999px;
-  padding: 0.48rem 0.8rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
-}
-
-.unlock-scale__chip:hover {
-  border-color: #5eead4;
-  color: var(--unlock-teal);
-}
-
-.unlock-scale__chip.is-selected {
-  border-color: var(--unlock-teal);
-  background: #e7f8f3;
-  color: var(--unlock-teal);
 }
 
 .unlock-consent .ant-checkbox-wrapper {
