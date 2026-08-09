@@ -8,14 +8,13 @@ import {
   Drawer,
   Input,
   Select,
-  Space,
   Spin,
   Table,
   Typography,
   message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { CreditCardOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { CreditCardOutlined, DownloadOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { fetchWarehouses } from '@/shared/api/inventory.api';
 import type { Warehouse } from '@/shared/api/inventory.types';
@@ -23,8 +22,10 @@ import { fetchSupplierPayables, fetchSupplierPayablesDetail } from '@/shared/api
 import type { SupplierPayablesDetail, SupplierPayablesDetailLine, SupplierPayablesRow } from '@/shared/api/procurement.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { buildSupplierPaymentCreateUrl } from '@/modules/procurement/supplier-payment-nav';
-import { filterBarStyle } from '@/modules/sales/sales-ui-styles';
+import { usePersistedFilters } from '@/shared/hooks/usePersistedFilters';
 import { useProcurementWrite } from '@/shared/auth/usePermission';
+import { ListFilterBar } from '@/shared/ui/ListFilterBar';
+import { downloadCsv } from '@/shared/utils/download-csv';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
@@ -36,6 +37,20 @@ type BalanceFilter =
   | 'over_100k'
   | 'over_500k'
   | 'over_1m';
+
+type PayablesListFilters = {
+  search: string;
+  warehouseId?: string;
+  agingFilter: AgingFilter;
+  balanceFilter: BalanceFilter;
+};
+
+const PAYABLES_FILTER_DEFAULTS: PayablesListFilters = {
+  search: '',
+  warehouseId: undefined,
+  agingFilter: 'all',
+  balanceFilter: 'all',
+};
 
 function matchesAging(row: SupplierPayablesRow, aging: AgingFilter): boolean {
   if (aging === 'all') return true;
@@ -84,10 +99,11 @@ export function SupplierPayablesPage() {
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<SupplierPayablesRow[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [search, setSearch] = useState('');
-  const [warehouseId, setWarehouseId] = useState<string | undefined>();
-  const [agingFilter, setAgingFilter] = useState<AgingFilter>('all');
-  const [balanceFilter, setBalanceFilter] = useState<BalanceFilter>('all');
+  const [filters, setFilters, resetFilters] = usePersistedFilters(
+    'admin.listFilters.supplierPayables',
+    PAYABLES_FILTER_DEFAULTS,
+  );
+  const { search, warehouseId, agingFilter, balanceFilter } = filters;
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detail, setDetail] = useState<SupplierPayablesDetail | null>(null);
@@ -151,11 +167,31 @@ export function SupplierPayablesPage() {
     [filteredRows],
   );
 
-  const resetFilters = () => {
-    setSearch('');
-    setWarehouseId(undefined);
-    setAgingFilter('all');
-    setBalanceFilter('all');
+  const exportCsv = () => {
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(
+      `supplier-payables-${stamp}.csv`,
+      [
+        tShared('columns.supplierCode'),
+        tShared('columns.supplierName'),
+        t('columns.totalPayable'),
+        t('columns.aging0To30'),
+        t('columns.aging31To60'),
+        t('columns.aging61To90'),
+        t('columns.agingOver90'),
+        t('columns.openDocuments'),
+      ],
+      filteredRows.map((row) => [
+        row.supplierCode,
+        row.supplierName,
+        String(row.totalPayable),
+        String(row.aging.current),
+        String(row.aging.days31To60),
+        String(row.aging.days61To90),
+        String(row.aging.over90),
+        String(row.openDocumentCount),
+      ]),
+    );
   };
 
   const openDetail = async (supplierId: string) => {
@@ -301,19 +337,27 @@ export function SupplierPayablesPage() {
   );
 
   return (
-    <Card title={t('title')} bordered={false}>
+    <Card
+      title={t('title')}
+      bordered={false}
+      extra={
+        <Button icon={<DownloadOutlined />} onClick={exportCsv} disabled={filteredRows.length === 0}>
+          {t('filters.export')}
+        </Button>
+      }
+    >
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
         {t('intro')}
       </Typography.Paragraph>
 
-      <Space wrap style={filterBarStyle}>
+      <ListFilterBar>
         <AutoComplete
           style={{ width: 260 }}
           options={searchSuggestions}
           value={search}
           filterOption={false}
-          onSelect={(value) => setSearch(String(value))}
-          onChange={(value) => setSearch(value)}
+          onSelect={(value) => setFilters((prev) => ({ ...prev, search: String(value) }))}
+          onChange={(value) => setFilters((prev) => ({ ...prev, search: value }))}
         >
           <Input
             allowClear
@@ -328,13 +372,13 @@ export function SupplierPayablesPage() {
           placeholder={t('filters.warehouse')}
           style={{ width: 200 }}
           value={warehouseId}
-          onChange={setWarehouseId}
+          onChange={(value) => setFilters((prev) => ({ ...prev, warehouseId: value }))}
           options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
         />
         <Select
           style={{ width: 200 }}
           value={agingFilter}
-          onChange={setAgingFilter}
+          onChange={(value: AgingFilter) => setFilters((prev) => ({ ...prev, agingFilter: value }))}
           options={[
             { value: 'all', label: t('filters.agingAll') },
             { value: 'current', label: t('filters.agingCurrent') },
@@ -346,7 +390,7 @@ export function SupplierPayablesPage() {
         <Select
           style={{ width: 200 }}
           value={balanceFilter}
-          onChange={setBalanceFilter}
+          onChange={(value: BalanceFilter) => setFilters((prev) => ({ ...prev, balanceFilter: value }))}
           options={[
             { value: 'all', label: t('filters.balanceAll') },
             { value: 'has_payable', label: t('filters.balancePayable') },
@@ -366,7 +410,7 @@ export function SupplierPayablesPage() {
         >
           {t('filters.reload')}
         </Button>
-      </Space>
+      </ListFilterBar>
 
       <Table
         rowKey="supplierId"

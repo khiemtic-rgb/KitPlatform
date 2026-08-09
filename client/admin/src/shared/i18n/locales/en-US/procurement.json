@@ -456,7 +456,8 @@
       "balanceOver500k": "Payable ≥ 500,000",
       "balanceOver1m": "Payable ≥ 1,000,000",
       "clear": "Clear filters",
-      "reload": "Reload"
+      "reload": "Reload",
+      "export": "Export CSV"
     },
     "detailDrawer": "Payables detail",
     "detailDrawerWithName": "Payables — {{supplierName}}",

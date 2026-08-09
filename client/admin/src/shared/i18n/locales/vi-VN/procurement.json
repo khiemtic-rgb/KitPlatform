@@ -477,7 +477,8 @@
       "balanceOver500k": "Phải trả ≥ 500.000",
       "balanceOver1m": "Phải trả ≥ 1.000.000",
       "clear": "Xóa lọc",
-      "reload": "Tải lại"
+      "reload": "Tải lại",
+      "export": "Xuất CSV"
     },
     "detailDrawer": "Chi tiết công nợ",
     "detailDrawerWithName": "Công nợ — {{supplierName}}",

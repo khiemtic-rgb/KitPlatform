@@ -783,7 +783,8 @@
       "balanceOver500k": "Receivable ≥ 500,000",
       "balanceOver1m": "Receivable ≥ 1,000,000",
       "clear": "Clear filters",
-      "reload": "Reload"
+      "reload": "Reload",
+      "export": "Export CSV"
     },
     "clear": "Clear filters",
     "paginationTotal": "{{count}} customers",

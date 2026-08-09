@@ -22,6 +22,8 @@ uploads/
 
 # Local scratch / deploy artifacts
 .tmp/
+.tmp-*
+artifacts/
 publish/
 **/publish/
 ensure-api-out.txt

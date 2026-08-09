@@ -8,14 +8,13 @@ import {
   Drawer,
   Input,
   Select,
-  Space,
   Spin,
   Table,
   Typography,
   message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { DollarOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { DollarOutlined, DownloadOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { fetchWarehouses } from '@/shared/api/inventory.api';
 import type { Warehouse } from '@/shared/api/inventory.types';
@@ -34,8 +33,10 @@ import {
   buildCustomerSearchSuggestions,
   matchesCustomerNameOrPhone,
 } from '@/modules/sales/sales-list-customer-search';
-import { filterBarStyle } from '@/modules/sales/sales-ui-styles';
+import { usePersistedFilters } from '@/shared/hooks/usePersistedFilters';
 import { useHasPermission } from '@/shared/auth/usePermission';
+import { ListFilterBar } from '@/shared/ui/ListFilterBar';
+import { downloadCsv } from '@/shared/utils/download-csv';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
@@ -47,6 +48,20 @@ type BalanceFilter =
   | 'over_100k'
   | 'over_500k'
   | 'over_1m';
+
+type ReceivablesListFilters = {
+  search: string;
+  warehouseId?: string;
+  agingFilter: AgingFilter;
+  balanceFilter: BalanceFilter;
+};
+
+const RECEIVABLES_FILTER_DEFAULTS: ReceivablesListFilters = {
+  search: '',
+  warehouseId: undefined,
+  agingFilter: 'all',
+  balanceFilter: 'all',
+};
 
 function agingCell(value: number) {
   return value > 0.009 ? formatDisplayMoney(value) : '—';
@@ -76,10 +91,11 @@ export function CustomerReceivablesPage() {
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<CustomerReceivablesRow[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [search, setSearch] = useState('');
-  const [warehouseId, setWarehouseId] = useState<string | undefined>();
-  const [agingFilter, setAgingFilter] = useState<AgingFilter>('all');
-  const [balanceFilter, setBalanceFilter] = useState<BalanceFilter>('all');
+  const [filters, setFilters, resetFilters] = usePersistedFilters(
+    'admin.listFilters.customerReceivables',
+    RECEIVABLES_FILTER_DEFAULTS,
+  );
+  const { search, warehouseId, agingFilter, balanceFilter } = filters;
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detail, setDetail] = useState<CustomerReceivablesDetail | null>(null);
@@ -137,11 +153,29 @@ export function CustomerReceivablesPage() {
     [filteredRows],
   );
 
-  const resetFilters = () => {
-    setSearch('');
-    setWarehouseId(undefined);
-    setAgingFilter('all');
-    setBalanceFilter('all');
+  const exportCsv = () => {
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(
+      `customer-receivables-${stamp}.csv`,
+      [
+        t('columns.customerCode'),
+        t('columns.customerName'),
+        t('columns.totalReceivable'),
+        t('columns.agingCurrent'),
+        t('columns.aging31To60'),
+        t('columns.aging61To90'),
+        t('columns.agingOver90'),
+      ],
+      filteredRows.map((row) => [
+        row.customerCode,
+        row.customerName,
+        String(row.totalReceivable),
+        String(row.aging.current),
+        String(row.aging.days31To60),
+        String(row.aging.days61To90),
+        String(row.aging.over90),
+      ]),
+    );
   };
 
   const goToPayment = useCallback(
@@ -280,19 +314,27 @@ export function CustomerReceivablesPage() {
   );
 
   return (
-    <Card title={t('title')} bordered={false}>
+    <Card
+      title={t('title')}
+      bordered={false}
+      extra={
+        <Button icon={<DownloadOutlined />} onClick={exportCsv} disabled={filteredRows.length === 0}>
+          {t('filters.export')}
+        </Button>
+      }
+    >
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
         {t('intro')}
       </Typography.Paragraph>
 
-      <Space wrap style={filterBarStyle}>
+      <ListFilterBar>
         <AutoComplete
           style={{ width: 260 }}
           options={searchSuggestions}
           value={search}
           filterOption={false}
-          onSelect={(value) => setSearch(String(value))}
-          onChange={(value) => setSearch(value)}
+          onSelect={(value) => setFilters((prev) => ({ ...prev, search: String(value) }))}
+          onChange={(value) => setFilters((prev) => ({ ...prev, search: value }))}
         >
           <Input
             allowClear
@@ -307,13 +349,13 @@ export function CustomerReceivablesPage() {
           placeholder={t('filters.warehouse')}
           style={{ width: 200 }}
           value={warehouseId}
-          onChange={setWarehouseId}
+          onChange={(value) => setFilters((prev) => ({ ...prev, warehouseId: value }))}
           options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
         />
         <Select
           style={{ width: 200 }}
           value={agingFilter}
-          onChange={setAgingFilter}
+          onChange={(value: AgingFilter) => setFilters((prev) => ({ ...prev, agingFilter: value }))}
           options={[
             { value: 'all', label: t('filters.agingAll') },
             { value: 'current', label: t('filters.agingCurrent') },
@@ -325,7 +367,7 @@ export function CustomerReceivablesPage() {
         <Select
           style={{ width: 200 }}
           value={balanceFilter}
-          onChange={setBalanceFilter}
+          onChange={(value: BalanceFilter) => setFilters((prev) => ({ ...prev, balanceFilter: value }))}
           options={[
             { value: 'all', label: t('filters.balanceAll') },
             { value: 'has_receivable', label: t('filters.balanceReceivable') },
@@ -345,7 +387,7 @@ export function CustomerReceivablesPage() {
         >
           {t('filters.reload')}
         </Button>
-      </Space>
+      </ListFilterBar>
 
       <Table
         rowKey="customerId"

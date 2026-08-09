@@ -685,6 +685,21 @@ export function TransferListPage() {
     return detail.items.some((line) => (receiveQtyByItem[line.id] ?? line.quantity) < line.quantity);
   }, [detail, receiveQtyByItem]);
 
+  const receiveShortageQty = useMemo(() => {
+    if (!detail) return 0;
+    return detail.items.reduce((sum, line) => {
+      const received = receiveQtyByItem[line.id] ?? line.quantity;
+      return sum + Math.max(0, line.quantity - received);
+    }, 0);
+  }, [detail, receiveQtyByItem]);
+
+  const fillReceiveShipped = () => {
+    if (!detail) return;
+    const qty: Record<string, number> = {};
+    for (const line of detail.items) qty[line.id] = line.quantity;
+    setReceiveQtyByItem(qty);
+  };
+
   const handleReceiveConfirm = async () => {
     if (!detail) return;
     if (hasReceiveShortage && !receiveNotes.trim()) {
@@ -1386,6 +1401,20 @@ export function TransferListPage() {
         {detail ? (
           <>
             <Alert type="info" showIcon style={{ marginBottom: 12 }} message={t('receiveHint')} />
+            {hasReceiveShortage ? (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message={t('receiveShortageWarning', { qty: formatDisplayQuantity(receiveShortageQty) })}
+                description={t('receiveShortageWarningHint')}
+              />
+            ) : null}
+            <Space style={{ marginBottom: 12 }}>
+              <Button size="small" onClick={fillReceiveShipped}>
+                {t('fillReceiveShipped')}
+              </Button>
+            </Space>
             <Table
               rowKey="id"
               size="small"

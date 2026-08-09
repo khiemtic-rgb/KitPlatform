@@ -58,4 +58,36 @@ check_cors "https://survey.novixa.vn"
 check_cors "https://prescriber.novixa.vn"
 check_cors "https://partner.novixa.vn"
 
+# Feature routes exist (401/403 = mounted; 404 = missing deploy)
+check_api_route() {
+  local path="$1"
+  local label="$2"
+  echo -n "$label ... "
+  local code
+  code="$(curl -s -o /dev/null -w '%{http_code}' "$API$path" || true)"
+  if [[ "$code" == "401" || "$code" == "403" || "$code" == "200" ]]; then
+    echo "OK ($code)"
+  else
+    echo "FAIL (HTTP $code — expected 401/403/200)"
+    exit 1
+  fi
+}
+
+check_api_route "/api/procurement/supplier-payables" "API supplier-payables route"
+check_api_route "/api/sales/customer-receivables" "API customer-receivables route"
+check_api_route "/api/inventory/transfers" "API inventory transfers route"
+
+echo -n "Migration manifest 279/280 ... "
+MANIFEST="/opt/kit-platform/migration-files.prod.txt"
+if [[ -f "$MANIFEST" ]] \
+  && grep -q '279_inventory_count_allow_zero_qty.sql' "$MANIFEST" \
+  && grep -q '280_inventory_transfer_ship_receive.sql' "$MANIFEST"; then
+  echo "OK"
+elif [[ ! -f "$MANIFEST" ]]; then
+  echo "SKIP (manifest not on host)"
+else
+  echo "FAIL (279/280 missing in $MANIFEST)"
+  exit 1
+fi
+
 echo "=== All checks passed ==="

@@ -787,7 +787,8 @@
       "balanceOver500k": "Phải thu ≥ 500.000",
       "balanceOver1m": "Phải thu ≥ 1.000.000",
       "clear": "Xóa lọc",
-      "reload": "Tải lại"
+      "reload": "Tải lại",
+      "export": "Xuất CSV"
     },
     "clear": "Xóa lọc",
     "paginationTotal": "{{count}} khách hàng",
