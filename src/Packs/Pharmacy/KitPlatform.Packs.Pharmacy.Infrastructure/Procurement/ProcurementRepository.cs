@@ -783,6 +783,12 @@ internal sealed class ProcurementRepository
                 throw new InvalidOperationException("PO phải ở trạng thái Đã duyệt hoặc Nhận một phần.");
             if (po.WarehouseId != request.WarehouseId)
                 throw new InvalidOperationException("Kho nhận phải khớp với PO.");
+            // Đồng bộ NCC/kho với PO khi tạo phiếu gắn PO
+            request = request with
+            {
+                SupplierId = po.SupplierId,
+                WarehouseId = po.WarehouseId,
+            };
 
             var existingDraft = await GetDraftGoodsReceiptForPoAsync(conn, tx, poId, TenantId);
             if (existingDraft is not null)
@@ -902,6 +908,168 @@ internal sealed class ProcurementRepository
 
         await tx.CommitAsync(cancellationToken);
         return grnId;
+    }
+
+    public async Task<bool> UpdateDraftGoodsReceiptAsync(
+        Guid grnId,
+        UpdateGoodsReceiptRequest request,
+        Guid updatedBy,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+
+        const string headerSql = """
+            SELECT id AS Id, purchase_order_id AS PurchaseOrderId, supplier_id AS SupplierId,
+                   warehouse_id AS WarehouseId, status AS Status
+            FROM goods_receipts
+            WHERE id = @Id AND tenant_id = @TenantId AND deleted_at IS NULL
+            FOR UPDATE
+            """;
+        var header = await conn.QuerySingleOrDefaultAsync<GrnHeaderRow>(headerSql, new { Id = grnId, TenantId }, tx);
+        if (header is null) return false;
+
+        if (header.Status != GoodsReceiptStatuses.Draft)
+            throw new InvalidOperationException("Chỉ sửa được phiếu ở trạng thái chờ nhập kho.");
+
+        var supplierId = request.SupplierId;
+        var warehouseId = request.WarehouseId;
+
+        if (header.PurchaseOrderId is Guid poId)
+        {
+            const string poCheck = """
+                SELECT supplier_id AS SupplierId, warehouse_id AS WarehouseId, status AS Status
+                FROM purchase_orders
+                WHERE id = @Id AND tenant_id = @TenantId AND deleted_at IS NULL
+                """;
+            var po = await conn.QuerySingleOrDefaultAsync<PoCheckRow>(
+                poCheck, new { Id = poId, TenantId }, tx)
+                ?? throw new InvalidOperationException("Đơn mua hàng không tồn tại.");
+
+            if (po.Status != PurchaseOrderStatuses.Approved && po.Status != PurchaseOrderStatuses.PartiallyReceived)
+                throw new InvalidOperationException("PO phải ở trạng thái Đã duyệt hoặc Nhận một phần.");
+
+            supplierId = po.SupplierId;
+            warehouseId = po.WarehouseId;
+        }
+
+        var receiptDate = (request.ReceiptDate ?? DateOnly.FromDateTime(DateTime.UtcNow))
+            .ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var treatment = await ResolveVatTreatmentAsync(conn, tx, request.VatTreatmentId, cancellationToken);
+        var pricingLines = request.Items
+            .Select(i => (
+                i.Quantity,
+                i.UnitCost,
+                new ProcurementDiscountInput(i.DiscountType, i.DiscountValue)))
+            .ToList();
+        var pricing = _pricing.PriceGoodsReceipt(
+            pricingLines,
+            new ProcurementDiscountInput(request.OrderDiscountType, request.OrderDiscountValue),
+            treatment.RatePercent,
+            treatment.IsNotSubject);
+
+        await conn.ExecuteAsync(
+            """
+            UPDATE goods_receipts
+            SET supplier_id = @SupplierId,
+                warehouse_id = @WarehouseId,
+                receipt_date = @ReceiptDate,
+                notes = @Notes,
+                supplier_invoice_number = @SupplierInvoiceNumber,
+                vat_treatment_id = @VatTreatmentId,
+                tax_rate_percent = @TaxRatePercent,
+                subtotal_gross = @SubtotalGross,
+                line_discount_total = @LineDiscountTotal,
+                merchandise_net = @MerchandiseNet,
+                order_discount_type = @OrderDiscountType,
+                order_discount_value = @OrderDiscountValue,
+                order_discount_amount = @OrderDiscountAmount,
+                tax_amount = @TaxAmount,
+                total_amount = @TotalAmount,
+                updated_at = NOW()
+            WHERE id = @Id AND tenant_id = @TenantId
+            """,
+            new
+            {
+                Id = grnId,
+                TenantId,
+                SupplierId = supplierId,
+                WarehouseId = warehouseId,
+                ReceiptDate = receiptDate,
+                request.Notes,
+                SupplierInvoiceNumber = string.IsNullOrWhiteSpace(request.SupplierInvoiceNumber)
+                    ? null
+                    : request.SupplierInvoiceNumber.Trim(),
+                VatTreatmentId = request.VatTreatmentId,
+                TaxRatePercent = treatment.RatePercent,
+                SubtotalGross = pricing.SubtotalGross,
+                LineDiscountTotal = pricing.LineDiscountTotal,
+                MerchandiseNet = pricing.MerchandiseNet,
+                OrderDiscountType = request.OrderDiscountType,
+                OrderDiscountValue = request.OrderDiscountValue ?? 0,
+                OrderDiscountAmount = pricing.OrderDiscountAmount,
+                TaxAmount = pricing.TaxAmount,
+                TotalAmount = pricing.TotalAmount,
+            },
+            tx);
+
+        await conn.ExecuteAsync(
+            "DELETE FROM goods_receipt_items WHERE goods_receipt_id = @GrnId AND tenant_id = @TenantId",
+            new { GrnId = grnId, TenantId },
+            tx);
+
+        const string itemSql = """
+            INSERT INTO goods_receipt_items (
+                tenant_id, goods_receipt_id, purchase_order_item_id, product_id, product_unit_id,
+                batch_number, manufacture_date, expiry_date, quantity, unit_cost,
+                discount_type, discount_value, discount_amount, line_total, inventory_unit_cost
+            )
+            VALUES (
+                @TenantId, @GrnId, @PurchaseOrderItemId, @ProductId, @ProductUnitId,
+                @BatchNumber, @ManufactureDate, @ExpiryDate, @Quantity, @UnitCost,
+                @DiscountType, @DiscountValue, @DiscountAmount, @LineTotal, @InventoryUnitCost
+            )
+            """;
+        for (var index = 0; index < request.Items.Count; index++)
+        {
+            var item = request.Items[index];
+            var priced = pricing.Lines[index];
+            if (item.PurchaseOrderItemId is Guid poItemId)
+            {
+                const string poItemSql = """
+                    SELECT ordered_qty AS OrderedQty, received_qty AS ReceivedQty
+                    FROM purchase_order_items WHERE id = @Id
+                    """;
+                var poItem = await conn.QuerySingleOrDefaultAsync<PoItemQtyRow>(
+                    poItemSql, new { Id = poItemId }, tx)
+                    ?? throw new InvalidOperationException("Dòng PO không tồn tại.");
+                if (poItem.ReceivedQty + item.Quantity > poItem.OrderedQty)
+                    throw new InvalidOperationException("Số lượng nhận vượt quá PO.");
+            }
+
+            await conn.ExecuteAsync(itemSql, new
+            {
+                TenantId,
+                GrnId = grnId,
+                item.PurchaseOrderItemId,
+                item.ProductId,
+                item.ProductUnitId,
+                BatchNumber = item.BatchNumber.Trim(),
+                item.ManufactureDate,
+                item.ExpiryDate,
+                item.Quantity,
+                item.UnitCost,
+                DiscountType = priced.DiscountType,
+                DiscountValue = priced.DiscountValue,
+                DiscountAmount = priced.DiscountAmount,
+                LineTotal = priced.LineNetTotal,
+                InventoryUnitCost = priced.InventoryUnitCost,
+            }, tx);
+        }
+
+        _ = updatedBy;
+        await tx.CommitAsync(cancellationToken);
+        return true;
     }
 
     public async Task CompleteGoodsReceiptAsync(Guid grnId, Guid completedBy, CancellationToken cancellationToken)

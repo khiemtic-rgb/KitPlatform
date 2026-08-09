@@ -232,6 +232,18 @@ public sealed record CreateGoodsReceiptRequest(
     short? OrderDiscountType = null,
     decimal? OrderDiscountValue = null);
 
+/** Cập nhật phiếu nhập ở trạng thái chờ nhập kho (Draft). */
+public sealed record UpdateGoodsReceiptRequest(
+    Guid SupplierId,
+    Guid WarehouseId,
+    DateOnly? ReceiptDate,
+    string? Notes,
+    string? SupplierInvoiceNumber,
+    Guid VatTreatmentId,
+    IReadOnlyList<CreateGoodsReceiptItemRequest> Items,
+    short? OrderDiscountType = null,
+    decimal? OrderDiscountValue = null);
+
 public sealed record SupplierPaymentListItemDto(
     Guid Id,
     string PaymentNumber,

@@ -51,6 +51,17 @@ public sealed class GoodsReceiptsController : ControllerBase
         return CreatedAtAction(nameof(Get), new { id = item.Id }, item);
     }
 
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = ProcurementPolicies.Write)]
+    public async Task<ActionResult<GoodsReceiptDetailDto>> Update(
+        Guid id,
+        [FromBody] UpdateGoodsReceiptRequest request,
+        CancellationToken cancellationToken)
+    {
+        var item = await _receipts.UpdateAsync(id, request, cancellationToken);
+        return item is null ? NotFound() : Ok(item);
+    }
+
     [HttpPost("{id:guid}/complete")]
     [Authorize(Policy = ProcurementPolicies.Write)]
     public async Task<ActionResult<GoodsReceiptDetailDto>> Complete(Guid id, CancellationToken cancellationToken)

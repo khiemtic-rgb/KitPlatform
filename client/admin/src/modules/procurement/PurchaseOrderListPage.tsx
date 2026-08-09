@@ -173,7 +173,7 @@ export function PurchaseOrderListPage() {
     const placeholder = suppliers.find((s) => isPlaceholderSupplier(s));
     form.setFieldsValue({
       supplierId: placeholder?.id,
-      items: [{ orderedQty: 1, unitPrice: 0 }],
+      items: [],
       vatTreatmentId: defaultVatTreatmentId(vatTreatments),
     });
     setDrawerOpen(true);
@@ -468,11 +468,17 @@ export function PurchaseOrderListPage() {
   ];
 
   const poLineColumns: ColumnsType<PurchaseOrderDetail['items'][number]> = [
-    { title: tShared('columns.productCode'), dataIndex: 'productCode', width: 90 },
-    { title: tShared('columns.productName'), dataIndex: 'productName', width: 280, ellipsis: true },
+    {
+      title: tShared('columns.stt'),
+      width: 48,
+      align: 'center',
+      render: (_v, _row, index) => index + 1,
+    },
+    { title: tShared('columns.productCode'), dataIndex: 'productCode', width: 88 },
+    { title: tShared('columns.productName'), dataIndex: 'productName', ellipsis: true },
     { title: tShared('columns.unit'), dataIndex: 'unitName', width: 64 },
-    procurementQuantityColumn(tShared('columns.ordered'), 'orderedQty', 68),
-    procurementQuantityColumn(tShared('columns.received'), 'receivedQty', 76),
+    procurementQuantityColumn(tShared('columns.ordered'), 'orderedQty', 64),
+    procurementQuantityColumn(tShared('columns.received'), 'receivedQty', 72),
     procurementRemainingQtyColumn(),
     {
       title: tShared('columns.unitPrice'),
@@ -482,6 +488,16 @@ export function PurchaseOrderListPage() {
       render: (v: number) => (
         <span style={{ fontVariantNumeric: 'tabular-nums', display: 'block', textAlign: 'right' }}>
           {formatDisplayMoney(v)}
+        </span>
+      ),
+    },
+    {
+      title: tShared('columns.lineTotal'),
+      width: PROCUREMENT_MONEY_COL_WIDTH,
+      align: 'right',
+      render: (_v, row) => (
+        <span style={{ fontVariantNumeric: 'tabular-nums', display: 'block', textAlign: 'right' }}>
+          {formatDisplayMoney(Math.round(Number(row.orderedQty ?? 0) * Number(row.unitPrice ?? 0)))}
         </span>
       ),
     },
@@ -559,7 +575,7 @@ export function PurchaseOrderListPage() {
 
       <Drawer
         title={t('createDrawer')}
-        width={980}
+        width={1240}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         styles={{ body: { paddingTop: 12, display: 'flex', flexDirection: 'column' } }}
@@ -589,7 +605,7 @@ export function PurchaseOrderListPage() {
 
       <Drawer
         title={detail ? t('viewDrawerWithNumber', { poNumber: detail.poNumber }) : t('viewDrawer')}
-        width={880}
+        width={1240}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         extra={
@@ -667,7 +683,6 @@ export function PurchaseOrderListPage() {
                 size="small"
                 pagination={false}
                 className="grn-lines-table"
-                scroll={{ x: 760 }}
                 dataSource={detail.items}
                 columns={poLineColumns}
                 summary={() => (
@@ -677,7 +692,8 @@ export function PurchaseOrderListPage() {
                     totalAmount={detail.totalAmount}
                     poNumber={detail.poNumber}
                     vatTreatmentName={detail.vatTreatmentName}
-                    leadingColSpan={5}
+                    leadingColSpan={7}
+                    summaryColSpan={2}
                   />
                 )}
               />

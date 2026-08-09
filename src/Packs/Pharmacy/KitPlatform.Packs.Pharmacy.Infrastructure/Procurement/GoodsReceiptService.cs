@@ -74,6 +74,44 @@ internal sealed class GoodsReceiptService : IGoodsReceiptService
         return (await _repository.GetGoodsReceiptAsync(id, cancellationToken: cancellationToken))!;
     }
 
+    public async Task<GoodsReceiptDetailDto?> UpdateAsync(
+        Guid id,
+        UpdateGoodsReceiptRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var existing = await RequireGrnAccessAsync(id, cancellationToken);
+        if (existing.Status != GoodsReceiptStatuses.Draft)
+            throw new InvalidOperationException("Chỉ sửa được phiếu ở trạng thái chờ nhập kho.");
+
+        if (request.Items.Count == 0)
+            throw new InvalidOperationException("Thêm ít nhất một dòng nhập.");
+
+        if (!await _repository.SupplierExistsAsync(request.SupplierId, cancellationToken))
+            throw new InvalidOperationException("NCC không tồn tại.");
+        if (!await _repository.WarehouseExistsAsync(request.WarehouseId, cancellationToken))
+            throw new InvalidOperationException("Kho không tồn tại.");
+        await _branchAccess.EnsureWarehouseAccessAsync(
+            existing.PurchaseOrderId is not null ? existing.WarehouseId : request.WarehouseId,
+            cancellationToken);
+
+        foreach (var item in request.Items)
+        {
+            if (string.IsNullOrWhiteSpace(item.BatchNumber))
+                throw new InvalidOperationException("Số lô không được để trống.");
+            if (item.Quantity <= 0)
+                throw new InvalidOperationException("Số lượng nhập phải lớn hơn 0.");
+            if (item.UnitCost < 0)
+                throw new InvalidOperationException("Giá vốn không hợp lệ.");
+            if (!await _repository.ProductExistsAsync(item.ProductId, cancellationToken))
+                throw new InvalidOperationException($"Sản phẩm không tồn tại: {item.ProductId}");
+        }
+
+        var updated = await _repository.UpdateDraftGoodsReceiptAsync(id, request, _tenant.UserId, cancellationToken);
+        if (!updated) return null;
+        await _audit.WriteAsync("goods_receipt", id, "update", new { grnNumber = existing.GrnNumber }, cancellationToken);
+        return await _repository.GetGoodsReceiptAsync(id, cancellationToken: cancellationToken);
+    }
+
     public async Task<GoodsReceiptDetailDto?> CompleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var grn = await RequireGrnAccessAsync(id, cancellationToken);

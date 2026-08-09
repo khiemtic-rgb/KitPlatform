@@ -14,6 +14,8 @@ export interface GoodsReceiptFormHeaderProps {
   purchaseOrderId?: string;
   linkedPo: PurchaseOrderDetail | null;
   poLoading: boolean;
+  /** Khi sửa phiếu đã gắn PO — khóa đổi liên kết PO. */
+  lockPoLink?: boolean;
   onEditPo: () => void;
 }
 
@@ -24,6 +26,7 @@ export function GoodsReceiptFormHeader({
   purchaseOrderId,
   linkedPo,
   poLoading,
+  lockPoLink = false,
   onEditPo,
 }: GoodsReceiptFormHeaderProps) {
   const { t } = useTranslation('procurement', { keyPrefix: 'goodsReceipts' });
@@ -52,7 +55,8 @@ export function GoodsReceiptFormHeader({
           extra={poHint ? <span style={{ fontSize: 11 }}>{poHint}</span> : undefined}
         >
           <Select
-            allowClear
+            allowClear={!lockPoLink}
+            disabled={lockPoLink}
             showSearch
             optionFilterProp="label"
             placeholder={t('linkPoPlaceholder')}
@@ -88,6 +92,7 @@ export function GoodsReceiptFormHeader({
         >
           <Select
             showSearch
+            disabled={!!purchaseOrderId}
             optionFilterProp="label"
             options={realSuppliers(suppliers).map((s) => ({
               value: s.id,
@@ -123,9 +128,6 @@ export function GoodsReceiptFormHeader({
           style={{ marginBottom: 0 }}
         >
           <Input maxLength={20} placeholder={t('supplierInvoicePlaceholder')} allowClear />
-        </Form.Item>
-        <Form.Item name="notes" label={tShared('columns.notes')} style={{ marginBottom: 0 }}>
-          <Input placeholder={t('notesOptional')} allowClear />
         </Form.Item>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Form, InputNumber, Select, Space, Typography } from 'antd';
+import { Form, Input, InputNumber, Select, Space, Typography } from 'antd';
 import type { FormInstance } from 'antd';
 import type { ProcurementVatTreatment } from '@/shared/api/procurement.types';
 import {
@@ -12,6 +12,9 @@ import { GrnTaxSummaryContent, PROCUREMENT_MONEY_COL_WIDTH } from '@/modules/pro
 import { formatVatTreatmentOptionLabel } from '@/modules/procurement/po-vat';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
+/** Cột nút xóa dòng — chừa padding phải cho tổng khớp cột Thành tiền */
+export const PROCUREMENT_LINE_ACTION_COL_WIDTH = 40;
+
 interface GrnLineLike extends GrnLinePricingLike {}
 
 export function GrnPricingControls({
@@ -19,20 +22,37 @@ export function GrnPricingControls({
 }: {
   vatTreatments: ProcurementVatTreatment[];
 }) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'goodsReceipts' });
   const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
   const { t: tVal } = useTranslation('procurement', { keyPrefix: 'shared.validation' });
   const orderDiscountType = Form.useWatch('orderDiscountType') as ProcurementDiscountType | undefined;
 
   return (
-    <Space wrap size={8} style={{ marginTop: 6, width: '100%' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 8,
+        alignItems: 'flex-end',
+        marginTop: 6,
+        width: '100%',
+      }}
+    >
+      <Form.Item
+        name="notes"
+        label={tShared('columns.notes')}
+        style={{ flex: '1 1 220px', marginBottom: 0, minWidth: 180 }}
+      >
+        <Input placeholder={t('notesOptional')} allowClear />
+      </Form.Item>
       <Form.Item
         name="vatTreatmentId"
         label={tShared('tax.vatLabel')}
         rules={[{ required: true, message: tVal('selectTax') }]}
-        style={{ marginBottom: 0, minWidth: 180 }}
+        style={{ marginBottom: 0, width: 180 }}
       >
         <Select
-          style={{ width: 180 }}
+          style={{ width: '100%' }}
           options={vatTreatments.map((item) => ({
             value: item.id,
             label: formatVatTreatmentOptionLabel(item),
@@ -61,7 +81,7 @@ export function GrnPricingControls({
           }
         />
       </Form.Item>
-    </Space>
+    </div>
   );
 }
 
@@ -109,8 +129,15 @@ export function GrnPricingSummaryPanel({
   );
 
   return (
-    <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end' }}>
-      <div style={{ minWidth: 280 }}>
+    <div
+      style={{
+        marginTop: 8,
+        display: 'flex',
+        justifyContent: 'flex-end',
+        paddingRight: PROCUREMENT_LINE_ACTION_COL_WIDTH + 8,
+      }}
+    >
+      <div>
         {pricing.lineDiscountTotal > 0 || pricing.orderDiscountAmount > 0 ? (
           <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', textAlign: 'right' }}>
             {pricing.lineDiscountTotal > 0

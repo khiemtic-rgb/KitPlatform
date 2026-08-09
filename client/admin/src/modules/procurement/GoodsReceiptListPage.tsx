@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -8,6 +8,7 @@ import {
   Form,
   InputNumber,
   Popconfirm,
+  Select,
   Space,
   Spin,
   Table,
@@ -19,8 +20,9 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import type { FormListFieldData } from 'antd/es/form/FormList';
 import { isAxiosError } from 'axios';
-import { PlusOutlined, EyeOutlined, DeleteOutlined, SaveOutlined, FolderOpenOutlined, CheckOutlined, CloseCircleOutlined, EyeInvisibleOutlined, PrinterOutlined } from '@ant-design/icons';
-import { fetchProducts } from '@/shared/api/catalog.api';
+import dayjs from 'dayjs';
+import { PlusOutlined, EyeOutlined, DeleteOutlined, SaveOutlined, FolderOpenOutlined, CheckOutlined, CloseCircleOutlined, EyeInvisibleOutlined, PrinterOutlined, EditOutlined } from '@ant-design/icons';
+import { fetchProduct, fetchProducts } from '@/shared/api/catalog.api';
 import type { ProductListItem } from '@/shared/api/catalog.types';
 import { fetchWarehouses } from '@/shared/api/inventory.api';
 import type { Warehouse } from '@/shared/api/inventory.types';
@@ -28,9 +30,11 @@ import {
   cancelGoodsReceipt,
   completeGoodsReceipt,
   createGoodsReceipt,
+  updateGoodsReceipt,
   archiveGoodsReceipt,
   fetchGoodsReceipt,
   fetchGoodsReceipts,
+  fetchLastPurchasePriceHint,
   fetchPurchaseOrder,
   fetchPurchaseOrders,
   fetchSuppliers,
@@ -58,20 +62,32 @@ import {
   GrnLineDiscountFields,
   GrnPricingControls,
   GrnPricingSummaryPanel,
+  PROCUREMENT_LINE_ACTION_COL_WIDTH,
 } from '@/modules/procurement/GrnPricingPanel';
 import { defaultVatTreatmentId } from '@/modules/procurement/po-vat';
-import { isPlaceholderSupplier } from '@/modules/procurement/grn-pricing';
+import {
+  grnLineNetTotal,
+  isPlaceholderSupplier,
+  PROCUREMENT_DISCOUNT_TYPES,
+  type ProcurementDiscountType,
+} from '@/modules/procurement/grn-pricing';
 import { printGoodsReceipt } from '@/shared/print/grn-print';
 import { ProductUnitSelect } from '@/modules/procurement/ProductUnitSelect';
 import { ProductSearchSelect } from '@/modules/procurement/ProductSearchSelect';
-import { PoUnitPriceField } from '@/modules/procurement/PoUnitPriceField';
+import { formatUnitLabel, pickDefaultProductUnitId } from '@/modules/procurement/product-unit.helpers';
 import { GrnBatchNumberField } from '@/modules/procurement/GrnBatchNumberField';
 import { PharmaExpiryPicker } from '@/shared/ui/PharmaDatePicker';
 import { GoodsReceiptFilterBar } from '@/modules/procurement/GoodsReceiptFilterBar';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { downloadCsv } from '@/shared/utils/download-csv';
-import { quantityInputNumberProps } from '@/shared/utils/money';
+import {
+  formatDisplayMoney,
+  formatDisplayQuantity,
+  moneyInputNumberPropsAllowZeroSuffix,
+  quantityInputNumberProps,
+} from '@/shared/utils/money';
 import { useProcurementWrite, useSystemDeletePermanent } from '@/shared/auth/usePermission';
+import { PROCUREMENT_MONEY_COL_WIDTH } from '@/modules/procurement/GrnPoTaxSummary';
 
 const emptyFilters: GoodsReceiptListFilters = {};
 
@@ -102,15 +118,110 @@ function defaultExpiryDate(): string {
   return d.toISOString().slice(0, 10);
 }
 
-function emptyGrnLine(): GrnLineForm {
-  return {
-    productId: '',
-    productUnitId: '',
-    batchNumber: '',
-    expiryDate: defaultExpiryDate(),
-    quantity: 1,
-    unitCost: 0,
-  };
+type ManualLineCell = 'product' | 'unit' | 'batch' | 'expiry' | 'qty' | 'unitCost' | 'discount';
+
+function productOptionLabel(p: { productCode: string; productName: string }): string {
+  return `${p.productCode} — ${p.productName}`;
+}
+
+function formatExpiryMmYyyy(iso?: string): string {
+  if (!iso) return '—';
+  const parsed = dayjs(iso.length >= 10 ? iso.slice(0, 10) : iso);
+  return parsed.isValid() ? parsed.format('MM/YYYY') : iso;
+}
+
+function formatLineDiscountText(
+  discountType: ProcurementDiscountType | undefined,
+  discountValue: number | undefined,
+  emDash: string,
+): string {
+  if (!discountType || discountValue == null || discountValue <= 0) return emDash;
+  if (discountType === PROCUREMENT_DISCOUNT_TYPES.Percent) return `${discountValue}%`;
+  return formatDisplayMoney(discountValue);
+}
+
+function UnitNameLabel({ productId, unitId }: { productId?: string; unitId?: string }) {
+  const [label, setLabel] = useState('—');
+
+  useEffect(() => {
+    if (!productId || !unitId) {
+      setLabel('—');
+      return;
+    }
+    let cancelled = false;
+    void fetchProduct(productId)
+      .then((product) => {
+        if (cancelled) return;
+        const unit = product.units.find((u) => u.id === unitId);
+        setLabel(unit ? formatUnitLabel(unit) : '—');
+      })
+      .catch(() => {
+        if (!cancelled) setLabel('—');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [productId, unitId]);
+
+  return <span>{label}</span>;
+}
+
+function ManualLineClickCell({
+  editing,
+  onEdit,
+  style,
+  align = 'left',
+  children,
+  display,
+}: {
+  editing: boolean;
+  onEdit: () => void;
+  style?: CSSProperties;
+  align?: 'left' | 'right' | 'center';
+  children: ReactNode;
+  display: ReactNode;
+}) {
+  return (
+    <div
+      role={editing ? undefined : 'button'}
+      tabIndex={editing ? undefined : 0}
+      onClick={() => {
+        if (!editing) onEdit();
+      }}
+      onKeyDown={(e) => {
+        if (!editing && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onEdit();
+        }
+      }}
+      style={{
+        minHeight: 32,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start',
+        padding: editing ? 0 : '4px 6px',
+        borderRadius: 6,
+        cursor: editing ? 'default' : 'pointer',
+        background: editing ? undefined : 'transparent',
+        ...style,
+      }}
+      onMouseEnter={(e) => {
+        if (!editing) e.currentTarget.style.background = '#f5f5f5';
+      }}
+      onMouseLeave={(e) => {
+        if (!editing) e.currentTarget.style.background = 'transparent';
+      }}
+    >
+      <div style={{ display: editing ? 'block' : 'none', width: '100%' }} onClick={(e) => e.stopPropagation()}>
+        {children}
+      </div>
+      {!editing && (
+        <Typography.Text ellipsis style={{ maxWidth: '100%' }} title={typeof display === 'string' ? display : undefined}>
+          {display}
+        </Typography.Text>
+      )}
+    </div>
+  );
 }
 
 function buildGrnLinesFromPo(po: PurchaseOrderDetail): GrnLineForm[] {
@@ -166,9 +277,52 @@ export function GoodsReceiptListPage() {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [poEditOpen, setPoEditOpen] = useState(false);
+  const [editingGrnId, setEditingGrnId] = useState<string | null>(null);
+  const [editingGrnNumber, setEditingGrnNumber] = useState<string | null>(null);
   const purchaseOrderId = Form.useWatch('purchaseOrderId', form);
   const supplierId = Form.useWatch('supplierId', form);
   const warehouseId = Form.useWatch('warehouseId', form) as string | undefined;
+  const watchedItems = Form.useWatch('items', form) as GrnLineForm[] | undefined;
+
+  const [draftProductId, setDraftProductId] = useState<string | undefined>();
+  const [draftUnitId, setDraftUnitId] = useState<string | undefined>();
+  const [draftBatch, setDraftBatch] = useState('');
+  const [draftExpiry, setDraftExpiry] = useState(defaultExpiryDate);
+  const [draftQty, setDraftQty] = useState(1);
+  const [draftUnitCost, setDraftUnitCost] = useState(0);
+  const [draftDiscountType, setDraftDiscountType] = useState<ProcurementDiscountType | undefined>();
+  const [draftDiscountValue, setDraftDiscountValue] = useState<number | undefined>(undefined);
+  const [editingManualCell, setEditingManualCell] = useState<{ rowKey: number; cell: ManualLineCell } | null>(
+    null,
+  );
+
+  const resetManualComposer = () => {
+    setDraftProductId(undefined);
+    setDraftUnitId(undefined);
+    setDraftBatch('');
+    setDraftExpiry(defaultExpiryDate());
+    setDraftQty(1);
+    setDraftUnitCost(0);
+    setDraftDiscountType(undefined);
+    setDraftDiscountValue(undefined);
+  };
+
+  const applyManualComposerProduct = (productId: string) => {
+    setDraftUnitId(undefined);
+    setDraftUnitCost(0);
+    void fetchProduct(productId)
+      .then((product) => {
+        setDraftUnitId(pickDefaultProductUnitId(product.units));
+      })
+      .catch(() => undefined);
+    if (supplierId) {
+      void fetchLastPurchasePriceHint(supplierId, productId)
+        .then((h) => {
+          if (h.unitPrice != null) setDraftUnitCost(h.unitPrice);
+        })
+        .catch(() => undefined);
+    }
+  };
 
   const loadMasterData = useCallback(async () => {
     const [sup, wh, prod, pos, pendingPos, vat] = await Promise.all([
@@ -254,6 +408,8 @@ export function GoodsReceiptListPage() {
   };
 
   useEffect(() => {
+    if (editingGrnId) return;
+
     if (!purchaseOrderId) {
       setLinkedPo(null);
       setPoDraftGrn(null);
@@ -304,7 +460,7 @@ export function GoodsReceiptListPage() {
     return () => {
       cancelled = true;
     };
-  }, [purchaseOrderId, form, t]);
+  }, [purchaseOrderId, editingGrnId, form, t, vatTreatments]);
 
   const handlePoEdited = (po: PurchaseOrderDetail) => {
     setLinkedPo(po);
@@ -330,11 +486,97 @@ export function GoodsReceiptListPage() {
     form.setFieldsValue({
       receiptDate: todayDateString(),
       vatTreatmentId: defaultVatTreatmentId(vatTreatments),
-      items: [emptyGrnLine()],
+      items: [],
     });
+    resetManualComposer();
+    setEditingManualCell(null);
+    setEditingGrnId(null);
+    setEditingGrnNumber(null);
     setLinkedPo(null);
     setPoDraftGrn(null);
     setPoLoading(false);
+    setDrawerOpen(true);
+  };
+
+  const openEdit = async (grn: GoodsReceiptDetail) => {
+    if (grn.status !== 1) {
+      message.warning(t('editOnlyDraft'));
+      return;
+    }
+    setDetailOpen(false);
+    setEditingGrnId(grn.id);
+    setEditingGrnNumber(grn.grnNumber);
+    setPoDraftGrn(null);
+    resetManualComposer();
+    setEditingManualCell(null);
+    form.resetFields();
+    form.setFieldsValue({
+      purchaseOrderId: grn.purchaseOrderId,
+      supplierId: grn.supplierId,
+      warehouseId: grn.warehouseId,
+      receiptDate: grn.receiptDate?.slice(0, 10) || todayDateString(),
+      notes: grn.notes,
+      supplierInvoiceNumber: grn.supplierInvoiceNumber,
+      vatTreatmentId: grn.vatTreatmentId || defaultVatTreatmentId(vatTreatments),
+      orderDiscountType: grn.orderDiscountType || undefined,
+      orderDiscountValue: grn.orderDiscountValue || undefined,
+      items: grn.items.map((line) => ({
+        purchaseOrderItemId: line.purchaseOrderItemId,
+        productId: line.productId,
+        productUnitId: line.productUnitId,
+        productCode: line.productCode,
+        productName: line.productName,
+        unitName: line.unitName,
+        batchNumber: line.batchNumber,
+        expiryDate: line.expiryDate?.slice(0, 10) || defaultExpiryDate(),
+        quantity: line.quantity,
+        unitCost: line.unitCost,
+        discountType: line.discountType || undefined,
+        discountValue: line.discountValue || undefined,
+      })),
+    });
+
+    if (grn.purchaseOrderId) {
+      setPoLoading(true);
+      try {
+        const po = await fetchPurchaseOrder(grn.purchaseOrderId);
+        setLinkedPo(po);
+        const byPoItemId = new Map(po.items.map((line) => [line.id, line]));
+        form.setFieldsValue({
+          supplierId: po.supplierId,
+          warehouseId: po.warehouseId,
+          items: grn.items.map((line) => {
+            const poLine = line.purchaseOrderItemId
+              ? byPoItemId.get(line.purchaseOrderItemId)
+              : undefined;
+            return {
+              purchaseOrderItemId: line.purchaseOrderItemId,
+              productId: line.productId,
+              productUnitId: line.productUnitId,
+              productCode: line.productCode || poLine?.productCode,
+              productName: line.productName || poLine?.productName,
+              unitName: line.unitName || poLine?.unitName,
+              orderedQty: poLine?.orderedQty ?? line.quantity,
+              receivedQty: poLine?.receivedQty ?? 0,
+              batchNumber: line.batchNumber,
+              expiryDate: line.expiryDate?.slice(0, 10) || defaultExpiryDate(),
+              quantity: line.quantity,
+              unitCost: line.unitCost,
+              discountType: line.discountType || undefined,
+              discountValue: line.discountValue || undefined,
+            };
+          }),
+        });
+      } catch {
+        setLinkedPo(null);
+        message.error(t('poLoadError'));
+      } finally {
+        setPoLoading(false);
+      }
+    } else {
+      setLinkedPo(null);
+      setPoLoading(false);
+    }
     setDrawerOpen(true);
   };
 
@@ -363,7 +605,7 @@ export function GoodsReceiptListPage() {
     }
   };
 
-  const handleCreate = async () => {
+  const handleSave = async () => {
     try {
       const values = await form.validateFields();
       const lines = (values.items as GrnLineForm[]).filter((i) => i.quantity > 0);
@@ -377,16 +619,15 @@ export function GoodsReceiptListPage() {
         return;
       }
       setSaving(true);
-      const created = await createGoodsReceipt({
-        purchaseOrderId: values.purchaseOrderId,
-        supplierId: values.supplierId,
-        warehouseId: values.warehouseId,
+      const payload = {
+        supplierId: values.supplierId as string,
+        warehouseId: values.warehouseId as string,
         receiptDate: values.receiptDate || todayDateString(),
-        notes: values.notes,
-        supplierInvoiceNumber: values.supplierInvoiceNumber,
-        vatTreatmentId: values.vatTreatmentId,
-        orderDiscountType: values.orderDiscountType,
-        orderDiscountValue: values.orderDiscountValue,
+        notes: values.notes as string | undefined,
+        supplierInvoiceNumber: values.supplierInvoiceNumber as string | undefined,
+        vatTreatmentId: values.vatTreatmentId as string,
+        orderDiscountType: values.orderDiscountType as number | undefined,
+        orderDiscountValue: values.orderDiscountValue as number | undefined,
         items: lines.map((i) => ({
           purchaseOrderItemId: i.purchaseOrderItemId,
           productId: i.productId,
@@ -398,6 +639,24 @@ export function GoodsReceiptListPage() {
           discountType: i.discountType,
           discountValue: i.discountValue,
         })),
+      };
+
+      if (editingGrnId) {
+        const updated = await updateGoodsReceipt(editingGrnId, payload);
+        message.success(t('messages.updated', { grnNumber: updated.grnNumber }));
+        setDrawerOpen(false);
+        setEditingGrnId(null);
+        setEditingGrnNumber(null);
+        setDetail(updated);
+        setDetailOpen(true);
+        void loadReceipts(filters, searchInput, page, pageSize);
+        void loadMasterData();
+        return;
+      }
+
+      const created = await createGoodsReceipt({
+        purchaseOrderId: values.purchaseOrderId,
+        ...payload,
       });
       message.success(t('messages.created', { grnNumber: created.grnNumber }));
       setDrawerOpen(false);
@@ -405,7 +664,9 @@ export function GoodsReceiptListPage() {
       void loadMasterData();
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, t('messages.createFailed')));
+        message.error(
+          apiErrorMessage(error, editingGrnId ? t('messages.updateFailed') : t('messages.createFailed')),
+        );
       }
     } finally {
       setSaving(false);
@@ -504,141 +765,468 @@ export function GoodsReceiptListPage() {
 
   const renderManualLines = (
     fields: FormListFieldData[],
-    add: (defaultValue?: Partial<GrnLineForm>) => void,
+    add: (defaultValue?: Partial<GrnLineForm>, insertIndex?: number) => void,
     remove: (index: number) => void,
-  ) => (
-    <>
-      <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-        {t('manualLinesHint')}
-      </Typography.Text>
-      {fields.map((field, index) => (
-        <Form.Item key={field.key} noStyle shouldUpdate>
-          {() => {
-            const productId = form.getFieldValue(['items', field.name, 'productId']) as string | undefined;
-            return (
+  ) => {
+    const draftLineTotal = grnLineNetTotal({
+      quantity: draftQty,
+      unitCost: draftUnitCost,
+      discountType: draftDiscountType,
+      discountValue: draftDiscountValue,
+    });
+
+    const addLineFromComposer = () => {
+      if (!draftProductId) {
+        message.warning(tVal('selectProduct'));
+        return;
+      }
+      if (!draftUnitId) {
+        message.warning(tVal('selectUnit'));
+        return;
+      }
+      const batch = draftBatch.trim();
+      if (!batch) {
+        message.warning(tVal('enterBatch'));
+        return;
+      }
+      if (!draftExpiry) {
+        message.warning(tVal('selectExpiry'));
+        return;
+      }
+      if (draftQty == null || draftQty <= 0) {
+        message.warning(tVal('qtyPositive'));
+        return;
+      }
+      if (draftUnitCost == null || draftUnitCost < 0) {
+        message.warning(tVal('enterPrice'));
+        return;
+      }
+      const seed = products.find((p) => p.id === draftProductId);
+      add({
+        productId: draftProductId,
+        productUnitId: draftUnitId,
+        productCode: seed?.productCode,
+        productName: seed?.productName,
+        batchNumber: batch,
+        expiryDate: draftExpiry,
+        quantity: draftQty,
+        unitCost: draftUnitCost,
+        discountType: draftDiscountType,
+        discountValue: draftDiscountValue,
+      });
+      resetManualComposer();
+      setEditingManualCell(null);
+    };
+
+    const isCellEditing = (rowKey: number, cell: ManualLineCell) =>
+      editingManualCell?.rowKey === rowKey && editingManualCell.cell === cell;
+
+    const headerCellStyle: CSSProperties = {
+      fontSize: 12,
+      color: '#64748b',
+      fontWeight: 500,
+      padding: '0 6px 6px',
+    };
+
+    return (
+      <>
+        <div
+          style={{
+            marginBottom: 12,
+            padding: 12,
+            border: '1px dashed #d9d9d9',
+            borderRadius: 8,
+            background: '#fafafa',
+          }}
+        >
+          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
+            {t('manualLinesComposerHint')}
+          </Typography.Text>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              alignItems: 'flex-end',
+            }}
+          >
+            <div style={{ flex: '2 1 240px', minWidth: 200 }}>
+              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.product')}</Typography.Text>
+              <ProductSearchSelect
+                value={draftProductId}
+                seedProducts={products}
+                placeholder={t('productSearchPlaceholder')}
+                style={{ width: '100%' }}
+                onChange={(value) => {
+                  setDraftProductId(value);
+                  if (!value) {
+                    resetManualComposer();
+                    return;
+                  }
+                  applyManualComposerProduct(value);
+                }}
+              />
+            </div>
+            <div style={{ flex: '0 0 84px' }}>
+              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.unit')}</Typography.Text>
+              <ProductUnitSelect
+                productId={draftProductId}
+                value={draftUnitId}
+                onChange={setDraftUnitId}
+                width={84}
+              />
+            </div>
+            <div style={{ flex: '0 0 140px' }}>
+              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.batchNumber')}</Typography.Text>
+              <GrnBatchNumberField
+                value={draftBatch}
+                warehouseId={warehouseId}
+                productId={draftProductId}
+                onChange={setDraftBatch}
+                onPickExisting={(batchPick) => {
+                  setDraftBatch(batchPick.batchNumber);
+                  if (batchPick.expiryDate) setDraftExpiry(batchPick.expiryDate);
+                }}
+              />
+            </div>
+            <div style={{ flex: '0 0 112px' }}>
+              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.expiry')}</Typography.Text>
+              <PharmaExpiryPicker value={draftExpiry} onChange={setDraftExpiry} style={{ width: 112 }} />
+            </div>
+            <div style={{ flex: '0 0 80px' }}>
+              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.qty')}</Typography.Text>
+              <InputNumber
+                {...quantityInputNumberProps}
+                min={0.001}
+                value={draftQty}
+                onChange={(v) => setDraftQty(Number(v ?? 0))}
+                style={{ width: '100%' }}
+              />
+            </div>
+            <div style={{ flex: '0 0 120px' }}>
+              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.unitCost')}</Typography.Text>
+              <InputNumber
+                {...moneyInputNumberPropsAllowZeroSuffix}
+                value={draftUnitCost}
+                onChange={(v) => setDraftUnitCost(Number(v ?? 0))}
+                style={{ width: '100%' }}
+              />
+            </div>
+            <div style={{ flex: '0 0 156px' }}>
+              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.lineDiscount')}</Typography.Text>
+              <Space size={4}>
+                <Select
+                  allowClear
+                  size="small"
+                  placeholder={tShared('columns.discount')}
+                  style={{ width: 68 }}
+                  value={draftDiscountType}
+                  onChange={(v) => {
+                    setDraftDiscountType(v);
+                    if (!v) setDraftDiscountValue(undefined);
+                  }}
+                  options={[
+                    { value: PROCUREMENT_DISCOUNT_TYPES.Percent, label: tShared('discount.percentSymbol') },
+                    { value: PROCUREMENT_DISCOUNT_TYPES.Fixed, label: tShared('discount.moneySymbol') },
+                  ]}
+                />
+                <InputNumber
+                  min={0}
+                  size="small"
+                  disabled={!draftDiscountType}
+                  value={draftDiscountValue}
+                  onChange={(v) => setDraftDiscountValue(v == null ? undefined : Number(v))}
+                  style={{ width: 76 }}
+                  placeholder="0"
+                />
+              </Space>
+            </div>
+            <div style={{ flex: `0 0 ${PROCUREMENT_MONEY_COL_WIDTH}px` }}>
+              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.lineTotal')}</Typography.Text>
               <div
                 style={{
+                  height: 32,
                   display: 'flex',
-                  gap: 8,
-                  alignItems: 'flex-start',
-                  marginBottom: 12,
-                  paddingBottom: 8,
-                  borderBottom: '1px solid #f0f0f0',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  padding: '0 8px',
+                  background: '#fff',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: 6,
+                  fontWeight: 600,
                 }}
               >
+                {formatDisplayMoney(draftLineTotal)}
+              </div>
+            </div>
+            <Button type="primary" icon={<PlusOutlined />} onClick={addLineFromComposer}>
+              {tShared('lines.addLine')}
+            </Button>
+          </div>
+        </div>
+
+        {fields.length === 0 ? (
+          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+            {t('manualLinesEmpty')}
+          </Typography.Text>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              alignItems: 'flex-end',
+              marginBottom: 4,
+              paddingRight: PROCUREMENT_LINE_ACTION_COL_WIDTH,
+            }}
+          >
+            <div style={{ flex: '0 0 28px', ...headerCellStyle, textAlign: 'center' }}>{tShared('columns.stt')}</div>
+            <div style={{ flex: '2 1 320px', minWidth: 240, ...headerCellStyle }}>{tShared('columns.product')}</div>
+            <div style={{ flex: '0 0 84px', ...headerCellStyle }}>{tShared('columns.unit')}</div>
+            <div style={{ flex: '0 0 140px', ...headerCellStyle }}>{tShared('columns.batchNumber')}</div>
+            <div style={{ flex: '0 0 112px', ...headerCellStyle }}>{tShared('columns.expiry')}</div>
+            <div style={{ flex: '0 0 80px', ...headerCellStyle, textAlign: 'right' }}>{tShared('columns.qty')}</div>
+            <div style={{ flex: '0 0 120px', ...headerCellStyle, textAlign: 'right' }}>{tShared('columns.unitCost')}</div>
+            <div style={{ flex: '0 0 156px', ...headerCellStyle }}>{tShared('columns.lineDiscount')}</div>
+            <div style={{ flex: `0 0 ${PROCUREMENT_MONEY_COL_WIDTH}px`, ...headerCellStyle, textAlign: 'right' }}>
+              {tShared('columns.lineTotal')}
+            </div>
+          </div>
+        )}
+
+        {fields.map((field, index) => (
+          <Form.Item key={field.key} noStyle shouldUpdate>
+            {() => {
+              const productId = form.getFieldValue(['items', field.name, 'productId']) as string | undefined;
+              const line = watchedItems?.[field.name];
+              const lineTotal = grnLineNetTotal(
+                line
+                  ? {
+                      quantity: line.quantity,
+                      unitCost: line.unitCost,
+                      discountType: line.discountType as ProcurementDiscountType | undefined,
+                      discountValue: line.discountValue,
+                    }
+                  : undefined,
+              );
+              const productLabel =
+                line?.productCode && line?.productName
+                  ? productOptionLabel({ productCode: line.productCode, productName: line.productName })
+                  : products.find((p) => p.id === productId)
+                    ? productOptionLabel(products.find((p) => p.id === productId)!)
+                    : (productId ?? tShared('emDash'));
+              const openCell = (cell: ManualLineCell) => setEditingManualCell({ rowKey: field.key, cell });
+
+              return (
                 <div
                   style={{
-                    flex: '0 0 28px',
-                    paddingTop: 30,
-                    textAlign: 'center',
-                    color: '#64748b',
-                    fontVariantNumeric: 'tabular-nums',
+                    display: 'flex',
+                    gap: 8,
+                    alignItems: 'center',
+                    marginBottom: 8,
+                    padding: '6px 0',
+                    borderBottom: '1px solid #f0f0f0',
                   }}
-                  title={tShared('columns.stt')}
                 >
-                  {index + 1}
+                  <div
+                    style={{
+                      flex: '0 0 28px',
+                      textAlign: 'center',
+                      color: '#64748b',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                    title={tShared('columns.stt')}
+                  >
+                    {index + 1}
+                  </div>
+
+                  <ManualLineClickCell
+                    editing={isCellEditing(field.key, 'product')}
+                    onEdit={() => openCell('product')}
+                    style={{ flex: '2 1 320px', minWidth: 240 }}
+                    display={productLabel}
+                  >
+                    <Form.Item
+                      {...field}
+                      name={[field.name, 'productId']}
+                      rules={[{ required: true, message: tVal('selectProduct') }]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <ProductSearchSelect
+                        seedProducts={products}
+                        placeholder={t('productSearchPlaceholder')}
+                        afterChange={(value) => {
+                          form.setFieldValue(['items', field.name, 'productUnitId'], undefined);
+                          const seed = value ? products.find((p) => p.id === value) : undefined;
+                          form.setFieldValue(['items', field.name, 'productCode'], seed?.productCode);
+                          form.setFieldValue(['items', field.name, 'productName'], seed?.productName);
+                          setEditingManualCell(null);
+                        }}
+                      />
+                    </Form.Item>
+                  </ManualLineClickCell>
+
+                  <ManualLineClickCell
+                    editing={isCellEditing(field.key, 'unit')}
+                    onEdit={() => openCell('unit')}
+                    style={{ flex: '0 0 84px' }}
+                    display={
+                      line?.unitName ? (
+                        line.unitName
+                      ) : (
+                        <UnitNameLabel productId={productId} unitId={line?.productUnitId} />
+                      )
+                    }
+                  >
+                    <Form.Item
+                      {...field}
+                      name={[field.name, 'productUnitId']}
+                      rules={[{ required: true, message: tVal('selectUnit') }]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <ProductUnitSelect
+                        productId={productId}
+                        width={84}
+                        onChange={() => setEditingManualCell(null)}
+                      />
+                    </Form.Item>
+                  </ManualLineClickCell>
+
+                  <ManualLineClickCell
+                    editing={isCellEditing(field.key, 'batch')}
+                    onEdit={() => openCell('batch')}
+                    style={{ flex: '0 0 140px' }}
+                    display={line?.batchNumber || tShared('emDash')}
+                  >
+                    <Form.Item
+                      {...field}
+                      name={[field.name, 'batchNumber']}
+                      rules={[{ required: true, message: tVal('enterBatch') }]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <GrnBatchNumberField
+                        warehouseId={warehouseId}
+                        productId={productId}
+                        onPickExisting={(batchPick) => {
+                          if (batchPick.expiryDate) {
+                            form.setFieldValue(['items', field.name, 'expiryDate'], batchPick.expiryDate);
+                          }
+                          setEditingManualCell(null);
+                        }}
+                      />
+                    </Form.Item>
+                  </ManualLineClickCell>
+
+                  <ManualLineClickCell
+                    editing={isCellEditing(field.key, 'expiry')}
+                    onEdit={() => openCell('expiry')}
+                    style={{ flex: '0 0 112px' }}
+                    display={formatExpiryMmYyyy(line?.expiryDate)}
+                  >
+                    <Form.Item
+                      {...field}
+                      name={[field.name, 'expiryDate']}
+                      rules={[{ required: true, message: tVal('selectExpiry') }]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <PharmaExpiryPicker
+                        style={{ width: 112 }}
+                        onChange={() => setEditingManualCell(null)}
+                      />
+                    </Form.Item>
+                  </ManualLineClickCell>
+
+                  <ManualLineClickCell
+                    editing={isCellEditing(field.key, 'qty')}
+                    onEdit={() => openCell('qty')}
+                    style={{ flex: '0 0 80px' }}
+                    align="right"
+                    display={formatDisplayQuantity(line?.quantity)}
+                  >
+                    <Form.Item
+                      {...field}
+                      name={[field.name, 'quantity']}
+                      rules={[{ required: true }]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <InputNumber
+                        {...quantityInputNumberProps}
+                        min={0.001}
+                        style={{ width: '100%' }}
+                        autoFocus
+                        onBlur={() => setEditingManualCell(null)}
+                        onPressEnter={() => setEditingManualCell(null)}
+                      />
+                    </Form.Item>
+                  </ManualLineClickCell>
+
+                  <ManualLineClickCell
+                    editing={isCellEditing(field.key, 'unitCost')}
+                    onEdit={() => openCell('unitCost')}
+                    style={{ flex: '0 0 120px' }}
+                    align="right"
+                    display={formatDisplayMoney(line?.unitCost)}
+                  >
+                    <Form.Item
+                      {...field}
+                      name={[field.name, 'unitCost']}
+                      rules={[{ required: true }]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <InputNumber
+                        {...moneyInputNumberPropsAllowZeroSuffix}
+                        style={{ width: '100%' }}
+                        autoFocus
+                        onBlur={() => setEditingManualCell(null)}
+                        onPressEnter={() => setEditingManualCell(null)}
+                      />
+                    </Form.Item>
+                  </ManualLineClickCell>
+
+                  <ManualLineClickCell
+                    editing={isCellEditing(field.key, 'discount')}
+                    onEdit={() => openCell('discount')}
+                    style={{ flex: '0 0 156px' }}
+                    display={formatLineDiscountText(
+                      line?.discountType as ProcurementDiscountType | undefined,
+                      line?.discountValue,
+                      tShared('emDash'),
+                    )}
+                  >
+                    <GrnLineDiscountFields fieldName={field.name} />
+                  </ManualLineClickCell>
+
+                  <div
+                    style={{
+                      flex: `0 0 ${PROCUREMENT_MONEY_COL_WIDTH}px`,
+                      textAlign: 'right',
+                      fontWeight: 600,
+                      fontVariantNumeric: 'tabular-nums',
+                      padding: '0 6px',
+                    }}
+                  >
+                    {formatDisplayMoney(lineTotal)}
+                  </div>
+
+                  <div style={{ flex: `0 0 ${PROCUREMENT_LINE_ACTION_COL_WIDTH}px`, textAlign: 'center' }}>
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      aria-label={tShared('lines.removeLineAria')}
+                      onClick={() => {
+                        if (editingManualCell?.rowKey === field.key) setEditingManualCell(null);
+                        remove(field.name);
+                      }}
+                    />
+                  </div>
                 </div>
-                <Form.Item
-                  {...field}
-                  name={[field.name, 'productId']}
-                  label={tShared('columns.product')}
-                  rules={[{ required: true, message: tVal('selectProduct') }]}
-                  style={{ flex: '2 1 320px', marginBottom: 0, minWidth: 240 }}
-                >
-                  <ProductSearchSelect
-                    seedProducts={products}
-                    placeholder={t('productSearchPlaceholder')}
-                    afterChange={() => {
-                      form.setFieldValue(['items', field.name, 'productUnitId'], undefined);
-                    }}
-                  />
-                </Form.Item>
-                <Form.Item
-                  {...field}
-                  name={[field.name, 'productUnitId']}
-                  label={tShared('columns.unit')}
-                  rules={[{ required: true, message: tVal('selectUnit') }]}
-                  style={{ flex: '0 0 84px', marginBottom: 0 }}
-                >
-                  <ProductUnitSelect productId={productId} width={84} />
-                </Form.Item>
-                <Form.Item
-                  {...field}
-                  name={[field.name, 'batchNumber']}
-                  label={tShared('columns.batchNumber')}
-                  rules={[{ required: true, message: tVal('enterBatch') }]}
-                  style={{ flex: '0 0 140px', marginBottom: 0 }}
-                >
-                  <GrnBatchNumberField
-                    warehouseId={warehouseId}
-                    productId={productId}
-                    onPickExisting={(batch) => {
-                      if (batch.expiryDate) {
-                        form.setFieldValue(['items', field.name, 'expiryDate'], batch.expiryDate);
-                      }
-                    }}
-                  />
-                </Form.Item>
-                <Form.Item
-                  {...field}
-                  name={[field.name, 'expiryDate']}
-                  label={tShared('columns.expiry')}
-                  rules={[{ required: true, message: tVal('selectExpiry') }]}
-                  style={{ flex: '0 0 112px', marginBottom: 0 }}
-                >
-                  <PharmaExpiryPicker style={{ width: 112 }} />
-                </Form.Item>
-                <Form.Item
-                  {...field}
-                  name={[field.name, 'quantity']}
-                  label={tShared('columns.qty')}
-                  rules={[{ required: true }]}
-                  style={{ flex: '0 0 80px', marginBottom: 0 }}
-                >
-                  <InputNumber {...quantityInputNumberProps} min={0.001} placeholder={tShared('columns.qty')} style={{ width: '100%' }} />
-                </Form.Item>
-                <Form.Item
-                  {...field}
-                  name={[field.name, 'unitCost']}
-                  label={tShared('columns.unitCost')}
-                  rules={[{ required: true }]}
-                  style={{ flex: '0 0 120px', marginBottom: 0 }}
-                >
-                  <PoUnitPriceField
-                    supplierId={supplierId}
-                    productId={productId}
-                    form={form}
-                    fieldName={field.name}
-                    valueFieldName="unitCost"
-                  />
-                </Form.Item>
-                <Form.Item label={tShared('columns.lineDiscount')} style={{ flex: '0 0 156px', marginBottom: 0 }}>
-                  <GrnLineDiscountFields fieldName={field.name} />
-                </Form.Item>
-                <Form.Item label=" " colon={false} style={{ flex: '0 0 auto', marginBottom: 0 }}>
-                  <Button
-                    type="text"
-                    danger
-                    icon={<DeleteOutlined />}
-                    aria-label={tShared('lines.removeLineAria')}
-                    onClick={() => remove(field.name)}
-                  />
-                </Form.Item>
-              </div>
-            );
-          }}
-        </Form.Item>
-      ))}
-      <Button
-        type="dashed"
-        icon={<PlusOutlined />}
-        onClick={() => add(emptyGrnLine())}
-        block
-      >
-        {t('addManualLine')}
-      </Button>
-    </>
-  );
+              );
+            }}
+          </Form.Item>
+        ))}
+      </>
+    );
+  };
 
   return (
     <Card
@@ -698,18 +1286,31 @@ export function GoodsReceiptListPage() {
       />
 
       <Drawer
-        title={t('createDrawer')}
+        title={
+          editingGrnId
+            ? t('editDrawerWithNumber', { grnNumber: editingGrnNumber ?? '' })
+            : t('createDrawer')
+        }
         width={PROCUREMENT_DRAWER_WIDTH}
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={() => {
+          setDrawerOpen(false);
+          setEditingGrnId(null);
+          setEditingGrnNumber(null);
+          setLinkedPo(null);
+          setPoDraftGrn(null);
+          form.resetFields();
+          resetManualComposer();
+          setEditingManualCell(null);
+        }}
         styles={{ body: { paddingTop: 8, paddingBottom: 8, display: 'flex', flexDirection: 'column', overflow: 'hidden' } }}
         extra={
           <Button
             type="primary"
             icon={<SaveOutlined />}
-            onClick={handleCreate}
+            onClick={() => void handleSave()}
             loading={saving}
-            disabled={!!poDraftGrn}
+            disabled={!!poDraftGrn && !editingGrnId}
           >
             {t('saveReceipt')}
           </Button>
@@ -723,10 +1324,11 @@ export function GoodsReceiptListPage() {
           <GoodsReceiptFormHeader
             suppliers={suppliers}
             warehouses={warehouses}
-            approvedPos={approvedPos}
+            approvedPos={editingGrnId ? allPurchaseOrders : approvedPos}
             purchaseOrderId={purchaseOrderId}
             linkedPo={linkedPo}
             poLoading={poLoading}
+            lockPoLink={Boolean(editingGrnId)}
             onEditPo={() => setPoEditOpen(true)}
           />
           {!poDraftGrn && <GrnPricingControls vatTreatments={vatTreatments} />}
@@ -812,6 +1414,11 @@ export function GoodsReceiptListPage() {
               </Button>
               {canWrite && (
                 <>
+              {detail.status === 1 && (
+                <Button icon={<EditOutlined />} onClick={() => void openEdit(detail)}>
+                  {t('editReceipt')}
+                </Button>
+              )}
               {detail.status === 1 && (
                 <Button type="primary" icon={<CheckOutlined />} onClick={() => handleComplete(detail.id)}>
                   {t('complete')}

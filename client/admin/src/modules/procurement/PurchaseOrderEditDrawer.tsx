@@ -9,7 +9,7 @@ import { fetchPurchaseOrder, fetchSuppliers, fetchVatTreatments, updatePurchaseO
 import { apiErrorMessage } from '@/shared/api/api-error';
 import type { ProcurementVatTreatment, PurchaseOrderDetail, Supplier } from '@/shared/api/procurement.types';
 import { PurchaseOrderFormHeader } from '@/modules/procurement/PurchaseOrderFormHeader';
-import { PurchaseOrderLinesEditor, type PoLineFormRow } from '@/modules/procurement/PurchaseOrderLinesEditor';
+import { PurchaseOrderLinesEditor, type PoLineFormProps } from '@/modules/procurement/PurchaseOrderLinesEditor';
 
 export interface PurchaseOrderEditDrawerProps {
   poId: string | null;
@@ -100,7 +100,7 @@ export function PurchaseOrderEditDrawer({
         expectedDate: values.expectedDate || undefined,
         notes: values.notes,
         vatTreatmentId: values.vatTreatmentId,
-        items: (values.items as PoLineFormRow[]).map((line) => ({
+        items: (values.items as PoLineFormProps[]).map((line) => ({
           id: line.id,
           productId: line.productId,
           productUnitId: line.productUnitId,
@@ -123,7 +123,7 @@ export function PurchaseOrderEditDrawer({
   return (
     <Drawer
       title={header ? t('editDrawerWithNumber', { poNumber: header.poNumber }) : t('editDrawer')}
-      width={980}
+      width={1240}
       open={open}
       zIndex={stackZIndex}
       onClose={onClose}

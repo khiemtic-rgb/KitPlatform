@@ -7,7 +7,7 @@ import type { FormInstance } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { grnLineNetTotal } from '@/modules/procurement/grn-pricing';
 import { GrnBatchNumberField } from '@/modules/procurement/GrnBatchNumberField';
-import { GrnLineDiscountFields } from '@/modules/procurement/GrnPricingPanel';
+import { GrnLineDiscountFields, PROCUREMENT_LINE_ACTION_COL_WIDTH } from '@/modules/procurement/GrnPricingPanel';
 import { PROCUREMENT_MONEY_COL_WIDTH } from '@/modules/procurement/GrnPoTaxSummary';
 import { ProcurementQuantityCell } from '@/modules/procurement/procurement-quantity-cell';
 import { PoUnitPriceField } from '@/modules/procurement/PoUnitPriceField';
@@ -237,7 +237,7 @@ export function GrnPoLinesEditor({
     },
     {
       title: '',
-      width: 40,
+      width: PROCUREMENT_LINE_ACTION_COL_WIDTH,
       render: (_, field) => (
         <Button
           type="text"

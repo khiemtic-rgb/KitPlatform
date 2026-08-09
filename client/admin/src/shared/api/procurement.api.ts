@@ -426,6 +426,35 @@ export async function createGoodsReceipt(payload: {
   return normalizeGrnDetail(data);
 }
 
+export async function updateGoodsReceipt(
+  id: string,
+  payload: {
+    supplierId: string;
+    warehouseId: string;
+    receiptDate?: string;
+    notes?: string;
+    supplierInvoiceNumber?: string;
+    vatTreatmentId: string;
+    orderDiscountType?: number;
+    orderDiscountValue?: number;
+    items: {
+      purchaseOrderItemId?: string;
+      productId: string;
+      productUnitId: string;
+      batchNumber: string;
+      manufactureDate?: string;
+      expiryDate: string;
+      quantity: number;
+      unitCost: number;
+      discountType?: number;
+      discountValue?: number;
+    }[];
+  },
+): Promise<GoodsReceiptDetail> {
+  const { data } = await http.put<Record<string, unknown>>(`/procurement/goods-receipts/${id}`, payload);
+  return normalizeGrnDetail(data);
+}
+
 export async function completeGoodsReceipt(id: string): Promise<GoodsReceiptDetail> {
   const { data } = await http.post<Record<string, unknown>>(`/procurement/goods-receipts/${id}/complete`);
   return normalizeGrnDetail(data);

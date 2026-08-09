@@ -47,6 +47,7 @@ public interface IGoodsReceiptService
         CancellationToken cancellationToken = default);
     Task<GoodsReceiptDetailDto?> GetAsync(Guid id, CancellationToken cancellationToken = default);
     Task<GoodsReceiptDetailDto> CreateAsync(CreateGoodsReceiptRequest request, CancellationToken cancellationToken = default);
+    Task<GoodsReceiptDetailDto?> UpdateAsync(Guid id, UpdateGoodsReceiptRequest request, CancellationToken cancellationToken = default);
     Task<GoodsReceiptDetailDto?> CompleteAsync(Guid id, CancellationToken cancellationToken = default);
     Task<GoodsReceiptDetailDto?> CancelAsync(Guid id, CancellationToken cancellationToken = default);
     Task<bool> ArchiveAsync(Guid id, CancellationToken cancellationToken = default);

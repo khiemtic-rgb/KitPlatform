@@ -20,8 +20,9 @@ import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
 import { procurementQuantityColumn } from '@/modules/procurement/procurement-quantity-cell';
 
-const DETAIL_MONEY_COL_WIDTH = 88;
+const DETAIL_MONEY_COL_WIDTH = 100;
 const DETAIL_CK_COL_WIDTH = 56;
+const DETAIL_BATCH_COL_WIDTH = 130;
 
 const moneyCellStyle = {
   fontVariantNumeric: 'tabular-nums' as const,
@@ -89,6 +90,12 @@ export function buildGrnDetailLineColumns(detail: GoodsReceiptDetail): ColumnsTy
 
   const columns: ColumnsType<GoodsReceiptItem> = [
     {
+      title: t('shared.columns.stt'),
+      width: 48,
+      align: 'center',
+      render: (_value, _row, index) => index + 1,
+    },
+    {
       title: t('shared.columns.product'),
       ellipsis: true,
       render: (_, row) => (
@@ -104,25 +111,29 @@ export function buildGrnDetailLineColumns(detail: GoodsReceiptDetail): ColumnsTy
     {
       title: t('shared.columns.unit'),
       dataIndex: 'unitName',
-      width: 48,
+      width: 52,
       className: 'grn-col-nowrap',
       render: (v: string) => v ?? emDash,
     },
     {
       title: t('shared.columns.batchShort'),
       dataIndex: 'batchNumber',
-      width: 52,
-      className: 'grn-col-nowrap',
-      ellipsis: true,
+      width: DETAIL_BATCH_COL_WIDTH,
+      ellipsis: { showTitle: true },
+      render: (v: string) => (
+        <span title={v} style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {v || emDash}
+        </span>
+      ),
     },
     {
       title: t('shared.columns.expiryFull'),
       dataIndex: 'expiryDate',
-      width: 86,
+      width: 96,
       className: 'grn-col-nowrap',
       render: (v: string) => formatDisplayDate(v),
     },
-    procurementQuantityColumn(t('shared.columns.qty'), 'quantity', 50),
+    procurementQuantityColumn(t('shared.columns.qty'), 'quantity', 56),
     {
       title: t('shared.columns.discount'),
       width: DETAIL_CK_COL_WIDTH,
@@ -206,36 +217,6 @@ export function GrnDetailHeader({ detail }: { detail: GoodsReceiptDetail }) {
   );
 }
 
-export function GrnDetailPricingSummary({ detail }: { detail: GoodsReceiptDetail }) {
-  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
-  const pricing = resolveGrnPricing(detail);
-
-  return (
-    <div style={{ marginTop: 6, display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
-      <div style={{ minWidth: 252 }}>
-        {pricing.lineDiscountTotal > 0 || pricing.orderDiscountAmount > 0 ? (
-          <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', textAlign: 'right' }}>
-            {pricing.lineDiscountTotal > 0
-              ? tShared('discount.lineDiscountSummary', { amount: formatDisplayMoney(pricing.lineDiscountTotal) })
-              : ''}
-            {pricing.lineDiscountTotal > 0 && pricing.orderDiscountAmount > 0 ? ' · ' : ''}
-            {pricing.orderDiscountAmount > 0
-              ? tShared('discount.orderDiscountSummary', { amount: formatDisplayMoney(pricing.orderDiscountAmount) })
-              : ''}
-          </Typography.Text>
-        ) : null}
-        <GrnTaxSummaryContent
-          subtotal={pricing.merchandiseNet}
-          taxAmount={pricing.taxAmount}
-          totalAmount={pricing.totalAmount}
-          subtotalLabel={tShared('tax.subtotalAfterLineDiscount')}
-          moneyColumnWidth={DETAIL_MONEY_COL_WIDTH}
-        />
-      </div>
-    </div>
-  );
-}
-
 interface GrnDetailLinesPanelProps {
   detail: GoodsReceiptDetail;
   showTitle?: boolean;
@@ -250,6 +231,7 @@ export function GrnDetailLinesPanel({
   fill = false,
 }: GrnDetailLinesPanelProps) {
   const { t } = useTranslation('procurement', { keyPrefix: 'shared.lines' });
+  const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
   const panelClass = [
     'grn-lines-detail-panel',
     compact ? 'grn-lines-detail-panel--compact' : '',
@@ -257,6 +239,11 @@ export function GrnDetailLinesPanel({
   ]
     .filter(Boolean)
     .join(' ');
+
+  const columns = buildGrnDetailLineColumns(detail);
+  const inventoryCostVisible = showInventoryUnitCost(detail);
+  const lineTotalColIndex = inventoryCostVisible ? columns.length - 2 : columns.length - 1;
+  const pricing = resolveGrnPricing(detail);
 
   return (
     <div className={panelClass}>
@@ -268,9 +255,40 @@ export function GrnDetailLinesPanel({
         tableLayout="fixed"
         className="grn-lines-table grn-lines-table--detail"
         dataSource={detail.items}
-        columns={buildGrnDetailLineColumns(detail)}
+        columns={columns}
+        summary={() => (
+          <Table.Summary>
+            <Table.Summary.Row>
+              <Table.Summary.Cell index={0} colSpan={lineTotalColIndex} />
+              <Table.Summary.Cell index={lineTotalColIndex} align="right">
+                {pricing.lineDiscountTotal > 0 || pricing.orderDiscountAmount > 0 ? (
+                  <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', textAlign: 'right' }}>
+                    {pricing.lineDiscountTotal > 0
+                      ? tShared('discount.lineDiscountSummary', {
+                          amount: formatDisplayMoney(pricing.lineDiscountTotal),
+                        })
+                      : ''}
+                    {pricing.lineDiscountTotal > 0 && pricing.orderDiscountAmount > 0 ? ' · ' : ''}
+                    {pricing.orderDiscountAmount > 0
+                      ? tShared('discount.orderDiscountSummary', {
+                          amount: formatDisplayMoney(pricing.orderDiscountAmount),
+                        })
+                      : ''}
+                  </Typography.Text>
+                ) : null}
+                <GrnTaxSummaryContent
+                  subtotal={pricing.merchandiseNet}
+                  taxAmount={pricing.taxAmount}
+                  totalAmount={pricing.totalAmount}
+                  subtotalLabel={tShared('tax.subtotalAfterLineDiscount')}
+                  moneyColumnWidth={DETAIL_MONEY_COL_WIDTH}
+                />
+              </Table.Summary.Cell>
+              {inventoryCostVisible ? <Table.Summary.Cell index={lineTotalColIndex + 1} /> : null}
+            </Table.Summary.Row>
+          </Table.Summary>
+        )}
       />
-      <GrnDetailPricingSummary detail={detail} />
     </div>
   );
 }
