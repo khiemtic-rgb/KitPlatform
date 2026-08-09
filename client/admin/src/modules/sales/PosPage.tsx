@@ -1490,9 +1490,9 @@ export function PosPage() {
       ),
     },
     {
-      title: t('pos.columns.unitPrice'),
+      title: canPriceOverride ? `${t('pos.columns.unitPrice')} ✎` : t('pos.columns.unitPrice'),
       dataIndex: 'unitPrice',
-      width: canPriceOverride ? 110 : 92,
+      width: canPriceOverride ? 118 : 92,
       align: 'right',
       className: 'pos-cart-col-money',
       render: (v: number, row) =>
@@ -1501,7 +1501,8 @@ export function PosPage() {
             disabled={!canWrite || cartLocked}
             value={v}
             {...moneyInputNumberPropsAllowZeroSuffix}
-            style={{ ...moneyInputNumberStyle, width: 96 }}
+            className="pos-unit-price-input"
+            style={{ ...moneyInputNumberStyle, width: 104 }}
             onChange={(unitPrice) =>
               setCart((prev) =>
                 prev.map((l) =>

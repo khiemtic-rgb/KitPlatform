@@ -15,9 +15,11 @@ internal sealed class PermissionEngine : IPermissionEngine
 
     public bool IsAdmin() => _user.IsInRole("ADMIN");
 
+    public bool IsManager() => _user.IsInRole("MANAGER");
+
     public SalesDiscountPolicy GetSalesDiscountPolicy()
         => SalesDiscountPolicy.FromPermissions(_user.Permissions, IsAdmin());
 
     public SalesPriceOverridePolicy GetSalesPriceOverridePolicy()
-        => SalesPriceOverridePolicy.FromPermissions(_user.Permissions, IsAdmin());
+        => SalesPriceOverridePolicy.FromPermissions(_user.Permissions, IsAdmin(), IsManager());
 }

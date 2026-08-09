@@ -40,7 +40,24 @@ public sealed record SalesDiscountPolicy(bool CanApply, bool Unlimited, decimal 
 public sealed record SalesPriceOverridePolicy(bool CanOverride)
 {
     public static SalesPriceOverridePolicy FromPermissions(IReadOnlyList<string> permissions, bool isAdmin)
-        => new(isAdmin || permissions.Contains(SalesPriceOverridePermissions.Override));
+    {
+        if (isAdmin
+            || permissions.Contains(SalesPriceOverridePermissions.Override)
+            || permissions.Contains(SalesDiscountPermissions.Unlimited))
+            return new(true);
+
+        return new(false);
+    }
+
+    public static SalesPriceOverridePolicy FromPermissions(
+        IReadOnlyList<string> permissions,
+        bool isAdmin,
+        bool isManager)
+    {
+        if (isAdmin || isManager)
+            return new(true);
+        return FromPermissions(permissions, isAdmin: false);
+    }
 }
 
 public static class SalesPricing
