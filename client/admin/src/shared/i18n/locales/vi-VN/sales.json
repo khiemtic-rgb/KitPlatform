@@ -15,8 +15,9 @@
       "5": "Đã hủy",
       "6": "Hết hạn"
     },
-    "discountType": {
-      "fixed": "Giá trị"
+      "discountType": {
+      "fixed": "Giá trị",
+      "unitPrice": "Sửa giá"
     },
     "reservationStatus": {
       "1": "Chờ xác nhận",
@@ -702,6 +703,7 @@
       "prescribers": "Bác sĩ",
       "prescriberLinks": "Mạng BS",
       "orders": "Đơn bán",
+      "priceOverrides": "Sửa giá",
       "customerReceivables": "Công nợ khách",
       "customerPayments": "Thu nợ khách",
       "appOrders": "Đơn từ app",
@@ -714,6 +716,33 @@
     "appOrders": {
       "drafts": "Chờ xác nhận",
       "reservations": "Đặt trước"
+    }
+  },
+  "priceOverrides": {
+    "title": "Tổng hợp đơn đã sửa giá",
+    "hint": "Sửa giá khi bán trên POS (CK → Sửa giá → cột Đơn giá). Tại đây xem lại và có thể đẩy giá đã sửa vào giá bán đang áp dụng cho đúng ĐVT — không cần vào form sản phẩm.",
+    "loadError": "Không tải được danh sách sửa giá",
+    "noAccess": "Không có quyền «Tổng hợp & đồng bộ giá vượt khung» (sales.price.manage)",
+    "summary": "{{count}} dòng · chênh lệch giá × SL",
+    "applyListPrice": "Cập nhật giá bán",
+    "applyConfirmTitle": "Cập nhật giá bán?",
+    "applyConfirm": "{{product}} ({{unit}}): {{from}} → {{to}}. Giá bán mới áp dụng cho lần bán sau.",
+    "applyOk": "Cập nhật",
+    "applyCancel": "Hủy",
+    "applySuccess": "Đã cập nhật giá bán {{product}} ({{unit}}) = {{price}}",
+    "applyError": "Không cập nhật được giá bán",
+    "applied": "Đã cập nhật giá bán",
+    "columns": {
+      "orderDate": "Ngày",
+      "orderNumber": "Số đơn",
+      "product": "Sản phẩm",
+      "qty": "SL",
+      "listPrice": "Giá gốc",
+      "soldPrice": "Giá bán",
+      "diff": "Chênh lệch",
+      "customer": "Khách",
+      "soldBy": "Thu ngân",
+      "action": ""
     }
   },
   "salesListSearch": {

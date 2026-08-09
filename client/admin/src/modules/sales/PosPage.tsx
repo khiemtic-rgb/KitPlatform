@@ -60,6 +60,13 @@ import {
   validateCartDiscountPolicy,
   type OrderDiscountState,
 } from '@/modules/sales/pos-pricing';
+import {
+  applyLineAdjustClear,
+  applyLineAdjustMode,
+  applyLineAdjustValue,
+  POS_LINE_ADJUST,
+  resolveLineAdjust,
+} from '@/modules/sales/pos-line-adjust';
 import { useSalesDiscountPolicy } from '@/modules/sales/useSalesDiscountPolicy';
 import { RX_POS_BLOCK_MESSAGE, shouldBlockRxAtPos } from '@/modules/sales/rx-dispensing';
 import {
@@ -1490,23 +1497,22 @@ export function PosPage() {
       ),
     },
     {
-      title: canPriceOverride ? `${t('pos.columns.unitPrice')} ✎` : t('pos.columns.unitPrice'),
+      title: t('pos.columns.unitPrice'),
       dataIndex: 'unitPrice',
-      width: canPriceOverride ? 118 : 92,
+      width: 100,
       align: 'right',
       className: 'pos-cart-col-money',
       render: (v: number, row) =>
-        canPriceOverride ? (
+        resolveLineAdjust(row) === POS_LINE_ADJUST.UnitPrice ? (
           <InputNumber
             disabled={!canWrite || cartLocked}
             value={v}
             {...moneyInputNumberPropsAllowZeroSuffix}
-            className="pos-unit-price-input"
-            style={{ ...moneyInputNumberStyle, width: 104 }}
-            onChange={(unitPrice) =>
+            style={{ ...moneyInputNumberStyle, width: 88 }}
+            onChange={(next) =>
               setCart((prev) =>
                 prev.map((l) =>
-                  l.key === row.key ? { ...l, unitPrice: Number(unitPrice ?? 0) } : l,
+                  l.key === row.key ? applyLineAdjustValue(l, Number(next ?? 0)) : l,
                 ),
               )
             }
@@ -1515,50 +1521,70 @@ export function PosPage() {
           <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDisplayMoney(v)}</span>
         ),
     },
-    ...(canDiscount
+    ...(canDiscount || canPriceOverride
       ? ([
           {
             title: t('pos.columns.discount'),
-            width: 112,
+            width: canPriceOverride ? 128 : 112,
             className: 'pos-cart-col-discount',
-            render: (_, row) => (
-              <Space.Compact>
-                <Select
-                  allowClear
-                  placeholder="%"
-                  style={{ width: 48 }}
-                  disabled={!canWrite || cartLocked}
-                  value={row.discountType}
-                  onChange={(discountType) =>
-                    setCart((prev) =>
-                      prev.map((l) =>
-                        l.key === row.key
-                          ? { ...l, discountType, discountValue: discountType ? l.discountValue ?? 0 : undefined }
-                          : l,
-                      ),
-                    )
-                  }
-                  options={[
-                    { value: SALES_DISCOUNT_TYPES.Percent, label: '%' },
-                    { value: SALES_DISCOUNT_TYPES.Fixed, label: t('enums.discountType.fixed') },
-                  ]}
-                />
-                <InputNumber
-                  disabled={!canWrite || cartLocked || !row.discountType}
-                  value={row.discountValue}
-                  {...(row.discountType === SALES_DISCOUNT_TYPES.Fixed
-                    ? { ...moneyInputNumberPropsAllowZeroSuffix, style: { ...moneyInputNumberStyle, width: 64 } }
-                    : { min: 0, max: 100, style: { ...moneyInputNumberStyle, width: 52 } })}
-                  onChange={(discountValue) =>
-                    setCart((prev) =>
-                      prev.map((l) =>
-                        l.key === row.key ? { ...l, discountValue: Number(discountValue ?? 0) } : l,
-                      ),
-                    )
-                  }
-                />
-              </Space.Compact>
-            ),
+            render: (_, row) => {
+              const adjust = resolveLineAdjust(row);
+              const selectOptions = [
+                ...(canDiscount
+                  ? [
+                      { value: POS_LINE_ADJUST.Percent, label: '%' },
+                      { value: POS_LINE_ADJUST.Fixed, label: t('enums.discountType.fixed') },
+                    ]
+                  : []),
+                ...(canPriceOverride
+                  ? [{ value: POS_LINE_ADJUST.UnitPrice, label: t('enums.discountType.unitPrice') }]
+                  : []),
+              ];
+              return (
+                <Space.Compact>
+                  <Select
+                    allowClear
+                    placeholder="%"
+                    style={{ width: canPriceOverride ? 88 : 48 }}
+                    disabled={!canWrite || cartLocked}
+                    value={adjust}
+                    onChange={(mode) =>
+                      setCart((prev) =>
+                        prev.map((l) =>
+                          l.key === row.key
+                            ? mode
+                              ? applyLineAdjustMode(l, mode as typeof POS_LINE_ADJUST.Percent)
+                              : applyLineAdjustClear(l)
+                            : l,
+                        ),
+                      )
+                    }
+                    options={selectOptions}
+                  />
+                  {adjust === POS_LINE_ADJUST.UnitPrice ? null : (
+                    <InputNumber
+                      disabled={!canWrite || cartLocked || !adjust}
+                      value={row.discountValue}
+                      {...(adjust === POS_LINE_ADJUST.Fixed
+                        ? {
+                            ...moneyInputNumberPropsAllowZeroSuffix,
+                            style: { ...moneyInputNumberStyle, width: 64 },
+                          }
+                        : { min: 0, max: 100, style: { ...moneyInputNumberStyle, width: 52 } })}
+                      onChange={(discountValue) =>
+                        setCart((prev) =>
+                          prev.map((l) =>
+                            l.key === row.key
+                              ? applyLineAdjustValue(l, Number(discountValue ?? 0))
+                              : l,
+                          ),
+                        )
+                      }
+                    />
+                  )}
+                </Space.Compact>
+              );
+            },
           },
         ] as ColumnsType<CartLine>)
       : []),

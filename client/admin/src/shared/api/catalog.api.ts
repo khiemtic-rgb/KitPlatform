@@ -469,6 +469,15 @@ export async function addPrice(
   return data;
 }
 
+/** Đóng giá bán lẻ cũ (price_type=1) và ghi giá mới cho đúng ĐVT. */
+export async function upsertRetailPrice(
+  productId: string,
+  body: { productUnitId: string; price: number },
+): Promise<ProductPrice> {
+  const { data } = await http.put<ProductPrice>(`/catalog/products/${productId}/retail-price`, body);
+  return data;
+}
+
 export async function fetchCategories(activeOnly = false): Promise<Category[]> {
   const { data } = await http.get<Array<Category & Record<string, unknown>>>('/catalog/categories', {
     params: { activeOnly },

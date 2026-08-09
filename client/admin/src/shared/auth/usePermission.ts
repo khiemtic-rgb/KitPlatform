@@ -100,6 +100,11 @@ export function useCanSalesCancel(): boolean {
   return useHasPermission('sales.cancel');
 }
 
+/** Báo cáo sửa giá + cập nhật giá bán catalog (sales.price.manage). ADMIN đã bao trong useHasPermission. */
+export function useCanSalesPriceManage(): boolean {
+  return useHasPermission('sales.price.manage');
+}
+
 export function useCanClinicRead(): boolean {
   return useHasAnyPermission('clinic.read', 'clinic.write');
 }

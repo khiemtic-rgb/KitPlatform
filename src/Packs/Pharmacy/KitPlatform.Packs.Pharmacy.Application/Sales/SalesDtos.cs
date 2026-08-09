@@ -310,7 +310,34 @@ public sealed record SalesOrderItemDto(
     short? DiscountType,
     decimal DiscountValue,
     decimal LineTotal,
-    decimal ReturnedQuantity = 0);
+    decimal ReturnedQuantity = 0,
+    decimal? ListUnitPrice = null,
+    bool IsPriceOverride = false);
+
+public sealed record SalesPriceOverrideLineDto(
+    Guid SalesOrderId,
+    string OrderNumber,
+    DateTime OrderDate,
+    Guid WarehouseId,
+    string WarehouseName,
+    Guid? CustomerId,
+    string? CustomerName,
+    Guid SalesOrderItemId,
+    Guid ProductId,
+    Guid ProductUnitId,
+    string ProductCode,
+    string ProductName,
+    string UnitName,
+    decimal Quantity,
+    decimal ListUnitPrice,
+    decimal UnitPrice,
+    decimal LineTotal,
+    string? SoldByName);
+
+public sealed record SyncPriceOverrideListPriceRequest(
+    Guid ProductId,
+    Guid ProductUnitId,
+    decimal Price);
 
 public sealed record SalesPaymentDto(
     Guid Id,

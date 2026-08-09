@@ -732,7 +732,9 @@ internal sealed class SalesRepository
                     FROM sales_return_items ri
                     INNER JOIN sales_returns r ON r.id = ri.sales_return_id
                     WHERE ri.sales_order_item_id = i.id AND r.status = @ReturnCompleted
-                ), 0) AS ReturnedQuantity
+                ), 0) AS ReturnedQuantity,
+                i.list_unit_price AS ListUnitPrice,
+                COALESCE(i.is_price_override, FALSE) AS IsPriceOverride
             FROM sales_order_items i
             INNER JOIN products p ON p.id = i.product_id
             INNER JOIN product_units u ON u.id = i.product_unit_id
@@ -749,7 +751,9 @@ internal sealed class SalesRepository
                 i.unit_price AS UnitPrice, i.discount_amount AS DiscountAmount,
                 i.discount_type AS DiscountType, i.discount_value AS DiscountValue,
                 i.line_total AS LineTotal,
-                0::decimal AS ReturnedQuantity
+                0::decimal AS ReturnedQuantity,
+                i.list_unit_price AS ListUnitPrice,
+                COALESCE(i.is_price_override, FALSE) AS IsPriceOverride
             FROM sales_order_items i
             INNER JOIN products p ON p.id = i.product_id
             INNER JOIN product_units u ON u.id = i.product_unit_id
@@ -822,7 +826,7 @@ internal sealed class SalesRepository
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
         var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, items, priceType, allowPriceOverride, cancellationToken);
-        var pricing = _pricing.PriceSaleOrder(pricedInputs, orderDiscount);
+        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(pricing, discountPolicy, cancellationToken: cancellationToken);
         await tx.CommitAsync(cancellationToken);
         return pricing;
@@ -851,7 +855,7 @@ internal sealed class SalesRepository
         var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
             conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
         var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
-        var pricing = _pricing.PriceSaleOrder(pricedInputs, orderDiscount);
+        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
             discountPolicy,
@@ -1050,7 +1054,7 @@ internal sealed class SalesRepository
         var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
             conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
         var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
-        var pricing = _pricing.PriceSaleOrder(pricedInputs, orderDiscount);
+        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
             discountPolicy,
@@ -1071,7 +1075,8 @@ internal sealed class SalesRepository
                 tx,
                 orderId,
                 pricing.Lines[i],
-                request.Items[i].PrescriptionLineId);
+                request.Items[i].PrescriptionLineId,
+                pricedInputs[i].ListUnitPrice);
         }
 
         await tx.CommitAsync(cancellationToken);
@@ -1101,7 +1106,7 @@ internal sealed class SalesRepository
         var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
             conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
         var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
-        var pricing = _pricing.PriceSaleOrder(pricedInputs, orderDiscount);
+        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
             discountPolicy,
@@ -1141,7 +1146,8 @@ internal sealed class SalesRepository
                 tx,
                 id,
                 pricing.Lines[i],
-                request.Items[i].PrescriptionLineId);
+                request.Items[i].PrescriptionLineId,
+                pricedInputs[i].ListUnitPrice);
         }
 
         await tx.CommitAsync(cancellationToken);
@@ -1214,7 +1220,7 @@ internal sealed class SalesRepository
             ? new SaleDiscountInput(request!.OrderDiscountType, request.OrderDiscountValue)
             : new SaleDiscountInput(header.OrderDiscountType, header.OrderDiscountValue);
         var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, saleItems, header.PriceType, allowPriceOverride, cancellationToken);
-        var pricing = _pricing.PriceSaleOrder(pricedInputs, orderDiscount);
+        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
             discountPolicy,
@@ -1453,6 +1459,76 @@ internal sealed class SalesRepository
             Draft = SalesOrderStatuses.Draft,
             Cancelled = SalesOrderStatuses.Cancelled,
         }) > 0;
+    }
+
+    public async Task<IReadOnlyList<SalesPriceOverrideLineDto>> GetPriceOverrideLinesAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        var conditions = new List<string>
+        {
+            "o.tenant_id = @TenantId",
+            "o.status = @Completed",
+            "i.is_price_override = TRUE",
+        };
+        var param = new DynamicParameters();
+        param.Add("TenantId", TenantId);
+        param.Add("Completed", SalesOrderStatuses.Completed);
+        param.Add("Limit", Math.Clamp(limit, 1, 500));
+        if (fromUtc is DateTime from)
+        {
+            conditions.Add("o.order_date >= @FromUtc");
+            param.Add("FromUtc", from);
+        }
+        if (toUtc is DateTime to)
+        {
+            conditions.Add("o.order_date < @ToUtc");
+            param.Add("ToUtc", to);
+        }
+        if (warehouseId is Guid wh)
+        {
+            conditions.Add("o.warehouse_id = @WarehouseId");
+            param.Add("WarehouseId", wh);
+        }
+
+        var sql = $"""
+            SELECT
+                o.id AS SalesOrderId,
+                o.order_number AS OrderNumber,
+                o.order_date AS OrderDate,
+                o.warehouse_id AS WarehouseId,
+                w.warehouse_name AS WarehouseName,
+                o.customer_id AS CustomerId,
+                c.full_name AS CustomerName,
+                i.id AS SalesOrderItemId,
+                i.product_id AS ProductId,
+                i.product_unit_id AS ProductUnitId,
+                p.product_code AS ProductCode,
+                p.product_name AS ProductName,
+                u.unit_name AS UnitName,
+                i.quantity AS Quantity,
+                COALESCE(i.list_unit_price, i.unit_price) AS ListUnitPrice,
+                i.unit_price AS UnitPrice,
+                i.line_total AS LineTotal,
+                e.full_name AS SoldByName
+            FROM sales_order_items i
+            INNER JOIN sales_orders o ON o.id = i.sales_order_id
+            INNER JOIN warehouses w ON w.id = o.warehouse_id
+            INNER JOIN products p ON p.id = i.product_id
+            INNER JOIN product_units u ON u.id = i.product_unit_id
+            LEFT JOIN customers c ON c.id = o.customer_id
+            LEFT JOIN employees e ON e.id = o.employee_id
+            WHERE {string.Join(" AND ", conditions)}
+            ORDER BY o.order_date DESC, o.order_number DESC
+            LIMIT @Limit
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<SalesPriceOverrideLineDto>(sql, param);
+        return rows.ToList();
     }
 
     public async Task<Guid> CreateSaleReturnAsync(
@@ -2120,7 +2196,7 @@ internal sealed class SalesRepository
             .ToList();
     }
 
-    private async Task<List<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ConversionFactor)>> ResolveSaleLineInputsAsync(
+    private async Task<List<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ListUnitPrice, decimal ConversionFactor)>> ResolveSaleLineInputsAsync(
         IDbConnection conn,
         IDbTransaction tx,
         IReadOnlyList<CreateSaleLineRequest> items,
@@ -2128,7 +2204,7 @@ internal sealed class SalesRepository
         bool allowPriceOverride,
         CancellationToken cancellationToken)
     {
-        var result = new List<(CreateSaleLineRequest, decimal, decimal)>();
+        var result = new List<(CreateSaleLineRequest, decimal, decimal, decimal)>();
         foreach (var line in items)
         {
             if (line.Quantity <= 0)
@@ -2175,11 +2251,15 @@ internal sealed class SalesRepository
                 }
             }
 
-            result.Add((line, resolvedPrice, unit.ConversionFactor));
+            result.Add((line, resolvedPrice, catalogPrice, unit.ConversionFactor));
         }
 
         return result;
     }
+
+    private static List<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ConversionFactor)> ForPricingEngine(
+        IReadOnlyList<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ListUnitPrice, decimal ConversionFactor)> inputs)
+        => inputs.Select(x => (x.Request, x.UnitPrice, x.ConversionFactor)).ToList();
 
     private sealed record SalePaymentResolution(
         List<CreateSalePaymentRequest> CashPayments,
@@ -2328,7 +2408,7 @@ internal sealed class SalesRepository
         IDbTransaction tx,
         Guid warehouseId,
         IReadOnlyList<PricedSaleLineResult> lines,
-        IReadOnlyList<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ConversionFactor)> resolvedInputs,
+        IReadOnlyList<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ListUnitPrice, decimal ConversionFactor)> resolvedInputs,
         CancellationToken cancellationToken)
     {
         if (lines.Count != resolvedInputs.Count)
@@ -2424,7 +2504,9 @@ internal sealed class SalesRepository
                     alloc.UnitCost,
                     alloc.BaseQuantity,
                     batchSource,
-                    requestLine.PrescriptionLineId));
+                    requestLine.PrescriptionLineId,
+                    resolvedInputs[index].ListUnitPrice,
+                    Math.Abs(pricedLine.UnitPrice - resolvedInputs[index].ListUnitPrice) > 0.009m));
                 lineQtyRemaining -= saleQty;
             }
 
@@ -2756,16 +2838,20 @@ internal sealed class SalesRepository
         IDbTransaction tx,
         Guid orderId,
         PricedSaleLineResult line,
-        Guid? prescriptionLineId)
+        Guid? prescriptionLineId,
+        decimal listUnitPrice)
     {
+        var isOverride = Math.Abs(line.UnitPrice - listUnitPrice) > 0.009m;
         const string sql = """
             INSERT INTO sales_order_items (
                 sales_order_id, product_id, product_unit_id, batch_id,
-                quantity, unit_price, discount_amount, discount_type, discount_value, line_total, prescription_line_id
+                quantity, unit_price, list_unit_price, is_price_override,
+                discount_amount, discount_type, discount_value, line_total, prescription_line_id
             )
             VALUES (
                 @OrderId, @ProductId, @ProductUnitId, NULL,
-                @Quantity, @UnitPrice, @DiscountAmount, @DiscountType, @DiscountValue, @LineTotal, @PrescriptionLineId
+                @Quantity, @UnitPrice, @ListUnitPrice, @IsPriceOverride,
+                @DiscountAmount, @DiscountType, @DiscountValue, @LineTotal, @PrescriptionLineId
             )
             """;
         await conn.ExecuteAsync(sql, new
@@ -2775,6 +2861,8 @@ internal sealed class SalesRepository
             line.ProductUnitId,
             line.Quantity,
             line.UnitPrice,
+            ListUnitPrice = listUnitPrice,
+            IsPriceOverride = isOverride,
             DiscountAmount = line.DiscountAmount,
             DiscountType = line.DiscountType,
             DiscountValue = line.DiscountValue,
@@ -2797,11 +2885,13 @@ internal sealed class SalesRepository
             const string itemSql = """
                 INSERT INTO sales_order_items (
                     sales_order_id, product_id, product_unit_id, batch_id, batch_source,
-                    quantity, unit_price, discount_amount, discount_type, discount_value, line_total, prescription_line_id
+                    quantity, unit_price, list_unit_price, is_price_override,
+                    discount_amount, discount_type, discount_value, line_total, prescription_line_id
                 )
                 VALUES (
                     @OrderId, @ProductId, @ProductUnitId, @BatchId, @BatchSource,
-                    @Quantity, @UnitPrice, @DiscountAmount, @DiscountType, @DiscountValue, @LineTotal, @PrescriptionLineId
+                    @Quantity, @UnitPrice, @ListUnitPrice, @IsPriceOverride,
+                    @DiscountAmount, @DiscountType, @DiscountValue, @LineTotal, @PrescriptionLineId
                 )
                 RETURNING id
                 """;
@@ -2814,6 +2904,8 @@ internal sealed class SalesRepository
                 BatchSource = plan.BatchSource,
                 plan.Quantity,
                 plan.UnitPrice,
+                plan.ListUnitPrice,
+                plan.IsPriceOverride,
                 plan.DiscountAmount,
                 DiscountType = plan.DiscountType,
                 DiscountValue = plan.DiscountValue,
@@ -2962,7 +3054,9 @@ internal sealed class SalesRepository
         decimal UnitCost,
         decimal BaseQuantity,
         short BatchSource,
-        Guid? PrescriptionLineId);
+        Guid? PrescriptionLineId,
+        decimal ListUnitPrice,
+        bool IsPriceOverride);
 
     private sealed record CompletedSaleLineInsert(
         Guid SalesOrderItemId,

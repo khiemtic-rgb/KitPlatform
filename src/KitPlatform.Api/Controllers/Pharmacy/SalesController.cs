@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using KitPlatform.Api.Authorization;
 using KitPlatform.Application.Core.Engines;
+using KitPlatform.Packs.Pharmacy.Catalog;
 using KitPlatform.Packs.Pharmacy.Sales;
 
 namespace KitPlatform.Api.Controllers.Pharmacy;
@@ -12,8 +13,37 @@ namespace KitPlatform.Api.Controllers.Pharmacy;
 public sealed class SalesController : ControllerBase
 {
     private readonly ISalesService _sales;
+    private readonly ICatalogService _catalog;
 
-    public SalesController(ISalesService sales) => _sales = sales;
+    public SalesController(ISalesService sales, ICatalogService catalog)
+    {
+        _sales = sales;
+        _catalog = catalog;
+    }
+
+    [HttpGet("price-overrides")]
+    [Authorize(Policy = SalesPolicies.PriceManage)]
+    public async Task<ActionResult<IReadOnlyList<SalesPriceOverrideLineDto>>> PriceOverrides(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] Guid? warehouseId,
+        [FromQuery] int limit = 200,
+        CancellationToken cancellationToken = default) =>
+        Ok(await _sales.GetPriceOverrideLinesAsync(from, to, warehouseId, Math.Clamp(limit, 1, 500), cancellationToken));
+
+    /// <summary>Đẩy giá bán đã sửa trên đơn vào giá bán lẻ catalog (đúng ĐVT).</summary>
+    [HttpPost("price-overrides/sync-list-price")]
+    [Authorize(Policy = SalesPolicies.PriceManage)]
+    public async Task<ActionResult<ProductPriceDto>> SyncPriceOverrideListPrice(
+        [FromBody] SyncPriceOverrideListPriceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var price = await _catalog.UpsertRetailPriceAsync(
+            request.ProductId,
+            new UpsertRetailPriceRequest(request.ProductUnitId, request.Price),
+            cancellationToken);
+        return price is null ? NotFound() : Ok(price);
+    }
 
     [HttpGet("customers")]
     [Authorize(Policy = SalesPolicies.Read)]

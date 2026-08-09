@@ -149,6 +149,18 @@ internal sealed class CatalogService : ICatalogService
         return await _repository.AddPriceAsync(productId, request, cancellationToken);
     }
 
+    public async Task<ProductPriceDto?> UpsertRetailPriceAsync(
+        Guid productId,
+        UpsertRetailPriceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (await _repository.ProductExistsAsync(productId, cancellationToken) is null)
+            return null;
+        if (request.Price < 0)
+            throw new InvalidOperationException("Giá bán không được âm.");
+        return await _repository.UpsertRetailPriceAsync(productId, request.ProductUnitId, request.Price, cancellationToken);
+    }
+
     public Task<IReadOnlyList<LookupItemDto>> GetCategoriesAsync(CancellationToken cancellationToken = default) =>
         _repository.GetCategoriesAsync(cancellationToken);
 

@@ -1061,8 +1061,19 @@ internal sealed class CatalogRepository
         return await conn.QuerySingleAsync<bool>(sql, new { ProductId = productId, TenantId = _tenant.TenantId });
     }
 
-    public async Task UpsertRetailPriceAsync(Guid productId, Guid unitId, decimal price, CancellationToken cancellationToken)
+    public async Task<ProductPriceDto?> UpsertRetailPriceAsync(Guid productId, Guid unitId, decimal price, CancellationToken cancellationToken)
     {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var unitOk = await conn.QuerySingleAsync<bool>(
+            """
+            SELECT EXISTS(
+                SELECT 1 FROM product_units
+                WHERE id = @UnitId AND product_id = @ProductId AND tenant_id = @TenantId AND status = 1
+            )
+            """,
+            new { UnitId = unitId, ProductId = productId, TenantId = _tenant.TenantId });
+        if (!unitOk) return null;
+
         const string deactivateSql = """
             UPDATE product_prices SET status = 2, updated_at = NOW()
             WHERE product_id = @ProductId AND product_unit_id = @UnitId AND price_type = 1 AND status = 1
@@ -1071,17 +1082,27 @@ internal sealed class CatalogRepository
         const string insertSql = """
             INSERT INTO product_prices (tenant_id, product_id, product_unit_id, price_type, currency_code, price)
             VALUES (@TenantId, @ProductId, @UnitId, 1, 'VND', @Price)
+            RETURNING id
             """;
 
-        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await conn.ExecuteAsync(deactivateSql, new { ProductId = productId, UnitId = unitId });
-        await conn.ExecuteAsync(insertSql, new
+        var priceId = await conn.QuerySingleAsync<Guid>(insertSql, new
         {
             TenantId = _tenant.TenantId,
             ProductId = productId,
             UnitId = unitId,
             Price = price,
         });
+
+        const string getSql = """
+            SELECT pr.id AS Id, pr.product_unit_id AS ProductUnitId, u.unit_name AS UnitName,
+                   pr.price_type AS PriceType, pr.currency_code AS CurrencyCode, pr.price AS Price,
+                   pr.effective_from AS EffectiveFrom, pr.effective_to AS EffectiveTo
+            FROM product_prices pr
+            INNER JOIN product_units u ON u.id = pr.product_unit_id
+            WHERE pr.id = @Id
+            """;
+        return await conn.QuerySingleAsync<ProductPriceDto>(getSql, new { Id = priceId });
     }
 
     public async Task<SimilarProductNamesResult> FindSimilarProductNamesAsync(

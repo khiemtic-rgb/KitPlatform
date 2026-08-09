@@ -119,4 +119,11 @@ public interface ISalesService
     Task ReportRxPosBlockAsync(
         ReportRxPosBlockRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<SalesPriceOverrideLineDto>> GetPriceOverrideLinesAsync(
+        DateTime? fromUtc = null,
+        DateTime? toUtc = null,
+        Guid? warehouseId = null,
+        int limit = 200,
+        CancellationToken cancellationToken = default);
 }

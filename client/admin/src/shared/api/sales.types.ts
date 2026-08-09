@@ -307,8 +307,10 @@ export interface CartLine {
   unitName: string;
   quantity: number;
   unitPrice: number;
-  /** Giá catalog lúc thêm dòng — dùng phát hiện override */
+  /** Giá catalog lúc thêm dòng — dùng phát hiện override / khôi phục */
   catalogUnitPrice?: number;
+  /** Chế độ cột CK: % | giá trị | sửa giá */
+  lineAdjust?: 'percent' | 'fixed' | 'unit_price';
   dispensingClass?: string;
   stockAvailable?: number;
   batchHints?: PosBatchHint[];
@@ -322,6 +324,27 @@ export interface CartLine {
   qtyWarning?: string;
   /** Dòng từ đơn BS / Connect — không cho xóa khỏi giỏ */
   rxLocked?: boolean;
+}
+
+export interface SalesPriceOverrideLine {
+  salesOrderId: string;
+  orderNumber: string;
+  orderDate: string;
+  warehouseId: string;
+  warehouseName: string;
+  customerId?: string;
+  customerName?: string;
+  salesOrderItemId: string;
+  productId: string;
+  productUnitId: string;
+  productCode: string;
+  productName: string;
+  unitName: string;
+  quantity: number;
+  listUnitPrice: number;
+  unitPrice: number;
+  lineTotal: number;
+  soldByName?: string;
 }
 
 export const SALES_RETURN_STATUS_LABELS: Record<number, string> = {

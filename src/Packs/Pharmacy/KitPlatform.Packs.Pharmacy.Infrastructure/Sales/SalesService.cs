@@ -347,6 +347,14 @@ internal sealed class SalesService : ISalesService
         CancellationToken cancellationToken = default) =>
         _repository.ReportRxPosBlockAsync(request, _tenant.UserId, cancellationToken);
 
+    public Task<IReadOnlyList<SalesPriceOverrideLineDto>> GetPriceOverrideLinesAsync(
+        DateTime? fromUtc = null,
+        DateTime? toUtc = null,
+        Guid? warehouseId = null,
+        int limit = 200,
+        CancellationToken cancellationToken = default) =>
+        _repository.GetPriceOverrideLinesAsync(fromUtc, toUtc, warehouseId, limit, cancellationToken);
+
     /// <summary>AC1 — dedicated discount audit when POS order/line discount &gt; 0 (excludes loyalty/voucher fields).</summary>
     private async Task WritePosDiscountAuditIfNeededAsync(
         SalesOrderDetailDto order,

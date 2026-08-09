@@ -30,12 +30,15 @@ export async function loadDraftCartLines(order: SalesOrderDetail): Promise<CartL
   const lines: CartLine[] = [];
   for (const item of order.items) {
     let stockAvailable = 0;
+    let catalogUnitPrice = item.unitPrice;
     try {
       const lookup = await lookupPosProduct(item.productCode, order.warehouseId);
       stockAvailable = lookup.stockAvailable;
+      catalogUnitPrice = lookup.unitPrice;
     } catch {
       stockAvailable = 0;
     }
+    const priceOverride = Math.abs(item.unitPrice - catalogUnitPrice) > 0.009;
     lines.push({
       key: item.productUnitId,
       productId: item.productId,
@@ -45,10 +48,17 @@ export async function loadDraftCartLines(order: SalesOrderDetail): Promise<CartL
       unitName: item.unitName,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
-      catalogUnitPrice: item.unitPrice,
+      catalogUnitPrice,
+      lineAdjust: priceOverride
+        ? 'unit_price'
+        : item.discountType === 1
+          ? 'percent'
+          : item.discountType === 2
+            ? 'fixed'
+            : undefined,
       stockAvailable,
-      discountType: item.discountType as SalesDiscountType | undefined,
-      discountValue: item.discountValue,
+      discountType: priceOverride ? undefined : (item.discountType as SalesDiscountType | undefined),
+      discountValue: priceOverride ? undefined : item.discountValue,
     });
   }
   return lines;

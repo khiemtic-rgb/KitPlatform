@@ -154,3 +154,4 @@ seed-prod/001_base_permissions.sql
 275_customer_app_login_requests.sql
 276_sales_price_override_permission.sql
 277_sales_price_override_align_unlimited_discount.sql
+278_sales_order_item_price_override.sql

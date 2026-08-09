@@ -5,6 +5,7 @@ import { Spin } from 'antd';
 import {
   ClockCircleOutlined,
   CommentOutlined,
+  DollarOutlined,
   FileTextOutlined,
   MobileOutlined,
   RollbackOutlined,
@@ -24,6 +25,11 @@ const allMainTabDefs: Omit<ProductNavTab, 'label'>[] = [
   { key: 'pos', path: '/sales/pos', icon: <ShoppingCartOutlined /> },
   { key: 'orders', path: '/sales/orders', icon: <FileTextOutlined /> },
   {
+    key: 'price-overrides',
+    path: '/sales/price-overrides',
+    icon: <DollarOutlined />,
+  },
+  {
     key: 'app-orders',
     path: '/sales/app-orders',
     icon: <MobileOutlined />,
@@ -42,6 +48,7 @@ const allMainTabDefs: Omit<ProductNavTab, 'label'>[] = [
 const tabLabelKeys: Record<string, string> = {
   pos: 'pos',
   orders: 'orders',
+  'price-overrides': 'priceOverrides',
   'app-orders': 'appOrders',
   returns: 'returns',
   chat: 'chat',
@@ -53,6 +60,7 @@ export function SalesLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const isPosRoute = location.pathname.startsWith('/sales/pos');
+  const canManagePriceOverrides = useHasPermission('sales.price.manage');
 
   const allMainTabs = useMemo<ProductNavTab[]>(
     () =>
@@ -63,9 +71,21 @@ export function SalesLayout() {
     [t],
   );
 
-  const mainTabs = useMemo(() => filterProductNavTabs(allMainTabs), [allMainTabs]);
+  const mainTabs = useMemo(
+    () =>
+      filterProductNavTabs(allMainTabs).filter(
+        (tab) => tab.key !== 'price-overrides' || canManagePriceOverrides,
+      ),
+    [allMainTabs, canManagePriceOverrides],
+  );
 
   useProductNavGuard(allMainTabs, '/sales/pos');
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/sales/price-overrides') && !canManagePriceOverrides) {
+      navigate('/sales/pos', { replace: true });
+    }
+  }, [canManagePriceOverrides, location.pathname, navigate]);
 
   const activeMainTab =
     mainTabs.find((tab) => location.pathname.startsWith(tab.path))?.key ?? 'pos';

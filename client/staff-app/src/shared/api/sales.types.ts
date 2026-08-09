@@ -76,8 +76,8 @@ export interface CartLine {
   unitName: string;
   quantity: number;
   unitPrice: number;
-  /** Giá catalog lúc thêm dòng — dùng phát hiện override */
   catalogUnitPrice?: number;
+  lineAdjust?: 'percent' | 'fixed' | 'unit_price';
   dispensingClass?: string;
   stockAvailable?: number;
   batchHints?: PosBatchHint[];

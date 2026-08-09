@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { App, Alert, Button, Drawer, Input, InputNumber, Segmented, Select, Space, Typography } from 'antd';
+import { App, Alert, Button, Drawer, Input, InputNumber, Select, Space, Typography } from 'antd';
 import type { InputRef } from 'antd';
 import {
   HomeOutlined,
@@ -11,7 +11,6 @@ import {
   UserAddOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { SALES_DISCOUNT_TYPES } from '@/shared/api/sales.types';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
@@ -52,6 +51,13 @@ import { fetchCustomerById } from '@/shared/api/customer.api';
 import { loadReservationForPos } from '@/shared/api/reservations.api';
 import { buildReservationCartLines } from '@/modules/reservations/reservation-pos-load';
 import { applyBatchLabelScan } from '@/modules/sales/pos-batch-scan';
+import {
+  applyLineAdjustClear,
+  applyLineAdjustMode,
+  applyLineAdjustValue,
+  POS_LINE_ADJUST,
+  resolveLineAdjust,
+} from '@/modules/sales/pos-line-adjust';
 import { useSalesDiscountPolicy } from '@/modules/sales/useSalesDiscountPolicy';
 import { usePosHotkeys } from '@/shared/hooks/usePosHotkeys';
 import { usePosSession } from '@/modules/pos/pos-session.store';
@@ -82,7 +88,6 @@ export function PosPage() {
     updateQuantity,
     updateBatchLabel,
     updateLineDiscount,
-    updateUnitPrice,
     removeLine,
     editingDraftId,
     editingDraftNumber,
@@ -682,23 +687,31 @@ export function PosPage() {
               <div className="cart-line-top">
                 <div className="cart-line-info">
                   <Typography.Text strong>{line.productName}</Typography.Text>
-                  <div style={{ fontSize: 12, color: '#64748b' }}>
-                    {line.productCode}
-                    {canPriceOverride ? (
-                      <>
-                        {' · '}
-                        <InputNumber
-                          size="small"
-                          min={0}
-                          value={line.unitPrice}
-                          controls={false}
-                          style={{ width: 88 }}
-                          onChange={(v) => updateUnitPrice(line.key, Number(v ?? 0))}
-                        />
-                        {' đ'}
-                      </>
+                  <div style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>{line.productCode}</span>
+                    <span>·</span>
+                    {resolveLineAdjust(line) === POS_LINE_ADJUST.UnitPrice ? (
+                      <InputNumber
+                        size="small"
+                        min={0}
+                        precision={0}
+                        value={line.unitPrice}
+                        controls={false}
+                        style={{ width: 96 }}
+                        formatter={(v) =>
+                          v == null ? '' : `${v}`.replace(/\./g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+                        }
+                        parser={(v) => Number(String(v ?? '').replace(/\./g, '')) as 0}
+                        onChange={(v) => {
+                          replaceCart(
+                            cart.map((l) =>
+                              l.key === line.key ? applyLineAdjustValue(l, Number(v ?? 0)) : l,
+                            ),
+                          );
+                        }}
+                      />
                     ) : (
-                      <> · {formatMoney(line.unitPrice)}</>
+                      <span>{formatMoney(line.unitPrice)}</span>
                     )}
                   </div>
                   {showsBatchPicker(batchMode, line.batchHints) ? (
@@ -729,62 +742,78 @@ export function PosPage() {
                   <InputNumber size="small" min={1} value={line.quantity} controls={false} style={{ width: 48 }} readOnly />
                   <Button size="small" icon={<PlusOutlined />} onClick={() => updateQuantity(line.key, line.quantity + 1)} />
                 </Space>
-                {canDiscount ? (
+                {(canDiscount || canPriceOverride) ? (
                 <Space className="cart-line-discount" size={4} align="center">
                   <span className="cart-line-discount-label">CK</span>
-                  <Segmented
+                  <Select
                     size="small"
-                    className="cart-line-discount-type"
-                    value={line.discountType ?? SALES_DISCOUNT_TYPES.Percent}
+                    allowClear
+                    placeholder="%"
+                    style={{ width: canPriceOverride ? 92 : 56 }}
+                    value={resolveLineAdjust(line)}
                     options={[
-                      { value: SALES_DISCOUNT_TYPES.Percent, label: '%' },
-                      { value: SALES_DISCOUNT_TYPES.Fixed, label: '₫' },
+                      ...(canDiscount
+                        ? [
+                            { value: POS_LINE_ADJUST.Percent, label: '%' },
+                            { value: POS_LINE_ADJUST.Fixed, label: 'Giá trị' },
+                          ]
+                        : []),
+                      ...(canPriceOverride
+                        ? [{ value: POS_LINE_ADJUST.UnitPrice, label: 'Sửa giá' }]
+                        : []),
                     ]}
-                    onChange={(discountType) => {
-                      const prev = line.discountValue ?? 0;
-                      const next =
-                        discountType === SALES_DISCOUNT_TYPES.Percent
-                          ? Math.min(prev, maxPercent)
-                          : prev;
-                      updateLineDiscount(line.key, discountType, next);
+                    onChange={(mode) => {
+                      replaceCart(
+                        cart.map((l) =>
+                          l.key === line.key
+                            ? mode
+                              ? applyLineAdjustMode(l, mode as typeof POS_LINE_ADJUST.Percent)
+                              : applyLineAdjustClear(l)
+                            : l,
+                        ),
+                      );
                     }}
                   />
-                  <InputNumber
-                    size="small"
-                    className="cart-line-discount-input"
-                    min={0}
-                    max={
-                      (line.discountType ?? SALES_DISCOUNT_TYPES.Percent) === SALES_DISCOUNT_TYPES.Percent
-                        ? maxPercent
-                        : undefined
-                    }
-                    precision={0}
-                    placeholder="0"
-                    value={(line.discountValue ?? 0) > 0 ? line.discountValue : undefined}
-                    inputMode="numeric"
-                    controls={false}
-                    formatter={(v) => {
-                      if (v == null) return '';
-                      const raw = `${v}`.replace(/\./g, '');
-                      if ((line.discountType ?? SALES_DISCOUNT_TYPES.Percent) === SALES_DISCOUNT_TYPES.Percent) {
-                        return raw;
+                  {resolveLineAdjust(line) === POS_LINE_ADJUST.UnitPrice ? null : (
+                    <InputNumber
+                      size="small"
+                      className="cart-line-discount-input"
+                      min={0}
+                      max={
+                        resolveLineAdjust(line) === POS_LINE_ADJUST.Percent ? maxPercent : undefined
                       }
-                      return raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                    }}
-                    parser={(v) => Number(String(v ?? '').replace(/\./g, '')) as 0}
-                    onChange={(v) => {
-                      const discountType = line.discountType ?? SALES_DISCOUNT_TYPES.Percent;
-                      let val = Number(v ?? 0);
-                      if (val <= 0) {
-                        updateLineDiscount(line.key, undefined, undefined);
-                        return;
-                      }
-                      if (discountType === SALES_DISCOUNT_TYPES.Percent) {
-                        val = Math.min(val, maxPercent);
-                      }
-                      updateLineDiscount(line.key, discountType, val);
-                    }}
-                  />
+                      precision={0}
+                      placeholder="0"
+                      disabled={!resolveLineAdjust(line)}
+                      value={(line.discountValue ?? 0) > 0 ? line.discountValue : undefined}
+                      inputMode="numeric"
+                      controls={false}
+                      formatter={(v) => {
+                        if (v == null) return '';
+                        const raw = `${v}`.replace(/\./g, '');
+                        if (resolveLineAdjust(line) === POS_LINE_ADJUST.Percent) return raw;
+                        return raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                      }}
+                      parser={(v) => Number(String(v ?? '').replace(/\./g, '')) as 0}
+                      onChange={(v) => {
+                        let val = Number(v ?? 0);
+                        if (val <= 0) {
+                          replaceCart(
+                            cart.map((l) => (l.key === line.key ? applyLineAdjustClear(l) : l)),
+                          );
+                          return;
+                        }
+                        if (resolveLineAdjust(line) === POS_LINE_ADJUST.Percent) {
+                          val = Math.min(val, maxPercent);
+                        }
+                        replaceCart(
+                          cart.map((l) =>
+                            l.key === line.key ? applyLineAdjustValue(l, val) : l,
+                          ),
+                        );
+                      }}
+                    />
+                  )}
                 </Space>
                 ) : null}
               </div>

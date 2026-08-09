@@ -15,4 +15,6 @@ public static class SalesPolicies
     public const string Cancel = "SalesCancel";
     /// <summary>Merge duplicate customers (sales.customers.merge or ADMIN) — not implied by sales.customers.</summary>
     public const string CustomerMerge = "SalesCustomerMerge";
+    /// <summary>Báo cáo sửa giá + đồng bộ giá bán catalog (sales.price.manage or ADMIN).</summary>
+    public const string PriceManage = "SalesPriceManage";
 }

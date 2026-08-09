@@ -317,6 +317,11 @@ const PrescriberLinksPage = lazy(() =>
 const SalesOrderListPage = lazy(() =>
   import('@/modules/sales/SalesOrderListPage').then((m) => ({ default: m.SalesOrderListPage })),
 );
+const SalesPriceOverrideReportPage = lazy(() =>
+  import('@/modules/sales/SalesPriceOverrideReportPage').then((m) => ({
+    default: m.SalesPriceOverrideReportPage,
+  })),
+);
 const CustomerReceivablesPage = lazy(() =>
   import('@/modules/sales/CustomerReceivablesPage').then((m) => ({ default: m.CustomerReceivablesPage })),
 );
@@ -697,6 +702,7 @@ export function AppRouter() {
                   }
                 />
                 <Route path="orders" element={<SalesOrderListPage />} />
+                <Route path="price-overrides" element={<SalesPriceOverrideReportPage />} />
                 <Route
                   path="customer-receivables"
                   element={<Navigate to="/receivables/customers" replace />}

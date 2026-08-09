@@ -47,6 +47,11 @@ public static class SalesAuthorizationExtensions
             policy.RequireAssertion(ctx =>
                 AdminTokenRules.IsAdminPrincipal(ctx.User)
                 && (HasPermission(ctx, "sales.customers.merge") || ctx.User.IsInRole("ADMIN"))));
+
+        options.AddPolicy(SalesPolicies.PriceManage, policy =>
+            policy.RequireAssertion(ctx =>
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && (HasPermission(ctx, "sales.price.manage") || ctx.User.IsInRole("ADMIN"))));
     }
 
     private static bool HasPermission(AuthorizationHandlerContext ctx, string permission) =>

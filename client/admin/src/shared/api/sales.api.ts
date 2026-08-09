@@ -467,6 +467,52 @@ export async function fetchSalesOrders(
   };
 }
 
+export async function fetchSalesPriceOverrides(filters?: {
+  from?: string;
+  to?: string;
+  warehouseId?: string;
+  limit?: number;
+}): Promise<import('@/shared/api/sales.types').SalesPriceOverrideLine[]> {
+  const { data } = await http.get<Record<string, unknown>[]>('/sales/price-overrides', {
+    params: {
+      from: filters?.from,
+      to: filters?.to,
+      warehouseId: filters?.warehouseId,
+      limit: filters?.limit ?? 200,
+    },
+  });
+  return (data ?? []).map((row) => ({
+    salesOrderId: String(row.salesOrderId ?? row.SalesOrderId ?? ''),
+    orderNumber: String(row.orderNumber ?? row.OrderNumber ?? ''),
+    orderDate: String(row.orderDate ?? row.OrderDate ?? ''),
+    warehouseId: String(row.warehouseId ?? row.WarehouseId ?? ''),
+    warehouseName: String(row.warehouseName ?? row.WarehouseName ?? ''),
+    customerId: row.customerId != null || row.CustomerId != null
+      ? String(row.customerId ?? row.CustomerId)
+      : undefined,
+    customerName: (row.customerName ?? row.CustomerName) as string | undefined,
+    salesOrderItemId: String(row.salesOrderItemId ?? row.SalesOrderItemId ?? ''),
+    productId: String(row.productId ?? row.ProductId ?? ''),
+    productUnitId: String(row.productUnitId ?? row.ProductUnitId ?? ''),
+    productCode: String(row.productCode ?? row.ProductCode ?? ''),
+    productName: String(row.productName ?? row.ProductName ?? ''),
+    unitName: String(row.unitName ?? row.UnitName ?? ''),
+    quantity: Number(row.quantity ?? row.Quantity ?? 0),
+    listUnitPrice: Number(row.listUnitPrice ?? row.ListUnitPrice ?? 0),
+    unitPrice: Number(row.unitPrice ?? row.UnitPrice ?? 0),
+    lineTotal: Number(row.lineTotal ?? row.LineTotal ?? 0),
+    soldByName: (row.soldByName ?? row.SoldByName) as string | undefined,
+  }));
+}
+
+export async function syncPriceOverrideListPrice(body: {
+  productId: string;
+  productUnitId: string;
+  price: number;
+}): Promise<void> {
+  await http.post('/sales/price-overrides/sync-list-price', body);
+}
+
 export async function fetchSalesOrder(id: string): Promise<SalesOrderDetail> {
   const { data } = await http.get<Record<string, unknown>>(`/sales/orders/${id}`);
   const rawItems = (data.items ?? data.Items ?? []) as Record<string, unknown>[];
@@ -478,6 +524,8 @@ export type SaleLinePayload = Required<
 > &
   Pick<CreateSaleLineRequest, 'batchNumber' | 'discountType' | 'discountValue'> & {
     prescriptionLineId?: string;
+    /** Đơn giá bán lệch catalog (Sửa giá) */
+    unitPrice?: number;
   };
 
 type CreateSalePayload = Pick<

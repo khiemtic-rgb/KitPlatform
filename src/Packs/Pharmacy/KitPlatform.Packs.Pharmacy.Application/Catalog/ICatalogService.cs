@@ -14,6 +14,7 @@ public interface ICatalogService
     Task<int> BulkDeleteProductsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken = default);
     Task<ProductBarcodeDto?> AddBarcodeAsync(Guid productId, CreateBarcodeRequest request, CancellationToken cancellationToken = default);
     Task<ProductPriceDto?> AddPriceAsync(Guid productId, CreatePriceRequest request, CancellationToken cancellationToken = default);
+    Task<ProductPriceDto?> UpsertRetailPriceAsync(Guid productId, UpsertRetailPriceRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LookupItemDto>> GetCategoriesAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LookupItemDto>> GetBrandsAsync(CancellationToken cancellationToken = default);
     Task<SimilarProductNamesResult> FindSimilarProductNamesAsync(

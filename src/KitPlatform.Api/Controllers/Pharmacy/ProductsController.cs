@@ -263,6 +263,17 @@ public sealed class ProductsController : ControllerBase
         return price is null ? NotFound() : Ok(price);
     }
 
+    [HttpPut("{id:guid}/retail-price")]
+    [Authorize(Policy = CatalogPolicies.Write)]
+    public async Task<ActionResult<ProductPriceDto>> UpsertRetailPrice(
+        Guid id,
+        [FromBody] UpsertRetailPriceRequest request,
+        CancellationToken cancellationToken)
+    {
+        var price = await _catalog.UpsertRetailPriceAsync(id, request, cancellationToken);
+        return price is null ? NotFound() : Ok(price);
+    }
+
     [HttpPut("{id:guid}/units")]
     [Authorize(Policy = CatalogPolicies.Write)]
     public async Task<ActionResult<ProductDetailDto>> SyncUnits(

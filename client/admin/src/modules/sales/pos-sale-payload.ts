@@ -18,11 +18,12 @@ export function buildSaleLineItems(cart: CartLine[]) {
       productUnitId: line.productUnitId,
       quantity: line.quantity,
       ...(batchNumber ? { batchNumber } : {}),
-      ...(line.discountType
-        ? { discountType: line.discountType, discountValue: line.discountValue ?? 0 }
-        : {}),
+      ...(priceOverride
+        ? { unitPrice: line.unitPrice }
+        : line.discountType
+          ? { discountType: line.discountType, discountValue: line.discountValue ?? 0 }
+          : {}),
       ...(line.prescriptionLineId ? { prescriptionLineId: line.prescriptionLineId } : {}),
-      ...(priceOverride ? { unitPrice: line.unitPrice } : {}),
     };
   });
 }

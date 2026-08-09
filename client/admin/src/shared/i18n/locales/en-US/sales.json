@@ -16,7 +16,8 @@
       "6": "Expired"
     },
     "discountType": {
-      "fixed": "Amount"
+      "fixed": "Amount",
+      "unitPrice": "Edit price"
     },
     "reservationStatus": {
       "1": "Pending confirmation",
@@ -698,6 +699,7 @@
     "tabs": {
       "pos": "POS",
       "orders": "Sales orders",
+      "priceOverrides": "Price edits",
       "customerReceivables": "Receivables",
       "customerPayments": "Collections",
       "appOrders": "App orders",
@@ -710,6 +712,33 @@
     "appOrders": {
       "drafts": "Awaiting confirmation",
       "reservations": "Reservations"
+    }
+  },
+  "priceOverrides": {
+    "title": "Orders with edited unit prices",
+    "hint": "Change price on POS while selling (CK → Edit price → Unit price). Here you can also push the sold price into the list price for that unit — no need to open the product form.",
+    "loadError": "Could not load price overrides",
+    "noAccess": "Missing permission “Review and sync price overrides” (sales.price.manage)",
+    "summary": "{{count}} lines · price delta × qty",
+    "applyListPrice": "Update list price",
+    "applyConfirmTitle": "Update catalog list price?",
+    "applyConfirm": "{{product}} ({{unit}}): {{from}} → {{to}}. New retail price applies to future sales.",
+    "applyOk": "Update",
+    "applyCancel": "Cancel",
+    "applySuccess": "List price updated for {{product}} ({{unit}}) = {{price}}",
+    "applyError": "Could not update list price",
+    "applied": "List price updated",
+    "columns": {
+      "orderDate": "Date",
+      "orderNumber": "Order",
+      "product": "Product",
+      "qty": "Qty",
+      "listPrice": "List",
+      "soldPrice": "Sold",
+      "diff": "Delta",
+      "customer": "Customer",
+      "soldBy": "Cashier",
+      "action": ""
     }
   },
   "salesListSearch": {

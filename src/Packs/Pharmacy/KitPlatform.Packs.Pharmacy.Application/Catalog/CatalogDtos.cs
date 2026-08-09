@@ -167,6 +167,8 @@ public sealed record CreatePriceRequest(
     decimal Price,
     string CurrencyCode = "VND");
 
+public sealed record UpsertRetailPriceRequest(Guid ProductUnitId, decimal Price);
+
 public sealed record LookupItemDto(Guid Id, string Code, string Name);
 
 public sealed record CategoryDto(
