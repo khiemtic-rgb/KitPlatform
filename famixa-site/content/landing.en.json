@@ -44,7 +44,8 @@
       { "href": "/en/plans/", "label": "Pricing" }
     ],
     "login": "Log in",
-    "cta": "Start free"
+    "cta": "View demo home",
+    "ctaHref": "https://home.famixa.vn/demo"
   },
   "hero": {
     "badge": "AI HELPS FAMILIES HAPPIER EVERY DAY",

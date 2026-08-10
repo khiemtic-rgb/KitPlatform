@@ -92,7 +92,8 @@
       }
     ],
     "login": "Đăng nhập",
-    "cta": "Bắt đầu miễn phí"
+    "cta": "Xem nhà demo",
+    "ctaHref": "https://home.famixa.vn/demo"
   },
   "hero": {
     "badge": "AI GIÚP GIA ĐÌNH HẠNH PHÚC HƠN MỖI NGÀY",

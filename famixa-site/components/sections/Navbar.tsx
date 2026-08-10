@@ -50,6 +50,7 @@ export function Navbar({
   const enHref = localeHrefs?.en ?? '/en/';
   const linkHref = (href: string) =>
     resolveHashLinks && href.startsWith('#') ? `/${locale}/${href}` : href;
+  const ctaHref = content.ctaHref || appUrl;
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#E8E6DF]/70 bg-[#FBF8F1]/95 backdrop-blur-sm">
@@ -120,7 +121,7 @@ export function Navbar({
             {content.login}
           </Button>
           <Button
-            href={appUrl}
+            href={ctaHref}
             className="hidden !min-h-[42px] !rounded-xl !bg-[#103B2B] !px-4 !text-[0.9rem] !font-semibold !text-[#fff] hover:!bg-[#0c2f22] md:inline-flex lg:!px-5"
           >
             {content.cta}
@@ -176,7 +177,7 @@ export function Navbar({
                 {content.login}
               </Button>
               <Button
-                href={appUrl}
+                href={ctaHref}
                 className="min-h-11 rounded-xl !bg-[#103B2B] !text-white text-sm hover:!bg-[#0c2f22]"
               >
                 {content.cta}
