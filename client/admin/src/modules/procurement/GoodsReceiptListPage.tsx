@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Reac
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
+  App,
   Button,
   Card,
   Drawer,
@@ -15,7 +16,6 @@ import {
   Tag,
   Tooltip,
   Typography,
-  message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { FormListFieldData } from 'antd/es/form/FormList';
@@ -249,6 +249,7 @@ export function GoodsReceiptListPage() {
   const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
   const { t: tCommon } = useTranslation('common', { keyPrefix: 'actions' });
   const { t: tVal } = useTranslation('procurement', { keyPrefix: 'shared.validation' });
+  const { message } = App.useApp();
   const { grnStatusLabel } = useProcurementEnums();
   const canWrite = useProcurementWrite();
   const canPurge = useSystemDeletePermanent();
@@ -292,6 +293,10 @@ export function GoodsReceiptListPage() {
   const [draftUnitCost, setDraftUnitCost] = useState(0);
   const [draftDiscountType, setDraftDiscountType] = useState<ProcurementDiscountType | undefined>();
   const [draftDiscountValue, setDraftDiscountValue] = useState<number | undefined>(undefined);
+  const [composerError, setComposerError] = useState<string | null>(null);
+  const [composerInvalid, setComposerInvalid] = useState<
+    'product' | 'unit' | 'batch' | 'expiry' | 'qty' | 'cost' | null
+  >(null);
   const [editingManualCell, setEditingManualCell] = useState<{ rowKey: number; cell: ManualLineCell } | null>(
     null,
   );
@@ -305,6 +310,8 @@ export function GoodsReceiptListPage() {
     setDraftUnitCost(0);
     setDraftDiscountType(undefined);
     setDraftDiscountValue(undefined);
+    setComposerError(null);
+    setComposerInvalid(null);
   };
 
   const applyManualComposerProduct = (productId: string) => {
@@ -777,27 +784,39 @@ export function GoodsReceiptListPage() {
 
     const addLineFromComposer = () => {
       if (!draftProductId) {
+        setComposerInvalid('product');
+        setComposerError(tVal('selectProduct'));
         message.warning(tVal('selectProduct'));
         return;
       }
       if (!draftUnitId) {
+        setComposerInvalid('unit');
+        setComposerError(tVal('selectUnit'));
         message.warning(tVal('selectUnit'));
         return;
       }
       const batch = draftBatch.trim();
       if (!batch) {
+        setComposerInvalid('batch');
+        setComposerError(tVal('enterBatch'));
         message.warning(tVal('enterBatch'));
         return;
       }
       if (!draftExpiry) {
+        setComposerInvalid('expiry');
+        setComposerError(tVal('selectExpiry'));
         message.warning(tVal('selectExpiry'));
         return;
       }
       if (draftQty == null || draftQty <= 0) {
+        setComposerInvalid('qty');
+        setComposerError(tVal('qtyPositive'));
         message.warning(tVal('qtyPositive'));
         return;
       }
       if (draftUnitCost == null || draftUnitCost < 0) {
+        setComposerInvalid('cost');
+        setComposerError(tVal('enterPrice'));
         message.warning(tVal('enterPrice'));
         return;
       }
@@ -842,6 +861,19 @@ export function GoodsReceiptListPage() {
           <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
             {t('manualLinesComposerHint')}
           </Typography.Text>
+          {composerError ? (
+            <Alert
+              type="error"
+              showIcon
+              style={{ marginBottom: 8 }}
+              message={composerError}
+              closable
+              onClose={() => {
+                setComposerError(null);
+                setComposerInvalid(null);
+              }}
+            />
+          ) : null}
           <div
             style={{
               display: 'flex',
@@ -851,13 +883,18 @@ export function GoodsReceiptListPage() {
             }}
           >
             <div style={{ flex: '2 1 240px', minWidth: 200 }}>
-              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.product')}</Typography.Text>
+              <Typography.Text style={{ fontSize: 12 }}>
+                {tShared('columns.product')} <Typography.Text type="danger">*</Typography.Text>
+              </Typography.Text>
               <ProductSearchSelect
                 value={draftProductId}
                 seedProducts={products}
                 placeholder={t('productSearchPlaceholder')}
                 style={{ width: '100%' }}
+                status={composerInvalid === 'product' ? 'error' : undefined}
                 onChange={(value) => {
+                  setComposerError(null);
+                  setComposerInvalid(null);
                   setDraftProductId(value);
                   if (!value) {
                     resetManualComposer();
@@ -868,47 +905,90 @@ export function GoodsReceiptListPage() {
               />
             </div>
             <div style={{ flex: '0 0 84px' }}>
-              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.unit')}</Typography.Text>
+              <Typography.Text style={{ fontSize: 12 }}>
+                {tShared('columns.unit')} <Typography.Text type="danger">*</Typography.Text>
+              </Typography.Text>
               <ProductUnitSelect
                 productId={draftProductId}
                 value={draftUnitId}
-                onChange={setDraftUnitId}
+                onChange={(value) => {
+                  setComposerError(null);
+                  setComposerInvalid(null);
+                  setDraftUnitId(value);
+                }}
                 width={84}
+                status={composerInvalid === 'unit' ? 'error' : undefined}
               />
             </div>
             <div style={{ flex: '0 0 140px' }}>
-              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.batchNumber')}</Typography.Text>
+              <Typography.Text style={{ fontSize: 12 }}>
+                {tShared('columns.batchNumber')} <Typography.Text type="danger">*</Typography.Text>
+              </Typography.Text>
               <GrnBatchNumberField
                 value={draftBatch}
                 warehouseId={warehouseId}
                 productId={draftProductId}
-                onChange={setDraftBatch}
+                status={composerInvalid === 'batch' ? 'error' : undefined}
+                onChange={(value) => {
+                  setComposerError(null);
+                  setComposerInvalid(null);
+                  setDraftBatch(value);
+                }}
                 onPickExisting={(batchPick) => {
+                  setComposerError(null);
+                  setComposerInvalid(null);
                   setDraftBatch(batchPick.batchNumber);
                   if (batchPick.expiryDate) setDraftExpiry(batchPick.expiryDate);
                 }}
               />
             </div>
             <div style={{ flex: '0 0 112px' }}>
-              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.expiry')}</Typography.Text>
-              <PharmaExpiryPicker value={draftExpiry} onChange={setDraftExpiry} style={{ width: 112 }} />
+              <Typography.Text style={{ fontSize: 12 }}>
+                {tShared('columns.expiry')} <Typography.Text type="danger">*</Typography.Text>
+              </Typography.Text>
+              <PharmaExpiryPicker
+                value={draftExpiry}
+                onChange={(value) => {
+                  setComposerError(null);
+                  setComposerInvalid(null);
+                  setDraftExpiry(value);
+                }}
+                style={{
+                  width: 112,
+                  ...(composerInvalid === 'expiry' ? { borderColor: '#ff4d4f' } : null),
+                }}
+              />
             </div>
             <div style={{ flex: '0 0 80px' }}>
-              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.qty')}</Typography.Text>
+              <Typography.Text style={{ fontSize: 12 }}>
+                {tShared('columns.qty')} <Typography.Text type="danger">*</Typography.Text>
+              </Typography.Text>
               <InputNumber
                 {...quantityInputNumberProps}
                 min={0.001}
                 value={draftQty}
-                onChange={(v) => setDraftQty(Number(v ?? 0))}
+                status={composerInvalid === 'qty' ? 'error' : undefined}
+                onChange={(v) => {
+                  setComposerError(null);
+                  setComposerInvalid(null);
+                  setDraftQty(Number(v ?? 0));
+                }}
                 style={{ width: '100%' }}
               />
             </div>
             <div style={{ flex: '0 0 120px' }}>
-              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.unitCost')}</Typography.Text>
+              <Typography.Text style={{ fontSize: 12 }}>
+                {tShared('columns.unitCost')} <Typography.Text type="danger">*</Typography.Text>
+              </Typography.Text>
               <InputNumber
                 {...moneyInputNumberPropsAllowZeroSuffix}
                 value={draftUnitCost}
-                onChange={(v) => setDraftUnitCost(Number(v ?? 0))}
+                status={composerInvalid === 'cost' ? 'error' : undefined}
+                onChange={(v) => {
+                  setComposerError(null);
+                  setComposerInvalid(null);
+                  setDraftUnitCost(Number(v ?? 0));
+                }}
                 style={{ width: '100%' }}
               />
             </div>

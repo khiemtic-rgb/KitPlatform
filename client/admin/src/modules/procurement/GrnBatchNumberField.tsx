@@ -21,6 +21,7 @@ type Props = {
   placeholder?: string;
   style?: CSSProperties;
   disabled?: boolean;
+  status?: '' | 'warning' | 'error';
 };
 
 function toExpiryFieldValue(iso?: string): string | undefined {
@@ -38,6 +39,7 @@ export function GrnBatchNumberField({
   placeholder,
   style,
   disabled,
+  status,
 }: Props) {
   const { t } = useTranslation('procurement', { keyPrefix: 'shared' });
   const [batches, setBatches] = useState<StockBatch[]>([]);
@@ -84,6 +86,7 @@ export function GrnBatchNumberField({
       value={value}
       options={options}
       disabled={disabled}
+      status={status}
       placeholder={placeholder ?? t('columns.batchShort')}
       style={style ?? { width: '100%' }}
       notFoundContent={

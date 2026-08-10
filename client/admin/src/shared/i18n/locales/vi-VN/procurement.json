@@ -364,7 +364,7 @@
     "supplierInvoiceNumberHint": "so_hoa_don_mthuoc (QĐ 540) — trên hóa đơn NCC",
     "supplierInvoicePlaceholder": "VD: 0000123",
     "manualLinesHint": "Chọn đơn đặt hàng ở trên để điền tự động, hoặc gõ mã/tên SP để tìm trong toàn danh mục rồi nhập lô, HSD, SL.",
-    "manualLinesComposerHint": "Nhập SP, ĐVT, lô, HSD, SL, giá rồi Thêm dòng — dòng mới gắn cuối danh sách. Bấm vào ô trên dòng để sửa từng trường.",
+    "manualLinesComposerHint": "Bắt buộc: SP, ĐVT, số lô, HSD, SL, giá vốn. Nhập xong bấm Thêm dòng — dòng mới gắn cuối danh sách. Bấm vào ô trên dòng để sửa từng trường.",
     "manualLinesEmpty": "Chưa có dòng — nhập ở khung trên rồi Thêm dòng.",
     "productSearchPlaceholder": "Gõ mã hoặc tên SP (toàn danh mục)…",
     "addManualLine": "Thêm dòng (nhập không theo PO)",

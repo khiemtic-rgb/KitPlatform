@@ -343,7 +343,7 @@
     "supplierInvoiceNumberHint": "Supplier VAT invoice number (QD 540)",
     "supplierInvoicePlaceholder": "e.g. 0000123",
     "manualLinesHint": "Select a purchase order above to auto-fill, or type product code/name to search the full catalog, then enter batch, expiry, qty.",
-    "manualLinesComposerHint": "Enter product, unit, batch, expiry, qty and cost, then Add line — new rows go to the bottom. Click a cell on a line to edit that field.",
+    "manualLinesComposerHint": "Required: product, unit, batch number, expiry, qty and cost. Then Add line — new rows go to the bottom. Click a cell on a line to edit that field.",
     "manualLinesEmpty": "No lines yet — fill the row above and Add line.",
     "productSearchPlaceholder": "Type product code or name (full catalog)…",
     "addManualLine": "Add line (not from PO)",

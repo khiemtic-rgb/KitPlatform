@@ -13,6 +13,7 @@ interface ProductUnitSelectProps {
   onChange?: (unitId: string) => void;
   width?: number;
   disabled?: boolean;
+  status?: '' | 'warning' | 'error';
 }
 
 export function ProductUnitSelect({
@@ -21,6 +22,7 @@ export function ProductUnitSelect({
   onChange,
   width = 130,
   disabled = false,
+  status,
 }: ProductUnitSelectProps) {
   const { t } = useTranslation('procurement', { keyPrefix: 'shared.columns' });
   const [units, setUnits] = useState<ProductUnit[]>([]);
@@ -79,6 +81,7 @@ export function ProductUnitSelect({
       disabled={disabled || !productId}
       placeholder={t('unitSelect')}
       style={{ width }}
+      status={status}
       options={units.map((u) => ({
         value: u.id,
         label: formatUnitLabel(u),

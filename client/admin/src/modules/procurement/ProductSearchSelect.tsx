@@ -16,6 +16,7 @@ type Props = {
   /** Seed options (vd. SP đã chọn từ PO) để hiện label ngay. */
   seedProducts?: ProductListItem[];
   className?: string;
+  status?: '' | 'warning' | 'error';
 };
 
 function toOption(p: { id: string; productCode: string; productName: string }): Option {
@@ -34,6 +35,7 @@ export function ProductSearchSelect({
   style,
   seedProducts,
   className,
+  status,
 }: Props) {
   const [options, setOptions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(false);
@@ -126,6 +128,7 @@ export function ProductSearchSelect({
       placeholder={placeholder ?? 'Gõ mã / tên SP để tìm…'}
       style={style}
       className={className}
+      status={status}
       filterOption={false}
       onSearch={runSearch}
       onDropdownVisibleChange={(open) => {
