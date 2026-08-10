@@ -15,6 +15,7 @@ import { FamilySettingsPage } from '@/modules/admin/FamilySettingsPage';
 import { ForceParentPinGate } from '@/shared/ui/ForceParentPinGate';
 import { OnlineStatusBanner } from '@/shared/ui/OnlineStatusBanner';
 import { DemoModeBanner } from '@/shared/ui/DemoModeBanner';
+import { DemoDwellTracker } from '@/shared/ui/DemoDwellTracker';
 
 function RequireParent({ children }: { children: ReactNode }) {
   const token = useSessionStore((s) => s.accessToken);
@@ -64,6 +65,7 @@ export function App() {
     >
       <OnlineStatusBanner />
       <DemoModeBanner />
+      <DemoDwellTracker />
       <ForceParentPinGate />
       <Routes>
         <Route path="/unlock" element={<ParentUnlockPage />} />

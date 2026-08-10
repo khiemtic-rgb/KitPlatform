@@ -105,18 +105,17 @@ public sealed class FamilyOsBillingController : ControllerBase
     [Authorize]
     [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]
     [HttpPost("demo-house/ping")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(DemoHousePingResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> PingDemoHouseView(
+    public async Task<ActionResult<DemoHousePingResponse>> PingDemoHouseView(
         [FromBody] RecordDemoHouseViewRequest? request,
         CancellationToken cancellationToken)
     {
         try
         {
-            await _commercial.RecordDemoHouseViewAsync(
-                request ?? new RecordDemoHouseViewRequest(null),
-                cancellationToken);
-            return NoContent();
+            return Ok(await _commercial.RecordDemoHouseViewAsync(
+                request ?? new RecordDemoHouseViewRequest(null, null),
+                cancellationToken));
         }
         catch (InvalidOperationException ex)
         {
@@ -124,7 +123,22 @@ public sealed class FamilyOsBillingController : ControllerBase
         }
     }
 
-    /// <summary>Ops — demo-house view totals (today / 7d / unique).</summary>
+    /// <summary>GTM — heartbeat dwell while browsing the demo house.</summary>
+    [Authorize]
+    [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]
+    [HttpPost("demo-house/heartbeat")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> HeartbeatDemoHouseView(
+        [FromBody] DemoHouseHeartbeatRequest? request,
+        CancellationToken cancellationToken)
+    {
+        if (request is null || request.SessionId == Guid.Empty)
+            return NoContent();
+        await _commercial.HeartbeatDemoHouseViewAsync(request, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>Ops — demo-house view totals (today / 7d / unique / dwell).</summary>
     [Authorize]
     [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]
     [HttpGet("ops/demo-house-views")]

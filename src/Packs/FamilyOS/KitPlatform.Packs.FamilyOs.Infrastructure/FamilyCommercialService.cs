@@ -1076,12 +1076,16 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
             items);
     }
 
-    public async Task RecordDemoHouseViewAsync(
+    public async Task<DemoHousePingResponse> RecordDemoHouseViewAsync(
         RecordDemoHouseViewRequest request,
         CancellationToken cancellationToken = default)
     {
         if (!_tenant.IsAuthenticated || _tenant.TenantId == Guid.Empty)
             throw new InvalidOperationException("Cần đăng nhập để ghi lượt xem demo.");
+
+        var sessionId = request.SessionId is Guid sid && sid != Guid.Empty
+            ? sid
+            : Guid.CreateVersion7();
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         var row = await conn.QuerySingleOrDefaultAsync<(string TenantCode, bool IsDemo)>(
@@ -1100,7 +1104,7 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
                 cancellationToken: cancellationToken));
 
         if (string.IsNullOrWhiteSpace(row.TenantCode) || !row.IsDemo)
-            return;
+            return new DemoHousePingResponse(sessionId);
 
         var clientKey = (request.ClientKey ?? "").Trim();
         if (clientKey.Length > 64) clientKey = clientKey[..64];
@@ -1111,10 +1115,12 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
                 new CommandDefinition(
                     """
                     INSERT INTO public.family_os_demo_view (
-                        tenant_id, tenant_code, user_id, client_key, source
+                        tenant_id, tenant_code, user_id, client_key, source,
+                        session_id, last_seen_at, duration_seconds
                     )
                     VALUES (
-                        @TenantId, @TenantCode, @UserId, @ClientKey, 'spa_demo'
+                        @TenantId, @TenantCode, @UserId, @ClientKey, 'spa_demo',
+                        @SessionId, NOW(), 0
                     )
                     """,
                     new
@@ -1123,12 +1129,84 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
                         TenantCode = row.TenantCode,
                         UserId = _tenant.UserId == Guid.Empty ? (Guid?)null : _tenant.UserId,
                         ClientKey = clientKey.Length == 0 ? null : clientKey,
+                        SessionId = sessionId,
                     },
                     cancellationToken: cancellationToken));
         }
         catch
         {
-            // Table may not be migrated yet — never block /demo enter.
+            // Pre-dwell schema or missing table — never block /demo enter.
+            try
+            {
+                await conn.ExecuteAsync(
+                    new CommandDefinition(
+                        """
+                        INSERT INTO public.family_os_demo_view (
+                            tenant_id, tenant_code, user_id, client_key, source
+                        )
+                        VALUES (
+                            @TenantId, @TenantCode, @UserId, @ClientKey, 'spa_demo'
+                        )
+                        """,
+                        new
+                        {
+                            TenantId = _tenant.TenantId,
+                            TenantCode = row.TenantCode,
+                            UserId = _tenant.UserId == Guid.Empty ? (Guid?)null : _tenant.UserId,
+                            ClientKey = clientKey.Length == 0 ? null : clientKey,
+                        },
+                        cancellationToken: cancellationToken));
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        return new DemoHousePingResponse(sessionId);
+    }
+
+    public async Task HeartbeatDemoHouseViewAsync(
+        DemoHouseHeartbeatRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_tenant.IsAuthenticated || _tenant.TenantId == Guid.Empty)
+            return;
+        if (request.SessionId == Guid.Empty)
+            return;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        try
+        {
+            await conn.ExecuteAsync(
+                new CommandDefinition(
+                    """
+                    UPDATE public.family_os_demo_view v
+                    SET
+                        last_seen_at = NOW(),
+                        duration_seconds = LEAST(
+                            7200,
+                            GREATEST(
+                                v.duration_seconds,
+                                EXTRACT(EPOCH FROM (NOW() - v.created_at))::int
+                            )
+                        )
+                    FROM public.tenants t
+                    WHERE v.session_id = @SessionId
+                      AND v.tenant_id = @TenantId
+                      AND t.id = v.tenant_id
+                      AND t.deleted_at IS NULL
+                      AND (
+                          t.tenant_code = 'DEMO_FAMILY'
+                          OR COALESCE((t.settings->'platform'->'features'->>'demoHouse')::boolean, FALSE)
+                      )
+                    """,
+                    new { request.SessionId, TenantId = _tenant.TenantId },
+                    cancellationToken: cancellationToken));
+        }
+        catch
+        {
+            // Columns may not exist yet.
         }
     }
 
@@ -1145,7 +1223,11 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
                 int Views7d,
                 int UniqueToday,
                 int Unique7d,
-                DateTime? LastViewAt)>(
+                DateTime? LastViewAt,
+                int AvgSecondsToday,
+                int AvgSeconds7d,
+                int TotalSecondsToday,
+                int TotalSeconds7d)>(
                 new CommandDefinition(
                     """
                     SELECT
@@ -1163,7 +1245,23 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
                         COUNT(DISTINCT COALESCE(NULLIF(client_key, ''), id::text)) FILTER (
                             WHERE created_at >= NOW() - INTERVAL '7 days'
                         )::int AS Unique7d,
-                        MAX(created_at) AS LastViewAt
+                        MAX(created_at) AS LastViewAt,
+                        COALESCE(AVG(duration_seconds) FILTER (
+                            WHERE duration_seconds > 0
+                              AND created_at >= date_trunc('day', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')
+                                  AT TIME ZONE 'Asia/Ho_Chi_Minh'
+                        ), 0)::int AS AvgSecondsToday,
+                        COALESCE(AVG(duration_seconds) FILTER (
+                            WHERE duration_seconds > 0
+                              AND created_at >= NOW() - INTERVAL '7 days'
+                        ), 0)::int AS AvgSeconds7d,
+                        COALESCE(SUM(duration_seconds) FILTER (
+                            WHERE created_at >= date_trunc('day', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')
+                                AT TIME ZONE 'Asia/Ho_Chi_Minh'
+                        ), 0)::int AS TotalSecondsToday,
+                        COALESCE(SUM(duration_seconds) FILTER (
+                            WHERE created_at >= NOW() - INTERVAL '7 days'
+                        ), 0)::int AS TotalSeconds7d
                     FROM public.family_os_demo_view
                     """,
                     cancellationToken: cancellationToken));
@@ -1176,7 +1274,11 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
                 stats.Unique7d,
                 stats.LastViewAt is DateTime dt
                     ? new DateTimeOffset(DateTime.SpecifyKind(dt, DateTimeKind.Utc))
-                    : null);
+                    : null,
+                stats.AvgSecondsToday,
+                stats.AvgSeconds7d,
+                stats.TotalSecondsToday,
+                stats.TotalSeconds7d);
         }
         catch
         {
@@ -1215,7 +1317,11 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
             fallback.Views7d,
             fallback.LastViewAt is DateTime dt2
                 ? new DateTimeOffset(DateTime.SpecifyKind(dt2, DateTimeKind.Utc))
-                : null);
+                : null,
+            0,
+            0,
+            0,
+            0);
     }
 
     private sealed class TrialSignupRow

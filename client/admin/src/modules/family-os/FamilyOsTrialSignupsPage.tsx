@@ -24,6 +24,17 @@ import {
 import { apiErrorMessage } from '@/shared/api/api-error';
 import './family-os-routines.css';
 
+function formatDuration(totalSeconds: number): string {
+  const sec = Math.max(0, Math.round(totalSeconds));
+  if (sec < 60) return `${sec}s`;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  if (m < 60) return s > 0 ? `${m}p ${s}s` : `${m}p`;
+  const h = Math.floor(m / 60);
+  const rm = m % 60;
+  return rm > 0 ? `${h}g ${rm}p` : `${h}g`;
+}
+
 function formatDate(iso?: string) {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -299,10 +310,43 @@ export function FamilyOsTrialSignupsPage() {
                 loading={loading}
               />
             </Col>
+            <Col xs={12} sm={6}>
+              <Statistic
+                title="TB thời gian hôm nay"
+                value={formatDuration(demoViews?.avgSecondsToday ?? 0)}
+                loading={loading}
+                valueStyle={{ color: '#0f766e' }}
+              />
+            </Col>
+            <Col xs={12} sm={6}>
+              <Statistic
+                title="TB thời gian 7 ngày"
+                value={formatDuration(demoViews?.avgSeconds7d ?? 0)}
+                loading={loading}
+              />
+            </Col>
+            <Col xs={12} sm={6}>
+              <Statistic
+                title="Tổng phút hôm nay"
+                value={Math.round((demoViews?.totalSecondsToday ?? 0) / 60)}
+                suffix="phút"
+                loading={loading}
+                valueStyle={{ color: '#0f766e' }}
+              />
+            </Col>
+            <Col xs={12} sm={6}>
+              <Statistic
+                title="Tổng phút 7 ngày"
+                value={Math.round((demoViews?.totalSeconds7d ?? 0) / 60)}
+                suffix="phút"
+                loading={loading}
+              />
+            </Col>
           </Row>
           <Typography.Paragraph type="secondary" style={{ margin: '12px 0 0', fontSize: 12 }}>
-            Mỗi lần vào /demo ghi 1 lượt. “Máy xem” đếm theo client key trên trình duyệt (unique
-            tương đối) — không phải tài khoản admin.
+            Mỗi lần vào /demo ghi 1 lượt. “Máy xem” đếm theo client key trên trình duyệt. Thời gian
+            đo bằng heartbeat ~30s khi đang xem nhà demo (cap 2 giờ/phiên) — phiên cũ trước khi có
+            tracking sẽ hiện 0.
           </Typography.Paragraph>
         </Card>
 

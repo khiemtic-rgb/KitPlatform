@@ -113,9 +113,17 @@ public sealed record FamilyOsDemoHouseViewsDto(
     int Views7d,
     int UniqueToday,
     int Unique7d,
-    DateTimeOffset? LastViewAt);
+    DateTimeOffset? LastViewAt,
+    int AvgSecondsToday,
+    int AvgSeconds7d,
+    int TotalSecondsToday,
+    int TotalSeconds7d);
 
-public sealed record RecordDemoHouseViewRequest(string? ClientKey);
+public sealed record RecordDemoHouseViewRequest(string? ClientKey, Guid? SessionId);
+
+public sealed record DemoHousePingResponse(Guid SessionId);
+
+public sealed record DemoHouseHeartbeatRequest(Guid SessionId);
 
 public sealed record SetParentPinRequest(string Pin);
 
@@ -180,11 +188,16 @@ public interface IFamilyCommercialService
         CancellationToken cancellationToken = default);
 
     /// <summary>Record a /demo enter (current tenant must be demo house or DEMO_FAMILY).</summary>
-    Task RecordDemoHouseViewAsync(
+    Task<DemoHousePingResponse> RecordDemoHouseViewAsync(
         RecordDemoHouseViewRequest request,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Ops: demo-house view totals (today / 7d / unique).</summary>
+    /// <summary>Extend dwell for an open demo session (heartbeat / pagehide).</summary>
+    Task HeartbeatDemoHouseViewAsync(
+        DemoHouseHeartbeatRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Ops: demo-house view totals (today / 7d / unique / dwell).</summary>
     Task<FamilyOsDemoHouseViewsDto> GetDemoHouseViewsAsync(
         CancellationToken cancellationToken = default);
 

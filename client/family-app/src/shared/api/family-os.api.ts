@@ -209,11 +209,24 @@ export async function loginFamilyParent(input: {
   return mapLoginResponse(data);
 }
 
-/** GTM: count a /demo enter (demo tenant only; ignored otherwise). */
-export async function pingDemoHouseView(clientKey?: string): Promise<void> {
-  await http.post('/family-os/demo-house/ping', {
-    clientKey: clientKey?.trim() || null,
+/** GTM: count a /demo enter (demo tenant only; ignored otherwise). Returns session id for dwell heartbeats. */
+export async function pingDemoHouseView(input?: {
+  clientKey?: string;
+  sessionId?: string;
+}): Promise<string | undefined> {
+  const { data } = await http.post<Row>('/family-os/demo-house/ping', {
+    clientKey: input?.clientKey?.trim() || null,
+    sessionId: input?.sessionId?.trim() || null,
   });
+  const id = data.sessionId ?? data.SessionId;
+  return id != null ? String(id) : undefined;
+}
+
+/** GTM: extend dwell while still browsing the demo house. */
+export async function heartbeatDemoHouseView(sessionId: string): Promise<void> {
+  const id = sessionId.trim();
+  if (!id) return;
+  await http.post('/family-os/demo-house/heartbeat', { sessionId: id });
 }
 
 /** Kit email login — no tenant code; may return workspace choice */

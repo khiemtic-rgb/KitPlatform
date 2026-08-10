@@ -6,6 +6,7 @@ import {
   pingDemoHouseView,
 } from '@/shared/api/family-os.api';
 import { useSessionStore } from '@/shared/auth/session.store';
+import { DEMO_SESSION_KEY } from '@/shared/ui/DemoDwellTracker';
 
 /** Overridable at build time for pilot (defaults match local / GTM seed). */
 const DEMO_TENANT = import.meta.env.VITE_FAMIXA_DEMO_TENANT || 'DEMO_FAMILY';
@@ -25,6 +26,16 @@ function demoClientKey(): string {
     return next;
   } catch {
     return `d_${Date.now()}`;
+  }
+}
+
+function newDemoSessionId(): string {
+  try {
+    return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `s_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  } catch {
+    return `s_${Date.now()}`;
   }
 }
 
@@ -63,7 +74,16 @@ export function DemoEnterPage() {
           demoMode: true,
         });
         try {
-          await pingDemoHouseView(demoClientKey());
+          const sessionId = newDemoSessionId();
+          const confirmed = await pingDemoHouseView({
+            clientKey: demoClientKey(),
+            sessionId,
+          });
+          try {
+            sessionStorage.setItem(DEMO_SESSION_KEY, confirmed || sessionId);
+          } catch {
+            /* ignore */
+          }
         } catch {
           /* best-effort — never block demo enter */
         }

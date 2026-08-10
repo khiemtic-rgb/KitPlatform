@@ -1705,6 +1705,10 @@ export interface FamilyOsDemoHouseViews {
   uniqueToday: number;
   unique7d: number;
   lastViewAt?: string;
+  avgSecondsToday: number;
+  avgSeconds7d: number;
+  totalSecondsToday: number;
+  totalSeconds7d: number;
 }
 
 /** Ops: GTM demo-house visit totals. */
@@ -1719,5 +1723,9 @@ export async function fetchFamilyOsDemoHouseViews(): Promise<FamilyOsDemoHouseVi
     lastViewAt: (data.lastViewAt ?? data.LastViewAt)
       ? String(data.lastViewAt ?? data.LastViewAt)
       : undefined,
+    avgSecondsToday: Number(data.avgSecondsToday ?? data.AvgSecondsToday ?? 0),
+    avgSeconds7d: Number(data.avgSeconds7d ?? data.AvgSeconds7d ?? 0),
+    totalSecondsToday: Number(data.totalSecondsToday ?? data.TotalSecondsToday ?? 0),
+    totalSeconds7d: Number(data.totalSeconds7d ?? data.TotalSeconds7d ?? 0),
   };
 }
