@@ -20093,8 +20093,7 @@ body:has(.app-shell.is-unlock) {
   --fx-ink: #14352c;
   --fx-muted: #5c7468;
   --fx-panel: rgba(255, 252, 247, 0.92);
-  --font-display: 'Nunito', 'Be Vietnam Pro', system-ui, sans-serif;
-  --font-ui: 'Be Vietnam Pro', system-ui, sans-serif;
+  /* Keep system/FB-style UI fonts from :root — do not override to webfonts. */
   position: relative;
   width: 100%;
   max-width: none;
