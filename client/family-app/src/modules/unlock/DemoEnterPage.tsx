@@ -6,9 +6,10 @@ import {
 } from '@/shared/api/family-os.api';
 import { useSessionStore } from '@/shared/auth/session.store';
 
-const DEMO_TENANT = 'DEMO_FAMILY';
-const DEMO_USER = 'demo';
-const DEMO_PASS = 'Admin@123';
+/** Overridable at build time for pilot (defaults match local / GTM seed). */
+const DEMO_TENANT = import.meta.env.VITE_FAMIXA_DEMO_TENANT || 'DEMO_FAMILY';
+const DEMO_USER = import.meta.env.VITE_FAMIXA_DEMO_USER || 'demo';
+const DEMO_PASS = import.meta.env.VITE_FAMIXA_DEMO_PASSWORD || 'Admin@123';
 
 /**
  * One-tap GTM entry: viewer login → pick persona → browse read-only.

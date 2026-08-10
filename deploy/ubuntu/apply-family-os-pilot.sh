@@ -225,5 +225,5 @@ echo
 echo "=== FamilyOS pilot apply xong ==="
 echo "  SPA : https://${FAMILY_HOST}/  |  https://${FAMILY_ALT_HOST}/"
 echo "  Admin FamilyOS: https://admin.novixa.vn (tenant co module family_os)"
-echo "  Schema: pack_family (192-199) — KHONG seed DEMO_FAMILY"
+echo "  Schema: pack_family — KHONG seed DEMO_FAMILY (GTM: seed-famixa-gtm-demo.sh + CONFIRM)"
 echo "  Tao tenant FamilyOS qua Admin /setup hoac platform provisioning"
