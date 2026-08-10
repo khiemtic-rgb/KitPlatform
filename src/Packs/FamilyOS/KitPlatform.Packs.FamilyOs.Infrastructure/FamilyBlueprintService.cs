@@ -8,17 +8,20 @@ internal sealed class FamilyBlueprintService : IFamilyBlueprintService
     private readonly FamilyGraphRepository _families;
     private readonly FamilyValueRepository _values;
     private readonly IFamilyCommercialService _commercial;
+    private readonly IFamilyWriteAccessService _writeAccess;
 
     public FamilyBlueprintService(
         FamilyBlueprintRepository repo,
         FamilyGraphRepository families,
         FamilyValueRepository values,
-        IFamilyCommercialService commercial)
+        IFamilyCommercialService commercial,
+        IFamilyWriteAccessService writeAccess)
     {
         _repo = repo;
         _families = families;
         _values = values;
         _commercial = commercial;
+        _writeAccess = writeAccess;
     }
 
     public async Task<FamilyBlueprintDto?> GetAsync(
@@ -79,18 +82,25 @@ internal sealed class FamilyBlueprintService : IFamilyBlueprintService
             var currentBand = FamilyBlueprintHydrator.ReadPrimaryAgeBandPublic(row.LayersJson);
             if (!string.Equals(currentBand, dobAgeBand, StringComparison.OrdinalIgnoreCase))
             {
-                var (layers, dna) = FamilyBlueprintHydrator.ApplyPrimaryAgeBand(
-                    row.LayersJson,
-                    row.DnaJson,
-                    dobAgeBand);
-                await _repo.UpsertAsync(
-                    familyId,
-                    layers,
-                    dna,
-                    FamilyBlueprintSchema.CurrentVersion,
-                    hydratedAt: row.HydratedAt,
-                    cancellationToken);
-                row = await _repo.GetAsync(familyId, cancellationToken) ?? row;
+                try
+                {
+                    var (layers, dna) = FamilyBlueprintHydrator.ApplyPrimaryAgeBand(
+                        row.LayersJson,
+                        row.DnaJson,
+                        dobAgeBand);
+                    await _repo.UpsertAsync(
+                        familyId,
+                        layers,
+                        dna,
+                        FamilyBlueprintSchema.CurrentVersion,
+                        hydratedAt: row.HydratedAt,
+                        cancellationToken);
+                    row = await _repo.GetAsync(familyId, cancellationToken) ?? row;
+                }
+                catch (InvalidOperationException)
+                {
+                    // Viewer / read-only — keep in-memory stage label below.
+                }
             }
         }
 
@@ -120,6 +130,7 @@ internal sealed class FamilyBlueprintService : IFamilyBlueprintService
         FamilyBlueprintUpsertRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         _ = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 
@@ -155,6 +166,7 @@ internal sealed class FamilyBlueprintService : IFamilyBlueprintService
         FamilyBlueprintHydrateRequest? request = null,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 
@@ -226,6 +238,7 @@ internal sealed class FamilyBlueprintService : IFamilyBlueprintService
         FamilyCalibrationCaptureRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         _ = await _families.GetFamilyAsync(familyId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy gia đình.");
 
@@ -250,6 +263,15 @@ internal sealed class FamilyBlueprintService : IFamilyBlueprintService
         Guid familyId,
         CancellationToken cancellationToken = default)
     {
+        try
+        {
+            await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
+        }
+        catch (InvalidOperationException)
+        {
+            return;
+        }
+
         var existing = await _repo.GetAsync(familyId, cancellationToken);
         if (existing is null) return;
 

@@ -14,6 +14,7 @@ export function ForceParentPinGate() {
   const member = useSessionStore((s) => s.member);
   const parentPin = useSessionStore((s) => s.parentPin);
   const setParentPin = useSessionStore((s) => s.setParentPin);
+  const demoMode = useSessionStore((s) => s.demoMode);
 
   const [digits, setDigits] = useState('');
   const [pending, setPending] = useState('');
@@ -23,8 +24,11 @@ export function ForceParentPinGate() {
 
   const blocked =
     Boolean(accessToken) &&
+    !demoMode &&
     member?.roleCode !== 'child' &&
+    member?.roleCode !== 'viewer' &&
     location.pathname !== '/unlock' &&
+    location.pathname !== '/demo' &&
     (parentPin || DEFAULT_PIN) === DEFAULT_PIN;
 
   useEffect(() => {

@@ -87,6 +87,9 @@ Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\
 Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\221_pack_family_calendar_period.sql"
 Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\seed\010_family_calendar_periods.sql"
 Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\seed\011_family_summer_schedule_2026.sql"
+Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\222_pack_family_commercial_foundation.sql"
+Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\249_pack_family_blueprint.sql"
+Invoke-PsqlFile -User $AppUser -Password $AppPassword -RelativePath "migrations\seed\012_family_demo_gtm.sql"
 
 if ($ApplyFamilyVertical) {
     if ([string]::IsNullOrWhiteSpace($PostgresPassword)) {
@@ -137,12 +140,19 @@ Write-Host "=== Seed OK ===" -ForegroundColor Green
 $summary | ForEach-Object { if ($_ -and $_.Trim()) { Write-Host ("  " + $_) } }
 
 Write-Host ""
-Write-Host "Login local admin:" -ForegroundColor Cyan
+Write-Host "Login local admin (full write):" -ForegroundColor Cyan
 Write-Host "  TenantCode : DEMO_FAMILY"
 Write-Host "  Username   : admin"
 Write-Host "  Password   : Admin@123"
 Write-Host "  FamilyId   : aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01"
-Write-Host "  Routine    : Ngay di hoc (school_day, Mon-Fri)"
+Write-Host "  Kids       : Bao Nhi + Duc Huy (summer/school calendar)"
+Write-Host ""
+Write-Host "GTM demo viewer (read-only):" -ForegroundColor Cyan
+Write-Host "  SPA        : http://localhost:5178/demo"
+Write-Host "  TenantCode : DEMO_FAMILY"
+Write-Host "  Username   : demo"
+Write-Host "  Password   : Admin@123"
+Write-Host "  Invite     : FAMIXADEM (viewer)"
 
 if (-not $SmokeApi) {
     return

@@ -156,6 +156,8 @@ export function WhoAreYouPage() {
   const setMember = useSessionStore((s) => s.setMember);
   const clear = useSessionStore((s) => s.clear);
   const verifyParentPin = useSessionStore((s) => s.verifyParentPin);
+  const demoMode = useSessionStore((s) => s.demoMode);
+  const canWrite = useSessionStore((s) => s.canWrite());
 
   const [members, setMembers] = useState<FamilyMembership[]>([]);
   const [sub, setSub] = useState<FamilySubscription | null>(null);
@@ -207,7 +209,10 @@ export function WhoAreYouPage() {
     [members],
   );
   const adults = useMemo(
-    () => members.filter((m) => m.roleCode !== 'child'),
+    () =>
+      members.filter(
+        (m) => m.roleCode !== 'child' && m.roleCode.toLowerCase() !== 'viewer',
+      ),
     [members],
   );
   const childIds = useMemo(
@@ -540,6 +545,7 @@ export function WhoAreYouPage() {
         </section>
       ) : null}
 
+      {canWrite ? (
       <nav className="home-v2-quick" aria-label="Thao tác nhanh">
         <button type="button" onClick={goAdmin}>
           <i className="is-green" aria-hidden>
@@ -560,6 +566,13 @@ export function WhoAreYouPage() {
           Ưu đãi Famixa
         </button>
       </nav>
+      ) : (
+        <p className="home-v2-demo-hint" style={{ opacity: 0.8, fontSize: '0.9rem', padding: '0 0.25rem' }}>
+          {demoMode
+            ? 'Đang xem nhà demo — chọn Mẹ/Bố/bé ở trên để xem ngày hôm nay.'
+            : 'Tài khoản chỉ xem — không sửa được nhà này.'}
+        </p>
+      )}
 
       {inviteErrorToast ? (
         <div className="home-v2-toast" role="status">

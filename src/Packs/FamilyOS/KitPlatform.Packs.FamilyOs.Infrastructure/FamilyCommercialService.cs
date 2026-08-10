@@ -16,19 +16,22 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
     private readonly IKitAccountService _kitAccounts;
     private readonly ITenantContext _tenant;
     private readonly FamilyOsBillingOptions _billing;
+    private readonly IFamilyWriteAccessService _writeAccess;
 
     public FamilyCommercialService(
         IDbConnectionFactory db,
         IAuthService auth,
         IKitAccountService kitAccounts,
         ITenantContext tenant,
-        Microsoft.Extensions.Options.IOptions<FamilyOsBillingOptions> billing)
+        Microsoft.Extensions.Options.IOptions<FamilyOsBillingOptions> billing,
+        IFamilyWriteAccessService writeAccess)
     {
         _db = db;
         _auth = auth;
         _kitAccounts = kitAccounts;
         _tenant = tenant;
         _billing = billing.Value;
+        _writeAccess = writeAccess;
     }
 
     private int TrialDays =>
@@ -358,6 +361,7 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
         FamilyInviteCreateRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         await EnsureEntitledAsync(familyId, cancellationToken);
 
         var role = string.IsNullOrWhiteSpace(request.RoleCode)

@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSessionStore } from '@/shared/auth/session.store';
 import { ParentUnlockPage } from '@/modules/unlock/ParentUnlockPage';
+import { DemoEnterPage } from '@/modules/unlock/DemoEnterPage';
 import { WhoAreYouPage } from '@/modules/who/WhoAreYouPage';
 import { TodayFlowPage } from '@/modules/flow/TodayFlowPage';
 import { OnboardingPage } from '@/modules/onboarding/OnboardingPage';
@@ -13,6 +14,7 @@ import { FamilyInvitePage } from '@/modules/admin/FamilyInvitePage';
 import { FamilySettingsPage } from '@/modules/admin/FamilySettingsPage';
 import { ForceParentPinGate } from '@/shared/ui/ForceParentPinGate';
 import { OnlineStatusBanner } from '@/shared/ui/OnlineStatusBanner';
+import { DemoModeBanner } from '@/shared/ui/DemoModeBanner';
 
 function RequireParent({ children }: { children: ReactNode }) {
   const token = useSessionStore((s) => s.accessToken);
@@ -23,6 +25,12 @@ function RequireParent({ children }: { children: ReactNode }) {
 function RequireMember({ children }: { children: ReactNode }) {
   const member = useSessionStore((s) => s.member);
   if (!member) return <Navigate to="/who" replace />;
+  return children;
+}
+
+function RequireWrite({ children }: { children: ReactNode }) {
+  const canWrite = useSessionStore((s) => s.canWrite());
+  if (!canWrite) return <Navigate to="/who" replace />;
   return children;
 }
 
@@ -39,7 +47,7 @@ export function App() {
   const location = useLocation();
   const kidMode = member?.roleCode === 'child';
   const homeMode = location.pathname === '/who';
-  const unlockMode = location.pathname === '/unlock';
+  const unlockMode = location.pathname === '/unlock' || location.pathname === '/demo';
   const adminMode = location.pathname.startsWith('/family-admin');
 
   useEffect(() => {
@@ -55,9 +63,11 @@ export function App() {
       className={`app-shell${kidMode ? ' is-kid' : ''}${homeMode ? ' is-home' : ''}${unlockMode ? ' is-unlock' : ''}${adminMode ? ' is-admin' : ''}`}
     >
       <OnlineStatusBanner />
+      <DemoModeBanner />
       <ForceParentPinGate />
       <Routes>
         <Route path="/unlock" element={<ParentUnlockPage />} />
+        <Route path="/demo" element={<DemoEnterPage />} />
         <Route
           path="/who"
           element={
@@ -71,7 +81,9 @@ export function App() {
           element={
             <RequireParent>
               <RequireMember>
-                <OnboardingPage />
+                <RequireWrite>
+                  <OnboardingPage />
+                </RequireWrite>
               </RequireMember>
             </RequireParent>
           }
@@ -88,7 +100,9 @@ export function App() {
           path="/family-admin"
           element={
             <RequireParent>
-              <FamilyAdminPage />
+              <RequireWrite>
+                <FamilyAdminPage />
+              </RequireWrite>
             </RequireParent>
           }
         />
@@ -96,7 +110,9 @@ export function App() {
           path="/family-admin/members"
           element={
             <RequireParent>
-              <FamilyMembersPage />
+              <RequireWrite>
+                <FamilyMembersPage />
+              </RequireWrite>
             </RequireParent>
           }
         />
@@ -104,7 +120,9 @@ export function App() {
           path="/family-admin/routine"
           element={
             <RequireParent>
-              <FamilyRoutinePage />
+              <RequireWrite>
+                <FamilyRoutinePage />
+              </RequireWrite>
             </RequireParent>
           }
         />
@@ -112,7 +130,9 @@ export function App() {
           path="/family-admin/invite"
           element={
             <RequireParent>
-              <FamilyInvitePage />
+              <RequireWrite>
+                <FamilyInvitePage />
+              </RequireWrite>
             </RequireParent>
           }
         />
@@ -120,7 +140,9 @@ export function App() {
           path="/family-admin/settings"
           element={
             <RequireParent>
-              <FamilySettingsPage />
+              <RequireWrite>
+                <FamilySettingsPage />
+              </RequireWrite>
             </RequireParent>
           }
         />

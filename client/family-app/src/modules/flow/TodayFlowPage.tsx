@@ -71,6 +71,7 @@ export function TodayFlowPage() {
   const member = useSessionStore((s) => s.member);
   const setMember = useSessionStore((s) => s.setMember);
   const verifyParentPin = useSessionStore((s) => s.verifyParentPin);
+  const canWrite = useSessionStore((s) => s.canWrite());
   const [flow, setFlow] = useState<DayFlow | null>(null);
   const [teamDay, setTeamDay] = useState<TeamDay | null>(null);
   const [events, setEvents] = useState<ConsequenceEvent[]>([]);
@@ -347,6 +348,10 @@ export function TodayFlowPage() {
     parentOverride = false,
   ) => {
     if (!familyId || busyId) return;
+    if (!canWrite) {
+      setError('Chế độ xem demo — nhà này chỉ xem, không sửa được.');
+      return;
+    }
     setBusyId(item.id);
     try {
       const result = await updateCommitmentProgress(

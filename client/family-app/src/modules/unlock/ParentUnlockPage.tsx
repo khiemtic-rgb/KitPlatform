@@ -183,6 +183,7 @@ export function ParentUnlockPage() {
       refreshToken: input.refreshToken,
       tenantCode: input.tenantCode.trim().toUpperCase(),
       parentPin: input.parentPin,
+      demoMode: false,
     });
     if (input.familyId && input.familyName) {
       setFamily({ familyId: input.familyId, familyName: input.familyName });
@@ -664,6 +665,14 @@ export function ParentUnlockPage() {
                 </span>
                 <span>
                   Có mã mời? <strong>Gia nhập →</strong>
+                </span>
+              </button>
+              <button type="button" className="fx-auth-footer-link" onClick={() => navigate('/demo')}>
+                <span className="fx-auth-footer-ico" aria-hidden>
+                  <IconEye />
+                </span>
+                <span>
+                  Xem nhà demo <strong>(chỉ xem) →</strong>
                 </span>
               </button>
             </div>

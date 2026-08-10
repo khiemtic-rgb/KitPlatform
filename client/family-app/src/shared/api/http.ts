@@ -12,6 +12,31 @@ http.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  const method = (config.method ?? 'get').toLowerCase();
+  const url = config.url ?? '';
+  const isMutate = method === 'post' || method === 'put' || method === 'patch' || method === 'delete';
+  const allowWhileDemo =
+    url.includes('/day-flows/ensure') ||
+    url.includes('/auth/') ||
+    url.includes('/overview');
+  if (isMutate && !allowWhileDemo && !useSessionStore.getState().canWrite()) {
+    return Promise.reject(
+      Object.assign(new Error('Chế độ xem demo — nhà này chỉ xem, không sửa được.'), {
+        code: 'demo_readonly',
+        config,
+        isAxiosError: true,
+        response: {
+          status: 403,
+          data: {
+            code: 'demo_readonly',
+            message: 'Chế độ xem demo — nhà này chỉ xem, không sửa được.',
+          },
+        },
+      }),
+    );
+  }
+
   return config;
 });
 

@@ -20,6 +20,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
     private readonly FamilyBehaviorRepository _behaviorRepo;
     private readonly FamilyBlueprintRepository _blueprint;
     private readonly ITenantContext _tenant;
+    private readonly IFamilyWriteAccessService _writeAccess;
 
     public FamilyDayFlowService(
         FamilyDayFlowRepository repo,
@@ -36,7 +37,8 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         FamilyValueRepository value,
         FamilyBehaviorRepository behaviorRepo,
         FamilyBlueprintRepository blueprint,
-        ITenantContext tenant)
+        ITenantContext tenant,
+        IFamilyWriteAccessService writeAccess)
     {
         _repo = repo;
         _routines = routines;
@@ -53,6 +55,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         _behaviorRepo = behaviorRepo;
         _blueprint = blueprint;
         _tenant = tenant;
+        _writeAccess = writeAccess;
     }
 
     public async Task<DayFlowDto> EnsureDayFlowAsync(
@@ -110,6 +113,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         UpdateCommitmentProgressRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
 
         var status = (request.Status ?? "").Trim().ToLowerInvariant();
@@ -371,6 +375,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         Guid commitmentId,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
 
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)
@@ -432,6 +437,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         VerifyCommitmentEvidenceRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
 
         var existing = await _repo.GetCommitmentForFamilyAsync(familyId, commitmentId, cancellationToken)
@@ -502,6 +508,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         RejectCommitmentEvidenceRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
 
         var reason = (request.ReasonCode ?? "").Trim().ToLowerInvariant();
@@ -546,6 +553,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         SetCommitmentEvidencePolicyRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
 
         var existing = await _repo.GetCommitmentForFamilyAsync(familyId, commitmentId, cancellationToken)
@@ -584,6 +592,7 @@ internal sealed class FamilyDayFlowService : IFamilyDayFlowService
         AddAdHocCommitmentRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         await _commercial.EnsureCapabilityAsync(familyId, FamilyCapabilityCodes.CoreRoutine, cancellationToken);
 
         var family = await _families.GetFamilyAsync(familyId, cancellationToken)

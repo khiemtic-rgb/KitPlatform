@@ -3,7 +3,16 @@ namespace KitPlatform.Packs.FamilyOs.Infrastructure;
 internal sealed class FamilyRoutineService : IFamilyRoutineService
 {
     private readonly FamilyRoutineRepository _repo;
-    public FamilyRoutineService(FamilyRoutineRepository repo) => _repo = repo;
+    private readonly IFamilyWriteAccessService _writeAccess;
+
+    public FamilyRoutineService(
+        FamilyRoutineRepository repo,
+        IFamilyWriteAccessService writeAccess)
+    {
+        _repo = repo;
+        _writeAccess = writeAccess;
+    }
+
     public async Task<IReadOnlyList<RoutineDto>> ListRoutinesAsync(
         Guid familyId,
         CancellationToken cancellationToken = default)
@@ -34,6 +43,7 @@ internal sealed class FamilyRoutineService : IFamilyRoutineService
         CreateRoutineRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         await EnsureFamilyAsync(familyId, cancellationToken);
         var code = (request.Code ?? "").Trim().ToLowerInvariant();
         var name = (request.DisplayName ?? "").Trim();
@@ -83,6 +93,7 @@ internal sealed class FamilyRoutineService : IFamilyRoutineService
         UpdateRoutineRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         var existing = await _repo.GetRoutineAsync(familyId, routineId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy routine.");
         var name = string.IsNullOrWhiteSpace(request.DisplayName)
@@ -118,6 +129,7 @@ internal sealed class FamilyRoutineService : IFamilyRoutineService
         AddCommitmentTemplateRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         var routine = await _repo.GetRoutineAsync(familyId, routineId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy routine.");
         var row = await InsertValidatedTemplateAsync(
@@ -149,6 +161,7 @@ internal sealed class FamilyRoutineService : IFamilyRoutineService
         UpdateCommitmentTemplateRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         var routine = await _repo.GetRoutineAsync(familyId, routineId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy routine.");
         var existing = await _repo.GetTemplateAsync(routine.Id, templateId, cancellationToken)
@@ -205,6 +218,7 @@ internal sealed class FamilyRoutineService : IFamilyRoutineService
         Guid templateId,
         CancellationToken cancellationToken = default)
     {
+        await _writeAccess.EnsureCanMutateAsync(familyId, cancellationToken);
         var routine = await _repo.GetRoutineAsync(familyId, routineId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy routine.");
         var existing = await _repo.GetTemplateAsync(routine.Id, templateId, cancellationToken)

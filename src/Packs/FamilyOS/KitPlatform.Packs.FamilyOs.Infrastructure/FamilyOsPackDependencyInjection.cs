@@ -11,6 +11,7 @@ public static class FamilyOsPackDependencyInjection
         this IServiceCollection services,
         IConfiguration? configuration = null)
     {
+        services.AddScoped<IFamilyWriteAccessService, FamilyWriteAccessService>();
         services.AddScoped<IFamilyCommercialService, FamilyCommercialService>();
         services.AddScoped<IFamilyBillingService, FamilyBillingService>();
         services.AddScoped<IPaymentProductHandler, FamilyOsPaymentProductHandler>();
