@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import type { ParentVoiceMessage, WeeklyStory } from '@/shared/api/family-os.api';
+import { SoftEvidenceImg } from '@/shared/ui/SoftEvidenceImg';
 
 export type KidFamilyPride = {
   id: string;
@@ -478,7 +479,11 @@ export function KidFamilyHub(props: Props) {
           </header>
           {photoTiles[0] ? (
             <button type="button" className="kfam-replay-thumb" onClick={props.onOpenMemories}>
-              <img src={photoTiles[0].imageUrl!} alt="" />
+              <SoftEvidenceImg
+                url={photoTiles[0].imageUrl}
+                fallback="📷"
+                fallbackSrc="/mascot/family-replay-beach.png"
+              />
               <i aria-hidden>📷</i>
             </button>
           ) : (
@@ -527,7 +532,7 @@ export function KidFamilyHub(props: Props) {
             <button type="button" className="kfam-moments-grid" onClick={props.onOpenMemories}>
               {photoTiles.map((m) => (
                 <span key={m.id} className="kfam-moment">
-                  <img src={m.imageUrl!} alt="" />
+                  <SoftEvidenceImg url={m.imageUrl} fallback={m.icon || '📷'} />
                 </span>
               ))}
             </button>

@@ -6,7 +6,7 @@ import type {
 } from '@/shared/api/family-os.api';
 import type { ParentPulse } from '@/shared/value/parent-pulse';
 import type { FvView } from '@/modules/flow/FamilyValuePanel';
-import { withEvidenceAuth } from '@/shared/upload/evidence-url';
+import { SoftEvidenceImg } from '@/shared/ui/SoftEvidenceImg';
 
 export type FamilyMomentCard = {
   id: string;
@@ -455,18 +455,15 @@ export function ParentFamilyPanel(props: Props) {
             <em>Đọc thư ›</em>
           </button>
           {props.moments.length > 0 ? (
-            props.moments.slice(0, 4).map((m) => {
-              const src = m.photoUrl ? withEvidenceAuth(m.photoUrl) : undefined;
-              return (
-                <article key={m.id} className="pf-mem is-photo" role="listitem">
-                  <div className="pf-mem-art" aria-hidden>
-                    {src ? <img src={src} alt="" /> : <span>{m.icon || '✨'}</span>}
-                  </div>
-                  <strong>{m.title}</strong>
-                  {m.subtitle ? <em>{m.subtitle}</em> : null}
-                </article>
-              );
-            })
+            props.moments.slice(0, 4).map((m) => (
+              <article key={m.id} className="pf-mem is-photo" role="listitem">
+                <div className="pf-mem-art" aria-hidden>
+                  <SoftEvidenceImg url={m.photoUrl} fallback={m.icon || '✨'} />
+                </div>
+                <strong>{m.title}</strong>
+                {m.subtitle ? <em>{m.subtitle}</em> : null}
+              </article>
+            ))
           ) : (
             <button
               type="button"

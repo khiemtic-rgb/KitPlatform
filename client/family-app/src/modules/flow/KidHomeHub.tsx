@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { DayFlowCommitment, ParentVoiceMessage } from '@/shared/api/family-os.api';
+import { SoftEvidenceImg } from '@/shared/ui/SoftEvidenceImg';
 import { KidNotifyOptInCard } from '@/shared/ui/KidNotifyOptInCard';
 
 type Props = {
@@ -585,11 +586,11 @@ export function KidHomeHub(props: Props) {
         {props.momentPreview ? (
           <article className="khub-moment-card">
             <div className="khub-moment-thumb" aria-hidden>
-              {props.momentPreview.imageUrl ? (
-                <img src={props.momentPreview.imageUrl} alt="" decoding="async" />
-              ) : (
-                <span className="khub-moment-thumb-fallback">👨‍👩‍👧</span>
-              )}
+              <SoftEvidenceImg
+                url={props.momentPreview.imageUrl}
+                fallback="👨‍👩‍👧"
+                fallbackSrc="/mascot/family-moment-2.png"
+              />
             </div>
             <div className="khub-moment-copy">
               <strong>{props.momentPreview.title}</strong>

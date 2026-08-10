@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { SoftEvidenceImg } from '@/shared/ui/SoftEvidenceImg';
 
 export type TreasureCatalogItem = {
   id: string;
@@ -422,7 +423,12 @@ export function KidTreasureHub(props: Props) {
               <div className="ktre-goal-art" aria-hidden>
                 <div className="ktre-goal-orb">
                   {primaryVisual?.kind === 'img' ? (
-                    <img src={primaryVisual.src} alt="" width={88} height={88} decoding="async" />
+                    <SoftEvidenceImg
+                      url={primaryVisual.src}
+                      fallback={primary.icon}
+                      fallbackSrc="/mascot/gift-today.png"
+                      auth={(u) => u?.trim() || undefined}
+                    />
                   ) : (
                     <span>{primaryVisual?.emoji ?? primary.icon}</span>
                   )}
@@ -506,7 +512,12 @@ export function KidTreasureHub(props: Props) {
                     <span className="ktre-mini-art" aria-hidden>
                       <span className="ktre-mini-orb">
                         {vis.kind === 'img' ? (
-                          <img src={vis.src} alt="" width={56} height={56} decoding="async" />
+                          <SoftEvidenceImg
+                            url={vis.src}
+                            fallback={item.icon}
+                            fallbackSrc="/mascot/gift-soft.png"
+                            auth={(u) => u?.trim() || undefined}
+                          />
                         ) : (
                           <span>{vis.emoji}</span>
                         )}
@@ -867,11 +878,11 @@ export function KidTreasureHub(props: Props) {
                       onClick={props.onOpenMemories}
                     >
                       <div className="ktre-mem-frame">
-                        {m.imageUrl ? (
-                          <img src={m.imageUrl} alt="" decoding="async" />
-                        ) : (
-                          <span aria-hidden>{m.icon}</span>
-                        )}
+                        <SoftEvidenceImg
+                          url={m.imageUrl}
+                          fallback={m.icon}
+                          fallbackSrc="/mascot/family-moment-1.png"
+                        />
                         {video ? (
                           <i className="ktre-mem-play" aria-hidden>
                             ▶

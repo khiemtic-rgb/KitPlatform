@@ -4775,15 +4775,12 @@ export function ParentBoardView({
                 treasureMemories.map((m) => (
                   <article key={m.id} className="ph-treasure-mem">
                     <div className="ph-treasure-mem-art">
-                      {m.memory.photoUrl ? (
-                        <img
-                          src={withEvidenceAuth(m.memory.photoUrl)}
-                          alt=""
-                          className="ph-memory-photo"
-                        />
-                      ) : (
-                        <span aria-hidden>{m.icon}</span>
-                      )}
+                      <SoftEvidenceImg
+                        url={m.memory.photoUrl}
+                        fallback={m.icon}
+                        className="ph-memory-photo"
+                        auth={withEvidenceAuth}
+                      />
                       <button
                         type="button"
                         className={
@@ -5007,7 +5004,11 @@ export function ParentBoardView({
                       target="_blank"
                       rel="noreferrer"
                     >
-                      <img src={photo} alt={`Ảnh ${who} gửi — ${item.title}`} />
+                      <SoftEvidenceImg
+                        url={photo}
+                        fallback="📷"
+                        auth={(u) => u?.trim() || undefined}
+                      />
                       <em>Chạm để xem ảnh lớn</em>
                     </a>
                   ) : (
@@ -5223,16 +5224,12 @@ export function ParentBoardView({
                     key={m.id}
                     className={`ph-diary-mem-sheet-card${m.locked ? ' is-locked' : ''}`}
                   >
-                    {m.photoUrl ? (
-                      <SoftEvidenceImg
-                        url={m.photoUrl}
-                        fallback={m.icon}
-                        className="ph-diary-mem-sheet-photo"
-                        auth={withEvidenceAuth}
-                      />
-                    ) : (
-                      <span aria-hidden>{m.icon}</span>
-                    )}
+                    <SoftEvidenceImg
+                      url={m.photoUrl}
+                      fallback={m.icon}
+                      className="ph-diary-mem-sheet-photo"
+                      auth={withEvidenceAuth}
+                    />
                     <div>
                       <strong>{m.title}</strong>
                       <em>

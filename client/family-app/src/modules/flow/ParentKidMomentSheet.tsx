@@ -5,6 +5,7 @@ import {
   type FamilyMemoryEntry,
 } from '@/shared/api/family-os.api';
 import { withEvidenceAuth } from '@/shared/upload/evidence-url';
+import { SoftEvidenceImg } from '@/shared/ui/SoftEvidenceImg';
 import { isKidMomentAudio } from '@/modules/flow/kidMomentAck';
 import { shortMemberName } from '@/modules/flow/relationshipGraph';
 
@@ -125,8 +126,13 @@ export function ParentKidMomentSheet({
 
         {audio && mediaSrc ? (
           <audio controls src={mediaSrc} className="km-preview-audio" />
-        ) : mediaSrc ? (
-          <img src={mediaSrc} alt={`Khoảnh khắc của ${who}`} className="km-preview-img" />
+        ) : memory?.photoUrl || mediaSrc ? (
+          <SoftEvidenceImg
+            url={memory?.photoUrl ?? mediaSrc}
+            fallback="📷"
+            className="km-preview-img"
+            auth={withEvidenceAuth}
+          />
         ) : null}
 
         {memory.noteVi ? <p className="km-caption">“{memory.noteVi}”</p> : null}

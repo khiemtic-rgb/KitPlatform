@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { DayFlowCommitment } from '@/shared/api/family-os.api';
 import type { FamilyMemory } from '@/shared/flow/family-memories';
 import {
@@ -6,6 +6,7 @@ import {
   memoryRelativeAgoLabel,
 } from '@/shared/flow/family-memories';
 import { avatarEmoji, inferGenderFromName } from '@/shared/ui/avatarGender';
+import { SoftEvidenceImg } from '@/shared/ui/SoftEvidenceImg';
 import { isKidMomentAudio } from '@/modules/flow/kidMomentAck';
 
 export type DiaryLens =
@@ -114,18 +115,17 @@ function MemoryCardArt(props: {
   audio?: boolean;
   emojiClassName?: string;
 }) {
-  const src = props.photoUrl ? props.withEvidenceAuth(props.photoUrl) : undefined;
-  const [failed, setFailed] = useState(false);
-  const [seenSrc, setSeenSrc] = useState(src);
-  if (seenSrc !== src) {
-    setSeenSrc(src);
-    setFailed(false);
+  if (props.audio && !props.photoUrl) {
+    return <span className="pd-wave">♪ ▄ ▅ ▆ ▅ ▄</span>;
   }
-  if (!src || failed) {
-    if (props.audio) return <span className="pd-wave">♪ ▄ ▅ ▆ ▅ ▄</span>;
-    return <span className={props.emojiClassName}>{props.icon}</span>;
-  }
-  return <img src={src} alt="" onError={() => setFailed(true)} />;
+  return (
+    <SoftEvidenceImg
+      url={props.photoUrl}
+      fallback={props.icon}
+      className={props.emojiClassName}
+      auth={props.withEvidenceAuth}
+    />
+  );
 }
 
 export function ParentDiaryPanel(props: Props) {

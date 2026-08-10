@@ -474,6 +474,7 @@ export function ParentHomeStoryBody(props: Props) {
           <SoftEvidenceImg
             url={m.photoUrl}
             fallback="📷"
+            className="phs-moment-ph"
             fallbackClassName="phs-moment-ph"
           />
         )}
@@ -532,6 +533,7 @@ export function ParentHomeStoryBody(props: Props) {
           <SoftEvidenceImg
             url={m.photoUrl}
             fallback={m.icon || '✨'}
+            className="phs-moment-ph"
             fallbackClassName="phs-moment-ph"
           />
         )}
