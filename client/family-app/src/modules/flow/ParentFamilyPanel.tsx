@@ -125,6 +125,22 @@ function ringPoints(n: number, cx: number, cy: number, r: number) {
   }).join(' ');
 }
 
+/** Short axis tip for polar label (keep readable on mobile). */
+function radarAxisShort(label: string) {
+  const t = label.trim();
+  if (t.length <= 10) return t;
+  const first = t.split(/\s+/)[0] || t;
+  return first.length <= 10 ? first : `${first.slice(0, 9)}…`;
+}
+
+function radarLabelPos(i: number, n: number, cx: number, cy: number, r: number) {
+  const a = (-Math.PI / 2) + (i * 2 * Math.PI) / n;
+  return {
+    x: cx + Math.cos(a) * r,
+    y: cy + Math.sin(a) * r,
+  };
+}
+
 function qualityMinutes(done: number, moments: number) {
   return Math.max(0, Math.min(45, done * 3 + (moments > 0 ? 6 : 0)));
 }
@@ -310,23 +326,43 @@ export function ParentFamilyPanel(props: Props) {
         </header>
         <div className="pf-growth">
           <article className="pf-radar-card">
-            <svg viewBox="0 0 160 160" className="pf-radar" aria-hidden>
+            <svg
+              viewBox="0 0 200 200"
+              className="pf-radar"
+              role="img"
+              aria-label={axes.map((a) => `${a.label} ${a.score}%`).join(', ')}
+            >
               {[0.35, 0.6, 0.85, 1].map((t) => (
                 <polygon
                   key={t}
-                  points={ringPoints(axes.length, 80, 80, 58 * t)}
+                  points={ringPoints(axes.length, 100, 100, 62 * t)}
                   className="pf-radar-ring"
                 />
               ))}
               <polygon
                 points={radarPoints(
                   axes.map((a) => a.score),
-                  80,
-                  80,
-                  58,
+                  100,
+                  100,
+                  62,
                 )}
                 className="pf-radar-fill"
               />
+              {axes.map((a, i) => {
+                const p = radarLabelPos(i, axes.length, 100, 100, 88);
+                return (
+                  <text
+                    key={a.label}
+                    x={p.x}
+                    y={p.y}
+                    className="pf-radar-axis"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                  >
+                    {radarAxisShort(a.label)}
+                  </text>
+                );
+              })}
             </svg>
             <ul className="pf-radar-legend">
               {axes.map((a) => (

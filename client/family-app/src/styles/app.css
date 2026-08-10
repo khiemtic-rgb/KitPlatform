@@ -22934,9 +22934,10 @@ body:has(.app-shell.is-unlock) {
 .pf-mini{border:none;border-radius:999px;padding:6px 10px;background:#ecfdf5;color:#0f766e;font-weight:800;font-size:.72rem;cursor:pointer;font-family:inherit}
 .pf-growth{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:10px}
 .pf-radar-card{padding:12px;border-radius:18px;background:#fff;border:1px solid rgba(15,23,42,.06);box-shadow:0 8px 18px rgba(15,23,42,.04)}
-.pf-radar{width:100%;max-width:180px;margin:0 auto;display:block}
+.pf-radar{width:100%;max-width:220px;margin:0 auto;display:block;overflow:visible}
 .pf-radar-ring{fill:none;stroke:rgba(15,23,42,.08);stroke-width:1}
 .pf-radar-fill{fill:rgba(15,118,110,.22);stroke:#0f766e;stroke-width:2}
+.pf-radar-axis{fill:#334155;font-size:9.5px;font-weight:700;letter-spacing:-0.01em;pointer-events:none}
 .pf-radar-legend{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
 .pf-radar-legend li{display:flex;justify-content:space-between;gap:8px;font-size:.75rem;color:#475569;font-weight:600}
 .pf-radar-legend b{color:#0f766e}
