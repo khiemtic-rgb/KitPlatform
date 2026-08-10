@@ -21,9 +21,9 @@ export const articleSidebar = {
 
   /** CTA chẩn đoán — dùng cho bài pain/PHC */
   ctaPhc: {
-    title: 'Kiểm tra nhà thuốc',
-    lead: '7 phút — biết đang mạnh chỗ nào, hở chỗ nào trước khi mất tiền âm thầm.',
-    primary: 'Làm Health Check miễn phí',
+    title: 'Bán tốt chưa đủ',
+    lead: 'Bạn có chắc quản lý đang ổn? 7 phút — biết đang hở tồn kho, khách quen hay quy trình ca.',
+    primary: 'Kiểm tra nhà thuốc miễn phí',
     primaryHref: PHC_SURVEY_URL,
   },
 
