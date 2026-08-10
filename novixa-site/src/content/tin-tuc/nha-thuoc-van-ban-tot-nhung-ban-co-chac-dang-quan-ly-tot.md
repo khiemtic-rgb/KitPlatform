@@ -83,8 +83,9 @@ Chỉ với 7 phút trả lời các câu hỏi khảo sát thực tế chuyên 
 
 Nhà thuốc vẫn đang bán tốt là một tín hiệu tuyệt vời. Nhưng đừng để những lỗ hổng âm thầm trong quản lý bào mòn đi thành quả lao động vất vả của bạn mỗi ngày. Phát hiện sớm khoảng trống là bước đầu tiên để bịt kín thất thoát và đưa nhà thuốc phát triển bền vững.
 
-👉 **[Bắt đầu Health Check 7 phút ngay](https://survey.novixa.vn/survey/21f67b68-f877-4f65-99a8-e32a6ea8de7d)**
-
-_(Hoàn toàn miễn phí · Không cần cài đặt phần mềm · Nhận kết quả phân tích riêng ngay lập tức)_
+<div class="ad-phc-cta" role="group" aria-label="Pharmacy Health Check">
+  <a class="ad-phc-cta__btn" href="https://survey.novixa.vn/survey/21f67b68-f877-4f65-99a8-e32a6ea8de7d">Nhận Health Check miễn phí ngay →</a>
+  <p class="ad-phc-cta__note">Hoàn toàn miễn phí · Không cần cài đặt phần mềm · Nhận kết quả phân tích riêng ngay lập tức</p>
+</div>
 
 > **Novixa** đồng hành cùng các nhà thuốc chuẩn hóa quy trình vận hành SOP, tự động hóa quản trị POS, CRM, cảnh báo kho FEFO và đo lường sức khỏe điểm bán thời gian thực, giúp bạn giải phóng sức lao động và tối ưu hiệu quả kinh doanh.

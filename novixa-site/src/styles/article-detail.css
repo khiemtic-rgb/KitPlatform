@@ -83,6 +83,50 @@
   max-width: none;
 }
 
+/* Primary PHC CTA inside article body (markdown HTML) */
+.ad-phc-cta {
+  margin: 1.75rem 0 0.5rem;
+  padding: 1.35rem 1.25rem;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #e8f9f1 0%, #f3fbf7 55%, #fff 100%);
+  border: 1px solid #c6eedc;
+  text-align: center;
+}
+
+.ad-phc-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 52px;
+  width: 100%;
+  max-width: 28rem;
+  padding: 0.95rem 1.5rem;
+  border-radius: 12px;
+  background: var(--ad-green);
+  color: #fff !important;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.25;
+  text-decoration: none !important;
+  box-shadow: 0 12px 28px rgba(22, 199, 132, 0.28);
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.ad-phc-cta__btn:hover {
+  background: var(--ad-green-deep);
+  color: #fff !important;
+  transform: translateY(-1px);
+  text-decoration: none !important;
+}
+
+.ad-phc-cta__note {
+  margin: 0.85rem 0 0 !important;
+  font-size: 0.8125rem !important;
+  line-height: 1.45 !important;
+  color: var(--ad-muted) !important;
+}
+
 .ad-aside {
   display: flex;
   flex-direction: column;
