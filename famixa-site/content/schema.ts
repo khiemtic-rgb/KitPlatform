@@ -61,6 +61,8 @@ export type LandingDocument = {
     links: CmsLink[];
     login: string;
     cta: string;
+    /** GTM: demo house URL; defaults to appUrl in Navbar when omitted. */
+    ctaHref?: string;
   };
   hero: {
     badge: string;
