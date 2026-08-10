@@ -1697,3 +1697,27 @@ export async function fetchFamilyOsTrialSignups(): Promise<FamilyOsTrialSignupLi
     items: itemsRaw.map(mapTrialSignup),
   };
 }
+
+export interface FamilyOsDemoHouseViews {
+  demoTenantCode: string;
+  viewsToday: number;
+  views7d: number;
+  uniqueToday: number;
+  unique7d: number;
+  lastViewAt?: string;
+}
+
+/** Ops: GTM demo-house visit totals. */
+export async function fetchFamilyOsDemoHouseViews(): Promise<FamilyOsDemoHouseViews> {
+  const { data } = await http.get<UnknownRow>(`/family-os/ops/demo-house-views`);
+  return {
+    demoTenantCode: String(data.demoTenantCode ?? data.DemoTenantCode ?? 'DEMO_FAMILY'),
+    viewsToday: Number(data.viewsToday ?? data.ViewsToday ?? 0),
+    views7d: Number(data.views7d ?? data.Views7d ?? 0),
+    uniqueToday: Number(data.uniqueToday ?? data.UniqueToday ?? 0),
+    unique7d: Number(data.unique7d ?? data.Unique7d ?? 0),
+    lastViewAt: (data.lastViewAt ?? data.LastViewAt)
+      ? String(data.lastViewAt ?? data.LastViewAt)
+      : undefined,
+  };
+}

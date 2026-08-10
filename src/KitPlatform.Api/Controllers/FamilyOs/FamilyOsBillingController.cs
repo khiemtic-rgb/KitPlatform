@@ -101,6 +101,38 @@ public sealed class FamilyOsBillingController : ControllerBase
         CancellationToken cancellationToken) =>
         Ok(await _commercial.ListTrialSignupsAsync(cancellationToken));
 
+    /// <summary>GTM — record a /demo house enter (demo tenant / demoHouse flag only).</summary>
+    [Authorize]
+    [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]
+    [HttpPost("demo-house/ping")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> PingDemoHouseView(
+        [FromBody] RecordDemoHouseViewRequest? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _commercial.RecordDemoHouseViewAsync(
+                request ?? new RecordDemoHouseViewRequest(null),
+                cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { code = "validation_error", message = ex.Message });
+        }
+    }
+
+    /// <summary>Ops — demo-house view totals (today / 7d / unique).</summary>
+    [Authorize]
+    [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]
+    [HttpGet("ops/demo-house-views")]
+    [ProducesResponseType(typeof(FamilyOsDemoHouseViewsDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<FamilyOsDemoHouseViewsDto>> GetDemoHouseViews(
+        CancellationToken cancellationToken) =>
+        Ok(await _commercial.GetDemoHouseViewsAsync(cancellationToken));
+
     /// <summary>Ops-only — extend a family's trial by N days (Admin → Billing).</summary>
     [Authorize(Policy = PaymentPolicies.OpsActivate)]
     [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]

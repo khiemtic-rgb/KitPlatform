@@ -19,7 +19,8 @@ http.interceptors.request.use((config) => {
   const allowWhileDemo =
     url.includes('/day-flows/ensure') ||
     url.includes('/auth/') ||
-    url.includes('/overview');
+    url.includes('/overview') ||
+    url.includes('/demo-house/ping');
   if (isMutate && !allowWhileDemo && !useSessionStore.getState().canWrite()) {
     return Promise.reject(
       Object.assign(new Error('Chế độ xem demo — nhà này chỉ xem, không sửa được.'), {

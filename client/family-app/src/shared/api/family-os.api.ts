@@ -209,6 +209,13 @@ export async function loginFamilyParent(input: {
   return mapLoginResponse(data);
 }
 
+/** GTM: count a /demo enter (demo tenant only; ignored otherwise). */
+export async function pingDemoHouseView(clientKey?: string): Promise<void> {
+  await http.post('/family-os/demo-house/ping', {
+    clientKey: clientKey?.trim() || null,
+  });
+}
+
 /** Kit email login — no tenant code; may return workspace choice */
 export async function loginFamilyByEmail(input: {
   email: string;

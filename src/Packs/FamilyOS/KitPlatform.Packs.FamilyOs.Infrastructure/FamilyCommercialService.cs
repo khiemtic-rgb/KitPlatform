@@ -1076,6 +1076,148 @@ internal sealed class FamilyCommercialService : IFamilyCommercialService
             items);
     }
 
+    public async Task RecordDemoHouseViewAsync(
+        RecordDemoHouseViewRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_tenant.IsAuthenticated || _tenant.TenantId == Guid.Empty)
+            throw new InvalidOperationException("Cần đăng nhập để ghi lượt xem demo.");
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var row = await conn.QuerySingleOrDefaultAsync<(string TenantCode, bool IsDemo)>(
+            new CommandDefinition(
+                """
+                SELECT
+                    t.tenant_code AS TenantCode,
+                    (
+                        t.tenant_code = 'DEMO_FAMILY'
+                        OR COALESCE((t.settings->'platform'->'features'->>'demoHouse')::boolean, FALSE)
+                    ) AS IsDemo
+                FROM public.tenants t
+                WHERE t.id = @TenantId AND t.deleted_at IS NULL
+                """,
+                new { TenantId = _tenant.TenantId },
+                cancellationToken: cancellationToken));
+
+        if (string.IsNullOrWhiteSpace(row.TenantCode) || !row.IsDemo)
+            return;
+
+        var clientKey = (request.ClientKey ?? "").Trim();
+        if (clientKey.Length > 64) clientKey = clientKey[..64];
+
+        try
+        {
+            await conn.ExecuteAsync(
+                new CommandDefinition(
+                    """
+                    INSERT INTO public.family_os_demo_view (
+                        tenant_id, tenant_code, user_id, client_key, source
+                    )
+                    VALUES (
+                        @TenantId, @TenantCode, @UserId, @ClientKey, 'spa_demo'
+                    )
+                    """,
+                    new
+                    {
+                        TenantId = _tenant.TenantId,
+                        TenantCode = row.TenantCode,
+                        UserId = _tenant.UserId == Guid.Empty ? (Guid?)null : _tenant.UserId,
+                        ClientKey = clientKey.Length == 0 ? null : clientKey,
+                    },
+                    cancellationToken: cancellationToken));
+        }
+        catch
+        {
+            // Table may not be migrated yet — never block /demo enter.
+        }
+    }
+
+    public async Task<FamilyOsDemoHouseViewsDto> GetDemoHouseViewsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+
+        // Prefer ledger; fall back to refresh_tokens for demo viewer if table empty/missing.
+        try
+        {
+            var stats = await conn.QuerySingleAsync<(
+                int ViewsToday,
+                int Views7d,
+                int UniqueToday,
+                int Unique7d,
+                DateTime? LastViewAt)>(
+                new CommandDefinition(
+                    """
+                    SELECT
+                        COUNT(*) FILTER (
+                            WHERE created_at >= date_trunc('day', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')
+                                AT TIME ZONE 'Asia/Ho_Chi_Minh'
+                        )::int AS ViewsToday,
+                        COUNT(*) FILTER (
+                            WHERE created_at >= NOW() - INTERVAL '7 days'
+                        )::int AS Views7d,
+                        COUNT(DISTINCT COALESCE(NULLIF(client_key, ''), id::text)) FILTER (
+                            WHERE created_at >= date_trunc('day', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')
+                                AT TIME ZONE 'Asia/Ho_Chi_Minh'
+                        )::int AS UniqueToday,
+                        COUNT(DISTINCT COALESCE(NULLIF(client_key, ''), id::text)) FILTER (
+                            WHERE created_at >= NOW() - INTERVAL '7 days'
+                        )::int AS Unique7d,
+                        MAX(created_at) AS LastViewAt
+                    FROM public.family_os_demo_view
+                    """,
+                    cancellationToken: cancellationToken));
+
+            return new FamilyOsDemoHouseViewsDto(
+                "DEMO_FAMILY",
+                stats.ViewsToday,
+                stats.Views7d,
+                stats.UniqueToday,
+                stats.Unique7d,
+                stats.LastViewAt is DateTime dt
+                    ? new DateTimeOffset(DateTime.SpecifyKind(dt, DateTimeKind.Utc))
+                    : null);
+        }
+        catch
+        {
+            // Table not migrated yet — approximate from shared demo viewer's refresh tokens.
+        }
+
+        var fallback = await conn.QuerySingleOrDefaultAsync<(
+            int ViewsToday,
+            int Views7d,
+            DateTime? LastViewAt)>(
+            new CommandDefinition(
+                """
+                SELECT
+                    COUNT(*) FILTER (
+                        WHERE rt.created_at >= date_trunc('day', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')
+                            AT TIME ZONE 'Asia/Ho_Chi_Minh'
+                    )::int AS ViewsToday,
+                    COUNT(*) FILTER (
+                        WHERE rt.created_at >= NOW() - INTERVAL '7 days'
+                    )::int AS Views7d,
+                    MAX(rt.created_at) AS LastViewAt
+                FROM public.refresh_tokens rt
+                INNER JOIN public.users u ON u.id = rt.user_id
+                INNER JOIN public.tenants t ON t.id = u.tenant_id
+                WHERE t.tenant_code = 'DEMO_FAMILY'
+                  AND u.username = 'demo'
+                  AND u.deleted_at IS NULL
+                """,
+                cancellationToken: cancellationToken));
+
+        return new FamilyOsDemoHouseViewsDto(
+            "DEMO_FAMILY",
+            fallback.ViewsToday,
+            fallback.Views7d,
+            fallback.ViewsToday,
+            fallback.Views7d,
+            fallback.LastViewAt is DateTime dt2
+                ? new DateTimeOffset(DateTime.SpecifyKind(dt2, DateTimeKind.Utc))
+                : null);
+    }
+
     private sealed class TrialSignupRow
     {
         public Guid Id { get; init; }

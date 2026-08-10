@@ -15,7 +15,9 @@ import {
 } from 'antd';
 import { ReloadOutlined, TeamOutlined, UserAddOutlined } from '@ant-design/icons';
 import {
+  fetchFamilyOsDemoHouseViews,
   fetchFamilyOsTrialSignups,
+  type FamilyOsDemoHouseViews,
   type FamilyOsTrialSignup,
   type FamilyOsTrialSignupList,
 } from '@/shared/api/family-os.api';
@@ -77,14 +79,21 @@ function sourceLabel(source: string) {
 export function FamilyOsTrialSignupsPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<FamilyOsTrialSignupList | null>(null);
+  const [demoViews, setDemoViews] = useState<FamilyOsDemoHouseViews | null>(null);
   const [q, setQ] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await fetchFamilyOsTrialSignups());
+      const [signups, views] = await Promise.all([
+        fetchFamilyOsTrialSignups(),
+        fetchFamilyOsDemoHouseViews().catch(() => null),
+      ]);
+      setData(signups);
+      setDemoViews(views);
     } catch (error) {
       setData(null);
+      setDemoViews(null);
       message.error(apiErrorMessage(error, 'Không tải được danh sách đăng ký dùng thử'));
     } finally {
       setLoading(false);
@@ -247,6 +256,55 @@ export function FamilyOsTrialSignupsPage() {
             </Card>
           </Col>
         </Row>
+
+        <Card
+          size="small"
+          title="Nhà demo GTM (home.famixa.vn/demo)"
+          extra={
+            demoViews?.lastViewAt ? (
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                Lần xem gần nhất: {formatDateTime(demoViews.lastViewAt)}
+              </Typography.Text>
+            ) : null
+          }
+        >
+          <Row gutter={[12, 12]}>
+            <Col xs={12} sm={6}>
+              <Statistic
+                title="Lượt xem hôm nay"
+                value={demoViews?.viewsToday ?? 0}
+                loading={loading}
+                valueStyle={{ color: '#0f766e' }}
+              />
+            </Col>
+            <Col xs={12} sm={6}>
+              <Statistic
+                title="Lượt xem 7 ngày"
+                value={demoViews?.views7d ?? 0}
+                loading={loading}
+              />
+            </Col>
+            <Col xs={12} sm={6}>
+              <Statistic
+                title="Máy xem hôm nay"
+                value={demoViews?.uniqueToday ?? 0}
+                loading={loading}
+                valueStyle={{ color: '#0f766e' }}
+              />
+            </Col>
+            <Col xs={12} sm={6}>
+              <Statistic
+                title="Máy xem 7 ngày"
+                value={demoViews?.unique7d ?? 0}
+                loading={loading}
+              />
+            </Col>
+          </Row>
+          <Typography.Paragraph type="secondary" style={{ margin: '12px 0 0', fontSize: 12 }}>
+            Mỗi lần vào /demo ghi 1 lượt. “Máy xem” đếm theo client key trên trình duyệt (unique
+            tương đối) — không phải tài khoản admin.
+          </Typography.Paragraph>
+        </Card>
 
         <Card
           title="Chi tiết đăng ký"

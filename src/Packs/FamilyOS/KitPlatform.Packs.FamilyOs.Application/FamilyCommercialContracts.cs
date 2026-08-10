@@ -106,6 +106,17 @@ public sealed record FamilyOsTrialSignupListDto(
     int Other,
     IReadOnlyList<FamilyOsTrialSignupDto> Items);
 
+/// <summary>GTM demo-house visit totals for admin ops.</summary>
+public sealed record FamilyOsDemoHouseViewsDto(
+    string DemoTenantCode,
+    int ViewsToday,
+    int Views7d,
+    int UniqueToday,
+    int Unique7d,
+    DateTimeOffset? LastViewAt);
+
+public sealed record RecordDemoHouseViewRequest(string? ClientKey);
+
 public sealed record SetParentPinRequest(string Pin);
 
 public sealed record VerifyParentPinRequest(string Pin);
@@ -166,6 +177,15 @@ public interface IFamilyCommercialService
 
     /// <summary>Ops-only: all Family OS trial/interest signups across tenants.</summary>
     Task<FamilyOsTrialSignupListDto> ListTrialSignupsAsync(
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Record a /demo enter (current tenant must be demo house or DEMO_FAMILY).</summary>
+    Task RecordDemoHouseViewAsync(
+        RecordDemoHouseViewRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Ops: demo-house view totals (today / 7d / unique).</summary>
+    Task<FamilyOsDemoHouseViewsDto> GetDemoHouseViewsAsync(
         CancellationToken cancellationToken = default);
 
     Task SetParentPinAsync(

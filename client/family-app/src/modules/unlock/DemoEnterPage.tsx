@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   fetchFamilies,
   loginFamilyParent,
+  pingDemoHouseView,
 } from '@/shared/api/family-os.api';
 import { useSessionStore } from '@/shared/auth/session.store';
 
@@ -10,6 +11,22 @@ import { useSessionStore } from '@/shared/auth/session.store';
 const DEMO_TENANT = import.meta.env.VITE_FAMIXA_DEMO_TENANT || 'DEMO_FAMILY';
 const DEMO_USER = import.meta.env.VITE_FAMIXA_DEMO_USER || 'demo';
 const DEMO_PASS = import.meta.env.VITE_FAMIXA_DEMO_PASSWORD || 'Admin@123';
+const DEMO_CLIENT_KEY = 'famixa.demo-client.v1';
+
+function demoClientKey(): string {
+  try {
+    const existing = localStorage.getItem(DEMO_CLIENT_KEY);
+    if (existing && existing.length >= 8) return existing;
+    const next =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `d_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    localStorage.setItem(DEMO_CLIENT_KEY, next);
+    return next;
+  } catch {
+    return `d_${Date.now()}`;
+  }
+}
 
 /**
  * One-tap GTM entry: viewer login → pick persona → browse read-only.
@@ -45,6 +62,11 @@ export function DemoEnterPage() {
           tenantCode: session.tenantCode || DEMO_TENANT,
           demoMode: true,
         });
+        try {
+          await pingDemoHouseView(demoClientKey());
+        } catch {
+          /* best-effort — never block demo enter */
+        }
         const families = await fetchFamilies();
         const house = families[0];
         if (!house) throw new Error('Nhà demo chưa có dữ liệu — chạy seed-family-os-local.ps1');
