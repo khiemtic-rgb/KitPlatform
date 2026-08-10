@@ -2,12 +2,29 @@
  * Sidebar sản phẩm trên trang chi tiết bài viết.
  * Chỉnh copy / link tại đây — không cần sửa layout.
  */
+
+export const PHC_SURVEY_URL =
+  'https://survey.novixa.vn/survey/21f67b68-f877-4f65-99a8-e32a6ea8de7d';
+
+/** Bài ưu tiên CTA Health Check (diagnostic trước demo). */
+const PHC_CTA_SLUGS = new Set([
+  'nha-thuoc-van-ban-tot-nhung-ban-co-chac-dang-quan-ly-tot',
+]);
+
 export const articleSidebar = {
   cta: {
     title: 'Dùng thử Novixa',
     lead: 'Đăng ký demo để xem POS, kho lô, CRM và báo cáo trên một nền tảng.',
     primary: 'Đăng ký demo',
     primaryHref: '/vi/lien-he/#contact-form',
+  },
+
+  /** CTA chẩn đoán — dùng cho bài pain/PHC */
+  ctaPhc: {
+    title: 'Kiểm tra nhà thuốc',
+    lead: '7 phút — biết đang mạnh chỗ nào, hở chỗ nào trước khi mất tiền âm thầm.',
+    primary: 'Làm Health Check miễn phí',
+    primaryHref: PHC_SURVEY_URL,
   },
 
   /** Sản phẩm / giải pháp — khách click chuyển ngay */
@@ -49,3 +66,17 @@ export const articleSidebar = {
   recentTitle: 'Bài liên quan',
   recentCount: 5,
 } as const;
+
+export type ArticleSidebarCta = {
+  title: string;
+  lead: string;
+  primary: string;
+  primaryHref: string;
+};
+
+export function resolveArticleSidebarCta(slug: string): ArticleSidebarCta {
+  if (PHC_CTA_SLUGS.has(slug)) {
+    return articleSidebar.ctaPhc;
+  }
+  return articleSidebar.cta;
+}

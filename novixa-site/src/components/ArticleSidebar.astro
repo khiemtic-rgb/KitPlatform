@@ -1,5 +1,5 @@
 ---
-import { articleSidebar as s } from '../lib/article-sidebar';
+import { articleSidebar as s, resolveArticleSidebarCta } from '../lib/article-sidebar';
 import { formatNewsDate } from '../lib/newsDate';
 
 interface RecentPost {
@@ -8,18 +8,20 @@ interface RecentPost {
 }
 
 interface Props {
+  slug: string;
   recent?: RecentPost[];
 }
 
-const { recent = [] } = Astro.props;
+const { slug, recent = [] } = Astro.props;
+const cta = resolveArticleSidebarCta(slug);
 ---
 
 <aside class="ad-aside" aria-label="Thông tin sản phẩm Novixa">
   <div class="ad-card ad-cta">
-    <h2>{s.cta.title}</h2>
-    <p>{s.cta.lead}</p>
-    <a class="ad-cta__btn" href={s.cta.primaryHref}>
-      {s.cta.primary}
+    <h2>{cta.title}</h2>
+    <p>{cta.lead}</p>
+    <a class="ad-cta__btn" href={cta.primaryHref}>
+      {cta.primary}
       <span aria-hidden="true">→</span>
     </a>
   </div>

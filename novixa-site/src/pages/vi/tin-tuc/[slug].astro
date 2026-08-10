@@ -79,7 +79,7 @@ const recent = sortPublishedNews(await getCollection('tinTuc'))
         <ArticleCta />
       </div>
 
-      <ArticleSidebar recent={recent} />
+      <ArticleSidebar slug={post.id} recent={recent} />
     </div>
   </article>
   <Footer slot="footer" />
