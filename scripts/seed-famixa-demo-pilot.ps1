@@ -4,10 +4,9 @@
 
 .DESCRIPTION
   Does NOT run with normal family-os deploy. Requires -ConfirmSeed.
-  Seeds DEMO_FAMILY (2 kids, summer/school, viewer `demo`) for public /demo browse.
+  Seeds DEMO_FAMILY (2 kids, summer/school, viewer demo) for public /demo browse.
 
 .EXAMPLE
-  # Dry print only
   .\scripts\seed-famixa-demo-pilot.ps1
 
 .EXAMPLE
@@ -30,7 +29,7 @@ Write-Host "  Entry  : https://home.famixa.vn/demo"
 Write-Host ""
 
 if (-not $ConfirmSeed) {
-    Write-Host "DRY RUN — chua seed." -ForegroundColor Yellow
+    Write-Host "DRY RUN - chua seed." -ForegroundColor Yellow
     Write-Host "Chay lai voi -ConfirmSeed khi da deploy SPA/API co /demo + viewer gate."
     Write-Host ""
     Write-Host "Tren VPS (thu cong):"
@@ -63,20 +62,21 @@ Write-Host "Upload migrations + seed script ..." -ForegroundColor Yellow
 & $pscp -batch -pw $pass -r "$Root\migrations" "${SshTarget}:${remote}/"
 & $pscp -batch -pw $pass $seedSh "${SshTarget}:${remote}/deploy/ubuntu/seed-famixa-gtm-demo.sh"
 
-$remoteCmd = @"
-set -e
-sed -i 's/\r$//' $remote/deploy/ubuntu/seed-famixa-gtm-demo.sh
-chmod +x $remote/deploy/ubuntu/seed-famixa-gtm-demo.sh
-cp $remote/deploy/ubuntu/seed-famixa-gtm-demo.sh /opt/kit-platform/seed-famixa-gtm-demo.sh
-rsync -a $remote/migrations/ /opt/kit-platform/migrations/
-CONFIRM=YES_SEED_FAMIXA_GTM MIGRATIONS=/opt/kit-platform/migrations bash /opt/kit-platform/seed-famixa-gtm-demo.sh
-"@
+# Literal bash (avoid PowerShell expanding $ in sed \r$)
+$remoteCmd = @(
+    'set -e'
+    "sed -i 's/\r`$//' $remote/deploy/ubuntu/seed-famixa-gtm-demo.sh"
+    "chmod +x $remote/deploy/ubuntu/seed-famixa-gtm-demo.sh"
+    "cp $remote/deploy/ubuntu/seed-famixa-gtm-demo.sh /opt/kit-platform/seed-famixa-gtm-demo.sh"
+    "rsync -a $remote/migrations/ /opt/kit-platform/migrations/"
+    'CONFIRM=YES_SEED_FAMIXA_GTM MIGRATIONS=/opt/kit-platform/migrations bash /opt/kit-platform/seed-famixa-gtm-demo.sh'
+) -join "`n"
 
-$tmpSh = Join-Path $env:TEMP "seed-famixa-gtm-remote.sh"
+$tmpSh = Join-Path $env:TEMP 'seed-famixa-gtm-remote.sh'
 $utf8 = New-Object System.Text.UTF8Encoding $false
 [System.IO.File]::WriteAllText($tmpSh, ($remoteCmd -replace "`r`n", "`n"), $utf8)
 & $pscp -batch -pw $pass $tmpSh "${SshTarget}:/tmp/seed-famixa-gtm-remote.sh"
-& $plink -batch -pw $pass $SshTarget "sed -i 's/\r$//' /tmp/seed-famixa-gtm-remote.sh; bash /tmp/seed-famixa-gtm-remote.sh"
+& $plink -batch -pw $pass $SshTarget "sed -i 's/\r`$//' /tmp/seed-famixa-gtm-remote.sh; bash /tmp/seed-famixa-gtm-remote.sh"
 if ($LASTEXITCODE -ne 0) {
     throw "Remote GTM seed failed: $LASTEXITCODE"
 }
@@ -84,4 +84,4 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host ""
 Write-Host "GTM seed done." -ForegroundColor Green
 Write-Host "  https://home.famixa.vn/demo" -ForegroundColor Yellow
-Write-Host "Smoke login demo tren API sau do harden: doi mat khau admin neu can." -ForegroundColor DarkYellow
+Write-Host "Smoke: open /demo; keep admin password private." -ForegroundColor DarkYellow
