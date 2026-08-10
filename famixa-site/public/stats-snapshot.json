@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-10T13:51:38.920Z",
+  "generatedAt": "2026-08-10T19:28:04.547Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 192,
-    "todayPageViews": 90,
-    "todayRequests": 502,
-    "last24hVisitors": 216,
-    "last24hPageViews": 102,
-    "last24hRequests": 605
+    "todayVisitors": 18,
+    "todayPageViews": 2,
+    "todayRequests": 21,
+    "last24hVisitors": 224,
+    "last24hPageViews": 104,
+    "last24hRequests": 571
   },
   "hourly": [
-    {
-      "time": "2026-08-09T14:00:00Z",
-      "visitors": 6,
-      "requests": 21
-    },
-    {
-      "time": "2026-08-09T15:00:00Z",
-      "visitors": 6,
-      "requests": 45
-    },
-    {
-      "time": "2026-08-09T16:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-09T17:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-09T18:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-09T19:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
     {
       "time": "2026-08-09T20:00:00Z",
       "visitors": 3,
@@ -123,17 +93,41 @@
     },
     {
       "time": "2026-08-10T13:00:00Z",
-      "visitors": 2,
-      "requests": 42
+      "visitors": 3,
+      "requests": 43
+    },
+    {
+      "time": "2026-08-10T14:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-10T15:00:00Z",
+      "visitors": 7,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-10T16:00:00Z",
+      "visitors": 10,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-10T17:00:00Z",
+      "visitors": 9,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-10T18:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-10T19:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-04",
-      "visitors": 201,
-      "pageViews": 160,
-      "requests": 689
-    },
     {
       "date": "2026-08-05",
       "visitors": 221,
@@ -166,34 +160,36 @@
     },
     {
       "date": "2026-08-10",
-      "visitors": 236,
-      "pageViews": 100,
-      "requests": 533
+      "visitors": 220,
+      "pageViews": 95,
+      "requests": 550
+    },
+    {
+      "date": "2026-08-11",
+      "visitors": 18,
+      "pageViews": 2,
+      "requests": 21
     }
   ],
   "topPages": [
     {
       "path": "/vi/goi-cha-me/nuoi-day-con-bang-ky-luat-tich-cuc-phuong-phap-giup-con-tu-giac-khong-nuoc-mat/",
-      "views": 68
+      "views": 69
     },
     {
       "path": "/images/blog/nuoi-day-con-bang-ky-luat-tich-cuc.png",
-      "views": 55
+      "views": 60
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 43
-    },
-    {
-      "path": "/robots.txt",
-      "views": 23
+      "views": 41
     },
     {
       "path": "/images/blog/lam-sao-de-con-hop-tac-thay-vi-chong-doi.png",
-      "views": 23
+      "views": 24
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "path": "/robots.txt",
       "views": 22
     },
     {
@@ -201,12 +197,16 @@
       "views": 19
     },
     {
-      "path": "/images/blog/khi-cha-me-bat-dong-trong-nuoi-day-con.png",
+      "path": "/vi/",
+      "views": 18
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
       "views": 17
     },
     {
-      "path": "/vi/",
-      "views": 16
+      "path": "/images/blog/khi-cha-me-bat-dong-trong-nuoi-day-con.png",
+      "views": 17
     },
     {
       "path": "/sitemap.xml",
@@ -217,20 +217,20 @@
       "views": 15
     },
     {
-      "path": "/api/stats",
-      "views": 14
-    },
-    {
       "path": "/images/blog/xay-dung-quy-tac-trong-gia-dinh.png",
       "views": 13
     },
     {
-      "path": "/_next/static/media/df0a9ae256c0569c-s.woff2",
+      "path": "/api/stats",
       "views": 12
     },
     {
       "path": "/_next/static/chunks/app/vi/page-b0e96d1fb6cc5bef.js",
       "views": 12
+    },
+    {
+      "path": "/",
+      "views": 11
     }
   ]
 }
