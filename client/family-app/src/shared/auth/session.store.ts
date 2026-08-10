@@ -44,16 +44,22 @@ export const useSessionStore = create<SessionState>()(
       member: null,
       demoMode: false,
       parentPin: DEFAULT_PIN,
-      setParentSession: ({ accessToken, refreshToken, tenantCode, parentPin, demoMode }) =>
+      setParentSession: ({ accessToken, refreshToken, tenantCode, parentPin, demoMode }) => {
+        const isDemo = Boolean(demoMode);
         set({
           accessToken,
           refreshToken: refreshToken ?? null,
           tenantCode,
           member: null,
-          demoMode: Boolean(demoMode),
-          parentPin:
-            parentPin && /^\d{4}$/.test(parentPin) ? parentPin : get().parentPin || DEFAULT_PIN,
-        }),
+          demoMode: isDemo,
+          // Demo must always accept the published tip PIN; ignore leftover device PIN.
+          parentPin: isDemo
+            ? DEFAULT_PIN
+            : parentPin && /^\d{4}$/.test(parentPin)
+              ? parentPin
+              : get().parentPin || DEFAULT_PIN,
+        });
+      },
       setTokens: ({ accessToken, refreshToken }) =>
         set({
           accessToken,
@@ -61,11 +67,16 @@ export const useSessionStore = create<SessionState>()(
         }),
       setFamily: ({ familyId, familyName }) => set({ familyId, familyName }),
       setMember: (member) => set({ member }),
-      setDemoMode: (demoMode) => set({ demoMode: Boolean(demoMode) }),
+      setDemoMode: (demoMode) =>
+        set(demoMode ? { demoMode: true, parentPin: DEFAULT_PIN } : { demoMode: false }),
       setParentPin: (pin) => {
+        if (get().demoMode) return;
         if (/^\d{4}$/.test(pin) && pin !== '1234') set({ parentPin: pin });
       },
-      verifyParentPin: (pin) => pin === (get().parentPin || DEFAULT_PIN),
+      verifyParentPin: (pin) => {
+        if (get().demoMode) return pin === DEFAULT_PIN;
+        return pin === (get().parentPin || DEFAULT_PIN);
+      },
       canWrite: () => {
         const s = get();
         if (s.demoMode) return false;
