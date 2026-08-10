@@ -116,6 +116,7 @@ export function GrnPricingSummaryPanel({
   form: FormInstance;
   vatTreatments: ProcurementVatTreatment[];
 }) {
+  const { t } = useTranslation('procurement', { keyPrefix: 'goodsReceipts' });
   const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
   const items = Form.useWatch('items', form) as GrnLineLike[] | undefined;
   const vatTreatmentId = Form.useWatch('vatTreatmentId', form) as string | undefined;
@@ -129,33 +130,37 @@ export function GrnPricingSummaryPanel({
   );
 
   return (
-    <div
-      style={{
-        marginTop: 8,
-        display: 'flex',
-        justifyContent: 'flex-end',
-        paddingRight: PROCUREMENT_LINE_ACTION_COL_WIDTH + 8,
-      }}
-    >
-      <div>
-        {pricing.lineDiscountTotal > 0 || pricing.orderDiscountAmount > 0 ? (
-          <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', textAlign: 'right' }}>
-            {pricing.lineDiscountTotal > 0
-              ? tShared('discount.lineDiscountSummary', { amount: formatDisplayMoney(pricing.lineDiscountTotal) })
-              : ''}
-            {pricing.lineDiscountTotal > 0 && pricing.orderDiscountAmount > 0 ? ' · ' : ''}
-            {pricing.orderDiscountAmount > 0
-              ? tShared('discount.orderDiscountSummary', { amount: formatDisplayMoney(pricing.orderDiscountAmount) })
-              : ''}
-          </Typography.Text>
-        ) : null}
-        <GrnTaxSummaryContent
-          subtotal={pricing.merchandiseNet}
-          taxAmount={pricing.taxAmount}
-          totalAmount={pricing.totalAmount}
-          subtotalLabel={tShared('tax.subtotalAfterLineDiscount')}
-          moneyColumnWidth={PROCUREMENT_MONEY_COL_WIDTH}
-        />
+    <div style={{ marginTop: 8 }}>
+      <Typography.Paragraph type="secondary" style={{ marginBottom: 8, fontSize: 12 }}>
+        <strong>{t('taxApHintTitle')}.</strong> {t('taxApHint')}
+      </Typography.Paragraph>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          paddingRight: PROCUREMENT_LINE_ACTION_COL_WIDTH + 8,
+        }}
+      >
+        <div>
+          {pricing.lineDiscountTotal > 0 || pricing.orderDiscountAmount > 0 ? (
+            <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', textAlign: 'right' }}>
+              {pricing.lineDiscountTotal > 0
+                ? tShared('discount.lineDiscountSummary', { amount: formatDisplayMoney(pricing.lineDiscountTotal) })
+                : ''}
+              {pricing.lineDiscountTotal > 0 && pricing.orderDiscountAmount > 0 ? ' · ' : ''}
+              {pricing.orderDiscountAmount > 0
+                ? tShared('discount.orderDiscountSummary', { amount: formatDisplayMoney(pricing.orderDiscountAmount) })
+                : ''}
+            </Typography.Text>
+          ) : null}
+          <GrnTaxSummaryContent
+            subtotal={pricing.merchandiseNet}
+            taxAmount={pricing.taxAmount}
+            totalAmount={pricing.totalAmount}
+            subtotalLabel={tShared('tax.subtotalAfterLineDiscount')}
+            moneyColumnWidth={PROCUREMENT_MONEY_COL_WIDTH}
+          />
+        </div>
       </div>
     </div>
   );

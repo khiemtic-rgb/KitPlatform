@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Card, Select, Space, Switch, Table, Typography, message } from 'antd';
+import { Alert, App, Button, Card, Select, Space, Switch, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { searchCustomers } from '@/shared/api/sales.api';
 import type { CustomerListItem } from '@/shared/api/sales.types';
@@ -50,6 +50,7 @@ function mergeMatrix(consents: CustomerConsent[]): ConsentRow[] {
 
 export function CustomerConsentPage() {
   const { t } = useTranslation('sales', { keyPrefix: 'customerConsent' });
+  const { message } = App.useApp();
   const { consentChannelLabel, consentPurposeLabel } = useSalesEnums();
   const canWrite = useHasPermission('sales.write');
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { Alert, Button, Form, Input, InputNumber, Modal, Select, Space, Switch, Tag, Tooltip, Typography, message } from 'antd';
+import { Alert, App, Button, Form, Input, InputNumber, Modal, Select, Space, Switch, Tag, Tooltip, Typography } from 'antd';
 
 import { MinusCircleOutlined, PlusOutlined, UserAddOutlined } from '@ant-design/icons';
 
@@ -289,6 +289,7 @@ export function PosCheckoutModal({
 }: Props) {
   const { t } = useTranslation('sales');
   const { t: tc } = useTranslation('common');
+  const { message } = App.useApp();
   const { paymentMethodOptions } = useSalesEnums();
 
   const amountFieldLabel = (autoSplit: boolean) =>

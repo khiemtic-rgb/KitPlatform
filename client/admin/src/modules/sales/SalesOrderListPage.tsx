@@ -12,7 +12,7 @@ import {
   Space,
   Table,
   Tag,
-  message,
+  App,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -83,6 +83,7 @@ function todayRange(): [Dayjs, Dayjs] {
 
 export function SalesOrderListPage() {
   const { t } = useTranslation('sales', { keyPrefix: 'orders' });
+  const { message } = App.useApp();
   const { orderDisplayStatus, saleStatusFilterOptions } = useSaleStatusLabels();
   const { returnStatusLabel } = useSalesEnums();
   const navigate = useNavigate();

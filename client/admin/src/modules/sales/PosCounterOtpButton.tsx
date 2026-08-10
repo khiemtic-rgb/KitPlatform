@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Popover, Space, Spin, Typography, message } from 'antd';
+import { Alert, App, Button, Popover, Space, Spin, Typography } from 'antd';
 import { MobileOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
@@ -20,6 +20,7 @@ type Props = {
 
 export function PosCounterOtpButton({ customerId, canWrite }: Props) {
   const { t } = useTranslation('sales', { keyPrefix: 'pos.counterOtp' });
+  const { message } = App.useApp();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<CustomerPilotOtpStatus | null>(null);
   const [loading, setLoading] = useState(false);

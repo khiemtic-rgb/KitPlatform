@@ -13,7 +13,7 @@ import {
   Space,
   Table,
   Tag,
-  message,
+  App,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { isAxiosError } from 'axios';
@@ -72,6 +72,7 @@ export function SupplierPaymentListPage() {
   const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
   const { t: tVal } = useTranslation('procurement', { keyPrefix: 'shared.validation' });
   const { t: tCommon } = useTranslation('common', { keyPrefix: 'actions' });
+  const { message } = App.useApp();
   const { paymentMethodLabel, paymentMethodOptions, supplierPaymentStatusLabel } = useProcurementEnums();
   const canWrite = useProcurementWrite();
   const navigate = useNavigate();

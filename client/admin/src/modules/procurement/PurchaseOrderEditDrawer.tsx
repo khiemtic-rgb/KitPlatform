@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SaveOutlined } from '@ant-design/icons';
-import { Button, Drawer, Form, Spin, Typography, message } from 'antd';
+import { App, Button, Drawer, Form, Spin, Typography } from 'antd';
 import { isAxiosError } from 'axios';
 import { fetchProducts } from '@/shared/api/catalog.api';
 import type { ProductListItem } from '@/shared/api/catalog.types';
@@ -28,6 +28,7 @@ export function PurchaseOrderEditDrawer({
 }: PurchaseOrderEditDrawerProps) {
   const { t } = useTranslation('procurement', { keyPrefix: 'purchaseOrders' });
   const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);

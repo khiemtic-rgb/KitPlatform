@@ -254,6 +254,29 @@ Test-Step 'Customer engagement overview' {
     Invoke-RestMethod "$base/api/customer-engagement/overview?periodDays=30" -Headers $script:adminH | Out-Null
 }
 
+# Lightweight POS route checks (same auth session)
+Test-Step 'POS lookup mounted' {
+    $code = try {
+        Invoke-WebRequest "$base/api/sales/pos/lookup?barcode=__smoke__" -Headers $script:adminH -SkipHttpErrorCheck -TimeoutSec 15 |
+            Select-Object -ExpandProperty StatusCode
+    } catch {
+        if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { throw }
+    }
+    if ($code -in 401, 403) { throw "HTTP $code" }
+}
+
+Test-Step 'POS customers search + orders + shift' {
+    Invoke-RestMethod "$base/api/sales/customers?search=0909" -Headers $script:adminH | Out-Null
+    Invoke-RestMethod "$base/api/sales/orders?page=1&pageSize=5" -Headers $script:adminH | Out-Null
+    try {
+        Invoke-RestMethod "$base/api/sales/shifts/current" -Headers $script:adminH | Out-Null
+    } catch {
+        $code = [int]($_.Exception.Response.StatusCode)
+        if ($code -in 401, 403) { throw "HTTP $code" }
+        if ($code -ge 500) { throw "HTTP $code" }
+    }
+}
+
 Write-Host "`n--- Summary ---" -ForegroundColor Cyan
 Write-Host "Passed: $passed"
 Write-Host "Draft orders (customer): $script:draftCount"

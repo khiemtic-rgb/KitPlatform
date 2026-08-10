@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import {
+  App,
   AutoComplete,
   Button,
   Card,
@@ -14,7 +15,6 @@ import {
   Tabs,
   Tag,
   Typography,
-  message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EyeOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
@@ -22,6 +22,7 @@ import { fetchProduct } from '@/shared/api/catalog.api';
 import { fetchStockBatches, fetchStockProducts, fetchWarehouses } from '@/shared/api/inventory.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import type { StockBatch, StockProductSummary, Warehouse } from '@/shared/api/inventory.types';
+import { ListFilterBar } from '@/shared/ui/ListFilterBar';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
@@ -43,6 +44,7 @@ function formatQty(value: number): string {
 
 export function StockListPage() {
   const { t } = useTranslation('inventory', { keyPrefix: 'stockList' });
+  const { message } = App.useApp();
   const { t: ts } = useTranslation('inventory', { keyPrefix: 'shared' });
   const { t: tc } = useTranslation('common');
   const [searchParams] = useSearchParams();
@@ -395,7 +397,7 @@ export function StockListPage() {
   ];
 
   const filterBar = (
-    <Space style={{ marginBottom: 16 }} wrap>
+    <ListFilterBar>
       <Select
         allowClear
         placeholder={t('filterByWarehouse')}
@@ -463,7 +465,7 @@ export function StockListPage() {
       <Button type="primary" ghost icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
         {tc('actions.reload')}
       </Button>
-    </Space>
+    </ListFilterBar>
   );
 
   const pagination = {

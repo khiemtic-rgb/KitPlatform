@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Badge, Button, Card, Empty, Input, List, Space, Spin, Typography, Alert, message } from 'antd';
+import { Badge, Button, Card, Empty, Input, List, Space, Spin, Typography, Alert, App } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
@@ -47,6 +47,7 @@ function MessageBubble({ item }: { item: AdminChatMessage }) {
 
 export function CustomerChatPage() {
   const { t } = useTranslation('sales', { keyPrefix: 'customerChat' });
+  const { message } = App.useApp();
   const accessToken = useAuthStore((s) => s.accessToken);
   const [threads, setThreads] = useState<AdminChatThread[]>([]);
   const [selectedId, setSelectedId] = useState<string>();

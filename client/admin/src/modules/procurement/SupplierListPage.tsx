@@ -14,7 +14,7 @@ import {
   Space,
   Table,
   Tag,
-  message,
+  App,
   Popconfirm,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -40,6 +40,7 @@ export function SupplierListPage() {
   const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
   const { t: tCommon } = useTranslation('common', { keyPrefix: 'actions' });
   const { t: tVal } = useTranslation('procurement', { keyPrefix: 'shared.validation' });
+  const { message } = App.useApp();
   const { supplierStatusLabel, supplierStatusOptions } = useProcurementEnums();
   const canWrite = useProcurementWrite();
   const [loading, setLoading] = useState(false);

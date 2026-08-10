@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
+  App,
   Button,
   Card,
   DatePicker,
@@ -16,7 +17,6 @@ import {
   Table,
   Tag,
   Typography,
-  message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { isAxiosError } from 'axios';
@@ -53,6 +53,7 @@ import type { TransferDetail, TransferItem, TransferListItem, Warehouse } from '
 import type { ProductUnit } from '@/shared/api/catalog.types';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayQuantity } from '@/shared/utils/money';
+import { ListFilterBar } from '@/shared/ui/ListFilterBar';
 import { inventoryT } from '@/shared/i18n';
 import { useInventoryEnums } from '@/shared/i18n/use-inventory-enums';
 import { ProductUnitSelect } from '@/modules/procurement/ProductUnitSelect';
@@ -430,6 +431,7 @@ function TransferLineEditor({
 }
 
 export function TransferListPage() {
+  const { message } = App.useApp();
   const { t } = useTranslation('inventory', { keyPrefix: 'transferList' });
   const { t: ts } = useTranslation('inventory', { keyPrefix: 'shared' });
   const { t: tc } = useTranslation('common');
@@ -982,7 +984,7 @@ export function TransferListPage() {
         }
       >
         <Alert type="info" showIcon style={{ marginBottom: 12 }} message={t('workflowHint')} />
-        <Space wrap style={{ marginBottom: 12, width: '100%' }} size={8}>
+        <ListFilterBar>
           <Input.Search
             allowClear
             placeholder={t('filters.searchPlaceholder')}
@@ -1053,7 +1055,7 @@ export function TransferListPage() {
             style={{ width: 160 }}
           />
           <Button onClick={resetFilters}>{t('filters.reset')}</Button>
-        </Space>
+        </ListFilterBar>
         <Table
           rowKey="id"
           loading={loading}

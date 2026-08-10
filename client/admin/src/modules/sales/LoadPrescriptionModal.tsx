@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Input, Modal, Space, Table, Tabs, Tag, message } from 'antd';
+import { App, Button, Input, Modal, Space, Table, Tabs, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { SearchOutlined } from '@ant-design/icons';
 import {
@@ -53,6 +53,7 @@ export function LoadPrescriptionModal({
   onLoaded,
   onLoadedConnectHandoff,
 }: Props) {
+  const { message } = App.useApp();
   const [tab, setTab] = useState<'rx' | 'connect'>('connect');
   const [phoneSearch, setPhoneSearch] = useState('');
   const [loading, setLoading] = useState(false);

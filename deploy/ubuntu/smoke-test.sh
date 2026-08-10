@@ -76,6 +76,10 @@ check_api_route() {
 check_api_route "/api/procurement/supplier-payables" "API supplier-payables route"
 check_api_route "/api/sales/customer-receivables" "API customer-receivables route"
 check_api_route "/api/inventory/transfers" "API inventory transfers route"
+check_api_route "/api/sales/customers" "API sales customers (POS search) route"
+check_api_route "/api/sales/pos/lookup" "API POS lookup route"
+check_api_route "/api/sales/orders" "API sales orders route"
+check_api_route "/api/sales/shifts/current" "API current shift route"
 
 echo -n "Migration manifest 279/280 ... "
 MANIFEST="/opt/kit-platform/migration-files.prod.txt"

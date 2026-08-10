@@ -11,7 +11,7 @@ import {
   Spin,
   Table,
   Typography,
-  message,
+  App,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DollarOutlined, DownloadOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
@@ -86,6 +86,7 @@ function matchesBalance(row: CustomerReceivablesRow, balance: BalanceFilter): bo
 
 export function CustomerReceivablesPage() {
   const { t } = useTranslation('sales', { keyPrefix: 'customerReceivables' });
+  const { message } = App.useApp();
   const canWrite = useHasPermission('sales.write');
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);

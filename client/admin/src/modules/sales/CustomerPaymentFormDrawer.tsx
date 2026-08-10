@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Drawer, Form, Input, InputNumber, Select, message } from 'antd';
+import { App, Button, Drawer, Form, Input, InputNumber, Select } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import { isAxiosError } from 'axios';
 import { CustomerPaymentAmountHint } from '@/modules/sales/CustomerPaymentAmountHint';
@@ -61,6 +61,7 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
   onSaved,
 }: CustomerPaymentFormDrawerProps) {
   const { t } = useTranslation('sales', { keyPrefix: 'customerPayments.form' });
+  const { message } = App.useApp();
   const { collectionPaymentMethodOptions } = useSalesEnums();
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);

@@ -12,7 +12,7 @@ import {
   Table,
   Tag,
   Tooltip,
-  message,
+  App,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { isAxiosError } from 'axios';
@@ -80,6 +80,7 @@ export function PurchaseOrderListPage() {
   const { t } = useTranslation('procurement', { keyPrefix: 'purchaseOrders' });
   const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
   const { t: tCommon } = useTranslation('common', { keyPrefix: 'actions' });
+  const { message } = App.useApp();
   const { poStatusLabel } = useProcurementEnums();
   const canWrite = useProcurementWrite();
   const isAdmin = useIsAdmin();

@@ -13,7 +13,7 @@ import {
   Table,
   Tag,
   Tooltip,
-  message,
+  App,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -49,6 +49,7 @@ export function VatTreatmentListPage() {
   const { t } = useTranslation('procurement', { keyPrefix: 'vatTreatments' });
   const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
   const { t: tCommon } = useTranslation('common', { keyPrefix: 'actions' });
+  const { message } = App.useApp();
   const canWrite = useProcurementWrite();
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);

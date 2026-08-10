@@ -42,6 +42,7 @@ import type {
 } from '@/shared/api/inventory.types';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayQuantity } from '@/shared/utils/money';
+import { ListFilterBar } from '@/shared/ui/ListFilterBar';
 import { InventoryCountBatchPickModal } from '@/modules/inventory/InventoryCountBatchPickModal';
 import { InventoryCountWorkflowSteps } from '@/modules/inventory/InventoryCountWorkflowSteps';
 import {
@@ -465,7 +466,7 @@ export function AdjustmentListPage() {
           </Space>
         }
       >
-        <Space wrap style={{ marginBottom: 12, width: '100%' }} size={8}>
+        <ListFilterBar>
           <Input.Search
             allowClear
             placeholder={t('filters.searchPlaceholder')}
@@ -511,7 +512,7 @@ export function AdjustmentListPage() {
             placeholder={[t('filters.dateRange'), '']}
           />
           <Button onClick={resetFilters}>{t('filters.reset')}</Button>
-        </Space>
+        </ListFilterBar>
         <Table
           rowKey="id"
           loading={loading}

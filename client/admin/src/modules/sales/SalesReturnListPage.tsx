@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Card, DatePicker, Select, Space, Table, Tag, message } from 'antd';
+import { App, Button, Card, DatePicker, Select, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EyeOutlined, PrinterOutlined, ReloadOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -27,6 +27,7 @@ function todayRange(): [Dayjs, Dayjs] {
 
 export function SalesReturnListPage() {
   const { t } = useTranslation('sales', { keyPrefix: 'returns.list' });
+  const { message } = App.useApp();
   const canRead = useHasPermission('sales.read');
   const { returnStatusLabel, returnStatusOptions } = useSalesEnums();
   const navigate = useNavigate();

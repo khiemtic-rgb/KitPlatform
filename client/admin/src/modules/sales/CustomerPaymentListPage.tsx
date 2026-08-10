@@ -12,7 +12,7 @@ import {
   Space,
   Table,
   Tag,
-  message,
+  App,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -65,6 +65,7 @@ const tableWrapClassName = 'sales-list-table-wrap';
 
 function CustomerPaymentListPageInner() {
   const { t } = useTranslation('sales', { keyPrefix: 'customerPayments' });
+  const { message } = App.useApp();
   const canWrite = useHasPermission('sales.write');
   const {
     paymentMethodLabel,

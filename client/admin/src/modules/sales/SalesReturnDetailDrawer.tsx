@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Card, Descriptions, Drawer, Space, Table, Tag, message } from 'antd';
+import { App, Button, Card, Descriptions, Drawer, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PrinterOutlined } from '@ant-design/icons';
 import { fetchSalesReturn } from '@/shared/api/sales.api';
@@ -21,6 +21,7 @@ type Props = {
 
 export function SalesReturnDetailDrawer({ open, returnId, onClose, onOpenOrder }: Props) {
   const { t } = useTranslation('sales', { keyPrefix: 'returns.detail' });
+  const { message } = App.useApp();
   const { paymentMethodLabel, returnStatusLabel } = useSalesEnums();
   const [detail, setDetail] = useState<SalesReturnDetail | null>(null);
   const [loading, setLoading] = useState(false);

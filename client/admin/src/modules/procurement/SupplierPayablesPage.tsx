@@ -11,7 +11,7 @@ import {
   Spin,
   Table,
   Typography,
-  message,
+  App,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { CreditCardOutlined, DownloadOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
@@ -94,6 +94,7 @@ function buildSupplierSearchSuggestions(rows: SupplierPayablesRow[], search: str
 export function SupplierPayablesPage() {
   const { t } = useTranslation('procurement', { keyPrefix: 'supplierPayables' });
   const { t: tShared } = useTranslation('procurement', { keyPrefix: 'shared' });
+  const { message } = App.useApp();
   const canWrite = useProcurementWrite();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);

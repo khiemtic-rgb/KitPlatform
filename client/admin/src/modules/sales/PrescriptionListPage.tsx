@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Card, Input, Select, Space, Table, Tag, message } from 'antd';
+import { App, Button, Card, Input, Select, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -25,6 +25,7 @@ const STATUS_KEYS = Object.keys(STATUS_COLORS);
 
 export function PrescriptionListPage() {
   const { t } = useTranslation('rx');
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const canWrite = useHasPermission('rx.prescription.create') || useHasPermission('sales.write');
