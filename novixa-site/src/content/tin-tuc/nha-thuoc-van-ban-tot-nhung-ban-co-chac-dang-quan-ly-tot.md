@@ -15,9 +15,9 @@ lang: vi
 
 Đa số các chủ nhà thuốc độc lập thường điều hành điểm bán dựa trên **cảm giác**:
 
-- Thấy quầy luôn có người đứng mua $\rightarrow$ _Nghĩ là kinh doanh tốt._
-- Thấy dược sĩ bận rộn lấy thuốc, tư vấn $\rightarrow$ _Nghĩ là vận hành chuẩn._
-- Thấy kho đầy ắp hàng hóa $\rightarrow$ _Nghĩ là tiềm lực mạnh._
+- Thấy quầy luôn có người đứng mua → _Nghĩ là kinh doanh tốt._
+- Thấy dược sĩ bận rộn lấy thuốc, tư vấn → _Nghĩ là vận hành chuẩn._
+- Thấy kho đầy ắp hàng hóa → _Nghĩ là tiềm lực mạnh._
 
 Thế nhưng, cảm giác rất hay đánh lừa thị giác. **Bán tốt chỉ thể hiện sức hút thương mại ngắn hạn, còn Quản lý tốt mới quyết định sự sống còn và dòng tiền dài hạn.**
 
@@ -46,6 +46,9 @@ Dược sĩ ca này cắt liều một kiểu, ca sau tư vấn một kiểu. Vi
 ### 5. Chủ nhà thuốc trở thành "tù nhân" của chính điểm bán
 
 Bạn không dám rời nhà thuốc nửa ngày vì sợ nhân viên làm sai, sợ mất tiền, sợ thất thoát kho. Việc thiếu một bộ chỉ số vận hành minh bạch khiến bạn phải trực tiếp túc trực và kiểm soát thủ công từng việc nhỏ nhặt nhất.
+
+> Muốn biết nhà thuốc mình đang hở ở đâu trước?
+> → **[Làm Health Check 7 phút](https://survey.novixa.vn/survey/21f67b68-f877-4f65-99a8-e32a6ea8de7d)** — miễn phí, nhận kết quả phân tích ngay.
 
 ## Pharmacy Health Check (PHC): Bắt bệnh chính xác cho nhà thuốc trong 7 phút
 
@@ -80,7 +83,7 @@ Chỉ với 7 phút trả lời các câu hỏi khảo sát thực tế chuyên 
 
 Nhà thuốc vẫn đang bán tốt là một tín hiệu tuyệt vời. Nhưng đừng để những lỗ hổng âm thầm trong quản lý bào mòn đi thành quả lao động vất vả của bạn mỗi ngày. Phát hiện sớm khoảng trống là bước đầu tiên để bịt kín thất thoát và đưa nhà thuốc phát triển bền vững.
 
-👉 **[ Bắt đầu Health Check 7 phút ngay ]**
+👉 **[Bắt đầu Health Check 7 phút ngay](https://survey.novixa.vn/survey/21f67b68-f877-4f65-99a8-e32a6ea8de7d)**
 
 _(Hoàn toàn miễn phí · Không cần cài đặt phần mềm · Nhận kết quả phân tích riêng ngay lập tức)_
 
