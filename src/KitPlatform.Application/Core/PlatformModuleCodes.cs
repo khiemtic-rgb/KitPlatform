@@ -33,6 +33,8 @@ public static class PlatformModuleCodes
     public const string FamilyOs = "family_os";
     /// <summary>Care OS — T3-ready care events / cohort / KPI hooks (Community Health instrumentation).</summary>
     public const string CareOs = "care_os";
+    /// <summary>KIT Content Park — multi-brand content ops (isolated from Pharmacy ERP).</summary>
+    public const string KitContent = "kit_content";
     public const string Learning = "learning";
 
     public static IReadOnlyList<string> All { get; } =
@@ -61,6 +63,7 @@ public static class PlatformModuleCodes
         NovixaConnect,
         FamilyOs,
         CareOs,
+        KitContent,
         Learning,
     ];
 }

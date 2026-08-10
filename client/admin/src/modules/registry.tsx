@@ -16,6 +16,7 @@ import {
   SettingOutlined,
   HomeOutlined,
   RiseOutlined,
+  ReadOutlined,
 } from '@ant-design/icons';
 import { commonT } from '@/shared/i18n';
 import { ADMIN_MODULE_PLATFORM_CODES } from '@/shared/platform/platform-feature-map';
@@ -35,6 +36,7 @@ export type ModuleKey =
   | 'customer'
   | 'reports'
   | 'kap'
+  | 'content'
   | 'learning'
   | 'system';
 
@@ -224,6 +226,15 @@ export const moduleRegistry: ModuleMenuItem[] = [
     enabled: true,
     platformModule: ADMIN_MODULE_PLATFORM_CODES.kap,
     verticals: ['pharmacy', 'clinic'],
+  },
+  {
+    key: 'content',
+    label: 'content',
+    path: '/content/budget',
+    icon: <ReadOutlined />,
+    enabled: true,
+    // Platform ADMIN ops — không gắn platformModule tenant pharmacy.
+    verticals: ALL_VERTICALS,
   },
   {
     key: 'system',

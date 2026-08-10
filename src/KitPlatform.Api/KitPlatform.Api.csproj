@@ -23,6 +23,7 @@
     <ProjectReference Include="..\Packs\Connect\KitPlatform.Packs.Connect.Infrastructure\KitPlatform.Packs.Connect.Infrastructure.csproj" />
     <ProjectReference Include="..\Packs\FamilyOS\KitPlatform.Packs.FamilyOs.Infrastructure\KitPlatform.Packs.FamilyOs.Infrastructure.csproj" />
     <ProjectReference Include="..\Packs\Care\KitPlatform.Packs.Care.Infrastructure\KitPlatform.Packs.Care.Infrastructure.csproj" />
+    <ProjectReference Include="..\Packs\Content\KitPlatform.Packs.Content.Infrastructure\KitPlatform.Packs.Content.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

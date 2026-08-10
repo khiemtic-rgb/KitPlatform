@@ -17,6 +17,7 @@ using KitPlatform.Packs.Survey.Infrastructure;
 using KitPlatform.Packs.Connect.Infrastructure;
 using KitPlatform.Packs.FamilyOs.Infrastructure;
 using KitPlatform.Packs.Care.Infrastructure;
+using KitPlatform.Packs.Content.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers()
@@ -115,6 +116,7 @@ builder.Services.AddClinicPack(builder.Configuration);
 builder.Services.AddSurveyPack(builder.Configuration);
 builder.Services.AddFamilyOsPack(builder.Configuration);
 builder.Services.AddCarePack();
+builder.Services.AddContentPack(builder.Configuration);
 
 builder.Services.AddRateLimiter(options =>
 {

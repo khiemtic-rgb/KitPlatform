@@ -413,6 +413,21 @@ const KapCampaignsPage = lazy(() =>
 const KapPartnersPage = lazy(() =>
   import('@/modules/kap/KapPartnersPage').then((m) => ({ default: m.KapPartnersPage })),
 );
+const ContentLayout = lazy(() =>
+  import('@/modules/content/ContentLayout').then((m) => ({ default: m.ContentLayout })),
+);
+const ContentBudgetPage = lazy(() =>
+  import('@/modules/content/ContentBudgetPage').then((m) => ({ default: m.ContentBudgetPage })),
+);
+const ContentSettingsPage = lazy(() =>
+  import('@/modules/content/ContentSettingsPage').then((m) => ({ default: m.ContentSettingsPage })),
+);
+const ContentBrandsPage = lazy(() =>
+  import('@/modules/content/ContentBrandsPage').then((m) => ({ default: m.ContentBrandsPage })),
+);
+const ContentTopicsPage = lazy(() =>
+  import('@/modules/content/ContentTopicsPage').then((m) => ({ default: m.ContentTopicsPage })),
+);
 const ReportsLayout = lazy(() =>
   import('@/modules/reports/ReportsLayout').then((m) => ({ default: m.ReportsLayout })),
 );
@@ -839,6 +854,20 @@ export function AppRouter() {
                 <Route path="rules" element={<KapRulesPage />} />
                 <Route path="campaigns" element={<KapCampaignsPage />} />
                 <Route path="partners" element={<KapPartnersPage />} />
+              </Route>
+              <Route
+                path="content"
+                element={
+                  <SuspenseRoute>
+                    <ContentLayout />
+                  </SuspenseRoute>
+                }
+              >
+                <Route index element={<Navigate to="/content/budget" replace />} />
+                <Route path="budget" element={<ContentBudgetPage />} />
+                <Route path="settings" element={<ContentSettingsPage />} />
+                <Route path="brands" element={<ContentBrandsPage />} />
+                <Route path="topics" element={<ContentTopicsPage />} />
               </Route>
               <Route
                 path="reports"

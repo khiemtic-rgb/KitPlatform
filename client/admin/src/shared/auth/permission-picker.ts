@@ -73,6 +73,10 @@ const PERMISSION_UI_GROUP_DEFS: Array<{
     items: ['survey.read', 'survey.write'],
   },
   {
+    moduleKey: 'content',
+    items: ['content.read', 'content.write', 'content.publish', 'content.budget.manage'],
+  },
+  {
     moduleKey: 'learning',
     items: ['learning.read', 'learning.write'],
   },

@@ -1,0 +1,6 @@
+# KIT Content Park — PILOT / INDEPENDENT
+# Do NOT merge into migration-files.prod.txt (Pharmacy) until GA is explicitly approved.
+# Apply: list files below in order via your content mig runner (or psql manually).
+
+281_pack_content_wave0.sql
+282_pack_content_generate_publish.sql
