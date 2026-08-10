@@ -26742,7 +26742,9 @@ button.kdiary-mcard.is-add strong{
   gap:12px;
   width:100%;
   min-width:0;
-  align-items:stretch;
+  align-items:start;
+  position:relative;
+  z-index:1;
 }
 @media (max-width:640px){
   .kdiary-mid{grid-template-columns:1fr}
@@ -26753,11 +26755,13 @@ button.kdiary-mcard.is-add strong{
   gap:12px;
   min-width:0;
   width:100%;
-  height:100%;
-  min-height:0;
+  /* Auto height so 2+ love notes don't spill onto the mood card below. */
+  height:auto;
+  align-self:stretch;
   padding:14px;
   border-radius:24px;
   box-shadow:0 10px 24px rgba(15,23,42,.05);
+  overflow:visible;
 }
 .kdiary-panel.is-pride{
   background:linear-gradient(165deg,#f0fdf4 0%,#ecfdf5 40%,#f8fafc 100%);
@@ -26766,6 +26770,8 @@ button.kdiary-mcard.is-add strong{
 .kdiary-panel.is-love{
   background:linear-gradient(165deg,#fff1f2 0%,#fce7f3 55%,#fff7ed 100%);
   border:1px solid rgba(244,114,182,.16);
+  /* Contain stacked notes; never paint over .kdiary-feel below. */
+  overflow:hidden;
 }
 .kdiary-panel-head{
   display:flex;
@@ -26849,14 +26855,14 @@ button.kdiary-mcard.is-add strong{
   display:flex;
   flex-direction:column;
   gap:10px;
-  flex:1 1 auto;
-  justify-content:space-between;
+  flex:0 1 auto;
+  justify-content:flex-start;
   min-width:0;
-  min-height:148px;
+  min-height:0;
 }
 .kdiary-love-row{
   display:block;
-  flex:1 1 auto;
+  flex:0 0 auto;
   padding:0;
   border-radius:18px;
   background:#fff;
@@ -26864,6 +26870,8 @@ button.kdiary-mcard.is-add strong{
   box-shadow:0 6px 14px rgba(219,39,119,.05);
   min-height:0;
   overflow:hidden;
+  position:relative;
+  z-index:0;
 }
 button.kdiary-love-hit{
   appearance:none;-webkit-appearance:none;
@@ -27030,6 +27038,9 @@ button.kdiary-love-hit:active{
     linear-gradient(165deg,#f5f3ff 0%,#faf5ff 45%,#eef2ff 100%);
   border:1px solid rgba(167,139,250,.2);
   box-shadow:0 12px 28px rgba(91,33,182,.07);
+  position:relative;
+  z-index:0;
+  isolation:isolate;
 }
 .kdiary-feel-head{
   display:flex;
@@ -27568,7 +27579,7 @@ button.kdiary-album-card.is-add strong{
   .kdiary-tale-fami img{width:124px;height:132px}
   .kdiary-tale-body{font-size:.9rem}
   button.kdiary-tale-polaroid{max-width:128px}
-  .kdiary-mid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch}
+  .kdiary-mid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
   .kdiary-feel-save{align-self:flex-start;min-width:220px}
   .ktre-mid{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr)}
   .ktre-hero-top{grid-template-columns:minmax(0,1.2fr) minmax(160px,1fr)}
