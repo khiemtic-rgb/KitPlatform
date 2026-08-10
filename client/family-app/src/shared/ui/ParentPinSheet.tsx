@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSessionStore } from '@/shared/auth/session.store';
 
 type Props = {
   open: boolean;
@@ -9,6 +10,8 @@ type Props = {
   verify: (pin: string) => boolean;
 };
 
+const DEMO_PIN = '1234';
+
 export function ParentPinSheet({
   open,
   title = 'Mã bố mẹ',
@@ -17,6 +20,7 @@ export function ParentPinSheet({
   onSuccess,
   verify,
 }: Props) {
+  const demoMode = useSessionStore((s) => s.demoMode);
   const [digits, setDigits] = useState('');
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -62,6 +66,31 @@ export function ParentPinSheet({
         <p className="muted" style={{ margin: 0 }}>
           {hint}
         </p>
+        {demoMode ? (
+          <p
+            className="pin-demo-tip"
+            style={{
+              margin: '0.65rem 0 0',
+              padding: '0.65rem 0.75rem',
+              borderRadius: 12,
+              background: 'rgba(15, 61, 46, 0.08)',
+              color: '#0f3d2e',
+              fontSize: '0.9rem',
+              lineHeight: 1.45,
+            }}
+          >
+            <strong>Nhà demo — thử mã {DEMO_PIN}.</strong>
+            <br />
+            Nhà thật: 4 số bảo mật do bố mẹ đặt khi tạo nhà / đổi trong Cài đặt, không hiện sẵn.
+          </p>
+        ) : (
+          <p
+            className="muted"
+            style={{ margin: '0.5rem 0 0', fontSize: '0.82rem', lineHeight: 1.4 }}
+          >
+            Đây là mã bảo mật do bố mẹ đặt cho thiết bị này — không chia sẻ với con nếu không cần.
+          </p>
+        )}
         <div className="pin-dots" aria-hidden>
           {[0, 1, 2, 3].map((i) => (
             <span key={i} className={`pin-dot${digits.length > i ? ' is-on' : ''}`} />
