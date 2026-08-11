@@ -7,6 +7,7 @@ import type {
   CustomerModeAReadinessSummary,
   CustomerPhoneReadiness,
   CustomerPilotOtpStatus,
+  ActiveCounterOtpList,
   BulkMarkPharmacyMemberResult,
   LoyaltyProgramSummary,
   LoyaltyTier,
@@ -320,6 +321,26 @@ export async function fetchCustomerPilotOtp(customerId: string): Promise<Custome
     code: (data.code ?? data.Code) != null ? String(data.code ?? data.Code) : null,
     expiresAt: (data.expiresAt ?? data.ExpiresAt) as string | null,
     createdAt: (data.createdAt ?? data.CreatedAt) as string | null,
+  };
+}
+
+/** Live staff-read OTPs (auto-refresh panel) — no need to open each customer. */
+export async function fetchActiveCounterOtps(): Promise<ActiveCounterOtpList> {
+  const { data } = await http.get<Record<string, unknown>>('/customers/active-counter-otps');
+  const raw = (data.items ?? data.Items ?? []) as Record<string, unknown>[];
+  return {
+    enabled: Boolean(data.enabled ?? data.Enabled ?? true),
+    items: raw.map((row) => ({
+      phone: String(row.phone ?? row.Phone ?? ''),
+      code: String(row.code ?? row.Code ?? ''),
+      expiresAt: String(row.expiresAt ?? row.ExpiresAt ?? ''),
+      createdAt: String(row.createdAt ?? row.CreatedAt ?? ''),
+      customerId:
+        row.customerId != null || row.CustomerId != null
+          ? String(row.customerId ?? row.CustomerId)
+          : null,
+      customerName: (row.customerName ?? row.CustomerName) as string | null | undefined,
+    })),
   };
 }
 

@@ -142,6 +142,20 @@ export interface CustomerPilotOtpStatus {
   createdAt: string | null;
 }
 
+export interface ActiveCounterOtpItem {
+  phone: string;
+  code: string;
+  expiresAt: string;
+  createdAt: string;
+  customerId?: string | null;
+  customerName?: string | null;
+}
+
+export interface ActiveCounterOtpList {
+  enabled: boolean;
+  items: ActiveCounterOtpItem[];
+}
+
 export interface CustomerOrderListItem {
   id: string;
   orderNumber: string;

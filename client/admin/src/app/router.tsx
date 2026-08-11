@@ -422,6 +422,9 @@ const ContentBudgetPage = lazy(() =>
 const ContentSettingsPage = lazy(() =>
   import('@/modules/content/ContentSettingsPage').then((m) => ({ default: m.ContentSettingsPage })),
 );
+const ContentAiSettingsPage = lazy(() =>
+  import('@/modules/content/ContentAiSettingsPage').then((m) => ({ default: m.ContentAiSettingsPage })),
+);
 const ContentBrandsPage = lazy(() =>
   import('@/modules/content/ContentBrandsPage').then((m) => ({ default: m.ContentBrandsPage })),
 );
@@ -863,8 +866,9 @@ export function AppRouter() {
                   </SuspenseRoute>
                 }
               >
-                <Route index element={<Navigate to="/content/budget" replace />} />
+                <Route index element={<Navigate to="/content/topics" replace />} />
                 <Route path="budget" element={<ContentBudgetPage />} />
+                <Route path="ai" element={<ContentAiSettingsPage />} />
                 <Route path="settings" element={<ContentSettingsPage />} />
                 <Route path="brands" element={<ContentBrandsPage />} />
                 <Route path="topics" element={<ContentTopicsPage />} />

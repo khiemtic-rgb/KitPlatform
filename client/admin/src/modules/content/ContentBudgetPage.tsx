@@ -19,7 +19,7 @@ export function ContentBudgetPage() {
     try {
       setBudget(await fetchContentBudget());
     } catch (e) {
-      message.error(apiErrorMessage(e, 'Không tải được ngân sách Content'));
+      message.error(apiErrorMessage(e, 'Không tải được giới hạn chi phí'));
     } finally {
       setLoading(false);
     }
@@ -39,10 +39,11 @@ export function ContentBudgetPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
           <Typography.Title level={4} style={{ margin: 0 }}>
-            Ngân sách Content
+            Giới hạn chi phí AI
           </Typography.Title>
           <Typography.Text type="secondary">
-            Trần động theo org/brand — chặn gen khi vượt (Wave 0 ước lượng ledger).
+            Theo dõi tiền ước tính khi nhờ AI viết / tạo ảnh trong tháng. Vượt mức → không cho tạo ảnh mới
+            (tránh cháy ngân sách).
           </Typography.Text>
         </div>
         <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
@@ -53,12 +54,12 @@ export function ContentBudgetPage() {
       <Row gutter={[16, 16]}>
         <Col xs={24} md={8}>
           <Card loading={loading}>
-            <Statistic title="Trần global / tháng" value={budget?.globalCeilingUsd ?? 0} precision={2} prefix="$" />
+            <Statistic title="Mức tối đa / tháng" value={budget?.globalCeilingUsd ?? 0} precision={2} prefix="$" />
           </Card>
         </Col>
         <Col xs={24} md={8}>
           <Card loading={loading}>
-            <Statistic title="Đã dùng (ước)" value={budget?.globalSpendUsd ?? 0} precision={2} prefix="$" />
+            <Statistic title="Đã dùng (ước tính)" value={budget?.globalSpendUsd ?? 0} precision={2} prefix="$" />
           </Card>
         </Col>
         <Col xs={24} md={8}>
@@ -68,27 +69,39 @@ export function ContentBudgetPage() {
         </Col>
       </Row>
 
-      <Card style={{ marginTop: 16 }} loading={loading} title="Mức sử dụng global">
+      <Card style={{ marginTop: 16 }} loading={loading} title="Mức đã dùng trong tháng">
         <Progress percent={usedPct} status={usedPct >= 90 ? 'exception' : 'active'} />
         <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
-          Tier ảnh mặc định: <strong>{budget?.defaultImageTier ?? '—'}</strong>
+          Chất lượng ảnh mặc định:{' '}
+          <strong>
+            {budget?.defaultImageTier === 'lean'
+              ? 'Tiết kiệm'
+              : budget?.defaultImageTier === 'premium'
+                ? 'Cao cấp'
+                : 'Cân bằng'}
+          </strong>
         </Typography.Paragraph>
       </Card>
 
-      <Card style={{ marginTop: 16 }} title="Theo brand">
+      <Card style={{ marginTop: 16 }} title="Theo từng thương hiệu">
         <Table
           rowKey="brandId"
           loading={loading}
           pagination={false}
           dataSource={budget?.brands ?? []}
           columns={[
-            { title: 'Brand', dataIndex: 'brandName', render: (v, r) => `${v} (${r.brandCode})` },
-            { title: 'Trần hiệu lực', dataIndex: 'effectiveCeilingUsd', render: money },
+            { title: 'Thương hiệu', dataIndex: 'brandName', render: (v, r) => `${v} (${r.brandCode})` },
+            { title: 'Mức tối đa', dataIndex: 'effectiveCeilingUsd', render: money },
             { title: 'Đã dùng', dataIndex: 'spendUsd', render: money },
             { title: 'Còn lại', dataIndex: 'remainingUsd', render: money },
-            { title: 'Tier ảnh', dataIndex: 'effectiveImageTier' },
             {
-              title: 'Pause khi vượt',
+              title: 'Chất lượng ảnh',
+              dataIndex: 'effectiveImageTier',
+              render: (v: string) =>
+                v === 'lean' ? 'Tiết kiệm' : v === 'premium' ? 'Cao cấp' : 'Cân bằng',
+            },
+            {
+              title: 'Tự dừng khi hết',
               dataIndex: 'pauseWhenExceeded',
               render: (v: boolean) => (v ? 'Có' : 'Không'),
             },

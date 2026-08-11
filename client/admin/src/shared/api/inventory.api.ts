@@ -341,6 +341,19 @@ export async function createTransfer(payload: {
   return normalizeTransferDetail(data);
 }
 
+export async function updateTransfer(
+  id: string,
+  payload: {
+    fromWarehouseId: string;
+    toWarehouseId: string;
+    notes?: string;
+    items: { batchId: string; quantity: number }[];
+  },
+): Promise<TransferDetail> {
+  const { data } = await http.put<Record<string, unknown>>(`/inventory/transfers/${id}`, payload);
+  return normalizeTransferDetail(data);
+}
+
 export async function completeTransfer(id: string): Promise<TransferDetail> {
   const { data } = await http.post<Record<string, unknown>>(`/inventory/transfers/${id}/complete`);
   return normalizeTransferDetail(data);

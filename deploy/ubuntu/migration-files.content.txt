@@ -4,3 +4,6 @@
 
 281_pack_content_wave0.sql
 282_pack_content_generate_publish.sql
+283_pack_content_brand_brief.sql
+284_pack_content_topic_display_at.sql
+285_pack_content_ai_config.sql

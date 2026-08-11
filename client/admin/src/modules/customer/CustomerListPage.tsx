@@ -35,6 +35,7 @@ import { useCanSalesCustomers, useCanSalesCustomersMerge } from '@/shared/auth/u
 import { CustomerFormDrawer } from '@/modules/customer/CustomerFormDrawer';
 import { CustomerImportCard } from '@/modules/customer/CustomerImportCard';
 import { CustomerAppLoginRequestsCard } from '@/modules/customer/CustomerAppLoginRequestsCard';
+import { ActiveCounterOtpPanel } from '@/modules/customer/ActiveCounterOtpPanel';
 import { CustomerAppQrButton } from '@/modules/sales/CustomerAppQrButton';
 import { CustomerModeAReadinessCard } from '@/modules/sales/CustomerModeAReadinessCard';
 import { useCustomerEnums } from '@/shared/i18n/use-customer-enums';
@@ -514,6 +515,7 @@ export function CustomerListPage() {
               label: t('tabs.list'),
               children: (
                 <>
+                  <ActiveCounterOtpPanel />
                   <CustomerAppLoginRequestsCard />
                   {canWrite ? (
                     <Card size="small" title={t('importTitle')} style={{ marginBottom: 16 }}>

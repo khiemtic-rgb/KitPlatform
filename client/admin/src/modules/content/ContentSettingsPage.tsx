@@ -57,7 +57,7 @@ export function ContentSettingsPage() {
       const s = await fetchContentSettings();
       form.setFieldsValue(toForm(s));
     } catch (e) {
-      message.error(apiErrorMessage(e, 'Không tải được cài đặt Content'));
+      message.error(apiErrorMessage(e, 'Không tải được tuỳ chọn'));
     } finally {
       setLoading(false);
     }
@@ -86,11 +86,11 @@ export function ContentSettingsPage() {
         connectorTypes: splitCsv(v.connectorTypes),
         channelTypes: splitCsv(v.channelTypes),
       });
-      message.success('Đã lưu cài đặt Content');
+      message.success('Đã lưu tuỳ chọn');
       await load();
     } catch (e) {
       if (e && typeof e === 'object' && 'errorFields' in e) return;
-      message.error(apiErrorMessage(e, 'Không lưu được cài đặt'));
+      message.error(apiErrorMessage(e, 'Không lưu được tuỳ chọn'));
     } finally {
       setSaving(false);
     }
@@ -99,53 +99,90 @@ export function ContentSettingsPage() {
   return (
     <Card loading={loading}>
       <Typography.Title level={4} style={{ marginTop: 0 }}>
-        Cài đặt động Content Park
+        Tuỳ chọn nâng cao
       </Typography.Title>
       <Typography.Paragraph type="secondary">
-        Thêm connector/channel/variant kind bằng danh sách CSV — không cần migration mới.
+        Chỉ cần chỉnh khi muốn đổi trần chi phí, số ảnh mỗi bài, hoặc danh sách loại bản viết / kênh đăng.
+        Việc hàng ngày nằm ở tab <strong>Làm bài</strong>.
       </Typography.Paragraph>
       <Form form={form} layout="vertical" style={{ maxWidth: 720 }}>
-        <Form.Item name="monthlyCeilingUsd" label="Trần ngân sách global (USD/tháng)" rules={[{ required: true }]}>
+        <Form.Item
+          name="monthlyCeilingUsd"
+          label="Trần chi phí AI toàn hệ thống (USD / tháng)"
+          extra="Ví dụ 120 = tối đa khoảng 120 USD/tháng cho gen chữ + ảnh."
+          rules={[{ required: true }]}
+        >
           <InputNumber min={0} step={10} style={{ width: '100%' }} />
         </Form.Item>
-        <Form.Item name="defaultImageTier" label="Tier ảnh mặc định" rules={[{ required: true }]}>
+        <Form.Item name="defaultImageTier" label="Chất lượng ảnh mặc định" rules={[{ required: true }]}>
           <Select
             options={[
-              { value: 'lean', label: 'Lean' },
-              { value: 'balanced', label: 'Balanced' },
-              { value: 'premium', label: 'Premium' },
+              { value: 'lean', label: 'Tiết kiệm — rẻ, đủ dùng' },
+              { value: 'balanced', label: 'Cân bằng — khuyến nghị' },
+              { value: 'premium', label: 'Cao cấp — đẹp hơn, đắt hơn' },
             ]}
           />
         </Form.Item>
+        <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+          Đơn giá ước tính mỗi ảnh (USD) — dùng để tính trần, không phải hoá đơn Google thật.
+        </Typography.Text>
         <Space size="large" wrap>
-          <Form.Item name="leanRate" label="RATE lean $/ảnh" rules={[{ required: true }]}>
+          <Form.Item name="leanRate" label="Giá ảnh Tiết kiệm" rules={[{ required: true }]}>
             <InputNumber min={0} step={0.01} />
           </Form.Item>
-          <Form.Item name="balancedRate" label="RATE balanced $/ảnh" rules={[{ required: true }]}>
+          <Form.Item name="balancedRate" label="Giá ảnh Cân bằng" rules={[{ required: true }]}>
             <InputNumber min={0} step={0.01} />
           </Form.Item>
-          <Form.Item name="premiumRate" label="RATE premium $/ảnh" rules={[{ required: true }]}>
+          <Form.Item name="premiumRate" label="Giá ảnh Cao cấp" rules={[{ required: true }]}>
             <InputNumber min={0} step={0.01} />
           </Form.Item>
         </Space>
         <Space size="large" wrap>
-          <Form.Item name="maxImageCandidatesPerItem" label="Số ảnh/bài" rules={[{ required: true }]}>
+          <Form.Item
+            name="maxImageCandidatesPerItem"
+            label="Số ảnh AI tạo mỗi bài"
+            extra="Thường 2–3 ảnh để chọn."
+            rules={[{ required: true }]}
+          >
             <InputNumber min={1} max={10} />
           </Form.Item>
-          <Form.Item name="regenMultiplier" label="Hệ số regen" rules={[{ required: true }]}>
+          <Form.Item
+            name="regenMultiplier"
+            label="Dự phòng chi phí gen lại"
+            extra="1.2 = cộng thêm ~20% khi ước tính."
+            rules={[{ required: true }]}
+          >
             <InputNumber min={1} max={3} step={0.1} />
           </Form.Item>
-          <Form.Item name="textPackEstimateUsd" label="Ước text pack $/topic" rules={[{ required: true }]}>
+          <Form.Item
+            name="textPackEstimateUsd"
+            label="Ước phí viết chữ / bài (USD)"
+            rules={[{ required: true }]}
+          >
             <InputNumber min={0} step={0.01} />
           </Form.Item>
         </Space>
-        <Form.Item name="variantKinds" label="Variant kinds (CSV)" rules={[{ required: true }]}>
+        <Form.Item
+          name="variantKinds"
+          label="Các bản viết AI tạo (cách nhau bằng dấu phẩy)"
+          extra="Ví dụ: bài web dài, bản Facebook, mô tả SEO…"
+          rules={[{ required: true }]}
+        >
           <Input.TextArea rows={2} />
         </Form.Item>
-        <Form.Item name="connectorTypes" label="Connector types (CSV)" rules={[{ required: true }]}>
+        <Form.Item
+          name="connectorTypes"
+          label="Kiểu kết nối đăng bài (nâng cao)"
+          extra="astro_git, wordpress_rest, facebook_page, manual…"
+          rules={[{ required: true }]}
+        >
           <Input.TextArea rows={2} />
         </Form.Item>
-        <Form.Item name="channelTypes" label="Channel types (CSV)" rules={[{ required: true }]}>
+        <Form.Item
+          name="channelTypes"
+          label="Loại kênh mạng xã hội (nâng cao)"
+          rules={[{ required: true }]}
+        >
           <Input.TextArea rows={2} />
         </Form.Item>
         <Space>

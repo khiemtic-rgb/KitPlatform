@@ -230,7 +230,7 @@ export const moduleRegistry: ModuleMenuItem[] = [
   {
     key: 'content',
     label: 'content',
-    path: '/content/budget',
+    path: '/content/topics',
     icon: <ReadOutlined />,
     enabled: true,
     // Platform ADMIN ops — không gắn platformModule tenant pharmacy.

@@ -45,6 +45,7 @@ public interface IInventoryService
     Task<PagedTransfersResult> GetTransfersAsync(TransferListFilter filter, CancellationToken cancellationToken = default);
     Task<TransferDetailDto?> GetTransferAsync(Guid id, CancellationToken cancellationToken = default);
     Task<TransferDetailDto> CreateTransferAsync(CreateTransferRequest request, CancellationToken cancellationToken = default);
+    Task<TransferDetailDto?> UpdateTransferAsync(Guid id, UpdateTransferRequest request, CancellationToken cancellationToken = default);
     Task<TransferDetailDto?> ShipTransferAsync(Guid id, CancellationToken cancellationToken = default);
     Task<TransferDetailDto?> ReceiveTransferAsync(Guid id, ReceiveTransferRequest request, CancellationToken cancellationToken = default);
     Task<TransferDetailDto?> CompleteTransferAsync(Guid id, CancellationToken cancellationToken = default);

@@ -46,4 +46,23 @@ internal sealed class CustomerPilotOtpAdminService : ICustomerPilotOtpAdminServi
             new DateTimeOffset(DateTime.SpecifyKind(otp.ExpiresAt, DateTimeKind.Utc)),
             new DateTimeOffset(DateTime.SpecifyKind(otp.CreatedAt, DateTimeKind.Utc)));
     }
+
+    public async Task<ActiveCounterOtpListDto> ListActiveAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (!_settings.ExposePilotOtpInAdmin)
+            return new ActiveCounterOtpListDto(false, []);
+
+        var rows = await _otpRepo.ListActivePilotOtpsAsync(_tenant.TenantId, 20, cancellationToken);
+        var items = rows
+            .Select(r => new ActiveCounterOtpDto(
+                r.Phone,
+                r.Code,
+                new DateTimeOffset(DateTime.SpecifyKind(r.ExpiresAt, DateTimeKind.Utc)),
+                new DateTimeOffset(DateTime.SpecifyKind(r.CreatedAt, DateTimeKind.Utc)),
+                r.CustomerId,
+                r.CustomerName))
+            .ToList();
+        return new ActiveCounterOtpListDto(true, items);
+    }
 }

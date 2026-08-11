@@ -24,6 +24,7 @@ internal sealed class ContentRepository
         public string VariantKindsJson { get; set; } = "[]";
         public string ConnectorTypesJson { get; set; } = "[]";
         public string ChannelTypesJson { get; set; } = "[]";
+        public string AiConfigJson { get; set; } = "{}";
         public DateTimeOffset UpdatedAt { get; set; }
     }
 
@@ -39,6 +40,7 @@ internal sealed class ContentRepository
         public bool PauseWhenExceeded { get; set; }
         public bool IsActive { get; set; }
         public int SortOrder { get; set; }
+        public string? OperationalBrief { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
     }
 
@@ -84,6 +86,7 @@ internal sealed class ContentRepository
         public string Priority { get; set; } = "P1";
         public string Status { get; set; } = "Draft";
         public string? BodyOutline { get; set; }
+        public DateTimeOffset? DisplayAt { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
     }
@@ -148,6 +151,7 @@ internal sealed class ContentRepository
                 variant_kinds_json::text AS VariantKindsJson,
                 connector_types_json::text AS ConnectorTypesJson,
                 channel_types_json::text AS ChannelTypesJson,
+                COALESCE(ai_config_json, '{}'::jsonb)::text AS AiConfigJson,
                 updated_at AS UpdatedAt
             FROM pack_content.org_settings
             ORDER BY updated_at
@@ -173,6 +177,7 @@ internal sealed class ContentRepository
                 variant_kinds_json = @VariantKindsJson::jsonb,
                 connector_types_json = @ConnectorTypesJson::jsonb,
                 channel_types_json = @ChannelTypesJson::jsonb,
+                ai_config_json = @AiConfigJson::jsonb,
                 updated_at = NOW()
             WHERE id = @Id
             """;
@@ -200,7 +205,8 @@ internal sealed class ContentRepository
                 default_cta_url AS DefaultCtaUrl, default_cta_label AS DefaultCtaLabel,
                 monthly_ceiling_usd AS MonthlyCeilingUsd, image_tier AS ImageTier,
                 pause_when_exceeded AS PauseWhenExceeded, is_active AS IsActive,
-                sort_order AS SortOrder, updated_at AS UpdatedAt
+                sort_order AS SortOrder, operational_brief AS OperationalBrief,
+                updated_at AS UpdatedAt
             FROM pack_content.brand
             WHERE (@ActiveOnly IS NULL OR is_active = @ActiveOnly)
             ORDER BY sort_order, name
@@ -217,7 +223,8 @@ internal sealed class ContentRepository
                 default_cta_url AS DefaultCtaUrl, default_cta_label AS DefaultCtaLabel,
                 monthly_ceiling_usd AS MonthlyCeilingUsd, image_tier AS ImageTier,
                 pause_when_exceeded AS PauseWhenExceeded, is_active AS IsActive,
-                sort_order AS SortOrder, updated_at AS UpdatedAt
+                sort_order AS SortOrder, operational_brief AS OperationalBrief,
+                updated_at AS UpdatedAt
             FROM pack_content.brand WHERE id = @Id
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
@@ -229,10 +236,12 @@ internal sealed class ContentRepository
         const string sql = """
             INSERT INTO pack_content.brand (
                 code, name, default_cta_url, default_cta_label,
-                monthly_ceiling_usd, image_tier, pause_when_exceeded, is_active, sort_order
+                monthly_ceiling_usd, image_tier, pause_when_exceeded, is_active, sort_order,
+                operational_brief
             ) VALUES (
                 @Code, @Name, @DefaultCtaUrl, @DefaultCtaLabel,
-                @MonthlyCeilingUsd, @ImageTier, @PauseWhenExceeded, @IsActive, @SortOrder
+                @MonthlyCeilingUsd, @ImageTier, @PauseWhenExceeded, @IsActive, @SortOrder,
+                @OperationalBrief
             ) RETURNING id
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
@@ -252,6 +261,7 @@ internal sealed class ContentRepository
                 pause_when_exceeded = @PauseWhenExceeded,
                 is_active = @IsActive,
                 sort_order = @SortOrder,
+                operational_brief = @OperationalBrief,
                 updated_at = NOW()
             WHERE id = @Id
             """;
@@ -392,7 +402,7 @@ internal sealed class ContentRepository
                 t.title AS Title, t.pillar AS Pillar, t.goal AS Goal,
                 t.cta_url AS CtaUrl, t.utm_campaign AS UtmCampaign,
                 t.priority AS Priority, t.status AS Status,
-                t.body_outline AS BodyOutline,
+                t.body_outline AS BodyOutline, t.display_at AS DisplayAt,
                 t.created_at AS CreatedAt, t.updated_at AS UpdatedAt
             FROM pack_content.topic t
             INNER JOIN pack_content.brand b ON b.id = t.brand_id
@@ -414,7 +424,7 @@ internal sealed class ContentRepository
                 t.title AS Title, t.pillar AS Pillar, t.goal AS Goal,
                 t.cta_url AS CtaUrl, t.utm_campaign AS UtmCampaign,
                 t.priority AS Priority, t.status AS Status,
-                t.body_outline AS BodyOutline,
+                t.body_outline AS BodyOutline, t.display_at AS DisplayAt,
                 t.created_at AS CreatedAt, t.updated_at AS UpdatedAt
             FROM pack_content.topic t
             INNER JOIN pack_content.brand b ON b.id = t.brand_id
@@ -434,13 +444,14 @@ internal sealed class ContentRepository
         string priority,
         string status,
         string? outline,
+        DateTimeOffset? displayAt,
         CancellationToken ct)
     {
         const string sql = """
             INSERT INTO pack_content.topic (
-                brand_id, title, pillar, goal, cta_url, utm_campaign, priority, status, body_outline
+                brand_id, title, pillar, goal, cta_url, utm_campaign, priority, status, body_outline, display_at
             ) VALUES (
-                @BrandId, @Title, @Pillar, @Goal, @CtaUrl, @Utm, @Priority, @Status, @Outline
+                @BrandId, @Title, @Pillar, @Goal, @CtaUrl, @Utm, @Priority, @Status, @Outline, @DisplayAt
             ) RETURNING id
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
@@ -455,6 +466,7 @@ internal sealed class ContentRepository
             Priority = priority,
             Status = status,
             Outline = outline,
+            DisplayAt = displayAt,
         });
     }
 
@@ -469,6 +481,7 @@ internal sealed class ContentRepository
         string priority,
         string status,
         string? outline,
+        DateTimeOffset? displayAt,
         CancellationToken ct)
     {
         const string sql = """
@@ -482,6 +495,7 @@ internal sealed class ContentRepository
                 priority = @Priority,
                 status = @Status,
                 body_outline = @Outline,
+                display_at = @DisplayAt,
                 updated_at = NOW()
             WHERE id = @Id
             """;
@@ -498,6 +512,7 @@ internal sealed class ContentRepository
             Priority = priority,
             Status = status,
             Outline = outline,
+            DisplayAt = displayAt,
         });
     }
 

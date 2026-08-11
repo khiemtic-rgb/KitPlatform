@@ -175,6 +175,9 @@
       "hint": "Single-use, ~5 minutes. No Zalo/SMS in this phase.",
       "waiting": "No code yet",
       "waitingHint": "Click Generate code, then read the 6 digits to the customer at the counter.",
+      "phoneLabel": "Phone",
+      "phonePlaceholder": "Customer phone (e.g. 09xxxxxxxx)",
+      "phoneRequired": "Enter customer phone (at least 9 digits)",
       "loading": "Loading…",
       "disabled": "Counter OTP is off (ExposePilotOtpInAdmin). Contact admin."
     },

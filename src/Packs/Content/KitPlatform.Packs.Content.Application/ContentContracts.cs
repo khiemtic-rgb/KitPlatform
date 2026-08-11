@@ -11,9 +11,18 @@ public sealed record ContentOrgSettingsDto(
     IReadOnlyList<string> VariantKinds,
     IReadOnlyList<string> ConnectorTypes,
     IReadOnlyList<string> ChannelTypes,
+    ContentAiConfigDto Ai,
     decimal MonthSpendEstimateUsd,
     decimal RemainingBudgetUsd,
     DateTimeOffset UpdatedAt);
+
+public sealed record ContentAiConfigDto(
+    string Provider,
+    string TextModel,
+    string? ImageModel,
+    bool ImagesEnabled,
+    string? GeminiApiKeySecretRef,
+    bool ApiKeyConfigured);
 
 public sealed record UpdateContentOrgSettingsRequest(
     decimal? MonthlyCeilingUsd,
@@ -24,7 +33,26 @@ public sealed record UpdateContentOrgSettingsRequest(
     decimal? TextPackEstimateUsd,
     List<string>? VariantKinds,
     List<string>? ConnectorTypes,
-    List<string>? ChannelTypes);
+    List<string>? ChannelTypes,
+    UpdateContentAiConfigRequest? Ai);
+
+/// <summary>
+/// AI knobs. <see cref="GeminiApiKey"/> is write-only (stored server-side, never returned on read).
+/// Prefer <see cref="GeminiApiKeySecretRef"/> pointing at an env / vault name.
+/// </summary>
+public sealed record UpdateContentAiConfigRequest(
+    string? Provider,
+    string? TextModel,
+    string? ImageModel,
+    bool? ImagesEnabled,
+    string? GeminiApiKeySecretRef,
+    string? GeminiApiKey);
+
+public sealed record ContentAiTestResultDto(
+    bool Ok,
+    string? Message,
+    bool ApiKeyConfigured,
+    string? TextModel);
 
 public sealed record ContentBrandDto(
     Guid Id,
@@ -37,6 +65,7 @@ public sealed record ContentBrandDto(
     bool PauseWhenExceeded,
     bool IsActive,
     int SortOrder,
+    string? OperationalBrief,
     decimal MonthSpendEstimateUsd,
     DateTimeOffset UpdatedAt);
 
@@ -49,7 +78,8 @@ public sealed record UpsertContentBrandRequest(
     string? ImageTier,
     bool? PauseWhenExceeded,
     bool? IsActive,
-    int? SortOrder);
+    int? SortOrder,
+    string? OperationalBrief);
 
 public sealed record ContentSiteTargetDto(
     Guid Id,
@@ -60,6 +90,7 @@ public sealed record ContentSiteTargetDto(
     string? BaseUrl,
     string ConfigJson,
     string? SecretRef,
+    bool SecretConfigured,
     bool IsActive,
     int SortOrder);
 
@@ -70,6 +101,8 @@ public sealed record UpsertContentSiteTargetRequest(
     string? BaseUrl,
     string? ConfigJson,
     string? SecretRef,
+    /// <summary>Write-only token/password. null=keep, empty=clear, value=replace. Never returned on GET.</summary>
+    string? Secret,
     bool? IsActive,
     int? SortOrder);
 
@@ -82,6 +115,7 @@ public sealed record ContentChannelTargetDto(
     string? ExternalId,
     string ConfigJson,
     string? SecretRef,
+    bool SecretConfigured,
     bool IsActive,
     int SortOrder);
 
@@ -92,6 +126,8 @@ public sealed record UpsertContentChannelTargetRequest(
     string? ExternalId,
     string? ConfigJson,
     string? SecretRef,
+    /// <summary>Write-only token. null=keep, empty=clear, value=replace. Never returned on GET.</summary>
+    string? Secret,
     bool? IsActive,
     int? SortOrder);
 
@@ -108,6 +144,7 @@ public sealed record ContentTopicDto(
     string Priority,
     string Status,
     string? BodyOutline,
+    DateTimeOffset? DisplayAt,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt);
 
@@ -157,7 +194,9 @@ public sealed record ContentTopicDetailDto(
 
 public sealed record GenerateContentRequest(
     bool SkipImages = false,
-    int? CandidateCount = null);
+    int? CandidateCount = null,
+    /// <summary>Only generate/replace images; keep existing text variants.</summary>
+    bool ImagesOnly = false);
 
 public sealed record GenerateContentResultDto(
     ContentTopicDto Topic,
@@ -171,7 +210,13 @@ public sealed record PublishContentRequest(
     IReadOnlyList<Guid>? SiteTargetIds = null,
     IReadOnlyList<Guid>? ChannelTargetIds = null,
     bool IncludeManualExport = true,
-    bool RunImmediately = true);
+    bool RunImmediately = true,
+    /// <summary>When set (or topic.DisplayAt), schedule on WP/FB instead of publishing live.</summary>
+    DateTimeOffset? PublishAt = null,
+    /// <summary>Ephemeral image (base64) — used only for this publish, not stored as content asset.</summary>
+    string? ImageBase64 = null,
+    string? ImageFileName = null,
+    string? ImageContentType = null);
 
 public sealed record PublishContentResultDto(
     IReadOnlyList<ContentPublishJobDto> Jobs);
@@ -185,7 +230,8 @@ public sealed record UpsertContentTopicRequest(
     string? UtmCampaign,
     string? Priority,
     string? Status,
-    string? BodyOutline);
+    string? BodyOutline,
+    DateTimeOffset? DisplayAt);
 
 public sealed record ContentBudgetSnapshotDto(
     decimal GlobalCeilingUsd,
@@ -209,6 +255,7 @@ public interface IContentOrgSettingsService
     Task<ContentOrgSettingsDto> GetAsync(CancellationToken cancellationToken = default);
     Task<ContentOrgSettingsDto> UpdateAsync(UpdateContentOrgSettingsRequest request, CancellationToken cancellationToken = default);
     Task<ContentBudgetSnapshotDto> GetBudgetSnapshotAsync(CancellationToken cancellationToken = default);
+    Task<ContentAiTestResultDto> TestAiAsync(CancellationToken cancellationToken = default);
 }
 
 public interface IContentBrandService

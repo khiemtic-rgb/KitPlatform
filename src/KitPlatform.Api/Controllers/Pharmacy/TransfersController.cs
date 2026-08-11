@@ -49,6 +49,17 @@ public sealed class TransfersController : ControllerBase
         return CreatedAtAction(nameof(Get), new { id = item.Id }, item);
     }
 
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = InventoryPolicies.Write)]
+    public async Task<ActionResult<TransferDetailDto>> Update(
+        Guid id,
+        [FromBody] UpdateTransferRequest request,
+        CancellationToken cancellationToken)
+    {
+        var item = await _inventory.UpdateTransferAsync(id, request, cancellationToken);
+        return item is null ? NotFound() : Ok(item);
+    }
+
     [HttpPost("{id:guid}/ship")]
     [Authorize(Policy = InventoryPolicies.Write)]
     public async Task<ActionResult<TransferDetailDto>> Ship(Guid id, CancellationToken cancellationToken)

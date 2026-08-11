@@ -44,6 +44,10 @@ public sealed class ContentController : ControllerBase
     public async Task<ActionResult<ContentBudgetSnapshotDto>> GetBudget(CancellationToken cancellationToken) =>
         Ok(await _settings.GetBudgetSnapshotAsync(cancellationToken));
 
+    [HttpPost("ai/test")]
+    public async Task<ActionResult<ContentAiTestResultDto>> TestAi(CancellationToken cancellationToken) =>
+        Ok(await _settings.TestAiAsync(cancellationToken));
+
     [HttpGet("brands")]
     public async Task<ActionResult<IReadOnlyList<ContentBrandDto>>> ListBrands(
         [FromQuery] bool? activeOnly,

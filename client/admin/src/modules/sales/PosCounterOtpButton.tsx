@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, App, Button, Popover, Space, Spin, Typography } from 'antd';
+import { Alert, App, Button, Input, Popover, Space, Spin, Typography } from 'antd';
 import { MobileOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
@@ -16,9 +16,11 @@ const POLL_MS = 4000;
 type Props = {
   customerId: string | null | undefined;
   canWrite: boolean;
+  /** Compact next to OTP strip (POS). */
+  compact?: boolean;
 };
 
-export function PosCounterOtpButton({ customerId, canWrite }: Props) {
+export function PosCounterOtpButton({ customerId, canWrite, compact = false }: Props) {
   const { t } = useTranslation('sales', { keyPrefix: 'pos.counterOtp' });
   const { message } = App.useApp();
   const [open, setOpen] = useState(false);
@@ -26,10 +28,12 @@ export function PosCounterOtpButton({ customerId, canWrite }: Props) {
   const [loading, setLoading] = useState(false);
   const [issuing, setIssuing] = useState(false);
   const [issuedCode, setIssuedCode] = useState<string | null>(null);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [resolvedPhone, setResolvedPhone] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!customerId) {
-      setStatus(null);
+      setStatus({ enabled: true, code: null, expiresAt: null, createdAt: null });
       return;
     }
     setLoading(true);
@@ -43,20 +47,49 @@ export function PosCounterOtpButton({ customerId, canWrite }: Props) {
   }, [customerId]);
 
   useEffect(() => {
-    if (!open || !customerId) return;
+    if (!open) return;
     void load();
+    if (!customerId) return;
     const timer = window.setInterval(() => void load(), POLL_MS);
     return () => window.clearInterval(timer);
   }, [open, customerId, load]);
 
+  useEffect(() => {
+    if (!open || !customerId) {
+      if (!customerId) setResolvedPhone(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchCustomer(customerId)
+      .then((detail) => {
+        if (cancelled) return;
+        setResolvedPhone(detail.phone);
+        setPhoneInput(detail.phone.replace(/\D/g, ''));
+      })
+      .catch(() => {
+        if (!cancelled) setResolvedPhone(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, customerId]);
+
   const onIssue = async () => {
-    if (!customerId) return;
+    const phone = (customerId ? resolvedPhone : phoneInput)?.replace(/\D/g, '') ?? '';
+    if (phone.length < 9) {
+      message.warning(t('phoneRequired'));
+      return;
+    }
     setIssuing(true);
     try {
-      const detail = await fetchCustomer(customerId);
+      let fullName: string | undefined;
+      if (customerId) {
+        const detail = await fetchCustomer(customerId);
+        fullName = detail.fullName;
+      }
       const res = await issueCounterPilotOtp({
-        phone: detail.phone,
-        fullName: detail.fullName,
+        phone,
+        fullName,
       });
       setIssuedCode(res.pilotCode ?? null);
       message.success(res.message || t('issued'));
@@ -68,7 +101,7 @@ export function PosCounterOtpButton({ customerId, canWrite }: Props) {
     }
   };
 
-  if (!customerId || !canWrite) {
+  if (!canWrite) {
     return null;
   }
 
@@ -77,7 +110,7 @@ export function PosCounterOtpButton({ customerId, canWrite }: Props) {
     status?.expiresAt != null ? dayjs(status.expiresAt).format('HH:mm:ss') : null;
 
   const content = (
-    <div style={{ maxWidth: 280 }}>
+    <div style={{ maxWidth: 300 }}>
       {loading && !status ? (
         <Spin size="small" tip={t('loading')} />
       ) : !status?.enabled ? (
@@ -110,6 +143,19 @@ export function PosCounterOtpButton({ customerId, canWrite }: Props) {
       ) : (
         <Space direction="vertical" size="small" style={{ width: '100%' }}>
           <Alert type="info" showIcon message={t('waiting')} description={t('waitingHint')} />
+          {!customerId ? (
+            <Input
+              inputMode="tel"
+              placeholder={t('phonePlaceholder')}
+              value={phoneInput}
+              onChange={(e) => setPhoneInput(e.target.value.replace(/[^\d]/g, '').slice(0, 11))}
+              maxLength={11}
+            />
+          ) : (
+            <Typography.Text type="secondary">
+              {t('phoneLabel')}: {resolvedPhone || '…'}
+            </Typography.Text>
+          )}
           <Button type="primary" size="small" loading={issuing} onClick={() => void onIssue()}>
             {t('issue')}
           </Button>
@@ -125,11 +171,16 @@ export function PosCounterOtpButton({ customerId, canWrite }: Props) {
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next) setIssuedCode(null);
+        if (!next) {
+          setIssuedCode(null);
+          if (!customerId) setPhoneInput('');
+        }
       }}
       content={content}
     >
-      <Button icon={<MobileOutlined />}>{t('button')}</Button>
+      <Button type={compact ? 'primary' : 'default'} size={compact ? 'small' : 'middle'} icon={<MobileOutlined />}>
+        {t('button')}
+      </Button>
     </Popover>
   );
 }

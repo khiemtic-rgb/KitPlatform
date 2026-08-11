@@ -13,7 +13,11 @@ public static class ContentPackDependencyInjection
         else
             services.AddOptions<ContentOptions>();
 
-        services.AddHttpClient<ContentGeminiClient>();
+        services.AddHttpClient<ContentGeminiClient>(c =>
+        {
+            // Pollinations free image gen can take 30–90s.
+            c.Timeout = TimeSpan.FromMinutes(2);
+        });
         services.AddHttpClient("content-publish");
 
         services.AddScoped<ContentRepository>();

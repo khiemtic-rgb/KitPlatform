@@ -527,7 +527,7 @@
     "continueWithCounterCode": "I already have a counter code",
     "otpSentTo": "Request for",
     "otpAskStaff": "Staff will read the sign-in code to you (Admin/POS → App code). Enter it below.",
-    "otpCounterHint": "Ask the staff to tap «App code» / «Generate code» on POS, then read the 6 digits to you.",
+    "otpCounterHint": "Staff can tap «App code» → Generate and read the digits; or you request OTP here and staff reads it from the POS screen.",
     "otpCounterNote": "Enter the code the staff just read for",
     "requestCodeFromCounter": "Request a new code (staff will see it on screen)",
     "devOtpHint": "Dev: use",

@@ -35,6 +35,7 @@ import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 import { PosCheckoutModal } from '@/modules/sales/PosCheckoutModal';
 import { PosCartQuantityInput } from '@/modules/sales/PosCartQuantityInput';
 import { PosCounterOtpButton } from '@/modules/sales/PosCounterOtpButton';
+import { ActiveCounterOtpPanel } from '@/modules/customer/ActiveCounterOtpPanel';
 import { formatSuggestedBatch } from '@/modules/sales/pos-batch-display';
 import {
   initialBatchLabelForMode,
@@ -1710,20 +1711,36 @@ export function PosPage() {
           }
         />
       )}
-      {openShift != null && (
-        <Alert
-          type="info"
-          showIcon
-          message={t('pos.alerts.shiftOpen', {
-            number: openShift.shiftNumber,
-            opening: formatDisplayMoney(openShift.openingCash),
-          })}
-          description={t('pos.alerts.shiftOpenDesc', {
-            openedAt: dayjs(openShift.openedAt).format('DD-MM-YYYY HH:mm'),
-            net: formatDisplayMoney(openShift.summary.netTotal),
-          })}
-        />
-      )}
+      <div className="pos-page__alerts-row">
+        {openShift != null ? (
+          <Alert
+            className="pos-page__alerts-row-item pos-page__alerts-row-item--shift"
+            type="info"
+            showIcon
+            message={t('pos.alerts.shiftOpen', {
+              number: openShift.shiftNumber,
+              opening: formatDisplayMoney(openShift.openingCash),
+            })}
+            description={t('pos.alerts.shiftOpenDesc', {
+              openedAt: dayjs(openShift.openedAt).format('DD-MM-YYYY HH:mm'),
+              net: formatDisplayMoney(openShift.summary.netTotal),
+            })}
+          />
+        ) : null}
+        <div className="pos-page__alerts-row-item pos-page__alerts-row-item--otp">
+          <ActiveCounterOtpPanel
+            compact
+            actions={
+              <Space size={4} wrap>
+                <CustomerAppQrButton size="small" />
+                {canWrite ? (
+                  <PosCounterOtpButton customerId={customerId} canWrite={canWrite} compact />
+                ) : null}
+              </Space>
+            }
+          />
+        </div>
+      </div>
       {loadedCustomerReservationId && loadedRefillSuggestionId ? (
         <Alert
           type="success"
@@ -1830,8 +1847,6 @@ export function PosPage() {
                 </Tooltip>
               ) : null}
             </Space.Compact>
-            <PosCounterOtpButton customerId={customerId} canWrite={canWrite} />
-            <CustomerAppQrButton size="middle" />
             {!editingDraftId && !auditSlimNav ? (
               <Space align="center" size={8} className="pos-page__app-draft-toggle">
                 <Switch

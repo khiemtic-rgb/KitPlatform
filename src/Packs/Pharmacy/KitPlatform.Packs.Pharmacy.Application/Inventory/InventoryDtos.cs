@@ -187,6 +187,13 @@ public sealed record CreateTransferRequest(
     string? Notes,
     IReadOnlyList<CreateTransferItemRequest> Items);
 
+/// <summary>Update a draft (Chờ gửi) transfer: warehouses, notes, and replace all lines.</summary>
+public sealed record UpdateTransferRequest(
+    Guid FromWarehouseId,
+    Guid ToWarehouseId,
+    string? Notes,
+    IReadOnlyList<CreateTransferItemRequest> Items);
+
 public sealed record ReceiveTransferItemRequest(Guid TransferItemId, decimal ReceivedQuantity);
 
 public sealed record ReceiveTransferRequest(

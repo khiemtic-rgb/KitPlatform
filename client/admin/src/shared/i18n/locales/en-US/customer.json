@@ -202,6 +202,19 @@
     "waiting": "No OTP yet",
     "waitingHint": "When the customer taps «Send OTP» in the app, the 6-digit code appears here (auto-refreshes every few seconds)."
   },
+  "activeCounterOtp": {
+    "title": "OTPs to read to customers",
+    "intro": "When a customer taps «Send OTP» in the app, the code appears here — no need to search the customer list.",
+    "reload": "Reload",
+    "waiting": "No OTP waiting",
+    "waitingHint": "Keep this tab open at the counter. Auto-refreshes every 3 seconds.",
+    "waitingCompact": "No OTP to read yet",
+    "waitingCompactHint": "Tap «App code» → enter phone / select customer → Generate. Or wait for the customer to request OTP in the app — the code appears here.",
+    "expiresAt": "Expires {{time}}",
+    "readAloud": "Read this code for the customer to enter in the app",
+    "unknownName": "Customer",
+    "moreCount": "+{{count}} more"
+  },
   "appLogin": {
     "title": "Pending remote app login",
     "hint": "Remote signup (CRM phone or invite code). After approve, call/Zalo the OTP to the customer.",

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using KitPlatform.Packs.Content;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
@@ -5,8 +7,21 @@ namespace KitPlatform.Packs.Content.Infrastructure;
 internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
 {
     private readonly ContentRepository _repo;
+    private readonly ContentGeminiClient _gemini;
+    private readonly IConfiguration _configuration;
+    private readonly ContentOptions _options;
 
-    public ContentOrgSettingsService(ContentRepository repo) => _repo = repo;
+    public ContentOrgSettingsService(
+        ContentRepository repo,
+        ContentGeminiClient gemini,
+        IConfiguration configuration,
+        IOptions<ContentOptions> options)
+    {
+        _repo = repo;
+        _gemini = gemini;
+        _configuration = configuration;
+        _options = options.Value;
+    }
 
     public async Task<ContentOrgSettingsDto> GetAsync(CancellationToken cancellationToken = default)
     {
@@ -38,6 +53,27 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
             row.ConnectorTypesJson = ContentRepository.ToJson(request.ConnectorTypes);
         if (request.ChannelTypes is { Count: > 0 })
             row.ChannelTypesJson = ContentRepository.ToJson(request.ChannelTypes);
+
+        if (request.Ai is { } ai)
+        {
+            var state = ContentAiConfigParser.Parse(row.AiConfigJson);
+            if (!string.IsNullOrWhiteSpace(ai.Provider))
+                state.Provider = ai.Provider.Trim().ToLowerInvariant();
+            if (!string.IsNullOrWhiteSpace(ai.TextModel))
+                state.TextModel = ai.TextModel.Trim();
+            if (ai.ImageModel is not null)
+                state.ImageModel = string.IsNullOrWhiteSpace(ai.ImageModel) ? null : ai.ImageModel.Trim();
+            if (ai.ImagesEnabled is { } imagesEnabled)
+                state.ImagesEnabled = imagesEnabled;
+            if (ai.GeminiApiKeySecretRef is not null)
+                state.GeminiApiKeySecretRef = string.IsNullOrWhiteSpace(ai.GeminiApiKeySecretRef)
+                    ? null
+                    : ai.GeminiApiKeySecretRef.Trim();
+            // Write-only key: null = keep; "" = clear; non-empty = replace
+            if (ai.GeminiApiKey is not null)
+                state.GeminiApiKey = string.IsNullOrWhiteSpace(ai.GeminiApiKey) ? null : ai.GeminiApiKey.Trim();
+            row.AiConfigJson = ContentAiConfigParser.ToJson(state);
+        }
 
         await _repo.UpdateOrgSettingsAsync(row, cancellationToken);
         return await GetAsync(cancellationToken);
@@ -73,6 +109,41 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
             brandDtos);
     }
 
+    public async Task<ContentAiTestResultDto> TestAiAsync(CancellationToken cancellationToken = default)
+    {
+        var resolved = await _gemini.ResolveConfigAsync(cancellationToken);
+        if (!resolved.ApiKeyConfigured)
+        {
+            return new ContentAiTestResultDto(
+                false,
+                "Chưa có API key — đặt Secret ref (env) hoặc dán key (chỉ ghi, không hiện lại).",
+                false,
+                resolved.TextModel);
+        }
+
+        try
+        {
+            var json = await _gemini.GenerateJsonAsync(
+                "Return valid JSON only.",
+                "Reply with JSON: {\"ok\":true,\"ping\":\"content-park\"}",
+                cancellationToken);
+            var ok = json.Contains("ok", StringComparison.OrdinalIgnoreCase);
+            return new ContentAiTestResultDto(
+                ok,
+                ok ? $"Kết nối OK · model {resolved.TextModel}" : $"Phản hồi lạ: {json[..Math.Min(120, json.Length)]}",
+                true,
+                resolved.TextModel);
+        }
+        catch (Exception ex)
+        {
+            return new ContentAiTestResultDto(
+                false,
+                ex.Message.Length > 400 ? ex.Message[..400] : ex.Message,
+                true,
+                resolved.TextModel);
+        }
+    }
+
     private async Task<decimal> MonthSpendAsync(Guid? brandId, CancellationToken ct)
     {
         var now = DateTimeOffset.UtcNow;
@@ -80,8 +151,11 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
         return await _repo.SumSpendAsync(brandId, from, ct);
     }
 
-    private static ContentOrgSettingsDto Map(ContentRepository.OrgSettingsRow row, decimal spend) =>
-        new(
+    private ContentOrgSettingsDto Map(ContentRepository.OrgSettingsRow row, decimal spend)
+    {
+        var aiState = ContentAiConfigParser.Parse(row.AiConfigJson);
+        var resolved = ContentAiConfigParser.Resolve(aiState, _options, _configuration);
+        return new(
             row.Id,
             row.MonthlyCeilingUsd,
             row.MaxImageCandidatesPerItem,
@@ -92,9 +166,11 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
             ContentRepository.ParseStringList(row.VariantKindsJson),
             ContentRepository.ParseStringList(row.ConnectorTypesJson),
             ContentRepository.ParseStringList(row.ChannelTypesJson),
+            ContentAiConfigParser.ToDto(aiState, resolved.ApiKeyConfigured),
             spend,
             Math.Max(0, row.MonthlyCeilingUsd - spend),
             row.UpdatedAt);
+    }
 
     private static string NormalizeTier(string tier)
     {
@@ -102,7 +178,6 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
         return t is "lean" or "balanced" or "premium" ? t : "balanced";
     }
 }
-
 internal sealed class ContentBrandService : IContentBrandService
 {
     private readonly ContentRepository _repo;
@@ -150,6 +225,8 @@ internal sealed class ContentBrandService : IContentBrandService
         row.PauseWhenExceeded = request.PauseWhenExceeded ?? existing.PauseWhenExceeded;
         row.IsActive = request.IsActive ?? existing.IsActive;
         row.SortOrder = request.SortOrder ?? existing.SortOrder;
+        if (request.OperationalBrief is null)
+            row.OperationalBrief = existing.OperationalBrief;
         await _repo.UpdateBrandAsync(row, cancellationToken);
         return await GetAsync(id, cancellationToken);
     }
@@ -159,9 +236,7 @@ internal sealed class ContentBrandService : IContentBrandService
         CancellationToken cancellationToken = default)
     {
         var rows = await _repo.ListSitesAsync(brandId, cancellationToken);
-        return rows.Select(r => new ContentSiteTargetDto(
-            r.Id, r.BrandId, r.Code, r.Name, r.ConnectorType, r.BaseUrl,
-            r.ConfigJson, r.SecretRef, r.IsActive, r.SortOrder)).ToList();
+        return rows.Select(MapSite).ToList();
     }
 
     public async Task<ContentSiteTargetDto> UpsertSiteAsync(
@@ -169,13 +244,21 @@ internal sealed class ContentBrandService : IContentBrandService
         UpsertContentSiteTargetRequest request,
         CancellationToken cancellationToken = default)
     {
+        var code = request.Code.Trim();
+        var existing = (await _repo.ListSitesAsync(brandId, cancellationToken))
+            .FirstOrDefault(s => string.Equals(s.Code, code, StringComparison.OrdinalIgnoreCase));
+        var configJson = ContentTargetSecrets.MergeConfig(
+            request.ConfigJson,
+            existing?.ConfigJson,
+            request.Secret);
+
         var id = await _repo.UpsertSiteAsync(brandId, new ContentRepository.SiteRow
         {
-            Code = request.Code.Trim(),
+            Code = code,
             Name = request.Name.Trim(),
             ConnectorType = request.ConnectorType.Trim(),
             BaseUrl = request.BaseUrl?.Trim(),
-            ConfigJson = NormalizeJson(request.ConfigJson),
+            ConfigJson = configJson,
             SecretRef = string.IsNullOrWhiteSpace(request.SecretRef) ? null : request.SecretRef.Trim(),
             IsActive = request.IsActive ?? true,
             SortOrder = request.SortOrder ?? 100,
@@ -189,9 +272,7 @@ internal sealed class ContentBrandService : IContentBrandService
         CancellationToken cancellationToken = default)
     {
         var rows = await _repo.ListChannelsAsync(brandId, cancellationToken);
-        return rows.Select(r => new ContentChannelTargetDto(
-            r.Id, r.BrandId, r.Code, r.Name, r.ChannelType, r.ExternalId,
-            r.ConfigJson, r.SecretRef, r.IsActive, r.SortOrder)).ToList();
+        return rows.Select(MapChannel).ToList();
     }
 
     public async Task<ContentChannelTargetDto> UpsertChannelAsync(
@@ -199,19 +280,43 @@ internal sealed class ContentBrandService : IContentBrandService
         UpsertContentChannelTargetRequest request,
         CancellationToken cancellationToken = default)
     {
+        var code = request.Code.Trim();
+        var existing = (await _repo.ListChannelsAsync(brandId, cancellationToken))
+            .FirstOrDefault(c => string.Equals(c.Code, code, StringComparison.OrdinalIgnoreCase));
+        var configJson = ContentTargetSecrets.MergeConfig(
+            request.ConfigJson,
+            existing?.ConfigJson,
+            request.Secret);
+
         var id = await _repo.UpsertChannelAsync(brandId, new ContentRepository.ChannelRow
         {
-            Code = request.Code.Trim(),
+            Code = code,
             Name = request.Name.Trim(),
             ChannelType = request.ChannelType.Trim(),
             ExternalId = request.ExternalId?.Trim(),
-            ConfigJson = NormalizeJson(request.ConfigJson),
+            ConfigJson = configJson,
             SecretRef = string.IsNullOrWhiteSpace(request.SecretRef) ? null : request.SecretRef.Trim(),
             IsActive = request.IsActive ?? true,
             SortOrder = request.SortOrder ?? 100,
         }, cancellationToken);
         var channels = await ListChannelsAsync(brandId, cancellationToken);
         return channels.First(c => c.Id == id);
+    }
+
+    private static ContentSiteTargetDto MapSite(ContentRepository.SiteRow r)
+    {
+        var (redacted, configured) = ContentTargetSecrets.RedactForClient(r.ConfigJson, r.SecretRef);
+        return new ContentSiteTargetDto(
+            r.Id, r.BrandId, r.Code, r.Name, r.ConnectorType, r.BaseUrl,
+            redacted, r.SecretRef, configured, r.IsActive, r.SortOrder);
+    }
+
+    private static ContentChannelTargetDto MapChannel(ContentRepository.ChannelRow r)
+    {
+        var (redacted, configured) = ContentTargetSecrets.RedactForClient(r.ConfigJson, r.SecretRef);
+        return new ContentChannelTargetDto(
+            r.Id, r.BrandId, r.Code, r.Name, r.ChannelType, r.ExternalId,
+            redacted, r.SecretRef, configured, r.IsActive, r.SortOrder);
     }
 
     private async Task<decimal> MonthSpendAsync(Guid brandId, CancellationToken ct)
@@ -223,7 +328,7 @@ internal sealed class ContentBrandService : IContentBrandService
 
     private static ContentBrandDto Map(ContentRepository.BrandRow r, decimal spend) =>
         new(r.Id, r.Code, r.Name, r.DefaultCtaUrl, r.DefaultCtaLabel, r.MonthlyCeilingUsd,
-            r.ImageTier, r.PauseWhenExceeded, r.IsActive, r.SortOrder, spend, r.UpdatedAt);
+            r.ImageTier, r.PauseWhenExceeded, r.IsActive, r.SortOrder, r.OperationalBrief, spend, r.UpdatedAt);
 
     private static ContentRepository.BrandRow ToRow(Guid id, UpsertContentBrandRequest request) =>
         new()
@@ -238,6 +343,9 @@ internal sealed class ContentBrandService : IContentBrandService
             PauseWhenExceeded = request.PauseWhenExceeded ?? true,
             IsActive = request.IsActive ?? true,
             SortOrder = request.SortOrder ?? 100,
+            OperationalBrief = string.IsNullOrWhiteSpace(request.OperationalBrief)
+                ? null
+                : request.OperationalBrief.Trim(),
         };
 
     private static string NormalizeJson(string? json)
@@ -306,6 +414,7 @@ internal sealed class ContentTopicService : IContentTopicService
             NormalizePriority(request.Priority),
             NormalizeStatus(request.Status),
             request.BodyOutline,
+            request.DisplayAt,
             cancellationToken);
         return (await GetAsync(id, cancellationToken))!;
     }
@@ -328,6 +437,7 @@ internal sealed class ContentTopicService : IContentTopicService
             NormalizePriority(request.Priority ?? existing.Priority),
             NormalizeStatus(request.Status ?? existing.Status),
             request.BodyOutline ?? existing.BodyOutline,
+            request.DisplayAt ?? existing.DisplayAt,
             cancellationToken);
         return await GetAsync(id, cancellationToken);
     }
@@ -350,7 +460,8 @@ internal sealed class ContentTopicService : IContentTopicService
 
     private static ContentTopicDto Map(ContentRepository.TopicRow r) =>
         new(r.Id, r.BrandId, r.BrandCode, r.BrandName, r.Title, r.Pillar, r.Goal,
-            r.CtaUrl, r.UtmCampaign, r.Priority, r.Status, r.BodyOutline, r.CreatedAt, r.UpdatedAt);
+            r.CtaUrl, r.UtmCampaign, r.Priority, r.Status, r.BodyOutline, r.DisplayAt,
+            r.CreatedAt, r.UpdatedAt);
 
     internal static ContentPublishJobDto MapJob(ContentRepository.PublishJobRow r) =>
         new(r.Id, r.TopicId, r.BrandId, r.TargetKind, r.SiteTargetId, r.ChannelTargetId,

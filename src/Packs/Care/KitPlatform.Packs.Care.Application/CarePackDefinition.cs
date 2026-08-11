@@ -6,6 +6,10 @@ namespace KitPlatform.Packs.Care;
 /// </summary>
 public static class CarePackDefinition
 {
+    // Local build stamp — changes binary hash so Windows Smart App Control reputation
+    // does not permanently block this unsigned Debug assembly after a false positive.
+    public const string LocalBuildStamp = "sac-unblock-2026-08-10";
+
     public const string PackCode = "care_os";
     public const string TenantPackageCode = "care_os";
     public const string DisplayName = "Care OS (T3-ready)";

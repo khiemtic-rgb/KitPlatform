@@ -1065,6 +1065,67 @@ internal sealed class InventoryRepository
         return transferId;
     }
 
+    public async Task UpdateTransferWithItemsAsync(
+        Guid transferId,
+        Guid fromWarehouseId,
+        Guid toWarehouseId,
+        string? notes,
+        IReadOnlyList<CreateTransferItemRequest> items,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+
+        const string headerSql = """
+            SELECT id AS Id, status AS Status
+            FROM inventory_transfers
+            WHERE id = @Id AND tenant_id = @TenantId
+            FOR UPDATE
+            """;
+        var header = await conn.QuerySingleOrDefaultAsync<(Guid Id, short Status)>(
+            headerSql, new { Id = transferId, TenantId }, tx);
+        if (header.Id == Guid.Empty)
+            throw new InvalidOperationException("Phiếu điều chuyển không tồn tại.");
+        if (header.Status != TransferStatuses.Draft)
+            throw new InvalidOperationException("Chỉ sửa được phiếu đang chờ gửi.");
+
+        const string updateHeaderSql = """
+            UPDATE inventory_transfers SET
+                from_warehouse_id = @FromWarehouseId,
+                to_warehouse_id = @ToWarehouseId,
+                notes = @Notes
+            WHERE id = @Id AND tenant_id = @TenantId
+            """;
+        await conn.ExecuteAsync(updateHeaderSql, new
+        {
+            Id = transferId,
+            TenantId,
+            FromWarehouseId = fromWarehouseId,
+            ToWarehouseId = toWarehouseId,
+            Notes = notes,
+        }, tx);
+
+        await conn.ExecuteAsync(
+            "DELETE FROM inventory_transfer_items WHERE transfer_id = @TransferId",
+            new { TransferId = transferId },
+            tx);
+
+        foreach (var item in items)
+        {
+            var batch = await GetBatchForUpdateAsync(conn, tx, item.BatchId, cancellationToken)
+                ?? throw new InvalidOperationException("Lô không tồn tại.");
+
+            if (batch.WarehouseId != fromWarehouseId)
+                throw new InvalidOperationException("Lô không thuộc kho xuất.");
+            if (batch.QuantityAvailable < item.Quantity)
+                throw new InvalidOperationException($"Không đủ tồn lô {batch.BatchNumber}.");
+
+            await InsertTransferItemAsync(conn, tx, transferId, item.BatchId, batch.ProductId, item.Quantity, cancellationToken);
+        }
+
+        await tx.CommitAsync(cancellationToken);
+    }
+
     public async Task<Guid> CreateAdjustmentWithItemsAsync(
         Guid warehouseId,
         string? reason,

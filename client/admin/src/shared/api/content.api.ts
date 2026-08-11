@@ -1,6 +1,15 @@
 import { http } from '@/shared/api/http';
 import { useAuthStore } from '@/shared/auth/auth.store';
 
+export type ContentAiConfig = {
+  provider: string;
+  textModel: string;
+  imageModel?: string | null;
+  imagesEnabled: boolean;
+  geminiApiKeySecretRef?: string | null;
+  apiKeyConfigured: boolean;
+};
+
 export type ContentOrgSettings = {
   id: string;
   monthlyCeilingUsd: number;
@@ -12,9 +21,17 @@ export type ContentOrgSettings = {
   variantKinds: string[];
   connectorTypes: string[];
   channelTypes: string[];
+  ai: ContentAiConfig;
   monthSpendEstimateUsd: number;
   remainingBudgetUsd: number;
   updatedAt: string;
+};
+
+export type ContentAiTestResult = {
+  ok: boolean;
+  message?: string | null;
+  apiKeyConfigured: boolean;
+  textModel?: string | null;
 };
 
 export type ContentBudgetSnapshot = {
@@ -45,6 +62,7 @@ export type ContentBrand = {
   pauseWhenExceeded: boolean;
   isActive: boolean;
   sortOrder: number;
+  operationalBrief?: string | null;
   monthSpendEstimateUsd: number;
   updatedAt: string;
 };
@@ -58,6 +76,7 @@ export type ContentSiteTarget = {
   baseUrl?: string | null;
   configJson: string;
   secretRef?: string | null;
+  secretConfigured: boolean;
   isActive: boolean;
   sortOrder: number;
 };
@@ -71,6 +90,7 @@ export type ContentChannelTarget = {
   externalId?: string | null;
   configJson: string;
   secretRef?: string | null;
+  secretConfigured: boolean;
   isActive: boolean;
   sortOrder: number;
 };
@@ -88,6 +108,7 @@ export type ContentTopic = {
   priority: string;
   status: string;
   bodyOutline?: string | null;
+  displayAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -164,8 +185,21 @@ export async function updateContentSettings(body: Partial<{
   variantKinds: string[];
   connectorTypes: string[];
   channelTypes: string[];
+  ai: Partial<{
+    provider: string;
+    textModel: string;
+    imageModel: string | null;
+    imagesEnabled: boolean;
+    geminiApiKeySecretRef: string | null;
+    geminiApiKey: string | null;
+  }>;
 }>) {
   const { data } = await http.put<ContentOrgSettings>('/content/settings', body);
+  return data;
+}
+
+export async function testContentAi() {
+  const { data } = await http.post<ContentAiTestResult>('/content/ai/test');
   return data;
 }
 
@@ -174,8 +208,11 @@ export async function fetchContentBudget() {
   return data;
 }
 
-export async function fetchContentBrands(activeOnly = false) {
-  const { data } = await http.get<ContentBrand[]>('/content/brands', { params: { activeOnly } });
+export async function fetchContentBrands(activeOnly?: boolean) {
+  const { data } = await http.get<ContentBrand[]>('/content/brands', {
+    // Omit param = list tất cả. true = chỉ đang dùng. false = chỉ đã tắt (không dùng cho “xem hết”).
+    params: activeOnly === undefined ? undefined : { activeOnly },
+  });
   return data;
 }
 
@@ -189,6 +226,7 @@ export async function createContentBrand(body: {
   pauseWhenExceeded?: boolean;
   isActive?: boolean;
   sortOrder?: number;
+  operationalBrief?: string | null;
 }) {
   const { data } = await http.post<ContentBrand>('/content/brands', body);
   return data;
@@ -212,7 +250,9 @@ export async function upsertContentSite(
     connectorType: string;
     baseUrl?: string;
     configJson?: string;
-    secretRef?: string;
+    secretRef?: string | null;
+    /** Write-only. Omit to keep existing; "" to clear. */
+    secret?: string | null;
     isActive?: boolean;
     sortOrder?: number;
   },
@@ -234,7 +274,9 @@ export async function upsertContentChannel(
     channelType: string;
     externalId?: string;
     configJson?: string;
-    secretRef?: string;
+    secretRef?: string | null;
+    /** Write-only. Omit to keep existing; "" to clear. */
+    secret?: string | null;
     isActive?: boolean;
     sortOrder?: number;
   },
@@ -263,6 +305,7 @@ export async function createContentTopic(body: {
   priority?: string;
   status?: string;
   bodyOutline?: string;
+  displayAt?: string | null;
 }) {
   const { data } = await http.post<ContentTopic>('/content/topics', body);
   return data;
@@ -275,7 +318,7 @@ export async function updateContentTopic(id: string, body: Parameters<typeof cre
 
 export async function generateContentTopic(
   id: string,
-  body?: { skipImages?: boolean; candidateCount?: number },
+  body?: { skipImages?: boolean; candidateCount?: number; imagesOnly?: boolean },
 ) {
   const { data } = await http.post<GenerateContentResult>(`/content/topics/${id}/generate`, body ?? {}, {
     timeout: 300_000,
@@ -299,10 +342,14 @@ export async function publishContentTopic(
     channelTargetIds?: string[];
     includeManualExport?: boolean;
     runImmediately?: boolean;
+    publishAt?: string | null;
+    imageBase64?: string;
+    imageFileName?: string;
+    imageContentType?: string;
   },
 ) {
   const { data } = await http.post<{ jobs: ContentPublishJob[] }>(`/content/topics/${id}/publish`, body ?? {}, {
-    timeout: 120_000,
+    timeout: 180_000,
   });
   return data;
 }

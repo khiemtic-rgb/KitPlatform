@@ -46,6 +46,7 @@ import {
   fetchWarehouses,
   receiveTransfer,
   shipTransfer,
+  updateTransfer,
 } from '@/shared/api/inventory.api';
 import { fetchProduct } from '@/shared/api/catalog.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
@@ -450,6 +451,9 @@ export function TransferListPage() {
   const [shortageOnly, setShortageOnly] = useState(false);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editingTransferId, setEditingTransferId] = useState<string | null>(null);
+  const [editingTransferNumber, setEditingTransferNumber] = useState<string | null>(null);
+  const skipClearLinesRef = useRef(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<TransferDetail | null>(null);
   const [form] = Form.useForm();
@@ -518,6 +522,10 @@ export function TransferListPage() {
   };
   useEffect(() => {
     if (!drawerOpen) return;
+    if (skipClearLinesRef.current) {
+      skipClearLinesRef.current = false;
+      return;
+    }
     setLines([]);
     setComposer(emptyEditor());
     setEditingKey(null);
@@ -525,11 +533,82 @@ export function TransferListPage() {
   }, [fromWarehouseId, drawerOpen]);
 
   const openCreate = () => {
+    setEditingTransferId(null);
+    setEditingTransferNumber(null);
     form.resetFields();
     setLines([]);
     setComposer(emptyEditor());
     setEditingKey(null);
     setDrawerOpen(true);
+  };
+
+  const detailToDraftLines = async (doc: TransferDetail): Promise<TransferDraftLine[]> => {
+    const draftLines: TransferDraftLine[] = [];
+    for (const item of doc.items) {
+      const product = await fetchProduct(item.productId);
+      const baseUnit =
+        product.units.find((u) => u.isBaseUnit) ??
+        product.units.find((u) => u.isSaleUnit) ??
+        product.units[0];
+      if (!baseUnit) {
+        throw new Error(t('validation.selectUnit'));
+      }
+      let available = item.quantity;
+      try {
+        const batches = await fetchStockBatches({
+          warehouseId: doc.fromWarehouseId,
+          productId: item.productId,
+          pageSize: 100,
+        });
+        const batch = batches.items.find((b) => b.id === item.batchId);
+        if (batch) available = batch.quantityAvailable;
+      } catch {
+        // keep line qty as floor while editing if stock lookup fails
+      }
+      draftLines.push({
+        key: item.id,
+        productId: item.productId,
+        productLabel: `${item.productCode} — ${item.productName}`,
+        batchId: item.batchId,
+        batchLabel: batchOptionLabel(item.batchNumber, item.expiryDate ?? undefined, available),
+        productUnitId: baseUnit.id,
+        unitName: formatUnitLabel(baseUnit),
+        conversionFactor: 1,
+        quantity: item.quantity,
+        quantityAvailable: Math.max(available, item.quantity),
+      });
+    }
+    return draftLines;
+  };
+
+  const openEdit = async (id: string) => {
+    setActionBusyId(id);
+    try {
+      const doc = detail?.id === id ? detail : await fetchTransfer(id);
+      if (doc.status !== 1) {
+        message.warning(t('messages.updateFailed'));
+        return;
+      }
+      const draftLines = await detailToDraftLines(doc);
+      skipClearLinesRef.current = true;
+      setEditingTransferId(doc.id);
+      setEditingTransferNumber(doc.transferNumber);
+      form.setFieldsValue({
+        fromWarehouseId: doc.fromWarehouseId,
+        toWarehouseId: doc.toWarehouseId,
+        notes: doc.notes ?? undefined,
+      });
+      setLines(draftLines);
+      setComposer(emptyEditor());
+      setEditingKey(null);
+      setEditDraft(emptyEditor());
+      setDetailOpen(false);
+      setDrawerOpen(true);
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('messages.detailLoadFailed')));
+    } finally {
+      setActionBusyId(null);
+    }
   };
 
   const openDetail = async (id: string) => {
@@ -609,7 +688,7 @@ export function TransferListPage() {
     setEditDraft(emptyEditor());
   };
 
-  const handleCreate = async () => {
+  const handleSave = async () => {
     try {
       const values = await form.validateFields();
       if (values.fromWarehouseId === values.toWarehouseId) {
@@ -621,21 +700,37 @@ export function TransferListPage() {
         return;
       }
       setSaving(true);
-      const created = await createTransfer({
-        fromWarehouseId: values.fromWarehouseId,
-        toWarehouseId: values.toWarehouseId,
-        notes: values.notes,
+      const payload = {
+        fromWarehouseId: values.fromWarehouseId as string,
+        toWarehouseId: values.toWarehouseId as string,
+        notes: values.notes as string | undefined,
         items: lines.map((line) => ({
           batchId: line.batchId,
           quantity: toBaseQuantity(line.quantity, line.conversionFactor),
         })),
-      });
-      message.success(t('messages.createSuccess', { number: created.transferNumber }));
+      };
+      if (editingTransferId) {
+        const updated = await updateTransfer(editingTransferId, payload);
+        message.success(t('messages.updateSuccess', { number: updated.transferNumber }));
+        if (detail?.id === updated.id) {
+          setDetail(updated);
+        }
+      } else {
+        const created = await createTransfer(payload);
+        message.success(t('messages.createSuccess', { number: created.transferNumber }));
+      }
       setDrawerOpen(false);
+      setEditingTransferId(null);
+      setEditingTransferNumber(null);
       load();
     } catch (error) {
       if (isAxiosError(error)) {
-        message.error(apiErrorMessage(error, t('messages.createFailed')));
+        message.error(
+          apiErrorMessage(
+            error,
+            editingTransferId ? t('messages.updateFailed') : t('messages.createFailed'),
+          ),
+        );
       }
     } finally {
       setSaving(false);
@@ -892,6 +987,17 @@ export function TransferListPage() {
             {row.status === 1 && (
               <>
                 <Tag
+                  color="geekblue"
+                  icon={<EditOutlined />}
+                  style={{ cursor: 'pointer', margin: 0 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void openEdit(row.id);
+                  }}
+                >
+                  {t('edit')}
+                </Tag>
+                <Tag
                   color="cyan"
                   icon={<SendOutlined />}
                   style={{ cursor: 'pointer', margin: 0 }}
@@ -1084,12 +1190,18 @@ export function TransferListPage() {
         title={
           <span>
             <SwapOutlined style={{ marginRight: 8 }} />
-            {t('createTitle')}
+            {editingTransferNumber
+              ? t('editTitle', { number: editingTransferNumber })
+              : t('createTitle')}
           </span>
         }
         width={TRANSFER_DRAWER_WIDTH}
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={() => {
+          setDrawerOpen(false);
+          setEditingTransferId(null);
+          setEditingTransferNumber(null);
+        }}
         styles={{
           body: {
             paddingTop: 8,
@@ -1101,8 +1213,16 @@ export function TransferListPage() {
         }}
         extra={
           <Space>
-            <Button onClick={() => setDrawerOpen(false)}>{tc('actions.cancel')}</Button>
-            <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleCreate}>
+            <Button
+              onClick={() => {
+                setDrawerOpen(false);
+                setEditingTransferId(null);
+                setEditingTransferNumber(null);
+              }}
+            >
+              {tc('actions.cancel')}
+            </Button>
+            <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={() => void handleSave()}>
               {tc('actions.save')}
             </Button>
           </Space>
@@ -1231,6 +1351,13 @@ export function TransferListPage() {
         extra={
           detail && detail.status === 1 ? (
             <Space>
+              <Button
+                icon={<EditOutlined />}
+                loading={actionBusyId === detail.id}
+                onClick={() => void openEdit(detail.id)}
+              >
+                {t('edit')}
+              </Button>
               <Button
                 danger
                 icon={<StopOutlined />}

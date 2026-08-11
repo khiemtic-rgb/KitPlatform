@@ -527,7 +527,7 @@
     "continueWithCounterCode": "Tôi đã có mã từ quầy",
     "otpSentTo": "Đã gửi yêu cầu cho",
     "otpAskStaff": "Nhân viên sẽ đọc mã đăng nhập cho bạn. Nhập mã vào ô bên dưới.",
-    "otpCounterHint": "Nhờ nhân viên quầy bấm «Mã app» / «Tạo mã» rồi đọc 6 số cho bạn.",
+    "otpCounterHint": "Có thể nhờ NV bấm «Mã app» → Tạo mã rồi đọc; hoặc bạn bấm gửi OTP — NV sẽ đọc mã trên màn hình POS.",
     "otpCounterNote": "Nhập mã nhân viên vừa đọc cho",
     "requestCodeFromCounter": "Yêu cầu mã mới (nhân viên sẽ thấy trên màn hình)",
     "devOtpHint": "Dev: dùng",

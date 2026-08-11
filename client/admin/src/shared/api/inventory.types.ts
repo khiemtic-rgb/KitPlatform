@@ -151,6 +151,8 @@ export type TransferItem = Req<
   | 'batchNumber'
   | 'quantity'
 > & {
+  expiryDate?: string | null;
+  unitName?: string | null;
   receivedQuantity?: number | null;
 };
 

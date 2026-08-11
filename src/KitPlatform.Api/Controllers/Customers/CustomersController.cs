@@ -133,6 +133,13 @@ public sealed class CustomersController : ControllerBase
     public async Task<ActionResult<NextCustomerCodeDto>> NextCode(CancellationToken cancellationToken) =>
         Ok(new NextCustomerCodeDto(await _admin.GetNextCustomerCodeAsync(cancellationToken)));
 
+    /// <summary>Live staff-read OTPs currently waiting (counter Mode A) — no need to open each customer.</summary>
+    [HttpGet("active-counter-otps")]
+    [Authorize(Policy = SalesPolicies.PosOrCustomers)]
+    public async Task<ActionResult<ActiveCounterOtpListDto>> ListActiveCounterOtps(
+        CancellationToken cancellationToken = default) =>
+        Ok(await _pilotOtp.ListActiveAsync(cancellationToken));
+
     [HttpGet("{customerId:guid}")]
     [Authorize(Policy = SalesPolicies.Read)]
     public async Task<ActionResult<CustomerDetailDto>> Get(

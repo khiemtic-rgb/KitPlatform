@@ -207,6 +207,19 @@
     "waiting": "Chưa có mã OTP",
     "waitingHint": "Khi khách bấm «Gửi mã OTP» trên app, mã 6 số sẽ hiện tại đây (tự cập nhật mỗi vài giây)."
   },
+  "activeCounterOtp": {
+    "title": "OTP chờ đọc cho khách",
+    "intro": "Khi khách bấm «Gửi mã OTP» trên app, mã hiện ngay tại đây — không cần tìm khách trong danh sách.",
+    "reload": "Tải lại",
+    "waiting": "Chưa có OTP đang chờ",
+    "waitingHint": "Giữ tab này mở khi khách đăng nhập tại quầy. Tự làm mới mỗi 3 giây.",
+    "waitingCompact": "Chưa có mã OTP để đọc",
+    "waitingCompactHint": "Bấm «Mã app» → nhập SĐT / chọn khách → Tạo mã. Hoặc chờ khách bấm gửi OTP trên app — mã hiện ngay tại đây.",
+    "expiresAt": "Hết hạn {{time}}",
+    "readAloud": "Đọc mã này cho khách nhập vào app",
+    "unknownName": "Khách",
+    "moreCount": "+{{count}} mã khác"
+  },
   "appLogin": {
     "title": "Chờ duyệt đăng nhập app (từ xa)",
     "hint": "Khách đăng ký từ xa (đã có SĐT trên CRM hoặc có mã mời). Duyệt xong hãy gọi/Zalo gửi mã OTP.",

@@ -218,6 +218,42 @@ internal sealed class InventoryService : IInventoryService
         return (await _repository.GetTransferAsync(transferId, cancellationToken))!;
     }
 
+    public async Task<TransferDetailDto?> UpdateTransferAsync(
+        Guid id,
+        UpdateTransferRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var existing = await _repository.GetTransferAsync(id, cancellationToken);
+        if (existing is null) return null;
+
+        await _branchAccess.EnsureWarehouseAccessAsync(existing.FromWarehouseId, cancellationToken);
+        await _branchAccess.EnsureWarehouseAccessAsync(request.FromWarehouseId, cancellationToken);
+
+        if (existing.Status != TransferStatuses.Draft)
+            throw new InvalidOperationException("Chỉ sửa được phiếu đang chờ gửi.");
+
+        if (request.FromWarehouseId == request.ToWarehouseId)
+            throw new InvalidOperationException("Kho xuất và kho nhận phải khác nhau.");
+        if (request.Items.Count == 0)
+            throw new InvalidOperationException("Thêm ít nhất một dòng điều chuyển.");
+
+        if (!await _repository.WarehouseExistsAsync(request.FromWarehouseId, cancellationToken))
+            throw new InvalidOperationException("Kho xuất không tồn tại.");
+        if (!await _repository.WarehouseExistsAsync(request.ToWarehouseId, cancellationToken))
+            throw new InvalidOperationException("Kho nhận không tồn tại.");
+
+        foreach (var item in request.Items)
+        {
+            if (item.Quantity <= 0)
+                throw new InvalidOperationException("Số lượng chuyển phải lớn hơn 0.");
+        }
+
+        await _repository.UpdateTransferWithItemsAsync(
+            id, request.FromWarehouseId, request.ToWarehouseId, request.Notes, request.Items, cancellationToken);
+
+        return await _repository.GetTransferAsync(id, cancellationToken);
+    }
+
     public async Task<TransferDetailDto?> ShipTransferAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var existing = await _repository.GetTransferAsync(id, cancellationToken);

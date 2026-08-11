@@ -537,6 +537,64 @@ internal sealed class CustomerAppAuthRepository
         return await conn.QuerySingleOrDefaultAsync<PilotOtpRow>(sql, new { TenantId = tenantId, Phone = phone });
     }
 
+    public async Task<IReadOnlyList<ActivePilotOtpListRow>> ListActivePilotOtpsAsync(
+        Guid tenantId,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        limit = Math.Clamp(limit, 1, 50);
+        const string sql = """
+            SELECT
+                o.phone AS Phone,
+                o.pilot_code AS Code,
+                o.expires_at AS ExpiresAt,
+                o.created_at AS CreatedAt,
+                c.id AS CustomerId,
+                c.full_name AS CustomerName
+            FROM customer_otp_challenges o
+            LEFT JOIN LATERAL (
+                SELECT id, full_name
+                FROM customers
+                WHERE tenant_id = o.tenant_id
+                  AND deleted_at IS NULL
+                  AND (
+                      phone = o.phone
+                      OR (
+                          CASE
+                              WHEN regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g') ~ '^84[0-9]{8,}$'
+                                  THEN '0' || substring(regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g') from 3)
+                              ELSE regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g')
+                          END
+                      ) = o.phone
+                  )
+                ORDER BY updated_at DESC NULLS LAST, created_at DESC
+                LIMIT 1
+            ) c ON TRUE
+            WHERE o.tenant_id = @TenantId
+              AND o.consumed_at IS NULL
+              AND o.expires_at > NOW()
+              AND o.pilot_code IS NOT NULL
+            ORDER BY o.created_at DESC
+            LIMIT @Limit
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<ActivePilotOtpListRow>(
+            sql,
+            new { TenantId = tenantId, Limit = limit });
+        return rows.ToList();
+    }
+
+    internal sealed class ActivePilotOtpListRow
+    {
+        public string Phone { get; init; } = "";
+        public string Code { get; init; } = "";
+        public DateTime ExpiresAt { get; init; }
+        public DateTime CreatedAt { get; init; }
+        public Guid? CustomerId { get; init; }
+        public string? CustomerName { get; init; }
+    }
+
     public async Task<OtpChallengeRow?> GetActiveOtpChallengeAsync(
         Guid tenantId,
         string phone,

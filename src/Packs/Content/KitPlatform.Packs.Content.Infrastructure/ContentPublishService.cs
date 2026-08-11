@@ -17,12 +17,23 @@ internal sealed class ContentPublishService : IContentPublishService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
+    private sealed class EphemeralMedia
+    {
+        public required byte[] Bytes { get; init; }
+        public required string FileName { get; init; }
+        public required string ContentType { get; init; }
+        public DateTimeOffset? PublishAt { get; init; }
+    }
+
     private readonly ContentRepository _repo;
     private readonly IHttpClientFactory _httpFactory;
     private readonly IConfiguration _configuration;
     private readonly IHostEnvironment _env;
     private readonly ContentOptions _options;
     private readonly ILogger<ContentPublishService> _logger;
+
+    // Per-request media for scoped publish (cleared in finally).
+    private EphemeralMedia? _ephemeral;
 
     public ContentPublishService(
         ContentRepository repo,
@@ -47,82 +58,144 @@ internal sealed class ContentPublishService : IContentPublishService
     {
         var topic = await _repo.GetTopicAsync(topicId, cancellationToken)
                     ?? throw new InvalidOperationException("Topic not found");
-        if (topic.Status is not ("Review" or "Approved" or "Scheduled" or "Published"))
+        if (topic.Status is not ("Review" or "Approved" or "Scheduled" or "Published" or "Draft"))
             throw new InvalidOperationException(
-                $"Topic status '{topic.Status}' cannot publish — cần Review/Approved trước.");
+                $"Topic status '{topic.Status}' cannot publish — cần có bản viết (Review/Approved).");
 
-        var sites = await _repo.ListSitesAsync(topic.BrandId, cancellationToken);
-        var channels = await _repo.ListChannelsAsync(topic.BrandId, cancellationToken);
-
-        var siteIds = request.SiteTargetIds?.ToHashSet() ?? sites.Where(s => s.IsActive).Select(s => s.Id).ToHashSet();
-        var channelIds = request.ChannelTargetIds?.ToHashSet()
-                         ?? channels.Where(c => c.IsActive).Select(c => c.Id).ToHashSet();
-
-        var jobs = new List<ContentPublishJobDto>();
-
-        if (request.IncludeManualExport)
+        // Allow Draft if variants exist (local-image publish path after gen).
+        if (topic.Status == "Draft")
         {
-            var id = await _repo.InsertPublishJobAsync(new ContentRepository.PublishJobRow
-            {
-                TopicId = topicId,
-                BrandId = topic.BrandId,
-                TargetKind = "manual",
-                ConnectorType = "manual",
-                Status = "Queued",
-            }, cancellationToken);
-            jobs.Add(await LoadJobAsync(id, cancellationToken));
+            var hasVariants = (await _repo.ListVariantsAsync(topicId, cancellationToken)).Count > 0;
+            if (!hasVariants)
+                throw new InvalidOperationException("Chưa có bản viết — bấm Nhờ AI trước khi xuất bản.");
         }
 
-        foreach (var site in sites.Where(s => siteIds.Contains(s.Id) && s.IsActive))
+        var publishAt = request.PublishAt ?? topic.DisplayAt;
+        _ephemeral = null;
+        if (!string.IsNullOrWhiteSpace(request.ImageBase64))
         {
-            var id = await _repo.InsertPublishJobAsync(new ContentRepository.PublishJobRow
+            try
             {
-                TopicId = topicId,
-                BrandId = topic.BrandId,
-                TargetKind = "site",
-                SiteTargetId = site.Id,
-                ConnectorType = site.ConnectorType,
-                Status = "Queued",
-            }, cancellationToken);
-            jobs.Add(await LoadJobAsync(id, cancellationToken));
-        }
-
-        foreach (var ch in channels.Where(c => channelIds.Contains(c.Id) && c.IsActive))
-        {
-            var connector = ch.ChannelType is "facebook_page" or "instagram" or "linkedin"
-                ? ch.ChannelType
-                : "manual";
-            if (ch.ChannelType == "facebook_page")
-                connector = "facebook_page";
-
-            var id = await _repo.InsertPublishJobAsync(new ContentRepository.PublishJobRow
-            {
-                TopicId = topicId,
-                BrandId = topic.BrandId,
-                TargetKind = "channel",
-                ChannelTargetId = ch.Id,
-                ConnectorType = connector,
-                Status = "Queued",
-            }, cancellationToken);
-            jobs.Add(await LoadJobAsync(id, cancellationToken));
-        }
-
-        if (request.RunImmediately)
-        {
-            var ran = new List<ContentPublishJobDto>();
-            foreach (var job in jobs)
-            {
-                var updated = await RunJobAsync(job.Id, cancellationToken);
-                if (updated is not null) ran.Add(updated);
+                var bytes = Convert.FromBase64String(request.ImageBase64.Trim());
+                if (bytes.Length > 0)
+                {
+                    _ephemeral = new EphemeralMedia
+                    {
+                        Bytes = bytes,
+                        FileName = string.IsNullOrWhiteSpace(request.ImageFileName)
+                            ? "cover.jpg"
+                            : request.ImageFileName.Trim(),
+                        ContentType = string.IsNullOrWhiteSpace(request.ImageContentType)
+                            ? "image/jpeg"
+                            : request.ImageContentType.Trim(),
+                        PublishAt = publishAt,
+                    };
+                }
             }
-            jobs = ran;
+            catch (FormatException)
+            {
+                throw new InvalidOperationException("ImageBase64 không hợp lệ");
+            }
+        }
+        else if (publishAt is not null)
+        {
+            _ephemeral = new EphemeralMedia
+            {
+                Bytes = [],
+                FileName = "",
+                ContentType = "application/octet-stream",
+                PublishAt = publishAt,
+            };
         }
 
-        var anyOk = jobs.Any(j => j.Status == "Succeeded");
-        if (anyOk)
-            await _repo.UpdateTopicStatusAsync(topicId, "Published", cancellationToken);
+        try
+        {
+            var sites = await _repo.ListSitesAsync(topic.BrandId, cancellationToken);
+            var channels = await _repo.ListChannelsAsync(topic.BrandId, cancellationToken);
 
-        return new PublishContentResultDto(jobs);
+            var siteIds = request.SiteTargetIds?.ToHashSet() ?? sites.Where(s => s.IsActive).Select(s => s.Id).ToHashSet();
+            var channelIds = request.ChannelTargetIds?.ToHashSet()
+                             ?? channels.Where(c => c.IsActive).Select(c => c.Id).ToHashSet();
+
+            var jobs = new List<ContentPublishJobDto>();
+
+            if (request.IncludeManualExport)
+            {
+                var id = await _repo.InsertPublishJobAsync(new ContentRepository.PublishJobRow
+                {
+                    TopicId = topicId,
+                    BrandId = topic.BrandId,
+                    TargetKind = "manual",
+                    ConnectorType = "manual",
+                    Status = "Queued",
+                    PublishAt = publishAt,
+                }, cancellationToken);
+                jobs.Add(await LoadJobAsync(id, cancellationToken));
+            }
+
+            foreach (var site in sites.Where(s => siteIds.Contains(s.Id) && s.IsActive))
+            {
+                var id = await _repo.InsertPublishJobAsync(new ContentRepository.PublishJobRow
+                {
+                    TopicId = topicId,
+                    BrandId = topic.BrandId,
+                    TargetKind = "site",
+                    SiteTargetId = site.Id,
+                    ConnectorType = site.ConnectorType,
+                    Status = "Queued",
+                    PublishAt = publishAt,
+                }, cancellationToken);
+                jobs.Add(await LoadJobAsync(id, cancellationToken));
+            }
+
+            foreach (var ch in channels.Where(c => channelIds.Contains(c.Id) && c.IsActive))
+            {
+                var connector = ch.ChannelType is "facebook_page" or "instagram" or "linkedin"
+                    ? ch.ChannelType
+                    : "manual";
+                if (ch.ChannelType == "facebook_page")
+                    connector = "facebook_page";
+
+                var id = await _repo.InsertPublishJobAsync(new ContentRepository.PublishJobRow
+                {
+                    TopicId = topicId,
+                    BrandId = topic.BrandId,
+                    TargetKind = "channel",
+                    ChannelTargetId = ch.Id,
+                    ConnectorType = connector,
+                    Status = "Queued",
+                    PublishAt = publishAt,
+                }, cancellationToken);
+                jobs.Add(await LoadJobAsync(id, cancellationToken));
+            }
+
+            if (request.RunImmediately)
+            {
+                var ran = new List<ContentPublishJobDto>();
+                foreach (var job in jobs)
+                {
+                    var updated = await RunJobAsync(job.Id, cancellationToken);
+                    if (updated is not null) ran.Add(updated);
+                }
+                jobs = ran;
+            }
+
+            var anyOk = jobs.Any(j => j.Status == "Succeeded");
+            if (anyOk)
+            {
+                var scheduled = publishAt is { } at && at > DateTimeOffset.UtcNow.AddMinutes(5);
+                await _repo.UpdateTopicStatusAsync(
+                    topicId,
+                    scheduled ? "Scheduled" : "Published",
+                    cancellationToken);
+            }
+
+            return new PublishContentResultDto(jobs);
+        }
+        finally
+        {
+            _ephemeral = null;
+        }
     }
 
     public async Task<ContentPublishJobDto?> RunJobAsync(Guid jobId, CancellationToken cancellationToken = default)
@@ -147,7 +220,7 @@ internal sealed class ContentPublishService : IContentPublishService
             {
                 "manual" => await RunManualAsync(topic, variants, selected, cancellationToken),
                 "wordpress_rest" => await RunWordPressAsync(job, topic, variants, selected, cancellationToken),
-                "facebook_page" => await RunFacebookAsync(job, topic, variants, cancellationToken),
+                "facebook_page" => await RunFacebookAsync(job, topic, variants, selected, cancellationToken),
                 "astro_git" => await RunAstroGitAsync(job, topic, variants, selected, cancellationToken),
                 _ => throw new InvalidOperationException($"Unsupported connector '{job.ConnectorType}'"),
             };
@@ -242,11 +315,11 @@ internal sealed class ContentPublishService : IContentPublishService
         var cfg = ParseConfig(site.ConfigJson);
         var username = GetConfigString(cfg, "username")
                        ?? throw new InvalidOperationException("WordPress config.username required");
-        var password = ResolveSecret(site.SecretRef)
+        var password = ResolveTargetSecret(site.SecretRef, site.ConfigJson)
                        ?? GetConfigString(cfg, "applicationPassword")
                        ?? throw new InvalidOperationException(
-                           "WordPress secret_ref / applicationPassword missing");
-        var status = GetConfigString(cfg, "status") ?? "draft";
+                           "WordPress token missing — dán mật khẩu ứng dụng vào form nơi đăng hoặc đặt env");
+        var defaultStatus = GetConfigString(cfg, "status") ?? "draft";
 
         var web = variants.FirstOrDefault(v => v.Kind is "web_long" or "seo_meta")
                   ?? variants.FirstOrDefault();
@@ -256,11 +329,36 @@ internal sealed class ContentPublishService : IContentPublishService
             content += $"\n\n[CTA]({topic.CtaUrl})";
 
         var http = _httpFactory.CreateClient("content-publish");
+        var basic = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
+
+        int? featuredMediaId = null;
+        var mediaBytes = await ResolvePublishImageBytesAsync(selected, ct);
+        if (mediaBytes is { } media && media.Bytes.Length > 0)
+        {
+            featuredMediaId = await UploadWordPressMediaAsync(
+                http, baseUrl, basic, media.Bytes, media.FileName, media.ContentType, ct);
+        }
+
+        var publishAt = _ephemeral?.PublishAt ?? job.PublishAt ?? topic.DisplayAt;
+        var isFuture = publishAt is { } at && at > DateTimeOffset.UtcNow.AddMinutes(5);
+        var status = isFuture ? "future" : defaultStatus;
+
+        var payload = new Dictionary<string, object?>
+        {
+            ["title"] = title,
+            ["content"] = content,
+            ["status"] = status,
+            ["format"] = "standard",
+        };
+        if (isFuture && publishAt is { } when)
+            payload["date_gmt"] = when.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss");
+        if (featuredMediaId is { } mid)
+            payload["featured_media"] = mid;
+
         using var req = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/wp-json/wp/v2/posts");
-        var token = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
-        req.Headers.Authorization = new AuthenticationHeaderValue("Basic", token);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Basic", basic);
         req.Content = new StringContent(
-            JsonSerializer.Serialize(new { title, content, status, format = "standard" }, JsonOpts),
+            JsonSerializer.Serialize(payload, JsonOpts),
             Encoding.UTF8,
             "application/json");
 
@@ -272,13 +370,53 @@ internal sealed class ContentPublishService : IContentPublishService
         using var doc = JsonDocument.Parse(body);
         var id = doc.RootElement.TryGetProperty("id", out var idEl) ? idEl.ToString() : null;
         var link = doc.RootElement.TryGetProperty("link", out var linkEl) ? linkEl.GetString() : null;
-        return new ConnectorResult(id ?? link, body);
+        return new ConnectorResult(
+            id ?? link,
+            ContentRepository.ToJson(new
+            {
+                wordpressId = id,
+                link,
+                scheduled = isFuture,
+                publishAt,
+                featuredMediaId,
+                imageKeptOnServer = false,
+            }));
+    }
+
+    private async Task<int> UploadWordPressMediaAsync(
+        HttpClient http,
+        string baseUrl,
+        string basicAuth,
+        byte[] bytes,
+        string fileName,
+        string contentType,
+        CancellationToken ct)
+    {
+        using var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(bytes);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        content.Add(fileContent, "file", fileName);
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/wp-json/wp/v2/media");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Basic", basicAuth);
+        req.Content = content;
+
+        using var res = await http.SendAsync(req, ct);
+        var body = await res.Content.ReadAsStringAsync(ct);
+        if (!res.IsSuccessStatusCode)
+            throw new InvalidOperationException($"WordPress media {(int)res.StatusCode}: {Trim(body)}");
+
+        using var doc = JsonDocument.Parse(body);
+        if (!doc.RootElement.TryGetProperty("id", out var idEl))
+            throw new InvalidOperationException("WordPress media response missing id");
+        return idEl.GetInt32();
     }
 
     private async Task<ConnectorResult> RunFacebookAsync(
         ContentRepository.PublishJobRow job,
         ContentRepository.TopicRow topic,
         IReadOnlyList<ContentRepository.VariantRow> variants,
+        ContentRepository.AssetRow? selected,
         CancellationToken ct)
     {
         var channel = job.ChannelTargetId is { } cid
@@ -289,8 +427,9 @@ internal sealed class ContentPublishService : IContentPublishService
 
         var pageId = channel.ExternalId?.Trim()
                      ?? throw new InvalidOperationException("Facebook external_id (page id) required");
-        var token = ResolveSecret(channel.SecretRef)
-                    ?? throw new InvalidOperationException("Facebook secret_ref (page access token) missing");
+        var token = ResolveTargetSecret(channel.SecretRef, channel.ConfigJson)
+                    ?? throw new InvalidOperationException(
+                        "Facebook token missing — dán Page Access Token vào form nơi đăng hoặc đặt env");
 
         var fb = variants.FirstOrDefault(v => v.Kind is "fb_page" or "fb_short")
                  ?? variants.FirstOrDefault();
@@ -298,22 +437,81 @@ internal sealed class ContentPublishService : IContentPublishService
         if (!string.IsNullOrWhiteSpace(topic.CtaUrl))
             message = $"{message.Trim()}\n\n{topic.CtaUrl}";
 
+        var publishAt = _ephemeral?.PublishAt ?? job.PublishAt ?? topic.DisplayAt;
+        var isFuture = publishAt is { } at && at > DateTimeOffset.UtcNow.AddMinutes(10);
         var http = _httpFactory.CreateClient("content-publish");
-        var url =
-            $"https://graph.facebook.com/v21.0/{Uri.EscapeDataString(pageId)}/feed";
-        using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+
+        var mediaOpt = await ResolvePublishImageBytesAsync(selected, ct);
+        if (mediaOpt is { } media && media.Bytes.Length > 0)
+        {
+            using var form = new MultipartFormDataContent();
+            form.Add(new StringContent(message), "caption");
+            form.Add(new StringContent(token), "access_token");
+            if (isFuture && publishAt is { } when)
+            {
+                form.Add(new StringContent("false"), "published");
+                form.Add(new StringContent(when.ToUnixTimeSeconds().ToString()), "scheduled_publish_time");
+            }
+            else
+            {
+                form.Add(new StringContent("true"), "published");
+            }
+
+            var fileContent = new ByteArrayContent(media.Bytes);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(media.ContentType);
+            form.Add(fileContent, "source", media.FileName);
+
+            var url = $"https://graph.facebook.com/v21.0/{Uri.EscapeDataString(pageId)}/photos";
+            using var res = await http.PostAsync(url, form, ct);
+            var body = await res.Content.ReadAsStringAsync(ct);
+            if (!res.IsSuccessStatusCode)
+                throw new InvalidOperationException($"Facebook photo {(int)res.StatusCode}: {Trim(body)}");
+
+            using var doc = JsonDocument.Parse(body);
+            var postId = doc.RootElement.TryGetProperty("post_id", out var pid) ? pid.GetString()
+                : doc.RootElement.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
+            return new ConnectorResult(
+                postId,
+                ContentRepository.ToJson(new { facebook = "photo", scheduled = isFuture, publishAt, postId, imageKeptOnServer = false }));
+        }
+
+        var fields = new Dictionary<string, string>
         {
             ["message"] = message,
             ["access_token"] = token,
-        });
-        using var res = await http.PostAsync(url, content, ct);
-        var body = await res.Content.ReadAsStringAsync(ct);
-        if (!res.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Facebook {(int)res.StatusCode}: {Trim(body)}");
+        };
+        if (isFuture && publishAt is { } when2)
+        {
+            fields["published"] = "false";
+            fields["scheduled_publish_time"] = when2.ToUnixTimeSeconds().ToString();
+        }
 
-        using var doc = JsonDocument.Parse(body);
-        var postId = doc.RootElement.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
-        return new ConnectorResult(postId, body);
+        var feedUrl = $"https://graph.facebook.com/v21.0/{Uri.EscapeDataString(pageId)}/feed";
+        using var formContent = new FormUrlEncodedContent(fields);
+        using var feedRes = await http.PostAsync(feedUrl, formContent, ct);
+        var feedBody = await feedRes.Content.ReadAsStringAsync(ct);
+        if (!feedRes.IsSuccessStatusCode)
+            throw new InvalidOperationException($"Facebook {(int)feedRes.StatusCode}: {Trim(feedBody)}");
+
+        using var feedDoc = JsonDocument.Parse(feedBody);
+        var feedId = feedDoc.RootElement.TryGetProperty("id", out var fid) ? fid.GetString() : null;
+        return new ConnectorResult(
+            feedId,
+            ContentRepository.ToJson(new { facebook = "feed", scheduled = isFuture, publishAt, feedId }));
+    }
+
+    private async Task<(byte[] Bytes, string FileName, string ContentType)?> ResolvePublishImageBytesAsync(
+        ContentRepository.AssetRow? selected,
+        CancellationToken ct)
+    {
+        if (_ephemeral is { Bytes.Length: > 0 } e)
+            return (e.Bytes, e.FileName, e.ContentType);
+
+        if (selected is null) return null;
+        var path = Path.Combine(ResolveAssetRoot(), selected.StoragePath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(path)) return null;
+        var bytes = await File.ReadAllBytesAsync(path, ct);
+        return (bytes, selected.FileName, selected.ContentType);
     }
 
     private async Task<ConnectorResult> RunAstroGitAsync(
@@ -336,8 +534,9 @@ internal sealed class ContentPublishService : IContentPublishService
                    ?? throw new InvalidOperationException("astro_git config.repo required");
         var branch = GetConfigString(cfg, "branch") ?? "main";
         var contentPath = (GetConfigString(cfg, "contentPath") ?? "src/content/blog").TrimEnd('/');
-        var token = ResolveSecret(site.SecretRef)
-                    ?? throw new InvalidOperationException("astro_git secret_ref (GitHub token) missing");
+        var token = ResolveTargetSecret(site.SecretRef, site.ConfigJson)
+                    ?? throw new InvalidOperationException(
+                        "GitHub token missing — dán token vào form nơi đăng hoặc đặt env");
 
         var web = variants.FirstOrDefault(v => v.Kind == "web_long") ?? variants.FirstOrDefault();
         var slug = Slugify(web?.Title ?? topic.Title);
@@ -403,6 +602,14 @@ internal sealed class ContentPublishService : IContentPublishService
         return Path.IsPathRooted(configured)
             ? configured
             : Path.GetFullPath(Path.Combine(_env.ContentRootPath, configured));
+    }
+
+    private string? ResolveTargetSecret(string? secretRef, string? configJson)
+    {
+        var stored = ContentTargetSecrets.ExtractStored(configJson);
+        if (!string.IsNullOrWhiteSpace(stored))
+            return stored;
+        return ResolveSecret(secretRef);
     }
 
     private string? ResolveSecret(string? secretRef)
