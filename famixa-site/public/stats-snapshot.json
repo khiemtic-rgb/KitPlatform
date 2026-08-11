@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-11T13:50:36.188Z",
+  "generatedAt": "2026-08-11T19:34:14.163Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 204,
-    "todayPageViews": 299,
-    "todayRequests": 773,
-    "last24hVisitors": 242,
-    "last24hPageViews": 314,
-    "last24hRequests": 846
+    "todayVisitors": 9,
+    "todayPageViews": 1,
+    "todayRequests": 11,
+    "last24hVisitors": 226,
+    "last24hPageViews": 312,
+    "last24hRequests": 820
   },
   "hourly": [
-    {
-      "time": "2026-08-10T14:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-10T15:00:00Z",
-      "visitors": 7,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-10T16:00:00Z",
-      "visitors": 10,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-10T17:00:00Z",
-      "visitors": 9,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-10T18:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-10T19:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
     {
       "time": "2026-08-10T20:00:00Z",
       "visitors": 2,
@@ -123,17 +93,36 @@
     },
     {
       "time": "2026-08-11T13:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-11T14:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-11T15:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-11T16:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-11T17:00:00Z",
+      "visitors": 6,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-11T18:00:00Z",
       "visitors": 3,
       "requests": 3
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-05",
-      "visitors": 221,
-      "pageViews": 113,
-      "requests": 624
-    },
     {
       "date": "2026-08-06",
       "visitors": 291,
@@ -166,23 +155,29 @@
     },
     {
       "date": "2026-08-11",
-      "visitors": 267,
-      "pageViews": 312,
-      "requests": 820
+      "visitors": 219,
+      "pageViews": 301,
+      "requests": 796
+    },
+    {
+      "date": "2026-08-12",
+      "visitors": 9,
+      "pageViews": 1,
+      "requests": 11
     }
   ],
   "topPages": [
     {
       "path": "/vi/goi-cha-me/co-nen-thuong-tien-cho-con-goc-nhin-tam-ly-hoc-va-cach-dung-phan-thuong-dung-muc-tieu/",
-      "views": 82
+      "views": 83
     },
     {
       "path": "/images/blog/co-nen-thuong-tien-cho-con.png",
-      "views": 51
+      "views": 52
     },
     {
       "path": "/vi/",
-      "views": 29
+      "views": 27
     },
     {
       "path": "/vi/goi-cha-me/",
@@ -190,15 +185,11 @@
     },
     {
       "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 20
+      "views": 19
     },
     {
       "path": "/cdn-cgi/rum",
       "views": 19
-    },
-    {
-      "path": "/robots.txt",
-      "views": 17
     },
     {
       "path": "/feed.json",
@@ -209,20 +200,16 @@
       "views": 15
     },
     {
-      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
+      "path": "/robots.txt",
       "views": 15
+    },
+    {
+      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
+      "views": 14
     },
     {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
       "views": 14
-    },
-    {
-      "path": "/images/blog/nuoi-day-con-bang-ky-luat-tich-cuc.png",
-      "views": 14
-    },
-    {
-      "path": "/images/moment-sleep.png",
-      "views": 13
     },
     {
       "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
@@ -231,6 +218,14 @@
     {
       "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
       "views": 13
+    },
+    {
+      "path": "/images/moment-sleep.png",
+      "views": 12
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 12
     }
   ]
 }
