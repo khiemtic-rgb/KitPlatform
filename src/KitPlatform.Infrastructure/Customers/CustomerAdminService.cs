@@ -18,7 +18,8 @@ internal sealed class CustomerAdminService : ICustomerAdminService
         int page,
         int pageSize,
         CancellationToken cancellationToken = default,
-        string? pharmacyRelation = null)
+        string? pharmacyRelation = null,
+        string? phoneReadiness = null)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -28,6 +29,7 @@ internal sealed class CustomerAdminService : ICustomerAdminService
             page,
             pageSize,
             pharmacyRelation,
+            phoneReadiness,
             cancellationToken);
         return new PagedCustomersResult(items, total, page, pageSize);
     }

@@ -47,8 +47,23 @@ public sealed class CustomersController : ControllerBase
         [FromQuery] string? search,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
+        [FromQuery] string? pharmacyRelation = null,
+        [FromQuery] string? phoneReadiness = null,
         CancellationToken cancellationToken = default) =>
-        Ok(await _admin.ListAsync(search, page, pageSize, cancellationToken));
+        Ok(await _admin.ListAsync(
+            search,
+            page,
+            pageSize,
+            cancellationToken,
+            pharmacyRelation,
+            phoneReadiness));
+
+    /// <summary>Mode A / pharmacy membership readiness counts for the current tenant.</summary>
+    [HttpGet("mode-a-readiness")]
+    [Authorize(Policy = SalesPolicies.Read)]
+    public async Task<ActionResult<CustomerPharmacyRelationSummaryDto>> ModeAReadiness(
+        CancellationToken cancellationToken = default) =>
+        Ok(await _admin.GetPharmacyRelationSummaryAsync(cancellationToken));
 
     /// <summary>Near-duplicate customers: same digit-phone or name similarity ≥ threshold.</summary>
     [HttpGet("similar-clusters")]

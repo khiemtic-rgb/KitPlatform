@@ -22,13 +22,18 @@ public sealed record PagedCustomersResult(
     int Page,
     int PageSize);
 
-/// <summary>CRM split: counts by pharmacy_relation for the current tenant.</summary>
+/// <summary>CRM + Mode A phone readiness for the current tenant.</summary>
 public sealed record CustomerPharmacyRelationSummaryDto(
     int Prospect,
     int Member,
     int Revoked,
     int Total,
-    int HasAppAccount);
+    int HasAppAccount,
+    int ValidVnMobile = 0,
+    int PhoneNeedsFix = 0,
+    int DuplicatePhoneGroups = 0,
+    int CustomersInDuplicateGroups = 0,
+    int ModeAReady = 0);
 
 public sealed record SimilarCustomerMemberDto(
     Guid Id,

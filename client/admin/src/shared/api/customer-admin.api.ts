@@ -4,6 +4,8 @@ import type {
   CustomerAdminListItem,
   CustomerDetail,
   CustomerLoyaltySummary,
+  CustomerModeAReadinessSummary,
+  CustomerPhoneReadiness,
   CustomerPilotOtpStatus,
   LoyaltyProgramSummary,
   LoyaltyTier,
@@ -35,6 +37,12 @@ function normalizeListItem(row: Record<string, unknown>): CustomerAdminListItem 
         : null,
     customerGroupName: (row.customerGroupName ?? row.CustomerGroupName) as string | null | undefined,
     groupDiscountPercent: Number(row.groupDiscountPercent ?? row.GroupDiscountPercent ?? 0),
+    hasAppAccount: Boolean(row.hasAppAccount ?? row.HasAppAccount ?? false),
+    appLastLoginAt: (row.appLastLoginAt ?? row.AppLastLoginAt) as string | null | undefined,
+    acquisitionSource: String(
+      row.acquisitionSource ?? row.AcquisitionSource ?? 'counter',
+    ),
+    pharmacyRelation: String(row.pharmacyRelation ?? row.PharmacyRelation ?? 'member'),
   };
 }
 
@@ -119,6 +127,8 @@ export async function fetchCustomers(params?: {
   search?: string;
   page?: number;
   pageSize?: number;
+  pharmacyRelation?: string;
+  phoneReadiness?: CustomerPhoneReadiness | string;
 }): Promise<PagedCustomersResult> {
   const { data } = await http.get<Record<string, unknown>>('/customers', { params });
   const items = ((data.items ?? data.Items ?? []) as Record<string, unknown>[]).map(normalizeListItem);
@@ -128,6 +138,57 @@ export async function fetchCustomers(params?: {
     page: Number(data.page ?? data.Page ?? 1),
     pageSize: Number(data.pageSize ?? data.PageSize ?? 20),
   };
+}
+
+function normalizeModeAReadiness(row: Record<string, unknown>): CustomerModeAReadinessSummary {
+  return {
+    prospect: Number(row.prospect ?? row.Prospect ?? 0),
+    member: Number(row.member ?? row.Member ?? 0),
+    revoked: Number(row.revoked ?? row.Revoked ?? 0),
+    total: Number(row.total ?? row.Total ?? 0),
+    hasAppAccount: Number(row.hasAppAccount ?? row.HasAppAccount ?? 0),
+    validVnMobile: Number(row.validVnMobile ?? row.ValidVnMobile ?? 0),
+    phoneNeedsFix: Number(row.phoneNeedsFix ?? row.PhoneNeedsFix ?? 0),
+    duplicatePhoneGroups: Number(row.duplicatePhoneGroups ?? row.DuplicatePhoneGroups ?? 0),
+    customersInDuplicateGroups: Number(
+      row.customersInDuplicateGroups ?? row.CustomersInDuplicateGroups ?? 0,
+    ),
+    modeAReady: Number(row.modeAReady ?? row.ModeAReady ?? 0),
+  };
+}
+
+/** Tenant Mode A readiness: phone quality + membership + app accounts. */
+export async function fetchModeAReadiness(): Promise<CustomerModeAReadinessSummary> {
+  const { data } = await http.get<Record<string, unknown>>('/customers/mode-a-readiness');
+  return normalizeModeAReadiness(data);
+}
+
+/** Fetch all pages for a filtered customer list (CSV export). Caps at maxRows. */
+export async function fetchAllCustomersForExport(params: {
+  search?: string;
+  pharmacyRelation?: string;
+  phoneReadiness?: CustomerPhoneReadiness | string;
+  maxRows?: number;
+}): Promise<CustomerAdminListItem[]> {
+  const pageSize = 100;
+  const maxRows = params.maxRows ?? 5000;
+  const items: CustomerAdminListItem[] = [];
+  let page = 1;
+  for (;;) {
+    const result = await fetchCustomers({
+      search: params.search,
+      pharmacyRelation: params.pharmacyRelation,
+      phoneReadiness: params.phoneReadiness,
+      page,
+      pageSize,
+    });
+    items.push(...result.items);
+    if (items.length >= result.total || result.items.length === 0 || items.length >= maxRows) {
+      break;
+    }
+    page += 1;
+  }
+  return items.slice(0, maxRows);
 }
 
 function normalizeSimilarMember(row: Record<string, unknown>): SimilarCustomerMember {

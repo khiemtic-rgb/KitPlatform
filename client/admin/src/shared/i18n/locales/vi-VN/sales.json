@@ -1020,6 +1020,41 @@
       "qrHint": "Sau khi mở app: đăng nhập bằng SĐT + OTP (nhân viên đọc mã OTP trong admin khi cần).",
       "installHint": "Gợi ý khách: trong app → Tài khoản → «Cài ra màn hình chính» để có icon như app thật."
     },
+    "modeAReadiness": {
+      "title": "Mode A readiness (SĐT quầy)",
+      "intro": "Tỷ lệ khách có SĐT di động VN hợp lệ để đăng nhập app bằng OTP quầy. Dùng trước khi mở app cho nhà thuốc mới.",
+      "reload": "Tải lại",
+      "loadFailed": "Không tải được báo cáo Mode A",
+      "readyBanner": "{{ready}} / {{total}} KH sẵn sàng Mode A ({{pct}}%)",
+      "readyHint": "Mode A ready = SĐT 0[35789]xxxxxxxx, đang hoạt động, không revoked, không trùng SĐT.",
+      "stats": {
+        "modeAReady": "Mode A ready",
+        "needsFix": "SĐT cần sửa",
+        "validVn": "SĐT VN hợp lệ",
+        "hasApp": "Đã có app",
+        "member": "Thành viên",
+        "prospect": "Prospect",
+        "duplicates": "KH trong nhóm trùng SĐT",
+        "duplicateGroupsSuffix": "({{groups}} nhóm)",
+        "total": "Tổng KH"
+      },
+      "actions": {
+        "viewNeedsFix": "Xem SĐT cần sửa",
+        "viewReady": "Xem Mode A ready",
+        "viewDuplicates": "Xem trùng SĐT",
+        "exportNeedsFix": "Xuất CSV SĐT cần sửa"
+      },
+      "exportSuccess": "Đã xuất {{count}} dòng",
+      "exportFailed": "Không xuất được CSV",
+      "csv": {
+        "code": "Mã KH",
+        "name": "Họ tên",
+        "phone": "SĐT",
+        "relation": "Quan hệ",
+        "status": "Trạng thái",
+        "appAccount": "Có app"
+      }
+    },
     "customerAppCard": {
       "title": "Cài đặt app khách hàng",
       "intro": "Tên, màu và thông tin hiển thị trên app mobile/PWA của khách. Thay đổi có hiệu lực sau khi khách tải lại app.",

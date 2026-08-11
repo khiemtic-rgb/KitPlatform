@@ -23,11 +23,40 @@ internal sealed class CustomerAdminRepository
     private Guid TenantId => _tenant.TenantId;
     private Guid? WorkspaceId => _tenant.WorkspaceId;
 
+    /// <summary>Digit-normalize customers.phone (84… → 0…), same rules as CustomerPhoneNormalizer.</summary>
+    private const string PhoneNormExpr = """
+        CASE
+            WHEN regexp_replace(coalesce(c.phone, ''), '[^0-9]', '', 'g') ~ '^84[0-9]{8,}$'
+                THEN '0' || substring(regexp_replace(coalesce(c.phone, ''), '[^0-9]', '', 'g') from 3)
+            ELSE regexp_replace(coalesce(c.phone, ''), '[^0-9]', '', 'g')
+        END
+        """;
+
+    private const string ValidVnMobilePred = """
+        ({0}) ~ '^0[35789][0-9]{{8}}$'
+        """;
+
+    private const string DuplicatePhonesCte = """
+        dup_phones AS (
+            SELECT phone_norm
+            FROM (
+                SELECT {0} AS phone_norm
+                FROM customers c
+                WHERE c.tenant_id = @TenantId
+                  AND c.deleted_at IS NULL
+            ) n
+            WHERE phone_norm ~ '^0[0-9]{{9,10}}$'
+            GROUP BY phone_norm
+            HAVING COUNT(*) > 1
+        )
+        """;
+
     public async Task<(IReadOnlyList<CustomerAdminListItemDto> Items, int Total)> ListAsync(
         string? search,
         int page,
         int pageSize,
         string? pharmacyRelation,
+        string? phoneReadiness,
         CancellationToken cancellationToken)
     {
         var conditions = new List<string> { "c.tenant_id = @TenantId", "c.deleted_at IS NULL" };
@@ -47,14 +76,56 @@ internal sealed class CustomerAdminRepository
             args.Add("PharmacyRelation", pharmacyRelation.Trim().ToLowerInvariant());
         }
 
+        var readiness = phoneReadiness?.Trim().ToLowerInvariant();
+        var needsDupCte = readiness is CustomerPhoneReadinessFilters.ModeAReady
+            or CustomerPhoneReadinessFilters.Duplicate;
+        var phoneNorm = PhoneNormExpr;
+        var validVn = string.Format(ValidVnMobilePred, phoneNorm);
+
+        if (CustomerPhoneReadinessFilters.IsKnown(readiness))
+        {
+            switch (readiness)
+            {
+                case CustomerPhoneReadinessFilters.ModeAReady:
+                    conditions.Add("c.status = 1");
+                    conditions.Add(
+                        "lower(coalesce(nullif(trim(c.pharmacy_relation), ''), 'member')) <> 'revoked'");
+                    conditions.Add(validVn);
+                    conditions.Add($"({phoneNorm}) NOT IN (SELECT phone_norm FROM dup_phones)");
+                    break;
+                case CustomerPhoneReadinessFilters.NeedsFix:
+                    conditions.Add($"NOT ({validVn})");
+                    break;
+                case CustomerPhoneReadinessFilters.Duplicate:
+                    conditions.Add($"({phoneNorm}) IN (SELECT phone_norm FROM dup_phones)");
+                    break;
+                case CustomerPhoneReadinessFilters.HasAppAccount:
+                    conditions.Add("ca.id IS NOT NULL");
+                    break;
+                case CustomerPhoneReadinessFilters.NoAppAccount:
+                    conditions.Add("ca.id IS NULL");
+                    break;
+            }
+        }
+
         var where = string.Join(" AND ", conditions);
+        var withClause = needsDupCte
+            ? $"WITH {string.Format(DuplicatePhonesCte, phoneNorm)}"
+            : string.Empty;
+
         var countSql = $"""
+            {withClause}
             SELECT COUNT(*)::int
             FROM customers c
             {KernelPartyReader.CustomerPartyJoins}
+            LEFT JOIN customer_accounts ca
+                ON ca.customer_id = c.id
+               AND ca.tenant_id = c.tenant_id
+               AND ca.status = 1
             WHERE {where}
             """;
         var listSql = $"""
+            {withClause}
             SELECT
                 {KernelPartyReader.CustomerListSelect}
             FROM customers c
@@ -81,29 +152,51 @@ internal sealed class CustomerAdminRepository
     public async Task<CustomerPharmacyRelationSummaryDto> GetPharmacyRelationSummaryAsync(
         CancellationToken cancellationToken)
     {
-        const string sql = """
+        var phoneNorm = PhoneNormExpr;
+        var sql = $$"""
+            WITH cust_base AS (
+                SELECT
+                    c.id,
+                    c.status,
+                    lower(coalesce(nullif(trim(c.pharmacy_relation), ''), 'member')) AS relation,
+                    {{phoneNorm}} AS phone_norm
+                FROM customers c
+                WHERE c.tenant_id = @TenantId
+                  AND c.deleted_at IS NULL
+            ),
+            dup_phones AS (
+                SELECT phone_norm
+                FROM cust_base
+                WHERE phone_norm ~ '^0[0-9]{9,10}$'
+                GROUP BY phone_norm
+                HAVING COUNT(*) > 1
+            )
             SELECT
-                COUNT(*) FILTER (
-                    WHERE lower(coalesce(nullif(trim(c.pharmacy_relation), ''), 'member')) = 'prospect'
-                )::int AS Prospect,
-                COUNT(*) FILTER (
-                    WHERE lower(coalesce(nullif(trim(c.pharmacy_relation), ''), 'member')) = 'member'
-                )::int AS Member,
-                COUNT(*) FILTER (
-                    WHERE lower(coalesce(nullif(trim(c.pharmacy_relation), ''), 'member')) = 'revoked'
-                )::int AS Revoked,
+                COUNT(*) FILTER (WHERE relation = 'prospect')::int AS Prospect,
+                COUNT(*) FILTER (WHERE relation = 'member')::int AS Member,
+                COUNT(*) FILTER (WHERE relation = 'revoked')::int AS Revoked,
                 COUNT(*)::int AS Total,
                 COUNT(*) FILTER (
                     WHERE EXISTS (
                         SELECT 1 FROM customer_accounts ca
-                        WHERE ca.customer_id = c.id
-                          AND ca.tenant_id = c.tenant_id
+                        WHERE ca.customer_id = cust_base.id
+                          AND ca.tenant_id = @TenantId
                           AND ca.status = 1
                     )
-                )::int AS HasAppAccount
-            FROM customers c
-            WHERE c.tenant_id = @TenantId
-              AND c.deleted_at IS NULL
+                )::int AS HasAppAccount,
+                COUNT(*) FILTER (WHERE phone_norm ~ '^0[35789][0-9]{8}$')::int AS ValidVnMobile,
+                COUNT(*) FILTER (WHERE phone_norm !~ '^0[35789][0-9]{8}$')::int AS PhoneNeedsFix,
+                (SELECT COUNT(*)::int FROM dup_phones)::int AS DuplicatePhoneGroups,
+                COUNT(*) FILTER (
+                    WHERE phone_norm IN (SELECT phone_norm FROM dup_phones)
+                )::int AS CustomersInDuplicateGroups,
+                COUNT(*) FILTER (
+                    WHERE status = 1
+                      AND relation <> 'revoked'
+                      AND phone_norm ~ '^0[35789][0-9]{8}$'
+                      AND phone_norm NOT IN (SELECT phone_norm FROM dup_phones)
+                )::int AS ModeAReady
+            FROM cust_base
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         var row = await conn.QuerySingleAsync<RelationSummaryRow>(sql, new { TenantId });
@@ -112,7 +205,12 @@ internal sealed class CustomerAdminRepository
             row.Member,
             row.Revoked,
             row.Total,
-            row.HasAppAccount);
+            row.HasAppAccount,
+            row.ValidVnMobile,
+            row.PhoneNeedsFix,
+            row.DuplicatePhoneGroups,
+            row.CustomersInDuplicateGroups,
+            row.ModeAReady);
     }
 
     private sealed class RelationSummaryRow
@@ -122,8 +220,12 @@ internal sealed class CustomerAdminRepository
         public int Revoked { get; init; }
         public int Total { get; init; }
         public int HasAppAccount { get; init; }
+        public int ValidVnMobile { get; init; }
+        public int PhoneNeedsFix { get; init; }
+        public int DuplicatePhoneGroups { get; init; }
+        public int CustomersInDuplicateGroups { get; init; }
+        public int ModeAReady { get; init; }
     }
-
     public async Task<SimilarCustomerClustersResult> GetSimilarClustersAsync(
         double similarityThreshold,
         CancellationToken cancellationToken)

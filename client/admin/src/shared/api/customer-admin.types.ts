@@ -9,6 +9,31 @@ export interface CustomerAdminListItem {
   customerGroupId?: string | null;
   customerGroupName?: string | null;
   groupDiscountPercent?: number;
+  hasAppAccount?: boolean;
+  appLastLoginAt?: string | null;
+  acquisitionSource?: string;
+  pharmacyRelation?: string;
+}
+
+/** Admin list filters for Mode A phone quality. */
+export type CustomerPhoneReadiness =
+  | 'mode_a_ready'
+  | 'needs_fix'
+  | 'duplicate'
+  | 'has_app_account'
+  | 'no_app_account';
+
+export interface CustomerModeAReadinessSummary {
+  prospect: number;
+  member: number;
+  revoked: number;
+  total: number;
+  hasAppAccount: number;
+  validVnMobile: number;
+  phoneNeedsFix: number;
+  duplicatePhoneGroups: number;
+  customersInDuplicateGroups: number;
+  modeAReady: number;
 }
 
 export interface PagedCustomersResult {

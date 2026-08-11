@@ -7,7 +7,8 @@ public interface ICustomerAdminService
         int page,
         int pageSize,
         CancellationToken cancellationToken = default,
-        string? pharmacyRelation = null);
+        string? pharmacyRelation = null,
+        string? phoneReadiness = null);
 
     Task<CustomerPharmacyRelationSummaryDto> GetPharmacyRelationSummaryAsync(
         CancellationToken cancellationToken = default);

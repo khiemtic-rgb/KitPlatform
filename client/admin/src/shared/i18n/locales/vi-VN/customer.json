@@ -94,10 +94,29 @@
     "addCustomer": "Thêm khách",
     "importTitle": "Nhập khách hàng (Excel/CSV)",
     "searchPlaceholder": "Tên, SĐT, mã KH, email",
+    "filters": {
+      "phoneReadiness": "Chất lượng SĐT / Mode A",
+      "pharmacyRelation": "Quan hệ NT",
+      "modeAReady": "Mode A ready",
+      "needsFix": "SĐT cần sửa",
+      "duplicate": "Trùng SĐT",
+      "hasAppAccount": "Đã có tài khoản app",
+      "noAppAccount": "Chưa có tài khoản app"
+    },
+    "relations": {
+      "member": "Thành viên",
+      "prospect": "Prospect",
+      "revoked": "Đã thu hồi"
+    },
+    "appAccountYes": "Có app",
+    "appAccountNo": "Chưa",
+    "filterActive": "Đang lọc danh sách · {{total}} kết quả (đóng để xóa bộ lọc)",
     "columns": {
       "customerCode": "Mã KH",
       "fullName": "Họ tên",
       "phone": "SĐT",
+      "relation": "Quan hệ",
+      "appAccount": "App",
       "group": "Nhóm",
       "email": "Email",
       "status": "Trạng thái",

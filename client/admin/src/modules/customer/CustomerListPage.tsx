@@ -1,9 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Card, Input, Popconfirm, Radio, Space, Table, Tabs, Tag, Typography, message } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Input,
+  Popconfirm,
+  Radio,
+  Select,
+  Space,
+  Table,
+  Tabs,
+  Tag,
+  Typography,
+  message,
+} from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   fetchCustomers,
   fetchCustomer,
@@ -13,6 +27,7 @@ import {
 import type {
   CustomerAdminListItem,
   CustomerDetail,
+  CustomerPhoneReadiness,
   SimilarCustomerCluster,
 } from '@/shared/api/customer-admin.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
@@ -23,8 +38,30 @@ import { CustomerAppLoginRequestsCard } from '@/modules/customer/CustomerAppLogi
 import { CustomerAppQrButton } from '@/modules/sales/CustomerAppQrButton';
 import { useCustomerEnums } from '@/shared/i18n/use-customer-enums';
 import { formatDisplayDate } from '@/shared/utils/date';
+import { ListFilterBar } from '@/shared/ui/ListFilterBar';
 
 type ListTab = 'list' | 'similar';
+
+const PHONE_READINESS_VALUES = new Set<CustomerPhoneReadiness>([
+  'mode_a_ready',
+  'needs_fix',
+  'duplicate',
+  'has_app_account',
+  'no_app_account',
+]);
+
+function parsePhoneReadiness(raw: string | null): CustomerPhoneReadiness | undefined {
+  if (!raw) return undefined;
+  return PHONE_READINESS_VALUES.has(raw as CustomerPhoneReadiness)
+    ? (raw as CustomerPhoneReadiness)
+    : undefined;
+}
+
+function parsePharmacyRelation(raw: string | null): string | undefined {
+  if (!raw) return undefined;
+  const v = raw.trim().toLowerCase();
+  return v === 'prospect' || v === 'member' || v === 'revoked' ? v : undefined;
+}
 
 type SimilarRow = {
   key: string;
@@ -84,6 +121,7 @@ export function CustomerListPage() {
   const { t: tc } = useTranslation('common');
   const { customerStatusLabel } = useCustomerEnums();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const canWrite = useCanSalesCustomers();
   const canMerge = useCanSalesCustomersMerge();
   const [activeTab, setActiveTab] = useState<ListTab>('list');
@@ -94,6 +132,12 @@ export function CustomerListPage() {
   const [pageSize, setPageSize] = useState(20);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const [phoneReadiness, setPhoneReadiness] = useState<CustomerPhoneReadiness | undefined>(() =>
+    parsePhoneReadiness(searchParams.get('phoneReadiness')),
+  );
+  const [pharmacyRelation, setPharmacyRelation] = useState<string | undefined>(() =>
+    parsePharmacyRelation(searchParams.get('pharmacyRelation')),
+  );
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<CustomerDetail | null>(null);
 
@@ -104,10 +148,36 @@ export function CustomerListPage() {
   const [keepers, setKeepers] = useState<Record<string, string>>({});
   const [mergingId, setMergingId] = useState<string | null>(null);
 
+  useEffect(() => {
+    const nextPhone = parsePhoneReadiness(searchParams.get('phoneReadiness'));
+    const nextRelation = parsePharmacyRelation(searchParams.get('pharmacyRelation'));
+    setPhoneReadiness(nextPhone);
+    setPharmacyRelation(nextRelation);
+    setPage(1);
+  }, [searchParams]);
+
+  const syncQuery = useCallback(
+    (next: { phoneReadiness?: CustomerPhoneReadiness; pharmacyRelation?: string }) => {
+      const params = new URLSearchParams(searchParams);
+      if (next.phoneReadiness) params.set('phoneReadiness', next.phoneReadiness);
+      else params.delete('phoneReadiness');
+      if (next.pharmacyRelation) params.set('pharmacyRelation', next.pharmacyRelation);
+      else params.delete('pharmacyRelation');
+      setSearchParams(params, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await fetchCustomers({ search: search || undefined, page, pageSize });
+      const result = await fetchCustomers({
+        search: search || undefined,
+        page,
+        pageSize,
+        phoneReadiness,
+        pharmacyRelation,
+      });
       setItems(result.items);
       setTotal(result.total);
     } catch (error) {
@@ -117,7 +187,7 @@ export function CustomerListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, t]);
+  }, [page, pageSize, pharmacyRelation, phoneReadiness, search, t]);
 
   const loadSimilar = useCallback(async () => {
     setSimilarLoading(true);
@@ -226,6 +296,24 @@ export function CustomerListPage() {
         title: t('columns.phone'),
         dataIndex: 'phone',
         width: 130,
+      },
+      {
+        title: t('columns.relation'),
+        dataIndex: 'pharmacyRelation',
+        width: 110,
+        render: (v?: string) => {
+          const rel = (v || 'member').toLowerCase();
+          const color =
+            rel === 'member' ? 'green' : rel === 'prospect' ? 'blue' : rel === 'revoked' ? 'red' : 'default';
+          return <Tag color={color}>{t(`relations.${rel}`, { defaultValue: rel })}</Tag>;
+        },
+      },
+      {
+        title: t('columns.appAccount'),
+        dataIndex: 'hasAppAccount',
+        width: 100,
+        render: (v?: boolean) =>
+          v ? <Tag color="blue">{t('appAccountYes')}</Tag> : <Tag>{t('appAccountNo')}</Tag>,
       },
       {
         title: t('columns.group'),
@@ -430,10 +518,10 @@ export function CustomerListPage() {
                       <CustomerImportCard onImported={load} />
                     </Card>
                   ) : null}
-                  <Space wrap style={{ marginBottom: 16 }}>
+                  <ListFilterBar>
                     <Input
                       allowClear
-                      style={{ width: 320 }}
+                      style={{ width: 280 }}
                       placeholder={t('searchPlaceholder')}
                       prefix={<SearchOutlined />}
                       value={searchInput}
@@ -441,6 +529,44 @@ export function CustomerListPage() {
                       onPressEnter={() => {
                         setPage(1);
                         setSearch(searchInput.trim());
+                      }}
+                    />
+                    <Select
+                      allowClear
+                      placeholder={t('filters.phoneReadiness')}
+                      style={{ width: 220 }}
+                      value={phoneReadiness}
+                      options={[
+                        { value: 'mode_a_ready', label: t('filters.modeAReady') },
+                        { value: 'needs_fix', label: t('filters.needsFix') },
+                        { value: 'duplicate', label: t('filters.duplicate') },
+                        { value: 'has_app_account', label: t('filters.hasAppAccount') },
+                        { value: 'no_app_account', label: t('filters.noAppAccount') },
+                      ]}
+                      onChange={(value) => {
+                        setPage(1);
+                        syncQuery({
+                          phoneReadiness: value as CustomerPhoneReadiness | undefined,
+                          pharmacyRelation,
+                        });
+                      }}
+                    />
+                    <Select
+                      allowClear
+                      placeholder={t('filters.pharmacyRelation')}
+                      style={{ width: 160 }}
+                      value={pharmacyRelation}
+                      options={[
+                        { value: 'member', label: t('relations.member') },
+                        { value: 'prospect', label: t('relations.prospect') },
+                        { value: 'revoked', label: t('relations.revoked') },
+                      ]}
+                      onChange={(value) => {
+                        setPage(1);
+                        syncQuery({
+                          phoneReadiness,
+                          pharmacyRelation: value as string | undefined,
+                        });
                       }}
                     />
                     <Button
@@ -456,7 +582,21 @@ export function CustomerListPage() {
                     <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
                       {tc('actions.reload')}
                     </Button>
-                  </Space>
+                  </ListFilterBar>
+
+                  {phoneReadiness || pharmacyRelation ? (
+                    <Alert
+                      type="info"
+                      showIcon
+                      closable
+                      style={{ marginBottom: 12 }}
+                      message={t('filterActive', { total })}
+                      onClose={() => {
+                        setPage(1);
+                        syncQuery({});
+                      }}
+                    />
+                  ) : null}
 
                   <Table
                     rowKey="id"

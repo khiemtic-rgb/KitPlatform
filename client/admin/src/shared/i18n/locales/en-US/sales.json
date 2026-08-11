@@ -1016,6 +1016,41 @@
       "qrHint": "After opening: sign in with phone + OTP (staff can read OTP from admin when needed).",
       "installHint": "Tip for customers: in the app → Account → «Add to Home Screen» for an app-like icon."
     },
+    "modeAReadiness": {
+      "title": "Mode A readiness (counter phone)",
+      "intro": "Share of customers with a valid VN mobile for counter OTP login. Use before enabling the app for a new pharmacy.",
+      "reload": "Reload",
+      "loadFailed": "Could not load Mode A readiness",
+      "readyBanner": "{{ready}} / {{total}} customers Mode A ready ({{pct}}%)",
+      "readyHint": "Mode A ready = phone 0[35789]xxxxxxxx, active, not revoked, not in a duplicate-phone group.",
+      "stats": {
+        "modeAReady": "Mode A ready",
+        "needsFix": "Phone needs fix",
+        "validVn": "Valid VN mobile",
+        "hasApp": "Has app account",
+        "member": "Members",
+        "prospect": "Prospects",
+        "duplicates": "In duplicate-phone groups",
+        "duplicateGroupsSuffix": "({{groups}} groups)",
+        "total": "Total customers"
+      },
+      "actions": {
+        "viewNeedsFix": "View phones needing fix",
+        "viewReady": "View Mode A ready",
+        "viewDuplicates": "View duplicate phones",
+        "exportNeedsFix": "Export CSV (needs fix)"
+      },
+      "exportSuccess": "Exported {{count}} rows",
+      "exportFailed": "Could not export CSV",
+      "csv": {
+        "code": "Code",
+        "name": "Full name",
+        "phone": "Phone",
+        "relation": "Relation",
+        "status": "Status",
+        "appAccount": "Has app"
+      }
+    },
     "customerAppCard": {
       "title": "Customer app settings",
       "intro": "Name, colors, and support info shown in the customer mobile/PWA app. Changes apply after the customer reloads the app.",

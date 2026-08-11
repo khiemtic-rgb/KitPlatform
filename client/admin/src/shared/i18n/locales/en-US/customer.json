@@ -94,10 +94,29 @@
     "addCustomer": "Add customer",
     "importTitle": "Import customers (Excel/CSV)",
     "searchPlaceholder": "Name, phone, customer code, email",
+    "filters": {
+      "phoneReadiness": "Phone / Mode A quality",
+      "pharmacyRelation": "Pharmacy relation",
+      "modeAReady": "Mode A ready",
+      "needsFix": "Phone needs fix",
+      "duplicate": "Duplicate phone",
+      "hasAppAccount": "Has app account",
+      "noAppAccount": "No app account"
+    },
+    "relations": {
+      "member": "Member",
+      "prospect": "Prospect",
+      "revoked": "Revoked"
+    },
+    "appAccountYes": "Has app",
+    "appAccountNo": "None",
+    "filterActive": "Filters active · {{total}} results (dismiss to clear)",
     "columns": {
       "customerCode": "Code",
       "fullName": "Full name",
       "phone": "Phone",
+      "relation": "Relation",
+      "appAccount": "App",
       "group": "Group",
       "email": "Email",
       "status": "Status",

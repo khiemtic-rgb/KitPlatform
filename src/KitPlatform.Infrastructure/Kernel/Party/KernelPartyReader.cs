@@ -44,7 +44,11 @@ internal static class KernelPartyReader
         c.created_at AS CreatedAt,
         c.customer_group_id AS CustomerGroupId,
         cg.group_name AS CustomerGroupName,
-        COALESCE(cg.discount_percent, 0) AS GroupDiscountPercent
+        COALESCE(cg.discount_percent, 0) AS GroupDiscountPercent,
+        (ca.id IS NOT NULL) AS HasAppAccount,
+        ca.last_login_at AS AppLastLoginAt,
+        COALESCE(NULLIF(TRIM(c.acquisition_source), ''), 'counter') AS AcquisitionSource,
+        COALESCE(NULLIF(TRIM(c.pharmacy_relation), ''), 'member') AS PharmacyRelation
         """;
 
     public const string CustomerDetailSelect = """
@@ -69,7 +73,11 @@ internal static class KernelPartyReader
         COALESCE(cg.discount_percent, 0) AS GroupDiscountPercent,
         (ca.id IS NOT NULL) AS HasAppAccount,
         ca.is_verified AS AppVerified,
-        ca.last_login_at AS AppLastLoginAt
+        ca.last_login_at AS AppLastLoginAt,
+        COALESCE(NULLIF(TRIM(c.acquisition_source), ''), 'counter') AS AcquisitionSource,
+        COALESCE(NULLIF(TRIM(c.pharmacy_relation), ''), 'member') AS PharmacyRelation,
+        c.pharmacy_verified_at AS PharmacyVerifiedAt,
+        c.pharmacy_verified_via AS PharmacyVerifiedVia
         """;
 
     public const string CustomerSearchFilter = """
