@@ -121,6 +121,62 @@ function newLineKey() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+const transferUnitsCache = new Map<string, ProductUnit[]>();
+
+/** Unit select for draft lines — never auto-overwrites an existing choice. */
+function TransferLineUnitSelect({
+  productId,
+  value,
+  onPick,
+}: {
+  productId: string;
+  value: string;
+  onPick: (unit: ProductUnit) => void;
+}) {
+  const [units, setUnits] = useState<ProductUnit[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const cached = transferUnitsCache.get(productId);
+    if (cached) {
+      setUnits(cached);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    void fetchProduct(productId)
+      .then((product) => {
+        if (cancelled) return;
+        transferUnitsCache.set(productId, product.units);
+        setUnits(product.units);
+      })
+      .catch(() => {
+        if (!cancelled) setUnits([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [productId]);
+
+  return (
+    <Select
+      size="small"
+      loading={loading}
+      value={value}
+      style={{ width: '100%' }}
+      options={units.map((u) => ({ value: u.id, label: formatUnitLabel(u) }))}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(unitId) => {
+        const unit = units.find((u) => u.id === unitId);
+        if (unit) onPick(unit);
+      }}
+    />
+  );
+}
+
 function TransferLineEditor({
   fromWarehouseId,
   value,
@@ -468,6 +524,7 @@ export function TransferListPage() {
   const [receiveNotes, setReceiveNotes] = useState('');
   const [receiveQtyByItem, setReceiveQtyByItem] = useState<Record<string, number>>({});
   const [actionBusyId, setActionBusyId] = useState<string | null>(null);
+  const prevFromWarehouseRef = useRef<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -521,11 +578,28 @@ export function TransferListPage() {
     setPage(1);
   };
   useEffect(() => {
-    if (!drawerOpen) return;
-    if (skipClearLinesRef.current) {
-      skipClearLinesRef.current = false;
+    if (!drawerOpen) {
+      prevFromWarehouseRef.current = undefined;
       return;
     }
+
+    // Prefill (open edit) sets warehouse + lines together — skip wipe once.
+    if (skipClearLinesRef.current) {
+      skipClearLinesRef.current = false;
+      prevFromWarehouseRef.current = fromWarehouseId;
+      return;
+    }
+
+    const prev = prevFromWarehouseRef.current;
+    if (prev === fromWarehouseId) return;
+
+    // First warehouse value after open (undefined → id) must not wipe lines.
+    if (prev == null) {
+      prevFromWarehouseRef.current = fromWarehouseId;
+      return;
+    }
+
+    prevFromWarehouseRef.current = fromWarehouseId;
     setLines([]);
     setComposer(emptyEditor());
     setEditingKey(null);
@@ -699,6 +773,20 @@ export function TransferListPage() {
         message.warning(t('validation.emptyLines'));
         return;
       }
+      const overStock = lines.find(
+        (line) => toBaseQuantity(line.quantity, line.conversionFactor) > line.quantityAvailable,
+      );
+      if (overStock) {
+        message.warning(
+          t('validation.exceedStock', {
+            qty: formatDisplayQuantity(
+              toBaseQuantity(overStock.quantity, overStock.conversionFactor),
+            ),
+            available: formatDisplayQuantity(overStock.quantityAvailable),
+          }),
+        );
+        return;
+      }
       setSaving(true);
       const payload = {
         fromWarehouseId: values.fromWarehouseId as string,
@@ -858,8 +946,45 @@ export function TransferListPage() {
     }
   };
 
-  const lineColumns: ColumnsType<TransferDraftLine> = useMemo(
-    () => [
+  const updateLineQuantity = (key: string, quantity: number | null) => {
+    const qty = quantity == null || Number.isNaN(quantity) ? 0 : quantity;
+    setLines((prev) =>
+      prev.map((line) => {
+        if (line.key !== key) return line;
+        const baseQty = toBaseQuantity(qty, line.conversionFactor || 1);
+        if (baseQty > line.quantityAvailable && qty > 0) {
+          message.warning(
+            t('validation.exceedStock', {
+              qty: formatDisplayQuantity(baseQty),
+              available: formatDisplayQuantity(line.quantityAvailable),
+            }),
+          );
+        }
+        return { ...line, quantity: qty };
+      }),
+    );
+  };
+
+  const updateLineUnit = (key: string, unit: ProductUnit) => {
+    setLines((prev) =>
+      prev.map((line) => {
+        if (line.key !== key) return line;
+        // Keep base quantity stable when switching display unit.
+        const baseQty = toBaseQuantity(line.quantity, line.conversionFactor || 1);
+        const nextFactor = unit.conversionFactor || 1;
+        const nextQty = Math.round((baseQty / nextFactor) * 1000) / 1000;
+        return {
+          ...line,
+          productUnitId: unit.id,
+          unitName: formatUnitLabel(unit),
+          conversionFactor: nextFactor,
+          quantity: nextQty,
+        };
+      }),
+    );
+  };
+
+  const lineColumns: ColumnsType<TransferDraftLine> = [
       {
         title: ts('stt'),
         key: 'stt',
@@ -880,15 +1005,31 @@ export function TransferListPage() {
       },
       {
         title: t('unit'),
-        dataIndex: 'unitName',
-        width: 110,
+        dataIndex: 'productUnitId',
+        width: 140,
+        render: (_: string, row) => (
+          <TransferLineUnitSelect
+            productId={row.productId}
+            value={row.productUnitId}
+            onPick={(unit) => updateLineUnit(row.key, unit)}
+          />
+        ),
       },
       {
         title: t('qty'),
         dataIndex: 'quantity',
-        width: 90,
+        width: 110,
         align: 'right',
-        render: (v: number) => formatDisplayQuantity(v),
+        render: (v: number, row) => (
+          <InputNumber
+            size="small"
+            min={0}
+            value={v}
+            style={{ width: '100%' }}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(next) => updateLineQuantity(row.key, next)}
+          />
+        ),
       },
       {
         title: t('qtyBase'),
@@ -900,7 +1041,7 @@ export function TransferListPage() {
       {
         title: tc('fields.actions'),
         key: 'actions',
-        width: 120,
+        width: 140,
         render: (_, row) => (
           <Space size={4} onClick={(e) => e.stopPropagation()}>
             <Button
@@ -927,9 +1068,7 @@ export function TransferListPage() {
           </Space>
         ),
       },
-    ],
-    [t, ts, tc, editingKey],
-  );
+    ];
 
   const columns: ColumnsType<TransferListItem> = [
     { title: ts('documentNumber'), dataIndex: 'transferNumber', width: 130 },
@@ -1311,7 +1450,7 @@ export function TransferListPage() {
                   {t('lineList')} ({lines.length})
                 </Typography.Text>
                 <Typography.Paragraph type="secondary" style={{ marginTop: 0, marginBottom: 8 }}>
-                  {t('clickToEdit')}
+                  {t('inlineEditHint')}
                 </Typography.Paragraph>
                 {lines.length === 0 ? (
                   <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('emptyLines')} />
@@ -1323,13 +1462,6 @@ export function TransferListPage() {
                     dataSource={lines}
                     columns={lineColumns}
                     scroll={{ x: 900 }}
-                    onRow={(row) => ({
-                      onClick: () => startEditLine(row),
-                      style: {
-                        cursor: 'pointer',
-                        background: editingKey === row.key ? '#e6f4ff' : undefined,
-                      },
-                    })}
                   />
                 )}
               </>

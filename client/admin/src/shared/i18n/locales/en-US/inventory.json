@@ -224,6 +224,7 @@
     "addItem": "Add item",
     "lineList": "Added items",
     "clickToEdit": "Click a row to edit that item.",
+    "inlineEditHint": "Edit qty / unit inline. To change product or batch, click «Edit».",
     "editingLine": "Editing line",
     "saveLine": "Save line",
     "unit": "Unit",

@@ -224,6 +224,7 @@
     "addItem": "Thêm hàng",
     "lineList": "Hàng đã thêm",
     "clickToEdit": "Bấm vào một dòng để sửa dòng đó.",
+    "inlineEditHint": "Sửa SL / ĐVT ngay trên dòng. Đổi sản phẩm hoặc lô: bấm «Sửa».",
     "editingLine": "Đang sửa dòng",
     "saveLine": "Lưu dòng",
     "unit": "ĐVT",
