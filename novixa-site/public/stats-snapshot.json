@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-11T07:39:01.066Z",
+  "generatedAt": "2026-08-11T13:44:11.007Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 314,
-    "todayPageViews": 259,
-    "todayRequests": 567,
-    "last24hVisitors": 596,
-    "last24hPageViews": 581,
-    "last24hRequests": 1570
+    "todayVisitors": 413,
+    "todayPageViews": 341,
+    "todayRequests": 843,
+    "last24hVisitors": 563,
+    "last24hPageViews": 508,
+    "last24hRequests": 1236
   },
   "hourly": [
-    {
-      "time": "2026-08-10T08:00:00Z",
-      "visitors": 29,
-      "requests": 103
-    },
-    {
-      "time": "2026-08-10T09:00:00Z",
-      "visitors": 23,
-      "requests": 197
-    },
-    {
-      "time": "2026-08-10T10:00:00Z",
-      "visitors": 15,
-      "requests": 26
-    },
-    {
-      "time": "2026-08-10T11:00:00Z",
-      "visitors": 13,
-      "requests": 30
-    },
-    {
-      "time": "2026-08-10T12:00:00Z",
-      "visitors": 39,
-      "requests": 50
-    },
-    {
-      "time": "2026-08-10T13:00:00Z",
-      "visitors": 153,
-      "requests": 204
-    },
     {
       "time": "2026-08-10T14:00:00Z",
       "visitors": 55,
@@ -128,8 +98,38 @@
     },
     {
       "time": "2026-08-11T07:00:00Z",
-      "visitors": 7,
-      "requests": 8
+      "visitors": 15,
+      "requests": 22
+    },
+    {
+      "time": "2026-08-11T08:00:00Z",
+      "visitors": 33,
+      "requests": 55
+    },
+    {
+      "time": "2026-08-11T09:00:00Z",
+      "visitors": 10,
+      "requests": 22
+    },
+    {
+      "time": "2026-08-11T10:00:00Z",
+      "visitors": 41,
+      "requests": 58
+    },
+    {
+      "time": "2026-08-11T11:00:00Z",
+      "visitors": 32,
+      "requests": 70
+    },
+    {
+      "time": "2026-08-11T12:00:00Z",
+      "visitors": 12,
+      "requests": 14
+    },
+    {
+      "time": "2026-08-11T13:00:00Z",
+      "visitors": 17,
+      "requests": 43
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-08-11",
-      "visitors": 314,
-      "pageViews": 259,
-      "requests": 567
+      "visitors": 413,
+      "pageViews": 341,
+      "requests": 843
     }
   ],
   "topPages": [
     {
       "path": "/vi/tin-tuc/nha-thuoc-van-ban-tot-nhung-ban-co-chac-dang-quan-ly-tot/",
-      "views": 350
+      "views": 255
     },
     {
       "path": "/vi/tin-tuc/quy-trinh-ban-thuoc-khong-ke-don-otc-chuan-hoa-de-toi-uu-hoa-doanh-thu-va-dam-bao-an-toan-dieu-tri/",
-      "views": 131
-    },
-    {
-      "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
-      "views": 122
-    },
-    {
-      "path": "/cdn-cgi/rum",
-      "views": 107
+      "views": 134
     },
     {
       "path": "/images/tin-tuc/quy-trinh-ban-thuoc-khong-ke-don.png",
-      "views": 63
+      "views": 73
     },
     {
-      "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
-      "views": 55
+      "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
+      "views": 66
     },
     {
       "path": "/robots.txt",
+      "views": 55
+    },
+    {
+      "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
       "views": 51
     },
     {
-      "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
-      "views": 36
+      "path": "/cdn-cgi/rum",
+      "views": 37
     },
     {
-      "path": "/images/tin-tuc/quy-trinh-thuoc-ke-don.png",
-      "views": 31
+      "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
+      "views": 34
     },
     {
       "path": "/",
       "views": 30
     },
     {
-      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
+      "path": "/images/tin-tuc/quy-trinh-thuoc-ke-don.png",
       "views": 27
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 24
+    },
+    {
+      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
+      "views": 21
+    },
+    {
+      "path": "/vi/",
+      "views": 20
     },
     {
       "path": "/images/tin-tuc/chuan-hoa-quy-trinh-tiep-don-khach.png",
-      "views": 27
+      "views": 20
     },
     {
-      "path": "/images/logo.png",
-      "views": 26
-    },
-    {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 24
-    },
-    {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 24
+      "path": "/images/tin-tuc/giup-giu-chan-nhan-vien.png",
+      "views": 19
     }
   ]
 }
