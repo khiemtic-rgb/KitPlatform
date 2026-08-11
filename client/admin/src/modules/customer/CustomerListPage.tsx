@@ -36,11 +36,12 @@ import { CustomerFormDrawer } from '@/modules/customer/CustomerFormDrawer';
 import { CustomerImportCard } from '@/modules/customer/CustomerImportCard';
 import { CustomerAppLoginRequestsCard } from '@/modules/customer/CustomerAppLoginRequestsCard';
 import { CustomerAppQrButton } from '@/modules/sales/CustomerAppQrButton';
+import { CustomerModeAReadinessCard } from '@/modules/sales/CustomerModeAReadinessCard';
 import { useCustomerEnums } from '@/shared/i18n/use-customer-enums';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { ListFilterBar } from '@/shared/ui/ListFilterBar';
 
-type ListTab = 'list' | 'similar';
+type ListTab = 'list' | 'appReady' | 'similar';
 
 const PHONE_READINESS_VALUES = new Set<CustomerPhoneReadiness>([
   'mode_a_ready',
@@ -154,6 +155,7 @@ export function CustomerListPage() {
     setPhoneReadiness(nextPhone);
     setPharmacyRelation(nextRelation);
     setPage(1);
+    if (nextPhone || nextRelation) setActiveTab('list');
   }, [searchParams]);
 
   const syncQuery = useCallback(
@@ -544,9 +546,11 @@ export function CustomerListPage() {
                         { value: 'no_app_account', label: t('filters.noAppAccount') },
                       ]}
                       onChange={(value) => {
+                        const next = (value as CustomerPhoneReadiness | undefined) || undefined;
+                        setPhoneReadiness(next);
                         setPage(1);
                         syncQuery({
-                          phoneReadiness: value as CustomerPhoneReadiness | undefined,
+                          phoneReadiness: next,
                           pharmacyRelation,
                         });
                       }}
@@ -562,10 +566,12 @@ export function CustomerListPage() {
                         { value: 'revoked', label: t('relations.revoked') },
                       ]}
                       onChange={(value) => {
+                        const next = (value as string | undefined) || undefined;
+                        setPharmacyRelation(next);
                         setPage(1);
                         syncQuery({
                           phoneReadiness,
-                          pharmacyRelation: value as string | undefined,
+                          pharmacyRelation: next,
                         });
                       }}
                     />
@@ -621,6 +627,11 @@ export function CustomerListPage() {
                   />
                 </>
               ),
+            },
+            {
+              key: 'appReady',
+              label: t('tabs.appReady'),
+              children: <CustomerModeAReadinessCard />,
             },
             ...(canMerge
               ? [

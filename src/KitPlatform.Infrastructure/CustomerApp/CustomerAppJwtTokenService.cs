@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using KitPlatform.Application.Configuration;
 using KitPlatform.Application.CustomerApp;
+using KitPlatform.Application.Customers;
 using System.IdentityModel.Tokens.Jwt;
 
 namespace KitPlatform.Infrastructure.CustomerApp;
@@ -84,7 +85,10 @@ internal sealed record TenantCustomerAppAuthRow(
     string? InviteCodeHash,
     string? InviteCodeHint);
 
-internal sealed record CustomerPhoneLookupRow(Guid CustomerId, string FullName);
+internal sealed record CustomerPhoneLookupRow(
+    Guid CustomerId,
+    string FullName,
+    string PharmacyRelation = CustomerPharmacyRelations.Member);
 
 internal sealed record CustomerAppLoginRequestRow(
     Guid Id,

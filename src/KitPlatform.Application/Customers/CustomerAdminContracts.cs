@@ -22,7 +22,7 @@ public sealed record PagedCustomersResult(
     int Page,
     int PageSize);
 
-/// <summary>CRM + Mode A phone readiness for the current tenant.</summary>
+/// <summary>CRM + app-login phone readiness for the current tenant.</summary>
 public sealed record CustomerPharmacyRelationSummaryDto(
     int Prospect,
     int Member,
@@ -33,7 +33,15 @@ public sealed record CustomerPharmacyRelationSummaryDto(
     int PhoneNeedsFix = 0,
     int DuplicatePhoneGroups = 0,
     int CustomersInDuplicateGroups = 0,
-    int ModeAReady = 0);
+    int ModeAReady = 0,
+    /// <summary>Active + valid VN mobile + not member + not revoked (eligible for bulk promote).</summary>
+    int EligibleToPromote = 0);
+
+public sealed record BulkMarkPharmacyMemberResult(
+    int Updated,
+    int AlreadyMember,
+    int Skipped,
+    int EligibleBefore);
 
 public sealed record SimilarCustomerMemberDto(
     Guid Id,

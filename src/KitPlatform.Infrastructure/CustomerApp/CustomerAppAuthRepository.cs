@@ -170,7 +170,10 @@ internal sealed class CustomerAppAuthRepository
         CancellationToken cancellationToken)
     {
         const string sql = """
-            SELECT id AS CustomerId, full_name AS FullName
+            SELECT
+                id AS CustomerId,
+                full_name AS FullName,
+                COALESCE(NULLIF(TRIM(pharmacy_relation), ''), 'member') AS PharmacyRelation
             FROM customers
             WHERE tenant_id = @TenantId AND phone = @Phone AND deleted_at IS NULL
             LIMIT 1

@@ -58,12 +58,35 @@ public sealed class CustomersController : ControllerBase
             pharmacyRelation,
             phoneReadiness));
 
-    /// <summary>Mode A / pharmacy membership readiness counts for the current tenant.</summary>
+    /// <summary>App-login / pharmacy membership readiness counts for the current tenant.</summary>
     [HttpGet("mode-a-readiness")]
     [Authorize(Policy = SalesPolicies.Read)]
     public async Task<ActionResult<CustomerPharmacyRelationSummaryDto>> ModeAReadiness(
         CancellationToken cancellationToken = default) =>
         Ok(await _admin.GetPharmacyRelationSummaryAsync(cancellationToken));
+
+    /// <summary>
+    /// Bulk-mark active customers with a valid VN mobile as pharmacy members
+    /// (skips revoked and invalid phones; does not send SMS).
+    /// </summary>
+    [HttpPost("bulk-mark-pharmacy-member")]
+    [Authorize(Policy = SalesPolicies.Write)]
+    public async Task<ActionResult<BulkMarkPharmacyMemberResult>> BulkMarkPharmacyMember(
+        [FromBody] MarkPharmacyMemberRequest? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _admin.BulkMarkValidPhoneAsMemberAsync(
+                request?.VerifiedVia,
+                _tenant.UserId,
+                cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 
     /// <summary>Near-duplicate customers: same digit-phone or name similarity ≥ threshold.</summary>
     [HttpGet("similar-clusters")]

@@ -34,6 +34,14 @@ export interface CustomerModeAReadinessSummary {
   duplicatePhoneGroups: number;
   customersInDuplicateGroups: number;
   modeAReady: number;
+  eligibleToPromote: number;
+}
+
+export interface BulkMarkPharmacyMemberResult {
+  updated: number;
+  alreadyMember: number;
+  skipped: number;
+  eligibleBefore: number;
 }
 
 export interface PagedCustomersResult {

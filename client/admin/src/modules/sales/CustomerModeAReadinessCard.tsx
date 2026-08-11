@@ -1,15 +1,35 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Button, Card, Col, Progress, Row, Space, Statistic, Typography, message } from 'antd';
-import { DownloadOutlined, ReloadOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Popconfirm,
+  Progress,
+  Row,
+  Space,
+  Statistic,
+  Typography,
+  message,
+} from 'antd';
+import {
+  CheckCircleOutlined,
+  DownloadOutlined,
+  ReloadOutlined,
+  UnorderedListOutlined,
+  UserSwitchOutlined,
+} from '@ant-design/icons';
+import {
+  bulkMarkPharmacyMembers,
   fetchAllCustomersForExport,
   fetchModeAReadiness,
 } from '@/shared/api/customer-admin.api';
 import type { CustomerModeAReadinessSummary } from '@/shared/api/customer-admin.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { downloadCsv } from '@/shared/utils/download-csv';
+import { useHasPermission } from '@/shared/auth/usePermission';
 
 function emptySummary(): CustomerModeAReadinessSummary {
   return {
@@ -23,14 +43,17 @@ function emptySummary(): CustomerModeAReadinessSummary {
     duplicatePhoneGroups: 0,
     customersInDuplicateGroups: 0,
     modeAReady: 0,
+    eligibleToPromote: 0,
   };
 }
 
 export function CustomerModeAReadinessCard() {
   const { t } = useTranslation('sales', { keyPrefix: 'receiptSettings.modeAReadiness' });
   const navigate = useNavigate();
+  const canWrite = useHasPermission('sales.write');
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [promoting, setPromoting] = useState(false);
   const [summary, setSummary] = useState<CustomerModeAReadinessSummary>(emptySummary);
 
   const load = useCallback(async () => {
@@ -69,7 +92,7 @@ export function CustomerModeAReadinessCard() {
     try {
       const rows = await fetchAllCustomersForExport({ phoneReadiness: 'needs_fix' });
       downloadCsv(
-        `mode-a-phone-needs-fix-${new Date().toISOString().slice(0, 10)}.csv`,
+        `sdt-can-sua-${new Date().toISOString().slice(0, 10)}.csv`,
         [
           t('csv.code'),
           t('csv.name'),
@@ -95,6 +118,28 @@ export function CustomerModeAReadinessCard() {
     }
   };
 
+  const promoteMembers = async () => {
+    setPromoting(true);
+    try {
+      const result = await bulkMarkPharmacyMembers('staff_mark');
+      if (result.updated === 0) {
+        message.info(t('promoteNothing'));
+      } else {
+        message.success(
+          t('promoteSuccess', {
+            updated: result.updated,
+            skipped: result.skipped + result.alreadyMember,
+          }),
+        );
+      }
+      await load();
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('promoteFailed')));
+    } finally {
+      setPromoting(false);
+    }
+  };
+
   return (
     <Card
       title={t('title')}
@@ -112,6 +157,7 @@ export function CustomerModeAReadinessCard() {
       <Alert
         type={tone}
         showIcon
+        icon={readyPct >= 80 ? <CheckCircleOutlined /> : undefined}
         style={{ marginBottom: 16 }}
         message={t('readyBanner', {
           ready: summary.modeAReady,
@@ -136,6 +182,9 @@ export function CustomerModeAReadinessCard() {
         </Col>
         <Col xs={12} sm={8} md={6}>
           <Statistic title={t('stats.validVn')} value={summary.validVnMobile} />
+        </Col>
+        <Col xs={12} sm={8} md={6}>
+          <Statistic title={t('stats.eligiblePromote')} value={summary.eligibleToPromote} />
         </Col>
         <Col xs={12} sm={8} md={6}>
           <Statistic title={t('stats.hasApp')} value={summary.hasAppAccount} />
@@ -163,11 +212,29 @@ export function CustomerModeAReadinessCard() {
       </Row>
 
       <Space wrap style={{ marginTop: 16 }}>
-        <Button
-          type="primary"
-          icon={<UnorderedListOutlined />}
-          onClick={() => openList('needs_fix')}
-        >
+        {canWrite ? (
+          summary.eligibleToPromote > 0 ? (
+            <Popconfirm
+              title={t('actions.promoteConfirmTitle')}
+              description={t('actions.promoteConfirmBody')}
+              okText={t('actions.promoteMembers')}
+              onConfirm={() => void promoteMembers()}
+            >
+              <Button
+                type="primary"
+                icon={<UserSwitchOutlined />}
+                loading={promoting}
+              >
+                {t('actions.promoteMembers')} ({summary.eligibleToPromote})
+              </Button>
+            </Popconfirm>
+          ) : (
+            <Button type="primary" icon={<CheckCircleOutlined />} disabled>
+              {t('actions.promoteMembers')} (0)
+            </Button>
+          )
+        ) : null}
+        <Button icon={<UnorderedListOutlined />} onClick={() => openList('needs_fix')}>
           {t('actions.viewNeedsFix')}
         </Button>
         <Button icon={<UnorderedListOutlined />} onClick={() => openList('mode_a_ready')}>
@@ -187,6 +254,15 @@ export function CustomerModeAReadinessCard() {
           {t('actions.exportNeedsFix')}
         </Button>
       </Space>
+
+      {canWrite && summary.eligibleToPromote === 0 ? (
+        <Alert
+          type="success"
+          showIcon
+          style={{ marginTop: 12 }}
+          message={t('promoteDoneHint', { needsFix: summary.phoneNeedsFix })}
+        />
+      ) : null}
     </Card>
   );
 }

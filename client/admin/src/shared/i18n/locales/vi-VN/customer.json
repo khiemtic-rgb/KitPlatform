@@ -95,9 +95,9 @@
     "importTitle": "Nhập khách hàng (Excel/CSV)",
     "searchPlaceholder": "Tên, SĐT, mã KH, email",
     "filters": {
-      "phoneReadiness": "Chất lượng SĐT / Mode A",
+      "phoneReadiness": "SĐT / đăng nhập app",
       "pharmacyRelation": "Quan hệ NT",
-      "modeAReady": "Mode A ready",
+      "modeAReady": "Sẵn sàng đăng nhập app",
       "needsFix": "SĐT cần sửa",
       "duplicate": "Trùng SĐT",
       "hasAppAccount": "Đã có tài khoản app",
@@ -132,6 +132,7 @@
     },
     "tabs": {
       "list": "Danh sách",
+      "appReady": "Sẵn sàng đăng nhập app",
       "similar": "Gần giống ≥ 80%"
     },
     "similarGuideTitle": "Gần giống ≥ 80% (chuẩn hóa dữ liệu)",

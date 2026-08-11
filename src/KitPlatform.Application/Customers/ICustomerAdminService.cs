@@ -13,6 +13,11 @@ public interface ICustomerAdminService
     Task<CustomerPharmacyRelationSummaryDto> GetPharmacyRelationSummaryAsync(
         CancellationToken cancellationToken = default);
 
+    Task<BulkMarkPharmacyMemberResult> BulkMarkValidPhoneAsMemberAsync(
+        string? verifiedVia,
+        Guid? verifiedByUserId,
+        CancellationToken cancellationToken = default);
+
     Task<SimilarCustomerClustersResult> GetSimilarClustersAsync(
         double similarityThreshold = 0.8,
         CancellationToken cancellationToken = default);

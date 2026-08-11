@@ -7,6 +7,7 @@ import type {
   CustomerModeAReadinessSummary,
   CustomerPhoneReadiness,
   CustomerPilotOtpStatus,
+  BulkMarkPharmacyMemberResult,
   LoyaltyProgramSummary,
   LoyaltyTier,
   LoyaltyTransaction,
@@ -154,13 +155,29 @@ function normalizeModeAReadiness(row: Record<string, unknown>): CustomerModeARea
       row.customersInDuplicateGroups ?? row.CustomersInDuplicateGroups ?? 0,
     ),
     modeAReady: Number(row.modeAReady ?? row.ModeAReady ?? 0),
+    eligibleToPromote: Number(row.eligibleToPromote ?? row.EligibleToPromote ?? 0),
   };
 }
 
-/** Tenant Mode A readiness: phone quality + membership + app accounts. */
+/** Tenant app-login readiness: phone quality + membership + app accounts. */
 export async function fetchModeAReadiness(): Promise<CustomerModeAReadinessSummary> {
   const { data } = await http.get<Record<string, unknown>>('/customers/mode-a-readiness');
   return normalizeModeAReadiness(data);
+}
+
+/** Bulk-mark active customers with valid VN mobile as pharmacy members. */
+export async function bulkMarkPharmacyMembers(
+  verifiedVia = 'staff_mark',
+): Promise<BulkMarkPharmacyMemberResult> {
+  const { data } = await http.post<Record<string, unknown>>('/customers/bulk-mark-pharmacy-member', {
+    verifiedVia,
+  });
+  return {
+    updated: Number(data.updated ?? data.Updated ?? 0),
+    alreadyMember: Number(data.alreadyMember ?? data.AlreadyMember ?? 0),
+    skipped: Number(data.skipped ?? data.Skipped ?? 0),
+    eligibleBefore: Number(data.eligibleBefore ?? data.EligibleBefore ?? 0),
+  };
 }
 
 /** Fetch all pages for a filtered customer list (CSV export). Caps at maxRows. */

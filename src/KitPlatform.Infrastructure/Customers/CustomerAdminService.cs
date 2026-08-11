@@ -38,6 +38,26 @@ internal sealed class CustomerAdminService : ICustomerAdminService
         CancellationToken cancellationToken = default) =>
         _repository.GetPharmacyRelationSummaryAsync(cancellationToken);
 
+    public async Task<BulkMarkPharmacyMemberResult> BulkMarkValidPhoneAsMemberAsync(
+        string? verifiedVia,
+        Guid? verifiedByUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var via = string.IsNullOrWhiteSpace(verifiedVia)
+            ? CustomerPharmacyVerifiedVia.StaffMark
+            : verifiedVia.Trim().ToLowerInvariant();
+        if (via is not (
+            CustomerPharmacyVerifiedVia.StaffMark
+            or CustomerPharmacyVerifiedVia.QrScan
+            or CustomerPharmacyVerifiedVia.FirstSale
+            or CustomerPharmacyVerifiedVia.Invite))
+        {
+            throw new InvalidOperationException("Hình thức xác nhận khách nhà thuốc không hợp lệ.");
+        }
+
+        return await _repository.BulkMarkValidPhoneAsMemberAsync(via, verifiedByUserId, cancellationToken);
+    }
+
     public Task<SimilarCustomerClustersResult> GetSimilarClustersAsync(
         double similarityThreshold = 0.8,
         CancellationToken cancellationToken = default) =>

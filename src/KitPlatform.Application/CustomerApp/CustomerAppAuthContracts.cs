@@ -10,6 +10,8 @@ public static class CustomerAppOtpResponseStatuses
 {
     public const string OtpSent = "otp_sent";
     public const string PendingApproval = "pending_approval";
+    /// <summary>Counter channel needs staff PIN (first-time / non-member). Client should show PIN field.</summary>
+    public const string CounterPinRequired = "counter_pin_required";
 }
 
 public static class CustomerAppLoginRequestStatuses

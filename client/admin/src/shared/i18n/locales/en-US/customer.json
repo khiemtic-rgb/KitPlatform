@@ -95,9 +95,9 @@
     "importTitle": "Import customers (Excel/CSV)",
     "searchPlaceholder": "Name, phone, customer code, email",
     "filters": {
-      "phoneReadiness": "Phone / Mode A quality",
+      "phoneReadiness": "Phone / app login",
       "pharmacyRelation": "Pharmacy relation",
-      "modeAReady": "Mode A ready",
+      "modeAReady": "Ready for app login",
       "needsFix": "Phone needs fix",
       "duplicate": "Duplicate phone",
       "hasAppAccount": "Has app account",
@@ -132,6 +132,7 @@
     },
     "tabs": {
       "list": "List",
+      "appReady": "App login readiness",
       "similar": "Similar ≥ 80%"
     },
     "similarGuideTitle": "Similar ≥ 80% (data cleanup)",

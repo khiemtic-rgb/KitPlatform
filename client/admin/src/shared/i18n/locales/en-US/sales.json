@@ -1017,29 +1017,37 @@
       "installHint": "Tip for customers: in the app → Account → «Add to Home Screen» for an app-like icon."
     },
     "modeAReadiness": {
-      "title": "Mode A readiness (counter phone)",
-      "intro": "Share of customers with a valid VN mobile for counter OTP login. Use before enabling the app for a new pharmacy.",
+      "title": "Ready for app login (counter OTP)",
+      "intro": "Share of customers with a valid Vietnamese mobile for counter OTP login. Use before enabling the app for a new pharmacy.",
       "reload": "Reload",
-      "loadFailed": "Could not load Mode A readiness",
-      "readyBanner": "{{ready}} / {{total}} customers Mode A ready ({{pct}}%)",
-      "readyHint": "Mode A ready = phone 0[35789]xxxxxxxx, active, not revoked, not in a duplicate-phone group.",
+      "loadFailed": "Could not load app-login readiness",
+      "readyBanner": "{{ready}} / {{total}} customers ready for app login ({{pct}}%)",
+      "readyHint": "Ready = valid VN mobile (0[35789]…), active, pharmacy member (not revoked), not in a duplicate-phone group.",
       "stats": {
-        "modeAReady": "Mode A ready",
+        "modeAReady": "Ready for app login",
         "needsFix": "Phone needs fix",
         "validVn": "Valid VN mobile",
         "hasApp": "Has app account",
         "member": "Members",
         "prospect": "Prospects",
+        "eligiblePromote": "Awaiting member activation",
         "duplicates": "In duplicate-phone groups",
         "duplicateGroupsSuffix": "({{groups}} groups)",
         "total": "Total customers"
       },
       "actions": {
         "viewNeedsFix": "View phones needing fix",
-        "viewReady": "View Mode A ready",
+        "viewReady": "View ready for app login",
         "viewDuplicates": "View duplicate phones",
-        "exportNeedsFix": "Export CSV (needs fix)"
+        "exportNeedsFix": "Export CSV (needs fix)",
+        "promoteMembers": "Activate as members",
+        "promoteConfirmTitle": "Bulk-activate pharmacy members?",
+        "promoteConfirmBody": "Active customers with a valid VN mobile who are not yet members (revoked excluded) will be activated as Member. Phones are not changed and no SMS is sent. App = None is normal — the app account is created on first OTP."
       },
+      "promoteSuccess": "Activated {{updated}} customers as members · skipped {{skipped}}.",
+      "promoteNothing": "No customers left to activate (valid phone and not yet member).",
+      "promoteDoneHint": "All eligible customers are already activated. {{needsFix}} still need a phone fix before app login.",
+      "promoteFailed": "Could not bulk-activate pharmacy members",
       "exportSuccess": "Exported {{count}} rows",
       "exportFailed": "Could not export CSV",
       "csv": {

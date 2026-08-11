@@ -1021,29 +1021,37 @@
       "installHint": "Gợi ý khách: trong app → Tài khoản → «Cài ra màn hình chính» để có icon như app thật."
     },
     "modeAReadiness": {
-      "title": "Mode A readiness (SĐT quầy)",
-      "intro": "Tỷ lệ khách có SĐT di động VN hợp lệ để đăng nhập app bằng OTP quầy. Dùng trước khi mở app cho nhà thuốc mới.",
+      "title": "Sẵn sàng đăng nhập app (OTP quầy)",
+      "intro": "Tỷ lệ khách có SĐT di động Việt Nam hợp lệ để đăng nhập app bằng OTP tại quầy. Dùng trước khi mở app cho nhà thuốc mới.",
       "reload": "Tải lại",
-      "loadFailed": "Không tải được báo cáo Mode A",
-      "readyBanner": "{{ready}} / {{total}} KH sẵn sàng Mode A ({{pct}}%)",
-      "readyHint": "Mode A ready = SĐT 0[35789]xxxxxxxx, đang hoạt động, không revoked, không trùng SĐT.",
+      "loadFailed": "Không tải được báo cáo sẵn sàng đăng nhập app",
+      "readyBanner": "{{ready}} / {{total}} KH sẵn sàng đăng nhập app ({{pct}}%)",
+      "readyHint": "Sẵn sàng = SĐT di động VN hợp lệ (0[35789]…), đang hoạt động, là thành viên (không thu hồi), không trùng SĐT.",
       "stats": {
-        "modeAReady": "Mode A ready",
+        "modeAReady": "Sẵn sàng đăng nhập app",
         "needsFix": "SĐT cần sửa",
         "validVn": "SĐT VN hợp lệ",
         "hasApp": "Đã có app",
         "member": "Thành viên",
         "prospect": "Prospect",
-        "duplicates": "KH trong nhóm trùng SĐT",
-        "duplicateGroupsSuffix": "({{groups}} nhóm)",
-        "total": "Tổng KH"
+      "eligiblePromote": "Chờ kích hoạt thành viên",
+      "duplicates": "KH trong nhóm trùng SĐT",
+      "duplicateGroupsSuffix": "({{groups}} nhóm)",
+      "total": "Tổng KH"
       },
       "actions": {
         "viewNeedsFix": "Xem SĐT cần sửa",
-        "viewReady": "Xem Mode A ready",
+        "viewReady": "Xem sẵn sàng đăng nhập app",
         "viewDuplicates": "Xem trùng SĐT",
-        "exportNeedsFix": "Xuất CSV SĐT cần sửa"
+        "exportNeedsFix": "Xuất CSV SĐT cần sửa",
+        "promoteMembers": "Kích hoạt thành viên",
+        "promoteConfirmTitle": "Kích hoạt thành viên hàng loạt?",
+        "promoteConfirmBody": "Các khách đang hoạt động, có SĐT di động VN hợp lệ và chưa phải thành viên (không gồm đã thu hồi) sẽ được kích hoạt Thành viên. Không sửa SĐT, không gửi SMS. Cột «App = Chưa» vẫn bình thường — tài khoản app tạo khi khách OTP lần đầu."
       },
+      "promoteSuccess": "Đã kích hoạt {{updated}} KH thành viên · bỏ qua {{skipped}}.",
+      "promoteNothing": "Không còn KH nào chờ kích hoạt (SĐT hợp lệ và chưa thành viên).",
+      "promoteDoneHint": "Đã kích hoạt hết KH đủ điều kiện. Còn {{needsFix}} KH cần sửa SĐT trước khi đăng nhập app được.",
+      "promoteFailed": "Không kích hoạt thành viên hàng loạt được",
       "exportSuccess": "Đã xuất {{count}} dòng",
       "exportFailed": "Không xuất được CSV",
       "csv": {

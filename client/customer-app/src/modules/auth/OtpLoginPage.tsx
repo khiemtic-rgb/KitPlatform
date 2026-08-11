@@ -101,6 +101,8 @@ export function OtpLoginPage() {
   const [tenantCode, setTenantCode] = useState(initialTenant.code || DEFAULT_TENANT_CODE);
   const [channel, setChannel] = useState<'counter' | 'remote'>('counter');
   const [counterPin, setCounterPin] = useState('');
+  const [showCounterPin, setShowCounterPin] = useState(false);
+  const [showRemoteOptions, setShowRemoteOptions] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState('');
   const [pilotCode, setPilotCode] = useState<string | null>(null);
@@ -163,7 +165,7 @@ export function OtpLoginPage() {
       message.warning(t('auth.consentRequired'));
       return;
     }
-    if (channel === 'counter' && !counterPin.trim()) {
+    if (channel === 'counter' && showCounterPin && !counterPin.trim()) {
       setFieldError(t('auth.counterPinRequired'));
       message.warning(t('auth.counterPinRequired'));
       return;
@@ -179,11 +181,20 @@ export function OtpLoginPage() {
       saveStoredTenantCode(code);
       const res = await requestOtp(normalized, code, {
         channel,
-        counterPin: channel === 'counter' ? counterPin.trim() : undefined,
+        counterPin:
+          channel === 'counter' && (showCounterPin || counterPin.trim())
+            ? counterPin.trim() || undefined
+            : undefined,
         inviteCode: channel === 'remote' ? inviteCode.trim() || undefined : undefined,
       });
-      message.success(res.message || t('auth.otpSent'));
       const status = (res.status || 'otp_sent').toLowerCase();
+      if (status === 'counter_pin_required') {
+        setShowCounterPin(true);
+        setFieldError(res.message || t('auth.counterPinRequired'));
+        message.info(res.message || t('auth.counterPinRequired'));
+        return;
+      }
+      message.success(res.message || t('auth.otpSent'));
       if (status === 'pending_approval') {
         setPendingApproval(true);
         setPilotCode(null);
@@ -333,32 +344,55 @@ export function OtpLoginPage() {
             ) : null}
 
             <div className="otp-login-field">
-              <span className="otp-login-label">{t('auth.channelLabel')}</span>
-              <div className="otp-login-channel" role="group" aria-label={t('auth.channelLabel')}>
-                <button
-                  type="button"
-                  className={`otp-login-channel-btn${channel === 'counter' ? ' is-active' : ''}`}
-                  onClick={() => {
-                    setChannel('counter');
-                    setFieldError(null);
-                  }}
-                >
-                  {t('auth.channelCounter')}
-                </button>
-                <button
-                  type="button"
-                  className={`otp-login-channel-btn${channel === 'remote' ? ' is-active' : ''}`}
-                  onClick={() => {
-                    setChannel('remote');
-                    setFieldError(null);
-                  }}
-                >
-                  {t('auth.channelRemote')}
-                </button>
-              </div>
+              <button
+                type="button"
+                className="otp-login-channel-toggle"
+                onClick={() => setShowRemoteOptions((v) => !v)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  color: 'var(--ca-text-muted, #667)',
+                  fontSize: 13,
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                }}
+              >
+                {showRemoteOptions ? t('auth.hideChannelOptions') : t('auth.showChannelOptions')}
+              </button>
+              {showRemoteOptions ? (
+                <>
+                  <span className="otp-login-label" style={{ display: 'block', marginTop: 8 }}>
+                    {t('auth.channelLabel')}
+                  </span>
+                  <div className="otp-login-channel" role="group" aria-label={t('auth.channelLabel')}>
+                    <button
+                      type="button"
+                      className={`otp-login-channel-btn${channel === 'counter' ? ' is-active' : ''}`}
+                      onClick={() => {
+                        setChannel('counter');
+                        setFieldError(null);
+                      }}
+                    >
+                      {t('auth.channelCounter')}
+                    </button>
+                    <button
+                      type="button"
+                      className={`otp-login-channel-btn${channel === 'remote' ? ' is-active' : ''}`}
+                      onClick={() => {
+                        setChannel('remote');
+                        setShowCounterPin(false);
+                        setFieldError(null);
+                      }}
+                    >
+                      {t('auth.channelRemote')}
+                    </button>
+                  </div>
+                </>
+              ) : null}
             </div>
 
-            {channel === 'counter' ? (
+            {channel === 'counter' && showCounterPin ? (
               <div className="otp-login-field">
                 <label className="otp-login-label" htmlFor="otp-counter-pin">
                   {t('auth.counterPinLabel')}
@@ -381,7 +415,9 @@ export function OtpLoginPage() {
                 </div>
                 <p className="otp-login-field-hint">{t('auth.counterPinHint')}</p>
               </div>
-            ) : (
+            ) : null}
+
+            {channel === 'remote' ? (
               <div className="otp-login-field">
                 <label className="otp-login-label" htmlFor="otp-invite">
                   {t('auth.inviteCodeLabel')}
@@ -398,7 +434,7 @@ export function OtpLoginPage() {
                   />
                 </div>
               </div>
-            )}
+            ) : null}
 
             {fieldError ? (
               <p className="otp-login-field-error" role="alert">

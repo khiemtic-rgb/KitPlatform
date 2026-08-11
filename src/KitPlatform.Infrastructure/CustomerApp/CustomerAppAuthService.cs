@@ -80,20 +80,52 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
             throw new InvalidOperationException(
                 "Nhà thuốc chưa cấu hình mã quầy. Vui lòng nhờ nhân viên đăng ký giúp.");
 
-        var pin = (counterPin ?? string.Empty).Trim();
-        if (pin.Length == 0)
-            throw new InvalidOperationException("Vui lòng nhập mã quầy.");
+        var existingAccount = await _repo.FindAccountByPhoneAsync(
+            tenant.TenantId, phone, cancellationToken);
+        var existingCustomer = existingAccount is null
+            ? await _repo.FindCustomerByPhoneAsync(tenant.TenantId, phone, cancellationToken)
+            : null;
 
-        if (!string.Equals(
-                CustomerAppAuthRepository.HashSecret(pin),
-                authCfg.CounterPinHash,
-                StringComparison.OrdinalIgnoreCase))
+        // Returning app user or CRM member: skip counter PIN (staff still reads OTP in Admin).
+        var isKnownMember =
+            existingAccount is not null
+            || (existingCustomer is not null
+                && CustomerPharmacyRelations.IsMember(existingCustomer.PharmacyRelation));
+
+        var pin = (counterPin ?? string.Empty).Trim();
+        if (!isKnownMember)
         {
+            if (pin.Length == 0)
+            {
+                return new CustomerOtpSentResponse(
+                    ExpiresInSeconds: 0,
+                    CooldownSeconds: 0,
+                    Message: "Lần đầu tại quầy: nhập mã quầy do nhân viên cung cấp, rồi gửi lại OTP.",
+                    PilotCode: null,
+                    CustomerAppOtpResponseStatuses.CounterPinRequired);
+            }
+
+            if (!string.Equals(
+                    CustomerAppAuthRepository.HashSecret(pin),
+                    authCfg.CounterPinHash,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Mã quầy không đúng.");
+            }
+        }
+        else if (pin.Length > 0
+                 && !string.Equals(
+                     CustomerAppAuthRepository.HashSecret(pin),
+                     authCfg.CounterPinHash,
+                     StringComparison.OrdinalIgnoreCase))
+        {
+            // Tolerate empty PIN for members; if they typed something wrong, still reject.
             throw new InvalidOperationException("Mã quầy không đúng.");
         }
 
-        var account = await _repo.EnsureAccountForCustomerPhoneAsync(
-            tenant.TenantId, tenant.TenantCode, phone, cancellationToken)
+        var account = existingAccount
+            ?? await _repo.EnsureAccountForCustomerPhoneAsync(
+                tenant.TenantId, tenant.TenantCode, phone, cancellationToken)
             ?? throw new InvalidOperationException(
                 "Số điện thoại chưa có trên hệ thống nhà thuốc. Nhờ nhân viên tạo khách tại quầy trước.");
 
@@ -118,10 +150,11 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
             cancellationToken);
 
         _logger.LogInformation(
-            "Counter OTP issued for {Phone} (tenant {Tenant}, account {AccountId})",
+            "Counter OTP issued for {Phone} (tenant {Tenant}, account {AccountId}, pinSkipped={PinSkipped})",
             phone,
             tenant.TenantCode,
-            account.AccountId);
+            account.AccountId,
+            isKnownMember);
 
         var exposeOnApp = _settings.ExposePilotOtpOnCustomerApp;
         return new CustomerOtpSentResponse(

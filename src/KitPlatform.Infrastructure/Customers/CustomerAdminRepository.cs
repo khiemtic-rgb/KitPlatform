@@ -195,7 +195,13 @@ internal sealed class CustomerAdminRepository
                       AND relation <> 'revoked'
                       AND phone_norm ~ '^0[35789][0-9]{8}$'
                       AND phone_norm NOT IN (SELECT phone_norm FROM dup_phones)
-                )::int AS ModeAReady
+                )::int AS ModeAReady,
+                COUNT(*) FILTER (
+                    WHERE status = 1
+                      AND relation <> 'member'
+                      AND relation <> 'revoked'
+                      AND phone_norm ~ '^0[35789][0-9]{8}$'
+                )::int AS EligibleToPromote
             FROM cust_base
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -210,7 +216,86 @@ internal sealed class CustomerAdminRepository
             row.PhoneNeedsFix,
             row.DuplicatePhoneGroups,
             row.CustomersInDuplicateGroups,
-            row.ModeAReady);
+            row.ModeAReady,
+            row.EligibleToPromote);
+    }
+
+    public async Task<BulkMarkPharmacyMemberResult> BulkMarkValidPhoneAsMemberAsync(
+        string verifiedVia,
+        Guid? verifiedByUserId,
+        CancellationToken cancellationToken)
+    {
+        var phoneNorm = PhoneNormExpr;
+        var countSql = $$"""
+            SELECT
+                COUNT(*) FILTER (
+                    WHERE status = 1
+                      AND relation = 'member'
+                      AND phone_norm ~ '^0[35789][0-9]{8}$'
+                )::int AS AlreadyMember,
+                COUNT(*) FILTER (
+                    WHERE status = 1
+                      AND relation <> 'member'
+                      AND relation <> 'revoked'
+                      AND phone_norm ~ '^0[35789][0-9]{8}$'
+                )::int AS Eligible,
+                COUNT(*) FILTER (
+                    WHERE NOT (
+                        status = 1
+                        AND relation <> 'revoked'
+                        AND phone_norm ~ '^0[35789][0-9]{8}$'
+                    )
+                )::int AS Skipped
+            FROM (
+                SELECT
+                    c.status,
+                    lower(coalesce(nullif(trim(c.pharmacy_relation), ''), 'member')) AS relation,
+                    {{phoneNorm}} AS phone_norm
+                FROM customers c
+                WHERE c.tenant_id = @TenantId
+                  AND c.deleted_at IS NULL
+            ) x
+            """;
+
+        var updateSql = $$"""
+            UPDATE customers c
+            SET pharmacy_relation = @Relation,
+                pharmacy_verified_at = COALESCE(c.pharmacy_verified_at, NOW()),
+                pharmacy_verified_via = COALESCE(c.pharmacy_verified_via, @VerifiedVia),
+                pharmacy_verified_by = COALESCE(@VerifiedBy, c.pharmacy_verified_by),
+                updated_at = NOW()
+            WHERE c.tenant_id = @TenantId
+              AND c.deleted_at IS NULL
+              AND c.status = 1
+              AND lower(coalesce(nullif(trim(c.pharmacy_relation), ''), 'member')) <> 'member'
+              AND lower(coalesce(nullif(trim(c.pharmacy_relation), ''), 'member')) <> 'revoked'
+              AND ({{phoneNorm}}) ~ '^0[35789][0-9]{8}$'
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var counts = await conn.QuerySingleAsync<BulkPromoteCountRow>(countSql, new { TenantId });
+        var updated = await conn.ExecuteAsync(
+            updateSql,
+            new
+            {
+                TenantId,
+                Relation = CustomerPharmacyRelations.Member,
+                VerifiedVia = verifiedVia,
+                VerifiedBy = verifiedByUserId,
+            });
+
+        return new BulkMarkPharmacyMemberResult(
+            updated,
+            counts.AlreadyMember,
+            counts.Skipped,
+            counts.Eligible);
+    }
+
+    private sealed class BulkPromoteCountRow
+    {
+        public int AlreadyMember { get; init; }
+        public int Eligible { get; init; }
+        public int Skipped { get; init; }
     }
 
     private sealed class RelationSummaryRow
@@ -225,6 +310,7 @@ internal sealed class CustomerAdminRepository
         public int DuplicatePhoneGroups { get; init; }
         public int CustomersInDuplicateGroups { get; init; }
         public int ModeAReady { get; init; }
+        public int EligibleToPromote { get; init; }
     }
     public async Task<SimilarCustomerClustersResult> GetSimilarClustersAsync(
         double similarityThreshold,
