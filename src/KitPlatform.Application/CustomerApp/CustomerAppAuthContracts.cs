@@ -44,9 +44,18 @@ public sealed record CustomerProfileDto(
     string TenantCode,
     string FullName,
     string Phone,
-    string? PreferredLocale);
+    string? PreferredLocale,
+    string? PharmacyRelation = null,
+    string? AcquisitionSource = null,
+    string? AvatarUrl = null);
 
 public sealed record UpdateCustomerPreferredLocaleRequest(string PreferredLocale);
+
+public sealed record UpdateCustomerProfileRequest(string? FullName = null, string? AvatarUrl = null);
+
+public sealed record ConfirmCustomerPharmacyLinkRequest(
+    string VerifiedVia = "qr_scan",
+    string? TenantCode = null);
 
 public sealed record CustomerLoginResponse(
     string AccessToken,

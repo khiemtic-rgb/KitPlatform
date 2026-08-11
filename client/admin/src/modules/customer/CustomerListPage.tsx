@@ -20,6 +20,7 @@ import { useCanSalesCustomers, useCanSalesCustomersMerge } from '@/shared/auth/u
 import { CustomerFormDrawer } from '@/modules/customer/CustomerFormDrawer';
 import { CustomerImportCard } from '@/modules/customer/CustomerImportCard';
 import { CustomerAppLoginRequestsCard } from '@/modules/customer/CustomerAppLoginRequestsCard';
+import { CustomerAppQrButton } from '@/modules/sales/CustomerAppQrButton';
 import { useCustomerEnums } from '@/shared/i18n/use-customer-enums';
 import { formatDisplayDate } from '@/shared/utils/date';
 
@@ -404,11 +405,14 @@ export function CustomerListPage() {
       <Card
         title={t('title')}
         extra={
-          canWrite ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-              {t('addCustomer')}
-            </Button>
-          ) : null
+          <Space wrap>
+            <CustomerAppQrButton />
+            {canWrite ? (
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                {t('addCustomer')}
+              </Button>
+            ) : null}
+          </Space>
         }
       >
         <Tabs

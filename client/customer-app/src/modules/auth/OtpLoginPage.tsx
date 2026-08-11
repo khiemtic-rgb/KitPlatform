@@ -7,7 +7,7 @@ import {
   SendOutlined,
   ShopOutlined,
 } from '@ant-design/icons';
-import { message } from 'antd';
+import { App } from 'antd';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getApiErrorMessage, requestOtp, verifyOtp } from '@/shared/api/customer-app.api';
@@ -21,6 +21,7 @@ import {
 import { useCustomerBranding } from '@/shared/config/BrandingProvider';
 import { applyTenantFromUrl } from '@/shared/config/tenant-link';
 import { useAuthStore } from '@/shared/auth/auth.store';
+import { lockPharmacyLinkFromCounter } from '@/shared/config/pharmacy-link';
 import './OtpLoginPage.css';
 
 function formatCountdown(totalSeconds: number) {
@@ -89,6 +90,7 @@ function DotGrid() {
 
 export function OtpLoginPage() {
   const { t } = useTranslation();
+  const { message } = App.useApp();
   const { branding, refresh } = useCustomerBranding();
   const [searchParams] = useSearchParams();
   const search = searchParams.toString();
@@ -99,6 +101,7 @@ export function OtpLoginPage() {
   const [tenantCode, setTenantCode] = useState(initialTenant.code || DEFAULT_TENANT_CODE);
   const [channel, setChannel] = useState<'counter' | 'remote'>('counter');
   const [counterPin, setCounterPin] = useState('');
+  const [fieldError, setFieldError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState('');
   const [pilotCode, setPilotCode] = useState<string | null>(null);
   const [expiresInSeconds, setExpiresInSeconds] = useState(0);
@@ -148,16 +151,20 @@ export function OtpLoginPage() {
 
   const onRequestOtp = async (event: FormEvent) => {
     event.preventDefault();
+    setFieldError(null);
     const normalized = digitsOnly(phone);
     if (normalized.length < 9) {
+      setFieldError(t('auth.invalidPhone'));
       message.warning(t('auth.invalidPhone'));
       return;
     }
     if (!agreed) {
+      setFieldError(t('auth.consentRequired'));
       message.warning(t('auth.consentRequired'));
       return;
     }
     if (channel === 'counter' && !counterPin.trim()) {
+      setFieldError(t('auth.counterPinRequired'));
       message.warning(t('auth.counterPinRequired'));
       return;
     }
@@ -165,6 +172,7 @@ export function OtpLoginPage() {
     try {
       const code = resolvedTenant();
       if (!code) {
+        setFieldError(t('auth.tenantRequired'));
         message.warning(t('auth.tenantRequired'));
         return;
       }
@@ -187,10 +195,13 @@ export function OtpLoginPage() {
       setPendingApproval(false);
       setPilotCode(res.pilotCode?.trim() || null);
       setExpiresInSeconds(res.expiresInSeconds);
-      setOtpCode(res.pilotCode?.trim() || '');
+      // Không auto-điền — khách nhập mã do nhân viên đọc.
+      setOtpCode('');
       setStep(1);
     } catch (error) {
-      message.error(getApiErrorMessage(error, t('auth.otpSendFailed')));
+      const errText = getApiErrorMessage(error, t('auth.otpSendFailed'));
+      setFieldError(errText);
+      message.error(errText);
     } finally {
       setLoading(false);
     }
@@ -207,6 +218,9 @@ export function OtpLoginPage() {
     try {
       const data = await verifyOtp(digitsOnly(phone), code, resolvedTenant());
       setSession(data);
+      if (channel === 'counter') {
+        lockPharmacyLinkFromCounter(data.profile.tenantCode || resolvedTenant());
+      }
       message.success(t('auth.welcome', { name: data.profile.fullName }));
       navigate('/', { replace: true });
     } catch {
@@ -324,14 +338,20 @@ export function OtpLoginPage() {
                 <button
                   type="button"
                   className={`otp-login-channel-btn${channel === 'counter' ? ' is-active' : ''}`}
-                  onClick={() => setChannel('counter')}
+                  onClick={() => {
+                    setChannel('counter');
+                    setFieldError(null);
+                  }}
                 >
                   {t('auth.channelCounter')}
                 </button>
                 <button
                   type="button"
                   className={`otp-login-channel-btn${channel === 'remote' ? ' is-active' : ''}`}
-                  onClick={() => setChannel('remote')}
+                  onClick={() => {
+                    setChannel('remote');
+                    setFieldError(null);
+                  }}
                 >
                   {t('auth.channelRemote')}
                 </button>
@@ -344,17 +364,22 @@ export function OtpLoginPage() {
                   {t('auth.counterPinLabel')}
                   <em>*</em>
                 </label>
-                <div className="otp-login-input">
+                <div className={`otp-login-input${fieldError && !counterPin.trim() ? ' is-invalid' : ''}`}>
                   <SafetyOutlined className="otp-login-input-icon" />
                   <input
                     id="otp-counter-pin"
                     value={counterPin}
-                    onChange={(e) => setCounterPin(e.target.value)}
+                    onChange={(e) => {
+                      setCounterPin(e.target.value);
+                      if (fieldError) setFieldError(null);
+                    }}
                     placeholder={t('auth.counterPinPlaceholder')}
                     inputMode="numeric"
                     autoComplete="one-time-code"
+                    aria-invalid={Boolean(fieldError && !counterPin.trim())}
                   />
                 </div>
+                <p className="otp-login-field-hint">{t('auth.counterPinHint')}</p>
               </div>
             ) : (
               <div className="otp-login-field">
@@ -374,6 +399,12 @@ export function OtpLoginPage() {
                 </div>
               </div>
             )}
+
+            {fieldError ? (
+              <p className="otp-login-field-error" role="alert">
+                {fieldError}
+              </p>
+            ) : null}
 
             <label className={`otp-login-consent${agreed ? ' is-checked' : ''}`}>
               <input
@@ -433,13 +464,8 @@ export function OtpLoginPage() {
         ) : (
           <form onSubmit={(e) => void onVerifyOtp(e)}>
             <p className="otp-login-otp-note">
-              {t('auth.otpSentTo')} <strong>{formatPhoneDisplay(phone)}</strong>.
-              {import.meta.env.DEV && !pilotCode ? (
-                <>
-                  {' '}
-                  {t('auth.devOtpHint')} <code>000000</code>
-                </>
-              ) : null}
+              {t('auth.otpSentTo')} <strong>{formatPhoneDisplay(phone)}</strong>.{' '}
+              {t('auth.otpAskStaff')}
             </p>
 
             {pilotCode ? (

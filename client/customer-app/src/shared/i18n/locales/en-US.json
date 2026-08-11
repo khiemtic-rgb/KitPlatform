@@ -512,7 +512,8 @@
     "channelRemote": "Remote",
     "counterPinLabel": "Counter PIN",
     "counterPinPlaceholder": "PIN from staff",
-    "counterPinRequired": "Enter counter PIN",
+    "counterPinRequired": "Enter the counter PIN from staff before sending OTP.",
+    "counterPinHint": "Not your customer code. Ask staff for the pharmacy counter PIN (Admin → Customers → app login).",
     "inviteCodeLabel": "Invite code (if first time)",
     "inviteCodePlaceholder": "e.g. XUANHOA",
     "pendingTitle": "Waiting for pharmacy approval",
@@ -522,7 +523,8 @@
     "locationFallback": "",
     "sendOtp": "Send OTP",
     "continueWithCounterCode": "I already have a counter code",
-    "otpSentTo": "Code sent to",
+    "otpSentTo": "Request for",
+    "otpAskStaff": "Staff will read the sign-in code to you (Admin/POS → App code). Enter it below.",
     "otpCounterHint": "Ask the staff to tap «App code» / «Generate code» on POS, then read the 6 digits to you.",
     "otpCounterNote": "Enter the code the staff just read for",
     "requestCodeFromCounter": "Request a new code (staff will see it on screen)",
@@ -654,6 +656,8 @@
     "profileUnlinked": "Not linked — care still works normally.",
     "pausedToast": "Pharmacy link paused",
     "resumedToast": "Pharmacy link resumed",
+    "lockedHint": "Linked at the pharmacy counter — cannot pause in the app. Contact the pharmacy to change.",
+    "lockedToast": "Cannot pause: link was locked after in-store sign-in.",
     "intentServices": "Pharmacy services",
     "intentOrders": "Counter orders",
     "intentChat": "Support chat",
@@ -661,7 +665,12 @@
     "intentReserve": "Reserve meds",
     "intentCall": "Call support",
     "intentReceivables": "Receivables",
-    "intentSync": "Sync from pharmacy"
+    "intentSync": "Sync from pharmacy",
+    "claimSuccess": "Pharmacy linked",
+    "claimFailed": "Could not link pharmacy"
+  },
+  "rx": {
+    "modeAHint": "To use pharmacy services, ask counter staff for a login code (counter PIN + OTP). Staff will read the OTP for you to enter in the app."
   },
   "timeline": {
     "title": "Care timeline",
@@ -1180,7 +1189,17 @@
   },
   "pwa": {
     "updateAvailable": "A new update is available",
-    "reload": "Reload"
+    "reload": "Reload",
+    "installBanner": "Add this app to your Home Screen for quicker access",
+    "install": "Install",
+    "later": "Later",
+    "installTitle": "Add to Home Screen",
+    "installSub": "Open faster like a real app",
+    "installSuccess": "Added to Home Screen",
+    "iosTitle": "Install on iPhone / iPad",
+    "iosStep1": "Tap Share (□↑) in the Safari toolbar.",
+    "iosStep2": "Choose «Add to Home Screen».",
+    "iosStep3": "Tap Add — the app icon appears on your Home Screen."
   },
   "push": {
     "vapidKeyInvalid": "Device notification setup is invalid. Please contact the pharmacy for help.",

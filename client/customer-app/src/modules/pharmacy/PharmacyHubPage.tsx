@@ -80,24 +80,36 @@ export function PharmacyHubPage() {
     void (async () => {
       try {
         const profile = await confirmPharmacyLink('qr_scan');
-        if (!cancelled) setProfile(profile);
-      } catch {
-        /* best-effort */
+        if (!cancelled) {
+          setProfile(profile);
+          message.success(t('pharmacyLink.claimSuccess', { defaultValue: 'Đã liên kết nhà thuốc' }));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          message.error(
+            getApiErrorMessage(error, t('pharmacyLink.claimFailed', { defaultValue: 'Không liên kết được nhà thuốc' })),
+          );
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [claimCode, isAuthenticated, setProfile]);
+  }, [claimCode, isAuthenticated, setProfile, t]);
 
   const phone = branding.supportPhone?.replace(/\s/g, '') ?? '';
 
   const claimPharmacyLink = () => {
     if (isAuthenticated) {
       void confirmPharmacyLink('qr_scan')
-        .then(setProfile)
-        .catch(() => {
-          // Best-effort: navigation continues even if server confirm fails.
+        .then((profile) => {
+          setProfile(profile);
+          message.success(t('pharmacyLink.claimSuccess', { defaultValue: 'Đã liên kết nhà thuốc' }));
+        })
+        .catch((error) => {
+          message.error(
+            getApiErrorMessage(error, t('pharmacyLink.claimFailed', { defaultValue: 'Không liên kết được nhà thuốc' })),
+          );
         });
     }
     navigate(`/health?add=prescription&code=${encodeURIComponent(claimCode)}`);

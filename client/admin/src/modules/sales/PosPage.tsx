@@ -101,6 +101,7 @@ import { buildCustomerDraftOrderPayload } from '@/modules/sales/pos-customer-dra
 import { CustomerFormDrawer } from '@/modules/customer/CustomerFormDrawer';
 import type { CustomerDetail } from '@/shared/api/customer-admin.types';
 import { CustomerDraftOrderStatusBar } from '@/modules/sales/CustomerDraftOrderStatusBar';
+import { CustomerAppQrButton } from '@/modules/sales/CustomerAppQrButton';
 import { formatDisplayMoney, moneyInputNumberPropsAllowZeroSuffix, moneyInputNumberStyle } from '@/shared/utils/money';
 import { useTranslation } from 'react-i18next';
 import { loadConnectHandoffForPos } from '@/modules/sales/connect-handoff-pos-load';
@@ -1830,6 +1831,7 @@ export function PosPage() {
               ) : null}
             </Space.Compact>
             <PosCounterOtpButton customerId={customerId} canWrite={canWrite} />
+            <CustomerAppQrButton size="middle" />
             {!editingDraftId && !auditSlimNav ? (
               <Space align="center" size={8} className="pos-page__app-draft-toggle">
                 <Switch

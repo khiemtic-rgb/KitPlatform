@@ -30,7 +30,7 @@ export function PharmacyLinkSheet() {
 
   const onScanQr = () => {
     closeLinkSheet();
-    navigate(suggested ? `/rx?tenant=${encodeURIComponent(suggested)}` : '/rx');
+    navigate(suggested ? `/pharmacy?tenant=${encodeURIComponent(suggested)}` : '/pharmacy');
   };
 
   const onEnterCode = () => {

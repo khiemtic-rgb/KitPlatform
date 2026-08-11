@@ -61,7 +61,10 @@ internal sealed record CustomerAccountRecord(
     string TenantCode,
     string FullName,
     string Phone,
-    string? PreferredLocale);
+    string? PreferredLocale,
+    string? PharmacyRelation = null,
+    string? AcquisitionSource = null,
+    string? AvatarUrl = null);
 
 internal sealed record TenantPhoneRow(Guid TenantId, string TenantCode);
 

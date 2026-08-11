@@ -28,7 +28,8 @@ type PharmacyLinkContextValue = PharmacyLinkState & {
   openLinkSheet: (intent?: string) => void;
   closeLinkSheet: () => void;
   linkNow: (tenantCode?: string) => void;
-  pauseLink: () => void;
+  /** false nếu liên kết bị khóa (OTP quầy). */
+  pauseLink: () => boolean;
   sheetOpen: boolean;
   sheetIntent: string | null;
 };
@@ -87,7 +88,7 @@ export function PharmacyLinkProvider({ children }: { children: ReactNode }) {
       const code = (tenantCode || state.tenantCode || profileTenant || '').trim().toUpperCase();
       const relation = (pharmacyRelation ?? '').trim().toLowerCase();
 
-      // Chỉ resume khi đã là member (tạm ngắt trên thiết bị) — không tự nâng prospect→member.
+      // Resume member đã tạm ngắt — không tự nâng prospect→member (cần OTP quầy / QR claim API).
       if (relation === 'member' || (!relation && state.paused)) {
         if (code) enablePharmacyLink(code);
         else resumePharmacyLink();
@@ -98,7 +99,7 @@ export function PharmacyLinkProvider({ children }: { children: ReactNode }) {
       }
 
       closeLinkSheet();
-      navigate(code ? `/rx?tenant=${encodeURIComponent(code)}` : '/rx');
+      navigate(code ? `/pharmacy?tenant=${encodeURIComponent(code)}` : '/pharmacy');
     },
     [
       closeLinkSheet,
@@ -113,9 +114,12 @@ export function PharmacyLinkProvider({ children }: { children: ReactNode }) {
   );
 
   const pauseLink = useCallback(() => {
-    pausePharmacyLink();
-    refreshLink();
-    closeLinkSheet();
+    const ok = pausePharmacyLink();
+    if (ok) {
+      refreshLink();
+      closeLinkSheet();
+    }
+    return ok;
   }, [closeLinkSheet, refreshLink]);
 
   const value = useMemo<PharmacyLinkContextValue>(

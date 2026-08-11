@@ -997,18 +997,24 @@
     },
     "customerAppLinkCard": {
       "title": "Customer app link & QR",
-      "intro": "Print this QR for the counter — customers scan with their phone camera and skip entering the pharmacy code.",
+      "intro": "Have the customer scan this QR with their phone camera to open your pharmacy app — no pharmacy code typing.",
+      "openButton": "App QR",
+      "openButtonTooltip": "Open QR for customer to scan into the app",
+      "modalTitle": "Customer scan to open app",
+      "close": "Close",
+      "loading": "Loading app link…",
       "copy": "Copy",
       "copySuccess": "Link copied",
       "copyFailed": "Could not copy link",
-      "downloadQr": "Download QR image",
+      "downloadQr": "Download QR (print for counter)",
       "downloadSuccess": "QR image downloaded",
       "downloadFailed": "Could not download QR image",
       "loadFailed": "Could not load platform config",
       "missingTenant": "Pharmacy code unavailable — sign in to admin again.",
       "missingAppUrl": "Platform__CustomerAppUrl is not configured on the server.",
       "qrCaption": "Scan to open app · {{tenant}}",
-      "qrHint": "Customers only enter phone and OTP (pilot: staff reads OTP from admin)."
+      "qrHint": "After opening: sign in with phone + OTP (staff can read OTP from admin when needed).",
+      "installHint": "Tip for customers: in the app → Account → «Add to Home Screen» for an app-like icon."
     },
     "customerAppCard": {
       "title": "Customer app settings",

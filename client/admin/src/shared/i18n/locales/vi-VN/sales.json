@@ -1001,18 +1001,24 @@
     },
     "customerAppLinkCard": {
       "title": "Link & QR app khách",
-      "intro": "In QR dán quầy — khách quét bằng camera điện thoại sẽ vào app và không cần gõ mã nhà thuốc.",
+      "intro": "Cho khách quét QR bằng camera điện thoại để mở app nhà thuốc — không cần gõ mã nhà thuốc.",
+      "openButton": "QR vào app",
+      "openButtonTooltip": "Mở QR để khách quét vào app",
+      "modalTitle": "Cho khách quét vào app",
+      "close": "Đóng",
+      "loading": "Đang tải link app…",
       "copy": "Sao chép",
       "copySuccess": "Đã sao chép link",
       "copyFailed": "Không sao chép được link",
-      "downloadQr": "Tải ảnh QR",
+      "downloadQr": "Tải ảnh QR (in quầy)",
       "downloadSuccess": "Đã tải ảnh QR",
       "downloadFailed": "Không tải được ảnh QR",
       "loadFailed": "Không tải được cấu hình nền tảng",
       "missingTenant": "Không xác định được mã nhà thuốc — đăng nhập lại admin.",
       "missingAppUrl": "Chưa cấu hình Platform__CustomerAppUrl trên server.",
       "qrCaption": "Quét để vào app · {{tenant}}",
-      "qrHint": "Khách chỉ cần nhập SĐT và mã OTP (pilot: nhân viên đọc mã từ admin)."
+      "qrHint": "Sau khi mở app: đăng nhập bằng SĐT + OTP (nhân viên đọc mã OTP trong admin khi cần).",
+      "installHint": "Gợi ý khách: trong app → Tài khoản → «Cài ra màn hình chính» để có icon như app thật."
     },
     "customerAppCard": {
       "title": "Cài đặt app khách hàng",

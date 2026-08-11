@@ -24,5 +24,20 @@ public interface ICustomerAppAuthService
         string preferredLocale,
         CancellationToken cancellationToken = default);
 
+    Task<CustomerProfileDto?> UpdateProfileAsync(
+        Guid accountId,
+        UpdateCustomerProfileRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<CustomerProfileDto?> UpdateAvatarUrlAsync(
+        Guid accountId,
+        string avatarUrl,
+        CancellationToken cancellationToken = default);
+
+    Task<CustomerProfileDto?> ConfirmPharmacyLinkAsync(
+        Guid accountId,
+        ConfirmCustomerPharmacyLinkRequest request,
+        CancellationToken cancellationToken = default);
+
     Task LogoutAsync(string refreshToken, CancellationToken cancellationToken = default);
 }

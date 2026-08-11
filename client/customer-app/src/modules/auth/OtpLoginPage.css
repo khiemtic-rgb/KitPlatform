@@ -244,6 +244,29 @@
   margin-bottom: 16px;
 }
 
+.otp-login-field-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ol-muted, #64748b);
+}
+
+.otp-login-field-error {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.otp-login-input.is-invalid {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
 .otp-login-channel {
   display: grid;
   grid-template-columns: 1fr 1fr;

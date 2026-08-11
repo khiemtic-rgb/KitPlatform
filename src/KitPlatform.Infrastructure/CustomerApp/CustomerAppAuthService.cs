@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using KitPlatform.Application.CustomerApp;
+using KitPlatform.Application.Customers;
 using KitPlatform.Infrastructure.Auth;
 
 namespace KitPlatform.Infrastructure.CustomerApp;
@@ -12,6 +13,7 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
     private readonly CustomerAppAuthRepository _repo;
     private readonly CustomerAppJwtTokenService _tokens;
     private readonly CustomerAppAuthSettings _settings;
+    private readonly CustomerAppSmsSettings _smsSettings;
     private readonly ICustomerOtpSender _otpSender;
     private readonly ICustomerEngagementEventService _engagementEvents;
     private readonly IHostEnvironment _env;
@@ -22,6 +24,7 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
         CustomerAppAuthRepository repo,
         CustomerAppJwtTokenService tokens,
         IOptions<CustomerAppAuthSettings> settings,
+        IOptions<CustomerAppSmsSettings> smsSettings,
         ICustomerOtpSender otpSender,
         ICustomerEngagementEventService engagementEvents,
         IHostEnvironment env,
@@ -31,6 +34,7 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
         _repo = repo;
         _tokens = tokens;
         _settings = settings.Value;
+        _smsSettings = smsSettings.Value;
         _otpSender = otpSender;
         _engagementEvents = engagementEvents;
         _env = env;
@@ -93,9 +97,15 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
             ?? throw new InvalidOperationException(
                 "Số điện thoại chưa có trên hệ thống nhà thuốc. Nhờ nhân viên tạo khách tại quầy trước.");
 
+        await _repo.MarkCustomerAsCounterMemberAsync(
+            tenant.TenantId, account.CustomerId, cancellationToken);
+
         await EnforceOtpCooldownAsync(tenant.TenantId, phone, cancellationToken);
         var (code, expiresAt, challengeId) = await CreateOtpChallengeAsync(
-            tenant, phone, exposeOnCustomerApp: true, cancellationToken);
+            tenant,
+            phone,
+            exposeOnCustomerApp: _settings.ExposePilotOtpOnCustomerApp,
+            cancellationToken);
 
         await _repo.InsertLoginRequestAsync(
             tenant.TenantId,
@@ -113,11 +123,14 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
             tenant.TenantCode,
             account.AccountId);
 
+        var exposeOnApp = _settings.ExposePilotOtpOnCustomerApp;
         return new CustomerOtpSentResponse(
             _settings.OtpExpireMinutes * 60,
             _settings.OtpCooldownSeconds,
-            "Mã đăng nhập hiển thị bên dưới. Không chia sẻ cho người khác.",
-            code,
+            exposeOnApp
+                ? "Mã đăng nhập hiển thị bên dưới. Không chia sẻ cho người khác."
+                : "Nhân viên sẽ đọc mã đăng nhập cho bạn (Admin/POS → Mã app). Nhập mã vào ô bên dưới.",
+            exposeOnApp ? code : null,
             CustomerAppOtpResponseStatuses.OtpSent);
     }
 
@@ -246,8 +259,19 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
         }
         catch (Exception ex)
         {
-            // Pilot without SMS gateway: still keep challenge for admin/counter display.
-            _logger.LogWarning(ex, "OTP SMS send failed for {Phone}; continuing with pilot display", phone);
+            // Mode A (Provider=Log): NV đọc mã — bỏ qua lỗi gửi.
+            // SMS Http: fail-closed — không báo đã gửi khi gateway lỗi.
+            if (IsHttpSmsProvider(_smsSettings))
+            {
+                _logger.LogError(ex, "OTP SMS gateway failed for {Phone}", phone);
+                throw new InvalidOperationException(
+                    "Không gửi được SMS OTP. Thử lại sau hoặc nhờ nhân viên cấp mã tại quầy.");
+            }
+
+            _logger.LogWarning(
+                ex,
+                "OTP SMS skipped/failed for {Phone}; staff-read mode keeps challenge for Admin/POS",
+                phone);
         }
 
         return (code, expiresAt, challengeId);
@@ -345,6 +369,97 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
         return account is null ? null : ToProfile(account);
     }
 
+    public async Task<CustomerProfileDto?> UpdateProfileAsync(
+        Guid accountId,
+        UpdateCustomerProfileRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var account = await _repo.FindAccountByIdAsync(accountId, cancellationToken);
+        if (account is null)
+            return null;
+
+        var touched = false;
+        if (!string.IsNullOrWhiteSpace(request.FullName))
+        {
+            var name = request.FullName.Trim();
+            if (name.Length < 2)
+                throw new InvalidOperationException("Họ tên phải có ít nhất 2 ký tự.");
+            if (!await _repo.UpdateCustomerFullNameAsync(accountId, name, cancellationToken))
+                throw new InvalidOperationException("Không cập nhật được họ tên.");
+            touched = true;
+        }
+
+        if (request.AvatarUrl is not null)
+        {
+            var url = request.AvatarUrl.Trim();
+            if (url.Length > 0 && !url.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Đường dẫn ảnh không hợp lệ.");
+            if (!await _repo.UpdateCustomerAvatarUrlAsync(accountId, url, cancellationToken))
+                throw new InvalidOperationException("Không cập nhật được ảnh đại diện.");
+            touched = true;
+        }
+
+        if (!touched)
+            throw new InvalidOperationException("Không có thông tin để cập nhật.");
+
+        account = await _repo.FindAccountByIdAsync(accountId, cancellationToken);
+        return account is null ? null : ToProfile(account);
+    }
+
+    public async Task<CustomerProfileDto?> UpdateAvatarUrlAsync(
+        Guid accountId,
+        string avatarUrl,
+        CancellationToken cancellationToken = default)
+    {
+        return await UpdateProfileAsync(
+            accountId,
+            new UpdateCustomerProfileRequest(AvatarUrl: avatarUrl),
+            cancellationToken);
+    }
+
+    public async Task<CustomerProfileDto?> ConfirmPharmacyLinkAsync(
+        Guid accountId,
+        ConfirmCustomerPharmacyLinkRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var account = await _repo.FindAccountByIdAsync(accountId, cancellationToken);
+        if (account is null)
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(request.TenantCode)
+            && !string.Equals(
+                request.TenantCode.Trim(),
+                account.TenantCode,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "Mã nhà thuốc trên QR không khớp tài khoản đang đăng nhập.");
+        }
+
+        var via = (request.VerifiedVia ?? CustomerPharmacyVerifiedVia.QrScan).Trim().ToLowerInvariant();
+        if (via is not (
+            CustomerPharmacyVerifiedVia.QrScan
+            or CustomerPharmacyVerifiedVia.Invite
+            or CustomerPharmacyVerifiedVia.StaffMark))
+        {
+            throw new InvalidOperationException("Hình thức xác nhận liên kết không hợp lệ.");
+        }
+
+        if (!CustomerPharmacyRelations.IsMember(account.PharmacyRelation))
+        {
+            var ok = await _repo.MarkPharmacyMemberFromAppAsync(
+                account.TenantId,
+                account.CustomerId,
+                via,
+                cancellationToken);
+            if (!ok)
+                throw new InvalidOperationException("Không liên kết được nhà thuốc.");
+        }
+
+        account = await _repo.FindAccountByIdAsync(accountId, cancellationToken);
+        return account is null ? null : ToProfile(account);
+    }
+
     public async Task LogoutAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(refreshToken))
@@ -376,7 +491,17 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
             account.TenantCode,
             account.FullName,
             account.Phone,
-            account.PreferredLocale);
+            account.PreferredLocale,
+            string.IsNullOrWhiteSpace(account.PharmacyRelation)
+                ? CustomerPharmacyRelations.Member
+                : account.PharmacyRelation.Trim().ToLowerInvariant(),
+            string.IsNullOrWhiteSpace(account.AcquisitionSource)
+                ? null
+                : account.AcquisitionSource.Trim().ToLowerInvariant(),
+            string.IsNullOrWhiteSpace(account.AvatarUrl) ? null : account.AvatarUrl.Trim());
+
+    private static bool IsHttpSmsProvider(CustomerAppSmsSettings sms) =>
+        sms.Provider.Equals("Http", StringComparison.OrdinalIgnoreCase);
 
     private string? ResolveTenantCode(string? tenantCode)
     {

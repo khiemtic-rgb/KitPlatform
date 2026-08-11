@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Alert, Button, Form, Input, Spin, Switch, Tag, message } from 'antd';
+import { Alert, Button, Form, Input, Modal, Spin, Switch, Tag, message } from 'antd';
 import {
   BellOutlined,
   CameraOutlined,
@@ -13,6 +13,7 @@ import {
   MedicineBoxOutlined,
   MessageOutlined,
   MobileOutlined,
+  PlusSquareOutlined,
   RightOutlined,
   RobotOutlined,
   SafetyCertificateOutlined,
@@ -59,6 +60,7 @@ import { useCustomerNotificationCount } from '@/shared/hooks/useCustomerNotifica
 import { useCustomerLabels } from '@/shared/i18n/useCustomerLabels';
 import { withCustomerUploadAuth } from '@/shared/utils/upload-url';
 import { apiPath } from '@/shared/api/api-base';
+import { usePwaInstallContext } from '@/shared/pwa/PwaInstallProvider';
 import './ProfilePage.css';
 import '@/shared/components/PharmacyLinkSheet.css';
 
@@ -155,7 +157,7 @@ function ConsentToggleRow({
 export function ProfilePage() {
   const { t } = useTranslation();
   const { branding } = useCustomerBranding();
-  const { linked, partnerName, tenantCode, paused, requireLink, pauseLink, linkNow, openLinkSheet } =
+  const { linked, partnerName, tenantCode, paused, requireLink, linkNow, openLinkSheet } =
     usePharmacyLink();
   const { requireAuth } = useVerifyAccount();
   const { consentChannel, consentPurpose } = useCustomerLabels();
@@ -181,6 +183,8 @@ export function ProfilePage() {
   const [pushLoading, setPushLoading] = useState(false);
   const [pushError, setPushError] = useState<string | null>(null);
   const notificationCount = useCustomerNotificationCount();
+  const { canOfferInstall, canNativeInstall, showIosGuide, install } = usePwaInstallContext();
+  const [iosInstallOpen, setIosInstallOpen] = useState(false);
 
   const browserPushSupported = isPushSupported();
   const appPushConsentGranted = useMemo(
@@ -488,6 +492,26 @@ export function ProfilePage() {
       tone: 'slate',
       onClick: scrollToSettings,
     },
+    ...(canOfferInstall
+      ? [
+          {
+            key: 'install',
+            title: t('pwa.installTitle'),
+            sub: t('pwa.installSub'),
+            icon: <PlusSquareOutlined />,
+            tone: 'teal' as MenuTone,
+            onClick: () => {
+              if (canNativeInstall) {
+                void install().then((ok) => {
+                  if (ok) message.success(t('pwa.installSuccess'));
+                });
+                return;
+              }
+              if (showIosGuide) setIosInstallOpen(true);
+            },
+          },
+        ]
+      : []),
     {
       key: 'addresses',
       title: t('profile.addresses'),
@@ -650,29 +674,13 @@ export function ProfilePage() {
           </div>
         </section>
 
-        <section className="profile-hub-card profile-hub-partner-card">
-          <h2 className="profile-hub-card-title">{t('pharmacyLink.profileCardTitle')}</h2>
-          <p className="profile-hub-partner-status">
-            {linked
-              ? t('pharmacyLink.profileLinked', {
-                  name: partnerName || tenantCode || profile?.tenantCode || '—',
-                })
-              : paused
-                ? t('pharmacyLink.profilePaused')
-                : t('pharmacyLink.profileUnlinked')}
-          </p>
-          <div className="profile-hub-partner-actions">
-            {linked ? (
-              <Button
-                danger
-                onClick={() => {
-                  pauseLink();
-                  message.success(t('pharmacyLink.pausedToast'));
-                }}
-              >
-                {t('pharmacyLink.pause')}
-              </Button>
-            ) : (
+        {!linked ? (
+          <section className="profile-hub-card profile-hub-partner-card">
+            <h2 className="profile-hub-card-title">{t('pharmacyLink.profileCardTitle')}</h2>
+            <p className="profile-hub-partner-status">
+              {paused ? t('pharmacyLink.profilePaused') : t('pharmacyLink.profileUnlinked')}
+            </p>
+            <div className="profile-hub-partner-actions">
               <Button
                 type="primary"
                 onClick={() => {
@@ -690,9 +698,9 @@ export function ProfilePage() {
               >
                 {paused ? t('pharmacyLink.resume') : t('pharmacyLink.scanQr')}
               </Button>
-            )}
-          </div>
-        </section>
+            </div>
+          </section>
+        ) : null}
 
         <div className="profile-hub-menu-grid">
           {menuItems.map((item) => (
@@ -882,6 +890,24 @@ export function ProfilePage() {
           </Form.Item>
         </Form>
       </CustomerFormModal>
+
+      <Modal
+        open={iosInstallOpen}
+        title={t('pwa.iosTitle')}
+        onCancel={() => setIosInstallOpen(false)}
+        footer={
+          <Button type="primary" onClick={() => setIosInstallOpen(false)}>
+            {t('common.close')}
+          </Button>
+        }
+        centered
+      >
+        <ol style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+          <li>{t('pwa.iosStep1')}</li>
+          <li>{t('pwa.iosStep2')}</li>
+          <li>{t('pwa.iosStep3')}</li>
+        </ol>
+      </Modal>
     </div>
   );
 }

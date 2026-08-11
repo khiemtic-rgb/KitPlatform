@@ -50,7 +50,10 @@ internal sealed class CustomerAppAuthRepository
                 t.tenant_code AS TenantCode,
                 c.full_name AS FullName,
                 ca.phone AS Phone,
-                ca.preferred_locale AS PreferredLocale
+                ca.preferred_locale AS PreferredLocale,
+                COALESCE(NULLIF(TRIM(c.pharmacy_relation), ''), 'member') AS PharmacyRelation,
+                NULLIF(TRIM(c.acquisition_source), '') AS AcquisitionSource,
+                NULLIF(TRIM(c.avatar_url), '') AS AvatarUrl
             FROM customer_accounts ca
             INNER JOIN customers c ON c.id = ca.customer_id AND c.deleted_at IS NULL
             INNER JOIN tenants t ON t.id = ca.tenant_id
@@ -74,14 +77,22 @@ internal sealed class CustomerAppAuthRepository
             return existing;
 
         const string findCustomerSql = """
-            SELECT id AS CustomerId, full_name AS FullName
+            SELECT
+                id AS CustomerId,
+                full_name AS FullName,
+                COALESCE(NULLIF(TRIM(pharmacy_relation), ''), 'member') AS PharmacyRelation,
+                NULLIF(TRIM(acquisition_source), '') AS AcquisitionSource
             FROM customers
             WHERE tenant_id = @TenantId AND phone = @Phone AND deleted_at IS NULL
             """;
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
 
-        var customer = await conn.QuerySingleOrDefaultAsync<(Guid CustomerId, string FullName)>(
+        var customer = await conn.QuerySingleOrDefaultAsync<(
+            Guid CustomerId,
+            string FullName,
+            string PharmacyRelation,
+            string? AcquisitionSource)>(
             findCustomerSql,
             new { TenantId = tenantId, Phone = phone });
 
@@ -105,6 +116,9 @@ internal sealed class CustomerAppAuthRepository
             tenantCode,
             customer.FullName,
             phone,
+            null,
+            customer.PharmacyRelation,
+            customer.AcquisitionSource,
             null);
     }
 
@@ -630,7 +644,10 @@ internal sealed class CustomerAppAuthRepository
                 t.tenant_code AS TenantCode,
                 c.full_name AS FullName,
                 ca.phone AS Phone,
-                ca.preferred_locale AS PreferredLocale
+                ca.preferred_locale AS PreferredLocale,
+                COALESCE(NULLIF(TRIM(c.pharmacy_relation), ''), 'member') AS PharmacyRelation,
+                NULLIF(TRIM(c.acquisition_source), '') AS AcquisitionSource,
+                NULLIF(TRIM(c.avatar_url), '') AS AvatarUrl
             FROM customer_accounts ca
             INNER JOIN customers c ON c.id = ca.customer_id AND c.deleted_at IS NULL
             INNER JOIN tenants t ON t.id = ca.tenant_id
@@ -682,6 +699,80 @@ internal sealed class CustomerAppAuthRepository
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         var rows = await conn.ExecuteAsync(sql, new { AccountId = accountId, Locale = locale });
+        return rows > 0;
+    }
+
+    public async Task<bool> UpdateCustomerFullNameAsync(
+        Guid accountId,
+        string fullName,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE customers c
+            SET full_name = @FullName,
+                updated_at = NOW()
+            FROM customer_accounts ca
+            WHERE ca.id = @AccountId
+              AND ca.customer_id = c.id
+              AND ca.tenant_id = c.tenant_id
+              AND ca.status = 1
+              AND c.deleted_at IS NULL
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.ExecuteAsync(sql, new { AccountId = accountId, FullName = fullName });
+        return rows > 0;
+    }
+
+    public async Task<bool> UpdateCustomerAvatarUrlAsync(
+        Guid accountId,
+        string avatarUrl,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE customers c
+            SET avatar_url = @AvatarUrl,
+                updated_at = NOW()
+            FROM customer_accounts ca
+            WHERE ca.id = @AccountId
+              AND ca.customer_id = c.id
+              AND ca.tenant_id = c.tenant_id
+              AND ca.status = 1
+              AND c.deleted_at IS NULL
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.ExecuteAsync(sql, new { AccountId = accountId, AvatarUrl = avatarUrl });
+        return rows > 0;
+    }
+
+    /// <summary>App self-claim (QR / invite): promote to member; keep counter acquisition if already set.</summary>
+    public async Task<bool> MarkPharmacyMemberFromAppAsync(
+        Guid tenantId,
+        Guid customerId,
+        string verifiedVia,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE customers
+            SET pharmacy_relation = 'member',
+                pharmacy_verified_at = COALESCE(pharmacy_verified_at, NOW()),
+                pharmacy_verified_via = @VerifiedVia,
+                acquisition_source = CASE
+                    WHEN COALESCE(NULLIF(TRIM(acquisition_source), ''), '') IN ('', 'app_self')
+                        THEN 'qr_claim'
+                    ELSE acquisition_source
+                END,
+                updated_at = NOW()
+            WHERE id = @CustomerId
+              AND tenant_id = @TenantId
+              AND deleted_at IS NULL
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.ExecuteAsync(
+            sql,
+            new { CustomerId = customerId, TenantId = tenantId, VerifiedVia = verifiedVia });
         return rows > 0;
     }
 

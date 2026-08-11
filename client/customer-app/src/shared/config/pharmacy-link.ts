@@ -2,6 +2,8 @@ import { loadStoredTenantCode, saveStoredTenantCode, TENANT_CODE_STORAGE_KEY } f
 
 /** '1' = dùng dịch vụ nhà thuốc; '0' = tạm ngắt trên thiết bị (soft unlink). */
 export const PHARMACY_LINK_ENABLED_KEY = 'novixa_pharmacy_link_enabled';
+/** '1' = liên kết do NV quầy cấp (không cho tạm ngắt trên app). */
+export const PHARMACY_LINK_LOCKED_KEY = 'novixa_pharmacy_link_locked';
 export const PHARMACY_LINK_CHANGED_EVENT = 'novixa-pharmacy-link-changed';
 
 export type PharmacyLinkState = {
@@ -10,6 +12,8 @@ export type PharmacyLinkState = {
   tenantCode: string;
   /** Đã từng có mã tenant nhưng user tạm ngắt trên thiết bị. */
   paused: boolean;
+  /** Liên kết khóa sau OTP quầy — không cho «Tạm ngắt». */
+  locked: boolean;
 };
 
 function readEnabledFlag(): boolean | null {
@@ -20,6 +24,11 @@ function readEnabledFlag(): boolean | null {
   return null;
 }
 
+export function isPharmacyLinkLocked(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(PHARMACY_LINK_LOCKED_KEY) === '1';
+}
+
 function notifyPharmacyLinkChanged() {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new Event(PHARMACY_LINK_CHANGED_EVENT));
@@ -27,7 +36,9 @@ function notifyPharmacyLinkChanged() {
 
 /**
  * Soft-gate: ưu tiên quan hệ server (`pharmacyRelation`).
- * `member` + chưa pause local → linked; `prospect`/`revoked` → chưa linked.
+ * `member` (OTP quầy / NV xác nhận): luôn linked, không cho tạm ngắt trên app.
+ * `prospect`/`revoked` → chưa linked.
+ * Legacy local lock vẫn giữ cho phiên cũ sau OTP quầy.
  */
 export function resolvePharmacyLinkState(
   profileTenantCode?: string | null,
@@ -39,18 +50,23 @@ export function resolvePharmacyLinkState(
   const enabled = readEnabledFlag();
   const relation = (pharmacyRelation ?? '').trim().toLowerCase();
 
-  if (relation) {
-    const serverMember = relation === 'member';
-    const paused = serverMember && enabled === false;
-    const linked = serverMember && enabled !== false;
-    return { linked, tenantCode, paused };
+  // Member trên server = đã liên kết nhà thuốc; không soft-unlink trên thiết bị.
+  if (relation === 'member' && tenantCode) {
+    return { linked: true, tenantCode, paused: false, locked: true };
   }
 
-  // Legacy fallback (profile chưa có field): chỉ linked khi local flag bật rõ.
-  // Tránh guest/branding tenant (NT_*) được coi là đã liên kết → nhảy vào AuthGuard /orders|/chat.
+  if (isPharmacyLinkLocked() && Boolean(tenantCode)) {
+    return { linked: true, tenantCode, paused: false, locked: true };
+  }
+
+  if (relation) {
+    return { linked: false, tenantCode, paused: false, locked: false };
+  }
+
+  // Legacy fallback: chỉ linked khi local flag bật rõ.
   const paused = Boolean(tenantCode) && enabled === false;
   const linked = Boolean(tenantCode) && enabled === true;
-  return { linked, tenantCode, paused };
+  return { linked, tenantCode, paused, locked: false };
 }
 
 /** Sau OTP member / QR thành công: gắn tenant và bật dịch vụ partner. */
@@ -63,12 +79,31 @@ export function enablePharmacyLink(tenantCode: string): void {
   notifyPharmacyLinkChanged();
 }
 
+/**
+ * Sau OTP do nhân viên quầy cấp: bật liên kết và khóa — khách không tự tắt trên app.
+ */
+export function lockPharmacyLinkFromCounter(tenantCode: string): void {
+  enablePharmacyLink(tenantCode);
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(PHARMACY_LINK_LOCKED_KEY, '1');
+  }
+  notifyPharmacyLinkChanged();
+}
+
+export function clearPharmacyLinkLock(): void {
+  if (typeof window !== 'undefined') {
+    window.localStorage.removeItem(PHARMACY_LINK_LOCKED_KEY);
+  }
+  notifyPharmacyLinkChanged();
+}
+
 /** Lưu tenant nhưng không bật commerce (prospect). */
 export function bindPharmacyTenantWithoutLink(tenantCode: string): void {
   const code = tenantCode.trim().toUpperCase();
   if (code) saveStoredTenantCode(code);
   if (typeof window !== 'undefined') {
     window.localStorage.setItem(PHARMACY_LINK_ENABLED_KEY, '0');
+    window.localStorage.removeItem(PHARMACY_LINK_LOCKED_KEY);
   }
   notifyPharmacyLinkChanged();
 }
@@ -80,19 +115,28 @@ export function syncPharmacyLinkFromProfile(profile: {
 }): void {
   const code = (profile.tenantCode ?? '').trim().toUpperCase();
   if (!code) return;
-  if ((profile.pharmacyRelation ?? '').toLowerCase() === 'member') {
-    enablePharmacyLink(code);
-  } else {
-    bindPharmacyTenantWithoutLink(code);
+  const relation = (profile.pharmacyRelation ?? '').trim().toLowerCase();
+  if (relation === 'member') {
+    // Member = liên kết cứng trên app: bật + khóa, xoá trạng thái «tạm ngắt» cũ.
+    lockPharmacyLinkFromCounter(code);
+    return;
   }
+  if (relation === 'prospect' || relation === 'revoked') {
+    bindPharmacyTenantWithoutLink(code);
+    return;
+  }
+  // Profile thiếu field (API cũ): không xoá lock / không ép tạm ngắt.
+  if (code) saveStoredTenantCode(code);
 }
 
-/** Tạm ngắt dịch vụ nhà thuốc trên thiết bị (core app vẫn dùng được). */
-export function pausePharmacyLink(): void {
+/** Tạm ngắt dịch vụ nhà thuốc trên thiết bị. Trả false nếu bị khóa / là member. */
+export function pausePharmacyLink(): boolean {
+  if (isPharmacyLinkLocked()) return false;
   if (typeof window !== 'undefined') {
     window.localStorage.setItem(PHARMACY_LINK_ENABLED_KEY, '0');
   }
   notifyPharmacyLinkChanged();
+  return true;
 }
 
 export function resumePharmacyLink(): void {

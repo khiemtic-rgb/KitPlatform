@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { CustomerLoginResponse, CustomerProfile } from '@/shared/api/customer-app.types';
-import { syncPharmacyLinkFromProfile } from '@/shared/config/pharmacy-link';
+import { syncPharmacyLinkFromProfile, clearPharmacyLinkLock } from '@/shared/config/pharmacy-link';
 
 interface AuthState {
   accessToken: string | null;
@@ -31,12 +31,14 @@ export const useAuthStore = create<AuthState>()(
         syncPharmacyLinkFromProfile(profile);
         set({ profile });
       },
-      clearSession: () =>
+      clearSession: () => {
+        clearPharmacyLinkLock();
         set({
           accessToken: null,
           refreshToken: null,
           profile: null,
-        }),
+        });
+      },
       isAuthenticated: () => Boolean(get().accessToken),
     }),
     {

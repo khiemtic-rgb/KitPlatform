@@ -8,6 +8,8 @@ import { queryClient } from '@/shared/api/query-client';
 import { BrandingProvider } from '@/shared/config/BrandingProvider';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PwaUpdateBanner } from '@/shared/pwa/PwaUpdateBanner';
+import { PwaInstallBanner } from '@/shared/pwa/PwaInstallBanner';
+import { PwaInstallProvider } from '@/shared/pwa/PwaInstallProvider';
 import '@/shared/i18n';
 
 export function AppProviders() {
@@ -19,8 +21,11 @@ export function AppProviders() {
             <ApiHealthProvider>
               <LocaleProvider>
                 <AuthHydrationGate>
-                  <AppRouter />
-                  <PwaUpdateBanner />
+                  <PwaInstallProvider>
+                    <AppRouter />
+                    <PwaUpdateBanner />
+                    <PwaInstallBanner />
+                  </PwaInstallProvider>
                 </AuthHydrationGate>
               </LocaleProvider>
             </ApiHealthProvider>

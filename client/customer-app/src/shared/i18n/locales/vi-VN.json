@@ -512,7 +512,8 @@
     "channelRemote": "Từ xa",
     "counterPinLabel": "Mã quầy",
     "counterPinPlaceholder": "PIN nhân viên cung cấp",
-    "counterPinRequired": "Nhập mã quầy",
+    "counterPinRequired": "Nhập mã quầy do nhân viên cung cấp trước khi gửi OTP.",
+    "counterPinHint": "Không phải mã KH. Xin PIN quầy ở admin (Khách hàng → đăng nhập app) hoặc nhờ nhân viên.",
     "inviteCodeLabel": "Mã giới thiệu (nếu chưa từng mua)",
     "inviteCodePlaceholder": "VD: XUANHOA",
     "pendingTitle": "Đang chờ nhà thuốc xác nhận",
@@ -522,7 +523,8 @@
     "locationFallback": "",
     "sendOtp": "Gửi mã OTP",
     "continueWithCounterCode": "Tôi đã có mã từ quầy",
-    "otpSentTo": "Mã gửi tới",
+    "otpSentTo": "Đã gửi yêu cầu cho",
+    "otpAskStaff": "Nhân viên sẽ đọc mã đăng nhập cho bạn. Nhập mã vào ô bên dưới.",
     "otpCounterHint": "Nhờ nhân viên quầy bấm «Mã app» / «Tạo mã» rồi đọc 6 số cho bạn.",
     "otpCounterNote": "Nhập mã nhân viên vừa đọc cho",
     "requestCodeFromCounter": "Yêu cầu mã mới (nhân viên sẽ thấy trên màn hình)",
@@ -654,6 +656,8 @@
     "profileUnlinked": "Chưa liên kết — chăm sóc vẫn dùng bình thường.",
     "pausedToast": "Đã tạm ngắt liên kết nhà thuốc",
     "resumedToast": "Đã bật lại liên kết nhà thuốc",
+    "lockedHint": "Liên kết do nhà thuốc xác nhận tại quầy — không tắt trên app. Liên hệ nhà thuốc nếu cần đổi.",
+    "lockedToast": "Không tắt được: liên kết đã khóa sau đăng nhập tại quầy.",
     "intentServices": "Dịch vụ nhà thuốc",
     "intentOrders": "Đơn từ quầy",
     "intentChat": "Chat hỗ trợ",
@@ -661,7 +665,12 @@
     "intentReserve": "Đặt thuốc trước",
     "intentCall": "Gọi hỗ trợ",
     "intentReceivables": "Công nợ",
-    "intentSync": "Đồng bộ từ nhà thuốc"
+    "intentSync": "Đồng bộ từ nhà thuốc",
+    "claimSuccess": "Đã liên kết nhà thuốc",
+    "claimFailed": "Không liên kết được nhà thuốc"
+  },
+  "rx": {
+    "modeAHint": "Để dùng dịch vụ nhà thuốc, nhờ nhân viên quầy cấp mã đăng nhập (mã quầy + OTP). NV sẽ đọc mã OTP cho bạn nhập trên app."
   },
   "timeline": {
     "title": "Timeline chăm sóc",
@@ -1180,7 +1189,17 @@
   },
   "pwa": {
     "updateAvailable": "Có bản cập nhật mới",
-    "reload": "Tải lại"
+    "reload": "Tải lại",
+    "installBanner": "Cài app ra màn hình chính để mở nhanh hơn",
+    "install": "Cài đặt",
+    "later": "Để sau",
+    "installTitle": "Cài ra màn hình chính",
+    "installSub": "Mở nhanh như app thật",
+    "installSuccess": "Đã thêm vào màn hình chính",
+    "iosTitle": "Cài trên iPhone / iPad",
+    "iosStep1": "Chạm nút Chia sẻ (□↑) ở thanh Safari.",
+    "iosStep2": "Chọn «Thêm vào MH chính».",
+    "iosStep3": "Bấm Thêm — icon app sẽ hiện trên màn hình."
   },
   "push": {
     "vapidKeyInvalid": "Cấu hình thông báo trên thiết bị chưa hợp lệ. Liên hệ nhà thuốc để được hỗ trợ.",

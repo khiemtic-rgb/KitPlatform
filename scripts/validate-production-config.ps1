@@ -40,10 +40,22 @@ if ([Environment]::GetEnvironmentVariable("CustomerAppAuth__DevBypassCode")) {
     throw "Xóa CustomerAppAuth__DevBypassCode trong Production."
 }
 
-$smsUrl = Require-Env "CustomerAppSms__HttpUrl" 8
+$exposeOnApp = [Environment]::GetEnvironmentVariable("CustomerAppAuth__ExposePilotOtpOnCustomerApp")
+$smsProvider = [Environment]::GetEnvironmentVariable("CustomerAppSms__Provider")
+if ([string]::IsNullOrWhiteSpace($smsProvider)) { $smsProvider = "Log" }
+
+if ($smsProvider -match "^(?i:log)$") {
+    if ($exposeOnApp -match "^(?i:true|1)$") {
+        throw "Mode A (SMS=Log): đặt CustomerAppAuth__ExposePilotOtpOnCustomerApp=false."
+    }
+    Write-Host "  CustomerAppSms__Provider=Log (Mode A — NV đọc mã)" -ForegroundColor Green
+} else {
+    $smsUrl = Require-Env "CustomerAppSms__HttpUrl" 8
+    Write-Host "  CustomerAppSms__HttpUrl = $smsUrl" -ForegroundColor Green
+}
+
 Write-Host "  ConnectionStrings__Default OK" -ForegroundColor Green
 Write-Host "  Jwt__Secret OK" -ForegroundColor Green
-Write-Host "  CustomerAppSms__HttpUrl = $smsUrl" -ForegroundColor Green
 
 $requiredCors = @(
     'https://admin.novixa.vn',

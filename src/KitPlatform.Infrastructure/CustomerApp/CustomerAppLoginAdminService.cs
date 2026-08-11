@@ -11,6 +11,7 @@ internal sealed class CustomerAppLoginAdminService : ICustomerAppLoginAdminServi
     private readonly CustomerAppAuthRepository _repo;
     private readonly ITenantContext _tenant;
     private readonly CustomerAppAuthSettings _settings;
+    private readonly CustomerAppSmsSettings _smsSettings;
     private readonly ICustomerOtpSender _otpSender;
     private readonly IHostEnvironment _env;
     private readonly ILogger<CustomerAppLoginAdminService> _logger;
@@ -19,6 +20,7 @@ internal sealed class CustomerAppLoginAdminService : ICustomerAppLoginAdminServi
         CustomerAppAuthRepository repo,
         ITenantContext tenant,
         IOptions<CustomerAppAuthSettings> settings,
+        IOptions<CustomerAppSmsSettings> smsSettings,
         ICustomerOtpSender otpSender,
         IHostEnvironment env,
         ILogger<CustomerAppLoginAdminService> logger)
@@ -26,6 +28,7 @@ internal sealed class CustomerAppLoginAdminService : ICustomerAppLoginAdminServi
         _repo = repo;
         _tenant = tenant;
         _settings = settings.Value;
+        _smsSettings = smsSettings.Value;
         _otpSender = otpSender;
         _env = env;
         _logger = logger;
@@ -173,6 +176,7 @@ internal sealed class CustomerAppLoginAdminService : ICustomerAppLoginAdminServi
         else
         {
             customerId = existing.CustomerId;
+            await _repo.MarkCustomerAsCounterMemberAsync(tenant.TenantId, customerId, cancellationToken);
         }
 
         await _repo.EnsureAccountForCustomerPhoneAsync(
@@ -227,7 +231,14 @@ internal sealed class CustomerAppLoginAdminService : ICustomerAppLoginAdminServi
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "OTP SMS send failed for {Phone} during admin issue", phone);
+            if (_smsSettings.Provider.Equals("Http", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogError(ex, "OTP SMS gateway failed for {Phone} during admin issue", phone);
+                throw new InvalidOperationException(
+                    "Không gửi được SMS OTP. Thử lại hoặc đọc mã trên Admin/POS nếu đã tạo.");
+            }
+
+            _logger.LogWarning(ex, "OTP SMS skipped/failed for {Phone} during admin issue (staff-read)", phone);
         }
 
         return (code, expiresAt, challengeId);

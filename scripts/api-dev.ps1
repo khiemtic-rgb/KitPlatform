@@ -57,13 +57,17 @@ function Stop-ApiDevProcess {
     Get-Process -Name "KitPlatform.Api" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
     foreach ($port in 5290, 7224) {
-        Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue |
-            ForEach-Object {
-                $proc = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue
-                if ($proc -and ($proc.ProcessName -eq "KitPlatform.Api" -or $proc.ProcessName -eq "dotnet")) {
-                    Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue
+        try {
+            Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction Stop |
+                ForEach-Object {
+                    $proc = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue
+                    if ($proc -and ($proc.ProcessName -eq "KitPlatform.Api" -or $proc.ProcessName -eq "dotnet")) {
+                        Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue
+                    }
                 }
-            }
+        } catch {
+            # NetTCPIP module unavailable in some sandboxes — pid file + process name above is enough.
+        }
     }
 
     Start-Sleep -Seconds 1

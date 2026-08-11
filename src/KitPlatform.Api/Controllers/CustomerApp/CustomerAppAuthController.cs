@@ -115,4 +115,123 @@ public sealed class CustomerAppAuthController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpPatch("profile")]
+    [Authorize(Policy = CustomerAppPolicies.Authenticated)]
+    [RequirePlatformModule(PlatformModuleCodes.CustomerApp)]
+    [ProducesResponseType(typeof(CustomerProfileDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateProfile(
+        [FromBody] UpdateCustomerProfileRequest request,
+        CancellationToken cancellationToken)
+    {
+        var accountIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        if (!Guid.TryParse(accountIdClaim, out var accountId))
+            return Unauthorized();
+
+        try
+        {
+            var profile = await _auth.UpdateProfileAsync(accountId, request, cancellationToken);
+            return profile is null ? Unauthorized() : Ok(profile);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("avatar")]
+    [Authorize(Policy = CustomerAppPolicies.Authenticated)]
+    [RequirePlatformModule(PlatformModuleCodes.CustomerApp)]
+    [RequestSizeLimit(2 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 2 * 1024 * 1024)]
+    [ProducesResponseType(typeof(CustomerProfileDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UploadAvatar(
+        IFormFile file,
+        [FromServices] IWebHostEnvironment environment,
+        CancellationToken cancellationToken)
+    {
+        var accountIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        if (!Guid.TryParse(accountIdClaim, out var accountId))
+            return Unauthorized();
+
+        try
+        {
+            var profile = await _auth.GetProfileAsync(accountId, cancellationToken);
+            if (profile is null)
+                return Unauthorized();
+
+            var url = await SaveAvatarAsync(file, profile.TenantId, profile.AccountId, environment, cancellationToken);
+            var updated = await _auth.UpdateAvatarUrlAsync(accountId, url, cancellationToken);
+            return updated is null ? Unauthorized() : Ok(updated);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("pharmacy-link")]
+    [Authorize(Policy = CustomerAppPolicies.Authenticated)]
+    [RequirePlatformModule(PlatformModuleCodes.CustomerApp)]
+    [ProducesResponseType(typeof(CustomerProfileDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ConfirmPharmacyLink(
+        [FromBody] ConfirmCustomerPharmacyLinkRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var accountIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        if (!Guid.TryParse(accountIdClaim, out var accountId))
+            return Unauthorized();
+
+        try
+        {
+            var profile = await _auth.ConfirmPharmacyLinkAsync(
+                accountId,
+                request ?? new ConfirmCustomerPharmacyLinkRequest(),
+                cancellationToken);
+            return profile is null ? Unauthorized() : Ok(profile);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    private static async Task<string> SaveAvatarAsync(
+        IFormFile file,
+        Guid tenantId,
+        Guid accountId,
+        IWebHostEnvironment environment,
+        CancellationToken cancellationToken)
+    {
+        const long maxBytes = 2 * 1024 * 1024;
+        var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".jpg", ".jpeg", ".png", ".webp" };
+
+        if (file is null || file.Length == 0)
+            throw new InvalidOperationException("Chọn ảnh để tải lên.");
+        if (file.Length > maxBytes)
+            throw new InvalidOperationException("Ảnh tối đa 2 MB.");
+
+        var extension = Path.GetExtension(file.FileName);
+        if (string.IsNullOrWhiteSpace(extension) || !allowed.Contains(extension))
+            throw new InvalidOperationException("Chỉ hỗ trợ ảnh JPG, PNG hoặc WebP.");
+
+        var tenantFolder = tenantId.ToString("N");
+        var accountFolder = accountId.ToString("N");
+        var directory = Path.Combine(
+            environment.ContentRootPath,
+            "uploads",
+            "avatars",
+            tenantFolder,
+            accountFolder);
+        Directory.CreateDirectory(directory);
+
+        var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+        var fullPath = Path.Combine(directory, fileName);
+        await using (var stream = System.IO.File.Create(fullPath))
+        {
+            await file.CopyToAsync(stream, cancellationToken);
+        }
+
+        return $"/uploads/avatars/{tenantFolder}/{accountFolder}/{fileName}";
+    }
 }

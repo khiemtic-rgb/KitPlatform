@@ -1,7 +1,8 @@
 import { Card, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
-/** Placeholder Rx entry until dedicated e-Rx claim flow ships. */
+/** Mode A: nhận đơn / liên kết tại quầy; e-Rx claim đầy đủ để phase sau. */
 export function RxEntryPage() {
   const { t } = useTranslation();
   return (
@@ -11,8 +12,12 @@ export function RxEntryPage() {
           {t('nav.rx', { defaultValue: 'Đơn thuốc' })}
         </Typography.Title>
         <Typography.Paragraph type="secondary">
-          Tính năng nhận đơn đang hoàn thiện. Liên hệ nhà thuốc nếu cần hỗ trợ.
+          {t('rx.modeAHint', {
+            defaultValue:
+              'Để dùng dịch vụ nhà thuốc, nhờ nhân viên quầy cấp mã đăng nhập (mã quầy + OTP). NV sẽ đọc mã OTP cho bạn nhập trên app.',
+          })}
         </Typography.Paragraph>
+        <Link to="/login">{t('auth.login', { defaultValue: 'Đăng nhập' })}</Link>
       </Card>
     </div>
   );

@@ -115,7 +115,20 @@ builder.Services.AddConnectPack();
 builder.Services.AddClinicPack(builder.Configuration);
 builder.Services.AddSurveyPack(builder.Configuration);
 builder.Services.AddFamilyOsPack(builder.Configuration);
-builder.Services.AddCarePack();
+try
+{
+    builder.Services.AddCarePack();
+}
+catch (Exception ex) when (
+    builder.Environment.IsDevelopment()
+    && (ex is FileLoadException or BadImageFormatException
+        || ex.InnerException is FileLoadException or BadImageFormatException))
+{
+    // Windows Smart App Control (VerifiedAndReputable) can block a local unsigned pack DLL
+    // by hash/reputation — Care endpoints will be unavailable until SAC allows the file.
+    Console.Error.WriteLine(
+        $"[dev] Care pack skipped (Application Control blocked DLL): {ex.GetBaseException().Message}");
+}
 builder.Services.AddContentPack(builder.Configuration);
 
 builder.Services.AddRateLimiter(options =>
@@ -633,11 +646,24 @@ static void ValidateProductionConfiguration(
 
     var sms = configuration.GetSection(CustomerAppSmsSettings.SectionName).Get<CustomerAppSmsSettings>()
         ?? new CustomerAppSmsSettings();
-    if (!sms.Provider.Equals("Http", StringComparison.OrdinalIgnoreCase)
-        || string.IsNullOrWhiteSpace(sms.HttpUrl))
+    var staffReadOtpMode = customerAppAuth.ExposePilotOtpInAdmin
+        && !customerAppAuth.ExposePilotOtpOnCustomerApp;
+    var smsLog = sms.Provider.Equals("Log", StringComparison.OrdinalIgnoreCase);
+    if (smsLog)
+    {
+        if (!staffReadOtpMode)
+        {
+            throw new InvalidOperationException(
+                "Production với CustomerAppSms:Provider=Log chỉ cho phép Mode A (NV đọc mã): "
+                + "ExposePilotOtpInAdmin=true và ExposePilotOtpOnCustomerApp=false.");
+        }
+    }
+    else if (!sms.Provider.Equals("Http", StringComparison.OrdinalIgnoreCase)
+             || string.IsNullOrWhiteSpace(sms.HttpUrl))
     {
         throw new InvalidOperationException(
-            "Production cần CustomerAppSms:Provider=Http và CustomerAppSms:HttpUrl (gateway SMS).");
+            "Production cần CustomerAppSms:Provider=Http + HttpUrl, "
+            + "hoặc Provider=Log với Mode A (NV đọc mã trên Admin/POS).");
     }
 }
 
