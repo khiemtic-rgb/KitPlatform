@@ -6,6 +6,12 @@ export const FAMILY_OS_BRAND = import.meta.env.VITE_FAMILY_OS_BRAND?.trim() || '
 export const FAMILY_OS_PRODUCT =
   import.meta.env.VITE_FAMILY_OS_PRODUCT?.trim() || 'One Family. One Plan. One Daily Flow.';
 
+/** KIT Marketing Park — admin shell when tenant vertical = marketing (org KIT_MKT). */
+export const MARKETING_PARK_BRAND =
+  import.meta.env.VITE_MARKETING_PARK_BRAND?.trim() || 'Marketing Park';
+export const MARKETING_PARK_PRODUCT =
+  import.meta.env.VITE_MARKETING_PARK_PRODUCT?.trim() || 'AI Content & Marketing Workspace';
+
 export const DEFAULT_TENANT_CODE = import.meta.env.VITE_DEFAULT_TENANT_CODE?.trim() || '';
 
 export const TENANT_CODE_STORAGE_KEY = 'novixa_tenant_code';
@@ -15,12 +21,21 @@ export function resolveShellBrand(vertical: string | null | undefined): {
   brand: string;
   product: string;
   isFamily: boolean;
+  isMarketing: boolean;
 } {
   const value = String(vertical ?? '').trim().toLowerCase();
   if (value === 'family') {
-    return { brand: FAMILY_OS_BRAND, product: FAMILY_OS_PRODUCT, isFamily: true };
+    return { brand: FAMILY_OS_BRAND, product: FAMILY_OS_PRODUCT, isFamily: true, isMarketing: false };
   }
-  return { brand: APP_BRAND, product: APP_PRODUCT, isFamily: false };
+  if (value === 'marketing') {
+    return {
+      brand: MARKETING_PARK_BRAND,
+      product: MARKETING_PARK_PRODUCT,
+      isFamily: false,
+      isMarketing: true,
+    };
+  }
+  return { brand: APP_BRAND, product: APP_PRODUCT, isFamily: false, isMarketing: false };
 }
 
 /** Khi set VITE_DEFAULT_TENANT_CODE: ẩn ô mã (white-label 1 tenant). Multi-tenant: để trống. */

@@ -91,7 +91,37 @@ export function DashboardPage() {
     return <FamilyOsOverviewPage />;
   }
 
+  if (vertical === 'marketing') {
+    return <MarketingParkDashboardPage />;
+  }
+
   return <PharmacyDashboardPage />;
+}
+
+function MarketingParkDashboardPage() {
+  return (
+    <div className="dashboard-page" style={{ maxWidth: 640, padding: '24px 8px' }}>
+      <Typography.Title level={3} style={{ marginTop: 0 }}>
+        KIT Marketing Park
+      </Typography.Title>
+      <Typography.Paragraph type="secondary">
+        Sản phẩm nội dung &amp; marketing độc lập (mã tổ chức <strong>KIT_MKT</strong>). Không gắn
+        vận hành Novixa / Famixa.
+      </Typography.Paragraph>
+      <Alert
+        type="info"
+        showIcon
+        message="Bắt đầu từ thương hiệu → chủ đề → nhờ AI → duyệt → xuất bản"
+        style={{ marginBottom: 16 }}
+      />
+      <Link to="/content/topics">
+        <Button type="primary">Vào làm bài</Button>
+      </Link>
+      <Link to="/content/brands" style={{ marginLeft: 12 }}>
+        <Button>Thương hiệu &amp; nơi đăng</Button>
+      </Link>
+    </div>
+  );
 }
 
 function PharmacyDashboardPage() {

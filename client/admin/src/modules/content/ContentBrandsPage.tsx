@@ -511,12 +511,12 @@ export function ContentBrandsPage() {
                     name="code"
                     label="Mã ngắn"
                     rules={[{ required: true }]}
-                    extra="Ví dụ: novixa — không đổi sau khi tạo."
+                    extra="Ví dụ: kit — không đổi sau khi tạo."
                   >
-                    <Input disabled={!!editing} placeholder="novixa" />
+                    <Input disabled={!!editing} placeholder="kit" />
                   </Form.Item>
                   <Form.Item name="name" label="Tên hiển thị" rules={[{ required: true }]}>
-                    <Input placeholder="Novixa" />
+                    <Input placeholder="KIT Technology" />
                   </Form.Item>
                   <Form.Item
                     name="operationalBrief"
@@ -669,7 +669,7 @@ export function ContentBrandsPage() {
                         style={{ marginBottom: 8 }}
                         extra="Tên bạn nhìn thấy khi chọn nơi đăng."
                       >
-                        <Input placeholder="Blog Novixa" style={{ width: 220 }} />
+                        <Input placeholder="Blog KIT" style={{ width: 220 }} />
                       </Form.Item>
                       {isSiteKind ? (
                         <Form.Item name="baseUrl" label="Địa chỉ web" style={{ marginBottom: 8 }}>
@@ -725,7 +725,7 @@ export function ContentBrandsPage() {
                           rules={[{ required: true }]}
                           style={{ marginBottom: 8 }}
                         >
-                          <Input placeholder="novixa-site" style={{ width: 180 }} />
+                          <Input placeholder="kit-site" style={{ width: 180 }} />
                         </Form.Item>
                         <Form.Item name="gitBranch" label="Branch" style={{ marginBottom: 8 }}>
                           <Input placeholder="main" style={{ width: 120 }} />
@@ -804,9 +804,9 @@ export function ContentBrandsPage() {
                                 <Form.Item
                                   name="secretRef"
                                   label={secretUi.label}
-                                  extra="Chỉ ghi tên biến (vd FB_NOVIXA_PAGE_TOKEN) nếu đã set env trên máy API. Không bắt buộc nếu đã dán token ở trên."
+                                  extra="Chỉ ghi tên biến (vd FB_KIT_PAGE_TOKEN) nếu đã set env trên máy API. Không bắt buộc nếu đã dán token ở trên."
                                 >
-                                  <Input placeholder="FB_NOVIXA_PAGE_TOKEN" style={{ maxWidth: 360 }} />
+                                  <Input placeholder="FB_KIT_PAGE_TOKEN" style={{ maxWidth: 360 }} />
                                 </Form.Item>
                               ),
                             },

@@ -1,5 +1,5 @@
 ---
-description: KIT Content Park isolation — never merge into Pharmacy prod migrations or Family OS deploy paths
+description: KIT Marketing Park isolation — never merge into Pharmacy/Family; own org KIT_MKT
 globs:
   - src/Packs/Content/**
   - migrations/*content*
@@ -9,11 +9,14 @@ globs:
 alwaysApply: false
 ---
 
-# Content Park (`kit_content`)
+# Marketing Park (`marketing_park` / `kit_content`)
 
-- Content is an **independent park**. Do **not** add Content migrations to `deploy/ubuntu/migration-files.prod.txt` (Pharmacy) or `migration-files.family-os.txt`.
-- Apply via `deploy/ubuntu/migration-files.content.txt` only.
+- Product package: **`marketing_park`**. Platform module: **`kit_content`**. Org/tenant: **`KIT_MKT`**.
+- Independent park. Do **not** add Content migrations to `deploy/ubuntu/migration-files.prod.txt` (Pharmacy) or `migration-files.family-os.txt`.
+- Apply via `deploy/ubuntu/migration-files.content.txt` only (281+ including `286_pack_content_marketing_park_tenant.sql`).
 - Do not couple Content services to Pharmacy sales/inventory tables or Family OS workers.
+- Do not show Marketing nav on Novixa/Famixa tenants — gate with `platformModule: kit_content` + vertical `marketing`.
 - Prefer **dynamic JSON catalogs** (connector types, channel types, variant kinds, image rates) over new ALTER TABLE for each brand/site/page.
 - Budget ceilings are first-class settings; do not hardcode USD rates in C# beyond seeds.
 - Expanding web/page = new `site_target` / `channel_target` rows, not a platform upgrade.
+- Brands (KIT, Novixa, Famixa, Vân Đỉnh Trà) are **content brands inside KIT_MKT**, not product packages.

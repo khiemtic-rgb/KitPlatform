@@ -162,10 +162,11 @@ function AppLayoutShell() {
   );
 
   useEffect(() => {
-    document.title = shellBrand.isFamily
-      ? `${shellBrand.brand} Admin`
-      : 'Novixa Admin';
-  }, [shellBrand.brand, shellBrand.isFamily]);
+    document.title =
+      shellBrand.isFamily || shellBrand.isMarketing
+        ? `${shellBrand.brand} Admin`
+        : 'Novixa Admin';
+  }, [shellBrand.brand, shellBrand.isFamily, shellBrand.isMarketing]);
 
   useEffect(() => {
     if (
@@ -308,17 +309,21 @@ function AppLayoutShell() {
             gap: 2,
           }}
         >
-          {shellBrand.isFamily ? (
+          {shellBrand.isFamily || shellBrand.isMarketing ? (
             <>
               <Typography.Text
                 strong
                 style={{ color: '#fff', fontSize: collapsed ? 12 : 18, lineHeight: 1.1 }}
               >
-                {collapsed ? 'FO' : shellBrand.brand}
+                {collapsed
+                  ? shellBrand.isMarketing
+                    ? 'MK'
+                    : 'FO'
+                  : shellBrand.brand}
               </Typography.Text>
               {!collapsed ? (
                 <Typography.Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11 }}>
-                  Starter
+                  {shellBrand.isMarketing ? 'KIT_MKT' : 'Starter'}
                 </Typography.Text>
               ) : null}
             </>

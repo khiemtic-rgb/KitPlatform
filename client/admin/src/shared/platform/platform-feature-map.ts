@@ -31,6 +31,7 @@ export const ADMIN_MODULE_PLATFORM_CODES: Partial<
     | 'customer'
     | 'reports'
     | 'kap'
+    | 'content'
     | 'learning'
     | 'system',
     string
@@ -52,6 +53,8 @@ export const ADMIN_MODULE_PLATFORM_CODES: Partial<
   reports: 'reports',
   /** Survey / KAP — SKU cha `assessment` (gói Survey·KAP). */
   kap: 'assessment',
+  /** Marketing Park — product package `marketing_park`, org `KIT_MKT`. */
+  content: 'kit_content',
   learning: 'learning',
 };
 

@@ -11,6 +11,8 @@ import {
 } from '@ant-design/icons';
 import { useRegisterSimpleModuleSubnav } from '@/shared/components/module-subnav.context';
 import { useAuthStore } from '@/shared/auth/auth.store';
+import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
+import { ADMIN_MODULE_PLATFORM_CODES } from '@/shared/platform/platform-feature-map';
 
 const STEP_PATHS = [
   '/content/brands',
@@ -23,6 +25,10 @@ export function ContentLayout() {
   const navigate = useNavigate();
   const roles = useAuthStore((s) => s.user?.roles ?? []);
   const isAdmin = roles.includes('ADMIN');
+  const platformLoaded = useTenantPlatformStore((s) => s.loaded);
+  const isModuleEnabled = useTenantPlatformStore((s) => s.isModuleEnabled);
+  const contentModule = ADMIN_MODULE_PLATFORM_CODES.content ?? 'kit_content';
+  const moduleOk = !platformLoaded || isModuleEnabled(contentModule);
 
   const tabs = useMemo(
     () => [
@@ -36,8 +42,8 @@ export function ContentLayout() {
   );
 
   useEffect(() => {
-    if (!isAdmin) navigate('/', { replace: true });
-  }, [isAdmin, navigate]);
+    if (!isAdmin || (platformLoaded && !moduleOk)) navigate('/', { replace: true });
+  }, [isAdmin, moduleOk, navigate, platformLoaded]);
 
   useEffect(() => {
     if (location.pathname === '/content' || location.pathname === '/content/') {
@@ -51,7 +57,7 @@ export function ContentLayout() {
   const currentStep =
     activeKey === 'brands' ? 0 : activeKey === 'topics' ? 1 : activeKey === 'budget' || activeKey === 'ai' || activeKey === 'settings' ? 2 : 1;
 
-  if (!isAdmin) return null;
+  if (!isAdmin || (platformLoaded && !moduleOk)) return null;
 
   return (
     <div>
@@ -68,11 +74,11 @@ export function ContentLayout() {
           <ReadOutlined style={{ color: '#0f2747', fontSize: 18, marginTop: 2 }} />
           <div>
             <Typography.Title level={5} style={{ margin: 0 }}>
-              Nội dung — viết & đăng bài cho nhiều thương hiệu
+              Marketing Park — viết & đăng cho nhiều thương hiệu
             </Typography.Title>
             <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-              Dùng như một toà soạn nhỏ: khai báo nơi đăng → nhờ AI viết → duyệt rồi xuất bản.
-              Không liên quan bán hàng / tồn kho.
+              Sản phẩm độc lập (org <strong>KIT_MKT</strong>): khai báo nơi đăng → nhờ AI → duyệt →
+              xuất bản. Không lẫn Novixa / Famixa ERP.
             </Typography.Text>
           </div>
         </div>

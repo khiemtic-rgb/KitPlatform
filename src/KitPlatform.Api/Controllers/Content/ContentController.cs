@@ -1,12 +1,15 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using KitPlatform.Api.Authorization;
+using KitPlatform.Application.Core;
 using KitPlatform.Packs.Content;
 
 namespace KitPlatform.Api.Controllers.Content;
 
-/// <summary>KIT Content Park — platform ADMIN ops (isolated from Pharmacy tenant packs).</summary>
+/// <summary>KIT Marketing Park — gated by module kit_content (tenant KIT_MKT / package marketing_park).</summary>
 [ApiController]
 [Authorize(Roles = "ADMIN")]
+[RequirePlatformModule(PlatformModuleCodes.KitContent)]
 [Route("api/content")]
 public sealed class ContentController : ControllerBase
 {

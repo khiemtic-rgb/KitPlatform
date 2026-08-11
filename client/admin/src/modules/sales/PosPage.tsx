@@ -1712,21 +1712,6 @@ export function PosPage() {
         />
       )}
       <div className="pos-page__alerts-row">
-        {openShift != null ? (
-          <Alert
-            className="pos-page__alerts-row-item pos-page__alerts-row-item--shift"
-            type="info"
-            showIcon
-            message={t('pos.alerts.shiftOpen', {
-              number: openShift.shiftNumber,
-              opening: formatDisplayMoney(openShift.openingCash),
-            })}
-            description={t('pos.alerts.shiftOpenDesc', {
-              openedAt: dayjs(openShift.openedAt).format('DD-MM-YYYY HH:mm'),
-              net: formatDisplayMoney(openShift.summary.netTotal),
-            })}
-          />
-        ) : null}
         <div className="pos-page__alerts-row-item pos-page__alerts-row-item--otp">
           <ActiveCounterOtpPanel
             compact

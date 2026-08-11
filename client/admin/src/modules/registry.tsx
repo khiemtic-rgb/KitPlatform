@@ -41,7 +41,7 @@ export type ModuleKey =
   | 'system';
 
 /** Tenant platform.vertical — lọc sidebar theo loại tổ chức. */
-export type AdminVertical = 'pharmacy' | 'clinic' | 'family';
+export type AdminVertical = 'pharmacy' | 'clinic' | 'family' | 'marketing';
 
 /**
  * Module tạm ẩn khỏi sidebar/header (giữ code + route).
@@ -88,7 +88,8 @@ export interface ModuleMenuItem {
 const PHARMACY_ONLY: readonly AdminVertical[] = ['pharmacy'];
 const CLINIC_ONLY: readonly AdminVertical[] = ['clinic'];
 const FAMILY_ONLY: readonly AdminVertical[] = ['family'];
-const ALL_VERTICALS: readonly AdminVertical[] = ['pharmacy', 'clinic', 'family'];
+const MARKETING_ONLY: readonly AdminVertical[] = ['marketing'];
+const ALL_VERTICALS: readonly AdminVertical[] = ['pharmacy', 'clinic', 'family', 'marketing'];
 
 /** Sidebar cấp 1 — thứ tự theo luồng vận hành */
 export const moduleRegistry: ModuleMenuItem[] = [
@@ -233,8 +234,8 @@ export const moduleRegistry: ModuleMenuItem[] = [
     path: '/content/topics',
     icon: <ReadOutlined />,
     enabled: true,
-    // Platform ADMIN ops — không gắn platformModule tenant pharmacy.
-    verticals: ALL_VERTICALS,
+    platformModule: ADMIN_MODULE_PLATFORM_CODES.content,
+    verticals: MARKETING_ONLY,
   },
   {
     key: 'system',
@@ -251,6 +252,7 @@ export function resolveAdminVertical(raw: string | null | undefined): AdminVerti
   const value = String(raw ?? 'pharmacy').trim().toLowerCase();
   if (value === 'clinic') return 'clinic';
   if (value === 'family') return 'family';
+  if (value === 'marketing') return 'marketing';
   return 'pharmacy';
 }
 

@@ -7,3 +7,4 @@
 283_pack_content_brand_brief.sql
 284_pack_content_topic_display_at.sql
 285_pack_content_ai_config.sql
+286_pack_content_marketing_park_tenant.sql

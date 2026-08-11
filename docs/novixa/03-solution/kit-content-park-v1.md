@@ -1,12 +1,14 @@
-# KIT Content Park V1 — Quản trị nội dung đa brand / đa kênh
+# KIT Marketing Park V1 — Quản trị nội dung đa brand / đa kênh
 
-**Mã:** `KIT-CNT-01` · **Version:** 1.0 · **Ngày:** 2026-08-10  
-**Status:** WAVE 1 — AI generate + budget enforce + connectors (manual / WP / FB / Astro Git)  
+**Mã:** `KIT-CNT-01` · **Version:** 1.1 · **Ngày:** 2026-08-11  
+**Status:** WAVE 1 + product isolation (org `KIT_MKT`, package `marketing_park`)  
 **Owner:** Platform / GTM ops  
 
 **Liên quan:**
 - Ngân sách tham chiếu: canvas `content-hub-budget` (30/60/120 bài·tháng)
 - Cô lập park: cùng kỷ luật Family OS — **không** gộp `migration-files.prod.txt` Pharmacy
+- **Mã tổ chức:** `KIT_MKT` · **Package:** `marketing_park` · **Module:** `kit_content`
+- Thương hiệu nội dung (KIT / Novixa / Famixa / Vân Đỉnh Trà) là **brand row trong park**, không phải tenant ERP
 - PHC / Assessment: **một connector CTA**, không phải trục toàn park
 - Marketing sites hiện có: Astro+Sveltia (`novixa-site`, …), WordPress (Vân Đỉnh Trà), Facebook Pages
 
@@ -14,12 +16,12 @@
 
 ## 1. Mục tiêu sản phẩm
 
-Xây **park quản trị nội dung riêng** trong KitPlatform để:
+Xây **park marketing độc lập** trong KitPlatform để:
 
 1. Quản lý **nhiều Brand / Website / Social Page** mà không phải sửa schema mỗi lần thêm site.
 2. Workflow thống nhất: **Topic → AI variants → duyệt → lịch → phân phối → đo**.
 3. Có **cài đặt trần ngân sách** (global + theo brand) để kiểm soát chi phí AI/ảnh khi scale.
-4. **Không đụng** lõi Pharmacy ERP / Family OS / Care khi vận hành content.
+4. **Không đụng** lõi Pharmacy ERP / Family OS / Care khi vận hành content — đăng nhập `KIT_MKT`, không hiện trên tenant Novixa/Famixa.
 
 **Không phải mục tiêu V1:** spam Group / FB cá nhân; Content Intelligence tự học 100%; thay CMS biên tập sâu của từng site.
 
@@ -29,14 +31,16 @@ Xây **park quản trị nội dung riêng** trong KitPlatform để:
 
 | Mục | Quy tắc |
 |-----|---------|
-| Pack code | `kit_content` (tạm) |
-| Schema DB | `pack_content` (hoặc prefix `content_*` nếu đồng bộ convention pack) |
+| Pack / module code | `kit_content` |
+| Tenant package | `marketing_park` |
+| Org / tenant_code | `KIT_MKT` |
+| Schema DB | `pack_content` |
 | Migration manifest | `deploy/ubuntu/migration-files.content.txt` — **riêng**, giống `migration-files.family-os.txt` |
 | Deploy VPS Content | Script/apply riêng; **chỉ khi user yêu cầu** |
 | Pharmacy `migration-files.prod.txt` | **Cấm** merge Content mig cho đến khi GA + phê duyệt off-hours |
 | Dependency Pharmacy | Không đọc/ghi bảng bán hàng, tồn, công nợ |
 | Dependency Survey/PHC | Chỉ lưu `cta_url` / UTM / optional `assessment_category` — không đổi scoring |
-| Multi-tenant | Content Park mang tính **platform / org KIT** (điều hành nhiều brand), không gắn 1 `tenant_id` pharmacy |
+| Multi-tenant ERP | Không gắn 1 `tenant_id` pharmacy; vận hành trên org Marketing riêng |
 
 Cursor rule (khi implement): `.cursor/rules/content-park.mdc` — mirror tinh thần family-os park (không gộp prod pharmacy, không force deploy).
 

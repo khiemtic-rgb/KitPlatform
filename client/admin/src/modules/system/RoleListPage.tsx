@@ -57,8 +57,9 @@ export function RoleListPage() {
   const { t: tc, i18n } = useTranslation('common');
   const { userStatusOptions } = useSystemEnums();
   const platformSettings = useTenantPlatformStore((s) => s.settings);
-  // Chỉ theo vertical — không suy FamilyOS từ enabledModules (tránh ẩn/xóa quyền nhà thuốc).
-  const isFamily = resolveAdminVertical(platformSettings?.vertical) === 'family';
+  const adminVertical = resolveAdminVertical(platformSettings?.vertical);
+  const isFamily = adminVertical === 'family';
+  const isMarketing = adminVertical === 'marketing';
   const canWrite = useHasPermission('system.write');
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<RoleListItem[]>([]);
@@ -73,8 +74,11 @@ export function RoleListPage() {
   const [form] = Form.useForm<RoleFormValues>();
 
   const permissionGroups = useMemo(
-    () => groupPermissionsForUi(permissions, { vertical: isFamily ? 'family' : undefined }),
-    [permissions, i18n.language, isFamily],
+    () =>
+      groupPermissionsForUi(permissions, {
+        vertical: isFamily ? 'family' : isMarketing ? 'marketing' : undefined,
+      }),
+    [permissions, i18n.language, isFamily, isMarketing],
   );
 
   const load = useCallback(async () => {
@@ -177,7 +181,7 @@ export function RoleListPage() {
     try {
       const codes = filterPermissionCodesForVertical(
         normalizePermissionCodesForSave(selectedCodes),
-        isFamily ? 'family' : undefined,
+        isFamily ? 'family' : isMarketing ? 'marketing' : undefined,
       );
       await updateRolePermissions(permRole.id, codes);
       message.success(t('messages.permissionsUpdated'));

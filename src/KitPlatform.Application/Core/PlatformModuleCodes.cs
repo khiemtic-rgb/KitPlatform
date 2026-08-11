@@ -33,7 +33,7 @@ public static class PlatformModuleCodes
     public const string FamilyOs = "family_os";
     /// <summary>Care OS — T3-ready care events / cohort / KPI hooks (Community Health instrumentation).</summary>
     public const string CareOs = "care_os";
-    /// <summary>KIT Content Park — multi-brand content ops (isolated from Pharmacy ERP).</summary>
+    /// <summary>KIT Marketing Park module — product package <c>marketing_park</c>, org <c>KIT_MKT</c>.</summary>
     public const string KitContent = "kit_content";
     public const string Learning = "learning";
 

@@ -1,6 +1,7 @@
 using KitPlatform.Application.Core;
 using KitPlatform.Packs.Clinic;
 using KitPlatform.Packs.Connect;
+using KitPlatform.Packs.Content;
 using KitPlatform.Packs.FamilyOs;
 using KitPlatform.Packs.Pharmacy;
 using KitPlatform.Packs.Survey;
@@ -101,6 +102,17 @@ public sealed class PackDefinitionsAsBuiltSyncTests
     }
 
     [Fact]
+    public void MarketingPark_match_product_isolation_definition()
+    {
+        Assert.Equal(["kit_content"], ContentPackDefinition.DefaultEnabledModules);
+        Assert.Equal(["kit_content"], ContentPackDefinition.PackModuleCodes);
+        Assert.Equal("kit_content", ContentPackDefinition.PackCode);
+        Assert.Equal("marketing_park", ContentPackDefinition.TenantPackageCode);
+        Assert.Equal("KIT_MKT", ContentPackDefinition.DedicatedTenantCode);
+        Assert.Equal(PlatformModuleCodes.KitContent, ContentPackDefinition.PrimaryModuleCode);
+    }
+
+    [Fact]
     public void Platform_module_codes_include_all_asbuilt_catalog_entries()
     {
         string[] expected =
@@ -128,6 +140,9 @@ public sealed class PackDefinitionsAsBuiltSyncTests
             "telehealth",
             "novixa_connect",
             "family_os",
+            "care_os",
+            "kit_content",
+            "learning",
         ];
 
         Assert.Equal(expected, PlatformModuleCodes.All.ToArray());
@@ -140,7 +155,8 @@ public sealed class PackDefinitionsAsBuiltSyncTests
                      .Concat(ClinicPackDefinition.PackModuleCodes)
                      .Concat(ConnectPackDefinition.PackModuleCodes)
                      .Concat(SurveyPackDefinition.PackModuleCodes)
-                     .Concat(FamilyOsPackDefinition.PackModuleCodes))
+                     .Concat(FamilyOsPackDefinition.PackModuleCodes)
+                     .Concat(ContentPackDefinition.PackModuleCodes))
         {
             Assert.Contains(code, PlatformModuleCodes.All);
         }
