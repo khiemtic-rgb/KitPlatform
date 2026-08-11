@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-11T02:29:12.322Z",
+  "generatedAt": "2026-08-11T07:39:01.066Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 197,
-    "todayPageViews": 124,
-    "todayRequests": 303,
+    "todayVisitors": 314,
+    "todayPageViews": 259,
+    "todayRequests": 567,
     "last24hVisitors": 596,
-    "last24hPageViews": 531,
-    "last24hRequests": 1525
+    "last24hPageViews": 581,
+    "last24hRequests": 1570
   },
   "hourly": [
-    {
-      "time": "2026-08-10T03:00:00Z",
-      "visitors": 78,
-      "requests": 93
-    },
-    {
-      "time": "2026-08-10T04:00:00Z",
-      "visitors": 39,
-      "requests": 45
-    },
-    {
-      "time": "2026-08-10T05:00:00Z",
-      "visitors": 22,
-      "requests": 24
-    },
-    {
-      "time": "2026-08-10T06:00:00Z",
-      "visitors": 17,
-      "requests": 21
-    },
-    {
-      "time": "2026-08-10T07:00:00Z",
-      "visitors": 26,
-      "requests": 36
-    },
     {
       "time": "2026-08-10T08:00:00Z",
       "visitors": 29,
@@ -128,8 +103,33 @@
     },
     {
       "time": "2026-08-11T02:00:00Z",
-      "visitors": 34,
-      "requests": 35
+      "visitors": 62,
+      "requests": 68
+    },
+    {
+      "time": "2026-08-11T03:00:00Z",
+      "visitors": 52,
+      "requests": 60
+    },
+    {
+      "time": "2026-08-11T04:00:00Z",
+      "visitors": 39,
+      "requests": 44
+    },
+    {
+      "time": "2026-08-11T05:00:00Z",
+      "visitors": 68,
+      "requests": 87
+    },
+    {
+      "time": "2026-08-11T06:00:00Z",
+      "visitors": 25,
+      "requests": 32
+    },
+    {
+      "time": "2026-08-11T07:00:00Z",
+      "visitors": 7,
+      "requests": 8
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-08-11",
-      "visitors": 197,
-      "pageViews": 124,
-      "requests": 303
+      "visitors": 314,
+      "pageViews": 259,
+      "requests": 567
     }
   ],
   "topPages": [
     {
       "path": "/vi/tin-tuc/nha-thuoc-van-ban-tot-nhung-ban-co-chac-dang-quan-ly-tot/",
-      "views": 285
-    },
-    {
-      "path": "/cdn-cgi/rum",
-      "views": 109
-    },
-    {
-      "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
-      "views": 108
+      "views": 350
     },
     {
       "path": "/vi/tin-tuc/quy-trinh-ban-thuoc-khong-ke-don-otc-chuan-hoa-de-toi-uu-hoa-doanh-thu-va-dam-bao-an-toan-dieu-tri/",
-      "views": 71
+      "views": 131
     },
     {
-      "path": "/vi/tin-tuc/quy-trinh-ban-thuoc-ke-don-chuan-hoa-de-dam-bao-an-toan-y-khoa-va-triet-tieu-rui-ro-phap-ly/",
-      "views": 59
+      "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
+      "views": 122
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 107
+    },
+    {
+      "path": "/images/tin-tuc/quy-trinh-ban-thuoc-khong-ke-don.png",
+      "views": 63
     },
     {
       "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
       "views": 55
     },
     {
-      "path": "/images/tin-tuc/quy-trinh-ban-thuoc-khong-ke-don.png",
-      "views": 53
-    },
-    {
       "path": "/robots.txt",
-      "views": 48
-    },
-    {
-      "path": "/vi/health-check/",
-      "views": 45
-    },
-    {
-      "path": "/images/tin-tuc/quy-trinh-thuoc-ke-don.png",
-      "views": 42
-    },
-    {
-      "path": "/images/tin-tuc/chuan-hoa-quy-trinh-tiep-don-khach.png",
-      "views": 37
+      "views": 51
     },
     {
       "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
-      "views": 33
+      "views": 36
+    },
+    {
+      "path": "/images/tin-tuc/quy-trinh-thuoc-ke-don.png",
+      "views": 31
     },
     {
       "path": "/",
-      "views": 28
+      "views": 30
     },
     {
       "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
       "views": 27
     },
     {
+      "path": "/images/tin-tuc/chuan-hoa-quy-trinh-tiep-don-khach.png",
+      "views": 27
+    },
+    {
       "path": "/images/logo.png",
       "views": 26
+    },
+    {
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 24
+    },
+    {
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 24
     }
   ]
 }
