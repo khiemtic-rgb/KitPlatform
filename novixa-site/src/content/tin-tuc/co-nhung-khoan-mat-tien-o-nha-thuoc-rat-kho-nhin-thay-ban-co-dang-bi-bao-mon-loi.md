@@ -2,6 +2,7 @@
 title: "Có Những Khoản Mất Tiền Ở Nhà Thuốc Rất Khó Nhìn Thấy: Bạn Có Đang Bị Bào Mòn Lợi Nhuận?"
 description: "SEO Title: Khoản Mất Tiền Tàng Hình Ở Nhà Thuốc & Cách Khắc Phục Meta Description: Doanh thu vẫn tốt nhưng cuối tháng không thấy tiền đâu? Khám phá 5 khoản mất tiền tàng hình ở nhà thuốc và cách kiểm soát dòng tiền hiệu quả cùng Novixa."
 category: van-hanh
+image: /images/tin-tuc/co-nhung-khoan-mat-tien-o-nha-thuoc-rat-kho-nhin-thay-ban-co-dang-bi-bao-mon-loi.jpg
 pubDate: 2026-08-12
 lang: vi
 ---
