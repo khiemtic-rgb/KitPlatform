@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-12T03:03:10.131Z",
+  "generatedAt": "2026-08-12T07:58:28.312Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 96,
-    "todayPageViews": 33,
-    "todayRequests": 179,
-    "last24hVisitors": 180,
-    "last24hPageViews": 276,
-    "last24hRequests": 696
+    "todayVisitors": 140,
+    "todayPageViews": 92,
+    "todayRequests": 342,
+    "last24hVisitors": 205,
+    "last24hPageViews": 311,
+    "last24hRequests": 715
   },
   "hourly": [
-    {
-      "time": "2026-08-11T04:00:00Z",
-      "visitors": 6,
-      "requests": 11
-    },
-    {
-      "time": "2026-08-11T05:00:00Z",
-      "visitors": 11,
-      "requests": 21
-    },
-    {
-      "time": "2026-08-11T06:00:00Z",
-      "visitors": 11,
-      "requests": 110
-    },
-    {
-      "time": "2026-08-11T07:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
     {
       "time": "2026-08-11T09:00:00Z",
       "visitors": 4,
@@ -120,6 +100,31 @@
       "time": "2026-08-12T02:00:00Z",
       "visitors": 92,
       "requests": 167
+    },
+    {
+      "time": "2026-08-12T03:00:00Z",
+      "visitors": 7,
+      "requests": 31
+    },
+    {
+      "time": "2026-08-12T04:00:00Z",
+      "visitors": 25,
+      "requests": 50
+    },
+    {
+      "time": "2026-08-12T05:00:00Z",
+      "visitors": 17,
+      "requests": 66
+    },
+    {
+      "time": "2026-08-12T06:00:00Z",
+      "visitors": 6,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-12T07:00:00Z",
+      "visitors": 4,
+      "requests": 8
     }
   ],
   "daily": [
@@ -161,71 +166,71 @@
     },
     {
       "date": "2026-08-12",
-      "visitors": 125,
-      "pageViews": 45,
-      "requests": 228
+      "visitors": 184,
+      "pageViews": 105,
+      "requests": 395
     }
   ],
   "topPages": [
     {
       "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh/",
-      "views": 37
+      "views": 65
     },
     {
       "path": "/images/blog/cha-me-nen-xin-loi-con-khi-nao.png",
-      "views": 32
+      "views": 37
     },
     {
       "path": "/vi/goi-cha-me/",
-      "views": 25
-    },
-    {
-      "path": "/vi/goi-cha-me/co-nen-thuong-tien-cho-con-goc-nhin-tam-ly-hoc-va-cach-dung-phan-thuong-dung-muc-tieu/",
-      "views": 22
-    },
-    {
-      "path": "/vi/",
-      "views": 21
-    },
-    {
-      "path": "/images/blog/co-nen-thuong-tien-cho-con.png",
-      "views": 18
-    },
-    {
-      "path": "/",
-      "views": 16
+      "views": 35
     },
     {
       "path": "/feed.json",
-      "views": 16
+      "views": 26
+    },
+    {
+      "path": "/vi/",
+      "views": 23
+    },
+    {
+      "path": "/",
+      "views": 18
+    },
+    {
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 18
     },
     {
       "path": "/robots.txt",
-      "views": 16
+      "views": 17
     },
     {
       "path": "/cdn-cgi/l/email-protection",
-      "views": 15
+      "views": 14
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 13
+    },
+    {
+      "path": "/images/blog/co-nen-thuong-tien-cho-con.png",
+      "views": 13
     },
     {
       "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
       "views": 12
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
       "views": 12
     },
     {
-      "path": "/images/moment-sleep.png",
-      "views": 12
-    },
-    {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 12
-    },
-    {
-      "path": "/images/blog/nuoi-day-con-bang-ky-luat-tich-cuc.png",
+      "path": "/sitemap.xml",
       "views": 11
+    },
+    {
+      "path": "/vi/huong-dan/cai-dat/",
+      "views": 10
     }
   ]
 }
