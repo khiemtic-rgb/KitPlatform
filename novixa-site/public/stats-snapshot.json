@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-12T07:54:01.866Z",
+  "generatedAt": "2026-08-12T13:49:31.434Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 345,
-    "todayPageViews": 200,
-    "todayRequests": 640,
-    "last24hVisitors": 518,
-    "last24hPageViews": 314,
-    "last24hRequests": 1088
+    "todayVisitors": 409,
+    "todayPageViews": 227,
+    "todayRequests": 1223,
+    "last24hVisitors": 491,
+    "last24hPageViews": 265,
+    "last24hRequests": 1408
   },
   "hourly": [
-    {
-      "time": "2026-08-11T08:00:00Z",
-      "visitors": 33,
-      "requests": 55
-    },
-    {
-      "time": "2026-08-11T09:00:00Z",
-      "visitors": 10,
-      "requests": 22
-    },
-    {
-      "time": "2026-08-11T10:00:00Z",
-      "visitors": 41,
-      "requests": 58
-    },
-    {
-      "time": "2026-08-11T11:00:00Z",
-      "visitors": 32,
-      "requests": 70
-    },
-    {
-      "time": "2026-08-11T12:00:00Z",
-      "visitors": 12,
-      "requests": 14
-    },
-    {
-      "time": "2026-08-11T13:00:00Z",
-      "visitors": 19,
-      "requests": 46
-    },
     {
       "time": "2026-08-11T14:00:00Z",
       "visitors": 38,
@@ -128,8 +98,38 @@
     },
     {
       "time": "2026-08-12T07:00:00Z",
-      "visitors": 17,
-      "requests": 18
+      "visitors": 21,
+      "requests": 22
+    },
+    {
+      "time": "2026-08-12T08:00:00Z",
+      "visitors": 21,
+      "requests": 23
+    },
+    {
+      "time": "2026-08-12T09:00:00Z",
+      "visitors": 35,
+      "requests": 39
+    },
+    {
+      "time": "2026-08-12T10:00:00Z",
+      "visitors": 14,
+      "requests": 15
+    },
+    {
+      "time": "2026-08-12T11:00:00Z",
+      "visitors": 15,
+      "requests": 473
+    },
+    {
+      "time": "2026-08-12T12:00:00Z",
+      "visitors": 16,
+      "requests": 20
+    },
+    {
+      "time": "2026-08-12T13:00:00Z",
+      "visitors": 7,
+      "requests": 11
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-08-12",
-      "visitors": 345,
-      "pageViews": 200,
-      "requests": 640
+      "visitors": 409,
+      "pageViews": 227,
+      "requests": 1223
     }
   ],
   "topPages": [
     {
       "path": "/vi/tin-tuc/quy-trinh-doi-tra-thuoc-tai-nha-thuoc-chuan-hoa-de-giu-chan-khach-hang-va-kiem-soat-an-toan-y-khoa/",
-      "views": 148
+      "views": 162
     },
     {
       "path": "/images/tin-tuc/quy-trinh-doi-tra-thuoc.png",
-      "views": 69
-    },
-    {
-      "path": "/",
-      "views": 55
-    },
-    {
-      "path": "/cdn-cgi/rum",
-      "views": 53
+      "views": 82
     },
     {
       "path": "/robots.txt",
-      "views": 50
+      "views": 49
     },
     {
-      "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
-      "views": 50
+      "path": "/",
+      "views": 47
     },
     {
       "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
-      "views": 44
+      "views": 46
     },
     {
-      "path": "/vi/",
+      "path": "/cdn-cgi/rum",
+      "views": 42
+    },
+    {
+      "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
       "views": 39
     },
     {
-      "path": "/images/tin-tuc/quy-trinh-ban-thuoc-khong-ke-don.png",
-      "views": 29
+      "path": "/vi/",
+      "views": 33
     },
     {
       "path": "/feed.json",
       "views": 26
     },
     {
-      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
-      "views": 26
-    },
-    {
-      "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
-      "views": 26
-    },
-    {
       "path": "/images/tin-tuc/chuan-hoa-quy-trinh-tiep-don-khach.png",
+      "views": 25
+    },
+    {
+      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
       "views": 24
     },
     {
-      "path": "/images/tin-tuc/tu-du-lieu-hoc-tap-den-thang-tien.png",
+      "path": "/images/tin-tuc/quy-trinh-ban-thuoc-khong-ke-don.png",
       "views": 23
     },
     {
-      "path": "/images/tin-tuc/quy-trinh-thuoc-ke-don.png",
+      "path": "/sitemap.xml",
       "views": 23
+    },
+    {
+      "path": "/trace.axd",
+      "views": 21
+    },
+    {
+      "path": "/.well-known/jwks.json",
+      "views": 21
     }
   ]
 }
