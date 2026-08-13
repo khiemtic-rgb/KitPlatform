@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-13T07:59:38.366Z",
+  "generatedAt": "2026-08-13T13:54:25.312Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 18,
-    "todayPageViews": 28,
-    "todayRequests": 86,
-    "last24hVisitors": 63,
+    "todayVisitors": 28,
+    "todayPageViews": 32,
+    "todayRequests": 125,
+    "last24hVisitors": 55,
     "last24hPageViews": 50,
-    "last24hRequests": 188
+    "last24hRequests": 192
   },
   "hourly": [
-    {
-      "time": "2026-08-12T08:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-12T09:00:00Z",
-      "visitors": 9,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-12T10:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-12T11:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-12T12:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-12T13:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
     {
       "time": "2026-08-12T14:00:00Z",
       "visitors": 5,
@@ -125,6 +95,36 @@
       "time": "2026-08-13T06:00:00Z",
       "visitors": 2,
       "requests": 8
+    },
+    {
+      "time": "2026-08-13T07:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-13T08:00:00Z",
+      "visitors": 2,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-13T09:00:00Z",
+      "visitors": 6,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-13T10:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-13T11:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-13T12:00:00Z",
+      "visitors": 4,
+      "requests": 22
     }
   ],
   "daily": [
@@ -166,9 +166,9 @@
     },
     {
       "date": "2026-08-13",
-      "visitors": 54,
-      "pageViews": 44,
-      "requests": 137
+      "visitors": 71,
+      "pageViews": 48,
+      "requests": 177
     }
   ],
   "topPages": [
@@ -185,16 +185,24 @@
       "views": 18
     },
     {
-      "path": "/vi/goi-cha-me/",
-      "views": 16
-    },
-    {
       "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh-1/",
       "views": 16
     },
     {
+      "path": "/vi/goi-cha-me/",
+      "views": 16
+    },
+    {
       "path": "/",
-      "views": 9
+      "views": 13
+    },
+    {
+      "path": "/images/blog/khi-nao-nen-noi-khong-voi-con.png",
+      "views": 8
+    },
+    {
+      "path": "/vi/",
+      "views": 8
     },
     {
       "path": "/images/social/zalo.png",
@@ -205,23 +213,7 @@
       "views": 5
     },
     {
-      "path": "/vi/",
-      "views": 5
-    },
-    {
-      "path": "/images/blog/cha-me-nen-xin-loi-con-khi-nao.png",
-      "views": 4
-    },
-    {
       "path": "/_next/static/media/df0a9ae256c0569c-s.woff2",
-      "views": 4
-    },
-    {
-      "path": "/images/blog/co-nen-thuong-tien-cho-con.png",
-      "views": 4
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
       "views": 4
     },
     {
@@ -229,8 +221,16 @@
       "views": 4
     },
     {
-      "path": "/vi/goi-cha-me/nuoi-day-con-bang-ky-luat-tich-cuc-phuong-phap-giup-con-tu-giac-khong-nuoc-mat/",
-      "views": 3
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 4
+    },
+    {
+      "path": "/images/blog/cha-me-nen-xin-loi-con-khi-nao.png",
+      "views": 2
+    },
+    {
+      "path": "/wp-login.php",
+      "views": 2
     }
   ]
 }
