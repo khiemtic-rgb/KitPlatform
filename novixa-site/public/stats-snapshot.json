@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-13T07:55:07.019Z",
+  "generatedAt": "2026-08-13T13:49:56.523Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 121,
-    "todayPageViews": 146,
-    "todayRequests": 1361,
-    "last24hVisitors": 278,
-    "last24hPageViews": 180,
-    "last24hRequests": 2743
+    "todayVisitors": 207,
+    "todayPageViews": 191,
+    "todayRequests": 2578,
+    "last24hVisitors": 276,
+    "last24hPageViews": 199,
+    "last24hRequests": 3376
   },
   "hourly": [
-    {
-      "time": "2026-08-12T08:00:00Z",
-      "visitors": 21,
-      "requests": 23
-    },
-    {
-      "time": "2026-08-12T09:00:00Z",
-      "visitors": 35,
-      "requests": 39
-    },
-    {
-      "time": "2026-08-12T10:00:00Z",
-      "visitors": 14,
-      "requests": 15
-    },
-    {
-      "time": "2026-08-12T11:00:00Z",
-      "visitors": 15,
-      "requests": 473
-    },
-    {
-      "time": "2026-08-12T12:00:00Z",
-      "visitors": 16,
-      "requests": 20
-    },
-    {
-      "time": "2026-08-12T13:00:00Z",
-      "visitors": 8,
-      "requests": 13
-    },
     {
       "time": "2026-08-12T14:00:00Z",
       "visitors": 21,
@@ -128,8 +98,38 @@
     },
     {
       "time": "2026-08-13T07:00:00Z",
-      "visitors": 16,
-      "requests": 246
+      "visitors": 18,
+      "requests": 248
+    },
+    {
+      "time": "2026-08-13T08:00:00Z",
+      "visitors": 11,
+      "requests": 13
+    },
+    {
+      "time": "2026-08-13T09:00:00Z",
+      "visitors": 21,
+      "requests": 256
+    },
+    {
+      "time": "2026-08-13T10:00:00Z",
+      "visitors": 28,
+      "requests": 32
+    },
+    {
+      "time": "2026-08-13T11:00:00Z",
+      "visitors": 19,
+      "requests": 702
+    },
+    {
+      "time": "2026-08-13T12:00:00Z",
+      "visitors": 15,
+      "requests": 25
+    },
+    {
+      "time": "2026-08-13T13:00:00Z",
+      "visitors": 14,
+      "requests": 186
     }
   ],
   "daily": [
@@ -171,26 +171,50 @@
     },
     {
       "date": "2026-08-13",
-      "visitors": 121,
-      "pageViews": 146,
-      "requests": 1361
+      "visitors": 207,
+      "pageViews": 191,
+      "requests": 2578
     }
   ],
   "topPages": [
     {
-      "path": "/robots.txt",
-      "views": 52
-    },
-    {
       "path": "/",
-      "views": 49
+      "views": 94
     },
     {
       "path": "/firebase-config.json",
+      "views": 67
+    },
+    {
+      "path": "/robots.txt",
+      "views": 53
+    },
+    {
+      "path": "/core/.env",
+      "views": 49
+    },
+    {
+      "path": "/application.properties",
+      "views": 49
+    },
+    {
+      "path": "/firebase-admin.json",
+      "views": 46
+    },
+    {
+      "path": "/configuration.js",
+      "views": 46
+    },
+    {
+      "path": "/actuator/env",
       "views": 43
     },
     {
-      "path": "/api/graphql",
+      "path": "/staging/.env",
+      "views": 40
+    },
+    {
+      "path": "/key.pem",
       "views": 40
     },
     {
@@ -198,44 +222,20 @@
       "views": 40
     },
     {
+      "path": "/api/graphql",
+      "views": 40
+    },
+    {
+      "path": "/config.js",
+      "views": 40
+    },
+    {
       "path": "/instance/config.py",
       "views": 39
     },
     {
-      "path": "/.gitconfig",
-      "views": 38
-    },
-    {
-      "path": "/.ssh/id_dsa",
-      "views": 38
-    },
-    {
-      "path": "/service_account.json",
-      "views": 36
-    },
-    {
-      "path": "/api/openapi.json",
-      "views": 36
-    },
-    {
-      "path": "/actuator/mappings",
-      "views": 33
-    },
-    {
-      "path": "/.hermes/config.yaml",
-      "views": 33
-    },
-    {
-      "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
-      "views": 32
-    },
-    {
-      "path": "/ssl/server.key",
-      "views": 32
-    },
-    {
-      "path": "/.well-known/jwks.json",
-      "views": 31
+      "path": "/id_ecdsa",
+      "views": 39
     }
   ]
 }
