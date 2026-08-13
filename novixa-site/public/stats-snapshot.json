@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-13T13:49:56.523Z",
+  "generatedAt": "2026-08-13T19:27:02.738Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 207,
-    "todayPageViews": 191,
-    "todayRequests": 2578,
-    "last24hVisitors": 276,
-    "last24hPageViews": 199,
-    "last24hRequests": 3376
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 315,
+    "last24hPageViews": 240,
+    "last24hRequests": 2798
   },
   "hourly": [
-    {
-      "time": "2026-08-12T14:00:00Z",
-      "visitors": 21,
-      "requests": 23
-    },
-    {
-      "time": "2026-08-12T15:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-12T16:00:00Z",
-      "visitors": 10,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-12T17:00:00Z",
-      "visitors": 8,
-      "requests": 238
-    },
-    {
-      "time": "2026-08-12T18:00:00Z",
-      "visitors": 8,
-      "requests": 463
-    },
-    {
-      "time": "2026-08-12T19:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
     {
       "time": "2026-08-12T20:00:00Z",
       "visitors": 9,
@@ -129,16 +99,40 @@
     {
       "time": "2026-08-13T13:00:00Z",
       "visitors": 14,
-      "requests": 186
+      "requests": 189
+    },
+    {
+      "time": "2026-08-13T14:00:00Z",
+      "visitors": 29,
+      "requests": 32
+    },
+    {
+      "time": "2026-08-13T15:00:00Z",
+      "visitors": 28,
+      "requests": 41
+    },
+    {
+      "time": "2026-08-13T16:00:00Z",
+      "visitors": 21,
+      "requests": 62
+    },
+    {
+      "time": "2026-08-13T17:00:00Z",
+      "visitors": 7,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-13T18:00:00Z",
+      "visitors": 10,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-13T19:00:00Z",
+      "visitors": 8,
+      "requests": 9
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-07",
-      "visitors": 513,
-      "pageViews": 337,
-      "requests": 1186
-    },
     {
       "date": "2026-08-08",
       "visitors": 652,
@@ -171,23 +165,19 @@
     },
     {
       "date": "2026-08-13",
-      "visitors": 207,
-      "pageViews": 191,
-      "requests": 2578
+      "visitors": 283,
+      "pageViews": 235,
+      "requests": 2742
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 94
-    },
-    {
-      "path": "/firebase-config.json",
-      "views": 67
+      "views": 97
     },
     {
       "path": "/robots.txt",
-      "views": 53
+      "views": 54
     },
     {
       "path": "/core/.env",
@@ -198,11 +188,15 @@
       "views": 49
     },
     {
+      "path": "/configuration.js",
+      "views": 46
+    },
+    {
       "path": "/firebase-admin.json",
       "views": 46
     },
     {
-      "path": "/configuration.js",
+      "path": "/firebase-config.json",
       "views": 46
     },
     {
@@ -210,32 +204,32 @@
       "views": 43
     },
     {
-      "path": "/staging/.env",
-      "views": 40
-    },
-    {
       "path": "/key.pem",
       "views": 40
     },
     {
-      "path": "/manifest.webmanifest",
+      "path": "/staging/.env",
       "views": 40
-    },
-    {
-      "path": "/api/graphql",
-      "views": 40
-    },
-    {
-      "path": "/config.js",
-      "views": 40
-    },
-    {
-      "path": "/instance/config.py",
-      "views": 39
     },
     {
       "path": "/id_ecdsa",
       "views": 39
+    },
+    {
+      "path": "/.claude/settings.json",
+      "views": 36
+    },
+    {
+      "path": "/nginx_status",
+      "views": 35
+    },
+    {
+      "path": "/admin/.env",
+      "views": 34
+    },
+    {
+      "path": "/.continue/config.json",
+      "views": 32
     }
   ]
 }
