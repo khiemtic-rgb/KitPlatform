@@ -21,6 +21,7 @@ Bộ tài liệu này trình bày đặc tả kỹ thuật phần mềm **Novixa
 | 1 | NVX-CQD-SFS-01 | Đặc tả chức năng phần mềm (Software Functional Specification) | [01-software-functional-specification-v1.md](./01-software-functional-specification-v1.md) · **Word:** [word/NVX-CQD-SFS-01.docx](./word/NVX-CQD-SFS-01.docx) |
 | 2 | NVX-CQD-API-01 | Đặc tả kỹ thuật API liên thông (API Integration Specification) | [02-api-integration-specification-v1.md](./02-api-integration-specification-v1.md) · **Word:** [word/NVX-CQD-API-01.docx](./word/NVX-CQD-API-01.docx) |
 | 3 | NVX-CQD-ARCH-01 | Tài liệu kiến trúc hệ thống (System Architecture Document) | [03-system-architecture-document-v1.md](./03-system-architecture-document-v1.md) · **Word:** [word/NVX-CQD-ARCH-01.docx](./word/NVX-CQD-ARCH-01.docx) |
+| 4 | NVX-CQD-UAT-01 | Biên bản kiểm thử API CSDL dược (Sandbox v1.1) | [04-bien-ban-kiem-thu-api-csdl-duoc-sandbox-v1.md](./04-bien-ban-kiem-thu-api-csdl-duoc-sandbox-v1.md) · **PDF (gửi chuyên viên):** [word/NVX-CQD-UAT-01-Bien-ban-kiem-thu-API-Sandbox.pdf](./word/NVX-CQD-UAT-01-Bien-ban-kiem-thu-API-Sandbox.pdf) · **Word:** [word/NVX-CQD-UAT-01-Bien-ban-kiem-thu-API-Sandbox.docx](./word/NVX-CQD-UAT-01-Bien-ban-kiem-thu-API-Sandbox.docx) |
 
 **Phụ lục đính kèm (nội bộ, tham chiếu kỹ thuật):**
 
@@ -33,6 +34,8 @@ Bộ tài liệu này trình bày đặc tả kỹ thuật phần mềm **Novixa
 **Bản Word (nộp hồ sơ):** thư mục [`word/`](./word/) — chạy `.\export-word.ps1` để tái tạo.
 
 **Trang bìa PDF:** [`word/NVX-CQD-00-Trang-bia.pdf`](./word/NVX-CQD-00-Trang-bia.pdf) — chỉ các hạng mục nộp Bộ (logo KIT, tiêu đề hồ sơ đề nghị, phần mềm Novixa, đơn vị đề nghị, địa điểm/ngày, phiên bản). Tái tạo: `node .\print\generate-cover-pdf.mjs` (cần Playwright Chromium).
+
+**Biên bản UAT PDF:** [`word/NVX-CQD-UAT-01-Bien-ban-kiem-thu-API-Sandbox.pdf`](./word/NVX-CQD-UAT-01-Bien-ban-kiem-thu-API-Sandbox.pdf) — mẫu hành chính (quốc hiệu, số hiệu, căn cứ, kết luận, chữ ký). Tái tạo: `node .\print\generate-uat-pdf.mjs`.
 
 ---
 

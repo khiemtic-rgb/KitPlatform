@@ -1,4 +1,4 @@
-﻿namespace KitPlatform.Packs.Pharmacy.Catalog;
+namespace KitPlatform.Packs.Pharmacy.Catalog;
 
 public sealed class NationalDrugCatalogSettings
 {
@@ -29,6 +29,26 @@ public sealed class NationalDrugCatalogSettings
     /// rồi lọc nội bộ. Tra cứu chính xác nên dùng mã thuốc / SĐK.
     /// </summary>
     public int MaxSearchScanPages { get; init; } = 40;
+
+    /// <summary>
+    /// Khi true + Mode sandbox/live có credentials: đẩy phiếu xuất bán lẻ (stock-out)
+    /// sau khi đơn bán hoàn tất. Mặc định false — bật chủ động khi UAT.
+    /// </summary>
+    public bool EnableStockOutSync { get; init; }
+
+    /// <summary>Số GCN đủ điều kiện KD thuốc (practice_license_code) — chuỗi nhà thuốc.</summary>
+    public string? PracticeLicenseCode { get; init; }
+
+    /// <summary>
+    /// unit_id CSDL dược dùng khi không lấy được từ packagings của thuốc (vd U31 = Viên).
+    /// </summary>
+    public string DefaultCsdlUnitId { get; init; } = "U31";
+
+    public bool CanSyncStockOut =>
+        EnableStockOutSync
+        && UsesRemoteApi
+        && !string.IsNullOrWhiteSpace(Username)
+        && !string.IsNullOrWhiteSpace(Password);
 
     public string ResolveBaseUrl()
     {

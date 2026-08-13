@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using KitPlatform.Application.Core.Engines;
 using KitPlatform.Application.Healthcare;
@@ -105,10 +105,10 @@ public static class PharmacyPackDependencyInjection
 
     private static void RegisterNationalDrugCatalog(IServiceCollection services, IConfiguration configuration)
     {
-        var mode = NationalDrugCatalogSettings.NormalizeMode(
-            configuration.GetSection(NationalDrugCatalogSettings.SectionName)["Mode"]);
-        var username = configuration.GetSection(NationalDrugCatalogSettings.SectionName)["Username"];
-        var password = configuration.GetSection(NationalDrugCatalogSettings.SectionName)["Password"];
+        var section = configuration.GetSection(NationalDrugCatalogSettings.SectionName);
+        var mode = NationalDrugCatalogSettings.NormalizeMode(section["Mode"]);
+        var username = section["Username"];
+        var password = section["Password"];
         var useRemote = mode is "sandbox" or "live"
             && !string.IsNullOrWhiteSpace(username)
             && !string.IsNullOrWhiteSpace(password);
@@ -116,6 +116,7 @@ public static class PharmacyPackDependencyInjection
         if (!useRemote)
         {
             services.AddScoped<INationalDrugCatalogService, MockNationalDrugCatalogService>();
+            services.AddScoped<ICsdlDuocStockOutSyncService, NoOpCsdlDuocStockOutSyncService>();
             return;
         }
 
@@ -128,5 +129,8 @@ public static class PharmacyPackDependencyInjection
             client.Timeout = TimeSpan.FromSeconds(Math.Clamp(settings.TimeoutSeconds, 10, 180));
         });
         services.AddScoped<INationalDrugCatalogService, CsdlDuocNationalDrugCatalogService>();
+        services.AddScoped<CsdlDuocTransactionClient>();
+        services.AddScoped<CsdlDuocSyncLogRepository>();
+        services.AddScoped<ICsdlDuocStockOutSyncService, CsdlDuocStockOutSyncService>();
     }
 }

@@ -25,6 +25,7 @@ DOCS = [
     ("03-system-architecture-document-v1.md", "NVX-CQD-ARCH-01.docx"),
     ("README.md", "NVX-CQD-00-Muc-luc-ho-so.docx"),
     ("phu-luc-a-qd540-field-map-v1.md", "NVX-CQD-PL-A-QD540-Field-Map.docx"),
+    ("04-bien-ban-kiem-thu-api-csdl-duoc-sandbox-v1.md", "NVX-CQD-UAT-01-Bien-ban-kiem-thu-API-Sandbox.docx"),
 ]
 
 
