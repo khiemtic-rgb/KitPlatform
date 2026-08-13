@@ -1,14 +1,25 @@
-/** Local image library via File System Access API — no server storage. */
+/** Local image library via File System Access API — no server storage.
+ * Each brand has its own folder handle in IndexedDB so Novixa/Famixa/… don’t mix images.
+ */
 
 const DB_NAME = 'kit-content-local-image-lib';
 const STORE = 'meta';
-const HANDLE_KEY = 'dirHandle';
-const NAME_KEY = 'dirName';
+/** Legacy single-folder keys (pre brand-scoped) — not auto-bound to brands. */
+const LEGACY_HANDLE_KEY = 'dirHandle';
+const LEGACY_NAME_KEY = 'dirName';
 
 export type LocalImageEntry = {
   name: string;
   handle: FileSystemFileHandle;
 };
+
+function handleKey(brandId: string) {
+  return `dirHandle:${brandId}`;
+}
+
+function nameKey(brandId: string) {
+  return `dirName:${brandId}`;
+}
 
 function hasFsAccess(): boolean {
   return typeof window !== 'undefined' && 'showDirectoryPicker' in window;
@@ -57,39 +68,94 @@ async function idbDel(key: string): Promise<void> {
 }
 
 async function ensurePermission(handle: FileSystemDirectoryHandle): Promise<boolean> {
-  const q = await handle.queryPermission({ mode: 'read' });
-  if (q === 'granted') return true;
-  const r = await handle.requestPermission({ mode: 'read' });
-  return r === 'granted';
+  try {
+    const q = await handle.queryPermission({ mode: 'read' });
+    if (q === 'granted') return true;
+    const r = await handle.requestPermission({ mode: 'read' });
+    return r === 'granted';
+  } catch {
+    return false;
+  }
 }
 
 export function isLocalImageLibrarySupported() {
   return hasFsAccess();
 }
 
-export async function getLocalImageLibraryName(): Promise<string | null> {
-  return (await idbGet<string>(NAME_KEY)) ?? null;
+export async function getLocalImageLibraryName(brandId: string): Promise<string | null> {
+  if (!brandId) return null;
+  return (await idbGet<string>(nameKey(brandId))) ?? null;
 }
 
-export async function clearLocalImageLibrary(): Promise<void> {
-  await idbDel(HANDLE_KEY);
-  await idbDel(NAME_KEY);
+/** Lightweight name map for brand table. */
+export async function getLocalImageLibraryNames(
+  brandIds: string[],
+): Promise<Record<string, string | null>> {
+  const out: Record<string, string | null> = {};
+  await Promise.all(
+    brandIds.map(async (id) => {
+      out[id] = (await idbGet<string>(nameKey(id))) ?? null;
+    }),
+  );
+  return out;
 }
 
-/** Ask user to pick a folder; persist handle in IndexedDB. */
-export async function pickLocalImageLibrary(): Promise<{ name: string; count: number }> {
+export async function clearLocalImageLibrary(brandId: string): Promise<void> {
+  if (!brandId) return;
+  await idbDel(handleKey(brandId));
+  await idbDel(nameKey(brandId));
+}
+
+/**
+ * Pick a folder for this brand. Call directly from a button click —
+ * do not setState before this (loses user gesture → SecurityError).
+ */
+export async function pickLocalImageLibrary(brandId: string): Promise<{ name: string; count: number }> {
+  if (!brandId) throw new Error('Thiếu thương hiệu — chọn brand trước khi gắn kho ảnh.');
   if (!hasFsAccess()) {
     throw new Error('Trình duyệt không hỗ trợ chọn thư mục (cần Chrome / Edge).');
   }
-  const dir = await window.showDirectoryPicker({ id: 'kit-content-images', mode: 'read' });
-  await idbSet(HANDLE_KEY, dir);
-  await idbSet(NAME_KEY, dir.name);
-  const images = await listLocalImages();
-  return { name: dir.name, count: images.length };
+
+  let dir: FileSystemDirectoryHandle;
+  try {
+    dir = await window.showDirectoryPicker({ mode: 'read' });
+  } catch (e) {
+    const name = e && typeof e === 'object' && 'name' in e ? String((e as { name: string }).name) : '';
+    if (name === 'AbortError') throw e;
+    if (name === 'SecurityError' || name === 'NotAllowedError') {
+      throw new Error(
+        'Trình duyệt chặn hộp thoại thư mục. Bấm lại nút bằng chuột (Chrome/Edge, localhost/HTTPS).',
+      );
+    }
+    throw new Error(
+      e instanceof Error && e.message
+        ? e.message
+        : 'Không mở được hộp thoại chọn thư mục.',
+    );
+  }
+
+  try {
+    await idbSet(handleKey(brandId), dir);
+    await idbSet(nameKey(brandId), dir.name);
+    await idbDel(LEGACY_HANDLE_KEY);
+    await idbDel(LEGACY_NAME_KEY);
+  } catch {
+    throw new Error('Đã chọn thư mục nhưng không lưu được (IndexedDB). Kiểm tra cookie/storage.');
+  }
+
+  let count = 0;
+  try {
+    const images = await listLocalImages(brandId);
+    count = images.length;
+  } catch {
+    /* folder saved; listing may need permission later */
+  }
+  return { name: dir.name, count };
 }
 
-export async function getLocalDirectoryHandle(): Promise<FileSystemDirectoryHandle | null> {
-  const handle = await idbGet<FileSystemDirectoryHandle>(HANDLE_KEY);
+export async function getLocalDirectoryHandle(brandId: string): Promise<FileSystemDirectoryHandle | null> {
+  if (!brandId) return null;
+  const handle = await idbGet<FileSystemDirectoryHandle>(handleKey(brandId));
   if (!handle) return null;
   if (!(await ensurePermission(handle))) return null;
   return handle;
@@ -97,8 +163,9 @@ export async function getLocalDirectoryHandle(): Promise<FileSystemDirectoryHand
 
 const IMAGE_RE = /\.(png|jpe?g|webp|gif)$/i;
 
-export async function listLocalImages(): Promise<LocalImageEntry[]> {
-  const dir = await getLocalDirectoryHandle();
+export async function listLocalImages(brandId: string): Promise<LocalImageEntry[]> {
+  if (!brandId) return [];
+  const dir = await getLocalDirectoryHandle(brandId);
   if (!dir) return [];
   const out: LocalImageEntry[] = [];
   for await (const [name, entry] of dir.entries()) {
@@ -137,7 +204,6 @@ export function pickBestLocalImage(title: string, images: LocalImageEntry[]): Lo
         }
       }
     }
-    // mild preference for shorter names when tie
     score = score * 100 - nameTokens.length;
     if (score > bestScore) {
       bestScore = score;

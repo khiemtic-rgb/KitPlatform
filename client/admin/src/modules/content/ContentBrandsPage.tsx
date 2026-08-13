@@ -16,7 +16,7 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, ReloadOutlined, FolderOpenOutlined } from '@ant-design/icons';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
   createContentBrand,
@@ -31,6 +31,12 @@ import {
   type ContentChannelTarget,
   type ContentSiteTarget,
 } from '@/shared/api/content.api';
+import {
+  clearLocalImageLibrary,
+  getLocalImageLibraryNames,
+  isLocalImageLibrarySupported,
+  pickLocalImageLibrary,
+} from '@/modules/content/content-local-image-library';
 
 /** Unified destination kinds shown in one combobox. */
 type DestKind =
@@ -165,6 +171,7 @@ export function ContentBrandsPage() {
   const [loading, setLoading] = useState(true);
   const [brands, setBrands] = useState<ContentBrand[]>([]);
   const [targetCounts, setTargetCounts] = useState<Record<string, BrandTargets>>({});
+  const [imageFolderNames, setImageFolderNames] = useState<Record<string, string | null>>({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState('info');
   const [editing, setEditing] = useState<ContentBrand | null>(null);
@@ -190,12 +197,25 @@ export function ContentBrandsPage() {
     setTargetCounts(Object.fromEntries(entries));
   }, []);
 
+  const loadImageFolders = useCallback(async (list: ContentBrand[]) => {
+    if (!isLocalImageLibrarySupported()) {
+      setImageFolderNames({});
+      return;
+    }
+    try {
+      setImageFolderNames(await getLocalImageLibraryNames(list.map((b) => b.id)));
+    } catch {
+      setImageFolderNames({});
+    }
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const b = await fetchContentBrands();
       setBrands(b);
       void loadTargetCounts(b);
+      void loadImageFolders(b);
       // warm settings (connector lists live in org; kinds are fixed in UI for flexibility)
       void fetchContentSettings().catch(() => undefined);
     } catch (e) {
@@ -203,7 +223,32 @@ export function ContentBrandsPage() {
     } finally {
       setLoading(false);
     }
-  }, [loadTargetCounts, message]);
+  }, [loadTargetCounts, loadImageFolders, message]);
+
+  const onPickBrandImageFolder = async (brand: ContentBrand) => {
+    if (!isLocalImageLibrarySupported()) {
+      message.warning('Cần Chrome / Edge để chọn thư mục ảnh trên máy.');
+      return;
+    }
+    try {
+      const r = await pickLocalImageLibrary(brand.id);
+      setImageFolderNames((prev) => ({ ...prev, [brand.id]: r.name }));
+      message.success(
+        r.count > 0
+          ? `«${brand.code}» → kho ảnh «${r.name}» (${r.count} ảnh)`
+          : `Đã gắn «${r.name}» cho «${brand.code}» — chưa thấy file ảnh trong thư mục.`,
+      );
+    } catch (e) {
+      if (e && typeof e === 'object' && 'name' in e && (e as { name: string }).name === 'AbortError') return;
+      message.error(e instanceof Error && e.message ? e.message : apiErrorMessage(e, 'Không chọn được thư mục'));
+    }
+  };
+
+  const onClearBrandImageFolder = async (brand: ContentBrand) => {
+    await clearLocalImageLibrary(brand.id);
+    setImageFolderNames((prev) => ({ ...prev, [brand.id]: null }));
+    message.info(`Đã bỏ kho ảnh của «${brand.code}»`);
+  };
 
   useEffect(() => {
     void load();
@@ -428,8 +473,8 @@ export function ContentBrandsPage() {
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
-        message="Bấm «Nơi đăng» trên từng thương hiệu để thêm website / mạng xã hội trong một danh sách."
-        description="Chọn loại trong combobox khi thêm. Chưa có connector tự động thì vẫn lưu được và xuất bản thủ công (chép bài)."
+        message="Bấm «Nơi đăng» để thêm web/MXH. «Kho ảnh» gắn thư mục máy riêng từng brand (không trùng Novixa/Famixa…)."
+        description="Chọn loại trong combobox khi thêm nơi đăng. Chưa có connector tự động thì vẫn lưu được và xuất bản thủ công (chép bài)."
       />
 
       <Table
@@ -449,22 +494,54 @@ export function ContentBrandsPage() {
           {
             title: 'Nơi đăng',
             key: 'dest',
-            width: 140,
+            width: 100,
             render: (_, row) => {
               const n = (targetCounts[row.id]?.sites ?? 0) + (targetCounts[row.id]?.channels ?? 0);
               return n > 0 ? <Tag color="blue">{n} chỗ</Tag> : <Tag>Chưa có</Tag>;
             },
           },
           {
+            title: 'Kho ảnh máy',
+            key: 'imageLib',
+            width: 220,
+            render: (_, row) => {
+              const folder = imageFolderNames[row.id];
+              if (!isLocalImageLibrarySupported()) {
+                return <Typography.Text type="secondary">Cần Chrome/Edge</Typography.Text>;
+              }
+              return (
+                <Space direction="vertical" size={2}>
+                  {folder ? (
+                    <Tag color="success" icon={<FolderOpenOutlined />}>
+                      {folder}
+                    </Tag>
+                  ) : (
+                    <Tag>Chưa chọn</Tag>
+                  )}
+                  <Space size={0}>
+                    <Button type="link" size="small" onClick={() => void onPickBrandImageFolder(row)}>
+                      {folder ? 'Đổi thư mục' : 'Chọn thư mục'}
+                    </Button>
+                    {folder ? (
+                      <Button type="link" size="small" danger onClick={() => void onClearBrandImageFolder(row)}>
+                        Bỏ
+                      </Button>
+                    ) : null}
+                  </Space>
+                </Space>
+              );
+            },
+          },
+          {
             title: 'Đang dùng',
             dataIndex: 'isActive',
-            width: 100,
+            width: 90,
             render: (v: boolean) => (v ? 'Có' : 'Không'),
           },
           {
             title: '',
             key: 'actions',
-            width: 220,
+            width: 180,
             render: (_, row) => (
               <Space>
                 <Button type="link" onClick={() => void openEdit(row, 'info')}>
@@ -518,6 +595,51 @@ export function ContentBrandsPage() {
                   <Form.Item name="name" label="Tên hiển thị" rules={[{ required: true }]}>
                     <Input placeholder="KIT Technology" />
                   </Form.Item>
+
+                  <div
+                    style={{
+                      marginBottom: 16,
+                      padding: 12,
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: 8,
+                    }}
+                  >
+                    <Typography.Text strong>
+                      <FolderOpenOutlined /> Kho ảnh máy (theo thương hiệu)
+                    </Typography.Text>
+                    <div style={{ marginTop: 4, marginBottom: 8 }}>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        Mỗi brand một thư mục — trình duyệt nhớ trên máy bạn, không upload lên server.
+                      </Typography.Text>
+                    </div>
+                    {!isLocalImageLibrarySupported() ? (
+                      <Alert type="warning" showIcon message="Cần Chrome / Edge để chọn thư mục ảnh." />
+                    ) : !editing ? (
+                      <Typography.Text type="secondary">
+                        Lưu thương hiệu trước, rồi chọn thư mục tại đây (hoặc cột «Kho ảnh máy» trên bảng).
+                      </Typography.Text>
+                    ) : (
+                      <Space wrap align="center">
+                        {imageFolderNames[editing.id] ? (
+                          <Tag color="success" icon={<FolderOpenOutlined />}>
+                            {imageFolderNames[editing.id]}
+                          </Tag>
+                        ) : (
+                          <Tag>Chưa chọn thư mục</Tag>
+                        )}
+                        <Button type="primary" ghost onClick={() => void onPickBrandImageFolder(editing)}>
+                          {imageFolderNames[editing.id] ? 'Đổi thư mục ảnh' : 'Chọn thư mục ảnh'}
+                        </Button>
+                        {imageFolderNames[editing.id] ? (
+                          <Button danger type="link" onClick={() => void onClearBrandImageFolder(editing)}>
+                            Bỏ liên kết
+                          </Button>
+                        ) : null}
+                      </Space>
+                    )}
+                  </div>
+
                   <Form.Item
                     name="operationalBrief"
                     label="Brief vận hành (dán từ ChatGPT / SoT)"

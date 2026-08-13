@@ -114,25 +114,28 @@ export function ContentTopicsPage() {
   const [localLibCount, setLocalLibCount] = useState(0);
   const [form] = Form.useForm();
 
+  /** Folder is per-brand — prefer topic brand, else list filter. */
+  const libBrandId = detail?.topic.brandId ?? brandFilter ?? undefined;
+
   const refreshLocalLib = useCallback(async () => {
-    if (!isLocalImageLibrarySupported()) {
+    if (!isLocalImageLibrarySupported() || !libBrandId) {
       setLocalLibName(null);
       setLocalLibCount(0);
       return;
     }
-    const name = await getLocalImageLibraryName();
+    const name = await getLocalImageLibraryName(libBrandId);
     setLocalLibName(name);
     if (!name) {
       setLocalLibCount(0);
       return;
     }
     try {
-      const imgs = await listLocalImages();
+      const imgs = await listLocalImages(libBrandId);
       setLocalLibCount(imgs.length);
     } catch {
       setLocalLibCount(0);
     }
-  }, []);
+  }, [libBrandId]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -143,17 +146,20 @@ export function ContentTopicsPage() {
       ]);
       setTopics(t);
       setBrands(b);
-      void refreshLocalLib();
     } catch (e) {
       message.error(apiErrorMessage(e, 'Không tải được danh sách bài'));
     } finally {
       setLoading(false);
     }
-  }, [brandFilter, message, refreshLocalLib]);
+  }, [brandFilter, message]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void refreshLocalLib();
+  }, [refreshLocalLib]);
 
   useEffect(() => {
     return () => {
@@ -471,22 +477,29 @@ export function ContentTopicsPage() {
   };
 
   const onPickLocalLibrary = async () => {
+    if (!libBrandId) {
+      message.warning('Lọc / chọn thương hiệu (hoặc mở chi tiết bài) trước — mỗi brand một thư mục ảnh.');
+      return;
+    }
     try {
-      const r = await pickLocalImageLibrary();
+      const r = await pickLocalImageLibrary(libBrandId);
       setLocalLibName(r.name);
       setLocalLibCount(r.count);
-      message.success(`Đã chọn kho ảnh «${r.name}» (${r.count} ảnh) — chỉ trên máy bạn, không upload lên server.`);
+      message.success(
+        `Đã gắn kho ảnh «${r.name}» cho thương hiệu này (${r.count} ảnh). Brand khác dùng thư mục riêng.`,
+      );
     } catch (e) {
       if (e && typeof e === 'object' && 'name' in e && (e as { name: string }).name === 'AbortError') return;
-      message.error(apiErrorMessage(e, 'Không chọn được thư mục ảnh'));
+      message.error(e instanceof Error && e.message ? e.message : apiErrorMessage(e, 'Không chọn được thư mục ảnh'));
     }
   };
 
   const onClearLocalLibrary = async () => {
-    await clearLocalImageLibrary();
+    if (!libBrandId) return;
+    await clearLocalImageLibrary(libBrandId);
     setLocalLibName(null);
     setLocalLibCount(0);
-    message.info('Đã bỏ liên kết kho ảnh local');
+    message.info('Đã bỏ liên kết kho ảnh của thương hiệu này');
   };
 
   const onPublish = async () => {
@@ -510,8 +523,8 @@ export function ContentTopicsPage() {
       let pickedFileName: string | undefined;
       let localImages: Awaited<ReturnType<typeof listLocalImages>> = [];
 
-      if (localLibName) {
-        localImages = await listLocalImages();
+      if (localLibName && libBrandId) {
+        localImages = await listLocalImages(libBrandId);
         if (localImages.length === 0) {
           message.warning('Kho ảnh trống — chọn thư mục có file .png/.jpg/.webp');
           return;
@@ -638,7 +651,11 @@ export function ContentTopicsPage() {
         </div>
         <Space wrap>
           {isLocalImageLibrarySupported() ? (
-            localLibName ? (
+            !libBrandId ? (
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                Lọc thương hiệu để gắn / dùng kho ảnh riêng
+              </Typography.Text>
+            ) : localLibName ? (
               <Space.Compact>
                 <Button icon={<FolderOpenOutlined />} onClick={() => void onPickLocalLibrary()}>
                   Kho ảnh: {localLibName} ({localLibCount})
@@ -647,7 +664,7 @@ export function ContentTopicsPage() {
               </Space.Compact>
             ) : (
               <Button type="dashed" icon={<FolderOpenOutlined />} onClick={() => void onPickLocalLibrary()}>
-                Chọn kho ảnh trên máy
+                Chọn kho ảnh thương hiệu
               </Button>
             )
           ) : (
