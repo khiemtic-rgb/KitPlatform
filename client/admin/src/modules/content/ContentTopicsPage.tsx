@@ -60,7 +60,6 @@ import {
   pickLocalImageLibrary,
   prepareLocalImageForPublish,
   rankLocalImages,
-  readLocalImageAsBase64,
   requestLocalImageLibraryPermission,
   revokeLocalPreviewUrls,
 } from '@/modules/content/content-local-image-library';
