@@ -24,6 +24,11 @@ public static class ContentPackDependencyInjection
             c.BaseAddress = new Uri("https://api.creatomate.com/");
             c.Timeout = TimeSpan.FromMinutes(2);
         });
+        services.AddHttpClient<ContentElevenLabsClient>(c =>
+        {
+            c.BaseAddress = new Uri("https://api.elevenlabs.io/");
+            c.Timeout = TimeSpan.FromMinutes(2);
+        });
 
         services.AddScoped<ContentRepository>();
         services.AddScoped<IContentOrgSettingsService, ContentOrgSettingsService>();

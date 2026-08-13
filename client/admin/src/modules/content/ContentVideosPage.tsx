@@ -33,6 +33,7 @@ import {
   prepareContentVideoStoryboard,
   refreshContentVideoJob,
   renderContentVideoJob,
+  runContentVideoMvpPipeline,
   type ContentBrand,
   type ContentPackage,
   type ContentVideoJob,
@@ -41,8 +42,12 @@ import {
 
 const STATUS_LABEL: Record<string, { text: string; color: string }> = {
   Draft: { text: 'Nháp', color: 'default' },
+  GeneratingScript: { text: 'Đang viết script…', color: 'processing' },
+  GeneratingAssets: { text: 'Đang tạo ảnh…', color: 'processing' },
+  GeneratingVoice: { text: 'Đang tạo voice…', color: 'processing' },
+  PreparingRender: { text: 'Chuẩn bị render…', color: 'processing' },
   Queued: { text: 'Hàng đợi', color: 'processing' },
-  Rendering: { text: 'Đang render', color: 'blue' },
+  Rendering: { text: 'Đang render…', color: 'blue' },
   Ready: { text: 'Sẵn sàng', color: 'cyan' },
   Failed: { text: 'Lỗi', color: 'red' },
   Approved: { text: 'Đã duyệt', color: 'green' },
@@ -50,10 +55,14 @@ const STATUS_LABEL: Record<string, { text: string; color: string }> = {
 
 type StoryBeat = {
   beat?: string;
+  order?: number;
+  type?: string;
   startSec?: number;
   endSec?: number;
   text?: string;
   visualHint?: string;
+  visualPrompt?: string;
+  imageUrl?: string;
 };
 
 function parseStoryboard(json: string): StoryBeat[] {
@@ -192,23 +201,28 @@ export function ContentVideosPage() {
 
   const runAction = async (
     job: ContentVideoJob,
-    action: 'storyboard' | 'render' | 'refresh' | 'approve',
+    action: 'storyboard' | 'render' | 'refresh' | 'approve' | 'mvp',
   ) => {
     setBusy(true);
     try {
       let next: ContentVideoJob;
       if (action === 'storyboard') next = await prepareContentVideoStoryboard(job.id);
+      else if (action === 'mvp') next = await runContentVideoMvpPipeline(job.id);
       else if (action === 'render') next = await renderContentVideoJob(job.id);
       else if (action === 'refresh') next = await refreshContentVideoJob(job.id);
       else next = await approveContentVideoJob(job.id);
       message.success(
-        action === 'render'
-          ? 'Đã queue / chuẩn bị render'
-          : action === 'storyboard'
-            ? 'Đã chuẩn bị storyboard'
-            : action === 'approve'
-              ? 'Đã duyệt'
-              : 'Đã refresh',
+        action === 'mvp'
+          ? next.outputUrl
+            ? 'MVP xong — có MP4'
+            : next.errorMessage || 'MVP xong (storyboard/assets; cần Creatomate để có MP4)'
+          : action === 'render'
+            ? 'Đã queue / chuẩn bị render'
+            : action === 'storyboard'
+              ? 'Đã chuẩn bị storyboard'
+              : action === 'approve'
+                ? 'Đã duyệt'
+                : 'Đã refresh',
       );
       setDetail(next);
       await load();
@@ -253,13 +267,12 @@ export function ContentVideosPage() {
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-          message="Nhánh clip — không thay Bài viết"
+          message="MVP V1 — pipeline tới MP4 (Creatomate)"
           description={
             <>
-              Chỉ lấy từ tab <Link to="/content/packages">Ý tưởng</Link> đã <strong>Generate All</strong> (có
-              kịch bản TikTok). Không lên ý / không đăng web-FB tại đây. Template{' '}
-              <Typography.Text code>storyboard_local</Typography.Text> = kịch bản từng đoạn (CapCut); Creatomate
-              khi có API key.
+              Luồng: Ý tưởng đã Generate → tạo job → <strong>Chạy MVP</strong> (ảnh scene + voice tuỳ
+              chọn + Creatomate). Không có Creatomate key / template UUID thì vẫn ra storyboard để dựng
+              CapCut. Publish MXH = giai đoạn sau.
             </>
           }
         />
@@ -423,14 +436,18 @@ export function ContentVideosPage() {
           detail ? (
             <Space wrap>
               <Button
+                type="primary"
                 icon={<ThunderboltOutlined />}
                 loading={busy}
-                onClick={() => void runAction(detail, 'storyboard')}
+                onClick={() => void runAction(detail, 'mvp')}
               >
+                Chạy MVP (ảnh→voice→render)
+              </Button>
+              <Button loading={busy} onClick={() => void runAction(detail, 'storyboard')}>
                 Storyboard
               </Button>
-              <Button type="primary" loading={busy} onClick={() => void runAction(detail, 'render')}>
-                Render / chuẩn bị
+              <Button loading={busy} onClick={() => void runAction(detail, 'render')}>
+                Render
               </Button>
               {detail.externalRenderId ? (
                 <Button loading={busy} onClick={() => void runAction(detail, 'refresh')}>
@@ -459,27 +476,57 @@ export function ContentVideosPage() {
                 {detail.provider} · {detail.templateName}
               </Typography.Text>
             </div>
-            {detail.errorMessage ? <Alert type="error" showIcon message={detail.errorMessage} /> : null}
+            {detail.errorMessage ? <Alert type="warning" showIcon message={detail.errorMessage} /> : null}
+            {detail.outputUrl ? (
+              <Card
+                size="small"
+                title="Preview MP4"
+                extra={
+                  <a href={detail.outputUrl} target="_blank" rel="noreferrer" download>
+                    Tải về
+                  </a>
+                }
+              >
+                <video
+                  src={detail.outputUrl}
+                  controls
+                  playsInline
+                  style={{ width: '100%', maxHeight: 420, background: '#0f172a', borderRadius: 8 }}
+                />
+              </Card>
+            ) : detail.previewUrl ? (
+              <Card size="small" title="Preview">
+                <a href={detail.previewUrl} target="_blank" rel="noreferrer">
+                  {detail.previewUrl}
+                </a>
+              </Card>
+            ) : null}
             <Card size="small" title="Script">
               <Typography.Paragraph style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }}>
                 {detail.scriptBody}
               </Typography.Paragraph>
             </Card>
-            <Card size="small" title={`Storyboard (${storyboard.length} beats)`}>
+            <Card size="small" title={`Storyboard (${storyboard.length} scenes)`}>
               {storyboard.length === 0 ? (
-                <Typography.Text type="secondary">Chưa có — bấm Storyboard.</Typography.Text>
+                <Typography.Text type="secondary">Chưa có — bấm Storyboard hoặc Chạy MVP.</Typography.Text>
               ) : (
                 <Space direction="vertical" style={{ width: '100%' }} size="small">
                   {storyboard.map((b, i) => (
                     <div key={`${b.beat}-${i}`} style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: 8 }}>
                       <Typography.Text strong>
-                        {b.beat ?? `Beat ${i + 1}`}
+                        {b.beat ?? `Scene ${i + 1}`}
                         {b.startSec != null && b.endSec != null ? ` · ${b.startSec}–${b.endSec}s` : ''}
                       </Typography.Text>
-                      <Typography.Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>
+                      <Typography.Paragraph style={{ marginBottom: 4, whiteSpace: 'pre-wrap' }}>
                         {b.text}
                       </Typography.Paragraph>
-                      {b.visualHint ? (
+                      {b.imageUrl ? (
+                        <img
+                          src={b.imageUrl}
+                          alt={b.beat ?? 'scene'}
+                          style={{ width: 96, height: 160, objectFit: 'cover', borderRadius: 6 }}
+                        />
+                      ) : b.visualHint ? (
                         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                           Visual: {b.visualHint}
                         </Typography.Text>
@@ -489,26 +536,6 @@ export function ContentVideosPage() {
                 </Space>
               )}
             </Card>
-            {detail.previewUrl || detail.outputUrl ? (
-              <Card size="small" title="Link">
-                {detail.previewUrl ? (
-                  <div>
-                    Preview:{' '}
-                    <a href={detail.previewUrl} target="_blank" rel="noreferrer">
-                      {detail.previewUrl}
-                    </a>
-                  </div>
-                ) : null}
-                {detail.outputUrl ? (
-                  <div>
-                    Output:{' '}
-                    <a href={detail.outputUrl} target="_blank" rel="noreferrer">
-                      {detail.outputUrl}
-                    </a>
-                  </div>
-                ) : null}
-              </Card>
-            ) : null}
           </Space>
         ) : null}
       </Drawer>

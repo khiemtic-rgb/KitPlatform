@@ -1,6 +1,9 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using KitPlatform.Packs.Content;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
 
@@ -11,11 +14,22 @@ internal sealed class ContentVideoService : IContentVideoService
 
     private readonly ContentRepository _repo;
     private readonly ContentCreatomateClient _creatomate;
+    private readonly ContentElevenLabsClient _elevenLabs;
+    private readonly IOptions<ContentOptions> _options;
+    private readonly IConfiguration _configuration;
 
-    public ContentVideoService(ContentRepository repo, ContentCreatomateClient creatomate)
+    public ContentVideoService(
+        ContentRepository repo,
+        ContentCreatomateClient creatomate,
+        ContentElevenLabsClient elevenLabs,
+        IOptions<ContentOptions> options,
+        IConfiguration configuration)
     {
         _repo = repo;
         _creatomate = creatomate;
+        _elevenLabs = elevenLabs;
+        _options = options;
+        _configuration = configuration;
     }
 
     public async Task<IReadOnlyList<ContentVideoTemplateDto>> ListTemplatesAsync(
@@ -139,6 +153,147 @@ internal sealed class ContentVideoService : IContentVideoService
         return await GetJobAsync(id, cancellationToken);
     }
 
+    public async Task<ContentVideoJobDto?> RunMvpPipelineAsync(
+        Guid id,
+        RunVideoMvpPipelineRequest? request = null,
+        CancellationToken cancellationToken = default)
+    {
+        var opts = request ?? new RunVideoMvpPipelineRequest();
+        var job = await _repo.GetVideoJobAsync(id, cancellationToken);
+        if (job is null) return null;
+
+        var template = await _repo.GetVideoTemplateAsync(job.TemplateId, cancellationToken)
+                       ?? throw new InvalidOperationException("Template thiếu.");
+
+        var pipelineNotes = new List<string>();
+        var config = ParseConfigObject(job.ConfigJson);
+
+        try
+        {
+            await SetStatusAsync(id, job, "GeneratingAssets", null, cancellationToken);
+
+            var beats = ResolveBeatNames(template.ConfigJson);
+            var storyboard = BuildStoryboardObjects(job.ScriptBody, beats, template.DurationSec);
+
+            if (opts.GenerateImages)
+            {
+                for (var i = 0; i < storyboard.Count; i++)
+                {
+                    var scene = storyboard[i];
+                    var prompt = string.IsNullOrWhiteSpace(scene.VisualPrompt)
+                        ? $"{job.BrandName} · {scene.Beat}: {scene.Text}"
+                        : scene.VisualPrompt!;
+                    scene.ImageUrl = BuildPollinationsImageUrl(prompt);
+                    storyboard[i] = scene;
+                }
+                pipelineNotes.Add($"images={storyboard.Count} (pollinations public URL)");
+            }
+
+            string? voicePublicUrl = null;
+            string? voiceLocalPath = null;
+            if (opts.GenerateVoice && _elevenLabs.IsConfigured)
+            {
+                await SetStatusAsync(id, job, "GeneratingVoice", null, cancellationToken);
+                var narration = string.Join(". ", storyboard.Select(s => s.Text).Where(t => !string.IsNullOrWhiteSpace(t)));
+                if (narration.Length < 20) narration = job.ScriptBody;
+                var mp3 = await _elevenLabs.SynthesizeMp3Async(narration, cancellationToken);
+                voiceLocalPath = await SaveVideoMediaAsync(id, "voice.mp3", mp3, cancellationToken);
+                voicePublicUrl = BuildPublicMediaUrl(id, "voice.mp3");
+                if (voicePublicUrl is null)
+                    pipelineNotes.Add("voice=local-only (set Content:PublicMediaBaseUrl for Creatomate)");
+                else
+                    pipelineNotes.Add("voice=elevenlabs");
+                config["voiceLocalPath"] = voiceLocalPath;
+                if (voicePublicUrl is not null) config["voiceUrl"] = voicePublicUrl;
+            }
+            else if (opts.GenerateVoice)
+            {
+                pipelineNotes.Add("voice=skipped (no ElevenLabsApiKey)");
+            }
+
+            var storyboardJson = ContentRepository.ToJson(storyboard);
+            config["mvpPipeline"] = new
+            {
+                at = DateTimeOffset.UtcNow,
+                notes = pipelineNotes,
+                creatomateConfigured = _creatomate.IsConfigured,
+                elevenLabsConfigured = _elevenLabs.IsConfigured,
+            };
+            var configJson = ContentRepository.ToJson(config);
+
+            await _repo.UpdateVideoJobAsync(
+                id,
+                null,
+                "PreparingRender",
+                job.ExternalRenderId,
+                job.PreviewUrl,
+                job.OutputUrl,
+                null,
+                storyboardJson,
+                configJson,
+                null,
+                cancellationToken);
+
+            if (!opts.Render)
+            {
+                await _repo.UpdateVideoJobAsync(
+                    id, null, "Ready", job.ExternalRenderId, job.PreviewUrl, job.OutputUrl,
+                    string.Join("; ", pipelineNotes),
+                    storyboardJson, configJson, DateTimeOffset.UtcNow, cancellationToken);
+                return await GetJobAsync(id, cancellationToken);
+            }
+
+            // Refresh job fields after updates
+            job = (await _repo.GetVideoJobAsync(id, cancellationToken))!;
+            return await QueueRenderWithStoryboardAsync(job, template, storyboard, storyboardJson, configJson, voicePublicUrl, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await _repo.UpdateVideoJobAsync(
+                id,
+                null,
+                "Failed",
+                job.ExternalRenderId,
+                job.PreviewUrl,
+                job.OutputUrl,
+                ex.Message,
+                job.StoryboardJson,
+                job.ConfigJson,
+                null,
+                cancellationToken);
+            return await GetJobAsync(id, cancellationToken);
+        }
+    }
+
+    public async Task<ContentVideoJobDto?> ApplyCreatomateWebhookAsync(
+        string renderId,
+        string status,
+        string? url,
+        string? snapshotUrl,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(renderId)) return null;
+        var jobs = await _repo.ListVideoJobsAsync(null, null, cancellationToken);
+        var job = jobs.FirstOrDefault(j =>
+            string.Equals(j.ExternalRenderId, renderId, StringComparison.OrdinalIgnoreCase));
+        if (job is null) return null;
+
+        var mapped = MapCreatomateStatus(status);
+        await _repo.UpdateVideoJobAsync(
+            job.Id,
+            null,
+            mapped,
+            renderId,
+            snapshotUrl ?? url ?? job.PreviewUrl,
+            mapped == "Ready" ? (url ?? job.OutputUrl) : job.OutputUrl,
+            mapped == "Failed" ? "Creatomate webhook: failed" : null,
+            job.StoryboardJson,
+            job.ConfigJson,
+            mapped == "Ready" ? DateTimeOffset.UtcNow : job.RenderedAt,
+            cancellationToken);
+        return await GetJobAsync(job.Id, cancellationToken);
+    }
+
     public async Task<ContentVideoJobDto?> QueueRenderAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var job = await _repo.GetVideoJobAsync(id, cancellationToken);
@@ -175,25 +330,55 @@ internal sealed class ContentVideoService : IContentVideoService
         }
 
         var beats = ResolveBeatNames(template.ConfigJson);
-        var storyboard = BuildStoryboard(job.ScriptBody, beats, template.DurationSec);
-        var storyboardJson = ContentRepository.ToJson(storyboard);
+        var scenes = BuildStoryboardObjects(job.ScriptBody, beats, template.DurationSec);
+        var storyboardJson = ContentRepository.ToJson(scenes);
+
+        return await QueueRenderWithStoryboardAsync(
+            job, template, scenes, storyboardJson, job.ConfigJson, voicePublicUrl: null, cancellationToken);
+    }
+
+    private async Task<ContentVideoJobDto?> QueueRenderWithStoryboardAsync(
+        ContentRepository.VideoJobRow job,
+        ContentRepository.VideoTemplateRow template,
+        IReadOnlyList<SceneBeat> scenes,
+        string storyboardJson,
+        string configJson,
+        string? voicePublicUrl,
+        CancellationToken cancellationToken)
+    {
+        if (template.Provider != "creatomate"
+            || !_creatomate.IsConfigured
+            || string.IsNullOrWhiteSpace(template.ExternalTemplateId))
+        {
+            var msg = template.Provider == "creatomate" && !_creatomate.IsConfigured
+                ? "Chưa có CreatomateApiKey — storyboard/assets sẵn sàng (CapCut hoặc cấu hình key)."
+                : template.Provider == "creatomate" && string.IsNullOrWhiteSpace(template.ExternalTemplateId)
+                    ? "Template Creatomate thiếu external_template_id — điền UUID template trên Creatomate."
+                    : "storyboard_local — xuất CapCut; bật Creatomate template để render MP4.";
+
+            await _repo.UpdateVideoJobAsync(
+                job.Id,
+                null,
+                "Ready",
+                job.ExternalRenderId,
+                job.PreviewUrl,
+                job.OutputUrl,
+                msg,
+                storyboardJson,
+                configJson,
+                DateTimeOffset.UtcNow,
+                cancellationToken);
+            return await GetJobAsync(job.Id, cancellationToken);
+        }
 
         await _repo.UpdateVideoJobAsync(
-            id,
-            null,
-            "Queued",
-            job.ExternalRenderId,
-            job.PreviewUrl,
-            job.OutputUrl,
-            null,
-            storyboardJson,
-            job.ConfigJson,
-            null,
-            cancellationToken);
+            job.Id, null, "Queued", job.ExternalRenderId, job.PreviewUrl, job.OutputUrl,
+            null, storyboardJson, configJson, null, cancellationToken);
 
         try
         {
-            var mods = BuildCreatomateModifications(template.ConfigJson, job.Title, job.ScriptBody, storyboard);
+            var mods = BuildCreatomateModifications(
+                template.ConfigJson, job.Title, job.ScriptBody, scenes, voicePublicUrl);
             var render = await _creatomate.CreateRenderAsync(
                 template.ExternalTemplateId!,
                 mods,
@@ -201,7 +386,7 @@ internal sealed class ContentVideoService : IContentVideoService
 
             var status = MapCreatomateStatus(render.Status);
             await _repo.UpdateVideoJobAsync(
-                id,
+                job.Id,
                 null,
                 status,
                 render.Id,
@@ -209,27 +394,18 @@ internal sealed class ContentVideoService : IContentVideoService
                 status == "Ready" ? render.Url : null,
                 null,
                 storyboardJson,
-                job.ConfigJson,
+                configJson,
                 status == "Ready" ? DateTimeOffset.UtcNow : null,
                 cancellationToken);
         }
         catch (Exception ex)
         {
             await _repo.UpdateVideoJobAsync(
-                id,
-                null,
-                "Failed",
-                null,
-                null,
-                null,
-                ex.Message,
-                storyboardJson,
-                job.ConfigJson,
-                null,
-                cancellationToken);
+                job.Id, null, "Failed", null, null, null, ex.Message,
+                storyboardJson, configJson, null, cancellationToken);
         }
 
-        return await GetJobAsync(id, cancellationToken);
+        return await GetJobAsync(job.Id, cancellationToken);
     }
 
     public async Task<ContentVideoJobDto?> RefreshRenderAsync(Guid id, CancellationToken cancellationToken = default)
@@ -351,32 +527,35 @@ internal sealed class ContentVideoService : IContentVideoService
         return ["HOOK", "PROBLEM", "INSIGHT", "SOLUTION", "CTA"];
     }
 
-    private static List<object> BuildStoryboard(string script, IReadOnlyList<string> beats, int durationSec)
+    private static List<object> BuildStoryboard(string script, IReadOnlyList<string> beats, int durationSec) =>
+        BuildStoryboardObjects(script, beats, durationSec).Cast<object>().ToList();
+
+    private static List<SceneBeat> BuildStoryboardObjects(string script, IReadOnlyList<string> beats, int durationSec)
     {
         var sections = ParseLabeledSections(script, beats);
         var per = Math.Max(3, durationSec / Math.Max(1, beats.Count));
         var cursor = 0;
-        var result = new List<object>();
+        var result = new List<SceneBeat>();
         for (var i = 0; i < beats.Count; i++)
         {
             var beat = beats[i];
             sections.TryGetValue(beat, out var text);
             if (string.IsNullOrWhiteSpace(text))
-            {
-                // fallback: split whole script into N chunks
                 text = ChunkFallback(script, beats.Count, i);
-            }
 
             var start = cursor;
             var end = i == beats.Count - 1 ? durationSec : cursor + per;
             cursor = end;
-            result.Add(new
+            var trimmed = text.Trim();
+            result.Add(new SceneBeat
             {
-                beat,
-                startSec = start,
-                endSec = end,
-                text = text.Trim(),
-                visualHint = beat switch
+                Order = i + 1,
+                Beat = beat,
+                Type = beat.ToLowerInvariant(),
+                StartSec = start,
+                EndSec = end,
+                Text = trimmed,
+                VisualHint = beat switch
                 {
                     "HOOK" => "Cận mặt / text lớn 0–3s",
                     "PROBLEM" => "B-roll vấn đề",
@@ -387,11 +566,82 @@ internal sealed class ContentVideoService : IContentVideoService
                     "CTA" => "Logo + URL / QR",
                     _ => "Cut theo nhịp",
                 },
+                VisualPrompt =
+                    $"Cinematic vertical 9:16 Vietnamese pharmacy / SaaS marketing still for beat {beat}: {trimmed}. No watermark, no readable tiny text.",
             });
         }
 
         return result;
     }
+
+    private async Task SetStatusAsync(
+        Guid id,
+        ContentRepository.VideoJobRow job,
+        string status,
+        string? error,
+        CancellationToken ct) =>
+        await _repo.UpdateVideoJobAsync(
+            id, null, status, job.ExternalRenderId, job.PreviewUrl, job.OutputUrl, error,
+            job.StoryboardJson, job.ConfigJson, job.RenderedAt, ct);
+
+    private static Dictionary<string, object?> ParseConfigObject(string json)
+    {
+        try
+        {
+            var dict = JsonSerializer.Deserialize<Dictionary<string, object?>>(
+                string.IsNullOrWhiteSpace(json) ? "{}" : json);
+            return dict ?? new Dictionary<string, object?>();
+        }
+        catch
+        {
+            return new Dictionary<string, object?>();
+        }
+    }
+
+    private static string BuildPollinationsImageUrl(string prompt)
+    {
+        var p = prompt.Length > 400 ? prompt[..400] : prompt;
+        return "https://image.pollinations.ai/prompt/"
+               + Uri.EscapeDataString(p)
+               + "?width=1080&height=1920&nologo=true";
+    }
+
+    private string ResolveVideoAssetRoot()
+    {
+        var configured = string.IsNullOrWhiteSpace(_options.Value.VideoAssetRoot)
+            ? "App_Data/content-video"
+            : _options.Value.VideoAssetRoot;
+        return Path.IsPathRooted(configured)
+            ? configured
+            : Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), configured));
+    }
+
+    private async Task<string> SaveVideoMediaAsync(
+        Guid jobId,
+        string fileName,
+        byte[] bytes,
+        CancellationToken ct)
+    {
+        var dir = Path.Combine(ResolveVideoAssetRoot(), jobId.ToString("N"));
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, fileName);
+        await File.WriteAllBytesAsync(path, bytes, ct);
+        return path;
+    }
+
+    private string? BuildPublicMediaUrl(Guid jobId, string fileName)
+    {
+        var baseUrl = FirstNonEmpty(
+            _options.Value.PublicMediaBaseUrl,
+            _configuration["Content:PublicMediaBaseUrl"],
+            _configuration["Platform:ApiUrl"]);
+        if (string.IsNullOrWhiteSpace(baseUrl)) return null;
+        // Creatomate cannot reach localhost — still return URL for tunnel setups.
+        return $"{baseUrl.TrimEnd('/')}/api/content/video/media/{jobId:D}/{Uri.EscapeDataString(fileName)}";
+    }
+
+    private static string? FirstNonEmpty(params string?[] values) =>
+        values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
 
     private static Dictionary<string, string> ParseLabeledSections(string script, IReadOnlyList<string> beats)
     {
@@ -427,33 +677,39 @@ internal sealed class ContentVideoService : IContentVideoService
         string templateConfigJson,
         string title,
         string script,
-        IReadOnlyList<object> storyboard)
+        IReadOnlyList<SceneBeat> storyboard,
+        string? voicePublicUrl)
     {
         var mods = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["Title"] = title,
+            ["Title.text"] = title,
             ["Script"] = script,
             ["Script.text"] = script,
         };
 
-        foreach (var item in storyboard)
-        {
-            // anonymous → serialize
-            var json = JsonSerializer.Serialize(item);
-            using var doc = JsonDocument.Parse(json);
-            var beat = doc.RootElement.GetProperty("beat").GetString() ?? "";
-            var text = doc.RootElement.GetProperty("text").GetString() ?? "";
-            if (!string.IsNullOrWhiteSpace(beat))
-            {
-                mods[beat] = text;
-                mods[$"{beat}.text"] = text;
-            }
-        }
-
+        Dictionary<string, string>? textKeys = null;
+        Dictionary<string, string>? imageKeys = null;
+        string? voiceKey = null;
         try
         {
             using var cfg = JsonDocument.Parse(
                 string.IsNullOrWhiteSpace(templateConfigJson) ? "{}" : templateConfigJson);
+            if (cfg.RootElement.TryGetProperty("sceneTextKeys", out var tk) && tk.ValueKind == JsonValueKind.Object)
+            {
+                textKeys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var p in tk.EnumerateObject())
+                    textKeys[p.Name] = p.Value.GetString() ?? p.Name;
+            }
+            if (cfg.RootElement.TryGetProperty("sceneImageKeys", out var ik) && ik.ValueKind == JsonValueKind.Object)
+            {
+                imageKeys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var p in ik.EnumerateObject())
+                    imageKeys[p.Name] = p.Value.GetString() ?? p.Name;
+            }
+            if (cfg.RootElement.TryGetProperty("voiceKey", out var vk))
+                voiceKey = vk.GetString();
+
             if (cfg.RootElement.TryGetProperty("modifications", out var map)
                 && map.ValueKind == JsonValueKind.Object)
             {
@@ -471,7 +727,60 @@ internal sealed class ContentVideoService : IContentVideoService
             /* ignore bad config */
         }
 
+        foreach (var scene in storyboard)
+        {
+            var beat = scene.Beat;
+            mods[beat] = scene.Text;
+            mods[$"{beat}.text"] = scene.Text;
+            if (textKeys is not null && textKeys.TryGetValue(beat, out var textMod))
+                mods[textMod] = scene.Text;
+            if (!string.IsNullOrWhiteSpace(scene.ImageUrl))
+            {
+                mods[$"{beat}.image"] = scene.ImageUrl;
+                if (imageKeys is not null && imageKeys.TryGetValue(beat, out var imageMod))
+                    mods[imageMod] = scene.ImageUrl;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(voicePublicUrl))
+        {
+            mods["Voice.source"] = voicePublicUrl;
+            mods["Voice.audio"] = voicePublicUrl;
+            if (!string.IsNullOrWhiteSpace(voiceKey))
+                mods[voiceKey] = voicePublicUrl;
+        }
+
         return mods;
+    }
+
+    private sealed class SceneBeat
+    {
+        [JsonPropertyName("order")]
+        public int Order { get; set; }
+
+        [JsonPropertyName("beat")]
+        public string Beat { get; set; } = "";
+
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = "";
+
+        [JsonPropertyName("startSec")]
+        public int StartSec { get; set; }
+
+        [JsonPropertyName("endSec")]
+        public int EndSec { get; set; }
+
+        [JsonPropertyName("text")]
+        public string Text { get; set; } = "";
+
+        [JsonPropertyName("visualHint")]
+        public string? VisualHint { get; set; }
+
+        [JsonPropertyName("visualPrompt")]
+        public string? VisualPrompt { get; set; }
+
+        [JsonPropertyName("imageUrl")]
+        public string? ImageUrl { get; set; }
     }
 
     private static string MapCreatomateStatus(string status) =>

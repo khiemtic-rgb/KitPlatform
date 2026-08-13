@@ -473,6 +473,18 @@ export async function prepareContentVideoStoryboard(id: string) {
   return data;
 }
 
+export async function runContentVideoMvpPipeline(
+  id: string,
+  body?: { generateImages?: boolean; generateVoice?: boolean; render?: boolean },
+) {
+  const { data } = await http.post<ContentVideoJob>(`/content/video/jobs/${id}/mvp-pipeline`, {
+    generateImages: body?.generateImages ?? true,
+    generateVoice: body?.generateVoice ?? true,
+    render: body?.render ?? true,
+  }, { timeout: 300_000 });
+  return data;
+}
+
 export async function renderContentVideoJob(id: string) {
   const { data } = await http.post<ContentVideoJob>(`/content/video/jobs/${id}/render`);
   return data;

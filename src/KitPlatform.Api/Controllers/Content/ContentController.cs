@@ -279,6 +279,23 @@ public sealed class ContentController : ControllerBase
         return row is null ? NotFound() : Ok(row);
     }
 
+    [HttpPost("video/jobs/{id:guid}/mvp-pipeline")]
+    public async Task<ActionResult<ContentVideoJobDto>> RunVideoMvpPipeline(
+        Guid id,
+        [FromBody] RunVideoMvpPipelineRequest? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var row = await _videos.RunMvpPipelineAsync(id, request, cancellationToken);
+            return row is null ? NotFound() : Ok(row);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPost("video/jobs/{id:guid}/render")]
     public async Task<ActionResult<ContentVideoJobDto>> QueueVideoRender(
         Guid id,
@@ -293,6 +310,42 @@ public sealed class ContentController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    [HttpPost("webhooks/creatomate")]
+    [AllowAnonymous]
+    public async Task<IActionResult> CreatomateWebhook(CancellationToken cancellationToken)
+    {
+        using var doc = await JsonDocument.ParseAsync(Request.Body, cancellationToken: cancellationToken);
+        var root = doc.RootElement;
+        var id = root.TryGetProperty("id", out var idEl) ? idEl.GetString()
+            : root.TryGetProperty("renderId", out var rid) ? rid.GetString() : null;
+        var status = root.TryGetProperty("status", out var st) ? st.GetString() ?? "" : "";
+        var url = root.TryGetProperty("url", out var u) ? u.GetString() : null;
+        var snap = root.TryGetProperty("snapshot_url", out var s) ? s.GetString()
+            : root.TryGetProperty("snapshotUrl", out var s2) ? s2.GetString() : null;
+        if (string.IsNullOrWhiteSpace(id))
+            return BadRequest(new { message = "Missing render id" });
+        await _videos.ApplyCreatomateWebhookAsync(id, status, url, snap, cancellationToken);
+        return Ok(new { received = true });
+    }
+
+    [HttpGet("video/media/{jobId:guid}/{fileName}")]
+    [AllowAnonymous]
+    public IActionResult GetVideoMedia(Guid jobId, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName) || fileName.Contains("..") || fileName.Contains('/') || fileName.Contains('\\'))
+            return BadRequest();
+        var root = Path.GetFullPath(Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "App_Data",
+            "content-video",
+            jobId.ToString("N")));
+        var path = Path.GetFullPath(Path.Combine(root, fileName));
+        if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(path))
+            return NotFound();
+        var contentType = fileName.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) ? "audio/mpeg" : "application/octet-stream";
+        return PhysicalFile(path, contentType);
     }
 
     [HttpPost("video/jobs/{id:guid}/refresh")]

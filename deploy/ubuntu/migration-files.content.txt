@@ -10,3 +10,4 @@
 286_pack_content_marketing_park_tenant.sql
 287_pack_content_package.sql
 288_pack_content_video_factory.sql
+290_pack_content_video_mvp_v1.sql

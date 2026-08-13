@@ -436,6 +436,11 @@ public sealed record CreateVideoJobFromPackageRequest(
 
 public sealed record UpdateVideoJobScriptRequest(string ScriptBody);
 
+public sealed record RunVideoMvpPipelineRequest(
+    bool GenerateImages = true,
+    bool GenerateVoice = true,
+    bool Render = true);
+
 public interface IContentVideoService
 {
     Task<IReadOnlyList<ContentVideoTemplateDto>> ListTemplatesAsync(
@@ -462,10 +467,25 @@ public interface IContentVideoService
     /// <summary>Parse beats → storyboard_json; status Ready (local) hoặc giữ Draft nếu lỗi parse.</summary>
     Task<ContentVideoJobDto?> PrepareStoryboardAsync(Guid id, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// MVP V1: storyboard → (optional) scene image URLs → (optional) ElevenLabs voice → Creatomate render.
+    /// </summary>
+    Task<ContentVideoJobDto?> RunMvpPipelineAsync(
+        Guid id,
+        RunVideoMvpPipelineRequest? request = null,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Creatomate nếu có API key + template; không thì = PrepareStoryboard.</summary>
     Task<ContentVideoJobDto?> QueueRenderAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<ContentVideoJobDto?> RefreshRenderAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<ContentVideoJobDto?> ApplyCreatomateWebhookAsync(
+        string renderId,
+        string status,
+        string? url,
+        string? snapshotUrl,
+        CancellationToken cancellationToken = default);
 
     Task<ContentVideoJobDto?> ApproveAsync(Guid id, CancellationToken cancellationToken = default);
 }
@@ -483,4 +503,18 @@ public sealed class ContentOptions
 
     /// <summary>Optional Creatomate API key. Falls back to env CREATOMATE_API_KEY.</summary>
     public string? CreatomateApiKey { get; set; }
+
+    /// <summary>Optional ElevenLabs API key. Falls back to env ELEVENLABS_API_KEY.</summary>
+    public string? ElevenLabsApiKey { get; set; }
+
+    /// <summary>ElevenLabs voice id (default Rachel-like public voice if empty).</summary>
+    public string? ElevenLabsVoiceId { get; set; }
+
+    /// <summary>
+    /// Public base URL so Creatomate can fetch generated voice/images (e.g. https://api.example.com).
+    /// Localhost is not reachable by Creatomate — use tunnel or CDN in production.
+    /// </summary>
+    public string? PublicMediaBaseUrl { get; set; }
+
+    public string VideoAssetRoot { get; set; } = "App_Data/content-video";
 }
