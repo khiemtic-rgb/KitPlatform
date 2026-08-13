@@ -38,6 +38,28 @@ export function resolveShellBrand(vertical: string | null | undefined): {
   return { brand: APP_BRAND, product: APP_PRODUCT, isFamily: false, isMarketing: false };
 }
 
+/** Login screen preview — brand by tenant/org code before session exists. */
+export function resolveLoginBrandByTenantCode(tenantCode: string | null | undefined): {
+  brand: string;
+  product: string;
+  isFamily: boolean;
+  isMarketing: boolean;
+} {
+  const code = String(tenantCode ?? '').trim().toUpperCase();
+  if (code === 'KIT_MKT' || code === 'DEMO_CONTENT' || code.startsWith('KIT_MKT')) {
+    return {
+      brand: MARKETING_PARK_BRAND,
+      product: MARKETING_PARK_PRODUCT,
+      isFamily: false,
+      isMarketing: true,
+    };
+  }
+  if (code === 'DEMO_FAMILY' || code.startsWith('FM_') || code.includes('FAMILY')) {
+    return { brand: FAMILY_OS_BRAND, product: FAMILY_OS_PRODUCT, isFamily: true, isMarketing: false };
+  }
+  return { brand: APP_BRAND, product: APP_PRODUCT, isFamily: false, isMarketing: false };
+}
+
 /** Khi set VITE_DEFAULT_TENANT_CODE: ẩn ô mã (white-label 1 tenant). Multi-tenant: để trống. */
 export function isTenantCodeLocked(): boolean {
   return DEFAULT_TENANT_CODE.length > 0;

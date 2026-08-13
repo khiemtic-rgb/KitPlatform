@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using KitPlatform.Api.Authorization;
@@ -16,21 +17,27 @@ public sealed class ContentController : ControllerBase
     private readonly IContentOrgSettingsService _settings;
     private readonly IContentBrandService _brands;
     private readonly IContentTopicService _topics;
+    private readonly IContentPackageService _packages;
     private readonly IContentGenerateService _generate;
     private readonly IContentPublishService _publish;
+    private readonly IContentVideoService _videos;
 
     public ContentController(
         IContentOrgSettingsService settings,
         IContentBrandService brands,
         IContentTopicService topics,
+        IContentPackageService packages,
         IContentGenerateService generate,
-        IContentPublishService publish)
+        IContentPublishService publish,
+        IContentVideoService videos)
     {
         _settings = settings;
         _brands = brands;
         _topics = topics;
+        _packages = packages;
         _generate = generate;
         _publish = publish;
+        _videos = videos;
     }
 
     [HttpGet("settings")]
@@ -106,6 +113,213 @@ public sealed class ContentController : ControllerBase
         CancellationToken cancellationToken) =>
         Ok(await _brands.UpsertChannelAsync(brandId, request, cancellationToken));
 
+    [HttpGet("packages")]
+    public async Task<ActionResult<IReadOnlyList<ContentPackageDto>>> ListPackages(
+        [FromQuery] Guid? brandId,
+        [FromQuery] string? status,
+        CancellationToken cancellationToken) =>
+        Ok(await _packages.ListAsync(brandId, status, cancellationToken));
+
+    [HttpGet("packages/{id:guid}")]
+    public async Task<ActionResult<ContentPackageDto>> GetPackage(Guid id, CancellationToken cancellationToken)
+    {
+        var row = await _packages.GetAsync(id, cancellationToken);
+        return row is null ? NotFound() : Ok(row);
+    }
+
+    [HttpGet("packages/{id:guid}/detail")]
+    public async Task<ActionResult<ContentPackageDetailDto>> GetPackageDetail(Guid id, CancellationToken cancellationToken)
+    {
+        var row = await _packages.GetDetailAsync(id, cancellationToken);
+        return row is null ? NotFound() : Ok(row);
+    }
+
+    [HttpPost("packages")]
+    public async Task<ActionResult<ContentPackageDto>> CreatePackage(
+        [FromBody] UpsertContentPackageRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _packages.CreateAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPut("packages/{id:guid}")]
+    public async Task<ActionResult<ContentPackageDto>> UpdatePackage(
+        Guid id,
+        [FromBody] UpsertContentPackageRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var row = await _packages.UpdateAsync(id, request, cancellationToken);
+            return row is null ? NotFound() : Ok(row);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("packages/{id:guid}/generate")]
+    public async Task<ActionResult<GenerateContentResultDto>> GeneratePackage(
+        Guid id,
+        [FromBody] GenerateContentRequest? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _packages.GenerateAllAsync(id, request ?? new GenerateContentRequest(), cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("packages/{id:guid}/adapt")]
+    public async Task<ActionResult<ContentPackageDto>> AdaptPackage(
+        Guid id,
+        [FromBody] AdaptContentPackageRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _packages.AdaptAsync(id, request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("packages/{id:guid}/approve")]
+    public async Task<ActionResult<ContentPackageDto>> ApprovePackage(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var row = await _packages.ApproveAsync(id, cancellationToken);
+            return row is null ? NotFound() : Ok(row);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("packages/approve-batch")]
+    public async Task<ActionResult<BatchApprovePackagesResultDto>> ApprovePackagesBatch(
+        [FromBody] BatchApprovePackagesRequest request,
+        CancellationToken cancellationToken) =>
+        Ok(await _packages.ApproveBatchAsync(request, cancellationToken));
+
+    [HttpGet("video/templates")]
+    public async Task<ActionResult<IReadOnlyList<ContentVideoTemplateDto>>> ListVideoTemplates(
+        [FromQuery] bool? activeOnly,
+        CancellationToken cancellationToken) =>
+        Ok(await _videos.ListTemplatesAsync(activeOnly ?? true, cancellationToken));
+
+    [HttpGet("video/jobs")]
+    public async Task<ActionResult<IReadOnlyList<ContentVideoJobDto>>> ListVideoJobs(
+        [FromQuery] Guid? brandId,
+        [FromQuery] string? status,
+        CancellationToken cancellationToken) =>
+        Ok(await _videos.ListJobsAsync(brandId, status, cancellationToken));
+
+    [HttpGet("video/jobs/{id:guid}")]
+    public async Task<ActionResult<ContentVideoJobDto>> GetVideoJob(Guid id, CancellationToken cancellationToken)
+    {
+        var row = await _videos.GetJobAsync(id, cancellationToken);
+        return row is null ? NotFound() : Ok(row);
+    }
+
+    [HttpPost("video/jobs/from-package")]
+    public async Task<ActionResult<ContentVideoJobDto>> CreateVideoJobFromPackage(
+        [FromBody] CreateVideoJobFromPackageRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _videos.CreateFromPackageAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPut("video/jobs/{id:guid}/script")]
+    public async Task<ActionResult<ContentVideoJobDto>> UpdateVideoJobScript(
+        Guid id,
+        [FromBody] UpdateVideoJobScriptRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var row = await _videos.UpdateScriptAsync(id, request, cancellationToken);
+            return row is null ? NotFound() : Ok(row);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("video/jobs/{id:guid}/storyboard")]
+    public async Task<ActionResult<ContentVideoJobDto>> PrepareVideoStoryboard(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var row = await _videos.PrepareStoryboardAsync(id, cancellationToken);
+        return row is null ? NotFound() : Ok(row);
+    }
+
+    [HttpPost("video/jobs/{id:guid}/render")]
+    public async Task<ActionResult<ContentVideoJobDto>> QueueVideoRender(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var row = await _videos.QueueRenderAsync(id, cancellationToken);
+            return row is null ? NotFound() : Ok(row);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("video/jobs/{id:guid}/refresh")]
+    public async Task<ActionResult<ContentVideoJobDto>> RefreshVideoRender(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var row = await _videos.RefreshRenderAsync(id, cancellationToken);
+        return row is null ? NotFound() : Ok(row);
+    }
+
+    [HttpPost("video/jobs/{id:guid}/approve")]
+    public async Task<ActionResult<ContentVideoJobDto>> ApproveVideoJob(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var row = await _videos.ApproveAsync(id, cancellationToken);
+            return row is null ? NotFound() : Ok(row);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("topics")]
     public async Task<ActionResult<IReadOnlyList<ContentTopicDto>>> ListTopics(
         [FromQuery] Guid? brandId,
@@ -166,6 +380,13 @@ public sealed class ContentController : ControllerBase
         return row is null ? NotFound() : Ok(row);
     }
 
+    [HttpDelete("topics/{id:guid}")]
+    public async Task<IActionResult> DeleteTopic(Guid id, CancellationToken cancellationToken)
+    {
+        var ok = await _topics.DeleteAsync(id, cancellationToken);
+        return ok ? NoContent() : NotFound();
+    }
+
     [HttpPost("topics/{topicId:guid}/assets/{assetId:guid}/select")]
     public async Task<IActionResult> SelectAsset(Guid topicId, Guid assetId, CancellationToken cancellationToken)
     {
@@ -182,19 +403,62 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpPost("topics/{id:guid}/publish")]
+    [RequestSizeLimit(40 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 40 * 1024 * 1024)]
     public async Task<ActionResult<PublishContentResultDto>> Publish(
         Guid id,
-        [FromBody] PublishContentRequest? request,
         CancellationToken cancellationToken)
     {
         try
         {
-            return Ok(await _publish.PublishAsync(id, request ?? new PublishContentRequest(), cancellationToken));
+            var request = await BindPublishRequestAsync(cancellationToken);
+            return Ok(await _publish.PublishAsync(id, request, cancellationToken));
         }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    private async Task<PublishContentRequest> BindPublishRequestAsync(CancellationToken cancellationToken)
+    {
+        if (Request.HasFormContentType)
+        {
+            var form = await Request.ReadFormAsync(cancellationToken);
+            byte[]? bytes = null;
+            string? fileName = null;
+            string? contentType = null;
+            var file = form.Files.GetFile("image");
+            if (file is { Length: > 0 })
+            {
+                await using var stream = file.OpenReadStream();
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms, cancellationToken);
+                bytes = ms.ToArray();
+                fileName = file.FileName;
+                contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "image/jpeg" : file.ContentType;
+            }
+
+            DateTimeOffset? publishAt = null;
+            if (DateTimeOffset.TryParse(form["publishAt"], out var pa))
+                publishAt = pa;
+
+            return new PublishContentRequest
+            {
+                IncludeManualExport = !bool.TryParse(form["includeManualExport"], out var ime) || ime,
+                RunImmediately = !bool.TryParse(form["runImmediately"], out var ri) || ri,
+                PublishAt = publishAt,
+                ImageBase64 = bytes is { Length: > 0 } ? Convert.ToBase64String(bytes) : null,
+                ImageFileName = fileName,
+                ImageContentType = contentType,
+            };
+        }
+
+        var json = await JsonSerializer.DeserializeAsync<PublishContentRequest>(
+            Request.Body,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true },
+            cancellationToken);
+        return json ?? new PublishContentRequest();
     }
 
     [HttpGet("jobs")]
@@ -204,9 +468,22 @@ public sealed class ContentController : ControllerBase
         Ok(await _publish.ListJobsAsync(topicId, cancellationToken));
 
     [HttpPost("jobs/{id:guid}/run")]
+    [RequestSizeLimit(40 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 40 * 1024 * 1024)]
     public async Task<ActionResult<ContentPublishJobDto>> RunJob(Guid id, CancellationToken cancellationToken)
     {
-        var row = await _publish.RunJobAsync(id, cancellationToken);
-        return row is null ? NotFound() : Ok(row);
+        try
+        {
+            PublishContentRequest? media = null;
+            if (Request.HasFormContentType)
+                media = await BindPublishRequestAsync(cancellationToken);
+
+            var row = await _publish.RunJobAsync(id, media, cancellationToken);
+            return row is null ? NotFound() : Ok(row);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }

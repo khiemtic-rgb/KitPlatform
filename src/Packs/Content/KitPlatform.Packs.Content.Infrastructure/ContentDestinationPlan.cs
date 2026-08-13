@@ -49,6 +49,7 @@ internal static class ContentDestinationPlan
                 case "facebook_page":
                     Add("fb_page");
                     Add("fb_short");
+                    Add("social_caption");
                     visualSlots++;
                     break;
                 case "facebook_group":
@@ -69,10 +70,15 @@ internal static class ContentDestinationPlan
                     break;
                 case "tiktok":
                 case "youtube":
+                    Add("tiktok_script");
+                    Add("social_caption");
+                    visualSlots++;
+                    break;
                 case "zalo_oa":
                 case "other":
                     // Short caption-style pack — reuse fb_short when available.
                     Add("fb_short");
+                    Add("social_caption");
                     visualSlots++;
                     break;
             }

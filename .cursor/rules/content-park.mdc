@@ -20,3 +20,5 @@ alwaysApply: false
 - Budget ceilings are first-class settings; do not hardcode USD rates in C# beyond seeds.
 - Expanding web/page = new `site_target` / `channel_target` rows, not a platform upgrade.
 - Brands (KIT, Novixa, Famixa, Vân Đỉnh Trà) are **content brands inside KIT_MKT**, not product packages.
+- Content Package (`pack_content.content_package`): 1 idea + brand → Generate All (variants by destinations) → Adapt clones to another brand. Do not auto-fanout to all brands.
+- Video Factory (`pack_content.video_*`): từ Package kéo `tiktok_script` → storyboard local; Creatomate optional (`Content:CreatomateApiKey`). Không auto-post TikTok.

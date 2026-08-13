@@ -66,6 +66,7 @@ public sealed record ContentBrandDto(
     bool IsActive,
     int SortOrder,
     string? OperationalBrief,
+    ContentBrandKnowledgeDto Knowledge,
     decimal MonthSpendEstimateUsd,
     DateTimeOffset UpdatedAt);
 
@@ -79,7 +80,8 @@ public sealed record UpsertContentBrandRequest(
     bool? PauseWhenExceeded,
     bool? IsActive,
     int? SortOrder,
-    string? OperationalBrief);
+    string? OperationalBrief,
+    ContentBrandKnowledgeDto? Knowledge);
 
 public sealed record ContentSiteTargetDto(
     Guid Id,
@@ -206,20 +208,74 @@ public sealed record GenerateContentResultDto(
     bool BudgetBlocked,
     string? Message);
 
-public sealed record PublishContentRequest(
-    IReadOnlyList<Guid>? SiteTargetIds = null,
-    IReadOnlyList<Guid>? ChannelTargetIds = null,
-    bool IncludeManualExport = true,
-    bool RunImmediately = true,
+public sealed class PublishContentRequest
+{
+    public IReadOnlyList<Guid>? SiteTargetIds { get; set; }
+    public IReadOnlyList<Guid>? ChannelTargetIds { get; set; }
+    public bool IncludeManualExport { get; set; } = true;
+    public bool RunImmediately { get; set; } = true;
     /// <summary>When set (or topic.DisplayAt), schedule on WP/FB instead of publishing live.</summary>
-    DateTimeOffset? PublishAt = null,
+    public DateTimeOffset? PublishAt { get; set; }
     /// <summary>Ephemeral image (base64) — used only for this publish, not stored as content asset.</summary>
-    string? ImageBase64 = null,
-    string? ImageFileName = null,
-    string? ImageContentType = null);
+    public string? ImageBase64 { get; set; }
+    public string? ImageFileName { get; set; }
+    public string? ImageContentType { get; set; }
+}
 
 public sealed record PublishContentResultDto(
     IReadOnlyList<ContentPublishJobDto> Jobs);
+
+public sealed record ContentPackageDto(
+    Guid Id,
+    Guid BrandId,
+    string BrandCode,
+    string BrandName,
+    Guid TopicId,
+    string Title,
+    string? Angle,
+    string? Audience,
+    string ContentType,
+    string? Pillar,
+    string Goal,
+    string Priority,
+    string Status,
+    Guid? SourcePackageId,
+    DateTimeOffset? DisplayAt,
+    int VariantCount,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);
+
+public sealed record ContentPackageDetailDto(
+    ContentPackageDto Package,
+    ContentTopicDetailDto TopicDetail);
+
+public sealed record UpsertContentPackageRequest(
+    Guid BrandId,
+    string Title,
+    string? Angle,
+    string? Audience,
+    string? ContentType,
+    string? Pillar,
+    string? Goal,
+    string? Priority,
+    string? BodyOutline,
+    DateTimeOffset? DisplayAt,
+    string? CtaUrl);
+
+public sealed record AdaptContentPackageRequest(
+    Guid TargetBrandId,
+    string? Title,
+    string? Angle,
+    string? BodyOutline,
+    DateTimeOffset? DisplayAt);
+
+public sealed record BatchApprovePackagesRequest(IReadOnlyList<Guid> PackageIds);
+
+public sealed record BatchApprovePackagesResultDto(
+    int Requested,
+    int Approved,
+    IReadOnlyList<Guid> FailedIds,
+    string? Message);
 
 public sealed record UpsertContentTopicRequest(
     Guid BrandId,
@@ -278,6 +334,7 @@ public interface IContentTopicService
     Task<ContentTopicDto> CreateAsync(UpsertContentTopicRequest request, CancellationToken cancellationToken = default);
     Task<ContentTopicDto?> UpdateAsync(Guid id, UpsertContentTopicRequest request, CancellationToken cancellationToken = default);
     Task<ContentTopicDto?> ApproveAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
     Task<bool> SelectAssetAsync(Guid topicId, Guid assetId, CancellationToken cancellationToken = default);
 }
 
@@ -296,9 +353,121 @@ public interface IContentPublishService
         PublishContentRequest request,
         CancellationToken cancellationToken = default);
 
-    Task<ContentPublishJobDto?> RunJobAsync(Guid jobId, CancellationToken cancellationToken = default);
+    Task<ContentPublishJobDto?> RunJobAsync(
+        Guid jobId,
+        PublishContentRequest? mediaRequest = null,
+        CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ContentPublishJobDto>> ListJobsAsync(Guid? topicId, CancellationToken cancellationToken = default);
     Task<(byte[] Bytes, string ContentType, string FileName)?> GetAssetFileAsync(Guid assetId, CancellationToken cancellationToken = default);
+}
+
+public interface IContentPackageService
+{
+    Task<IReadOnlyList<ContentPackageDto>> ListAsync(
+        Guid? brandId,
+        string? status,
+        CancellationToken cancellationToken = default);
+
+    Task<ContentPackageDto?> GetAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<ContentPackageDetailDto?> GetDetailAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<ContentPackageDto> CreateAsync(UpsertContentPackageRequest request, CancellationToken cancellationToken = default);
+    Task<ContentPackageDto?> UpdateAsync(Guid id, UpsertContentPackageRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>B2 — generate all destination variants for the package topic.</summary>
+    Task<GenerateContentResultDto> GenerateAllAsync(
+        Guid id,
+        GenerateContentRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>B3 — clone idea to another brand (Draft package; does not auto-generate).</summary>
+    Task<ContentPackageDto> AdaptAsync(
+        Guid id,
+        AdaptContentPackageRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<ContentPackageDto?> ApproveAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<BatchApprovePackagesResultDto> ApproveBatchAsync(
+        BatchApprovePackagesRequest request,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed record ContentVideoTemplateDto(
+    Guid Id,
+    string Code,
+    string Name,
+    string Provider,
+    string? ExternalTemplateId,
+    string AspectRatio,
+    int DurationSec,
+    string? Description,
+    string ConfigJson,
+    bool IsActive,
+    int SortOrder);
+
+public sealed record ContentVideoJobDto(
+    Guid Id,
+    Guid BrandId,
+    string BrandCode,
+    string BrandName,
+    Guid? PackageId,
+    Guid? TopicId,
+    Guid TemplateId,
+    string TemplateCode,
+    string TemplateName,
+    string Title,
+    string ScriptBody,
+    string Status,
+    string Provider,
+    string? ExternalRenderId,
+    string? PreviewUrl,
+    string? OutputUrl,
+    string? ErrorMessage,
+    string StoryboardJson,
+    string ConfigJson,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt,
+    DateTimeOffset? RenderedAt);
+
+public sealed record CreateVideoJobFromPackageRequest(
+    Guid PackageId,
+    Guid? TemplateId = null,
+    string? TemplateCode = null);
+
+public sealed record UpdateVideoJobScriptRequest(string ScriptBody);
+
+public interface IContentVideoService
+{
+    Task<IReadOnlyList<ContentVideoTemplateDto>> ListTemplatesAsync(
+        bool? activeOnly = true,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ContentVideoJobDto>> ListJobsAsync(
+        Guid? brandId,
+        string? status,
+        CancellationToken cancellationToken = default);
+
+    Task<ContentVideoJobDto?> GetJobAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Tạo job từ package — kéo variant tiktok_script (fallback social_caption / web_long).</summary>
+    Task<ContentVideoJobDto> CreateFromPackageAsync(
+        CreateVideoJobFromPackageRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<ContentVideoJobDto?> UpdateScriptAsync(
+        Guid id,
+        UpdateVideoJobScriptRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Parse beats → storyboard_json; status Ready (local) hoặc giữ Draft nếu lỗi parse.</summary>
+    Task<ContentVideoJobDto?> PrepareStoryboardAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Creatomate nếu có API key + template; không thì = PrepareStoryboard.</summary>
+    Task<ContentVideoJobDto?> QueueRenderAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<ContentVideoJobDto?> RefreshRenderAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<ContentVideoJobDto?> ApproveAsync(Guid id, CancellationToken cancellationToken = default);
 }
 
 public sealed class ContentOptions
@@ -311,4 +480,7 @@ public sealed class ContentOptions
     public string TextModel { get; set; } = "gemini-flash-latest";
     public string? ImageModel { get; set; }
     public string AssetRoot { get; set; } = "App_Data/content-assets";
+
+    /// <summary>Optional Creatomate API key. Falls back to env CREATOMATE_API_KEY.</summary>
+    public string? CreatomateApiKey { get; set; }
 }

@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -90,6 +92,11 @@ internal sealed class ContentPublishService : IContentPublishService
                             : request.ImageContentType.Trim(),
                         PublishAt = publishAt,
                     };
+                    _logger.LogInformation(
+                        "Content publish {TopicId}: ephemeral image {Bytes} bytes ({File})",
+                        topicId,
+                        bytes.Length,
+                        _ephemeral.FileName);
                 }
             }
             catch (FormatException)
@@ -99,6 +106,7 @@ internal sealed class ContentPublishService : IContentPublishService
         }
         else if (publishAt is not null)
         {
+            _logger.LogWarning("Content publish {TopicId}: no image attached (text-only / MD-only)", topicId);
             _ephemeral = new EphemeralMedia
             {
                 Bytes = [],
@@ -174,7 +182,7 @@ internal sealed class ContentPublishService : IContentPublishService
                 var ran = new List<ContentPublishJobDto>();
                 foreach (var job in jobs)
                 {
-                    var updated = await RunJobAsync(job.Id, cancellationToken);
+                    var updated = await RunJobAsync(job.Id, null, cancellationToken);
                     if (updated is not null) ran.Add(updated);
                 }
                 jobs = ran;
@@ -198,10 +206,54 @@ internal sealed class ContentPublishService : IContentPublishService
         }
     }
 
-    public async Task<ContentPublishJobDto?> RunJobAsync(Guid jobId, CancellationToken cancellationToken = default)
+    public async Task<ContentPublishJobDto?> RunJobAsync(
+        Guid jobId,
+        PublishContentRequest? mediaRequest = null,
+        CancellationToken cancellationToken = default)
     {
         var job = await _repo.GetPublishJobAsync(jobId, cancellationToken);
         if (job is null) return null;
+
+        _ephemeral = null;
+        if (mediaRequest is not null)
+        {
+            var publishAt = mediaRequest.PublishAt ?? job.PublishAt;
+            if (!string.IsNullOrWhiteSpace(mediaRequest.ImageBase64))
+            {
+                try
+                {
+                    var bytes = Convert.FromBase64String(mediaRequest.ImageBase64.Trim());
+                    if (bytes.Length > 0)
+                    {
+                        _ephemeral = new EphemeralMedia
+                        {
+                            Bytes = bytes,
+                            FileName = string.IsNullOrWhiteSpace(mediaRequest.ImageFileName)
+                                ? "cover.jpg"
+                                : mediaRequest.ImageFileName.Trim(),
+                            ContentType = string.IsNullOrWhiteSpace(mediaRequest.ImageContentType)
+                                ? "image/jpeg"
+                                : mediaRequest.ImageContentType.Trim(),
+                            PublishAt = publishAt,
+                        };
+                    }
+                }
+                catch (FormatException)
+                {
+                    throw new InvalidOperationException("ImageBase64 không hợp lệ");
+                }
+            }
+            else if (publishAt is not null)
+            {
+                _ephemeral = new EphemeralMedia
+                {
+                    Bytes = [],
+                    FileName = "",
+                    ContentType = "application/octet-stream",
+                    PublishAt = publishAt,
+                };
+            }
+        }
 
         job.Status = "Running";
         job.LastError = null;
@@ -244,6 +296,10 @@ internal sealed class ContentPublishService : IContentPublishService
                 job.LastError,
                 ContentRepository.ToJson(new { type = ex.GetType().Name }),
                 cancellationToken);
+        }
+        finally
+        {
+            _ephemeral = null;
         }
 
         return await LoadJobAsync(jobId, cancellationToken);
@@ -319,17 +375,31 @@ internal sealed class ContentPublishService : IContentPublishService
                        ?? GetConfigString(cfg, "applicationPassword")
                        ?? throw new InvalidOperationException(
                            "WordPress token missing — dán mật khẩu ứng dụng vào form nơi đăng hoặc đặt env");
+        // Application Passwords are shown with spaces; WP accepts both forms — normalize for Basic auth.
+        password = password.Replace(" ", "", StringComparison.Ordinal).Trim();
+        username = username.Trim();
         var defaultStatus = GetConfigString(cfg, "status") ?? "draft";
 
-        var web = variants.FirstOrDefault(v => v.Kind is "web_long" or "seo_meta")
-                  ?? variants.FirstOrDefault();
+        // Full article only — never use seo_meta as post body (that was short description only).
+        var web = variants.FirstOrDefault(v => v.Kind == "web_long")
+                  ?? variants.FirstOrDefault(v => v.Kind is "fb_page" or "social_caption")
+                  ?? variants.FirstOrDefault(v => v.Kind != "seo_meta");
+        var seo = variants.FirstOrDefault(v => v.Kind == "seo_meta");
         var title = web?.Title ?? topic.Title;
-        var content = web?.BodyMarkdown ?? topic.Title;
-        if (!string.IsNullOrWhiteSpace(topic.CtaUrl))
-            content += $"\n\n[CTA]({topic.CtaUrl})";
+        var bodyMd = web?.BodyMarkdown ?? topic.Title;
+        if (!string.IsNullOrWhiteSpace(topic.CtaUrl)
+            && !bodyMd.Contains(topic.CtaUrl, StringComparison.OrdinalIgnoreCase))
+            bodyMd += $"\n\n[Tìm hiểu thêm]({topic.CtaUrl})";
+        var contentHtml = MarkdownToSimpleHtml(bodyMd);
+        var excerpt = MarkdownToPlainText(
+            seo?.BodyMarkdown ?? Trim(bodyMd, 180),
+            singleLine: true);
 
         var http = _httpFactory.CreateClient("content-publish");
         var basic = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
+
+        // Probe auth before media/post — clearer error when Authorization is stripped or App Password wrong.
+        await EnsureWordPressAuthAsync(http, baseUrl, basic, username, ct);
 
         int? featuredMediaId = null;
         var mediaBytes = await ResolvePublishImageBytesAsync(selected, ct);
@@ -343,13 +413,19 @@ internal sealed class ContentPublishService : IContentPublishService
         var isFuture = publishAt is { } at && at > DateTimeOffset.UtcNow.AddMinutes(5);
         var status = isFuture ? "future" : defaultStatus;
 
+        var categoryIds = await ResolveWordPressCategoryIdsAsync(
+            http, baseUrl, basic, cfg, title, topic.Pillar, bodyMd, ct);
+
         var payload = new Dictionary<string, object?>
         {
             ["title"] = title,
-            ["content"] = content,
+            ["content"] = contentHtml,
+            ["excerpt"] = excerpt,
             ["status"] = status,
             ["format"] = "standard",
         };
+        if (categoryIds.Count > 0)
+            payload["categories"] = categoryIds;
         if (isFuture && publishAt is { } when)
             payload["date_gmt"] = when.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss");
         if (featuredMediaId is { } mid)
@@ -365,7 +441,7 @@ internal sealed class ContentPublishService : IContentPublishService
         using var res = await http.SendAsync(req, ct);
         var body = await res.Content.ReadAsStringAsync(ct);
         if (!res.IsSuccessStatusCode)
-            throw new InvalidOperationException($"WordPress {(int)res.StatusCode}: {Trim(body)}");
+            throw new InvalidOperationException(HumanizeWordPressError("post", (int)res.StatusCode, body, username));
 
         using var doc = JsonDocument.Parse(body);
         var id = doc.RootElement.TryGetProperty("id", out var idEl) ? idEl.ToString() : null;
@@ -379,8 +455,173 @@ internal sealed class ContentPublishService : IContentPublishService
                 scheduled = isFuture,
                 publishAt,
                 featuredMediaId,
+                categories = categoryIds,
+                hasFullBody = contentHtml.Length > 400,
                 imageKeptOnServer = false,
             }));
+    }
+
+    private async Task<List<int>> ResolveWordPressCategoryIdsAsync(
+        HttpClient http,
+        string baseUrl,
+        string basicAuth,
+        Dictionary<string, JsonElement> cfg,
+        string title,
+        string? pillar,
+        string bodyMd,
+        CancellationToken ct)
+    {
+        var ids = new List<int>();
+
+        // Explicit IDs in config: "wpCategoryIds": [3,5] or "3,5"
+        if (cfg.TryGetValue("wpCategoryIds", out var idsEl))
+        {
+            if (idsEl.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var x in idsEl.EnumerateArray())
+                {
+                    if (x.ValueKind == JsonValueKind.Number && x.TryGetInt32(out var n) && n > 0)
+                        ids.Add(n);
+                    else if (x.ValueKind == JsonValueKind.String && int.TryParse(x.GetString(), out var ns) && ns > 0)
+                        ids.Add(ns);
+                }
+            }
+            else if (idsEl.ValueKind == JsonValueKind.String)
+            {
+                foreach (var part in (idsEl.GetString() ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    if (int.TryParse(part, out var n) && n > 0)
+                        ids.Add(n);
+                }
+            }
+        }
+
+        var slugHints = new List<string>();
+        var configuredSlugs = GetConfigString(cfg, "wpCategories")
+                              ?? GetConfigString(cfg, "wpCategory")
+                              ?? GetConfigString(cfg, "blogCategory");
+        if (!string.IsNullOrWhiteSpace(configuredSlugs))
+        {
+            slugHints.AddRange(configuredSlugs.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        }
+
+        // Vân Đỉnh Trà: Journal menu only shows category "journal" (id 3) — never leave Uncategorized.
+        var isVanDinhTra = baseUrl.Contains("vandinhtra", StringComparison.OrdinalIgnoreCase);
+        if (isVanDinhTra && slugHints.Count == 0 && ids.Count == 0)
+        {
+            slugHints.AddRange(InferVanDinhTraCategorySlugs(title, pillar, bodyMd));
+        }
+
+        if (slugHints.Count > 0)
+        {
+            var map = await FetchWordPressCategorySlugMapAsync(http, baseUrl, basicAuth, ct);
+            foreach (var slug in slugHints)
+            {
+                var key = slug.Trim().ToLowerInvariant();
+                if (map.TryGetValue(key, out var id) && id > 0)
+                    ids.Add(id);
+            }
+        }
+
+        if (isVanDinhTra && ids.Count == 0)
+        {
+            // Hard fallback known Journal category on vandinhtra.vn
+            ids.Add(3);
+        }
+
+        return ids.Distinct().ToList();
+    }
+
+    private static IReadOnlyList<string> InferVanDinhTraCategorySlugs(string title, string? pillar, string body)
+    {
+        var hay = $"{title}\n{pillar}\n{Trim(body, 400)}".ToLowerInvariant();
+        var slugs = new List<string> { "journal" };
+
+        if (ContainsAny(hay, "câu chuyện", "cau chuyen", "hành trình", "hanh trinh", "sứ mệnh", "su menh", "triết lý", "triet ly"))
+            slugs.Add("cau-chuyen");
+        if (ContainsAny(hay, "kiến thức", "kien thuc", "pha trà", "pha tra", "bảo quản", "bao quan", "phân loại", "phan loai"))
+            slugs.Add("kien-thuc-tra");
+        if (ContainsAny(hay, "thái nguyên", "thai nguyen", "tân cương", "tan cuong", "vùng chè", "vung che", "đồi chè"))
+            slugs.Add("vung-che-thai-nguyen");
+        if (ContainsAny(hay, "mùa chè", "mua che", "nhật ký", "nhat ky"))
+            slugs.Add("nhat-ky-mua-che");
+
+        var pillarSlug = pillar?.Trim().ToLowerInvariant().Replace(' ', '-');
+        if (!string.IsNullOrWhiteSpace(pillarSlug))
+            slugs.Add(pillarSlug!);
+
+        return slugs.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    private static async Task<Dictionary<string, int>> FetchWordPressCategorySlugMapAsync(
+        HttpClient http,
+        string baseUrl,
+        string basicAuth,
+        CancellationToken ct)
+    {
+        var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var url = $"{baseUrl}/wp-json/wp/v2/categories?per_page=100";
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Basic", basicAuth);
+        using var res = await http.SendAsync(req, ct);
+        if (!res.IsSuccessStatusCode)
+            return map;
+        var body = await res.Content.ReadAsStringAsync(ct);
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            foreach (var el in doc.RootElement.EnumerateArray())
+            {
+                var slug = el.TryGetProperty("slug", out var s) ? s.GetString() : null;
+                var id = el.TryGetProperty("id", out var idEl) && idEl.TryGetInt32(out var n) ? n : 0;
+                if (!string.IsNullOrWhiteSpace(slug) && id > 0)
+                    map[slug!] = id;
+            }
+        }
+        catch
+        {
+            /* ignore */
+        }
+        return map;
+    }
+
+    /// <summary>Minimal Markdown → HTML for WordPress post content.</summary>
+    private static string MarkdownToSimpleHtml(string markdown)
+    {
+        if (string.IsNullOrWhiteSpace(markdown)) return "<p></p>";
+        var s = markdown.Replace("\r\n", "\n", StringComparison.Ordinal).Trim();
+        s = Regex.Replace(s, @"```[\s\S]*?```", m =>
+            "<pre><code>" + System.Net.WebUtility.HtmlEncode(m.Value.Trim('`').Trim()) + "</code></pre>");
+        s = Regex.Replace(s, @"^######\s+(.+)$", "<h6>$1</h6>", RegexOptions.Multiline);
+        s = Regex.Replace(s, @"^#####\s+(.+)$", "<h5>$1</h5>", RegexOptions.Multiline);
+        s = Regex.Replace(s, @"^####\s+(.+)$", "<h4>$1</h4>", RegexOptions.Multiline);
+        s = Regex.Replace(s, @"^###\s+(.+)$", "<h3>$1</h3>", RegexOptions.Multiline);
+        s = Regex.Replace(s, @"^##\s+(.+)$", "<h2>$1</h2>", RegexOptions.Multiline);
+        s = Regex.Replace(s, @"^#\s+(.+)$", "<h1>$1</h1>", RegexOptions.Multiline);
+        s = Regex.Replace(s, @"!\[([^\]]*)\]\(([^)]+)\)", "<img src=\"$2\" alt=\"$1\" />");
+        s = Regex.Replace(s, @"\[([^\]]+)\]\(([^)]+)\)", "<a href=\"$2\">$1</a>");
+        s = Regex.Replace(s, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
+        s = Regex.Replace(s, @"__(.+?)__", "<strong>$1</strong>");
+        s = Regex.Replace(s, @"(?<!\w)\*(?!\*)(.+?)(?<!\*)\*(?!\w)", "<em>$1</em>");
+        s = Regex.Replace(s, @"^>\s?(.+)$", "<blockquote><p>$1</p></blockquote>", RegexOptions.Multiline);
+        s = Regex.Replace(s, @"^\s*[-*+]\s+(.+)$", "<li>$1</li>", RegexOptions.Multiline);
+        s = Regex.Replace(s, @"(?:<li>.*?</li>\n?)+", m => "<ul>" + m.Value + "</ul>");
+        s = Regex.Replace(s, @"^\s*\d+\.\s+(.+)$", "<li>$1</li>", RegexOptions.Multiline);
+
+        var blocks = Regex.Split(s, @"\n{2,}");
+        var sb = new StringBuilder();
+        foreach (var block in blocks)
+        {
+            var b = block.Trim();
+            if (b.Length == 0) continue;
+            if (b.StartsWith('<') && Regex.IsMatch(b, @"^<(h[1-6]|ul|ol|pre|blockquote|p|img)\b"))
+            {
+                sb.AppendLine(b.Replace("\n", " ", StringComparison.Ordinal));
+                continue;
+            }
+            sb.Append("<p>").Append(b.Replace("\n", "<br />", StringComparison.Ordinal)).AppendLine("</p>");
+        }
+        return sb.ToString().Trim();
     }
 
     private async Task<int> UploadWordPressMediaAsync(
@@ -404,12 +645,61 @@ internal sealed class ContentPublishService : IContentPublishService
         using var res = await http.SendAsync(req, ct);
         var body = await res.Content.ReadAsStringAsync(ct);
         if (!res.IsSuccessStatusCode)
-            throw new InvalidOperationException($"WordPress media {(int)res.StatusCode}: {Trim(body)}");
+            throw new InvalidOperationException(HumanizeWordPressError("media", (int)res.StatusCode, body));
 
         using var doc = JsonDocument.Parse(body);
         if (!doc.RootElement.TryGetProperty("id", out var idEl))
             throw new InvalidOperationException("WordPress media response missing id");
         return idEl.GetInt32();
+    }
+
+    private static async Task EnsureWordPressAuthAsync(
+        HttpClient http,
+        string baseUrl,
+        string basicAuth,
+        string username,
+        CancellationToken ct)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/wp-json/wp/v2/users/me?context=edit");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Basic", basicAuth);
+        using var res = await http.SendAsync(req, ct);
+        var body = await res.Content.ReadAsStringAsync(ct);
+        if (res.IsSuccessStatusCode)
+            return;
+        throw new InvalidOperationException(HumanizeWordPressError("auth", (int)res.StatusCode, body, username));
+    }
+
+    private static string HumanizeWordPressError(string mode, int statusCode, string body, string? username = null)
+    {
+        var raw = Trim(body, 800);
+        string? wpMessage = null;
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("message", out var m))
+                wpMessage = m.GetString();
+        }
+        catch
+        {
+            /* ignore */
+        }
+
+        if (statusCode is 401 or 403
+            || raw.Contains("rest_cannot_create", StringComparison.OrdinalIgnoreCase)
+            || raw.Contains("rest_forbidden", StringComparison.OrdinalIgnoreCase)
+            || raw.Contains("rest_not_logged_in", StringComparison.OrdinalIgnoreCase))
+        {
+            var who = string.IsNullOrWhiteSpace(username) ? "" : $" (username đang dùng: «{username}»).";
+            return
+                $"WordPress {statusCode}: đăng nhập REST thất bại{who} " +
+                "Role Admin vẫn lỗi thường vì: (1) chưa dán Application Password (đừng dùng mật khẩu đăng nhập web), " +
+                "(2) username sai — phải đúng «admin», " +
+                "(3) hosting/nginx nuốt header Authorization — cần cấu hình pass Authorization tới PHP, " +
+                "(4) plugin bảo mật chặn Application Passwords. " +
+                $"Chi tiết: {wpMessage ?? raw}";
+        }
+
+        return $"WordPress {mode} {statusCode}: {wpMessage ?? raw}";
     }
 
     private async Task<ConnectorResult> RunFacebookAsync(
@@ -432,9 +722,10 @@ internal sealed class ContentPublishService : IContentPublishService
                         "Facebook token missing — dán Page Access Token vào form nơi đăng hoặc đặt env");
 
         var fb = variants.FirstOrDefault(v => v.Kind is "fb_page" or "fb_short")
-                 ?? variants.FirstOrDefault();
-        var message = fb?.BodyMarkdown ?? topic.Title;
-        if (!string.IsNullOrWhiteSpace(topic.CtaUrl))
+                 ?? variants.FirstOrDefault(v => v.Kind is "social_caption");
+        // Never post raw markdown (web_long) to Facebook — shows ** as draft-looking text.
+        var message = MarkdownToPlainText(fb?.BodyMarkdown ?? topic.Title);
+        if (!string.IsNullOrWhiteSpace(topic.CtaUrl) && !message.Contains(topic.CtaUrl, StringComparison.OrdinalIgnoreCase))
             message = $"{message.Trim()}\n\n{topic.CtaUrl}";
 
         var publishAt = _ephemeral?.PublishAt ?? job.PublishAt ?? topic.DisplayAt;
@@ -465,7 +756,7 @@ internal sealed class ContentPublishService : IContentPublishService
             using var res = await http.PostAsync(url, form, ct);
             var body = await res.Content.ReadAsStringAsync(ct);
             if (!res.IsSuccessStatusCode)
-                throw new InvalidOperationException($"Facebook photo {(int)res.StatusCode}: {Trim(body)}");
+                throw new InvalidOperationException(HumanizeFacebookError("photo", (int)res.StatusCode, body));
 
             using var doc = JsonDocument.Parse(body);
             var postId = doc.RootElement.TryGetProperty("post_id", out var pid) ? pid.GetString()
@@ -491,7 +782,7 @@ internal sealed class ContentPublishService : IContentPublishService
         using var feedRes = await http.PostAsync(feedUrl, formContent, ct);
         var feedBody = await feedRes.Content.ReadAsStringAsync(ct);
         if (!feedRes.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Facebook {(int)feedRes.StatusCode}: {Trim(feedBody)}");
+            throw new InvalidOperationException(HumanizeFacebookError("feed", (int)feedRes.StatusCode, feedBody));
 
         using var feedDoc = JsonDocument.Parse(feedBody);
         var feedId = feedDoc.RootElement.TryGetProperty("id", out var fid) ? fid.GetString() : null;
@@ -528,63 +819,350 @@ internal sealed class ContentPublishService : IContentPublishService
             throw new InvalidOperationException("Site target missing for Astro Git job");
 
         var cfg = ParseConfig(site.ConfigJson);
-        var owner = GetConfigString(cfg, "owner")
-                    ?? throw new InvalidOperationException("astro_git config.owner required");
-        var repo = GetConfigString(cfg, "repo")
-                   ?? throw new InvalidOperationException("astro_git config.repo required");
+        var owner = GetConfigString(cfg, "owner");
+        var repo = GetConfigString(cfg, "repo");
+        if (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repo))
+            throw new InvalidOperationException(
+                "Astro/Git chưa đủ cấu hình: vào Thương hiệu → Nơi đăng → chọn website Astro → điền GitHub owner + tên repo → Lưu. Rồi bấm Chạy lại.");
         var branch = GetConfigString(cfg, "branch") ?? "main";
-        var contentPath = (GetConfigString(cfg, "contentPath") ?? "src/content/blog").TrimEnd('/');
+        var contentPath = (GetConfigString(cfg, "contentPath") ?? "novixa-site/src/content/tin-tuc").TrimEnd('/');
         var token = ResolveTargetSecret(site.SecretRef, site.ConfigJson)
                     ?? throw new InvalidOperationException(
-                        "GitHub token missing — dán token vào form nơi đăng hoặc đặt env");
+                        "Thiếu GitHub token — vào Thương hiệu → Nơi đăng Astro → dán token (ghp_…) → Lưu.");
 
         var web = variants.FirstOrDefault(v => v.Kind == "web_long") ?? variants.FirstOrDefault();
         var slug = Slugify(web?.Title ?? topic.Title);
-        var date = DateTime.UtcNow.ToString("yyyy-MM-dd");
-        var filePath = $"{contentPath}/{date}-{slug}.md";
-        var description = variants.FirstOrDefault(v => v.Kind == "seo_meta")?.BodyMarkdown
-                          ?? topic.Title;
-        var md = $"""
-            ---
-            title: "{EscapeYaml(web?.Title ?? topic.Title)}"
-            description: "{EscapeYaml(Trim(description, 150))}"
-            pubDate: {date}
-            ---
+        var displayDate = (topic.DisplayAt ?? job.PublishAt ?? DateTimeOffset.UtcNow).ToString("yyyy-MM-dd");
+        var description = MarkdownToPlainText(
+            variants.FirstOrDefault(v => v.Kind == "seo_meta")?.BodyMarkdown ?? topic.Title,
+            singleLine: true);
+        var title = web?.Title ?? topic.Title;
+        var bodyMd = web?.BodyMarkdown ?? topic.Title;
+        var cta = string.IsNullOrWhiteSpace(topic.CtaUrl) ? "" : $"\n\n[Tìm hiểu thêm]({topic.CtaUrl})";
 
-            {web?.BodyMarkdown ?? topic.Title}
+        var pathLower = contentPath.Replace('\\', '/').ToLowerInvariant();
+        var isNovixaTinTuc = pathLower.Contains("tin-tuc", StringComparison.Ordinal);
+        var isFamixaBlog = pathLower.Contains("famixa-site", StringComparison.Ordinal)
+            || string.Equals(GetConfigString(cfg, "contentFormat"), "famixa", StringComparison.OrdinalIgnoreCase);
+        var isKittechInsights = pathLower.Contains("insights", StringComparison.Ordinal)
+            || string.Equals(GetConfigString(cfg, "contentFormat"), "insights", StringComparison.OrdinalIgnoreCase);
 
-            {(string.IsNullOrWhiteSpace(topic.CtaUrl) ? "" : $"[Tìm hiểu thêm]({topic.CtaUrl})")}
-            """;
+        string? imagePublicPath = GetConfigString(cfg, "defaultImage");
+        string? imageRepoPath = null;
+        byte[]? imageBytes = null;
+        var mediaOpt = await ResolvePublishImageBytesAsync(selected, ct);
+        if (mediaOpt is { } media && media.Bytes.Length > 0)
+        {
+            var ext = GuessImageExt(media.FileName, media.ContentType);
+            if (isNovixaTinTuc)
+            {
+                var imageDir = GetConfigString(cfg, "imagePath")?.TrimEnd('/')
+                               ?? "novixa-site/public/images/tin-tuc";
+                imageRepoPath = $"{imageDir}/{slug}.{ext}";
+                imagePublicPath = $"/images/tin-tuc/{slug}.{ext}";
+                imageBytes = media.Bytes;
+            }
+            else if (isFamixaBlog)
+            {
+                var imageDir = GetConfigString(cfg, "imagePath")?.TrimEnd('/')
+                               ?? "famixa-site/public/images/blog";
+                imageRepoPath = $"{imageDir}/{slug}.{ext}";
+                imagePublicPath = $"/images/blog/{slug}.{ext}";
+                imageBytes = media.Bytes;
+            }
+            else if (isKittechInsights)
+            {
+                // kittech.vn — public/images/insights/{slug}.ext → heroImage
+                var imageDir = GetConfigString(cfg, "imagePath")?.TrimEnd('/')
+                               ?? "public/images/insights";
+                imageRepoPath = $"{imageDir}/{slug}.{ext}";
+                imagePublicPath = $"/images/insights/{slug}.{ext}";
+                imageBytes = media.Bytes;
+            }
+        }
+
+        string filePath;
+        string md;
+        string commitPrefix;
+        string? publishedCategory = null;
+        string? publishedSection = null;
+
+        if (isNovixaTinTuc)
+        {
+            // novixa.vn — Astro collection tinTuc (novixa-site/src/content.config.ts)
+            filePath = $"{contentPath}/{slug}.md";
+            commitPrefix = "content(novixa)";
+            var category = GetConfigString(cfg, "newsCategory")
+                           ?? GetConfigString(cfg, "category")
+                           ?? "van-hanh";
+            var subcategory = GetConfigString(cfg, "newsSubcategory")
+                              ?? GetConfigString(cfg, "subcategory");
+            publishedCategory = category.Trim();
+            var fm = new StringBuilder();
+            fm.AppendLine("---");
+            fm.Append("title: \"").Append(EscapeYaml(title)).AppendLine("\"");
+            fm.Append("description: \"").Append(EscapeYaml(Trim(description, 280))).AppendLine("\"");
+            fm.Append("category: ").AppendLine(category.Trim());
+            if (!string.IsNullOrWhiteSpace(subcategory))
+                fm.Append("subcategory: ").AppendLine(subcategory.Trim());
+            if (!string.IsNullOrWhiteSpace(imagePublicPath))
+                fm.Append("image: ").AppendLine(imagePublicPath.Trim());
+            fm.Append("pubDate: ").AppendLine(displayDate);
+            fm.AppendLine("lang: vi");
+            fm.AppendLine("---");
+            fm.AppendLine();
+            fm.Append(bodyMd);
+            fm.Append(cta);
+            md = fm.ToString();
+        }
+        else if (isFamixaBlog)
+        {
+            // famixa.vn — Next.js MD in famixa-site/content/blog/{slug}.md
+            // Live URL: /vi/goi-cha-me/{slug}
+            filePath = $"{contentPath}/{slug}.md";
+            commitPrefix = "content(famixa)";
+            var configuredCategory = GetConfigString(cfg, "blogCategory")
+                                     ?? GetConfigString(cfg, "category")
+                                     ?? GetConfigString(cfg, "insightCategory");
+            var autoCategory = !string.Equals(
+                GetConfigString(cfg, "autoCategory"), "false", StringComparison.OrdinalIgnoreCase);
+            var category = autoCategory
+                ? InferFamixaCategory(title, topic.Pillar, bodyMd, configuredCategory)
+                : (NormalizeFamixaCategory(configuredCategory) ?? "nuoi-day");
+            publishedCategory = category;
+            if (string.IsNullOrWhiteSpace(imagePublicPath))
+                imagePublicPath = GetConfigString(cfg, "defaultImage") ?? "/images/blog/default.png";
+            var fm = new StringBuilder();
+            fm.AppendLine("---");
+            fm.Append("title: ").AppendLine(YamlScalar(title));
+            fm.Append("description: ").AppendLine(YamlScalar(Trim(description, 280)));
+            fm.Append("category: ").AppendLine(category);
+            fm.Append("image: ").AppendLine(imagePublicPath.Trim());
+            fm.Append("pubDate: ").AppendLine(displayDate);
+            fm.AppendLine("draft: false");
+            fm.AppendLine("lang: vi");
+            fm.AppendLine("---");
+            fm.AppendLine();
+            fm.Append(bodyMd);
+            fm.Append(cta);
+            md = fm.ToString();
+        }
+        else if (isKittechInsights)
+        {
+            // kittech.vn — Kit-Technology: src/content/insights/{locale}/{category}/{slug}.md
+            // Live URL (vi): /vi/blog/{category}/{slug} · (en): /en/insights/{category}/{slug}
+            var locale = (GetConfigString(cfg, "locale") ?? "vi").Trim().ToLowerInvariant();
+            if (locale is not ("vi" or "en"))
+                locale = "vi";
+            var configuredCategory = GetConfigString(cfg, "insightCategory")
+                                     ?? GetConfigString(cfg, "category");
+            var autoCategory = !string.Equals(
+                GetConfigString(cfg, "autoCategory"), "false", StringComparison.OrdinalIgnoreCase);
+            var category = autoCategory
+                ? InferKittechCategory(title, topic.Pillar, topic.BrandCode, topic.BrandName, bodyMd, configuredCategory)
+                : (configuredCategory?.Trim().Length > 0 ? configuredCategory.Trim() : "technology");
+            var section = InferKittechSection(category, GetConfigString(cfg, "insightSection") ?? GetConfigString(cfg, "section"));
+            publishedCategory = category;
+            publishedSection = section;
+            filePath = $"{contentPath}/{locale}/{category}/{slug}.md";
+            commitPrefix = "content(kittech)";
+            var fm = new StringBuilder();
+            fm.AppendLine("---");
+            fm.Append("title: \"").Append(EscapeYaml(title)).AppendLine("\"");
+            fm.Append("description: \"").Append(EscapeYaml(Trim(description, 150))).AppendLine("\"");
+            fm.Append("locale: ").AppendLine(locale);
+            fm.Append("category: ").AppendLine(category);
+            fm.Append("section: ").AppendLine(section);
+            fm.Append("publishDate: ").AppendLine(displayDate);
+            fm.AppendLine("draft: false");
+            fm.Append("translationId: \"").Append(EscapeYaml(slug)).AppendLine("\"");
+            fm.AppendLine("tags: []");
+            if (!string.IsNullOrWhiteSpace(imagePublicPath))
+                fm.Append("heroImage: \"").Append(EscapeYaml(imagePublicPath.Trim())).AppendLine("\"");
+            fm.AppendLine("---");
+            fm.AppendLine();
+            fm.Append(bodyMd);
+            fm.Append(cta);
+            md = fm.ToString();
+        }
+        else
+        {
+            filePath = $"{contentPath}/{displayDate}-{slug}.md";
+            commitPrefix = "content(park)";
+            md = $"""
+                ---
+                title: "{EscapeYaml(title)}"
+                description: "{EscapeYaml(Trim(description, 150))}"
+                pubDate: {displayDate}
+                ---
+
+                {bodyMd}{cta}
+                """;
+        }
 
         var http = _httpFactory.CreateClient("content-publish");
-        var apiUrl =
-            $"https://api.github.com/repos/{owner}/{repo}/contents/{filePath}";
-        using var req = new HttpRequestMessage(HttpMethod.Put, apiUrl);
+
+        // Preflight: GitHub returns 404 both for missing repo AND for fine-grained tokens
+        // that do not include the target repository — surface a clearer message.
+        await EnsureGitHubRepoAccessibleAsync(http, owner!, repo!, token!, ct);
+
+        string? imageSha = null;
+        if (imageBytes is { Length: > 0 } && !string.IsNullOrWhiteSpace(imageRepoPath))
+        {
+            var imgPut = await PutGitHubFileAsync(
+                http, owner!, repo!, branch, token!, imageRepoPath!, imageBytes,
+                $"{commitPrefix}: image {slug}", ct);
+            imageSha = imgPut.Sha;
+        }
+
+        var mdPut = await PutGitHubFileAsync(
+            http, owner!, repo!, branch, token!, filePath, Encoding.UTF8.GetBytes(md),
+            $"{commitPrefix}: {(imageSha is null ? "add" : "publish")} {slug}", ct);
+
+        return new ConnectorResult(
+            mdPut.Sha ?? filePath,
+            ContentRepository.ToJson(new
+            {
+                astro = "git",
+                path = filePath,
+                imagePath = imageRepoPath,
+                image = imagePublicPath,
+                hasImage = imageBytes is { Length: > 0 },
+                sha = mdPut.Sha,
+                owner,
+                repo,
+                branch,
+                category = publishedCategory,
+                section = publishedSection,
+            }));
+    }
+
+    private static async Task EnsureGitHubRepoAccessibleAsync(
+        HttpClient http,
+        string owner,
+        string repo,
+        string token,
+        CancellationToken ct)
+    {
+        var url = $"https://api.github.com/repos/{owner}/{repo}";
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         req.Headers.UserAgent.ParseAdd("KitPlatform-ContentPark");
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
-        req.Content = new StringContent(
-            JsonSerializer.Serialize(new
-            {
-                message = $"content(park): add {slug}",
-                content = Convert.ToBase64String(Encoding.UTF8.GetBytes(md)),
-                branch,
-            }, JsonOpts),
-            Encoding.UTF8,
-            "application/json");
-
         using var res = await http.SendAsync(req, ct);
         var body = await res.Content.ReadAsStringAsync(ct);
-        if (!res.IsSuccessStatusCode)
-            throw new InvalidOperationException($"GitHub {(int)res.StatusCode}: {Trim(body)}");
+        if (res.IsSuccessStatusCode)
+            return;
 
-        _ = selected; // image commit can be Wave 1.1
-        using var doc = JsonDocument.Parse(body);
-        var sha = doc.RootElement.TryGetProperty("content", out var c)
-                  && c.TryGetProperty("sha", out var shaEl)
-            ? shaEl.GetString()
-            : null;
-        return new ConnectorResult(sha ?? filePath, body);
+        if ((int)res.StatusCode is 401 or 403)
+        {
+            throw new InvalidOperationException(
+                $"GitHub {(int)res.StatusCode}: token không hợp lệ hoặc thiếu quyền ghi cho {owner}/{repo}. " +
+                "Dùng PAT classic quyền repo, hoặc fine-grained token chọn đúng repo + Contents: Read and write.");
+        }
+
+        if ((int)res.StatusCode == 404)
+        {
+            throw new InvalidOperationException(
+                $"GitHub 404: không truy cập được repo {owner}/{repo}. " +
+                "Kiểm tra: (1) Owner = khiemtic-rgb, Repo = Kit-Technology (đúng dấu gạch); " +
+                "(2) Fine-grained token phải chọn đúng repo Kit-Technology (không chọn Account permissions); " +
+                "(3) Thư mục bài = src/content/insights. " +
+                $"Chi tiết API: {Trim(body)}");
+        }
+
+        throw new InvalidOperationException($"GitHub {(int)res.StatusCode} khi mở {owner}/{repo}: {Trim(body)}");
+    }
+
+    private sealed record GitHubPutResult(string? Sha, string RawBody);
+
+    private async Task<GitHubPutResult> PutGitHubFileAsync(
+        HttpClient http,
+        string owner,
+        string repo,
+        string branch,
+        string token,
+        string filePath,
+        byte[] bytes,
+        string commitMessage,
+        CancellationToken ct)
+    {
+        var apiUrl =
+            $"https://api.github.com/repos/{owner}/{repo}/contents/{Uri.EscapeDataString(filePath).Replace("%2F", "/", StringComparison.Ordinal)}";
+
+        async Task<GitHubPutResult> PutAsync(string? sha)
+        {
+            using var putReq = new HttpRequestMessage(HttpMethod.Put, apiUrl);
+            putReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            putReq.Headers.UserAgent.ParseAdd("KitPlatform-ContentPark");
+            putReq.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+            var payload = sha is null
+                ? (object)new
+                {
+                    message = commitMessage,
+                    content = Convert.ToBase64String(bytes),
+                    branch,
+                }
+                : new
+                {
+                    message = commitMessage,
+                    content = Convert.ToBase64String(bytes),
+                    branch,
+                    sha,
+                };
+            putReq.Content = new StringContent(
+                JsonSerializer.Serialize(payload, JsonOpts),
+                Encoding.UTF8,
+                "application/json");
+            using var putRes = await http.SendAsync(putReq, ct);
+            var putBody = await putRes.Content.ReadAsStringAsync(ct);
+            if (!putRes.IsSuccessStatusCode)
+                throw new InvalidOperationException(
+                    $"GitHub {(int)putRes.StatusCode} khi ghi {owner}/{repo}/{filePath} (branch {branch}): {Trim(putBody)}");
+            using var putDoc = JsonDocument.Parse(putBody);
+            var outSha = putDoc.RootElement.TryGetProperty("content", out var c)
+                         && c.TryGetProperty("sha", out var shaEl)
+                ? shaEl.GetString()
+                : sha;
+            return new GitHubPutResult(outSha, putBody);
+        }
+
+        try
+        {
+            return await PutAsync(null);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("422", StringComparison.Ordinal)
+                                                   || ex.Message.Contains("sha", StringComparison.OrdinalIgnoreCase)
+                                                   || ex.Message.Contains("\"code\":\"sha_missing\"", StringComparison.Ordinal)
+                                                   || ex.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase))
+        {
+            using var getReq = new HttpRequestMessage(HttpMethod.Get, apiUrl + $"?ref={Uri.EscapeDataString(branch)}");
+            getReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            getReq.Headers.UserAgent.ParseAdd("KitPlatform-ContentPark");
+            getReq.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+            using var getRes = await http.SendAsync(getReq, ct);
+            var getBody = await getRes.Content.ReadAsStringAsync(ct);
+            if (!getRes.IsSuccessStatusCode)
+                throw new InvalidOperationException($"GitHub get {(int)getRes.StatusCode} {owner}/{repo}/{filePath}: {Trim(getBody)}");
+            using var existing = JsonDocument.Parse(getBody);
+            var existingSha = existing.RootElement.TryGetProperty("sha", out var shaNode)
+                ? shaNode.GetString()
+                : null;
+            if (string.IsNullOrWhiteSpace(existingSha))
+                throw;
+            return await PutAsync(existingSha);
+        }
+    }
+
+    private static string GuessImageExt(string fileName, string contentType)
+    {
+        var ext = Path.GetExtension(fileName).TrimStart('.').ToLowerInvariant();
+        if (ext is "png" or "jpg" or "jpeg" or "webp" or "gif")
+            return ext == "jpeg" ? "jpg" : ext;
+        if (contentType.Contains("png", StringComparison.OrdinalIgnoreCase)) return "png";
+        if (contentType.Contains("webp", StringComparison.OrdinalIgnoreCase)) return "webp";
+        if (contentType.Contains("gif", StringComparison.OrdinalIgnoreCase)) return "gif";
+        return "jpg";
     }
 
     private async Task<ContentPublishJobDto> LoadJobAsync(Guid id, CancellationToken ct)
@@ -640,24 +1218,248 @@ internal sealed class ContentPublishService : IContentPublishService
         return el.ValueKind == JsonValueKind.String ? el.GetString() : el.ToString();
     }
 
+    /// <summary>Strip Markdown for Facebook captions (keep line breaks). Sites keep raw MD in body.</summary>
+    private static string MarkdownToPlainText(string markdown, bool singleLine = false)
+    {
+        if (string.IsNullOrWhiteSpace(markdown)) return "";
+        var s = markdown.Replace("\r\n", "\n", StringComparison.Ordinal);
+
+        s = Regex.Replace(s, @"```[\s\S]*?```", "");
+        s = Regex.Replace(s, @"!\[([^\]]*)\]\([^)]+\)", "$1");
+        s = Regex.Replace(s, @"\[([^\]]+)\]\(([^)]+)\)", "$1");
+        s = Regex.Replace(s, @"\*\*\*(.+?)\*\*\*", "$1");
+        s = Regex.Replace(s, @"\*\*(.+?)\*\*", "$1");
+        s = Regex.Replace(s, @"__(.+?)__", "$1");
+        s = Regex.Replace(s, @"(?<!\w)\*(?!\*)(.+?)(?<!\*)\*(?!\w)", "$1");
+        s = Regex.Replace(s, @"(?<!\w)_(?!_)(.+?)(?<!_)_(?!\w)", "$1");
+        s = Regex.Replace(s, @"^#{1,6}\s*", "", RegexOptions.Multiline);
+        s = Regex.Replace(s, @"^>\s?", "", RegexOptions.Multiline);
+        s = Regex.Replace(s, @"^\s*[-*+]\s+", "• ", RegexOptions.Multiline);
+        s = Regex.Replace(s, @"^\s*\d+\.\s+", "", RegexOptions.Multiline);
+        s = Regex.Replace(s, @"^---+\s*$", "", RegexOptions.Multiline);
+        s = s.Replace("`", "", StringComparison.Ordinal);
+        s = s.Replace("**", "", StringComparison.Ordinal);
+        s = Regex.Replace(s, @"\n{3,}", "\n\n");
+        if (singleLine)
+            s = Regex.Replace(s, @"\s+", " ");
+        return s.Trim();
+    }
+
+    private static string HumanizeFacebookError(string mode, int statusCode, string body)
+    {
+        var raw = Trim(body, 800);
+        if (raw.Contains("expired", StringComparison.OrdinalIgnoreCase)
+            || raw.Contains("\"code\":190", StringComparison.Ordinal)
+            || raw.Contains("error_subcode\":463", StringComparison.Ordinal)
+            || raw.Contains("Error validating access token", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Facebook: Page Access Token đã hết hạn. Vào Thương hiệu → Nơi đăng → Facebook Fanpage → dán token mới (Page token dài hạn) → Lưu → Chạy lại.";
+        }
+
+        if (raw.Contains("permissions", StringComparison.OrdinalIgnoreCase)
+            || raw.Contains("(#200)", StringComparison.Ordinal))
+        {
+            return "Facebook: thiếu quyền pages_manage_posts (hoặc token không phải của Page). Lấy lại Page Access Token rồi dán vào Nơi đăng.";
+        }
+
+        return $"Facebook {mode} {statusCode}: {raw}";
+    }
+
+    private static readonly HashSet<string> FamixaCategories = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "nuoi-day", "routine", "man-hinh", "tu-giac", "famixa",
+    };
+
+    /// <summary>famixa.vn blog categories (famixa-site/lib/blog/categories.ts).</summary>
+    private static string InferFamixaCategory(string title, string? pillar, string? body, string? configuredFallback)
+    {
+        var pillarSlug = NormalizeFamixaCategory(pillar);
+        if (pillarSlug is not null)
+            return pillarSlug;
+
+        var hay = $"{title}\n{pillar}\n{Trim(body ?? "", 400)}".ToLowerInvariant();
+        if (ContainsAny(hay, "màn hình", "man hinh", "screen time", "điện thoại", "dien thoai", "thiết bị", "thiet bi", "youtube", "tiktok"))
+            return "man-hinh";
+        if (ContainsAny(hay, "tự giác", "tu giac", "bớt nhắc", "bot nhac", "không cần nhắc", "trưởng thành", "truong thanh", "hợp tác", "hop tac"))
+            return "tu-giac";
+        if (ContainsAny(hay, "routine", "nhịp", "nhip", "giờ ngủ", "gio ngu", "thói quen", "thoi quen", "lịch", "lich sinh hoạt", "việc nhà", "viec nha"))
+            return "routine";
+        if (ContainsAny(hay, "famixa", "app famixa", "dùng famixa", "dung famixa", "gói peace", "goi peace", "ai coach"))
+            return "famixa";
+        if (ContainsAny(hay, "nuôi dạy", "nuoi day", "xin lỗi", "xin loi", "kỷ luật", "ky luat", "khen", "phạt", "phat", "cha mẹ", "cha me"))
+            return "nuoi-day";
+
+        return NormalizeFamixaCategory(configuredFallback) ?? "nuoi-day";
+    }
+
+    private static string? NormalizeFamixaCategory(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var s = raw.Trim().ToLowerInvariant().Replace(' ', '-').Replace('_', '-');
+        s = s switch
+        {
+            "nuoiday" or "parenting" or "nuoi-day-con" => "nuoi-day",
+            "screen" or "screen-time" or "manhinh" => "man-hinh",
+            "tugiac" or "autonomy" => "tu-giac",
+            "nhịp" or "nhip" or "habits" => "routine",
+            "app" or "product" => "famixa",
+            _ => s,
+        };
+        return FamixaCategories.Contains(s) ? s : null;
+    }
+
+    private static string YamlScalar(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return "''";
+        return "\"" + EscapeYaml(s) + "\"";
+    }
+
+    private static readonly HashSet<string> KittechCategories = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ai", "healthcare", "digital-transformation", "engineering", "company-news",
+        "business", "technology", "solutions", "products", "faq",
+    };
+
+    /// <summary>
+    /// Map topic title / pillar / brand → kittech.vn insight category folder.
+    /// Configured category wins only when auto is off, or as weak fallback when nothing matches.
+    /// </summary>
+    private static string InferKittechCategory(
+        string title,
+        string? pillar,
+        string? brandCode,
+        string? brandName,
+        string? body,
+        string? configuredFallback)
+    {
+        // Exact pillar slug (e.g. user typed "healthcare" / "ai" in Chủ đề)
+        var pillarSlug = NormalizeCategorySlug(pillar);
+        if (pillarSlug is not null && KittechCategories.Contains(pillarSlug))
+            return pillarSlug.ToLowerInvariant();
+
+        var hay = $"{title}\n{pillar}\n{brandCode}\n{brandName}\n{Trim(body ?? "", 400)}".ToLowerInvariant();
+
+        // Brand-first signals
+        if (ContainsAny(hay, "novixa", "nhà thuốc", "nha thuoc", "dược", "duoc", "pharmacy", "gpp", "pos nhà thuốc"))
+            return "healthcare";
+        if (ContainsAny(hay, "famixa", "gia đình", "gia dinh", "family", "cha mẹ", "cha me", "con cái"))
+            return "products";
+
+        // Topic keywords (ordered by specificity)
+        if (ContainsAny(hay, "faq", "hỏi đáp", "hoi dap", "câu hỏi thường", "cau hoi thuong"))
+            return "faq";
+        if (ContainsAny(hay, "ai agent", "trí tuệ nhân tạo", "tri tue nhan tao", "machine learning", "llm",
+                "chatgpt", "generative ai", " ai ", "ai-", "-ai ", "ai trong", "ứng dụng ai", "ung dung ai"))
+            return "ai";
+        if (ContainsAny(hay, "chuyển đổi số", "chuyen doi so", "digital transformation", "số hóa", "so hoa"))
+            return "digital-transformation";
+        if (ContainsAny(hay, "devops", "docker", "kubernetes", "api-first", "cloud-native", "flutter", "postgresql",
+                "kiến trúc", "kien truc", "engineering", "kỹ thuật", "ky thuat", "microservices"))
+            return "engineering";
+        if (ContainsAny(hay, "company", "tin công ty", "tin cong ty", "tuyển dụng", "tuyen dung", "văn hóa", "van hoa kit"))
+            return "company-news";
+        if (ContainsAny(hay, "doanh nghiệp", "doanh nghiep", "kinh doanh", "crm", "loyalty", "omnichannel",
+                "bán hàng", "ban hang", "roi", "growth"))
+            return "business";
+        if (ContainsAny(hay, "sản phẩm", "san pham", "product", "tính năng", "tinh nang", "giải pháp", "giai phap",
+                "platform", "nền tảng", "nen tang"))
+            return ContainsAny(hay, "giải pháp", "giai phap", "solution") ? "solutions" : "products";
+        if (ContainsAny(hay, "công nghệ", "cong nghe", "technology", "mobile-first", "pwa", "saas", "bảo mật", "bao mat"))
+            return "technology";
+        if (ContainsAny(hay, "y tế", "y te", "healthcare", "sức khỏe", "suc khoe", "bệnh", "benh"))
+            return "healthcare";
+
+        var fallback = NormalizeCategorySlug(configuredFallback);
+        if (fallback is not null && KittechCategories.Contains(fallback))
+            return fallback.ToLowerInvariant();
+        return "technology";
+    }
+
+    private static string InferKittechSection(string category, string? configured)
+    {
+        var cfg = NormalizeCategorySlug(configured);
+        if (cfg is "insights" or "technology" or "solutions" or "products" or "company" or "faq")
+            return cfg;
+
+        return category.ToLowerInvariant() switch
+        {
+            "technology" or "engineering" or "ai" or "digital-transformation" => "technology",
+            "solutions" => "solutions",
+            "products" => "products",
+            "company-news" => "company",
+            "faq" => "faq",
+            _ => "insights",
+        };
+    }
+
+    private static string? NormalizeCategorySlug(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var s = raw.Trim().ToLowerInvariant()
+            .Replace(' ', '-')
+            .Replace('_', '-');
+        // common aliases
+        s = s switch
+        {
+            "health" or "y-te" or "yte" or "nha-thuoc" or "pharmacy" => "healthcare",
+            "tech" or "cong-nghe" => "technology",
+            "dx" or "chuyen-doi-so" => "digital-transformation",
+            "company" or "tin-tuc" or "news" => "company-news",
+            "product" => "products",
+            "solution" => "solutions",
+            "eng" => "engineering",
+            _ => s,
+        };
+        return s;
+    }
+
+    private static bool ContainsAny(string hay, params string[] needles)
+    {
+        foreach (var n in needles)
+        {
+            if (hay.Contains(n, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
     private static string Trim(string s, int max = 500) =>
         s.Length <= max ? s : s[..max];
 
     private static string EscapeYaml(string s) =>
-        s.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal);
+        s.Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("\"", "\\\"", StringComparison.Ordinal)
+            .Replace("\r", " ", StringComparison.Ordinal)
+            .Replace("\n", " ", StringComparison.Ordinal);
 
     private static string Slugify(string input)
     {
+        var ascii = RemoveDiacritics(input.Trim().ToLowerInvariant());
         var sb = new StringBuilder();
-        foreach (var ch in input.Trim().ToLowerInvariant())
+        foreach (var ch in ascii)
         {
-            if (char.IsLetterOrDigit(ch)) sb.Append(ch);
-            else if (ch is ' ' or '-' or '_') sb.Append('-');
+            if (ch is >= 'a' and <= 'z' or >= '0' and <= '9') sb.Append(ch);
+            else if (ch is ' ' or '-' or '_' or '.') sb.Append('-');
         }
         var slug = sb.ToString().Trim('-');
         while (slug.Contains("--", StringComparison.Ordinal))
             slug = slug.Replace("--", "-", StringComparison.Ordinal);
         return string.IsNullOrWhiteSpace(slug) ? Guid.NewGuid().ToString("N")[..8] : slug[..Math.Min(80, slug.Length)];
+    }
+
+    private static string RemoveDiacritics(string text)
+    {
+        var formD = text.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder(formD.Length);
+        foreach (var ch in formD)
+        {
+            var uc = CharUnicodeInfo.GetUnicodeCategory(ch);
+            if (uc != UnicodeCategory.NonSpacingMark) sb.Append(ch);
+        }
+        return sb.ToString()
+            .Normalize(NormalizationForm.FormC)
+            .Replace('đ', 'd')
+            .Replace('Đ', 'd');
     }
 
     private sealed record ConnectorResult(string? ExternalRef, string ResultJson);

@@ -227,6 +227,11 @@ internal sealed class ContentBrandService : IContentBrandService
         row.SortOrder = request.SortOrder ?? existing.SortOrder;
         if (request.OperationalBrief is null)
             row.OperationalBrief = existing.OperationalBrief;
+        if (request.Knowledge is null)
+        {
+            row.ToneJson = existing.ToneJson;
+            row.VisualKitJson = existing.VisualKitJson;
+        }
         await _repo.UpdateBrandAsync(row, cancellationToken);
         return await GetAsync(id, cancellationToken);
     }
@@ -327,11 +332,16 @@ internal sealed class ContentBrandService : IContentBrandService
     }
 
     private static ContentBrandDto Map(ContentRepository.BrandRow r, decimal spend) =>
-        new(r.Id, r.Code, r.Name, r.DefaultCtaUrl, r.DefaultCtaLabel, r.MonthlyCeilingUsd,
-            r.ImageTier, r.PauseWhenExceeded, r.IsActive, r.SortOrder, r.OperationalBrief, spend, r.UpdatedAt);
+        new(
+            r.Id, r.Code, r.Name, r.DefaultCtaUrl, r.DefaultCtaLabel, r.MonthlyCeilingUsd,
+            r.ImageTier, r.PauseWhenExceeded, r.IsActive, r.SortOrder, r.OperationalBrief,
+            ContentBrandKnowledge.Parse(r.ToneJson, r.VisualKitJson),
+            spend, r.UpdatedAt);
 
-    private static ContentRepository.BrandRow ToRow(Guid id, UpsertContentBrandRequest request) =>
-        new()
+    private static ContentRepository.BrandRow ToRow(Guid id, UpsertContentBrandRequest request)
+    {
+        var (toneJson, visualJson) = ContentBrandKnowledge.Serialize(request.Knowledge);
+        return new()
         {
             Id = id,
             Code = request.Code.Trim().ToLowerInvariant(),
@@ -346,7 +356,10 @@ internal sealed class ContentBrandService : IContentBrandService
             OperationalBrief = string.IsNullOrWhiteSpace(request.OperationalBrief)
                 ? null
                 : request.OperationalBrief.Trim(),
+            ToneJson = toneJson,
+            VisualKitJson = visualJson,
         };
+    }
 
     private static string NormalizeJson(string? json)
     {
@@ -450,6 +463,13 @@ internal sealed class ContentTopicService : IContentTopicService
         return await GetAsync(id, cancellationToken);
     }
 
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var existing = await _repo.GetTopicAsync(id, cancellationToken);
+        if (existing is null) return false;
+        return await _repo.DeleteTopicAsync(id, cancellationToken);
+    }
+
     public async Task<bool> SelectAssetAsync(Guid topicId, Guid assetId, CancellationToken cancellationToken = default)
     {
         var asset = await _repo.GetAssetAsync(assetId, cancellationToken);
@@ -476,4 +496,289 @@ internal sealed class ContentTopicService : IContentTopicService
             or "Published" or "BudgetBlocked" or "Rejected"
             ? s
             : "Draft";
+}
+
+internal sealed class ContentPackageService : IContentPackageService
+{
+    private readonly ContentRepository _repo;
+    private readonly IContentTopicService _topics;
+    private readonly IContentGenerateService _generate;
+
+    public ContentPackageService(
+        ContentRepository repo,
+        IContentTopicService topics,
+        IContentGenerateService generate)
+    {
+        _repo = repo;
+        _topics = topics;
+        _generate = generate;
+    }
+
+    public async Task<IReadOnlyList<ContentPackageDto>> ListAsync(
+        Guid? brandId,
+        string? status,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await _repo.ListPackagesAsync(brandId, status, cancellationToken);
+        return rows.Select(Map).ToList();
+    }
+
+    public async Task<ContentPackageDto?> GetAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var row = await _repo.GetPackageAsync(id, cancellationToken);
+        return row is null ? null : Map(row);
+    }
+
+    public async Task<ContentPackageDetailDto?> GetDetailAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var package = await GetAsync(id, cancellationToken);
+        if (package is null) return null;
+        var detail = await _topics.GetDetailAsync(package.TopicId, cancellationToken);
+        if (detail is null) return null;
+        return new ContentPackageDetailDto(package, detail);
+    }
+
+    public async Task<ContentPackageDto> CreateAsync(
+        UpsertContentPackageRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var brand = await _repo.GetBrandAsync(request.BrandId, cancellationToken)
+                    ?? throw new InvalidOperationException("Brand not found");
+
+        var title = request.Title.Trim();
+        if (title.Length == 0) throw new InvalidOperationException("Title is required");
+
+        var priority = NormalizePriority(request.Priority);
+        var goal = string.IsNullOrWhiteSpace(request.Goal) ? "traffic" : request.Goal.Trim();
+        var contentType = string.IsNullOrWhiteSpace(request.ContentType) ? "educational" : request.ContentType.Trim();
+        var outline = BuildOutline(request.Angle, request.Audience, request.BodyOutline);
+
+        var topicId = await _repo.InsertTopicAsync(
+            request.BrandId,
+            title,
+            request.Pillar?.Trim(),
+            goal,
+            request.CtaUrl?.Trim() ?? brand.DefaultCtaUrl,
+            utm: null,
+            priority,
+            "Draft",
+            outline,
+            request.DisplayAt,
+            cancellationToken);
+
+        var packageId = await _repo.InsertPackageAsync(
+            request.BrandId,
+            topicId,
+            title,
+            request.Angle?.Trim(),
+            request.Audience?.Trim(),
+            contentType,
+            request.Pillar?.Trim(),
+            goal,
+            priority,
+            "Draft",
+            sourcePackageId: null,
+            cancellationToken);
+
+        return (await GetAsync(packageId, cancellationToken))!;
+    }
+
+    public async Task<ContentPackageDto?> UpdateAsync(
+        Guid id,
+        UpsertContentPackageRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var existing = await _repo.GetPackageAsync(id, cancellationToken);
+        if (existing is null) return null;
+
+        var title = request.Title.Trim();
+        if (title.Length == 0) throw new InvalidOperationException("Title is required");
+
+        var priority = NormalizePriority(request.Priority ?? existing.Priority);
+        var goal = string.IsNullOrWhiteSpace(request.Goal) ? existing.Goal : request.Goal.Trim();
+        var contentType = string.IsNullOrWhiteSpace(request.ContentType)
+            ? existing.ContentType
+            : request.ContentType.Trim();
+        var outline = BuildOutline(request.Angle, request.Audience, request.BodyOutline);
+
+        await _repo.UpdatePackageAsync(
+            id,
+            title,
+            request.Angle?.Trim(),
+            request.Audience?.Trim(),
+            contentType,
+            request.Pillar?.Trim(),
+            goal,
+            priority,
+            cancellationToken);
+
+        var topic = await _repo.GetTopicAsync(existing.TopicId, cancellationToken);
+        if (topic is not null)
+        {
+            await _repo.UpdateTopicAsync(
+                existing.TopicId,
+                existing.BrandId,
+                title,
+                request.Pillar?.Trim() ?? topic.Pillar,
+                goal,
+                request.CtaUrl?.Trim() ?? topic.CtaUrl,
+                topic.UtmCampaign,
+                priority,
+                topic.Status,
+                outline ?? topic.BodyOutline,
+                request.DisplayAt ?? topic.DisplayAt,
+                cancellationToken);
+        }
+
+        return await GetAsync(id, cancellationToken);
+    }
+
+    public async Task<GenerateContentResultDto> GenerateAllAsync(
+        Guid id,
+        GenerateContentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var package = await _repo.GetPackageAsync(id, cancellationToken)
+                      ?? throw new InvalidOperationException("Package not found");
+
+        await _repo.UpdatePackageStatusAsync(id, "Generating", cancellationToken);
+        try
+        {
+            var result = await _generate.GenerateAsync(package.TopicId, request, cancellationToken);
+            await _repo.UpdatePackageStatusAsync(id, result.Topic.Status, cancellationToken);
+            return result;
+        }
+        catch
+        {
+            var topic = await _repo.GetTopicAsync(package.TopicId, cancellationToken);
+            await _repo.UpdatePackageStatusAsync(id, topic?.Status ?? "Draft", cancellationToken);
+            throw;
+        }
+    }
+
+    public async Task<ContentPackageDto> AdaptAsync(
+        Guid id,
+        AdaptContentPackageRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var source = await _repo.GetPackageAsync(id, cancellationToken)
+                     ?? throw new InvalidOperationException("Source package not found");
+        if (request.TargetBrandId == source.BrandId)
+            throw new InvalidOperationException("Chọn thương hiệu đích khác với brand nguồn.");
+
+        var targetBrand = await _repo.GetBrandAsync(request.TargetBrandId, cancellationToken)
+                          ?? throw new InvalidOperationException("Target brand not found");
+
+        var sourceTopic = await _repo.GetTopicAsync(source.TopicId, cancellationToken)
+                          ?? throw new InvalidOperationException("Source topic missing");
+
+        var title = string.IsNullOrWhiteSpace(request.Title)
+            ? source.Title
+            : request.Title.Trim();
+        var angle = string.IsNullOrWhiteSpace(request.Angle)
+            ? $"Góc nhìn {targetBrand.Name}: {source.Angle ?? source.Title}"
+            : request.Angle.Trim();
+        var outline = BuildOutline(
+            angle,
+            source.Audience,
+            request.BodyOutline
+            ?? $"Biến thể từ package {source.BrandName}: «{source.Title}».\n\n{sourceTopic.BodyOutline ?? ""}".Trim());
+
+        var topicId = await _repo.InsertTopicAsync(
+            request.TargetBrandId,
+            title,
+            source.Pillar,
+            source.Goal,
+            targetBrand.DefaultCtaUrl ?? sourceTopic.CtaUrl,
+            utm: null,
+            source.Priority,
+            "Draft",
+            outline,
+            request.DisplayAt ?? sourceTopic.DisplayAt,
+            cancellationToken);
+
+        var packageId = await _repo.InsertPackageAsync(
+            request.TargetBrandId,
+            topicId,
+            title,
+            angle,
+            source.Audience,
+            source.ContentType,
+            source.Pillar,
+            source.Goal,
+            source.Priority,
+            "Draft",
+            sourcePackageId: source.Id,
+            cancellationToken);
+
+        return (await GetAsync(packageId, cancellationToken))!;
+    }
+
+    public async Task<ContentPackageDto?> ApproveAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var package = await _repo.GetPackageAsync(id, cancellationToken);
+        if (package is null) return null;
+
+        var variants = await _repo.ListVariantsAsync(package.TopicId, cancellationToken);
+        if (variants.Count == 0)
+            throw new InvalidOperationException("Chưa có bản viết — Generate All trước khi duyệt.");
+
+        await _repo.UpdateTopicStatusAsync(package.TopicId, "Approved", cancellationToken);
+        await _repo.UpdatePackageStatusAsync(id, "Approved", cancellationToken);
+        return await GetAsync(id, cancellationToken);
+    }
+
+    public async Task<BatchApprovePackagesResultDto> ApproveBatchAsync(
+        BatchApprovePackagesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = (request.PackageIds ?? [])
+            .Where(x => x != Guid.Empty)
+            .Distinct()
+            .ToList();
+        if (ids.Count == 0)
+            return new BatchApprovePackagesResultDto(0, 0, [], "Không có package nào được chọn.");
+
+        var failed = new List<Guid>();
+        var approved = 0;
+        foreach (var id in ids)
+        {
+            try
+            {
+                var row = await ApproveAsync(id, cancellationToken);
+                if (row is null) failed.Add(id);
+                else approved++;
+            }
+            catch
+            {
+                failed.Add(id);
+            }
+        }
+
+        return new BatchApprovePackagesResultDto(
+            ids.Count,
+            approved,
+            failed,
+            failed.Count == 0
+                ? $"Đã duyệt {approved} package."
+                : $"Đã duyệt {approved}/{ids.Count}; {failed.Count} lỗi (thiếu bản viết hoặc không tìm thấy).");
+    }
+
+    private static ContentPackageDto Map(ContentRepository.PackageRow r) =>
+        new(
+            r.Id, r.BrandId, r.BrandCode, r.BrandName, r.TopicId, r.Title, r.Angle, r.Audience,
+            r.ContentType, r.Pillar, r.Goal, r.Priority, r.Status, r.SourcePackageId, r.DisplayAt,
+            r.VariantCount, r.CreatedAt, r.UpdatedAt);
+
+    private static string? BuildOutline(string? angle, string? audience, string? bodyOutline)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(angle)) parts.Add("Angle: " + angle.Trim());
+        if (!string.IsNullOrWhiteSpace(audience)) parts.Add("Audience: " + audience.Trim());
+        if (!string.IsNullOrWhiteSpace(bodyOutline)) parts.Add(bodyOutline.Trim());
+        return parts.Count == 0 ? null : string.Join("\n\n", parts);
+    }
+
+    private static string NormalizePriority(string? p) =>
+        p is "P0" or "P1" or "P2" ? p : "P1";
 }

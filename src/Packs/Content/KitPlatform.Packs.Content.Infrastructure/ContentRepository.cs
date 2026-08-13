@@ -41,6 +41,8 @@ internal sealed class ContentRepository
         public bool IsActive { get; set; }
         public int SortOrder { get; set; }
         public string? OperationalBrief { get; set; }
+        public string ToneJson { get; set; } = "{}";
+        public string VisualKitJson { get; set; } = "{}";
         public DateTimeOffset UpdatedAt { get; set; }
     }
 
@@ -87,6 +89,28 @@ internal sealed class ContentRepository
         public string Status { get; set; } = "Draft";
         public string? BodyOutline { get; set; }
         public DateTimeOffset? DisplayAt { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
+    }
+
+    public sealed class PackageRow
+    {
+        public Guid Id { get; set; }
+        public Guid BrandId { get; set; }
+        public string BrandCode { get; set; } = "";
+        public string BrandName { get; set; } = "";
+        public Guid TopicId { get; set; }
+        public string Title { get; set; } = "";
+        public string? Angle { get; set; }
+        public string? Audience { get; set; }
+        public string ContentType { get; set; } = "educational";
+        public string? Pillar { get; set; }
+        public string Goal { get; set; } = "traffic";
+        public string Priority { get; set; } = "P1";
+        public string Status { get; set; } = "Draft";
+        public Guid? SourcePackageId { get; set; }
+        public DateTimeOffset? DisplayAt { get; set; }
+        public int VariantCount { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
     }
@@ -206,6 +230,7 @@ internal sealed class ContentRepository
                 monthly_ceiling_usd AS MonthlyCeilingUsd, image_tier AS ImageTier,
                 pause_when_exceeded AS PauseWhenExceeded, is_active AS IsActive,
                 sort_order AS SortOrder, operational_brief AS OperationalBrief,
+                tone_json::text AS ToneJson, visual_kit_json::text AS VisualKitJson,
                 updated_at AS UpdatedAt
             FROM pack_content.brand
             WHERE (@ActiveOnly IS NULL OR is_active = @ActiveOnly)
@@ -224,6 +249,7 @@ internal sealed class ContentRepository
                 monthly_ceiling_usd AS MonthlyCeilingUsd, image_tier AS ImageTier,
                 pause_when_exceeded AS PauseWhenExceeded, is_active AS IsActive,
                 sort_order AS SortOrder, operational_brief AS OperationalBrief,
+                tone_json::text AS ToneJson, visual_kit_json::text AS VisualKitJson,
                 updated_at AS UpdatedAt
             FROM pack_content.brand WHERE id = @Id
             """;
@@ -237,11 +263,11 @@ internal sealed class ContentRepository
             INSERT INTO pack_content.brand (
                 code, name, default_cta_url, default_cta_label,
                 monthly_ceiling_usd, image_tier, pause_when_exceeded, is_active, sort_order,
-                operational_brief
+                operational_brief, tone_json, visual_kit_json
             ) VALUES (
                 @Code, @Name, @DefaultCtaUrl, @DefaultCtaLabel,
                 @MonthlyCeilingUsd, @ImageTier, @PauseWhenExceeded, @IsActive, @SortOrder,
-                @OperationalBrief
+                @OperationalBrief, @ToneJson::jsonb, @VisualKitJson::jsonb
             ) RETURNING id
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
@@ -262,6 +288,8 @@ internal sealed class ContentRepository
                 is_active = @IsActive,
                 sort_order = @SortOrder,
                 operational_brief = @OperationalBrief,
+                tone_json = @ToneJson::jsonb,
+                visual_kit_json = @VisualKitJson::jsonb,
                 updated_at = NOW()
             WHERE id = @Id
             """;
@@ -525,6 +553,17 @@ internal sealed class ContentRepository
         await conn.ExecuteAsync(sql, new { Id = id, Status = status });
     }
 
+    public async Task<bool> DeleteTopicAsync(Guid id, CancellationToken ct)
+    {
+        // Cascades variants / assets / publish_jobs / packages (FK ON DELETE CASCADE).
+        const string sql = """
+            DELETE FROM pack_content.topic WHERE id = @Id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        var n = await conn.ExecuteAsync(sql, new { Id = id });
+        return n > 0;
+    }
+
     public async Task InsertUsageAsync(
         Guid? brandId,
         Guid? topicId,
@@ -763,6 +802,343 @@ internal sealed class ContentRepository
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
         return (await conn.QueryAsync<PublishJobRow>(sql, new { TopicId = topicId })).ToList();
+    }
+
+    public async Task<IReadOnlyList<PackageRow>> ListPackagesAsync(Guid? brandId, string? status, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT p.id AS Id, p.brand_id AS BrandId, b.code AS BrandCode, b.name AS BrandName,
+                   p.topic_id AS TopicId, p.title AS Title, p.angle AS Angle, p.audience AS Audience,
+                   p.content_type AS ContentType, p.pillar AS Pillar, p.goal AS Goal,
+                   p.priority AS Priority, COALESCE(t.status, p.status) AS Status,
+                   p.source_package_id AS SourcePackageId, t.display_at AS DisplayAt,
+                   (SELECT COUNT(*)::int FROM pack_content.variant v WHERE v.topic_id = p.topic_id) AS VariantCount,
+                   p.created_at AS CreatedAt, p.updated_at AS UpdatedAt
+            FROM pack_content.content_package p
+            INNER JOIN pack_content.brand b ON b.id = p.brand_id
+            INNER JOIN pack_content.topic t ON t.id = p.topic_id
+            WHERE (@BrandId IS NULL OR p.brand_id = @BrandId)
+              AND (@Status IS NULL OR COALESCE(t.status, p.status) = @Status)
+            ORDER BY p.created_at DESC
+            LIMIT 500
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return (await conn.QueryAsync<PackageRow>(sql, new { BrandId = brandId, Status = status })).ToList();
+    }
+
+    public async Task<PackageRow?> GetPackageAsync(Guid id, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT p.id AS Id, p.brand_id AS BrandId, b.code AS BrandCode, b.name AS BrandName,
+                   p.topic_id AS TopicId, p.title AS Title, p.angle AS Angle, p.audience AS Audience,
+                   p.content_type AS ContentType, p.pillar AS Pillar, p.goal AS Goal,
+                   p.priority AS Priority, COALESCE(t.status, p.status) AS Status,
+                   p.source_package_id AS SourcePackageId, t.display_at AS DisplayAt,
+                   (SELECT COUNT(*)::int FROM pack_content.variant v WHERE v.topic_id = p.topic_id) AS VariantCount,
+                   p.created_at AS CreatedAt, p.updated_at AS UpdatedAt
+            FROM pack_content.content_package p
+            INNER JOIN pack_content.brand b ON b.id = p.brand_id
+            INNER JOIN pack_content.topic t ON t.id = p.topic_id
+            WHERE p.id = @Id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.QuerySingleOrDefaultAsync<PackageRow>(sql, new { Id = id });
+    }
+
+    public async Task<Guid> InsertPackageAsync(
+        Guid brandId,
+        Guid topicId,
+        string title,
+        string? angle,
+        string? audience,
+        string contentType,
+        string? pillar,
+        string goal,
+        string priority,
+        string status,
+        Guid? sourcePackageId,
+        CancellationToken ct)
+    {
+        const string sql = """
+            INSERT INTO pack_content.content_package (
+                brand_id, topic_id, title, angle, audience, content_type,
+                pillar, goal, priority, status, source_package_id
+            ) VALUES (
+                @BrandId, @TopicId, @Title, @Angle, @Audience, @ContentType,
+                @Pillar, @Goal, @Priority, @Status, @SourcePackageId
+            ) RETURNING id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.ExecuteScalarAsync<Guid>(sql, new
+        {
+            BrandId = brandId,
+            TopicId = topicId,
+            Title = title,
+            Angle = angle,
+            Audience = audience,
+            ContentType = contentType,
+            Pillar = pillar,
+            Goal = goal,
+            Priority = priority,
+            Status = status,
+            SourcePackageId = sourcePackageId,
+        });
+    }
+
+    public async Task UpdatePackageAsync(
+        Guid id,
+        string title,
+        string? angle,
+        string? audience,
+        string contentType,
+        string? pillar,
+        string goal,
+        string priority,
+        CancellationToken ct)
+    {
+        const string sql = """
+            UPDATE pack_content.content_package SET
+                title = @Title,
+                angle = @Angle,
+                audience = @Audience,
+                content_type = @ContentType,
+                pillar = @Pillar,
+                goal = @Goal,
+                priority = @Priority,
+                updated_at = NOW()
+            WHERE id = @Id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new
+        {
+            Id = id,
+            Title = title,
+            Angle = angle,
+            Audience = audience,
+            ContentType = contentType,
+            Pillar = pillar,
+            Goal = goal,
+            Priority = priority,
+        });
+    }
+
+    public async Task UpdatePackageStatusAsync(Guid id, string status, CancellationToken ct)
+    {
+        const string sql = """
+            UPDATE pack_content.content_package
+            SET status = @Status, updated_at = NOW()
+            WHERE id = @Id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new { Id = id, Status = status });
+    }
+
+    public sealed class VideoTemplateRow
+    {
+        public Guid Id { get; set; }
+        public string Code { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Provider { get; set; } = "storyboard_local";
+        public string? ExternalTemplateId { get; set; }
+        public string AspectRatio { get; set; } = "9:16";
+        public int DurationSec { get; set; } = 45;
+        public string? Description { get; set; }
+        public string ConfigJson { get; set; } = "{}";
+        public bool IsActive { get; set; }
+        public int SortOrder { get; set; }
+    }
+
+    public sealed class VideoJobRow
+    {
+        public Guid Id { get; set; }
+        public Guid BrandId { get; set; }
+        public string BrandCode { get; set; } = "";
+        public string BrandName { get; set; } = "";
+        public Guid? PackageId { get; set; }
+        public Guid? TopicId { get; set; }
+        public Guid TemplateId { get; set; }
+        public string TemplateCode { get; set; } = "";
+        public string TemplateName { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string ScriptBody { get; set; } = "";
+        public string Status { get; set; } = "Draft";
+        public string Provider { get; set; } = "storyboard_local";
+        public string? ExternalRenderId { get; set; }
+        public string? PreviewUrl { get; set; }
+        public string? OutputUrl { get; set; }
+        public string? ErrorMessage { get; set; }
+        public string StoryboardJson { get; set; } = "[]";
+        public string ConfigJson { get; set; } = "{}";
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
+        public DateTimeOffset? RenderedAt { get; set; }
+    }
+
+    public async Task<IReadOnlyList<VideoTemplateRow>> ListVideoTemplatesAsync(bool? activeOnly, CancellationToken ct)
+    {
+        var sql = """
+            SELECT id AS Id, code AS Code, name AS Name, provider AS Provider,
+                   external_template_id AS ExternalTemplateId, aspect_ratio AS AspectRatio,
+                   duration_sec AS DurationSec, description AS Description,
+                   config_json::text AS ConfigJson, is_active AS IsActive, sort_order AS SortOrder
+            FROM pack_content.video_template
+            WHERE (@ActiveOnly IS NULL OR is_active = @ActiveOnly)
+            ORDER BY sort_order, name
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return (await conn.QueryAsync<VideoTemplateRow>(sql, new { ActiveOnly = activeOnly })).ToList();
+    }
+
+    public async Task<VideoTemplateRow?> GetVideoTemplateAsync(Guid id, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT id AS Id, code AS Code, name AS Name, provider AS Provider,
+                   external_template_id AS ExternalTemplateId, aspect_ratio AS AspectRatio,
+                   duration_sec AS DurationSec, description AS Description,
+                   config_json::text AS ConfigJson, is_active AS IsActive, sort_order AS SortOrder
+            FROM pack_content.video_template
+            WHERE id = @Id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.QuerySingleOrDefaultAsync<VideoTemplateRow>(sql, new { Id = id });
+    }
+
+    public async Task<VideoTemplateRow?> GetVideoTemplateByCodeAsync(string code, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT id AS Id, code AS Code, name AS Name, provider AS Provider,
+                   external_template_id AS ExternalTemplateId, aspect_ratio AS AspectRatio,
+                   duration_sec AS DurationSec, description AS Description,
+                   config_json::text AS ConfigJson, is_active AS IsActive, sort_order AS SortOrder
+            FROM pack_content.video_template
+            WHERE code = @Code
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.QuerySingleOrDefaultAsync<VideoTemplateRow>(sql, new { Code = code });
+    }
+
+    public async Task<IReadOnlyList<VideoJobRow>> ListVideoJobsAsync(Guid? brandId, string? status, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT j.id AS Id, j.brand_id AS BrandId, b.code AS BrandCode, b.name AS BrandName,
+                   j.package_id AS PackageId, j.topic_id AS TopicId, j.template_id AS TemplateId,
+                   t.code AS TemplateCode, t.name AS TemplateName, j.title AS Title,
+                   j.script_body AS ScriptBody, j.status AS Status, j.provider AS Provider,
+                   j.external_render_id AS ExternalRenderId, j.preview_url AS PreviewUrl,
+                   j.output_url AS OutputUrl, j.error_message AS ErrorMessage,
+                   j.storyboard_json::text AS StoryboardJson, j.config_json::text AS ConfigJson,
+                   j.created_at AS CreatedAt, j.updated_at AS UpdatedAt, j.rendered_at AS RenderedAt
+            FROM pack_content.video_job j
+            INNER JOIN pack_content.brand b ON b.id = j.brand_id
+            INNER JOIN pack_content.video_template t ON t.id = j.template_id
+            WHERE (@BrandId IS NULL OR j.brand_id = @BrandId)
+              AND (@Status IS NULL OR j.status = @Status)
+            ORDER BY j.created_at DESC
+            LIMIT 300
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return (await conn.QueryAsync<VideoJobRow>(sql, new { BrandId = brandId, Status = status })).ToList();
+    }
+
+    public async Task<VideoJobRow?> GetVideoJobAsync(Guid id, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT j.id AS Id, j.brand_id AS BrandId, b.code AS BrandCode, b.name AS BrandName,
+                   j.package_id AS PackageId, j.topic_id AS TopicId, j.template_id AS TemplateId,
+                   t.code AS TemplateCode, t.name AS TemplateName, j.title AS Title,
+                   j.script_body AS ScriptBody, j.status AS Status, j.provider AS Provider,
+                   j.external_render_id AS ExternalRenderId, j.preview_url AS PreviewUrl,
+                   j.output_url AS OutputUrl, j.error_message AS ErrorMessage,
+                   j.storyboard_json::text AS StoryboardJson, j.config_json::text AS ConfigJson,
+                   j.created_at AS CreatedAt, j.updated_at AS UpdatedAt, j.rendered_at AS RenderedAt
+            FROM pack_content.video_job j
+            INNER JOIN pack_content.brand b ON b.id = j.brand_id
+            INNER JOIN pack_content.video_template t ON t.id = j.template_id
+            WHERE j.id = @Id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.QuerySingleOrDefaultAsync<VideoJobRow>(sql, new { Id = id });
+    }
+
+    public async Task<Guid> InsertVideoJobAsync(
+        Guid brandId,
+        Guid? packageId,
+        Guid? topicId,
+        Guid templateId,
+        string title,
+        string scriptBody,
+        string status,
+        string provider,
+        string storyboardJson,
+        string configJson,
+        CancellationToken ct)
+    {
+        const string sql = """
+            INSERT INTO pack_content.video_job (
+                brand_id, package_id, topic_id, template_id, title, script_body,
+                status, provider, storyboard_json, config_json
+            ) VALUES (
+                @BrandId, @PackageId, @TopicId, @TemplateId, @Title, @ScriptBody,
+                @Status, @Provider, @StoryboardJson::jsonb, @ConfigJson::jsonb
+            ) RETURNING id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.ExecuteScalarAsync<Guid>(sql, new
+        {
+            BrandId = brandId,
+            PackageId = packageId,
+            TopicId = topicId,
+            TemplateId = templateId,
+            Title = title,
+            ScriptBody = scriptBody,
+            Status = status,
+            Provider = provider,
+            StoryboardJson = storyboardJson,
+            ConfigJson = configJson,
+        });
+    }
+
+    public async Task UpdateVideoJobAsync(
+        Guid id,
+        string? scriptBody,
+        string status,
+        string? externalRenderId,
+        string? previewUrl,
+        string? outputUrl,
+        string? errorMessage,
+        string storyboardJson,
+        string configJson,
+        DateTimeOffset? renderedAt,
+        CancellationToken ct)
+    {
+        const string sql = """
+            UPDATE pack_content.video_job SET
+                script_body = COALESCE(@ScriptBody, script_body),
+                status = @Status,
+                external_render_id = @ExternalRenderId,
+                preview_url = @PreviewUrl,
+                output_url = @OutputUrl,
+                error_message = @ErrorMessage,
+                storyboard_json = @StoryboardJson::jsonb,
+                config_json = @ConfigJson::jsonb,
+                rendered_at = @RenderedAt,
+                updated_at = NOW()
+            WHERE id = @Id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new
+        {
+            Id = id,
+            ScriptBody = scriptBody,
+            Status = status,
+            ExternalRenderId = externalRenderId,
+            PreviewUrl = previewUrl,
+            OutputUrl = outputUrl,
+            ErrorMessage = errorMessage,
+            StoryboardJson = storyboardJson,
+            ConfigJson = configJson,
+            RenderedAt = renderedAt,
+        });
     }
 
     public static Dictionary<string, decimal> ParseRates(string json)

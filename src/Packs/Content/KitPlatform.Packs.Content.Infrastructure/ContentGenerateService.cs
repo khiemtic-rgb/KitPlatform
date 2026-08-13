@@ -129,9 +129,13 @@ internal sealed class ContentGenerateService : IContentGenerateService
             throw new InvalidOperationException(
                 "Gemini API key missing — vào Nội dung → Cấu hình AI (Secret ref / key), hoặc env GEMINI_API_KEY");
 
-        if (!request.ImagesOnly && string.IsNullOrWhiteSpace(brand.OperationalBrief))
-            throw new InvalidOperationException(
-                "Thương hiệu chưa có Brief vận hành. Vào Nội dung → Thương hiệu & nơi đăng → Sửa thương hiệu → dán brief tổng hợp (ChatGPT/SoT) rồi mới Nhờ AI.");
+        if (!request.ImagesOnly)
+        {
+            var knowledgeGate = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
+            if (!ContentBrandKnowledge.HasEnoughForGenerate(brand.OperationalBrief, knowledgeGate))
+                throw new InvalidOperationException(
+                    "Thiếu Brand Knowledge: vào Thương hiệu → điền Positioning (≥20 ký tự) hoặc Brief vận hành (≥40 ký tự) rồi mới Generate.");
+        }
 
         await _repo.UpdateTopicStatusAsync(topicId, "Generating", cancellationToken);
 
@@ -150,19 +154,25 @@ internal sealed class ContentGenerateService : IContentGenerateService
                 if (kinds.Count == 0)
                     kinds = ["web_long"];
 
+                var knowledge = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
+                var brandContext = ContentBrandKnowledge.FormatForPrompt(knowledge, brand.OperationalBrief);
+
                 var system =
-                    "You are a Vietnamese multi-channel content writer for KitPlatform Content Park.\n" +
+                    "You are a Vietnamese multi-channel content writer for KIT Marketing Park.\n" +
                     "Return valid JSON only. No markdown fences.\n" +
-                    "You MUST follow the brand operational brief strictly: voice, claims allowed/forbidden, CTA rules, themes.\n" +
+                    "You MUST follow the brand knowledge / brief strictly: voice, claims allowed/forbidden, CTA rules, themes.\n" +
                     "Do not invent competitor prices, medical claims, or guarantees not in the brief.\n" +
+                    "Never write in another brand's voice when adapting angle for this brand.\n" +
                     "Adapt length to each variant kind.\n" +
+                    "Kind guides: web_long=800–1500 words VN article (markdown OK); seo_meta=title+description; " +
+                    "fb_page=Facebook post PLAIN TEXT only (no **bold**, no # headings, no markdown — Facebook shows raw **); " +
+                    "fb_short=hook+CTA plain text; tiktok_script=timed beats HOOK/PROBLEM/INSIGHT/SOLUTION/CTA 45–60s; " +
+                    "social_caption=short post + hashtags line (plain text); linkedin/instagram=native tone.\n" +
                     "ONLY generate the variant kinds listed — do not invent extra channels.";
 
                 var user =
                     "Brand: " + brand.Name + " (" + brand.Code + ")\n" +
-                    "=== BRAND OPERATIONAL BRIEF (source of truth) ===\n" +
-                    brand.OperationalBrief!.Trim() + "\n" +
-                    "=== END BRIEF ===\n\n" +
+                    brandContext + "\n\n" +
                     "Publish destinations configured: " + destPlan.Summary + "\n" +
                     "Topic title: " + topic.Title + "\n" +
                     "Pillar: " + (topic.Pillar ?? "") + "\n" +
@@ -171,7 +181,7 @@ internal sealed class ContentGenerateService : IContentGenerateService
                     "Article outline (optional): " + (topic.BodyOutline ?? "") + "\n" +
                     "Variant kinds required (ONLY these): " + string.Join(", ", kinds) + "\n\n" +
                     "Return JSON object with keys variants (array of {kind,title,bodyMarkdown,meta}) " +
-                    "and imagePrompt (English visual prompt aligned with brand brief, no text overlays).\n" +
+                    "and imagePrompt (English visual prompt aligned with brand brief/visual style, no text overlays).\n" +
                     "Include exactly one entry per variant kind listed — no more, no less.";
 
                 var raw = await _gemini.GenerateJsonAsync(system, user, cancellationToken);

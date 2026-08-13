@@ -8,6 +8,8 @@ import {
   ReadOutlined,
   SettingOutlined,
   TagsOutlined,
+  UnorderedListOutlined,
+  VideoCameraOutlined,
 } from '@ant-design/icons';
 import { useRegisterSimpleModuleSubnav } from '@/shared/components/module-subnav.context';
 import { useAuthStore } from '@/shared/auth/auth.store';
@@ -16,7 +18,7 @@ import { ADMIN_MODULE_PLATFORM_CODES } from '@/shared/platform/platform-feature-
 
 const STEP_PATHS = [
   '/content/brands',
-  '/content/topics',
+  '/content/packages',
   '/content/topics',
 ] as const;
 
@@ -32,7 +34,9 @@ export function ContentLayout() {
 
   const tabs = useMemo(
     () => [
-      { key: 'topics', label: 'Làm bài', path: '/content/topics', icon: <FileTextOutlined /> },
+      { key: 'packages', label: 'Ý tưởng', path: '/content/packages', icon: <FileTextOutlined /> },
+      { key: 'videos', label: 'Videos', path: '/content/videos', icon: <VideoCameraOutlined /> },
+      { key: 'topics', label: 'Bài viết', path: '/content/topics', icon: <UnorderedListOutlined /> },
       { key: 'brands', label: 'Thương hiệu & nơi đăng', path: '/content/brands', icon: <TagsOutlined /> },
       { key: 'budget', label: 'Giới hạn chi phí', path: '/content/budget', icon: <FundOutlined /> },
       { key: 'ai', label: 'Cấu hình AI', path: '/content/ai', icon: <ApiOutlined /> },
@@ -47,15 +51,23 @@ export function ContentLayout() {
 
   useEffect(() => {
     if (location.pathname === '/content' || location.pathname === '/content/') {
-      navigate('/content/topics', { replace: true });
+      navigate('/content/packages', { replace: true });
     }
   }, [location.pathname, navigate]);
 
-  const activeKey = tabs.find((tab) => location.pathname.startsWith(tab.path))?.key ?? 'topics';
+  const activeKey = tabs.find((tab) => location.pathname.startsWith(tab.path))?.key ?? 'packages';
   useRegisterSimpleModuleSubnav(tabs, activeKey, navigate);
 
   const currentStep =
-    activeKey === 'brands' ? 0 : activeKey === 'topics' ? 1 : activeKey === 'budget' || activeKey === 'ai' || activeKey === 'settings' ? 2 : 1;
+    activeKey === 'brands'
+      ? 0
+      : activeKey === 'packages' || activeKey === 'videos'
+        ? 1
+        : activeKey === 'topics'
+          ? 2
+          : activeKey === 'budget' || activeKey === 'ai' || activeKey === 'settings'
+            ? 2
+            : 1;
 
   if (!isAdmin || (platformLoaded && !moduleOk)) return null;
 
@@ -77,28 +89,28 @@ export function ContentLayout() {
               Marketing Park — viết & đăng cho nhiều thương hiệu
             </Typography.Title>
             <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-              Sản phẩm độc lập (org <strong>KIT_MKT</strong>): khai báo nơi đăng → nhờ AI → duyệt →
-              xuất bản. Không lẫn Novixa / Famixa ERP.
+              <strong>Ý tưởng</strong> (viết AI / sang brand khác) → <strong>Videos</strong> (tuỳ chọn) →{' '}
+              <strong>Bài viết</strong> (ảnh + xuất bản web/FB). Không lẫn ERP.
             </Typography.Text>
           </div>
         </div>
 
         <Steps
           size="small"
-          current={currentStep}
-          onChange={(i) => navigate(STEP_PATHS[i] ?? '/content/topics')}
+          current={Math.min(currentStep, 2)}
+          onChange={(i) => navigate(STEP_PATHS[i] ?? '/content/packages')}
           items={[
             {
               title: '1. Nơi đăng',
               description: 'Thương hiệu + web/fanpage',
             },
             {
-              title: '2. Làm bài',
-              description: 'Dán tiêu đề → Nhờ AI → chọn ảnh',
+              title: '2. Ý tưởng',
+              description: 'Generate All · Sang brand khác',
             },
             {
-              title: '3. Duyệt & đăng',
-              description: 'Xem / duyệt → Xuất bản',
+              title: '3. Bài viết',
+              description: 'Ảnh → duyệt → xuất bản',
             },
           ]}
           style={{ marginBottom: 8 }}
@@ -108,11 +120,25 @@ export function ContentLayout() {
           <Button size="small" type={activeKey === 'brands' ? 'primary' : 'default'} onClick={() => navigate('/content/brands')}>
             Bước 1 · Thương hiệu
           </Button>
-          <Button size="small" type={activeKey === 'topics' ? 'primary' : 'default'} onClick={() => navigate('/content/topics')}>
-            Bước 2–3 · Làm bài
+          <Button
+            size="small"
+            type={activeKey === 'packages' ? 'primary' : 'default'}
+            onClick={() => navigate('/content/packages')}
+          >
+            Bước 2 · Ý tưởng
+          </Button>
+          <Button
+            size="small"
+            type={activeKey === 'topics' ? 'primary' : 'default'}
+            onClick={() => navigate('/content/topics')}
+          >
+            Bước 3 · Bài viết
+          </Button>
+          <Button size="small" type={activeKey === 'videos' ? 'primary' : 'default'} onClick={() => navigate('/content/videos')}>
+            Videos
           </Button>
           <Button size="small" type="link" onClick={() => navigate('/content/budget')}>
-            Xem giới hạn chi phí AI
+            Giới hạn chi phí AI
           </Button>
         </div>
       </div>

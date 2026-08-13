@@ -3,11 +3,15 @@ import {
   Alert,
   App,
   Button,
+  Card,
   Collapse,
+  Col,
+  Divider,
   Drawer,
   Form,
   Input,
   InputNumber,
+  Row,
   Select,
   Space,
   Switch,
@@ -16,7 +20,33 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import { PlusOutlined, ReloadOutlined, FolderOpenOutlined } from '@ant-design/icons';
+import {
+  AimOutlined,
+  ApiOutlined,
+  BankOutlined,
+  BgColorsOutlined,
+  BookOutlined,
+  CodeOutlined,
+  DollarOutlined,
+  EditOutlined,
+  FolderOpenOutlined,
+  FontColorsOutlined,
+  GithubOutlined,
+  GlobalOutlined,
+  KeyOutlined,
+  LinkOutlined,
+  NumberOutlined,
+  PictureOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SaveOutlined,
+  SendOutlined,
+  StopOutlined,
+  TagsOutlined,
+  TeamOutlined,
+  ThunderboltOutlined,
+  UnorderedListOutlined,
+} from '@ant-design/icons';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
   createContentBrand,
@@ -63,6 +93,8 @@ type DestRow = {
   address: string;
   secretRef?: string | null;
   secretConfigured: boolean;
+  /** Empty = OK; otherwise short Vietnamese warning. */
+  configWarning?: string;
   raw: ContentSiteTarget | ContentChannelTarget;
 };
 
@@ -119,6 +151,9 @@ function buildConfigJson(kind: string, v: Record<string, unknown>): string {
   if (kind === 'site:wordpress_rest') {
     if (typeof v.wpUsername === 'string' && v.wpUsername.trim()) base.username = v.wpUsername.trim();
     if (typeof v.wpStatus === 'string' && v.wpStatus.trim()) base.status = v.wpStatus.trim();
+    if (typeof v.wpCategories === 'string' && v.wpCategories.trim()) {
+      base.wpCategories = v.wpCategories.trim();
+    }
   }
   if (kind === 'site:astro_git') {
     if (typeof v.gitOwner === 'string' && v.gitOwner.trim()) base.owner = v.gitOwner.trim();
@@ -127,6 +162,24 @@ function buildConfigJson(kind: string, v: Record<string, unknown>): string {
     if (typeof v.gitContentPath === 'string' && v.gitContentPath.trim()) {
       base.contentPath = v.gitContentPath.trim();
     }
+    if (typeof v.gitImagePath === 'string' && v.gitImagePath.trim()) {
+      base.imagePath = v.gitImagePath.trim();
+    }
+    if (typeof v.insightLocale === 'string' && v.insightLocale.trim()) {
+      base.locale = v.insightLocale.trim();
+    }
+    if (typeof v.insightCategory === 'string' && v.insightCategory.trim()) {
+      base.insightCategory = v.insightCategory.trim();
+    }
+    if (typeof v.blogCategory === 'string' && v.blogCategory.trim()) {
+      base.blogCategory = v.blogCategory.trim();
+    }
+    if (typeof v.insightSection === 'string' && v.insightSection.trim()) {
+      base.insightSection = v.insightSection.trim();
+    }
+    const path = typeof base.contentPath === 'string' ? base.contentPath.toLowerCase() : '';
+    if (path.includes('insights')) base.contentFormat = 'insights';
+    if (path.includes('famixa-site')) base.contentFormat = 'famixa';
   }
   return JSON.stringify(base);
 }
@@ -203,7 +256,8 @@ export function ContentBrandsPage() {
       return;
     }
     try {
-      setImageFolderNames(await getLocalImageLibraryNames(list.map((b) => b.id)));
+      const map = await getLocalImageLibraryNames(list.map((b) => b.id));
+      setImageFolderNames(map);
     } catch {
       setImageFolderNames({});
     }
@@ -230,6 +284,7 @@ export function ContentBrandsPage() {
       message.warning('Cần Chrome / Edge để chọn thư mục ảnh trên máy.');
       return;
     }
+    // Do not setState before showDirectoryPicker — React re-render drops user gesture → SecurityError.
     try {
       const r = await pickLocalImageLibrary(brand.id);
       setImageFolderNames((prev) => ({ ...prev, [brand.id]: r.name }));
@@ -262,30 +317,50 @@ export function ContentBrandsPage() {
   };
 
   const destRows: DestRow[] = useMemo(() => {
-    const siteRows: DestRow[] = sites.map((s) => ({
-      key: `site:${s.id}`,
-      group: 'site',
-      code: s.code,
-      name: s.name,
-      kindLabel: siteKind(s.connectorType),
-      kindValue: `site:${s.connectorType}`,
-      address: s.baseUrl?.trim() || '—',
-      secretRef: s.secretRef,
-      secretConfigured: s.secretConfigured,
-      raw: s,
-    }));
-    const channelRows: DestRow[] = channels.map((c) => ({
-      key: `channel:${c.id}`,
-      group: 'channel',
-      code: c.code,
-      name: c.name,
-      kindLabel: channelKind(c.channelType),
-      kindValue: `channel:${c.channelType}`,
-      address: c.externalId?.trim() || '—',
-      secretRef: c.secretRef,
-      secretConfigured: c.secretConfigured,
-      raw: c,
-    }));
+    const siteRows: DestRow[] = sites.map((s) => {
+      const cfg = parseConfigObj(s.configJson);
+      let configWarning: string | undefined;
+      if (s.connectorType === 'astro_git') {
+        const missing: string[] = [];
+        if (!(typeof cfg.owner === 'string' && cfg.owner.trim())) missing.push('owner');
+        if (!(typeof cfg.repo === 'string' && cfg.repo.trim())) missing.push('repo');
+        if (!s.secretConfigured) missing.push('token');
+        if (missing.length) configWarning = `Thiếu ${missing.join(', ')}`;
+      }
+      return {
+        key: `site:${s.id}`,
+        group: 'site' as const,
+        code: s.code,
+        name: s.name,
+        kindLabel: siteKind(s.connectorType),
+        kindValue: `site:${s.connectorType}`,
+        address: s.baseUrl?.trim() || '—',
+        secretRef: s.secretRef,
+        secretConfigured: s.secretConfigured,
+        configWarning,
+        raw: s,
+      };
+    });
+    const channelRows: DestRow[] = channels.map((c) => {
+      let configWarning: string | undefined;
+      if (c.channelType === 'facebook_page') {
+        if (!c.externalId?.trim()) configWarning = 'Thiếu Page ID';
+        else if (!c.secretConfigured) configWarning = 'Thiếu token';
+      }
+      return {
+        key: `channel:${c.id}`,
+        group: 'channel' as const,
+        code: c.code,
+        name: c.name,
+        kindLabel: channelKind(c.channelType),
+        kindValue: `channel:${c.channelType}`,
+        address: c.externalId?.trim() || '—',
+        secretRef: c.secretRef,
+        secretConfigured: c.secretConfigured,
+        configWarning,
+        raw: c,
+      };
+    });
     return [...siteRows, ...channelRows].sort((a, b) => a.name.localeCompare(b.name, 'vi'));
   }, [sites, channels]);
 
@@ -293,7 +368,18 @@ export function ContentBrandsPage() {
     setEditing(null);
     setDrawerTab('info');
     form.resetFields();
-    form.setFieldsValue({ pauseWhenExceeded: true, isActive: true, sortOrder: 100 });
+    form.setFieldsValue({
+      pauseWhenExceeded: true,
+      isActive: true,
+      sortOrder: 100,
+      knowledge: {
+        tone: [],
+        forbiddenTopics: [],
+        preferredTerms: [],
+        avoidTerms: [],
+        hashtags: [],
+      },
+    });
     setSites([]);
     setChannels([]);
     destForm.resetFields();
@@ -309,6 +395,13 @@ export function ContentBrandsPage() {
   const openEdit = async (row: ContentBrand, tab: 'info' | 'targets' = 'info') => {
     setEditing(row);
     setDrawerTab(tab);
+    const k = row.knowledge ?? {
+      tone: [],
+      forbiddenTopics: [],
+      preferredTerms: [],
+      avoidTerms: [],
+      hashtags: [],
+    };
     form.setFieldsValue({
       code: row.code,
       name: row.name,
@@ -320,6 +413,20 @@ export function ContentBrandsPage() {
       isActive: row.isActive,
       sortOrder: row.sortOrder,
       operationalBrief: row.operationalBrief ?? undefined,
+      knowledge: {
+        positioning: k.positioning ?? undefined,
+        audience: k.audience ?? undefined,
+        tone: k.tone ?? [],
+        forbiddenTopics: k.forbiddenTopics ?? [],
+        preferredTerms: k.preferredTerms ?? [],
+        avoidTerms: k.avoidTerms ?? [],
+        hashtags: k.hashtags ?? [],
+        ctaStyle: k.ctaStyle ?? undefined,
+        voiceNotes: k.voiceNotes ?? undefined,
+        visualStyle: k.visualStyle ?? undefined,
+        visualColors: k.visualColors ?? undefined,
+        imageNotes: k.imageNotes ?? undefined,
+      },
     });
     resetDestForm();
     setDrawerOpen(true);
@@ -346,10 +453,16 @@ export function ContentBrandsPage() {
         configJson: s.configJson || '{}',
         wpUsername: typeof cfg.username === 'string' ? cfg.username : undefined,
         wpStatus: typeof cfg.status === 'string' ? cfg.status : 'draft',
+        wpCategories: typeof cfg.wpCategories === 'string' ? cfg.wpCategories : undefined,
         gitOwner: typeof cfg.owner === 'string' ? cfg.owner : undefined,
         gitRepo: typeof cfg.repo === 'string' ? cfg.repo : undefined,
         gitBranch: typeof cfg.branch === 'string' ? cfg.branch : 'main',
         gitContentPath: typeof cfg.contentPath === 'string' ? cfg.contentPath : 'src/content/blog',
+        gitImagePath: typeof cfg.imagePath === 'string' ? cfg.imagePath : undefined,
+        insightLocale: typeof cfg.locale === 'string' ? cfg.locale : 'vi',
+        insightCategory: typeof cfg.insightCategory === 'string' ? cfg.insightCategory : undefined,
+        blogCategory: typeof cfg.blogCategory === 'string' ? cfg.blogCategory : undefined,
+        insightSection: typeof cfg.insightSection === 'string' ? cfg.insightSection : undefined,
       });
     } else {
       const c = row.raw as ContentChannelTarget;
@@ -369,13 +482,45 @@ export function ContentBrandsPage() {
   const saveBrand = async () => {
     try {
       const v = await form.validateFields();
+      const positioning = String(v.knowledge?.positioning ?? '').trim();
+      const brief = String(v.operationalBrief ?? '').trim();
+      if (brief.length < 40 && positioning.length < 20) {
+        message.error('Cần Brief (≥40 ký tự) hoặc Positioning (≥20 ký tự) trong Brand Knowledge.');
+        return;
+      }
+      const payload = {
+        code: v.code,
+        name: v.name,
+        defaultCtaUrl: v.defaultCtaUrl,
+        defaultCtaLabel: v.defaultCtaLabel,
+        monthlyCeilingUsd: v.monthlyCeilingUsd,
+        imageTier: v.imageTier,
+        pauseWhenExceeded: v.pauseWhenExceeded,
+        isActive: v.isActive,
+        sortOrder: v.sortOrder,
+        operationalBrief: v.operationalBrief,
+        knowledge: {
+          positioning: v.knowledge?.positioning ?? null,
+          audience: v.knowledge?.audience ?? null,
+          tone: v.knowledge?.tone ?? [],
+          forbiddenTopics: v.knowledge?.forbiddenTopics ?? [],
+          preferredTerms: v.knowledge?.preferredTerms ?? [],
+          avoidTerms: v.knowledge?.avoidTerms ?? [],
+          hashtags: v.knowledge?.hashtags ?? [],
+          ctaStyle: v.knowledge?.ctaStyle ?? null,
+          voiceNotes: v.knowledge?.voiceNotes ?? null,
+          visualStyle: v.knowledge?.visualStyle ?? null,
+          visualColors: v.knowledge?.visualColors ?? null,
+          imageNotes: v.knowledge?.imageNotes ?? null,
+        },
+      };
       if (editing) {
-        const updated = await updateContentBrand(editing.id, v);
+        const updated = await updateContentBrand(editing.id, payload);
         setEditing(updated);
         message.success('Đã lưu thương hiệu');
         await load();
       } else {
-        const created = await createContentBrand(v);
+        const created = await createContentBrand(payload);
         message.success('Đã tạo thương hiệu — thêm nơi đăng bên dưới');
         await load();
         setEditing(created);
@@ -395,6 +540,13 @@ export function ContentBrandsPage() {
       const v = await destForm.validateFields();
       const { group, type } = parseKind(v.kind);
       const configJson = buildConfigJson(v.kind, v);
+      if (v.kind === 'site:astro_git') {
+        const cfg = parseConfigObj(configJson);
+        if (!cfg.owner || !cfg.repo) {
+          message.error('Astro/Git: phải điền GitHub owner và Tên repo trước khi Lưu.');
+          return;
+        }
+      }
       const pasted = typeof v.secret === 'string' ? v.secret.trim() : '';
       const needsSecretNow =
         v.kind === 'site:wordpress_rest' ||
@@ -418,6 +570,11 @@ export function ContentBrandsPage() {
           ...secretPayload,
         });
         setSecretConfigured(saved.secretConfigured);
+        if (type === 'astro_git') {
+          message.success(`Đã lưu Astro/Git — owner=${parseConfigObj(saved.configJson).owner ?? '?'} / repo=${parseConfigObj(saved.configJson).repo ?? '?'}`);
+        } else {
+          message.success('Đã lưu nơi đăng');
+        }
       } else {
         const saved = await upsertContentChannel(editing.id, {
           code: v.code.trim(),
@@ -430,8 +587,8 @@ export function ContentBrandsPage() {
           ...secretPayload,
         });
         setSecretConfigured(saved.secretConfigured);
+        message.success('Đã lưu nơi đăng');
       }
-      message.success('Đã lưu nơi đăng');
       destForm.setFieldValue('secret', '');
       await loadTargets(editing.id);
     } catch (e) {
@@ -473,7 +630,7 @@ export function ContentBrandsPage() {
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
-        message="Bấm «Nơi đăng» để thêm web/MXH. «Kho ảnh» gắn thư mục máy riêng từng brand (không trùng Novixa/Famixa…)."
+        message="Bấm «Nơi đăng» trên từng thương hiệu để thêm website / mạng xã hội. «Kho ảnh» gắn thư mục máy riêng từng brand (không trùng Novixa/Famixa…)."
         description="Chọn loại trong combobox khi thêm nơi đăng. Chưa có connector tự động thì vẫn lưu được và xuất bản thủ công (chép bài)."
       />
 
@@ -485,11 +642,15 @@ export function ContentBrandsPage() {
           { title: 'Mã', dataIndex: 'code', width: 110 },
           { title: 'Thương hiệu', dataIndex: 'name' },
           {
-            title: 'Brief',
+            title: 'Knowledge',
             key: 'brief',
             width: 90,
             render: (_, row) =>
-              row.operationalBrief?.trim() ? <Tag color="success">Đã có</Tag> : <Tag color="error">Thiếu</Tag>,
+              row.operationalBrief?.trim() || row.knowledge?.positioning?.trim() ? (
+                <Tag color="success">OK</Tag>
+              ) : (
+                <Tag color="error">Thiếu</Tag>
+              ),
           },
           {
             title: 'Nơi đăng',
@@ -519,7 +680,11 @@ export function ContentBrandsPage() {
                     <Tag>Chưa chọn</Tag>
                   )}
                   <Space size={0}>
-                    <Button type="link" size="small" onClick={() => void onPickBrandImageFolder(row)}>
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={() => void onPickBrandImageFolder(row)}
+                    >
                       {folder ? 'Đổi thư mục' : 'Chọn thư mục'}
                     </Button>
                     {folder ? (
@@ -557,13 +722,19 @@ export function ContentBrandsPage() {
       />
 
       <Drawer
-        title={editing ? `Thương hiệu: ${editing.name}` : 'Thêm thương hiệu'}
-        width={760}
+        title={
+          <Space>
+            <BankOutlined style={{ color: '#1677ff' }} />
+            <span>{editing ? `Thương hiệu: ${editing.name}` : 'Thêm thương hiệu'}</span>
+          </Space>
+        }
+        width={1080}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+        styles={{ body: { paddingTop: 12, background: '#f8fafc' } }}
         extra={
           drawerTab === 'info' ? (
-            <Button type="primary" onClick={() => void saveBrand()}>
+            <Button type="primary" icon={<SaveOutlined />} onClick={() => void saveBrand()}>
               {editing ? 'Lưu thương hiệu' : 'Tạo & tiếp tục nơi đăng'}
             </Button>
           ) : null
@@ -581,43 +752,98 @@ export function ContentBrandsPage() {
           items={[
             {
               key: 'info',
-              label: '1. Thông tin & Brief',
+              label: (
+                <Space size={6}>
+                  <BookOutlined />
+                  Thông tin & Brand Knowledge
+                </Space>
+              ),
               children: (
-                <Form form={form} layout="vertical">
-                  <Form.Item
-                    name="code"
-                    label="Mã ngắn"
-                    rules={[{ required: true }]}
-                    extra="Ví dụ: kit — không đổi sau khi tạo."
+                <Form form={form} layout="vertical" requiredMark="optional" style={{ maxWidth: 920 }}>
+                  <Card
+                    size="small"
+                    title={
+                      <Space>
+                        <BankOutlined />
+                        <span>Định danh</span>
+                      </Space>
+                    }
+                    style={{ marginBottom: 16 }}
                   >
-                    <Input disabled={!!editing} placeholder="kit" />
-                  </Form.Item>
-                  <Form.Item name="name" label="Tên hiển thị" rules={[{ required: true }]}>
-                    <Input placeholder="KIT Technology" />
-                  </Form.Item>
+                    <Row gutter={[16, 0]}>
+                      <Col xs={24} sm={8}>
+                        <Form.Item
+                          name="code"
+                          label={
+                            <Space size={4}>
+                              <NumberOutlined />
+                              Mã ngắn
+                            </Space>
+                          }
+                          rules={[{ required: true, message: 'Bắt buộc' }]}
+                          extra="Không đổi sau khi tạo"
+                        >
+                          <Input disabled={!!editing} placeholder="novixa" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={16}>
+                        <Form.Item
+                          name="name"
+                          label={
+                            <Space size={4}>
+                              <FontColorsOutlined />
+                              Tên hiển thị
+                            </Space>
+                          }
+                          rules={[{ required: true, message: 'Bắt buộc' }]}
+                        >
+                          <Input placeholder="Novixa Healthcare Platform" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={16}>
+                      <Col xs={24} sm={8}>
+                        <Form.Item name="isActive" label="Đang dùng" valuePropName="checked">
+                          <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={8}>
+                        <Form.Item name="sortOrder" label="Thứ tự hiển thị">
+                          <InputNumber style={{ width: '100%' }} placeholder="0" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={8}>
+                        <Form.Item
+                          name="pauseWhenExceeded"
+                          label="Dừng gen khi hết ngân sách"
+                          valuePropName="checked"
+                        >
+                          <Switch />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  </Card>
 
-                  <div
-                    style={{
-                      marginBottom: 16,
-                      padding: 12,
-                      background: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Typography.Text strong>
-                      <FolderOpenOutlined /> Kho ảnh máy (theo thương hiệu)
-                    </Typography.Text>
-                    <div style={{ marginTop: 4, marginBottom: 8 }}>
+                  <Card
+                    size="small"
+                    title={
+                      <Space>
+                        <FolderOpenOutlined style={{ color: '#1677ff' }} />
+                        <span>Kho ảnh máy (theo thương hiệu)</span>
+                      </Space>
+                    }
+                    extra={
                       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        Mỗi brand một thư mục — trình duyệt nhớ trên máy bạn, không upload lên server.
+                        Mỗi brand một thư mục — tránh trùng ảnh Novixa/Famixa…
                       </Typography.Text>
-                    </div>
+                    }
+                    style={{ marginBottom: 16 }}
+                  >
                     {!isLocalImageLibrarySupported() ? (
-                      <Alert type="warning" showIcon message="Cần Chrome / Edge để chọn thư mục ảnh." />
+                      <Alert type="warning" showIcon message="Cần Chrome / Edge để chọn thư mục ảnh trên máy." />
                     ) : !editing ? (
                       <Typography.Text type="secondary">
-                        Lưu thương hiệu trước, rồi chọn thư mục tại đây (hoặc cột «Kho ảnh máy» trên bảng).
+                        Lưu thương hiệu trước, rồi chọn thư mục ảnh tại đây (hoặc cột «Kho ảnh máy» trên bảng).
                       </Typography.Text>
                     ) : (
                       <Space wrap align="center">
@@ -628,7 +854,12 @@ export function ContentBrandsPage() {
                         ) : (
                           <Tag>Chưa chọn thư mục</Tag>
                         )}
-                        <Button type="primary" ghost onClick={() => void onPickBrandImageFolder(editing)}>
+                        <Button
+                          type="primary"
+                          ghost
+                          icon={<PictureOutlined />}
+                          onClick={() => void onPickBrandImageFolder(editing)}
+                        >
                           {imageFolderNames[editing.id] ? 'Đổi thư mục ảnh' : 'Chọn thư mục ảnh'}
                         </Button>
                         {imageFolderNames[editing.id] ? (
@@ -636,346 +867,758 @@ export function ContentBrandsPage() {
                             Bỏ liên kết
                           </Button>
                         ) : null}
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          Trình duyệt nhớ thư mục trên máy bạn — không upload lên server.
+                        </Typography.Text>
                       </Space>
                     )}
-                  </div>
+                  </Card>
 
-                  <Form.Item
-                    name="operationalBrief"
-                    label="Brief vận hành (dán từ ChatGPT / SoT)"
-                    extra="Bắt buộc trước khi «Nhờ AI»."
-                    rules={[
-                      {
-                        validator: async (_, value) => {
-                          if (typeof value === 'string' && value.trim().length >= 80) return;
-                          throw new Error('Dán brief đủ dài (≥ ~80 ký tự).');
-                        },
-                      },
-                    ]}
+                  <Card
+                    size="small"
+                    title={
+                      <Space>
+                        <ThunderboltOutlined style={{ color: '#fa8c16' }} />
+                        <span>Brand Knowledge · Giọng AI</span>
+                      </Space>
+                    }
+                    extra={
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        Mỗi brand một giọng — tránh viết giống nhau
+                      </Typography.Text>
+                    }
+                    style={{ marginBottom: 16 }}
                   >
-                    <Input.TextArea
-                      rows={10}
-                      placeholder="Dán nội dung tổng hợp yêu cầu / chiến lược nội dung…"
-                      showCount
-                    />
-                  </Form.Item>
-                  <Form.Item name="defaultCtaUrl" label="Link CTA mặc định">
-                    <Input placeholder="https://..." />
-                  </Form.Item>
-                  <Form.Item name="defaultCtaLabel" label="Chữ trên nút CTA">
-                    <Input />
-                  </Form.Item>
-                  <Space size="large" wrap style={{ width: '100%' }}>
-                    <Form.Item name="monthlyCeilingUsd" label="Trần chi phí riêng (USD/tháng)">
-                      <InputNumber min={0} style={{ width: 200 }} placeholder="Theo mức chung" />
-                    </Form.Item>
-                    <Form.Item name="imageTier" label="Chất lượng ảnh riêng">
-                      <Select
-                        allowClear
-                        style={{ width: 200 }}
-                        placeholder="Theo mặc định"
-                        options={[
-                          { value: 'lean', label: 'Tiết kiệm' },
-                          { value: 'balanced', label: 'Cân bằng' },
-                          { value: 'premium', label: 'Cao cấp' },
-                        ]}
+                    <Form.Item
+                      name={['knowledge', 'positioning']}
+                      label={
+                        <Space size={4}>
+                          <AimOutlined />
+                          Positioning
+                        </Space>
+                      }
+                      extra="Bắt buộc nếu chưa có Brief (≥20 ký tự)"
+                    >
+                      <Input.TextArea
+                        rows={3}
+                        placeholder="Nền tảng quản trị nhà thuốc hiện đại — giúp chủ nhà thuốc kiểm soát dòng tiền, tồn kho và vận hành…"
                       />
                     </Form.Item>
-                  </Space>
-                  <Space size="large" wrap>
-                    <Form.Item name="pauseWhenExceeded" label="Dừng gen khi hết ngân sách" valuePropName="checked">
-                      <Switch />
+                    <Row gutter={16}>
+                      <Col xs={24} md={12}>
+                        <Form.Item
+                          name={['knowledge', 'audience']}
+                          label={
+                            <Space size={4}>
+                              <TeamOutlined />
+                              Đối tượng
+                            </Space>
+                          }
+                        >
+                          <Input placeholder="Chủ nhà thuốc độc lập, chuỗi nhỏ…" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <Form.Item
+                          name={['knowledge', 'tone']}
+                          label={
+                            <Space size={4}>
+                              <TagsOutlined />
+                              Tone (thẻ)
+                            </Space>
+                          }
+                        >
+                          <Select
+                            mode="tags"
+                            placeholder="chuyên nghiệp, thực tế, gần gũi…"
+                            tokenSeparators={[',']}
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Form.Item
+                      name={['knowledge', 'forbiddenTopics']}
+                      label={
+                        <Space size={4}>
+                          <StopOutlined />
+                          Chủ đề cấm
+                        </Space>
+                      }
+                    >
+                      <Select
+                        mode="tags"
+                        placeholder="cam kết chữa bệnh, so sánh giá đối thủ…"
+                        tokenSeparators={[',']}
+                      />
                     </Form.Item>
-                    <Form.Item name="isActive" label="Đang dùng" valuePropName="checked">
-                      <Switch />
+                    <Row gutter={16}>
+                      <Col xs={24} md={12}>
+                        <Form.Item name={['knowledge', 'preferredTerms']} label="Ưu tiên dùng từ">
+                          <Select mode="tags" placeholder="nền tảng, module, dòng tiền…" tokenSeparators={[',']} />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <Form.Item name={['knowledge', 'avoidTerms']} label="Tránh dùng từ">
+                          <Select mode="tags" placeholder="siêu rẻ, #1 thị trường…" tokenSeparators={[',']} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={16}>
+                      <Col xs={24} md={12}>
+                        <Form.Item name={['knowledge', 'hashtags']} label="Hashtag gợi ý">
+                          <Select mode="tags" placeholder="#Novixa #NhaThuoc…" tokenSeparators={[',', ' ']} />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <Form.Item name={['knowledge', 'ctaStyle']} label="Phong cách CTA">
+                          <Input placeholder="Nhẹ nhàng · mời dùng thử · liên hệ tư vấn…" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Form.Item name={['knowledge', 'voiceNotes']} label="Ghi chú giọng viết">
+                      <Input.TextArea
+                        rows={2}
+                        placeholder="Không phô trương; lấy ví dụ thực tế từ vận hành nhà thuốc…"
+                      />
                     </Form.Item>
-                    <Form.Item name="sortOrder" label="Thứ tự">
-                      <InputNumber style={{ width: 100 }} />
+                  </Card>
+
+                  <Card
+                    size="small"
+                    title={
+                      <Space>
+                        <PictureOutlined style={{ color: '#722ed1' }} />
+                        <span>Visual & ảnh</span>
+                      </Space>
+                    }
+                    style={{ marginBottom: 16 }}
+                  >
+                    <Row gutter={16}>
+                      <Col xs={24} md={12}>
+                        <Form.Item
+                          name={['knowledge', 'visualStyle']}
+                          label={
+                            <Space size={4}>
+                              <BgColorsOutlined />
+                              Visual style
+                            </Space>
+                          }
+                        >
+                          <Input placeholder="Modern healthcare, sạch sẽ, tin cậy…" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <Form.Item name={['knowledge', 'visualColors']} label="Màu chủ đạo">
+                          <Input placeholder="Trắng + xanh dương / xanh lá…" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Form.Item name={['knowledge', 'imageNotes']} label="Ghi chú ảnh">
+                      <Input placeholder="Brand-safe; tránh chữ chồng lên ảnh khi đăng MXH…" />
                     </Form.Item>
-                  </Space>
+                  </Card>
+
+                  <Card
+                    size="small"
+                    title={
+                      <Space>
+                        <BookOutlined />
+                        <span>Brief vận hành</span>
+                      </Space>
+                    }
+                    style={{ marginBottom: 16 }}
+                  >
+                    <Form.Item
+                      name="operationalBrief"
+                      label="Nội dung brief (tuỳ chọn nếu đã có Positioning)"
+                      extra="Có thể dán brief dài từ ChatGPT/SoT. Cần Brief ≥40 ký tự hoặc Positioning ≥20."
+                    >
+                      <Input.TextArea
+                        rows={6}
+                        placeholder="Dán nội dung tổng hợp yêu cầu / chiến lược nội dung…"
+                        showCount
+                      />
+                    </Form.Item>
+                  </Card>
+
+                  <Card
+                    size="small"
+                    title={
+                      <Space>
+                        <SendOutlined style={{ color: '#1677ff' }} />
+                        <span>CTA & ngân sách</span>
+                      </Space>
+                    }
+                  >
+                    <Row gutter={16}>
+                      <Col xs={24} md={14}>
+                        <Form.Item
+                          name="defaultCtaUrl"
+                          label={
+                            <Space size={4}>
+                              <LinkOutlined />
+                              Link CTA mặc định
+                            </Space>
+                          }
+                        >
+                          <Input placeholder="https://novixa.vn/…" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={10}>
+                        <Form.Item name="defaultCtaLabel" label="Chữ trên nút CTA">
+                          <Input placeholder="Tìm hiểu thêm" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Divider style={{ margin: '4px 0 16px' }} />
+                    <Row gutter={16}>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="monthlyCeilingUsd"
+                          label={
+                            <Space size={4}>
+                              <DollarOutlined />
+                              Trần chi phí riêng (USD/tháng)
+                            </Space>
+                          }
+                        >
+                          <InputNumber min={0} style={{ width: '100%' }} placeholder="Theo mức chung" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item name="imageTier" label="Chất lượng ảnh riêng">
+                          <Select
+                            allowClear
+                            placeholder="Theo mặc định"
+                            options={[
+                              { value: 'lean', label: 'Tiết kiệm' },
+                              { value: 'balanced', label: 'Cân bằng' },
+                              { value: 'premium', label: 'Cao cấp' },
+                            ]}
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  </Card>
                 </Form>
               ),
             },
             {
               key: 'targets',
-              label: editing ? `2. Nơi đăng (${destRows.length})` : '2. Nơi đăng',
+              label: editing ? (
+                <Space size={6}>
+                  <SendOutlined />
+                  Nơi đăng ({destRows.length})
+                </Space>
+              ) : (
+                <Space size={6}>
+                  <SendOutlined />
+                  Nơi đăng
+                </Space>
+              ),
               disabled: !editing,
               children: editing ? (
-                <div>
-                  <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-                    Một danh sách cho mọi chỗ đăng. Bấm dòng để sửa; chọn <strong>Loại</strong> khi thêm mới.
-                  </Typography.Paragraph>
-
-                  <Table
+                <div style={{ maxWidth: 920 }}>
+                  <Card
                     size="small"
-                    rowKey="key"
-                    pagination={false}
-                    dataSource={destRows}
-                    locale={{ emptyText: 'Chưa có nơi đăng — thêm bằng form bên dưới' }}
-                    onRow={(row) => ({
-                      onClick: () => fillDestFromRow(row),
-                      style: { cursor: 'pointer' },
-                    })}
-                    columns={[
-                      { title: 'Mã', dataIndex: 'code', width: 100 },
-                      { title: 'Tên', dataIndex: 'name' },
-                      {
-                        title: 'Loại',
-                        dataIndex: 'kindLabel',
-                        render: (v: string, row) => (
-                          <Tag color={row.group === 'site' ? 'blue' : 'purple'}>{v}</Tag>
-                        ),
-                      },
-                      {
-                        title: 'URL / Page ID',
-                        dataIndex: 'address',
-                        ellipsis: true,
-                      },
-                      {
-                        title: 'Token',
-                        key: 'token',
-                        width: 110,
-                        render: (_, row) =>
-                          row.secretConfigured ? (
-                            <Tag color="success">Đã có</Tag>
-                          ) : (
-                            <Tag>Chưa có</Tag>
-                          ),
-                      },
-                    ]}
-                    style={{ marginBottom: 20 }}
-                  />
-
-                  <Typography.Title level={5} style={{ marginTop: 0 }}>
-                    Thêm / cập nhật nơi đăng
-                  </Typography.Title>
-                  <Form
-                    form={destForm}
-                    layout="vertical"
-                    initialValues={{
-                      kind: 'site:manual',
-                      configJson: '{}',
-                      wpStatus: 'draft',
-                      gitBranch: 'main',
-                      gitContentPath: 'src/content/blog',
-                      secret: '',
-                    }}
+                    title={
+                      <Space>
+                        <UnorderedListOutlined />
+                        <span>Danh sách nơi đăng</span>
+                      </Space>
+                    }
+                    extra={
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        Bấm một dòng để sửa
+                      </Typography.Text>
+                    }
+                    style={{ marginBottom: 16 }}
                   >
-                    <Form.Item
-                      name="kind"
-                      label="Loại nơi đăng"
-                      rules={[{ required: true, message: 'Chọn loại' }]}
-                      extra="Web hoặc mạng xã hội — chọn trong danh sách."
+                    <Table
+                      size="small"
+                      rowKey="key"
+                      pagination={false}
+                      dataSource={destRows}
+                      locale={{ emptyText: 'Chưa có nơi đăng — thêm bằng form bên dưới' }}
+                      onRow={(row) => ({
+                        onClick: () => fillDestFromRow(row),
+                        style: { cursor: 'pointer' },
+                      })}
+                      columns={[
+                        { title: 'Mã', dataIndex: 'code', width: 100 },
+                        { title: 'Tên', dataIndex: 'name' },
+                        {
+                          title: 'Loại',
+                          dataIndex: 'kindLabel',
+                          render: (v: string, row) => (
+                            <Tag color={row.group === 'site' ? 'blue' : 'purple'}>{v}</Tag>
+                          ),
+                        },
+                        {
+                          title: 'URL / Page ID',
+                          dataIndex: 'address',
+                          ellipsis: true,
+                        },
+                        {
+                          title: 'Token',
+                          key: 'token',
+                          width: 100,
+                          render: (_, row) =>
+                            row.secretConfigured ? (
+                              <Tag color="success">Đã có</Tag>
+                            ) : (
+                              <Tag>Chưa có</Tag>
+                            ),
+                        },
+                        {
+                          title: 'Cấu hình',
+                          key: 'cfg',
+                          width: 120,
+                          render: (_, row) =>
+                            row.configWarning ? (
+                              <Tag color="error">{row.configWarning}</Tag>
+                            ) : (
+                              <Tag color="success">OK</Tag>
+                            ),
+                        },
+                      ]}
+                    />
+                  </Card>
+
+                  <Card
+                    size="small"
+                    title={
+                      <Space>
+                        <EditOutlined />
+                        <span>Thêm / cập nhật nơi đăng</span>
+                      </Space>
+                    }
+                    style={{ marginBottom: 16 }}
+                  >
+                    <Form
+                      form={destForm}
+                      layout="vertical"
+                      requiredMark="optional"
+                      initialValues={{
+                        kind: 'site:manual',
+                        configJson: '{}',
+                        wpStatus: 'draft',
+                        gitBranch: 'main',
+                        gitContentPath: 'novixa-site/src/content/tin-tuc',
+                        secret: '',
+                      }}
                     >
-                      <Select
-                        showSearch
-                        optionFilterProp="label"
-                        options={DEST_KIND_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                        placeholder="Chọn loại…"
-                      />
-                    </Form.Item>
-                    <Space wrap style={{ width: '100%' }} align="start">
                       <Form.Item
-                        name="code"
-                        label="Mã ngắn (nội bộ)"
-                        rules={[{ required: true }]}
-                        style={{ marginBottom: 8 }}
-                        extra="ID duy nhất trong thương hiệu — vd blog, fb-main."
+                        name="kind"
+                        label={
+                          <Space size={4}>
+                            <SendOutlined />
+                            Loại nơi đăng
+                          </Space>
+                        }
+                        rules={[{ required: true, message: 'Chọn loại' }]}
+                        extra="Website hoặc mạng xã hội"
                       >
-                        <Input placeholder="blog" style={{ width: 140 }} />
+                        <Select
+                          showSearch
+                          optionFilterProp="label"
+                          options={DEST_KIND_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                          placeholder="Chọn loại…"
+                          size="large"
+                        />
                       </Form.Item>
-                      <Form.Item
-                        name="name"
-                        label="Tên gọi"
-                        rules={[{ required: true }]}
-                        style={{ marginBottom: 8 }}
-                        extra="Tên bạn nhìn thấy khi chọn nơi đăng."
-                      >
-                        <Input placeholder="Blog KIT" style={{ width: 220 }} />
-                      </Form.Item>
-                      {isSiteKind ? (
-                        <Form.Item name="baseUrl" label="Địa chỉ web" style={{ marginBottom: 8 }}>
-                          <Input placeholder="https://..." style={{ width: 260 }} />
-                        </Form.Item>
-                      ) : (
-                        <Form.Item
-                          name="externalId"
-                          label="Page / Channel ID"
-                          style={{ marginBottom: 8 }}
-                          extra="ID trang trên nền tảng (Facebook Page ID…)"
-                        >
-                          <Input placeholder="123456789" style={{ width: 200 }} />
-                        </Form.Item>
-                      )}
-                    </Space>
 
-                    {showWpFields ? (
-                      <Space wrap style={{ width: '100%' }} align="start">
-                        <Form.Item
-                          name="wpUsername"
-                          label="Tài khoản WordPress"
-                          rules={[{ required: true, message: 'Nhập username WP' }]}
-                          style={{ marginBottom: 8 }}
+                      <Row gutter={16}>
+                        <Col xs={24} sm={8}>
+                          <Form.Item
+                            name="code"
+                            label={
+                              <Space size={4}>
+                                <NumberOutlined />
+                                Mã ngắn
+                              </Space>
+                            }
+                            rules={[{ required: true, message: 'Bắt buộc' }]}
+                            extra="vd. blog, fb-main"
+                          >
+                            <Input placeholder="fb-main" />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} sm={8}>
+                          <Form.Item
+                            name="name"
+                            label={
+                              <Space size={4}>
+                                <FontColorsOutlined />
+                                Tên gọi
+                              </Space>
+                            }
+                            rules={[{ required: true, message: 'Bắt buộc' }]}
+                          >
+                            <Input placeholder="Fanpage Novixa" />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} sm={8}>
+                          {isSiteKind ? (
+                            <Form.Item
+                              name="baseUrl"
+                              label={
+                                <Space size={4}>
+                                  <GlobalOutlined />
+                                  Địa chỉ web
+                                </Space>
+                              }
+                            >
+                              <Input placeholder="https://novixa.vn/" />
+                            </Form.Item>
+                          ) : (
+                            <Form.Item
+                              name="externalId"
+                              label={
+                                <Space size={4}>
+                                  <ApiOutlined />
+                                  Page / Channel ID
+                                </Space>
+                              }
+                              extra="Facebook Page ID…"
+                            >
+                              <Input placeholder="123456789" />
+                            </Form.Item>
+                          )}
+                        </Col>
+                      </Row>
+
+                      {showWpFields ? (
+                        <Card
+                          type="inner"
+                          size="small"
+                          title={
+                            <Space>
+                              <GlobalOutlined />
+                              WordPress
+                            </Space>
+                          }
+                          style={{ marginBottom: 16 }}
                         >
-                          <Input placeholder="editor" style={{ width: 180 }} />
-                        </Form.Item>
-                        <Form.Item name="wpStatus" label="Trạng thái bài đăng" style={{ marginBottom: 8 }}>
-                          <Select
-                            style={{ width: 160 }}
-                            options={[
-                              { value: 'draft', label: 'Nháp' },
-                              { value: 'publish', label: 'Xuất bản ngay' },
-                            ]}
+                          <Row gutter={16}>
+                            <Col xs={24} sm={12}>
+                              <Form.Item
+                                name="wpUsername"
+                                label="Tài khoản WordPress"
+                                rules={[{ required: true, message: 'Nhập username WP' }]}
+                              >
+                                <Input placeholder="admin" />
+                              </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12}>
+                              <Form.Item name="wpStatus" label="Trạng thái bài đăng">
+                                <Select
+                                  options={[
+                                    { value: 'draft', label: 'Nháp' },
+                                    { value: 'publish', label: 'Xuất bản ngay' },
+                                  ]}
+                                />
+                              </Form.Item>
+                            </Col>
+                          </Row>
+                          <Form.Item
+                            name="wpCategories"
+                            label="Chuyên mục (slug)"
+                            extra="vandinhtra.vn: journal (bắt buộc để hiện Journal), thêm cau-chuyen, kien-thuc-tra… Cách nhau bằng dấu phẩy. Để trống = tự chọn."
+                          >
+                            <Input placeholder="journal,cau-chuyen" />
+                          </Form.Item>
+                        </Card>
+                      ) : null}
+
+                      {showAstroFields ? (
+                        <Card
+                          type="inner"
+                          size="small"
+                          title={
+                            <Space>
+                              <GithubOutlined />
+                              Astro / GitHub
+                            </Space>
+                          }
+                          style={{ marginBottom: 16 }}
+                        >
+                          <Alert
+                            type="info"
+                            showIcon
+                            style={{ marginBottom: 12 }}
+                            message="Ba website Git"
+                            description={
+                              <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                                <li>
+                                  <b>novixa.vn</b> — repo <code>KitPlatform</code>, path{' '}
+                                  <code>novixa-site/src/content/tin-tuc</code>
+                                </li>
+                                <li>
+                                  <b>famixa.vn</b> — repo <code>KitPlatform</code>, path{' '}
+                                  <code>famixa-site/content/blog</code> → URL{' '}
+                                  <code>/vi/goi-cha-me/…</code>
+                                </li>
+                                <li>
+                                  <b>kittech.vn</b> — repo <code>Kit-Technology</code>, path{' '}
+                                  <code>src/content/insights</code> → URL <code>/vi/blog/…</code>
+                                </li>
+                              </ul>
+                            }
                           />
-                        </Form.Item>
-                      </Space>
-                    ) : null}
+                          <Row gutter={16}>
+                            <Col xs={24} sm={8}>
+                              <Form.Item
+                                name="gitOwner"
+                                label="GitHub owner"
+                                rules={[{ required: true, message: 'Bắt buộc' }]}
+                                extra="vd. khiemtic-rgb"
+                              >
+                                <Input placeholder="khiemtic-rgb" />
+                              </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={8}>
+                              <Form.Item
+                                name="gitRepo"
+                                label="Tên repo"
+                                rules={[{ required: true, message: 'Bắt buộc' }]}
+                              >
+                                <Input placeholder="Kit-Technology" />
+                              </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={8}>
+                              <Form.Item name="gitBranch" label="Branch">
+                                <Input placeholder="main" />
+                              </Form.Item>
+                            </Col>
+                          </Row>
+                          <Form.Item
+                            name="gitContentPath"
+                            label="Thư mục bài viết"
+                            extra="Novixa: novixa-site/src/content/tin-tuc · Famixa: famixa-site/content/blog · Kittech: src/content/insights"
+                          >
+                            <Input placeholder="famixa-site/content/blog" />
+                          </Form.Item>
+                          <Form.Item
+                            name="gitImagePath"
+                            label="Thư mục ảnh (tùy chọn)"
+                            extra="Famixa: famixa-site/public/images/blog · Kittech: public/images/insights · Novixa: novixa-site/public/images/tin-tuc"
+                          >
+                            <Input placeholder="famixa-site/public/images/blog" />
+                          </Form.Item>
+                          <Row gutter={16}>
+                            <Col xs={24} sm={8}>
+                              <Form.Item
+                                name="insightLocale"
+                                label="Ngôn ngữ (kittech)"
+                                extra="vi → /vi/blog/… · en → /en/insights/…"
+                              >
+                                <Select
+                                  allowClear
+                                  options={[
+                                    { value: 'vi', label: 'vi (tiếng Việt)' },
+                                    { value: 'en', label: 'en (English)' },
+                                  ]}
+                                />
+                              </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={8}>
+                              <Form.Item
+                                name="blogCategory"
+                                label="Category mặc định (famixa)"
+                                extra="nuoi-day / routine / man-hinh / tu-giac / famixa — để trống = tự chọn"
+                              >
+                                <Select
+                                  allowClear
+                                  options={[
+                                    { value: 'nuoi-day', label: 'nuoi-day · Nuôi dạy' },
+                                    { value: 'routine', label: 'routine · Nhịp sinh hoạt' },
+                                    { value: 'man-hinh', label: 'man-hinh · Màn hình' },
+                                    { value: 'tu-giac', label: 'tu-giac · Tự giác' },
+                                    { value: 'famixa', label: 'famixa · Dùng app' },
+                                  ]}
+                                />
+                              </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={8}>
+                              <Form.Item
+                                name="insightCategory"
+                                label="Category mặc định (kittech)"
+                                extra="Để trống = tự chọn theo tiêu đề. Chỉ dùng khi không khớp từ khóa."
+                              >
+                                <Select
+                                  allowClear
+                                  showSearch
+                                  options={[
+                                    'ai',
+                                    'healthcare',
+                                    'digital-transformation',
+                                    'engineering',
+                                    'company-news',
+                                    'business',
+                                    'technology',
+                                    'solutions',
+                                    'products',
+                                    'faq',
+                                  ].map((v) => ({ value: v, label: v }))}
+                                />
+                              </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={8}>
+                              <Form.Item
+                                name="insightSection"
+                                label="Section (kittech)"
+                                extra="insights / technology / company…"
+                              >
+                                <Select
+                                  allowClear
+                                  options={[
+                                    'insights',
+                                    'technology',
+                                    'solutions',
+                                    'products',
+                                    'company',
+                                    'faq',
+                                  ].map((v) => ({ value: v, label: v }))}
+                                />
+                              </Form.Item>
+                            </Col>
+                          </Row>
+                        </Card>
+                      ) : null}
 
-                    {showAstroFields ? (
-                      <Space wrap style={{ width: '100%' }} align="start">
-                        <Form.Item
-                          name="gitOwner"
-                          label="GitHub owner"
-                          rules={[{ required: true }]}
-                          style={{ marginBottom: 8 }}
-                        >
-                          <Input placeholder="org-or-user" style={{ width: 160 }} />
-                        </Form.Item>
-                        <Form.Item
-                          name="gitRepo"
-                          label="Tên repo"
-                          rules={[{ required: true }]}
-                          style={{ marginBottom: 8 }}
-                        >
-                          <Input placeholder="kit-site" style={{ width: 180 }} />
-                        </Form.Item>
-                        <Form.Item name="gitBranch" label="Branch" style={{ marginBottom: 8 }}>
-                          <Input placeholder="main" style={{ width: 120 }} />
-                        </Form.Item>
-                        <Form.Item name="gitContentPath" label="Thư mục bài viết" style={{ marginBottom: 8 }}>
-                          <Input placeholder="src/content/blog" style={{ width: 220 }} />
-                        </Form.Item>
-                      </Space>
-                    ) : null}
-
-                    {showSecret ? (
-                      <>
-                        <Form.Item
-                          name="secret"
-                          label={secretUi.pasteLabel}
+                      {showSecret ? (
+                        <Card
+                          type="inner"
+                          size="small"
+                          title={
+                            <Space>
+                              <KeyOutlined />
+                              {secretUi.pasteLabel}
+                            </Space>
+                          }
+                          style={{ marginBottom: 16 }}
                           extra={
-                            secretConfigured
-                              ? `${secretUi.extra} · Đã có token trên server — để trống ô này nếu giữ nguyên.`
-                              : secretUi.extra
+                            secretConfigured ? <Tag color="success">Token đã lưu</Tag> : <Tag>Chưa có token</Tag>
                           }
                         >
-                          <Input.Password
-                            placeholder={secretUi.placeholder}
-                            autoComplete="new-password"
-                            style={{ maxWidth: 480 }}
-                          />
-                        </Form.Item>
-                        {secretConfigured ? (
-                          <Tag color="success" style={{ marginBottom: 12 }}>
-                            Token đã lưu trên server
-                          </Tag>
-                        ) : null}
-                        {destKind === 'channel:facebook_page' ? (
+                          <Form.Item
+                            name="secret"
+                            label="Dán token"
+                            extra={
+                              secretConfigured
+                                ? `${secretUi.extra} · Để trống nếu giữ token cũ.`
+                                : secretUi.extra
+                            }
+                          >
+                            <Input.Password
+                              placeholder={secretUi.placeholder}
+                              autoComplete="new-password"
+                              size="large"
+                            />
+                          </Form.Item>
+                          {destKind === 'channel:facebook_page' ? (
+                            <Collapse
+                              ghost
+                              items={[
+                                {
+                                  key: 'fb-token-help',
+                                  label: 'Hướng dẫn lấy Page Access Token (Facebook)',
+                                  children: (
+                                    <ol style={{ margin: 0, paddingLeft: 18, lineHeight: 1.7 }}>
+                                      <li>
+                                        Vào{' '}
+                                        <a href="https://developers.facebook.com/" target="_blank" rel="noreferrer">
+                                          developers.facebook.com
+                                        </a>{' '}
+                                        → App → Graph API Explorer.
+                                      </li>
+                                      <li>
+                                        Generate token với <code>pages_show_list</code>,{' '}
+                                        <code>pages_read_engagement</code>, <code>pages_manage_posts</code>.
+                                      </li>
+                                      <li>
+                                        Gọi <code>GET /me/accounts</code> → lấy <code>id</code> và{' '}
+                                        <code>access_token</code> của Page.
+                                      </li>
+                                      <li>Dán token + Page ID → Lưu vào danh sách.</li>
+                                    </ol>
+                                  ),
+                                },
+                              ]}
+                            />
+                          ) : null}
                           <Collapse
                             ghost
-                            style={{ marginBottom: 12 }}
                             items={[
                               {
-                                key: 'fb-token-help',
-                                label: 'Cách lấy Page Access Token (Facebook)',
+                                key: 'env-ref',
+                                label: 'Tuỳ chọn: biến môi trường thay vì dán token',
                                 children: (
-                                  <ol style={{ margin: 0, paddingLeft: 18, lineHeight: 1.7 }}>
-                                    <li>
-                                      Vào{' '}
-                                      <a href="https://developers.facebook.com/" target="_blank" rel="noreferrer">
-                                        developers.facebook.com
-                                      </a>{' '}
-                                      → App → Graph API Explorer.
-                                    </li>
-                                    <li>
-                                      Generate token với quyền <code>pages_show_list</code>,{' '}
-                                      <code>pages_read_engagement</code>, <code>pages_manage_posts</code>.
-                                    </li>
-                                    <li>
-                                      Gọi <code>GET /me/accounts</code> → lấy <code>id</code> (Page ID) và{' '}
-                                      <code>access_token</code>.
-                                    </li>
-                                    <li>
-                                      Dán <code>access_token</code> vào ô phía trên, Page ID vào ô Page / Channel ID,
-                                      rồi bấm Lưu.
-                                    </li>
-                                  </ol>
+                                  <Form.Item
+                                    name="secretRef"
+                                    label={secretUi.label}
+                                    extra="Chỉ tên biến (vd FB_KIT_PAGE_TOKEN) nếu đã set env trên máy API."
+                                  >
+                                    <Input placeholder="FB_KIT_PAGE_TOKEN" />
+                                  </Form.Item>
                                 ),
                               },
                             ]}
                           />
-                        ) : null}
-                        <Collapse
-                          ghost
-                          style={{ marginBottom: 12 }}
-                          items={[
-                            {
-                              key: 'env-ref',
-                              label: 'Tuỳ chọn: dùng biến môi trường thay vì dán token',
-                              children: (
-                                <Form.Item
-                                  name="secretRef"
-                                  label={secretUi.label}
-                                  extra="Chỉ ghi tên biến (vd FB_KIT_PAGE_TOKEN) nếu đã set env trên máy API. Không bắt buộc nếu đã dán token ở trên."
-                                >
-                                  <Input placeholder="FB_KIT_PAGE_TOKEN" style={{ maxWidth: 360 }} />
-                                </Form.Item>
-                              ),
-                            },
-                          ]}
+                        </Card>
+                      ) : (
+                        <Alert
+                          type="info"
+                          showIcon
+                          style={{ marginBottom: 16 }}
+                          message="Đăng thủ công không cần token"
+                          description="Khi xuất bản, hệ thống cho chép bài / tải file — không gọi API bên ngoài."
                         />
-                      </>
-                    ) : (
-                      <Alert
-                        type="info"
-                        showIcon
+                      )}
+
+                      <Collapse
+                        ghost
                         style={{ marginBottom: 12 }}
-                        message="Đăng thủ công không cần token — khi xuất bản hệ thống cho chép bài / tải file."
+                        items={[
+                          {
+                            key: 'adv',
+                            label: (
+                              <Space size={4}>
+                                <CodeOutlined />
+                                Tuỳ chọn nâng cao (JSON phụ)
+                              </Space>
+                            ),
+                            children: (
+                              <Form.Item
+                                name="configJson"
+                                label="JSON cấu hình thêm"
+                                extra="WordPress/Astro đã có ô riêng — hệ thống tự ghép vào JSON này."
+                              >
+                                <Input.TextArea rows={3} placeholder="{}" style={{ fontFamily: 'monospace' }} />
+                              </Form.Item>
+                            ),
+                          },
+                        ]}
                       />
-                    )}
 
-                    <Collapse
-                      ghost
-                      style={{ marginBottom: 12 }}
-                      items={[
-                        {
-                          key: 'adv',
-                          label: 'Tuỳ chọn nâng cao (JSON phụ)',
-                          children: (
-                            <Form.Item
-                              name="configJson"
-                              label="JSON cấu hình thêm"
-                              extra="Chỉ cần nếu bạn biết. WordPress/Astro đã có ô riêng phía trên — hệ thống tự ghép vào JSON này."
-                            >
-                              <Input.TextArea rows={3} placeholder="{}" style={{ fontFamily: 'monospace' }} />
-                            </Form.Item>
-                          ),
-                        },
-                      ]}
-                    />
-
-                    <Space>
-                      <Button type="primary" loading={savingDest} onClick={() => void saveDestination()}>
-                        Lưu vào danh sách
-                      </Button>
-                      <Button onClick={() => resetDestForm((destKind as DestKind) || 'site:manual')}>
-                        Xoá form
-                      </Button>
-                    </Space>
-                  </Form>
+                      <Space size="middle">
+                        <Button
+                          type="primary"
+                          icon={<SaveOutlined />}
+                          loading={savingDest}
+                          onClick={() => void saveDestination()}
+                        >
+                          Lưu vào danh sách
+                        </Button>
+                        <Button onClick={() => resetDestForm((destKind as DestKind) || 'site:manual')}>
+                          Xoá form
+                        </Button>
+                      </Space>
+                    </Form>
+                  </Card>
 
                   <Alert
-                    style={{ marginTop: 16 }}
                     type="warning"
                     showIcon
                     message="Đăng tự động hiện hỗ trợ: WordPress, Astro/Git, Facebook Page, và Thủ công."

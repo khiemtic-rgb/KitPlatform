@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   App,
   Button,
@@ -7,6 +7,7 @@ import {
   Drawer,
   Form,
   Input,
+  Popconfirm,
   Select,
   Space,
   Table,
@@ -14,9 +15,11 @@ import {
   Typography,
   Upload,
 } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import {
   CheckOutlined,
   CloudUploadOutlined,
+  DeleteOutlined,
   DownloadOutlined,
   FileExcelOutlined,
   FolderOpenOutlined,
@@ -29,6 +32,7 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import {
   approveContentTopic,
   createContentTopic,
+  deleteContentTopic,
   fetchContentAssetObjectUrl,
   fetchContentBrands,
   fetchContentTopicDetail,
@@ -47,12 +51,18 @@ import {
 } from '@/shared/api/content.api';
 import {
   clearLocalImageLibrary,
-  getLocalImageLibraryName,
+  getLocalImageLibraryStatus,
+  isConfidentLocalMatch,
   isLocalImageLibrarySupported,
   listLocalImages,
+  loadLocalImagePreviews,
   pickBestLocalImage,
   pickLocalImageLibrary,
+  prepareLocalImageForPublish,
+  rankLocalImages,
   readLocalImageAsBase64,
+  requestLocalImageLibraryPermission,
+  revokeLocalPreviewUrls,
 } from '@/modules/content/content-local-image-library';
 import {
   downloadCsvTemplate,
@@ -77,6 +87,76 @@ const STATUS_LABEL: Record<string, { text: string; color: string }> = {
 function StatusTag({ status }: { status: string }) {
   const m = STATUS_LABEL[status] ?? { text: status, color: 'default' };
   return <Tag color={m.color}>{m.text}</Tag>;
+}
+
+const CONNECTOR_LABEL: Record<string, { title: string; color: string }> = {
+  facebook_page: { title: 'Facebook Page', color: 'blue' },
+  astro_git: { title: 'Website · Astro / Git', color: 'purple' },
+  wordpress_rest: { title: 'WordPress', color: 'geekblue' },
+  manual: { title: 'Thủ công', color: 'default' },
+  linkedin: { title: 'LinkedIn', color: 'cyan' },
+  zalo_oa: { title: 'Zalo OA', color: 'green' },
+};
+
+function connectorLabel(type: string) {
+  return CONNECTOR_LABEL[type] ?? { title: type, color: 'default' };
+}
+
+/** Human-readable publish error; keep raw text for expand. */
+function formatPublishError(raw: string): { summary: string; hint?: string; raw: string } {
+  const text = raw.trim();
+  const lower = text.toLowerCase();
+  if (
+    lower.includes('resource not accessible by personal access token') ||
+    (lower.includes('github 403') && lower.includes('personal access token'))
+  ) {
+    return {
+      summary: 'GitHub từ chối token (403) — không đủ quyền ghi repo.',
+      hint: 'Tạo PAT classic mới với quyền repo (full control of private repositories), dán lại ở Thương hiệu → Nơi đăng Astro, rồi «Đăng lại + ảnh». Fine-grained token cần Contents: Read and write trên đúng repo.',
+      raw: text,
+    };
+  }
+  if (lower.includes('github 401') || lower.includes('bad credentials')) {
+    return {
+      summary: 'GitHub token sai hoặc đã hết hạn.',
+      hint: 'Dán lại PAT ở Thương hiệu → Nơi đăng Astro / Git.',
+      raw: text,
+    };
+  }
+  if (lower.includes('github 404') || lower.includes('not found')) {
+    const repoMatch = text.match(/repo\s+([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)/i);
+    const repoHint = repoMatch?.[1] ? ` (đang gọi ${repoMatch[1]})` : '';
+    return {
+      summary: `Không truy cập được repo trên GitHub${repoHint}.`,
+      hint: 'Mở Thương hiệu → Nơi đăng Astro và kiểm tra đúng: owner = khiemtic-rgb, repo = Kit-Technology, thư mục = src/content/insights. Nếu dùng fine-grained token: phải chọn đúng repo Kit-Technology + Contents Read and write (không chọn Account). Token chỉ gắn KitPlatform sẽ báo 404 với Kit-Technology.',
+      raw: text,
+    };
+  }
+  // Prefer GitHub / WordPress message field when present
+  const msgMatch = text.match(/"message"\s*:\s*"((?:\\.|[^"\\])*)"/);
+  if (msgMatch?.[1]) {
+    let decoded = msgMatch[1]
+      .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\');
+    if (lower.includes('wordpress') && (lower.includes('401') || lower.includes('rest_cannot_create'))) {
+      return {
+        summary: decoded,
+        hint: 'Tài khoản WordPress thiếu quyền đăng bài / upload ảnh. Dùng user Editor hoặc Administrator, tạo Application Password mới, nhập đúng username (login, không phải tên hiển thị) → Lưu → Đăng lại + ảnh.',
+        raw: text,
+      };
+    }
+    if (lower.includes('wordpress') && lower.includes('403')) {
+      return {
+        summary: decoded,
+        hint: 'WordPress từ chối quyền. Kiểm tra role user và plugin bảo mật có chặn REST / Application Passwords không.',
+        raw: text,
+      };
+    }
+    return { summary: decoded, raw: text };
+  }
+  const short = text.length > 160 ? `${text.slice(0, 160)}…` : text;
+  return { summary: short, raw: text };
 }
 
 function parseTitleLines(raw: string): string[] {
@@ -112,23 +192,51 @@ export function ContentTopicsPage() {
   const [excelImporting, setExcelImporting] = useState(false);
   const [localLibName, setLocalLibName] = useState<string | null>(null);
   const [localLibCount, setLocalLibCount] = useState(0);
+  /** After reload Chrome may remember the folder but need a click to re-allow read. */
+  const [localLibNeedsPermission, setLocalLibNeedsPermission] = useState(false);
+  const [localPreviews, setLocalPreviews] = useState<
+    { name: string; url: string; confidence: number; reason: string }[]
+  >([]);
+  const [localPreviewLoading, setLocalPreviewLoading] = useState(false);
+  const [pickedLocalName, setPickedLocalName] = useState<string | null>(null);
+  const [localMatchConfident, setLocalMatchConfident] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [batchApproving, setBatchApproving] = useState(false);
+  const [batchPublishing, setBatchPublishing] = useState(false);
   const [form] = Form.useForm();
+  const didAutoSelectBrand = useRef(false);
 
   /** Folder is per-brand — prefer topic brand, else list filter. */
   const libBrandId = detail?.topic.brandId ?? brandFilter ?? undefined;
+
+  const canBulkApprove = (status: string) =>
+    status === 'Review' || status === 'Draft' || status === 'Rejected';
+
+  const canBulkPublish = (status: string) =>
+    status === 'Approved' || status === 'Review' || status === 'Draft';
+
+  const canSelectRow = (status: string) => canBulkApprove(status) || canBulkPublish(status);
 
   const refreshLocalLib = useCallback(async () => {
     if (!isLocalImageLibrarySupported() || !libBrandId) {
       setLocalLibName(null);
       setLocalLibCount(0);
+      setLocalLibNeedsPermission(false);
       return;
     }
-    const name = await getLocalImageLibraryName(libBrandId);
-    setLocalLibName(name);
-    if (!name) {
+    const status = await getLocalImageLibraryStatus(libBrandId);
+    setLocalLibName(status.name);
+    if (!status.hasHandle) {
       setLocalLibCount(0);
+      setLocalLibNeedsPermission(false);
       return;
     }
+    if (status.permission !== 'granted') {
+      setLocalLibCount(0);
+      setLocalLibNeedsPermission(true);
+      return;
+    }
+    setLocalLibNeedsPermission(false);
     try {
       const imgs = await listLocalImages(libBrandId);
       setLocalLibCount(imgs.length);
@@ -136,6 +244,104 @@ export function ContentTopicsPage() {
       setLocalLibCount(0);
     }
   }, [libBrandId]);
+
+  const loadLocalGallery = useCallback(async (
+    brandId: string,
+    topicTitle?: string,
+    opts?: { requestPermission?: boolean },
+  ) => {
+    if (!brandId) {
+      setLocalLibName(null);
+      setLocalLibCount(0);
+      setLocalLibNeedsPermission(false);
+      setLocalPreviews((prev) => {
+        revokeLocalPreviewUrls(prev);
+        return [];
+      });
+      return;
+    }
+    setLocalPreviewLoading(true);
+    try {
+      if (opts?.requestPermission) {
+        const ok = await requestLocalImageLibraryPermission(brandId);
+        if (!ok) {
+          setLocalLibNeedsPermission(true);
+          setLocalLibCount(0);
+          message.warning('Trình duyệt chưa cho phép đọc thư mục ảnh. Bấm «Cho phép đọc lại» hoặc chọn lại thư mục.');
+          return;
+        }
+        setLocalLibNeedsPermission(false);
+      }
+      const imgs = await listLocalImages(brandId, { requestPermission: opts?.requestPermission });
+      setLocalLibCount(imgs.length);
+      setLocalPreviews((prev) => {
+        revokeLocalPreviewUrls(prev);
+        return [];
+      });
+      const status = await getLocalImageLibraryStatus(brandId);
+      setLocalLibName(status.name);
+      if (imgs.length === 0) {
+        setPickedLocalName(null);
+        setLocalMatchConfident(false);
+        setLocalLibNeedsPermission(status.hasHandle && status.permission !== 'granted');
+        return;
+      }
+      setLocalLibNeedsPermission(false);
+
+      const title = topicTitle ?? '';
+      const ranked = title ? rankLocalImages(title, imgs) : imgs.map((entry) => ({
+        entry,
+        score: 0,
+        confidence: 0,
+        reason: '',
+      }));
+      const ordered = ranked.map((r) => r.entry);
+      const previewsRaw = await loadLocalImagePreviews(ordered, 48);
+      const scoreByName = new Map(ranked.map((r) => [r.entry.name, r]));
+      setLocalPreviews(
+        previewsRaw.map((p) => {
+          const s = scoreByName.get(p.name);
+          return {
+            name: p.name,
+            url: p.url,
+            confidence: s?.confidence ?? 0,
+            reason: s?.reason ?? '',
+          };
+        }),
+      );
+
+      const confident = title ? isConfidentLocalMatch(title, imgs) : false;
+      setLocalMatchConfident(confident);
+      const best = title ? pickBestLocalImage(title, imgs) : ordered[0];
+      setPickedLocalName(best?.name ?? ordered[0]!.name);
+    } catch {
+      setLocalLibCount(0);
+      setLocalMatchConfident(false);
+      setLocalPreviews((prev) => {
+        revokeLocalPreviewUrls(prev);
+        return [];
+      });
+    } finally {
+      setLocalPreviewLoading(false);
+    }
+  }, [message]);
+
+  useEffect(() => {
+    void refreshLocalLib();
+  }, [refreshLocalLib]);
+
+  useEffect(() => {
+    if (detail?.topic.brandId) {
+      void loadLocalGallery(detail.topic.brandId, detail.topic.title);
+    }
+  }, [detail?.topic.brandId, detail?.topic.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    return () => {
+      revokeLocalPreviewUrls(localPreviews);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only revoke on unmount
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -146,20 +352,28 @@ export function ContentTopicsPage() {
       ]);
       setTopics(t);
       setBrands(b);
+      // Lần đầu vào trang: chọn sẵn brand đầu để lưới gọn (ẩn cột thương hiệu).
+      if (!brandFilter && b.length > 0 && !didAutoSelectBrand.current) {
+        didAutoSelectBrand.current = true;
+        setBrandFilter(b[0]!.id);
+        return;
+      }
+      didAutoSelectBrand.current = true;
+      void refreshLocalLib();
     } catch (e) {
       message.error(apiErrorMessage(e, 'Không tải được danh sách bài'));
     } finally {
       setLoading(false);
     }
-  }, [brandFilter, message]);
+  }, [brandFilter, message, refreshLocalLib]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
   useEffect(() => {
-    void refreshLocalLib();
-  }, [refreshLocalLib]);
+    setSelectedIds([]);
+  }, [brandFilter]);
 
   useEffect(() => {
     return () => {
@@ -184,6 +398,9 @@ export function ContentTopicsPage() {
         Object.values(prev).forEach((u) => URL.revokeObjectURL(u));
         return urls;
       });
+      if (localLibName && !localLibNeedsPermission) {
+        void loadLocalGallery(d.topic.brandId, d.topic.title);
+      }
     } catch (e) {
       message.error(apiErrorMessage(e, 'Không tải được chi tiết bài'));
     } finally {
@@ -476,21 +693,172 @@ export function ContentTopicsPage() {
     }
   };
 
+  const onApproveBatch = async () => {
+    const ids = selectedIds.filter((id) => {
+      const row = topics.find((t) => t.id === id);
+      return row && canBulkApprove(row.status);
+    });
+    if (ids.length === 0) {
+      message.warning('Chọn ít nhất 1 bài Chờ duyệt / Nháp / Từ chối');
+      return;
+    }
+    setBatchApproving(true);
+    let ok = 0;
+    const failed: string[] = [];
+    try {
+      for (const id of ids) {
+        try {
+          await approveContentTopic(id);
+          ok += 1;
+        } catch {
+          const title = topics.find((t) => t.id === id)?.title ?? id;
+          failed.push(title);
+        }
+      }
+      if (failed.length === 0) message.success(`Đã duyệt ${ok} bài (chưa đăng)`);
+      else if (ok > 0) message.warning(`Duyệt ${ok} bài; lỗi ${failed.length}: ${failed.slice(0, 2).join(', ')}`);
+      else message.error('Duyệt hàng loạt thất bại');
+      setSelectedIds([]);
+      await load();
+    } finally {
+      setBatchApproving(false);
+    }
+  };
+
+  const onPublishBatch = async () => {
+    const rows = selectedIds
+      .map((id) => topics.find((t) => t.id === id))
+      .filter((t): t is ContentTopic => !!t && canBulkPublish(t.status));
+    if (rows.length === 0) {
+      message.warning('Chọn ít nhất 1 bài Đã duyệt / Chờ duyệt / Nháp để xuất bản');
+      return;
+    }
+    if (!brandFilter) {
+      message.warning('Lọc một thương hiệu trước khi xuất bản hàng loạt (kho ảnh theo brand).');
+      return;
+    }
+    if (!isLocalImageLibrarySupported() || !localLibName) {
+      message.error('Gắn kho ảnh thương hiệu trước — mỗi bài lấy ảnh khớp tiêu đề từ thư mục máy.');
+      return;
+    }
+
+    let localImages: Awaited<ReturnType<typeof listLocalImages>> = [];
+    try {
+      localImages = await listLocalImages(brandFilter, { requestPermission: true });
+    } catch {
+      message.error('Không đọc được kho ảnh — bấm Cho phép đọc / chọn lại thư mục.');
+      return;
+    }
+    if (localImages.length === 0) {
+      message.warning('Kho ảnh trống — chọn thư mục có .png/.jpg/.webp.');
+      return;
+    }
+
+    const okConfirm = await new Promise<boolean>((resolve) => {
+      modal.confirm({
+        title: `Xuất bản ${rows.length} bài?`,
+        width: 480,
+        content: (
+          <div>
+            <p>
+              Mỗi bài lấy ảnh khớp tiêu đề từ kho «<strong>{localLibName}</strong>» ({localImages.length} ảnh).
+            </p>
+            <p>
+              Lịch đăng = <strong>ngày hiển thị</strong> của từng bài (nếu trống → đăng ngay).
+            </p>
+            <p style={{ color: '#64748b', marginBottom: 0 }}>
+              Duyệt tự động nếu còn Chờ duyệt/Nháp — rồi đẩy lên web/FB. Không lưu ảnh lâu trên server.
+            </p>
+          </div>
+        ),
+        okText: 'Đẩy lịch đăng hàng loạt',
+        cancelText: 'Huỷ',
+        onOk: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+    if (!okConfirm) return;
+
+    setBatchPublishing(true);
+    let ok = 0;
+    const failed: string[] = [];
+    try {
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i]!;
+        message.loading({
+          content: `Xuất bản ${i + 1}/${rows.length}: ${row.title.slice(0, 48)}…`,
+          key: 'content-batch-publish',
+          duration: 0,
+        });
+        try {
+          if (row.status === 'Review' || row.status === 'Draft') {
+            try {
+              await approveContentTopic(row.id);
+            } catch {
+              /* already approved */
+            }
+          }
+          const preferred =
+            pickBestLocalImage(row.title, localImages) || localImages[i % localImages.length]!;
+          const file = await prepareLocalImageForPublish(preferred);
+          if (!file.blob || file.blob.size < 100) {
+            failed.push(`${row.title} (ảnh)`);
+            continue;
+          }
+          const res = await publishContentTopic(row.id, {
+            includeManualExport: true,
+            runImmediately: true,
+            publishAt: row.displayAt ?? null,
+            imageBlob: file.blob,
+            imageFileName: file.fileName,
+            imageContentType: file.contentType,
+          });
+          const jobFailed = res.jobs.filter((j) => j.status === 'Failed').length;
+          if (jobFailed > 0 && res.jobs.every((j) => j.status === 'Failed')) {
+            failed.push(row.title);
+          } else {
+            ok += 1;
+          }
+        } catch {
+          failed.push(row.title);
+        }
+      }
+      message.destroy('content-batch-publish');
+      if (failed.length === 0) message.success(`Đã xuất bản ${ok} bài`);
+      else if (ok > 0)
+        message.warning(`Xuất bản ${ok} bài; lỗi ${failed.length}: ${failed.slice(0, 2).join(', ')}`);
+      else message.error(`Xuất bản thất bại: ${failed.slice(0, 3).join(', ')}`);
+      setSelectedIds([]);
+      await load();
+    } finally {
+      setBatchPublishing(false);
+      message.destroy('content-batch-publish');
+    }
+  };
+
   const onPickLocalLibrary = async () => {
     if (!libBrandId) {
-      message.warning('Lọc / chọn thương hiệu (hoặc mở chi tiết bài) trước — mỗi brand một thư mục ảnh.');
+      message.warning('Chọn / lọc thương hiệu (hoặc mở chi tiết bài) trước khi gắn kho ảnh — mỗi brand một thư mục.');
       return;
     }
     try {
       const r = await pickLocalImageLibrary(libBrandId);
       setLocalLibName(r.name);
       setLocalLibCount(r.count);
-      message.success(
-        `Đã gắn kho ảnh «${r.name}» cho thương hiệu này (${r.count} ảnh). Brand khác dùng thư mục riêng.`,
-      );
+      setLocalLibNeedsPermission(false);
+      if (r.count === 0) {
+        message.warning(
+          `Thư mục «${r.name}» chưa thấy ảnh .png/.jpg/.webp (kể cả thư mục con). Hãy chọn đúng thư mục chứa ảnh.`,
+        );
+      } else {
+        message.success(
+          `Đã gắn kho ảnh «${r.name}» cho thương hiệu này (${r.count} ảnh). Brand khác dùng thư mục riêng.`,
+        );
+      }
+      void loadLocalGallery(libBrandId, detail?.topic.title);
     } catch (e) {
       if (e && typeof e === 'object' && 'name' in e && (e as { name: string }).name === 'AbortError') return;
-      message.error(e instanceof Error && e.message ? e.message : apiErrorMessage(e, 'Không chọn được thư mục ảnh'));
+      message.error(apiErrorMessage(e, 'Không chọn được thư mục ảnh'));
     }
   };
 
@@ -499,7 +867,18 @@ export function ContentTopicsPage() {
     await clearLocalImageLibrary(libBrandId);
     setLocalLibName(null);
     setLocalLibCount(0);
+    setLocalLibNeedsPermission(false);
+    setPickedLocalName(null);
+    setLocalPreviews((prev) => {
+      revokeLocalPreviewUrls(prev);
+      return [];
+    });
     message.info('Đã bỏ liên kết kho ảnh của thương hiệu này');
+  };
+
+  const onAllowLocalLibrary = async () => {
+    if (!libBrandId) return;
+    await loadLocalGallery(libBrandId, detail?.topic.title, { requestPermission: true });
   };
 
   const onPublish = async () => {
@@ -520,17 +899,31 @@ export function ContentTopicsPage() {
         ? new Date(publishAt).toLocaleString('vi-VN')
         : 'ngay lập tức (không có ngày hiển thị)';
 
+      const hasServerImage = detail.assets.some((a) => a.isSelected) || detail.assets.length > 0;
+
       let pickedFileName: string | undefined;
       let localImages: Awaited<ReturnType<typeof listLocalImages>> = [];
 
       if (localLibName && libBrandId) {
-        localImages = await listLocalImages(libBrandId);
+        localImages = await listLocalImages(libBrandId, { requestPermission: true });
         if (localImages.length === 0) {
-          message.warning('Kho ảnh trống — chọn thư mục có file .png/.jpg/.webp');
+          if (localLibNeedsPermission) {
+            message.warning('Bấm «Cho phép đọc lại» kho ảnh, rồi xuất bản lại để kèm ảnh.');
+          } else {
+            message.warning('Kho ảnh trống — chọn thư mục có file .png/.jpg/.webp.');
+          }
           return;
         }
-        const suggested = pickBestLocalImage(detail.topic.title, localImages);
-        pickedFileName = suggested?.name ?? localImages[0]!.name;
+        const preferred =
+          (pickedLocalName && localImages.find((i) => i.name === pickedLocalName)) ||
+          pickBestLocalImage(detail.topic.title, localImages) ||
+          localImages[0]!;
+        pickedFileName = preferred.name;
+      } else if (!hasServerImage) {
+        message.error(
+          'Chưa có ảnh — bấm «Chọn kho ảnh trên máy» rồi chọn ảnh (Đang dùng), sau đó «Đẩy lịch đăng». Không đăng chỉ chữ.',
+        );
+        return;
       }
 
       const okConfirm = await new Promise<boolean>((resolve) => {
@@ -541,26 +934,30 @@ export function ContentTopicsPage() {
             <div>
               {localLibName && localImages.length > 0 ? (
                 <div style={{ marginBottom: 12 }}>
-                  <Typography.Text>Ảnh từ kho máy «{localLibName}»:</Typography.Text>
+                  <Typography.Text>Ảnh từ kho máy «{localLibName}» (bắt buộc):</Typography.Text>
                   <Select
                     style={{ width: '100%', marginTop: 6 }}
                     defaultValue={pickedFileName}
-                    options={localImages.map((img) => ({ value: img.name, label: img.name }))}
+                    options={rankLocalImages(detail.topic.title, localImages).map((r) => ({
+                      value: r.entry.name,
+                      label: `${r.entry.name}${r.reason ? ` — ${r.reason}` : ''}`,
+                    }))}
                     showSearch
                     optionFilterProp="label"
                     onChange={(v) => {
                       pickedFileName = v;
+                      setPickedLocalName(v);
                     }}
                   />
                 </div>
               ) : (
-                <p>Ảnh: dùng ảnh đã chọn trên server (nếu có), hoặc đăng không kèm ảnh.</p>
+                <p>Ảnh: dùng ảnh đã có trên bài (AI / đã chọn).</p>
               )}
               <p>
                 Lịch đăng: <strong>{whenLabel}</strong> — WP/FB tự lên vào giờ đó, không cần mở lại KitPlatform.
               </p>
               <p style={{ color: '#64748b', marginBottom: 0 }}>
-                Ảnh chỉ gửi một lần lên WP/FB — không lưu kho lâu trên server KitPlatform.
+                Ảnh gửi kèm lần này lên WP/FB/novixa — không lưu kho lâu trên server KitPlatform.
               </p>
             </div>
           ),
@@ -572,7 +969,7 @@ export function ContentTopicsPage() {
       });
       if (!okConfirm) return;
 
-      let imageBase64: string | undefined;
+      let imageBlob: Blob | undefined;
       let imageFileName: string | undefined;
       let imageContentType: string | undefined;
       if (localLibName && pickedFileName) {
@@ -581,31 +978,80 @@ export function ContentTopicsPage() {
           message.warning('Không đọc được ảnh đã chọn');
           return;
         }
-        const file = await readLocalImageAsBase64(entry);
-        imageBase64 = file.base64;
+        const file = await prepareLocalImageForPublish(entry);
+        imageBlob = file.blob;
         imageFileName = file.fileName;
         imageContentType = file.contentType;
+        if (!imageBlob || imageBlob.size < 100) {
+          message.error('Ảnh quá nhỏ / không đọc được — chọn ảnh khác.');
+          return;
+        }
+      } else if (!hasServerImage) {
+        message.error('Thiếu ảnh — chọn kho ảnh trên máy trước khi đăng.');
+        return;
       }
+
+      message.loading({
+        content: imageFileName ? `Đang gửi ảnh «${imageFileName}»…` : 'Đang xuất bản…',
+        key: 'content-publish',
+        duration: 0,
+      });
 
       const res = await publishContentTopic(detail.topic.id, {
         includeManualExport: true,
         runImmediately: true,
         publishAt: publishAt ?? null,
-        imageBase64,
+        imageBlob,
         imageFileName,
         imageContentType,
       });
+      message.destroy('content-publish');
       const failed = res.jobs.filter((j) => j.status === 'Failed').length;
       const succeeded = res.jobs.filter((j) => j.status === 'Succeeded').length;
+      const fbPhoto = res.jobs.some((j) => {
+        if (j.connectorType !== 'facebook_page' || j.status !== 'Succeeded') return false;
+        try {
+          return (JSON.parse(j.resultJson) as { facebook?: string }).facebook === 'photo';
+        } catch {
+          return false;
+        }
+      });
+      const fbTextOnly = res.jobs.some((j) => {
+        if (j.connectorType !== 'facebook_page' || j.status !== 'Succeeded') return false;
+        try {
+          return (JSON.parse(j.resultJson) as { facebook?: string }).facebook === 'feed';
+        } catch {
+          return false;
+        }
+      });
+      const astroHasImage = res.jobs.some((j) => {
+        if (j.connectorType !== 'astro_git' || j.status !== 'Succeeded') return false;
+        try {
+          return (JSON.parse(j.resultJson) as { hasImage?: boolean }).hasImage === true;
+        } catch {
+          return false;
+        }
+      });
       if (failed > 0) message.warning(`Xuất bản: ${succeeded} thành công, ${failed} lỗi`);
+      else if (fbTextOnly && !fbPhoto)
+        message.error(
+          'Facebook vẫn chỉ chữ — ảnh không tới server. Kiểm tra kho ảnh / Cho phép đọc lại, rồi Đẩy lịch đăng lại.',
+        );
+      else if (imageFileName && !fbPhoto && !astroHasImage && !hasServerImage)
+        message.warning('Đã gửi ảnh nhưng kênh chưa xác nhận có ảnh — mở Chi tiết job để kiểm tra.');
       else
         message.success(
           `Đã đẩy lịch đăng (${succeeded} kênh)` +
-            (imageFileName ? ` · ảnh ${imageFileName}` : ''),
+            (fbPhoto || astroHasImage || imageFileName
+              ? ` · có ảnh${imageFileName ? ` ${imageFileName}` : ''}`
+              : hasServerImage
+                ? ' · ảnh trên bài'
+                : ''),
         );
       await loadDetail(detail.topic.id);
       await load();
     } catch (e) {
+      message.destroy('content-publish');
       message.error(apiErrorMessage(e, 'Xuất bản thất bại'));
     } finally {
       setBusy(false);
@@ -613,15 +1059,66 @@ export function ContentTopicsPage() {
   };
 
   const onRetryJob = async (job: ContentPublishJob) => {
+    if (!detail) return;
     setBusy(true);
     try {
-      await runContentPublishJob(job.id);
-      message.success('Đã chạy lại');
-      if (detail) await loadDetail(detail.topic.id);
+      let imageBlob: Blob | undefined;
+      let imageFileName: string | undefined;
+      const needsImage =
+        job.connectorType === 'facebook_page' ||
+        job.connectorType === 'astro_git' ||
+        job.connectorType === 'wordpress_rest';
+
+      if (needsImage && localLibName && libBrandId) {
+        const localImages = await listLocalImages(libBrandId, { requestPermission: true });
+        const preferred =
+          (pickedLocalName && localImages.find((i) => i.name === pickedLocalName)) ||
+          pickBestLocalImage(detail.topic.title, localImages) ||
+          localImages[0];
+        if (preferred) {
+          const file = await prepareLocalImageForPublish(preferred);
+          imageBlob = file.blob;
+          imageFileName = file.fileName;
+          message.loading({ content: `Đang chạy lại ${job.connectorType} + ảnh «${imageFileName}»…`, key: 'content-retry', duration: 0 });
+        } else {
+          message.warning('Chưa chọn được ảnh local — sẽ chạy lại kênh này không kèm ảnh mới.');
+        }
+      }
+
+      const updated = await runContentPublishJob(job.id, {
+        imageBlob,
+        imageFileName,
+        publishAt: detail.topic.displayAt ?? undefined,
+      });
+      message.destroy('content-retry');
+      if (updated.status === 'Succeeded') {
+        message.success(`Đã chạy lại ${job.connectorType} — thành công`);
+      } else {
+        message.error(updated.lastError || `Chạy lại ${job.connectorType} thất bại`);
+      }
+      await loadDetail(detail.topic.id);
     } catch (e) {
+      message.destroy('content-retry');
       message.error(apiErrorMessage(e, 'Chạy lại thất bại'));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const onDeleteTopic = async (row: ContentTopic) => {
+    setRowBusyId(row.id);
+    try {
+      await deleteContentTopic(row.id);
+      message.success('Đã xóa bài');
+      if (detail?.topic.id === row.id) {
+        setDetailOpen(false);
+        setDetail(null);
+      }
+      await load();
+    } catch (e) {
+      message.error(apiErrorMessage(e, 'Xóa bài thất bại'));
+    } finally {
+      setRowBusyId(null);
     }
   };
 
@@ -640,12 +1137,11 @@ export function ContentTopicsPage() {
       >
         <div style={{ maxWidth: 560 }}>
           <Typography.Title level={4} style={{ margin: 0 }}>
-            Hàng đợi bài
+            Bài viết
           </Typography.Title>
           <Typography.Text type="secondary">
-            Nhanh hơn CMS từng site: <strong>Excel / dán tiêu đề</strong> → <strong>Nhờ AI</strong> (chỉ chữ) → chọn
-            ảnh từ <strong>kho thư mục máy bạn</strong> → xuất bản kèm ngày → WP/FB tự đăng, không giữ ảnh trên
-            server KitPlatform.
+            Tab này: <strong>ảnh + duyệt + xuất bản</strong> (web/FB). Generate All / sang brand khác làm ở{' '}
+            <strong>Ý tưởng</strong>. Excel / «Nhờ AI» chỉ là <strong>lối tắt 1 bài</strong>.
             {brands.length === 0 ? ' Hãy thêm thương hiệu trước.' : null}
           </Typography.Text>
         </div>
@@ -653,12 +1149,20 @@ export function ContentTopicsPage() {
           {isLocalImageLibrarySupported() ? (
             !libBrandId ? (
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                Lọc thương hiệu để gắn / dùng kho ảnh riêng
+                Lọc thương hiệu để gắn kho ảnh riêng
               </Typography.Text>
             ) : localLibName ? (
               <Space.Compact>
-                <Button icon={<FolderOpenOutlined />} onClick={() => void onPickLocalLibrary()}>
-                  Kho ảnh: {localLibName} ({localLibCount})
+                <Button
+                  icon={<FolderOpenOutlined />}
+                  type={localLibNeedsPermission ? 'primary' : 'default'}
+                  onClick={() =>
+                    void (localLibNeedsPermission ? onAllowLocalLibrary() : onPickLocalLibrary())
+                  }
+                >
+                  {localLibNeedsPermission
+                    ? `Cho phép đọc «${localLibName}»`
+                    : `Kho ảnh: ${localLibName} (${localLibCount})`}
                 </Button>
                 <Button onClick={() => void onClearLocalLibrary()}>Bỏ</Button>
               </Space.Compact>
@@ -675,11 +1179,28 @@ export function ContentTopicsPage() {
           <Select
             allowClear
             placeholder="Lọc / chọn thương hiệu"
-            style={{ width: 180 }}
+            style={{ width: 200 }}
             value={brandFilter}
-            onChange={setBrandFilter}
+            onChange={(v) => setBrandFilter(v)}
             options={brands.map((b) => ({ value: b.id, label: b.name }))}
           />
+          <Button
+            icon={<CheckOutlined />}
+            disabled={selectedIds.length === 0 || batchPublishing}
+            loading={batchApproving}
+            onClick={() => void onApproveBatch()}
+          >
+            Duyệt đã chọn ({selectedIds.length})
+          </Button>
+          <Button
+            type="primary"
+            icon={<CloudUploadOutlined />}
+            disabled={selectedIds.length === 0 || batchApproving}
+            loading={batchPublishing}
+            onClick={() => void onPublishBatch()}
+          >
+            Xuất bản đã chọn ({selectedIds.length})
+          </Button>
           <Button icon={<ReloadOutlined />} onClick={() => void load()}>
             Tải lại
           </Button>
@@ -721,49 +1242,72 @@ export function ContentTopicsPage() {
               ? 'Chưa có thương hiệu — vào tab Thương hiệu trước'
               : 'Chưa có bài — bấm «Nhập Excel» hoặc «Dán nhiều tiêu đề»',
         }}
-        columns={[
-          { title: 'Thương hiệu', dataIndex: 'brandName', width: 120 },
-          { title: 'Tiêu đề', dataIndex: 'title' },
-          {
-            title: 'Ngày hiển thị',
-            dataIndex: 'displayAt',
-            width: 120,
-            render: (v?: string | null) => (v ? String(v).slice(0, 10) : '—'),
-          },
-          {
-            title: 'Trạng thái',
-            dataIndex: 'status',
-            width: 120,
-            render: (s: string) => <StatusTag status={s} />,
-          },
-          {
-            title: 'Việc cần làm',
-            key: 'a',
-            width: 280,
-            render: (_, row) => (
-              <Space wrap size={0}>
-                {(row.status === 'Draft' ||
-                  row.status === 'BudgetBlocked' ||
-                  row.status === 'Rejected') && (
-                  <Button
-                    type="link"
-                    icon={<ThunderboltOutlined />}
-                    loading={rowBusyId === row.id}
-                    onClick={() => confirmGenerateRow(row)}
-                  >
-                    Nhờ AI
+        rowSelection={{
+          selectedRowKeys: selectedIds,
+          onChange: (keys) => setSelectedIds(keys.map(String)),
+          getCheckboxProps: (row) => ({
+            disabled: !canSelectRow(row.status),
+          }),
+        }}
+        columns={
+          [
+            ...(brandFilter
+              ? []
+              : [{ title: 'Thương hiệu', dataIndex: 'brandName', width: 120 } as const]),
+            { title: 'Tiêu đề', dataIndex: 'title' },
+            {
+              title: 'Ngày hiển thị',
+              dataIndex: 'displayAt',
+              width: 120,
+              render: (v?: string | null) => (v ? String(v).slice(0, 10) : '—'),
+            },
+            {
+              title: 'Trạng thái',
+              dataIndex: 'status',
+              width: 120,
+              render: (s: string) => <StatusTag status={s} />,
+            },
+            {
+              title: 'Việc cần làm',
+              key: 'a',
+              width: 280,
+              render: (_: unknown, row: ContentTopic) => (
+                <Space wrap size={0}>
+                  {(row.status === 'Draft' ||
+                    row.status === 'BudgetBlocked' ||
+                    row.status === 'Rejected') && (
+                    <Button
+                      type="link"
+                      icon={<ThunderboltOutlined />}
+                      loading={rowBusyId === row.id}
+                      onClick={() => confirmGenerateRow(row)}
+                    >
+                      Nhờ AI
+                    </Button>
+                  )}
+                  <Button type="link" onClick={() => openDetail(row)}>
+                    Xem / duyệt
                   </Button>
-                )}
-                <Button type="link" onClick={() => openDetail(row)}>
-                  Xem / duyệt
-                </Button>
-                <Button type="link" onClick={() => openEdit(row)}>
-                  Sửa
-                </Button>
-              </Space>
-            ),
-          },
-        ]}
+                  <Button type="link" onClick={() => openEdit(row)}>
+                    Sửa
+                  </Button>
+                  <Popconfirm
+                    title="Xóa bài này?"
+                    description="Xóa luôn bản viết, ảnh AI và lịch xuất bản gắn bài. Không gỡ bài đã lên Facebook/web."
+                    okText="Xóa"
+                    okButtonProps={{ danger: true }}
+                    cancelText="Huỷ"
+                    onConfirm={() => void onDeleteTopic(row)}
+                  >
+                    <Button type="link" danger icon={<DeleteOutlined />} loading={rowBusyId === row.id}>
+                      Xóa
+                    </Button>
+                  </Popconfirm>
+                </Space>
+              ),
+            },
+          ] as ColumnsType<ContentTopic>
+        }
       />
 
       <Drawer
@@ -930,7 +1474,8 @@ export function ContentTopicsPage() {
         title={detail ? detail.topic.title : 'Chi tiết bài'}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
-        width={720}
+        width={1040}
+        styles={{ body: { paddingTop: 12, background: '#f8fafc' } }}
         loading={detailLoading}
         extra={
           detail ? (
@@ -1000,87 +1545,222 @@ export function ContentTopicsPage() {
               size="small"
               title={
                 localLibName
-                  ? `Ảnh AI (tuỳ chọn — đang dùng kho máy «${localLibName}»)`
+                  ? `Kho ảnh máy «${localLibName}» (${localLibCount})`
                   : `Ảnh để chọn (${detail.assets.length})`
               }
-            >
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                {detail.assets.map((a) => (
-                  <div
-                    key={a.id}
-                    style={{
-                      width: 160,
-                      border: a.isSelected ? '2px solid #1677ff' : '1px solid #e2e8f0',
-                      borderRadius: 8,
-                      padding: 8,
-                    }}
-                  >
-                    {assetUrls[a.id] ? (
-                      <img
-                        src={assetUrls[a.id]}
-                        alt={a.fileName}
-                        style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 4 }}
-                      />
+              extra={
+                localLibName ? (
+                  <Space size={4}>
+                    {localLibNeedsPermission ? (
+                      <Button size="small" type="primary" loading={localPreviewLoading} onClick={() => void onAllowLocalLibrary()}>
+                        Cho phép đọc lại
+                      </Button>
                     ) : (
-                      <div
-                        style={{
-                          height: 100,
-                          background: '#f1f5f9',
-                          borderRadius: 4,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 12,
-                          color: '#64748b',
-                        }}
-                      >
-                        {a.fileName}
-                      </div>
+                      <Button size="small" loading={localPreviewLoading} onClick={() => void loadLocalGallery(detail.topic.brandId, detail.topic.title)}>
+                        Tải lại ảnh
+                      </Button>
                     )}
-                    <Button
-                      size="small"
-                      block
-                      type={a.isSelected ? 'primary' : 'default'}
-                      style={{ marginTop: 6 }}
-                      loading={busy}
-                      onClick={() => void onSelectAsset(a)}
+                  </Space>
+                ) : null
+              }
+            >
+              {localLibName ? (
+                <div>
+                  {localPreviewLoading ? (
+                    <Typography.Text type="secondary">Đang đọc ảnh từ máy…</Typography.Text>
+                  ) : localLibNeedsPermission ? (
+                    <Space direction="vertical" size={8}>
+                      <Typography.Text type="warning">
+                        Trình duyệt đã nhớ thư mục «{localLibName}», nhưng sau khi tải lại trang cần bấm một lần để cho phép đọc (Chrome không tự mở lại quyền).
+                      </Typography.Text>
+                      <Button type="primary" icon={<FolderOpenOutlined />} onClick={() => void onAllowLocalLibrary()}>
+                        Cho phép đọc lại
+                      </Button>
+                    </Space>
+                  ) : localPreviews.length === 0 ? (
+                    <Space direction="vertical" size={8}>
+                      <Typography.Text type="warning">
+                        Chưa thấy ảnh trong thư mục. Dùng file .png / .jpg / .webp — có thể nằm trong thư mục con.
+                      </Typography.Text>
+                      <Button type="primary" icon={<FolderOpenOutlined />} onClick={() => void onPickLocalLibrary()}>
+                        Chọn lại thư mục ảnh
+                      </Button>
+                    </Space>
+                  ) : (
+                    <>
+                      <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
+                        Ảnh xếp theo độ khớp tiêu đề bài
+                        {localMatchConfident ? (
+                          <>
+                            {' '}
+                            · <Typography.Text type="success">đã chọn ảnh khớp mạnh</Typography.Text>
+                          </>
+                        ) : (
+                          <>
+                            {' '}
+                            · <Typography.Text type="warning">khớp yếu — hãy chọn tay nếu sai</Typography.Text>
+                          </>
+                        )}
+                        {pickedLocalName ? (
+                          <>
+                            {' '}
+                            · đang chọn: <Typography.Text code>{pickedLocalName}</Typography.Text>
+                          </>
+                        ) : null}
+                        {localLibCount > localPreviews.length
+                          ? ` · đang hiện ${localPreviews.length}/${localLibCount}`
+                          : null}
+                        . «Đang dùng» chỉ chọn trên máy — phải bấm <strong>Đẩy lịch đăng</strong> mới gửi ảnh lên
+                        Facebook.
+                      </Typography.Paragraph>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                        {localPreviews.map((p) => {
+                          const selected = pickedLocalName === p.name;
+                          return (
+                            <div
+                              key={p.name}
+                              style={{
+                                width: 160,
+                                border: selected ? '2px solid #1677ff' : '1px solid #e2e8f0',
+                                borderRadius: 8,
+                                padding: 8,
+                                cursor: 'pointer',
+                              }}
+                              onClick={() => setPickedLocalName(p.name)}
+                            >
+                              <img
+                                src={p.url}
+                                alt={p.name}
+                                style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 4 }}
+                              />
+                              <Typography.Text
+                                ellipsis
+                                style={{ display: 'block', marginTop: 6, fontSize: 12 }}
+                                title={p.name}
+                              >
+                                {p.name}
+                              </Typography.Text>
+                              {p.reason ? (
+                                <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                                  {p.reason}
+                                  {p.confidence > 0 ? ` · ${p.confidence}%` : ''}
+                                </Typography.Text>
+                              ) : null}
+                              <Button
+                                size="small"
+                                block
+                                type={selected ? 'primary' : 'default'}
+                                style={{ marginTop: 6 }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPickedLocalName(p.name);
+                                }}
+                              >
+                                {selected ? 'Đang dùng' : 'Chọn ảnh này'}
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                  {detail.assets.length > 0 ? (
+                    <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0 }}>
+                      (Vẫn còn {detail.assets.length} ảnh AI trên server — khi dùng kho máy, ưu tiên ảnh local khi đăng.)
+                    </Typography.Paragraph>
+                  ) : null}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                  {detail.assets.map((a) => (
+                    <div
+                      key={a.id}
+                      style={{
+                        width: 160,
+                        border: a.isSelected ? '2px solid #1677ff' : '1px solid #e2e8f0',
+                        borderRadius: 8,
+                        padding: 8,
+                      }}
                     >
-                      {a.isSelected ? 'Đang dùng' : 'Chọn ảnh này'}
-                    </Button>
-                  </div>
-                ))}
-                {detail.assets.length === 0 ? (
-                  <Space direction="vertical" size={8}>
-                    <Typography.Text type="secondary">
-                      {localLibName
-                        ? 'Không cần ảnh AI — khi Đẩy lịch đăng sẽ chọn ảnh từ kho máy.'
-                        : 'Chưa có ảnh — lần gen trước có thể chỉ viết chữ hoặc model ảnh lỗi.'}
-                    </Typography.Text>
-                    {!localLibName ? (
+                      {assetUrls[a.id] ? (
+                        <img
+                          src={assetUrls[a.id]}
+                          alt={a.fileName}
+                          style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 4 }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            height: 100,
+                            background: '#f1f5f9',
+                            borderRadius: 4,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 12,
+                            color: '#64748b',
+                          }}
+                        >
+                          {a.fileName}
+                        </div>
+                      )}
+                      <Button
+                        size="small"
+                        block
+                        type={a.isSelected ? 'primary' : 'default'}
+                        style={{ marginTop: 6 }}
+                        loading={busy}
+                        onClick={() => void onSelectAsset(a)}
+                      >
+                        {a.isSelected ? 'Đang dùng' : 'Chọn ảnh này'}
+                      </Button>
+                    </div>
+                  ))}
+                  {detail.assets.length === 0 ? (
+                    <Space direction="vertical" size={8}>
+                      <Typography.Text type="secondary">
+                        Chưa có ảnh trên server. Bấm «Chọn kho ảnh trên máy» (nút phía trên danh sách bài) để dùng ảnh local, hoặc tạo ảnh AI.
+                      </Typography.Text>
+                      <Button type="dashed" icon={<FolderOpenOutlined />} onClick={() => void onPickLocalLibrary()}>
+                        Chọn kho ảnh trên máy
+                      </Button>
                       <Button type="primary" loading={busy} onClick={() => void onGenerateImages()}>
                         Tạo ảnh ngay
                       </Button>
-                    ) : null}
-                  </Space>
-                ) : null}
-              </div>
+                    </Space>
+                  ) : null}
+                </div>
+              )}
             </Card>
 
-            <Card size="small" title={`Xuất bản (${detail.jobs.length})`}>
+            <Card
+              size="small"
+              title={`Xuất bản (${detail.jobs.length})`}
+              styles={{ body: { paddingTop: 12 } }}
+            >
               <Table
-                size="small"
+                size="middle"
                 rowKey="id"
                 pagination={false}
                 dataSource={detail.jobs}
                 locale={{ emptyText: 'Chưa xuất bản' }}
+                scroll={{ x: 880 }}
                 columns={[
-                  { title: 'Kênh', dataIndex: 'connectorType', width: 140 },
+                  {
+                    title: 'Kênh',
+                    dataIndex: 'connectorType',
+                    width: 200,
+                    render: (t: string) => {
+                      const c = connectorLabel(t);
+                      return <Tag color={c.color}>{c.title}</Tag>;
+                    },
+                  },
                   {
                     title: 'Kết quả',
                     dataIndex: 'status',
-                    width: 110,
+                    width: 120,
                     render: (s: string) => (
-                      <Tag color={s === 'Failed' ? 'red' : s === 'Succeeded' ? 'green' : 'default'}>
+                      <Tag color={s === 'Failed' ? 'error' : s === 'Succeeded' ? 'success' : 'processing'}>
                         {s === 'Succeeded'
                           ? 'Thành công'
                           : s === 'Failed'
@@ -1094,20 +1774,117 @@ export function ContentTopicsPage() {
                   {
                     title: 'Chi tiết',
                     key: 'info',
-                    render: (_, j: ContentPublishJob) => j.lastError || j.externalRef || '—',
+                    render: (_, j: ContentPublishJob) => {
+                      if (j.lastError) {
+                        const err = formatPublishError(j.lastError);
+                        return (
+                          <div style={{ maxWidth: 520 }}>
+                            <Typography.Text type="danger" strong style={{ display: 'block' }}>
+                              {err.summary}
+                            </Typography.Text>
+                            {err.hint ? (
+                              <Typography.Paragraph
+                                type="secondary"
+                                style={{ margin: '6px 0 0', fontSize: 12, lineHeight: 1.45 }}
+                              >
+                                {err.hint}
+                              </Typography.Paragraph>
+                            ) : null}
+                            <Collapse
+                              ghost
+                              size="small"
+                              style={{ marginTop: 4 }}
+                              items={[
+                                {
+                                  key: 'raw',
+                                  label: (
+                                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                      Xem lỗi kỹ thuật
+                                    </Typography.Text>
+                                  ),
+                                  children: (
+                                    <Typography.Paragraph
+                                      code
+                                      copyable
+                                      style={{
+                                        margin: 0,
+                                        fontSize: 11,
+                                        whiteSpace: 'pre-wrap',
+                                        wordBreak: 'break-word',
+                                        maxHeight: 120,
+                                        overflow: 'auto',
+                                      }}
+                                    >
+                                      {err.raw}
+                                    </Typography.Paragraph>
+                                  ),
+                                },
+                              ]}
+                            />
+                          </div>
+                        );
+                      }
+                      let mediaHint = '';
+                      let pathHint = '';
+                      let categoryHint = '';
+                      try {
+                        const r = j.resultJson
+                          ? (JSON.parse(j.resultJson) as {
+                              facebook?: string;
+                              hasImage?: boolean;
+                              image?: string;
+                              path?: string;
+                              category?: string;
+                            })
+                          : null;
+                        if (r?.facebook === 'photo') mediaHint = 'Có ảnh';
+                        else if (r?.facebook === 'feed') mediaHint = 'Chỉ chữ (không ảnh)';
+                        else if (r?.hasImage) mediaHint = `Có ảnh${r.image ? ` · ${r.image}` : ''}`;
+                        else if (j.connectorType === 'astro_git' && r && r.hasImage === false)
+                          mediaHint = 'Chưa kèm ảnh';
+                        if (r?.path) pathHint = r.path;
+                        if (r?.category) categoryHint = r.category;
+                      } catch {
+                        /* ignore */
+                      }
+                      return (
+                        <Space direction="vertical" size={2} style={{ maxWidth: 480 }}>
+                          <Typography.Text style={{ wordBreak: 'break-all' }}>
+                            {j.externalRef || 'OK'}
+                          </Typography.Text>
+                          <Space size={4} wrap>
+                            {mediaHint ? (
+                              <Tag color={mediaHint.startsWith('Có') ? 'success' : 'warning'}>{mediaHint}</Tag>
+                            ) : null}
+                            {categoryHint ? <Tag color="purple">Chuyên mục: {categoryHint}</Tag> : null}
+                          </Space>
+                          {pathHint ? (
+                            <Typography.Text type="secondary" style={{ fontSize: 12 }} copyable>
+                              {pathHint}
+                            </Typography.Text>
+                          ) : null}
+                        </Space>
+                      );
+                    },
                   },
                   {
-                    title: '',
-                    width: 90,
+                    title: 'Thao tác',
+                    width: 140,
+                    fixed: 'right',
                     render: (_, j) =>
-                      j.status === 'Failed' || j.status === 'Queued' ? (
+                      j.status === 'Failed' || j.status === 'Queued' || j.status === 'Succeeded' ? (
                         <Button
-                          type="link"
+                          type={j.status === 'Failed' ? 'primary' : 'link'}
                           size="small"
+                          danger={j.status === 'Failed'}
                           loading={busy}
                           onClick={() => void onRetryJob(j)}
                         >
-                          Chạy lại
+                          {j.connectorType === 'facebook_page' ||
+                          j.connectorType === 'astro_git' ||
+                          j.connectorType === 'wordpress_rest'
+                            ? 'Đăng lại + ảnh'
+                            : 'Chạy lại'}
                         </Button>
                       ) : null,
                   },

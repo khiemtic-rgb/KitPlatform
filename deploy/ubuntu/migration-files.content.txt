@@ -8,3 +8,5 @@
 284_pack_content_topic_display_at.sql
 285_pack_content_ai_config.sql
 286_pack_content_marketing_park_tenant.sql
+287_pack_content_package.sql
+288_pack_content_video_factory.sql

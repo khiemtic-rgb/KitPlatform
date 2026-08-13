@@ -19,13 +19,20 @@ public static class ContentPackDependencyInjection
             c.Timeout = TimeSpan.FromMinutes(2);
         });
         services.AddHttpClient("content-publish");
+        services.AddHttpClient<ContentCreatomateClient>(c =>
+        {
+            c.BaseAddress = new Uri("https://api.creatomate.com/");
+            c.Timeout = TimeSpan.FromMinutes(2);
+        });
 
         services.AddScoped<ContentRepository>();
         services.AddScoped<IContentOrgSettingsService, ContentOrgSettingsService>();
         services.AddScoped<IContentBrandService, ContentBrandService>();
         services.AddScoped<IContentTopicService, ContentTopicService>();
+        services.AddScoped<IContentPackageService, ContentPackageService>();
         services.AddScoped<IContentGenerateService, ContentGenerateService>();
         services.AddScoped<IContentPublishService, ContentPublishService>();
+        services.AddScoped<IContentVideoService, ContentVideoService>();
         return services;
     }
 }
