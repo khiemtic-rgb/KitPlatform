@@ -19,6 +19,7 @@ using KitPlatform.Packs.Pharmacy.Rx;
 using KitPlatform.Packs.Pharmacy.Sales;
 using KitPlatform.Packs.Pharmacy.Infrastructure.Healthcare;
 using KitPlatform.Packs.Pharmacy.Infrastructure.Integration.Qd540;
+using KitPlatform.Packs.Pharmacy.Infrastructure.Catalog.CsdlDuoc;
 
 namespace KitPlatform.Packs.Pharmacy.Infrastructure;
 
@@ -53,7 +54,7 @@ public static class PharmacyPackDependencyInjection
         services.AddScoped<ActiveIngredientRepository>();
         services.AddScoped<IActiveIngredientService, ActiveIngredientService>();
         services.Configure<NationalDrugCatalogSettings>(configuration.GetSection(NationalDrugCatalogSettings.SectionName));
-        services.AddScoped<INationalDrugCatalogService, MockNationalDrugCatalogService>();
+        RegisterNationalDrugCatalog(services, configuration);
         services.AddScoped<INationalDrugBulkLinkService, NationalDrugBulkLinkService>();
 
         // Inventory
@@ -100,5 +101,32 @@ public static class PharmacyPackDependencyInjection
         services.AddScoped<IQd540Table1Service, Qd540Table1Service>();
 
         return services;
+    }
+
+    private static void RegisterNationalDrugCatalog(IServiceCollection services, IConfiguration configuration)
+    {
+        var mode = NationalDrugCatalogSettings.NormalizeMode(
+            configuration.GetSection(NationalDrugCatalogSettings.SectionName)["Mode"]);
+        var username = configuration.GetSection(NationalDrugCatalogSettings.SectionName)["Username"];
+        var password = configuration.GetSection(NationalDrugCatalogSettings.SectionName)["Password"];
+        var useRemote = mode is "sandbox" or "live"
+            && !string.IsNullOrWhiteSpace(username)
+            && !string.IsNullOrWhiteSpace(password);
+
+        if (!useRemote)
+        {
+            services.AddScoped<INationalDrugCatalogService, MockNationalDrugCatalogService>();
+            return;
+        }
+
+        services.AddSingleton<CsdlDuocTokenProvider>();
+        services.AddHttpClient("csdl-duoc", (sp, client) =>
+        {
+            var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptionsMonitor<NationalDrugCatalogSettings>>()
+                .CurrentValue;
+            client.BaseAddress = new Uri(settings.ResolveBaseUrl().TrimEnd('/') + "/");
+            client.Timeout = TimeSpan.FromSeconds(Math.Clamp(settings.TimeoutSeconds, 10, 180));
+        });
+        services.AddScoped<INationalDrugCatalogService, CsdlDuocNationalDrugCatalogService>();
     }
 }

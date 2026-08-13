@@ -5,22 +5,6 @@ namespace KitPlatform.Packs.Pharmacy.Infrastructure;
 
 internal sealed class MockNationalDrugCatalogService : INationalDrugCatalogService
 {
-    private static readonly IReadOnlyList<NationalDrugFieldMapDto> FieldMap =
-    [
-        new("maThuoc", "Mã thuốc (CSDL QG)", "nationalDrugId", "Mã liên kết QG", "Khóa tham chiếu — không hiển thị POS"),
-        new("soDangKy", "Số đăng ký lưu hành", "nationalRegistrationNumber", "Số ĐK lưu hành", "Lưu trên sản phẩm để đối soát"),
-        new("tenThuoc", "Tên thuốc", "productName", "Tên sản phẩm", "Tên thương mại trên nhãn"),
-        new("tenHoatChat", "Tên hoạt chất", "genericName", "Tên hoạt chất / generic", "Gộp với hàm lượng nếu có"),
-        new("hamLuong", "Hàm lượng", "genericName", "Tên hoạt chất / generic", "Nối sau tên hoạt chất"),
-        new("dangBaoChe", "Dạng bào chế", "description", "Mô tả", "Ghi chú tham chiếu QG"),
-        new("quyCachDongGoi", "Quy cách đóng gói", "description", "Mô tả", "Ghi chú tham chiếu QG"),
-        new("donViTinh", "Đơn vị tính", "saleUnitName", "ĐVT cơ sở", "ĐVT bán nhỏ nhất"),
-        new("maVach", "Mã vạch / GTIN", "primaryBarcode", "Barcode chính", "Gợi ý — chỉnh tại tab Chi tiết"),
-        new("loaiThuoc", "Loại thuốc", "drugType", "Loại thuốc", "OTC → 1, Kê đơn → 2"),
-        new("tenNhaSanXuat", "Nhà sản xuất", "description", "Mô tả", "Ghi chú tham chiếu QG"),
-        new("nuocSanXuat", "Nước sản xuất", "description", "Mô tả", "Ghi chú tham chiếu QG"),
-    ];
-
     private static readonly IReadOnlyList<MockDrugRecord> Catalog =
     [
         new(
@@ -195,15 +179,15 @@ internal sealed class MockNationalDrugCatalogService : INationalDrugCatalogServi
         var mode = NormalizeMode(_settings.Mode);
         var (label, isLive, message) = mode switch
         {
-            "live" => ("Liên thông thật", true, "Đang kết nối CSDL Dược QG theo QĐ 522."),
-            "sandbox" => ("Sandbox", false, "Môi trường thử nghiệm — cần tài khoản Sở Y tế."),
-            _ => ("Mock (nội bộ)", false, "Dữ liệu mẫu nội bộ — chờ hồ sơ liên thông Novixa (QĐ 522)."),
+            "live" => ("Liên thông thật", true, "Mock vẫn đang bật — đổi DI sang CSDL dược khi cấu hình Username/Password."),
+            "sandbox" => ("Sandbox", false, "Mock vẫn đang bật — cấu hình NationalDrugCatalog Username/Password để gọi API thật."),
+            _ => ("Mock (nội bộ)", false, "Dữ liệu mẫu nội bộ — chưa gọi api-sandbox.csdlduoc.com.vn."),
         };
 
         return Task.FromResult(new NationalDrugConnectionStatusDto(mode, label, isLive, message));
     }
 
-    public IReadOnlyList<NationalDrugFieldMapDto> GetFieldMap() => FieldMap;
+    public IReadOnlyList<NationalDrugFieldMapDto> GetFieldMap() => NationalDrugCatalogFieldMap.Items;
 
     public Task<PagedNationalDrugListResult> SearchAsync(
         string? search,

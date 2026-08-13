@@ -20,6 +20,13 @@ using KitPlatform.Packs.Care.Infrastructure;
 using KitPlatform.Packs.Content.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
+// Optional local secrets (gitignored under .dev/) — e.g. CSDL dược sandbox password.
+var repoRootDevSecrets = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", ".dev", "national-drug.secrets.json"));
+if (File.Exists(repoRootDevSecrets))
+{
+    builder.Configuration.AddJsonFile(repoRootDevSecrets, optional: true, reloadOnChange: true);
+}
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
