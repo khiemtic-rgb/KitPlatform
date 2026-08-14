@@ -33,17 +33,20 @@ internal sealed class CsdlDuocStockOutSyncService : ICsdlDuocStockOutSyncService
 
     private readonly CsdlDuocSyncLogRepository _log;
     private readonly CsdlDuocTransactionClient _client;
+    private readonly ICsdlDuocCredentialResolver _credentials;
     private readonly IOptionsMonitor<NationalDrugCatalogSettings> _options;
     private readonly ILogger<CsdlDuocStockOutSyncService> _logger;
 
     public CsdlDuocStockOutSyncService(
         CsdlDuocSyncLogRepository log,
         CsdlDuocTransactionClient client,
+        ICsdlDuocCredentialResolver credentials,
         IOptionsMonitor<NationalDrugCatalogSettings> options,
         ILogger<CsdlDuocStockOutSyncService> logger)
     {
         _log = log;
         _client = client;
+        _credentials = credentials;
         _options = options;
         _logger = logger;
     }
@@ -54,10 +57,20 @@ internal sealed class CsdlDuocStockOutSyncService : ICsdlDuocStockOutSyncService
         string? orderNumber,
         CancellationToken cancellationToken = default)
     {
-        var settings = _options.CurrentValue;
-        if (!settings.CanSyncStockOut)
+        var creds = await _credentials.ResolveAsync(tenantId, cancellationToken);
+        if (!creds.CanSyncStockOut)
         {
-            _logger.LogDebug("CSDL stock-out sync disabled — skip order {OrderId}", salesOrderId);
+            _logger.LogDebug(
+                "CSDL stock-out sync disabled — skip order {OrderId} source={Source} status={Status}",
+                salesOrderId, creds.Source, creds.LinkStatus);
+            return;
+        }
+
+        // Prefer tenant-linked sync; platform EnableStockOutSync still allows sandbox UAT.
+        if (creds.IsTenantLinked
+            && !string.Equals(creds.LinkStatus, "Connected", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogDebug("CSDL tenant link not Connected — skip order {OrderId}", salesOrderId);
             return;
         }
 
@@ -68,6 +81,7 @@ internal sealed class CsdlDuocStockOutSyncService : ICsdlDuocStockOutSyncService
             return;
         }
 
+        var settings = _options.CurrentValue;
         try
         {
             var lines = await _log.LoadSaleLinesAsync(tenantId, salesOrderId, cancellationToken);
@@ -103,7 +117,7 @@ internal sealed class CsdlDuocStockOutSyncService : ICsdlDuocStockOutSyncService
                     continue;
                 }
 
-                var unitId = await ResolveUnitIdCachedAsync(line.NationalDrugId!, fallbackUnit, cancellationToken);
+                var unitId = await ResolveUnitIdCachedAsync(creds, line.NationalDrugId!, fallbackUnit, cancellationToken);
                 items.Add(new CsdlDuocStockOutItem
                 {
                     DrugId = line.NationalDrugId!.Trim(),
@@ -139,6 +153,9 @@ internal sealed class CsdlDuocStockOutSyncService : ICsdlDuocStockOutSyncService
                 _ => DateTime.SpecifyKind(header.OrderDate, DateTimeKind.Utc),
             };
             var txnDate = TimeZoneInfo.ConvertTimeFromUtc(orderUtc, VietnamTz);
+            var practice = !string.IsNullOrWhiteSpace(creds.PracticeLicenseCode)
+                ? creds.PracticeLicenseCode.Trim()
+                : (string.IsNullOrWhiteSpace(settings.PracticeLicenseCode) ? null : settings.PracticeLicenseCode.Trim());
 
             var request = new CsdlDuocStockOutRequest
             {
@@ -147,16 +164,14 @@ internal sealed class CsdlDuocStockOutSyncService : ICsdlDuocStockOutSyncService
                 ReferenceNumber = header.OrderNumber.Length <= 50
                     ? header.OrderNumber
                     : header.OrderNumber[..50],
-                PracticeLicenseCode = string.IsNullOrWhiteSpace(settings.PracticeLicenseCode)
-                    ? null
-                    : settings.PracticeLicenseCode.Trim(),
+                PracticeLicenseCode = practice,
                 Note = string.IsNullOrWhiteSpace(header.RetailFacilityCode)
                     ? null
                     : $"facility={header.RetailFacilityCode}",
                 Items = items,
             };
 
-            var (body, statusCode, raw) = await _client.PostStockOutAsync(request, cancellationToken);
+            var (body, statusCode, raw) = await _client.PostStockOutAsync(creds, request, cancellationToken);
             if (statusCode is < 200 or >= 300 || string.IsNullOrWhiteSpace(body?.TransactionId))
             {
                 await _log.UpdateAsync(
@@ -170,7 +185,7 @@ internal sealed class CsdlDuocStockOutSyncService : ICsdlDuocStockOutSyncService
             string? remoteStatus = "submitted";
             try
             {
-                var (st, stCode, _) = await _client.GetStockOutStatusAsync(remoteId, cancellationToken);
+                var (st, stCode, _) = await _client.GetStockOutStatusAsync(creds, remoteId, cancellationToken);
                 if (stCode is >= 200 and < 300)
                     remoteStatus = st?.Status ?? "submitted";
                 else
@@ -218,11 +233,15 @@ internal sealed class CsdlDuocStockOutSyncService : ICsdlDuocStockOutSyncService
             r.ErrorMessage, r.CreatedAt, r.UpdatedAt)).ToList();
     }
 
-    private async Task<string> ResolveUnitIdCachedAsync(string drugId, string fallback, CancellationToken cancellationToken)
+    private async Task<string> ResolveUnitIdCachedAsync(
+        CsdlDuocEffectiveCredentials credentials,
+        string drugId,
+        string fallback,
+        CancellationToken cancellationToken)
     {
         if (UnitIdCache.TryGetValue(drugId, out var cached))
             return cached;
-        var unit = await _client.ResolveUnitIdAsync(drugId, fallback, cancellationToken) ?? fallback;
+        var unit = await _client.ResolveUnitIdAsync(credentials, drugId, fallback, cancellationToken) ?? fallback;
         UnitIdCache[drugId] = unit;
         return unit;
     }

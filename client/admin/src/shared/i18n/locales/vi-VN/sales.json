@@ -592,10 +592,26 @@
       "save": "Lưu",
       "customer": "Khách hàng",
       "customerRequired": "Chọn khách hàng",
-      "orderLink": "Liên kết đơn bán (tùy chọn)",
+      "orderLink": "Đơn bán còn nợ",
       "orderPlaceholder": "Chọn đơn còn nợ",
       "orderSelectCustomerFirst": "Chọn khách hàng trước",
+      "orderEmpty": "Khách này không còn đơn nợ",
+      "orderLinkFifoHint": "Không chọn đơn: khi Ghi sổ sẽ trừ lần lượt từ đơn cũ nhất.",
+      "orderLinkSelectedHint": "Đang gắn phiếu thu vào đơn {{orderNumber}}.",
+      "clearOrderLink": "Bỏ chọn đơn (thu gộp FIFO)",
+      "fillAllOutstanding": "Điền đủ tổng còn nợ",
+      "orderColumns": {
+        "orderNumber": "Số đơn",
+        "orderDate": "Ngày",
+        "orderTotal": "Tiền mua",
+        "paidAmount": "Đã trả",
+        "outstanding": "Còn nợ"
+      },
+      "orderSummary": {
+        "label": "Tổng"
+      },
       "amount": "Số tiền thu",
+      "outstandingAmount": "Số tiền còn nợ",
       "amountRequired": "Nhập số tiền",
       "paymentMethod": "Hình thức",
       "paymentDate": "Ngày thu",
@@ -604,8 +620,8 @@
       "hint": {
         "noOutstanding": "Đơn bán đã hết nợ — không thể ghi nhận thu trên đơn này.",
         "orderOutstanding": "Còn nợ đơn {{orderNumber}}: {{outstanding}}",
-        "genericOutstanding": "Còn nợ: {{outstanding}}",
-        "description": "Số tiền thu không được vượt còn nợ của đơn. Nợ trên đơn chỉ giảm sau khi Ghi sổ phiếu thu.",
+        "genericOutstanding": "Tổng còn nợ: {{outstanding}}",
+        "description": "Số tiền thu không được vượt còn nợ. Nợ trên đơn chỉ giảm sau khi Ghi sổ phiếu thu.",
         "fillOutstanding": "Điền đủ còn nợ"
       },
       "messages": {
@@ -613,7 +629,9 @@
         "loadDetailFailed": "Không tải được chi tiết phiếu",
         "invalidAmount": "Số tiền không hợp lệ",
         "amountExceeds": "Số tiền thu không được vượt còn nợ {{outstanding}}",
+        "amountExceedsTotal": "Số tiền thu không được vượt tổng còn nợ {{outstanding}}",
         "validatorExceeds": "Không vượt còn nợ {{outstanding}}",
+        "validatorExceedsTotal": "Không vượt tổng còn nợ {{outstanding}}",
         "updateSuccess": "Đã cập nhật {{paymentNumber}}",
         "createSuccess": "Đã lưu {{paymentNumber}}. Bấm Ghi sổ để trừ nợ trên đơn và ghi nhận tiền thu.",
         "saveFailed": "Không lưu được phiếu thu nợ",

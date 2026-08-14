@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using KitPlatform.Packs.Pharmacy.Catalog;
 
 namespace KitPlatform.Packs.Pharmacy.Infrastructure.Catalog.CsdlDuoc;
 
@@ -26,11 +27,12 @@ internal sealed class CsdlDuocTransactionClient
     }
 
     public async Task<(CsdlDuocTransactionCreateResponse? Body, int StatusCode, string Raw)> PostStockInAsync(
+        CsdlDuocEffectiveCredentials credentials,
         CsdlDuocStockInRequest request,
         CancellationToken cancellationToken = default)
     {
         var json = JsonSerializer.Serialize(request, JsonOpts);
-        using var response = await SendAsync(HttpMethod.Post, "transactions/stock-in", json, cancellationToken);
+        using var response = await SendAsync(credentials, HttpMethod.Post, "transactions/stock-in", json, cancellationToken);
         var raw = await response.Content.ReadAsStringAsync(cancellationToken);
         CsdlDuocTransactionCreateResponse? body = null;
         if (response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(raw))
@@ -47,11 +49,12 @@ internal sealed class CsdlDuocTransactionClient
     }
 
     public async Task<(CsdlDuocTransactionStatusResponse? Body, int StatusCode, string Raw)> GetStockInStatusAsync(
+        CsdlDuocEffectiveCredentials credentials,
         string transactionId,
         CancellationToken cancellationToken = default)
     {
         var path = $"transactions/stock-in/{Uri.EscapeDataString(transactionId)}/status";
-        using var response = await SendAsync(HttpMethod.Get, path, bodyJson: null, cancellationToken);
+        using var response = await SendAsync(credentials, HttpMethod.Get, path, bodyJson: null, cancellationToken);
         var raw = await response.Content.ReadAsStringAsync(cancellationToken);
         CsdlDuocTransactionStatusResponse? body = null;
         if (response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(raw))
@@ -64,11 +67,12 @@ internal sealed class CsdlDuocTransactionClient
     }
 
     public async Task<(CsdlDuocTransactionCreateResponse? Body, int StatusCode, string Raw)> PostStockOutAsync(
+        CsdlDuocEffectiveCredentials credentials,
         CsdlDuocStockOutRequest request,
         CancellationToken cancellationToken = default)
     {
         var json = JsonSerializer.Serialize(request, JsonOpts);
-        using var response = await SendAsync(HttpMethod.Post, "transactions/stock-out", json, cancellationToken);
+        using var response = await SendAsync(credentials, HttpMethod.Post, "transactions/stock-out", json, cancellationToken);
         var raw = await response.Content.ReadAsStringAsync(cancellationToken);
         CsdlDuocTransactionCreateResponse? body = null;
         if (response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(raw))
@@ -85,11 +89,12 @@ internal sealed class CsdlDuocTransactionClient
     }
 
     public async Task<(CsdlDuocTransactionStatusResponse? Body, int StatusCode, string Raw)> GetStockOutStatusAsync(
+        CsdlDuocEffectiveCredentials credentials,
         string transactionId,
         CancellationToken cancellationToken = default)
     {
         var path = $"transactions/stock-out/{Uri.EscapeDataString(transactionId)}/status";
-        using var response = await SendAsync(HttpMethod.Get, path, bodyJson: null, cancellationToken);
+        using var response = await SendAsync(credentials, HttpMethod.Get, path, bodyJson: null, cancellationToken);
         var raw = await response.Content.ReadAsStringAsync(cancellationToken);
         CsdlDuocTransactionStatusResponse? body = null;
         if (response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(raw))
@@ -101,11 +106,15 @@ internal sealed class CsdlDuocTransactionClient
         return (body, (int)response.StatusCode, raw);
     }
 
-    public async Task<string?> ResolveUnitIdAsync(string drugId, string fallbackUnitId, CancellationToken cancellationToken)
+    public async Task<string?> ResolveUnitIdAsync(
+        CsdlDuocEffectiveCredentials credentials,
+        string drugId,
+        string fallbackUnitId,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(drugId)) return fallbackUnitId;
         var path = $"master/drugs/{Uri.EscapeDataString(drugId.Trim())}";
-        using var response = await SendAsync(HttpMethod.Get, path, bodyJson: null, cancellationToken);
+        using var response = await SendAsync(credentials, HttpMethod.Get, path, bodyJson: null, cancellationToken);
         if (!response.IsSuccessStatusCode) return fallbackUnitId;
         var drug = await response.Content.ReadFromJsonAsync<CsdlDuocDrugDto>(JsonOpts, cancellationToken);
         var unit = drug?.Packagings?.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.UnitId))?.UnitId;
@@ -113,6 +122,7 @@ internal sealed class CsdlDuocTransactionClient
     }
 
     private async Task<HttpResponseMessage> SendAsync(
+        CsdlDuocEffectiveCredentials credentials,
         HttpMethod method,
         string relativeUrl,
         string? bodyJson,
@@ -120,7 +130,7 @@ internal sealed class CsdlDuocTransactionClient
     {
         async Task<HttpResponseMessage> OnceAsync()
         {
-            var client = await _tokens.CreateAuthorizedClientAsync(cancellationToken);
+            var client = await _tokens.CreateAuthorizedClientAsync(credentials, cancellationToken);
             var request = new HttpRequestMessage(method, relativeUrl);
             if (bodyJson is not null)
                 request.Content = new StringContent(bodyJson, Encoding.UTF8, "application/json");
@@ -132,7 +142,7 @@ internal sealed class CsdlDuocTransactionClient
             return response;
 
         response.Dispose();
-        _tokens.Invalidate();
+        _tokens.Invalidate(credentials.Username);
         return await OnceAsync();
     }
 

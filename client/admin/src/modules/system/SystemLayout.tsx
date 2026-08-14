@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   BankOutlined,
+  ApiOutlined,
   CloudOutlined,
   CreditCardOutlined,
   FileSearchOutlined,
@@ -79,6 +80,13 @@ export function SystemLayout() {
         icon: <GlobalOutlined />,
         pharmacyOnly: true as const,
       },
+      {
+        key: 'csdl-settings',
+        label: t('csdlSettings'),
+        path: '/system/csdl-settings',
+        icon: <ApiOutlined />,
+        pharmacyOnly: true as const,
+      },
       { key: 'audit-log', label: t('auditLog'), path: '/system/audit-log', icon: <FileSearchOutlined /> },
     ];
 
@@ -116,7 +124,8 @@ export function SystemLayout() {
     const onPharmacyOnlyTab =
       location.pathname.startsWith('/system/pos-settings') ||
       location.pathname.startsWith('/system/customer-app-settings') ||
-      location.pathname.startsWith('/system/storefront-settings');
+      location.pathname.startsWith('/system/storefront-settings') ||
+      location.pathname.startsWith('/system/csdl-settings');
     if (adminVertical !== 'pharmacy' && onPharmacyOnlyTab) {
       navigate('/system/platform-pack', { replace: true });
       return;

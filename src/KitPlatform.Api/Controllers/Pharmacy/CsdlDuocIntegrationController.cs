@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using KitPlatform.Api.Authorization;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.Core;
+using KitPlatform.Packs.Pharmacy.Catalog;
 using KitPlatform.Packs.Pharmacy.Infrastructure.Catalog.CsdlDuoc;
 
 namespace KitPlatform.Api.Controllers.Pharmacy;
@@ -14,12 +15,62 @@ namespace KitPlatform.Api.Controllers.Pharmacy;
 public sealed class CsdlDuocIntegrationController : ControllerBase
 {
     private readonly ICsdlDuocStockOutSyncService _sync;
+    private readonly ITenantCsdlDuocLinkService _link;
     private readonly ITenantContext _tenant;
 
-    public CsdlDuocIntegrationController(ICsdlDuocStockOutSyncService sync, ITenantContext tenant)
+    public CsdlDuocIntegrationController(
+        ICsdlDuocStockOutSyncService sync,
+        ITenantCsdlDuocLinkService link,
+        ITenantContext tenant)
     {
         _sync = sync;
+        _link = link;
         _tenant = tenant;
+    }
+
+    [HttpGet("link")]
+    [Authorize(Policy = InventoryPolicies.Read)]
+    [ProducesResponseType(typeof(TenantCsdlDuocLinkDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<TenantCsdlDuocLinkDto>> GetLink(CancellationToken cancellationToken) =>
+        Ok(await _link.GetAsync(_tenant.TenantId, cancellationToken));
+
+    [HttpPut("link")]
+    [Authorize(Policy = InventoryPolicies.Write)]
+    [ProducesResponseType(typeof(TenantCsdlDuocLinkDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<TenantCsdlDuocLinkDto>> UpdateLink(
+        [FromBody] UpdateTenantCsdlDuocLinkRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _link.UpdateAsync(
+                _tenant.TenantId,
+                request,
+                _tenant.IsAuthenticated ? _tenant.UserId : null,
+                cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("link/test")]
+    [Authorize(Policy = InventoryPolicies.Write)]
+    [ProducesResponseType(typeof(TenantCsdlDuocLinkDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<TenantCsdlDuocLinkDto>> TestLink(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _link.TestConnectionAsync(
+                _tenant.TenantId,
+                _tenant.IsAuthenticated ? _tenant.UserId : null,
+                cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpGet("sync-log")]

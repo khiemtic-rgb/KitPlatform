@@ -40,7 +40,21 @@ internal sealed class CustomerReceivablesService : ICustomerReceivablesService
         var group = BuildCustomerGroups(rows, credits)
             .FirstOrDefault(x => x.CustomerId == customerId);
         if (group is null)
-            return null;
+        {
+            var customer = await _repository.GetCustomerHeaderAsync(customerId, cancellationToken);
+            if (customer is null)
+                return null;
+
+            return new CustomerReceivablesDetailDto(
+                customer.Value.Id,
+                customer.Value.CustomerCode,
+                customer.Value.FullName,
+                customer.Value.Phone,
+                0m,
+                0m,
+                new CustomerReceivablesAgingBucketsDto(0m, 0m, 0m, 0m),
+                Array.Empty<CustomerReceivablesDetailLineDto>());
+        }
 
         var summary = BuildSummaryRow(group);
         var lines = group.Lines

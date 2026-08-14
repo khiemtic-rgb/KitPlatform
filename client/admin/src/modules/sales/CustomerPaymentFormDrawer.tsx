@@ -1,9 +1,9 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { App, Button, Drawer, Form, Input, InputNumber, Select } from 'antd';
+import { App, Button, Col, Drawer, Form, Input, InputNumber, Row, Select, Space, Table, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { SaveOutlined } from '@ant-design/icons';
 import { isAxiosError } from 'axios';
-import { CustomerPaymentAmountHint } from '@/modules/sales/CustomerPaymentAmountHint';
 import {
   createCustomerPayment,
   fetchCustomerPayment,
@@ -18,13 +18,34 @@ import type {
 } from '@/shared/api/sales.types';
 import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
 import { PharmaDatePicker } from '@/shared/ui/PharmaDatePicker';
+import { formatDisplayDate } from '@/shared/utils/date';
 import {
   formatDisplayMoney,
-  moneyInputNumberProps,
+  formatMoneyInputWithSuffix,
+  moneyInputClassName,
   moneyInputNumberStyle,
   parseMoneyInput,
 } from '@/shared/utils/money';
 import type { CustomerPaymentPrefill } from '@/modules/sales/customer-payment-nav';
+
+const moneyInputWithSuffixProps = {
+  min: 1,
+  precision: 0,
+  controls: false,
+  className: moneyInputClassName,
+  formatter: (value: number | string | undefined) => formatMoneyInputWithSuffix(value),
+  parser: (value: string | undefined) => parseMoneyInput(value) ?? 0,
+} as const;
+
+const moneyReadonlyWithSuffixProps = {
+  min: 0,
+  precision: 0,
+  controls: false,
+  readOnly: true,
+  className: moneyInputClassName,
+  formatter: (value: number | string | undefined) => formatMoneyInputWithSuffix(value),
+  parser: (value: string | undefined) => parseMoneyInput(value) ?? 0,
+} as const;
 
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -65,9 +86,10 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
   const { collectionPaymentMethodOptions } = useSalesEnums();
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const [orderLines, setOrderLines] = useState<CustomerReceivablesDetailLine[]>([]);
   const customerId = Form.useWatch('customerId', form);
-  const salesOrderId = Form.useWatch('salesOrderId', form);
+  const salesOrderId = Form.useWatch('salesOrderId', form) as string | undefined;
 
   const customerOptions = useMemo(
     () =>
@@ -78,17 +100,32 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
     [customers],
   );
 
+  const orderTotals = useMemo(() => {
+    let orderTotal = 0;
+    let paidAmount = 0;
+    let outstanding = 0;
+    for (const line of orderLines) {
+      orderTotal += line.orderTotal;
+      paidAmount += line.paidAmount;
+      outstanding += line.outstanding;
+    }
+    return { orderTotal, paidAmount, outstanding };
+  }, [orderLines]);
+
   const loadOrderLines = useCallback(
     async (id: string) => {
+      setOrdersLoading(true);
       try {
         const detail = await fetchCustomerReceivablesDetail(id);
         setOrderLines(detail.lines.filter((line) => line.outstanding > 0.009));
       } catch (error) {
         setOrderLines([]);
         message.error(apiErrorMessage(error, t('messages.loadOrdersFailed')));
+      } finally {
+        setOrdersLoading(false);
       }
     },
-    [t],
+    [message, t],
   );
 
   useEffect(() => {
@@ -103,7 +140,6 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
         paymentDate: todayIsoDate(),
         notes: undefined,
       });
-      void loadOrderLines(prefill.customerId);
       return;
     }
 
@@ -116,14 +152,13 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
         paymentDate: toFormPaymentDate(editingRow.paymentDate),
         notes: editingRow.notes,
       });
-      void loadOrderLines(editingRow.customerId);
       return;
     }
 
     form.resetFields();
     form.setFieldsValue({ paymentMethod: 1, paymentDate: todayIsoDate() });
     setOrderLines([]);
-  }, [open, prefill, editingRow, form, loadOrderLines]);
+  }, [open, prefill, editingRow, form]);
 
   useEffect(() => {
     if (!open || !editingId || editingRow) return;
@@ -139,7 +174,6 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
           paymentDate: toFormPaymentDate(row.paymentDate),
           notes: row.notes,
         });
-        void loadOrderLines(row.customerId);
       })
       .catch((error) => {
         if (!cancelled) {
@@ -149,7 +183,7 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
     return () => {
       cancelled = true;
     };
-  }, [open, editingId, editingRow, form, loadOrderLines, t]);
+  }, [open, editingId, editingRow, form, message, t]);
 
   useEffect(() => {
     if (!open) return;
@@ -165,16 +199,68 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
     [orderLines, salesOrderId],
   );
 
-  const orderLineOptions = useMemo(
-    () =>
-      orderLines.map((line) => ({
-        value: line.salesOrderId,
-        label: t('orderOption', {
-          orderNumber: line.orderNumber,
-          outstanding: formatDisplayMoney(line.outstanding),
-        }),
-      })),
-    [orderLines, t],
+  const amountCap = selectedOrder?.outstanding ?? orderTotals.outstanding;
+
+  const selectOrder = useCallback(
+    (orderId: string | undefined, fillAmount: boolean) => {
+      form.setFieldsValue({ salesOrderId: orderId });
+      if (!fillAmount) return;
+      if (orderId) {
+        const line = orderLines.find((row) => row.salesOrderId === orderId);
+        if (line) form.setFieldsValue({ amount: line.outstanding });
+        return;
+      }
+      if (orderTotals.outstanding > 0.009) {
+        form.setFieldsValue({ amount: orderTotals.outstanding });
+      }
+    },
+    [form, orderLines, orderTotals.outstanding],
+  );
+
+  const orderColumns: ColumnsType<CustomerReceivablesDetailLine> = useMemo(
+    () => [
+      {
+        title: t('orderColumns.orderNumber'),
+        dataIndex: 'orderNumber',
+        key: 'orderNumber',
+        width: 110,
+        ellipsis: true,
+      },
+      {
+        title: t('orderColumns.orderDate'),
+        dataIndex: 'orderDate',
+        key: 'orderDate',
+        width: 96,
+        render: (value: string) => formatDisplayDate(value),
+      },
+      {
+        title: t('orderColumns.orderTotal'),
+        dataIndex: 'orderTotal',
+        key: 'orderTotal',
+        align: 'right',
+        width: 110,
+        render: (value: number) => formatDisplayMoney(value),
+      },
+      {
+        title: t('orderColumns.paidAmount'),
+        dataIndex: 'paidAmount',
+        key: 'paidAmount',
+        align: 'right',
+        width: 100,
+        render: (value: number) => formatDisplayMoney(value),
+      },
+      {
+        title: t('orderColumns.outstanding'),
+        dataIndex: 'outstanding',
+        key: 'outstanding',
+        align: 'right',
+        width: 110,
+        render: (value: number) => (
+          <Typography.Text strong>{formatDisplayMoney(value)}</Typography.Text>
+        ),
+      },
+    ],
+    [t],
   );
 
   const handleSave = async () => {
@@ -197,6 +283,14 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
         message.error(
           t('messages.amountExceeds', {
             outstanding: formatDisplayMoney(selectedOrder.outstanding),
+          }),
+        );
+        return;
+      }
+      if (!selectedOrder && orderLines.length > 0 && payload.amount > orderTotals.outstanding + 0.009) {
+        message.error(
+          t('messages.amountExceedsTotal', {
+            outstanding: formatDisplayMoney(orderTotals.outstanding),
           }),
         );
         return;
@@ -224,7 +318,7 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
   return (
     <Drawer
       title={editingId ? t('editTitle') : t('createTitle')}
-      width={480}
+      width={720}
       open={open}
       destroyOnClose
       onClose={onClose}
@@ -246,70 +340,162 @@ export const CustomerPaymentFormDrawer = memo(function CustomerPaymentFormDrawer
             options={customerOptions}
             onChange={(id) => {
               form.setFieldsValue({ salesOrderId: undefined, amount: undefined });
-              if (id) void loadOrderLines(String(id));
-              else setOrderLines([]);
+              if (!id) setOrderLines([]);
             }}
           />
         </Form.Item>
-        <Form.Item name="salesOrderId" label={t('orderLink')}>
-          <Select
-            allowClear
-            showSearch
-            optionFilterProp="label"
-            disabled={!customerId}
-            placeholder={customerId ? t('orderPlaceholder') : t('orderSelectCustomerFirst')}
-            options={orderLineOptions}
-            onChange={(value: string | undefined) => {
-              const line = orderLines.find((row) => row.salesOrderId === value);
-              if (line && !form.getFieldValue('amount')) {
-                form.setFieldsValue({ amount: line.outstanding });
-              }
-            }}
-          />
+
+        <Form.Item name="salesOrderId" hidden>
+          <Input />
         </Form.Item>
-        {selectedOrder ? (
-          <CustomerPaymentAmountHint
-            orderNumber={selectedOrder.orderNumber}
-            outstanding={selectedOrder.outstanding}
-            onFillAmount={(amount) => form.setFieldsValue({ amount })}
-          />
-        ) : null}
+
         <Form.Item
-          name="amount"
-          label={t('amount')}
-          rules={[
-            { required: true, message: t('amountRequired') },
-            {
-              validator: async (_, value) => {
-                if (!selectedOrder) return;
-                const amount = resolveAmount(value);
-                if (Number.isNaN(amount) || amount <= 0) {
-                  throw new Error(t('messages.invalidAmount'));
-                }
-                if (amount > selectedOrder.outstanding + 0.009) {
-                  throw new Error(
-                    t('messages.validatorExceeds', {
-                      outstanding: formatDisplayMoney(selectedOrder.outstanding),
-                    }),
-                  );
-                }
-              },
-            },
-          ]}
+          label={t('orderLink')}
+          extra={
+            customerId
+              ? selectedOrder
+                ? t('orderLinkSelectedHint', { orderNumber: selectedOrder.orderNumber })
+                : t('orderLinkFifoHint')
+              : undefined
+          }
         >
-          <InputNumber
-            {...moneyInputNumberProps}
-            style={moneyInputNumberStyle}
-            min={1}
-            max={selectedOrder ? selectedOrder.outstanding : undefined}
-          />
+          {!customerId ? (
+            <Typography.Text type="secondary">{t('orderSelectCustomerFirst')}</Typography.Text>
+          ) : (
+            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+              <Table<CustomerReceivablesDetailLine>
+                size="small"
+                rowKey="salesOrderId"
+                loading={ordersLoading}
+                pagination={false}
+                scroll={{ y: 220 }}
+                locale={{ emptyText: t('orderEmpty') }}
+                columns={orderColumns}
+                dataSource={orderLines}
+                rowSelection={{
+                  type: 'radio',
+                  selectedRowKeys: salesOrderId ? [salesOrderId] : [],
+                  onChange: (keys) => {
+                    const next = keys[0] ? String(keys[0]) : undefined;
+                    selectOrder(next, true);
+                  },
+                }}
+                onRow={(record) => ({
+                  onClick: () => selectOrder(record.salesOrderId, true),
+                  style: { cursor: 'pointer' },
+                })}
+                summary={() =>
+                  orderLines.length > 0 ? (
+                    <Table.Summary fixed>
+                      <Table.Summary.Row>
+                        <Table.Summary.Cell index={0} />
+                        <Table.Summary.Cell index={1} colSpan={2}>
+                          <Typography.Text strong>{t('orderSummary.label')}</Typography.Text>
+                        </Table.Summary.Cell>
+                        <Table.Summary.Cell index={3} align="right">
+                          <Typography.Text strong>
+                            {formatDisplayMoney(orderTotals.orderTotal)}
+                          </Typography.Text>
+                        </Table.Summary.Cell>
+                        <Table.Summary.Cell index={4} align="right">
+                          <Typography.Text strong>
+                            {formatDisplayMoney(orderTotals.paidAmount)}
+                          </Typography.Text>
+                        </Table.Summary.Cell>
+                        <Table.Summary.Cell index={5} align="right">
+                          <Typography.Text strong type="danger">
+                            {formatDisplayMoney(orderTotals.outstanding)}
+                          </Typography.Text>
+                        </Table.Summary.Cell>
+                      </Table.Summary.Row>
+                    </Table.Summary>
+                  ) : null
+                }
+              />
+              <Space wrap>
+                {selectedOrder ? (
+                  <Button type="link" size="small" style={{ padding: 0 }} onClick={() => selectOrder(undefined, false)}>
+                    {t('clearOrderLink')}
+                  </Button>
+                ) : null}
+                {orderTotals.outstanding > 0.009 ? (
+                  <Button
+                    type="link"
+                    size="small"
+                    style={{ padding: 0 }}
+                    onClick={() => selectOrder(undefined, true)}
+                  >
+                    {t('fillAllOutstanding')}
+                  </Button>
+                ) : null}
+              </Space>
+            </Space>
+          )}
         </Form.Item>
-        <Form.Item name="paymentMethod" label={t('paymentMethod')} rules={[{ required: true }]}>
-          <Select options={collectionPaymentMethodOptions} />
-        </Form.Item>
-        <Form.Item name="paymentDate" label={t('paymentDate')}>
-          <PharmaDatePicker style={{ width: '100%' }} />
-        </Form.Item>
+
+        {selectedOrder || (customerId && orderTotals.outstanding > 0.009) ? (
+          <Typography.Paragraph type="secondary" style={{ marginTop: -8, marginBottom: 12 }}>
+            {t('hint.description')}
+          </Typography.Paragraph>
+        ) : null}
+
+        <Row gutter={12}>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              name="amount"
+              label={t('amount')}
+              rules={[
+                { required: true, message: t('amountRequired') },
+                {
+                  validator: async (_, value) => {
+                    const amount = resolveAmount(value);
+                    if (Number.isNaN(amount) || amount <= 0) {
+                      throw new Error(t('messages.invalidAmount'));
+                    }
+                    if (amountCap > 0 && amount > amountCap + 0.009) {
+                      throw new Error(
+                        t(selectedOrder ? 'messages.validatorExceeds' : 'messages.validatorExceedsTotal', {
+                          outstanding: formatDisplayMoney(amountCap),
+                        }),
+                      );
+                    }
+                  },
+                },
+              ]}
+            >
+              <InputNumber
+                {...moneyInputWithSuffixProps}
+                style={moneyInputNumberStyle}
+                min={1}
+                max={amountCap > 0 ? amountCap : undefined}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item label={t('outstandingAmount')}>
+              <InputNumber
+                {...moneyReadonlyWithSuffixProps}
+                style={moneyInputNumberStyle}
+                value={customerId ? amountCap : undefined}
+                placeholder={customerId ? undefined : t('orderSelectCustomerFirst')}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={12}>
+          <Col xs={24} sm={12}>
+            <Form.Item name="paymentMethod" label={t('paymentMethod')} rules={[{ required: true }]}>
+              <Select options={collectionPaymentMethodOptions} />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item name="paymentDate" label={t('paymentDate')}>
+              <PharmaDatePicker style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+        </Row>
+
         <Form.Item name="notes" label={t('notes')}>
           <Input.TextArea rows={2} />
         </Form.Item>

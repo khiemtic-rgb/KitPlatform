@@ -8,6 +8,7 @@ import {
   SaveOutlined,
   ScanOutlined,
   SearchOutlined,
+  ShoppingCartOutlined,
   UserAddOutlined,
   UserOutlined,
 } from '@ant-design/icons';
@@ -625,16 +626,26 @@ export function PosPage() {
 
         <section className="pos-search-block">
           <div className="pos-field-head">
-            <span className="pos-field-label">Tìm sản phẩm</span>
+            <span className="pos-field-label">Tìm và thêm sản phẩm</span>
             <span className="pos-field-hint">
-              {searching ? 'Đang tìm…' : 'F2 · Gõ ≥2 ký tự → chạm kết quả · Enter nếu chỉ còn 1 dòng'}
+              {searching ? 'Đang tìm…' : 'Gõ tên / mã SP · chạm kết quả để thêm'}
             </span>
           </div>
           <Input
             ref={searchRef}
+            size="large"
             className="staff-touch-input"
             prefix={<SearchOutlined />}
-            placeholder="Tên, mã SP, SKU..."
+            suffix={
+              <Button
+                type="text"
+                icon={<ScanOutlined />}
+                aria-label="Mở camera quét"
+                onClick={() => setScanOpen(true)}
+                style={{ marginInlineEnd: -6 }}
+              />
+            }
+            placeholder="Tìm và thêm sản phẩm vào đơn"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onPressEnter={() => void handleSearchEnter()}
@@ -645,7 +656,7 @@ export function PosPage() {
               {hits.map((hit) => (
                 <div key={hit.lookupCode} className="search-hit" onClick={() => void addFromLookup(hit.lookupCode)}>
                   <Typography.Text strong>{hit.productName}</Typography.Text>
-                  <div style={{ fontSize: 12, color: '#64748b' }}>
+                  <div className="pos-hit-meta">
                     {hit.productCode} · {formatMoney(hit.unitPrice)} · Tồn {hit.stockAvailable}
                   </div>
                 </div>
@@ -657,10 +668,11 @@ export function PosPage() {
         <section className="pos-search-block">
           <div className="pos-field-head">
             <span className="pos-field-label">Quét mã vạch</span>
-            <span className="pos-field-hint">Camera quét nhãn SP · gõ tay mã vạch rồi Enter hoặc +</span>
+            <span className="pos-field-hint">Camera hoặc gõ mã rồi Enter</span>
           </div>
           <Space.Compact block className="pos-barcode-row">
             <Input
+              size="large"
               prefix={<ScanOutlined />}
               placeholder="Barcode..."
               value={barcode}
@@ -668,36 +680,48 @@ export function PosPage() {
               onPressEnter={() => void addByBarcode()}
               allowClear
             />
-            <Button icon={<ScanOutlined />} onClick={() => setScanOpen(true)} aria-label="Mở camera quét" />
-            <Button type="primary" onClick={() => void addByBarcode()}>
+            <Button size="large" icon={<ScanOutlined />} onClick={() => setScanOpen(true)} aria-label="Mở camera quét" />
+            <Button type="primary" size="large" onClick={() => void addByBarcode()}>
               +
             </Button>
           </Space.Compact>
         </section>
 
-        <Typography.Title level={5} style={{ marginTop: 8, marginBottom: 8 }}>
-          Giỏ ({cart.length})
+        <Typography.Title level={5} className="pos-cart-title">
+          Giỏ hàng ({cart.length})
         </Typography.Title>
 
         {cart.length === 0 ? (
-          <Typography.Text type="secondary">Chưa có sản phẩm</Typography.Text>
+          <div className="pos-empty-cart">
+            <div className="pos-empty-cart__icon" aria-hidden>
+              <ShoppingCartOutlined />
+            </div>
+            <p className="pos-empty-cart__title">Đơn chưa có sản phẩm</p>
+            <p className="pos-empty-cart__hint">Tìm hoặc quét mã để thêm vào giỏ</p>
+            <Button
+              type="link"
+              className="pos-empty-cart__action"
+              onClick={() => searchRef.current?.focus()}
+            >
+              Chọn sản phẩm
+            </Button>
+          </div>
         ) : (
           cart.map((line) => (
             <div key={line.key} className="cart-line">
               <div className="cart-line-top">
                 <div className="cart-line-info">
                   <Typography.Text strong>{line.productName}</Typography.Text>
-                  <div style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div className="cart-line-meta">
                     <span>{line.productCode}</span>
                     <span>·</span>
                     {resolveLineAdjust(line) === POS_LINE_ADJUST.UnitPrice ? (
                       <InputNumber
-                        size="small"
                         min={0}
                         precision={0}
                         value={line.unitPrice}
                         controls={false}
-                        style={{ width: 96 }}
+                        style={{ width: 110 }}
                         formatter={(v) =>
                           v == null ? '' : `${v}`.replace(/\./g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
                         }
@@ -717,8 +741,7 @@ export function PosPage() {
                   {showsBatchPicker(batchMode, line.batchHints) ? (
                     <Button
                       type="link"
-                      size="small"
-                      style={{ padding: 0, height: 'auto', fontSize: 12 }}
+                      style={{ padding: 0, height: 'auto', fontSize: 14, fontWeight: 600 }}
                       onClick={() => setBatchLineKey(line.key)}
                     >
                       Lô: {line.batchLabel || defaultBatchLabel(line.batchHints) || 'Chọn lô'}
@@ -729,18 +752,18 @@ export function PosPage() {
                 <Button
                   type="text"
                   danger
-                  size="small"
                   className="cart-line-remove"
                   onClick={() => removeLine(line.key)}
+                  aria-label="Xóa dòng"
                 >
                   ×
                 </Button>
               </div>
               <div className="cart-line-foot">
                 <Space className="cart-line-qty" size={4}>
-                  <Button size="small" icon={<MinusOutlined />} onClick={() => updateQuantity(line.key, line.quantity - 1)} />
-                  <InputNumber size="small" min={1} value={line.quantity} controls={false} style={{ width: 48 }} readOnly />
-                  <Button size="small" icon={<PlusOutlined />} onClick={() => updateQuantity(line.key, line.quantity + 1)} />
+                  <Button icon={<MinusOutlined />} onClick={() => updateQuantity(line.key, line.quantity - 1)} />
+                  <InputNumber min={1} value={line.quantity} controls={false} readOnly />
+                  <Button icon={<PlusOutlined />} onClick={() => updateQuantity(line.key, line.quantity + 1)} />
                 </Space>
                 {(canDiscount || canPriceOverride) ? (
                 <Space className="cart-line-discount" size={4} align="center">
@@ -823,6 +846,8 @@ export function PosPage() {
 
         <Button
           block
+          size="large"
+          className="pos-customer-btn"
           icon={<UserOutlined />}
           style={{ marginTop: 12 }}
           onClick={() => {
@@ -832,38 +857,44 @@ export function PosPage() {
         >
           {customer
             ? `${customer.fullName} · ${customer.phone}${customer.allowCredit ? ' · được nợ' : ''}`
-            : 'Chọn khách (tuỳ chọn)'}
+            : 'Thêm khách hàng'}
         </Button>
       </main>
 
       <footer className="staff-footer">
-        <Space direction="vertical" style={{ width: '100%' }} size={8}>
-          <Space style={{ width: '100%', justifyContent: 'space-between' }} align="start">
-            <div>
-              <Typography.Text>Tạm tính</Typography.Text>
-              {priced.totalDiscountAmount > 0 ? (
-                <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
-                  Đã giảm {formatMoney(priced.totalDiscountAmount)}
-                </Typography.Text>
-              ) : null}
-            </div>
-            <Typography.Title level={4} style={{ margin: 0 }}>
-              {formatMoney(priced.totalAmount)}
-            </Typography.Title>
-          </Space>
+        <div className="pos-footer-total">
+          <div>
+            <span className="pos-footer-total__label">Tạm tính</span>
+            <span className="pos-footer-total__badge">{cart.length} SP</span>
+            {priced.totalDiscountAmount > 0 ? (
+              <Typography.Text type="secondary" style={{ display: 'block', fontSize: 13, marginTop: 2 }}>
+                Đã giảm {formatMoney(priced.totalDiscountAmount)}
+              </Typography.Text>
+            ) : null}
+          </div>
+          <Typography.Title level={3} className="pos-footer-total__amount">
+            {formatMoney(priced.totalAmount)}
+          </Typography.Title>
+        </div>
+        <div className="pos-footer-actions">
           <Button
-            block
+            className="pos-footer-draft"
             icon={<SaveOutlined />}
             disabled={cart.length === 0}
             loading={savingDraft}
             onClick={() => void saveDraft()}
           >
-            {editingDraftId ? 'Cập nhật nháp' : 'Lưu nháp'}
+            {editingDraftId ? 'Cập nhật' : 'Lưu tạm'}
           </Button>
-          <Button type="primary" block size="large" disabled={cart.length === 0} onClick={goCheckout}>
+          <Button
+            type="primary"
+            className="pos-footer-pay"
+            disabled={cart.length === 0}
+            onClick={goCheckout}
+          >
             Thanh toán
           </Button>
-        </Space>
+        </div>
       </footer>
 
       <OpenShiftSheet

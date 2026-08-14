@@ -3,6 +3,9 @@ export type NationalDrugConnectionStatus = {
   modeLabel: string;
   isLive: boolean;
   message?: string;
+  accountSource?: string;
+  accountUsername?: string;
+  linkStatus?: string;
 };
 
 export type NationalDrugFieldMap = {

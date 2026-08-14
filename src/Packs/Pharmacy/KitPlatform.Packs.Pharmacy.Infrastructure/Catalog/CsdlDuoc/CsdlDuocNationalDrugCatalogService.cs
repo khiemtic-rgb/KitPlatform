@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using KitPlatform.Application.Abstractions;
 using KitPlatform.Packs.Pharmacy.Catalog;
 
 namespace KitPlatform.Packs.Pharmacy.Infrastructure.Catalog.CsdlDuoc;
@@ -15,15 +16,21 @@ internal sealed class CsdlDuocNationalDrugCatalogService : INationalDrugCatalogS
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
     private readonly CsdlDuocTokenProvider _tokens;
+    private readonly ICsdlDuocCredentialResolver _credentials;
+    private readonly ITenantContext _tenant;
     private readonly IOptionsMonitor<NationalDrugCatalogSettings> _options;
     private readonly ILogger<CsdlDuocNationalDrugCatalogService> _logger;
 
     public CsdlDuocNationalDrugCatalogService(
         CsdlDuocTokenProvider tokens,
+        ICsdlDuocCredentialResolver credentials,
+        ITenantContext tenant,
         IOptionsMonitor<NationalDrugCatalogSettings> options,
         ILogger<CsdlDuocNationalDrugCatalogService> logger)
     {
         _tokens = tokens;
+        _credentials = credentials;
+        _tenant = tenant;
         _options = options;
         _logger = logger;
     }
@@ -31,17 +38,24 @@ internal sealed class CsdlDuocNationalDrugCatalogService : INationalDrugCatalogS
     public async Task<NationalDrugConnectionStatusDto> GetConnectionStatusAsync(
         CancellationToken cancellationToken = default)
     {
-        var mode = NationalDrugCatalogSettings.NormalizeMode(_options.CurrentValue.Mode);
+        var creds = await _credentials.ResolveAsync(_tenant.TenantId, cancellationToken);
+        var mode = NationalDrugCatalogSettings.NormalizeMode(creds.Mode);
         var (label, isLive) = mode switch
         {
             "live" => ("Liên thông thật (CSDL dược)", true),
             "sandbox" => ("Sandbox CSDL dược", false),
             _ => ("Mock (nội bộ)", false),
         };
+        if (creds.IsTenantLinked)
+            label = mode == "live"
+                ? "Tài khoản nhà thuốc (live)"
+                : "Tài khoản nhà thuốc (sandbox)";
+        else if (mode == "sandbox")
+            label = "Sandbox chung (platform)";
 
         try
         {
-            var client = await _tokens.CreateAuthorizedClientAsync(cancellationToken);
+            var client = await _tokens.CreateAuthorizedClientAsync(creds, cancellationToken);
             using var response = await client.GetAsync("master/drugs?page=1&page_size=1", cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
@@ -49,7 +63,10 @@ internal sealed class CsdlDuocNationalDrugCatalogService : INationalDrugCatalogS
                     mode,
                     label,
                     isLive,
-                    $"Đã đăng nhập nhưng GET /master/drugs lỗi HTTP {(int)response.StatusCode}.");
+                    $"Đã đăng nhập nhưng GET /master/drugs lỗi HTTP {(int)response.StatusCode}.",
+                    creds.Source,
+                    MaskUser(creds.Username),
+                    creds.LinkStatus);
             }
 
             var page = await response.Content.ReadFromJsonAsync<CsdlDuocPagedDrugsResponse>(JsonOpts, cancellationToken);
@@ -57,7 +74,10 @@ internal sealed class CsdlDuocNationalDrugCatalogService : INationalDrugCatalogS
                 mode,
                 label,
                 isLive,
-                $"Kết nối OK — danh mục ~{page?.Total ?? 0:N0} thuốc. Tìm theo tên: quét cục bộ (API chưa filter keyword); ưu tiên mã thuốc/SĐK.");
+                $"Kết nối OK — danh mục ~{page?.Total ?? 0:N0} thuốc. Nguồn: {label}.",
+                creds.Source,
+                MaskUser(creds.Username),
+                creds.LinkStatus);
         }
         catch (Exception ex)
         {
@@ -66,7 +86,10 @@ internal sealed class CsdlDuocNationalDrugCatalogService : INationalDrugCatalogS
                 mode,
                 label,
                 false,
-                $"Chưa kết nối: {ex.Message}");
+                $"Chưa kết nối: {ex.Message}",
+                creds.Source,
+                MaskUser(creds.Username),
+                creds.LinkStatus);
         }
     }
 
@@ -150,7 +173,8 @@ internal sealed class CsdlDuocNationalDrugCatalogService : INationalDrugCatalogS
             using var response = await client.GetAsync(url, cancellationToken);
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                _tokens.Invalidate();
+                var creds = await _credentials.ResolveAsync(_tenant.TenantId, cancellationToken);
+                _tokens.Invalidate(creds.Username);
                 client = await AuthorizedClientAsync(cancellationToken);
                 using var retry = await client.GetAsync(url, cancellationToken);
                 retry.EnsureSuccessStatusCode();
@@ -210,7 +234,8 @@ internal sealed class CsdlDuocNationalDrugCatalogService : INationalDrugCatalogS
             return null;
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            _tokens.Invalidate();
+            var creds = await _credentials.ResolveAsync(_tenant.TenantId, cancellationToken);
+            _tokens.Invalidate(creds.Username);
             client = await AuthorizedClientAsync(cancellationToken);
             using var retry = await client.GetAsync(url, cancellationToken);
             if (!retry.IsSuccessStatusCode) return null;
@@ -226,8 +251,11 @@ internal sealed class CsdlDuocNationalDrugCatalogService : INationalDrugCatalogS
         return await response.Content.ReadFromJsonAsync<CsdlDuocDrugDto>(JsonOpts, cancellationToken);
     }
 
-    private async Task<HttpClient> AuthorizedClientAsync(CancellationToken cancellationToken) =>
-        await _tokens.CreateAuthorizedClientAsync(cancellationToken);
+    private async Task<HttpClient> AuthorizedClientAsync(CancellationToken cancellationToken)
+    {
+        var creds = await _credentials.ResolveAsync(_tenant.TenantId, cancellationToken);
+        return await _tokens.CreateAuthorizedClientAsync(creds, cancellationToken);
+    }
 
     private async Task<HttpResponseMessage> GetWithAuthRetryAsync(string relativeUrl, CancellationToken cancellationToken)
     {
@@ -237,8 +265,17 @@ internal sealed class CsdlDuocNationalDrugCatalogService : INationalDrugCatalogS
             return response;
 
         response.Dispose();
-        _tokens.Invalidate();
+        var creds = await _credentials.ResolveAsync(_tenant.TenantId, cancellationToken);
+        _tokens.Invalidate(creds.Username);
         client = await AuthorizedClientAsync(cancellationToken);
         return await client.GetAsync(relativeUrl, cancellationToken);
+    }
+
+    private static string? MaskUser(string? username)
+    {
+        if (string.IsNullOrWhiteSpace(username)) return null;
+        var u = username.Trim();
+        if (u.Length <= 4) return "****";
+        return u[..2] + new string('*', Math.Min(6, u.Length - 4)) + u[^2..];
     }
 }

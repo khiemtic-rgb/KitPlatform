@@ -4,7 +4,10 @@ public sealed record NationalDrugConnectionStatusDto(
     string Mode,
     string ModeLabel,
     bool IsLive,
-    string? Message);
+    string? Message,
+    string? AccountSource = null,
+    string? AccountUsername = null,
+    string? LinkStatus = null);
 
 public sealed record NationalDrugFieldMapDto(
     string NationalField,

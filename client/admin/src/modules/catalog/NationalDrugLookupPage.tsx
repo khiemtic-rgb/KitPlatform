@@ -177,8 +177,8 @@ export function NationalDrugLookupPage() {
           </Space>
         }
         description={
-          connection?.isLive
-            ? (connection.message ?? t('alertDescriptionLive'))
+          connection
+            ? (connection.message ?? (connection.isLive ? t('alertDescriptionLive') : t('alertDescriptionMock')))
             : t('alertDescriptionMock')
         }
       />

@@ -3631,6 +3631,36 @@ internal sealed class SalesRepository
         return rows > 0;
     }
 
+    public async Task<(Guid Id, string CustomerCode, string FullName, string? Phone)?> GetCustomerHeaderAsync(
+        Guid customerId,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var row = await conn.QuerySingleOrDefaultAsync<CustomerHeaderRow>(
+            """
+            SELECT id AS Id,
+                   customer_code AS CustomerCode,
+                   full_name AS FullName,
+                   phone AS Phone
+            FROM customers
+            WHERE id = @CustomerId
+              AND tenant_id = @TenantId
+              AND deleted_at IS NULL
+            """,
+            new { CustomerId = customerId, TenantId });
+        if (row is null)
+            return null;
+        return (row.Id, row.CustomerCode, row.FullName, row.Phone);
+    }
+
+    private sealed class CustomerHeaderRow
+    {
+        public Guid Id { get; init; }
+        public string CustomerCode { get; init; } = "";
+        public string FullName { get; init; } = "";
+        public string? Phone { get; init; }
+    }
+
     public async Task<IReadOnlyList<SalesOrderReceivableSourceRow>> GetSalesOrderReceivableSourceRowsAsync(
         Guid[]? allowedWarehouseIds,
         CancellationToken cancellationToken)

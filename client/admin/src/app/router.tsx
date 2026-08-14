@@ -356,6 +356,9 @@ const CustomerAppSettingsPage = lazy(() =>
 const StorefrontSettingsPage = lazy(() =>
   import('@/modules/system/StorefrontSettingsPage').then((m) => ({ default: m.StorefrontSettingsPage })),
 );
+const CsdlDuocSettingsPage = lazy(() =>
+  import('@/modules/system/CsdlDuocSettingsPage').then((m) => ({ default: m.CsdlDuocSettingsPage })),
+);
 const LoyaltySettingsPage = lazy(() =>
   import('@/modules/sales/LoyaltySettingsPage').then((m) => ({ default: m.LoyaltySettingsPage })),
 );
@@ -424,6 +427,9 @@ const ContentSettingsPage = lazy(() =>
 );
 const ContentAiSettingsPage = lazy(() =>
   import('@/modules/content/ContentAiSettingsPage').then((m) => ({ default: m.ContentAiSettingsPage })),
+);
+const ContentVideoSettingsPage = lazy(() =>
+  import('@/modules/content/ContentVideoSettingsPage').then((m) => ({ default: m.ContentVideoSettingsPage })),
 );
 const ContentBrandsPage = lazy(() =>
   import('@/modules/content/ContentBrandsPage').then((m) => ({ default: m.ContentBrandsPage })),
@@ -875,6 +881,7 @@ export function AppRouter() {
                 <Route index element={<Navigate to="/content/packages" replace />} />
                 <Route path="budget" element={<ContentBudgetPage />} />
                 <Route path="ai" element={<ContentAiSettingsPage />} />
+                <Route path="video-settings" element={<ContentVideoSettingsPage />} />
                 <Route path="settings" element={<ContentSettingsPage />} />
                 <Route path="brands" element={<ContentBrandsPage />} />
                 <Route path="packages" element={<ContentPackagesPage />} />
@@ -996,6 +1003,7 @@ export function AppRouter() {
                 <Route path="pos-settings" element={<ReceiptSettingsPage />} />
                 <Route path="customer-app-settings" element={<CustomerAppSettingsPage />} />
                 <Route path="storefront-settings" element={<StorefrontSettingsPage />} />
+                <Route path="csdl-settings" element={<CsdlDuocSettingsPage />} />
                 <Route path="audit-log" element={<AuditLogListPage />} />
                 <Route
                   path="assessment-leads"

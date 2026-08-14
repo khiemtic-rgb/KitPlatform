@@ -14,6 +14,9 @@ function normalizeConnectionStatus(row: Record<string, unknown>): NationalDrugCo
     modeLabel: String(row.modeLabel ?? row.ModeLabel ?? 'Mock'),
     isLive: Boolean(row.isLive ?? row.IsLive),
     message: (row.message ?? row.Message) as string | undefined,
+    accountSource: (row.accountSource ?? row.AccountSource) as string | undefined,
+    accountUsername: (row.accountUsername ?? row.AccountUsername) as string | undefined,
+    linkStatus: (row.linkStatus ?? row.LinkStatus) as string | undefined,
   };
 }
 

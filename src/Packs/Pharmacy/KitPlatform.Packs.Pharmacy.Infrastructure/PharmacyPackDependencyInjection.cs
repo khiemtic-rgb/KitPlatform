@@ -113,13 +113,8 @@ public static class PharmacyPackDependencyInjection
             && !string.IsNullOrWhiteSpace(username)
             && !string.IsNullOrWhiteSpace(password);
 
-        if (!useRemote)
-        {
-            services.AddScoped<INationalDrugCatalogService, MockNationalDrugCatalogService>();
-            services.AddScoped<ICsdlDuocStockOutSyncService, NoOpCsdlDuocStockOutSyncService>();
-            return;
-        }
-
+        services.AddScoped<TenantCsdlDuocLinkRepository>();
+        services.AddScoped<ICsdlDuocCredentialResolver, CsdlDuocCredentialResolver>();
         services.AddSingleton<CsdlDuocTokenProvider>();
         services.AddHttpClient("csdl-duoc", (sp, client) =>
         {
@@ -128,6 +123,15 @@ public static class PharmacyPackDependencyInjection
             client.BaseAddress = new Uri(settings.ResolveBaseUrl().TrimEnd('/') + "/");
             client.Timeout = TimeSpan.FromSeconds(Math.Clamp(settings.TimeoutSeconds, 10, 180));
         });
+        services.AddScoped<ITenantCsdlDuocLinkService, TenantCsdlDuocLinkService>();
+
+        if (!useRemote)
+        {
+            services.AddScoped<INationalDrugCatalogService, MockNationalDrugCatalogService>();
+            services.AddScoped<ICsdlDuocStockOutSyncService, NoOpCsdlDuocStockOutSyncService>();
+            return;
+        }
+
         services.AddScoped<INationalDrugCatalogService, CsdlDuocNationalDrugCatalogService>();
         services.AddScoped<CsdlDuocTransactionClient>();
         services.AddScoped<CsdlDuocSyncLogRepository>();

@@ -591,10 +591,26 @@
       "save": "Save",
       "customer": "Customer",
       "customerRequired": "Select a customer",
-      "orderLink": "Link to sale order (optional)",
+      "orderLink": "Open sale orders",
       "orderPlaceholder": "Select order with balance",
       "orderSelectCustomerFirst": "Select a customer first",
+      "orderEmpty": "This customer has no open balances",
+      "orderLinkFifoHint": "No order selected: posting applies the amount to oldest orders first.",
+      "orderLinkSelectedHint": "Collection linked to order {{orderNumber}}.",
+      "clearOrderLink": "Clear order (FIFO across all)",
+      "fillAllOutstanding": "Fill total balance",
+      "orderColumns": {
+        "orderNumber": "Order",
+        "orderDate": "Date",
+        "orderTotal": "Purchase",
+        "paidAmount": "Paid",
+        "outstanding": "Due"
+      },
+      "orderSummary": {
+        "label": "Total"
+      },
       "amount": "Collection amount",
+      "outstandingAmount": "Outstanding balance",
       "amountRequired": "Enter amount",
       "paymentMethod": "Method",
       "paymentDate": "Collection date",
@@ -603,8 +619,8 @@
       "hint": {
         "noOutstanding": "This sale order has no balance — cannot record collection against it.",
         "orderOutstanding": "Order {{orderNumber}} balance: {{outstanding}}",
-        "genericOutstanding": "Balance: {{outstanding}}",
-        "description": "Collection cannot exceed the order balance. Debt is reduced only after posting the receipt.",
+        "genericOutstanding": "Total balance: {{outstanding}}",
+        "description": "Collection cannot exceed the balance. Debt is reduced only after posting the receipt.",
         "fillOutstanding": "Fill full balance"
       },
       "messages": {
@@ -612,7 +628,9 @@
         "loadDetailFailed": "Could not load receipt details",
         "invalidAmount": "Invalid amount",
         "amountExceeds": "Collection cannot exceed balance {{outstanding}}",
+        "amountExceedsTotal": "Collection cannot exceed total balance {{outstanding}}",
         "validatorExceeds": "Cannot exceed balance {{outstanding}}",
+        "validatorExceedsTotal": "Cannot exceed total balance {{outstanding}}",
         "updateSuccess": "Updated {{paymentNumber}}",
         "createSuccess": "Saved {{paymentNumber}}. Click Post to reduce order debt and record collection.",
         "saveFailed": "Could not save collection receipt",
