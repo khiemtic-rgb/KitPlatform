@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-14T07:52:23.174Z",
+  "generatedAt": "2026-08-14T13:45:11.225Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 323,
-    "todayPageViews": 235,
-    "todayRequests": 1030,
-    "last24hVisitors": 504,
-    "last24hPageViews": 335,
-    "last24hRequests": 2703
+    "todayVisitors": 496,
+    "todayPageViews": 332,
+    "todayRequests": 1296,
+    "last24hVisitors": 598,
+    "last24hPageViews": 387,
+    "last24hRequests": 1752
   },
   "hourly": [
-    {
-      "time": "2026-08-13T08:00:00Z",
-      "visitors": 11,
-      "requests": 13
-    },
-    {
-      "time": "2026-08-13T09:00:00Z",
-      "visitors": 21,
-      "requests": 256
-    },
-    {
-      "time": "2026-08-13T10:00:00Z",
-      "visitors": 28,
-      "requests": 32
-    },
-    {
-      "time": "2026-08-13T11:00:00Z",
-      "visitors": 19,
-      "requests": 702
-    },
-    {
-      "time": "2026-08-13T12:00:00Z",
-      "visitors": 15,
-      "requests": 25
-    },
-    {
-      "time": "2026-08-13T13:00:00Z",
-      "visitors": 14,
-      "requests": 189
-    },
     {
       "time": "2026-08-13T14:00:00Z",
       "visitors": 29,
@@ -128,8 +98,38 @@
     },
     {
       "time": "2026-08-14T07:00:00Z",
-      "visitors": 17,
-      "requests": 31
+      "visitors": 21,
+      "requests": 39
+    },
+    {
+      "time": "2026-08-14T08:00:00Z",
+      "visitors": 88,
+      "requests": 99
+    },
+    {
+      "time": "2026-08-14T09:00:00Z",
+      "visitors": 19,
+      "requests": 23
+    },
+    {
+      "time": "2026-08-14T10:00:00Z",
+      "visitors": 31,
+      "requests": 37
+    },
+    {
+      "time": "2026-08-14T11:00:00Z",
+      "visitors": 37,
+      "requests": 48
+    },
+    {
+      "time": "2026-08-14T12:00:00Z",
+      "visitors": 23,
+      "requests": 27
+    },
+    {
+      "time": "2026-08-14T13:00:00Z",
+      "visitors": 22,
+      "requests": 24
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-08-14",
-      "visitors": 323,
-      "pageViews": 235,
-      "requests": 1030
+      "visitors": 496,
+      "pageViews": 332,
+      "requests": 1296
     }
   ],
   "topPages": [
     {
       "path": "/cdn-cgi/rum",
-      "views": 129
+      "views": 130
     },
     {
       "path": "/vi/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api-voi-he-thong-co-so-du-lieu-ve-duoc/",
-      "views": 114
-    },
-    {
-      "path": "/",
-      "views": 80
-    },
-    {
-      "path": "/robots.txt",
-      "views": 61
+      "views": 121
     },
     {
       "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
-      "views": 54
+      "views": 68
     },
     {
-      "path": "/core/.env",
-      "views": 48
+      "path": "/robots.txt",
+      "views": 58
     },
     {
-      "path": "/configuration.js",
-      "views": 45
+      "path": "/",
+      "views": 40
     },
     {
-      "path": "/actuator/env",
-      "views": 42
-    },
-    {
-      "path": "/key.pem",
-      "views": 39
-    },
-    {
-      "path": "/id_ecdsa",
-      "views": 38
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 32
     },
     {
       "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
-      "views": 36
-    },
-    {
-      "path": "/.aws/config",
-      "views": 35
-    },
-    {
-      "path": "/.env.docker",
-      "views": 35
-    },
-    {
-      "path": "/admin/.env",
-      "views": 33
-    },
-    {
-      "path": "/actuator/configprops",
       "views": 32
+    },
+    {
+      "path": "/vi/",
+      "views": 29
+    },
+    {
+      "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
+      "views": 27
+    },
+    {
+      "path": "/images/tin-tuc/quy-trinh-doi-tra-thuoc.png",
+      "views": 26
+    },
+    {
+      "path": "/images/tin-tuc/quy-trinh-thuoc-ke-don.png",
+      "views": 23
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 22
+    },
+    {
+      "path": "/test.php",
+      "views": 22
+    },
+    {
+      "path": "/keys/service-account.json",
+      "views": 21
+    },
+    {
+      "path": "/_astro/_slug_.OmCW7wJf.css",
+      "views": 21
     }
   ]
 }
