@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-14T13:50:51.754Z",
+  "generatedAt": "2026-08-14T19:25:59.141Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 131,
-    "todayPageViews": 47,
-    "todayRequests": 336,
-    "last24hVisitors": 152,
-    "last24hPageViews": 81,
-    "last24hRequests": 469
+    "todayVisitors": 15,
+    "todayPageViews": 9,
+    "todayRequests": 28,
+    "last24hVisitors": 150,
+    "last24hPageViews": 66,
+    "last24hRequests": 399
   },
   "hourly": [
-    {
-      "time": "2026-08-13T14:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-13T15:00:00Z",
-      "visitors": 5,
-      "requests": 69
-    },
-    {
-      "time": "2026-08-13T16:00:00Z",
-      "visitors": 12,
-      "requests": 20
-    },
-    {
-      "time": "2026-08-13T17:00:00Z",
-      "visitors": 5,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-13T18:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-13T19:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
     {
       "time": "2026-08-13T20:00:00Z",
       "visitors": 1,
@@ -130,15 +100,34 @@
       "time": "2026-08-14T13:00:00Z",
       "visitors": 2,
       "requests": 3
+    },
+    {
+      "time": "2026-08-14T14:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-14T15:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-14T16:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-14T17:00:00Z",
+      "visitors": 14,
+      "requests": 26
+    },
+    {
+      "time": "2026-08-14T18:00:00Z",
+      "visitors": 1,
+      "requests": 2
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-08",
-      "visitors": 204,
-      "pageViews": 101,
-      "requests": 488
-    },
     {
       "date": "2026-08-09",
       "visitors": 230,
@@ -171,9 +160,15 @@
     },
     {
       "date": "2026-08-14",
-      "visitors": 182,
-      "pageViews": 57,
-      "requests": 374
+      "visitors": 147,
+      "pageViews": 60,
+      "requests": 378
+    },
+    {
+      "date": "2026-08-15",
+      "visitors": 15,
+      "pageViews": 9,
+      "requests": 28
     }
   ],
   "topPages": [
@@ -183,15 +178,15 @@
     },
     {
       "path": "/",
-      "views": 27
+      "views": 29
     },
     {
       "path": "/images/blog/tao-moi-truong-tu-lap-cho-con.png",
-      "views": 24
+      "views": 27
     },
     {
       "path": "/robots.txt",
-      "views": 23
+      "views": 22
     },
     {
       "path": "/cdn-cgi/rum",
@@ -199,43 +194,43 @@
     },
     {
       "path": "/vi/",
-      "views": 18
+      "views": 16
     },
     {
       "path": "/sitemap.xml",
-      "views": 17
+      "views": 16
     },
     {
       "path": "/images/loop/05-chart.png",
-      "views": 11
+      "views": 10
     },
     {
       "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 11
+      "views": 10
     },
     {
       "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 10
-    },
-    {
-      "path": "/images/quote-lan-card.png",
-      "views": 10
-    },
-    {
-      "path": "/_next/static/chunks/app/vi/page-b0e96d1fb6cc5bef.js",
       "views": 9
     },
     {
-      "path": "/images/banner-right.png",
+      "path": "/images/quote-lan-card.png",
       "views": 9
     },
     {
       "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
-      "views": 9
+      "views": 8
     },
     {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 9
+      "views": 8
+    },
+    {
+      "path": "/images/blog/co-nen-thuong-tien-cho-con.png",
+      "views": 8
+    },
+    {
+      "path": "/images/banner-right.png",
+      "views": 7
     }
   ]
 }
