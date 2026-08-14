@@ -1,18 +1,36 @@
 import axios from 'axios';
 import { http } from '@/shared/api/http';
 
+export type CustomerReceivablesLine = {
+  salesOrderId: string;
+  orderNumber: string;
+  orderDate?: string;
+  orderTotal?: number;
+  paidAmount?: number;
+  outstanding: number;
+  daysOutstanding?: number;
+};
+
 export interface CustomerReceivablesSummary {
   customerId: string;
   customerCode: string;
   customerName: string;
   customerPhone?: string | null;
   totalReceivable: number;
-  lines: {
-    salesOrderId: string;
-    orderNumber: string;
-    outstanding: number;
-  }[];
+  unappliedCredit?: number;
+  openDocumentCount?: number;
+  lines: CustomerReceivablesLine[];
 }
+
+export type CustomerReceivablesRow = {
+  customerId: string;
+  customerCode: string;
+  customerName: string;
+  customerPhone?: string | null;
+  totalReceivable: number;
+  unappliedCredit: number;
+  openDocumentCount: number;
+};
 
 export type CustomerReceivablesHint = {
   customerCode: string;
@@ -20,23 +38,59 @@ export type CustomerReceivablesHint = {
   phone?: string;
 };
 
+function normalizeLine(line: Record<string, unknown>): CustomerReceivablesLine {
+  return {
+    salesOrderId: String(line.salesOrderId ?? line.SalesOrderId),
+    orderNumber: String(line.orderNumber ?? line.OrderNumber ?? ''),
+    orderDate: (line.orderDate ?? line.OrderDate) as string | undefined,
+    orderTotal: Number(line.orderTotal ?? line.OrderTotal ?? 0) || undefined,
+    paidAmount: Number(line.paidAmount ?? line.PaidAmount ?? 0) || undefined,
+    outstanding: Number(line.outstanding ?? line.Outstanding ?? 0),
+    daysOutstanding: Number(line.daysOutstanding ?? line.DaysOutstanding ?? 0) || undefined,
+  };
+}
+
+function normalizeReceivablesRow(row: Record<string, unknown>): CustomerReceivablesRow {
+  return {
+    customerId: String(row.customerId ?? row.CustomerId),
+    customerCode: String(row.customerCode ?? row.CustomerCode ?? ''),
+    customerName: String(row.customerName ?? row.CustomerName ?? ''),
+    customerPhone: (row.customerPhone ?? row.CustomerPhone) as string | null | undefined,
+    totalReceivable: Number(row.totalReceivable ?? row.TotalReceivable ?? 0),
+    unappliedCredit: Number(row.unappliedCredit ?? row.UnappliedCredit ?? 0),
+    openDocumentCount: Number(row.openDocumentCount ?? row.OpenDocumentCount ?? 0),
+  };
+}
+
+/** Danh sách khách còn công nợ (ưu tiên hiển thị tại quầy). */
+export async function fetchReceivablesSummary(warehouseId?: string): Promise<CustomerReceivablesRow[]> {
+  const { data } = await http.get<Record<string, unknown>[]>('/sales/customer-receivables', {
+    params: warehouseId ? { warehouseId } : undefined,
+  });
+  return data
+    .map(normalizeReceivablesRow)
+    .filter((row) => row.totalReceivable > 0.009)
+    .sort((a, b) => b.totalReceivable - a.totalReceivable);
+}
+
 export async function fetchCustomerReceivablesDetail(
   customerId: string,
   customerHint?: CustomerReceivablesHint,
 ): Promise<CustomerReceivablesSummary> {
   try {
     const { data } = await http.get<Record<string, unknown>>(`/sales/customer-receivables/${customerId}`);
-    const lines = ((data.lines ?? data.Lines ?? []) as Record<string, unknown>[]).map((line) => ({
-      salesOrderId: String(line.salesOrderId ?? line.SalesOrderId),
-      orderNumber: String(line.orderNumber ?? line.OrderNumber ?? ''),
-      outstanding: Number(line.outstanding ?? line.Outstanding ?? 0),
-    }));
+    const lines = ((data.lines ?? data.Lines ?? []) as Record<string, unknown>[]).map(normalizeLine);
     return {
       customerId: String(data.customerId ?? data.CustomerId ?? customerId),
       customerCode: String(data.customerCode ?? data.CustomerCode ?? customerHint?.customerCode ?? ''),
       customerName: String(data.customerName ?? data.CustomerName ?? customerHint?.fullName ?? ''),
-      customerPhone: (data.customerPhone ?? data.CustomerPhone ?? customerHint?.phone) as string | null | undefined,
+      customerPhone: (data.customerPhone ?? data.CustomerPhone ?? customerHint?.phone) as
+        | string
+        | null
+        | undefined,
       totalReceivable: Number(data.totalReceivable ?? data.TotalReceivable ?? 0),
+      unappliedCredit: Number(data.unappliedCredit ?? data.UnappliedCredit ?? 0) || undefined,
+      openDocumentCount: lines.length || undefined,
       lines,
     };
   } catch (error) {

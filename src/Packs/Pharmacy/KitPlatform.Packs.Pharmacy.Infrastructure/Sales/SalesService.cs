@@ -279,8 +279,9 @@ internal sealed class SalesService : ISalesService
     public Task<SalesShiftSummaryDto> GetShiftSummaryAsync(
         DateTime from,
         DateTime to,
+        Guid? warehouseId = null,
         CancellationToken cancellationToken = default) =>
-        _repository.GetShiftSummaryAsync(from, to, cancellationToken);
+        _repository.GetShiftSummaryAsync(from, to, warehouseId, cancellationToken);
 
     public Task<IReadOnlyList<SalesShiftListItemDto>> GetShiftsAsync(
         int limit = 50,

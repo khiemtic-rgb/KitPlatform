@@ -145,3 +145,10 @@ export const ADJUSTMENT_STATUS_LABELS: Record<number, string> = {
   3: 'Đã duyệt',
   4: 'Đã hủy',
 };
+
+export const ADJUSTMENT_STATUS_COLORS: Record<number, string> = {
+  1: 'gold',
+  2: 'processing',
+  3: 'green',
+  4: 'default',
+};

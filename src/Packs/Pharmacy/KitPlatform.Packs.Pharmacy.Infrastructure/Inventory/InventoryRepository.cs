@@ -2072,10 +2072,22 @@ internal sealed class InventoryRepository
             var productId = entry.ProductId;
             if (productId is null || productId == Guid.Empty)
             {
-                if (string.IsNullOrWhiteSpace(entry.ScannedBarcode))
+                // Prefer product from selected batch when client already chose a lot
+                if (entry.BatchId is Guid earlyBatchId && earlyBatchId != Guid.Empty)
+                {
+                    var earlyBatch = await GetBatchForUpdateAsync(conn, tx, earlyBatchId, cancellationToken)
+                        ?? throw new InvalidOperationException("Lô không tồn tại.");
+                    productId = earlyBatch.ProductId;
+                }
+                else if (!string.IsNullOrWhiteSpace(entry.ScannedBarcode))
+                {
+                    productId = await ResolveProductIdByBarcodeOnConnectionAsync(conn, entry.ScannedBarcode.Trim(), cancellationToken)
+                        ?? throw new InvalidOperationException($"Không tìm thấy sản phẩm theo barcode: {entry.ScannedBarcode}");
+                }
+                else
+                {
                     throw new InvalidOperationException("Cần productId hoặc barcode.");
-                productId = await ResolveProductIdByBarcodeOnConnectionAsync(conn, entry.ScannedBarcode.Trim(), cancellationToken)
-                    ?? throw new InvalidOperationException($"Không tìm thấy sản phẩm theo barcode: {entry.ScannedBarcode}");
+                }
             }
 
             if (!await ProductExistsOnConnectionAsync(conn, productId.Value, cancellationToken))

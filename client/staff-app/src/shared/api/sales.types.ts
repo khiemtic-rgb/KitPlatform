@@ -175,8 +175,10 @@ export interface SalesOrderDetail {
   orderDate: string;
   totalAmount: number;
   amountPaid: number;
+  outstanding?: number;
   status?: number;
   warehouseId?: string;
+  warehouseName?: string;
   customerId?: string;
   customerName?: string;
   orderDiscountType?: number;

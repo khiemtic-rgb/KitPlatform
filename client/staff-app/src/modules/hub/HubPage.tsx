@@ -185,11 +185,13 @@ export function HubPage() {
     try {
       const warehouses = await fetchWarehouses();
       const warehouseId = posWarehouseId ?? warehouses[0]?.id;
-      const start = dayjs().startOf('day').toISOString();
-      const end = dayjs().endOf('day').toISOString();
+      const start = dayjs().startOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
+      const end = dayjs().add(1, 'day').startOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
       const [shift, daySummary] = await Promise.all([
         warehouseId ? fetchOpenShift(warehouseId) : Promise.resolve(null),
-        fetchShiftSummary(start, end).catch(() => null),
+        warehouseId
+          ? fetchShiftSummary(start, end, warehouseId).catch(() => null)
+          : fetchShiftSummary(start, end).catch(() => null),
       ]);
       setOpenShift(shift);
       setTodayNet(daySummary?.netTotal ?? shift?.summary?.netTotal ?? null);

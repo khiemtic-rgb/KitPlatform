@@ -90,6 +90,7 @@ public interface ISalesService
     Task<SalesShiftSummaryDto> GetShiftSummaryAsync(
         DateTime from,
         DateTime to,
+        Guid? warehouseId = null,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<SalesShiftListItemDto>> GetShiftsAsync(

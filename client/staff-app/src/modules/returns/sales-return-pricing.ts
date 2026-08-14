@@ -1,4 +1,5 @@
 import type { SalesOrderDetailFull } from '@/shared/api/sales.types';
+import { SALES_PAYMENT_CREDIT } from '@/shared/api/sales.types';
 
 function computeLineRefundAmount(
   lineTotal: number,
@@ -41,4 +42,43 @@ export function previewReturnRefund(
 export function returnableQuantity(line: SalesOrderDetailFull['items'][number]): number {
   if (!line.batchId) return 0;
   return Math.max(0, line.quantity - (line.returnedQuantity ?? 0));
+}
+
+export function blockedReturnReason(line: SalesOrderDetailFull['items'][number]): string | null {
+  if (!line.batchId) return 'Thiếu lô kho — không trả trên điện thoại được';
+  const left = line.quantity - (line.returnedQuantity ?? 0);
+  if (left <= 0.0001) return 'Đã trả hết';
+  return null;
+}
+
+/** Ưu tiên giảm công nợ trước, phần còn lại hoàn tiền mặt/CK. */
+export function splitReturnRefund(
+  totalRefund: number,
+  outstanding: number,
+  amountPaid: number,
+): { debtReduced: number; cashRefund: number } {
+  const debtReduced = Math.min(totalRefund, Math.max(0, outstanding));
+  const cashRefund = Math.min(totalRefund - debtReduced, Math.max(0, amountPaid));
+  return { debtReduced, cashRefund };
+}
+
+export function resolveReturnPaymentSummary(order: SalesOrderDetailFull): {
+  amountPaid: number;
+  outstanding: number;
+} {
+  const payments = order.payments ?? [];
+  const cashPaid = payments
+    .filter((p) => p.paymentMethod !== SALES_PAYMENT_CREDIT)
+    .reduce((sum, p) => sum + p.amount, 0);
+  const amountPaid =
+    order.amountPaid != null && order.amountPaid > 0
+      ? order.amountPaid
+      : payments.length > 0
+        ? cashPaid
+        : order.totalAmount;
+  const outstanding =
+    order.outstanding != null
+      ? order.outstanding
+      : Math.max(0, order.totalAmount - amountPaid);
+  return { amountPaid, outstanding };
 }

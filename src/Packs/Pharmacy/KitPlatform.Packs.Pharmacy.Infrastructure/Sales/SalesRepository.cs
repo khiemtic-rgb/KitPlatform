@@ -1900,13 +1900,15 @@ internal sealed class SalesRepository
     public async Task<SalesShiftSummaryDto> GetShiftSummaryAsync(
         DateTime from,
         DateTime to,
+        Guid? warehouseId,
         CancellationToken cancellationToken)
     {
         if (from >= to)
             throw new InvalidOperationException("Khoảng thời gian không hợp lệ.");
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return await BuildShiftSummaryAsync(conn, from, to, openingCash: 0, closingCash: null);
+        return await BuildShiftSummaryAsync(
+            conn, from, to, openingCash: 0, closingCash: null, shiftId: null, warehouseId: warehouseId);
     }
 
     public async Task<IReadOnlyList<SalesShiftListItemDto>> GetShiftsAsync(
@@ -2072,7 +2074,8 @@ internal sealed class SalesRepository
             throw new InvalidOperationException("Ca đã được đóng.");
 
         var summary = await BuildShiftSummaryAsync(
-            conn, shift.OpenedAt, DateTime.UtcNow, shift.OpeningCash, request.ClosingCash);
+            conn, shift.OpenedAt, DateTime.UtcNow, shift.OpeningCash, request.ClosingCash,
+            shiftId: id, warehouseId: null);
         var variance = request.ClosingCash - summary.ExpectedCash;
 
         await conn.ExecuteAsync(
@@ -2124,7 +2127,8 @@ internal sealed class SalesRepository
 
         var end = header.ClosedAt ?? DateTime.UtcNow;
         var summary = await BuildShiftSummaryAsync(
-            conn, header.OpenedAt, end, header.OpeningCash, header.ClosingCash);
+            conn, header.OpenedAt, end, header.OpeningCash, header.ClosingCash,
+            shiftId: id, warehouseId: null);
         var lotAlerts = await GetShiftLotComplianceAlertsAsync(conn, id);
 
         return new SalesShiftDetailDto(
@@ -2140,27 +2144,60 @@ internal sealed class SalesRepository
         DateTime from,
         DateTime to,
         decimal openingCash,
-        decimal? closingCash)
+        decimal? closingCash,
+        Guid? shiftId,
+        Guid? warehouseId)
     {
-        const string salesSql = """
+        // Ca mở/đóng: cộng theo sales_shift_id (đúng nghiệp vụ quầy).
+        // Báo cáo theo ngày: lọc paid_at + (tuỳ chọn) warehouse.
+        var salesSql = shiftId is not null
+            ? """
+            SELECT sp.payment_method AS PaymentMethod, COALESCE(SUM(sp.amount), 0) AS Amount
+            FROM sales_payments sp
+            INNER JOIN sales_orders o ON o.id = sp.sales_order_id
+            WHERE o.tenant_id = @TenantId
+              AND o.sales_shift_id = @ShiftId
+            GROUP BY sp.payment_method
+            """
+            : """
             SELECT sp.payment_method AS PaymentMethod, COALESCE(SUM(sp.amount), 0) AS Amount
             FROM sales_payments sp
             INNER JOIN sales_orders o ON o.id = sp.sales_order_id
             WHERE o.tenant_id = @TenantId
               AND sp.paid_at >= @From AND sp.paid_at < @To
+              AND (@WarehouseId IS NULL OR o.warehouse_id = @WarehouseId)
             GROUP BY sp.payment_method
             """;
-        const string refundSql = """
+        var refundSql = shiftId is not null
+            ? """
             SELECT rp.payment_method AS PaymentMethod, COALESCE(SUM(rp.amount), 0) AS Amount
             FROM sales_return_payments rp
             INNER JOIN sales_returns r ON r.id = rp.sales_return_id
             WHERE r.tenant_id = @TenantId
+              AND r.sales_shift_id = @ShiftId
+            GROUP BY rp.payment_method
+            """
+            : """
+            SELECT rp.payment_method AS PaymentMethod, COALESCE(SUM(rp.amount), 0) AS Amount
+            FROM sales_return_payments rp
+            INNER JOIN sales_returns r ON r.id = rp.sales_return_id
+            INNER JOIN sales_orders o ON o.id = r.sales_order_id
+            WHERE r.tenant_id = @TenantId
               AND rp.paid_at >= @From AND rp.paid_at < @To
+              AND (@WarehouseId IS NULL OR o.warehouse_id = @WarehouseId)
             GROUP BY rp.payment_method
             """;
 
-        var salesRows = (await conn.QueryAsync<ShiftAmountRow>(salesSql, new { TenantId, From = from, To = to })).ToList();
-        var refundRows = (await conn.QueryAsync<ShiftAmountRow>(refundSql, new { TenantId, From = from, To = to })).ToList();
+        var args = new
+        {
+            TenantId,
+            From = from,
+            To = to,
+            ShiftId = shiftId,
+            WarehouseId = warehouseId,
+        };
+        var salesRows = (await conn.QueryAsync<ShiftAmountRow>(salesSql, args)).ToList();
+        var refundRows = (await conn.QueryAsync<ShiftAmountRow>(refundSql, args)).ToList();
 
         var salesMap = salesRows.ToDictionary(r => r.PaymentMethod, r => r.Amount);
         var refundMap = refundRows.ToDictionary(r => r.PaymentMethod, r => r.Amount);

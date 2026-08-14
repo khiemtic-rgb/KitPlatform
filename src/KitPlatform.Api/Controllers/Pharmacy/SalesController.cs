@@ -311,13 +311,14 @@ public sealed class SalesController : ControllerBase
     public async Task<ActionResult<SalesShiftSummaryDto>> ShiftSummary(
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to,
+        [FromQuery] Guid? warehouseId,
         CancellationToken cancellationToken)
     {
         try
         {
             var end = to ?? DateTime.UtcNow;
             var start = from ?? end.Date;
-            return Ok(await _sales.GetShiftSummaryAsync(start, end, cancellationToken));
+            return Ok(await _sales.GetShiftSummaryAsync(start, end, warehouseId, cancellationToken));
         }
         catch (InvalidOperationException ex)
         {

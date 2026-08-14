@@ -99,6 +99,15 @@ function normalizeOrderFull(data: Record<string, unknown>, rawItems: Record<stri
   const base = normalizeOrder(data, rawItems);
   return {
     ...base,
+    status: Number(data.status ?? data.Status ?? 1),
+    warehouseId: String(data.warehouseId ?? data.WarehouseId ?? ''),
+    warehouseName: (data.warehouseName ?? data.WarehouseName) as string | undefined,
+    customerId: (data.customerId ?? data.CustomerId) as string | undefined,
+    amountPaid: Number(data.amountPaid ?? data.AmountPaid ?? base.amountPaid ?? 0),
+    outstanding:
+      data.outstanding != null || data.Outstanding != null
+        ? Number(data.outstanding ?? data.Outstanding)
+        : undefined,
     discountAmount: Number(data.discountAmount ?? data.DiscountAmount ?? 0),
     items: rawItems.map(normalizeOrderItem),
   };
@@ -298,9 +307,17 @@ export async function fetchPosCustomerLoyalty(
   }
 }
 
-export async function fetchShiftSummary(from: string, to: string): Promise<SalesShiftSummary> {
+export async function fetchShiftSummary(
+  from: string,
+  to: string,
+  warehouseId?: string,
+): Promise<SalesShiftSummary> {
   const { data } = await http.get<Record<string, unknown>>('/sales/shift-summary', {
-    params: { from, to },
+    params: {
+      from,
+      to,
+      ...(warehouseId ? { warehouseId } : {}),
+    },
   });
   return normalizeShiftSummary(row(data));
 }

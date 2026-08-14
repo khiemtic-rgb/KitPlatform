@@ -249,7 +249,13 @@ export async function fetchCountEntries(adjustmentId: string): Promise<Adjustmen
 
 export async function addCountEntries(
   adjustmentId: string,
-  entries: { batchId: string; quantity: number; zone?: string; scannedBarcode?: string }[],
+  entries: {
+    productId?: string;
+    batchId: string;
+    quantity: number;
+    zone?: string;
+    scannedBarcode?: string;
+  }[],
 ): Promise<AdjustmentCountEntry[]> {
   const { data } = await http.post<Record<string, unknown>[]>(
     `/inventory/adjustments/${adjustmentId}/count-entries`,
@@ -260,6 +266,14 @@ export async function addCountEntries(
 
 export async function approveAdjustment(adjustmentId: string): Promise<void> {
   await http.post(`/inventory/adjustments/${adjustmentId}/approve`);
+}
+
+export async function cancelAdjustment(adjustmentId: string): Promise<void> {
+  await http.post(`/inventory/adjustments/${adjustmentId}/cancel`);
+}
+
+export async function deleteCountEntry(adjustmentId: string, entryId: string): Promise<void> {
+  await http.delete(`/inventory/adjustments/${adjustmentId}/count-entries/${entryId}`);
 }
 
 export async function resolveInventoryBarcode(

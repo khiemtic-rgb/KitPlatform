@@ -1,3 +1,9 @@
+export const GRN_STATUS = {
+  Pending: 1,
+  Completed: 2,
+  Cancelled: 3,
+} as const;
+
 export const GRN_STATUS_LABELS: Record<number, string> = {
   1: 'Chờ nhập kho',
   2: 'Hoàn tất',
