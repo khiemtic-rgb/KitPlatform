@@ -1,22 +1,30 @@
-import { useCallback, useEffect, useState } from 'react';
-import { App, Alert, Badge, Button, Space, Typography } from 'antd';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { App, Alert, Badge, Button, Drawer, Typography } from 'antd';
 import {
+  AppstoreOutlined,
+  AuditOutlined,
   BarChartOutlined,
+  BellOutlined,
   DollarOutlined,
   FileSearchOutlined,
   FormOutlined,
+  HomeOutlined,
+  ImportOutlined,
   InboxOutlined,
   LogoutOutlined,
+  MenuOutlined,
   MessageOutlined,
+  MoreOutlined,
+  OrderedListOutlined,
   PrinterOutlined,
   RollbackOutlined,
+  ScanOutlined,
   ShoppingCartOutlined,
+  SolutionOutlined,
   SwapOutlined,
   TeamOutlined,
-  AuditOutlined,
-  ImportOutlined,
-  SolutionOutlined,
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import { fetchChatThreads, sumUnreadThreads } from '@/shared/api/chat.api';
 import { countActiveReservations, fetchReservations, RESERVATION_STATUS } from '@/shared/api/reservations.api';
@@ -35,54 +43,106 @@ import {
   useCanSalesRead,
 } from '@/shared/auth/usePermission';
 import { fetchCustomerDraftOrders, CUSTOMER_DRAFT_ORDER_STATUS } from '@/shared/api/customer-draft-orders.api';
+import {
+  fetchOpenShift,
+  fetchShiftSummary,
+  fetchWarehouses,
+} from '@/shared/api/sales.api';
+import type { SalesShiftDetail } from '@/shared/api/sales.types';
+import { formatMoney } from '@/shared/utils/money';
+import { usePosSession } from '@/modules/pos/pos-session.store';
 
-type MenuItemProps = {
+type TileProps = {
   icon: React.ReactNode;
   label: string;
   hint?: string;
   badge?: number;
   onClick: () => void;
-  compact?: boolean;
 };
 
-function HubMenuItem({ icon, label, hint, badge, onClick, compact }: MenuItemProps) {
+type ListRowProps = {
+  icon: React.ReactNode;
+  label: string;
+  hint?: string;
+  badge?: number;
+  onClick: () => void;
+  tone?: 'teal' | 'green' | 'blue' | 'orange' | 'purple' | 'amber' | 'rose' | 'slate';
+};
+
+type GridTileProps = {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  tone?: ListRowProps['tone'];
+};
+
+const TONE_CLASS: Record<NonNullable<ListRowProps['tone']>, string> = {
+  teal: 'tone-teal',
+  green: 'tone-green',
+  blue: 'tone-blue',
+  orange: 'tone-orange',
+  purple: 'tone-purple',
+  amber: 'tone-amber',
+  rose: 'tone-rose',
+  slate: 'tone-slate',
+};
+
+function HubTile({ icon, label, hint, badge, onClick }: TileProps) {
   return (
-    <button type="button" className="hub-menu-item" onClick={onClick}>
-      <Space style={{ width: '100%', justifyContent: compact ? 'flex-start' : 'space-between' }} direction={compact ? 'vertical' : 'horizontal'} size={compact ? 8 : 'middle'}>
-        <span className="hub-menu-icon">{icon}</span>
-        <div style={{ textAlign: 'left', flex: 1 }}>
-          <Typography.Text strong>{label}</Typography.Text>
-          {hint && !compact ? (
-            <div>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {hint}
-              </Typography.Text>
-            </div>
-          ) : null}
-        </div>
-        {!compact ? (
-          badge != null && badge > 0 ? <Badge count={badge} /> : <span className="hub-menu-arrow">→</span>
-        ) : badge != null && badge > 0 ? (
-          <Badge count={badge} style={{ marginTop: 4 }} />
-        ) : null}
-      </Space>
+    <button type="button" className="hub-tile" onClick={onClick}>
+      <span className="hub-icon-well tone-teal">{icon}</span>
+      <span className="hub-tile-label">{label}</span>
+      {hint ? <span className="hub-tile-hint">{hint}</span> : null}
+      {badge != null && badge > 0 ? <Badge count={badge} className="hub-tile-badge" /> : null}
+    </button>
+  );
+}
+
+function HubListRow({ icon, label, hint, badge, onClick, tone = 'teal' }: ListRowProps) {
+  return (
+    <button type="button" className="hub-list-row" onClick={onClick}>
+      <span className={`hub-icon-well ${TONE_CLASS[tone]}`}>{icon}</span>
+      <span className="hub-list-copy">
+        <span className="hub-list-label">{label}</span>
+        {hint ? <span className="hub-list-hint">{hint}</span> : null}
+      </span>
+      {badge != null && badge > 0 ? <Badge count={badge} /> : <span className="hub-chevron">›</span>}
+    </button>
+  );
+}
+
+function HubGridTile({ icon, label, onClick, tone = 'teal' }: GridTileProps) {
+  return (
+    <button type="button" className="hub-grid-tile" onClick={onClick}>
+      <span className={`hub-icon-well ${TONE_CLASS[tone]}`}>{icon}</span>
+      <span className="hub-grid-label">{label}</span>
     </button>
   );
 }
 
 export function HubPage() {
   const navigate = useNavigate();
+  const { message } = App.useApp();
   const user = useAuthStore((s) => s.user);
   const refreshToken = useAuthStore((s) => s.refreshToken);
   const clearSession = useAuthStore((s) => s.clearSession);
+  const posWarehouseId = usePosSession((s) => s.warehouseId);
+
   const [unread, setUnread] = useState(0);
   const [reservationCount, setReservationCount] = useState(0);
   const [customerDraftCount, setCustomerDraftCount] = useState(0);
   const [remoteBuild, setRemoteBuild] = useState<string | null>(null);
+  const [openShift, setOpenShift] = useState<SalesShiftDetail | null>(null);
+  const [todayNet, setTodayNet] = useState<number | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [counterExpanded, setCounterExpanded] = useState(false);
+
   const localBuild = getLocalAppBuild();
   const canSales = useCanSalesRead();
   const canInventory = useCanInventoryRead();
   const canProcurement = useCanProcurementRead();
+
+  const pharmacyName = user?.tenantCode ? `Nhà thuốc ${user.tenantCode}` : 'Nhà thuốc';
 
   useEffect(() => {
     void (async () => {
@@ -118,11 +178,33 @@ export function HubPage() {
     }
   }, []);
 
+  const loadShiftCard = useCallback(async () => {
+    try {
+      const warehouses = await fetchWarehouses();
+      const warehouseId = posWarehouseId ?? warehouses[0]?.id;
+      const start = dayjs().startOf('day').toISOString();
+      const end = dayjs().endOf('day').toISOString();
+      const [shift, daySummary] = await Promise.all([
+        warehouseId ? fetchOpenShift(warehouseId) : Promise.resolve(null),
+        fetchShiftSummary(start, end).catch(() => null),
+      ]);
+      setOpenShift(shift);
+      setTodayNet(daySummary?.netTotal ?? shift?.summary?.netTotal ?? null);
+    } catch {
+      setOpenShift(null);
+      setTodayNet(null);
+    }
+  }, [posWarehouseId]);
+
   useEffect(() => {
     void loadBadges();
-    const timer = window.setInterval(() => void loadBadges(), 30_000);
+    void loadShiftCard();
+    const timer = window.setInterval(() => {
+      void loadBadges();
+      void loadShiftCard();
+    }, 30_000);
     return () => window.clearInterval(timer);
-  }, [loadBadges]);
+  }, [loadBadges, loadShiftCard]);
 
   const logout = async () => {
     try {
@@ -133,14 +215,115 @@ export function HubPage() {
     }
   };
 
+  const counterItems = useMemo(() => {
+    const items: Array<{
+      key: string;
+      icon: React.ReactNode;
+      label: string;
+      tone: NonNullable<ListRowProps['tone']>;
+      onClick: () => void;
+    }> = [];
+
+    if (canInventory) {
+      items.push(
+        {
+          key: 'stock',
+          icon: <FileSearchOutlined />,
+          label: 'Tra tồn',
+          tone: 'blue',
+          onClick: () => navigate('/stock'),
+        },
+        {
+          key: 'transfers',
+          icon: <SwapOutlined />,
+          label: 'Chuyển kho',
+          tone: 'purple',
+          onClick: () => navigate('/transfers'),
+        },
+        {
+          key: 'stocktake',
+          icon: <AuditOutlined />,
+          label: 'Kiểm kê',
+          tone: 'orange',
+          onClick: () => navigate('/stocktake'),
+        },
+      );
+    }
+    if (canProcurement) {
+      items.push({
+        key: 'grn',
+        icon: <ImportOutlined />,
+        label: 'Nhập hàng',
+        tone: 'green',
+        onClick: () => navigate('/goods-receipt'),
+      });
+    }
+    if (canSales) {
+      items.push(
+        {
+          key: 'orders',
+          icon: <PrinterOutlined />,
+          label: 'In đơn & in lại',
+          tone: 'blue',
+          onClick: () => navigate('/orders'),
+        },
+        {
+          key: 'collect',
+          icon: <DollarOutlined />,
+          label: 'Thu công nợ',
+          tone: 'amber',
+          onClick: () => navigate('/collect'),
+        },
+        {
+          key: 'returns',
+          icon: <RollbackOutlined />,
+          label: 'Trả hàng',
+          tone: 'rose',
+          onClick: () => navigate('/returns'),
+        },
+      );
+    }
+    return items;
+  }, [canInventory, canProcurement, canSales, navigate]);
+
+  const visibleCounter = counterExpanded ? counterItems : counterItems.slice(0, 7);
+  const hasMoreCounter = counterItems.length > 7;
+
   return (
-    <div className="staff-shell">
-      <header className="staff-header">
-        <AppBrandLogo height={32} maxWidth={120} />
-        <Typography.Text type="secondary" style={{ display: 'block', fontSize: 13 }}>
-          {user?.tenantCode ?? '—'} · {user?.username ?? '—'}
-          {localBuild ? ` · v${localBuild}` : ''}
-        </Typography.Text>
+    <div className="staff-shell hub-shell">
+      <header className="hub-topbar">
+        <button
+          type="button"
+          className="hub-icon-btn"
+          aria-label="Menu"
+          onClick={() => setMoreOpen(true)}
+        >
+          <MenuOutlined />
+        </button>
+
+        <div className="hub-topbar-brand">
+          <AppBrandLogo height={28} maxWidth={72} />
+          <div className="hub-topbar-titles">
+            <Typography.Text className="hub-pharmacy-name" ellipsis>
+              {pharmacyName}
+            </Typography.Text>
+            <Typography.Text type="secondary" className="hub-pharmacy-sub">
+              {user?.username ?? '—'}
+              {localBuild ? ` · v${localBuild}` : ''}
+            </Typography.Text>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="hub-icon-btn"
+          aria-label="Thông báo"
+          onClick={() => navigate('/chat')}
+        >
+          <Badge count={unread} size="small" offset={[-2, 2]}>
+            <BellOutlined />
+          </Badge>
+        </button>
       </header>
 
       <main className="staff-body hub-body">
@@ -149,7 +332,7 @@ export function HubPage() {
             type="warning"
             showIcon
             message="Đang có bản app mới"
-            description="Bấm Cập nhật ngay để tải menu Chuyển kho, Đơn nháp và các tính năng mới."
+            description="Bấm Cập nhật ngay để tải menu và tính năng mới."
             action={
               <Button size="small" type="primary" onClick={() => void enforceLatestAppBuild()}>
                 Cập nhật ngay
@@ -159,160 +342,202 @@ export function HubPage() {
           />
         ) : null}
 
-        <button type="button" className="hub-primary-card" onClick={() => navigate('/pos')}>
-          <Space align="start">
-            <span className="hub-menu-icon">
-              <ShoppingCartOutlined />
+        {canSales ? (
+          <div className="hub-primary-card">
+            <button type="button" className="hub-primary-main" onClick={() => navigate('/pos')}>
+              <span className="hub-primary-icon">
+                <ShoppingCartOutlined />
+              </span>
+              <span className="hub-primary-copy">
+                <span className="hub-primary-title">BÁN HÀNG</span>
+                <span className="hub-primary-hint">POS · Tìm SP · Quét mã · In bill</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="hub-primary-scan"
+              aria-label="Quét mã bán hàng"
+              onClick={() => navigate('/pos')}
+            >
+              <ScanOutlined />
+            </button>
+            <span className="hub-primary-chevron" aria-hidden>
+              ›
             </span>
-            <div>
-              <Typography.Text strong style={{ color: '#fff', fontSize: 18 }}>
-                Bán hàng
-              </Typography.Text>
-              <div>
-                <Typography.Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>
-                  POS · tìm SP · in bill
-                </Typography.Text>
-              </div>
-            </div>
-          </Space>
-        </button>
+          </div>
+        ) : null}
 
-        <Typography.Text className="hub-section-label">Khách hàng</Typography.Text>
         {canSales ? (
           <>
-        <div className="hub-grid">
-          <HubMenuItem
-            compact
-            icon={<TeamOutlined />}
-            label="Khách + OTP"
-            onClick={() => navigate('/customers')}
-          />
-          <HubMenuItem
-            compact
-            icon={<MessageOutlined />}
-            label="Chat"
-            badge={unread}
-            onClick={() => navigate('/chat')}
-          />
-        </div>
-        <div className="hub-list-item">
-          <HubMenuItem
-            icon={<InboxOutlined />}
-            label="Giữ hàng"
-            hint="Đơn app khách · đưa vào POS"
-            badge={reservationCount}
-            onClick={() => navigate('/reservations')}
-          />
-        </div>
-        <div className="hub-list-item">
-          <HubMenuItem
-            icon={<SolutionOutlined />}
-            label="Đơn nháp app khách"
-            hint="Dược sĩ gửi · khách xác nhận → POS"
-            badge={customerDraftCount}
-            onClick={() => navigate('/customer-drafts')}
-          />
-        </div>
-        <div className="hub-list-item">
-          <HubMenuItem
-            icon={<FormOutlined />}
-            label="Đơn nháp"
-            hint="Lưu tạm tại quầy · mở lại POS"
-            onClick={() => navigate('/drafts')}
-          />
-        </div>
+            <Typography.Text className="hub-section-label">Khách hàng</Typography.Text>
+            <div className="hub-tile-row">
+              <HubTile
+                icon={<TeamOutlined />}
+                label="Khách + OTP"
+                hint="Thêm & tìm khách"
+                onClick={() => navigate('/customers')}
+              />
+              <HubTile
+                icon={<MessageOutlined />}
+                label="Chat"
+                hint="Chat với khách"
+                badge={unread}
+                onClick={() => navigate('/chat')}
+              />
+            </div>
+
+            <div className="hub-list-card">
+              <HubListRow
+                icon={<InboxOutlined />}
+                label="Giữ hàng"
+                hint="Đơn app khách · đưa vào POS"
+                badge={reservationCount}
+                tone="green"
+                onClick={() => navigate('/reservations')}
+              />
+              <HubListRow
+                icon={<SolutionOutlined />}
+                label="Đơn nháp app khách"
+                hint="Dược sĩ gửi · khách xác nhận → POS"
+                badge={customerDraftCount}
+                tone="teal"
+                onClick={() => navigate('/customer-drafts')}
+              />
+              <HubListRow
+                icon={<FormOutlined />}
+                label="Đơn nháp"
+                hint="Lưu tạm tại quầy · mở lại POS"
+                tone="teal"
+                onClick={() => navigate('/drafts')}
+              />
+            </div>
           </>
         ) : null}
 
-        <Typography.Text className="hub-section-label">Quầy</Typography.Text>
-        <div className="hub-grid">
-          {canInventory ? (
-            <>
-              <HubMenuItem
-                compact
-                icon={<FileSearchOutlined />}
-                label="Tra tồn"
-                hint="Xem tồn mọi kho"
-                onClick={() => navigate('/stock')}
-              />
-              <HubMenuItem
-                compact
-                icon={<SwapOutlined />}
-                label="Chuyển kho"
-                hint="Quầy lấy hàng nhau"
-                onClick={() => navigate('/transfers')}
-              />
-              <HubMenuItem
-                compact
-                icon={<AuditOutlined />}
-                label="Kiểm kê"
-                hint="Đếm tồn · quét mã"
-                onClick={() => navigate('/stocktake')}
-              />
-            </>
-          ) : null}
-          {canProcurement ? (
-            <HubMenuItem
-              compact
-              icon={<ImportOutlined />}
-              label="Nhập hàng"
-              hint="Phiếu nhập · lô/HSD · cập nhật tồn"
-              onClick={() => navigate('/goods-receipt')}
-            />
-          ) : null}
-          {canSales ? (
-            <>
-              <HubMenuItem
-                compact
-                icon={<PrinterOutlined />}
-                label="Đơn & in lại"
-                onClick={() => navigate('/orders')}
-              />
-              <HubMenuItem
-                compact
-                icon={<DollarOutlined />}
-                label="Thu công nợ"
-                onClick={() => navigate('/collect')}
-              />
-              <HubMenuItem
-                compact
-                icon={<RollbackOutlined />}
-                label="Trả hàng"
-                onClick={() => navigate('/returns')}
-              />
-            </>
-          ) : null}
-        </div>
+        {(canInventory || canProcurement || canSales) && counterItems.length > 0 ? (
+          <>
+            <Typography.Text className="hub-section-label">Quầy</Typography.Text>
+            <div className="hub-counter-grid">
+              {visibleCounter.map((item) => (
+                <HubGridTile
+                  key={item.key}
+                  icon={item.icon}
+                  label={item.label}
+                  tone={item.tone}
+                  onClick={item.onClick}
+                />
+              ))}
+              {hasMoreCounter ? (
+                <HubGridTile
+                  icon={counterExpanded ? <AppstoreOutlined /> : <AppstoreOutlined />}
+                  label={counterExpanded ? 'Thu gọn' : 'Xem thêm'}
+                  tone="slate"
+                  onClick={() => setCounterExpanded((v) => !v)}
+                />
+              ) : null}
+            </div>
+          </>
+        ) : null}
 
         <Typography.Text className="hub-section-label">Ca làm việc</Typography.Text>
-        <div className="hub-list-item">
-          <HubMenuItem
-            icon={<BarChartOutlined />}
-            label="Hôm nay"
-            hint="Doanh thu ca · mở / đóng ca"
-            onClick={() => navigate('/today')}
-          />
+        <div className="hub-shift-card">
+          <button type="button" className="hub-shift-main" onClick={() => navigate('/today')}>
+            <span className="hub-icon-well tone-green">
+              <BarChartOutlined />
+            </span>
+            <span className="hub-shift-copy">
+              <span className="hub-list-label">Hôm nay</span>
+              <span className="hub-list-hint">Doanh thu ca · mở / đóng ca</span>
+            </span>
+            <span className="hub-shift-amount">
+              {todayNet != null ? formatMoney(todayNet) : '—'}
+            </span>
+            <span className="hub-chevron">›</span>
+          </button>
+          <div className="hub-shift-meta">
+            {openShift ? (
+              <>
+                <span className="hub-shift-pill">
+                  <span className="hub-shift-dot" />
+                  Ca đang mở
+                </span>
+                <span className="hub-shift-meta-text">
+                  {openShift.openedAt ? dayjs(openShift.openedAt).format('HH:mm') : '—'}
+                  {openShift.shiftNumber ? ` · ${openShift.shiftNumber}` : ''}
+                </span>
+                <button type="button" className="hub-shift-close" onClick={() => navigate('/today')}>
+                  Chốt ca
+                </button>
+              </>
+            ) : (
+              <span className="hub-shift-meta-text hub-shift-meta-warn">Chưa mở ca · mở tại POS</span>
+            )}
+          </div>
         </div>
+      </main>
 
-        <div className="hub-footnote">
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+      <nav className="hub-tabbar" aria-label="Điều hướng chính">
+        <button type="button" className="hub-tab is-active" onClick={() => window.scrollTo({ top: 0 })}>
+          <HomeOutlined />
+          <span>Trang chủ</span>
+        </button>
+        <button
+          type="button"
+          className="hub-tab"
+          onClick={() => (canSales ? navigate('/orders') : message.warning('Không có quyền xem đơn'))}
+        >
+          <OrderedListOutlined />
+          <span>Đơn hàng</span>
+        </button>
+        <button
+          type="button"
+          className="hub-tab hub-tab-scan"
+          aria-label="Quét mã"
+          onClick={() => (canSales ? navigate('/pos') : message.warning('Không có quyền bán hàng'))}
+        >
+          <span className="hub-scan-fab">
+            <ScanOutlined />
+          </span>
+          <span>Quét mã</span>
+        </button>
+        <button type="button" className="hub-tab" onClick={() => navigate('/chat')}>
+          <Badge count={unread} size="small" offset={[4, -2]}>
+            <BellOutlined />
+          </Badge>
+          <span>Thông báo</span>
+        </button>
+        <button type="button" className="hub-tab" onClick={() => setMoreOpen(true)}>
+          <MoreOutlined />
+          <span>Thêm</span>
+        </button>
+      </nav>
+
+      <Drawer
+        title="Thêm"
+        placement="bottom"
+        height="auto"
+        open={moreOpen}
+        onClose={() => setMoreOpen(false)}
+        className="hub-more-drawer"
+      >
+        <div className="hub-more-body">
+          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 13 }}>
             Báo cáo chi tiết · cấu hình nâng cao → admin trên máy tính
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ display: 'block', fontSize: 11, marginTop: 4 }}>
-            Phiên bản app: {import.meta.env.VITE_APP_BUILD ?? 'dev'}
+          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 12 }}>
+            Phiên bản app: {import.meta.env.VITE_APP_BUILD ?? localBuild ?? 'dev'}
           </Typography.Text>
+          <Button
+            block
+            size="large"
+            danger
+            icon={<LogoutOutlined />}
+            onClick={() => void logout()}
+          >
+            Đăng xuất
+          </Button>
         </div>
-
-        <Button
-          block
-          size="large"
-          className="hub-logout-btn"
-          icon={<LogoutOutlined />}
-          onClick={() => void logout()}
-        >
-          Đăng xuất
-        </Button>
-      </main>
+      </Drawer>
     </div>
   );
 }

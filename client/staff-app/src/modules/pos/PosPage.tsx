@@ -28,7 +28,13 @@ import {
   searchPosProducts,
   updateDraftSale,
 } from '@/shared/api/sales.api';
-import type { PosProductSearchItem, SalesShiftDetail, TenantBatchModeValue, TenantRxSettings } from '@/shared/api/sales.types';
+import {
+  SALES_DISCOUNT_TYPES,
+  type PosProductSearchItem,
+  type SalesShiftDetail,
+  type TenantBatchModeValue,
+  type TenantRxSettings,
+} from '@/shared/api/sales.types';
 import { RX_POS_BLOCK_MESSAGE, shouldBlockRxAtPos } from '@/modules/pos/rx-dispensing';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useAuthStore } from '@/shared/auth/auth.store';
@@ -870,10 +876,80 @@ export function PosPage() {
         </Button>
       </main>
 
-      <footer className="staff-footer">
+      <footer className="staff-footer pos-footer">
+        {canDiscount && cart.length > 0 ? (
+          <div className="pos-order-discount">
+            <span className="pos-order-discount__label">CK đơn</span>
+            <Select
+              className="pos-order-discount__type"
+              allowClear
+              placeholder="%"
+              value={orderDiscount.discountType}
+              options={[
+                { value: SALES_DISCOUNT_TYPES.Percent, label: '%' },
+                { value: SALES_DISCOUNT_TYPES.Fixed, label: '₫' },
+              ]}
+              onChange={(discountType) =>
+                setOrderDiscount({
+                  discountType: discountType ?? undefined,
+                  discountValue: discountType ? orderDiscount.discountValue ?? 0 : undefined,
+                })
+              }
+            />
+            <InputNumber
+              className="pos-order-discount__value"
+              min={0}
+              max={
+                orderDiscount.discountType === SALES_DISCOUNT_TYPES.Percent ? maxPercent : undefined
+              }
+              precision={0}
+              placeholder="0"
+              disabled={!orderDiscount.discountType}
+              value={
+                orderDiscount.discountType && (orderDiscount.discountValue ?? 0) > 0
+                  ? orderDiscount.discountValue
+                  : undefined
+              }
+              inputMode="numeric"
+              controls={false}
+              formatter={(v) => {
+                if (v == null) return '';
+                const raw = `${v}`.replace(/\./g, '');
+                if (orderDiscount.discountType === SALES_DISCOUNT_TYPES.Percent) return raw;
+                return raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+              }}
+              parser={(v) => Number(String(v ?? '').replace(/\./g, '')) as 0}
+              onChange={(v) => {
+                let val = Number(v ?? 0);
+                if (!orderDiscount.discountType || val <= 0) {
+                  setOrderDiscount(
+                    orderDiscount.discountType
+                      ? { discountType: orderDiscount.discountType, discountValue: 0 }
+                      : {},
+                  );
+                  return;
+                }
+                if (orderDiscount.discountType === SALES_DISCOUNT_TYPES.Percent) {
+                  val = Math.min(val, maxPercent);
+                }
+                setOrderDiscount({
+                  discountType: orderDiscount.discountType,
+                  discountValue: val,
+                });
+              }}
+            />
+            {priced.orderDiscountAmount > 0 ? (
+              <span className="pos-order-discount__saved">
+                −{formatMoney(priced.orderDiscountAmount)}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
         <div className="pos-footer-total">
           <div>
-            <span className="pos-footer-total__label">Tạm tính</span>
+            <span className="pos-footer-total__label">
+              {priced.totalDiscountAmount > 0 ? 'Phải thu' : 'Tạm tính'}
+            </span>
             <span className="pos-footer-total__badge">{cart.length} SP</span>
             {priced.totalDiscountAmount > 0 ? (
               <Typography.Text type="secondary" style={{ display: 'block', fontSize: 13, marginTop: 2 }}>
