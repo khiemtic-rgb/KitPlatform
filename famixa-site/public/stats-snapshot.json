@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-13T19:32:10.663Z",
+  "generatedAt": "2026-08-14T03:05:33.006Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 10,
-    "todayPageViews": 4,
-    "todayRequests": 16,
-    "last24hVisitors": 53,
-    "last24hPageViews": 72,
-    "last24hRequests": 266
+    "todayVisitors": 100,
+    "todayPageViews": 28,
+    "todayRequests": 217,
+    "last24hVisitors": 140,
+    "last24hPageViews": 82,
+    "last24hRequests": 419
   },
   "hourly": [
-    {
-      "time": "2026-08-12T20:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-12T21:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-12T22:00:00Z",
-      "visitors": 4,
-      "requests": 11
-    },
-    {
-      "time": "2026-08-12T23:00:00Z",
-      "visitors": 5,
-      "requests": 11
-    },
-    {
-      "time": "2026-08-13T00:00:00Z",
-      "visitors": 4,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-13T01:00:00Z",
-      "visitors": 4,
-      "requests": 34
-    },
-    {
-      "time": "2026-08-13T02:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-13T03:00:00Z",
-      "visitors": 4,
-      "requests": 11
-    },
     {
       "time": "2026-08-13T04:00:00Z",
       "visitors": 2,
@@ -128,8 +88,43 @@
     },
     {
       "time": "2026-08-13T19:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-13T20:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-13T21:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-13T22:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-13T23:00:00Z",
+      "visitors": 5,
+      "requests": 9
+    },
+    {
+      "time": "2026-08-14T00:00:00Z",
       "visitors": 1,
       "requests": 1
+    },
+    {
+      "time": "2026-08-14T01:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-14T02:00:00Z",
+      "visitors": 99,
+      "requests": 214
     }
   ],
   "daily": [
@@ -165,77 +160,77 @@
     },
     {
       "date": "2026-08-13",
-      "visitors": 46,
-      "pageViews": 60,
-      "requests": 237
+      "visitors": 51,
+      "pageViews": 66,
+      "requests": 259
     },
     {
       "date": "2026-08-14",
-      "visitors": 10,
-      "pageViews": 4,
-      "requests": 16
+      "visitors": 127,
+      "pageViews": 38,
+      "requests": 255
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 23
+      "views": 29
+    },
+    {
+      "path": "/vi/goi-cha-me/tao-moi-truong-giup-con-tu-lap-dung-chi-day-hay-thiet-ke-khong-gian-tu-giac/",
+      "views": 27
     },
     {
       "path": "/robots.txt",
-      "views": 21
+      "views": 22
     },
     {
-      "path": "/feed.json",
-      "views": 18
+      "path": "/cdn-cgi/rum",
+      "views": 20
+    },
+    {
+      "path": "/images/blog/tao-moi-truong-tu-lap-cho-con.png",
+      "views": 20
     },
     {
       "path": "/vi/",
-      "views": 18
-    },
-    {
-      "path": "/vi/goi-cha-me/",
-      "views": 17
-    },
-    {
-      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh-1/",
-      "views": 16
+      "views": 19
     },
     {
       "path": "/sitemap.xml",
-      "views": 16
+      "views": 17
+    },
+    {
+      "path": "/feed.json",
+      "views": 12
+    },
+    {
+      "path": "/vi/goi-cha-me/",
+      "views": 12
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 11
+    },
+    {
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 10
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 9
+    },
+    {
+      "path": "/_next/static/chunks/app/vi/page-b0e96d1fb6cc5bef.js",
+      "views": 9
+    },
+    {
+      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh-1/",
+      "views": 8
     },
     {
       "path": "/images/blog/khi-nao-nen-noi-khong-voi-con.png",
       "views": 8
-    },
-    {
-      "path": "/images/social/zalo.png",
-      "views": 7
-    },
-    {
-      "path": "/images/moment-study.png",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/app/vi/page-b0e96d1fb6cc5bef.js",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/media/df0a9ae256c0569c-s.woff2",
-      "views": 4
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 4
-    },
-    {
-      "path": "/images/blog/nuoi-day-con-bang-ky-luat-tich-cuc.png",
-      "views": 4
     }
   ]
 }
