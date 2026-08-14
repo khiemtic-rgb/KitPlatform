@@ -762,7 +762,16 @@ export function PosPage() {
               <div className="cart-line-foot">
                 <Space className="cart-line-qty" size={4}>
                   <Button icon={<MinusOutlined />} onClick={() => updateQuantity(line.key, line.quantity - 1)} />
-                  <InputNumber min={1} value={line.quantity} controls={false} readOnly />
+                  <InputNumber
+                    min={1}
+                    value={line.quantity}
+                    controls={false}
+                    inputMode="numeric"
+                    onChange={(value) => {
+                      const next = Math.max(1, Math.floor(Number(value ?? 1)));
+                      updateQuantity(line.key, next);
+                    }}
+                  />
                   <Button icon={<PlusOutlined />} onClick={() => updateQuantity(line.key, line.quantity + 1)} />
                 </Space>
                 {(canDiscount || canPriceOverride) ? (
