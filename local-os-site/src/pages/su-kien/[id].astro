@@ -1,0 +1,28 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { formatWhen, getListing } from '../../lib/api';
+const { id } = Astro.params;
+const item = id ? await getListing(id) : null;
+if (!item) Astro.response.status = 404;
+---
+<Layout title={item ? `${item.title} — Thái Nguyên Life` : 'Không tìm thấy'} active="event">
+  <div class="page">
+    <div class="wrap" style="max-width:760px">
+      {item ? (
+        <article class="detail">
+          <p class="muted">Sự kiện · {item.trust}</p>
+          <h1>{item.title}</h1>
+          <p>{item.summary}</p>
+          <div class="facts">
+            {item.organizationName && <div><strong>Đơn vị:</strong> {item.organizationName}</div>}
+            {item.placeText && <div><strong>Địa điểm:</strong> {item.placeText}</div>}
+            {item.startAt && <div><strong>Bắt đầu:</strong> {formatWhen(item.startAt)}</div>}
+            {item.endAt && <div><strong>Kết thúc:</strong> {formatWhen(item.endAt)}</div>}
+          </div>
+          {item.registrationUrl && <p><a href={item.registrationUrl} rel="nofollow">Đăng ký</a></p>}
+          {item.sourceUrl && <p><a href={item.sourceUrl} rel="nofollow">Nguồn</a></p>}
+        </article>
+      ) : <p class="empty">Tin không còn hoặc đã ẩn.</p>}
+    </div>
+  </div>
+</Layout>

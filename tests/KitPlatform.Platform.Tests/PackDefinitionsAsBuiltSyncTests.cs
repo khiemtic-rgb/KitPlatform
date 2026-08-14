@@ -3,6 +3,7 @@ using KitPlatform.Packs.Clinic;
 using KitPlatform.Packs.Connect;
 using KitPlatform.Packs.Content;
 using KitPlatform.Packs.FamilyOs;
+using KitPlatform.Packs.LocalOs;
 using KitPlatform.Packs.Pharmacy;
 using KitPlatform.Packs.Survey;
 using Xunit;
@@ -113,6 +114,17 @@ public sealed class PackDefinitionsAsBuiltSyncTests
     }
 
     [Fact]
+    public void LocalOs_match_product_isolation_definition()
+    {
+        Assert.Equal(["local_os"], LocalOsPackDefinition.DefaultEnabledModules);
+        Assert.Equal(["local_os"], LocalOsPackDefinition.PackModuleCodes);
+        Assert.Equal("local_os", LocalOsPackDefinition.PackCode);
+        Assert.Equal("local_os", LocalOsPackDefinition.TenantPackageCode);
+        Assert.Equal("KIT_LOCAL", LocalOsPackDefinition.DedicatedTenantCode);
+        Assert.Equal(PlatformModuleCodes.LocalOs, LocalOsPackDefinition.PrimaryModuleCode);
+    }
+
+    [Fact]
     public void Platform_module_codes_include_all_asbuilt_catalog_entries()
     {
         string[] expected =
@@ -142,6 +154,7 @@ public sealed class PackDefinitionsAsBuiltSyncTests
             "family_os",
             "care_os",
             "kit_content",
+            "local_os",
             "learning",
         ];
 
@@ -156,7 +169,8 @@ public sealed class PackDefinitionsAsBuiltSyncTests
                      .Concat(ConnectPackDefinition.PackModuleCodes)
                      .Concat(SurveyPackDefinition.PackModuleCodes)
                      .Concat(FamilyOsPackDefinition.PackModuleCodes)
-                     .Concat(ContentPackDefinition.PackModuleCodes))
+                     .Concat(ContentPackDefinition.PackModuleCodes)
+                     .Concat(LocalOsPackDefinition.PackModuleCodes))
         {
             Assert.Contains(code, PlatformModuleCodes.All);
         }

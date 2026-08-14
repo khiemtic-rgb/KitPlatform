@@ -12,6 +12,11 @@ export const MARKETING_PARK_BRAND =
 export const MARKETING_PARK_PRODUCT =
   import.meta.env.VITE_MARKETING_PARK_PRODUCT?.trim() || 'AI Content & Marketing Workspace';
 
+/** KIT Local OS — admin shell when tenant vertical = local (org KIT_LOCAL). */
+export const LOCAL_OS_BRAND = import.meta.env.VITE_LOCAL_OS_BRAND?.trim() || 'Thái Nguyên Life';
+export const LOCAL_OS_PRODUCT =
+  import.meta.env.VITE_LOCAL_OS_PRODUCT?.trim() || 'Việc · Sự kiện · Trọ';
+
 export const DEFAULT_TENANT_CODE = import.meta.env.VITE_DEFAULT_TENANT_CODE?.trim() || '';
 
 export const TENANT_CODE_STORAGE_KEY = 'novixa_tenant_code';
@@ -22,10 +27,17 @@ export function resolveShellBrand(vertical: string | null | undefined): {
   product: string;
   isFamily: boolean;
   isMarketing: boolean;
+  isLocal: boolean;
 } {
   const value = String(vertical ?? '').trim().toLowerCase();
   if (value === 'family') {
-    return { brand: FAMILY_OS_BRAND, product: FAMILY_OS_PRODUCT, isFamily: true, isMarketing: false };
+    return {
+      brand: FAMILY_OS_BRAND,
+      product: FAMILY_OS_PRODUCT,
+      isFamily: true,
+      isMarketing: false,
+      isLocal: false,
+    };
   }
   if (value === 'marketing') {
     return {
@@ -33,9 +45,19 @@ export function resolveShellBrand(vertical: string | null | undefined): {
       product: MARKETING_PARK_PRODUCT,
       isFamily: false,
       isMarketing: true,
+      isLocal: false,
     };
   }
-  return { brand: APP_BRAND, product: APP_PRODUCT, isFamily: false, isMarketing: false };
+  if (value === 'local') {
+    return {
+      brand: LOCAL_OS_BRAND,
+      product: LOCAL_OS_PRODUCT,
+      isFamily: false,
+      isMarketing: false,
+      isLocal: true,
+    };
+  }
+  return { brand: APP_BRAND, product: APP_PRODUCT, isFamily: false, isMarketing: false, isLocal: false };
 }
 
 /** Login screen preview — brand by tenant/org code before session exists. */
@@ -44,6 +66,7 @@ export function resolveLoginBrandByTenantCode(tenantCode: string | null | undefi
   product: string;
   isFamily: boolean;
   isMarketing: boolean;
+  isLocal: boolean;
 } {
   const code = String(tenantCode ?? '').trim().toUpperCase();
   if (code === 'KIT_MKT' || code === 'DEMO_CONTENT' || code.startsWith('KIT_MKT')) {
@@ -52,12 +75,28 @@ export function resolveLoginBrandByTenantCode(tenantCode: string | null | undefi
       product: MARKETING_PARK_PRODUCT,
       isFamily: false,
       isMarketing: true,
+      isLocal: false,
+    };
+  }
+  if (code === 'KIT_LOCAL' || code === 'DEMO_LOCAL' || code.startsWith('KIT_LOCAL')) {
+    return {
+      brand: LOCAL_OS_BRAND,
+      product: LOCAL_OS_PRODUCT,
+      isFamily: false,
+      isMarketing: false,
+      isLocal: true,
     };
   }
   if (code === 'DEMO_FAMILY' || code.startsWith('FM_') || code.includes('FAMILY')) {
-    return { brand: FAMILY_OS_BRAND, product: FAMILY_OS_PRODUCT, isFamily: true, isMarketing: false };
+    return {
+      brand: FAMILY_OS_BRAND,
+      product: FAMILY_OS_PRODUCT,
+      isFamily: true,
+      isMarketing: false,
+      isLocal: false,
+    };
   }
-  return { brand: APP_BRAND, product: APP_PRODUCT, isFamily: false, isMarketing: false };
+  return { brand: APP_BRAND, product: APP_PRODUCT, isFamily: false, isMarketing: false, isLocal: false };
 }
 
 /** Khi set VITE_DEFAULT_TENANT_CODE: ẩn ô mã (white-label 1 tenant). Multi-tenant: để trống. */

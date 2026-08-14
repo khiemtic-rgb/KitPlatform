@@ -1,0 +1,163 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ListingCard from '../components/ListingCard.astro';
+import {
+  EMP_LABEL,
+  formatDayBox,
+  formatRelative,
+  formatWhen,
+  hrefFor,
+  listListings,
+} from '../lib/api';
+
+const q = Astro.url.searchParams.get('q') ?? '';
+const [jobs, events, rooms] = await Promise.all([
+  listListings('job', q || undefined),
+  listListings('event', q || undefined),
+  listListings('room', q || undefined),
+]);
+const mixed = [...jobs, ...events, ...rooms]
+  .sort((a, b) => {
+    const ta = new Date(a.lastCheckedAt || a.publishedAt || 0).getTime();
+    const tb = new Date(b.lastCheckedAt || b.publishedAt || 0).getTime();
+    return tb - ta;
+  });
+const today = mixed.slice(0, 4);
+const feed = mixed.slice(0, 5);
+const upcoming = events.filter((e) => e.startAt).slice(0, 3);
+---
+<Layout title="Thái Nguyên Life — Việc, sự kiện, trọ">
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <h1>Hôm nay có gì đáng để bạn quan tâm?</h1>
+      <form class="search-bar" method="get" action="/">
+        <input type="search" name="q" value={q} placeholder="Bạn đang tìm gì?" />
+        <span class="city">Thái Nguyên</span>
+        <button type="submit">Tìm kiếm</button>
+      </form>
+      <div class="quick">
+        <a class="pill" href="/viec"><span class="dot job">💼</span> Việc làm</a>
+        <a class="pill" href="/su-kien"><span class="dot event">📅</span> Sự kiện</a>
+        <a class="pill" href="/tro"><span class="dot room">🏠</span> Phòng trọ</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="page">
+    <div class="wrap layout">
+      <div>
+        <div class="section-head">
+          <h2>Cơ hội hôm nay</h2>
+          <div class="tabs" id="opp-tabs">
+            <button class="tab is-on" type="button" data-filter="all">Tất cả</button>
+            <button class="tab" type="button" data-filter="job">Việc làm</button>
+            <button class="tab" type="button" data-filter="event">Sự kiện</button>
+            <button class="tab" type="button" data-filter="room">Phòng trọ</button>
+          </div>
+        </div>
+        <div class="cards-4" id="opp-cards">
+          {today.map((item) => <ListingCard item={item} />)}
+        </div>
+        {today.length === 0 && <p class="empty">Chưa có tin còn hạn. Duyệt tin ở admin rồi Đăng.</p>}
+
+        <div class="section-head" style="margin-top:28px">
+          <h2>Mới cập nhật</h2>
+        </div>
+        <div class="layout" style="grid-template-columns: 1fr 260px; gap: 14px">
+          <div class="panel">
+            <div class="feed">
+              {feed.map((item) => (
+                <a class={`feed-item ${item.kind}`} href={hrefFor(item)}>
+                  <i></i>
+                  <div>
+                    <div class="ago">{formatRelative(item.lastCheckedAt || item.publishedAt)}</div>
+                    <strong>{item.title}</strong>
+                    <div class="muted">{item.organizationName || item.placeText}</div>
+                  </div>
+                </a>
+              ))}
+              {feed.length === 0 && <p class="empty">Chưa có cập nhật.</p>}
+            </div>
+          </div>
+          <aside class="note">
+            <h3>Không bỏ lỡ cơ hội nào!</h3>
+            <p>Bản tin việc + sự kiện qua Zalo — chưa mở đăng ký công khai.</p>
+          </aside>
+        </div>
+
+        <div class="section-head" style="margin-top:28px">
+          <h2>Dành cho bạn</h2>
+        </div>
+        <div class="chips">
+          <a class="tab is-on" href="/viec">Gợi ý cho bạn</a>
+          <a class="tab" href="/viec?q=part">Việc làm part-time</a>
+          <a class="tab" href="/viec?q=ca tối">Ca tối</a>
+          <a class="tab" href="/tro">Gần trường</a>
+        </div>
+        <div class="job-row">
+          {jobs.slice(0, 4).map((item) => (
+            <a class="job-card" href={hrefFor(item)}>
+              <h3>{item.title}</h3>
+              <p class="hl">{item.salaryText}</p>
+              <p class="loc">{item.placeText}</p>
+              {item.employmentType && <span class="tag">{EMP_LABEL[item.employmentType] ?? item.employmentType}</span>}
+              <p class="ago">{formatRelative(item.lastCheckedAt || item.publishedAt)}</p>
+            </a>
+          ))}
+        </div>
+        {jobs.length === 0 && <p class="empty">Chưa có việc còn hạn.</p>}
+      </div>
+
+      <aside>
+        <div class="panel">
+          <h3>Khu vực của bạn</h3>
+          <div class="side-map"></div>
+          <strong>Thái Nguyên</strong>
+          <p class="muted">City đầu — sinh viên năm 1–7.</p>
+        </div>
+        <div class="panel">
+          <h3>Đáng chú ý hôm nay</h3>
+          <div class="hi">
+            <div><span>Việc còn hạn</span><b>{jobs.length}</b></div>
+            <div><span>Sự kiện</span><b>{events.length}</b></div>
+            <div><span>Phòng trọ</span><b>{rooms.length}</b></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Sự kiện sắp diễn ra</h3>
+          {upcoming.map((item) => {
+            const box = formatDayBox(item.startAt);
+            return (
+              <a class="ev" href={hrefFor(item)}>
+                <div class="ev-date">
+                  <strong>{box?.day ?? '—'}</strong>
+                  <span>{box?.mon ?? ''}</span>
+                </div>
+                <div>
+                  <strong>{item.title}</strong>
+                  <div class="muted">{formatWhen(item.startAt)}</div>
+                  <div class="muted">{item.placeText}</div>
+                </div>
+              </a>
+            );
+          })}
+          {upcoming.length === 0 && <p class="empty">Chưa có sự kiện đã đăng.</p>}
+        </div>
+      </aside>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const tabs = document.querySelectorAll<HTMLButtonElement>('#opp-tabs .tab');
+  const cards = document.querySelectorAll<HTMLElement>('#opp-cards [data-kind]');
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      tabs.forEach((t) => t.classList.toggle('is-on', t === tab));
+      const filter = tab.dataset.filter ?? 'all';
+      cards.forEach((card) => {
+        card.style.display = filter === 'all' || card.dataset.kind === filter ? '' : 'none';
+      });
+    });
+  });
+</script>

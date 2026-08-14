@@ -89,6 +89,7 @@ const PERMISSION_UI_GROUP_DEFS: Array<{
 /** Module quyền FamilyOS được hiện / lưu. */
 const FAMILY_PERMISSION_MODULES = new Set(['system', 'family_os', 'family']);
 const MARKETING_PERMISSION_MODULES = new Set(['system', 'content']);
+const LOCAL_PERMISSION_MODULES = new Set(['system', 'local_os', 'local']);
 
 function buildPermissionUiGroup(
   moduleKey: string,
@@ -233,7 +234,7 @@ export type PermissionLookupLike = {
 
 export type GroupPermissionsOptions = {
   /** When family — hide pharmacy/clinic permission groups. When marketing — system + content only. */
-  vertical?: 'pharmacy' | 'clinic' | 'family' | 'marketing';
+  vertical?: 'pharmacy' | 'clinic' | 'family' | 'marketing' | 'local';
 };
 
 /** FamilyOS: chỉ giữ system / family_os (allowlist — không dựa regex tiếng Việt). */
@@ -257,6 +258,16 @@ function isMarketingFacingModule(moduleKey: string): boolean {
   return MARKETING_PERMISSION_MODULES.has(key);
 }
 
+function isLocalFacingPermissionCode(code: string): boolean {
+  const prefix = (code.split('.')[0] ?? '').trim().toLowerCase();
+  return LOCAL_PERMISSION_MODULES.has(prefix);
+}
+
+function isLocalFacingModule(moduleKey: string): boolean {
+  const key = normalizePermissionModuleKey(moduleKey);
+  return LOCAL_PERMISSION_MODULES.has(key);
+}
+
 /** Khi lưu quyền — bỏ mã không thuộc vertical. */
 export function filterPermissionCodesForVertical(
   codes: string[],
@@ -264,6 +275,7 @@ export function filterPermissionCodesForVertical(
 ): string[] {
   if (vertical === 'family') return codes.filter((code) => isFamilyFacingPermissionCode(code));
   if (vertical === 'marketing') return codes.filter((code) => isMarketingFacingPermissionCode(code));
+  if (vertical === 'local') return codes.filter((code) => isLocalFacingPermissionCode(code));
   return codes;
 }
 
@@ -274,6 +286,7 @@ export function groupPermissionsForUi(
 ): PermissionUiGroup[] {
   const isFamily = options?.vertical === 'family';
   const isMarketing = options?.vertical === 'marketing';
+  const isLocal = options?.vertical === 'local';
   const known = new Set(
     PERMISSION_UI_GROUP_DEFS.flatMap((g) => [...g.items, ...(g.discountCodes ?? [])]),
   );
@@ -283,9 +296,11 @@ export function groupPermissionsForUi(
     if (known.has(p.permissionCode)) continue;
     if (isFamily && !isFamilyFacingPermissionCode(p.permissionCode)) continue;
     if (isMarketing && !isMarketingFacingPermissionCode(p.permissionCode)) continue;
+    if (isLocal && !isLocalFacingPermissionCode(p.permissionCode)) continue;
     const moduleKey = normalizePermissionModuleKey(p.moduleName);
     if (isFamily && !isFamilyFacingModule(moduleKey)) continue;
     if (isMarketing && !isMarketingFacingModule(moduleKey)) continue;
+    if (isLocal && !isLocalFacingModule(moduleKey)) continue;
     const list = extras.get(moduleKey) ?? [];
     list.push({
       code: p.permissionCode,
@@ -298,7 +313,9 @@ export function groupPermissionsForUi(
     ? PERMISSION_UI_GROUP_DEFS.filter((g) => FAMILY_PERMISSION_MODULES.has(g.moduleKey))
     : isMarketing
       ? PERMISSION_UI_GROUP_DEFS.filter((g) => MARKETING_PERMISSION_MODULES.has(g.moduleKey))
-      : PERMISSION_UI_GROUP_DEFS;
+      : isLocal
+        ? PERMISSION_UI_GROUP_DEFS.filter((g) => LOCAL_PERMISSION_MODULES.has(g.moduleKey))
+        : PERMISSION_UI_GROUP_DEFS;
 
   const groups: PermissionUiGroup[] = defs.map((group) =>
     buildPermissionUiGroup(group.moduleKey, group.items, group.discountCodes),

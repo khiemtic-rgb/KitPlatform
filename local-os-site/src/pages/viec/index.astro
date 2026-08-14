@@ -1,0 +1,22 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ListingCard from '../../components/ListingCard.astro';
+import { listListings } from '../../lib/api';
+const q = Astro.url.searchParams.get('q') ?? '';
+const jobs = await listListings('job', q || undefined);
+---
+<Layout title="Việc làm — Thái Nguyên Life" active="job">
+  <div class="page">
+    <div class="wrap">
+      <h1 class="page-title">Việc làm</h1>
+      <form class="search-bar" method="get" style="max-width:640px;margin-bottom:20px">
+        <input type="search" name="q" value={q} placeholder="Ca tối, gần trường…" />
+        <button type="submit">Lọc</button>
+      </form>
+      <div class="cards-3">
+        {jobs.map((item) => <ListingCard item={item} />)}
+      </div>
+      {jobs.length === 0 && <p class="empty">Không có việc khớp.</p>}
+    </div>
+  </div>
+</Layout>

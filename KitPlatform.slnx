@@ -11,6 +11,8 @@
   <Project Path="src/Packs/Survey/KitPlatform.Packs.Survey.Infrastructure/KitPlatform.Packs.Survey.Infrastructure.csproj" />
   <Project Path="src/Packs/FamilyOS/KitPlatform.Packs.FamilyOs.Application/KitPlatform.Packs.FamilyOs.Application.csproj" />
   <Project Path="src/Packs/FamilyOS/KitPlatform.Packs.FamilyOs.Infrastructure/KitPlatform.Packs.FamilyOs.Infrastructure.csproj" />
+  <Project Path="src/Packs/LocalOS/KitPlatform.Packs.LocalOs.Application/KitPlatform.Packs.LocalOs.Application.csproj" />
+  <Project Path="src/Packs/LocalOS/KitPlatform.Packs.LocalOs.Infrastructure/KitPlatform.Packs.LocalOs.Infrastructure.csproj" />
   <Project Path="tests/KitPlatform.Application.Tests/KitPlatform.Application.Tests.csproj" />
   <Project Path="tests/KitPlatform.Platform.Tests/KitPlatform.Platform.Tests.csproj" />
   <Project Path="tests/KitPlatform.Api.Tests/KitPlatform.Api.Tests.csproj" />

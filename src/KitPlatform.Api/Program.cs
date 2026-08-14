@@ -18,6 +18,7 @@ using KitPlatform.Packs.Connect.Infrastructure;
 using KitPlatform.Packs.FamilyOs.Infrastructure;
 using KitPlatform.Packs.Care.Infrastructure;
 using KitPlatform.Packs.Content.Infrastructure;
+using KitPlatform.Packs.LocalOs.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
 // Optional local secrets (gitignored under .dev/) — e.g. CSDL dược sandbox password.
@@ -137,6 +138,7 @@ catch (Exception ex) when (
         $"[dev] Care pack skipped (Application Control blocked DLL): {ex.GetBaseException().Message}");
 }
 builder.Services.AddContentPack(builder.Configuration);
+builder.Services.AddLocalOsPack();
 
 builder.Services.AddRateLimiter(options =>
 {

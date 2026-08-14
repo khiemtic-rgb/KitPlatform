@@ -1,0 +1,208 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+<Layout title="Đăng tin việc — Thái Nguyên Life" active="publish">
+  <div class="page">
+    <div class="wrap publish-wrap">
+      <h1 class="page-title">Đăng tin việc</h1>
+      <p class="muted">Điền 1–2 phút. Tin lên site sau khi Thái Nguyên Life duyệt. Bạn tự copy và dán lên group — chúng tôi không đăng hộ.</p>
+
+      <div id="step-kind" class="panel">
+        <h3>Loại tin</h3>
+        <div class="chips">
+          <button class="chip is-on" type="button" data-kind="job">Việc làm</button>
+          <button class="chip is-off" type="button" disabled>Sự kiện (sắp có)</button>
+          <button class="chip is-off" type="button" disabled>Phòng trọ (sắp có)</button>
+        </div>
+      </div>
+
+      <div id="step-template" class="panel">
+        <h3>Mẫu việc</h3>
+        <div class="chips" id="templates">
+          <button class="chip is-on" type="button" data-template="part_time">Part-time</button>
+          <button class="chip" type="button" data-template="full_time">Full-time</button>
+          <button class="chip" type="button" data-template="intern">Thực tập</button>
+        </div>
+        <div class="chips" id="categories">
+          <button class="chip" type="button" data-cat="phuc_vu">Phục vụ</button>
+          <button class="chip" type="button" data-cat="ban_hang">Bán hàng</button>
+          <button class="chip" type="button" data-cat="gia_su">Gia sư</button>
+          <button class="chip" type="button" data-cat="van_phong">Văn phòng</button>
+        </div>
+      </div>
+
+      <form id="job-form" class="panel" autocomplete="on">
+        <h3>Thông tin bắt buộc</h3>
+        <label>Tiêu đề tin
+          <input name="title" required maxlength="120" placeholder="VD: Tuyển phục vụ part-time quán nướng" />
+        </label>
+        <label>Địa điểm
+          <input name="placeText" required maxlength="160" placeholder="Số nhà, đường, phường / gần ĐHTN" />
+        </label>
+        <label>Thời gian làm
+          <input name="workingTime" required maxlength="120" placeholder="VD: 17h–22h, T2–T6" />
+        </label>
+        <label>Người liên hệ
+          <input name="contactName" required maxlength="80" placeholder="Tên chủ / quản lý" />
+        </label>
+        <label>Số lượng (tuỳ chọn)
+          <input name="quantity" maxlength="40" placeholder="VD: 3 bạn" />
+        </label>
+        <label>Thu nhập (tuỳ chọn)
+          <input name="salaryText" maxlength="80" placeholder="VD: 25k/giờ hoặc 4–5 triệu/tháng" />
+        </label>
+        <label>Yêu cầu (tuỳ chọn)
+          <textarea name="requirements" rows="3" maxlength="500" placeholder="Nam/nữ, ca tối, không cần kinh nghiệm…"></textarea>
+        </label>
+
+        <h3 style="margin-top:18px">Xác minh số điện thoại</h3>
+        <label>SĐT liên hệ (hiện trên tin)
+          <input name="phone" required inputmode="tel" maxlength="16" placeholder="09xxxxxxxx" />
+        </label>
+        <div class="otp-row">
+          <input name="otp" maxlength="6" inputmode="numeric" placeholder="Mã 6 số" />
+          <button type="button" class="btn-green" id="btn-otp">Gửi mã</button>
+        </div>
+        <p class="muted" id="otp-hint"></p>
+        <p class="err" id="form-err" hidden></p>
+        <button type="submit" class="btn-green" id="btn-submit">Gửi tin chờ duyệt</button>
+      </form>
+
+      <div id="success" class="panel" hidden>
+        <h3>Đã nhận tin</h3>
+        <p id="review-note" class="muted"></p>
+        <label>Nội dung chia sẻ
+          <textarea id="share-text" rows="12" readonly></textarea>
+        </label>
+        <button type="button" class="btn-green" id="btn-copy">Copy nội dung</button>
+        <h3 style="margin-top:20px">Group gợi ý — bạn tự mở và dán</h3>
+        <div id="groups"></div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import {
+    publishJob,
+    requestPublisherOtp,
+    trackShare,
+    verifyPublisherOtp,
+  } from '../lib/api';
+
+  const form = document.getElementById('job-form') as HTMLFormElement;
+  const success = document.getElementById('success') as HTMLElement;
+  const errEl = document.getElementById('form-err') as HTMLElement;
+  const otpHint = document.getElementById('otp-hint') as HTMLElement;
+  const shareTextEl = document.getElementById('share-text') as HTMLTextAreaElement;
+  const groupsEl = document.getElementById('groups') as HTMLElement;
+  const reviewNote = document.getElementById('review-note') as HTMLElement;
+
+  let template = 'part_time';
+  const categories = new Set<string>();
+  let token = '';
+  let listingId = '';
+
+  document.getElementById('templates')?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-template]');
+    if (!btn) return;
+    template = btn.dataset.template || 'part_time';
+    document.querySelectorAll('#templates .chip').forEach((c) => c.classList.toggle('is-on', c === btn));
+  });
+
+  document.getElementById('categories')?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-cat]');
+    if (!btn) return;
+    const cat = btn.dataset.cat || '';
+    if (categories.has(cat)) categories.delete(cat);
+    else if (categories.size < 4) categories.add(cat);
+    document.querySelectorAll('#categories .chip').forEach((c) => {
+      c.classList.toggle('is-on', categories.has((c as HTMLButtonElement).dataset.cat || ''));
+    });
+  });
+
+  function showErr(msg: string) {
+    errEl.hidden = false;
+    errEl.textContent = msg;
+  }
+
+  document.getElementById('btn-otp')?.addEventListener('click', async () => {
+    const phone = String(new FormData(form).get('phone') || '');
+    otpHint.textContent = 'Đang gửi…';
+    try {
+      const r = await requestPublisherOtp(phone);
+      token = '';
+      otpHint.textContent = r.debugCode
+        ? `Dev: mã là ${r.debugCode} (chưa gắn SMS).`
+        : 'Đã tạo mã. Trong bản dev, xem log API nếu không hiện mã.';
+    } catch (err) {
+      otpHint.textContent = '';
+      showErr(err instanceof Error ? err.message : 'Không gửi được mã.');
+    }
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errEl.hidden = true;
+    const data = new FormData(form);
+    const phone = String(data.get('phone') || '');
+    const otp = String(data.get('otp') || '');
+    try {
+      if (!token) {
+        const session = await verifyPublisherOtp(phone, otp);
+        token = session.token;
+      }
+      const result = await publishJob({
+        token,
+        template,
+        categories: [...categories],
+        title: String(data.get('title') || ''),
+        quantity: String(data.get('quantity') || '') || undefined,
+        placeText: String(data.get('placeText') || ''),
+        workingTime: String(data.get('workingTime') || ''),
+        salaryText: String(data.get('salaryText') || '') || undefined,
+        requirements: String(data.get('requirements') || '') || undefined,
+        contactName: String(data.get('contactName') || ''),
+      });
+      listingId = result.listing.id;
+      form.hidden = true;
+      document.getElementById('step-kind')!.hidden = true;
+      document.getElementById('step-template')!.hidden = true;
+      success.hidden = false;
+      shareTextEl.value = result.shareText;
+      reviewNote.textContent = result.reviewNote;
+      groupsEl.innerHTML = result.groups
+        .map(
+          (g) =>
+            `<div class="group-row"><div><strong>${g.name}</strong><div class="muted">${g.url}</div></div>
+             <div class="group-actions">
+               <a class="btn" data-open="${g.id}" href="${g.url}" target="_blank" rel="noopener">Mở group</a>
+               <button type="button" class="btn" data-copy-group="${g.id}">Copy link</button>
+             </div></div>`,
+        )
+        .join('');
+    } catch (err) {
+      token = '';
+      showErr(err instanceof Error ? err.message : 'Không gửi được tin.');
+    }
+  });
+
+  document.getElementById('btn-copy')?.addEventListener('click', async () => {
+    await navigator.clipboard.writeText(shareTextEl.value);
+    if (listingId) void trackShare(listingId, null, 'copy');
+    (document.getElementById('btn-copy') as HTMLButtonElement).textContent = 'Đã copy';
+  });
+
+  groupsEl.addEventListener('click', async (e) => {
+    const open = (e.target as HTMLElement).closest<HTMLAnchorElement>('[data-open]');
+    const copy = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-copy-group]');
+    if (open && listingId) void trackShare(listingId, open.dataset.open || null, 'open');
+    if (copy) {
+      const row = copy.closest('.group-row');
+      const url = row?.querySelector('.muted')?.textContent || '';
+      await navigator.clipboard.writeText(url);
+      if (listingId) void trackShare(listingId, copy.dataset.copyGroup || null, 'copy');
+      copy.textContent = 'Đã copy';
+    }
+  });
+</script>

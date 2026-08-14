@@ -32,6 +32,7 @@ export const ADMIN_MODULE_PLATFORM_CODES: Partial<
     | 'reports'
     | 'kap'
     | 'content'
+    | 'localOs'
     | 'learning'
     | 'system',
     string
@@ -55,6 +56,7 @@ export const ADMIN_MODULE_PLATFORM_CODES: Partial<
   kap: 'assessment',
   /** Marketing Park — product package `marketing_park`, org `KIT_MKT`. */
   content: 'kit_content',
+  localOs: 'local_os',
   learning: 'learning',
 };
 

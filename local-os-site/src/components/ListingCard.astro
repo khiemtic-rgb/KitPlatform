@@ -1,0 +1,26 @@
+---
+import {
+  cardHighlight,
+  formatRelative,
+  hrefFor,
+  kindLabel,
+  type LocalListing,
+} from '../lib/api';
+
+interface Props {
+  item: LocalListing;
+}
+const { item } = Astro.props;
+const hl = cardHighlight(item);
+---
+<a class={`media-card ${item.kind}`} href={hrefFor(item)} data-kind={item.kind}>
+  <div class="thumb">
+    <span class="badge">{kindLabel(item.kind)}</span>
+  </div>
+  <div class="media-body">
+    <h3>{item.title}</h3>
+    {hl && <p class="hl">{hl}</p>}
+    <p class="loc">{item.placeText || item.organizationName}</p>
+    <p class="ago">{formatRelative(item.lastCheckedAt || item.publishedAt)}</p>
+  </div>
+</a>

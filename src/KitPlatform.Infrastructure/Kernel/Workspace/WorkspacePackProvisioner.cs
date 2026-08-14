@@ -10,6 +10,7 @@ internal sealed class WorkspacePackProvisioner
     private static readonly string[] ConnectPackModules = ["novixa_connect"];
     private static readonly string[] FamilyOsPackModules = ["family_os"];
     private static readonly string[] MarketingParkModules = ["kit_content"];
+    private static readonly string[] LocalOsPackModules = ["local_os"];
 
     private readonly IDbConnectionFactory _db;
 
@@ -51,6 +52,13 @@ internal sealed class WorkspacePackProvisioner
         {
             await conn.ExecuteAsync(
                 "SELECT kit_provision_pack_workspace(@TenantId, 'marketing_park')",
+                new { TenantId = tenantId });
+        }
+
+        if (enabledModules.Any(m => LocalOsPackModules.Contains(m, StringComparer.OrdinalIgnoreCase)))
+        {
+            await conn.ExecuteAsync(
+                "SELECT kit_provision_pack_workspace(@TenantId, 'local_os')",
                 new { TenantId = tenantId });
         }
     }

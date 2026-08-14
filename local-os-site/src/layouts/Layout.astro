@@ -1,0 +1,66 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  active?: 'home' | 'job' | 'event' | 'room' | 'publish';
+}
+const { title, active = 'home' } = Astro.props;
+---
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <span class="brand-mark">📍</span>
+          <span>Thái Nguyên Life</span>
+        </a>
+        <nav class="nav">
+          <a href="/" class={active === 'home' ? 'is-on' : undefined}>Trang chủ</a>
+          <a href="/viec" class={active === 'job' ? 'is-on' : undefined}>Việc làm</a>
+          <a href="/su-kien" class={active === 'event' ? 'is-on' : undefined}>Sự kiện</a>
+          <a href="/tro" class={active === 'room' ? 'is-on' : undefined}>Phòng trọ</a>
+          <a href="/dang-tin" class={active === 'publish' ? 'is-on publish' : 'publish'}>+ Đăng tin</a>
+        </nav>
+      </div>
+    </header>
+    <slot />
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div>
+            <a class="brand" href="/">
+              <span class="brand-mark">📍</span>
+              <span>Thái Nguyên Life</span>
+            </a>
+            <p class="muted" style="margin-top:10px">Việc · Sự kiện · Trọ cho sinh viên năm 1–7. Xem không cần tài khoản.</p>
+          </div>
+          <div>
+            <h4>Khám phá</h4>
+            <a href="/viec">Việc làm</a>
+            <a href="/su-kien">Sự kiện</a>
+            <a href="/tro">Phòng trọ</a>
+            <a href="/dang-tin">Đăng tin việc</a>
+          </div>
+          <div>
+            <h4>Hỗ trợ</h4>
+            <p class="muted">Phỏng vấn / xem phòng do chủ hoặc quản lý. Chúng tôi không nhận hồ sơ, không thu phí ứng tuyển.</p>
+          </div>
+        </div>
+        <div class="copy">
+          <span>© 2026 Thái Nguyên Life — city first, Local OS.</span>
+          <span>Tin group mặc định chưa xác minh.</span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

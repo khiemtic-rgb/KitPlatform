@@ -35,6 +35,8 @@ public static class PlatformModuleCodes
     public const string CareOs = "care_os";
     /// <summary>KIT Marketing Park module — product package <c>marketing_park</c>, org <c>KIT_MKT</c>.</summary>
     public const string KitContent = "kit_content";
+    /// <summary>KIT Local OS — Thái Nguyên Life, tenant KIT_LOCAL, package local_os.</summary>
+    public const string LocalOs = "local_os";
     public const string Learning = "learning";
 
     public static IReadOnlyList<string> All { get; } =
@@ -64,6 +66,7 @@ public static class PlatformModuleCodes
         FamilyOs,
         CareOs,
         KitContent,
+        LocalOs,
         Learning,
     ];
 }

@@ -24,6 +24,7 @@
     <ProjectReference Include="..\Packs\FamilyOS\KitPlatform.Packs.FamilyOs.Infrastructure\KitPlatform.Packs.FamilyOs.Infrastructure.csproj" />
     <ProjectReference Include="..\Packs\Care\KitPlatform.Packs.Care.Infrastructure\KitPlatform.Packs.Care.Infrastructure.csproj" />
     <ProjectReference Include="..\Packs\Content\KitPlatform.Packs.Content.Infrastructure\KitPlatform.Packs.Content.Infrastructure.csproj" />
+    <ProjectReference Include="..\Packs\LocalOS\KitPlatform.Packs.LocalOs.Infrastructure\KitPlatform.Packs.LocalOs.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

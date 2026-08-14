@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\src\Packs\Survey\KitPlatform.Packs.Survey.Application\KitPlatform.Packs.Survey.Application.csproj" />
     <ProjectReference Include="..\..\src\Packs\FamilyOS\KitPlatform.Packs.FamilyOs.Application\KitPlatform.Packs.FamilyOs.Application.csproj" />
     <ProjectReference Include="..\..\src\Packs\Content\KitPlatform.Packs.Content.Application\KitPlatform.Packs.Content.Application.csproj" />
+    <ProjectReference Include="..\..\src\Packs\LocalOS\KitPlatform.Packs.LocalOs.Application\KitPlatform.Packs.LocalOs.Application.csproj" />
   </ItemGroup>
 
 </Project>

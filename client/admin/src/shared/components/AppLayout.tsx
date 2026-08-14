@@ -131,6 +131,7 @@ function AppLayoutShell() {
       connect: canAccessConnect,
       clinic: canAccessClinic,
       familyOs: true,
+      localOs: true,
       procurement: canAccessProcurement,
       inventory: canAccessInventory,
       receivables: canAccessReceivables,
@@ -163,10 +164,10 @@ function AppLayoutShell() {
 
   useEffect(() => {
     document.title =
-      shellBrand.isFamily || shellBrand.isMarketing
+      shellBrand.isFamily || shellBrand.isMarketing || shellBrand.isLocal
         ? `${shellBrand.brand} Admin`
         : 'Novixa Admin';
-  }, [shellBrand.brand, shellBrand.isFamily, shellBrand.isMarketing]);
+  }, [shellBrand.brand, shellBrand.isFamily, shellBrand.isMarketing, shellBrand.isLocal]);
 
   useEffect(() => {
     if (
@@ -309,7 +310,7 @@ function AppLayoutShell() {
             gap: 2,
           }}
         >
-          {shellBrand.isFamily || shellBrand.isMarketing ? (
+          {shellBrand.isFamily || shellBrand.isMarketing || shellBrand.isLocal ? (
             <>
               <Typography.Text
                 strong
@@ -318,12 +319,14 @@ function AppLayoutShell() {
                 {collapsed
                   ? shellBrand.isMarketing
                     ? 'MK'
-                    : 'FO'
+                    : shellBrand.isLocal
+                      ? 'TN'
+                      : 'FO'
                   : shellBrand.brand}
               </Typography.Text>
               {!collapsed ? (
                 <Typography.Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11 }}>
-                  {shellBrand.isMarketing ? 'KIT_MKT' : 'Starter'}
+                  {shellBrand.isMarketing ? 'KIT_MKT' : shellBrand.isLocal ? 'KIT_LOCAL' : 'Starter'}
                 </Typography.Text>
               ) : null}
             </>

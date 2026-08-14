@@ -1,0 +1,36 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { formatPriceMonth, getListing, ROOM_TYPE_LABEL, telHref } from '../../lib/api';
+const { id } = Astro.params;
+const item = id ? await getListing(id) : null;
+if (!item) Astro.response.status = 404;
+---
+<Layout title={item ? `${item.title} — Thái Nguyên Life` : 'Không tìm thấy'} active="room">
+  <div class="page">
+    <div class="wrap" style="max-width:760px">
+      {item ? (
+        <article class="detail">
+          <p class="muted">Phòng trọ · {item.trust}</p>
+          <h1>{item.title}</h1>
+          <p>{item.summary}</p>
+          <div class="facts">
+            {item.placeText && <div><strong>Khu:</strong> {item.placeText}</div>}
+            {item.roomType && <div><strong>Loại:</strong> {ROOM_TYPE_LABEL[item.roomType] ?? item.roomType}</div>}
+            {item.priceMonth != null && <div><strong>Giá:</strong> {formatPriceMonth(item.priceMonth)}</div>}
+          </div>
+          {item.contactPhone && (
+            <p>
+              Liên hệ chủ nhà:{' '}
+              {telHref(item.contactPhone) ? (
+                <a class="hl" href={telHref(item.contactPhone)!}>{item.contactPhone}</a>
+              ) : (
+                <strong>{item.contactPhone}</strong>
+              )}
+            </p>
+          )}
+          {item.sourceUrl && <p><a href={item.sourceUrl} rel="nofollow">Tin gốc</a></p>}
+        </article>
+      ) : <p class="empty">Tin không còn hoặc đã ẩn.</p>}
+    </div>
+  </div>
+</Layout>

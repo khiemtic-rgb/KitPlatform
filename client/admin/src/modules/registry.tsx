@@ -37,11 +37,12 @@ export type ModuleKey =
   | 'reports'
   | 'kap'
   | 'content'
+  | 'localOs'
   | 'learning'
   | 'system';
 
 /** Tenant platform.vertical — lọc sidebar theo loại tổ chức. */
-export type AdminVertical = 'pharmacy' | 'clinic' | 'family' | 'marketing';
+export type AdminVertical = 'pharmacy' | 'clinic' | 'family' | 'marketing' | 'local';
 
 /**
  * Module tạm ẩn khỏi sidebar/header (giữ code + route).
@@ -89,7 +90,8 @@ const PHARMACY_ONLY: readonly AdminVertical[] = ['pharmacy'];
 const CLINIC_ONLY: readonly AdminVertical[] = ['clinic'];
 const FAMILY_ONLY: readonly AdminVertical[] = ['family'];
 const MARKETING_ONLY: readonly AdminVertical[] = ['marketing'];
-const ALL_VERTICALS: readonly AdminVertical[] = ['pharmacy', 'clinic', 'family', 'marketing'];
+const LOCAL_ONLY: readonly AdminVertical[] = ['local'];
+const ALL_VERTICALS: readonly AdminVertical[] = ['pharmacy', 'clinic', 'family', 'marketing', 'local'];
 
 /** Sidebar cấp 1 — thứ tự theo luồng vận hành */
 export const moduleRegistry: ModuleMenuItem[] = [
@@ -238,6 +240,15 @@ export const moduleRegistry: ModuleMenuItem[] = [
     verticals: MARKETING_ONLY,
   },
   {
+    key: 'localOs',
+    label: 'localOs',
+    path: '/local-os/listings',
+    icon: <ReadOutlined />,
+    enabled: true,
+    platformModule: ADMIN_MODULE_PLATFORM_CODES.localOs,
+    verticals: LOCAL_ONLY,
+  },
+  {
     key: 'system',
     label: 'system',
     path: '/system/branches',
@@ -253,6 +264,7 @@ export function resolveAdminVertical(raw: string | null | undefined): AdminVerti
   if (value === 'clinic') return 'clinic';
   if (value === 'family') return 'family';
   if (value === 'marketing') return 'marketing';
+  if (value === 'local') return 'local';
   return 'pharmacy';
 }
 

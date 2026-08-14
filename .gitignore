@@ -35,3 +35,5 @@ scripts/_inline-*.ps1
 scripts/_run-smoke-batch.ps1
 .cursor/handoff/
 docs/**/node_modules/
+local-os-site/node_modules/
+local-os-site/.astro/

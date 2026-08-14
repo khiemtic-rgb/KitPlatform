@@ -1,0 +1,6 @@
+# KIT Local OS (Thái Nguyên Life) — PILOT / INDEPENDENT
+# Do NOT merge into migration-files.prod.txt (Pharmacy),
+# migration-files.family-os.txt, or migration-files.content.txt.
+# Apply only when operating the Local OS park.
+
+294_pack_local_os_v1.sql

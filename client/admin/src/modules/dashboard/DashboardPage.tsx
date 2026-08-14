@@ -95,7 +95,34 @@ export function DashboardPage() {
     return <MarketingParkDashboardPage />;
   }
 
+  if (vertical === 'local') {
+    return <LocalOsDashboardPage />;
+  }
+
   return <PharmacyDashboardPage />;
+}
+
+function LocalOsDashboardPage() {
+  return (
+    <div className="dashboard-page" style={{ maxWidth: 640, padding: '24px 8px' }}>
+      <Typography.Title level={3} style={{ marginTop: 0 }}>
+        Thái Nguyên Life
+      </Typography.Title>
+      <Typography.Paragraph type="secondary">
+        Park Local OS độc lập (mã tổ chức <strong>KIT_LOCAL</strong>). Không gắn Novixa / Famixa /
+        Marketing Park.
+      </Typography.Paragraph>
+      <Alert
+        type="info"
+        showIcon
+        message="Tin gửi từ site ở trạng thái chờ duyệt. Đăng lên site công khai sau khi đọc."
+        style={{ marginBottom: 16 }}
+      />
+      <Link to="/local-os/listings">
+        <Button type="primary">Hàng chờ tin</Button>
+      </Link>
+    </div>
+  );
 }
 
 function MarketingParkDashboardPage() {

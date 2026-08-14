@@ -60,6 +60,7 @@ export function RoleListPage() {
   const adminVertical = resolveAdminVertical(platformSettings?.vertical);
   const isFamily = adminVertical === 'family';
   const isMarketing = adminVertical === 'marketing';
+  const isLocal = adminVertical === 'local';
   const canWrite = useHasPermission('system.write');
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<RoleListItem[]>([]);
@@ -76,9 +77,9 @@ export function RoleListPage() {
   const permissionGroups = useMemo(
     () =>
       groupPermissionsForUi(permissions, {
-        vertical: isFamily ? 'family' : isMarketing ? 'marketing' : undefined,
+        vertical: isFamily ? 'family' : isMarketing ? 'marketing' : isLocal ? 'local' : undefined,
       }),
-    [permissions, i18n.language, isFamily, isMarketing],
+    [permissions, i18n.language, isFamily, isMarketing, isLocal],
   );
 
   const load = useCallback(async () => {
@@ -181,7 +182,7 @@ export function RoleListPage() {
     try {
       const codes = filterPermissionCodesForVertical(
         normalizePermissionCodesForSave(selectedCodes),
-        isFamily ? 'family' : isMarketing ? 'marketing' : undefined,
+        isFamily ? 'family' : isMarketing ? 'marketing' : isLocal ? 'local' : undefined,
       );
       await updateRolePermissions(permRole.id, codes);
       message.success(t('messages.permissionsUpdated'));
