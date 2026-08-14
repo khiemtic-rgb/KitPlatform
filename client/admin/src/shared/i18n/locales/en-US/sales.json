@@ -1017,13 +1017,16 @@
       "popupBlocked": "Popup blocked — allow popups and try again"
     },
     "customerAppLinkCard": {
-      "title": "Customer app link & QR",
-      "intro": "Have the customer scan this QR with their phone camera to open your pharmacy app — no pharmacy code typing.",
-      "openButton": "App QR",
-      "openButtonTooltip": "Open QR for customer to scan into the app",
-      "modalTitle": "Customer scan to open app",
+      "title": "Novixa Health QR (counter)",
+      "intro": "Scan first — feel the value — install only if they want. Never push the app; offer a useful benefit right after purchase.",
+      "scriptLabel": "Standard line after checkout",
+      "scriptLine": "«Would you like me to send your medicine details and dosing schedule to your phone?»",
+      "flowLine": "ASK → SCAN → USE → FEEL USEFUL → VOLUNTARY INSTALL",
+      "openButton": "Novixa Health QR",
+      "openButtonTooltip": "Open QR + staff script for Novixa Health",
+      "modalTitle": "Novixa Health — send meds to phone",
       "close": "Close",
-      "loading": "Loading app link…",
+      "loading": "Loading link…",
       "copy": "Copy",
       "copySuccess": "Link copied",
       "copyFailed": "Could not copy link",
@@ -1033,9 +1036,19 @@
       "loadFailed": "Could not load platform config",
       "missingTenant": "Pharmacy code unavailable — sign in to admin again.",
       "missingAppUrl": "Platform__CustomerAppUrl is not configured on the server.",
-      "qrCaption": "Scan to open app · {{tenant}}",
-      "qrHint": "After opening: sign in with phone + OTP (staff can read OTP from admin when needed).",
-      "installHint": "Tip for customers: in the app → Account → «Add to Home Screen» for an app-like icon."
+      "qrCaption": "Scan with phone camera · {{tenant}}",
+      "qrHint": "Scanning opens medicine info right away — installing the app is optional.",
+      "installHint": "Suggest install only after they find it useful: history, reminders, family meds.",
+      "dontPush": "Don't sell the app. Sell convenience. Never enter health data for the customer without consent.",
+      "faq": {
+        "title": "If the customer asks / worries",
+        "installQ": "«Do I have to install an app?»",
+        "installA": "«No. Scanning lets you view it right away. Later, if it's useful, you can install to keep history and get reminders.»",
+        "privacyQ": "Customer worries about data collection",
+        "privacyA": "«Your information is your choice. You decide what to save and share.» Keep it short; never enter extra health data yourself.",
+        "whenInstallQ": "When to suggest installing?",
+        "whenInstallA": "Not immediately. After they have used it and found it helpful: mention Novixa Health for tracking and reminders if they buy often or manage family meds. Offer only 1–2 benefits."
+      }
     },
     "modeAReadiness": {
       "title": "Ready for app login (counter OTP)",

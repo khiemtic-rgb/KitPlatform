@@ -216,7 +216,7 @@
     "waitingCompact": "Chưa có mã OTP để đọc",
     "waitingCompactHint": "Bấm «Mã app» → nhập SĐT / chọn khách → Tạo mã. Hoặc chờ khách bấm gửi OTP trên app — mã hiện ngay tại đây.",
     "expiresAt": "Hết hạn {{time}}",
-    "readAloud": "Đọc mã này cho khách nhập vào app",
+    "readAloud": "Đọc mã này cho khách nhập trên Novixa Health",
     "unknownName": "Khách",
     "moreCount": "+{{count}} mã khác"
   },

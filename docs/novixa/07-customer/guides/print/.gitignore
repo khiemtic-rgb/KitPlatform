@@ -1,1 +1,4 @@
 node_modules/
+preview-*.png
+.local-browsers/
+

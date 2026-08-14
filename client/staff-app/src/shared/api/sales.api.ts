@@ -479,22 +479,62 @@ export async function fetchReceiptSettings(): Promise<ReceiptStoreSettings> {
   };
 }
 
+export interface SalesOrderListFilters {
+  search?: string;
+  customerSearch?: string;
+  documentSearch?: string;
+  status?: number;
+  from?: string;
+  to?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface SalesOrderPagedListResult {
+  items: SalesOrderListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export async function fetchSalesOrders(
+  filters?: SalesOrderListFilters,
+): Promise<SalesOrderPagedListResult> {
+  const params: Record<string, string | number | undefined> = {};
+  if (filters?.search?.trim()) params.search = filters.search.trim();
+  if (filters?.customerSearch?.trim()) params.customerSearch = filters.customerSearch.trim();
+  if (filters?.documentSearch?.trim()) params.documentSearch = filters.documentSearch.trim();
+  if (filters?.status != null) params.status = filters.status;
+  if (filters?.from) params.from = filters.from;
+  if (filters?.to) params.to = filters.to;
+  if (filters?.page != null) params.page = filters.page;
+  if (filters?.pageSize != null) params.pageSize = filters.pageSize;
+
+  const { data } = await http.get<Record<string, unknown>>('/sales/orders', {
+    params: Object.keys(params).length > 0 ? params : undefined,
+  });
+  const rawItems = (data.items ?? data.Items ?? []) as Record<string, unknown>[];
+  return {
+    items: rawItems.map(normalizeOrderListItem),
+    total: Number(data.total ?? data.Total ?? 0),
+    page: Number(data.page ?? data.Page ?? 1),
+    pageSize: Number(data.pageSize ?? data.PageSize ?? rawItems.length),
+  };
+}
+
 export async function searchSalesOrders(
   query: string,
   mode: 'document' | 'customer' = 'document',
 ): Promise<SalesOrderListItem[]> {
   const trimmed = query.trim();
-  const params: Record<string, string | number> = { pageSize: 30, page: 1 };
-  if (mode === 'customer') {
-    params.customerSearch = trimmed;
-  } else {
-    params.documentSearch = trimmed;
-  }
-  const { data } = await http.get<Record<string, unknown>>('/sales/orders', { params });
-  const rawItems = (data.items ?? data.Items ?? []) as Record<string, unknown>[];
-  return rawItems
-    .map(normalizeOrderListItem)
-    .filter((item) => item.status === 2 || item.status === 4);
+  const result = await fetchSalesOrders({
+    page: 1,
+    pageSize: 30,
+    ...(mode === 'customer'
+      ? { customerSearch: trimmed }
+      : { documentSearch: trimmed }),
+  });
+  return result.items.filter((item) => item.status === 2 || item.status === 4);
 }
 
 export async function fetchSalesOrderById(id: string): Promise<SalesOrderDetailFull> {

@@ -11,7 +11,7 @@ interface CustomerAppQrButtonProps {
   type?: 'default' | 'primary' | 'dashed' | 'link' | 'text';
 }
 
-/** Nút nhanh: mở QR/link để khách quét vào app (không phải mã KH POS). */
+/** Nút nhanh: mở QR Novixa Health + kịch bản giới thiệu tại quầy. */
 export function CustomerAppQrButton({
   size = 'middle',
   showLabel = true,
@@ -38,7 +38,7 @@ export function CustomerAppQrButton({
             {t('close')}
           </Button>
         }
-        width={560}
+        width={600}
         destroyOnClose
         centered
       >

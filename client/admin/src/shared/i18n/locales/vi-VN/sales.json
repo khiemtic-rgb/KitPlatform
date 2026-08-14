@@ -1021,13 +1021,16 @@
       "popupBlocked": "Trình duyệt chặn popup — cho phép popup rồi thử lại"
     },
     "customerAppLinkCard": {
-      "title": "Link & QR app khách",
-      "intro": "Cho khách quét QR bằng camera điện thoại để mở app nhà thuốc — không cần gõ mã nhà thuốc.",
-      "openButton": "QR vào app",
-      "openButtonTooltip": "Mở QR để khách quét vào app",
-      "modalTitle": "Cho khách quét vào app",
+      "title": "QR Novixa Health (quầy)",
+      "intro": "Quét trước – thấy tiện – rồi mới cài nếu khách muốn. Không ép cài app; mục tiêu là gửi tiện ích ngay sau khi mua thuốc.",
+      "scriptLabel": "Câu nói chuẩn sau khi chốt đơn",
+      "scriptLine": "«Chị có muốn em gửi thông tin thuốc và lịch dùng thuốc vào điện thoại không ạ?»",
+      "flowLine": "HỎI → QUÉT → DÙNG → THẤY TIỆN → TỰ NGUYỆN CÀI",
+      "openButton": "QR Novixa Health",
+      "openButtonTooltip": "Mở QR + câu nói chuẩn để giới thiệu Novixa Health",
+      "modalTitle": "Novixa Health — gửi thuốc vào điện thoại",
       "close": "Đóng",
-      "loading": "Đang tải link app…",
+      "loading": "Đang tải link…",
       "copy": "Sao chép",
       "copySuccess": "Đã sao chép link",
       "copyFailed": "Không sao chép được link",
@@ -1037,9 +1040,19 @@
       "loadFailed": "Không tải được cấu hình nền tảng",
       "missingTenant": "Không xác định được mã nhà thuốc — đăng nhập lại admin.",
       "missingAppUrl": "Chưa cấu hình Platform__CustomerAppUrl trên server.",
-      "qrCaption": "Quét để vào app · {{tenant}}",
-      "qrHint": "Sau khi mở app: đăng nhập bằng SĐT + OTP (nhân viên đọc mã OTP trong admin khi cần).",
-      "installHint": "Gợi ý khách: trong app → Tài khoản → «Cài ra màn hình chính» để có icon như app thật."
+      "qrCaption": "Quét bằng camera ĐT · {{tenant}}",
+      "qrHint": "Khách quét mã là xem thông tin thuốc ngay — không bắt buộc cài app.",
+      "installHint": "Chỉ gợi ý cài sau khi khách thấy tiện: quản lý thuốc / nhắc dùng / gia đình.",
+      "dontPush": "Đừng bán app. Hãy bán sự tiện lợi. Không tự ý nhập thông tin sức khỏe của khách.",
+      "faq": {
+        "title": "Khi khách hỏi / lo lắng",
+        "installQ": "«Có phải tải app không?»",
+        "installA": "«Không ạ. Chị quét mã là xem được ngay. Nếu thấy tiện thì sau này chị có thể cài để lưu lịch sử và nhận nhắc thuốc.»",
+        "privacyQ": "Khách lo bị thu thập thông tin",
+        "privacyA": "«Thông tin của chị là do chị quyết định. Chị có quyền lựa chọn thông tin nào muốn lưu và chia sẻ.» Không giải thích dài; không tự ý nhập thêm.",
+        "whenInstallQ": "Khi nào gợi ý cài app?",
+        "whenInstallA": "Không cần ngay. Sau khi khách đã dùng và thấy hữu ích: «Nếu chị thường xuyên mua thuốc hoặc muốn quản lý thuốc cho cả gia đình, chị có thể cài Novixa Health để tiện theo dõi và nhận nhắc thuốc ạ.» Chỉ nêu 1–2 lợi ích phù hợp."
+      }
     },
     "modeAReadiness": {
       "title": "Sẵn sàng đăng nhập app (OTP quầy)",

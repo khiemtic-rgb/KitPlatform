@@ -16,7 +16,6 @@ import {
   MessageOutlined,
   MoreOutlined,
   OrderedListOutlined,
-  PrinterOutlined,
   RollbackOutlined,
   ScanOutlined,
   ShoppingCartOutlined,
@@ -266,13 +265,6 @@ export function HubPage() {
     if (canSales) {
       items.push(
         {
-          key: 'orders',
-          icon: <PrinterOutlined />,
-          label: 'In đơn & in lại',
-          tone: 'blue',
-          onClick: () => navigate('/orders'),
-        },
-        {
           key: 'collect',
           icon: <DollarOutlined />,
           label: 'Thu công nợ',
@@ -414,6 +406,13 @@ export function HubPage() {
                 hint="Lưu tạm tại quầy · mở lại POS"
                 tone="teal"
                 onClick={() => navigate('/drafts')}
+              />
+              <HubListRow
+                icon={<OrderedListOutlined />}
+                label="Đơn bán"
+                hint="Hôm nay · tìm HĐ · in lại bill"
+                tone="blue"
+                onClick={() => navigate('/orders')}
               />
             </div>
           </>

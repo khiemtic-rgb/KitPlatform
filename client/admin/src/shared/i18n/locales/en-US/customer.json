@@ -211,7 +211,7 @@
     "waitingCompact": "No OTP to read yet",
     "waitingCompactHint": "Tap «App code» → enter phone / select customer → Generate. Or wait for the customer to request OTP in the app — the code appears here.",
     "expiresAt": "Expires {{time}}",
-    "readAloud": "Read this code for the customer to enter in the app",
+    "readAloud": "Read this code for the customer to enter in Novixa Health",
     "unknownName": "Customer",
     "moreCount": "+{{count}} more"
   },
