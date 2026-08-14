@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-14T13:45:11.225Z",
+  "generatedAt": "2026-08-14T19:15:23.500Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 496,
-    "todayPageViews": 332,
-    "todayRequests": 1296,
-    "last24hVisitors": 598,
-    "last24hPageViews": 387,
-    "last24hRequests": 1752
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 600,
+    "last24hPageViews": 375,
+    "last24hRequests": 1718
   },
   "hourly": [
-    {
-      "time": "2026-08-13T14:00:00Z",
-      "visitors": 29,
-      "requests": 32
-    },
-    {
-      "time": "2026-08-13T15:00:00Z",
-      "visitors": 28,
-      "requests": 41
-    },
-    {
-      "time": "2026-08-13T16:00:00Z",
-      "visitors": 21,
-      "requests": 62
-    },
-    {
-      "time": "2026-08-13T17:00:00Z",
-      "visitors": 7,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-13T18:00:00Z",
-      "visitors": 10,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-13T19:00:00Z",
-      "visitors": 19,
-      "requests": 21
-    },
     {
       "time": "2026-08-13T20:00:00Z",
       "visitors": 7,
@@ -128,17 +98,41 @@
     },
     {
       "time": "2026-08-14T13:00:00Z",
+      "visitors": 29,
+      "requests": 47
+    },
+    {
+      "time": "2026-08-14T14:00:00Z",
+      "visitors": 40,
+      "requests": 45
+    },
+    {
+      "time": "2026-08-14T15:00:00Z",
+      "visitors": 21,
+      "requests": 21
+    },
+    {
+      "time": "2026-08-14T16:00:00Z",
       "visitors": 22,
-      "requests": 24
+      "requests": 25
+    },
+    {
+      "time": "2026-08-14T17:00:00Z",
+      "visitors": 9,
+      "requests": 11
+    },
+    {
+      "time": "2026-08-14T18:00:00Z",
+      "visitors": 17,
+      "requests": 18
+    },
+    {
+      "time": "2026-08-14T19:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-08",
-      "visitors": 652,
-      "pageViews": 585,
-      "requests": 2509
-    },
     {
       "date": "2026-08-09",
       "visitors": 583,
@@ -171,15 +165,15 @@
     },
     {
       "date": "2026-08-14",
-      "visitors": 496,
-      "pageViews": 332,
-      "requests": 1296
+      "visitors": 578,
+      "pageViews": 367,
+      "requests": 1442
     }
   ],
   "topPages": [
     {
       "path": "/cdn-cgi/rum",
-      "views": 130
+      "views": 131
     },
     {
       "path": "/vi/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api-voi-he-thong-co-so-du-lieu-ve-duoc/",
@@ -187,38 +181,38 @@
     },
     {
       "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
-      "views": 68
+      "views": 79
     },
     {
       "path": "/robots.txt",
-      "views": 58
+      "views": 56
     },
     {
       "path": "/",
-      "views": 40
+      "views": 37
     },
     {
       "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 32
+      "views": 37
     },
     {
       "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
       "views": 32
     },
     {
-      "path": "/vi/",
-      "views": 29
-    },
-    {
       "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
-      "views": 27
+      "views": 28
     },
     {
       "path": "/images/tin-tuc/quy-trinh-doi-tra-thuoc.png",
-      "views": 26
+      "views": 27
     },
     {
-      "path": "/images/tin-tuc/quy-trinh-thuoc-ke-don.png",
+      "path": "/vi/",
+      "views": 24
+    },
+    {
+      "path": "/_astro/_slug_.OmCW7wJf.css",
       "views": 23
     },
     {
@@ -226,15 +220,15 @@
       "views": 22
     },
     {
-      "path": "/test.php",
-      "views": 22
-    },
-    {
-      "path": "/keys/service-account.json",
+      "path": "/.s3cfg",
       "views": 21
     },
     {
-      "path": "/_astro/_slug_.OmCW7wJf.css",
+      "path": "/amplifyconfiguration.json",
+      "views": 21
+    },
+    {
+      "path": "/info.php",
       "views": 21
     }
   ]
