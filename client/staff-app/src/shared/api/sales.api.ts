@@ -81,10 +81,17 @@ function normalizeOrderListItem(row: Record<string, unknown>): SalesOrderListIte
   return {
     id: String(row.id ?? row.Id),
     orderNumber: String(row.orderNumber ?? row.OrderNumber ?? ''),
+    warehouseId: row.warehouseId != null || row.WarehouseId != null
+      ? String(row.warehouseId ?? row.WarehouseId)
+      : undefined,
+    warehouseName: (row.warehouseName ?? row.WarehouseName) as string | undefined,
+    customerId: (row.customerId ?? row.CustomerId) as string | null | undefined,
     customerName: (row.customerName ?? row.CustomerName) as string | undefined,
     orderDate: String(row.orderDate ?? row.OrderDate ?? ''),
     totalAmount: Number(row.totalAmount ?? row.TotalAmount ?? 0),
+    itemCount: Number(row.itemCount ?? row.ItemCount ?? 0),
     status: Number(row.status ?? row.Status ?? 1),
+    shiftNumber: (row.shiftNumber ?? row.ShiftNumber) as string | null | undefined,
   };
 }
 
@@ -339,15 +346,55 @@ export async function closeSalesShift(
   return normalizeOpenShift(row(data));
 }
 
-export async function searchCustomers(search?: string): Promise<CustomerListItem[]> {
-  const { data } = await http.get<Record<string, unknown>[]>('/sales/customers', { params: { search } });
-  return data.map((c) => ({
+export async function searchCustomers(
+  search?: string,
+  options?: { page?: number; pageSize?: number },
+): Promise<{
+  items: CustomerListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}> {
+  const page = Math.max(1, options?.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, options?.pageSize ?? 30));
+  const { data } = await http.get<Record<string, unknown> | Record<string, unknown>[]>('/sales/customers', {
+    params: { search, page, pageSize },
+  });
+
+  const mapRow = (c: Record<string, unknown>): CustomerListItem => ({
     id: String(c.id ?? c.Id),
     customerCode: String(c.customerCode ?? c.CustomerCode ?? ''),
     fullName: String(c.fullName ?? c.FullName ?? ''),
     phone: String(c.phone ?? c.Phone ?? ''),
     allowCredit: Boolean(c.allowCredit ?? c.AllowCredit),
-  }));
+    creditLimit:
+      c.creditLimit != null || c.CreditLimit != null
+        ? Number(c.creditLimit ?? c.CreditLimit)
+        : null,
+    currentOutstanding: Number(c.currentOutstanding ?? c.CurrentOutstanding ?? 0),
+    customerGroupName: (c.customerGroupName ?? c.CustomerGroupName) as string | null | undefined,
+    groupDiscountPercent: Number(c.groupDiscountPercent ?? c.GroupDiscountPercent ?? 0),
+    pharmacyRelation: String(c.pharmacyRelation ?? c.PharmacyRelation ?? 'member'),
+  });
+
+  // Backward-compatible: older API returned a bare array.
+  if (Array.isArray(data)) {
+    const items = data.map(mapRow);
+    return { items, total: items.length, page: 1, pageSize: items.length || pageSize, hasMore: false };
+  }
+
+  const rows = ((data.items ?? data.Items ?? []) as Record<string, unknown>[]).map(mapRow);
+  const total = Number(data.total ?? data.Total ?? rows.length);
+  const resolvedPage = Number(data.page ?? data.Page ?? page);
+  const resolvedPageSize = Number(data.pageSize ?? data.PageSize ?? pageSize);
+  return {
+    items: rows,
+    total,
+    page: resolvedPage,
+    pageSize: resolvedPageSize,
+    hasMore: resolvedPage * resolvedPageSize < total,
+  };
 }
 
 export async function fetchPosStockBulk(
@@ -451,6 +498,10 @@ export async function fetchDraftSalesOrders(): Promise<SalesOrderListItem[]> {
   });
   const rawItems = (data.items ?? data.Items ?? []) as Record<string, unknown>[];
   return rawItems.map(normalizeOrderListItem).filter((item) => item.status === 1);
+}
+
+export async function cancelDraftSale(id: string): Promise<void> {
+  await http.post(`/sales/orders/${id}/cancel`);
 }
 
 export async function updateDraftSale(

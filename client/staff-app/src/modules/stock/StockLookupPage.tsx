@@ -1,20 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { App, Input, Select, Spin, Typography } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import {
-  fetchWarehouses,
-  lookupPosProduct,
-  searchPosProducts,
-} from '@/shared/api/sales.api';
-import type { PosProductLookup, PosProductSearchItem, Warehouse } from '@/shared/api/sales.types';
+import { fetchWarehouses } from '@/shared/api/sales.api';
+import { fetchStockBatches, fetchStockProducts } from '@/shared/api/inventory.api';
+import type { StockBatch, StockProductSummary } from '@/shared/api/inventory.types';
+import type { Warehouse } from '@/shared/api/sales.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
-import { formatMoney } from '@/shared/utils/money';
-import { defaultBatchLabel } from '@/modules/sales/pos-batch';
 import { StaffPageHeader } from '@/shared/layout/StaffPageHeader';
 import { usePosSession } from '@/modules/pos/pos-session.store';
 
 function warehouseOptionLabel(w: Warehouse) {
   return w.branchName ? `${w.warehouseName} · ${w.branchName}` : w.warehouseName;
+}
+
+function formatQty(value: number): string {
+  return value.toLocaleString('vi-VN');
 }
 
 export function StockLookupPage() {
@@ -23,9 +24,11 @@ export function StockLookupPage() {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehouseId, setWarehouseId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
-  const [hits, setHits] = useState<PosProductSearchItem[]>([]);
-  const [detail, setDetail] = useState<PosProductLookup | null>(null);
+  const [items, setItems] = useState<StockProductSummary[]>([]);
+  const [selected, setSelected] = useState<StockProductSummary | null>(null);
+  const [batches, setBatches] = useState<StockBatch[]>([]);
   const [searching, setSearching] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     void fetchWarehouses()
@@ -35,7 +38,7 @@ export function StockLookupPage() {
           posWarehouseId && wh.some((w) => w.id === posWarehouseId) ? posWarehouseId : wh[0]?.id ?? null;
         setWarehouseId(preferred);
       })
-      .catch(() => message.error('Không tải được kho'));
+      .catch((error) => message.error(apiErrorMessage(error, 'Không tải được kho')));
   }, [message, posWarehouseId]);
 
   const activeWarehouse = useMemo(
@@ -43,34 +46,62 @@ export function StockLookupPage() {
     [warehouses, warehouseId],
   );
 
+  const loadProducts = useCallback(
+    async (search: string, whId: string) => {
+      setSearching(true);
+      setSelected(null);
+      setBatches([]);
+      try {
+        const result = await fetchStockProducts({
+          warehouseId: whId,
+          search: search.trim() || undefined,
+          page: 1,
+          pageSize: 40,
+        });
+        setItems(result.items);
+      } catch (error) {
+        setItems([]);
+        message.error(apiErrorMessage(error, 'Không tra được tồn kho'));
+      } finally {
+        setSearching(false);
+      }
+    },
+    [message],
+  );
+
   useEffect(() => {
-    setDetail(null);
-    if (query.trim().length < 2) {
-      setHits([]);
+    if (!warehouseId) {
+      setItems([]);
       return;
     }
     const timer = window.setTimeout(() => {
-      void (async () => {
-        if (!warehouseId) return;
-        setSearching(true);
-        try {
-          setHits(await searchPosProducts(query.trim(), warehouseId));
-        } finally {
-          setSearching(false);
-        }
-      })();
-    }, 280);
+      void loadProducts(query, warehouseId);
+    }, query.trim().length === 0 ? 0 : 280);
     return () => window.clearTimeout(timer);
-  }, [query, warehouseId]);
+  }, [query, warehouseId, loadProducts]);
 
-  const loadDetail = async (lookupCode: string) => {
+  const openProduct = async (product: StockProductSummary) => {
     if (!warehouseId) return;
+    if (selected?.productId === product.productId) {
+      setSelected(null);
+      setBatches([]);
+      return;
+    }
+    setSelected(product);
+    setDetailLoading(true);
     try {
-      setDetail(await lookupPosProduct(lookupCode, warehouseId));
-      setQuery('');
-      setHits([]);
+      const result = await fetchStockBatches({
+        warehouseId,
+        productId: product.productId,
+        page: 1,
+        pageSize: 50,
+      });
+      setBatches(result.items.filter((b) => b.quantityAvailable > 0));
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tra được sản phẩm'));
+      setBatches([]);
+      message.error(apiErrorMessage(error, 'Không tải được lô'));
+    } finally {
+      setDetailLoading(false);
     }
   };
 
@@ -83,61 +114,102 @@ export function StockLookupPage() {
           className="stock-warehouse-select"
           placeholder="Chọn kho"
           value={warehouseId ?? undefined}
-          onChange={(id) => setWarehouseId(id)}
+          onChange={(id) => {
+            setWarehouseId(id);
+            setQuery('');
+            setSelected(null);
+            setBatches([]);
+          }}
           options={warehouses.map((w) => ({ value: w.id, label: warehouseOptionLabel(w) }))}
           style={{ width: '100%', marginBottom: 12 }}
         />
         <Input
           size="large"
-          placeholder="Tên, mã SP, SKU..."
+          allowClear
+          prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+          placeholder="Tên, mã SP, barcode…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          allowClear
+          disabled={!warehouseId}
         />
         <Typography.Text type="secondary" style={{ display: 'block', margin: '8px 0 12px', fontSize: 12 }}>
           {activeWarehouse
             ? `Đang xem tồn: ${warehouseOptionLabel(activeWarehouse)} · chỉ tra cứu, không thêm giỏ.`
             : 'Chọn kho để tra tồn các quầy khác (VD: quầy 2 xem tồn quầy 1).'}
         </Typography.Text>
-        {searching ? <Spin /> : null}
-        {hits.map((hit) => (
-          <div key={hit.lookupCode} className="search-hit" onClick={() => void loadDetail(hit.lookupCode)}>
-            <Typography.Text strong>{hit.productName}</Typography.Text>
-            <div style={{ fontSize: 12, color: '#64748b' }}>
-              {hit.productCode} · {formatMoney(hit.unitPrice)} · Tồn {hit.stockAvailable}
-            </div>
-          </div>
-        ))}
-        {detail ? (
-          <div className="cart-line" style={{ marginTop: 16 }}>
-            <Typography.Title level={5} style={{ marginTop: 0 }}>
-              {detail.productName}
-            </Typography.Title>
-            <Typography.Text type="secondary">
-              {detail.productCode} · {detail.unitName}
-            </Typography.Text>
-            <div style={{ marginTop: 12, fontSize: 15 }}>
-              <strong>Tồn:</strong> {detail.stockAvailable} · <strong>Giá:</strong> {formatMoney(detail.unitPrice)}
-            </div>
-            {detail.batchHints?.length ? (
-              <div style={{ marginTop: 12 }}>
-                <Typography.Text strong style={{ fontSize: 13 }}>
-                  Lô trong kho
-                </Typography.Text>
-                {detail.batchHints.map((h) => (
-                  <div key={h.batchId} style={{ fontSize: 12, marginTop: 6, color: '#64748b' }}>
-                    {h.batchNumber}
-                    {h.isSuggested ? ' · FEFO' : ''}
-                    {h.expiryDate ? ` · HSD ${dayjs(h.expiryDate).format('MM/YYYY')}` : ''} · {h.quantityAvailable}
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            <Typography.Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 11 }}>
-              Gợi ý lô: {defaultBatchLabel(detail.batchHints) ?? '—'}
-            </Typography.Text>
+
+        {searching ? (
+          <div style={{ textAlign: 'center', padding: 16 }}>
+            <Spin />
           </div>
         ) : null}
+
+        {!searching && warehouseId && items.length === 0 ? (
+          <Typography.Text type="secondary">
+            {query.trim()
+              ? 'Không tìm thấy sản phẩm có tồn khớp từ khóa.'
+              : 'Kho này chưa có tồn (hoặc không có quyền xem).'}
+          </Typography.Text>
+        ) : null}
+
+        {!searching
+          ? items.map((item) => {
+              const active = selected?.productId === item.productId;
+              return (
+                <div key={item.productId} className="stock-hit-wrap">
+                  <button
+                    type="button"
+                    className={`search-hit stock-hit${active ? ' is-active' : ''}`}
+                    onClick={() => void openProduct(item)}
+                  >
+                    <Typography.Text strong>{item.productName}</Typography.Text>
+                    <div className="stock-hit-meta">
+                      <span>
+                        {item.productCode}
+                        {item.saleUnitName ? ` · ${item.saleUnitName}` : ''}
+                      </span>
+                      <span className="stock-hit-qty">Tồn {formatQty(item.totalQuantity)}</span>
+                    </div>
+                  </button>
+
+                  {active ? (
+                    <div className="stock-hit-detail">
+                      <div className="stock-hit-detail__total">
+                        <strong>Tồn tổng:</strong> {formatQty(selected.totalQuantity)}
+                        {selected.saleUnitName ? ` ${selected.saleUnitName}` : ''}
+                      </div>
+                      {detailLoading ? (
+                        <div style={{ textAlign: 'center', padding: 8 }}>
+                          <Spin size="small" />
+                        </div>
+                      ) : batches.length > 0 ? (
+                        <div className="stock-hit-detail__batches">
+                          <Typography.Text strong style={{ fontSize: 12 }}>
+                            Lô trong kho
+                          </Typography.Text>
+                          {batches.map((batch) => (
+                            <div key={batch.id} className="stock-batch-row">
+                              <span>
+                                {batch.batchNumber}
+                                {batch.expiryDate
+                                  ? ` · HSD ${dayjs(batch.expiryDate).format('MM/YYYY')}`
+                                  : ''}
+                              </span>
+                              <span>{formatQty(batch.quantityAvailable)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          Không có lô còn số lượng.
+                        </Typography.Text>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })
+          : null}
       </main>
     </div>
   );

@@ -1,6 +1,27 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { App, Button, Drawer, Form, Input, InputNumber, Select, Space, Spin, Tag, Typography } from 'antd';
-import { MinusCircleOutlined, PlusOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  App,
+  Alert,
+  Button,
+  Drawer,
+  Empty,
+  Form,
+  Input,
+  InputNumber,
+  Popconfirm,
+  Segmented,
+  Select,
+  Spin,
+  Tag,
+  Typography,
+} from 'antd';
+import {
+  MinusCircleOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  StopOutlined,
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
   cancelTransfer,
@@ -34,8 +55,28 @@ type TransferLineForm = {
   quantity: number;
 };
 
+type StatusFilter = 'all' | 'draft' | 'shipped' | 'completed' | 'cancelled';
+
 function warehouseOptionLabel(w: Warehouse) {
   return w.branchName ? `${w.warehouseName} · ${w.branchName}` : w.warehouseName;
+}
+
+function formatWhen(value?: string | null): string {
+  if (!value) return '—';
+  const parsed = dayjs(value);
+  if (!parsed.isValid()) return '—';
+  const now = dayjs();
+  if (now.isSame(parsed, 'day')) return `Hôm nay ${parsed.format('HH:mm')}`;
+  if (now.subtract(1, 'day').isSame(parsed, 'day')) return `Hôm qua ${parsed.format('HH:mm')}`;
+  return parsed.format('DD/MM HH:mm');
+}
+
+function statusToApi(filter: StatusFilter): number | undefined {
+  if (filter === 'draft') return 1;
+  if (filter === 'shipped') return 2;
+  if (filter === 'completed') return 3;
+  if (filter === 'cancelled') return 4;
+  return undefined;
 }
 
 function TransferLineRow({
@@ -153,6 +194,7 @@ function TransferLineRow({
         rules={[{ required: true, message: 'Chọn sản phẩm' }]}
       >
         <Select
+          size="large"
           showSearch
           filterOption={false}
           placeholder={fromWarehouseId ? 'Tìm mã hoặc tên SP' : 'Chọn kho đi trước'}
@@ -165,12 +207,9 @@ function TransferLineRow({
           }}
         />
       </Form.Item>
-      <Form.Item
-        name={[field.name, 'batchId']}
-        label="Lô"
-        rules={[{ required: true, message: 'Chọn lô' }]}
-      >
+      <Form.Item name={[field.name, 'batchId']} label="Lô" rules={[{ required: true, message: 'Chọn lô' }]}>
         <Select
+          size="large"
           placeholder="Chọn lô"
           disabled={!productId || batchOptions.length === 0}
           loading={batchLoading}
@@ -182,7 +221,7 @@ function TransferLineRow({
         label="Số lượng"
         rules={[{ required: true, message: 'Nhập số lượng' }]}
       >
-        <InputNumber min={0.001} style={{ width: '100%' }} />
+        <InputNumber size="large" min={0.001} style={{ width: '100%' }} />
       </Form.Item>
     </div>
   );
@@ -192,16 +231,21 @@ export function TransfersPage() {
   const { message } = App.useApp();
   const posWarehouseId = usePosSession((s) => s.warehouseId);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [items, setItems] = useState<TransferListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<number | undefined>();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [query, setQuery] = useState('');
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<TransferDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [actingId, setActingId] = useState<string | null>(null);
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [receiveNotes, setReceiveNotes] = useState('');
   const [receiveQtyByItem, setReceiveQtyByItem] = useState<Record<string, number>>({});
@@ -209,26 +253,45 @@ export function TransfersPage() {
   const fromWarehouseId = Form.useWatch('fromWarehouseId', form) as string | undefined;
   const prevFromWarehouseRef = useRef<string | undefined>(undefined);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [paged, wh] = await Promise.all([
-        fetchTransfers({ status: statusFilter, page, pageSize: 20 }),
-        fetchWarehouses(),
-      ]);
-      setItems(paged.items);
-      setTotal(paged.total);
-      setWarehouses(wh);
-    } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được phiếu chuyển kho'));
-    } finally {
-      setLoading(false);
-    }
-  }, [message, statusFilter, page]);
+  const load = useCallback(
+    async (mode: 'full' | 'refresh' | 'more' = 'full') => {
+      if (mode === 'full') {
+        setLoading(true);
+        setLoadError(null);
+      } else if (mode === 'refresh') {
+        setRefreshing(true);
+      }
+      const nextPage = mode === 'more' ? page + 1 : 1;
+      try {
+        const [paged, wh] = await Promise.all([
+          fetchTransfers({ status: statusToApi(statusFilter), page: nextPage, pageSize: 20 }),
+          mode === 'more' ? Promise.resolve(warehouses) : fetchWarehouses(),
+        ]);
+        setItems((prev) => (mode === 'more' ? [...prev, ...paged.items] : paged.items));
+        setTotal(paged.total);
+        setPage(nextPage);
+        if (mode !== 'more') setWarehouses(wh as Warehouse[]);
+        setLoadError(null);
+      } catch (error) {
+        const text = apiErrorMessage(error, 'Không tải được phiếu chuyển kho');
+        if (mode === 'full') {
+          setItems([]);
+          setLoadError(text);
+        } else {
+          message.error(text);
+        }
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [message, statusFilter, page, warehouses],
+  );
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void load('full');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when filter changes only
+  }, [statusFilter]);
 
   useEffect(() => {
     if (!createOpen) {
@@ -246,6 +309,17 @@ export function TransfersPage() {
     prevFromWarehouseRef.current = fromWarehouseId;
   }, [createOpen, fromWarehouseId, form]);
 
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter(
+      (i) =>
+        i.transferNumber.toLowerCase().includes(q) ||
+        i.fromWarehouseName.toLowerCase().includes(q) ||
+        i.toWarehouseName.toLowerCase().includes(q),
+    );
+  }, [items, query]);
+
   const openCreate = () => {
     form.resetFields();
     const defaultFrom =
@@ -258,11 +332,15 @@ export function TransfersPage() {
   };
 
   const openDetail = async (id: string) => {
+    setDetailLoading(true);
+    setDetailOpen(true);
     try {
       setDetail(await fetchTransfer(id));
-      setDetailOpen(true);
     } catch (error) {
+      setDetailOpen(false);
       message.error(apiErrorMessage(error, 'Không tải được chi tiết phiếu'));
+    } finally {
+      setDetailLoading(false);
     }
   };
 
@@ -273,22 +351,26 @@ export function TransfersPage() {
         message.warning('Kho đi và kho đến phải khác nhau');
         return;
       }
+      const lines = (values.items as TransferLineForm[]).filter((line) => line.batchId);
+      if (lines.length === 0) {
+        message.warning('Thêm ít nhất một dòng có lô');
+        return;
+      }
       setSaving(true);
       const created = await createTransfer({
         fromWarehouseId: values.fromWarehouseId,
         toWarehouseId: values.toWarehouseId,
         notes: values.notes,
-        items: (values.items as TransferLineForm[])
-          .filter((line) => line.batchId)
-          .map((line) => ({
-            batchId: line.batchId!,
-            quantity: line.quantity,
-          })),
+        items: lines.map((line) => ({
+          batchId: line.batchId!,
+          quantity: line.quantity,
+        })),
       });
       message.success(`Đã tạo phiếu ${created.transferNumber}`);
       setCreateOpen(false);
-      await load();
+      await load('refresh');
     } catch (error) {
+      if ((error as { errorFields?: unknown })?.errorFields) return;
       message.error(apiErrorMessage(error, 'Không tạo được phiếu chuyển kho'));
     } finally {
       setSaving(false);
@@ -296,18 +378,18 @@ export function TransfersPage() {
   };
 
   const handleShip = async (id: string) => {
+    setActingId(id);
     setCompleting(true);
     try {
       await shipTransfer(id);
       message.success('Đã gửi hàng — chờ kho nhận xác nhận');
-      if (detail?.id === id) {
-        setDetail(await fetchTransfer(id));
-      }
-      await load();
+      if (detail?.id === id) setDetail(await fetchTransfer(id));
+      await load('refresh');
     } catch (error) {
       message.error(apiErrorMessage(error, 'Không gửi được phiếu'));
     } finally {
       setCompleting(false);
+      setActingId(null);
     }
   };
 
@@ -342,11 +424,9 @@ export function TransfersPage() {
       setDetail(updated);
       setReceiveOpen(false);
       message.success(
-        hasShortage
-          ? 'Đã nhận có lệch — phần thiếu đã hoàn về kho xuất'
-          : 'Đã xác nhận nhận hàng',
+        hasShortage ? 'Đã nhận có lệch — phần thiếu đã hoàn về kho xuất' : 'Đã xác nhận nhận hàng',
       );
-      await load();
+      await load('refresh');
     } catch (error) {
       message.error(apiErrorMessage(error, 'Không nhận được phiếu'));
     } finally {
@@ -355,35 +435,35 @@ export function TransfersPage() {
   };
 
   const handleComplete = async (id: string) => {
+    setActingId(id);
     setCompleting(true);
     try {
       await completeTransfer(id);
       message.success('Đã gửi và nhận đủ (một bước)');
-      if (detail?.id === id) {
-        setDetail(await fetchTransfer(id));
-      }
-      await load();
+      if (detail?.id === id) setDetail(await fetchTransfer(id));
+      await load('refresh');
     } catch (error) {
       message.error(apiErrorMessage(error, 'Không hoàn tất được phiếu'));
     } finally {
       setCompleting(false);
+      setActingId(null);
     }
   };
 
   const handleCancel = async (id: string) => {
+    setActingId(id);
     setCompleting(true);
     try {
       await cancelTransfer(id);
       message.success('Đã hủy phiếu chuyển kho');
-      if (detail?.id === id) {
-        setDetail(await fetchTransfer(id));
-      }
+      if (detail?.id === id) setDetail(await fetchTransfer(id));
       setReceiveOpen(false);
-      await load();
+      await load('refresh');
     } catch (error) {
       message.error(apiErrorMessage(error, 'Không hủy được phiếu'));
     } finally {
       setCompleting(false);
+      setActingId(null);
     }
   };
 
@@ -392,88 +472,207 @@ export function TransfersPage() {
     label: warehouseOptionLabel(w),
   }));
 
+  const hasMore = items.length < total;
+  const detailHasShortage =
+    detail?.items.some(
+      (line) => line.receivedQuantity != null && line.receivedQuantity < line.quantity,
+    ) ?? false;
+
   return (
     <div className="staff-shell">
-      <StaffPageHeader title="Chuyển kho" backTo="/" />
-      <main className="staff-body">
-        <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 12 }}>
-          Quy trình: tạo phiếu → Gửi (trừ kho xuất) → Nhận (cộng kho nhận). Cùng quản lý 2 kho có thể Gửi + nhận đủ một bước.
-        </Typography.Text>
-
-        <Space style={{ marginBottom: 12, width: '100%' }} wrap>
-          <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-            Tải lại
-          </Button>
-          <Select
-            allowClear
-            placeholder="Trạng thái"
-            style={{ minWidth: 140 }}
-            value={statusFilter}
-            onChange={(v) => {
-              setStatusFilter(v);
-              setPage(1);
-            }}
-            options={[
-              { value: 1, label: 'Chờ gửi' },
-              { value: 2, label: 'Đang chuyển' },
-              { value: 3, label: 'Hoàn tất' },
-              { value: 4, label: 'Đã hủy' },
-            ]}
+      <StaffPageHeader
+        title="Chuyển kho"
+        subtitle={
+          loadError
+            ? 'Không tải được danh sách'
+            : total > 0
+              ? `${total} phiếu`
+              : 'Chưa có phiếu'
+        }
+        backTo="/"
+        right={
+          <Button
+            type="text"
+            className="chat-header-refresh"
+            icon={<ReloadOutlined spin={refreshing || loading} />}
+            aria-label="Tải lại"
+            onClick={() => void load(loadError ? 'full' : 'refresh')}
           />
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={warehouses.length < 2}>
-            Tạo phiếu
-          </Button>
-        </Space>
+        }
+      />
+      <main className="staff-body">
+        {loadError ? (
+          <Alert
+            type="error"
+            showIcon
+            message="Không tải được chuyển kho"
+            description={loadError}
+            action={
+              <Button size="small" type="primary" loading={loading} onClick={() => void load('full')}>
+                Thử lại
+              </Button>
+            }
+            style={{ marginBottom: 12 }}
+          />
+        ) : (
+          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 10, fontSize: 12 }}>
+            Tạo → Gửi (trừ kho xuất) → Nhận (cộng kho nhận). Quản lý cả 2 kho: dùng Gửi + nhận đủ.
+          </Typography.Text>
+        )}
 
-        {warehouses.length < 2 ? (
-          <Typography.Text type="warning">Cần ít nhất 2 kho để chuyển hàng giữa quầy.</Typography.Text>
+        <div className="transfer-toolbar">
+          <Input
+            size="large"
+            allowClear
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            placeholder="Tìm mã phiếu, kho…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            disabled={Boolean(loadError) && items.length === 0}
+          />
+          <div className="transfer-toolbar__row">
+            <Segmented
+              size="middle"
+              value={statusFilter}
+              onChange={(v) => setStatusFilter(v as StatusFilter)}
+              disabled={Boolean(loadError) && items.length === 0}
+              options={[
+                { label: 'Tất cả', value: 'all' },
+                { label: 'Chờ gửi', value: 'draft' },
+                { label: 'Đang chuyển', value: 'shipped' },
+                { label: 'Xong', value: 'completed' },
+              ]}
+            />
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlusOutlined />}
+              onClick={openCreate}
+              disabled={warehouses.length < 2}
+            >
+              Tạo
+            </Button>
+          </div>
+        </div>
+
+        {warehouses.length < 2 && !loadError ? (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="Cần ít nhất 2 kho"
+            description="Chưa đủ kho trong phạm vi quyền để chuyển hàng giữa quầy."
+          />
         ) : null}
 
         {loading ? (
-          <Spin />
-        ) : items.length === 0 ? (
-          <Typography.Text type="secondary">Chưa có phiếu chuyển kho</Typography.Text>
+          <div style={{ textAlign: 'center', padding: 24 }}>
+            <Spin />
+          </div>
+        ) : loadError && items.length === 0 ? (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Bấm Thử lại khi mạng ổn" />
+        ) : visible.length === 0 ? (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={query.trim() ? 'Không tìm thấy phiếu khớp' : 'Chưa có phiếu chuyển kho'}
+          />
         ) : (
-          items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className="transfer-list-item"
-              onClick={() => void openDetail(item.id)}
-            >
-              <div className="transfer-list-item-top">
-                <Typography.Text strong>{item.transferNumber}</Typography.Text>
-                <Space size={4}>
+          visible.map((item) => (
+            <article key={item.id} className="transfer-card">
+              <button type="button" className="transfer-card__main" onClick={() => void openDetail(item.id)}>
+                <div className="transfer-card__head">
+                  <div className="transfer-card__ids">
+                    <Typography.Text strong className="transfer-card__number">
+                      {item.transferNumber}
+                    </Typography.Text>
+                    <Typography.Text type="secondary" className="transfer-card__when">
+                      {formatWhen(item.transferDate)} · {item.itemCount} dòng
+                    </Typography.Text>
+                  </div>
                   <Tag color={transferStatusColor(item.status, item.hasShortage)}>
                     {transferStatusLabel(item.status, item.hasShortage)}
                   </Tag>
-                </Space>
-              </div>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {item.fromWarehouseName} → {item.toWarehouseName}
-              </Typography.Text>
-              <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
-                {dayjs(item.transferDate).format('DD/MM/YYYY')} · {item.itemCount} dòng
-              </Typography.Text>
-            </button>
+                </div>
+                <div className="transfer-card__route">
+                  <div>
+                    <span className="transfer-card__route-label">Từ</span> {item.fromWarehouseName}
+                  </div>
+                  <div>
+                    <span className="transfer-card__route-label">Đến</span> {item.toWarehouseName}
+                  </div>
+                </div>
+              </button>
+
+              {(canShipTransfer(item.status) ||
+                canCompleteTransfer(item.status) ||
+                canReceiveTransfer(item.status)) && (
+                <div className="transfer-card__actions">
+                  {canShipTransfer(item.status) ? (
+                    <Button
+                      className="transfer-card__btn"
+                      loading={actingId === item.id && completing}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleShip(item.id);
+                      }}
+                    >
+                      Gửi hàng
+                    </Button>
+                  ) : null}
+                  {canCompleteTransfer(item.status) ? (
+                    <Button
+                      className="transfer-card__btn"
+                      type="primary"
+                      loading={actingId === item.id && completing}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleComplete(item.id);
+                      }}
+                    >
+                      Gửi + nhận đủ
+                    </Button>
+                  ) : null}
+                  {canReceiveTransfer(item.status) ? (
+                    <Button
+                      className="transfer-card__btn"
+                      type="primary"
+                      loading={actingId === item.id && completing}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void (async () => {
+                          setActingId(item.id);
+                          try {
+                            const doc = await fetchTransfer(item.id);
+                            setDetail(doc);
+                            setDetailOpen(true);
+                            openReceive(doc);
+                          } catch (error) {
+                            message.error(apiErrorMessage(error, 'Không mở nhận hàng'));
+                          } finally {
+                            setActingId(null);
+                          }
+                        })();
+                      }}
+                    >
+                      Nhận hàng
+                    </Button>
+                  ) : null}
+                </div>
+              )}
+            </article>
           ))
         )}
 
-        {total > 20 ? (
-          <Space style={{ marginTop: 12 }}>
-            <Button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-              Trước
-            </Button>
-            <Typography.Text type="secondary">
-              Trang {page}/{Math.max(1, Math.ceil(total / 20))}
-            </Typography.Text>
-            <Button
-              disabled={page >= Math.ceil(total / 20)}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Sau
-            </Button>
-          </Space>
+        {hasMore && !loading && !loadError ? (
+          <Button
+            block
+            size="large"
+            className="customer-load-more"
+            loading={refreshing}
+            onClick={() => void load('more')}
+          >
+            Xem thêm ({items.length}/{total})
+          </Button>
         ) : null}
       </main>
 
@@ -483,9 +682,10 @@ export function TransfersPage() {
         height="92%"
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        extra={
-          <Button type="primary" loading={saving} onClick={() => void handleCreate()}>
-            Lưu
+        styles={{ body: { paddingBottom: 80 } }}
+        footer={
+          <Button type="primary" block size="large" loading={saving} onClick={() => void handleCreate()}>
+            Lưu phiếu
           </Button>
         }
       >
@@ -495,14 +695,14 @@ export function TransfersPage() {
             label="Kho đi (lấy hàng)"
             rules={[{ required: true, message: 'Chọn kho đi' }]}
           >
-            <Select options={warehouseOptions} placeholder="VD: Quầy 1" />
+            <Select size="large" options={warehouseOptions} placeholder="VD: Quầy 1" />
           </Form.Item>
           <Form.Item
             name="toWarehouseId"
             label="Kho đến (nhận hàng)"
             rules={[{ required: true, message: 'Chọn kho đến' }]}
           >
-            <Select options={warehouseOptions} placeholder="VD: Quầy 2" />
+            <Select size="large" options={warehouseOptions} placeholder="VD: Quầy 2" />
           </Form.Item>
           <Form.Item name="notes" label="Ghi chú">
             <Input.TextArea rows={2} placeholder="VD: Quầy 2 thiếu Paracetamol" />
@@ -518,7 +718,7 @@ export function TransfersPage() {
                     remove={() => remove(field.name)}
                   />
                 ))}
-                <Button type="dashed" onClick={() => add({ quantity: 1 })} block icon={<PlusOutlined />}>
+                <Button type="dashed" size="large" onClick={() => add({ quantity: 1 })} block icon={<PlusOutlined />}>
                   Thêm dòng
                 </Button>
               </>
@@ -530,86 +730,122 @@ export function TransfersPage() {
       <Drawer
         title={detail ? detail.transferNumber : 'Chi tiết phiếu'}
         placement="bottom"
-        height="85%"
+        height="88%"
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
-        extra={
-          detail && canCancelTransfer(detail.status) ? (
-            <Space wrap>
-              <Button danger loading={completing} icon={<StopOutlined />} onClick={() => void handleCancel(detail.id)}>
-                Hủy
-              </Button>
+        styles={{ body: { paddingBottom: 96 } }}
+        footer={
+          detail && !detailLoading ? (
+            <div className="transfer-detail-footer">
+              {canCancelTransfer(detail.status) ? (
+                <Popconfirm
+                  title="Hủy phiếu chuyển kho?"
+                  onConfirm={() => void handleCancel(detail.id)}
+                >
+                  <Button danger size="large" loading={completing} icon={<StopOutlined />}>
+                    Hủy
+                  </Button>
+                </Popconfirm>
+              ) : null}
               {canShipTransfer(detail.status) ? (
-                <Button loading={completing} onClick={() => void handleShip(detail.id)}>
+                <Button size="large" loading={completing} onClick={() => void handleShip(detail.id)}>
                   Gửi hàng
                 </Button>
               ) : null}
               {canCompleteTransfer(detail.status) ? (
-                <Button type="primary" loading={completing} onClick={() => void handleComplete(detail.id)}>
+                <Button
+                  type="primary"
+                  size="large"
+                  loading={completing}
+                  onClick={() => void handleComplete(detail.id)}
+                >
                   Gửi + nhận đủ
                 </Button>
               ) : null}
               {canReceiveTransfer(detail.status) ? (
-                <Button type="primary" loading={completing} onClick={() => openReceive(detail)}>
+                <Button type="primary" size="large" loading={completing} onClick={() => openReceive(detail)}>
                   Nhận hàng
                 </Button>
               ) : null}
-            </Space>
+            </div>
           ) : null
         }
       >
-        {detail ? (
+        {detailLoading || !detail ? (
+          <div style={{ textAlign: 'center', padding: 24 }}>
+            <Spin />
+          </div>
+        ) : (
           <>
-            <p>
-              <strong>Kho đi:</strong> {detail.fromWarehouseName}
-            </p>
-            <p>
-              <strong>Kho đến:</strong> {detail.toWarehouseName}
-            </p>
-            <p>
-              <strong>Trạng thái:</strong>{' '}
-              <Tag color={transferStatusColor(detail.status)}>{transferStatusLabel(detail.status)}</Tag>
-              {detail.items.some(
-                (line) => line.receivedQuantity != null && line.receivedQuantity < line.quantity,
-              ) ? (
-                <Tag color="orange" style={{ marginLeft: 6 }}>
-                  Có nhận thiếu
-                </Tag>
-              ) : null}
-            </p>
+            <div className="transfer-detail-meta">
+              <Tag color={transferStatusColor(detail.status, detailHasShortage || detail.hasShortage)}>
+                {transferStatusLabel(detail.status, detailHasShortage || detail.hasShortage)}
+              </Tag>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {formatWhen(detail.transferDate)}
+              </Typography.Text>
+            </div>
+            <div className="transfer-detail-route">
+              <div>
+                <span className="transfer-card__route-label">Từ</span> {detail.fromWarehouseName}
+              </div>
+              <div>
+                <span className="transfer-card__route-label">Đến</span> {detail.toWarehouseName}
+              </div>
+            </div>
+            {detail.shippedAt ? (
+              <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>
+                Gửi: {formatWhen(detail.shippedAt)}
+              </Typography.Text>
+            ) : null}
+            {detail.receivedAt ? (
+              <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 8 }}>
+                Nhận: {formatWhen(detail.receivedAt)}
+              </Typography.Text>
+            ) : null}
             {detail.notes ? (
-              <p>
+              <Typography.Paragraph style={{ marginBottom: 8, fontSize: 13 }}>
                 <strong>Ghi chú:</strong> {detail.notes}
-              </p>
+              </Typography.Paragraph>
             ) : null}
             {detail.receiveNotes ? (
-              <p>
-                <strong>Ghi chú nhận thiếu:</strong> {detail.receiveNotes}
-              </p>
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message="Ghi chú nhận thiếu"
+                description={detail.receiveNotes}
+              />
             ) : null}
             <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-              Chi tiết hàng
+              Chi tiết hàng ({detail.items.length})
             </Typography.Text>
             {detail.items.map((line) => {
               const short =
                 line.receivedQuantity != null && line.receivedQuantity < line.quantity;
               return (
-                <div key={line.id} className="cart-line" style={{ marginBottom: 8 }}>
+                <div key={line.id} className="transfer-detail-line">
                   <Typography.Text strong>{line.productName}</Typography.Text>
                   <Typography.Text
                     type={short ? 'danger' : 'secondary'}
                     style={{ display: 'block', fontSize: 12 }}
                   >
-                    {line.productCode} · Lô {line.batchNumber} · SL phiếu {line.quantity}
-                    {line.receivedQuantity != null
-                      ? ` · SL nhận ${line.receivedQuantity}${short ? ' (thiếu)' : ''}`
-                      : ''}
+                    {line.productCode} · Lô {line.batchNumber}
                   </Typography.Text>
+                  <div className="transfer-detail-line__qty">
+                    <span>Phiếu {line.quantity}</span>
+                    {line.receivedQuantity != null ? (
+                      <span className={short ? 'is-short' : ''}>
+                        Nhận {line.receivedQuantity}
+                        {short ? ' (thiếu)' : ''}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               );
             })}
           </>
-        ) : null}
+        )}
       </Drawer>
 
       <Drawer
@@ -618,8 +854,9 @@ export function TransfersPage() {
         height="88%"
         open={receiveOpen}
         onClose={() => setReceiveOpen(false)}
-        extra={
-          <Button type="primary" loading={completing} onClick={() => void handleReceiveConfirm()}>
+        styles={{ body: { paddingBottom: 80 } }}
+        footer={
+          <Button type="primary" block size="large" loading={completing} onClick={() => void handleReceiveConfirm()}>
             Xác nhận nhận
           </Button>
         }
@@ -630,12 +867,13 @@ export function TransfersPage() {
               Nhập SL thực nhận (≤ SL phiếu). Phần thiếu hoàn về kho xuất; phải ghi chú khi thiếu.
             </Typography.Text>
             {detail.items.map((line) => (
-              <div key={line.id} className="cart-line" style={{ marginBottom: 12 }}>
+              <div key={line.id} className="transfer-detail-line" style={{ marginBottom: 12 }}>
                 <Typography.Text strong>{line.productName}</Typography.Text>
                 <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 6 }}>
                   Lô {line.batchNumber} · SL phiếu {line.quantity}
                 </Typography.Text>
                 <InputNumber
+                  size="large"
                   min={0}
                   max={line.quantity}
                   value={receiveQtyByItem[line.id] ?? line.quantity}

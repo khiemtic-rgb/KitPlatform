@@ -26,11 +26,13 @@ function normalizeMessage(row: Record<string, unknown>): ChatMessage {
 }
 
 export async function fetchChatThreads(): Promise<ChatThread[]> {
-  const { data } = await http.get<{ items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }>(
-    '/sales/customer-chat/threads',
-  );
-  const rows = data.items ?? data.Items ?? [];
-  return rows.map(normalizeThread);
+  const { data } = await http.get<
+    Record<string, unknown> | Record<string, unknown>[] | { items?: Record<string, unknown>[]; Items?: Record<string, unknown>[] }
+  >('/sales/customer-chat/threads');
+  const rows = Array.isArray(data)
+    ? data
+    : ((data.items ?? data.Items ?? []) as Record<string, unknown>[]);
+  return rows.map(normalizeThread).filter((t) => t.customerId && t.customerId !== 'undefined');
 }
 
 export async function fetchChatMessages(customerId: string, limit = 50) {

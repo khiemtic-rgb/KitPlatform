@@ -117,3 +117,7 @@ export async function loadCustomerDraftOrderForPos(id: string) {
 export async function linkCustomerDraftOrderSale(draftOrderId: string, salesOrderId: string) {
   await http.post(`/sales/customer-draft-orders/${draftOrderId}/link-sale`, { salesOrderId });
 }
+
+export async function cancelCustomerDraftOrder(id: string): Promise<void> {
+  await http.post(`/sales/customer-draft-orders/${id}/cancel`);
+}

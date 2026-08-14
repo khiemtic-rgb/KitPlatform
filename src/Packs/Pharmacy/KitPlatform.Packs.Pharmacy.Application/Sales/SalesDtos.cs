@@ -14,6 +14,12 @@ public sealed record CustomerListItemDto(
     decimal GroupDiscountPercent = 0,
     string PharmacyRelation = "member");
 
+public sealed record PagedCustomerSearchResult(
+    IReadOnlyList<CustomerListItemDto> Items,
+    int Total,
+    int Page,
+    int PageSize);
+
 public sealed record PosBatchHintDto(
     Guid BatchId,
     string BatchNumber,

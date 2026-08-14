@@ -2,8 +2,10 @@
 
 public interface ISalesService
 {
-    Task<IReadOnlyList<CustomerListItemDto>> SearchCustomersAsync(
+    Task<PagedCustomerSearchResult> SearchCustomersAsync(
         string? search = null,
+        int page = 1,
+        int pageSize = 30,
         CancellationToken cancellationToken = default);
 
     Task<PosProductLookupDto?> LookupProductAsync(

@@ -18,14 +18,36 @@ export const RESERVATION_STATUS_LABEL: Record<number, string> = {
   6: 'Từ chối',
 };
 
+export const RESERVATION_STATUS_COLOR: Record<number, string> = {
+  1: 'gold',
+  2: 'blue',
+  3: 'green',
+  4: 'default',
+  5: 'default',
+  6: 'error',
+};
+
+export const RESERVATION_FULFILLMENT = {
+  Pickup: 1,
+  Delivery: 2,
+} as const;
+
+export const RESERVATION_FULFILLMENT_LABEL: Record<number, string> = {
+  1: 'Đến lấy',
+  2: 'Giao hàng',
+};
+
 export interface ReservationListItem {
   id: string;
   reservationNumber: string;
+  customerId: string;
   status: number;
+  fulfillmentType: number;
   customerName: string;
   customerPhone: string | null;
   itemCount: number;
   submittedAt: string;
+  readyAt?: string | null;
 }
 
 export interface ReservationPosLoad {
@@ -47,13 +69,16 @@ function normalizeListItem(row: Record<string, unknown>): ReservationListItem {
   return {
     id: String(row.id ?? row.Id),
     reservationNumber: String(row.reservationNumber ?? row.ReservationNumber ?? ''),
+    customerId: String(row.customerId ?? row.CustomerId ?? ''),
     status: Number(row.status ?? row.Status ?? 1),
+    fulfillmentType: Number(row.fulfillmentType ?? row.FulfillmentType ?? 1),
     customerName: String(row.customerName ?? row.CustomerName ?? ''),
     customerPhone: (row.customerPhone ?? row.CustomerPhone) as string | null,
     itemCount: Number(row.itemCount ?? row.ItemCount ?? 0),
     submittedAt: String(
       row.submittedAt ?? row.SubmittedAt ?? row.requestedAt ?? row.RequestedAt ?? '',
     ),
+    readyAt: (row.readyAt ?? row.ReadyAt) as string | null | undefined,
   };
 }
 

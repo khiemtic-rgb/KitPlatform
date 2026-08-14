@@ -7,11 +7,16 @@ export interface CustomerAdminListItem {
   allowCredit?: boolean;
   creditLimit?: number | null;
   currentOutstanding?: number;
+  customerGroupName?: string | null;
+  groupDiscountPercent?: number;
+  pharmacyRelation?: string;
+  appLastLoginAt?: string | null;
 }
 
 export interface CustomerDetail extends CustomerAdminListItem {
   email?: string | null;
   status?: number;
+  addressLine?: string | null;
 }
 
 export interface UpdateCustomerCreditPayload {
@@ -29,6 +34,14 @@ export interface CustomerPilotOtpStatus {
   code: string | null;
   expiresAt: string | null;
   createdAt: string | null;
+}
+
+export interface IssueCounterPilotOtpResult {
+  customerId: string;
+  phone: string;
+  pilotCode?: string | null;
+  expiresAt?: string | null;
+  message: string;
 }
 
 export interface PagedCustomersResult {

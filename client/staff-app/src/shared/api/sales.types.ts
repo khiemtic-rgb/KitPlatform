@@ -119,6 +119,11 @@ export interface CustomerListItem {
   fullName: string;
   phone: string;
   allowCredit?: boolean;
+  creditLimit?: number | null;
+  currentOutstanding?: number;
+  customerGroupName?: string | null;
+  groupDiscountPercent?: number;
+  pharmacyRelation?: string;
 }
 
 export interface SalesOrderItem {
@@ -141,10 +146,15 @@ export interface SalesOrderItem {
 export interface SalesOrderListItem {
   id: string;
   orderNumber: string;
+  warehouseId?: string;
+  warehouseName?: string;
+  customerId?: string | null;
   customerName?: string;
   orderDate: string;
   totalAmount: number;
+  itemCount?: number;
   status: number;
+  shiftNumber?: string | null;
 }
 
 export interface SalesOrderDetailFull extends SalesOrderDetail {

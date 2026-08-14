@@ -47,10 +47,12 @@ public sealed class SalesController : ControllerBase
 
     [HttpGet("customers")]
     [Authorize(Policy = SalesPolicies.Read)]
-    public async Task<ActionResult<IReadOnlyList<CustomerListItemDto>>> Customers(
+    public async Task<ActionResult<PagedCustomerSearchResult>> Customers(
         [FromQuery] string? search,
-        CancellationToken cancellationToken) =>
-        Ok(await _sales.SearchCustomersAsync(search, cancellationToken));
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 30,
+        CancellationToken cancellationToken = default) =>
+        Ok(await _sales.SearchCustomersAsync(search, page, pageSize, cancellationToken));
 
     [HttpGet("pos/customer-loyalty")]
     [Authorize(Policy = SalesPolicies.Read)]

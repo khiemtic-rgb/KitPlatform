@@ -141,14 +141,36 @@ internal sealed class CustomerReservationService : ICustomerReservationService
     public async Task<CustomerReservationDto> RejectAsync(
         Guid tenantId,
         Guid reservationId,
-        CancellationToken cancellationToken = default) =>
-        await TransitionAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureStaffAccessAsync(tenantId, reservationId, cancellationToken);
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+
+        var status = await _repo.GetStatusAsync(tenantId, reservationId, customerId: null, conn, tx, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy yêu cầu đặt trước.");
+
+        if (status is not (
+            CustomerReservationStatuses.Pending
+            or CustomerReservationStatuses.Confirmed
+            or CustomerReservationStatuses.Ready))
+        {
+            throw new InvalidOperationException(
+                "Chỉ từ chối/hủy được đơn đang chờ, đã xác nhận hoặc sẵn sàng lấy.");
+        }
+
+        await _repo.UpdateStatusAsync(
             tenantId,
             reservationId,
-            CustomerReservationStatuses.Pending,
             CustomerReservationStatuses.Rejected,
-            "Chỉ từ chối được yêu cầu đang chờ.",
+            conn,
+            tx,
             cancellationToken);
+        await tx.CommitAsync(cancellationToken);
+
+        return (await GetForStaffAsync(tenantId, reservationId, cancellationToken))!;
+    }
 
     public async Task<CustomerReservationDto> MarkReadyAsync(
         Guid tenantId,

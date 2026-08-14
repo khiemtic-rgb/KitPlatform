@@ -9,9 +9,15 @@ import {
   Select,
   Space,
   Switch,
+  Tag,
   Typography,
 } from 'antd';
-import { ArrowLeftOutlined, MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  MinusCircleOutlined,
+  PhoneOutlined,
+  PlusOutlined,
+  ShoppingCartOutlined,
+} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import {
   completeDraftSale,
@@ -36,7 +42,7 @@ import {
 } from '@/shared/api/sales.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { formatMoney } from '@/shared/utils/money';
-import { priceCart, roundMoney } from '@/modules/sales/pos-pricing';
+import { priceCart, roundMoney, lineNet } from '@/modules/sales/pos-pricing';
 import { buildCreateSalePayload, buildDraftCompletePayload } from '@/modules/sales/pos-sale-payload';
 import { defaultOrderReminderLabel } from '@/modules/sales/order-reminder-label';
 import { validateCartBatchLabels } from '@/modules/sales/pos-batch';
@@ -64,9 +70,9 @@ import { useSalesDiscountPolicy } from '@/modules/sales/useSalesDiscountPolicy';
 import { useCanSalesWrite } from '@/shared/auth/usePermission';
 import {
   linkReservationSale,
-  markReservationCollected,
 } from '@/shared/api/reservations.api';
 import { linkCustomerDraftOrderSale } from '@/shared/api/customer-draft-orders.api';
+import { StaffPageHeader } from '@/shared/layout/StaffPageHeader';
 
 const moneyProps = {
   style: { width: '100%' },
@@ -75,11 +81,35 @@ const moneyProps = {
   parser: (v: string | undefined) => Number(String(v ?? '').replace(/\./g, '')) as 0,
 };
 
-function SummaryRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+function digitsOnly(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
+function hasUsablePhone(phone?: string | null): boolean {
+  const d = digitsOnly(phone ?? '');
+  return d.length >= 9 && d.length <= 12;
+}
+
+function roundUpCash(amount: number, step: number): number {
+  if (amount <= 0) return 0;
+  return Math.ceil(amount / step) * step;
+}
+
+function SummaryRow({
+  label,
+  value,
+  strong,
+  muted,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+  muted?: boolean;
+}) {
   return (
-    <div className="checkout-summary-row">
-      <Typography.Text type={strong ? undefined : 'secondary'}>{label}</Typography.Text>
-      <Typography.Text strong={strong}>{value}</Typography.Text>
+    <div className={`checkout-summary-row${strong ? ' is-strong' : ''}${muted ? ' is-muted' : ''}`}>
+      <span>{label}</span>
+      <span>{value}</span>
     </div>
   );
 }
@@ -95,9 +125,13 @@ export function CheckoutPage() {
     setOrderDiscount,
     clearCart,
     loadedReservationId,
+    loadedReservationNumber,
     loadedCustomerDraftOrderId,
+    loadedCustomerDraftNumber,
     loadedPrescriptionId,
+    loadedPrescriptionCode,
     editingDraftId,
+    editingDraftNumber,
     clearDraftEdit,
   } = usePosSession();
 
@@ -111,7 +145,10 @@ export function CheckoutPage() {
     [customer?.allowCredit],
   );
   const [batchMode, setBatchMode] = useState<TenantBatchModeValue>('suggest');
-  const [rxSettings, setRxSettings] = useState<TenantRxSettings>({ enforcementMode: 'off', posBlockedAudit: true });
+  const [rxSettings, setRxSettings] = useState<TenantRxSettings>({
+    enforcementMode: 'off',
+    posBlockedAudit: true,
+  });
   const [shiftReady, setShiftReady] = useState<boolean | null>(null);
   const [vouchers, setVouchers] = useState<PosCustomerVoucher[]>([]);
   const [selectedVoucherId, setSelectedVoucherId] = useState<string>();
@@ -166,6 +203,20 @@ export function CheckoutPage() {
       ? loyaltyPointsForDiscount(loyaltyDiscount, customerLoyalty)
       : 0;
   const isFreeOrder = payableTotal < 0.01;
+  const itemQty = useMemo(() => cart.reduce((sum, line) => sum + Number(line.quantity || 0), 0), [cart]);
+
+  const sourceLabel = useMemo(() => {
+    if (loadedReservationNumber) return `Giữ hàng ${loadedReservationNumber}`;
+    if (loadedCustomerDraftNumber) return `Đơn nháp app ${loadedCustomerDraftNumber}`;
+    if (loadedPrescriptionCode) return `Đơn thuốc ${loadedPrescriptionCode}`;
+    if (editingDraftNumber) return `Nháp quầy ${editingDraftNumber}`;
+    return null;
+  }, [
+    loadedReservationNumber,
+    loadedCustomerDraftNumber,
+    loadedPrescriptionCode,
+    editingDraftNumber,
+  ]);
 
   useEffect(() => {
     if (!customer?.id || priced.totalAmount <= 0) {
@@ -179,7 +230,9 @@ export function CheckoutPage() {
     void fetchPosCustomerVouchers(customer.id, priced.totalAmount)
       .then((items) => {
         setVouchers(items);
-        setSelectedVoucherId((prev) => (prev && items.some((v) => v.customerVoucherId === prev) ? prev : undefined));
+        setSelectedVoucherId((prev) =>
+          prev && items.some((v) => v.customerVoucherId === prev) ? prev : undefined,
+        );
       })
       .catch(() => setVouchers([]));
     void fetchPosCustomerLoyalty(customer.id, priced.totalAmount).then(setCustomerLoyalty);
@@ -210,7 +263,8 @@ export function CheckoutPage() {
 
   const singleCash = !isFreeOrder && isSingleCashPayment(payments);
   const cashTendered = singleCash ? Number(payments[0]?.amount ?? 0) : 0;
-  const changeDue = singleCash && cashTendered > payableTotal + 0.009 ? cashTendered - payableTotal : 0;
+  const changeDue =
+    singleCash && cashTendered > payableTotal + 0.009 ? cashTendered - payableTotal : 0;
   const paidTotal = isFreeOrder ? 0 : computeAppliedPayment(payments, payableTotal);
   const creditAmount = computeCreditAmount(payments, payableTotal, isFreeOrder);
   const paymentOk =
@@ -220,6 +274,14 @@ export function CheckoutPage() {
       allowCredit: Boolean(customer?.allowCredit),
     });
 
+  const paymentBlockReason = !paymentOk
+    ? creditAmount > 0.009 && !customer?.allowCredit
+      ? 'Khách chưa được phép ghi nợ'
+      : 'Tổng thu + ghi nợ phải bằng số phải thu'
+    : shiftReady === false
+      ? 'Chưa mở ca'
+      : null;
+
   const updatePayment = (index: number, patch: Partial<PosCheckoutPaymentLine>) => {
     setPayments((prev) => {
       const next = prev.map((row, i) => (i === index ? { ...row, ...patch } : row));
@@ -228,19 +290,35 @@ export function CheckoutPage() {
     });
   };
 
+  const setCashAmount = (amount: number) => {
+    setPayments([{ paymentMethod: SALES_PAYMENT_CASH, amount: roundMoney(amount) }]);
+  };
+
+  const setFullCredit = () => {
+    if (!customer?.allowCredit) {
+      message.warning('Khách chưa được phép ghi nợ');
+      return;
+    }
+    setPayments([{ paymentMethod: SALES_PAYMENT_CREDIT, amount: payableTotal }]);
+  };
+
   const addPayment = () => {
     setPayments((prev) => {
-      const allocated = singleCash
-        ? payableTotal
-        : roundMoney(sumNonCreditPayments(prev));
+      const allocated = singleCash ? payableTotal : roundMoney(sumNonCreditPayments(prev));
       const remaining = Math.max(0, payableTotal - allocated);
       if (prev.length === 1 && Math.abs(allocated - payableTotal) < 0.01) {
         return rebalanceFirstRow(
-          [{ ...prev[0], amount: 0 }, { paymentMethod: SALES_PAYMENT_CASH, amount: 0 }],
+          [
+            { ...prev[0], amount: 0 },
+            { paymentMethod: SALES_PAYMENT_CASH, amount: 0 },
+          ],
           payableTotal,
         );
       }
-      return rebalanceFirstRow([...prev, { paymentMethod: SALES_PAYMENT_CASH, amount: remaining }], payableTotal);
+      return rebalanceFirstRow(
+        [...prev, { paymentMethod: SALES_PAYMENT_CASH, amount: remaining }],
+        payableTotal,
+      );
     });
   };
 
@@ -282,6 +360,17 @@ export function CheckoutPage() {
 
     setSaving(true);
     try {
+      const invalidLine = cart.find(
+        (line) => !line.productUnitId || !line.productId || Number(line.quantity) <= 0,
+      );
+      if (invalidLine) {
+        message.error(
+          `${invalidLine.productName || invalidLine.productCode || 'Sản phẩm'}: dòng không hợp lệ — quay POS chọn lại.`,
+        );
+        setSaving(false);
+        return;
+      }
+
       const stockMap = await fetchPosStockBulk(
         warehouseId,
         cart.map((c) => c.productUnitId),
@@ -319,7 +408,10 @@ export function CheckoutPage() {
 
       const apiPayments = isFreeOrder
         ? []
-        : normalizePaymentsForApi(payments.length > 0 ? payments : defaultPayments(payableTotal), payableTotal);
+        : normalizePaymentsForApi(
+            payments.length > 0 ? payments : defaultPayments(payableTotal),
+            payableTotal,
+          );
 
       const order = editingDraftId
         ? await completeDraftSale(editingDraftId, {
@@ -341,8 +433,8 @@ export function CheckoutPage() {
 
       if (loadedReservationId) {
         try {
+          // link-sale đã gắn SO + chuyển Collected — không gọi /collected thêm (sẽ lỗi Ready→Collected).
           await linkReservationSale(loadedReservationId, order.id);
-          await markReservationCollected(loadedReservationId);
         } catch {
           message.warning('Đã bán nhưng chưa cập nhật trạng thái giữ hàng');
         }
@@ -369,12 +461,11 @@ export function CheckoutPage() {
 
   return (
     <div className="staff-shell">
-      <header className="staff-header">
-        <Space>
-          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)} />
-          <Typography.Text strong>Thanh toán</Typography.Text>
-        </Space>
-      </header>
+      <StaffPageHeader
+        title="Thanh toán"
+        subtitle={`${itemQty} SP · ${formatMoney(payableTotal)}`}
+        backTo="/pos"
+      />
 
       <main className="staff-body checkout-body">
         {shiftReady === false ? (
@@ -383,26 +474,275 @@ export function CheckoutPage() {
             showIcon
             message="Chưa mở ca"
             description="Quay lại POS và mở ca trước khi thanh toán."
-            style={{ marginBottom: 16 }}
+            action={
+              <Button size="small" onClick={() => navigate('/pos')}>
+                Về POS
+              </Button>
+            }
+            style={{ marginBottom: 12 }}
           />
         ) : null}
 
-        <div className="checkout-total-card">
-          <Typography.Title level={2} style={{ margin: 0, color: '#0f766e' }}>
-            {formatMoney(payableTotal)}
-          </Typography.Title>
-          <Typography.Text type="secondary">{cart.length} sản phẩm</Typography.Text>
-        </div>
+        {sourceLabel ? (
+          <Alert
+            type="info"
+            showIcon
+            className="checkout-source"
+            message={sourceLabel}
+            description="Hoàn tất sẽ gắn đơn bán với nguồn này."
+            style={{ marginBottom: 12 }}
+          />
+        ) : null}
 
-        <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-          Khách: {customer ? `${customer.fullName} · ${customer.phone}` : 'Khách lẻ'}
-          {customer?.allowCredit ? ' · được ghi nợ' : customer ? ' · không được nợ' : ''}
-        </Typography.Text>
+        <section className="checkout-hero">
+          <Typography.Text type="secondary" className="checkout-hero__label">
+            Phải thu
+          </Typography.Text>
+          <div className="checkout-hero__amount">{formatMoney(payableTotal)}</div>
+          <Typography.Text type="secondary" className="checkout-hero__meta">
+            {cart.length} dòng · {itemQty} sản phẩm
+          </Typography.Text>
+        </section>
+
+        <section className="checkout-customer">
+          <div className="checkout-customer__main">
+            <Typography.Text strong>{customer?.fullName || 'Khách lẻ'}</Typography.Text>
+            {customer ? (
+              <div className="checkout-customer__meta">
+                {hasUsablePhone(customer.phone) ? (
+                  <a className="checkout-customer__phone" href={`tel:${digitsOnly(customer.phone)}`}>
+                    <PhoneOutlined /> {customer.phone}
+                  </a>
+                ) : (
+                  <span className="checkout-customer__phone-missing">Chưa có SĐT</span>
+                )}
+                {customer.allowCredit ? (
+                  <Tag color="green">Được ghi nợ</Tag>
+                ) : (
+                  <Tag>Không ghi nợ</Tag>
+                )}
+              </div>
+            ) : (
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                Chưa chọn khách — không đổi điểm / voucher / nhắc hết đơn.
+              </Typography.Text>
+            )}
+          </div>
+          <Button
+            type="text"
+            icon={<ShoppingCartOutlined />}
+            aria-label="Sửa giỏ"
+            onClick={() => navigate('/pos')}
+          >
+            Giỏ
+          </Button>
+        </section>
+
+        {customer && !customer.allowCredit && canEditCustomerCredit ? (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="Khách chưa được phép ghi nợ"
+            description="Vào Khách + OTP → chọn khách → Cài đặt ghi nợ nếu quản lý đồng ý."
+          />
+        ) : null}
+
+        <section className="checkout-panel">
+          <div className="checkout-panel__title">Sản phẩm</div>
+          <ul className="checkout-lines">
+            {cart.map((line) => (
+              <li key={line.key} className="checkout-lines__item">
+                <div className="checkout-lines__name">
+                  <Typography.Text ellipsis>{line.productName}</Typography.Text>
+                  <Typography.Text type="secondary" className="checkout-lines__sub">
+                    {line.productCode} · {line.quantity} {line.unitName}
+                    {line.batchLabel ? ` · Lô ${line.batchLabel}` : ''}
+                  </Typography.Text>
+                </div>
+                <Typography.Text strong className="checkout-lines__amt">
+                  {formatMoney(lineNet(line))}
+                </Typography.Text>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="checkout-panel">
+          <div className="checkout-panel__title">Tóm tắt tiền</div>
+          <SummaryRow label="Tạm tính" value={formatMoney(priced.subtotalGross)} />
+          {priced.lineDiscountTotal > 0 ? (
+            <SummaryRow label="CK dòng" value={`−${formatMoney(priced.lineDiscountTotal)}`} muted />
+          ) : null}
+          {priced.orderDiscountAmount > 0 ? (
+            <SummaryRow label="CK đơn" value={`−${formatMoney(priced.orderDiscountAmount)}`} muted />
+          ) : null}
+          {voucherDiscount > 0 ? (
+            <SummaryRow label="Voucher" value={`−${formatMoney(voucherDiscount)}`} muted />
+          ) : null}
+          {loyaltyDiscount > 0 ? (
+            <SummaryRow label="Đổi điểm" value={`−${formatMoney(loyaltyDiscount)}`} muted />
+          ) : null}
+          <SummaryRow label="Phải thu" value={formatMoney(payableTotal)} strong />
+        </section>
+
+        <section className="checkout-panel">
+          <div className="checkout-panel__title">Chiết khấu đơn</div>
+          {canDiscount ? (
+            <>
+              <div className="checkout-discount-grid">
+                <div>
+                  <Typography.Text type="secondary" className="checkout-field-label">
+                    Loại CK
+                  </Typography.Text>
+                  <Select
+                    size="large"
+                    style={{ width: '100%' }}
+                    placeholder="Chọn"
+                    allowClear
+                    value={orderDiscount.discountType}
+                    options={[
+                      { value: SALES_DISCOUNT_TYPES.Percent, label: '% phần trăm' },
+                      { value: SALES_DISCOUNT_TYPES.Fixed, label: 'Số tiền (VND)' },
+                    ]}
+                    onChange={(discountType) =>
+                      setOrderDiscount({
+                        discountType: discountType ?? undefined,
+                        discountValue: discountType ? orderDiscount.discountValue ?? 0 : undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Typography.Text type="secondary" className="checkout-field-label">
+                    Giá trị
+                    {orderDiscount.discountType === SALES_DISCOUNT_TYPES.Percent && maxPercent != null
+                      ? ` (≤ ${maxPercent}%)`
+                      : ''}
+                  </Typography.Text>
+                  <InputNumber
+                    {...moneyProps}
+                    size="large"
+                    placeholder="0"
+                    disabled={!orderDiscount.discountType}
+                    value={orderDiscount.discountValue}
+                    max={
+                      orderDiscount.discountType === SALES_DISCOUNT_TYPES.Percent && maxPercent != null
+                        ? maxPercent
+                        : undefined
+                    }
+                    onChange={(v) =>
+                      setOrderDiscount({
+                        ...orderDiscount,
+                        discountValue: Number(v ?? 0),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              {cart.some((l) => (l.discountValue ?? 0) > 0) ? (
+                <Typography.Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
+                  Đã có CK dòng trên giỏ — chỉnh lại tại POS nếu cần.
+                </Typography.Text>
+              ) : null}
+            </>
+          ) : (
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              Bạn không có quyền chiết khấu trên đơn.
+            </Typography.Text>
+          )}
+        </section>
+
+        {customer && vouchers.length > 0 ? (
+          <section className="checkout-panel">
+            <div className="checkout-panel__title">Voucher khách</div>
+            <Select
+              size="large"
+              allowClear
+              placeholder="Chọn voucher"
+              style={{ width: '100%' }}
+              value={selectedVoucherId}
+              options={vouchers.map((v) => ({
+                value: v.customerVoucherId,
+                label: `${v.voucherCode} · −${formatMoney(v.discountAmount)} (${v.voucherName})`,
+              }))}
+              onChange={(v) => setSelectedVoucherId(v)}
+            />
+          </section>
+        ) : null}
+
+        {!customer ? (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="Đổi điểm / voucher"
+            description="Quay POS chọn khách (không bán khách lẻ) để dùng điểm và voucher."
+          />
+        ) : null}
+
+        {showLoyaltyPanel && customerLoyalty ? (
+          <section className="checkout-panel checkout-panel--loyalty">
+            <div className="checkout-panel__title">Tích điểm</div>
+            <Typography.Text style={{ display: 'block', marginBottom: 8 }}>
+              {customerLoyalty.pointsBalance > 0
+                ? `Điểm: ${customerLoyalty.pointsBalance.toLocaleString()} · ≈ ${formatMoney(loyaltyPointsValue(customerLoyalty))}`
+                : `Chưa có điểm · tích ${formatMoney(customerLoyalty.pointsPerAmount)} / điểm`}
+            </Typography.Text>
+            {canRedeem ? (
+              <Space direction="vertical" size={10} style={{ width: '100%' }}>
+                <div className="checkout-switch-row">
+                  <Typography.Text>Đổi điểm thành tiền</Typography.Text>
+                  <Switch checked={redeemEnabled} onChange={handleRedeemToggle} disabled={saving} />
+                </div>
+                {redeemEnabled ? (
+                  <>
+                    <Typography.Text type="secondary" className="checkout-field-label">
+                      Số tiền giảm (tối đa {formatMoney(maxRedeemMoney)})
+                    </Typography.Text>
+                    <InputNumber
+                      {...moneyProps}
+                      size="large"
+                      min={0}
+                      max={maxRedeemMoney}
+                      value={redeemDiscountAmount}
+                      disabled={saving}
+                      onChange={handleRedeemAmountChange}
+                    />
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      Còn phải thu: {formatMoney(payableTotal)}
+                      {loyaltyDiscount > 0
+                        ? ` · ≈ ${redeemPointsUsed.toLocaleString(undefined, { maximumFractionDigits: 2 })} điểm`
+                        : ''}
+                    </Typography.Text>
+                  </>
+                ) : null}
+              </Space>
+            ) : (
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {customerLoyalty.pointsBalance <= 0
+                  ? 'Khách chưa có điểm để đổi'
+                  : `Đơn hiện tại không đủ điều kiện đổi điểm (tối đa ${formatMoney(maxRedeemMoney)})`}
+              </Typography.Text>
+            )}
+          </section>
+        ) : customer ? (
+          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 12 }}>
+            Tích điểm chưa bật cho nhà thuốc này.
+          </Typography.Text>
+        ) : null}
 
         {customer ? (
-          <div className="checkout-panel" style={{ marginBottom: 16 }}>
-            <Space align="center" style={{ marginBottom: 8, width: '100%', justifyContent: 'space-between' }}>
-              <Typography.Text strong>Lịch nhắc hết đơn</Typography.Text>
+          <section className="checkout-panel">
+            <div className="checkout-switch-row">
+              <div>
+                <div className="checkout-panel__title" style={{ marginBottom: 0 }}>
+                  Lịch nhắc hết đơn
+                </div>
+                <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                  Gợi ý mua lại khi hết liệu trình
+                </Typography.Text>
+              </div>
               <Switch
                 checked={orderReminderEnabled}
                 disabled={saving}
@@ -415,110 +755,142 @@ export function CheckoutPage() {
                   }
                 }}
               />
-            </Space>
+            </div>
             {orderReminderEnabled ? (
-              <Space direction="vertical" style={{ width: '100%' }} size={8}>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  Tạo gợi ý mua lại + nhắc uống khi hết liệu trình.
+              <div className="checkout-reminder-fields">
+                <Typography.Text type="secondary" className="checkout-field-label">
+                  Nhãn nhắc
                 </Typography.Text>
                 <Input
+                  size="large"
                   maxLength={120}
                   value={orderReminderLabel}
                   disabled={saving}
                   placeholder={defaultOrderReminderLabel()}
                   onChange={(e) => setOrderReminderLabel(e.target.value)}
                 />
-                <Space align="center">
-                  <Typography.Text type="secondary">Số ngày dùng</Typography.Text>
-                  <InputNumber
-                    min={1}
-                    max={730}
-                    value={orderReminderDaysSupply}
-                    disabled={saving}
-                    onChange={(value) => setOrderReminderDaysSupply(Math.max(1, Number(value ?? 30)))}
-                  />
-                </Space>
-              </Space>
+                <Typography.Text type="secondary" className="checkout-field-label">
+                  Số ngày dùng
+                </Typography.Text>
+                <InputNumber
+                  size="large"
+                  style={{ width: '100%' }}
+                  min={1}
+                  max={730}
+                  value={orderReminderDaysSupply}
+                  disabled={saving}
+                  onChange={(value) => setOrderReminderDaysSupply(Math.max(1, Number(value ?? 30)))}
+                />
+              </div>
             ) : null}
-          </div>
+          </section>
         ) : null}
 
-        {customer && !customer.allowCredit && canEditCustomerCredit ? (
-          <Alert
-            type="info"
-            showIcon
-            style={{ marginBottom: 12 }}
-            message="Khách chưa được phép ghi nợ"
-            description="Vào Khách + OTP → chọn khách → Cài đặt ghi nợ nếu quản lý đồng ý."
-          />
-        ) : null}
+        <section className="checkout-panel">
+          <div className="checkout-panel__title">Hình thức thu</div>
 
-        <div className="checkout-panel">
-          <SummaryRow label="Tạm tính" value={formatMoney(priced.subtotalGross)} />
-          {priced.lineDiscountTotal > 0 ? (
-            <SummaryRow label="Chiết khấu dòng" value={`−${formatMoney(priced.lineDiscountTotal)}`} />
-          ) : null}
-          {priced.orderDiscountAmount > 0 ? (
-            <SummaryRow label="Chiết khấu đơn" value={`−${formatMoney(priced.orderDiscountAmount)}`} />
-          ) : null}
-          {voucherDiscount > 0 ? (
-            <SummaryRow label="Voucher" value={`−${formatMoney(voucherDiscount)}`} />
-          ) : null}
-          {loyaltyDiscount > 0 ? (
-            <SummaryRow label="Đổi điểm" value={`−${formatMoney(loyaltyDiscount)}`} />
-          ) : null}
-          <SummaryRow label="Phải thu" value={formatMoney(payableTotal)} strong />
-        </div>
+          {isFreeOrder ? (
+            <Alert type="success" showIcon message="Đơn miễn phí sau chiết khấu / voucher" />
+          ) : (
+            <>
+              {singleCash ? (
+                <div className="checkout-cash-presets">
+                  <Button size="middle" onClick={() => setCashAmount(payableTotal)}>
+                    Đủ
+                  </Button>
+                  <Button size="middle" onClick={() => setCashAmount(roundUpCash(payableTotal, 1000))}>
+                    Tròn 1k
+                  </Button>
+                  <Button size="middle" onClick={() => setCashAmount(roundUpCash(payableTotal, 5000))}>
+                    Tròn 5k
+                  </Button>
+                  <Button size="middle" onClick={() => setCashAmount(roundUpCash(payableTotal, 10000))}>
+                    Tròn 10k
+                  </Button>
+                  {customer?.allowCredit ? (
+                    <Button size="middle" onClick={setFullCredit}>
+                      Ghi nợ hết
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
 
-        <Typography.Text strong style={{ display: 'block', margin: '16px 0 8px' }}>
-          Chiết khấu đơn
-        </Typography.Text>
-        {canDiscount ? (
-        <Space.Compact style={{ width: '100%', marginBottom: 16 }}>
-          <Select
-            style={{ width: '38%' }}
-            placeholder="Loại CK"
-            allowClear
-            value={orderDiscount.discountType}
-            options={[
-              { value: SALES_DISCOUNT_TYPES.Percent, label: '%' },
-              { value: SALES_DISCOUNT_TYPES.Fixed, label: 'VND' },
-            ]}
-            onChange={(discountType) =>
-              setOrderDiscount({
-                discountType: discountType ?? undefined,
-                discountValue: discountType ? orderDiscount.discountValue ?? 0 : undefined,
-              })
-            }
-          />
-          <InputNumber
-            {...moneyProps}
-            style={{ width: '62%' }}
-            placeholder="Giá trị"
-            disabled={!orderDiscount.discountType}
-            value={orderDiscount.discountValue}
-            onChange={(v) =>
-              setOrderDiscount({
-                ...orderDiscount,
-                discountValue: Number(v ?? 0),
-              })
-            }
-          />
-        </Space.Compact>
-        ) : (
-          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 12 }}>
-            Bạn không có quyền chiết khấu trên đơn.
-          </Typography.Text>
-        )}
+              {payments.length >= 2 ? (
+                <Alert
+                  type="info"
+                  showIcon
+                  message="Chia nhiều hình thức — dòng đầu tự cân theo các dòng còn lại"
+                  style={{ marginBottom: 10 }}
+                />
+              ) : null}
+
+              {payments.map((row, index) => {
+                const autoSplit = index === 0 && payments.length > 1;
+                return (
+                  <div key={index} className="checkout-payment-row">
+                    <Select
+                      size="large"
+                      style={{ flex: 1.1 }}
+                      value={row.paymentMethod}
+                      options={paymentMethodOptions}
+                      onChange={(paymentMethod) => updatePayment(index, { paymentMethod })}
+                    />
+                    <InputNumber
+                      {...moneyProps}
+                      size="large"
+                      style={{ flex: 1 }}
+                      value={row.amount}
+                      disabled={autoSplit}
+                      onChange={(v) => updatePayment(index, { amount: Number(v ?? 0) })}
+                    />
+                    {payments.length > 1 ? (
+                      <Button
+                        type="text"
+                        danger
+                        className="checkout-payment-remove"
+                        icon={<MinusCircleOutlined />}
+                        aria-label="Xóa hình thức"
+                        onClick={() => removePayment(index)}
+                      />
+                    ) : null}
+                  </div>
+                );
+              })}
+
+              <Button
+                type="dashed"
+                block
+                size="large"
+                icon={<PlusOutlined />}
+                onClick={addPayment}
+                style={{ marginBottom: 10 }}
+              >
+                Thêm hình thức thu
+              </Button>
+
+              <SummaryRow label="Đã thu" value={formatMoney(paidTotal)} />
+              {creditAmount > 0.009 ? (
+                <SummaryRow label="Ghi nợ" value={formatMoney(creditAmount)} />
+              ) : null}
+              {changeDue > 0 ? (
+                <SummaryRow label="Tiền thối" value={formatMoney(changeDue)} strong />
+              ) : null}
+
+              {!paymentOk ? (
+                <Alert type="warning" showIcon style={{ marginTop: 10 }} message={paymentBlockReason} />
+              ) : null}
+            </>
+          )}
+        </section>
 
         {cart.some((l) => (l.discountValue ?? 0) > 0) ? (
           <Collapse
             ghost
-            style={{ marginBottom: 12 }}
+            style={{ marginBottom: 8 }}
             items={[
               {
                 key: 'lines',
-                label: 'Chiết khấu theo dòng (chỉnh tại POS)',
+                label: 'Gợi ý: CK dòng chỉnh tại POS',
                 children: (
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     Quay lại giỏ hàng → nhập CK dòng (% hoặc ₫) trên từng sản phẩm.
@@ -528,175 +900,31 @@ export function CheckoutPage() {
             ]}
           />
         ) : null}
-
-        {customer && vouchers.length > 0 ? (
-          <>
-            <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-              Voucher khách
-            </Typography.Text>
-            <Select
-              allowClear
-              placeholder="Chọn voucher"
-              style={{ width: '100%', marginBottom: 16 }}
-              value={selectedVoucherId}
-              options={vouchers.map((v) => ({
-                value: v.customerVoucherId,
-                label: `${v.voucherCode} · −${formatMoney(v.discountAmount)} (${v.voucherName})`,
-              }))}
-              onChange={(v) => setSelectedVoucherId(v)}
-            />
-          </>
-        ) : null}
-
-        {!customer ? (
-          <Alert
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-            message="Đổi điểm loyalty"
-            description="Quay lại POS và chọn khách (không bán khách lẻ) để trừ điểm thành tiền."
-          />
-        ) : null}
-
-        {showLoyaltyPanel && customerLoyalty ? (
-          <Alert
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-            message={
-              customerLoyalty.pointsBalance > 0
-                ? `Điểm: ${customerLoyalty.pointsBalance.toLocaleString()} · ≈ ${formatMoney(loyaltyPointsValue(customerLoyalty))}`
-                : `Chưa có điểm · tích ${formatMoney(customerLoyalty.pointsPerAmount)} / điểm`
-            }
-            description={
-              canRedeem ? (
-                <Space direction="vertical" size={10} style={{ width: '100%', marginTop: 8 }}>
-                  <Space align="center">
-                    <Typography.Text>Đổi điểm thành tiền</Typography.Text>
-                    <Switch checked={redeemEnabled} onChange={handleRedeemToggle} disabled={saving} />
-                  </Space>
-                  {redeemEnabled ? (
-                    <>
-                      <div>
-                        <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-                          Số tiền giảm (tối đa {formatMoney(maxRedeemMoney)})
-                        </Typography.Text>
-                        <InputNumber
-                          {...moneyProps}
-                          min={0}
-                          max={maxRedeemMoney}
-                          value={redeemDiscountAmount}
-                          disabled={saving}
-                          onChange={handleRedeemAmountChange}
-                        />
-                      </div>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        Còn phải thu: {formatMoney(payableTotal)}
-                        {loyaltyDiscount > 0
-                          ? ` · ≈ ${redeemPointsUsed.toLocaleString(undefined, { maximumFractionDigits: 2 })} điểm`
-                          : ''}
-                      </Typography.Text>
-                    </>
-                  ) : null}
-                </Space>
-              ) : (
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {customerLoyalty.pointsBalance <= 0
-                    ? 'Khách chưa có điểm để đổi'
-                    : `Đơn hiện tại không đủ điều kiện đổi điểm (tối đa ${formatMoney(maxRedeemMoney)})`}
-                </Typography.Text>
-              )
-            }
-          />
-        ) : customer ? (
-          <Alert
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-            message="Chưa bật tích điểm"
-            description="Bật loyalty trong admin → Cài đặt bán hàng → Tích điểm."
-          />
-        ) : null}
-
-        <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-          Hình thức thu
-        </Typography.Text>
-
-        {isFreeOrder ? (
-          <Alert type="success" showIcon message="Đơn miễn phí sau chiết khấu / voucher" style={{ marginBottom: 12 }} />
-        ) : (
-          <>
-            {payments.length >= 2 ? (
-              <Alert
-                type="info"
-                showIcon
-                message="Chia nhiều hình thức — dòng đầu tự cân theo các dòng còn lại"
-                style={{ marginBottom: 12 }}
-              />
-            ) : null}
-
-            {payments.map((row, index) => {
-              const autoSplit = index === 0 && payments.length > 1;
-              return (
-                <div key={index} className="checkout-payment-row">
-                  <Select
-                    style={{ flex: 1 }}
-                    value={row.paymentMethod}
-                    options={paymentMethodOptions}
-                    onChange={(paymentMethod) => updatePayment(index, { paymentMethod })}
-                  />
-                  <InputNumber
-                    {...moneyProps}
-                    style={{ flex: 1 }}
-                    value={row.amount}
-                    disabled={autoSplit}
-                    onChange={(v) => updatePayment(index, { amount: Number(v ?? 0) })}
-                  />
-                  {payments.length > 1 ? (
-                    <Button
-                      type="text"
-                      danger
-                      icon={<MinusCircleOutlined />}
-                      onClick={() => removePayment(index)}
-                    />
-                  ) : null}
-                </div>
-              );
-            })}
-
-            <Button type="dashed" block icon={<PlusOutlined />} onClick={addPayment} style={{ marginBottom: 12 }}>
-              Thêm hình thức thu
-            </Button>
-
-            <div className="checkout-panel">
-              <SummaryRow label="Đã thu" value={formatMoney(paidTotal)} />
-              {creditAmount > 0.009 ? (
-                <SummaryRow label="Ghi nợ" value={formatMoney(creditAmount)} />
-              ) : null}
-              {changeDue > 0 ? <SummaryRow label="Tiền thối" value={formatMoney(changeDue)} /> : null}
-            </div>
-
-            {!paymentOk ? (
-              <Alert
-                type="warning"
-                showIcon
-                style={{ marginTop: 12 }}
-                message={
-                  creditAmount > 0.009 && !customer?.allowCredit
-                    ? 'Khách chưa được phép ghi nợ'
-                    : 'Tổng thu + ghi nợ phải bằng số phải thu'
-                }
-              />
-            ) : null}
-          </>
-        )}
       </main>
 
-      <footer className="staff-footer">
+      <footer className="staff-footer checkout-footer">
+        {paymentBlockReason ? (
+          <Typography.Text type="danger" className="checkout-footer__hint">
+            {paymentBlockReason}
+          </Typography.Text>
+        ) : changeDue > 0 ? (
+          <Typography.Text type="secondary" className="checkout-footer__hint">
+            Thối {formatMoney(changeDue)}
+          </Typography.Text>
+        ) : creditAmount > 0.009 ? (
+          <Typography.Text type="secondary" className="checkout-footer__hint">
+            Ghi nợ {formatMoney(creditAmount)}
+          </Typography.Text>
+        ) : (
+          <Typography.Text type="secondary" className="checkout-footer__hint">
+            {formatMoney(payableTotal)} · {itemQty} SP
+          </Typography.Text>
+        )}
         <Button
           type="primary"
           block
           size="large"
+          className="checkout-footer__btn"
           loading={saving}
           disabled={shiftReady === false || cart.length === 0 || !paymentOk}
           onClick={() => void submit()}

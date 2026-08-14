@@ -73,10 +73,16 @@ internal sealed class SalesRepository
             salesOrderId,
             cancellationToken);
 
-    public async Task<IReadOnlyList<CustomerListItemDto>> SearchCustomersAsync(
+    public async Task<PagedCustomerSearchResult> SearchCustomersAsync(
         string? search,
+        int page,
+        int pageSize,
         CancellationToken cancellationToken)
     {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var offset = (page - 1) * pageSize;
+
         var conditions = new List<string> { "c.tenant_id = @TenantId", "c.deleted_at IS NULL" };
         var param = new DynamicParameters();
         param.Add("TenantId", TenantId);
@@ -93,6 +99,13 @@ internal sealed class SalesRepository
             param.Add("Search", $"%{search.Trim()}%");
             AddPhoneDigitSearchParams(param, search, "Search");
         }
+
+        var whereSql = string.Join(" AND ", conditions);
+        var countSql = $"""
+            SELECT COUNT(*)::int
+            FROM customers c
+            WHERE {whereSql}
+            """;
 
         var sql = $"""
             SELECT
@@ -117,13 +130,18 @@ internal sealed class SalesRepository
                AND cg.tenant_id = c.tenant_id
                AND cg.deleted_at IS NULL
                AND cg.status = 1
-            WHERE {string.Join(" AND ", conditions)}
+            WHERE {whereSql}
             ORDER BY c.full_name
-            LIMIT 50
+            LIMIT @PageSize OFFSET @Offset
             """;
         param.Add("Completed", SalesOrderStatuses.Completed);
+        param.Add("PageSize", pageSize);
+        param.Add("Offset", offset);
+
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return (await conn.QueryAsync<CustomerListItemDto>(sql, param)).ToList();
+        var total = await conn.ExecuteScalarAsync<int>(countSql, param);
+        var items = (await conn.QueryAsync<CustomerListItemDto>(sql, param)).ToList();
+        return new PagedCustomerSearchResult(items, total, page, pageSize);
     }
 
     public async Task<PosProductLookupDto?> LookupByBarcodeAsync(
@@ -530,7 +548,27 @@ internal sealed class SalesRepository
                 new { ProductUnitId = item.ProductUnitId, TenantId });
 
             if (unit is null)
-                throw new InvalidOperationException($"Đơn vị sản phẩm {item.ProductUnitId} không tồn tại.");
+            {
+                var soft = await conn.QuerySingleOrDefaultAsync<(string? ProductCode, string? ProductName, DateTime? DeletedAt)>(
+                    """
+                    SELECT p.product_code AS ProductCode, p.product_name AS ProductName, p.deleted_at AS DeletedAt
+                    FROM product_units u
+                    INNER JOIN products p ON p.id = u.product_id
+                    WHERE u.id = @ProductUnitId AND u.tenant_id = @TenantId
+                    """,
+                    new { ProductUnitId = item.ProductUnitId, TenantId });
+                if (soft.DeletedAt is not null)
+                {
+                    var label = string.IsNullOrWhiteSpace(soft.ProductCode)
+                        ? (soft.ProductName ?? "Sản phẩm")
+                        : $"{soft.ProductCode} — {soft.ProductName}";
+                    throw new InvalidOperationException(
+                        $"{label} đã ngưng/xóa. Xóa dòng này và chọn lại sản phẩm đang bán trên POS.");
+                }
+
+                throw new InvalidOperationException(
+                    "Đơn vị bán không còn hiệu lực. Xóa dòng lỗi và chọn lại sản phẩm trên POS.");
+            }
 
             var batches = await _inventoryEngine.GetAvailableBatchesAsync(
                 conn, request.WarehouseId, item.ProductId, cancellationToken);

@@ -239,10 +239,13 @@ function normalizePosAllocationPreview(data: Record<string, unknown>): PosAlloca
 }
 
 export async function searchCustomers(search?: string): Promise<CustomerListItem[]> {
-  const { data } = await http.get<Record<string, unknown>[]>('/sales/customers', {
-    params: search ? { search } : undefined,
+  const { data } = await http.get<Record<string, unknown> | Record<string, unknown>[]>('/sales/customers', {
+    params: search ? { search, page: 1, pageSize: 50 } : { page: 1, pageSize: 50 },
   });
-  return data.map((row) => ({
+  const rows = Array.isArray(data)
+    ? data
+    : ((data.items ?? data.Items ?? []) as Record<string, unknown>[]);
+  return rows.map((row) => ({
     id: String(row.id ?? row.Id),
     customerCode: String(row.customerCode ?? row.CustomerCode ?? ''),
     fullName: String(row.fullName ?? row.FullName ?? ''),

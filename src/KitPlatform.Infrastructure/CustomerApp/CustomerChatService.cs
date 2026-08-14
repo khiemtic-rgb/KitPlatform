@@ -104,7 +104,17 @@ internal sealed class CustomerChatService : ICustomerChatService
         Guid tenantId,
         CancellationToken cancellationToken = default)
     {
-        var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(null, cancellationToken);
+        Guid[]? allowed;
+        try
+        {
+            (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(null, cancellationToken);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Staff chưa gán kho/chi nhánh: inbox rỗng thay vì 401 khiến app báo lỗi trùng.
+            return new AdminChatThreadListResult([]);
+        }
+
         var rows = await _repo.ListThreadsAsync(tenantId, allowed, cancellationToken);
         var items = rows.Select(row => new AdminChatThreadListItemDto(
             row.ThreadId,

@@ -122,7 +122,7 @@ export function PosPage() {
   const [shiftDrawer, setShiftDrawer] = useState(false);
   const [customerOpen, setCustomerOpen] = useState(false);
   const [customerQuery, setCustomerQuery] = useState('');
-  const [customerHits, setCustomerHits] = useState<Awaited<ReturnType<typeof searchCustomers>>>([]);
+  const [customerHits, setCustomerHits] = useState<CustomerListItem[]>([]);
   const [batchLineKey, setBatchLineKey] = useState<string | null>(null);
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
 
@@ -164,7 +164,7 @@ export function PosPage() {
         let draftCustomer: CustomerListItem | null = null;
         if (order.customerId) {
           const hits = await searchCustomers(order.customerName ?? '');
-          draftCustomer = hits.find((c) => c.id === order.customerId) ?? hits[0] ?? null;
+          draftCustomer = hits.items.find((c) => c.id === order.customerId) ?? hits.items[0] ?? null;
         }
         persistPosDraftEdit(draftId);
         loadDraftIntoSession({
@@ -867,7 +867,7 @@ export function PosPage() {
           style={{ marginTop: 12 }}
           onClick={() => {
             setCustomerOpen(true);
-            void searchCustomers('').then(setCustomerHits);
+            void searchCustomers('').then((r) => setCustomerHits(r.items));
           }}
         >
           {customer
@@ -1035,7 +1035,7 @@ export function PosPage() {
             value={customerQuery}
             onChange={(e) => {
               setCustomerQuery(e.target.value);
-              void searchCustomers(e.target.value).then(setCustomerHits);
+              void searchCustomers(e.target.value).then((r) => setCustomerHits(r.items));
             }}
             style={{ marginBottom: 12 }}
           />

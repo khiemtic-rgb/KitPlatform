@@ -39,10 +39,12 @@ internal sealed class SalesService : ISalesService
     private SalesDiscountPolicy DiscountPolicy => _permissions.GetSalesDiscountPolicy();
     private bool AllowPriceOverride => _permissions.GetSalesPriceOverridePolicy().CanOverride;
 
-    public Task<IReadOnlyList<CustomerListItemDto>> SearchCustomersAsync(
+    public Task<PagedCustomerSearchResult> SearchCustomersAsync(
         string? search = null,
+        int page = 1,
+        int pageSize = 30,
         CancellationToken cancellationToken = default) =>
-        _repository.SearchCustomersAsync(search, cancellationToken);
+        _repository.SearchCustomersAsync(search, page, pageSize, cancellationToken);
 
     public async Task<PosProductLookupDto?> LookupProductAsync(
         string query,
