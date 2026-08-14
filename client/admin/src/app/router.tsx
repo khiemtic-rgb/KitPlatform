@@ -428,9 +428,6 @@ const ContentSettingsPage = lazy(() =>
 const ContentAiSettingsPage = lazy(() =>
   import('@/modules/content/ContentAiSettingsPage').then((m) => ({ default: m.ContentAiSettingsPage })),
 );
-const ContentVideoSettingsPage = lazy(() =>
-  import('@/modules/content/ContentVideoSettingsPage').then((m) => ({ default: m.ContentVideoSettingsPage })),
-);
 const ContentBrandsPage = lazy(() =>
   import('@/modules/content/ContentBrandsPage').then((m) => ({ default: m.ContentBrandsPage })),
 );
@@ -881,7 +878,6 @@ export function AppRouter() {
                 <Route index element={<Navigate to="/content/packages" replace />} />
                 <Route path="budget" element={<ContentBudgetPage />} />
                 <Route path="ai" element={<ContentAiSettingsPage />} />
-                <Route path="video-settings" element={<ContentVideoSettingsPage />} />
                 <Route path="settings" element={<ContentSettingsPage />} />
                 <Route path="brands" element={<ContentBrandsPage />} />
                 <Route path="packages" element={<ContentPackagesPage />} />
