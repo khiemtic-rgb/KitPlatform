@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Col, Drawer, Form, Input, Row, Select, Space, Tooltip, message } from 'antd';
+import { App, Button, Col, Drawer, Form, Input, Row, Select, Space, Tooltip } from 'antd';
+import type { FormInstance } from 'antd/es/form';
 import { CloseOutlined, KeyOutlined, QuestionCircleOutlined, SaveOutlined } from '@ant-design/icons';
 import { createUser, fetchBranches, fetchEmployee, fetchEmployees, fetchRoles, updateUser } from '@/shared/api/identity-admin.api';
 import type { BranchListItem, EmployeeLookup, UserDetail } from '@/shared/api/identity-admin.types';
@@ -19,6 +20,26 @@ interface UserFormValues {
   employeeId?: string;
   branchIds?: string[];
   primaryBranchId?: string;
+}
+
+function applyUserSaveErrorToForm(form: FormInstance<UserFormValues>, errMsg: string) {
+  const lower = errMsg.toLowerCase();
+  if (lower.includes('email') || lower.includes('kitplatform')) {
+    form.setFields([{ name: 'email', errors: [errMsg] }]);
+    return;
+  }
+  if (lower.includes('đăng nhập') || lower.includes('username') || lower.includes('tên đăng nhập')) {
+    form.setFields([{ name: 'username', errors: [errMsg] }]);
+    return;
+  }
+  if (lower.includes('mật khẩu') || lower.includes('password')) {
+    const pwdField = form.getFieldValue('password') !== undefined ? 'password' : 'newPassword';
+    form.setFields([{ name: pwdField, errors: [errMsg] }]);
+    return;
+  }
+  if (lower.includes('vai trò') || lower.includes('role')) {
+    form.setFields([{ name: 'roleIds', errors: [errMsg] }]);
+  }
 }
 
 interface UserFormDrawerProps {
@@ -58,6 +79,7 @@ function seedRoleOptionsFromEditing(editing: UserDetail | null) {
 export function UserFormDrawer({ open, editing, onClose, onSaved }: UserFormDrawerProps) {
   const { t } = useTranslation('system', { keyPrefix: 'users' });
   const { t: tc } = useTranslation('common');
+  const { message } = App.useApp();
   const { userStatusOptions } = useSystemEnums();
   const [form] = Form.useForm<UserFormValues>();
   const [saving, setSaving] = useState(false);
@@ -274,7 +296,9 @@ export function UserFormDrawer({ open, editing, onClose, onSaved }: UserFormDraw
       onSaved();
       handleClose();
     } catch (error) {
-      message.error(apiErrorMessage(error, t('messages.saveFailed')));
+      const errMsg = apiErrorMessage(error, t('messages.saveFailed'));
+      applyUserSaveErrorToForm(form, errMsg);
+      message.error(errMsg);
     } finally {
       setSaving(false);
     }
@@ -306,7 +330,7 @@ export function UserFormDrawer({ open, editing, onClose, onSaved }: UserFormDraw
               rules={[{ required: true, message: t('form.usernameRequired') }]}
               style={{ marginBottom: 12 }}
             >
-              <Input autoComplete="off" placeholder="username" />
+              <Input autoComplete="off" name="novixa-new-username" placeholder="username" />
             </Form.Item>
           </Col>
           <Col span={12}>
@@ -324,12 +348,12 @@ export function UserFormDrawer({ open, editing, onClose, onSaved }: UserFormDraw
         <Row gutter={12}>
           <Col span={14}>
             <Form.Item name="employeeFullName" label={t('form.fullName')} style={{ marginBottom: 12 }}>
-              <Input placeholder={t('form.fullNamePlaceholder')} />
+              <Input autoComplete="off" name="novixa-employee-name" placeholder={t('form.fullNamePlaceholder')} />
             </Form.Item>
           </Col>
           <Col span={10}>
             <Form.Item name="employeePhone" label={t('form.phone')} style={{ marginBottom: 12 }}>
-              <Input placeholder="090..." />
+              <Input autoComplete="off" name="novixa-employee-phone" placeholder="090..." />
             </Form.Item>
           </Col>
         </Row>
@@ -339,13 +363,14 @@ export function UserFormDrawer({ open, editing, onClose, onSaved }: UserFormDraw
             <Form.Item
               name="email"
               label={t('form.email')}
+              extra={!editing ? t('form.emailUniqueHint') : undefined}
               rules={[
                 { required: true, message: t('form.emailRequired') },
                 { type: 'email', message: t('form.emailInvalid') },
               ]}
               style={{ marginBottom: 12 }}
             >
-              <Input placeholder="email@..." />
+              <Input autoComplete="off" name="novixa-user-email" placeholder="email@..." />
             </Form.Item>
           </Col>
           <Col span={10}>

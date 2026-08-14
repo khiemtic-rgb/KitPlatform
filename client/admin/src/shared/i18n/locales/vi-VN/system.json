@@ -334,6 +334,7 @@
       "email": "Email",
       "emailRequired": "Nhập email",
       "emailInvalid": "Email không hợp lệ",
+      "emailUniqueHint": "Mỗi tài khoản một email riêng — không dùng lại email admin đang đăng nhập.",
       "status": "Trạng thái",
       "password": "Mật khẩu",
       "passwordRequired": "Nhập mật khẩu",

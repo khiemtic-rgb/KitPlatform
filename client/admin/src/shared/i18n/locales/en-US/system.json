@@ -334,6 +334,7 @@
       "email": "Email",
       "emailRequired": "Enter email",
       "emailInvalid": "Invalid email",
+      "emailUniqueHint": "Each account needs its own email — do not reuse the signed-in admin email.",
       "status": "Status",
       "password": "Password",
       "passwordRequired": "Enter password",
