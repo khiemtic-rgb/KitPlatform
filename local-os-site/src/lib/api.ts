@@ -48,6 +48,12 @@ export type CommunityGroup = {
   geo: string;
 };
 
+export async function listGroups(): Promise<CommunityGroup[]> {
+  const res = await fetch(`${API}/groups`);
+  if (!res.ok) return [];
+  return (await res.json()) as CommunityGroup[];
+}
+
 export type PublishJobResult = {
   listing: LocalListing;
   shareText: string;
@@ -122,13 +128,45 @@ export function hrefFor(item: Pick<LocalListing, 'id' | 'kind'>): string {
 
 export function kindLabel(kind: string): string {
   if (kind === 'event') return 'Sự kiện';
-  if (kind === 'room') return 'Phòng trọ';
+  if (kind === 'room') return 'Nhà ở';
+  if (kind === 'offer') return 'Ưu đãi';
   return 'Việc làm';
 }
 
 export function formatPriceMonth(n?: number | null): string {
   if (n == null) return '';
+  if (n >= 1_000_000) {
+    const trieu = n / 1_000_000;
+    const s = Number.isInteger(trieu) ? String(trieu) : trieu.toFixed(1).replace('.', ',');
+    return `${s} triệu/tháng`;
+  }
   return `${n.toLocaleString('vi-VN')} đ/tháng`;
+}
+
+export function formatEventLine(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const time = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const weekday = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'][d.getDay()];
+  const date = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return `${time} • ${weekday}, ${date}`;
+}
+
+export function trendSubtitle(item: LocalListing): string {
+  if (item.kind === 'job') return [item.salaryText, item.placeText].filter(Boolean).join(' • ');
+  if (item.kind === 'event') return formatEventLine(item.startAt) || item.placeText || '';
+  return formatPriceMonth(item.priceMonth) || item.placeText || '';
+}
+
+export function trendFoot(item: LocalListing): { kind: 'fire' | 'party' | 'pin'; text: string } {
+  if (item.kind === 'job') {
+    return { kind: 'fire', text: formatRelative(item.lastCheckedAt || item.publishedAt) || 'Tin mới' };
+  }
+  if (item.kind === 'event') {
+    return { kind: 'party', text: item.placeText || 'Sự kiện đã duyệt' };
+  }
+  return { kind: 'pin', text: item.placeText || 'Nhà ở Thái Nguyên' };
 }
 
 export function formatWhen(iso?: string | null): string {
@@ -144,8 +182,52 @@ export function formatDayBox(iso?: string | null): { day: string; mon: string } 
   if (Number.isNaN(d.getTime())) return null;
   return {
     day: String(d.getDate()).padStart(2, '0'),
-    mon: d.toLocaleString('en-US', { month: 'short' }).toUpperCase(),
+    mon: ['CN', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7'][d.getDay()],
   };
+}
+
+export function formatClock(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+}
+
+export function isRecent(iso?: string | null, hours = 48): boolean {
+  if (!iso) return false;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return false;
+  return Date.now() - d.getTime() < hours * 3600 * 1000;
+}
+
+export function groupInitials(name: string): string {
+  const parts = name.replace(/[()]/g, '').split(/\s+/).filter(Boolean);
+  const first = parts[0]?.[0] ?? 'G';
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : (parts[0]?.[1] ?? '');
+  return (first + last).toUpperCase();
+}
+
+export function coverFor(kind: string, index = 0): string {
+  if (kind === 'event') return index % 2 === 0 ? '/trend/event.jpg' : '/trend/event2.jpg';
+  if (kind === 'room') return index % 2 === 0 ? '/trend/room.jpg' : '/trend/room2.jpg';
+  return ['/trend/job.jpg', '/trend/job2.jpg', '/trend/job3.jpg'][index % 3];
+}
+
+export function orgInitial(item: Pick<LocalListing, 'organizationName' | 'title'>): string {
+  const src = (item.organizationName || item.title || 'V').trim();
+  return src[0]?.toUpperCase() ?? 'V';
+}
+
+export function groupCover(index: number): string {
+  return [`/trend/comm1.jpg`, `/trend/comm2.jpg`, `/trend/comm3.jpg`, `/trend/comm4.jpg`][index % 4];
+}
+
+export function groupHint(group: Pick<CommunityGroup, 'category' | 'audience' | 'platform'>): string {
+  if (group.category === 'job' && group.audience === 'student') return 'Group việc / sinh viên';
+  if (group.category === 'job') return 'Group việc làm';
+  if (group.category === 'room') return 'Group nhà ở';
+  if (group.category === 'event') return 'Group sự kiện';
+  return group.platform === 'facebook' ? 'Facebook group' : 'Group gợi ý';
 }
 
 export function formatRelative(iso?: string | null): string {

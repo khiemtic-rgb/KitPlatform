@@ -1,6 +1,7 @@
 ---
 import {
   cardHighlight,
+  coverFor,
   formatRelative,
   hrefFor,
   kindLabel,
@@ -9,12 +10,14 @@ import {
 
 interface Props {
   item: LocalListing;
+  index?: number;
 }
-const { item } = Astro.props;
+const { item, index = 0 } = Astro.props;
 const hl = cardHighlight(item);
 ---
 <a class={`media-card ${item.kind}`} href={hrefFor(item)} data-kind={item.kind}>
   <div class="thumb">
+    <img src={coverFor(item.kind, index)} alt="" />
     <span class="badge">{kindLabel(item.kind)}</span>
   </div>
   <div class="media-body">

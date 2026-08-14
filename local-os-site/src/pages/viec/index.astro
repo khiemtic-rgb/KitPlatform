@@ -14,7 +14,7 @@ const jobs = await listListings('job', q || undefined);
         <button type="submit">Lọc</button>
       </form>
       <div class="cards-3">
-        {jobs.map((item) => <ListingCard item={item} />)}
+        {jobs.map((item, i) => <ListingCard item={item} index={i} />)}
       </div>
       {jobs.length === 0 && <p class="empty">Không có việc khớp.</p>}
     </div>

@@ -1,163 +1,363 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import ListingCard from '../components/ListingCard.astro';
+import TrendCard from '../components/TrendCard.astro';
 import {
-  EMP_LABEL,
-  formatDayBox,
-  formatRelative,
-  formatWhen,
+  coverFor,
+  formatClock,
+  formatEventLine,
+  formatPriceMonth,
+  groupCover,
+  groupHint,
   hrefFor,
+  isRecent,
+  listGroups,
   listListings,
+  orgInitial,
 } from '../lib/api';
 
 const q = Astro.url.searchParams.get('q') ?? '';
-const [jobs, events, rooms] = await Promise.all([
+const [jobs, events, rooms, groups] = await Promise.all([
   listListings('job', q || undefined),
   listListings('event', q || undefined),
   listListings('room', q || undefined),
+  listGroups(),
 ]);
-const mixed = [...jobs, ...events, ...rooms]
-  .sort((a, b) => {
-    const ta = new Date(a.lastCheckedAt || a.publishedAt || 0).getTime();
-    const tb = new Date(b.lastCheckedAt || b.publishedAt || 0).getTime();
-    return tb - ta;
-  });
-const today = mixed.slice(0, 4);
-const feed = mixed.slice(0, 5);
-const upcoming = events.filter((e) => e.startAt).slice(0, 3);
+
+const picked: typeof jobs = [];
+for (const list of [jobs, events, rooms]) {
+  if (list[0]) picked.push(list[0]);
+}
+for (const item of [...jobs, ...events, ...rooms]) {
+  if (picked.length >= 8) break;
+  if (!picked.some((x) => x.id === item.id)) picked.push(item);
+}
+const latestJobs = jobs.slice(0, 4);
+const upcoming = events.filter((e) => e.startAt).slice(0, 4);
+const featuredRooms = rooms.slice(0, 4);
+const liveCount = jobs.length + events.length + rooms.length;
 ---
-<Layout title="Thái Nguyên Life — Việc, sự kiện, trọ">
+<Layout title="Thái Nguyên Life — Việc, sự kiện, nhà ở">
   <section class="hero">
     <div class="wrap hero-inner">
-      <h1>Hôm nay có gì đáng để bạn quan tâm?</h1>
-      <form class="search-bar" method="get" action="/">
-        <input type="search" name="q" value={q} placeholder="Bạn đang tìm gì?" />
-        <span class="city">Thái Nguyên</span>
-        <button type="submit">Tìm kiếm</button>
-      </form>
-      <div class="quick">
-        <a class="pill" href="/viec"><span class="dot job">💼</span> Việc làm</a>
-        <a class="pill" href="/su-kien"><span class="dot event">📅</span> Sự kiện</a>
-        <a class="pill" href="/tro"><span class="dot room">🏠</span> Phòng trọ</a>
+      <div class="hero-copy">
+        <h1>Hôm nay ở <em>Thái Nguyên</em> có gì đáng để bạn quan tâm?</h1>
+        <p class="hero-sub">Khám phá cơ hội, sự kiện, ưu đãi và những điều hữu ích quanh bạn.</p>
+      </div>
+      <div class="hero-find" id="tim">
+        <form class="search-bar hero-search" method="get" action="/">
+          <input
+            type="search"
+            name="q"
+            value={q}
+            placeholder="Bạn đang tìm gì? Ví dụ: việc làm part-time, phòng trọ, sự kiện..."
+          />
+          <button type="submit">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+            Tìm kiếm
+          </button>
+        </form>
+        <div class="quick">
+          <a class="pill" href="/viec?q=part-time">
+            <svg class="pill-ico job" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            việc làm part-time
+          </a>
+          <a class="pill" href="/tro?q=trường">
+            <svg class="pill-ico room" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
+            phòng trọ gần trường
+          </a>
+          <a class="pill" href="/su-kien">
+            <svg class="pill-ico event" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            sự kiện cuối tuần
+          </a>
+          <a class="pill" href="/uu-dai">
+            <svg class="pill-ico offer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.6 13.4 10.5 3.3A2 2 0 0 0 9.1 2.9H4a1 1 0 0 0-1 1v5.1a2 2 0 0 0 .6 1.4l10.1 10.1a2 2 0 0 0 2.8 0l4.1-4.1a2 2 0 0 0 0-2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>
+            ưu đãi ăn uống
+          </a>
+          <a class="pill" href="/su-kien?q=workshop">
+            <svg class="pill-ico workshop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+            workshop
+          </a>
+          <a class="pill" href="/uu-dai#hoc-bong">
+            <svg class="pill-ico grant" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9 12 5l9 4-9 4-9-4z"/><path d="M7 11.5v4.2c0 .6 2.2 2.3 5 2.3s5-1.7 5-2.3v-4.2"/></svg>
+            học bổng
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap cat-wrap">
+    <nav class="cat-bar" aria-label="Danh mục">
+      <a class="cat-item" href="/viec">
+        <span class="cat-ico job" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>
+        </span>
+        <strong>Việc làm</strong>
+        <span>{jobs.length} tin</span>
+      </a>
+      <a class="cat-item" href="/su-kien">
+        <span class="cat-ico event" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        </span>
+        <strong>Sự kiện</strong>
+        <span>{events.length} sự kiện</span>
+      </a>
+      <a class="cat-item" href="/tro">
+        <span class="cat-ico room" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
+        </span>
+        <strong>Nhà ở</strong>
+        <span>{rooms.length} tin</span>
+      </a>
+      <a class="cat-item soon" href="/uu-dai">
+        <span class="cat-ico offer" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.6 13.4 10.5 3.3A2 2 0 0 0 9.1 2.9H4a1 1 0 0 0-1 1v5.1a2 2 0 0 0 .6 1.4l10.1 10.1a2 2 0 0 0 2.8 0l4.1-4.1a2 2 0 0 0 0-2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>
+        </span>
+        <strong>Ưu đãi</strong>
+        <span>Sắp mở</span>
+      </a>
+      <a class="cat-item soon" href="/uu-dai#hoc-bong">
+        <span class="cat-ico grant" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9 12 5l9 4-9 4-9-4z"/><path d="M7 11.5v4.2c0 .6 2.2 2.3 5 2.3s5-1.7 5-2.3v-4.2"/><path d="M21 9v6"/></svg>
+        </span>
+        <strong>Học bổng</strong>
+        <span>Sắp mở</span>
+      </a>
+      <a class="cat-item" href="#cong-dong">
+        <span class="cat-ico community" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="2.4"/><circle cx="15.5" cy="8.4" r="2"/><path d="M4.8 17.2c.4-2.4 2.4-3.8 4.2-3.8s3.8 1.4 4.2 3.8"/><path d="M13.2 13.8c1.6-.2 3.4 1 3.8 3.4"/></svg>
+        </span>
+        <strong>Cộng đồng</strong>
+        <span>{groups.length} nhóm</span>
+      </a>
+    </nav>
+  </div>
+
+  <div class="page">
+    <div class="wrap">
+      <div class="section-head trend-head">
+        <h2>
+          <span class="trend-title-ico" aria-hidden="true">🔥</span>
+          Đang được quan tâm
+        </h2>
+        <a class="see-all" href="/viec">Xem tất cả →</a>
+      </div>
+      <div class="trend-scroller">
+        <div class="trend-track" data-trend-track>
+          {picked.map((item, i) => <TrendCard item={item} index={i} />)}
+        </div>
+        {picked.length > 3 && (
+          <>
+            <button type="button" class="trend-nav trend-prev" data-trend-prev aria-label="Tin trước">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+            </button>
+            <button type="button" class="trend-nav trend-next" data-trend-next aria-label="Tin sau">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+          </>
+        )}
+      </div>
+      {picked.length === 0 && <p class="empty">Chưa có tin còn hạn. Duyệt tin ở admin rồi Đăng.</p>}
+
+      <div class="trio equal">
+        <section class="panel">
+          <div class="section-head tight">
+            <h2>Việc làm mới nhất</h2>
+            <a class="see-all" href="/viec">Xem tất cả →</a>
+          </div>
+          {latestJobs.map((item, i) => (
+            <a class="job-line" href={hrefFor(item)}>
+              <span class={`job-ico c${i % 3}`}>{orgInitial(item)}</span>
+              <div class="job-body">
+                <div class="job-title">
+                  <strong>{item.title}</strong>
+                  {isRecent(item.publishedAt || item.lastCheckedAt) && <span class="new-badge">Mới</span>}
+                </div>
+                {item.organizationName && <div class="job-meta">{item.organizationName}</div>}
+                {item.placeText && (
+                  <div class="job-meta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+                    {item.placeText}
+                  </div>
+                )}
+                {item.salaryText && <div class="job-pay">{item.salaryText}</div>}
+              </div>
+            </a>
+          ))}
+          {latestJobs.length === 0 && <p class="empty">Chưa có việc còn hạn.</p>}
+          <a class="panel-more" href="/viec">Xem tất cả việc làm →</a>
+        </section>
+
+        <section class="panel">
+          <div class="section-head tight">
+            <h2>Sự kiện sắp diễn ra</h2>
+            <a class="see-all" href="/su-kien">Xem tất cả →</a>
+          </div>
+          {upcoming.map((item, i) => (
+            <a class="ev" href={hrefFor(item)}>
+              <img class="ev-thumb" src={coverFor('event', i)} alt="" />
+              <div class="ev-body">
+                <strong>{item.title}</strong>
+                {item.placeText && (
+                  <div class="job-meta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+                    {item.placeText}
+                  </div>
+                )}
+                <div class="job-meta">{formatEventLine(item.startAt) || formatClock(item.startAt)}</div>
+                <span class="mini-badge event">Sự kiện</span>
+              </div>
+            </a>
+          ))}
+          {upcoming.length === 0 && <p class="empty">Chưa có sự kiện đã đăng.</p>}
+          <a class="panel-more" href="/su-kien">Xem tất cả sự kiện →</a>
+        </section>
+
+        <section class="panel">
+          <div class="section-head tight">
+            <h2>Phòng trọ nổi bật</h2>
+            <a class="see-all" href="/tro">Xem tất cả →</a>
+          </div>
+          {featuredRooms.map((item, i) => (
+            <a class="ev" href={hrefFor(item)}>
+              <img class="ev-thumb" src={coverFor('room', i)} alt="" />
+              <div class="ev-body">
+                <strong>{item.title}</strong>
+                {item.placeText && (
+                  <div class="job-meta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+                    {item.placeText}
+                  </div>
+                )}
+                {formatPriceMonth(item.priceMonth) && <div class="job-pay">{formatPriceMonth(item.priceMonth)}</div>}
+              </div>
+            </a>
+          ))}
+          {featuredRooms.length === 0 && <p class="empty">Chưa có phòng còn hạn.</p>}
+          <a class="panel-more" href="/tro">Xem tất cả phòng trọ →</a>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <section class="post-band">
+    <div class="wrap post-band-grid">
+      <div class="post-band-copy">
+        <h2>Đăng tin dễ dàng – Chia sẻ nhanh chóng</h2>
+        <ul>
+          <li><span>✓</span> Đăng tin miễn phí</li>
+          <li><span>✓</span> Tiếp cận đúng người quanh Thái Nguyên</li>
+          <li><span>✓</span> Gợi ý group — bạn tự mở và dán</li>
+        </ul>
+        <div class="post-band-actions">
+          <a class="btn-green" href="/dang-tin">+ Đăng tin ngay</a>
+          <a class="btn btn-outline" href="/dang-tin">Hướng dẫn đăng tin</a>
+        </div>
+      </div>
+      <div class="post-band-art" aria-hidden="true">
+        <img class="cta-hills" src="/trend/cta-hills.jpg" alt="" />
+        <img class="cta-phone" src="/trend/cta-phone.jpg" alt="" />
       </div>
     </div>
   </section>
 
   <div class="page">
-    <div class="wrap layout">
-      <div>
+    <div class="wrap">
+      <section id="cong-dong">
         <div class="section-head">
-          <h2>Cơ hội hôm nay</h2>
-          <div class="tabs" id="opp-tabs">
-            <button class="tab is-on" type="button" data-filter="all">Tất cả</button>
-            <button class="tab" type="button" data-filter="job">Việc làm</button>
-            <button class="tab" type="button" data-filter="event">Sự kiện</button>
-            <button class="tab" type="button" data-filter="room">Phòng trọ</button>
-          </div>
+          <h2>Cộng đồng quanh bạn</h2>
+          <a class="see-all" href="#cong-dong">Xem tất cả →</a>
         </div>
-        <div class="cards-4" id="opp-cards">
-          {today.map((item) => <ListingCard item={item} />)}
-        </div>
-        {today.length === 0 && <p class="empty">Chưa có tin còn hạn. Duyệt tin ở admin rồi Đăng.</p>}
-
-        <div class="section-head" style="margin-top:28px">
-          <h2>Mới cập nhật</h2>
-        </div>
-        <div class="layout" style="grid-template-columns: 1fr 260px; gap: 14px">
-          <div class="panel">
-            <div class="feed">
-              {feed.map((item) => (
-                <a class={`feed-item ${item.kind}`} href={hrefFor(item)}>
-                  <i></i>
-                  <div>
-                    <div class="ago">{formatRelative(item.lastCheckedAt || item.publishedAt)}</div>
-                    <strong>{item.title}</strong>
-                    <div class="muted">{item.organizationName || item.placeText}</div>
-                  </div>
-                </a>
-              ))}
-              {feed.length === 0 && <p class="empty">Chưa có cập nhật.</p>}
-            </div>
-          </div>
-          <aside class="note">
-            <h3>Không bỏ lỡ cơ hội nào!</h3>
-            <p>Bản tin việc + sự kiện qua Zalo — chưa mở đăng ký công khai.</p>
-          </aside>
-        </div>
-
-        <div class="section-head" style="margin-top:28px">
-          <h2>Dành cho bạn</h2>
-        </div>
-        <div class="chips">
-          <a class="tab is-on" href="/viec">Gợi ý cho bạn</a>
-          <a class="tab" href="/viec?q=part">Việc làm part-time</a>
-          <a class="tab" href="/viec?q=ca tối">Ca tối</a>
-          <a class="tab" href="/tro">Gần trường</a>
-        </div>
-        <div class="job-row">
-          {jobs.slice(0, 4).map((item) => (
-            <a class="job-card" href={hrefFor(item)}>
-              <h3>{item.title}</h3>
-              <p class="hl">{item.salaryText}</p>
-              <p class="loc">{item.placeText}</p>
-              {item.employmentType && <span class="tag">{EMP_LABEL[item.employmentType] ?? item.employmentType}</span>}
-              <p class="ago">{formatRelative(item.lastCheckedAt || item.publishedAt)}</p>
-            </a>
-          ))}
-        </div>
-        {jobs.length === 0 && <p class="empty">Chưa có việc còn hạn.</p>}
-      </div>
-
-      <aside>
-        <div class="panel">
-          <h3>Khu vực của bạn</h3>
-          <div class="side-map"></div>
-          <strong>Thái Nguyên</strong>
-          <p class="muted">City đầu — sinh viên năm 1–7.</p>
-        </div>
-        <div class="panel">
-          <h3>Đáng chú ý hôm nay</h3>
-          <div class="hi">
-            <div><span>Việc còn hạn</span><b>{jobs.length}</b></div>
-            <div><span>Sự kiện</span><b>{events.length}</b></div>
-            <div><span>Phòng trọ</span><b>{rooms.length}</b></div>
-          </div>
-        </div>
-        <div class="panel">
-          <h3>Sự kiện sắp diễn ra</h3>
-          {upcoming.map((item) => {
-            const box = formatDayBox(item.startAt);
-            return (
-              <a class="ev" href={hrefFor(item)}>
-                <div class="ev-date">
-                  <strong>{box?.day ?? '—'}</strong>
-                  <span>{box?.mon ?? ''}</span>
+        <div class="comm-scroller">
+          <div class="comm-track" data-comm-track>
+            {groups.map((g, i) => (
+              <article class="comm-card">
+                <img src={groupCover(i)} alt="" />
+                <div class="comm-card-body">
+                  <strong>{g.name}</strong>
+                  <span>{groupHint(g)}</span>
+                  <a class="btn-green comm-join" href={g.url} target="_blank" rel="noopener">Tham gia</a>
                 </div>
-                <div>
-                  <strong>{item.title}</strong>
-                  <div class="muted">{formatWhen(item.startAt)}</div>
-                  <div class="muted">{item.placeText}</div>
-                </div>
-              </a>
-            );
-          })}
-          {upcoming.length === 0 && <p class="empty">Chưa có sự kiện đã đăng.</p>}
+              </article>
+            ))}
+          </div>
+          {groups.length > 3 && (
+            <>
+              <button type="button" class="trend-nav trend-prev" data-comm-prev aria-label="Group trước">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+              </button>
+              <button type="button" class="trend-nav trend-next" data-comm-next aria-label="Group sau">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+              </button>
+            </>
+          )}
         </div>
-      </aside>
+        {groups.length === 0 && <p class="empty">Chưa có group gợi ý.</p>}
+        {groups.length > 0 && <p class="comm-note">Gợi ý group — bạn tự mở và dán. Chúng tôi không đăng hộ.</p>}
+      </section>
     </div>
   </div>
-</Layout>
 
-<script>
-  const tabs = document.querySelectorAll<HTMLButtonElement>('#opp-tabs .tab');
-  const cards = document.querySelectorAll<HTMLElement>('#opp-cards [data-kind]');
-  tabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      tabs.forEach((t) => t.classList.toggle('is-on', t === tab));
-      const filter = tab.dataset.filter ?? 'all';
-      cards.forEach((card) => {
-        card.style.display = filter === 'all' || card.dataset.kind === filter ? '' : 'none';
+  <section class="life-band">
+    <div class="wrap">
+      <div class="life-bar">
+        <div class="life-stats">
+          <div class="life-stat">
+            <span class="life-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v6c0 4.2 2.8 7.2 7 8.5 4.2-1.3 7-4.3 7-8.5V6z"/><path d="m9 12 2 2 4-4"/></svg>
+            </span>
+            <div>
+              <b>{liveCount}</b>
+              <span>Tin đang đăng</span>
+            </div>
+          </div>
+          <div class="life-stat">
+            <span class="life-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="2.2"/><circle cx="16" cy="8.3" r="1.8"/><path d="M4.8 17.2c.4-2.3 2.3-3.7 4.2-3.7s3.8 1.4 4.2 3.7"/></svg>
+            </span>
+            <div>
+              <b>0đ</b>
+              <span>Phí ứng tuyển</span>
+            </div>
+          </div>
+          <div class="life-stat">
+            <span class="life-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 8v4.2L15 14"/></svg>
+            </span>
+            <div>
+              <b>100%</b>
+              <span>Tin được kiểm duyệt</span>
+            </div>
+          </div>
+          <div class="life-stat">
+            <span class="life-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="2.2"/><path d="M7 17.2c.5-2.4 2.4-3.7 5-3.7s4.5 1.3 5 3.7"/><circle cx="12" cy="12" r="9"/></svg>
+            </span>
+            <div>
+              <b>{groups.length}</b>
+              <span>Cộng đồng gợi ý</span>
+            </div>
+          </div>
+        </div>
+        <div class="life-brand">
+          <strong>Thái Nguyên Life</strong>
+          <span>Đồng hành cùng bạn mỗi ngày</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    function bindScroller(trackSel: string, nextSel: string, prevSel: string) {
+      const track = document.querySelector(trackSel);
+      document.querySelector(nextSel)?.addEventListener('click', () => {
+        track?.scrollBy({ left: 280, behavior: 'smooth' });
       });
-    });
-  });
-</script>
+      document.querySelector(prevSel)?.addEventListener('click', () => {
+        track?.scrollBy({ left: -280, behavior: 'smooth' });
+      });
+    }
+    bindScroller('[data-trend-track]', '[data-trend-next]', '[data-trend-prev]');
+    bindScroller('[data-comm-track]', '[data-comm-next]', '[data-comm-prev]');
+  </script>
+</Layout>
