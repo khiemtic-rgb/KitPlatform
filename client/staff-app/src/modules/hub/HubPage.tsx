@@ -43,6 +43,7 @@ import {
   useCanSalesRead,
 } from '@/shared/auth/usePermission';
 import { fetchCustomerDraftOrders, CUSTOMER_DRAFT_ORDER_STATUS } from '@/shared/api/customer-draft-orders.api';
+import { isActionableCustomerDraftStatus } from '@/modules/sales/customer-draft-order-helpers';
 import {
   fetchOpenShift,
   fetchShiftSummary,
@@ -170,7 +171,9 @@ export function HubPage() {
       ]);
       setUnread(sumUnreadThreads(threads));
       setReservationCount(countActiveReservations(reservations));
-      setCustomerDraftCount(customerDrafts.length);
+      setCustomerDraftCount(
+        customerDrafts.filter((row) => isActionableCustomerDraftStatus(row.status)).length,
+      );
     } catch {
       setUnread(0);
       setReservationCount(0);

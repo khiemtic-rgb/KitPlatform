@@ -7,6 +7,10 @@ export const http = axios.create({
   baseURL: apiPath('/api'),
   headers: { 'Content-Type': 'application/json' },
   timeout: 30_000,
+  // ASP.NET binds short[] as status=1&status=2 (not status[]=1)
+  paramsSerializer: {
+    indexes: null,
+  },
 });
 
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
