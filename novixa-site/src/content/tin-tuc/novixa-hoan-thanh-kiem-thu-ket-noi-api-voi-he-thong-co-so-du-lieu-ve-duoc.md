@@ -1,7 +1,7 @@
 ---
 title: Novixa hoàn thành kiểm thử kết nối API với Hệ thống Cơ sở dữ liệu về dược
 description: ''
-category: tin-tuc-novixa
+category: quan-tri-nha-thuoc
 subcategory: ''
 image: /images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png
 pubDate: 2026-08-14
