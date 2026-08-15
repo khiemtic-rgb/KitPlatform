@@ -443,6 +443,9 @@ const ContentVideosPage = lazy(() =>
 const LocalOsListingsPage = lazy(() =>
   import('@/modules/local-os/LocalOsListingsPage').then((m) => ({ default: m.LocalOsListingsPage })),
 );
+const LocalOsSourcesPage = lazy(() =>
+  import('@/modules/local-os/LocalOsSourcesPage').then((m) => ({ default: m.LocalOsSourcesPage })),
+);
 const ReportsLayout = lazy(() =>
   import('@/modules/reports/ReportsLayout').then((m) => ({ default: m.ReportsLayout })),
 );
@@ -892,6 +895,14 @@ export function AppRouter() {
                 element={
                   <SuspenseRoute>
                     <LocalOsListingsPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="local-os/sources"
+                element={
+                  <SuspenseRoute>
+                    <LocalOsSourcesPage />
                   </SuspenseRoute>
                 }
               />

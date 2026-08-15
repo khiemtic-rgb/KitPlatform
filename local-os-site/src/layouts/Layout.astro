@@ -1,18 +1,35 @@
 ---
 import '../styles/global.css';
+import { OFFERS_PUBLIC } from '../lib/api';
 
 interface Props {
   title: string;
-  active?: 'home' | 'job' | 'event' | 'room' | 'offer' | 'grant' | 'community' | 'publish';
+  description?: string;
+  active?: 'home' | 'discover' | 'job' | 'event' | 'room' | 'offer' | 'grant' | 'community' | 'publish';
 }
 const { title, active = 'home' } = Astro.props;
+const description = Astro.props.description
+  ?? 'Hiểu Thái Nguyên, rồi tìm việc — sự kiện — phòng trọ đã duyệt. Xem không cần tài khoản.';
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
 ---
 <!doctype html>
 <html lang="vi">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#1f7a45" />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Thái Nguyên Life" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content="vi_VN" />
     <title>{title}</title>
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Pattaya&display=swap" rel="stylesheet" />
@@ -23,21 +40,34 @@ const { title, active = 'home' } = Astro.props;
         <a class="brand" href="/" aria-label="Thái Nguyên Life">
           <img class="brand-logo" src="/logo-thai-nguyen-life.png" alt="Thái Nguyên Life — Mọi điều hữu ích quanh bạn" />
         </a>
-        <nav class="nav">
-          <a href="/" class={active === 'home' ? 'is-on' : undefined}>Khám phá</a>
+        <nav class="nav" aria-label="Chính">
+          <a href="/kham-pha" class={active === 'discover' ? 'is-on' : undefined}>Khám phá</a>
           <a href="/viec" class={active === 'job' ? 'is-on' : undefined}>Việc làm</a>
           <a href="/su-kien" class={active === 'event' ? 'is-on' : undefined}>Sự kiện</a>
-          <a href="/tro" class={active === 'room' ? 'is-on' : undefined}>Nhà ở</a>
-          <a href="/uu-dai" class={active === 'offer' ? 'is-on' : undefined}>Ưu đãi</a>
-          <a href="/uu-dai#hoc-bong" class={active === 'grant' ? 'is-on' : undefined}>Học bổng</a>
+          <a href="/tro" class={active === 'room' ? 'is-on' : undefined}>Phòng trọ</a>
+          {OFFERS_PUBLIC && <a href="/uu-dai" class={active === 'offer' ? 'is-on' : undefined}>Ưu đãi</a>}
+          {OFFERS_PUBLIC && <a href="/uu-dai#hoc-bong" class={active === 'grant' ? 'is-on' : undefined}>Học bổng</a>}
           <a href="/#cong-dong" class={active === 'community' ? 'is-on' : undefined}>Cộng đồng</a>
         </nav>
         <div class="header-actions">
           <a href="/dang-tin" class={active === 'publish' ? 'btn-green is-on' : 'btn-green'}>+ Đăng tin</a>
-          <a class="icon-btn" href="/#tim" title="Tìm trên trang" aria-label="Tìm kiếm">
+          <a class="icon-btn" href="/#tim" title="Tìm trên trang chủ" aria-label="Tìm kiếm">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
           </a>
-          <span class="avatar-btn" title="Chưa cần đăng nhập để xem" aria-hidden="true">👤</span>
+          <details class="nav-drawer">
+            <summary class="nav-toggle" aria-label="Mở menu">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            </summary>
+            <nav class="nav-mobile" aria-label="Menu điện thoại">
+              <a href="/kham-pha">Khám phá</a>
+              <a href="/viec">Việc làm</a>
+              <a href="/su-kien">Sự kiện</a>
+              <a href="/tro">Phòng trọ</a>
+              <a href="/#cong-dong">Cộng đồng</a>
+              <a href="/dang-tin">+ Đăng tin</a>
+              <a href="/thong-tin/gioi-thieu">Giới thiệu</a>
+            </nav>
+          </details>
         </div>
       </div>
     </header>
@@ -58,11 +88,14 @@ const { title, active = 'home' } = Astro.props;
           </div>
           <div>
             <h4>Khám phá</h4>
+            <a href="/kham-pha">Khám phá Thái Nguyên</a>
+            <a href="/kham-pha/dia-diem">Địa điểm</a>
+            <a href="/kham-pha/cam-nang/cuoi-tuan">Cẩm nang</a>
             <a href="/viec">Việc làm</a>
             <a href="/su-kien">Sự kiện</a>
-            <a href="/tro">Nhà ở</a>
-            <a href="/uu-dai">Ưu đãi</a>
-            <a href="/uu-dai#hoc-bong">Học bổng</a>
+            <a href="/tro">Phòng trọ</a>
+            {OFFERS_PUBLIC && <a href="/uu-dai">Ưu đãi</a>}
+            {OFFERS_PUBLIC && <a href="/uu-dai#hoc-bong">Học bổng</a>}
           </div>
           <div>
             <h4>Hỗ trợ</h4>
@@ -88,7 +121,9 @@ const { title, active = 'home' } = Astro.props;
         </div>
         <div class="copy">
           <span>© 2026 Thái Nguyên Life. All rights reserved.</span>
-          <a class="to-top" href="#top" aria-label="Lên đầu trang">↑</a>
+          <a class="to-top" href="#top" aria-label="Lên đầu trang">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 19V6M6.5 11.5 12 6l5.5 5.5"/></svg>
+          </a>
         </div>
       </div>
     </footer>

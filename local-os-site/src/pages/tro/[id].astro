@@ -1,37 +1,277 @@
 ---
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
-import { formatPriceMonth, getListing, ROOM_TYPE_LABEL, telHref } from '../../lib/api';
+import {
+  cleanPlace,
+  cleanTitle,
+  coverFor,
+  formatPhone,
+  formatRelative,
+  getListing,
+  hrefFor,
+  listingPhone,
+  listListings,
+  roomNoteChips,
+  ROOM_TYPE_LABEL,
+  telHref,
+  trustLabel,
+} from '../../lib/api';
+import {
+  formatDistance,
+  roomAmenities,
+  roomArea,
+  schoolLabel,
+  schoolOf,
+  similarRooms,
+  wardOf,
+} from '../../lib/room-filters';
+
 const { id } = Astro.params;
 const item = id ? await getListing(id) : null;
 if (!item) Astro.response.status = 404;
+
+const title = item ? cleanTitle(item.title, item.placeText) : '';
+const place = item ? cleanPlace(item.placeText) : '';
+const notes = item ? roomNoteChips(item.summary) : [];
+const amenities = item ? roomAmenities(item) : [];
+const area = item ? roomArea(item) : '';
+const dist = item ? formatDistance(item) : '';
+const school = item ? schoolLabel(schoolOf(item)) : '';
+const ward = item ? wardOf(item) : '';
+const phone = item ? listingPhone(item) : '';
+const phoneShow = formatPhone(phone);
+const phoneHref = telHref(phone);
+const host = item?.contactName || item?.organizationName || 'Chủ nhà';
+const when = item ? formatRelative(item.lastCheckedAt || item.publishedAt) : '';
+const sourceKind = item?.sourceUrl?.includes('spreadsheets')
+  ? 'Danh sách trọ TNUS'
+  : item?.sourceUrl?.includes('tnue')
+    ? 'Tuyển sinh ĐH Sư phạm'
+    : (item?.sourceName || 'Tin gốc');
+const roomCount = (item?.summary ?? '').match(/khoảng\s+\d+\s+phòng/i)?.[0] ?? '';
+const mapsQuery = place
+  ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${place}, Thái Nguyên`)}`
+  : null;
+const all = item ? await listListings('room') : [];
+const similar = item ? similarRooms(item, all) : [];
+const photos = [coverFor('room', 0), coverFor('room', 1)];
+
+const facts: { label: string; value: string }[] = [];
+if (item?.roomType) facts.push({ label: 'Loại', value: ROOM_TYPE_LABEL[item.roomType] ?? item.roomType });
+facts.push({ label: 'Giá', value: 'Liên hệ khi gọi' });
+if (phoneShow) facts.push({ label: 'Điện thoại', value: phoneShow });
+if (host) facts.push({ label: 'Chủ nhà', value: host });
+if (area) facts.push({ label: 'Diện tích', value: area });
+if (school) facts.push({ label: 'Gần trường', value: school });
+if (ward) facts.push({ label: 'Phường', value: ward });
+if (dist) facts.push({ label: 'Khoảng cách (theo tin)', value: dist });
+if (when) facts.push({ label: 'Cập nhật', value: when });
+if (sourceKind) facts.push({ label: 'Nguồn', value: sourceKind });
 ---
-<Layout title={item ? `${item.title} — Thái Nguyên Life` : 'Không tìm thấy'} active="room">
-  <div class="page">
-    <div class="wrap" style="max-width:760px">
+<Layout title={item ? `${title} — Thái Nguyên Life` : 'Không tìm thấy'} active="room">
+  <div class="page room-detail-page">
+    <div class="wrap">
       {item ? (
-        <article class="detail">
-          <p class="muted">Phòng trọ · {item.trust}</p>
-          <h1>{item.title}</h1>
-          <p>{item.summary}</p>
-          <div class="facts">
-            {item.placeText && <div><strong>Khu:</strong> {item.placeText}</div>}
-            {item.roomType && <div><strong>Loại:</strong> {ROOM_TYPE_LABEL[item.roomType] ?? item.roomType}</div>}
-            {item.priceMonth != null && <div><strong>Giá:</strong> {formatPriceMonth(item.priceMonth)}</div>}
-          </div>
-          {item.contactPhone && (
-            <p>
-              Liên hệ chủ nhà:{' '}
-              {telHref(item.contactPhone) ? (
-                <a class="hl" href={telHref(item.contactPhone)!}>{item.contactPhone}</a>
-              ) : (
-                <strong>{item.contactPhone}</strong>
+        <>
+          <nav class="job-crumb" aria-label="Đường dẫn">
+            <a href="/">Trang chủ</a>
+            <span>›</span>
+            <a href="/tro">Phòng trọ</a>
+            {school && (<><span>›</span><span>{school}</span></>)}
+            <span>›</span>
+            <span>{title}</span>
+          </nav>
+
+          <div class="room-detail-grid">
+            <article class="room-detail-main">
+              <header class="room-detail-head">
+                <div class="room-kicker">
+                  <span class="room-pill">Phòng trọ</span>
+                  <span class="room-pill is-soft">{trustLabel(item.trust)}</span>
+                </div>
+                <div class="job-detail-title-row">
+                  <h1>{title}</h1>
+                  <span class="job-save" aria-hidden="true" title="Chưa lưu tin">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.4-9.2-8.2C1 9.2 2.2 6 5.4 6c1.8 0 3 1.2 3.6 2.2C9.6 7.2 10.8 6 12.6 6c3.2 0 4.4 3.2 2.6 5.8C13 15.6 12 20 12 20z"/></svg>
+                    Lưu
+                  </span>
+                </div>
+                {place && <p class="room-place">{place}</p>}
+              </header>
+
+              <div class="room-gallery">
+                <div class="room-gallery-main">
+                  <img src={photos[0]} alt="Ảnh minh họa phòng trọ" />
+                  <span class="photo-caption">Ảnh minh họa</span>
+                </div>
+                <div class="room-gallery-side">
+                  <img src={photos[1]} alt="Ảnh minh họa phòng trọ" />
+                  <span class="photo-caption">Ảnh minh họa — không phải ảnh phòng này</span>
+                </div>
+              </div>
+
+              <dl class="room-quick">
+                <div>
+                  <dt>Giá</dt>
+                  <dd>Liên hệ khi gọi{roomCount ? ` (${roomCount})` : ''}</dd>
+                </div>
+                {phoneShow && (
+                  <div>
+                    <dt>Điện thoại</dt>
+                    <dd>{phoneHref ? <a href={phoneHref}>{phoneShow}</a> : phoneShow}</dd>
+                  </div>
+                )}
+                <div>
+                  <dt>Chủ nhà</dt>
+                  <dd>{host}</dd>
+                </div>
+                {area && (
+                  <div>
+                    <dt>Diện tích</dt>
+                    <dd>{area}</dd>
+                  </div>
+                )}
+                {when && (
+                  <div>
+                    <dt>Cập nhật</dt>
+                    <dd>{when}</dd>
+                  </div>
+                )}
+              </dl>
+
+              {phoneHref && (
+                <div class="room-contact">
+                  <div>
+                    <span>Liên hệ chủ nhà</span>
+                    <strong>{phoneShow}</strong>
+                    <em>Hỏi giá và còn phòng khi gọi — số có thể đổi.</em>
+                  </div>
+                  <a class="btn-green" href={phoneHref}>Gọi ngay</a>
+                </div>
               )}
-            </p>
+
+              {notes.length > 0 && (
+                <section class="job-block">
+                  <h2>Mô tả chi tiết</h2>
+                  <ul>{notes.map((n) => <li>{n}</li>)}</ul>
+                </section>
+              )}
+
+              {amenities.length > 0 && (
+                <section class="job-block">
+                  <h2>Tiện ích</h2>
+                  <ul class="room-amenity-grid">
+                    {amenities.map((a) => <li data-amenity={a.id}>{a.label}</li>)}
+                  </ul>
+                </section>
+              )}
+
+              {facts.length > 0 && (
+                <section class="job-block">
+                  <h2>Thông tin chi tiết</h2>
+                  <dl class="job-facts">
+                    {facts.map((f) => (
+                      <div>
+                        <dt>{f.label}</dt>
+                        <dd>{f.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              )}
+
+              {place && (
+                <section class="job-block">
+                  <h2>Vị trí</h2>
+                  <p>{place}</p>
+                  {school && <p class="muted">Gần {school}{dist ? ` · khoảng ${dist} (theo tin)` : ''}</p>}
+                  {mapsQuery && (
+                    <div class="room-map">
+                      <a class="btn-green" href={mapsQuery} rel="nofollow noopener" target="_blank">Xem trên bản đồ</a>
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {item.sourceUrl && (
+                <p class="room-source">
+                  Nguồn: <a href={item.sourceUrl} rel="nofollow noopener" target="_blank">{sourceKind}</a>
+                </p>
+              )}
+            </article>
+
+            <aside class="room-detail-side">
+              <section class="room-host-card">
+                <h3>Liên hệ chủ nhà</h3>
+                <div class="room-host-who">
+                  <span class="job-ico c2">{host.slice(0, 1)}</span>
+                  <div>
+                    <strong>{host}</strong>
+                    <span>Chủ trọ · theo danh sách nguồn</span>
+                  </div>
+                </div>
+                {phoneHref ? (
+                  <a class="btn-green room-host-call" href={phoneHref}>Gọi {phoneShow}</a>
+                ) : (
+                  <p class="muted">Chưa có số trên tin.</p>
+                )}
+                <p class="muted">Hỏi giá và còn phòng khi gọi — số có thể đổi. Không nhắn tin trên site.</p>
+              </section>
+
+              <section class="room-safe">
+                <h3>Thông tin an toàn</h3>
+                <ul>
+                  <li>Xem phòng trực tiếp trước khi đặt cọc</li>
+                  <li>Không chuyển khoản giữ chỗ trước</li>
+                  <li>Giá đổi theo thời điểm — hỏi lại khi gọi</li>
+                </ul>
+              </section>
+
+              {similar.length > 0 && (
+                <section class="panel">
+                  <h3>Phòng trọ tương tự</h3>
+                  {similar.map((r, i) => (
+                    <a class="room-mini" href={hrefFor(r)}>
+                      <img src={coverFor('room', i)} alt="Ảnh minh họa" />
+                      <div>
+                        <strong>{cleanTitle(r.title, r.placeText)}</strong>
+                        <em>{formatPhone(listingPhone(r)) || 'Giá liên hệ'}</em>
+                        <span>{cleanPlace(r.placeText)}</span>
+                      </div>
+                    </a>
+                  ))}
+                  <a class="panel-more" href="/tro">Xem thêm phòng trọ →</a>
+                </section>
+              )}
+
+              <section class="panel">
+                <h3>Chia sẻ tin này</h3>
+                <div class="job-share">
+                  <a class="soc fb" data-share="facebook" href="#" rel="nofollow noopener" target="_blank" title="Facebook">f</a>
+                  <a class="soc zl" data-share="zalo" href="#" rel="nofollow noopener" target="_blank" title="Zalo">Z</a>
+                  <button class="soc" type="button" data-copy title="Sao chép link">⎘</button>
+                </div>
+                <p style="margin:10px 0 0"><a href="/thong-tin/lien-he">Báo cáo tin →</a></p>
+              </section>
+            </aside>
+          </div>
+          {phoneHref && (
+            <div class="room-call-dock">
+              <a class="btn-green" href={phoneHref}>Gọi {phoneShow}</a>
+            </div>
           )}
-          {item.sourceUrl && <p><a href={item.sourceUrl} rel="nofollow">Tin gốc</a></p>}
-        </article>
+        </>
       ) : <p class="empty">Tin không còn hoặc đã ẩn.</p>}
     </div>
   </div>
+  <script>
+    const pageUrl = location.href;
+    const fb = document.querySelector<HTMLAnchorElement>('[data-share="facebook"]');
+    const zalo = document.querySelector<HTMLAnchorElement>('[data-share="zalo"]');
+    if (fb) fb.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`;
+    if (zalo) zalo.href = `https://zalo.me/share?u=${encodeURIComponent(pageUrl)}`;
+    document.querySelector('[data-copy]')?.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(pageUrl); } catch { /* ignore */ }
+    });
+  </script>
 </Layout>

@@ -1,22 +1,205 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import ListingCard from '../../components/ListingCard.astro';
-import { listListings } from '../../lib/api';
+import JobRow from '../../components/JobRow.astro';
+import { hrefFor as listingHref, listListings, orgInitial } from '../../lib/api';
+import {
+  featuredJobs,
+  filterJobs,
+  isRemote,
+  JOB_TYPES,
+  jobPlaces,
+  jobStats,
+  jobTypeOf,
+} from '../../lib/job-filters';
+
+const PAGE_SIZE = 12;
 const q = Astro.url.searchParams.get('q') ?? '';
-const jobs = await listListings('job', q || undefined);
+const type = Astro.url.searchParams.get('type') ?? '';
+const place = Astro.url.searchParams.get('place') ?? '';
+const pay = Astro.url.searchParams.get('pay') ?? '';
+const chip = Astro.url.searchParams.get('chip') ?? '';
+const all = await listListings('job', q || undefined);
+const places = jobPlaces(all);
+const types = JOB_TYPES.filter((t) => all.some((j) => jobTypeOf(j) === t.id));
+const showRemote = all.some(isRemote);
+const items = filterJobs(all, { type, place, pay, chip });
+const pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+const page = Math.min(pages, Math.max(1, Number(Astro.url.searchParams.get('page')) || 1));
+const from = items.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+const to = Math.min(items.length, page * PAGE_SIZE);
+const slice = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+const hasFilter = Boolean(q || type || place || pay || chip);
+const featured = featuredJobs(all);
+const stats = jobStats(all);
+
+const chips = [
+  { id: '', label: 'Tất cả' },
+  { id: 'new', label: 'Việc làm mới' },
+  { id: 'part_time', label: 'Part-time' },
+  { id: 'student', label: 'Sinh viên' },
+  ...(showRemote ? [{ id: 'remote', label: 'Làm tại nhà' }] : []),
+];
+
+function hrefFor(next: { page?: number; chip?: string } = {}): string {
+  const p = new URLSearchParams();
+  if (q) p.set('q', q);
+  if (type) p.set('type', type);
+  if (place) p.set('place', place);
+  if (pay) p.set('pay', pay);
+  const nextChip = next.chip !== undefined ? next.chip : chip;
+  if (nextChip) p.set('chip', nextChip);
+  const nextPage = next.page ?? 1;
+  if (nextPage > 1) p.set('page', String(nextPage));
+  const qs = p.toString();
+  return qs ? `/viec?${qs}` : '/viec';
+}
+
+function pagerNums(current: number, total: number): Array<number | 'gap'> {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const set = new Set([1, total, current, current - 1, current + 1]);
+  if (current <= 3) {
+    set.add(2); set.add(3); set.add(4);
+  }
+  if (current >= total - 2) {
+    set.add(total - 1); set.add(total - 2); set.add(total - 3);
+  }
+  const sorted = [...set].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  const out: Array<number | 'gap'> = [];
+  for (const n of sorted) {
+    const last = out[out.length - 1];
+    if (typeof last === 'number' && n - last > 1) out.push('gap');
+    out.push(n);
+  }
+  return out;
+}
 ---
 <Layout title="Việc làm — Thái Nguyên Life" active="job">
-  <div class="page">
+  <section class="job-hero">
     <div class="wrap">
-      <h1 class="page-title">Việc làm</h1>
-      <form class="search-bar" method="get" style="max-width:640px;margin-bottom:20px">
-        <input type="search" name="q" value={q} placeholder="Ca tối, gần trường…" />
-        <button type="submit">Lọc</button>
+      <h1>Việc làm tại Thái Nguyên</h1>
+      <p>Tin đã duyệt — tự liên hệ đơn vị tuyển. Chúng tôi không nhận hồ sơ.</p>
+    </div>
+  </section>
+
+  <div class="page jobs-page">
+    <div class="wrap">
+      <form class="job-search" method="get">
+        {chip && <input type="hidden" name="chip" value={chip} />}
+        <div class="job-search-top">
+          <input type="search" name="q" value={q} placeholder="Tìm việc làm, vị trí, công ty…" />
+          <button type="submit">Lọc</button>
+        </div>
+        <div class="job-search-filters">
+          <label>
+            <span>Hình thức</span>
+            <select name="type" onchange="this.form.requestSubmit()">
+              <option value="">Tất cả…</option>
+              {types.map((t) => (
+                <option value={t.id} selected={type === t.id}>{t.label}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Mức lương</span>
+            <select name="pay" onchange="this.form.requestSubmit()">
+              <option value="">Tất cả…</option>
+              <option value="has" selected={pay === 'has'}>Có ghi lương / hỗ trợ</option>
+            </select>
+          </label>
+          <label>
+            <span>Địa điểm</span>
+            <select name="place" onchange="this.form.requestSubmit()">
+              <option value="">Tất cả…</option>
+              {places.map((p) => (
+                <option value={p} selected={place === p}>{p}</option>
+              ))}
+            </select>
+          </label>
+        </div>
       </form>
-      <div class="cards-3">
-        {jobs.map((item, i) => <ListingCard item={item} index={i} />)}
+
+      <div class="job-chips" role="navigation" aria-label="Lọc nhanh">
+        {chips.map((c) => (
+          <a class={chip === c.id ? 'is-on' : undefined} href={hrefFor({ chip: c.id })}>{c.label}</a>
+        ))}
+        {hasFilter && <a class="room-filters-clear" href="/viec">Xóa lọc</a>}
       </div>
-      {jobs.length === 0 && <p class="empty">Không có việc khớp.</p>}
+
+      <div class="jobs-layout">
+        <div>
+          <div class="room-toolbar">
+            <p class="room-count">
+              {items.length === 0
+                ? 'Không có việc khớp'
+                : `Hiển thị ${from} – ${to} trong ${items.length} việc làm`}
+              {hasFilter && items.length !== all.length ? ` · ${all.length} đang đăng` : ''}
+            </p>
+            <span class="room-sort">Sắp xếp: Mới nhất</span>
+          </div>
+
+          <div class="job-list">
+            {slice.map((item, i) => <JobRow item={item} index={(page - 1) * PAGE_SIZE + i} />)}
+          </div>
+          {items.length === 0 && <p class="empty">Không có việc khớp. Thử bỏ lọc hoặc đổi từ khóa.</p>}
+
+          {pages > 1 && (
+            <nav class="room-pager" aria-label="Trang">
+              {page > 1 ? <a href={hrefFor({ page: page - 1 })} aria-label="Trang trước">‹</a> : <span class="is-off">‹</span>}
+              {pagerNums(page, pages).map((n) =>
+                n === 'gap' ? (
+                  <span class="is-gap">…</span>
+                ) : n === page ? (
+                  <span class="is-on" aria-current="page">{n}</span>
+                ) : (
+                  <a href={hrefFor({ page: n })}>{n}</a>
+                )
+              )}
+              {page < pages ? <a href={hrefFor({ page: page + 1 })} aria-label="Trang sau">›</a> : <span class="is-off">›</span>}
+            </nav>
+          )}
+        </div>
+
+        <aside class="job-side">
+          {featured.length > 0 && (
+            <section class="panel">
+              <h3>Việc đã xác minh nguồn</h3>
+              {featured.map((item, i) => (
+                <a class="job-mini" href={listingHref(item)}>
+                  <span class={`job-ico c${i % 3}`}>{orgInitial(item)}</span>
+                  <div>
+                    <strong>{item.title}</strong>
+                    {item.organizationName && <span>{item.organizationName}</span>}
+                    <em>{item.salaryText || 'Thỏa thuận'}</em>
+                  </div>
+                </a>
+              ))}
+            </section>
+          )}
+
+          <section class="job-seek">
+            <h3>Bạn đang tìm việc?</h3>
+            <p>Xem tin đã duyệt rồi tự liên hệ. Thái Nguyên Life không nhận hồ sơ, không phỏng vấn.</p>
+            <ul>
+              <li>Không thu phí sinh viên</li>
+              <li>Tin được duyệt trước khi lên site</li>
+              <li>Liên hệ trực tiếp đơn vị tuyển</li>
+            </ul>
+            <a class="btn-green" href="/dang-tin">Đăng tin việc</a>
+          </section>
+
+          <section class="panel">
+            <h3>Thống kê việc làm</h3>
+            <ul class="job-stats">
+              {stats.map((row) => (
+                <li>
+                  <span>{row.label}</span>
+                  <strong>{row.count}</strong>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </aside>
+      </div>
     </div>
   </div>
 </Layout>

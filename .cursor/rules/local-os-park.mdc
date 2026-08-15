@@ -10,5 +10,5 @@ alwaysApply: true
 - Manifest: `deploy/ubuntu/migration-files.local-os.txt` only. Do **not** add to `migration-files.prod.txt`, `migration-files.family-os.txt`, or `migration-files.content.txt`.
 - Do not merge Local OS commits with Pharmacy auth. Do not crawl Facebook. Do not auto-post to groups.
 - Public submit → `NEEDS_REVIEW`. Site shows `ACTIVE` only after human publish.
-- Student v1: Job + Event + Room. Listing Publisher MVP: **Job only**.
+- Student v1: Job + Event + Room. Publisher: Job + Event + Room (no prices on rooms). Offers/grants stay hidden.
 - No Novixa/Famixa/PHC CTAs on the public site.

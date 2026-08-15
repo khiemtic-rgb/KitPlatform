@@ -1,0 +1,60 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { GUIDES, getGuide, getPlace, placeHref } from '../../../lib/discover';
+
+export function getStaticPaths() {
+  return GUIDES.map((g) => ({ params: { slug: g.slug } }));
+}
+
+const guide = getGuide(Astro.params.slug ?? '');
+if (!guide) return Astro.redirect('/kham-pha');
+---
+<Layout title={`${guide.title} — Khám phá Thái Nguyên`} active="discover">
+  <div class="page discover-page">
+    <div class="wrap" style="max-width:800px">
+      <nav class="job-crumb" aria-label="Đường dẫn">
+        <a href="/">Trang chủ</a>
+        <span>›</span>
+        <a href="/kham-pha">Khám phá</a>
+        <span>›</span>
+        <span>Cẩm nang</span>
+        <span>›</span>
+        <span>{guide.title}</span>
+      </nav>
+
+      <article class="event-detail-main" style="padding:16px 20px 24px">
+        <div class="event-hero-media">
+          <img src={guide.cover} alt="" />
+          <span class="photo-caption">Ảnh minh họa</span>
+        </div>
+        <header class="event-detail-head">
+          <p class="muted">{guide.kicker}</p>
+          <h1>{guide.title}</h1>
+          <p class="event-detail-lead">{guide.summary}</p>
+        </header>
+        {guide.sections.map((s) => (
+          <section class="job-block">
+            <h2>{s.heading}</h2>
+            <p>{s.body}</p>
+            {s.placeSlugs && s.placeSlugs.length > 0 && (
+              <p>
+                {s.placeSlugs.map((slug) => {
+                  const p = getPlace(slug);
+                  return p ? <a class="btn-outline" href={placeHref(p.slug)} style="margin-right:8px">{p.title}</a> : null;
+                })}
+              </p>
+            )}
+          </section>
+        ))}
+        <section class="job-block">
+          <h2>Nguồn</h2>
+          <ul>
+            {guide.sources.map((s) => (
+              <li><a href={s.url} rel="nofollow noopener" target="_blank">{s.label}</a></li>
+            ))}
+          </ul>
+        </section>
+      </article>
+    </div>
+  </div>
+</Layout>

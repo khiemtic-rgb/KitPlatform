@@ -66,7 +66,7 @@ public sealed class PublicLocalOsController : ControllerBase
         [FromQuery] string? category,
         [FromQuery] string? audience,
         CancellationToken cancellationToken) =>
-        Ok(await _publishers.RecommendGroupsAsync(category ?? "job", audience ?? "student", cancellationToken));
+        Ok(await _publishers.RecommendGroupsAsync(category, audience ?? "student", cancellationToken));
 
     [HttpPost("share-events")]
     public async Task<IActionResult> TrackShare(

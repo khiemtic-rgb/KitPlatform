@@ -28,7 +28,9 @@ public sealed record LocalListingDto(
     string Status,
     DateTimeOffset? PublishedAt,
     DateTimeOffset? LastCheckedAt,
-    DateTimeOffset? ExpiresAt);
+    DateTimeOffset? ExpiresAt,
+    Guid? SourceId,
+    string? SourceName);
 
 public sealed record UpsertLocalListingRequest(
     string Kind,
@@ -54,7 +56,8 @@ public sealed record UpsertLocalListingRequest(
     string? RoomType,
     string? Trust,
     bool? SafetyFlag,
-    string? Status);
+    string? Status,
+    Guid? SourceId = null);
 
 public sealed record LocalListingQuery(
     string? Kind,
@@ -72,16 +75,22 @@ public sealed record VerifyPublisherOtpRequest(string Phone, string Code);
 public sealed record PublisherSessionDto(string Token, Guid PublisherId, string Phone, int ExistingListingCount);
 
 public sealed record PublishJobRequest(
-    string Token,
-    string Template,
+    string? Token,
+    string? Kind,
+    string? Template,
     List<string>? Categories,
     string Title,
     string? Quantity,
     string PlaceText,
-    string WorkingTime,
+    string? WorkingTime,
     string? SalaryText,
     string? Requirements,
-    string ContactName);
+    string ContactName,
+    string? Phone = null,
+    string? RoomType = null,
+    string? StartAt = null,
+    string? EndAt = null,
+    string? RegistrationUrl = null);
 
 public sealed record CommunityGroupDto(
     Guid Id,
@@ -101,6 +110,50 @@ public sealed record PublishJobResult(
 
 public sealed record TrackShareRequest(Guid ListingId, Guid? GroupId, string EventKind);
 
+public sealed record IngestFromSourceRequest(string SourceUrl, string? PastedText, string? Kind, Guid? SourceId = null);
+
+public sealed record IngestFromSourceResult(LocalListingDto Listing, string Note, bool Existing);
+
+public sealed record LocalSourceDto(
+    Guid Id,
+    string SourceKind,
+    string Name,
+    string? Url,
+    string Status,
+    string Platform,
+    string Category,
+    string Audience,
+    string Geo,
+    string? Notes,
+    bool WatchEnabled = false,
+    DateTimeOffset? LastWatchedAt = null);
+
+public sealed record LocalWatchRunDto(
+    Guid Id,
+    DateTimeOffset StartedAt,
+    DateTimeOffset? FinishedAt,
+    string Trigger,
+    int SourcesScanned,
+    int LinksSeen,
+    int CreatedCount,
+    int SkippedExisting,
+    int SkippedFilter,
+    int ErrorCount,
+    string? Note);
+
+public sealed record UpsertLocalSourceRequest(
+    string SourceKind,
+    string Name,
+    string? Url,
+    string? Status,
+    string? Platform,
+    string? Category,
+    string? Audience,
+    string? Geo,
+    string? Notes);
+
+public sealed record SetLocalSourceStatusRequest(string Status);
+
 public interface ILocalOsListingService
 {
     Task<IReadOnlyList<LocalListingDto>> ListAsync(LocalListingQuery query, CancellationToken cancellationToken = default);
@@ -110,11 +163,31 @@ public interface ILocalOsListingService
     Task<LocalListingDto?> SetStatusAsync(Guid id, string status, CancellationToken cancellationToken = default);
 }
 
+public interface ILocalOsIngestService
+{
+    Task<IngestFromSourceResult> IngestAsync(IngestFromSourceRequest request, CancellationToken cancellationToken = default);
+}
+
+public interface ILocalOsSourceService
+{
+    Task<IReadOnlyList<LocalSourceDto>> ListAsync(CancellationToken cancellationToken = default);
+    Task<LocalSourceDto> CreateAsync(UpsertLocalSourceRequest request, CancellationToken cancellationToken = default);
+    Task<LocalSourceDto?> UpdateAsync(Guid id, UpsertLocalSourceRequest request, CancellationToken cancellationToken = default);
+    Task<LocalSourceDto?> SetStatusAsync(Guid id, string status, CancellationToken cancellationToken = default);
+}
+
+public interface ILocalOsWatchService
+{
+    Task<LocalWatchRunDto> RunAsync(string trigger, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<LocalWatchRunDto>> ListRunsAsync(int take = 10, CancellationToken cancellationToken = default);
+    Task<DateTimeOffset?> LastFinishedAtAsync(CancellationToken cancellationToken = default);
+}
+
 public interface ILocalOsPublisherService
 {
     Task<RequestPublisherOtpResult> RequestOtpAsync(string phone, CancellationToken cancellationToken = default);
     Task<PublisherSessionDto?> VerifyOtpAsync(string phone, string code, CancellationToken cancellationToken = default);
     Task<PublishJobResult> PublishJobAsync(PublishJobRequest request, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<CommunityGroupDto>> RecommendGroupsAsync(string category, string audience, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<CommunityGroupDto>> RecommendGroupsAsync(string? category, string audience, CancellationToken cancellationToken = default);
     Task TrackShareAsync(TrackShareRequest request, CancellationToken cancellationToken = default);
 }

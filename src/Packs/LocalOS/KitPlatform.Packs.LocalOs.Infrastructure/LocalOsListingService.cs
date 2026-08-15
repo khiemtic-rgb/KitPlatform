@@ -7,17 +7,18 @@ namespace KitPlatform.Packs.LocalOs.Infrastructure;
 internal sealed class LocalOsListingService : ILocalOsListingService
 {
     internal const string SelectColumns = """
-        id AS Id, kind AS Kind, title AS Title, summary AS Summary,
-        organization_name AS OrganizationName, place_text AS PlaceText,
-        audience AS Audience, city_code AS CityCode,
-        source_kind AS SourceKind, source_url AS SourceUrl,
-        contact_phone AS ContactPhone, contact_name AS ContactName,
-        salary_text AS SalaryText, working_time AS WorkingTime, employment_type AS EmploymentType,
-        category AS Category, requirements AS Requirements,
-        start_at AS StartAt, end_at AS EndAt, registration_url AS RegistrationUrl,
-        price_month AS PriceMonth, room_type AS RoomType, trust AS Trust,
-        safety_flag AS SafetyFlag, status AS Status,
-        published_at AS PublishedAt, last_checked_at AS LastCheckedAt, expires_at AS ExpiresAt
+        l.id AS Id, l.kind AS Kind, l.title AS Title, l.summary AS Summary,
+        l.organization_name AS OrganizationName, l.place_text AS PlaceText,
+        l.audience AS Audience, l.city_code AS CityCode,
+        l.source_kind AS SourceKind, l.source_url AS SourceUrl,
+        l.contact_phone AS ContactPhone, l.contact_name AS ContactName,
+        l.salary_text AS SalaryText, l.working_time AS WorkingTime, l.employment_type AS EmploymentType,
+        l.category AS Category, l.requirements AS Requirements,
+        l.start_at AS StartAt, l.end_at AS EndAt, l.registration_url AS RegistrationUrl,
+        l.price_month AS PriceMonth, l.room_type AS RoomType, l.trust AS Trust,
+        l.safety_flag AS SafetyFlag, l.status AS Status,
+        l.published_at AS PublishedAt, l.last_checked_at AS LastCheckedAt, l.expires_at AS ExpiresAt,
+        l.source_id AS SourceId, s.name AS SourceName
         """;
 
     private readonly IDbConnectionFactory _db;
@@ -38,23 +39,24 @@ internal sealed class LocalOsListingService : ILocalOsListingService
 
         var sql = $"""
             SELECT {SelectColumns}
-            FROM pack_local.listing
-            WHERE city_code = @City
-              AND (@Kind IS NULL OR kind = @Kind)
-              AND (@Status IS NULL OR status = @Status)
-              AND (@Q IS NULL OR title ILIKE @Like OR COALESCE(place_text, '') ILIKE @Like
-                   OR COALESCE(organization_name, '') ILIKE @Like)
+            FROM pack_local.listing l
+            LEFT JOIN pack_local.source s ON s.id = l.source_id
+            WHERE l.city_code = @City
+              AND (@Kind IS NULL OR l.kind = @Kind)
+              AND (@Status IS NULL OR l.status = @Status)
+              AND (@Q IS NULL OR l.title ILIKE @Like OR COALESCE(l.place_text, '') ILIKE @Like
+                   OR COALESCE(l.organization_name, '') ILIKE @Like)
               AND (
                     @PublicOnly = FALSE
                     OR (
-                        status = 'ACTIVE'
-                        AND safety_flag = FALSE
-                        AND (expires_at IS NULL OR expires_at > NOW())
+                        l.status = 'ACTIVE'
+                        AND l.safety_flag = FALSE
+                        AND (l.expires_at IS NULL OR l.expires_at > NOW())
                     )
                   )
-            ORDER BY CASE WHEN status = 'NEEDS_REVIEW' THEN 0 ELSE 1 END,
-                     COALESCE(last_checked_at, published_at, created_at) DESC
-            LIMIT 200
+            ORDER BY CASE WHEN l.status = 'NEEDS_REVIEW' THEN 0 ELSE 1 END,
+                     COALESCE(l.last_checked_at, l.published_at, l.created_at) DESC
+            LIMIT 500
             """;
 
         var rows = await conn.QueryAsync<ListingRow>(
@@ -83,14 +85,15 @@ internal sealed class LocalOsListingService : ILocalOsListingService
             new CommandDefinition(
                 $"""
                 SELECT {SelectColumns}
-                FROM pack_local.listing
-                WHERE id = @Id
+                FROM pack_local.listing l
+                LEFT JOIN pack_local.source s ON s.id = l.source_id
+                WHERE l.id = @Id
                   AND (
                         @PublicOnly = FALSE
                         OR (
-                            status = 'ACTIVE'
-                            AND safety_flag = FALSE
-                            AND (expires_at IS NULL OR expires_at > NOW())
+                            l.status = 'ACTIVE'
+                            AND l.safety_flag = FALSE
+                            AND (l.expires_at IS NULL OR l.expires_at > NOW())
                         )
                       )
                 """,
@@ -110,13 +113,13 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                 """
                 INSERT INTO pack_local.listing (
                     id, kind, title, summary, organization_name, place_text, audience, city_code,
-                    source_kind, source_url, contact_phone, contact_name, salary_text, working_time,
+                    source_kind, source_url, source_id, contact_phone, contact_name, salary_text, working_time,
                     employment_type, category, requirements,
                     start_at, end_at, registration_url, price_month, room_type, trust, safety_flag,
                     status, published_at, last_checked_at, expires_at
                 ) VALUES (
                     @Id, @Kind, @Title, @Summary, @OrganizationName, @PlaceText, @Audience, @CityCode,
-                    @SourceKind, @SourceUrl, @ContactPhone, @ContactName, @SalaryText, @WorkingTime,
+                    @SourceKind, @SourceUrl, @SourceId, @ContactPhone, @ContactName, @SalaryText, @WorkingTime,
                     @EmploymentType, @Category, @Requirements,
                     @StartAt, @EndAt, @RegistrationUrl, @PriceMonth, @RoomType, @Trust, @SafetyFlag,
                     @Status, CASE WHEN @Status = 'ACTIVE' THEN NOW() ELSE NULL END, NOW(),
@@ -142,6 +145,7 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                     organization_name = @OrganizationName, place_text = @PlaceText,
                     audience = @Audience, city_code = @CityCode,
                     source_kind = @SourceKind, source_url = @SourceUrl,
+                    source_id = COALESCE(@SourceId, source_id),
                     contact_phone = @ContactPhone, contact_name = @ContactName,
                     salary_text = @SalaryText, working_time = @WorkingTime, employment_type = @EmploymentType,
                     category = @Category, requirements = @Requirements,
@@ -188,7 +192,7 @@ internal sealed class LocalOsListingService : ILocalOsListingService
     internal static object Bind(Guid id, UpsertLocalListingRequest r)
     {
         var kind = (r.Kind ?? "job").Trim().ToLowerInvariant();
-        if (kind is not ("job" or "event" or "room"))
+        if (kind is not ("job" or "event" or "room" or "grant"))
             kind = "job";
         var audience = (r.Audience is { Count: > 0 } ? r.Audience : ["student"]).ToArray();
         var status = string.IsNullOrWhiteSpace(r.Status) ? "NEEDS_REVIEW" : r.Status.Trim().ToUpperInvariant();
@@ -205,6 +209,7 @@ internal sealed class LocalOsListingService : ILocalOsListingService
             CityCode = string.IsNullOrWhiteSpace(r.CityCode) ? LocalOsPackDefinition.DefaultCityCode : r.CityCode.Trim(),
             SourceKind = string.IsNullOrWhiteSpace(r.SourceKind) ? "group_manual" : r.SourceKind.Trim(),
             r.SourceUrl,
+            r.SourceId,
             r.ContactPhone,
             r.ContactName,
             r.SalaryText,
@@ -212,8 +217,8 @@ internal sealed class LocalOsListingService : ILocalOsListingService
             r.EmploymentType,
             r.Category,
             r.Requirements,
-            r.StartAt,
-            r.EndAt,
+            StartAt = r.StartAt?.ToUniversalTime(),
+            EndAt = r.EndAt?.ToUniversalTime(),
             r.RegistrationUrl,
             r.PriceMonth,
             r.RoomType,
@@ -229,7 +234,7 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         r.SalaryText, r.WorkingTime, r.EmploymentType, r.Category, r.Requirements,
         r.StartAt, r.EndAt, r.RegistrationUrl,
         r.PriceMonth, r.RoomType, r.Trust, r.SafetyFlag, r.Status,
-        r.PublishedAt, r.LastCheckedAt, r.ExpiresAt);
+        r.PublishedAt, r.LastCheckedAt, r.ExpiresAt, r.SourceId, r.SourceName);
 
     internal sealed class ListingRow
     {
@@ -261,5 +266,7 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         public DateTimeOffset? PublishedAt { get; set; }
         public DateTimeOffset? LastCheckedAt { get; set; }
         public DateTimeOffset? ExpiresAt { get; set; }
+        public Guid? SourceId { get; set; }
+        public string? SourceName { get; set; }
     }
 }

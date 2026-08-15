@@ -14,6 +14,10 @@ import {
   listListings,
   orgInitial,
 } from '../lib/api';
+import { featuredGuides, featuredPlaces, guideHref, placeHref } from '../lib/discover';
+
+const homePlaces = featuredPlaces();
+const homeGuides = featuredGuides();
 
 const q = Astro.url.searchParams.get('q') ?? '';
 const [jobs, events, rooms, groups] = await Promise.all([
@@ -36,12 +40,12 @@ const upcoming = events.filter((e) => e.startAt).slice(0, 4);
 const featuredRooms = rooms.slice(0, 4);
 const liveCount = jobs.length + events.length + rooms.length;
 ---
-<Layout title="Thái Nguyên Life — Việc, sự kiện, nhà ở">
+<Layout title="Thái Nguyên Life — Việc, sự kiện, phòng trọ" description="Hiểu Thái Nguyên, rồi tìm việc — sự kiện — phòng trọ đã duyệt, còn hạn. Xem không cần tài khoản.">
   <section class="hero">
     <div class="wrap hero-inner">
       <div class="hero-copy">
         <h1>Hôm nay ở <em>Thái Nguyên</em> có gì đáng để bạn quan tâm?</h1>
-        <p class="hero-sub">Khám phá cơ hội, sự kiện, ưu đãi và những điều hữu ích quanh bạn.</p>
+        <p class="hero-sub">Hiểu Thái Nguyên, rồi tìm việc — sự kiện — phòng trọ còn hạn.</p>
       </div>
       <div class="hero-find" id="tim">
         <form class="search-bar hero-search" method="get" action="/">
@@ -69,17 +73,9 @@ const liveCount = jobs.length + events.length + rooms.length;
             <svg class="pill-ico event" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
             sự kiện cuối tuần
           </a>
-          <a class="pill" href="/uu-dai">
-            <svg class="pill-ico offer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.6 13.4 10.5 3.3A2 2 0 0 0 9.1 2.9H4a1 1 0 0 0-1 1v5.1a2 2 0 0 0 .6 1.4l10.1 10.1a2 2 0 0 0 2.8 0l4.1-4.1a2 2 0 0 0 0-2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>
-            ưu đãi ăn uống
-          </a>
           <a class="pill" href="/su-kien?q=workshop">
             <svg class="pill-ico workshop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
             workshop
-          </a>
-          <a class="pill" href="/uu-dai#hoc-bong">
-            <svg class="pill-ico grant" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9 12 5l9 4-9 4-9-4z"/><path d="M7 11.5v4.2c0 .6 2.2 2.3 5 2.3s5-1.7 5-2.3v-4.2"/></svg>
-            học bổng
           </a>
         </div>
       </div>
@@ -106,22 +102,8 @@ const liveCount = jobs.length + events.length + rooms.length;
         <span class="cat-ico room" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
         </span>
-        <strong>Nhà ở</strong>
+        <strong>Phòng trọ</strong>
         <span>{rooms.length} tin</span>
-      </a>
-      <a class="cat-item soon" href="/uu-dai">
-        <span class="cat-ico offer" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.6 13.4 10.5 3.3A2 2 0 0 0 9.1 2.9H4a1 1 0 0 0-1 1v5.1a2 2 0 0 0 .6 1.4l10.1 10.1a2 2 0 0 0 2.8 0l4.1-4.1a2 2 0 0 0 0-2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>
-        </span>
-        <strong>Ưu đãi</strong>
-        <span>Sắp mở</span>
-      </a>
-      <a class="cat-item soon" href="/uu-dai#hoc-bong">
-        <span class="cat-ico grant" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9 12 5l9 4-9 4-9-4z"/><path d="M7 11.5v4.2c0 .6 2.2 2.3 5 2.3s5-1.7 5-2.3v-4.2"/><path d="M21 9v6"/></svg>
-        </span>
-        <strong>Học bổng</strong>
-        <span>Sắp mở</span>
       </a>
       <a class="cat-item" href="#cong-dong">
         <span class="cat-ico community" aria-hidden="true">
@@ -159,6 +141,33 @@ const liveCount = jobs.length + events.length + rooms.length;
       </div>
       {picked.length === 0 && <p class="empty">Chưa có tin còn hạn. Duyệt tin ở admin rồi Đăng.</p>}
 
+      <div class="section-head" style="margin-top:28px">
+        <h2>Khám phá Thái Nguyên</h2>
+        <a class="see-all" href="/kham-pha">Xem hub →</a>
+      </div>
+      <div class="discover-home">
+        {homePlaces.map((p) => (
+          <a class="discover-card" href={placeHref(p.slug)}>
+            <div class="discover-card-photo">
+              <img src={p.cover} alt="" />
+              <span class="photo-caption">Ảnh minh họa</span>
+            </div>
+            <div class="discover-card-body">
+              <h3>{p.title}</h3>
+              <p>{p.summary}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+      <div class="discover-guides" style="margin:-12px 0 28px">
+        {homeGuides.map((g) => (
+          <a class="discover-guide" href={guideHref(g.slug)}>
+            <strong>{g.title}</strong>
+            <span>{g.summary}</span>
+          </a>
+        ))}
+      </div>
+
       <div class="trio equal">
         <section class="panel">
           <div class="section-head tight">
@@ -195,7 +204,10 @@ const liveCount = jobs.length + events.length + rooms.length;
           </div>
           {upcoming.map((item, i) => (
             <a class="ev" href={hrefFor(item)}>
-              <img class="ev-thumb" src={coverFor('event', i)} alt="" />
+              <span class="ev-thumb-wrap">
+                <img class="ev-thumb" src={coverFor('event', i)} alt="Ảnh minh họa" />
+                <span class="photo-caption">Minh họa</span>
+              </span>
               <div class="ev-body">
                 <strong>{item.title}</strong>
                 {item.placeText && (
@@ -220,7 +232,10 @@ const liveCount = jobs.length + events.length + rooms.length;
           </div>
           {featuredRooms.map((item, i) => (
             <a class="ev" href={hrefFor(item)}>
-              <img class="ev-thumb" src={coverFor('room', i)} alt="" />
+              <span class="ev-thumb-wrap">
+                <img class="ev-thumb" src={coverFor('room', i)} alt="Ảnh minh họa" />
+                <span class="photo-caption">Minh họa</span>
+              </span>
               <div class="ev-body">
                 <strong>{item.title}</strong>
                 {item.placeText && (
@@ -316,8 +331,8 @@ const liveCount = jobs.length + events.length + rooms.length;
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="2.2"/><circle cx="16" cy="8.3" r="1.8"/><path d="M4.8 17.2c.4-2.3 2.3-3.7 4.2-3.7s3.8 1.4 4.2 3.7"/></svg>
             </span>
             <div>
-              <b>0đ</b>
-              <span>Phí ứng tuyển</span>
+              <b>Không mất phí</b>
+              <span>khi xem &amp; liên hệ</span>
             </div>
           </div>
           <div class="life-stat">

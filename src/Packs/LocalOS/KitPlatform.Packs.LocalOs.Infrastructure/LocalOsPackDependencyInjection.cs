@@ -9,6 +9,10 @@ public static class LocalOsPackDependencyInjection
     {
         services.AddScoped<ILocalOsListingService, LocalOsListingService>();
         services.AddScoped<ILocalOsPublisherService, LocalOsPublisherService>();
+        services.AddScoped<ILocalOsIngestService, LocalOsIngestService>();
+        services.AddScoped<ILocalOsSourceService, LocalOsSourceService>();
+        services.AddScoped<ILocalOsWatchService, LocalOsWatchService>();
+        services.AddHostedService<LocalOsWatchWorker>();
         return services;
     }
 }

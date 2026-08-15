@@ -1,29 +1,257 @@
 ---
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
-import { formatWhen, getListing } from '../../lib/api';
+import {
+  coverFor,
+  formatClock,
+  formatRelative,
+  getListing,
+  hrefFor,
+  listListings,
+  orgInitial,
+  trustLabel,
+} from '../../lib/api';
+import {
+  eventCatLabel,
+  eventCatOf,
+  eventDeadlineBits,
+  eventFee,
+  eventFormat,
+  eventPlaceKey,
+  eventTags,
+  eventTopics,
+  formatEventWhenFull,
+  similarEvents,
+} from '../../lib/event-filters';
+
 const { id } = Astro.params;
 const item = id ? await getListing(id) : null;
 if (!item) Astro.response.status = 404;
+
+const all = item ? await listListings('event') : [];
+const similar = item ? similarEvents(item, all) : [];
+const cat = item ? eventCatOf(item) : '';
+const catLabel = eventCatLabel(cat);
+const tags = item ? eventTags(item) : [];
+const format = item ? eventFormat(item) : '';
+const fee = item ? eventFee(item) : '';
+const topics = item ? eventTopics(item) : [];
+const deadlines = item ? eventDeadlineBits(item) : [];
+const placeKey = item ? eventPlaceKey(item) : '';
+const registerUrl = item?.registrationUrl || null;
+const sourceUrl = item?.sourceUrl || null;
+const applyUrl = registerUrl || sourceUrl;
+const startFull = item ? formatEventWhenFull(item.startAt) : '';
+const endFull = item ? formatEventWhenFull(item.endAt) : '';
+const when = item ? formatRelative(item.lastCheckedAt || item.publishedAt) : '';
+
+const facts: { label: string; value: string }[] = [];
+if (item?.organizationName) facts.push({ label: 'Đơn vị', value: item.organizationName });
+if (item?.placeText) facts.push({ label: 'Địa điểm', value: item.placeText });
+if (catLabel) facts.push({ label: 'Loại', value: catLabel });
+if (format) facts.push({ label: 'Hình thức', value: format });
+if (fee) facts.push({ label: 'Phí (theo tin)', value: fee });
+for (const d of deadlines) facts.push({ label: 'Mốc', value: d });
+if (when) facts.push({ label: 'Cập nhật', value: when });
+
+const mapsQuery = placeKey
+  ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${placeKey}, Thái Nguyên`)}`
+  : null;
 ---
 <Layout title={item ? `${item.title} — Thái Nguyên Life` : 'Không tìm thấy'} active="event">
-  <div class="page">
-    <div class="wrap" style="max-width:760px">
+  <div class="page event-detail-page">
+    <div class="wrap">
       {item ? (
-        <article class="detail">
-          <p class="muted">Sự kiện · {item.trust}</p>
-          <h1>{item.title}</h1>
-          <p>{item.summary}</p>
-          <div class="facts">
-            {item.organizationName && <div><strong>Đơn vị:</strong> {item.organizationName}</div>}
-            {item.placeText && <div><strong>Địa điểm:</strong> {item.placeText}</div>}
-            {item.startAt && <div><strong>Bắt đầu:</strong> {formatWhen(item.startAt)}</div>}
-            {item.endAt && <div><strong>Kết thúc:</strong> {formatWhen(item.endAt)}</div>}
+        <>
+          <nav class="job-crumb" aria-label="Đường dẫn">
+            <a href="/">Trang chủ</a>
+            <span>›</span>
+            <a href="/su-kien">Sự kiện</a>
+            {cat && (<><span>›</span><a href={`/su-kien?cat=${cat}`}>{catLabel}</a></>)}
+            <span>›</span>
+            <span>{item.title}</span>
+          </nav>
+
+          <div class="event-detail-grid">
+            <article class="event-detail-main">
+              <div class="event-hero-media">
+                <img src={coverFor('event', 0)} alt="Ảnh minh họa sự kiện" />
+                <span class={`event-row-badge is-${cat || 'event'}`}>{catLabel}</span>
+                <span class="job-save event-hero-save" aria-hidden="true" title="Chưa lưu tin">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.4-9.2-8.2C1 9.2 2.2 6 5.4 6c1.8 0 3 1.2 3.6 2.2C9.6 7.2 10.8 6 12.6 6c3.2 0 4.4 3.2 2.6 5.8C13 15.6 12 20 12 20z"/></svg>
+                  Lưu
+                </span>
+                <span class="photo-caption">Ảnh minh họa</span>
+              </div>
+
+              <header class="event-detail-head">
+                <h1>{item.title}</h1>
+                <div class="event-detail-pills">
+                  <span class="room-pill is-soft">{trustLabel(item.trust)}</span>
+                  <span class="room-pill">{catLabel}</span>
+                  {placeKey && <span class="room-pill">{placeKey}</span>}
+                  {tags.filter((t) => t !== catLabel).map((t) => <span class="job-row-tag">{t}</span>)}
+                </div>
+              </header>
+
+              {item.summary && <p class="event-detail-lead">{item.summary}</p>}
+
+              <dl class="event-quick">
+                {startFull && (
+                  <div>
+                    <dt>Bắt đầu</dt>
+                    <dd>{startFull}</dd>
+                  </div>
+                )}
+                {endFull && (
+                  <div>
+                    <dt>Kết thúc</dt>
+                    <dd>{endFull}</dd>
+                  </div>
+                )}
+                {format && (
+                  <div>
+                    <dt>Hình thức</dt>
+                    <dd>{format}</dd>
+                  </div>
+                )}
+                {fee && (
+                  <div>
+                    <dt>Phí (theo tin)</dt>
+                    <dd>{fee}</dd>
+                  </div>
+                )}
+              </dl>
+
+              {facts.length > 0 && (
+                <section class="job-block">
+                  <h2>Thông tin chi tiết</h2>
+                  <dl class="job-facts">
+                    {facts.map((f) => (
+                      <div>
+                        <dt>{f.label}</dt>
+                        <dd>{f.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              )}
+
+              {topics.length > 0 && (
+                <section class="job-block">
+                  <h2>Nội dung & chủ đề</h2>
+                  <ul>{topics.map((t) => <li>{t}</li>)}</ul>
+                </section>
+              )}
+
+              {item.requirements && (
+                <section class="job-block">
+                  <h2>Đối tượng</h2>
+                  <p>{item.requirements}</p>
+                </section>
+              )}
+
+              {item.placeText && (
+                <section class="job-block">
+                  <h2>Địa điểm</h2>
+                  <p>{item.placeText}</p>
+                  {mapsQuery && (
+                    <p>
+                      <a class="btn-outline" href={mapsQuery} rel="nofollow noopener" target="_blank">Xem trên Google Maps</a>
+                    </p>
+                  )}
+                </section>
+              )}
+
+              {(sourceUrl || item.organizationName) && (
+                <section class="event-source-card">
+                  <span class="job-ico c2">{orgInitial(item)}</span>
+                  <div>
+                    <strong>{item.organizationName || 'Nguồn tin'}</strong>
+                    {sourceUrl && (
+                      <a href={sourceUrl} rel="nofollow noopener" target="_blank">{sourceUrl.replace(/^https?:\/\//, '')}</a>
+                    )}
+                  </div>
+                </section>
+              )}
+            </article>
+
+            <aside class="event-detail-side">
+              <section class="event-reg-card">
+                <h3>Đăng ký tham dự</h3>
+                <p>Đăng ký trên trang ban tổ chức. Thái Nguyên Life không nhận bài, không cấp giấy chứng nhận.</p>
+                {applyUrl ? (
+                  <a class="btn-green event-reg-go" href={applyUrl} rel="nofollow noopener" target="_blank">
+                    {registerUrl ? 'Đăng ký trên trang gốc' : 'Xem tin gốc'}
+                  </a>
+                ) : (
+                  <p class="muted">Chưa có link đăng ký trên tin.</p>
+                )}
+                {sourceUrl && registerUrl && sourceUrl !== registerUrl && (
+                  <a class="btn-outline event-reg-src" href={sourceUrl} rel="nofollow noopener" target="_blank">Xem tin gốc</a>
+                )}
+                <ul>
+                  <li>Tự đăng ký với ban tổ chức</li>
+                  <li>Hạn và phí lấy theo tin nguồn — kiểm tra lại khi mở link</li>
+                  <li>Không nộp hồ sơ cho Thái Nguyên Life</li>
+                </ul>
+              </section>
+
+              {item.organizationName && (
+                <section class="panel">
+                  <h3>Đơn vị tổ chức</h3>
+                  <div class="event-org">
+                    <span class="job-ico c0">{orgInitial(item)}</span>
+                    <div>
+                      <strong>{item.organizationName}</strong>
+                      {sourceUrl && (
+                        <a href={sourceUrl} rel="nofollow noopener" target="_blank">Xem tin gốc →</a>
+                      )}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {similar.length > 0 && (
+                <section class="panel">
+                  <h3>Sự kiện liên quan</h3>
+                  {similar.map((e, i) => (
+                    <a class="event-mini" href={hrefFor(e)}>
+                      <img src={coverFor('event', i + 1)} alt="Ảnh minh họa" />
+                      <div>
+                        <strong>{e.title}</strong>
+                        {formatClock(e.startAt) && <span>{formatEventWhenFull(e.startAt)}</span>}
+                        {e.placeText && <span>{e.placeText}</span>}
+                      </div>
+                    </a>
+                  ))}
+                  <a class="panel-more" href="/su-kien">Xem thêm sự kiện →</a>
+                </section>
+              )}
+
+              <section class="panel">
+                <h3>Chia sẻ tin này</h3>
+                <div class="job-share">
+                  <a class="soc fb" data-share="facebook" href="#" rel="nofollow noopener" target="_blank" title="Facebook">f</a>
+                  <a class="soc zl" data-share="zalo" href="#" rel="nofollow noopener" target="_blank" title="Zalo">Z</a>
+                  <button class="soc" type="button" data-copy title="Sao chép link">⎘</button>
+                </div>
+                <p style="margin:10px 0 0"><a href="/thong-tin/lien-he">Báo cáo tin →</a></p>
+              </section>
+            </aside>
           </div>
-          {item.registrationUrl && <p><a href={item.registrationUrl} rel="nofollow">Đăng ký</a></p>}
-          {item.sourceUrl && <p><a href={item.sourceUrl} rel="nofollow">Nguồn</a></p>}
-        </article>
+        </>
       ) : <p class="empty">Tin không còn hoặc đã ẩn.</p>}
     </div>
   </div>
+  <script>
+    const pageUrl = location.href;
+    const fb = document.querySelector<HTMLAnchorElement>('[data-share="facebook"]');
+    const zalo = document.querySelector<HTMLAnchorElement>('[data-share="zalo"]');
+    if (fb) fb.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`;
+    if (zalo) zalo.href = `https://zalo.me/share?u=${encodeURIComponent(pageUrl)}`;
+    document.querySelector('[data-copy]')?.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(pageUrl); } catch { /* ignore */ }
+    });
+  </script>
 </Layout>

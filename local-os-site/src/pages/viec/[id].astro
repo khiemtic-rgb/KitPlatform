@@ -1,39 +1,240 @@
 ---
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
-import { getListing, telHref } from '../../lib/api';
+import {
+  formatWhen,
+  getListing,
+  hrefFor,
+  listListings,
+  orgInitial,
+  telHref,
+  trustLabel,
+} from '../../lib/api';
+import {
+  isNewJob,
+  jobFacts,
+  jobTags,
+  jobTypeOf,
+  JOB_TYPES,
+  similarJobs,
+  splitJobLines,
+} from '../../lib/job-filters';
+
 const { id } = Astro.params;
 const item = id ? await getListing(id) : null;
 if (!item) Astro.response.status = 404;
+
+const all = item ? await listListings('job') : [];
+const similar = item ? similarJobs(item, all) : [];
+const more = item ? all.filter((j) => j.id !== item.id).slice(0, 6) : [];
+const tags = item ? jobTags(item) : [];
+const typeLabel = item ? JOB_TYPES.find((t) => t.id === jobTypeOf(item))?.label : '';
+const facts = item
+  ? [
+      ...jobFacts(item),
+      ...(formatWhen(item.lastCheckedAt || item.publishedAt)
+        ? [{ label: 'Cập nhật', value: formatWhen(item.lastCheckedAt || item.publishedAt) }]
+        : []),
+      ...(formatWhen(item.expiresAt) ? [{ label: 'Hạn tin', value: formatWhen(item.expiresAt) }] : []),
+    ]
+  : [];
+const desc = item ? splitJobLines(item.summary) : [];
+const reqs = item ? splitJobLines(item.requirements) : [];
+const phoneHref = item ? telHref(item.contactPhone) : null;
+const applyUrl = item?.registrationUrl || item?.sourceUrl;
+const mapsQuery = item?.placeText
+  ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${item.placeText}, Thái Nguyên`)}`
+  : null;
+
+const fit: string[] = [];
+if (item && typeLabel) fit.push(typeLabel);
+if (item && tags.includes('Sinh viên')) fit.push('Dành cho sinh viên');
+if (item?.placeText) fit.push(item.placeText);
 ---
 <Layout title={item ? `${item.title} — Thái Nguyên Life` : 'Không tìm thấy'} active="job">
-  <div class="page">
-    <div class="wrap" style="max-width:760px">
+  <div class="page job-detail-page">
+    <div class="wrap">
       {item ? (
-        <article class="detail">
-          <p class="muted">Việc làm · {item.trust}</p>
-          <h1>{item.title}</h1>
-          <p>{item.summary}</p>
-          <div class="facts">
-            {item.organizationName && <div><strong>Đơn vị:</strong> {item.organizationName}</div>}
-            {item.placeText && <div><strong>Địa điểm:</strong> {item.placeText}</div>}
-            {item.salaryText && <div><strong>Lương:</strong> {item.salaryText}</div>}
-            {item.workingTime && <div><strong>Ca:</strong> {item.workingTime}</div>}
-          </div>
-          {item.contactPhone && (
-            <p>
-              Liên hệ chủ/QL:{' '}
-              {telHref(item.contactPhone) ? (
-                <a class="hl" href={telHref(item.contactPhone)!}>{item.contactPhone}</a>
-              ) : (
-                <strong>{item.contactPhone}</strong>
+        <>
+          <nav class="job-crumb" aria-label="Đường dẫn">
+            <a href="/">Trang chủ</a>
+            <span>›</span>
+            <a href="/viec">Việc làm</a>
+            <span>›</span>
+            <span>{item.title}</span>
+          </nav>
+
+          <div class="job-detail-grid">
+            <article class="job-detail">
+              <header class="job-detail-head">
+                <div class="job-detail-kicker">
+                  {isNewJob(item) && <span class="new-badge">Mới đăng</span>}
+                  <span class="room-pill is-soft">{trustLabel(item.trust)}</span>
+                </div>
+                <div class="job-detail-title-row">
+                  <h1>{item.title}</h1>
+                  <span class="job-save" aria-hidden="true" title="Chưa lưu tin">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.4-9.2-8.2C1 9.2 2.2 6 5.4 6c1.8 0 3 1.2 3.6 2.2C9.6 7.2 10.8 6 12.6 6c3.2 0 4.4 3.2 2.6 5.8C13 15.6 12 20 12 20z"/></svg>
+                    Lưu
+                  </span>
+                </div>
+                <p class="job-detail-meta">
+                  {typeLabel && <span>{typeLabel}</span>}
+                  {item.placeText && <span>{item.placeText}</span>}
+                </p>
+                <p class="job-detail-pay">
+                  {item.salaryText || 'Thỏa thuận'}
+                  {!item.salaryText && <span class="job-row-tag">Hỏi khi liên hệ</span>}
+                </p>
+                {tags.length > 0 && (
+                  <div class="job-detail-tags">
+                    {tags.map((t) => <span class="job-row-tag">{t}</span>)}
+                  </div>
+                )}
+              </header>
+
+              <section class="job-employer">
+                <span class="job-row-logo c0">{orgInitial(item)}</span>
+                <div>
+                  <strong>{item.organizationName || item.contactName || 'Đơn vị tuyển'}</strong>
+                  <span>{item.sourceName || trustLabel(item.trust)}</span>
+                </div>
+                <div class="job-employer-contact">
+                  <span>Liên hệ tuyển dụng</span>
+                  <strong>{item.contactPhone || item.contactName || 'Xem tin gốc'}</strong>
+                  <em>Tự liên hệ — Thái Nguyên Life không nhận hồ sơ.</em>
+                </div>
+                <div class="job-employer-actions">
+                  {phoneHref && <a class="btn-green" href={phoneHref}>Gọi ngay</a>}
+                  {applyUrl && (
+                    <a class="btn-outline" href={applyUrl} rel="nofollow noopener" target="_blank">Xem tin gốc</a>
+                  )}
+                </div>
+              </section>
+
+              {desc.length > 0 && (
+                <section class="job-block">
+                  <h2>Mô tả công việc</h2>
+                  {desc.length === 1 ? <p>{desc[0]}</p> : <ul>{desc.map((d) => <li>{d}</li>)}</ul>}
+                </section>
               )}
-              <span class="muted"> — tự phỏng vấn, chúng tôi không nhận hồ sơ.</span>
-            </p>
-          )}
-          {item.sourceUrl && <p><a href={item.sourceUrl} rel="nofollow">Xem tin gốc</a></p>}
-        </article>
+
+              {reqs.length > 0 && (
+                <section class="job-block">
+                  <h2>Yêu cầu</h2>
+                  {reqs.length === 1 ? <p>{reqs[0]}</p> : <ul>{reqs.map((d) => <li>{d}</li>)}</ul>}
+                </section>
+              )}
+
+              {facts.length > 0 && (
+                <section class="job-block">
+                  <h2>Thông tin công việc</h2>
+                  <dl class="job-facts">
+                    {facts.map((f) => (
+                      <div>
+                        <dt>{f.label}</dt>
+                        <dd>{f.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              )}
+
+              {item.placeText && (
+                <section class="job-block">
+                  <h2>Địa điểm làm việc</h2>
+                  <p>{item.placeText}</p>
+                  {mapsQuery && (
+                    <p>
+                      <a class="btn-outline" href={mapsQuery} rel="nofollow noopener" target="_blank">Xem trên Google Maps</a>
+                    </p>
+                  )}
+                </section>
+              )}
+
+              {more.length > 0 && (
+                <section class="job-block">
+                  <h2>Việc làm khác đang đăng</h2>
+                  <div class="job-more">
+                    {more.map((j) => (
+                      <a class="job-more-card" href={hrefFor(j)}>
+                        <strong>{j.title}</strong>
+                        <span>{j.organizationName || j.placeText}</span>
+                        <em>{j.salaryText || 'Thỏa thuận'}</em>
+                      </a>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </article>
+
+            <aside class="job-detail-side">
+              <section class="job-seek">
+                <h3>Bạn phù hợp với công việc này?</h3>
+                {fit.length > 0 && (
+                  <ul>
+                    {fit.map((x) => <li>{x}</li>)}
+                  </ul>
+                )}
+                <p>Tự liên hệ đơn vị tuyển. Chúng tôi không nhận hồ sơ, không phỏng vấn.</p>
+                {phoneHref ? (
+                  <a class="btn-green" href={phoneHref}>Gọi ngay</a>
+                ) : applyUrl ? (
+                  <a class="btn-green" href={applyUrl} rel="nofollow noopener" target="_blank">Xem tin gốc / đăng ký</a>
+                ) : (
+                  <a class="btn-green" href="/viec">Xem việc khác</a>
+                )}
+              </section>
+
+              {similar.length > 0 && (
+                <section class="panel">
+                  <h3>Việc làm tương tự</h3>
+                  {similar.map((j, i) => (
+                    <a class="job-mini" href={hrefFor(j)}>
+                      <span class={`job-ico c${i % 3}`}>{orgInitial(j)}</span>
+                      <div>
+                        <strong>{j.title}</strong>
+                        {j.organizationName && <span>{j.organizationName}</span>}
+                        <em>{j.salaryText || 'Thỏa thuận'}</em>
+                      </div>
+                    </a>
+                  ))}
+                  <a class="panel-more" href="/viec">Xem thêm việc làm →</a>
+                </section>
+              )}
+
+              <section class="panel">
+                <h3>Chia sẻ tin này</h3>
+                <div class="job-share">
+                  <a class="soc fb" data-share="facebook" href="#" rel="nofollow noopener" target="_blank" title="Facebook">f</a>
+                  <a class="soc zl" data-share="zalo" href="#" rel="nofollow noopener" target="_blank" title="Zalo">Z</a>
+                  <button class="soc" type="button" data-copy title="Sao chép link">⎘</button>
+                </div>
+              </section>
+
+              <section class="job-safe">
+                <h3>Lưu ý an toàn</h3>
+                <ul>
+                  <li>Liên hệ trực tiếp bằng số / link trên tin</li>
+                  <li>Không nộp phí giữ chỗ hay giữ việc</li>
+                  <li>Thái Nguyên Life không nhận hồ sơ, không phỏng vấn</li>
+                </ul>
+                <a href="/thong-tin/lien-he">Báo cáo tin →</a>
+              </section>
+            </aside>
+          </div>
+        </>
       ) : <p class="empty">Tin không còn hoặc đã ẩn.</p>}
     </div>
   </div>
+  <script>
+    const pageUrl = location.href;
+    const fb = document.querySelector<HTMLAnchorElement>('[data-share="facebook"]');
+    const zalo = document.querySelector<HTMLAnchorElement>('[data-share="zalo"]');
+    if (fb) fb.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`;
+    if (zalo) zalo.href = `https://zalo.me/share?u=${encodeURIComponent(pageUrl)}`;
+    document.querySelector('[data-copy]')?.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(pageUrl); } catch { /* ignore */ }
+    });
+  </script>
 </Layout>

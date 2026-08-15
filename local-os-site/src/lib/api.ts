@@ -5,10 +5,15 @@ export type LocalListing = {
   summary?: string | null;
   organizationName?: string | null;
   placeText?: string | null;
+  audience?: string[] | null;
+  category?: string | null;
   contactPhone?: string | null;
+  contactName?: string | null;
+  sourceName?: string | null;
   salaryText?: string | null;
   workingTime?: string | null;
   employmentType?: string | null;
+  requirements?: string | null;
   startAt?: string | null;
   endAt?: string | null;
   registrationUrl?: string | null;
@@ -18,10 +23,14 @@ export type LocalListing = {
   sourceUrl?: string | null;
   publishedAt?: string | null;
   lastCheckedAt?: string | null;
+  expiresAt?: string | null;
 };
 
 const API = (import.meta.env.PUBLIC_LOCAL_OS_API as string | undefined)?.replace(/\/$/, '')
   || 'http://127.0.0.1:5290/api/public/local-os';
+
+/** Shop deals + scholarships parked until brand partners. Flip to show nav/pages again. */
+export const OFFERS_PUBLIC = false;
 
 export async function listListings(kind?: string, q?: string): Promise<LocalListing[]> {
   const url = new URL(`${API}/listings`);
@@ -83,16 +92,22 @@ export async function verifyPublisherOtp(phone: string, code: string): Promise<{
 }
 
 export async function publishJob(body: {
-  token: string;
-  template: string;
+  phone: string;
+  token?: string;
+  kind?: 'job' | 'event' | 'room';
+  template?: string;
   categories?: string[];
   title: string;
   quantity?: string;
   placeText: string;
-  workingTime: string;
+  workingTime?: string;
   salaryText?: string;
   requirements?: string;
   contactName: string;
+  roomType?: string;
+  startAt?: string;
+  endAt?: string;
+  registrationUrl?: string;
 }): Promise<PublishJobResult> {
   const res = await fetch(`${API}/listings/jobs`, {
     method: 'POST',
@@ -123,14 +138,61 @@ async function readApiError(res: Response, fallback: string): Promise<string> {
 export function hrefFor(item: Pick<LocalListing, 'id' | 'kind'>): string {
   if (item.kind === 'event') return `/su-kien/${item.id}`;
   if (item.kind === 'room') return `/tro/${item.id}`;
+  if (item.kind === 'grant') return `/uu-dai/${item.id}`;
   return `/viec/${item.id}`;
 }
 
 export function kindLabel(kind: string): string {
   if (kind === 'event') return 'Sự kiện';
-  if (kind === 'room') return 'Nhà ở';
+  if (kind === 'room') return 'Phòng trọ';
   if (kind === 'offer') return 'Ưu đãi';
+  if (kind === 'grant') return 'Học bổng';
   return 'Việc làm';
+}
+
+export function trustLabel(trust?: string | null): string {
+  switch ((trust ?? '').toUpperCase()) {
+    case 'OFFICIAL':
+      return 'Nguồn chính thức';
+    case 'SOURCE_TRUSTED':
+      return 'Nguồn đã đăng ký';
+    case 'VERIFIED':
+      return 'Đã xác minh';
+    case 'COMMUNITY':
+      return 'Cộng đồng';
+    default:
+      return 'Chưa xác minh';
+  }
+}
+
+export function cleanPlace(place?: string | null): string {
+  if (!place) return '';
+  let s = place.replace(/,\s*$/g, '').trim();
+  s = s.replace(/,\s*Thành phố Thái Nguyên,\s*Thái Nguyên$/i, ', TP. Thái Nguyên');
+  s = s.replace(/,\s*Thái Nguyên,\s*Thái Nguyên$/i, ', Thái Nguyên');
+  s = s.replace(/Thành phố Thái Nguyên/gi, 'TP. Thái Nguyên');
+  return s;
+}
+
+export function cleanTitle(title?: string | null, _place?: string | null): string {
+  let s = (title ?? '').replace(/,\s*$/g, '').trim();
+  const cut = s.split(/\s+[—–-]\s+/)[0]?.trim();
+  if (cut && cut.length >= 8) s = cut;
+  s = s.replace(/Thành phố Thái Nguyên/gi, 'TP. Thái Nguyên');
+  return s;
+}
+
+/** Amenities / notes only — drop repeated price + source boilerplate. */
+export function roomNoteChips(summary?: string | null): string[] {
+  if (!summary) return [];
+  return summary
+    .split(/[·•]|(?:\.\s+)/)
+    .map((x) => x.replace(/\.$/, '').trim())
+    .filter((x) => x.length > 1 && x.length < 80)
+    .filter((x) => !/^giá\s*:/i.test(x))
+    .filter((x) => !/^nguồn\s*:/i.test(x))
+    .filter((x) => !/liên hệ chủ/i.test(x))
+    .filter((x) => !/đổi theo thời điểm/i.test(x));
 }
 
 export function formatPriceMonth(n?: number | null): string {
@@ -166,7 +228,7 @@ export function trendFoot(item: LocalListing): { kind: 'fire' | 'party' | 'pin';
   if (item.kind === 'event') {
     return { kind: 'party', text: item.placeText || 'Sự kiện đã duyệt' };
   }
-  return { kind: 'pin', text: item.placeText || 'Nhà ở Thái Nguyên' };
+  return { kind: 'pin', text: item.placeText || 'Phòng trọ Thái Nguyên' };
 }
 
 export function formatWhen(iso?: string | null): string {
@@ -208,7 +270,7 @@ export function groupInitials(name: string): string {
 }
 
 export function coverFor(kind: string, index = 0): string {
-  if (kind === 'event') return index % 2 === 0 ? '/trend/event.jpg' : '/trend/event2.jpg';
+  if (kind === 'event' || kind === 'grant') return index % 2 === 0 ? '/trend/event.jpg' : '/trend/event2.jpg';
   if (kind === 'room') return index % 2 === 0 ? '/trend/room.jpg' : '/trend/room2.jpg';
   return ['/trend/job.jpg', '/trend/job2.jpg', '/trend/job3.jpg'][index % 3];
 }
@@ -225,7 +287,7 @@ export function groupCover(index: number): string {
 export function groupHint(group: Pick<CommunityGroup, 'category' | 'audience' | 'platform'>): string {
   if (group.category === 'job' && group.audience === 'student') return 'Group việc / sinh viên';
   if (group.category === 'job') return 'Group việc làm';
-  if (group.category === 'room') return 'Group nhà ở';
+  if (group.category === 'room') return 'Group phòng trọ';
   if (group.category === 'event') return 'Group sự kiện';
   return group.platform === 'facebook' ? 'Facebook group' : 'Group gợi ý';
 }
@@ -246,8 +308,9 @@ export function formatRelative(iso?: string | null): string {
 
 export function cardHighlight(item: LocalListing): string {
   if (item.kind === 'job') return item.salaryText || item.workingTime || '';
-  if (item.kind === 'event') return formatWhen(item.startAt);
-  return formatPriceMonth(item.priceMonth);
+  if (item.kind === 'event') return formatWhen(item.startAt) || item.workingTime || '';
+  if (item.kind === 'grant') return item.salaryText || 'Xem điều kiện trên tin gốc';
+  return formatPriceMonth(item.priceMonth) || 'Giá liên hệ';
 }
 
 export const ROOM_TYPE_LABEL: Record<string, string> = {
@@ -261,6 +324,31 @@ export const EMP_LABEL: Record<string, string> = {
   full_time: 'Full-time',
   weekend: 'Cuối tuần',
 };
+
+export const JOB_CAT_LABEL: Record<string, string> = {
+  internship: 'Thực tập',
+  part_time: 'Part-time',
+  full_time: 'Full-time',
+  weekend: 'Cuối tuần',
+  service: 'Phục vụ',
+  sales: 'Bán hàng',
+};
+
+export function listingPhone(item: Pick<LocalListing, 'contactPhone' | 'sourceUrl' | 'summary'>): string {
+  const field = (item.contactPhone ?? '').trim();
+  if (field) return field;
+  const hash = item.sourceUrl?.match(/[#&]p=(\d{8,12})/i);
+  if (hash?.[1]) return hash[1];
+  const inText = `${item.summary ?? ''}`.match(/(?:\+84|0)[\d\s.]{8,14}/);
+  return inText?.[0]?.replace(/[^\d+]/g, '') ?? '';
+}
+
+export function formatPhone(phone?: string | null): string {
+  const d = (phone ?? '').replace(/\D/g, '');
+  if (d.length === 10) return `${d.slice(0, 4)} ${d.slice(4, 7)} ${d.slice(7)}`;
+  if (d.length === 11) return `${d.slice(0, 4)} ${d.slice(4, 7)} ${d.slice(7)}`;
+  return (phone ?? '').trim();
+}
 
 export function telHref(phone?: string | null): string | null {
   if (!phone) return null;

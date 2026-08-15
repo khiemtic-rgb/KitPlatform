@@ -1,6 +1,8 @@
 ---
 import {
   cardHighlight,
+  cleanPlace,
+  cleanTitle,
   coverFor,
   formatRelative,
   hrefFor,
@@ -17,13 +19,14 @@ const hl = cardHighlight(item);
 ---
 <a class={`media-card ${item.kind}`} href={hrefFor(item)} data-kind={item.kind}>
   <div class="thumb">
-    <img src={coverFor(item.kind, index)} alt="" />
+    <img src={coverFor(item.kind, index)} alt="Ảnh minh họa" />
     <span class="badge">{kindLabel(item.kind)}</span>
+    <span class="photo-caption">Ảnh minh họa</span>
   </div>
   <div class="media-body">
-    <h3>{item.title}</h3>
+    <h3>{item.kind === 'room' ? cleanTitle(item.title, item.placeText) : item.title}</h3>
     {hl && <p class="hl">{hl}</p>}
-    <p class="loc">{item.placeText || item.organizationName}</p>
+    <p class="loc">{item.kind === 'room' ? cleanPlace(item.placeText) : (item.placeText || item.organizationName)}</p>
     <p class="ago">{formatRelative(item.lastCheckedAt || item.publishedAt)}</p>
   </div>
 </a>

@@ -37,3 +37,5 @@ scripts/_run-smoke-batch.ps1
 docs/**/node_modules/
 local-os-site/node_modules/
 local-os-site/.astro/
+local-os-site/dist/
+local-os-site/.wrangler/

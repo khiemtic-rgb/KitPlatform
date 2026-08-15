@@ -14,8 +14,21 @@ namespace KitPlatform.Api.Controllers.LocalOs;
 public sealed class LocalOsController : ControllerBase
 {
     private readonly ILocalOsListingService _listings;
+    private readonly ILocalOsIngestService _ingest;
+    private readonly ILocalOsSourceService _sources;
+    private readonly ILocalOsWatchService _watch;
 
-    public LocalOsController(ILocalOsListingService listings) => _listings = listings;
+    public LocalOsController(
+        ILocalOsListingService listings,
+        ILocalOsIngestService ingest,
+        ILocalOsSourceService sources,
+        ILocalOsWatchService watch)
+    {
+        _listings = listings;
+        _ingest = ingest;
+        _sources = sources;
+        _watch = watch;
+    }
 
     [HttpGet("listings")]
     public async Task<ActionResult<IReadOnlyList<LocalListingDto>>> List(
@@ -49,6 +62,86 @@ public sealed class LocalOsController : ControllerBase
     {
         var row = await _listings.UpdateAsync(id, request, cancellationToken);
         return row is null ? NotFound() : Ok(row);
+    }
+
+    [HttpGet("sources")]
+    public async Task<ActionResult<IReadOnlyList<LocalSourceDto>>> ListSources(
+        CancellationToken cancellationToken) =>
+        Ok(await _sources.ListAsync(cancellationToken));
+
+    [HttpPost("sources")]
+    public async Task<ActionResult<LocalSourceDto>> CreateSource(
+        [FromBody] UpsertLocalSourceRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _sources.CreateAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPut("sources/{id:guid}")]
+    public async Task<ActionResult<LocalSourceDto>> UpdateSource(
+        Guid id,
+        [FromBody] UpsertLocalSourceRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var row = await _sources.UpdateAsync(id, request, cancellationToken);
+            return row is null ? NotFound() : Ok(row);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("sources/{id:guid}/status")]
+    public async Task<ActionResult<LocalSourceDto>> SetSourceStatus(
+        Guid id,
+        [FromBody] SetLocalSourceStatusRequest request,
+        CancellationToken cancellationToken)
+    {
+        var row = await _sources.SetStatusAsync(id, request.Status, cancellationToken);
+        return row is null ? NotFound() : Ok(row);
+    }
+
+    [HttpGet("watch/runs")]
+    public async Task<ActionResult<IReadOnlyList<LocalWatchRunDto>>> WatchRuns(
+        CancellationToken cancellationToken) =>
+        Ok(await _watch.ListRunsAsync(10, cancellationToken));
+
+    [HttpPost("watch/run")]
+    public async Task<ActionResult<LocalWatchRunDto>> WatchRun(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _watch.RunAsync("manual", cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("ingest")]
+    public async Task<ActionResult<IngestFromSourceResult>> Ingest(
+        [FromBody] IngestFromSourceRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _ingest.IngestAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("listings/{id:guid}/status")]

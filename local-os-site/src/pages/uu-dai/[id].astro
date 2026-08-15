@@ -1,0 +1,46 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { getListing, OFFERS_PUBLIC, telHref, trustLabel } from '../../lib/api';
+
+if (!OFFERS_PUBLIC) return Astro.redirect('/');
+
+const { id } = Astro.params;
+const item = id ? await getListing(id) : null;
+if (!item || item.kind !== 'grant') Astro.response.status = 404;
+const applyUrl = item?.registrationUrl || item?.sourceUrl;
+const phoneHref = item ? telHref(item.contactPhone) : null;
+---
+<Layout title={item ? `${item.title} — Thái Nguyên Life` : 'Không tìm thấy'} active="offer">
+  <div class="page">
+    <div class="wrap" style="max-width:760px">
+      {item && item.kind === 'grant' ? (
+        <article class="detail">
+          <a class="room-back" href="/uu-dai#hoc-bong">← Tất cả học bổng</a>
+          <p class="muted">Học bổng · {trustLabel(item.trust)}</p>
+          <h1>{item.title}</h1>
+          <p>{item.summary}</p>
+          <div class="facts">
+            {item.organizationName && <div><strong>Đơn vị:</strong> {item.organizationName}</div>}
+            {item.placeText && <div><strong>Địa điểm:</strong> {item.placeText}</div>}
+            {item.salaryText && <div><strong>Mức hỗ trợ:</strong> {item.salaryText}</div>}
+            {item.requirements && <div><strong>Điều kiện:</strong> {item.requirements}</div>}
+          </div>
+          {item.contactPhone && (
+            <p>
+              Liên hệ:{' '}
+              {phoneHref ? <a class="hl" href={phoneHref}>{item.contactPhone}</a> : <strong>{item.contactPhone}</strong>}
+              {item.contactName && <span> ({item.contactName})</span>}
+              <span class="muted"> — nộp hồ sơ tại trường, không nộp cho Thái Nguyên Life.</span>
+            </p>
+          )}
+          {applyUrl && (
+            <p>
+              <a class="btn-green" href={applyUrl} rel="nofollow noopener" target="_blank">Xem thông báo gốc</a>
+            </p>
+          )}
+        </article>
+      ) : <p class="empty">Tin không còn hoặc đã ẩn.</p>}
+    </div>
+  </div>
+</Layout>

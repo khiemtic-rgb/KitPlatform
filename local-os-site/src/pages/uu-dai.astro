@@ -1,16 +1,27 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import ListingCard from '../components/ListingCard.astro';
+import { listListings, OFFERS_PUBLIC } from '../lib/api';
+
+if (!OFFERS_PUBLIC) return Astro.redirect('/');
+
+const grants = await listListings('grant');
 ---
-<Layout title="Ưu đãi — Thái Nguyên Life" active="offer">
+<Layout title="Ưu đãi & học bổng — Thái Nguyên Life" active="offer">
   <div class="page">
-    <div class="wrap publish-wrap">
+    <div class="wrap">
       <h1 class="page-title">Ưu đãi &amp; học bổng</h1>
-      <div class="panel">
-        <p>Mục này đang để chỗ theo giao diện — chưa mở đăng tin ưu đãi / học bổng.</p>
-        <p class="muted">Hiện Thái Nguyên Life nhận tin <strong>việc làm</strong>. Sự kiện và nhà ở do vận hành duyệt tay.</p>
-        <p id="hoc-bong"></p>
-        <a class="btn-green" href="/dang-tin">Đăng tin việc</a>
-        <a class="btn" href="/viec" style="margin-left:8px">Xem việc đang có</a>
+      <p class="room-filters-note">Học bổng lấy từ thông báo website trường. Ưu đãi quán / shop — sắp mở (nguồn chưa có).</p>
+
+      <h2 id="hoc-bong" class="section-head" style="margin-top:8px">Học bổng</h2>
+      <div class="cards-3">
+        {grants.map((item, i) => <ListingCard item={item} index={i} />)}
+      </div>
+      {grants.length === 0 && <p class="empty">Chưa có học bổng còn hạn.</p>}
+
+      <div class="panel" style="margin-top:28px">
+        <h3>Ưu đãi đời sống</h3>
+        <p class="muted">Giảm giá quán, vé, shop cho SV chưa lấy từ nguồn đã đăng ký. Không bịa tin.</p>
       </div>
     </div>
   </div>

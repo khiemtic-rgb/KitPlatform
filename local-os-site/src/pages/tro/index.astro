@@ -1,22 +1,193 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import ListingCard from '../../components/ListingCard.astro';
+import RoomCard from '../../components/RoomCard.astro';
 import { listListings } from '../../lib/api';
+import { DISTANCES, filterRooms, SCHOOLS, wardsIn } from '../../lib/room-filters';
+
+const PAGE_SIZE = 12;
 const q = Astro.url.searchParams.get('q') ?? '';
-const items = await listListings('room', q || undefined);
+const school = Astro.url.searchParams.get('school') ?? '';
+const ward = Astro.url.searchParams.get('ward') ?? '';
+const dist = Astro.url.searchParams.get('dist') ?? '';
+const view = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'grid';
+const all = await listListings('room', q || undefined);
+const wards = wardsIn(all);
+const items = filterRooms(all, { school, ward, dist });
+const pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+const page = Math.min(pages, Math.max(1, Number(Astro.url.searchParams.get('page')) || 1));
+const from = items.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+const to = Math.min(items.length, page * PAGE_SIZE);
+const slice = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+const hasFilter = Boolean(q || school || ward || dist);
+
+function hrefFor(next: { page?: number; school?: string; view?: string } = {}): string {
+  const p = new URLSearchParams();
+  if (q) p.set('q', q);
+  const nextSchool = next.school !== undefined ? next.school : school;
+  if (nextSchool) p.set('school', nextSchool);
+  if (ward) p.set('ward', ward);
+  if (dist) p.set('dist', dist);
+  const nextView = next.view ?? view;
+  if (nextView === 'list') p.set('view', 'list');
+  const nextPage = next.page ?? 1;
+  if (nextPage > 1) p.set('page', String(nextPage));
+  const qs = p.toString();
+  return qs ? `/tro?${qs}` : '/tro';
+}
+
+function pagerNums(current: number, total: number): Array<number | 'gap'> {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const set = new Set([1, total, current, current - 1, current + 1]);
+  if (current <= 3) {
+    set.add(2); set.add(3); set.add(4);
+  }
+  if (current >= total - 2) {
+    set.add(total - 1); set.add(total - 2); set.add(total - 3);
+  }
+  const sorted = [...set].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  const out: Array<number | 'gap'> = [];
+  for (const n of sorted) {
+    const last = out[out.length - 1];
+    if (typeof last === 'number' && n - last > 1) out.push('gap');
+    out.push(n);
+  }
+  return out;
+}
 ---
-<Layout title="Nhà ở — Thái Nguyên Life" active="room">
-  <div class="page">
+<Layout title="Phòng trọ — Thái Nguyên Life" active="room">
+  <section class="room-hero">
+    <div class="wrap room-hero-inner">
+      <h1>Phòng trọ Thái Nguyên</h1>
+      <p>Tìm phòng phù hợp, gần trường — giá hỏi trực tiếp chủ nhà.</p>
+    </div>
+  </section>
+
+  <div class="page rooms-page">
     <div class="wrap">
-      <h1 class="page-title">Nhà ở</h1>
-      <form class="search-bar" method="get" style="max-width:640px;margin-bottom:20px">
-        <input type="search" name="q" value={q} placeholder="Giá, khu, ở ghép…" />
-        <button type="submit">Lọc</button>
+      <form class="room-search" method="get">
+        {view === 'list' && <input type="hidden" name="view" value="list" />}
+        <label class="room-search-field">
+          <span>Tìm kiếm</span>
+          <span class="room-search-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+            <input type="search" name="q" value={q} placeholder="Đường, phường, tiện nghi…" />
+          </span>
+        </label>
+        <label class="room-search-field">
+          <span>Khu vực</span>
+          <select name="ward" aria-label="Phường / xã" onchange="this.form.requestSubmit()">
+            <option value="">Mọi phường</option>
+            {wards.map((w) => (
+              <option value={w} selected={ward === w}>{w}</option>
+            ))}
+          </select>
+        </label>
+        <label class="room-search-field">
+          <span>Trường</span>
+          <select name="school" aria-label="Trường học" onchange="this.form.requestSubmit()">
+            <option value="">Mọi trường</option>
+            {SCHOOLS.map((s) => (
+              <option value={s.id} selected={school === s.id}>{s.label}</option>
+            ))}
+          </select>
+        </label>
+        <label class="room-search-field">
+          <span>Khoảng cách</span>
+          <select name="dist" aria-label="Khoảng cách" onchange="this.form.requestSubmit()">
+            <option value="">Mọi khoảng cách</option>
+            {DISTANCES.map((d) => (
+              <option value={d.id} selected={dist === d.id}>{d.label}</option>
+            ))}
+          </select>
+        </label>
+        <button class="room-search-go" type="submit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M4 5h16l-6 7v5l-4 2v-7z"/>
+          </svg>
+          Lọc ngay
+        </button>
       </form>
-      <div class="cards-3">
-        {items.map((item, i) => <ListingCard item={item} index={i} />)}
+
+      <div class="room-quick" role="navigation" aria-label="Lọc theo trường">
+        <a class={!school ? 'is-on' : undefined} href={hrefFor({ school: '' })}>Tất cả</a>
+        {SCHOOLS.map((s) => (
+          <a class={school === s.id ? 'is-on' : undefined} href={hrefFor({ school: s.id })}>{s.label}</a>
+        ))}
       </div>
-      {items.length === 0 && <p class="empty">Chưa có phòng còn hạn.</p>}
+
+      <div class="room-toolbar">
+        <p class="room-count">
+          {items.length === 0
+            ? 'Không có phòng khớp'
+            : `Hiển thị ${from} – ${to} trong ${items.length} phòng trọ`}
+          {hasFilter && items.length !== all.length ? ` · ${all.length} đang đăng` : ''}
+          {dist ? ' · Khoảng cách chỉ tính tin có ghi mét/km.' : ''}
+        </p>
+        <div class="room-toolbar-right">
+          <span class="room-sort">Sắp xếp: Mới nhất</span>
+          <div class="room-views" aria-label="Kiểu xem">
+            <a class={view === 'grid' ? 'is-on' : undefined} href={hrefFor({ view: 'grid', page })} title="Lưới" aria-label="Xem lưới">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+            </a>
+            <a class={view === 'list' ? 'is-on' : undefined} href={hrefFor({ view: 'list', page })} title="Danh sách" aria-label="Xem danh sách">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="4" width="18" height="3" rx="1"/><rect x="3" y="10.5" width="18" height="3" rx="1"/><rect x="3" y="17" width="18" height="3" rx="1"/></svg>
+            </a>
+          </div>
+          {hasFilter && <a class="room-filters-clear" href={view === 'list' ? '/tro?view=list' : '/tro'}>Xóa lọc</a>}
+        </div>
+      </div>
+
+      <div class:list={['room-grid', view === 'list' && 'is-list']}>
+        {slice.map((item, i) => <RoomCard item={item} index={(page - 1) * PAGE_SIZE + i} />)}
+      </div>
+      {items.length === 0 && (
+        <p class="empty">Không có phòng khớp. Thử bỏ khoảng cách hoặc chọn trường khác.</p>
+      )}
+
+      {pages > 1 && (
+        <nav class="room-pager" aria-label="Trang">
+          {page > 1 ? <a href={hrefFor({ page: page - 1 })} aria-label="Trang trước">‹</a> : <span class="is-off">‹</span>}
+          {pagerNums(page, pages).map((n) =>
+            n === 'gap' ? (
+              <span class="is-gap">…</span>
+            ) : n === page ? (
+              <span class="is-on" aria-current="page">{n}</span>
+            ) : (
+              <a href={hrefFor({ page: n })}>{n}</a>
+            )
+          )}
+          {page < pages ? <a href={hrefFor({ page: page + 1 })} aria-label="Trang sau">›</a> : <span class="is-off">›</span>}
+        </nav>
+      )}
     </div>
   </div>
+
+  <section class="room-cta">
+    <div class="wrap room-cta-inner">
+      <div class="room-cta-art" aria-hidden="true">
+        <svg viewBox="0 0 220 140" fill="none">
+          <rect x="18" y="62" width="72" height="58" rx="6" fill="#cfe8d6"/>
+          <path d="M14 66 54 34l40 32" stroke="#1b7340" stroke-width="6" stroke-linejoin="round"/>
+          <rect x="42" y="86" width="22" height="34" rx="3" fill="#1b7340"/>
+          <rect x="108" y="48" width="88" height="72" rx="6" fill="#b7dcc4"/>
+          <path d="M102 54 152 16l50 38" stroke="#166338" stroke-width="6" stroke-linejoin="round"/>
+          <rect x="128" y="72" width="20" height="18" rx="2" fill="#fff"/>
+          <rect x="156" y="72" width="20" height="18" rx="2" fill="#fff"/>
+        </svg>
+      </div>
+      <div class="room-cta-copy">
+        <h2>Bạn có phòng trống?</h2>
+        <p>Đăng tin phòng trên site chưa mở. Hiện dán link tin gốc cho admin duyệt. Tin việc thì đăng được ngay.</p>
+        <div class="room-cta-actions">
+          <a class="btn-green" href="/dang-tin">Đăng tin việc</a>
+          <a class="btn-outline" href="/thong-tin/quy-dinh">Hướng dẫn đăng tin</a>
+        </div>
+      </div>
+      <ul class="room-cta-points">
+        <li>Không thu phí sinh viên</li>
+        <li>Tin được duyệt trước khi lên site</li>
+        <li>Liên hệ trực tiếp chủ nhà</li>
+      </ul>
+    </div>
+  </section>
 </Layout>

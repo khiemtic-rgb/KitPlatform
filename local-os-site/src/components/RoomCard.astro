@@ -1,0 +1,56 @@
+---
+import {
+  cleanPlace,
+  cleanTitle,
+  coverFor,
+  formatPhone,
+  formatRelative,
+  hrefFor,
+  listingPhone,
+  type LocalListing,
+} from '../lib/api';
+import { roomCardSpecs, schoolLabel, schoolOf } from '../lib/room-filters';
+
+interface Props {
+  item: LocalListing;
+  index?: number;
+}
+const { item, index = 0 } = Astro.props;
+const title = cleanTitle(item.title, item.placeText);
+const place = cleanPlace(item.placeText);
+const school = schoolLabel(schoolOf(item));
+const specs = roomCardSpecs(item);
+const when = formatRelative(item.lastCheckedAt || item.publishedAt);
+const phone = formatPhone(listingPhone(item));
+---
+<a class="room-card" href={hrefFor(item)}>
+  <div class="room-card-photo">
+    <img src={coverFor('room', index)} alt="Ảnh minh họa phòng trọ" />
+    <span class="room-card-badge">{school || 'Phòng trọ'}</span>
+    <span class="room-card-heart" aria-hidden="true" title="Chưa lưu tin">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M12 20s-7-4.4-9.2-8.2C1 9.2 2.2 6 5.4 6c1.8 0 3 1.2 3.6 2.2C9.6 7.2 10.8 6 12.6 6c3.2 0 4.4 3.2 2.6 5.8C13 15.6 12 20 12 20z"/>
+      </svg>
+    </span>
+    <span class="photo-caption">Ảnh minh họa</span>
+  </div>
+  <div class="room-card-body">
+    <h3>{title}</h3>
+    {place && (
+      <p class="room-card-place">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/>
+        </svg>
+        {place}
+      </p>
+    )}
+    <p class="room-card-price">Giá liên hệ</p>
+    {phone && <p class="room-card-phone">{phone}</p>}
+    {specs.length > 0 && (
+      <ul class="room-card-specs">
+        {specs.map((s) => <li>{s}</li>)}
+      </ul>
+    )}
+    {when && <p class="room-card-ago">{when}</p>}
+  </div>
+</a>

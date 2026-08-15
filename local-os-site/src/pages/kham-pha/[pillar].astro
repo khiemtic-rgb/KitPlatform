@@ -1,0 +1,60 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { PILLARS, guideHref, guidesIn, pillarOf, placeHref, placesIn } from '../../lib/discover';
+
+export function getStaticPaths() {
+  return PILLARS.map((p) => ({ params: { pillar: p.id } }));
+}
+
+const pillar = pillarOf(Astro.params.pillar ?? '');
+if (!pillar) return Astro.redirect('/kham-pha');
+const places = placesIn(pillar.id);
+const guides = guidesIn(pillar.id);
+---
+<Layout title={`${pillar.label} — Khám phá Thái Nguyên`} active="discover">
+  <div class="page discover-page">
+    <div class="wrap">
+      <nav class="job-crumb" aria-label="Đường dẫn">
+        <a href="/">Trang chủ</a>
+        <span>›</span>
+        <a href="/kham-pha">Khám phá</a>
+        <span>›</span>
+        <span>{pillar.label}</span>
+      </nav>
+      <h1 class="page-title">{pillar.label}</h1>
+      <p class="muted" style="margin:-8px 0 22px">{pillar.lead}</p>
+
+      {places.length > 0 && (
+        <div class="discover-grid">
+          {places.map((p) => (
+            <a class="discover-card" href={placeHref(p.slug)}>
+              <div class="discover-card-photo">
+                <img src={p.cover} alt="" />
+                <span class="photo-caption">Ảnh minh họa</span>
+              </div>
+              <div class="discover-card-body">
+                <h3>{p.title}</h3>
+                <p>{p.summary}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+
+      {guides.length > 0 && (
+        <div class="discover-guides" style="margin-top:22px">
+          {guides.map((g) => (
+            <a class="discover-guide" href={guideHref(g.slug)}>
+              <strong>{g.title}</strong>
+              <span>{g.summary}</span>
+            </a>
+          ))}
+        </div>
+      )}
+
+      {places.length === 0 && guides.length === 0 && (
+        <p class="empty">Chưa có bài trong mục này. Quay lại hub.</p>
+      )}
+    </div>
+  </div>
+</Layout>

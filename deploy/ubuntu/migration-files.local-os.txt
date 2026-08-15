@@ -4,3 +4,15 @@
 # Apply only when operating the Local OS park.
 
 294_pack_local_os_v1.sql
+295_pack_local_os_ingest.sql
+296_pack_local_os_source_registry.sql
+297_pack_local_os_partner_job_boards.sql
+298_pack_local_os_tn_gov_vietnamworks.sql
+299_pack_local_os_uni_facebook_pages.sql
+300_pack_local_os_tnue_rooms.sql
+301_pack_local_os_tnus_rooms_sheet.sql
+302_pack_local_os_publish_tn_rooms.sql
+303_pack_local_os_publish_ictu_jobs.sql
+304_pack_local_os_publish_events_grants.sql
+305_pack_local_os_event_city_sources.sql
+306_pack_local_os_source_watch.sql

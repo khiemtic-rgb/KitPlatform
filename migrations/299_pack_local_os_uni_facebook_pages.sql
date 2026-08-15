@@ -1,0 +1,56 @@
+-- Local OS: Thái Nguyên university Facebook Pages as sources (metadata only, never crawl).
+-- Isolated park. Do not apply via Pharmacy / Family / Content manifests.
+
+INSERT INTO pack_local.source (
+    id, source_kind, name, url, status, platform, category, audience, geo, notes
+)
+VALUES
+    ('b1111111-1111-1111-1111-111111111401', 'facebook_page',
+     'Fanpage ĐH Khoa học (ĐHTN)',
+     'https://www.facebook.com/DHKHDHTN/',
+     'active', 'facebook', 'event', 'student', 'thai_nguyen',
+     'Page trường. Dán link một bài + nội dung. Không quét tường.'),
+    ('b1111111-1111-1111-1111-111111111402', 'facebook_page',
+     'Fanpage ĐH Kỹ thuật Công nghiệp',
+     'https://www.facebook.com/Truongdhktcn',
+     'active', 'facebook', 'event', 'student', 'thai_nguyen',
+     'Page trường. Dán link một bài + nội dung. Không quét tường.'),
+    ('b1111111-1111-1111-1111-111111111403', 'facebook_page',
+     'Fanpage ICTU',
+     'https://www.facebook.com/ictu.vn',
+     'active', 'facebook', 'event', 'student', 'thai_nguyen',
+     'Page trường (website ICTU đã có trong sổ). Dán link một bài + nội dung.'),
+    ('b1111111-1111-1111-1111-111111111404', 'facebook_page',
+     'Fanpage ĐH Sư phạm Thái Nguyên',
+     'https://www.facebook.com/dhsptn',
+     'active', 'facebook', 'event', 'student', 'thai_nguyen',
+     'Page trường. Dán link một bài + nội dung. Không quét tường.'),
+    ('b1111111-1111-1111-1111-111111111405', 'facebook_page',
+     'Fanpage ĐH Kinh tế & QTKD (TUEBA)',
+     'https://www.facebook.com/tueba.edu.vn',
+     'active', 'facebook', 'event', 'student', 'thai_nguyen',
+     'Page trường. Dán link một bài + nội dung. Không quét tường.'),
+    ('b1111111-1111-1111-1111-111111111406', 'facebook_page',
+     'Fanpage ĐH Nông Lâm (TUAF)',
+     'https://www.facebook.com/www.tuaf.edu.vn',
+     'active', 'facebook', 'event', 'student', 'thai_nguyen',
+     'Page trường (slug Facebook là www.tuaf.edu.vn). Dán link một bài + nội dung.'),
+    ('b1111111-1111-1111-1111-111111111407', 'facebook_page',
+     'Fanpage ĐH Y Dược Thái Nguyên',
+     'https://www.facebook.com/TruongDaiHocYDuocThaiNguyen',
+     'active', 'facebook', 'event', 'student', 'thai_nguyen',
+     'Page trường. Dán link một bài + nội dung. Không quét tường.'),
+    ('b1111111-1111-1111-1111-111111111408', 'facebook_page',
+     'Fanpage Đại học Thái Nguyên (TNU)',
+     'https://www.facebook.com/tnu.edu.vn',
+     'active', 'facebook', 'event', 'student', 'thai_nguyen',
+     'Page đại học vùng. Dán link một bài + nội dung. Không quét tường.')
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    url = EXCLUDED.url,
+    source_kind = EXCLUDED.source_kind,
+    category = EXCLUDED.category,
+    audience = EXCLUDED.audience,
+    notes = EXCLUDED.notes,
+    status = EXCLUDED.status,
+    updated_at = NOW();

@@ -1,0 +1,148 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import {
+  GUIDES,
+  HUB_CATS,
+  HUB_FAQS,
+  PLACES,
+  guideHref,
+  guideTag,
+  placeArea,
+  placeHref,
+  placeTag,
+  placeTagTone,
+} from '../../lib/discover';
+
+const hubSlugs = [
+  'ho-nui-coc',
+  'tan-cuong',
+  'bao-tang-van-hoa-cac-dan-toc',
+  'atk-dinh-hoa',
+  'chua-hang',
+  'suoi-kem-la-bang',
+  'den-duom',
+  'dai-doi-915',
+];
+const featured = hubSlugs.map((s) => PLACES.find((p) => p.slug === s)).filter((p): p is NonNullable<typeof p> => !!p);
+
+const catIco: Record<string, string> = {
+  'dia-diem': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>',
+  'am-thuc': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3v8M6 3v5a2 2 0 0 0 4 0V3M16 3v18M14 3h4v5a2 2 0 0 1-4 0V3z"/></svg>',
+  'du-lich': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M8 8V7a4 4 0 0 1 8 0v1M5 13h14"/></svg>',
+  'van-hoa': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4c-2.2 1.6-4 2-6.5 2v8c2.5 0 4.3-.4 6.5-2 2.2 1.6 4 2 6.5 2V6C16 6 14.2 5.6 12 4z"/><path d="M12 14v6"/></svg>',
+  'quan-hay': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 9h10l-1 9H8L7 9z"/><path d="M8 9V7a4 4 0 0 1 8 0v2"/><path d="M7 13h10"/></svg>',
+  'check-in': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.2"/><path d="M8 6 9.4 4h5.2L16 6"/></svg>',
+  'cam-nang': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5z"/><path d="M8 7h8M8 11h8"/></svg>',
+};
+---
+<Layout title="Khám phá Thái Nguyên — Thái Nguyên Life" active="discover" description="Địa điểm, ẩm thực, du lịch và cẩm nang Thái Nguyên — có nguồn, không phải blog tour.">
+  <section class="disc-hero">
+    <div class="wrap disc-hero-inner">
+      <h1>Khám phá Thái Nguyên</h1>
+      <p>Hiểu nơi mình sống — địa điểm, ẩm thực, du lịch, văn hóa và những điều thú vị quanh Thái Nguyên.</p>
+    </div>
+  </section>
+
+  <div class="page discover-page disc-hub">
+    <div class="wrap">
+      <nav class="disc-cats" aria-label="Lối khám phá">
+        {HUB_CATS.map((c) =>
+          c.soon || !c.href ? (
+            <span class={`disc-cat is-soon tone-${c.tone}`}>
+              <span class="disc-cat-ico" aria-hidden="true" set:html={catIco[c.id]} />
+              <strong>{c.label}</strong>
+              <em>{c.lead}</em>
+            </span>
+          ) : (
+            <a class={`disc-cat tone-${c.tone}`} href={c.href}>
+              <span class="disc-cat-ico" aria-hidden="true" set:html={catIco[c.id]} />
+              <strong>{c.label}</strong>
+              <em>{c.lead}</em>
+            </a>
+          )
+        )}
+      </nav>
+
+      <div class="section-head disc-head">
+        <h2>Địa điểm nổi bật</h2>
+        <a class="see-all" href="/kham-pha/dia-diem">Xem tất cả địa điểm →</a>
+      </div>
+      <div class="disc-places">
+        {featured.map((p) => (
+          <a class="disc-place" href={placeHref(p.slug)}>
+            <div class="disc-place-photo">
+              <img src={p.cover} alt="" />
+              <span class={`disc-tag tone-${placeTagTone(p)}`}>{placeTag(p)}</span>
+              <span class="photo-caption">Ảnh minh họa</span>
+            </div>
+            <div class="disc-place-body">
+              <h3>{p.title}</h3>
+              <p class="disc-place-loc">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+                {placeArea(p)}
+              </p>
+              <p>{p.summary}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+
+      <div class="disc-mid">
+        <div id="cam-nang">
+          <div class="section-head disc-head tight">
+            <h2>Cẩm nang Thái Nguyên</h2>
+            <a class="see-all" href="/kham-pha/du-lich">Xem thêm →</a>
+          </div>
+          <div class="disc-guides">
+            {GUIDES.map((g) => (
+              <a class="disc-guide" href={guideHref(g.slug)}>
+                <div class="disc-guide-photo">
+                  <img src={g.cover} alt="" />
+                  <span class="disc-tag tone-guide">{guideTag(g)}</span>
+                  <span class="photo-caption">Ảnh minh họa</span>
+                </div>
+                <div class="disc-guide-body">
+                  <h3>{g.title}</h3>
+                  <p>{g.summary}</p>
+                  <span class="muted">{g.sections.length} mục · có nguồn</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <aside class="disc-faq">
+          <h2>Câu hỏi phổ biến</h2>
+          <ul>
+            {HUB_FAQS.map((f, i) => (
+              <li>
+                <a href={f.href}>
+                  <span class={`disc-faq-n n-${i}`}>{String.fromCharCode(65 + i)}</span>
+                  <strong>{f.q}</strong>
+                  <span class="disc-faq-go" aria-hidden="true">→</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <a class="btn-outline disc-faq-all" href="#cam-nang">Xem tất cả câu hỏi →</a>
+        </aside>
+      </div>
+
+      <section class="disc-cta">
+        <div class="disc-cta-bag" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none">
+            <rect x="14" y="22" width="36" height="32" rx="8" fill="#f4c430"/>
+            <path d="M22 22v-4a10 10 0 0 1 20 0v4" stroke="#166338" stroke-width="3.2"/>
+            <path d="M14 34h36" stroke="#e0a800" stroke-width="3"/>
+            <circle cx="32" cy="42" r="4" fill="#166338"/>
+          </svg>
+        </div>
+        <div>
+          <h2>Bạn có địa điểm yêu thích tại Thái Nguyên?</h2>
+          <p>Chia sẻ chỗ thật qua liên hệ. Chưa nhận sổ quán / check-in — không tự đăng, không bịa review.</p>
+        </div>
+        <a class="btn-green" href="/thong-tin/lien-he">Chia sẻ ngay →</a>
+      </section>
+    </div>
+  </div>
+</Layout>

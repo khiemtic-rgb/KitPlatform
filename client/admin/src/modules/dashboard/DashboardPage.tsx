@@ -115,11 +115,14 @@ function LocalOsDashboardPage() {
       <Alert
         type="info"
         showIcon
-        message="Tin gửi từ site ở trạng thái chờ duyệt. Đăng lên site công khai sau khi đọc."
+        message="Sổ nguồn: canh mục lục website chính thức (hoặc dán một bài) → hàng chờ → duyệt tay. Không quét Facebook, không tự đăng site/group."
         style={{ marginBottom: 16 }}
       />
       <Link to="/local-os/listings">
         <Button type="primary">Hàng chờ tin</Button>
+      </Link>
+      <Link to="/local-os/sources" style={{ marginLeft: 12 }}>
+        <Button>Sổ nguồn</Button>
       </Link>
     </div>
   );

@@ -17,11 +17,14 @@ const sub = trendSubtitle(item);
 const foot = trendFoot(item);
 ---
 <a class={`trend-card ${item.kind}`} href={hrefFor(item)}>
-  <img class="trend-photo" src={coverFor(item.kind, index)} alt="" />
-  <span class={`trend-badge ${item.kind}`}>{kindLabel(item.kind)}</span>
-  <span class="trend-save" aria-hidden="true" title="Lưu tin — sắp mở">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 4h10a1 1 0 0 1 1 1v16l-6-3.2L6 21V5a1 1 0 0 1 1-1z"/></svg>
-  </span>
+  <div class="trend-photo-wrap">
+    <img class="trend-photo" src={coverFor(item.kind, index)} alt="Ảnh minh họa" />
+    <span class={`trend-badge ${item.kind}`}>{kindLabel(item.kind)}</span>
+    <span class="photo-caption">Ảnh minh họa</span>
+    <span class="trend-save" aria-hidden="true" title="Lưu tin — sắp mở">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 4h10a1 1 0 0 1 1 1v16l-6-3.2L6 21V5a1 1 0 0 1 1-1z"/></svg>
+    </span>
+  </div>
   <div class="trend-meta">
     <h3>{item.title}</h3>
     {sub && <p class="trend-sub">{sub}</p>}
