@@ -13,6 +13,7 @@ import {
 import {
   isNewJob,
   jobFacts,
+  jobPay,
   jobTags,
   jobTypeOf,
   JOB_TYPES,
@@ -79,8 +80,8 @@ if (item?.placeText) fit.push(item.placeText);
                   {item.placeText && <span>{item.placeText}</span>}
                 </p>
                 <p class="job-detail-pay">
-                  {item.salaryText || 'Thỏa thuận'}
-                  {!item.salaryText && <span class="job-row-tag">Hỏi khi liên hệ</span>}
+                  {jobPay(item)}
+                  {jobPay(item) === 'Thỏa thuận' && <span class="job-row-tag">Hỏi khi liên hệ</span>}
                 </p>
                 {tags.length > 0 && (
                   <div class="job-detail-tags">
@@ -158,7 +159,7 @@ if (item?.placeText) fit.push(item.placeText);
                       <a class="job-more-card" href={hrefFor(j)}>
                         <strong>{j.title}</strong>
                         <span>{j.organizationName || j.placeText}</span>
-                        <em>{j.salaryText || 'Thỏa thuận'}</em>
+                        <em>{jobPay(j)}</em>
                       </a>
                     ))}
                   </div>
@@ -193,7 +194,7 @@ if (item?.placeText) fit.push(item.placeText);
                       <div>
                         <strong>{j.title}</strong>
                         {j.organizationName && <span>{j.organizationName}</span>}
-                        <em>{j.salaryText || 'Thỏa thuận'}</em>
+                        <em>{jobPay(j)}</em>
                       </div>
                     </a>
                   ))}

@@ -15,6 +15,7 @@ import {
   orgInitial,
 } from '../lib/api';
 import { featuredGuides, featuredPlaces, guideHref, placeHref } from '../lib/discover';
+import { jobPay } from '../lib/job-filters';
 
 const homePlaces = featuredPlaces();
 const homeGuides = featuredGuides();
@@ -189,7 +190,7 @@ const liveCount = jobs.length + events.length + rooms.length;
                     {item.placeText}
                   </div>
                 )}
-                {item.salaryText && <div class="job-pay">{item.salaryText}</div>}
+                {jobPay(item) !== 'Thỏa thuận' && <div class="job-pay">{jobPay(item)}</div>}
               </div>
             </a>
           ))}

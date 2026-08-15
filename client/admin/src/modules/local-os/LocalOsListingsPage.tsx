@@ -27,6 +27,7 @@ import {
   type LocalListing,
   type LocalSource,
 } from '@/shared/api/local-os.api';
+import { rewriteListingCopy } from './rewriteListingCopy';
 
 const STATUS_COLOR: Record<string, string> = {
   NEEDS_REVIEW: 'gold',
@@ -77,6 +78,31 @@ function guessPhone(text: string): string | undefined {
   let digits = m[0].replace(/\D/g, '');
   if (digits.startsWith('84') && digits.length >= 11) digits = `0${digits.slice(2)}`;
   return digits.length >= 9 && digits.length <= 12 ? digits : undefined;
+}
+
+function guessSalary(text: string): string | undefined {
+  const patterns = [
+    /\d{1,3}(?:[.\s]\d{3})+\s*đ?\s*[-–~]\s*\d{1,3}(?:[.\s]\d{3})+\s*đ?\s*\/?\s*(?:giờ|gio|h)\b/i,
+    /\d+(?:[.,]\d+)?\s*k\s*[-–~]\s*\d+(?:[.,]\d+)?\s*k(?:\s*\/?\s*(?:giờ|gio|h))?/i,
+    /\d+(?:[.,]\d+)?\s*k\s*\/\s*(?:giờ|gio|h)\b/i,
+    /\d+(?:[.,]\d+)?\s*tr(?:iệu)?\d?\s*[-–~]\s*\d+(?:[.,]\d+)?\s*tr(?:iệu)?/i,
+    /\d+[.,]\d+\s*tr(?:iệu)?(?:\s*\/\s*tháng)?/i,
+    /\d+\s*tr(?:iệu)?\d?(?:\s*\/\s*(?:tháng|khóa|khoa))?/i,
+    /(?:lương|thu nhập|lcb)\s*[:：]\s*[^\n]{4,56}/i,
+  ];
+  let best: string | undefined;
+  let bestAt = Number.POSITIVE_INFINITY;
+  for (const p of patterns) {
+    const m = p.exec(text);
+    if (!m || m.index >= bestAt) continue;
+    let s = m[0].replace(/\s+/g, ' ').trim();
+    s = s.replace(/^(?:lương|thu nhập|lcb)\s*[:：]\s*/i, '').split(/\s+[•·|(]/)[0]?.trim() ?? s;
+    if (s.length >= 3 && s.length <= 48) {
+      best = s;
+      bestAt = m.index;
+    }
+  }
+  return best;
 }
 
 function guessPlace(text: string): string {
@@ -150,24 +176,42 @@ export function LocalOsListingsPage() {
       let created = 0;
       let skipped = 0;
       const sourceUrl = String(values.sourceUrl ?? '').trim();
+      const kind = values.kind || 'job';
       for (const pastedText of chunks) {
+        const written = rewriteListingCopy(pastedText, kind);
         if (sourceUrl) {
           const result = await ingestLocalOsSource({
             sourceUrl,
-            pastedText,
-            kind: values.kind,
+            pastedText: written.body,
+            kind,
             sourceId: values.sourceId,
           });
           if (result.existing) skipped += 1;
-          else created += 1;
+          else {
+            await updateLocalOsListing(result.listing.id, {
+              kind,
+              title: written.title,
+              summary: written.body,
+              placeText: written.place || guessPlace(pastedText),
+              contactPhone: written.phone || guessPhone(pastedText),
+              salaryText: kind === 'room' ? undefined : written.salary || guessSalary(pastedText),
+              sourceKind: result.listing.sourceKind ?? 'group_paste',
+              sourceUrl: result.listing.sourceUrl,
+              trust: result.listing.trust,
+              safetyFlag: result.listing.safetyFlag,
+              status: result.listing.status,
+            });
+            created += 1;
+          }
         } else {
           try {
             await createLocalOsListing({
-              kind: values.kind || 'job',
-              title: guessTitle(pastedText),
-              summary: pastedText.slice(0, 2000),
-              placeText: guessPlace(pastedText),
-              contactPhone: guessPhone(pastedText),
+              kind,
+              title: written.title || guessTitle(pastedText),
+              summary: written.body,
+              placeText: written.place || guessPlace(pastedText),
+              contactPhone: written.phone || guessPhone(pastedText),
+              salaryText: kind === 'room' ? undefined : written.salary || guessSalary(pastedText),
             });
             created += 1;
           } catch (error) {
@@ -193,6 +237,17 @@ export function LocalOsListingsPage() {
     }
   };
 
+  const polishBox = () => {
+    const raw = String(form.getFieldValue('pastedText') ?? '');
+    if (raw.trim().length < 8) {
+      message.warning('Dán nội dung bài trước, rồi bấm Viết lại.');
+      return;
+    }
+    const kind = String(form.getFieldValue('kind') || 'job');
+    form.setFieldsValue({ pastedText: rewriteListingCopy(raw, kind).body });
+    message.success('Đã viết lại cho chuẩn. Đọc lại rồi thêm vào danh sách.');
+  };
+
   const openWrite = (row: LocalListing) => {
     setWriting(row);
     editForm.setFieldsValue({
@@ -206,6 +261,21 @@ export function LocalOsListingsPage() {
       workingTime: row.workingTime,
       requirements: row.requirements,
     });
+  };
+
+  const polishEdit = () => {
+    const kind = String(editForm.getFieldValue('kind') || 'job');
+    const raw = [editForm.getFieldValue('title'), editForm.getFieldValue('summary')].filter(Boolean).join('\n');
+    if (String(raw).trim().length < 8) return;
+    const w = rewriteListingCopy(String(raw), kind);
+    editForm.setFieldsValue({
+      title: w.title,
+      summary: w.body,
+      placeText: w.place || editForm.getFieldValue('placeText'),
+      contactPhone: w.phone || editForm.getFieldValue('contactPhone'),
+      salaryText: kind === 'room' ? undefined : w.salary || editForm.getFieldValue('salaryText'),
+    });
+    message.success('Đã viết lại nội dung.');
   };
 
   const openNew = () => {
@@ -388,7 +458,7 @@ export function LocalOsListingsPage() {
         <Form.Item
           name="pastedText"
           label="Nội dung bài"
-          extra="Ctrl + Enter để thêm rồi dán bài tiếp. Giữ loại / nguồn."
+          extra="Dán bài thô → Viết lại cho chuẩn → Thêm. Ctrl + Enter để thêm rồi dán tiếp."
         >
           <Input.TextArea
             rows={8}
@@ -406,6 +476,9 @@ export function LocalOsListingsPage() {
           <Alert type="error" showIcon style={{ marginBottom: 12 }} message={lastError} />
         ) : null}
         <Space>
+          <Button htmlType="button" onClick={polishBox}>
+            Viết lại cho chuẩn
+          </Button>
           <Button type="primary" htmlType="button" loading={ingesting} onClick={() => void ingest()}>
             Thêm vào danh sách
           </Button>
@@ -477,6 +550,9 @@ export function LocalOsListingsPage() {
           Viết lại cho rõ. Bấm <strong>Duyệt &amp; đăng</strong> khi đủ tiêu đề, địa điểm và số điện thoại.
           Site mới hiện tin.
         </Typography.Paragraph>
+        <Button style={{ marginBottom: 12 }} onClick={polishEdit}>
+          Viết lại cho chuẩn
+        </Button>
         <Form form={editForm} layout="vertical">
           <Form.Item name="kind" label="Loại" rules={[{ required: true }]}>
             <Select options={KIND_OPTIONS} />

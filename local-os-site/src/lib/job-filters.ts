@@ -67,6 +67,43 @@ export function jobTags(item: LocalListing): string[] {
   return tags.slice(0, 4);
 }
 
+const PAY_PATTERNS = [
+  /\d{1,3}(?:[.\s]\d{3})+\s*đ?\s*[-–~]\s*\d{1,3}(?:[.\s]\d{3})+\s*đ?\s*\/?\s*(?:giờ|gio|h)\b/i,
+  /\d+(?:[.,]\d+)?\s*k\s*[-–~]\s*\d+(?:[.,]\d+)?\s*k(?:\s*\/?\s*(?:giờ|gio|h))?/i,
+  /\d+(?:[.,]\d+)?\s*k\s*\/\s*(?:giờ|gio|h)\b/i,
+  /\d+(?:[.,]\d+)?\s*tr(?:iệu)?\d?\s*[-–~]\s*\d+(?:[.,]\d+)?\s*tr(?:iệu)?/i,
+  /\d+[.,]\d+\s*tr(?:iệu)?(?:\s*\/\s*tháng)?/i,
+  /\d+\s*tr(?:iệu)?\d?(?:\s*\/\s*(?:tháng|khóa|khoa))?/i,
+  /(?:lương|thu nhập|lcb)\s*[:：]\s*[^\n]{4,56}/i,
+];
+
+function cleanPay(raw: string): string | null {
+  let s = raw.replace(/\s+/g, ' ').trim();
+  s = s.split(/\s+[•·|(]|,\s+(?:tùy|chưa|cam)/)[0]?.trim() ?? s;
+  s = s.replace(/^(?:lương|thu nhập|lcb)\s*[:：]\s*/i, '').replace(/[.,;:]+$/, '').trim();
+  if (s.length < 3) return null;
+  if (/^0\d{8,}/.test(s) || /20\d{2}/.test(s)) return null;
+  return s.length > 48 ? `${s.slice(0, 48)}…` : s;
+}
+
+/** Lương ghi trên tin, hoặc tách từ tiêu đề / nội dung (6tr5, 23k/h, 23.000đ/giờ…). */
+export function jobPay(item: LocalListing): string {
+  const stored = (item.salaryText ?? '').trim();
+  if (stored && !/^thỏa thuận$/i.test(stored)) return stored;
+  const text = `${item.title ?? ''}\n${item.summary ?? ''}`;
+  let best: string | null = null;
+  let bestAt = Number.POSITIVE_INFINITY;
+  for (const p of PAY_PATTERNS) {
+    const m = p.exec(text);
+    if (!m || m.index >= bestAt) continue;
+    const s = cleanPay(m[0]);
+    if (!s) continue;
+    best = s;
+    bestAt = m.index;
+  }
+  return best ?? 'Thỏa thuận';
+}
+
 export function filterJobs(
   items: LocalListing[],
   opts: { type?: string; place?: string; pay?: string; chip?: string },
@@ -74,7 +111,7 @@ export function filterJobs(
   return items.filter((item) => {
     if (opts.type && jobTypeOf(item) !== opts.type) return false;
     if (opts.place && wardOf(item) !== opts.place) return false;
-    if (opts.pay === 'has' && !item.salaryText) return false;
+    if (opts.pay === 'has' && jobPay(item) === 'Thỏa thuận') return false;
     if (opts.chip === 'new' && !isNewJob(item)) return false;
     if (opts.chip === 'part_time' && !isPartTime(item)) return false;
     if (opts.chip === 'student' && !isStudentJob(item)) return false;

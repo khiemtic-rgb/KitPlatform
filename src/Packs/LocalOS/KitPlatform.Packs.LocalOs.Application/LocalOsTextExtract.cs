@@ -128,8 +128,44 @@ public static class LocalOsTextExtract
 
     public static string? GuessSalary(string text)
     {
-        var m = Regex.Match(text, @"(\d+[.,]?\d*)\s*(k/giờ|k/h|nghìn/giờ|triệu/tháng|tr/tháng|triệu|k)", RegexOptions.IgnoreCase);
-        return m.Success ? m.Value.Trim() : null;
+        if (string.IsNullOrWhiteSpace(text))
+            return null;
+        var t = text.Replace('\u00a0', ' ');
+        string[] patterns =
+        [
+            @"\d{1,3}(?:[.\s]\d{3})+\s*đ?\s*[-–~]\s*\d{1,3}(?:[.\s]\d{3})+\s*đ?\s*/?\s*(?:giờ|gio|h)\b",
+            @"\d+(?:[.,]\d+)?\s*k\s*[-–~]\s*\d+(?:[.,]\d+)?\s*k(?:\s*/?\s*(?:giờ|gio|h))?",
+            @"\d+(?:[.,]\d+)?\s*k\s*/\s*(?:giờ|gio|h)\b",
+            @"\d+(?:[.,]\d+)?\s*tr(?:iệu)?\d?\s*[-–~]\s*\d+(?:[.,]\d+)?\s*tr(?:iệu)?",
+            @"\d+[.,]\d+\s*tr(?:iệu)?(?:\s*/\s*tháng)?",
+            @"\d+\s*tr(?:iệu)?\d?(?:\s*/\s*(?:tháng|khóa|khoa))?",
+            @"(?<=(?:lương|thu nhập|lcb)\s*[:：]\s*)[^\n]{4,56}",
+        ];
+        string? best = null;
+        var bestAt = int.MaxValue;
+        foreach (var p in patterns)
+        {
+            var m = Regex.Match(t, p, RegexOptions.IgnoreCase);
+            if (!m.Success || m.Index >= bestAt)
+                continue;
+            var s = CleanPay(m.Value);
+            if (s is null)
+                continue;
+            best = s;
+            bestAt = m.Index;
+        }
+        return best;
+    }
+
+    private static string? CleanPay(string raw)
+    {
+        var s = Regex.Replace(raw.Trim(), @"\s+", " ");
+        s = Regex.Split(s, @"\s+[•·|(]|,\s+(?:tùy|chưa|cam)")[0].Trim().TrimEnd('.', ',', ';', ':');
+        if (s.Length < 3 || s.Length > 48)
+            return s.Length > 48 ? s[..48].TrimEnd() + "…" : null;
+        if (Regex.IsMatch(s, @"^0\d{8,}") || Regex.IsMatch(s, @"20\d{2}"))
+            return null;
+        return s;
     }
 
     public static string GuessPlace(string text)

@@ -6,7 +6,7 @@ import {
   orgInitial,
   type LocalListing,
 } from '../lib/api';
-import { jobTags } from '../lib/job-filters';
+import { jobPay, jobTags } from '../lib/job-filters';
 
 interface Props {
   item: LocalListing;
@@ -40,7 +40,7 @@ const snippet = (item.summary ?? '').replace(/\s+/g, ' ').trim();
     {snippet && <p class="job-row-snip">{snippet}</p>}
   </div>
   <div class="job-row-side">
-    <strong>{item.salaryText || 'Thỏa thuận'}</strong>
+    <strong>{jobPay(item)}</strong>
     {when && <span>{when}</span>}
   </div>
 </a>
