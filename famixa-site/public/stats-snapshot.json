@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-15T07:05:19.346Z",
+  "generatedAt": "2026-08-15T13:05:33.684Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 12,
-    "todayPageViews": 4,
-    "todayRequests": 24,
-    "last24hVisitors": 47,
-    "last24hPageViews": 39,
-    "last24hRequests": 148
+    "todayVisitors": 18,
+    "todayPageViews": 8,
+    "todayRequests": 46,
+    "last24hVisitors": 39,
+    "last24hPageViews": 27,
+    "last24hRequests": 122
   },
   "hourly": [
-    {
-      "time": "2026-08-14T08:00:00Z",
-      "visitors": 8,
-      "requests": 17
-    },
-    {
-      "time": "2026-08-14T09:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-14T10:00:00Z",
-      "visitors": 6,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-14T11:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-14T12:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-14T13:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
     {
       "time": "2026-08-14T14:00:00Z",
       "visitors": 2,
@@ -125,6 +95,31 @@
       "time": "2026-08-15T06:00:00Z",
       "visitors": 2,
       "requests": 2
+    },
+    {
+      "time": "2026-08-15T07:00:00Z",
+      "visitors": 5,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-15T08:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-15T09:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-15T10:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-15T11:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
@@ -166,23 +161,23 @@
     },
     {
       "date": "2026-08-15",
-      "visitors": 45,
-      "pageViews": 19,
-      "requests": 86
+      "visitors": 62,
+      "pageViews": 23,
+      "requests": 108
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 28
+      "views": 24
     },
     {
       "path": "/robots.txt",
-      "views": 22
+      "views": 20
     },
     {
       "path": "/sitemap.xml",
-      "views": 15
+      "views": 16
     },
     {
       "path": "/vi/",
@@ -190,38 +185,10 @@
     },
     {
       "path": "/images/blog/tao-moi-truong-tu-lap-cho-con.png",
-      "views": 5
+      "views": 3
     },
     {
-      "path": "/vi/goi-cha-me/tao-moi-truong-giup-con-tu-lap-dung-chi-day-hay-thiet-ke-khong-gian-tu-giac/",
-      "views": 4
-    },
-    {
-      "path": "/images/blog/khi-nao-nen-noi-khong-voi-con.png",
-      "views": 2
-    },
-    {
-      "path": "/vi/huong-dan/moi-thanh-vien/",
-      "views": 2
-    },
-    {
-      "path": "//2018/wp-includes/wlwmanifest.xml",
-      "views": 2
-    },
-    {
-      "path": "//test/wp-includes/wlwmanifest.xml",
-      "views": 2
-    },
-    {
-      "path": "/images/blog/co-nen-thuong-tien-cho-con.png",
-      "views": 2
-    },
-    {
-      "path": "//news/wp-includes/wlwmanifest.xml",
-      "views": 2
-    },
-    {
-      "path": "/vi/huong-dan/lich-hom-nay/",
+      "path": "//blog/wp-includes/wlwmanifest.xml",
       "views": 2
     },
     {
@@ -230,6 +197,34 @@
     },
     {
       "path": "//wordpress/wp-includes/wlwmanifest.xml",
+      "views": 2
+    },
+    {
+      "path": "//wp2/wp-includes/wlwmanifest.xml",
+      "views": 2
+    },
+    {
+      "path": "//2018/wp-includes/wlwmanifest.xml",
+      "views": 2
+    },
+    {
+      "path": "//2019/wp-includes/wlwmanifest.xml",
+      "views": 2
+    },
+    {
+      "path": "/images/blog/co-nen-thuong-tien-cho-con.png",
+      "views": 2
+    },
+    {
+      "path": "/vi",
+      "views": 2
+    },
+    {
+      "path": "//news/wp-includes/wlwmanifest.xml",
+      "views": 2
+    },
+    {
+      "path": "//test/wp-includes/wlwmanifest.xml",
       "views": 2
     }
   ]
