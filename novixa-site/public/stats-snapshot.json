@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-15T01:51:05.587Z",
+  "generatedAt": "2026-08-15T06:58:42.240Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 28,
-    "todayPageViews": 6,
-    "todayRequests": 33,
-    "last24hVisitors": 614,
-    "last24hPageViews": 440,
-    "last24hRequests": 1480
+    "todayVisitors": 89,
+    "todayPageViews": 40,
+    "todayRequests": 204,
+    "last24hVisitors": 457,
+    "last24hPageViews": 288,
+    "last24hRequests": 850
   },
   "hourly": [
-    {
-      "time": "2026-08-14T02:00:00Z",
-      "visitors": 148,
-      "requests": 392
-    },
-    {
-      "time": "2026-08-14T03:00:00Z",
-      "visitors": 31,
-      "requests": 34
-    },
-    {
-      "time": "2026-08-14T04:00:00Z",
-      "visitors": 39,
-      "requests": 54
-    },
-    {
-      "time": "2026-08-14T05:00:00Z",
-      "visitors": 33,
-      "requests": 264
-    },
-    {
-      "time": "2026-08-14T06:00:00Z",
-      "visitors": 32,
-      "requests": 57
-    },
     {
       "time": "2026-08-14T07:00:00Z",
       "visitors": 21,
@@ -130,6 +105,31 @@
       "time": "2026-08-15T01:00:00Z",
       "visitors": 18,
       "requests": 19
+    },
+    {
+      "time": "2026-08-15T02:00:00Z",
+      "visitors": 15,
+      "requests": 43
+    },
+    {
+      "time": "2026-08-15T03:00:00Z",
+      "visitors": 10,
+      "requests": 30
+    },
+    {
+      "time": "2026-08-15T04:00:00Z",
+      "visitors": 24,
+      "requests": 61
+    },
+    {
+      "time": "2026-08-15T05:00:00Z",
+      "visitors": 17,
+      "requests": 22
+    },
+    {
+      "time": "2026-08-15T06:00:00Z",
+      "visitors": 13,
+      "requests": 15
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-08-15",
-      "visitors": 28,
-      "pageViews": 6,
-      "requests": 33
+      "visitors": 89,
+      "pageViews": 40,
+      "requests": 204
     }
   ],
   "topPages": [
     {
-      "path": "/cdn-cgi/rum",
-      "views": 129
-    },
-    {
-      "path": "/vi/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api-voi-he-thong-co-so-du-lieu-ve-duoc/",
-      "views": 121
-    },
-    {
-      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
-      "views": 82
+      "path": "/robots.txt",
+      "views": 50
     },
     {
       "path": "/",
-      "views": 55
+      "views": 46
     },
     {
-      "path": "/robots.txt",
-      "views": 48
-    },
-    {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 34
-    },
-    {
-      "path": "/images/tin-tuc/quy-trinh-doi-tra-thuoc.png",
-      "views": 29
+      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
+      "views": 39
     },
     {
       "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
-      "views": 26
-    },
-    {
-      "path": "/vi/",
-      "views": 24
-    },
-    {
-      "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
-      "views": 24
+      "views": 23
     },
     {
       "path": "/sitemap.xml",
       "views": 22
     },
     {
-      "path": "/.env.docker",
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
       "views": 21
     },
     {
-      "path": "/appsettings.json",
+      "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
       "views": 21
     },
     {
-      "path": "/info.php",
-      "views": 21
+      "path": "/cdn-cgi/rum",
+      "views": 19
     },
     {
-      "path": "/amplifyconfiguration.json",
-      "views": 21
+      "path": "/images/tin-tuc/quy-trinh-doi-tra-thuoc.png",
+      "views": 19
+    },
+    {
+      "path": "/vi/",
+      "views": 17
+    },
+    {
+      "path": "/sitemap-index.xml",
+      "views": 15
+    },
+    {
+      "path": "/_astro/_slug_.OmCW7wJf.css",
+      "views": 14
+    },
+    {
+      "path": "/images/tin-tuc/quy-trinh-ban-thuoc-khong-ke-don.png",
+      "views": 14
+    },
+    {
+      "path": "/vi/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api-voi-he-thong-co-so-du-lieu-ve-duoc/",
+      "views": 13
+    },
+    {
+      "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
+      "views": 10
     }
   ]
 }
