@@ -171,6 +171,8 @@ export function LocalOsSourcesPage() {
           Canh nguồn ngay
         </Button>
         <Link to="/local-os/listings">Hàng chờ tin</Link>
+        {' · '}
+        <Link to="/local-os/stats">Thống kê truy cập</Link>
       </Space>
       {runs[0] ? (
         <Typography.Paragraph type="secondary">

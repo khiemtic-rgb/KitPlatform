@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "astro dev --host 127.0.0.1 --port 4322",
     "build": "astro build",
+    "export-feed": "node scripts/export-public-feed.mjs",
     "preview": "astro preview --host 127.0.0.1 --port 4322",
-    "deploy": "astro build && wrangler deploy"
+    "deploy": "node scripts/export-public-feed.mjs && astro build && wrangler deploy"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.6.0",

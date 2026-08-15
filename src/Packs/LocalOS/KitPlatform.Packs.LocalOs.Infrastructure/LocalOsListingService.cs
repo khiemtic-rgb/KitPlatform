@@ -106,6 +106,12 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         UpsertLocalListingRequest request,
         CancellationToken cancellationToken = default)
     {
+        var dup = await FindDuplicateAsync(
+            request.Kind, request.Title, request.PlaceText, request.ContactPhone,
+            request.Summary, request.SourceUrl, excludeId: null, onlyActive: false, cancellationToken);
+        if (dup is not null)
+            throw new InvalidOperationException("Tin này đã có trong danh sách. Không thêm trùng.");
+
         var id = Guid.CreateVersion7();
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await conn.ExecuteAsync(
@@ -169,6 +175,18 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         var next = status.Trim().ToUpperInvariant();
         if (next is not ("ACTIVE" or "NEEDS_REVIEW" or "EXPIRED" or "HIDDEN"))
             next = "NEEDS_REVIEW";
+        if (next == "ACTIVE")
+        {
+            var self = await GetAsync(id, publicOnly: false, cancellationToken);
+            if (self is not null)
+            {
+                var dup = await FindDuplicateAsync(
+                    self.Kind, self.Title, self.PlaceText, self.ContactPhone,
+                    self.Summary, self.SourceUrl, excludeId: id, onlyActive: true, cancellationToken);
+                if (dup is not null)
+                    throw new InvalidOperationException("Tin trùng với tin đang đăng. Không đăng lại.");
+            }
+        }
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         var n = await conn.ExecuteAsync(
             new CommandDefinition(
@@ -187,6 +205,44 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                 cancellationToken: cancellationToken));
         if (n == 0) return null;
         return await GetAsync(id, publicOnly: false, cancellationToken);
+    }
+
+    public async Task<LocalListingDto?> FindDuplicateAsync(
+        string kind,
+        string title,
+        string? placeText,
+        string? contactPhone,
+        string? summary,
+        string? sourceUrl,
+        Guid? excludeId,
+        bool onlyActive,
+        CancellationToken cancellationToken = default)
+    {
+        var k = (kind ?? "job").Trim().ToLowerInvariant();
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<ListingRow>(
+            new CommandDefinition(
+                $"""
+                SELECT {SelectColumns}
+                FROM pack_local.listing l
+                LEFT JOIN pack_local.source s ON s.id = l.source_id
+                WHERE l.kind = @Kind
+                  AND l.status <> 'HIDDEN'
+                  AND (@OnlyActive = FALSE OR l.status = 'ACTIVE')
+                  AND (@ExcludeId IS NULL OR l.id <> @ExcludeId)
+                ORDER BY COALESCE(l.last_checked_at, l.created_at) DESC
+                LIMIT 300
+                """,
+                new { Kind = k, OnlyActive = onlyActive, ExcludeId = excludeId },
+                cancellationToken: cancellationToken));
+        foreach (var row in rows)
+        {
+            if (LocalOsTextExtract.SameListing(
+                    k, title, placeText, contactPhone, summary, sourceUrl,
+                    row.Kind, row.Title, row.PlaceText, row.ContactPhone, row.Summary, row.SourceUrl))
+                return Map(row);
+        }
+        return null;
     }
 
     internal static object Bind(Guid id, UpsertLocalListingRequest r)

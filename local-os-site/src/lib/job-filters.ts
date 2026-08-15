@@ -1,4 +1,5 @@
 import { isRecent, type LocalListing } from './api';
+import { wardOf } from './room-filters';
 
 export const JOB_TYPES = [
   { id: 'part_time', label: 'Part-time' },
@@ -66,18 +67,13 @@ export function jobTags(item: LocalListing): string[] {
   return tags.slice(0, 4);
 }
 
-export function jobPlaces(items: LocalListing[]): string[] {
-  return [...new Set(items.map((i) => (i.placeText ?? '').trim()).filter((p) => p.length > 1 && p.length < 60))]
-    .sort((a, b) => a.localeCompare(b, 'vi'));
-}
-
 export function filterJobs(
   items: LocalListing[],
   opts: { type?: string; place?: string; pay?: string; chip?: string },
 ): LocalListing[] {
   return items.filter((item) => {
     if (opts.type && jobTypeOf(item) !== opts.type) return false;
-    if (opts.place && (item.placeText ?? '').trim() !== opts.place) return false;
+    if (opts.place && wardOf(item) !== opts.place) return false;
     if (opts.pay === 'has' && !item.salaryText) return false;
     if (opts.chip === 'new' && !isNewJob(item)) return false;
     if (opts.chip === 'part_time' && !isPartTime(item)) return false;

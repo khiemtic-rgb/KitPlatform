@@ -7,10 +7,10 @@ import {
   filterJobs,
   isRemote,
   JOB_TYPES,
-  jobPlaces,
   jobStats,
   jobTypeOf,
 } from '../../lib/job-filters';
+import { WARDS } from '../../lib/room-filters';
 
 const PAGE_SIZE = 12;
 const q = Astro.url.searchParams.get('q') ?? '';
@@ -19,7 +19,6 @@ const place = Astro.url.searchParams.get('place') ?? '';
 const pay = Astro.url.searchParams.get('pay') ?? '';
 const chip = Astro.url.searchParams.get('chip') ?? '';
 const all = await listListings('job', q || undefined);
-const places = jobPlaces(all);
 const types = JOB_TYPES.filter((t) => all.some((j) => jobTypeOf(j) === t.id));
 const showRemote = all.some(isRemote);
 const items = filterJobs(all, { type, place, pay, chip });
@@ -77,7 +76,7 @@ function pagerNums(current: number, total: number): Array<number | 'gap'> {
   <section class="job-hero">
     <div class="wrap">
       <h1>Việc làm tại Thái Nguyên</h1>
-      <p>Tin đã duyệt — tự liên hệ đơn vị tuyển. Chúng tôi không nhận hồ sơ.</p>
+      <p class="job-hero-lead">Việc làm tại Thái Nguyên · Liên hệ trực tiếp nhà tuyển dụng</p>
     </div>
   </section>
 
@@ -108,10 +107,10 @@ function pagerNums(current: number, total: number): Array<number | 'gap'> {
           </label>
           <label>
             <span>Địa điểm</span>
-            <select name="place" onchange="this.form.requestSubmit()">
+            <select name="place" aria-label="Phường / xã" onchange="this.form.requestSubmit()">
               <option value="">Tất cả…</option>
-              {places.map((p) => (
-                <option value={p} selected={place === p}>{p}</option>
+              {WARDS.map((w) => (
+                <option value={w.id} selected={place === w.id}>{w.label}</option>
               ))}
             </select>
           </label>
@@ -162,7 +161,7 @@ function pagerNums(current: number, total: number): Array<number | 'gap'> {
         <aside class="job-side">
           {featured.length > 0 && (
             <section class="panel">
-              <h3>Việc đã xác minh nguồn</h3>
+              <h3>Việc nổi bật</h3>
               {featured.map((item, i) => (
                 <a class="job-mini" href={listingHref(item)}>
                   <span class={`job-ico c${i % 3}`}>{orgInitial(item)}</span>
@@ -178,11 +177,11 @@ function pagerNums(current: number, total: number): Array<number | 'gap'> {
 
           <section class="job-seek">
             <h3>Bạn đang tìm việc?</h3>
-            <p>Xem tin đã duyệt rồi tự liên hệ. Thái Nguyên Life không nhận hồ sơ, không phỏng vấn.</p>
+            <p>Xem tin rồi gọi số trên tin. Nhà tuyển dụng tự nhận ứng viên.</p>
             <ul>
-              <li>Không thu phí sinh viên</li>
-              <li>Tin được duyệt trước khi lên site</li>
-              <li>Liên hệ trực tiếp đơn vị tuyển</li>
+              <li>Xem tin miễn phí</li>
+              <li>Liên hệ trực tiếp nhà tuyển dụng</li>
+              <li>Đăng tin việc không mất phí</li>
             </ul>
             <a class="btn-green" href="/dang-tin">Đăng tin việc</a>
           </section>

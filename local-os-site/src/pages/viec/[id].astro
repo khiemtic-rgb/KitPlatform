@@ -69,14 +69,10 @@ if (item?.placeText) fit.push(item.placeText);
               <header class="job-detail-head">
                 <div class="job-detail-kicker">
                   {isNewJob(item) && <span class="new-badge">Mới đăng</span>}
-                  <span class="room-pill is-soft">{trustLabel(item.trust)}</span>
+                  {trustLabel(item.trust) && <span class="room-pill is-soft">{trustLabel(item.trust)}</span>}
                 </div>
                 <div class="job-detail-title-row">
                   <h1>{item.title}</h1>
-                  <span class="job-save" aria-hidden="true" title="Chưa lưu tin">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.4-9.2-8.2C1 9.2 2.2 6 5.4 6c1.8 0 3 1.2 3.6 2.2C9.6 7.2 10.8 6 12.6 6c3.2 0 4.4 3.2 2.6 5.8C13 15.6 12 20 12 20z"/></svg>
-                    Lưu
-                  </span>
                 </div>
                 <p class="job-detail-meta">
                   {typeLabel && <span>{typeLabel}</span>}
@@ -97,12 +93,14 @@ if (item?.placeText) fit.push(item.placeText);
                 <span class="job-row-logo c0">{orgInitial(item)}</span>
                 <div>
                   <strong>{item.organizationName || item.contactName || 'Đơn vị tuyển'}</strong>
-                  <span>{item.sourceName || trustLabel(item.trust)}</span>
+                  {(item.sourceName || trustLabel(item.trust)) && (
+                    <span>{item.sourceName || trustLabel(item.trust)}</span>
+                  )}
                 </div>
                 <div class="job-employer-contact">
                   <span>Liên hệ tuyển dụng</span>
                   <strong>{item.contactPhone || item.contactName || 'Xem tin gốc'}</strong>
-                  <em>Tự liên hệ — Thái Nguyên Life không nhận hồ sơ.</em>
+                  <em>Gọi số trên tin để ứng tuyển</em>
                 </div>
                 <div class="job-employer-actions">
                   {phoneHref && <a class="btn-green" href={phoneHref}>Gọi ngay</a>}
@@ -176,7 +174,7 @@ if (item?.placeText) fit.push(item.placeText);
                     {fit.map((x) => <li>{x}</li>)}
                   </ul>
                 )}
-                <p>Tự liên hệ đơn vị tuyển. Chúng tôi không nhận hồ sơ, không phỏng vấn.</p>
+                <p>Gọi hoặc nhắn số trên tin.</p>
                 {phoneHref ? (
                   <a class="btn-green" href={phoneHref}>Gọi ngay</a>
                 ) : applyUrl ? (
@@ -213,18 +211,17 @@ if (item?.placeText) fit.push(item.placeText);
               </section>
 
               <section class="job-safe">
-                <h3>Lưu ý an toàn</h3>
+                <h3>Khi ứng tuyển</h3>
                 <ul>
-                  <li>Liên hệ trực tiếp bằng số / link trên tin</li>
+                  <li>Liên hệ bằng số hoặc link trên tin</li>
                   <li>Không nộp phí giữ chỗ hay giữ việc</li>
-                  <li>Thái Nguyên Life không nhận hồ sơ, không phỏng vấn</li>
                 </ul>
                 <a href="/thong-tin/lien-he">Báo cáo tin →</a>
               </section>
             </aside>
           </div>
         </>
-      ) : <p class="empty">Tin không còn hoặc đã ẩn.</p>}
+      ) : <p class="empty">Tin không còn trên site.</p>}
     </div>
   </div>
   <script>

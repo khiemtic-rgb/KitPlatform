@@ -128,7 +128,7 @@ export async function runLocalOsWatch(): Promise<LocalWatchRun> {
 }
 
 export async function ingestLocalOsSource(body: {
-  sourceUrl: string;
+  sourceUrl?: string;
   pastedText?: string;
   kind?: string;
   sourceId?: string;
@@ -137,6 +137,27 @@ export async function ingestLocalOsSource(body: {
     '/local-os/ingest',
     body,
   );
+  return data;
+}
+
+export async function createLocalOsListing(body: {
+  kind: string;
+  title: string;
+  summary?: string;
+  placeText?: string;
+  salaryText?: string;
+  contactPhone?: string;
+  contactName?: string;
+  workingTime?: string;
+  requirements?: string;
+  status?: string;
+}): Promise<LocalListing> {
+  const { data } = await http.post<LocalListing>('/local-os/listings', {
+    ...body,
+    sourceKind: 'admin_write',
+    trust: 'UNVERIFIED',
+    status: body.status ?? 'NEEDS_REVIEW',
+  });
   return data;
 }
 

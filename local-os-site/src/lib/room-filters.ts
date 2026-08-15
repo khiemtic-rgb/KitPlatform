@@ -1,9 +1,27 @@
 import { roomNoteChips, type LocalListing } from './api';
 
+export const WARDS = [
+  { id: 'phan-dinh-phung', label: 'Phường Phan Đình Phùng', aliases: ['phan đình phùng', 'phan dinh phung'] },
+  { id: 'quyet-thang', label: 'Phường Quyết Thắng', aliases: ['quyết thắng', 'quyet thang', 'quết thắng', 'quyết thắbg'] },
+  { id: 'quan-trieu', label: 'Phường Quan Triều', aliases: ['quan triều', 'quan trieu'] },
+  { id: 'gia-sang', label: 'Phường Gia Sàng', aliases: ['gia sàng', 'gia sang'] },
+  { id: 'linh-son', label: 'Phường Linh Sơn', aliases: ['linh sơn', 'linh son'] },
+  { id: 'tich-luong', label: 'Phường Tích Lương', aliases: ['tích lương', 'tich luong'] },
+  { id: 'tan-cuong', label: 'Xã Tân Cương', aliases: ['tân cương', 'tan cuong'] },
+  { id: 'dai-phuc', label: 'Xã Đại Phúc', aliases: ['đại phúc', 'dai phuc'] },
+] as const;
+
 export const SCHOOLS = [
-  { id: 'sp', label: 'ĐH Sư phạm' },
-  { id: 'kh', label: 'ĐH Khoa học (TNUS)' },
-  { id: 'ictu', label: 'ICTU' },
+  { id: 'sp', label: 'Trường Đại học Sư phạm', short: 'ĐH Sư phạm', code: 'TNUE', aliases: ['sư phạm', 'su pham', 'tnue'] },
+  { id: 'ktcn', label: 'Trường Đại học Kỹ thuật Công nghiệp', short: 'ĐH Kỹ thuật CN', code: 'TNUT', aliases: ['kỹ thuật công nghiệp', 'ky thuat cong nghiep', 'tnut', 'tkcn'] },
+  { id: 'nl', label: 'Trường Đại học Nông Lâm', short: 'ĐH Nông Lâm', code: 'TUAF', aliases: ['nông lâm', 'nong lam', 'tuaf'] },
+  { id: 'yd', label: 'Trường Đại học Y Dược', short: 'ĐH Y Dược', code: 'TUMP', aliases: ['y dược', 'y duoc', 'tump'] },
+  { id: 'ktqtkd', label: 'Trường Đại học Kinh tế và Quản trị Kinh doanh', short: 'ĐH Kinh tế & QTKD', code: 'TUEBA', aliases: ['quản trị kinh doanh', 'quan tri kinh doanh', 'tueba', 'qtkd'] },
+  { id: 'kh', label: 'Trường Đại học Khoa học', short: 'ĐH Khoa học', code: 'TNUS', aliases: ['khoa học', 'khoa hoc', 'tnus'] },
+  { id: 'cntt', label: 'Trường Đại học Công nghệ Thông tin và Truyền thông', short: 'ĐH CNTT & TT', code: 'ICTU', aliases: ['công nghệ thông tin', 'cong nghe thong tin', 'truyền thông', 'truyen thong', 'ictu', 'cntt'] },
+  { id: 'nn', label: 'Trường Ngoại ngữ', short: 'Ngoại ngữ', code: 'SFL', aliases: ['ngoại ngữ', 'ngoai ngu', 'sfl'] },
+  { id: 'kqt', label: 'Khoa Quốc tế', short: 'Khoa Quốc tế', code: 'IS', aliases: ['khoa quốc tế', 'khoa quoc te'] },
+  { id: 'ktct', label: 'Trường Đại học Kinh tế - Công nghệ Thái Nguyên', short: 'ĐH KT-CN', code: 'TUETECH', aliases: ['kinh tế - công nghệ', 'kinh te - cong nghe', 'kinh tế công nghệ', 'kinh te cong nghe', 'tuetech'] },
 ] as const;
 
 export const DISTANCES = [
@@ -13,51 +31,31 @@ export const DISTANCES = [
   { id: '5000', label: 'Trong 5 km', meters: 5000 },
 ] as const;
 
-const WARD_NAMES = [
-  'Quang Trung',
-  'Phan Đình Phùng',
-  'Tân Thịnh',
-  'Quyết Thắng',
-  'Hoàng Văn Thụ',
-  'Tân Long',
-  'Quang Vinh',
-  'Đồng Quang',
-  'Túc Duyên',
-  'Gia Sàng',
-  'Tân Thành',
-  'Phú Xá',
-  'Trung Thành',
-  'Tích Lương',
-  'Cam Giá',
-  'Hương Sơn',
-  'Thịnh Đán',
-  'Phú Lương',
-];
-
-export function schoolOf(item: LocalListing): string {
-  const blob = `${item.title} ${item.summary ?? ''} ${item.sourceUrl ?? ''} ${item.sourceName ?? ''}`.toLowerCase();
-  if (blob.includes('sư phạm') || blob.includes('su pham') || blob.includes('tnue')) return 'sp';
-  if (blob.includes('khoa học') || blob.includes('khoa hoc') || blob.includes('tnus') || blob.includes('1zav9iswr'))
-    return 'kh';
-  if (blob.includes('ictu') || blob.includes('cntt') || blob.includes('truyền thông')) return 'ictu';
-  return '';
+function fold(raw: string): string {
+  return raw
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd');
 }
 
-export function wardOf(item: LocalListing): string {
-  const place = item.placeText ?? '';
-  const prefixed = place.match(/(?:phường|ph\.|p\.|xã|xa)\s+([^,/]+)/i);
-  if (prefixed?.[1]) return tidyWard(prefixed[1]);
-  const lower = place.toLowerCase();
-  for (const name of WARD_NAMES) {
-    if (lower.includes(name.toLowerCase())) return name;
+export function schoolOf(item: LocalListing): string {
+  const blob = fold(`${item.title} ${item.summary ?? ''} ${item.sourceUrl ?? ''} ${item.sourceName ?? ''}`);
+  if (blob.includes('1zav9iswr')) return 'kh';
+  const order = ['yd', 'nl', 'ktcn', 'ktqtkd', 'ktct', 'kh', 'cntt', 'nn', 'kqt', 'sp'] as const;
+  for (const id of order) {
+    const row = SCHOOLS.find((s) => s.id === id);
+    if (row?.aliases.some((a) => blob.includes(fold(a)))) return id;
   }
   return '';
 }
 
-function tidyWard(raw: string): string {
-  const s = raw.replace(/\s+/g, ' ').trim().replace(/\.$/, '');
-  const hit = WARD_NAMES.find((w) => w.toLowerCase() === s.toLowerCase());
-  return hit ?? s.replace(/^(phường|xã)\s+/i, '');
+export function wardOf(item: LocalListing): string {
+  const place = fold(`${item.placeText ?? ''} ${item.title} ${item.summary ?? ''}`);
+  for (const w of WARDS) {
+    if (place.includes(fold(w.label)) || w.aliases.some((a) => place.includes(fold(a)))) return w.id;
+  }
+  return '';
 }
 
 export function distanceMeters(item: LocalListing): number | null {
@@ -79,12 +77,18 @@ function toMeters(raw: string | undefined, unit: string | undefined): number {
   return (unit ?? 'm').toLowerCase() === 'km' ? n * 1000 : n;
 }
 
-export function wardsIn(items: LocalListing[]): string[] {
-  return [...new Set(items.map(wardOf).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'));
+export function wardsIn(_items: LocalListing[]): string[] {
+  return WARDS.map((w) => w.id);
 }
 
 export function schoolLabel(id?: string | null): string {
-  return SCHOOLS.find((s) => s.id === id)?.label ?? '';
+  const key = id === 'ictu' ? 'cntt' : id;
+  const row = SCHOOLS.find((s) => s.id === key);
+  return row ? `${row.short} (${row.code})` : '';
+}
+
+export function wardLabel(id?: string | null): string {
+  return WARDS.find((w) => w.id === id)?.label ?? '';
 }
 
 export function formatDistance(item: LocalListing): string {
@@ -156,8 +160,9 @@ export function filterRooms(
   opts: { school?: string; ward?: string; dist?: string },
 ): LocalListing[] {
   const maxM = DISTANCES.find((d) => d.id === opts.dist)?.meters;
+  const schoolId = opts.school === 'ictu' ? 'cntt' : opts.school;
   return items.filter((item) => {
-    if (opts.school && schoolOf(item) !== opts.school) return false;
+    if (schoolId && schoolOf(item) !== schoolId) return false;
     if (opts.ward && wardOf(item) !== opts.ward) return false;
     if (maxM != null) {
       const m = distanceMeters(item);

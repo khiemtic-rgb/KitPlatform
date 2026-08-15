@@ -23,6 +23,7 @@ import {
   schoolLabel,
   schoolOf,
   similarRooms,
+  wardLabel,
   wardOf,
 } from '../../lib/room-filters';
 
@@ -37,7 +38,7 @@ const amenities = item ? roomAmenities(item) : [];
 const area = item ? roomArea(item) : '';
 const dist = item ? formatDistance(item) : '';
 const school = item ? schoolLabel(schoolOf(item)) : '';
-const ward = item ? wardOf(item) : '';
+const ward = item ? wardLabel(wardOf(item)) : '';
 const phone = item ? listingPhone(item) : '';
 const phoneShow = formatPhone(phone);
 const phoneHref = telHref(phone);
@@ -87,14 +88,10 @@ if (sourceKind) facts.push({ label: 'Nguồn', value: sourceKind });
               <header class="room-detail-head">
                 <div class="room-kicker">
                   <span class="room-pill">Phòng trọ</span>
-                  <span class="room-pill is-soft">{trustLabel(item.trust)}</span>
+                  {trustLabel(item.trust) && <span class="room-pill is-soft">{trustLabel(item.trust)}</span>}
                 </div>
                 <div class="job-detail-title-row">
                   <h1>{title}</h1>
-                  <span class="job-save" aria-hidden="true" title="Chưa lưu tin">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.4-9.2-8.2C1 9.2 2.2 6 5.4 6c1.8 0 3 1.2 3.6 2.2C9.6 7.2 10.8 6 12.6 6c3.2 0 4.4 3.2 2.6 5.8C13 15.6 12 20 12 20z"/></svg>
-                    Lưu
-                  </span>
                 </div>
                 {place && <p class="room-place">{place}</p>}
               </header>
@@ -106,7 +103,7 @@ if (sourceKind) facts.push({ label: 'Nguồn', value: sourceKind });
                 </div>
                 <div class="room-gallery-side">
                   <img src={photos[1]} alt="Ảnh minh họa phòng trọ" />
-                  <span class="photo-caption">Ảnh minh họa — không phải ảnh phòng này</span>
+                  <span class="photo-caption">Ảnh minh họa</span>
                 </div>
               </div>
 
@@ -144,7 +141,7 @@ if (sourceKind) facts.push({ label: 'Nguồn', value: sourceKind });
                   <div>
                     <span>Liên hệ chủ nhà</span>
                     <strong>{phoneShow}</strong>
-                    <em>Hỏi giá và còn phòng khi gọi — số có thể đổi.</em>
+                    <em>Hỏi giá và còn phòng khi gọi.</em>
                   </div>
                   <a class="btn-green" href={phoneHref}>Gọi ngay</a>
                 </div>
@@ -207,7 +204,7 @@ if (sourceKind) facts.push({ label: 'Nguồn', value: sourceKind });
                   <span class="job-ico c2">{host.slice(0, 1)}</span>
                   <div>
                     <strong>{host}</strong>
-                    <span>Chủ trọ · theo danh sách nguồn</span>
+                    <span>Chủ nhà</span>
                   </div>
                 </div>
                 {phoneHref ? (
@@ -215,11 +212,11 @@ if (sourceKind) facts.push({ label: 'Nguồn', value: sourceKind });
                 ) : (
                   <p class="muted">Chưa có số trên tin.</p>
                 )}
-                <p class="muted">Hỏi giá và còn phòng khi gọi — số có thể đổi. Không nhắn tin trên site.</p>
+                <p class="muted">Hỏi giá và còn phòng khi gọi.</p>
               </section>
 
               <section class="room-safe">
-                <h3>Thông tin an toàn</h3>
+                <h3>Khi xem phòng</h3>
                 <ul>
                   <li>Xem phòng trực tiếp trước khi đặt cọc</li>
                   <li>Không chuyển khoản giữ chỗ trước</li>
@@ -261,7 +258,7 @@ if (sourceKind) facts.push({ label: 'Nguồn', value: sourceKind });
             </div>
           )}
         </>
-      ) : <p class="empty">Tin không còn hoặc đã ẩn.</p>}
+      ) : <p class="empty">Tin không còn trên site.</p>}
     </div>
   </div>
   <script>

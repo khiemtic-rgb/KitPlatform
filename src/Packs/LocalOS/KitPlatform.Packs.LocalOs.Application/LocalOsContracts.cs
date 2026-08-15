@@ -110,7 +110,7 @@ public sealed record PublishJobResult(
 
 public sealed record TrackShareRequest(Guid ListingId, Guid? GroupId, string EventKind);
 
-public sealed record IngestFromSourceRequest(string SourceUrl, string? PastedText, string? Kind, Guid? SourceId = null);
+public sealed record IngestFromSourceRequest(string? SourceUrl, string? PastedText, string? Kind, Guid? SourceId = null);
 
 public sealed record IngestFromSourceResult(LocalListingDto Listing, string Note, bool Existing);
 
@@ -161,6 +161,16 @@ public interface ILocalOsListingService
     Task<LocalListingDto> CreateAsync(UpsertLocalListingRequest request, CancellationToken cancellationToken = default);
     Task<LocalListingDto?> UpdateAsync(Guid id, UpsertLocalListingRequest request, CancellationToken cancellationToken = default);
     Task<LocalListingDto?> SetStatusAsync(Guid id, string status, CancellationToken cancellationToken = default);
+    Task<LocalListingDto?> FindDuplicateAsync(
+        string kind,
+        string title,
+        string? placeText,
+        string? contactPhone,
+        string? summary,
+        string? sourceUrl,
+        Guid? excludeId,
+        bool onlyActive,
+        CancellationToken cancellationToken = default);
 }
 
 public interface ILocalOsIngestService

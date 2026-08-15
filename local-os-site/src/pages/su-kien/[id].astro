@@ -77,17 +77,13 @@ const mapsQuery = placeKey
               <div class="event-hero-media">
                 <img src={coverFor('event', 0)} alt="Ảnh minh họa sự kiện" />
                 <span class={`event-row-badge is-${cat || 'event'}`}>{catLabel}</span>
-                <span class="job-save event-hero-save" aria-hidden="true" title="Chưa lưu tin">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.4-9.2-8.2C1 9.2 2.2 6 5.4 6c1.8 0 3 1.2 3.6 2.2C9.6 7.2 10.8 6 12.6 6c3.2 0 4.4 3.2 2.6 5.8C13 15.6 12 20 12 20z"/></svg>
-                  Lưu
-                </span>
                 <span class="photo-caption">Ảnh minh họa</span>
               </div>
 
               <header class="event-detail-head">
                 <h1>{item.title}</h1>
                 <div class="event-detail-pills">
-                  <span class="room-pill is-soft">{trustLabel(item.trust)}</span>
+                  {trustLabel(item.trust) && <span class="room-pill is-soft">{trustLabel(item.trust)}</span>}
                   <span class="room-pill">{catLabel}</span>
                   {placeKey && <span class="room-pill">{placeKey}</span>}
                   {tags.filter((t) => t !== catLabel).map((t) => <span class="job-row-tag">{t}</span>)}
@@ -179,7 +175,7 @@ const mapsQuery = placeKey
             <aside class="event-detail-side">
               <section class="event-reg-card">
                 <h3>Đăng ký tham dự</h3>
-                <p>Đăng ký trên trang ban tổ chức. Thái Nguyên Life không nhận bài, không cấp giấy chứng nhận.</p>
+                <p>Đăng ký với ban tổ chức qua link trên tin.</p>
                 {applyUrl ? (
                   <a class="btn-green event-reg-go" href={applyUrl} rel="nofollow noopener" target="_blank">
                     {registerUrl ? 'Đăng ký trên trang gốc' : 'Xem tin gốc'}
@@ -191,9 +187,8 @@ const mapsQuery = placeKey
                   <a class="btn-outline event-reg-src" href={sourceUrl} rel="nofollow noopener" target="_blank">Xem tin gốc</a>
                 )}
                 <ul>
-                  <li>Tự đăng ký với ban tổ chức</li>
-                  <li>Hạn và phí lấy theo tin nguồn — kiểm tra lại khi mở link</li>
-                  <li>Không nộp hồ sơ cho Thái Nguyên Life</li>
+                  <li>Đăng ký với ban tổ chức</li>
+                  <li>Hạn và phí theo trang ban tổ chức</li>
                 </ul>
               </section>
 
@@ -241,7 +236,7 @@ const mapsQuery = placeKey
             </aside>
           </div>
         </>
-      ) : <p class="empty">Tin không còn hoặc đã ẩn.</p>}
+      ) : <p class="empty">Tin không còn trên site.</p>}
     </div>
   </div>
   <script>

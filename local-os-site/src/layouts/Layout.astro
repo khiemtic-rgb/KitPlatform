@@ -9,14 +9,14 @@ interface Props {
 }
 const { title, active = 'home' } = Astro.props;
 const description = Astro.props.description
-  ?? 'Hiểu Thái Nguyên, rồi tìm việc — sự kiện — phòng trọ đã duyệt. Xem không cần tài khoản.';
+  ?? 'Việc làm, sự kiện, phòng trọ và khám phá Thái Nguyên.';
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
 ---
 <!doctype html>
 <html lang="vi">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#1f7a45" />
     <link rel="canonical" href={canonical} />
@@ -50,7 +50,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
           <a href="/#cong-dong" class={active === 'community' ? 'is-on' : undefined}>Cộng đồng</a>
         </nav>
         <div class="header-actions">
-          <a href="/dang-tin" class={active === 'publish' ? 'btn-green is-on' : 'btn-green'}>+ Đăng tin</a>
+          <a href="/dang-tin" class={active === 'publish' ? 'btn-green is-on' : 'btn-green'}>+ Đăng<span class="post-extra"> tin</span></a>
           <a class="icon-btn" href="/#tim" title="Tìm trên trang chủ" aria-label="Tìm kiếm">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
           </a>
@@ -108,11 +108,10 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
             <h4>Về chúng tôi</h4>
             <a href="/thong-tin/gioi-thieu">Giới thiệu</a>
             <a href="/thong-tin/dieu-khoan">Điều khoản</a>
-            <a href="/thong-tin/quang-cao">Quảng cáo</a>
           </div>
           <div>
             <h4>Nhận tin mới mỗi ngày</h4>
-            <p class="muted">Bản tin email — sắp mở. Hiện xem tin trên site, không cần đăng ký.</p>
+            <p class="muted">Bản tin email sắp có. Hiện xem tin trên site.</p>
             <form class="news-form" action="/thong-tin/lien-he" method="get">
               <input type="email" name="email" placeholder="Email của bạn" disabled />
               <button type="button" disabled aria-label="Sắp mở">→</button>
@@ -127,5 +126,20 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
         </div>
       </div>
     </footer>
+    <script is:inline>
+      (function () {
+        var path = location.pathname || '/';
+        if (path === '/thong-ke' || path.indexOf('/api/') === 0) return;
+        try {
+          fetch('/api/hit', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ path: path }),
+            keepalive: true,
+            credentials: 'omit',
+          });
+        } catch (e) {}
+      })();
+    </script>
   </body>
 </html>

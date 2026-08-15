@@ -32,19 +32,52 @@ const API = (import.meta.env.PUBLIC_LOCAL_OS_API as string | undefined)?.replace
 /** Shop deals + scholarships parked until brand partners. Flip to show nav/pages again. */
 export const OFFERS_PUBLIC = false;
 
+type PublicFeed = { listings?: LocalListing[]; groups?: CommunityGroup[] };
+
+let feedCache: PublicFeed | null = null;
+
+async function bundledFeed(): Promise<PublicFeed> {
+  if (feedCache) return feedCache;
+  try {
+    const mod = await import('../data/public-feed.json');
+    feedCache = (mod.default ?? mod) as PublicFeed;
+  } catch {
+    feedCache = { listings: [], groups: [] };
+  }
+  return feedCache;
+}
+
+function matchListing(item: LocalListing, q?: string): boolean {
+  if (!q) return true;
+  const n = q.trim().toLowerCase();
+  if (!n) return true;
+  return [item.title, item.summary, item.placeText, item.organizationName]
+    .some((v) => (v ?? '').toLowerCase().includes(n));
+}
+
 export async function listListings(kind?: string, q?: string): Promise<LocalListing[]> {
-  const url = new URL(`${API}/listings`);
-  if (kind) url.searchParams.set('kind', kind);
-  if (q) url.searchParams.set('q', q);
-  const res = await fetch(url);
-  if (!res.ok) return [];
-  return (await res.json()) as LocalListing[];
+  try {
+    const url = new URL(`${API}/listings`);
+    if (kind) url.searchParams.set('kind', kind);
+    if (q) url.searchParams.set('q', q);
+    const res = await fetch(url);
+    if (res.ok) return (await res.json()) as LocalListing[];
+  } catch {
+    /* Cloudflare cannot reach the local API — use the deploy snapshot. */
+  }
+  const feed = await bundledFeed();
+  return (feed.listings ?? []).filter((item) => (!kind || item.kind === kind) && matchListing(item, q));
 }
 
 export async function getListing(id: string): Promise<LocalListing | null> {
-  const res = await fetch(`${API}/listings/${id}`);
-  if (!res.ok) return null;
-  return (await res.json()) as LocalListing;
+  try {
+    const res = await fetch(`${API}/listings/${id}`);
+    if (res.ok) return (await res.json()) as LocalListing;
+  } catch {
+    /* use snapshot */
+  }
+  const feed = await bundledFeed();
+  return (feed.listings ?? []).find((item) => item.id === id) ?? null;
 }
 
 export type CommunityGroup = {
@@ -58,9 +91,14 @@ export type CommunityGroup = {
 };
 
 export async function listGroups(): Promise<CommunityGroup[]> {
-  const res = await fetch(`${API}/groups`);
-  if (!res.ok) return [];
-  return (await res.json()) as CommunityGroup[];
+  try {
+    const res = await fetch(`${API}/groups`);
+    if (res.ok) return (await res.json()) as CommunityGroup[];
+  } catch {
+    /* use snapshot */
+  }
+  const feed = await bundledFeed();
+  return feed.groups ?? [];
 }
 
 export type PublishJobResult = {
@@ -161,7 +199,7 @@ export function trustLabel(trust?: string | null): string {
     case 'COMMUNITY':
       return 'Cộng đồng';
     default:
-      return 'Chưa xác minh';
+      return '';
   }
 }
 
@@ -226,7 +264,7 @@ export function trendFoot(item: LocalListing): { kind: 'fire' | 'party' | 'pin';
     return { kind: 'fire', text: formatRelative(item.lastCheckedAt || item.publishedAt) || 'Tin mới' };
   }
   if (item.kind === 'event') {
-    return { kind: 'party', text: item.placeText || 'Sự kiện đã duyệt' };
+    return { kind: 'party', text: item.placeText || 'Sự kiện Thái Nguyên' };
   }
   return { kind: 'pin', text: item.placeText || 'Phòng trọ Thái Nguyên' };
 }

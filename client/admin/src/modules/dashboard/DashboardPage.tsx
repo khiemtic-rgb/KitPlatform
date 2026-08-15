@@ -115,7 +115,7 @@ function LocalOsDashboardPage() {
       <Alert
         type="info"
         showIcon
-        message="Sổ nguồn: canh mục lục website chính thức (hoặc dán một bài) → hàng chờ → duyệt tay. Không quét Facebook, không tự đăng site/group."
+        message="Dán bài từ nhóm → viết lại → duyệt → đăng. Site chỉ hiện tin đã đăng."
         style={{ marginBottom: 16 }}
       />
       <Link to="/local-os/listings">
@@ -123,6 +123,9 @@ function LocalOsDashboardPage() {
       </Link>
       <Link to="/local-os/sources" style={{ marginLeft: 12 }}>
         <Button>Sổ nguồn</Button>
+      </Link>
+      <Link to="/local-os/stats" style={{ marginLeft: 12 }}>
+        <Button>Thống kê truy cập</Button>
       </Link>
     </div>
   );

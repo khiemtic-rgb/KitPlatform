@@ -39,3 +39,4 @@ local-os-site/node_modules/
 local-os-site/.astro/
 local-os-site/dist/
 local-os-site/.wrangler/
+local-os-site/src/data/public-feed.json

@@ -51,8 +51,17 @@ public sealed class LocalOsController : ControllerBase
     [HttpPost("listings")]
     public async Task<ActionResult<LocalListingDto>> Create(
         [FromBody] UpsertLocalListingRequest request,
-        CancellationToken cancellationToken) =>
-        Ok(await _listings.CreateAsync(request, cancellationToken));
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _listings.CreateAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 
     [HttpPut("listings/{id:guid}")]
     public async Task<ActionResult<LocalListingDto>> Update(
@@ -150,7 +159,14 @@ public sealed class LocalOsController : ControllerBase
         [FromBody] SetLocalListingStatusRequest request,
         CancellationToken cancellationToken)
     {
-        var row = await _listings.SetStatusAsync(id, request.Status, cancellationToken);
-        return row is null ? NotFound() : Ok(row);
+        try
+        {
+            var row = await _listings.SetStatusAsync(id, request.Status, cancellationToken);
+            return row is null ? NotFound() : Ok(row);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }

@@ -1,12 +1,12 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout title="Đăng tin — Thái Nguyên Life" active="publish" description="Đăng tin việc, sự kiện hoặc phòng trọ miễn phí. Lên site sau khi duyệt. Không cần OTP.">
+<Layout title="Đăng tin — Thái Nguyên Life" active="publish" description="Đăng tin miễn phí. Không cần tạo tài khoản.">
   <section class="job-hero">
     <div class="wrap pub-hero">
       <div>
         <h1 id="pub-title">Đăng tin</h1>
-        <p id="pub-lead">Việc, sự kiện hoặc phòng trọ — miễn phí, lên site sau khi duyệt. Không cần OTP.</p>
+        <p id="pub-lead" class="job-hero-lead">Đăng tin miễn phí · Không cần tạo tài khoản</p>
       </div>
       <button type="button" class="pub-preview-btn" id="btn-preview">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -53,12 +53,13 @@ import Layout from '../layouts/Layout.astro';
           </section>
 
           <section class="pub-card" data-pane="1" data-for="job">
-            <h2>Mẫu việc</h2>
+            <h2>Hình thức</h2>
             <div class="pub-chips" id="templates">
               <button class="chip is-on" type="button" data-template="part_time">Part-time</button>
               <button class="chip" type="button" data-template="full_time">Full-time</button>
               <button class="chip" type="button" data-template="intern">Thực tập</button>
             </div>
+            <h2 class="pub-subhead">Ngành</h2>
             <div class="pub-chips" id="categories">
               <button class="chip" type="button" data-cat="phuc_vu">Phục vụ</button>
               <button class="chip" type="button" data-cat="ban_hang">Bán hàng</button>
@@ -85,7 +86,7 @@ import Layout from '../layouts/Layout.astro';
               <button class="chip" type="button" data-room="shared">Ở ghép</button>
               <button class="chip" type="button" data-room="transfer">Chuyển nhượng</button>
             </div>
-            <p class="muted">Không điền giá. Site hiện «Giá liên hệ» — hỏi khi gọi.</p>
+            <p class="muted">Giá hỏi khi gọi — không cần ghi trên tin.</p>
           </section>
 
           <section class="pub-card" data-pane="1">
@@ -146,7 +147,7 @@ import Layout from '../layouts/Layout.astro';
               <textarea name="requirements" rows="6" maxlength="500" placeholder="Nam/nữ, ca tối, không cần kinh nghiệm…"></textarea>
               <span class="pub-count" data-count="requirements">0/500</span>
             </label>
-            <p class="muted">Tin lên site sau khi Thái Nguyên Life duyệt. Bạn tự copy và dán lên group — chúng tôi không đăng hộ.</p>
+            <p class="muted">Có thể bổ sung yêu cầu hoặc tiện ích. Bỏ trống cũng được.</p>
           </section>
 
           <section class="pub-card" data-pane="3" hidden>
@@ -154,11 +155,10 @@ import Layout from '../layouts/Layout.astro';
             <label class="pub-field">Số điện thoại liên hệ
               <input name="phone" required inputmode="tel" maxlength="16" placeholder="09xxxxxxxx" />
             </label>
-            <p class="muted">SĐT hiện trên tin sau khi duyệt. Không cần mã OTP. Tối đa 3 tin/ngày mỗi số.</p>
             <p class="muted" id="draft-hint"></p>
             <label class="pub-check">
               <input type="checkbox" name="agree" required />
-              <span>Tôi đồng ý với <a href="/thong-tin/quy-dinh">quy định sử dụng</a> và chịu trách nhiệm nội dung tin đăng.</span>
+              <span>Tôi đồng ý với <a href="/thong-tin/quy-dinh">quy định sử dụng</a>.</span>
             </label>
           </section>
 
@@ -170,7 +170,7 @@ import Layout from '../layouts/Layout.astro';
             </button>
             <button type="button" class="btn-outline" id="btn-back" hidden>← Quay lại</button>
             <button type="button" class="btn-green" id="btn-next">Tiếp tục →</button>
-            <button type="submit" class="btn-green" id="btn-submit" hidden>Gửi tin chờ duyệt</button>
+            <button type="submit" class="btn-green" id="btn-submit" hidden>Gửi tin</button>
           </div>
         </form>
 
@@ -181,7 +181,7 @@ import Layout from '../layouts/Layout.astro';
             <textarea id="share-text" rows="12" readonly></textarea>
           </label>
           <button type="button" class="btn-green" id="btn-copy">Copy nội dung</button>
-          <h2 style="margin-top:22px">Group gợi ý — bạn tự mở và dán</h2>
+          <h2 style="margin-top:22px">Gợi ý group để chia sẻ</h2>
           <div id="groups"></div>
         </div>
       </div>
@@ -190,18 +190,17 @@ import Layout from '../layouts/Layout.astro';
         <section class="pub-card">
           <h3>Mẹo giúp tin đăng hiệu quả hơn</h3>
           <ul class="pub-tips" id="pub-tips"></ul>
-          <p class="pub-protip">Tin đủ chỗ + SĐT được duyệt trước. Không có “ưu tiên trả phí”.</p>
+          <p class="pub-protip">Viết rõ chỗ làm / chỗ ở và số liên hệ để người xem gọi được ngay.</p>
         </section>
         <section class="pub-card">
           <h3>Lợi ích khi đăng tin</h3>
           <ul class="pub-benefits">
-            <li><strong>Miễn phí</strong> — không thu phí sinh viên, không thu phí đăng v1.</li>
+            <li><strong>Miễn phí</strong> — không mất phí đăng tin.</li>
             <li><strong>Đúng người</strong> — tin hiện cho người đang tìm ở Thái Nguyên.</li>
-            <li><strong>Nhanh</strong> — điền 1–2 phút, lên site sau khi duyệt.</li>
-            <li><strong>Tự chia sẻ</strong> — copy + mở group, chúng tôi không đăng hộ.</li>
+            <li><strong>Nhanh</strong> — điền 1–2 phút.</li>
+            <li><strong>Chia sẻ thêm</strong> — copy nội dung nếu muốn đăng lên group.</li>
           </ul>
         </section>
-        <p class="pub-secure">SĐT hiện trên tin sau khi duyệt. Không bán dữ liệu, không chia bên thứ ba.</p>
       </aside>
     </div>
   </div>
@@ -209,7 +208,7 @@ import Layout from '../layouts/Layout.astro';
   <dialog class="pub-dialog" id="preview-dialog">
     <form method="dialog" class="pub-dialog-inner">
       <h2>Xem trước tin đăng</h2>
-      <p class="muted">Chưa lên site. Đây là bản bạn đang điền — tin công khai sau khi duyệt.</p>
+      <p class="muted">Đây là bản bạn đang điền.</p>
       <dl id="preview-body" class="pub-preview"></dl>
       <button class="btn-green" value="close">Đóng</button>
     </form>
@@ -238,7 +237,7 @@ import Layout from '../layouts/Layout.astro';
   let template = 'part_time';
   let roomType = 'private';
   let eventCat = 'workshop';
-  const categories = new Set<string>();
+  let category = '';
   let listingId = '';
 
   const kindLabel: Record<string, string> = {
@@ -270,28 +269,28 @@ import Layout from '../layouts/Layout.astro';
     other: 'Khác',
   };
   const leads: Record<string, string> = {
-    job: 'Đăng tin việc miễn phí — lên site sau khi duyệt. Không cần OTP.',
-    event: 'Đăng sự kiện thật còn hạn — lên site sau khi duyệt. Không cần OTP.',
-    room: 'Đăng phòng trọ — giá hỏi khi gọi, không điền giá trên form. Không cần OTP.',
+    job: 'Đăng tin miễn phí · Không cần tạo tài khoản',
+    event: 'Đăng tin miễn phí · Không cần tạo tài khoản',
+    room: 'Đăng tin miễn phí · Không cần tạo tài khoản',
   };
   const tips: Record<string, string[]> = {
     job: [
       'Tiêu đề rõ: việc gì, ca nào, khu nào.',
       'Địa điểm cụ thể — số nhà hoặc gần trường / quán.',
-      'Thu nhập thật nếu có; để trống còn hơn bịa.',
-      'SĐT liên hệ đúng — hiện trên tin sau khi duyệt.',
+      'Thu nhập thật nếu có; để trống còn hơn ghi sai.',
+      'Số liên hệ đúng để người xem gọi được.',
     ],
     event: [
       'Tên sự kiện + ngày giờ thật, chưa hết hạn.',
       'Địa điểm cụ thể — hội trường, sân, đường.',
       'Link đăng ký gốc nếu có; để trống nếu chỉ gọi SĐT.',
-      'SĐT ban tổ chức — hiện trên tin sau khi duyệt.',
+      'Số ban tổ chức để người xem gọi được.',
     ],
     room: [
       'Địa chỉ rõ — số nhà / gần trường.',
       'Chọn loại phòng: riêng, ghép, chuyển nhượng.',
-      'Không điền giá. Người xem gọi để hỏi.',
-      'SĐT chủ nhà đúng — hiện trên tin sau khi duyệt.',
+      'Giá hỏi khi gọi — không cần ghi trên tin.',
+      'Số chủ nhà để người xem gọi được.',
     ],
   };
 
@@ -427,7 +426,7 @@ import Layout from '../layouts/Layout.astro';
       template,
       roomType,
       eventCat,
-      categories: [...categories],
+      category,
       title: field('title'),
       placeText: field('placeText'),
       placeTextRoom: field('placeTextRoom'),
@@ -460,15 +459,13 @@ import Layout from '../layouts/Layout.astro';
       if (typeof d.template === 'string') template = d.template;
       if (typeof d.roomType === 'string') roomType = d.roomType;
       if (typeof d.eventCat === 'string') eventCat = d.eventCat;
-      if (Array.isArray(d.categories)) {
-        categories.clear();
-        for (const c of d.categories) if (typeof c === 'string') categories.add(c);
-      }
+      if (typeof d.category === 'string') category = d.category;
+      else if (Array.isArray(d.categories) && typeof d.categories[0] === 'string') category = d.categories[0];
       document.querySelectorAll('#templates .chip').forEach((c) => {
         c.classList.toggle('is-on', (c as HTMLButtonElement).dataset.template === template);
       });
       document.querySelectorAll('#categories .chip').forEach((el) => {
-        el.classList.toggle('is-on', categories.has((el as HTMLButtonElement).dataset.cat || ''));
+        el.classList.toggle('is-on', (el as HTMLButtonElement).dataset.cat === category);
       });
       document.querySelectorAll('#room-types .chip').forEach((c) => {
         c.classList.toggle('is-on', (c as HTMLButtonElement).dataset.room === roomType);
@@ -491,7 +488,7 @@ import Layout from '../layouts/Layout.astro';
       ['SĐT', field('phone') || '—'],
     ];
     if (kind === 'job') {
-      rows.splice(1, 0, ['Mẫu', [templateLabel[template], ...[...categories].map((c) => catLabel[c] || c)].filter(Boolean).join(' · ')]);
+      rows.splice(1, 0, ['Hình thức', [templateLabel[template], category ? catLabel[category] || category : ''].filter(Boolean).join(' · ')]);
       rows.push(['Thời gian', field('workingTime') || '—'], ['Số lượng', field('quantity') || '—'], ['Thu nhập', field('salaryText') || '—']);
     }
     if (kind === 'event') {
@@ -525,11 +522,9 @@ import Layout from '../layouts/Layout.astro';
   document.getElementById('categories')?.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-cat]');
     if (!btn) return;
-    const cat = btn.dataset.cat || '';
-    if (categories.has(cat)) categories.delete(cat);
-    else if (categories.size < 4) categories.add(cat);
+    category = btn.dataset.cat === category ? '' : (btn.dataset.cat || '');
     document.querySelectorAll('#categories .chip').forEach((c) => {
-      c.classList.toggle('is-on', categories.has((c as HTMLButtonElement).dataset.cat || ''));
+      c.classList.toggle('is-on', (c as HTMLButtonElement).dataset.cat === category);
     });
   });
 
@@ -579,7 +574,7 @@ import Layout from '../layouts/Layout.astro';
         phone: field('phone'),
         kind,
         template: kind === 'job' ? template : kind === 'event' ? eventCat : undefined,
-        categories: kind === 'job' ? [...categories] : undefined,
+        categories: kind === 'job' && category ? [category] : undefined,
         title: field('title'),
         quantity: kind === 'job' ? field('quantity') || undefined : undefined,
         placeText: placeValue(),
@@ -599,7 +594,7 @@ import Layout from '../layouts/Layout.astro';
       document.getElementById('btn-preview')!.hidden = true;
       success.hidden = false;
       shareTextEl.value = result.shareText;
-      reviewNote.textContent = result.reviewNote;
+      reviewNote.textContent = 'Đã nhận tin. Chúng tôi sẽ xem và đăng lên site sớm.';
       const topic = kindLabel[result.listing.kind] || kindLabel[kind];
       groupsEl.innerHTML = result.groups.length
         ? result.groups
@@ -612,7 +607,7 @@ import Layout from '../layouts/Layout.astro';
                  </div></div>`,
             )
             .join('')
-        : `<p class="muted">Chưa có group ${topic.toLowerCase()} trong sổ. Copy nội dung, tự dán group đúng chủ đề — chúng tôi không đăng hộ.</p>`;
+        : `<p class="muted">Chưa có group ${topic.toLowerCase()} gợi ý. Copy nội dung nếu muốn chia sẻ thêm.</p>`;
     } catch (err) {
       showErr(err instanceof Error ? err.message : 'Không gửi được tin.');
     }

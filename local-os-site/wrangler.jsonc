@@ -4,5 +4,12 @@
   "compatibility_date": "2026-08-15",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
-  "preview_urls": true
+  "preview_urls": true,
+  "routes": [
+    { "pattern": "thainguyenlife.vn", "custom_domain": true },
+    { "pattern": "www.thainguyenlife.vn", "custom_domain": true }
+  ],
+  "kv_namespaces": [
+    { "binding": "HITS", "id": "1fbd46805dde4bc88cf302ea80ed12d0" }
+  ]
 }

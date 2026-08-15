@@ -25,12 +25,27 @@ internal sealed class LocalOsIngestService : ILocalOsIngestService
         IngestFromSourceRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!LocalOsSourceLink.TryParse(request.SourceUrl, out var uri, out var linkKind) || uri is null)
-            throw new InvalidOperationException("Link không hợp lệ. Dán URL http/https của một bài, không phải trang chủ.");
+        var pasted = (request.PastedText ?? "").Trim();
+        var rawUrl = (request.SourceUrl ?? "").Trim();
+        if (rawUrl.Length == 0)
+            rawUrl = LocalOsTextExtract.FirstHttpUrl(pasted) ?? "";
+
+        if (rawUrl.Length == 0)
+            return await CreateFromPasteAsync(pasted, request, sourceUrl: null, listingSourceKind: "group_paste", cancellationToken);
+
+        if (!LocalOsSourceLink.TryParse(rawUrl, out var uri, out var linkKind) || uri is null)
+        {
+            if (pasted.Length >= 12)
+                return await CreateFromPasteAsync(pasted, request, sourceUrl: null, listingSourceKind: "group_paste", cancellationToken);
+            throw new InvalidOperationException("Dán nội dung bài, hoặc kèm link bài http/https.");
+        }
 
         if (linkKind == LocalOsSourceLinkKind.FacebookGroupFeed)
-            throw new InvalidOperationException(
-                "Đây là link hội nhóm, không phải link một bài. Mở bài viết → copy URL bài. Hệ thống không quét group.");
+        {
+            if (pasted.Length >= 12)
+                return await CreateFromPasteAsync(pasted, request, sourceUrl: null, listingSourceKind: "group_paste", cancellationToken);
+            throw new InvalidOperationException("Dán nội dung bài (copy chữ trên bài). Link hội nhóm không đủ.");
+        }
 
         var sourceUrl = uri.GetLeftPart(UriPartial.Query).TrimEnd('?');
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -51,52 +66,78 @@ internal sealed class LocalOsIngestService : ILocalOsIngestService
                 return new IngestFromSourceResult(row, "Link này đã có trong hàng chờ / danh sách. Không tạo trùng.", true);
         }
 
-        var pasted = (request.PastedText ?? "").Trim();
         var fetched = "";
-        var note = "Đã đưa vào chờ duyệt. Site công khai chỉ hiện sau khi bạn bấm Đăng.";
-
-        if (linkKind == LocalOsSourceLinkKind.FacebookPost)
-        {
-            if (pasted.Length < 12)
-                throw new InvalidOperationException(
-                    "Facebook không cho máy đọc bài. Dán nội dung bài (copy chữ trên Facebook) kèm link bài.");
-            note = "Đã vào chờ duyệt từ bài Facebook (máy không đọc FB — dùng nội dung bạn dán). Duyệt tay trước khi lên site.";
-        }
-        else if (pasted.Length < 12)
+        if (linkKind == LocalOsSourceLinkKind.FacebookPost && pasted.Length < 12)
+            throw new InvalidOperationException("Dán nội dung bài kèm link, nếu có.");
+        if (pasted.Length < 12)
         {
             fetched = await TryFetchPublicPageAsync(uri, cancellationToken);
             if (fetched.Length < 8)
-                throw new InvalidOperationException("Không đọc được trang. Dán thêm nội dung bài, rồi thử lại.");
-            note = "Đã lấy tiêu đề/mô tả công khai từ trang (không phải Facebook). Vào chờ duyệt.";
+                throw new InvalidOperationException("Không đọc được trang. Dán thêm nội dung bài.");
         }
 
         var blob = pasted.Length >= 12 ? pasted : fetched;
+        var listingSourceKind = linkKind == LocalOsSourceLinkKind.FacebookPost ? "facebook_post_paste" : "url_paste";
+        try
+        {
+            return await CreateFromPasteAsync(blob, request, sourceUrl, listingSourceKind, cancellationToken, uri);
+        }
+        catch (Exception ex) when (ex.Message.Contains("uq_local_listing_source_url", StringComparison.OrdinalIgnoreCase)
+                                   || ex.InnerException?.Message.Contains("uq_local_listing_source_url", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            var again = await conn.QuerySingleOrDefaultAsync<Guid?>(
+                new CommandDefinition(
+                    "SELECT id FROM pack_local.listing WHERE source_url = @Url LIMIT 1",
+                    new { Url = sourceUrl },
+                    cancellationToken: cancellationToken));
+            if (again is Guid id)
+            {
+                var row = await _listings.GetAsync(id, publicOnly: false, cancellationToken);
+                if (row is not null)
+                    return new IngestFromSourceResult(row, "Link này đã có trong danh sách.", true);
+            }
+            throw;
+        }
+    }
+
+    private async Task<IngestFromSourceResult> CreateFromPasteAsync(
+        string blob,
+        IngestFromSourceRequest request,
+        string? sourceUrl,
+        string listingSourceKind,
+        CancellationToken cancellationToken,
+        Uri? uri = null)
+    {
+        if (blob.Trim().Length < 12)
+            throw new InvalidOperationException("Dán nội dung bài (vài dòng chữ).");
+
         var kind = LocalOsTextExtract.GuessKind(blob, request.Kind?.Trim().ToLowerInvariant());
         var title = LocalOsTextExtract.GuessTitle(blob);
         var unsafeHit = LocalOsTextExtract.LooksUnsafe(blob);
         var registry = await _sources.ListAsync(cancellationToken);
-        var matched = LocalOsSourceMatch.Find(registry, uri, request.SourceId);
-        var listingSourceKind = matched?.SourceKind
-            ?? (linkKind == LocalOsSourceLinkKind.FacebookPost ? "facebook_post_paste" : "url_paste");
-        if (matched is not null)
-            note += $" Nguồn: {matched.Name}.";
-        if (kind == "room")
-            note += " Không lưu giá phòng — site hiện «Giá liên hệ» (giá đổi theo thời điểm).";
-        LocalListingDto listing;
-        try
-        {
-            listing = await _listings.CreateAsync(
+        var matched = request.SourceId is not null || uri is not null
+            ? LocalOsSourceMatch.Find(registry, uri ?? new Uri("https://thainguyenlife.vn/"), request.SourceId)
+            : null;
+        var sourceKind = matched?.SourceKind ?? listingSourceKind;
+        var place = LocalOsTextExtract.GuessPlace(blob);
+        var phone = LocalOsTextExtract.GuessPhone(blob);
+        var existing = await _listings.FindDuplicateAsync(
+            kind, title, place, phone, blob, sourceUrl, excludeId: null, onlyActive: false, cancellationToken);
+        if (existing is not null)
+            return new IngestFromSourceResult(existing, "Tin này đã có trong danh sách. Không thêm trùng.", true);
+
+        var listing = await _listings.CreateAsync(
             new UpsertLocalListingRequest(
                 Kind: kind,
                 Title: title,
                 Summary: blob.Length > 2000 ? blob[..2000] : blob,
                 OrganizationName: null,
-                PlaceText: LocalOsTextExtract.GuessPlace(blob),
+                PlaceText: place,
                 Audience: matched is { Audience.Length: > 0 } ? [matched.Audience] : ["student"],
                 CityCode: LocalOsPackDefinition.DefaultCityCode,
-                SourceKind: listingSourceKind,
+                SourceKind: sourceKind,
                 SourceUrl: sourceUrl,
-                ContactPhone: LocalOsTextExtract.GuessPhone(blob),
+                ContactPhone: phone,
                 ContactName: null,
                 SalaryText: kind == "room" ? null : LocalOsTextExtract.GuessSalary(blob),
                 WorkingTime: null,
@@ -113,26 +154,11 @@ internal sealed class LocalOsIngestService : ILocalOsIngestService
                 Status: "NEEDS_REVIEW",
                 SourceId: matched?.Id),
             cancellationToken);
-        }
-        catch (Exception ex) when (ex.Message.Contains("uq_local_listing_source_url", StringComparison.OrdinalIgnoreCase)
-                                   || ex.InnerException?.Message.Contains("uq_local_listing_source_url", StringComparison.OrdinalIgnoreCase) == true)
-        {
-            var again = await conn.QuerySingleOrDefaultAsync<Guid?>(
-                new CommandDefinition(
-                    "SELECT id FROM pack_local.listing WHERE source_url = @Url LIMIT 1",
-                    new { Url = sourceUrl },
-                    cancellationToken: cancellationToken));
-            if (again is Guid id)
-            {
-                var row = await _listings.GetAsync(id, publicOnly: false, cancellationToken);
-                if (row is not null)
-                    return new IngestFromSourceResult(row, "Link này đã có. Không tạo trùng.", true);
-            }
-            throw;
-        }
-
+        var note = "Đã thêm vào danh sách. Viết lại rồi duyệt trước khi đăng.";
+        if (matched is not null)
+            note += $" Nguồn: {matched.Name}.";
         if (unsafeHit)
-            note += " Gắn cờ an toàn (phí / livestream / đa cấp) — đọc kỹ trước khi đăng.";
+            note += " Đọc kỹ trước khi đăng.";
         return new IngestFromSourceResult(listing, note, false);
     }
 

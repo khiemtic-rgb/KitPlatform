@@ -29,11 +29,6 @@ const snippet = (item.summary ?? '').replace(/\s+/g, ' ').trim();
   <div class="event-row-body">
     <div class="event-row-top">
       <h3>{item.title}</h3>
-      <i class="job-row-save" aria-hidden="true" title="Chưa lưu tin">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M7 4h10a1 1 0 0 1 1 1v16l-6-3.2L6 21V5a1 1 0 0 1 1-1z"/>
-        </svg>
-      </i>
     </div>
     {snippet && <p class="event-row-snip">{snippet}</p>}
     <p class="event-row-meta">

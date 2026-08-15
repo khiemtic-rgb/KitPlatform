@@ -2,7 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import RoomCard from '../../components/RoomCard.astro';
 import { listListings } from '../../lib/api';
-import { DISTANCES, filterRooms, SCHOOLS, wardsIn } from '../../lib/room-filters';
+import { DISTANCES, filterRooms, SCHOOLS, WARDS } from '../../lib/room-filters';
 
 const PAGE_SIZE = 12;
 const q = Astro.url.searchParams.get('q') ?? '';
@@ -11,7 +11,6 @@ const ward = Astro.url.searchParams.get('ward') ?? '';
 const dist = Astro.url.searchParams.get('dist') ?? '';
 const view = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'grid';
 const all = await listListings('room', q || undefined);
-const wards = wardsIn(all);
 const items = filterRooms(all, { school, ward, dist });
 const pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
 const page = Math.min(pages, Math.max(1, Number(Astro.url.searchParams.get('page')) || 1));
@@ -58,7 +57,7 @@ function pagerNums(current: number, total: number): Array<number | 'gap'> {
   <section class="room-hero">
     <div class="wrap room-hero-inner">
       <h1>Phòng trọ Thái Nguyên</h1>
-      <p>Tìm phòng phù hợp, gần trường — giá hỏi trực tiếp chủ nhà.</p>
+      <p class="job-hero-lead">Phòng trọ tại Thái Nguyên · Liên hệ trực tiếp chủ nhà</p>
     </div>
   </section>
 
@@ -76,9 +75,9 @@ function pagerNums(current: number, total: number): Array<number | 'gap'> {
         <label class="room-search-field">
           <span>Khu vực</span>
           <select name="ward" aria-label="Phường / xã" onchange="this.form.requestSubmit()">
-            <option value="">Mọi phường</option>
-            {wards.map((w) => (
-              <option value={w} selected={ward === w}>{w}</option>
+            <option value="">Mọi khu vực</option>
+            {WARDS.map((w) => (
+              <option value={w.id} selected={ward === w.id}>{w.label}</option>
             ))}
           </select>
         </label>
@@ -87,7 +86,7 @@ function pagerNums(current: number, total: number): Array<number | 'gap'> {
           <select name="school" aria-label="Trường học" onchange="this.form.requestSubmit()">
             <option value="">Mọi trường</option>
             {SCHOOLS.map((s) => (
-              <option value={s.id} selected={school === s.id}>{s.label}</option>
+              <option value={s.id} selected={school === s.id}>{s.label} ({s.code})</option>
             ))}
           </select>
         </label>
@@ -107,13 +106,6 @@ function pagerNums(current: number, total: number): Array<number | 'gap'> {
           Lọc ngay
         </button>
       </form>
-
-      <div class="room-quick" role="navigation" aria-label="Lọc theo trường">
-        <a class={!school ? 'is-on' : undefined} href={hrefFor({ school: '' })}>Tất cả</a>
-        {SCHOOLS.map((s) => (
-          <a class={school === s.id ? 'is-on' : undefined} href={hrefFor({ school: s.id })}>{s.label}</a>
-        ))}
-      </div>
 
       <div class="room-toolbar">
         <p class="room-count">
@@ -177,16 +169,16 @@ function pagerNums(current: number, total: number): Array<number | 'gap'> {
       </div>
       <div class="room-cta-copy">
         <h2>Bạn có phòng trống?</h2>
-        <p>Đăng tin phòng trên site chưa mở. Hiện dán link tin gốc cho admin duyệt. Tin việc thì đăng được ngay.</p>
+        <p>Đăng tin phòng miễn phí. Người tìm sẽ gọi trực tiếp.</p>
         <div class="room-cta-actions">
-          <a class="btn-green" href="/dang-tin">Đăng tin việc</a>
-          <a class="btn-outline" href="/thong-tin/quy-dinh">Hướng dẫn đăng tin</a>
+          <a class="btn-green" href="/dang-tin">Đăng tin phòng</a>
+          <a class="btn-outline" href="/thong-tin/quy-dinh">Quy định đăng tin</a>
         </div>
       </div>
       <ul class="room-cta-points">
-        <li>Không thu phí sinh viên</li>
-        <li>Tin được duyệt trước khi lên site</li>
+        <li>Đăng tin không mất phí</li>
         <li>Liên hệ trực tiếp chủ nhà</li>
+        <li>Giá hỏi khi gọi</li>
       </ul>
     </div>
   </section>
