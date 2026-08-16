@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-16T13:01:58.470Z",
+  "generatedAt": "2026-08-16T18:48:12.440Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 240,
-    "todayPageViews": 79,
-    "todayRequests": 371,
-    "last24hVisitors": 321,
-    "last24hPageViews": 145,
-    "last24hRequests": 525
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 322,
+    "last24hPageViews": 134,
+    "last24hRequests": 564
   },
   "hourly": [
-    {
-      "time": "2026-08-15T14:00:00Z",
-      "visitors": 14,
-      "requests": 15
-    },
-    {
-      "time": "2026-08-15T15:00:00Z",
-      "visitors": 14,
-      "requests": 16
-    },
-    {
-      "time": "2026-08-15T16:00:00Z",
-      "visitors": 20,
-      "requests": 21
-    },
-    {
-      "time": "2026-08-15T17:00:00Z",
-      "visitors": 11,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-15T18:00:00Z",
-      "visitors": 11,
-      "requests": 32
-    },
     {
       "time": "2026-08-15T19:00:00Z",
       "visitors": 10,
@@ -125,15 +100,39 @@
       "time": "2026-08-16T12:00:00Z",
       "visitors": 7,
       "requests": 10
+    },
+    {
+      "time": "2026-08-16T13:00:00Z",
+      "visitors": 12,
+      "requests": 15
+    },
+    {
+      "time": "2026-08-16T14:00:00Z",
+      "visitors": 27,
+      "requests": 46
+    },
+    {
+      "time": "2026-08-16T15:00:00Z",
+      "visitors": 11,
+      "requests": 13
+    },
+    {
+      "time": "2026-08-16T16:00:00Z",
+      "visitors": 8,
+      "requests": 14
+    },
+    {
+      "time": "2026-08-16T17:00:00Z",
+      "visitors": 10,
+      "requests": 13
+    },
+    {
+      "time": "2026-08-16T18:00:00Z",
+      "visitors": 4,
+      "requests": 34
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-10",
-      "visitors": 588,
-      "pageViews": 478,
-      "requests": 1450
-    },
     {
       "date": "2026-08-11",
       "visitors": 490,
@@ -166,71 +165,71 @@
     },
     {
       "date": "2026-08-16",
-      "visitors": 240,
-      "pageViews": 79,
-      "requests": 371
+      "visitors": 296,
+      "pageViews": 112,
+      "requests": 506
     }
   ],
   "topPages": [
+    {
+      "path": "/robots.txt",
+      "views": 55
+    },
     {
       "path": "/vi/tin-tuc/the-nao-la-ton-kho-chet-sat-thu-am-tham-bao-mon-dong-tien-nha-thuoc/",
       "views": 51
     },
     {
-      "path": "/robots.txt",
-      "views": 50
-    },
-    {
       "path": "/images/tin-tuc/the-nao-la-ton-kho-chet.png",
-      "views": 29
+      "views": 34
     },
     {
       "path": "/",
-      "views": 25
+      "views": 28
+    },
+    {
+      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
+      "views": 22
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 20
     },
     {
       "path": "/sitemap.xml",
       "views": 20
     },
     {
-      "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
-      "views": 20
-    },
-    {
-      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
-      "views": 19
+      "path": "/images/logo.png",
+      "views": 18
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 17
+      "views": 18
     },
     {
       "path": "/images/tin-tuc/quy-trinh-doi-tra-thuoc.png",
       "views": 17
     },
     {
-      "path": "/cdn-cgi/rum",
-      "views": 16
+      "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
+      "views": 17
     },
     {
       "path": "/images/tin-tuc/quy-trinh-ban-thuoc-khong-ke-don.png",
       "views": 15
     },
     {
-      "path": "/images/logo.png",
+      "path": "/vi/",
       "views": 13
     },
     {
       "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
-      "views": 13
-    },
-    {
-      "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
       "views": 12
     },
     {
       "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 11
+      "views": 12
     }
   ]
 }
