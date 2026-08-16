@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-16T07:00:53.123Z",
+  "generatedAt": "2026-08-16T13:01:58.470Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 166,
-    "todayPageViews": 63,
-    "todayRequests": 250,
-    "last24hVisitors": 323,
-    "last24hPageViews": 157,
-    "last24hRequests": 530
+    "todayVisitors": 240,
+    "todayPageViews": 79,
+    "todayRequests": 371,
+    "last24hVisitors": 321,
+    "last24hPageViews": 145,
+    "last24hRequests": 525
   },
   "hourly": [
-    {
-      "time": "2026-08-15T08:00:00Z",
-      "visitors": 16,
-      "requests": 17
-    },
-    {
-      "time": "2026-08-15T09:00:00Z",
-      "visitors": 13,
-      "requests": 14
-    },
-    {
-      "time": "2026-08-15T10:00:00Z",
-      "visitors": 21,
-      "requests": 27
-    },
-    {
-      "time": "2026-08-15T11:00:00Z",
-      "visitors": 14,
-      "requests": 18
-    },
-    {
-      "time": "2026-08-15T12:00:00Z",
-      "visitors": 16,
-      "requests": 19
-    },
-    {
-      "time": "2026-08-15T13:00:00Z",
-      "visitors": 30,
-      "requests": 31
-    },
     {
       "time": "2026-08-15T14:00:00Z",
       "visitors": 14,
@@ -125,6 +95,36 @@
       "time": "2026-08-16T06:00:00Z",
       "visitors": 22,
       "requests": 22
+    },
+    {
+      "time": "2026-08-16T07:00:00Z",
+      "visitors": 16,
+      "requests": 21
+    },
+    {
+      "time": "2026-08-16T08:00:00Z",
+      "visitors": 22,
+      "requests": 39
+    },
+    {
+      "time": "2026-08-16T09:00:00Z",
+      "visitors": 10,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-16T10:00:00Z",
+      "visitors": 28,
+      "requests": 31
+    },
+    {
+      "time": "2026-08-16T11:00:00Z",
+      "visitors": 10,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-16T12:00:00Z",
+      "visitors": 7,
+      "requests": 10
     }
   ],
   "daily": [
@@ -166,54 +166,46 @@
     },
     {
       "date": "2026-08-16",
-      "visitors": 166,
-      "pageViews": 63,
-      "requests": 250
+      "visitors": 240,
+      "pageViews": 79,
+      "requests": 371
     }
   ],
   "topPages": [
     {
-      "path": "/robots.txt",
-      "views": 52
+      "path": "/vi/tin-tuc/the-nao-la-ton-kho-chet-sat-thu-am-tham-bao-mon-dong-tien-nha-thuoc/",
+      "views": 51
     },
     {
-      "path": "/vi/tin-tuc/the-nao-la-ton-kho-chet-sat-thu-am-tham-bao-mon-dong-tien-nha-thuoc/",
-      "views": 45
+      "path": "/robots.txt",
+      "views": 50
     },
     {
       "path": "/images/tin-tuc/the-nao-la-ton-kho-chet.png",
-      "views": 24
+      "views": 29
     },
     {
-      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
-      "views": 23
+      "path": "/",
+      "views": 25
     },
     {
       "path": "/sitemap.xml",
-      "views": 22
-    },
-    {
-      "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
-      "views": 21
+      "views": 20
     },
     {
       "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
       "views": 20
     },
     {
-      "path": "/images/tin-tuc/quy-trinh-doi-tra-thuoc.png",
+      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
       "views": 19
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 18
-    },
-    {
-      "path": "/images/tin-tuc/quy-trinh-ban-thuoc-khong-ke-don.png",
       "views": 17
     },
     {
-      "path": "/",
+      "path": "/images/tin-tuc/quy-trinh-doi-tra-thuoc.png",
       "views": 17
     },
     {
@@ -221,16 +213,24 @@
       "views": 16
     },
     {
+      "path": "/images/tin-tuc/quy-trinh-ban-thuoc-khong-ke-don.png",
+      "views": 15
+    },
+    {
       "path": "/images/logo.png",
       "views": 13
     },
     {
-      "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
+      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
       "views": 13
     },
     {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
       "views": 12
+    },
+    {
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 11
     }
   ]
 }
