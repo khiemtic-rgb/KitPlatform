@@ -1,13 +1,18 @@
 import { isRecent, type LocalListing } from './api';
 
 export const EVENT_CATS = [
+  { id: 'culture', label: 'Văn hóa', re: /văn hóa|dân ca|dân vũ|di sản|nghệ thuật|đền |chùa |lễ hội/i },
+  { id: 'sport', label: 'Thể thao', re: /thể thao|giải đấu|bóng đá|bóng chuyền|golf|giải chạy|jet ski/i },
+  { id: 'tourism', label: 'Du lịch', re: /du lịch|vùng chè|núi cốc|ba bể|thưởng trà|tàu di sản/i },
+  { id: 'fair', label: 'Hội chợ', re: /hội chợ|ngày hội|festival|liên hoan|ocop|gian hàng|phố trà|ẩm thực/i },
   { id: 'conference', label: 'Hội thảo', re: /hội thảo|hội nghị|conference|aimcs/i },
   { id: 'workshop', label: 'Workshop', re: /workshop/i },
   { id: 'music', label: 'Âm nhạc', re: /âm nhạc|đêm nhạc|concert|ca nhạc/i },
-  { id: 'sport', label: 'Thể thao', re: /thể thao|giải đấu|bóng đá/i },
-  { id: 'fair', label: 'Ngày hội', re: /ngày hội|festival|hội chợ/i },
   { id: 'fun', label: 'Giải trí', re: /giải trí/i },
 ] as const;
+
+/** Chips luôn hiện — văn hóa / thể thao / du lịch / hội chợ. */
+export const EVENT_PINNED_CATS = ['culture', 'sport', 'tourism', 'fair'] as const;
 
 export const EVENT_WHEN = [
   { id: 'upcoming', label: 'Sắp diễn ra' },
@@ -52,7 +57,7 @@ export function eventCatsIn(items: LocalListing[]): { id: string; label: string;
   }
   return EVENT_CATS
     .map((c) => ({ id: c.id, label: c.label, count: counts.get(c.id) ?? 0 }))
-    .filter((c) => c.count > 0);
+    .filter((c) => c.count > 0 || (EVENT_PINNED_CATS as readonly string[]).includes(c.id));
 }
 
 export function eventTags(item: LocalListing): string[] {

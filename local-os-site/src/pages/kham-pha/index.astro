@@ -1,9 +1,12 @@
 ---
+export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
+import { formatEventLine, hrefFor, listListings } from '../../lib/api';
 import {
   GUIDES,
   HUB_CATS,
   HUB_FAQS,
+  HUB_RELATED,
   PLACES,
   guideHref,
   guideTag,
@@ -16,14 +19,19 @@ import {
 const hubSlugs = [
   'ho-nui-coc',
   'tan-cuong',
+  'lang-thai-hai',
   'bao-tang-van-hoa-cac-dan-toc',
   'atk-dinh-hoa',
+  'ditich-27-7',
   'chua-hang',
   'suoi-kem-la-bang',
+  'hang-phuong-hoang',
   'den-duom',
   'dai-doi-915',
+  'dung-tan',
 ];
 const featured = hubSlugs.map((s) => PLACES.find((p) => p.slug === s)).filter((p): p is NonNullable<typeof p> => !!p);
+const events = (await listListings('event')).slice(0, 4);
 
 const catIco: Record<string, string> = {
   'dia-diem': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>',
@@ -39,7 +47,7 @@ const catIco: Record<string, string> = {
   <section class="disc-hero">
     <div class="wrap disc-hero-inner">
       <h1>Khám phá Thái Nguyên</h1>
-      <p>Hiểu nơi mình sống — địa điểm, ẩm thực, du lịch, văn hóa và những điều thú vị quanh Thái Nguyên.</p>
+      <p>Địa điểm, văn hóa trà, về nguồn, cẩm nang cuối tuần — có nguồn. Chưa mở sổ quán / check-in.</p>
     </div>
   </section>
 
@@ -86,6 +94,35 @@ const catIco: Record<string, string> = {
           </a>
         ))}
       </div>
+
+      {events.length > 0 && (
+        <section class="disc-related" aria-labelledby="disc-sk">
+          <div class="section-head disc-head">
+            <h2 id="disc-sk">Sự kiện liên quan</h2>
+            <a class="see-all" href="/su-kien">Tất cả sự kiện →</a>
+          </div>
+          <div class="disc-related-list">
+            {events.map((e) => (
+              <a class="event-mini" href={hrefFor(e)}>
+                <span class="event-mini-date"><strong>SK</strong></span>
+                <div>
+                  <strong>{e.title}</strong>
+                  <span>{formatEventLine(e.startAt) || e.placeText || ''}</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <nav class="disc-also" aria-label="Tin liên quan">
+        {HUB_RELATED.map((r) => (
+          <a class="disc-also-card" href={r.href}>
+            <strong>{r.label}</strong>
+            <span>{r.lead}</span>
+          </a>
+        ))}
+      </nav>
 
       <div class="disc-mid">
         <div id="cam-nang">

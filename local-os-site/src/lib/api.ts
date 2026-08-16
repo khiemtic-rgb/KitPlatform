@@ -47,6 +47,17 @@ async function bundledFeed(): Promise<PublicFeed> {
   return feedCache;
 }
 
+async function kvFeed(): Promise<PublicFeed | null> {
+  try {
+    const { readLiveFeed } = await import('./live-feed');
+    const live = await readLiveFeed();
+    if (live?.listings?.length) return live as PublicFeed;
+  } catch {
+    /* local Astro has no KV */
+  }
+  return null;
+}
+
 function matchListing(item: LocalListing, q?: string): boolean {
   if (!q) return true;
   const n = q.trim().toLowerCase();
@@ -56,6 +67,10 @@ function matchListing(item: LocalListing, q?: string): boolean {
 }
 
 export async function listListings(kind?: string, q?: string): Promise<LocalListing[]> {
+  const live = await kvFeed();
+  if (live?.listings?.length) {
+    return live.listings.filter((item) => (!kind || item.kind === kind) && matchListing(item, q));
+  }
   try {
     const url = new URL(`${API}/listings`);
     if (kind) url.searchParams.set('kind', kind);
@@ -63,13 +78,17 @@ export async function listListings(kind?: string, q?: string): Promise<LocalList
     const res = await fetch(url);
     if (res.ok) return (await res.json()) as LocalListing[];
   } catch {
-    /* Cloudflare cannot reach the local API — use the deploy snapshot. */
+    /* Cloudflare cannot reach the local API — use deploy snapshot. */
   }
   const feed = await bundledFeed();
   return (feed.listings ?? []).filter((item) => (!kind || item.kind === kind) && matchListing(item, q));
 }
 
 export async function getListing(id: string): Promise<LocalListing | null> {
+  const live = await kvFeed();
+  if (live?.listings?.length) {
+    return live.listings.find((item) => item.id === id) ?? null;
+  }
   try {
     const res = await fetch(`${API}/listings/${id}`);
     if (res.ok) return (await res.json()) as LocalListing;
@@ -91,6 +110,8 @@ export type CommunityGroup = {
 };
 
 export async function listGroups(): Promise<CommunityGroup[]> {
+  const live = await kvFeed();
+  if (live?.groups?.length) return live.groups;
   try {
     const res = await fetch(`${API}/groups`);
     if (res.ok) return (await res.json()) as CommunityGroup[];

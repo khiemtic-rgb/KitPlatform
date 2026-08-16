@@ -11,5 +11,8 @@
   ],
   "kv_namespaces": [
     { "binding": "HITS", "id": "1fbd46805dde4bc88cf302ea80ed12d0" }
-  ]
+  ],
+  "vars": {
+    "FEED_SYNC_TOKEN": "tnl-kv-feed-7c4e91b2a8d64f0e"
+  }
 }

@@ -56,7 +56,7 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                   )
             ORDER BY CASE WHEN l.status = 'NEEDS_REVIEW' THEN 0 ELSE 1 END,
                      COALESCE(l.last_checked_at, l.published_at, l.created_at) DESC
-            LIMIT 500
+            LIMIT 2000
             """;
 
         var rows = await conn.QueryAsync<ListingRow>(

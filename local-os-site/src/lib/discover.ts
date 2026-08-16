@@ -60,6 +60,16 @@ export const HUB_FAQS: { q: string; href: string }[] = [
   { q: 'Ăn gì ở Thái Nguyên?', href: '/kham-pha/cam-nang/an-gi' },
   { q: 'Nửa ngày trong phố đi đâu?', href: '/kham-pha/cam-nang/trong-pho' },
   { q: 'Về nguồn ở Thái Nguyên?', href: '/kham-pha/cam-nang/ve-nguon' },
+  { q: 'Văn hóa trà Tân Cương / Festival?', href: '/kham-pha/cam-nang/van-hoa-tra' },
+  { q: 'Gần phố hay đi huyện — chọn thế nào?', href: '/kham-pha/cam-nang/gan-hay-xa' },
+  { q: 'Sinh viên mới đến Thái Nguyên?', href: '/kham-pha/cam-nang/sinh-vien-moi' },
+  { q: 'Mùa nào đi đâu?', href: '/kham-pha/cam-nang/mua-nao' },
+];
+
+export const HUB_RELATED: { label: string; lead: string; href: string }[] = [
+  { label: 'Sự kiện còn hạn', lead: 'Lễ hội, thể thao, hội chợ — chỉ tin đã duyệt', href: '/su-kien' },
+  { label: 'Việc làm', lead: 'Tin tuyển còn hạn, không phải tour', href: '/viec' },
+  { label: 'Phòng trọ', lead: 'Tin phòng đã duyệt — giá liên hệ', href: '/tro' },
 ];
 
 export const PILLARS: { id: DiscoverPillar; label: string; lead: string }[] = [
@@ -100,7 +110,7 @@ export const PLACES: DiscoverPlace[] = [
       'Ăn trong khu theo nhà hàng / quán tại chỗ. Không có menu cố định trên site này.',
       'Trên một số lộ trình từ thành phố, trang quản lý khu du lịch nhắc làng nghề bánh chưng Bờ Đậu — mua nếu đi qua, không phải “review quán”.',
     ],
-    nearby: ['tan-cuong', 'suoi-kem-la-bang'],
+    nearby: ['tan-cuong', 'suoi-kem-la-bang', 'ditich-27-7', 'lang-thai-hai'],
     eventHints: ['núi cốc', 'hồ núi'],
     mapsQuery: 'Hồ Núi Cốc, Đại Từ, Thái Nguyên',
     sources: [
@@ -136,7 +146,7 @@ export const PLACES: DiscoverPlace[] = [
       'Chè Tân Cương là đặc sản — uống / mua về. Không liệt kê quán cụ thể khi chưa có nguồn đã đăng ký.',
       'Bữa ăn ven đường: hỏi dân địa phương; Thái Nguyên Life không review nhà hàng.',
     ],
-    nearby: ['ho-nui-coc', 'suoi-kem-la-bang'],
+    nearby: ['ho-nui-coc', 'suoi-kem-la-bang', 'lang-thai-hai'],
     eventHints: ['chè', 'trà', 'tân cương', 'festival trà'],
     mapsQuery: 'Đồi chè Tân Cương, Thái Nguyên',
     sources: [
@@ -170,7 +180,7 @@ export const PLACES: DiscoverPlace[] = [
     eatWhat: [
       'Trong phố, ăn quanh khu Đội Cấn / trung tâm — tự chọn. Site chưa có sổ quán đã đăng ký.',
     ],
-    nearby: ['chua-hang', 'dai-doi-915'],
+    nearby: ['chua-hang', 'dai-doi-915', 'lang-thai-hai'],
     eventHints: ['bảo tàng', 'văn hóa các dân tộc'],
     mapsQuery: 'Bảo tàng Văn hóa các dân tộc Việt Nam, 1 Đội Cấn, Thái Nguyên',
     sources: [
@@ -259,7 +269,7 @@ export const PLACES: DiscoverPlace[] = [
       'Tham quan, lễ — giữ trang phục lịch sự.',
     ],
     eatWhat: ['Ăn ven QL3 hoặc về phố. Site chưa có sổ quán.'],
-    nearby: ['atk-dinh-hoa'],
+    nearby: ['atk-dinh-hoa', 'ditich-27-7'],
     eventHints: ['đuổm', 'dương tự minh'],
     mapsQuery: 'Đền Đuổm, Động Đạt, Phú Lương, Thái Nguyên',
     sources: [
@@ -278,6 +288,7 @@ export const PLACES: DiscoverPlace[] = [
     cover: '/discover/atk.jpg',
     tag: 'Lịch sử',
     area: 'Định Hóa',
+    featured: true,
     intro: [
       'Trang quản lý di tích: ATK Định Hóa là An toàn khu Trung ương, nơi ở và làm việc của Chủ tịch Hồ Chí Minh, Trung ương Đảng, Chính phủ thời kháng chiến chống Pháp (1946–1954). Được đánh giá là quần thể di tích quan trọng bậc nhất của dân tộc trong thế kỷ 20.',
       'Quần thể trải dài khoảng 520 km², 182 điểm trên 23 xã / thị trấn. Điểm thường thăm: Nhà tưởng niệm (khánh thành 19/5/2005), Tỉn Keo (họp Bộ Chính trị 6/12/1953 quyết định chiến dịch Điện Biên Phủ), Khuôn Tát, Đồi Phong Tướng.',
@@ -290,7 +301,7 @@ export const PLACES: DiscoverPlace[] = [
     eatWhat: [
       'Ăn tại nhà hàng / quán quanh khu di tích nếu có. Site không review món “đặc sản ATK”.',
     ],
-    nearby: ['den-duom'],
+    nearby: ['den-duom', 'ditich-27-7'],
     eventHints: ['atk', 'định hóa', 'tỉn keo'],
     mapsQuery: 'Nhà tưởng niệm Chủ tịch Hồ Chí Minh ATK Định Hóa, Phú Đình',
     sources: [
@@ -349,9 +360,109 @@ export const PLACES: DiscoverPlace[] = [
     eatWhat: [
       'Chè La Bằng — mua / uống tại hộ hoặc HTX nếu mở. Không list quán.',
     ],
-    nearby: ['ho-nui-coc', 'tan-cuong'],
+    nearby: ['ho-nui-coc', 'tan-cuong', 'ditich-27-7'],
     eventHints: ['suối kẹm', 'la bằng'],
     mapsQuery: 'Suối Kẹm, La Bằng, Đại Từ, Thái Nguyên',
+    sources: [SRC_TOP12],
+  },
+  {
+    kind: 'place',
+    slug: 'ditich-27-7',
+    title: 'Khu di tích quốc gia 27/7',
+    kicker: 'Địa điểm · Văn hóa',
+    summary: 'Nơi gắn nguồn cội ngày Thương binh — Liệt sĩ 27/7/1947. Đại Từ — xếp hạng quốc gia 1997. Hỏi giờ tại di tích.',
+    placeText: 'Xóm Bàn Cờ — xã Đại Phúc (trước là Hùng Sơn), huyện Đại Từ',
+    pillars: ['dia-diem', 'van-hoa', 'du-lich'],
+    cover: '/discover/guide-ve-nguon.jpg',
+    tag: 'Lịch sử',
+    area: 'Đại Từ',
+    featured: true,
+    intro: [
+      'Cổng thông tin tỉnh và cổng du lịch: tối 27/7/1947, tại gốc đa xóm Bàn Cờ (xã Hùng Sơn, nay thuộc xã Đại Phúc, huyện Đại Từ) diễn ra lễ công bố lấy ngày 27/7 hằng năm làm ngày Thương binh toàn quốc — sau đổi thành ngày Thương binh — Liệt sĩ.',
+      'Địa điểm được xếp hạng di tích cấp quốc gia năm 1997. Năm 1997 khánh thành khu di tích / bia kỷ niệm; các đợt tôn tạo sau đó mở rộng khuôn viên. Cổng du lịch ghi đây là điểm nối tuyến Hồ Núi Cốc với ATK Định Hóa trên lộ trình về nguồn.',
+      'Giờ mở cửa, đoàn học sinh, lễ dâng hương: hỏi tại di tích. Không lấy lịch “đang diễn ra” từ site bên ngoài nếu mục đã hết ngày.',
+    ],
+    doWhat: [
+      'Dâng hương, xem nhà tưởng niệm / trưng bày — giữ trang phục lịch sự.',
+      'Kết hợp Hồ Núi Cốc cùng huyện Đại Từ nếu còn cả ngày; không nhét ATK vào cùng buổi nếu xuất phát muộn.',
+      'Tháng Bảy thường có đoàn về nguồn — hỏi tại chỗ, không đặt qua Thái Nguyên Life.',
+    ],
+    eatWhat: ['Ăn ngoài khu di tích, thị trấn / ven đường Đại Từ. Site không review quán.'],
+    nearby: ['ho-nui-coc', 'suoi-kem-la-bang', 'atk-dinh-hoa'],
+    eventHints: ['27/7', 'thương binh', 'bàn cờ', 'đại từ'],
+    mapsQuery: 'Khu di tích lịch sử quốc gia 27/7, Đại Phúc, Đại Từ, Thái Nguyên',
+    sources: [
+      {
+        label: 'Cổng TTĐT Thái Nguyên — khu di tích 27/7',
+        url: 'http://thainguyen.gov.vn/den-on-dap-nghia/khu-di-tich-lich-su-quoc-gia-27-7-dia-chi-do-lan-toa-gia-tri-lich-su-282309',
+      },
+      {
+        label: 'Cổng Du lịch Thái Nguyên — địa điểm công bố 27/7',
+        url: 'http://thainguyentourism.vn/vi/du-khach/Kham-pha-diem-den/Dia-diem-cong-bo-ngay-Thuong-binh-Liet-si-toan-quoc-73.html',
+      },
+      SRC_TOP12,
+    ],
+  },
+  {
+    kind: 'place',
+    slug: 'lang-thai-hai',
+    title: 'Làng nhà sàn Thái Hải',
+    kicker: 'Địa điểm · Văn hóa · Du lịch',
+    summary: 'Khu bảo tồn làng nhà sàn Tày — Nùng, xã Thịnh Đức. Cổng du lịch / My Thái Nguyên ghi UNWTO 2022. Hỏi dịch vụ tại chỗ.',
+    placeText: 'Xã Thịnh Đức, TP. Thái Nguyên — gần trung tâm hơn ATK / hang',
+    pillars: ['dia-diem', 'van-hoa', 'du-lich'],
+    cover: '/discover/doi-che.jpg',
+    tag: 'Văn hóa',
+    area: 'Thịnh Đức',
+    featured: true,
+    intro: [
+      'Cổng du lịch tỉnh: Khu bảo tồn làng nhà sàn dân tộc sinh thái Thái Hải (còn gọi Bản làng Thái Hải) ở xã Thịnh Đức, thành phố Thái Nguyên — gần trung tâm hơn các điểm huyện. Bài cổng ghi khoảng 30 ngôi nhà sàn Tày, Nùng; quy mô khuôn viên khoảng 70 ha (một phần đã khai thác).',
+      'My Thái Nguyên ghi nhà sàn chuyển từ Định Hóa; Tổ chức Du lịch Thế giới (UNWTO) công nhận làng du lịch tốt nhất thế giới năm 2022. Cổng du lịch còn nhắc các giải ASEAN / OCOP trên bài riêng — xem nguồn, không copy giá khuyến mãi đã hết hạn.',
+      'Dịch vụ lưu trú / ẩm thực / trải nghiệm do đơn vị quản lý vận hành. Giờ, vé, đặt chỗ: hỏi tại làng. Không đặt qua Thái Nguyên Life.',
+    ],
+    doWhat: [
+      'Tham quan làng, nhà sàn, không gian xanh — nửa ngày hoặc cả ngày từ phố.',
+      'Tôn trọng nhà ở của hộ — cổng du lịch nhắc đăng ký trước nếu dùng dịch vụ trải nghiệm.',
+      'Kết hợp Tân Cương / Hồ Núi Cốc nếu còn thời gian; không nhét ATK cùng buổi.',
+    ],
+    eatWhat: [
+      'Ẩm thực trong làng nếu đang phục vụ — hỏi thực đơn / giá tại chỗ. Site không review nhà hàng.',
+    ],
+    nearby: ['tan-cuong', 'ho-nui-coc', 'bao-tang-van-hoa-cac-dan-toc'],
+    eventHints: ['thái hải', 'nhà sàn'],
+    mapsQuery: 'Làng nhà sàn Thái Hải, Thịnh Đức, Thái Nguyên',
+    sources: [
+      { label: 'My Thái Nguyên — Thái Hải', url: 'https://mythainguyen.vn/vi/thaihai' },
+      {
+        label: 'Cổng Du lịch Thái Nguyên — khu du lịch Thái Hải',
+        url: 'http://thainguyentourism.vn/vi/news/Tin-tuc/Khu-du-lich-Thai-Hai-Dam-da-ban-sac-dan-toc-o-Thai-Nguyen-11.html',
+      },
+      SRC_TOP12,
+    ],
+  },
+  {
+    kind: 'place',
+    slug: 'dung-tan',
+    title: 'Trung tâm TM & DL Dũng Tân',
+    kicker: 'Địa điểm · Du lịch',
+    summary: 'Điểm trong Top 12 cổng du lịch tỉnh — khu thương mại / vườn. Hỏi giờ tại chỗ; không phải review cửa hàng.',
+    placeText: 'TP. Thái Nguyên',
+    pillars: ['dia-diem', 'du-lich'],
+    cover: '/discover/guide-an-gi.jpg',
+    tag: 'Địa điểm',
+    area: 'TP. Thái Nguyên',
+    intro: [
+      'Cổng du lịch tỉnh xếp Trung tâm Thương mại và Du lịch Dũng Tân trong Top 12 điểm đến hấp dẫn tại Thái Nguyên. Đây là khu thương mại / vườn do đơn vị tư nhân vận hành — không phải danh lam nhà nước.',
+      'Giờ mở cửa, sự kiện trong khu, giá dịch vụ: hỏi tại chỗ. Thái Nguyên Life không review cửa hàng, không niêm yết khuyến mãi.',
+    ],
+    doWhat: [
+      'Đi xem / mua sắm nếu đang mở — nửa buổi trong phố.',
+      'Không gửi đơn, không đặt chỗ qua site này.',
+    ],
+    eatWhat: ['Ăn trong khu nếu có — tự chọn. Site chưa có sổ quán.'],
+    nearby: ['bao-tang-van-hoa-cac-dan-toc', 'chua-hang'],
+    eventHints: ['dũng tân'],
+    mapsQuery: 'Trung tâm Thương mại Du lịch Dũng Tân, Thái Nguyên',
     sources: [SRC_TOP12],
   },
 ];
@@ -384,8 +495,13 @@ export const GUIDES: DiscoverGuide[] = [
       },
       {
         heading: 'Xa hơn — cả ngày, xuất phát sớm',
-        body: 'Hang Phượng Hoàng / Suối Mỏ Gà (Võ Nhai, ~45 km). Suối Kẹm + chè La Bằng (Đại Từ, ~35 km). ATK Định Hóa — về nguồn, không nhét chung với hồ trong một buổi.',
-        placeSlugs: ['hang-phuong-hoang', 'suoi-kem-la-bang', 'atk-dinh-hoa'],
+        body: 'Hang Phượng Hoàng / Suối Mỏ Gà (Võ Nhai, ~45 km). Suối Kẹm + chè La Bằng (Đại Từ, ~35 km). ATK Định Hóa hoặc di tích 27/7 — về nguồn, không nhét chung với hồ trong một buổi.',
+        placeSlugs: ['hang-phuong-hoang', 'suoi-kem-la-bang', 'atk-dinh-hoa', 'ditich-27-7'],
+      },
+      {
+        heading: 'Làng nhà sàn Thái Hải',
+        body: 'Xã Thịnh Đức — gần phố hơn hang / ATK. Tham quan làng Tày — Nùng; hỏi dịch vụ tại chỗ. Có thể kết hợp Tân Cương cùng ngày nếu còn sức.',
+        placeSlugs: ['lang-thai-hai', 'tan-cuong'],
       },
       {
         heading: 'Sự kiện trong tuần',
@@ -488,12 +604,155 @@ export const GUIDES: DiscoverGuide[] = [
         placeSlugs: ['den-duom'],
       },
       {
-        heading: 'Di tích 27/7',
-        body: 'Cổng du lịch tỉnh ghi Khu di tích lịch sử quốc gia 27/7 tại tổ Bàn Cờ, thị trấn Hùng Sơn, huyện Đại Từ — nơi gắn nguồn cội ngày Thương binh liệt sĩ 27/7/1947. Chưa có trang riêng trên site này; hỏi giờ tại di tích nếu đi Đại Từ.',
+        heading: 'Di tích 27/7 — Đại Từ',
+        body: 'Xóm Bàn Cờ, xã Đại Phúc (trước Hùng Sơn). Nơi công bố ngày Thương binh toàn quốc 27/7/1947; xếp hạng quốc gia 1997. Có thể ghé khi đi Hồ Núi Cốc / Suối Kẹm cùng huyện. Hỏi giờ tại di tích.',
+        placeSlugs: ['ditich-27-7', 'ho-nui-coc'],
       },
     ],
     sources: [
       { label: 'Khu di tích ATK Định Hóa — giới thiệu', url: 'http://ditich.atkthainguyen.org.vn/gioi-thieu-atk' },
+      {
+        label: 'Cổng TTĐT Thái Nguyên — khu di tích 27/7',
+        url: 'http://thainguyen.gov.vn/den-on-dap-nghia/khu-di-tich-lich-su-quoc-gia-27-7-dia-chi-do-lan-toa-gia-tri-lich-su-282309',
+      },
+      SRC_TOP12,
+    ],
+  },
+  {
+    kind: 'guide',
+    slug: 'van-hoa-tra',
+    title: 'Văn hóa trà ở Thái Nguyên',
+    kicker: 'Cẩm nang · Văn hóa',
+    summary: 'Tân Cương, La Bằng, Festival / thưởng trà — chỉ tin còn hạn. Không phải tour bán chè.',
+    pillars: ['van-hoa', 'am-thuc', 'du-lich'],
+    cover: '/discover/doi-che.jpg',
+    featured: true,
+    sections: [
+      {
+        heading: 'Tân Cương — di sản + đồi',
+        body: 'Tri thức trồng và chế biến chè Tân Cương là di sản phi vật thể quốc gia (2023). Đi đồi, uống chè, ghé Không gian văn hóa Trà nếu mở. Giá hộp chè hỏi tại hộ / HTX.',
+        placeSlugs: ['tan-cuong'],
+      },
+      {
+        heading: 'La Bằng — chè + suối',
+        body: 'Cổng du lịch xếp vùng chè La Bằng cùng Suối Kẹm (Đại Từ, ~35 km). Cả ngày cuối tuần: suối buổi sáng, đồi buổi chiều — hoặc ngược lại tùy nắng.',
+        placeSlugs: ['suoi-kem-la-bang'],
+      },
+      {
+        heading: 'Festival và ngày hội',
+        body: 'Festival Trà Quốc tế và các ngày thưởng trà / ẩm thực từ trà chỉ hiện trên mục Sự kiện khi tin đã duyệt còn hạn. Đừng lấy lịch “đang diễn ra” từ site bên ngoài nếu mục đã hết ngày.',
+        placeSlugs: ['tan-cuong'],
+      },
+      {
+        heading: 'Không phải sổ quán',
+        body: 'Site chưa mở “quán hay”. Mua chè tại vùng sản xuất hoặc cửa hàng bạn tự chọn — không có top 10 ẩn danh.',
+      },
+    ],
+    sources: [
+      { label: 'Nhân Dân — di sản tri thức chè Tân Cương', url: 'https://nhandan.vn/tri-thuc-trong-va-che-bien-che-tan-cuong-la-di-san-van-hoa-phi-vat-the-quoc-gia-post746391.html' },
+      SRC_TOP12,
+    ],
+  },
+  {
+    kind: 'guide',
+    slug: 'gan-hay-xa',
+    title: 'Gần phố hay đi huyện?',
+    kicker: 'Cẩm nang',
+    summary: 'Nửa ngày trong thành phố; cả ngày mới đi ATK, hang, suối. Không nhét ba huyện một buổi.',
+    pillars: ['du-lich', 'dia-diem'],
+    cover: '/banner-ho-nui-coc.png',
+    sections: [
+      {
+        heading: 'Trong phố — nửa ngày',
+        body: 'Bảo tàng (1 Đội Cấn), Chùa Hang (~3 km bắc), Đại đội 915 (Gia Sàng). Xe máy / xe buýt nội thị. Kiểm tra giờ trước khi đi.',
+        placeSlugs: ['bao-tang-van-hoa-cac-dan-toc', 'chua-hang', 'dai-doi-915'],
+      },
+      {
+        heading: 'Gần phố — nửa ngày đến cả ngày',
+        body: 'Tân Cương và Làng Thái Hải (Thịnh Đức) gần thành phố hơn hang / ATK. Hồ Núi Cốc ~15 km tây nam — nên đi sớm nếu muốn cả khu.',
+        placeSlugs: ['tan-cuong', 'lang-thai-hai', 'ho-nui-coc'],
+      },
+      {
+        heading: 'Huyện — cả ngày, xuất phát sớm',
+        body: 'ATK Định Hóa. Hang Phượng Hoàng / Mỏ Gà (Võ Nhai, ~45 km). Suối Kẹm + chè La Bằng (~35 km). Di tích 27/7 (Đại Từ) có thể ghé cùng hồ / suối — không nhét ATK vào cùng buổi nếu xuất phát muộn.',
+        placeSlugs: ['atk-dinh-hoa', 'hang-phuong-hoang', 'suoi-kem-la-bang', 'ditich-27-7'],
+      },
+      {
+        heading: 'Đền Đuổm trên đường',
+        body: 'Khoảng 24 km, sát QL3, Phú Lương. Ghé khi đi / về hướng bắc — không phải điểm “check-in 5 phút” nếu muốn vào đền.',
+        placeSlugs: ['den-duom'],
+      },
+    ],
+    sources: [SRC_TOP12],
+  },
+  {
+    kind: 'guide',
+    slug: 'sinh-vien-moi',
+    title: 'Sinh viên mới đến Thái Nguyên',
+    kicker: 'Cẩm nang',
+    summary: 'Hiểu phố trước: bảo tàng, chè, tin việc / phòng đã duyệt. Không phải hướng dẫn nhập học.',
+    pillars: ['dia-diem', 'du-lich', 'van-hoa'],
+    cover: '/discover/bao-tang.jpg',
+    sections: [
+      {
+        heading: 'Một buổi trong phố',
+        body: 'Bảo tàng Văn hóa các dân tộc (1 Đội Cấn) gần nhiều trường. Chùa Hang hoặc Đại đội 915 nếu còn chiều. Hỏi giờ tại chỗ.',
+        placeSlugs: ['bao-tang-van-hoa-cac-dan-toc', 'chua-hang', 'dai-doi-915'],
+      },
+      {
+        heading: 'Cuối tuần đầu tiên',
+        body: 'Đồi chè Tân Cương — gần, không cần xe đi huyện. Hồ Núi Cốc nếu có bạn và cả ngày. Làng Thái Hải nếu muốn xem nhà sàn gần phố.',
+        placeSlugs: ['tan-cuong', 'ho-nui-coc', 'lang-thai-hai'],
+      },
+      {
+        heading: 'Việc và phòng',
+        body: 'Mục Việc và Phòng trọ chỉ hiện tin đã duyệt còn hạn. Phòng: giá liên hệ, không đặt cọc qua site. Không có phí sinh viên trên Thái Nguyên Life.',
+      },
+      {
+        heading: 'Sự kiện',
+        body: 'Lễ hội / ngày hội / thể thao chỉ hiện khi tin còn hạn. Đừng tin lịch “hàng chục sự kiện đang diễn ra” trên site bên ngoài nếu mục đã hết ngày.',
+      },
+    ],
+    sources: [
+      { label: 'My Thái Nguyên — bảo tàng', url: 'https://mythainguyen.vn/vi/baotangvanhoacacdantoc' },
+      SRC_TOP12,
+    ],
+  },
+  {
+    kind: 'guide',
+    slug: 'mua-nao',
+    title: 'Mùa nào đi đâu ở Thái Nguyên?',
+    kicker: 'Cẩm nang',
+    summary: 'Gợi ý theo loại điểm — không hẹn “tháng đẹp nhất”. Lễ hội chỉ khi tin còn hạn.',
+    pillars: ['du-lich', 'van-hoa'],
+    cover: '/discover/suoi-kem.jpg',
+    sections: [
+      {
+        heading: 'Cả năm — đồi chè và phố',
+        body: 'Tân Cương, bảo tàng, Chùa Hang, Đại đội 915 đi được quanh năm. Mùa lá xanh dễ chụp hơn; không hẹn hoàng hôn “đẹp nhất”.',
+        placeSlugs: ['tan-cuong', 'bao-tang-van-hoa-cac-dan-toc', 'chua-hang'],
+      },
+      {
+        heading: 'Nắng nóng — suối / hồ',
+        body: 'Cổng du lịch nhắc Suối Kẹm mùa hè người ta tắm — tự đánh giá an toàn, site không có cứu hộ. Hồ Núi Cốc: hỏi vé / thuyền tại chỗ.',
+        placeSlugs: ['suoi-kem-la-bang', 'ho-nui-coc'],
+      },
+      {
+        heading: 'Tháng Bảy — về nguồn 27/7',
+        body: 'Di tích 27/7 (Đại Từ) gắn ngày Thương binh — Liệt sĩ. Đoàn về nguồn thường tăng vào tháng Bảy — hỏi tại di tích, không đặt qua site.',
+        placeSlugs: ['ditich-27-7', 'atk-dinh-hoa', 'dai-doi-915'],
+      },
+      {
+        heading: 'Mùa lễ hội trà',
+        body: 'Festival Trà và ngày hội ẩm thực / thưởng trà chỉ hiện trên mục Sự kiện khi tin đã duyệt còn hạn. Hết ngày thì gỡ — không giữ lịch cũ.',
+        placeSlugs: ['tan-cuong'],
+      },
+    ],
+    sources: [
+      {
+        label: 'Cổng TTĐT Thái Nguyên — khu di tích 27/7',
+        url: 'http://thainguyen.gov.vn/den-on-dap-nghia/khu-di-tich-lich-su-quoc-gia-27-7-dia-chi-do-lan-toa-gia-tri-lich-su-282309',
+      },
       SRC_TOP12,
     ],
   },

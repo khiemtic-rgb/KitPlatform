@@ -15,6 +15,7 @@ import {
   message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import type { TextAreaRef } from 'antd/es/input/TextArea';
 import { ReloadOutlined } from '@ant-design/icons';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
@@ -22,6 +23,7 @@ import {
   fetchLocalOsListings,
   fetchLocalOsSources,
   ingestLocalOsSource,
+  publishLocalOsHomepage,
   setLocalOsListingStatus,
   updateLocalOsListing,
   type LocalListing,
@@ -139,7 +141,7 @@ export function LocalOsListingsPage() {
   const [lastError, setLastError] = useState<string | null>(null);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
-  const pasteRef = useRef<{ focus: () => void } | null>(null);
+  const pasteRef = useRef<TextAreaRef>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -323,7 +325,7 @@ export function LocalOsListingsPage() {
       }
       if (publish) {
         await setLocalOsListingStatus(id, 'ACTIVE');
-        message.success('Đã đăng trong danh sách. Trang chủ mạng chỉ cập nhật sau khi deploy.');
+        message.success('Đã lên trang chủ Thái Nguyên Life.');
       } else {
         message.success('Đã lưu. Vẫn ở hàng chờ duyệt.');
       }
@@ -341,11 +343,7 @@ export function LocalOsListingsPage() {
   const setStatusOf = async (id: string, next: string) => {
     try {
       await setLocalOsListingStatus(id, next);
-        message.success(
-          next === 'ACTIVE'
-            ? 'Đã đăng trong danh sách. Trang chủ mạng chỉ cập nhật sau khi deploy.'
-            : 'Đã cập nhật.',
-        );
+        message.success(next === 'ACTIVE' ? 'Đã lên trang chủ Thái Nguyên Life.' : 'Đã cập nhật trang chủ.');
       await load();
     } catch (error) {
       message.error(apiErrorMessage(error, 'Không đổi được trạng thái.'));
@@ -520,6 +518,21 @@ export function LocalOsListingsPage() {
         <Button icon={<ReloadOutlined />} onClick={() => void load()}>
           Tải lại
         </Button>
+        <Button
+          onClick={() => {
+            void (async () => {
+              try {
+                const r = await publishLocalOsHomepage();
+                if (r.ok) message.success(r.message || `Đã lên trang chủ (${r.listingCount} tin).`);
+                else message.error(r.message || 'Chưa lên được trang chủ.');
+              } catch (error) {
+                message.error(apiErrorMessage(error, 'Chưa lên được trang chủ.'));
+              }
+            })();
+          }}
+        >
+          Cập nhật trang chủ
+        </Button>
       </Space>
       <Table
         rowKey="id"
@@ -548,7 +561,7 @@ export function LocalOsListingsPage() {
       >
         <Typography.Paragraph type="secondary">
           Viết lại cho rõ. Bấm <strong>Duyệt &amp; đăng</strong> khi đủ tiêu đề, địa điểm và số điện thoại.
-          Site mới hiện tin.
+          Tin ACTIVE lên thainguyenlife.vn ngay, không cần deploy.
         </Typography.Paragraph>
         <Button style={{ marginBottom: 12 }} onClick={polishEdit}>
           Viết lại cho chuẩn

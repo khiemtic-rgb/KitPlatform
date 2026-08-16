@@ -161,6 +161,21 @@ export async function createLocalOsListing(body: {
   return data;
 }
 
+export async function publishLocalOsHomepage(): Promise<{
+  ok: boolean;
+  message: string;
+  listingCount: number;
+  skipped?: boolean;
+}> {
+  const { data } = await http.post<{
+    ok: boolean;
+    message: string;
+    listingCount: number;
+    skipped?: boolean;
+  }>('/local-os/feed/publish', {}, { timeout: 45_000 });
+  return data;
+}
+
 export async function updateLocalOsListing(
   id: string,
   body: Partial<LocalListing> & { kind: string; title: string },

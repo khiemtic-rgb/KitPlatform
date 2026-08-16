@@ -139,6 +139,9 @@ catch (Exception ex) when (
 }
 builder.Services.AddContentPack(builder.Configuration);
 builder.Services.AddLocalOsPack();
+builder.Services.Configure<KitPlatform.Api.LocalOs.LocalOsHomepageFeedOptions>(
+    builder.Configuration.GetSection(KitPlatform.Api.LocalOs.LocalOsHomepageFeedOptions.Section));
+builder.Services.AddHttpClient<KitPlatform.Api.LocalOs.LocalOsHomepageFeedPublisher>();
 
 builder.Services.AddRateLimiter(options =>
 {

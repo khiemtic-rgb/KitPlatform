@@ -16,6 +16,7 @@
   --community: #0f766e;
   --shadow: 0 8px 28px rgba(20, 36, 28, 0.06);
   --radius: 16px;
+  --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Historic", "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -23,10 +24,10 @@ html, body { margin: 0; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: clip; }
 body { overflow-x: clip; }
 body {
-  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  font-family: var(--font);
   background: var(--bg);
   color: var(--ink);
-  line-height: 1.5;
+  line-height: 1.3333;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -125,15 +126,15 @@ img { max-width: 100%; }
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7), 0 8px 28px rgba(255, 250, 240, 0.55);
 }
 .hero h1 em {
-  font-family: Pattaya, "Be Vietnam Pro", cursive;
+  font-family: inherit;
   font-style: normal;
-  font-weight: 400;
+  font-weight: 800;
   color: #0f6b36;
-  font-size: 1.14em;
-  display: inline-block;
-  line-height: 1;
-  padding: 0 6px 0 2px;
-  vertical-align: -0.04em;
+  font-size: 1em;
+  display: inline;
+  line-height: inherit;
+  padding: 0;
+  vertical-align: baseline;
   text-shadow:
     0 1px 0 rgba(255, 255, 255, 0.92),
     0 0 20px rgba(255, 250, 240, 0.85);
@@ -1112,10 +1113,12 @@ img { max-width: 100%; }
   background: #c2410c;
 }
 .event-row-badge.is-workshop { background: #ea7a1c; }
-.event-row-badge.is-music { background: #92400e; }
-.event-row-badge.is-sport { background: #1d4ed8; }
-.event-row-badge.is-fair { background: #7c3aed; }
-.event-row-badge.is-fun { background: #0f766e; }
+  .event-row-badge.is-music { background: #92400e; }
+  .event-row-badge.is-sport { background: #1d4ed8; }
+  .event-row-badge.is-fair { background: #7c3aed; }
+  .event-row-badge.is-fun { background: #0f766e; }
+  .event-row-badge.is-culture { background: #6d4ad4; }
+  .event-row-badge.is-tourism { background: #0f766e; }
 .event-row-body { min-width: 0; display: grid; align-content: start; gap: 6px; padding: 2px 4px 2px 0; }
 .event-row-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .event-row-top h3 {
@@ -1367,6 +1370,38 @@ img { max-width: 100%; }
 .disc-faq-n.n-1 { background: #ea7a1c; }
 .disc-faq-n.n-2 { background: #0f766e; }
 .disc-faq-n.n-3 { background: #2b6cb0; }
+.disc-faq-n.n-4 { background: #6d4ad4; }
+.disc-faq-n.n-5 { background: #166338; }
+.disc-faq-n.n-6 { background: #b45309; }
+.disc-faq-n.n-7 { background: #0e7490; }
+.disc-related { margin: 28px 0 8px; }
+.disc-related-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.disc-related-list .event-mini,
+.disc-related-list .event-mini:first-of-type {
+  border: 0;
+  padding: 12px 14px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(20, 36, 28, 0.06);
+}
+.disc-also {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0 8px;
+}
+.disc-also-card {
+  display: grid; gap: 4px; text-decoration: none;
+  background: #fff; border-radius: 14px; padding: 14px 16px;
+  box-shadow: 0 8px 24px rgba(20, 36, 28, 0.06);
+}
+.disc-also-card:hover { box-shadow: 0 12px 28px rgba(20, 36, 28, 0.1); }
+.disc-also-card strong { font-size: 15px; color: var(--green-dark); }
+.disc-also-card span { color: #6b7280; font-size: 13px; line-height: 1.4; }
 .disc-faq strong { font-size: 13.5px; line-height: 1.35; }
 .disc-faq-go { color: #9ca3af; font-weight: 700; }
 .disc-faq-all { display: block; text-align: center; margin-top: 14px; }
@@ -1556,6 +1591,7 @@ img { max-width: 100%; }
   .event-quick > div:first-child { border-top: 0; }
   .discover-pillars, .discover-grid, .discover-guides, .discover-home, .discover-detail,
   .disc-cats, .disc-places, .disc-guides, .disc-mid, .disc-cta,
+  .disc-related-list, .disc-also,
   .about-hero, .about-mission, .about-stats, .about-cta {
     grid-template-columns: 1fr;
   }
@@ -1708,7 +1744,7 @@ img { max-width: 100%; }
 .pub-card .pub-subhead { margin: 16px 0 12px; }
 .pub-steps {
   list-style: none; margin: 0; padding: 14px 8px 6px;
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
 }
 .pub-steps li {
   display: flex; align-items: center; gap: 8px;

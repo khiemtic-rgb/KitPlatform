@@ -11,6 +11,7 @@ const { title, active = 'home' } = Astro.props;
 const description = Astro.props.description
   ?? 'Việc làm, sự kiện, phòng trọ và khám phá Thái Nguyên.';
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
 ---
 <!doctype html>
 <html lang="vi">
@@ -30,9 +31,6 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Pattaya&display=swap" rel="stylesheet" />
   </head>
   <body id="top">
     <header class="site-header">

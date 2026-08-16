@@ -1,12 +1,12 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout title="Đăng tin — Thái Nguyên Life" active="publish" description="Đăng tin miễn phí. Không cần tạo tài khoản.">
+<Layout title="Đăng tin — Thái Nguyên Life" active="publish" description="Đăng tin miễn phí, hai bước. Không cần tài khoản.">
   <section class="job-hero">
     <div class="wrap pub-hero">
       <div>
         <h1 id="pub-title">Đăng tin</h1>
-        <p id="pub-lead" class="job-hero-lead">Đăng tin miễn phí · Không cần tạo tài khoản</p>
+        <p id="pub-lead" class="job-hero-lead">Miễn phí · Không cần tài khoản · Hai bước</p>
       </div>
       <button type="button" class="pub-preview-btn" id="btn-preview">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -19,9 +19,8 @@ import Layout from '../layouts/Layout.astro';
     <div class="wrap pub-layout">
       <div class="pub-main">
         <ol class="pub-steps" id="pub-steps" aria-label="Các bước đăng tin">
-          <li class="is-on" data-step="1"><span>1</span> Thông tin cơ bản</li>
-          <li data-step="2"><span>2</span> Thông tin chi tiết</li>
-          <li data-step="3"><span>3</span> Xác nhận &amp; đăng tin</li>
+          <li class="is-on" data-step="1"><span>1</span> Tin đăng</li>
+          <li data-step="2"><span>2</span> Đăng tin</li>
         </ol>
 
         <form id="job-form" class="pub-form" autocomplete="on" novalidate>
@@ -72,9 +71,11 @@ import Layout from '../layouts/Layout.astro';
           <section class="pub-card" data-pane="1" data-for="event">
             <h2>Loại sự kiện</h2>
             <div class="pub-chips" id="event-cats">
-              <button class="chip is-on" type="button" data-event-cat="workshop">Workshop</button>
-              <button class="chip" type="button" data-event-cat="festival">Lễ hội</button>
-              <button class="chip" type="button" data-event-cat="community">Cộng đồng</button>
+              <button class="chip is-on" type="button" data-event-cat="culture">Văn hóa</button>
+              <button class="chip" type="button" data-event-cat="sport">Thể thao</button>
+              <button class="chip" type="button" data-event-cat="tourism">Du lịch</button>
+              <button class="chip" type="button" data-event-cat="fair">Hội chợ</button>
+              <button class="chip" type="button" data-event-cat="workshop">Workshop</button>
               <button class="chip" type="button" data-event-cat="other">Khác</button>
             </div>
           </section>
@@ -90,7 +91,7 @@ import Layout from '../layouts/Layout.astro';
           </section>
 
           <section class="pub-card" data-pane="1">
-            <h2>Thông tin bắt buộc</h2>
+            <h2>Nội dung tin</h2>
             <div class="pub-grid">
               <label class="pub-field pub-span-2">Tiêu đề tin đăng
                 <input name="title" required maxlength="100" placeholder="VD: Tuyển phục vụ part-time quán nướng" />
@@ -141,18 +142,18 @@ import Layout from '../layouts/Layout.astro';
             </div>
           </section>
 
-          <section class="pub-card" data-pane="2" hidden>
+          <section class="pub-card" data-pane="1">
             <h2 id="detail-title">Yêu cầu (tuỳ chọn)</h2>
             <label class="pub-field">
-              <textarea name="requirements" rows="6" maxlength="500" placeholder="Nam/nữ, ca tối, không cần kinh nghiệm…"></textarea>
+              <textarea name="requirements" rows="4" maxlength="500" placeholder="Nam/nữ, ca tối, không cần kinh nghiệm…"></textarea>
               <span class="pub-count" data-count="requirements">0/500</span>
             </label>
-            <p class="muted">Có thể bổ sung yêu cầu hoặc tiện ích. Bỏ trống cũng được.</p>
+            <p class="muted">Bỏ trống cũng được — gửi được ngay.</p>
           </section>
 
-          <section class="pub-card" data-pane="3" hidden>
-            <h2>Liên hệ &amp; xác nhận</h2>
-            <label class="pub-field">Số điện thoại liên hệ
+          <section class="pub-card" data-pane="2" hidden>
+            <h2>Số điện thoại</h2>
+            <label class="pub-field">Số của bạn — người xem sẽ gọi số này
               <input name="phone" required inputmode="tel" maxlength="16" placeholder="09xxxxxxxx" />
             </label>
             <p class="muted" id="draft-hint"></p>
@@ -169,8 +170,8 @@ import Layout from '../layouts/Layout.astro';
               Lưu nháp
             </button>
             <button type="button" class="btn-outline" id="btn-back" hidden>← Quay lại</button>
-            <button type="button" class="btn-green" id="btn-next">Tiếp tục →</button>
-            <button type="submit" class="btn-green" id="btn-submit" hidden>Gửi tin</button>
+            <button type="button" class="btn-green" id="btn-next">Tiếp: đăng tin →</button>
+            <button type="submit" class="btn-green" id="btn-submit" hidden>Đăng tin</button>
           </div>
         </form>
 
@@ -197,7 +198,7 @@ import Layout from '../layouts/Layout.astro';
           <ul class="pub-benefits">
             <li><strong>Miễn phí</strong> — không mất phí đăng tin.</li>
             <li><strong>Đúng người</strong> — tin hiện cho người đang tìm ở Thái Nguyên.</li>
-            <li><strong>Nhanh</strong> — điền 1–2 phút.</li>
+            <li><strong>Nhanh</strong> — hai bước, khoảng một phút.</li>
             <li><strong>Chia sẻ thêm</strong> — copy nội dung nếu muốn đăng lên group.</li>
           </ul>
         </section>
@@ -236,7 +237,7 @@ import Layout from '../layouts/Layout.astro';
   let kind: 'job' | 'event' | 'room' = 'job';
   let template = 'part_time';
   let roomType = 'private';
-  let eventCat = 'workshop';
+  let eventCat = 'culture';
   let category = '';
   let listingId = '';
 
@@ -263,15 +264,19 @@ import Layout from '../layouts/Layout.astro';
     transfer: 'Chuyển nhượng',
   };
   const eventLabel: Record<string, string> = {
+    culture: 'Văn hóa',
+    sport: 'Thể thao',
+    tourism: 'Du lịch',
+    fair: 'Hội chợ',
     workshop: 'Workshop',
     festival: 'Lễ hội',
     community: 'Cộng đồng',
     other: 'Khác',
   };
   const leads: Record<string, string> = {
-    job: 'Đăng tin miễn phí · Không cần tạo tài khoản',
-    event: 'Đăng tin miễn phí · Không cần tạo tài khoản',
-    room: 'Đăng tin miễn phí · Không cần tạo tài khoản',
+    job: 'Miễn phí · Không cần tài khoản · Hai bước',
+    event: 'Miễn phí · Không cần tài khoản · Hai bước',
+    room: 'Miễn phí · Không cần tài khoản · Hai bước',
   };
   const tips: Record<string, string[]> = {
     job: [
@@ -385,8 +390,8 @@ import Layout from '../layouts/Layout.astro';
       li.classList.toggle('is-done', s < n);
     });
     btnBack.hidden = n === 1;
-    btnNext.hidden = n === 3;
-    btnSubmit.hidden = n !== 3;
+    btnNext.hidden = n === 2;
+    btnSubmit.hidden = n !== 2;
     clearErr();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -407,7 +412,7 @@ import Layout from '../layouts/Layout.astro';
         return false;
       }
     }
-    if (n === 3) {
+    if (n === 2) {
       if (!field('phone')) {
         showErr('Nhập số điện thoại liên hệ.');
         return false;
@@ -538,7 +543,7 @@ import Layout from '../layouts/Layout.astro';
   document.getElementById('event-cats')?.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-event-cat]');
     if (!btn) return;
-    eventCat = btn.dataset.eventCat || 'workshop';
+    eventCat = btn.dataset.eventCat || 'culture';
     document.querySelectorAll('#event-cats .chip').forEach((c) => c.classList.toggle('is-on', c === btn));
   });
 
@@ -549,7 +554,7 @@ import Layout from '../layouts/Layout.astro';
 
   btnNext.addEventListener('click', () => {
     if (!validateStep(step)) return;
-    setStep(Math.min(3, step + 1));
+    setStep(Math.min(2, step + 1));
   });
   btnBack.addEventListener('click', () => setStep(Math.max(1, step - 1)));
 
@@ -568,7 +573,7 @@ import Layout from '../layouts/Layout.astro';
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!validateStep(3)) return;
+    if (!validateStep(2)) return;
     try {
       const result = await publishJob({
         phone: field('phone'),

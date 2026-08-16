@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using KitPlatform.Api.Authorization;
+using KitPlatform.Api.LocalOs;
 using KitPlatform.Application.Core;
 using KitPlatform.Packs.LocalOs;
 
@@ -17,17 +18,20 @@ public sealed class LocalOsController : ControllerBase
     private readonly ILocalOsIngestService _ingest;
     private readonly ILocalOsSourceService _sources;
     private readonly ILocalOsWatchService _watch;
+    private readonly LocalOsHomepageFeedPublisher _homepage;
 
     public LocalOsController(
         ILocalOsListingService listings,
         ILocalOsIngestService ingest,
         ILocalOsSourceService sources,
-        ILocalOsWatchService watch)
+        ILocalOsWatchService watch,
+        LocalOsHomepageFeedPublisher homepage)
     {
         _listings = listings;
         _ingest = ingest;
         _sources = sources;
         _watch = watch;
+        _homepage = homepage;
     }
 
     [HttpGet("listings")]
@@ -55,7 +59,8 @@ public sealed class LocalOsController : ControllerBase
     {
         try
         {
-            return Ok(await _listings.CreateAsync(request, cancellationToken));
+            var row = await _listings.CreateAsync(request, cancellationToken);
+            return await AfterHomepageAsync(row, push: row.Status == "ACTIVE", cancellationToken);
         }
         catch (InvalidOperationException ex)
         {
@@ -70,8 +75,14 @@ public sealed class LocalOsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var row = await _listings.UpdateAsync(id, request, cancellationToken);
-        return row is null ? NotFound() : Ok(row);
+        if (row is null) return NotFound();
+        return await AfterHomepageAsync(row, push: row.Status == "ACTIVE", cancellationToken);
     }
+
+    [HttpPost("feed/publish")]
+    public async Task<ActionResult<LocalOsFeedPublishResult>> PublishHomepage(
+        CancellationToken cancellationToken) =>
+        Ok(await _homepage.PublishAsync(cancellationToken));
 
     [HttpGet("sources")]
     public async Task<ActionResult<IReadOnlyList<LocalSourceDto>>> ListSources(
@@ -162,11 +173,24 @@ public sealed class LocalOsController : ControllerBase
         try
         {
             var row = await _listings.SetStatusAsync(id, request.Status, cancellationToken);
-            return row is null ? NotFound() : Ok(row);
+            if (row is null) return NotFound();
+            return await AfterHomepageAsync(row, push: true, cancellationToken);
         }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    private async Task<ActionResult<LocalListingDto>> AfterHomepageAsync(
+        LocalListingDto row,
+        bool push,
+        CancellationToken cancellationToken)
+    {
+        if (!push) return Ok(row);
+        var feed = await _homepage.PublishAsync(cancellationToken);
+        if (!feed.Ok)
+            return StatusCode(502, new { message = feed.Message, listing = row });
+        return Ok(row);
     }
 }

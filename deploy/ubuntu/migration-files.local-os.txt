@@ -16,3 +16,4 @@
 304_pack_local_os_publish_events_grants.sql
 305_pack_local_os_event_city_sources.sql
 306_pack_local_os_source_watch.sql
+307_pack_local_os_city_life_events.sql

@@ -32,6 +32,11 @@ public static class LocalOsWatchFilter
         "hội thảo", "hoi thao", "hội nghị khoa học", "khai mạc", "khai mac",
         "đêm nhạc", "triển lãm", "trien lam", "hội chợ", "hoi cho",
         "giải thể thao", "giải bóng", "ngày hội việc",
+        "văn hóa", "van hoa", "dân ca", "dân vũ", "di sản", "am thuc", "ẩm thực",
+        "thể thao", "the thao", "bóng đá", "bong da", "bóng chuyền", "golf",
+        "giải chạy", "giai chay",
+        "du lịch", "du lich", "vùng chè", "vung che", "ocop", "phố trà",
+        "liên hoan", "lien hoan",
     ];
 
     private static readonly string[] AllowJob =
