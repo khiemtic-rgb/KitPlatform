@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-15T18:53:59.991Z",
+  "generatedAt": "2026-08-16T02:02:07.132Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 16,
-    "todayPageViews": 4,
-    "todayRequests": 23,
-    "last24hVisitors": 46,
-    "last24hPageViews": 23,
-    "last24hRequests": 142
+    "todayVisitors": 7,
+    "todayPageViews": 3,
+    "todayRequests": 8,
+    "last24hVisitors": 54,
+    "last24hPageViews": 24,
+    "last24hRequests": 123
   },
   "hourly": [
-    {
-      "time": "2026-08-14T19:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-14T20:00:00Z",
-      "visitors": 3,
-      "requests": 23
-    },
-    {
-      "time": "2026-08-14T21:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-14T22:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-14T23:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-15T00:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-15T01:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-15T02:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
     {
       "time": "2026-08-15T03:00:00Z",
       "visitors": 1,
@@ -125,6 +85,41 @@
       "time": "2026-08-15T18:00:00Z",
       "visitors": 12,
       "requests": 15
+    },
+    {
+      "time": "2026-08-15T19:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-15T20:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-15T21:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-15T22:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-15T23:00:00Z",
+      "visitors": 10,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-16T00:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-16T01:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
@@ -160,15 +155,15 @@
     },
     {
       "date": "2026-08-15",
-      "visitors": 43,
-      "pageViews": 17,
-      "requests": 108
+      "visitors": 54,
+      "pageViews": 24,
+      "requests": 133
     },
     {
       "date": "2026-08-16",
-      "visitors": 16,
-      "pageViews": 4,
-      "requests": 23
+      "visitors": 47,
+      "pageViews": 14,
+      "requests": 56
     }
   ],
   "topPages": [
@@ -178,15 +173,15 @@
     },
     {
       "path": "/sitemap.xml",
-      "views": 17
+      "views": 18
     },
     {
       "path": "/",
-      "views": 17
+      "views": 15
     },
     {
       "path": "/vi/",
-      "views": 6
+      "views": 7
     },
     {
       "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
@@ -197,15 +192,7 @@
       "views": 4
     },
     {
-      "path": "/cdn-cgi/rum",
-      "views": 3
-    },
-    {
       "path": "/_next/static/css/4e38ee1c6419eb50.css",
-      "views": 3
-    },
-    {
-      "path": "/images/blog/cha-me-nen-xin-loi-con-khi-nao.png",
       "views": 3
     },
     {
@@ -213,23 +200,31 @@
       "views": 3
     },
     {
-      "path": "//2018/wp-includes/wlwmanifest.xml",
+      "path": "/images/blog/cha-me-nen-xin-loi-con-khi-nao.png",
+      "views": 3
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 3
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 3
+    },
+    {
+      "path": "/images/social/zalo.png",
       "views": 2
     },
     {
-      "path": "//test/wp-includes/wlwmanifest.xml",
+      "path": "/en/",
       "views": 2
     },
     {
-      "path": "/vi/goi-cha-me/con-khong-hoan-hao-va-cha-me-cung-vay-hoc-cach-chap-nhan-de-cung-nhau-truong-thanh/",
+      "path": "/_next/static/chunks/977-9a1479e294eb83c3.js",
       "views": 2
     },
     {
-      "path": "//news/wp-includes/wlwmanifest.xml",
-      "views": 2
-    },
-    {
-      "path": "/images/blog/tao-moi-truong-tu-lap-cho-con.png",
+      "path": "/vi",
       "views": 2
     }
   ]
