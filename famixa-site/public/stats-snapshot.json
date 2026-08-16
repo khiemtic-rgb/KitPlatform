@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-16T02:02:07.132Z",
+  "generatedAt": "2026-08-16T07:07:21.453Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 7,
-    "todayPageViews": 3,
-    "todayRequests": 8,
-    "last24hVisitors": 54,
-    "last24hPageViews": 24,
-    "last24hRequests": 123
+    "todayVisitors": 127,
+    "todayPageViews": 54,
+    "todayRequests": 258,
+    "last24hVisitors": 170,
+    "last24hPageViews": 71,
+    "last24hRequests": 359
   },
   "hourly": [
-    {
-      "time": "2026-08-15T03:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-15T04:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-15T05:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-15T06:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-15T07:00:00Z",
-      "visitors": 5,
-      "requests": 8
-    },
     {
       "time": "2026-08-15T08:00:00Z",
       "visitors": 2,
@@ -120,6 +95,31 @@
       "time": "2026-08-16T01:00:00Z",
       "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-08-16T02:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-16T03:00:00Z",
+      "visitors": 94,
+      "requests": 209
+    },
+    {
+      "time": "2026-08-16T04:00:00Z",
+      "visitors": 16,
+      "requests": 17
+    },
+    {
+      "time": "2026-08-16T05:00:00Z",
+      "visitors": 15,
+      "requests": 18
+    },
+    {
+      "time": "2026-08-16T06:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
@@ -161,71 +161,71 @@
     },
     {
       "date": "2026-08-16",
-      "visitors": 47,
-      "pageViews": 14,
-      "requests": 56
+      "visitors": 177,
+      "pageViews": 65,
+      "requests": 306
     }
   ],
   "topPages": [
     {
+      "path": "/vi/goi-cha-me/cach-xay-dung-niem-tin-giua-cha-me-va-con-soi-day-ket-noi-giup-tre-tu-giac-truong-thanh/",
+      "views": 39
+    },
+    {
+      "path": "/images/blog/cach-xay-dung-niem-tin.png",
+      "views": 30
+    },
+    {
       "path": "/robots.txt",
-      "views": 21
+      "views": 23
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 22
     },
     {
       "path": "/sitemap.xml",
-      "views": 18
+      "views": 17
     },
     {
       "path": "/",
       "views": 15
     },
     {
-      "path": "/vi/",
-      "views": 7
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 5
-    },
-    {
-      "path": "/vi/thong-ke/",
-      "views": 4
-    },
-    {
       "path": "/_next/static/css/4e38ee1c6419eb50.css",
-      "views": 3
-    },
-    {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 3
+      "views": 15
     },
     {
       "path": "/images/blog/cha-me-nen-xin-loi-con-khi-nao.png",
-      "views": 3
+      "views": 12
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 3
+      "path": "/_next/static/chunks/app/vi/page-b0e96d1fb6cc5bef.js",
+      "views": 10
     },
     {
-      "path": "/cdn-cgi/rum",
-      "views": 3
+      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
+      "views": 9
     },
     {
-      "path": "/images/social/zalo.png",
-      "views": 2
+      "path": "/vi/",
+      "views": 9
     },
     {
-      "path": "/en/",
-      "views": 2
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 9
     },
     {
-      "path": "/_next/static/chunks/977-9a1479e294eb83c3.js",
-      "views": 2
+      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh/",
+      "views": 9
     },
     {
-      "path": "/vi",
-      "views": 2
+      "path": "/images/blog/tao-moi-truong-tu-lap-cho-con.png",
+      "views": 8
+    },
+    {
+      "path": "/images/blog/co-nen-thuong-tien-cho-con.png",
+      "views": 7
     }
   ]
 }
