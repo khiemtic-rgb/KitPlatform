@@ -2,10 +2,10 @@
 import Layout from '../layouts/Layout.astro';
 import TrendCard from '../components/TrendCard.astro';
 import {
+  cardHighlight,
   coverFor,
   formatClock,
   formatEventLine,
-  formatPriceMonth,
   groupCover,
   groupHint,
   hrefFor,
@@ -37,7 +37,9 @@ for (const item of [...jobs, ...events, ...rooms]) {
   if (!picked.some((x) => x.id === item.id)) picked.push(item);
 }
 const latestJobs = jobs.slice(0, 4);
-const upcoming = events.filter((e) => e.startAt).slice(0, 4);
+const upcoming = [...events]
+  .sort((a, b) => Number(Boolean(b.startAt)) - Number(Boolean(a.startAt)))
+  .slice(0, 4);
 const featuredRooms = rooms.slice(0, 4);
 const liveCount = jobs.length + events.length + rooms.length;
 ---
@@ -183,6 +185,7 @@ const liveCount = jobs.length + events.length + rooms.length;
             <h2>Việc làm mới nhất</h2>
             <a class="see-all" href="/viec">Xem tất cả →</a>
           </div>
+          <div class="home-col-list">
           {latestJobs.map((item, i) => (
             <a class="job-line" href={hrefFor(item)}>
               <span class={`job-ico c${i % 3}`}>{orgInitial(item)}</span>
@@ -203,6 +206,7 @@ const liveCount = jobs.length + events.length + rooms.length;
             </a>
           ))}
           {latestJobs.length === 0 && <p class="empty">Đang cập nhật việc làm.</p>}
+          </div>
           <a class="panel-more" href="/viec">Xem tất cả việc làm →</a>
         </section>
 
@@ -211,6 +215,7 @@ const liveCount = jobs.length + events.length + rooms.length;
             <h2>Sự kiện sắp diễn ra</h2>
             <a class="see-all" href="/su-kien">Xem tất cả →</a>
           </div>
+          <div class="home-col-list">
           {upcoming.map((item, i) => (
             <a class="ev" href={hrefFor(item)}>
               <span class="ev-thumb-wrap">
@@ -225,12 +230,13 @@ const liveCount = jobs.length + events.length + rooms.length;
                     {item.placeText}
                   </div>
                 )}
-                <div class="job-meta">{formatEventLine(item.startAt) || formatClock(item.startAt)}</div>
+                <div class="job-meta">{formatEventLine(item.startAt) || formatClock(item.startAt) || 'Xem ngày trên tin'}</div>
                 <span class="mini-badge event">Sự kiện</span>
               </div>
             </a>
           ))}
           {upcoming.length === 0 && <p class="empty">Đang cập nhật sự kiện.</p>}
+          </div>
           <a class="panel-more" href="/su-kien">Xem tất cả sự kiện →</a>
         </section>
 
@@ -239,6 +245,7 @@ const liveCount = jobs.length + events.length + rooms.length;
             <h2>Phòng trọ nổi bật</h2>
             <a class="see-all" href="/tro">Xem tất cả →</a>
           </div>
+          <div class="home-col-list">
           {featuredRooms.map((item, i) => (
             <a class="ev" href={hrefFor(item)}>
               <span class="ev-thumb-wrap">
@@ -253,11 +260,12 @@ const liveCount = jobs.length + events.length + rooms.length;
                     {item.placeText}
                   </div>
                 )}
-                {formatPriceMonth(item.priceMonth) && <div class="job-pay">{formatPriceMonth(item.priceMonth)}</div>}
+                <div class="job-pay">{cardHighlight(item)}</div>
               </div>
             </a>
           ))}
           {featuredRooms.length === 0 && <p class="empty">Đang cập nhật phòng trọ.</p>}
+          </div>
           <a class="panel-more" href="/tro">Xem tất cả phòng trọ →</a>
         </section>
       </div>
