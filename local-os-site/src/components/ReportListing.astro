@@ -22,10 +22,17 @@ const reasons =
           { id: 'wrong_phone', label: 'Số hoặc link không đúng' },
           { id: 'other', label: 'Tin không còn đúng' },
         ];
+
+const lead =
+  kind === 'room'
+    ? 'Báo sai số, hết phòng hoặc không liên lạc được. Ban Quản trị kiểm tra xác minh lại thông tin.'
+    : kind === 'job'
+      ? 'Báo sai số, đã tuyển hết hoặc không liên lạc được. Ban Quản trị kiểm tra xác minh lại thông tin.'
+      : 'Báo sự kiện hủy, hết chỗ hoặc số/link không đúng. Ban Quản trị kiểm tra xác minh lại thông tin.';
 ---
 <section class="listing-report" data-listing-report data-listing-id={listingId}>
   <h3>Gọi rồi mà tin không đúng?</h3>
-  <p>Báo sai số, hết phòng hoặc không liên lạc được. Quản trị kiểm tra — tin không tự ẩn.</p>
+  <p>{lead}</p>
   <button class="listing-report-open" type="button">Báo tin này</button>
   <form class="listing-report-form" hidden>
     <div class="listing-report-reasons">
