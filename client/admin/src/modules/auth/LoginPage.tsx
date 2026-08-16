@@ -8,10 +8,10 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import type { AuthWorkspace, LoginResponse } from '@/shared/api/types';
 import { useAuthStore } from '@/shared/auth/auth.store';
 import {
-  APP_BRAND,
   DEFAULT_TENANT_CODE,
   isTenantCodeLocked,
   loadStoredTenantCode,
+  resolveLoginBrandByTenantCode,
   saveStoredTenantCode,
 } from '@/shared/config/app-brand';
 import { AdminLanguageSelect } from '@/shared/i18n/LanguageSelect';
@@ -56,6 +56,10 @@ export function LoginPage() {
 
   const from = (location.state as { from?: string } | null)?.from ?? '/';
   const tenantLocked = isTenantCodeLocked();
+  const tenantCodeWatch = Form.useWatch('tenantCode', form);
+  const loginBrand = resolveLoginBrandByTenantCode(
+    mode === 'tenant' ? tenantCodeWatch || loadStoredTenantCode() : '',
+  );
 
   const applySession = (data: LoginResponse) => {
     if (!data?.accessToken) {
@@ -81,6 +85,15 @@ export function LoginPage() {
     setMode('tenant');
     form.setFieldsValue({
       tenantCode: 'DEMO_FAMILY',
+      username: 'admin',
+      password: 'Admin@123',
+    });
+  };
+
+  const fillLocalDemo = () => {
+    setMode('tenant');
+    form.setFieldsValue({
+      tenantCode: 'KIT_LOCAL',
       username: 'admin',
       password: 'Admin@123',
     });
@@ -137,7 +150,12 @@ export function LoginPage() {
       }
       applySession(result.session);
     } catch (error) {
-      message.error(apiErrorMessage(error, t('messages.failed')));
+      const tenant = (mode === 'tenant' ? values.tenantCode : '').trim().toUpperCase();
+      const hint =
+        tenant === 'KIT_LOCAL'
+          ? ' KIT_LOCAL chỉ có trên API local (:5290), không có trên api.novixa.vn.'
+          : '';
+      message.error(`${apiErrorMessage(error, t('messages.failed'))}${hint}`);
     } finally {
       setLoading(false);
     }
@@ -175,7 +193,9 @@ export function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #1b3a6b 0%, #2563eb 55%, #15803d 100%)',
+        background: loginBrand.isLocal
+          ? 'linear-gradient(135deg, #14532d 0%, #166338 55%, #4d7c0f 100%)'
+          : 'linear-gradient(135deg, #1b3a6b 0%, #2563eb 55%, #15803d 100%)',
         padding: 24,
       }}
     >
@@ -185,13 +205,19 @@ export function LoginPage() {
             <AdminLanguageSelect />
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-              <AppBrandLogo height={72} maxWidth={200} />
-            </div>
+            {loginBrand.isLocal || loginBrand.isFamily || loginBrand.isMarketing ? null : (
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+                <AppBrandLogo height={72} maxWidth={200} />
+              </div>
+            )}
             <Typography.Title level={3} style={{ marginBottom: 4 }}>
-              {APP_BRAND}
+              {loginBrand.brand}
             </Typography.Title>
-            <Typography.Text type="secondary">{tc('productName')}</Typography.Text>
+            <Typography.Text type="secondary">
+              {loginBrand.isLocal || loginBrand.isFamily || loginBrand.isMarketing
+                ? loginBrand.product
+                : tc('productName')}
+            </Typography.Text>
           </div>
 
           {!tenantLocked ? (
@@ -233,7 +259,7 @@ export function LoginPage() {
               >
                 <Input
                   prefix={<ShopOutlined />}
-                  placeholder="DEMO_FAMILY / DEMO_PHARMACY"
+                  placeholder="KIT_LOCAL / DEMO_FAMILY / DEMO_PHARMACY"
                   size="large"
                   style={{ textTransform: 'uppercase' }}
                   autoComplete="organization"
@@ -312,6 +338,15 @@ export function LoginPage() {
                   onClick={fillFamilyDemo}
                 >
                   DEMO_FAMILY
+                </Button>
+                {' · '}
+                <Button
+                  type="link"
+                  size="small"
+                  style={{ padding: 0, height: 'auto', fontSize: 12 }}
+                  onClick={fillLocalDemo}
+                >
+                  KIT_LOCAL
                 </Button>
               </Typography.Paragraph>
             ) : null}
