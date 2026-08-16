@@ -5,6 +5,7 @@ export const EVENT_CATS = [
   { id: 'sport', label: 'Thể thao', re: /thể thao|giải đấu|bóng đá|bóng chuyền|golf|giải chạy|jet ski/i },
   { id: 'tourism', label: 'Du lịch', re: /du lịch|vùng chè|núi cốc|ba bể|thưởng trà|tàu di sản/i },
   { id: 'fair', label: 'Hội chợ', re: /hội chợ|ngày hội|festival|liên hoan|ocop|gian hàng|phố trà|ẩm thực/i },
+  { id: 'benefit', label: 'Học bổng · ưu đãi', re: /học bổng|ưu đãi|khuyến mãi|học phí|miễn phí|giảm giá|voucher|suất học/i },
   { id: 'conference', label: 'Hội thảo', re: /hội thảo|hội nghị|conference|aimcs/i },
   { id: 'workshop', label: 'Workshop', re: /workshop/i },
   { id: 'music', label: 'Âm nhạc', re: /âm nhạc|đêm nhạc|concert|ca nhạc/i },
@@ -12,7 +13,7 @@ export const EVENT_CATS = [
 ] as const;
 
 /** Chips luôn hiện — văn hóa / thể thao / du lịch / hội chợ. */
-export const EVENT_PINNED_CATS = ['culture', 'sport', 'tourism', 'fair'] as const;
+export const EVENT_PINNED_CATS = ['culture', 'sport', 'tourism', 'fair', 'benefit'] as const;
 
 export const EVENT_WHEN = [
   { id: 'upcoming', label: 'Sắp diễn ra' },
@@ -28,6 +29,7 @@ function blob(item: LocalListing): string {
 
 export function eventCatOf(item: LocalListing): string {
   if (item.category === 'conference') return 'conference';
+  if (item.category === 'scholarship' || item.category === 'grant' || item.category === 'offer') return 'benefit';
   if (item.category && EVENT_CATS.some((c) => c.id === item.category)) return item.category;
   const text = blob(item);
   return EVENT_CATS.find((c) => c.re.test(text))?.id ?? '';

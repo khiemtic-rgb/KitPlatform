@@ -127,6 +127,30 @@ export async function runLocalOsWatch(): Promise<LocalWatchRun> {
   return data;
 }
 
+export async function rewriteLocalOsListing(body: {
+  text: string;
+  kind?: string;
+}): Promise<{
+  title: string;
+  body: string;
+  place?: string | null;
+  phone?: string | null;
+  salary?: string | null;
+  via: string;
+  note?: string | null;
+}> {
+  const { data } = await http.post<{
+    title: string;
+    body: string;
+    place?: string | null;
+    phone?: string | null;
+    salary?: string | null;
+    via: string;
+    note?: string | null;
+  }>('/local-os/listings/rewrite', body, { timeout: 50_000 });
+  return data;
+}
+
 export async function ingestLocalOsSource(body: {
   sourceUrl?: string;
   pastedText?: string;
@@ -158,6 +182,22 @@ export async function createLocalOsListing(body: {
     trust: 'UNVERIFIED',
     status: body.status ?? 'NEEDS_REVIEW',
   });
+  return data;
+}
+
+export type LocalListingReport = {
+  id: string;
+  listingId: string;
+  reason: string;
+  note?: string | null;
+  createdAt: string;
+  listingTitle?: string | null;
+  listingKind?: string | null;
+  listingStatus?: string | null;
+};
+
+export async function fetchLocalOsReports(): Promise<LocalListingReport[]> {
+  const { data } = await http.get<LocalListingReport[]>('/local-os/reports');
   return data;
 }
 

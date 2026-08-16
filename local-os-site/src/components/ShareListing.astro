@@ -1,0 +1,30 @@
+---
+---
+<section class="listing-share">
+  <h3>Chia sẻ tin này</h3>
+  <p>Gửi cho bạn bè trên Facebook, Zalo hoặc sao chép link.</p>
+  <div class="listing-share-row">
+    <a class="listing-share-btn fb" data-share="facebook" href="#" rel="nofollow noopener" target="_blank">Facebook</a>
+    <a class="listing-share-btn zl" data-share="zalo" href="#" rel="nofollow noopener" target="_blank">Zalo</a>
+    <button class="listing-share-btn copy" type="button" data-copy>Sao chép link</button>
+  </div>
+</section>
+<script>
+  const pageUrl = location.href;
+  const fb = document.querySelector<HTMLAnchorElement>('[data-share="facebook"]');
+  const zalo = document.querySelector<HTMLAnchorElement>('[data-share="zalo"]');
+  if (fb) fb.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`;
+  if (zalo) zalo.href = `https://zalo.me/share?u=${encodeURIComponent(pageUrl)}`;
+  document.querySelector('[data-copy]')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget as HTMLButtonElement;
+    try {
+      await navigator.clipboard.writeText(pageUrl);
+      btn.textContent = 'Đã sao chép';
+    } catch {
+      btn.textContent = 'Copy không được';
+    }
+    window.setTimeout(() => {
+      btn.textContent = 'Sao chép link';
+    }, 1600);
+  });
+</script>

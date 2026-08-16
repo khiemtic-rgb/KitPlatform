@@ -36,13 +36,14 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         var kind = string.IsNullOrWhiteSpace(query.Kind) ? null : query.Kind.Trim().ToLowerInvariant();
         var q = string.IsNullOrWhiteSpace(query.Q) ? null : query.Q.Trim();
         var status = string.IsNullOrWhiteSpace(query.Status) ? null : query.Status.Trim().ToUpperInvariant();
+        await ExpireOverdueAsync(conn, cancellationToken);
 
         var sql = $"""
             SELECT {SelectColumns}
             FROM pack_local.listing l
             LEFT JOIN pack_local.source s ON s.id = l.source_id
             WHERE l.city_code = @City
-              AND (@Kind IS NULL OR l.kind = @Kind)
+              AND (@Kind IS NULL OR l.kind = @Kind OR (@Kind = 'event' AND l.kind = 'grant'))
               AND (@Status IS NULL OR l.status = @Status)
               AND (@Q IS NULL OR l.title ILIKE @Like OR COALESCE(l.place_text, '') ILIKE @Like
                    OR COALESCE(l.organization_name, '') ILIKE @Like)
@@ -52,6 +53,7 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                         l.status = 'ACTIVE'
                         AND l.safety_flag = FALSE
                         AND (l.expires_at IS NULL OR l.expires_at > NOW())
+                        AND (l.kind <> 'event' OR l.end_at IS NULL OR l.end_at > NOW())
                     )
                   )
             ORDER BY CASE WHEN l.status = 'NEEDS_REVIEW' THEN 0 ELSE 1 END,
@@ -91,9 +93,9 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                   AND (
                         @PublicOnly = FALSE
                         OR (
-                            l.status = 'ACTIVE'
-                            AND l.safety_flag = FALSE
-                            AND (l.expires_at IS NULL OR l.expires_at > NOW())
+                            l.safety_flag = FALSE
+                            AND l.published_at IS NOT NULL
+                            AND l.status IN ('ACTIVE', 'EXPIRED')
                         )
                       )
                 """,
@@ -248,7 +250,9 @@ internal sealed class LocalOsListingService : ILocalOsListingService
     internal static object Bind(Guid id, UpsertLocalListingRequest r)
     {
         var kind = (r.Kind ?? "job").Trim().ToLowerInvariant();
-        if (kind is not ("job" or "event" or "room" or "grant"))
+        if (kind is "grant" or "offer")
+            kind = "event";
+        if (kind is not ("job" or "event" or "room"))
             kind = "job";
         var audience = (r.Audience is { Count: > 0 } ? r.Audience : ["student"]).ToArray();
         var status = string.IsNullOrWhiteSpace(r.Status) ? "NEEDS_REVIEW" : r.Status.Trim().ToUpperInvariant();
@@ -283,6 +287,20 @@ internal sealed class LocalOsListingService : ILocalOsListingService
             Status = status,
         };
     }
+
+    private static Task ExpireOverdueAsync(System.Data.IDbConnection conn, CancellationToken cancellationToken) =>
+        conn.ExecuteAsync(
+            new CommandDefinition(
+                """
+                UPDATE pack_local.listing
+                SET status = 'EXPIRED', updated_at = NOW()
+                WHERE status = 'ACTIVE'
+                  AND (
+                    (expires_at IS NOT NULL AND expires_at <= NOW())
+                    OR (kind = 'event' AND end_at IS NOT NULL AND end_at <= NOW())
+                  )
+                """,
+                cancellationToken: cancellationToken));
 
     internal static LocalListingDto Map(ListingRow r) => new(
         r.Id, r.Kind, r.Title, r.Summary, r.OrganizationName, r.PlaceText,

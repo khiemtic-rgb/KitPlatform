@@ -14,8 +14,12 @@ import {
   roomNoteChips,
   ROOM_TYPE_LABEL,
   telHref,
+  isListingExpired,
   trustLabel,
 } from '../../lib/api';
+import ExpiredNotice from '../../components/ExpiredNotice.astro';
+import ReportListing from '../../components/ReportListing.astro';
+import ShareListing from '../../components/ShareListing.astro';
 import {
   formatDistance,
   roomAmenities,
@@ -56,6 +60,7 @@ const mapsQuery = place
 const all = item ? await listListings('room') : [];
 const similar = item ? similarRooms(item, all) : [];
 const photos = [coverFor('room', 0), coverFor('room', 1)];
+const expired = item ? isListingExpired(item) : false;
 
 const facts: { label: string; value: string }[] = [];
 if (item?.roomType) facts.push({ label: 'Loại', value: ROOM_TYPE_LABEL[item.roomType] ?? item.roomType });
@@ -85,6 +90,7 @@ if (sourceKind) facts.push({ label: 'Nguồn', value: sourceKind });
 
           <div class="room-detail-grid">
             <article class="room-detail-main">
+              {expired && <ExpiredNotice item={item} />}
               <header class="room-detail-head">
                 <div class="room-kicker">
                   <span class="room-pill">Phòng trọ</span>
@@ -207,12 +213,16 @@ if (sourceKind) facts.push({ label: 'Nguồn', value: sourceKind });
                     <span>Chủ nhà</span>
                   </div>
                 </div>
-                {phoneHref ? (
+                {phoneHref && !expired ? (
                   <a class="btn-green room-host-call" href={phoneHref}>Gọi {phoneShow}</a>
+                ) : phoneHref && expired ? (
+                  <a class="btn-outline room-host-call" href={phoneHref}>Số trên tin</a>
                 ) : (
                   <p class="muted">Chưa có số trên tin.</p>
                 )}
-                <p class="muted">Hỏi giá và còn phòng khi gọi.</p>
+                <p class="muted">{expired ? 'Tin hết hạn — số có thể không còn nhận.' : 'Hỏi giá và còn phòng khi gọi.'}</p>
+                <ReportListing listingId={item.id} kind="room" />
+                <ShareListing />
               </section>
 
               <section class="room-safe">
@@ -241,15 +251,6 @@ if (sourceKind) facts.push({ label: 'Nguồn', value: sourceKind });
                 </section>
               )}
 
-              <section class="panel">
-                <h3>Chia sẻ tin này</h3>
-                <div class="job-share">
-                  <a class="soc fb" data-share="facebook" href="#" rel="nofollow noopener" target="_blank" title="Facebook">f</a>
-                  <a class="soc zl" data-share="zalo" href="#" rel="nofollow noopener" target="_blank" title="Zalo">Z</a>
-                  <button class="soc" type="button" data-copy title="Sao chép link">⎘</button>
-                </div>
-                <p style="margin:10px 0 0"><a href="/thong-tin/lien-he">Báo cáo tin →</a></p>
-              </section>
             </aside>
           </div>
           {phoneHref && (
@@ -261,14 +262,4 @@ if (sourceKind) facts.push({ label: 'Nguồn', value: sourceKind });
       ) : <p class="empty">Tin không còn trên site.</p>}
     </div>
   </div>
-  <script>
-    const pageUrl = location.href;
-    const fb = document.querySelector<HTMLAnchorElement>('[data-share="facebook"]');
-    const zalo = document.querySelector<HTMLAnchorElement>('[data-share="zalo"]');
-    if (fb) fb.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`;
-    if (zalo) zalo.href = `https://zalo.me/share?u=${encodeURIComponent(pageUrl)}`;
-    document.querySelector('[data-copy]')?.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(pageUrl); } catch { /* ignore */ }
-    });
-  </script>
 </Layout>

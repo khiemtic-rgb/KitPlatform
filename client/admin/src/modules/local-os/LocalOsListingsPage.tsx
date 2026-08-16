@@ -21,12 +21,15 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import {
   createLocalOsListing,
   fetchLocalOsListings,
+  fetchLocalOsReports,
   fetchLocalOsSources,
   ingestLocalOsSource,
   publishLocalOsHomepage,
+  rewriteLocalOsListing,
   setLocalOsListingStatus,
   updateLocalOsListing,
   type LocalListing,
+  type LocalListingReport,
   type LocalSource,
 } from '@/shared/api/local-os.api';
 import { rewriteListingCopy } from './rewriteListingCopy';
@@ -49,6 +52,13 @@ const KIND_LABEL: Record<string, string> = {
   job: 'Việc',
   event: 'Sự kiện',
   room: 'Trọ',
+};
+
+const REPORT_LABEL: Record<string, string> = {
+  wrong_phone: 'Sai số',
+  gone: 'Hết phòng / hết việc',
+  no_answer: 'Không liên lạc được',
+  other: 'Tin không đúng',
 };
 
 const KIND_OPTIONS = [
@@ -130,8 +140,11 @@ function reviewGaps(values: {
 
 export function LocalOsListingsPage() {
   const [items, setItems] = useState<LocalListing[]>([]);
+  const [reports, setReports] = useState<LocalListingReport[]>([]);
+  const [reportOf, setReportOf] = useState<LocalListing | null>(null);
   const [loading, setLoading] = useState(false);
   const [ingesting, setIngesting] = useState(false);
+  const [polishing, setPolishing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string>('NEEDS_REVIEW');
   const [kind, setKind] = useState<string | undefined>();
@@ -146,7 +159,16 @@ export function LocalOsListingsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setItems(await fetchLocalOsListings({ status: status || undefined, kind }));
+      const [rows, inbox] = await Promise.all([
+        fetchLocalOsListings({
+          status: status === 'REPORTED' ? undefined : status || undefined,
+          kind,
+        }),
+        fetchLocalOsReports().catch(() => [] as LocalListingReport[]),
+      ]);
+      setReports(inbox);
+      const flagged = new Set(inbox.map((r) => r.listingId));
+      setItems(status === 'REPORTED' ? rows.filter((row) => flagged.has(row.id)) : rows);
     } catch (error) {
       message.error(apiErrorMessage(error, 'Không tải được danh sách.'));
     } finally {
@@ -239,15 +261,39 @@ export function LocalOsListingsPage() {
     }
   };
 
-  const polishBox = () => {
+  const applyRewrite = async (raw: string, kindValue: string) => {
+    try {
+      const ai = await rewriteLocalOsListing({ text: raw, kind: kindValue });
+      return {
+        title: ai.title,
+        body: ai.body,
+        place: ai.place ?? undefined,
+        phone: ai.phone ?? undefined,
+        salary: kindValue === 'room' ? undefined : ai.salary ?? undefined,
+        via: 'ai' as const,
+      };
+    } catch (error) {
+      const local = rewriteListingCopy(raw, kindValue);
+      return { ...local, via: 'rules' as const, note: apiErrorMessage(error, '') };
+    }
+  };
+
+  const polishBox = async () => {
     const raw = String(form.getFieldValue('pastedText') ?? '');
     if (raw.trim().length < 8) {
       message.warning('Dán nội dung bài trước, rồi bấm Viết lại.');
       return;
     }
-    const kind = String(form.getFieldValue('kind') || 'job');
-    form.setFieldsValue({ pastedText: rewriteListingCopy(raw, kind).body });
-    message.success('Đã viết lại cho chuẩn. Đọc lại rồi thêm vào danh sách.');
+    const kindValue = String(form.getFieldValue('kind') || 'job');
+    setPolishing(true);
+    try {
+      const w = await applyRewrite(raw, kindValue);
+      form.setFieldsValue({ pastedText: w.body });
+      if (w.via === 'ai') message.success('AI đã viết lại. Đọc lại rồi thêm vào danh sách.');
+      else message.warning('Chưa gọi được AI — đã lọc tắt / cảm thán tại máy. Đọc lại trước khi thêm.');
+    } finally {
+      setPolishing(false);
+    }
   };
 
   const openWrite = (row: LocalListing) => {
@@ -265,19 +311,25 @@ export function LocalOsListingsPage() {
     });
   };
 
-  const polishEdit = () => {
-    const kind = String(editForm.getFieldValue('kind') || 'job');
+  const polishEdit = async () => {
+    const kindValue = String(editForm.getFieldValue('kind') || 'job');
     const raw = [editForm.getFieldValue('title'), editForm.getFieldValue('summary')].filter(Boolean).join('\n');
     if (String(raw).trim().length < 8) return;
-    const w = rewriteListingCopy(String(raw), kind);
-    editForm.setFieldsValue({
-      title: w.title,
-      summary: w.body,
-      placeText: w.place || editForm.getFieldValue('placeText'),
-      contactPhone: w.phone || editForm.getFieldValue('contactPhone'),
-      salaryText: kind === 'room' ? undefined : w.salary || editForm.getFieldValue('salaryText'),
-    });
-    message.success('Đã viết lại nội dung.');
+    setPolishing(true);
+    try {
+      const w = await applyRewrite(String(raw), kindValue);
+      editForm.setFieldsValue({
+        title: w.title,
+        summary: w.body,
+        placeText: w.place || editForm.getFieldValue('placeText'),
+        contactPhone: w.phone || editForm.getFieldValue('contactPhone'),
+        salaryText: kindValue === 'room' ? undefined : w.salary || editForm.getFieldValue('salaryText'),
+      });
+      if (w.via === 'ai') message.success('AI đã viết lại nội dung.');
+      else message.warning('Chưa gọi được AI — đã lọc tắt / cảm thán tại máy.');
+    } finally {
+      setPolishing(false);
+    }
   };
 
   const openNew = () => {
@@ -366,6 +418,13 @@ export function LocalOsListingsPage() {
           <Typography.Text type="secondary">
             {[row.placeText, row.salaryText, row.contactPhone].filter(Boolean).join(' · ')}
           </Typography.Text>
+          {reports.filter((r) => r.listingId === row.id).length > 0 ? (
+            <div>
+              <Tag color="orange">
+                {reports.filter((r) => r.listingId === row.id).length} báo cáo độc giả
+              </Tag>
+            </div>
+          ) : null}
         </div>
       ),
     },
@@ -398,6 +457,11 @@ export function LocalOsListingsPage() {
               Ẩn
             </Button>
           ) : null}
+          {reports.some((r) => r.listingId === row.id) ? (
+            <Button size="small" onClick={() => setReportOf(row)}>
+              Xem báo cáo
+            </Button>
+          ) : null}
         </Space>
       ),
     },
@@ -422,11 +486,21 @@ export function LocalOsListingsPage() {
       <Typography.Paragraph type="secondary">
         Copy bài từ nhóm quảng cáo, dán vào ô dưới — thêm liên tục, không cần link.
         Nhiều bài cách nhau bằng một dòng <code>---</code>. Sau đó mở tin → viết lại → duyệt → đăng.
-        Site chỉ hiện tin đã đăng.{' '}
+        Học bổng / ưu đãi dán loại <strong>Sự kiện</strong> — không mở mục ưu đãi riêng.
+        Site chỉ hiện tin đã đăng. Độc giả báo sai số / hết phòng — không tự ẩn; vào{' '}
+        <strong>Có báo cáo</strong> rồi Ẩn hoặc sửa số.{' '}
         <Link to="/local-os/sources">Sổ nguồn</Link>
         {' · '}
         <Link to="/local-os/stats">Thống kê</Link>
       </Typography.Paragraph>
+      {reports.length > 0 && status !== 'REPORTED' ? (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 12, maxWidth: 760 }}
+          message={`${new Set(reports.map((r) => r.listingId)).size} tin có báo cáo từ độc giả. Lọc «Có báo cáo» để xử lý.`}
+        />
+      ) : null}
 
       <Form
         form={form}
@@ -456,7 +530,7 @@ export function LocalOsListingsPage() {
         <Form.Item
           name="pastedText"
           label="Nội dung bài"
-          extra="Dán bài thô → Viết lại cho chuẩn → Thêm. Ctrl + Enter để thêm rồi dán tiếp."
+          extra="Dán bài thô → AI viết lại (bỏ tắt, cảm thán, câu hô) → đọc lại → Thêm. Không bịa lương / SĐT. Ctrl + Enter để thêm."
         >
           <Input.TextArea
             rows={8}
@@ -474,8 +548,8 @@ export function LocalOsListingsPage() {
           <Alert type="error" showIcon style={{ marginBottom: 12 }} message={lastError} />
         ) : null}
         <Space>
-          <Button htmlType="button" onClick={polishBox}>
-            Viết lại cho chuẩn
+          <Button htmlType="button" loading={polishing} onClick={() => void polishBox()}>
+            AI viết lại cho chuẩn
           </Button>
           <Button type="primary" htmlType="button" loading={ingesting} onClick={() => void ingest()}>
             Thêm vào danh sách
@@ -493,7 +567,9 @@ export function LocalOsListingsPage() {
             ? `Chờ duyệt (${items.length})`
             : status === 'EXPIRED'
               ? 'Hết hạn — tin vừa thêm nằm ở Chờ duyệt'
-              : `Danh sách (${items.length})`}
+              : status === 'REPORTED'
+                ? `Có báo cáo độc giả (${items.length})`
+                : `Danh sách (${items.length})`}
         </Typography.Text>
         <Select
           style={{ width: 160 }}
@@ -504,6 +580,7 @@ export function LocalOsListingsPage() {
             { value: 'ACTIVE', label: 'Đang đăng' },
             { value: 'HIDDEN', label: 'Ẩn' },
             { value: 'EXPIRED', label: 'Hết hạn' },
+            { value: 'REPORTED', label: 'Có báo cáo' },
             { value: '', label: 'Tất cả' },
           ]}
         />
@@ -560,11 +637,11 @@ export function LocalOsListingsPage() {
         }
       >
         <Typography.Paragraph type="secondary">
-          Viết lại cho rõ. Bấm <strong>Duyệt &amp; đăng</strong> khi đủ tiêu đề, địa điểm và số điện thoại.
+          AI viết lại cho rõ — bỏ tắt, cảm thán, câu hô. Không bịa số. Bấm <strong>Duyệt &amp; đăng</strong> khi đủ tiêu đề, địa điểm và số điện thoại.
           Tin ACTIVE lên thainguyenlife.vn ngay, không cần deploy.
         </Typography.Paragraph>
-        <Button style={{ marginBottom: 12 }} onClick={polishEdit}>
-          Viết lại cho chuẩn
+        <Button style={{ marginBottom: 12 }} loading={polishing} onClick={() => void polishEdit()}>
+          AI viết lại cho chuẩn
         </Button>
         <Form form={editForm} layout="vertical">
           <Form.Item name="kind" label="Loại" rules={[{ required: true }]}>
@@ -595,6 +672,42 @@ export function LocalOsListingsPage() {
             <Input.TextArea rows={3} />
           </Form.Item>
         </Form>
+      </Drawer>
+
+      <Drawer
+        title={reportOf ? `Báo cáo: ${reportOf.title}` : 'Báo cáo độc giả'}
+        width={420}
+        open={!!reportOf}
+        onClose={() => setReportOf(null)}
+        extra={
+          reportOf && reportOf.status !== 'HIDDEN' ? (
+            <Button
+              danger
+              onClick={() => {
+                void setStatusOf(reportOf.id, 'HIDDEN');
+                setReportOf(null);
+              }}
+            >
+              Ẩn tin
+            </Button>
+          ) : null
+        }
+      >
+        <Typography.Paragraph type="secondary">
+          Một báo cáo ẩn danh không đủ để tự ẩn. Kiểm tra số / còn phòng rồi Ẩn hoặc sửa tin.
+        </Typography.Paragraph>
+        {reports
+          .filter((r) => r.listingId === reportOf?.id)
+          .map((r) => (
+            <div key={r.id} style={{ marginBottom: 12 }}>
+              <Tag>{REPORT_LABEL[r.reason] ?? r.reason}</Tag>
+              <Typography.Text type="secondary">
+                {' '}
+                {new Date(r.createdAt).toLocaleString('vi-VN')}
+              </Typography.Text>
+              {r.note ? <div>{r.note}</div> : null}
+            </div>
+          ))}
       </Drawer>
     </div>
   );

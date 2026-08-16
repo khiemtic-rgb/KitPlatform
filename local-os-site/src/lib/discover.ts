@@ -49,7 +49,7 @@ export const HUB_CATS: {
   { id: 'dia-diem', label: 'Địa điểm', lead: 'Danh lam, thắng cảnh, điểm tham quan', href: '/kham-pha/dia-diem', tone: 'place' },
   { id: 'am-thuc', label: 'Ẩm thực', lead: 'Chè, đặc sản — chưa sổ quán', href: '/kham-pha/am-thuc', tone: 'food' },
   { id: 'du-lich', label: 'Du lịch', lead: 'Đi đâu, chơi gì vừa sức cuối tuần', href: '/kham-pha/du-lich', tone: 'travel' },
-  { id: 'van-hoa', label: 'Văn hóa', lead: 'Trà, di sản, địa chỉ đỏ', href: '/kham-pha/van-hoa', tone: 'culture' },
+  { id: 'van-hoa', label: 'Văn hóa', lead: 'Người, dân tộc, Then, trà, địa chỉ đỏ', href: '/kham-pha/van-hoa', tone: 'culture' },
   { id: 'quan-hay', label: 'Quán hay', lead: 'Sắp có — chưa mở sổ quán', soon: true, tone: 'cafe' },
   { id: 'check-in', label: 'Check-in', lead: 'Sắp có — chưa mở điểm sống ảo', soon: true, tone: 'photo' },
   { id: 'cam-nang', label: 'Cẩm nang', lead: 'Hướng dẫn, mẹo hay, thông tin hữu ích', href: '/kham-pha#cam-nang', tone: 'guide' },
@@ -64,19 +64,23 @@ export const HUB_FAQS: { q: string; href: string }[] = [
   { q: 'Gần phố hay đi huyện — chọn thế nào?', href: '/kham-pha/cam-nang/gan-hay-xa' },
   { q: 'Sinh viên mới đến Thái Nguyên?', href: '/kham-pha/cam-nang/sinh-vien-moi' },
   { q: 'Mùa nào đi đâu?', href: '/kham-pha/cam-nang/mua-nao' },
+  { q: 'Thái Nguyên có những dân tộc nào?', href: '/kham-pha/cam-nang/cac-dan-toc' },
+  { q: 'Then Tày — Nùng là gì?', href: '/kham-pha/cam-nang/then' },
+  { q: 'Hát Soọng cô của người Sán Dìu?', href: '/kham-pha/cam-nang/soong-co' },
+  { q: 'Lịch sử / Việt Bắc ở Thái Nguyên?', href: '/kham-pha/cam-nang/lich-su' },
 ];
 
 export const HUB_RELATED: { label: string; lead: string; href: string }[] = [
-  { label: 'Sự kiện còn hạn', lead: 'Lễ hội, thể thao, hội chợ — chỉ tin đã duyệt', href: '/su-kien' },
-  { label: 'Việc làm', lead: 'Tin tuyển còn hạn, không phải tour', href: '/viec' },
-  { label: 'Phòng trọ', lead: 'Tin phòng đã duyệt — giá liên hệ', href: '/tro' },
+  { label: 'Sự kiện', lead: 'Lễ hội, thể thao, hội chợ', href: '/su-kien' },
+  { label: 'Việc làm', lead: 'Tin tuyển — không phải tour', href: '/viec' },
+  { label: 'Phòng trọ', lead: 'Giá liên hệ khi gọi', href: '/tro' },
 ];
 
 export const PILLARS: { id: DiscoverPillar; label: string; lead: string }[] = [
   { id: 'dia-diem', label: 'Địa điểm', lead: 'Hồ, đồi chè, bảo tàng, di tích — chỗ để hiểu Thái Nguyên.' },
   { id: 'am-thuc', label: 'Ẩm thực', lead: 'Chè và món địa phương. Chưa phải danh bạ quán.' },
   { id: 'du-lich', label: 'Du lịch', lead: 'Trong phố nửa ngày, cuối tuần hồ / hang / về nguồn.' },
-  { id: 'van-hoa', label: 'Văn hóa', lead: 'Trà, di sản, bảo tàng, địa chỉ đỏ — không phải tin lễ hội đã hết.' },
+  { id: 'van-hoa', label: 'Văn hóa', lead: 'Người, dân tộc, Then, Soọng cô, trà, bảo tàng, địa chỉ đỏ.' },
 ];
 
 const SRC_TOP12: DiscoverSource = {
@@ -169,8 +173,8 @@ export const PLACES: DiscoverPlace[] = [
     area: 'TP. Thái Nguyên',
     featured: true,
     intro: [
-      'Bảo tàng thành lập 1960 (Bảo tàng Việt Bắc), đổi tên 1990. Cổng du lịch tỉnh ghi đây là một trong 5 bảo tàng quốc gia, trưng bày và bảo quản trên 40.000 tài liệu / hiện vật gốc về văn hóa 54 dân tộc; có khu trong nhà và ngoài trời.',
-      'Địa chỉ thống nhất trên trang bảo tàng và cổng du lịch: số 1 Đội Cấn, Thái Nguyên. Giờ mở cửa / vé / đoàn trải nghiệm: hỏi bảo tàng (cổng du lịch ghi hoạt động “động” cần đặt lịch trước).',
+      'Bảo tàng thành lập 1960 (Bảo tàng Việt Bắc), đổi tên 1990. Cổng du lịch tỉnh ghi đây là một trong 5 bảo tàng quốc gia, trưng bày và bảo quản trên 40.000 tài liệu / hiện vật gốc về văn hóa 54 dân tộc Việt Nam — không phải bảo tàng “chỉ dân tộc Thái Nguyên”.',
+      'Địa chỉ thống nhất trên trang bảo tàng và cổng du lịch: số 1 Đội Cấn, Thái Nguyên. Giờ mở cửa / vé / đoàn trải nghiệm: hỏi bảo tàng (cổng du lịch ghi hoạt động “động” cần đặt lịch trước). Người và dân tộc trên địa bàn tỉnh: xem cẩm nang Các dân tộc Thái Nguyên.',
     ],
     doWhat: [
       'Tham quan trưng bày — buổi sáng hoặc chiều, dễ kết hợp lịch học.',
@@ -301,7 +305,7 @@ export const PLACES: DiscoverPlace[] = [
     eatWhat: [
       'Ăn tại nhà hàng / quán quanh khu di tích nếu có. Site không review món “đặc sản ATK”.',
     ],
-    nearby: ['den-duom', 'ditich-27-7'],
+    nearby: ['den-duom', 'ditich-27-7', 'khuon-manh'],
     eventHints: ['atk', 'định hóa', 'tỉn keo'],
     mapsQuery: 'Nhà tưởng niệm Chủ tịch Hồ Chí Minh ATK Định Hóa, Phú Đình',
     sources: [
@@ -330,7 +334,7 @@ export const PLACES: DiscoverPlace[] = [
       'Không đi một mình vào hang sâu nếu chưa rõ lối.',
     ],
     eatWhat: ['Ăn tại quán trong khu nếu có, hoặc mang theo. Site không review quán Võ Nhai.'],
-    nearby: [],
+    nearby: ['khuon-manh'],
     eventHints: ['phượng hoàng', 'mỏ gà', 'võ nhai'],
     mapsQuery: 'Hang Phượng Hoàng Suối Mỏ Gà, Phú Thượng, Võ Nhai, Thái Nguyên',
     sources: [
@@ -465,6 +469,37 @@ export const PLACES: DiscoverPlace[] = [
     mapsQuery: 'Trung tâm Thương mại Du lịch Dũng Tân, Thái Nguyên',
     sources: [SRC_TOP12],
   },
+  {
+    kind: 'place',
+    slug: 'khuon-manh',
+    title: 'Rừng Khuôn Mánh — Cứu quốc quân II',
+    kicker: 'Địa điểm · Văn hóa',
+    summary: 'Di tích quốc gia (1994), xã Tràng Xá, Võ Nhai — nơi thành lập Trung đội Cứu quốc quân II ngày 15/9/1941. Cả ngày, cùng huyện với hang Phượng Hoàng.',
+    placeText: 'Xã Tràng Xá, huyện Võ Nhai',
+    pillars: ['dia-diem', 'van-hoa', 'du-lich'],
+    cover: '/discover/hang-phuong-hoang.jpg',
+    tag: 'Lịch sử',
+    area: 'Võ Nhai',
+    intro: [
+      'My Thái Nguyên và cổng huyện: rừng Khuôn Mánh (xã Tràng Xá, Võ Nhai) là nơi thành lập Trung đội Cứu quốc quân II ngày 15/9/1941 — đơn vị tiền thân của Quân đội nhân dân Việt Nam. Năm 1994, địa điểm được công nhận di tích lịch sử cấp quốc gia.',
+      'Cùng huyện với hang Phượng Hoàng / Suối Mỏ Gà. Giờ mở cửa, đường vào, đoàn về nguồn: hỏi tại di tích. Site không niêm yết vé / giờ cũ.',
+    ],
+    doWhat: [
+      'Cả ngày nếu đi Võ Nhai — có thể kết hợp hang Phượng Hoàng; không nhét ATK Định Hóa cùng buổi nếu xuất phát muộn.',
+      'Dâng hương, xem nhà bia / trưng bày nếu đang mở. Không tổ chức picnic trong khu tưởng niệm.',
+    ],
+    eatWhat: ['Ăn ngoài khu di tích hoặc mang theo. Site không review quán Võ Nhai.'],
+    nearby: ['hang-phuong-hoang', 'atk-dinh-hoa', 'dai-doi-915'],
+    eventHints: ['khuôn mánh', 'cứu quốc quân', 'võ nhai'],
+    mapsQuery: 'Di tích rừng Khuôn Mánh, Tràng Xá, Võ Nhai, Thái Nguyên',
+    sources: [
+      { label: 'My Thái Nguyên — di tích rừng Khuôn Mánh', url: 'https://mythainguyen.vn/iv/rungkhuonmanh' },
+      {
+        label: 'Báo Thái Nguyên — nơi thành lập Cứu quốc quân II',
+        url: 'https://baothainguyen.vn/chinh-tri/201404/ve-noi-thanh-lap-trung-doi-cuu-quoc-quan-ii-367B281/',
+      },
+    ],
+  },
 ];
 
 export const GUIDES: DiscoverGuide[] = [
@@ -495,8 +530,8 @@ export const GUIDES: DiscoverGuide[] = [
       },
       {
         heading: 'Xa hơn — cả ngày, xuất phát sớm',
-        body: 'Hang Phượng Hoàng / Suối Mỏ Gà (Võ Nhai, ~45 km). Suối Kẹm + chè La Bằng (Đại Từ, ~35 km). ATK Định Hóa hoặc di tích 27/7 — về nguồn, không nhét chung với hồ trong một buổi.',
-        placeSlugs: ['hang-phuong-hoang', 'suoi-kem-la-bang', 'atk-dinh-hoa', 'ditich-27-7'],
+        body: 'Hang Phượng Hoàng / Suối Mỏ Gà (Võ Nhai, ~45 km) — có thể ghé rừng Khuôn Mánh cùng huyện. Suối Kẹm + chè La Bằng (Đại Từ, ~35 km). ATK Định Hóa hoặc di tích 27/7 — về nguồn, không nhét chung với hồ trong một buổi.',
+        placeSlugs: ['hang-phuong-hoang', 'khuon-manh', 'suoi-kem-la-bang', 'atk-dinh-hoa', 'ditich-27-7'],
       },
       {
         heading: 'Làng nhà sàn Thái Hải',
@@ -608,6 +643,11 @@ export const GUIDES: DiscoverGuide[] = [
         body: 'Xóm Bàn Cờ, xã Đại Phúc (trước Hùng Sơn). Nơi công bố ngày Thương binh toàn quốc 27/7/1947; xếp hạng quốc gia 1997. Có thể ghé khi đi Hồ Núi Cốc / Suối Kẹm cùng huyện. Hỏi giờ tại di tích.',
         placeSlugs: ['ditich-27-7', 'ho-nui-coc'],
       },
+      {
+        heading: 'Võ Nhai — rừng Khuôn Mánh',
+        body: 'Xã Tràng Xá: nơi thành lập Trung đội Cứu quốc quân II (15/9/1941), di tích quốc gia 1994. Cùng huyện hang Phượng Hoàng — cả ngày, xuất phát sớm. Không nhét ATK cùng buổi nếu đi muộn.',
+        placeSlugs: ['khuon-manh', 'hang-phuong-hoang'],
+      },
     ],
     sources: [
       { label: 'Khu di tích ATK Định Hóa — giới thiệu', url: 'http://ditich.atkthainguyen.org.vn/gioi-thieu-atk' },
@@ -615,6 +655,7 @@ export const GUIDES: DiscoverGuide[] = [
         label: 'Cổng TTĐT Thái Nguyên — khu di tích 27/7',
         url: 'http://thainguyen.gov.vn/den-on-dap-nghia/khu-di-tich-lich-su-quoc-gia-27-7-dia-chi-do-lan-toa-gia-tri-lich-su-282309',
       },
+      { label: 'My Thái Nguyên — di tích rừng Khuôn Mánh', url: 'https://mythainguyen.vn/iv/rungkhuonmanh' },
       SRC_TOP12,
     ],
   },
@@ -696,7 +737,7 @@ export const GUIDES: DiscoverGuide[] = [
     sections: [
       {
         heading: 'Một buổi trong phố',
-        body: 'Bảo tàng Văn hóa các dân tộc (1 Đội Cấn) gần nhiều trường. Chùa Hang hoặc Đại đội 915 nếu còn chiều. Hỏi giờ tại chỗ.',
+        body: 'Bảo tàng Văn hóa các dân tộc (1 Đội Cấn) gần nhiều trường — trưng bày 54 dân tộc toàn quốc, không phải “chỉ Thái Nguyên”. Chùa Hang hoặc Đại đội 915 nếu còn chiều. Hỏi giờ tại chỗ.',
         placeSlugs: ['bao-tang-van-hoa-cac-dan-toc', 'chua-hang', 'dai-doi-915'],
       },
       {
@@ -707,6 +748,10 @@ export const GUIDES: DiscoverGuide[] = [
       {
         heading: 'Việc và phòng',
         body: 'Mục Việc và Phòng trọ chỉ hiện tin đã duyệt còn hạn. Phòng: giá liên hệ, không đặt cọc qua site. Không có phí sinh viên trên Thái Nguyên Life.',
+      },
+      {
+        heading: 'Người và văn hóa',
+        body: 'Đọc cẩm nang Các dân tộc, Then, Soọng cô trước khi đi bảo tàng — để khỏi lẫn 54 dân tộc toàn quốc với cộng đồng trên địa bàn tỉnh. Không phải tour homestay.',
       },
       {
         heading: 'Sự kiện',
@@ -749,6 +794,164 @@ export const GUIDES: DiscoverGuide[] = [
       },
     ],
     sources: [
+      {
+        label: 'Cổng TTĐT Thái Nguyên — khu di tích 27/7',
+        url: 'http://thainguyen.gov.vn/den-on-dap-nghia/khu-di-tich-lich-su-quoc-gia-27-7-dia-chi-do-lan-toa-gia-tri-lich-su-282309',
+      },
+      SRC_TOP12,
+    ],
+  },
+  {
+    kind: 'guide',
+    slug: 'cac-dan-toc',
+    title: 'Thái Nguyên có những dân tộc nào?',
+    kicker: 'Cẩm nang · Văn hóa',
+    summary: 'Cổng tỉnh ghi 8 dân tộc chiếm số đông. Bảo tàng trong phố là 54 dân tộc toàn quốc — đừng lẫn hai lớp.',
+    pillars: ['van-hoa', 'dia-diem'],
+    cover: '/discover/bao-tang.jpg',
+    featured: true,
+    sections: [
+      {
+        heading: 'Tám dân tộc chiếm số đông',
+        body: 'Bài giới thiệu chung trên cổng TTĐT tỉnh ghi Thái Nguyên có nhiều dân tộc cùng sinh sống, trong đó 8 dân tộc chiếm số đông: Kinh, Tày, Nùng, Sán Dìu, Mông, Sán Chay, Dao, Hoa; đồng bào DTTS gần 30% dân số. Đó là cách cổng tỉnh mô tả cộng đồng — không phải bảng điều tra mới nhất.',
+      },
+      {
+        heading: 'Sau hợp nhất 1/7/2025',
+        body: 'Cổng tỉnh: tỉnh Thái Nguyên được thành lập trên cơ sở hợp nhất Thái Nguyên (cũ) và Bắc Kạn (cũ) từ 1/7/2025; 92 đơn vị cấp xã; diện tích 8.375,21 km²; dân số khoảng 1.799.489 người. Site không bịa tỷ lệ dân tộc sau hợp nhất — xem cổng / Sở Dân tộc khi cần số mới.',
+      },
+      {
+        heading: 'Bảo tàng ≠ danh mục tỉnh',
+        body: 'Bảo tàng Văn hóa các dân tộc Việt Nam (1 Đội Cấn) trưng bày 54 dân tộc trên cả nước. Đi bảo tàng để hiểu văn hóa các tộc người; muốn biết cộng đồng trên địa bàn tỉnh thì đọc cổng / Sở, không lấy 54 làm “số dân tộc Thái Nguyên”.',
+        placeSlugs: ['bao-tang-van-hoa-cac-dan-toc'],
+      },
+      {
+        heading: 'Gần phố — nhà sàn Tày · Nùng',
+        body: 'Làng nhà sàn Thái Hải (Thịnh Đức) là điểm cộng đồng Tày — Nùng gần thành phố, trong Top 12 cổng du lịch. Hỏi dịch vụ tại chỗ. Then (UNESCO) và Soọng cô (Sán Dìu) có cẩm nang riêng.',
+        placeSlugs: ['lang-thai-hai'],
+      },
+      {
+        heading: 'Lễ hội dân tộc',
+        body: 'Lồng tồng, Then, Soọng cô, lễ hội đền / chùa chỉ hiện trên mục Sự kiện khi tin đã duyệt còn hạn. Cổng có chuyên mục Đất và người — không lấy lịch “đang diễn ra” từ site bên ngoài nếu mục đã hết ngày.',
+      },
+    ],
+    sources: [
+      {
+        label: 'Cổng TTĐT Thái Nguyên — giới thiệu chung về tỉnh',
+        url: 'http://thainguyen.gov.vn/thong-tin-chung/gioi-thieu-chung-ve-tinh-thai-nguyen-102339',
+      },
+      { label: 'Cổng TTĐT Thái Nguyên — thông tin chung', url: 'https://thainguyen.gov.vn/thong-tin-chung' },
+      { label: 'Sở Dân tộc và Tôn giáo Thái Nguyên', url: 'https://sodantoctongiao.thainguyen.gov.vn/cac-dan-toc-tinh-thai-nguyen' },
+      { label: 'My Thái Nguyên — bảo tàng', url: 'https://mythainguyen.vn/vi/baotangvanhoacacdantoc' },
+    ],
+  },
+  {
+    kind: 'guide',
+    slug: 'then',
+    title: 'Then Tày — Nùng là gì?',
+    kicker: 'Cẩm nang · Văn hóa',
+    summary: 'Thực hành Then của người Tày, Nùng, Thái — UNESCO 13/12/2019. Thái Nguyên nằm trong vùng thực hành Đông Bắc. Không phải lịch diễn tuần này.',
+    pillars: ['van-hoa'],
+    cover: '/discover/guide-ve-nguon.jpg',
+    sections: [
+      {
+        heading: 'Di sản nhân loại',
+        body: 'Báo Thái Nguyên: ngày 13/12/2019 (giờ Việt Nam), UNESCO ghi danh Thực hành Then của người Tày, Nùng, Thái ở Việt Nam vào Danh sách di sản văn hóa phi vật thể đại diện của nhân loại.',
+      },
+      {
+        heading: 'Then là gì',
+        body: 'Theo bài báo tỉnh dẫn Ủy ban UNESCO: Then là thực hành nghi lễ trong đời sống tinh thần người Tày, Nùng, Thái — cầu an, chữa bệnh, cầu mùa, năm mới. Thầy Then hát tiếng dân tộc, gảy tính tẩu, xóc nhạc, phất quạt. Site không mô tả nghi lễ để “xem cho vui” — Then là tín ngưỡng cộng đồng.',
+      },
+      {
+        heading: 'Thái Nguyên trong vùng Then',
+        body: 'Bài báo tỉnh: di sản tập trung chủ yếu các tỉnh Đông Bắc (gồm Thái Nguyên) và một số tỉnh Tây Bắc. Không có lịch “Then tuần này” trên site — biểu diễn / lễ hội chỉ hiện khi tin Sự kiện còn hạn.',
+        placeSlugs: ['lang-thai-hai', 'bao-tang-van-hoa-cac-dan-toc'],
+      },
+      {
+        heading: 'Đi đâu để hiểu thêm',
+        body: 'Trong phố: bảo tàng (trưng bày văn hóa các dân tộc). Gần phố: làng Thái Hải nếu muốn thấy không gian nhà sàn Tày — Nùng. Không đặt thầy Then / không bán vé lễ qua Thái Nguyên Life.',
+        placeSlugs: ['bao-tang-van-hoa-cac-dan-toc', 'lang-thai-hai'],
+      },
+    ],
+    sources: [
+      {
+        label: 'Báo Thái Nguyên — UNESCO ghi danh Thực hành Then',
+        url: 'https://baothainguyen.vn/thoi-su-trong-nuoc/201912/thuc-hanh-then-duoc-unesco-cong-nhan-la-di-san-van-hoa-the-gioi-367C767/',
+      },
+    ],
+  },
+  {
+    kind: 'guide',
+    slug: 'soong-co',
+    title: 'Hát Soọng cô của người Sán Dìu',
+    kicker: 'Cẩm nang · Văn hóa',
+    summary: 'Di sản phi vật thể quốc gia (2015). Báo tỉnh dẫn Sở: hơn 50.000 người Sán Dìu trên địa bàn. Không phải sổ câu lạc bộ.',
+    pillars: ['van-hoa'],
+    cover: '/discover/doi-che.jpg',
+    sections: [
+      {
+        heading: 'Soọng cô là gì',
+        body: 'Báo Thái Nguyên: Soọng cô là lối hát giao duyên của người Sán Dìu — đối đáp, đặt lời thể thất ngôn tứ tuyệt, truyền khẩu; hát ở cưới, nhà mới, chúc tụng, hát ru. Năm 2015 được công nhận di sản văn hóa phi vật thể quốc gia.',
+      },
+      {
+        heading: 'Người Sán Dìu ở Thái Nguyên',
+        body: 'Bài báo tháng 4/2025 dẫn Sở Dân tộc và Tôn giáo: toàn tỉnh hơn 50.000 người Sán Dìu, tập trung Phú Lương, Phú Bình, Đại Từ, Đồng Hỷ, TP. Thái Nguyên và Phổ Yên. Đó là số Sở cung cấp cho báo — không phải điều tra site tự đếm.',
+      },
+      {
+        heading: 'Không phải lịch diễn',
+        body: 'Câu lạc bộ hát Soọng cô sinh hoạt theo cộng đồng. Site không mở sổ CLB, không hẹn “đêm hát”. Ngày hội / giao lưu chỉ hiện trên mục Sự kiện khi tin đã duyệt còn hạn.',
+      },
+      {
+        heading: 'Đi đâu gần',
+        body: 'Trong phố: bảo tàng để xem ngữ cảnh văn hóa các dân tộc. Vùng chè / huyện phía đông — bắc (Đồng Hỷ, Phú Lương, Phú Bình) là nơi báo tỉnh nhắc cộng đồng Sán Dìu sinh sống — không biến thành tour “thăm nhà”.',
+        placeSlugs: ['bao-tang-van-hoa-cac-dan-toc', 'den-duom'],
+      },
+    ],
+    sources: [
+      {
+        label: 'Báo Thái Nguyên — hát Soọng cô, niềm tự hào người Sán Dìu',
+        url: 'https://baothainguyen.vn/van-hoa/202504/hat-soong-co-niem-tu-hao-cua-nguoi-san-diu-ae90b11/',
+      },
+    ],
+  },
+  {
+    kind: 'guide',
+    slug: 'lich-su',
+    title: 'Lịch sử / Việt Bắc ở Thái Nguyên?',
+    kicker: 'Cẩm nang · Văn hóa',
+    summary: 'ATK Định Hóa, Khuôn Mánh 1941, 27/7 Đại Từ, Đại đội 915 trong phố. Không nhét bốn điểm một ngày.',
+    pillars: ['van-hoa', 'du-lich'],
+    cover: '/discover/atk.jpg',
+    featured: true,
+    sections: [
+      {
+        heading: 'ATK Định Hóa — cả ngày',
+        body: 'An toàn khu Trung ương thời kháng chiến chống Pháp (1946–1954): Nhà tưởng niệm, Tỉn Keo, Khuôn Tát. Xuất phát sớm. Giờ / vé hỏi trung tâm di tích.',
+        placeSlugs: ['atk-dinh-hoa'],
+      },
+      {
+        heading: 'Võ Nhai — Cứu quốc quân II',
+        body: 'Rừng Khuôn Mánh, xã Tràng Xá: thành lập Trung đội Cứu quốc quân II ngày 15/9/1941; xếp hạng quốc gia 1994. Có thể kết hợp hang Phượng Hoàng cùng huyện — cả ngày.',
+        placeSlugs: ['khuon-manh', 'hang-phuong-hoang'],
+      },
+      {
+        heading: 'Đại Từ — di tích 27/7',
+        body: 'Nơi công bố ngày Thương binh toàn quốc 27/7/1947. Ghé khi đi Hồ Núi Cốc / Suối Kẹm cùng hướng Đại Từ. Đoàn về nguồn tháng Bảy: hỏi tại di tích.',
+        placeSlugs: ['ditich-27-7', 'ho-nui-coc'],
+      },
+      {
+        heading: 'Trong phố — Đại đội 915',
+        body: 'Phường Gia Sàng. Tưởng niệm 60 liệt sĩ TNXP đêm Noel 1972. Phù hợp buổi chiều hoặc ngày không đi huyện.',
+        placeSlugs: ['dai-doi-915'],
+      },
+      {
+        heading: 'Đền Đuổm — QL3',
+        body: 'Thờ Dương Tự Minh, thế kỷ XII — lớp lịch sử khác ATK. Khoảng 24 km, xã Động Đạt, Phú Lương. Ghé khi đi / về hướng bắc.',
+        placeSlugs: ['den-duom'],
+      },
+    ],
+    sources: [
+      { label: 'Khu di tích ATK Định Hóa — giới thiệu', url: 'http://ditich.atkthainguyen.org.vn/gioi-thieu-atk' },
+      { label: 'My Thái Nguyên — di tích rừng Khuôn Mánh', url: 'https://mythainguyen.vn/iv/rungkhuonmanh' },
       {
         label: 'Cổng TTĐT Thái Nguyên — khu di tích 27/7',
         url: 'http://thainguyen.gov.vn/den-on-dap-nghia/khu-di-tich-lich-su-quoc-gia-27-7-dia-chi-do-lan-toa-gia-tri-lich-su-282309',

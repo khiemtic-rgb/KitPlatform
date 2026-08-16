@@ -1,41 +1,72 @@
-/** Viết lại tin dán từ nhóm: tiếng Việt chuẩn, không bịa số liệu. */
+/** Lọc tin dán từ nhóm: tắt, cảm thán, hô hào. Không bịa số liệu. */
+
+function tok(inner: string, flags = 'gi'): RegExp {
+  return new RegExp(`(?<![A-Za-zÀ-ỹ0-9])(?:${inner})(?![A-Za-zÀ-ỹ0-9])`, flags);
+}
 
 const PHRASES: [RegExp, string][] = [
-  [/\bpasstime\b/gi, 'bán thời gian'],
-  [/\bpart[\s-]?time\b/gi, 'bán thời gian'],
-  [/\bfull[\s-]?time\b/gi, 'toàn thời gian'],
-  [/\bwork from home\b/gi, 'làm tại nhà'],
-  [/\bremote\b/gi, 'làm từ xa'],
-  [/\bnv\b/gi, 'nhân viên'],
-  [/\bns\b/gi, 'nhân sự'],
-  [/\btuyển dụng\b/gi, 'Tuyển dụng'],
-  [/\bquán\s*cf\b/gi, 'quán cà phê'],
-  [/\bcf\b/gi, 'cà phê'],
-  [/\blcb\b/gi, 'lương cơ bản'],
-  [/\bpc\b/gi, 'phụ cấp'],
-  [/\btca\b/gi, 'tăng ca'],
-  [/\bbhxh\b/gi, 'BHXH'],
-  [/\bbhyt\b/gi, 'BHYT'],
-  [/\bbhtn\b/gi, 'BHTN'],
-  [/\bsl\b/gi, 'số lượng'],
-  [/\bsơ\s*sở\b/gi, 'cơ sở'],
-  [/\bso so\b/gi, 'cơ sở'],
-  [/\bcơ sơ\b/gi, 'cơ sở'],
-  [/\bcam ket\b/gi, 'cam kết'],
-  [/\bthuong\b/gi, 'thưởng'],
-  [/\bko\b/gi, 'không'],
-  [/\bkhg\b/gi, 'không'],
-  [/\bdc\b/gi, 'được'],
-  [/\bđc\b/gi, 'được'],
-  [/\bnk\b/gi, 'nam/nữ'],
-  [/\bsv\b/gi, 'sinh viên'],
-  [/\bcn\b/gi, 'chủ nhật'],
-  [/\bt2\b/gi, 'T2'],
-  [/\bt7\b/gi, 'T7'],
-  [/\blh\s*:/gi, 'Liên hệ:'],
-  [/\bliên hệ\s*:/gi, 'Liên hệ:'],
-  [/\bthu nhập\s*:/gi, 'Thu nhập:'],
-  [/\blương\s*:/gi, 'Lương:'],
+  [tok('passtime|part[\\s-]?time|partime|pt'), 'bán thời gian'],
+  [tok('full[\\s-]?time|fulltime|ft'), 'toàn thời gian'],
+  [tok('work from home|wfh'), 'làm tại nhà'],
+  [tok('remote'), 'làm từ xa'],
+  [tok('nv|nhan vien'), 'nhân viên'],
+  [tok('ns'), 'nhân sự'],
+  [tok('ql|qly'), 'quản lý'],
+  [tok('sv|sinh vien'), 'sinh viên'],
+  [tok('hs'), 'học sinh'],
+  [tok('quán\\s*cf|quan\\s*cf'), 'quán cà phê'],
+  [tok('cf|cafe|coffee'), 'cà phê'],
+  [tok('lcb'), 'lương cơ bản'],
+  [tok('pc'), 'phụ cấp'],
+  [tok('tca|tang ca'), 'tăng ca'],
+  [tok('hđld|hdld|hđ|hdld'), 'hợp đồng'],
+  [tok('bhxh'), 'BHXH'],
+  [tok('bhyt'), 'BHYT'],
+  [tok('bhtn'), 'BHTN'],
+  [tok('sl'), 'số lượng'],
+  [tok('sđt|sdt'), 'số điện thoại'],
+  [tok('đt'), 'điện thoại'],
+  [tok('add|đc chỉ|dc chi|dia chi'), 'địa chỉ'],
+  [tok('sơ\\s*sở|so so|cơ sơ'), 'cơ sở'],
+  [tok('cam ket'), 'cam kết'],
+  [tok('thuong'), 'thưởng'],
+  [tok('ko|khg|k0|kg|khong'), 'không'],
+  [tok('dc|đc|dk'), 'được'],
+  [tok('vs'), 'với'],
+  [tok('j'), 'gì'],
+  [tok('nx'), 'nữa'],
+  [tok('mk'), 'mình'],
+  [tok('nk'), 'nam/nữ'],
+  [tok('cn'), 'chủ nhật'],
+  [tok('t2'), 'T2'],
+  [tok('t3'), 'T3'],
+  [tok('t4'), 'T4'],
+  [tok('t5'), 'T5'],
+  [tok('t6'), 'T6'],
+  [tok('t7'), 'T7'],
+  [tok('lh'), 'liên hệ'],
+  [tok('ib|inbox|nt'), 'nhắn tin'],
+  [tok('zl|zalo'), 'Zalo'],
+  [tok('hnay'), 'hôm nay'],
+  [/liên hệ\s*:/gi, 'Liên hệ:'],
+  [/thu nhập\s*:/gi, 'Thu nhập:'],
+  [/lương\s*:/gi, 'Lương:'],
+];
+
+const DROP_PHRASES = [
+  tok('ae ơi|a e ơi|anh em ơi|mn ơi|mọi người ơi|ban ơi|bạn ơi|oi ae|ơi ae'),
+  tok('ae|a\\.e|anh em ơi'),
+  tok('mn|mng|moi nguoi'),
+  tok('inbox ngay|ib ngay|nhắn ngay|alo ngay|gọi ngay đi'),
+  tok('siêu hot|sieu hot|hot nhất|hot nhat|very hot'),
+  tok('tuyển gấp|tuyen gap|cần gấp lắm|can gap|gấp gấp|gap gap'),
+  tok('ôi|ối|trời ơi|troi oi|wow+|wao+|omg'),
+  tok('hehe+|hihi+|haha+|kkk+'),
+  tok('nha+|nhé+|nhe+|nè+|ne+| hen+|á+|ý+'),
+  tok('ạ+|a ơi|ơi ơi|ơi'),
+  tok('luôn luôn|luôn đi|luôn nha'),
+  tok('siêu|cực kỳ|cuc ky|quá trời|qua troi|quá đã|qua da'),
+  tok('pls|plz|please'),
 ];
 
 function expandPhrases(raw: string): string {
@@ -44,12 +75,26 @@ function expandPhrases(raw: string): string {
   return s;
 }
 
+function dropFiller(raw: string): string {
+  let s = raw;
+  for (const re of DROP_PHRASES) s = s.replace(re, ' ');
+  return s
+    .replace(/!{2,}/g, '.')
+    .replace(/\?{2,}/g, '?')
+    .replace(/[.]{3,}/g, '.')
+    .replace(/[!]{1,}(?=\s|$)/g, '.')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .replace(/([,.;]){2,}/g, '$1')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 function sentenceVi(raw: string): string {
-  const t = raw.replace(/\s+/g, ' ').trim();
+  const t = raw.replace(/\s+/g, ' ').trim().replace(/^[,.;:\-–]+/, '').trim();
   if (!t) return t;
   const letters = t.replace(/[^A-Za-zÀ-ỹ]/g, '');
   const up = (letters.match(/[A-ZÀ-Ỹ]/g) ?? []).length;
-  if (letters.length > 8 && up / letters.length > 0.65) {
+  if (letters.length > 8 && up / letters.length > 0.55) {
     return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
   }
   return t.charAt(0).toUpperCase() + t.slice(1);
@@ -58,7 +103,7 @@ function sentenceVi(raw: string): string {
 function stripDecor(raw: string): string {
   return raw
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, ' ')
-    .replace(/[⭐✨🔥💥❗‼️♥️❤💕👉✅❌●■□▪▫]/g, ' ')
+    .replace(/[⭐✨🔥💥❗‼️♥️❤💕👉✅❌●■□▪▫★☆♥♡]/g, ' ')
     .replace(/[━─=_]{3,}/g, '\n')
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
@@ -90,6 +135,12 @@ function takeLine(lines: string[], test: (s: string) => boolean): string {
   return lines.find(test) ?? '';
 }
 
+function isNoiseLine(line: string): boolean {
+  const t = line.replace(/[\s.,;:!?-]+/g, '');
+  if (t.length < 3) return true;
+  return /^(ib|zalo|hot|gap|gapgap|ae|mn)$/i.test(t);
+}
+
 export function rewriteListingCopy(raw: string, kind = 'job'): {
   title: string;
   body: string;
@@ -97,18 +148,19 @@ export function rewriteListingCopy(raw: string, kind = 'job'): {
   phone?: string;
   salary?: string;
 } {
-  const cleaned = normalizePay(expandPhrases(stripDecor(raw.replace(/\r/g, ''))));
+  const cleaned = normalizePay(dropFiller(expandPhrases(stripDecor(raw.replace(/\r/g, '')))));
   const lines = cleaned
     .split('\n')
-    .map((l) => l.replace(/\s+/g, ' ').trim())
-    .filter((l) => l.length > 1 && !/^[-–•·]+$/.test(l));
+    .map((l) => dropFiller(l.replace(/\s+/g, ' ').trim()))
+    .map((l) => l.replace(/^[-–•·*]\s*/, ''))
+    .filter((l) => l.length > 1 && !/^[-–•·]+$/.test(l) && !isNoiseLine(l));
 
   const first = lines.find((l) => l.length >= 8 && !/^liên hệ/i.test(l)) ?? lines[0] ?? 'Tin tuyển dụng';
   const title = sentenceVi(first).replace(/\s*[|•·].*$/, '').slice(0, 120);
 
   const pay = takeLine(lines, (l) => /lương|thu nhập|triệu|k\/giờ|đ\/giờ/i.test(l));
   const time = takeLine(lines, (l) => /giờ|ca |hành chính|t2|t7|toàn thời gian|bán thời gian/i.test(l) && !/lương|triệu/i.test(l));
-  const place = takeLine(lines, (l) => /phường|xã|thái nguyên|địa điểm|cơ sở|quán|sau |gần /i.test(l));
+  const place = takeLine(lines, (l) => /phường|xã|thái nguyên|địa điểm|địa chỉ|cơ sở|quán|sau |gần /i.test(l));
   const req = takeLine(lines, (l) => /nữ|nam|tuổi|yêu cầu|sinh viên|kinh nghiệm/i.test(l));
   const perk = takeLine(lines, (l) => /thưởng|bảo hiểm|bhxh|nghỉ|lễ|tết|phụ cấp/i.test(l));
   const phones = phonesIn(cleaned);
@@ -116,13 +168,14 @@ export function rewriteListingCopy(raw: string, kind = 'job'): {
   const rest = lines
     .filter((l) => l !== first && l !== pay && l !== time && l !== place && l !== req && l !== perk)
     .filter((l) => !phones.some((p) => l.includes(p)))
+    .filter((l) => !isNoiseLine(l))
     .slice(0, 8);
 
   const blocks: string[] = [];
   if (kind === 'job') {
     if (pay) blocks.push(`Thu nhập: ${sentenceVi(pay.replace(/^lương\s*:\s*/i, '').replace(/^thu nhập\s*:\s*/i, ''))}`);
     if (time) blocks.push(`Thời gian: ${sentenceVi(time)}`);
-    if (place) blocks.push(`Địa điểm: ${sentenceVi(place.replace(/^địa điểm\s*:\s*/i, ''))}`);
+    if (place) blocks.push(`Địa điểm: ${sentenceVi(place.replace(/^địa điểm\s*:\s*/i, '').replace(/^địa chỉ\s*:\s*/i, ''))}`);
     if (req) blocks.push(`Yêu cầu: ${sentenceVi(req.replace(/^yêu cầu\s*:\s*/i, ''))}`);
     if (perk) blocks.push(`Quyền lợi: ${sentenceVi(perk)}`);
   } else if (kind === 'room') {
@@ -142,8 +195,8 @@ export function rewriteListingCopy(raw: string, kind = 'job'): {
   return {
     title,
     body: body.slice(0, 2000),
-    place: place ? sentenceVi(place.replace(/^địa điểm\s*:\s*/i, '')) : undefined,
+    place: place ? sentenceVi(place.replace(/^địa điểm\s*:\s*/i, '').replace(/^địa chỉ\s*:\s*/i, '')) : undefined,
     phone: phones[0],
-    salary: pay ? pay.replace(/^lương\s*:\s*/i, '').replace(/^thu nhập\s*:\s*/i, '').trim() : undefined,
+    salary: kind === 'room' ? undefined : pay ? pay.replace(/^lương\s*:\s*/i, '').replace(/^thu nhập\s*:\s*/i, '').trim() : undefined,
   };
 }

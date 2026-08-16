@@ -8,8 +8,12 @@ import {
   listListings,
   orgInitial,
   telHref,
+  isListingExpired,
   trustLabel,
 } from '../../lib/api';
+import ExpiredNotice from '../../components/ExpiredNotice.astro';
+import ReportListing from '../../components/ReportListing.astro';
+import ShareListing from '../../components/ShareListing.astro';
 import {
   isNewJob,
   jobFacts,
@@ -41,6 +45,7 @@ const facts = item
   : [];
 const desc = item ? splitJobLines(item.summary) : [];
 const reqs = item ? splitJobLines(item.requirements) : [];
+const expired = item ? isListingExpired(item) : false;
 const phoneHref = item ? telHref(item.contactPhone) : null;
 const applyUrl = item?.registrationUrl || item?.sourceUrl;
 const mapsQuery = item?.placeText
@@ -67,6 +72,7 @@ if (item?.placeText) fit.push(item.placeText);
 
           <div class="job-detail-grid">
             <article class="job-detail">
+              {expired && <ExpiredNotice item={item} />}
               <header class="job-detail-head">
                 <div class="job-detail-kicker">
                   {isNewJob(item) && <span class="new-badge">Mới đăng</span>}
@@ -101,10 +107,11 @@ if (item?.placeText) fit.push(item.placeText);
                 <div class="job-employer-contact">
                   <span>Liên hệ tuyển dụng</span>
                   <strong>{item.contactPhone || item.contactName || 'Xem tin gốc'}</strong>
-                  <em>Gọi số trên tin để ứng tuyển</em>
+                  <em>{expired ? 'Tin hết hạn — số có thể không còn nhận' : 'Gọi số trên tin để ứng tuyển'}</em>
                 </div>
                 <div class="job-employer-actions">
-                  {phoneHref && <a class="btn-green" href={phoneHref}>Gọi ngay</a>}
+                  {phoneHref && !expired && <a class="btn-green" href={phoneHref}>Gọi ngay</a>}
+                  {phoneHref && expired && <a class="btn-outline" href={phoneHref}>Số trên tin</a>}
                   {applyUrl && (
                     <a class="btn-outline" href={applyUrl} rel="nofollow noopener" target="_blank">Xem tin gốc</a>
                   )}
@@ -183,6 +190,8 @@ if (item?.placeText) fit.push(item.placeText);
                 ) : (
                   <a class="btn-green" href="/viec">Xem việc khác</a>
                 )}
+                <ReportListing listingId={item.id} kind="job" />
+                <ShareListing />
               </section>
 
               {similar.length > 0 && (
@@ -202,22 +211,12 @@ if (item?.placeText) fit.push(item.placeText);
                 </section>
               )}
 
-              <section class="panel">
-                <h3>Chia sẻ tin này</h3>
-                <div class="job-share">
-                  <a class="soc fb" data-share="facebook" href="#" rel="nofollow noopener" target="_blank" title="Facebook">f</a>
-                  <a class="soc zl" data-share="zalo" href="#" rel="nofollow noopener" target="_blank" title="Zalo">Z</a>
-                  <button class="soc" type="button" data-copy title="Sao chép link">⎘</button>
-                </div>
-              </section>
-
               <section class="job-safe">
                 <h3>Khi ứng tuyển</h3>
                 <ul>
                   <li>Liên hệ bằng số hoặc link trên tin</li>
                   <li>Không nộp phí giữ chỗ hay giữ việc</li>
                 </ul>
-                <a href="/thong-tin/lien-he">Báo cáo tin →</a>
               </section>
             </aside>
           </div>
@@ -225,14 +224,4 @@ if (item?.placeText) fit.push(item.placeText);
       ) : <p class="empty">Tin không còn trên site.</p>}
     </div>
   </div>
-  <script>
-    const pageUrl = location.href;
-    const fb = document.querySelector<HTMLAnchorElement>('[data-share="facebook"]');
-    const zalo = document.querySelector<HTMLAnchorElement>('[data-share="zalo"]');
-    if (fb) fb.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`;
-    if (zalo) zalo.href = `https://zalo.me/share?u=${encodeURIComponent(pageUrl)}`;
-    document.querySelector('[data-copy]')?.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(pageUrl); } catch { /* ignore */ }
-    });
-  </script>
 </Layout>

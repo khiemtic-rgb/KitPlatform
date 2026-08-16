@@ -1,0 +1,85 @@
+---
+type Props = { listingId: string; kind: string };
+const { listingId, kind } = Astro.props;
+
+const reasons =
+  kind === 'room'
+    ? [
+        { id: 'wrong_phone', label: 'Số điện thoại không đúng' },
+        { id: 'gone', label: 'Đã hết phòng' },
+        { id: 'no_answer', label: 'Gọi không được' },
+        { id: 'other', label: 'Tin không còn đúng' },
+      ]
+    : kind === 'job'
+      ? [
+          { id: 'wrong_phone', label: 'Số điện thoại không đúng' },
+          { id: 'gone', label: 'Đã tuyển / hết việc' },
+          { id: 'no_answer', label: 'Gọi không được' },
+          { id: 'other', label: 'Tin không còn đúng' },
+        ]
+      : [
+          { id: 'gone', label: 'Sự kiện đã hủy / hết chỗ' },
+          { id: 'wrong_phone', label: 'Số hoặc link không đúng' },
+          { id: 'other', label: 'Tin không còn đúng' },
+        ];
+---
+<section class="listing-report" data-listing-report data-listing-id={listingId}>
+  <h3>Gọi rồi mà tin không đúng?</h3>
+  <p>Báo sai số, hết phòng hoặc không liên lạc được. Quản trị kiểm tra — tin không tự ẩn.</p>
+  <button class="listing-report-open" type="button">Báo tin này</button>
+  <form class="listing-report-form" hidden>
+    <div class="listing-report-reasons">
+      {reasons.map((r) => (
+        <label>
+          <input type="radio" name="reason" value={r.id} required />
+          {r.label}
+        </label>
+      ))}
+    </div>
+    <label class="listing-report-note">
+      Ghi chú (không bắt buộc)
+      <input type="text" name="note" maxlength="280" placeholder="Ví dụ: số báo thuê bao" />
+    </label>
+    <button class="btn-outline" type="submit">Gửi báo cáo</button>
+  </form>
+  <p class="listing-report-done" hidden role="status">Đã ghi nhận. Quản trị sẽ kiểm tra.</p>
+</section>
+<script>
+  document.querySelectorAll<HTMLElement>('[data-listing-report]').forEach((root) => {
+    if (root.dataset.bound === '1') return;
+    root.dataset.bound = '1';
+    const open = root.querySelector<HTMLButtonElement>('.listing-report-open');
+    const form = root.querySelector<HTMLFormElement>('.listing-report-form');
+    const done = root.querySelector<HTMLElement>('.listing-report-done');
+    const listingId = root.dataset.listingId ?? '';
+    open?.addEventListener('click', () => {
+      if (form) form.hidden = !form.hidden;
+    });
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const reason = String(data.get('reason') ?? '');
+      const note = String(data.get('note') ?? '').trim();
+      const btn = form.querySelector('button[type="submit"]');
+      if (btn instanceof HTMLButtonElement) btn.disabled = true;
+      try {
+        const res = await fetch('/api/report', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ listingId, reason, note: note || null }),
+        });
+        if (!res.ok) throw new Error('fail');
+        form.hidden = true;
+        if (open) open.hidden = true;
+        if (done) done.hidden = false;
+      } catch {
+        if (done) {
+          done.hidden = false;
+          done.textContent = 'Chưa gửi được. Thử lại sau hoặc vào Liên hệ.';
+        }
+      } finally {
+        if (btn instanceof HTMLButtonElement) btn.disabled = false;
+      }
+    });
+  });
+</script>

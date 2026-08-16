@@ -126,6 +126,11 @@ internal sealed class LocalOsIngestService : ILocalOsIngestService
         if (existing is not null)
             return new IngestFromSourceResult(existing, "Tin này đã có trong danh sách. Không thêm trùng.", true);
 
+        var trustedWatch = request.FromWatch
+            && matched is not null
+            && matched.SourceKind is "official_web" or "partner" or "rss"
+            && !string.Equals(matched.Platform, "facebook", StringComparison.OrdinalIgnoreCase)
+            && !unsafeHit;
         var listing = await _listings.CreateAsync(
             new UpsertLocalListingRequest(
                 Kind: kind,
@@ -142,19 +147,21 @@ internal sealed class LocalOsIngestService : ILocalOsIngestService
                 SalaryText: kind == "room" ? null : LocalOsTextExtract.GuessSalary(blob),
                 WorkingTime: null,
                 EmploymentType: kind == "job" ? "part_time" : null,
-                Category: null,
+                Category: kind == "event" && LocalOsTextExtract.LooksLikeBenefit(blob) ? "benefit" : null,
                 Requirements: null,
                 StartAt: null,
                 EndAt: null,
                 RegistrationUrl: null,
                 PriceMonth: null,
                 RoomType: null,
-                Trust: "UNVERIFIED",
+                Trust: trustedWatch ? "SOURCE_TRUSTED" : "UNVERIFIED",
                 SafetyFlag: unsafeHit,
-                Status: "NEEDS_REVIEW",
+                Status: trustedWatch ? "ACTIVE" : "NEEDS_REVIEW",
                 SourceId: matched?.Id),
             cancellationToken);
-        var note = "Đã thêm vào danh sách. Viết lại rồi duyệt trước khi đăng.";
+        var note = trustedWatch
+            ? "Đã đăng từ nguồn tin cậy."
+            : "Đã thêm vào danh sách. Viết lại rồi duyệt trước khi đăng.";
         if (matched is not null)
             note += $" Nguồn: {matched.Name}.";
         if (unsafeHit)

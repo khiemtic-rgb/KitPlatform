@@ -138,9 +138,8 @@ export function LocalOsSourcesPage() {
         Sổ nguồn — Thái Nguyên Life
       </Typography.Title>
       <Typography.Paragraph type="secondary">
-        Facebook group là <strong>một loại nguồn</strong>, không phải sản phẩm. Máy <strong>không quét
-        group</strong>. Nguồn website chính thức có thể <strong>canh mục lục</strong> → nháp chờ duyệt. Không tự
-        lên site, không tự đăng group.
+        Canh mục lục website chính thức lúc <strong>8:00 sáng</strong> (giờ Việt Nam). Tin từ nguồn tin cậy
+        <strong> tự đăng</strong> lên site. Form công khai và dán tay vẫn chờ duyệt. Không quét Facebook.
       </Typography.Paragraph>
       <Space style={{ marginBottom: 12 }} wrap>
         <Button
@@ -176,8 +175,9 @@ export function LocalOsSourcesPage() {
       </Space>
       {runs[0] ? (
         <Typography.Paragraph type="secondary">
-          Lần canh gần nhất: {new Date(runs[0].startedAt).toLocaleString('vi-VN')} · +{runs[0].createdCount}{' '}
-          nháp · {runs[0].trigger === 'scheduled' ? 'lịch hàng ngày' : 'bấm tay'}
+          Lần canh gần nhất: {new Date(runs[0].startedAt).toLocaleString('vi-VN')}
+          {runs[0].finishedAt ? '' : ' (chưa xong)'} · +{runs[0].createdCount} tin ·{' '}
+          {runs[0].trigger === 'scheduled' ? 'lịch 8h sáng' : 'bấm tay'}
           {runs[0].note ? ` — ${runs[0].note}` : ''}
         </Typography.Paragraph>
       ) : null}

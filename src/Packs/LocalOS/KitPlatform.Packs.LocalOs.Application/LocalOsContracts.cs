@@ -110,7 +110,28 @@ public sealed record PublishJobResult(
 
 public sealed record TrackShareRequest(Guid ListingId, Guid? GroupId, string EventKind);
 
-public sealed record IngestFromSourceRequest(string? SourceUrl, string? PastedText, string? Kind, Guid? SourceId = null);
+public sealed record RewriteLocalListingRequest(string Text, string? Kind);
+
+public sealed record RewriteLocalListingResult(
+    string Title,
+    string Body,
+    string? Place,
+    string? Phone,
+    string? Salary,
+    string Via,
+    string? Note);
+
+public sealed record IngestFromSourceRequest(
+    string? SourceUrl,
+    string? PastedText,
+    string? Kind,
+    Guid? SourceId = null,
+    bool FromWatch = false);
+
+public interface ILocalOsHomepagePush
+{
+    Task PushAfterTrustedPublishAsync(int createdCount, CancellationToken cancellationToken = default);
+}
 
 public sealed record IngestFromSourceResult(LocalListingDto Listing, string Note, bool Existing);
 
@@ -154,6 +175,27 @@ public sealed record UpsertLocalSourceRequest(
 
 public sealed record SetLocalSourceStatusRequest(string Status);
 
+public sealed record SubmitLocalListingReportRequest(string Reason, string? Note);
+
+public sealed record LocalListingReportDto(
+    Guid Id,
+    Guid ListingId,
+    string Reason,
+    string? Note,
+    DateTimeOffset CreatedAt,
+    string? ListingTitle,
+    string? ListingKind,
+    string? ListingStatus);
+
+public interface ILocalOsReportService
+{
+    Task<LocalListingReportDto?> SubmitAsync(
+        Guid listingId,
+        SubmitLocalListingReportRequest request,
+        CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<LocalListingReportDto>> ListAsync(CancellationToken cancellationToken = default);
+}
+
 public interface ILocalOsListingService
 {
     Task<IReadOnlyList<LocalListingDto>> ListAsync(LocalListingQuery query, CancellationToken cancellationToken = default);
@@ -171,6 +213,11 @@ public interface ILocalOsListingService
         Guid? excludeId,
         bool onlyActive,
         CancellationToken cancellationToken = default);
+}
+
+public interface ILocalOsRewriteService
+{
+    Task<RewriteLocalListingResult> RewriteAsync(RewriteLocalListingRequest request, CancellationToken cancellationToken = default);
 }
 
 public interface ILocalOsIngestService
@@ -191,6 +238,8 @@ public interface ILocalOsWatchService
     Task<LocalWatchRunDto> RunAsync(string trigger, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LocalWatchRunDto>> ListRunsAsync(int take = 10, CancellationToken cancellationToken = default);
     Task<DateTimeOffset?> LastFinishedAtAsync(CancellationToken cancellationToken = default);
+    Task<DateTimeOffset?> LastScheduledFinishedAtAsync(CancellationToken cancellationToken = default);
+    Task<bool> HasInFlightAsync(TimeSpan maxAge, CancellationToken cancellationToken = default);
 }
 
 public interface ILocalOsPublisherService

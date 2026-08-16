@@ -18,20 +18,29 @@ public sealed class LocalOsController : ControllerBase
     private readonly ILocalOsIngestService _ingest;
     private readonly ILocalOsSourceService _sources;
     private readonly ILocalOsWatchService _watch;
+    private readonly ILocalOsRewriteService _rewrite;
+    private readonly ILocalOsReportService _reports;
     private readonly LocalOsHomepageFeedPublisher _homepage;
+    private readonly LocalOsReaderReportInbox _inbox;
 
     public LocalOsController(
         ILocalOsListingService listings,
         ILocalOsIngestService ingest,
         ILocalOsSourceService sources,
         ILocalOsWatchService watch,
-        LocalOsHomepageFeedPublisher homepage)
+        ILocalOsRewriteService rewrite,
+        ILocalOsReportService reports,
+        LocalOsHomepageFeedPublisher homepage,
+        LocalOsReaderReportInbox inbox)
     {
         _listings = listings;
         _ingest = ingest;
         _sources = sources;
         _watch = watch;
+        _rewrite = rewrite;
+        _reports = reports;
         _homepage = homepage;
+        _inbox = inbox;
     }
 
     [HttpGet("listings")]
@@ -83,6 +92,35 @@ public sealed class LocalOsController : ControllerBase
     public async Task<ActionResult<LocalOsFeedPublishResult>> PublishHomepage(
         CancellationToken cancellationToken) =>
         Ok(await _homepage.PublishAsync(cancellationToken));
+
+    [HttpGet("reports")]
+    public async Task<ActionResult<IReadOnlyList<LocalListingReportDto>>> Reports(
+        CancellationToken cancellationToken)
+    {
+        var db = await _reports.ListAsync(cancellationToken);
+        var remote = await _inbox.PullAsync(cancellationToken);
+        if (remote.Count == 0) return Ok(db);
+
+        var merged = db.ToList();
+        foreach (var row in remote)
+        {
+            var dup = merged.Any(d =>
+                d.Id == row.Id
+                || (d.ListingId == row.ListingId
+                    && d.Reason == row.Reason
+                    && Math.Abs((d.CreatedAt - row.CreatedAt).TotalMinutes) < 3));
+            if (dup) continue;
+            var listing = await _listings.GetAsync(row.ListingId, publicOnly: false, cancellationToken);
+            merged.Add(row with
+            {
+                ListingTitle = listing?.Title,
+                ListingKind = listing?.Kind,
+                ListingStatus = listing?.Status,
+            });
+        }
+
+        return Ok(merged.OrderByDescending(r => r.CreatedAt).Take(300).ToList());
+    }
 
     [HttpGet("sources")]
     public async Task<ActionResult<IReadOnlyList<LocalSourceDto>>> ListSources(
@@ -142,6 +180,21 @@ public sealed class LocalOsController : ControllerBase
         try
         {
             return Ok(await _watch.RunAsync("manual", cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("listings/rewrite")]
+    public async Task<ActionResult<RewriteLocalListingResult>> Rewrite(
+        [FromBody] RewriteLocalListingRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _rewrite.RewriteAsync(request, cancellationToken));
         }
         catch (InvalidOperationException ex)
         {

@@ -46,7 +46,7 @@ const liveCount = jobs.length + events.length + rooms.length;
     <div class="wrap hero-inner">
       <div class="hero-copy">
         <h1>Hôm nay ở <em>Thái Nguyên</em> có gì đáng để bạn quan tâm?</h1>
-        <p class="hero-sub">Khám phá những điều đang diễn ra quanh bạn — việc làm, sự kiện, phòng trọ, ưu đãi và nhiều thông tin hữu ích khác.</p>
+        <p class="hero-sub">Việc làm, sự kiện, phòng trọ và khám phá quanh Thái Nguyên.</p>
       </div>
       <div class="hero-find" id="tim">
         <form class="search-bar hero-search" method="get" action="/">
@@ -148,11 +148,11 @@ const liveCount = jobs.length + events.length + rooms.length;
           </>
         )}
       </div>
-      {picked.length === 0 && <p class="empty">Chưa có tin còn hạn. Duyệt tin ở admin rồi Đăng.</p>}
+      {picked.length === 0 && <p class="empty">Đang cập nhật tin.</p>}
 
       <div class="section-head" style="margin-top:28px">
         <h2>Khám phá Thái Nguyên</h2>
-        <a class="see-all" href="/kham-pha">Xem hub →</a>
+        <a class="see-all" href="/kham-pha">Xem tất cả →</a>
       </div>
       <div class="discover-home">
         {homePlaces.map((p) => (
@@ -202,7 +202,7 @@ const liveCount = jobs.length + events.length + rooms.length;
               </div>
             </a>
           ))}
-          {latestJobs.length === 0 && <p class="empty">Chưa có việc còn hạn.</p>}
+          {latestJobs.length === 0 && <p class="empty">Đang cập nhật việc làm.</p>}
           <a class="panel-more" href="/viec">Xem tất cả việc làm →</a>
         </section>
 
@@ -230,7 +230,7 @@ const liveCount = jobs.length + events.length + rooms.length;
               </div>
             </a>
           ))}
-          {upcoming.length === 0 && <p class="empty">Chưa có sự kiện đã đăng.</p>}
+          {upcoming.length === 0 && <p class="empty">Đang cập nhật sự kiện.</p>}
           <a class="panel-more" href="/su-kien">Xem tất cả sự kiện →</a>
         </section>
 
@@ -257,7 +257,7 @@ const liveCount = jobs.length + events.length + rooms.length;
               </div>
             </a>
           ))}
-          {featuredRooms.length === 0 && <p class="empty">Chưa có phòng còn hạn.</p>}
+          {featuredRooms.length === 0 && <p class="empty">Đang cập nhật phòng trọ.</p>}
           <a class="panel-more" href="/tro">Xem tất cả phòng trọ →</a>
         </section>
       </div>
@@ -270,8 +270,8 @@ const liveCount = jobs.length + events.length + rooms.length;
         <h2>Đăng tin dễ dàng – Chia sẻ nhanh chóng</h2>
         <ul>
           <li><span>✓</span> Đăng tin miễn phí</li>
-          <li><span>✓</span> Tiếp cận đúng người quanh Thái Nguyên</li>
-          <li><span>✓</span> Gợi ý group — bạn tự mở và dán</li>
+          <li><span>✓</span> Tiếp cận người quanh Thái Nguyên</li>
+          <li><span>✓</span> Không mất phí khi xem và liên hệ</li>
         </ul>
         <div class="post-band-actions">
           <a class="btn-green" href="/dang-tin">+ Đăng tin ngay</a>
@@ -290,7 +290,6 @@ const liveCount = jobs.length + events.length + rooms.length;
       <section id="cong-dong">
         <div class="section-head">
           <h2>Cộng đồng quanh bạn</h2>
-          <a class="see-all" href="#cong-dong">Xem tất cả →</a>
         </div>
         <div class="comm-scroller">
           <div class="comm-track" data-comm-track>
@@ -316,8 +315,8 @@ const liveCount = jobs.length + events.length + rooms.length;
             </>
           )}
         </div>
-        {groups.length === 0 && <p class="empty">Chưa có group gợi ý.</p>}
-        {groups.length > 0 && <p class="comm-note">Gợi ý group quanh Thái Nguyên — mở và tham gia khi muốn.</p>}
+        {groups.length === 0 && <p class="empty">Đang cập nhật cộng đồng.</p>}
+        {groups.length > 0 && <p class="comm-note">Nhóm quanh Thái Nguyên — mở và tham gia khi muốn.</p>}
       </section>
     </div>
   </div>
@@ -350,7 +349,7 @@ const liveCount = jobs.length + events.length + rooms.length;
             </span>
             <div>
               <b>Chọn lọc</b>
-              <span>Tin còn hạn tại Thái Nguyên</span>
+              <span>Tin tại Thái Nguyên</span>
             </div>
           </div>
           <div class="life-stat">

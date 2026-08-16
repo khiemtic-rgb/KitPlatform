@@ -16,14 +16,30 @@ public static class LocalOsTextExtract
     public static bool LooksUnsafe(string text) =>
         BlockWords.Any(w => text.Contains(w, StringComparison.OrdinalIgnoreCase));
 
+    public static bool LooksLikeBenefit(string text)
+    {
+        var t = text.ToLowerInvariant();
+        string[] keys =
+        [
+            "học bổng", "hoc bong", "ưu đãi", "uu dai", "khuyến mãi", "khuyen mai",
+            "học phí", "hoc phi", "miễn phí", "mien phi", "giảm giá", "giam gia",
+            "voucher", "suất học", "suat hoc", "trợ cấp học", "tro cap hoc",
+        ];
+        return keys.Any(k => t.Contains(k, StringComparison.Ordinal));
+    }
+
     public static string GuessKind(string text, string? hint)
     {
+        if (hint is "grant" or "offer")
+            return "event";
         if (hint is "job" or "event" or "room")
             return hint;
         var t = text.ToLowerInvariant();
         if (t.Contains("phòng") || t.Contains("phong tro") || t.Contains("trọ") || t.Contains("cho thuê") || t.Contains("ở ghép"))
             return "room";
-        if (t.Contains("workshop") || t.Contains("sự kiện") || t.Contains("su kien") || t.Contains("đêm nhạc") || t.Contains("ngày hội"))
+        if (LooksLikeBenefit(text)
+            || t.Contains("workshop") || t.Contains("sự kiện") || t.Contains("su kien")
+            || t.Contains("đêm nhạc") || t.Contains("ngày hội"))
             return "event";
         return "job";
     }

@@ -1,0 +1,13 @@
+---
+import type { LocalListing } from '../lib/api';
+
+type Props = { item: LocalListing };
+const { item } = Astro.props;
+const text =
+  item.kind === 'job'
+    ? 'Tin đã hết hạn. Không còn nhận ứng tuyển trên trang này.'
+    : item.kind === 'room'
+      ? 'Tin phòng đã hết hạn. Số liên hệ có thể không còn nhận.'
+      : 'Tin đã hết hạn hoặc sự kiện đã kết thúc.';
+---
+<p class="listing-expired" role="status">{text}</p>

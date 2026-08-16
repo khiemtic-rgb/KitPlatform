@@ -26,6 +26,7 @@ const hubSlugs = [
   'chua-hang',
   'suoi-kem-la-bang',
   'hang-phuong-hoang',
+  'khuon-manh',
   'den-duom',
   'dai-doi-915',
   'dung-tan',
@@ -43,32 +44,24 @@ const catIco: Record<string, string> = {
   'cam-nang': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5z"/><path d="M8 7h8M8 11h8"/></svg>',
 };
 ---
-<Layout title="Khám phá Thái Nguyên — Thái Nguyên Life" active="discover" description="Địa điểm, ẩm thực, du lịch và cẩm nang Thái Nguyên — có nguồn, không phải blog tour.">
+<Layout title="Khám phá Thái Nguyên — Thái Nguyên Life" active="discover" description="Địa điểm, người và dân tộc, Then, về nguồn, cẩm nang Thái Nguyên — có nguồn, không phải blog tour.">
   <section class="disc-hero">
     <div class="wrap disc-hero-inner">
       <h1>Khám phá Thái Nguyên</h1>
-      <p>Địa điểm, văn hóa trà, về nguồn, cẩm nang cuối tuần — có nguồn. Chưa mở sổ quán / check-in.</p>
+      <p>Địa điểm, người & dân tộc, Then, trà, về nguồn — có nguồn.</p>
     </div>
   </section>
 
   <div class="page discover-page disc-hub">
     <div class="wrap">
       <nav class="disc-cats" aria-label="Lối khám phá">
-        {HUB_CATS.map((c) =>
-          c.soon || !c.href ? (
-            <span class={`disc-cat is-soon tone-${c.tone}`}>
-              <span class="disc-cat-ico" aria-hidden="true" set:html={catIco[c.id]} />
-              <strong>{c.label}</strong>
-              <em>{c.lead}</em>
-            </span>
-          ) : (
+        {HUB_CATS.filter((c) => !c.soon && c.href).map((c) => (
             <a class={`disc-cat tone-${c.tone}`} href={c.href}>
               <span class="disc-cat-ico" aria-hidden="true" set:html={catIco[c.id]} />
               <strong>{c.label}</strong>
               <em>{c.lead}</em>
             </a>
-          )
-        )}
+        ))}
       </nav>
 
       <div class="section-head disc-head">

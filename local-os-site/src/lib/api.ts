@@ -58,6 +58,12 @@ async function kvFeed(): Promise<PublicFeed | null> {
   return null;
 }
 
+function kindMatches(item: LocalListing, kind?: string): boolean {
+  if (!kind) return true;
+  if (kind === 'event') return item.kind === 'event' || item.kind === 'grant';
+  return item.kind === kind;
+}
+
 function matchListing(item: LocalListing, q?: string): boolean {
   if (!q) return true;
   const n = q.trim().toLowerCase();
@@ -66,22 +72,37 @@ function matchListing(item: LocalListing, q?: string): boolean {
     .some((v) => (v ?? '').toLowerCase().includes(n));
 }
 
+export function isListingExpired(item: LocalListing): boolean {
+  const now = Date.now();
+  if (item.expiresAt) {
+    const t = new Date(item.expiresAt).getTime();
+    if (!Number.isNaN(t) && t <= now) return true;
+  }
+  if ((item.kind === 'event' || item.kind === 'grant') && item.endAt) {
+    const t = new Date(item.endAt).getTime();
+    if (!Number.isNaN(t) && t <= now) return true;
+  }
+  return false;
+}
+
 export async function listListings(kind?: string, q?: string): Promise<LocalListing[]> {
   const live = await kvFeed();
   if (live?.listings?.length) {
-    return live.listings.filter((item) => (!kind || item.kind === kind) && matchListing(item, q));
+    return live.listings.filter((item) => kindMatches(item, kind) && matchListing(item, q) && !isListingExpired(item));
   }
   try {
     const url = new URL(`${API}/listings`);
     if (kind) url.searchParams.set('kind', kind);
     if (q) url.searchParams.set('q', q);
     const res = await fetch(url);
-    if (res.ok) return (await res.json()) as LocalListing[];
+    if (res.ok) {
+      return ((await res.json()) as LocalListing[]).filter((item) => !isListingExpired(item));
+    }
   } catch {
     /* Cloudflare cannot reach the local API — use deploy snapshot. */
   }
   const feed = await bundledFeed();
-  return (feed.listings ?? []).filter((item) => (!kind || item.kind === kind) && matchListing(item, q));
+  return (feed.listings ?? []).filter((item) => kindMatches(item, kind) && matchListing(item, q) && !isListingExpired(item));
 }
 
 export async function getListing(id: string): Promise<LocalListing | null> {
@@ -197,7 +218,7 @@ async function readApiError(res: Response, fallback: string): Promise<string> {
 export function hrefFor(item: Pick<LocalListing, 'id' | 'kind'>): string {
   if (item.kind === 'event') return `/su-kien/${item.id}`;
   if (item.kind === 'room') return `/tro/${item.id}`;
-  if (item.kind === 'grant') return `/uu-dai/${item.id}`;
+  if (item.kind === 'grant') return `/su-kien/${item.id}`;
   return `/viec/${item.id}`;
 }
 

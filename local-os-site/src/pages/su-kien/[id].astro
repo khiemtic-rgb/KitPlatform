@@ -9,8 +9,12 @@ import {
   hrefFor,
   listListings,
   orgInitial,
+  isListingExpired,
   trustLabel,
 } from '../../lib/api';
+import ExpiredNotice from '../../components/ExpiredNotice.astro';
+import ReportListing from '../../components/ReportListing.astro';
+import ShareListing from '../../components/ShareListing.astro';
 import {
   eventCatLabel,
   eventCatOf,
@@ -54,6 +58,7 @@ if (fee) facts.push({ label: 'Phí (theo tin)', value: fee });
 for (const d of deadlines) facts.push({ label: 'Mốc', value: d });
 if (when) facts.push({ label: 'Cập nhật', value: when });
 
+const expired = item ? isListingExpired(item) : false;
 const mapsQuery = placeKey
   ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${placeKey}, Thái Nguyên`)}`
   : null;
@@ -80,6 +85,7 @@ const mapsQuery = placeKey
                 <span class="photo-caption">Ảnh minh họa</span>
               </div>
 
+              {expired && <ExpiredNotice item={item} />}
               <header class="event-detail-head">
                 <h1>{item.title}</h1>
                 <div class="event-detail-pills">
@@ -174,11 +180,11 @@ const mapsQuery = placeKey
 
             <aside class="event-detail-side">
               <section class="event-reg-card">
-                <h3>Đăng ký tham dự</h3>
-                <p>Đăng ký với ban tổ chức qua link trên tin.</p>
+                <h3>{expired ? 'Tin đã hết hạn' : 'Đăng ký tham dự'}</h3>
+                <p>{expired ? 'Sự kiện / tin này không còn nhận đăng ký trên trang này.' : 'Đăng ký với ban tổ chức qua link trên tin.'}</p>
                 {applyUrl ? (
-                  <a class="btn-green event-reg-go" href={applyUrl} rel="nofollow noopener" target="_blank">
-                    {registerUrl ? 'Đăng ký trên trang gốc' : 'Xem tin gốc'}
+                  <a class={expired ? 'btn-outline event-reg-go' : 'btn-green event-reg-go'} href={applyUrl} rel="nofollow noopener" target="_blank">
+                    Xem tin gốc
                   </a>
                 ) : (
                   <p class="muted">Chưa có link đăng ký trên tin.</p>
@@ -190,6 +196,8 @@ const mapsQuery = placeKey
                   <li>Đăng ký với ban tổ chức</li>
                   <li>Hạn và phí theo trang ban tổ chức</li>
                 </ul>
+                <ReportListing listingId={item.id} kind="event" />
+                <ShareListing />
               </section>
 
               {item.organizationName && (
@@ -224,29 +232,10 @@ const mapsQuery = placeKey
                 </section>
               )}
 
-              <section class="panel">
-                <h3>Chia sẻ tin này</h3>
-                <div class="job-share">
-                  <a class="soc fb" data-share="facebook" href="#" rel="nofollow noopener" target="_blank" title="Facebook">f</a>
-                  <a class="soc zl" data-share="zalo" href="#" rel="nofollow noopener" target="_blank" title="Zalo">Z</a>
-                  <button class="soc" type="button" data-copy title="Sao chép link">⎘</button>
-                </div>
-                <p style="margin:10px 0 0"><a href="/thong-tin/lien-he">Báo cáo tin →</a></p>
-              </section>
             </aside>
           </div>
         </>
       ) : <p class="empty">Tin không còn trên site.</p>}
     </div>
   </div>
-  <script>
-    const pageUrl = location.href;
-    const fb = document.querySelector<HTMLAnchorElement>('[data-share="facebook"]');
-    const zalo = document.querySelector<HTMLAnchorElement>('[data-share="zalo"]');
-    if (fb) fb.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`;
-    if (zalo) zalo.href = `https://zalo.me/share?u=${encodeURIComponent(pageUrl)}`;
-    document.querySelector('[data-copy]')?.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(pageUrl); } catch { /* ignore */ }
-    });
-  </script>
 </Layout>

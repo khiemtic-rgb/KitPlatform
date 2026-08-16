@@ -12,11 +12,16 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
 
     private readonly IDbConnectionFactory _db;
     private readonly ILocalOsIngestService _ingest;
+    private readonly ILocalOsHomepagePush _homepage;
 
-    public LocalOsWatchService(IDbConnectionFactory db, ILocalOsIngestService ingest)
+    public LocalOsWatchService(
+        IDbConnectionFactory db,
+        ILocalOsIngestService ingest,
+        ILocalOsHomepagePush homepage)
     {
         _db = db;
         _ingest = ingest;
+        _homepage = homepage;
     }
 
     public async Task<LocalWatchRunDto> RunAsync(string trigger, CancellationToken cancellationToken = default)
@@ -106,7 +111,8 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
                             link.AbsoluteUri,
                             pageText.Length >= 12 ? pageText : null,
                             source.Category is "job" or "event" ? source.Category : null,
-                            source.Id),
+                            source.Id,
+                            FromWatch: true),
                         cancellationToken);
                     if (result.Existing)
                         existing++;
@@ -137,7 +143,7 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
         }
 
         var note = notes.Count == 0
-            ? "Canh mục lục công khai. Tin mới vào chờ duyệt — không tự lên site, không đụng Facebook."
+            ? "Canh 8h sáng. Tin nguồn tin cậy tự đăng — không đụng Facebook. Form công khai vẫn chờ duyệt."
             : string.Join(" · ", notes.Take(6));
 
         await using (var conn = await _db.CreateOpenConnectionAsync(cancellationToken))
@@ -170,6 +176,9 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
                     cancellationToken: cancellationToken));
         }
 
+        if (created > 0)
+            await _homepage.PushAfterTrustedPublishAsync(created, cancellationToken);
+
         return (await GetRunAsync(runId, cancellationToken))!;
     }
 
@@ -198,6 +207,33 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
             new CommandDefinition(
                 "SELECT MAX(finished_at) FROM pack_local.watch_run WHERE finished_at IS NOT NULL",
                 cancellationToken: cancellationToken));
+    }
+
+    public async Task<DateTimeOffset?> LastScheduledFinishedAtAsync(CancellationToken cancellationToken = default)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<DateTimeOffset?>(
+            new CommandDefinition(
+                """
+                SELECT MAX(finished_at) FROM pack_local.watch_run
+                WHERE finished_at IS NOT NULL AND trigger = 'scheduled'
+                """,
+                cancellationToken: cancellationToken));
+    }
+
+    public async Task<bool> HasInFlightAsync(TimeSpan maxAge, CancellationToken cancellationToken = default)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var started = await conn.QuerySingleOrDefaultAsync<DateTimeOffset?>(
+            new CommandDefinition(
+                """
+                SELECT started_at FROM pack_local.watch_run
+                WHERE finished_at IS NULL
+                ORDER BY started_at DESC
+                LIMIT 1
+                """,
+                cancellationToken: cancellationToken));
+        return started is DateTimeOffset at && DateTimeOffset.UtcNow - at < maxAge;
     }
 
     private async Task<LocalWatchRunDto?> GetRunAsync(Guid id, CancellationToken cancellationToken)

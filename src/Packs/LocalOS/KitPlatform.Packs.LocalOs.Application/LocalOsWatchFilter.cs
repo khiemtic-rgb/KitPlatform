@@ -37,6 +37,8 @@ public static class LocalOsWatchFilter
         "giải chạy", "giai chay",
         "du lịch", "du lich", "vùng chè", "vung che", "ocop", "phố trà",
         "liên hoan", "lien hoan",
+        "học bổng", "hoc bong", "ưu đãi", "uu dai", "khuyến mãi", "khuyen mai",
+        "học phí", "hoc phi", "giảm giá", "giam gia", "voucher", "suất học",
     ];
 
     private static readonly string[] AllowJob =

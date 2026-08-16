@@ -12,13 +12,16 @@ public sealed class PublicLocalOsController : ControllerBase
 {
     private readonly ILocalOsListingService _listings;
     private readonly ILocalOsPublisherService _publishers;
+    private readonly ILocalOsReportService _reports;
 
     public PublicLocalOsController(
         ILocalOsListingService listings,
-        ILocalOsPublisherService publishers)
+        ILocalOsPublisherService publishers,
+        ILocalOsReportService reports)
     {
         _listings = listings;
         _publishers = publishers;
+        _reports = reports;
     }
 
     [HttpGet("listings")]
@@ -36,6 +39,25 @@ public sealed class PublicLocalOsController : ControllerBase
     {
         var row = await _listings.GetAsync(id, publicOnly: true, cancellationToken);
         return row is null ? NotFound() : Ok(row);
+    }
+
+    [HttpPost("listings/{id:guid}/reports")]
+    public async Task<IActionResult> Report(
+        Guid id,
+        [FromBody] SubmitLocalListingReportRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var row = await _reports.SubmitAsync(id, request, cancellationToken);
+            return row is null
+                ? NotFound(new { message = "Tin không còn trên site." })
+                : Ok(new { ok = true });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("publisher/otp")]

@@ -142,6 +142,8 @@ builder.Services.AddLocalOsPack();
 builder.Services.Configure<KitPlatform.Api.LocalOs.LocalOsHomepageFeedOptions>(
     builder.Configuration.GetSection(KitPlatform.Api.LocalOs.LocalOsHomepageFeedOptions.Section));
 builder.Services.AddHttpClient<KitPlatform.Api.LocalOs.LocalOsHomepageFeedPublisher>();
+builder.Services.AddScoped<KitPlatform.Packs.LocalOs.ILocalOsHomepagePush, KitPlatform.Api.LocalOs.LocalOsHomepagePushAdapter>();
+builder.Services.AddHttpClient<KitPlatform.Api.LocalOs.LocalOsReaderReportInbox>();
 
 builder.Services.AddRateLimiter(options =>
 {
