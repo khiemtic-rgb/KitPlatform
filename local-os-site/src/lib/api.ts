@@ -216,12 +216,18 @@ export async function publishJob(body: {
   endAt?: string;
   registrationUrl?: string;
 }): Promise<PublishJobResult> {
-  const res = await fetch(`${API}/listings/jobs`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(await readApiError(res, 'Không gửi được tin.'));
+  const url = typeof window !== 'undefined' ? '/api/publish' : `${API}/listings/jobs`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error('Chưa gửi được. Thử lại sau một lúc.');
+  }
+  if (!res.ok) throw new Error(await readApiError(res, 'Chưa gửi được. Thử lại sau một lúc.'));
   return (await res.json()) as PublishJobResult;
 }
 
