@@ -14,12 +14,10 @@ import {
   orgInitial,
 } from '../lib/api';
 import { featuredGuides, featuredPlaces, guideHref, placeHref } from '../lib/discover';
-import { WEEK_GUIDE, buildWeekDigest, digestCardSummary } from '../lib/week-digest';
 import { jobPay } from '../lib/job-filters';
 
 const homePlaces = featuredPlaces();
 const homeGuides = featuredGuides().slice(0, 3);
-const weekDigest = await buildWeekDigest();
 
 const q = Astro.url.searchParams.get('q') ?? '';
 const [jobs, events, rooms, groups] = await Promise.all([
@@ -172,9 +170,9 @@ const liveCount = jobs.length + events.length + rooms.length;
         ))}
       </div>
       <div class="discover-guides" style="margin:-12px 0 28px">
-        <a class="discover-guide is-live" href={WEEK_GUIDE.href}>
-          <strong>{WEEK_GUIDE.title}</strong>
-          <span>{digestCardSummary(weekDigest)}</span>
+        <a class="discover-guide is-live" href="/kham-pha/cam-nang">
+          <strong>Cẩm nang Thái Nguyên</strong>
+          <span>Cuối tuần đi đâu, đang tuyển gì, phòng nào gần trường.</span>
         </a>
         {homeGuides.map((g) => (
           <a class="discover-guide" href={guideHref(g.slug)}>

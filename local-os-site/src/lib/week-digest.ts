@@ -98,7 +98,7 @@ export async function buildWeekDigest(): Promise<WeekDigest> {
   const roomItems = pick(schoolRooms, allRooms, LIMIT);
 
   const asOf = new Date().toISOString().slice(0, 10);
-  const blurb = `Hôm nay có ${allEvents.length} sự kiện, ${allJobs.length} việc, ${allRooms.length} phòng.`;
+  const blurb = 'Cuối tuần đi đâu, đang tuyển gì, phòng nào gần trường.';
 
   return {
     asOf,

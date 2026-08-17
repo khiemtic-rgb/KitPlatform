@@ -15,7 +15,6 @@ import {
   placeTag,
   placeTagTone,
 } from '../../lib/discover';
-import { WEEK_GUIDE, buildWeekDigest, digestCardSummary } from '../../lib/week-digest';
 
 const hubSlugs = [
   'ho-nui-coc',
@@ -34,7 +33,6 @@ const hubSlugs = [
 ];
 const featured = hubSlugs.map((s) => PLACES.find((p) => p.slug === s)).filter((p): p is NonNullable<typeof p> => !!p);
 const events = (await listListings('event')).slice(0, 4);
-const weekDigest = await buildWeekDigest();
 
 const catIco: Record<string, string> = {
   'dia-diem': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>',
@@ -126,11 +124,11 @@ const catIco: Record<string, string> = {
             <a class="see-all" href="/kham-pha/cam-nang">Xem tất cả →</a>
           </div>
           <div class="disc-guides">
-            <a class="disc-guide is-live" href={WEEK_GUIDE.href}>
+            <a class="disc-guide is-live" href="/kham-pha/cam-nang">
               <div class="disc-guide-body">
-                <h3>{WEEK_GUIDE.title}</h3>
-                <p>{digestCardSummary(weekDigest)}</p>
-                <span class="muted">{WEEK_GUIDE.kicker}</span>
+                <h3>Cẩm nang Thái Nguyên</h3>
+                <p>Cuối tuần đi đâu, đang tuyển gì, phòng nào gần trường.</p>
+                <span class="muted">Cẩm nang</span>
               </div>
             </a>
             {GUIDES.map((g) => (
