@@ -78,6 +78,22 @@ export function isHiddenGroupJob(item: LocalListing): boolean {
   return item.kind === 'job' && (item.sourceKind ?? '').toLowerCase() === 'group_manual';
 }
 
+/** Việc / phòng không có SĐT không lên site công khai — gọi không được thì thành tin rác. Sự kiện giữ. */
+export function hasCallablePhone(item: Pick<LocalListing, 'contactPhone' | 'sourceUrl' | 'summary'>): boolean {
+  const field = (item.contactPhone ?? '').replace(/\D/g, '');
+  if (field.length >= 9 && field.length <= 12) return true;
+  const hash = item.sourceUrl?.match(/[#&]p=(\d{8,12})/i);
+  if (hash?.[1]) return true;
+  const inText = `${item.summary ?? ''}`.match(/(?:\+84|0)[\d\s.]{8,14}/);
+  const d = inText?.[0]?.replace(/\D/g, '') ?? '';
+  return d.length >= 9 && d.length <= 12;
+}
+
+function isReachablePublic(item: LocalListing): boolean {
+  if (item.kind === 'event' || item.kind === 'grant') return true;
+  return hasCallablePhone(item);
+}
+
 export function isListingExpired(item: LocalListing): boolean {
   const now = Date.now();
   if (item.expiresAt) {
@@ -94,7 +110,7 @@ export function isListingExpired(item: LocalListing): boolean {
 export async function listListings(kind?: string, q?: string): Promise<LocalListing[]> {
   const live = await kvFeed();
   if (live?.listings?.length) {
-    return live.listings.filter((item) => kindMatches(item, kind) && matchListing(item, q) && !isListingExpired(item) && !isHiddenGroupJob(item));
+    return live.listings.filter((item) => kindMatches(item, kind) && matchListing(item, q) && !isListingExpired(item) && !isHiddenGroupJob(item) && isReachablePublic(item));
   }
   try {
     const url = new URL(`${API}/listings`);
@@ -102,33 +118,33 @@ export async function listListings(kind?: string, q?: string): Promise<LocalList
     if (q) url.searchParams.set('q', q);
     const res = await fetch(url);
     if (res.ok) {
-      return ((await res.json()) as LocalListing[]).filter((item) => !isListingExpired(item) && !isHiddenGroupJob(item));
+      return ((await res.json()) as LocalListing[]).filter((item) => !isListingExpired(item) && !isHiddenGroupJob(item) && isReachablePublic(item));
     }
   } catch {
     /* Cloudflare cannot reach the local API — use deploy snapshot. */
   }
   const feed = await bundledFeed();
-  return (feed.listings ?? []).filter((item) => kindMatches(item, kind) && matchListing(item, q) && !isListingExpired(item) && !isHiddenGroupJob(item));
+  return (feed.listings ?? []).filter((item) => kindMatches(item, kind) && matchListing(item, q) && !isListingExpired(item) && !isHiddenGroupJob(item) && isReachablePublic(item));
 }
 
 export async function getListing(id: string): Promise<LocalListing | null> {
   const live = await kvFeed();
   if (live?.listings?.length) {
     const found = live.listings.find((item) => item.id === id) ?? null;
-    return found && !isHiddenGroupJob(found) ? found : null;
+    return found && !isHiddenGroupJob(found) && isReachablePublic(found) ? found : null;
   }
   try {
     const res = await fetch(`${API}/listings/${id}`);
     if (res.ok) {
       const item = (await res.json()) as LocalListing;
-      return isHiddenGroupJob(item) ? null : item;
+      return isHiddenGroupJob(item) || !isReachablePublic(item) ? null : item;
     }
   } catch {
     /* use snapshot */
   }
   const feed = await bundledFeed();
   const found = (feed.listings ?? []).find((item) => item.id === id) ?? null;
-  return found && !isHiddenGroupJob(found) ? found : null;
+  return found && !isHiddenGroupJob(found) && isReachablePublic(found) ? found : null;
 }
 
 export type CommunityGroup = {

@@ -1,0 +1,62 @@
+---
+export const prerender = false;
+import Layout from '../../../layouts/Layout.astro';
+import { WEEK_GUIDE, buildWeekDigest } from '../../../lib/week-digest';
+
+const digest = await buildWeekDigest();
+const sections = [digest.events, digest.jobs, digest.rooms];
+---
+<Layout
+  title={`${WEEK_GUIDE.title} — Thái Nguyên Life`}
+  active="discover"
+  description={digest.blurb}
+>
+  <div class="page discover-page">
+    <div class="wrap week-digest">
+      <nav class="job-crumb" aria-label="Đường dẫn">
+        <a href="/">Trang chủ</a>
+        <span>›</span>
+        <a href="/kham-pha">Khám phá</a>
+        <span>›</span>
+        <a href="/kham-pha/cam-nang">Cẩm nang</a>
+        <span>›</span>
+        <span>{WEEK_GUIDE.title}</span>
+      </nav>
+
+      <article class="panel week-digest-main">
+        <p class="muted">{WEEK_GUIDE.kicker} · {digest.asOf}</p>
+        <h1 class="page-title">{WEEK_GUIDE.title}</h1>
+        <p class="event-detail-lead">{digest.blurb}</p>
+        <p class="muted">Gọi thẳng số trên tin. Giá phòng hỏi khi gọi.</p>
+
+        {sections.map((sec) => (
+          <section class="job-block">
+            <h2>{sec.title}</h2>
+            {sec.items.length === 0 ? (
+              <p>{sec.empty} <a href={sec.moreHref}>{sec.moreLabel} →</a></p>
+            ) : (
+              <ul class="week-digest-list">
+                {sec.items.map((row) => (
+                  <li>
+                    <a href={row.href}>
+                      <strong>{row.title}</strong>
+                      {row.meta && <span>{row.meta}</span>}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {sec.items.length > 0 && (
+              <p><a class="see-all" href={sec.moreHref}>{sec.moreLabel} →</a></p>
+            )}
+          </section>
+        ))}
+
+        <section class="job-block">
+          <h2>Đọc thêm</h2>
+          <p><a href="/kham-pha/cam-nang/cuoi-tuan">Cuối tuần đi đâu</a>, <a href="/kham-pha/cam-nang/sinh-vien-moi">Sinh viên mới đến</a>, <a href="/kham-pha/cam-nang/an-gi">Ăn gì ở Thái Nguyên</a>.</p>
+        </section>
+      </article>
+    </div>
+  </div>
+</Layout>

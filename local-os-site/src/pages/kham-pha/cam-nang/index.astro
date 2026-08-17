@@ -1,0 +1,219 @@
+---
+export const prerender = false;
+import Layout from '../../../layouts/Layout.astro';
+import { coverFor, formatEventLine, hrefFor, listListings } from '../../../lib/api';
+import { eventCatLabel, eventCatOf, featuredEvents, isUpcoming } from '../../../lib/event-filters';
+import { guideHref } from '../../../lib/discover';
+import {
+  HANDBOOK_CATS,
+  handbookCatOf,
+  handbookEventDate,
+  handbookEventTone,
+  handbookHits,
+  handbookNewsLead,
+  handbookGuides,
+  handbookJobs,
+  handbookRooms,
+  showHandbookSection,
+} from '../../../lib/handbook';
+
+const cat = handbookCatOf(Astro.url.searchParams.get('cat'));
+const [allEvents, allJobs, allRooms] = await Promise.all([
+  listListings('event'),
+  listListings('job'),
+  listListings('room'),
+]);
+
+const dated = featuredEvents(allEvents, 5);
+const events = dated.length
+  ? dated
+  : allEvents.filter(isUpcoming).slice(0, 5);
+const jobs = handbookJobs(allJobs, cat).slice(0, 6);
+const rooms = handbookRooms(allRooms, cat).slice(0, 6);
+const lifeGuides = handbookGuides(cat, 'life').slice(0, 5);
+
+const showEvent = showHandbookSection(cat, 'event');
+const showJob = showHandbookSection(cat, 'job');
+const showRoom = showHandbookSection(cat, 'room');
+const showLife = showHandbookSection(cat, 'life');
+
+function catHref(id: string): string {
+  return id ? `/kham-pha/cam-nang?cat=${id}` : '/kham-pha/cam-nang';
+}
+---
+<Layout
+  title="Cẩm nang Thái Nguyên — Thái Nguyên Life"
+  active="discover"
+  description="Cuối tuần đi đâu, đang tuyển gì, phòng nào gần trường — gọi thẳng số trên tin."
+>
+  <section class="job-hero">
+    <div class="wrap">
+      <nav class="job-crumb" aria-label="Đường dẫn">
+        <a href="/">Trang chủ</a>
+        <span>›</span>
+        <a href="/kham-pha">Khám phá</a>
+        <span>›</span>
+        <span>Cẩm nang</span>
+      </nav>
+      <h1>Cẩm nang Thái Nguyên</h1>
+      <p>Cuối tuần đi đâu, đang tuyển gì, phòng nào gần trường.</p>
+    </div>
+  </section>
+
+  <div class="page hb-page">
+    <div class="wrap">
+      <nav class="job-chips" aria-label="Lọc cẩm nang">
+        {HANDBOOK_CATS.map((c) => (
+          <a class:list={[{ 'is-on': c.id === cat }]} href={catHref(c.id)}>{c.label}</a>
+        ))}
+      </nav>
+
+      {showEvent && (
+        <section class="hb-block" aria-labelledby="hb-sk">
+          <div class="section-head disc-head">
+            <h2 id="hb-sk">
+              <span class="hb-h-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+              </span>
+              Sự kiện tuần này
+            </h2>
+            <a class="see-all" href="/su-kien">Xem tất cả ›</a>
+          </div>
+          {events.length === 0 ? (
+            <p class="empty">Tuần này chưa có sự kiện. <a href="/su-kien">Xem Sự kiện →</a></p>
+          ) : (
+            <ul class="hb-events">
+              {events.map((item, i) => {
+                const when = handbookEventDate(item.startAt);
+                const cid = eventCatOf(item);
+                return (
+                  <li>
+                    <a class="hb-event" href={hrefFor(item)}>
+                      <span class="hb-date">
+                        <strong>{when.day}</strong>
+                        <em>{when.mon}</em>
+                      </span>
+                      <span class="hb-event-photo" style={`background-image:url('${coverFor('event', i)}')`}></span>
+                      <span class="hb-event-body">
+                        <strong>{item.title}</strong>
+                        <span>{[formatEventLine(item.startAt) || 'Xem ngày trên tin', item.placeText].filter(Boolean).join(' · ')}</span>
+                      </span>
+                      <span class={`hb-tag tone-${handbookEventTone(cid)}`}>{eventCatLabel(cid)}</span>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {showJob && (
+        <section class="hb-block" aria-labelledby="hb-job">
+          <div class="section-head disc-head">
+            <h2 id="hb-job">
+              <span class="hb-h-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </span>
+              Việc làm
+            </h2>
+            <a class="see-all" href="/viec">Xem tất cả ›</a>
+          </div>
+          <div class="hb-cards">
+            {jobs.map((item, i) => {
+              const hit = handbookHits(item);
+              return (
+                <a class="hb-card" href={hrefFor(item)}>
+                  <span class="hb-card-photo" style={`background-image:url('${coverFor('job', i)}')`}></span>
+                  <span class="hb-card-copy">
+                    <strong>{item.title}</strong>
+                    {hit.phone && <span class="hb-phone">{hit.phone}</span>}
+                    {hit.pay && <b class="hb-hit">{hit.pay}</b>}
+                    <span>{handbookNewsLead(item)}</span>
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+          {jobs.length === 0 && (
+            <p class="empty">Chưa có việc trong mục này. <a href="/viec">Xem Việc làm →</a></p>
+          )}
+        </section>
+      )}
+
+      {showRoom && (
+        <section class="hb-block" aria-labelledby="hb-room">
+          <div class="section-head disc-head">
+            <h2 id="hb-room">
+              <span class="hb-h-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
+              </span>
+              Phòng trọ
+            </h2>
+            <a class="see-all" href="/tro">Xem tất cả ›</a>
+          </div>
+          <div class="hb-cards">
+            {rooms.map((item, i) => {
+              const hit = handbookHits(item);
+              return (
+                <a class="hb-card" href={hrefFor(item)}>
+                  <span class="hb-card-photo" style={`background-image:url('${coverFor('room', i)}')`}></span>
+                  <span class="hb-card-copy">
+                    <strong>{item.title}</strong>
+                    {hit.phone && <span class="hb-phone">{hit.phone}</span>}
+                    {hit.pay && <b class="hb-hit">{hit.pay}</b>}
+                    <span>{handbookNewsLead(item)}</span>
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+          {rooms.length === 0 && (
+            <p class="empty">Chưa có phòng trong mục này. <a href="/tro">Xem Phòng trọ →</a></p>
+          )}
+        </section>
+      )}
+
+      {showLife && (
+        <section class="hb-block" aria-labelledby="hb-life">
+          <div class="section-head disc-head">
+            <h2 id="hb-life">
+              <span class="hb-h-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5z"/><path d="M8 7h8M8 11h8"/></svg>
+              </span>
+              Nên biết khi ở Thái Nguyên
+            </h2>
+            <a class="see-all" href="/kham-pha">Xem khám phá ›</a>
+          </div>
+          {lifeGuides.length === 0 ? (
+            <p class="empty">Chưa có gợi ý cho mục này.</p>
+          ) : (
+            <div class="hb-life">
+              {lifeGuides.map((g) => (
+                <a class="hb-life-card" href={guideHref(g.slug)}>
+                  <span class="hb-life-photo" style={`background-image:url('${g.cover}')`}></span>
+                  <strong>{g.title}</strong>
+                  <span>{g.kicker}</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      <section class="hb-cta">
+        <div class="hb-cta-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5z"/>
+            <path d="M8 7h8M8 11h8M8 15h5"/>
+          </svg>
+        </div>
+        <div>
+          <h2>Bạn đang tuyển, cho thuê phòng, hoặc có sự kiện?</h2>
+          <p>Đăng tin miễn phí. Người xem gọi thẳng số trên tin — việc, phòng trọ, sự kiện quanh Thái Nguyên.</p>
+        </div>
+        <a class="btn-green" href="/dang-tin">Đăng tin</a>
+      </section>
+    </div>
+  </div>
+</Layout>

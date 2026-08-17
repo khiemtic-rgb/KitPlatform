@@ -47,15 +47,16 @@ export const HUB_CATS: {
   tone: string;
 }[] = [
   { id: 'dia-diem', label: 'Địa điểm', lead: 'Danh lam, thắng cảnh, điểm tham quan', href: '/kham-pha/dia-diem', tone: 'place' },
-  { id: 'am-thuc', label: 'Ẩm thực', lead: 'Chè, đặc sản — chưa sổ quán', href: '/kham-pha/am-thuc', tone: 'food' },
+  { id: 'am-thuc', label: 'Ẩm thực', lead: 'Chè và đặc sản địa phương', href: '/kham-pha/am-thuc', tone: 'food' },
   { id: 'du-lich', label: 'Du lịch', lead: 'Đi đâu, chơi gì vừa sức cuối tuần', href: '/kham-pha/du-lich', tone: 'travel' },
   { id: 'van-hoa', label: 'Văn hóa', lead: 'Người, dân tộc, Then, trà, địa chỉ đỏ', href: '/kham-pha/van-hoa', tone: 'culture' },
   { id: 'quan-hay', label: 'Quán hay', lead: 'Sắp có — chưa mở sổ quán', soon: true, tone: 'cafe' },
   { id: 'check-in', label: 'Check-in', lead: 'Sắp có — chưa mở điểm sống ảo', soon: true, tone: 'photo' },
-  { id: 'cam-nang', label: 'Cẩm nang', lead: 'Hướng dẫn, mẹo hay, thông tin hữu ích', href: '/kham-pha#cam-nang', tone: 'guide' },
+  { id: 'cam-nang', label: 'Cẩm nang', lead: 'Cuối tuần đi đâu, việc, phòng', href: '/kham-pha/cam-nang', tone: 'guide' },
 ];
 
 export const HUB_FAQS: { q: string; href: string }[] = [
+  { q: 'Tuần này ở Thái Nguyên có gì?', href: '/kham-pha/cam-nang/tuan-nay' },
   { q: 'Cuối tuần ở Thái Nguyên nên đi đâu?', href: '/kham-pha/cam-nang/cuoi-tuan' },
   { q: 'Ăn gì ở Thái Nguyên?', href: '/kham-pha/cam-nang/an-gi' },
   { q: 'Nửa ngày trong phố đi đâu?', href: '/kham-pha/cam-nang/trong-pho' },
@@ -72,7 +73,7 @@ export const HUB_FAQS: { q: string; href: string }[] = [
 
 export const HUB_RELATED: { label: string; lead: string; href: string }[] = [
   { label: 'Sự kiện', lead: 'Lễ hội, thể thao, hội chợ', href: '/su-kien' },
-  { label: 'Việc làm', lead: 'Tin tuyển — không phải tour', href: '/viec' },
+  { label: 'Việc làm', lead: 'Đang tuyển quanh Thái Nguyên', href: '/viec' },
   { label: 'Phòng trọ', lead: 'Giá liên hệ khi gọi', href: '/tro' },
 ];
 
@@ -508,7 +509,7 @@ export const GUIDES: DiscoverGuide[] = [
     slug: 'cuoi-tuan',
     title: 'Cuối tuần ở Thái Nguyên đi đâu?',
     kicker: 'Cẩm nang',
-    summary: 'Trong phố nửa ngày; đồi chè / hồ cả ngày; hang hoặc ATK nếu xuất phát sớm. Không phải lịch trình bán tour.',
+    summary: 'Nửa ngày trong phố, cả ngày đồi chè hoặc hồ — chọn theo sức.',
     pillars: ['du-lich', 'dia-diem'],
     cover: '/banner-ho-nui-coc.png',
     featured: true,
@@ -553,7 +554,7 @@ export const GUIDES: DiscoverGuide[] = [
     slug: 'an-gi',
     title: 'Ăn gì ở Thái Nguyên?',
     kicker: 'Cẩm nang · Ẩm thực',
-    summary: 'Chè có nguồn: Tân Cương và La Bằng. Quán cụ thể chưa mở — không bịa list “top 10”.',
+    summary: 'Chè Tân Cương, chè La Bằng. Quán cụ thể hỏi người quen.',
     pillars: ['am-thuc', 'van-hoa'],
     cover: '/discover/guide-an-gi.jpg',
     featured: true,
@@ -664,7 +665,7 @@ export const GUIDES: DiscoverGuide[] = [
     slug: 'van-hoa-tra',
     title: 'Văn hóa trà ở Thái Nguyên',
     kicker: 'Cẩm nang · Văn hóa',
-    summary: 'Tân Cương, La Bằng, Festival / thưởng trà — chỉ tin còn hạn. Không phải tour bán chè.',
+    summary: 'Tân Cương, La Bằng, Festival trà — lịch cụ thể xem mục Sự kiện.',
     pillars: ['van-hoa', 'am-thuc', 'du-lich'],
     cover: '/discover/doi-che.jpg',
     featured: true,
@@ -731,7 +732,7 @@ export const GUIDES: DiscoverGuide[] = [
     slug: 'sinh-vien-moi',
     title: 'Sinh viên mới đến Thái Nguyên',
     kicker: 'Cẩm nang',
-    summary: 'Hiểu phố trước: bảo tàng, chè, tin việc / phòng đã duyệt. Không phải hướng dẫn nhập học.',
+    summary: 'Mới đến: hiểu phố, tìm việc làm thêm, hỏi phòng gần trường.',
     pillars: ['dia-diem', 'du-lich', 'van-hoa'],
     cover: '/discover/bao-tang.jpg',
     sections: [
@@ -747,7 +748,7 @@ export const GUIDES: DiscoverGuide[] = [
       },
       {
         heading: 'Việc và phòng',
-        body: 'Mục Việc và Phòng trọ chỉ hiện tin đã duyệt còn hạn. Phòng: giá liên hệ, không đặt cọc qua site. Không có phí sinh viên trên Thái Nguyên Life.',
+        body: 'Mục Việc và Phòng trọ chỉ hiện tin đã duyệt còn hạn. Xem số đang hiện trong «Tuần này ở Thái Nguyên có gì?». Phòng: giá liên hệ, không đặt cọc qua site. Không có phí sinh viên trên Thái Nguyên Life.',
       },
       {
         heading: 'Người và văn hóa',
@@ -768,7 +769,7 @@ export const GUIDES: DiscoverGuide[] = [
     slug: 'mua-nao',
     title: 'Mùa nào đi đâu ở Thái Nguyên?',
     kicker: 'Cẩm nang',
-    summary: 'Gợi ý theo loại điểm — không hẹn “tháng đẹp nhất”. Lễ hội chỉ khi tin còn hạn.',
+    summary: 'Gợi ý theo loại điểm. Lễ hội xem mục Sự kiện.',
     pillars: ['du-lich', 'van-hoa'],
     cover: '/discover/suoi-kem.jpg',
     sections: [
@@ -849,7 +850,7 @@ export const GUIDES: DiscoverGuide[] = [
     slug: 'then',
     title: 'Then Tày — Nùng là gì?',
     kicker: 'Cẩm nang · Văn hóa',
-    summary: 'Thực hành Then của người Tày, Nùng, Thái — UNESCO 13/12/2019. Thái Nguyên nằm trong vùng thực hành Đông Bắc. Không phải lịch diễn tuần này.',
+    summary: 'Then của người Tày, Nùng, Thái — UNESCO 2019. Thái Nguyên nằm trong vùng thực hành Đông Bắc.',
     pillars: ['van-hoa'],
     cover: '/discover/guide-ve-nguon.jpg',
     sections: [

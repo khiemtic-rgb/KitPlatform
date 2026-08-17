@@ -191,18 +191,18 @@ internal sealed class LocalOsRewriteService : ILocalOsRewriteService
         - Xóa cảm thán, emoji, in hoa la liệt, "ơi/nhé/nha/ạ/luôn/siêu/hot/gấp!!!/hehe".
         - Không bịa lương, số điện thoại, địa chỉ, giờ, quyền lợi, số lượng. Không có trong bài gốc thì để null / bỏ.
         - Giữ nguyên số liệu đã có (lương, SĐT, giờ, chỗ).
-        - Phòng (room): không ghi giá trong body; salary để null.
+        - Phòng (room): không ghi giá trong body; salary để null. title dạng "Cho thuê phòng khép kín gần …", ≤ 70 ký tự — không chép nguyên bài chat. place CHỈ địa chỉ (đường / phường / mốc), ≤ 60 ký tự. body: tiêu đề, rồi Diện tích / Tiện ích / Địa chỉ / Liên hệ. Không nhét cả bài vào Địa chỉ.
         - Việc (job): body gồm tiêu đề rồi các dòng Thu nhập / Thời gian / Địa điểm / Yêu cầu / Liên hệ nếu có.
-        - Tiêu đề ≤ 120 ký tự, không chấm than.
+        - Tiêu đề ≤ 70 ký tự, không chấm than, không giọng "mình có / em còn".
 
         Trả JSON đúng schema: title, body, place, phone, salary (null nếu không có trong bài gốc).
         """;
 
     private static RewriteLocalListingResult Guard(string kind, string source, AiDraft draft)
     {
-        var title = Clip(OneLine(draft.Title), 120);
+        var title = Clip(OneLine(draft.Title), 80);
         if (string.IsNullOrWhiteSpace(title))
-            title = LocalOsTextExtract.GuessTitle(source);
+            title = LocalOsTextExtract.GuessShortTitle(kind, source);
 
         var body = (draft.Body ?? "").Trim();
         if (body.Length > 2000)
@@ -213,15 +213,77 @@ internal sealed class LocalOsRewriteService : ILocalOsRewriteService
         var sourcePhones = LocalOsTextExtract.PhonesIn(source);
         var outPhones = LocalOsTextExtract.PhonesIn($"{draft.Phone} {body}");
         var phone = outPhones.FirstOrDefault(sourcePhones.Contains) ?? sourcePhones.FirstOrDefault();
-        if (phone is not null && !body.Contains(phone, StringComparison.Ordinal))
-            body = $"{body.TrimEnd()}\nLiên hệ: {phone}";
 
         var salary = kind == "room" ? null : KeepPay(source, draft.Salary);
         var place = OneLine(draft.Place);
-        if (place is { Length: > 80 })
-            place = place[..80].TrimEnd();
+        if (place is { Length: > 72 } || LocalOsTextExtract.LooksLikeChatDump(title, place, body, source))
+            place = LocalOsTextExtract.GuessStreetPlace(source) ?? LocalOsTextExtract.GuessPlace(source);
+
+        if (LocalOsTextExtract.LooksLikeChatDump(title, place, body, source))
+        {
+            title = LocalOsTextExtract.GuessShortTitle(kind, source);
+            body = BuildFallbackBody(kind, title, place, phone, source, salary);
+            return new RewriteLocalListingResult(title, body, place, phone, salary, "ai", null);
+        }
+
+        if (kind == "room")
+            body = StripRoomPrices(body);
+
+        if (phone is not null && !body.Contains(phone, StringComparison.Ordinal))
+            body = $"{body.TrimEnd()}\nLiên hệ: {phone}";
 
         return new RewriteLocalListingResult(title, body, place, phone, salary, "ai", null);
+    }
+
+    private static string StripRoomPrices(string body)
+    {
+        var kept = body.Split('\n')
+            .Where(l => !Regex.IsMatch(l, @"\d+[.,]?\d*\s*(?:triệu|tr)\b", RegexOptions.IgnoreCase)
+                        || Regex.IsMatch(l, @"m2|m²", RegexOptions.IgnoreCase));
+        var next = string.Join('\n', kept).Trim();
+        return next.Length >= 8 ? next : body;
+    }
+
+    private static string BuildFallbackBody(
+        string kind, string title, string? place, string? phone, string source, string? salary)
+    {
+        var lines = new List<string> { title, "" };
+        if (kind == "room")
+        {
+            var area = Regex.Match(source, @"(\d+(?:[.,]\d+)?)\s*m2\b", RegexOptions.IgnoreCase);
+            var closed = Regex.IsMatch(source, @"khép kín|khep kin", RegexOptions.IgnoreCase);
+            if (area.Success)
+                lines.Add($"Diện tích: {area.Groups[1].Value.Replace('.', ',')}m²{(closed ? ", khép kín." : ".")}");
+            else if (closed)
+                lines.Add("Phòng khép kín.");
+
+            var amen = new List<string>();
+            if (Regex.IsMatch(source, @"nóng lạnh|nong lanh", RegexOptions.IgnoreCase))
+                amen.Add("nóng lạnh");
+            if (Regex.IsMatch(source, @"camera", RegexOptions.IgnoreCase))
+                amen.Add("camera an ninh");
+            if (Regex.IsMatch(source, @"để xe|de xe", RegexOptions.IgnoreCase))
+                amen.Add("chỗ để xe máy");
+            if (Regex.IsMatch(source, @"an ninh tốt", RegexOptions.IgnoreCase) && !amen.Contains("camera an ninh"))
+                amen.Add("an ninh tốt");
+            if (Regex.IsMatch(source, @"cùng dãy với chủ|cung day voi chu", RegexOptions.IgnoreCase))
+                amen.Add("ở cùng dãy với chủ nhà");
+            if (amen.Count > 0)
+                lines.Add("Tiện ích: " + string.Join(", ", amen) + ".");
+            if (!string.IsNullOrWhiteSpace(place))
+                lines.Add("Địa chỉ: " + place);
+        }
+        else
+        {
+            if (kind == "job" && !string.IsNullOrWhiteSpace(salary))
+                lines.Add("Thu nhập: " + salary);
+            if (!string.IsNullOrWhiteSpace(place))
+                lines.Add("Địa điểm: " + place);
+        }
+
+        if (!string.IsNullOrWhiteSpace(phone))
+            lines.Add("Liên hệ: " + phone);
+        return string.Join('\n', lines).Trim();
     }
 
     private static string? KeepPay(string source, string? proposed)

@@ -2,7 +2,6 @@
 import Layout from '../layouts/Layout.astro';
 import TrendCard from '../components/TrendCard.astro';
 import {
-  cardHighlight,
   coverFor,
   formatClock,
   formatEventLine,
@@ -15,10 +14,12 @@ import {
   orgInitial,
 } from '../lib/api';
 import { featuredGuides, featuredPlaces, guideHref, placeHref } from '../lib/discover';
+import { WEEK_GUIDE, buildWeekDigest, digestCardSummary } from '../lib/week-digest';
 import { jobPay } from '../lib/job-filters';
 
 const homePlaces = featuredPlaces();
-const homeGuides = featuredGuides();
+const homeGuides = featuredGuides().slice(0, 3);
+const weekDigest = await buildWeekDigest();
 
 const q = Astro.url.searchParams.get('q') ?? '';
 const [jobs, events, rooms, groups] = await Promise.all([
@@ -171,6 +172,10 @@ const liveCount = jobs.length + events.length + rooms.length;
         ))}
       </div>
       <div class="discover-guides" style="margin:-12px 0 28px">
+        <a class="discover-guide is-live" href={WEEK_GUIDE.href}>
+          <strong>{WEEK_GUIDE.title}</strong>
+          <span>{digestCardSummary(weekDigest)}</span>
+        </a>
         {homeGuides.map((g) => (
           <a class="discover-guide" href={guideHref(g.slug)}>
             <strong>{g.title}</strong>
@@ -201,7 +206,7 @@ const liveCount = jobs.length + events.length + rooms.length;
                     {item.placeText}
                   </div>
                 )}
-                {jobPay(item) !== 'Thỏa thuận' && <div class="job-pay">{jobPay(item)}</div>}
+                <div class="job-pay">Lương: {jobPay(item)}</div>
               </div>
             </a>
           ))}
@@ -260,7 +265,7 @@ const liveCount = jobs.length + events.length + rooms.length;
                     {item.placeText}
                   </div>
                 )}
-                <div class="job-pay">{cardHighlight(item)}</div>
+                <div class="job-pay">Giá thuê: liên hệ</div>
               </div>
             </a>
           ))}

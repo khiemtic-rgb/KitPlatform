@@ -40,7 +40,7 @@ const snippet = (item.summary ?? '').replace(/\s+/g, ' ').trim();
     {snippet && <p class="job-row-snip">{snippet}</p>}
   </div>
   <div class="job-row-side">
-    <strong>{jobPay(item)}</strong>
+    <strong>Lương: {jobPay(item)}</strong>
     {when && <span>{when}</span>}
   </div>
 </a>

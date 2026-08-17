@@ -197,6 +197,94 @@ public static class LocalOsTextExtract
         return "Thái Nguyên";
     }
 
+    public static string? GuessStreetPlace(string text)
+    {
+        var bits = new List<string>();
+        string[] patterns =
+        [
+            @"cầu vượt\s+[^,.\n()\-]{2,40}",
+            @"(?:phường|xã|p\.)\s+[^,.\n()]{2,28}",
+            @"(?:tp\.?|thành phố)\s*thái nguyên",
+            @"gần\s+(?:đh|đại học|cao đẳng|trường)[^,.\n()]{0,36}",
+            @"\d{1,4}[a-zA-Z]?\s+(?:đường|phố|ngõ|hẻm)[^,.\n]{2,40}",
+            @"(?:phường\s+)?quyết thắng",
+            @"phan đình phùng",
+        ];
+        foreach (var p in patterns)
+        {
+            var m = Regex.Match(text, p, RegexOptions.IgnoreCase);
+            if (!m.Success)
+                continue;
+            var s = Regex.Replace(m.Value, @"\s+", " ").Trim();
+            if (s.Length is < 4 or > 56)
+                continue;
+            if (bits.Any(b => b.Contains(s, StringComparison.OrdinalIgnoreCase) || s.Contains(b, StringComparison.OrdinalIgnoreCase)))
+                continue;
+            bits.Add(char.ToUpperInvariant(s[0]) + s[1..]);
+        }
+
+        if (bits.Count == 0)
+            return null;
+        var joined = string.Join(", ", bits);
+        return joined.Length <= 80 ? joined : joined[..80].TrimEnd();
+    }
+
+    public static string GuessShortTitle(string kind, string text)
+    {
+        var t = text.ToLowerInvariant();
+        if (kind == "room")
+        {
+            var closed = t.Contains("khép kín") || t.Contains("khep kin");
+            var shared = t.Contains("ở ghép") || t.Contains("o ghep");
+            var near = Regex.Match(text, @"gần\s+([^,.\n()]{3,32})", RegexOptions.IgnoreCase);
+            var title = shared ? "Cho thuê chỗ ở ghép" : closed ? "Cho thuê phòng khép kín" : "Cho thuê phòng";
+            if (near.Success)
+                title += " gần " + Regex.Replace(near.Groups[1].Value, @"\s+", " ").Trim();
+            return title.Length <= 80 ? title : title[..80].TrimEnd();
+        }
+
+        if (kind == "event")
+        {
+            var named = Regex.Match(text, @"(?:sự kiện|workshop|đêm nhạc|ngày hội)\s+([^,.\n]{4,48})", RegexOptions.IgnoreCase);
+            if (named.Success)
+            {
+                var s = Regex.Replace(named.Groups[1].Value, @"\s+", " ").Trim();
+                return s.Length <= 80 ? s : s[..80].TrimEnd();
+            }
+            return "Sự kiện tại Thái Nguyên";
+        }
+
+        var role = Regex.Match(text, @"(?:tuyển|tuyen)\s+([^,.\n]{4,40})", RegexOptions.IgnoreCase);
+        if (role.Success)
+        {
+            var s = "Tuyển " + Regex.Replace(role.Groups[1].Value, @"\s+", " ").Trim();
+            return s.Length <= 80 ? s : s[..80].TrimEnd();
+        }
+
+        return GuessTitle(text);
+    }
+
+    public static bool LooksLikeChatDump(string? title, string? place, string? body, string source)
+    {
+        var t = (title ?? "").Trim();
+        var p = (place ?? "").Trim();
+        var b = (body ?? "").Trim();
+        if (t.Length is 0 or > 72)
+            return true;
+        if (Regex.IsMatch(t, @"^(mình|em|tớ|tôi|mk|m)\s+(có|còn|đang|cần)\b", RegexOptions.IgnoreCase))
+            return true;
+        if (p.Length > 72)
+            return true;
+        if (Regex.IsMatch(p, @"phòng", RegexOptions.IgnoreCase) && Regex.IsMatch(p, @"triệu|cho thuê", RegexOptions.IgnoreCase))
+            return true;
+        var compact = Regex.Replace(source, @"\s+", " ").Trim();
+        var head = t.TrimEnd('…', '.').Length > 40 ? t[..40] : t;
+        if (compact.Length > 60 && head.Length > 24 && compact.StartsWith(head, StringComparison.OrdinalIgnoreCase))
+            return true;
+        var addr = Regex.Match(b, @"địa chỉ:\s*([^\n]+)", RegexOptions.IgnoreCase);
+        return addr.Success && t.Length > 20 && addr.Groups[1].Value.Contains(t[..Math.Min(24, t.Length)], StringComparison.OrdinalIgnoreCase);
+    }
+
     public static string StripHtml(string html)
     {
         var title = Regex.Match(html, @"<title[^>]*>(.*?)</title>", RegexOptions.IgnoreCase | RegexOptions.Singleline);

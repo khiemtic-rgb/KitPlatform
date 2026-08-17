@@ -32,7 +32,7 @@ import {
   type LocalListingReport,
   type LocalSource,
 } from '@/shared/api/local-os.api';
-import { rewriteListingCopy } from './rewriteListingCopy';
+import { looksLikeRawDump, rewriteListingCopy } from './rewriteListingCopy';
 
 const STATUS_COLOR: Record<string, string> = {
   NEEDS_REVIEW: 'gold',
@@ -262,18 +262,21 @@ export function LocalOsListingsPage() {
   };
 
   const applyRewrite = async (raw: string, kindValue: string) => {
+    const local = rewriteListingCopy(raw, kindValue);
     try {
       const ai = await rewriteLocalOsListing({ text: raw, kind: kindValue });
-      return {
+      const drafted = {
         title: ai.title,
         body: ai.body,
         place: ai.place ?? undefined,
         phone: ai.phone ?? undefined,
         salary: kindValue === 'room' ? undefined : ai.salary ?? undefined,
-        via: 'ai' as const,
       };
+      if (looksLikeRawDump(drafted, raw)) {
+        return { ...local, via: 'rules' as const, note: 'dump' };
+      }
+      return { ...drafted, via: 'ai' as const };
     } catch (error) {
-      const local = rewriteListingCopy(raw, kindValue);
       return { ...local, via: 'rules' as const, note: apiErrorMessage(error, '') };
     }
   };
@@ -290,7 +293,8 @@ export function LocalOsListingsPage() {
       const w = await applyRewrite(raw, kindValue);
       form.setFieldsValue({ pastedText: w.body });
       if (w.via === 'ai') message.success('AI đã viết lại. Đọc lại rồi thêm vào danh sách.');
-      else message.warning('Chưa gọi được AI — đã lọc tắt / cảm thán tại máy. Đọc lại trước khi thêm.');
+      else if (w.note === 'dump') message.warning('AI trả bài thô — đã biên tập lại tại máy. Đọc lại trước khi thêm.');
+      else message.warning('Chưa gọi được AI — đã biên tập tại máy. Đọc lại trước khi thêm.');
     } finally {
       setPolishing(false);
     }
@@ -326,7 +330,8 @@ export function LocalOsListingsPage() {
         salaryText: kindValue === 'room' ? undefined : w.salary || editForm.getFieldValue('salaryText'),
       });
       if (w.via === 'ai') message.success('AI đã viết lại nội dung.');
-      else message.warning('Chưa gọi được AI — đã lọc tắt / cảm thán tại máy.');
+      else if (w.note === 'dump') message.warning('AI trả bài thô — đã biên tập lại tại máy.');
+      else message.warning('Chưa gọi được AI — đã biên tập tại máy.');
     } finally {
       setPolishing(false);
     }

@@ -17,7 +17,7 @@ if (!guide) return Astro.redirect('/kham-pha');
         <span>›</span>
         <a href="/kham-pha">Khám phá</a>
         <span>›</span>
-        <span>Cẩm nang</span>
+        <a href="/kham-pha/cam-nang">Cẩm nang</a>
         <span>›</span>
         <span>{guide.title}</span>
       </nav>
@@ -46,6 +46,10 @@ if (!guide) return Astro.redirect('/kham-pha');
             )}
           </section>
         ))}
+        <section class="job-block">
+          <h2>Tuần này</h2>
+          <p><a href="/kham-pha/cam-nang/tuan-nay">Tuần này ở Thái Nguyên có gì?</a> — việc, phòng và sự kiện đang mở.</p>
+        </section>
         <section class="job-block">
           <h2>Nguồn</h2>
           <ul>

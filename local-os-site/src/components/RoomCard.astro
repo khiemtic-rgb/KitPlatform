@@ -39,8 +39,8 @@ const phone = formatPhone(listingPhone(item));
         {place}
       </p>
     )}
-    <p class="room-card-price">Giá liên hệ</p>
-    {phone && <p class="room-card-phone">{phone}</p>}
+    <p class="room-card-price">Giá thuê: liên hệ</p>
+    {phone && <p class="room-card-phone">Số điện thoại: {phone}</p>}
     {specs.length > 0 && (
       <ul class="room-card-specs">
         {specs.map((s) => <li>{s}</li>)}

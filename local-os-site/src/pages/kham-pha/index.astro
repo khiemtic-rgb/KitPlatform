@@ -15,6 +15,7 @@ import {
   placeTag,
   placeTagTone,
 } from '../../lib/discover';
+import { WEEK_GUIDE, buildWeekDigest, digestCardSummary } from '../../lib/week-digest';
 
 const hubSlugs = [
   'ho-nui-coc',
@@ -33,6 +34,7 @@ const hubSlugs = [
 ];
 const featured = hubSlugs.map((s) => PLACES.find((p) => p.slug === s)).filter((p): p is NonNullable<typeof p> => !!p);
 const events = (await listListings('event')).slice(0, 4);
+const weekDigest = await buildWeekDigest();
 
 const catIco: Record<string, string> = {
   'dia-diem': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>',
@@ -44,11 +46,11 @@ const catIco: Record<string, string> = {
   'cam-nang': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5z"/><path d="M8 7h8M8 11h8"/></svg>',
 };
 ---
-<Layout title="Khám phá Thái Nguyên — Thái Nguyên Life" active="discover" description="Địa điểm, người và dân tộc, Then, về nguồn, cẩm nang Thái Nguyên — có nguồn, không phải blog tour.">
+<Layout title="Khám phá Thái Nguyên — Thái Nguyên Life" active="discover" description="Đồi chè, bảo tàng, Then, cuối tuần đi đâu ở Thái Nguyên.">
   <section class="disc-hero">
     <div class="wrap disc-hero-inner">
       <h1>Khám phá Thái Nguyên</h1>
-      <p>Địa điểm, người & dân tộc, Then, trà, về nguồn — có nguồn.</p>
+      <p>Đồi chè, bảo tàng, Then — và cuối tuần đi đâu.</p>
     </div>
   </section>
 
@@ -121,9 +123,16 @@ const catIco: Record<string, string> = {
         <div id="cam-nang">
           <div class="section-head disc-head tight">
             <h2>Cẩm nang Thái Nguyên</h2>
-            <a class="see-all" href="/kham-pha/du-lich">Xem thêm →</a>
+            <a class="see-all" href="/kham-pha/cam-nang">Xem tất cả →</a>
           </div>
           <div class="disc-guides">
+            <a class="disc-guide is-live" href={WEEK_GUIDE.href}>
+              <div class="disc-guide-body">
+                <h3>{WEEK_GUIDE.title}</h3>
+                <p>{digestCardSummary(weekDigest)}</p>
+                <span class="muted">{WEEK_GUIDE.kicker}</span>
+              </div>
+            </a>
             {GUIDES.map((g) => (
               <a class="disc-guide" href={guideHref(g.slug)}>
                 <div class="disc-guide-photo">
@@ -134,7 +143,7 @@ const catIco: Record<string, string> = {
                 <div class="disc-guide-body">
                   <h3>{g.title}</h3>
                   <p>{g.summary}</p>
-                  <span class="muted">{g.sections.length} mục · có nguồn</span>
+                  <span class="muted">{g.kicker}</span>
                 </div>
               </a>
             ))}
@@ -154,7 +163,7 @@ const catIco: Record<string, string> = {
               </li>
             ))}
           </ul>
-          <a class="btn-outline disc-faq-all" href="#cam-nang">Xem tất cả câu hỏi →</a>
+          <a class="btn-outline disc-faq-all" href="/kham-pha/cam-nang">Xem cẩm nang →</a>
         </aside>
       </div>
 
@@ -169,7 +178,7 @@ const catIco: Record<string, string> = {
         </div>
         <div>
           <h2>Bạn có địa điểm yêu thích tại Thái Nguyên?</h2>
-          <p>Chia sẻ chỗ thật qua liên hệ. Chưa nhận sổ quán / check-in — không tự đăng, không bịa review.</p>
+          <p>Có chỗ hay quanh Thái Nguyên? Gửi cho chúng tôi.</p>
         </div>
         <a class="btn-green" href="/thong-tin/lien-he">Chia sẻ ngay →</a>
       </section>
