@@ -233,9 +233,13 @@ public interface ILocalOsSourceService
     Task<LocalSourceDto?> SetStatusAsync(Guid id, string status, CancellationToken cancellationToken = default);
 }
 
+public sealed record LocalWatchStartResult(LocalWatchRunDto Run, bool Began);
+
 public interface ILocalOsWatchService
 {
     Task<LocalWatchRunDto> RunAsync(string trigger, CancellationToken cancellationToken = default);
+    Task<LocalWatchStartResult> StartAsync(string trigger, CancellationToken cancellationToken = default);
+    Task<LocalWatchRunDto> CompleteAsync(Guid runId, string trigger, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LocalWatchRunDto>> ListRunsAsync(int take = 10, CancellationToken cancellationToken = default);
     Task<DateTimeOffset?> LastFinishedAtAsync(CancellationToken cancellationToken = default);
     Task<DateTimeOffset?> LastScheduledFinishedAtAsync(CancellationToken cancellationToken = default);

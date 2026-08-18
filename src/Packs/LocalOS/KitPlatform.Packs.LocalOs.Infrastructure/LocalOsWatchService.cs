@@ -1,5 +1,5 @@
+using System.Collections.Concurrent;
 using System.Net;
-using System.Net.Http.Headers;
 using Dapper;
 using KitPlatform.Infrastructure.Data;
 using KitPlatform.Packs.LocalOs;
@@ -8,8 +8,8 @@ namespace KitPlatform.Packs.LocalOs.Infrastructure;
 
 internal sealed class LocalOsWatchService : ILocalOsWatchService
 {
-    private const int MaxLinksPerSource = 10;
-    private const int MaxCreatesPerSource = 3;
+    private const int MaxLinksPerSource = 8;
+    private const int MaxCreatesPerSource = 2;
 
     private static readonly HttpClient Http = CreateHttp();
 
@@ -29,12 +29,20 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
 
     public async Task<LocalWatchRunDto> RunAsync(string trigger, CancellationToken cancellationToken = default)
     {
+        var start = await StartAsync(trigger, cancellationToken);
+        if (!start.Began)
+            return start.Run;
+        return await CompleteAsync(start.Run.Id, trigger, cancellationToken);
+    }
+
+    public async Task<LocalWatchStartResult> StartAsync(string trigger, CancellationToken cancellationToken = default)
+    {
         await CloseStaleAsync(cancellationToken);
         if (await HasInFlightAsync(TimeSpan.FromMinutes(2), cancellationToken))
         {
             var open = (await ListRunsAsync(1, cancellationToken)).FirstOrDefault();
             if (open is not null)
-                return open;
+                return new LocalWatchStartResult(open, Began: false);
         }
 
         var runId = Guid.CreateVersion7();
@@ -44,21 +52,32 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
             await conn.ExecuteAsync(
                 new CommandDefinition(
                     """
-                    INSERT INTO pack_local.watch_run (id, started_at, trigger)
-                    VALUES (@Id, NOW(), @Trigger)
+                    INSERT INTO pack_local.watch_run (id, started_at, trigger, note)
+                    VALUES (@Id, NOW(), @Trigger, 'Đang canh mục lục…')
                     """,
                     new { Id = runId, Trigger = trig },
                     cancellationToken: cancellationToken));
         }
 
+        var run = await GetRunAsync(runId, cancellationToken)
+            ?? new LocalWatchRunDto(runId, DateTimeOffset.UtcNow, null, trig, 0, 0, 0, 0, 0, 0, "Đang canh mục lục…");
+        return new LocalWatchStartResult(run, Began: true);
+    }
+
+    public async Task<LocalWatchRunDto> CompleteAsync(
+        Guid runId,
+        string trigger,
+        CancellationToken cancellationToken = default)
+    {
+        var trig = trigger.Trim().ToLowerInvariant() == "scheduled" ? "scheduled" : "manual";
         var scanned = 0;
         var linksSeen = 0;
         var created = 0;
         var existing = 0;
         var filtered = 0;
         var errors = 0;
-        var notes = new List<string>();
-        var budget = trig == "scheduled" ? TimeSpan.FromSeconds(90) : TimeSpan.FromSeconds(50);
+        var notes = new ConcurrentBag<string>();
+        var budget = trig == "scheduled" ? TimeSpan.FromSeconds(90) : TimeSpan.FromSeconds(40);
         using var budgetCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         budgetCts.CancelAfter(budget);
         var workCt = budgetCts.Token;
@@ -68,7 +87,7 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
             IReadOnlyList<LocalSourceDto> sources;
             await using (var conn = await _db.CreateOpenConnectionAsync(workCt))
             {
-                var rows = await conn.QueryAsync<LocalSourceDto>(
+                var rows = await conn.QueryAsync<LocalOsSourceRow>(
                     new CommandDefinition(
                         """
                         SELECT id AS Id, source_kind AS SourceKind, name AS Name, url AS Url, status AS Status,
@@ -79,11 +98,35 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
                           AND status = 'active'
                           AND source_kind IN ('official_web', 'partner', 'rss')
                           AND platform <> 'facebook'
-                        ORDER BY name
+                        ORDER BY last_watched_at NULLS FIRST, name
                         """,
                         cancellationToken: workCt));
-                sources = rows.ToList();
+                sources = rows.Select(r => r.ToDto()).ToList();
             }
+
+            if (sources.Count == 0)
+                notes.Add("Chưa có nguồn website đang bật canh.");
+
+            var htmlById = new ConcurrentDictionary<Guid, string>();
+            await Parallel.ForEachAsync(
+                sources,
+                new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = workCt },
+                async (source, ct) =>
+                {
+                    if (!LocalOsSourceLink.TryParse(source.Url, out var indexUri, out var kind) || indexUri is null)
+                        return;
+                    if (kind != LocalOsSourceLinkKind.PublicWeb
+                        || LocalOsSourceLink.IsFacebookHost(LocalOsSourceLink.NormalizeHost(indexUri.Host)))
+                    {
+                        notes.Add($"{source.Name}: bỏ (không canh Facebook).");
+                        return;
+                    }
+
+                    var html = await FetchHtmlAsync(indexUri, ct);
+                    htmlById[source.Id] = html;
+                    if (html.Length < 40)
+                        notes.Add($"{source.Name}: không đọc được mục lục.");
+                });
 
             foreach (var source in sources)
             {
@@ -93,26 +136,21 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
                     break;
                 }
 
-                if (!LocalOsSourceLink.TryParse(source.Url, out var indexUri, out var kind) || indexUri is null)
+                if (!htmlById.TryGetValue(source.Id, out var html))
                     continue;
-                if (kind != LocalOsSourceLinkKind.PublicWeb
-                    || LocalOsSourceLink.IsFacebookHost(LocalOsSourceLink.NormalizeHost(indexUri.Host)))
+
+                scanned++;
+                if (html.Length < 40)
                 {
-                    notes.Add($"{source.Name}: bỏ (không canh Facebook).");
+                    errors++;
                     continue;
                 }
 
-                scanned++;
+                if (!LocalOsSourceLink.TryParse(source.Url, out var indexUri, out _) || indexUri is null)
+                    continue;
+
                 try
                 {
-                    var html = await FetchHtmlAsync(indexUri, workCt);
-                    if (html.Length < 40)
-                    {
-                        errors++;
-                        notes.Add($"{source.Name}: không đọc được mục lục.");
-                        continue;
-                    }
-
                     var links = LocalOsIndexLinks.ExtractHits(html, indexUri, MaxLinksPerSource);
                     linksSeen += links.Count;
                     if (links.Count == 0)
@@ -121,13 +159,14 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
                         continue;
                     }
 
+                    var filterCat = source.Category == "job" ? "job" : null;
                     var made = 0;
                     foreach (var hit in links)
                     {
                         if (made >= MaxCreatesPerSource || workCt.IsCancellationRequested)
                             break;
 
-                        var preview = LocalOsWatchFilter.Decide(hit.Title, hit.Uri.AbsoluteUri, source.Category);
+                        var preview = LocalOsWatchFilter.Decide(hit.Title, hit.Uri.AbsoluteUri, filterCat);
                         if (preview != LocalOsWatchDecision.Allow)
                         {
                             filtered++;
@@ -146,7 +185,7 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
                             var title = pageText.Length > 0
                                 ? LocalOsTextExtract.GuessTitle(pageText)
                                 : (hit.Title.Length > 0 ? hit.Title : hit.Uri.AbsolutePath);
-                            var decision = LocalOsWatchFilter.Decide(title, hit.Uri.AbsoluteUri, source.Category);
+                            var decision = LocalOsWatchFilter.Decide(title, hit.Uri.AbsoluteUri, filterCat);
                             if (decision != LocalOsWatchDecision.Allow)
                             {
                                 filtered++;
@@ -208,11 +247,12 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
             notes.Add(TrimNote(ex.Message));
         }
 
-        var note = notes.Count == 0
+        var noteList = notes.Distinct().Take(8).ToList();
+        var note = noteList.Count == 0
             ? (created > 0
                 ? $"Canh xong: +{created} tin."
                 : "Canh xong — chưa thấy tin việc/sự kiện mới trên mục lục.")
-            : string.Join(" · ", notes.Distinct().Take(8));
+            : string.Join(" · ", noteList);
 
         await using (var conn = await _db.CreateOpenConnectionAsync(CancellationToken.None))
         {
@@ -255,7 +295,7 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
         CancellationToken cancellationToken = default)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        var rows = await conn.QueryAsync<LocalWatchRunDto>(
+        var rows = await conn.QueryAsync<LocalOsWatchRunRow>(
             new CommandDefinition(
                 $"""
                 SELECT {RunColumns}
@@ -265,35 +305,20 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
                 """,
                 new { Take = Math.Clamp(take, 1, 30) },
                 cancellationToken: cancellationToken));
-        return rows.ToList();
+        return rows.Select(r => r.ToDto()).ToList();
     }
 
-    public async Task<DateTimeOffset?> LastFinishedAtAsync(CancellationToken cancellationToken = default)
-    {
-        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return await conn.QuerySingleOrDefaultAsync<DateTimeOffset?>(
-            new CommandDefinition(
-                "SELECT MAX(finished_at) FROM pack_local.watch_run WHERE finished_at IS NOT NULL",
-                cancellationToken: cancellationToken));
-    }
+    public Task<DateTimeOffset?> LastFinishedAtAsync(CancellationToken cancellationToken = default) =>
+        QueryMaxFinishedAtAsync(scheduledOnly: false, cancellationToken);
 
-    public async Task<DateTimeOffset?> LastScheduledFinishedAtAsync(CancellationToken cancellationToken = default)
-    {
-        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return await conn.QuerySingleOrDefaultAsync<DateTimeOffset?>(
-            new CommandDefinition(
-                """
-                SELECT MAX(finished_at) FROM pack_local.watch_run
-                WHERE finished_at IS NOT NULL AND trigger = 'scheduled'
-                """,
-                cancellationToken: cancellationToken));
-    }
+    public Task<DateTimeOffset?> LastScheduledFinishedAtAsync(CancellationToken cancellationToken = default) =>
+        QueryMaxFinishedAtAsync(scheduledOnly: true, cancellationToken);
 
     public async Task<bool> HasInFlightAsync(TimeSpan maxAge, CancellationToken cancellationToken = default)
     {
         await CloseStaleAsync(cancellationToken);
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        var started = await conn.QuerySingleOrDefaultAsync<DateTimeOffset?>(
+        var value = await conn.ExecuteScalarAsync(
             new CommandDefinition(
                 """
                 SELECT started_at FROM pack_local.watch_run
@@ -302,7 +327,18 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
                 LIMIT 1
                 """,
                 cancellationToken: cancellationToken));
-        return started is DateTimeOffset at && DateTimeOffset.UtcNow - at < maxAge;
+        return ToOffset(value) is DateTimeOffset at && DateTimeOffset.UtcNow - at < maxAge;
+    }
+
+    private async Task<DateTimeOffset?> QueryMaxFinishedAtAsync(bool scheduledOnly, CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var sql = scheduledOnly
+            ? "SELECT MAX(finished_at) FROM pack_local.watch_run WHERE finished_at IS NOT NULL AND trigger = 'scheduled'"
+            : "SELECT MAX(finished_at) FROM pack_local.watch_run WHERE finished_at IS NOT NULL";
+        var value = await conn.ExecuteScalarAsync(
+            new CommandDefinition(sql, cancellationToken: cancellationToken));
+        return ToOffset(value);
     }
 
     private async Task CloseStaleAsync(CancellationToken cancellationToken)
@@ -327,7 +363,7 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
     private async Task<LocalWatchRunDto?> GetRunAsync(Guid id, CancellationToken cancellationToken)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return await conn.QuerySingleOrDefaultAsync<LocalWatchRunDto>(
+        var row = await conn.QuerySingleOrDefaultAsync<LocalOsWatchRunRow>(
             new CommandDefinition(
                 $"""
                 SELECT {RunColumns}
@@ -336,6 +372,7 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
                 """,
                 new { Id = id },
                 cancellationToken: cancellationToken));
+        return row?.ToDto();
     }
 
     private async Task<bool> UrlExistsAsync(Uri uri, CancellationToken cancellationToken)
@@ -385,15 +422,29 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
         var handler = new SocketsHttpHandler
         {
             AutomaticDecompression = DecompressionMethods.All,
-            ConnectTimeout = TimeSpan.FromSeconds(5),
+            ConnectTimeout = TimeSpan.FromSeconds(3),
             PooledConnectionLifetime = TimeSpan.FromMinutes(2),
         };
-        var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(6) };
+        var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(4) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
         client.DefaultRequestHeaders.Accept.ParseAdd("text/html,application/xhtml+xml");
         return client;
     }
+
+    private static DateTimeOffset? ToOffset(object? value)
+    {
+        if (value is null or DBNull)
+            return null;
+        if (value is DateTimeOffset dto)
+            return dto;
+        if (value is DateTime dt)
+            return new DateTimeOffset(ToUtc(dt), TimeSpan.Zero);
+        return null;
+    }
+
+    private static DateTime ToUtc(DateTime dt) =>
+        dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
 
     private static string TrimNote(string s) =>
         s.Length <= 160 ? s : s[..160].TrimEnd() + "…";

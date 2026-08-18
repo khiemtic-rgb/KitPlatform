@@ -28,6 +28,7 @@ public static class LocalOsWatchFilter
 
     private static readonly string[] AllowEvent =
     [
+        "sự kiện", "su kien", "su-kien", "sukien",
         "lễ hội", "le hoi", "ngày hội", "ngay hoi", "festival", "workshop",
         "hội thảo", "hoi thao", "hội nghị khoa học", "khai mạc", "khai mac",
         "đêm nhạc", "triển lãm", "trien lam", "hội chợ", "hoi cho",

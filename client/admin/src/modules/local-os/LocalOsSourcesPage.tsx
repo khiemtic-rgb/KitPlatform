@@ -34,11 +34,18 @@ export function LocalOsSourcesPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [src, watchRuns] = await Promise.all([fetchLocalOsSources(), fetchLocalOsWatchRuns()]);
-      setItems(src);
-      setRuns(watchRuns);
-    } catch (error) {
-      message.error(apiErrorMessage(error, 'Không tải được sổ nguồn.'));
+      const srcP = fetchLocalOsSources().then(
+        (rows) => ({ rows, error: null as unknown }),
+        (error: unknown) => ({ rows: null as LocalSource[] | null, error }),
+      );
+      const runP = fetchLocalOsWatchRuns().then(
+        (rows) => ({ rows, error: null as unknown }),
+        (error: unknown) => ({ rows: null as LocalWatchRun[] | null, error }),
+      );
+      const [src, watchRuns] = await Promise.all([srcP, runP]);
+      if (src.rows) setItems(src.rows);
+      else message.error(apiErrorMessage(src.error, 'Không tải được sổ nguồn.'));
+      if (watchRuns.rows) setRuns(watchRuns.rows);
     } finally {
       setLoading(false);
     }
@@ -156,19 +163,39 @@ export function LocalOsSourcesPage() {
           loading={watching}
           onClick={() => {
             setWatching(true);
-            void runLocalOsWatch()
-              .then((r) => {
-                if (!r.finishedAt) {
-                  message.warning(r.note || 'Đang canh — đợi lần này xong rồi bấm lại.');
-                } else if (r.createdCount > 0) {
-                  message.success(`Canh xong: +${r.createdCount} tin mới.`);
+            void (async () => {
+              try {
+                const started = await runLocalOsWatch();
+                const show = (r: LocalWatchRun) => {
+                  if (!r.finishedAt) {
+                    message.info(r.note || 'Đang canh mục lục…');
+                  } else if (r.createdCount > 0) {
+                    message.success(`Canh xong: +${r.createdCount} tin mới.`);
+                  } else {
+                    message.info(r.note || 'Canh xong — chưa thấy tin mới trên mục lục.');
+                  }
+                };
+                if (!started.finishedAt) {
+                  message.info('Đang canh mục lục — không cần đợi trên nút này.');
+                  let latest = started;
+                  for (let i = 0; i < 25; i++) {
+                    await new Promise((resolve) => setTimeout(resolve, 2000));
+                    const runs = await fetchLocalOsWatchRuns();
+                    const cur = runs.find((x) => x.id === started.id) ?? runs[0];
+                    if (cur) latest = cur;
+                    if (cur?.finishedAt) break;
+                  }
+                  show(latest);
                 } else {
-                  message.info(r.note || 'Canh xong — chưa thấy tin mới trên mục lục.');
+                  show(started);
                 }
-                return load();
-              })
-              .catch((error) => message.error(apiErrorMessage(error, 'Không canh được nguồn. Thử lại sau một lúc.')))
-              .finally(() => setWatching(false));
+                await load();
+              } catch (error) {
+                message.error(apiErrorMessage(error, 'Không canh được nguồn. Thử lại sau một lúc.'));
+              } finally {
+                setWatching(false);
+              }
+            })();
           }}
         >
           Canh nguồn ngay

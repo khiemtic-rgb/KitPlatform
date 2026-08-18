@@ -21,7 +21,7 @@ public static class LocalOsIndexLinks
     private static readonly string[] Prefer =
     [
         "tuyen-dung", "tuyendung", "viec-lam", "vieclam", "thuc-tap", "intern",
-        "su-kien", "sukien", "le-hoi", "festival", "hoc-bong", "thong-bao",
+        "su-kien", "sukien", "su kien", "sự kiện", "le-hoi", "festival", "hoc-bong", "thong-bao",
         "ke-hoach", "chuong-trinh", "tuyen", "2026",
     ];
 

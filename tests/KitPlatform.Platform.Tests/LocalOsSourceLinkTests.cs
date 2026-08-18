@@ -1,4 +1,5 @@
 using KitPlatform.Packs.LocalOs;
+using Xunit;
 
 namespace KitPlatform.Platform.Tests;
 

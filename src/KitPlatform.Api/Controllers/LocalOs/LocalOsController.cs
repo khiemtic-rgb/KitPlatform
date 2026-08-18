@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using KitPlatform.Api.Authorization;
 using KitPlatform.Api.LocalOs;
 using KitPlatform.Application.Core;
@@ -22,6 +23,8 @@ public sealed class LocalOsController : ControllerBase
     private readonly ILocalOsReportService _reports;
     private readonly LocalOsHomepageFeedPublisher _homepage;
     private readonly LocalOsReaderReportInbox _inbox;
+    private readonly IServiceScopeFactory _scopes;
+    private readonly ILogger<LocalOsController> _log;
 
     public LocalOsController(
         ILocalOsListingService listings,
@@ -31,7 +34,9 @@ public sealed class LocalOsController : ControllerBase
         ILocalOsRewriteService rewrite,
         ILocalOsReportService reports,
         LocalOsHomepageFeedPublisher homepage,
-        LocalOsReaderReportInbox inbox)
+        LocalOsReaderReportInbox inbox,
+        IServiceScopeFactory scopes,
+        ILogger<LocalOsController> log)
     {
         _listings = listings;
         _ingest = ingest;
@@ -41,6 +46,8 @@ public sealed class LocalOsController : ControllerBase
         _reports = reports;
         _homepage = homepage;
         _inbox = inbox;
+        _scopes = scopes;
+        _log = log;
     }
 
     [HttpGet("listings")]
@@ -179,9 +186,26 @@ public sealed class LocalOsController : ControllerBase
     {
         try
         {
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(TimeSpan.FromSeconds(55));
-            return Ok(await _watch.RunAsync("manual", timeout.Token));
+            var start = await _watch.StartAsync("manual", cancellationToken);
+            if (start.Began)
+            {
+                var runId = start.Run.Id;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await using var scope = _scopes.CreateAsyncScope();
+                        var watch = scope.ServiceProvider.GetRequiredService<ILocalOsWatchService>();
+                        await watch.CompleteAsync(runId, "manual", CancellationToken.None);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.LogWarning(ex, "Local OS watch manual failed.");
+                    }
+                });
+            }
+
+            return Ok(start.Run);
         }
         catch (InvalidOperationException ex)
         {

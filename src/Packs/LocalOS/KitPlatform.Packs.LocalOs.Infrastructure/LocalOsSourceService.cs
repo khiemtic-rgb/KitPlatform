@@ -22,7 +22,7 @@ internal sealed class LocalOsSourceService : ILocalOsSourceService
     public async Task<IReadOnlyList<LocalSourceDto>> ListAsync(CancellationToken cancellationToken = default)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        var rows = await conn.QueryAsync<LocalSourceDto>(
+        var rows = await conn.QueryAsync<LocalOsSourceRow>(
             new CommandDefinition(
                 $"""
                 SELECT {SelectColumns}
@@ -30,7 +30,7 @@ internal sealed class LocalOsSourceService : ILocalOsSourceService
                 ORDER BY source_kind, name
                 """,
                 cancellationToken: cancellationToken));
-        return rows.ToList();
+        return rows.Select(r => r.ToDto()).ToList();
     }
 
     public async Task<LocalSourceDto> CreateAsync(
@@ -116,7 +116,7 @@ internal sealed class LocalOsSourceService : ILocalOsSourceService
     private async Task<LocalSourceDto?> GetAsync(Guid id, CancellationToken cancellationToken)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return await conn.QuerySingleOrDefaultAsync<LocalSourceDto>(
+        var row = await conn.QuerySingleOrDefaultAsync<LocalOsSourceRow>(
             new CommandDefinition(
                 $"""
                 SELECT {SelectColumns}
@@ -125,6 +125,7 @@ internal sealed class LocalOsSourceService : ILocalOsSourceService
                 """,
                 new { Id = id },
                 cancellationToken: cancellationToken));
+        return row?.ToDto();
     }
 
     private static object Bind(Guid id, UpsertLocalSourceRequest r)

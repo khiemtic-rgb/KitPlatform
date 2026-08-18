@@ -6,6 +6,14 @@ namespace KitPlatform.Platform.Tests;
 public class LocalOsWatchFilterTests
 {
     [Fact]
+    public void Allows_su_kien_title_on_event_source()
+    {
+        Assert.Equal(
+            LocalOsWatchDecision.Allow,
+            LocalOsWatchFilter.Decide("Sự kiện chào tân sinh viên 2026", "/su-kien/x", "event"));
+    }
+
+    [Fact]
     public void Allows_festival_on_event_source()
     {
         Assert.Equal(
