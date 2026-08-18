@@ -65,6 +65,6 @@ Nhằm giúp các chủ nhà thuốc độc lập tự soi lại "sức khỏe" 
 - **Không cần cài đặt:** Thực hiện hoàn toàn online.
 - **Báo cáo chuyên sâu:** Nhận ngay bức tranh phân tích về khoảng trống vận hành và gợi ý ưu tiên xử lý mà không bắt buộc phải mua phần mềm.
 
-👉 **Khám phá và tự kiểm tra sức khỏe nhà thuốc của bạn tại:** [https://novixa.vn/](https://novixa.vn/)
+👉 **Khám phá và tự kiểm tra sức khỏe nhà thuốc của bạn tại:** [https://novixa.vn/vi/health-check/](https://novixa.vn/vi/health-check/)
 
-[Tìm hiểu thêm](https://novixa.vn/)
+[Tìm hiểu thêm](https://novixa.vn/vi/health-check/)

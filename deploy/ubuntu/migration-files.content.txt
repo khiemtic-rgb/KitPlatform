@@ -11,3 +11,10 @@
 287_pack_content_package.sql
 288_pack_content_video_factory.sql
 290_pack_content_video_mvp_v1.sql
+291_pack_content_work_queue.sql
+292_pack_content_brand_adapt.sql
+293_pack_content_brand_brain.sql
+294_pack_content_gemini_36.sql
+295_pack_content_video_config.sql
+296_pack_content_facebook_oauth.sql
+297_pack_content_facebook_oauth_pending.sql

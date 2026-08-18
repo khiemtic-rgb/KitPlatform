@@ -85,6 +85,6 @@ Kiểm soát hàng hết hạn mới chỉ là một phần trong bức tranh v�
 * Nhận ngay báo cáo phân tích chuyên sâu về các rủi ro vận hành ẩn giấu.
 * Tự nhìn rõ khoảng trống trong quản lý trước khi đưa ra bất kỳ quyết định đầu tư nào.
 
-👉 **[Tự đánh giá sức khỏe nhà thuốc của bạn tại đây (Miễn phí)](https://novixa.vn/)**
+👉 **[Tự đánh giá sức khỏe nhà thuốc của bạn tại đây (Miễn phí)](https://novixa.vn/vi/health-check/)**
 
-[Tìm hiểu thêm](https://novixa.vn/)
+[Tìm hiểu thêm](https://novixa.vn/vi/health-check/)

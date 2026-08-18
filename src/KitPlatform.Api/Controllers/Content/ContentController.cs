@@ -18,26 +18,65 @@ public sealed class ContentController : ControllerBase
     private readonly IContentBrandService _brands;
     private readonly IContentTopicService _topics;
     private readonly IContentPackageService _packages;
-    private readonly IContentGenerateService _generate;
     private readonly IContentPublishService _publish;
     private readonly IContentVideoService _videos;
+    private readonly IContentOpsService _ops;
+    private readonly IContentWorkQueueService _work;
+    private readonly IContentFacebookConnectionService _facebook;
 
     public ContentController(
         IContentOrgSettingsService settings,
         IContentBrandService brands,
         IContentTopicService topics,
         IContentPackageService packages,
-        IContentGenerateService generate,
         IContentPublishService publish,
-        IContentVideoService videos)
+        IContentVideoService videos,
+        IContentOpsService ops,
+        IContentWorkQueueService work,
+        IContentFacebookConnectionService facebook)
     {
         _settings = settings;
         _brands = brands;
         _topics = topics;
         _packages = packages;
-        _generate = generate;
         _publish = publish;
         _videos = videos;
+        _ops = ops;
+        _work = work;
+        _facebook = facebook;
+    }
+
+    [HttpGet("ops")]
+    public async Task<ActionResult<ContentOpsSnapshotDto>> GetOps(CancellationToken cancellationToken) =>
+        Ok(await _ops.GetSnapshotAsync(cancellationToken));
+
+    [HttpGet("calendar")]
+    public async Task<ActionResult<IReadOnlyList<ContentCalendarItemDto>>> GetCalendar(
+        [FromQuery] DateTimeOffset from,
+        [FromQuery] DateTimeOffset to,
+        [FromQuery] Guid? brandId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _ops.ListCalendarAsync(from, to, brandId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("work")]
+    public async Task<ActionResult<IReadOnlyList<ContentWorkJobDto>>> ListActiveWork(
+        CancellationToken cancellationToken) =>
+        Ok(await _work.ListActiveAsync(cancellationToken));
+
+    [HttpGet("work/{id:guid}")]
+    public async Task<ActionResult<ContentWorkJobDto>> GetWork(Guid id, CancellationToken cancellationToken)
+    {
+        var row = await _work.GetAsync(id, cancellationToken);
+        return row is null ? NotFound() : Ok(row);
     }
 
     [HttpGet("settings")]
@@ -57,6 +96,98 @@ public sealed class ContentController : ControllerBase
     [HttpPost("ai/test")]
     public async Task<ActionResult<ContentAiTestResultDto>> TestAi(CancellationToken cancellationToken) =>
         Ok(await _settings.TestAiAsync(cancellationToken));
+
+    [HttpPost("video/test")]
+    public async Task<ActionResult<ContentVideoTestResultDto>> TestVideo(CancellationToken cancellationToken) =>
+        Ok(await _settings.TestVideoAsync(cancellationToken));
+
+    [HttpPost("facebook/test")]
+    public async Task<ActionResult<ContentFacebookTestResultDto>> TestFacebook(CancellationToken cancellationToken) =>
+        Ok(await _settings.TestFacebookAsync(cancellationToken));
+
+    [HttpGet("facebook/oauth/start")]
+    public async Task<ActionResult<ContentFacebookStartDto>> StartFacebook(
+        [FromQuery] Guid brandId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _facebook.StartAsync(brandId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("facebook/oauth/complete")]
+    public async Task<ActionResult<ContentFacebookPendingDto>> CompleteFacebook(
+        [FromBody] ContentFacebookCompleteRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _facebook.CompleteAsync(request.Code, request.State, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("facebook/oauth/pending/{sessionId}")]
+    public async Task<ActionResult<ContentFacebookPendingDto>> GetFacebookPending(
+        string sessionId,
+        CancellationToken cancellationToken)
+    {
+        var row = await _facebook.GetPendingAsync(sessionId, cancellationToken);
+        return row is null ? NotFound(new { message = "Phiên Facebook hết hạn — Kết nối lại." }) : Ok(row);
+    }
+
+    [HttpPost("facebook/oauth/select")]
+    public async Task<ActionResult<ContentChannelTargetDto>> SelectFacebookPage(
+        [FromBody] ContentFacebookSelectRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _facebook.SelectPageAsync(request.SessionId, request.PageId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("channels/{id:guid}/facebook/verify")]
+    public async Task<ActionResult<ContentFacebookVerifyDto>> VerifyFacebook(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _facebook.VerifyAsync(id, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("channels/{id:guid}/facebook/disconnect")]
+    public async Task<ActionResult<ContentChannelTargetDto>> DisconnectFacebook(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _facebook.DisconnectAsync(id, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 
     [HttpGet("brands")]
     public async Task<ActionResult<IReadOnlyList<ContentBrandDto>>> ListBrands(
@@ -100,6 +231,12 @@ public sealed class ContentController : ControllerBase
         CancellationToken cancellationToken) =>
         Ok(await _brands.UpsertSiteAsync(brandId, request, cancellationToken));
 
+    [HttpGet("write-plans")]
+    public async Task<ActionResult<IReadOnlyList<ContentWritePlanDto>>> ListWritePlans(
+        [FromQuery] Guid? brandId,
+        CancellationToken cancellationToken) =>
+        Ok(await _brands.ListWritePlansAsync(brandId, cancellationToken));
+
     [HttpGet("brands/{brandId:guid}/channels")]
     public async Task<ActionResult<IReadOnlyList<ContentChannelTargetDto>>> ListChannels(
         Guid brandId,
@@ -117,8 +254,9 @@ public sealed class ContentController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<ContentPackageDto>>> ListPackages(
         [FromQuery] Guid? brandId,
         [FromQuery] string? status,
+        [FromQuery] bool? coresOnly,
         CancellationToken cancellationToken) =>
-        Ok(await _packages.ListAsync(brandId, status, cancellationToken));
+        Ok(await _packages.ListAsync(brandId, status, coresOnly ?? false, cancellationToken));
 
     [HttpGet("packages/{id:guid}")]
     public async Task<ActionResult<ContentPackageDto>> GetPackage(Guid id, CancellationToken cancellationToken)
@@ -167,14 +305,32 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpPost("packages/{id:guid}/generate")]
-    public async Task<ActionResult<GenerateContentResultDto>> GeneratePackage(
+    public async Task<ActionResult<EnqueueWorkResultDto>> GeneratePackage(
         Guid id,
         [FromBody] GenerateContentRequest? request,
         CancellationToken cancellationToken)
     {
         try
         {
-            return Ok(await _packages.GenerateAllAsync(id, request ?? new GenerateContentRequest(), cancellationToken));
+            return Ok(await _work.EnqueueGeneratePackageAsync(
+                id, request ?? new GenerateContentRequest(), cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("packages/{id:guid}/adapt-multi")]
+    public async Task<ActionResult<EnqueueWorkResultDto>> AdaptMulti(
+        Guid id,
+        [FromBody] AnalyzeAdaptRequest? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _work.EnqueueBrandAdaptAsync(
+                id, request ?? new AnalyzeAdaptRequest(), cancellationToken));
         }
         catch (InvalidOperationException ex)
         {
@@ -191,6 +347,20 @@ public sealed class ContentController : ControllerBase
         try
         {
             return Ok(await _packages.AdaptAsync(id, request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("packages/{id:guid}/export")]
+    public async Task<IActionResult> ExportPackage(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var (bytes, fileName) = await _packages.ExportManualPackAsync(id, cancellationToken);
+            return File(bytes, "application/zip", fileName);
         }
         catch (InvalidOperationException ex)
         {
@@ -217,6 +387,51 @@ public sealed class ContentController : ControllerBase
         [FromBody] BatchApprovePackagesRequest request,
         CancellationToken cancellationToken) =>
         Ok(await _packages.ApproveBatchAsync(request, cancellationToken));
+
+    [HttpPost("packages/pool")]
+    public async Task<ActionResult<CreatePoolIdeasResultDto>> CreatePool(
+        [FromBody] CreatePoolIdeasRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _packages.CreatePoolAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("packages/pool/analyze")]
+    public async Task<ActionResult<AnalyzePoolResultDto>> AnalyzePool(
+        [FromBody] AnalyzePoolRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _work.EnqueueBrandAdaptBatchAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("packages/pool/apply")]
+    public async Task<ActionResult<ApplyPoolFitsResultDto>> ApplyPool(
+        [FromBody] ApplyPoolFitsRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _packages.ApplyPoolFitsAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 
     [HttpGet("video/templates")]
     public async Task<ActionResult<IReadOnlyList<ContentVideoTemplateDto>>> ListVideoTemplates(
@@ -280,15 +495,15 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpPost("video/jobs/{id:guid}/mvp-pipeline")]
-    public async Task<ActionResult<ContentVideoJobDto>> RunVideoMvpPipeline(
+    public async Task<ActionResult<EnqueueWorkResultDto>> RunVideoMvpPipeline(
         Guid id,
         [FromBody] RunVideoMvpPipelineRequest? request,
         CancellationToken cancellationToken)
     {
         try
         {
-            var row = await _videos.RunMvpPipelineAsync(id, request, cancellationToken);
-            return row is null ? NotFound() : Ok(row);
+            return Ok(await _work.EnqueueVideoMvpAsync(
+                id, request ?? new RunVideoMvpPipelineRequest(), cancellationToken));
         }
         catch (InvalidOperationException ex)
         {
@@ -297,14 +512,13 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpPost("video/jobs/{id:guid}/render")]
-    public async Task<ActionResult<ContentVideoJobDto>> QueueVideoRender(
+    public async Task<ActionResult<EnqueueWorkResultDto>> QueueVideoRender(
         Guid id,
         CancellationToken cancellationToken)
     {
         try
         {
-            var row = await _videos.QueueRenderAsync(id, cancellationToken);
-            return row is null ? NotFound() : Ok(row);
+            return Ok(await _work.EnqueueVideoRenderAsync(id, cancellationToken));
         }
         catch (InvalidOperationException ex)
         {
@@ -411,14 +625,15 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpPost("topics/{id:guid}/generate")]
-    public async Task<ActionResult<GenerateContentResultDto>> Generate(
+    public async Task<ActionResult<EnqueueWorkResultDto>> Generate(
         Guid id,
         [FromBody] GenerateContentRequest? request,
         CancellationToken cancellationToken)
     {
         try
         {
-            return Ok(await _generate.GenerateAsync(id, request ?? new GenerateContentRequest(), cancellationToken));
+            return Ok(await _work.EnqueueGenerateTopicAsync(
+                id, request ?? new GenerateContentRequest(), cancellationToken));
         }
         catch (InvalidOperationException ex)
         {
@@ -458,14 +673,14 @@ public sealed class ContentController : ControllerBase
     [HttpPost("topics/{id:guid}/publish")]
     [RequestSizeLimit(40 * 1024 * 1024)]
     [RequestFormLimits(MultipartBodyLengthLimit = 40 * 1024 * 1024)]
-    public async Task<ActionResult<PublishContentResultDto>> Publish(
+    public async Task<ActionResult<EnqueueWorkResultDto>> Publish(
         Guid id,
         CancellationToken cancellationToken)
     {
         try
         {
             var request = await BindPublishRequestAsync(cancellationToken);
-            return Ok(await _publish.PublishAsync(id, request, cancellationToken));
+            return Ok(await _work.EnqueuePublishTopicAsync(id, request, cancellationToken));
         }
         catch (InvalidOperationException ex)
         {

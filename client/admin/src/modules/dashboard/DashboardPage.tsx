@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button, Col, Row, Segmented, Spin, Tag, Typography, Alert, message } from 'antd';
 import {
@@ -118,8 +118,11 @@ function LocalOsDashboardPage() {
         message="Dán bài từ nhóm → viết lại → duyệt → đăng. Site chỉ hiện tin đã đăng."
         style={{ marginBottom: 16 }}
       />
-      <Link to="/local-os/listings">
-        <Button type="primary">Hàng chờ tin</Button>
+      <Link to="/local-os/duyet">
+        <Button type="primary">Duyệt trên điện thoại</Button>
+      </Link>
+      <Link to="/local-os/listings" style={{ marginLeft: 12 }}>
+        <Button>Hàng chờ tin</Button>
       </Link>
       <Link to="/local-os/sources" style={{ marginLeft: 12 }}>
         <Button>Sổ nguồn</Button>
@@ -132,29 +135,7 @@ function LocalOsDashboardPage() {
 }
 
 function MarketingParkDashboardPage() {
-  return (
-    <div className="dashboard-page" style={{ maxWidth: 640, padding: '24px 8px' }}>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        KIT Marketing Park
-      </Typography.Title>
-      <Typography.Paragraph type="secondary">
-        Sản phẩm nội dung &amp; marketing độc lập (mã tổ chức <strong>KIT_MKT</strong>). Không gắn
-        vận hành Novixa / Famixa.
-      </Typography.Paragraph>
-      <Alert
-        type="info"
-        showIcon
-        message="Bắt đầu từ thương hiệu → chủ đề → nhờ AI → duyệt → xuất bản"
-        style={{ marginBottom: 16 }}
-      />
-      <Link to="/content/topics">
-        <Button type="primary">Vào làm bài</Button>
-      </Link>
-      <Link to="/content/brands" style={{ marginLeft: 12 }}>
-        <Button>Thương hiệu &amp; nơi đăng</Button>
-      </Link>
-    </div>
-  );
+  return <Navigate to="/content/ops" replace />;
 }
 
 function PharmacyDashboardPage() {

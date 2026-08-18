@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace KitPlatform.Packs.Content;
 
-/// <summary>Structured brand voice — stored in <c>brand.tone_json</c> + <c>visual_kit_json</c>.</summary>
+/// <summary>Brand Brain — stored in <c>brand.tone_json</c> + <c>visual_kit_json</c>. No extra table.</summary>
 public sealed record ContentBrandKnowledgeDto(
     string? Positioning,
     string? Audience,
@@ -17,7 +17,20 @@ public sealed record ContentBrandKnowledgeDto(
     string? VoiceNotes,
     string? VisualStyle,
     string? VisualColors,
-    string? ImageNotes);
+    string? ImageNotes,
+    IReadOnlyList<string> Problems,
+    IReadOnlyList<string> Needs,
+    IReadOnlyList<string> Desires,
+    IReadOnlyList<string> ContentPillars,
+    IReadOnlyList<string> ClaimsAllowed,
+    IReadOnlyList<string> ClaimsForbidden,
+    IReadOnlyList<string> Products,
+    IReadOnlyList<string> Services,
+    IReadOnlyList<string> Differentiators,
+    IReadOnlyList<string> ProofPoints,
+    IReadOnlyList<string> Competitors,
+    IReadOnlyList<string> GoodExamples,
+    IReadOnlyList<string> BadExamples);
 
 public static class ContentBrandKnowledge
 {
@@ -29,7 +42,8 @@ public static class ContentBrandKnowledge
     };
 
     public static ContentBrandKnowledgeDto Empty { get; } = new(
-        null, null, [], [], [], [], [], null, null, null, null, null);
+        null, null, [], [], [], [], [], null, null, null, null, null,
+        [], [], [], [], [], [], [], [], [], [], [], [], []);
 
     public static ContentBrandKnowledgeDto Parse(string? toneJson, string? visualKitJson)
     {
@@ -47,7 +61,20 @@ public static class ContentBrandKnowledge
             GetString(tone, "voiceNotes"),
             GetString(visual, "style") ?? GetString(visual, "visualStyle"),
             GetString(visual, "colors") ?? GetString(visual, "visualColors"),
-            GetString(visual, "imageNotes"));
+            GetString(visual, "imageNotes"),
+            GetStrings(tone, "problems"),
+            GetStrings(tone, "needs"),
+            GetStrings(tone, "desires"),
+            GetStrings(tone, "contentPillars"),
+            GetStrings(tone, "claimsAllowed"),
+            GetStrings(tone, "claimsForbidden"),
+            GetStrings(tone, "products"),
+            GetStrings(tone, "services"),
+            GetStrings(tone, "differentiators"),
+            GetStrings(tone, "proofPoints"),
+            GetStrings(tone, "competitors"),
+            GetStrings(tone, "goodExamples"),
+            GetStrings(tone, "badExamples"));
     }
 
     public static (string ToneJson, string VisualKitJson) Serialize(ContentBrandKnowledgeDto? knowledge)
@@ -57,13 +84,26 @@ public static class ContentBrandKnowledge
         {
             ["positioning"] = NullIfEmpty(k.Positioning),
             ["audience"] = NullIfEmpty(k.Audience),
-            ["tone"] = k.Tone.Count > 0 ? k.Tone : null,
-            ["forbiddenTopics"] = k.ForbiddenTopics.Count > 0 ? k.ForbiddenTopics : null,
-            ["preferredTerms"] = k.PreferredTerms.Count > 0 ? k.PreferredTerms : null,
-            ["avoidTerms"] = k.AvoidTerms.Count > 0 ? k.AvoidTerms : null,
-            ["hashtags"] = k.Hashtags.Count > 0 ? k.Hashtags : null,
+            ["tone"] = NonEmpty(k.Tone),
+            ["forbiddenTopics"] = NonEmpty(k.ForbiddenTopics),
+            ["preferredTerms"] = NonEmpty(k.PreferredTerms),
+            ["avoidTerms"] = NonEmpty(k.AvoidTerms),
+            ["hashtags"] = NonEmpty(k.Hashtags),
             ["ctaStyle"] = NullIfEmpty(k.CtaStyle),
             ["voiceNotes"] = NullIfEmpty(k.VoiceNotes),
+            ["problems"] = NonEmpty(k.Problems),
+            ["needs"] = NonEmpty(k.Needs),
+            ["desires"] = NonEmpty(k.Desires),
+            ["contentPillars"] = NonEmpty(k.ContentPillars),
+            ["claimsAllowed"] = NonEmpty(k.ClaimsAllowed),
+            ["claimsForbidden"] = NonEmpty(k.ClaimsForbidden),
+            ["products"] = NonEmpty(k.Products),
+            ["services"] = NonEmpty(k.Services),
+            ["differentiators"] = NonEmpty(k.Differentiators),
+            ["proofPoints"] = NonEmpty(k.ProofPoints),
+            ["competitors"] = NonEmpty(k.Competitors),
+            ["goodExamples"] = NonEmpty(k.GoodExamples),
+            ["badExamples"] = NonEmpty(k.BadExamples),
         };
         var visual = new Dictionary<string, object?>
         {
@@ -74,7 +114,7 @@ public static class ContentBrandKnowledge
         return (JsonSerializer.Serialize(tone, JsonOpts), JsonSerializer.Serialize(visual, JsonOpts));
     }
 
-    public static bool HasEnoughForGenerate(string? operationalBrief, ContentBrandKnowledgeDto knowledge)
+    public static bool HasVoice(string? operationalBrief, ContentBrandKnowledgeDto knowledge)
     {
         if (!string.IsNullOrWhiteSpace(operationalBrief) && operationalBrief.Trim().Length >= 40)
             return true;
@@ -82,7 +122,23 @@ public static class ContentBrandKnowledge
                && knowledge.Positioning.Trim().Length >= 20;
     }
 
-    /// <summary>Compact block injected into Gemini user prompt.</summary>
+    public static bool HasEnoughForGenerate(string? operationalBrief, ContentBrandKnowledgeDto knowledge) =>
+        MissingBrain(operationalBrief, knowledge).Count == 0;
+
+    public static IReadOnlyList<string> MissingBrain(string? operationalBrief, ContentBrandKnowledgeDto knowledge)
+    {
+        var miss = new List<string>();
+        if (!HasVoice(operationalBrief, knowledge))
+            miss.Add("Positioning (≥20) hoặc Brief vận hành (≥40)");
+        if (knowledge.ClaimsForbidden is not { Count: > 0 })
+            miss.Add("Claims forbidden (ít nhất 1)");
+        if (knowledge.ProofPoints is not { Count: > 0 })
+            miss.Add("Proof points (ít nhất 1)");
+        if (knowledge.GoodExamples is not { Count: > 0 })
+            miss.Add("Ví dụ nội dung tốt (ít nhất 1)");
+        return miss;
+    }
+
     public static string FormatForPrompt(ContentBrandKnowledgeDto k, string? operationalBrief)
     {
         var sb = new StringBuilder();
@@ -94,20 +150,33 @@ public static class ContentBrandKnowledge
             sb.AppendLine();
         }
 
-        sb.AppendLine("=== BRAND KNOWLEDGE (structured) ===");
+        sb.AppendLine("=== BRAND BRAIN ===");
         Append(sb, "Positioning", k.Positioning);
         Append(sb, "Audience", k.Audience);
+        AppendList(sb, "Problems (pain)", k.Problems);
+        AppendList(sb, "Needs", k.Needs);
+        AppendList(sb, "Desires", k.Desires);
+        AppendList(sb, "Content pillars", k.ContentPillars);
         AppendList(sb, "Tone", k.Tone);
         AppendList(sb, "Forbidden topics", k.ForbiddenTopics);
+        AppendList(sb, "Claims allowed", k.ClaimsAllowed);
+        AppendList(sb, "Claims FORBIDDEN", k.ClaimsForbidden);
+        AppendList(sb, "Products", k.Products);
+        AppendList(sb, "Services", k.Services);
+        AppendList(sb, "Differentiators", k.Differentiators);
+        AppendList(sb, "Proof points", k.ProofPoints);
+        AppendList(sb, "Competitors / context", k.Competitors);
         AppendList(sb, "Prefer terms", k.PreferredTerms);
         AppendList(sb, "Avoid terms", k.AvoidTerms);
         AppendList(sb, "Hashtags", k.Hashtags);
         Append(sb, "CTA style", k.CtaStyle);
         Append(sb, "Voice notes", k.VoiceNotes);
+        AppendList(sb, "Good content examples", k.GoodExamples);
+        AppendList(sb, "Bad content examples (do not imitate)", k.BadExamples);
         Append(sb, "Visual style", k.VisualStyle);
         Append(sb, "Visual colors", k.VisualColors);
         Append(sb, "Image notes", k.ImageNotes);
-        sb.AppendLine("=== END BRAND KNOWLEDGE ===");
+        sb.AppendLine("=== END BRAND BRAIN ===");
         return sb.ToString().Trim();
     }
 
@@ -122,6 +191,9 @@ public static class ContentBrandKnowledge
         if (values.Count == 0) return;
         sb.Append(label).Append(": ").AppendLine(string.Join("; ", values.Where(v => !string.IsNullOrWhiteSpace(v))));
     }
+
+    private static object? NonEmpty(IReadOnlyList<string> values) =>
+        values.Count > 0 ? values : null;
 
     private static string? NullIfEmpty(string? s) =>
         string.IsNullOrWhiteSpace(s) ? null : s.Trim();

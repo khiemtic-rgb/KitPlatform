@@ -17,38 +17,58 @@ internal sealed class ContentCreatomateClient
     };
 
     private readonly HttpClient _http;
+    private readonly ContentRepository _repo;
     private readonly IOptions<ContentOptions> _options;
     private readonly IConfiguration _configuration;
 
     public ContentCreatomateClient(
         HttpClient http,
+        ContentRepository repo,
         IOptions<ContentOptions> options,
         IConfiguration configuration)
     {
         _http = http;
+        _repo = repo;
         _options = options;
         _configuration = configuration;
         if (_http.BaseAddress is null)
             _http.BaseAddress = new Uri("https://api.creatomate.com/");
     }
 
-    public string? ResolveApiKey()
+    public async Task<ContentVideoResolved> ResolveAsync(CancellationToken cancellationToken)
     {
-        var key = FirstNonEmpty(
-            _options.Value.CreatomateApiKey,
-            _configuration["Content:CreatomateApiKey"],
-            Environment.GetEnvironmentVariable("CREATOMATE_API_KEY"));
-        return key;
+        var row = await _repo.GetOrgSettingsAsync(cancellationToken);
+        return ContentVideoConfigParser.Resolve(
+            ContentVideoConfigParser.Parse(row.VideoConfigJson),
+            _options.Value,
+            _configuration);
     }
 
-    public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
+    public async Task<bool> IsConfiguredAsync(CancellationToken cancellationToken) =>
+        (await ResolveAsync(cancellationToken)).CreatomateConfigured;
+
+    public async Task<(bool Ok, string Message)> TestConnectionAsync(CancellationToken cancellationToken)
+    {
+        var resolved = await ResolveAsync(cancellationToken);
+        if (!resolved.CreatomateConfigured)
+            return (false, "Chưa có Creatomate API key — đặt Secret ref hoặc dán key (chỉ ghi).");
+
+        using var req = new HttpRequestMessage(HttpMethod.Get, "v1/templates");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", resolved.CreatomateApiKey);
+        using var res = await _http.SendAsync(req, cancellationToken);
+        var body = await res.Content.ReadAsStringAsync(cancellationToken);
+        if (!res.IsSuccessStatusCode)
+            return (false, $"Creatomate {(int)res.StatusCode}: {Truncate(body)}");
+        return (true, "Creatomate kết nối OK");
+    }
 
     public async Task<CreatomateRenderResult> CreateRenderAsync(
         string templateId,
         IReadOnlyDictionary<string, string> modifications,
         CancellationToken cancellationToken)
     {
-        var key = ResolveApiKey()
+        var resolved = await ResolveAsync(cancellationToken);
+        var key = resolved.CreatomateApiKey
                   ?? throw new InvalidOperationException("Chưa cấu hình CreatomateApiKey.");
 
         using var req = new HttpRequestMessage(HttpMethod.Post, "v1/renders");
@@ -75,7 +95,8 @@ internal sealed class ContentCreatomateClient
 
     public async Task<CreatomateRenderResult> GetRenderAsync(string renderId, CancellationToken cancellationToken)
     {
-        var key = ResolveApiKey()
+        var resolved = await ResolveAsync(cancellationToken);
+        var key = resolved.CreatomateApiKey
                   ?? throw new InvalidOperationException("Chưa cấu hình CreatomateApiKey.");
 
         using var req = new HttpRequestMessage(HttpMethod.Get, $"v1/renders/{Uri.EscapeDataString(renderId)}");
@@ -89,9 +110,6 @@ internal sealed class ContentCreatomateClient
                   ?? throw new InvalidOperationException("Creatomate response invalid.");
         return new CreatomateRenderResult(row.Id ?? renderId, row.Status ?? "unknown", row.Url, row.SnapshotUrl);
     }
-
-    private static string? FirstNonEmpty(params string?[] values) =>
-        values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
 
     private static string Truncate(string s) =>
         s.Length <= 400 ? s : s[..400] + "…";

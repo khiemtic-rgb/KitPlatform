@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   App,
   Button,
   Card,
   Collapse,
+  Modal,
   Col,
   Divider,
   Drawer,
@@ -50,15 +52,20 @@ import {
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
   createContentBrand,
+  disconnectFacebookChannel,
   fetchContentBrands,
   fetchContentChannels,
   fetchContentSettings,
   fetchContentSites,
+  selectFacebookPage,
+  startFacebookOAuth,
   updateContentBrand,
   upsertContentChannel,
   upsertContentSite,
+  verifyFacebookChannel,
   type ContentBrand,
   type ContentChannelTarget,
+  type ContentFacebookPageOption,
   type ContentSiteTarget,
 } from '@/shared/api/content.api';
 import {
@@ -67,6 +74,78 @@ import {
   isLocalImageLibrarySupported,
   pickLocalImageLibrary,
 } from '@/modules/content/content-local-image-library';
+import type { ContentBrandKnowledge } from '@/shared/api/content.api';
+import {
+  facebookStatusLabel,
+  parseFacebookLink,
+  parseFbGroupLines,
+  parseFbGroupRef,
+} from '@/modules/content/content-channels';
+import { FB_PENDING_KEY, FB_RETURN_KEY } from '@/modules/content/ContentFacebookCallbackPage';
+
+function fbGroupCode(id: string) {
+  const slug = id.replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  return `fb-g-${slug || 'group'}`.slice(0, 64);
+}
+
+const EMPTY_BRAIN: ContentBrandKnowledge = {
+  tone: [],
+  forbiddenTopics: [],
+  preferredTerms: [],
+  avoidTerms: [],
+  hashtags: [],
+  problems: [],
+  needs: [],
+  desires: [],
+  contentPillars: [],
+  claimsAllowed: [],
+  claimsForbidden: [],
+  products: [],
+  services: [],
+  differentiators: [],
+  proofPoints: [],
+  competitors: [],
+  goodExamples: [],
+  badExamples: [],
+};
+
+function knowledgeFromRow(row?: ContentBrand | null): ContentBrandKnowledge {
+  const k = row?.knowledge;
+  return {
+    ...EMPTY_BRAIN,
+    ...k,
+    tone: k?.tone ?? [],
+    forbiddenTopics: k?.forbiddenTopics ?? [],
+    preferredTerms: k?.preferredTerms ?? [],
+    avoidTerms: k?.avoidTerms ?? [],
+    hashtags: k?.hashtags ?? [],
+    problems: k?.problems ?? [],
+    needs: k?.needs ?? [],
+    desires: k?.desires ?? [],
+    contentPillars: k?.contentPillars ?? [],
+    claimsAllowed: k?.claimsAllowed ?? [],
+    claimsForbidden: k?.claimsForbidden ?? [],
+    products: k?.products ?? [],
+    services: k?.services ?? [],
+    differentiators: k?.differentiators ?? [],
+    proofPoints: k?.proofPoints ?? [],
+    competitors: k?.competitors ?? [],
+    goodExamples: k?.goodExamples ?? [],
+    badExamples: k?.badExamples ?? [],
+  };
+}
+
+function missingBrain(brief: string, k: ContentBrandKnowledge): string[] {
+  const miss: string[] = [];
+  const positioning = (k.positioning ?? '').trim();
+  if (brief.trim().length < 40 && positioning.length < 20) {
+    miss.push('Positioning (≥20) hoặc Brief vận hành (≥40)');
+  }
+  if ((k.claimsForbidden ?? []).length === 0) miss.push('Claims forbidden (ít nhất 1)');
+  if ((k.proofPoints ?? []).length === 0) miss.push('Proof points (ít nhất 1)');
+  if ((k.goodExamples ?? []).length === 0) miss.push('Ví dụ nội dung tốt (ít nhất 1)');
+  return miss;
+}
 
 /** Unified destination kinds shown in one combobox. */
 type DestKind =
@@ -75,6 +154,7 @@ type DestKind =
   | 'site:astro_git'
   | 'site:buffer'
   | 'channel:facebook_page'
+  | 'channel:facebook_group'
   | 'channel:instagram'
   | 'channel:linkedin'
   | 'channel:threads'
@@ -102,16 +182,34 @@ const DEST_KIND_OPTIONS: { value: DestKind; label: string; group: 'site' | 'chan
   { value: 'site:manual', label: 'Website · Thủ công (chép bài)', group: 'site' },
   { value: 'site:wordpress_rest', label: 'Website · WordPress', group: 'site' },
   { value: 'site:astro_git', label: 'Website · Astro / Git', group: 'site' },
-  { value: 'site:buffer', label: 'Website · Buffer / lịch đăng', group: 'site' },
+  { value: 'site:buffer', label: 'Website · Buffer (chỉ lưu — chưa auto)', group: 'site' },
   { value: 'channel:facebook_page', label: 'MXH · Facebook Fanpage', group: 'channel' },
-  { value: 'channel:instagram', label: 'MXH · Instagram', group: 'channel' },
-  { value: 'channel:linkedin', label: 'MXH · LinkedIn', group: 'channel' },
-  { value: 'channel:threads', label: 'MXH · Threads', group: 'channel' },
-  { value: 'channel:zalo_oa', label: 'MXH · Zalo OA', group: 'channel' },
-  { value: 'channel:tiktok', label: 'MXH · TikTok', group: 'channel' },
-  { value: 'channel:youtube', label: 'MXH · YouTube', group: 'channel' },
-  { value: 'channel:other', label: 'MXH · Khác', group: 'channel' },
+  { value: 'channel:facebook_group', label: 'MXH · Nhóm Facebook (đăng tay)', group: 'channel' },
+  { value: 'channel:instagram', label: 'MXH · Instagram (đăng tay)', group: 'channel' },
+  { value: 'channel:linkedin', label: 'MXH · LinkedIn (đăng tay)', group: 'channel' },
+  { value: 'channel:threads', label: 'MXH · Threads (đăng tay)', group: 'channel' },
+  { value: 'channel:zalo_oa', label: 'MXH · Zalo OA (đăng tay)', group: 'channel' },
+  { value: 'channel:tiktok', label: 'MXH · TikTok (đăng tay)', group: 'channel' },
+  { value: 'channel:youtube', label: 'MXH · YouTube (đăng tay)', group: 'channel' },
+  { value: 'channel:other', label: 'MXH · Khác (đăng tay)', group: 'channel' },
 ];
+
+const CORE_DEST_KINDS = new Set<DestKind>([
+  'site:manual',
+  'site:wordpress_rest',
+  'site:astro_git',
+  'channel:facebook_page',
+  'channel:facebook_group',
+]);
+
+function visibleDestKindOptions(channelTypes: string[], connectorTypes: string[]) {
+  const allowed = new Set([...channelTypes, ...connectorTypes]);
+  return DEST_KIND_OPTIONS.filter((o) => {
+    if (CORE_DEST_KINDS.has(o.value)) return true;
+    const raw = o.value.split(':')[1] ?? o.value;
+    return allowed.has(raw);
+  });
+}
 
 const KIND_LABEL = Object.fromEntries(DEST_KIND_OPTIONS.map((o) => [o.value, o.label])) as Record<
   string,
@@ -181,6 +279,12 @@ function buildConfigJson(kind: string, v: Record<string, unknown>): string {
     if (path.includes('insights')) base.contentFormat = 'insights';
     if (path.includes('famixa-site')) base.contentFormat = 'famixa';
   }
+  if (kind === 'channel:facebook_group') {
+    const parsed = parseFbGroupRef(
+      typeof v.groupUrl === 'string' ? v.groupUrl : typeof v.externalId === 'string' ? v.externalId : '',
+    );
+    if (parsed) base.url = parsed.url;
+  }
   return JSON.stringify(base);
 }
 
@@ -221,6 +325,8 @@ type BrandTargets = { sites: number; channels: number };
 
 export function ContentBrandsPage() {
   const { message } = App.useApp();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [brands, setBrands] = useState<ContentBrand[]>([]);
   const [targetCounts, setTargetCounts] = useState<Record<string, BrandTargets>>({});
@@ -232,9 +338,13 @@ export function ContentBrandsPage() {
   const [channels, setChannels] = useState<ContentChannelTarget[]>([]);
   const [savingDest, setSavingDest] = useState(false);
   const [secretConfigured, setSecretConfigured] = useState(false);
+  const [fbBusy, setFbBusy] = useState(false);
+  const [fbSession, setFbSession] = useState<string | null>(null);
+  const [fbPages, setFbPages] = useState<ContentFacebookPageOption[]>([]);
   const [form] = Form.useForm();
   const [destForm] = Form.useForm();
   const destKind = Form.useWatch('kind', destForm) as string | undefined;
+  const [destKindOptions, setDestKindOptions] = useState(DEST_KIND_OPTIONS);
 
   const loadTargetCounts = useCallback(async (list: ContentBrand[]) => {
     const entries = await Promise.all(
@@ -266,12 +376,15 @@ export function ContentBrandsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const b = await fetchContentBrands();
+      const [b, settings] = await Promise.all([
+        fetchContentBrands(),
+        fetchContentSettings().catch(() => null),
+      ]);
       setBrands(b);
+      if (settings)
+        setDestKindOptions(visibleDestKindOptions(settings.channelTypes ?? [], settings.connectorTypes ?? []));
       void loadTargetCounts(b);
       void loadImageFolders(b);
-      // warm settings (connector lists live in org; kinds are fixed in UI for flexibility)
-      void fetchContentSettings().catch(() => undefined);
     } catch (e) {
       message.error(apiErrorMessage(e, 'Không tải được thương hiệu'));
     } finally {
@@ -309,6 +422,33 @@ export function ContentBrandsPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (loading || brands.length === 0) return;
+    const raw = sessionStorage.getItem(FB_PENDING_KEY);
+    const brandId = searchParams.get('fbBrand');
+    if (!raw && !brandId) return;
+    let pending: { sessionId: string; brandId: string; pages: ContentFacebookPageOption[] } | null = null;
+    if (raw) {
+      try {
+        pending = JSON.parse(raw) as { sessionId: string; brandId: string; pages: ContentFacebookPageOption[] };
+      } catch {
+        pending = null;
+      }
+      sessionStorage.removeItem(FB_PENDING_KEY);
+    }
+    const id = pending?.brandId || brandId;
+    const brand = brands.find((b) => b.id === id);
+    if (!brand) return;
+    if (pending?.pages?.length) {
+      setFbSession(pending.sessionId);
+      setFbPages(pending.pages);
+    }
+    void openEdit(brand, 'targets');
+    setSearchParams({}, { replace: true });
+    // openEdit is stable enough for this one-shot return from OAuth
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brands, loading, searchParams, setSearchParams]);
+
   const loadTargets = async (brandId: string) => {
     const [s, c] = await Promise.all([fetchContentSites(brandId), fetchContentChannels(brandId)]);
     setSites(s);
@@ -344,9 +484,26 @@ export function ContentBrandsPage() {
     const channelRows: DestRow[] = channels.map((c) => {
       let configWarning: string | undefined;
       if (c.channelType === 'facebook_page') {
-        if (!c.externalId?.trim()) configWarning = 'Thiếu Page ID';
-        else if (!c.secretConfigured) configWarning = 'Thiếu token';
+        const fb = parseFacebookLink(c.configJson);
+        const st = (fb?.status ?? '').toUpperCase();
+        if (st === 'NEED_RECONNECT' || st === 'REVOKED' || st === 'EXPIRED' || st === 'PERMISSION_ERROR') {
+          configWarning = 'Cần kết nối lại';
+        } else if (st !== 'CONNECTED' && !c.secretConfigured) {
+          configWarning = 'Chưa kết nối';
+        } else if (!c.externalId?.trim()) {
+          configWarning = 'Thiếu Page ID';
+        }
       }
+      if (c.channelType === 'facebook_group') {
+        const parsed = parseFbGroupRef(
+          (parseConfigObj(c.configJson).url as string | undefined) || c.externalId,
+        );
+        if (!parsed) configWarning = 'Thiếu link nhóm';
+      }
+      const groupUrl =
+        c.channelType === 'facebook_group'
+          ? parseFbGroupRef((parseConfigObj(c.configJson).url as string | undefined) || c.externalId)?.url
+          : null;
       return {
         key: `channel:${c.id}`,
         group: 'channel' as const,
@@ -354,7 +511,7 @@ export function ContentBrandsPage() {
         name: c.name,
         kindLabel: channelKind(c.channelType),
         kindValue: `channel:${c.channelType}`,
-        address: c.externalId?.trim() || '—',
+        address: groupUrl || c.externalId?.trim() || '—',
         secretRef: c.secretRef,
         secretConfigured: c.secretConfigured,
         configWarning,
@@ -372,13 +529,7 @@ export function ContentBrandsPage() {
       pauseWhenExceeded: true,
       isActive: true,
       sortOrder: 100,
-      knowledge: {
-        tone: [],
-        forbiddenTopics: [],
-        preferredTerms: [],
-        avoidTerms: [],
-        hashtags: [],
-      },
+      knowledge: { ...EMPTY_BRAIN },
     });
     setSites([]);
     setChannels([]);
@@ -395,13 +546,7 @@ export function ContentBrandsPage() {
   const openEdit = async (row: ContentBrand, tab: 'info' | 'targets' = 'info') => {
     setEditing(row);
     setDrawerTab(tab);
-    const k = row.knowledge ?? {
-      tone: [],
-      forbiddenTopics: [],
-      preferredTerms: [],
-      avoidTerms: [],
-      hashtags: [],
-    };
+    const k = knowledgeFromRow(row);
     form.setFieldsValue({
       code: row.code,
       name: row.name,
@@ -414,13 +559,9 @@ export function ContentBrandsPage() {
       sortOrder: row.sortOrder,
       operationalBrief: row.operationalBrief ?? undefined,
       knowledge: {
+        ...k,
         positioning: k.positioning ?? undefined,
         audience: k.audience ?? undefined,
-        tone: k.tone ?? [],
-        forbiddenTopics: k.forbiddenTopics ?? [],
-        preferredTerms: k.preferredTerms ?? [],
-        avoidTerms: k.avoidTerms ?? [],
-        hashtags: k.hashtags ?? [],
         ctaStyle: k.ctaStyle ?? undefined,
         voiceNotes: k.voiceNotes ?? undefined,
         visualStyle: k.visualStyle ?? undefined,
@@ -466,12 +607,17 @@ export function ContentBrandsPage() {
       });
     } else {
       const c = row.raw as ContentChannelTarget;
+      const cfg = parseConfigObj(c.configJson);
+      const groupParsed = parseFbGroupRef(
+        (typeof cfg.url === 'string' ? cfg.url : '') || c.externalId,
+      );
       destForm.setFieldsValue({
         kind: `channel:${c.channelType}`,
         code: c.code,
         name: c.name,
         baseUrl: undefined,
         externalId: c.externalId ?? undefined,
+        groupUrl: groupParsed?.url,
         secretRef: c.secretRef ?? undefined,
         secret: '',
         configJson: c.configJson || '{}',
@@ -482,10 +628,11 @@ export function ContentBrandsPage() {
   const saveBrand = async () => {
     try {
       const v = await form.validateFields();
-      const positioning = String(v.knowledge?.positioning ?? '').trim();
       const brief = String(v.operationalBrief ?? '').trim();
-      if (brief.length < 40 && positioning.length < 20) {
-        message.error('Cần Brief (≥40 ký tự) hoặc Positioning (≥20 ký tự) trong Brand Knowledge.');
+      const knowledge = knowledgeFromRow({ knowledge: v.knowledge } as ContentBrand);
+      const miss = missingBrain(brief, knowledge);
+      if (miss.length > 0) {
+        message.error('Thiếu Brand Brain: ' + miss.join('; '));
         return;
       }
       const payload = {
@@ -500,18 +647,31 @@ export function ContentBrandsPage() {
         sortOrder: v.sortOrder,
         operationalBrief: v.operationalBrief,
         knowledge: {
-          positioning: v.knowledge?.positioning ?? null,
-          audience: v.knowledge?.audience ?? null,
-          tone: v.knowledge?.tone ?? [],
-          forbiddenTopics: v.knowledge?.forbiddenTopics ?? [],
-          preferredTerms: v.knowledge?.preferredTerms ?? [],
-          avoidTerms: v.knowledge?.avoidTerms ?? [],
-          hashtags: v.knowledge?.hashtags ?? [],
-          ctaStyle: v.knowledge?.ctaStyle ?? null,
-          voiceNotes: v.knowledge?.voiceNotes ?? null,
-          visualStyle: v.knowledge?.visualStyle ?? null,
-          visualColors: v.knowledge?.visualColors ?? null,
-          imageNotes: v.knowledge?.imageNotes ?? null,
+          positioning: knowledge.positioning ?? null,
+          audience: knowledge.audience ?? null,
+          tone: knowledge.tone,
+          forbiddenTopics: knowledge.forbiddenTopics,
+          preferredTerms: knowledge.preferredTerms,
+          avoidTerms: knowledge.avoidTerms,
+          hashtags: knowledge.hashtags,
+          ctaStyle: knowledge.ctaStyle ?? null,
+          voiceNotes: knowledge.voiceNotes ?? null,
+          visualStyle: knowledge.visualStyle ?? null,
+          visualColors: knowledge.visualColors ?? null,
+          imageNotes: knowledge.imageNotes ?? null,
+          problems: knowledge.problems,
+          needs: knowledge.needs,
+          desires: knowledge.desires,
+          contentPillars: knowledge.contentPillars,
+          claimsAllowed: knowledge.claimsAllowed,
+          claimsForbidden: knowledge.claimsForbidden,
+          products: knowledge.products,
+          services: knowledge.services,
+          differentiators: knowledge.differentiators,
+          proofPoints: knowledge.proofPoints,
+          competitors: knowledge.competitors,
+          goodExamples: knowledge.goodExamples,
+          badExamples: knowledge.badExamples,
         },
       };
       if (editing) {
@@ -552,7 +712,24 @@ export function ContentBrandsPage() {
         v.kind === 'site:wordpress_rest' ||
         v.kind === 'site:astro_git' ||
         v.kind === 'channel:facebook_page';
-      if (needsSecretNow && !pasted && !secretConfigured && !v.secretRef?.trim()) {
+      const fbLink =
+        v.kind === 'channel:facebook_page'
+          ? parseFacebookLink(
+              channels.find((c) => c.code === v.code)?.configJson,
+            )
+          : null;
+      const fbReady = secretConfigured || fbLink?.status === 'CONNECTED';
+      if (needsSecretNow && v.kind === 'channel:facebook_page' && !pasted && !fbReady && !v.secretRef?.trim()) {
+        message.warning('Bấm Kết nối Facebook, hoặc dán token khẩn cấp.');
+        return;
+      }
+      if (
+        needsSecretNow &&
+        v.kind !== 'channel:facebook_page' &&
+        !pasted &&
+        !secretConfigured &&
+        !v.secretRef?.trim()
+      ) {
         message.warning('Dán token vào ô bên dưới (hoặc chọn biến env) trước khi lưu.');
         return;
       }
@@ -575,6 +752,33 @@ export function ContentBrandsPage() {
         } else {
           message.success('Đã lưu nơi đăng');
         }
+      } else if (v.kind === 'channel:facebook_group') {
+        const rows = parseFbGroupLines((v.groupUrl as string | undefined) || v.externalId);
+        if (rows.length === 0) {
+          message.error('Dán link nhóm Facebook — mỗi dòng một nhóm, hoặc Tên | link');
+          return;
+        }
+        for (const [i, row] of rows.entries()) {
+          const name =
+            rows.length === 1 && v.name?.trim() && !v.name.trim().startsWith('fb-')
+              ? v.name.trim()
+              : row.name;
+          await upsertContentChannel(editing.id, {
+            code: rows.length === 1 ? v.code.trim() || fbGroupCode(row.id) : fbGroupCode(row.id),
+            name: name || `Nhóm ${i + 1}`,
+            channelType: 'facebook_group',
+            externalId: row.id,
+            secretRef: null,
+            configJson: JSON.stringify({ url: row.url }),
+            isActive: true,
+          });
+        }
+        destForm.setFieldsValue({ groupUrl: '', secret: '' });
+        await loadTargets(editing.id);
+        message.success(
+          rows.length === 1 ? 'Đã lưu nhóm' : `Đã thêm ${rows.length} nhóm — đăng tay từ Bản viết`,
+        );
+        return;
       } else {
         const saved = await upsertContentChannel(editing.id, {
           code: v.code.trim(),
@@ -600,8 +804,58 @@ export function ContentBrandsPage() {
   };
 
   const isSiteKind = !destKind || destKind.startsWith('site:');
+  const isFbGroup = destKind === 'channel:facebook_group';
+  const isFbPage = destKind === 'channel:facebook_page';
+  const destCode = Form.useWatch('code', destForm) as string | undefined;
+  const destFbChannel = channels.find((c) => c.channelType === 'facebook_page' && c.code === destCode);
+  const destFb = destFbChannel ? parseFacebookLink(destFbChannel.configJson) : null;
   const secretUi = secretHint(destKind);
-  const showSecret = destKind !== 'site:manual';
+  const showSecret = destKind !== 'site:manual' && !isFbGroup;
+
+  const connectFacebook = async () => {
+    if (!editing) {
+      message.warning('Lưu thương hiệu trước, rồi kết nối Facebook.');
+      return;
+    }
+    setFbBusy(true);
+    try {
+      const r = await startFacebookOAuth(editing.id);
+      window.location.href = r.url;
+    } catch (e) {
+      message.error(apiErrorMessage(e, 'Chưa mở được Facebook Login. Cấu hình App ở Model AI → Facebook.'));
+      setFbBusy(false);
+    }
+  };
+
+  const pickFbPage = async (pageId: string) => {
+    if (!fbSession || !editing) return;
+    setFbBusy(true);
+    try {
+      const saved = await selectFacebookPage(fbSession, pageId);
+      setFbSession(null);
+      setFbPages([]);
+      await loadTargets(editing.id);
+      setSecretConfigured(saved.secretConfigured);
+      destForm.setFieldsValue({
+        kind: 'channel:facebook_page',
+        code: saved.code,
+        name: saved.name,
+        externalId: saved.externalId ?? undefined,
+        configJson: saved.configJson || '{}',
+        secret: '',
+      });
+      message.success(`Đã kết nối ${saved.name}`);
+      const back = sessionStorage.getItem(FB_RETURN_KEY);
+      if (back) {
+        sessionStorage.removeItem(FB_RETURN_KEY);
+        navigate(back);
+      }
+    } catch (e) {
+      message.error(apiErrorMessage(e, 'Không lưu được Page.'));
+    } finally {
+      setFbBusy(false);
+    }
+  };
   const showWpFields = destKind === 'site:wordpress_rest';
   const showAstroFields = destKind === 'site:astro_git';
 
@@ -613,7 +867,7 @@ export function ContentBrandsPage() {
             Thương hiệu & nơi đăng
           </Typography.Title>
           <Typography.Text type="secondary">
-            Bước 1 — thương hiệu + Brief, rồi danh sách nơi đăng (web, fanpage, LinkedIn, Zalo…).
+            Bước 1 — thương hiệu + Brief, rồi danh sách nơi đăng (web, fanpage, nhóm FB, LinkedIn, Zalo…).
           </Typography.Text>
         </div>
         <Space wrap>
@@ -642,15 +896,22 @@ export function ContentBrandsPage() {
           { title: 'Mã', dataIndex: 'code', width: 110 },
           { title: 'Thương hiệu', dataIndex: 'name' },
           {
-            title: 'Knowledge',
+            title: 'Brain',
             key: 'brief',
-            width: 90,
-            render: (_, row) =>
-              row.operationalBrief?.trim() || row.knowledge?.positioning?.trim() ? (
-                <Tag color="success">OK</Tag>
+            width: 110,
+            render: (_, row) => {
+              const ready =
+                row.brainReady ??
+                missingBrain(row.operationalBrief ?? '', knowledgeFromRow(row)).length === 0;
+              const miss = row.brainMissing ?? missingBrain(row.operationalBrief ?? '', knowledgeFromRow(row));
+              return ready ? (
+                <Tag color="success">Sẵn sàng</Tag>
               ) : (
-                <Tag color="error">Thiếu</Tag>
-              ),
+                <Tag color="error" title={miss.join('; ')}>
+                  Thiếu
+                </Tag>
+              );
+            },
           },
           {
             title: 'Nơi đăng',
@@ -879,12 +1140,12 @@ export function ContentBrandsPage() {
                     title={
                       <Space>
                         <ThunderboltOutlined style={{ color: '#fa8c16' }} />
-                        <span>Brand Knowledge · Giọng AI</span>
+                        <span>Kiến thức thương hiệu</span>
                       </Space>
                     }
                     extra={
                       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        Mỗi brand một giọng — tránh viết giống nhau
+                        Brain đủ mới Generate — không viết giống nhau giữa brand
                       </Typography.Text>
                     }
                     style={{ marginBottom: 16 }}
@@ -981,6 +1242,74 @@ export function ContentBrandsPage() {
                         placeholder="Không phô trương; lấy ví dụ thực tế từ vận hành nhà thuốc…"
                       />
                     </Form.Item>
+                    <Divider style={{ margin: '8px 0 16px' }}>Nỗi đau · nhu cầu · mong muốn</Divider>
+                    <Form.Item name={['knowledge', 'problems']} label="Problems (pain)">
+                      <Select mode="tags" placeholder="Mất thuốc hết hạn, không biết lãi thật…" tokenSeparators={[',']} />
+                    </Form.Item>
+                    <Form.Item name={['knowledge', 'needs']} label="Needs">
+                      <Select mode="tags" placeholder="FEFO, báo cáo tồn, đối soát đơn…" tokenSeparators={[',']} />
+                    </Form.Item>
+                    <Form.Item name={['knowledge', 'desires']} label="Desires">
+                      <Select mode="tags" placeholder="Chủ nhà thuốc ngủ ngon, gia đình gần nhau…" tokenSeparators={[',']} />
+                    </Form.Item>
+                    <Form.Item name={['knowledge', 'contentPillars']} label="Trụ nội dung">
+                      <Select mode="tags" placeholder="Vận hành, tuân thủ, câu chuyện khách…" tokenSeparators={[',']} />
+                    </Form.Item>
+                    <Divider style={{ margin: '8px 0 16px' }}>Claim · sản phẩm · bằng chứng</Divider>
+                    <Form.Item
+                      name={['knowledge', 'claimsAllowed']}
+                      label="Claims được nói"
+                    >
+                      <Select mode="tags" placeholder="Giúp kiểm soát tồn / nhắc hạn…" tokenSeparators={[',']} />
+                    </Form.Item>
+                    <Form.Item
+                      name={['knowledge', 'claimsForbidden']}
+                      label="Claims cấm (bắt buộc ≥1)"
+                    >
+                      <Select mode="tags" placeholder="Chữa khỏi bệnh, #1 thị trường, cam kết lãi…" tokenSeparators={[',']} />
+                    </Form.Item>
+                    <Row gutter={16}>
+                      <Col xs={24} md={12}>
+                        <Form.Item name={['knowledge', 'products']} label="Sản phẩm">
+                          <Select mode="tags" placeholder="POS, tồn kho, sổ sách…" tokenSeparators={[',']} />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <Form.Item name={['knowledge', 'services']} label="Dịch vụ">
+                          <Select mode="tags" placeholder="Onboarding, hỗ trợ go-live…" tokenSeparators={[',']} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Form.Item name={['knowledge', 'differentiators']} label="Điểm khác biệt">
+                      <Select mode="tags" placeholder="Làm trên hiện trường, không demo suông…" tokenSeparators={[',']} />
+                    </Form.Item>
+                    <Form.Item
+                      name={['knowledge', 'proofPoints']}
+                      label="Proof points (bắt buộc ≥1)"
+                    >
+                      <Select mode="tags" placeholder="Pilot DEMO, số liệu đã công bố…" tokenSeparators={[',']} />
+                    </Form.Item>
+                    <Form.Item name={['knowledge', 'competitors']} label="Đối thủ / ngữ cảnh">
+                      <Select mode="tags" placeholder="Excel, phần mềm kế toán generic…" tokenSeparators={[',']} />
+                    </Form.Item>
+                    <Divider style={{ margin: '8px 0 16px' }}>Ví dụ nội dung</Divider>
+                    <Form.Item
+                      name={['knowledge', 'goodExamples']}
+                      label="Ví dụ tốt (bắt buộc ≥1)"
+                    >
+                      <Select
+                        mode="tags"
+                        placeholder="Bài FEFO 3 bước cho chủ nhà thuốc…"
+                        tokenSeparators={[]}
+                      />
+                    </Form.Item>
+                    <Form.Item name={['knowledge', 'badExamples']} label="Ví dụ xấu (đừng bắt chước)">
+                      <Select
+                        mode="tags"
+                        placeholder="Copy bài generic «đồng hành cùng bạn» cho mọi brand…"
+                        tokenSeparators={[]}
+                      />
+                    </Form.Item>
                   </Card>
 
                   <Card
@@ -1059,6 +1388,11 @@ export function ContentBrandsPage() {
                               <LinkOutlined />
                               Link CTA mặc định
                             </Space>
+                          }
+                          extra={
+                            editing?.code?.toLowerCase() === 'novixa'
+                              ? 'Bài nói kiểm tra sức khỏe nhà thuốc tự gắn https://novixa.vn/vi/health-check/ — không dùng trang chủ.'
+                              : undefined
                           }
                         >
                           <Input placeholder="https://novixa.vn/…" />
@@ -1163,12 +1497,18 @@ export function ContentBrandsPage() {
                           title: 'Token',
                           key: 'token',
                           width: 100,
-                          render: (_, row) =>
-                            row.secretConfigured ? (
+                          render: (_, row) => {
+                            if (row.kindValue === 'channel:facebook_page') {
+                              const fb = parseFacebookLink((row.raw as ContentChannelTarget).configJson);
+                              const lab = facebookStatusLabel(fb?.status);
+                              return <Tag color={lab.color}>{lab.text}</Tag>;
+                            }
+                            return row.secretConfigured ? (
                               <Tag color="success">Đã có</Tag>
                             ) : (
                               <Tag>Chưa có</Tag>
-                            ),
+                            );
+                          },
                         },
                         {
                           title: 'Cấu hình',
@@ -1222,7 +1562,7 @@ export function ContentBrandsPage() {
                         <Select
                           showSearch
                           optionFilterProp="label"
-                          options={DEST_KIND_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                          options={destKindOptions.map((o) => ({ value: o.value, label: o.label }))}
                           placeholder="Chọn loại…"
                           size="large"
                         />
@@ -1238,10 +1578,10 @@ export function ContentBrandsPage() {
                                 Mã ngắn
                               </Space>
                             }
-                            rules={[{ required: true, message: 'Bắt buộc' }]}
-                            extra="vd. blog, fb-main"
+                            rules={isFbGroup ? [] : [{ required: true, message: 'Bắt buộc' }]}
+                            extra={isFbGroup ? 'Để trống = tự lấy từ link nhóm' : 'vd. blog, fb-main'}
                           >
-                            <Input placeholder="fb-main" />
+                            <Input placeholder={isFbGroup ? 'tự tạo' : 'fb-main'} />
                           </Form.Item>
                         </Col>
                         <Col xs={24} sm={8}>
@@ -1253,7 +1593,8 @@ export function ContentBrandsPage() {
                                 Tên gọi
                               </Space>
                             }
-                            rules={[{ required: true, message: 'Bắt buộc' }]}
+                            rules={isFbGroup ? [] : [{ required: true, message: 'Bắt buộc' }]}
+                            extra={isFbGroup ? 'Một nhóm: đặt tên. Nhiều nhóm: ghi Tên | link mỗi dòng.' : undefined}
                           >
                             <Input placeholder="Fanpage Novixa" />
                           </Form.Item>
@@ -1271,7 +1612,7 @@ export function ContentBrandsPage() {
                             >
                               <Input placeholder="https://novixa.vn/" />
                             </Form.Item>
-                          ) : (
+                          ) : isFbGroup ? null : (
                             <Form.Item
                               name="externalId"
                               label={
@@ -1287,6 +1628,24 @@ export function ContentBrandsPage() {
                           )}
                         </Col>
                       </Row>
+                      {isFbGroup ? (
+                        <Form.Item
+                          name="groupUrl"
+                          label={
+                            <Space size={4}>
+                              <TeamOutlined />
+                              Link nhóm Facebook (nhiều nhóm = nhiều dòng)
+                            </Space>
+                          }
+                          rules={[{ required: true, message: 'Dán ít nhất một link nhóm' }]}
+                          extra="Mỗi dòng một nhóm. Có thể ghi Tên | https://www.facebook.com/groups/… — không cần token."
+                        >
+                          <Input.TextArea
+                            rows={5}
+                            placeholder={'Nhà thuốc HN | https://www.facebook.com/groups/abc\nhttps://www.facebook.com/groups/xyz'}
+                          />
+                        </Form.Item>
+                      ) : null}
 
                       {showWpFields ? (
                         <Card
@@ -1487,6 +1846,79 @@ export function ContentBrandsPage() {
                         </Card>
                       ) : null}
 
+                      {isFbPage ? (
+                        <Card type="inner" size="small" title="Facebook Connection" style={{ marginBottom: 16 }}>
+                          <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                            <div>
+                              {(() => {
+                                const lab = facebookStatusLabel(destFb?.status);
+                                return <Tag color={lab.color}>{lab.text}</Tag>;
+                              })()}
+                              {destFb?.pageName || destFbChannel?.name ? (
+                                <Typography.Text> Trang: {destFb?.pageName || destFbChannel?.name}</Typography.Text>
+                              ) : null}
+                            </div>
+                            {destFb?.lastError ? (
+                              <Typography.Text type="warning">{destFb.lastError}</Typography.Text>
+                            ) : null}
+                            <Typography.Paragraph type="secondary" style={{ margin: 0, fontSize: 12 }}>
+                              Operator không dán token. Cần App Meta ở{' '}
+                              <Link to="/content/ai#facebook">Model AI → Facebook</Link>.
+                            </Typography.Paragraph>
+                            <Space wrap>
+                              <Button type="primary" loading={fbBusy} onClick={() => void connectFacebook()}>
+                                {destFb?.status === 'CONNECTED' ? 'Kết nối lại Facebook' : 'Kết nối Facebook'}
+                              </Button>
+                              {destFbChannel ? (
+                                <Button
+                                  loading={fbBusy}
+                                  onClick={() => {
+                                    void (async () => {
+                                      setFbBusy(true);
+                                      try {
+                                        const r = await verifyFacebookChannel(destFbChannel.id);
+                                        await loadTargets(editing!.id);
+                                        if (r.ok) message.success(r.message || 'Facebook còn quyền.');
+                                        else message.warning(r.message || 'Cần kết nối lại.');
+                                      } catch (e) {
+                                        message.error(apiErrorMessage(e, 'Không kiểm tra được.'));
+                                      } finally {
+                                        setFbBusy(false);
+                                      }
+                                    })();
+                                  }}
+                                >
+                                  Kiểm tra kết nối
+                                </Button>
+                              ) : null}
+                              {destFbChannel && destFb?.status && destFb.status !== 'DISCONNECTED' ? (
+                                <Button
+                                  danger
+                                  loading={fbBusy}
+                                  onClick={() => {
+                                    void (async () => {
+                                      setFbBusy(true);
+                                      try {
+                                        const saved = await disconnectFacebookChannel(destFbChannel.id);
+                                        await loadTargets(editing!.id);
+                                        setSecretConfigured(saved.secretConfigured);
+                                        message.success('Đã ngắt Facebook.');
+                                      } catch (e) {
+                                        message.error(apiErrorMessage(e, 'Không ngắt được.'));
+                                      } finally {
+                                        setFbBusy(false);
+                                      }
+                                    })();
+                                  }}
+                                >
+                                  Ngắt kết nối
+                                </Button>
+                              ) : null}
+                            </Space>
+                          </Space>
+                        </Card>
+                      ) : null}
+
                       {showSecret ? (
                         <Card
                           type="inner"
@@ -1517,32 +1949,18 @@ export function ContentBrandsPage() {
                               size="large"
                             />
                           </Form.Item>
-                          {destKind === 'channel:facebook_page' ? (
+                          {isFbPage ? (
                             <Collapse
                               ghost
                               items={[
                                 {
                                   key: 'fb-token-help',
-                                  label: 'Hướng dẫn lấy Page Access Token (Facebook)',
+                                  label: 'Khẩn cấp: dán Page token (không khuyến nghị)',
                                   children: (
-                                    <ol style={{ margin: 0, paddingLeft: 18, lineHeight: 1.7 }}>
-                                      <li>
-                                        Vào{' '}
-                                        <a href="https://developers.facebook.com/" target="_blank" rel="noreferrer">
-                                          developers.facebook.com
-                                        </a>{' '}
-                                        → App → Graph API Explorer.
-                                      </li>
-                                      <li>
-                                        Generate token với <code>pages_show_list</code>,{' '}
-                                        <code>pages_read_engagement</code>, <code>pages_manage_posts</code>.
-                                      </li>
-                                      <li>
-                                        Gọi <code>GET /me/accounts</code> → lấy <code>id</code> và{' '}
-                                        <code>access_token</code> của Page.
-                                      </li>
-                                      <li>Dán token + Page ID → Lưu vào danh sách.</li>
-                                    </ol>
+                                    <Typography.Paragraph type="secondary" style={{ margin: 0, fontSize: 12 }}>
+                                      Chỉ khi OAuth chưa sẵn. Token Explorer thường hết hạn vài giờ — dùng Kết nối
+                                      Facebook ở trên.
+                                    </Typography.Paragraph>
                                   ),
                                 },
                               ]}
@@ -1632,6 +2050,26 @@ export function ContentBrandsPage() {
           ]}
         />
       </Drawer>
+      <Modal
+        title="Chọn Facebook Page"
+        open={fbPages.length > 0}
+        onCancel={() => {
+          setFbPages([]);
+          setFbSession(null);
+        }}
+        footer={null}
+      >
+        <Typography.Paragraph type="secondary">
+          KIT lấy Page Access Token từ tài khoản vừa cấp quyền. Chọn đúng trang của thương hiệu này.
+        </Typography.Paragraph>
+        <Space direction="vertical" style={{ width: '100%' }}>
+          {fbPages.map((p) => (
+            <Button key={p.id} block loading={fbBusy} onClick={() => void pickFbPage(p.id)}>
+              {p.name}
+            </Button>
+          ))}
+        </Space>
+      </Modal>
     </div>
   );
 }

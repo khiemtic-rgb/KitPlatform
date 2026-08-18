@@ -2,11 +2,20 @@ namespace KitPlatform.Packs.Content.Infrastructure;
 
 /// <summary>
 /// Plans which variant kinds + how many images to generate from brand site/channel targets.
+/// Nơi đăng is the source of truth — org variant-kind catalogs are not applied here.
 /// </summary>
 internal static class ContentDestinationPlan
 {
+    public sealed record Slot(
+        string Key,
+        string Label,
+        string DestType,
+        IReadOnlyList<string> VariantKinds,
+        bool NeedsImages);
+
     public sealed record Plan(
         IReadOnlyList<string> VariantKinds,
+        IReadOnlyList<Slot> Slots,
         int SuggestedImageCandidates,
         bool NeedsImages,
         int SiteCount,
@@ -16,90 +25,84 @@ internal static class ContentDestinationPlan
     public static Plan FromTargets(
         IReadOnlyList<ContentRepository.SiteRow> sites,
         IReadOnlyList<ContentRepository.ChannelRow> channels,
-        IReadOnlyList<string> orgVariantKinds,
         int maxImageCandidates)
     {
         var activeSites = sites.Where(s => s.IsActive).ToList();
         var activeChannels = channels.Where(c => c.IsActive).ToList();
-        var allowed = orgVariantKinds.Count > 0
-            ? orgVariantKinds.Select(k => k.Trim()).Where(k => k.Length > 0).ToHashSet(StringComparer.OrdinalIgnoreCase)
-            : null;
+        var slots = new List<Slot>();
 
-        var kinds = new List<string>();
-        void Add(string kind)
+        foreach (var site in activeSites)
         {
-            if (allowed is not null && !allowed.Contains(kind)) return;
-            if (kinds.Any(k => string.Equals(k, kind, StringComparison.OrdinalIgnoreCase))) return;
-            kinds.Add(kind);
-        }
-
-        var visualSlots = 0; // one slot per destination that typically needs a visual
-
-        foreach (var _ in activeSites)
-        {
-            Add("web_long");
-            Add("seo_meta");
-            visualSlots++;
+            var type = (site.ConnectorType ?? "").Trim().ToLowerInvariant();
+            slots.Add(new Slot(
+                "site:" + site.Id.ToString("N"),
+                string.IsNullOrWhiteSpace(site.Name) ? site.Code : site.Name,
+                string.IsNullOrWhiteSpace(type) ? "site" : type,
+                ["web_long", "seo_meta"],
+                NeedsImages: true));
         }
 
         foreach (var ch in activeChannels)
         {
-            switch ((ch.ChannelType ?? "").Trim().ToLowerInvariant())
+            var type = (ch.ChannelType ?? "").Trim().ToLowerInvariant();
+            var label = string.IsNullOrWhiteSpace(ch.Name) ? ch.Code : ch.Name;
+            var key = "channel:" + ch.Id.ToString("N");
+            switch (type)
             {
                 case "facebook_page":
-                    Add("fb_page");
-                    Add("fb_short");
-                    Add("social_caption");
-                    visualSlots++;
+                    slots.Add(new Slot(key, label, type, ["fb_page", "fb_short", "social_caption"], true));
                     break;
                 case "facebook_group":
-                    Add("group_suggested");
-                    visualSlots++;
+                    slots.Add(new Slot(key, label, type, ["group_suggested"], false));
                     break;
                 case "instagram":
-                    Add("instagram");
-                    visualSlots++;
+                    slots.Add(new Slot(key, label, type, ["instagram"], true));
                     break;
                 case "linkedin":
-                    Add("linkedin");
-                    visualSlots++;
+                    slots.Add(new Slot(key, label, type, ["linkedin"], true));
                     break;
                 case "threads":
-                    Add("fb_short");
-                    visualSlots++;
+                    slots.Add(new Slot(key, label, type, ["fb_short", "social_caption"], false));
                     break;
                 case "tiktok":
                 case "youtube":
-                    Add("tiktok_script");
-                    Add("social_caption");
-                    visualSlots++;
+                    slots.Add(new Slot(key, label, type, ["tiktok_script", "social_caption"], false));
                     break;
                 case "zalo_oa":
                 case "other":
-                    // Short caption-style pack — reuse fb_short when available.
-                    Add("fb_short");
-                    Add("social_caption");
-                    visualSlots++;
+                    slots.Add(new Slot(key, label, type, ["fb_short", "social_caption"], false));
+                    break;
+                default:
+                    slots.Add(new Slot(key, label, type.Length == 0 ? "other" : type, ["social_caption"], false));
                     break;
             }
         }
 
-        if (kinds.Count == 0)
+        var kinds = new List<string>();
+        foreach (var slot in slots)
         {
-            // No destinations configured — cheapest useful pack, no images.
-            Add("web_long");
+            foreach (var kind in slot.VariantKinds)
+            {
+                if (!kinds.Any(k => string.Equals(k, kind, StringComparison.OrdinalIgnoreCase)))
+                    kinds.Add(kind);
+            }
+        }
+
+        if (slots.Count == 0)
+        {
             return new Plan(
-                kinds,
+                [],
+                [],
                 SuggestedImageCandidates: 0,
                 NeedsImages: false,
                 activeSites.Count,
                 activeChannels.Count,
-                "Chưa có nơi đăng — chỉ gen web_long, không ảnh. Khai báo Website/MXH ở Thương hiệu để gen đúng kênh.");
+                "Chưa có nơi đăng — vào Thương hiệu để thêm Website / Fanpage / nhóm.");
         }
 
+        var visualSlots = slots.Count(s => s.NeedsImages);
         var cap = Math.Clamp(maxImageCandidates, 0, 10);
-        // 1 ảnh / chỗ đăng cần ảnh, tối đa = cap org (tiết kiệm hơn gen đủ max mỗi lần).
-        var suggested = cap <= 0 ? 0 : Math.Min(cap, Math.Max(1, visualSlots));
+        var suggested = cap <= 0 || visualSlots == 0 ? 0 : Math.Min(cap, visualSlots);
 
         var summary =
             $"{activeSites.Count} web · {activeChannels.Count} MXH → {kinds.Count} bản viết" +
@@ -107,10 +110,40 @@ internal static class ContentDestinationPlan
 
         return new Plan(
             kinds,
+            slots,
             suggested,
             NeedsImages: suggested > 0,
             activeSites.Count,
             activeChannels.Count,
             summary);
+    }
+
+    public static Plan Restrict(Plan plan, IReadOnlyList<string>? requestedKinds)
+    {
+        if (requestedKinds is not { Count: > 0 })
+            return plan;
+
+        var want = requestedKinds
+            .Select(k => k.Trim())
+            .Where(k => k.Length > 0)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var slots = plan.Slots
+            .Where(s => s.VariantKinds.Any(k => want.Contains(k)))
+            .ToList();
+        var kinds = plan.VariantKinds.Where(k => want.Contains(k)).ToList();
+        if (kinds.Count == 0)
+            throw new InvalidOperationException(
+                "Kênh đã chọn không khớp nơi đăng của brand. Bỏ tick bớt chỗ, hoặc thêm nơi đăng ở Thương hiệu.");
+
+        var needsImages = plan.NeedsImages && slots.Any(s => s.NeedsImages);
+        var suggested = needsImages ? plan.SuggestedImageCandidates : 0;
+        return new Plan(
+            kinds,
+            slots,
+            suggested,
+            needsImages,
+            plan.SiteCount,
+            plan.ChannelCount,
+            plan.Summary + " · lọc " + string.Join("/", kinds));
     }
 }

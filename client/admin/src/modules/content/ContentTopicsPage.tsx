@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  Alert,
   App,
   Button,
   Card,
@@ -11,6 +13,7 @@ import {
   Select,
   Space,
   Table,
+  Tabs,
   Tag,
   Typography,
   Upload,
@@ -21,6 +24,7 @@ import {
   CloudUploadOutlined,
   DeleteOutlined,
   DownloadOutlined,
+  FacebookOutlined,
   FileExcelOutlined,
   FolderOpenOutlined,
   PlusOutlined,
@@ -35,20 +39,28 @@ import {
   deleteContentTopic,
   fetchContentAssetObjectUrl,
   fetchContentBrands,
+  fetchContentChannels,
+  fetchContentSites,
   fetchContentTopicDetail,
   fetchContentTopics,
   generateContentTopic,
   publishContentTopic,
   runContentPublishJob,
   selectContentAsset,
+  startFacebookOAuth,
   updateContentTopic,
   type ContentAsset,
   type ContentBrand,
+  type ContentChannelTarget,
   type ContentPublishJob,
+  type ContentSiteTarget,
   type ContentTopic,
   type ContentTopicDetail,
   type ContentVariant,
 } from '@/shared/api/content.api';
+import { FB_RETURN_KEY } from '@/modules/content/ContentFacebookCallbackPage';
+import { ContentManualPostTab } from '@/modules/content/ContentManualPostTab';
+import { writeClipboardImage } from '@/modules/content/content-manual-dest';
 import {
   clearLocalImageLibrary,
   getLocalImageLibraryStatus,
@@ -154,8 +166,33 @@ function formatPublishError(raw: string): { summary: string; hint?: string; raw:
     }
     return { summary: decoded, raw: text };
   }
+  if (
+    lower.includes('mất quyền đăng') ||
+    lower.includes('kết nối lại facebook') ||
+    lower.includes('pages_manage_posts')
+  ) {
+    return {
+      summary: text.length > 160 ? `${text.slice(0, 160)}…` : text,
+      hint: 'Bấm «Kết nối lại» ngay cột Thao tác — đăng nhập Facebook, chọn Page, rồi «Đăng lại + ảnh».',
+      raw: text,
+    };
+  }
   const short = text.length > 160 ? `${text.slice(0, 160)}…` : text;
   return { summary: short, raw: text };
+}
+
+function isFacebookReconnectJob(job: ContentPublishJob) {
+  if (job.connectorType !== 'facebook_page' || job.status !== 'Failed') return false;
+  const err = (job.lastError ?? '').toLowerCase();
+  return (
+    err.includes('kết nối lại') ||
+    err.includes('mất quyền') ||
+    err.includes('pages_manage_posts') ||
+    err.includes('oauth') ||
+    err.includes('"code":190') ||
+    err.includes('(#190)') ||
+    err.includes('expired')
+  );
 }
 
 function parseTitleLines(raw: string): string[] {
@@ -172,10 +209,13 @@ function parseTitleLines(raw: string): string[] {
 
 export function ContentTopicsPage() {
   const { message, modal } = App.useApp();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [topics, setTopics] = useState<ContentTopic[]>([]);
   const [brands, setBrands] = useState<ContentBrand[]>([]);
   const [brandFilter, setBrandFilter] = useState<string | undefined>();
+  const [coreFilter, setCoreFilter] = useState<string | undefined>();
   const [open, setOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [editing, setEditing] = useState<ContentTopic | null>(null);
@@ -203,7 +243,8 @@ export function ContentTopicsPage() {
   const [batchApproving, setBatchApproving] = useState(false);
   const [batchPublishing, setBatchPublishing] = useState(false);
   const [form] = Form.useForm();
-  const didAutoSelectBrand = useRef(false);
+  const [channels, setChannels] = useState<ContentChannelTarget[]>([]);
+  const [sites, setSites] = useState<ContentSiteTarget[]>([]);
 
   /** Folder is per-brand — prefer topic brand, else list filter. */
   const libBrandId = detail?.topic.brandId ?? brandFilter ?? undefined;
@@ -215,6 +256,21 @@ export function ContentTopicsPage() {
     status === 'Approved' || status === 'Review' || status === 'Draft';
 
   const canSelectRow = (status: string) => canBulkApprove(status) || canBulkPublish(status);
+
+  const topicCoreKey = (row: ContentTopic) => row.corePackageId || row.id;
+  const topicCoreLabel = (row: ContentTopic) => row.coreTitle || row.title;
+
+  const coreOptions = [...topics]
+    .reduce<Array<{ value: string; label: string }>>((acc, row) => {
+      const value = topicCoreKey(row);
+      if (!acc.some((o) => o.value === value)) acc.push({ value, label: topicCoreLabel(row) });
+      return acc;
+    }, [])
+    .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+
+  const visibleTopics = coreFilter
+    ? topics.filter((row) => topicCoreKey(row) === coreFilter)
+    : topics;
 
   const refreshLocalLib = useCallback(async () => {
     if (!isLocalImageLibrarySupported() || !libBrandId) {
@@ -351,13 +407,6 @@ export function ContentTopicsPage() {
       ]);
       setTopics(t);
       setBrands(b);
-      // Lần đầu vào trang: chọn sẵn brand đầu để lưới gọn (ẩn cột thương hiệu).
-      if (!brandFilter && b.length > 0 && !didAutoSelectBrand.current) {
-        didAutoSelectBrand.current = true;
-        setBrandFilter(b[0]!.id);
-        return;
-      }
-      didAutoSelectBrand.current = true;
       void refreshLocalLib();
     } catch (e) {
       message.error(apiErrorMessage(e, 'Không tải được danh sách bài'));
@@ -372,7 +421,7 @@ export function ContentTopicsPage() {
 
   useEffect(() => {
     setSelectedIds([]);
-  }, [brandFilter]);
+  }, [brandFilter, coreFilter]);
 
   useEffect(() => {
     return () => {
@@ -385,6 +434,18 @@ export function ContentTopicsPage() {
     try {
       const d = await fetchContentTopicDetail(topicId);
       setDetail(d);
+      if (d.topic.corePackageId) setCoreFilter(d.topic.corePackageId);
+      try {
+        const [ch, st] = await Promise.all([
+          fetchContentChannels(d.topic.brandId),
+          fetchContentSites(d.topic.brandId),
+        ]);
+        setChannels(ch);
+        setSites(st);
+      } catch {
+        setChannels([]);
+        setSites([]);
+      }
       const urls: Record<string, string> = {};
       for (const a of d.assets) {
         try {
@@ -406,6 +467,14 @@ export function ContentTopicsPage() {
       setDetailLoading(false);
     }
   };
+
+  useEffect(() => {
+    const topicId = searchParams.get('topic');
+    if (!topicId) return;
+    setDetailOpen(true);
+    void loadDetail(topicId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open from Videos / Góc brand
+  }, [searchParams.get('topic')]);
 
   const openCreate = () => {
     setEditing(null);
@@ -477,8 +546,7 @@ export function ContentTopicsPage() {
         setDetailOpen(true);
         await loadDetail(created.id);
         const res = await generateContentTopic(created.id, { skipImages: false });
-        if (res.budgetBlocked) message.warning(res.message ?? 'Hết ngân sách AI');
-        else message.success(res.message ?? 'AI đã viết xong');
+        message.success(res.message ?? 'AI đã viết xong');
         await loadDetail(created.id);
         await load();
       }
@@ -589,13 +657,10 @@ export function ContentTopicsPage() {
     setRowBusyId(row.id);
     try {
       const res = await generateContentTopic(row.id, { skipImages: !!localLibName });
-      if (res.budgetBlocked) {
-        message.warning(res.message ?? 'Hết ngân sách AI');
-      } else {
-        message.success(
-          `AI xong: ${row.title}` + (localLibName ? ' · Ảnh lấy từ kho máy khi Xuất bản' : ''),
-        );
-      }
+      message.success(
+        (res.message ?? `AI xong: ${row.title}`) +
+          (localLibName ? ' · Ảnh lấy từ kho máy khi Xuất bản' : ''),
+      );
       await load();
       setDetailOpen(true);
       await loadDetail(row.id);
@@ -623,16 +688,10 @@ export function ContentTopicsPage() {
       // Prefer local library → don't burn Gemini/Pollinations for images.
       const skip = skipImages || !!localLibName;
       const res = await generateContentTopic(detail.topic.id, { skipImages: skip });
-      if (res.budgetBlocked) {
-        message.warning(res.message ?? 'Đã chặn vì hết ngân sách AI');
-      } else if (res.message?.includes('ảnh lỗi') || res.message?.includes('Không tạo được ảnh')) {
-        message.warning(res.message);
-      } else {
-        message.success(
-          (res.message ?? 'AI đã viết xong') +
-            (localLibName ? ' · Ảnh sẽ lấy từ kho máy khi Xuất bản.' : ''),
-        );
-      }
+      message.success(
+        (res.message ?? 'AI đã viết xong') +
+          (localLibName ? ' · Ảnh sẽ lấy từ kho máy khi Xuất bản.' : ''),
+      );
       await loadDetail(detail.topic.id);
       await load();
     } catch (e) {
@@ -647,13 +706,7 @@ export function ContentTopicsPage() {
     setBusy(true);
     try {
       const res = await generateContentTopic(detail.topic.id, { imagesOnly: true });
-      if (res.budgetBlocked) {
-        message.warning(res.message ?? 'Đã chặn vì hết ngân sách AI');
-      } else if ((detail && res.assets.length === 0) || res.message?.includes('Không tạo')) {
-        message.warning(res.message ?? 'Không tạo được ảnh');
-      } else {
-        message.success(res.message ?? 'Đã tạo ảnh');
-      }
+      message.success(res.message ?? 'Đã tạo ảnh');
       await loadDetail(detail.topic.id);
       await load();
     } catch (e) {
@@ -675,6 +728,29 @@ export function ContentTopicsPage() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const onCopyManualImage = async () => {
+    if (!detail) throw new Error('Chưa mở bài');
+    if (libBrandId && (pickedLocalName || localPreviews.length > 0)) {
+      const imgs = await listLocalImages(libBrandId, { requestPermission: true });
+      const entry =
+        (pickedLocalName && imgs.find((i) => i.name === pickedLocalName)) ||
+        pickBestLocalImage(detail.topic.title, imgs) ||
+        imgs[0];
+      if (entry) {
+        const file = await prepareLocalImageForPublish(entry);
+        await writeClipboardImage(file.blob);
+        return;
+      }
+    }
+    const selected = detail.assets.find((a) => a.isSelected) ?? detail.assets[0];
+    if (selected && assetUrls[selected.id]) {
+      const blob = await fetch(assetUrls[selected.id]).then((r) => r.blob());
+      await writeClipboardImage(blob);
+      return;
+    }
+    throw new Error('Chưa chọn ảnh — sang tab Ảnh trước.');
   };
 
   const onApprove = async () => {
@@ -1104,6 +1180,32 @@ export function ContentTopicsPage() {
     }
   };
 
+  const onReconnectFacebook = async (job: ContentPublishJob) => {
+    const brandId = job.brandId || detail?.topic.brandId;
+    if (!brandId) {
+      message.error('Thiếu thương hiệu để kết nối Facebook.');
+      return;
+    }
+    setBusy(true);
+    try {
+      if (detail?.topic.id) {
+        sessionStorage.setItem(FB_RETURN_KEY, `/content/topics?topic=${detail.topic.id}`);
+      }
+      const r = await startFacebookOAuth(brandId);
+      window.location.href = r.url;
+    } catch (e) {
+      const msg = apiErrorMessage(e, 'Chưa mở được Facebook Login. Cấu hình App ở Model AI → Facebook.');
+      message.error(msg);
+      if (/chưa cấu hình facebook app|model ai/i.test(msg)) {
+        if (detail?.topic.id) {
+          sessionStorage.setItem(FB_RETURN_KEY, `/content/topics?topic=${detail.topic.id}`);
+        }
+        navigate('/content/ai#facebook');
+      }
+      setBusy(false);
+    }
+  };
+
   const onDeleteTopic = async (row: ContentTopic) => {
     setRowBusyId(row.id);
     try {
@@ -1139,8 +1241,8 @@ export function ContentTopicsPage() {
             Bài viết
           </Typography.Title>
           <Typography.Text type="secondary">
-            Tab này: <strong>ảnh + duyệt + xuất bản</strong> (web/FB). Generate All / sang brand khác làm ở{' '}
-            <strong>Ý tưởng</strong>. Excel / «Nhờ AI» chỉ là <strong>lối tắt 1 bài</strong>.
+            Ảnh + duyệt + xuất bản cho góc brand đã viết. Ý tưởng gốc chỉ nằm ở Góc brand / Idea Pool,
+            không đưa vào đây.
             {brands.length === 0 ? ' Hãy thêm thương hiệu trước.' : null}
           </Typography.Text>
         </div>
@@ -1175,6 +1277,16 @@ export function ContentTopicsPage() {
               Kho ảnh local cần Chrome/Edge
             </Typography.Text>
           )}
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder="Lọc ý tưởng gốc"
+            style={{ minWidth: 260 }}
+            value={coreFilter}
+            onChange={setCoreFilter}
+            options={coreOptions}
+          />
           <Select
             allowClear
             placeholder="Lọc / chọn thương hiệu"
@@ -1234,7 +1346,7 @@ export function ContentTopicsPage() {
       <Table
         rowKey="id"
         loading={loading}
-        dataSource={topics}
+        dataSource={visibleTopics}
         locale={{
           emptyText:
             brands.length === 0
@@ -1253,7 +1365,27 @@ export function ContentTopicsPage() {
             ...(brandFilter
               ? []
               : [{ title: 'Thương hiệu', dataIndex: 'brandName', width: 120 } as const]),
-            { title: 'Tiêu đề', dataIndex: 'title' },
+            {
+              title: 'Tiêu đề',
+              dataIndex: 'title',
+              render: (title: string, row: ContentTopic) => (
+                <div>
+                  <div>{title}</div>
+                  {row.coreTitle && row.coreTitle !== title ? (
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      Từ ý tưởng: {row.coreTitle}
+                    </Typography.Text>
+                  ) : null}
+                </div>
+              ),
+            },
+            {
+              title: 'Bản viết',
+              dataIndex: 'variantCount',
+              width: 90,
+              align: 'center',
+              render: (n?: number) => n ?? 0,
+            },
             {
               title: 'Ngày hiển thị',
               dataIndex: 'displayAt',
@@ -1514,32 +1646,48 @@ export function ContentTopicsPage() {
               </Typography.Text>
               <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
                 {localLibName
-                  ? <>AI viết chữ → <strong>Đẩy lịch đăng</strong> (chọn ảnh từ kho máy + ngày hiển thị → WP/FB tự đăng).</>
-                  : <>Chọn ảnh → <strong>Duyệt</strong> → <strong>Xuất bản</strong>.</>}
+                  ? <>AI viết chữ → <strong>Đẩy lịch đăng</strong> (WP/Fanpage). Nhóm / LinkedIn → tab <strong>Đăng tay</strong>.</>
+                  : <>Chọn ảnh → <strong>Duyệt</strong> → <strong>Xuất bản</strong> hoặc tab <strong>Đăng tay</strong>.</>}
               </Typography.Paragraph>
             </div>
 
-            <Card size="small" title={`Bản viết (${detail.variants.length})`}>
-              {detail.variants.length === 0 ? (
-                <Typography.Text type="secondary">Chưa có — bấm «Nhờ AI viết».</Typography.Text>
-              ) : (
-                detail.variants.map((v: ContentVariant) => (
-                  <div key={v.id} style={{ marginBottom: 12 }}>
-                    <Typography.Text strong>
-                      {v.kind}
-                      {v.title ? ` — ${v.title}` : ''}
-                    </Typography.Text>
-                    <Typography.Paragraph
-                      ellipsis={{ rows: 4, expandable: true, symbol: 'xem thêm' }}
-                      style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}
-                    >
-                      {v.bodyMarkdown}
-                    </Typography.Paragraph>
-                  </div>
-                ))
-              )}
-            </Card>
-
+            <Tabs
+              defaultActiveKey="write"
+              items={[
+                {
+                  key: 'write',
+                  label: `Bản viết (${detail.variants.length})`,
+                  children:
+                    detail.variants.length === 0 ? (
+                      <Alert
+                        type="info"
+                        showIcon
+                        message="Bài này chưa có chữ"
+                        description="Đây thường là ý tưởng gốc (Xuân Hòa / sổ tay), không phải góc Famixa/KIT Tech đã Generate. Xóa lọc thương hiệu trên bảng, tìm hàng Bản viết > 0, hoặc mở từ Góc brand."
+                      />
+                    ) : (
+                      detail.variants.map((v: ContentVariant) => (
+                        <div key={v.id} style={{ marginBottom: 16 }}>
+                          <Typography.Text strong>
+                            {v.kind}
+                            {v.title ? ` — ${v.title}` : ''}
+                          </Typography.Text>
+                          <Typography.Paragraph
+                            ellipsis={{ rows: 4, expandable: true, symbol: 'xem thêm' }}
+                            style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}
+                          >
+                            {v.bodyMarkdown}
+                          </Typography.Paragraph>
+                        </div>
+                      ))
+                    ),
+                },
+                {
+                  key: 'images',
+                  label: localLibName
+                    ? `Ảnh · ${localLibName} (${localLibCount})`
+                    : `Ảnh (${detail.assets.length})`,
+                  children: (
             <Card
               size="small"
               title={
@@ -1731,7 +1879,34 @@ export function ContentTopicsPage() {
                 </div>
               )}
             </Card>
-
+                  ),
+                },
+                {
+                  key: 'manual',
+                  label: 'Đăng tay',
+                  children: (
+                    <ContentManualPostTab
+                      channels={channels}
+                      sites={sites}
+                      variants={detail.variants}
+                      hasImage={
+                        !!pickedLocalName ||
+                        localPreviews.length > 0 ||
+                        detail.assets.some((a) => a.isSelected) ||
+                        detail.assets.length > 0
+                      }
+                      onCopyImage={onCopyManualImage}
+                      onCopied={(ok, detailMsg) => {
+                        if (ok) message.success(detailMsg);
+                        else message.warning(detailMsg);
+                      }}
+                    />
+                  ),
+                },
+                {
+                  key: 'jobs',
+                  label: `Xuất bản (${detail.jobs.length})`,
+                  children: (
             <Card
               size="small"
               title={`Xuất bản (${detail.jobs.length})`}
@@ -1868,28 +2043,45 @@ export function ContentTopicsPage() {
                   },
                   {
                     title: 'Thao tác',
-                    width: 140,
+                    width: 220,
                     fixed: 'right',
                     render: (_, j) =>
                       j.status === 'Failed' || j.status === 'Queued' || j.status === 'Succeeded' ? (
-                        <Button
-                          type={j.status === 'Failed' ? 'primary' : 'link'}
-                          size="small"
-                          danger={j.status === 'Failed'}
-                          loading={busy}
-                          onClick={() => void onRetryJob(j)}
-                        >
-                          {j.connectorType === 'facebook_page' ||
-                          j.connectorType === 'astro_git' ||
-                          j.connectorType === 'wordpress_rest'
-                            ? 'Đăng lại + ảnh'
-                            : 'Chạy lại'}
-                        </Button>
+                        <Space size={6} wrap>
+                          {isFacebookReconnectJob(j) ? (
+                            <Button
+                              type="primary"
+                              size="small"
+                              icon={<FacebookOutlined />}
+                              loading={busy}
+                              onClick={() => void onReconnectFacebook(j)}
+                            >
+                              Kết nối lại
+                            </Button>
+                          ) : null}
+                          <Button
+                            type={j.status === 'Failed' && !isFacebookReconnectJob(j) ? 'primary' : 'link'}
+                            size="small"
+                            danger={j.status === 'Failed' && !isFacebookReconnectJob(j)}
+                            loading={busy}
+                            onClick={() => void onRetryJob(j)}
+                          >
+                            {j.connectorType === 'facebook_page' ||
+                            j.connectorType === 'astro_git' ||
+                            j.connectorType === 'wordpress_rest'
+                              ? 'Đăng lại + ảnh'
+                              : 'Chạy lại'}
+                          </Button>
+                        </Space>
                       ) : null,
                   },
                 ]}
               />
             </Card>
+                  ),
+                },
+              ]}
+            />
           </Space>
         ) : null}
       </Drawer>

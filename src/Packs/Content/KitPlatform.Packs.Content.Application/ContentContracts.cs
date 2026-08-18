@@ -12,6 +12,8 @@ public sealed record ContentOrgSettingsDto(
     IReadOnlyList<string> ConnectorTypes,
     IReadOnlyList<string> ChannelTypes,
     ContentAiConfigDto Ai,
+    ContentVideoConfigDto Video,
+    ContentFacebookConfigDto Facebook,
     decimal MonthSpendEstimateUsd,
     decimal RemainingBudgetUsd,
     DateTimeOffset UpdatedAt);
@@ -24,6 +26,15 @@ public sealed record ContentAiConfigDto(
     string? GeminiApiKeySecretRef,
     bool ApiKeyConfigured);
 
+public sealed record ContentVideoConfigDto(
+    string? CreatomateApiKeySecretRef,
+    bool CreatomateConfigured,
+    string? ElevenLabsApiKeySecretRef,
+    bool ElevenLabsConfigured,
+    string? ElevenLabsVoiceId,
+    string? PublicMediaBaseUrl,
+    string? CreatomateTemplateId);
+
 public sealed record UpdateContentOrgSettingsRequest(
     decimal? MonthlyCeilingUsd,
     int? MaxImageCandidatesPerItem,
@@ -34,7 +45,9 @@ public sealed record UpdateContentOrgSettingsRequest(
     List<string>? VariantKinds,
     List<string>? ConnectorTypes,
     List<string>? ChannelTypes,
-    UpdateContentAiConfigRequest? Ai);
+    UpdateContentAiConfigRequest? Ai,
+    UpdateContentVideoConfigRequest? Video,
+    UpdateContentFacebookConfigRequest? Facebook);
 
 /// <summary>
 /// AI knobs. <see cref="GeminiApiKey"/> is write-only (stored server-side, never returned on read).
@@ -54,6 +67,77 @@ public sealed record ContentAiTestResultDto(
     bool ApiKeyConfigured,
     string? TextModel);
 
+/// <summary>
+/// Video knobs. API keys are write-only (stored server-side, never returned on read).
+/// Prefer secret refs pointing at env / vault names.
+/// </summary>
+public sealed record UpdateContentVideoConfigRequest(
+    string? CreatomateApiKeySecretRef,
+    string? CreatomateApiKey,
+    string? ElevenLabsApiKeySecretRef,
+    string? ElevenLabsApiKey,
+    string? ElevenLabsVoiceId,
+    string? PublicMediaBaseUrl,
+    string? CreatomateTemplateId);
+
+public sealed record ContentVideoTestResultDto(
+    bool CreatomateOk,
+    string? CreatomateMessage,
+    bool CreatomateConfigured,
+    bool ElevenLabsOk,
+    string? ElevenLabsMessage,
+    bool ElevenLabsConfigured,
+    string? VoiceId);
+
+public sealed record ContentFacebookConfigDto(
+    string? AppId,
+    bool AppSecretConfigured,
+    string? AppIdSecretRef,
+    string? AppSecretSecretRef,
+    string? RedirectUri);
+
+public sealed record UpdateContentFacebookConfigRequest(
+    string? AppId,
+    string? AppIdSecretRef,
+    string? AppSecretSecretRef,
+    string? AppSecret,
+    string? RedirectUri);
+
+public sealed record ContentFacebookTestResultDto(
+    bool Ok,
+    string? Message,
+    bool AppSecretConfigured,
+    string? AppId);
+
+public sealed record ContentFacebookStartDto(
+    string Url,
+    string State);
+
+public sealed record ContentFacebookPageOptionDto(
+    string Id,
+    string Name);
+
+public sealed record ContentFacebookPendingDto(
+    string SessionId,
+    Guid BrandId,
+    IReadOnlyList<ContentFacebookPageOptionDto> Pages);
+
+public sealed record ContentFacebookCompleteRequest(
+    string Code,
+    string State);
+
+public sealed record ContentFacebookSelectRequest(
+    string SessionId,
+    string PageId);
+
+public sealed record ContentFacebookVerifyDto(
+    bool Ok,
+    string Status,
+    string? PageId,
+    string? PageName,
+    string? Message,
+    DateTimeOffset? LastVerifiedAt);
+
 public sealed record ContentBrandDto(
     Guid Id,
     string Code,
@@ -68,7 +152,9 @@ public sealed record ContentBrandDto(
     string? OperationalBrief,
     ContentBrandKnowledgeDto Knowledge,
     decimal MonthSpendEstimateUsd,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    bool BrainReady = false,
+    IReadOnlyList<string>? BrainMissing = null);
 
 public sealed record UpsertContentBrandRequest(
     string Code,
@@ -121,6 +207,20 @@ public sealed record ContentChannelTargetDto(
     bool IsActive,
     int SortOrder);
 
+public sealed record ContentWriteSlotDto(
+    string Key,
+    string Label,
+    string DestType,
+    IReadOnlyList<string> VariantKinds);
+
+public sealed record ContentWritePlanDto(
+    Guid BrandId,
+    string BrandCode,
+    string BrandName,
+    IReadOnlyList<ContentWriteSlotDto> Slots,
+    IReadOnlyList<string> VariantKinds,
+    string Summary);
+
 public sealed record UpsertContentChannelTargetRequest(
     string Code,
     string Name,
@@ -148,7 +248,10 @@ public sealed record ContentTopicDto(
     string? BodyOutline,
     DateTimeOffset? DisplayAt,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    int VariantCount = 0,
+    Guid? CorePackageId = null,
+    string? CoreTitle = null);
 
 public sealed record ContentVariantDto(
     Guid Id,
@@ -198,7 +301,9 @@ public sealed record GenerateContentRequest(
     bool SkipImages = false,
     int? CandidateCount = null,
     /// <summary>Only generate/replace images; keep existing text variants.</summary>
-    bool ImagesOnly = false);
+    bool ImagesOnly = false,
+    /// <summary>When set, only these variant kinds (intersected with destination plan).</summary>
+    IReadOnlyList<string>? VariantKinds = null);
 
 public sealed record GenerateContentResultDto(
     ContentTopicDto Topic,
@@ -225,6 +330,31 @@ public sealed class PublishContentRequest
 public sealed record PublishContentResultDto(
     IReadOnlyList<ContentPublishJobDto> Jobs);
 
+public sealed record ContentCoreIdeaDto(
+    string? Insight,
+    string? Problem,
+    string? CoreMessage,
+    IReadOnlyList<string> Keywords,
+    string? Source,
+    string? SourceUrl = null,
+    string? SourceType = null,
+    string? Evidence = null,
+    string? FactOrOpinion = null);
+
+public sealed record ContentBrandFitDto(
+    Guid BrandId,
+    string BrandCode,
+    string BrandName,
+    string Verdict,
+    int Score,
+    string? Reason,
+    string? Title,
+    string? Angle,
+    string? Audience,
+    string? Cta,
+    Guid? PackageId,
+    string? Outline = null);
+
 public sealed record ContentPackageDto(
     Guid Id,
     Guid BrandId,
@@ -240,14 +370,20 @@ public sealed record ContentPackageDto(
     string Priority,
     string Status,
     Guid? SourcePackageId,
+    string? SourceTitle,
     DateTimeOffset? DisplayAt,
     int VariantCount,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    ContentCoreIdeaDto? CoreIdea = null,
+    IReadOnlyList<ContentBrandFitDto>? BrandFits = null,
+    int AdaptationCount = 0,
+    ContentQualityGateDto? QualityGate = null);
 
 public sealed record ContentPackageDetailDto(
     ContentPackageDto Package,
-    ContentTopicDetailDto TopicDetail);
+    ContentTopicDetailDto TopicDetail,
+    IReadOnlyList<ContentPackageDto> Adaptations);
 
 public sealed record UpsertContentPackageRequest(
     Guid BrandId,
@@ -260,7 +396,68 @@ public sealed record UpsertContentPackageRequest(
     string? Priority,
     string? BodyOutline,
     DateTimeOffset? DisplayAt,
-    string? CtaUrl);
+    string? CtaUrl,
+    string? Insight = null,
+    string? Problem = null,
+    string? CoreMessage = null,
+    List<string>? Keywords = null,
+    string? Source = null,
+    string? SourceUrl = null,
+    string? SourceType = null,
+    string? Evidence = null,
+    string? FactOrOpinion = null);
+
+public sealed record AnalyzeAdaptRequest(
+    IReadOnlyList<Guid>? BrandIds = null,
+    bool IncludeMaybe = true,
+    bool GenerateFits = false,
+    bool CreatePackages = true,
+    bool IncludeSourceBrand = false);
+
+public sealed record PoolIdeaDraft(
+    string Title,
+    string? Insight = null,
+    string? Problem = null,
+    string? CoreMessage = null,
+    string? Angle = null,
+    string? Audience = null,
+    string? Goal = null,
+    string? Source = null,
+    string? SourceUrl = null,
+    string? SourceType = null,
+    string? Evidence = null,
+    string? FactOrOpinion = null);
+
+public sealed record CreatePoolIdeasRequest(
+    Guid? HomeBrandId = null,
+    IReadOnlyList<PoolIdeaDraft>? Ideas = null);
+
+public sealed record CreatePoolIdeasResultDto(
+    IReadOnlyList<ContentPackageDto> Packages,
+    string? Message);
+
+public sealed record AnalyzePoolRequest(
+    IReadOnlyList<Guid> PackageIds,
+    IReadOnlyList<Guid>? BrandIds = null,
+    bool IncludeMaybe = true);
+
+public sealed record AnalyzePoolResultDto(
+    IReadOnlyList<EnqueueWorkResultDto> Jobs,
+    string Message);
+
+public sealed record ApplyPoolFitItem(Guid PackageId, Guid BrandId);
+
+public sealed record ApplyPoolFitsRequest(
+    IReadOnlyList<ApplyPoolFitItem> Items,
+    bool GenerateFits = false,
+    IReadOnlyList<string>? VariantKinds = null);
+
+public sealed record ApplyPoolFitsResultDto(
+    int Requested,
+    int Created,
+    int Skipped,
+    IReadOnlyList<ContentBrandFitDto> Fits,
+    string? Message);
 
 public sealed record AdaptContentPackageRequest(
     Guid TargetBrandId,
@@ -312,6 +509,19 @@ public interface IContentOrgSettingsService
     Task<ContentOrgSettingsDto> UpdateAsync(UpdateContentOrgSettingsRequest request, CancellationToken cancellationToken = default);
     Task<ContentBudgetSnapshotDto> GetBudgetSnapshotAsync(CancellationToken cancellationToken = default);
     Task<ContentAiTestResultDto> TestAiAsync(CancellationToken cancellationToken = default);
+    Task<ContentVideoTestResultDto> TestVideoAsync(CancellationToken cancellationToken = default);
+    Task<ContentFacebookTestResultDto> TestFacebookAsync(CancellationToken cancellationToken = default);
+}
+
+public interface IContentFacebookConnectionService
+{
+    Task<ContentFacebookStartDto> StartAsync(Guid brandId, CancellationToken cancellationToken = default);
+    Task<ContentFacebookPendingDto> CompleteAsync(string code, string state, CancellationToken cancellationToken = default);
+    Task<ContentFacebookPendingDto?> GetPendingAsync(string sessionId, CancellationToken cancellationToken = default);
+    Task<ContentChannelTargetDto> SelectPageAsync(string sessionId, string pageId, CancellationToken cancellationToken = default);
+    Task<ContentFacebookVerifyDto> VerifyAsync(Guid channelId, CancellationToken cancellationToken = default);
+    Task<ContentChannelTargetDto> DisconnectAsync(Guid channelId, CancellationToken cancellationToken = default);
+    Task MarkNeedReconnectAsync(Guid channelId, string error, CancellationToken cancellationToken = default);
 }
 
 public interface IContentBrandService
@@ -324,6 +534,7 @@ public interface IContentBrandService
     Task<ContentSiteTargetDto> UpsertSiteAsync(Guid brandId, UpsertContentSiteTargetRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ContentChannelTargetDto>> ListChannelsAsync(Guid brandId, CancellationToken cancellationToken = default);
     Task<ContentChannelTargetDto> UpsertChannelAsync(Guid brandId, UpsertContentChannelTargetRequest request, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ContentWritePlanDto>> ListWritePlansAsync(Guid? brandId = null, CancellationToken cancellationToken = default);
 }
 
 public interface IContentTopicService
@@ -366,6 +577,7 @@ public interface IContentPackageService
     Task<IReadOnlyList<ContentPackageDto>> ListAsync(
         Guid? brandId,
         string? status,
+        bool coresOnly = false,
         CancellationToken cancellationToken = default);
 
     Task<ContentPackageDto?> GetAsync(Guid id, CancellationToken cancellationToken = default);
@@ -385,10 +597,31 @@ public interface IContentPackageService
         AdaptContentPackageRequest request,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Core idea → brand-fit scores → create a distinct adaptation package per fitting brand.
+    /// Does not copy the same article. Skips brands with verdict skip.
+    /// </summary>
+    Task<IReadOnlyList<ContentBrandFitDto>> AnalyzeAndAdaptAsync(
+        Guid id,
+        AnalyzeAdaptRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<CreatePoolIdeasResultDto> CreatePoolAsync(
+        CreatePoolIdeasRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<ApplyPoolFitsResultDto> ApplyPoolFitsAsync(
+        ApplyPoolFitsRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<ContentPackageDto?> ApproveAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<BatchApprovePackagesResultDto> ApproveBatchAsync(
         BatchApprovePackagesRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<(byte[] Bytes, string FileName)> ExportManualPackAsync(
+        Guid id,
         CancellationToken cancellationToken = default);
 }
 
@@ -497,7 +730,7 @@ public sealed class ContentOptions
     /// <summary>Gemini / Google AI Studio key. Falls back to env GEMINI_API_KEY.</summary>
     public string? GeminiApiKey { get; set; }
 
-    public string TextModel { get; set; } = "gemini-flash-latest";
+    public string TextModel { get; set; } = "gemini-3.6-flash";
     public string? ImageModel { get; set; }
     public string AssetRoot { get; set; } = "App_Data/content-assets";
 
@@ -517,4 +750,175 @@ public sealed class ContentOptions
     public string? PublicMediaBaseUrl { get; set; }
 
     public string VideoAssetRoot { get; set; } = "App_Data/content-video";
+
+    /// <summary>Background worker for generate / publish / video. Off in tests if needed.</summary>
+    public bool WorkerEnabled { get; set; } = true;
+
+    public int WorkerPollSeconds { get; set; } = 2;
+
+    public int WorkerMaxRetries { get; set; } = 3;
+
+    public string WorkAssetRoot { get; set; } = "App_Data/content-work";
+
+    /// <summary>Meta app id for Facebook Login. Falls back to env FACEBOOK_APP_ID.</summary>
+    public string? FacebookAppId { get; set; }
+
+    /// <summary>Meta app secret. Falls back to env FACEBOOK_APP_SECRET. Never returned on GET.</summary>
+    public string? FacebookAppSecret { get; set; }
+
+    /// <summary>OAuth redirect — must match Valid OAuth Redirect URIs on the Meta app.</summary>
+    public string? FacebookRedirectUri { get; set; }
+}
+
+public static class ContentWorkKinds
+{
+    public const string GenerateTopic = "generate_topic";
+    public const string GeneratePackage = "generate_package";
+    public const string PublishTopic = "publish_topic";
+    public const string VideoMvp = "video_mvp";
+    public const string VideoRender = "video_render";
+    public const string BrandAdapt = "brand_adapt";
+}
+
+public static class ContentWorkStatuses
+{
+    public const string Queued = "Queued";
+    public const string Running = "Running";
+    public const string Succeeded = "Succeeded";
+    public const string Failed = "Failed";
+    public const string Cancelled = "Cancelled";
+}
+
+public sealed record ContentWorkJobDto(
+    Guid Id,
+    string Kind,
+    string Status,
+    Guid? BrandId,
+    string? BrandCode,
+    string? BrandName,
+    Guid? TopicId,
+    Guid? PackageId,
+    Guid? VideoJobId,
+    string? Title,
+    string? ErrorMessage,
+    int RetryCount,
+    int MaxRetries,
+    DateTimeOffset AvailableAt,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? StartedAt,
+    DateTimeOffset? CompletedAt,
+    string? Message);
+
+public sealed record EnqueueWorkResultDto(
+    ContentWorkJobDto Job,
+    string Message);
+
+public sealed record ContentOpsBrandRowDto(
+    Guid BrandId,
+    string BrandCode,
+    string BrandName,
+    int ReviewCount,
+    int ScheduledCount,
+    int PublishedMonthCount,
+    decimal SpendUsd);
+
+public sealed record ContentOpsSnapshotDto(
+    int ReviewCount,
+    int GeneratingCount,
+    int ScheduledCount,
+    int PublishedTodayCount,
+    int ErrorCount,
+    decimal MonthSpendUsd,
+    decimal MonthCeilingUsd,
+    IReadOnlyList<ContentOpsBrandRowDto> Brands,
+    IReadOnlyList<ContentWorkJobDto> ActiveJobs,
+    int CoreIdeaCount,
+    int CoreDraftCount,
+    int CoreUnscoredCount,
+    int AdaptationCount,
+    int ScheduledThisWeek,
+    int PublishedThisWeek,
+    IReadOnlyList<ContentPackageDto> CoreIdeas,
+    IReadOnlyList<ContentCalendarItemDto> WeekItems,
+    IReadOnlyList<ContentWorkJobDto> RecentErrors,
+    int BudgetBlockedCount,
+    bool FacebookAppConfigured,
+    IReadOnlyList<ContentOpsFailedPublishDto> FailedPublishJobs);
+
+public sealed record ContentOpsFailedPublishDto(
+    Guid JobId,
+    Guid TopicId,
+    string TopicTitle,
+    string ConnectorType,
+    string? LastError,
+    DateTimeOffset UpdatedAt);
+
+public sealed record ContentCalendarItemDto(
+    DateTimeOffset At,
+    string Kind,
+    Guid? PackageId,
+    Guid? TopicId,
+    Guid? PublishJobId,
+    Guid BrandId,
+    string BrandCode,
+    string BrandName,
+    string Title,
+    string? Channel,
+    string Status);
+
+public interface IContentOpsService
+{
+    Task<ContentOpsSnapshotDto> GetSnapshotAsync(CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ContentCalendarItemDto>> ListCalendarAsync(
+        DateTimeOffset fromUtc,
+        DateTimeOffset toUtc,
+        Guid? brandId,
+        CancellationToken cancellationToken = default);
+}
+
+public interface IContentWorkQueueService
+{
+    Task<EnqueueWorkResultDto> EnqueueGenerateTopicAsync(
+        Guid topicId,
+        GenerateContentRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<EnqueueWorkResultDto> EnqueueGeneratePackageAsync(
+        Guid packageId,
+        GenerateContentRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<EnqueueWorkResultDto> EnqueuePublishTopicAsync(
+        Guid topicId,
+        PublishContentRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<EnqueueWorkResultDto> EnqueueVideoMvpAsync(
+        Guid videoJobId,
+        RunVideoMvpPipelineRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<EnqueueWorkResultDto> EnqueueVideoRenderAsync(
+        Guid videoJobId,
+        CancellationToken cancellationToken = default);
+
+    Task<EnqueueWorkResultDto> EnqueueBrandAdaptAsync(
+        Guid packageId,
+        AnalyzeAdaptRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<AnalyzePoolResultDto> EnqueueBrandAdaptBatchAsync(
+        AnalyzePoolRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<ContentWorkJobDto?> GetAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ContentWorkJobDto>> ListActiveAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Claim and run at most one due work job. Returns true if a job was processed.</summary>
+    Task<bool> ProcessNextAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Run leftover <c>publish_job</c> rows that are due (old sync / scheduled path).</summary>
+    Task<int> ProcessDuePublishJobsAsync(int limit = 3, CancellationToken cancellationToken = default);
 }

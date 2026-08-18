@@ -10,41 +10,60 @@ namespace KitPlatform.Packs.Content.Infrastructure;
 internal sealed class ContentElevenLabsClient
 {
     private readonly HttpClient _http;
+    private readonly ContentRepository _repo;
     private readonly IOptions<ContentOptions> _options;
     private readonly IConfiguration _configuration;
 
     public ContentElevenLabsClient(
         HttpClient http,
+        ContentRepository repo,
         IOptions<ContentOptions> options,
         IConfiguration configuration)
     {
         _http = http;
+        _repo = repo;
         _options = options;
         _configuration = configuration;
         if (_http.BaseAddress is null)
             _http.BaseAddress = new Uri("https://api.elevenlabs.io/");
     }
 
-    public string? ResolveApiKey() =>
-        FirstNonEmpty(
-            _options.Value.ElevenLabsApiKey,
-            _configuration["Content:ElevenLabsApiKey"],
-            Environment.GetEnvironmentVariable("ELEVENLABS_API_KEY"));
+    public async Task<ContentVideoResolved> ResolveAsync(CancellationToken cancellationToken)
+    {
+        var row = await _repo.GetOrgSettingsAsync(cancellationToken);
+        return ContentVideoConfigParser.Resolve(
+            ContentVideoConfigParser.Parse(row.VideoConfigJson),
+            _options.Value,
+            _configuration);
+    }
 
-    public bool IsConfigured => !string.IsNullOrWhiteSpace(ResolveApiKey());
+    public async Task<bool> IsConfiguredAsync(CancellationToken cancellationToken) =>
+        (await ResolveAsync(cancellationToken)).ElevenLabsConfigured;
 
-    public string ResolveVoiceId() =>
-        FirstNonEmpty(
-            _options.Value.ElevenLabsVoiceId,
-            _configuration["Content:ElevenLabsVoiceId"],
-            Environment.GetEnvironmentVariable("ELEVENLABS_VOICE_ID"))
-        ?? "21m00Tcm4TlvDq8ikWAM"; // Rachel
+    public async Task<(bool Ok, string Message)> TestConnectionAsync(CancellationToken cancellationToken)
+    {
+        var resolved = await ResolveAsync(cancellationToken);
+        if (!resolved.ElevenLabsConfigured)
+            return (false, "Chưa có ElevenLabs API key — đặt Secret ref hoặc dán key (chỉ ghi).");
+
+        using var req = new HttpRequestMessage(HttpMethod.Get, "v1/user");
+        req.Headers.Add("xi-api-key", resolved.ElevenLabsApiKey);
+        using var res = await _http.SendAsync(req, cancellationToken);
+        var body = await res.Content.ReadAsStringAsync(cancellationToken);
+        if (!res.IsSuccessStatusCode)
+        {
+            var snippet = body.Length > 300 ? body[..300] + "…" : body;
+            return (false, $"ElevenLabs {(int)res.StatusCode}: {snippet}");
+        }
+        return (true, $"ElevenLabs kết nối OK · voice {resolved.VoiceId}");
+    }
 
     public async Task<byte[]> SynthesizeMp3Async(string text, CancellationToken cancellationToken)
     {
-        var key = ResolveApiKey()
+        var resolved = await ResolveAsync(cancellationToken);
+        var key = resolved.ElevenLabsApiKey
                   ?? throw new InvalidOperationException("Chưa cấu hình ElevenLabsApiKey.");
-        var voice = ResolveVoiceId();
+        var voice = resolved.VoiceId;
         var body = new
         {
             text,
@@ -70,7 +89,4 @@ internal sealed class ContentElevenLabsClient
             throw new InvalidOperationException("ElevenLabs trả audio rỗng.");
         return bytes;
     }
-
-    private static string? FirstNonEmpty(params string?[] values) =>
-        values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
 }

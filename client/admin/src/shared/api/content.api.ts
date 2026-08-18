@@ -10,6 +10,24 @@ export type ContentAiConfig = {
   apiKeyConfigured: boolean;
 };
 
+export type ContentVideoConfig = {
+  creatomateApiKeySecretRef?: string | null;
+  creatomateConfigured: boolean;
+  elevenLabsApiKeySecretRef?: string | null;
+  elevenLabsConfigured: boolean;
+  elevenLabsVoiceId?: string | null;
+  publicMediaBaseUrl?: string | null;
+  creatomateTemplateId?: string | null;
+};
+
+export type ContentFacebookConfig = {
+  appId?: string | null;
+  appSecretConfigured: boolean;
+  appIdSecretRef?: string | null;
+  appSecretSecretRef?: string | null;
+  redirectUri?: string | null;
+};
+
 export type ContentOrgSettings = {
   id: string;
   monthlyCeilingUsd: number;
@@ -22,6 +40,8 @@ export type ContentOrgSettings = {
   connectorTypes: string[];
   channelTypes: string[];
   ai: ContentAiConfig;
+  video?: ContentVideoConfig;
+  facebook?: ContentFacebookConfig;
   monthSpendEstimateUsd: number;
   remainingBudgetUsd: number;
   updatedAt: string;
@@ -32,6 +52,16 @@ export type ContentAiTestResult = {
   message?: string | null;
   apiKeyConfigured: boolean;
   textModel?: string | null;
+};
+
+export type ContentVideoTestResult = {
+  creatomateOk: boolean;
+  creatomateMessage?: string | null;
+  creatomateConfigured: boolean;
+  elevenLabsOk: boolean;
+  elevenLabsMessage?: string | null;
+  elevenLabsConfigured: boolean;
+  voiceId?: string | null;
 };
 
 export type ContentBudgetSnapshot = {
@@ -64,6 +94,19 @@ export type ContentBrandKnowledge = {
   visualStyle?: string | null;
   visualColors?: string | null;
   imageNotes?: string | null;
+  problems: string[];
+  needs: string[];
+  desires: string[];
+  contentPillars: string[];
+  claimsAllowed: string[];
+  claimsForbidden: string[];
+  products: string[];
+  services: string[];
+  differentiators: string[];
+  proofPoints: string[];
+  competitors: string[];
+  goodExamples: string[];
+  badExamples: string[];
 };
 
 export type ContentBrand = {
@@ -81,6 +124,8 @@ export type ContentBrand = {
   knowledge: ContentBrandKnowledge;
   monthSpendEstimateUsd: number;
   updatedAt: string;
+  brainReady?: boolean;
+  brainMissing?: string[] | null;
 };
 
 export type ContentSiteTarget = {
@@ -111,6 +156,22 @@ export type ContentChannelTarget = {
   sortOrder: number;
 };
 
+export type ContentWriteSlot = {
+  key: string;
+  label: string;
+  destType: string;
+  variantKinds: string[];
+};
+
+export type ContentWritePlan = {
+  brandId: string;
+  brandCode: string;
+  brandName: string;
+  slots: ContentWriteSlot[];
+  variantKinds: string[];
+  summary: string;
+};
+
 export type ContentTopic = {
   id: string;
   brandId: string;
@@ -127,6 +188,42 @@ export type ContentTopic = {
   displayAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  variantCount?: number;
+  corePackageId?: string | null;
+  coreTitle?: string | null;
+};
+
+export type ContentCoreIdea = {
+  insight?: string | null;
+  problem?: string | null;
+  coreMessage?: string | null;
+  keywords: string[];
+  source?: string | null;
+  sourceUrl?: string | null;
+  sourceType?: string | null;
+  evidence?: string | null;
+  factOrOpinion?: string | null;
+};
+
+export type ContentQualityGate = {
+  passed: boolean;
+  issues: string[];
+  checkedAt: string;
+};
+
+export type ContentBrandFit = {
+  brandId: string;
+  brandCode: string;
+  brandName: string;
+  verdict: string;
+  score: number;
+  reason?: string | null;
+  title?: string | null;
+  angle?: string | null;
+  audience?: string | null;
+  cta?: string | null;
+  packageId?: string | null;
+  outline?: string | null;
 };
 
 export type ContentPackage = {
@@ -144,10 +241,15 @@ export type ContentPackage = {
   priority: string;
   status: string;
   sourcePackageId?: string | null;
+  sourceTitle?: string | null;
   displayAt?: string | null;
   variantCount: number;
   createdAt: string;
   updatedAt: string;
+  coreIdea?: ContentCoreIdea | null;
+  brandFits?: ContentBrandFit[] | null;
+  adaptationCount?: number;
+  qualityGate?: ContentQualityGate | null;
 };
 
 export type ContentVariant = {
@@ -201,6 +303,7 @@ export type ContentTopicDetail = {
 export type ContentPackageDetail = {
   package: ContentPackage;
   topicDetail: ContentTopicDetail;
+  adaptations: ContentPackage[];
 };
 
 export type ContentVideoTemplate = {
@@ -274,6 +377,22 @@ export async function updateContentSettings(body: Partial<{
     geminiApiKeySecretRef: string | null;
     geminiApiKey: string | null;
   }>;
+  video: Partial<{
+    creatomateApiKeySecretRef: string | null;
+    creatomateApiKey: string | null;
+    elevenLabsApiKeySecretRef: string | null;
+    elevenLabsApiKey: string | null;
+    elevenLabsVoiceId: string | null;
+    publicMediaBaseUrl: string | null;
+    creatomateTemplateId: string | null;
+  }>;
+  facebook: Partial<{
+    appId: string | null;
+    appIdSecretRef: string | null;
+    appSecretSecretRef: string | null;
+    appSecret: string | null;
+    redirectUri: string | null;
+  }>;
 }>) {
   const { data } = await http.put<ContentOrgSettings>('/content/settings', body);
   return data;
@@ -281,6 +400,72 @@ export async function updateContentSettings(body: Partial<{
 
 export async function testContentAi() {
   const { data } = await http.post<ContentAiTestResult>('/content/ai/test');
+  return data;
+}
+
+export async function testContentVideo() {
+  const { data } = await http.post<ContentVideoTestResult>('/content/video/test');
+  return data;
+}
+
+export type ContentFacebookTestResult = {
+  ok: boolean;
+  message?: string | null;
+  appSecretConfigured: boolean;
+  appId?: string | null;
+};
+
+export type ContentFacebookPageOption = { id: string; name: string };
+
+export type ContentFacebookPending = {
+  sessionId: string;
+  brandId: string;
+  pages: ContentFacebookPageOption[];
+};
+
+export type ContentFacebookVerify = {
+  ok: boolean;
+  status: string;
+  pageId?: string | null;
+  pageName?: string | null;
+  message?: string | null;
+  lastVerifiedAt?: string | null;
+};
+
+export async function testContentFacebook() {
+  const { data } = await http.post<ContentFacebookTestResult>('/content/facebook/test');
+  return data;
+}
+
+export async function startFacebookOAuth(brandId: string) {
+  const { data } = await http.get<{ url: string; state: string }>('/content/facebook/oauth/start', {
+    params: { brandId },
+  });
+  return data;
+}
+
+export async function completeFacebookOAuth(code: string, state: string) {
+  const { data } = await http.post<ContentFacebookPending>('/content/facebook/oauth/complete', { code, state });
+  return data;
+}
+
+export async function fetchFacebookPending(sessionId: string) {
+  const { data } = await http.get<ContentFacebookPending>(`/content/facebook/oauth/pending/${sessionId}`);
+  return data;
+}
+
+export async function selectFacebookPage(sessionId: string, pageId: string) {
+  const { data } = await http.post<ContentChannelTarget>('/content/facebook/oauth/select', { sessionId, pageId });
+  return data;
+}
+
+export async function verifyFacebookChannel(channelId: string) {
+  const { data } = await http.post<ContentFacebookVerify>(`/content/channels/${channelId}/facebook/verify`);
+  return data;
+}
+
+export async function disconnectFacebookChannel(channelId: string) {
+  const { data } = await http.post<ContentChannelTarget>(`/content/channels/${channelId}/facebook/disconnect`);
   return data;
 }
 
@@ -348,6 +533,13 @@ export async function fetchContentChannels(brandId: string) {
   return data;
 }
 
+export async function fetchContentWritePlans(brandId?: string) {
+  const { data } = await http.get<ContentWritePlan[]>('/content/write-plans', {
+    params: brandId ? { brandId } : undefined,
+  });
+  return data;
+}
+
 export async function upsertContentChannel(
   brandId: string,
   body: {
@@ -372,7 +564,11 @@ export async function fetchContentTopics(params?: { brandId?: string; status?: s
   return data;
 }
 
-export async function fetchContentPackages(params?: { brandId?: string; status?: string }) {
+export async function fetchContentPackages(params?: {
+  brandId?: string;
+  status?: string;
+  coresOnly?: boolean;
+}) {
   const { data } = await http.get<ContentPackage[]>('/content/packages', { params });
   return data;
 }
@@ -394,6 +590,15 @@ export async function createContentPackage(body: {
   bodyOutline?: string;
   displayAt?: string | null;
   ctaUrl?: string;
+  insight?: string;
+  problem?: string;
+  coreMessage?: string;
+  keywords?: string[];
+  source?: string;
+  sourceUrl?: string;
+  sourceType?: string;
+  evidence?: string;
+  factOrOpinion?: string;
 }) {
   const { data } = await http.post<ContentPackage>('/content/packages', body);
   return data;
@@ -404,14 +609,250 @@ export async function updateContentPackage(id: string, body: Parameters<typeof c
   return data;
 }
 
+export type ContentWorkJob = {
+  id: string;
+  kind: string;
+  status: string;
+  brandId?: string | null;
+  brandCode?: string | null;
+  brandName?: string | null;
+  topicId?: string | null;
+  packageId?: string | null;
+  videoJobId?: string | null;
+  title?: string | null;
+  errorMessage?: string | null;
+  retryCount: number;
+  maxRetries: number;
+  availableAt: string;
+  createdAt: string;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  message?: string | null;
+};
+
+export type ContentWorkEnqueueResult = {
+  job: ContentWorkJob;
+  message: string;
+};
+
+export type ContentCalendarItem = {
+  at: string;
+  kind: string;
+  packageId?: string | null;
+  topicId?: string | null;
+  publishJobId?: string | null;
+  brandId: string;
+  brandCode: string;
+  brandName: string;
+  title: string;
+  channel?: string | null;
+  status: string;
+};
+
+export type ContentOpsSnapshot = {
+  reviewCount: number;
+  generatingCount: number;
+  scheduledCount: number;
+  publishedTodayCount: number;
+  errorCount: number;
+  monthSpendUsd: number;
+  monthCeilingUsd: number;
+  brands: Array<{
+    brandId: string;
+    brandCode: string;
+    brandName: string;
+    reviewCount: number;
+    scheduledCount: number;
+    publishedMonthCount: number;
+    spendUsd: number;
+  }>;
+  activeJobs: ContentWorkJob[];
+  coreIdeaCount: number;
+  coreDraftCount: number;
+  coreUnscoredCount: number;
+  adaptationCount: number;
+  scheduledThisWeek: number;
+  publishedThisWeek: number;
+  coreIdeas: ContentPackage[];
+  weekItems: ContentCalendarItem[];
+  recentErrors: ContentWorkJob[];
+  budgetBlockedCount: number;
+  facebookAppConfigured: boolean;
+  failedPublishJobs: ContentOpsFailedPublish[];
+};
+
+export type ContentOpsFailedPublish = {
+  jobId: string;
+  topicId: string;
+  topicTitle: string;
+  connectorType: string;
+  lastError?: string | null;
+  updatedAt: string;
+};
+
+export async function fetchContentOps() {
+  const { data } = await http.get<ContentOpsSnapshot>('/content/ops');
+  return data;
+}
+
+export async function fetchContentCalendar(params: { from: string; to: string; brandId?: string }) {
+  const { data } = await http.get<ContentCalendarItem[]>('/content/calendar', { params });
+  return data;
+}
+
+export async function fetchContentWorkJob(id: string) {
+  const { data } = await http.get<ContentWorkJob>(`/content/work/${id}`);
+  return data;
+}
+
+export async function fetchContentPublishJobs(topicId?: string) {
+  const { data } = await http.get<ContentPublishJob[]>('/content/jobs', { params: { topicId } });
+  return data;
+}
+
+function workFailedError(job: ContentWorkJob) {
+  const msg = job.errorMessage || job.message || 'Job thất bại';
+  return Object.assign(new Error(msg), { response: { data: { message: msg } } });
+}
+
+export async function waitForContentWork(
+  id: string,
+  opts?: { intervalMs?: number; timeoutMs?: number },
+) {
+  const interval = opts?.intervalMs ?? 2000;
+  const timeout = opts?.timeoutMs ?? 300_000;
+  const start = Date.now();
+  for (;;) {
+    const job = await fetchContentWorkJob(id);
+    if (job.status === 'Succeeded' || job.status === 'Failed' || job.status === 'Cancelled') {
+      return job;
+    }
+    if (Date.now() - start > timeout) {
+      throw Object.assign(new Error('Hết thời gian chờ job nền'), {
+        response: { data: { message: 'Hết thời gian chờ job nền' } },
+      });
+    }
+    await new Promise((r) => setTimeout(r, interval));
+  }
+}
+
+async function enqueueAndWait(
+  path: string,
+  body: unknown,
+  timeoutMs: number,
+) {
+  const { data } = await http.post<ContentWorkEnqueueResult>(path, body ?? {}, { timeout: 30_000 });
+  const job = await waitForContentWork(data.job.id, { timeoutMs });
+  if (job.status === 'Failed' || job.status === 'Cancelled') throw workFailedError(job);
+  return job;
+}
+
 export async function generateContentPackage(
   id: string,
-  body?: { skipImages?: boolean; candidateCount?: number; imagesOnly?: boolean },
+  body?: {
+    skipImages?: boolean;
+    candidateCount?: number;
+    imagesOnly?: boolean;
+    variantKinds?: string[];
+  },
 ) {
-  const { data } = await http.post<GenerateContentResult>(`/content/packages/${id}/generate`, body ?? {}, {
-    timeout: 300_000,
+  return enqueueAndWait(`/content/packages/${id}/generate`, body ?? {}, 300_000);
+}
+
+export async function downloadContentPackageExport(id: string) {
+  const { data, headers } = await http.get<Blob>(`/content/packages/${id}/export`, {
+    responseType: 'blob',
+    timeout: 60_000,
   });
+  const match = /filename="?([^"]+)"?/i.exec(String(headers['content-disposition'] ?? ''));
+  const name = match?.[1] ?? `content-pack-${id.slice(0, 8)}.zip`;
+  const url = URL.createObjectURL(data);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function adaptContentPackageMulti(
+  id: string,
+  body?: { brandIds?: string[]; includeMaybe?: boolean; generateFits?: boolean },
+) {
+  return enqueueAndWait(`/content/packages/${id}/adapt-multi`, body ?? {}, 180_000);
+}
+
+export async function createContentPool(body: {
+  homeBrandId?: string;
+  ideas: Array<{
+    title: string;
+    insight?: string;
+    problem?: string;
+    coreMessage?: string;
+    angle?: string;
+    audience?: string;
+    goal?: string;
+    source?: string;
+    sourceUrl?: string;
+    sourceType?: string;
+    evidence?: string;
+    factOrOpinion?: string;
+  }>;
+}) {
+  const { data } = await http.post<{ packages: ContentPackage[]; message?: string | null }>(
+    '/content/packages/pool',
+    body,
+  );
   return data;
+}
+
+export async function analyzeContentPool(body: {
+  packageIds: string[];
+  brandIds?: string[];
+  includeMaybe?: boolean;
+}) {
+  const { data } = await http.post<{ jobs: ContentWorkEnqueueResult[]; message?: string | null }>(
+    '/content/packages/pool/analyze',
+    body,
+    { timeout: 30_000 },
+  );
+  const ids = data.jobs.map((j) => j.job.id);
+  await waitForContentWorkMany(ids, { timeoutMs: 12 * 60_000 });
+  return data;
+}
+
+export async function applyContentPoolFits(body: {
+  items: Array<{ packageId: string; brandId: string }>;
+  generateFits?: boolean;
+  variantKinds?: string[];
+}) {
+  const { data } = await http.post<{
+    requested: number;
+    created: number;
+    skipped: number;
+    fits: ContentBrandFit[];
+    message?: string | null;
+  }>('/content/packages/pool/apply', body);
+  return data;
+}
+
+async function waitForContentWorkMany(ids: string[], opts?: { timeoutMs?: number; intervalMs?: number }) {
+  const timeout = opts?.timeoutMs ?? 180_000;
+  const interval = opts?.intervalMs ?? 2_000;
+  const start = Date.now();
+  const pending = new Set(ids);
+  while (pending.size > 0) {
+    if (Date.now() - start > timeout) {
+      throw Object.assign(new Error('Hết thời gian chờ chấm Brand Fit'), {
+        response: { data: { message: 'Hết thời gian chờ chấm Brand Fit' } },
+      });
+    }
+    for (const id of [...pending]) {
+      const job = await fetchContentWorkJob(id);
+      if (job.status === 'Succeeded') pending.delete(id);
+      else if (job.status === 'Failed' || job.status === 'Cancelled') throw workFailedError(job);
+    }
+    if (pending.size > 0) await new Promise((r) => setTimeout(r, interval));
+  }
 }
 
 export async function adaptContentPackage(
@@ -477,17 +918,21 @@ export async function runContentVideoMvpPipeline(
   id: string,
   body?: { generateImages?: boolean; generateVoice?: boolean; render?: boolean },
 ) {
-  const { data } = await http.post<ContentVideoJob>(`/content/video/jobs/${id}/mvp-pipeline`, {
-    generateImages: body?.generateImages ?? true,
-    generateVoice: body?.generateVoice ?? true,
-    render: body?.render ?? true,
-  }, { timeout: 300_000 });
-  return data;
+  await enqueueAndWait(
+    `/content/video/jobs/${id}/mvp-pipeline`,
+    {
+      generateImages: body?.generateImages ?? true,
+      generateVoice: body?.generateVoice ?? true,
+      render: body?.render ?? true,
+    },
+    300_000,
+  );
+  return fetchContentVideoJob(id);
 }
 
 export async function renderContentVideoJob(id: string) {
-  const { data } = await http.post<ContentVideoJob>(`/content/video/jobs/${id}/render`);
-  return data;
+  await enqueueAndWait(`/content/video/jobs/${id}/render`, {}, 180_000);
+  return fetchContentVideoJob(id);
 }
 
 export async function refreshContentVideoJob(id: string) {
@@ -530,10 +975,7 @@ export async function generateContentTopic(
   id: string,
   body?: { skipImages?: boolean; candidateCount?: number; imagesOnly?: boolean },
 ) {
-  const { data } = await http.post<GenerateContentResult>(`/content/topics/${id}/generate`, body ?? {}, {
-    timeout: 300_000,
-  });
-  return data;
+  return enqueueAndWait(`/content/topics/${id}/generate`, body ?? {}, 300_000);
 }
 
 export async function approveContentTopic(id: string) {
@@ -586,18 +1028,22 @@ export async function publishContentTopic(
         body!.imageFileName || 'cover.jpg',
       );
     }
-    const { data } = await http.post<{ jobs: ContentPublishJob[] }>(`/content/topics/${id}/publish`, form, {
-      timeout: 180_000,
+    const { data } = await http.post<ContentWorkEnqueueResult>(`/content/topics/${id}/publish`, form, {
+      timeout: 60_000,
       maxBodyLength: Infinity,
       maxContentLength: Infinity,
     });
-    return data;
+    const job = await waitForContentWork(data.job.id, { timeoutMs: 180_000 });
+    if (job.status === 'Failed' || job.status === 'Cancelled') throw workFailedError(job);
+    return { jobs: await fetchContentPublishJobs(id), work: job };
   }
 
-  const { data } = await http.post<{ jobs: ContentPublishJob[] }>(`/content/topics/${id}/publish`, body ?? {}, {
-    timeout: 180_000,
+  const { data } = await http.post<ContentWorkEnqueueResult>(`/content/topics/${id}/publish`, body ?? {}, {
+    timeout: 30_000,
   });
-  return data;
+  const job = await waitForContentWork(data.job.id, { timeoutMs: 180_000 });
+  if (job.status === 'Failed' || job.status === 'Cancelled') throw workFailedError(job);
+  return { jobs: await fetchContentPublishJobs(id), work: job };
 }
 
 export async function runContentPublishJob(

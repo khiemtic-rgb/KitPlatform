@@ -233,7 +233,7 @@ export const moduleRegistry: ModuleMenuItem[] = [
   {
     key: 'content',
     label: 'content',
-    path: '/content/packages',
+    path: '/content/ops',
     icon: <ReadOutlined />,
     enabled: true,
     platformModule: ADMIN_MODULE_PLATFORM_CODES.content,

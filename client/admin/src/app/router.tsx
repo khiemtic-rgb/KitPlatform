@@ -419,6 +419,12 @@ const KapPartnersPage = lazy(() =>
 const ContentLayout = lazy(() =>
   import('@/modules/content/ContentLayout').then((m) => ({ default: m.ContentLayout })),
 );
+const ContentOpsPage = lazy(() =>
+  import('@/modules/content/ContentOpsPage').then((m) => ({ default: m.ContentOpsPage })),
+);
+const ContentCalendarPage = lazy(() =>
+  import('@/modules/content/ContentCalendarPage').then((m) => ({ default: m.ContentCalendarPage })),
+);
 const ContentBudgetPage = lazy(() =>
   import('@/modules/content/ContentBudgetPage').then((m) => ({ default: m.ContentBudgetPage })),
 );
@@ -431,11 +437,19 @@ const ContentAiSettingsPage = lazy(() =>
 const ContentBrandsPage = lazy(() =>
   import('@/modules/content/ContentBrandsPage').then((m) => ({ default: m.ContentBrandsPage })),
 );
+const ContentFacebookCallbackPage = lazy(() =>
+  import('@/modules/content/ContentFacebookCallbackPage').then((m) => ({
+    default: m.ContentFacebookCallbackPage,
+  })),
+);
 const ContentTopicsPage = lazy(() =>
   import('@/modules/content/ContentTopicsPage').then((m) => ({ default: m.ContentTopicsPage })),
 );
 const ContentPackagesPage = lazy(() =>
   import('@/modules/content/ContentPackagesPage').then((m) => ({ default: m.ContentPackagesPage })),
+);
+const ContentIdeaPoolPage = lazy(() =>
+  import('@/modules/content/ContentIdeaPoolPage').then((m) => ({ default: m.ContentIdeaPoolPage })),
 );
 const ContentVideosPage = lazy(() =>
   import('@/modules/content/ContentVideosPage').then((m) => ({ default: m.ContentVideosPage })),
@@ -448,6 +462,9 @@ const LocalOsSourcesPage = lazy(() =>
 );
 const LocalOsStatsPage = lazy(() =>
   import('@/modules/local-os/LocalOsStatsPage').then((m) => ({ default: m.LocalOsStatsPage })),
+);
+const LocalOsPhoneReviewPage = lazy(() =>
+  import('@/modules/local-os/LocalOsPhoneReviewPage').then((m) => ({ default: m.LocalOsPhoneReviewPage })),
 );
 const ReportsLayout = lazy(() =>
   import('@/modules/reports/ReportsLayout').then((m) => ({ default: m.ReportsLayout })),
@@ -884,15 +901,30 @@ export function AppRouter() {
                   </SuspenseRoute>
                 }
               >
-                <Route index element={<Navigate to="/content/packages" replace />} />
+                <Route index element={<Navigate to="/content/ops" replace />} />
+                <Route path="ops" element={<ContentOpsPage />} />
+                <Route path="calendar" element={<ContentCalendarPage />} />
                 <Route path="budget" element={<ContentBudgetPage />} />
                 <Route path="ai" element={<ContentAiSettingsPage />} />
                 <Route path="settings" element={<ContentSettingsPage />} />
                 <Route path="brands" element={<ContentBrandsPage />} />
+                <Route
+                  path="facebook/callback"
+                  element={<ContentFacebookCallbackPage />}
+                />
                 <Route path="packages" element={<ContentPackagesPage />} />
+                <Route path="pool" element={<ContentIdeaPoolPage />} />
                 <Route path="videos" element={<ContentVideosPage />} />
                 <Route path="topics" element={<ContentTopicsPage />} />
               </Route>
+              <Route
+                path="local-os/duyet"
+                element={
+                  <SuspenseRoute>
+                    <LocalOsPhoneReviewPage />
+                  </SuspenseRoute>
+                }
+              />
               <Route
                 path="local-os/listings"
                 element={

@@ -10,6 +10,7 @@ namespace KitPlatform.Packs.Content.Infrastructure;
 internal static class ContentTargetSecrets
 {
     public const string StoredSecretKey = "storedSecret";
+    public const string StoredUserSecretKey = "storedUserSecret";
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -22,9 +23,11 @@ internal static class ContentTargetSecrets
     public static string MergeConfig(string? incomingConfigJson, string? existingConfigJson, string? writeOnlySecret)
     {
         var node = ParseObject(incomingConfigJson);
-        // Never trust client-sent storedSecret
+        // Never trust client-sent secrets
         node.Remove(StoredSecretKey);
+        node.Remove(StoredUserSecretKey);
 
+        var existing = ParseObject(existingConfigJson);
         var existingStored = ExtractStored(existingConfigJson);
         if (writeOnlySecret is null)
         {
@@ -39,6 +42,9 @@ internal static class ContentTargetSecrets
         {
             node[StoredSecretKey] = writeOnlySecret.Trim();
         }
+
+        if (!node.ContainsKey("facebook") && existing.TryGetPropertyValue("facebook", out var fb) && fb is not null)
+            node["facebook"] = fb.DeepClone();
 
         return node.ToJsonString();
     }
@@ -59,6 +65,7 @@ internal static class ContentTargetSecrets
         var node = ParseObject(configJson);
         var hasStored = ExtractStored(configJson) is not null;
         node.Remove(StoredSecretKey);
+        node.Remove(StoredUserSecretKey);
         var configured = hasStored || !string.IsNullOrWhiteSpace(secretRef);
         return (node.ToJsonString(), configured);
     }

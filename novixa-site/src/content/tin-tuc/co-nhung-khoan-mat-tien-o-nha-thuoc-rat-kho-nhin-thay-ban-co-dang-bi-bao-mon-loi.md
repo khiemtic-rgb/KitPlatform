@@ -64,6 +64,6 @@ Chính vì báo cáo doanh thu ngày luôn tròn trịa, chủ nhà thuốc dễ
 
 Nếu bạn muốn kiểm tra xem nhà thuốc của mình đang kiểm soát tồn kho, dòng tiền và vận hành ở mức độ nào, hãy dành 7 phút tự đánh giá với **Pharmacy Health Check** từ Novixa. Báo cáo sẽ giúp bạn tự phát hiện những khoảng trống vận hành mà bấy lâu nay có thể bạn chưa nhìn thấy.
 
-👉 **Tự đánh giá sức khỏe vận hành nhà thuốc tại:** [https://novixa.vn/](https://novixa.vn/)
+👉 **Tự đánh giá sức khỏe vận hành nhà thuốc tại:** [https://novixa.vn/vi/health-check/](https://novixa.vn/vi/health-check/)
 
-[Tìm hiểu thêm](https://novixa.vn/)
+[Tìm hiểu thêm](https://novixa.vn/vi/health-check/)

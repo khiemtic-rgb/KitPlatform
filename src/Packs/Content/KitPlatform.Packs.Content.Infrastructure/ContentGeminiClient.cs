@@ -13,9 +13,9 @@ internal sealed class ContentGeminiClient
 
     private static readonly string[] TextFallbacks =
     [
+        "gemini-3.6-flash",
         "gemini-flash-latest",
         "gemini-2.0-flash",
-        "gemini-2.5-flash",
     ];
 
     /// <summary>
@@ -66,7 +66,8 @@ internal sealed class ContentGeminiClient
     public async Task<string> GenerateJsonAsync(
         string systemPrompt,
         string userPrompt,
-        CancellationToken ct)
+        CancellationToken ct,
+        int maxOutputTokens = 4096)
     {
         var resolved = await ResolveConfigAsync(ct);
         var preferred = resolved.TextModel;
@@ -90,6 +91,7 @@ internal sealed class ContentGeminiClient
                     {
                         temperature = 0.7,
                         responseMimeType = "application/json",
+                        maxOutputTokens,
                     },
                 };
                 var data = await PostAsync(resolved.ApiKey, $"/models/{model}:generateContent", body, ct);

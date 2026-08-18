@@ -13,12 +13,16 @@ alwaysApply: false
 
 - Product package: **`marketing_park`**. Platform module: **`kit_content`**. Org/tenant: **`KIT_MKT`**.
 - Independent park. Do **not** add Content migrations to `deploy/ubuntu/migration-files.prod.txt` (Pharmacy) or `migration-files.family-os.txt`.
-- Apply via `deploy/ubuntu/migration-files.content.txt` only (281+ including `286_pack_content_marketing_park_tenant.sql`).
+- Apply via `deploy/ubuntu/migration-files.content.txt` only (281+ including `286_pack_content_marketing_park_tenant.sql`). Runner: `deploy/ubuntu/run-kit-migrations-content.sh` / `apply-kit-migrations-content.sh` — never `migration-files.prod.txt`.
 - Do not couple Content services to Pharmacy sales/inventory tables or Family OS workers.
 - Do not show Marketing nav on Novixa/Famixa tenants — gate with `platformModule: kit_content` + vertical `marketing`.
 - Prefer **dynamic JSON catalogs** (connector types, channel types, variant kinds, image rates) over new ALTER TABLE for each brand/site/page.
 - Budget ceilings are first-class settings; do not hardcode USD rates in C# beyond seeds.
 - Expanding web/page = new `site_target` / `channel_target` rows, not a platform upgrade.
 - Brands (KIT, Novixa, Famixa, Vân Đỉnh Trà) are **content brands inside KIT_MKT**, not product packages.
-- Content Package (`pack_content.content_package`): 1 idea + brand → Generate All (variants by destinations) → Adapt clones to another brand. Do not auto-fanout to all brands.
+- Content Package (`pack_content.content_package`) = Core Idea (or a brand adaptation via `source_package_id`). Idea Pool: batch Brand Fit, operator confirms cells, then create adaptations. Do not auto-fanout to all brands. Do not add a `ContentIdea` table.
 - Video Factory (`pack_content.video_*`): từ Package kéo `tiktok_script` → storyboard local; Creatomate optional (`Content:CreatomateApiKey`). Không auto-post TikTok.
+- Generate / publish / video MVP+render enqueue `pack_content.work_job`; `ContentWorkWorker` claims (SKIP LOCKED). HTTP returns Processing. Manual export remains the default publish path.
+- Generate writes **only** variants implied by that brand's active `site_target` / `channel_target` rows (nơi đăng). Do not default-tick Website/Facebook/Video groups. No dests → refuse generate.
+- V1 auto-publish **only**: `astro_git`, `wordpress_rest`, `facebook_page` (+ optional `manual` export). Instagram / LinkedIn / Buffer / groups / profiles = copy tay. Groups are never auto-posted.
+- Facebook OAuth pending lives in `pack_content.facebook_oauth_pending` (mig 297) — not in-memory. Apply Content migs via `deploy/ubuntu/run-kit-migrations-content.sh` (reads `migration-files.content.txt`). Never merge into Pharmacy `run-kit-migrations-prod.sh`.

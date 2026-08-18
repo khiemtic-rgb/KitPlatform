@@ -10,7 +10,7 @@ namespace KitPlatform.Packs.Content.Infrastructure;
 internal sealed class ContentVideoService : IContentVideoService
 {
     private static readonly string[] PreferredScriptKinds =
-        ["tiktok_script", "social_caption", "fb_short", "fb_page", "web_long"];
+        ["tiktok_script", "web_long", "fb_page", "fb_short", "social_caption"];
 
     private readonly ContentRepository _repo;
     private readonly ContentCreatomateClient _creatomate;
@@ -70,7 +70,7 @@ internal sealed class ContentVideoService : IContentVideoService
         var script = PickScript(variants);
         if (string.IsNullOrWhiteSpace(script))
             throw new InvalidOperationException(
-                "Package chưa có bản tiktok_script / caption — Generate All trước.");
+                "Package chưa có bản viết (web / Facebook / tiktok_script) — Generate góc trước.");
 
         var title = package.Title.Trim();
         if (title.Length > 480) title = title[..480];
@@ -88,7 +88,7 @@ internal sealed class ContentVideoService : IContentVideoService
             ContentRepository.ToJson(new
             {
                 fromPackageStatus = package.Status,
-                creatomateConfigured = _creatomate.IsConfigured,
+                creatomateConfigured = await _creatomate.IsConfiguredAsync(cancellationToken),
             }),
             cancellationToken);
 
@@ -134,12 +134,21 @@ internal sealed class ContentVideoService : IContentVideoService
                        ?? throw new InvalidOperationException("Template thiếu.");
 
         var beats = ResolveBeatNames(template.ConfigJson);
-        var storyboard = BuildStoryboard(job.ScriptBody, beats, template.DurationSec);
+        var script = job.ScriptBody;
+        if (job.TopicId is Guid topicId)
+        {
+            var variants = await _repo.ListVariantsAsync(topicId, cancellationToken);
+            var richer = PickScript(variants);
+            if (!string.IsNullOrWhiteSpace(richer) && richer.Length > (script?.Length ?? 0) + 40)
+                script = richer;
+        }
+
+        var storyboard = BuildStoryboard(script ?? "", beats, template.DurationSec);
         var storyboardJson = ContentRepository.ToJson(storyboard);
 
         await _repo.UpdateVideoJobAsync(
             id,
-            scriptBody: null,
+            scriptBody: script,
             status: "Ready",
             externalRenderId: job.ExternalRenderId,
             previewUrl: job.PreviewUrl,
@@ -191,16 +200,17 @@ internal sealed class ContentVideoService : IContentVideoService
 
             string? voicePublicUrl = null;
             string? voiceLocalPath = null;
-            if (opts.GenerateVoice && _elevenLabs.IsConfigured)
+            var videoCfg = await _elevenLabs.ResolveAsync(cancellationToken);
+            if (opts.GenerateVoice && videoCfg.ElevenLabsConfigured)
             {
                 await SetStatusAsync(id, job, "GeneratingVoice", null, cancellationToken);
                 var narration = string.Join(". ", storyboard.Select(s => s.Text).Where(t => !string.IsNullOrWhiteSpace(t)));
                 if (narration.Length < 20) narration = job.ScriptBody;
                 var mp3 = await _elevenLabs.SynthesizeMp3Async(narration, cancellationToken);
                 voiceLocalPath = await SaveVideoMediaAsync(id, "voice.mp3", mp3, cancellationToken);
-                voicePublicUrl = BuildPublicMediaUrl(id, "voice.mp3");
+                voicePublicUrl = BuildPublicMediaUrl(id, "voice.mp3", videoCfg.PublicMediaBaseUrl);
                 if (voicePublicUrl is null)
-                    pipelineNotes.Add("voice=local-only (set Content:PublicMediaBaseUrl for Creatomate)");
+                    pipelineNotes.Add("voice=local-only (set Public media URL trên Model AI / Video)");
                 else
                     pipelineNotes.Add("voice=elevenlabs");
                 config["voiceLocalPath"] = voiceLocalPath;
@@ -216,8 +226,8 @@ internal sealed class ContentVideoService : IContentVideoService
             {
                 at = DateTimeOffset.UtcNow,
                 notes = pipelineNotes,
-                creatomateConfigured = _creatomate.IsConfigured,
-                elevenLabsConfigured = _elevenLabs.IsConfigured,
+                creatomateConfigured = videoCfg.CreatomateConfigured,
+                elevenLabsConfigured = videoCfg.ElevenLabsConfigured,
             };
             var configJson = ContentRepository.ToJson(config);
 
@@ -236,8 +246,9 @@ internal sealed class ContentVideoService : IContentVideoService
 
             if (!opts.Render)
             {
+                var preview = FirstSceneImage(storyboard) ?? job.PreviewUrl;
                 await _repo.UpdateVideoJobAsync(
-                    id, null, "Ready", job.ExternalRenderId, job.PreviewUrl, job.OutputUrl,
+                    id, null, "Ready", job.ExternalRenderId, preview, job.OutputUrl,
                     string.Join("; ", pipelineNotes),
                     storyboardJson, configJson, DateTimeOffset.UtcNow, cancellationToken);
                 return await GetJobAsync(id, cancellationToken);
@@ -302,14 +313,17 @@ internal sealed class ContentVideoService : IContentVideoService
         var template = await _repo.GetVideoTemplateAsync(job.TemplateId, cancellationToken)
                        ?? throw new InvalidOperationException("Template thiếu.");
 
+        var videoCfg = await _creatomate.ResolveAsync(cancellationToken);
+        var creatomateTemplateId = FirstNonEmpty(template.ExternalTemplateId, videoCfg.CreatomateTemplateId);
+
         // Local / no Creatomate → storyboard Ready
         if (template.Provider != "creatomate"
-            || !_creatomate.IsConfigured
-            || string.IsNullOrWhiteSpace(template.ExternalTemplateId))
+            || !videoCfg.CreatomateConfigured
+            || string.IsNullOrWhiteSpace(creatomateTemplateId))
         {
             var prepared = await PrepareStoryboardAsync(id, cancellationToken);
             if (prepared is null) return null;
-            if (template.Provider == "creatomate" && !_creatomate.IsConfigured)
+            if (template.Provider == "creatomate" && !videoCfg.CreatomateConfigured)
             {
                 await _repo.UpdateVideoJobAsync(
                     id,
@@ -346,14 +360,16 @@ internal sealed class ContentVideoService : IContentVideoService
         string? voicePublicUrl,
         CancellationToken cancellationToken)
     {
+        var videoCfg = await _creatomate.ResolveAsync(cancellationToken);
+        var creatomateTemplateId = FirstNonEmpty(template.ExternalTemplateId, videoCfg.CreatomateTemplateId);
         if (template.Provider != "creatomate"
-            || !_creatomate.IsConfigured
-            || string.IsNullOrWhiteSpace(template.ExternalTemplateId))
+            || !videoCfg.CreatomateConfigured
+            || string.IsNullOrWhiteSpace(creatomateTemplateId))
         {
-            var msg = template.Provider == "creatomate" && !_creatomate.IsConfigured
+            var msg = template.Provider == "creatomate" && !videoCfg.CreatomateConfigured
                 ? "Chưa có CreatomateApiKey — storyboard/assets sẵn sàng (CapCut hoặc cấu hình key)."
-                : template.Provider == "creatomate" && string.IsNullOrWhiteSpace(template.ExternalTemplateId)
-                    ? "Template Creatomate thiếu external_template_id — điền UUID template trên Creatomate."
+                : template.Provider == "creatomate" && string.IsNullOrWhiteSpace(creatomateTemplateId)
+                    ? "Template Creatomate thiếu UUID — điền trên Model AI / Video."
                     : "storyboard_local — xuất CapCut; bật Creatomate template để render MP4.";
 
             await _repo.UpdateVideoJobAsync(
@@ -361,7 +377,7 @@ internal sealed class ContentVideoService : IContentVideoService
                 null,
                 "Ready",
                 job.ExternalRenderId,
-                job.PreviewUrl,
+                FirstSceneImage(scenes) ?? job.PreviewUrl,
                 job.OutputUrl,
                 msg,
                 storyboardJson,
@@ -380,7 +396,7 @@ internal sealed class ContentVideoService : IContentVideoService
             var mods = BuildCreatomateModifications(
                 template.ConfigJson, job.Title, job.ScriptBody, scenes, voicePublicUrl);
             var render = await _creatomate.CreateRenderAsync(
-                template.ExternalTemplateId!,
+                creatomateTemplateId!,
                 mods,
                 cancellationToken);
 
@@ -412,7 +428,7 @@ internal sealed class ContentVideoService : IContentVideoService
     {
         var job = await _repo.GetVideoJobAsync(id, cancellationToken);
         if (job is null) return null;
-        if (string.IsNullOrWhiteSpace(job.ExternalRenderId) || !_creatomate.IsConfigured)
+        if (string.IsNullOrWhiteSpace(job.ExternalRenderId) || !await _creatomate.IsConfiguredAsync(cancellationToken))
             return await GetJobAsync(id, cancellationToken);
 
         try
@@ -493,15 +509,42 @@ internal sealed class ContentVideoService : IContentVideoService
 
     private static string? PickScript(IReadOnlyList<ContentRepository.VariantRow> variants)
     {
+        var bodies = variants
+            .Where(v => !string.IsNullOrWhiteSpace(v.BodyMarkdown))
+            .Select(v => (v.Kind, Body: ForNarration(v.BodyMarkdown)))
+            .Where(v => v.Body.Length > 0)
+            .ToList();
+        if (bodies.Count == 0) return null;
+
+        var tiktok = bodies.FirstOrDefault(v =>
+            v.Kind.Equals("tiktok_script", StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(tiktok.Body)
+            && (tiktok.Body.Length >= 280 || HasBeatLabels(tiktok.Body)))
+            return tiktok.Body;
+
         foreach (var kind in PreferredScriptKinds)
         {
-            var hit = variants.FirstOrDefault(v =>
-                string.Equals(v.Kind, kind, StringComparison.OrdinalIgnoreCase)
-                && !string.IsNullOrWhiteSpace(v.BodyMarkdown));
-            if (hit is not null) return hit.BodyMarkdown;
+            var hit = bodies
+                .Where(v => v.Kind.Equals(kind, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(v => v.Body.Length)
+                .FirstOrDefault();
+            if (hit.Body is { Length: >= 200 }) return hit.Body;
         }
 
-        return variants.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v.BodyMarkdown))?.BodyMarkdown;
+        return bodies.OrderByDescending(v => v.Body.Length).First().Body;
+    }
+
+    private static bool HasBeatLabels(string script) =>
+        Regex.IsMatch(script, @"(?im)^\s*(?:#+\s*)?(HOOK|PROBLEM|INSIGHT|SOLUTION|CTA)\s*[:\-–]");
+
+    private static string ForNarration(string markdown)
+    {
+        var t = markdown.Replace("\r\n", "\n");
+        t = Regex.Replace(t, @"^#+\s*", "", RegexOptions.Multiline);
+        t = Regex.Replace(t, @"\*\*|__", "");
+        t = Regex.Replace(t, @"\[(.*?)\]\([^)]+\)", "$1");
+        t = Regex.Replace(t, @"`+", "");
+        return t.Trim();
     }
 
     private static List<string> ResolveBeatNames(string configJson)
@@ -629,9 +672,10 @@ internal sealed class ContentVideoService : IContentVideoService
         return path;
     }
 
-    private string? BuildPublicMediaUrl(Guid jobId, string fileName)
+    private string? BuildPublicMediaUrl(Guid jobId, string fileName, string? publicBase = null)
     {
         var baseUrl = FirstNonEmpty(
+            publicBase,
             _options.Value.PublicMediaBaseUrl,
             _configuration["Content:PublicMediaBaseUrl"],
             _configuration["Platform:ApiUrl"]);
@@ -642,6 +686,9 @@ internal sealed class ContentVideoService : IContentVideoService
 
     private static string? FirstNonEmpty(params string?[] values) =>
         values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
+
+    private static string? FirstSceneImage(IEnumerable<SceneBeat> scenes) =>
+        scenes.Select(s => s.ImageUrl).FirstOrDefault(u => !string.IsNullOrWhiteSpace(u));
 
     private static Dictionary<string, string> ParseLabeledSections(string script, IReadOnlyList<string> beats)
     {
@@ -666,11 +713,20 @@ internal sealed class ContentVideoService : IContentVideoService
 
     private static string ChunkFallback(string script, int n, int index)
     {
-        var lines = script.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (lines.Length == 0) return script.Trim();
-        var size = Math.Max(1, (int)Math.Ceiling(lines.Length / (double)n));
-        var slice = lines.Skip(index * size).Take(size);
-        return string.Join("\n", slice);
+        var parts = Regex.Split(script, @"(?<=[\.!\?…])\s+|\n{2,}")
+            .Select(s => s.Trim())
+            .Where(s => s.Length > 18 && !s.StartsWith('#') && !Regex.IsMatch(s, @"^#[\w]+"))
+            .ToList();
+        if (parts.Count == 0)
+        {
+            var lines = script.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (lines.Length == 0) return script.Trim();
+            var lineSize = Math.Max(1, (int)Math.Ceiling(lines.Length / (double)n));
+            return string.Join("\n", lines.Skip(index * lineSize).Take(lineSize));
+        }
+
+        var size = Math.Max(1, (int)Math.Ceiling(parts.Count / (double)n));
+        return string.Join(" ", parts.Skip(index * size).Take(size));
     }
 
     private static Dictionary<string, string> BuildCreatomateModifications(

@@ -60,25 +60,29 @@ import { logoutApi } from '@/shared/api/auth.api';
 import { AdminLanguageSelect } from '@/shared/i18n/LanguageSelect';
 import { AppBrandLogo } from '@/shared/components/AppBrandLogo';
 import { resolveShellBrand } from '@/shared/config/app-brand';
+import {
+  CONTENT_NAV_ITEMS,
+  CONTENT_NAV_SETUP,
+  CONTENT_NAV_WORK,
+  resolveContentNavKey,
+  resolveContentNavLabel,
+} from '@/modules/content/content-nav';
 
 const { Header, Sider, Content } = Layout;
 
-function resolveActiveModuleKey(pathname: string): ModuleKey {
+function resolveActiveModuleKey(pathname: string): string {
+  const contentKey = resolveContentNavKey(pathname);
+  if (contentKey) return contentKey;
 
   if (pathname === '/') return 'dashboard';
 
   for (const module of moduleRegistry) {
-
     if (!module.enabled || module.key === 'dashboard') continue;
-
     const base = `/${module.path.split('/').filter(Boolean)[0]}`;
-
     if (pathname.startsWith(base)) return module.key;
-
   }
 
   return 'dashboard';
-
 }
 
 
@@ -182,7 +186,7 @@ function AppLayoutShell() {
 
   const activeKey = resolveActiveModuleKey(location.pathname);
 
-  const activeModuleLabel = t(`modules.${activeKey}`);
+  const activeModuleLabel = resolveContentNavLabel(location.pathname) ?? t(`modules.${activeKey}`);
 
   const menuItems = useMemo(
     () =>
@@ -206,6 +210,14 @@ function AppLayoutShell() {
           const navEnabled = module.enabled && platformOk && kapOk && permissionOk;
           // Ẩn hẳn module tắt / không thuộc vertical — không hiện "(sắp có)".
           if (!navEnabled) return [];
+          if (adminVertical === 'marketing' && module.key === 'dashboard') return [];
+          if (adminVertical === 'marketing' && module.key === 'content') {
+            return [
+              ...CONTENT_NAV_WORK.map((i) => ({ key: i.key, icon: i.icon, label: i.label })),
+              { type: 'divider' as const },
+              ...CONTENT_NAV_SETUP.map((i) => ({ key: i.key, icon: i.icon, label: i.label })),
+            ];
+          }
           return [
             {
               key: module.key,
@@ -274,6 +286,27 @@ function AppLayoutShell() {
   };
 
 
+
+  if (location.pathname.startsWith('/local-os/duyet')) {
+    return (
+      <Layout className="los-phone-shell" style={{ minHeight: '100vh' }}>
+        <Header className="app-header" style={{ padding: '0 16px' }}>
+          <Typography.Title level={5} style={{ margin: 0 }}>
+            Duyệt tin
+          </Typography.Title>
+          <Dropdown menu={userMenu} placement="bottomRight">
+            <Space style={{ cursor: 'pointer' }}>
+              <Avatar size="small" icon={<UserOutlined />} />
+              <Typography.Text>{user?.username ?? 'Admin'}</Typography.Text>
+            </Space>
+          </Dropdown>
+        </Header>
+        <Content className="app-main-content">
+          <Outlet />
+        </Content>
+      </Layout>
+    );
+  }
 
   return (
 
@@ -346,6 +379,11 @@ function AppLayoutShell() {
           items={menuItems}
 
           onClick={({ key }) => {
+            const contentItem = CONTENT_NAV_ITEMS.find((i) => i.key === key);
+            if (contentItem) {
+              navigate(contentItem.path);
+              return;
+            }
             const module = moduleRegistry.find((m) => m.key === key);
             if (!module || !isModuleVisibleForVertical(module, adminVertical)) return;
             const platformOk =

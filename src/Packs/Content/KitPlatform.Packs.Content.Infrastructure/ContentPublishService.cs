@@ -32,6 +32,7 @@ internal sealed class ContentPublishService : IContentPublishService
     private readonly IConfiguration _configuration;
     private readonly IHostEnvironment _env;
     private readonly ContentOptions _options;
+    private readonly IContentFacebookConnectionService _facebook;
     private readonly ILogger<ContentPublishService> _logger;
 
     // Per-request media for scoped publish (cleared in finally).
@@ -43,6 +44,7 @@ internal sealed class ContentPublishService : IContentPublishService
         IConfiguration configuration,
         IHostEnvironment env,
         IOptions<ContentOptions> options,
+        IContentFacebookConnectionService facebook,
         ILogger<ContentPublishService> logger)
     {
         _repo = repo;
@@ -50,6 +52,7 @@ internal sealed class ContentPublishService : IContentPublishService
         _configuration = configuration;
         _env = env;
         _options = options.Value;
+        _facebook = facebook;
         _logger = logger;
     }
 
@@ -143,6 +146,8 @@ internal sealed class ContentPublishService : IContentPublishService
 
             foreach (var site in sites.Where(s => siteIds.Contains(s.Id) && s.IsActive))
             {
+                if (!IsAutoSiteConnector(site.ConnectorType))
+                    continue;
                 var id = await _repo.InsertPublishJobAsync(new ContentRepository.PublishJobRow
                 {
                     TopicId = topicId,
@@ -158,23 +163,25 @@ internal sealed class ContentPublishService : IContentPublishService
 
             foreach (var ch in channels.Where(c => channelIds.Contains(c.Id) && c.IsActive))
             {
-                var connector = ch.ChannelType is "facebook_page" or "instagram" or "linkedin"
-                    ? ch.ChannelType
-                    : "manual";
-                if (ch.ChannelType == "facebook_page")
-                    connector = "facebook_page";
-
+                if (!IsAutoChannelConnector(ch.ChannelType))
+                    continue;
                 var id = await _repo.InsertPublishJobAsync(new ContentRepository.PublishJobRow
                 {
                     TopicId = topicId,
                     BrandId = topic.BrandId,
                     TargetKind = "channel",
                     ChannelTargetId = ch.Id,
-                    ConnectorType = connector,
+                    ConnectorType = "facebook_page",
                     Status = "Queued",
                     PublishAt = publishAt,
                 }, cancellationToken);
                 jobs.Add(await LoadJobAsync(id, cancellationToken));
+            }
+
+            if (jobs.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    "Không có kênh đăng tự động. Chỉ Fanpage, Astro Git, WordPress. Instagram / LinkedIn / group: copy tay ở Đăng tay.");
             }
 
             if (request.RunImmediately)
@@ -274,7 +281,8 @@ internal sealed class ContentPublishService : IContentPublishService
                 "wordpress_rest" => await RunWordPressAsync(job, topic, variants, selected, cancellationToken),
                 "facebook_page" => await RunFacebookAsync(job, topic, variants, selected, cancellationToken),
                 "astro_git" => await RunAstroGitAsync(job, topic, variants, selected, cancellationToken),
-                _ => throw new InvalidOperationException($"Unsupported connector '{job.ConnectorType}'"),
+                _ => throw new InvalidOperationException(
+                    $"Kênh «{job.ConnectorType}» không đăng tự động — copy tay ở Đăng tay. Chỉ auto: Fanpage, Astro, WordPress."),
             };
 
             job.Status = "Succeeded";
@@ -339,7 +347,7 @@ internal sealed class ContentPublishService : IContentPublishService
                 topic.Id,
                 topic.Title,
                 topic.BrandCode,
-                topic.CtaUrl,
+                CtaUrl = TopicCta(topic),
                 topic.UtmCampaign,
                 topic.Goal,
             },
@@ -387,9 +395,11 @@ internal sealed class ContentPublishService : IContentPublishService
         var seo = variants.FirstOrDefault(v => v.Kind == "seo_meta");
         var title = web?.Title ?? topic.Title;
         var bodyMd = web?.BodyMarkdown ?? topic.Title;
-        if (!string.IsNullOrWhiteSpace(topic.CtaUrl)
-            && !bodyMd.Contains(topic.CtaUrl, StringComparison.OrdinalIgnoreCase))
-            bodyMd += $"\n\n[Tìm hiểu thêm]({topic.CtaUrl})";
+        var ctaUrl = TopicCta(topic);
+        bodyMd = ContentCtaRouter.RewriteBody(topic.BrandCode, bodyMd, ctaUrl);
+        if (!string.IsNullOrWhiteSpace(ctaUrl)
+            && !bodyMd.Contains(ctaUrl, StringComparison.OrdinalIgnoreCase))
+            bodyMd += $"\n\n[Tìm hiểu thêm]({ctaUrl})";
         var contentHtml = MarkdownToSimpleHtml(bodyMd);
         var excerpt = MarkdownToPlainText(
             seo?.BodyMarkdown ?? Trim(bodyMd, 180),
@@ -724,9 +734,11 @@ internal sealed class ContentPublishService : IContentPublishService
         var fb = variants.FirstOrDefault(v => v.Kind is "fb_page" or "fb_short")
                  ?? variants.FirstOrDefault(v => v.Kind is "social_caption");
         // Never post raw markdown (web_long) to Facebook — shows ** as draft-looking text.
-        var message = MarkdownToPlainText(fb?.BodyMarkdown ?? topic.Title);
-        if (!string.IsNullOrWhiteSpace(topic.CtaUrl) && !message.Contains(topic.CtaUrl, StringComparison.OrdinalIgnoreCase))
-            message = $"{message.Trim()}\n\n{topic.CtaUrl}";
+        var ctaUrl = TopicCta(topic);
+        var message = MarkdownToPlainText(
+            ContentCtaRouter.RewriteBody(topic.BrandCode, fb?.BodyMarkdown ?? topic.Title, ctaUrl));
+        if (!string.IsNullOrWhiteSpace(ctaUrl) && !message.Contains(ctaUrl, StringComparison.OrdinalIgnoreCase))
+            message = $"{message.Trim()}\n\n{ctaUrl}";
 
         var publishAt = _ephemeral?.PublishAt ?? job.PublishAt ?? topic.DisplayAt;
         var isFuture = publishAt is { } at && at > DateTimeOffset.UtcNow.AddMinutes(10);
@@ -756,7 +768,8 @@ internal sealed class ContentPublishService : IContentPublishService
             using var res = await http.PostAsync(url, form, ct);
             var body = await res.Content.ReadAsStringAsync(ct);
             if (!res.IsSuccessStatusCode)
-                throw new InvalidOperationException(HumanizeFacebookError("photo", (int)res.StatusCode, body));
+                throw new InvalidOperationException(
+                    await FacebookFailAsync(channel.Id, "photo", (int)res.StatusCode, body, ct));
 
             using var doc = JsonDocument.Parse(body);
             var postId = doc.RootElement.TryGetProperty("post_id", out var pid) ? pid.GetString()
@@ -782,7 +795,8 @@ internal sealed class ContentPublishService : IContentPublishService
         using var feedRes = await http.PostAsync(feedUrl, formContent, ct);
         var feedBody = await feedRes.Content.ReadAsStringAsync(ct);
         if (!feedRes.IsSuccessStatusCode)
-            throw new InvalidOperationException(HumanizeFacebookError("feed", (int)feedRes.StatusCode, feedBody));
+            throw new InvalidOperationException(
+                await FacebookFailAsync(channel.Id, "feed", (int)feedRes.StatusCode, feedBody, ct));
 
         using var feedDoc = JsonDocument.Parse(feedBody);
         var feedId = feedDoc.RootElement.TryGetProperty("id", out var fid) ? fid.GetString() : null;
@@ -837,8 +851,11 @@ internal sealed class ContentPublishService : IContentPublishService
             variants.FirstOrDefault(v => v.Kind == "seo_meta")?.BodyMarkdown ?? topic.Title,
             singleLine: true);
         var title = web?.Title ?? topic.Title;
-        var bodyMd = web?.BodyMarkdown ?? topic.Title;
-        var cta = string.IsNullOrWhiteSpace(topic.CtaUrl) ? "" : $"\n\n[Tìm hiểu thêm]({topic.CtaUrl})";
+        var bodyMd = ContentCtaRouter.RewriteBody(topic.BrandCode, web?.BodyMarkdown ?? topic.Title, TopicCta(topic));
+        var ctaUrl = TopicCta(topic);
+        var cta = !string.IsNullOrWhiteSpace(ctaUrl) && !bodyMd.Contains(ctaUrl, StringComparison.OrdinalIgnoreCase)
+            ? $"\n\n[Tìm hiểu thêm]({ctaUrl})"
+            : "";
 
         var pathLower = contentPath.Replace('\\', '/').ToLowerInvariant();
         var isNovixaTinTuc = pathLower.Contains("tin-tuc", StringComparison.Ordinal);
@@ -1245,6 +1262,39 @@ internal sealed class ContentPublishService : IContentPublishService
         return s.Trim();
     }
 
+    private async Task<string> FacebookFailAsync(
+        Guid channelId,
+        string mode,
+        int statusCode,
+        string body,
+        CancellationToken ct)
+    {
+        var message = HumanizeFacebookError(mode, statusCode, body);
+        if (IsFacebookAuthError(body))
+        {
+            try
+            {
+                await _facebook.MarkNeedReconnectAsync(channelId, message, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Không ghi được trạng thái NEED_RECONNECT cho kênh {ChannelId}", channelId);
+            }
+        }
+        return message;
+    }
+
+    private static bool IsFacebookAuthError(string body)
+    {
+        var raw = body ?? "";
+        return raw.Contains("expired", StringComparison.OrdinalIgnoreCase)
+               || raw.Contains("\"code\":190", StringComparison.Ordinal)
+               || raw.Contains("error_subcode\":463", StringComparison.Ordinal)
+               || raw.Contains("Error validating access token", StringComparison.OrdinalIgnoreCase)
+               || raw.Contains("(#200)", StringComparison.Ordinal)
+               || raw.Contains("OAuthException", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static string HumanizeFacebookError(string mode, int statusCode, string body)
     {
         var raw = Trim(body, 800);
@@ -1253,13 +1303,13 @@ internal sealed class ContentPublishService : IContentPublishService
             || raw.Contains("error_subcode\":463", StringComparison.Ordinal)
             || raw.Contains("Error validating access token", StringComparison.OrdinalIgnoreCase))
         {
-            return "Facebook: Page Access Token đã hết hạn. Vào Thương hiệu → Nơi đăng → Facebook Fanpage → dán token mới (Page token dài hạn) → Lưu → Chạy lại.";
+            return "Facebook: mất quyền đăng. Bấm Kết nối lại trên hàng này, rồi Đăng lại + ảnh.";
         }
 
         if (raw.Contains("permissions", StringComparison.OrdinalIgnoreCase)
             || raw.Contains("(#200)", StringComparison.Ordinal))
         {
-            return "Facebook: thiếu quyền pages_manage_posts (hoặc token không phải của Page). Lấy lại Page Access Token rồi dán vào Nơi đăng.";
+            return "Facebook: thiếu quyền pages_manage_posts. Bấm Kết nối lại trên hàng này và chọn đúng Page.";
         }
 
         return $"Facebook {mode} {statusCode}: {raw}";
@@ -1422,6 +1472,16 @@ internal sealed class ContentPublishService : IContentPublishService
         }
         return false;
     }
+
+    private static bool IsAutoSiteConnector(string? type) =>
+        type is "astro_git" or "wordpress_rest";
+
+    private static bool IsAutoChannelConnector(string? type) =>
+        type == "facebook_page";
+
+    private static string? TopicCta(ContentRepository.TopicRow topic) =>
+        ContentCtaRouter.Resolve(
+            topic.BrandCode, topic.Title, topic.Pillar, topic.Goal, topic.BodyOutline, topic.CtaUrl);
 
     private static string Trim(string s, int max = 500) =>
         s.Length <= max ? s : s[..max];

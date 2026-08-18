@@ -12,7 +12,7 @@ internal sealed class ContentAiConfigState
     public string Provider { get; set; } = "gemini";
 
     [JsonPropertyName("textModel")]
-    public string TextModel { get; set; } = "gemini-flash-latest";
+    public string TextModel { get; set; } = "gemini-3.6-flash";
 
     [JsonPropertyName("imageModel")]
     public string? ImageModel { get; set; }
@@ -65,7 +65,7 @@ internal static class ContentAiConfigParser
     public static ContentAiConfigDto ToDto(ContentAiConfigState state, bool apiKeyConfigured) =>
         new(
             string.IsNullOrWhiteSpace(state.Provider) ? "gemini" : state.Provider.Trim(),
-            string.IsNullOrWhiteSpace(state.TextModel) ? "gemini-flash-latest" : state.TextModel.Trim(),
+            RewriteRetiredTextModel(state.TextModel),
             string.IsNullOrWhiteSpace(state.ImageModel) ? null : state.ImageModel.Trim(),
             state.ImagesEnabled,
             string.IsNullOrWhiteSpace(state.GeminiApiKeySecretRef) ? null : state.GeminiApiKeySecretRef.Trim(),
@@ -84,9 +84,10 @@ internal static class ContentAiConfigParser
             ?? FirstNonEmpty(Environment.GetEnvironmentVariable("GOOGLE_API_KEY"))
             ?? FirstNonEmpty(Environment.GetEnvironmentVariable("GOOGLE_GENERATIVE_AI_API_KEY"));
 
-        var textModel = FirstNonEmpty(state.TextModel)
-                        ?? FirstNonEmpty(options.TextModel)
-                        ?? "gemini-flash-latest";
+        var textModel = RewriteRetiredTextModel(
+            FirstNonEmpty(state.TextModel)
+            ?? FirstNonEmpty(options.TextModel)
+            ?? "gemini-3.6-flash");
         var imageModel = FirstNonEmpty(state.ImageModel) ?? FirstNonEmpty(options.ImageModel);
 
         return new ContentAiResolved(
@@ -106,6 +107,17 @@ internal static class ContentAiConfigParser
         return FirstNonEmpty(configuration[key])
                ?? FirstNonEmpty(Environment.GetEnvironmentVariable(key))
                ?? FirstNonEmpty(configuration[$"Content:Secrets:{key}"]);
+    }
+
+    /// <summary>Gemini retired 2.5-flash for new keys — map to the current flash id.</summary>
+    private static string RewriteRetiredTextModel(string? model)
+    {
+        var m = (model ?? "").Trim();
+        if (m.Length == 0) return "gemini-3.6-flash";
+        if (m.Equals("gemini-2.5-flash", StringComparison.OrdinalIgnoreCase)
+            || m.Equals("models/gemini-2.5-flash", StringComparison.OrdinalIgnoreCase))
+            return "gemini-3.6-flash";
+        return m;
     }
 
     private static string? FirstNonEmpty(params string?[] values)

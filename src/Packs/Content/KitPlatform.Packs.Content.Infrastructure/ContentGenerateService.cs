@@ -46,12 +46,9 @@ internal sealed class ContentGenerateService : IContentGenerateService
 
         var sites = await _repo.ListSitesAsync(brand.Id, cancellationToken);
         var channels = await _repo.ListChannelsAsync(brand.Id, cancellationToken);
-        var orgKinds = ContentRepository.ParseStringList(org.VariantKindsJson);
-        var destPlan = ContentDestinationPlan.FromTargets(
-            sites,
-            channels,
-            orgKinds,
-            org.MaxImageCandidatesPerItem);
+        var destPlan = ContentDestinationPlan.Restrict(
+            ContentDestinationPlan.FromTargets(sites, channels, org.MaxImageCandidatesPerItem),
+            request.VariantKinds);
 
         var ai = await _gemini.ResolveConfigAsync(cancellationToken);
         var candidates = Math.Clamp(
@@ -133,8 +130,11 @@ internal sealed class ContentGenerateService : IContentGenerateService
         {
             var knowledgeGate = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
             if (!ContentBrandKnowledge.HasEnoughForGenerate(brand.OperationalBrief, knowledgeGate))
+            {
+                var miss = ContentBrandKnowledge.MissingBrain(brand.OperationalBrief, knowledgeGate);
                 throw new InvalidOperationException(
-                    "Thiếu Brand Knowledge: vào Thương hiệu → điền Positioning (≥20 ký tự) hoặc Brief vận hành (≥40 ký tự) rồi mới Generate.");
+                    "Thiếu Brand Brain — vào Thương hiệu → Kiến thức thương hiệu: " + string.Join("; ", miss));
+            }
         }
 
         await _repo.UpdateTopicStatusAsync(topicId, "Generating", cancellationToken);
@@ -152,58 +152,131 @@ internal sealed class ContentGenerateService : IContentGenerateService
             {
                 var kinds = destPlan.VariantKinds.ToList();
                 if (kinds.Count == 0)
-                    kinds = ["web_long"];
+                    throw new InvalidOperationException(
+                        "Thương hiệu chưa có nơi đăng — vào Thương hiệu → Nơi đăng (Website / Fanpage / nhóm).");
+
+                var wantGroup = kinds.Any(k => k.Equals("group_suggested", StringComparison.OrdinalIgnoreCase));
+                var wantWeb = kinds.Any(k => k.Equals("web_long", StringComparison.OrdinalIgnoreCase));
+                var packKinds = kinds
+                    .Where(k =>
+                        !k.Equals("group_suggested", StringComparison.OrdinalIgnoreCase)
+                        && !k.Equals("web_long", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
 
                 var knowledge = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
                 var brandContext = ContentBrandKnowledge.FormatForPrompt(knowledge, brand.OperationalBrief);
+                var packageId = await _repo.GetPackageIdByTopicAsync(topicId, cancellationToken);
+                var package = packageId is Guid pid ? await _repo.GetPackageAsync(pid, cancellationToken) : null;
+                var (core, _) = ContentPackageExtra.Parse(package?.ExtraJson);
+                var ctaUrl = ContentCtaRouter.Resolve(
+                    brand.Code,
+                    package?.Title ?? topic.Title,
+                    topic.Pillar,
+                    topic.Goal,
+                    topic.BodyOutline,
+                    topic.CtaUrl,
+                    brand.DefaultCtaUrl);
+                if (!string.Equals(topic.CtaUrl, ctaUrl, StringComparison.Ordinal))
+                    await _repo.UpdateTopicCtaAsync(topicId, ctaUrl, cancellationToken);
 
-                var system =
-                    "You are a Vietnamese multi-channel content writer for KIT Marketing Park.\n" +
-                    "Return valid JSON only. No markdown fences.\n" +
-                    "You MUST follow the brand knowledge / brief strictly: voice, claims allowed/forbidden, CTA rules, themes.\n" +
-                    "Do not invent competitor prices, medical claims, or guarantees not in the brief.\n" +
-                    "Never write in another brand's voice when adapting angle for this brand.\n" +
-                    "Adapt length to each variant kind.\n" +
-                    "Kind guides: web_long=800–1500 words VN article (markdown OK); seo_meta=title+description; " +
-                    "fb_page=Facebook post PLAIN TEXT only (no **bold**, no # headings, no markdown — Facebook shows raw **); " +
-                    "fb_short=hook+CTA plain text; tiktok_script=timed beats HOOK/PROBLEM/INSIGHT/SOLUTION/CTA 45–60s; " +
-                    "social_caption=short post + hashtags line (plain text); linkedin/instagram=native tone.\n" +
-                    "ONLY generate the variant kinds listed — do not invent extra channels.";
+                var parsed = new GeminiPackResponse();
+                if (packKinds.Count > 0)
+                {
+                    var system =
+                        "You are a Vietnamese multi-channel content writer for KIT Marketing Park.\n" +
+                        "Return valid JSON only. No markdown fences.\n" +
+                        "You MUST follow the FULL Brand Brain: voice, claims allowed/forbidden, proof, good/bad examples.\n" +
+                        "Do not invent competitor prices, medical claims, salaries, or guarantees not in the brief or evidence.\n" +
+                        "If factOrOpinion=fact and source is missing, do not invent numbers — write qualitatively.\n" +
+                        "Never write in another brand's voice. Use this brand's angle only.\n" +
+                        "Adapt length to each variant kind.\n" +
+                        "Kind guides: seo_meta=title+description; " +
+                        "fb_page=PLAIN TEXT 120–220 words, ONE thesis (same as Angle), 3 concrete beats, 1 CTA/question — no **bold**; " +
+                        "fb_short=hook+CTA plain text; tiktok_script=timed beats HOOK/PROBLEM/INSIGHT/SOLUTION/CTA 45–60s; " +
+                        "social_caption=short post + hashtags line (plain text); linkedin/instagram=native tone.\n" +
+                        "Do NOT write web_long or group_suggested here.\n" +
+                        "ONLY generate the variant kinds listed — do not invent extra channels.\n" +
+                        "Ban filler: «trong thời đại», «không thể phủ nhận», «hãy cùng tìm hiểu», «điều này cho thấy».";
+                    if (string.Equals(ctaUrl, ContentCtaRouter.NovixaHealthCheck, StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(ctaUrl, ContentCtaRouter.NovixaSpaHealthCheck, StringComparison.OrdinalIgnoreCase))
+                    {
+                        system +=
+                            "\nFor this topic the ONLY allowed CTA URL is " + ctaUrl +
+                            " — never homepage novixa.vn or survey.novixa.vn.";
+                    }
 
-                var user =
-                    "Brand: " + brand.Name + " (" + brand.Code + ")\n" +
-                    brandContext + "\n\n" +
-                    "Publish destinations configured: " + destPlan.Summary + "\n" +
-                    "Topic title: " + topic.Title + "\n" +
-                    "Pillar: " + (topic.Pillar ?? "") + "\n" +
-                    "Goal: " + topic.Goal + "\n" +
-                    "CTA URL: " + (topic.CtaUrl ?? brand.DefaultCtaUrl ?? "") + "\n" +
-                    "Article outline (optional): " + (topic.BodyOutline ?? "") + "\n" +
-                    "Variant kinds required (ONLY these): " + string.Join(", ", kinds) + "\n\n" +
-                    "Return JSON object with keys variants (array of {kind,title,bodyMarkdown,meta}) " +
-                    "and imagePrompt (English visual prompt aligned with brand brief/visual style, no text overlays).\n" +
-                    "Include exactly one entry per variant kind listed — no more, no less.";
+                    var user =
+                        "Brand: " + brand.Name + " (" + brand.Code + ")\n" +
+                        brandContext + "\n\n" +
+                        "CORE IDEA / ANGLE\n" +
+                        "Title: " + (package?.Title ?? topic.Title) + "\n" +
+                        "Angle: " + (package?.Angle ?? "") + "\n" +
+                        "Audience: " + (package?.Audience ?? "") + "\n" +
+                        "Insight: " + (core.Insight ?? "") + "\n" +
+                        "Problem: " + (core.Problem ?? "") + "\n" +
+                        "Core message: " + (core.CoreMessage ?? "") + "\n" +
+                        "Source: " + (core.Source ?? "") + "\n" +
+                        "Source URL: " + (core.SourceUrl ?? "") + "\n" +
+                        "Evidence: " + (core.Evidence ?? "") + "\n" +
+                        "Fact or opinion: " + (core.FactOrOpinion ?? "") + "\n\n" +
+                        "Publish destinations configured: " + destPlan.Summary + "\n" +
+                        "Topic title: " + topic.Title + "\n" +
+                        "Pillar: " + (topic.Pillar ?? "") + "\n" +
+                        "Goal: " + topic.Goal + "\n" +
+                        "CTA URL: " + (ctaUrl ?? "") + "\n" +
+                        "Article outline (optional): " + (topic.BodyOutline ?? "") + "\n" +
+                        "Variant kinds required (ONLY these): " + string.Join(", ", packKinds) + "\n\n" +
+                        "Return JSON object with keys variants (array of {kind,title,bodyMarkdown,meta}) " +
+                        "and imagePrompt (English visual prompt aligned with brand brief/visual style, no text overlays).\n" +
+                        "Include exactly one entry per variant kind listed — no more, no less.";
 
-                var raw = await _gemini.GenerateJsonAsync(system, user, cancellationToken);
-                var parsed = JsonSerializer.Deserialize<GeminiPackResponse>(raw, JsonOpts)
+                    var raw = await _gemini.GenerateJsonAsync(system, user, cancellationToken);
+                    parsed = JsonSerializer.Deserialize<GeminiPackResponse>(raw, JsonOpts)
                              ?? throw new InvalidOperationException("Failed to parse Gemini JSON");
 
-                if (parsed.Variants is { Count: > 0 })
-                {
-                    var allow = kinds.ToHashSet(StringComparer.OrdinalIgnoreCase);
-                    foreach (var v in parsed.Variants)
+                    if (parsed.Variants is { Count: > 0 })
                     {
-                        if (string.IsNullOrWhiteSpace(v.Kind)) continue;
-                        var kind = v.Kind.Trim();
-                        if (!allow.Contains(kind)) continue; // drop extras AI invented
-                        await _repo.UpsertVariantAsync(
-                            topicId,
-                            kind,
-                            v.Title?.Trim(),
-                            v.BodyMarkdown?.Trim() ?? "",
-                            ContentRepository.ToJson(v.Meta ?? new Dictionary<string, JsonElement>()),
-                            cancellationToken);
+                        var allow = packKinds.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                        foreach (var v in parsed.Variants)
+                        {
+                            if (string.IsNullOrWhiteSpace(v.Kind)) continue;
+                            var kind = v.Kind.Trim();
+                            if (!allow.Contains(kind)) continue;
+                            await _repo.UpsertVariantAsync(
+                                topicId,
+                                kind,
+                                v.Title?.Trim(),
+                                ContentCtaRouter.RewriteBody(brand.Code, v.BodyMarkdown?.Trim() ?? "", ctaUrl),
+                                ContentRepository.ToJson(v.Meta ?? new Dictionary<string, JsonElement>()),
+                                cancellationToken);
+                        }
                     }
+                }
+
+                if (wantWeb)
+                {
+                    await WriteWebLongAsync(
+                        topicId,
+                        brand,
+                        brandContext,
+                        package,
+                        core,
+                        topic,
+                        destPlan.Summary,
+                        ctaUrl,
+                        cancellationToken);
+                }
+
+                if (wantGroup)
+                {
+                    await WriteGroupShareAsync(
+                        topicId,
+                        brand,
+                        knowledge,
+                        package,
+                        core,
+                        topic,
+                        cancellationToken);
                 }
 
                 await _repo.InsertUsageAsync(
@@ -224,6 +297,28 @@ internal sealed class ContentGenerateService : IContentGenerateService
                 imagePrompt = string.IsNullOrWhiteSpace(parsed.ImagePrompt)
                     ? $"Professional brand content photo for: {topic.Title}. Clean modern lighting, no text."
                     : parsed.ImagePrompt.Trim();
+
+                if (package is not null)
+                {
+                    var written = await _repo.ListVariantsAsync(topicId, cancellationToken);
+                    var gate = ContentQualityGate.Evaluate(
+                        knowledge,
+                        core,
+                        package.Angle,
+                        written.Select(v => (v.Kind, v.BodyMarkdown)).ToList(),
+                        brand.Name);
+                    await _repo.UpdatePackageExtraJsonAsync(
+                        package.Id,
+                        ContentPackageExtra.MergeGate(package.ExtraJson, gate),
+                        cancellationToken);
+                    if (!gate.Passed && gate.Issues.Count > 0)
+                    {
+                        destPlan = destPlan with
+                        {
+                            Summary = destPlan.Summary + " · gate: " + string.Join("; ", gate.Issues.Take(3)),
+                        };
+                    }
+                }
             }
 
             var imageOk = 0;
@@ -359,6 +454,212 @@ internal sealed class ContentGenerateService : IContentGenerateService
         }
     }
 
+    private async Task WriteWebLongAsync(
+        Guid topicId,
+        ContentRepository.BrandRow brand,
+        string brandContext,
+        ContentRepository.PackageRow? package,
+        ContentCoreIdeaDto core,
+        ContentRepository.TopicRow topic,
+        string destSummary,
+        string? ctaUrl,
+        CancellationToken cancellationToken)
+    {
+        var thesis = FirstNonEmpty(package?.Angle, core.CoreMessage, core.Insight, topic.Title);
+        var system =
+            "You are a senior Vietnamese brand editor for KIT Marketing Park.\n" +
+            "Return valid JSON only: {\"title\":\"...\",\"bodyMarkdown\":\"...\"}. No markdown fences.\n" +
+            "Write ONE flagship article (web_long). Not a multi-channel pack.\n" +
+            "ONE thesis only — the Angle. Every H2 must prove that thesis. Do not survey the topic.\n" +
+            "Structure:\n" +
+            "- Lead (80–120 words): one scene + the problem. No «trong thời đại», «hãy cùng tìm hiểu».\n" +
+            "- Exactly 3 ## headings. Each: one argument + one concrete example from Brand Brain (problems/proof).\n" +
+            "- Close: one takeaway + CTA URL if provided (plain markdown link).\n" +
+            "900–1400 words Vietnamese. Markdown OK (##, lists). No invented numbers, medical claims, or other-brand voice.\n" +
+            "If evidence/source is empty, stay qualitative — do not fabricate stats.";
+
+        var user =
+            "Brand: " + brand.Name + " (" + brand.Code + ")\n" +
+            brandContext + "\n\n" +
+            "THESIS (must be the spine): " + thesis + "\n" +
+            "Title hint: " + (package?.Title ?? topic.Title) + "\n" +
+            "Audience: " + (package?.Audience ?? "") + "\n" +
+            "Insight: " + (core.Insight ?? "") + "\n" +
+            "Problem: " + (core.Problem ?? "") + "\n" +
+            "Core message: " + (core.CoreMessage ?? "") + "\n" +
+            "Source: " + (core.Source ?? "") + "\n" +
+            "Source URL: " + (core.SourceUrl ?? "") + "\n" +
+            "Evidence: " + (core.Evidence ?? "") + "\n" +
+            "Fact or opinion: " + (core.FactOrOpinion ?? "") + "\n" +
+            "Pillar: " + (topic.Pillar ?? "") + "\n" +
+            "Goal: " + topic.Goal + "\n" +
+            "CTA URL: " + (ctaUrl ?? "") + "\n" +
+            "Outline (optional): " + (topic.BodyOutline ?? "") + "\n" +
+            "Destinations (context only): " + destSummary + "\n\n" +
+            "Write the article now. title = published headline. bodyMarkdown = full article.";
+
+        string? title = null;
+        string? body = null;
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var prompt = attempt == 0
+                ? user
+                : user + "\n\nBài trước quá mỏng hoặc loãng. Viết LẠI: đúng 3 mục ##, mỗi mục một luận điểm + ví dụ hiện trường, 900–1400 từ.";
+            var raw = await _gemini.GenerateJsonAsync(system, prompt, cancellationToken, maxOutputTokens: 8192);
+            var parsed = JsonSerializer.Deserialize<GeminiGroupShareResponse>(raw, JsonOpts);
+            var nextTitle = (parsed?.Title ?? "").Trim();
+            var nextBody = ContentCtaRouter.RewriteBody(brand.Code, parsed?.BodyMarkdown?.Trim() ?? "", ctaUrl);
+            if (nextBody.Length < 400) continue;
+            title = nextTitle;
+            body = nextBody;
+            var h2 = nextBody.Split('\n').Count(l => l.TrimStart().StartsWith("## ", StringComparison.Ordinal));
+            if (nextBody.Length >= 2200 && h2 >= 2) break;
+        }
+
+        if (string.IsNullOrWhiteSpace(body) || body.Length < 400)
+            throw new InvalidOperationException("Bài web quá mỏng — Generate lại.");
+
+        await _repo.UpsertVariantAsync(
+            topicId,
+            "web_long",
+            string.IsNullOrWhiteSpace(title) ? topic.Title : title,
+            body,
+            "{}",
+            cancellationToken);
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var v in values)
+        {
+            if (!string.IsNullOrWhiteSpace(v)) return v.Trim();
+        }
+
+        return "";
+    }
+
+    private async Task WriteGroupShareAsync(
+        Guid topicId,
+        ContentRepository.BrandRow brand,
+        ContentBrandKnowledgeDto knowledge,
+        ContentRepository.PackageRow? package,
+        ContentCoreIdeaDto core,
+        ContentRepository.TopicRow topic,
+        CancellationToken cancellationToken)
+    {
+        var banned = GroupBannedTerms(brand.Name, brand.Code, knowledge);
+        var situation = StripBanned(core.Problem ?? package?.Angle ?? topic.Title, banned);
+        var feeling = StripBanned(core.Insight ?? "", banned);
+        var who = StripBanned(package?.Audience ?? "mọi người trong group", banned);
+        var theme = StripBanned(package?.Title ?? topic.Title, banned);
+
+        var system =
+            "Bạn là thành viên group Facebook, viết bài tâm sự gọn — gần gũi nhưng trình bày sạch, " +
+            "không phải copywriter fanpage, không viết giúp thương hiệu.\n" +
+            "Return valid JSON only: {\"title\":\"...\",\"bodyMarkdown\":\"...\"}. No markdown fences.\n" +
+            "title chỉ để admin nhận diện (không dán lên Facebook). Toàn bộ bài nằm trong bodyMarkdown.\n" +
+            "Giọng: lịch sự, đời thường, 1 tình huống + 1 câu hỏi. Không headline marketing, không \"các bác ạ\", không sến.\n" +
+            "BỐ CỤC bodyMarkdown (bắt buộc, đúng thứ tự, có \\n):\n" +
+            "1) Hook: 1 câu, tối đa 1 emoji ở cuối câu.\n" +
+            "2) Dòng trống.\n" +
+            "3) Bối cảnh: 2–3 câu, mỗi câu một dòng (không viết thành khối).\n" +
+            "4) Dòng trống rồi dòng 'Mình thấy:' rồi 3–4 dòng bắt đầu bằng • (không dùng dấu -).\n" +
+            "5) Dòng trống rồi 1 câu hỏi mở cho group (không lời khuyên, không giải pháp).\n" +
+            "6) Dòng trống rồi đúng 2 hashtag chủ đề cụ thể (vd #nuoidaycon #manhinh). Cấm #tamsu #cuocsong #giađình chung chung. Cấm hashtag thương hiệu.\n" +
+            "Tối đa 3 emoji cả bài. Không **bold**, không heading.\n" +
+            "CẤM: tên thương hiệu/sản phẩm/app, URL, CTA, \"mình đang dùng\", \"nên thử\".\n" +
+            "Độ dài 70–160 từ.";
+
+        var user =
+            "Tình huống mọi người đang bàn (chỉ đời sống, không bán gì):\n" +
+            "Gợi ý chủ đề: " + theme + "\n" +
+            "Vấn đề đời thường: " + situation + "\n" +
+            "Cảm xúc (không biến thành sản phẩm): " + feeling + "\n" +
+            "Ai trong group (mô tả người, không phải khách hàng): " + who + "\n\n" +
+            "Các từ/cụm SAU TUYỆT ĐỐI không được xuất hiện:\n- " +
+            string.Join("\n- ", banned) + "\n\n" +
+            "Viết đúng bố cục hook / bối cảnh / • / câu hỏi / 2 hashtag. Không lặp title trong body.";
+
+        string? title = null;
+        string? body = null;
+        var lastHits = new List<string>();
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            var prompt = attempt == 0
+                ? user
+                : user + "\n\nBài trước lệch bố cục hoặc giọng bán. Viết LẠI đúng hook / • / câu hỏi / 2 hashtag. Lỗi: " +
+                  string.Join("; ", lastHits);
+            var raw = await _gemini.GenerateJsonAsync(system, prompt, cancellationToken);
+            var parsed = JsonSerializer.Deserialize<GeminiGroupShareResponse>(raw, JsonOpts);
+            var nextTitle = (parsed?.Title ?? "").Trim();
+            var nextBody = ContentGroupShareFormat.Normalize(parsed?.BodyMarkdown);
+            if (nextBody.Length < 40) continue;
+            title = nextTitle;
+            body = nextBody;
+            lastHits = ContentQualityGate.GroupShareIssues(body, knowledge, brand.Name).ToList();
+            if (lastHits.Count == 0 && !LooksLikeGroupPostLayout(body) && attempt < 2)
+                lastHits.Add("thiếu xuống dòng / icon / gạch đầu dòng — viết lại như bài group, không một khối");
+            if (lastHits.Count == 0) break;
+        }
+
+        if (string.IsNullOrWhiteSpace(body) || body.Length < 40)
+            throw new InvalidOperationException("Bài nhóm quá ngắn — thử Generate lại.");
+        if (lastHits.Count > 0)
+            throw new InvalidOperationException(
+                "Bài nhóm vẫn giọng bán hàng — Generate lại. " + string.Join("; ", lastHits.Take(3)));
+
+        await _repo.UpsertVariantAsync(
+            topicId,
+            "group_suggested",
+            string.IsNullOrWhiteSpace(title) ? null : title,
+            body,
+            "{}",
+            cancellationToken);
+    }
+
+    private static bool LooksLikeGroupPostLayout(string body)
+    {
+        var lines = body.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        if (lines.Length < 4) return false;
+        var hasBullet = lines.Count(l => l.TrimStart().StartsWith("• ", StringComparison.Ordinal)) >= 3;
+        var hasBlank = lines.Any(l => l.Trim().Length == 0);
+        var hasHash = body.Contains('#');
+        return hasBullet && hasBlank && hasHash;
+    }
+
+    private static List<string> GroupBannedTerms(string brandName, string brandCode, ContentBrandKnowledgeDto k)
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        void Add(string? s)
+        {
+            var t = (s ?? "").Trim();
+            if (t.Length < 3) return;
+            set.Add(t);
+            if (t.StartsWith('#')) set.Add(t.TrimStart('#'));
+        }
+
+        Add(brandName);
+        Add(brandCode);
+        foreach (var p in k.Products) Add(p);
+        foreach (var p in k.Services) Add(p);
+        foreach (var p in k.Hashtags) Add(p);
+        foreach (var extra in new[] { "Famixa", "Novixa", "KIT Tech", "landing", "demo", "sản phẩm", "ứng dụng" })
+            Add(extra);
+        return set.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    private static string StripBanned(string? raw, IReadOnlyList<string> banned)
+    {
+        var t = (raw ?? "").Trim();
+        if (t.Length == 0) return "";
+        foreach (var b in banned.OrderByDescending(x => x.Length))
+        {
+            if (b.Length < 3) continue;
+            t = t.Replace(b, "…", StringComparison.OrdinalIgnoreCase);
+        }
+        return t;
+    }
+
     private async Task<GenerateContentResultDto> BuildResultAsync(
         Guid topicId,
         decimal estimate,
@@ -385,7 +686,7 @@ internal sealed class ContentGenerateService : IContentGenerateService
         return new ContentTopicDto(
             row.Id, row.BrandId, row.BrandCode, row.BrandName, row.Title, row.Pillar, row.Goal,
             row.CtaUrl, row.UtmCampaign, row.Priority, row.Status, row.BodyOutline, row.DisplayAt,
-            row.CreatedAt, row.UpdatedAt);
+            row.CreatedAt, row.UpdatedAt, row.VariantCount, row.CorePackageId, row.CoreTitle);
     }
 
     private string ResolveAssetRoot()
@@ -410,5 +711,11 @@ internal sealed class ContentGenerateService : IContentGenerateService
         public string? Title { get; set; }
         public string? BodyMarkdown { get; set; }
         public Dictionary<string, JsonElement>? Meta { get; set; }
+    }
+
+    private sealed class GeminiGroupShareResponse
+    {
+        public string? Title { get; set; }
+        public string? BodyMarkdown { get; set; }
     }
 }

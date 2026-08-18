@@ -25,6 +25,8 @@ internal sealed class ContentRepository
         public string ConnectorTypesJson { get; set; } = "[]";
         public string ChannelTypesJson { get; set; } = "[]";
         public string AiConfigJson { get; set; } = "{}";
+        public string VideoConfigJson { get; set; } = "{}";
+        public string FacebookConfigJson { get; set; } = "{}";
         public DateTimeOffset UpdatedAt { get; set; }
     }
 
@@ -91,6 +93,9 @@ internal sealed class ContentRepository
         public DateTimeOffset? DisplayAt { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
+        public int VariantCount { get; set; }
+        public Guid? CorePackageId { get; set; }
+        public string? CoreTitle { get; set; }
     }
 
     public sealed class PackageRow
@@ -109,8 +114,11 @@ internal sealed class ContentRepository
         public string Priority { get; set; } = "P1";
         public string Status { get; set; } = "Draft";
         public Guid? SourcePackageId { get; set; }
+        public string? SourceTitle { get; set; }
         public DateTimeOffset? DisplayAt { get; set; }
         public int VariantCount { get; set; }
+        public int AdaptationCount { get; set; }
+        public string ExtraJson { get; set; } = "{}";
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
     }
@@ -176,6 +184,8 @@ internal sealed class ContentRepository
                 connector_types_json::text AS ConnectorTypesJson,
                 channel_types_json::text AS ChannelTypesJson,
                 COALESCE(ai_config_json, '{}'::jsonb)::text AS AiConfigJson,
+                COALESCE(video_config_json, '{}'::jsonb)::text AS VideoConfigJson,
+                COALESCE(facebook_config_json, '{}'::jsonb)::text AS FacebookConfigJson,
                 updated_at AS UpdatedAt
             FROM pack_content.org_settings
             ORDER BY updated_at
@@ -202,6 +212,8 @@ internal sealed class ContentRepository
                 connector_types_json = @ConnectorTypesJson::jsonb,
                 channel_types_json = @ChannelTypesJson::jsonb,
                 ai_config_json = @AiConfigJson::jsonb,
+                video_config_json = @VideoConfigJson::jsonb,
+                facebook_config_json = @FacebookConfigJson::jsonb,
                 updated_at = NOW()
             WHERE id = @Id
             """;
@@ -431,12 +443,18 @@ internal sealed class ContentRepository
                 t.cta_url AS CtaUrl, t.utm_campaign AS UtmCampaign,
                 t.priority AS Priority, t.status AS Status,
                 t.body_outline AS BodyOutline, t.display_at AS DisplayAt,
-                t.created_at AS CreatedAt, t.updated_at AS UpdatedAt
+                t.created_at AS CreatedAt, t.updated_at AS UpdatedAt,
+                (SELECT COUNT(*)::int FROM pack_content.variant v WHERE v.topic_id = t.id) AS VariantCount,
+                COALESCE(p.source_package_id, p.id) AS CorePackageId,
+                COALESCE(src.title, p.title) AS CoreTitle
             FROM pack_content.topic t
             INNER JOIN pack_content.brand b ON b.id = t.brand_id
+            LEFT JOIN pack_content.content_package p ON p.topic_id = t.id
+            LEFT JOIN pack_content.content_package src ON src.id = p.source_package_id
             WHERE (@BrandId IS NULL OR t.brand_id = @BrandId)
               AND (@Status IS NULL OR t.status = @Status)
-            ORDER BY t.priority, t.updated_at DESC
+              AND (p.id IS NULL OR p.source_package_id IS NOT NULL)
+            ORDER BY VariantCount DESC, t.updated_at DESC
             LIMIT 500
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
@@ -453,9 +471,14 @@ internal sealed class ContentRepository
                 t.cta_url AS CtaUrl, t.utm_campaign AS UtmCampaign,
                 t.priority AS Priority, t.status AS Status,
                 t.body_outline AS BodyOutline, t.display_at AS DisplayAt,
-                t.created_at AS CreatedAt, t.updated_at AS UpdatedAt
+                t.created_at AS CreatedAt, t.updated_at AS UpdatedAt,
+                (SELECT COUNT(*)::int FROM pack_content.variant v WHERE v.topic_id = t.id) AS VariantCount,
+                COALESCE(p.source_package_id, p.id) AS CorePackageId,
+                COALESCE(src.title, p.title) AS CoreTitle
             FROM pack_content.topic t
             INNER JOIN pack_content.brand b ON b.id = t.brand_id
+            LEFT JOIN pack_content.content_package p ON p.topic_id = t.id
+            LEFT JOIN pack_content.content_package src ON src.id = p.source_package_id
             WHERE t.id = @Id
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
@@ -496,6 +519,16 @@ internal sealed class ContentRepository
             Outline = outline,
             DisplayAt = displayAt,
         });
+    }
+
+    public async Task UpdateTopicCtaAsync(Guid id, string? ctaUrl, CancellationToken ct)
+    {
+        const string sql = """
+            UPDATE pack_content.topic SET cta_url = @CtaUrl, updated_at = NOW()
+            WHERE id = @Id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new { Id = id, CtaUrl = ctaUrl });
     }
 
     public async Task UpdateTopicAsync(
@@ -551,6 +584,17 @@ internal sealed class ContentRepository
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
         await conn.ExecuteAsync(sql, new { Id = id, Status = status });
+    }
+
+    public async Task EnsureTopicDisplayAtAsync(Guid id, CancellationToken ct)
+    {
+        const string sql = """
+            UPDATE pack_content.topic
+            SET display_at = COALESCE(display_at, NOW()), updated_at = NOW()
+            WHERE id = @Id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new { Id = id });
     }
 
     public async Task<bool> DeleteTopicAsync(Guid id, CancellationToken ct)
@@ -804,26 +848,34 @@ internal sealed class ContentRepository
         return (await conn.QueryAsync<PublishJobRow>(sql, new { TopicId = topicId })).ToList();
     }
 
-    public async Task<IReadOnlyList<PackageRow>> ListPackagesAsync(Guid? brandId, string? status, CancellationToken ct)
+    public async Task<IReadOnlyList<PackageRow>> ListPackagesAsync(
+        Guid? brandId,
+        string? status,
+        bool coresOnly,
+        CancellationToken ct)
     {
         const string sql = """
             SELECT p.id AS Id, p.brand_id AS BrandId, b.code AS BrandCode, b.name AS BrandName,
                    p.topic_id AS TopicId, p.title AS Title, p.angle AS Angle, p.audience AS Audience,
                    p.content_type AS ContentType, p.pillar AS Pillar, p.goal AS Goal,
                    p.priority AS Priority, COALESCE(t.status, p.status) AS Status,
-                   p.source_package_id AS SourcePackageId, t.display_at AS DisplayAt,
+                   p.source_package_id AS SourcePackageId, src.title AS SourceTitle, t.display_at AS DisplayAt,
                    (SELECT COUNT(*)::int FROM pack_content.variant v WHERE v.topic_id = p.topic_id) AS VariantCount,
+                   (SELECT COUNT(*)::int FROM pack_content.content_package c WHERE c.source_package_id = p.id) AS AdaptationCount,
+                   CAST(p.extra_json AS text) AS ExtraJson,
                    p.created_at AS CreatedAt, p.updated_at AS UpdatedAt
             FROM pack_content.content_package p
             INNER JOIN pack_content.brand b ON b.id = p.brand_id
             INNER JOIN pack_content.topic t ON t.id = p.topic_id
+            LEFT JOIN pack_content.content_package src ON src.id = p.source_package_id
             WHERE (@BrandId IS NULL OR p.brand_id = @BrandId)
               AND (@Status IS NULL OR COALESCE(t.status, p.status) = @Status)
+              AND (@CoresOnly = FALSE OR p.source_package_id IS NULL)
             ORDER BY p.created_at DESC
             LIMIT 500
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
-        return (await conn.QueryAsync<PackageRow>(sql, new { BrandId = brandId, Status = status })).ToList();
+        return (await conn.QueryAsync<PackageRow>(sql, new { BrandId = brandId, Status = status, CoresOnly = coresOnly })).ToList();
     }
 
     public async Task<PackageRow?> GetPackageAsync(Guid id, CancellationToken ct)
@@ -833,12 +885,15 @@ internal sealed class ContentRepository
                    p.topic_id AS TopicId, p.title AS Title, p.angle AS Angle, p.audience AS Audience,
                    p.content_type AS ContentType, p.pillar AS Pillar, p.goal AS Goal,
                    p.priority AS Priority, COALESCE(t.status, p.status) AS Status,
-                   p.source_package_id AS SourcePackageId, t.display_at AS DisplayAt,
+                   p.source_package_id AS SourcePackageId, src.title AS SourceTitle, t.display_at AS DisplayAt,
                    (SELECT COUNT(*)::int FROM pack_content.variant v WHERE v.topic_id = p.topic_id) AS VariantCount,
+                   (SELECT COUNT(*)::int FROM pack_content.content_package c WHERE c.source_package_id = p.id) AS AdaptationCount,
+                   CAST(p.extra_json AS text) AS ExtraJson,
                    p.created_at AS CreatedAt, p.updated_at AS UpdatedAt
             FROM pack_content.content_package p
             INNER JOIN pack_content.brand b ON b.id = p.brand_id
             INNER JOIN pack_content.topic t ON t.id = p.topic_id
+            LEFT JOIN pack_content.content_package src ON src.id = p.source_package_id
             WHERE p.id = @Id
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
@@ -885,6 +940,51 @@ internal sealed class ContentRepository
         });
     }
 
+    public async Task<IReadOnlyList<PackageRow>> ListPackagesBySourceAsync(Guid sourcePackageId, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT p.id AS Id, p.brand_id AS BrandId, b.code AS BrandCode, b.name AS BrandName,
+                   p.topic_id AS TopicId, p.title AS Title, p.angle AS Angle, p.audience AS Audience,
+                   p.content_type AS ContentType, p.pillar AS Pillar, p.goal AS Goal,
+                   p.priority AS Priority, COALESCE(t.status, p.status) AS Status,
+                   p.source_package_id AS SourcePackageId, src.title AS SourceTitle, t.display_at AS DisplayAt,
+                   (SELECT COUNT(*)::int FROM pack_content.variant v WHERE v.topic_id = p.topic_id) AS VariantCount,
+                   (SELECT COUNT(*)::int FROM pack_content.content_package c WHERE c.source_package_id = p.id) AS AdaptationCount,
+                   CAST(p.extra_json AS text) AS ExtraJson,
+                   p.created_at AS CreatedAt, p.updated_at AS UpdatedAt
+            FROM pack_content.content_package p
+            INNER JOIN pack_content.brand b ON b.id = p.brand_id
+            INNER JOIN pack_content.topic t ON t.id = p.topic_id
+            LEFT JOIN pack_content.content_package src ON src.id = p.source_package_id
+            WHERE p.source_package_id = @SourcePackageId
+            ORDER BY b.sort_order, b.name
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return (await conn.QueryAsync<PackageRow>(sql, new { SourcePackageId = sourcePackageId })).ToList();
+    }
+
+    public async Task<Guid?> GetPackageIdBySourceAndBrandAsync(Guid sourcePackageId, Guid brandId, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT id FROM pack_content.content_package
+            WHERE source_package_id = @SourcePackageId AND brand_id = @BrandId
+            LIMIT 1
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.ExecuteScalarAsync<Guid?>(sql, new { SourcePackageId = sourcePackageId, BrandId = brandId });
+    }
+
+    public async Task UpdatePackageExtraJsonAsync(Guid id, string extraJson, CancellationToken ct)
+    {
+        const string sql = """
+            UPDATE pack_content.content_package
+            SET extra_json = CAST(@ExtraJson AS jsonb), updated_at = NOW()
+            WHERE id = @Id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new { Id = id, ExtraJson = string.IsNullOrWhiteSpace(extraJson) ? "{}" : extraJson });
+    }
+
     public async Task UpdatePackageAsync(
         Guid id,
         string title,
@@ -920,6 +1020,15 @@ internal sealed class ContentRepository
             Goal = goal,
             Priority = priority,
         });
+    }
+
+    public async Task<Guid?> GetPackageIdByTopicAsync(Guid topicId, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT id FROM pack_content.content_package WHERE topic_id = @TopicId LIMIT 1
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.ExecuteScalarAsync<Guid?>(sql, new { TopicId = topicId });
     }
 
     public async Task UpdatePackageStatusAsync(Guid id, string status, CancellationToken ct)
@@ -1015,6 +1124,22 @@ internal sealed class ContentRepository
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
         return await conn.QuerySingleOrDefaultAsync<VideoTemplateRow>(sql, new { Code = code });
+    }
+
+    public async Task SetVideoTemplateExternalIdByCodeAsync(string code, string? externalTemplateId, CancellationToken ct)
+    {
+        const string sql = """
+            UPDATE pack_content.video_template
+            SET external_template_id = @ExternalTemplateId,
+                updated_at = NOW()
+            WHERE code = @Code
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new
+        {
+            Code = code,
+            ExternalTemplateId = string.IsNullOrWhiteSpace(externalTemplateId) ? null : externalTemplateId.Trim(),
+        });
     }
 
     public async Task<IReadOnlyList<VideoJobRow>> ListVideoJobsAsync(Guid? brandId, string? status, CancellationToken ct)
@@ -1139,6 +1264,99 @@ internal sealed class ContentRepository
             ConfigJson = configJson,
             RenderedAt = renderedAt,
         });
+    }
+
+    public sealed class OauthPendingRow
+    {
+        public string Id { get; set; } = "";
+        public string Kind { get; set; } = "";
+        public Guid BrandId { get; set; }
+        public string? RedirectUri { get; set; }
+        public string PagesJson { get; set; } = "[]";
+        public DateTimeOffset ExpiresAt { get; set; }
+    }
+
+    public sealed class FailedPublishRow
+    {
+        public Guid Id { get; set; }
+        public Guid TopicId { get; set; }
+        public string TopicTitle { get; set; } = "";
+        public string ConnectorType { get; set; } = "";
+        public string? LastError { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
+    }
+
+    public async Task PutOauthPendingAsync(
+        string id,
+        string kind,
+        Guid brandId,
+        string? redirectUri,
+        string pagesJson,
+        DateTimeOffset expiresAt,
+        CancellationToken ct)
+    {
+        const string sql = """
+            INSERT INTO pack_content.facebook_oauth_pending
+                (id, kind, brand_id, redirect_uri, pages_json, expires_at)
+            VALUES (@Id, @Kind, @BrandId, @RedirectUri, @PagesJson::jsonb, @ExpiresAt)
+            ON CONFLICT (id) DO UPDATE SET
+                kind = EXCLUDED.kind,
+                brand_id = EXCLUDED.brand_id,
+                redirect_uri = EXCLUDED.redirect_uri,
+                pages_json = EXCLUDED.pages_json,
+                expires_at = EXCLUDED.expires_at
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new
+        {
+            Id = id,
+            Kind = kind,
+            BrandId = brandId,
+            RedirectUri = redirectUri,
+            PagesJson = pagesJson,
+            ExpiresAt = expiresAt,
+        });
+    }
+
+    public async Task<OauthPendingRow?> GetOauthPendingAsync(string id, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT id AS Id, kind AS Kind, brand_id AS BrandId, redirect_uri AS RedirectUri,
+                   pages_json::text AS PagesJson, expires_at AS ExpiresAt
+            FROM pack_content.facebook_oauth_pending
+            WHERE id = @Id AND expires_at > NOW()
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.QuerySingleOrDefaultAsync<OauthPendingRow>(sql, new { Id = id });
+    }
+
+    public async Task DeleteOauthPendingAsync(string id, CancellationToken ct)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(
+            "DELETE FROM pack_content.facebook_oauth_pending WHERE id = @Id",
+            new { Id = id });
+    }
+
+    public async Task PurgeOauthPendingAsync(CancellationToken ct)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync("DELETE FROM pack_content.facebook_oauth_pending WHERE expires_at <= NOW()");
+    }
+
+    public async Task<IReadOnlyList<FailedPublishRow>> ListFailedPublishJobsAsync(int take, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT j.id AS Id, j.topic_id AS TopicId, t.title AS TopicTitle,
+                   j.connector_type AS ConnectorType, j.last_error AS LastError, j.updated_at AS UpdatedAt
+            FROM pack_content.publish_job j
+            INNER JOIN pack_content.topic t ON t.id = j.topic_id
+            WHERE j.status = 'Failed'
+            ORDER BY j.updated_at DESC
+            LIMIT @Take
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return (await conn.QueryAsync<FailedPublishRow>(sql, new { Take = take })).ToList();
     }
 
     public static Dictionary<string, decimal> ParseRates(string json)

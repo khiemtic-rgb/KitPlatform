@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { App, Button, Card, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
+import { App, Button, Card, Checkbox, Form, InputNumber, Select, Space, Typography } from 'antd';
 import { ReloadOutlined, SaveOutlined } from '@ant-design/icons';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
@@ -17,10 +17,18 @@ type FormValues = {
   leanRate: number;
   balancedRate: number;
   premiumRate: number;
-  variantKinds: string;
-  connectorTypes: string;
-  channelTypes: string;
+  channelTypes: string[];
 };
+
+const EXTRA_CHANNEL_OPTS = [
+  { value: 'instagram', label: 'Instagram (đăng tay)' },
+  { value: 'linkedin', label: 'LinkedIn (đăng tay)' },
+  { value: 'threads', label: 'Threads (đăng tay)' },
+  { value: 'zalo_oa', label: 'Zalo OA (đăng tay)' },
+  { value: 'tiktok', label: 'TikTok (đăng tay)' },
+  { value: 'youtube', label: 'YouTube (đăng tay)' },
+  { value: 'other', label: 'MXH khác (đăng tay)' },
+];
 
 function toForm(s: ContentOrgSettings): FormValues {
   return {
@@ -32,17 +40,8 @@ function toForm(s: ContentOrgSettings): FormValues {
     leanRate: s.imageRateUsd.lean ?? 0.02,
     balancedRate: s.imageRateUsd.balanced ?? 0.05,
     premiumRate: s.imageRateUsd.premium ?? 0.14,
-    variantKinds: (s.variantKinds ?? []).join(', '),
-    connectorTypes: (s.connectorTypes ?? []).join(', '),
-    channelTypes: (s.channelTypes ?? []).join(', '),
+    channelTypes: (s.channelTypes ?? []).filter((t) => EXTRA_CHANNEL_OPTS.some((o) => o.value === t)),
   };
-}
-
-function splitCsv(raw: string) {
-  return raw
-    .split(',')
-    .map((x) => x.trim())
-    .filter(Boolean);
 }
 
 export function ContentSettingsPage() {
@@ -50,11 +49,13 @@ export function ContentSettingsPage() {
   const [form] = Form.useForm<FormValues>();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [org, setOrg] = useState<ContentOrgSettings | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const s = await fetchContentSettings();
+      setOrg(s);
       form.setFieldsValue(toForm(s));
     } catch (e) {
       message.error(apiErrorMessage(e, 'Không tải được tuỳ chọn'));
@@ -82,9 +83,13 @@ export function ContentSettingsPage() {
           balanced: v.balancedRate,
           premium: v.premiumRate,
         },
-        variantKinds: splitCsv(v.variantKinds),
-        connectorTypes: splitCsv(v.connectorTypes),
-        channelTypes: splitCsv(v.channelTypes),
+        variantKinds: org?.variantKinds,
+        connectorTypes: org?.connectorTypes,
+        channelTypes: [
+          'facebook_page',
+          'facebook_group',
+          ...v.channelTypes.filter((t) => EXTRA_CHANNEL_OPTS.some((o) => o.value === t)),
+        ],
       });
       message.success('Đã lưu tuỳ chọn');
       await load();
@@ -102,8 +107,7 @@ export function ContentSettingsPage() {
         Tuỳ chọn nâng cao
       </Typography.Title>
       <Typography.Paragraph type="secondary">
-        Chỉ cần chỉnh khi muốn đổi trần chi phí, số ảnh mỗi bài, hoặc danh sách loại bản viết / kênh đăng.
-        Việc hàng ngày nằm ở tab <strong>Làm bài</strong>.
+        Trần chi phí AI. Generate viết theo nơi đăng của từng brand — không tick kênh ở đây.
       </Typography.Paragraph>
       <Form form={form} layout="vertical" style={{ maxWidth: 720 }}>
         <Form.Item
@@ -163,27 +167,11 @@ export function ContentSettingsPage() {
           </Form.Item>
         </Space>
         <Form.Item
-          name="variantKinds"
-          label="Các bản viết AI tạo (cách nhau bằng dấu phẩy)"
-          extra="Ví dụ: bài web dài, bản Facebook, mô tả SEO…"
-          rules={[{ required: true }]}
-        >
-          <Input.TextArea rows={2} />
-        </Form.Item>
-        <Form.Item
-          name="connectorTypes"
-          label="Kiểu kết nối đăng bài (nâng cao)"
-          extra="astro_git, wordpress_rest, facebook_page, manual…"
-          rules={[{ required: true }]}
-        >
-          <Input.TextArea rows={2} />
-        </Form.Item>
-        <Form.Item
           name="channelTypes"
-          label="Loại kênh mạng xã hội (nâng cao)"
-          rules={[{ required: true }]}
+          label="MXH hiện khi thêm nơi đăng"
+          extra="Website + Fanpage + nhóm Facebook luôn có. Tick thêm mạng chỉ để copy tay — không auto."
         >
-          <Input.TextArea rows={2} />
+          <Checkbox.Group options={EXTRA_CHANNEL_OPTS} />
         </Form.Item>
         <Space>
           <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={() => void onSave()}>
