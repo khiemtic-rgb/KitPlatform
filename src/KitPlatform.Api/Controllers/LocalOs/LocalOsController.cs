@@ -242,7 +242,7 @@ public sealed class LocalOsController : ControllerBase
     {
         if (!push) return Ok(row);
         var feed = await _homepage.PublishAsync(cancellationToken);
-        if (!feed.Ok)
+        if (!feed.Ok || feed.Skipped)
             return StatusCode(502, new { message = feed.Message, listing = row });
         return Ok(row);
     }

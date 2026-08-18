@@ -14,6 +14,7 @@
   ],
   "vars": {
     "FEED_SYNC_TOKEN": "tnl-kv-feed-7c4e91b2a8d64f0e",
-    "LOCAL_OS_API": "https://api.novixa.vn/api/public/local-os"
+    "LOCAL_OS_API": "https://api.novixa.vn/api/public/local-os",
+    "LOCAL_OS_ADMIN_API": "https://api.novixa.vn/api"
   }
 }

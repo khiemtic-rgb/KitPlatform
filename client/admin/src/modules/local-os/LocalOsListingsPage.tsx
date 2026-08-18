@@ -494,6 +494,8 @@ export function LocalOsListingsPage() {
         Học bổng / ưu đãi dán loại <strong>Sự kiện</strong> — không mở mục ưu đãi riêng.
         Site chỉ hiện tin đã đăng. Độc giả báo sai số / hết phòng — không tự ẩn; vào{' '}
         <strong>Có báo cáo</strong> rồi Ẩn hoặc sửa số.{' '}
+        <Link to="/local-os/duyet">Duyệt trên điện thoại</Link>
+        {' · '}
         <Link to="/local-os/sources">Sổ nguồn</Link>
         {' · '}
         <Link to="/local-os/stats">Thống kê</Link>
@@ -643,7 +645,7 @@ export function LocalOsListingsPage() {
       >
         <Typography.Paragraph type="secondary">
           AI viết lại cho rõ — bỏ tắt, cảm thán, câu hô. Không bịa số. Bấm <strong>Duyệt &amp; đăng</strong> khi đủ tiêu đề, địa điểm và số điện thoại.
-          Tin ACTIVE lên thainguyenlife.vn ngay, không cần deploy.
+          Tin ACTIVE đẩy lên thainguyenlife.vn từ máy đang đăng nhập (VPS hoặc local). Việc / phòng cần số điện thoại.
         </Typography.Paragraph>
         <Button style={{ marginBottom: 12 }} loading={polishing} onClick={() => void polishEdit()}>
           AI viết lại cho chuẩn

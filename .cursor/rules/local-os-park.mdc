@@ -10,5 +10,6 @@ alwaysApply: true
 - Manifest: `deploy/ubuntu/migration-files.local-os.txt` only. Do **not** add to `migration-files.prod.txt`, `migration-files.family-os.txt`, or `migration-files.content.txt`.
 - Do not merge Local OS commits with Pharmacy auth. Do not crawl Facebook. Do not auto-post to groups.
 - Public submit → `NEEDS_REVIEW`. Site shows `ACTIVE` only after human publish.
+- Homepage feed: VPS (`api.novixa.vn` / `KIT_LOCAL`) may push to Worker KV when `LocalOs__PublicFeedUrl` is set. Do not push an empty feed. Local still works when you are at that machine.
 - Student v1: Job + Event + Room. Publisher: Job + Event + Room (no prices on rooms). Offers/grants stay hidden.
 - No Novixa/Famixa/PHC CTAs on the public site.

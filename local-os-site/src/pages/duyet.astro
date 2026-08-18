@@ -1,0 +1,240 @@
+---
+export const prerender = false;
+---
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="theme-color" content="#1f7a45" />
+    <title>Duyệt tin — Thái Nguyên Life</title>
+    <link rel="icon" href="/favicon.ico" />
+    <style>
+      :root { --green: #1f7a45; --green-dark: #155724; --bg: #f3f6f4; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #14241c; }
+      body { padding: 16px 16px calc(24px + env(safe-area-inset-bottom)); }
+      .wrap { max-width: 440px; margin: 0 auto; }
+      h1 { margin: 0 0 6px; font-size: 1.35rem; }
+      .sub { margin: 0 0 18px; color: #5b6560; font-size: 14px; }
+      .card { background: #fff; border-radius: 16px; padding: 18px 16px; box-shadow: 0 8px 24px rgba(20, 36, 28, 0.06); }
+      label { display: block; font-weight: 700; font-size: 13px; margin: 0 0 6px; }
+      input { width: 100%; border: 1px solid #d5ddd8; border-radius: 10px; padding: 12px 12px; font: inherit; margin-bottom: 12px; }
+      .btn { display: inline-flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; border: 0; border-radius: 12px; font: inherit; font-weight: 700; cursor: pointer; }
+      .btn-green { background: var(--green); color: #fff; }
+      .btn-ghost { background: #fff; color: #374151; border: 1px solid #d5ddd8; }
+      .btn-danger { background: #f3f4f6; color: #374151; }
+      .err { color: #b42318; font-size: 14px; margin: 8px 0 0; }
+      .badge { display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; background: #e8f5ec; color: var(--green-dark); }
+      .title { margin: 10px 0 8px; font-size: 1.2rem; line-height: 1.35; }
+      .meta { color: #4b5563; font-size: 14px; line-height: 1.45; margin: 0 0 6px; }
+      .phone { color: var(--green-dark); font-weight: 700; font-size: 16px; margin: 8px 0; }
+      .warn { background: #fff7ed; color: #9a3412; border-radius: 10px; padding: 10px 12px; font-size: 13.5px; margin: 10px 0; }
+      .actions { display: grid; grid-template-columns: 1fr 1.2fr; gap: 10px; margin-top: 16px; }
+      .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+      .count { font-weight: 700; color: var(--green-dark); }
+      .out { background: none; border: 0; color: #6b7280; font: inherit; text-decoration: underline; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div id="login-pane">
+        <h1>Duyệt tin</h1>
+        <p class="sub">Đăng nhập KIT_LOCAL — duyệt trên điện thoại, tin lên trang chủ sau khi bấm Đăng.</p>
+        <form class="card" id="login-form">
+          <label for="user">Tài khoản</label>
+          <input id="user" name="username" autocomplete="username" required />
+          <label for="pass">Mật khẩu</label>
+          <input id="pass" name="password" type="password" autocomplete="current-password" required />
+          <button class="btn btn-green" type="submit">Vào duyệt</button>
+          <p class="err" id="login-err" hidden></p>
+        </form>
+      </div>
+
+      <div id="review-pane" hidden>
+        <div class="top">
+          <div>
+            <h1>Duyệt tin</h1>
+            <p class="sub" id="queue-label">Đang tải…</p>
+          </div>
+          <button type="button" class="out" id="btn-out">Thoát</button>
+        </div>
+        <div class="card" id="empty" hidden>
+          <p class="meta">Hết tin chờ duyệt.</p>
+        </div>
+        <div class="card" id="item-card" hidden>
+          <span class="badge" id="kind"></span>
+          <span class="count" id="remain"></span>
+          <h2 class="title" id="title"></h2>
+          <p class="meta" id="place"></p>
+          <p class="meta" id="pay"></p>
+          <p class="phone" id="phone-line"></p>
+          <div id="need-phone" hidden>
+            <p class="warn">Việc / phòng không có số thì không lên site. Ghi số rồi đăng.</p>
+            <label for="phone-in">Số điện thoại</label>
+            <input id="phone-in" inputmode="tel" autocomplete="tel" placeholder="09xxxxxxxx" />
+          </div>
+          <p class="err" id="rev-err" hidden></p>
+          <div class="actions">
+            <button type="button" class="btn btn-danger" id="btn-hide">Ẩn</button>
+            <button type="button" class="btn btn-green" id="btn-pub">Đăng</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      const KEY = 'tnlife-review-token';
+      const loginPane = document.getElementById('login-pane')!;
+      const reviewPane = document.getElementById('review-pane')!;
+      const loginErr = document.getElementById('login-err')!;
+      const revErr = document.getElementById('rev-err')!;
+      const empty = document.getElementById('empty')!;
+      const card = document.getElementById('item-card')!;
+      const needPhone = document.getElementById('need-phone')!;
+      const phoneIn = document.getElementById('phone-in') as HTMLInputElement;
+      const queueLabel = document.getElementById('queue-label')!;
+
+      type Row = {
+        id: string;
+        kind: string;
+        title: string;
+        placeText?: string | null;
+        contactPhone?: string | null;
+        salaryText?: string | null;
+        workingTime?: string | null;
+        [k: string]: unknown;
+      };
+
+      const kindLabel: Record<string, string> = { job: 'Việc', event: 'Sự kiện', room: 'Trọ' };
+      let queue: Row[] = [];
+      let token = sessionStorage.getItem(KEY) || '';
+
+      function auth(init: RequestInit = {}): RequestInit {
+        return {
+          ...init,
+          headers: { 'content-type': 'application/json', authorization: `Bearer ${token}`, ...(init.headers || {}) },
+        };
+      }
+
+      function showErr(el: HTMLElement, msg: string) {
+        el.hidden = !msg;
+        el.textContent = msg;
+      }
+
+      function hasPhone(row: Row): boolean {
+        const d = (row.contactPhone ?? '').replace(/\D/g, '');
+        return d.length >= 9 && d.length <= 12;
+      }
+
+      function render() {
+        queueLabel.textContent = queue.length ? `${queue.length} tin chờ` : 'Hàng chờ trống';
+        if (!queue.length) {
+          card.hidden = true;
+          empty.hidden = false;
+          return;
+        }
+        const row = queue[0];
+        empty.hidden = true;
+        card.hidden = false;
+        document.getElementById('kind')!.textContent = kindLabel[row.kind] || row.kind;
+        document.getElementById('remain')!.textContent = ` · còn ${queue.length}`;
+        document.getElementById('title')!.textContent = row.title;
+        document.getElementById('place')!.textContent = row.placeText || 'Chưa ghi địa điểm';
+        const pay = row.kind === 'job' ? (row.salaryText || row.workingTime || '') : row.kind === 'room' ? 'Giá thuê: liên hệ' : '';
+        document.getElementById('pay')!.textContent = pay;
+        const ok = hasPhone(row) || row.kind === 'event';
+        document.getElementById('phone-line')!.textContent = hasPhone(row) ? `Số điện thoại: ${row.contactPhone}` : '';
+        needPhone.hidden = ok;
+        phoneIn.value = row.contactPhone || '';
+        showErr(revErr, '');
+      }
+
+      async function loadQueue() {
+        const res = await fetch('/api/review/listings?status=NEEDS_REVIEW', auth());
+        if (res.status === 401) {
+          token = '';
+          sessionStorage.removeItem(KEY);
+          loginPane.hidden = false;
+          reviewPane.hidden = true;
+          return;
+        }
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || 'Không tải được hàng chờ.');
+        queue = (await res.json()) as Row[];
+        render();
+      }
+
+      async function decide(status: 'ACTIVE' | 'HIDDEN') {
+        const row = queue[0];
+        if (!row) return;
+        const phone = phoneIn.value.trim();
+        if (status === 'ACTIVE' && row.kind !== 'event' && !hasPhone({ ...row, contactPhone: phone || row.contactPhone })) {
+          showErr(revErr, 'Ghi số điện thoại trước khi đăng.');
+          return;
+        }
+        showErr(revErr, '');
+        const res = await fetch('/api/review/status', auth({
+          method: 'POST',
+          body: JSON.stringify({
+            id: row.id,
+            status,
+            phone: phone || undefined,
+            listing: row,
+          }),
+        }));
+        const data = await res.json().catch(() => ({})) as { message?: string };
+        if (res.status === 401) {
+          token = '';
+          sessionStorage.removeItem(KEY);
+          loginPane.hidden = false;
+          reviewPane.hidden = true;
+          showErr(loginErr, 'Hết phiên. Đăng nhập lại.');
+          return;
+        }
+        if (!res.ok) {
+          showErr(revErr, data.message || 'Chưa gửi được.');
+          return;
+        }
+        queue.shift();
+        render();
+      }
+
+      function enterReview() {
+        loginPane.hidden = true;
+        reviewPane.hidden = false;
+        void loadQueue().catch((e) => showErr(revErr, e instanceof Error ? e.message : 'Không tải được.'));
+      }
+
+      document.getElementById('login-form')!.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        showErr(loginErr, '');
+        const username = (document.getElementById('user') as HTMLInputElement).value.trim();
+        const password = (document.getElementById('pass') as HTMLInputElement).value;
+        const res = await fetch('/api/review/login', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json().catch(() => ({})) as { accessToken?: string; message?: string };
+        if (!res.ok || !data.accessToken) {
+          showErr(loginErr, data.message || 'Không đăng nhập được.');
+          return;
+        }
+        token = data.accessToken;
+        sessionStorage.setItem(KEY, token);
+        enterReview();
+      });
+
+      document.getElementById('btn-out')!.addEventListener('click', () => {
+        token = '';
+        sessionStorage.removeItem(KEY);
+        loginPane.hidden = false;
+        reviewPane.hidden = true;
+      });
+      document.getElementById('btn-hide')!.addEventListener('click', () => void decide('HIDDEN'));
+      document.getElementById('btn-pub')!.addEventListener('click', () => void decide('ACTIVE'));
+
+      if (token) enterReview();
+    </script>
+  </body>
+</html>
