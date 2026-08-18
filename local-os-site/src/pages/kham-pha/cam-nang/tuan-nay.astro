@@ -12,7 +12,7 @@ const sections = [digest.events, digest.jobs, digest.rooms];
   description={digest.blurb}
 >
   <div class="page discover-page">
-    <div class="wrap week-digest">
+    <div class="wrap guide-wrap">
       <nav class="job-crumb" aria-label="Đường dẫn">
         <a href="/">Trang chủ</a>
         <span>›</span>
@@ -23,38 +23,45 @@ const sections = [digest.events, digest.jobs, digest.rooms];
         <span>{WEEK_GUIDE.title}</span>
       </nav>
 
-      <article class="panel week-digest-main">
-        <p class="muted">{WEEK_GUIDE.kicker} · {digest.asOf}</p>
-        <h1 class="page-title">{WEEK_GUIDE.title}</h1>
-        <p class="event-detail-lead">{digest.blurb}</p>
-        <p class="muted">Gọi thẳng số trên tin. Giá phòng hỏi khi gọi.</p>
+      <article class="event-detail-main guide-article">
+        <div class="event-hero-media">
+          <img src={WEEK_GUIDE.cover} alt="" />
+          <span class="photo-caption">Ảnh minh họa</span>
+        </div>
+        <header class="event-detail-head">
+          <p class="muted">{WEEK_GUIDE.kicker}</p>
+          <h1>{WEEK_GUIDE.title}</h1>
+          <p class="event-detail-lead">{digest.blurb}</p>
+        </header>
 
         {sections.map((sec) => (
           <section class="job-block">
             <h2>{sec.title}</h2>
             {sec.items.length === 0 ? (
-              <p>{sec.empty} <a href={sec.moreHref}>{sec.moreLabel} →</a></p>
+              <p>{sec.empty}</p>
             ) : (
-              <ul class="week-digest-list">
-                {sec.items.map((row) => (
-                  <li>
-                    <a href={row.href}>
-                      <strong>{row.title}</strong>
-                      {row.meta && <span>{row.meta}</span>}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              sec.items.map((row) => (
+                <div class="guide-hit">
+                  {row.meta && <p>{row.meta}</p>}
+                  <p class="guide-pills">
+                    <a class="btn-outline" href={row.href}>{row.title}</a>
+                  </p>
+                </div>
+              ))
             )}
-            {sec.items.length > 0 && (
-              <p><a class="see-all" href={sec.moreHref}>{sec.moreLabel} →</a></p>
-            )}
+            <p class="guide-pills">
+              <a class="btn-outline" href={sec.moreHref}>{sec.moreLabel}</a>
+            </p>
           </section>
         ))}
 
         <section class="job-block">
           <h2>Đọc thêm</h2>
-          <p><a href="/kham-pha/cam-nang/cuoi-tuan">Cuối tuần đi đâu</a>, <a href="/kham-pha/cam-nang/sinh-vien-moi">Sinh viên mới đến</a>, <a href="/kham-pha/cam-nang/an-gi">Ăn gì ở Thái Nguyên</a>.</p>
+          <p class="guide-pills">
+            <a class="btn-outline" href="/kham-pha/cam-nang/cuoi-tuan">Cuối tuần đi đâu</a>
+            <a class="btn-outline" href="/kham-pha/cam-nang/sinh-vien-moi">Sinh viên mới đến</a>
+            <a class="btn-outline" href="/kham-pha/cam-nang/an-gi">Ăn gì ở Thái Nguyên</a>
+          </p>
         </section>
       </article>
     </div>

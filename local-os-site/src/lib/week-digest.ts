@@ -6,7 +6,8 @@ export const WEEK_GUIDE = {
   slug: 'tuan-nay',
   href: '/kham-pha/cam-nang/tuan-nay',
   title: 'Tuần này ở Thái Nguyên có gì?',
-  kicker: 'Cẩm nang',
+  kicker: 'Cẩm nang · Tuần này',
+  cover: '/banner-ho-nui-coc.png',
 } as const;
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;

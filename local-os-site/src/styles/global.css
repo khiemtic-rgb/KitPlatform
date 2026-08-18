@@ -1237,10 +1237,18 @@ img { max-width: 100%; }
   position: absolute; right: 12px; top: 12px; z-index: 2;
   background: rgba(255, 255, 255, 0.94);
 }
-.event-detail-head { padding: 16px 8px 0; }
-.event-detail-head h1 { margin: 0 0 10px; font-size: 1.7rem; line-height: 1.35; }
+.event-detail-head { padding: 18px 4px 0; }
+.event-detail-head .muted { margin: 0 0 8px; font-size: 13px; color: #8b938e; }
+.event-detail-head h1 { margin: 0 0 10px; font-size: 1.75rem; line-height: 1.3; letter-spacing: -0.02em; }
 .event-detail-pills { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.event-detail-lead { margin: 14px 8px 0; color: #3f4a44; font-size: 15px; line-height: 1.55; }
+.event-detail-lead { margin: 0; color: #3f4a44; font-size: 15.5px; line-height: 1.6; }
+.guide-wrap { max-width: 800px; }
+.guide-article { padding: 16px 20px 28px; }
+.guide-pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0 !important; }
+.guide-pills .btn-outline { text-decoration: none; }
+.guide-hit { margin: 0 0 14px; }
+.guide-hit:last-child { margin-bottom: 0; }
+.guide-hit p { margin: 0 0 8px; }
 .event-quick {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0;
   margin: 18px 8px 8px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
@@ -1582,15 +1590,6 @@ img { max-width: 100%; }
 }
 .disc-guide.is-live .disc-guide-body { padding: 16px 14px 18px; }
 .week-digest { max-width: 800px; }
-.week-digest-main { padding: 18px 20px 24px; }
-.week-digest-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.week-digest-list a {
-  display: grid; gap: 2px; text-decoration: none;
-  padding: 10px 12px; border-radius: 10px; background: #f6f8f6;
-}
-.week-digest-list a:hover { background: #e8f5ec; }
-.week-digest-list strong { font-size: 15px; line-height: 1.35; }
-.week-digest-list span { color: #6b7280; font-size: 13px; }
 .discover-today {
   margin: 32px 0 8px; background: #e8f5ec; border-radius: 16px; padding: 20px 22px;
 }

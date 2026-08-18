@@ -11,7 +11,7 @@ if (!guide) return Astro.redirect('/kham-pha');
 ---
 <Layout title={`${guide.title} — Khám phá Thái Nguyên`} active="discover">
   <div class="page discover-page">
-    <div class="wrap" style="max-width:800px">
+    <div class="wrap guide-wrap">
       <nav class="job-crumb" aria-label="Đường dẫn">
         <a href="/">Trang chủ</a>
         <span>›</span>
@@ -22,7 +22,7 @@ if (!guide) return Astro.redirect('/kham-pha');
         <span>{guide.title}</span>
       </nav>
 
-      <article class="event-detail-main" style="padding:16px 20px 24px">
+      <article class="event-detail-main guide-article">
         <div class="event-hero-media">
           <img src={guide.cover} alt="" />
           <span class="photo-caption">Ảnh minh họa</span>
@@ -37,10 +37,10 @@ if (!guide) return Astro.redirect('/kham-pha');
             <h2>{s.heading}</h2>
             <p>{s.body}</p>
             {s.placeSlugs && s.placeSlugs.length > 0 && (
-              <p>
+              <p class="guide-pills">
                 {s.placeSlugs.map((slug) => {
                   const p = getPlace(slug);
-                  return p ? <a class="btn-outline" href={placeHref(p.slug)} style="margin-right:8px">{p.title}</a> : null;
+                  return p ? <a class="btn-outline" href={placeHref(p.slug)}>{p.title}</a> : null;
                 })}
               </p>
             )}
@@ -48,7 +48,10 @@ if (!guide) return Astro.redirect('/kham-pha');
         ))}
         <section class="job-block">
           <h2>Tuần này</h2>
-          <p><a href="/kham-pha/cam-nang/tuan-nay">Tuần này ở Thái Nguyên có gì?</a> — việc, phòng và sự kiện đang mở.</p>
+          <p>Việc, phòng và sự kiện đang mở.</p>
+          <p class="guide-pills">
+            <a class="btn-outline" href="/kham-pha/cam-nang/tuan-nay">Tuần này ở Thái Nguyên có gì?</a>
+          </p>
         </section>
         <section class="job-block">
           <h2>Nguồn</h2>
