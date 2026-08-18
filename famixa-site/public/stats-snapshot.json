@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-18T07:12:39.346Z",
+  "generatedAt": "2026-08-18T13:18:14.795Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 14,
-    "todayPageViews": 7,
-    "todayRequests": 125,
-    "last24hVisitors": 92,
-    "last24hPageViews": 33,
-    "last24hRequests": 267
+    "todayVisitors": 57,
+    "todayPageViews": 38,
+    "todayRequests": 217,
+    "last24hVisitors": 123,
+    "last24hPageViews": 58,
+    "last24hRequests": 321
   },
   "hourly": [
-    {
-      "time": "2026-08-17T08:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-17T09:00:00Z",
-      "visitors": 3,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-17T10:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-17T11:00:00Z",
-      "visitors": 3,
-      "requests": 24
-    },
-    {
-      "time": "2026-08-17T12:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-17T13:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
     {
       "time": "2026-08-17T14:00:00Z",
       "visitors": 1,
@@ -128,8 +98,38 @@
     },
     {
       "time": "2026-08-18T07:00:00Z",
-      "visitors": 2,
-      "requests": 91
+      "visitors": 8,
+      "requests": 125
+    },
+    {
+      "time": "2026-08-18T08:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-18T09:00:00Z",
+      "visitors": 20,
+      "requests": 22
+    },
+    {
+      "time": "2026-08-18T10:00:00Z",
+      "visitors": 15,
+      "requests": 17
+    },
+    {
+      "time": "2026-08-18T11:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-18T12:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-18T13:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-08-18",
-      "visitors": 41,
-      "pageViews": 18,
-      "requests": 155
+      "visitors": 96,
+      "pageViews": 49,
+      "requests": 247
     }
   ],
   "topPages": [
     {
-      "path": "/",
-      "views": 16
-    },
-    {
       "path": "/robots.txt",
-      "views": 15
+      "views": 20
     },
     {
       "path": "/images/blog/nuoi-day-con-trong-thoi-dai-ai.png",
-      "views": 13
+      "views": 16
     },
     {
-      "path": "/vi/",
-      "views": 8
+      "path": "/vi/goi-cha-me/nuoi-day-con-trong-thoi-dai-ai-dung-bien-cong-nghe-thanh-ke-thu-hay-bien-ai-thanh-tro-ly-gia-dinh/",
+      "views": 15
+    },
+    {
+      "path": "/",
+      "views": 14
     },
     {
       "path": "/sitemap.xml",
-      "views": 8
+      "views": 11
+    },
+    {
+      "path": "/images/blog/cha-me-nen-xin-loi-con-khi-nao.png",
+      "views": 7
+    },
+    {
+      "path": "/images/blog/tao-moi-truong-tu-lap-cho-con.png",
+      "views": 7
     },
     {
       "path": "/licensor.js",
       "views": 7
     },
     {
-      "path": "/images/blog/cha-me-nen-xin-loi-con-khi-nao.png",
-      "views": 6
+      "path": "/images/moment-chores.png",
+      "views": 7
     },
     {
       "path": "/images/hero-family.png",
       "views": 6
     },
     {
-      "path": "/images/blog/tao-moi-truong-tu-lap-cho-con.png",
-      "views": 5
+      "path": "/images/blog/nuoi-day-con-bang-ky-luat-tich-cuc.png",
+      "views": 6
+    },
+    {
+      "path": "/images/blog/co-nen-thuong-tien-cho-con.png",
+      "views": 6
+    },
+    {
+      "path": "/vi/",
+      "views": 6
+    },
+    {
+      "path": "/images/blog/cach-xay-dung-niem-tin.png",
+      "views": 6
     },
     {
       "path": "/static/style/sys_files/index.js",
       "views": 5
-    },
-    {
-      "path": "/vi/goi-cha-me/nuoi-day-con-trong-thoi-dai-ai-dung-bien-cong-nghe-thanh-ke-thu-hay-bien-ai-thanh-tro-ly-gia-dinh/",
-      "views": 4
-    },
-    {
-      "path": "/static/style/protect/index.js",
-      "views": 4
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 4
-    },
-    {
-      "path": "/images/blog/nuoi-day-con-bang-ky-luat-tich-cuc.png",
-      "views": 4
-    },
-    {
-      "path": "/images/blog/cach-xay-dung-niem-tin.png",
-      "views": 4
     }
   ]
 }
