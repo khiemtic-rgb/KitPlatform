@@ -1237,11 +1237,10 @@ img { max-width: 100%; }
   position: absolute; right: 12px; top: 12px; z-index: 2;
   background: rgba(255, 255, 255, 0.94);
 }
-.event-detail-head { padding: 18px 4px 0; }
-.event-detail-head .muted { margin: 0 0 8px; font-size: 13px; color: #8b938e; }
-.event-detail-head h1 { margin: 0 0 10px; font-size: 1.75rem; line-height: 1.3; letter-spacing: -0.02em; }
+.event-detail-head { padding: 16px 8px 0; }
+.event-detail-head h1 { margin: 0 0 10px; font-size: 1.7rem; line-height: 1.35; }
 .event-detail-pills { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.event-detail-lead { margin: 0; color: #3f4a44; font-size: 15.5px; line-height: 1.6; }
+.event-detail-lead { margin: 14px 8px 0; color: #3f4a44; font-size: 15px; line-height: 1.55; }
 .guide-wrap { max-width: 800px; }
 .guide-article { padding: 16px 20px 28px; }
 .guide-pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0 !important; }

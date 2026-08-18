@@ -1,6 +1,15 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
-import { GUIDES, getGuide, getPlace, placeHref } from '../../../lib/discover';
+import ShareListing from '../../../components/ShareListing.astro';
+import {
+  GUIDES,
+  discoverBadgeClass,
+  getGuide,
+  getPlace,
+  guideTag,
+  kickerPills,
+  placeHref,
+} from '../../../lib/discover';
 
 export function getStaticPaths() {
   return GUIDES.map((g) => ({ params: { slug: g.slug } }));
@@ -8,10 +17,19 @@ export function getStaticPaths() {
 
 const guide = getGuide(Astro.params.slug ?? '');
 if (!guide) return Astro.redirect('/kham-pha');
+
+const badge = guideTag(guide);
+const pills = kickerPills(guide.kicker);
+const places = [...new Map(
+  guide.sections
+    .flatMap((s) => (s.placeSlugs ?? []).map((slug) => getPlace(slug)))
+    .filter(Boolean)
+    .map((p) => [p!.slug, p]),
+).values()];
 ---
 <Layout title={`${guide.title} — Khám phá Thái Nguyên`} active="discover">
-  <div class="page discover-page">
-    <div class="wrap guide-wrap">
+  <div class="page event-detail-page">
+    <div class="wrap">
       <nav class="job-crumb" aria-label="Đường dẫn">
         <a href="/">Trang chủ</a>
         <span>›</span>
@@ -22,46 +40,76 @@ if (!guide) return Astro.redirect('/kham-pha');
         <span>{guide.title}</span>
       </nav>
 
-      <article class="event-detail-main guide-article">
-        <div class="event-hero-media">
-          <img src={guide.cover} alt="" />
-          <span class="photo-caption">Ảnh minh họa</span>
-        </div>
-        <header class="event-detail-head">
-          <p class="muted">{guide.kicker}</p>
-          <h1>{guide.title}</h1>
+      <div class="event-detail-grid">
+        <article class="event-detail-main">
+          <div class="event-hero-media">
+            <img src={guide.cover} alt="" />
+            <span class={`event-row-badge ${discoverBadgeClass(badge)}`}>{badge}</span>
+            <span class="photo-caption">Ảnh minh họa</span>
+          </div>
+          <header class="event-detail-head">
+            <h1>{guide.title}</h1>
+            <div class="event-detail-pills">
+              {pills.map((p) => <span class="room-pill">{p}</span>)}
+            </div>
+          </header>
           <p class="event-detail-lead">{guide.summary}</p>
-        </header>
-        {guide.sections.map((s) => (
+
+          {guide.sections.map((s) => (
+            <section class="job-block">
+              <h2>{s.heading}</h2>
+              <p>{s.body}</p>
+              {s.placeSlugs && s.placeSlugs.length > 0 && (
+                <p>
+                  {s.placeSlugs.map((slug) => {
+                    const p = getPlace(slug);
+                    return p ? <a class="btn-outline" href={placeHref(p.slug)} style="margin-right:8px">{p.title}</a> : null;
+                  })}
+                </p>
+              )}
+            </section>
+          ))}
+
           <section class="job-block">
-            <h2>{s.heading}</h2>
-            <p>{s.body}</p>
-            {s.placeSlugs && s.placeSlugs.length > 0 && (
-              <p class="guide-pills">
-                {s.placeSlugs.map((slug) => {
-                  const p = getPlace(slug);
-                  return p ? <a class="btn-outline" href={placeHref(p.slug)}>{p.title}</a> : null;
-                })}
-              </p>
-            )}
+            <h2>Nguồn</h2>
+            <ul>
+              {guide.sources.map((s) => (
+                <li><a href={s.url} rel="nofollow noopener" target="_blank">{s.label}</a></li>
+              ))}
+            </ul>
           </section>
-        ))}
-        <section class="job-block">
-          <h2>Tuần này</h2>
-          <p>Việc, phòng và sự kiện đang mở.</p>
-          <p class="guide-pills">
-            <a class="btn-outline" href="/kham-pha/cam-nang/tuan-nay">Tuần này ở Thái Nguyên có gì?</a>
-          </p>
-        </section>
-        <section class="job-block">
-          <h2>Nguồn</h2>
-          <ul>
-            {guide.sources.map((s) => (
-              <li><a href={s.url} rel="nofollow noopener" target="_blank">{s.label}</a></li>
-            ))}
-          </ul>
-        </section>
-      </article>
+        </article>
+
+        <aside class="event-detail-side">
+          <section class="event-reg-card">
+            <h3>Tuần này ở Thái Nguyên</h3>
+            <p>Việc, phòng và sự kiện đang mở — gọi thẳng số trên tin.</p>
+            <a class="btn-green event-reg-go" href="/kham-pha/cam-nang/tuan-nay">Xem tuần này</a>
+            <a class="btn-outline event-reg-src" href="/kham-pha/cam-nang">Cẩm nang</a>
+            <ul>
+              <li>Gọi số trên tin</li>
+              <li>Giá phòng hỏi khi gọi</li>
+            </ul>
+          </section>
+
+          {places.length > 0 && (
+            <section class="panel">
+              <h3>Địa điểm trong bài</h3>
+              {places.map((p) => p && (
+                <a class="event-mini" href={placeHref(p.slug)}>
+                  <img src={p.cover} alt="" />
+                  <div>
+                    <strong>{p.title}</strong>
+                    <span>{p.placeText}</span>
+                  </div>
+                </a>
+              ))}
+            </section>
+          )}
+
+          <ShareListing />
+        </aside>
+      </div>
     </div>
   </div>
 </Layout>

@@ -184,7 +184,7 @@ const mapsQuery = placeKey
                 <p>{expired ? 'Sự kiện / tin này không còn nhận đăng ký trên trang này.' : 'Đăng ký với ban tổ chức qua link trên tin.'}</p>
                 {applyUrl ? (
                   <a class={expired ? 'btn-outline event-reg-go' : 'btn-green event-reg-go'} href={applyUrl} rel="nofollow noopener" target="_blank">
-                    Xem tin gốc
+                    {registerUrl && !expired ? 'Mở trang đăng ký' : 'Xem tin gốc'}
                   </a>
                 ) : (
                   <p class="muted">Chưa có link đăng ký trên tin.</p>

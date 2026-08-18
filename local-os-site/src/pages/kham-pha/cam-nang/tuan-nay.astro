@@ -1,18 +1,22 @@
 ---
 export const prerender = false;
 import Layout from '../../../layouts/Layout.astro';
+import ShareListing from '../../../components/ShareListing.astro';
 import { WEEK_GUIDE, buildWeekDigest } from '../../../lib/week-digest';
+import { discoverBadgeClass, kickerPills } from '../../../lib/discover';
 
 const digest = await buildWeekDigest();
 const sections = [digest.events, digest.jobs, digest.rooms];
+const pills = kickerPills(WEEK_GUIDE.kicker);
+const badge = pills[0] || 'Cẩm nang';
 ---
 <Layout
   title={`${WEEK_GUIDE.title} — Thái Nguyên Life`}
   active="discover"
   description={digest.blurb}
 >
-  <div class="page discover-page">
-    <div class="wrap guide-wrap">
+  <div class="page event-detail-page">
+    <div class="wrap">
       <nav class="job-crumb" aria-label="Đường dẫn">
         <a href="/">Trang chủ</a>
         <span>›</span>
@@ -23,47 +27,99 @@ const sections = [digest.events, digest.jobs, digest.rooms];
         <span>{WEEK_GUIDE.title}</span>
       </nav>
 
-      <article class="event-detail-main guide-article">
-        <div class="event-hero-media">
-          <img src={WEEK_GUIDE.cover} alt="" />
-          <span class="photo-caption">Ảnh minh họa</span>
-        </div>
-        <header class="event-detail-head">
-          <p class="muted">{WEEK_GUIDE.kicker}</p>
-          <h1>{WEEK_GUIDE.title}</h1>
+      <div class="event-detail-grid">
+        <article class="event-detail-main">
+          <div class="event-hero-media">
+            <img src={WEEK_GUIDE.cover} alt="" />
+            <span class={`event-row-badge ${discoverBadgeClass(badge)}`}>{badge}</span>
+            <span class="photo-caption">Ảnh minh họa</span>
+          </div>
+          <header class="event-detail-head">
+            <h1>{WEEK_GUIDE.title}</h1>
+            <div class="event-detail-pills">
+              {pills.map((p) => <span class="room-pill">{p}</span>)}
+            </div>
+          </header>
           <p class="event-detail-lead">{digest.blurb}</p>
-        </header>
 
-        {sections.map((sec) => (
-          <section class="job-block">
-            <h2>{sec.title}</h2>
-            {sec.items.length === 0 ? (
-              <p>{sec.empty}</p>
-            ) : (
-              sec.items.map((row) => (
-                <div class="guide-hit">
-                  {row.meta && <p>{row.meta}</p>}
-                  <p class="guide-pills">
-                    <a class="btn-outline" href={row.href}>{row.title}</a>
-                  </p>
-                </div>
-              ))
-            )}
-            <p class="guide-pills">
-              <a class="btn-outline" href={sec.moreHref}>{sec.moreLabel}</a>
-            </p>
+          <dl class="event-quick">
+            <div>
+              <dt>Sự kiện</dt>
+              <dd>{digest.events.total}</dd>
+            </div>
+            <div>
+              <dt>Việc</dt>
+              <dd>{digest.jobs.total}</dd>
+            </div>
+            <div>
+              <dt>Phòng</dt>
+              <dd>{digest.rooms.total}</dd>
+            </div>
+          </dl>
+
+          {sections.map((sec) => (
+            <section class="job-block">
+              <h2>{sec.title}</h2>
+              {sec.items.length === 0 ? (
+                <p>{sec.empty}</p>
+              ) : (
+                sec.items.map((row) => (
+                  <a class="event-mini" href={row.href}>
+                    <span class="event-mini-date"><strong>{sec.id === 'event' ? 'SK' : sec.id === 'job' ? 'VL' : 'PT'}</strong></span>
+                    <div>
+                      <strong>{row.title}</strong>
+                      {row.meta && <span>{row.meta}</span>}
+                    </div>
+                  </a>
+                ))
+              )}
+              <a class="panel-more" href={sec.moreHref}>{sec.moreLabel} →</a>
+            </section>
+          ))}
+        </article>
+
+        <aside class="event-detail-side">
+          <section class="event-reg-card">
+            <h3>Xem tin đang mở</h3>
+            <p>Gọi thẳng số trên tin. Giá phòng hỏi khi gọi.</p>
+            <a class="btn-green event-reg-go" href="/su-kien">Sự kiện</a>
+            <a class="btn-outline event-reg-src" href="/viec">Việc làm</a>
+            <a class="btn-outline event-reg-src" href="/tro">Phòng trọ</a>
+            <ul>
+              <li>Gọi số trên tin việc và phòng</li>
+              <li>Giá phòng hỏi khi gọi</li>
+            </ul>
           </section>
-        ))}
 
-        <section class="job-block">
-          <h2>Đọc thêm</h2>
-          <p class="guide-pills">
-            <a class="btn-outline" href="/kham-pha/cam-nang/cuoi-tuan">Cuối tuần đi đâu</a>
-            <a class="btn-outline" href="/kham-pha/cam-nang/sinh-vien-moi">Sinh viên mới đến</a>
-            <a class="btn-outline" href="/kham-pha/cam-nang/an-gi">Ăn gì ở Thái Nguyên</a>
-          </p>
-        </section>
-      </article>
+          <section class="panel">
+            <h3>Đọc thêm</h3>
+            <a class="event-mini" href="/kham-pha/cam-nang/cuoi-tuan">
+              <span class="event-mini-date"><strong>CN</strong></span>
+              <div>
+                <strong>Cuối tuần đi đâu</strong>
+                <span>Gợi ý vừa sức quanh Thái Nguyên</span>
+              </div>
+            </a>
+            <a class="event-mini" href="/kham-pha/cam-nang/an-gi">
+              <span class="event-mini-date"><strong>CN</strong></span>
+              <div>
+                <strong>Ăn gì ở Thái Nguyên</strong>
+                <span>Chè Tân Cương, chè La Bằng</span>
+              </div>
+            </a>
+            <a class="event-mini" href="/kham-pha/cam-nang/sinh-vien-moi">
+              <span class="event-mini-date"><strong>CN</strong></span>
+              <div>
+                <strong>Sinh viên mới đến</strong>
+                <span>Việc, phòng, cuối tuần</span>
+              </div>
+            </a>
+            <a class="panel-more" href="/kham-pha/cam-nang">Cẩm nang →</a>
+          </section>
+
+          <ShareListing />
+        </aside>
+      </div>
     </div>
   </div>
 </Layout>

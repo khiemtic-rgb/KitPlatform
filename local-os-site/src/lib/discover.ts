@@ -1010,6 +1010,19 @@ export function guideTag(g: DiscoverGuide): string {
   return PILLARS.find((p) => p.id === first)?.label || 'Cẩm nang';
 }
 
+export function kickerPills(kicker: string): string[] {
+  return kicker.split('·').map((s) => s.trim()).filter(Boolean);
+}
+
+export function discoverBadgeClass(label: string): string {
+  const n = label.toLowerCase();
+  if (n.includes('ẩm thực') || n.includes('ăn')) return 'is-fun';
+  if (n.includes('thể thao')) return 'is-sport';
+  if (n.includes('văn hóa')) return 'is-culture';
+  if (n.includes('du lịch') || n.includes('địa điểm')) return 'is-tourism';
+  return 'is-culture';
+}
+
 export function placeArea(p: DiscoverPlace): string {
   if (p.area) return p.area;
   return p.placeText.split(/[—–,]/)[0]?.trim() || 'Thái Nguyên';

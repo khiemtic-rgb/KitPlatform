@@ -1,14 +1,19 @@
 ---
 export const prerender = false;
 import Layout from '../../../layouts/Layout.astro';
+import ShareListing from '../../../components/ShareListing.astro';
 import { formatEventLine, hrefFor, listListings } from '../../../lib/api';
 import {
   GUIDES,
   PLACES,
+  discoverBadgeClass,
   getPlace,
   guideHref,
+  kickerPills,
   matchEventsForPlace,
+  placeArea,
   placeHref,
+  placeTag,
 } from '../../../lib/discover';
 
 export function getStaticPaths() {
@@ -23,10 +28,13 @@ const related = matchEventsForPlace(place, events);
 const nearby = place.nearby.map((s) => getPlace(s)).filter(Boolean);
 const guides = GUIDES.filter((g) => g.sections.some((s) => s.placeSlugs?.includes(place.slug)));
 const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.mapsQuery)}`;
+const badge = placeTag(place);
+const pills = kickerPills(place.kicker);
+const area = placeArea(place);
 ---
 <Layout title={`${place.title} — Khám phá Thái Nguyên`} active="discover">
-  <div class="page discover-page">
-    <div class="wrap guide-wrap">
+  <div class="page event-detail-page">
+    <div class="wrap">
       <nav class="job-crumb" aria-label="Đường dẫn">
         <a href="/">Trang chủ</a>
         <span>›</span>
@@ -37,83 +45,103 @@ const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURICompone
         <span>{place.title}</span>
       </nav>
 
-      <article class="event-detail-main guide-article">
-        <div class="event-hero-media">
-          <img src={place.cover} alt="" />
-          <span class="photo-caption">Ảnh minh họa</span>
-        </div>
-        <header class="event-detail-head">
-          <p class="muted">{place.kicker}</p>
-          <h1>{place.title}</h1>
+      <div class="event-detail-grid">
+        <article class="event-detail-main">
+          <div class="event-hero-media">
+            <img src={place.cover} alt="" />
+            <span class={`event-row-badge ${discoverBadgeClass(badge)}`}>{badge}</span>
+            <span class="photo-caption">Ảnh minh họa</span>
+          </div>
+          <header class="event-detail-head">
+            <h1>{place.title}</h1>
+            <div class="event-detail-pills">
+              {pills.map((p) => <span class="room-pill">{p}</span>)}
+              {area && <span class="room-pill">{area}</span>}
+            </div>
+          </header>
           <p class="event-detail-lead">{place.placeText}</p>
-        </header>
 
-        <section class="job-block">
-          <h2>Giới thiệu</h2>
-          {place.intro.map((p) => <p>{p}</p>)}
-        </section>
-        <section class="job-block">
-          <h2>Đi đâu / làm gì</h2>
-          {place.doWhat.map((x) => <p>{x}</p>)}
-        </section>
-        <section class="job-block">
-          <h2>Ăn gì</h2>
-          {place.eatWhat.map((x) => <p>{x}</p>)}
-        </section>
-        {nearby.length > 0 && (
           <section class="job-block">
-            <h2>Gần đây</h2>
-            {nearby.map((n) => n && (
-              <div class="guide-hit">
-                <p>{n.summary}</p>
-                <p class="guide-pills">
-                  <a class="btn-outline" href={placeHref(n.slug)}>{n.title}</a>
-                </p>
-              </div>
-            ))}
+            <h2>Giới thiệu</h2>
+            {place.intro.map((p) => <p>{p}</p>)}
           </section>
-        )}
-        {related.length > 0 && (
           <section class="job-block">
-            <h2>Sự kiện liên quan</h2>
-            {related.map((e) => (
-              <div class="guide-hit">
-                <p>{formatEventLine(e.startAt) || e.placeText || ''}</p>
-                <p class="guide-pills">
-                  <a class="btn-outline" href={hrefFor(e)}>{e.title}</a>
-                </p>
-              </div>
-            ))}
-            <p class="guide-pills">
-              <a class="btn-outline" href="/su-kien">Tất cả sự kiện</a>
-            </p>
+            <h2>Đi đâu / làm gì</h2>
+            <ul>{place.doWhat.map((x) => <li>{x}</li>)}</ul>
           </section>
-        )}
-        {guides.length > 0 && (
           <section class="job-block">
-            <h2>Cẩm nang</h2>
-            <p class="guide-pills">
-              {guides.map((g) => (
-                <a class="btn-outline" href={guideHref(g.slug)}>{g.title}</a>
+            <h2>Ăn gì</h2>
+            <ul>{place.eatWhat.map((x) => <li>{x}</li>)}</ul>
+          </section>
+          {nearby.length > 0 && (
+            <section class="job-block">
+              <h2>Gần đây</h2>
+              {nearby.map((n) => n && (
+                <a class="event-mini" href={placeHref(n.slug)}>
+                  <img src={n.cover} alt="" />
+                  <div>
+                    <strong>{n.title}</strong>
+                    <span>{n.summary}</span>
+                  </div>
+                </a>
               ))}
-            </p>
+            </section>
+          )}
+          <section class="job-block">
+            <h2>Nguồn</h2>
+            <ul>
+              {place.sources.map((s) => (
+                <li><a href={s.url} rel="nofollow noopener" target="_blank">{s.label}</a></li>
+              ))}
+            </ul>
           </section>
-        )}
-        <section class="job-block">
-          <h2>Bản đồ</h2>
-          <p class="guide-pills">
-            <a class="btn-outline" href={maps} rel="nofollow noopener" target="_blank">Xem trên Google Maps</a>
-          </p>
-        </section>
-        <section class="job-block">
-          <h2>Nguồn</h2>
-          <ul>
-            {place.sources.map((s) => (
-              <li><a href={s.url} rel="nofollow noopener" target="_blank">{s.label}</a></li>
-            ))}
-          </ul>
-        </section>
-      </article>
+        </article>
+
+        <aside class="event-detail-side">
+          <section class="event-reg-card">
+            <h3>Xem vị trí</h3>
+            <p>{place.placeText}</p>
+            <a class="btn-green event-reg-go" href={maps} rel="nofollow noopener" target="_blank">Xem trên Google Maps</a>
+            <ul>
+              <li>Ảnh minh họa, không phải vé hay giá</li>
+              <li>Giờ mở cửa hỏi tại chỗ</li>
+            </ul>
+          </section>
+
+          {related.length > 0 && (
+            <section class="panel">
+              <h3>Sự kiện liên quan</h3>
+              {related.map((e) => (
+                <a class="event-mini" href={hrefFor(e)}>
+                  <span class="event-mini-date"><strong>SK</strong></span>
+                  <div>
+                    <strong>{e.title}</strong>
+                    <span>{formatEventLine(e.startAt) || e.placeText || ''}</span>
+                  </div>
+                </a>
+              ))}
+              <a class="panel-more" href="/su-kien">Tất cả sự kiện →</a>
+            </section>
+          )}
+
+          {guides.length > 0 && (
+            <section class="panel">
+              <h3>Cẩm nang</h3>
+              {guides.map((g) => (
+                <a class="event-mini" href={guideHref(g.slug)}>
+                  <span class="event-mini-date"><strong>CN</strong></span>
+                  <div>
+                    <strong>{g.title}</strong>
+                    <span>{g.summary}</span>
+                  </div>
+                </a>
+              ))}
+            </section>
+          )}
+
+          <ShareListing />
+        </aside>
+      </div>
     </div>
   </div>
 </Layout>
