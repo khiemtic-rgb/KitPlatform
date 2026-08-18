@@ -3,16 +3,27 @@ namespace KitPlatform.Packs.Content;
 public sealed record ContentQualityGateDto(
     bool Passed,
     IReadOnlyList<string> Issues,
-    DateTimeOffset CheckedAt);
+    DateTimeOffset CheckedAt,
+    IReadOnlyList<string>? BlockingIssues = null,
+    IReadOnlyList<string>? ApproveIssues = null)
+{
+    public bool CanPublish => (BlockingIssues ?? []).Count == 0;
+
+    public bool CanApprove => (ApproveIssues ?? BlockingIssues ?? []).Count == 0;
+}
 
 public static class ContentQualityGate
 {
+    public const string BriefMissing =
+        "Thiếu Creative Brief (mục tiêu + format) — điền trước khi duyệt";
+
     public static ContentQualityGateDto Evaluate(
         ContentBrandKnowledgeDto brain,
         ContentCoreIdeaDto? core,
         string? angle,
         IReadOnlyList<(string Kind, string Body)> variants,
-        string? brandName = null)
+        string? brandName = null,
+        ContentCreativeBriefDto? brief = null)
     {
         var issues = new List<string>();
         if (string.IsNullOrWhiteSpace(angle))
@@ -25,6 +36,9 @@ public static class ContentQualityGate
         {
             issues.Add("Ý tưởng kiểu fact nhưng chưa có nguồn");
         }
+
+        if (!HasMinimumBrief(brief))
+            issues.Add(BriefMissing);
 
         foreach (var forbid in brain.ClaimsForbidden)
         {
@@ -64,8 +78,54 @@ public static class ContentQualityGate
                 issues.AddRange(GroupShareIssues(v.Body ?? "", brain, brandName));
         }
 
-        return new(issues.Count == 0, issues, DateTimeOffset.UtcNow);
+        return Finalize(issues);
     }
+
+    public static ContentQualityGateDto Normalize(ContentQualityGateDto gate) =>
+        Finalize(gate.Issues ?? [], gate.CheckedAt);
+
+    public static ContentQualityGateDto Finalize(
+        IReadOnlyList<string> issues,
+        DateTimeOffset? checkedAt = null)
+    {
+        var list = issues.Where(i => !string.IsNullOrWhiteSpace(i)).ToList();
+        return new(
+            list.Count == 0,
+            list,
+            checkedAt ?? DateTimeOffset.UtcNow,
+            SelectPublishBlocking(list),
+            SelectApproveBlocking(list));
+    }
+
+    public static bool IsPublishBlocking(string issue)
+    {
+        var t = issue ?? "";
+        if (t.Contains("web_long: quá mỏng", StringComparison.OrdinalIgnoreCase)) return true;
+        if (t.Contains("web_long: thiếu mục", StringComparison.OrdinalIgnoreCase)) return true;
+        if (t.Contains("Thiếu góc nhìn", StringComparison.OrdinalIgnoreCase)) return true;
+        if (t.Contains("chưa có nguồn", StringComparison.OrdinalIgnoreCase)) return true;
+        return t.Contains("dính claim cấm", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsApproveBlocking(string issue) =>
+        IsPublishBlocking(issue)
+        || string.Equals(issue, BriefMissing, StringComparison.Ordinal);
+
+    public static IReadOnlyList<string> SelectPublishBlocking(IEnumerable<string> issues) =>
+        issues.Where(IsPublishBlocking).Distinct(StringComparer.Ordinal).ToList();
+
+    public static IReadOnlyList<string> SelectApproveBlocking(IEnumerable<string> issues) =>
+        issues.Where(IsApproveBlocking).Distinct(StringComparer.Ordinal).ToList();
+
+    public static bool HasMinimumBrief(ContentCreativeBriefDto? brief) =>
+        !string.IsNullOrWhiteSpace(brief?.Objective)
+        && !string.IsNullOrWhiteSpace(brief?.Format);
+
+    public static string RefuseApprove(IReadOnlyList<string> issues) =>
+        "Quality gate chặn duyệt: " + string.Join("; ", issues.Take(5));
+
+    public static string RefusePublish(IReadOnlyList<string> issues) =>
+        "Quality gate chặn đăng: " + string.Join("; ", issues.Take(5));
 
     private static readonly string[] GroupPromoNeedles =
     [

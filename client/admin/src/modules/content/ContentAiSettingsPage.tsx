@@ -138,7 +138,7 @@ export function ContentAiSettingsPage() {
   const [aiHint, setAiHint] = useState<string | null>(null);
   const [videoHint, setVideoHint] = useState<string | null>(null);
   const [facebookHint, setFacebookHint] = useState<string | null>(null);
-  const [fbReturnTo, setFbReturnTo] = useState<string | null>(() => sessionStorage.getItem(FB_RETURN_KEY));
+  const [fbReturnTo] = useState<string | null>(() => sessionStorage.getItem(FB_RETURN_KEY));
 
   const load = useCallback(async () => {
     setLoading(true);

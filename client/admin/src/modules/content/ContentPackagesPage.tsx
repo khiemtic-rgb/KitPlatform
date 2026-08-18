@@ -54,6 +54,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { kindsFromWriteSlots, writeSlotLabel } from '@/modules/content/content-channels';
 import { ContentManualPostTab } from '@/modules/content/ContentManualPostTab';
 import { writeClipboardImage } from '@/modules/content/content-manual-dest';
+import { ContentPackageBriefCard } from '@/modules/content/ContentPackageBriefCard';
+import { ContentPackagePerformanceCard } from '@/modules/content/ContentPackagePerformanceCard';
+import {
+  CONTENT_BRIEF_EMOTIONS,
+  CONTENT_BRIEF_FORMATS,
+  CONTENT_BRIEF_OBJECTIVES,
+} from '@/modules/content/content-brief';
 
 const VARIANT_KIND_LABEL: Record<string, string> = {
   web_long: 'Website',
@@ -222,6 +229,13 @@ export function ContentPackagesPage() {
         sourceType: values.sourceType || undefined,
         evidence: values.evidence?.trim() || undefined,
         factOrOpinion: values.factOrOpinion || undefined,
+        creativeBrief: {
+          objective: values.briefObjective || undefined,
+          emotion: values.briefEmotion || undefined,
+          format: values.briefFormat || undefined,
+          visualDirection: values.briefVisual?.trim() || undefined,
+          durationSec: values.briefDuration || undefined,
+        },
       });
       message.success('Đã tạo ý tưởng');
       setCreateOpen(false);
@@ -779,6 +793,18 @@ export function ContentPackagesPage() {
               />
             </Form.Item>
           </Space>
+          <Form.Item name="briefObjective" label="Brief — mục tiêu">
+            <Select allowClear options={[...CONTENT_BRIEF_OBJECTIVES]} placeholder="Nhận biết / traffic / tin…" />
+          </Form.Item>
+          <Form.Item name="briefFormat" label="Brief — format">
+            <Select allowClear options={[...CONTENT_BRIEF_FORMATS]} placeholder="Bài web / mini story…" />
+          </Form.Item>
+          <Form.Item name="briefEmotion" label="Brief — cảm xúc">
+            <Select allowClear options={[...CONTENT_BRIEF_EMOTIONS]} />
+          </Form.Item>
+          <Form.Item name="briefVisual" label="Brief — hướng hình">
+            <Input.TextArea rows={2} placeholder="Screen-first, hiện trường…" />
+          </Form.Item>
           <Form.Item name="bodyOutline" label="Gợi ý / dàn ý">
             <Input.TextArea rows={3} placeholder="Các ý chính muốn nhấn…" />
           </Form.Item>
@@ -915,7 +941,9 @@ export function ContentPackagesPage() {
                 icon={<CheckOutlined />}
                 loading={busy}
                 disabled={
-                  detail.topicDetail.variants.length === 0 || detail.package.status === 'Approved'
+                  detail.topicDetail.variants.length === 0 ||
+                  detail.package.status === 'Approved' ||
+                  detail.package.qualityGate?.canApprove === false
                 }
                 onClick={() => void onApproveOne(detail.package)}
               >
@@ -959,20 +987,38 @@ export function ContentPackagesPage() {
               </Typography.Paragraph>
             </div>
 
-            {detail.package.qualityGate && !detail.package.qualityGate.passed ? (
+            {detail.package.qualityGate &&
+            ((detail.package.qualityGate.blockingIssues?.length ?? 0) > 0 ||
+              (detail.package.qualityGate.approveIssues?.length ?? 0) > 0 ||
+              !detail.package.qualityGate.passed) ? (
               <Alert
-                type="warning"
+                type={
+                  (detail.package.qualityGate.blockingIssues?.length ?? 0) > 0 ? 'error' : 'warning'
+                }
                 showIcon
-                message="Quality Gate — còn lỗi, vẫn ở Chờ duyệt"
+                message={
+                  (detail.package.qualityGate.blockingIssues?.length ?? 0) > 0
+                    ? 'Quality Gate — chặn đăng (bài mỏng / claim / thiếu angle)'
+                    : 'Quality Gate — điền Brief hoặc sửa gợi ý trước khi duyệt'
+                }
                 description={
                   <ul style={{ margin: 0, paddingLeft: 18 }}>
-                    {detail.package.qualityGate.issues.map((i) => (
+                    {(detail.package.qualityGate.issues ?? []).map((i) => (
                       <li key={i}>{i}</li>
                     ))}
                   </ul>
                 }
               />
             ) : null}
+
+            <Card size="small" title="Creative Brief">
+              <ContentPackageBriefCard
+                key={`${detail.package.id}-${detail.package.updatedAt}`}
+                pkg={detail.package}
+                busy={busy}
+                onSaved={() => void openDetail(detail.package.id)}
+              />
+            </Card>
 
             {detail.package.coreIdea &&
             (detail.package.coreIdea.insight ||
@@ -1006,6 +1052,10 @@ export function ContentPackagesPage() {
                 ) : null}
               </Card>
             ) : null}
+
+            <Card size="small" title="Số liệu (nhập tay)">
+              <ContentPackagePerformanceCard packageId={detail.package.id} />
+            </Card>
 
             {detail.package.brandFits && detail.package.brandFits.length > 0 ? (
               <Card size="small" title="Brand Fit">

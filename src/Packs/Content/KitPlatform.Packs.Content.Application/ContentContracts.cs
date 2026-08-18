@@ -378,7 +378,8 @@ public sealed record ContentPackageDto(
     ContentCoreIdeaDto? CoreIdea = null,
     IReadOnlyList<ContentBrandFitDto>? BrandFits = null,
     int AdaptationCount = 0,
-    ContentQualityGateDto? QualityGate = null);
+    ContentQualityGateDto? QualityGate = null,
+    ContentCreativeBriefDto? CreativeBrief = null);
 
 public sealed record ContentPackageDetailDto(
     ContentPackageDto Package,
@@ -405,7 +406,8 @@ public sealed record UpsertContentPackageRequest(
     string? SourceUrl = null,
     string? SourceType = null,
     string? Evidence = null,
-    string? FactOrOpinion = null);
+    string? FactOrOpinion = null,
+    ContentCreativeBriefDto? CreativeBrief = null);
 
 public sealed record AnalyzeAdaptRequest(
     IReadOnlyList<Guid>? BrandIds = null,
@@ -618,6 +620,20 @@ public interface IContentPackageService
 
     Task<BatchApprovePackagesResultDto> ApproveBatchAsync(
         BatchApprovePackagesRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<ContentPackageDto?> UpdateBriefAsync(
+        Guid id,
+        ContentCreativeBriefDto brief,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ContentPerformanceDto>> ListPerformanceAsync(
+        Guid packageId,
+        CancellationToken cancellationToken = default);
+
+    Task<ContentPerformanceDto> IngestPerformanceAsync(
+        Guid packageId,
+        IngestContentPerformanceRequest request,
         CancellationToken cancellationToken = default);
 
     Task<(byte[] Bytes, string FileName)> ExportManualPackAsync(

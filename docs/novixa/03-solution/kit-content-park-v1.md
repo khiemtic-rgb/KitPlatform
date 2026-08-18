@@ -123,7 +123,7 @@ Text pack estimate seed: `~0.08 USD / topic` (multi-variant).
 | `content_publish_job` | Hàng đợi publish |
 | `content_publish_log` | Attempt + error |
 | `content_usage_ledger` | Mỗi lần gọi AI/ảnh: brand, kind, estimate_usd, at |
-| `content_performance` | Metrics thô (views/clicks) — stub V1 OK |
+| `content_performance` | Metrics thô (views/clicks/UTM) — **nhập tay** (mig 311). Không Pixel / API MXH ở wave này. |
 
 ### 5.2 Topic fields quan trọng
 
@@ -210,7 +210,12 @@ Worker: BackgroundService hoặc outbox pattern **trong pack Content** — khôn
 
 ### Wave 3 — Scale kênh
 - Buffer / IG / LI  
-- Performance stub + báo cáo spend vs trần  
+- Performance: nhập tay trên góc brand (`content_performance`). Auto-pull MXH = sau.
+
+### Wave 2.1 — Governance (đang chạy)
+- Creative Brief mỏng trên `content_package.extra_json` (objective, emotion, format, visual, duration) — không bảng ContentIdea
+- Quality gate **chặn** duyệt nếu thiếu Brief; **chặn đăng** nếu web mỏng / thiếu angle / claim cấm
+- Group / caption dài = gợi ý, không chặn auto web/Fanpage
 
 ### Wave 4 — Intelligence (sau data 30 ngày)
 - Gợi ý topic theo performance (optional)

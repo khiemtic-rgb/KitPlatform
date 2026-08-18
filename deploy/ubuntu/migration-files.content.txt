@@ -18,3 +18,4 @@
 295_pack_content_video_config.sql
 296_pack_content_facebook_oauth.sql
 297_pack_content_facebook_oauth_pending.sql
+311_pack_content_performance.sql

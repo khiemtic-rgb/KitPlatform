@@ -744,10 +744,9 @@ internal sealed class ContentPackageService : IContentPackageService
             cancellationToken);
 
         var core = ContentPackageExtra.FromRequest(request);
-        await _repo.UpdatePackageExtraJsonAsync(
-            packageId,
-            ContentPackageExtra.Merge("{}", core, []),
-            cancellationToken);
+        var extra = ContentPackageExtra.Merge("{}", core, []);
+        extra = ContentPackageExtra.MergeBrief(extra, request.CreativeBrief);
+        await _repo.UpdatePackageExtraJsonAsync(packageId, extra, cancellationToken);
 
         return (await GetAsync(packageId, cancellationToken))!;
     }
@@ -802,10 +801,10 @@ internal sealed class ContentPackageService : IContentPackageService
         var existingExtra = (await _repo.GetPackageAsync(id, cancellationToken))?.ExtraJson;
         var (prevCore, prevFits) = ContentPackageExtra.Parse(existingExtra);
         var core = ContentPackageExtra.FromRequest(request, prevCore);
-        await _repo.UpdatePackageExtraJsonAsync(
-            id,
-            ContentPackageExtra.Merge(existingExtra, core, prevFits),
-            cancellationToken);
+        var extra = ContentPackageExtra.Merge(existingExtra, core, prevFits);
+        if (request.CreativeBrief is not null)
+            extra = ContentPackageExtra.MergeBrief(extra, request.CreativeBrief);
+        await _repo.UpdatePackageExtraJsonAsync(id, extra, cancellationToken);
 
         return await GetAsync(id, cancellationToken);
     }
@@ -894,6 +893,11 @@ internal sealed class ContentPackageService : IContentPackageService
             "Draft",
             sourcePackageId: source.Id,
             cancellationToken);
+
+        var (core, _) = ContentPackageExtra.Parse(source.ExtraJson);
+        var extra = ContentPackageExtra.Merge("{}", core, []);
+        extra = ContentPackageExtra.MergeBrief(extra, ContentPackageExtra.ParseBrief(source.ExtraJson));
+        await _repo.UpdatePackageExtraJsonAsync(packageId, extra, cancellationToken);
 
         return (await GetAsync(packageId, cancellationToken))!;
     }
@@ -1214,6 +1218,10 @@ internal sealed class ContentPackageService : IContentPackageService
         if (variants.Count == 0)
             throw new InvalidOperationException("Chưa có bản viết — Generate All trước khi duyệt.");
 
+        var gate = await ContentQualityRunner.EvaluateAsync(_repo, package, cancellationToken);
+        await ContentQualityRunner.PersistAsync(_repo, package.Id, package.ExtraJson, gate, cancellationToken);
+        ContentQualityRunner.ThrowIfCannotApprove(gate);
+
         await _repo.UpdateTopicStatusAsync(package.TopicId, "Approved", cancellationToken);
         await _repo.EnsureTopicDisplayAtAsync(package.TopicId, cancellationToken);
         await _repo.UpdatePackageStatusAsync(id, "Approved", cancellationToken);
@@ -1253,7 +1261,73 @@ internal sealed class ContentPackageService : IContentPackageService
             failed,
             failed.Count == 0
                 ? $"Đã duyệt {approved} package."
-                : $"Đã duyệt {approved}/{ids.Count}; {failed.Count} lỗi (thiếu bản viết hoặc không tìm thấy).");
+                : $"Đã duyệt {approved}/{ids.Count}; {failed.Count} lỗi (thiếu bản viết, Brief, hoặc gate chặn).");
+    }
+
+    public async Task<ContentPackageDto?> UpdateBriefAsync(
+        Guid id,
+        ContentCreativeBriefDto brief,
+        CancellationToken cancellationToken = default)
+    {
+        var package = await _repo.GetPackageAsync(id, cancellationToken);
+        if (package is null) return null;
+
+        var extra = ContentPackageExtra.MergeBrief(package.ExtraJson, brief);
+        await _repo.UpdatePackageExtraJsonAsync(id, extra, cancellationToken);
+        package = await _repo.GetPackageAsync(id, cancellationToken);
+        if (package is null) return null;
+
+        if (package.VariantCount > 0)
+        {
+            var nextGate = await ContentQualityRunner.EvaluateAsync(_repo, package, cancellationToken);
+            await ContentQualityRunner.PersistAsync(_repo, package.Id, package.ExtraJson, nextGate, cancellationToken);
+        }
+
+        return await GetAsync(id, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ContentPerformanceDto>> ListPerformanceAsync(
+        Guid packageId,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await _repo.ListPerformanceAsync(packageId, cancellationToken);
+        return rows.Select(MapPerformance).ToList();
+    }
+
+    public async Task<ContentPerformanceDto> IngestPerformanceAsync(
+        Guid packageId,
+        IngestContentPerformanceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var package = await _repo.GetPackageAsync(packageId, cancellationToken)
+                      ?? throw new InvalidOperationException("Package not found");
+        var channel = (request.Channel ?? "").Trim().ToLowerInvariant();
+        if (channel.Length == 0)
+            throw new InvalidOperationException("Chọn kênh đo (Fanpage / website / khác).");
+
+        var day = request.MetricDate == default
+            ? DateTime.UtcNow.Date
+            : request.MetricDate.Date;
+        var id = await _repo.InsertPerformanceAsync(
+            package.Id,
+            package.TopicId,
+            package.BrandId,
+            channel,
+            day,
+            request.Impressions,
+            request.Views,
+            request.Clicks,
+            request.Engagements,
+            request.Comments,
+            request.Shares,
+            request.UtmCampaign?.Trim(),
+            request.UtmSource?.Trim(),
+            request.UtmMedium?.Trim(),
+            request.Notes?.Trim(),
+            cancellationToken);
+        var row = await _repo.GetPerformanceAsync(id, cancellationToken)
+                  ?? throw new InvalidOperationException("Không lưu được số liệu.");
+        return MapPerformance(row);
     }
 
     public async Task<(byte[] Bytes, string FileName)> ExportManualPackAsync(
@@ -1328,8 +1402,16 @@ internal sealed class ContentPackageService : IContentPackageService
             r.Id, r.BrandId, r.BrandCode, r.BrandName, r.TopicId, r.Title, r.Angle, r.Audience,
             r.ContentType, r.Pillar, r.Goal, r.Priority, r.Status, r.SourcePackageId, r.SourceTitle, r.DisplayAt,
             r.VariantCount, r.CreatedAt, r.UpdatedAt, core, fits, r.AdaptationCount,
-            ContentPackageExtra.ParseGate(r.ExtraJson));
+            ContentPackageExtra.ParseGate(r.ExtraJson),
+            ContentPackageExtra.ParseBrief(r.ExtraJson));
     }
+
+    private static ContentPerformanceDto MapPerformance(ContentRepository.PerformanceRow r) =>
+        new(
+            r.Id, r.PackageId, r.TopicId, r.BrandId, r.BrandCode, r.BrandName,
+            r.Channel, r.MetricDate, r.Impressions, r.Views, r.Clicks,
+            r.Engagements, r.Comments, r.Shares,
+            r.UtmCampaign, r.UtmSource, r.UtmMedium, r.Notes, r.CreatedAt);
 
     private sealed class AdaptAiResponse
     {

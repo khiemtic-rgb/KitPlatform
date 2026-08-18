@@ -20,8 +20,14 @@ internal static class ContentPackageExtra
         return (core, root.BrandFit ?? []);
     }
 
-    public static ContentQualityGateDto? ParseGate(string? extraJson) =>
-        ParseRoot(extraJson).QualityGate;
+    public static ContentQualityGateDto? ParseGate(string? extraJson)
+    {
+        var gate = ParseRoot(extraJson).QualityGate;
+        return gate is null ? null : ContentQualityGate.Normalize(gate);
+    }
+
+    public static ContentCreativeBriefDto? ParseBrief(string? extraJson) =>
+        SanitizeBrief(ParseRoot(extraJson).CreativeBrief);
 
     public static string Merge(
         string? existing,
@@ -55,8 +61,37 @@ internal static class ContentPackageExtra
     public static string MergeGate(string? existing, ContentQualityGateDto gate)
     {
         var root = ParseRoot(existing);
-        root.QualityGate = gate;
+        root.QualityGate = ContentQualityGate.Normalize(gate);
         return JsonSerializer.Serialize(root, JsonOpts);
+    }
+
+    public static string MergeBrief(string? existing, ContentCreativeBriefDto? brief)
+    {
+        var root = ParseRoot(existing);
+        root.CreativeBrief = SanitizeBrief(brief);
+        return JsonSerializer.Serialize(root, JsonOpts);
+    }
+
+    public static ContentCreativeBriefDto? SanitizeBrief(ContentCreativeBriefDto? brief)
+    {
+        if (brief is null) return null;
+        var duration = brief.DurationSec is > 0 and < 600 ? brief.DurationSec : null;
+        var clean = new ContentCreativeBriefDto(
+            NullIfEmpty(brief.Objective),
+            NullIfEmpty(brief.Emotion),
+            NullIfEmpty(brief.Format),
+            NullIfEmpty(brief.VisualDirection),
+            duration);
+        if (clean.Objective is null
+            && clean.Emotion is null
+            && clean.Format is null
+            && clean.VisualDirection is null
+            && clean.DurationSec is null)
+        {
+            return null;
+        }
+
+        return clean;
     }
 
     private static ExtraRoot ParseRoot(string? json)
@@ -81,5 +116,6 @@ internal static class ContentPackageExtra
         public ContentCoreIdeaDto? CoreIdea { get; set; }
         public List<ContentBrandFitDto>? BrandFit { get; set; }
         public ContentQualityGateDto? QualityGate { get; set; }
+        public ContentCreativeBriefDto? CreativeBrief { get; set; }
     }
 }

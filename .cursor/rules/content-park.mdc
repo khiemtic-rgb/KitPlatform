@@ -23,6 +23,9 @@ alwaysApply: false
 - Content Package (`pack_content.content_package`) = Core Idea (or a brand adaptation via `source_package_id`). Idea Pool: batch Brand Fit, operator confirms cells, then create adaptations. Do not auto-fanout to all brands. Do not add a `ContentIdea` table.
 - Video Factory (`pack_content.video_*`): từ Package kéo `tiktok_script` → storyboard local; Creatomate optional (`Content:CreatomateApiKey`). Không auto-post TikTok.
 - Generate / publish / video MVP+render enqueue `pack_content.work_job`; `ContentWorkWorker` claims (SKIP LOCKED). HTTP returns Processing. Manual export remains the default publish path.
+- Creative Brief (objective + format, optional emotion/visual/duration) lives in `content_package.extra_json`. Approve requires it. Do not add a Brief table.
+- Quality gate **blocks** Approve (thin web, missing angle, fact without source, forbidden claims, missing Brief) and **blocks auto-publish** (same except Brief — already-approved packages can still ship). Group/caption nits stay advisory.
+- `content_performance` = manual ingest (mig 311). No Meta Pixel / GA pull in this wave.
 - Generate writes **only** variants implied by that brand's active `site_target` / `channel_target` rows (nơi đăng). Do not default-tick Website/Facebook/Video groups. No dests → refuse generate.
 - V1 auto-publish **only**: `astro_git`, `wordpress_rest`, `facebook_page` (+ optional `manual` export). Instagram / LinkedIn / Buffer / groups / profiles = copy tay. Groups are never auto-posted.
 - Facebook OAuth pending lives in `pack_content.facebook_oauth_pending` (mig 297) — not in-memory. Apply Content migs via `deploy/ubuntu/run-kit-migrations-content.sh` (reads `migration-files.content.txt`). Never merge into Pharmacy `run-kit-migrations-prod.sh`.

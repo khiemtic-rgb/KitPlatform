@@ -1344,6 +1344,115 @@ internal sealed class ContentRepository
         await conn.ExecuteAsync("DELETE FROM pack_content.facebook_oauth_pending WHERE expires_at <= NOW()");
     }
 
+    public sealed class PerformanceRow
+    {
+        public Guid Id { get; set; }
+        public Guid PackageId { get; set; }
+        public Guid TopicId { get; set; }
+        public Guid BrandId { get; set; }
+        public string BrandCode { get; set; } = "";
+        public string BrandName { get; set; } = "";
+        public string Channel { get; set; } = "";
+        public DateTime MetricDate { get; set; }
+        public int? Impressions { get; set; }
+        public int? Views { get; set; }
+        public int? Clicks { get; set; }
+        public int? Engagements { get; set; }
+        public int? Comments { get; set; }
+        public int? Shares { get; set; }
+        public string? UtmCampaign { get; set; }
+        public string? UtmSource { get; set; }
+        public string? UtmMedium { get; set; }
+        public string? Notes { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+    }
+
+    public async Task<IReadOnlyList<PerformanceRow>> ListPerformanceAsync(Guid packageId, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT p.id AS Id, p.package_id AS PackageId, p.topic_id AS TopicId, p.brand_id AS BrandId,
+                   b.code AS BrandCode, b.name AS BrandName, p.channel AS Channel,
+                   p.metric_date AS MetricDate, p.impressions AS Impressions, p.views AS Views,
+                   p.clicks AS Clicks, p.engagements AS Engagements, p.comments AS Comments,
+                   p.shares AS Shares, p.utm_campaign AS UtmCampaign, p.utm_source AS UtmSource,
+                   p.utm_medium AS UtmMedium, p.notes AS Notes, p.created_at AS CreatedAt
+            FROM pack_content.content_performance p
+            INNER JOIN pack_content.brand b ON b.id = p.brand_id
+            WHERE p.package_id = @PackageId
+            ORDER BY p.metric_date DESC, p.created_at DESC
+            LIMIT 200
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return (await conn.QueryAsync<PerformanceRow>(sql, new { PackageId = packageId })).ToList();
+    }
+
+    public async Task<PerformanceRow?> GetPerformanceAsync(Guid id, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT p.id AS Id, p.package_id AS PackageId, p.topic_id AS TopicId, p.brand_id AS BrandId,
+                   b.code AS BrandCode, b.name AS BrandName, p.channel AS Channel,
+                   p.metric_date AS MetricDate, p.impressions AS Impressions, p.views AS Views,
+                   p.clicks AS Clicks, p.engagements AS Engagements, p.comments AS Comments,
+                   p.shares AS Shares, p.utm_campaign AS UtmCampaign, p.utm_source AS UtmSource,
+                   p.utm_medium AS UtmMedium, p.notes AS Notes, p.created_at AS CreatedAt
+            FROM pack_content.content_performance p
+            INNER JOIN pack_content.brand b ON b.id = p.brand_id
+            WHERE p.id = @Id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.QuerySingleOrDefaultAsync<PerformanceRow>(sql, new { Id = id });
+    }
+
+    public async Task<Guid> InsertPerformanceAsync(
+        Guid packageId,
+        Guid topicId,
+        Guid brandId,
+        string channel,
+        DateTime metricDate,
+        int? impressions,
+        int? views,
+        int? clicks,
+        int? engagements,
+        int? comments,
+        int? shares,
+        string? utmCampaign,
+        string? utmSource,
+        string? utmMedium,
+        string? notes,
+        CancellationToken ct)
+    {
+        const string sql = """
+            INSERT INTO pack_content.content_performance (
+                package_id, topic_id, brand_id, channel, metric_date,
+                impressions, views, clicks, engagements, comments, shares,
+                utm_campaign, utm_source, utm_medium, notes
+            ) VALUES (
+                @PackageId, @TopicId, @BrandId, @Channel, @MetricDate,
+                @Impressions, @Views, @Clicks, @Engagements, @Comments, @Shares,
+                @UtmCampaign, @UtmSource, @UtmMedium, @Notes
+            ) RETURNING id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.ExecuteScalarAsync<Guid>(sql, new
+        {
+            PackageId = packageId,
+            TopicId = topicId,
+            BrandId = brandId,
+            Channel = channel,
+            MetricDate = metricDate.Date,
+            Impressions = impressions,
+            Views = views,
+            Clicks = clicks,
+            Engagements = engagements,
+            Comments = comments,
+            Shares = shares,
+            UtmCampaign = utmCampaign,
+            UtmSource = utmSource,
+            UtmMedium = utmMedium,
+            Notes = notes,
+        });
+    }
+
     public async Task<IReadOnlyList<FailedPublishRow>> ListFailedPublishJobsAsync(int take, CancellationToken ct)
     {
         const string sql = """

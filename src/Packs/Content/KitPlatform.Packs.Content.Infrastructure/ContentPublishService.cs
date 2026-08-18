@@ -75,6 +75,8 @@ internal sealed class ContentPublishService : IContentPublishService
                 throw new InvalidOperationException("Chưa có bản viết — bấm Nhờ AI trước khi xuất bản.");
         }
 
+        await EnforceQualityGateAsync(topicId, topic, cancellationToken);
+
         var publishAt = request.PublishAt ?? topic.DisplayAt;
         _ephemeral = null;
         if (!string.IsNullOrWhiteSpace(request.ImageBase64))
@@ -213,6 +215,35 @@ internal sealed class ContentPublishService : IContentPublishService
         }
     }
 
+    private async Task EnforceQualityGateAsync(
+        Guid topicId,
+        ContentRepository.TopicRow topic,
+        CancellationToken cancellationToken)
+    {
+        var packageId = await _repo.GetPackageIdByTopicAsync(topicId, cancellationToken);
+        if (packageId is Guid pid)
+        {
+            var package = await _repo.GetPackageAsync(pid, cancellationToken);
+            if (package is null) return;
+            var gate = await ContentQualityRunner.EvaluateAsync(_repo, package, cancellationToken);
+            await ContentQualityRunner.PersistAsync(_repo, package.Id, package.ExtraJson, gate, cancellationToken);
+            ContentQualityRunner.ThrowIfCannotPublish(gate);
+            return;
+        }
+
+        var brand = await _repo.GetBrandAsync(topic.BrandId, cancellationToken)
+                    ?? throw new InvalidOperationException("Brand not found");
+        var knowledge = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
+        var variants = await _repo.ListVariantsAsync(topicId, cancellationToken);
+        var legacy = ContentQualityGate.Evaluate(
+            knowledge,
+            null,
+            topic.Title,
+            variants.Select(v => (v.Kind, v.BodyMarkdown)).ToList(),
+            brand.Name);
+        ContentQualityRunner.ThrowIfCannotPublish(legacy);
+    }
+
     public async Task<ContentPublishJobDto?> RunJobAsync(
         Guid jobId,
         PublishContentRequest? mediaRequest = null,
@@ -271,6 +302,8 @@ internal sealed class ContentPublishService : IContentPublishService
         {
             var topic = await _repo.GetTopicAsync(job.TopicId, cancellationToken)
                         ?? throw new InvalidOperationException("Topic missing");
+            if (!string.Equals(job.ConnectorType, "manual", StringComparison.OrdinalIgnoreCase))
+                await EnforceQualityGateAsync(job.TopicId, topic, cancellationToken);
             var variants = await _repo.ListVariantsAsync(job.TopicId, cancellationToken);
             var assets = await _repo.ListAssetsAsync(job.TopicId, cancellationToken);
             var selected = assets.FirstOrDefault(a => a.IsSelected) ?? assets.FirstOrDefault();

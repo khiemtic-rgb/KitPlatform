@@ -209,6 +209,40 @@ export type ContentQualityGate = {
   passed: boolean;
   issues: string[];
   checkedAt: string;
+  blockingIssues?: string[] | null;
+  approveIssues?: string[] | null;
+  canPublish?: boolean;
+  canApprove?: boolean;
+};
+
+export type ContentCreativeBrief = {
+  objective?: string | null;
+  emotion?: string | null;
+  format?: string | null;
+  visualDirection?: string | null;
+  durationSec?: number | null;
+};
+
+export type ContentPerformance = {
+  id: string;
+  packageId: string;
+  topicId: string;
+  brandId: string;
+  brandCode: string;
+  brandName: string;
+  channel: string;
+  metricDate: string;
+  impressions?: number | null;
+  views?: number | null;
+  clicks?: number | null;
+  engagements?: number | null;
+  comments?: number | null;
+  shares?: number | null;
+  utmCampaign?: string | null;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  notes?: string | null;
+  createdAt: string;
 };
 
 export type ContentBrandFit = {
@@ -250,6 +284,7 @@ export type ContentPackage = {
   brandFits?: ContentBrandFit[] | null;
   adaptationCount?: number;
   qualityGate?: ContentQualityGate | null;
+  creativeBrief?: ContentCreativeBrief | null;
 };
 
 export type ContentVariant = {
@@ -599,6 +634,7 @@ export async function createContentPackage(body: {
   sourceType?: string;
   evidence?: string;
   factOrOpinion?: string;
+  creativeBrief?: ContentCreativeBrief;
 }) {
   const { data } = await http.post<ContentPackage>('/content/packages', body);
   return data;
@@ -772,6 +808,37 @@ export async function downloadContentPackageExport(id: string) {
   a.download = name;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+export async function updateContentPackageBrief(id: string, body: ContentCreativeBrief) {
+  const { data } = await http.put<ContentPackage>(`/content/packages/${id}/brief`, body);
+  return data;
+}
+
+export async function fetchContentPackagePerformance(id: string) {
+  const { data } = await http.get<ContentPerformance[]>(`/content/packages/${id}/performance`);
+  return data;
+}
+
+export async function ingestContentPackagePerformance(
+  id: string,
+  body: {
+    channel: string;
+    metricDate: string;
+    impressions?: number | null;
+    views?: number | null;
+    clicks?: number | null;
+    engagements?: number | null;
+    comments?: number | null;
+    shares?: number | null;
+    utmCampaign?: string;
+    utmSource?: string;
+    utmMedium?: string;
+    notes?: string;
+  },
+) {
+  const { data } = await http.post<ContentPerformance>(`/content/packages/${id}/performance`, body);
+  return data;
 }
 
 export async function adaptContentPackageMulti(

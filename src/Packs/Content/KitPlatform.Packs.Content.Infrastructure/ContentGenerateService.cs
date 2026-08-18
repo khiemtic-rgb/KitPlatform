@@ -168,6 +168,8 @@ internal sealed class ContentGenerateService : IContentGenerateService
                 var packageId = await _repo.GetPackageIdByTopicAsync(topicId, cancellationToken);
                 var package = packageId is Guid pid ? await _repo.GetPackageAsync(pid, cancellationToken) : null;
                 var (core, _) = ContentPackageExtra.Parse(package?.ExtraJson);
+                var brief = ContentPackageExtra.ParseBrief(package?.ExtraJson);
+                var briefBlock = ContentCreativeBriefDto.FormatForPrompt(brief);
                 var ctaUrl = ContentCtaRouter.Resolve(
                     brand.Code,
                     package?.Title ?? topic.Title,
@@ -218,8 +220,9 @@ internal sealed class ContentGenerateService : IContentGenerateService
                         "Source: " + (core.Source ?? "") + "\n" +
                         "Source URL: " + (core.SourceUrl ?? "") + "\n" +
                         "Evidence: " + (core.Evidence ?? "") + "\n" +
-                        "Fact or opinion: " + (core.FactOrOpinion ?? "") + "\n\n" +
-                        "Publish destinations configured: " + destPlan.Summary + "\n" +
+                        "Fact or opinion: " + (core.FactOrOpinion ?? "") + "\n" +
+                        (string.IsNullOrWhiteSpace(briefBlock) ? "" : "CREATIVE BRIEF\n" + briefBlock + "\n") +
+                        "\nPublish destinations configured: " + destPlan.Summary + "\n" +
                         "Topic title: " + topic.Title + "\n" +
                         "Pillar: " + (topic.Pillar ?? "") + "\n" +
                         "Goal: " + topic.Goal + "\n" +
@@ -264,6 +267,7 @@ internal sealed class ContentGenerateService : IContentGenerateService
                         topic,
                         destPlan.Summary,
                         ctaUrl,
+                        briefBlock,
                         cancellationToken);
                 }
 
@@ -306,7 +310,8 @@ internal sealed class ContentGenerateService : IContentGenerateService
                         core,
                         package.Angle,
                         written.Select(v => (v.Kind, v.BodyMarkdown)).ToList(),
-                        brand.Name);
+                        brand.Name,
+                        brief);
                     await _repo.UpdatePackageExtraJsonAsync(
                         package.Id,
                         ContentPackageExtra.MergeGate(package.ExtraJson, gate),
@@ -463,6 +468,7 @@ internal sealed class ContentGenerateService : IContentGenerateService
         ContentRepository.TopicRow topic,
         string destSummary,
         string? ctaUrl,
+        string? briefBlock,
         CancellationToken cancellationToken)
     {
         var thesis = FirstNonEmpty(package?.Angle, core.CoreMessage, core.Insight, topic.Title);
@@ -491,6 +497,7 @@ internal sealed class ContentGenerateService : IContentGenerateService
             "Source URL: " + (core.SourceUrl ?? "") + "\n" +
             "Evidence: " + (core.Evidence ?? "") + "\n" +
             "Fact or opinion: " + (core.FactOrOpinion ?? "") + "\n" +
+            (string.IsNullOrWhiteSpace(briefBlock) ? "" : "CREATIVE BRIEF\n" + briefBlock + "\n") +
             "Pillar: " + (topic.Pillar ?? "") + "\n" +
             "Goal: " + topic.Goal + "\n" +
             "CTA URL: " + (ctaUrl ?? "") + "\n" +

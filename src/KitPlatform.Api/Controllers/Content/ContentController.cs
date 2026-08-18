@@ -382,6 +382,45 @@ public sealed class ContentController : ControllerBase
         }
     }
 
+    [HttpPut("packages/{id:guid}/brief")]
+    public async Task<ActionResult<ContentPackageDto>> UpdatePackageBrief(
+        Guid id,
+        [FromBody] ContentCreativeBriefDto brief,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var row = await _packages.UpdateBriefAsync(id, brief, cancellationToken);
+            return row is null ? NotFound() : Ok(row);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("packages/{id:guid}/performance")]
+    public async Task<ActionResult<IReadOnlyList<ContentPerformanceDto>>> ListPackagePerformance(
+        Guid id,
+        CancellationToken cancellationToken) =>
+        Ok(await _packages.ListPerformanceAsync(id, cancellationToken));
+
+    [HttpPost("packages/{id:guid}/performance")]
+    public async Task<ActionResult<ContentPerformanceDto>> IngestPackagePerformance(
+        Guid id,
+        [FromBody] IngestContentPerformanceRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _packages.IngestPerformanceAsync(id, request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPost("packages/approve-batch")]
     public async Task<ActionResult<BatchApprovePackagesResultDto>> ApprovePackagesBatch(
         [FromBody] BatchApprovePackagesRequest request,
