@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-18T01:56:30.970Z",
+  "generatedAt": "2026-08-18T07:12:39.346Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 3,
-    "todayPageViews": 3,
-    "todayRequests": 20,
-    "last24hVisitors": 152,
-    "last24hPageViews": 72,
-    "last24hRequests": 448
+    "todayVisitors": 14,
+    "todayPageViews": 7,
+    "todayRequests": 125,
+    "last24hVisitors": 92,
+    "last24hPageViews": 33,
+    "last24hRequests": 267
   },
   "hourly": [
-    {
-      "time": "2026-08-17T02:00:00Z",
-      "visitors": 75,
-      "requests": 213
-    },
-    {
-      "time": "2026-08-17T03:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-17T05:00:00Z",
-      "visitors": 3,
-      "requests": 68
-    },
-    {
-      "time": "2026-08-17T06:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
     {
       "time": "2026-08-17T08:00:00Z",
       "visitors": 1,
@@ -120,6 +100,36 @@
       "time": "2026-08-18T01:00:00Z",
       "visitors": 1,
       "requests": 4
+    },
+    {
+      "time": "2026-08-18T02:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-18T03:00:00Z",
+      "visitors": 8,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-18T04:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-08-18T05:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-18T06:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-08-18T07:00:00Z",
+      "visitors": 2,
+      "requests": 91
     }
   ],
   "daily": [
@@ -161,71 +171,71 @@
     },
     {
       "date": "2026-08-18",
-      "visitors": 25,
-      "pageViews": 14,
-      "requests": 50
+      "visitors": 41,
+      "pageViews": 18,
+      "requests": 155
     }
   ],
   "topPages": [
     {
-      "path": "/images/blog/nuoi-day-con-trong-thoi-dai-ai.png",
-      "views": 37
-    },
-    {
-      "path": "/vi/goi-cha-me/nuoi-day-con-trong-thoi-dai-ai-dung-bien-cong-nghe-thanh-ke-thu-hay-bien-ai-thanh-tro-ly-gia-dinh/",
-      "views": 36
-    },
-    {
       "path": "/",
-      "views": 18
-    },
-    {
-      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
-      "views": 17
-    },
-    {
-      "path": "/cdn-cgi/rum",
       "views": 16
     },
     {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 11
+      "path": "/robots.txt",
+      "views": 15
     },
     {
-      "path": "/images/ch4-stages-art.png",
-      "views": 10
-    },
-    {
-      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 10
+      "path": "/images/blog/nuoi-day-con-trong-thoi-dai-ai.png",
+      "views": 13
     },
     {
       "path": "/vi/",
-      "views": 9
+      "views": 8
     },
     {
-      "path": "/images/social/zalo.png",
-      "views": 9
+      "path": "/sitemap.xml",
+      "views": 8
     },
     {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 9
-    },
-    {
-      "path": "/robots.txt",
-      "views": 9
+      "path": "/licensor.js",
+      "views": 7
     },
     {
       "path": "/images/blog/cha-me-nen-xin-loi-con-khi-nao.png",
-      "views": 8
+      "views": 6
     },
     {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 8
+      "path": "/images/hero-family.png",
+      "views": 6
     },
     {
       "path": "/images/blog/tao-moi-truong-tu-lap-cho-con.png",
-      "views": 7
+      "views": 5
+    },
+    {
+      "path": "/static/style/sys_files/index.js",
+      "views": 5
+    },
+    {
+      "path": "/vi/goi-cha-me/nuoi-day-con-trong-thoi-dai-ai-dung-bien-cong-nghe-thanh-ke-thu-hay-bien-ai-thanh-tro-ly-gia-dinh/",
+      "views": 4
+    },
+    {
+      "path": "/static/style/protect/index.js",
+      "views": 4
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 4
+    },
+    {
+      "path": "/images/blog/nuoi-day-con-bang-ky-luat-tich-cuc.png",
+      "views": 4
+    },
+    {
+      "path": "/images/blog/cach-xay-dung-niem-tin.png",
+      "views": 4
     }
   ]
 }
