@@ -23,7 +23,7 @@ public static class LocalOsWatchFilter
     private static readonly string[] DenyPast =
     [
         "đã kết thúc", "da ket thuc", "đã diễn ra", "da dien ra", "đã bế mạc", "da be mac",
-        "2019", "2020", "2021", "2022", "2023", "2024", "2025",
+        "2019", "2020", "2021", "2022", "2023", "2024",
     ];
 
     private static readonly string[] AllowEvent =
@@ -54,8 +54,10 @@ public static class LocalOsWatchFilter
         if (DenyPolitics.Any(w => blob.Contains(w, StringComparison.Ordinal)))
             return LocalOsWatchDecision.DenyPolitics;
 
-        var has2026 = blob.Contains("2026", StringComparison.Ordinal);
-        if (!has2026 && DenyPast.Any(w => blob.Contains(w, StringComparison.Ordinal)))
+        var current = blob.Contains("2026", StringComparison.Ordinal)
+            || blob.Contains("2025-2026", StringComparison.Ordinal)
+            || blob.Contains("2025 – 2026", StringComparison.Ordinal);
+        if (!current && DenyPast.Any(w => blob.Contains(w, StringComparison.Ordinal)))
             return LocalOsWatchDecision.DenyPast;
 
         var cat = (sourceCategory ?? "").Trim().ToLowerInvariant();

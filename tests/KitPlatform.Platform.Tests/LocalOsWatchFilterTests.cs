@@ -30,6 +30,14 @@ public class LocalOsWatchFilterTests
     }
 
     [Fact]
+    public void Allows_school_year_2025_2026()
+    {
+        Assert.Equal(
+            LocalOsWatchDecision.Allow,
+            LocalOsWatchFilter.Decide("Tuyển dụng thực tập sinh năm học 2025-2026", "/tuyen-dung/x", "job"));
+    }
+
+    [Fact]
     public void Allows_job_on_job_source()
     {
         Assert.Equal(
@@ -62,5 +70,19 @@ public class LocalOsIndexLinksTests
         var links = LocalOsIndexLinks.Extract(html, page, 10);
         Assert.Single(links);
         Assert.Contains("festival-tra-2026", links[0].AbsoluteUri, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Prefers_job_article_over_nav()
+    {
+        var page = new Uri("https://fit.ictu.edu.vn/");
+        const string html = """
+            <a href="/gioi-thieu">Giới thiệu</a>
+            <a href="/lien-he">Liên hệ</a>
+            <a href="/tuyen-dung/thuc-tap-sinh-2026">Tuyển dụng thực tập sinh 2026</a>
+            """;
+        var hits = LocalOsIndexLinks.ExtractHits(html, page, 5);
+        Assert.Contains(hits, h => h.Uri.AbsoluteUri.Contains("thuc-tap-sinh-2026", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(hits, h => h.Uri.AbsolutePath.Contains("gioi-thieu", StringComparison.OrdinalIgnoreCase));
     }
 }

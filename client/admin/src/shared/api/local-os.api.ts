@@ -123,7 +123,7 @@ export async function fetchLocalOsWatchRuns(): Promise<LocalWatchRun[]> {
 }
 
 export async function runLocalOsWatch(): Promise<LocalWatchRun> {
-  const { data } = await http.post<LocalWatchRun>('/local-os/watch/run', {}, { timeout: 120_000 });
+  const { data } = await http.post<LocalWatchRun>('/local-os/watch/run', {}, { timeout: 60_000 });
   return data;
 }
 

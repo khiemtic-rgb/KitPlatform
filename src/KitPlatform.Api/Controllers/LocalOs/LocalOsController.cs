@@ -179,7 +179,9 @@ public sealed class LocalOsController : ControllerBase
     {
         try
         {
-            return Ok(await _watch.RunAsync("manual", cancellationToken));
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(55));
+            return Ok(await _watch.RunAsync("manual", timeout.Token));
         }
         catch (InvalidOperationException ex)
         {

@@ -8,7 +8,7 @@ namespace KitPlatform.Packs.LocalOs.Infrastructure;
 /// <summary>08:00 Asia/Ho_Chi_Minh daily. Official watch → ACTIVE. Never Facebook.</summary>
 internal sealed class LocalOsWatchWorker : BackgroundService
 {
-    private static readonly TimeSpan InFlightMax = TimeSpan.FromMinutes(20);
+    private static readonly TimeSpan InFlightMax = TimeSpan.FromMinutes(3);
     private static readonly TimeZoneInfo Vietnam = ResolveVietnam();
 
     private readonly IServiceScopeFactory _scopes;

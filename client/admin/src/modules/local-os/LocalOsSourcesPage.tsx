@@ -158,12 +158,16 @@ export function LocalOsSourcesPage() {
             setWatching(true);
             void runLocalOsWatch()
               .then((r) => {
-                message.success(
-                  `Canh xong: +${r.createdCount} nháp, bỏ trùng ${r.skippedExisting}, lọc ${r.skippedFilter}.`,
-                );
+                if (!r.finishedAt) {
+                  message.warning(r.note || 'Đang canh — đợi lần này xong rồi bấm lại.');
+                } else if (r.createdCount > 0) {
+                  message.success(`Canh xong: +${r.createdCount} tin mới.`);
+                } else {
+                  message.info(r.note || 'Canh xong — chưa thấy tin mới trên mục lục.');
+                }
                 return load();
               })
-              .catch((error) => message.error(apiErrorMessage(error, 'Không canh được nguồn.')))
+              .catch((error) => message.error(apiErrorMessage(error, 'Không canh được nguồn. Thử lại sau một lúc.')))
               .finally(() => setWatching(false));
           }}
         >
