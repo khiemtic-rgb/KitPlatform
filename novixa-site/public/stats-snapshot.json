@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-19T13:11:02.709Z",
+  "generatedAt": "2026-08-19T18:54:45.600Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 174,
-    "todayPageViews": 70,
-    "todayRequests": 470,
-    "last24hVisitors": 269,
-    "last24hPageViews": 140,
-    "last24hRequests": 634
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 271,
+    "last24hPageViews": 149,
+    "last24hRequests": 661
   },
   "hourly": [
-    {
-      "time": "2026-08-18T14:00:00Z",
-      "visitors": 22,
-      "requests": 25
-    },
-    {
-      "time": "2026-08-18T15:00:00Z",
-      "visitors": 11,
-      "requests": 14
-    },
-    {
-      "time": "2026-08-18T16:00:00Z",
-      "visitors": 12,
-      "requests": 13
-    },
-    {
-      "time": "2026-08-18T17:00:00Z",
-      "visitors": 13,
-      "requests": 33
-    },
-    {
-      "time": "2026-08-18T18:00:00Z",
-      "visitors": 13,
-      "requests": 15
-    },
     {
       "time": "2026-08-18T19:00:00Z",
       "visitors": 5,
@@ -125,15 +100,39 @@
       "time": "2026-08-19T12:00:00Z",
       "visitors": 12,
       "requests": 27
+    },
+    {
+      "time": "2026-08-19T13:00:00Z",
+      "visitors": 18,
+      "requests": 34
+    },
+    {
+      "time": "2026-08-19T14:00:00Z",
+      "visitors": 15,
+      "requests": 16
+    },
+    {
+      "time": "2026-08-19T15:00:00Z",
+      "visitors": 14,
+      "requests": 17
+    },
+    {
+      "time": "2026-08-19T16:00:00Z",
+      "visitors": 14,
+      "requests": 35
+    },
+    {
+      "time": "2026-08-19T17:00:00Z",
+      "visitors": 13,
+      "requests": 14
+    },
+    {
+      "time": "2026-08-19T18:00:00Z",
+      "visitors": 8,
+      "requests": 11
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-13",
-      "visitors": 314,
-      "pageViews": 246,
-      "requests": 3036
-    },
     {
       "date": "2026-08-14",
       "visitors": 641,
@@ -166,15 +165,15 @@
     },
     {
       "date": "2026-08-19",
-      "visitors": 174,
-      "pageViews": 70,
-      "requests": 470
+      "visitors": 239,
+      "pageViews": 118,
+      "requests": 597
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 46
+      "views": 47
     },
     {
       "path": "/robots.txt",
@@ -182,22 +181,14 @@
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 39
-    },
-    {
-      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
-      "views": 24
-    },
-    {
-      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
-      "views": 22
+      "views": 37
     },
     {
       "path": "/brand/xuanhoa-logo.png",
       "views": 20
     },
     {
-      "path": "/images/tin-tuc/the-nao-la-ton-kho-chet.png",
+      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
       "views": 17
     },
     {
@@ -205,11 +196,11 @@
       "views": 17
     },
     {
-      "path": "/sitemap-index.xml",
+      "path": "/brand/articles/gap-duoc-si.jpg",
       "views": 16
     },
     {
-      "path": "/brand/articles/gap-duoc-si.jpg",
+      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
       "views": 16
     },
     {
@@ -217,7 +208,7 @@
       "views": 15
     },
     {
-      "path": "/brand/products/hapacol-pain.jpg",
+      "path": "/brand/articles/phong-cam-cum.jpg",
       "views": 14
     },
     {
@@ -225,11 +216,19 @@
       "views": 14
     },
     {
-      "path": "/brand/articles/phong-cam-cum.jpg",
+      "path": "/brand/products/hapacol-pain.jpg",
       "views": 14
     },
     {
-      "path": "/vi/",
+      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
+      "views": 13
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 13
+    },
+    {
+      "path": "/sitemap-index.xml",
       "views": 13
     }
   ]
