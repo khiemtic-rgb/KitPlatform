@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-19T07:06:42.146Z",
+  "generatedAt": "2026-08-19T13:11:02.709Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 123,
-    "todayPageViews": 51,
-    "todayRequests": 374,
-    "last24hVisitors": 344,
-    "last24hPageViews": 197,
-    "last24hRequests": 747
+    "todayVisitors": 174,
+    "todayPageViews": 70,
+    "todayRequests": 470,
+    "last24hVisitors": 269,
+    "last24hPageViews": 140,
+    "last24hRequests": 634
   },
   "hourly": [
-    {
-      "time": "2026-08-18T08:00:00Z",
-      "visitors": 14,
-      "requests": 18
-    },
-    {
-      "time": "2026-08-18T09:00:00Z",
-      "visitors": 28,
-      "requests": 28
-    },
-    {
-      "time": "2026-08-18T10:00:00Z",
-      "visitors": 45,
-      "requests": 56
-    },
-    {
-      "time": "2026-08-18T11:00:00Z",
-      "visitors": 31,
-      "requests": 34
-    },
-    {
-      "time": "2026-08-18T12:00:00Z",
-      "visitors": 18,
-      "requests": 38
-    },
-    {
-      "time": "2026-08-18T13:00:00Z",
-      "visitors": 26,
-      "requests": 35
-    },
     {
       "time": "2026-08-18T14:00:00Z",
       "visitors": 22,
@@ -125,6 +95,36 @@
       "time": "2026-08-19T06:00:00Z",
       "visitors": 63,
       "requests": 65
+    },
+    {
+      "time": "2026-08-19T07:00:00Z",
+      "visitors": 6,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-19T08:00:00Z",
+      "visitors": 9,
+      "requests": 9
+    },
+    {
+      "time": "2026-08-19T09:00:00Z",
+      "visitors": 10,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-19T10:00:00Z",
+      "visitors": 15,
+      "requests": 17
+    },
+    {
+      "time": "2026-08-19T11:00:00Z",
+      "visitors": 17,
+      "requests": 21
+    },
+    {
+      "time": "2026-08-19T12:00:00Z",
+      "visitors": 12,
+      "requests": 27
     }
   ],
   "daily": [
@@ -166,54 +166,50 @@
     },
     {
       "date": "2026-08-19",
-      "visitors": 123,
-      "pageViews": 51,
-      "requests": 374
+      "visitors": 174,
+      "pageViews": 70,
+      "requests": 470
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 62
+      "views": 46
     },
     {
       "path": "/robots.txt",
-      "views": 43
+      "views": 39
     },
     {
       "path": "/cdn-cgi/rum",
       "views": 39
     },
     {
-      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
-      "views": 27
-    },
-    {
       "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
-      "views": 27
-    },
-    {
-      "path": "/images/tin-tuc/the-nao-la-ton-kho-chet.png",
       "views": 24
     },
     {
-      "path": "/vi/",
-      "views": 21
+      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
+      "views": 22
     },
     {
       "path": "/brand/xuanhoa-logo.png",
       "views": 20
     },
     {
+      "path": "/images/tin-tuc/the-nao-la-ton-kho-chet.png",
+      "views": 17
+    },
+    {
       "path": "/favicon.svg",
       "views": 17
     },
     {
-      "path": "/brand/articles/gap-duoc-si.jpg",
+      "path": "/sitemap-index.xml",
       "views": 16
     },
     {
-      "path": "/sitemap-index.xml",
+      "path": "/brand/articles/gap-duoc-si.jpg",
       "views": 16
     },
     {
@@ -221,16 +217,20 @@
       "views": 15
     },
     {
-      "path": "/sitemap.xml",
-      "views": 15
-    },
-    {
-      "path": "/vi/tin-tuc/the-nao-la-ton-kho-chet-sat-thu-am-tham-bao-mon-dong-tien-nha-thuoc/",
-      "views": 15
-    },
-    {
       "path": "/brand/products/hapacol-pain.jpg",
       "views": 14
+    },
+    {
+      "path": "/brand/family-health.png",
+      "views": 14
+    },
+    {
+      "path": "/brand/articles/phong-cam-cum.jpg",
+      "views": 14
+    },
+    {
+      "path": "/vi/",
+      "views": 13
     }
   ]
 }
