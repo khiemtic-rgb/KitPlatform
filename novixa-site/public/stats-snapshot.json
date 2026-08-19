@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-18T18:57:46.849Z",
+  "generatedAt": "2026-08-19T01:54:15.111Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 313,
-    "last24hPageViews": 165,
-    "last24hRequests": 573
+    "todayVisitors": 23,
+    "todayPageViews": 14,
+    "todayRequests": 47,
+    "last24hVisitors": 336,
+    "last24hPageViews": 204,
+    "last24hRequests": 633
   },
   "hourly": [
-    {
-      "time": "2026-08-17T19:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-17T20:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-17T21:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-17T22:00:00Z",
-      "visitors": 13,
-      "requests": 14
-    },
-    {
-      "time": "2026-08-17T23:00:00Z",
-      "visitors": 3,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-18T00:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-18T01:00:00Z",
-      "visitors": 14,
-      "requests": 19
-    },
     {
       "time": "2026-08-18T02:00:00Z",
       "visitors": 16,
@@ -128,8 +93,43 @@
     },
     {
       "time": "2026-08-18T18:00:00Z",
-      "visitors": 11,
-      "requests": 13
+      "visitors": 13,
+      "requests": 15
+    },
+    {
+      "time": "2026-08-18T19:00:00Z",
+      "visitors": 5,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-18T20:00:00Z",
+      "visitors": 9,
+      "requests": 16
+    },
+    {
+      "time": "2026-08-18T21:00:00Z",
+      "visitors": 10,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-18T22:00:00Z",
+      "visitors": 9,
+      "requests": 11
+    },
+    {
+      "time": "2026-08-18T23:00:00Z",
+      "visitors": 16,
+      "requests": 19
+    },
+    {
+      "time": "2026-08-19T00:00:00Z",
+      "visitors": 13,
+      "requests": 17
+    },
+    {
+      "time": "2026-08-19T01:00:00Z",
+      "visitors": 12,
+      "requests": 30
     }
   ],
   "daily": [
@@ -165,27 +165,33 @@
     },
     {
       "date": "2026-08-18",
-      "visitors": 301,
-      "pageViews": 161,
-      "requests": 546
+      "visitors": 336,
+      "pageViews": 194,
+      "requests": 612
+    },
+    {
+      "date": "2026-08-19",
+      "visitors": 23,
+      "pageViews": 14,
+      "requests": 47
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 61
+      "views": 67
     },
     {
       "path": "/robots.txt",
-      "views": 44
+      "views": 45
     },
     {
       "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
-      "views": 38
+      "views": 33
     },
     {
       "path": "/vi/",
-      "views": 29
+      "views": 30
     },
     {
       "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
@@ -193,39 +199,39 @@
     },
     {
       "path": "/images/tin-tuc/the-nao-la-ton-kho-chet.png",
-      "views": 24
+      "views": 26
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 19
+      "views": 20
     },
     {
-      "path": "/sitemap-index.xml",
+      "path": "/sitemap.xml",
       "views": 16
     },
     {
       "path": "/vi/tin-tuc/the-nao-la-ton-kho-chet-sat-thu-am-tham-bao-mon-dong-tien-nha-thuoc/",
+      "views": 16
+    },
+    {
+      "path": "/sitemap-index.xml",
       "views": 15
     },
     {
-      "path": "/sitemap.xml",
-      "views": 15
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 14
     },
     {
       "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
-      "views": 13
+      "views": 12
     },
     {
       "path": "/images/logo.png",
       "views": 10
     },
     {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
       "views": 9
-    },
-    {
-      "path": "/images/tin-tuc/quy-trinh-doi-tra-thuoc.png",
-      "views": 8
     },
     {
       "path": "/wp-login.php",
