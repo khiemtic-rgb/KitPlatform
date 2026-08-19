@@ -891,7 +891,10 @@ internal sealed class ContentPublishService : IContentPublishService
             : "";
 
         var pathLower = contentPath.Replace('\\', '/').ToLowerInvariant();
-        var isNovixaTinTuc = pathLower.Contains("tin-tuc", StringComparison.Ordinal);
+        var isPharmacyKienThuc = pathLower.Contains("pharmacy-storefront", StringComparison.Ordinal)
+            || pathLower.Contains("kien-thuc", StringComparison.Ordinal)
+            || string.Equals(GetConfigString(cfg, "contentFormat"), "pharmacy", StringComparison.OrdinalIgnoreCase);
+        var isNovixaTinTuc = !isPharmacyKienThuc && pathLower.Contains("tin-tuc", StringComparison.Ordinal);
         var isFamixaBlog = pathLower.Contains("famixa-site", StringComparison.Ordinal)
             || string.Equals(GetConfigString(cfg, "contentFormat"), "famixa", StringComparison.OrdinalIgnoreCase);
         var isKittechInsights = pathLower.Contains("insights", StringComparison.Ordinal)
@@ -904,7 +907,15 @@ internal sealed class ContentPublishService : IContentPublishService
         if (mediaOpt is { } media && media.Bytes.Length > 0)
         {
             var ext = GuessImageExt(media.FileName, media.ContentType);
-            if (isNovixaTinTuc)
+            if (isPharmacyKienThuc)
+            {
+                var imageDir = GetConfigString(cfg, "imagePath")?.TrimEnd('/')
+                               ?? "client/pharmacy-storefront/public/images/kien-thuc";
+                imageRepoPath = $"{imageDir}/{slug}.{ext}";
+                imagePublicPath = $"/images/kien-thuc/{slug}.{ext}";
+                imageBytes = media.Bytes;
+            }
+            else if (isNovixaTinTuc)
             {
                 var imageDir = GetConfigString(cfg, "imagePath")?.TrimEnd('/')
                                ?? "novixa-site/public/images/tin-tuc";
@@ -929,6 +940,20 @@ internal sealed class ContentPublishService : IContentPublishService
                 imagePublicPath = $"/images/insights/{slug}.{ext}";
                 imageBytes = media.Bytes;
             }
+            else
+            {
+                var imageDir = GetConfigString(cfg, "imagePath")?.TrimEnd('/');
+                if (!string.IsNullOrWhiteSpace(imageDir))
+                {
+                    imageRepoPath = $"{imageDir}/{slug}.{ext}";
+                    var pub = imageDir.Replace('\\', '/');
+                    var idx = pub.IndexOf("/public/", StringComparison.OrdinalIgnoreCase);
+                    imagePublicPath = idx >= 0
+                        ? pub[(idx + "/public".Length)..] + $"/{slug}.{ext}"
+                        : $"/images/{slug}.{ext}";
+                    imageBytes = media.Bytes;
+                }
+            }
         }
 
         string filePath;
@@ -937,7 +962,31 @@ internal sealed class ContentPublishService : IContentPublishService
         string? publishedCategory = null;
         string? publishedSection = null;
 
-        if (isNovixaTinTuc)
+        if (isPharmacyKienThuc)
+        {
+            filePath = $"{contentPath}/{slug}.md";
+            commitPrefix = "content(xuanhoa)";
+            var category = GetConfigString(cfg, "newsCategory")
+                           ?? GetConfigString(cfg, "category")
+                           ?? "Kiến thức sức khỏe";
+            publishedCategory = category.Trim();
+            if (string.IsNullOrWhiteSpace(imagePublicPath))
+                imagePublicPath = GetConfigString(cfg, "defaultImage") ?? "/brand/articles/default.png";
+            var fm = new StringBuilder();
+            fm.AppendLine("---");
+            fm.Append("title: \"").Append(EscapeYaml(title)).AppendLine("\"");
+            fm.Append("description: \"").Append(EscapeYaml(Trim(description, 280))).AppendLine("\"");
+            fm.Append("pubDate: ").AppendLine(displayDate);
+            fm.Append("category: \"").Append(EscapeYaml(category.Trim())).AppendLine("\"");
+            if (!string.IsNullOrWhiteSpace(imagePublicPath))
+                fm.Append("image: ").AppendLine(imagePublicPath.Trim());
+            fm.AppendLine("---");
+            fm.AppendLine();
+            fm.Append(bodyMd);
+            fm.Append(cta);
+            md = fm.ToString();
+        }
+        else if (isNovixaTinTuc)
         {
             // novixa.vn — Astro collection tinTuc (novixa-site/src/content.config.ts)
             filePath = $"{contentPath}/{slug}.md";
