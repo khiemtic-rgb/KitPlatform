@@ -1,4 +1,5 @@
 ---
+import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
@@ -12,18 +13,26 @@ const slug = Astro.params.slug ?? '';
 const articles = [...tenant.articles].sort((a, b) => (a.date < b.date ? 1 : -1));
 const index = articles.findIndex((a) => a.slug === slug || a.href.endsWith(`/${slug}`));
 const article = index >= 0 ? articles[index] : undefined;
+const kitEntry = (await getCollection('kien-thuc')).find((post) => {
+  const id = post.id.replace(/\.md$/i, '').split('/').pop() ?? post.id;
+  const slugFromId = id.replace(/^\d{4}-\d{2}-\d{2}-/, '');
+  return id === slug || slugFromId === slug || post.id === slug;
+});
+const kitRendered = kitEntry ? await render(kitEntry) : null;
+const KitContent = kitRendered?.Content;
 
 if (!article) {
   return Astro.redirect('/kien-thuc');
 }
 
 const title = article.title;
-const sections = article.sections ?? [];
-const paragraphs =
-  article.body ??
-  (sections.length === 0
-    ? ['Bài viết đang được cập nhật. Bạn có thể đặt thuốc hoặc trao đổi với dược sĩ trên App Novixa.']
-    : []);
+const sections = KitContent ? [] : (article.sections ?? []);
+const paragraphs = KitContent
+  ? []
+  : (article.body ??
+    (sections.length === 0
+      ? ['Bài viết đang được cập nhật. Bạn có thể đặt thuốc hoặc trao đổi với dược sĩ trên App Novixa.']
+      : []));
 const prev = index < articles.length - 1 ? articles[index + 1] : undefined;
 const next = index > 0 ? articles[index - 1] : undefined;
 const related = articles.filter((a) => a.slug !== article.slug).slice(0, 5);
@@ -116,26 +125,36 @@ const iconPhone = `<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path
           }
 
           <div class="sf-article-body">
-            {paragraphs.map((p) => <p>{p}</p>)}
             {
-              sections.map((section, i) => (
-                <section id={section.id} class="sf-article-section">
-                  <h2>
-                    {i + 1}. {section.title}
-                  </h2>
-                  {section.paragraphs?.map((p) => <p>{p}</p>)}
-                  {section.bullets && section.bullets.length > 0 ? (
-                    <ul class="sf-article-bullets">
-                      {section.bullets.map((b) => (
-                        <li>
-                          <span set:html={iconCheck} />
-                          <span>{b}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </section>
-              ))
+              KitContent ? (
+                <div class="sf-article-md">
+                  <KitContent />
+                </div>
+              ) : (
+                <>
+                  {paragraphs.map((p) => <p>{p}</p>)}
+                  {
+                    sections.map((section, i) => (
+                      <section id={section.id} class="sf-article-section">
+                        <h2>
+                          {i + 1}. {section.title}
+                        </h2>
+                        {section.paragraphs?.map((p) => <p>{p}</p>)}
+                        {section.bullets && section.bullets.length > 0 ? (
+                          <ul class="sf-article-bullets">
+                            {section.bullets.map((b) => (
+                              <li>
+                                <span set:html={iconCheck} />
+                                <span>{b}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </section>
+                    ))
+                  }
+                </>
+              )
             }
             <p class="sf-article-disclaimer">
               Nội dung mang tính tham khảo. Không thay thế tư vấn trực tiếp từ dược sĩ hoặc bác sĩ khi dùng thuốc.

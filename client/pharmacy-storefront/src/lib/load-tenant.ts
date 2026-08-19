@@ -1,4 +1,5 @@
 import type { PharmacyTenantConfig } from '../tenants/types';
+import { mergeKitKnowledge } from './kit-knowledge';
 import { resolveTenant, StorefrontNotFoundError } from './tenant';
 
 type AstroLike = {
@@ -11,7 +12,8 @@ type AstroLike = {
 /** Load tenant or soft-404 for unpublished / unknown hosts. */
 export async function loadTenant(astro: AstroLike): Promise<PharmacyTenantConfig | Response> {
   try {
-    return await resolveTenant(astro.request, astro.url);
+    const tenant = await resolveTenant(astro.request, astro.url);
+    return await mergeKitKnowledge(tenant);
   } catch (err) {
     const isNotFound =
       err instanceof StorefrontNotFoundError ||

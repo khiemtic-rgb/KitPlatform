@@ -1,6 +1,7 @@
 import type { PharmacyTenantConfig } from '../tenants/types';
 import { createCoreBrandSafeSeed } from '../tenants/core-brand-safe-seed';
 import { createTemplateSeed } from '../tenants/template-seed';
+import { xuanhoa } from '../tenants/xuanhoa';
 import { deepMerge } from './deep-merge';
 
 export type PublicStorefrontPayload = {
@@ -102,6 +103,11 @@ export function mapPublicContentToTenant(payload: PublicStorefrontPayload): Phar
 
   if (!Array.isArray(merged.articles)) {
     merged.articles = [];
+  }
+
+  // CMS overlay with empty articles must not wipe the Xuân Hòa static knowledge set.
+  if (isXuanHoaPilot && merged.articles.length === 0) {
+    merged.articles = xuanhoa.articles;
   }
 
   return merged;

@@ -1960,6 +1960,28 @@
   margin: 0 0 1rem;
 }
 
+.sf-article-md h2,
+.sf-article-md h3 {
+  margin: 1.4rem 0 0.7rem;
+  color: var(--sf-green);
+  font-size: 1.2rem;
+}
+
+.sf-article-md p,
+.sf-article-md ul,
+.sf-article-md ol {
+  margin: 0 0 1rem;
+}
+
+.sf-article-md ul,
+.sf-article-md ol {
+  padding-left: 1.25rem;
+}
+
+.sf-article-md a {
+  color: var(--sf-green);
+}
+
 .sf-article-section {
   margin: 1.5rem 0;
   scroll-margin-top: 5rem;

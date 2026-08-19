@@ -99,6 +99,8 @@ export interface PharmacyArticle {
   topic?: string;
   categoryLabel?: string;
   readingMinutes?: number;
+  /** Kit Marketing markdown collection — rendered on the article page */
+  fromKitCollection?: boolean;
 }
 
 export interface PharmacyKnowledgeTip {
