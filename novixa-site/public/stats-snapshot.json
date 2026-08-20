@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-19T18:54:45.600Z",
+  "generatedAt": "2026-08-20T01:52:55.885Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 271,
-    "last24hPageViews": 149,
-    "last24hRequests": 661
+    "todayVisitors": 13,
+    "todayPageViews": 7,
+    "todayRequests": 21,
+    "last24hVisitors": 264,
+    "last24hPageViews": 133,
+    "last24hRequests": 628
   },
   "hourly": [
-    {
-      "time": "2026-08-18T19:00:00Z",
-      "visitors": 5,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-18T20:00:00Z",
-      "visitors": 9,
-      "requests": 16
-    },
-    {
-      "time": "2026-08-18T21:00:00Z",
-      "visitors": 10,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-18T22:00:00Z",
-      "visitors": 9,
-      "requests": 11
-    },
-    {
-      "time": "2026-08-18T23:00:00Z",
-      "visitors": 16,
-      "requests": 19
-    },
-    {
-      "time": "2026-08-19T00:00:00Z",
-      "visitors": 13,
-      "requests": 17
-    },
-    {
-      "time": "2026-08-19T01:00:00Z",
-      "visitors": 12,
-      "requests": 30
-    },
     {
       "time": "2026-08-19T02:00:00Z",
       "visitors": 20,
@@ -128,8 +93,43 @@
     },
     {
       "time": "2026-08-19T18:00:00Z",
+      "visitors": 10,
+      "requests": 14
+    },
+    {
+      "time": "2026-08-19T19:00:00Z",
+      "visitors": 12,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-19T20:00:00Z",
+      "visitors": 13,
+      "requests": 28
+    },
+    {
+      "time": "2026-08-19T21:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-19T22:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-19T23:00:00Z",
+      "visitors": 3,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-20T00:00:00Z",
+      "visitors": 6,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-20T01:00:00Z",
       "visitors": 8,
-      "requests": 11
+      "requests": 14
     }
   ],
   "daily": [
@@ -165,58 +165,68 @@
     },
     {
       "date": "2026-08-19",
-      "visitors": 239,
-      "pageViews": 118,
-      "requests": 597
+      "visitors": 269,
+      "pageViews": 140,
+      "requests": 654
+    },
+    {
+      "date": "2026-08-20",
+      "visitors": 13,
+      "pageViews": 7,
+      "requests": 21
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 47
+      "views": 61
     },
     {
       "path": "/robots.txt",
-      "views": 39
+      "views": 42
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 37
+      "views": 36
     },
     {
       "path": "/brand/xuanhoa-logo.png",
-      "views": 20
-    },
-    {
-      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
-      "views": 17
+      "views": 18
     },
     {
       "path": "/favicon.svg",
-      "views": 17
-    },
-    {
-      "path": "/brand/articles/gap-duoc-si.jpg",
-      "views": 16
+      "views": 18
     },
     {
       "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
       "views": 16
     },
     {
-      "path": "/brand/articles/dinh-duong-tieu-duong.jpg",
+      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
+      "views": 16
+    },
+    {
+      "path": "/sitemap-index.xml",
       "views": 15
+    },
+    {
+      "path": "/brand/articles/gap-duoc-si.jpg",
+      "views": 14
     },
     {
       "path": "/brand/articles/phong-cam-cum.jpg",
       "views": 14
     },
     {
-      "path": "/brand/family-health.png",
+      "path": "/brand/articles/dinh-duong-tieu-duong.jpg",
       "views": 14
     },
     {
-      "path": "/brand/products/hapacol-pain.jpg",
+      "path": "/vi/",
+      "views": 14
+    },
+    {
+      "path": "/sitemap.xml",
       "views": 14
     },
     {
@@ -224,12 +234,8 @@
       "views": 13
     },
     {
-      "path": "/sitemap.xml",
-      "views": 13
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 13
+      "path": "/brand/products/hapacol-pain.jpg",
+      "views": 12
     }
   ]
 }
