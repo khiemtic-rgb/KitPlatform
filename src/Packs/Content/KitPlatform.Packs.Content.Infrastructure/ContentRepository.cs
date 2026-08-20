@@ -169,6 +169,13 @@ internal sealed class ContentRepository
         public DateTimeOffset UpdatedAt { get; set; }
     }
 
+    public sealed class SeriesPilotRow
+    {
+        public string SeriesCode { get; set; } = "";
+        public string GraphJson { get; set; } = "{}";
+        public DateTimeOffset UpdatedAt { get; set; }
+    }
+
     public async Task<OrgSettingsRow> GetOrgSettingsAsync(CancellationToken ct)
     {
         const string sql = """
@@ -1494,4 +1501,40 @@ internal sealed class ContentRepository
     }
 
     public static string ToJson<T>(T value) => JsonSerializer.Serialize(value, JsonOpts);
+
+    public async Task<SeriesPilotRow?> GetSeriesPilotAsync(string seriesCode, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT
+                series_code AS SeriesCode,
+                graph_json::text AS GraphJson,
+                updated_at AS UpdatedAt
+            FROM pack_content.series_pilot
+            WHERE series_code = @SeriesCode
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.QuerySingleOrDefaultAsync<SeriesPilotRow>(sql, new { SeriesCode = seriesCode });
+    }
+
+    public async Task<SeriesPilotRow> UpsertSeriesPilotAsync(string seriesCode, string graphJson, CancellationToken ct)
+    {
+        const string sql = """
+            INSERT INTO pack_content.series_pilot (series_code, graph_json, updated_at)
+            VALUES (@SeriesCode, CAST(@GraphJson AS jsonb), NOW())
+            ON CONFLICT (series_code) DO UPDATE SET
+                graph_json = CAST(@GraphJson AS jsonb),
+                updated_at = NOW()
+            RETURNING
+                series_code AS SeriesCode,
+                graph_json::text AS GraphJson,
+                updated_at AS UpdatedAt
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        var row = await conn.QuerySingleAsync<SeriesPilotRow>(sql, new
+        {
+            SeriesCode = seriesCode,
+            GraphJson = string.IsNullOrWhiteSpace(graphJson) ? "{}" : graphJson,
+        });
+        return row;
+    }
 }

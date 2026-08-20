@@ -29,6 +29,16 @@ public static class ContentPackDependencyInjection
             c.BaseAddress = new Uri("https://api.elevenlabs.io/");
             c.Timeout = TimeSpan.FromMinutes(2);
         });
+        services.AddHttpClient<ContentRunwayClient>(c =>
+        {
+            c.BaseAddress = new Uri("https://api.dev.runwayml.com/");
+            c.Timeout = TimeSpan.FromMinutes(2);
+        });
+        services.AddHttpClient<ContentFalClient>(c =>
+        {
+            c.BaseAddress = new Uri("https://queue.fal.run/");
+            c.Timeout = TimeSpan.FromMinutes(3);
+        });
         services.AddHttpClient("content-facebook", c => c.Timeout = TimeSpan.FromSeconds(30));
 
         services.AddScoped<ContentRepository>();
@@ -40,6 +50,10 @@ public static class ContentPackDependencyInjection
         services.AddScoped<IContentGenerateService, ContentGenerateService>();
         services.AddScoped<IContentPublishService, ContentPublishService>();
         services.AddScoped<IContentVideoService, ContentVideoService>();
+        services.AddScoped<IContentSeriesTurboService, ContentSeriesTurboService>();
+        services.AddScoped<IContentSeriesStillService, ContentSeriesStillService>();
+        services.AddScoped<IContentSeriesScriptDraftService, ContentSeriesScriptDraftService>();
+        services.AddScoped<IContentSeriesPilotService, ContentSeriesPilotService>();
         services.AddScoped<IContentOpsService, ContentOpsService>();
         services.AddScoped<IContentWorkQueueService, ContentWorkQueueService>();
         services.AddScoped<ContentFacebookClient>();

@@ -13,6 +13,8 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
     private readonly ContentGeminiClient _gemini;
     private readonly ContentCreatomateClient _creatomate;
     private readonly ContentElevenLabsClient _elevenLabs;
+    private readonly ContentRunwayClient _runway;
+    private readonly ContentFalClient _fal;
     private readonly ContentFacebookClient _facebook;
     private readonly IConfiguration _configuration;
     private readonly ContentOptions _options;
@@ -22,6 +24,8 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
         ContentGeminiClient gemini,
         ContentCreatomateClient creatomate,
         ContentElevenLabsClient elevenLabs,
+        ContentRunwayClient runway,
+        ContentFalClient fal,
         ContentFacebookClient facebook,
         IConfiguration configuration,
         IOptions<ContentOptions> options)
@@ -30,6 +34,8 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
         _gemini = gemini;
         _creatomate = creatomate;
         _elevenLabs = elevenLabs;
+        _runway = runway;
+        _fal = fal;
         _facebook = facebook;
         _configuration = configuration;
         _options = options.Value;
@@ -124,6 +130,22 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
                     state.CreatomateTemplateId,
                     cancellationToken);
             }
+            if (video.RunwayApiKeySecretRef is not null)
+                state.RunwayApiKeySecretRef = string.IsNullOrWhiteSpace(video.RunwayApiKeySecretRef)
+                    ? null
+                    : video.RunwayApiKeySecretRef.Trim();
+            if (video.RunwayApiKey is not null)
+                state.RunwayApiKey = string.IsNullOrWhiteSpace(video.RunwayApiKey)
+                    ? null
+                    : video.RunwayApiKey.Trim();
+            if (video.FalApiKeySecretRef is not null)
+                state.FalApiKeySecretRef = string.IsNullOrWhiteSpace(video.FalApiKeySecretRef)
+                    ? null
+                    : video.FalApiKeySecretRef.Trim();
+            if (video.FalApiKey is not null)
+                state.FalApiKey = string.IsNullOrWhiteSpace(video.FalApiKey)
+                    ? null
+                    : video.FalApiKey.Trim();
             row.VideoConfigJson = ContentVideoConfigParser.ToJson(state);
         }
 
@@ -223,6 +245,10 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
         var resolved = await _creatomate.ResolveAsync(cancellationToken);
         var creatomate = await _creatomate.TestConnectionAsync(cancellationToken);
         var eleven = await _elevenLabs.TestConnectionAsync(cancellationToken);
+        var runway = await _runway.TestConnectionAsync(cancellationToken);
+        var runwayResolved = await _runway.ResolveAsync(cancellationToken);
+        var fal = await _fal.TestConnectionAsync(cancellationToken);
+        var falResolved = await _fal.ResolveAsync(cancellationToken);
         return new ContentVideoTestResultDto(
             creatomate.Ok,
             creatomate.Message,
@@ -230,7 +256,13 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
             eleven.Ok,
             eleven.Message,
             resolved.ElevenLabsConfigured,
-            resolved.VoiceId);
+            resolved.VoiceId,
+            runway.Ok,
+            runway.Message,
+            runwayResolved.RunwayConfigured,
+            fal.Ok,
+            fal.Message,
+            falResolved.FalConfigured);
     }
 
     public async Task<ContentFacebookTestResultDto> TestFacebookAsync(CancellationToken cancellationToken = default)
@@ -1209,6 +1241,235 @@ internal sealed class ContentPackageService : IContentPackageService
                 : $"Đã tạo {created}; bỏ {skipped} ô (thiếu package/brand).");
     }
 
+    public async Task<SuggestPoolIdeasResultDto> SuggestPoolIdeasAsync(
+        SuggestPoolIdeasRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var want = Math.Clamp(request.Limit <= 0 ? 4 : request.Limit, 1, 6);
+        var all = await _repo.ListPackagesAsync(null, null, coresOnly: false, cancellationToken);
+        var cores = all.Where(p => p.SourcePackageId is null).ToList();
+        if (request.PackageIds is { Count: > 0 })
+        {
+            var pick = request.PackageIds.ToHashSet();
+            cores = cores.Where(p => pick.Contains(p.Id)).ToList();
+        }
+
+        if (cores.Count == 0)
+            throw new InvalidOperationException(
+                "Chưa có ý tưởng gốc. Thêm 1–2 ý ở tab Pool rồi mới gợi ý tiếp.");
+
+        cores = cores.Take(12).ToList();
+        var existingTitles = all
+            .Select(p => p.Title.Trim())
+            .Where(t => t.Length > 0)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var catalog = new StringBuilder();
+        foreach (var core in cores)
+        {
+            var (idea, _) = ContentPackageExtra.Parse(core.ExtraJson);
+            catalog.Append("- ").Append(Clip(core.Title, 80));
+            if (!string.IsNullOrWhiteSpace(idea.Insight))
+                catalog.Append(" | ").Append(Clip(idea.Insight, 70));
+            catalog.AppendLine();
+        }
+
+        var brands = (await _repo.ListBrandsAsync(true, cancellationToken))
+            .Where(b => b.IsActive)
+            .Select(b => b.Name)
+            .ToList();
+
+        const string system =
+            "You are the editorial strategist for KIT Marketing Park.\n"
+            + "Return compact JSON only: {\"ideas\":[{\"title\":\"\",\"insight\":\"\",\"whyNext\":\"\","
+            + "\"fromTitle\":\"\",\"gap\":\"\",\"suggestedBrands\":\"\",\"factOrOpinion\":\"opinion\"}]}.\n"
+            + "Each field ≤ 90 characters. Each idea is the NEXT thesis in the same system — not a rewrite.\n"
+            + "fromTitle must copy an existing core title. Do not duplicate titles. Vietnamese. No stats.";
+
+        var user =
+            "Existing cores (do not repeat):\n" + catalog + "\n"
+            + "Brands: " + string.Join(", ", brands) + "\n"
+            + "Propose " + want + " next core ideas.";
+
+        var rows = new List<SuggestPoolIdeaDto>();
+        try
+        {
+            using var geminiCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            geminiCts.CancelAfter(TimeSpan.FromSeconds(22));
+            var raw = await _gemini.GenerateJsonAsync(system, user, geminiCts.Token, 1024);
+            rows = MapSuggestRows(ParseSuggestIdeas(raw), cores, existingTitles, want);
+        }
+        catch
+        {
+            /* Gemini timeout / truncated JSON — catalog fallback below */
+        }
+
+        if (rows.Count == 0)
+            rows = FallbackSuggest(cores, existingTitles, want);
+
+        if (rows.Count == 0)
+            throw new InvalidOperationException(
+                "Chưa gợi ý được ý mới. Thêm vài ý gốc khác rồi thử lại.");
+
+        return new SuggestPoolIdeasResultDto(
+            rows,
+            $"Gợi ý {rows.Count} ý tiếp theo từ {cores.Count} ý đã có. Tick rồi thêm vào pool — không tự tạo góc.");
+    }
+
+    private static string? NullIfEmpty(string? s) =>
+        string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
+    private static string Clip(string? s, int max)
+    {
+        var t = (s ?? "").Trim();
+        if (t.Length <= max) return t;
+        return t[..max].TrimEnd() + "…";
+    }
+
+    private static readonly JsonSerializerOptions SuggestJsonOpts = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
+
+    private static List<SuggestPoolIdeaDto> MapSuggestRows(
+        IEnumerable<SuggestAiIdea> parsed,
+        IReadOnlyList<ContentRepository.PackageRow> cores,
+        HashSet<string> existingTitles,
+        int want) =>
+        parsed
+            .Where(i => !string.IsNullOrWhiteSpace(i.Title))
+            .Select(i =>
+            {
+                var title = i.Title!.Trim();
+                var from = cores.FirstOrDefault(c =>
+                    !string.IsNullOrWhiteSpace(i.FromTitle)
+                    && c.Title.Equals(i.FromTitle.Trim(), StringComparison.OrdinalIgnoreCase));
+                return new SuggestPoolIdeaDto(
+                    title,
+                    NullIfEmpty(i.Insight),
+                    NullIfEmpty(i.Problem),
+                    null,
+                    NullIfEmpty(i.WhyNext),
+                    from?.Title ?? NullIfEmpty(i.FromTitle),
+                    from?.Id,
+                    NullIfEmpty(i.Gap),
+                    NullIfEmpty(i.SuggestedBrands),
+                    string.IsNullOrWhiteSpace(i.FactOrOpinion) ? "opinion" : i.FactOrOpinion.Trim());
+            })
+            .Where(i => !existingTitles.Contains(i.Title))
+            .DistinctBy(i => i.Title, StringComparer.OrdinalIgnoreCase)
+            .Take(want)
+            .ToList();
+
+    private static List<SuggestPoolIdeaDto> FallbackSuggest(
+        IReadOnlyList<ContentRepository.PackageRow> cores,
+        HashSet<string> existingTitles,
+        int want)
+    {
+        var stems = new (string Suffix, string Why, string Gap)[]
+        {
+            (" — việc cần làm tuần này", "Cùng thesis, đưa ra hành động.", "Chưa có bước làm cụ thể"),
+            (" — chỗ hay tự dối", "Đào sâu lỗ của ý gốc.", "Chưa chỉ ra chỗ tự lừa"),
+            (" — dấu hiệu đã lệch", "Cùng hệ, góc nhận diện sớm.", "Chưa có tín hiệu cảnh báo"),
+        };
+        var list = new List<SuggestPoolIdeaDto>();
+        foreach (var core in cores)
+        {
+            foreach (var s in stems)
+            {
+                var seed = Clip(core.Title, 36).TrimEnd('…', '.', ' ', '—');
+                var title = seed + s.Suffix;
+                if (existingTitles.Contains(title)) continue;
+                existingTitles.Add(title);
+                list.Add(new SuggestPoolIdeaDto(
+                    title, null, null, null, s.Why, core.Title, core.Id, s.Gap, null, "opinion"));
+                if (list.Count >= want) return list;
+            }
+        }
+
+        return list;
+    }
+
+    private static List<SuggestAiIdea> ParseSuggestIdeas(string raw)
+    {
+        var text = raw.Trim();
+        if (text.StartsWith("```", StringComparison.Ordinal))
+        {
+            var start = text.IndexOf('[');
+            if (start < 0) start = text.IndexOf('{');
+            var end = text.LastIndexOf('}');
+            if (start >= 0 && end > start)
+                text = text[start..(end + 1)];
+        }
+
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<SuggestAiResponse>(text, SuggestJsonOpts);
+            if (parsed?.Ideas is { Count: > 0 })
+                return parsed.Ideas.Where(i => !string.IsNullOrWhiteSpace(i.Title)).ToList();
+        }
+        catch (JsonException)
+        {
+            /* truncated — take complete inner objects */
+        }
+
+        var ideas = new List<SuggestAiIdea>();
+        var arrayAt = text.IndexOf('[');
+        var i = arrayAt >= 0 ? arrayAt : 0;
+        while (i < text.Length)
+        {
+            var open = text.IndexOf('{', i);
+            if (open < 0) break;
+            var close = FindMatchingBrace(text, open);
+            if (close < 0) break;
+            var slice = text[open..(close + 1)];
+            i = close + 1;
+            if (!slice.Contains("\"title\"", StringComparison.OrdinalIgnoreCase)) continue;
+            try
+            {
+                var idea = JsonSerializer.Deserialize<SuggestAiIdea>(slice, SuggestJsonOpts);
+                if (idea is not null && !string.IsNullOrWhiteSpace(idea.Title))
+                    ideas.Add(idea);
+            }
+            catch (JsonException)
+            {
+                /* skip broken object */
+            }
+        }
+
+        if (ideas.Count == 0)
+            throw new JsonException("empty suggest payload");
+        return ideas;
+    }
+
+    private static int FindMatchingBrace(string text, int open)
+    {
+        var depth = 0;
+        var inStr = false;
+        var escape = false;
+        for (var i = open; i < text.Length; i++)
+        {
+            var c = text[i];
+            if (inStr)
+            {
+                if (escape) escape = false;
+                else if (c == '\\') escape = true;
+                else if (c == '"') inStr = false;
+                continue;
+            }
+
+            if (c == '"') inStr = true;
+            else if (c == '{') depth++;
+            else if (c == '}')
+            {
+                depth--;
+                if (depth == 0) return i;
+            }
+        }
+
+        return -1;
+    }
+
     public async Task<ContentPackageDto?> ApproveAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var package = await _repo.GetPackageAsync(id, cancellationToken);
@@ -1412,6 +1673,24 @@ internal sealed class ContentPackageService : IContentPackageService
             r.Channel, r.MetricDate, r.Impressions, r.Views, r.Clicks,
             r.Engagements, r.Comments, r.Shares,
             r.UtmCampaign, r.UtmSource, r.UtmMedium, r.Notes, r.CreatedAt);
+
+    private sealed class SuggestAiResponse
+    {
+        public List<SuggestAiIdea>? Ideas { get; set; }
+    }
+
+    private sealed class SuggestAiIdea
+    {
+        public string? Title { get; set; }
+        public string? Insight { get; set; }
+        public string? Problem { get; set; }
+        public string? CoreMessage { get; set; }
+        public string? WhyNext { get; set; }
+        public string? FromTitle { get; set; }
+        public string? Gap { get; set; }
+        public string? SuggestedBrands { get; set; }
+        public string? FactOrOpinion { get; set; }
+    }
 
     private sealed class AdaptAiResponse
     {

@@ -223,6 +223,73 @@ internal sealed class ContentGeminiClient
             "Không tạo được ảnh (Gemini hết quota và Pollinations cũng lỗi). Thử lại sau ~15s hoặc bật billing Gemini.");
     }
 
+    /// <summary>
+    /// Scene still from character portrait refs. Never falls back to Pollinations (faces would drift).
+    /// </summary>
+    public async Task<(byte[] Bytes, string Model)> GenerateImageWithRefsAsync(
+        string prompt,
+        IReadOnlyList<(string Mime, string Base64)> references,
+        string? aspectRatio,
+        CancellationToken ct)
+    {
+        var resolved = await ResolveConfigAsync(ct);
+        if (!resolved.ApiKeyConfigured)
+            throw new InvalidOperationException("Cần Gemini API key để vẽ KF từ Canon mặt — Pollinations không khớp mặt.");
+
+        var preferred = string.IsNullOrWhiteSpace(resolved.ImageModel) ? null : resolved.ImageModel!.Trim();
+        if (preferred is not null
+            && (preferred.StartsWith("imagen", StringComparison.OrdinalIgnoreCase)
+                || preferred.StartsWith("pollinations", StringComparison.OrdinalIgnoreCase)))
+        {
+            preferred = null;
+        }
+
+        var models = preferred is null
+            ? ImageModels
+            : new[] { preferred }.Concat(ImageModels.Where(m => m != preferred)).ToArray();
+
+        var parts = new List<object> { new { text = prompt } };
+        foreach (var (mime, b64) in references)
+        {
+            parts.Add(new { inline_data = new { mime_type = mime, data = b64 } });
+        }
+
+        Exception? first = null;
+        foreach (var model in models)
+        {
+            foreach (var modalities in ImageModalities)
+            {
+                try
+                {
+                    object generationConfig = string.IsNullOrWhiteSpace(aspectRatio)
+                        ? new { responseModalities = modalities }
+                        : new { responseModalities = modalities, imageConfig = new { aspectRatio } };
+                    var data = await PostAsync(resolved.ApiKey, $"/models/{model}:generateContent", new
+                    {
+                        contents = new[] { new { role = "user", parts } },
+                        generationConfig,
+                    }, ct);
+                    var bytes = ExtractInlineImage(data);
+                    if (bytes is null || bytes.Length == 0)
+                        throw new InvalidOperationException($"Model {model} returned no image bytes");
+                    _logger.LogInformation(
+                        "Content Park scene still {Model} refs={RefCount} aspect={Aspect}",
+                        model,
+                        references.Count,
+                        aspectRatio ?? "-");
+                    return (bytes, model);
+                }
+                catch (Exception ex)
+                {
+                    first ??= ex;
+                    _logger.LogWarning(ex, "Content Park scene still {Model} failed", model);
+                }
+            }
+        }
+
+        throw first ?? new InvalidOperationException("Không vẽ được KF cảnh từ Canon. Kiểm tra Gemini image model / quota.");
+    }
+
     private static readonly SemaphoreSlim PollinationsGate = new(1, 1);
     private static DateTimeOffset _pollinationsNextAllowed = DateTimeOffset.MinValue;
 

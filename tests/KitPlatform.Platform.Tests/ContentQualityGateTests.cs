@@ -55,6 +55,48 @@ public sealed class ContentQualityGateTests
     }
 
     [Fact]
+    public void Web_structure_does_not_block_facebook()
+    {
+        var gate = ContentQualityGate.Evaluate(
+            Brain(),
+            Core(),
+            "Góc riêng",
+            [("web_long", "Bài quá ngắn, không có mục."), ("fb_page", "Một caption đủ dùng.")],
+            "Novixa",
+            Brief());
+
+        Assert.False(gate.CanPublish);
+        var fb = ContentQualityGate.SelectPublishBlocking(gate.BlockingIssues ?? gate.Issues, "facebook_page");
+        Assert.Empty(fb);
+        var web = ContentQualityGate.SelectPublishBlocking(gate.BlockingIssues ?? gate.Issues, "wordpress_rest");
+        Assert.Contains(web, i => i.Contains("quá mỏng") || i.Contains("thiếu mục"));
+    }
+
+    [Fact]
+    public void Repair_inserts_two_headings_on_plain_prose()
+    {
+        var body = string.Join("\n\n", Enumerable.Range(0, 6).Select(i =>
+            "Đoạn " + i + " nói về nhà thuốc bán tốt nhưng vận hành hụt. " + new string('x', 80)));
+        var fixedBody = ContentWebLongRepair.EnsureHeadings(body);
+        Assert.True(ContentQualityGate.CountMarkdownH2(fixedBody) >= 2);
+    }
+
+    [Fact]
+    public void Hash_heading_without_space_counts()
+    {
+        var web = new string('a', 2300) + "\n##Một\n" + new string('b', 200) + "\n##Hai\n" + new string('c', 200);
+        Assert.Equal(2, ContentQualityGate.CountMarkdownH2(web));
+        var gate = ContentQualityGate.Evaluate(
+            Brain(),
+            Core(),
+            "Góc riêng",
+            [("web_long", web)],
+            "Novixa",
+            Brief());
+        Assert.True(gate.CanPublish);
+    }
+
+    [Fact]
     public void Forbidden_claim_blocks_publish()
     {
         var gate = ContentQualityGate.Evaluate(

@@ -1,5 +1,6 @@
 import { http } from '@/shared/api/http';
 import { useAuthStore } from '@/shared/auth/auth.store';
+import { isAxiosError } from 'axios';
 
 export type ContentAiConfig = {
   provider: string;
@@ -18,6 +19,10 @@ export type ContentVideoConfig = {
   elevenLabsVoiceId?: string | null;
   publicMediaBaseUrl?: string | null;
   creatomateTemplateId?: string | null;
+  runwayApiKeySecretRef?: string | null;
+  runwayConfigured: boolean;
+  falApiKeySecretRef?: string | null;
+  falConfigured: boolean;
 };
 
 export type ContentFacebookConfig = {
@@ -62,6 +67,22 @@ export type ContentVideoTestResult = {
   elevenLabsMessage?: string | null;
   elevenLabsConfigured: boolean;
   voiceId?: string | null;
+  runwayOk?: boolean;
+  runwayMessage?: string | null;
+  runwayConfigured?: boolean;
+  falOk?: boolean;
+  falMessage?: string | null;
+  falConfigured?: boolean;
+};
+
+export type ContentSeriesTurboTask = {
+  taskId: string;
+  status: string;
+  videoUrl?: string | null;
+  error?: string | null;
+  usedPlaceholderImage: boolean;
+  model: string;
+  seconds: number;
 };
 
 export type ContentBudgetSnapshot = {
@@ -420,6 +441,10 @@ export async function updateContentSettings(body: Partial<{
     elevenLabsVoiceId: string | null;
     publicMediaBaseUrl: string | null;
     creatomateTemplateId: string | null;
+    runwayApiKeySecretRef: string | null;
+    runwayApiKey: string | null;
+    falApiKeySecretRef: string | null;
+    falApiKey: string | null;
   }>;
   facebook: Partial<{
     appId: string | null;
@@ -441,6 +466,165 @@ export async function testContentAi() {
 export async function testContentVideo() {
   const { data } = await http.post<ContentVideoTestResult>('/content/video/test');
   return data;
+}
+
+export async function startContentSeriesTurbo(body: {
+  clipId: string;
+  prompt: string;
+  negativePrompt?: string;
+  imageDataUrl?: string;
+  seconds: number;
+  ratio: string;
+  engine?: 'turbo' | 'wan';
+}) {
+  const { data } = await http.post<ContentSeriesTurboTask>('/content/series/turbo', body, { timeout: 60_000 });
+  return data;
+}
+
+export async function generateContentSeriesStill(body: {
+  prompt: string;
+  aspect: string;
+  references: { name: string; imageDataUrl: string; role?: string }[];
+}) {
+  const { data } = await http.post<{ imageDataUrl: string; model: string; aspect: string }>(
+    '/content/series/still',
+    body,
+    { timeout: 180_000 },
+  );
+  return data;
+}
+
+export async function getContentSeriesTurbo(taskId: string) {
+  const { data } = await http.get<ContentSeriesTurboTask>(`/content/series/turbo/${encodeURIComponent(taskId)}`);
+  return data;
+}
+
+export type ContentSeriesScriptDraft = {
+  pack: string;
+  model: string;
+  estimatedUsd: number;
+  costNote: string;
+  usedBrandBrain?: boolean;
+  brandCode?: string | null;
+};
+
+export async function draftContentSeriesScript(body: {
+  seed: string;
+  charactersHint?: string;
+  episodeHint?: string;
+  brandId?: string;
+}) {
+  const { data } = await http.post<ContentSeriesScriptDraft>('/content/series/script-draft', body, {
+    timeout: 90_000,
+  });
+  return data;
+}
+
+export type ContentSeriesPilot = {
+  seriesCode: string;
+  graph: Record<string, unknown>;
+  updatedAt: string;
+};
+
+export type ContentSeriesVoice = {
+  voiceId: string;
+  name: string;
+  category?: string | null;
+  cloned?: boolean;
+  vietnamese?: boolean;
+  publicOwnerId?: string | null;
+  gender?: string | null;
+  age?: string | null;
+  accent?: string | null;
+};
+
+export async function fetchContentSeriesPilot(code = 'FAMIXA') {
+  const { data } = await http.get<ContentSeriesPilot>('/content/series/pilot', { params: { code } });
+  return data;
+}
+
+export async function putContentSeriesPilot(body: { seriesCode?: string; graph: Record<string, unknown> }) {
+  const { data } = await http.put<ContentSeriesPilot>('/content/series/pilot', {
+    seriesCode: body.seriesCode ?? 'FAMIXA',
+    graph: body.graph,
+  });
+  return data;
+}
+
+export async function fetchContentSeriesVoices() {
+  const { data } = await http.get<ContentSeriesVoice[]>('/content/series/voices', { timeout: 60_000 });
+  return data;
+}
+
+function looksLikeScreenplayTts(text: string) {
+  const s = text.trim();
+  if (s.split(/\r?\n/).filter(Boolean).length >= 4) return true;
+  if (/VIDEO ID:|07\.\s*SCRIPT/i.test(s)) return true;
+  if (/(?:^|\n)(?:SC|SCENE)\s*0*\d+\b/i.test(s) && s.length > 40) return true;
+  if (/\n(?:MINH|NAM|LINH|BỐ|MẸ)\s*:/i.test(s) && s.length > 60) return true;
+  return false;
+}
+
+export async function previewContentSeriesTts(body: {
+  voiceId: string;
+  text: string;
+  publicOwnerId?: string;
+  voiceName?: string;
+  stability?: number;
+  similarityBoost?: number;
+  style?: number;
+  speed?: number;
+}) {
+  const spoken = (body.text ?? '').trim();
+  if (spoken.length < 1) throw new Error('Câu thoại quá ngắn để đọc.');
+  if (looksLikeScreenplayTts(spoken)) {
+    throw new Error('TTS chỉ nhận Voice Script (thoại CHAR). Không gửi heading/cảnh/action.');
+  }
+  const voiceId = (body.voiceId ?? '').trim();
+  if (voiceId.length < 8) throw new Error('Chưa gán Voice Canon ElevenLabs.');
+  try {
+    const { data, headers } = await http.post<Blob>(
+      '/content/series/tts',
+      {
+        voiceId,
+        text: spoken,
+        publicOwnerId: body.publicOwnerId,
+        voiceName: body.voiceName,
+        voiceSettings: {
+          stability: body.stability,
+          similarityBoost: body.similarityBoost,
+          style: body.style,
+          speed: body.speed,
+        },
+      },
+      {
+        responseType: 'blob',
+        timeout: 60_000,
+      },
+    );
+    const type = String(headers['content-type'] ?? data.type ?? '');
+    if (type.includes('json') || (data.size < 80 && !type.includes('audio'))) {
+      throw new Error(await readBlobMessage(data));
+    }
+    return data;
+  } catch (e) {
+    if (isAxiosError(e) && e.response?.data instanceof Blob) {
+      throw new Error(await readBlobMessage(e.response.data));
+    }
+    throw e;
+  }
+}
+
+async function readBlobMessage(blob: Blob) {
+  const raw = await blob.text();
+  let message = raw || 'Không tạo được tiếng.';
+  try {
+    const parsed = JSON.parse(raw) as { message?: string; title?: string };
+    message = (parsed.message || parsed.title || message).trim();
+  } catch {
+    /* keep raw */
+  }
+  return message;
 }
 
 export type ContentFacebookTestResult = {
@@ -868,6 +1052,28 @@ export async function createContentPool(body: {
   const { data } = await http.post<{ packages: ContentPackage[]; message?: string | null }>(
     '/content/packages/pool',
     body,
+  );
+  return data;
+}
+
+export type ContentPoolSuggestion = {
+  title: string;
+  insight?: string | null;
+  problem?: string | null;
+  coreMessage?: string | null;
+  whyNext?: string | null;
+  fromTitle?: string | null;
+  fromPackageId?: string | null;
+  gap?: string | null;
+  suggestedBrands?: string | null;
+  factOrOpinion?: string | null;
+};
+
+export async function suggestContentPool(body?: { limit?: number; packageIds?: string[] }) {
+  const { data } = await http.post<{ ideas: ContentPoolSuggestion[]; message?: string | null }>(
+    '/content/packages/pool/suggest',
+    body ?? { limit: 4 },
+    { timeout: 180_000 },
   );
   return data;
 }

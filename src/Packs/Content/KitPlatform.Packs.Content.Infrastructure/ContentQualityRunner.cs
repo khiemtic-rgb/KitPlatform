@@ -44,10 +44,12 @@ internal static class ContentQualityRunner
         throw new InvalidOperationException(ContentQualityGate.RefuseApprove(issues));
     }
 
-    public static void ThrowIfCannotPublish(ContentQualityGateDto gate)
+    public static void ThrowIfCannotPublish(ContentQualityGateDto gate, string? connectorType = null)
     {
-        if (gate.CanPublish) return;
-        var issues = gate.BlockingIssues is { Count: > 0 } ? gate.BlockingIssues : gate.Issues;
+        var issues = ContentQualityGate.SelectPublishBlocking(
+            gate.BlockingIssues is { Count: > 0 } ? gate.BlockingIssues : gate.Issues,
+            connectorType);
+        if (issues.Count == 0) return;
         throw new InvalidOperationException(ContentQualityGate.RefusePublish(issues));
     }
 }

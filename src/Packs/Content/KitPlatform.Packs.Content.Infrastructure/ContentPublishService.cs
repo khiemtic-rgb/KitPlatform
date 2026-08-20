@@ -75,7 +75,7 @@ internal sealed class ContentPublishService : IContentPublishService
                 throw new InvalidOperationException("Chưa có bản viết — bấm Nhờ AI trước khi xuất bản.");
         }
 
-        await EnforceQualityGateAsync(topicId, topic, cancellationToken);
+        await EnforceQualityGateAsync(topicId, topic, cancellationToken, connectorType: "mixed");
 
         var publishAt = request.PublishAt ?? topic.DisplayAt;
         _ephemeral = null;
@@ -218,8 +218,12 @@ internal sealed class ContentPublishService : IContentPublishService
     private async Task EnforceQualityGateAsync(
         Guid topicId,
         ContentRepository.TopicRow topic,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? connectorType = null)
     {
+        if (ContentQualityGate.RequiresWebStructure(connectorType))
+            await RepairWebLongHeadingsAsync(topicId, cancellationToken);
+
         var packageId = await _repo.GetPackageIdByTopicAsync(topicId, cancellationToken);
         if (packageId is Guid pid)
         {
@@ -227,7 +231,7 @@ internal sealed class ContentPublishService : IContentPublishService
             if (package is null) return;
             var gate = await ContentQualityRunner.EvaluateAsync(_repo, package, cancellationToken);
             await ContentQualityRunner.PersistAsync(_repo, package.Id, package.ExtraJson, gate, cancellationToken);
-            ContentQualityRunner.ThrowIfCannotPublish(gate);
+            ContentQualityRunner.ThrowIfCannotPublish(gate, connectorType);
             return;
         }
 
@@ -241,7 +245,25 @@ internal sealed class ContentPublishService : IContentPublishService
             topic.Title,
             variants.Select(v => (v.Kind, v.BodyMarkdown)).ToList(),
             brand.Name);
-        ContentQualityRunner.ThrowIfCannotPublish(legacy);
+        ContentQualityRunner.ThrowIfCannotPublish(legacy, connectorType);
+    }
+
+    private async Task RepairWebLongHeadingsAsync(Guid topicId, CancellationToken cancellationToken)
+    {
+        var variants = await _repo.ListVariantsAsync(topicId, cancellationToken);
+        var web = variants.FirstOrDefault(v =>
+            string.Equals(v.Kind, "web_long", StringComparison.OrdinalIgnoreCase));
+        if (web is null) return;
+        if (ContentQualityGate.CountMarkdownH2(web.BodyMarkdown) >= 2) return;
+        var fixedBody = ContentWebLongRepair.EnsureHeadings(web.BodyMarkdown);
+        if (string.Equals(fixedBody, web.BodyMarkdown, StringComparison.Ordinal)) return;
+        await _repo.UpsertVariantAsync(
+            topicId,
+            "web_long",
+            web.Title,
+            fixedBody,
+            string.IsNullOrWhiteSpace(web.MetaJson) ? "{}" : web.MetaJson,
+            cancellationToken);
     }
 
     public async Task<ContentPublishJobDto?> RunJobAsync(
@@ -303,7 +325,7 @@ internal sealed class ContentPublishService : IContentPublishService
             var topic = await _repo.GetTopicAsync(job.TopicId, cancellationToken)
                         ?? throw new InvalidOperationException("Topic missing");
             if (!string.Equals(job.ConnectorType, "manual", StringComparison.OrdinalIgnoreCase))
-                await EnforceQualityGateAsync(job.TopicId, topic, cancellationToken);
+                await EnforceQualityGateAsync(job.TopicId, topic, cancellationToken, job.ConnectorType);
             var variants = await _repo.ListVariantsAsync(job.TopicId, cancellationToken);
             var assets = await _repo.ListAssetsAsync(job.TopicId, cancellationToken);
             var selected = assets.FirstOrDefault(a => a.IsSelected) ?? assets.FirstOrDefault();
@@ -940,20 +962,6 @@ internal sealed class ContentPublishService : IContentPublishService
                 imagePublicPath = $"/images/insights/{slug}.{ext}";
                 imageBytes = media.Bytes;
             }
-            else
-            {
-                var imageDir = GetConfigString(cfg, "imagePath")?.TrimEnd('/');
-                if (!string.IsNullOrWhiteSpace(imageDir))
-                {
-                    imageRepoPath = $"{imageDir}/{slug}.{ext}";
-                    var pub = imageDir.Replace('\\', '/');
-                    var idx = pub.IndexOf("/public/", StringComparison.OrdinalIgnoreCase);
-                    imagePublicPath = idx >= 0
-                        ? pub[(idx + "/public".Length)..] + $"/{slug}.{ext}"
-                        : $"/images/{slug}.{ext}";
-                    imageBytes = media.Bytes;
-                }
-            }
         }
 
         string filePath;
@@ -964,6 +972,7 @@ internal sealed class ContentPublishService : IContentPublishService
 
         if (isPharmacyKienThuc)
         {
+            // xuanhoa.novixa.vn — Astro collection kien-thuc
             filePath = $"{contentPath}/{slug}.md";
             commitPrefix = "content(xuanhoa)";
             var category = GetConfigString(cfg, "newsCategory")

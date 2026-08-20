@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { App, Button, Card, Checkbox, Input, Select, Space, Table, Tag, Typography } from 'antd';
-import { ClusterOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { App, Button, Card, Checkbox, Input, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
+import { ClusterOutlined, PlusOutlined, ReloadOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
   analyzeContentPool,
@@ -9,9 +9,11 @@ import {
   createContentPool,
   fetchContentBrands,
   fetchContentPackages,
+  suggestContentPool,
   type ContentBrand,
   type ContentBrandFit,
   type ContentPackage,
+  type ContentPoolSuggestion,
 } from '@/shared/api/content.api';
 
 type CellKey = string;
@@ -57,6 +59,10 @@ export function ContentIdeaPoolPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [picked, setPicked] = useState<Record<CellKey, boolean>>({});
   const [generateFits, setGenerateFits] = useState(false);
+  const [tab, setTab] = useState('pool');
+  const [suggestions, setSuggestions] = useState<ContentPoolSuggestion[]>([]);
+  const [suggestMsg, setSuggestMsg] = useState<string>();
+  const [pickedSuggest, setPickedSuggest] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -157,6 +163,55 @@ export function ContentIdeaPoolPage() {
 
   const scoredCount = matrixRows.filter((p) => (p.brandFits ?? []).length > 0).length;
 
+  const onSuggest = async () => {
+    setBusy(true);
+    try {
+      const res = await suggestContentPool({
+        limit: 4,
+        packageIds: selectedIds.length > 0 ? selectedIds : undefined,
+      });
+      setSuggestions(res.ideas ?? []);
+      setPickedSuggest([]);
+      setSuggestMsg(res.message ?? undefined);
+      setTab('suggest');
+      message.success(res.message ?? `Gợi ý ${res.ideas?.length ?? 0} ý tiếp`);
+    } catch (e) {
+      message.error(apiErrorMessage(e, 'Gợi ý thất bại'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onAddSuggestions = async () => {
+    const ideas = suggestions.filter((s) => pickedSuggest.includes(s.title));
+    if (ideas.length === 0) {
+      message.warning('Tick ít nhất một gợi ý để thêm vào pool');
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await createContentPool({
+        homeBrandId,
+        ideas: ideas.map((s) => ({
+          title: s.title,
+          insight: s.insight ?? undefined,
+          problem: s.problem ?? undefined,
+          coreMessage: s.coreMessage ?? undefined,
+          factOrOpinion: s.factOrOpinion ?? undefined,
+        })),
+      });
+      message.success(res.message ?? `Đã thêm ${res.packages.length} ý vào pool`);
+      setSelectedIds(res.packages.map((p) => p.id));
+      setPickedSuggest([]);
+      setTab('pool');
+      await load();
+    } catch (e) {
+      message.error(apiErrorMessage(e, 'Thêm gợi ý thất bại'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const onApply = async () => {
     if (plannedItems.length === 0) {
       message.warning(
@@ -189,12 +244,15 @@ export function ContentIdeaPoolPage() {
             Idea Pool
           </Typography.Title>
           <Typography.Text type="secondary">
-            Nghĩ ý tưởng gốc — AI chấm Fit từng brand. Không ép 1 idea × 6 bài. Bạn chỉ duyệt ô nào dùng.
+            Nghĩ ý tưởng gốc — gợi ý ý tiếp từ catalog đã có, rồi chấm Fit. Không ép 1 idea × 6 bài.
           </Typography.Text>
         </div>
         <Space wrap>
           <Button icon={<ReloadOutlined />} onClick={() => void load()}>
             Tải lại
+          </Button>
+          <Button icon={<ThunderboltOutlined />} loading={busy} onClick={() => void onSuggest()}>
+            Gợi ý từ ý đã có
           </Button>
           <Button icon={<ClusterOutlined />} loading={busy} onClick={() => void onAnalyze()}>
             Chấm Brand Fit
@@ -210,6 +268,15 @@ export function ContentIdeaPoolPage() {
         </Space>
       </div>
 
+      <Tabs
+        activeKey={tab}
+        onChange={setTab}
+        items={[
+          {
+            key: 'pool',
+            label: `Ý đã có (${cores.length})`,
+            children: (
+              <>
       <Card size="small" style={{ marginBottom: 16 }}>
         <Space direction="vertical" style={{ width: '100%' }} size={12}>
           <Space wrap>
@@ -321,6 +388,96 @@ export function ContentIdeaPoolPage() {
               );
             },
           })),
+        ]}
+      />
+              </>
+            ),
+          },
+          {
+            key: 'suggest',
+            label: `Gợi ý tiếp (${suggestions.length})`,
+            children: (
+              <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                  AI đọc catalog gốc (và hàng bạn tick ở tab Ý đã có) rồi đề xuất ý <strong>tiếp theo</strong> —
+                  cùng hệ, góc khác. Tick rồi thêm vào pool. Không tự tạo góc / không đăng.
+                </Typography.Paragraph>
+                {suggestMsg ? (
+                  <Typography.Text type="secondary">{suggestMsg}</Typography.Text>
+                ) : null}
+                <Space wrap>
+                  <Button
+                    type="primary"
+                    icon={<ThunderboltOutlined />}
+                    loading={busy}
+                    onClick={() => void onSuggest()}
+                  >
+                    {suggestions.length > 0 ? 'Gợi ý lại' : 'Gợi ý từ ý đã có'}
+                  </Button>
+                  <Button
+                    icon={<PlusOutlined />}
+                    loading={busy}
+                    disabled={pickedSuggest.length === 0}
+                    onClick={() => void onAddSuggestions()}
+                  >
+                    Thêm {pickedSuggest.length} ý đã chọn vào pool
+                  </Button>
+                </Space>
+                <Table
+                  rowKey="title"
+                  loading={busy && suggestions.length === 0}
+                  dataSource={suggestions}
+                  pagination={false}
+                  locale={{ emptyText: 'Bấm Gợi ý từ ý đã có — cần ít nhất 1 ý gốc trong pool.' }}
+                  rowSelection={{
+                    selectedRowKeys: pickedSuggest,
+                    onChange: (keys) => setPickedSuggest(keys.map(String)),
+                  }}
+                  columns={[
+                    {
+                      title: 'Gợi ý tiếp',
+                      dataIndex: 'title',
+                      width: 240,
+                      render: (title: string, row: ContentPoolSuggestion) => (
+                        <div>
+                          <Typography.Text strong>{title}</Typography.Text>
+                          {row.insight ? (
+                            <Typography.Paragraph type="secondary" style={{ margin: '4px 0 0', fontSize: 12 }}>
+                              {row.insight}
+                            </Typography.Paragraph>
+                          ) : null}
+                        </div>
+                      ),
+                    },
+                    {
+                      title: 'Từ ý đã có',
+                      dataIndex: 'fromTitle',
+                      width: 200,
+                      render: (v: string | null | undefined) => v || '—',
+                    },
+                    {
+                      title: 'Lỗ chưa nói',
+                      dataIndex: 'gap',
+                      width: 200,
+                      render: (v: string | null | undefined) => v || '—',
+                    },
+                    {
+                      title: 'Vì sao liền mạch',
+                      dataIndex: 'whyNext',
+                      width: 240,
+                      render: (v: string | null | undefined) => v || '—',
+                    },
+                    {
+                      title: 'Brand gợi ý',
+                      dataIndex: 'suggestedBrands',
+                      width: 140,
+                      render: (v: string | null | undefined) => v || '—',
+                    },
+                  ]}
+                />
+              </Space>
+            ),
+          },
         ]}
       />
     </div>

@@ -23,6 +23,10 @@ public sealed class ContentController : ControllerBase
     private readonly IContentOpsService _ops;
     private readonly IContentWorkQueueService _work;
     private readonly IContentFacebookConnectionService _facebook;
+    private readonly IContentSeriesTurboService _seriesTurbo;
+    private readonly IContentSeriesStillService _seriesStill;
+    private readonly IContentSeriesScriptDraftService _seriesDraft;
+    private readonly IContentSeriesPilotService _seriesPilot;
 
     public ContentController(
         IContentOrgSettingsService settings,
@@ -33,7 +37,11 @@ public sealed class ContentController : ControllerBase
         IContentVideoService videos,
         IContentOpsService ops,
         IContentWorkQueueService work,
-        IContentFacebookConnectionService facebook)
+        IContentFacebookConnectionService facebook,
+        IContentSeriesTurboService seriesTurbo,
+        IContentSeriesStillService seriesStill,
+        IContentSeriesScriptDraftService seriesDraft,
+        IContentSeriesPilotService seriesPilot)
     {
         _settings = settings;
         _brands = brands;
@@ -44,6 +52,10 @@ public sealed class ContentController : ControllerBase
         _ops = ops;
         _work = work;
         _facebook = facebook;
+        _seriesTurbo = seriesTurbo;
+        _seriesStill = seriesStill;
+        _seriesDraft = seriesDraft;
+        _seriesPilot = seriesPilot;
     }
 
     [HttpGet("ops")]
@@ -100,6 +112,147 @@ public sealed class ContentController : ControllerBase
     [HttpPost("video/test")]
     public async Task<ActionResult<ContentVideoTestResultDto>> TestVideo(CancellationToken cancellationToken) =>
         Ok(await _settings.TestVideoAsync(cancellationToken));
+
+    [HttpPost("series/turbo")]
+    public async Task<ActionResult<ContentSeriesTurboTaskDto>> StartSeriesTurbo(
+        [FromBody] ContentSeriesTurboStartRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _seriesTurbo.StartAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("series/script-draft")]
+    public async Task<ActionResult<ContentSeriesScriptDraftDto>> DraftSeriesScript(
+        [FromBody] ContentSeriesScriptDraftRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _seriesDraft.DraftAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("series/turbo/{taskId}")]
+    public async Task<ActionResult<ContentSeriesTurboTaskDto>> GetSeriesTurbo(
+        string taskId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _seriesTurbo.GetAsync(taskId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("series/pilot")]
+    public async Task<ActionResult<ContentSeriesPilotDto>> GetSeriesPilot(
+        [FromQuery] string? code,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _seriesPilot.GetAsync(code ?? "FAMIXA", cancellationToken));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPut("series/pilot")]
+    public async Task<ActionResult<ContentSeriesPilotDto>> PutSeriesPilot(
+        [FromBody] UpsertContentSeriesPilotRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _seriesPilot.UpsertAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("series/voices")]
+    public async Task<ActionResult<IReadOnlyList<ContentSeriesVoiceDto>>> ListSeriesVoices(
+        CancellationToken cancellationToken) =>
+        Ok(await _seriesPilot.ListVoicesAsync(cancellationToken));
+
+    [HttpPost("series/still")]
+    public async Task<ActionResult<ContentSeriesStillDto>> GenerateSeriesStill(
+        [FromBody] ContentSeriesStillRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _seriesStill.GenerateAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("series/tts")]
+    public async Task<IActionResult> PreviewSeriesTts(
+        [FromBody] ContentSeriesTtsRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var bytes = await _seriesPilot.PreviewTtsAsync(
+                request.VoiceId,
+                request.Text,
+                request.PublicOwnerId,
+                request.VoiceName,
+                request.VoiceSettings,
+                cancellationToken);
+            return File(bytes, "audio/mpeg");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 
     [HttpPost("facebook/test")]
     public async Task<ActionResult<ContentFacebookTestResultDto>> TestFacebook(CancellationToken cancellationToken) =>
@@ -450,6 +603,21 @@ public sealed class ContentController : ControllerBase
         try
         {
             return Ok(await _work.EnqueueBrandAdaptBatchAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("packages/pool/suggest")]
+    public async Task<ActionResult<SuggestPoolIdeasResultDto>> SuggestPool(
+        [FromBody] SuggestPoolIdeasRequest? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _packages.SuggestPoolIdeasAsync(request ?? new SuggestPoolIdeasRequest(), cancellationToken));
         }
         catch (InvalidOperationException ex)
         {

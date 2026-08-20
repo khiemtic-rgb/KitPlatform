@@ -66,13 +66,8 @@ public static class ContentQualityGate
             {
                 if (len < 2200)
                     issues.Add("web_long: quá mỏng — cần bài một luận điểm, khoảng 800–1400 từ");
-                var h2 = 0;
-                foreach (var line in (v.Body ?? "").Split('\n'))
-                {
-                    if (line.TrimStart().StartsWith("## ", StringComparison.Ordinal)) h2++;
-                }
-                if (h2 < 2)
-                    issues.Add("web_long: thiếu mục ## — bài phải có 3 luận điểm, mỗi cái một H2");
+                if (CountMarkdownH2(v.Body) < 2)
+                    issues.Add("web_long: thiếu mục ## — cần ít nhất 2 heading ## (mỗi luận điểm một H2)");
             }
             if (kind == "group_suggested")
                 issues.AddRange(GroupShareIssues(v.Body ?? "", brain, brandName));
@@ -97,11 +92,24 @@ public static class ContentQualityGate
             SelectApproveBlocking(list));
     }
 
+    public static bool IsWebStructureIssue(string issue)
+    {
+        var t = issue ?? "";
+        return t.Contains("web_long: quá mỏng", StringComparison.OrdinalIgnoreCase)
+            || t.Contains("web_long: thiếu mục", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Website connectors need H2/length. Fanpage / manual do not.</summary>
+    public static bool RequiresWebStructure(string? connectorType)
+    {
+        var t = (connectorType ?? "").Trim().ToLowerInvariant();
+        return t is "wordpress_rest" or "astro_git";
+    }
+
     public static bool IsPublishBlocking(string issue)
     {
         var t = issue ?? "";
-        if (t.Contains("web_long: quá mỏng", StringComparison.OrdinalIgnoreCase)) return true;
-        if (t.Contains("web_long: thiếu mục", StringComparison.OrdinalIgnoreCase)) return true;
+        if (IsWebStructureIssue(t)) return true;
         if (t.Contains("Thiếu góc nhìn", StringComparison.OrdinalIgnoreCase)) return true;
         if (t.Contains("chưa có nguồn", StringComparison.OrdinalIgnoreCase)) return true;
         return t.Contains("dính claim cấm", StringComparison.OrdinalIgnoreCase);
@@ -111,8 +119,15 @@ public static class ContentQualityGate
         IsPublishBlocking(issue)
         || string.Equals(issue, BriefMissing, StringComparison.Ordinal);
 
-    public static IReadOnlyList<string> SelectPublishBlocking(IEnumerable<string> issues) =>
-        issues.Where(IsPublishBlocking).Distinct(StringComparer.Ordinal).ToList();
+    public static IReadOnlyList<string> SelectPublishBlocking(
+        IEnumerable<string> issues,
+        string? connectorType = null)
+    {
+        IEnumerable<string> list = issues.Where(IsPublishBlocking);
+        if (connectorType is not null && !RequiresWebStructure(connectorType))
+            list = list.Where(i => !IsWebStructureIssue(i));
+        return list.Distinct(StringComparer.Ordinal).ToList();
+    }
 
     public static IReadOnlyList<string> SelectApproveBlocking(IEnumerable<string> issues) =>
         issues.Where(IsApproveBlocking).Distinct(StringComparer.Ordinal).ToList();
@@ -126,6 +141,18 @@ public static class ContentQualityGate
 
     public static string RefusePublish(IReadOnlyList<string> issues) =>
         "Quality gate chặn đăng: " + string.Join("; ", issues.Take(5));
+
+    public static int CountMarkdownH2(string? body)
+    {
+        var n = 0;
+        foreach (var line in (body ?? "").Replace("\r\n", "\n").Split('\n'))
+        {
+            var t = line.TrimStart();
+            if (t.StartsWith("##", StringComparison.Ordinal) && !t.StartsWith("###", StringComparison.Ordinal))
+                n++;
+        }
+        return n;
+    }
 
     private static readonly string[] GroupPromoNeedles =
     [

@@ -29,6 +29,19 @@ internal sealed class ContentVideoConfigState
 
     [JsonPropertyName("creatomateTemplateId")]
     public string? CreatomateTemplateId { get; set; }
+
+    [JsonPropertyName("runwayApiKeySecretRef")]
+    public string? RunwayApiKeySecretRef { get; set; } = "RUNWAY_API_KEY";
+
+    /// <summary>Write-only stored key — never serialized into read DTOs.</summary>
+    [JsonPropertyName("runwayApiKey")]
+    public string? RunwayApiKey { get; set; }
+
+    [JsonPropertyName("falApiKeySecretRef")]
+    public string? FalApiKeySecretRef { get; set; } = "FAL_KEY";
+
+    [JsonPropertyName("falApiKey")]
+    public string? FalApiKey { get; set; }
 }
 
 internal sealed record ContentVideoResolved(
@@ -40,7 +53,13 @@ internal sealed record ContentVideoResolved(
     bool ElevenLabsConfigured,
     string? ElevenLabsApiKeySecretRef,
     string VoiceId,
-    string? PublicMediaBaseUrl);
+    string? PublicMediaBaseUrl,
+    string? RunwayApiKey,
+    bool RunwayConfigured,
+    string? RunwayApiKeySecretRef,
+    string? FalApiKey,
+    bool FalConfigured,
+    string? FalApiKeySecretRef);
 
 internal static class ContentVideoConfigParser
 {
@@ -79,7 +98,11 @@ internal static class ContentVideoConfigParser
             resolved.ElevenLabsConfigured,
             FirstNonEmpty(state.ElevenLabsVoiceId) ?? resolved.VoiceId,
             FirstNonEmpty(state.PublicMediaBaseUrl) ?? resolved.PublicMediaBaseUrl,
-            FirstNonEmpty(state.CreatomateTemplateId) ?? resolved.CreatomateTemplateId);
+            FirstNonEmpty(state.CreatomateTemplateId) ?? resolved.CreatomateTemplateId,
+            FirstNonEmpty(state.RunwayApiKeySecretRef) ?? resolved.RunwayApiKeySecretRef,
+            resolved.RunwayConfigured,
+            FirstNonEmpty(state.FalApiKeySecretRef) ?? resolved.FalApiKeySecretRef,
+            resolved.FalConfigured);
 
     public static ContentVideoResolved Resolve(
         ContentVideoConfigState state,
@@ -116,6 +139,20 @@ internal static class ContentVideoConfigParser
             FirstNonEmpty(state.CreatomateTemplateId)
             ?? FirstNonEmpty(configuration["Content:CreatomateTemplateId"]);
 
+        var runwayKey =
+            FirstNonEmpty(state.RunwayApiKey)
+            ?? ResolveSecret(state.RunwayApiKeySecretRef, configuration)
+            ?? FirstNonEmpty(options.RunwayApiKey)
+            ?? FirstNonEmpty(configuration["Content:RunwayApiKey"])
+            ?? FirstNonEmpty(Environment.GetEnvironmentVariable("RUNWAY_API_KEY"));
+
+        var falKey =
+            FirstNonEmpty(state.FalApiKey)
+            ?? ResolveSecret(state.FalApiKeySecretRef, configuration)
+            ?? FirstNonEmpty(options.FalApiKey)
+            ?? FirstNonEmpty(configuration["Content:FalApiKey"])
+            ?? FirstNonEmpty(Environment.GetEnvironmentVariable("FAL_KEY"));
+
         return new ContentVideoResolved(
             creatomateKey,
             !string.IsNullOrWhiteSpace(creatomateKey),
@@ -125,7 +162,13 @@ internal static class ContentVideoConfigParser
             !string.IsNullOrWhiteSpace(elevenKey),
             FirstNonEmpty(state.ElevenLabsApiKeySecretRef),
             voice,
-            publicBase);
+            publicBase,
+            runwayKey,
+            !string.IsNullOrWhiteSpace(runwayKey),
+            FirstNonEmpty(state.RunwayApiKeySecretRef),
+            falKey,
+            !string.IsNullOrWhiteSpace(falKey),
+            FirstNonEmpty(state.FalApiKeySecretRef));
     }
 
     private static string? ResolveSecret(string? secretRef, IConfiguration configuration)

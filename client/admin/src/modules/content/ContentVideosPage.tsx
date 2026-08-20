@@ -22,7 +22,9 @@ import {
 import { Link } from 'react-router-dom';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { CONTENT_NAV_SETUP } from '@/modules/content/content-nav';
+import { ContentFamixaSeriesTab } from '@/modules/content/ContentFamixaSeriesTab';
 import { ContentVideoLabTab } from '@/modules/content/ContentVideoLabTab';
+import '@/modules/content/content-famixa-studio.css';
 import {
   approveContentVideoJob,
   createContentVideoJobFromPackage,
@@ -148,6 +150,7 @@ export function ContentVideosPage() {
   const [busy, setBusy] = useState(false);
   const [creatomateConfigured, setCreatomateConfigured] = useState(false);
   const [elevenLabsConfigured, setElevenLabsConfigured] = useState(false);
+  const [mainTab, setMainTab] = useState('series');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -313,7 +316,8 @@ export function ContentVideosPage() {
   const storyboard = detail ? parseStoryboard(detail.storyboardJson) : [];
 
   return (
-    <div>
+    <div className={mainTab === 'series' ? 'fx-videos fx-videos--studio' : 'fx-videos'}>
+      {mainTab === 'series' ? null : (
       <div
         style={{
           display: 'flex',
@@ -331,8 +335,8 @@ export function ContentVideosPage() {
             </Space>
           </Typography.Title>
           <Typography.Text type="secondary">
-            Lab Phase 1 = bảng sản xuất (QUAY / AI / SCREEN / ASSET). Tab Factory = job từ góc brand
-            (storyboard 9:16 — không thay bảng lab).
+            Series Famixa = Pha 0–1 (shot dài tập). Lab = video ngắn đa brand. Factory = job từ góc
+            brand (9:16). Không trộn ba tab.
           </Typography.Text>
           <div style={{ marginTop: 8 }}>
             <Space size={4} wrap>
@@ -360,10 +364,13 @@ export function ContentVideosPage() {
           </div>
         </div>
       </div>
+      )}
 
       <Tabs
-        defaultActiveKey="lab"
+        activeKey={mainTab}
+        onChange={setMainTab}
         items={[
+          { key: 'series', label: 'Series Famixa — EP01', children: <ContentFamixaSeriesTab /> },
           { key: 'lab', label: 'Phase 1 — bảng sản xuất', children: <ContentVideoLabTab /> },
           {
             key: 'factory',

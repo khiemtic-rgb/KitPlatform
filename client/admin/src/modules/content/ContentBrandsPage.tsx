@@ -278,6 +278,9 @@ function buildConfigJson(kind: string, v: Record<string, unknown>): string {
     const path = typeof base.contentPath === 'string' ? base.contentPath.toLowerCase() : '';
     if (path.includes('insights')) base.contentFormat = 'insights';
     if (path.includes('famixa-site')) base.contentFormat = 'famixa';
+    if (path.includes('pharmacy-storefront') || path.includes('kien-thuc')) {
+      base.contentFormat = 'pharmacy';
+    }
   }
   if (kind === 'channel:facebook_group') {
     const parsed = parseFbGroupRef(
@@ -1706,9 +1709,13 @@ export function ContentBrandsPage() {
                             type="info"
                             showIcon
                             style={{ marginBottom: 12 }}
-                            message="Ba website Git"
+                            message="Bốn website Git"
                             description={
                               <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                                <li>
+                                  <b>xuanhoa.novixa.vn</b> — repo <code>KitPlatform</code>, path{' '}
+                                  <code>client/pharmacy-storefront/src/content/kien-thuc</code>
+                                </li>
                                 <li>
                                   <b>novixa.vn</b> — repo <code>KitPlatform</code>, path{' '}
                                   <code>novixa-site/src/content/tin-tuc</code>
@@ -1754,14 +1761,14 @@ export function ContentBrandsPage() {
                           <Form.Item
                             name="gitContentPath"
                             label="Thư mục bài viết"
-                            extra="Novixa: novixa-site/src/content/tin-tuc · Famixa: famixa-site/content/blog · Kittech: src/content/insights"
+                            extra="Xuân Hòa: client/pharmacy-storefront/src/content/kien-thuc · Novixa: novixa-site/src/content/tin-tuc · Famixa: famixa-site/content/blog · Kittech: src/content/insights"
                           >
                             <Input placeholder="famixa-site/content/blog" />
                           </Form.Item>
                           <Form.Item
                             name="gitImagePath"
                             label="Thư mục ảnh (tùy chọn)"
-                            extra="Famixa: famixa-site/public/images/blog · Kittech: public/images/insights · Novixa: novixa-site/public/images/tin-tuc"
+                            extra="Xuân Hòa: client/pharmacy-storefront/public/images/kien-thuc · Famixa: famixa-site/public/images/blog · Kittech: public/images/insights · Novixa: novixa-site/public/images/tin-tuc"
                           >
                             <Input placeholder="famixa-site/public/images/blog" />
                           </Form.Item>

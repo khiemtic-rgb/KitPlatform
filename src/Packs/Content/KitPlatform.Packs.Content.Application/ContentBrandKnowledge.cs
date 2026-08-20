@@ -180,6 +180,35 @@ public static class ContentBrandKnowledge
         return sb.ToString().Trim();
     }
 
+    /// <summary>Script draft: full brain, clipped. Never dump source PDFs.</summary>
+    public static string FormatForSeriesDraft(ContentBrandKnowledgeDto k, string? operationalBrief, int maxChars = 4500)
+    {
+        var text = FormatForPrompt(k, operationalBrief);
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        text += "\n\nApply this locked Famixa knowledge. Do not reinvent the brand, philosophy, or characters.";
+        return text.Length <= maxChars ? text : text[..maxChars].TrimEnd() + "…";
+    }
+
+    /// <summary>I2V slice only — visual + forbidden. English, short.</summary>
+    public static string FormatForVideoContext(ContentBrandKnowledgeDto k, int maxChars = 360)
+    {
+        var bits = new List<string>();
+        if (!string.IsNullOrWhiteSpace(k.VisualStyle)) bits.Add(k.VisualStyle.Trim());
+        if (!string.IsNullOrWhiteSpace(k.VisualColors)) bits.Add(k.VisualColors.Trim());
+        var forbid = k.ClaimsForbidden
+            .Concat(k.ForbiddenTopics)
+            .Concat(k.AvoidTerms)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(6)
+            .ToList();
+        if (forbid.Count > 0) bits.Add("Forbidden: " + string.Join("; ", forbid));
+        bits.Add("No looking at the camera. No extra people. Do not change faces, age, clothes or location.");
+        var text = string.Join(". ", bits);
+        return text.Length <= maxChars ? text : text[..Math.Max(0, maxChars - 1)].TrimEnd() + "…";
+    }
+
     private static void Append(StringBuilder sb, string label, string? value)
     {
         if (string.IsNullOrWhiteSpace(value)) return;

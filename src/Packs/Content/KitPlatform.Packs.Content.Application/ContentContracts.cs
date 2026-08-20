@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace KitPlatform.Packs.Content;
 
 public sealed record ContentOrgSettingsDto(
@@ -33,7 +35,11 @@ public sealed record ContentVideoConfigDto(
     bool ElevenLabsConfigured,
     string? ElevenLabsVoiceId,
     string? PublicMediaBaseUrl,
-    string? CreatomateTemplateId);
+    string? CreatomateTemplateId,
+    string? RunwayApiKeySecretRef,
+    bool RunwayConfigured,
+    string? FalApiKeySecretRef,
+    bool FalConfigured);
 
 public sealed record UpdateContentOrgSettingsRequest(
     decimal? MonthlyCeilingUsd,
@@ -78,7 +84,11 @@ public sealed record UpdateContentVideoConfigRequest(
     string? ElevenLabsApiKey,
     string? ElevenLabsVoiceId,
     string? PublicMediaBaseUrl,
-    string? CreatomateTemplateId);
+    string? CreatomateTemplateId,
+    string? RunwayApiKeySecretRef,
+    string? RunwayApiKey,
+    string? FalApiKeySecretRef,
+    string? FalApiKey);
 
 public sealed record ContentVideoTestResultDto(
     bool CreatomateOk,
@@ -87,7 +97,109 @@ public sealed record ContentVideoTestResultDto(
     bool ElevenLabsOk,
     string? ElevenLabsMessage,
     bool ElevenLabsConfigured,
-    string? VoiceId);
+    string? VoiceId,
+    bool RunwayOk,
+    string? RunwayMessage,
+    bool RunwayConfigured,
+    bool FalOk,
+    string? FalMessage,
+    bool FalConfigured);
+
+public sealed record ContentSeriesTurboStartRequest(
+    string ClipId,
+    string Prompt,
+    string? NegativePrompt,
+    string? ImageDataUrl,
+    int Seconds,
+    string Ratio,
+    string? Engine);
+
+public sealed record ContentSeriesTurboTaskDto(
+    string TaskId,
+    string Status,
+    string? VideoUrl,
+    string? Error,
+    bool UsedPlaceholderImage,
+    string Model,
+    int Seconds);
+
+public sealed record ContentSeriesStillRefDto(
+    string Name,
+    string ImageDataUrl,
+    string? Role = null);
+
+public sealed record ContentSeriesStillRequest(
+    string Prompt,
+    string Aspect,
+    IReadOnlyList<ContentSeriesStillRefDto> References);
+
+public sealed record ContentSeriesStillDto(
+    string ImageDataUrl,
+    string Model,
+    string Aspect);
+
+public sealed record ContentSeriesScriptDraftRequest(
+    string Seed,
+    string? CharactersHint,
+    string? EpisodeHint,
+    Guid? BrandId);
+
+public sealed record ContentSeriesScriptDraftDto(
+    string Pack,
+    string Model,
+    decimal EstimatedUsd,
+    string CostNote,
+    bool UsedBrandBrain,
+    string? BrandCode);
+
+public sealed record ContentSeriesPilotDto(
+    string SeriesCode,
+    JsonElement Graph,
+    DateTimeOffset UpdatedAt);
+
+public sealed record UpsertContentSeriesPilotRequest(
+    string SeriesCode,
+    JsonElement Graph);
+
+public sealed record ContentSeriesVoiceDto(
+    string VoiceId,
+    string Name,
+    string? Category = null,
+    bool Cloned = false,
+    bool Vietnamese = false,
+    string? PublicOwnerId = null,
+    string? Gender = null,
+    string? Age = null,
+    string? Accent = null);
+
+public sealed record ContentSeriesTtsVoiceSettings(
+    double? Stability = null,
+    double? SimilarityBoost = null,
+    double? Style = null,
+    double? Speed = null);
+
+public sealed record ContentSeriesTtsRequest(
+    string VoiceId,
+    string Text,
+    string? PublicOwnerId = null,
+    string? VoiceName = null,
+    ContentSeriesTtsVoiceSettings? VoiceSettings = null);
+
+public interface IContentSeriesPilotService
+{
+    Task<ContentSeriesPilotDto> GetAsync(string seriesCode, CancellationToken cancellationToken = default);
+    Task<ContentSeriesPilotDto> UpsertAsync(
+        UpsertContentSeriesPilotRequest request,
+        CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ContentSeriesVoiceDto>> ListVoicesAsync(CancellationToken cancellationToken = default);
+    Task<byte[]> PreviewTtsAsync(
+        string voiceId,
+        string text,
+        string? publicOwnerId = null,
+        string? voiceName = null,
+        ContentSeriesTtsVoiceSettings? voiceSettings = null,
+        CancellationToken cancellationToken = default);
+}
 
 public sealed record ContentFacebookConfigDto(
     string? AppId,
@@ -461,6 +573,26 @@ public sealed record ApplyPoolFitsResultDto(
     IReadOnlyList<ContentBrandFitDto> Fits,
     string? Message);
 
+public sealed record SuggestPoolIdeasRequest(
+    int Limit = 6,
+    IReadOnlyList<Guid>? PackageIds = null);
+
+public sealed record SuggestPoolIdeaDto(
+    string Title,
+    string? Insight,
+    string? Problem,
+    string? CoreMessage,
+    string? WhyNext,
+    string? FromTitle,
+    Guid? FromPackageId,
+    string? Gap,
+    string? SuggestedBrands,
+    string? FactOrOpinion);
+
+public sealed record SuggestPoolIdeasResultDto(
+    IReadOnlyList<SuggestPoolIdeaDto> Ideas,
+    string? Message);
+
 public sealed record AdaptContentPackageRequest(
     Guid TargetBrandId,
     string? Title,
@@ -513,6 +645,29 @@ public interface IContentOrgSettingsService
     Task<ContentAiTestResultDto> TestAiAsync(CancellationToken cancellationToken = default);
     Task<ContentVideoTestResultDto> TestVideoAsync(CancellationToken cancellationToken = default);
     Task<ContentFacebookTestResultDto> TestFacebookAsync(CancellationToken cancellationToken = default);
+}
+
+public interface IContentSeriesTurboService
+{
+    Task<ContentSeriesTurboTaskDto> StartAsync(
+        ContentSeriesTurboStartRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<ContentSeriesTurboTaskDto> GetAsync(string taskId, CancellationToken cancellationToken = default);
+}
+
+public interface IContentSeriesStillService
+{
+    Task<ContentSeriesStillDto> GenerateAsync(
+        ContentSeriesStillRequest request,
+        CancellationToken cancellationToken = default);
+}
+
+public interface IContentSeriesScriptDraftService
+{
+    Task<ContentSeriesScriptDraftDto> DraftAsync(
+        ContentSeriesScriptDraftRequest request,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IContentFacebookConnectionService
@@ -614,6 +769,10 @@ public interface IContentPackageService
 
     Task<ApplyPoolFitsResultDto> ApplyPoolFitsAsync(
         ApplyPoolFitsRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<SuggestPoolIdeasResultDto> SuggestPoolIdeasAsync(
+        SuggestPoolIdeasRequest request,
         CancellationToken cancellationToken = default);
 
     Task<ContentPackageDto?> ApproveAsync(Guid id, CancellationToken cancellationToken = default);
@@ -752,6 +911,12 @@ public sealed class ContentOptions
 
     /// <summary>Optional Creatomate API key. Falls back to env CREATOMATE_API_KEY.</summary>
     public string? CreatomateApiKey { get; set; }
+
+    /// <summary>Optional Runway API key (Famixa Series Turbo test). Falls back to env RUNWAY_API_KEY.</summary>
+    public string? RunwayApiKey { get; set; }
+
+    /// <summary>Optional Fal API key (Wan 2.1 I2V). Falls back to env FAL_KEY.</summary>
+    public string? FalApiKey { get; set; }
 
     /// <summary>Optional ElevenLabs API key. Falls back to env ELEVENLABS_API_KEY.</summary>
     public string? ElevenLabsApiKey { get; set; }

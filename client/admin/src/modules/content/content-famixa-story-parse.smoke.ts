@@ -1,0 +1,100 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { diagnoseEpisodeStory, isNonStoryLine, parseEpisodeStory } from './content-famixa-story-parse';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const golden = readFileSync(join(here, 'content-famixa-ep01-golden.txt'), 'utf8');
+const poisoned =
+  golden +
+  '\n\nSC10 — decomposition must not generate an arbitrary large number of shots.\nDO NOT copy SC01 into SC02.\n';
+
+const doc = parseEpisodeStory(poisoned);
+if (!doc) throw new Error('Golden EP01 failed to parse.');
+
+const fail: string[] = [];
+if (doc.scenes.length !== 7) {
+  fail.push(`expected 7 script scenes, got ${doc.scenes.map((s) => s.id + ':' + (s.title || '')).join(' | ')}`);
+}
+const titles = doc.scenes.map((s) => `${s.id} ${(s.title ?? '').toUpperCase()}`);
+for (const want of [
+  'LỜI HỨA',
+  'TIN NHẮN',
+  'SÁNG THỨ BẢY',
+  'KHÔNG SAO',
+  'MỘT NGÀY RẤT BÌNH THƯỜNG',
+  'BỐ VỀ',
+  'KẾT',
+]) {
+  if (!titles.some((t) => t.includes(want))) fail.push(`missing scene ${want}`);
+}
+if (doc.scenes.some((s) => s.id === 'SC10' || s.id === 'SC08')) fail.push('invented scenes beyond script');
+if (!/BỐ ĐỪNG HỨA NỮA/i.test(doc.episode.title || '')) fail.push(`wrong title: ${doc.episode.title}`);
+
+const dump = JSON.stringify(doc);
+if (/STORY INTENT|Không được diễn thành|EMOTIONAL END STATE|decomposition must not|BÀN ĂN|CUỘC TRÒ CHUYỆN/i.test(dump)) {
+  fail.push('other-script or instruction leaked into parsed graph');
+}
+
+const shotsByScene = new Map<string, number>();
+for (const s of doc.shots) {
+  const id = s.sceneId || s.scene || '';
+  shotsByScene.set(id, (shotsByScene.get(id) ?? 0) + 1);
+}
+for (const [id, n] of shotsByScene) {
+  if (n > 8) fail.push(`${id} exploded to ${n} shots`);
+}
+if (doc.shots.length > 56) fail.push(`too many shots: ${doc.shots.length}`);
+if (new Set(doc.shots.map((s) => s.shot)).size !== doc.shots.length) fail.push('shot codes reused');
+if (new Set(doc.shots.map((s) => s.id)).size !== doc.shots.length) fail.push('shot ids reused');
+if (!doc.shots.every((s) => s.id.startsWith('EP01-'))) fail.push('shot ids missing EP01 prefix');
+
+const byId = Object.fromEntries(doc.scenes.map((s) => [s.id, s]));
+const texts = (id: string) => (byId[id]?.dialogue ?? []).map((d) => d.text).join('\n');
+
+if (/thứ bảy bố nhớ|ngoắc tay|xem trận bóng/i.test(texts('SC02'))) fail.push('SC02 contains SC01 dialogue');
+if (/mai bố vẫn đi|sao chưa ngủ/i.test(texts('SC01'))) fail.push('SC01 contains SC02 dialogue');
+if (/lần sau bố đừng hứa/i.test(texts('SC01'))) fail.push('SC01 contains SC04 payoff');
+if (/con thích bố hứa|bố là bố con/i.test(texts('SC07'))) fail.push('SC07 contains SC06 dialogue');
+if (!/ngoắc tay/i.test(texts('SC01'))) fail.push('SC01 lost Ngoắc tay');
+if (!/mai bố vẫn đi với con/i.test(texts('SC02'))) fail.push('SC02 lost Mai bố vẫn đi');
+if (!/bố ơi/i.test(texts('SC03'))) fail.push('SC03 lost Bố ơi');
+if (!/lần sau bố đừng hứa nữa/i.test(texts('SC04'))) fail.push('SC04 lost the line');
+if ((byId.SC05?.dialogue?.length ?? 0) > 0) fail.push('SC05 invented dialogue');
+if (!/con thích bố hứa/i.test(texts('SC06'))) fail.push('SC06 lost Con thích bố hứa');
+if (!/không hứa những chuyện bố chưa chắc/i.test(texts('SC07'))) fail.push('SC07 lost the vow');
+
+if (doc.lines.length !== 71) fail.push(`expected 71 spoken lines, got ${doc.lines.length}`);
+const speakers = new Set(doc.lines.map((l) => l.characterId));
+if (speakers.size < 3) fail.push(`expected 3 speakers, got ${[...speakers].join(',')}`);
+
+fail.push(...diagnoseEpisodeStory(doc));
+if (!isNonStoryLine('SC10 — decomposition must not generate an arbitrary large number of shots.')) {
+  fail.push('instruction line not filtered');
+}
+
+if (fail.length) {
+  console.error('GOLDEN EP01 FAIL');
+  for (const f of fail) console.error(' -', f);
+  console.error(
+    JSON.stringify(
+      {
+        title: doc.episode.title,
+        scenes: doc.scenes.map((s) => ({
+          id: s.id,
+          title: s.title,
+          lines: (s.dialogue ?? []).map((d) => d.text),
+        })),
+        shots: doc.shots.map((s) => s.id),
+        lineN: doc.lines.length,
+        warnings: doc.warnings,
+      },
+      null,
+      2,
+    ),
+  );
+  process.exit(1);
+}
+console.log(
+  `GOLDEN EP01 PASS · ${doc.scenes.length} scenes · ${doc.shots.length} shots · ${doc.lines.length} lines · warnings=${doc.warnings.length}`,
+);

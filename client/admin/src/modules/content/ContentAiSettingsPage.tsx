@@ -60,6 +60,10 @@ type VideoFormValues = {
   elevenLabsVoiceId?: string;
   publicMediaBaseUrl?: string;
   creatomateTemplateId?: string;
+  runwayApiKeySecretRef?: string;
+  runwayApiKey?: string;
+  falApiKeySecretRef?: string;
+  falApiKey?: string;
 };
 
 const TEXT_MODEL_OPTS = [
@@ -113,6 +117,10 @@ function toVideoForm(video: ContentVideoConfig): VideoFormValues {
     elevenLabsVoiceId: video.elevenLabsVoiceId ?? '',
     publicMediaBaseUrl: video.publicMediaBaseUrl ?? '',
     creatomateTemplateId: video.creatomateTemplateId ?? '',
+    runwayApiKeySecretRef: video.runwayApiKeySecretRef ?? 'RUNWAY_API_KEY',
+    runwayApiKey: '',
+    falApiKeySecretRef: video.falApiKeySecretRef ?? 'FAL_KEY',
+    falApiKey: '',
   };
 }
 
@@ -134,6 +142,15 @@ export function ContentAiSettingsPage() {
   const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
   const [creatomateConfigured, setCreatomateConfigured] = useState(false);
   const [elevenLabsConfigured, setElevenLabsConfigured] = useState(false);
+  const [runwayConfigured, setRunwayConfigured] = useState(false);
+  const [falConfigured, setFalConfigured] = useState(false);
+  const [i2vChoice, setI2vChoice] = useState<'turbo' | 'wan'>(() =>
+    typeof localStorage !== 'undefined' && localStorage.getItem('kit.famixaSeries.engine') === 'wan' ? 'wan' : 'turbo',
+  );
+  const [voiceChoice, setVoiceChoice] = useState<'elevenlabs' | 'f5'>(() =>
+    typeof localStorage !== 'undefined' && localStorage.getItem('kit.famixaSeries.voice') === 'f5' ? 'f5' : 'elevenlabs',
+  );
+  const [renderChoice, setRenderChoice] = useState<'creatomate'>('creatomate');
   const [facebookConfigured, setFacebookConfigured] = useState(false);
   const [aiHint, setAiHint] = useState<string | null>(null);
   const [videoHint, setVideoHint] = useState<string | null>(null);
@@ -148,12 +165,21 @@ export function ContentAiSettingsPage() {
       const s = await fetchContentSettings();
       aiForm.setFieldsValue(toAiForm(s.ai));
       videoForm.setFieldsValue(
-        toVideoForm(s.video ?? { creatomateConfigured: false, elevenLabsConfigured: false }),
+        toVideoForm(
+          s.video ?? {
+            creatomateConfigured: false,
+            elevenLabsConfigured: false,
+            runwayConfigured: false,
+            falConfigured: false,
+          },
+        ),
       );
       facebookForm.setFieldsValue(toFacebookForm(s.facebook));
       setApiKeyConfigured(s.ai.apiKeyConfigured);
       setCreatomateConfigured(s.video?.creatomateConfigured ?? false);
       setElevenLabsConfigured(s.video?.elevenLabsConfigured ?? false);
+      setRunwayConfigured(s.video?.runwayConfigured ?? false);
+      setFalConfigured(s.video?.falConfigured ?? false);
       setFacebookConfigured(s.facebook?.appSecretConfigured ?? false);
     } catch (e) {
       message.error(apiErrorMessage(e, 'Không tải được cấu hình AI'));
@@ -207,6 +233,8 @@ export function ContentAiSettingsPage() {
       setSavingVideo(true);
       const creatomateKey = v.creatomateApiKey?.trim();
       const elevenKey = v.elevenLabsApiKey?.trim();
+      const runwayKey = v.runwayApiKey?.trim();
+      const falKey = v.falApiKey?.trim();
       const updated = await updateContentSettings({
         video: {
           creatomateApiKeySecretRef: v.creatomateApiKeySecretRef?.trim() || null,
@@ -214,15 +242,28 @@ export function ContentAiSettingsPage() {
           elevenLabsVoiceId: v.elevenLabsVoiceId?.trim() || null,
           publicMediaBaseUrl: v.publicMediaBaseUrl?.trim() || null,
           creatomateTemplateId: v.creatomateTemplateId?.trim() || null,
+          runwayApiKeySecretRef: v.runwayApiKeySecretRef?.trim() || null,
+          falApiKeySecretRef: v.falApiKeySecretRef?.trim() || null,
           ...(creatomateKey ? { creatomateApiKey: creatomateKey } : {}),
           ...(elevenKey ? { elevenLabsApiKey: elevenKey } : {}),
+          ...(runwayKey ? { runwayApiKey: runwayKey } : {}),
+          ...(falKey ? { falApiKey: falKey } : {}),
         },
       });
       videoForm.setFieldsValue(
-        toVideoForm(updated.video ?? { creatomateConfigured: false, elevenLabsConfigured: false }),
+        toVideoForm(
+          updated.video ?? {
+            creatomateConfigured: false,
+            elevenLabsConfigured: false,
+            runwayConfigured: false,
+            falConfigured: false,
+          },
+        ),
       );
       setCreatomateConfigured(updated.video?.creatomateConfigured ?? false);
       setElevenLabsConfigured(updated.video?.elevenLabsConfigured ?? false);
+      setRunwayConfigured(updated.video?.runwayConfigured ?? false);
+      setFalConfigured(updated.video?.falConfigured ?? false);
       message.success('Đã lưu cấu hình video');
     } catch (e) {
       if (e && typeof e === 'object' && 'errorFields' in e) return;
@@ -255,10 +296,13 @@ export function ContentAiSettingsPage() {
       const r = await testContentVideo();
       setCreatomateConfigured(r.creatomateConfigured);
       setElevenLabsConfigured(r.elevenLabsConfigured);
-      const parts = [r.creatomateMessage, r.elevenLabsMessage].filter(Boolean);
+      setRunwayConfigured(r.runwayConfigured ?? false);
+      setFalConfigured(r.falConfigured ?? false);
+      const parts = [r.creatomateMessage, r.elevenLabsMessage, r.runwayMessage, r.falMessage].filter(Boolean);
       setVideoHint(parts.join(' · ') || null);
-      if (r.creatomateOk && r.elevenLabsOk) message.success('Creatomate + ElevenLabs OK');
-      else if (r.creatomateOk || r.elevenLabsOk) message.warning(parts.join(' · '));
+      if (r.creatomateOk && r.elevenLabsOk && r.runwayOk && r.falOk)
+        message.success('Creatomate + ElevenLabs + Runway + Fal OK');
+      else if (r.creatomateOk || r.elevenLabsOk || r.runwayOk || r.falOk) message.warning(parts.join(' · '));
       else message.warning(parts.join(' · ') || 'Chưa cấu hình video');
     } catch (e) {
       message.error(apiErrorMessage(e, 'Không test được Creatomate / giọng nói'));
@@ -466,71 +510,151 @@ export function ContentAiSettingsPage() {
         layout="vertical"
         style={{ maxWidth: 720, display: tab === 'video' ? undefined : 'none' }}
       >
-        <Typography.Paragraph type="secondary">
-          Creatomate render MP4, ElevenLabs lồng tiếng. Không có key thì Videos vẫn làm storyboard / CapCut.
-        </Typography.Paragraph>
-        <Alert
-          type={creatomateConfigured && elevenLabsConfigured ? 'success' : 'warning'}
-          showIcon
+        {videoHint ? (
+          <Alert type="info" showIcon style={{ marginBottom: 16 }} message={videoHint} />
+        ) : null}
+
+        <Card
+          size="small"
+          title="I2V Series"
+          extra={
+            i2vChoice === 'turbo' ? (
+              <Tag color={runwayConfigured ? 'success' : 'warning'}>
+                {runwayConfigured ? 'Đã có key' : 'Chưa có key'}
+              </Tag>
+            ) : (
+              <Tag color={falConfigured ? 'success' : 'warning'}>{falConfigured ? 'Đã có key' : 'Chưa có key'}</Tag>
+            )
+          }
           style={{ marginBottom: 16 }}
-          message={
-            <Space wrap>
-              <span>Creatomate:</span>
-              {creatomateConfigured ? <Tag color="success">Đã cấu hình</Tag> : <Tag color="warning">Chưa có key</Tag>}
-              <span>Giọng nói:</span>
-              {elevenLabsConfigured ? <Tag color="success">Đã cấu hình</Tag> : <Tag color="warning">Chưa có key</Tag>}
-            </Space>
+        >
+          <Form.Item label="Nhà cung cấp">
+            <Select
+              value={i2vChoice}
+              onChange={(v) => {
+                setI2vChoice(v);
+                try {
+                  localStorage.setItem('kit.famixaSeries.engine', v);
+                } catch {
+                  /* quota */
+                }
+              }}
+              options={[
+                { value: 'turbo', label: 'Runway Turbo' },
+                { value: 'wan', label: 'Wan 2.1 (Fal)' },
+              ]}
+            />
+          </Form.Item>
+          {i2vChoice === 'turbo' ? (
+            <>
+              <Form.Item name="runwayApiKeySecretRef" label="Secret ref">
+                <Input placeholder="RUNWAY_API_KEY" autoComplete="off" />
+              </Form.Item>
+              <Form.Item name="runwayApiKey" label="API key (chỉ ghi — để trống nếu giữ nguyên)">
+                <Input.Password placeholder="Dán key Runway" autoComplete="new-password" />
+              </Form.Item>
+            </>
+          ) : (
+            <>
+              <Form.Item name="falApiKeySecretRef" label="Secret ref">
+                <Input placeholder="FAL_KEY" autoComplete="off" />
+              </Form.Item>
+              <Form.Item name="falApiKey" label="API key (chỉ ghi — để trống nếu giữ nguyên)">
+                <Input.Password placeholder="Dán key Fal" autoComplete="new-password" />
+              </Form.Item>
+            </>
+          )}
+        </Card>
+
+        <Card
+          size="small"
+          title="Giọng nói"
+          extra={
+            voiceChoice === 'elevenlabs' ? (
+              <Tag color={elevenLabsConfigured ? 'success' : 'warning'}>
+                {elevenLabsConfigured ? 'Đã có key' : 'Chưa có key'}
+              </Tag>
+            ) : (
+              <Tag color={falConfigured ? 'success' : 'warning'}>{falConfigured ? 'Đã có key Fal' : 'Chưa có key'}</Tag>
+            )
           }
-          description={
-            videoHint ??
-            'Secret ref mặc định: CREATOMATE_API_KEY và ELEVENLABS_API_KEY. Localhost Creatomate không lấy được file — điền Public media URL.'
+          style={{ marginBottom: 16 }}
+        >
+          <Form.Item label="Nhà cung cấp">
+            <Select
+              value={voiceChoice}
+              onChange={(v) => {
+                setVoiceChoice(v);
+                try {
+                  localStorage.setItem('kit.famixaSeries.voice', v);
+                } catch {
+                  /* quota */
+                }
+              }}
+              options={[
+                { value: 'elevenlabs', label: 'ElevenLabs' },
+                { value: 'f5', label: 'F5-TTS (Fal)' },
+              ]}
+            />
+          </Form.Item>
+          {voiceChoice === 'elevenlabs' ? (
+            <>
+              <Form.Item name="elevenLabsApiKeySecretRef" label="Secret ref">
+                <Input placeholder="ELEVENLABS_API_KEY" autoComplete="off" />
+              </Form.Item>
+              <Form.Item name="elevenLabsApiKey" label="API key (chỉ ghi — để trống nếu giữ nguyên)">
+                <Input.Password placeholder="Dán key ElevenLabs" autoComplete="new-password" />
+              </Form.Item>
+              <Form.Item name="elevenLabsVoiceId" label="Voice ID">
+                <Input placeholder="Voice ID" autoComplete="off" />
+              </Form.Item>
+            </>
+          ) : i2vChoice === 'wan' ? null : (
+            <>
+              <Form.Item name="falApiKeySecretRef" label="Secret ref">
+                <Input placeholder="FAL_KEY" autoComplete="off" />
+              </Form.Item>
+              <Form.Item name="falApiKey" label="API key (chỉ ghi — để trống nếu giữ nguyên)">
+                <Input.Password placeholder="Dán key Fal" autoComplete="new-password" />
+              </Form.Item>
+            </>
+          )}
+        </Card>
+
+        <Card
+          size="small"
+          title="Render Factory"
+          extra={
+            <Tag color={creatomateConfigured ? 'success' : 'warning'}>
+              {creatomateConfigured ? 'Đã có key' : 'Chưa có key'}
+            </Tag>
           }
-        />
-        <Typography.Text strong>Creatomate</Typography.Text>
-        <Form.Item
-          name="creatomateApiKeySecretRef"
-          label="Secret ref"
-          extra="Tên biến môi trường, ví dụ CREATOMATE_API_KEY."
-          style={{ marginTop: 8 }}
+          style={{ marginBottom: 16 }}
         >
-          <Input placeholder="CREATOMATE_API_KEY" autoComplete="off" />
-        </Form.Item>
-        <Form.Item name="creatomateApiKey" label="API key (chỉ ghi — để trống nếu giữ nguyên)">
-          <Input.Password placeholder="Dán key Creatomate" autoComplete="new-password" />
-        </Form.Item>
-        <Form.Item
-          name="creatomateTemplateId"
-          label="Template UUID"
-          extra="UUID template 9:16 trên Creatomate. Để trống = chỉ storyboard local."
-        >
-          <Input placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autoComplete="off" />
-        </Form.Item>
-        <Form.Item
-          name="publicMediaBaseUrl"
-          label="Public media URL"
-          extra="URL API Creatomate gọi được (tunnel/CDN). Localhost máy bạn họ không vào được."
-        >
-          <Input placeholder="https://…" autoComplete="off" />
-        </Form.Item>
-        <Typography.Text strong>Giọng nói (ElevenLabs)</Typography.Text>
-        <Form.Item
-          name="elevenLabsApiKeySecretRef"
-          label="Secret ref"
-          extra="Tên biến môi trường, ví dụ ELEVENLABS_API_KEY."
-          style={{ marginTop: 8 }}
-        >
-          <Input placeholder="ELEVENLABS_API_KEY" autoComplete="off" />
-        </Form.Item>
-        <Form.Item name="elevenLabsApiKey" label="API key (chỉ ghi — để trống nếu giữ nguyên)">
-          <Input.Password placeholder="Dán key ElevenLabs" autoComplete="new-password" />
-        </Form.Item>
-        <Form.Item
-          name="elevenLabsVoiceId"
-          label="Voice ID"
-          extra="ID giọng trên ElevenLabs. Để trống = giọng mặc định."
-        >
-          <Input placeholder="Voice ID" autoComplete="off" />
-        </Form.Item>
+          <Form.Item label="Nhà cung cấp">
+            <Select
+              value={renderChoice}
+              onChange={setRenderChoice}
+              options={[{ value: 'creatomate', label: 'Creatomate' }]}
+            />
+          </Form.Item>
+          {renderChoice === 'creatomate' ? (
+            <>
+              <Form.Item name="creatomateApiKeySecretRef" label="Secret ref">
+                <Input placeholder="CREATOMATE_API_KEY" autoComplete="off" />
+              </Form.Item>
+              <Form.Item name="creatomateApiKey" label="API key (chỉ ghi — để trống nếu giữ nguyên)">
+                <Input.Password placeholder="Dán key Creatomate" autoComplete="new-password" />
+              </Form.Item>
+              <Form.Item name="creatomateTemplateId" label="Template UUID">
+                <Input placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autoComplete="off" />
+              </Form.Item>
+              <Form.Item name="publicMediaBaseUrl" label="Public media URL">
+                <Input placeholder="https://…" autoComplete="off" />
+              </Form.Item>
+            </>
+          ) : null}
+        </Card>
         <Space wrap>
           <Button type="primary" icon={<SaveOutlined />} loading={savingVideo} onClick={() => void onSaveVideo()}>
             Lưu video

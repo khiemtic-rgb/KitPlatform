@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Alert,
@@ -62,14 +62,12 @@ import { FB_RETURN_KEY } from '@/modules/content/ContentFacebookCallbackPage';
 import { ContentManualPostTab } from '@/modules/content/ContentManualPostTab';
 import { writeClipboardImage } from '@/modules/content/content-manual-dest';
 import {
-  clearLocalImageLibrary,
   getLocalImageLibraryStatus,
   isConfidentLocalMatch,
   isLocalImageLibrarySupported,
   listLocalImages,
   loadLocalImagePreviews,
   pickBestLocalImage,
-  pickLocalImageLibrary,
   prepareLocalImageForPublish,
   rankLocalImages,
   requestLocalImageLibraryPermission,
@@ -222,6 +220,11 @@ export function ContentTopicsPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<ContentTopicDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailAction, setDetailAction] = useState<
+    'write' | 'writeText' | 'images' | 'approve' | 'publish' | 'pickImage' | null
+  >(null);
+  const [detailTab, setDetailTab] = useState('write');
+  const detailIdRef = useRef<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [rowBusyId, setRowBusyId] = useState<string | null>(null);
   const [assetUrls, setAssetUrls] = useState<Record<string, string>>({});
@@ -429,10 +432,12 @@ export function ContentTopicsPage() {
     };
   }, [assetUrls]);
 
-  const loadDetail = async (topicId: string) => {
-    setDetailLoading(true);
+  const loadDetail = async (topicId: string, opts?: { silent?: boolean }) => {
+    const silent = opts?.silent ?? detailIdRef.current === topicId;
+    if (!silent) setDetailLoading(true);
     try {
       const d = await fetchContentTopicDetail(topicId);
+      detailIdRef.current = d.topic.id;
       setDetail(d);
       if (d.topic.corePackageId) setCoreFilter(d.topic.corePackageId);
       try {
@@ -471,6 +476,7 @@ export function ContentTopicsPage() {
   useEffect(() => {
     const topicId = searchParams.get('topic');
     if (!topicId) return;
+    setDetailTab('write');
     setDetailOpen(true);
     void loadDetail(topicId);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open from Videos / Góc brand
@@ -511,6 +517,7 @@ export function ContentTopicsPage() {
   };
 
   const openDetail = (row: ContentTopic) => {
+    setDetailTab('write');
     setDetailOpen(true);
     void loadDetail(row.id);
   };
@@ -656,11 +663,8 @@ export function ContentTopicsPage() {
   const onGenerateRow = async (row: ContentTopic) => {
     setRowBusyId(row.id);
     try {
-      const res = await generateContentTopic(row.id, { skipImages: !!localLibName });
-      message.success(
-        (res.message ?? `AI xong: ${row.title}`) +
-          (localLibName ? ' · Ảnh lấy từ kho máy khi Xuất bản' : ''),
-      );
+      const res = await generateContentTopic(row.id);
+      message.success(res.message ?? `AI xong: ${row.title}`);
       await load();
       setDetailOpen(true);
       await loadDetail(row.id);
@@ -673,9 +677,9 @@ export function ContentTopicsPage() {
 
   const confirmGenerateRow = (row: ContentTopic) => {
     modal.confirm({
-      title: 'Nhờ AI viết bài này?',
+      title: 'AI viết + ảnh bài này?',
       content: row.title,
-      okText: 'Viết ngay',
+      okText: 'Viết + tạo ảnh',
       cancelText: 'Huỷ',
       onOk: () => onGenerateRow(row),
     });
@@ -683,50 +687,79 @@ export function ContentTopicsPage() {
 
   const onGenerate = async (skipImages = false) => {
     if (!detail) return;
-    setBusy(true);
+    setDetailAction(skipImages ? 'writeText' : 'write');
     try {
-      // Prefer local library → don't burn Gemini/Pollinations for images.
-      const skip = skipImages || !!localLibName;
-      const res = await generateContentTopic(detail.topic.id, { skipImages: skip });
-      message.success(
-        (res.message ?? 'AI đã viết xong') +
-          (localLibName ? ' · Ảnh sẽ lấy từ kho máy khi Xuất bản.' : ''),
-      );
-      await loadDetail(detail.topic.id);
+      const res = await generateContentTopic(detail.topic.id, { skipImages });
+      message.success(res.message ?? (skipImages ? 'AI đã viết xong' : 'AI đã viết + tạo ảnh'));
+      setDetailTab(skipImages ? 'write' : 'images');
+      await loadDetail(detail.topic.id, { silent: true });
       await load();
     } catch (e) {
       message.error(apiErrorMessage(e, 'AI tạo bài thất bại'));
     } finally {
-      setBusy(false);
+      setDetailAction(null);
     }
+  };
+
+  const confirmGenerate = (skipImages: boolean) => {
+    if (!detail) return;
+    if (detail.variants.length === 0) {
+      void onGenerate(skipImages);
+      return;
+    }
+    modal.confirm({
+      title: skipImages ? 'Viết lại chữ?' : 'AI viết lại chữ + ảnh?',
+      content: skipImages
+        ? 'Bài đã có bản viết. Tiếp tục sẽ viết lại các kênh — không giữ bản cũ. Ảnh giữ nguyên.'
+        : 'Bài đã có chữ/ảnh. Tiếp tục sẽ viết lại các kênh và tạo ảnh mới theo chủ đề — không giữ bản cũ.',
+      okText: skipImages ? 'Viết lại chữ' : 'Viết + tạo ảnh lại',
+      cancelText: 'Giữ bản hiện tại',
+      onOk: () => onGenerate(skipImages),
+    });
   };
 
   const onGenerateImages = async () => {
     if (!detail) return;
-    setBusy(true);
+    setDetailAction('images');
     try {
       const res = await generateContentTopic(detail.topic.id, { imagesOnly: true });
       message.success(res.message ?? 'Đã tạo ảnh');
-      await loadDetail(detail.topic.id);
+      setDetailTab('images');
+      await loadDetail(detail.topic.id, { silent: true });
       await load();
     } catch (e) {
       message.error(apiErrorMessage(e, 'Tạo ảnh thất bại'));
     } finally {
-      setBusy(false);
+      setDetailAction(null);
     }
+  };
+
+  const confirmGenerateImages = () => {
+    if (!detail) return;
+    if (detail.assets.length === 0) {
+      void onGenerateImages();
+      return;
+    }
+    modal.confirm({
+      title: 'Tạo ảnh mới?',
+      content: 'Sẽ thay ảnh AI hiện có. Bản viết giữ nguyên — không chạy lại cả quy trình.',
+      okText: 'Tạo ảnh mới',
+      cancelText: 'Giữ ảnh cũ',
+      onOk: () => onGenerateImages(),
+    });
   };
 
   const onSelectAsset = async (asset: ContentAsset) => {
     if (!detail) return;
-    setBusy(true);
+    setDetailAction('pickImage');
     try {
       await selectContentAsset(detail.topic.id, asset.id);
       message.success('Đã chọn ảnh này');
-      await loadDetail(detail.topic.id);
+      await loadDetail(detail.topic.id, { silent: true });
     } catch (e) {
       message.error(apiErrorMessage(e, 'Không chọn được ảnh'));
     } finally {
-      setBusy(false);
+      setDetailAction(null);
     }
   };
 
@@ -755,16 +788,16 @@ export function ContentTopicsPage() {
 
   const onApprove = async () => {
     if (!detail) return;
-    setBusy(true);
+    setDetailAction('approve');
     try {
       await approveContentTopic(detail.topic.id);
       message.success('Đã duyệt — có thể xuất bản');
-      await loadDetail(detail.topic.id);
+      await loadDetail(detail.topic.id, { silent: true });
       await load();
     } catch (e) {
       message.error(apiErrorMessage(e, 'Duyệt thất bại'));
     } finally {
-      setBusy(false);
+      setDetailAction(null);
     }
   };
 
@@ -813,7 +846,7 @@ export function ContentTopicsPage() {
       return;
     }
     if (!isLocalImageLibrarySupported() || !localLibName) {
-      message.error('Gắn kho ảnh thương hiệu trước — mỗi bài lấy ảnh khớp tiêu đề từ thư mục máy.');
+      message.error('Gắn kho ảnh ở Thương hiệu (cột Kho ảnh máy), rồi lọc brand này để xuất bản hàng loạt.');
       return;
     }
 
@@ -821,11 +854,11 @@ export function ContentTopicsPage() {
     try {
       localImages = await listLocalImages(brandFilter, { requestPermission: true });
     } catch {
-      message.error('Không đọc được kho ảnh — bấm Cho phép đọc / chọn lại thư mục.');
+      message.error('Không đọc được kho ảnh — mở bài, tab Ảnh, bấm Cho phép đọc lại.');
       return;
     }
     if (localImages.length === 0) {
-      message.warning('Kho ảnh trống — chọn thư mục có .png/.jpg/.webp.');
+      message.warning('Kho ảnh trống — đổi thư mục ở Thương hiệu (cột Kho ảnh máy).');
       return;
     }
 
@@ -911,46 +944,6 @@ export function ContentTopicsPage() {
     }
   };
 
-  const onPickLocalLibrary = async () => {
-    if (!libBrandId) {
-      message.warning('Chọn / lọc thương hiệu (hoặc mở chi tiết bài) trước khi gắn kho ảnh — mỗi brand một thư mục.');
-      return;
-    }
-    try {
-      const r = await pickLocalImageLibrary(libBrandId);
-      setLocalLibName(r.name);
-      setLocalLibCount(r.count);
-      setLocalLibNeedsPermission(false);
-      if (r.count === 0) {
-        message.warning(
-          `Thư mục «${r.name}» chưa thấy ảnh .png/.jpg/.webp (kể cả thư mục con). Hãy chọn đúng thư mục chứa ảnh.`,
-        );
-      } else {
-        message.success(
-          `Đã gắn kho ảnh «${r.name}» cho thương hiệu này (${r.count} ảnh). Brand khác dùng thư mục riêng.`,
-        );
-      }
-      void loadLocalGallery(libBrandId, detail?.topic.title);
-    } catch (e) {
-      if (e && typeof e === 'object' && 'name' in e && (e as { name: string }).name === 'AbortError') return;
-      message.error(apiErrorMessage(e, 'Không chọn được thư mục ảnh'));
-    }
-  };
-
-  const onClearLocalLibrary = async () => {
-    if (!libBrandId) return;
-    await clearLocalImageLibrary(libBrandId);
-    setLocalLibName(null);
-    setLocalLibCount(0);
-    setLocalLibNeedsPermission(false);
-    setPickedLocalName(null);
-    setLocalPreviews((prev) => {
-      revokeLocalPreviewUrls(prev);
-      return [];
-    });
-    message.info('Đã bỏ liên kết kho ảnh của thương hiệu này');
-  };
-
   const onAllowLocalLibrary = async () => {
     if (!libBrandId) return;
     await loadLocalGallery(libBrandId, detail?.topic.title, { requestPermission: true });
@@ -958,7 +951,7 @@ export function ContentTopicsPage() {
 
   const onPublish = async () => {
     if (!detail) return;
-    setBusy(true);
+    setDetailAction('publish');
     try {
       // Auto-approve so WP/FB path can run from Review/Draft-with-variants.
       if (detail.topic.status === 'Review' || detail.topic.status === 'Draft') {
@@ -985,7 +978,7 @@ export function ContentTopicsPage() {
           if (localLibNeedsPermission) {
             message.warning('Bấm «Cho phép đọc lại» kho ảnh, rồi xuất bản lại để kèm ảnh.');
           } else {
-            message.warning('Kho ảnh trống — chọn thư mục có file .png/.jpg/.webp.');
+            message.warning('Kho ảnh trống — đổi thư mục ở Thương hiệu (cột Kho ảnh máy).');
           }
           return;
         }
@@ -996,7 +989,7 @@ export function ContentTopicsPage() {
         pickedFileName = preferred.name;
       } else if (!hasServerImage) {
         message.error(
-          'Chưa có ảnh — bấm «Chọn kho ảnh trên máy» rồi chọn ảnh (Đang dùng), sau đó «Đẩy lịch đăng». Không đăng chỉ chữ.',
+          'Chưa có ảnh — bấm «Tạo ảnh» hoặc gắn kho ở Thương hiệu (Kho ảnh máy), rồi Đẩy lịch đăng. Không đăng chỉ chữ.',
         );
         return;
       }
@@ -1062,7 +1055,7 @@ export function ContentTopicsPage() {
           return;
         }
       } else if (!hasServerImage) {
-        message.error('Thiếu ảnh — chọn kho ảnh trên máy trước khi đăng.');
+        message.error('Thiếu ảnh — Tạo ảnh hoặc gắn kho ở Thương hiệu trước khi đăng.');
         return;
       }
 
@@ -1129,7 +1122,7 @@ export function ContentTopicsPage() {
       message.destroy('content-publish');
       message.error(apiErrorMessage(e, 'Xuất bản thất bại'));
     } finally {
-      setBusy(false);
+      setDetailAction(null);
     }
   };
 
@@ -1247,36 +1240,6 @@ export function ContentTopicsPage() {
           </Typography.Text>
         </div>
         <Space wrap>
-          {isLocalImageLibrarySupported() ? (
-            !libBrandId ? (
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                Lọc thương hiệu để gắn kho ảnh riêng
-              </Typography.Text>
-            ) : localLibName ? (
-              <Space.Compact>
-                <Button
-                  icon={<FolderOpenOutlined />}
-                  type={localLibNeedsPermission ? 'primary' : 'default'}
-                  onClick={() =>
-                    void (localLibNeedsPermission ? onAllowLocalLibrary() : onPickLocalLibrary())
-                  }
-                >
-                  {localLibNeedsPermission
-                    ? `Cho phép đọc «${localLibName}»`
-                    : `Kho ảnh: ${localLibName} (${localLibCount})`}
-                </Button>
-                <Button onClick={() => void onClearLocalLibrary()}>Bỏ</Button>
-              </Space.Compact>
-            ) : (
-              <Button type="dashed" icon={<FolderOpenOutlined />} onClick={() => void onPickLocalLibrary()}>
-                Chọn kho ảnh thương hiệu
-              </Button>
-            )
-          ) : (
-            <Typography.Text type="warning" style={{ fontSize: 12 }}>
-              Kho ảnh local cần Chrome/Edge
-            </Typography.Text>
-          )}
           <Select
             allowClear
             showSearch
@@ -1413,7 +1376,7 @@ export function ContentTopicsPage() {
                       loading={rowBusyId === row.id}
                       onClick={() => confirmGenerateRow(row)}
                     >
-                      Nhờ AI
+                      AI viết + ảnh
                     </Button>
                   )}
                   <Button type="link" onClick={() => openDetail(row)}>
@@ -1612,25 +1575,44 @@ export function ContentTopicsPage() {
           detail ? (
             <Space wrap>
               <Button
-                type="primary"
+                type={detail.variants.length === 0 ? 'primary' : 'default'}
                 icon={<ThunderboltOutlined />}
-                loading={busy}
-                onClick={() => void onGenerate(false)}
+                loading={detailAction === 'write'}
+                disabled={!!detailAction && detailAction !== 'write'}
+                onClick={() => confirmGenerate(false)}
               >
-                Nhờ AI viết
+                AI viết + ảnh
               </Button>
-              <Button loading={busy} onClick={() => void onGenerate(true)}>
+              <Button
+                loading={detailAction === 'writeText'}
+                disabled={!!detailAction && detailAction !== 'writeText'}
+                onClick={() => confirmGenerate(true)}
+              >
                 Chỉ viết chữ
               </Button>
               {!localLibName ? (
-                <Button loading={busy} onClick={() => void onGenerateImages()}>
+                <Button
+                  loading={detailAction === 'images'}
+                  disabled={!!detailAction && detailAction !== 'images'}
+                  onClick={() => confirmGenerateImages()}
+                >
                   Tạo ảnh
                 </Button>
               ) : null}
-              <Button icon={<CheckOutlined />} loading={busy} onClick={() => void onApprove()}>
+              <Button
+                icon={<CheckOutlined />}
+                loading={detailAction === 'approve'}
+                disabled={!!detailAction && detailAction !== 'approve'}
+                onClick={() => void onApprove()}
+              >
                 Duyệt
               </Button>
-              <Button icon={<CloudUploadOutlined />} loading={busy} onClick={() => void onPublish()}>
+              <Button
+                icon={<CloudUploadOutlined />}
+                loading={detailAction === 'publish'}
+                disabled={!!detailAction && detailAction !== 'publish'}
+                onClick={() => void onPublish()}
+              >
                 {localLibName ? 'Đẩy lịch đăng' : 'Xuất bản'}
               </Button>
             </Space>
@@ -1646,13 +1628,14 @@ export function ContentTopicsPage() {
               </Typography.Text>
               <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
                 {localLibName
-                  ? <>AI viết chữ → <strong>Đẩy lịch đăng</strong> (WP/Fanpage). Nhóm / LinkedIn → tab <strong>Đăng tay</strong>.</>
-                  : <>Chọn ảnh → <strong>Duyệt</strong> → <strong>Xuất bản</strong> hoặc tab <strong>Đăng tay</strong>.</>}
+                  ? <>«AI viết + ảnh» ra chữ và ảnh theo chủ đề. Đã xong thì <strong>Đẩy lịch đăng</strong>. Nhóm / LinkedIn → tab <strong>Đăng tay</strong>.</>
+                  : <>«AI viết + ảnh» = chữ + ảnh cùng lúc. Xong thì chọn ảnh → <strong>Duyệt</strong> → <strong>Xuất bản</strong>. «Chỉ viết chữ» nếu không cần ảnh mới.</>}
               </Typography.Paragraph>
             </div>
 
             <Tabs
-              defaultActiveKey="write"
+              activeKey={detailTab}
+              onChange={setDetailTab}
               items={[
                 {
                   key: 'write',
@@ -1727,11 +1710,8 @@ export function ContentTopicsPage() {
                   ) : localPreviews.length === 0 ? (
                     <Space direction="vertical" size={8}>
                       <Typography.Text type="warning">
-                        Chưa thấy ảnh trong thư mục. Dùng file .png / .jpg / .webp — có thể nằm trong thư mục con.
+                        Chưa thấy ảnh trong thư mục. Đổi kho ở Thương hiệu (cột Kho ảnh máy) — file .png / .jpg / .webp.
                       </Typography.Text>
-                      <Button type="primary" icon={<FolderOpenOutlined />} onClick={() => void onPickLocalLibrary()}>
-                        Chọn lại thư mục ảnh
-                      </Button>
                     </Space>
                   ) : (
                     <>
@@ -1856,7 +1836,7 @@ export function ContentTopicsPage() {
                         block
                         type={a.isSelected ? 'primary' : 'default'}
                         style={{ marginTop: 6 }}
-                        loading={busy}
+                        loading={detailAction === 'pickImage'}
                         onClick={() => void onSelectAsset(a)}
                       >
                         {a.isSelected ? 'Đang dùng' : 'Chọn ảnh này'}
@@ -1866,12 +1846,13 @@ export function ContentTopicsPage() {
                   {detail.assets.length === 0 ? (
                     <Space direction="vertical" size={8}>
                       <Typography.Text type="secondary">
-                        Chưa có ảnh trên server. Bấm «Chọn kho ảnh trên máy» (nút phía trên danh sách bài) để dùng ảnh local, hoặc tạo ảnh AI.
+                        Chưa có ảnh. Bấm «Tạo ảnh ngay», hoặc gắn kho máy ở Thương hiệu (cột Kho ảnh máy).
                       </Typography.Text>
-                      <Button type="dashed" icon={<FolderOpenOutlined />} onClick={() => void onPickLocalLibrary()}>
-                        Chọn kho ảnh trên máy
-                      </Button>
-                      <Button type="primary" loading={busy} onClick={() => void onGenerateImages()}>
+                      <Button
+                        type="primary"
+                        loading={detailAction === 'images'}
+                        onClick={() => confirmGenerateImages()}
+                      >
                         Tạo ảnh ngay
                       </Button>
                     </Space>

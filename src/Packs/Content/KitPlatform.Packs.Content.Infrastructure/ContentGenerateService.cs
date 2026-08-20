@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -55,14 +56,15 @@ internal sealed class ContentGenerateService : IContentGenerateService
             request.CandidateCount ?? destPlan.SuggestedImageCandidates,
             0,
             10);
-        if (request.SkipImages || !ai.ImagesEnabled || !destPlan.NeedsImages)
+        if (request.SkipImages || !ai.ImagesEnabled)
             candidates = 0;
-        // Images-only: still respect destination plan unless explicit candidateCount.
-        if (request.ImagesOnly && request.CandidateCount is null && destPlan.NeedsImages)
-            candidates = Math.Clamp(destPlan.SuggestedImageCandidates, 0, 10);
-        if (request.ImagesOnly && !destPlan.NeedsImages)
+        else if (candidates < 1)
+            candidates = 1;
+        if (request.ImagesOnly && request.CandidateCount is null)
+            candidates = Math.Clamp(Math.Max(destPlan.SuggestedImageCandidates, 1), 1, 10);
+        if (request.ImagesOnly && !ai.ImagesEnabled)
             throw new InvalidOperationException(
-                "Thương hiệu chưa có nơi đăng cần ảnh (website / fanpage…). Vào Thương hiệu → Nơi đăng để thêm.");
+                "Không thể tạo ảnh — bật «Gen ảnh» trong Cấu hình AI.");
 
         var tier = string.IsNullOrWhiteSpace(brand.ImageTier)
             ? org.DefaultImageTier
@@ -141,14 +143,8 @@ internal sealed class ContentGenerateService : IContentGenerateService
 
         try
         {
-            string imagePrompt;
-            if (request.ImagesOnly)
-            {
-                imagePrompt =
-                    $"Professional brand content photo for pharmacy/content marketing: {topic.Title}. " +
-                    "Clean modern lighting, no text overlays, brand-safe.";
-            }
-            else
+            string? seedImagePrompt = null;
+            if (!request.ImagesOnly)
             {
                 var kinds = destPlan.VariantKinds.ToList();
                 if (kinds.Count == 0)
@@ -230,7 +226,8 @@ internal sealed class ContentGenerateService : IContentGenerateService
                         "Article outline (optional): " + (topic.BodyOutline ?? "") + "\n" +
                         "Variant kinds required (ONLY these): " + string.Join(", ", packKinds) + "\n\n" +
                         "Return JSON object with keys variants (array of {kind,title,bodyMarkdown,meta}) " +
-                        "and imagePrompt (English visual prompt aligned with brand brief/visual style, no text overlays).\n" +
+                        "and imagePrompt (English visual only: scene, light, people, mood from brand brief. "
+                        + "NEVER ask to paint headlines, slogans, brand names, or any letters).\n" +
                         "Include exactly one entry per variant kind listed — no more, no less.";
 
                     var raw = await _gemini.GenerateJsonAsync(system, user, cancellationToken);
@@ -298,8 +295,8 @@ internal sealed class ContentGenerateService : IContentGenerateService
                     }),
                     cancellationToken);
 
-                imagePrompt = string.IsNullOrWhiteSpace(parsed.ImagePrompt)
-                    ? $"Professional brand content photo for: {topic.Title}. Clean modern lighting, no text."
+                seedImagePrompt = string.IsNullOrWhiteSpace(parsed.ImagePrompt)
+                    ? null
                     : parsed.ImagePrompt.Trim();
 
                 if (package is not null)
@@ -328,6 +325,7 @@ internal sealed class ContentGenerateService : IContentGenerateService
 
             var imageOk = 0;
             string? imageError = null;
+            string imagePrompt = "";
 
             // Re-check before calling image APIs (images are the main cost).
             if (candidates > 0)
@@ -358,6 +356,10 @@ internal sealed class ContentGenerateService : IContentGenerateService
                         cancellationToken);
                 }
 
+                var directed = await DirectImagePromptAsync(topic, brand, seedImagePrompt, cancellationToken);
+                imagePrompt = directed.Scene;
+                var altScene = directed.AltScene;
+
                 await _repo.DeleteAssetsForTopicAsync(topicId, cancellationToken);
                 var root = ResolveAssetRoot();
                 Directory.CreateDirectory(root);
@@ -366,8 +368,11 @@ internal sealed class ContentGenerateService : IContentGenerateService
                 {
                     try
                     {
+                        var shot = i == 0 || string.IsNullOrWhiteSpace(altScene)
+                            ? imagePrompt
+                            : altScene;
                         var (bytes, model) = await _gemini.GenerateImageAsync(
-                            $"{imagePrompt}\nVariation {i + 1} of {candidates}.",
+                            $"{shot}\nSame thesis, composition {i + 1} of {candidates}.",
                             cancellationToken);
                         var assetId = Guid.CreateVersion7();
                         var fileName = $"{assetId:N}.png";
@@ -519,12 +524,14 @@ internal sealed class ContentGenerateService : IContentGenerateService
             if (nextBody.Length < 400) continue;
             title = nextTitle;
             body = nextBody;
-            var h2 = nextBody.Split('\n').Count(l => l.TrimStart().StartsWith("## ", StringComparison.Ordinal));
+            var h2 = ContentQualityGate.CountMarkdownH2(nextBody);
             if (nextBody.Length >= 2200 && h2 >= 2) break;
         }
 
         if (string.IsNullOrWhiteSpace(body) || body.Length < 400)
             throw new InvalidOperationException("Bài web quá mỏng — Generate lại.");
+
+        body = ContentWebLongRepair.EnsureHeadings(body);
 
         await _repo.UpsertVariantAsync(
             topicId,
@@ -696,6 +703,95 @@ internal sealed class ContentGenerateService : IContentGenerateService
             row.CreatedAt, row.UpdatedAt, row.VariantCount, row.CorePackageId, row.CoreTitle);
     }
 
+    private sealed record DirectedImagePrompt(string Scene, string? AltScene);
+
+    private async Task<DirectedImagePrompt> DirectImagePromptAsync(
+        ContentRepository.TopicRow topic,
+        ContentRepository.BrandRow brand,
+        string? seedPrompt,
+        CancellationToken ct)
+    {
+        var knowledge = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
+        var packageId = await _repo.GetPackageIdByTopicAsync(topic.Id, ct);
+        var package = packageId is Guid pid ? await _repo.GetPackageAsync(pid, ct) : null;
+        var brief = ContentPackageExtra.ParseBrief(package?.ExtraJson);
+        var variants = await _repo.ListVariantsAsync(topic.Id, ct);
+        var beats = new StringBuilder();
+        foreach (var v in variants.Take(4))
+        {
+            var body = (v.BodyMarkdown ?? "").Trim();
+            if (body.Length > 260) body = body[..260];
+            beats.Append("- ").Append(v.Kind);
+            if (!string.IsNullOrWhiteSpace(v.Title)) beats.Append(": ").Append(v.Title);
+            if (body.Length > 0) beats.Append(" — ").Append(body);
+            beats.AppendLine();
+        }
+
+        var fallback = SealImagePrompt(
+            string.IsNullOrWhiteSpace(seedPrompt)
+                ? "Cinematic documentary still of a specific human moment that makes the article thesis feel true. "
+                  + "Close or medium shot, one clear subject, shallow depth of field, magazine-cover energy. Not a generic shop interior."
+                : seedPrompt.Trim(),
+            topic.Title);
+
+        try
+        {
+            const string system =
+                "You are an art director for Vietnamese social and web marketing photos.\n"
+                + "Return JSON only: {\"scene\":\"...\",\"altScene\":\"...\"}.\n"
+                + "scene = one photorealistic still that proves the ARTICLE THESIS — a specific person doing a real action, "
+                + "emotion first, scroll-stopping. Not a catalog pharmacy interior, not a stock handshake.\n"
+                + "altScene = same thesis, different distance or viewpoint (detail vs wide).\n"
+                + "English visual description only. Never request letters, signs, logos, slogans, or captions.";
+            var user =
+                "Brand visual: " + (knowledge.VisualStyle ?? "") + " / " + (knowledge.VisualColors ?? "") +
+                " / " + (knowledge.ImageNotes ?? "") + "\n" +
+                "Audience: " + (knowledge.Audience ?? "") + "\n" +
+                (string.IsNullOrWhiteSpace(ContentCreativeBriefDto.FormatForPrompt(brief))
+                    ? ""
+                    : "CREATIVE BRIEF\n" + ContentCreativeBriefDto.FormatForPrompt(brief) + "\n") +
+                "Angle: " + (package?.Angle ?? "") + "\n" +
+                "Title: " + topic.Title + "\n" +
+                "Pillar: " + (topic.Pillar ?? "") + "\n" +
+                "Goal: " + topic.Goal + "\n" +
+                "Outline: " + (topic.BodyOutline ?? "") + "\n" +
+                "Copy beats:\n" + beats +
+                (string.IsNullOrWhiteSpace(seedPrompt) ? "" : "Seed: " + seedPrompt.Trim() + "\n");
+
+            var raw = await _gemini.GenerateJsonAsync(system, user, ct, 900);
+            var dto = JsonSerializer.Deserialize<ImageDirectorResponse>(raw, JsonOpts);
+            var scene = dto?.Scene?.Trim();
+            if (string.IsNullOrWhiteSpace(scene))
+                return new DirectedImagePrompt(fallback, null);
+
+            var alt = string.IsNullOrWhiteSpace(dto?.AltScene)
+                ? null
+                : SealImagePrompt(dto.AltScene.Trim(), topic.Title);
+            return new DirectedImagePrompt(SealImagePrompt(scene, topic.Title), alt);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Image director failed for topic {TopicId} — using fallback prompt", topic.Id);
+            return new DirectedImagePrompt(fallback, null);
+        }
+    }
+
+    /// <summary>
+    /// Image models garble Vietnamese/Latin letters. Caption lives on the post, never in the pixels.
+    /// </summary>
+    private static string SealImagePrompt(string scene, string? title)
+    {
+        var body = scene.Trim();
+        if (!string.IsNullOrWhiteSpace(title))
+            body += "\nMood/theme only (do not paint these words): " + title.Trim();
+        return body
+            + "\nHARD RULES: photorealistic photograph. Zero written language in the frame. "
+            + "No letters, numbers, logos, captions, watermarks, posters, price tags, product labels, "
+            + "or shop signs with readable text. Storefront boards and shelf labels must be blank, "
+            + "blurred, or turned away. Screens show graphics only, never words. "
+            + "Do not invent brand names. Vietnamese and English text are both forbidden.";
+    }
+
     private string ResolveAssetRoot()
     {
         var configured = string.IsNullOrWhiteSpace(_options.AssetRoot)
@@ -718,6 +814,12 @@ internal sealed class ContentGenerateService : IContentGenerateService
         public string? Title { get; set; }
         public string? BodyMarkdown { get; set; }
         public Dictionary<string, JsonElement>? Meta { get; set; }
+    }
+
+    private sealed class ImageDirectorResponse
+    {
+        public string? Scene { get; set; }
+        public string? AltScene { get; set; }
     }
 
     private sealed class GeminiGroupShareResponse
