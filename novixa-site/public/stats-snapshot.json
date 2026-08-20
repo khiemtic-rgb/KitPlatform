@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-20T07:07:27.891Z",
+  "generatedAt": "2026-08-20T13:11:59.750Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 51,
-    "todayPageViews": 14,
-    "todayRequests": 81,
-    "last24hVisitors": 203,
-    "last24hPageViews": 99,
-    "last24hRequests": 351
+    "todayVisitors": 133,
+    "todayPageViews": 161,
+    "todayRequests": 381,
+    "last24hVisitors": 212,
+    "last24hPageViews": 215,
+    "last24hRequests": 531
   },
   "hourly": [
-    {
-      "time": "2026-08-19T08:00:00Z",
-      "visitors": 9,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-19T09:00:00Z",
-      "visitors": 10,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-19T10:00:00Z",
-      "visitors": 15,
-      "requests": 17
-    },
-    {
-      "time": "2026-08-19T11:00:00Z",
-      "visitors": 17,
-      "requests": 21
-    },
-    {
-      "time": "2026-08-19T12:00:00Z",
-      "visitors": 12,
-      "requests": 27
-    },
-    {
-      "time": "2026-08-19T13:00:00Z",
-      "visitors": 18,
-      "requests": 34
-    },
     {
       "time": "2026-08-19T14:00:00Z",
       "visitors": 15,
@@ -125,6 +95,36 @@
       "time": "2026-08-20T06:00:00Z",
       "visitors": 6,
       "requests": 15
+    },
+    {
+      "time": "2026-08-20T07:00:00Z",
+      "visitors": 20,
+      "requests": 23
+    },
+    {
+      "time": "2026-08-20T08:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-20T09:00:00Z",
+      "visitors": 10,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-20T10:00:00Z",
+      "visitors": 11,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-20T11:00:00Z",
+      "visitors": 33,
+      "requests": 193
+    },
+    {
+      "time": "2026-08-20T12:00:00Z",
+      "visitors": 12,
+      "requests": 56
     }
   ],
   "daily": [
@@ -166,26 +166,42 @@
     },
     {
       "date": "2026-08-20",
-      "visitors": 51,
-      "pageViews": 14,
-      "requests": 81
+      "visitors": 133,
+      "pageViews": 161,
+      "requests": 381
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 57
+      "views": 100
+    },
+    {
+      "path": "/vi/",
+      "views": 43
     },
     {
       "path": "/robots.txt",
       "views": 41
     },
     {
+      "path": "/cdn-cgi/l/email-protection",
+      "views": 28
+    },
+    {
       "path": "/sitemap-index.xml",
-      "views": 17
+      "views": 16
     },
     {
       "path": "/sitemap.xml",
+      "views": 16
+    },
+    {
+      "path": "/favicon.svg",
+      "views": 16
+    },
+    {
+      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
       "views": 15
     },
     {
@@ -193,44 +209,28 @@
       "views": 14
     },
     {
-      "path": "/vi/",
-      "views": 14
+      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
+      "views": 9
     },
     {
-      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
-      "views": 13
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 7
     },
     {
       "path": "/images/tin-tuc/the-nao-la-ton-kho-chet.png",
-      "views": 8
-    },
-    {
-      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
-      "views": 8
+      "views": 7
     },
     {
       "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
-      "views": 8
-    },
-    {
-      "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
-      "views": 7
-    },
-    {
-      "path": "/images/tin-tuc/nhung-loi-thuong-gap-khach-hang.png",
-      "views": 7
+      "views": 6
     },
     {
       "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
-      "views": 5
+      "views": 6
     },
     {
-      "path": "/images/tin-tuc/giup-giu-chan-nhan-vien.png",
-      "views": 4
-    },
-    {
-      "path": "/vi/tin-tuc/recognition-giup-giu-chan-nhan-vien-nha-thuoc-nhu-the-nao/",
-      "views": 4
+      "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
+      "views": 6
     }
   ]
 }
