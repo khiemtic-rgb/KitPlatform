@@ -1118,20 +1118,32 @@ async function waitForContentWorkMany(ids: string[], opts?: { timeoutMs?: number
   const timeout = opts?.timeoutMs ?? 180_000;
   const interval = opts?.intervalMs ?? 2_000;
   const start = Date.now();
-  const pending = new Set(ids);
-  while (pending.size > 0) {
-    if (Date.now() - start > timeout) {
-      throw Object.assign(new Error('Hết thời gian chờ chấm Brand Fit'), {
-        response: { data: { message: 'Hết thời gian chờ chấm Brand Fit' } },
-      });
+    const pending = new Set(ids);
+    const failed: ContentWorkJob[] = [];
+    while (pending.size > 0) {
+      if (Date.now() - start > timeout) {
+        throw Object.assign(new Error('Hết thời gian chờ chấm Brand Fit'), {
+          response: { data: { message: 'Hết thời gian chờ chấm Brand Fit' } },
+        });
+      }
+      for (const id of [...pending]) {
+        const job = await fetchContentWorkJob(id);
+        if (job.status === 'Succeeded') pending.delete(id);
+        else if (job.status === 'Failed' || job.status === 'Cancelled') {
+          pending.delete(id);
+          failed.push(job);
+        }
+      }
+      if (pending.size > 0) await new Promise((r) => setTimeout(r, interval));
     }
-    for (const id of [...pending]) {
-      const job = await fetchContentWorkJob(id);
-      if (job.status === 'Succeeded') pending.delete(id);
-      else if (job.status === 'Failed' || job.status === 'Cancelled') throw workFailedError(job);
+    if (failed.length > 0) {
+      const first = workFailedError(failed[0]);
+      if (failed.length === 1) throw first;
+      throw Object.assign(
+        new Error(`${failed.length} job Brand Fit thất bại. ${first.message}`),
+        { response: { data: { message: `${failed.length} job Brand Fit thất bại. ${first.message}` } } },
+      );
     }
-    if (pending.size > 0) await new Promise((r) => setTimeout(r, interval));
-  }
 }
 
 export async function adaptContentPackage(

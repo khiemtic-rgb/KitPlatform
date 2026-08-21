@@ -180,6 +180,28 @@ public static class ContentBrandKnowledge
         return sb.ToString().Trim();
     }
 
+    /// <summary>Short card for Brand Fit — full brain + 6 brands overflows Gemini output.</summary>
+    public static string FormatForFitScore(ContentBrandKnowledgeDto k, string? operationalBrief, int maxChars = 1400)
+    {
+        var sb = new StringBuilder();
+        if (!string.IsNullOrWhiteSpace(operationalBrief))
+            sb.AppendLine("Brief: " + Clip(operationalBrief.Trim(), 280));
+        Append(sb, "Audience", k.Audience);
+        AppendList(sb, "Pillars", k.ContentPillars);
+        AppendList(sb, "Problems", k.Problems);
+        AppendList(sb, "Products", k.Products);
+        AppendList(sb, "Claims FORBIDDEN", k.ClaimsForbidden);
+        AppendList(sb, "Forbidden topics", k.ForbiddenTopics);
+        var text = sb.ToString().Trim();
+        return text.Length <= maxChars ? text : text[..maxChars].TrimEnd() + "…";
+    }
+
+    private static string Clip(string value, int max)
+    {
+        var t = value.Trim();
+        return t.Length <= max ? t : t[..max].TrimEnd() + "…";
+    }
+
     /// <summary>Script draft: full brain, clipped. Never dump source PDFs.</summary>
     public static string FormatForSeriesDraft(ContentBrandKnowledgeDto k, string? operationalBrief, int maxChars = 4500)
     {

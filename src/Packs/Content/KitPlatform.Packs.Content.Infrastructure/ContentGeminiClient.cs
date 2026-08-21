@@ -67,7 +67,8 @@ internal sealed class ContentGeminiClient
         string systemPrompt,
         string userPrompt,
         CancellationToken ct,
-        int maxOutputTokens = 4096)
+        int maxOutputTokens = 4096,
+        bool disableThinking = false)
     {
         var resolved = await ResolveConfigAsync(ct);
         var preferred = resolved.TextModel;
@@ -78,33 +79,46 @@ internal sealed class ContentGeminiClient
         Exception? last = null;
         foreach (var model in models)
         {
-            try
+            var thinkingAttempts = disableThinking ? new[] { true, false } : new[] { false };
+            foreach (var noThink in thinkingAttempts)
             {
-                var body = new
+                try
                 {
-                    systemInstruction = new { parts = new[] { new { text = systemPrompt } } },
-                    contents = new[]
+                    object generationConfig = noThink
+                        ? new
+                        {
+                            temperature = 0.4,
+                            responseMimeType = "application/json",
+                            maxOutputTokens,
+                            thinkingConfig = new { thinkingBudget = 0 },
+                        }
+                        : new
+                        {
+                            temperature = 0.7,
+                            responseMimeType = "application/json",
+                            maxOutputTokens,
+                        };
+                    var body = new
                     {
-                        new { role = "user", parts = new[] { new { text = userPrompt } } },
-                    },
-                    generationConfig = new
-                    {
-                        temperature = 0.7,
-                        responseMimeType = "application/json",
-                        maxOutputTokens,
-                    },
-                };
-                var data = await PostAsync(resolved.ApiKey, $"/models/{model}:generateContent", body, ct);
-                var text = ExtractText(data);
-                if (string.IsNullOrWhiteSpace(text))
-                    throw new InvalidOperationException("Gemini returned empty text");
-                _logger.LogInformation("Content Park text model {Model}", model);
-                return text;
-            }
-            catch (Exception ex)
-            {
-                last = ex;
-                _logger.LogWarning(ex, "Content Park text model {Model} failed", model);
+                        systemInstruction = new { parts = new[] { new { text = systemPrompt } } },
+                        contents = new[]
+                        {
+                            new { role = "user", parts = new[] { new { text = userPrompt } } },
+                        },
+                        generationConfig,
+                    };
+                    var data = await PostAsync(resolved.ApiKey, $"/models/{model}:generateContent", body, ct);
+                    var text = ExtractText(data);
+                    if (string.IsNullOrWhiteSpace(text))
+                        throw new InvalidOperationException("Gemini returned empty text");
+                    _logger.LogInformation("Content Park text model {Model}", model);
+                    return text;
+                }
+                catch (Exception ex)
+                {
+                    last = ex;
+                    _logger.LogWarning(ex, "Content Park text model {Model} failed", model);
+                }
             }
         }
 
@@ -421,8 +435,11 @@ internal sealed class ContentGeminiClient
         var sb = new StringBuilder();
         foreach (var part in parts.EnumerateArray())
         {
+            if (part.TryGetProperty("thought", out var thought)
+                && thought.ValueKind is JsonValueKind.True)
+                continue;
             if (part.TryGetProperty("text", out var text))
-                sb.AppendLine(text.GetString());
+                sb.Append(text.GetString());
         }
         var s = sb.ToString().Trim();
         return string.IsNullOrWhiteSpace(s) ? null : s;

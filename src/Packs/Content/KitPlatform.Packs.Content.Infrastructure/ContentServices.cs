@@ -957,56 +957,18 @@ internal sealed class ContentPackageService : IContentPackageService
         if (brands.Count == 0)
             throw new InvalidOperationException("Không còn thương hiệu nào để chấm Fit.");
 
-        var brandBlocks = new System.Text.StringBuilder();
-        foreach (var brand in brands)
+        var parsedFits = new List<ContentAdaptFitRow>();
+        ContentAdaptParsed? parsedHead = null;
+        foreach (var chunk in brands.Chunk(3))
         {
-            var knowledge = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
-            brandBlocks.AppendLine("---");
-            brandBlocks.AppendLine("BrandCode: " + brand.Code);
-            brandBlocks.AppendLine("BrandName: " + brand.Name);
-            brandBlocks.AppendLine(ContentBrandKnowledge.FormatForPrompt(knowledge, brand.OperationalBrief));
-            if (!string.IsNullOrWhiteSpace(brand.DefaultCtaLabel) || !string.IsNullOrWhiteSpace(brand.DefaultCtaUrl))
-                brandBlocks.AppendLine("Default CTA: " + (brand.DefaultCtaLabel ?? "") + " " + (brand.DefaultCtaUrl ?? ""));
-            brandBlocks.AppendLine();
+            var raw = await AskBrandFitJsonAsync(source, sourceTopic, core, chunk, cancellationToken);
+            var parsedChunk = ContentAdaptJson.ParseLenient(raw);
+            parsedHead ??= parsedChunk;
+            parsedFits.AddRange(parsedChunk.Fits);
         }
 
-        var system =
-            "You are a Vietnamese brand strategist for KIT Marketing Park.\n" +
-            "Return valid JSON only. No markdown fences.\n" +
-            "A Core Idea is brand-independent. Each brand must get a DISTINCT angle — never translate or copy the same article.\n" +
-            "Read the FULL Brand Brain (problems, claims forbidden, products, pillars, good/bad examples).\n" +
-            "verdict=skip when: wrong audience; idea hits claimsForbidden; products/pillars cannot carry the topic; " +
-            "or forcing a fit would cheapen the brand (pharmacy SOP on tea/family/city; job listings on pharmacy/tea/family).\n" +
-            "If factOrOpinion=fact and source/evidence is missing, do not invent numbers — skip brands that would need invented proof.\n" +
-            "verdict must be exactly: fit | maybe | skip.\n" +
-            "score is 0-100. Skip should be below 45. Fit is 70+.\n" +
-            "Do not invent medical claims, prices, salaries, or guarantees.";
-
-        var user =
-            "CORE IDEA\n" +
-            "Title: " + source.Title + "\n" +
-            "Insight: " + (core.Insight ?? source.Angle ?? "") + "\n" +
-            "Problem: " + (core.Problem ?? "") + "\n" +
-            "Core message: " + (core.CoreMessage ?? source.Angle ?? "") + "\n" +
-            "Audience (origin): " + (source.Audience ?? "") + "\n" +
-            "Objective: " + source.Goal + "\n" +
-            "Pillar: " + (source.Pillar ?? "") + "\n" +
-            "Source: " + (core.Source ?? "") + "\n" +
-            "Source URL: " + (core.SourceUrl ?? "") + "\n" +
-            "Source type: " + (core.SourceType ?? "") + "\n" +
-            "Evidence: " + (core.Evidence ?? "") + "\n" +
-            "Fact or opinion: " + (core.FactOrOpinion ?? "") + "\n" +
-            "Outline: " + (sourceTopic.BodyOutline ?? "") + "\n\n" +
-            "BRANDS TO SCORE (only these codes):\n" +
-            brandBlocks + "\n" +
-            "Return JSON: { coreIdea: { insight, problem, coreMessage, keywords: [] }, " +
-            "fits: [ { brandCode, verdict, score, reason, title, angle, audience, cta, outline } ] }\n" +
-            "Include exactly one fits[] row per BrandCode listed. No extra brands.\n" +
-            "outline, reason, title, angle, audience, cta MUST be strings (join bullets with '; '), never arrays.\n" +
-            "Angles must differ across brands that are fit/maybe.";
-
-        var raw = await _gemini.GenerateJsonAsync(system, user, cancellationToken);
-        var parsed = ContentAdaptJson.Parse(raw);
+        var parsed = parsedHead ?? throw new InvalidOperationException("AI không trả fits[] Brand Fit.");
+        parsed = parsed with { Fits = parsedFits };
 
         if (parsed.Insight is not null || parsed.Problem is not null || parsed.CoreMessage is not null || parsed.Keywords.Count > 0)
         {
@@ -1090,6 +1052,55 @@ internal sealed class ContentPackageService : IContentPackageService
             cancellationToken);
 
         return results;
+    }
+
+    private async Task<string> AskBrandFitJsonAsync(
+        ContentRepository.PackageRow source,
+        ContentRepository.TopicRow sourceTopic,
+        ContentCoreIdeaDto core,
+        IReadOnlyList<ContentRepository.BrandRow> chunk,
+        CancellationToken cancellationToken)
+    {
+        var brandBlocks = new StringBuilder();
+        foreach (var brand in chunk)
+        {
+            var knowledge = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
+            brandBlocks.AppendLine("---");
+            brandBlocks.AppendLine("BrandCode: " + brand.Code);
+            brandBlocks.AppendLine("BrandName: " + brand.Name);
+            brandBlocks.AppendLine(ContentBrandKnowledge.FormatForFitScore(knowledge, brand.OperationalBrief));
+            brandBlocks.AppendLine();
+        }
+
+        var system =
+            "You are a Vietnamese brand strategist for KIT Marketing Park.\n" +
+            "Return compact valid JSON only. No markdown.\n" +
+            "A Core Idea is brand-independent. Each brand gets a DISTINCT angle — never copy the same article.\n" +
+            "verdict=skip when: wrong audience; idea hits claimsForbidden; products/pillars cannot carry the topic; " +
+            "or forcing a fit cheapens the brand (pharmacy SOP on tea/family/city; job listings on pharmacy/tea/family).\n" +
+            "If factOrOpinion=fact and source/evidence is missing, do not invent numbers.\n" +
+            "verdict must be exactly: fit | maybe | skip. score 0-100. Skip <45. Fit 70+.\n" +
+            "Do not invent medical claims, prices, salaries, or guarantees.";
+
+        var user =
+            "CORE IDEA\n" +
+            "Title: " + source.Title + "\n" +
+            "Insight: " + (core.Insight ?? source.Angle ?? "") + "\n" +
+            "Problem: " + (core.Problem ?? "") + "\n" +
+            "Core message: " + (core.CoreMessage ?? source.Angle ?? "") + "\n" +
+            "Audience (origin): " + (source.Audience ?? "") + "\n" +
+            "Objective: " + source.Goal + "\n" +
+            "Pillar: " + (source.Pillar ?? "") + "\n" +
+            "Fact or opinion: " + (core.FactOrOpinion ?? "") + "\n" +
+            "Source: " + (core.Source ?? "") + "\n" +
+            "Evidence: " + (core.Evidence ?? "") + "\n" +
+            "Outline: " + Clip(sourceTopic.BodyOutline, 400) + "\n\n" +
+            "BRANDS TO SCORE (only these codes):\n" +
+            brandBlocks + "\n" +
+            "Return JSON: { \"fits\": [ { \"brandCode\", \"verdict\", \"score\", \"reason\", \"title\", \"angle\" } ] }\n" +
+            "Exactly one fits[] row per BrandCode. reason ≤ 22 words. title/angle ≤ 16 words. All values are strings except score (number). No arrays.";
+
+        return await _gemini.GenerateJsonAsync(system, user, cancellationToken, 8192, disableThinking: true);
     }
 
     public async Task<CreatePoolIdeasResultDto> CreatePoolAsync(

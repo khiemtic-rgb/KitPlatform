@@ -37,5 +37,10 @@ export function apiErrorMessage(error: unknown, fallback: string) {
     }
     return `${fallback} (HTTP ${error.response.status})`;
   }
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim().slice(0, 280);
+  }
+  const nested = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+  if (typeof nested === 'string' && nested.trim()) return nested.trim().slice(0, 280);
   return fallback;
 }

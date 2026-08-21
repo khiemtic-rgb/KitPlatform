@@ -197,7 +197,35 @@ internal static class ContentAdaptJson
     {
         var json = StripFence(raw);
         using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
+        return FromRoot(doc.RootElement);
+    }
+
+    public static ContentAdaptParsed ParseLenient(string raw)
+    {
+        try
+        {
+            return Parse(raw);
+        }
+        catch (JsonException)
+        {
+            var repaired = RepairTruncatedJson(StripFence(raw));
+            try
+            {
+                return Parse(repaired);
+            }
+            catch (JsonException)
+            {
+                var partial = ExtractPartialFits(repaired);
+                if (partial.Count == 0)
+                    throw new InvalidOperationException(
+                        "AI cắt JSON Brand Fit giữa chừng. Chấm lại — mỗi lần ít brand hơn nếu vẫn lỗi.");
+                return new ContentAdaptParsed(null, null, null, [], partial);
+            }
+        }
+    }
+
+    private static ContentAdaptParsed FromRoot(JsonElement root)
+    {
         string? insight = null, problem = null, coreMessage = null;
         var keywords = new List<string>();
         if (TryProp(root, out var coreEl, "coreIdea", "core_idea"))
@@ -213,17 +241,8 @@ internal static class ContentAdaptJson
         {
             foreach (var row in fitsEl.EnumerateArray())
             {
-                if (row.ValueKind != JsonValueKind.Object) continue;
-                fits.Add(new ContentAdaptFitRow(
-                    ReadFlexible(row, "brandCode", "brand_code"),
-                    ReadFlexible(row, "verdict"),
-                    ReadScore(row),
-                    ReadFlexible(row, "reason"),
-                    ReadFlexible(row, "title"),
-                    ReadFlexible(row, "angle"),
-                    ReadFlexible(row, "audience"),
-                    ReadFlexible(row, "cta"),
-                    ReadFlexible(row, "outline")));
+                var mapped = MapFit(row);
+                if (mapped is not null) fits.Add(mapped);
             }
         }
 
@@ -233,15 +252,147 @@ internal static class ContentAdaptJson
         return new ContentAdaptParsed(insight, problem, coreMessage, keywords, fits);
     }
 
+    private static ContentAdaptFitRow? MapFit(JsonElement row)
+    {
+        if (row.ValueKind != JsonValueKind.Object) return null;
+        var code = ReadFlexible(row, "brandCode", "brand_code");
+        if (string.IsNullOrWhiteSpace(code)) return null;
+        return new ContentAdaptFitRow(
+            code,
+            ReadFlexible(row, "verdict"),
+            ReadScore(row),
+            ReadFlexible(row, "reason"),
+            ReadFlexible(row, "title"),
+            ReadFlexible(row, "angle"),
+            ReadFlexible(row, "audience"),
+            ReadFlexible(row, "cta"),
+            ReadFlexible(row, "outline"));
+    }
+
+    /// <summary>Close an unterminated string / array / object when Gemini hits max tokens.</summary>
+    internal static string RepairTruncatedJson(string raw)
+    {
+        var s = raw.Trim();
+        var start = s.IndexOf('{');
+        if (start < 0) return s;
+        s = s[start..];
+
+        var closer = new List<char>();
+        var inString = false;
+        var escape = false;
+        foreach (var c in s)
+        {
+            if (inString)
+            {
+                if (escape) { escape = false; continue; }
+                if (c == '\\') { escape = true; continue; }
+                if (c == '"') inString = false;
+                continue;
+            }
+
+            switch (c)
+            {
+                case '"':
+                    inString = true;
+                    break;
+                case '{':
+                    closer.Add('}');
+                    break;
+                case '[':
+                    closer.Add(']');
+                    break;
+                case '}' or ']':
+                    if (closer.Count > 0 && closer[^1] == c)
+                        closer.RemoveAt(closer.Count - 1);
+                    break;
+            }
+        }
+
+        var sb = new StringBuilder(s);
+        if (inString)
+        {
+            if (escape) sb.Append('n');
+            sb.Append('"');
+        }
+
+        while (sb.Length > 0 && (char.IsWhiteSpace(sb[^1]) || sb[^1] == ','))
+            sb.Length--;
+
+        for (var i = closer.Count - 1; i >= 0; i--)
+            sb.Append(closer[i]);
+        return sb.ToString();
+    }
+
+    private static List<ContentAdaptFitRow> ExtractPartialFits(string json)
+    {
+        var fits = new List<ContentAdaptFitRow>();
+        var s = json;
+        var idx = 0;
+        while (idx < s.Length)
+        {
+            var open = s.IndexOf('{', idx);
+            if (open < 0) break;
+            var depth = 0;
+            var inString = false;
+            var escape = false;
+            var end = -1;
+            for (var i = open; i < s.Length; i++)
+            {
+                var c = s[i];
+                if (inString)
+                {
+                    if (escape) { escape = false; continue; }
+                    if (c == '\\') { escape = true; continue; }
+                    if (c == '"') inString = false;
+                    continue;
+                }
+
+                if (c == '"') { inString = true; continue; }
+                if (c == '{') depth++;
+                else if (c == '}')
+                {
+                    depth--;
+                    if (depth == 0) { end = i; break; }
+                }
+            }
+
+            if (end < 0) break;
+            var slice = s[open..(end + 1)];
+            idx = end + 1;
+            try
+            {
+                using var doc = JsonDocument.Parse(slice);
+                var mapped = MapFit(doc.RootElement);
+                if (mapped is not null) fits.Add(mapped);
+            }
+            catch (JsonException)
+            {
+                // skip incomplete object
+            }
+        }
+
+        return fits;
+    }
+
     private static string StripFence(string raw)
     {
         var s = raw.Trim();
-        if (!s.StartsWith("```", StringComparison.Ordinal)) return s;
-        var nl = s.IndexOf('\n');
-        if (nl < 0) return s;
-        s = s[(nl + 1)..];
-        var end = s.LastIndexOf("```", StringComparison.Ordinal);
-        return end >= 0 ? s[..end].Trim() : s.Trim();
+        if (s.StartsWith("```", StringComparison.Ordinal))
+        {
+            var nl = s.IndexOf('\n');
+            if (nl >= 0)
+            {
+                s = s[(nl + 1)..];
+                var fence = s.LastIndexOf("```", StringComparison.Ordinal);
+                if (fence >= 0) s = s[..fence];
+                s = s.Trim();
+            }
+        }
+
+        var start = s.IndexOf('{');
+        if (start < 0) return s;
+        var end = s.LastIndexOf('}');
+        return end > start ? s[start..(end + 1)] : s[start..];
     }
 
     private static bool TryProp(JsonElement obj, out JsonElement value, params string[] names)
