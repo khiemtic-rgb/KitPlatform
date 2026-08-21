@@ -2206,7 +2206,7 @@ const EPISODE_CAST: { id: string; names: string[]; role: string }[] = [
   { id: 'CHAR-003', names: ['linh', 'mẹ', 'me'], role: 'Mẹ' },
 ];
 
-function looksLikeShotPack(text: string) {
+export function looksLikeShotPack(text: string) {
   return /^---\s*(SHORT|SHOT|LONG|REF|STILL)\s*---/im.test(text);
 }
 
@@ -2232,7 +2232,7 @@ function looksLikeEpisodeScript(text: string) {
   );
 }
 
-function stripDialogue(raw: string) {
+export function stripDialogue(raw: string) {
   return raw
     .trim()
     .replace(/^["“”']+|["“”']+$/g, '')
@@ -2251,7 +2251,7 @@ function resolveEpisodeSpeaker(raw: string, chars: FamixaCharacter[]): FamixaCha
   return chars.find((c) => c.name.toLowerCase() === key);
 }
 
-function ensureEpisodeChar(chars: FamixaCharacter[], speaker: string): FamixaCharacter {
+export function ensureEpisodeChar(chars: FamixaCharacter[], speaker: string): FamixaCharacter {
   const hit = resolveEpisodeSpeaker(speaker, chars);
   if (hit) {
     if (!chars.some((c) => c.id === hit.id)) chars.push(hit);
@@ -2264,13 +2264,13 @@ function ensureEpisodeChar(chars: FamixaCharacter[], speaker: string): FamixaCha
   return row;
 }
 
-function isEpisodeMetaLine(line: string) {
+export function isEpisodeMetaLine(line: string) {
   return /^(cuối\s*episode|mục tiêu|âm thanh|sound(?:\s*design)?|emotion|cảm xúc|nhạc|continuity|style|format|target duration|video id|video title|production purpose|season|project)\s*:?\s*$/i.test(
     line.trim(),
   );
 }
 
-function sceneHead(line: string) {
+export function sceneHead(line: string) {
   const m = line.match(/^(?:#{1,3}\s*)?(?:SCENE|SC|CẢNH|CANH)\s*0*(\d+)\b\s*[—–:\-.]?\s*(.*)$/i);
   if (m) return { n: Number(m[1]), title: (m[2] ?? '').trim() };
   const numbered = line.match(/^(?:#{1,3}\s*)?(\d{1,2})\s*[\.\)]\s*(?:SCENE|CẢNH|CANH)\b\s*[—–:\-.]?\s*(.*)$/i);
@@ -2278,7 +2278,7 @@ function sceneHead(line: string) {
   return undefined;
 }
 
-function shotHead(line: string) {
+export function shotHead(line: string) {
   const m = line.match(/^(?:#{1,3}\s*)?(?:SHOT|SH|BEAT|KHOẢNH KHẮC)\s*0*(\d+)\b\s*[—–:\-.]?\s*(.*)$/i);
   if (!m) return undefined;
   return { n: Number(m[1]), title: (m[2] ?? '').trim() };
@@ -2296,7 +2296,7 @@ function speakerHead(line: string) {
   return { name, emotion: (m[2] ?? '').trim(), rest: (m[3] ?? '').trim() };
 }
 
-function extractEpisodeScriptBody(text: string) {
+export function extractEpisodeScriptBody(text: string) {
   const start = text.search(/^(?:#{1,3}\s*)?(?:0?7\.\s*)?SCRIPT\b|^(?:#{1,3}\s*)?SCENE\s*0*1\b/im);
   if (start < 0) return text;
   const rest = text.slice(start);
@@ -2304,7 +2304,7 @@ function extractEpisodeScriptBody(text: string) {
   return (end > 0 ? rest.slice(0, end) : rest).trim();
 }
 
-function skipScriptFurniture(line: string) {
+export function skipScriptFurniture(line: string) {
   return (
     /^(?:#{1,3}\s*)?(?:0?7\.\s*)?SCRIPT\b/i.test(line) ||
     /^(?:CUT TO BLACK|END|FADE OUT|FADE IN)\.?\s*$/i.test(line) ||
@@ -2312,7 +2312,7 @@ function skipScriptFurniture(line: string) {
   );
 }
 
-function screenplaySpeaker(line: string, chars: FamixaCharacter[]) {
+export function screenplaySpeaker(line: string, chars: FamixaCharacter[]) {
   const vo = line.match(/^(?:VOICE\s*OVER|V\.?\s*O\.?)\s*[—–:-]\s*(.+)$/i);
   if (vo) return vo[1].trim();
   const colon = speakerHead(line);
@@ -2342,14 +2342,14 @@ function isPackBannerLine(line: string) {
   );
 }
 
-function locHead(line: string) {
+export function locHead(line: string) {
   const m = line.match(/^(?:INT|EXT)\.?\s*[/.—–-]?\s*(.+)$/i);
   if (!m) return undefined;
   const title = (m[1] ?? '').trim();
   return title ? { title } : undefined;
 }
 
-function beatHead(line: string) {
+export function beatHead(line: string) {
   const m = line.match(
     /^(?:#{1,3}\s*)?(?:ở\s*đoạn|đoạn|khoảnh khắc|mở đầu(?:\s*episode)?|cuối cảnh)\b\s*[—–:\-.]?\s*(.*)$/i,
   );
@@ -2358,7 +2358,7 @@ function beatHead(line: string) {
   return { title };
 }
 
-function seedEpisodeCast(text: string, characters: FamixaCharacter[]) {
+export function seedEpisodeCast(text: string, characters: FamixaCharacter[]) {
   for (const row of EPISODE_CAST) {
     const proper = row.names[0] ?? '';
     const named = characters.find((c) => c.id === row.id);
@@ -2380,7 +2380,7 @@ function stripEpisodeMetaTail(text: string) {
   return text.replace(/\n(?:cuối\s*episode|mục tiêu)\s*:?[\s\S]*$/i, '').trim();
 }
 
-function proseBeats(text: string, episodeTitle: string): { sceneN: number; title: string; body: string }[] {
+export function proseBeats(text: string, episodeTitle: string): { sceneN: number; title: string; body: string }[] {
   const paras = stripEpisodeMetaTail(text)
     .split(/\n\s*\n/)
     .map((p) => p.replace(/\s+/g, ' ').trim())

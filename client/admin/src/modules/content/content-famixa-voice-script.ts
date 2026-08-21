@@ -115,7 +115,7 @@ export function deriveVoiceScript(state: SeriesPilotState): FamixaVoiceScript {
     const byScene = new Map<string, typeof lines>();
     for (const l of state.lines ?? []) {
       const text = spokenText(l.text);
-      if (!text || isNotSpokenDialogue(text, l.name || l.characterId) || looksLikeScreenplayDump(text)) continue;
+      if (!text || isNotSpokenDialogue(text, l.characterId) || looksLikeScreenplayDump(text)) continue;
       const sceneId = l.sceneId || 'SC';
       const bucket = byScene.get(sceneId) ?? [];
       bucket.push({

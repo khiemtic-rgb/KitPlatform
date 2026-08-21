@@ -53,9 +53,7 @@ import {
   previousLockedShot,
   previousKeyframeShot,
   bindShotToMemory,
-  bindShotToSceneKeyframe,
   primeLongShotsOnScriptLock,
-  shotActionFromPack,
   applyShotLockToGraph,
   compileI2vPrompt,
   formatSeriesVideoContext,
@@ -88,7 +86,6 @@ import {
   lockCast,
   localFileRef,
   mergeRemotePilot,
-  mergeStills,
   linesForScene,
   replaceStoryFromParse,
   newRoleRow,
@@ -534,9 +531,9 @@ export function ContentFamixaSeriesTab() {
   const [ttsBusy, setTtsBusy] = useState(false);
   const [playingLineId, setPlayingLineId] = useState<string>();
   const [ttsNote, setTtsNote] = useState<string>();
-  const [ttsFiles, setTtsFiles] = useState<Record<string, { url: string; fileName: string }>>({});
+  const [, setTtsFiles] = useState<Record<string, { url: string; fileName: string }>>({});
   const [ttsFull, setTtsFull] = useState<{ url: string; fileName: string }>();
-  const serverSaveTimer = useRef<ReturnType<typeof setTimeout>>();
+  const serverSaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const queueServerSave = (next: SeriesPilotState) => {
     if (serverSaveTimer.current) clearTimeout(serverSaveTimer.current);
     serverSaveTimer.current = setTimeout(() => {
@@ -627,16 +624,6 @@ export function ContentFamixaSeriesTab() {
       voiceLocked: keep.status === 'complete' ? Boolean(st.voiceLocked) : false,
     });
     return keep;
-  };
-
-  const saveTtsFile = (cueId: string) => {
-    const file = ttsFiles[cueId];
-    if (!file) return;
-    const a = document.createElement('a');
-    a.href = file.url;
-    a.download = file.fileName;
-    a.rel = 'noopener';
-    a.click();
   };
 
   const playCueAudio = (url: string) =>
@@ -2478,7 +2465,7 @@ export function ContentFamixaSeriesTab() {
           <>
             <Tooltip title={canLockVoice(state) ? undefined : voiceLockHint}>
               <span>
-                <Button type="primary" disabled={!canLockVoice(state)} onClick={lockVoice}>
+                <Button type="primary" disabled={!canLockVoice(state)} onClick={() => lockVoice()}>
                   Khóa Full Voice
                 </Button>
               </span>
