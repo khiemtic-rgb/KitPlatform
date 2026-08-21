@@ -1088,7 +1088,13 @@ export async function analyzeContentPool(body: {
     body,
     { timeout: 30_000 },
   );
-  const ids = data.jobs.map((j) => j.job.id);
+  const ids = (data.jobs ?? [])
+    .map((j) => j.job?.id)
+    .filter((id): id is string => Boolean(id));
+  if (ids.length === 0) {
+    const msg = data.message || 'Không tạo được job chấm Brand Fit';
+    throw Object.assign(new Error(msg), { response: { data: { message: msg } } });
+  }
   await waitForContentWorkMany(ids, { timeoutMs: 12 * 60_000 });
   return data;
 }

@@ -1002,21 +1002,19 @@ internal sealed class ContentPackageService : IContentPackageService
             "Return JSON: { coreIdea: { insight, problem, coreMessage, keywords: [] }, " +
             "fits: [ { brandCode, verdict, score, reason, title, angle, audience, cta, outline } ] }\n" +
             "Include exactly one fits[] row per BrandCode listed. No extra brands.\n" +
+            "outline, reason, title, angle, audience, cta MUST be strings (join bullets with '; '), never arrays.\n" +
             "Angles must differ across brands that are fit/maybe.";
 
         var raw = await _gemini.GenerateJsonAsync(system, user, cancellationToken);
-        var parsed = JsonSerializer.Deserialize<AdaptAiResponse>(raw, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-        }) ?? throw new InvalidOperationException("AI không trả JSON Brand Fit hợp lệ.");
+        var parsed = ContentAdaptJson.Parse(raw);
 
-        if (parsed.CoreIdea is not null)
+        if (parsed.Insight is not null || parsed.Problem is not null || parsed.CoreMessage is not null || parsed.Keywords.Count > 0)
         {
             core = new ContentCoreIdeaDto(
-                parsed.CoreIdea.Insight ?? core.Insight,
-                parsed.CoreIdea.Problem ?? core.Problem,
-                parsed.CoreIdea.CoreMessage ?? core.CoreMessage,
-                parsed.CoreIdea.Keywords is { Count: > 0 } ? parsed.CoreIdea.Keywords : core.Keywords,
+                parsed.Insight ?? core.Insight,
+                parsed.Problem ?? core.Problem,
+                parsed.CoreMessage ?? core.CoreMessage,
+                parsed.Keywords.Count > 0 ? parsed.Keywords : core.Keywords,
                 core.Source,
                 core.SourceUrl,
                 core.SourceType,
@@ -1027,7 +1025,7 @@ internal sealed class ContentPackageService : IContentPackageService
         var byCode = brands.ToDictionary(b => b.Code, StringComparer.OrdinalIgnoreCase);
         var results = new List<ContentBrandFitDto>();
 
-        foreach (var row in parsed.Fits ?? [])
+        foreach (var row in parsed.Fits)
         {
             if (string.IsNullOrWhiteSpace(row.BrandCode)) continue;
             if (!byCode.TryGetValue(row.BrandCode.Trim(), out var brand)) continue;
@@ -1690,25 +1688,6 @@ internal sealed class ContentPackageService : IContentPackageService
         public string? Gap { get; set; }
         public string? SuggestedBrands { get; set; }
         public string? FactOrOpinion { get; set; }
-    }
-
-    private sealed class AdaptAiResponse
-    {
-        public ContentCoreIdeaDto? CoreIdea { get; set; }
-        public List<AdaptAiFit>? Fits { get; set; }
-    }
-
-    private sealed class AdaptAiFit
-    {
-        public string? BrandCode { get; set; }
-        public string? Verdict { get; set; }
-        public int Score { get; set; }
-        public string? Reason { get; set; }
-        public string? Title { get; set; }
-        public string? Angle { get; set; }
-        public string? Audience { get; set; }
-        public string? Cta { get; set; }
-        public string? Outline { get; set; }
     }
 
     private async Task<Guid> MaterializeFitAsync(

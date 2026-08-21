@@ -102,11 +102,11 @@ internal static class ContentDestinationPlan
 
         var visualSlots = slots.Count(s => s.NeedsImages);
         var cap = Math.Clamp(maxImageCandidates, 0, 10);
-        var suggested = cap <= 0 || visualSlots == 0 ? 0 : Math.Min(cap, visualSlots);
+        var suggested = cap <= 0 || visualSlots == 0 ? 0 : 1;
 
         var summary =
             $"{activeSites.Count} web · {activeChannels.Count} MXH → {kinds.Count} bản viết" +
-            (suggested > 0 ? $", {suggested} ảnh" : ", không ảnh");
+            (suggested > 0 ? ", 1 ảnh" : ", không ảnh");
 
         return new Plan(
             kinds,

@@ -52,16 +52,10 @@ internal sealed class ContentGenerateService : IContentGenerateService
             request.VariantKinds);
 
         var ai = await _gemini.ResolveConfigAsync(cancellationToken);
-        var candidates = Math.Clamp(
-            request.CandidateCount ?? destPlan.SuggestedImageCandidates,
-            0,
-            10);
-        if (request.SkipImages || !ai.ImagesEnabled)
-            candidates = 0;
-        else if (candidates < 1)
+        // One photoreal still per topic — extra candidates burn Gemini image quota.
+        var candidates = 0;
+        if (!request.SkipImages && ai.ImagesEnabled && (destPlan.NeedsImages || request.ImagesOnly))
             candidates = 1;
-        if (request.ImagesOnly && request.CandidateCount is null)
-            candidates = Math.Clamp(Math.Max(destPlan.SuggestedImageCandidates, 1), 1, 10);
         if (request.ImagesOnly && !ai.ImagesEnabled)
             throw new InvalidOperationException(
                 "Không thể tạo ảnh — bật «Gen ảnh» trong Cấu hình AI.");
@@ -358,68 +352,59 @@ internal sealed class ContentGenerateService : IContentGenerateService
 
                 var directed = await DirectImagePromptAsync(topic, brand, seedImagePrompt, cancellationToken);
                 imagePrompt = directed.Scene;
-                var altScene = directed.AltScene;
 
                 await _repo.DeleteAssetsForTopicAsync(topicId, cancellationToken);
                 var root = ResolveAssetRoot();
                 Directory.CreateDirectory(root);
 
-                for (var i = 0; i < candidates; i++)
+                try
                 {
-                    try
-                    {
-                        var shot = i == 0 || string.IsNullOrWhiteSpace(altScene)
-                            ? imagePrompt
-                            : altScene;
-                        var (bytes, model) = await _gemini.GenerateImageAsync(
-                            $"{shot}\nSame thesis, composition {i + 1} of {candidates}.",
-                            cancellationToken);
-                        var assetId = Guid.CreateVersion7();
-                        var fileName = $"{assetId:N}.png";
-                        var relDir = Path.Combine(topicId.ToString("N"));
-                        var absDir = Path.Combine(root, relDir);
-                        Directory.CreateDirectory(absDir);
-                        var absPath = Path.Combine(absDir, fileName);
-                        await File.WriteAllBytesAsync(absPath, bytes, cancellationToken);
-                        var storagePath = Path.Combine(relDir, fileName).Replace('\\', '/');
+                    var (bytes, model) = await _gemini.GenerateImageAsync(imagePrompt, cancellationToken);
+                    var assetId = Guid.CreateVersion7();
+                    var fileName = $"{assetId:N}.png";
+                    var relDir = Path.Combine(topicId.ToString("N"));
+                    var absDir = Path.Combine(root, relDir);
+                    Directory.CreateDirectory(absDir);
+                    var absPath = Path.Combine(absDir, fileName);
+                    await File.WriteAllBytesAsync(absPath, bytes, cancellationToken);
+                    var storagePath = Path.Combine(relDir, fileName).Replace('\\', '/');
 
-                        await _repo.InsertAssetAsync(new ContentRepository.AssetRow
-                        {
-                            Id = assetId,
-                            TopicId = topicId,
-                            Kind = "image",
-                            FileName = fileName,
-                            ContentType = "image/png",
-                            StoragePath = storagePath,
-                            Prompt = imagePrompt,
-                            Model = model,
-                            ImageTier = tier,
-                            EstimateUsd = rate,
-                            IsSelected = imageOk == 0,
-                            MetaJson = "{}",
-                        }, cancellationToken);
-
-                        await _repo.InsertUsageAsync(
-                            brand.Id,
-                            topicId,
-                            "image_gen",
-                            tier,
-                            1,
-                            rate,
-                            ContentRepository.ToJson(new { model, candidate = i + 1 }),
-                            cancellationToken);
-                        imageOk++;
-                    }
-                    catch (Exception imgEx)
+                    await _repo.InsertAssetAsync(new ContentRepository.AssetRow
                     {
-                        imageError = imgEx.Message;
-                        _logger.LogWarning(imgEx, "Image candidate {I} failed for topic {TopicId}", i + 1, topicId);
-                    }
+                        Id = assetId,
+                        TopicId = topicId,
+                        Kind = "image",
+                        FileName = fileName,
+                        ContentType = "image/png",
+                        StoragePath = storagePath,
+                        Prompt = imagePrompt,
+                        Model = model,
+                        ImageTier = tier,
+                        EstimateUsd = rate,
+                        IsSelected = true,
+                        MetaJson = "{}",
+                    }, cancellationToken);
+
+                    await _repo.InsertUsageAsync(
+                        brand.Id,
+                        topicId,
+                        "image_gen",
+                        tier,
+                        1,
+                        rate,
+                        ContentRepository.ToJson(new { model, candidate = 1 }),
+                        cancellationToken);
+                    imageOk++;
+                }
+                catch (Exception imgEx)
+                {
+                    imageError = imgEx.Message;
+                    _logger.LogWarning(imgEx, "Image failed for topic {TopicId}", topicId);
                 }
 
                 if (imageOk == 0 && imageError is not null)
                 {
-                    _logger.LogError("All image candidates failed for topic {TopicId}: {Error}", topicId, imageError);
+                    _logger.LogError("Image generation failed for topic {TopicId}: {Error}", topicId, imageError);
                 }
             }
 
@@ -428,7 +413,7 @@ internal sealed class ContentGenerateService : IContentGenerateService
             if (request.ImagesOnly)
             {
                 msg = imageOk > 0
-                    ? $"Đã tạo {imageOk} ảnh ({destPlan.Summary})."
+                    ? "Đã tạo 1 ảnh theo nội dung bài."
                     : "Không tạo được ảnh: " + (imageError ?? "chưa rõ lỗi — kiểm tra Cấu hình AI / model ảnh.");
             }
             else if (candidates == 0)
@@ -437,9 +422,7 @@ internal sealed class ContentGenerateService : IContentGenerateService
             }
             else if (imageOk > 0)
             {
-                msg = $"Đã gen {destPlan.VariantKinds.Count} bản viết + {imageOk} ảnh · {destPlan.Summary}.";
-                if (imageOk < candidates && imageError is not null)
-                    msg += " Một số ảnh lỗi.";
+                msg = $"Đã gen {destPlan.VariantKinds.Count} bản viết + 1 ảnh · {destPlan.Summary}.";
             }
             else
             {
@@ -703,7 +686,7 @@ internal sealed class ContentGenerateService : IContentGenerateService
             row.CreatedAt, row.UpdatedAt, row.VariantCount, row.CorePackageId, row.CoreTitle);
     }
 
-    private sealed record DirectedImagePrompt(string Scene, string? AltScene);
+    private sealed record DirectedImagePrompt(string Scene);
 
     private async Task<DirectedImagePrompt> DirectImagePromptAsync(
         ContentRepository.TopicRow topic,
@@ -714,13 +697,14 @@ internal sealed class ContentGenerateService : IContentGenerateService
         var knowledge = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
         var packageId = await _repo.GetPackageIdByTopicAsync(topic.Id, ct);
         var package = packageId is Guid pid ? await _repo.GetPackageAsync(pid, ct) : null;
+        var (core, _) = ContentPackageExtra.Parse(package?.ExtraJson);
         var brief = ContentPackageExtra.ParseBrief(package?.ExtraJson);
         var variants = await _repo.ListVariantsAsync(topic.Id, ct);
         var beats = new StringBuilder();
-        foreach (var v in variants.Take(4))
+        foreach (var v in variants.Take(8))
         {
             var body = (v.BodyMarkdown ?? "").Trim();
-            if (body.Length > 260) body = body[..260];
+            if (body.Length > 720) body = body[..720];
             beats.Append("- ").Append(v.Kind);
             if (!string.IsNullOrWhiteSpace(v.Title)) beats.Append(": ").Append(v.Title);
             if (body.Length > 0) beats.Append(" — ").Append(body);
@@ -729,24 +713,24 @@ internal sealed class ContentGenerateService : IContentGenerateService
 
         var fallback = SealImagePrompt(
             string.IsNullOrWhiteSpace(seedPrompt)
-                ? "Cinematic documentary still of a specific human moment that makes the article thesis feel true. "
-                  + "Close or medium shot, one clear subject, shallow depth of field, magazine-cover energy. Not a generic shop interior."
+                ? "Photorealistic documentary still of the exact human moment this article argues — one subject, one action, emotion first. Not a generic shop interior or stock handshake."
                 : seedPrompt.Trim(),
             topic.Title);
 
         try
         {
             const string system =
-                "You are an art director for Vietnamese social and web marketing photos.\n"
-                + "Return JSON only: {\"scene\":\"...\",\"altScene\":\"...\"}.\n"
-                + "scene = one photorealistic still that proves the ARTICLE THESIS — a specific person doing a real action, "
-                + "emotion first, scroll-stopping. Not a catalog pharmacy interior, not a stock handshake.\n"
-                + "altScene = same thesis, different distance or viewpoint (detail vs wide).\n"
+                "You are an art director. Read the ARTICLE COPY first, then describe ONE still that illustrates that specific claim.\n"
+                + "Return JSON only: {\"scene\":\"...\"}.\n"
+                + "scene = one photorealistic photograph of a concrete person/action that matches the article — not a brand moodboard, not a catalog interior.\n"
                 + "English visual description only. Never request letters, signs, logos, slogans, or captions.";
             var user =
                 "Brand visual: " + (knowledge.VisualStyle ?? "") + " / " + (knowledge.VisualColors ?? "") +
                 " / " + (knowledge.ImageNotes ?? "") + "\n" +
                 "Audience: " + (knowledge.Audience ?? "") + "\n" +
+                "Insight: " + (core.Insight ?? "") + "\n" +
+                "Problem: " + (core.Problem ?? "") + "\n" +
+                "Core message: " + (core.CoreMessage ?? "") + "\n" +
                 (string.IsNullOrWhiteSpace(ContentCreativeBriefDto.FormatForPrompt(brief))
                     ? ""
                     : "CREATIVE BRIEF\n" + ContentCreativeBriefDto.FormatForPrompt(brief) + "\n") +
@@ -755,24 +739,21 @@ internal sealed class ContentGenerateService : IContentGenerateService
                 "Pillar: " + (topic.Pillar ?? "") + "\n" +
                 "Goal: " + topic.Goal + "\n" +
                 "Outline: " + (topic.BodyOutline ?? "") + "\n" +
-                "Copy beats:\n" + beats +
+                "ARTICLE COPY (illustrate this, not a generic brand photo):\n" + beats +
                 (string.IsNullOrWhiteSpace(seedPrompt) ? "" : "Seed: " + seedPrompt.Trim() + "\n");
 
-            var raw = await _gemini.GenerateJsonAsync(system, user, ct, 900);
+            var raw = await _gemini.GenerateJsonAsync(system, user, ct, 700);
             var dto = JsonSerializer.Deserialize<ImageDirectorResponse>(raw, JsonOpts);
             var scene = dto?.Scene?.Trim();
             if (string.IsNullOrWhiteSpace(scene))
-                return new DirectedImagePrompt(fallback, null);
+                return new DirectedImagePrompt(fallback);
 
-            var alt = string.IsNullOrWhiteSpace(dto?.AltScene)
-                ? null
-                : SealImagePrompt(dto.AltScene.Trim(), topic.Title);
-            return new DirectedImagePrompt(SealImagePrompt(scene, topic.Title), alt);
+            return new DirectedImagePrompt(SealImagePrompt(scene, topic.Title));
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Image director failed for topic {TopicId} — using fallback prompt", topic.Id);
-            return new DirectedImagePrompt(fallback, null);
+            return new DirectedImagePrompt(fallback);
         }
     }
 

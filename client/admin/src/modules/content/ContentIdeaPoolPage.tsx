@@ -148,6 +148,7 @@ export function ContentIdeaPoolPage() {
       message.warning('Chọn ít nhất một brand để chấm');
       return;
     }
+    const hide = message.loading('Đang chấm Brand Fit… AI đọc từng ý, có thể mất vài phút.', 0);
     setBusy(true);
     try {
       await analyzeContentPool({ packageIds: ids, brandIds: scoreBrandIds, includeMaybe: true });
@@ -157,6 +158,7 @@ export function ContentIdeaPoolPage() {
     } catch (e) {
       message.error(apiErrorMessage(e, 'Chấm Brand Fit thất bại'));
     } finally {
+      hide();
       setBusy(false);
     }
   };
