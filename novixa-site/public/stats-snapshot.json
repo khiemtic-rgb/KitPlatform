@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-21T13:12:45.622Z",
+  "generatedAt": "2026-08-21T18:57:42.741Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 237,
-    "todayPageViews": 377,
-    "todayRequests": 2325,
-    "last24hVisitors": 345,
-    "last24hPageViews": 851,
-    "last24hRequests": 3203
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 351,
+    "last24hPageViews": 574,
+    "last24hRequests": 2825
   },
   "hourly": [
-    {
-      "time": "2026-08-20T14:00:00Z",
-      "visitors": 42,
-      "requests": 390
-    },
-    {
-      "time": "2026-08-20T15:00:00Z",
-      "visitors": 14,
-      "requests": 42
-    },
-    {
-      "time": "2026-08-20T16:00:00Z",
-      "visitors": 8,
-      "requests": 11
-    },
-    {
-      "time": "2026-08-20T17:00:00Z",
-      "visitors": 3,
-      "requests": 31
-    },
-    {
-      "time": "2026-08-20T18:00:00Z",
-      "visitors": 11,
-      "requests": 27
-    },
     {
       "time": "2026-08-20T19:00:00Z",
       "visitors": 37,
@@ -128,17 +103,36 @@
     },
     {
       "time": "2026-08-21T13:00:00Z",
+      "visitors": 23,
+      "requests": 33
+    },
+    {
+      "time": "2026-08-21T14:00:00Z",
+      "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-21T15:00:00Z",
       "visitors": 7,
-      "requests": 11
+      "requests": 9
+    },
+    {
+      "time": "2026-08-21T16:00:00Z",
+      "visitors": 15,
+      "requests": 21
+    },
+    {
+      "time": "2026-08-21T17:00:00Z",
+      "visitors": 15,
+      "requests": 31
+    },
+    {
+      "time": "2026-08-21T18:00:00Z",
+      "visitors": 21,
+      "requests": 33
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-15",
-      "visitors": 260,
-      "pageViews": 147,
-      "requests": 532
-    },
     {
       "date": "2026-08-16",
       "visitors": 331,
@@ -171,50 +165,54 @@
     },
     {
       "date": "2026-08-21",
-      "visitors": 237,
-      "pageViews": 377,
-      "requests": 2325
+      "visitors": 296,
+      "pageViews": 409,
+      "requests": 2446
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 214
+      "views": 174
     },
     {
       "path": "/vi/",
-      "views": 127
-    },
-    {
-      "path": "/cdn-cgi/l/email-protection",
-      "views": 85
+      "views": 102
     },
     {
       "path": "/robots.txt",
-      "views": 52
+      "views": 53
     },
     {
       "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 46
-    },
-    {
-      "path": "/favicon.svg",
-      "views": 41
+      "views": 44
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 39
+      "views": 43
+    },
+    {
+      "path": "/cdn-cgi/l/email-protection",
+      "views": 42
+    },
+    {
+      "path": "/favicon.svg",
+      "views": 42
+    },
+    {
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 33
     },
     {
       "path": "/_astro/index.Bqr8_YCi.css",
       "views": 32
     },
     {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 31
+      "path": "/images/logo.png",
+      "views": 27
     },
     {
-      "path": "/images/logo.png",
+      "path": "/sitemap-index.xml",
       "views": 25
     },
     {
@@ -223,18 +221,14 @@
     },
     {
       "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
-      "views": 23
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 22
+      "views": 24
     },
     {
       "path": "/wp-includes/css/index.php",
       "views": 21
     },
     {
-      "path": "/wp-content/languages/index.php",
+      "path": "/wp-content/uploads/wp-conflg.php",
       "views": 21
     }
   ]
