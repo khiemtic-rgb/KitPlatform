@@ -402,17 +402,17 @@ export function LocalOsListingsPage() {
     setSaving(true);
     try {
       const body = {
-        kind: values.kind as string,
-        title: String(values.title).trim(),
-        summary: values.summary,
+        kind: String(values.kind ?? ''),
+        title: String(values.title ?? '').trim(),
+        summary: values.summary == null ? undefined : String(values.summary),
         placeText,
-        salaryText: values.kind === 'room' ? undefined : values.salaryText,
+        salaryText: String(values.kind ?? '') === 'room' ? undefined : values.salaryText == null ? undefined : String(values.salaryText),
         contactPhone,
-        contactName: values.contactName,
-        workingTime: values.workingTime,
-        requirements: values.requirements,
-        organizationName: values.organizationName,
-        employmentType: values.employmentType,
+        contactName: values.contactName == null ? undefined : String(values.contactName),
+        workingTime: values.workingTime == null ? undefined : String(values.workingTime),
+        requirements: values.requirements == null ? undefined : String(values.requirements),
+        organizationName: values.organizationName == null ? undefined : String(values.organizationName),
+        employmentType: values.employmentType == null ? undefined : String(values.employmentType),
       };
       let id: string;
       if (writing && writing !== 'new') {
