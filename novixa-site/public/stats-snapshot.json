@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-20T19:01:23.323Z",
+  "generatedAt": "2026-08-21T01:58:57.249Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 209,
-    "last24hPageViews": 482,
-    "last24hRequests": 929
+    "todayVisitors": 63,
+    "todayPageViews": 67,
+    "todayRequests": 159,
+    "last24hVisitors": 280,
+    "last24hPageViews": 697,
+    "last24hRequests": 1393
   },
   "hourly": [
-    {
-      "time": "2026-08-19T20:00:00Z",
-      "visitors": 13,
-      "requests": 28
-    },
-    {
-      "time": "2026-08-19T21:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-19T22:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-19T23:00:00Z",
-      "visitors": 3,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-20T00:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-20T01:00:00Z",
-      "visitors": 9,
-      "requests": 15
-    },
     {
       "time": "2026-08-20T02:00:00Z",
       "visitors": 13,
@@ -125,6 +95,41 @@
       "time": "2026-08-20T18:00:00Z",
       "visitors": 11,
       "requests": 27
+    },
+    {
+      "time": "2026-08-20T19:00:00Z",
+      "visitors": 37,
+      "requests": 206
+    },
+    {
+      "time": "2026-08-20T20:00:00Z",
+      "visitors": 7,
+      "requests": 15
+    },
+    {
+      "time": "2026-08-20T21:00:00Z",
+      "visitors": 1,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-20T22:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-20T23:00:00Z",
+      "visitors": 18,
+      "requests": 147
+    },
+    {
+      "time": "2026-08-21T00:00:00Z",
+      "visitors": 40,
+      "requests": 60
+    },
+    {
+      "time": "2026-08-21T01:00:00Z",
+      "visitors": 24,
+      "requests": 89
     }
   ],
   "daily": [
@@ -160,71 +165,77 @@
     },
     {
       "date": "2026-08-20",
-      "visitors": 193,
-      "pageViews": 471,
-      "requests": 887
+      "visitors": 237,
+      "pageViews": 636,
+      "requests": 1266
+    },
+    {
+      "date": "2026-08-21",
+      "visitors": 63,
+      "pageViews": 67,
+      "requests": 159
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 143
+      "views": 198
     },
     {
       "path": "/vi/",
-      "views": 73
+      "views": 119
     },
     {
       "path": "/cdn-cgi/l/email-protection",
-      "views": 71
+      "views": 112
     },
     {
       "path": "/robots.txt",
-      "views": 38
-    },
-    {
-      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
-      "views": 17
+      "views": 45
     },
     {
       "path": "/favicon.svg",
-      "views": 17
-    },
-    {
-      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
-      "views": 16
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 15
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 14
-    },
-    {
-      "path": "/.well-known/acme-challenge/abGfnYDfSmQU-86st6LU9x-d-tI256gblSntHyx8LTA11dUXsL84ZOZ-k3_2T4IV",
-      "views": 13
-    },
-    {
-      "path": "/images/tin-tuc/the-nao-la-ton-kho-chet.png",
-      "views": 11
-    },
-    {
-      "path": "/vi/nguoi-dan/",
-      "views": 11
-    },
-    {
-      "path": "/.env",
-      "views": 11
-    },
-    {
-      "path": "/vi/lien-he/",
-      "views": 10
+      "views": 32
     },
     {
       "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 10
+      "views": 32
+    },
+    {
+      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
+      "views": 20
+    },
+    {
+      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
+      "views": 19
+    },
+    {
+      "path": "/.env",
+      "views": 17
+    },
+    {
+      "path": "/sitemap-index.xml",
+      "views": 17
+    },
+    {
+      "path": "/vi/lien-he/",
+      "views": 17
+    },
+    {
+      "path": "/vi/nguoi-dan/",
+      "views": 17
+    },
+    {
+      "path": "/.well-known/acme-challenge/kBT41hvSgasNcwu7Rmk4OkX-nttAomWCP4GiiYFs5_hv77rymJ1pKdvq8Dodx0w4",
+      "views": 14
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 13
+    },
+    {
+      "path": "/_astro/index.Bqr8_YCi.css",
+      "views": 13
     }
   ]
 }
