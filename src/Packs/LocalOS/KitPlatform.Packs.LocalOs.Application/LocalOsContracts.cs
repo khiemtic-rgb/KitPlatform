@@ -118,6 +118,11 @@ public sealed record RewriteLocalListingResult(
     string? Place,
     string? Phone,
     string? Salary,
+    string? ContactName,
+    string? WorkingTime,
+    string? Requirements,
+    string? OrganizationName,
+    string? EmploymentType,
     string Via,
     string? Note);
 

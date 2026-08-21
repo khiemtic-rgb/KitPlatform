@@ -26,6 +26,7 @@ public sealed class LocalOsHomepageFeedPublisher
     private readonly ILocalOsPublisherService _publishers;
     private readonly HttpClient _http;
     private readonly LocalOsHomepageFeedOptions _options;
+    private readonly IHostEnvironment _env;
     private readonly ILogger<LocalOsHomepageFeedPublisher> _log;
 
     public LocalOsHomepageFeedPublisher(
@@ -33,12 +34,14 @@ public sealed class LocalOsHomepageFeedPublisher
         ILocalOsPublisherService publishers,
         HttpClient http,
         IOptions<LocalOsHomepageFeedOptions> options,
+        IHostEnvironment env,
         ILogger<LocalOsHomepageFeedPublisher> log)
     {
         _listings = listings;
         _publishers = publishers;
         _http = http;
         _options = options.Value;
+        _env = env;
         _log = log;
         _http.Timeout = TimeSpan.FromSeconds(30);
     }
@@ -49,12 +52,22 @@ public sealed class LocalOsHomepageFeedPublisher
         var secret = (_options.PublicFeedSecret ?? "").Trim();
         if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(secret))
             return new LocalOsFeedPublishResult(true, "Chưa cấu hình đẩy trang chủ mạng.", 0, Skipped: true);
+        if (_env.IsDevelopment() && url.Contains("thainguyenlife.vn", StringComparison.OrdinalIgnoreCase))
+            return new LocalOsFeedPublishResult(
+                true,
+                "Máy local không đẩy thainguyenlife.vn — tin Đang đăng ở đây chưa lên trang chủ mạng.",
+                0,
+                Skipped: true);
 
         var listings = await _listings.ListAsync(
             new LocalListingQuery(null, null, null, null, PublicOnly: true),
             cancellationToken);
-        if (listings.Count == 0)
-            return new LocalOsFeedPublishResult(false, "Không đẩy feed rỗng — giữ trang chủ hiện tại.", 0);
+        var jobCount = listings.Count(x => string.Equals(x.Kind, "job", StringComparison.OrdinalIgnoreCase));
+        if (listings.Count == 0 || jobCount < 8)
+            return new LocalOsFeedPublishResult(
+                false,
+                $"Không đẩy trang chủ khi việc công khai còn {jobCount} — giữ bản đang chạy.",
+                listings.Count);
 
         var groups = await _publishers.RecommendGroupsAsync(null, "student", cancellationToken);
         var payload = JsonSerializer.Serialize(

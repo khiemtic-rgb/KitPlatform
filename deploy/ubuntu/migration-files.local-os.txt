@@ -20,3 +20,5 @@
 307_pack_local_os_city_life_events.sql
 309_pack_local_os_grants_into_events.sql
 310_pack_local_os_listing_reports.sql
+312_pack_local_os_restore_public_jobs.sql
+313_pack_local_os_publish_today.sql

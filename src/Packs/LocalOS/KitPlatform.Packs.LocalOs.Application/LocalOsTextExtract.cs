@@ -264,6 +264,208 @@ public static class LocalOsTextExtract
         return GuessTitle(text);
     }
 
+    public static string? GuessContactName(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return null;
+
+        var labeled = Regex.Match(
+            text,
+            @"(?:liên hệ|lh|zalo)\s*[:\-–]?\s*((?:anh|chị|cô|chú|em)\s+[A-Za-zÀ-ỹ][A-Za-zÀ-ỹ ]{0,28}?)(?=\s*(?:[-–:,]|sđt|sdt|0|\+84|$))",
+            RegexOptions.IgnoreCase);
+        if (labeled.Success)
+        {
+            var n = CleanPersonName(labeled.Groups[1].Value);
+            if (n is not null)
+                return n;
+        }
+
+        var full = Regex.Match(
+            text,
+            @"(?:liên hệ|lh)\s*[:\-–]\s*([A-Za-zÀ-ỹ][A-Za-zÀ-ỹ. ]{1,36}?)(?=\s*(?:[-–:]|sđt|sdt|0|\+84))",
+            RegexOptions.IgnoreCase);
+        if (full.Success)
+        {
+            var n = CleanPersonName(full.Groups[1].Value);
+            if (n is not null)
+                return n;
+        }
+
+        var role = Regex.Match(
+            text,
+            @"\b((?:anh|chị|cô|chú)\s+[A-ZÀ-Ỹ][a-zà-ỹ]{1,20}(?:\s+[A-ZÀ-Ỹ][a-zà-ỹ]{1,20}){0,3})\b");
+        return role.Success ? CleanPersonName(role.Groups[1].Value) : null;
+    }
+
+    public static string? GuessWorkingTime(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return null;
+        var labeled = Regex.Match(
+            text,
+            @"(?:thời gian(?: làm việc)?|ca làm(?: việc)?|giờ làm)\s*[:\-–]\s*([^\n]{3,72})",
+            RegexOptions.IgnoreCase);
+        if (labeled.Success)
+        {
+            var s = ClipField(labeled.Groups[1].Value, 72);
+            if (s is not null && !LooksLikePay(s))
+                return s;
+        }
+
+        var range = Regex.Match(
+            text,
+            @"\d{1,2}\s*h(?:\d{0,2})?\s*[-–]\s*\d{1,2}\s*h(?:\d{0,2})?(?:\s*(?:hoặc|/)\s*\d{1,2}\s*h(?:\d{0,2})?\s*[-–]\s*\d{1,2}\s*h(?:\d{0,2})?)?(?:\s*,?\s*(?:T[2-7]|CN|thứ|cuối tuần)[^.\n]{0,28})?",
+            RegexOptions.IgnoreCase);
+        return range.Success ? ClipField(range.Value, 72) : null;
+    }
+
+    public static string? GuessRequirements(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return null;
+        var m = Regex.Match(
+            text,
+            @"(?:yêu cầu|yc)\s*[:\-–]\s*([^\n]{4,140})",
+            RegexOptions.IgnoreCase);
+        if (m.Success)
+            return ClipField(m.Groups[1].Value, 140);
+        m = Regex.Match(text, @"(?:từ\s*)?\d{2}\s*[-–]\s*\d{2}\s*tuổi|(?:từ\s+)?\d{2}\s*tuổi", RegexOptions.IgnoreCase);
+        return m.Success ? ClipField(m.Value, 80) : null;
+    }
+
+    public static string? GuessOrganizationName(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return null;
+        var m = Regex.Match(
+            text,
+            @"(?:quán|nhà hàng|công ty|cửa hàng|tiệm|khách sạn|cơ sở)\s+([A-Za-zÀ-ỹ0-9][A-Za-zÀ-ỹ0-9 &'’\-]{0,32}?)(?=\s+(?:cần|tuyển|tuyen|nv|nhân viên|pt|ft|lh|liên hệ|,|$))",
+            RegexOptions.IgnoreCase);
+        if (!m.Success)
+            return null;
+        var s = ClipField(m.Value, 48);
+        if (s is null)
+            return null;
+        if (Regex.IsMatch(s, @"tuyển|nhân viên|liên hệ|lương", RegexOptions.IgnoreCase))
+            return null;
+        return s;
+    }
+
+    public static string? GuessEmploymentType(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return null;
+        var t = text.ToLowerInvariant();
+        if (Regex.IsMatch(t, @"thực tập|intern"))
+            return "internship";
+        if (Regex.IsMatch(t, @"bán thời gian|part[\s-]?time|partime|passtime|(?<![a-z])pt(?![a-z])"))
+            return "part_time";
+        if (Regex.IsMatch(t, @"toàn thời gian|full[\s-]?time|(?<![a-z])ft(?![a-z])"))
+            return "full_time";
+        if (t.Contains("cuối tuần"))
+            return "weekend";
+        return null;
+    }
+
+    public static string? KeepIfFromSource(string source, string? proposed)
+    {
+        var clean = OneLine(proposed);
+        if (string.IsNullOrWhiteSpace(clean))
+            return null;
+        var foldedSource = Fold(source);
+        var folded = Fold(clean);
+        if (folded.Length < 2)
+            return null;
+        if (foldedSource.Contains(folded))
+            return clean;
+        var digits = Regex.Replace(clean, @"\D", "");
+        if (digits.Length >= 3 && Regex.Replace(source, @"\D", "").Contains(digits))
+            return clean;
+        return null;
+    }
+
+    public static string StructuredBody(
+        string kind,
+        string title,
+        string? organization,
+        string? place,
+        string? phone,
+        string? contactName,
+        string? salary,
+        string? workingTime,
+        string? requirements)
+    {
+        var lines = new List<string>();
+        if (kind == "job" && !string.IsNullOrWhiteSpace(organization))
+        {
+            var lead = organization.Trim() + " tuyển nhân viên.";
+            if (!Fold(title).Contains(Fold(organization)))
+                lines.Add(lead);
+        }
+        else if (kind == "room")
+        {
+            lines.Add(title);
+        }
+
+        if (kind == "job" && !string.IsNullOrWhiteSpace(salary))
+            lines.Add("Thu nhập: " + salary.Trim());
+        if (!string.IsNullOrWhiteSpace(workingTime))
+            lines.Add("Thời gian: " + workingTime.Trim());
+        if (!string.IsNullOrWhiteSpace(place))
+            lines.Add((kind == "room" ? "Địa chỉ: " : "Địa điểm: ") + place.Trim());
+        if (!string.IsNullOrWhiteSpace(requirements))
+            lines.Add("Yêu cầu: " + requirements.Trim());
+        var contact = FormatContact(contactName, phone);
+        if (contact is not null)
+            lines.Add("Liên hệ: " + contact);
+        var body = string.Join("\n", lines.Where(l => l.Length > 0)).Trim();
+        return body.Length >= 8 ? body : title;
+    }
+
+    public static string? FormatContact(string? name, string? phone)
+    {
+        var n = OneLine(name);
+        var p = OneLine(phone);
+        if (string.IsNullOrWhiteSpace(n) && string.IsNullOrWhiteSpace(p))
+            return null;
+        if (string.IsNullOrWhiteSpace(n))
+            return p;
+        if (string.IsNullOrWhiteSpace(p))
+            return n;
+        return $"{n} — {p}";
+    }
+
+    private static string? CleanPersonName(string? raw)
+    {
+        var s = OneLine(raw);
+        if (string.IsNullOrWhiteSpace(s))
+            return null;
+        s = Regex.Replace(s, @"\d", " ");
+        s = Regex.Replace(s, @"\s+", " ").Trim(" :-–.,;".ToCharArray());
+        if (s.Length is < 2 or > 40)
+            return null;
+        if (Regex.IsMatch(s, @"^(liên hệ|lh|zalo|sđt|sdt|tuyển|nhân viên|quán|nhà hàng)$", RegexOptions.IgnoreCase))
+            return null;
+        if (Regex.IsMatch(s, @"thái nguyên|thu nhập|lương|địa điểm", RegexOptions.IgnoreCase))
+            return null;
+        return s;
+    }
+
+    private static bool LooksLikePay(string s) =>
+        Regex.IsMatch(s, @"triệu|\d+\s*k\b|000\s*đ", RegexOptions.IgnoreCase)
+        && !Regex.IsMatch(s, @"\d{1,2}\s*h", RegexOptions.IgnoreCase);
+
+    private static string? ClipField(string raw, int max)
+    {
+        var s = OneLine(raw).TrimEnd('.', ',', ';', ':');
+        if (s.Length < 3)
+            return null;
+        return s.Length <= max ? s : s[..max].TrimEnd();
+    }
+
+    private static string OneLine(string? s) =>
+        Regex.Replace((s ?? "").Replace('\n', ' '), @"\s+", " ").Trim();
+
     public static bool LooksLikeChatDump(string? title, string? place, string? body, string source)
     {
         var t = (title ?? "").Trim();

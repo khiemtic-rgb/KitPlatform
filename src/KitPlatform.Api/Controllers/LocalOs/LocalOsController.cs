@@ -268,8 +268,8 @@ public sealed class LocalOsController : ControllerBase
     {
         if (!push) return Ok(row);
         var feed = await _homepage.PublishAsync(cancellationToken);
-        if (!feed.Ok || feed.Skipped)
-            return StatusCode(502, new { message = feed.Message, listing = row });
+        if (!feed.Ok)
+            _log.LogWarning("Tin {Id} đã lưu nhưng chưa đẩy trang chủ: {Message}", row.Id, feed.Message);
         return Ok(row);
     }
 }

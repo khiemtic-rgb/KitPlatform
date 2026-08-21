@@ -253,6 +253,11 @@ export type ListingRewrite = {
   place?: string;
   phone?: string;
   salary?: string;
+  contactName?: string;
+  workingTime?: string;
+  requirements?: string;
+  organizationName?: string;
+  employmentType?: string;
 };
 
 export function looksLikeRawDump(result: Pick<ListingRewrite, 'title' | 'body' | 'place'>, source: string): boolean {
@@ -271,57 +276,113 @@ export function looksLikeRawDump(result: Pick<ListingRewrite, 'title' | 'body' |
   return false;
 }
 
+function extractContactName(text: string): string | undefined {
+  const labeled = text.match(
+    /(?:liên hệ|lh|zalo)\s*[:\-–]?\s*((?:anh|chị|cô|chú|em)\s+[A-Za-zÀ-ỹ][A-Za-zÀ-ỹ ]{0,28}?)(?=\s*(?:[-–:,]|sđt|sdt|0|\+84|$))/i,
+  );
+  const fromLabel = cleanPersonName(labeled?.[1]);
+  if (fromLabel) return fromLabel;
+  const full = text.match(
+    /(?:liên hệ|lh)\s*[:\-–]\s*([A-Za-zÀ-ỹ][A-Za-zÀ-ỹ. ]{1,36}?)(?=\s*(?:[-–:]|sđt|sdt|0|\+84))/i,
+  );
+  const fromFull = cleanPersonName(full?.[1]);
+  if (fromFull) return fromFull;
+  const role = text.match(/\b((?:anh|chị|cô|chú)\s+[A-ZÀ-Ỹ][a-zà-ỹ]{1,20}(?:\s+[A-ZÀ-Ỹ][a-zà-ỹ]{1,20}){0,3})\b/);
+  return cleanPersonName(role?.[1]);
+}
+
+function cleanPersonName(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  const s = raw.replace(/\d/g, ' ').replace(/\s+/g, ' ').trim().replace(/^[:\-–.,;\s]+|[:\-–.,;\s]+$/g, '');
+  if (s.length < 2 || s.length > 40) return undefined;
+  if (/^(liên hệ|lh|zalo|sđt|sdt|tuyển|nhân viên|quán|nhà hàng)$/i.test(s)) return undefined;
+  if (/thái nguyên|thu nhập|lương|địa điểm/i.test(s)) return undefined;
+  return s;
+}
+
+function extractWorkingTime(text: string): string | undefined {
+  const labeled = text.match(/(?:thời gian(?: làm việc)?|ca làm(?: việc)?|giờ làm)\s*[:\-–]\s*([^\n]{3,72})/i);
+  const a = labeled?.[1]?.replace(/\s+/g, ' ').trim().replace(/[.,;:]+$/, '');
+  if (a && a.length >= 3 && !/(triệu|\d+\s*k\b|000\s*đ)/i.test(a)) return a.slice(0, 72);
+  const range = text.match(
+    /\d{1,2}\s*h(?:\d{0,2})?\s*[-–]\s*\d{1,2}\s*h(?:\d{0,2})?(?:\s*(?:hoặc|\/)\s*\d{1,2}\s*h(?:\d{0,2})?\s*[-–]\s*\d{1,2}\s*h(?:\d{0,2})?)?(?:\s*,?\s*(?:T[2-7]|CN|thứ|cuối tuần)[^.\n]{0,28})?/i,
+  );
+  return range?.[0]?.replace(/\s+/g, ' ').trim().slice(0, 72);
+}
+
+function extractRequirements(text: string): string | undefined {
+  const m = text.match(/(?:yêu cầu|yc)\s*[:\-–]\s*([^\n]{4,140})/i);
+  if (m?.[1]) return m[1].replace(/\s+/g, ' ').trim().replace(/[.,;:]+$/, '').slice(0, 140);
+  const age = text.match(/(?:từ\s*)?\d{2}\s*[-–]\s*\d{2}\s*tuổi|(?:từ\s+)?\d{2}\s*tuổi/i);
+  return age?.[0]?.replace(/\s+/g, ' ').trim();
+}
+
+function extractOrganization(text: string): string | undefined {
+  const m = text.match(
+    /(?:quán|nhà hàng|công ty|cửa hàng|tiệm|khách sạn|cơ sở)\s+[A-Za-zÀ-ỹ0-9][A-Za-zÀ-ỹ0-9 &'’\-]{0,32}?(?=\s+(?:cần|tuyển|tuyen|nv|nhân viên|pt|ft|lh|liên hệ|,|$))/i,
+  );
+  const s = m?.[0]?.replace(/\s+/g, ' ').trim();
+  if (!s || /tuyển|nhân viên|liên hệ|lương/i.test(s)) return undefined;
+  return s.slice(0, 48);
+}
+
+function extractEmployment(text: string): string | undefined {
+  const t = text.toLowerCase();
+  if (/thực tập|intern/.test(t)) return 'internship';
+  if (/bán thời gian|part[\s-]?time|partime|passtime/.test(t)) return 'part_time';
+  if (/toàn thời gian|full[\s-]?time/.test(t)) return 'full_time';
+  if (t.includes('cuối tuần')) return 'weekend';
+  return undefined;
+}
+
 export function rewriteListingCopy(raw: string, kind = 'job'): ListingRewrite {
   const cleaned = normalizePay(dropFiller(expandPhrases(stripDecor(raw.replace(/\r/g, '')))));
-  const lines = explodeLines(cleaned);
   const phones = phonesIn(cleaned);
   const place = extractShortPlace(cleaned) ?? extractShortPlace(raw);
   const title = shortTitle(kind, cleaned, place);
-
-  const pay = takeLine(lines, (l) => /lương|thu nhập|triệu|k\/giờ|đ\/giờ/i.test(l) && l.length <= 90);
-  const time = takeLine(
-    lines,
-    (l) =>
-      /(?:\d{1,2}\s*h|\d{1,2}:\d{2}|ca\s|hành chính|t2|t7)/i.test(l) &&
-      !/lương|triệu/i.test(l) &&
-      l.length <= 90 &&
-      !l.toLowerCase().startsWith(title.slice(0, 18).toLowerCase()),
-  );
-  const req = takeLine(lines, (l) => /nữ|nam|tuổi|yêu cầu|sinh viên|kinh nghiệm/i.test(l) && l.length <= 90);
-  const perk = takeLine(lines, (l) => /thưởng|bảo hiểm|bhxh|nghỉ|lễ|tết|phụ cấp/i.test(l) && l.length <= 90);
+  const contactName = extractContactName(cleaned) ?? extractContactName(raw);
+  const workingTime = extractWorkingTime(cleaned) ?? extractWorkingTime(raw);
+  const requirements = extractRequirements(cleaned) ?? extractRequirements(raw);
+  const organizationName = extractOrganization(cleaned) ?? extractOrganization(raw);
+  const employmentType = extractEmployment(cleaned);
+  const payLine = takeLine(explodeLines(cleaned), (l) => /lương|thu nhập|triệu|k\/giờ|đ\/giờ/i.test(l) && l.length <= 90);
+  const salary =
+    kind === 'room'
+      ? undefined
+      : payLine
+        ? payLine.replace(/^lương\s*:\s*/i, '').replace(/^thu nhập\s*:\s*/i, '').trim()
+        : undefined;
 
   const blocks: string[] = [];
   if (kind === 'job') {
-    if (pay) blocks.push(`Thu nhập: ${sentenceVi(pay.replace(/^lương\s*:\s*/i, '').replace(/^thu nhập\s*:\s*/i, ''))}`);
-    if (time) blocks.push(`Thời gian: ${sentenceVi(time)}`);
-    if (place) blocks.push(`Địa điểm: ${place}`);
-    if (req) blocks.push(`Yêu cầu: ${sentenceVi(req.replace(/^yêu cầu\s*:\s*/i, ''))}`);
-    if (perk) blocks.push(`Quyền lợi: ${sentenceVi(perk)}`);
-    const titleHead = title.replace(/[.!?]+$/, '').slice(0, 24).toLowerCase();
-    for (const r of lines) {
-      if (r === pay || r === time || r === req || r === perk) continue;
-      if (phones.some((p) => r.includes(p))) continue;
-      if (place && r.toLowerCase().includes(place.slice(0, 12).toLowerCase())) continue;
-      if (r.length > 90) continue;
-      if (r.toLowerCase().startsWith(titleHead)) continue;
-      const s = sentenceVi(r);
-      if (s.length >= 8 && !blocks.some((b) => b.includes(s.slice(0, 24)))) blocks.push(s);
+    if (organizationName && !title.toLowerCase().includes(organizationName.toLowerCase().slice(0, 12))) {
+      blocks.push(`${sentenceVi(organizationName)} tuyển nhân viên.`);
     }
+    if (salary) blocks.push(`Thu nhập: ${sentenceVi(salary)}`);
+    if (workingTime) blocks.push(`Thời gian: ${sentenceVi(workingTime)}`);
+    if (place) blocks.push(`Địa điểm: ${place}`);
+    if (requirements) blocks.push(`Yêu cầu: ${sentenceVi(requirements.replace(/^yêu cầu\s*:\s*/i, ''))}`);
   } else if (kind === 'room') {
     blocks.push(...roomFacts(cleaned));
     if (place) blocks.push(`Địa chỉ: ${place}`);
   } else {
-    if (time) blocks.push(`Thời gian: ${sentenceVi(time)}`);
+    if (workingTime) blocks.push(`Thời gian: ${sentenceVi(workingTime)}`);
     if (place) blocks.push(`Địa điểm: ${place}`);
   }
-  if (phones.length) blocks.push(`Liên hệ: ${phones.join(', ')}`);
+  const contact =
+    contactName && phones[0] ? `${contactName} — ${phones[0]}` : contactName || phones[0];
+  if (contact) blocks.push(`Liên hệ: ${contact}`);
 
-  const body = [title, '', ...blocks].join('\n').trim();
   return {
     title,
-    body: body.slice(0, 2000),
+    body: blocks.join('\n').trim().slice(0, 2000) || title,
     place,
     phone: phones[0],
-    salary: kind === 'room' ? undefined : pay ? pay.replace(/^lương\s*:\s*/i, '').replace(/^thu nhập\s*:\s*/i, '').trim() : undefined,
+    salary,
+    contactName,
+    workingTime,
+    requirements,
+    organizationName,
+    employmentType,
   };
 }

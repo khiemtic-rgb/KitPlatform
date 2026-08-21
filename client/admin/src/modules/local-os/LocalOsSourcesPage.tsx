@@ -145,8 +145,10 @@ export function LocalOsSourcesPage() {
         Sổ nguồn — Thái Nguyên Life
       </Typography.Title>
       <Typography.Paragraph type="secondary">
-        Canh mục lục website chính thức lúc <strong>8:00 sáng</strong> (giờ Việt Nam). Tin từ nguồn tin cậy
-        <strong> tự đăng</strong> lên site. Form công khai và dán tay vẫn chờ duyệt. Không quét Facebook.
+        Canh mục lục website chính thức lúc <strong>8:00 sáng</strong> (giờ Việt Nam).
+        Số <strong>+N tin</strong> là tin mới vào hệ thống — chỉ tin <strong>ACTIVE</strong> từ nguồn web/RSS/đối tác mới lên site.
+        Tin thiếu SĐT (việc/phòng) hoặc bị lọc vẫn vào <Link to="/local-os/listings">Hàng chờ</Link>.
+        Form công khai và dán tay chờ duyệt. Không quét Facebook.
       </Typography.Paragraph>
       <Space style={{ marginBottom: 12 }} wrap>
         <Button
@@ -170,7 +172,9 @@ export function LocalOsSourcesPage() {
                   if (!r.finishedAt) {
                     message.info(r.note || 'Đang canh mục lục…');
                   } else if (r.createdCount > 0) {
-                    message.success(`Canh xong: +${r.createdCount} tin mới.`);
+                    message.success(
+                      `Canh xong: +${r.createdCount} tin vào hệ thống. Mở Hàng chờ nếu chưa thấy trên trang chủ.`,
+                    );
                   } else {
                     message.info(r.note || 'Canh xong — chưa thấy tin mới trên mục lục.');
                   }

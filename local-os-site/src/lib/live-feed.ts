@@ -41,7 +41,10 @@ export async function writeLiveFeed(feed: PublicFeed): Promise<number> {
   const ns = (await env())?.HITS;
   if (!ns) throw new Error('KV chưa sẵn sàng.');
   const listings = Array.isArray(feed.listings) ? feed.listings : [];
-  if (listings.length === 0) throw new Error('Không ghi feed rỗng.');
+  const jobs = listings.filter((item) => item.kind === 'job').length;
+  if (listings.length === 0 || jobs < 8) {
+    throw new Error(`Không ghi feed thiếu việc (${jobs}).`);
+  }
   const next: PublicFeed = {
     listings,
     groups: Array.isArray(feed.groups) ? feed.groups : [],

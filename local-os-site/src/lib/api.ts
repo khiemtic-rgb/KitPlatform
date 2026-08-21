@@ -1,3 +1,5 @@
+import { localOsApiBase } from './backend-api';
+
 export type LocalListing = {
   id: string;
   kind: string;
@@ -73,12 +75,7 @@ function matchListing(item: LocalListing, q?: string): boolean {
     .some((v) => (v ?? '').toLowerCase().includes(n));
 }
 
-/** Group pastes stay in admin; public site only shows official / form / admin jobs. */
-export function isHiddenGroupJob(item: LocalListing): boolean {
-  return item.kind === 'job' && (item.sourceKind ?? '').toLowerCase() === 'group_manual';
-}
-
-/** Việc / phòng không có SĐT không lên site công khai — gọi không được thì thành tin rác. Sự kiện giữ. */
+/** Việc official / đối tác có link gốc thì lên site dù chưa có SĐT. Phòng vẫn cần SĐT. */
 export function hasCallablePhone(item: Pick<LocalListing, 'contactPhone' | 'sourceUrl' | 'summary'>): boolean {
   const field = (item.contactPhone ?? '').replace(/\D/g, '');
   if (field.length >= 9 && field.length <= 12) return true;
@@ -89,8 +86,19 @@ export function hasCallablePhone(item: Pick<LocalListing, 'contactPhone' | 'sour
   return d.length >= 9 && d.length <= 12;
 }
 
+function hasApplyLink(item: LocalListing): boolean {
+  const url = item.sourceUrl || item.registrationUrl;
+  return !!url && /^https?:\/\//i.test(url);
+}
+
+function isOfficialJob(item: LocalListing): boolean {
+  const kind = (item.sourceKind ?? '').toLowerCase();
+  return item.kind === 'job' && (kind === 'official_web' || kind === 'partner' || kind === 'rss' || kind === 'url_paste');
+}
+
 function isReachablePublic(item: LocalListing): boolean {
   if (item.kind === 'event' || item.kind === 'grant') return true;
+  if (isOfficialJob(item) && hasApplyLink(item)) return true;
   return hasCallablePhone(item);
 }
 
@@ -107,44 +115,56 @@ export function isListingExpired(item: LocalListing): boolean {
   return false;
 }
 
-export async function listListings(kind?: string, q?: string): Promise<LocalListing[]> {
-  const live = await kvFeed();
-  if (live?.listings?.length) {
-    return live.listings.filter((item) => kindMatches(item, kind) && matchListing(item, q) && !isListingExpired(item) && !isHiddenGroupJob(item) && isReachablePublic(item));
-  }
+async function fetchApiListings(kind?: string, q?: string): Promise<LocalListing[] | null> {
   try {
-    const url = new URL(`${API}/listings`);
+    const base = await localOsApiBase();
+    const url = new URL(`${base}/listings`);
     if (kind) url.searchParams.set('kind', kind);
     if (q) url.searchParams.set('q', q);
     const res = await fetch(url);
-    if (res.ok) {
-      return ((await res.json()) as LocalListing[]).filter((item) => !isListingExpired(item) && !isHiddenGroupJob(item) && isReachablePublic(item));
-    }
+    if (res.ok) return (await res.json()) as LocalListing[];
   } catch {
-    /* Cloudflare cannot reach the local API — use deploy snapshot. */
+    /* Worker uses api.novixa.vn; local Astro uses :5290 */
+  }
+  return null;
+}
+
+export async function listListings(kind?: string, q?: string): Promise<LocalListing[]> {
+  const apply = (items: LocalListing[]) =>
+    items.filter(
+      (item) =>
+        kindMatches(item, kind) && matchListing(item, q) && !isListingExpired(item) && isReachablePublic(item),
+    );
+  const fromApi = apply((await fetchApiListings(kind, q)) ?? []);
+  if (fromApi.length > 0) return fromApi;
+  const live = await kvFeed();
+  if (live?.listings?.length) {
+    const fromKv = apply(live.listings as LocalListing[]);
+    if (fromKv.length > 0) return fromKv;
   }
   const feed = await bundledFeed();
-  return (feed.listings ?? []).filter((item) => kindMatches(item, kind) && matchListing(item, q) && !isListingExpired(item) && !isHiddenGroupJob(item) && isReachablePublic(item));
+  return apply(feed.listings ?? []);
 }
 
 export async function getListing(id: string): Promise<LocalListing | null> {
+  try {
+    const base = await localOsApiBase();
+    const res = await fetch(`${base}/listings/${id}`);
+    if (res.ok) {
+      const item = (await res.json()) as LocalListing;
+      if (item && !isListingExpired(item) && isReachablePublic(item)) return item;
+    }
+  } catch {
+    /* fall through to KV / snapshot */
+  }
   const live = await kvFeed();
   if (live?.listings?.length) {
     const found = live.listings.find((item) => item.id === id) ?? null;
-    return found && !isHiddenGroupJob(found) && isReachablePublic(found) ? found : null;
-  }
-  try {
-    const res = await fetch(`${API}/listings/${id}`);
-    if (res.ok) {
-      const item = (await res.json()) as LocalListing;
-      return isHiddenGroupJob(item) || !isReachablePublic(item) ? null : item;
-    }
-  } catch {
-    /* use snapshot */
+    return found && isReachablePublic(found) ? found : null;
   }
   const feed = await bundledFeed();
   const found = (feed.listings ?? []).find((item) => item.id === id) ?? null;
-  return found && !isHiddenGroupJob(found) && isReachablePublic(found) ? found : null;
+  return found && isReachablePublic(found) ? found : null;
 }
 
 export type CommunityGroup = {

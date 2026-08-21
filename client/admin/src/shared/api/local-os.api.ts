@@ -136,6 +136,11 @@ export async function rewriteLocalOsListing(body: {
   place?: string | null;
   phone?: string | null;
   salary?: string | null;
+  contactName?: string | null;
+  workingTime?: string | null;
+  requirements?: string | null;
+  organizationName?: string | null;
+  employmentType?: string | null;
   via: string;
   note?: string | null;
 }> {
@@ -145,6 +150,11 @@ export async function rewriteLocalOsListing(body: {
     place?: string | null;
     phone?: string | null;
     salary?: string | null;
+    contactName?: string | null;
+    workingTime?: string | null;
+    requirements?: string | null;
+    organizationName?: string | null;
+    employmentType?: string | null;
     via: string;
     note?: string | null;
   }>('/local-os/listings/rewrite', body, { timeout: 50_000 });
@@ -174,6 +184,8 @@ export async function createLocalOsListing(body: {
   contactName?: string;
   workingTime?: string;
   requirements?: string;
+  organizationName?: string;
+  employmentType?: string;
   status?: string;
 }): Promise<LocalListing> {
   const { data } = await http.post<LocalListing>('/local-os/listings', {

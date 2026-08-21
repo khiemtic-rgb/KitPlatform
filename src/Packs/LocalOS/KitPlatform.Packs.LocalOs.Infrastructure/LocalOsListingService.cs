@@ -54,7 +54,6 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                         AND l.safety_flag = FALSE
                         AND (l.expires_at IS NULL OR l.expires_at > NOW())
                         AND (l.kind <> 'event' OR l.end_at IS NULL OR l.end_at > NOW())
-                        AND NOT (l.kind = 'job' AND lower(COALESCE(l.source_kind, '')) = 'group_manual')
                     )
                   )
             ORDER BY CASE WHEN l.status = 'NEEDS_REVIEW' THEN 0 ELSE 1 END,

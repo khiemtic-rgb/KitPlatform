@@ -2,17 +2,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Alert,
+  App,
   Button,
+  Col,
   Drawer,
   Form,
   Input,
+  Row,
   Select,
   Space,
   Steps,
   Table,
   Tag,
   Typography,
-  message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
@@ -32,7 +34,7 @@ import {
   type LocalListingReport,
   type LocalSource,
 } from '@/shared/api/local-os.api';
-import { looksLikeRawDump, rewriteListingCopy } from './rewriteListingCopy';
+import { looksLikeRawDump, rewriteListingCopy, type ListingRewrite } from './rewriteListingCopy';
 
 const STATUS_COLOR: Record<string, string> = {
   NEEDS_REVIEW: 'gold',
@@ -65,6 +67,13 @@ const KIND_OPTIONS = [
   { value: 'job', label: 'Việc' },
   { value: 'event', label: 'Sự kiện' },
   { value: 'room', label: 'Trọ' },
+];
+
+const EMPLOY_OPTIONS = [
+  { value: 'part_time', label: 'Bán thời gian' },
+  { value: 'full_time', label: 'Toàn thời gian' },
+  { value: 'internship', label: 'Thực tập' },
+  { value: 'weekend', label: 'Cuối tuần' },
 ];
 
 function splitPosts(raw: string): string[] {
@@ -124,21 +133,46 @@ function guessPlace(text: string): string {
   return 'Thái Nguyên';
 }
 
+function pick(ai?: string | null, local?: string): string | undefined {
+  const a = (ai ?? '').trim();
+  if (a) return a;
+  const b = (local ?? '').trim();
+  return b || undefined;
+}
+
+function draftToForm(kind: string, w: ListingRewrite) {
+  return {
+    kind,
+    title: w.title,
+    summary: w.body,
+    placeText: w.place,
+    contactPhone: w.phone,
+    contactName: w.contactName,
+    workingTime: w.workingTime,
+    salaryText: kind === 'room' ? undefined : w.salary,
+    requirements: w.requirements,
+    organizationName: w.organizationName,
+    employmentType: w.employmentType,
+  };
+}
+
 function reviewGaps(values: {
   kind?: string;
   title?: string;
-  placeText?: string;
   contactPhone?: string;
 }): string[] {
   const gaps: string[] = [];
-  if (!values.kind) gaps.push('Chọn loại tin');
+  const kind = String(values.kind ?? '');
+  if (!kind) gaps.push('Chọn loại tin');
   if (!String(values.title ?? '').trim()) gaps.push('Thiếu tiêu đề');
-  if (!String(values.placeText ?? '').trim()) gaps.push('Thiếu địa điểm');
-  if (!String(values.contactPhone ?? '').trim()) gaps.push('Thiếu số điện thoại');
+  if ((kind === 'job' || kind === 'room') && !String(values.contactPhone ?? '').trim()) {
+    gaps.push('Thiếu số điện thoại');
+  }
   return gaps;
 }
 
 export function LocalOsListingsPage() {
+  const { message } = App.useApp();
   const [items, setItems] = useState<LocalListing[]>([]);
   const [reports, setReports] = useState<LocalListingReport[]>([]);
   const [reportOf, setReportOf] = useState<LocalListing | null>(null);
@@ -152,6 +186,7 @@ export function LocalOsListingsPage() {
   const [sources, setSources] = useState<LocalSource[]>([]);
   const [added, setAdded] = useState(0);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [formHint, setFormHint] = useState<string | null>(null);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
   const pasteRef = useRef<TextAreaRef>(null);
@@ -218,6 +253,11 @@ export function LocalOsListingsPage() {
               summary: written.body,
               placeText: written.place || guessPlace(pastedText),
               contactPhone: written.phone || guessPhone(pastedText),
+              contactName: written.contactName,
+              workingTime: written.workingTime,
+              requirements: written.requirements,
+              organizationName: written.organizationName,
+              employmentType: written.employmentType,
               salaryText: kind === 'room' ? undefined : written.salary || guessSalary(pastedText),
               sourceKind: result.listing.sourceKind ?? 'group_paste',
               sourceUrl: result.listing.sourceUrl,
@@ -235,6 +275,11 @@ export function LocalOsListingsPage() {
               summary: written.body,
               placeText: written.place || guessPlace(pastedText),
               contactPhone: written.phone || guessPhone(pastedText),
+              contactName: written.contactName,
+              workingTime: written.workingTime,
+              requirements: written.requirements,
+              organizationName: written.organizationName,
+              employmentType: written.employmentType,
               salaryText: kind === 'room' ? undefined : written.salary || guessSalary(pastedText),
             });
             created += 1;
@@ -265,12 +310,17 @@ export function LocalOsListingsPage() {
     const local = rewriteListingCopy(raw, kindValue);
     try {
       const ai = await rewriteLocalOsListing({ text: raw, kind: kindValue });
-      const drafted = {
-        title: ai.title,
-        body: ai.body,
-        place: ai.place ?? undefined,
-        phone: ai.phone ?? undefined,
-        salary: kindValue === 'room' ? undefined : ai.salary ?? undefined,
+      const drafted: ListingRewrite = {
+        title: pick(ai.title, local.title) || local.title,
+        body: pick(ai.body, local.body) || local.body,
+        place: pick(ai.place, local.place),
+        phone: pick(ai.phone, local.phone),
+        salary: kindValue === 'room' ? undefined : pick(ai.salary, local.salary),
+        contactName: pick(ai.contactName, local.contactName),
+        workingTime: pick(ai.workingTime, local.workingTime),
+        requirements: pick(ai.requirements, local.requirements),
+        organizationName: pick(ai.organizationName, local.organizationName),
+        employmentType: pick(ai.employmentType, local.employmentType),
       };
       if (looksLikeRawDump(drafted, raw)) {
         return { ...local, via: 'rules' as const, note: 'dump' };
@@ -291,10 +341,16 @@ export function LocalOsListingsPage() {
     setPolishing(true);
     try {
       const w = await applyRewrite(raw, kindValue);
-      form.setFieldsValue({ pastedText: w.body });
-      if (w.via === 'ai') message.success('AI đã viết lại. Đọc lại rồi thêm vào danh sách.');
-      else if (w.note === 'dump') message.warning('AI trả bài thô — đã biên tập lại tại máy. Đọc lại trước khi thêm.');
-      else message.warning('Chưa gọi được AI — đã biên tập tại máy. Đọc lại trước khi thêm.');
+      setWriting('new');
+      setFormHint(null);
+      editForm.setFieldsValue({
+        ...draftToForm(kindValue, w),
+        placeText: w.place || guessPlace(raw),
+        contactPhone: w.phone || guessPhone(raw),
+      });
+      if (w.via === 'ai') message.success('Đã điền form bên phải. Sửa rồi Duyệt & đăng.');
+      else if (w.note === 'dump') message.warning('AI trả bài thô — đã tách trường tại máy. Kiểm tra form rồi duyệt.');
+      else message.warning('Chưa gọi được AI — đã tách trường tại máy. Kiểm tra form rồi duyệt.');
     } finally {
       setPolishing(false);
     }
@@ -312,62 +368,54 @@ export function LocalOsListingsPage() {
       contactName: row.contactName,
       workingTime: row.workingTime,
       requirements: row.requirements,
+      organizationName: row.organizationName,
+      employmentType: row.employmentType,
     });
-  };
-
-  const polishEdit = async () => {
-    const kindValue = String(editForm.getFieldValue('kind') || 'job');
-    const raw = [editForm.getFieldValue('title'), editForm.getFieldValue('summary')].filter(Boolean).join('\n');
-    if (String(raw).trim().length < 8) return;
-    setPolishing(true);
-    try {
-      const w = await applyRewrite(String(raw), kindValue);
-      editForm.setFieldsValue({
-        title: w.title,
-        summary: w.body,
-        placeText: w.place || editForm.getFieldValue('placeText'),
-        contactPhone: w.phone || editForm.getFieldValue('contactPhone'),
-        salaryText: kindValue === 'room' ? undefined : w.salary || editForm.getFieldValue('salaryText'),
-      });
-      if (w.via === 'ai') message.success('AI đã viết lại nội dung.');
-      else if (w.note === 'dump') message.warning('AI trả bài thô — đã biên tập lại tại máy.');
-      else message.warning('Chưa gọi được AI — đã biên tập tại máy.');
-    } finally {
-      setPolishing(false);
-    }
-  };
-
-  const openNew = () => {
-    setWriting('new');
-    editForm.resetFields();
-    editForm.setFieldsValue({ kind: 'job' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const persistWrite = async (publish: boolean) => {
-    const values = await editForm.validateFields();
-    const gaps = reviewGaps(values);
-    if (publish && gaps.length > 0) {
-      message.warning(gaps.join(' · '));
+    let values: Record<string, unknown>;
+    try {
+      values = await editForm.validateFields();
+    } catch {
+      setFormHint('Thiếu tiêu đề hoặc loại tin.');
+      message.error('Thiếu tiêu đề hoặc loại tin.');
       return;
     }
+    const pasted = String(form.getFieldValue('pastedText') ?? '');
+    const contactPhone =
+      String(values.contactPhone ?? '').trim() || guessPhone(pasted) || '';
+    const placeText = String(values.placeText ?? '').trim() || guessPlace(pasted);
+    editForm.setFieldsValue({ contactPhone, placeText });
+    const merged = { ...values, contactPhone, placeText };
+    const gaps = reviewGaps(merged);
+    if (publish && gaps.length > 0) {
+      setFormHint(gaps.join(' · '));
+      message.warning(gaps.join(' · '));
+      if (gaps.some((g) => g.includes('điện thoại'))) {
+        editForm.setFields([{ name: 'contactPhone', errors: ['Cần số để đăng việc / trọ'] }]);
+      }
+      return;
+    }
+    setFormHint(null);
     setSaving(true);
     try {
       const body = {
         kind: values.kind as string,
         title: String(values.title).trim(),
         summary: values.summary,
-        placeText: values.placeText,
+        placeText,
         salaryText: values.kind === 'room' ? undefined : values.salaryText,
-        contactPhone: values.contactPhone,
+        contactPhone,
         contactName: values.contactName,
         workingTime: values.workingTime,
         requirements: values.requirements,
+        organizationName: values.organizationName,
+        employmentType: values.employmentType,
       };
       let id: string;
-      if (writing === 'new') {
-        const created = await createLocalOsListing(body);
-        id = created.id;
-      } else if (writing) {
+      if (writing && writing !== 'new') {
         await updateLocalOsListing(writing.id, {
           ...body,
           sourceKind: writing.sourceKind ?? 'group_paste',
@@ -378,20 +426,42 @@ export function LocalOsListingsPage() {
         });
         id = writing.id;
       } else {
-        return;
+        const created = await createLocalOsListing(body);
+        id = created.id;
       }
       if (publish) {
         await setLocalOsListingStatus(id, 'ACTIVE');
-        message.success('Đã lên trang chủ Thái Nguyên Life.');
+        if (import.meta.env.DEV) {
+          message.warning(
+            'Đã đăng trên máy local. thainguyenlife.vn lấy tin từ api.novixa.vn — chưa lên trang chủ mạng.',
+          );
+        } else {
+          try {
+            const r = await publishLocalOsHomepage();
+            if (r.ok && !r.skipped) message.success(r.message || 'Đã lên trang chủ Thái Nguyên Life.');
+            else message.warning(r.message || 'Đã đăng. Trang chủ mạng chưa cập nhật.');
+          } catch (error) {
+            message.warning(apiErrorMessage(error, 'Đã đăng. Chưa đẩy được trang chủ — bấm Cập nhật trang chủ.'));
+          }
+        }
       } else {
         message.success('Đã lưu. Vẫn ở hàng chờ duyệt.');
       }
+      setFormHint(null);
       setWriting(null);
+      editForm.resetFields();
+      editForm.setFieldsValue({ kind: form.getFieldValue('kind') || 'job' });
+      form.setFieldsValue({ pastedText: '' });
       setStatus(publish ? 'ACTIVE' : 'NEEDS_REVIEW');
       await load();
     } catch (error) {
-      if (error && typeof error === 'object' && 'errorFields' in error) return;
-      message.error(apiErrorMessage(error, 'Không lưu được.'));
+      if (error && typeof error === 'object' && 'errorFields' in error) {
+        setFormHint('Thiếu tiêu đề hoặc loại tin.');
+        return;
+      }
+      const msg = apiErrorMessage(error, 'Không lưu được.');
+      setFormHint(msg);
+      message.error(msg);
     } finally {
       setSaving(false);
     }
@@ -400,7 +470,11 @@ export function LocalOsListingsPage() {
   const setStatusOf = async (id: string, next: string) => {
     try {
       await setLocalOsListingStatus(id, next);
-        message.success(next === 'ACTIVE' ? 'Đã lên trang chủ Thái Nguyên Life.' : 'Đã cập nhật trang chủ.');
+      if (next === 'ACTIVE' && import.meta.env.DEV) {
+        message.warning('Đã đăng trên máy local. thainguyenlife.vn chưa có tin này.');
+      } else {
+        message.success(next === 'ACTIVE' ? 'Đã đăng.' : 'Đã cập nhật.');
+      }
       await load();
     } catch (error) {
       message.error(apiErrorMessage(error, 'Không đổi được trạng thái.'));
@@ -421,7 +495,9 @@ export function LocalOsListingsPage() {
         <div>
           <div style={{ fontWeight: 600 }}>{row.title}</div>
           <Typography.Text type="secondary">
-            {[row.placeText, row.salaryText, row.contactPhone].filter(Boolean).join(' · ')}
+            {[row.organizationName, row.placeText, row.salaryText, row.contactName, row.contactPhone]
+              .filter(Boolean)
+              .join(' · ')}
           </Typography.Text>
           {reports.filter((r) => r.listingId === row.id).length > 0 ? (
             <div>
@@ -477,20 +553,27 @@ export function LocalOsListingsPage() {
       <Typography.Title level={4} style={{ marginTop: 0 }}>
         Tin Thái Nguyên Life
       </Typography.Title>
+      {import.meta.env.DEV ? (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="Đang đăng trên máy local chưa lên thainguyenlife.vn. Trang chủ mạng lấy tin từ api.novixa.vn (admin.novixa.vn)."
+        />
+      ) : null}
       <Steps
         size="small"
         current={0}
         style={{ maxWidth: 720, marginBottom: 16 }}
         items={[
-          { title: 'Dán vào danh sách' },
-          { title: 'Viết bài' },
-          { title: 'Duyệt' },
+          { title: 'Dán bài' },
+          { title: 'AI điền form cạnh' },
+          { title: 'Sửa & duyệt' },
           { title: 'Đăng' },
         ]}
       />
       <Typography.Paragraph type="secondary">
-        Copy bài từ nhóm quảng cáo, dán vào ô dưới — thêm liên tục, không cần link.
-        Nhiều bài cách nhau bằng một dòng <code>---</code>. Sau đó mở tin → viết lại → duyệt → đăng.
+        Copy bài từ nhóm, dán bên trái → AI điền form bên phải → sửa SĐT/tên → Duyệt & đăng.
         Học bổng / ưu đãi dán loại <strong>Sự kiện</strong> — không mở mục ưu đãi riêng.
         Site chỉ hiện tin đã đăng. Độc giả báo sai số / hết phòng — không tự ẩn; vào{' '}
         <strong>Có báo cáo</strong> rồi Ẩn hoặc sửa số.{' '}
@@ -504,69 +587,146 @@ export function LocalOsListingsPage() {
         <Alert
           type="warning"
           showIcon
-          style={{ marginBottom: 12, maxWidth: 760 }}
+          style={{ marginBottom: 12 }}
           message={`${new Set(reports.map((r) => r.listingId)).size} tin có báo cáo từ độc giả. Lọc «Có báo cáo» để xử lý.`}
         />
       ) : null}
 
-      <Form
-        form={form}
-        layout="vertical"
-        style={{ maxWidth: 760, marginBottom: 8 }}
-        initialValues={{ kind: 'job' }}
-      >
-        <Space wrap style={{ width: '100%' }} align="start">
-          <Form.Item name="kind" label="Loại" style={{ width: 160, marginBottom: 12 }}>
-            <Select options={KIND_OPTIONS} />
-          </Form.Item>
-          <Form.Item name="sourceId" label="Nhóm / nguồn (nếu có)" style={{ minWidth: 280, flex: 1, marginBottom: 12 }}>
-            <Select
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              placeholder="Không bắt buộc"
-              options={sources
-                .filter((s) => s.status === 'active')
-                .map((s) => ({ value: s.id, label: s.name }))}
-            />
-          </Form.Item>
-        </Space>
-        <Form.Item name="sourceUrl" label="Link bài (không bắt buộc)">
-          <Input placeholder="Dán nếu có — bỏ trống cũng được" />
-        </Form.Item>
-        <Form.Item
-          name="pastedText"
-          label="Nội dung bài"
-          extra="Dán bài thô → AI viết lại (bỏ tắt, cảm thán, câu hô) → đọc lại → Thêm. Không bịa lương / SĐT. Ctrl + Enter để thêm."
-        >
-          <Input.TextArea
-            rows={8}
-            placeholder="Dán nguyên bài vừa copy…"
-            ref={pasteRef}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                void ingest();
-              }
+      <Row gutter={[24, 24]} align="top">
+        <Col xs={24} xl={12}>
+          <Form
+            form={form}
+            layout="vertical"
+            initialValues={{ kind: 'job' }}
+          >
+            <Space wrap style={{ width: '100%' }} align="start">
+              <Form.Item name="kind" label="Loại" style={{ width: 160, marginBottom: 12 }}>
+                <Select
+                  options={KIND_OPTIONS}
+                  onChange={(v) => editForm.setFieldsValue({ kind: v })}
+                />
+              </Form.Item>
+              <Form.Item name="sourceId" label="Nhóm / nguồn (nếu có)" style={{ minWidth: 220, flex: 1, marginBottom: 12 }}>
+                <Select
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  placeholder="Không bắt buộc"
+                  options={sources
+                    .filter((s) => s.status === 'active')
+                    .map((s) => ({ value: s.id, label: s.name }))}
+                />
+              </Form.Item>
+            </Space>
+            <Form.Item name="sourceUrl" label="Link bài (không bắt buộc)">
+              <Input placeholder="Dán nếu có — bỏ trống cũng được" />
+            </Form.Item>
+            <Form.Item
+              name="pastedText"
+              label="Nội dung bài"
+              extra="Giữ bài gốc bên trái để đối chiếu. AI điền form bên phải — không xóa ô này."
+            >
+              <Input.TextArea
+                rows={16}
+                placeholder="Dán nguyên bài vừa copy…"
+                ref={pasteRef}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    void polishBox();
+                  }
+                }}
+              />
+            </Form.Item>
+            {lastError ? (
+              <Alert type="error" showIcon style={{ marginBottom: 12 }} message={lastError} />
+            ) : null}
+            <Space wrap>
+              <Button type="primary" htmlType="button" loading={polishing} onClick={() => void polishBox()}>
+                AI viết lại &amp; điền form
+              </Button>
+              <Button htmlType="button" loading={ingesting} onClick={() => void ingest()}>
+                Thêm vào danh sách
+              </Button>
+              {added > 0 ? (
+                <Typography.Text type="secondary">Đã thêm {added} tin phiên này</Typography.Text>
+              ) : null}
+            </Space>
+          </Form>
+        </Col>
+        <Col xs={24} xl={12}>
+          <div
+            style={{
+              border: '1px solid #f0f0f0',
+              borderRadius: 8,
+              padding: 16,
+              background: '#fafafa',
             }}
-          />
-        </Form.Item>
-        {lastError ? (
-          <Alert type="error" showIcon style={{ marginBottom: 12 }} message={lastError} />
-        ) : null}
-        <Space>
-          <Button htmlType="button" loading={polishing} onClick={() => void polishBox()}>
-            AI viết lại cho chuẩn
-          </Button>
-          <Button type="primary" htmlType="button" loading={ingesting} onClick={() => void ingest()}>
-            Thêm vào danh sách
-          </Button>
-          <Button onClick={openNew}>Viết tin mới</Button>
-          {added > 0 ? (
-            <Typography.Text type="secondary">Đã thêm {added} tin phiên này</Typography.Text>
-          ) : null}
-        </Space>
-      </Form>
+          >
+            <Typography.Title level={5} style={{ marginTop: 0 }}>
+              {writing && writing !== 'new' ? 'Sửa tin đang chọn' : 'Form duyệt'}
+            </Typography.Title>
+            <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
+              Sửa SĐT, tên, lương rồi <strong>Duyệt &amp; đăng</strong>. Việc / phòng cần số điện thoại.
+            </Typography.Paragraph>
+            {formHint ? (
+              <Alert type="warning" showIcon style={{ marginBottom: 12 }} message={formHint} />
+            ) : null}
+            <Space wrap style={{ marginBottom: 12 }}>
+              <Button htmlType="button" loading={saving} onClick={() => void persistWrite(false)}>
+                Lưu chờ duyệt
+              </Button>
+              <Button htmlType="button" type="primary" loading={saving} onClick={() => void persistWrite(true)}>
+                Duyệt &amp; đăng
+              </Button>
+              <Button
+                onClick={() => {
+                  setWriting(null);
+                  editForm.resetFields();
+                  editForm.setFieldsValue({ kind: form.getFieldValue('kind') || 'job' });
+                }}
+              >
+                Xóa form
+              </Button>
+            </Space>
+            <Form form={editForm} layout="vertical" initialValues={{ kind: 'job' }}>
+              <Form.Item name="kind" label="Loại" rules={[{ required: true }]}>
+                <Select options={KIND_OPTIONS} />
+              </Form.Item>
+              <Form.Item name="title" label="Tiêu đề" rules={[{ required: true, message: 'Nhập tiêu đề' }]}>
+                <Input />
+              </Form.Item>
+              <Form.Item name="contactPhone" label="Số điện thoại">
+                <Input placeholder="09xxxxxxxx" />
+              </Form.Item>
+              <Form.Item name="placeText" label="Địa điểm">
+                <Input placeholder="Phường / gần trường / quán" />
+              </Form.Item>
+              <Form.Item name="organizationName" label="Quán / công ty">
+                <Input placeholder="Vert, TokyoLife, Sen Hồ…" />
+              </Form.Item>
+              <Form.Item name="contactName" label="Người liên hệ">
+                <Input placeholder="chị Hoa, anh Minh…" />
+              </Form.Item>
+              <Form.Item name="employmentType" label="Hình thức">
+                <Select allowClear options={EMPLOY_OPTIONS} placeholder="Bán thời gian / toàn thời gian" />
+              </Form.Item>
+              <Form.Item name="workingTime" label="Thời gian (việc / sự kiện)">
+                <Input placeholder="17h–22h, T2–CN" />
+              </Form.Item>
+              <Form.Item name="salaryText" label="Thu nhập (việc — phòng để trống)">
+                <Input placeholder="22.000đ/giờ hoặc 7–10 triệu/tháng" />
+              </Form.Item>
+              <Form.Item name="summary" label="Nội dung">
+                <Input.TextArea rows={6} />
+              </Form.Item>
+              <Form.Item name="requirements" label="Yêu cầu" style={{ marginBottom: 0 }}>
+                <Input.TextArea rows={2} placeholder="Tuổi, kinh nghiệm, giới tính…" />
+              </Form.Item>
+            </Form>
+          </div>
+        </Col>
+      </Row>
 
       <Space style={{ margin: '20px 0 12px' }} wrap>
         <Typography.Text strong>
@@ -607,7 +767,8 @@ export function LocalOsListingsPage() {
             void (async () => {
               try {
                 const r = await publishLocalOsHomepage();
-                if (r.ok) message.success(r.message || `Đã lên trang chủ (${r.listingCount} tin).`);
+                if (r.ok && !r.skipped) message.success(r.message || `Đã lên trang chủ (${r.listingCount} tin).`);
+                else if (r.skipped) message.warning(r.message || 'Máy local không đẩy trang chủ mạng.');
                 else message.error(r.message || 'Chưa lên được trang chủ.');
               } catch (error) {
                 message.error(apiErrorMessage(error, 'Chưa lên được trang chủ.'));
@@ -625,61 +786,6 @@ export function LocalOsListingsPage() {
         dataSource={items}
         pagination={{ pageSize: 20 }}
       />
-
-      <Drawer
-        title={writing === 'new' ? 'Viết tin mới' : 'Viết bài → duyệt → đăng'}
-        width={560}
-        open={!!writing}
-        onClose={() => setWriting(null)}
-        extra={
-          <Space>
-            <Button onClick={() => setWriting(null)}>Đóng</Button>
-            <Button loading={saving} onClick={() => void persistWrite(false)}>
-              Lưu
-            </Button>
-            <Button type="primary" loading={saving} onClick={() => void persistWrite(true)}>
-              Duyệt &amp; đăng
-            </Button>
-          </Space>
-        }
-      >
-        <Typography.Paragraph type="secondary">
-          AI viết lại cho rõ — bỏ tắt, cảm thán, câu hô. Không bịa số. Bấm <strong>Duyệt &amp; đăng</strong> khi đủ tiêu đề, địa điểm và số điện thoại.
-          Tin ACTIVE đẩy lên thainguyenlife.vn từ máy đang đăng nhập (VPS hoặc local). Việc / phòng cần số điện thoại.
-        </Typography.Paragraph>
-        <Button style={{ marginBottom: 12 }} loading={polishing} onClick={() => void polishEdit()}>
-          AI viết lại cho chuẩn
-        </Button>
-        <Form form={editForm} layout="vertical">
-          <Form.Item name="kind" label="Loại" rules={[{ required: true }]}>
-            <Select options={KIND_OPTIONS} />
-          </Form.Item>
-          <Form.Item name="title" label="Tiêu đề" rules={[{ required: true, message: 'Nhập tiêu đề' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="placeText" label="Địa điểm">
-            <Input placeholder="Phường / gần trường / quán" />
-          </Form.Item>
-          <Form.Item name="contactName" label="Người liên hệ">
-            <Input />
-          </Form.Item>
-          <Form.Item name="contactPhone" label="Số điện thoại">
-            <Input />
-          </Form.Item>
-          <Form.Item name="workingTime" label="Thời gian (việc / sự kiện)">
-            <Input />
-          </Form.Item>
-          <Form.Item name="salaryText" label="Thu nhập (việc — phòng để trống)">
-            <Input />
-          </Form.Item>
-          <Form.Item name="summary" label="Nội dung">
-            <Input.TextArea rows={8} />
-          </Form.Item>
-          <Form.Item name="requirements" label="Ghi chú thêm">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-        </Form>
-      </Drawer>
 
       <Drawer
         title={reportOf ? `Báo cáo: ${reportOf.title}` : 'Báo cáo độc giả'}
