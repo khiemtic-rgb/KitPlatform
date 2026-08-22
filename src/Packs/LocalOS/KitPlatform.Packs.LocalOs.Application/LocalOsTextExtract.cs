@@ -92,10 +92,30 @@ public static class LocalOsTextExtract
     public static bool IsThinLead(string? summary)
     {
         var s = (summary ?? "").Trim();
-        if (s.Length < 400)
+        if (s.Length < 400 || HasScrapedChrome(s))
             return true;
         return s.EndsWith("...", StringComparison.Ordinal) || s.EndsWith("…", StringComparison.Ordinal);
     }
+
+    public static bool IsBetterLead(string? current, string next)
+    {
+        if (next.Length < 80 || HasScrapedChrome(next))
+            return false;
+        var cur = (current ?? "").Trim();
+        if (cur.Length == 0)
+            return true;
+        if (string.Equals(cur, next, StringComparison.Ordinal))
+            return false;
+        if (IsThinLead(cur))
+            return true;
+        return next.Length > cur.Length + 20;
+    }
+
+    public static bool HasScrapedChrome(string text) =>
+        Regex.IsMatch(
+            text,
+            @"giúp chúng tôi|góp ý|festivalindex|đăng nhập để|theo dõi sự kiện|mở form góp ý",
+            RegexOptions.IgnoreCase);
 
     /// <summary>Lead for the public site: drop repeated title, keep a few sentences. Never invents.</summary>
     public static string GuessSummary(string? title, string text, int maxChars = 1200)
@@ -569,9 +589,12 @@ public static class LocalOsTextExtract
         var heading = og.Success ? Decode(og.Groups[1].Value) : (title.Success ? Decode(title.Groups[1].Value) : "");
         var cleaned = Regex.Replace(html, @"<(script|style|noscript|nav|footer)\b[\s\S]*?</\1>", " ", RegexOptions.IgnoreCase);
         var paras = new List<string>();
-        foreach (Match m in Regex.Matches(cleaned, @"<p\b[^>]*>([\s\S]*?)</p>", RegexOptions.IgnoreCase))
+        foreach (Match m in Regex.Matches(cleaned, @"<p\b([^>]*)>([\s\S]*?)</p>", RegexOptions.IgnoreCase))
         {
-            var p = Decode(Regex.Replace(m.Groups[1].Value, @"<[^>]+>", " "));
+            if (LooksLikeChromeClass(m.Groups[1].Value))
+                continue;
+            var p = Decode(Regex.Replace(m.Groups[2].Value, @"<[^>]+>", " "));
+            p = UnwrapQuote(p);
             if (!UsefulParagraph(p, heading))
                 continue;
             if (paras.Exists(x => x.Equals(p, StringComparison.OrdinalIgnoreCase)))
@@ -628,10 +651,24 @@ public static class LocalOsTextExtract
     private static bool UsefulHighlight(string text) =>
         text.Length is >= 18 and <= 180 && !LooksLikeChrome(text);
 
+    private static bool LooksLikeChromeClass(string attrs) =>
+        Regex.IsMatch(
+            attrs,
+            @"quote|muted|follow|cta|login|lunar|subscribe|góp|gop-y|feedback|bell|hot-title",
+            RegexOptions.IgnoreCase);
+
+    private static string UnwrapQuote(string text)
+    {
+        var s = text.Trim();
+        if (s.Length >= 2 && ((s[0] == '“' && s[^1] == '”') || (s[0] == '"' && s[^1] == '"')))
+            return s[1..^1].Trim();
+        return s;
+    }
+
     private static bool LooksLikeChrome(string text) =>
         Regex.IsMatch(
             text,
-            @"cookie|đăng nhập|javascript|copyright|all rights|theo dõi sự kiện|khám phá theo địa điểm|đi sâu vào|nhận thông báo",
+            @"cookie|đăng nhập|javascript|copyright|all rights|theo dõi sự kiện|khám phá theo địa điểm|đi sâu vào|nhận thông báo|giúp chúng tôi|góp ý|festivalindex|mở form góp ý|cải thiện chất lượng",
             RegexOptions.IgnoreCase);
 
     private static string Decode(string s) =>

@@ -312,7 +312,7 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         if (!LocalOsEventLeadRefresh.TryParsePublicUri(mapped.SourceUrl, out var uri))
             return mapped;
         var next = await LocalOsEventLeadRefresh.TryExtractAsync(uri, cancellationToken);
-        if (next is null || next.Length <= (mapped.Summary?.Length ?? 0) + 20)
+        if (next is null || !LocalOsTextExtract.IsBetterLead(mapped.Summary, next))
             return mapped;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         if (!await LocalOsEventLeadRefresh.TryStoreAsync(conn, mapped.Id, next, cancellationToken))

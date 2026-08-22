@@ -46,7 +46,8 @@ internal static class LocalOsEventLeadRefresh
                 SET summary = @Summary, last_checked_at = NOW(), updated_at = NOW()
                 WHERE id = @Id
                   AND kind = 'event'
-                  AND char_length(@Summary) > char_length(coalesce(summary, '')) + 20
+                  AND @Summary IS NOT NULL
+                  AND char_length(@Summary) >= 80
                 """,
                 new { Id = id, Summary = summary },
                 cancellationToken: cancellationToken));
@@ -84,7 +85,7 @@ internal static class LocalOsEventLeadRefresh
             if (!TryParsePublicUri(row.SourceUrl, out var uri))
                 continue;
             var next = await TryExtractAsync(uri, cancellationToken);
-            if (next is null || next.Length <= (row.Summary?.Length ?? 0) + 20)
+            if (next is null || !LocalOsTextExtract.IsBetterLead(row.Summary, next))
                 continue;
             if (await TryStoreAsync(conn, row.Id, next, cancellationToken))
                 done++;

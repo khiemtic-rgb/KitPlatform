@@ -194,7 +194,7 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
                         {
                             existing++;
                             if (row.Kind == "event" && LocalOsTextExtract.IsThinLead(row.Summary))
-                                await TryRefreshShortSummaryAsync(row.Id, hit.Uri, workCt);
+                                await TryRefreshShortSummaryAsync(row.Id, row.Summary, hit.Uri, workCt);
                             continue;
                         }
 
@@ -419,7 +419,7 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
         public int SummaryLen { get; set; }
     }
 
-    private async Task TryRefreshShortSummaryAsync(Guid id, Uri uri, CancellationToken cancellationToken)
+    private async Task TryRefreshShortSummaryAsync(Guid id, string? current, Uri uri, CancellationToken cancellationToken)
     {
         var pageText = await FetchTextAsync(uri, cancellationToken);
         if (pageText.Length < 40)
@@ -440,7 +440,7 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
             return;
         }
         var summary = LocalOsTextExtract.GuessSummary(title, pageText);
-        if (summary.Length < 80)
+        if (!LocalOsTextExtract.IsBetterLead(current, summary))
             return;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await LocalOsEventLeadRefresh.TryStoreAsync(conn, id, summary, cancellationToken);

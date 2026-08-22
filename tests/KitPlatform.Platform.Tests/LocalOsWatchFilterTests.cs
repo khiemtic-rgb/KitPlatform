@@ -186,6 +186,8 @@ public class LocalOsTextExtractSummaryTests
             <h1>Lễ hội truyền thống chùa Long Sào</h1>
             <p class="mb-0">Lễ hội truyền thống chùa Long Sào diễn ra tại xóm Cơ Phi với phần lễ dâng hương, cầu an và tưởng nhớ tiền nhân. Phần hội có văn nghệ, trò chơi dân gian, thu hút người dân địa phương và du khách thập phương.</p>
             <p class="v2-detail-locality-cta-lead">Đi sâu vào Xã Thành Công hoặc mở trang Thái Nguyên để xem thêm khu vực và lịch lễ hội.</p>
+            <p class="v2-muted">Giúp chúng tôi cải thiện chất lượng thông tin.</p>
+            <p class="lh-quote">“Lễ hội truyền thống chùa Long Sào diễn ra tại xóm Cơ Phi với phần lễ dâng hương, cầu an và tưởng nhớ tiền nhân. Phần hội có văn nghệ, trò chơi dân gian, thu hút người dân địa phương và du khách thập phương.”</p>
             <h3>Điểm nhấn</h3>
             <ul>
             <li>Có nghi thức dâng hương, cầu quốc thái dân an</li>
@@ -198,9 +200,11 @@ public class LocalOsTextExtractSummaryTests
         Assert.Contains("cầu quốc thái dân an", text, StringComparison.Ordinal);
         Assert.DoesNotContain("thu...", text, StringComparison.Ordinal);
         Assert.DoesNotContain("Đi sâu vào", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("Giúp chúng tôi", text, StringComparison.Ordinal);
         var lead = LocalOsTextExtract.GuessSummary("Lễ hội truyền thống chùa Long Sào | Lễ Hội Việt Nam", text);
         Assert.False(LocalOsTextExtract.IsThinLead(lead));
         Assert.Contains("thu hút người dân địa phương", lead, StringComparison.Ordinal);
+        Assert.True(LocalOsTextExtract.IsBetterLead("… thu...", lead));
     }
 }
 
