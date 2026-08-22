@@ -10,6 +10,7 @@ import {
   featuredEvents,
   filterEvents,
 } from '../../lib/event-filters';
+import { collectionJsonLd, siteOrigin } from '../../lib/seo';
 
 const PAGE_SIZE = 10;
 const q = Astro.url.searchParams.get('q') ?? '';
@@ -60,8 +61,16 @@ function pagerNums(current: number, total: number): Array<number | 'gap'> {
   }
   return out;
 }
+
+const pageDesc = 'Văn hóa, thể thao, du lịch, hội chợ — lọc theo nhóm để xem tin đang mở tại Thái Nguyên.';
 ---
-<Layout title="Sự kiện — Thái Nguyên Life" active="event">
+<Layout
+  title="Sự kiện — Thái Nguyên Life"
+  description={pageDesc}
+  image="/trend/event.jpg"
+  jsonLd={[collectionJsonLd({ origin: siteOrigin(Astro.site), path: '/su-kien', name: 'Sự kiện tại Thái Nguyên', description: pageDesc })]}
+  active="event"
+>
   <section class="job-hero">
     <div class="wrap">
       <h1>Sự kiện tại Thái Nguyên</h1>

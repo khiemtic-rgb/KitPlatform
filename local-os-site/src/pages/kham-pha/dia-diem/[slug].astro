@@ -15,6 +15,7 @@ import {
   placeHref,
   placeTag,
 } from '../../../lib/discover';
+import { breadcrumbJsonLd, clipMeta, placeJsonLd, siteOrigin } from '../../../lib/seo';
 
 export function getStaticPaths() {
   return PLACES.map((p) => ({ params: { slug: p.slug } }));
@@ -31,8 +32,32 @@ const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURICompone
 const badge = placeTag(place);
 const pills = kickerPills(place.kicker);
 const area = placeArea(place);
+const origin = siteOrigin(Astro.site);
+const pageDesc = clipMeta(place.summary || place.intro[0] || place.title);
 ---
-<Layout title={`${place.title} — Khám phá Thái Nguyên`} active="discover">
+<Layout
+  title={`${place.title} — Khám phá Thái Nguyên`}
+  description={pageDesc}
+  image={place.cover}
+  ogType="article"
+  jsonLd={[
+    breadcrumbJsonLd(origin, [
+      { name: 'Trang chủ', path: '/' },
+      { name: 'Khám phá', path: '/kham-pha' },
+      { name: 'Địa điểm', path: '/kham-pha/dia-diem' },
+      { name: place.title, path: placeHref(place.slug) },
+    ]),
+    placeJsonLd({
+      origin,
+      path: placeHref(place.slug),
+      name: place.title,
+      description: pageDesc,
+      placeText: place.placeText,
+      image: place.cover,
+    }),
+  ]}
+  active="discover"
+>
   <div class="page event-detail-page">
     <div class="wrap">
       <nav class="job-crumb" aria-label="Đường dẫn">

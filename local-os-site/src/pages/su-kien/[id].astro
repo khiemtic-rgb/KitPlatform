@@ -28,6 +28,7 @@ import {
   formatEventWhenFull,
   similarEvents,
 } from '../../lib/event-filters';
+import { breadcrumbJsonLd, clipMeta, eventJsonLd, siteOrigin } from '../../lib/seo';
 
 const { id } = Astro.params;
 const item = id ? await getListing(id) : null;
@@ -64,8 +65,42 @@ const expired = item ? isListingExpired(item) : false;
 const mapsQuery = placeKey
   ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${placeKey}, Thái Nguyên`)}`
   : null;
+const origin = siteOrigin(Astro.site);
+const pageTitle = item ? `${item.title} — Thái Nguyên Life` : 'Không tìm thấy';
+const pageDesc = item
+  ? clipMeta([lead, item.placeText].filter(Boolean).join(' — ') || item.title)
+  : 'Tin sự kiện không còn hoặc chưa mở trên Thái Nguyên Life.';
+const pageImage = coverFor('event', 0);
+const pageJsonLd = item && !expired
+  ? [
+      breadcrumbJsonLd(origin, [
+        { name: 'Trang chủ', path: '/' },
+        { name: 'Sự kiện', path: '/su-kien' },
+        { name: item.title, path: hrefFor(item) },
+      ]),
+      eventJsonLd({
+        origin,
+        path: hrefFor(item),
+        name: item.title,
+        description: pageDesc,
+        startAt: item.startAt,
+        endAt: item.endAt,
+        placeText: item.placeText,
+        organizationName: item.organizationName,
+        image: pageImage,
+      }),
+    ]
+  : [];
 ---
-<Layout title={item ? `${item.title} — Thái Nguyên Life` : 'Không tìm thấy'} active="event">
+<Layout
+  title={pageTitle}
+  description={pageDesc}
+  image={pageImage}
+  ogType="article"
+  jsonLd={pageJsonLd}
+  robots={!item || expired ? 'noindex, nofollow' : undefined}
+  active="event"
+>
   <div class="page event-detail-page">
     <div class="wrap">
       {item ? (

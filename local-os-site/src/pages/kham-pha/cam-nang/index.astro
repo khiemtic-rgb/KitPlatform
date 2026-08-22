@@ -16,6 +16,7 @@ import {
   handbookRooms,
   showHandbookSection,
 } from '../../../lib/handbook';
+import { breadcrumbJsonLd, collectionJsonLd, siteOrigin } from '../../../lib/seo';
 
 const cat = handbookCatOf(Astro.url.searchParams.get('cat'));
 const [allEvents, allJobs, allRooms] = await Promise.all([
@@ -45,6 +46,20 @@ function catHref(id: string): string {
   title="Cẩm nang Thái Nguyên — Thái Nguyên Life"
   active="discover"
   description="Cuối tuần đi đâu, đang tuyển gì, phòng nào gần trường — gọi thẳng số trên tin."
+  image="/discover/guide-an-gi.jpg"
+  jsonLd={[
+    breadcrumbJsonLd(siteOrigin(Astro.site), [
+      { name: 'Trang chủ', path: '/' },
+      { name: 'Khám phá', path: '/kham-pha' },
+      { name: 'Cẩm nang', path: '/kham-pha/cam-nang' },
+    ]),
+    collectionJsonLd({
+      origin: siteOrigin(Astro.site),
+      path: '/kham-pha/cam-nang',
+      name: 'Cẩm nang Thái Nguyên',
+      description: 'Cuối tuần đi đâu, đang tuyển gì, phòng nào gần trường — gọi thẳng số trên tin.',
+    }),
+  ]}
 >
   <section class="job-hero">
     <div class="wrap">

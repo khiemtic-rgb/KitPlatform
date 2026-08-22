@@ -16,6 +16,7 @@ import {
 import { featuredGuides, featuredPlaces, guideHref, placeHref } from '../lib/discover';
 import { isEventPast } from '../lib/event-date';
 import { jobPay } from '../lib/job-filters';
+import { collectionJsonLd, siteOrigin } from '../lib/seo';
 
 const homePlaces = featuredPlaces();
 const homeGuides = featuredGuides().slice(0, 3);
@@ -44,7 +45,17 @@ const upcoming = [...events]
 const featuredRooms = rooms.slice(0, 4);
 const liveCount = jobs.length + events.length + rooms.length;
 ---
-<Layout title="Thái Nguyên Life – Hiểu Thái Nguyên, sống trọn trải nghiệm" description="Việc làm, sự kiện, phòng trọ và khám phá Thái Nguyên.">
+<Layout
+  title="Thái Nguyên Life – Hiểu Thái Nguyên, sống trọn trải nghiệm"
+  description="Việc làm, sự kiện, phòng trọ và khám phá quanh Thái Nguyên — gọi thẳng số trên tin."
+  image="/banner-ho-nui-coc.png"
+  jsonLd={[collectionJsonLd({
+    origin: siteOrigin(Astro.site),
+    path: '/',
+    name: 'Thái Nguyên Life',
+    description: 'Việc làm, sự kiện, phòng trọ và khám phá quanh Thái Nguyên.',
+  })]}
+>
   <section class="hero">
     <div class="wrap hero-inner">
       <div class="hero-copy">

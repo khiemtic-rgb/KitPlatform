@@ -10,6 +10,7 @@ import {
   kickerPills,
   placeHref,
 } from '../../../lib/discover';
+import { articleJsonLd, breadcrumbJsonLd, clipMeta, siteOrigin } from '../../../lib/seo';
 
 export function getStaticPaths() {
   return GUIDES.map((g) => ({ params: { slug: g.slug } }));
@@ -26,8 +27,31 @@ const places = [...new Map(
     .filter(Boolean)
     .map((p) => [p!.slug, p]),
 ).values()];
+const origin = siteOrigin(Astro.site);
+const pageDesc = clipMeta(guide.summary || guide.sections[0]?.body || guide.title);
 ---
-<Layout title={`${guide.title} — Khám phá Thái Nguyên`} active="discover">
+<Layout
+  title={`${guide.title} — Khám phá Thái Nguyên`}
+  description={pageDesc}
+  image={guide.cover}
+  ogType="article"
+  jsonLd={[
+    breadcrumbJsonLd(origin, [
+      { name: 'Trang chủ', path: '/' },
+      { name: 'Khám phá', path: '/kham-pha' },
+      { name: 'Cẩm nang', path: '/kham-pha/cam-nang' },
+      { name: guide.title, path: `/kham-pha/cam-nang/${guide.slug}` },
+    ]),
+    articleJsonLd({
+      origin,
+      path: `/kham-pha/cam-nang/${guide.slug}`,
+      headline: guide.title,
+      description: pageDesc,
+      image: guide.cover,
+    }),
+  ]}
+  active="discover"
+>
   <div class="page event-detail-page">
     <div class="wrap">
       <nav class="job-crumb" aria-label="Đường dẫn">

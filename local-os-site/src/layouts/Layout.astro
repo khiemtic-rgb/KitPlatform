@@ -1,16 +1,38 @@
 ---
 import '../styles/global.css';
 import { OFFERS_PUBLIC } from '../lib/api';
+import {
+  absUrl,
+  clipMeta,
+  DEFAULT_DESCRIPTION,
+  DEFAULT_OG_IMAGE,
+  jsonLdGraph,
+  siteOrigin,
+} from '../lib/seo';
 
 interface Props {
   title: string;
   description?: string;
+  image?: string;
+  ogType?: 'website' | 'article';
+  jsonLd?: Array<Record<string, unknown> | null | undefined> | Record<string, unknown> | null;
+  robots?: string;
   active?: 'home' | 'discover' | 'job' | 'event' | 'room' | 'offer' | 'grant' | 'community' | 'publish';
 }
-const { title, active = 'home' } = Astro.props;
-const description = Astro.props.description
-  ?? 'Việc làm, sự kiện, phòng trọ và khám phá Thái Nguyên.';
-const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
+const {
+  title,
+  active = 'home',
+  image,
+  ogType = 'website',
+  jsonLd,
+  robots,
+} = Astro.props;
+const origin = siteOrigin(Astro.site);
+const description = clipMeta(Astro.props.description ?? DEFAULT_DESCRIPTION);
+const ogImage = absUrl(origin, image ?? DEFAULT_OG_IMAGE);
+const canonical = new URL(Astro.url.pathname, Astro.site ?? origin).href;
+const extra = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
+const graph = jsonLdGraph(origin, extra);
 Astro.response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
 ---
 <!doctype html>
@@ -19,16 +41,24 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate'
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content={description} />
+    {robots && <meta name="robots" content={robots} />}
     <meta name="theme-color" content="#1f7a45" />
     <meta name="google-site-verification" content="xWO1oI12OrQkJw3Uxzty71I7VRsaYkydQvbTt5pCPaw" />
     <link rel="canonical" href={canonical} />
     <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content="Thái Nguyên Life" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:locale" content="vi_VN" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:alt" content={title} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <script type="application/ld+json" set:html={JSON.stringify(graph).replace(/</g, '\\u003c')} />
     <title>{title}</title>
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" href="/favicon.png" />

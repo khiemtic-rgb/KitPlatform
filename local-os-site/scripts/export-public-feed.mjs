@@ -20,6 +20,9 @@ try {
     getJson('/groups'),
   ]);
   const feed = { listings, groups, exportedAt: new Date().toISOString() };
+  if (!Array.isArray(listings) || listings.length < 50) {
+    throw new Error(`thin feed (${listings?.length ?? 0}) — refuse overwrite`);
+  }
   writeFileSync(out, JSON.stringify(feed));
   const counts = listings.reduce((acc, row) => {
     acc[row.kind] = (acc[row.kind] || 0) + 1;
@@ -27,6 +30,6 @@ try {
   }, {});
   console.log(`public-feed: ${listings.length} listings`, counts, `${groups.length} groups`);
 } catch (err) {
-  writeFileSync(out, JSON.stringify({ listings: [], groups: [], exportedAt: null }));
-  console.warn(`public-feed: empty (${err.message})`);
+  console.error(`public-feed: keep existing (${err.message})`);
+  process.exit(1);
 }

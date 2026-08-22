@@ -7,7 +7,12 @@ if (!OFFERS_PUBLIC) return Astro.redirect('/');
 
 const grants = await listListings('grant');
 ---
-<Layout title="Ưu đãi & học bổng — Thái Nguyên Life" active="offer">
+<Layout
+  title="Ưu đãi & học bổng — Thái Nguyên Life"
+  description="Học bổng lấy từ thông báo website trường. Ưu đãi quán / shop — sắp mở."
+  robots="noindex"
+  active="offer"
+>
   <div class="page">
     <div class="wrap">
       <h1 class="page-title">Ưu đãi &amp; học bổng</h1>

@@ -4,6 +4,7 @@ import Layout from '../../../layouts/Layout.astro';
 import ShareListing from '../../../components/ShareListing.astro';
 import { WEEK_GUIDE, buildWeekDigest } from '../../../lib/week-digest';
 import { discoverBadgeClass, kickerPills } from '../../../lib/discover';
+import { articleJsonLd, breadcrumbJsonLd, clipMeta, siteOrigin } from '../../../lib/seo';
 
 const digest = await buildWeekDigest();
 const sections = [digest.events, digest.jobs, digest.rooms];
@@ -13,7 +14,24 @@ const badge = pills[0] || 'Cẩm nang';
 <Layout
   title={`${WEEK_GUIDE.title} — Thái Nguyên Life`}
   active="discover"
-  description={digest.blurb}
+  description={clipMeta(digest.blurb)}
+  image={WEEK_GUIDE.cover}
+  ogType="article"
+  jsonLd={[
+    breadcrumbJsonLd(siteOrigin(Astro.site), [
+      { name: 'Trang chủ', path: '/' },
+      { name: 'Khám phá', path: '/kham-pha' },
+      { name: 'Cẩm nang', path: '/kham-pha/cam-nang' },
+      { name: WEEK_GUIDE.title, path: WEEK_GUIDE.href },
+    ]),
+    articleJsonLd({
+      origin: siteOrigin(Astro.site),
+      path: WEEK_GUIDE.href,
+      headline: WEEK_GUIDE.title,
+      description: clipMeta(digest.blurb),
+      image: WEEK_GUIDE.cover,
+    }),
+  ]}
 >
   <div class="page event-detail-page">
     <div class="wrap">

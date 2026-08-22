@@ -15,6 +15,7 @@ import {
   placeTag,
   placeTagTone,
 } from '../../lib/discover';
+import { breadcrumbJsonLd, collectionJsonLd, siteOrigin } from '../../lib/seo';
 
 const hubSlugs = [
   'ho-nui-coc',
@@ -44,7 +45,24 @@ const catIco: Record<string, string> = {
   'cam-nang': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5z"/><path d="M8 7h8M8 11h8"/></svg>',
 };
 ---
-<Layout title="Khám phá Thái Nguyên — Thái Nguyên Life" active="discover" description="Đồi chè, bảo tàng, Then, cuối tuần đi đâu ở Thái Nguyên.">
+<Layout
+  title="Khám phá Thái Nguyên — Thái Nguyên Life"
+  active="discover"
+  description="Đồi chè, bảo tàng, Then, cuối tuần đi đâu ở Thái Nguyên."
+  image="/banner-ho-nui-coc.png"
+  jsonLd={[
+    breadcrumbJsonLd(siteOrigin(Astro.site), [
+      { name: 'Trang chủ', path: '/' },
+      { name: 'Khám phá', path: '/kham-pha' },
+    ]),
+    collectionJsonLd({
+      origin: siteOrigin(Astro.site),
+      path: '/kham-pha',
+      name: 'Khám phá Thái Nguyên',
+      description: 'Đồi chè, bảo tàng, Then, cuối tuần đi đâu ở Thái Nguyên.',
+    }),
+  ]}
+>
   <section class="disc-hero">
     <div class="wrap disc-hero-inner">
       <h1>Khám phá Thái Nguyên</h1>

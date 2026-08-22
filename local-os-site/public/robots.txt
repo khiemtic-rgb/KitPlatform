@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
-Disallow: /thong-ke
 Disallow: /api/
+Disallow: /duyet
+Disallow: /thong-ke
+
+Sitemap: https://thainguyenlife.vn/sitemap.xml

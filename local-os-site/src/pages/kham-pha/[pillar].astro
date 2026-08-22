@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { PILLARS, guideHref, guidesIn, pillarOf, placeHref, placesIn } from '../../lib/discover';
+import { breadcrumbJsonLd, collectionJsonLd, siteOrigin } from '../../lib/seo';
 
 export function getStaticPaths() {
   return PILLARS.map((p) => ({ params: { pillar: p.id } }));
@@ -11,7 +12,24 @@ if (!pillar) return Astro.redirect('/kham-pha');
 const places = placesIn(pillar.id);
 const guides = guidesIn(pillar.id);
 ---
-<Layout title={`${pillar.label} — Khám phá Thái Nguyên`} active="discover">
+<Layout
+  title={`${pillar.label} — Khám phá Thái Nguyên`}
+  description={pillar.lead}
+  jsonLd={[
+    breadcrumbJsonLd(siteOrigin(Astro.site), [
+      { name: 'Trang chủ', path: '/' },
+      { name: 'Khám phá', path: '/kham-pha' },
+      { name: pillar.label, path: `/kham-pha/${pillar.id}` },
+    ]),
+    collectionJsonLd({
+      origin: siteOrigin(Astro.site),
+      path: `/kham-pha/${pillar.id}`,
+      name: `${pillar.label} Thái Nguyên`,
+      description: pillar.lead,
+    }),
+  ]}
+  active="discover"
+>
   <div class="page discover-page">
     <div class="wrap">
       <nav class="job-crumb" aria-label="Đường dẫn">

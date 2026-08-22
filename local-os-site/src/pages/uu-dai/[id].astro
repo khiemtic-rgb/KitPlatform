@@ -11,7 +11,12 @@ if (!item || item.kind !== 'grant') Astro.response.status = 404;
 const applyUrl = item?.registrationUrl || item?.sourceUrl;
 const phoneHref = item ? telHref(item.contactPhone) : null;
 ---
-<Layout title={item ? `${item.title} — Thái Nguyên Life` : 'Không tìm thấy'} active="offer">
+<Layout
+  title={item ? `${item.title} — Thái Nguyên Life` : 'Không tìm thấy'}
+  description={item?.summary || 'Học bổng trên Thái Nguyên Life.'}
+  robots={!item || item.kind !== 'grant' ? 'noindex, nofollow' : 'noindex'}
+  active="offer"
+>
   <div class="page">
     <div class="wrap" style="max-width:760px">
       {item && item.kind === 'grant' ? (

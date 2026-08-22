@@ -24,6 +24,7 @@ import {
   similarJobs,
   splitJobLines,
 } from '../../lib/job-filters';
+import { breadcrumbJsonLd, jobJsonLd, listingDescription, siteOrigin } from '../../lib/seo';
 
 const { id } = Astro.params;
 const item = id ? await getListing(id) : null;
@@ -56,8 +57,43 @@ const fit: string[] = [];
 if (item && typeLabel) fit.push(typeLabel);
 if (item && tags.includes('Sinh viên')) fit.push('Dành cho sinh viên');
 if (item?.placeText) fit.push(item.placeText);
+const origin = siteOrigin(Astro.site);
+const pageTitle = item ? `${item.title} — Thái Nguyên Life` : 'Không tìm thấy';
+const pageDesc = item
+  ? listingDescription({ title: item.title, summary: item.summary, place: item.placeText })
+  : 'Tin việc làm không còn hoặc chưa mở trên Thái Nguyên Life.';
+const pageImage = '/trend/job.jpg';
+const pageJsonLd = item && !expired
+  ? [
+      breadcrumbJsonLd(origin, [
+        { name: 'Trang chủ', path: '/' },
+        { name: 'Việc làm', path: '/viec' },
+        { name: item.title, path: hrefFor(item) },
+      ]),
+      jobJsonLd({
+        origin,
+        path: hrefFor(item),
+        title: item.title,
+        description: pageDesc,
+        publishedAt: item.publishedAt,
+        expiresAt: item.expiresAt,
+        organizationName: item.organizationName,
+        sourceName: item.sourceName,
+        placeText: item.placeText,
+        employmentType: jobTypeOf(item),
+      }),
+    ]
+  : [];
 ---
-<Layout title={item ? `${item.title} — Thái Nguyên Life` : 'Không tìm thấy'} active="job">
+<Layout
+  title={pageTitle}
+  description={pageDesc}
+  image={pageImage}
+  ogType="article"
+  jsonLd={pageJsonLd}
+  robots={!item || expired ? 'noindex, nofollow' : undefined}
+  active="job"
+>
   <div class="page job-detail-page">
     <div class="wrap">
       {item ? (

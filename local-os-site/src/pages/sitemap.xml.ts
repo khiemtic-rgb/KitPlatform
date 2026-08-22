@@ -25,14 +25,15 @@ function abs(origin: string, path: string): string {
 
 export const GET: APIRoute = async ({ site }) => {
   const origin = (site ?? new URL(FALLBACK)).origin.replace(/\/$/, '');
+  const today = new Date().toISOString().slice(0, 10);
   const rows: Row[] = [
-    { path: '/', changefreq: 'daily', priority: '1.0' },
-    { path: '/kham-pha', changefreq: 'weekly', priority: '0.9' },
-    { path: '/kham-pha/cam-nang', changefreq: 'daily', priority: '0.85' },
-    { path: '/kham-pha/cam-nang/tuan-nay', changefreq: 'daily', priority: '0.8' },
-    { path: '/viec', changefreq: 'daily', priority: '0.8' },
-    { path: '/su-kien', changefreq: 'daily', priority: '0.8' },
-    { path: '/tro', changefreq: 'daily', priority: '0.8' },
+    { path: '/', changefreq: 'daily', priority: '1.0', lastmod: today },
+    { path: '/kham-pha', changefreq: 'weekly', priority: '0.9', lastmod: today },
+    { path: '/kham-pha/cam-nang', changefreq: 'daily', priority: '0.85', lastmod: today },
+    { path: '/kham-pha/cam-nang/tuan-nay', changefreq: 'daily', priority: '0.8', lastmod: today },
+    { path: '/viec', changefreq: 'daily', priority: '0.8', lastmod: today },
+    { path: '/su-kien', changefreq: 'daily', priority: '0.8', lastmod: today },
+    { path: '/tro', changefreq: 'daily', priority: '0.8', lastmod: today },
     { path: '/dang-tin', changefreq: 'monthly', priority: '0.4' },
     { path: '/thong-tin/gioi-thieu', changefreq: 'monthly', priority: '0.4' },
     { path: '/thong-tin/quy-dinh', changefreq: 'yearly', priority: '0.3' },

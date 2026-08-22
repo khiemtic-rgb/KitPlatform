@@ -30,6 +30,7 @@ import {
   wardLabel,
   wardOf,
 } from '../../lib/room-filters';
+import { breadcrumbJsonLd, listingDescription, roomJsonLd, siteOrigin } from '../../lib/seo';
 
 const { id } = Astro.params;
 const item = id ? await getListing(id) : null;
@@ -73,8 +74,42 @@ if (ward) facts.push({ label: 'Phường', value: ward });
 if (dist) facts.push({ label: 'Khoảng cách (theo tin)', value: dist });
 if (when) facts.push({ label: 'Cập nhật', value: when });
 if (sourceKind) facts.push({ label: 'Nguồn', value: sourceKind });
+const origin = siteOrigin(Astro.site);
+const pageTitle = item ? `${title} — Thái Nguyên Life` : 'Không tìm thấy';
+const pageDesc = item
+  ? listingDescription({
+      title,
+      summary: item.summary,
+      place: place || item.placeText,
+    })
+  : 'Tin phòng trọ không còn hoặc chưa mở trên Thái Nguyên Life.';
+const pageImage = coverFor('room', 0);
+const pageJsonLd = item && !expired
+  ? [
+      breadcrumbJsonLd(origin, [
+        { name: 'Trang chủ', path: '/' },
+        { name: 'Phòng trọ', path: '/tro' },
+        { name: title, path: hrefFor(item) },
+      ]),
+      roomJsonLd({
+        origin,
+        path: hrefFor(item),
+        name: title,
+        description: pageDesc,
+        placeText: place || item.placeText,
+      }),
+    ]
+  : [];
 ---
-<Layout title={item ? `${title} — Thái Nguyên Life` : 'Không tìm thấy'} active="room">
+<Layout
+  title={pageTitle}
+  description={pageDesc}
+  image={pageImage}
+  ogType="article"
+  jsonLd={pageJsonLd}
+  robots={!item || expired ? 'noindex, nofollow' : undefined}
+  active="room"
+>
   <div class="page room-detail-page">
     <div class="wrap">
       {item ? (
