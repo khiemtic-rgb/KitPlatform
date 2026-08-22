@@ -1,0 +1,49 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { coverFor, formatRelative, hrefFor, listListings } from '../../lib/api';
+import { collectionJsonLd, siteOrigin } from '../../lib/seo';
+
+const items = await listListings('article');
+const pageDesc = 'Bài viết về đời sống Thái Nguyên — đăng từ KIT MKT, không phải việc hay phòng trọ.';
+---
+<Layout
+  title="Tin — Thái Nguyên Life"
+  description={pageDesc}
+  image="/banner-ho-nui-coc.png"
+  jsonLd={[collectionJsonLd({
+    origin: siteOrigin(Astro.site),
+    path: '/tin',
+    name: 'Tin Thái Nguyên',
+    description: pageDesc,
+  })]}
+  active="news"
+>
+  <section class="job-hero">
+    <div class="wrap">
+      <h1>Tin Thái Nguyên</h1>
+      <p class="job-hero-lead">Bài viết địa phương. Việc / sự kiện / trọ nằm ở mục riêng.</p>
+    </div>
+  </section>
+  <div class="page events-page">
+    <div class="wrap">
+      {items.length === 0 ? (
+        <p class="empty">Chưa có bài. Khi KIT MKT xuất bản lên Thái Nguyên Life, bài sẽ hiện đây.</p>
+      ) : (
+        <ul class="event-list">
+          {items.map((item) => (
+            <li>
+              <a class="event-row" href={hrefFor(item)}>
+                <img src={coverFor('article', 0)} alt="" />
+                <div>
+                  <h2>{item.title}</h2>
+                  <p>{(item.salaryText || item.summary || '').replace(/\s+/g, ' ').slice(0, 160)}</p>
+                  <span class="muted">{formatRelative(item.publishedAt || item.lastCheckedAt)}</span>
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  </div>
+</Layout>

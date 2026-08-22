@@ -53,6 +53,7 @@ public static class ContentPackDependencyInjection
         services.AddScoped<IContentTopicService, ContentTopicService>();
         services.AddScoped<IContentPackageService, ContentPackageService>();
         services.AddScoped<IContentGenerateService, ContentGenerateService>();
+        services.AddScoped<IContentLocalOsPublisher, UnconfiguredContentLocalOsPublisher>();
         services.AddScoped<IContentPublishService, ContentPublishService>();
         services.AddScoped<IContentVideoService, ContentVideoService>();
         services.AddScoped<IContentSeriesTurboService, ContentSeriesTurboService>();
@@ -67,5 +68,17 @@ public static class ContentPackDependencyInjection
         services.AddScoped<IContentFacebookConnectionService, ContentFacebookConnectionService>();
         services.AddHostedService<ContentWorkWorker>();
         return services;
+    }
+}
+
+internal sealed class UnconfiguredContentLocalOsPublisher : IContentLocalOsPublisher
+{
+    public Task<ContentLocalOsPublishResult> PublishArticleAsync(
+        ContentLocalOsPublishRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _ = request;
+        _ = cancellationToken;
+        throw new InvalidOperationException("Chưa gắn publisher Thái Nguyên Life trên API.");
     }
 }

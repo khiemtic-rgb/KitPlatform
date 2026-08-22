@@ -11,6 +11,7 @@ alwaysApply: true
 - Do not merge Local OS commits with Pharmacy auth. Do not crawl Facebook. Do not auto-post to groups.
 - Public submit → `NEEDS_REVIEW`. Site shows `ACTIVE` only after human publish.
 - KIT_MKT ADMIN may open the listings queue (nav + `local_os` module). Data stays in `pack_local`. Do not merge tenants or Content/Pharmacy auth.
+- KIT_MKT **Xuất bản** to connector `local_os` writes an ACTIVE `article` in `pack_local` (source `kit_mkt`, `content://kit-mkt/topic/{id}`). Public site shows `/tin/{id}`. Public submit still `NEEDS_REVIEW`. Do not invent dates/prices or add Novixa/Famixa/PHC CTAs on this path.
 - Homepage feed: VPS (`api.novixa.vn` / `KIT_LOCAL`) may push to Worker KV when `LocalOs__PublicFeedUrl` is set. Do not push an empty feed. Local still works when you are at that machine.
 - Student v1: Job + Event + Room. Publisher: Job + Event + Room (no prices on rooms). Offers/grants stay hidden.
 - No Novixa/Famixa/PHC CTAs on the public site.

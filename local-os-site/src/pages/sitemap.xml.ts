@@ -33,6 +33,7 @@ export const GET: APIRoute = async ({ site }) => {
     { path: '/kham-pha/cam-nang/tuan-nay', changefreq: 'daily', priority: '0.8', lastmod: today },
     { path: '/viec', changefreq: 'daily', priority: '0.8', lastmod: today },
     { path: '/su-kien', changefreq: 'daily', priority: '0.8', lastmod: today },
+    { path: '/tin', changefreq: 'daily', priority: '0.8', lastmod: today },
     { path: '/tro', changefreq: 'daily', priority: '0.8', lastmod: today },
     { path: '/dang-tin', changefreq: 'monthly', priority: '0.4' },
     { path: '/thong-tin/gioi-thieu', changefreq: 'monthly', priority: '0.4' },

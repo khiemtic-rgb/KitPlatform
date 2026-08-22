@@ -17,7 +17,7 @@ interface Props {
   ogType?: 'website' | 'article';
   jsonLd?: Array<Record<string, unknown> | null | undefined> | Record<string, unknown> | null;
   robots?: string;
-  active?: 'home' | 'discover' | 'job' | 'event' | 'room' | 'offer' | 'grant' | 'community' | 'publish';
+  active?: 'home' | 'discover' | 'job' | 'event' | 'room' | 'offer' | 'grant' | 'community' | 'publish' | 'news';
 }
 const {
   title,
@@ -74,6 +74,7 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate'
           <a href="/kham-pha" class={active === 'discover' ? 'is-on' : undefined}>Khám phá</a>
           <a href="/viec" class={active === 'job' ? 'is-on' : undefined}>Việc làm</a>
           <a href="/su-kien" class={active === 'event' ? 'is-on' : undefined}>Sự kiện</a>
+          <a href="/tin" class={active === 'news' ? 'is-on' : undefined}>Tin</a>
           <a href="/tro" class={active === 'room' ? 'is-on' : undefined}>Phòng trọ</a>
           {OFFERS_PUBLIC && <a href="/uu-dai" class={active === 'offer' ? 'is-on' : undefined}>Ưu đãi</a>}
           {OFFERS_PUBLIC && <a href="/uu-dai#hoc-bong" class={active === 'grant' ? 'is-on' : undefined}>Học bổng</a>}
@@ -92,6 +93,7 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate'
               <a href="/kham-pha">Khám phá</a>
               <a href="/viec">Việc làm</a>
               <a href="/su-kien">Sự kiện</a>
+              <a href="/tin">Tin</a>
               <a href="/tro">Phòng trọ</a>
               <a href="/#cong-dong">Cộng đồng</a>
               <a href="/dang-tin">+ Đăng tin</a>
@@ -118,6 +120,7 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate'
             <a href="/kham-pha/cam-nang">Cẩm nang</a>
             <a href="/viec">Việc làm</a>
             <a href="/su-kien">Sự kiện</a>
+            <a href="/tin">Tin</a>
             <a href="/tro">Phòng trọ</a>
             {OFFERS_PUBLIC && <a href="/uu-dai">Ưu đãi</a>}
             {OFFERS_PUBLIC && <a href="/uu-dai#hoc-bong">Học bổng</a>}

@@ -54,6 +54,7 @@ const KIND_LABEL: Record<string, string> = {
   job: 'Việc',
   event: 'Sự kiện',
   room: 'Trọ',
+  article: 'Bài web',
 };
 
 const REPORT_LABEL: Record<string, string> = {
@@ -67,6 +68,7 @@ const KIND_OPTIONS = [
   { value: 'job', label: 'Việc' },
   { value: 'event', label: 'Sự kiện' },
   { value: 'room', label: 'Trọ' },
+  { value: 'article', label: 'Bài web' },
 ];
 
 const EMPLOY_OPTIONS = [

@@ -22,18 +22,19 @@ const homePlaces = featuredPlaces();
 const homeGuides = featuredGuides().slice(0, 3);
 
 const q = Astro.url.searchParams.get('q') ?? '';
-const [jobs, events, rooms, groups] = await Promise.all([
+const [jobs, events, rooms, articles, groups] = await Promise.all([
   listListings('job', q || undefined),
   listListings('event', q || undefined),
   listListings('room', q || undefined),
+  listListings('article', q || undefined),
   listGroups(),
 ]);
 
 const picked: typeof jobs = [];
-for (const list of [jobs, events, rooms]) {
+for (const list of [jobs, events, rooms, articles]) {
   if (list[0]) picked.push(list[0]);
 }
-for (const item of [...jobs, ...events, ...rooms]) {
+for (const item of [...jobs, ...events, ...rooms, ...articles]) {
   if (picked.length >= 8) break;
   if (!picked.some((x) => x.id === item.id)) picked.push(item);
 }
@@ -43,7 +44,8 @@ const upcoming = [...events]
   .sort((a, b) => Number(Boolean(b.startAt)) - Number(Boolean(a.startAt)))
   .slice(0, 4);
 const featuredRooms = rooms.slice(0, 4);
-const liveCount = jobs.length + events.length + rooms.length;
+const latestArticles = articles.slice(0, 4);
+const liveCount = jobs.length + events.length + rooms.length + articles.length;
 ---
 <Layout
   title="Thái Nguyên Life – Hiểu Thái Nguyên, sống trọn trải nghiệm"
@@ -129,6 +131,13 @@ const liveCount = jobs.length + events.length + rooms.length;
         <strong>Sự kiện</strong>
         <span>{events.length} sự kiện</span>
       </a>
+      <a class="cat-item" href="/tin">
+        <span class="cat-ico event" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2V4z"/><path d="M7 8h9M7 12h9M7 16h6"/></svg>
+        </span>
+        <strong>Tin</strong>
+        <span>{articles.length} bài</span>
+      </a>
       <a class="cat-item" href="/tro">
         <span class="cat-ico room" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
@@ -202,6 +211,30 @@ const liveCount = jobs.length + events.length + rooms.length;
           </a>
         ))}
       </div>
+
+      {latestArticles.length > 0 && (
+        <div class="section-head" style="margin-top:8px">
+          <h2>Tin Thái Nguyên</h2>
+          <a class="see-all" href="/tin">Xem tất cả →</a>
+        </div>
+      )}
+      {latestArticles.length > 0 && (
+        <div class="home-col-list" style="margin-bottom:28px">
+          {latestArticles.map((item, i) => (
+            <a class="ev" href={hrefFor(item)}>
+              <span class="ev-thumb-wrap">
+                <img class="ev-thumb" src={coverFor('article', i)} alt="" />
+                <span class="photo-caption">Minh họa</span>
+              </span>
+              <div class="ev-body">
+                <strong>{item.title}</strong>
+                {item.organizationName && <div class="job-meta">{item.organizationName}</div>}
+                <span class="mini-badge event">Tin</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
 
       <div class="trio equal">
         <section class="panel">

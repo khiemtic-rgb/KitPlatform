@@ -103,7 +103,7 @@ public static class ContentQualityGate
     public static bool RequiresWebStructure(string? connectorType)
     {
         var t = (connectorType ?? "").Trim().ToLowerInvariant();
-        return t is "wordpress_rest" or "astro_git";
+        return t is "wordpress_rest" or "astro_git" or "local_os";
     }
 
     public static bool IsPublishBlocking(string issue)

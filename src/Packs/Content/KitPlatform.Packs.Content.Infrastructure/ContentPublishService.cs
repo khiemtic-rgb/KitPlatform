@@ -33,6 +33,7 @@ internal sealed class ContentPublishService : IContentPublishService
     private readonly IHostEnvironment _env;
     private readonly ContentOptions _options;
     private readonly IContentFacebookConnectionService _facebook;
+    private readonly IContentLocalOsPublisher _localOs;
     private readonly ILogger<ContentPublishService> _logger;
 
     // Per-request media for scoped publish (cleared in finally).
@@ -45,6 +46,7 @@ internal sealed class ContentPublishService : IContentPublishService
         IHostEnvironment env,
         IOptions<ContentOptions> options,
         IContentFacebookConnectionService facebook,
+        IContentLocalOsPublisher localOs,
         ILogger<ContentPublishService> logger)
     {
         _repo = repo;
@@ -53,6 +55,7 @@ internal sealed class ContentPublishService : IContentPublishService
         _env = env;
         _options = options.Value;
         _facebook = facebook;
+        _localOs = localOs;
         _logger = logger;
     }
 
@@ -183,7 +186,7 @@ internal sealed class ContentPublishService : IContentPublishService
             if (jobs.Count == 0)
             {
                 throw new InvalidOperationException(
-                    "Không có kênh đăng tự động. Chỉ Fanpage, Astro Git, WordPress. Instagram / LinkedIn / group: copy tay ở Đăng tay.");
+                    "Không có kênh đăng tự động. Chỉ Fanpage, Astro Git, WordPress, Thái Nguyên Life. Instagram / LinkedIn / group: copy tay ở Đăng tay.");
             }
 
             if (request.RunImmediately)
@@ -336,8 +339,9 @@ internal sealed class ContentPublishService : IContentPublishService
                 "wordpress_rest" => await RunWordPressAsync(job, topic, variants, selected, cancellationToken),
                 "facebook_page" => await RunFacebookAsync(job, topic, variants, selected, cancellationToken),
                 "astro_git" => await RunAstroGitAsync(job, topic, variants, selected, cancellationToken),
+                "local_os" => await RunLocalOsAsync(job, topic, variants, cancellationToken),
                 _ => throw new InvalidOperationException(
-                    $"Kênh «{job.ConnectorType}» không đăng tự động — copy tay ở Đăng tay. Chỉ auto: Fanpage, Astro, WordPress."),
+                    $"Kênh «{job.ConnectorType}» không đăng tự động — copy tay ở Đăng tay. Chỉ auto: Fanpage, Astro, WordPress, Thái Nguyên Life."),
             };
 
             job.Status = "Succeeded";
@@ -412,6 +416,35 @@ internal sealed class ContentPublishService : IContentPublishService
             exportedAt = DateTimeOffset.UtcNow,
         };
         return new ConnectorResult(null, JsonSerializer.Serialize(payload, JsonOpts));
+    }
+
+    private async Task<ConnectorResult> RunLocalOsAsync(
+        ContentRepository.PublishJobRow job,
+        ContentRepository.TopicRow topic,
+        IReadOnlyList<ContentRepository.VariantRow> variants,
+        CancellationToken ct)
+    {
+        var web = variants.FirstOrDefault(v =>
+                      string.Equals(v.Kind, "web_long", StringComparison.OrdinalIgnoreCase))
+                  ?? variants.FirstOrDefault(v =>
+                      !string.Equals(v.Kind, "seo_meta", StringComparison.OrdinalIgnoreCase));
+        var seo = variants.FirstOrDefault(v =>
+            string.Equals(v.Kind, "seo_meta", StringComparison.OrdinalIgnoreCase));
+        var title = (web?.Title ?? topic.Title ?? "").Trim();
+        var body = (web?.BodyMarkdown ?? "").Trim();
+        var seoText = MarkdownToPlainText(seo?.BodyMarkdown ?? "", singleLine: true);
+        var brand = await _repo.GetBrandAsync(topic.BrandId, ct);
+        var published = await _localOs.PublishArticleAsync(
+            new ContentLocalOsPublishRequest(
+                topic.Id,
+                title,
+                body,
+                string.IsNullOrWhiteSpace(seoText) ? null : seoText,
+                brand?.Name,
+                topic.BrandCode),
+            ct);
+        _ = job;
+        return new ConnectorResult(published.ListingId.ToString("D"), published.ResultJson);
     }
 
     private async Task<ConnectorResult> RunWordPressAsync(
@@ -1565,7 +1598,7 @@ internal sealed class ContentPublishService : IContentPublishService
     }
 
     private static bool IsAutoSiteConnector(string? type) =>
-        type is "astro_git" or "wordpress_rest";
+        type is "astro_git" or "wordpress_rest" or "local_os";
 
     private static bool IsAutoChannelConnector(string? type) =>
         type == "facebook_page";

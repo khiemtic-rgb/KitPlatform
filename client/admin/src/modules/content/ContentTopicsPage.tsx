@@ -101,6 +101,7 @@ function StatusTag({ status }: { status: string }) {
 const CONNECTOR_LABEL: Record<string, { title: string; color: string }> = {
   facebook_page: { title: 'Facebook Page', color: 'blue' },
   astro_git: { title: 'Website · Astro / Git', color: 'purple' },
+  local_os: { title: 'Thái Nguyên Life', color: 'green' },
   wordpress_rest: { title: 'WordPress', color: 'geekblue' },
   manual: { title: 'Thủ công', color: 'default' },
   linkedin: { title: 'LinkedIn', color: 'cyan' },
@@ -163,6 +164,17 @@ function formatPublishError(raw: string): { summary: string; hint?: string; raw:
       };
     }
     return { summary: decoded, raw: text };
+  }
+  if (
+    lower.includes('thái nguyên life') ||
+    lower.includes('web_long trước khi đẩy') ||
+    lower.includes('bài quá ngắn')
+  ) {
+    return {
+      summary: text.length > 160 ? `${text.slice(0, 160)}…` : text,
+      hint: 'Cần bản Website (web_long) đủ dài, có ít nhất 2 mục ##. Mở Góc brand → Nhờ AI, rồi Xuất bản lại.',
+      raw: text,
+    };
   }
   if (
     lower.includes('mất quyền đăng') ||
@@ -1994,6 +2006,7 @@ export function ContentTopicsPage() {
                               hasImage?: boolean;
                               image?: string;
                               path?: string;
+                              url?: string;
                               category?: string;
                             })
                           : null;
@@ -2002,7 +2015,8 @@ export function ContentTopicsPage() {
                         else if (r?.hasImage) mediaHint = `Có ảnh${r.image ? ` · ${r.image}` : ''}`;
                         else if (j.connectorType === 'astro_git' && r && r.hasImage === false)
                           mediaHint = 'Chưa kèm ảnh';
-                        if (r?.path) pathHint = r.path;
+                        if (r?.url) pathHint = r.url;
+                        else if (r?.path) pathHint = r.path;
                         if (r?.category) categoryHint = r.category;
                       } catch {
                         /* ignore */
@@ -2019,9 +2033,15 @@ export function ContentTopicsPage() {
                             {categoryHint ? <Tag color="purple">Chuyên mục: {categoryHint}</Tag> : null}
                           </Space>
                           {pathHint ? (
-                            <Typography.Text type="secondary" style={{ fontSize: 12 }} copyable>
-                              {pathHint}
-                            </Typography.Text>
+                            pathHint.startsWith('http') ? (
+                              <Typography.Link href={pathHint} target="_blank" style={{ fontSize: 12 }} copyable>
+                                {pathHint}
+                              </Typography.Link>
+                            ) : (
+                              <Typography.Text type="secondary" style={{ fontSize: 12 }} copyable>
+                                {pathHint}
+                              </Typography.Text>
+                            )
                           ) : null}
                         </Space>
                       );

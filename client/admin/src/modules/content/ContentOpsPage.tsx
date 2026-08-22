@@ -325,6 +325,7 @@ export function ContentOpsPage() {
 const CONNECTOR_LABEL: Record<string, string> = {
   facebook_page: 'Fanpage',
   astro_git: 'Astro',
+  local_os: 'Thái Nguyên Life',
   wordpress_rest: 'WordPress',
   manual: 'Xuất tay',
 };

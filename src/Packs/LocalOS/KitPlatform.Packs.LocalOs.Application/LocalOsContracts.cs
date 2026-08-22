@@ -208,6 +208,7 @@ public interface ILocalOsListingService
     Task<LocalListingDto> CreateAsync(UpsertLocalListingRequest request, CancellationToken cancellationToken = default);
     Task<LocalListingDto?> UpdateAsync(Guid id, UpsertLocalListingRequest request, CancellationToken cancellationToken = default);
     Task<LocalListingDto?> SetStatusAsync(Guid id, string status, CancellationToken cancellationToken = default);
+    Task<LocalListingDto?> FindBySourceUrlAsync(string sourceUrl, CancellationToken cancellationToken = default);
     Task<LocalListingDto?> FindDuplicateAsync(
         string kind,
         string title,

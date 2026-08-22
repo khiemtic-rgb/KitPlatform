@@ -808,6 +808,23 @@ public interface IContentGenerateService
         CancellationToken cancellationToken = default);
 }
 
+public sealed record ContentLocalOsPublishRequest(
+    Guid TopicId,
+    string Title,
+    string BodyMarkdown,
+    string? SeoDescription,
+    string? BrandName,
+    string? BrandCode);
+
+public sealed record ContentLocalOsPublishResult(Guid ListingId, string PublicPath, string ResultJson);
+
+public interface IContentLocalOsPublisher
+{
+    Task<ContentLocalOsPublishResult> PublishArticleAsync(
+        ContentLocalOsPublishRequest request,
+        CancellationToken cancellationToken = default);
+}
+
 public interface IContentPublishService
 {
     Task<PublishContentResultDto> PublishAsync(

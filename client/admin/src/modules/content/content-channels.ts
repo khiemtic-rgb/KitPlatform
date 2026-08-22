@@ -9,6 +9,7 @@ export const CHANNEL_GROUPS = [
 export const DEST_TYPE_LABEL: Record<string, string> = {
   astro_git: 'Astro',
   wordpress_rest: 'WordPress',
+  local_os: 'Thái Nguyên Life',
   manual: 'Web chép tay',
   buffer: 'Buffer',
   facebook_page: 'Fanpage',

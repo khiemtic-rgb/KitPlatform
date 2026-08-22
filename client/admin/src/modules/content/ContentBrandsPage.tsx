@@ -152,6 +152,7 @@ type DestKind =
   | 'site:manual'
   | 'site:wordpress_rest'
   | 'site:astro_git'
+  | 'site:local_os'
   | 'site:buffer'
   | 'channel:facebook_page'
   | 'channel:facebook_group'
@@ -180,6 +181,7 @@ type DestRow = {
 
 const DEST_KIND_OPTIONS: { value: DestKind; label: string; group: 'site' | 'channel' }[] = [
   { value: 'site:manual', label: 'Website · Thủ công (chép bài)', group: 'site' },
+  { value: 'site:local_os', label: 'Website · Thái Nguyên Life (tự đăng)', group: 'site' },
   { value: 'site:wordpress_rest', label: 'Website · WordPress', group: 'site' },
   { value: 'site:astro_git', label: 'Website · Astro / Git', group: 'site' },
   { value: 'site:buffer', label: 'Website · Buffer (chỉ lưu — chưa auto)', group: 'site' },
@@ -196,6 +198,7 @@ const DEST_KIND_OPTIONS: { value: DestKind; label: string; group: 'site' | 'chan
 
 const CORE_DEST_KINDS = new Set<DestKind>([
   'site:manual',
+  'site:local_os',
   'site:wordpress_rest',
   'site:astro_git',
   'channel:facebook_page',
@@ -752,6 +755,8 @@ export function ContentBrandsPage() {
         setSecretConfigured(saved.secretConfigured);
         if (type === 'astro_git') {
           message.success(`Đã lưu Astro/Git — owner=${parseConfigObj(saved.configJson).owner ?? '?'} / repo=${parseConfigObj(saved.configJson).repo ?? '?'}`);
+        } else if (type === 'local_os') {
+          message.success('Đã lưu Thái Nguyên Life — Xuất bản sẽ tự tạo bài /tin trên thainguyenlife.vn');
         } else {
           message.success('Đã lưu nơi đăng');
         }
@@ -813,7 +818,8 @@ export function ContentBrandsPage() {
   const destFbChannel = channels.find((c) => c.channelType === 'facebook_page' && c.code === destCode);
   const destFb = destFbChannel ? parseFacebookLink(destFbChannel.configJson) : null;
   const secretUi = secretHint(destKind);
-  const showSecret = destKind !== 'site:manual' && !isFbGroup;
+  const isLocalOs = destKind === 'site:local_os';
+  const showSecret = destKind !== 'site:manual' && destKind !== 'site:local_os' && !isFbGroup;
 
   const connectFacebook = async () => {
     if (!editing) {
@@ -1568,6 +1574,21 @@ export function ContentBrandsPage() {
                           options={destKindOptions.map((o) => ({ value: o.value, label: o.label }))}
                           placeholder="Chọn loại…"
                           size="large"
+                          onChange={(v) => {
+                            if (v !== 'site:local_os') return;
+                            const cur = destForm.getFieldsValue();
+                            destForm.setFieldsValue({
+                              code: typeof cur.code === 'string' && cur.code.trim() ? cur.code : 'tnl',
+                              name:
+                                typeof cur.name === 'string' && cur.name.trim()
+                                  ? cur.name
+                                  : 'Thái Nguyên Life',
+                              baseUrl:
+                                typeof cur.baseUrl === 'string' && cur.baseUrl.trim()
+                                  ? cur.baseUrl
+                                  : 'https://thainguyenlife.vn',
+                            });
+                          }}
                         />
                       </Form.Item>
 
@@ -1613,7 +1634,11 @@ export function ContentBrandsPage() {
                                 </Space>
                               }
                             >
-                              <Input placeholder="https://novixa.vn/" />
+                              <Input
+                                placeholder={
+                                  isLocalOs ? 'https://thainguyenlife.vn' : 'https://novixa.vn/'
+                                }
+                              />
                             </Form.Item>
                           ) : isFbGroup ? null : (
                             <Form.Item
@@ -1992,6 +2017,14 @@ export function ContentBrandsPage() {
                             ]}
                           />
                         </Card>
+                      ) : isLocalOs ? (
+                        <Alert
+                          type="success"
+                          showIcon
+                          style={{ marginBottom: 16 }}
+                          message="Tự đăng lên thainguyenlife.vn"
+                          description="Không cần GitHub token. Xuất bản từ Góc brand sẽ tạo / cập nhật bài /tin trên Thái Nguyên Life (cùng topic = cùng bài)."
+                        />
                       ) : (
                         <Alert
                           type="info"

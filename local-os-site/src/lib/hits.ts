@@ -13,6 +13,7 @@ const LABELS: Record<string, string> = {
   '/viec': 'Việc làm',
   '/tro': 'Phòng trọ',
   '/su-kien': 'Sự kiện',
+  '/tin': 'Tin',
   '/kham-pha': 'Khám phá',
   '/dang-tin': 'Đăng tin',
   '/thong-tin/gioi-thieu': 'Giới thiệu',
@@ -23,6 +24,7 @@ export function pathLabel(path: string): string {
   if (path.startsWith('/viec/')) return 'Chi tiết việc';
   if (path.startsWith('/tro/')) return 'Chi tiết phòng';
   if (path.startsWith('/su-kien/')) return 'Chi tiết sự kiện';
+  if (path.startsWith('/tin/')) return 'Chi tiết tin';
   if (path.startsWith('/kham-pha/')) return 'Khám phá';
   if (path.startsWith('/thong-tin/')) return 'Thông tin';
   return path;

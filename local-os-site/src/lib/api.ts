@@ -65,6 +65,7 @@ async function kvFeed(): Promise<PublicFeed | null> {
 function kindMatches(item: LocalListing, kind?: string): boolean {
   if (!kind) return true;
   if (kind === 'event') return item.kind === 'event' || item.kind === 'grant';
+  if (kind === 'article') return item.kind === 'article';
   return item.kind === kind;
 }
 
@@ -98,7 +99,7 @@ function isOfficialJob(item: LocalListing): boolean {
 }
 
 function isReachablePublic(item: LocalListing): boolean {
-  if (item.kind === 'event' || item.kind === 'grant') return true;
+  if (item.kind === 'event' || item.kind === 'grant' || item.kind === 'article') return true;
   if (isOfficialJob(item) && hasApplyLink(item)) return true;
   return hasCallablePhone(item);
 }
@@ -270,11 +271,13 @@ export function hrefFor(item: Pick<LocalListing, 'id' | 'kind'>): string {
   if (item.kind === 'event') return `/su-kien/${item.id}`;
   if (item.kind === 'room') return `/tro/${item.id}`;
   if (item.kind === 'grant') return `/su-kien/${item.id}`;
+  if (item.kind === 'article') return `/tin/${item.id}`;
   return `/viec/${item.id}`;
 }
 
 export function kindLabel(kind: string): string {
   if (kind === 'event') return 'Sự kiện';
+  if (kind === 'article') return 'Tin';
   if (kind === 'room') return 'Phòng trọ';
   if (kind === 'offer') return 'Ưu đãi';
   if (kind === 'grant') return 'Học bổng';
@@ -349,11 +352,12 @@ export function formatEventLine(iso?: string | null): string {
 export function trendSubtitle(item: LocalListing): string {
   if (item.kind === 'job') return [item.salaryText, item.placeText].filter(Boolean).join(' • ');
   if (item.kind === 'event') return formatEventLine(item.startAt) || item.placeText || '';
+  if (item.kind === 'article') return item.placeText || item.organizationName || '';
   return formatPriceMonth(item.priceMonth) || item.placeText || '';
 }
 
 export function trendFoot(item: LocalListing): { kind: 'fire' | 'party' | 'pin'; text: string } {
-  if (item.kind === 'job') {
+  if (item.kind === 'job' || item.kind === 'article') {
     return { kind: 'fire', text: formatRelative(item.lastCheckedAt || item.publishedAt) || 'Tin mới' };
   }
   if (item.kind === 'event') {
@@ -401,7 +405,7 @@ export function groupInitials(name: string): string {
 }
 
 export function coverFor(kind: string, index = 0): string {
-  if (kind === 'event' || kind === 'grant') return index % 2 === 0 ? '/trend/event.jpg' : '/trend/event2.jpg';
+  if (kind === 'event' || kind === 'grant' || kind === 'article') return index % 2 === 0 ? '/trend/event.jpg' : '/trend/event2.jpg';
   if (kind === 'room') return index % 2 === 0 ? '/trend/room.jpg' : '/trend/room2.jpg';
   return ['/trend/job.jpg', '/trend/job2.jpg', '/trend/job3.jpg'][index % 3];
 }

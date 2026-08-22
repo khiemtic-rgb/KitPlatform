@@ -123,11 +123,16 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         UpsertLocalListingRequest request,
         CancellationToken cancellationToken = default)
     {
-        var dup = await FindDuplicateAsync(
-            request.Kind, request.Title, request.PlaceText, request.ContactPhone,
-            request.Summary, request.SourceUrl, excludeId: null, onlyActive: false, cancellationToken);
-        if (dup is not null)
-            throw new InvalidOperationException("Tin này đã có trong danh sách. Không thêm trùng.");
+        var sourceUrl = (request.SourceUrl ?? "").Trim();
+        var skipDup = sourceUrl.StartsWith("content://kit-mkt/", StringComparison.OrdinalIgnoreCase);
+        if (!skipDup)
+        {
+            var dup = await FindDuplicateAsync(
+                request.Kind, request.Title, request.PlaceText, request.ContactPhone,
+                request.Summary, request.SourceUrl, excludeId: null, onlyActive: false, cancellationToken);
+            if (dup is not null)
+                throw new InvalidOperationException("Tin này đã có trong danh sách. Không thêm trùng.");
+        }
 
         var id = Guid.CreateVersion7();
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -146,7 +151,9 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                     @EmploymentType, @Category, @Requirements,
                     @StartAt, @EndAt, @RegistrationUrl, @PriceMonth, @RoomType, @Trust, @SafetyFlag,
                     @Status, CASE WHEN @Status = 'ACTIVE' THEN NOW() ELSE NULL END, NOW(),
-                    NOW() + CASE WHEN @Kind = 'event' THEN INTERVAL '30 days' ELSE INTERVAL '14 days' END
+                    CASE WHEN @Kind = 'article' THEN NULL
+                         ELSE NOW() + CASE WHEN @Kind = 'event' THEN INTERVAL '30 days' ELSE INTERVAL '14 days' END
+                    END
                 )
                 """,
                 Bind(id, request),
@@ -175,7 +182,8 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                     start_at = @StartAt, end_at = @EndAt, registration_url = @RegistrationUrl,
                     price_month = @PriceMonth, room_type = @RoomType,
                     trust = @Trust, safety_flag = @SafetyFlag, status = @Status,
-                    last_checked_at = NOW(), updated_at = NOW()
+                    last_checked_at = NOW(), updated_at = NOW(),
+                    expires_at = CASE WHEN @Kind = 'article' THEN NULL ELSE expires_at END
                 WHERE id = @Id
                 """,
                 Bind(id, request),
@@ -224,6 +232,28 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         return await GetAsync(id, publicOnly: false, cancellationToken);
     }
 
+    public async Task<LocalListingDto?> FindBySourceUrlAsync(
+        string sourceUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var url = (sourceUrl ?? "").Trim();
+        if (url.Length == 0) return null;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var row = await conn.QueryFirstOrDefaultAsync<ListingRow>(
+            new CommandDefinition(
+                $"""
+                SELECT {SelectColumns}
+                FROM pack_local.listing l
+                LEFT JOIN pack_local.source s ON s.id = l.source_id
+                WHERE l.source_url = @Url AND l.status <> 'HIDDEN'
+                ORDER BY COALESCE(l.last_checked_at, l.created_at) DESC
+                LIMIT 1
+                """,
+                new { Url = url },
+                cancellationToken: cancellationToken));
+        return row is null ? null : Map(row);
+    }
+
     public async Task<LocalListingDto?> FindDuplicateAsync(
         string kind,
         string title,
@@ -267,7 +297,7 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         var kind = (r.Kind ?? "job").Trim().ToLowerInvariant();
         if (kind is "grant" or "offer")
             kind = "event";
-        if (kind is not ("job" or "event" or "room"))
+        if (kind is not ("job" or "event" or "room" or "article"))
             kind = "job";
         var audience = (r.Audience is { Count: > 0 } ? r.Audience : ["student"]).ToArray();
         var status = string.IsNullOrWhiteSpace(r.Status) ? "NEEDS_REVIEW" : r.Status.Trim().ToUpperInvariant();

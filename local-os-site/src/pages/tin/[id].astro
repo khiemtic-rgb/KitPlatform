@@ -1,0 +1,78 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { coverFor, formatRelative, getListing, hrefFor, isListingExpired } from '../../lib/api';
+import { renderArticleHtml } from '../../lib/md';
+import { articleJsonLd, breadcrumbJsonLd, clipMeta, siteOrigin } from '../../lib/seo';
+
+const { id } = Astro.params;
+const item = id ? await getListing(id) : null;
+if (!item || item.kind !== 'article') Astro.response.status = 404;
+
+const expired = item ? isListingExpired(item) : false;
+const origin = siteOrigin(Astro.site);
+const pageTitle = item && item.kind === 'article' ? `${item.title} — Thái Nguyên Life` : 'Không tìm thấy';
+const pageDesc = item && item.kind === 'article'
+  ? clipMeta(item.salaryText || item.summary || item.title)
+  : 'Bài không còn hoặc chưa mở trên Thái Nguyên Life.';
+const pageImage = coverFor('article', 0);
+const html = item && item.kind === 'article' ? renderArticleHtml(item.summary ?? '') : '';
+const when = item ? formatRelative(item.publishedAt || item.lastCheckedAt) : '';
+const pageJsonLd = item && item.kind === 'article' && !expired
+  ? [
+      breadcrumbJsonLd(origin, [
+        { name: 'Trang chủ', path: '/' },
+        { name: 'Tin', path: '/tin' },
+        { name: item.title, path: hrefFor(item) },
+      ]),
+      articleJsonLd({
+        origin,
+        path: hrefFor(item),
+        headline: item.title,
+        description: pageDesc,
+        image: pageImage,
+      }),
+    ]
+  : [];
+---
+<Layout
+  title={pageTitle}
+  description={pageDesc}
+  image={pageImage}
+  ogType="article"
+  jsonLd={pageJsonLd}
+  robots={!item || item.kind !== 'article' || expired ? 'noindex, nofollow' : undefined}
+  active="news"
+>
+  <div class="page event-detail-page">
+    <div class="wrap">
+      {item && item.kind === 'article' ? (
+        <>
+          <nav class="job-crumb" aria-label="Đường dẫn">
+            <a href="/">Trang chủ</a>
+            <span>›</span>
+            <a href="/tin">Tin</a>
+            <span>›</span>
+            <span>{item.title}</span>
+          </nav>
+          <article class="event-detail-main" style="max-width:760px">
+            <div class="event-hero-media">
+              <img src={pageImage} alt="" />
+              <span class="photo-caption">Ảnh minh họa</span>
+            </div>
+            <header class="event-detail-head">
+              <h1>{item.title}</h1>
+              <div class="event-detail-pills">
+                {item.organizationName && <span class="room-pill">{item.organizationName}</span>}
+                {when && <span class="room-pill is-soft">{when}</span>}
+              </div>
+            </header>
+            <div class="event-detail-lead article-body" set:html={html} />
+          </article>
+        </>
+      ) : (
+        <p class="empty">Bài không còn hoặc chưa mở.</p>
+      )}
+    </div>
+  </div>
+</Layout>
