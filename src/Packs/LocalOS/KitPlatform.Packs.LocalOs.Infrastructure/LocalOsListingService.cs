@@ -317,7 +317,26 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         if (!await LocalOsEventLeadRefresh.TryStoreAsync(conn, mapped.Id, next, cancellationToken))
             return mapped;
-        return mapped with { Summary = next, LastCheckedAt = DateTimeOffset.UtcNow };
+        var updated = mapped with { Summary = next, LastCheckedAt = DateTimeOffset.UtcNow };
+        if (updated.Status == "EXPIRED"
+            && updated.StartAt is null
+            && updated.EndAt is null
+            && (updated.ExpiresAt is null || updated.ExpiresAt > DateTimeOffset.UtcNow)
+            && !LocalOsEventDate.IsPastListing(
+                updated.Kind, updated.StartAt, updated.EndAt, updated.Title, next, updated.WorkingTime))
+        {
+            await conn.ExecuteAsync(
+                new CommandDefinition(
+                    """
+                    UPDATE pack_local.listing
+                    SET status = 'ACTIVE', updated_at = NOW()
+                    WHERE id = @Id AND status = 'EXPIRED' AND kind = 'event'
+                    """,
+                    new { updated.Id },
+                    cancellationToken: cancellationToken));
+            updated = updated with { Status = "ACTIVE" };
+        }
+        return updated;
     }
 
     private static async Task ExpireOverdueAsync(System.Data.IDbConnection conn, CancellationToken cancellationToken)

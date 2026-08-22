@@ -193,6 +193,9 @@ public class LocalOsTextExtractSummaryTests
             <li>Có nghi thức dâng hương, cầu quốc thái dân an</li>
             <li>Tưởng nhớ công đức các bậc tiền nhân</li>
             </ul>
+            <aside>
+            <article class="lh-news-item"><p>Phiên chợ Nông sản số 5 ngày trước • Thái Nguyên 16/8</p></article>
+            </aside>
             </body></html>
             """;
         var text = LocalOsTextExtract.StripHtml(html);
@@ -201,10 +204,14 @@ public class LocalOsTextExtractSummaryTests
         Assert.DoesNotContain("thu...", text, StringComparison.Ordinal);
         Assert.DoesNotContain("Đi sâu vào", text, StringComparison.Ordinal);
         Assert.DoesNotContain("Giúp chúng tôi", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("16/8", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("11/8", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("ngày trước", text, StringComparison.Ordinal);
         var lead = LocalOsTextExtract.GuessSummary("Lễ hội truyền thống chùa Long Sào | Lễ Hội Việt Nam", text);
         Assert.False(LocalOsTextExtract.IsThinLead(lead));
         Assert.Contains("thu hút người dân địa phương", lead, StringComparison.Ordinal);
         Assert.True(LocalOsTextExtract.IsBetterLead("… thu...", lead));
+        Assert.False(LocalOsEventDate.IsPastListing("event", null, null, "Lễ hội truyền thống chùa Long Sào | Lễ Hội Việt Nam", lead, null, new DateOnly(2026, 8, 22)));
     }
 }
 

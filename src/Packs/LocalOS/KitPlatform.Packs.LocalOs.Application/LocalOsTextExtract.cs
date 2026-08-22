@@ -114,7 +114,7 @@ public static class LocalOsTextExtract
     public static bool HasScrapedChrome(string text) =>
         Regex.IsMatch(
             text,
-            @"giúp chúng tôi|góp ý|festivalindex|đăng nhập để|theo dõi sự kiện|mở form góp ý",
+            @"giúp chúng tôi|góp ý|festivalindex|đăng nhập để|theo dõi sự kiện|mở form góp ý|ngày trước|•",
             RegexOptions.IgnoreCase);
 
     /// <summary>Lead for the public site: drop repeated title, keep a few sentences. Never invents.</summary>
@@ -587,7 +587,7 @@ public static class LocalOsTextExtract
         if (!desc.Success)
             desc = Regex.Match(html, @"name\s*=\s*[""']description[""']\s+content\s*=\s*[""'](.*?)[""']", RegexOptions.IgnoreCase);
         var heading = og.Success ? Decode(og.Groups[1].Value) : (title.Success ? Decode(title.Groups[1].Value) : "");
-        var cleaned = Regex.Replace(html, @"<(script|style|noscript|nav|footer)\b[\s\S]*?</\1>", " ", RegexOptions.IgnoreCase);
+        var cleaned = Regex.Replace(html, @"<(script|style|noscript|nav|footer|aside)\b[\s\S]*?</\1>", " ", RegexOptions.IgnoreCase);
         var paras = new List<string>();
         foreach (Match m in Regex.Matches(cleaned, @"<p\b([^>]*)>([\s\S]*?)</p>", RegexOptions.IgnoreCase))
         {
@@ -654,7 +654,7 @@ public static class LocalOsTextExtract
     private static bool LooksLikeChromeClass(string attrs) =>
         Regex.IsMatch(
             attrs,
-            @"quote|muted|follow|cta|login|lunar|subscribe|góp|gop-y|feedback|bell|hot-title",
+            @"quote|muted|follow|cta|login|lunar|subscribe|góp|gop-y|feedback|bell|hot-title|news-item|side-card|side-caption|related",
             RegexOptions.IgnoreCase);
 
     private static string UnwrapQuote(string text)
@@ -668,7 +668,7 @@ public static class LocalOsTextExtract
     private static bool LooksLikeChrome(string text) =>
         Regex.IsMatch(
             text,
-            @"cookie|đăng nhập|javascript|copyright|all rights|theo dõi sự kiện|khám phá theo địa điểm|đi sâu vào|nhận thông báo|giúp chúng tôi|góp ý|festivalindex|mở form góp ý|cải thiện chất lượng",
+            @"cookie|đăng nhập|javascript|copyright|all rights|theo dõi sự kiện|khám phá theo địa điểm|đi sâu vào|nhận thông báo|giúp chúng tôi|góp ý|festivalindex|mở form góp ý|cải thiện chất lượng|ngày trước|•",
             RegexOptions.IgnoreCase);
 
     private static string Decode(string s) =>
