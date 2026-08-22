@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-22T07:07:23.381Z",
+  "generatedAt": "2026-08-22T13:07:40.219Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 43,
-    "todayPageViews": 8,
-    "todayRequests": 63,
-    "last24hVisitors": 119,
-    "last24hPageViews": 57,
-    "last24hRequests": 266
+    "todayVisitors": 69,
+    "todayPageViews": 16,
+    "todayRequests": 141,
+    "last24hVisitors": 107,
+    "last24hPageViews": 37,
+    "last24hRequests": 245
   },
   "hourly": [
-    {
-      "time": "2026-08-21T08:00:00Z",
-      "visitors": 13,
-      "requests": 17
-    },
-    {
-      "time": "2026-08-21T09:00:00Z",
-      "visitors": 10,
-      "requests": 13
-    },
-    {
-      "time": "2026-08-21T10:00:00Z",
-      "visitors": 8,
-      "requests": 17
-    },
-    {
-      "time": "2026-08-21T11:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-21T12:00:00Z",
-      "visitors": 6,
-      "requests": 15
-    },
-    {
-      "time": "2026-08-21T13:00:00Z",
-      "visitors": 13,
-      "requests": 26
-    },
     {
       "time": "2026-08-21T14:00:00Z",
       "visitors": 3,
@@ -125,6 +95,36 @@
       "time": "2026-08-22T06:00:00Z",
       "visitors": 6,
       "requests": 8
+    },
+    {
+      "time": "2026-08-22T07:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-22T08:00:00Z",
+      "visitors": 13,
+      "requests": 41
+    },
+    {
+      "time": "2026-08-22T09:00:00Z",
+      "visitors": 12,
+      "requests": 17
+    },
+    {
+      "time": "2026-08-22T10:00:00Z",
+      "visitors": 5,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-22T11:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-22T12:00:00Z",
+      "visitors": 2,
+      "requests": 2
     }
   ],
   "daily": [
@@ -166,70 +166,70 @@
     },
     {
       "date": "2026-08-22",
-      "visitors": 79,
-      "pageViews": 26,
-      "requests": 128
+      "visitors": 117,
+      "pageViews": 33,
+      "requests": 204
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 45
-    },
-    {
-      "path": "/vi/",
-      "views": 29
-    },
-    {
-      "path": "/robots.txt",
       "views": 27
     },
     {
-      "path": "/sitemap.xml",
-      "views": 17
+      "path": "/robots.txt",
+      "views": 26
     },
     {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "path": "/vi/",
+      "views": 20
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 16
+    },
+    {
+      "path": "/images/blog/nuoi-day-con-trong-thoi-dai-ai.png",
+      "views": 7
+    },
+    {
+      "path": "/images/blog/tao-moi-truong-tu-lap-cho-con.png",
       "views": 6
     },
     {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "path": "/images/blog/cach-xay-dung-niem-tin.png",
       "views": 6
     },
     {
       "path": "/images/blog/cha-me-nen-xin-loi-con-khi-nao.png",
-      "views": 6
+      "views": 5
+    },
+    {
+      "path": "/images/blog/khi-cha-me-bat-dong-trong-nuoi-day-con.png",
+      "views": 5
     },
     {
       "path": "/wp-includes/css/buttons.css",
-      "views": 6
+      "views": 4
+    },
+    {
+      "path": "/images/blog/10-sai-lam-pho-bien-khi-nuoi-day-con.png",
+      "views": 4
     },
     {
       "path": "/media/system/js/core.js",
-      "views": 6
-    },
-    {
-      "path": "/images/blog/nuoi-day-con-trong-thoi-dai-ai.png",
-      "views": 5
-    },
-    {
-      "path": "/images/blog/cach-xay-dung-niem-tin.png",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 5
-    },
-    {
-      "path": "/favicon-32.png",
       "views": 4
     },
     {
-      "path": "/images/blog/nuoi-day-con-bang-ky-luat-tich-cuc.png",
+      "path": "/images/blog/phat-con-de-khong-bi-ton-thuong.png",
       "views": 4
     },
     {
-      "path": "/images/blog/tao-moi-truong-tu-lap-cho-con.png",
+      "path": "/images/blog/lam-guong-quan-trong-hon-day-bao.png",
+      "views": 4
+    },
+    {
+      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
       "views": 4
     }
   ]
