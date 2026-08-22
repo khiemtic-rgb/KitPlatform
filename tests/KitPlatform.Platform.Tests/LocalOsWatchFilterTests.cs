@@ -60,6 +60,36 @@ public class LocalOsWatchFilterTests
             LocalOsWatchDecision.DenyNoise,
             LocalOsWatchFilter.Decide("UBND làm việc với đoàn công tác", "/tin-tuc/1", "event"));
     }
+
+    [Fact]
+    public void Allows_thai_nguyen_football_friendly()
+    {
+        Assert.Equal(
+            LocalOsWatchDecision.Allow,
+            LocalOsWatchFilter.Decide(
+                "FC Thái Nguyên gặp CA Hà Nội trên sân nhà",
+                "/the-thao/202608/giao-huu",
+                "event"));
+    }
+
+    [Fact]
+    public void Denies_event_index_page()
+    {
+        Assert.Equal(
+            LocalOsWatchDecision.DenyNoise,
+            LocalOsWatchFilter.Decide("TIN TỨC SỰ KIỆN - Sở Văn hóa, Thể thao và Du lịch", "/tin-tuc-su-kien", "event"));
+    }
+
+    [Fact]
+    public void Allows_city_news_without_su_kien_keyword()
+    {
+        Assert.Equal(
+            LocalOsWatchDecision.Allow,
+            LocalOsWatchFilter.Decide(
+                "Các trường thuộc Đại học Thái Nguyên tổ chức đón tân sinh viên",
+                "/giao-duc/202608/don-tan-sinh-vien",
+                "event"));
+    }
 }
 
 public class LocalOsIndexLinksTests

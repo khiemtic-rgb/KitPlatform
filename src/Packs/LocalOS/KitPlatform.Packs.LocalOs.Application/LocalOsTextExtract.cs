@@ -28,6 +28,35 @@ public static class LocalOsTextExtract
         return keys.Any(k => t.Contains(k, StringComparison.Ordinal));
     }
 
+    public static string GuessEventCategory(string text)
+    {
+        if (LooksLikeBenefit(text))
+            return "benefit";
+        var t = text.ToLowerInvariant();
+        if (HasAny(t, "bóng đá", "bong da", "giao hữu", "giao huu", "v.league", "sân vận động",
+                "the-thao", "thể thao", "bóng chuyền", "giải chạy", "fc thái nguyên"))
+            return "sport";
+        if (HasAny(t, "giáo dục", "giao duc", "học sinh", "sinh viên", "đại học", "năm học",
+                "khai giảng", "tân sinh viên", "trường học", "học bổng"))
+            return "education";
+        if (HasAny(t, "hội chợ", "hoi cho", "festival", "ngày hội", "ngay hoi", "ocop", "phiên chợ"))
+            return "fair";
+        if (HasAny(t, "lễ hội", "le hoi", "văn hóa", "van hoa", "dân ca", "di sản", "nghệ thuật"))
+            return "culture";
+        if (HasAny(t, "du lịch", "du lich", "núi cốc", "vùng chè", "ba bể"))
+            return "tourism";
+        if (t.Contains("workshop", StringComparison.Ordinal))
+            return "workshop";
+        if (HasAny(t, "hội thảo", "hoi thao", "hội nghị khoa học", "conference"))
+            return "conference";
+        if (HasAny(t, "đêm nhạc", "concert", "ca nhạc", "âm nhạc"))
+            return "music";
+        return "news";
+    }
+
+    private static bool HasAny(string blob, params string[] keys) =>
+        keys.Any(k => blob.Contains(k, StringComparison.Ordinal));
+
     public static string GuessKind(string text, string? hint)
     {
         if (hint is "grant" or "offer")

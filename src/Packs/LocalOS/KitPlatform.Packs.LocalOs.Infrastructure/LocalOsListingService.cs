@@ -131,7 +131,7 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                     @EmploymentType, @Category, @Requirements,
                     @StartAt, @EndAt, @RegistrationUrl, @PriceMonth, @RoomType, @Trust, @SafetyFlag,
                     @Status, CASE WHEN @Status = 'ACTIVE' THEN NOW() ELSE NULL END, NOW(),
-                    NOW() + INTERVAL '14 days'
+                    NOW() + CASE WHEN @Kind = 'event' THEN INTERVAL '30 days' ELSE INTERVAL '14 days' END
                 )
                 """,
                 Bind(id, request),

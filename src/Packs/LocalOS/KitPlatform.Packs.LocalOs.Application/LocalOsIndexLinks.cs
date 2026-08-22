@@ -23,6 +23,8 @@ public static class LocalOsIndexLinks
         "tuyen-dung", "tuyendung", "viec-lam", "vieclam", "thuc-tap", "intern",
         "su-kien", "sukien", "su kien", "sự kiện", "le-hoi", "festival", "hoc-bong", "thong-bao",
         "ke-hoach", "chuong-trinh", "tuyen", "2026",
+        "the-thao", "the thao", "thể thao", "bong-da", "bóng đá", "giao-huu", "giao hữu",
+        "van-hoa", "văn hóa", "giao-duc", "giáo dục", "doi-song", "đời sống",
     ];
 
     public static IReadOnlyList<Uri> Extract(string html, Uri pageUrl, int max = 15) =>

@@ -1,8 +1,10 @@
 import { isRecent, type LocalListing } from './api';
 
 export const EVENT_CATS = [
+  { id: 'news', label: 'Tin tức', re: /tin tức|thời sự|thông tin|cập nhật/i },
+  { id: 'education', label: 'Giáo dục', re: /giáo dục|học sinh|sinh viên|đại học|năm học|khai giảng|trường học/i },
   { id: 'culture', label: 'Văn hóa', re: /văn hóa|dân ca|dân vũ|di sản|nghệ thuật|đền |chùa |lễ hội/i },
-  { id: 'sport', label: 'Thể thao', re: /thể thao|giải đấu|bóng đá|bóng chuyền|golf|giải chạy|jet ski/i },
+  { id: 'sport', label: 'Thể thao', re: /thể thao|giải đấu|bóng đá|bóng chuyền|golf|giải chạy|jet ski|giao hữu|fc thái nguyên|sân vận động|v\.league/i },
   { id: 'tourism', label: 'Du lịch', re: /du lịch|vùng chè|núi cốc|ba bể|thưởng trà|tàu di sản/i },
   { id: 'fair', label: 'Hội chợ', re: /hội chợ|ngày hội|festival|liên hoan|ocop|gian hàng|phố trà|ẩm thực/i },
   { id: 'benefit', label: 'Học bổng · ưu đãi', re: /học bổng|ưu đãi|khuyến mãi|học phí|miễn phí|giảm giá|voucher|suất học/i },
@@ -12,8 +14,8 @@ export const EVENT_CATS = [
   { id: 'fun', label: 'Giải trí', re: /giải trí/i },
 ] as const;
 
-/** Chips luôn hiện — văn hóa / thể thao / du lịch / hội chợ. */
-export const EVENT_PINNED_CATS = ['culture', 'sport', 'tourism', 'fair', 'benefit'] as const;
+/** Chips luôn hiện — tin / giáo dục / văn hóa / thể thao / hội chợ. */
+export const EVENT_PINNED_CATS = ['news', 'education', 'culture', 'sport', 'tourism', 'fair', 'benefit'] as const;
 
 export const EVENT_WHEN = [
   { id: 'upcoming', label: 'Sắp diễn ra' },
@@ -93,10 +95,20 @@ export function isUpcoming(item: LocalListing): boolean {
 }
 
 export function featuredEvents(items: LocalListing[], limit = 4): LocalListing[] {
-  return items
+  const dated = items
     .filter((e) => e.startAt && isUpcoming(e))
-    .sort((a, b) => new Date(a.startAt ?? 0).getTime() - new Date(b.startAt ?? 0).getTime())
-    .slice(0, limit);
+    .sort((a, b) => new Date(a.startAt ?? 0).getTime() - new Date(b.startAt ?? 0).getTime());
+  const fresh = items
+    .filter((e) => !e.startAt && isRecent(e.publishedAt || e.lastCheckedAt, 72))
+    .sort((a, b) => new Date(b.publishedAt ?? 0).getTime() - new Date(a.publishedAt ?? 0).getTime());
+  const out: LocalListing[] = [];
+  const seen = new Set<string>();
+  for (const e of [...dated, ...fresh]) {
+    if (seen.has(e.id) || out.length >= limit) continue;
+    seen.add(e.id);
+    out.push(e);
+  }
+  return out;
 }
 
 export function filterEvents(

@@ -72,7 +72,7 @@ export const HUB_FAQS: { q: string; href: string }[] = [
 ];
 
 export const HUB_RELATED: { label: string; lead: string; href: string }[] = [
-  { label: 'Sự kiện', lead: 'Lễ hội, thể thao, hội chợ', href: '/su-kien' },
+  { label: 'Sự kiện', lead: 'Tin tức, lễ hội, thể thao, hội chợ', href: '/su-kien' },
   { label: 'Việc làm', lead: 'Đang tuyển quanh Thái Nguyên', href: '/viec' },
   { label: 'Phòng trọ', lead: 'Giá liên hệ khi gọi', href: '/tro' },
 ];

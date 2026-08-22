@@ -8,8 +8,8 @@ namespace KitPlatform.Packs.LocalOs.Infrastructure;
 
 internal sealed class LocalOsWatchService : ILocalOsWatchService
 {
-    private const int MaxLinksPerSource = 8;
-    private const int MaxCreatesPerSource = 2;
+    private const int MaxLinksPerSource = 20;
+    private const int MaxCreatesPerSource = 6;
 
     private static readonly HttpClient Http = CreateHttp();
 
@@ -77,7 +77,7 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
         var filtered = 0;
         var errors = 0;
         var notes = new ConcurrentBag<string>();
-        var budget = trig == "scheduled" ? TimeSpan.FromSeconds(90) : TimeSpan.FromSeconds(40);
+        var budget = trig == "scheduled" ? TimeSpan.FromSeconds(180) : TimeSpan.FromSeconds(70);
         using var budgetCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         budgetCts.CancelAfter(budget);
         var workCt = budgetCts.Token;
@@ -159,7 +159,7 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
                         continue;
                     }
 
-                    var filterCat = source.Category == "job" ? "job" : null;
+                    var filterCat = source.Category is "job" or "event" ? source.Category : null;
                     var made = 0;
                     foreach (var hit in links)
                     {

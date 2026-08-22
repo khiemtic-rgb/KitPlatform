@@ -8,9 +8,27 @@ public enum LocalOsWatchDecision
     DenyNoise,
 }
 
-/// <summary>Official-index filter: student-useful job/event only. Never invents dates or prices.</summary>
+/// <summary>
+/// Official index: jobs stay strict. Event/news sources allow city life unless politics / past / admin.
+/// Never invents dates or prices. Never Facebook.
+/// </summary>
 public static class LocalOsWatchFilter
 {
+    private static readonly string[] DenyIndex =
+    [
+        "festivalindex",
+        "tin tức sự kiện -", "tin tuc su kien -",
+        "sự kiện tại thái nguyên", "su kien tai thai nguyen",
+    ];
+
+    private static readonly string[] DenyAdmin =
+    [
+        "làm việc với đoàn", "lam viec voi doan",
+        "tiếp đoàn", "tiep doan",
+        "thông báo kết luận", "thong bao ket luan",
+        "ban thường vụ", "ban thuong vu",
+    ];
+
     private static readonly string[] DenyPolitics =
     [
         "hđnd", "hdnd", "chỉ đạo", "chi dao", "gpmb", "giải phóng mặt bằng",
@@ -36,6 +54,11 @@ public static class LocalOsWatchFilter
         "văn hóa", "van hoa", "dân ca", "dân vũ", "di sản", "am thuc", "ẩm thực",
         "thể thao", "the thao", "bóng đá", "bong da", "bóng chuyền", "golf",
         "giải chạy", "giai chay",
+        "fc thái nguyên", "clb thái nguyên", "giao hữu", "giao huu",
+        "sân vận động", "san van dong", "trận đấu", "tran dau",
+        "v.league", "vleague", "hạng nhất", "hang nhat",
+        "pvf-cand", "pvf cand", "công an nhân dân", "cong an nhan dan",
+        "hà nội fc", "ha noi fc",
         "du lịch", "du lich", "vùng chè", "vung che", "ocop", "phố trà",
         "liên hoan", "lien hoan",
         "học bổng", "hoc bong", "ưu đãi", "uu dai", "khuyến mãi", "khuyen mai",
@@ -52,6 +75,10 @@ public static class LocalOsWatchFilter
     public static LocalOsWatchDecision Decide(string title, string? url, string? sourceCategory)
     {
         var blob = $"{title} {url}".ToLowerInvariant();
+        if (DenyIndex.Any(w => blob.Contains(w, StringComparison.Ordinal)))
+            return LocalOsWatchDecision.DenyNoise;
+        if (DenyAdmin.Any(w => blob.Contains(w, StringComparison.Ordinal)))
+            return LocalOsWatchDecision.DenyNoise;
         if (DenyPolitics.Any(w => blob.Contains(w, StringComparison.Ordinal)))
             return LocalOsWatchDecision.DenyPolitics;
 
@@ -67,7 +94,7 @@ public static class LocalOsWatchFilter
         if (cat == "job")
             return jobOk ? LocalOsWatchDecision.Allow : LocalOsWatchDecision.DenyNoise;
         if (cat == "event")
-            return eventOk ? LocalOsWatchDecision.Allow : LocalOsWatchDecision.DenyNoise;
+            return LocalOsWatchDecision.Allow;
         return jobOk || eventOk ? LocalOsWatchDecision.Allow : LocalOsWatchDecision.DenyNoise;
     }
 }

@@ -23,3 +23,5 @@
 312_pack_local_os_restore_public_jobs.sql
 313_pack_local_os_publish_today.sql
 316_pack_local_os_tnue_pdp_rooms.sql
+317_pack_local_os_tn_football_events.sql
+318_pack_local_os_city_news_watch.sql

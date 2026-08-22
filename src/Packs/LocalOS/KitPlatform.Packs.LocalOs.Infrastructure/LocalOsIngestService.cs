@@ -147,7 +147,7 @@ internal sealed class LocalOsIngestService : ILocalOsIngestService
                 SalaryText: kind == "room" ? null : LocalOsTextExtract.GuessSalary(blob),
                 WorkingTime: null,
                 EmploymentType: kind == "job" ? "part_time" : null,
-                Category: kind == "event" && LocalOsTextExtract.LooksLikeBenefit(blob) ? "benefit" : null,
+                Category: kind == "event" ? LocalOsTextExtract.GuessEventCategory(blob) : null,
                 Requirements: null,
                 StartAt: null,
                 EndAt: null,
