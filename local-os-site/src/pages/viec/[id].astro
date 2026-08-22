@@ -4,6 +4,7 @@ import Layout from '../../layouts/Layout.astro';
 import {
   formatWhen,
   getListing,
+  coverFor,
   hrefFor,
   listListings,
   orgInitial,
@@ -62,7 +63,7 @@ const pageTitle = item ? `${item.title} — Thái Nguyên Life` : 'Không tìm t
 const pageDesc = item
   ? listingDescription({ title: item.title, summary: item.summary, place: item.placeText })
   : 'Tin việc làm không còn hoặc chưa mở trên Thái Nguyên Life.';
-const pageImage = '/trend/job.jpg';
+const pageImage = coverFor('job', 0, item?.id);
 const pageJsonLd = item && !expired
   ? [
       breadcrumbJsonLd(origin, [

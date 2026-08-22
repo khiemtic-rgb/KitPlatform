@@ -70,7 +70,7 @@ const pageTitle = item ? `${item.title} — Thái Nguyên Life` : 'Không tìm t
 const pageDesc = item
   ? clipMeta([lead, item.placeText].filter(Boolean).join(' — ') || item.title)
   : 'Tin sự kiện không còn hoặc chưa mở trên Thái Nguyên Life.';
-const pageImage = coverFor('event', 0);
+const pageImage = coverFor('event', 0, item?.id);
 const pageJsonLd = item && !expired
   ? [
       breadcrumbJsonLd(origin, [
@@ -117,7 +117,7 @@ const pageJsonLd = item && !expired
           <div class="event-detail-grid">
             <article class="event-detail-main">
               <div class="event-hero-media">
-                <img src={coverFor('event', 0)} alt="Ảnh minh họa sự kiện" />
+                <img src={coverFor('event', 0, item.id)} alt="Ảnh minh họa sự kiện" />
                 <span class={`event-row-badge is-${cat || 'event'}`}>{catLabel}</span>
                 <span class="photo-caption">Ảnh minh họa</span>
               </div>
@@ -257,7 +257,7 @@ const pageJsonLd = item && !expired
                   <h3>Sự kiện liên quan</h3>
                   {similar.map((e, i) => (
                     <a class="event-mini" href={hrefFor(e)}>
-                      <img src={coverFor('event', i + 1)} alt="Ảnh minh họa" />
+                      <img src={coverFor('event', i + 1, e.id)} alt="Ảnh minh họa" />
                       <div>
                         <strong>{e.title}</strong>
                         {formatClock(e.startAt) && <span>{formatEventWhenFull(e.startAt)}</span>}

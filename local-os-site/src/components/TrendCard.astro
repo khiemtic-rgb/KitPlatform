@@ -1,6 +1,7 @@
 ---
 import {
   coverFor,
+  coverWashClass,
   hrefFor,
   kindLabel,
   trendFoot,
@@ -18,7 +19,7 @@ const foot = trendFoot(item);
 ---
 <a class={`trend-card ${item.kind}`} href={hrefFor(item)}>
   <div class="trend-photo-wrap">
-    <img class="trend-photo" src={coverFor(item.kind, index)} alt="Ảnh minh họa" />
+    <img class={`trend-photo ${coverWashClass(item.kind, item.id)}`} src={coverFor(item.kind, index, item.id)} alt="Ảnh minh họa" />
     <span class={`trend-badge ${item.kind}`}>{kindLabel(item.kind)}</span>
     <span class="photo-caption">Ảnh minh họa</span>
   </div>

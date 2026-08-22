@@ -108,7 +108,7 @@ function catHref(id: string): string {
                         <strong>{when.day}</strong>
                         <em>{when.mon}</em>
                       </span>
-                      <span class="hb-event-photo" style={`background-image:url('${coverFor('event', i)}')`}></span>
+                      <span class="hb-event-photo" style={`background-image:url('${coverFor('event', i, item.id)}')`}></span>
                       <span class="hb-event-body">
                         <strong>{item.title}</strong>
                         <span>{[formatEventLine(item.startAt) || 'Xem ngày trên tin', item.placeText].filter(Boolean).join(' · ')}</span>
@@ -139,7 +139,7 @@ function catHref(id: string): string {
               const hit = handbookHits(item);
               return (
                 <a class="hb-card" href={hrefFor(item)}>
-                  <span class="hb-card-photo" style={`background-image:url('${coverFor('job', i)}')`}></span>
+                  <span class="hb-card-photo" style={`background-image:url('${coverFor('job', i, item.id)}')`}></span>
                   <span class="hb-card-copy">
                     <strong>{item.title}</strong>
                     {hit.phone && <span class="hb-phone">{hit.phone}</span>}
@@ -172,7 +172,7 @@ function catHref(id: string): string {
               const hit = handbookHits(item);
               return (
                 <a class="hb-card" href={hrefFor(item)}>
-                  <span class="hb-card-photo" style={`background-image:url('${coverFor('room', i)}')`}></span>
+                  <span class="hb-card-photo" style={`background-image:url('${coverFor('room', i, item.id)}')`}></span>
                   <span class="hb-card-copy">
                     <strong>{item.title}</strong>
                     {hit.phone && <span class="hb-phone">{hit.phone}</span>}

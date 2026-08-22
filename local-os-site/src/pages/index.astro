@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import TrendCard from '../components/TrendCard.astro';
 import {
   coverFor,
+  coverWashClass,
   formatClock,
   formatEventLine,
   groupCover,
@@ -278,7 +279,7 @@ const liveCount = jobs.length + events.length + rooms.length + articles.length;
           {upcoming.map((item, i) => (
             <a class="ev" href={hrefFor(item)}>
               <span class="ev-thumb-wrap">
-                <img class="ev-thumb" src={coverFor('event', i)} alt="Ảnh minh họa" />
+                <img class={`ev-thumb ${coverWashClass('event', item.id)}`} src={coverFor('event', i, item.id)} alt="Ảnh minh họa" />
                 <span class="photo-caption">Minh họa</span>
               </span>
               <div class="ev-body">
@@ -308,7 +309,7 @@ const liveCount = jobs.length + events.length + rooms.length + articles.length;
           {featuredRooms.map((item, i) => (
             <a class="ev" href={hrefFor(item)}>
               <span class="ev-thumb-wrap">
-                <img class="ev-thumb" src={coverFor('room', i)} alt="Ảnh minh họa" />
+                <img class={`ev-thumb ${coverWashClass('room', item.id)}`} src={coverFor('room', i, item.id)} alt="Ảnh minh họa" />
                 <span class="photo-caption">Minh họa</span>
               </span>
               <div class="ev-body">

@@ -60,7 +60,7 @@ const mapsQuery = place
   : null;
 const all = item ? await listListings('room') : [];
 const similar = item ? similarRooms(item, all) : [];
-const photos = [coverFor('room', 0), coverFor('room', 1)];
+const photos = [coverFor('room', 0, item?.id), coverFor('room', 1, item?.id)];
 const expired = item ? isListingExpired(item) : false;
 
 const facts: { label: string; value: string }[] = [];
@@ -83,7 +83,7 @@ const pageDesc = item
       place: place || item.placeText,
     })
   : 'Tin phòng trọ không còn hoặc chưa mở trên Thái Nguyên Life.';
-const pageImage = coverFor('room', 0);
+const pageImage = coverFor('room', 0, item?.id);
 const pageJsonLd = item && !expired
   ? [
       breadcrumbJsonLd(origin, [
@@ -274,7 +274,7 @@ const pageJsonLd = item && !expired
                   <h3>Phòng trọ tương tự</h3>
                   {similar.map((r, i) => (
                     <a class="room-mini" href={hrefFor(r)}>
-                      <img src={coverFor('room', i)} alt="Ảnh minh họa" />
+                      <img src={coverFor('room', i, r.id)} alt="Ảnh minh họa" />
                       <div>
                         <strong>{cleanTitle(r.title, r.placeText)}</strong>
                         <em>{formatPhone(listingPhone(r)) || 'Giá liên hệ'}</em>

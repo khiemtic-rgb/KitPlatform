@@ -19,7 +19,7 @@ const hl = cardHighlight(item);
 ---
 <a class={`media-card ${item.kind}`} href={hrefFor(item)} data-kind={item.kind}>
   <div class="thumb">
-    <img src={coverFor(item.kind, index)} alt="Ảnh minh họa" />
+    <img src={coverFor(item.kind, index, item.id)} alt="Ảnh minh họa" />
     <span class="badge">{kindLabel(item.kind)}</span>
     <span class="photo-caption">Ảnh minh họa</span>
   </div>

@@ -25,7 +25,7 @@ const phone = formatPhone(listingPhone(item));
 ---
 <a class="room-card" href={hrefFor(item)}>
   <div class="room-card-photo">
-    <img src={coverFor('room', index)} alt="Ảnh minh họa phòng trọ" />
+    <img src={coverFor('room', index, item.id)} alt="Ảnh minh họa phòng trọ" />
     <span class="room-card-badge">{school || 'Phòng trọ'}</span>
     <span class="photo-caption">Ảnh minh họa</span>
   </div>

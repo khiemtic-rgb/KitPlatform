@@ -405,10 +405,47 @@ export function groupInitials(name: string): string {
   return (first + last).toUpperCase();
 }
 
-export function coverFor(kind: string, index = 0): string {
-  if (kind === 'event' || kind === 'grant' || kind === 'article') return index % 2 === 0 ? '/trend/event.jpg' : '/trend/event2.jpg';
-  if (kind === 'room') return index % 2 === 0 ? '/trend/room.jpg' : '/trend/room2.jpg';
-  return ['/trend/job.jpg', '/trend/job2.jpg', '/trend/job3.jpg'][index % 3];
+const JOB_COVERS = ['/trend/job.jpg', '/trend/job2.jpg', '/trend/job3.jpg', '/trend/job4.jpg', '/trend/job5.jpg'];
+const EVENT_COVERS = ['/trend/event.jpg', '/trend/event2.jpg', '/trend/event3.jpg', '/trend/event4.jpg', '/trend/cta-hills.jpg'];
+const ROOM_COVERS = ['/trend/room.jpg', '/trend/room2.jpg', '/trend/room3.jpg', '/trend/room4.jpg'];
+
+function vnDayKey(): number {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const y = Number(parts.find((p) => p.type === 'year')?.value);
+  const m = Number(parts.find((p) => p.type === 'month')?.value);
+  const d = Number(parts.find((p) => p.type === 'day')?.value);
+  return y * 372 + m * 31 + d;
+}
+
+function coverHash(token: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < token.length; i++) {
+    h ^= token.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function coverPool(kind: string): string[] {
+  if (kind === 'room') return ROOM_COVERS;
+  if (kind === 'job') return JOB_COVERS;
+  return EVENT_COVERS;
+}
+
+/** Stock illustration. Same listing stays the same all day (VN), next day shifts. */
+export function coverFor(kind: string, index = 0, id?: string | null): string {
+  const pool = coverPool(kind);
+  const n = coverHash(`${vnDayKey()}|${kind}|${id || index}`) + index * 17;
+  return pool[n % pool.length];
+}
+
+export function coverWashClass(kind: string, id?: string | null): string {
+  return `cover-wash-${coverHash(`${vnDayKey()}|wash|${kind}|${id || ''}`) % 3}`;
 }
 
 function coverApiOrigin(): string {
@@ -423,7 +460,7 @@ export function hasListingCover(item?: Pick<LocalListing, 'coverUrl'> | null): b
 }
 
 export function listingCover(
-  item: Pick<LocalListing, 'kind' | 'coverUrl'> | null | undefined,
+  item: Pick<LocalListing, 'kind' | 'coverUrl' | 'id'> | null | undefined,
   index = 0,
 ): string {
   const raw = (item?.coverUrl ?? '').trim();
@@ -432,7 +469,7 @@ export function listingCover(
     const origin = coverApiOrigin();
     return `${origin}${raw.startsWith('/') ? raw : `/${raw}`}`;
   }
-  return coverFor(item?.kind ?? 'article', index);
+  return coverFor(item?.kind ?? 'article', index, item?.id);
 }
 
 export function orgInitial(item: Pick<LocalListing, 'organizationName' | 'title'>): string {

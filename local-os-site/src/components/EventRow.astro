@@ -22,7 +22,7 @@ const snippet = eventLead(item, 280);
 ---
 <a class="event-row" href={hrefFor(item)}>
   <div class="event-row-photo">
-    <img src={coverFor('event', index)} alt="Ảnh minh họa sự kiện" />
+    <img src={coverFor('event', index, item.id)} alt="Ảnh minh họa sự kiện" />
     <span class={`event-row-badge is-${cat || 'event'}`}>{catLabel}</span>
     <span class="photo-caption">Ảnh minh họa</span>
   </div>
