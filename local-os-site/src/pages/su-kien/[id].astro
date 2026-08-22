@@ -21,6 +21,7 @@ import {
   eventDeadlineBits,
   eventFee,
   eventFormat,
+  eventLead,
   eventPlaceKey,
   eventTags,
   eventTopics,
@@ -48,6 +49,7 @@ const applyUrl = registerUrl || sourceUrl;
 const startFull = item ? formatEventWhenFull(item.startAt) : '';
 const endFull = item ? formatEventWhenFull(item.endAt) : '';
 const when = item ? formatRelative(item.lastCheckedAt || item.publishedAt) : '';
+const lead = item ? eventLead(item) : '';
 
 const facts: { label: string; value: string }[] = [];
 if (item?.organizationName) facts.push({ label: 'Đơn vị', value: item.organizationName });
@@ -96,7 +98,7 @@ const mapsQuery = placeKey
                 </div>
               </header>
 
-              {item.summary && <p class="event-detail-lead">{item.summary}</p>}
+              {lead && <p class="event-detail-lead">{lead}</p>}
 
               <dl class="event-quick">
                 {startFull && (

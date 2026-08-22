@@ -53,7 +53,9 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                         l.status = 'ACTIVE'
                         AND l.safety_flag = FALSE
                         AND (l.expires_at IS NULL OR l.expires_at > NOW())
-                        AND (l.kind <> 'event' OR l.end_at IS NULL OR l.end_at > NOW())
+                        AND (l.kind <> 'event' OR COALESCE(l.end_at, l.start_at) IS NULL
+                             OR (timezone('Asia/Ho_Chi_Minh', COALESCE(l.end_at, l.start_at)))::date
+                                >= (timezone('Asia/Ho_Chi_Minh', NOW()))::date)
                     )
                   )
             ORDER BY CASE WHEN l.status = 'NEEDS_REVIEW' THEN 0 ELSE 1 END,
@@ -74,7 +76,13 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                     PublicOnly = query.PublicOnly,
                 },
                 cancellationToken: cancellationToken));
-        return rows.Select(Map).ToList();
+        var list = rows.Select(Map).ToList();
+        if (!query.PublicOnly)
+            return list;
+        return list
+            .Where(x => !LocalOsEventDate.IsPastListing(
+                x.Kind, x.StartAt, x.EndAt, x.Title, x.Summary, x.WorkingTime))
+            .ToList();
     }
 
     public async Task<LocalListingDto?> GetAsync(
@@ -101,7 +109,13 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                 """,
                 new { Id = id, PublicOnly = publicOnly },
                 cancellationToken: cancellationToken));
-        return row is null ? null : Map(row);
+        if (row is null)
+            return null;
+        var mapped = Map(row);
+        if (publicOnly && LocalOsEventDate.IsPastListing(
+                mapped.Kind, mapped.StartAt, mapped.EndAt, mapped.Title, mapped.Summary, mapped.WorkingTime))
+            return null;
+        return mapped;
     }
 
     public async Task<LocalListingDto> CreateAsync(
@@ -288,8 +302,9 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         };
     }
 
-    private static Task ExpireOverdueAsync(System.Data.IDbConnection conn, CancellationToken cancellationToken) =>
-        conn.ExecuteAsync(
+    private static async Task ExpireOverdueAsync(System.Data.IDbConnection conn, CancellationToken cancellationToken)
+    {
+        await conn.ExecuteAsync(
             new CommandDefinition(
                 """
                 UPDATE pack_local.listing
@@ -297,10 +312,43 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                 WHERE status = 'ACTIVE'
                   AND (
                     (expires_at IS NOT NULL AND expires_at <= NOW())
-                    OR (kind = 'event' AND end_at IS NOT NULL AND end_at <= NOW())
+                    OR (
+                        kind IN ('event', 'grant')
+                        AND COALESCE(end_at, start_at) IS NOT NULL
+                        AND (timezone('Asia/Ho_Chi_Minh', COALESCE(end_at, start_at)))::date
+                            < (timezone('Asia/Ho_Chi_Minh', NOW()))::date
+                    )
                   )
                 """,
                 cancellationToken: cancellationToken));
+
+        var open = await conn.QueryAsync<ListingRow>(
+            new CommandDefinition(
+                $"""
+                SELECT {SelectColumns}
+                FROM pack_local.listing l
+                LEFT JOIN pack_local.source s ON s.id = l.source_id
+                WHERE l.status = 'ACTIVE'
+                  AND l.kind IN ('event', 'grant')
+                """,
+                cancellationToken: cancellationToken));
+        var pastIds = open
+            .Where(r => LocalOsEventDate.IsPastListing(
+                r.Kind, r.StartAt, r.EndAt, r.Title, r.Summary, r.WorkingTime))
+            .Select(r => r.Id)
+            .ToArray();
+        if (pastIds.Length == 0)
+            return;
+        await conn.ExecuteAsync(
+            new CommandDefinition(
+                """
+                UPDATE pack_local.listing
+                SET status = 'EXPIRED', updated_at = NOW()
+                WHERE id = ANY(@Ids) AND status = 'ACTIVE'
+                """,
+                new { Ids = pastIds },
+                cancellationToken: cancellationToken));
+    }
 
     internal static LocalListingDto Map(ListingRow r) => new(
         r.Id, r.Kind, r.Title, r.Summary, r.OrganizationName, r.PlaceText,

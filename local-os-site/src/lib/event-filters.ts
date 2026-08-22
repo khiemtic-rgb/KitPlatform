@@ -1,4 +1,7 @@
 import { isRecent, type LocalListing } from './api';
+import { isEventPast } from './event-date';
+
+export { isEventPast, lastEventDate } from './event-date';
 
 export const EVENT_CATS = [
   { id: 'news', label: 'Tin tức', re: /tin tức|thời sự|thông tin|cập nhật/i },
@@ -88,18 +91,15 @@ export function eventDateBadge(iso?: string | null): { day: string; mon: string 
 }
 
 export function isUpcoming(item: LocalListing): boolean {
-  const end = item.endAt || item.startAt;
-  if (!end) return true;
-  const t = new Date(end).getTime();
-  return !Number.isNaN(t) && t >= Date.now();
+  return !isEventPast(item);
 }
 
 export function featuredEvents(items: LocalListing[], limit = 4): LocalListing[] {
   const dated = items
-    .filter((e) => e.startAt && isUpcoming(e))
+    .filter((e) => e.startAt && !isEventPast(e))
     .sort((a, b) => new Date(a.startAt ?? 0).getTime() - new Date(b.startAt ?? 0).getTime());
   const fresh = items
-    .filter((e) => !e.startAt && isRecent(e.publishedAt || e.lastCheckedAt, 72))
+    .filter((e) => !e.startAt && !isEventPast(e) && isRecent(e.publishedAt || e.lastCheckedAt, 72))
     .sort((a, b) => new Date(b.publishedAt ?? 0).getTime() - new Date(a.publishedAt ?? 0).getTime());
   const out: LocalListing[] = [];
   const seen = new Set<string>();
@@ -117,6 +117,7 @@ export function filterEvents(
 ): LocalListing[] {
   const now = new Date();
   return items.filter((item) => {
+    if (isEventPast(item)) return false;
     if (opts.cat && eventCatOf(item) !== opts.cat) return false;
     if (opts.place && eventPlaceKey(item) !== opts.place) return false;
     if (opts.when === 'upcoming' && !isUpcoming(item)) return false;
@@ -142,6 +143,20 @@ export function filterEvents(
 
 export function isNewEvent(item: LocalListing): boolean {
   return isRecent(item.publishedAt || item.lastCheckedAt, 48);
+}
+
+/** Detail lead: drop repeated title, keep a few sentences. List still clamps in CSS. */
+export function eventLead(item: LocalListing, max = 900): string {
+  let text = (item.summary ?? '').replace(/\s+/g, ' ').trim();
+  const title = (item.title ?? '').replace(/\s+/g, ' ').trim();
+  const head = title.replace(/[.…|]+$/g, '').trim();
+  if (head.length >= 12 && text.toLowerCase().startsWith(head.toLowerCase())) {
+    text = text.slice(head.length).replace(/^[\s|·\-–]+/, '');
+  }
+  if (text.length <= max) return text;
+  const slice = text.slice(0, max);
+  const cut = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('! '), slice.lastIndexOf('? '));
+  return cut > 120 ? slice.slice(0, cut + 1).trim() : `${slice.trim()}…`;
 }
 
 export function formatEventWhenFull(iso?: string | null): string {

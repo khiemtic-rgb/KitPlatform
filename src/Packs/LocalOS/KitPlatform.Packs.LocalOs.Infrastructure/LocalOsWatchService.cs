@@ -173,9 +173,12 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
                             continue;
                         }
 
-                        if (await UrlExistsAsync(hit.Uri, workCt))
+                        var already = await FindByUrlAsync(hit.Uri, workCt);
+                        if (already is { } row)
                         {
                             existing++;
+                            if (row.Kind == "event" && row.SummaryLen < 280)
+                                await TryRefreshShortSummaryAsync(row.Id, hit.Uri, workCt);
                             continue;
                         }
 
@@ -375,16 +378,65 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
         return row?.ToDto();
     }
 
-    private async Task<bool> UrlExistsAsync(Uri uri, CancellationToken cancellationToken)
+    private async Task<UrlHit?> FindByUrlAsync(Uri uri, CancellationToken cancellationToken)
     {
         var url = uri.GetLeftPart(UriPartial.Query).TrimEnd('?');
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        var found = await conn.QuerySingleOrDefaultAsync<Guid?>(
+        return await conn.QuerySingleOrDefaultAsync<UrlHit>(
             new CommandDefinition(
-                "SELECT id FROM pack_local.listing WHERE source_url = @Url LIMIT 1",
+                """
+                SELECT id AS Id, kind AS Kind, char_length(coalesce(summary, '')) AS SummaryLen
+                FROM pack_local.listing
+                WHERE source_url = @Url
+                LIMIT 1
+                """,
                 new { Url = url },
                 cancellationToken: cancellationToken));
-        return found is not null;
+    }
+
+    private sealed class UrlHit
+    {
+        public Guid Id { get; set; }
+        public string Kind { get; set; } = "";
+        public int SummaryLen { get; set; }
+    }
+
+    private async Task TryRefreshShortSummaryAsync(Guid id, Uri uri, CancellationToken cancellationToken)
+    {
+        var pageText = await FetchTextAsync(uri, cancellationToken);
+        if (pageText.Length < 40)
+            return;
+        var title = LocalOsTextExtract.GuessTitle(pageText);
+        if (LocalOsEventDate.IsPastInText($"{title} {pageText}"))
+        {
+            await using var hide = await _db.CreateOpenConnectionAsync(cancellationToken);
+            await hide.ExecuteAsync(
+                new CommandDefinition(
+                    """
+                    UPDATE pack_local.listing
+                    SET status = 'EXPIRED', last_checked_at = NOW(), updated_at = NOW()
+                    WHERE id = @Id AND kind IN ('event', 'grant') AND status = 'ACTIVE'
+                    """,
+                    new { Id = id },
+                    cancellationToken: cancellationToken));
+            return;
+        }
+        var summary = LocalOsTextExtract.GuessSummary(title, pageText);
+        if (summary.Length < 80)
+            return;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(
+            new CommandDefinition(
+                """
+                UPDATE pack_local.listing
+                SET summary = @Summary, last_checked_at = NOW(), updated_at = NOW()
+                WHERE id = @Id
+                  AND kind = 'event'
+                  AND char_length(coalesce(summary, '')) < 280
+                  AND char_length(@Summary) > char_length(coalesce(summary, '')) + 40
+                """,
+                new { Id = id, Summary = summary },
+                cancellationToken: cancellationToken));
     }
 
     private static async Task<string> FetchHtmlAsync(Uri uri, CancellationToken cancellationToken)

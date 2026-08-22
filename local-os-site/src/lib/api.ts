@@ -1,4 +1,5 @@
 import { localOsApiBase } from './backend-api';
+import { isEventPast } from './event-date';
 
 export type LocalListing = {
   id: string;
@@ -108,10 +109,7 @@ export function isListingExpired(item: LocalListing): boolean {
     const t = new Date(item.expiresAt).getTime();
     if (!Number.isNaN(t) && t <= now) return true;
   }
-  if ((item.kind === 'event' || item.kind === 'grant') && item.endAt) {
-    const t = new Date(item.endAt).getTime();
-    if (!Number.isNaN(t) && t <= now) return true;
-  }
+  if ((item.kind === 'event' || item.kind === 'grant') && isEventPast(item)) return true;
   return false;
 }
 

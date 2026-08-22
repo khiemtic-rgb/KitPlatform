@@ -135,7 +135,7 @@ internal sealed class LocalOsIngestService : ILocalOsIngestService
             new UpsertLocalListingRequest(
                 Kind: kind,
                 Title: title,
-                Summary: blob.Length > 2000 ? blob[..2000] : blob,
+                Summary: LocalOsTextExtract.GuessSummary(title, blob),
                 OrganizationName: null,
                 PlaceText: place,
                 Audience: matched is { Audience.Length: > 0 } ? [matched.Audience] : ["student"],

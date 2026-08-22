@@ -1188,7 +1188,7 @@ img { max-width: 100%; }
 }
 .event-row-snip {
   margin: 0; color: #6b7280; font-size: 13px;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
 .event-row-meta {
   margin: 0; display: flex; flex-wrap: wrap; gap: 8px 12px;
@@ -1240,7 +1240,7 @@ img { max-width: 100%; }
 .event-detail-head { padding: 16px 8px 0; }
 .event-detail-head h1 { margin: 0 0 10px; font-size: 1.7rem; line-height: 1.35; }
 .event-detail-pills { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.event-detail-lead { margin: 14px 8px 0; color: #3f4a44; font-size: 15px; line-height: 1.55; }
+.event-detail-lead { margin: 14px 8px 0; color: #3f4a44; font-size: 15px; line-height: 1.65; white-space: pre-wrap; }
 .guide-wrap { max-width: 800px; }
 .guide-article { padding: 16px 20px 28px; }
 .guide-pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0 !important; }

@@ -88,6 +88,35 @@ public static class LocalOsTextExtract
         return compact.Length <= 140 ? compact : compact[..140].TrimEnd() + "…";
     }
 
+    /// <summary>Lead for the public site: drop repeated title, keep a few sentences. Never invents.</summary>
+    public static string GuessSummary(string? title, string text, int maxChars = 900)
+    {
+        if (maxChars < 80)
+            maxChars = 80;
+        var raw = Regex.Replace(text ?? "", @"[ \t]+", " ");
+        raw = Regex.Replace(raw, @"\n{3,}", "\n\n").Trim();
+        if (raw.Length == 0)
+            return "";
+
+        var t = Regex.Replace(title ?? "", @"\s+", " ").Trim();
+        if (t.Length >= 12)
+        {
+            var head = t.TrimEnd('…', '.', '|', ' ');
+            if (head.Length >= 12 && raw.StartsWith(head, StringComparison.OrdinalIgnoreCase))
+                raw = raw[head.Length..].TrimStart(' ', '|', '·', '-', '–', '\n');
+        }
+
+        var compact = Regex.Replace(raw, @"\s+", " ").Trim();
+        if (compact.Length <= maxChars)
+            return compact;
+        var slice = compact[..maxChars];
+        var cut = Math.Max(slice.LastIndexOf(". ", StringComparison.Ordinal), slice.LastIndexOf("! ", StringComparison.Ordinal));
+        cut = Math.Max(cut, slice.LastIndexOf("? ", StringComparison.Ordinal));
+        if (cut < 120)
+            return slice.TrimEnd() + "…";
+        return slice[..(cut + 1)].Trim();
+    }
+
     public static string Fold(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw))
@@ -523,14 +552,40 @@ public static class LocalOsTextExtract
         var desc = Regex.Match(html, @"property\s*=\s*[""']og:description[""']\s+content\s*=\s*[""'](.*?)[""']", RegexOptions.IgnoreCase);
         if (!desc.Success)
             desc = Regex.Match(html, @"name\s*=\s*[""']description[""']\s+content\s*=\s*[""'](.*?)[""']", RegexOptions.IgnoreCase);
+        var heading = og.Success ? Decode(og.Groups[1].Value) : (title.Success ? Decode(title.Groups[1].Value) : "");
+        var cleaned = Regex.Replace(html, @"<(script|style|noscript|nav|footer)\b[\s\S]*?</\1>", " ", RegexOptions.IgnoreCase);
+        var paras = new List<string>();
+        foreach (Match m in Regex.Matches(cleaned, @"<p\b[^>]*>([\s\S]*?)</p>", RegexOptions.IgnoreCase))
+        {
+            var p = Decode(Regex.Replace(m.Groups[1].Value, @"<[^>]+>", " "));
+            if (!UsefulParagraph(p, heading))
+                continue;
+            if (paras.Exists(x => x.Equals(p, StringComparison.OrdinalIgnoreCase)))
+                continue;
+            paras.Add(p);
+            if (paras.Count >= 8)
+                break;
+        }
+
         var parts = new List<string>();
-        if (og.Success)
-            parts.Add(Decode(og.Groups[1].Value));
-        else if (title.Success)
-            parts.Add(Decode(title.Groups[1].Value));
-        if (desc.Success)
+        if (heading.Length > 0)
+            parts.Add(heading);
+        if (paras.Count > 0)
+            parts.AddRange(paras);
+        else if (desc.Success)
             parts.Add(Decode(desc.Groups[1].Value));
-        return string.Join("\n", parts.Where(p => p.Length > 0));
+        return string.Join("\n\n", parts.Where(p => p.Length > 0));
+    }
+
+    private static bool UsefulParagraph(string text, string heading)
+    {
+        if (text.Length is < 40 or > 700)
+            return false;
+        if (heading.Length >= 12 && text.StartsWith(heading, StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (Regex.IsMatch(text, @"cookie|đăng nhập|javascript|copyright|all rights", RegexOptions.IgnoreCase))
+            return false;
+        return true;
     }
 
     private static string Decode(string s) =>

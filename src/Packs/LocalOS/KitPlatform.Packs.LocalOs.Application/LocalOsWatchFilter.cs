@@ -38,9 +38,13 @@ public static class LocalOsWatchFilter
         "tai nạn", "cháy lớn", "an táng",
     ];
 
-    private static readonly string[] DenyPast =
+    private static readonly string[] DenyPastPhrase =
     [
         "đã kết thúc", "da ket thuc", "đã diễn ra", "da dien ra", "đã bế mạc", "da be mac",
+    ];
+
+    private static readonly string[] DenyPastYear =
+    [
         "2019", "2020", "2021", "2022", "2023", "2024",
     ];
 
@@ -82,13 +86,16 @@ public static class LocalOsWatchFilter
         if (DenyPolitics.Any(w => blob.Contains(w, StringComparison.Ordinal)))
             return LocalOsWatchDecision.DenyPolitics;
 
+        var cat = (sourceCategory ?? "").Trim().ToLowerInvariant();
+        if (DenyPastPhrase.Any(w => blob.Contains(w, StringComparison.Ordinal)))
+            return LocalOsWatchDecision.DenyPast;
         var current = blob.Contains("2026", StringComparison.Ordinal)
             || blob.Contains("2025-2026", StringComparison.Ordinal)
             || blob.Contains("2025 – 2026", StringComparison.Ordinal);
-        if (!current && DenyPast.Any(w => blob.Contains(w, StringComparison.Ordinal)))
+        if (!current && DenyPastYear.Any(w => blob.Contains(w, StringComparison.Ordinal)))
             return LocalOsWatchDecision.DenyPast;
-
-        var cat = (sourceCategory ?? "").Trim().ToLowerInvariant();
+        if (cat != "job" && LocalOsEventDate.IsPastInText($"{title} {url}"))
+            return LocalOsWatchDecision.DenyPast;
         var jobOk = AllowJob.Any(w => blob.Contains(w, StringComparison.Ordinal));
         var eventOk = AllowEvent.Any(w => blob.Contains(w, StringComparison.Ordinal));
         if (cat == "job")

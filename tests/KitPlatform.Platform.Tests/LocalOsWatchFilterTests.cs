@@ -81,6 +81,25 @@ public class LocalOsWatchFilterTests
     }
 
     [Fact]
+    public void Denies_event_whose_date_already_passed()
+    {
+        Assert.Equal(
+            LocalOsWatchDecision.DenyPast,
+            LocalOsWatchFilter.Decide(
+                "Lễ hội văn hóa truyền thống Chợ tình Xuân Dương năm 2026 diễn ra 10-11/5/2026",
+                "/su-kien/cho-tinh",
+                "event"));
+    }
+
+    [Fact]
+    public void Denies_already_happened_phrase_even_with_2026()
+    {
+        Assert.Equal(
+            LocalOsWatchDecision.DenyPast,
+            LocalOsWatchFilter.Decide("Festival Trà 2026 đã kết thúc", "/festival", "event"));
+    }
+
+    [Fact]
     public void Allows_city_news_without_su_kien_keyword()
     {
         Assert.Equal(
@@ -89,6 +108,69 @@ public class LocalOsWatchFilterTests
                 "Các trường thuộc Đại học Thái Nguyên tổ chức đón tân sinh viên",
                 "/giao-duc/202608/don-tan-sinh-vien",
                 "event"));
+    }
+}
+
+public class LocalOsEventDateTests
+{
+    private static readonly DateOnly Today = new(2026, 8, 22);
+
+    [Fact]
+    public void Reads_range_10_11_may_2026_as_past()
+    {
+        Assert.True(LocalOsEventDate.IsPastInText(
+            "Lễ hội Chợ tình Xuân Dương năm 2026 diễn ra trong hai ngày 10-11/5/2026",
+            Today));
+    }
+
+    [Fact]
+    public void Keeps_25_aug_2026_upcoming()
+    {
+        Assert.False(LocalOsEventDate.IsPastInText(
+            "Giao hữu FC Thái Nguyên – Hà Nội FC 25/8/2026",
+            Today));
+    }
+
+    [Fact]
+    public void No_date_is_not_past()
+    {
+        Assert.False(LocalOsEventDate.IsPastInText(
+            "Các trường thuộc Đại học Thái Nguyên tổ chức đón tân sinh viên",
+            Today));
+    }
+}
+
+public class LocalOsTextExtractSummaryTests
+{
+    [Fact]
+    public void GuessSummary_strips_repeated_title_and_keeps_sentences()
+    {
+        var title = "Lễ hội văn hóa truyền thống \"Chợ tình Xuân Dương\" năm 2026 | Lễ Hội Việt Nam";
+        var blob = title + "\n\nLễ hội diễn ra trong hai ngày 10-11/5 tại xã Xuân Dương, Thái Nguyên. Khách có thể xem hát then và chợ phiên. Ban tổ chức không bán vé trên Thái Nguyên Life.";
+        var lead = LocalOsTextExtract.GuessSummary(title, blob, 900);
+        Assert.DoesNotContain("Lễ Hội Việt Nam Lễ hội", lead, StringComparison.Ordinal);
+        Assert.Contains("10-11/5", lead, StringComparison.Ordinal);
+        Assert.Contains("hát then", lead, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StripHtml_reads_article_paragraphs_not_only_meta()
+    {
+        const string html = """
+            <html><head>
+            <title>Chợ tình Xuân Dương 2026</title>
+            <meta property="og:description" content="Lễ hội diễn ra trong hai ngày 10-11/5 tại xã Xuân Dương...">
+            </head><body>
+            <nav><p>Trang chủ</p></nav>
+            <article>
+            <p>Lễ hội văn hóa truyền thống Chợ tình Xuân Dương năm 2026 diễn ra trong hai ngày 10-11/5 tại xã Xuân Dương, Thái Nguyên.</p>
+            <p>Chương trình có hát then, chợ phiên và các trò chơi dân gian do người dân địa phương tổ chức.</p>
+            </article>
+            </body></html>
+            """;
+        var text = LocalOsTextExtract.StripHtml(html);
+        Assert.Contains("hát then", text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("chợ phiên", text, StringComparison.OrdinalIgnoreCase);
     }
 }
 

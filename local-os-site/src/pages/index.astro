@@ -14,6 +14,7 @@ import {
   orgInitial,
 } from '../lib/api';
 import { featuredGuides, featuredPlaces, guideHref, placeHref } from '../lib/discover';
+import { isEventPast } from '../lib/event-date';
 import { jobPay } from '../lib/job-filters';
 
 const homePlaces = featuredPlaces();
@@ -37,6 +38,7 @@ for (const item of [...jobs, ...events, ...rooms]) {
 }
 const latestJobs = jobs.slice(0, 4);
 const upcoming = [...events]
+  .filter((e) => !isEventPast(e))
   .sort((a, b) => Number(Boolean(b.startAt)) - Number(Boolean(a.startAt)))
   .slice(0, 4);
 const featuredRooms = rooms.slice(0, 4);

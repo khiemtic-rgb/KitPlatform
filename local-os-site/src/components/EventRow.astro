@@ -6,7 +6,7 @@ import {
   hrefFor,
   type LocalListing,
 } from '../lib/api';
-import { eventCatLabel, eventCatOf, eventTags, isNewEvent } from '../lib/event-filters';
+import { eventCatLabel, eventCatOf, eventLead, eventTags, isNewEvent } from '../lib/event-filters';
 
 interface Props {
   item: LocalListing;
@@ -18,7 +18,7 @@ const catLabel = eventCatLabel(cat);
 const tags = eventTags(item);
 const when = formatRelative(item.lastCheckedAt || item.publishedAt);
 const timeLine = formatEventLine(item.startAt) || item.workingTime || '';
-const snippet = (item.summary ?? '').replace(/\s+/g, ' ').trim();
+const snippet = eventLead(item, 280);
 ---
 <a class="event-row" href={hrefFor(item)}>
   <div class="event-row-photo">
