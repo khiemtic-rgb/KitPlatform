@@ -28,22 +28,41 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
             throw new InvalidOperationException("Cần 1–4 ảnh Canon mặt (không gửi crop mặt làm KF I2V).");
 
         var parsed = new List<(string Mime, string Base64)>(refs.Count);
+        var kept = new List<ContentSeriesStillRefDto>();
         foreach (var row in refs)
         {
             var url = (row.ImageDataUrl ?? "").Trim();
+            var scene = string.Equals(row.Role, "scene", StringComparison.OrdinalIgnoreCase);
             if (url.Length is < 32 or > MaxDataUrlChars)
+            {
+                if (scene) continue;
                 throw new InvalidOperationException($"Canon {(row.Name ?? "CHAR")} quá lớn hoặc trống.");
+            }
             if (!TryParseDataUrl(url, out var mime, out var b64))
+            {
+                if (scene) continue;
                 throw new InvalidOperationException($"Canon {(row.Name ?? "CHAR")} không phải data URL ảnh.");
+            }
             parsed.Add((mime, b64));
+            kept.Add(row);
         }
+        refs = kept;
 
-        var guarded =
-            "Photorealistic Vietnamese live-action SCENE still. Full environment + bodies in frame. "
-            + "Attached images are FACE/WARDROBE REFERENCES only — do not output a passport crop, contact sheet, or headshot grid. "
-            + "Match each named person's face, hair, age and clothes from the matching reference. "
-            + "No extra people, no text, no subtitles, no watermark, no logo, no illustration.\n"
-            + prompt;
+        var hasScene = refs.Any(r =>
+            string.Equals(r.Role, "scene", StringComparison.OrdinalIgnoreCase));
+        var guarded = hasScene
+            ? "Photorealistic Vietnamese live-action SCENE still. Full environment + bodies in frame. "
+              + "The image marked role=scene is the PREVIOUS SHOT END FRAME. Keep the same place, clothes, lighting, bodies and camera. "
+              + "Only apply the new action. Do not reset the scene or invent a new location. "
+              + "Other attached images are FACE/WARDROBE identity only — never copy a character bible, master reference, turnaround, or expression grid. "
+              + "No extra people, no text, no title card, no watermark.\n"
+              + prompt
+            : "Photorealistic Vietnamese live-action SCENE still. Full environment + bodies in frame. "
+              + "Attached images are FACE/WARDROBE REFERENCES only. Do NOT output a character design sheet, master reference, turnaround, expression grid, contact sheet, passport crop, or title card. "
+              + "Output one film frame of the locked Action. "
+              + "Match each named person's face, hair, age and clothes from the matching reference. "
+              + "No extra people, no text, no subtitles, no watermark, no logo, no illustration.\n"
+              + prompt;
 
         var (bytes, model) = await _gemini.GenerateImageWithRefsAsync(
             guarded,
@@ -56,6 +75,51 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
             model,
             aspect);
     }
+
+    public async Task<ContentSeriesKfNoteDto> RewriteNoteAsync(
+        ContentSeriesKfNoteRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var note = (request.Note ?? "").Trim();
+        if (note.Length is < 4 or > 400)
+            throw new InvalidOperationException("Mô tả 4–400 ký tự — lời thường, không viết prompt.");
+
+        var raw = await _gemini.GenerateJsonAsync(
+            "You rewrite a Vietnamese operator note into a SHORT continuity lock for a still. "
+            + "JSON only: {\"instruction\":\"...\",\"place\":bool,\"lighting\":bool,\"wardrobe\":bool,\"camera\":bool,\"inherit\":bool}. "
+            + "instruction <= 220 chars, Vietnamese. Keep the locked Action. "
+            + "Do not invent location changes, new characters, dialogue, hugs, apologies, or plot. "
+            + "inherit=true unless the note says start a new scene.",
+            $"Action: {(request.Action ?? "").Trim()}\nLocation: {(request.Location ?? "").Trim()}\nNote: {note}",
+            cancellationToken,
+            512,
+            true);
+
+        var t = (raw ?? "").Trim();
+        if (t.StartsWith("```", StringComparison.Ordinal))
+        {
+            var nl = t.IndexOf('\n');
+            t = nl > 0 ? t[(nl + 1)..] : t;
+            var end = t.LastIndexOf("```", StringComparison.Ordinal);
+            if (end > 0) t = t[..end];
+        }
+        using var doc = System.Text.Json.JsonDocument.Parse(t);
+        var root = doc.RootElement;
+        var instruction = root.TryGetProperty("instruction", out var i) ? (i.GetString() ?? "").Trim() : "";
+        if (instruction.Length > 280) instruction = instruction[..280];
+        if (instruction.Length < 8)
+            throw new InvalidOperationException("Gemini không trả lệnh continuity đọc được.");
+        return new ContentSeriesKfNoteDto(
+            instruction,
+            ReadBool(root, "place"),
+            ReadBool(root, "lighting"),
+            ReadBool(root, "wardrobe"),
+            ReadBool(root, "camera"),
+            root.TryGetProperty("inherit", out var h) && h.ValueKind == System.Text.Json.JsonValueKind.False ? false : true);
+    }
+
+    private static bool ReadBool(System.Text.Json.JsonElement root, string name) =>
+        root.TryGetProperty(name, out var p) && p.ValueKind == System.Text.Json.JsonValueKind.True;
 
     private static string NormalizeAspect(string? raw)
     {

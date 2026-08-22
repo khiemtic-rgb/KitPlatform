@@ -20,3 +20,5 @@
 297_pack_content_facebook_oauth_pending.sql
 311_pack_content_performance.sql
 313_pack_content_series_pilot.sql
+314_pack_content_grants.sql
+315_pack_content_series_build.sql

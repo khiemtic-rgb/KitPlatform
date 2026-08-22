@@ -1,7 +1,10 @@
 /** Scene batch orchestration on the existing series graph. Does not invent story. */
 
+import { actionNearlySame, kfIsApprovedStill } from './content-famixa-scene-first';
 import {
+  episodeShots,
   shotCharacterIds,
+  shotHasValidAction,
   shotRunOf,
   studioShotCode,
   type FamixaSeriesShot,
@@ -10,12 +13,16 @@ import {
   type SeriesShotRun,
 } from './content-famixa-series';
 
-export type SceneKfMode = 'new' | 'reuse_previous' | 'reuse_baseline';
+export type SceneKfMode = 'new' | 'reuse_previous' | 'reuse_baseline' | 'none';
+
+export type ShotProdLane = 'scripted' | 'reuse' | 'hold' | 'skip' | 'locked';
 
 export type SceneKfPlanRow = {
   shotId: string;
   code: string;
   mode: SceneKfMode;
+  lane: ShotProdLane;
+  eligible: boolean;
   sourceShotId?: string;
   sourceCode?: string;
   reason: string;
@@ -24,8 +31,7 @@ export type SceneKfPlanRow = {
   forceNew: boolean;
 };
 
-const NEW_FRAME =
-  /close-?up|cận cảnh|chi tiết|insert|bài kiểm tra|màn hình|tin nhắn|\bsms\b|điện thoại|tay cầm/i;
+const NEW_FRAME = /close-?up|cận cảnh|chi tiết|insert|màn hình|tin nhắn|\bsms\b/i;
 const PLACE_SHIFT = /bước vào|đi vào|vào lớp|ra khỏi|sang phòng|mở cửa vào|rời khỏi|vào nhà|ra đường/i;
 
 export function sceneCodeOfShot(shot: FamixaSeriesShot) {
@@ -35,20 +41,25 @@ export function sceneCodeOfShot(shot: FamixaSeriesShot) {
 
 export function shotsInScene(shots: FamixaSeriesShot[], scene?: string) {
   const sc = (scene ?? '').match(/SC\s*\d+/i)?.[0]?.replace(/\s+/g, '').toUpperCase();
-  if (!sc) return shots;
-  return shots.filter((s) => sceneCodeOfShot(s) === sc);
+  const list = !sc ? shots : shots.filter((s) => sceneCodeOfShot(s) === sc);
+  const seen = new Set<string>();
+  return list.filter((s) => (seen.has(s.id) ? false : (seen.add(s.id), true)));
 }
 
 export function kfIsApproved(run: SeriesShotRun) {
-  return Boolean(run.keyframeDataUrl) && run.status !== 'story_locked';
+  return kfIsApprovedStill(run);
 }
 
 function normPlace(s?: string) {
   return (s ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
+function visualCharIds(shot: FamixaSeriesShot) {
+  return shotCharacterIds(shot).filter((id) => id !== 'CHAR-VO').sort();
+}
+
 function sameChars(a: FamixaSeriesShot, b: FamixaSeriesShot) {
-  return [...shotCharacterIds(a)].sort().join() === [...shotCharacterIds(b)].sort().join();
+  return visualCharIds(a).join() === visualCharIds(b).join();
 }
 
 function blobOf(shot: FamixaSeriesShot, action?: string) {
@@ -74,47 +85,82 @@ export function continuityPlaceHint(
 }
 
 export function buildSceneKfPlan(state: SeriesPilotState, sceneShots: FamixaSeriesShot[]): SceneKfPlanRow[] {
-  const baseline = sceneShots[0];
+  const all = episodeShots(state);
   const rows: SceneKfPlanRow[] = [];
   for (let i = 0; i < sceneShots.length; i++) {
     const shot = sceneShots[i]!;
     const run = shotRunOf(state, shot);
     const action = (run.shotAction || shot.story || '').trim();
     const forceNew = Boolean(run.kfForceNew);
-    let mode: SceneKfMode = 'new';
+    const code = studioShotCode(shot, all);
+    let mode: SceneKfMode = 'none';
+    let lane: ShotProdLane = 'hold';
     let source: FamixaSeriesShot | undefined;
-    let reason = 'Shot đầu cảnh';
+    let reason = 'HOLD — No Action';
 
-    if (i === 0 || forceNew) {
+    if (run.prodSkip) {
+      lane = 'skip';
+      reason = 'SKIP';
+    } else if (run.status === 'approved') {
+      lane = 'locked';
+      mode = 'none';
+      reason = 'LOCKED';
+    } else if (!shotHasValidAction(shot, run)) {
+      lane = 'hold';
+      reason = 'HOLD — No Action';
+    } else if (shot.voiceChainFrom && !forceNew) {
+      source = sceneShots.find((s) => s.id === shot.voiceChainFrom) ?? all.find((s) => s.id === shot.voiceChainFrom);
+      lane = 'reuse';
+      mode = 'reuse_previous';
+      reason = source
+        ? `REUSE ${studioShotCode(source, all)} — nối thoại cùng KF`
+        : 'REUSE host — nối thoại cùng KF';
+    } else if (
+      !forceNew &&
+      i > 0 &&
+      actionNearlySame(action, sceneShots[i - 1] ? (shotRunOf(state, sceneShots[i - 1]!).shotAction || sceneShots[i - 1]!.story) : '')
+    ) {
+      source = sceneShots[i - 1];
+      lane = 'reuse';
+      mode = 'reuse_previous';
+      reason = source ? `REUSE ${studioShotCode(source, all)} — cùng Action` : 'REUSE — cùng Action';
+    } else if (i === 0 || forceNew) {
+      lane = 'scripted';
       mode = 'new';
       reason = forceNew ? 'Bạn chọn KF mới' : 'Shot đầu cảnh';
     } else if (NEW_FRAME.test(blobOf(shot, action))) {
+      lane = 'scripted';
       mode = 'new';
       reason = 'Đổi khung / cận cảnh';
     } else if (
       PLACE_SHIFT.test(blobOf(shot, action)) ||
       (shot.location &&
-        baseline?.location &&
+        sceneShots[0]?.location &&
         normPlace(shot.location) &&
-        normPlace(shot.location) !== normPlace(baseline.location))
+        normPlace(shot.location) !== normPlace(sceneShots[0].location))
     ) {
+      lane = 'scripted';
       mode = 'new';
       reason = 'Đổi bối cảnh / vị trí';
     } else {
-      const prev = sceneShots[i - 1];
-      const prevRow = rows[i - 1];
+      const prevEligible = [...rows]
+        .reverse()
+        .find((r) => r.eligible && (r.lane === 'scripted' || r.lane === 'reuse' || r.lane === 'locked'));
+      const prev = prevEligible ? sceneShots.find((s) => s.id === prevEligible.shotId) : undefined;
       const samePlace =
         Boolean(prev) &&
         sameChars(shot, prev!) &&
         (!shot.location || !prev!.location || normPlace(shot.location) === normPlace(prev!.location));
-      if (samePlace && prev && prevRow) {
+      if (samePlace && prev && prevEligible) {
         source =
-          prevRow.mode === 'new'
+          prevEligible.mode === 'new'
             ? prev
-            : sceneShots.find((s) => s.id === prevRow.sourceShotId) || baseline || prev;
-        mode = source.id === baseline?.id ? 'reuse_baseline' : 'reuse_previous';
-        reason = 'Cùng chỗ · cùng CHAR';
+            : sceneShots.find((s) => s.id === prevEligible.sourceShotId) || prev;
+        lane = 'scripted';
+        mode = 'new';
+        reason = `Kế thừa ${studioShotCode(source, all)} — vẽ Action mới, không copy khung`;
       } else {
+        lane = 'scripted';
         mode = 'new';
         reason = 'Khác CHAR hoặc chỗ — KF mới';
       }
@@ -122,10 +168,12 @@ export function buildSceneKfPlan(state: SeriesPilotState, sceneShots: FamixaSeri
 
     rows.push({
       shotId: shot.id,
-      code: studioShotCode(shot),
+      code,
       mode,
+      lane,
+      eligible: lane === 'scripted' || lane === 'reuse',
       sourceShotId: source?.id,
-      sourceCode: source ? studioShotCode(source) : undefined,
+      sourceCode: source ? studioShotCode(source, all) : undefined,
       reason,
       hasKf: Boolean(run.keyframeDataUrl),
       kfApproved: kfIsApproved(run),
@@ -175,22 +223,64 @@ export function applySceneKfReuses(
   const byId = new Map(sceneShots.map((s) => [s.id, s]));
   let next = state;
   for (const row of plan) {
-    if (row.mode === 'new' || !row.sourceShotId) continue;
     const dst = byId.get(row.shotId);
-    const src = byId.get(row.sourceShotId);
-    if (!dst || !src) continue;
-    if (!shotRunOf(next, src).keyframeDataUrl) continue;
-    next = copyShotKeyframe(next, src, dst);
+    if (!dst) continue;
+    if (row.lane === 'reuse' && row.sourceShotId) {
+      const src = byId.get(row.sourceShotId);
+      if (!src || !shotRunOf(next, src).keyframeDataUrl) continue;
+      next = copyShotKeyframe(next, src, dst);
+      continue;
+    }
+    const run = shotRunOf(next, dst);
+    if (row.lane === 'scripted' && run.keyframeInheritedFrom && run.keyframeDataUrl) {
+      next = {
+        ...next,
+        runs: {
+          ...next.runs,
+          [dst.id]: {
+            ...run,
+            keyframeDataUrl: undefined,
+            keyframeInheritedFrom: undefined,
+            status: run.status === 'approved' ? run.status : 'story_locked',
+          },
+        },
+      };
+    }
   }
   return next;
+}
+
+/** First NEW-KF shot in the scene plan — KF01 / file attach target. */
+export function firstNewKfShot(sceneShots: FamixaSeriesShot[], plan: SceneKfPlanRow[]) {
+  const id = plan.find((p) => p.lane === 'scripted' && p.mode === 'new')?.shotId ?? sceneShots[0]?.id;
+  return sceneShots.find((s) => s.id === id);
 }
 
 export function sceneKfToGenerate(sceneShots: FamixaSeriesShot[], plan: SceneKfPlanRow[], state: SeriesPilotState) {
   return sceneShots.filter((s) => {
     const row = plan.find((p) => p.shotId === s.id);
-    if (!row || row.mode !== 'new') return false;
+    if (!row || row.lane !== 'scripted' || row.mode !== 'new') return false;
+    if (!shotHasValidAction(s, shotRunOf(state, s))) return false;
     return !shotRunOf(state, s).keyframeDataUrl;
   });
+}
+
+export function productionQueue(plan: SceneKfPlanRow[]) {
+  return plan.filter((p) => p.lane === 'scripted' || p.lane === 'reuse');
+}
+
+export function previewEligibleIds(plan: SceneKfPlanRow[]) {
+  return new Set(
+    plan.filter((p) => p.lane === 'scripted' || p.lane === 'reuse' || p.lane === 'locked').map((p) => p.shotId),
+  );
+}
+
+export function laneLabel(row: SceneKfPlanRow) {
+  if (row.lane === 'hold') return 'HOLD — No Action';
+  if (row.lane === 'skip') return 'SKIP';
+  if (row.lane === 'locked') return 'LOCKED';
+  if (row.lane === 'reuse') return `REUSE ${row.sourceCode || ''}`.trim();
+  return 'READY';
 }
 
 export function readySceneVideoShots(
@@ -200,7 +290,10 @@ export function readySceneVideoShots(
 ) {
   const ready: FamixaSeriesShot[] = [];
   const blocked: FamixaSeriesShot[] = [];
+  const plan = buildSceneKfPlan(state, sceneShots);
   for (const s of sceneShots) {
+    const row = plan.find((p) => p.shotId === s.id);
+    if (!row?.eligible) continue;
     const run = shotRunOf(state, s);
     if (run.status === 'approved' || run.previewUrl?.trim()) continue;
     const action = (run.shotAction || s.story || '').trim();
@@ -211,7 +304,9 @@ export function readySceneVideoShots(
 }
 
 export function modeLabel(row: SceneKfPlanRow) {
+  if (row.lane === 'hold' || row.lane === 'skip') return laneLabel(row);
   if (row.mode === 'new') return 'KF mới';
   if (row.mode === 'reuse_baseline') return `Kế thừa ${row.sourceCode || 'KF đầu cảnh'}`;
-  return `Reuse ${row.sourceCode || 'KF trước'}`;
+  if (row.mode === 'reuse_previous') return `Reuse ${row.sourceCode || 'KF trước'}`;
+  return laneLabel(row);
 }

@@ -415,6 +415,8 @@ internal sealed class ContentGenerateService : IContentGenerateService
                 msg = imageOk > 0
                     ? "Đã tạo 1 ảnh theo nội dung bài."
                     : "Không tạo được ảnh: " + (imageError ?? "chưa rõ lỗi — kiểm tra Cấu hình AI / model ảnh.");
+                if (imageOk == 0)
+                    throw new InvalidOperationException(msg);
             }
             else if (candidates == 0)
             {

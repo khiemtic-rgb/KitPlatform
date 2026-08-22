@@ -13,6 +13,7 @@ const CAST: { id: string; names: string[]; role: string }[] = [
   { id: 'CHAR-001', names: ['minh', 'con'], role: 'Con' },
   { id: 'CHAR-002', names: ['nam', 'bố', 'bo', 'ba'], role: 'Bố' },
   { id: 'CHAR-003', names: ['linh', 'mẹ', 'me'], role: 'Mẹ' },
+  { id: 'CHAR-VO', names: ['lời bình', 'voice-over', 'voice over', 'vo'], role: 'Lời bình' },
 ];
 
 export type ParsedEpisodeStory = {
@@ -61,6 +62,7 @@ export function isNonStoryLine(line: string) {
   if (/^(KIT MARKETING|VIDEO PRODUCTION MASTER|CRITICAL FIX|FINAL ACCEPTANCE|ACCEPTANCE TEST|GOLDEN TEST)\b/i.test(s)) {
     return true;
   }
+  if (/kịch bản phim ngắn|drama voice famixa/i.test(s) && s.length < 80) return true;
   if (
     /\b(do not|must not|required:|golden test|critical fix|acceptance criteria|developer instruction|implementation instruction|validation text|coding instruction|graph state|story parser|shot decomposition|parse version)\b/i.test(
       s,
@@ -157,10 +159,27 @@ export function introducesUnspokenText(line: string) {
 export function looksLikeUnspokenLine(text: string, speaker?: string) {
   const s = text.trim();
   if (!s) return false;
+  if (looksLikeVoiceDirection(s)) return true;
   if (/cô trả bài/i.test(s) || /^Mai cô\b/i.test(s)) return true;
   const who = (speaker ?? '').replace(/^\[|\]$/g, '').trim();
   const isNam = /^(nam|bố|bo|ba|char-002)$/i.test(who);
   if (isNam && /^Bạn An chín rưỡi\.?$/i.test(s)) return true;
+  return false;
+}
+
+/** Cast bible / acting note — not a spoken line. `Giọng ai thế?` stays thoại. */
+export function looksLikeVoiceDirection(text: string) {
+  const s = text.trim().replace(/^["“”']+|["“”']+$/g, '');
+  if (!s) return false;
+  if (/^giọng (ai|gì|nào|đó|kia|bố|mẹ|con|minh|nam|linh)\b/i.test(s)) return false;
+  if (/^giọng đọc\b/i.test(s)) return true;
+  if (
+    /^giọng\b/i.test(s) &&
+    /(háo hức|mong manh|khao khát|sắc lạnh|thực dụng|mệt mỏi|kiệt sức|bất lực|trầm ấm|truyền cảm|không hề nghĩ|thương con)/i.test(s)
+  ) {
+    return true;
+  }
+  if (/^giọng\b/i.test(s) && (s.match(/,/g) ?? []).length >= 2) return true;
   return false;
 }
 
@@ -169,6 +188,7 @@ export function looksLikeSpokenLine(text: string, speaker?: string) {
   const s = text.trim().replace(/^["“”']+|["“”']+$/g, '');
   if (!s) return false;
   if (isSoundSlug(s) || isSoundSlug(speaker ?? '')) return false;
+  if (looksLikeVoiceDirection(s)) return false;
   if (looksLikeActionLine(s) || looksLikeUnspokenLine(s, speaker)) return false;
   return true;
 }
@@ -214,9 +234,24 @@ function ensureChar(chars: FamixaCharacter[], speaker: string): FamixaCharacter 
   return row;
 }
 
+/** VOICE-OVER slug. Parenthetical = voice direction, not spoken. */
+export function voiceOverHead(line: string) {
+  const m = line.match(/^(?:VOICE[-\s]+OVER|V\.?\s*O\.?)\s*(?:\(([^)]{0,80})\))?\s*[—–:.]?\s*(.*)$/i);
+  if (!m) return undefined;
+  const direction = (m[1] ?? '').trim();
+  const rest = (m[2] ?? '').trim();
+  if (rest && /^(giọng đọc|giọng nam|giọng nữ)\b/i.test(rest) && rest.length < 80) {
+    return { speaker: 'Lời bình', direction: direction || rest, rest: '' };
+  }
+  return { speaker: 'Lời bình', direction, rest };
+}
+
+function ensureNarrator(chars: FamixaCharacter[]) {
+  return ensureChar(chars, 'Lời bình');
+}
+
 function screenplaySpeaker(line: string, chars: FamixaCharacter[]) {
-  const vo = line.match(/^(?:VOICE\s*OVER|V\.?\s*O\.?)\s*[—–:-]\s*(.+)$/i);
-  if (vo) return vo[1].trim();
+  if (voiceOverHead(line)) return undefined;
   const tagged = taggedSpeaker(line);
   if (tagged) return isSoundSlug(tagged.name) ? undefined : tagged.name;
   const colon = speakerHead(line);
@@ -245,6 +280,7 @@ function skipFurniture(line: string) {
       line,
     ) ||
     /^(FAMIXA|KIT MARKETING)\b/i.test(line) ||
+    /kịch bản phim|drama voice famixa|production master/i.test(line) ||
     /^\d{2}\.\s+(STORY INTENT|CORE QUESTION|EMOTIONAL|CHARACTERS|LOCATION|VISUAL|SCRIPT|VOICE|SOUND)\b/i.test(line)
   );
 }
@@ -275,7 +311,10 @@ function seedCast(text: string, characters: FamixaCharacter[]) {
       if (!named.role) named.role = row.role;
       continue;
     }
-    if (proper.length < 3 || !new RegExp(proper, 'i').test(text)) continue;
+    const token =
+      row.names.find((n) => n.length >= 4 && new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(text)) ??
+      (proper.length >= 3 && new RegExp(proper.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(text) ? proper : '');
+    if (!token) continue;
     characters.push({
       id: row.id,
       name: proper.charAt(0).toUpperCase() + proper.slice(1),
@@ -307,17 +346,31 @@ function headerFields(chunk: string) {
   return map;
 }
 
+function splitBeatIntoShotStories(text: string): string[] {
+  const t = text.replace(/\s+/g, ' ').trim();
+  if (!t) return [];
+  const camera = /cận cảnh|nhìn bài|điểm|điện thoại|bước (ra|vào|khỏi)/i.test(t);
+  if (!camera) return [t];
+  const sentences = t.split(/(?<=[.!?…])\s+/).map((s) => s.trim()).filter((s) => s.length >= 6);
+  if (sentences.length >= 2 && sentences.length <= 3) return sentences;
+  if (/,/.test(t)) {
+    const bits = t.split(/,\s+/).map((s) => s.trim()).filter((s) => s.length >= 8);
+    if (bits.length >= 2 && bits.length <= 3) return bits;
+  }
+  return [t];
+}
+
 function decomposeSceneShots(
   scene: SceneDraft,
   startShotN: number,
   epCode: string,
-): { shots: FamixaSeriesShot[]; nextN: number } {
-  type Bucket = { actions: string[]; dialogue: string[]; charIds: string[] };
-  const buckets: Bucket[] = [];
-  let cur: Bucket = { actions: [], dialogue: [], charIds: [] };
+): { shots: FamixaSeriesShot[]; nextN: number; beats: { id: string; text: string; shotIds: string[] }[] } {
+  type Group = { actions: string[]; dialogue: string[]; charIds: string[] };
+  const groups: Group[] = [];
+  let cur: Group = { actions: [], dialogue: [], charIds: [] };
   const flush = () => {
     if (!cur.actions.length && !cur.dialogue.length) return;
-    buckets.push(cur);
+    groups.push(cur);
     cur = { actions: [], dialogue: [], charIds: [] };
   };
   for (const beat of scene.beats) {
@@ -326,7 +379,7 @@ function decomposeSceneShots(
       continue;
     }
     if (beat.kind === 'action') {
-      if (cur.dialogue.length) flush();
+      if (cur.actions.length || cur.dialogue.length) flush();
       cur.actions.push(beat.text);
       continue;
     }
@@ -335,75 +388,48 @@ function decomposeSceneShots(
   }
   flush();
 
-  const merged: Bucket[] = [];
-  for (const b of buckets) {
-    const last = merged.at(-1);
-    const tinyAction = last && !last.dialogue.length && last.actions.length === 1 && b.dialogue.length;
-    if (tinyAction && last) {
-      last.actions.push(...b.actions);
-      last.dialogue.push(...b.dialogue);
-      last.charIds = [...new Set([...last.charIds, ...b.charIds])];
-      continue;
-    }
-    merged.push({ ...b, charIds: [...b.charIds] });
-  }
-
-  while (merged.length > 8) {
-    const a = merged[merged.length - 2]!;
-    const b = merged[merged.length - 1]!;
-    a.actions.push(...b.actions);
-    a.dialogue.push(...b.dialogue);
-    a.charIds = [...new Set([...a.charIds, ...b.charIds])];
-    merged.pop();
-  }
-
   const shots: FamixaSeriesShot[] = [];
+  const beats: { id: string; text: string; shotIds: string[] }[] = [];
   let n = startShotN;
-  for (const b of merged) {
-    const story = [...b.actions, ...b.dialogue].join(' ').replace(/\s+/g, ' ').trim();
-    if (!story) continue;
-    const shot = shotCode(n);
-    const charIds = b.charIds.length ? b.charIds : [...scene.charIds];
-    shots.push({
-      id: `${epCode}-${scene.id}-${shot}`,
-      scene: scene.id,
-      shot,
-      clock: `${Math.max(1, n) * 5}s`,
-      seconds: 5,
-      story: story.slice(0, 400),
-      visual: b.actions.join(' ').slice(0, 240),
-      characters: charIds,
-      characterIds: charIds,
-      sceneId: scene.id,
-      location: scene.location || scene.title,
-      motionPrompt: '',
-      motionPromptVi: story.slice(0, 220),
-      status: 'story_locked',
-    });
-    n += 1;
+  let beatN = 0;
+  for (const g of groups) {
+    const beatText = [...g.actions, ...g.dialogue].join(' ').replace(/\s+/g, ' ').trim();
+    if (!beatText) continue;
+    beatN += 1;
+    const beatId = `${scene.id}-BEAT${String(beatN).padStart(2, '0')}`;
+    const stories = g.actions.length ? g.actions.flatMap(splitBeatIntoShotStories) : [beatText];
+    const shotIds: string[] = [];
+    const charIds = g.charIds.length ? g.charIds : [...scene.charIds];
+    for (const story of stories) {
+      const action = story.replace(/\s+/g, ' ').trim();
+      if (action.length < 6) continue;
+      const shot = shotCode(n);
+      const id = `${epCode}-${scene.id}-${shot}`;
+      shots.push({
+        id,
+        scene: scene.id,
+        shot,
+        clock: '5s',
+        seconds: 5,
+        story: action.slice(0, 400),
+        visual: (g.actions.join(' ') || action).slice(0, 240),
+        characters: charIds,
+        characterIds: charIds,
+        sceneId: scene.id,
+        location: scene.location || scene.title,
+        motionPrompt: '',
+        motionPromptVi: action.slice(0, 220),
+        status: 'story_locked',
+        beatId,
+        beatText,
+        previousShotId: shots.at(-1)?.id,
+      });
+      shotIds.push(id);
+      n += 1;
+    }
+    if (shotIds.length) beats.push({ id: beatId, text: beatText.slice(0, 280), shotIds });
   }
-  if (shots.length === 0 && (scene.raw.length || scene.title)) {
-    const story = scene.raw.join(' ').replace(/\s+/g, ' ').trim().slice(0, 400) || scene.title;
-    const shot = shotCode(n);
-    shots.push({
-      id: `${epCode}-${scene.id}-${shot}`,
-      scene: scene.id,
-      shot,
-      clock: `${n * 5}s`,
-      seconds: 5,
-      story,
-      visual: '',
-      characters: [...scene.charIds],
-      characterIds: [...scene.charIds],
-      sceneId: scene.id,
-      location: scene.location || scene.title,
-      motionPrompt: '',
-      motionPromptVi: story.slice(0, 220),
-      status: 'story_locked',
-    });
-    n += 1;
-  }
-  return { shots, nextN: n };
+  return { shots, nextN: n, beats };
 }
 
 function toSceneNode(draft: SceneDraft): FamixaSceneNode {
@@ -562,6 +588,19 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
       continue;
     }
 
+    const vo = voiceOverHead(line);
+    if (vo) {
+      pendingUnspoken = false;
+      pendingGotLine = false;
+      if (vo.rest && looksLikeSpokenLine(vo.rest, vo.speaker)) {
+        addDialogue(ensureNarrator(characters), vo.rest);
+        pendingSpeaker = undefined;
+      } else {
+        pendingSpeaker = vo.speaker;
+      }
+      continue;
+    }
+
     const slug = screenplaySpeaker(line, characters);
     if (slug) {
       pendingSpeaker = slug;
@@ -627,9 +666,19 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
     current!.beats.push({ kind: 'action', text: body.slice(0, 400) });
   }
 
+  const shots: FamixaSeriesShot[] = [];
+  const beatMap = new Map<string, { id: string; text: string; shotIds: string[] }[]>();
+  let shotN = 1;
+  for (const draft of drafts.sort((a, b) => a.n - b.n)) {
+    const part = decomposeSceneShots(draft, shotN, `EP${epNo}`);
+    shots.push(...part.shots);
+    beatMap.set(draft.id, part.beats);
+    shotN = part.nextN;
+  }
+
   const scenes = drafts
     .sort((a, b) => a.n - b.n)
-    .map(toSceneNode);
+    .map((d) => ({ ...toSceneNode(d), scriptBeats: beatMap.get(d.id) ?? [] }));
 
   for (const sc of scenes) {
     if (!(sc.content || sc.dialogue?.length || sc.actions?.length)) {
@@ -642,18 +691,8 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
       seenInScene.add(key);
     }
   }
-
-  const shots: FamixaSeriesShot[] = [];
-  let shotN = 1;
-  for (const draft of drafts.sort((a, b) => a.n - b.n)) {
-    const part = decomposeSceneShots(draft, shotN, `EP${epNo}`);
-    const scoped = part.shots.map((s, i) => ({
-      ...s,
-      previousShotId: i > 0 ? part.shots[i - 1]?.id : undefined,
-      inheritFromShotId: i > 0 ? part.shots[i - 1]?.id : undefined,
-    }));
-    shots.push(...scoped);
-    shotN = part.nextN;
+  if (shots.some((s) => !(s.story || '').trim())) {
+    warnings.push('KIT emitted a shot without Action. Shot graph must follow Script Beats.');
   }
 
   const lines: FamixaLine[] = [];
@@ -670,7 +709,9 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
     }
   }
 
-  const roles = characters.slice(0, 8).map((c) => ({
+  const vo = characters.filter((c) => c.id === 'CHAR-VO');
+  const rest = characters.filter((c) => c.id !== 'CHAR-VO').slice(0, vo.length ? 7 : 8);
+  const roles = [...rest, ...vo].slice(0, 8).map((c) => ({
     id: `role-${c.id}`,
     title: c.role || c.id,
     name: c.name,
@@ -705,6 +746,8 @@ export function diagnoseEpisodeStory(doc: ParsedEpisodeStory) {
     if (shot.sceneId && !shot.id.includes(shot.sceneId)) {
       issues.push(`Shot ${shot.id} scene mismatch.`);
     }
+    if (!(shot.story || '').trim()) issues.push(`Empty shot ${shot.id} — no Script Beat Action.`);
+    if (!shot.beatId) issues.push(`Shot ${shot.id} has no beatId.`);
   }
   const shotCodes = doc.shots.map((s) => s.shot);
   if (new Set(shotCodes).size !== shotCodes.length) issues.push('Shot codes are not unique in the episode.');

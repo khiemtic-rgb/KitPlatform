@@ -24,6 +24,8 @@ public sealed class ContentController : ControllerBase
     private readonly IContentWorkQueueService _work;
     private readonly IContentFacebookConnectionService _facebook;
     private readonly IContentSeriesTurboService _seriesTurbo;
+    private readonly IContentSeriesTakeProxyService _seriesTake;
+    private readonly IContentSeriesAssembleService _seriesAssemble;
     private readonly IContentSeriesStillService _seriesStill;
     private readonly IContentSeriesScriptDraftService _seriesDraft;
     private readonly IContentSeriesPilotService _seriesPilot;
@@ -39,6 +41,8 @@ public sealed class ContentController : ControllerBase
         IContentWorkQueueService work,
         IContentFacebookConnectionService facebook,
         IContentSeriesTurboService seriesTurbo,
+        IContentSeriesTakeProxyService seriesTake,
+        IContentSeriesAssembleService seriesAssemble,
         IContentSeriesStillService seriesStill,
         IContentSeriesScriptDraftService seriesDraft,
         IContentSeriesPilotService seriesPilot)
@@ -53,6 +57,8 @@ public sealed class ContentController : ControllerBase
         _work = work;
         _facebook = facebook;
         _seriesTurbo = seriesTurbo;
+        _seriesTake = seriesTake;
+        _seriesAssemble = seriesAssemble;
         _seriesStill = seriesStill;
         _seriesDraft = seriesDraft;
         _seriesPilot = seriesPilot;
@@ -170,6 +176,48 @@ public sealed class ContentController : ControllerBase
         }
     }
 
+    [HttpPost("series/assemble")]
+    [RequestSizeLimit(40_000_000)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 40_000_000)]
+    public async Task<IActionResult> AssembleSeriesCut(
+        [FromBody] ContentSeriesAssembleRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var cut = await _seriesAssemble.AssembleAsync(request, cancellationToken);
+            return File(cut.Bytes, cut.ContentType, cut.FileName);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("series/take-proxy")]
+    public async Task<IActionResult> ProxySeriesTake(
+        [FromBody] ContentSeriesTakeProxyRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var take = await _seriesTake.FetchAsync(request.Url, cancellationToken);
+            return File(take.Bytes, take.ContentType, take.FileName);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("series/pilot")]
     public async Task<ActionResult<ContentSeriesPilotDto>> GetSeriesPilot(
         [FromQuery] string? code,
@@ -204,10 +252,96 @@ public sealed class ContentController : ControllerBase
         }
     }
 
+    [HttpGet("series/builds")]
+    public async Task<ActionResult<IReadOnlyList<ContentSeriesBuildSummaryDto>>> ListSeriesBuilds(
+        [FromQuery] string? code,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _seriesPilot.ListBuildsAsync(code ?? "FAMIXA", cancellationToken));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("series/builds/{id:guid}")]
+    public async Task<ActionResult<ContentSeriesBuildDto>> GetSeriesBuild(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _seriesPilot.GetBuildAsync(id, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPut("series/builds")]
+    public async Task<ActionResult<ContentSeriesBuildDto>> PutSeriesBuild(
+        [FromBody] UpsertContentSeriesBuildRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _seriesPilot.UpsertBuildAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("series/builds/{id:guid}")]
+    public async Task<IActionResult> DeleteSeriesBuild(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _seriesPilot.DeleteBuildAsync(id, cancellationToken);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("series/voices")]
     public async Task<ActionResult<IReadOnlyList<ContentSeriesVoiceDto>>> ListSeriesVoices(
         CancellationToken cancellationToken) =>
         Ok(await _seriesPilot.ListVoicesAsync(cancellationToken));
+
+    [HttpPost("series/kf-note")]
+    public async Task<ActionResult<ContentSeriesKfNoteDto>> RewriteSeriesKfNote(
+        [FromBody] ContentSeriesKfNoteRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _seriesStill.RewriteNoteAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 
     [HttpPost("series/still")]
     public async Task<ActionResult<ContentSeriesStillDto>> GenerateSeriesStill(
@@ -241,7 +375,8 @@ public sealed class ContentController : ControllerBase
                 request.PublicOwnerId,
                 request.VoiceName,
                 request.VoiceSettings,
-                cancellationToken);
+                cancellationToken,
+                request.Accent);
             return File(bytes, "audio/mpeg");
         }
         catch (InvalidOperationException ex)

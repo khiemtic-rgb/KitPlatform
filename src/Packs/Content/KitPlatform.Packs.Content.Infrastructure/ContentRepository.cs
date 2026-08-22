@@ -176,6 +176,22 @@ internal sealed class ContentRepository
         public DateTimeOffset UpdatedAt { get; set; }
     }
 
+    public sealed class SeriesBuildRow
+    {
+        public Guid Id { get; set; }
+        public string SeriesCode { get; set; } = "";
+        public string EpisodeCode { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string Status { get; set; } = "draft";
+        public int ShotCount { get; set; }
+        public int VoiceLines { get; set; }
+        public int KfCount { get; set; }
+        public int VideoCount { get; set; }
+        public string GraphJson { get; set; } = "{}";
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
+    }
+
     public async Task<OrgSettingsRow> GetOrgSettingsAsync(CancellationToken ct)
     {
         const string sql = """
@@ -1536,5 +1552,132 @@ internal sealed class ContentRepository
             GraphJson = string.IsNullOrWhiteSpace(graphJson) ? "{}" : graphJson,
         });
         return row;
+    }
+
+    public async Task<IReadOnlyList<SeriesBuildRow>> ListSeriesBuildsAsync(string seriesCode, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT
+                id AS Id,
+                series_code AS SeriesCode,
+                episode_code AS EpisodeCode,
+                title AS Title,
+                status AS Status,
+                shot_count AS ShotCount,
+                voice_lines AS VoiceLines,
+                kf_count AS KfCount,
+                video_count AS VideoCount,
+                '{}'::text AS GraphJson,
+                created_at AS CreatedAt,
+                updated_at AS UpdatedAt
+            FROM pack_content.series_build
+            WHERE series_code = @SeriesCode
+            ORDER BY updated_at DESC
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        var rows = await conn.QueryAsync<SeriesBuildRow>(sql, new { SeriesCode = seriesCode });
+        return rows.ToList();
+    }
+
+    public async Task<SeriesBuildRow?> GetSeriesBuildAsync(Guid id, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT
+                id AS Id,
+                series_code AS SeriesCode,
+                episode_code AS EpisodeCode,
+                title AS Title,
+                status AS Status,
+                shot_count AS ShotCount,
+                voice_lines AS VoiceLines,
+                kf_count AS KfCount,
+                video_count AS VideoCount,
+                graph_json::text AS GraphJson,
+                created_at AS CreatedAt,
+                updated_at AS UpdatedAt
+            FROM pack_content.series_build
+            WHERE id = @Id
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.QuerySingleOrDefaultAsync<SeriesBuildRow>(sql, new { Id = id });
+    }
+
+    public async Task<SeriesBuildRow> UpsertSeriesBuildAsync(
+        Guid id,
+        string seriesCode,
+        string episodeCode,
+        string title,
+        string status,
+        int shotCount,
+        int voiceLines,
+        int kfCount,
+        int videoCount,
+        string graphJson,
+        CancellationToken ct)
+    {
+        const string sql = """
+            INSERT INTO pack_content.series_build (
+                id, series_code, episode_code, title, status,
+                shot_count, voice_lines, kf_count, video_count, graph_json, created_at, updated_at)
+            VALUES (
+                @Id, @SeriesCode, @EpisodeCode, @Title, @Status,
+                @ShotCount, @VoiceLines, @KfCount, @VideoCount, CAST(@GraphJson AS jsonb), NOW(), NOW())
+            ON CONFLICT (id) DO UPDATE SET
+                series_code = EXCLUDED.series_code,
+                episode_code = EXCLUDED.episode_code,
+                title = EXCLUDED.title,
+                status = EXCLUDED.status,
+                shot_count = EXCLUDED.shot_count,
+                voice_lines = EXCLUDED.voice_lines,
+                kf_count = EXCLUDED.kf_count,
+                video_count = EXCLUDED.video_count,
+                graph_json = EXCLUDED.graph_json,
+                updated_at = NOW()
+            RETURNING
+                id AS Id,
+                series_code AS SeriesCode,
+                episode_code AS EpisodeCode,
+                title AS Title,
+                status AS Status,
+                shot_count AS ShotCount,
+                voice_lines AS VoiceLines,
+                kf_count AS KfCount,
+                video_count AS VideoCount,
+                graph_json::text AS GraphJson,
+                created_at AS CreatedAt,
+                updated_at AS UpdatedAt
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.QuerySingleAsync<SeriesBuildRow>(sql, new
+        {
+            Id = id,
+            SeriesCode = seriesCode,
+            EpisodeCode = episodeCode,
+            Title = title,
+            Status = status,
+            ShotCount = shotCount,
+            VoiceLines = voiceLines,
+            KfCount = kfCount,
+            VideoCount = videoCount,
+            GraphJson = string.IsNullOrWhiteSpace(graphJson) ? "{}" : graphJson,
+        });
+    }
+
+    public async Task<bool> DeleteSeriesBuildAsync(Guid id, CancellationToken ct)
+    {
+        const string sql = "DELETE FROM pack_content.series_build WHERE id = @Id";
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.ExecuteAsync(sql, new { Id = id }) > 0;
+    }
+
+    public async Task SetSeriesPilotActiveBuildAsync(string seriesCode, Guid? buildId, CancellationToken ct)
+    {
+        const string sql = """
+            UPDATE pack_content.series_pilot
+            SET active_build_id = @BuildId, updated_at = NOW()
+            WHERE series_code = @SeriesCode
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new { SeriesCode = seriesCode, BuildId = buildId });
     }
 }

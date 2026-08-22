@@ -481,6 +481,22 @@ export async function startContentSeriesTurbo(body: {
   return data;
 }
 
+export async function rewriteContentSeriesKfNote(body: {
+  note: string;
+  action?: string;
+  location?: string;
+}) {
+  const { data } = await http.post<{
+    instruction: string;
+    place: boolean;
+    lighting: boolean;
+    wardrobe: boolean;
+    camera: boolean;
+    inherit: boolean;
+  }>('/content/series/kf-note', body, { timeout: 60_000 });
+  return data;
+}
+
 export async function generateContentSeriesStill(body: {
   prompt: string;
   aspect: string;
@@ -497,6 +513,77 @@ export async function generateContentSeriesStill(body: {
 export async function getContentSeriesTurbo(taskId: string) {
   const { data } = await http.get<ContentSeriesTurboTask>(`/content/series/turbo/${encodeURIComponent(taskId)}`);
   return data;
+}
+
+async function fetchTakeViaBrowser(src: string) {
+  const res = await fetch(src, { mode: 'cors' });
+  if (!res.ok) throw new Error(`Link take HTTP ${res.status}.`);
+  const blob = await res.blob();
+  if (blob.size < 80) throw new Error('Link take trống.');
+  const type = (blob.type || '').toLowerCase();
+  if (type.includes('json') || type.startsWith('text/')) throw new Error('URL không trả file video.');
+  return blob;
+}
+
+export async function assembleContentSeriesCut(body: {
+  fileStem: string;
+  aspect?: '16:9' | '9:16';
+  clips: {
+    code: string;
+    videoUrl: string;
+    seconds: number;
+    usableStart?: number;
+    usableEnd?: number;
+    voices: { lineId: string; startSec: number; audioBase64: string; mime?: string }[];
+  }[];
+}) {
+  const { data, headers } = await http.post<Blob>('/content/series/assemble', body, {
+    responseType: 'blob',
+    timeout: 600_000,
+  });
+  const type = String(headers['content-type'] ?? data.type ?? '');
+  if (type.includes('json') || data.size < 80) {
+    throw new Error(await readBlobMessage(data, 'Không ghép được tập.'));
+  }
+  return data;
+}
+
+export async function fetchContentSeriesTake(url: string) {
+  const src = (url ?? '').trim();
+  if (!src) throw new Error('Chưa có link take.');
+  if (/^(blob:|data:)/i.test(src)) {
+    const res = await fetch(src);
+    if (!res.ok) throw new Error('Không đọc được take trên máy.');
+    return res.blob();
+  }
+  try {
+    const { data, headers } = await http.post<Blob>(
+      '/content/series/take-proxy',
+      { url: src },
+      { responseType: 'blob', timeout: 120_000 },
+    );
+    const type = String(headers['content-type'] ?? data.type ?? '');
+    if (type.includes('json') || (data.size < 80 && !type.includes('video'))) {
+      throw new Error(await readBlobMessage(data, 'Không tải được take.'));
+    }
+    return data;
+  } catch (e) {
+    const status = isAxiosError(e) ? e.response?.status : undefined;
+    let msg = 'Không tải được take.';
+    if (isAxiosError(e) && e.response?.data instanceof Blob) {
+      msg = await readBlobMessage(e.response.data, msg);
+    } else if (e instanceof Error && e.message.trim()) {
+      msg = e.message.trim();
+    }
+    if (status === 404) {
+      msg = 'API chưa có take-proxy. Restart KitPlatform.Api (:5290) rồi Tải lại.';
+    }
+    try {
+      return await fetchTakeViaBrowser(src);
+    } catch {
+      throw new Error(msg);
+    }
+  }
 }
 
 export type ContentSeriesScriptDraft = {
@@ -551,6 +638,51 @@ export async function putContentSeriesPilot(body: { seriesCode?: string; graph: 
   return data;
 }
 
+export type ContentSeriesBuildSummary = {
+  id: string;
+  seriesCode: string;
+  episodeCode: string;
+  title: string;
+  status: string;
+  shotCount: number;
+  voiceLines: number;
+  kfCount: number;
+  videoCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ContentSeriesBuild = ContentSeriesBuildSummary & {
+  graph: Record<string, unknown>;
+};
+
+export async function fetchContentSeriesBuilds(code = 'FAMIXA') {
+  const { data } = await http.get<ContentSeriesBuildSummary[]>('/content/series/builds', { params: { code } });
+  return data ?? [];
+}
+
+export async function fetchContentSeriesBuild(id: string) {
+  const { data } = await http.get<ContentSeriesBuild>(`/content/series/builds/${id}`);
+  return data;
+}
+
+export async function putContentSeriesBuild(body: {
+  id?: string;
+  seriesCode?: string;
+  graph: Record<string, unknown>;
+}) {
+  const { data } = await http.put<ContentSeriesBuild>('/content/series/builds', {
+    id: body.id,
+    seriesCode: body.seriesCode ?? 'FAMIXA',
+    graph: body.graph,
+  });
+  return data;
+}
+
+export async function deleteContentSeriesBuild(id: string) {
+  await http.delete(`/content/series/builds/${id}`);
+}
+
 export async function fetchContentSeriesVoices() {
   const { data } = await http.get<ContentSeriesVoice[]>('/content/series/voices', { timeout: 60_000 });
   return data;
@@ -570,12 +702,13 @@ export async function previewContentSeriesTts(body: {
   text: string;
   publicOwnerId?: string;
   voiceName?: string;
+  accent?: string;
   stability?: number;
   similarityBoost?: number;
   style?: number;
   speed?: number;
 }) {
-  const spoken = (body.text ?? '').trim();
+  const spoken = (body.text ?? '').replace(/\[[^\]]+\]\s*/g, '').replace(/\s+/g, ' ').trim();
   if (spoken.length < 1) throw new Error('Câu thoại quá ngắn để đọc.');
   if (looksLikeScreenplayTts(spoken)) {
     throw new Error('TTS chỉ nhận Voice Script (thoại CHAR). Không gửi heading/cảnh/action.');
@@ -590,6 +723,7 @@ export async function previewContentSeriesTts(body: {
         text: spoken,
         publicOwnerId: body.publicOwnerId,
         voiceName: body.voiceName,
+        accent: body.accent,
         voiceSettings: {
           stability: body.stability,
           similarityBoost: body.similarityBoost,
@@ -604,20 +738,20 @@ export async function previewContentSeriesTts(body: {
     );
     const type = String(headers['content-type'] ?? data.type ?? '');
     if (type.includes('json') || (data.size < 80 && !type.includes('audio'))) {
-      throw new Error(await readBlobMessage(data));
+      throw new Error(await readBlobMessage(data, 'Không tạo được tiếng.'));
     }
     return data;
   } catch (e) {
     if (isAxiosError(e) && e.response?.data instanceof Blob) {
-      throw new Error(await readBlobMessage(e.response.data));
+      throw new Error(await readBlobMessage(e.response.data, 'Không tạo được tiếng.'));
     }
     throw e;
   }
 }
 
-async function readBlobMessage(blob: Blob) {
+async function readBlobMessage(blob: Blob, fallback = 'Không đọc được phản hồi.') {
   const raw = await blob.text();
-  let message = raw || 'Không tạo được tiếng.';
+  let message = raw || fallback;
   try {
     const parsed = JSON.parse(raw) as { message?: string; title?: string };
     message = (parsed.message || parsed.title || message).trim();

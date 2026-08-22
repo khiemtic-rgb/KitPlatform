@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   App,
@@ -8,6 +8,7 @@ import {
   Drawer,
   Select,
   Space,
+  Spin,
   Table,
   Tabs,
   Tag,
@@ -22,9 +23,32 @@ import {
 import { Link } from 'react-router-dom';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { CONTENT_NAV_SETUP } from '@/modules/content/content-nav';
-import { ContentFamixaSeriesTab } from '@/modules/content/ContentFamixaSeriesTab';
-import { ContentVideoLabTab } from '@/modules/content/ContentVideoLabTab';
-import '@/modules/content/content-famixa-studio.css';
+
+const ContentFamixaSeriesTab = lazy(() =>
+  import('@/modules/content/ContentFamixaSeriesTab').then((m) => ({ default: m.ContentFamixaSeriesTab })),
+);
+const ContentVideoLabTab = lazy(() =>
+  import('@/modules/content/ContentVideoLabTab').then((m) => ({ default: m.ContentVideoLabTab })),
+);
+
+function TabFallback({ tip }: { tip: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+      <Spin tip={tip} />
+    </div>
+  );
+}
+
+function SeriesOpeningShell() {
+  return (
+    <div style={{ padding: '16px 8px' }}>
+      <Typography.Title level={5} style={{ margin: '0 0 8px' }}>
+        Kịch bản
+      </Typography.Title>
+      <Typography.Text type="secondary">Đang nạp Series — tab đã mở, không chờ Factory.</Typography.Text>
+    </div>
+  );
+}
 import {
   approveContentVideoJob,
   createContentVideoJobFromPackage,
@@ -151,6 +175,11 @@ export function ContentVideosPage() {
   const [creatomateConfigured, setCreatomateConfigured] = useState(false);
   const [elevenLabsConfigured, setElevenLabsConfigured] = useState(false);
   const [mainTab, setMainTab] = useState('series');
+  const [seriesMount, setSeriesMount] = useState(false);
+  useEffect(() => {
+    const t = window.requestAnimationFrame(() => setSeriesMount(true));
+    return () => window.cancelAnimationFrame(t);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -177,8 +206,9 @@ export function ContentVideosPage() {
   }, [message]);
 
   useEffect(() => {
+    if (mainTab !== 'factory') return;
     void load();
-  }, [load]);
+  }, [load, mainTab]);
 
   useEffect(() => {
     setSelectedIds([]);
@@ -369,13 +399,34 @@ export function ContentVideosPage() {
       <Tabs
         activeKey={mainTab}
         onChange={setMainTab}
+        destroyInactiveTabPane
         items={[
-          { key: 'series', label: 'Series Famixa — EP01', children: <ContentFamixaSeriesTab /> },
-          { key: 'lab', label: 'Phase 1 — bảng sản xuất', children: <ContentVideoLabTab /> },
+          {
+            key: 'series',
+            label: 'Series Famixa — EP01',
+            children:
+              mainTab === 'series' && seriesMount ? (
+                <Suspense fallback={<SeriesOpeningShell />}>
+                  <ContentFamixaSeriesTab />
+                </Suspense>
+              ) : (
+                <SeriesOpeningShell />
+              ),
+          },
+          {
+            key: 'lab',
+            label: 'Phase 1 — bảng sản xuất',
+            children:
+              mainTab === 'lab' ? (
+                <Suspense fallback={<TabFallback tip="Đang mở Lab…" />}>
+                  <ContentVideoLabTab />
+                </Suspense>
+              ) : null,
+          },
           {
             key: 'factory',
             label: 'Factory (góc brand)',
-            children: (
+            children: mainTab === 'factory' ? (
               <div>
                 {(!creatomateConfigured || !elevenLabsConfigured) && (
                   <Alert
@@ -524,7 +575,7 @@ export function ContentVideosPage() {
         ]}
       />
               </div>
-            ),
+            ) : null,
           },
         ]}
       />

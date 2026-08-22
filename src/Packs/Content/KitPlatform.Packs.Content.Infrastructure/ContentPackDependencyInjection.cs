@@ -39,6 +39,11 @@ public static class ContentPackDependencyInjection
             c.BaseAddress = new Uri("https://queue.fal.run/");
             c.Timeout = TimeSpan.FromMinutes(3);
         });
+        services.AddHttpClient("content-take-proxy", c =>
+        {
+            c.Timeout = TimeSpan.FromMinutes(2);
+            c.DefaultRequestHeaders.UserAgent.ParseAdd("KitPlatform-Content-TakeProxy/1.0");
+        });
         services.AddHttpClient("content-facebook", c => c.Timeout = TimeSpan.FromSeconds(30));
 
         services.AddScoped<ContentRepository>();
@@ -51,6 +56,8 @@ public static class ContentPackDependencyInjection
         services.AddScoped<IContentPublishService, ContentPublishService>();
         services.AddScoped<IContentVideoService, ContentVideoService>();
         services.AddScoped<IContentSeriesTurboService, ContentSeriesTurboService>();
+        services.AddScoped<IContentSeriesTakeProxyService, ContentSeriesTakeProxyService>();
+        services.AddScoped<IContentSeriesAssembleService, ContentSeriesAssembleService>();
         services.AddScoped<IContentSeriesStillService, ContentSeriesStillService>();
         services.AddScoped<IContentSeriesScriptDraftService, ContentSeriesScriptDraftService>();
         services.AddScoped<IContentSeriesPilotService, ContentSeriesPilotService>();

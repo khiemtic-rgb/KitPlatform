@@ -515,10 +515,30 @@ internal sealed class ContentWorkQueueService : IContentWorkQueueService
             {
                 ContentWorkStatuses.Queued => "Đang chờ worker.",
                 ContentWorkStatuses.Running => "Worker đang xử lý.",
-                ContentWorkStatuses.Succeeded => "Xong.",
+                ContentWorkStatuses.Succeeded => SucceededMessage(r.ResultJson),
                 ContentWorkStatuses.Failed => r.ErrorMessage ?? "Thất bại.",
                 _ => r.Status,
             });
+
+    private static string SucceededMessage(string? resultJson)
+    {
+        if (string.IsNullOrWhiteSpace(resultJson) || resultJson.Trim() == "{}")
+            return "Xong.";
+        try
+        {
+            using var doc = JsonDocument.Parse(resultJson);
+            if (doc.RootElement.TryGetProperty("message", out var m))
+            {
+                var s = m.GetString();
+                if (!string.IsNullOrWhiteSpace(s)) return s;
+            }
+        }
+        catch
+        {
+            /* keep default */
+        }
+        return "Xong.";
+    }
 
     private sealed class PublishPayload
     {

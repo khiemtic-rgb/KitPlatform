@@ -1,6 +1,6 @@
 /** Voice Script = dialogue-only production artifact. Screenplay stays Story SoT. */
 
-import { isNonStoryLine, looksLikeSpokenLine } from './content-famixa-story-parse';
+import { isNonStoryLine, looksLikeSpokenLine, looksLikeVoiceDirection } from './content-famixa-story-parse';
 import type { FamixaListenCue, FamixaSceneNode, SeriesPilotState } from './content-famixa-series';
 
 export type VoicePreviewStatus = 'idle' | 'incomplete' | 'complete';
@@ -57,6 +57,7 @@ export function isNotSpokenDialogue(text: string, speaker?: string) {
   if (/^(?:INT|EXT)\.?\s/i.test(s)) return true;
   if (/^(?:CUT TO BLACK|CUT TO|FADE OUT|FADE IN|KẾT THÚC|END)\.?\s*$/i.test(s)) return true;
   if (/^(VIDEO[ _]?ID|VIDEO[ _]?TITLE|TARGET DURATION|FORMAT|CONTINUITY)\s*:/i.test(s)) return true;
+  if (looksLikeVoiceDirection(s)) return true;
   return false;
 }
 
@@ -228,7 +229,7 @@ export function voiceLockBlockReason(state: SeriesPilotState): string | undefine
   const missing = script.lines.filter((l) => !l.voiceId);
   if (missing.length) {
     const names = [...new Set(missing.map((l) => l.name || l.characterId))].slice(0, 4).join(', ');
-    return `Gán Voice Canon cho: ${names}.`;
+    return `Gán Voice Canon cho: ${names}. Lời bình chỉ cần giọng nam miền Bắc — không cần ảnh Canon.`;
   }
   if (voicePreviewCoversScript(script, state.voicePreview)) return undefined;
   const issue = (state.voicePreview?.issues ?? [])[0];

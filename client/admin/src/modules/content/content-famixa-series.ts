@@ -3,8 +3,13 @@
 import { parseEpisodeStory } from './content-famixa-story-parse';
 import { ensureStoryMemory, inheritStoryMemory, needsInheritanceReview, type FamixaStoryMemory } from './content-famixa-story-memory';
 import { deriveVoiceScript, mergeVoiceGenerated, voiceProductionReady, type FamixaVoicePreview } from './content-famixa-voice-script';
-import { canonPixelsOf, loadCanonPixels, rememberCanonFromChars, rememberCanonPixels, saveCanonPixels } from './content-famixa-canon-store';
-import { famixaCanonSeedFor, fetchFamixaCanonSeedDataUrl } from './content-famixa-canon-seed';
+import { canonPixelsOf, loadCanonPixels, rememberCanonFromChars, rememberCanonPixels } from './content-famixa-canon-store';
+import { kfPixelsOf, loadKfPixels, rememberKfFromRuns, rememberKfPixels, saveKfPixels } from './content-famixa-kf-store';
+import { famixaCanonSeedFor } from './content-famixa-canon-seed';
+import { displayUrlForData, stripJsonDataUrls } from './content-famixa-blob-url';
+import { englishI2vMotion, I2V_VI_RE } from './content-famixa-i2v-en';
+import { ACTING_LAW_LOCK, actingI2vBrief, actingOfShot, inferActingDirection } from './content-famixa-acting-law';
+import { setFamixaMediaScope } from './content-famixa-media-scope';
 
 export type SeriesShotStatus =
   | 'story_locked'
@@ -42,7 +47,17 @@ export type FamixaSeriesShot = {
   sceneId?: string;
   characterIds?: string[];
   previousShotId?: string;
+  nextShotId?: string;
   inheritFromShotId?: string;
+  /** Script beat this shot was decomposed from. No beat → not production. */
+  beatId?: string;
+  beatText?: string;
+  /** Explicit Voice Script line ids. [] = NONE. Missing = not locked yet. */
+  dialogueSegmentIds?: string[];
+  /** Auto Short nối thoại >10s — cùng Action/KF với shot gốc. Không bịa beat. */
+  voiceChainFrom?: string;
+  /** Edit length from voice + pause. I2V stays 5 or 10; assemble trims. */
+  editSeconds?: number;
 };
 
 export type FamixaSeriesEpisode = {
@@ -126,6 +141,8 @@ export type FamixaSceneNode = {
   content?: string;
   actions?: string[];
   dialogue?: FamixaSceneDialogue[];
+  /** Script beats that produced shots. Shot graph follows these, not a target count. */
+  scriptBeats?: { id: string; text: string; shotIds: string[] }[];
 };
 
 export type FamixaLine = {
@@ -183,7 +200,7 @@ export const SC02_CONTINUITY_SEED: SceneContinuityLock = {
   position: 'Nam trái · Minh giữa · Linh phải.',
   environment: 'Bữa cơm tối. Cùng phòng, bàn, món, cửa sổ, nội thất, ánh sáng đêm. Tone ấm.',
   camera: 'Eye-level, 35mm, chuyển động rất nhẹ. Không shake, pan, rotation, cut.',
-  performance: 'Đời thường, tiết chế. Không gesture lớn. Không nhìn camera. Không thêm hành động ngoài Shot Action.',
+  performance: ACTING_LAW_LOCK,
   locked: false,
 };
 
@@ -224,9 +241,16 @@ function codeMatch(raw: string | undefined, kind: 'EP' | 'SC' | 'SH') {
   return raw?.match(new RegExp(`${kind}\\s*\\d+`, 'i'))?.[0]?.replace(/\s+/g, '').toUpperCase();
 }
 
-export function studioShotCode(shot?: FamixaSeriesShot) {
+export function studioShotCode(shot?: FamixaSeriesShot, allShots?: FamixaSeriesShot[]) {
   if (!shot) return 'SH';
-  return codeMatch(shot.shot, 'SH') || codeMatch(shot.id, 'SH') || 'SH';
+  if (allShots?.length) {
+    const i = allShots.findIndex((s) => s.id === shot.id);
+    if (i >= 0) return `SH01-${String(i + 1).padStart(2, '0')}`;
+  }
+  const frame = (codeMatch(shot.shot, 'SH') || codeMatch(shot.id, 'SH') || 'SH01')
+    .replace(/\D/g, '')
+    .padStart(2, '0');
+  return `SH01-${frame}`;
 }
 
 export function studioSceneCode(shot?: FamixaSeriesShot, episode?: FamixaSeriesEpisode) {
@@ -329,20 +353,12 @@ export function inheritedTurboPrompt(lock: SceneContinuityLock, action: string) 
 }
 
 function compileLockPrompt(lock: SceneContinuityLock, action: string, seconds = 5) {
-  const act = action.replace(/\s+/g, ' ').trim();
   const src = lock.sourceShotId || lock.id;
-  const wardrobe = clipMem(lock.wardrobe, 140);
-  const pos = clipMem(lock.position, 80);
-  const env = clipMem(lock.environment, 140);
-  const cam = clipMem(lock.camera, 80);
+  const motion = englishI2vMotion(action, seconds);
+  const acting = actingI2vBrief(inferActingDirection({ action }));
   return (
-    `Same scene as ${src}. ` +
-    (wardrobe ? `Wardrobe locked: ${wardrobe}. ` : 'Same wardrobe. ') +
-    (pos ? `Seats: ${pos}. ` : '') +
-    (env ? `${env} ` : 'Same room, table, food, night light. ') +
-    (cam ? `Camera: ${cam} ` : '') +
-    `Only this action: ${act || 'subtle natural motion at the table.'} ` +
-    `Do not change clothes, faces, age, props or location. No looking at the camera. ${seconds} seconds.`
+    `Same scene as ${src}. Same wardrobe, seats and lighting as the still. ` +
+    `${motion} ${acting}`
   );
 }
 
@@ -377,19 +393,30 @@ export type SeriesShotRun = {
   keyframeDataUrl?: string;
   keyframeFileName?: string;
   keyframePath?: string;
-  /** Shot LOCK mà KF này copy từ đó (cùng khung cảnh). */
+  /** Shot LOCK mà KF này copy từ đó (cùng khung cảnh). Pixel copy only — not “drew from previous ref”. */
   keyframeInheritedFrom?: string;
+  /** Operator duyệt KF. AI still starts as draft. */
+  kfApproved?: boolean;
   /** Operator ép KF mới — bỏ plan REUSE. */
   kfForceNew?: boolean;
+  /** Continuity instruction after KIT rewrite — not the raw user complaint. */
+  kfTechNote?: string;
+  /** Shot dư — không sản xuất. */
+  prodSkip?: boolean;
   /** What we send to Runway — not the Story pack. */
   runwayMotion?: string;
   runwayNegative?: string;
   /** Only the delta for this shot — inherits scene continuity. */
   shotAction?: string;
   continuity?: Partial<Record<ContinuityGateId, boolean>>;
+  startState?: import('./content-famixa-continuity-chain').ShotBeatState;
+  endState?: import('./content-famixa-continuity-chain').ShotBeatState;
+  transitionType?: import('./content-famixa-continuity-chain').TransitionType;
 };
 
 export type SeriesPilotState = {
+  /** pack_content.series_build.id — namespaces local KF/TTS. */
+  buildId?: string;
   roles: SeriesRoleRow[];
   runs: Record<string, SeriesShotRun>;
   episode?: FamixaSeriesEpisode;
@@ -411,11 +438,27 @@ export type SeriesPilotState = {
   parseVersion?: number;
   storyVersion?: number;
   storyReviewed?: boolean;
+  /** Operator approved beat → shot split. Empty SH pruned. */
+  shotGraphLocked?: boolean;
   /** Long-form Series/Season/Episode/CHAR/relationship memory — not visual continuity. */
   storyMemory?: FamixaStoryMemory;
   /** Full Voice duyệt xong mới I2V / short. */
   voiceLocked?: boolean;
   voicePreview?: FamixaVoicePreview;
+  /** TTS production assets — duration survives F5 via this graph + IndexedDB. */
+  voiceAssets?: Record<string, FamixaVoiceAsset>;
+  /** Per-scene continuity lock. Shot inherits; Action is the only delta. */
+  sceneMasters?: Record<string, import('./content-famixa-scene-first').SceneMaster>;
+  /** Preview range signed off — required for full-EP Final, not for a test cut. */
+  previewApproved?: boolean;
+};
+
+export type FamixaVoiceAsset = {
+  lineId: string;
+  shotId?: string;
+  characterId?: string;
+  duration: number;
+  status: 'ready';
 };
 
 function sceneCodeOf(scene?: string) {
@@ -425,20 +468,129 @@ function sceneCodeOf(scene?: string) {
 export function appendSceneShot(state: SeriesPilotState, scene?: string) {
   const ep = state.episode ?? emptyEpisode();
   const sc = sceneCodeOf(scene || ep.shots.at(-1)?.scene) || 'SC01';
-  const n = ep.shots.filter((s) => sceneCodeOf(s.scene) === sc).length + 1;
-  const last = ep.shots.filter((s) => sceneCodeOf(s.scene) === sc).at(-1);
-  const shot = newSceneShot(sc, n);
-  if (last) {
-    const ids = shotCharacterIds(last);
+  const lastInScene = ep.shots.filter((s) => sceneCodeOf(s.scene) === sc).at(-1);
+  return insertSceneShot(state, { scene: sc, afterId: lastInScene?.id });
+}
+
+/** Test helper only. Production UI must not pad empty SH to hit a count. */
+export function padSceneShots(state: SeriesPilotState, scene?: string, count = 6) {
+  const n = Math.max(1, Math.min(12, Math.floor(count)));
+  const sc = sceneCodeOf(scene || state.episode?.shots.at(-1)?.scene) || 'SC01';
+  let cur = state;
+  const added: FamixaSeriesShot[] = [];
+  const inScene = () =>
+    (cur.episode?.shots ?? []).filter(
+      (s) => sceneCodeOf(s.scene) === sc || sceneCodeOf(s.sceneId) === sc,
+    );
+  while (inScene().length < n) {
+    const next = appendSceneShot(cur, sc);
+    cur = next.state;
+    added.push(next.shot);
+  }
+  return { state: cur, added, scene: sc };
+}
+
+function nextSceneShotIndex(shots: FamixaSeriesShot[], scene: string, mode: 'first-free' | 'after-max') {
+  const used = shots
+    .filter((s) => sceneCodeOf(s.scene) === scene || sceneCodeOf(s.sceneId) === scene)
+    .map((s) => Number((codeMatch(s.shot, 'SH') || codeMatch(s.id, 'SH') || 'SH0').replace(/\D/g, '') || 0));
+  if (mode === 'after-max') return Math.max(0, ...used) + 1;
+  let n = 1;
+  const set = new Set(used);
+  while (set.has(n)) n += 1;
+  return n;
+}
+
+export function insertSceneShot(
+  state: SeriesPilotState,
+  opts?: { beforeId?: string; afterId?: string; scene?: string },
+) {
+  const ep = state.episode ?? emptyEpisode();
+  const all = ep.shots;
+  const neighbor = all.find((s) => s.id === (opts?.beforeId || opts?.afterId));
+  const sc =
+    sceneCodeOf(opts?.scene || neighbor?.scene || neighbor?.sceneId || all[0]?.scene) || 'SC01';
+  const shot = newSceneShot(
+    sc,
+    nextSceneShotIndex(all, sc, opts?.beforeId ? 'first-free' : 'after-max'),
+  );
+  if (neighbor) {
+    const ids = shotCharacterIds(neighbor);
     shot.characterIds = ids;
     shot.characters = ids;
-    shot.sceneId = last.sceneId || sc;
-    shot.previousShotId = last.id;
+    shot.sceneId = neighbor.sceneId || sc;
+    shot.location = neighbor.location;
+    shot.seconds = neighbor.seconds || 5;
+  }
+  let shots = all;
+  if (opts?.beforeId) {
+    const i = all.findIndex((s) => s.id === opts.beforeId);
+    shots = i < 0 ? [shot, ...all] : [...all.slice(0, i), shot, ...all.slice(i)];
+  } else if (opts?.afterId) {
+    const i = all.findIndex((s) => s.id === opts.afterId);
+    shots = i < 0 ? [...all, shot] : [...all.slice(0, i + 1), shot, ...all.slice(i + 1)];
+  } else {
+    shots = [...all, shot];
   }
   return {
-    state: ensurePilotGraph({ ...state, episode: { ...ep, shots: [...ep.shots, shot] } }),
+    state: ensurePilotGraph({ ...state, episode: { ...ep, shots } }),
     shot,
   };
+}
+
+/** First pack shot with story — chèn SH01/SH02 trước mốc này, không đảo thứ tự clip mới. */
+export function sceneInsertAnchor(shots: FamixaSeriesShot[]) {
+  return shots.find((s) => (s.story || '').trim()) ?? shots[0];
+}
+
+export function removeSceneShots(state: SeriesPilotState, ids: string[]) {
+  const drop = new Set(ids.filter(Boolean));
+  if (!drop.size) return state;
+  const ep = state.episode ?? emptyEpisode();
+  return {
+    ...state,
+    episode: { ...ep, shots: ep.shots.filter((s) => !drop.has(s.id)) },
+  };
+}
+
+function nextShortId(shorts: FamixaShortClip[]) {
+  const ids = new Set(shorts.map((s) => s.id));
+  let n = 1;
+  while (ids.has(`S${String(n).padStart(2, '0')}`)) n += 1;
+  return `S${String(n).padStart(2, '0')}`;
+}
+
+/** Insert a blank short. beforeId = chèn trước clip đang mở (S04→S08 vẫn giữ KF). */
+export function insertShortClip(
+  state: SeriesPilotState,
+  opts?: { beforeId?: string; afterId?: string },
+) {
+  const shorts = [...(state.shorts ?? [])];
+  const neighbor =
+    shorts.find((s) => s.id === (opts?.beforeId || opts?.afterId)) ?? shorts[0];
+  const row: FamixaShortClip = {
+    id: nextShortId(shorts),
+    hook: '',
+    visual: '',
+    seconds: neighbor?.seconds ?? 7,
+    motionPrompt: '',
+    motionPromptVi: '',
+    scene: neighbor?.scene,
+    sceneId: neighbor?.sceneId,
+    characters: neighbor?.characters ?? [],
+    characterIds: neighbor?.characterIds ?? [],
+  };
+  let next = shorts;
+  if (opts?.beforeId) {
+    const i = shorts.findIndex((s) => s.id === opts.beforeId);
+    next = i < 0 ? [row, ...shorts] : [...shorts.slice(0, i), row, ...shorts.slice(i)];
+  } else if (opts?.afterId) {
+    const i = shorts.findIndex((s) => s.id === opts.afterId);
+    next = i < 0 ? [...shorts, row] : [...shorts.slice(0, i + 1), row, ...shorts.slice(i + 1)];
+  } else {
+    next = [...shorts, row];
+  }
+  return { state: { ...state, shorts: next }, short: row };
 }
 
 /** Khung rỗng — không có chuyện mẫu. */
@@ -510,6 +662,7 @@ export function emptyPilot(): SeriesPilotState {
     parseVersion: 0,
     storyVersion: 0,
     storyReviewed: false,
+    shotGraphLocked: false,
     storyMemory: undefined,
     voiceLocked: false,
     voicePreview: undefined,
@@ -518,10 +671,19 @@ export function emptyPilot(): SeriesPilotState {
 
 export function loadSeriesPilot(): SeriesPilotState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyPilot();
+    if (raw.includes('data:image')) {
+      raw = stripJsonDataUrls(raw);
+      try {
+        localStorage.setItem(STORAGE_KEY, raw);
+      } catch {
+        /* quota */
+      }
+    }
     const v = JSON.parse(raw) as SeriesPilotState;
     const loaded: SeriesPilotState = {
+      buildId: typeof v.buildId === 'string' ? v.buildId : undefined,
       roles: Array.isArray(v.roles) ? v.roles : [],
       runs: v.runs ?? {},
       episode: v.episode,
@@ -541,11 +703,15 @@ export function loadSeriesPilot(): SeriesPilotState {
       parseVersion: typeof v.parseVersion === 'number' ? v.parseVersion : 0,
       storyVersion: typeof v.storyVersion === 'number' ? v.storyVersion : 0,
       storyReviewed: Boolean(v.storyReviewed),
+      shotGraphLocked: v.shotGraphLocked === true ? true : v.shotGraphLocked === false ? false : undefined,
       storyMemory: v.storyMemory && typeof v.storyMemory === 'object' ? v.storyMemory : undefined,
       voiceLocked: Boolean(v.voiceLocked),
       voicePreview: v.voicePreview && typeof v.voicePreview === 'object' ? v.voicePreview : undefined,
+      voiceAssets: v.voiceAssets && typeof v.voiceAssets === 'object' ? v.voiceAssets : undefined,
+      sceneMasters: v.sceneMasters && typeof v.sceneMasters === 'object' ? v.sceneMasters : undefined,
+      previewApproved: Boolean(v.previewApproved),
     };
-    const migrated = ensurePilotGraph(loaded);
+    const migrated = slimPilotForStorage(ensurePilotGraph(loaded));
     if ((loaded.schemaVersion ?? 0) < PILOT_SCHEMA) {
       migrated.schemaVersion = PILOT_SCHEMA;
       saveSeriesPilot(migrated);
@@ -569,11 +735,28 @@ export function slimPilotForStorage(state: SeriesPilotState): SeriesPilotState {
   };
 }
 
-export function saveSeriesPilot(state: SeriesPilotState) {
-  rememberCanonFromChars(state.characters ?? [], state.stills);
+/** Server graph — parsed story only. packDraft stays on the machine. */
+export function slimPilotForServer(state: SeriesPilotState): SeriesPilotState {
   const slim = slimPilotForStorage(state);
+  return { ...slim, packDraft: undefined };
+}
+
+let lastPilotJson = '';
+
+export function saveSeriesPilot(state: SeriesPilotState, preJson?: string) {
+  rememberCanonFromChars(state.characters ?? [], state.stills);
+  rememberKfFromRuns(state.runs);
+  for (const [id, run] of Object.entries(state.runs)) {
+    if (run.keyframeDataUrl?.startsWith('data:image')) {
+      void saveKfPixels(id, run.keyframeDataUrl, run.keyframeFileName);
+    }
+  }
+  const slim = slimPilotForStorage(state);
+  const json = preJson ?? JSON.stringify(slim);
+  if (json === lastPilotJson) return;
+  lastPilotJson = json;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(slim));
+    localStorage.setItem(STORAGE_KEY, json);
     return;
   } catch {
     /* quota — drop pack text next */
@@ -692,7 +875,7 @@ export function continuityFromGraph(
     position: listed.filter((c) => c.seat).map((c) => `${c.name} ${c.seat}`).join(' · ') || scene?.position || base?.position || '',
     environment: scene?.environment || base?.environment || '',
     camera: scene?.camera || base?.camera || '',
-    performance: scene?.performance || base?.performance || '',
+    performance: scene?.performance || base?.performance || ACTING_LAW_LOCK,
     locked: Boolean(base?.locked),
     sourceShotId: base?.sourceShotId || scene?.sourceShotId,
   };
@@ -707,7 +890,7 @@ export function ensurePilotGraph(state: SeriesPilotState): SeriesPilotState {
   for (const row of charsFromContinuityBlob(lock?.characters ?? '')) {
     upsertChar(charMap, row);
   }
-  if (state.packDraft) {
+  if (state.packDraft && charMap.size === 0) {
     for (const row of parseCharLocks(state.packDraft)) {
       upsertChar(charMap, { id: row.code, name: row.name, role: row.role });
     }
@@ -915,21 +1098,42 @@ export function compileI2vPrompt(
     .join('; ');
   const inherit = shot.inheritFromShotId || shot.previousShotId || lock.sourceShotId || scene?.id || lock.id;
   const act = action.replace(/\s+/g, ' ').trim();
-  const wardrobe = clipMem(lock.wardrobe, 140);
-  const pos = clipMem(lock.position, 80);
-  const env = clipMem(scene?.environment || lock.environment, 140);
-  const cam = clipMem(scene?.camera || lock.camera, 80);
+  const names = ids
+    .map((id) => (state.characters ?? []).find((row) => row.id === id)?.name || '')
+    .filter(Boolean)
+    .join(', ');
+  const motion = englishI2vMotion(act, shot.seconds);
+  const idsDlg = shot.dialogueSegmentIds ?? [];
+  const dlg = (state.scenes ?? [])
+    .flatMap((sc) => sc.dialogue ?? [])
+    .filter((d) => idsDlg.includes(d.id));
+  const acting = actingI2vBrief(actingOfShot(dlg, act));
   const ctx = clipMem(videoContext, 280);
+  const ctxEn = ctx && !I2V_VI_RE.test(ctx) ? ctx : '';
+  const run = shotRunOf(state, shot);
+  const start = run.startState;
+  const end = run.endState;
+  const startBit = start
+    ? `START: ${[start.location, start.pose, start.prop, start.lighting, start.camera].filter(Boolean).join('; ')}. `
+    : '';
+  const endBit = end ? `END: ${[end.pose, end.prop, end.facing].filter(Boolean).join('; ')}. ` : '';
+  const startEn = startBit && I2V_VI_RE.test(startBit) ? `${englishI2vMotion(startBit, 5).slice(0, 180)} ` : startBit;
+  const endEn = endBit && I2V_VI_RE.test(endBit) ? `${englishI2vMotion(endBit, 5).slice(0, 140)} ` : endBit;
   const text =
-    `Same scene as ${inherit}. ` +
-    (cast ? `Cast: ${cast}. ` : '') +
-    (wardrobe ? `Wardrobe locked: ${wardrobe}. ` : 'Same wardrobe. ') +
-    (pos ? `Seats: ${pos}. ` : '') +
-    (env ? `${env} ` : 'Same room, table, food, night light. ') +
-    (cam ? `Camera: ${cam} ` : '') +
-    (ctx ? `${ctx} ` : '') +
-    `Only this action: ${act || 'subtle natural motion at the table.'} ` +
-    `Do not change clothes, faces, age, props or location. No looking at the camera. ${shot.seconds || 5} seconds.`;
+    `The still is the first frame. Continue the same scene as ${inherit}. ` +
+    (names ? `Cast: ${names}. ` : cast ? `Cast on graph. ` : '') +
+    startEn +
+    `Keep wardrobe, place, lighting and camera. ` +
+    (ctxEn ? `${ctxEn} ` : '') +
+    motion +
+    ' ' +
+    acting +
+    ' ' +
+    endEn +
+    (shot.dialogueSegmentIds?.length
+      ? ' The character speaks this beat; mouth moves with the spoken line. '
+      : '') +
+    'Do not reset the scene.';
   return text.length <= 900 ? text : text.slice(0, 900);
 }
 
@@ -1023,11 +1227,13 @@ export function characterCanonReady(c?: FamixaCharacter) {
 export type SeriesCanonRef = { name: string; role?: string; imageDataUrl: string };
 
 export function canonDisplayOf(state: SeriesPilotState, characterId: string) {
-  const pixels = canonImageOf(state, characterId);
-  if (pixels) return pixels;
   const id = normCharId(characterId);
   const ch = (state.characters ?? []).find((c) => c.id === id);
-  return famixaCanonSeedFor(ch ?? { id })?.publicPath;
+  const seed = famixaCanonSeedFor(ch ?? { id });
+  const userFile = Boolean(ch?.canonFileName && seed && ch.canonFileName !== seed.fileName);
+  if (seed && !userFile) return seed.publicPath;
+  const pixels = canonImageOf(state, characterId);
+  return displayUrlForData(`canon:${id}`, pixels) || seed?.publicPath;
 }
 
 export function canonImageOf(state: SeriesPilotState, characterId: string) {
@@ -1078,48 +1284,36 @@ export function canonStillRefs(state: SeriesPilotState, characterIds?: string[])
 
 export async function hydratePilotCanon(state: SeriesPilotState): Promise<SeriesPilotState> {
   rememberCanonFromChars(state.characters ?? [], state.stills);
-  let changed = false;
-  const characters: FamixaCharacter[] = [];
   for (const c of state.characters ?? []) {
     if (c.canonImageDataUrl?.startsWith('data:image')) {
-      characters.push(c);
-      continue;
-    }
-    const hit = await loadCanonPixels(c.id);
-    if (hit?.dataUrl?.startsWith('data:image')) {
-      changed = true;
-      characters.push({
-        ...c,
-        canonImageDataUrl: hit.dataUrl,
-        canonFileName: c.canonFileName || hit.fileName,
-      });
+      rememberCanonPixels(c.id, c.canonImageDataUrl, c.canonFileName);
       continue;
     }
     const seed = famixaCanonSeedFor(c);
-    if (!seed) {
-      characters.push(c);
-      continue;
-    }
-    try {
-      const dataUrl = await fetchFamixaCanonSeedDataUrl(seed.publicPath);
-      if (!dataUrl.startsWith('data:image')) {
-        characters.push(c);
-        continue;
-      }
-      await saveCanonPixels(c.id, dataUrl, seed.fileName);
-      changed = true;
-      characters.push({
-        ...c,
-        canonImageDataUrl: dataUrl,
-        canonFileName: c.canonFileName || seed.fileName,
-        canonLocalPath: c.canonLocalPath || seed.publicPath,
-      });
-    } catch {
-      characters.push(c);
-    }
+    const userFile = Boolean(c.canonFileName && seed && c.canonFileName !== seed.fileName);
+    if (seed && !userFile) continue;
+    await loadCanonPixels(c.id);
   }
-  if (!changed) return state;
-  return applyCanonToStills({ ...state, characters });
+  return slimPilotForStorage(state);
+}
+
+/** Restore scene/short KF from IndexedDB after slim graph load. */
+export async function hydratePilotKeyframes(state: SeriesPilotState): Promise<SeriesPilotState> {
+  setFamixaMediaScope(state.buildId);
+  const ids = [
+    ...episodeShots(state).map((s) => s.id),
+    ...(state.shorts ?? []).map((s) => s.id),
+    ...Object.keys(state.runs ?? {}),
+  ];
+  const uniq = [...new Set(ids.filter(Boolean))];
+  rememberKfFromRuns(state.runs ?? {});
+  for (const id of uniq) {
+    const run = state.runs[id];
+    if (run?.keyframeDataUrl?.startsWith('data:image')) continue;
+    if (kfPixelsOf(id)) continue;
+    await loadKfPixels(id);
+  }
+  return state;
 }
 
 export function seriesSceneStillPrompt(opts: {
@@ -1128,18 +1322,27 @@ export function seriesSceneStillPrompt(opts: {
   action?: string;
   location?: string;
   refs: SeriesCanonRef[];
+  continuityNote?: string;
 }) {
-  const who = opts.refs
-    .map((r) => `${r.name}${r.role ? ` (${r.role})` : ''}`)
-    .join(', ');
+  const people = opts.refs.filter((r) => r.role !== 'scene' && !/loi binh|narrator|voice.?over/i.test(`${r.name} ${r.role}`));
+  const who = people.map((r) => `${r.name}${r.role ? ` (${r.role})` : ''}`).join(', ');
   const frame = opts.aspect === '9:16' ? 'vertical 9:16 phone frame' : 'widescreen 16:9 cinematic frame';
+  const action = looksLikePackHeading(opts.action) ? '' : (opts.action ?? '').trim();
+  const visual = looksLikePackHeading(opts.visual) ? '' : (opts.visual ?? '').trim();
   return [
-    `Format: ${frame}.`,
-    who ? `People in scene (match attached portraits): ${who}.` : '',
+    `Format: ${frame}. One photoreal live-action film still of the Action — not a title card.`,
+    'Attached images are FACE/WARDROBE identity only. Copy faces into the scene. NEVER reproduce a character bible, master reference, turnaround, expression grid, contact sheet, or typography.',
+    who ? `People in the scene (faces from refs): ${who}.` : '',
     opts.location ? `Location: ${opts.location.slice(0, 180)}.` : '',
-    opts.visual ? `Scene: ${opts.visual.slice(0, 500)}` : '',
-    opts.action ? `Action: ${opts.action.slice(0, 400)}` : '',
-    'Same Vietnamese family, natural indoor light, photoreal, not anime.',
+    visual ? `Scene lock (do not redesign): ${visual.slice(0, 360)}` : '',
+    action ? `Only change the Action (must be visible): ${action.slice(0, 400)}` : '',
+    opts.refs.some((r) => r.role === 'scene')
+      ? 'Continue the exact same scene from the attached previous keyframe. Preserve character identity, wardrobe, location, lighting, props and time. Only the Action changes. Do not invent a new room or outfit.'
+      : 'Same Vietnamese family, natural indoor night light, photoreal, not anime, not illustration.',
+    opts.continuityNote
+      ? `Continuity lock (operator, already rewritten): ${opts.continuityNote.slice(0, 280)} Do not change the story action or add people.`
+      : '',
+    actingI2vBrief(inferActingDirection({ action, text: action })),
   ]
     .filter(Boolean)
     .join('\n');
@@ -1151,7 +1354,17 @@ export function characterOfRole(state: SeriesPilotState, role: SeriesRoleRow) {
   return (state.characters ?? []).find((c) => c.id === id);
 }
 
+export function isVoiceOnlyRole(
+  role: Pick<SeriesRoleRow, 'title' | 'name' | 'characterId'>,
+  character?: { id?: string; name?: string },
+) {
+  const id = normCharId(role.characterId || character?.id || '');
+  const hay = foldVoiceText([role.characterId, role.title, role.name, character?.id, character?.name].filter(Boolean).join(' '));
+  return id === 'CHAR-VO' || /loi binh|voice.?over|\bnarrator\b/.test(hay);
+}
+
 export function roleCanonReady(state: SeriesPilotState, role: SeriesRoleRow) {
+  if (isVoiceOnlyRole(role, characterOfRole(state, role))) return true;
   return characterCanonReady(characterOfRole(state, role));
 }
 
@@ -1160,7 +1373,7 @@ export function roleVoiceReady(state: SeriesPilotState, role: SeriesRoleRow) {
   return Boolean((ch?.voiceId || role.voiceId || '').trim());
 }
 
-export type FamixaVoiceLaneKey = 'boy' | 'girl' | 'father' | 'mother' | 'man' | 'woman' | 'any';
+export type FamixaVoiceLaneKey = 'boy' | 'girl' | 'father' | 'mother' | 'man' | 'woman' | 'narrator' | 'any';
 
 export type FamixaVoiceLane = {
   key: FamixaVoiceLaneKey;
@@ -1188,17 +1401,37 @@ function foldVoiceText(raw?: string | null) {
     .trim();
 }
 
+export function isChildVoiceLane(lane: FamixaVoiceLane) {
+  return lane.key === 'boy' || lane.key === 'girl';
+}
+
+export function isKidLibraryVoice(v: FamixaVoicePick) {
+  const a = normVoiceAge(v.age);
+  if (a === 'middle_aged' || a === 'old') return false;
+  if (a === 'young') return true;
+  return /boy|girl|child|kid|teen|be trai|be gai|cau be|co be|tre em|hoc sinh/.test(voiceHay(v));
+}
+
 export function voiceLaneForRole(
   role: Pick<SeriesRoleRow, 'title' | 'name' | 'characterId'>,
   character?: { id?: string; name?: string },
 ): FamixaVoiceLane {
   const id = normCharId(role.characterId || character?.id || '');
   const hay = foldVoiceText([role.characterId, role.title, role.name, character?.id, character?.name].filter(Boolean).join(' '));
-  if (/be gai|con gai|co be|nu nhi/.test(hay)) {
-    return { key: 'girl', label: 'bé gái miền Bắc', gender: 'female', ages: ['young'] };
+  if (id === 'CHAR-VO' || /loi binh|voice.?over|\bnarrator\b/.test(hay)) {
+    return { key: 'narrator', label: 'lời bình miền Bắc', gender: 'male', ages: ['middle_aged'] };
   }
-  if (id === 'CHAR-001' || /\bminh\b/.test(hay) || /be trai|cau be|con trai|\bcon\b/.test(hay)) {
-    return { key: 'boy', label: 'bé trai miền Bắc', gender: 'male', ages: ['young'] };
+  if (
+    id === 'CHAR-001' ||
+    id === 'CHAR-004' ||
+    /\bminh\b/.test(hay) ||
+    (/\ban\b/.test(hay) && !/\b(nam|linh)\b/.test(hay)) ||
+    /be trai|cau be|con trai|ban an/.test(hay)
+  ) {
+    return { key: 'boy', label: 'bé trai 11 tuổi miền Bắc', gender: 'male', ages: ['young'] };
+  }
+  if (/be gai|con gai|co be|nu nhi/.test(hay)) {
+    return { key: 'girl', label: 'bé gái 11 tuổi miền Bắc', gender: 'female', ages: ['young'] };
   }
   if (id === 'CHAR-003' || /\blinh\b/.test(hay) || /\bme\b/.test(hay) || /phu huynh nu/.test(hay)) {
     return { key: 'mother', label: 'phụ huynh nữ miền Bắc', gender: 'female', ages: ['middle_aged'] };
@@ -1244,19 +1477,32 @@ function voiceHay(v: FamixaVoicePick) {
   return foldVoiceText([v.accent, v.name, v.gender, v.age].filter(Boolean).join(' '));
 }
 
-function isSouthernOrCentralVoice(v: FamixaVoicePick) {
-  return /southern|south viet|saigon|sai gon|ho chi minh|mien nam|mekong|central|mien trung|hue|da nang|nha trang/.test(voiceHay(v));
+export function isSouthernOrCentralVoice(v: FamixaVoicePick) {
+  return /southern|\bsouth\b|south viet|saigon|sai.?gon|ho chi minh|\bhcm\b|mien nam|nam ky|giong nam|mekong|can tho|cantho|vung tau|bien hoa|dong nai|central|mien trung|hue|da nang|nha trang/.test(
+    voiceHay(v),
+  );
 }
 
-function isNorthernVoice(v: FamixaVoicePick) {
-  return /northern|north viet|hanoi|ha noi|ha-noi|mien bac|giong bac|bac ky|hai phong|nam dinh/.test(voiceHay(v));
+export function isNorthernVoice(v: FamixaVoicePick) {
+  return /northern|north viet|hanoi|ha noi|ha-noi|ha noi|mien bac|giong bac|bac ky|hai phong|nam dinh|thai nguyen/.test(
+    voiceHay(v),
+  );
+}
+
+/** Cast / TTS: An·Minh must be tagged Northern. Unknown accent = often Southern. */
+export function voiceSoundsNorthern(v?: FamixaVoicePick) {
+  if (!v) return false;
+  if (isSouthernOrCentralVoice(v)) return false;
+  return isNorthernVoice(v);
 }
 
 export function voicesForLane(voices: FamixaVoicePick[], lane: FamixaVoiceLane, selectedId?: string) {
-  const pool = voices.filter((v) => !v.cloned && v.vietnamese !== false && !isSouthernOrCentralVoice(v));
-  const north = pool.filter(isNorthernVoice);
-  const unknown = pool.filter((v) => !v.accent || !foldVoiceText(v.accent));
-  let base = north.length >= 3 ? north : [...north, ...unknown.filter((v) => !north.includes(v))];
+  const northern = voices.filter((v) => !v.cloned && v.vietnamese !== false && voiceSoundsNorthern(v));
+  const pool =
+    northern.length > 0
+      ? northern
+      : voices.filter((v) => !v.cloned && v.vietnamese !== false && !isSouthernOrCentralVoice(v));
+  let base = pool;
   if (lane.gender) {
     const gendered = base.filter((v) => {
       const g = normVoiceGender(v.gender);
@@ -1264,20 +1510,36 @@ export function voicesForLane(voices: FamixaVoicePick[], lane: FamixaVoiceLane, 
     });
     if (gendered.length >= 2) base = gendered;
   }
-  if (lane.ages?.length) {
+  if (lane.ages?.length && lane.key !== 'narrator') {
     const aged = base.filter((v) => {
       const a = normVoiceAge(v.age);
+      if (isChildVoiceLane(lane)) return isKidLibraryVoice(v) || (!a && !/dad|mom|father|mother|man|woman|adult|uncle|aunt/.test(voiceHay(v)));
       return !a || lane.ages!.includes(a);
     });
-    if (aged.length >= 2) base = aged;
+    if (aged.length >= 1) base = aged;
   }
-  if (lane.key === 'boy' || lane.key === 'girl') {
-    const kids = base.filter((v) => {
+  if (lane.key === 'narrator') {
+    const adults = base.filter((v) => {
       const a = normVoiceAge(v.age);
-      return a === 'young' || /boy|girl|child|kid|be trai|be gai|cau be|co be/.test(voiceHay(v));
+      return a === 'middle_aged' || a === 'old' || /dad|father|man|adult|narrat|uncle|\bong\b/.test(voiceHay(v));
     });
-    if (kids.length >= 2) base = kids;
+    const males = (adults.length ? adults : base).filter((v) => {
+      const g = normVoiceGender(v.gender);
+      return !g || g === 'male';
+    });
+    base = males.length ? males : adults.length ? adults : base;
+  } else if (isChildVoiceLane(lane)) {
+    const kids = base.filter(isKidLibraryVoice);
+    if (kids.length >= 1) base = kids;
+    else {
+      const notAdult = base.filter((v) => {
+        const a = normVoiceAge(v.age);
+        return a !== 'middle_aged' && a !== 'old';
+      });
+      if (notAdult.length) base = notAdult;
+    }
   }
+  if (!base.length && pool.length) base = pool;
   const selected = (selectedId ?? '').trim();
   if (selected && !base.some((v) => v.voiceId === selected)) {
     const cur = voices.find((v) => v.voiceId === selected);
@@ -1290,6 +1552,37 @@ export function canLockCast(state: SeriesPilotState) {
   if (state.roles.length === 0) return false;
   if (!rolesReady(state.roles)) return false;
   return state.roles.every((r) => roleCanonReady(state, r) && roleVoiceReady(state, r));
+}
+
+/** Voice-over is a speaker, not a face. Keep CHAR-VO on Cast so Full Voice can assign a Northern adult. */
+export function syncVoiceOnlyRoles(state: SeriesPilotState): SeriesPilotState {
+  const spokenIds = new Set<string>();
+  for (const sc of state.scenes ?? []) {
+    for (const d of sc.dialogue ?? []) spokenIds.add(normCharId(d.characterId));
+  }
+  for (const l of state.lines ?? []) spokenIds.add(normCharId(l.characterId));
+  const chars = state.characters ?? [];
+  const voChar =
+    chars.find((c) => c.id === 'CHAR-VO') ||
+    chars.find((c) => /loi binh|voice.?over|\bnarrator\b/.test(foldVoiceText(`${c.id} ${c.name} ${c.role}`)));
+  if (!voChar || !spokenIds.has(normCharId(voChar.id))) return state;
+  const hasRole = state.roles.some((r) => isVoiceOnlyRole(r, characterOfRole(state, r)) || r.characterId === voChar.id);
+  const roles = hasRole
+    ? state.roles
+    : [
+        ...state.roles,
+        {
+          id: `role-${voChar.id}`,
+          title: voChar.role || 'Lời bình',
+          name: voChar.name || 'Lời bình',
+          characterId: voChar.id,
+          line: (state.lines ?? []).find((l) => l.characterId === voChar.id)?.text,
+        },
+      ];
+  const next = { ...state, roles };
+  const voiceReady = roles.every((r) => !isVoiceOnlyRole(r, characterOfRole(next, r)) || roleVoiceReady(next, r));
+  if (next.castLocked && !voiceReady) return { ...next, castLocked: false };
+  return hasRole && next.castLocked === state.castLocked ? state : next;
 }
 
 export function setCharacterVoice(
@@ -1365,20 +1658,39 @@ export function hasSeriesGraph(state: SeriesPilotState) {
 }
 
 export function mergeRemotePilot(remote: SeriesPilotState, local: SeriesPilotState): SeriesPilotState {
+  rememberCanonFromChars(local.characters ?? [], local.stills);
+  rememberCanonFromChars(remote.characters ?? [], remote.stills);
+  rememberKfFromRuns(local.runs ?? {});
+  rememberKfFromRuns(remote.runs ?? {});
   const graph = ensurePilotGraph({ ...remote, schemaVersion: PILOT_SCHEMA });
   const localChars = local.characters ?? [];
   const characters = (graph.characters ?? []).map((c) => {
     const old = localChars.find((x) => x.id === c.id);
-    return { ...c, canonImageDataUrl: old?.canonImageDataUrl || c.canonImageDataUrl };
+    rememberCanonPixels(c.id, old?.canonImageDataUrl || c.canonImageDataUrl, old?.canonFileName || c.canonFileName);
+    return {
+      ...c,
+      canonFileName: c.canonFileName || old?.canonFileName,
+      canonLocalPath: c.canonLocalPath || old?.canonLocalPath,
+      canonImageDataUrl: undefined,
+    };
   });
-  const runs: SeriesPilotState['runs'] = { ...graph.runs };
-  for (const [id, run] of Object.entries(runs)) {
-    const old = local.runs[id];
-    if (old?.keyframeDataUrl) runs[id] = { ...run, keyframeDataUrl: old.keyframeDataUrl };
+  const runs: SeriesPilotState['runs'] = {};
+  const ids = new Set([...Object.keys(graph.runs ?? {}), ...Object.keys(local.runs ?? {})]);
+  for (const id of ids) {
+    const rem = graph.runs?.[id];
+    const old = local.runs?.[id];
+    rememberKfPixels(id, old?.keyframeDataUrl || rem?.keyframeDataUrl, old?.keyframeFileName || rem?.keyframeFileName);
+    runs[id] = {
+      ...(rem ?? old ?? { status: 'story_locked' }),
+      keyframeDataUrl: undefined,
+      keyframeFileName: old?.keyframeFileName || rem?.keyframeFileName,
+      keyframePath: old?.keyframePath || rem?.keyframePath,
+    };
   }
   const stills = (graph.stills ?? []).map((s) => {
     const old = (local.stills ?? []).find((x) => x.id === s.id);
-    return { ...s, imageDataUrl: old?.imageDataUrl || s.imageDataUrl };
+    if (s.charCode) rememberCanonPixels(s.charCode, old?.imageDataUrl || s.imageDataUrl, old?.fileName || s.fileName);
+    return { ...s, imageDataUrl: undefined, fileName: s.fileName || old?.fileName };
   });
   const sameEp = episodeCodeOf(graph.episode?.episode || graph.episode?.title) ===
     episodeCodeOf(local.episode?.episode || local.episode?.title);
@@ -1387,11 +1699,13 @@ export function mergeRemotePilot(remote: SeriesPilotState, local: SeriesPilotSta
     : graph.voicePreview;
   return {
     ...graph,
+    buildId: graph.buildId || local.buildId,
     characters,
     runs,
     stills,
     voiceLocked: sameEp ? Boolean(graph.voiceLocked || local.voiceLocked) : Boolean(graph.voiceLocked),
     voicePreview,
+    shorts: sameEp ? mergeClipLists(graph.shorts ?? [], local.shorts ?? []) : graph.shorts,
   };
 }
 
@@ -1532,6 +1846,11 @@ export function stillKey(s: Pick<FamixaCharStill, 'shortId' | 'charCode' | 'scen
   return `${s.shortId}|${s.charCode}|${s.scene}`.toLowerCase();
 }
 
+export function mergeClipLists<T extends { id: string }>(primary: T[], extra: T[]) {
+  const seen = new Set(primary.map((s) => s.id));
+  return [...primary, ...extra.filter((s) => !seen.has(s.id))];
+}
+
 export function mergeStills(prev: FamixaCharStill[], incoming: FamixaCharStill[]) {
   const map = new Map(prev.map((s) => [stillKey(s), s]));
   for (const n of incoming) {
@@ -1623,23 +1942,31 @@ export function replaceStoryFromParse(
       voiceNote: old.voiceNote || r.voiceNote,
     };
   });
-  const keepIds = new Set((parsed.episode?.shots ?? []).map((s) => s.id));
+  const keepIds = new Set([
+    ...(parsed.episode?.shots ?? []).map((s) => s.id),
+    ...(parsed.shorts ?? []).map((s) => s.id),
+    ...((switchedEpisode ? [] : prev.shorts) ?? []).map((s) => s.id),
+  ]);
   const runs = switchedEpisode
     ? {}
     : Object.fromEntries(Object.entries(prev.runs).filter(([id]) => keepIds.has(id)));
-  return {
+  const shorts = switchedEpisode
+    ? parsed.shorts
+    : mergeClipLists(parsed.shorts, prev.shorts ?? []);
+  const next = {
     ...prev,
     episode: parsed.episode,
     scenes: parsed.scenes,
     lines: parsed.lines,
     characters,
     roles,
-    shorts: parsed.shorts,
+    shorts,
     stills: parsed.stills.length ? mergeStills(switchedEpisode ? [] : prev.stills ?? [], parsed.stills) : parsed.stills,
     packDraft: packText,
     scriptLocked: false,
     sceneLocked: false,
     storyReviewed: false,
+    shotGraphLocked: false,
     parseWarnings: parsed.warnings ?? [],
     parseVersion: (prev.parseVersion ?? 0) + 1,
     storyVersion: (prev.storyVersion ?? 0) + 1,
@@ -1652,6 +1979,10 @@ export function replaceStoryFromParse(
     voicePreview: undefined,
     schemaVersion: PILOT_SCHEMA,
   };
+  return syncVoiceOnlyRoles({
+    ...next,
+    castLocked: Boolean(prev.castLocked && next.roles.every((r) => roleCanonReady(next, r) && roleVoiceReady(next, r))),
+  });
 }
 
 export function mergeShots(prev: FamixaSeriesShot[], incoming: FamixaSeriesShot[]) {
@@ -1680,8 +2011,15 @@ export function episodeShots(state: SeriesPilotState) {
   return state.episode?.shots ?? [];
 }
 
+export function withKfPixels(id: string, run?: SeriesShotRun): SeriesShotRun {
+  const base = run ?? { status: 'story_locked' as const };
+  if (base.keyframeDataUrl?.startsWith('data:image')) return base;
+  const pixels = kfPixelsOf(id);
+  return pixels ? { ...base, keyframeDataUrl: pixels } : base;
+}
+
 export function shotRunOf(state: SeriesPilotState, shot: FamixaSeriesShot): SeriesShotRun {
-  return state.runs[shot.id] ?? { status: shot.status };
+  return withKfPixels(shot.id, state.runs[shot.id] ?? { status: shot.status });
 }
 
 export function reviewComplete(run: SeriesShotRun) {
@@ -1722,6 +2060,7 @@ export function previousLockedShot(state: SeriesPilotState, shot?: FamixaSeriesS
 
 /** Copy KF cảnh từ shot LOCK vào shot đang mở nếu shot đó chưa có ảnh. */
 export function bindShotToMemory(state: SeriesPilotState, shot: FamixaSeriesShot): SeriesPilotState {
+  if (!shotHasValidAction(shot, shotRunOf(state, shot))) return state;
   const prev = previousLockedShot(state, shot);
   if (!prev) return state;
   const run = shotRunOf(state, shot);
@@ -1755,6 +2094,83 @@ export function shotActionFromPack(shot: FamixaSeriesShot) {
   return (shot.story || shot.motionPromptVi || shot.visual || '').replace(/\s+/g, ' ').trim();
 }
 
+export function looksLikePackHeading(raw?: string) {
+  const s = (raw ?? '').replace(/\s+/g, ' ').trim();
+  if (s.length < 4) return false;
+  if (/kịch bản phim|tên kịch bản|drama voice|master reference|character (canon|sheet)|turnaround|expression sheet|production master|video title|estimated duration|target duration/i.test(s)) {
+    return true;
+  }
+  if (/^(?:#{1,3}\s*)?(?:famixa|kit marketing)\b/i.test(s)) return true;
+  if (/^kịch bản\b.{0,56}$/i.test(s)) return true;
+  return false;
+}
+
+/** Prefer a real beat over a pack title stuck in shotAction. Does not invent story. */
+export function effectiveShotAction(shot: FamixaSeriesShot, run?: SeriesShotRun) {
+  const seen = new Set<string>();
+  for (const raw of [run?.shotAction, shot.story, shot.motionPromptVi, shot.visual, shot.beatText]) {
+    const t = (raw ?? '').replace(/\s+/g, ' ').trim();
+    if (t.length < 6 || seen.has(t) || looksLikePackHeading(t)) continue;
+    seen.add(t);
+    return t;
+  }
+  return '';
+}
+
+/** Silent OK. Empty / placeholder Action = HOLD — not reuse, not generate. */
+export function shotHasValidAction(shot: FamixaSeriesShot, run?: SeriesShotRun) {
+  const raw = effectiveShotAction(shot, run) || ((run?.shotAction ?? '').trim() || shotActionFromPack(shot)).replace(/\s+/g, ' ').trim();
+  if (looksLikePackHeading(raw)) return false;
+  if (raw.length < 6) return false;
+  if (/^[-—–._/\\\s]+$/u.test(raw)) return false;
+  if (/^(n\/a|none|null|không|chưa có( mô tả)?( shot)?)$/i.test(raw)) return false;
+  return /[\p{L}\p{N}]/u.test(raw);
+}
+
+/** Drop SH with no Action. Graph may list them; production graph after duyệt must not. */
+export function pruneEmptyShots(state: SeriesPilotState): SeriesPilotState {
+  const ep = state.episode;
+  if (!ep?.shots.length) return { ...state, shotGraphLocked: true };
+  const keep = ep.shots.filter((s) => shotHasValidAction(s, shotRunOf(state, s)));
+  const keepIds = new Set(keep.map((s) => s.id));
+  const scenes = (state.scenes ?? []).map((sc) => ({
+    ...sc,
+    scriptBeats: (sc.scriptBeats ?? [])
+      .map((b) => ({ ...b, shotIds: b.shotIds.filter((id) => keepIds.has(id)) }))
+      .filter((b) => b.shotIds.length || (b.text || '').trim()),
+  }));
+  return {
+    ...state,
+    episode: { ...ep, shots: keep },
+    scenes,
+    shotGraphLocked: true,
+    runs: Object.fromEntries(Object.entries(state.runs).filter(([id]) => keepIds.has(id) || id.startsWith('S'))),
+  };
+}
+
+export function groupShotsByBeat(shots: FamixaSeriesShot[]) {
+  const out: { key: string; beatId?: string; label: string; shots: FamixaSeriesShot[] }[] = [];
+  const ix = new Map<string, number>();
+  for (const s of shots) {
+    const empty = !shotHasValidAction(s);
+    const key = s.beatId || (empty ? `hold:${s.sceneId || s.scene || 'SC'}` : `lone:${s.id}`);
+    let i = ix.get(key);
+    if (i === undefined) {
+      i = out.length;
+      ix.set(key, i);
+      out.push({
+        key,
+        beatId: s.beatId,
+        label: s.beatText || (empty ? 'Không có Script Beat — không production' : shotActionFromPack(s)),
+        shots: [s],
+      });
+    } else {
+      out[i]!.shots.push(s);
+    }
+  }
+  return out;
+}
+
 /** KF cảnh từ shot có ảnh (không bắt buộc LOCK) — batch I2V cùng bàn ăn. */
 export function previousKeyframeShot(state: SeriesPilotState, shot?: FamixaSeriesShot) {
   const locked = previousLockedShot(state, shot);
@@ -1770,6 +2186,7 @@ export function previousKeyframeShot(state: SeriesPilotState, shot?: FamixaSerie
 
 export function bindShotToSceneKeyframe(state: SeriesPilotState, shot: FamixaSeriesShot): SeriesPilotState {
   const run = shotRunOf(state, shot);
+  if (!shotHasValidAction(shot, run)) return state;
   if (run.keyframeDataUrl) return state;
   const prev = previousKeyframeShot(state, shot);
   if (!prev) return state;
@@ -1848,7 +2265,7 @@ export function runwaySpentSum(state: SeriesPilotState) {
 }
 
 export function shortRunOf(state: SeriesPilotState, id: string): SeriesShotRun {
-  return state.runs[id] ?? { status: 'keyframe_ready' };
+  return withKfPixels(id, state.runs[id] ?? { status: 'keyframe_ready' });
 }
 
 export function approvedShortCount(state: SeriesPilotState) {
@@ -1868,13 +2285,28 @@ export function linesForScene(state: SeriesPilotState, sceneId: string) {
   return (state.lines ?? []).filter((l) => l.sceneId === sceneId);
 }
 
+export function visualRolesOf(state: SeriesPilotState) {
+  return state.roles.filter((r) => !isVoiceOnlyRole(r, characterOfRole(state, r)));
+}
+
+/** Voice lock means the script was accepted — do not bounce back to step 1. */
+export function ensureScriptFollowsVoice(state: SeriesPilotState): SeriesPilotState {
+  if (state.scriptLocked || !state.voiceLocked) return state;
+  return { ...state, scriptLocked: true };
+}
+
 export function canLockScript(state: SeriesPilotState) {
-  const n = (state.shorts?.length ?? 0) + episodeShots(state).length;
+  const n =
+    (state.shorts?.length ?? 0) +
+    episodeShots(state).filter((s) => shotHasValidAction(s, shotRunOf(state, s))).length;
   if (n === 0) return false;
   if ((state.scenes?.length ?? 0) > 0 && !state.storyReviewed) return false;
   if (state.roles.length > 0 && !rolesReady(state.roles)) return false;
   if (state.roles.length > 0 && !state.roles.every((r) => roleCanonReady(state, r))) return false;
-  if (state.roles.length > 0 && !state.castLocked) return false;
+  const visual = visualRolesOf(state);
+  const visualReady =
+    visual.length === 0 || visual.every((r) => roleCanonReady(state, r) && roleVoiceReady(state, r));
+  if (state.roles.length > 0 && !state.castLocked && !visualReady) return false;
   if (needsInheritanceReview(state)) return false;
   return true;
 }
@@ -1887,6 +2319,7 @@ export function canWorkScene(state: SeriesPilotState) {
   if (!voiceProductionReady(state)) return false;
   if (needsInheritanceReview(state)) return false;
   if (!state.scriptLocked) return false;
+  if ((state.episode?.shots.length ?? 0) > 0 && state.shotGraphLocked === false) return false;
   const shorts = state.shorts ?? [];
   if (shorts.length === 0) return true;
   return approvedShortCount(state) >= shorts.length;
@@ -1907,13 +2340,15 @@ export function sceneBlockReason(state: SeriesPilotState): string | undefined {
   if (shorts.length > 0 && approvedShortCount(state) < shorts.length) {
     return `Khóa hết short 9:16 (${approvedShortCount(state)}/${shorts.length}) rồi mới tạo video cảnh.`;
   }
+  if (state.shotGraphLocked === false) {
+    return 'Duyệt cách chia shot (Script Beat → SH) rồi mới dựng cảnh. KIT không tạo SH rỗng.';
+  }
   return undefined;
 }
 
-/** Không bao giờ đẩy vào pane Short khi pack không có short. */
+/** After Voice LOCK, open Shorts review (studio). 9:16 is Advanced, not the main path. */
 export function studioFallbackPane(state: SeriesPilotState): 'script' | 'shorts' | 'studio' {
   if (!canOpenStudio(state) || !voiceProductionReady(state)) return 'script';
-  if ((state.shorts?.length ?? 0) > 0 && !canWorkScene(state)) return 'shorts';
   return 'studio';
 }
 
@@ -2644,12 +3079,12 @@ export function packForShotEdit(
 /** V02 QC, short enough for Runway — same blocking: Nam talks, Minh listens, Linh smiles. */
 export const RUNWAY_V02_MOTION = `A warm Vietnamese family of three at dinner at night. Nam on the left talks naturally to Minh in the center and keeps his eyes on Minh the whole shot — never looks at the camera. One or two very small hand gestures only. Minh stays quiet, listens, looks at Nam, small realistic face movement. Linh on the right watches them with a gentle smile, does not speak, no talking gestures. Same faces, hair, clothes, seats, table, food, room and night light as the input image. Subtle live-action only: blink, breathe. Very slow push-in, eye-level, 35mm. No shake, no pan, no rotation, no zoom jump, no cut. 5 seconds.`;
 
-export const RUNWAY_V02_NEGATIVE = `No looking at camera. No talking to camera. No Linh speaking. No large gestures. No exaggerated acting. No smoke or fog. No location change. No face morph. No extra people. No deformed hands. No text, logo, watermark. No camera shake, pan, rotation, or cut.`;
+export const RUNWAY_V02_NEGATIVE = `No looking at camera. No talking to camera. No Linh speaking. No large gestures. No exaggerated acting. No moral lecture. No sudden hug or apology reset. No scream without cause. No smoke or fog. No location change. No face morph. No extra people. No deformed hands. No text, logo, watermark. No camera shake, pan, rotation, or cut.`;
 
 /** SH02 V02 — Minh asks once, Nam listens. Keep KF02. */
 export const RUNWAY_SH02_V02_MOTION = `A warm Vietnamese family of three at dinner at night. Same faces, clothes, seats, table, food, room and night light as the input image. Minh in the center looks at Nam on the left for the entire 5 seconds. Minh speaks only once, asking Nam a short question. Minh's mouth moves only while asking, then stays still. Minh does not look at the camera or straight ahead. No repeated head turns. Nam stays silent the whole shot and only listens, eyes on Minh. One or two very small listening reactions. Nam never looks at the camera. Linh on the right stays silent, watches them with a gentle smile, no talking gestures. Subtle live-action: blink, breathe. Very slow push-in, eye-level, 35mm. No shake, no pan, no rotation, no cut. 5 seconds.`;
 
-export const RUNWAY_SH02_V02_NEGATIVE = `No looking at camera. No talking to camera. No Nam speaking. No Linh speaking. No Minh looking straight ahead. No repeated head turns. No large gestures. No exaggerated acting. No face morph. No extra people. No deformed hands. No text, logo, watermark. No camera shake, pan, rotation, or cut.`;
+export const RUNWAY_SH02_V02_NEGATIVE = `No looking at camera. No talking to camera. No Nam speaking. No Linh speaking. No Minh looking straight ahead. No repeated head turns. No large gestures. No exaggerated acting. No moral lecture. No sudden hug or apology reset. No scream without cause. No face morph. No extra people. No deformed hands. No text, logo, watermark. No camera shake, pan, rotation, or cut.`;
 
 const SAFE_I2V =
   'Cinematic live-action dinner scene. The photo is the first frame only. ' +
@@ -2657,8 +3092,7 @@ const SAFE_I2V =
   'small head turns, soft eye contact, gentle camera drift. Keep the same seats and faces. No captions.';
 
 const PACK_RE = /VIDEO\s*ID|PRODUCTION MASTER|=======|CHAR-\d+\s*[—–-]/i;
-const HARD_RE = /nude|sex|porn|kill|blood|abuse|suicide|weapon|gun|cãi|đánh|máu/i;
-const VI_RE = /[àáạảãăắằặẳẵâấầậẩẫèéẹẻẽêếềệểễìíịỉĩòóọỏõôốồộổỗơớờợởỡùúụủũưứừựửữỳýỵỷỹđ]/i;
+const HARD_RE = /nude|sex|porn|kill|blood|abuse|suicide|weapon|gun/i;
 const WARN_RE = /11-year-old|year-old|child|minor|argue|crying|fight|shouting/i;
 
 function compactAvoid(negative?: string) {
@@ -2675,7 +3109,7 @@ function compactAvoid(negative?: string) {
 /** Prefer pasted Runway motion. Do not send the Story pack. */
 export function turboI2vPrompt(motion?: string, negative?: string) {
   const m = (motion ?? '').trim();
-  const usable = m.length > 20 && !PACK_RE.test(m) && !VI_RE.test(m);
+  const usable = m.length > 20 && !PACK_RE.test(m) && !I2V_VI_RE.test(m);
   const body = usable ? m : SAFE_I2V;
   const avoid = compactAvoid(negative);
   const text = `${body}${avoid ? `\n\nAvoid: ${avoid}` : ''}`.replace(/\s+\n/g, '\n').trim();
@@ -2688,15 +3122,17 @@ export type TurboPreflight = { ok: boolean; reasons: string[]; warnings: string[
 export function preflightTurboSend(opts: { prompt: string; imageDataUrl?: string }): TurboPreflight {
   const reasons: string[] = [];
   const warnings: string[] = [];
-  const prompt = (opts.prompt ?? '').trim();
+  let prompt = (opts.prompt ?? '').trim();
   const image = (opts.imageDataUrl ?? '').trim();
   if (!image.startsWith('data:image/') && !/^https?:\/\//i.test(image)) {
     reasons.push('Chưa có ảnh cảnh (KF).');
   }
+  if (I2V_VI_RE.test(prompt) || PACK_RE.test(prompt)) {
+    prompt = englishI2vMotion(prompt);
+  }
   if (!prompt) reasons.push('Chưa có prompt I2V.');
   if (PACK_RE.test(prompt)) reasons.push('Đừng dán giấy Story (VIDEO ID / MASTER) vào ô Motion.');
   if (HARD_RE.test(prompt)) reasons.push('Prompt còn từ Runway hay chặn (máu / bạo lực / nude).');
-  if (VI_RE.test(prompt)) reasons.push('Prompt tiếng Việt — lần trước bị chặn.');
   if (prompt.length > 900) warnings.push('Prompt gần 1000 ký tự — Runway cắt / dễ chặn.');
   if (WARN_RE.test(prompt)) {
     warnings.push('Có chữ tuổi trẻ / argue / crying — moderation có thể trừ credit.');
@@ -2753,7 +3189,7 @@ export function studioI2vPrecheck(opts: {
       ok: !opts.sceneLocked,
       label: opts.sceneLocked ? 'Scene đã Final — mở khóa trên Timeline để làm lại' : 'Scene chưa Final',
     },
-    { id: 'prev', ok: opts.unlocked, label: 'Được phép làm shot này' },
+    { id: 'prev', ok: opts.unlocked, label: 'Shot liền trước đã khóa (I2V / LOCK)' },
     { id: 'lock', ok: opts.lock.locked, label: 'Continuity đã khóa' },
     { id: 'action', ok: Boolean(action), label: 'Shot Action đã nhập' },
     { id: 'kf', ok: hasKf, label: 'Có ảnh keyframe cảnh' },
@@ -2792,7 +3228,7 @@ export function studioI2vPrecheck(opts: {
       ok: gate.ok,
       label: gate.ok ? 'Prompt I2V đạt (0 cr)' : gate.reasons[0] || 'Prompt I2V chưa đạt',
     });
-    return { ok: items.every((i) => i.ok), items, warnings: gate.warnings, prompt };
+    return { ok: items.every((i) => i.ok), items, warnings: gate.warnings, prompt: gate.prompt };
   }
   items.push({ id: 'prompt', ok: false, label: 'Prompt I2V — cần Memory + Action + KF' });
   return { ok: false, items, warnings: [], prompt };

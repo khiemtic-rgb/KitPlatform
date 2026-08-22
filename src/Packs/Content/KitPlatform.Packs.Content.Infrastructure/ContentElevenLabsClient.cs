@@ -81,7 +81,8 @@ internal sealed class ContentElevenLabsClient
         string? publicOwnerId,
         string? voiceName,
         ContentSeriesTtsVoiceSettings? voiceSettings,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? accent = null)
     {
         var resolved = await ResolveAsync(cancellationToken);
         var key = resolved.ElevenLabsApiKey
@@ -90,27 +91,37 @@ internal sealed class ContentElevenLabsClient
         if (string.IsNullOrWhiteSpace(voice))
             throw new InvalidOperationException("Thiếu Voice ID ElevenLabs.");
         voice = await EnsureLibraryVoiceAsync(key, voice, publicOwnerId, voiceName, cancellationToken);
-        var spoken = (text ?? "").Trim();
+        var spoken = StripSpokenDirection(text);
         if (spoken.Length > 5000) spoken = spoken[..5000];
         var stability = Clamp01(voiceSettings?.Stability, 0.5);
         var similarity = Clamp01(voiceSettings?.SimilarityBoost, 0.75);
         var style = Clamp01(voiceSettings?.Style, 0.0);
         var speed = voiceSettings?.Speed is >= 0.7 and <= 1.2 ? voiceSettings.Speed.Value : 1.0;
-        var body = new
+        var lockNorth = LooksNorthernLabel($"{accent} {voiceName}");
+        var settings = new
         {
-            text = spoken,
-            model_id = "eleven_v3",
-            language_code = "vi",
-            apply_text_normalization = "on",
-            voice_settings = new
-            {
-                stability,
-                similarity_boost = similarity,
-                style,
-                speed,
-                use_speaker_boost = true,
-            },
+            stability,
+            similarity_boost = similarity,
+            style,
+            speed,
+            use_speaker_boost = true,
         };
+        object body = lockNorth
+            ? new
+            {
+                text = spoken,
+                model_id = "eleven_v3",
+                apply_text_normalization = "off",
+                voice_settings = settings,
+            }
+            : new
+            {
+                text = spoken,
+                model_id = "eleven_v3",
+                language_code = "vi",
+                apply_text_normalization = "on",
+                voice_settings = settings,
+            };
 
         using var req = new HttpRequestMessage(
             HttpMethod.Post,
@@ -167,12 +178,18 @@ internal sealed class ContentElevenLabsClient
             byId[row.VoiceId] = row;
         }
 
-        return byId.Values
+        var northern = byId.Values
             .Where(v => !v.Cloned)
             .Where(KeepNorthernVietnamese)
             .OrderByDescending(v => LooksNorthern(v))
             .ThenBy(v => v.Name, StringComparer.OrdinalIgnoreCase)
             .Take(120)
+            .ToList();
+        if (northern.Count > 0) return northern;
+        return byId.Values
+            .Where(v => !v.Cloned && v.Vietnamese && !LooksSouthernOrCentral(v))
+            .OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase)
+            .Take(80)
             .ToList();
     }
 
@@ -191,11 +208,15 @@ internal sealed class ContentElevenLabsClient
         var rows = new List<ContentSeriesVoiceDto>();
         var queries = new[]
         {
-            "language=vi&page_size=100&sort=usage_character_count_1y",
             "language=vi&accent=northern&page_size=100&sort=usage_character_count_1y",
             "language=vi&accent=hanoi&page_size=100&sort=usage_character_count_1y",
+            "language=vi&accent=northern&gender=male&page_size=100&sort=usage_character_count_1y",
+            "language=vi&accent=northern&age=middle_aged&page_size=100",
             "language=vi&search=Hanoi&page_size=100",
             "language=vi&search=H%C3%A0%20N%E1%BB%99i&page_size=100",
+            "language=vi&search=Hanoi%20man&page_size=100",
+            "language=vi&search=narrator&page_size=100",
+            "language=vi&page_size=100&sort=usage_character_count_1y",
         };
         foreach (var query in queries)
         {
@@ -346,21 +367,30 @@ internal sealed class ContentElevenLabsClient
     }
 
     private static bool KeepNorthernVietnamese(ContentSeriesVoiceDto v) =>
-        v.Vietnamese && !LooksSouthernOrCentral(v) && (LooksNorthern(v) || string.IsNullOrWhiteSpace(v.Accent));
+        v.Vietnamese && LooksNorthern(v) && !LooksSouthernOrCentral(v);
 
     private static bool LooksNorthern(ContentSeriesVoiceDto v) =>
-        ContainsAny(FoldVoice(v), "northern", "north viet", "hanoi", "ha noi", "ha-noi", "mien bac", "giong bac", "bac ky", "hai phong", "nam dinh");
+        LooksNorthernLabel(FoldVoice(v));
+
+    private static bool LooksNorthernLabel(string? raw) =>
+        ContainsAny(Fold(raw), "northern", "north viet", "hanoi", "ha noi", "ha-noi", "mien bac", "giong bac", "bac ky", "hai phong", "nam dinh", "thai nguyen");
 
     private static bool LooksSouthernOrCentral(ContentSeriesVoiceDto v) =>
         ContainsAny(
             FoldVoice(v),
             "southern",
             "south viet",
+            "south",
             "saigon",
             "sai gon",
             "ho chi minh",
+            "hcm",
             "mien nam",
+            "nam ky",
+            "giong nam",
             "mekong",
+            "can tho",
+            "vung tau",
             "central",
             "mien trung",
             "hue",
@@ -398,5 +428,14 @@ internal sealed class ContentElevenLabsClient
     {
         var t = value?.Trim();
         return string.IsNullOrWhiteSpace(t) ? null : t;
+    }
+
+    /// <summary>Drop English v3 audio tags — with language_code=vi ElevenLabs reads them aloud.</summary>
+    internal static string StripSpokenDirection(string? text)
+    {
+        var s = (text ?? "").Trim();
+        if (s.Length == 0) return "";
+        s = System.Text.RegularExpressions.Regex.Replace(s, @"\[[^\]]+\]\s*", "");
+        return System.Text.RegularExpressions.Regex.Replace(s, @"\s+", " ").Trim();
     }
 }

@@ -1,8 +1,9 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, Fragment, type ReactNode } from 'react';
 import { Alert, Button, Checkbox, Collapse, Select, Space, Tag, Typography } from 'antd';
-import { CheckOutlined, FolderOpenOutlined, PlusOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { CheckOutlined, FolderOpenOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import {
   SERIES_STATUS_LABEL,
+  groupShotsByBeat,
   memoryLine,
   shotActionBeats,
   shotOneLiner,
@@ -20,7 +21,11 @@ import {
   type SeriesShotRun,
   type SeriesShotStatus,
 } from './content-famixa-series';
-import { modeLabel, type SceneKfPlanRow } from './content-famixa-batch-plan';
+import { type SceneKfPlanRow } from './content-famixa-batch-plan';
+import { type PreviewCutPlan } from './content-famixa-preview-cut';
+import { looksLikeVideoUrl } from './content-famixa-assemble';
+import { ContentFamixaProdV2 } from './ContentFamixaProdV2';
+import { canEnterProdStep, PROD_V2_STEPS, productionShorts, type ProdV2Step } from './content-famixa-prod-v2';
 import { voiceProductionReady } from './content-famixa-voice-script';
 import './content-famixa-studio.css';
 
@@ -33,10 +38,10 @@ const QC: { id: SeriesReviewAxis; label: string }[] = [
 
 function clipSrc(url?: string, sessionSrc?: string) {
   if (sessionSrc) return sessionSrc;
-  const href = (url ?? '').trim();
-  if (/^https?:\/\//i.test(href) && /\.(mp4|webm|ogg)(\?|#|$)/i.test(href)) return href;
-  return '';
+  return looksLikeVideoUrl(url) ? (url ?? '').trim() : '';
 }
+
+type SceneProdStep = Extract<ProdV2Step, 'shorts' | 'image' | 'video' | 'preview' | 'final'>;
 
 export function ContentFamixaStudioView({
   shots,
@@ -52,12 +57,9 @@ export function ContentFamixaStudioView({
   sceneLocked,
   scriptLocked,
   shortsReady,
-  shortsCount,
-  shortsLockedCount,
   sessionSrc,
   turboBusy,
   kitCredits,
-  runwaySpent,
   expectedCost,
   costLabel,
   engine,
@@ -66,7 +68,8 @@ export function ContentFamixaStudioView({
   voiceProvider,
   onVoiceProvider,
   onSelectShot,
-  onAddShot,
+  onLockShotGraph,
+  onSeconds,
   onAction,
   onPickKeyframe,
   onGenerateKeyframe,
@@ -77,27 +80,45 @@ export function ContentFamixaStudioView({
   onCreateSceneVideo,
   sceneBatchLabel,
   sceneBatchDisabled,
-  batchPlan,
   batchSceneShots,
-  batchKfNew,
-  batchKfReuse,
   onGenerateSceneKf,
+  onPickSceneKeyframe,
   onApproveSceneKf,
+  onRegenerateSelectedKf,
   generateSceneKfBusy,
+  sceneBatchCredits,
+  sessionSrcOf,
+  cutFrom,
+  cutTo,
+  cutPick,
+  onCutRange,
+  onCutPick,
+  onLockSceneMaster,
+  onPatchSceneMaster,
+  cutPlan,
+  ttsUrlOf,
+  onFillPreviewCut,
+  onDownloadTakes,
+  onAssembleCut,
+  onEnsureTts,
+  assembleBusy,
+  assembleAspect,
+  onAssembleAspect,
   placeHint,
   onAcceptPlaceChange,
   onKeepPlaceBaseline,
-  onForceKfNew,
   onReview,
   onLockShot,
   onFailShot,
   onPickVideo,
   onOpenScript,
-  onOpenShorts,
+  onOpenVoice,
   onOpenStudio,
   onOpenTimeline,
   onOpenAdvanced,
   onOpenMemory,
+  onLockScene,
+  onApprovePreview,
   statusOf,
   runOf,
   actionOf,
@@ -131,7 +152,9 @@ export function ContentFamixaStudioView({
   voiceProvider: 'elevenlabs' | 'f5';
   onVoiceProvider: (value: 'elevenlabs' | 'f5') => void;
   onSelectShot: (shot: FamixaSeriesShot) => void;
-  onAddShot: () => void;
+  onLockShotGraph?: () => void;
+  onSeconds?: (shotId: string, seconds: 5 | 10) => void;
+  onRemoveShots?: (ids: string[]) => void;
   onAction: (value: string) => void;
   onPickKeyframe: (file: File) => void;
   onGenerateKeyframe?: () => void;
@@ -139,16 +162,40 @@ export function ContentFamixaStudioView({
   onInheritKeyframe: () => void;
   onApproveKeyframe: () => void;
   onCreateVideo: () => void;
-  onCreateSceneVideo: () => void;
+  onCreateSceneVideo: (ids?: string[]) => void;
   sceneBatchLabel: string;
   sceneBatchDisabled: boolean;
   batchPlan?: SceneKfPlanRow[];
   batchSceneShots?: FamixaSeriesShot[];
   batchKfNew?: number;
   batchKfReuse?: number;
-  onGenerateSceneKf?: () => void;
-  onApproveSceneKf?: () => void;
+  onGenerateSceneKf?: (ids?: string[]) => void;
+  onPickSceneKeyframe?: (file: File, shotId?: string) => void;
+  onApproveSceneKf?: (ids?: string[]) => void;
+  onRegenerateSelectedKf?: (ids: string[]) => void;
   generateSceneKfBusy?: boolean;
+  sceneVideoReady?: number;
+  sceneVideoBlocked?: number;
+  sceneBatchCredits?: number;
+  sessionSrcOf?: (id: string) => string | undefined;
+  onPassTake?: (shot: FamixaSeriesShot) => void;
+  onFailTake?: (shot: FamixaSeriesShot) => void;
+  cutFrom?: string;
+  cutTo?: string;
+  cutPick?: string[];
+  onCutRange?: (fromId: string, toId: string) => void;
+  onCutPick?: (ids: string[]) => void;
+  onLockSceneMaster?: (sceneId: string, locked: boolean) => void;
+  onPatchSceneMaster?: (sceneId: string, patch: { location?: string; time?: string; lighting?: string; wardrobe?: string; props?: string; camera?: string; mood?: string }) => void;
+  cutPlan?: PreviewCutPlan;
+  ttsUrlOf?: (lineId: string) => string | undefined;
+  onFillPreviewCut?: (kind: 'story' | 'motion') => void;
+  onDownloadTakes?: (ids?: string[]) => void;
+  onAssembleCut?: () => void;
+  onEnsureTts?: () => Promise<number>;
+  assembleBusy?: boolean;
+  assembleAspect?: '16:9' | '9:16';
+  onAssembleAspect?: (aspect: '16:9' | '9:16') => void;
   placeHint?: { from: string; to: string };
   onAcceptPlaceChange?: () => void;
   onKeepPlaceBaseline?: () => void;
@@ -158,22 +205,29 @@ export function ContentFamixaStudioView({
   onFailShot: () => void;
   onPickVideo: (file: File) => void;
   onOpenScript: () => void;
+  onOpenVoice?: () => void;
   onOpenShorts: () => void;
   onOpenStudio: () => void;
   onOpenTimeline: () => void;
   onOpenAdvanced: () => void;
   onOpenMemory: () => void;
+  onLockScene?: () => void;
+  onApprovePreview?: () => void;
   statusOf: (shot: FamixaSeriesShot) => SeriesShotStatus;
   runOf?: (shot: FamixaSeriesShot) => SeriesShotRun;
   actionOf: (shot: FamixaSeriesShot) => string | undefined;
-  pane: 'script' | 'shorts' | 'studio' | 'timeline' | 'advanced';
+  pane: 'script' | 'voice' | 'shorts' | 'studio' | 'timeline' | 'advanced';
   children?: ReactNode;
 }) {
   const kfPick = useRef<HTMLInputElement>(null);
   const vidPick = useRef<HTMLInputElement>(null);
   const [memOpen, setMemOpen] = useState(false);
   const [editAction, setEditAction] = useState(false);
-  const code = studioShotCode(active);
+  const [floor, setFloor] = useState<'scene' | 'shot'>('scene');
+  const [sceneStep, setSceneStep] = useState<SceneProdStep>('shorts');
+  const scenePack = batchSceneShots?.length ? batchSceneShots : shots;
+  const sh = (s?: FamixaSeriesShot) => studioShotCode(s, shots);
+  const code = sh(active);
   const scene = studioSceneCode(active, episode);
   const next = active ? shots[shots.findIndex((s) => s.id === active.id) + 1] : undefined;
   const play = clipSrc(run?.previewUrl, sessionSrc);
@@ -182,7 +236,7 @@ export function ContentFamixaStudioView({
   const actionOk = Boolean(actionText.trim());
   const beats = shotActionBeats(active?.story, actionText);
   const kfLabel = code.replace(/^SH/i, 'KF') || 'KF';
-  const inheritFrom = prevLocked ? studioShotCode(prevLocked) : '';
+  const inheritFrom = prevLocked ? sh(prevLocked) : '';
   const allLocked = shots.length > 0 && shots.every((s) => statusOf(s) === 'approved');
   const shotN = active ? shots.findIndex((s) => s.id === active.id) + 1 : 0;
   const hasTake = Boolean(play);
@@ -197,7 +251,6 @@ export function ContentFamixaStudioView({
   const showVideo = Boolean(kfApproved || hasTake);
   const showQc = Boolean(hasTake || run?.status === 'reviewed' || run?.status === 'approved');
   const voiceOk = Boolean(pilot && voiceProductionReady(pilot));
-  const shortsOk = !shortsCount || (shortsLockedCount ?? 0) >= shortsCount;
   const epTitle = episode?.title || studioSceneTitle(lock, episode);
   const sceneTitle = studioSceneTitle(lock, episode);
   const oneLine = shotOneLiner(active?.story, actionText);
@@ -219,44 +272,105 @@ export function ContentFamixaStudioView({
   const i2vPrompt = precheck.prompt;
   const prevKf = prevRun?.keyframeDataUrl;
   const inherited = Boolean(run?.keyframeInheritedFrom && prevLocked && run.keyframeInheritedFrom === prevLocked.id);
+  const graphLocked = pilot?.shotGraphLocked === true;
+  const epCode = scene.split('·')[0]?.trim() || 'EP';
+  const scLabel = (scene.split('·').pop() ?? scene).trim();
+  const openDetail = (s: FamixaSeriesShot) => {
+    onSelectShot(s);
+    setFloor('shot');
+  };
+
+  useEffect(() => {
+    if (pane === 'studio') setFloor('scene');
+  }, [pane]);
 
   return (
     <div className="fx-studio">
       <div className="fx-main">
         <div className="fx-top">
           <div>
+            <p className="fx-head-ep">{epCode}</p>
             <p className="fx-head-title">
-              {scene.replace(' · ', ' · ')}
+              {scLabel}
               {sceneTitle ? ` — ${sceneTitle}` : epTitle ? ` — ${epTitle}` : ''}
             </p>
-            <p className="fx-head-sub">
-              {active
-                ? `${code} · ${shotN}/${shots.length || 0} · ${active.seconds ?? 5} giây`
-                : 'Chọn một shot để dựng'}
-            </p>
-            {active ? <p className="fx-head-line">{oneLine}</p> : null}
+            {pane === 'studio' && floor === 'scene' ? (
+              <p className="fx-head-sub">
+                {pilot ? productionShorts(pilot).length : 0} Shorts từ kịch bản
+                {graphLocked ? ' · đã duyệt chia Short' : ' · chưa duyệt chia Short'}
+              </p>
+            ) : (
+              <p className="fx-head-sub">
+                {active
+                  ? `${code} · ${shotN}/${shots.length || 0} · ${active.seconds ?? 5} giây · Shot Detail`
+                  : 'Chọn một shot để sửa'}
+              </p>
+            )}
+            {pane === 'studio' && floor === 'shot' && active ? (
+              <p className="fx-head-line">{oneLine}</p>
+            ) : null}
+            {pane === 'studio' && floor === 'scene' ? (
+              <p className="fx-gates">
+                <span className={voiceOk ? 'fx-gate fx-gate--ok' : 'fx-gate'}>Voice{voiceOk ? ' ✓' : ''}</span>
+                <span className={lock.locked ? 'fx-gate fx-gate--ok' : 'fx-gate'}>Continuity{lock.locked ? ' ✓' : ''}</span>
+              </p>
+            ) : pane === 'studio' ? (
+              <p className="fx-gates">
+                <span className={scriptLocked ? 'fx-gate fx-gate--ok' : 'fx-gate'}>Script{scriptLocked ? ' ✓' : ''}</span>
+                <span className={voiceOk ? 'fx-gate fx-gate--ok' : 'fx-gate'}>Voice{voiceOk ? ' ✓' : ''}</span>
+                <span className={lock.locked ? 'fx-gate fx-gate--ok' : 'fx-gate'}>Continuity{lock.locked ? ' ✓' : ''}</span>
+              </p>
+            ) : null}
             <div className="fx-steps">
-              <button type="button" className={`fx-step${scriptLocked ? ' fx-step--ok' : ''}${pane === 'script' ? ' fx-step--on' : ''}`} onClick={onOpenScript}>
-                ① Kịch bản{scriptLocked ? ' ✓' : ''}
-              </button>
-              <button
-                type="button"
-                className={`fx-step${voiceOk ? ' fx-step--ok' : ''}${pane === 'script' && !voiceOk ? ' fx-step--on' : ''}`}
-                onClick={onOpenScript}
-              >
-                ② Full Voice{voiceOk ? ' ✓' : ''}
-              </button>
-              {typeof shortsCount === 'number' && shortsCount > 0 ? (
-                <button type="button" className={`fx-step${shortsOk ? ' fx-step--ok' : ''}${pane === 'shorts' ? ' fx-step--on' : ''}`} onClick={onOpenShorts}>
-                  ③ Short{shortsOk ? ' ✓' : ` ${shortsLockedCount ?? 0}/${shortsCount}`}
-                </button>
-              ) : null}
-              <button type="button" className={`fx-step${pane === 'studio' ? ' fx-step--on' : ''}`} onClick={onOpenStudio}>
-                {typeof shortsCount === 'number' && shortsCount > 0 ? '④' : '③'} Dựng cảnh{pane === 'studio' ? ' ←' : ''}
-              </button>
-              <button type="button" className={`fx-step${allLocked ? ' fx-step--ok' : ''}${pane === 'timeline' ? ' fx-step--on' : ''}`} onClick={onOpenTimeline}>
-                {typeof shortsCount === 'number' && shortsCount > 0 ? '⑤' : '④'} Timeline{allLocked ? ' ✓' : ''}
-              </button>
+              {PROD_V2_STEPS.map((s) => {
+                const on =
+                  (s.id === 'script' && pane === 'script') ||
+                  (s.id === 'voice' && pane === 'voice') ||
+                  (pane === 'studio' && floor === 'scene' && sceneStep === s.id);
+                const ok =
+                  (s.id === 'script' && scriptLocked) ||
+                  (s.id === 'voice' && voiceOk) ||
+                  (s.id === 'shorts' && graphLocked) ||
+                  (s.id === 'final' && allLocked);
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className={`fx-step${ok ? ' fx-step--ok' : ''}${on ? ' fx-step--on' : ''}`}
+                    onClick={() => {
+                      if (s.id === 'script') {
+                        onOpenScript();
+                        return;
+                      }
+                      if (s.id === 'voice') {
+                        (onOpenVoice ?? onOpenScript)();
+                        return;
+                      }
+                      const why = pilot ? canEnterProdStep(pilot, s.id) : 'Chưa có kịch bản.';
+                      if (why && s.id !== 'shorts') {
+                        if (!scriptLocked) {
+                          onOpenScript();
+                          return;
+                        }
+                        if (!voiceOk) {
+                          (onOpenVoice ?? onOpenScript)();
+                          return;
+                        }
+                        setFloor('scene');
+                        setSceneStep('shorts');
+                        onOpenStudio();
+                        return;
+                      }
+                      setFloor('scene');
+                      setSceneStep(s.id);
+                      onOpenStudio();
+                    }}
+                  >
+                    {s.n} {s.label}
+                    {ok ? ' ✓' : ''}
+                  </button>
+                );
+              })}
               <button type="button" className={`fx-step${pane === 'advanced' ? ' fx-step--on' : ''}`} onClick={onOpenAdvanced}>
                 Nâng cao
               </button>
@@ -280,102 +394,127 @@ export function ContentFamixaStudioView({
           />
         ) : null}
 
-        {pane === 'studio' && shots.length === 0 ? (
+
+        {pane === 'studio' && floor === 'scene' && !(pilot ? productionShorts(pilot).length : scenePack.length) ? (
           <Alert
             type="info"
             showIcon
-            message="Chưa có shot trên bảng."
-            description="Khóa kịch bản và Full Voice trước. Nếu tập có short thì khóa short. Rồi thêm shot 16:9 ở đây."
+            message="Chưa có Short từ kịch bản."
+            description="Nhận pack rồi duyệt thoại. KIT chỉ chia Short khi có Script Beat — không pad số lượng."
             style={{ marginBottom: 12 }}
           />
         ) : null}
 
-        {pane === 'studio' ? (
+        {pane === 'studio' && floor === 'scene' && pilot && onCutRange && onGenerateSceneKf ? (
+          <ContentFamixaProdV2
+            step={sceneStep}
+            onStep={(s) => {
+              if (s === 'script') onOpenScript();
+              else if (s === 'voice') (onOpenVoice ?? onOpenScript)();
+              else setSceneStep(s);
+            }}
+            state={pilot}
+            queue={scenePack}
+            fromId={cutFrom}
+            toId={cutTo}
+            pickIds={cutPick}
+            onRange={onCutRange}
+            onPickIds={onCutPick}
+            onLockSceneMaster={onLockSceneMaster}
+            onPatchSceneMaster={onPatchSceneMaster}
+            onSeconds={(id, sec) => onSeconds?.(id, sec)}
+            onLockShotGraph={onLockShotGraph}
+            onOpenShot={openDetail}
+            runOf={(s) => runOf?.(s) ?? { status: statusOf(s) }}
+            actionOf={actionOf}
+            lock={lock}
+            episode={episode}
+            generateKfBusy={generateSceneKfBusy}
+            turboBusy={turboBusy}
+            onGenerateKf={(ids) => onGenerateSceneKf?.(ids)}
+            onPickKf={onPickSceneKeyframe}
+            onApproveKf={onApproveSceneKf}
+            onRegenerateKf={onRegenerateSelectedKf}
+            onCreateVideo={(ids) => onCreateSceneVideo(ids)}
+            cutPlan={cutPlan}
+            ttsUrlOf={ttsUrlOf}
+            sessionSrcOf={sessionSrcOf}
+            onFillPreview={onFillPreviewCut}
+            onDownloadTakes={onDownloadTakes}
+            onAssembleCut={onAssembleCut}
+            onEnsureTts={onEnsureTts}
+            assembleBusy={assembleBusy}
+            assembleAspect={assembleAspect}
+            onAssembleAspect={onAssembleAspect}
+            sceneBatchLabel={sceneBatchLabel}
+            sceneBatchDisabled={sceneBatchDisabled}
+            sceneBatchCredits={sceneBatchCredits}
+            kitCredits={kitCredits}
+            onLockScene={() => onLockScene?.()}
+            onApprovePreview={onApprovePreview}
+            sceneLocked={sceneLocked}
+            sceneReady={allLocked}
+          />
+        ) : null}
+
+        {pane === 'studio' && floor === 'shot' ? (
         <>
+        <div style={{ marginBottom: 10 }}>
+          <Button type="link" style={{ paddingLeft: 0 }} onClick={() => setFloor('scene')}>
+            ← Shorts
+          </Button>
+          <span className="fx-shot__hint">Chi tiết Short — sửa ngoại lệ, không phải màn dựng hàng loạt.</span>
+        </div>
         <div className="fx-grid">
           <section className="fx-card fx-card--shots">
             <h3>SHOT</h3>
-            {shots.map((s) => {
-              const on = s.id === active?.id;
-              const ui = studioShotUi(runOf?.(s) ?? { status: statusOf(s) });
+            {groupShotsByBeat(shots).map((g, gi, arr) => {
+              const head = g.shots[0];
+              if (!head) return null;
+              const sc = studioSceneCode(head, episode);
+              const prevSc = gi > 0 && arr[gi - 1]?.shots[0] ? studioSceneCode(arr[gi - 1]!.shots[0]!, episode) : '';
+              const beatNo = g.beatId?.match(/BEAT\s*(\d+)/i)?.[1] || String(gi + 1).padStart(2, '0');
               return (
-                <button
-                  key={s.id}
-                  type="button"
-                  className={`fx-shot${on ? ' fx-shot--on' : ''}${ui.tone === 'locked' ? ' fx-shot--lock' : ''}`}
-                  onClick={() => onSelectShot(s)}
-                >
-                  <div className="fx-shot__row">
-                    <span className="fx-shot__id">
-                      {studioShotCode(s)} · {s.seconds}s
-                    </span>
-                    <span className={`fx-badge fx-badge--${ui.tone === 'locked' ? 'lock' : ui.tone === 'error' ? 'err' : ui.tone === 'warn' ? 'warn' : ui.tone === 'on' ? 'on' : 'wait'}`}>
-                      {ui.label}
-                    </span>
+                <Fragment key={g.key}>
+                  {sc !== prevSc ? <div className="fx-shot__scene">{sc}</div> : null}
+                  <div className={`fx-beat${g.beatId ? '' : ' fx-beat--hold'}`}>
+                    <div className="fx-beat__head">BEAT {beatNo}</div>
+                    <div className="fx-beat__text">{g.label}</div>
+                    {g.shots.map((s) => {
+                      const on = s.id === active?.id;
+                      const ui = studioShotUi(runOf?.(s) ?? { status: statusOf(s) });
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          className={`fx-shot${on ? ' fx-shot--on' : ''}${ui.tone === 'locked' ? ' fx-shot--lock' : ''}`}
+                          onClick={() => onSelectShot(s)}
+                        >
+                          <div className="fx-shot__row">
+                            <span className="fx-shot__id">
+                              {sh(s)} · {s.seconds}s
+                            </span>
+                            <span className={`fx-badge fx-badge--${ui.tone === 'locked' ? 'lock' : ui.tone === 'error' ? 'err' : ui.tone === 'warn' ? 'warn' : ui.tone === 'on' ? 'on' : 'wait'}`}>
+                              {ui.label}
+                            </span>
+                          </div>
+                          <div className="fx-shot__story">{shotOneLiner(s.story, actionOf(s))}</div>
+                          {ui.hint ? <div className="fx-shot__hint">{ui.hint}</div> : null}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <div className="fx-shot__story">{shotOneLiner(s.story, actionOf(s))}</div>
-                  {ui.hint ? <div className="fx-shot__hint">{ui.hint}</div> : null}
-                </button>
+                </Fragment>
               );
             })}
-            <Button block icon={<PlusOutlined />} onClick={onAddShot}>
-              Thêm shot
-            </Button>
+            {!graphLocked && onLockShotGraph ? (
+              <Button block type="primary" onClick={onLockShotGraph} style={{ marginTop: 8 }}>
+                Duyệt cách chia shot
+              </Button>
+            ) : null}
           </section>
 
           <div className="fx-work">
-
-          {batchPlan && batchPlan.length > 0 ? (
-            <section className="fx-card fx-card--batch">
-              <h3>CẢNH · PRODUCTION</h3>
-              <p className="fx-plan">
-                {batchPlan.map((p) => `${p.code} ${p.mode === 'new' ? 'NEW' : `REUSE ${p.sourceCode || ''}`}`.trim()).join(' · ')}
-              </p>
-              <p className="fx-shot__hint">
-                {(batchKfNew ?? 0) > 0 ? `${batchKfNew} KF mới` : 'Không cần KF mới'}
-                {batchKfReuse ? ` · ${batchKfReuse} reuse` : ''}
-                {' · không gửi storyboard 12 ô vào I2V'}
-              </p>
-              <Space wrap style={{ marginTop: 8 }}>
-                <Button type="primary" loading={generateSceneKfBusy} onClick={onGenerateSceneKf}>
-                  Tạo KF toàn cảnh
-                </Button>
-                <Button onClick={onApproveSceneKf} disabled={!batchSceneShots?.some((s) => runOf?.(s)?.keyframeDataUrl)}>
-                  Duyệt tất cả KF
-                </Button>
-              </Space>
-              <div className="fx-sheet">
-                {(batchSceneShots ?? []).map((s) => {
-                  const row = batchPlan.find((p) => p.shotId === s.id);
-                  const take = runOf?.(s);
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      className={`fx-sheet__cell${s.id === active?.id ? ' fx-sheet__cell--on' : ''}`}
-                      onClick={() => onSelectShot(s)}
-                    >
-                      {take?.keyframeDataUrl ? (
-                        <img src={take.keyframeDataUrl} alt={studioShotCode(s)} />
-                      ) : (
-                        <div className="fx-sheet__empty">Chưa KF</div>
-                      )}
-                      <span>
-                        {studioShotCode(s)} · {s.seconds}s
-                      </span>
-                      <span className="fx-sheet__mode">{row ? modeLabel(row) : ''}</span>
-                      {row?.kfApproved ? <span className="fx-sheet__ok">Đã duyệt</span> : null}
-                    </button>
-                  );
-                })}
-              </div>
-              {active && onForceKfNew ? (
-                <Button size="small" style={{ marginTop: 8 }} onClick={() => onForceKfNew(active)}>
-                  Đổi ảnh — KF mới cho {code}
-                </Button>
-              ) : null}
-            </section>
-          ) : null}
 
           <section className="fx-card fx-card--action">
             <h3>
@@ -383,10 +522,30 @@ export function ContentFamixaStudioView({
             </h3>
             {!active ? (
               <Typography.Text type="secondary">Chọn shot bên trái.</Typography.Text>
-            ) : !unlocked ? (
-              <Alert type="warning" showIcon message="Khóa shot liền trước đã." />
             ) : (
               <>
+                {active.beatText ? (
+                  <p className="fx-beat-source">
+                    Script Beat: {active.beatText}
+                  </p>
+                ) : (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    style={{ marginBottom: 10 }}
+                    message="Không có Script Beat"
+                    description="KIT không production shot này. Sửa kịch bản rồi Nhận pack, hoặc gỡ SH rỗng khi duyệt cách chia shot."
+                  />
+                )}
+                {!unlocked ? (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    style={{ marginBottom: 10 }}
+                    message="Xem được — chưa I2V"
+                    description="Khóa shot liền trước rồi mới trừ credit / khóa shot này. Action và KF vẫn sửa được."
+                  />
+                ) : null}
                 <p className="fx-story">{actionText || 'KIT chưa tách được hành động từ kịch bản cho shot này.'}</p>
                 {beats.length > 1 ? (
                   <ul className="fx-beats">
@@ -492,17 +651,17 @@ export function ContentFamixaStudioView({
             </ul>
             <Space wrap style={{ marginTop: 10 }}>
               {onGenerateKeyframe ? (
-                <Button type="primary" loading={generateKfBusy} onClick={onGenerateKeyframe} disabled={!unlocked}>
+                <Button type="primary" loading={generateKfBusy} onClick={onGenerateKeyframe}>
                   Tạo KF CLEAN
                 </Button>
               ) : null}
               <Button onClick={() => kfPick.current?.click()}>Chọn ảnh KF</Button>
               {prevLocked ? (
-                <Button disabled={!prevKf || !unlocked} onClick={onInheritKeyframe}>
+                <Button disabled={!prevKf} onClick={onInheritKeyframe}>
                   Dùng KF {inheritFrom}
                 </Button>
               ) : null}
-              <Button disabled={!kfOk || !unlocked || kfApproved} onClick={onApproveKeyframe}>
+              <Button disabled={!kfOk || kfApproved} onClick={onApproveKeyframe}>
                 Duyệt KF
               </Button>
             </Space>
@@ -616,14 +775,6 @@ export function ContentFamixaStudioView({
                     : `Tạo video · xác nhận −${expectedCost} cr`
                   : 'Pre-check chưa đạt (0 cr)'}
               </Button>
-              <Button
-                icon={<ThunderboltOutlined />}
-                disabled={sceneBatchDisabled}
-                loading={turboBusy}
-                onClick={onCreateSceneVideo}
-              >
-                Tạo hết shot cảnh này · {sceneBatchLabel}
-              </Button>
             </Space>
           </section>
 
@@ -696,14 +847,14 @@ export function ContentFamixaStudioView({
             <strong>TIẾP THEO</strong>
             {' — '}
             {next
-              ? `Sau khi khóa ${code}, hệ thống sẽ mở ${studioShotCode(next)}.`
+              ? `Sau khi khóa ${code}, hệ thống sẽ mở ${sh(next)}.`
               : allLocked
                 ? 'Hết shot đã khóa. Timeline · Final để ghi chú ghép và khóa cảnh.'
                 : `Sau khi khóa ${code || 'shot này'}, thêm shot hoặc nhận pack ở Cài đặt nâng cao.`}
           </span>
           {next ? (
             <Button type="primary" onClick={() => onSelectShot(next)}>
-              Sang {studioShotCode(next)} →
+              Sang {sh(next)} →
             </Button>
           ) : (
             <Button type="primary" onClick={onOpenTimeline}>
@@ -716,23 +867,45 @@ export function ContentFamixaStudioView({
       </div>
 
       <aside className="fx-mem fx-mem--slim">
-        <h3>KIT ĐANG NHỚ</h3>
-        <Tag color={lock.locked ? 'green' : 'gold'}>
-          {lock.locked ? 'Continuity đã khóa' : 'Continuity chưa khóa'}
-        </Tag>
-        <p className="fx-mem__src">
-          {lock.sourceShotId || inheritFrom
-            ? `Kế thừa từ ${inheritFrom || studioShotCode({ id: lock.sourceShotId } as FamixaSeriesShot)}`
-            : 'Khóa shot đầu cảnh để nhớ trang phục / bối cảnh.'}
-        </p>
+        <h3>CONTINUITY</h3>
+        <Tag color={lock.locked ? 'green' : 'gold'}>{lock.locked ? 'LOCKED' : 'Chưa khóa'}</Tag>
         <p className="fx-mem__line">
-          {memoryLine(lock.characters, 28) || '—'}
-          {lock.wardrobe ? ` · ${memoryLine(lock.wardrobe, 28)}` : ''}
+          <strong>{memoryLine(lock.characters, 32) || 'CHAR'}</strong>
+          {lock.wardrobe ? <><br />{memoryLine(lock.wardrobe, 40)}</> : null}
         </p>
-        {lock.environment ? <p className="fx-mem__line">{memoryLine(lock.environment, 48)}</p> : null}
-        {lock.camera ? <p className="fx-mem__line">{memoryLine(lock.camera, 40)}</p> : null}
+        {lock.environment ? (
+          <p className="fx-mem__line">
+            <span className="fx-mem__k">Bối cảnh</span>
+            {memoryLine(lock.environment, 48)}
+          </p>
+        ) : null}
+        {lock.camera ? (
+          <p className="fx-mem__line">
+            <span className="fx-mem__k">Camera</span>
+            {memoryLine(lock.camera, 40)}
+          </p>
+        ) : null}
+        {placeHint ? (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ margin: '8px 0' }}
+            message="Có thay đổi bối cảnh"
+            description={placeHint.to}
+            action={
+              <Space direction="vertical" size={4}>
+                <Button size="small" onClick={onAcceptPlaceChange}>
+                  Xem thay đổi
+                </Button>
+                <Button size="small" onClick={onKeepPlaceBaseline}>
+                  Giữ baseline
+                </Button>
+              </Space>
+            }
+          />
+        ) : null}
         <Button type="link" style={{ paddingLeft: 0 }} onClick={() => setMemOpen((v) => !v)}>
-          {memOpen ? 'Thu gọn ▴' : 'Xem chi tiết ▾'}
+          {memOpen ? 'Thu gọn' : 'Xem chi tiết'}
         </Button>
         {memOpen ? (
           <>
@@ -755,11 +928,6 @@ export function ContentFamixaStudioView({
             </Button>
           </>
         ) : null}
-        <p className="fx-mem__credits">
-          Runway đã trừ <strong>{runwaySpent} cr</strong>
-          <br />
-          Sổ KIT khi khóa: {kitCredits} cr
-        </p>
       </aside>
     </div>
   );
@@ -782,7 +950,6 @@ export function FamixaTimelinePane({
   onLockScene,
   onUnlockScene,
   onOpenShot,
-  onAddShot,
 }: {
   shots: FamixaSeriesShot[];
   episode?: FamixaSeriesEpisode;
@@ -800,11 +967,10 @@ export function FamixaTimelinePane({
   onLockScene: () => void;
   onUnlockScene: () => void;
   onOpenShot: (shot: FamixaSeriesShot) => void;
-  onAddShot: () => void;
 }) {
   const total = shots.reduce((n, s) => n + (s.seconds || 5), 0);
   const locked = shots.filter((s) => statusOf(s) === 'approved').length;
-  const pending = shots.filter((s) => statusOf(s) !== 'approved').map((s) => studioShotCode(s));
+  const pending = shots.filter((s) => statusOf(s) !== 'approved').map((s) => studioShotCode(s, shots));
   let clock = 0;
   return (
     <div>
@@ -821,7 +987,7 @@ export function FamixaTimelinePane({
         {lock.sourceShotId ? ` · Baseline ${lock.sourceShotId}` : ''}
       </Typography.Paragraph>
       {shots.length === 0 ? (
-        <Alert type="info" showIcon message="Chưa có shot. Mở Cài đặt nâng cao để dán pack, hoặc thêm shot." />
+        <Alert type="info" showIcon message="Chưa có shot từ kịch bản. Nhận pack Story rồi duyệt cách chia shot." />
       ) : (
         <div className="fx-timeline">
           {shots.map((s) => {
@@ -840,7 +1006,7 @@ export function FamixaTimelinePane({
                 onClick={() => onOpenShot(s)}
               >
                 <span className="fx-timeline__t">{start}s</span>
-                <span className="fx-timeline__code">{studioShotCode(s)}</span>
+                <span className="fx-timeline__code">{studioShotCode(s, shots)}</span>
                 <span className="fx-timeline__sec">{s.seconds}s</span>
                 <span className="fx-timeline__story">
                   {shotOneLiner(s.story, actionOf(s))}
@@ -860,9 +1026,9 @@ export function FamixaTimelinePane({
           })}
         </div>
       )}
-      <Button icon={<PlusOutlined />} onClick={onAddShot} style={{ marginTop: 10 }} disabled={sceneLocked}>
-        + Thêm shot vào plan
-      </Button>
+      <Typography.Paragraph type="secondary" style={{ marginTop: 10 }}>
+        Shot graph theo Script Beat. KIT không thêm SH rỗng trên Timeline.
+      </Typography.Paragraph>
 
       <div className="fx-card" style={{ marginTop: 16 }}>
         <h3>Final · khóa cảnh</h3>

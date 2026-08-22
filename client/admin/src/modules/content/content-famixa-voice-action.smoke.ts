@@ -227,6 +227,56 @@ check('screenplay', excerpt, [
 ]);
 check('tagged-voice-paste', tagged, ['Về khoe mới được.', 'Mẹ!', 'Gì mà chạy như ma đuổi thế?']);
 
+const voPack = `
+SC08 — LỜI BÌNH
+VOICE-OVER (Giọng đọc trầm ấm, truyền cảm):
+
+Áp lực thành tích không dạy con trưởng thành. Sự ghi nhận tiến trình mới nuôi dưỡng tính tự giác.
+`;
+const voDoc = parseEpisodeStory(voPack);
+const voScript = deriveVoiceScript({
+  roles: [],
+  runs: {},
+  episode: voDoc?.episode,
+  characters: voDoc?.characters ?? [],
+  scenes: voDoc?.scenes ?? [],
+  lines: voDoc?.lines ?? [],
+} as SeriesPilotState);
+if (!voScript.lines.some((l) => /Áp lực thành tích không dạy con trưởng thành/i.test(l.text))) {
+  fail.push('VOICE-OVER spoken line must be in Voice Script');
+}
+if (voScript.lines.some((l) => /Giọng đọc trầm ấm/i.test(l.text))) {
+  fail.push('VOICE-OVER must not speak the voice direction');
+}
+if (!voScript.lines.some((l) => l.characterId === 'CHAR-VO')) {
+  fail.push('VOICE-OVER speaker must be CHAR-VO');
+}
+if (voDoc?.roles.some((r) => r.characterId === 'CHAR-VO') !== true) {
+  fail.push('Lời bình must be a Cast role');
+}
+
+const bible = `
+SC01 — BÀI KIỂM TRA ĐIỂM 9
+Minh: Giọng háo hức, mong manh, khao khát được công nhận.
+Linh: Giọng sắc lạnh, thực dụng, mệt mỏi, không hề nghĩ mình sai.
+Nam: Giọng kiệt sức, bất lực nhưng thương con.
+Linh: Để lên bàn.
+Linh: Mấy?
+`;
+check('voice-bible', bible, ['Để lên bàn.', 'Mấy?']);
+const bibleDoc = parseEpisodeStory(bible);
+const bibleScript = deriveVoiceScript({
+  roles: [],
+  runs: {},
+  episode: bibleDoc?.episode,
+  characters: bibleDoc?.characters ?? [],
+  scenes: bibleDoc?.scenes ?? [],
+  lines: bibleDoc?.lines ?? [],
+} as SeriesPilotState);
+for (const leak of ['Giọng háo hức', 'Giọng sắc lạnh', 'Giọng kiệt sức']) {
+  if (bibleScript.lines.some((l) => l.text.includes(leak))) fail.push(`bible leaked — ${leak}`);
+}
+
 const leakedGraph = {
   roles: [],
   runs: {},

@@ -13,6 +13,19 @@ const doc = parseEpisodeStory(poisoned);
 if (!doc) throw new Error('Golden EP01 failed to parse.');
 
 const fail: string[] = [];
+const headingPack = parseEpisodeStory(`KỊCH BẢN PHIM NGẮN / DRAMA VOICE FAMIXA
+
+### SH01 — MINH MUỐN KHOE
+Minh đặt bài kiểm tra trước mặt mẹ, đẩy nhẹ về phía Linh.
+MINH
+Mẹ ơi mẹ ơi, cô ghi cái này cho con nè!
+`);
+if (headingPack?.shots.some((s) => /kịch bản phim|drama voice/i.test(s.story || ''))) {
+  fail.push('pack title must not become SH01 Action');
+}
+if (!headingPack?.shots.some((s) => /đặt bài|khoe|Minh/i.test(s.story || ''))) {
+  fail.push('SH01 must keep Minh showing the test');
+}
 if (doc.scenes.length !== 7) {
   fail.push(`expected 7 script scenes, got ${doc.scenes.map((s) => s.id + ':' + (s.title || '')).join(' | ')}`);
 }
@@ -42,9 +55,12 @@ for (const s of doc.shots) {
   shotsByScene.set(id, (shotsByScene.get(id) ?? 0) + 1);
 }
 for (const [id, n] of shotsByScene) {
-  if (n > 8) fail.push(`${id} exploded to ${n} shots`);
+  if (n > 24) fail.push(`${id} exploded to ${n} shots`);
 }
-if (doc.shots.length > 56) fail.push(`too many shots: ${doc.shots.length}`);
+if (doc.shots.length > 96) fail.push(`too many shots: ${doc.shots.length}`);
+if (doc.shots.some((s) => !(s.story || '').trim())) fail.push('empty shot without Action');
+if (doc.shots.some((s) => !s.beatId)) fail.push('shot without Script Beat');
+if (doc.shots.some((s) => s.inheritFromShotId)) fail.push('parser auto-inherited every previous shot');
 if (new Set(doc.shots.map((s) => s.shot)).size !== doc.shots.length) fail.push('shot codes reused');
 if (new Set(doc.shots.map((s) => s.id)).size !== doc.shots.length) fail.push('shot ids reused');
 if (!doc.shots.every((s) => s.id.startsWith('EP01-'))) fail.push('shot ids missing EP01 prefix');

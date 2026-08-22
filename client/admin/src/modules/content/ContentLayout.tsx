@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Spin } from 'antd';
 import { useRegisterModuleSubnav } from '@/shared/components/module-subnav.context';
 import { useAuthStore } from '@/shared/auth/auth.store';
 import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
@@ -29,5 +30,15 @@ export function ContentLayout() {
 
   if (!isAdmin || (platformLoaded && !moduleOk)) return null;
 
-  return <Outlet />;
+  return (
+    <Suspense
+      fallback={
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 64 }}>
+          <Spin tip="Đang mở…" />
+        </div>
+      }
+    >
+      <Outlet />
+    </Suspense>
+  );
 }

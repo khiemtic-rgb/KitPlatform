@@ -138,6 +138,19 @@ public sealed record ContentSeriesStillDto(
     string Model,
     string Aspect);
 
+public sealed record ContentSeriesKfNoteRequest(
+    string Note,
+    string? Action = null,
+    string? Location = null);
+
+public sealed record ContentSeriesKfNoteDto(
+    string Instruction,
+    bool Place,
+    bool Lighting,
+    bool Wardrobe,
+    bool Camera,
+    bool Inherit);
+
 public sealed record ContentSeriesScriptDraftRequest(
     string Seed,
     string? CharactersHint,
@@ -158,6 +171,38 @@ public sealed record ContentSeriesPilotDto(
     DateTimeOffset UpdatedAt);
 
 public sealed record UpsertContentSeriesPilotRequest(
+    string SeriesCode,
+    JsonElement Graph);
+
+public sealed record ContentSeriesBuildSummaryDto(
+    Guid Id,
+    string SeriesCode,
+    string EpisodeCode,
+    string Title,
+    string Status,
+    int ShotCount,
+    int VoiceLines,
+    int KfCount,
+    int VideoCount,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);
+
+public sealed record ContentSeriesBuildDto(
+    Guid Id,
+    string SeriesCode,
+    string EpisodeCode,
+    string Title,
+    string Status,
+    int ShotCount,
+    int VoiceLines,
+    int KfCount,
+    int VideoCount,
+    JsonElement Graph,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);
+
+public sealed record UpsertContentSeriesBuildRequest(
+    Guid? Id,
     string SeriesCode,
     JsonElement Graph);
 
@@ -183,6 +228,7 @@ public sealed record ContentSeriesTtsRequest(
     string Text,
     string? PublicOwnerId = null,
     string? VoiceName = null,
+    string? Accent = null,
     ContentSeriesTtsVoiceSettings? VoiceSettings = null);
 
 public interface IContentSeriesPilotService
@@ -198,7 +244,16 @@ public interface IContentSeriesPilotService
         string? publicOwnerId = null,
         string? voiceName = null,
         ContentSeriesTtsVoiceSettings? voiceSettings = null,
+        CancellationToken cancellationToken = default,
+        string? accent = null);
+    Task<IReadOnlyList<ContentSeriesBuildSummaryDto>> ListBuildsAsync(
+        string seriesCode,
         CancellationToken cancellationToken = default);
+    Task<ContentSeriesBuildDto> GetBuildAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<ContentSeriesBuildDto> UpsertBuildAsync(
+        UpsertContentSeriesBuildRequest request,
+        CancellationToken cancellationToken = default);
+    Task DeleteBuildAsync(Guid id, CancellationToken cancellationToken = default);
 }
 
 public sealed record ContentFacebookConfigDto(
@@ -656,10 +711,49 @@ public interface IContentSeriesTurboService
     Task<ContentSeriesTurboTaskDto> GetAsync(string taskId, CancellationToken cancellationToken = default);
 }
 
+public sealed record ContentSeriesTakeProxyRequest(string Url);
+
+public sealed record ContentSeriesAssembleVoiceDto(
+    string LineId,
+    double StartSec,
+    string AudioBase64,
+    string? Mime = null);
+
+public sealed record ContentSeriesAssembleClipDto(
+    string Code,
+    string VideoUrl,
+    double Seconds,
+    IReadOnlyList<ContentSeriesAssembleVoiceDto> Voices,
+    double UsableStart = 0,
+    double? UsableEnd = null);
+
+public sealed record ContentSeriesAssembleRequest(
+    string FileStem,
+    IReadOnlyList<ContentSeriesAssembleClipDto> Clips,
+    string? Aspect = null);
+
+public interface IContentSeriesAssembleService
+{
+    Task<(byte[] Bytes, string ContentType, string FileName)> AssembleAsync(
+        ContentSeriesAssembleRequest request,
+        CancellationToken cancellationToken = default);
+}
+
+public interface IContentSeriesTakeProxyService
+{
+    Task<(byte[] Bytes, string ContentType, string FileName)> FetchAsync(
+        string url,
+        CancellationToken cancellationToken = default);
+}
+
 public interface IContentSeriesStillService
 {
     Task<ContentSeriesStillDto> GenerateAsync(
         ContentSeriesStillRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<ContentSeriesKfNoteDto> RewriteNoteAsync(
+        ContentSeriesKfNoteRequest request,
         CancellationToken cancellationToken = default);
 }
 

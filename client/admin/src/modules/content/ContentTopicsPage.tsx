@@ -723,7 +723,12 @@ export function ContentTopicsPage() {
     setDetailAction('images');
     try {
       const res = await generateContentTopic(detail.topic.id, { imagesOnly: true });
-      message.success(res.message ?? 'Đã tạo ảnh');
+      const msg = res.message ?? 'Đã tạo ảnh';
+      if (/không tạo được ảnh|ảnh lỗi/i.test(msg)) {
+        message.error(msg);
+        return;
+      }
+      message.success(msg);
       setDetailTab('images');
       await loadDetail(detail.topic.id, { silent: true });
       await load();

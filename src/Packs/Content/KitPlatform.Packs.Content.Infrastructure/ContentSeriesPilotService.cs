@@ -63,9 +63,10 @@ internal sealed class ContentSeriesPilotService : IContentSeriesPilotService
         string? publicOwnerId = null,
         string? voiceName = null,
         ContentSeriesTtsVoiceSettings? voiceSettings = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? accent = null)
     {
-        var spoken = (text ?? "").Trim();
+        var spoken = ContentElevenLabsClient.StripSpokenDirection(text);
         if (spoken.Length < 1)
             throw new InvalidOperationException("Thiếu câu thoại để nghe thử.");
         if (LooksLikeScreenplayDump(spoken))
@@ -81,8 +82,133 @@ internal sealed class ContentSeriesPilotService : IContentSeriesPilotService
         }
         if (!await _elevenLabs.IsConfiguredAsync(cancellationToken))
             throw new InvalidOperationException("Chưa có key ElevenLabs — Cấu hình AI.");
-        return await _elevenLabs.SynthesizeMp3Async(spoken, voice, publicOwnerId, voiceName, voiceSettings, cancellationToken);
+        return await _elevenLabs.SynthesizeMp3Async(spoken, voice, publicOwnerId, voiceName, voiceSettings, cancellationToken, accent);
     }
+
+    public async Task<IReadOnlyList<ContentSeriesBuildSummaryDto>> ListBuildsAsync(
+        string seriesCode,
+        CancellationToken cancellationToken = default)
+    {
+        var code = NormalizeCode(seriesCode);
+        var rows = await _repo.ListSeriesBuildsAsync(code, cancellationToken);
+        return rows.Select(ToSummary).ToList();
+    }
+
+    public async Task<ContentSeriesBuildDto> GetBuildAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var row = await _repo.GetSeriesBuildAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException("Không thấy bản dựng.");
+        return ToBuildDto(row);
+    }
+
+    public async Task<ContentSeriesBuildDto> UpsertBuildAsync(
+        UpsertContentSeriesBuildRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var code = NormalizeCode(request.SeriesCode);
+        var raw = request.Graph.ValueKind is JsonValueKind.Object or JsonValueKind.Array
+            ? request.Graph.GetRawText()
+            : "{}";
+        var stripped = StripBinaries(raw);
+        if (stripped.Length > MaxGraphChars)
+            throw new InvalidOperationException("Graph Series quá lớn — bỏ packDraft cũ hoặc ảnh data URL rồi lưu lại.");
+        var id = request.Id is { } given && given != Guid.Empty ? given : Guid.NewGuid();
+        var meta = SummarizeGraph(stripped);
+        var row = await _repo.UpsertSeriesBuildAsync(
+            id,
+            code,
+            meta.EpisodeCode,
+            meta.Title,
+            meta.Status,
+            meta.ShotCount,
+            meta.VoiceLines,
+            meta.KfCount,
+            meta.VideoCount,
+            stripped,
+            cancellationToken);
+        await _repo.SetSeriesPilotActiveBuildAsync(code, row.Id, cancellationToken);
+        return ToBuildDto(row);
+    }
+
+    public async Task DeleteBuildAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var row = await _repo.GetSeriesBuildAsync(id, cancellationToken);
+        if (row is null) return;
+        await _repo.DeleteSeriesBuildAsync(id, cancellationToken);
+        await _repo.SetSeriesPilotActiveBuildAsync(row.SeriesCode, null, cancellationToken);
+    }
+
+    private static ContentSeriesBuildSummaryDto ToSummary(ContentRepository.SeriesBuildRow row) =>
+        new(row.Id, row.SeriesCode, row.EpisodeCode, row.Title, row.Status,
+            row.ShotCount, row.VoiceLines, row.KfCount, row.VideoCount, row.CreatedAt, row.UpdatedAt);
+
+    private static ContentSeriesBuildDto ToBuildDto(ContentRepository.SeriesBuildRow row)
+    {
+        using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(row.GraphJson) ? "{}" : row.GraphJson);
+        return new ContentSeriesBuildDto(
+            row.Id, row.SeriesCode, row.EpisodeCode, row.Title, row.Status,
+            row.ShotCount, row.VoiceLines, row.KfCount, row.VideoCount,
+            doc.RootElement.Clone(), row.CreatedAt, row.UpdatedAt);
+    }
+
+    private readonly record struct GraphMeta(
+        string EpisodeCode, string Title, string Status, int ShotCount, int VoiceLines, int KfCount, int VideoCount);
+
+    private static GraphMeta SummarizeGraph(string json)
+    {
+        JsonNode? node;
+        try { node = JsonNode.Parse(json); }
+        catch (JsonException) { return new GraphMeta("", "Bản dựng", "draft", 0, 0, 0, 0); }
+        var obj = node as JsonObject;
+        var episode = obj?["episode"] as JsonObject;
+        var epRaw = episode?["episode"]?.ToString() ?? episode?["title"]?.ToString() ?? "";
+        var epMatch = Regex.Match(epRaw, @"EP\s*\d+", RegexOptions.IgnoreCase);
+        var episodeCode = epMatch.Success ? Regex.Replace(epMatch.Value, @"\s+", "").ToUpperInvariant() : "";
+        var title = (episode?["title"]?.ToString() ?? epRaw ?? "Bản dựng").Trim();
+        if (title.Length > 240) title = title[..240];
+        if (string.IsNullOrWhiteSpace(title)) title = "Bản dựng";
+        var shots = episode?["shots"] as JsonArray;
+        var shotCount = shots?.Count ?? 0;
+        var lines = obj?["lines"] as JsonArray;
+        var voicePreview = obj?["voicePreview"] as JsonObject;
+        var generated = IntOf(voicePreview?["generatedLineCount"]);
+        var sourced = IntOf(voicePreview?["sourceLineCount"]);
+        var voiceLines = generated > 0 ? generated : sourced > 0 ? sourced : lines?.Count ?? 0;
+        var runs = obj?["runs"] as JsonObject;
+        var kf = 0;
+        var video = 0;
+        if (runs is not null)
+        {
+            foreach (var p in runs)
+            {
+                if (p.Value is not JsonObject run) continue;
+                var kfName = run["keyframeFileName"]?.ToString();
+                var kfPath = run["keyframePath"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(kfName) || !string.IsNullOrWhiteSpace(kfPath)) kf++;
+                var url = run["previewUrl"]?.ToString();
+                var local = run["localVideoPath"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(url) || !string.IsNullOrWhiteSpace(local)) video++;
+            }
+        }
+        var sceneLocked = FlagOf(obj?["sceneLocked"]);
+        var voiceLocked = FlagOf(obj?["voiceLocked"]);
+        var scriptLocked = FlagOf(obj?["scriptLocked"]);
+        var status = sceneLocked ? "final"
+            : video > 0 || kf > 0 ? "in_prod"
+            : voiceLocked ? "voice_locked"
+            : scriptLocked ? "script_locked"
+            : "draft";
+        return new GraphMeta(episodeCode, title, status, shotCount, voiceLines, kf, video);
+    }
+
+    private static int IntOf(JsonNode? n)
+    {
+        if (n is JsonValue v && v.TryGetValue<int>(out var i)) return i;
+        return int.TryParse(n?.ToString(), out var p) ? p : 0;
+    }
+
+    private static bool FlagOf(JsonNode? n) =>
+        n is JsonValue v && v.TryGetValue<bool>(out var b) && b;
 
     private static bool LooksLikeScreenplayDump(string spoken)
     {

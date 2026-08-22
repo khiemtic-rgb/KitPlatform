@@ -499,6 +499,14 @@ function SuspenseRoute({ children }: { children: ReactNode }) {
   return <Suspense fallback={<RouteFallback />}>{children}</Suspense>;
 }
 
+function ContentRouteFallback() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: 64 }}>
+      <Spin tip="Đang mở…" />
+    </div>
+  );
+}
+
 export function AppRouter() {
   return (
     <BrowserRouter>
@@ -896,9 +904,9 @@ export function AppRouter() {
               <Route
                 path="content"
                 element={
-                  <SuspenseRoute>
+                  <Suspense fallback={<ContentRouteFallback />}>
                     <ContentLayout />
-                  </SuspenseRoute>
+                  </Suspense>
                 }
               >
                 <Route index element={<Navigate to="/content/ops" replace />} />
@@ -914,7 +922,14 @@ export function AppRouter() {
                 />
                 <Route path="packages" element={<ContentPackagesPage />} />
                 <Route path="pool" element={<ContentIdeaPoolPage />} />
-                <Route path="videos" element={<ContentVideosPage />} />
+                <Route
+                  path="videos"
+                  element={
+                    <Suspense fallback={<ContentRouteFallback />}>
+                      <ContentVideosPage />
+                    </Suspense>
+                  }
+                />
                 <Route path="topics" element={<ContentTopicsPage />} />
               </Route>
               <Route
