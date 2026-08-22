@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-21T18:57:42.741Z",
+  "generatedAt": "2026-08-22T01:51:42.756Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 351,
-    "last24hPageViews": 574,
-    "last24hRequests": 2825
+    "todayVisitors": 18,
+    "todayPageViews": 8,
+    "todayRequests": 20,
+    "last24hVisitors": 276,
+    "last24hPageViews": 372,
+    "last24hRequests": 2340
   },
   "hourly": [
-    {
-      "time": "2026-08-20T19:00:00Z",
-      "visitors": 37,
-      "requests": 206
-    },
-    {
-      "time": "2026-08-20T20:00:00Z",
-      "visitors": 7,
-      "requests": 15
-    },
-    {
-      "time": "2026-08-20T21:00:00Z",
-      "visitors": 1,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-20T22:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-20T23:00:00Z",
-      "visitors": 18,
-      "requests": 147
-    },
-    {
-      "time": "2026-08-21T00:00:00Z",
-      "visitors": 40,
-      "requests": 60
-    },
-    {
-      "time": "2026-08-21T01:00:00Z",
-      "visitors": 28,
-      "requests": 134
-    },
     {
       "time": "2026-08-21T02:00:00Z",
       "visitors": 18,
@@ -130,6 +95,41 @@
       "time": "2026-08-21T18:00:00Z",
       "visitors": 21,
       "requests": 33
+    },
+    {
+      "time": "2026-08-21T19:00:00Z",
+      "visitors": 5,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-21T20:00:00Z",
+      "visitors": 7,
+      "requests": 31
+    },
+    {
+      "time": "2026-08-21T21:00:00Z",
+      "visitors": 7,
+      "requests": 17
+    },
+    {
+      "time": "2026-08-21T22:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-21T23:00:00Z",
+      "visitors": 4,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-22T00:00:00Z",
+      "visitors": 13,
+      "requests": 15
+    },
+    {
+      "time": "2026-08-22T01:00:00Z",
+      "visitors": 5,
+      "requests": 5
     }
   ],
   "daily": [
@@ -165,66 +165,72 @@
     },
     {
       "date": "2026-08-21",
-      "visitors": 296,
-      "pageViews": 409,
-      "requests": 2446
+      "visitors": 315,
+      "pageViews": 440,
+      "requests": 2514
+    },
+    {
+      "date": "2026-08-22",
+      "visitors": 18,
+      "pageViews": 8,
+      "requests": 20
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 174
+      "views": 122
     },
     {
       "path": "/vi/",
-      "views": 102
+      "views": 70
     },
     {
       "path": "/robots.txt",
-      "views": 53
-    },
-    {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 44
-    },
-    {
-      "path": "/cdn-cgi/rum",
       "views": 43
     },
     {
-      "path": "/cdn-cgi/l/email-protection",
-      "views": 42
-    },
-    {
-      "path": "/favicon.svg",
-      "views": 42
+      "path": "/cdn-cgi/rum",
+      "views": 41
     },
     {
       "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 33
+      "views": 31
+    },
+    {
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 31
+    },
+    {
+      "path": "/favicon.svg",
+      "views": 30
     },
     {
       "path": "/_astro/index.Bqr8_YCi.css",
-      "views": 32
+      "views": 26
     },
     {
       "path": "/images/logo.png",
-      "views": 27
-    },
-    {
-      "path": "/sitemap-index.xml",
       "views": 25
     },
     {
-      "path": "/images/audience/pharmacy.png",
-      "views": 24
+      "path": "/sitemap-index.xml",
+      "views": 23
     },
     {
-      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
-      "views": 24
+      "path": "/wp-admin/function.php",
+      "views": 21
     },
     {
       "path": "/wp-includes/css/index.php",
+      "views": 21
+    },
+    {
+      "path": "/wp-content/languages/index.php",
+      "views": 21
+    },
+    {
+      "path": "/admin-footer.php",
       "views": 21
     },
     {
