@@ -146,8 +146,11 @@ export function isNewEvent(item: LocalListing): boolean {
 }
 
 /** Detail lead: drop repeated title, keep a few sentences. List still clamps in CSS. */
-export function eventLead(item: LocalListing, max = 900): string {
-  let text = (item.summary ?? '').replace(/\s+/g, ' ').trim();
+export function eventLead(item: LocalListing, max = 1200): string {
+  let text = (item.summary ?? '')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
   const title = (item.title ?? '').replace(/\s+/g, ' ').trim();
   const head = title.replace(/[.…|]+$/g, '').trim();
   if (head.length >= 12 && text.toLowerCase().startsWith(head.toLowerCase())) {
@@ -155,6 +158,8 @@ export function eventLead(item: LocalListing, max = 900): string {
   }
   if (text.length <= max) return text;
   const slice = text.slice(0, max);
+  const para = slice.lastIndexOf('\n\n');
+  if (para > 160) return slice.slice(0, para).trim();
   const cut = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('! '), slice.lastIndexOf('? '));
   return cut > 120 ? slice.slice(0, cut + 1).trim() : `${slice.trim()}…`;
 }

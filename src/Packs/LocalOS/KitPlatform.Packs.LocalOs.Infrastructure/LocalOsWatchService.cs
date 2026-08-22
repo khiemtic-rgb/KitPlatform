@@ -107,6 +107,22 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
             if (sources.Count == 0)
                 notes.Add("Chưa có nguồn website đang bật canh.");
 
+            try
+            {
+                await using var leadConn = await _db.CreateOpenConnectionAsync(workCt);
+                var filled = await LocalOsEventLeadRefresh.RefreshThinAsync(leadConn, 10, workCt);
+                if (filled > 0)
+                    notes.Add($"Bổ sung mô tả {filled} sự kiện đang cắt ngắn.");
+            }
+            catch (OperationCanceledException)
+            {
+                notes.Add("Hết giờ canh — dừng, không treo.");
+            }
+            catch (Exception)
+            {
+                /* keep watching sources */
+            }
+
             var htmlById = new ConcurrentDictionary<Guid, string>();
             await Parallel.ForEachAsync(
                 sources,
@@ -177,7 +193,7 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
                         if (already is { } row)
                         {
                             existing++;
-                            if (row.Kind == "event" && row.SummaryLen < 280)
+                            if (row.Kind == "event" && LocalOsTextExtract.IsThinLead(row.Summary))
                                 await TryRefreshShortSummaryAsync(row.Id, hit.Uri, workCt);
                             continue;
                         }
@@ -385,7 +401,8 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
         return await conn.QuerySingleOrDefaultAsync<UrlHit>(
             new CommandDefinition(
                 """
-                SELECT id AS Id, kind AS Kind, char_length(coalesce(summary, '')) AS SummaryLen
+                SELECT id AS Id, kind AS Kind, summary AS Summary,
+                       char_length(coalesce(summary, '')) AS SummaryLen
                 FROM pack_local.listing
                 WHERE source_url = @Url
                 LIMIT 1
@@ -398,6 +415,7 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
     {
         public Guid Id { get; set; }
         public string Kind { get; set; } = "";
+        public string? Summary { get; set; }
         public int SummaryLen { get; set; }
     }
 
@@ -425,18 +443,7 @@ internal sealed class LocalOsWatchService : ILocalOsWatchService
         if (summary.Length < 80)
             return;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        await conn.ExecuteAsync(
-            new CommandDefinition(
-                """
-                UPDATE pack_local.listing
-                SET summary = @Summary, last_checked_at = NOW(), updated_at = NOW()
-                WHERE id = @Id
-                  AND kind = 'event'
-                  AND char_length(coalesce(summary, '')) < 280
-                  AND char_length(@Summary) > char_length(coalesce(summary, '')) + 40
-                """,
-                new { Id = id, Summary = summary },
-                cancellationToken: cancellationToken));
+        await LocalOsEventLeadRefresh.TryStoreAsync(conn, id, summary, cancellationToken);
     }
 
     private static async Task<string> FetchHtmlAsync(Uri uri, CancellationToken cancellationToken)

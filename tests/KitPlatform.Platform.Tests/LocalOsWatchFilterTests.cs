@@ -172,6 +172,36 @@ public class LocalOsTextExtractSummaryTests
         Assert.Contains("hát then", text, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("chợ phiên", text, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void StripHtml_keeps_lead_that_starts_with_title_not_truncated_meta()
+    {
+        const string html = """
+            <html><head>
+            <title>Lễ hội truyền thống chùa Long Sào | Lễ Hội Việt Nam</title>
+            <meta property="og:title" content="Lễ hội truyền thống chùa Long Sào">
+            <meta property="og:description" content="Lễ hội truyền thống chùa Long Sào diễn ra tại xóm Cơ Phi với phần lễ dâng hương, cầu an và tưởng nhớ tiền nhân. Phần hội có văn nghệ, trò chơi dân gian, thu...">
+            </head><body>
+            <nav><p>Đăng nhập để theo dõi lễ hội và nhận cập nhật phù hợp.</p></nav>
+            <h1>Lễ hội truyền thống chùa Long Sào</h1>
+            <p class="mb-0">Lễ hội truyền thống chùa Long Sào diễn ra tại xóm Cơ Phi với phần lễ dâng hương, cầu an và tưởng nhớ tiền nhân. Phần hội có văn nghệ, trò chơi dân gian, thu hút người dân địa phương và du khách thập phương.</p>
+            <p class="v2-detail-locality-cta-lead">Đi sâu vào Xã Thành Công hoặc mở trang Thái Nguyên để xem thêm khu vực và lịch lễ hội.</p>
+            <h3>Điểm nhấn</h3>
+            <ul>
+            <li>Có nghi thức dâng hương, cầu quốc thái dân an</li>
+            <li>Tưởng nhớ công đức các bậc tiền nhân</li>
+            </ul>
+            </body></html>
+            """;
+        var text = LocalOsTextExtract.StripHtml(html);
+        Assert.Contains("thu hút người dân địa phương", text, StringComparison.Ordinal);
+        Assert.Contains("cầu quốc thái dân an", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("thu...", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("Đi sâu vào", text, StringComparison.Ordinal);
+        var lead = LocalOsTextExtract.GuessSummary("Lễ hội truyền thống chùa Long Sào | Lễ Hội Việt Nam", text);
+        Assert.False(LocalOsTextExtract.IsThinLead(lead));
+        Assert.Contains("thu hút người dân địa phương", lead, StringComparison.Ordinal);
+    }
 }
 
 public class LocalOsIndexLinksTests

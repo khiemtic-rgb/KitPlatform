@@ -88,8 +88,17 @@ public static class LocalOsTextExtract
         return compact.Length <= 140 ? compact : compact[..140].TrimEnd() + "…";
     }
 
+    /// <summary>Lead still short: meta-only, or cut mid-word with …</summary>
+    public static bool IsThinLead(string? summary)
+    {
+        var s = (summary ?? "").Trim();
+        if (s.Length < 400)
+            return true;
+        return s.EndsWith("...", StringComparison.Ordinal) || s.EndsWith("…", StringComparison.Ordinal);
+    }
+
     /// <summary>Lead for the public site: drop repeated title, keep a few sentences. Never invents.</summary>
-    public static string GuessSummary(string? title, string text, int maxChars = 900)
+    public static string GuessSummary(string? title, string text, int maxChars = 1200)
     {
         if (maxChars < 80)
             maxChars = 80;
@@ -106,10 +115,15 @@ public static class LocalOsTextExtract
                 raw = raw[head.Length..].TrimStart(' ', '|', '·', '-', '–', '\n');
         }
 
-        var compact = Regex.Replace(raw, @"\s+", " ").Trim();
+        var compact = Regex.Replace(raw, @"[ \t]+", " ");
+        compact = Regex.Replace(compact, @" *\n *", "\n");
+        compact = Regex.Replace(compact, @"\n{3,}", "\n\n").Trim();
         if (compact.Length <= maxChars)
             return compact;
         var slice = compact[..maxChars];
+        var para = slice.LastIndexOf("\n\n", StringComparison.Ordinal);
+        if (para >= 160)
+            return slice[..para].Trim();
         var cut = Math.Max(slice.LastIndexOf(". ", StringComparison.Ordinal), slice.LastIndexOf("! ", StringComparison.Ordinal));
         cut = Math.Max(cut, slice.LastIndexOf("? ", StringComparison.Ordinal));
         if (cut < 120)
@@ -563,7 +577,24 @@ public static class LocalOsTextExtract
             if (paras.Exists(x => x.Equals(p, StringComparison.OrdinalIgnoreCase)))
                 continue;
             paras.Add(p);
-            if (paras.Count >= 8)
+            if (paras.Count >= 10)
+                break;
+        }
+
+        var highlights = new List<string>();
+        foreach (Match m in Regex.Matches(cleaned, @"<li\b[^>]*>([\s\S]*?)</li>", RegexOptions.IgnoreCase))
+        {
+            if (m.Groups[1].Value.Contains("<ul", StringComparison.OrdinalIgnoreCase)
+                || m.Groups[1].Value.Contains("<ol", StringComparison.OrdinalIgnoreCase))
+                continue;
+            var li = Decode(Regex.Replace(m.Groups[1].Value, @"<[^>]+>", " "));
+            if (!UsefulHighlight(li))
+                continue;
+            if (paras.Exists(p => p.Contains(li, StringComparison.OrdinalIgnoreCase))
+                || highlights.Exists(x => x.Equals(li, StringComparison.OrdinalIgnoreCase)))
+                continue;
+            highlights.Add(li);
+            if (highlights.Count >= 6)
                 break;
         }
 
@@ -572,21 +603,36 @@ public static class LocalOsTextExtract
             parts.Add(heading);
         if (paras.Count > 0)
             parts.AddRange(paras);
-        else if (desc.Success)
-            parts.Add(Decode(desc.Groups[1].Value));
+        if (highlights.Count > 0)
+            parts.AddRange(highlights);
+        else if (paras.Count == 0 && desc.Success)
+        {
+            var meta = Decode(desc.Groups[1].Value);
+            if (meta.Length > 0)
+                parts.Add(meta);
+        }
         return string.Join("\n\n", parts.Where(p => p.Length > 0));
     }
 
     private static bool UsefulParagraph(string text, string heading)
     {
-        if (text.Length is < 40 or > 700)
+        if (text.Length is < 40 or > 900)
             return false;
-        if (heading.Length >= 12 && text.StartsWith(heading, StringComparison.OrdinalIgnoreCase))
+        if (heading.Length >= 12
+            && text.StartsWith(heading, StringComparison.OrdinalIgnoreCase)
+            && text.Length <= heading.Length + 24)
             return false;
-        if (Regex.IsMatch(text, @"cookie|đăng nhập|javascript|copyright|all rights", RegexOptions.IgnoreCase))
-            return false;
-        return true;
+        return !LooksLikeChrome(text);
     }
+
+    private static bool UsefulHighlight(string text) =>
+        text.Length is >= 18 and <= 180 && !LooksLikeChrome(text);
+
+    private static bool LooksLikeChrome(string text) =>
+        Regex.IsMatch(
+            text,
+            @"cookie|đăng nhập|javascript|copyright|all rights|theo dõi sự kiện|khám phá theo địa điểm|đi sâu vào|nhận thông báo",
+            RegexOptions.IgnoreCase);
 
     private static string Decode(string s) =>
         System.Net.WebUtility.HtmlDecode(Regex.Replace(s, @"\s+", " ").Trim());

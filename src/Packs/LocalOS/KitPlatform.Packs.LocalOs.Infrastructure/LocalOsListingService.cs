@@ -112,6 +112,7 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         if (row is null)
             return null;
         var mapped = Map(row);
+        mapped = await RefreshThinLeadAsync(mapped, cancellationToken);
         if (publicOnly && LocalOsEventDate.IsPastListing(
                 mapped.Kind, mapped.StartAt, mapped.EndAt, mapped.Title, mapped.Summary, mapped.WorkingTime))
             return null;
@@ -300,6 +301,23 @@ internal sealed class LocalOsListingService : ILocalOsListingService
             SafetyFlag = r.SafetyFlag ?? false,
             Status = status,
         };
+    }
+
+    private async Task<LocalListingDto> RefreshThinLeadAsync(
+        LocalListingDto mapped,
+        CancellationToken cancellationToken)
+    {
+        if (mapped.Kind != "event" || !LocalOsTextExtract.IsThinLead(mapped.Summary))
+            return mapped;
+        if (!LocalOsEventLeadRefresh.TryParsePublicUri(mapped.SourceUrl, out var uri))
+            return mapped;
+        var next = await LocalOsEventLeadRefresh.TryExtractAsync(uri, cancellationToken);
+        if (next is null || next.Length <= (mapped.Summary?.Length ?? 0) + 20)
+            return mapped;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        if (!await LocalOsEventLeadRefresh.TryStoreAsync(conn, mapped.Id, next, cancellationToken))
+            return mapped;
+        return mapped with { Summary = next, LastCheckedAt = DateTimeOffset.UtcNow };
     }
 
     private static async Task ExpireOverdueAsync(System.Data.IDbConnection conn, CancellationToken cancellationToken)
