@@ -1,6 +1,7 @@
 using System.Text.Json;
 using KitPlatform.Packs.Content;
 using KitPlatform.Packs.LocalOs;
+using Microsoft.AspNetCore.Hosting;
 
 namespace KitPlatform.Api.LocalOs;
 
@@ -11,15 +12,18 @@ public sealed class ContentLocalOsPublisher : IContentLocalOsPublisher
 
     private readonly ILocalOsListingService _listings;
     private readonly ILocalOsHomepagePush _homepage;
+    private readonly IWebHostEnvironment _env;
     private readonly ILogger<ContentLocalOsPublisher> _log;
 
     public ContentLocalOsPublisher(
         ILocalOsListingService listings,
         ILocalOsHomepagePush homepage,
+        IWebHostEnvironment env,
         ILogger<ContentLocalOsPublisher> log)
     {
         _listings = listings;
         _homepage = homepage;
+        _env = env;
         _log = log;
     }
 
@@ -33,7 +37,7 @@ public sealed class ContentLocalOsPublisher : IContentLocalOsPublisher
         var title = (request.Title ?? "").Trim();
         if (title.Length < 4)
             throw new InvalidOperationException("Bài chưa có tiêu đề — không đẩy Thái Nguyên Life.");
-        var body = (request.BodyMarkdown ?? "").Trim();
+        var body = ContentCtaRouter.RewriteThaiNguyenLifeHost((request.BodyMarkdown ?? "").Trim());
         if (body.Length < 40)
             throw new InvalidOperationException("Bài quá ngắn — cần web_long trước khi đẩy Thái Nguyên Life.");
 
@@ -77,6 +81,13 @@ public sealed class ContentLocalOsPublisher : IContentLocalOsPublisher
                   ?? throw new InvalidOperationException("Không cập nhật được bài Thái Nguyên Life.");
             if (!string.Equals(row.Status, "ACTIVE", StringComparison.OrdinalIgnoreCase))
                 row = await _listings.SetStatusAsync(row.Id, "ACTIVE", cancellationToken) ?? row;
+        }
+
+        if (request.CoverBytes is { Length: > 0 })
+        {
+            var coverUrl = LocalOsCoverStore.Save(
+                _env, row.Id, request.CoverBytes, request.CoverContentType, request.CoverFileName);
+            row = await _listings.SetCoverUrlAsync(row.Id, coverUrl, cancellationToken) ?? row;
         }
 
         var path = $"/tin/{row.Id:D}";

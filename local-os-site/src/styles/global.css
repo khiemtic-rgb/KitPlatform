@@ -1242,6 +1242,11 @@ img { max-width: 100%; }
 .event-detail-head h1 { margin: 0 0 10px; font-size: 1.7rem; line-height: 1.35; }
 .event-detail-pills { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .event-detail-lead { margin: 14px 8px 0; color: #3f4a44; font-size: 15px; line-height: 1.65; white-space: pre-wrap; }
+.article-body { margin: 16px 8px 0; color: #3f4a44; font-size: 15.5px; line-height: 1.75; }
+.article-body p { margin: 0 0 14px; }
+.article-body h2 { margin: 22px 0 10px; font-size: 1.15rem; }
+.article-body h3 { margin: 18px 0 8px; font-size: 1.02rem; }
+.article-body a { color: #155724; }
 .guide-wrap { max-width: 800px; }
 .guide-article { padding: 16px 20px 28px; }
 .guide-pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0 !important; }

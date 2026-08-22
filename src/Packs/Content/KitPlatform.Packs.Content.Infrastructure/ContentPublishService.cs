@@ -339,7 +339,7 @@ internal sealed class ContentPublishService : IContentPublishService
                 "wordpress_rest" => await RunWordPressAsync(job, topic, variants, selected, cancellationToken),
                 "facebook_page" => await RunFacebookAsync(job, topic, variants, selected, cancellationToken),
                 "astro_git" => await RunAstroGitAsync(job, topic, variants, selected, cancellationToken),
-                "local_os" => await RunLocalOsAsync(job, topic, variants, cancellationToken),
+                "local_os" => await RunLocalOsAsync(job, topic, variants, selected, cancellationToken),
                 _ => throw new InvalidOperationException(
                     $"Kênh «{job.ConnectorType}» không đăng tự động — copy tay ở Đăng tay. Chỉ auto: Fanpage, Astro, WordPress, Thái Nguyên Life."),
             };
@@ -422,6 +422,7 @@ internal sealed class ContentPublishService : IContentPublishService
         ContentRepository.PublishJobRow job,
         ContentRepository.TopicRow topic,
         IReadOnlyList<ContentRepository.VariantRow> variants,
+        ContentRepository.AssetRow? selected,
         CancellationToken ct)
     {
         var web = variants.FirstOrDefault(v =>
@@ -431,9 +432,10 @@ internal sealed class ContentPublishService : IContentPublishService
         var seo = variants.FirstOrDefault(v =>
             string.Equals(v.Kind, "seo_meta", StringComparison.OrdinalIgnoreCase));
         var title = (web?.Title ?? topic.Title ?? "").Trim();
-        var body = (web?.BodyMarkdown ?? "").Trim();
+        var body = ContentCtaRouter.RewriteThaiNguyenLifeHost((web?.BodyMarkdown ?? "").Trim());
         var seoText = MarkdownToPlainText(seo?.BodyMarkdown ?? "", singleLine: true);
         var brand = await _repo.GetBrandAsync(topic.BrandId, ct);
+        var cover = await ResolvePublishImageBytesAsync(selected, ct);
         var published = await _localOs.PublishArticleAsync(
             new ContentLocalOsPublishRequest(
                 topic.Id,
@@ -441,7 +443,10 @@ internal sealed class ContentPublishService : IContentPublishService
                 body,
                 string.IsNullOrWhiteSpace(seoText) ? null : seoText,
                 brand?.Name,
-                topic.BrandCode),
+                topic.BrandCode,
+                cover?.Bytes,
+                cover?.ContentType,
+                cover?.FileName),
             ct);
         _ = job;
         return new ConnectorResult(published.ListingId.ToString("D"), published.ResultJson);

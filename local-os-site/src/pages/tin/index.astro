@@ -1,6 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { coverFor, formatRelative, hrefFor, listListings } from '../../lib/api';
+import { formatRelative, hasListingCover, hrefFor, listingCover, listListings } from '../../lib/api';
 import { collectionJsonLd, siteOrigin } from '../../lib/seo';
 
 const items = await listListings('article');
@@ -33,7 +33,7 @@ const pageDesc = 'Bài viết về đời sống Thái Nguyên — đăng từ K
           {items.map((item) => (
             <li>
               <a class="event-row" href={hrefFor(item)}>
-                <img src={coverFor('article', 0)} alt="" />
+                <img src={listingCover(item, 0)} alt={hasListingCover(item) ? item.title : ''} />
                 <div>
                   <h2>{item.title}</h2>
                   <p>{(item.salaryText || item.summary || '').replace(/\s+/g, ' ').slice(0, 160)}</p>

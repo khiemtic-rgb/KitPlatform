@@ -1,7 +1,19 @@
 ---
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
-import { coverFor, formatRelative, getListing, hrefFor, isListingExpired } from '../../lib/api';
+import {
+  formatRelative,
+  getListing,
+  hasListingCover,
+  hrefFor,
+  isListingExpired,
+  listingCover,
+  listListings,
+  orgInitial,
+  trustLabel,
+} from '../../lib/api';
+import ReportListing from '../../components/ReportListing.astro';
+import ShareListing from '../../components/ShareListing.astro';
 import { renderArticleHtml } from '../../lib/md';
 import { articleJsonLd, breadcrumbJsonLd, clipMeta, siteOrigin } from '../../lib/seo';
 
@@ -9,15 +21,25 @@ const { id } = Astro.params;
 const item = id ? await getListing(id) : null;
 if (!item || item.kind !== 'article') Astro.response.status = 404;
 
+const all = item ? await listListings('article') : [];
+const similar = item
+  ? all.filter((x) => x.id !== item.id).slice(0, 4)
+  : [];
 const expired = item ? isListingExpired(item) : false;
 const origin = siteOrigin(Astro.site);
 const pageTitle = item && item.kind === 'article' ? `${item.title} — Thái Nguyên Life` : 'Không tìm thấy';
+const lead = item && item.kind === 'article' ? (item.salaryText ?? '').trim() : '';
 const pageDesc = item && item.kind === 'article'
-  ? clipMeta(item.salaryText || item.summary || item.title)
+  ? clipMeta(lead || item.summary || item.title)
   : 'Bài không còn hoặc chưa mở trên Thái Nguyên Life.';
-const pageImage = coverFor('article', 0);
+const pageImage = item && item.kind === 'article' ? listingCover(item, 0) : listingCover(null, 0);
+const realCover = item ? hasListingCover(item) : false;
 const html = item && item.kind === 'article' ? renderArticleHtml(item.summary ?? '') : '';
 const when = item ? formatRelative(item.publishedAt || item.lastCheckedAt) : '';
+const facts: { label: string; value: string }[] = [];
+if (item?.organizationName) facts.push({ label: 'Đơn vị', value: item.organizationName });
+if (item?.placeText) facts.push({ label: 'Địa điểm', value: item.placeText });
+if (when) facts.push({ label: 'Cập nhật', value: when });
 const pageJsonLd = item && item.kind === 'article' && !expired
   ? [
       breadcrumbJsonLd(origin, [
@@ -31,6 +53,8 @@ const pageJsonLd = item && item.kind === 'article' && !expired
         headline: item.title,
         description: pageDesc,
         image: pageImage,
+        datePublished: item.publishedAt,
+        dateModified: item.lastCheckedAt || item.publishedAt,
       }),
     ]
   : [];
@@ -55,20 +79,96 @@ const pageJsonLd = item && item.kind === 'article' && !expired
             <span>›</span>
             <span>{item.title}</span>
           </nav>
-          <article class="event-detail-main" style="max-width:760px">
-            <div class="event-hero-media">
-              <img src={pageImage} alt="" />
-              <span class="photo-caption">Ảnh minh họa</span>
-            </div>
-            <header class="event-detail-head">
-              <h1>{item.title}</h1>
-              <div class="event-detail-pills">
-                {item.organizationName && <span class="room-pill">{item.organizationName}</span>}
-                {when && <span class="room-pill is-soft">{when}</span>}
+
+          <div class="event-detail-grid">
+            <article class="event-detail-main">
+              <div class="event-hero-media">
+                <img src={pageImage} alt={realCover ? item.title : 'Ảnh minh họa'} />
+                <span class="event-row-badge is-event">Tin</span>
+                {!realCover && <span class="photo-caption">Ảnh minh họa</span>}
               </div>
-            </header>
-            <div class="event-detail-lead article-body" set:html={html} />
-          </article>
+
+              <header class="event-detail-head">
+                <h1>{item.title}</h1>
+                <div class="event-detail-pills">
+                  {trustLabel(item.trust) && <span class="room-pill is-soft">{trustLabel(item.trust)}</span>}
+                  {item.organizationName && <span class="room-pill">{item.organizationName}</span>}
+                  {item.placeText && <span class="room-pill">{item.placeText}</span>}
+                  {when && <span class="room-pill is-soft">{when}</span>}
+                </div>
+              </header>
+
+              {lead && <p class="event-detail-lead">{lead}</p>}
+
+              {facts.length > 0 && (
+                <section class="job-block">
+                  <h2>Thông tin chi tiết</h2>
+                  <dl class="job-facts">
+                    {facts.map((f) => (
+                      <div>
+                        <dt>{f.label}</dt>
+                        <dd>{f.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              )}
+
+              {html && (
+                <div class="article-body" set:html={html} />
+              )}
+
+              {item.organizationName && (
+                <section class="event-source-card">
+                  <span class="job-ico c2">{orgInitial(item)}</span>
+                  <div>
+                    <strong>{item.organizationName}</strong>
+                    <span class="muted">Bài trên Thái Nguyên Life</span>
+                  </div>
+                </section>
+              )}
+            </article>
+
+            <aside class="event-detail-side">
+              <section class="event-reg-card">
+                <h3>Chia sẻ bài này</h3>
+                <p>Gửi bạn bè trên Facebook, Zalo hoặc sao chép link. Không phải tin tuyển dụng hay phòng trọ.</p>
+                <ShareListing />
+                <ReportListing listingId={item.id} kind="article" />
+              </section>
+
+              {item.organizationName && (
+                <section class="panel">
+                  <h3>Đơn vị</h3>
+                  <div class="event-org">
+                    <span class="job-ico c0">{orgInitial(item)}</span>
+                    <div>
+                      <strong>{item.organizationName}</strong>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {similar.length > 0 && (
+                <section class="panel">
+                  <h3>Tin liên quan</h3>
+                  {similar.map((e, i) => (
+                    <a class="event-mini" href={hrefFor(e)}>
+                      <img src={listingCover(e, i + 1)} alt={hasListingCover(e) ? e.title : 'Ảnh minh họa'} />
+                      <div>
+                        <strong>{e.title}</strong>
+                        {e.organizationName && <span>{e.organizationName}</span>}
+                        {formatRelative(e.publishedAt || e.lastCheckedAt) && (
+                          <span>{formatRelative(e.publishedAt || e.lastCheckedAt)}</span>
+                        )}
+                      </div>
+                    </a>
+                  ))}
+                  <a class="panel-more" href="/tin">Xem thêm tin →</a>
+                </section>
+              )}
+            </aside>
+          </div>
         </>
       ) : (
         <p class="empty">Bài không còn hoặc chưa mở.</p>

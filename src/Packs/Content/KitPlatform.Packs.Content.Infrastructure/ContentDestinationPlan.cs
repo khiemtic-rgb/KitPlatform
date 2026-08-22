@@ -39,7 +39,7 @@ internal static class ContentDestinationPlan
                 string.IsNullOrWhiteSpace(site.Name) ? site.Code : site.Name,
                 string.IsNullOrWhiteSpace(type) ? "site" : type,
                 ["web_long", "seo_meta"],
-                NeedsImages: type is not ("local_os" or "manual")));
+                NeedsImages: type is not "manual"));
         }
 
         foreach (var ch in activeChannels)

@@ -18,7 +18,7 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         l.price_month AS PriceMonth, l.room_type AS RoomType, l.trust AS Trust,
         l.safety_flag AS SafetyFlag, l.status AS Status,
         l.published_at AS PublishedAt, l.last_checked_at AS LastCheckedAt, l.expires_at AS ExpiresAt,
-        l.source_id AS SourceId, s.name AS SourceName
+        l.source_id AS SourceId, s.name AS SourceName, l.cover_url AS CoverUrl
         """;
 
     private readonly IDbConnectionFactory _db;
@@ -232,6 +232,27 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         return await GetAsync(id, publicOnly: false, cancellationToken);
     }
 
+    public async Task<LocalListingDto?> SetCoverUrlAsync(
+        Guid id,
+        string? coverUrl,
+        CancellationToken cancellationToken = default)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var n = await conn.ExecuteAsync(
+            new CommandDefinition(
+                """
+                UPDATE pack_local.listing SET
+                    cover_url = @CoverUrl,
+                    last_checked_at = NOW(),
+                    updated_at = NOW()
+                WHERE id = @Id
+                """,
+                new { Id = id, CoverUrl = string.IsNullOrWhiteSpace(coverUrl) ? null : coverUrl.Trim() },
+                cancellationToken: cancellationToken));
+        if (n == 0) return null;
+        return await GetAsync(id, publicOnly: false, cancellationToken);
+    }
+
     public async Task<LocalListingDto?> FindBySourceUrlAsync(
         string sourceUrl,
         CancellationToken cancellationToken = default)
@@ -423,7 +444,7 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         r.SalaryText, r.WorkingTime, r.EmploymentType, r.Category, r.Requirements,
         r.StartAt, r.EndAt, r.RegistrationUrl,
         r.PriceMonth, r.RoomType, r.Trust, r.SafetyFlag, r.Status,
-        r.PublishedAt, r.LastCheckedAt, r.ExpiresAt, r.SourceId, r.SourceName);
+        r.PublishedAt, r.LastCheckedAt, r.ExpiresAt, r.SourceId, r.SourceName, r.CoverUrl);
 
     internal sealed class ListingRow
     {
@@ -457,5 +478,6 @@ internal sealed class LocalOsListingService : ILocalOsListingService
         public DateTimeOffset? ExpiresAt { get; set; }
         public Guid? SourceId { get; set; }
         public string? SourceName { get; set; }
+        public string? CoverUrl { get; set; }
     }
 }

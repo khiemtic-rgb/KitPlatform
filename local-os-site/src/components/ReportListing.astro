@@ -17,18 +17,25 @@ const reasons =
           { id: 'no_answer', label: 'Gọi không được' },
           { id: 'other', label: 'Tin không còn đúng' },
         ]
-      : [
-          { id: 'gone', label: 'Sự kiện đã hủy / hết chỗ' },
-          { id: 'wrong_phone', label: 'Số hoặc link không đúng' },
-          { id: 'other', label: 'Tin không còn đúng' },
-        ];
+      : kind === 'article'
+        ? [
+            { id: 'wrong', label: 'Nội dung không đúng' },
+            { id: 'other', label: 'Bài không còn phù hợp' },
+          ]
+        : [
+            { id: 'gone', label: 'Sự kiện đã hủy / hết chỗ' },
+            { id: 'wrong_phone', label: 'Số hoặc link không đúng' },
+            { id: 'other', label: 'Tin không còn đúng' },
+          ];
 
 const lead =
   kind === 'room'
     ? 'Báo sai số, hết phòng hoặc không liên lạc được. Ban Quản trị kiểm tra xác minh lại thông tin.'
     : kind === 'job'
       ? 'Báo sai số, đã tuyển hết hoặc không liên lạc được. Ban Quản trị kiểm tra xác minh lại thông tin.'
-      : 'Báo sự kiện hủy, hết chỗ hoặc số/link không đúng. Ban Quản trị kiểm tra xác minh lại thông tin.';
+      : kind === 'article'
+        ? 'Báo nội dung sai hoặc bài không còn phù hợp. Ban Quản trị kiểm tra lại.'
+        : 'Báo sự kiện hủy, hết chỗ hoặc số/link không đúng. Ban Quản trị kiểm tra xác minh lại thông tin.';
 ---
 <section class="listing-report" data-listing-report data-listing-id={listingId}>
   <h3>Gọi rồi mà tin không đúng?</h3>

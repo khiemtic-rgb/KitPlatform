@@ -472,7 +472,10 @@ internal sealed class ContentGenerateService : IContentGenerateService
             "- Exactly 3 ## headings. Each: one argument + one concrete example from Brand Brain (problems/proof).\n" +
             "- Close: one takeaway + CTA URL if provided (plain markdown link).\n" +
             "900–1400 words Vietnamese. Markdown OK (##, lists). No invented numbers, medical claims, or other-brand voice.\n" +
-            "If evidence/source is empty, stay qualitative — do not fabricate stats.";
+            "If evidence/source is empty, stay qualitative — do not fabricate stats.\n" +
+            (string.Equals(brand.Code, "tnlife", StringComparison.OrdinalIgnoreCase)
+                ? "Brand tnlife: every public URL must be https://thainguyenlife.vn (paths /viec /tro /tin OK). Never thainguyen.life. No Novixa/Famixa/PHC CTA. No trailing hashtag dump.\n"
+                : "");
 
         var user =
             "Brand: " + brand.Name + " (" + brand.Code + ")\n" +

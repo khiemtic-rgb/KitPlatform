@@ -236,15 +236,24 @@ export function articleJsonLd(opts: {
   headline: string;
   description: string;
   image?: string;
+  datePublished?: string | null;
+  dateModified?: string | null;
 }): Record<string, unknown> {
+  const url = absUrl(opts.origin, opts.path);
   const node: Record<string, unknown> = {
     '@type': 'Article',
     headline: opts.headline,
     description: opts.description,
-    url: absUrl(opts.origin, opts.path),
+    url,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
     inLanguage: 'vi-VN',
+    author: { '@type': 'Organization', name: 'Thái Nguyên Life' },
     publisher: { '@id': `${opts.origin}/#org` },
   };
+  const published = isoOrNull(opts.datePublished);
+  const modified = isoOrNull(opts.dateModified) || published;
+  if (published) node.datePublished = published;
+  if (modified) node.dateModified = modified;
   if (opts.image) node.image = absUrl(opts.origin, opts.image);
   return node;
 }

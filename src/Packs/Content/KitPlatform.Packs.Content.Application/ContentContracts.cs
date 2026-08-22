@@ -814,7 +814,10 @@ public sealed record ContentLocalOsPublishRequest(
     string BodyMarkdown,
     string? SeoDescription,
     string? BrandName,
-    string? BrandCode);
+    string? BrandCode,
+    byte[]? CoverBytes = null,
+    string? CoverContentType = null,
+    string? CoverFileName = null);
 
 public sealed record ContentLocalOsPublishResult(Guid ListingId, string PublicPath, string ResultJson);
 

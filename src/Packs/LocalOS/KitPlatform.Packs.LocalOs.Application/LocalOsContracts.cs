@@ -30,7 +30,8 @@ public sealed record LocalListingDto(
     DateTimeOffset? LastCheckedAt,
     DateTimeOffset? ExpiresAt,
     Guid? SourceId,
-    string? SourceName);
+    string? SourceName,
+    string? CoverUrl = null);
 
 public sealed record UpsertLocalListingRequest(
     string Kind,
@@ -209,6 +210,7 @@ public interface ILocalOsListingService
     Task<LocalListingDto?> UpdateAsync(Guid id, UpsertLocalListingRequest request, CancellationToken cancellationToken = default);
     Task<LocalListingDto?> SetStatusAsync(Guid id, string status, CancellationToken cancellationToken = default);
     Task<LocalListingDto?> FindBySourceUrlAsync(string sourceUrl, CancellationToken cancellationToken = default);
+    Task<LocalListingDto?> SetCoverUrlAsync(Guid id, string? coverUrl, CancellationToken cancellationToken = default);
     Task<LocalListingDto?> FindDuplicateAsync(
         string kind,
         string title,

@@ -7,8 +7,10 @@ import {
   formatEventLine,
   groupCover,
   groupHint,
+  hasListingCover,
   hrefFor,
   isRecent,
+  listingCover,
   listGroups,
   listListings,
   orgInitial,
@@ -223,8 +225,8 @@ const liveCount = jobs.length + events.length + rooms.length + articles.length;
           {latestArticles.map((item, i) => (
             <a class="ev" href={hrefFor(item)}>
               <span class="ev-thumb-wrap">
-                <img class="ev-thumb" src={coverFor('article', i)} alt="" />
-                <span class="photo-caption">Minh họa</span>
+                <img class="ev-thumb" src={listingCover(item, i)} alt={hasListingCover(item) ? item.title : ''} />
+                {!hasListingCover(item) && <span class="photo-caption">Minh họa</span>}
               </span>
               <div class="ev-body">
                 <strong>{item.title}</strong>

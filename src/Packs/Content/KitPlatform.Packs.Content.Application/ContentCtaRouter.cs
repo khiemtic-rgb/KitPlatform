@@ -8,6 +8,7 @@ public static class ContentCtaRouter
 {
     public const string NovixaHealthCheck = "https://novixa.vn/vi/health-check/";
     public const string NovixaSpaHealthCheck = "https://novixa.vn/vi/spa-health-check/";
+    public const string ThaiNguyenLifeHome = "https://thainguyenlife.vn";
 
     public static string? Resolve(
         string? brandCode,
@@ -27,18 +28,21 @@ public static class ContentCtaRouter
                 return KeepIfSameLanding(topicCta, NovixaHealthCheck) ?? NovixaHealthCheck;
         }
 
+        if (IsThaiNguyenLife(brandCode))
+            return CanonicalThaiNguyenLife(FirstNonEmpty(topicCta, brandDefault) ?? ThaiNguyenLifeHome);
+
         return FirstNonEmpty(topicCta, brandDefault);
     }
 
     public static string RewriteBody(string? brandCode, string body, string? resolvedCta)
     {
-        if (string.IsNullOrWhiteSpace(body) || string.IsNullOrWhiteSpace(resolvedCta))
-            return body ?? "";
-        if (!IsNovixa(brandCode)) return body;
+        var next = RewriteThaiNguyenLifeHost(body ?? "");
+        if (string.IsNullOrWhiteSpace(next) || string.IsNullOrWhiteSpace(resolvedCta))
+            return next;
+        if (!IsNovixa(brandCode)) return next;
         if (!resolvedCta.StartsWith("https://novixa.vn/vi/", StringComparison.OrdinalIgnoreCase))
-            return body;
+            return next;
 
-        var next = body;
         foreach (var wrong in new[]
                  {
                      "https://www.novixa.vn/",
@@ -53,11 +57,40 @@ public static class ContentCtaRouter
         return next;
     }
 
+    public static string RewriteThaiNguyenLifeHost(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return text ?? "";
+        return System.Text.RegularExpressions.Regex.Replace(
+            text,
+            @"https?://(?:www\.)?thainguyen\.life",
+            ThaiNguyenLifeHome,
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    }
+
+    public static string CanonicalThaiNguyenLife(string? url)
+    {
+        var raw = RewriteThaiNguyenLifeHost((url ?? "").Trim());
+        if (string.IsNullOrWhiteSpace(raw)) return ThaiNguyenLifeHome;
+        if (raw.StartsWith("http://thainguyenlife.vn", StringComparison.OrdinalIgnoreCase))
+            raw = "https://" + raw["http://".Length..];
+        if (!raw.StartsWith("https://thainguyenlife.vn", StringComparison.OrdinalIgnoreCase)
+            && IsThaiNguyenLifeHostOnly(raw))
+            return ThaiNguyenLifeHome;
+        return raw;
+    }
+
+    private static bool IsThaiNguyenLifeHostOnly(string raw) =>
+        raw.Equals("thainguyenlife.vn", StringComparison.OrdinalIgnoreCase)
+        || raw.Equals("www.thainguyenlife.vn", StringComparison.OrdinalIgnoreCase);
+
     public static bool LooksLikeHealthCheck(string? title, string? pillar, string? goal, string? outline) =>
         LooksLikeHealthCheck(Fold($"{title} {pillar} {goal} {outline}"));
 
     private static bool IsNovixa(string? brandCode) =>
         string.Equals(brandCode?.Trim(), "novixa", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsThaiNguyenLife(string? brandCode) =>
+        string.Equals(brandCode?.Trim(), "tnlife", StringComparison.OrdinalIgnoreCase);
 
     private static bool LooksLikeSpaHealthCheck(string folded) =>
         folded.Contains("spa-health-check", StringComparison.Ordinal)

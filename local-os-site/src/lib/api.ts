@@ -25,6 +25,7 @@ export type LocalListing = {
   trust: string;
   sourceKind?: string | null;
   sourceUrl?: string | null;
+  coverUrl?: string | null;
   publishedAt?: string | null;
   lastCheckedAt?: string | null;
   expiresAt?: string | null;
@@ -408,6 +409,30 @@ export function coverFor(kind: string, index = 0): string {
   if (kind === 'event' || kind === 'grant' || kind === 'article') return index % 2 === 0 ? '/trend/event.jpg' : '/trend/event2.jpg';
   if (kind === 'room') return index % 2 === 0 ? '/trend/room.jpg' : '/trend/room2.jpg';
   return ['/trend/job.jpg', '/trend/job2.jpg', '/trend/job3.jpg'][index % 3];
+}
+
+function coverApiOrigin(): string {
+  const pub = (import.meta.env.PUBLIC_LOCAL_OS_API as string | undefined)?.replace(/\/$/, '');
+  if (pub) return pub.replace(/\/api\/public\/local-os\/?$/i, '');
+  if (import.meta.env.PROD) return 'https://api.novixa.vn';
+  return 'http://127.0.0.1:5290';
+}
+
+export function hasListingCover(item?: Pick<LocalListing, 'coverUrl'> | null): boolean {
+  return Boolean((item?.coverUrl ?? '').trim());
+}
+
+export function listingCover(
+  item: Pick<LocalListing, 'kind' | 'coverUrl'> | null | undefined,
+  index = 0,
+): string {
+  const raw = (item?.coverUrl ?? '').trim();
+  if (raw) {
+    if (/^https?:\/\//i.test(raw)) return raw;
+    const origin = coverApiOrigin();
+    return `${origin}${raw.startsWith('/') ? raw : `/${raw}`}`;
+  }
+  return coverFor(item?.kind ?? 'article', index);
 }
 
 export function orgInitial(item: Pick<LocalListing, 'organizationName' | 'title'>): string {

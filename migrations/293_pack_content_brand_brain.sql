@@ -167,7 +167,7 @@ VALUES
 ),
 (
     'tnlife', 'Thái Nguyên Life',
-    'Xem việc & sự kiện', 'https://thainguyen.life',
+    'Xem việc & sự kiện', 'https://thainguyenlife.vn',
     15, 'lean', TRUE, TRUE, 50,
     'Mặt công khai Local OS — việc làm, sự kiện, phòng trọ Thái Nguyên. Không bán thuốc, không Family OS, không trà. Tin phải có nguồn; không bịa số liệu tuyển dụng.',
     $json${

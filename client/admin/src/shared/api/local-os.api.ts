@@ -23,6 +23,7 @@ export type LocalListing = {
   status: string;
   sourceKind?: string | null;
   sourceUrl?: string | null;
+  coverUrl?: string | null;
   sourceId?: string | null;
   sourceName?: string | null;
   publishedAt?: string | null;

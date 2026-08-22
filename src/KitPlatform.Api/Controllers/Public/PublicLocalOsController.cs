@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using KitPlatform.Packs.LocalOs;
 
@@ -13,15 +14,18 @@ public sealed class PublicLocalOsController : ControllerBase
     private readonly ILocalOsListingService _listings;
     private readonly ILocalOsPublisherService _publishers;
     private readonly ILocalOsReportService _reports;
+    private readonly IWebHostEnvironment _env;
 
     public PublicLocalOsController(
         ILocalOsListingService listings,
         ILocalOsPublisherService publishers,
-        ILocalOsReportService reports)
+        ILocalOsReportService reports,
+        IWebHostEnvironment env)
     {
         _listings = listings;
         _publishers = publishers;
         _reports = reports;
+        _env = env;
     }
 
     [HttpGet("listings")]
@@ -39,6 +43,16 @@ public sealed class PublicLocalOsController : ControllerBase
     {
         var row = await _listings.GetAsync(id, publicOnly: true, cancellationToken);
         return row is null ? NotFound() : Ok(row);
+    }
+
+    [HttpGet("listings/{id:guid}/cover")]
+    [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)]
+    public async Task<IActionResult> Cover(Guid id, CancellationToken cancellationToken)
+    {
+        var row = await _listings.GetAsync(id, publicOnly: true, cancellationToken);
+        if (row is null) return NotFound();
+        var file = KitPlatform.Api.LocalOs.LocalOsCoverStore.Find(_env, id);
+        return file is null ? NotFound() : PhysicalFile(file.Value.Path, file.Value.ContentType);
     }
 
     [HttpPost("listings/{id:guid}/reports")]
