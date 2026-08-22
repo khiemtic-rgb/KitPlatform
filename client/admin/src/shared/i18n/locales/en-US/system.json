@@ -438,6 +438,8 @@
       "learning": "People Development",
       "customer": "Customers",
       "family_os": "FamilyOS",
+      "content": "Marketing",
+      "local_os": "Thai Nguyen Life",
       "system": "System"
     },
     "labels": {
@@ -474,6 +476,8 @@
       "survey.write": "Manage KAP / Survey",
       "learning.read": "View / take People Development",
       "learning.write": "Manage People Development (recognize / evaluate)",
+      "local_os.read": "View Thai Nguyen Life listings",
+      "local_os.write": "Publish / review Thai Nguyen Life listings",
       "system.read": "View system",
       "system.write": "Manage system",
       "system.delete_permanent": "Permanent delete"

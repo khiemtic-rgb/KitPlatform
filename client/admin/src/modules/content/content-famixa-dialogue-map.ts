@@ -248,13 +248,9 @@ export function applyDialogueMap(state: SeriesPilotState): SeriesPilotState {
   const cleared = dropVoiceChains(state);
   const ep = cleared.episode;
   if (!ep?.shots.length) return cleared;
-  const { byShot, lines } = proposeDialogueMap(cleared, ep.shots);
+  const { byShot } = proposeDialogueMap(cleared, ep.shots);
   const shots = ep.shots.map((s) => {
     const ids = s.dialogueSegmentIds ?? byShot.get(s.id) ?? [];
-    const voiceSec = ids.reduce((n, id) => {
-      const line = lines.find((l) => l.id === id);
-      return n + (line ? lineSecOf(cleared, line) : 0);
-    }, 0);
     const spoken = ids.length > 0;
     const seconds: 5 | 10 = spoken ? 10 : s.seconds === 10 ? 10 : 5;
     return {

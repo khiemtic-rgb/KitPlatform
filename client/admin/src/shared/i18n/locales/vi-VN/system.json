@@ -438,6 +438,8 @@
       "learning": "Phát triển Nhân sự",
       "customer": "Khách hàng",
       "family_os": "FamilyOS",
+      "content": "Marketing",
+      "local_os": "Thái Nguyên Life",
       "system": "Hệ thống"
     },
     "labels": {
@@ -474,6 +476,8 @@
       "survey.write": "Quản lý KAP / Survey",
       "learning.read": "Xem / học Phát triển Nhân sự",
       "learning.write": "Quản lý Phát triển Nhân sự (ghi nhận / đánh giá)",
+      "local_os.read": "Xem tin Thái Nguyên Life",
+      "local_os.write": "Đăng / duyệt tin Thái Nguyên Life",
       "system.read": "Xem hệ thống",
       "system.write": "Quản trị hệ thống",
       "system.delete_permanent": "Xóa vĩnh viễn"

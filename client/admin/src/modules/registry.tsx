@@ -90,7 +90,8 @@ const PHARMACY_ONLY: readonly AdminVertical[] = ['pharmacy'];
 const CLINIC_ONLY: readonly AdminVertical[] = ['clinic'];
 const FAMILY_ONLY: readonly AdminVertical[] = ['family'];
 const MARKETING_ONLY: readonly AdminVertical[] = ['marketing'];
-const LOCAL_ONLY: readonly AdminVertical[] = ['local'];
+/** KIT_LOCAL owns the park; KIT_MKT ADMIN may operate listings. */
+const LOCAL_AND_MARKETING: readonly AdminVertical[] = ['local', 'marketing'];
 const ALL_VERTICALS: readonly AdminVertical[] = ['pharmacy', 'clinic', 'family', 'marketing', 'local'];
 
 /** Sidebar cấp 1 — thứ tự theo luồng vận hành */
@@ -246,7 +247,7 @@ export const moduleRegistry: ModuleMenuItem[] = [
     icon: <ReadOutlined />,
     enabled: true,
     platformModule: ADMIN_MODULE_PLATFORM_CODES.localOs,
-    verticals: LOCAL_ONLY,
+    verticals: LOCAL_AND_MARKETING,
   },
   {
     key: 'system',

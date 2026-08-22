@@ -13,6 +13,8 @@ export const PERMISSION_MODULE_ORDER = [
   'learning',
   'customer',
   'family_os',
+  'content',
+  'local_os',
   'system',
 ] as const;
 
@@ -52,6 +54,13 @@ const MODULE_KEY_ALIASES: Record<string, (typeof PERMISSION_MODULE_ORDER)[number
   FamilyOS: 'family_os',
   family: 'family_os',
   'Family OS': 'family_os',
+  content: 'content',
+  Content: 'content',
+  kit_content: 'content',
+  local_os: 'local_os',
+  local: 'local_os',
+  LocalOs: 'local_os',
+  'Thái Nguyên Life': 'local_os',
   system: 'system',
   System: 'system',
   'Hệ thống': 'system',

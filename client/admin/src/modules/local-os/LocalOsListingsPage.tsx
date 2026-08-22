@@ -298,7 +298,7 @@ export function LocalOsListingsPage() {
       window.setTimeout(() => pasteRef.current?.focus(), 50);
     } catch (error) {
       if (error && typeof error === 'object' && 'errorFields' in error) return;
-      const msg = apiErrorMessage(error, 'Không thêm được tin. Kiểm tra API local (:5290) và đăng nhập ADMIN KIT_LOCAL.');
+      const msg = apiErrorMessage(error, 'Không thêm được tin. Đăng nhập ADMIN KIT_MKT hoặc KIT_LOCAL trên api.novixa.vn.');
       setLastError(msg);
       message.error(msg);
     } finally {

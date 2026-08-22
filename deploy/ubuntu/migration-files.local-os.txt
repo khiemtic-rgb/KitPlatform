@@ -26,3 +26,4 @@
 317_pack_local_os_tn_football_events.sql
 318_pack_local_os_city_news_watch.sql
 319_pack_local_os_expire_past_events.sql
+320_pack_local_os_kit_mkt_ops.sql

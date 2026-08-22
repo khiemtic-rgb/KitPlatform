@@ -168,6 +168,9 @@ export function ContentOpsPage() {
           <Link to="/content/calendar?view=week">
             <Button icon={<CalendarOutlined />}>Lịch tuần</Button>
           </Link>
+          <Link to="/local-os/listings">
+            <Button>Thái Nguyên Life</Button>
+          </Link>
           <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
             Tải lại
           </Button>

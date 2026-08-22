@@ -2471,11 +2471,12 @@ export function ContentFamixaSeriesTab() {
     const assets = stateRef.current.voiceAssets ?? {};
     const measured: Record<string, number> = {};
     for (const line of spoken) {
+      const voiceId = script.lines.find((l) => l.id === line.id)?.voiceId;
       const blob =
         ttsBlobs.current.get(line.id) ||
-        ttsBlobs.current.get(ttsTextKey(line.text, line.voiceId)) ||
-        (await loadTtsBlob(ttsLineKey(line.id, line.voiceId))) ||
-        (await loadTtsBlob(ttsTextKey(line.text, line.voiceId)));
+        ttsBlobs.current.get(ttsTextKey(line.text, voiceId)) ||
+        (await loadTtsBlob(ttsLineKey(line.id, voiceId))) ||
+        (await loadTtsBlob(ttsTextKey(line.text, voiceId)));
       if (!blob) continue;
       const sec = (await measureAudioSec(blob)) || assets[line.id]?.duration || 0;
       if (sec > 0.2) measured[line.id] = Number(sec.toFixed(2));

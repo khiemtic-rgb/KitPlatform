@@ -77,6 +77,10 @@ const PERMISSION_UI_GROUP_DEFS: Array<{
     items: ['content.read', 'content.write', 'content.publish', 'content.budget.manage'],
   },
   {
+    moduleKey: 'local_os',
+    items: ['local_os.read', 'local_os.write'],
+  },
+  {
     moduleKey: 'learning',
     items: ['learning.read', 'learning.write'],
   },
@@ -88,7 +92,7 @@ const PERMISSION_UI_GROUP_DEFS: Array<{
 
 /** Module quyền FamilyOS được hiện / lưu. */
 const FAMILY_PERMISSION_MODULES = new Set(['system', 'family_os', 'family']);
-const MARKETING_PERMISSION_MODULES = new Set(['system', 'content']);
+const MARKETING_PERMISSION_MODULES = new Set(['system', 'content', 'local_os', 'local']);
 const LOCAL_PERMISSION_MODULES = new Set(['system', 'local_os', 'local']);
 
 function buildPermissionUiGroup(

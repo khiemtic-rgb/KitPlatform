@@ -67,12 +67,15 @@ import {
   resolveContentNavKey,
   resolveContentNavLabel,
 } from '@/modules/content/content-nav';
+import { LOCAL_OS_NAV, resolveLocalOsNavKey } from '@/modules/local-os/local-os-nav';
 
 const { Header, Sider, Content } = Layout;
 
 function resolveActiveModuleKey(pathname: string): string {
   const contentKey = resolveContentNavKey(pathname);
   if (contentKey) return contentKey;
+  const localKey = resolveLocalOsNavKey(pathname);
+  if (localKey) return localKey;
 
   if (pathname === '/') return 'dashboard';
 
@@ -216,6 +219,12 @@ function AppLayoutShell() {
               ...CONTENT_NAV_WORK.map((i) => ({ key: i.key, icon: i.icon, label: i.label })),
               { type: 'divider' as const },
               ...CONTENT_NAV_SETUP.map((i) => ({ key: i.key, icon: i.icon, label: i.label })),
+            ];
+          }
+          if (adminVertical === 'marketing' && module.key === 'localOs') {
+            return [
+              { type: 'divider' as const },
+              ...LOCAL_OS_NAV.map((i) => ({ key: i.key, icon: i.icon, label: i.label })),
             ];
           }
           return [
@@ -382,6 +391,11 @@ function AppLayoutShell() {
             const contentItem = CONTENT_NAV_ITEMS.find((i) => i.key === key);
             if (contentItem) {
               navigate(contentItem.path);
+              return;
+            }
+            const localItem = LOCAL_OS_NAV.find((i) => i.key === key);
+            if (localItem) {
+              navigate(localItem.path);
               return;
             }
             const module = moduleRegistry.find((m) => m.key === key);
