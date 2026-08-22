@@ -1,144 +1,138 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-21T01:58:57.249Z",
+  "generatedAt": "2026-08-22T01:51:42.756Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 63,
-    "todayPageViews": 67,
-    "todayRequests": 159,
-    "last24hVisitors": 280,
-    "last24hPageViews": 697,
-    "last24hRequests": 1393
+    "todayVisitors": 18,
+    "todayPageViews": 8,
+    "todayRequests": 20,
+    "last24hVisitors": 276,
+    "last24hPageViews": 372,
+    "last24hRequests": 2340
   },
   "hourly": [
     {
-      "time": "2026-08-20T02:00:00Z",
-      "visitors": 13,
-      "requests": 13
+      "time": "2026-08-21T02:00:00Z",
+      "visitors": 18,
+      "requests": 81
     },
     {
-      "time": "2026-08-20T03:00:00Z",
-      "visitors": 10,
-      "requests": 14
+      "time": "2026-08-21T03:00:00Z",
+      "visitors": 22,
+      "requests": 1393
     },
     {
-      "time": "2026-08-20T04:00:00Z",
-      "visitors": 6,
-      "requests": 6
+      "time": "2026-08-21T04:00:00Z",
+      "visitors": 15,
+      "requests": 151
     },
     {
-      "time": "2026-08-20T05:00:00Z",
-      "visitors": 8,
-      "requests": 11
+      "time": "2026-08-21T05:00:00Z",
+      "visitors": 48,
+      "requests": 93
     },
     {
-      "time": "2026-08-20T06:00:00Z",
-      "visitors": 6,
-      "requests": 15
-    },
-    {
-      "time": "2026-08-20T07:00:00Z",
+      "time": "2026-08-21T06:00:00Z",
       "visitors": 20,
-      "requests": 23
+      "requests": 35
     },
     {
-      "time": "2026-08-20T08:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-20T09:00:00Z",
-      "visitors": 10,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-20T10:00:00Z",
-      "visitors": 11,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-20T11:00:00Z",
-      "visitors": 33,
-      "requests": 193
-    },
-    {
-      "time": "2026-08-20T12:00:00Z",
-      "visitors": 12,
-      "requests": 56
-    },
-    {
-      "time": "2026-08-20T13:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-20T14:00:00Z",
-      "visitors": 42,
-      "requests": 390
-    },
-    {
-      "time": "2026-08-20T15:00:00Z",
-      "visitors": 14,
-      "requests": 42
-    },
-    {
-      "time": "2026-08-20T16:00:00Z",
+      "time": "2026-08-21T07:00:00Z",
       "visitors": 8,
-      "requests": 11
-    },
-    {
-      "time": "2026-08-20T17:00:00Z",
-      "visitors": 3,
-      "requests": 31
-    },
-    {
-      "time": "2026-08-20T18:00:00Z",
-      "visitors": 11,
       "requests": 27
     },
     {
-      "time": "2026-08-20T19:00:00Z",
-      "visitors": 37,
-      "requests": 206
+      "time": "2026-08-21T08:00:00Z",
+      "visitors": 12,
+      "requests": 52
     },
     {
-      "time": "2026-08-20T20:00:00Z",
-      "visitors": 7,
-      "requests": 15
+      "time": "2026-08-21T09:00:00Z",
+      "visitors": 20,
+      "requests": 63
     },
     {
-      "time": "2026-08-20T21:00:00Z",
-      "visitors": 1,
-      "requests": 4
+      "time": "2026-08-21T10:00:00Z",
+      "visitors": 6,
+      "requests": 20
     },
     {
-      "time": "2026-08-20T22:00:00Z",
-      "visitors": 5,
+      "time": "2026-08-21T11:00:00Z",
+      "visitors": 13,
+      "requests": 95
+    },
+    {
+      "time": "2026-08-21T12:00:00Z",
+      "visitors": 18,
+      "requests": 108
+    },
+    {
+      "time": "2026-08-21T13:00:00Z",
+      "visitors": 23,
+      "requests": 33
+    },
+    {
+      "time": "2026-08-21T14:00:00Z",
+      "visitors": 4,
       "requests": 7
     },
     {
-      "time": "2026-08-20T23:00:00Z",
-      "visitors": 18,
-      "requests": 147
+      "time": "2026-08-21T15:00:00Z",
+      "visitors": 7,
+      "requests": 9
     },
     {
-      "time": "2026-08-21T00:00:00Z",
-      "visitors": 40,
-      "requests": 60
+      "time": "2026-08-21T16:00:00Z",
+      "visitors": 15,
+      "requests": 21
     },
     {
-      "time": "2026-08-21T01:00:00Z",
-      "visitors": 24,
-      "requests": 89
+      "time": "2026-08-21T17:00:00Z",
+      "visitors": 15,
+      "requests": 31
+    },
+    {
+      "time": "2026-08-21T18:00:00Z",
+      "visitors": 21,
+      "requests": 33
+    },
+    {
+      "time": "2026-08-21T19:00:00Z",
+      "visitors": 5,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-21T20:00:00Z",
+      "visitors": 7,
+      "requests": 31
+    },
+    {
+      "time": "2026-08-21T21:00:00Z",
+      "visitors": 7,
+      "requests": 17
+    },
+    {
+      "time": "2026-08-21T22:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-21T23:00:00Z",
+      "visitors": 4,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-22T00:00:00Z",
+      "visitors": 13,
+      "requests": 15
+    },
+    {
+      "time": "2026-08-22T01:00:00Z",
+      "visitors": 5,
+      "requests": 5
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-15",
-      "visitors": 260,
-      "pageViews": 147,
-      "requests": 532
-    },
     {
       "date": "2026-08-16",
       "visitors": 331,
@@ -171,71 +165,77 @@
     },
     {
       "date": "2026-08-21",
-      "visitors": 63,
-      "pageViews": 67,
-      "requests": 159
+      "visitors": 315,
+      "pageViews": 440,
+      "requests": 2514
+    },
+    {
+      "date": "2026-08-22",
+      "visitors": 18,
+      "pageViews": 8,
+      "requests": 20
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 198
+      "views": 122
     },
     {
       "path": "/vi/",
-      "views": 119
-    },
-    {
-      "path": "/cdn-cgi/l/email-protection",
-      "views": 112
+      "views": 70
     },
     {
       "path": "/robots.txt",
-      "views": 45
+      "views": 43
     },
     {
-      "path": "/favicon.svg",
-      "views": 32
+      "path": "/cdn-cgi/rum",
+      "views": 41
+    },
+    {
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 31
     },
     {
       "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 32
+      "views": 31
     },
     {
-      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
-      "views": 20
-    },
-    {
-      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
-      "views": 19
-    },
-    {
-      "path": "/.env",
-      "views": 17
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 17
-    },
-    {
-      "path": "/vi/lien-he/",
-      "views": 17
-    },
-    {
-      "path": "/vi/nguoi-dan/",
-      "views": 17
-    },
-    {
-      "path": "/.well-known/acme-challenge/kBT41hvSgasNcwu7Rmk4OkX-nttAomWCP4GiiYFs5_hv77rymJ1pKdvq8Dodx0w4",
-      "views": 14
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 13
+      "path": "/favicon.svg",
+      "views": 30
     },
     {
       "path": "/_astro/index.Bqr8_YCi.css",
-      "views": 13
+      "views": 26
+    },
+    {
+      "path": "/images/logo.png",
+      "views": 25
+    },
+    {
+      "path": "/sitemap-index.xml",
+      "views": 23
+    },
+    {
+      "path": "/wp-admin/function.php",
+      "views": 21
+    },
+    {
+      "path": "/wp-includes/css/index.php",
+      "views": 21
+    },
+    {
+      "path": "/wp-content/languages/index.php",
+      "views": 21
+    },
+    {
+      "path": "/admin-footer.php",
+      "views": 21
+    },
+    {
+      "path": "/wp-content/uploads/wp-conflg.php",
+      "views": 21
     }
   ]
 }
