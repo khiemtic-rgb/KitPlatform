@@ -22,3 +22,4 @@
 310_pack_local_os_listing_reports.sql
 312_pack_local_os_restore_public_jobs.sql
 313_pack_local_os_publish_today.sql
+316_pack_local_os_tnue_pdp_rooms.sql
