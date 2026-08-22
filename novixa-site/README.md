@@ -10,7 +10,7 @@ Site marketing **tách biệt** khỏi lõi ERP KitPlatform (`client/admin`, `sr
 
 Sau khi **push GitHub**, Cloudflare Pages tự build và publish lên **https://novixa.vn** (vài phút).
 
-Workflow hàng ngày: `.github/workflows/novixa-scheduled-publish.yml` — bài tin mới lên đúng `pubDate`.
+Đăng tin **chỉ tay** (Markdown / Excel). Job GitHub tự viết bài + đăng fanpage đã tắt vì hay lỗi.
 
 ## Chạy local (tuỳ chọn)
 
@@ -74,32 +74,7 @@ Giao diện web: **https://novixa.vn/admin/**
 
 Chưa có OAuth? Nhân viên vẫn vào `/admin/` → **Sign in with token** (tạo [PAT](https://github.com/settings/personal-access-tokens) quyền `Contents: Read and write` trên repo KitPlatform).
 
-### Cách 1 — Tự động Gemini (viết bài + ảnh)
-
-Lịch biên tập: `scripts/lib/news-content-plan.mjs` — mỗi ngày 1 bài mới (từ 15/7/2026).
-
-**GitHub Secret:** `GEMINI_API_KEY` (bắt buộc — [Google AI Studio](https://aistudio.google.com/apikey)). Tuỳ chọn repo Variables: `GEMINI_MODEL` (mặc định `gemini-2.5-flash`), `GEMINI_IMAGE_MODEL` (mặc định `gemini-2.5-flash-image` → fallback Imagen).
-
-Workflow `novixa-scheduled-publish.yml` mỗi đêm (~00:05 VN):
-
-1. `npm run publish:news` — Gemini viết bài + **ảnh chỉ cho bài đó**
-2. `npm run ensure:today-images` — bù ảnh thiếu cho bài `pubDate` hôm nay
-3. Import Excel (nếu có `import/tin-tuc.xlsx`)
-4. Đăng fanpage + deploy
-
-```powershell
-cd novixa-site
-# Xem lịch sắp tới
-npm run publish:news:status
-
-# Chạy tay (cần GEMINI_API_KEY trong .env)
-npm run publish:news
-
-# Một bài cụ thể, đăng ngay
-$env:ARTICLE_ID="nv-a01"; $env:FORCE_PUBLISH="1"; npm run publish:news
-```
-
-### Cách 2 — Excel / CSV (nhập tay / chỉnh sửa)
+### Cách 1 — Excel / CSV (nhập tay / chỉnh sửa)
 
 1. Đặt file vào `import/tin-tuc.xlsx` (hoặc `tin-tuc.csv`).
 2. Cột: `title` hoặc `description` (tiêu đề), `pubDate`, `slug` (tuỳ chọn), `content`.
@@ -114,13 +89,11 @@ git push
 ```
 
 - **pubDate** trong tương lai → bài **ẩn** đến đúng ngày (giờ VN).
-- Site tĩnh: bài chỉ hiện sau khi **Cloudflare build lại** (workflow ghi `public/.publish-stamp` mỗi đêm ~00:05 VN). Empty-commit không đủ vì Pages root = `novixa-site`.
+- Site tĩnh: bài chỉ hiện sau khi **Cloudflare Pages build lại** (push commit có đổi trong `novixa-site/`).
 - **Trùng slug hoặc title** → **cập nhật** file `.md` cũ.
 - Mẫu: `import/tin-tuc.template.csv`
 
-GitHub Actions `novixa-scheduled-publish.yml` chạy import + deploy hàng ngày. Tuỳ chọn: secret `CF_DEPLOY_HOOK` (Cloudflare Pages → Deploy hooks).
-
-### Cách 3 — Markdown tay
+### Cách 2 — Markdown tay
 
 Tạo file `src/content/tin-tuc/ten-bai.md`:
 
@@ -135,28 +108,18 @@ lang: vi
 Nội dung...
 ```
 
-## Đăng tự động fanpage Facebook
+## Fanpage Facebook
 
-Cùng lịch `pubDate` với site — workflow hàng ngày chạy `npm run post:fanpage`.
+Không còn job GitHub đăng fanpage hàng đêm. Nếu cần đăng tay local:
 
 **Local:** `import/Id_Fanpage.txt` (gitignore) — xem mẫu `Id_Fanpage.template.txt`.
 
-**GitHub Secrets** (Settings → Actions):
-
-| Secret | Giá trị |
-|--------|---------|
-| `FB_PAGE_ID` | Page ID (số) |
-| `FB_PAGE_ACCESS_TOKEN` | Page Access Token |
-
-Log đã đăng: `import/fanpage-posted.json`.
-
 ```powershell
 npm run post:fanpage:dry
-npm run post:fanpage:dry -- --date=2026-07-01
 npm run post:fanpage
 ```
 
-## SEO bài tin (tự động)
+## SEO bài tin
 
 Mỗi bài tin có:
 
