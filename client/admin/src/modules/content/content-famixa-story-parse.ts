@@ -110,11 +110,122 @@ function shotHead(line: string) {
 }
 
 function locHead(line: string) {
-  const m = line.match(/^(?:INT|EXT)\.?\s*[/.—–-]?\s*(.+)$/i);
+  const m = line.match(/^(?:INT|EXT|NỘI|NGOẠI)\.?\s*[/.—–-]?\s*(.+)$/i);
   if (!m) return undefined;
   const title = (m[1] ?? '').trim();
   if (!title || isNonStoryLine(title)) return undefined;
   return { title };
+}
+
+const CAST_NAME = /\b(minh|nam|linh|mẹ|bố|ba|má|con)\b/i;
+const CAST_VERB =
+  /\b(chạy|bước|đưa|cầm|nhìn|nói|đứng|chờ|buông|rơi|bấm|mở|đặt|kéo|ôm|quay|ngồi|khóc|cười|liếc)\b/i;
+
+/** Heading / slug / lighting / SFX — not a production Action. */
+export function isNonCinematicAction(raw?: string) {
+  const s = (raw ?? '').replace(/\s+/g, ' ').trim();
+  if (!s || s.length < 4) return true;
+  if (looksLikeScriptMetaHeading(s) || isNonStoryLine(s)) return true;
+  if (/^(format|style|short-?form|social drama|vertical video)\b/i.test(s) && s.length < 96) return true;
+  if (/^(?:nội|ngoại|int|ext)\.?\s/i.test(s) && !CAST_VERB.test(s)) return true;
+  if (/^(ánh sáng|ánh đèn|đèn vàng|lighting|warm light|soft light)\b/i.test(s) && !CAST_VERB.test(s)) return true;
+  if (/^(khoảng lặng|không khí|im lặng|nghẹt thở)\b/i.test(s) && !CAST_VERB.test(s) && !CAST_NAME.test(s)) return true;
+  if (/^(tiếng |sfx\b)/i.test(s) && !CAST_NAME.test(s)) return true;
+  if (isSoundSlug(s)) return true;
+  if (/^(phòng (khách|ăn|ngủ)|bối cảnh)\b/i.test(s) && !CAST_VERB.test(s) && s.length < 72) return true;
+  return false;
+}
+
+/** "Nhưng…" / "À." — not its own Shot. */
+export function isDialogueFragment(raw?: string) {
+  const s = (raw ?? '')
+    .replace(/^(Minh|Nam|Linh|An|Mẹ|Bố|Ba|Má|Con)\s*[:：]\s*/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!s) return true;
+  const bare = s.replace(/[.“"”…]+/g, '').trim();
+  return bare.length <= 8 || /^(nhưng|à|ờ|ừ|ơ|ừm)\.?$/i.test(bare);
+}
+
+/** INSERT / liếc điểm — may be a second Shot on the same Beat. */
+export function looksLikeInsertAction(raw?: string) {
+  const s = (raw ?? '').replace(/\s+/g, ' ').trim();
+  if (!s) return false;
+  return /cận (cảnh )?(tờ|bài|điểm|số)|insert\b|liếc .{0,28}(điểm|số|9\/10|con số)|tờ (giấy|bài).{0,28}(rơi|nằm|trượt|trên)/i.test(
+    s,
+  );
+}
+
+/** Peel INSERT off a same-sentence Action (`…, cận cảnh điểm 8`). */
+export function peelInsertClause(text: string): { rest: string; insert?: string } {
+  const s = text.replace(/\s+/g, ' ').trim();
+  const m = s.match(
+    /^(.*?)(?:[,;]|\s+)\s*((?:cận cảnh|insert)\b.+|tờ (?:giấy|bài).{0,40}(?:rơi|nằm|trượt|trên).+)$/i,
+  );
+  if (!m) return { rest: s };
+  const rest = (m[1] ?? '').replace(/[.,;]\s*$/, '').trim();
+  const insert = (m[2] ?? '').trim();
+  if (!rest || !insert || rest.length < 8) return { rest: s };
+  return { rest, insert };
+}
+
+function subjectKey(text: string) {
+  const t = text.toLowerCase();
+  if (/\b(mẹ|linh)\b/.test(t) && !/\b(minh|con)\b/.test(t)) return 'linh';
+  if (/\b(bố|nam|ba)\b/.test(t) && !/\b(minh|linh)\b/.test(t)) return 'nam';
+  if (/\b(minh|con)\b/.test(t)) return 'minh';
+  return '';
+}
+
+function stripNonCinematicClauses(text: string) {
+  const parts = text
+    .split(/(?<=[.!?…])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 4 && !isNonCinematicAction(s) && !isDialogueFragment(s));
+  return (parts.length ? parts.join(' ') : text).replace(/\s+/g, ' ').trim();
+}
+
+type PlannedShot = { story: string; splitReason: 'ACTION_CHANGE' | 'SUBJECT_CHANGE' | 'INSERT' | 'DIALOGUE_PERFORMANCE' };
+
+/** 1 Beat → 1 Shot unless INSERT or subject change. Never split on comma / lighting / SFX. */
+export function planBeatShots(actions: string[], dialogue: string[]): PlannedShot[] {
+  const cinematic = actions.map((a) => stripNonCinematicClauses(a)).filter((a) => a && !isNonCinematicAction(a));
+  const spoken = dialogue.filter((d) => !isDialogueFragment(d)).join(' ').replace(/\s+/g, ' ').trim();
+  if (!cinematic.length) {
+    if (!spoken) return [];
+    return [{ story: spoken.slice(0, 400), splitReason: 'DIALOGUE_PERFORMANCE' }];
+  }
+  const clauses = cinematic.flatMap((block) =>
+    block
+      .split(/(?<=[.!?…])\s+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length >= 6)
+      .flatMap((s) => {
+        const peeled = peelInsertClause(s);
+        return peeled.insert ? [peeled.rest, peeled.insert] : [s];
+      }),
+  );
+  const inserts = clauses.filter((c) => looksLikeInsertAction(c));
+  const rest = clauses.filter((c) => !looksLikeInsertAction(c));
+  if (inserts.length && rest.length) {
+    return [
+      { story: rest.join(' ').slice(0, 400), splitReason: 'ACTION_CHANGE' },
+      { story: inserts[0]!.slice(0, 400), splitReason: 'INSERT' },
+    ];
+  }
+  if (cinematic.length >= 2) {
+    const a = cinematic[0]!;
+    const b = cinematic[1]!;
+    const ka = subjectKey(a);
+    const kb = subjectKey(b);
+    if (ka && kb && ka !== kb) {
+      return [
+        { story: a.slice(0, 400), splitReason: 'ACTION_CHANGE' },
+        { story: b.slice(0, 400), splitReason: 'SUBJECT_CHANGE' },
+      ];
+    }
+  }
+  return [{ story: cinematic.join(' ').slice(0, 400), splitReason: 'ACTION_CHANGE' }];
 }
 
 const SOUND_SLUG =
@@ -167,10 +278,32 @@ export function looksLikeUnspokenLine(text: string, speaker?: string) {
   return false;
 }
 
+const ACTING_HINT =
+  /háo hức|thở dốc|phẳng lì|không cảm xúc|nghẹn|lí nhí|sắc lạnh|tàn nhẫn|thì thào|vỡ vụn|thì thầm|run rẩy|nức nở|lạnh lùng|mỉa mai|gắt gỏng|im lặng|nhẹ nhàng/;
+
+/** `(hào hức, thở dốc)` — how they speak, not the line. */
+export function looksLikeActingParenthetical(text: string) {
+  const s = text.trim().replace(/^["“”']+|["“”']+$/g, '');
+  if (!s) return false;
+  const wrapped = /^\([^)]+\)$/.test(s);
+  const inner = (wrapped ? s.slice(1, -1) : s).trim();
+  if (!inner || inner.length > 64 || /[.!?…]/.test(inner)) return false;
+  if (wrapped && ACTING_HINT.test(inner)) return true;
+  if (wrapped && (inner.match(/,/g) ?? []).length >= 1 && inner.length < 48 && !CAST_VERB.test(inner)) return true;
+  if (!wrapped && ACTING_HINT.test(inner) && (inner.match(/,/g) ?? []).length >= 1 && inner.length < 40) return true;
+  return false;
+}
+
+function actingNoteOf(text: string) {
+  const s = text.trim().replace(/^["“”']+|["“”']+$/g, '');
+  return (s.startsWith('(') && s.endsWith(')') ? s.slice(1, -1) : s).trim();
+}
+
 /** Cast bible / acting note — not a spoken line. `Giọng ai thế?` stays thoại. */
 export function looksLikeVoiceDirection(text: string) {
   const s = text.trim().replace(/^["“”']+|["“”']+$/g, '');
   if (!s) return false;
+  if (looksLikeActingParenthetical(s)) return true;
   if (/^giọng (ai|gì|nào|đó|kia|bố|mẹ|con|minh|nam|linh)\b/i.test(s)) return false;
   if (/^giọng đọc\b/i.test(s)) return true;
   if (
@@ -291,6 +424,7 @@ function skipFurniture(line: string) {
       line,
     ) ||
     /^(FAMIXA|KIT MARKETING)\b/i.test(line) ||
+    /^(SHORT-?FORM|SOCIAL DRAMA)\b/i.test(line) ||
     /kịch bản phim|drama voice famixa|production master/i.test(line) ||
     /^\d{2}\.\s+(STORY INTENT|CORE QUESTION|EMOTIONAL|CHARACTERS|LOCATION|VISUAL|SCRIPT|VOICE|SOUND)\b/i.test(line)
   );
@@ -354,20 +488,6 @@ function headerFields(chunk: string) {
   return map;
 }
 
-function splitBeatIntoShotStories(text: string): string[] {
-  const t = text.replace(/\s+/g, ' ').trim();
-  if (!t) return [];
-  const camera = /cận cảnh|nhìn bài|điểm|điện thoại|bước (ra|vào|khỏi)/i.test(t);
-  if (!camera) return [t];
-  const sentences = t.split(/(?<=[.!?…])\s+/).map((s) => s.trim()).filter((s) => s.length >= 6);
-  if (sentences.length >= 2 && sentences.length <= 3) return sentences;
-  if (/,/.test(t)) {
-    const bits = t.split(/,\s+/).map((s) => s.trim()).filter((s) => s.length >= 8);
-    if (bits.length >= 2 && bits.length <= 3) return bits;
-  }
-  return [t];
-}
-
 function decomposeSceneShots(
   scene: SceneDraft,
   startShotN: number,
@@ -405,12 +525,12 @@ function decomposeSceneShots(
     if (!beatText) continue;
     beatN += 1;
     const beatId = `${scene.id}-BEAT${String(beatN).padStart(2, '0')}`;
-    const stories = g.actions.length ? g.actions.flatMap(splitBeatIntoShotStories) : [beatText];
+    const planned = planBeatShots(g.actions, g.dialogue);
     const shotIds: string[] = [];
     const charIds = frameCanonIds(g.charIds.length ? g.charIds : [...scene.charIds]);
-    for (const story of stories) {
-      const action = story.replace(/\s+/g, ' ').trim();
-      if (action.length < 6) continue;
+    planned.forEach((row, au) => {
+      const action = row.story.replace(/\s+/g, ' ').trim();
+      if (action.length < 6 || isNonCinematicAction(action)) return;
       const shot = shotCode(n);
       const id = `${epCode}-${scene.id}-${shot}`;
       shots.push({
@@ -431,10 +551,12 @@ function decomposeSceneShots(
         beatId,
         beatText,
         previousShotId: shots.at(-1)?.id,
+        splitReason: row.splitReason,
+        actionUnitIds: [`${beatId}-AU${String(au + 1).padStart(2, '0')}`],
       });
       shotIds.push(id);
       n += 1;
-    }
+    });
     if (shotIds.length) beats.push({ id: beatId, text: beatText.slice(0, 280), shotIds });
   }
   return { shots, nextN: n, beats };
@@ -484,6 +606,7 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
   const byN = new Map<number, SceneDraft>();
   let current: SceneDraft | undefined;
   let pendingSpeaker: string | undefined;
+  let pendingEmotion: string | undefined;
   let pendingGotLine = false;
   let pendingUnspoken = false;
   let droppedInstruction = 0;
@@ -522,10 +645,16 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
   };
 
   const addAction = (line: string) => {
+    const text = line.replace(/\s+/g, ' ').trim();
+    if (!text || isNonCinematicAction(text)) {
+      const loc = locHead(text);
+      if (loc && current) current.location = current.location || loc.title;
+      return;
+    }
     if (!current) openScene(1, '');
-    current!.beats.push({ kind: 'action', text: line });
-    current!.raw.push(line);
-    pendingUnspoken = introducesUnspokenText(line);
+    current!.beats.push({ kind: 'action', text });
+    current!.raw.push(text);
+    pendingUnspoken = introducesUnspokenText(text);
   };
 
   for (const raw of extractScriptBody(source).split(/\r?\n/)) {
@@ -533,6 +662,7 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
     if (!line) {
       if (pendingGotLine) {
         pendingSpeaker = undefined;
+        pendingEmotion = undefined;
         pendingGotLine = false;
       }
       continue;
@@ -591,7 +721,6 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
     }
 
     if (isSoundSlug(line) || (taggedSpeaker(line) && isSoundSlug(taggedSpeaker(line)!.name))) {
-      addAction(line);
       pendingSpeaker = undefined;
       pendingGotLine = false;
       continue;
@@ -618,26 +747,40 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
       const colon = speakerHead(line);
       const rest = colon?.rest || tagged?.rest || '';
       if (rest) {
+        if (looksLikeActingParenthetical(rest) || looksLikeVoiceDirection(rest)) {
+          pendingEmotion = actingNoteOf(rest) || colon?.emotion || pendingEmotion;
+          continue;
+        }
         if (pendingUnspoken || !looksLikeSpokenLine(rest, slug)) {
           addAction(rest);
+          pendingSpeaker = undefined;
+          pendingEmotion = undefined;
         } else {
           const ch = ensureChar(characters, colon?.name || tagged?.name || slug);
-          if (ch) addDialogue(ch, rest, colon?.emotion || undefined);
+          if (ch) addDialogue(ch, rest, colon?.emotion || pendingEmotion);
+          pendingEmotion = undefined;
           pendingUnspoken = false;
+          pendingSpeaker = undefined;
         }
-        pendingSpeaker = undefined;
+      } else if (colon?.emotion) {
+        pendingEmotion = colon.emotion;
       }
       continue;
     }
 
     if (pendingSpeaker) {
+      if (looksLikeActingParenthetical(line) || looksLikeVoiceDirection(line)) {
+        pendingEmotion = actingNoteOf(line);
+        continue;
+      }
       if (pendingUnspoken || !looksLikeSpokenLine(line, pendingSpeaker)) {
         addAction(line);
         continue;
       }
       const spoken = ensureChar(characters, pendingSpeaker);
-      if (spoken) addDialogue(spoken, line);
+      if (spoken) addDialogue(spoken, line, pendingEmotion);
       else addAction(line);
+      pendingEmotion = undefined;
       pendingGotLine = true;
       pendingUnspoken = false;
       continue;

@@ -10,7 +10,7 @@ import { displayUrlForData, stripJsonDataUrls } from './content-famixa-blob-url'
 import { I2V_VI_RE } from './content-famixa-i2v-en';
 import { ACTING_LAW_LOCK, actingI2vBrief, inferActingDirection } from './content-famixa-acting-law';
 import { mergeKeepDialoguePerformance } from './content-famixa-performance';
-import { looksLikeVoiceDirection } from './content-famixa-story-parse';
+import { isDialogueFragment, isNonCinematicAction, looksLikeInsertAction, looksLikeVoiceDirection } from './content-famixa-story-parse';
 import { setFamixaMediaScope } from './content-famixa-media-scope';
 import { mergeKeepFinalSource } from './content-famixa-final-source';
 import { type VisualSpec } from './content-famixa-visual-spec';
@@ -73,7 +73,23 @@ export type FamixaSeriesShot = {
   voiceChainFrom?: string;
   /** Edit length from voice + pause. I2V stays 5 or 10; assemble trims. */
   editSeconds?: number;
+  /** Why this Shot exists. NONE / missing → not production. */
+  splitReason?: ShotSplitReason;
+  actionUnitIds?: string[];
 };
+
+export type ShotSplitReason =
+  | 'ACTION_CHANGE'
+  | 'SUBJECT_CHANGE'
+  | 'EMOTION_CHANGE'
+  | 'CAMERA_CHANGE'
+  | 'REACTION'
+  | 'INSERT'
+  | 'LOCATION_CHANGE'
+  | 'TIME_CHANGE'
+  | 'DIALOGUE_PERFORMANCE'
+  | 'VOICE_CHAIN'
+  | 'NONE';
 
 export type FamixaSeriesEpisode = {
   seriesCode: string;
@@ -2222,6 +2238,27 @@ export function replaceStoryFromParse(
   }));
 }
 
+/** Re-read spoken lines from packDraft. Does not replace Shot Plan / KF / takes. */
+export function refreshSpokenLinesFromPack(state: SeriesPilotState): SeriesPilotState {
+  const pack = (state.packDraft ?? '').trim();
+  if (pack.length < 20) return state;
+  const doc = parseEpisodeStory(pack);
+  if (!doc?.lines.length) return state;
+  const scenes = (state.scenes ?? []).map((sc) => {
+    const fresh = doc.scenes.find((s) => s.id === sc.id);
+    if (!fresh) return sc;
+    return { ...sc, dialogue: fresh.dialogue, content: fresh.content || sc.content };
+  });
+  const missing = doc.scenes.filter((s) => !(state.scenes ?? []).some((x) => x.id === s.id));
+  return {
+    ...state,
+    scenes: missing.length ? [...scenes, ...missing] : scenes,
+    lines: doc.lines,
+    voiceLocked: false,
+    voicePreview: undefined,
+  };
+}
+
 export function mergeShots(prev: FamixaSeriesShot[], incoming: FamixaSeriesShot[]) {
   const map = new Map(prev.map((s) => [s.id, s]));
   for (const n of incoming) {
@@ -2353,6 +2390,10 @@ export function looksLikePackHeading(raw?: string) {
   if (/phân cảnh chi tiết/i.test(s) && s.length < 64) return true;
   if (/^giọng\b/i.test(s) && s.length < 96) return true;
   if (/^(?:tone|thời lượng(?:\s*mục tiêu)?)\s*:/i.test(s)) return true;
+  if (/^(format|style|short-?form|social drama)\b/i.test(s) && s.length < 96) return true;
+  if (/^(?:nội|ngoại|int|ext)\.?\s/i.test(s) && s.length < 72 && !/\b(chạy|bước|đưa|nhìn|nói|minh|linh|nam)\b/i.test(s)) {
+    return true;
+  }
   if (/\(\d+\s*[–\-]\s*\d+\s*s\)$/i.test(s) && s.length < 80) return true;
   return false;
 }
@@ -2371,23 +2412,129 @@ export function effectiveShotAction(shot: FamixaSeriesShot, run?: SeriesShotRun)
 
 /** Silent OK. Empty / placeholder Action = HOLD — not reuse, not generate. */
 export function shotHasValidAction(shot: FamixaSeriesShot, run?: SeriesShotRun) {
-  const raw = effectiveShotAction(shot, run) || ((run?.shotAction ?? '').trim() || shotActionFromPack(shot)).replace(/\s+/g, ' ').trim();
+  const story = ((run?.shotAction ?? '').trim() || shot.story || '').replace(/\s+/g, ' ').trim();
+  const spoken = (shot.dialogueSegmentIds?.length ?? 0) > 0;
+  if (shot.splitReason === 'NONE') return false;
+  if (isNonCinematicAction(story) && !spoken) return false;
+  if (isDialogueFragment(story) && !spoken) return false;
+  if (looksLikePackHeading(story) && !spoken) return false;
+  const raw =
+    effectiveShotAction(shot, run) ||
+    ((run?.shotAction ?? '').trim() || shotActionFromPack(shot)).replace(/\s+/g, ' ').trim();
   if (looksLikePackHeading(raw) || raw.length < 6) {
-    const beat = (shot.beatText ?? '').replace(/\s+/g, ' ').trim();
-    if (beat.length >= 6 && !looksLikePackHeading(beat)) return true;
     if (/^(?:tone|thời lượng)\s*:/i.test(raw)) return false;
-    return (shot.dialogueSegmentIds?.length ?? 0) > 0;
+    return spoken;
   }
   if (/^[-—–._/\\\s]+$/u.test(raw)) return false;
   if (/^(n\/a|none|null|không|chưa có( mô tả)?( shot)?)$/i.test(raw)) return false;
   return /[\p{L}\p{N}]/u.test(raw);
 }
 
+function subjectOfAction(text: string) {
+  const t = text.toLowerCase();
+  if (/\b(mẹ|linh)\b/.test(t) && !/\b(minh|con)\b/.test(t)) return 'linh';
+  if (/\b(bố|nam|ba)\b/.test(t) && !/\b(minh|linh)\b/.test(t)) return 'nam';
+  if (/\b(minh|con)\b/.test(t)) return 'minh';
+  return '';
+}
+
+function relinkShotOrder(shots: FamixaSeriesShot[]) {
+  return shots.map((s, i) => ({
+    ...s,
+    previousShotId: i > 0 ? shots[i - 1]!.id : undefined,
+    nextShotId: i < shots.length - 1 ? shots[i + 1]!.id : undefined,
+  }));
+}
+
+/** Same Beat stays 1 Shot unless INSERT or subject change. */
+export function coalesceSameBeatShots(shots: FamixaSeriesShot[]) {
+  const groups: FamixaSeriesShot[][] = [];
+  const ix = new Map<string, number>();
+  for (const s of shots) {
+    const key = s.beatId || `lone:${s.id}`;
+    let i = ix.get(key);
+    if (i === undefined) {
+      i = groups.length;
+      ix.set(key, i);
+      groups.push([s]);
+    } else {
+      groups[i]!.push(s);
+    }
+  }
+  const out: FamixaSeriesShot[] = [];
+  for (const g of groups) {
+    if (g.length === 1) {
+      const one = g[0]!;
+      out.push({
+        ...one,
+        splitReason:
+          one.splitReason && one.splitReason !== 'NONE'
+            ? one.splitReason
+            : looksLikeInsertAction(one.story)
+              ? 'INSERT'
+              : (one.dialogueSegmentIds?.length ?? 0) > 0
+                ? 'DIALOGUE_PERFORMANCE'
+                : 'ACTION_CHANGE',
+        actionUnitIds: one.actionUnitIds?.length ? one.actionUnitIds : one.beatId ? [`${one.beatId}-AU01`] : ['AU01'],
+      });
+      continue;
+    }
+    const inserts = g.filter((s) => looksLikeInsertAction(s.story));
+    const rest = g.filter((s) => !looksLikeInsertAction(s.story));
+    if (inserts.length && rest.length) {
+      const host = rest[0]!;
+      out.push({
+        ...host,
+        story: rest
+          .map((s) => s.story)
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .slice(0, 400),
+        splitReason: 'ACTION_CHANGE',
+        actionUnitIds: [`${host.beatId || 'BEAT'}-AU01`],
+      });
+      out.push({
+        ...inserts[0]!,
+        splitReason: 'INSERT',
+        actionUnitIds: [`${host.beatId || 'BEAT'}-AU02`],
+      });
+      continue;
+    }
+    if (rest.length >= 2) {
+      const a = rest[0]!;
+      const b = rest[1]!;
+      const ka = subjectOfAction(a.story);
+      const kb = subjectOfAction(b.story);
+      if (ka && kb && ka !== kb) {
+        out.push({ ...a, splitReason: 'ACTION_CHANGE', actionUnitIds: [`${a.beatId || 'BEAT'}-AU01`] });
+        out.push({ ...b, splitReason: 'SUBJECT_CHANGE', actionUnitIds: [`${b.beatId || 'BEAT'}-AU02`] });
+        continue;
+      }
+    }
+    const first = g[0]!;
+    out.push({
+      ...first,
+      story: (first.beatText || g.map((s) => s.story).join(' ')).replace(/\s+/g, ' ').slice(0, 400),
+      visual: first.visual || first.story,
+      splitReason: 'ACTION_CHANGE',
+      actionUnitIds: [`${first.beatId || 'BEAT'}-AU01`],
+    });
+  }
+  return relinkShotOrder(out);
+}
+
+export function shotPlanDensity(shots: FamixaSeriesShot[]) {
+  const prod = shots.filter((s) => shotHasValidAction(s));
+  const beats = new Set(prod.map((s) => s.beatId).filter(Boolean));
+  const ratio = beats.size ? prod.length / beats.size : 0;
+  return { shots: prod.length, beats: beats.size, ratio, warn: ratio > 2.5, block: ratio > 3 };
+}
+
 /** Drop SH with no Action. Graph may list them; production graph after duyệt must not. */
 export function pruneEmptyShots(state: SeriesPilotState): SeriesPilotState {
   const ep = state.episode;
   if (!ep?.shots.length) return { ...state, shotGraphLocked: true };
-  const keep = ep.shots.filter((s) => shotHasValidAction(s, shotRunOf(state, s)));
+  const keep = coalesceSameBeatShots(ep.shots.filter((s) => shotHasValidAction(s, shotRunOf(state, s))));
   const keepIds = new Set(keep.map((s) => s.id));
   const scenes = (state.scenes ?? []).map((sc) => ({
     ...sc,

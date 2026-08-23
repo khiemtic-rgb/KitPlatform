@@ -32,9 +32,10 @@ if (!cut) fail.push('split-beat script failed to parse');
 else {
   const beats = groupShotsByBeat(cut.shots);
   if (beats.length !== 1) fail.push(`one action beat should stay one beat, got ${beats.length}`);
-  if (cut.shots.length < 2 || cut.shots.length > 3) {
-    fail.push(`camera split of one beat should be 2–3 shots, got ${cut.shots.length}`);
+  if (cut.shots.length !== 2) {
+    fail.push(`cận điểm is INSERT — 2 shots, got ${cut.shots.length}: ${cut.shots.map((s) => s.story).join(' | ')}`);
   }
+  if (cut.shots.some((s) => s.splitReason === 'INSERT') !== true) fail.push('second shot must be INSERT');
   if (new Set(cut.shots.map((s) => s.beatId)).size !== 1) fail.push('split shots must share beatId');
   if (cut.shots.some((s) => !shotHasValidAction(s))) fail.push('split invented empty SH');
 }

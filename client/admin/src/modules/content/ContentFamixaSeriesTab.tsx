@@ -65,6 +65,7 @@ import {
   shotHasValidAction,
   bindShotToMemory,
   pruneEmptyShots,
+  shotPlanDensity,
   groupShotsByBeat,
   primeLongShotsOnScriptLock,
   applyShotLockToGraph,
@@ -107,6 +108,7 @@ import {
   mergeRemotePilot,
   linesForScene,
   replaceStoryFromParse,
+  refreshSpokenLinesFromPack,
   newRoleRow,
   newStillRow,
   packForShotEdit,
@@ -1138,6 +1140,13 @@ export function ContentFamixaSeriesTab() {
   const spentOnRunway = runwaySpentSum(state);
   const voiceScript = useMemo(() => deriveVoiceScript(state), [state]);
   const listenCues = voiceScript.lines;
+
+  useEffect(() => {
+    if (voiceScript.lines.length > 0) return;
+    const next = refreshSpokenLinesFromPack(stateRef.current);
+    if (deriveVoiceScript(next).lines.length <= voiceScript.lines.length) return;
+    persistState(next);
+  }, [state.packDraft, voiceScript.lines.length]);
   const voiceLockHint =
     !keys.elevenLabs && state.voicePreview?.status !== 'complete'
       ? 'Chưa có key ElevenLabs — Cấu hình AI, rồi bấm Tạo Full Voice.'
@@ -1762,8 +1771,13 @@ export function ContentFamixaSeriesTab() {
       return;
     }
     const cov = coverageOf(next, remain);
+    const dens = shotPlanDensity(remain);
+    const densNote = dens.warn
+      ? ` · mật độ ${dens.ratio.toFixed(1)} shot/beat — xem lại`
+      : '';
     message.success(
       `SHOT GRAPH LOCKED — ${n} Short · thoại ${cov.spoken} · câm ${cov.silent}` +
+        densNote +
         (cov.extraUnmapped.length ? ` · ${cov.extraUnmapped.length} câu chưa gắn` : '') +
         (cov.message ? ` · ${cov.message}` : ''),
     );
@@ -4386,6 +4400,10 @@ export function ContentFamixaSeriesTab() {
                   <Typography.Paragraph type="secondary" style={{ margin: '2px 0 6px', fontSize: 12 }}>
                     Kịch bản: {beats.length} beats · Đề xuất {sceneShots.filter((s) => shotHasValidAction(s)).length}{' '}
                     shots
+                    {(() => {
+                      const d = shotPlanDensity(sceneShots);
+                      return d.warn ? ` · mật độ ${d.ratio.toFixed(1)} — xem lại` : '';
+                    })()}
                     {sc.environment ? ` · ${sc.environment}` : ''}
                   </Typography.Paragraph>
                   {beats.map((b, i) => {
@@ -4396,11 +4414,16 @@ export function ContentFamixaSeriesTab() {
                           <Typography.Text strong>BEAT {String(i + 1).padStart(2, '0')}</Typography.Text>
                           <span style={{ color: '#64748b' }}> · {b.text}</span>
                         </div>
-                        {kids.map((s, si) => (
-                          <div key={s.id} style={{ marginLeft: 16, color: '#334155' }}>
-                            {si === kids.length - 1 ? '└─' : '├─'} {s.shot} — {s.story}
-                          </div>
-                        ))}
+                        {kids.map((s, si) => {
+                          const hold = !shotHasValidAction(s);
+                          return (
+                            <div key={s.id} style={{ marginLeft: 16, color: hold ? '#94a3b8' : '#334155' }}>
+                              {si === kids.length - 1 ? '└─' : '├─'} {s.shot} — {s.story}
+                              {s.splitReason ? ` · ${s.splitReason}` : ''}
+                              {hold ? ' · HOLD' : ` · ${s.seconds || 5}s`}
+                            </div>
+                          );
+                        })}
                       </div>
                     );
                   })}

@@ -1,7 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { diagnoseEpisodeStory, isNonStoryLine, looksLikeScriptMetaHeading, parseEpisodeStory } from './content-famixa-story-parse';
+import {
+  diagnoseEpisodeStory,
+  isNonCinematicAction,
+  isNonStoryLine,
+  looksLikeActingParenthetical,
+  looksLikeScriptMetaHeading,
+  looksLikeSpokenLine,
+  parseEpisodeStory,
+  planBeatShots,
+} from './content-famixa-story-parse';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const golden = readFileSync(join(here, 'content-famixa-ep01-golden.txt'), 'utf8');
@@ -122,6 +131,52 @@ if (anPack?.shots.some((s) => (s.characterIds ?? s.characters ?? []).includes('C
 }
 if ((anPack?.shots[0]?.characterIds ?? []).filter((id) => id !== 'CHAR-VO').length > 2) {
   fail.push(`An pack shot has too many bodies: ${(anPack?.shots[0]?.characterIds ?? []).join()}`);
+}
+
+const room = parseEpisodeStory(`SC01 — PHÒNG KHÁCH
+FORMAT: SHORT-FORM / SOCIAL DRAMA
+NỘI. PHÒNG KHÁCH - TỐI
+Ánh sáng vàng.
+Linh ngồi sofa nhìn điện thoại.
+Minh chạy vào phòng khách, đưa bài kiểm tra cho mẹ và đứng chờ phản ứng.
+MINH
+Nhưng...
+Con đã tiến bộ rồi mẹ ạ.
+Linh buông tay. Tờ giấy rơi xuống mặt kính. Linh tiếp tục bấm điện thoại.
+
+Tờ bài nằm yên trên mặt kính.
+`);
+if (room?.shots.some((s) => /short-?form|nội\.|ánh sáng vàng|khoảng lặng|tiếng bàn/i.test(s.story || ''))) {
+  fail.push(`slug/lighting/SFX must not be shots: ${room?.shots.map((s) => s.story).join(' | ')}`);
+}
+if (room?.shots.filter((s) => /^nhưng/i.test((s.story || '').replace(/^Minh:\s*/i, ''))).length) {
+  fail.push('dialogue fragment Nhưng… must not be its own shot');
+}
+const roomStories = (room?.shots ?? []).map((s) => s.story).join(' || ');
+if (!/Linh ngồi|nhìn điện thoại/i.test(roomStories)) fail.push('Linh on phone must stay one action shot');
+if ((room?.shots.filter((s) => /chạy vào|đưa bài|chờ/i.test(s.story || '')).length ?? 0) !== 1) {
+  fail.push(`run+hand+wait must stay 1 shot, got ${roomStories}`);
+}
+if (!room?.shots.some((s) => s.splitReason === 'INSERT' && /tờ giấy|tờ bài|mặt kính/i.test(s.story || ''))) {
+  fail.push(`paper fall / lying paper should be INSERT: ${roomStories}`);
+}
+if (!looksLikeActingParenthetical('(hào hức, thở dốc)')) fail.push('acting paren is direction');
+if (looksLikeSpokenLine('(phẳng lì, không cảm xúc)', 'Minh')) fail.push('acting paren must not be spoken');
+const acted = parseEpisodeStory(`SC01 — PHÒNG
+MINH: (hào hức, thở dốc)
+Mẹ ơi con được chín điểm!
+LINH: (phẳng lì, không cảm xúc)
+Ừ.
+`);
+if (acted?.lines.some((l) => /hào hức|phẳng lì|thở dốc/i.test(l.text))) {
+  fail.push(`acting note leaked into dialogue: ${acted.lines.map((l) => l.text).join(' | ')}`);
+}
+if (!acted?.lines.some((l) => /chín điểm/i.test(l.text))) fail.push('spoken line after acting paren must stay');
+if ((acted?.lines.length ?? 0) !== 2) fail.push(`expected 2 spoken lines after parens, got ${acted?.lines.map((l) => l.text).join(' | ')}`);
+
+if (!isNonCinematicAction('Ánh sáng vàng.')) fail.push('lighting is not cinematic');
+if (planBeatShots(['Ánh sáng vàng.', 'Linh nhìn điện thoại.'], []).length !== 1) {
+  fail.push('lighting + mother on phone = 1 shot');
 }
 
 fail.push(...diagnoseEpisodeStory(doc));
