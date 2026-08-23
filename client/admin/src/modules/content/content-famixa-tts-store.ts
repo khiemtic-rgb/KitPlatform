@@ -27,6 +27,26 @@ export function ttsLineKey(lineId: string, voiceId?: string) {
   return v ? `${id}#${v}` : id;
 }
 
+/** Keys TTS may have been saved under — voiceId often missing on the Video pane after F5. */
+export function ttsLookupKeys(
+  line: { id: string; text?: string; voiceId?: string },
+  extraVoiceIds: string[] = [],
+) {
+  const id = (line.id ?? '').trim();
+  const text = (line.text ?? '').replace(/\s+/g, ' ').trim();
+  const voices = [...new Set([line.voiceId, ...extraVoiceIds].map((v) => (v ?? '').trim()).filter(Boolean))];
+  const keys: string[] = [];
+  if (id) {
+    keys.push(id);
+    for (const v of voices) keys.push(ttsLineKey(id, v));
+  }
+  if (text) {
+    keys.push(ttsTextKey(text));
+    for (const v of voices) keys.push(ttsTextKey(text, v));
+  }
+  return [...new Set(keys)];
+}
+
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 1);
@@ -138,4 +158,42 @@ export async function loadTtsBlobAny(lineIds: string[]) {
     if (blob) return blob;
   }
   return undefined;
+}
+
+async function readExactTtsKey(key: string) {
+  const db = await openDb();
+  return new Promise<Blob | undefined>((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).get(key);
+    req.onsuccess = () => resolve(req.result as Blob | undefined);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/** Recover DIA file saved as lineId#voice after the Video pane drops voiceId. */
+export async function findTtsBlobForLine(lineId: string) {
+  const id = lineId.trim();
+  if (!id) return undefined;
+  const direct = await loadTtsBlob(id);
+  if (direct) return direct;
+  try {
+    const db = await openDb();
+    const keys = await new Promise<IDBValidKey[]>((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readonly');
+      const req = tx.objectStore(STORE).getAllKeys();
+      req.onsuccess = () => resolve(req.result ?? []);
+      req.onerror = () => reject(req.error);
+    });
+    const needle = `:${id}`;
+    const hashed = `:${id}#`;
+    const match = keys.map(String).find((k) => k.endsWith(needle) || k.includes(hashed));
+    if (!match) return undefined;
+    const row = await readExactTtsKey(match);
+    if (!row || row.size < 32) return undefined;
+    mem.set(ttsKey(id), row);
+    void saveTtsBlob(id, row);
+    return row;
+  } catch {
+    return undefined;
+  }
 }

@@ -80,7 +80,7 @@ const twoFace = compileShotBlocking({
   peopleNames: ['Minh', 'Linh'],
   action: 'Liếc nhìn con số 9.',
 });
-if (!/complete faces|torso/i.test(twoFace)) fail.push('two-shot blocking must keep mother face');
+if (!/Primary face|shoulder|torso/i.test(twoFace)) fail.push('two-shot blocking must keep speaker face, allow secondary shoulder');
 const stayNam = compileShotBlocking({
   speakerNames: ['Linh'],
   peopleNames: ['Nam', 'Minh', 'Linh'],

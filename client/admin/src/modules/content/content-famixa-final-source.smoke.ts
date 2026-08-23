@@ -50,6 +50,9 @@ if (resolveFinalSource({}) !== 'NONE') fail.push('empty is NONE');
 if (assembleVideoUrl({ lipsyncUrl: 'https://fal.example/lip.mp4', previewUrl: 'https://runway.example/raw.mp4', lipsynced: true }) !== 'https://fal.example/lip.mp4') {
   fail.push('assemble must use Fal file');
 }
+if (assembleVideoUrl({ takeUrl: 'https://runway.example/take.mp4' }) !== 'https://runway.example/take.mp4') {
+  fail.push('assemble must use takeUrl when previewUrl is gone');
+}
 
 const kept = mergeKeepFinalSource({ previewUrl: 'https://runway.example/raw.mp4' }, {
   lipsynced: true,
@@ -119,7 +122,7 @@ if (!need.includes('SH01')) fail.push('spoken raw take still needs Fal');
 const block = finalSourceBlockReason(plan.items.map((i) => ({ code: i.code, silent: i.silent, finalSource: i.finalSource, lipsynced: i.lipsynced })));
 if (!block) fail.push('Test 7: mixed FAL + TTS must block Final');
 const copy = assembleConfirmCopy(plan);
-if (!/FAL/i.test(copy.detail) || !/Preview tạm|RUNWAY_TTS/i.test(copy.detail)) {
+if (!/FAL/i.test(copy.detail) || !/chưa khớp môi|mix TTS|RUNWAY_TTS|Preview/i.test(copy.detail)) {
   fail.push(`Test 7 confirm must list sources: ${copy.detail}`);
 }
 

@@ -132,7 +132,8 @@ public sealed record ContentSeriesLipsyncStartRequest(
     string VideoUrl,
     string AudioBase64,
     string? Mime = null,
-    string? SyncMode = null);
+    string? SyncMode = null,
+    string? Model = null);
 
 public sealed record ContentSeriesStillRefDto(
     string Name,
@@ -158,7 +159,10 @@ public sealed record ContentSeriesStillQaDto(
     int? Total,
     IReadOnlyDictionary<string, int>? Axes,
     IReadOnlyList<string> HardFails,
-    string? Notes);
+    string? Notes,
+    IReadOnlyDictionary<string, string>? HardChecks = null,
+    string? Evidence = null,
+    int? Confidence = null);
 
 public sealed record ContentSeriesKfNoteRequest(
     string Note,
@@ -747,12 +751,14 @@ public sealed record ContentSeriesAssembleVoiceDto(
 
 public sealed record ContentSeriesAssembleClipDto(
     string Code,
-    string VideoUrl,
+    string? VideoUrl,
     double Seconds,
     IReadOnlyList<ContentSeriesAssembleVoiceDto> Voices,
     double UsableStart = 0,
     double? UsableEnd = null,
-    bool UseVideoAudio = false);
+    bool UseVideoAudio = false,
+    bool RequireVoice = false,
+    string? StillBase64 = null);
 
 public sealed record ContentSeriesAssembleRequest(
     string FileStem,

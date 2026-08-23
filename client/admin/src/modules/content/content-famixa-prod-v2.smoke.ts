@@ -12,15 +12,19 @@ import {
   lipsyncNeedIds,
   lipsyncInFlight,
   shouldResumeLipsync,
+  parseFalJobIdFromError,
   lipsyncVideoUrl,
   takeVideoUrl,
   shotKeepsLipsync,
   parseFalLipsyncRef,
   estimateFalLipsyncUsd,
   estimateFalLipsyncUsdForShots,
+  normalizeLipsyncModel,
+  lipsyncTierOf,
   canRetryTurboStart,
   isTurboDailyQuota,
   inferRunwayBilled,
+  runwayCostView,
   shouldResumeTurboPoll,
   parseRetryAfterSec,
   nextRunwayQuietUntil,
@@ -167,9 +171,29 @@ if (lipsyncInFlight({ lipsynced: true, lipsyncTaskId: 'lipsync_1', lipsyncStatus
 if (shouldResumeLipsync({ lipsyncTaskId: 'x', lipsyncStatus: 'FAILED', lipsyncError: 'Fal 405:' })) {
   fail.push('405 must not resume a dead Fal poll');
 }
+if (
+  parseFalJobIdFromError('Fal job 01a02e1d-d082-70e1-b906-23d7c5c08940 quá 3 phút.') !==
+  '01a02e1d-d082-70e1-b906-23d7c5c08940'
+) {
+  fail.push('parse Fal job id from timeout');
+}
+if (
+  !shouldResumeLipsync({
+    lipsyncStatus: 'FAILED',
+    lipsyncError: 'Fal job 01a02e1d-d082-70e1-b906-23d7c5c08940 quá 3 phút. Có thể đã trừ.',
+  })
+) {
+  fail.push('timeout without saved task id must still Hỏi lại');
+}
 if (estimateFalLipsyncUsd(10) !== 0.12) fail.push('10s Fal lipsync 1.9 is $0.12');
 if (estimateFalLipsyncUsdForShots([{ seconds: 10 }, { seconds: 10 }, { seconds: 10 }]) !== 0.36) {
   fail.push('3×10s Fal lipsync 1.9 is $0.36');
+}
+if (estimateFalLipsyncUsd(10, 'v3') !== 1.33) fail.push('10s Fal lipsync v3 is $1.33');
+if (estimateFalLipsyncUsd(10, 'ls') !== 0.2) fail.push('10s LatentSync is $0.20');
+if (estimateFalLipsyncUsd(50, 'ls') !== 0.25) fail.push('50s LatentSync is $0.25');
+if (normalizeLipsyncModel('ls') !== 'ls' || lipsyncTierOf('v3').title !== 'Chuẩn · đắt') {
+  fail.push('lipsync tier labels');
 }
 if (shouldResumeLipsync({ lipsyncTaskId: 'x', lipsyncStatus: 'PENDING' }) !== true) {
   fail.push('pending lipsync may resume');
@@ -188,6 +212,9 @@ if (takeVideoUrl({ lipsynced: true, lipsyncUrl: 'https://fal.example/lip.mp4', p
 }
 if (takeVideoUrl({ previewUrl: 'https://runway.example/raw.mp4' }) !== 'https://runway.example/raw.mp4') {
   fail.push('raw take url is the assemble fallback');
+}
+if (takeVideoUrl({ takeUrl: 'https://runway.example/take.mp4' }) !== 'https://runway.example/take.mp4') {
+  fail.push('takeUrl-only must still assemble');
 }
 if (!shotKeepsLipsync({ lipsyncUrl: 'https://fal.example/lip.mp4' })) {
   fail.push('lipsyncUrl without flag must still keep Fal audio');
@@ -228,6 +255,23 @@ if (!v2ready.ready.some((s) => s.id === 'b')) fail.push('approved SH02 must send
 if (!v2ready.blocked.some((b) => b.shot.id === 'a' && /DRAFT/i.test(b.reason))) {
   fail.push('draft block reason');
 }
+const draftQa95 = {
+  ...locked,
+  runs: {
+    ...locked.runs,
+    a: {
+      status: 'keyframe_ready' as const,
+      keyframeDataUrl: 'data:image/png;base64,aa',
+      kfApproved: false,
+      visualQa: { status: 'PASS' as const, total: 95, hardFails: [], checks: {} },
+    },
+  },
+} as SeriesPilotState;
+const qa95 = readyV2VideoShots(draftQa95, queue);
+if (qa95.ready.some((s) => s.id === 'a')) fail.push('QA 95 draft must not send Runway');
+if (!qa95.blocked.some((b) => b.shot.id === 'a' && /Duyệt KF/i.test(b.reason))) {
+  fail.push('QA 95 draft must ask to approve KF, not claim score failed');
+}
 
 if (clampShortSeconds(5) !== 5 || clampShortSeconds(10) !== 10) fail.push('duration only 5 or 10');
 if (canRetryTurboStart('unexpected error', true)) fail.push('must not auto-retry after Runway created a task');
@@ -235,8 +279,22 @@ if (canRetryTurboStart('Runway 429 rate limit', false) !== true) fail.push('429 
 if (canRetryTurboStart('Runway 429 daily-quota: 60: limit', false)) fail.push('daily quota must not auto-start');
 if (!isTurboDailyQuota('Your daily task limit has been reached.')) fail.push('Runway daily task limit string');
 if (canRetryTurboStart('Your daily task limit has been reached.', false)) fail.push('must not POST again after daily task limit');
-if (inferRunwayBilled({ turboTaskId: 't1' }, 10) !== 50) fail.push('failed 10s job billed 50');
-if (inferRunwayBilled({ runwayBilled: 100, turboTaskId: 't2' }, 10) !== 100) fail.push('keep cumulative billed');
+if (inferRunwayBilled({ turboTaskId: 't1' }, 10) !== 0) fail.push('task id without file is not billed');
+if (inferRunwayBilled({ runwayBilled: 75, turboTaskId: 't2', turboError: 'INTERNAL.BAD_OUTPUT' }, 5) !== 0) {
+  fail.push('failed job must not show đã trừ');
+}
+if (inferRunwayBilled({ runwayBilled: 100, turboTaskId: 't2', previewUrl: 'https://x/a.mp4' }, 10) !== 100) {
+  fail.push('keep cumulative billed after file OK');
+}
+if (runwayCostView({ turboTaskId: 't', turboError: 'INTERNAL.BAD_OUTPUT', turboStatus: 'FAILED' }, 5).phase !== 'REFUND_PENDING') {
+  fail.push('INTERNAL cost is REFUND_PENDING');
+}
+if (runwayCostView({ videoPipe: 'INPUT_INVALID', turboStatus: 'FAILED', turboError: 'Width — · Height —' }, 5).phase !== 'NONE') {
+  fail.push('KIT precheck must not show REFUND PENDING');
+}
+if (runwayCostView({ turboTaskId: 't', turboStatus: 'PENDING' }, 5).label.includes('PENDING') !== true) {
+  fail.push('submitted task is PENDING not đã trừ');
+}
 if (!shouldResumeTurboPoll({ turboTaskId: 't', turboError: 'Runway giới hạn tốc độ' })) {
   fail.push('429 row must resume old task');
 }

@@ -48,31 +48,27 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
         }
         refs = kept;
 
-        var hasScene = refs.Any(r =>
-            string.Equals(r.Role, "scene", StringComparison.OrdinalIgnoreCase));
-        var guarded = hasScene
-            ? "HARD BAN: no readable letters, numbers, captions, subtitles, logos, watermarks, UI, or typography. "
-              + "If a reference has text, ignore the letters — do not copy them. KIT may overlay narrative marks later.\n"
-              + "Photorealistic Vietnamese live-action SCENE still. Frame ONLY what FRAMING LOCK / SHOT INTENT require — "
-              + "do not force a full-body wide of every named person. Secondary may be partial.\n"
-              + "The image marked role=scene is the PREVIOUS SHOT END FRAME. Keep the same place, clothes, lighting and key props. "
-              + "Only apply the new action. Soft continuity (pose, gaze, camera distance) may change. "
-              + "Other attached images are FACE/WARDROBE identity only — never copy a character bible, master reference, turnaround, or expression grid. "
-              + "No extra people, no title card.\n"
-              + prompt
-            : "HARD BAN: no readable letters, numbers, captions, subtitles, logos, watermarks, UI, or typography. "
-              + "If a reference has text, ignore the letters — do not copy them. KIT may overlay narrative marks later.\n"
-              + "Photorealistic Vietnamese live-action SCENE still. Frame ONLY what FRAMING LOCK / SHOT INTENT require — "
-              + "do not force a full-body wide of every named person.\n"
-              + "Attached images are FACE/WARDROBE REFERENCES only. Do NOT output a character design sheet, master reference, turnaround, expression grid, contact sheet, passport crop, or title card. "
-              + "Output one film frame of the locked Action and composition. "
-              + "Match each named person's face, hair, age and clothes from the matching reference. "
-              + "No extra people, no illustration.\n"
-              + prompt;
+        var guarded = prompt;
+
+        var labeled = new List<(string Mime, string Base64, string Label)>(parsed.Count);
+        for (var i = 0; i < parsed.Count; i++)
+        {
+            var row = refs[i];
+            var n = i + 1;
+            var role = (row.Role ?? "").Trim();
+            var label = role.Equals("scene", StringComparison.OrdinalIgnoreCase)
+                ? $"REFERENCE {n} — Scene Master ({row.Name}). Exact environment. Do not redesign the room."
+                : role.Equals("continuity", StringComparison.OrdinalIgnoreCase)
+                    ? $"REFERENCE {n} — Previous KF ({row.Name}). Keep faces, wardrobe, room, lighting, props. Do not copy crop, zoom, or pose."
+                    : role.Equals("identity-secondary", StringComparison.OrdinalIgnoreCase)
+                        ? $"REFERENCE {n} — {row.Name} Canon. Identity only. May be a shoulder / partial face."
+                        : $"REFERENCE {n} — {row.Name} Canon. Face, hair, age, wardrobe identity only. Not a pose to copy.";
+            labeled.Add((parsed[i].Mime, parsed[i].Base64, label));
+        }
 
         var (bytes, model) = await _gemini.GenerateImageWithRefsAsync(
             guarded,
-            parsed,
+            labeled,
             aspect,
             cancellationToken);
         var mimeOut = bytes.Length >= 8 && bytes[0] == 0x89 ? "image/png" : "image/jpeg";
@@ -137,18 +133,28 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
 
         var raw = await _gemini.GenerateJsonWithImageAsync(
             "You are a film still QA judge. Script/spec is source of truth. Do not invent plot, hugs, apologies, or extra people. "
-            + "Score the attached still against the Visual Spec. JSON only: "
-            + "{\"total\":0-100,\"axes\":{\"character\":0-100,\"face\":0-100,\"action\":0-100,\"prop\":0-100,\"composition\":0-100,\"continuity\":0-100,\"emotion\":0-100},"
-            + "\"hardFails\":[\"MISSING_FACE\"|\"MISSING_PROP\"|\"WRONG_COUNT\"|\"WRONG_LOCATION\"|\"WRONG_WARDROBE\"|\"WRONG_ACTION\"],"
+            + "JSON only: {\"hardChecks\":{\"character\":\"PASS|FAIL\",\"face\":\"PASS|FAIL\",\"people\":\"PASS|FAIL\","
+            + "\"location\":\"PASS|FAIL\",\"prop\":\"PASS|FAIL|PARTIAL\",\"action\":\"PASS|FAIL\",\"gaze\":\"PASS|FAIL\",\"continuity\":\"PASS|FAIL\"},"
+            + "\"hardFails\":[\"MISSING_FACE\"|\"WRONG_CHARACTER\"|\"WRONG_COUNT\"|\"WRONG_LOCATION\"|\"MISSING_PROP\"|\"WRONG_ACTION\"|\"WRONG_WARDROBE\"|\"WRONG_GAZE\"],"
+            + "\"total\":0-100,\"axes\":{\"character\":0-100,\"face\":0-100,\"action\":0-100,\"prop\":0-100,\"composition\":0-100,\"continuity\":0-100,\"emotion\":0-100},"
+            + "\"evidence\":\"one Vietnamese sentence naming the miss\",\"confidence\":0-100,"
             + "\"notes\":\"short Vietnamese\"}. "
-            + "HARD FAIL (never average away): missing required primary face, missing required prop, wrong people count, wrong place, wrong wardrobe, wrong action. "
-            + "FACE_REQUIRED: reject cropped/back-turned/unreadable primary face. Secondary may be partial if spec says so. "
+            + "HARD CHECKS decide FAIL. Quality total is SOFT polish only — never write a hardFail because composition is not 70%, lens is not 50mm, emotion is mild, or lighting is a bit warm. "
+            + "A still that performs the Visual Contract (right primary, readable primary face, gaze toward the other person not the lens, right place, visible required prop) "
+            + "MUST have empty hardFails and hardChecks PASS or PARTIAL. That image PASSES even if total is 70-80. "
+            + "Do not score 45-70 and invent hardFails for an ordinary photoreal family still. "
+            + "Do not FAIL without a specific hardFail code AND evidence. No evidence = empty hardFails. "
+            + "PARTIAL prop (paper present but not fully readable) is PASS, not MISSING_PROP. "
+            + "FACE: only PRIMARY face. Secondary shoulder/partial is PASS, not MISSING_FACE. "
+            + "WRONG_COUNT: only an EXTRA person. One full face + a mother shoulder is PASS. "
+            + "GAZE: looking at the other person or a prop is PASS. Looking into the lens is WRONG_GAZE. "
+            + "Never fail because the subject is not looking at camera. "
             + "Do not fail because a KIT overlay number looks graphic.",
             $"VISUAL SPEC:\n{spec}",
             mime,
             b64,
             cancellationToken,
-            768);
+            1024);
 
         var t = (raw ?? "").Trim();
         if (t.StartsWith("```", StringComparison.Ordinal))
@@ -180,8 +186,27 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
         }
         int? total = root.TryGetProperty("total", out var tot) && tot.TryGetInt32(out var tv) ? tv : null;
         var notes = root.TryGetProperty("notes", out var nt) ? (nt.GetString() ?? "").Trim() : "";
-        var status = fails.Count > 0 || (total is < 80) ? "REJECT" : "PASS";
-        return new ContentSeriesStillQaDto(status, total, axes.Count == 0 ? null : axes, fails, notes.Length == 0 ? null : notes);
+        var evidence = root.TryGetProperty("evidence", out var ev) ? (ev.GetString() ?? "").Trim() : "";
+        int? confidence = root.TryGetProperty("confidence", out var cf) && cf.TryGetInt32(out var cv) ? cv : null;
+        var hardChecks = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (root.TryGetProperty("hardChecks", out var hc) && hc.ValueKind == System.Text.Json.JsonValueKind.Object)
+        {
+            foreach (var p in hc.EnumerateObject())
+            {
+                var v = p.Value.ValueKind == System.Text.Json.JsonValueKind.String ? (p.Value.GetString() ?? "").Trim() : "";
+                if (v.Length > 0) hardChecks[p.Name] = v;
+            }
+        }
+        var status = fails.Count > 0 ? "REJECT" : "PASS";
+        return new ContentSeriesStillQaDto(
+            status,
+            total,
+            axes.Count == 0 ? null : axes,
+            fails,
+            notes.Length == 0 ? null : notes,
+            hardChecks.Count == 0 ? null : hardChecks,
+            evidence.Length == 0 ? null : evidence,
+            confidence);
     }
 
     private static bool ReadBool(System.Text.Json.JsonElement root, string name) =>

@@ -157,10 +157,11 @@ internal sealed class ContentFalClient
         return fileUrl;
     }
 
-    public async Task<(string TaskId, string Status, string? VideoUrl)> CreateLipsyncAsync(
+    public async Task<(string TaskId, string Status, string? VideoUrl, string Model)> CreateLipsyncAsync(
         string videoUrl,
         string audioUrl,
         string? syncMode,
+        string? modelKind,
         CancellationToken cancellationToken)
     {
         var resolved = await ResolveAsync(cancellationToken);
@@ -168,29 +169,47 @@ internal sealed class ContentFalClient
                   ?? throw new InvalidOperationException(
                       "Chưa cấu hình FalApiKey — Model AI → Video, hoặc env FAL_KEY.");
 
+        var kind = NormalizeLipsyncKind(modelKind);
+        var endpoint = kind switch
+        {
+            "v3" => "fal-ai/sync-lipsync/v3",
+            "ls" => "fal-ai/latentsync",
+            _ => LipsyncEndpoint,
+        };
+        var prefix = kind switch
+        {
+            "v3" => "lipsync_v3_",
+            "ls" => "lipsync_ls_",
+            _ => LipsyncPrefix,
+        };
+        var modelLabel = kind switch
+        {
+            "v3" => "sync-lipsync-v3",
+            "ls" => "latentsync",
+            _ => LipsyncModel,
+        };
         var mode = NormalizeSyncMode(syncMode);
         var clipUrl = videoUrl.Trim();
         var audio = audioUrl.Trim();
-        var payload = JsonContent.Create(new { video_url = clipUrl, audio_url = audio, sync_mode = mode, model = LipsyncVariant }, options: JsonOpts);
 
-        // One POST. Queue first (returns request_id). fal.run only if queue rejects the route.
-        // Never retry 504 / never fan-out to v1/latentsync — each 200 is a paid Fal job.
-        using var queueReq = new HttpRequestMessage(HttpMethod.Post, LipsyncEndpoint);
+        // One POST. Queue first (returns request_id). fal.run only if queue rejects the same route.
+        // Never retry 504 / never fan-out to another model — each 200 is a paid Fal job.
+        using var queueReq = new HttpRequestMessage(HttpMethod.Post, endpoint);
         ApplyAuth(queueReq, key);
-        queueReq.Content = payload;
+        queueReq.Content = LipsyncPayload(kind, clipUrl, audio, mode);
         using var queueRes = await _http.SendAsync(queueReq, cancellationToken);
         var queueBody = await queueRes.Content.ReadAsStringAsync(cancellationToken);
         var queueCode = (int)queueRes.StatusCode;
         if (queueCode == 402)
             throw new InvalidOperationException("Fal hết tiền (402). Nạp trên fal.ai. Đừng gửi lại job cũ.");
         if (queueRes.IsSuccessStatusCode)
-            return await FinishLipsyncCreateAsync(key, queueBody, cancellationToken);
+            return await FinishLipsyncCreateAsync(key, queueBody, endpoint, prefix, modelLabel, cancellationToken);
         if (queueCode is not (404 or 405))
             throw LipsyncAcceptOrFail(queueCode, queueBody);
 
-        using var syncReq = new HttpRequestMessage(HttpMethod.Post, "https://fal.run/fal-ai/sync-lipsync");
+        using var syncReq = new HttpRequestMessage(HttpMethod.Post, $"https://fal.run/{endpoint}");
         ApplyAuth(syncReq, key);
-        syncReq.Content = JsonContent.Create(new { video_url = clipUrl, audio_url = audio, sync_mode = mode, model = LipsyncVariant }, options: JsonOpts);
+        syncReq.Content = LipsyncPayload(kind, clipUrl, audio, mode);
         using var syncRes = await _http.SendAsync(syncReq, cancellationToken);
         var syncBody = await syncRes.Content.ReadAsStringAsync(cancellationToken);
         var syncCode = (int)syncRes.StatusCode;
@@ -198,33 +217,43 @@ internal sealed class ContentFalClient
             throw new InvalidOperationException("Fal hết tiền (402). Nạp trên fal.ai. Đừng gửi lại job cũ.");
         if (!syncRes.IsSuccessStatusCode)
             throw LipsyncAcceptOrFail(syncCode, syncBody);
-        return await FinishLipsyncCreateAsync(key, syncBody, cancellationToken);
+        return await FinishLipsyncCreateAsync(key, syncBody, endpoint, prefix, modelLabel, cancellationToken);
     }
 
-    private async Task<(string TaskId, string Status, string? VideoUrl)> FinishLipsyncCreateAsync(
+    private async Task<(string TaskId, string Status, string? VideoUrl, string Model)> FinishLipsyncCreateAsync(
         string key,
         string body,
+        string endpoint,
+        string prefix,
+        string modelLabel,
         CancellationToken cancellationToken)
     {
         using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
         var video = ReadVideoUrl(doc.RootElement);
         var id = ReadRequestId(doc.RootElement);
         if (!string.IsNullOrWhiteSpace(video))
-            return (LipsyncPrefix + (string.IsNullOrWhiteSpace(id) ? Guid.NewGuid().ToString("N") : id), "SUCCEEDED", video);
+            return (prefix + (string.IsNullOrWhiteSpace(id) ? Guid.NewGuid().ToString("N") : id), "SUCCEEDED", video, modelLabel);
         if (string.IsNullOrWhiteSpace(id))
             throw new InvalidOperationException("Fal lipsync không trả request id. Kiểm tra fal.ai → Usage trước khi gửi job mới.");
         var waited = await WaitLipsyncAsync(
             key,
             id,
-            LipsyncEndpoint,
+            endpoint,
             ReadString(doc.RootElement, "status_url") ?? ReadString(doc.RootElement, "statusUrl"),
             ReadString(doc.RootElement, "response_url") ?? ReadString(doc.RootElement, "responseUrl"),
-            cancellationToken);
+            cancellationToken,
+            75);
         if (!string.IsNullOrWhiteSpace(waited.VideoUrl))
-            return (LipsyncPrefix + id, "SUCCEEDED", waited.VideoUrl);
-        throw new InvalidOperationException(
-            waited.Error
-            ?? $"Fal đã nhận job {id} (đã trừ). KIT chưa lấy được file. Mở fal.ai → Usage — đừng bấm Khớp môi lại.");
+            return (prefix + id, "SUCCEEDED", waited.VideoUrl, modelLabel);
+        if (waited.Status == "FAILED"
+            && !string.IsNullOrWhiteSpace(waited.Error)
+            && !waited.Error.Contains("405", StringComparison.OrdinalIgnoreCase)
+            && !waited.Error.Contains("vẫn chạy", StringComparison.OrdinalIgnoreCase)
+            && !waited.Error.Contains("quá ", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(waited.Error);
+        }
+        return (prefix + id, "PENDING", null, modelLabel);
     }
 
     private static InvalidOperationException LipsyncAcceptOrFail(int code, string body)
@@ -235,7 +264,7 @@ internal sealed class ContentFalClient
         return new InvalidOperationException($"Fal lipsync {code}: {Truncate(body)}");
     }
 
-    private async Task<(string Status, string? VideoUrl, string? Error)> WaitLipsyncAsync(
+    private async Task<(string Status, string? VideoUrl, string? Error)> PeekLipsyncAsync(
         string key,
         string requestId,
         string endpoint,
@@ -268,61 +297,83 @@ internal sealed class ContentFalClient
                 return ("SUCCEEDED", ready, null);
         }
 
+        string? last = null;
+        foreach (var url in statusCandidates)
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, url);
+            ApplyAuth(req, key);
+            using var res = await _http.SendAsync(req, cancellationToken);
+            var body = await res.Content.ReadAsStringAsync(cancellationToken);
+            if ((int)res.StatusCode is 404 or 405)
+            {
+                last = $"Fal đã nhận job {requestId} (có thể đã trừ). KIT hỏi sai URL (405). Mở fal.ai → Usage — đừng gửi job mới.";
+                continue;
+            }
+            if (!res.IsSuccessStatusCode)
+            {
+                last = $"Fal {(int)res.StatusCode}: {Truncate(body)}";
+                continue;
+            }
+            using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
+            var raw = doc.RootElement.TryGetProperty("status", out var st) ? st.GetString() ?? "" : "";
+            var status = raw.Trim().ToUpperInvariant() switch
+            {
+                "COMPLETED" or "COMPLETE" or "SUCCESS" => "SUCCEEDED",
+                "IN_QUEUE" or "IN_PROGRESS" or "QUEUED" => "PENDING",
+                "FAILED" or "ERROR" => "FAILED",
+                var s => string.IsNullOrWhiteSpace(s) ? "PENDING" : s,
+            };
+            if (status == "FAILED")
+                return ("FAILED", null, ReadString(doc.RootElement, "error") ?? Truncate(body));
+            if (status != "SUCCEEDED")
+                return ("PENDING", null, null);
+            foreach (var result in resultCandidates)
+            {
+                using var rreq = new HttpRequestMessage(HttpMethod.Get, result);
+                ApplyAuth(rreq, key);
+                using var rres = await _http.SendAsync(rreq, cancellationToken);
+                var rbody = await rres.Content.ReadAsStringAsync(cancellationToken);
+                if (!rres.IsSuccessStatusCode) continue;
+                using var rdoc = JsonDocument.Parse(string.IsNullOrWhiteSpace(rbody) ? "{}" : rbody);
+                var video = ReadVideoUrl(rdoc.RootElement);
+                if (!string.IsNullOrWhiteSpace(video))
+                    return ("SUCCEEDED", video, null);
+            }
+            return ("PENDING", null, "Fal báo xong — KIT chưa thấy URL. Hỏi lại · 0$.");
+        }
+
+        if (last is not null && last.Contains("405", StringComparison.Ordinal))
+            return ("FAILED", null, last);
+        return ("PENDING", null, last);
+    }
+
+    private async Task<(string Status, string? VideoUrl, string? Error)> WaitLipsyncAsync(
+        string key,
+        string requestId,
+        string endpoint,
+        string? statusUrl,
+        string? resultUrl,
+        CancellationToken cancellationToken,
+        int maxSeconds = 75)
+    {
         var t0 = DateTime.UtcNow;
         string? last = null;
-        while ((DateTime.UtcNow - t0).TotalSeconds < 180)
+        while ((DateTime.UtcNow - t0).TotalSeconds < Math.Max(8, maxSeconds))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var got = false;
-            foreach (var url in statusCandidates)
-            {
-                using var req = new HttpRequestMessage(HttpMethod.Get, url);
-                ApplyAuth(req, key);
-                using var res = await _http.SendAsync(req, cancellationToken);
-                var body = await res.Content.ReadAsStringAsync(cancellationToken);
-                if ((int)res.StatusCode is 404 or 405)
-                {
-                    last = $"Fal đã nhận job {requestId} (có thể đã trừ). KIT hỏi sai URL (405). Mở fal.ai → Usage — đừng gửi job mới.";
-                    continue;
-                }
-                if (!res.IsSuccessStatusCode)
-                {
-                    last = $"Fal {(int)res.StatusCode}: {Truncate(body)}";
-                    continue;
-                }
-                got = true;
-                using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
-                var raw = doc.RootElement.TryGetProperty("status", out var st) ? st.GetString() ?? "" : "";
-                var status = raw.Trim().ToUpperInvariant() switch
-                {
-                    "COMPLETED" or "COMPLETE" or "SUCCESS" => "SUCCEEDED",
-                    "IN_QUEUE" or "IN_PROGRESS" or "QUEUED" => "PENDING",
-                    "FAILED" or "ERROR" => "FAILED",
-                    var s => s,
-                };
-                if (status == "FAILED")
-                    return ("FAILED", null, ReadString(doc.RootElement, "error") ?? Truncate(body));
-                if (status != "SUCCEEDED")
-                    break;
-                foreach (var result in resultCandidates)
-                {
-                    using var rreq = new HttpRequestMessage(HttpMethod.Get, result);
-                    ApplyAuth(rreq, key);
-                    using var rres = await _http.SendAsync(rreq, cancellationToken);
-                    var rbody = await rres.Content.ReadAsStringAsync(cancellationToken);
-                    if (!rres.IsSuccessStatusCode) continue;
-                    using var rdoc = JsonDocument.Parse(string.IsNullOrWhiteSpace(rbody) ? "{}" : rbody);
-                    var video = ReadVideoUrl(rdoc.RootElement);
-                    if (!string.IsNullOrWhiteSpace(video))
-                        return ("SUCCEEDED", video, null);
-                }
-                return ("FAILED", null, "Fal xong nhưng không có URL video.");
-            }
-            if (!got && last is not null && last.Contains("405", StringComparison.Ordinal))
-                return ("FAILED", null, last);
+            var peek = await PeekLipsyncAsync(key, requestId, endpoint, statusUrl, resultUrl, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(peek.VideoUrl))
+                return peek;
+            if (peek.Status == "FAILED"
+                && !string.IsNullOrWhiteSpace(peek.Error)
+                && peek.Error.Contains("405", StringComparison.Ordinal))
+                return peek;
+            if (peek.Status == "FAILED")
+                return peek;
+            last = peek.Error;
             await Task.Delay(4000, cancellationToken);
         }
-        return ("FAILED", null, last ?? $"Fal job {requestId} quá 3 phút. Có thể đã trừ. Mở fal.ai → Usage — đừng gửi job mới.");
+        return ("PENDING", null, last ?? $"Fal job {requestId} vẫn chạy. Hỏi lại · 0$ — đừng gửi job mới.");
     }
 
     public async Task<(string Status, string? VideoUrl, string? Error)> GetTaskAsync(
@@ -339,14 +390,17 @@ internal sealed class ContentFalClient
             string? last = null;
             foreach (var ep in LipsyncRecoverEndpoints(taskId))
             {
-                var waited = await WaitLipsyncAsync(key, id, ep, null, null, cancellationToken);
-                if (!string.IsNullOrWhiteSpace(waited.VideoUrl))
-                    return (waited.Status, waited.VideoUrl, waited.Error);
-                last = waited.Error;
-                if (waited.Status is "PENDING" or "RUNNING" or "IN_PROGRESS")
-                    return (waited.Status, null, waited.Error);
+                var peeked = await PeekLipsyncAsync(key, id, ep, null, null, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(peeked.VideoUrl))
+                    return (peeked.Status, peeked.VideoUrl, peeked.Error);
+                last = peeked.Error;
+                if (peeked.Status == "FAILED"
+                    && peeked.Error is not null
+                    && peeked.Error.Contains("405", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                return (string.IsNullOrWhiteSpace(peeked.Status) ? "PENDING" : peeked.Status, peeked.VideoUrl, peeked.Error);
             }
-            return ("FAILED", null, last);
+            return ("PENDING", null, last);
         }
 
         using var statusReq = new HttpRequestMessage(HttpMethod.Get, $"{endpoint}/requests/{Uri.EscapeDataString(id)}/status");
@@ -467,6 +521,30 @@ internal sealed class ContentFalClient
         if (root.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Object)
             return ReadVideoUrl(data);
         return null;
+    }
+
+    private static string NormalizeLipsyncKind(string? raw)
+    {
+        var m = (raw ?? "").Trim().ToLowerInvariant();
+        if (m is "v3" or "sync-lipsync-v3") return "v3";
+        if (m is "ls" or "latentsync" or "latent") return "ls";
+        return "1.9";
+    }
+
+    private static JsonContent LipsyncPayload(string kind, string videoUrl, string audioUrl, string mode)
+    {
+        if (kind == "ls")
+        {
+            var loop = mode == "loop" ? "loop" : mode == "bounce" ? "pingpong" : null;
+            return loop is null
+                ? JsonContent.Create(new { video_url = videoUrl, audio_url = audioUrl }, options: JsonOpts)
+                : JsonContent.Create(new { video_url = videoUrl, audio_url = audioUrl, loop_mode = loop }, options: JsonOpts);
+        }
+        if (kind == "v3")
+            return JsonContent.Create(new { video_url = videoUrl, audio_url = audioUrl, sync_mode = mode }, options: JsonOpts);
+        return JsonContent.Create(
+            new { video_url = videoUrl, audio_url = audioUrl, sync_mode = mode, model = LipsyncVariant },
+            options: JsonOpts);
     }
 
     private static string NormalizeSyncMode(string? raw)

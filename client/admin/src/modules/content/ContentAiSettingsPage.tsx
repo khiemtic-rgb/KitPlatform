@@ -69,7 +69,6 @@ type VideoFormValues = {
 const TEXT_MODEL_OPTS = [
   { value: 'gemini-3.6-flash', label: 'gemini-3.6-flash (khuyên dùng)' },
   { value: 'gemini-flash-latest', label: 'gemini-flash-latest' },
-  { value: 'gemini-2.0-flash', label: 'gemini-2.0-flash' },
 ];
 
 const IMAGE_MODEL_OPTS = [
@@ -567,7 +566,7 @@ export function ContentAiSettingsPage() {
           style={{ marginBottom: 16 }}
         >
           <p style={{ marginTop: 0, color: 'rgba(0,0,0,0.65)' }}>
-            Key từ fal.ai (Key / API). Khớp môi = sync-lipsync 1.9 (~$0.70/phút). Wan dùng chung. Không dán vào Runway / ElevenLabs / Creatomate.
+            Key từ fal.ai (Key / API). Khớp môi: Chuẩn v3 (~$8/phút) · Vừa 1.9 (~$0.70/phút) · Rẻ LatentSync (~$0.20/clip). Wan dùng chung. Không dán vào Runway / ElevenLabs / Creatomate.
           </p>
           <Form.Item name="falApiKeySecretRef" label="Secret ref">
             <Input placeholder="FAL_KEY" autoComplete="off" />

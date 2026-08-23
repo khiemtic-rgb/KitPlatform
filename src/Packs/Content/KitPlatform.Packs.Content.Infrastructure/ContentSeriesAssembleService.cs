@@ -9,7 +9,8 @@ namespace KitPlatform.Packs.Content.Infrastructure;
 internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleService
 {
     private const int MaxClips = 40;
-    private const int MaxVoiceBytes = 4_000_000;
+    private const int MaxVoiceBytes = 8_000_000;
+    private const int MaxStillBytes = 8_000_000;
     private readonly IContentSeriesTakeProxyService _takes;
 
     public ContentSeriesAssembleService(IContentSeriesTakeProxyService takes)
@@ -38,9 +39,19 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var clip = clips[i];
-                var take = await _takes.FetchAsync(clip.VideoUrl, cancellationToken);
-                var src = Path.Combine(work, $"src{i:00}.mp4");
-                await File.WriteAllBytesAsync(src, take.Bytes, cancellationToken);
+                var still = DecodeStill(clip.StillBase64);
+                var fromStill = still.Length > 0 && string.IsNullOrWhiteSpace(clip.VideoUrl);
+                if (!fromStill && string.IsNullOrWhiteSpace(clip.VideoUrl))
+                    throw new InvalidOperationException($"{clip.Code}: thiếu take và thiếu KF — không bỏ shot, tạo KF rồi ghép.");
+                var stillExt = still.Length > 2 && still[0] == 0xFF && still[1] == 0xD8 ? "jpg" : "png";
+                var src = Path.Combine(work, fromStill ? $"src{i:00}.{stillExt}" : $"src{i:00}.mp4");
+                if (fromStill)
+                    await File.WriteAllBytesAsync(src, still, cancellationToken);
+                else
+                {
+                    var take = await _takes.FetchAsync(clip.VideoUrl!, cancellationToken);
+                    await File.WriteAllBytesAsync(src, take.Bytes, cancellationToken);
+                }
                 var voices = new List<string>();
                 var delays = new List<int>();
                 foreach (var v in clip.Voices ?? Array.Empty<ContentSeriesAssembleVoiceDto>())
@@ -56,7 +67,10 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
                 var dur = Math.Clamp(clip.Seconds, 0.4, 20);
                 if (clip.UsableEnd is > 0) dur = Math.Min(dur, Math.Max(0.4, clip.UsableEnd.Value - clip.UsableStart));
                 var outPart = Path.Combine(work, $"part{i:00}.mp4");
-                await RunFfmpeg(ffmpeg, MixArgs(src, voices, delays, clip.UsableStart, dur, outPart, request.Aspect, clip.UseVideoAudio), work, cancellationToken);
+                var keepAudio = !fromStill && clip.UseVideoAudio && HasAudibleAudio(ffmpeg, src);
+                if (!keepAudio && voices.Count == 0 && clip.RequireVoice)
+                    throw new InvalidOperationException($"{clip.Code}: thiếu thoại — không ghép file câm.");
+                await RunFfmpeg(ffmpeg, MixArgs(src, voices, delays, clip.UsableStart, dur, outPart, request.Aspect, keepAudio, fromStill), work, cancellationToken);
                 parts.Add(outPart);
             }
 
@@ -66,7 +80,18 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
                 string.Join('\n', parts.Select(p => $"file '{p.Replace('\\', '/')}'")),
                 cancellationToken);
             var dest = Path.Combine(work, "cut.mp4");
-            await RunFfmpeg(ffmpeg, $"-y -f concat -safe 0 -i \"{list}\" -c copy \"{dest}\"", work, cancellationToken);
+            try
+            {
+                await RunFfmpeg(ffmpeg, $"-y -f concat -safe 0 -i \"{list}\" -c copy \"{dest}\"", work, cancellationToken);
+            }
+            catch (InvalidOperationException)
+            {
+                await RunFfmpeg(
+                    ffmpeg,
+                    $"-y -f concat -safe 0 -i \"{list}\" -c:v libx264 -preset veryfast -crf 20 -c:a aac -b:a 160k -ar 48000 -ac 2 \"{dest}\"",
+                    work,
+                    cancellationToken);
+            }
             var bytes = await File.ReadAllBytesAsync(dest, cancellationToken);
             if (bytes.Length < 1000) throw new InvalidOperationException("FFmpeg xong nhưng file trống.");
             var stem = Sanitize(request.FileStem);
@@ -86,13 +111,19 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
         double dur,
         string dest,
         string? aspect,
-        bool useVideoAudio)
+        bool useVideoAudio,
+        bool fromStill = false)
     {
-        var start = ss > 0.05 ? $"-ss {ss.ToString("0.###", CultureInfo.InvariantCulture)} " : "";
         var t = $"-t {dur.ToString("0.###", CultureInfo.InvariantCulture)}";
-        var keepTakeAudio = useVideoAudio;
+        var keepTakeAudio = useVideoAudio && !fromStill;
         var inputs = new StringBuilder();
-        inputs.Append(start).Append("-i \"").Append(video).Append("\" ");
+        if (fromStill)
+            inputs.Append("-loop 1 ").Append(t).Append(" -i \"").Append(video).Append("\" ");
+        else
+        {
+            var start = ss > 0.05 ? $"-ss {ss.ToString("0.###", CultureInfo.InvariantCulture)} " : "";
+            inputs.Append(start).Append("-i \"").Append(video).Append("\" ");
+        }
         if (!keepTakeAudio)
         {
             foreach (var v in voices)
@@ -160,6 +191,38 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
             throw new InvalidOperationException($"FFmpeg lỗi ({p.ExitCode}): {Trim(err)}");
     }
 
+    private static bool HasAudibleAudio(string ffmpeg, string src)
+    {
+        try
+        {
+            using var p = new Process();
+            p.StartInfo = new ProcessStartInfo
+            {
+                FileName = ffmpeg,
+                Arguments = $"-hide_banner -i \"{src}\" -af volumedetect -f null -",
+                UseShellExecute = false,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true,
+            };
+            if (!p.Start()) return false;
+            var err = p.StandardError.ReadToEnd();
+            p.WaitForExit(20_000);
+            var m = System.Text.RegularExpressions.Regex.Match(
+                err,
+                @"max_volume:\s*(-inf|[-\d.]+)\s*dB",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (!m.Success) return false;
+            if (string.Equals(m.Groups[1].Value, "-inf", StringComparison.OrdinalIgnoreCase)) return false;
+            return double.TryParse(m.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var db)
+                   && db > -32;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static string? ResolveFfmpeg()
     {
         foreach (var name in new[] { "ffmpeg", "ffmpeg.exe" })
@@ -204,6 +267,20 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
             s = s[(comma + 1)..];
         try { return Convert.FromBase64String(s); }
         catch { throw new InvalidOperationException("File thoại không đọc được."); }
+    }
+
+    private static byte[] DecodeStill(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return Array.Empty<byte>();
+        try
+        {
+            var bytes = DecodeAudio(raw);
+            return bytes.Length is >= 32 and <= MaxStillBytes ? bytes : Array.Empty<byte>();
+        }
+        catch
+        {
+            return Array.Empty<byte>();
+        }
     }
 
     private static string Sanitize(string? stem)

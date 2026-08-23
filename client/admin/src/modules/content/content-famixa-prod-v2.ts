@@ -1,10 +1,12 @@
 /** Famixa Production Workflow V2. Graph ≠ queue. Shorts come from Script Beats only. */
 
 import { kfIsApproved, sceneCodeOfShot } from './content-famixa-batch-plan';
+import { approveBlockReason, visualQaAllowsApprove } from './content-famixa-visual-spec';
 import { shotsInInclusiveRange } from './content-famixa-preview-cut';
 import { pickShots, shotProdStatus } from './content-famixa-scene-first';
-import { hasVerifiedTake } from './content-famixa-runway-pipe';
+import { classifyVideoPipe, dataUriHash, hasVerifiedTake, promptHashOf, sameKfAsInternalFail } from './content-famixa-runway-pipe';
 import {
+  compileI2vPrompt,
   episodeShots,
   i2vActionOf,
   shotHasValidAction,
@@ -27,7 +29,9 @@ export type ShortSimpleStatus =
   | 'VIDEO READY'
   | 'FINAL'
   | 'HOLD'
-  | 'SKIP';
+  | 'SKIP'
+  | 'QA BLOCK'
+  | 'QA REVIEW';
 
 export const PROD_V2_STEPS: { id: ProdV2Step; n: string; label: string }[] = [
   { id: 'script', n: '1', label: 'Kịch bản' },
@@ -102,6 +106,8 @@ export function shortSimpleStatus(state: SeriesPilotState, shot: FamixaSeriesSho
   if (run.prodSkip) return 'SKIP';
   const prod = shotProdStatus(state, shot);
   if (prod === 'HOLD') return 'HOLD';
+  if (prod === 'QA BLOCK') return 'QA BLOCK';
+  if (prod === 'QA REVIEW') return 'QA REVIEW';
   if (prod === 'VIDEO APPROVED') return 'FINAL';
   if (prod === 'VIDEO READY') return hasVerifiedTake(run) ? 'VIDEO READY' : 'KF READY';
   if (prod === 'VIDEO QUEUED') return hasVerifiedTake(run) ? 'VIDEO READY' : 'KF READY';
@@ -155,12 +161,20 @@ export function kfFollowIds(state: SeriesPilotState, shots: FamixaSeriesShot[]) 
     .map((s) => s.id);
 }
 
+export function shotI2vPromptHash(state: SeriesPilotState, shot: FamixaSeriesShot, run?: SeriesShotRun) {
+  const row = run || shotRunOf(state, shot);
+  const action = i2vActionOf(state, shot, row) || row.shotAction || shot.story || '';
+  if (!action.trim()) return '';
+  return promptHashOf(compileI2vPrompt(state, shot, action));
+}
+
 export function videoNeedIds(state: SeriesPilotState, shots: FamixaSeriesShot[]) {
   return shots.filter((s) => {
     const run = shotRunOf(state, s);
     if (!shotHasValidAction(s, run) || run.prodSkip) return false;
     if (run.status === 'approved' && run.previewUrl?.trim()) return false;
     if (!kfIsApproved(run)) return false;
+    if (sameKfAsInternalFail(run, dataUriHash(run.keyframeDataUrl), shotI2vPromptHash(state, s, run))) return false;
     return !run.previewUrl?.trim();
   }).map((s) => s.id);
 }
@@ -220,8 +234,9 @@ export function takeVideoUrl(run?: {
   lipsynced?: boolean;
   lipsyncUrl?: string;
   previewUrl?: string;
+  takeUrl?: string;
 }) {
-  return lipsyncVideoUrl(run) || run?.previewUrl?.trim() || undefined;
+  return lipsyncVideoUrl(run) || run?.previewUrl?.trim() || run?.takeUrl?.trim() || undefined;
 }
 
 /** Flag may vanish after F5/merge — lipsyncUrl still means keep Fal audio. */
@@ -232,16 +247,46 @@ export function shotKeepsLipsync(run?: {
   return Boolean(run?.lipsynced || run?.lipsyncUrl?.trim());
 }
 
-/** Fal sync-lipsync 1.9 bills per output minute. 10s ≈ $0.12 — not free. */
-export const FAL_LIPSYNC_USD_PER_MIN = 0.7;
+export type FalLipsyncModel = '1.9' | 'v3' | 'ls';
+export type FalLipsyncSyncMode = 'cut_off' | 'silence' | 'loop' | 'bounce' | 'remap';
+export type VideoSendOpts = { remake?: boolean };
+export type LipsyncSendOpts = { remake?: boolean };
 
-export function estimateFalLipsyncUsd(seconds: number) {
-  const sec = Math.max(5, Number(seconds) || 10);
-  return Math.round((sec / 60) * FAL_LIPSYNC_USD_PER_MIN * 100) / 100;
+/** Fal 1.9 ≈ $0.70/min. v3 ≈ $8/min. LatentSync is per-clip (see estimate). */
+export const FAL_LIPSYNC_USD_PER_MIN: Record<Exclude<FalLipsyncModel, 'ls'>, number> = { '1.9': 0.7, v3: 8 };
+
+export const FAL_LIPSYNC_TIERS: { value: FalLipsyncModel; title: string; hint: string; rate: string }[] = [
+  { value: 'v3', title: 'Chuẩn · đắt', hint: 'Fal v3 — miệng sát thoại nhất', rate: '~$8/phút (~$1.33/10s)' },
+  { value: '1.9', title: 'Vừa', hint: 'Fal 1.9 — đủ dùng sản xuất', rate: '~$0.70/phút (~$0.12/10s)' },
+  { value: 'ls', title: 'Rẻ', hint: 'LatentSync — test / tiết kiệm', rate: '~$0.20/clip (≤40s)' },
+];
+
+export function normalizeLipsyncModel(raw?: string): FalLipsyncModel {
+  if (raw === 'v3') return 'v3';
+  if (raw === 'ls' || raw === 'latentsync') return 'ls';
+  return '1.9';
 }
 
-export function estimateFalLipsyncUsdForShots(shots: { seconds?: number }[]) {
-  return Math.round(shots.reduce((n, s) => n + estimateFalLipsyncUsd(s.seconds ?? 10), 0) * 100) / 100;
+export function lipsyncTierOf(raw?: string) {
+  const value = normalizeLipsyncModel(raw);
+  return FAL_LIPSYNC_TIERS.find((t) => t.value === value) ?? FAL_LIPSYNC_TIERS[1]!;
+}
+
+export function normalizeLipsyncSyncMode(raw?: string): FalLipsyncSyncMode {
+  return raw === 'cut_off' || raw === 'silence' || raw === 'loop' || raw === 'bounce' || raw === 'remap'
+    ? raw
+    : 'remap';
+}
+
+export function estimateFalLipsyncUsd(seconds: number, model: FalLipsyncModel = '1.9') {
+  const kind = normalizeLipsyncModel(model);
+  const sec = Math.max(5, Number(seconds) || 10);
+  if (kind === 'ls') return sec <= 40 ? 0.2 : Math.round(sec * 0.005 * 100) / 100;
+  return Math.round((sec / 60) * FAL_LIPSYNC_USD_PER_MIN[kind] * 100) / 100;
+}
+
+export function estimateFalLipsyncUsdForShots(shots: { seconds?: number }[], model: FalLipsyncModel = '1.9') {
+  return Math.round(shots.reduce((n, s) => n + estimateFalLipsyncUsd(s.seconds ?? 10, model), 0) * 100) / 100;
 }
 
 /** Estimated / billed / Fal — per selected production shots. */
@@ -254,23 +299,44 @@ export function productionCostLedger(state: SeriesPilotState, shots: FamixaSerie
   }, 0);
   const needFal = lipsyncNeedIds(state, shots);
   const falDone = shots.filter((s) => shotKeepsLipsync(shotRunOf(state, s)));
-  const estimatedFalUsd = estimateFalLipsyncUsdForShots([...needFal.map((id) => shots.find((s) => s.id === id)!).filter(Boolean), ...falDone]);
-  const confirmedFalUsd = estimateFalLipsyncUsdForShots(falDone);
+  const falModel = normalizeLipsyncModel(state.lipsyncModel);
+  const estimatedFalUsd = estimateFalLipsyncUsdForShots(
+    [...needFal.map((id) => shots.find((s) => s.id === id)!).filter(Boolean), ...falDone],
+    falModel,
+  );
+  const confirmedFalUsd = estimateFalLipsyncUsdForShots(falDone, falModel);
   return { billedRunway, estimatedRunway, estimatedFalUsd, confirmedFalUsd, needI2v: needI2v.length, needFal: needFal.length };
 }
 
-/** Dead poll (404/405) ≠ free retry. New Confirm = new Fal charge. */
+export function lipsyncTaskPrefix(model?: string) {
+  const m = normalizeLipsyncModel(model);
+  if (m === 'v3') return 'lipsync_v3_';
+  if (m === 'ls') return 'lipsync_ls_';
+  return 'lipsync_';
+}
+
+export function parseFalJobIdFromError(raw?: string) {
+  const m = (raw || '').match(/Fal job ([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+  return m?.[1];
+}
+
+/** Dead poll (404/405) ≠ free retry. Timeout / still-running = Hỏi lại · 0$. New Confirm = new Fal charge. */
 export function shouldResumeLipsync(run: {
   lipsyncTaskId?: string;
   lipsynced?: boolean;
   lipsyncStatus?: string;
   lipsyncError?: string;
 }) {
-  if (run.lipsynced || !run.lipsyncTaskId?.trim()) return false;
+  const err = run.lipsyncError || '';
+  const recovered = parseFalJobIdFromError(err);
+  if (run.lipsynced) return false;
+  if (/404|405|504|downstream|quá tải|chưa có khớp môi/i.test(err)) return false;
+  if (!run.lipsyncTaskId?.trim() && !recovered) return false;
   const st = (run.lipsyncStatus || '').toUpperCase();
-  if (st === 'FAILED' || st === 'CANCELLED' || st === 'SUCCEEDED') return false;
-  if (/404|405|504|downstream|quá tải|chưa có khớp môi/i.test(run.lipsyncError || '')) return false;
-  return st === 'PENDING' || st === 'RUNNING' || st === 'PROCESSING' || st === 'IN_PROGRESS' || st === 'RETRY';
+  if (st === 'CANCELLED' || st === 'SUCCEEDED') return false;
+  if (st === 'FAILED' && /quá \d+ phút|vẫn chạy|Hỏi lại|chưa lấy được file/i.test(err)) return true;
+  if (st === 'FAILED') return false;
+  return st === 'PENDING' || st === 'RUNNING' || st === 'PROCESSING' || st === 'IN_PROGRESS' || st === 'RETRY' || Boolean(recovered);
 }
 
 /** V2 I2V: script + voice + shot graph. Does not wait for 9:16 short lock. */
@@ -306,8 +372,23 @@ export function readyV2VideoShots(state: SeriesPilotState, shots: FamixaSeriesSh
       blocked.push({ shot: s, reason: 'thiếu KF' });
       continue;
     }
+    if (sameKfAsInternalFail(run, dataUriHash(run.keyframeDataUrl), shotI2vPromptHash(state, s, run)) && !shouldResumeTurboPoll(run)) {
+      blocked.push({
+        shot: s,
+        reason: 'INTERNAL.BAD_OUTPUT — không gửi lại cùng KF + prompt. Sửa KF hoặc đổi prompt rồi Confirm 1 job.',
+      });
+      continue;
+    }
     if (!kfIsApproved(run)) {
-      blocked.push({ shot: s, reason: 'KF DRAFT — duyệt trước I2V' });
+      const qa = run.visualQa;
+      blocked.push({
+        shot: s,
+        reason: !qa
+          ? 'KF DRAFT — duyệt trước I2V'
+          : visualQaAllowsApprove(qa)
+            ? `KF DRAFT — QA ${qa.total ?? 'PASS'} đã đạt. Bấm Duyệt KF rồi Confirm 1 job.`
+            : approveBlockReason(qa) || 'KF DRAFT — duyệt trước I2V',
+      });
       continue;
     }
     if (!i2vActionOf(state, s, run) && !action) {
@@ -323,7 +404,7 @@ export function videoCreditsFor(shots: FamixaSeriesShot[], creditsOf: (seconds: 
   return shots.reduce((n, s) => n + creditsOf(s.seconds === 10 ? 10 : 5), 0);
 }
 
-/** New Runway POST only if the previous attempt never created a task. Failed unexpected is already billed. */
+/** New Runway POST only if the previous attempt never created a task. Never auto-retry after a created job. */
 export function canRetryTurboStart(error: string, createdTask: boolean) {
   if (createdTask) return false;
   if (isTurboDailyQuota(error)) return false;
@@ -412,14 +493,62 @@ export function shouldResumeTurboPoll(run: {
   return false;
 }
 
+/** Confirmed spend only. Task created / FAILED ≠ billed. 5 cr/s gen4_turbo. */
 export function inferRunwayBilled(
-  run: { runwayBilled?: number; runwaySpent?: number; turboTaskId?: string; previewUrl?: string },
+  run: { runwayBilled?: number; runwaySpent?: number; turboTaskId?: string; previewUrl?: string; videoVerified?: boolean },
   seconds: number,
 ) {
+  if (!run.previewUrl?.trim() && !hasVerifiedTake(run)) return 0;
   if (typeof run.runwayBilled === 'number' && run.runwayBilled > 0) return run.runwayBilled;
   if (typeof run.runwaySpent === 'number' && run.runwaySpent > 0) return run.runwaySpent;
-  if (run.turboTaskId?.trim() && !run.previewUrl?.trim()) return clampShortSeconds(seconds) * 5;
-  return 0;
+  return clampShortSeconds(seconds) * 5;
+}
+
+export function runwayEstimatedCredits(seconds: number) {
+  return clampShortSeconds(seconds) * 5;
+}
+
+export function runwayCostView(
+  run: {
+    runwayBilled?: number;
+    runwaySpent?: number;
+    turboTaskId?: string;
+    previewUrl?: string;
+    turboStatus?: string;
+    turboError?: string;
+    videoVerified?: boolean;
+    runwayRefund?: string;
+    videoPipe?: string;
+  },
+  seconds: number,
+) {
+  const estimated = runwayEstimatedCredits(seconds);
+  if (hasVerifiedTake(run) || run.previewUrl?.trim()) {
+    const actual = inferRunwayBilled(run, seconds) || estimated;
+    return { phase: 'ACTUAL' as const, estimated, actual, label: `Actual: ${actual} cr` };
+  }
+  if (
+    run.videoPipe === 'INPUT_INVALID' ||
+    (run.turboStatus || '').toUpperCase() === 'BLOCKED' ||
+    /RUNWAY BLOCKED|KIT PRECHECK|Width —|Chưa đo được pixel/i.test(run.turboError || '')
+  ) {
+    return { phase: 'NONE' as const, estimated: 0, actual: undefined, label: 'KIT PRECHECK · 0 cr' };
+  }
+  const failed =
+    classifyVideoPipe(run) === 'RUNWAY_FAILED' ||
+    ((run.turboStatus || '').toUpperCase() === 'FAILED' && run.videoPipe !== 'INPUT_INVALID');
+  if (failed) {
+    return {
+      phase: 'REFUND_PENDING' as const,
+      estimated,
+      actual: undefined,
+      label: `Estimated: ${estimated} cr · FAILED · REFUND PENDING`,
+    };
+  }
+  if (run.turboTaskId?.trim()) {
+    return { phase: 'PENDING' as const, estimated, actual: undefined, label: `Estimated: ${estimated} cr · PENDING` };
+  }
+  return { phase: 'NONE' as const, estimated: 0, actual: undefined, label: '' };
 }
 
 export function canEnterProdStep(state: SeriesPilotState, step: ProdV2Step): string | undefined {

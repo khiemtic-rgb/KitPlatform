@@ -15,7 +15,7 @@ internal sealed class ContentGeminiClient
     [
         "gemini-3.6-flash",
         "gemini-flash-latest",
-        "gemini-2.0-flash",
+        "gemini-2.5-flash-lite",
     ];
 
     /// <summary>
@@ -32,7 +32,6 @@ internal sealed class ContentGeminiClient
 
     private static readonly string[][] ImageModalities =
     [
-        ["IMAGE"],
         ["TEXT", "IMAGE"],
     ];
 
@@ -142,41 +141,53 @@ internal sealed class ContentGeminiClient
         Exception? last = null;
         foreach (var model in models)
         {
-            try
+            foreach (var noThink in new[] { true, false })
             {
-                var body = new
+                try
                 {
-                    systemInstruction = new { parts = new[] { new { text = systemPrompt } } },
-                    contents = new[]
-                    {
-                        new
+                    object generationConfig = noThink
+                        ? new
                         {
-                            role = "user",
-                            parts = new object[]
+                            temperature = 0.2,
+                            responseMimeType = "application/json",
+                            maxOutputTokens,
+                            thinkingConfig = new { thinkingBudget = 0 },
+                        }
+                        : new
+                        {
+                            temperature = 0.2,
+                            responseMimeType = "application/json",
+                            maxOutputTokens,
+                        };
+                    var body = new
+                    {
+                        systemInstruction = new { parts = new[] { new { text = systemPrompt } } },
+                        contents = new[]
+                        {
+                            new
                             {
-                                new { text = userPrompt },
-                                new { inline_data = new { mime_type = mime, data = base64 } },
+                                role = "user",
+                                parts = new object[]
+                                {
+                                    new { text = userPrompt },
+                                    new { inline_data = new { mime_type = mime, data = base64 } },
+                                },
                             },
                         },
-                    },
-                    generationConfig = new
-                    {
-                        temperature = 0.2,
-                        responseMimeType = "application/json",
-                        maxOutputTokens,
-                        thinkingConfig = new { thinkingBudget = 0 },
-                    },
-                };
-                var data = await PostAsync(resolved.ApiKey, $"/models/{model}:generateContent", body, ct);
-                var text = ExtractText(data);
-                if (string.IsNullOrWhiteSpace(text))
-                    throw new InvalidOperationException("Gemini returned empty QA JSON");
-                return text;
-            }
-            catch (Exception ex)
-            {
-                last = ex;
-                _logger.LogWarning(ex, "Content Park still QA model {Model} failed", model);
+                        generationConfig,
+                    };
+                    var data = await PostAsync(resolved.ApiKey, $"/models/{model}:generateContent", body, ct);
+                    var text = ExtractText(data);
+                    if (string.IsNullOrWhiteSpace(text))
+                        throw new InvalidOperationException("Gemini returned empty QA JSON");
+                    _logger.LogInformation("Content Park still QA model {Model}", model);
+                    return text;
+                }
+                catch (Exception ex)
+                {
+                    last = ex;
+                    _logger.LogWarning(ex, "Content Park still QA model {Model} failed", model);
+                }
             }
         }
 
@@ -300,7 +311,7 @@ internal sealed class ContentGeminiClient
     /// </summary>
     public async Task<(byte[] Bytes, string Model)> GenerateImageWithRefsAsync(
         string prompt,
-        IReadOnlyList<(string Mime, string Base64)> references,
+        IReadOnlyList<(string Mime, string Base64, string Label)> references,
         string? aspectRatio,
         CancellationToken ct)
     {
@@ -321,8 +332,10 @@ internal sealed class ContentGeminiClient
             : new[] { preferred }.Concat(ImageModels.Where(m => m != preferred)).ToArray();
 
         var parts = new List<object> { new { text = prompt } };
-        foreach (var (mime, b64) in references)
+        foreach (var (mime, b64, label) in references)
         {
+            if (!string.IsNullOrWhiteSpace(label))
+                parts.Add(new { text = label });
             parts.Add(new { inline_data = new { mime_type = mime, data = b64 } });
         }
 

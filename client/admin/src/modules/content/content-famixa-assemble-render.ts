@@ -83,6 +83,17 @@ function drawSub(ctx: CanvasRenderingContext2D, w: number, h: number, name: stri
   ctx.fillText(line, w / 2, h - pad);
 }
 
+async function loadPoster(blob: Blob) {
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  img.src = url;
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error('Không đọc được KF để giữ khung.'));
+  });
+  return { img, url };
+}
+
 async function loadVideo(blob: Blob, muted = true) {
   const url = URL.createObjectURL(blob);
   const el = document.createElement('video');
@@ -142,11 +153,15 @@ export async function recordAssembledCut(opts: {
       const clip = opts.clips[i]!;
       opts.onProgress?.(`${clip.code} · ${i + 1}/${opts.clips.length}`);
       const blob = await opts.videoOf(clip.shotId);
-      const keepLip = Boolean(clip.useVideoAudio);
-      const { el, url } = await loadVideo(blob, !keepLip);
+      const keepLip = Boolean(clip.useVideoAudio) && !clip.holdStill;
+      const asStill = Boolean(clip.holdStill) || (blob.type || '').startsWith('image/');
+      const poster = asStill ? await loadPoster(blob) : undefined;
+      const loaded = asStill ? undefined : await loadVideo(blob, !keepLip);
+      const el = loaded?.el;
+      const url = poster?.url || loaded?.url || '';
       const audioBufs: { buf: AudioBuffer; start: number }[] = [];
       let local = 0;
-      if (keepLip) {
+      if (keepLip && el) {
         try {
           ac.createMediaElementSource(el).connect(dest);
         } catch {
@@ -157,8 +172,7 @@ export async function recordAssembledCut(opts: {
         for (const cue of clip.cues) {
           const ab = await opts.audioOf(cue.lineId);
           if (!ab) {
-            local += cue.endSec - cue.startSec;
-            continue;
+            throw new Error(`Thiếu thoại ${cue.code}: “${cue.text.slice(0, 40)}”. Không ghép file câm.`);
           }
           const raw = await ab.arrayBuffer();
           const buf = await ac.decodeAudioData(raw.slice(0));
@@ -166,7 +180,7 @@ export async function recordAssembledCut(opts: {
           local += buf.duration;
         }
       }
-      const dur = Math.max(clip.seconds, Number.isFinite(el.duration) ? el.duration : 0, local || 0, 1);
+      const dur = Math.max(clip.seconds, el && Number.isFinite(el.duration) ? el.duration : 0, local || 0, 1);
       const t0 = ac.currentTime + 0.08;
       for (const a of audioBufs) {
         const src = ac.createBufferSource();
@@ -174,8 +188,12 @@ export async function recordAssembledCut(opts: {
         src.connect(dest);
         src.start(t0 + a.start);
       }
-      el.currentTime = 0;
-      await waitVideoPlaying(el);
+      if (el) {
+        el.currentTime = 0;
+        await waitVideoPlaying(el);
+      } else if (poster?.img) {
+        ctx.drawImage(poster.img, 0, 0, w, h);
+      }
       const started = performance.now();
       await new Promise<void>((resolve) => {
         const tick = () => {
@@ -183,12 +201,11 @@ export async function recordAssembledCut(opts: {
             resolve();
             return;
           }
-          if (el.readyState >= 2) {
-            try {
-              ctx.drawImage(el, 0, 0, w, h);
-            } catch {
-              /* decode lag — keep last frame, do not flash black */
-            }
+          try {
+            if (poster?.img) ctx.drawImage(poster.img, 0, 0, w, h);
+            else if (el && el.readyState >= 2) ctx.drawImage(el, 0, 0, w, h);
+          } catch {
+            /* decode lag — keep last frame, do not flash black */
           }
           const elapsed = (performance.now() - started) / 1000;
           const absT = clip.startSec + elapsed;
@@ -198,7 +215,7 @@ export async function recordAssembledCut(opts: {
         };
         window.requestAnimationFrame(tick);
       });
-      el.pause();
+      el?.pause();
       URL.revokeObjectURL(url);
     }
   } finally {

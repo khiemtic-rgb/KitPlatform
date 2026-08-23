@@ -48,6 +48,8 @@ export type RunwayAttempt = {
   videoMime?: string;
   error?: string;
   billed?: number;
+  estimatedCost?: number;
+  refundStatus?: 'NONE' | 'PENDING' | 'REFUND_PENDING' | 'REFUNDED';
   kf?: RunwayImageMeta;
   source?: RunwayImageMeta;
   promptHash?: string;
@@ -57,6 +59,17 @@ export type RunwayAttempt = {
   httpStatus?: number;
   diagnostic?: boolean;
   classification?: RunwayFailureClass;
+  fingerprint?: string;
+  exactRequest?: {
+    promptText?: string;
+    promptHash?: string;
+    kfHash?: string;
+    model?: string;
+    duration?: number;
+    ratio?: string;
+    apiVersion?: string;
+    compiler?: string;
+  };
 };
 
 export type RunwayDiagRow = {
@@ -101,6 +114,12 @@ export type RunwayPipeRun = {
   keyframeDataUrl?: string;
   runwayDiagnostics?: RunwayDiagRow[];
   kfRetryOk?: boolean;
+  /** Snapshot at FAIL — circuit compares this, not the live KF URL. */
+  failedKfHash?: string;
+  failedPromptHash?: string;
+  failedFingerprint?: string;
+  runwayRefund?: 'NONE' | 'PENDING' | 'REFUND_PENDING' | 'REFUNDED';
+  renderFailure?: boolean;
 };
 
 const PIPE_LABEL: Record<VideoPipeStatus, string> = {
@@ -133,9 +152,40 @@ function upperStatus(run?: RunwayPipeRun) {
   return (run?.turboStatus || '').trim().toUpperCase();
 }
 
+export function lastGenerationFail(run?: RunwayPipeRun) {
+  const fromAttempts = [...(run?.runwayAttempts ?? [])].reverse().find((a) => {
+    const internal = /INTERNAL|BAD_OUTPUT/i.test(`${a.failureCode || ''} ${a.error || ''}`);
+    const failed = /^(FAILED|CANCELLED)$/i.test(a.status || '');
+    if (!internal && !failed) return false;
+    return internal || Boolean(a.taskId?.trim());
+  });
+  if (fromAttempts) return fromAttempts;
+  if (isKitPrecheckError(run?.turboError)) return undefined;
+  if (run?.turboTaskId && (isInternalBadOutput(run) || upperStatus(run) === 'FAILED')) {
+    return {
+      n: 0,
+      at: '',
+      taskId: run.turboTaskId,
+      status: 'FAILED',
+      failureCode: parseFailureCode(run.turboError) || (isInternalBadOutput(run) ? 'INTERNAL' : 'FAILED'),
+      error: run.turboError,
+    };
+  }
+  return undefined;
+}
+
+export function hasRunwayGenerationFail(run?: RunwayPipeRun) {
+  return Boolean(lastGenerationFail(run));
+}
+
 export function classifyVideoPipe(run?: RunwayPipeRun): VideoPipeStatus {
   if (run?.videoPipe && run.videoPipe !== 'VIDEO_READY' && run.videoPipe !== 'VIDEO_NOT_SENT') {
-    if (run.videoPipe === 'INPUT_INVALID' && !hasVerifiedTake(run)) return 'INPUT_INVALID';
+    if (run.videoPipe === 'INPUT_INVALID' && !hasVerifiedTake(run)) {
+      if (isKitPrecheckError(run.turboError)) {
+        return lastGenerationFail(run) ? 'RUNWAY_FAILED' : 'VIDEO_NOT_SENT';
+      }
+      return 'INPUT_INVALID';
+    }
   }
   if (hasVerifiedTake(run)) return 'VIDEO_READY';
   const stored = run?.videoPipe;
@@ -172,7 +222,91 @@ export function isVideoPipeError(status: VideoPipeStatus) {
   );
 }
 
-export function canManualRetry(run?: RunwayPipeRun): {
+export const RUNWAY_BATCH_MAX = 3;
+
+export function isInternalBadOutput(run?: RunwayPipeRun) {
+  const blob = `${run?.turboError || ''} ${latestAttempt(run)?.failureCode || ''}`;
+  return /INTERNAL(?:\.BAD_OUTPUT)?/i.test(blob);
+}
+
+export function promptHashOf(prompt?: string) {
+  return dataUriHash((prompt ?? '').trim());
+}
+
+export function failedInputFingerprint(run?: RunwayPipeRun) {
+  const failed = [...(run?.runwayAttempts ?? [])]
+    .reverse()
+    .find((a) => /INTERNAL|BAD_OUTPUT/i.test(`${a.failureCode || ''} ${a.error || ''}`) || a.status === 'FAILED');
+  const att = failed || (isInternalBadOutput(run) || upperStatus(run) === 'FAILED' ? latestAttempt(run) : undefined);
+  const kfHash = run?.failedKfHash || att?.source?.hash || att?.kf?.hash || '';
+  const promptHash = run?.failedPromptHash || att?.promptHash || '';
+  if (!kfHash && !isInternalBadOutput(run) && upperStatus(run) !== 'FAILED' && classifyVideoPipe(run) !== 'RUNWAY_FAILED') {
+    return undefined;
+  }
+  return {
+    kfHash,
+    promptHash,
+    failureCode: att?.failureCode || parseFailureCode(run?.turboError) || (isInternalBadOutput(run) ? 'INTERNAL' : 'FAILED'),
+    taskId: att?.taskId || run?.turboTaskId,
+  };
+}
+
+export function stampFailedInput(run?: RunwayPipeRun, kfRaw?: string, _prompt?: string) {
+  const att = lastGenerationFail(run) || latestAttempt(run);
+  const kfHash = att?.source?.hash || run?.failedKfHash || dataUriHash(kfRaw || run?.keyframeDataUrl) || '';
+  const promptHash = att?.promptHash || run?.failedPromptHash || '';
+  return {
+    failedKfHash: kfHash,
+    failedPromptHash: promptHash,
+    failedFingerprint: att?.fingerprint || run?.failedFingerprint || '',
+    runwayRefund: att?.taskId ? ('REFUND_PENDING' as const) : ('NONE' as const),
+    renderFailure: Boolean(att?.taskId),
+  };
+}
+
+/** Drop Width— / 429-fake state. Do not invent a circuit stamp from the live prompt. */
+export function sanitizeKitPrecheck(run?: RunwayPipeRun): Partial<RunwayPipeRun> | undefined {
+  if (!run) return undefined;
+  if (run.videoPipe !== 'INPUT_INVALID' && !isKitPrecheckError(run.turboError)) return undefined;
+  if (run.videoPipe === 'INPUT_INVALID' && run.turboError && !isKitPrecheckError(run.turboError)) return undefined;
+  const gen = lastGenerationFail(run);
+  const poisonStamp =
+    Boolean(run.failedPromptHash) &&
+    !(run.runwayAttempts ?? []).some((a) => a.promptHash && a.promptHash === run.failedPromptHash && a.taskId);
+  return {
+    videoPipe: gen ? 'RUNWAY_FAILED' : 'VIDEO_NOT_SENT',
+    turboStatus: gen ? 'FAILED' : undefined,
+    turboError: gen ? gen.failureCode || gen.error || run.turboError : undefined,
+    runwayRefund: gen ? run.runwayRefund || 'REFUND_PENDING' : 'NONE',
+    renderFailure: Boolean(gen),
+    ...(poisonStamp ? { failedPromptHash: gen?.promptHash, failedFingerprint: gen?.fingerprint } : {}),
+  };
+}
+
+/**
+ * Circuit only after a real Runway job FAIL.
+ * Same source KF + same failed prompt → lock. New V1 prompt or new KF → open.
+ * Missing old promptHash → open (POST still checks fingerprint when present).
+ */
+export function sameFailedInput(run?: RunwayPipeRun, sourceHash?: string, promptHash?: string) {
+  const failed = lastGenerationFail(run);
+  if (!failed) return false;
+  const current = sourceHash || dataUriHash(run?.keyframeDataUrl);
+  const stamped = run?.failedKfHash || failed.source?.hash;
+  if (stamped && current && stamped !== current) return false;
+  const prevPrompt = failed.promptHash || run?.failedPromptHash;
+  if (prevPrompt && promptHash) return prevPrompt === promptHash;
+  if (!prevPrompt) return !promptHash;
+  if (!promptHash) return Boolean(stamped && current && stamped === current);
+  return true;
+}
+
+export function capRunwayBatch<T>(shots: T[], production = false) {
+  const max = production ? RUNWAY_BATCH_MAX : 1;
+  return shots.slice(0, Math.max(1, max));
+}
+
+export function canManualRetry(run?: RunwayPipeRun, promptHash?: string): {
   ok: boolean;
   kind: 'resume' | 'new' | 'recover' | 'none';
   reason?: string;
@@ -183,23 +317,31 @@ export function canManualRetry(run?: RunwayPipeRun): {
     return { ok: true, kind: 'resume', reason: 'Hỏi lại task cũ — 0 cr.' };
   }
   if (pipe === 'TIMEOUT') return { ok: true, kind: 'resume', reason: 'Hỏi lại task cũ — 0 cr.' };
-  if (pipe === 'INPUT_INVALID') return { ok: false, kind: 'none', reason: 'Sửa KF rồi mới gửi.' };
+  if (pipe === 'INPUT_INVALID') {
+    if (isKitPrecheckError(run?.turboError) && !sameFailedInput(run, dataUriHash(run?.keyframeDataUrl), promptHash)) {
+      return { ok: true, kind: 'new', reason: 'KIT PRECHECK đã qua — Confirm 1 job.' };
+    }
+    return { ok: false, kind: 'none', reason: 'Sửa KF rồi mới gửi.' };
+  }
   const output = latestAttempt(run)?.outputUrl?.trim();
   if ((pipe === 'DOWNLOAD_FAILED' || pipe === 'FILE_INVALID' || pipe === 'VIDEO_SUCCEEDED') && output) {
     return { ok: true, kind: 'recover', reason: 'Thử đọc URL đã có — 0 cr.' };
   }
-  if (pipe === 'RUNWAY_FAILED' && /INTERNAL/i.test(run?.turboError || '')) {
-    if (sameKfAsInternalFail(run)) {
+  if (pipe === 'RUNWAY_FAILED' && isInternalBadOutput(run)) {
+    if (sameFailedInput(run, dataUriHash(run?.keyframeDataUrl), promptHash)) {
       return {
         ok: false,
         kind: 'none',
-        reason: 'INTERNAL.BAD_OUTPUT — cùng KF không gửi lại. Sửa/duyệt KF mới rồi gửi 1 lần.',
+        reason: 'INTERNAL.BAD_OUTPUT — không gửi lại cùng KF + prompt. Sửa KF rồi duyệt.',
       };
     }
-    return { ok: true, kind: 'new', reason: 'KF đã đổi — gửi 1 job mới, không spam.' };
+    return { ok: true, kind: 'new', reason: 'KF/prompt đã đổi — Confirm 1 job.' };
+  }
+  if (pipe === 'RUNWAY_FAILED' && sameFailedInput(run, dataUriHash(run?.keyframeDataUrl), promptHash)) {
+    return { ok: false, kind: 'none', reason: 'Cùng KF + prompt đã FAIL — circuit mở. Sửa input rồi Confirm 1 job.' };
   }
   if (pipe === 'RUNWAY_FAILED' || pipe === 'DOWNLOAD_FAILED' || pipe === 'FILE_INVALID') {
-    return { ok: true, kind: 'new', reason: 'Job mới — trừ cr thêm.' };
+    return { ok: true, kind: 'new', reason: 'Job mới — Confirm ước tính cr.' };
   }
   if (pipe === 'VIDEO_NOT_SENT') return { ok: true, kind: 'new', reason: 'Gửi job mới.' };
   return { ok: false, kind: 'none' };
@@ -263,8 +405,10 @@ function dataUriMeta(raw: string) {
 
 function decodePrefix(payload: string, n = 16): number[] {
   try {
-    const chunk = payload.slice(0, Math.ceil((n * 4) / 3) + 4);
-    const bin = typeof atob === 'function' ? atob(chunk) : '';
+    const need = Math.ceil((n * 4) / 3) + 8;
+    const chunk = payload.slice(0, need);
+    const aligned = chunk + '='.repeat((4 - (chunk.length % 4)) % 4);
+    const bin = typeof atob === 'function' ? atob(aligned) : '';
     if (!bin) return [];
     const out: number[] = [];
     for (let i = 0; i < Math.min(n, bin.length); i++) out.push(bin.charCodeAt(i));
@@ -272,6 +416,35 @@ function decodePrefix(payload: string, n = 16): number[] {
   } catch {
     return [];
   }
+}
+
+/** JPEG SOF — same walk as ContentSeriesTurboService.ReadJpegSize. */
+export function jpegSize(bytes: number[]) {
+  if (bytes.length < 8 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return undefined;
+  let i = 2;
+  while (i + 8 < bytes.length) {
+    if (bytes[i] !== 0xff) {
+      i += 1;
+      continue;
+    }
+    const marker = bytes[i + 1]!;
+    if (marker === 0xd8 || marker === 0xd9) {
+      i += 2;
+      continue;
+    }
+    if (i + 3 >= bytes.length) break;
+    const len = (bytes[i + 2]! << 8) | bytes[i + 3]!;
+    if (len < 2) break;
+    if (marker === 0xc0 || marker === 0xc1 || marker === 0xc2) {
+      if (i + 8 >= bytes.length) return undefined;
+      const h = (bytes[i + 5]! << 8) | bytes[i + 6]!;
+      const w = (bytes[i + 7]! << 8) | bytes[i + 8]!;
+      if (w > 0 && h > 0 && w <= 16_000 && h <= 16_000) return { width: w, height: h };
+      return undefined;
+    }
+    i += 2 + len;
+  }
+  return undefined;
 }
 
 function looksLikeImageMagic(bytes: number[], mime?: string) {
@@ -344,7 +517,8 @@ export function inspectKfDataUri(raw?: string): KfInputCheck {
   const magicOk = looksLikeImageMagic(magic, mime);
   checks.push({ id: 'magic', ok: magicOk, label: magicOk ? 'Đọc được PNG/JPEG' : 'Không phải file ảnh (HTML/lỗi?)' });
   if (!magicOk) reasons.push('KF không đọc được — không gửi Runway.');
-  const dim = pngSize(magic);
+  const head = decodePrefix(meta?.payload || '', 65_536);
+  const dim = pngSize(head.length >= 24 ? head : magic) || jpegSize(head);
   if (dim) {
     const dimOk = dim.width >= 64 && dim.height >= 64 && !(dim.width === 1 && dim.height === 1);
     checks.push({ id: 'res', ok: dimOk, label: `${dim.width}×${dim.height}` });
@@ -372,20 +546,30 @@ export function formatProductionLog(opts: {
   const kf = opts.run?.sentKfCheck || opts.run?.kfCheck || inspectKfDataUri(opts.run?.keyframeDataUrl);
   const att = latestAttempt(opts.run);
   const attempts = opts.run?.runwayAttempts ?? [];
+  const w = att?.kf?.width || kf.width;
+  const h = att?.kf?.height || kf.height;
+  const measured = Boolean(w && h);
+  const reasons = (kf.reasons ?? []).filter((r) => !(measured && /chưa đo|pixel|1280|720/i.test(r)));
+  const taskIds = [...new Set(attempts.map((a) => a.taskId).filter(Boolean) as string[])];
+  const failN = attempts.filter((a) => /FAIL|INTERNAL/i.test(`${a.status || ''} ${a.failureCode || ''} ${a.error || ''}`)).length;
   const lines = [
     `SHOT: ${opts.code}`,
     `PIPE: ${pipe} — ${videoPipeLabel(pipe)}`,
     '',
     'KF SENT (sau normalize — đây mới là payload Runway):',
     `  ${opts.kfLabel || '—'} · ${opts.kfApproved ? 'APPROVED' : 'chưa duyệt / DRAFT'}`,
-    `  ${kf.kind} ${kf.mime || ''} ${kf.bytes ? `${Math.round(kf.bytes / 1024)} KB` : ''} ${kf.width && kf.height ? `${kf.width}×${kf.height}` : ''}`.trim(),
+    `  ${kf.kind} ${kf.mime || att?.kf?.mime || ''} ${kf.bytes ? `${Math.round(kf.bytes / 1024)} KB` : ''} ${w && h ? `${w}×${h}` : ''}`.trim(),
     ...kf.checks.map((c) => `  ${c.ok ? '✓' : '✗'} ${c.label}`),
-    kf.reasons.length ? `  BLOCK: ${kf.reasons.join(' ')}` : '  VALIDATE: OK hoặc sẽ kiểm khi gửi',
+    reasons.length ? `  BLOCK: ${reasons.join(' ')}` : '  VALIDATE: OK — payload đủ điều kiện gửi',
     '',
     'RUNWAY:',
     `  Job ID: ${opts.run?.turboTaskId || att?.taskId || 'NONE'}`,
     `  Status: ${opts.run?.turboStatus || '—'}`,
-    `  Attempts: ${attempts.length ? `${att?.n || attempts.length}` : '0'}`,
+    `  Attempts: ${attempts.length ? `${att?.n || attempts.length}` : '0'}${failN ? ` · ${failN} FAIL` : ''}`,
+    `  Task IDs (Support Runway): ${taskIds.length ? taskIds.join(', ') : opts.run?.turboTaskId || 'NONE'}`,
+    att?.exactRequest
+      ? `  REQUEST: ${att.exactRequest.compiler || ''} ${att.exactRequest.model || ''} ${att.exactRequest.duration || ''}s ${att.exactRequest.ratio || ''} prompt=${(att.exactRequest.promptText || '').slice(0, 80)}`
+      : '',
     `  Output: ${opts.run?.previewUrl || att?.outputUrl || 'NONE'}`,
     `  Download: ${
       opts.run?.videoVerified === true
@@ -398,7 +582,20 @@ export function formatProductionLog(opts: {
     }`,
     `  Error: ${opts.run?.turboError || att?.error || '—'}`,
     `  Failure: ${att?.failureCode || '—'}`,
-    `  Billed this shot: ${attempts.reduce((n, a) => n + (a.billed || 0), 0) || '—'} cr (Runway trừ khi nhận job, không hoàn)`,
+    `  KF_HASH: ${att?.source?.hash || att?.kf?.hash || '—'}`,
+    `  PROMPT_HASH: ${att?.promptHash || '—'}`,
+    `  Estimated: ${att?.duration ? att.duration * 5 : '—'} cr (5 cr/s · gen4_turbo)`,
+    `  Cost: ${
+      classifyVideoPipe(opts.run) === 'VIDEO_READY'
+        ? `ACTUAL ${attempts.reduce((n, a) => n + (a.billed || 0), 0) || '—'} cr`
+        : classifyVideoPipe(opts.run) === 'INPUT_INVALID'
+          ? 'NONE — KIT PRECHECK, chưa gọi Runway'
+          : isInternalBadOutput(opts.run) || classifyVideoPipe(opts.run) === 'RUNWAY_FAILED'
+          ? 'REFUND_PENDING — Runway hoàn lỗi generation; KIT không tự ghi đã trừ'
+          : opts.run?.turboTaskId
+            ? 'PENDING — task tạo ≠ đã trừ'
+            : 'NONE'
+    }`,
   ];
   if (attempts.length) {
     lines.push('', 'ATTEMPTS:');
@@ -458,13 +655,8 @@ export function lastSourceKfHash(run?: RunwayPipeRun) {
   return latestAttempt(run)?.source?.hash || dataUriHash(run?.keyframeDataUrl);
 }
 
-export function sameKfAsInternalFail(run?: RunwayPipeRun, sourceHash?: string) {
-  if (!run || !/INTERNAL/i.test(run.turboError || latestAttempt(run)?.failureCode || '')) return false;
-  if (run.kfRetryOk) return false;
-  const prev = latestAttempt(run)?.source?.hash || lastSentKfHash(run);
-  const next = sourceHash || dataUriHash(run.keyframeDataUrl);
-  if (!prev || !next) return true;
-  return prev === next;
+export function sameKfAsInternalFail(run?: RunwayPipeRun, sourceHash?: string, promptHash?: string) {
+  return sameFailedInput(run, sourceHash, promptHash);
 }
 
 export function classifyRunwayFailure(opts: {
@@ -500,6 +692,14 @@ export function inspectRunwayPayload(raw?: string, ratio?: string): KfInputCheck
   checks.push({ id: 'pixels', ok: exact, label: w && h ? `${w}×${h}${exact ? '' : ` ≠ ${want}`}` : `cần ${want}` });
   if (w && h && !exact) reasons.push(`Pixel ${w}×${h} — Runway cần đúng ${want}.`);
   if (!w || !h) reasons.push(`Chưa đo được pixel — cần đúng ${want}.`);
+  if (w && h) {
+    const wantR = want === '1280×720' ? 16 / 9 : 9 / 16;
+    const aspectOk = Math.abs(w / h - wantR) < 0.03;
+    checks.push({ id: 'aspect', ok: aspectOk, label: `aspect ${(w / h).toFixed(3)}` });
+    if (!aspectOk) reasons.push('Aspect ratio không khớp khung Runway.');
+  }
+  const bytes = base.bytes ?? 0;
+  if (bytes === 0 && src.startsWith('data:')) reasons.push('File 0 byte — RUNWAY BLOCKED.');
   return {
     ...base,
     mime: jpeg ? 'image/jpeg' : base.mime,
@@ -635,17 +835,26 @@ export function parseFailureCode(raw?: string) {
   return m?.[1]?.toUpperCase();
 }
 
+export function isKitPrecheckError(raw?: string | null) {
+  return /RUNWAY BLOCKED|KIT PRECHECK|Width —|Height —|Aspect ratio —|Chưa đo được pixel|Normalize JPEG|không gửi được/i.test(
+    (raw ?? '').trim(),
+  );
+}
+
 export function explainPipeError(raw?: string | null) {
   const t = (raw ?? '').trim();
   if (!t) return 'Chưa có file take.';
+  if (isKitPrecheckError(t)) {
+    return 'KIT PRECHECK · 0 cr — chưa gọi Runway. Không phải 429 / không hoàn credit. Đo JPEG rồi TEST INPUT.';
+  }
   if (/moderation|safety|content.?policy/i.test(t)) {
-    return 'Runway chặn nội dung. Job này FAILED — đã trừ cr. Sửa prompt/KF rồi gửi job mới.';
+    return 'Runway chặn nội dung. Job FAILED. Sửa prompt/KF rồi Confirm 1 job mới — đừng spam cùng input.';
   }
   if (/ASSET\.INVALID/i.test(t)) {
     return 'ASSET.INVALID: KF Runway không đọc được. Không gửi lại cùng file. Nén JPEG / đổi KF.';
   }
   if (/INTERNAL\.BAD_OUTPUT|INTERNAL\b/i.test(t) || /unexpected error/i.test(t)) {
-    return 'Runway INTERNAL: họ nhận job (trừ cr) rồi gãy khi render. Không gửi lại cùng KF. Normalize JPEG 1280×720 rồi A/B 3+3 — đừng spam Gửi lại.';
+    return 'INTERNAL.BAD_OUTPUT — RENDER_FAILURE. Không gửi lại cùng KF + prompt. Sửa/duyệt KF mới rồi Confirm 1 lần. Credit: REFUND PENDING (Runway), KIT không tự ghi đã trừ.';
   }
   if (/SUCCEEDED.*output|không đọc được output/i.test(t)) {
     return 'Runway báo SUCCEEDED nhưng KIT không đọc được output URL. Mở Nhật ký — Hỏi lại · 0 cr, đừng gửi job mới.';

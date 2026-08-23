@@ -508,6 +508,9 @@ export async function qaContentSeriesStill(body: { imageDataUrl: string; specJso
     axes?: Record<string, number>;
     hardFails: string[];
     notes?: string;
+    hardChecks?: Record<string, string>;
+    evidence?: string;
+    confidence?: number;
   }>('/content/series/still-qa', body, { timeout: 90_000 });
   return data;
 }
@@ -538,6 +541,7 @@ export async function startContentSeriesLipsync(body: {
   audioBase64: string;
   mime?: string;
   syncMode?: 'cut_off' | 'silence' | 'loop' | 'bounce' | 'remap';
+  model?: '1.9' | 'v3' | 'ls';
 }) {
   const { data } = await http.post<ContentSeriesTurboTask>('/content/series/lipsync', body, { timeout: 360_000 });
   return data;
@@ -558,12 +562,14 @@ export async function assembleContentSeriesCut(body: {
   aspect?: '16:9' | '9:16';
   clips: {
     code: string;
-    videoUrl: string;
+    videoUrl?: string;
     seconds: number;
     usableStart?: number;
     usableEnd?: number;
     voices: { lineId: string; startSec: number; audioBase64: string; mime?: string }[];
     useVideoAudio?: boolean;
+    requireVoice?: boolean;
+    stillBase64?: string;
   }[];
 }) {
   const { data, headers } = await http.post<Blob>('/content/series/assemble', body, {

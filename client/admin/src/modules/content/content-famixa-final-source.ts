@@ -62,9 +62,9 @@ export function stampFinalSource<T extends FinalSourceRun>(run: T, silent = fals
 
 export function assembleVideoUrl(run?: FinalSourceRun) {
   if (resolveFinalSource(run) === 'FAL') {
-    return run?.lipsyncUrl?.trim() || run?.previewUrl?.trim() || undefined;
+    return run?.lipsyncUrl?.trim() || run?.previewUrl?.trim() || run?.takeUrl?.trim() || undefined;
   }
-  return run?.previewUrl?.trim() || run?.lipsyncUrl?.trim() || undefined;
+  return run?.previewUrl?.trim() || run?.takeUrl?.trim() || run?.lipsyncUrl?.trim() || undefined;
 }
 
 export function isFalSource(src?: FinalSource) {

@@ -1,5 +1,6 @@
 import {
   canManualRetry,
+  capRunwayBatch,
   classifyVideoPipe,
   compareRunwayJobs,
   dataUriHash,
@@ -9,10 +10,13 @@ import {
   hasVerifiedTake,
   inspectKfDataUri,
   inspectRunwayPayload,
+  isKitPrecheckError,
+  jpegSize,
   isPrivateRunwayImageUrl,
   isVideoPipeError,
   parseFailureCode,
   patchRunwayAttempt,
+  sameFailedInput,
   sameKfAsInternalFail,
   startRunwayAttempt,
   summarizeAbDiagnostic,
@@ -44,17 +48,53 @@ if (classifyVideoPipe({ turboStatus: 'SUCCEEDED', videoPipe: 'DOWNLOAD_FAILED', 
 }
 if (!isVideoPipeError('RUNWAY_FAILED') || isVideoPipeError('VIDEO_READY')) fail.push('error flags');
 
-if (canManualRetry({ turboStatus: 'FAILED', turboTaskId: 't', turboError: 'unexpected' }).kind !== 'new') {
-  fail.push('failed unexpected may start a new attempt');
+if (canManualRetry({ turboStatus: 'FAILED', turboTaskId: 't', turboError: 'unexpected' }).kind !== 'none') {
+  fail.push('failed same input must block retry');
 }
-if (canManualRetry({ turboStatus: 'FAILED', turboTaskId: 't', turboError: 'INTERNAL.BAD_OUTPUT' }).ok) {
-  fail.push('INTERNAL must not offer blind Gửi lại');
+if (canManualRetry({ turboStatus: 'FAILED', turboTaskId: 't', turboError: 'INTERNAL.BAD_OUTPUT' }).kind !== 'none') {
+  fail.push('INTERNAL must not offer Tạo lại cùng KF');
 }
 if (canManualRetry({ turboStatus: 'RUNNING', turboTaskId: 't' }).kind !== 'resume') {
   fail.push('in-flight must resume 0 cr');
 }
 if (canManualRetry({ previewUrl: 'https://x/a.mp4' }).ok) fail.push('READY must not retry');
 if (canManualRetry({ videoPipe: 'INPUT_INVALID' }).ok) fail.push('invalid KF must not send');
+
+const jpeg = `data:image/jpeg;base64,/9j/4AAQ${'A'.repeat(1200)}`;
+if (sameFailedInput({ videoPipe: 'INPUT_INVALID', turboStatus: 'FAILED', turboError: 'Width — · Height —' })) {
+  fail.push('KIT precheck without task must not open INTERNAL circuit');
+}
+if (canManualRetry({ videoPipe: 'INPUT_INVALID', turboStatus: 'BLOCKED', turboError: 'Width — · Height —' }).kind !== 'new') {
+  fail.push('Width — precheck must allow Confirm after measure fix');
+}
+if (
+  !sameFailedInput({
+    videoPipe: 'INPUT_INVALID',
+    turboStatus: 'FAILED',
+    turboError: 'Width —',
+    keyframeDataUrl: jpeg,
+    failedKfHash: dataUriHash(jpeg),
+    runwayAttempts: [{ n: 1, at: 'x', taskId: 't', source: { hash: dataUriHash(jpeg) }, failureCode: 'INTERNAL.BAD_OUTPUT' }],
+  })
+) {
+  fail.push('same KF INTERNAL without new prompt stays locked');
+}
+if (
+  sameFailedInput(
+    {
+      videoPipe: 'INPUT_INVALID',
+      turboStatus: 'FAILED',
+      turboError: 'Width —',
+      keyframeDataUrl: jpeg,
+      failedKfHash: dataUriHash(jpeg),
+      runwayAttempts: [{ n: 1, at: 'x', taskId: 't', source: { hash: dataUriHash(jpeg) }, failureCode: 'INTERNAL.BAD_OUTPUT' }],
+    },
+    dataUriHash(jpeg),
+    'hnewv1:12',
+  )
+) {
+  fail.push('V1 prompt must unlock Width— deadlock on same KF');
+}
 if (
   canManualRetry({
     videoPipe: 'DOWNLOAD_FAILED',
@@ -75,10 +115,31 @@ if (isPrivateRunwayImageUrl('https://cdn.example/v10.2/kf.jpg')) {
 }
 if (!isPrivateRunwayImageUrl('https://127.0.0.1:5290/a.png')) fail.push('127.0.0.1 is private');
 
-const jpeg = `data:image/jpeg;base64,/9j/4AAQ${'A'.repeat(1200)}`;
 const jpegCheck = inspectKfDataUri(jpeg);
 if (!jpegCheck.ok || jpegCheck.mime !== 'image/jpeg') fail.push('jpeg data-URI must pass mime/magic');
 if ((jpegCheck.bytes ?? 0) < 800) fail.push('jpeg byte estimate');
+
+function jpegSofUri(width: number, height: number) {
+  const bytes: number[] = [
+    0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
+    0xff, 0xc0, 0x00, 0x11, 0x08, (height >> 8) & 255, height & 255, (width >> 8) & 255, width & 255, 0x03, 0x01, 0x22,
+    0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01, 0xff, 0xd9,
+  ];
+  while (bytes.length < 900) bytes.push(0);
+  return `data:image/jpeg;base64,${Buffer.from(bytes).toString('base64')}`;
+}
+const sof = jpegSofUri(1280, 720);
+const sofDim = jpegSize(
+  [...Buffer.from(sof.slice(sof.indexOf(',') + 1), 'base64')].map((b) => b),
+);
+if (sofDim?.width !== 1280 || sofDim?.height !== 720) fail.push('jpeg SOF must read 1280×720');
+const sofCheck = inspectKfDataUri(sof);
+if (sofCheck.width !== 1280 || sofCheck.height !== 720) fail.push('inspectKfDataUri must parse JPEG SOF');
+const sofPayload = inspectRunwayPayload(sof, '16:9');
+if (!sofPayload.ok) fail.push(`valid 1280×720 JPEG must pass Runway gate: ${sofPayload.reasons.join(' ')}`);
+if (!isKitPrecheckError('RUNWAY BLOCKED (0 cr): Width — · Height —')) fail.push('Width — is KIT precheck');
+if (isKitPrecheckError('INTERNAL.BAD_OUTPUT.CODE01')) fail.push('INTERNAL is not KIT precheck');
+if (!/KIT PRECHECK|0 cr/i.test(explainPipeError('Width — · Height —'))) fail.push('precheck copy must not look like 429');
 
 const png1x1 =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
@@ -108,9 +169,33 @@ const log = formatProductionLog({
     runwayAttempts: patched,
   },
 });
-if (!log.includes('SHOT: SH01-04') || !log.includes('RUNWAY_FAILED') || !log.includes('rw_fail')) {
-  fail.push('production log must name shot + job + pipe');
+if (!log.includes('SHOT: SH01-04') || !log.includes('RUNWAY_FAILED') || !log.includes('rw_fail') || !/REFUND_PENDING|Estimated/i.test(log)) {
+  fail.push('production log must name shot + job + pipe + refund pending');
 }
+const staleBlock = formatProductionLog({
+  code: 'SH01-04',
+  kfApproved: true,
+  run: {
+    turboTaskId: '3f9145a8-1481-4a90-9e41-4ae37f390bbc',
+    turboStatus: 'FAILED',
+    turboError: 'INTERNAL.BAD_OUTPUT.CODE01',
+    sentKfCheck: {
+      ok: true,
+      kind: 'data',
+      mime: 'image/jpeg',
+      bytes: 74_000,
+      width: 1280,
+      height: 720,
+      reasons: ['Chưa đo được pixel — cần đúng 1280×720.'],
+      checks: [{ id: 'pixels', ok: true, label: '1280×720' }],
+    },
+    runwayAttempts: [
+      { n: 1, at: 'x', taskId: '3f9145a8-1481-4a90-9e41-4ae37f390bbc', kf: { width: 1280, height: 720, mime: 'image/jpeg' } },
+    ],
+  },
+});
+if (/BLOCK:.*[Cc]hưa đo/.test(staleBlock)) fail.push('measured 1280×720 must not show pixel BLOCK');
+if (!staleBlock.includes('3f9145a8-1481-4a90-9e41-4ae37f390bbc')) fail.push('log must keep task id for support');
 
 const diff = compareRunwayJobs(
   { code: 'SH01-05', run: { previewUrl: 'https://x/ok.mp4', turboStatus: 'SUCCEEDED', turboTaskId: 'rw_ok' } },
@@ -129,8 +214,27 @@ const sameInternal = {
   runwayAttempts: [{ n: 1, at: 'x', source: { hash: dataUriHash(jpeg) }, failureCode: 'INTERNAL.BAD_OUTPUT' }],
 };
 if (!sameKfAsInternalFail(sameInternal)) fail.push('same source hash is INTERNAL lock');
-if (canManualRetry(sameInternal).ok) fail.push('same KF INTERNAL must not retry');
-if (sameKfAsInternalFail({ ...sameInternal, kfRetryOk: true })) fail.push('approved new KF unlocks one retry');
+if (canManualRetry(sameInternal).kind !== 'none') fail.push('same KF INTERNAL must block retry');
+if (!sameKfAsInternalFail({ ...sameInternal, kfRetryOk: true })) fail.push('kfRetryOk alone must not unlock same hash');
+const jpeg2 = `data:image/jpeg;base64,/9j/4AAQ${'B'.repeat(1200)}`;
+if (sameFailedInput({ ...sameInternal, keyframeDataUrl: jpeg2, failedKfHash: dataUriHash(jpeg) })) {
+  fail.push('new KF hash must unlock circuit');
+}
+if (canManualRetry({ ...sameInternal, keyframeDataUrl: jpeg2, failedKfHash: dataUriHash(jpeg) }).kind !== 'new') {
+  fail.push('changed KF may Confirm 1 job');
+}
+if (capRunwayBatch([1, 2, 3, 4], false).length !== 1) fail.push('SAFE batch is 1');
+if (capRunwayBatch([1, 2, 3, 4], true).length !== 3) fail.push('PRODUCTION batch is 3');
+if (
+  !sameFailedInput({
+    turboStatus: 'FAILED',
+    turboError: 'INTERNAL.BAD_OUTPUT',
+    keyframeDataUrl: jpeg,
+    runwayAttempts: [{ n: 1, at: 'x', kf: { hash: 'sent-jpeg-only' }, failureCode: 'INTERNAL.BAD_OUTPUT' }],
+  })
+) {
+  fail.push('sent JPEG hash must not unlock INTERNAL without new stamped KF');
+}
 
 const diag = formatRunwayDiagnostic({
   code: 'SH01-02',

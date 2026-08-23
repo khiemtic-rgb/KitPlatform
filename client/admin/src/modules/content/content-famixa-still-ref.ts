@@ -74,7 +74,7 @@ export function coverCropRect(srcW: number, srcH: number, destW: number, destH: 
   }
   const sh = Math.round(sw0 / destA);
   const slack = Math.max(0, sh0 - sh);
-  const sy = Math.round(slack * 0.28);
+  const sy = Math.round(slack * 0.08);
   return { sx: 0, sy: Math.max(0, Math.min(sy, slack)), sw: sw0, sh: Math.min(sh, sh0) };
 }
 
@@ -101,7 +101,14 @@ export function isJpegDataUri(url?: string) {
  * Mandatory Runway payload: JPEG at exact 1280×720 or 720×1280.
  * Never pass through Gemini/SK PNG, even when the aspect is already 16:9.
  */
-export async function prepareRunwayKf(url: string, ratio?: string, opts?: { people?: number }): Promise<string> {
+export function aspectMismatch(srcW: number, srcH: number, destW: number, destH: number, slack = 0.08) {
+  if (!srcW || !srcH || !destW || !destH) return false;
+  const srcA = srcW / srcH;
+  const destA = destW / destH;
+  return Math.abs(srcA - destA) / destA > slack;
+}
+
+export async function prepareRunwayKf(url: string, ratio?: string, opts?: { people?: number; faceSafe?: boolean }): Promise<string> {
   const src = (url ?? '').trim();
   if (!src.startsWith('data:image')) {
     throw new Error('KF phải là data-URI trước Runway — không gửi URL/PNG gốc (0 cr).');
@@ -120,7 +127,7 @@ export async function prepareRunwayKf(url: string, ratio?: string, opts?: { peop
   if (!ctx) throw new Error('Không normalize được KF — không gửi PNG gốc (0 cr).');
   ctx.fillStyle = '#1a1410';
   ctx.fillRect(0, 0, dw, dh);
-  if (shouldContainFit(sw, sh, dw, dh, opts?.people)) {
+  if (opts?.faceSafe !== false && (aspectMismatch(sw, sh, dw, dh) || shouldContainFit(sw, sh, dw, dh, opts?.people))) {
     const fit = containDrawRect(sw, sh, dw, dh);
     ctx.drawImage(img, 0, 0, sw, sh, fit.dx, fit.dy, fit.dw, fit.dh);
   } else {

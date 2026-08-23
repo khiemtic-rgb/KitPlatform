@@ -23,6 +23,8 @@ export type AssembleClip = {
   seconds: number;
   videoUrl?: string;
   useVideoAudio?: boolean;
+  /** I2V missing — hold approved KF. Not a skipped beat. */
+  holdStill?: boolean;
   cues: AssembleCue[];
 };
 
@@ -98,7 +100,7 @@ export function buildAssembleTimeline(
   const spokenWithoutFile: string[] = [];
   let abs = 0;
   for (const item of plan.items) {
-    const keepFal = item.finalSource === 'FAL' || Boolean(item.lipsynced);
+    const keepFal = Boolean(item.hasLipsyncFile);
     const itemFit = keepFal ? 'take' : fit;
     const lines = item.lines.length ? item.lines : item.line ? [item.line] : [];
     const local: AssembleCue[] = [];
@@ -136,6 +138,7 @@ export function buildAssembleTimeline(
       startSec: abs,
       seconds,
       useVideoAudio: keepFal,
+      holdStill: !item.hasVideo && item.hasKf,
       cues: local,
     });
     abs += seconds;
@@ -178,30 +181,66 @@ export function planWithExistingTakes(plan: PreviewCutPlan): PreviewCutPlan {
     fromCode: items[0]?.code ?? plan.fromCode,
     toCode: items.at(-1)?.code ?? plan.toCode,
     motionMissingVideo: [],
+    durationBlocked: items.some((i) => Boolean(i.durationIssue)),
     estimatedSec: items.reduce((n, i) => n + i.seconds, 0),
   };
 }
 
+export function existingTakeIds(plan: PreviewCutPlan) {
+  return plan.items.filter((i) => i.hasVideo).map((i) => i.shotId);
+}
+
+/** Full story cut: keep every beat that has take or approved KF. Never drop a scripted shot. */
+export function planCompleteCut(plan: PreviewCutPlan): PreviewCutPlan {
+  const items = plan.items.filter((i) => i.hasVideo || i.hasKf);
+  return {
+    ...plan,
+    items,
+    fromCode: items[0]?.code ?? plan.fromCode,
+    toCode: items.at(-1)?.code ?? plan.toCode,
+    motionMissingVideo: items.filter((i) => !i.hasVideo).map((i) => i.shotId),
+    durationBlocked: items.some((i) => Boolean(i.durationIssue)),
+    estimatedSec: items.reduce((n, i) => n + i.seconds, 0),
+  };
+}
+
+export function completeCutHolds(plan: PreviewCutPlan) {
+  return plan.items.filter((i) => !i.hasVideo && i.hasKf);
+}
+
+export function completeCutBlocked(plan: PreviewCutPlan) {
+  return plan.items.filter((i) => !i.hasVideo && !i.hasKf).map((i) => i.code);
+}
+
+export function completeCutReady(plan: PreviewCutPlan) {
+  return plan.items.length > 0 && plan.items.every((i) => i.hasVideo || i.hasKf);
+}
+
 export function assembleNeedTtsOverlay(plan: PreviewCutPlan) {
-  return plan.items.filter((i) => i.finalSource !== 'FAL' && !i.lipsynced && !i.silent);
+  return plan.items.filter((i) => !i.silent && !i.hasLipsyncFile);
 }
 
 export function assembleConfirmCopy(plan: PreviewCutPlan) {
-  const fal = plan.items.filter((i) => i.finalSource === 'FAL' || i.lipsynced).map((i) => i.code);
+  const fal = plan.items.filter((i) => i.hasLipsyncFile).map((i) => i.code);
   const tts = assembleNeedTtsOverlay(plan).map((i) => i.code);
-  const bits = [`Gồm ${plan.items.map((i) => i.code).join(', ')}.`];
-  if (fal.length) bits.push(`FINAL_SOURCE=FAL: ${fal.join(', ')} — giữ tiếng khớp môi, không overlay TTS.`);
-  if (tts.length) {
-    bits.push(`Preview tạm RUNWAY_TTS: ${tts.join(', ')}.`);
-    bits.push('Hàng overlay = take Runway câm — miệng không theo lời. Không phải Final.');
+  const hold = completeCutHolds(plan).map((i) => i.code);
+  const take = plan.items.filter((i) => i.hasVideo).map((i) => i.code);
+  const bits = [`Đủ ${plan.items.length} shot kịch bản: ${plan.items.map((i) => i.code).join(', ')}.`];
+  if (take.length) bits.push(`TAKE: ${take.join(', ')}.`);
+  if (hold.length) {
+    bits.push(`HOLD KF: ${hold.join(', ')} — I2V lỗi thì giữ khung đã duyệt + thoại, không cắt nhịp.`);
   }
+  if (fal.length) bits.push(`FINAL_SOURCE=FAL: ${fal.join(', ')} — giữ tiếng khớp môi.`);
+  if (tts.length) {
+    bits.push(`Thoại mix TTS: ${tts.join(', ')}${hold.length ? ' (kể cả HOLD)' : ''} — miệng chưa theo lời nếu chưa Fal.`);
+  }
+  bits.push('Không bỏ shot. File phải có thoại. 0 cr Runway. 0 Fal.');
   return {
-    okText:
-      fal.length && !tts.length
-        ? 'Ghép MP4 (FINAL_SOURCE=FAL) + SRT'
-        : fal.length
-          ? `Ghép Preview · ${fal.length} FAL + thoại tạm`
-          : 'Ghép Preview tạm · MP4 + thoại',
+    okText: hold.length
+      ? `Ghép tập hoàn chỉnh · ${take.length} take + ${hold.length} HOLD + thoại`
+      : fal.length && !tts.length
+        ? 'Ghép tập hoàn chỉnh · MP4 + thoại khớp môi'
+        : `Ghép tập hoàn chỉnh · ${plan.items.length} shot + thoại`,
     detail: bits.join(' '),
   };
 }

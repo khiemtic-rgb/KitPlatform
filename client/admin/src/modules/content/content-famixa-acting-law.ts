@@ -367,14 +367,14 @@ export function compileShotBlocking(opts: {
   const bits: string[] = [];
   if (speakers.length) {
     bits.push(
-      `SPEAKER LOCK: ${speakers.join(', ')} ${speakers.length > 1 ? 'are' : 'is'} speaking and MUST be fully visible — face and body in frame, not cropped out, not hidden behind someone.`,
+      `SPEAKER LOCK: ${speakers.join(', ')} ${speakers.length > 1 ? 'are' : 'is'} speaking. Face visible, looking at the other person — never the lens. Do not hide a speaking parent off-frame.`,
     );
   }
   if (people.length >= 3) {
     bits.push('BLOCKING: three people in one tense room, standing apart. Not a family portrait. No huddle, no arms around shoulders, no cozy group photo.');
   } else if (people.length === 2) {
     bits.push(
-      `BLOCKING: two people (${people.join(', ')}), physical distance, not leaning in affectionately. Both complete faces in frame — do not crop a parent to torso/hands.`,
+      `BLOCKING: two people (${people.join(', ')}), physical distance, not leaning in affectionately. Primary face visible. Secondary may be a foreground shoulder — do not force an even two-shot. Do not crop the speaker to torso/hands.`,
     );
   }
   if (opts.namJustEntered || ((speakers.some((n) => /nam|bố|ba/i.test(n)) || /bước vào|về rồi|cửa/.test(blob)) && !opts.namAlreadyIn)) {

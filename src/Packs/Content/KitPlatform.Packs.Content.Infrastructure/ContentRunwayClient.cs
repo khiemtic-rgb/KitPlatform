@@ -78,14 +78,10 @@ internal sealed class ContentRunwayClient
 
         using var req = new HttpRequestMessage(HttpMethod.Post, "v1/image_to_video");
         ApplyAuth(req, key);
-        req.Content = JsonContent.Create(new
-        {
-            model = TurboModel,
-            promptImage,
-            promptText,
-            duration = durationSec,
-            ratio,
-        }, options: JsonOpts);
+        object payload = string.IsNullOrWhiteSpace(promptText)
+            ? new { model = TurboModel, promptImage, duration = durationSec, ratio }
+            : new { model = TurboModel, promptImage, promptText, duration = durationSec, ratio };
+        req.Content = JsonContent.Create(payload, options: JsonOpts);
 
         using var res = await _http.SendAsync(req, cancellationToken);
         var body = await res.Content.ReadAsStringAsync(cancellationToken);

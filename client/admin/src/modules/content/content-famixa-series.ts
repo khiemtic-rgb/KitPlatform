@@ -3,17 +3,20 @@
 import { parseEpisodeStory } from './content-famixa-story-parse';
 import { ensureStoryMemory, inheritStoryMemory, needsInheritanceReview, type FamixaStoryMemory } from './content-famixa-story-memory';
 import { deriveVoiceScript, mergeVoiceGenerated, voiceProductionReady, type FamixaVoicePreview } from './content-famixa-voice-script';
-import { canonPixelsOf, loadCanonPixels, rememberCanonFromChars, rememberCanonPixels } from './content-famixa-canon-store';
+import { canonPixelsOf, loadCanonPixels, rememberCanonFromChars, rememberCanonPixels, saveCanonPixels } from './content-famixa-canon-store';
 import { kfPixelsOf, loadKfPixels, rememberKfFromRuns, rememberKfPixels, saveKfPixels } from './content-famixa-kf-store';
-import { famixaCanonSeedFor } from './content-famixa-canon-seed';
+import { famixaCanonSeedFor, fetchFamixaCanonSeedDataUrl } from './content-famixa-canon-seed';
 import { displayUrlForData, stripJsonDataUrls } from './content-famixa-blob-url';
-import { englishI2vMotion, I2V_VI_RE } from './content-famixa-i2v-en';
-import { ACTING_LAW_LOCK, actingI2vBrief, actingI2vBriefFromLines, inferActingDirection } from './content-famixa-acting-law';
+import { I2V_VI_RE } from './content-famixa-i2v-en';
+import { ACTING_LAW_LOCK, actingI2vBrief, inferActingDirection } from './content-famixa-acting-law';
 import { mergeKeepDialoguePerformance } from './content-famixa-performance';
 import { looksLikeVoiceDirection } from './content-famixa-story-parse';
 import { setFamixaMediaScope } from './content-famixa-media-scope';
 import { mergeKeepFinalSource } from './content-famixa-final-source';
-import { compileVisualPrompt, type VisualSpec } from './content-famixa-visual-spec';
+import { type VisualSpec } from './content-famixa-visual-spec';
+import { compileNarrativeStillPrompt } from './content-famixa-kf-pipeline';
+import { dataUriHash, promptHashOf, sameFailedInput } from './content-famixa-runway-pipe';
+import { compileRunwayPromptV1, promptViolatesRunwayI2vLaw } from './content-runway-prompt-v1';
 import {
   FAMIXA_CANON_VERSION,
   frameCanonIds,
@@ -381,14 +384,8 @@ export function inheritedTurboPrompt(lock: SceneContinuityLock, action: string) 
   return compileLockPrompt(lock, action, 5);
 }
 
-function compileLockPrompt(lock: SceneContinuityLock, action: string, seconds = 5) {
-  const src = lock.sourceShotId || lock.id;
-  const motion = englishI2vMotion(action, seconds);
-  const acting = actingI2vBrief(inferActingDirection({ action }));
-  return (
-    `Same scene as ${src}. Same wardrobe, seats and lighting as the still. ` +
-    `${motion} ${acting}`
-  );
+function compileLockPrompt(_lock: SceneContinuityLock, action: string, _seconds = 5) {
+  return compileRunwayPromptV1({ action }).text;
 }
 
 export type SeriesRoleRow = {
@@ -408,8 +405,13 @@ export type SeriesShotRun = {
   credits?: number;
   /** Runway already billed this take; KIT ledger uses `credits` only after lock. */
   runwaySpent?: number;
-  /** Cumulative Runway cr on Start (fail still bills). */
+  /** Cumulative Runway cr after SUCCEEDED + readable file only. */
   runwayBilled?: number;
+  runwayEstimated?: number;
+  runwayRefund?: 'NONE' | 'PENDING' | 'REFUND_PENDING' | 'REFUNDED';
+  failedKfHash?: string;
+  failedPromptHash?: string;
+  renderFailure?: boolean;
   model?: string;
   notes?: string;
   review?: Partial<Record<SeriesReviewAxis, boolean>>;
@@ -469,7 +471,7 @@ export type SeriesShotRun = {
   visualQa?: import('./content-famixa-visual-spec').VisualQa;
   /** Shot dư — không sản xuất. */
   prodSkip?: boolean;
-  /** What we send to Runway — not the Story pack. */
+  /** Legacy paste fields — never sent to Runway. */
   runwayMotion?: string;
   runwayNegative?: string;
   /** Only the delta for this shot — inherits scene continuity. */
@@ -523,6 +525,11 @@ export type SeriesPilotState = {
   previewApproved?: boolean;
   /** Per-scene preview sign-off. */
   sceneApproved?: Record<string, boolean>;
+  /** Fal lipsync — operator picks model + sync. Default 1.9 / remap. */
+  lipsyncModel?: '1.9' | 'v3' | 'ls';
+  lipsyncSyncMode?: 'cut_off' | 'silence' | 'loop' | 'bounce' | 'remap';
+  /** false / unset = SAFE (1 shot). true = batch tối đa 3, fail thì dừng. */
+  i2vProductionMode?: boolean;
 };
 
 export type FamixaVoiceAsset = {
@@ -799,6 +806,17 @@ export function loadSeriesPilot(): SeriesPilotState {
       sceneMasters: v.sceneMasters && typeof v.sceneMasters === 'object' ? v.sceneMasters : undefined,
       canonVersion: typeof v.canonVersion === 'number' ? v.canonVersion : undefined,
       previewApproved: Boolean(v.previewApproved),
+      lipsyncModel:
+        v.lipsyncModel === 'v3' || v.lipsyncModel === '1.9' || v.lipsyncModel === 'ls' ? v.lipsyncModel : undefined,
+      lipsyncSyncMode:
+        v.lipsyncSyncMode === 'cut_off' ||
+        v.lipsyncSyncMode === 'silence' ||
+        v.lipsyncSyncMode === 'loop' ||
+        v.lipsyncSyncMode === 'bounce' ||
+        v.lipsyncSyncMode === 'remap'
+          ? v.lipsyncSyncMode
+          : undefined,
+      i2vProductionMode: v.i2vProductionMode === true,
     };
     const migrated = slimPilotForStorage(ensurePilotGraph(loaded));
     const hadDeadLipsync = Object.values(loaded.runs ?? {}).some((r) =>
@@ -1252,68 +1270,14 @@ export function pickFamixaBrand<T extends { code: string; name: string }>(brands
   );
 }
 
-/** Prompt I2V từ graph (CHAR / scene / inherit / Action) — không dán giấy Story / 48 docs. */
+/** I2V = RUNWAY_PROMPT_V1 only. Visual Contract / thoại / START-END không vào Runway. */
 export function compileI2vPrompt(
-  state: SeriesPilotState,
-  shot: FamixaSeriesShot,
+  _state: SeriesPilotState,
+  _shot: FamixaSeriesShot,
   action: string,
-  videoContext?: string,
+  _videoContext?: string,
 ) {
-  const scene = sceneNodeOf(state, shot);
-  const lock = lockFromGraph(state, shot);
-  const ids = shot.characterIds?.length ? shot.characterIds : scene?.characterIds ?? [];
-  const cast = ids
-    .map((id) => {
-      const c = (state.characters ?? []).find((row) => row.id === id);
-      if (!c) return '';
-      const perf = scene?.performances?.[c.id];
-      const bits = [c.name || c.id];
-      if (c.seat) bits.push(c.seat);
-      if (c.wardrobe) bits.push(c.wardrobe);
-      if (perf) bits.push(perf);
-      return bits.join(' · ');
-    })
-    .filter(Boolean)
-    .join('; ');
-  const inherit = shot.inheritFromShotId || shot.previousShotId || lock.sourceShotId || scene?.id || lock.id;
-  const act = action.replace(/\s+/g, ' ').trim();
-  const names = ids
-    .map((id) => (state.characters ?? []).find((row) => row.id === id)?.name || '')
-    .filter(Boolean)
-    .join(', ');
-  const motion = englishI2vMotion(act, shot.seconds);
-  const idsDlg = shot.dialogueSegmentIds ?? [];
-  const dlg = (state.scenes ?? [])
-    .flatMap((sc) => sc.dialogue ?? [])
-    .filter((d) => idsDlg.includes(d.id));
-  const acting = actingI2vBriefFromLines(dlg, act);
-  const ctx = clipMem(videoContext, 280);
-  const ctxEn = ctx && !I2V_VI_RE.test(ctx) ? ctx : '';
-  const run = shotRunOf(state, shot);
-  const start = run.startState;
-  const end = run.endState;
-  const startBit = start
-    ? `START: ${[start.location, start.pose, start.prop, start.lighting, start.camera].filter(Boolean).join('; ')}. `
-    : '';
-  const endBit = end ? `END: ${[end.pose, end.prop, end.facing].filter(Boolean).join('; ')}. ` : '';
-  const startEn = startBit && I2V_VI_RE.test(startBit) ? `${englishI2vMotion(startBit, 5).slice(0, 180)} ` : startBit;
-  const endEn = endBit && I2V_VI_RE.test(endBit) ? `${englishI2vMotion(endBit, 5).slice(0, 140)} ` : endBit;
-  const text =
-    `The still is the first frame. Continue the same scene as ${inherit}. ` +
-    (names ? `Cast: ${names}. ` : cast ? `Cast on graph. ` : '') +
-    startEn +
-    `Keep wardrobe, place, lighting and camera. ` +
-    (ctxEn ? `${ctxEn} ` : '') +
-    motion +
-    ' ' +
-    acting +
-    ' ' +
-    endEn +
-    (shot.dialogueSegmentIds?.length
-      ? ' Mute take: blink and breathe only. Do not animate speech — lipsync is a later step. '
-      : '') +
-    'Do not reset the scene.';
-  return text.length <= 900 ? text : text.slice(0, 900);
+  return compileRunwayPromptV1({ action }).text;
 }
 
 export function applyShotLockToGraph(
@@ -1469,10 +1433,16 @@ export async function hydratePilotCanon(state: SeriesPilotState): Promise<Series
       rememberCanonPixels(c.id, c.canonImageDataUrl, c.canonFileName);
       continue;
     }
+    const cached = canonPixelsOf(c.id) || (await loadCanonPixels(c.id))?.dataUrl;
+    if (cached?.startsWith('data:image')) continue;
     const seed = famixaCanonSeedFor(c);
-    const userFile = Boolean(c.canonFileName && seed && c.canonFileName !== seed.fileName);
-    if (seed && !userFile) continue;
-    await loadCanonPixels(c.id);
+    if (!seed) continue;
+    try {
+      const url = await fetchFamixaCanonSeedDataUrl(seed.publicPath);
+      await saveCanonPixels(c.id, url, seed.fileName);
+    } catch {
+      /* public Master Reference missing */
+    }
   }
   return slimPilotForStorage(state);
 }
@@ -1522,7 +1492,18 @@ export function seriesSceneStillPrompt(opts: {
   lightingLock?: string;
   speakers?: string;
   visualSpec?: VisualSpec;
+  correction?: string;
 }) {
+  if (opts.visualSpec) {
+    return compileNarrativeStillPrompt({
+      spec: opts.visualSpec,
+      aspect: opts.aspect,
+      location: opts.location,
+      lighting: opts.lightingLock,
+      refs: opts.refs,
+      correction: opts.correction,
+    });
+  }
   const people = opts.refs.filter((r) => r.role !== 'scene' && !/loi binh|narrator|voice.?over/i.test(`${r.name} ${r.role}`));
   const who = opts.peopleNames?.trim() || people.map((r) => `${r.name}${r.role ? ` (${r.role})` : ''}`).join(', ');
   const count = opts.peopleCount && opts.peopleCount > 0 ? opts.peopleCount : people.length;
@@ -1536,25 +1517,24 @@ export function seriesSceneStillPrompt(opts: {
   const note = stripStillLettering(opts.continuityNote);
   return [
     STILL_NO_TEXT,
-    `Format: ${frame}. One photoreal live-action film still of the Action — not a title card.`,
+    `Format: ${frame}. One SHARP photoreal live-action film still — not a zoomed copy of another frame, not motion-blur, not a smeared JPEG.`,
+    'FACE SAFE: forehead, both eyes, nose, mouth, chin and hairline inside the frame. Face visible ≠ look at camera. Forbidden: cut forehead, cut chin, cheek-only, back of head, out-of-focus face, looking into the lens.',
     'Canon attachments are FACE identity only for anyone newly entering. NEVER reproduce a character bible, master reference, turnaround, expression grid, contact sheet, or typography. Do not change clothes already shown in PREV-SHOT.',
-    count
-      ? `CAST COUNT LOCK: exactly ${count} people in the frame${who ? `: ${who}` : ''}. Do not add another person. Do not add father/Nam unless listed. No extras.`
-      : who
-        ? `People in the scene (faces from refs): ${who}.`
-        : '',
-    opts.visualSpec?.primary
-      ? `FACE LOCK: ${opts.visualSpec.primary.name} full face — eyes, nose, mouth, hairline. ${
-          opts.visualSpec.secondary.length
-            ? `Secondary (${opts.visualSpec.secondary.map((p) => `${p.name} ${p.face}`).join(', ')}) may be partial unless they speak.`
-            : ''
-        } Forbidden: cropped primary face, back-turned primary, unreadable eyes.`
-      : count >= 2 || who
-        ? `FACE LOCK: every named person (${who || 'cast'}) must show a complete face — eyes, nose, mouth, hairline. Forbidden: faceless torso, cropped at chest, hands-only parent, mother with no head.`
-        : '',
+    count === 0
+      ? 'CAST COUNT: no full standing person. The prop / insert is the subject. Faces only as the brief allows (eyes/hands).'
+      : count
+        ? `CAST COUNT: exactly ${count} FULL person${count === 1 ? '' : 's'} (${who || 'primary'}). Extra people forbidden. Secondary may be a shoulder only if the brief says so.`
+        : who
+          ? `People in the scene (faces from refs): ${who}.`
+          : '',
+    count >= 2 || who
+      ? `FACE LOCK: every named person (${who || 'cast'}) must show a complete face — eyes, nose, mouth, hairline. Forbidden: faceless torso, cropped at chest, hands-only parent, mother with no head.`
+      : '',
     opts.aspect === '9:16' && count >= 2
       ? 'VERTICAL BLOCKING: both heads in the upper two-thirds. Over-shoulder or stacked. Do not place a parent only on the far right of a landscape table — they will be cut out of 9:16.'
-      : '',
+      : opts.aspect === '9:16'
+        ? 'VERTICAL: primary head in the upper two-thirds. Do not leave the subject as a tiny figure at the bottom.'
+        : '',
     opts.location ? `Location: ${opts.location.slice(0, 180)}.` : '',
     visual ? `Scene lock (do not redesign): ${visual.slice(0, 360)}` : '',
     action ? `Only change the Action (must be visible): ${action.slice(0, 400)}` : '',
@@ -1565,7 +1545,7 @@ export function seriesSceneStillPrompt(opts: {
       ? `LIGHTING LOCK: ${opts.lightingLock.slice(0, 160)}. Same dim evening as the locked first frame. If a later still went bright, restore dim. Forbidden: daylight, bright cheerful living room, studio softbox.`
       : '',
     speakers
-      ? `SPEAKER LOCK: ${speakers.slice(0, 120)}. The speaker must be on camera. Do not hide a speaking parent off-frame. Do not write their line on the image.`
+      ? `SPEAKER LOCK: ${speakers.slice(0, 120)}. Speaker face visible, looking at the other person — never the lens. Do not hide a speaking parent off-frame. Do not write their line on the image.`
       : '',
     'WARDROBE LOCK: copy exact clothes from PREV-SHOT. The boy in the room is Minh — same shirt as frames 1–4. Do not dress him from the Canon sheet. Do not draw classmate An. If Nam is already in PREV-SHOT, copy that exact man (face, hair, shirt).',
     opts.refs.some((r) => r.role === 'scene')
@@ -1574,7 +1554,6 @@ export function seriesSceneStillPrompt(opts: {
     note
       ? `Continuity lock (operator, already rewritten): ${note.slice(0, 280)} Do not change the story action or add people.`
       : '',
-    opts.visualSpec ? compileVisualPrompt(opts.visualSpec) : '',
     STILL_NO_TEXT,
     actingI2vBrief(inferActingDirection({ action, text: action })),
   ]
@@ -2374,6 +2353,7 @@ export function looksLikePackHeading(raw?: string) {
   if (/phân cảnh chi tiết/i.test(s) && s.length < 64) return true;
   if (/^giọng\b/i.test(s) && s.length < 96) return true;
   if (/^(?:tone|thời lượng(?:\s*mục tiêu)?)\s*:/i.test(s)) return true;
+  if (/\(\d+\s*[–\-]\s*\d+\s*s\)$/i.test(s) && s.length < 80) return true;
   return false;
 }
 
@@ -3331,44 +3311,9 @@ export function packForShotEdit(
 }
 
 /** V02 QC, short enough for Runway — same blocking: Nam talks, Minh listens, Linh smiles. */
-export const RUNWAY_V02_MOTION = `A warm Vietnamese family of three at dinner at night. Nam on the left talks naturally to Minh in the center and keeps his eyes on Minh the whole shot — never looks at the camera. One or two very small hand gestures only. Minh stays quiet, listens, looks at Nam, small realistic face movement. Linh on the right watches them with a gentle smile, does not speak, no talking gestures. Same faces, hair, clothes, seats, table, food, room and night light as the input image. Subtle live-action only: blink, breathe. Very slow push-in, eye-level, 35mm. No shake, no pan, no rotation, no zoom jump, no cut. 5 seconds.`;
-
-export const RUNWAY_V02_NEGATIVE = `No looking at camera. No talking to camera. No Linh speaking. No large gestures. No exaggerated acting. No moral lecture. No sudden hug or apology reset. No scream without cause. No smoke or fog. No location change. No face morph. No extra people. No deformed hands. No text, logo, watermark. No camera shake, pan, rotation, or cut.`;
-
-/** SH02 V02 — Minh asks once, Nam listens. Keep KF02. */
-export const RUNWAY_SH02_V02_MOTION = `A warm Vietnamese family of three at dinner at night. Same faces, clothes, seats, table, food, room and night light as the input image. Minh in the center looks at Nam on the left for the entire 5 seconds. Minh speaks only once, asking Nam a short question. Minh's mouth moves only while asking, then stays still. Minh does not look at the camera or straight ahead. No repeated head turns. Nam stays silent the whole shot and only listens, eyes on Minh. One or two very small listening reactions. Nam never looks at the camera. Linh on the right stays silent, watches them with a gentle smile, no talking gestures. Subtle live-action: blink, breathe. Very slow push-in, eye-level, 35mm. No shake, no pan, no rotation, no cut. 5 seconds.`;
-
-export const RUNWAY_SH02_V02_NEGATIVE = `No looking at camera. No talking to camera. No Nam speaking. No Linh speaking. No Minh looking straight ahead. No repeated head turns. No large gestures. No exaggerated acting. No moral lecture. No sudden hug or apology reset. No scream without cause. No face morph. No extra people. No deformed hands. No text, logo, watermark. No camera shake, pan, rotation, or cut.`;
-
-const SAFE_I2V =
-  'Cinematic live-action dinner scene. The photo is the first frame only. ' +
-  'Start motion right away: people blink and breathe, hands serve rice, chopsticks, steam from bowls, ' +
-  'small head turns, soft eye contact, gentle camera drift. Keep the same seats and faces. No captions.';
-
 const PACK_RE = /VIDEO\s*ID|PRODUCTION MASTER|=======|CHAR-\d+\s*[—–-]/i;
 const HARD_RE = /nude|sex|porn|kill|blood|abuse|suicide|weapon|gun/i;
 const WARN_RE = /11-year-old|year-old|child|minor|argue|crying|fight|shouting/i;
-
-function compactAvoid(negative?: string) {
-  const t = (negative ?? '').trim();
-  if (!t) return '';
-  const keep = t
-    .split(/\n+/)
-    .map((s) => s.replace(/^No\s+/i, '').trim())
-    .filter((s) => s.length > 0 && !HARD_RE.test(s) && !WARN_RE.test(s) && !PACK_RE.test(s))
-    .slice(0, 10);
-  return keep.join(', ');
-}
-
-/** Prefer pasted Runway motion. Do not send the Story pack. */
-export function turboI2vPrompt(motion?: string, negative?: string) {
-  const m = (motion ?? '').trim();
-  const usable = m.length > 20 && !PACK_RE.test(m) && !I2V_VI_RE.test(m);
-  const body = usable ? m : SAFE_I2V;
-  const avoid = compactAvoid(negative);
-  const text = `${body}${avoid ? `\n\nAvoid: ${avoid}` : ''}`.replace(/\s+\n/g, '\n').trim();
-  return text.length <= 980 ? text : text.slice(0, 980);
-}
 
 export type TurboPreflight = { ok: boolean; reasons: string[]; warnings: string[]; prompt: string };
 
@@ -3385,11 +3330,14 @@ export function preflightTurboSend(opts: { prompt: string; imageDataUrl?: string
     reasons.push('KF là URL máy local — Runway không tải được. Gửi data-URI.');
   }
   if (I2V_VI_RE.test(prompt) || PACK_RE.test(prompt)) {
-    prompt = englishI2vMotion(prompt);
+    prompt = compileRunwayPromptV1({ action: prompt }).text;
   }
   if (!prompt) reasons.push('Chưa có prompt I2V.');
   if (PACK_RE.test(prompt)) reasons.push('Đừng dán giấy Story (VIDEO ID / MASTER) vào ô Motion.');
   if (HARD_RE.test(prompt)) reasons.push('Prompt còn từ Runway hay chặn (máu / bạo lực / nude).');
+  if (promptViolatesRunwayI2vLaw(prompt)) {
+    reasons.push('I2V law: chỉ motion + camera — không mô tả lại KF, không câu phủ định.');
+  }
   if (prompt.length > 900) warnings.push('Prompt gần 1000 ký tự — Runway cắt / dễ chặn.');
   if (WARN_RE.test(prompt)) {
     warnings.push('Có chữ tuổi trẻ / argue / crying — moderation có thể trừ credit.');
@@ -3424,6 +3372,7 @@ export function studioI2vPrecheck(opts: {
   state?: SeriesPilotState;
   shot?: FamixaSeriesShot;
   videoContext?: string;
+  run?: SeriesShotRun;
 }): StudioI2vPrecheck {
   const action = (
     opts.state && opts.shot ? i2vActionOf(opts.state, opts.shot) : ''
@@ -3496,6 +3445,13 @@ export function studioI2vPrecheck(opts: {
       ok: gate.ok,
       label: gate.ok ? 'Prompt I2V đạt (0 cr)' : gate.reasons[0] || 'Prompt I2V chưa đạt',
     });
+    if (sameFailedInput(opts.run, dataUriHash(opts.keyframeDataUrl), promptHashOf(gate.prompt))) {
+      items.push({
+        id: 'circuit',
+        ok: false,
+        label: 'CIRCUIT — cùng KF + prompt đã FAIL. Không gửi Runway. Sửa/duyệt KF mới.',
+      });
+    }
     return { ok: items.every((i) => i.ok), items, warnings: gate.warnings, prompt: gate.prompt };
   }
   items.push({ id: 'prompt', ok: false, label: 'Prompt I2V — cần Memory + Action + KF' });

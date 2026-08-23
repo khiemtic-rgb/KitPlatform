@@ -19,14 +19,16 @@ export type PreviewCutItem = {
   code: string;
   seconds: number;
   silent: boolean;
-  line?: Pick<FamixaVoiceLine, 'id' | 'characterId' | 'name' | 'text' | 'performance'>;
-  lines: Pick<FamixaVoiceLine, 'id' | 'characterId' | 'name' | 'text' | 'performance'>[];
+  line?: Pick<FamixaVoiceLine, 'id' | 'characterId' | 'name' | 'text' | 'performance' | 'voiceId'>;
+  lines: Pick<FamixaVoiceLine, 'id' | 'characterId' | 'name' | 'text' | 'performance' | 'voiceId'>[];
   voiceSec: number;
   hasVoiceFile: boolean;
   hasKf: boolean;
   kfApproved: boolean;
   hasVideo: boolean;
   lipsynced?: boolean;
+  /** Real Fal file URL — flag-only lipsync is not audio. */
+  hasLipsyncFile?: boolean;
   finalSource?: FinalSource;
   durationIssue?: string;
   status: PreviewCutStatus;
@@ -58,8 +60,15 @@ function charsOf(text: string) {
   return text.replace(/\s+/g, '').length;
 }
 
-function pickLine(line: FamixaVoiceLine): Pick<FamixaVoiceLine, 'id' | 'characterId' | 'name' | 'text' | 'performance'> {
-  return { id: line.id, characterId: line.characterId, name: line.name, text: line.text, performance: line.performance };
+function pickLine(line: FamixaVoiceLine): Pick<FamixaVoiceLine, 'id' | 'characterId' | 'name' | 'text' | 'performance' | 'voiceId'> {
+  return {
+    id: line.id,
+    characterId: line.characterId,
+    name: line.name,
+    text: line.text,
+    performance: line.performance,
+    voiceId: line.voiceId,
+  };
 }
 
 /** Explicit map first. Unmapped lines stay extra — never dumped onto the last Short. */
@@ -131,6 +140,7 @@ export function mapPreviewCut(
       kfApproved: kfIsApproved(run),
       hasVideo,
       lipsynced: Boolean(run.lipsynced || run.lipsyncUrl?.trim()),
+      hasLipsyncFile: Boolean(run.lipsyncUrl?.trim()),
       finalSource: resolveFinalSource(run, silent),
       durationIssue,
       status,

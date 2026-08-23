@@ -23,14 +23,9 @@ const RULES: { re: RegExp; en: string }[] = [
   { re: /nói|hỏi/, en: 'a small face reaction, no freeze' },
 ];
 
-function secondsOf(n?: number) {
-  return n && n >= 8 ? 10 : 5;
-}
-
 /** English-only motion line for Runway. Does not invent a new story beat. */
-export function englishI2vMotion(action: string, seconds?: number) {
+export function englishI2vMotion(action: string, _seconds?: number) {
   const raw = (action ?? '').replace(/\s+/g, ' ').trim();
-  const sec = secondsOf(seconds);
   if (raw.length > 20 && !PACK_RE.test(raw) && !I2V_VI_RE.test(raw)) {
     return raw.length <= 900 ? raw : raw.slice(0, 900);
   }
@@ -45,26 +40,11 @@ export function englishI2vMotion(action: string, seconds?: number) {
     /\bnam\b/i.test(raw) ? 'Nam' : '',
     /\blinh\b/i.test(raw) ? 'Linh' : '',
   ].filter(Boolean);
-  const cast = who.length ? `People in frame: ${who.join(', ')}. ` : '';
-  const text =
-    `Cinematic live-action. The photo is the first frame. ${cast}${beat} ` +
-    `Start motion immediately: blink, breathe, small realistic movement. ` +
-    `Mute take: do not animate spoken words. ` +
-    `Continuous film cadence, gentle handheld, no snap-zoom. ` +
-    `Steady lighting. No flicker, flash or strobe. ` +
-    `Keep the same faces, hair, clothes, place and lighting. No looking at the camera. ` +
-    `No extra people. No text, logo or watermark. ${sec} seconds.`;
+  const subject = who[0] || 'The subject';
+  const text = `${subject}: ${beat} Blink and breathe. Camera remains steady.`;
   return text.length <= 900 ? text : text.slice(0, 900);
 }
 
 export function i2vPromptIsEnglish(prompt: string) {
   return !I2V_VI_RE.test(prompt) && !PACK_RE.test(prompt);
-}
-
-/** Second I2V attempt after Runway unexpected — same beat, different wording. */
-export function englishI2vRetry(prompt: string) {
-  const extra = ' Subtle handheld; motion starts on frame one; no freeze-frame.';
-  if (prompt.includes('Subtle handheld')) return prompt.slice(0, 900);
-  const text = `${prompt.trim()} ${extra}`;
-  return text.length <= 900 ? text : text.slice(0, 900);
 }

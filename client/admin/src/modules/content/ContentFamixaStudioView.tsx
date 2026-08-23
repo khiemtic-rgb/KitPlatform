@@ -27,6 +27,20 @@ import { type PreviewCutPlan } from './content-famixa-preview-cut';
 import { looksLikeVideoUrl } from './content-famixa-assemble';
 import { ContentFamixaProdV2 } from './ContentFamixaProdV2';
 import { canEnterProdStep, lipsyncVideoUrl, PROD_V2_STEPS, productionShorts, type ProdV2Step } from './content-famixa-prod-v2';
+import {
+  canManualRetry,
+  dataUriHash,
+  explainPipeError,
+  isInternalBadOutput,
+  isKitPrecheckError,
+  lastGenerationFail,
+  promptHashOf,
+  sameFailedInput,
+  sanitizeKitPrecheck,
+  stampFailedInput,
+} from './content-famixa-runway-pipe';
+import { formatRunwayInputTest, testRunwayInput } from './content-runway-adapter';
+import { measureKfImage, prepareRunwayKf } from './content-famixa-still-ref';
 import { voiceProductionReady } from './content-famixa-voice-script';
 import './content-famixa-studio.css';
 
@@ -81,6 +95,7 @@ export function ContentFamixaStudioView({
   onCreateSceneVideo,
   onAbDiagnostic,
   onLipsync,
+  onLipsyncPrefs,
   onAttachLipsync,
   lipsyncBusy,
   sceneBatchLabel,
@@ -89,6 +104,7 @@ export function ContentFamixaStudioView({
   onGenerateSceneKf,
   onPickSceneKeyframe,
   onApproveSceneKf,
+  onQaKf,
   onRegenerateSelectedKf,
   generateSceneKfBusy,
   sceneBatchCredits,
@@ -129,6 +145,7 @@ export function ContentFamixaStudioView({
   onApprovePreview,
   onPatchRun,
   onApproveScene,
+  onI2vProductionMode,
   statusOf,
   runOf,
   actionOf,
@@ -172,9 +189,10 @@ export function ContentFamixaStudioView({
   onInheritKeyframe: () => void;
   onApproveKeyframe: () => void;
   onCreateVideo: () => void;
-  onCreateSceneVideo: (ids?: string[]) => void;
+  onCreateSceneVideo: (ids?: string[], opts?: { remake?: boolean }) => void;
   onAbDiagnostic?: (successId: string, failId: string) => void;
-  onLipsync?: (ids?: string[]) => void;
+  onLipsync?: (ids?: string[], opts?: { remake?: boolean }) => void;
+  onLipsyncPrefs?: (prefs: { lipsyncModel?: '1.9' | 'v3' | 'ls'; lipsyncSyncMode?: 'cut_off' | 'silence' | 'loop' | 'bounce' | 'remap' }) => void;
   onAttachLipsync?: (shotId: string) => void;
   lipsyncBusy?: boolean | string;
   sceneBatchLabel: string;
@@ -186,6 +204,7 @@ export function ContentFamixaStudioView({
   onGenerateSceneKf?: (ids?: string[]) => void;
   onPickSceneKeyframe?: (file: File, shotId?: string) => void;
   onApproveSceneKf?: (ids?: string[]) => void;
+  onQaKf?: (shotId: string) => void;
   onRegenerateSelectedKf?: (ids: string[]) => void;
   generateSceneKfBusy?: boolean;
   sceneVideoReady?: number;
@@ -249,6 +268,7 @@ export function ContentFamixaStudioView({
   onApprovePreview?: () => void;
   onPatchRun?: (shotId: string, patch: Partial<SeriesShotRun>) => void;
   onApproveScene?: (sceneId: string) => void;
+  onI2vProductionMode?: (on: boolean) => void;
   statusOf: (shot: FamixaSeriesShot) => SeriesShotStatus;
   runOf?: (shot: FamixaSeriesShot) => SeriesShotRun;
   actionOf: (shot: FamixaSeriesShot) => string | undefined;
@@ -261,6 +281,7 @@ export function ContentFamixaStudioView({
   const [editAction, setEditAction] = useState(false);
   const [floor, setFloor] = useState<'scene' | 'shot'>('scene');
   const [sceneStep, setSceneStep] = useState<SceneProdStep>('shorts');
+  const [inputTest, setInputTest] = useState('');
   const scenePack = batchSceneShots?.length ? batchSceneShots : shots;
   const sh = (s?: FamixaSeriesShot) => studioShotCode(s, shots);
   const code = sh(active);
@@ -304,8 +325,11 @@ export function ContentFamixaStudioView({
     state: pilot,
     shot: active,
     videoContext,
+    run,
   });
   const i2vPrompt = precheck.prompt;
+  const circuitOpen = sameFailedInput(run, dataUriHash(run?.keyframeDataUrl), promptHashOf(i2vPrompt));
+  const retry = canManualRetry(run, promptHashOf(i2vPrompt));
   const prevKf = prevRun?.keyframeDataUrl;
   const inherited = Boolean(run?.keyframeInheritedFrom && prevLocked && run.keyframeInheritedFrom === prevLocked.id);
   const graphLocked = pilot?.shotGraphLocked === true;
@@ -462,6 +486,11 @@ export function ContentFamixaStudioView({
             onSeconds={(id, sec) => onSeconds?.(id, sec)}
             onLockShotGraph={onLockShotGraph}
             onOpenShot={openDetail}
+            onReviewKf={(s) => {
+              onSelectShot(s);
+              setFloor('scene');
+              setSceneStep('image');
+            }}
             runOf={(s) => runOf?.(s) ?? { status: statusOf(s) }}
             actionOf={actionOf}
             lock={lock}
@@ -471,10 +500,12 @@ export function ContentFamixaStudioView({
             onGenerateKf={(ids) => onGenerateSceneKf?.(ids)}
             onPickKf={onPickSceneKeyframe}
             onApproveKf={onApproveSceneKf}
+            onQaKf={onQaKf}
             onRegenerateKf={onRegenerateSelectedKf}
-            onCreateVideo={(ids) => onCreateSceneVideo(ids)}
+            onCreateVideo={(ids, opts) => onCreateSceneVideo(ids, opts)}
             onAbDiagnostic={onAbDiagnostic}
             onLipsync={onLipsync}
+            onLipsyncPrefs={onLipsyncPrefs}
             onAttachLipsync={onAttachLipsync}
             lipsyncBusy={lipsyncBusy}
             cutPlan={cutPlan}
@@ -497,6 +528,7 @@ export function ContentFamixaStudioView({
             onApprovePreview={onApprovePreview}
             onPatchRun={onPatchRun}
             onApproveScene={onApproveScene}
+            onI2vProductionMode={onI2vProductionMode}
             sceneLocked={sceneLocked}
             sceneReady={allLocked}
           />
@@ -806,25 +838,102 @@ export function ContentFamixaStudioView({
               ) : null}
             </div>
             {run?.turboError ? (
-              <Alert type="error" showIcon style={{ marginBottom: 8 }} message={run.turboError} />
+              <Alert type="error" showIcon style={{ marginBottom: 8 }} message={explainPipeError(run.turboError)} />
             ) : null}
             {run?.lipsyncError && !run.lipsynced ? (
               <Alert type="warning" showIcon style={{ marginBottom: 8 }} message={run.lipsyncError} />
             ) : null}
             <Space wrap>
               <Button
-                type="primary"
-                icon={<ThunderboltOutlined />}
-                disabled={!precheck.ok || !active || !showVideo}
-                loading={Boolean(turboBusy)}
-                onClick={onCreateVideo}
+                onClick={() => {
+                  void (async () => {
+                    const ratio = outputAspectOf(pilot ?? {});
+                    let image = run?.keyframeDataUrl;
+                    let width = run?.sentKfCheck?.width || run?.kfCheck?.width;
+                    let height = run?.sentKfCheck?.height || run?.kfCheck?.height;
+                    try {
+                      if (image) {
+                        image = await prepareRunwayKf(image, ratio);
+                        const dim = await measureKfImage(image).catch(() => ({ width: 0, height: 0 }));
+                        width = dim.width || width;
+                        height = dim.height || height;
+                      }
+                    } catch {
+                      /* keep source — TEST still reports MIME / size */
+                    }
+                    const r = testRunwayInput({
+                      image,
+                      prompt: precheck.prompt,
+                      ratio,
+                      width,
+                      height,
+                    });
+                    setInputTest(formatRunwayInputTest(r));
+                    if (r.ok && active && run && (run.videoPipe === 'INPUT_INVALID' || isKitPrecheckError(run.turboError))) {
+                      const cleaned = sanitizeKitPrecheck(run);
+                      if (cleaned) onPatchRun?.(active.id, cleaned);
+                    }
+                  })();
+                }}
               >
-                {precheck.ok
-                  ? engine === 'wan'
-                    ? 'Tạo video · xác nhận Wan'
-                    : `Tạo video · xác nhận −${expectedCost} cr`
-                  : 'Pre-check chưa đạt (0 cr)'}
+                TEST INPUT · 0 cr
               </Button>
+              {circuitOpen ? (
+                <>
+                  <Button
+                    onClick={() => {
+                      if (run && lastGenerationFail(run) && !run.failedKfHash) {
+                        onPatchRun?.(active!.id, stampFailedInput(run, run.keyframeDataUrl));
+                      }
+                    }}
+                  >
+                    Xem lỗi
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (active) onQaKf?.(active.id);
+                    }}
+                  >
+                    Kiểm tra KF
+                  </Button>
+                  <Button
+                    type="primary"
+                    loading={generateKfBusy}
+                    onClick={() => {
+                      if (run && lastGenerationFail(run) && !run.failedKfHash) {
+                        onPatchRun?.(active!.id, stampFailedInput(run, run.keyframeDataUrl));
+                      }
+                      onGenerateKeyframe?.();
+                    }}
+                  >
+                    Tạo KF sửa lỗi
+                  </Button>
+                </>
+              ) : retry.kind === 'new' && isInternalBadOutput(run) && lastGenerationFail(run) ? (
+                <Button
+                  type="primary"
+                  icon={<ThunderboltOutlined />}
+                  disabled={!precheck.ok || !active || !showVideo}
+                  loading={Boolean(turboBusy)}
+                  onClick={onCreateVideo}
+                >
+                  KF đã đổi · Tạo Video · Confirm {expectedCost} cr
+                </Button>
+              ) : (
+                <Button
+                  type="primary"
+                  icon={<ThunderboltOutlined />}
+                  disabled={!precheck.ok || !active || !showVideo}
+                  loading={Boolean(turboBusy)}
+                  onClick={onCreateVideo}
+                >
+                  {precheck.ok
+                    ? engine === 'wan'
+                      ? 'Tạo video · xác nhận Wan'
+                      : `Tạo video · Confirm ước ${expectedCost} cr`
+                    : 'Pre-check chưa đạt (0 cr)'}
+                </Button>
+              )}
               {onLipsync && active && run?.previewUrl && !run.lipsynced ? (
                 <>
                   <Button
@@ -841,6 +950,15 @@ export function ContentFamixaStudioView({
               ) : active && run?.lipsynced && lipsyncVideoUrl(run) ? (
                 <>
                   <Tag color="green">KHỚP MÔI</Tag>
+                  {onLipsync ? (
+                    <Button
+                      loading={Boolean(lipsyncBusy)}
+                      disabled={Boolean(turboBusy) || Boolean(lipsyncBusy)}
+                      onClick={() => onLipsync([active.id], { remake: true })}
+                    >
+                      Khớp lại
+                    </Button>
+                  ) : null}
                   <Button
                     icon={<DownloadOutlined />}
                     loading={assembleBusy}
@@ -854,6 +972,11 @@ export function ContentFamixaStudioView({
                 </>
               ) : null}
             </Space>
+            {inputTest ? (
+              <pre className="fx-log" style={{ marginTop: 8, whiteSpace: 'pre-wrap' }}>
+                {inputTest}
+              </pre>
+            ) : null}
           </section>
 
           <section className={`fx-card fx-card--qc${showQc ? '' : ' fx-card--muted'}`}>

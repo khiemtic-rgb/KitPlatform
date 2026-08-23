@@ -20,7 +20,7 @@ import {
   compileShotStillMood,
   visibleFrameCast,
 } from './content-famixa-scene-first';
-import { seriesSceneStillPrompt, stripStillLettering, type FamixaSeriesShot, type SeriesPilotState } from './content-famixa-series';
+import { looksLikePackHeading, seriesSceneStillPrompt, stripStillLettering, type FamixaSeriesShot, type SeriesPilotState } from './content-famixa-series';
 
 function shot(partial: Partial<FamixaSeriesShot> & { id: string }): FamixaSeriesShot {
   return {
@@ -127,6 +127,21 @@ if (shotProdStatus({ ...state, sceneLocked: true }, shots[1]!) !== 'KF DRAFT') {
   fail.push('sceneLocked without take must stay KF DRAFT');
 }
 if (kfIsApprovedStill(state.runs.SH02!)) fail.push('draft must not be approved');
+if (!looksLikePackHeading('KHOE BÀI TRONG VỠ ÒA (0–6s)')) fail.push('pack title with duration is not Action');
+if (
+  shotProdStatus(
+    {
+      ...state,
+      runs: {
+        ...state.runs,
+        SH02: { ...state.runs.SH02!, visualQa: { status: 'PENDING', hardFails: [], checks: {} } },
+      },
+    },
+    shots[1]!,
+  ) !== 'KF DRAFT'
+) {
+  fail.push('QA PENDING must not look like QA BLOCK');
+}
 
 if (planEditSeconds(2.5, 0.4, 0) < 2.8 || planEditSeconds(2.5, 0.4, 0) > 3.1) {
   fail.push(`edit ${planEditSeconds(2.5, 0.4, 0)}`);
@@ -163,7 +178,7 @@ if (c1.count !== 2 || c1.ids.includes('CHAR-002')) fail.push(`SH01 must be 2 peo
 const c2 = visibleFrameCast(state, shots[1]!, shots[0]!);
 if (c2.count !== 2 || c2.ids.includes('CHAR-002')) fail.push(`SH02 must stay 2 people, got ${c2.ids.join()}`);
 if (!peopleCountLock(c2, c1.count).includes('exactly 2')) fail.push('count lock text');
-if (!/FACE LOCK|complete face/i.test(peopleCountLock(c2, c1.count))) fail.push('count lock must keep both faces');
+if (!/FACE LOCK|primary face/i.test(peopleCountLock(c2, c1.count))) fail.push('count lock must keep primary face');
 const anState = {
   ...state,
   characters: [...(state.characters ?? []), { id: 'CHAR-004', name: 'An', role: 'Bạn' }],
@@ -251,11 +266,12 @@ const glance = shot({
   visual: 'Liếc nhìn con số 9 đúng nửa giây.',
 });
 const glanceCard = compileShotSceneCard(state, glance);
-if (glanceCard.visualSpec.framing !== 'MCU') fail.push(`glance framing ${glanceCard.visualSpec.framing}`);
-if (glanceCard.visualSpec.primary?.name !== 'Minh') fail.push('glance primary Minh');
-if (!glanceCard.visualSpec.secondary.some((p) => p.name === 'Linh' && p.face === 'partial')) {
-  fail.push('glance Linh must be partial secondary');
+if (/face on camera|speak this line/i.test(`${glanceCard.visualSpec.purpose} ${glanceCard.stillAction}`)) {
+  fail.push('card must not say face on camera');
 }
+if (glanceCard.visualSpec.framing !== 'INSERT') fail.push(`glance framing ${glanceCard.visualSpec.framing}`);
+if (glanceCard.visualSpec.subjectKind !== 'prop') fail.push('glance subject is the paper');
+if (glanceCard.visualSpec.primary?.name === 'Minh') fail.push('glance must not MCU Minh as primary');
 const glancePrompt = seriesSceneStillPrompt({
   aspect: '16:9',
   visual: glanceCard.stillAction,
@@ -265,9 +281,12 @@ const glancePrompt = seriesSceneStillPrompt({
   peopleNames: 'Minh, Linh',
   visualSpec: glanceCard.visualSpec,
 });
-if (!/FRAMING LOCK|PRIMARY: Minh|NOT REQUIRED/i.test(glancePrompt)) fail.push('visual spec must compile into still prompt');
+if (!/Test paper|INSERT|PRIORITY 1|HARD BAN/i.test(glancePrompt)) fail.push('visual spec must compile INSERT into still prompt');
 if (/every named person[\s\S]*complete face/i.test(glancePrompt)) {
-  fail.push('MCU glance must not force both full faces');
+  fail.push('INSERT glance must not force both full faces');
+}
+if (/exactly 2 FULL|exactly 2 people/i.test(glancePrompt)) {
+  fail.push('INSERT glance must not CAST COUNT 2');
 }
 if (stripStillLettering('Spoken this shot (speaker on camera): Minh: Không... đề khó mà mẹ.').includes('Không')) {
   fail.push('stripStillLettering must drop quoted dialogue');
@@ -291,6 +310,23 @@ const twoStill = seriesSceneStillPrompt({
 });
 if (!/FACE LOCK|complete face/i.test(twoStill)) fail.push('9:16 two-shot must lock both faces');
 if (!/VERTICAL BLOCKING|upper two-thirds/i.test(twoStill)) fail.push('9:16 two-shot must not be a cropped table');
+const mcuStill = seriesSceneStillPrompt({
+  aspect: '9:16',
+  visual: 'Dining room, dim evening',
+  action: glanceCard.visualSpec.shotAction,
+  refs: [],
+  peopleCount: 2,
+  peopleNames: 'Minh, Linh',
+  visualSpec: compileShotSceneCard(state, shot({
+    id: 'SH01-05',
+    story: 'Minh nói với mẹ.',
+    characterIds: ['CHAR-001'],
+    characters: ['CHAR-001'],
+    dialogueSegmentIds: ['L1'],
+  })).visualSpec,
+});
+if (!/PRIORITY 1|Minh/i.test(mcuStill)) fail.push('MCU still must lead with story priority');
+if (/exactly 2 FULL|vertical two-shot/i.test(mcuStill)) fail.push('MCU 9:16 must not force a two-shot');
 if (!/SPEAKER LOCK/i.test(namCard.blocking)) fail.push('card blocking must lock speaker');
 if (!/family portrait/i.test(namCard.blocking)) fail.push('card must forbid family portrait');
 if (!/dim/i.test(namCard.lighting)) fail.push(`lighting ${namCard.lighting}`);

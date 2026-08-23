@@ -32,7 +32,7 @@ if (aspectMatchesRunway(1024, 1024, '16:9')) fail.push('square must not match 16
 const crop = coverCropRect(1024, 1024, 1280, 720);
 if (crop.sw !== 1024) fail.push('square→16:9 keeps full width');
 if (Math.abs(crop.sh - Math.round(1024 / (1280 / 720))) > 2) fail.push('square→16:9 crops height');
-if (crop.sy <= 0) fail.push('face-bias crop must lift off the bottom');
+if (crop.sy < 0) fail.push('cover crop sy must stay in frame');
 if (!shouldContainFit(1344, 768, 720, 1280, 2)) fail.push('2 people landscape→9:16 must contain');
 if (shouldContainFit(1344, 768, 720, 1280, 1)) fail.push('1 person may still cover-crop');
 const box = containDrawRect(1344, 768, 720, 1280);

@@ -29,7 +29,7 @@ import {
   type SeriesPilotState,
   type SeriesShotRun,
 } from './content-famixa-series';
-import { deriveVisualSpec, type VisualQa, type VisualSpec } from './content-famixa-visual-spec';
+import { deriveVisualSpec, qaLane, visualQaAllowsApprove, type VisualQa, type VisualSpec } from './content-famixa-visual-spec';
 
 export function visualSpecOf(state: SeriesPilotState, shot: FamixaSeriesShot, prevShot?: FamixaSeriesShot): VisualSpec {
   return shotRunOf(state, shot).visualSpec ?? compileShotSceneCard(state, shot, prevShot).visualSpec;
@@ -73,7 +73,9 @@ export type ShotProdStatus =
   | 'KF APPROVED'
   | 'VIDEO QUEUED'
   | 'VIDEO READY'
-  | 'VIDEO APPROVED';
+  | 'VIDEO APPROVED'
+  | 'QA BLOCK'
+  | 'QA REVIEW';
 
 export const PROD_GATES = [
   { id: 'script', label: 'Script Approved' },
@@ -234,9 +236,10 @@ export function kfHasPixels(run: SeriesShotRun) {
   return Boolean(run.keyframeDataUrl?.startsWith('data:image'));
 }
 
-/** Explicit duyệt. Legacy: continuity ticks count as approved. */
+/** Explicit duyệt + Image QA PASS (hard OK + quality ≥85). Legacy without visualQa still uses kfApproved. */
 export function kfIsApprovedStill(run: SeriesShotRun) {
   if (!kfHasPixels(run)) return false;
+  if (run.visualQa && !visualQaAllowsApprove(run.visualQa)) return false;
   if (run.kfApproved === true) return true;
   if (run.kfApproved === false) return false;
   return Boolean(run.continuity && Object.values(run.continuity).some(Boolean));
@@ -428,7 +431,10 @@ export function compileShotSceneCard(
   const master = sceneMasterOf(state, sceneIdOfShot(shot));
   const cast = visibleFrameCast(state, shot, prevShot);
   const action = effectiveShotAction(shot, shotRunOf(state, shot));
-  const speakerNames = lines.map((l) => (l.name || l.characterId || '').trim()).filter(Boolean);
+  const speakerNames = lines
+    .filter((l) => !isOffFrameChar(l.characterId, l.name))
+    .map((l) => (l.name || l.characterId || '').trim())
+    .filter(Boolean);
   const spoken = lines.map((l) => `${l.name}: ${l.text}`).join(' · ');
   const lighting =
     master.lighting ||
@@ -443,15 +449,47 @@ export function compileShotSceneCard(
     namJustEntered: namIn && !namWas,
     namAlreadyIn: namWas,
   });
-  const faceLock =
-    cast.count >= 2
-      ? `FACE LOCK: ${cast.names.join(', ')} each need a complete visible face. Do not crop Linh/mẹ at the chest.`
-      : '';
   const place = master.location || shot.location || master.environment || '';
+  const prevAction = prevShot ? effectiveShotAction(prevShot, shotRunOf(state, prevShot)) : undefined;
+  const prevFraming = prevShot
+    ? (
+        shotRunOf(state, prevShot).visualSpec ??
+        deriveVisualSpec({
+          shotId: prevShot.id,
+          action: prevAction,
+          names: visibleFrameCast(state, prevShot).names,
+          ids: visibleFrameCast(state, prevShot).ids,
+        })
+      ).framing
+    : undefined;
+  const visualSpec = deriveVisualSpec({
+    shotId: shot.id,
+    action,
+    spoken,
+    location: place,
+    lighting,
+    names: cast.names,
+    ids: cast.ids,
+    speakers: speakerNames,
+    camera: master.camera,
+    lens: master.lens,
+    prevAction,
+    prevFraming,
+  });
+  const faceLock =
+    visualSpec.framing === 'INSERT'
+      ? ''
+      : visualSpec.primary
+        ? `PRIMARY FACE VISIBLE: ${visualSpec.primary.name} full face, looking at ${visualSpec.gazeTarget || 'the other person'}, never the lens.${
+            visualSpec.secondary[0]
+              ? ` SECONDARY ${visualSpec.secondary[0].name}: ${visualSpec.secondary[0].body} — face ${visualSpec.secondary[0].face}, not required unless spec says full.`
+              : ''
+          }`
+        : '';
   const stillAction = [
     place ? `Setting: ${place}. ${lighting}.` : lighting,
-    speakerNames.length
-      ? `SPEAKER ON CAMERA: ${[...new Set(speakerNames)].join(', ')}. Mouth slightly open. Never paint dialogue, subtitles, or letters.`
+    speakerNames.length && visualSpec.framing !== 'INSERT'
+      ? `SPEAKER FACE VISIBLE: ${[...new Set(speakerNames)].join(', ')}. Looking at the other person, never the lens. Mouth slightly open. Never paint dialogue, subtitles, or letters.`
       : '',
     action && !looksLikePackHeading(action) ? `Action: ${action}` : '',
     blocking,
@@ -464,18 +502,6 @@ export function compileShotSceneCard(
     .join(' — ')
     .replace(/\s+/g, ' ')
     .trim();
-  const visualSpec = deriveVisualSpec({
-    shotId: shot.id,
-    action,
-    location: place,
-    lighting,
-    names: cast.names,
-    ids: cast.ids,
-    speakers: speakerNames,
-    camera: master.camera,
-    lens: master.lens,
-    prevAction: prevShot ? effectiveShotAction(prevShot, shotRunOf(state, prevShot)) : undefined,
-  });
   return {
     oneLiner: oneLiner ? (oneLiner.length > 88 ? `${oneLiner.slice(0, 88)}…` : oneLiner) : 'Chưa có mô tả shot',
     stillAction,
@@ -502,9 +528,9 @@ export function peopleCountLock(cast: VisibleFrameCast, prevCount?: number) {
   return [
     `CAST COUNT LOCK: exactly ${cast.count || prevCount || 0} people in the frame: ${who}.`,
     speakerNames
-      ? `SPEAKER LOCK: ${speakerNames} must be fully visible. Do not hide a speaking parent off-camera.`
+      ? `SPEAKER LOCK: ${speakerNames} face visible, looking at the other person — never the lens. Do not hide a speaking parent.`
       : '',
-    `FACE LOCK: ${who} — complete face each (eyes, nose, mouth). No faceless mother/torso crop.`,
+    `FACE LOCK: primary face complete (eyes, nose, mouth). Secondary may be shoulder-only when Shot Director says so. No faceless primary / speaker torso crop.`,
     prev,
     prevCount && cast.count > prevCount
       ? `CAST PERSIST: keep everyone from the previous still (${prevCount} people) plus any new speaker. Do not drop Minh when Nam enters.`
@@ -604,6 +630,13 @@ export function shotProdStatus(state: SeriesPilotState, shot: FamixaSeriesShot):
   const run = shotRunOf(state, shot);
   if (run.prodSkip) return 'HOLD';
   if (!shotHasValidAction(shot, run)) return 'HOLD';
+  if (run.visualQa && !visualQaAllowsApprove(run.visualQa)) {
+    const lane = qaLane(run.visualQa, visualSpecOf(state, shot));
+    if (lane === 'PENDING' || lane === 'NONE') {
+      return kfHasPixels(run) ? 'KF DRAFT' : 'READY';
+    }
+    return lane === 'REVIEW' ? 'QA REVIEW' : 'QA BLOCK';
+  }
   if (run.previewUrl?.trim() && (run.status === 'approved' || state.sceneLocked)) return 'VIDEO APPROVED';
   if (run.turboStatus === 'PENDING' || run.turboStatus === 'RUNNING' || run.turboStatus === 'RETRY') return 'VIDEO QUEUED';
   if (run.previewUrl?.trim()) return 'VIDEO READY';
@@ -709,12 +742,29 @@ export function buildTimelineLanes(tl: AssembleTimeline): TimelineLane[] {
   ];
 }
 
-export function continueScenePrompt(master: SceneMaster, prevCode: string | undefined, action: string) {
+export function continueScenePrompt(
+  master: SceneMaster,
+  prevCode: string | undefined,
+  action: string,
+  mode: 'same-camera' | 'new-camera' = 'same-camera',
+) {
   const who = master.characters || 'the same people';
   const place = master.location || master.environment || 'the same room';
   const light = master.lighting || 'the same lighting';
   const clothes = master.wardrobe || 'the same wardrobe';
   const from = prevCode ? `from ${prevCode}` : 'from the attached previous keyframe';
+  if (mode === 'new-camera') {
+    return [
+      `Same locked scene (${place}, ${light}, ${clothes}, ${who}). NEW CAMERA — do not copy the previous crop, zoom, or camera distance.`,
+      `Do not upscale or smear a previous still. Sharp photoreal film grain, not a zoomed JPEG.`,
+      `FACE SAFE: forehead, both eyes, nose, mouth, chin, hairline inside the frame. Face visible ≠ look at camera. Forbidden: cut forehead, cut chin, cheek-only, back of head, motion blur, looking into the lens.`,
+      master.screenDirection ? `Screen direction lock: ${master.screenDirection}.` : '',
+      `Only the Action changes: ${action}.`,
+      SCENE_CONTINUITY_RULE,
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
   return [
     `Continue the exact same scene ${from}.`,
     `Preserve character identity (${who}), wardrobe from the previous still (${clothes} — do not redress from Canon), location (${place}), lighting (${light}), props (${master.props || 'same props'}), and time (${master.time || 'same time'}).`,

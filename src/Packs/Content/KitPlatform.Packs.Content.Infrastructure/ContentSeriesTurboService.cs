@@ -148,14 +148,14 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
         var audioExt = audioMime.Contains("wav", StringComparison.OrdinalIgnoreCase) ? "wav" : "mp3";
         var audioCdn = await _fal.UploadAsync(audioBytes, audioMime, $"{request.ClipId}.{audioExt}", cancellationToken);
 
-        var created = await _fal.CreateLipsyncAsync(videoCdn, audioCdn, request.SyncMode, cancellationToken);
+        var created = await _fal.CreateLipsyncAsync(videoCdn, audioCdn, request.SyncMode, request.Model, cancellationToken);
         return new ContentSeriesTurboTaskDto(
             created.TaskId,
             created.Status,
             created.VideoUrl,
             null,
             false,
-            ContentFalClient.LipsyncModel,
+            created.Model,
             0);
     }
 
@@ -343,16 +343,29 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
     private static string BuildPrompt(string? prompt)
     {
         var raw = (prompt ?? "").Trim();
-        const string safe =
-            "Cinematic live-action. The photo is the first frame only. " +
-            "Start motion right away: blink, breathe, small natural movement. Keep the same faces and clothes. No captions.";
-        if (string.IsNullOrWhiteSpace(raw)) return safe;
+        const string motionOnly =
+            "Subtle body movement, blink and breathe. Camera remains steady.";
+        if (string.IsNullOrWhiteSpace(raw)) return motionOnly;
         raw = System.Text.RegularExpressions.Regex.Replace(
             raw,
             @"\b(11-year-old|year-old|child|minor|crying|shouting)\b",
             "",
             System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        raw = System.Text.RegularExpressions.Regex.Replace(
+            raw,
+            @"(?i)\b(display the text|show the words|write a prompt|on-?screen text)\b",
+            " ");
         raw = System.Text.RegularExpressions.Regex.Replace(raw, @"\s+", " ").Trim();
-        return raw.Length <= 980 ? raw : raw[..980];
+        if (LooksLikeForbiddenI2vPrompt(raw))
+            throw new InvalidOperationException(
+                "I2V law — chỉ motion + camera. Không gửi mô tả lại KF / câu phủ định (0 cr).");
+        if (string.IsNullOrWhiteSpace(raw)) return motionOnly;
+        return raw.Length <= 900 ? raw : raw[..900];
     }
+
+    private static bool LooksLikeForbiddenI2vPrompt(string raw) =>
+        System.Text.RegularExpressions.Regex.IsMatch(
+            raw,
+            @"\b(no text|no captions?|no logo|watermark|do not |don't |mute take|preserve the (characters|wardrobe|room)|visual contract|fail conditions|same wardrobe|vietnamese family drama|stand in )\b",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 }

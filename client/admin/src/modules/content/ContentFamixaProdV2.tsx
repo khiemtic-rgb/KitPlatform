@@ -1,6 +1,6 @@
 /** Famixa Production Workflow V2 screens: Shorts → Image → Video → Preview → Final. */
 
-import { Alert, Button, Checkbox, Drawer, Input, Radio, Space, Tag, Typography } from 'antd';
+import { Alert, Button, Checkbox, Drawer, Input, Radio, Select, Space, Tag, Typography } from 'antd';
 import { DownloadOutlined, FolderOpenOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -18,11 +18,19 @@ import {
   lipsyncVideoUrl,
   takeVideoUrl,
   shouldResumeLipsync,
-  inferRunwayBilled,
   productionCostLedger,
+  runwayCostView,
   shouldResumeTurboPoll,
   isTurboRateLimit,
   turboInFlight,
+  normalizeLipsyncModel,
+  normalizeLipsyncSyncMode,
+  lipsyncTierOf,
+  FAL_LIPSYNC_TIERS,
+  estimateFalLipsyncUsdForShots,
+  shotI2vPromptHash,
+  type FalLipsyncModel,
+  type FalLipsyncSyncMode,
   type ProdV2Step,
 } from './content-famixa-prod-v2';
 import {
@@ -31,9 +39,10 @@ import {
   compareRunwayJobs,
   formatRunwayDiagnostic,
   formatProductionLog,
-  latestAttempt,
+  isInternalBadOutput,
+  lastGenerationFail,
   parseFailureCode,
-  sameKfAsInternalFail,
+  stampFailedInput,
   videoPipeLabel,
 } from './content-famixa-runway-pipe';
 import {
@@ -49,7 +58,7 @@ import {
   type SeriesPilotState,
   type SeriesShotRun,
 } from './content-famixa-series';
-import { existingTakesReady, rangeTakesReady } from './content-famixa-assemble';
+import { completeCutHolds, completeCutReady, existingTakesReady, rangeTakesReady } from './content-famixa-assemble';
 import { type PreviewCutPlan } from './content-famixa-preview-cut';
 import { ContentFamixaPreviewCutCard } from './ContentFamixaPreviewCutCard';
 import { continuityPlaceHint, kfIsApproved } from './content-famixa-batch-plan';
@@ -74,9 +83,20 @@ import { compileKfRewrite, emptyKfRewrite, sanitizeKfRewrite, type KfRewrite } f
 import {
   applyOperatorCheck,
   approveBlockReason,
+  coverageRepeatWarning,
+  HARD_FAIL_CODES,
+  qaLane,
   storyboardLabel,
   visualQaAllowsApprove,
 } from './content-famixa-visual-spec';
+import {
+  compileCorrectionPrompt,
+  compileVisualContract,
+  EDIT_QUICK,
+  FAIL_TICKS,
+  formatVisualContract,
+  nextShotNeedingKf,
+} from './content-famixa-kf-pipeline';
 import { rewriteContentSeriesKfNote } from '../../shared/api/content.api';
 import './content-famixa-studio.css';
 
@@ -112,6 +132,7 @@ export function ContentFamixaProdV2({
   onSeconds,
   onLockShotGraph,
   onOpenShot,
+  onReviewKf,
   runOf,
   actionOf,
   lock,
@@ -121,10 +142,12 @@ export function ContentFamixaProdV2({
   onGenerateKf,
   onPickKf,
   onApproveKf,
+  onQaKf,
   onRegenerateKf,
   onCreateVideo,
   onAbDiagnostic,
   onLipsync,
+  onLipsyncPrefs,
   onAttachLipsync,
   lipsyncBusy,
   cutPlan,
@@ -148,6 +171,7 @@ export function ContentFamixaProdV2({
   onApprovePreview,
   onPatchRun,
   onApproveScene,
+  onI2vProductionMode,
 }: {
   step: ProdV2Step;
   onStep: (step: ProdV2Step) => void;
@@ -181,6 +205,7 @@ export function ContentFamixaProdV2({
   onSeconds: (shotId: string, seconds: 5 | 10) => void;
   onLockShotGraph?: () => void;
   onOpenShot: (shot: FamixaSeriesShot) => void;
+  onReviewKf?: (shot: FamixaSeriesShot) => void;
   runOf: (shot: FamixaSeriesShot) => SeriesShotRun;
   actionOf: (shot: FamixaSeriesShot) => string | undefined;
   lock: SceneContinuityLock;
@@ -190,10 +215,12 @@ export function ContentFamixaProdV2({
   onGenerateKf: (ids?: string[]) => void;
   onPickKf?: (file: File, shotId?: string) => void;
   onApproveKf?: (ids?: string[]) => void;
+  onQaKf?: (shotId: string) => void;
   onRegenerateKf?: (ids: string[], continuityNote?: string) => void;
-  onCreateVideo: (ids?: string[]) => void;
+  onCreateVideo: (ids?: string[], opts?: { remake?: boolean }) => void;
   onAbDiagnostic?: (successId: string, failId: string) => void;
-  onLipsync?: (ids?: string[]) => void;
+  onLipsync?: (ids?: string[], opts?: { remake?: boolean }) => void;
+  onLipsyncPrefs?: (prefs: { lipsyncModel?: FalLipsyncModel; lipsyncSyncMode?: FalLipsyncSyncMode }) => void;
   onAttachLipsync?: (shotId: string) => void;
   lipsyncBusy?: boolean | string;
   cutPlan?: PreviewCutPlan;
@@ -218,6 +245,7 @@ export function ContentFamixaProdV2({
   onApprovePreview?: () => void;
   onPatchRun?: (shotId: string, patch: Partial<SeriesShotRun>) => void;
   onApproveScene?: (sceneId: string) => void;
+  onI2vProductionMode?: (on: boolean) => void;
 }) {
   const pick = useRef<HTMLInputElement>(null);
   const [logShotId, setLogShotId] = useState<string | undefined>();
@@ -231,8 +259,8 @@ export function ContentFamixaProdV2({
   const vidSend = sel
     .filter((s) => {
       if (!vidNeed.includes(s.id)) return false;
-      const retry = canManualRetry(runOf(s));
-      return retry.kind === 'resume' || classifyVideoPipe(runOf(s)) === 'VIDEO_NOT_SENT';
+      const retry = canManualRetry(runOf(s), shotI2vPromptHash(state, s, runOf(s)));
+      return retry.ok && (retry.kind === 'resume' || retry.kind === 'new');
     })
     .map((s) => s.id);
   const lipNeed = lipsyncNeedIds(state, sel);
@@ -240,6 +268,8 @@ export function ContentFamixaProdV2({
   const takeN = sel.filter((s) => takeVideoUrl(runOf(s))).length;
   const takesOk = cutPlan ? rangeTakesReady(cutPlan) : takeN === sel.length && sel.length > 0;
   const haveTakes = cutPlan ? existingTakesReady(cutPlan) : takeN > 0;
+  const canCompleteCut = cutPlan ? completeCutReady(cutPlan) : haveTakes;
+  const holdN = cutPlan ? completeCutHolds(cutPlan).length : 0;
   const epTitle = episode?.title || studioSceneTitle(lock, episode) || 'EP';
 
   const applyPreset = (preset: 5 | 10 | 20 | 'all') => {
@@ -274,11 +304,13 @@ export function ContentFamixaProdV2({
   const [kfUserNote, setKfUserNote] = useState('');
   const [kfRewrite, setKfRewrite] = useState<KfRewrite>(emptyKfRewrite());
   const [kfRewriteBusy, setKfRewriteBusy] = useState(false);
+  const [kfFailTicks, setKfFailTicks] = useState<string[]>([]);
   const pickFor = useRef<string | undefined>(undefined);
   const selKey = sel.map((s) => s.id).join('|');
   useEffect(() => {
     const lock = visualLockShot(state, sel);
-    setKfPicked(sel.filter((s) => s.id !== lock?.id).map((s) => s.id));
+    const next = nextShotNeedingKf(sel, kfNeed, lock?.id);
+    setKfPicked(next ? [next.id] : []);
   }, [selKey]);
   const kfDetail = sel.find((s) => s.id === kfDetailId) || queue.find((s) => s.id === kfDetailId);
   const compileKfNote = async () => {
@@ -577,9 +609,7 @@ export function ContentFamixaProdV2({
                   </Radio.Group>
                   <p className="fx-plan">
                     {kfMethod === 'ai'
-                      ? template
-                        ? `Khóa ${studioShotCode(template, queue)}. Tạo từ ${fromCode || 'shot sau'} · ${genN} hình, sắc thái kịch bản.`
-                        : `Tuần tự ${genN} hình. Shot sau dựa shot trước. Sắc thái theo kịch bản.`
+                      ? `1 Shot → 1 KF. Reference: Scene Master + Canon + KF trước. Shot sau chỉ sau QA PASS.`
                       : 'SK: mở Shot → Đổi ảnh. KIT không generate.'}
                   </p>
                   {kfMethod === 'ai' ? (
@@ -590,14 +620,34 @@ export function ContentFamixaProdV2({
                         disabled={!genN || !master.locked || !state.outputAspect}
                         onClick={() => onGenerateKf(need)}
                       >
-                        {fromCode ? `Tạo KF từ ${fromCode} · ${genN}` : `Tạo KF tuần tự · ${genN}`}
+                        TẠO 1 ẢNH KF
                       </Button>
+                      {(() => {
+                        const cur = need[0] ? sel.find((s) => s.id === need[0]) : undefined;
+                        const passed = cur && kfIsApproved(runOf(cur));
+                        const nxt = passed
+                          ? nextShotNeedingKf(
+                              sel,
+                              kfNeed.filter((id) => id !== cur.id),
+                              template?.id,
+                            )
+                          : undefined;
+                        return nxt ? (
+                          <Button
+                            loading={generateKfBusy}
+                            disabled={!master.locked || !state.outputAspect}
+                            onClick={() => onGenerateKf([nxt.id])}
+                          >
+                            Tạo shot tiếp {studioShotCode(nxt, queue)}
+                          </Button>
+                        ) : null;
+                      })()}
                       <Button
                         loading={generateKfBusy}
-                        disabled={!redo.length || !master.locked || !state.outputAspect}
-                        onClick={() => onRegenerateKf?.(redo)}
+                        disabled={!redo[0] || !master.locked || !state.outputAspect}
+                        onClick={() => onRegenerateKf?.(redo.slice(0, 1))}
                       >
-                        Tạo lại {redo.length} hình đã chọn
+                        Sửa 1 KF đã chọn
                       </Button>
                     </Space>
                   ) : (
@@ -605,15 +655,12 @@ export function ContentFamixaProdV2({
                   )}
                 </div>
                 {(() => {
-                  const labels = sel.map((s) =>
-                    storyboardLabel(
-                      runOf(s).visualSpec ?? compileShotSceneCard(state, s, previousSceneKf(state, s, queue)?.shot).visualSpec,
-                    ),
-                  );
-                  const allWide = labels.length >= 3 && labels.every((l) => l === 'WIDE' || l === 'ESTABLISHING');
+                  const specs = sel.map((s) => compileShotSceneCard(state, s, previousSceneKf(state, s, queue)?.shot).visualSpec);
+                  const labels = specs.map((spec) => storyboardLabel(spec));
+                  const coverWarn = coverageRepeatWarning(labels);
                   return (
                     <div className="fx-storyboard">
-                      <p className="fx-storyboard__kicker">STORYBOARD STRIP</p>
+                      <p className="fx-storyboard__kicker">SHOT DIRECTOR</p>
                       <div className="fx-storyboard__strip">
                         {sel.map((s, i) => (
                           <button
@@ -627,9 +674,7 @@ export function ContentFamixaProdV2({
                           </button>
                         ))}
                       </div>
-                      {allWide ? (
-                        <Alert type="warning" showIcon message="Cả dải đều WIDE — coverage sẽ chán. Đổi MCU / CU / INSERT theo Action." />
-                      ) : null}
+                      {coverWarn ? <Alert type="warning" showIcon message={coverWarn} /> : null}
                     </div>
                   );
                 })()}
@@ -639,7 +684,7 @@ export function ContentFamixaProdV2({
                     const item = cutPlan?.items.find((i) => i.shotId === s.id);
                     const prev = previousSceneKf(state, s, queue)?.shot;
                     const card = compileShotSceneCard(state, s, prev);
-                    const spec = run.visualSpec ?? card.visualSpec;
+                    const spec = card.visualSpec;
                     const action = card.oneLiner;
                     const on = kfPicked.includes(s.id);
                     const st = shotProdStatus(state, s);
@@ -661,22 +706,40 @@ export function ContentFamixaProdV2({
                             {studioShotCode(s, queue)} {spec.framing}
                             {s.voiceChainFrom ? ' · REUSE' : ''}
                           </strong>
-                          <span>{spec.intent || action || '—'}</span>
+                          <span>{spec.shotAction || spec.purpose || action || '—'}</span>
                         </button>
                         <Tag>{template && s.id === template.id ? 'KHÓA' : st}</Tag>
                         {run.lipsynced ? <Tag color="green">KHỚP MÔI</Tag> : null}
-                        <Tag color={spec.primary ? 'blue' : 'gold'}>
-                          {spec.primary
-                            ? `${spec.framing} · ${spec.primary.name}${spec.secondary[0] ? ` + ${spec.secondary[0].name} ${spec.secondary[0].face}` : ''}`
-                            : 'Chưa khóa subject'}
+                        <Tag color={spec.subjectName ? 'blue' : 'gold'}>
+                          {spec.subjectKind === 'prop'
+                            ? `INSERT · ${spec.subjectName}`
+                            : `${spec.framing} · ${spec.focus}${spec.gazeTarget ? ` → ${spec.gazeTarget}` : ''}${
+                                spec.secondary[0] ? ` · ${spec.secondary[0].name} ${spec.secondary[0].body}` : ''
+                              }`}
                         </Tag>
                         <Tag
                           color={
-                            qa?.status === 'PASS' ? 'green' : qa?.status === 'REJECT' ? 'red' : qa?.status === 'PENDING' ? 'gold' : 'default'
+                            qaLane(qa, spec) === 'PASS'
+                              ? 'green'
+                              : qaLane(qa, spec) === 'REVIEW'
+                                ? 'gold'
+                                : qaLane(qa, spec) === 'BLOCK'
+                                  ? 'red'
+                                  : 'default'
                           }
                         >
                           QA {qa?.total != null ? `${qa.total}` : qa?.status || '—'}
+                          {qaLane(qa, spec) === 'BLOCK'
+                            ? ' BLOCK'
+                            : qaLane(qa, spec) === 'REVIEW'
+                              ? ' REVIEW'
+                              : qaLane(qa, spec) === 'PASS'
+                                ? ' PASS'
+                                : ''}
                         </Tag>
+                        {qa?.hardFails.length ? (
+                          <Tag color="red">HARD FAIL · {qa.hardFails.join(' · ')}</Tag>
+                        ) : null}
                         <span className="fx-shot-seq__sec">
                           {s.editSeconds ? `${s.editSeconds}s edit` : ''} · I2V {clampShortSeconds(s.seconds)}s
                         </span>
@@ -697,6 +760,7 @@ export function ContentFamixaProdV2({
                     setKfDetailId(undefined);
                     setKfUserNote('');
                     setKfRewrite(emptyKfRewrite());
+                    setKfFailTicks([]);
                   }}
                   width={440}
                   destroyOnClose
@@ -711,22 +775,87 @@ export function ContentFamixaProdV2({
                       {(() => {
                         const prev = previousSceneKf(state, kfDetail, queue)?.shot;
                         const card = compileShotSceneCard(state, kfDetail, prev);
-                        const spec = runOf(kfDetail).visualSpec ?? card.visualSpec;
+                        const spec = card.visualSpec;
                         const qa = runOf(kfDetail).visualQa;
                         const item = cutPlan?.items.find((i) => i.shotId === kfDetail.id);
                         return (
                           <>
                             <p>
-                              <span>Intent</span>
-                              {spec.intent}
+                              <span>Visual Contract</span>
+                            </p>
+                            <pre className="fx-gemini-brief">{formatVisualContract(compileVisualContract(spec))}</pre>
+                            <p>
+                              <span>Reference Pack</span>
+                              Scene Master · Character Canon · Previous KF — Gemini nhận tối đa 4 ảnh, mỗi ảnh một vai.
                             </p>
                             <p>
-                              <span>Framing</span>
-                              {spec.shotType} · {spec.camera} · {spec.lens}
+                              <span>Shot plan</span>
+                              {spec.framing} · {spec.focus}
+                              {spec.gazeTarget ? ` · Gaze → ${spec.gazeTarget}` : ''} · face visible · 1 candidate
                             </p>
+                            <p>
+                              <span>Story</span>
+                              {spec.whyThisShot}
+                            </p>
+                            <p>
+                              <span>Intent</span>
+                              {spec.purpose}
+                            </p>
+                            <p>
+                              <span>Action</span>
+                              {spec.shotAction}
+                            </p>
+                            <p>
+                              <span>Performance</span>
+                              {spec.performance}
+                            </p>
+                            <p>
+                              <span>Focus</span>
+                              {spec.focus}
+                            </p>
+                            <p>
+                              <span>Subject</span>
+                              {spec.subjectKind === 'prop' ? `PROP · ${spec.subjectName}` : spec.subjectName}
+                            </p>
+                            <p>
+                              <span>Shot</span>
+                              {spec.framing} · {spec.shotType} · {spec.camera} · {spec.lens}
+                            </p>
+                            <p>
+                              <span>Composition</span>
+                              {spec.composition}
+                            </p>
+                            {spec.gaze ? (
+                              <p>
+                                <span>Gaze</span>
+                                {spec.gaze}
+                              </p>
+                            ) : null}
+                            {spec.emotion ? (
+                              <p>
+                                <span>Emotion</span>
+                                {spec.emotion}
+                              </p>
+                            ) : null}
+                            {spec.startState ? (
+                              <p>
+                                <span>Start</span>
+                                {spec.startState}
+                              </p>
+                            ) : null}
+                            {spec.endState ? (
+                              <p>
+                                <span>End</span>
+                                {spec.endState}
+                              </p>
+                            ) : null}
                             <p>
                               <span>Primary</span>
-                              {spec.primary ? `${spec.primary.name} — ${spec.primary.face.toUpperCase()} FACE · ${spec.primary.body}` : '—'}
+                              {spec.subjectKind === 'prop'
+                                ? spec.subjectName
+                                : spec.primary
+                                  ? `${spec.primary.name} — ${spec.primary.face.toUpperCase()} FACE · ${spec.primary.body}`
+                                  : '—'}
                             </p>
                             <p>
                               <span>Secondary</span>
@@ -748,15 +877,53 @@ export function ContentFamixaProdV2({
                               {!item || item.silent || !item.line ? 'NONE' : `${item.line.name}: “${item.line.text}”`}
                             </p>
                             <p>
-                              <span>AI QA</span>
-                              {qa?.status === 'PASS' && qa.total != null
-                                ? `${qa.total}/100 PASS`
-                                : qa?.status === 'REJECT'
-                                  ? `REJECT ${qa.hardFails.join(', ') || qa.notes || ''}`.trim()
-                                  : qa?.status === 'PENDING'
-                                    ? 'PENDING — tick REQUIRED'
-                                    : 'Chưa QA'}
+                              <span>Forbidden</span>
+                              {spec.forbidden.join(' · ') || '—'}
                             </p>
+                            <p>
+                              <span>Hard fail</span>
+                              {HARD_FAIL_CODES.join(' · ')} — BLOCK dù điểm cao
+                            </p>
+                            <p>
+                              <span>KF candidate · Visual QA</span>
+                              {qaLane(qa, spec) === 'PASS'
+                                ? `HARD FAIL NONE · quality ${qa?.total ?? '—'} (soft) — Duyệt KF`
+                                : qaLane(qa, spec) === 'BLOCK'
+                                  ? `HARD FAIL${qa?.hardFails.length ? ` · ${qa.hardFails.join(', ')}` : ''}${
+                                      qa?.evidence ? ` — ${qa.evidence}` : ''
+                                    }`
+                                  : qa?.status === 'PENDING'
+                                    ? 'PENDING — Chấm lại ảnh này, đừng tạo ảnh mới'
+                                    : 'Chưa QA'}
+                              {qa?.confidence != null ? ` · tin cậy ${qa.confidence}%` : ''}
+                            </p>
+                            <Space wrap style={{ marginBottom: 8 }}>
+                              {EDIT_QUICK.map((t) => (
+                                <Button
+                                  key={t.id}
+                                  size="small"
+                                  disabled={!runOf(kfDetail).keyframeDataUrl}
+                                  loading={generateKfBusy}
+                                  onClick={() =>
+                                    onRegenerateKf?.(
+                                      [kfDetail.id],
+                                      compileCorrectionPrompt(spec, [t.id], runOf(kfDetail).visualQa?.evidence),
+                                    )
+                                  }
+                                >
+                                  {t.label}
+                                </Button>
+                              ))}
+                            </Space>
+                            {qa?.hardChecks ? (
+                              <p className="fx-vqa">
+                                {Object.entries(qa.hardChecks).map(([k, v]) => (
+                                  <span key={k}>
+                                    {k} {v}
+                                  </span>
+                                ))}
+                              </p>
+                            ) : null}
                             {qa?.axes ? (
                               <p className="fx-vqa">
                                 {(['character', 'face', 'action', 'prop', 'composition', 'continuity', 'emotion'] as const).map((k) =>
@@ -799,6 +966,28 @@ export function ContentFamixaProdV2({
                         <span>Method</span>
                         {kfOrigin(runOf(kfDetail))}
                       </p>
+                      <p>
+                        <span>
+                          {qaLane(runOf(kfDetail).visualQa, compileShotSceneCard(state, kfDetail, previousSceneKf(state, kfDetail, queue)?.shot).visualSpec) === 'PASS'
+                            ? 'Sửa ảnh (không bắt buộc)'
+                            : 'Ảnh không đạt — sửa gì?'}
+                        </span>
+                      </p>
+                      <Space wrap style={{ marginBottom: 8 }}>
+                        {FAIL_TICKS.map((t) => (
+                          <Checkbox
+                            key={t.id}
+                            checked={kfFailTicks.includes(t.id)}
+                            onChange={(e) =>
+                              setKfFailTicks((cur) =>
+                                e.target.checked ? [...cur, t.id] : cur.filter((id) => id !== t.id),
+                              )
+                            }
+                          >
+                            {t.label}
+                          </Checkbox>
+                        ))}
+                      </Space>
                       <p>
                         <span>Vì sao tạo lại</span>
                       </p>
@@ -860,7 +1049,16 @@ export function ContentFamixaProdV2({
                         <Button
                           loading={generateKfBusy}
                           onClick={() => {
+                            const spec = compileShotSceneCard(
+                              state,
+                              kfDetail,
+                              previousSceneKf(state, kfDetail, queue)?.shot,
+                            ).visualSpec;
+                            const fromTicks = kfFailTicks.length
+                              ? compileCorrectionPrompt(spec, kfFailTicks, runOf(kfDetail).visualQa?.evidence)
+                              : '';
                             const note =
+                              fromTicks ||
                               kfRewrite.instruction.trim() ||
                               compileKfRewrite(kfUserNote, {
                                 action: actionOf(kfDetail) || kfDetail.story,
@@ -869,14 +1067,27 @@ export function ContentFamixaProdV2({
                             onRegenerateKf?.([kfDetail.id], note) ?? onGenerateKf([kfDetail.id]);
                           }}
                         >
-                          Tạo lại
+                          Sửa ảnh
                         </Button>
+                        {onQaKf ? (
+                          <Button
+                            loading={generateKfBusy}
+                            disabled={!runOf(kfDetail).keyframeDataUrl}
+                            onClick={() => onQaKf(kfDetail.id)}
+                          >
+                            Chấm lại QA
+                          </Button>
+                        ) : null}
                         <Button
                           type="primary"
-                          disabled={!runOf(kfDetail).keyframeDataUrl || !visualQaAllowsApprove(runOf(kfDetail).visualQa)}
+                          disabled={
+                            !runOf(kfDetail).keyframeDataUrl ||
+                            !visualQaAllowsApprove(runOf(kfDetail).visualQa) ||
+                            kfIsApproved(runOf(kfDetail))
+                          }
                           onClick={() => onApproveKf?.([kfDetail.id])}
                         >
-                          Duyệt KF
+                          {kfIsApproved(runOf(kfDetail)) ? 'Đã duyệt' : 'Duyệt KF'}
                         </Button>
                       </Space>
                       {approveBlockReason(runOf(kfDetail).visualQa) ? (
@@ -907,14 +1118,33 @@ export function ContentFamixaProdV2({
 
       {step === 'video' ? (
         <section className="fx-card">
-          <p className="fx-kf__kicker">05 VIDEO — gửi Runway / Wan từ KF đã chọn</p>
+          <p className="fx-kf__kicker">05 VIDEO — RUNWAY COST-SAFE</p>
+          <Alert
+            type={state.i2vProductionMode ? 'warning' : 'info'}
+            showIcon
+            style={{ marginBottom: 12 }}
+            message={state.i2vProductionMode ? 'PRODUCTION MODE — batch tối đa 3. 1 FAIL = PAUSED.' : 'SAFE MODE (mặc định) — 1 shot → xem take → mới tiếp.'}
+            description={
+              <Space wrap>
+                <Button size="small" type={state.i2vProductionMode ? 'default' : 'primary'} onClick={() => onI2vProductionMode?.(false)}>
+                  SAFE MODE
+                </Button>
+                <Button size="small" type={state.i2vProductionMode ? 'primary' : 'default'} onClick={() => onI2vProductionMode?.(true)}>
+                  PRODUCTION · batch 3
+                </Button>
+                <Typography.Text type="secondary">
+                  I2V chỉ sau KF APPROVED + QA PASS + PRECHECK. 5s = 25 cr · 10s = 50 cr. Task tạo ≠ đã trừ.
+                </Typography.Text>
+              </Space>
+            }
+          />
           {consecutiveDialogueWarning(state, sel) ? (
             <Alert type="warning" showIcon message={consecutiveDialogueWarning(state, sel)} />
           ) : null}
           <p className="fx-plan">
             {(() => {
               const cost = productionCostLedger(state, sel);
-              return `Cost · Runway ${cost.billedRunway} cr đã trừ / ước ${cost.estimatedRunway} cr · Fal ~$${cost.confirmedFalUsd.toFixed(2)} đã khớp / ~$${cost.estimatedFalUsd.toFixed(2)} nếu gửi hết`;
+              return `Cost · Actual (file OK) ${cost.billedRunway} cr · ước job mới ${cost.estimatedRunway} cr · Fal ~$${cost.confirmedFalUsd.toFixed(2)} / ~$${cost.estimatedFalUsd.toFixed(2)}`;
             })()}
           </p>
           <h3>
@@ -931,7 +1161,7 @@ export function ContentFamixaProdV2({
             {kitCredits ? ` · sổ KIT ${kitCredits} cr` : ''}
           </p>
           <Typography.Paragraph type="secondary">
-            Mỗi Short = 1 clip 5s hoặc 10s. Confirm mới gửi job. Runway trừ cr khi nhận job — fail unexpected vẫn mất cr. KIT không tự gửi lần 2. Không gửi từ bước Preview.
+            Mỗi Short = 5s hoặc 10s. Confirm hiện Estimated. SUCCESS + file đọc được mới là Actual. Generation error = REFUND PENDING. Không bấm lại cùng KF.
           </Typography.Paragraph>
           {(() => {
             const chain = buildContinuityChain(state, sel);
@@ -958,8 +1188,7 @@ export function ContentFamixaProdV2({
               message={(() => {
                 const failed = sel.filter((s) => runOf(s).turboError && !runOf(s).previewUrl);
                 const kept = sel.filter((s) => runOf(s).previewUrl?.trim()).length;
-                const billed = failed.reduce((n, s) => n + inferRunwayBilled(runOf(s), s.seconds), 0);
-                return `${failed.map((s) => studioShotCode(s, queue)).join(', ')} lỗi Runway — ${kept} take đã có giữ nguyên${billed ? ` · đã trừ ~${billed} cr` : ''}.`;
+                return `${failed.map((s) => studioShotCode(s, queue)).join(', ')} RUNWAY FAILED — ${kept} take giữ nguyên. Credit: REFUND PENDING (Runway), KIT không ghi đã trừ.`;
               })()}
               description={
                 <Space direction="vertical" size={8}>
@@ -968,18 +1197,29 @@ export function ContentFamixaProdV2({
                       ? `KIT còn khóa gửi job mới (nhớ 429 cũ, ~${runwayQuietMin} phút).`
                       : sel.some((s) => isTurboRateLimit(runOf(s).turboError || '') && !runOf(s).previewUrl)
                         ? '429 = hết số job/ngày. Hỏi lại · 0 cr trước.'
-                        : 'Bỏ shot lỗi để test ghép take đã có — 0 cr Runway. Đừng Gửi lại hàng loạt.'}
+                        : 'INTERNAL.BAD_OUTPUT ≠ lỗi thường. Không gửi lại cùng KF. Sửa KF → HARD/QUALITY/SEQUENCE PASS → duyệt → Confirm 1 job.'}
                   </span>
-                  <Button
-                    type="primary"
-                    onClick={() => {
-                      const failed = sel.filter((s) => runOf(s).turboError && !runOf(s).previewUrl);
-                      if (!dropFromCut(failed.map((s) => s.id))) return;
-                      onStep('preview');
-                    }}
-                  >
-                    Bỏ shot lỗi · Preview {takeN} take
-                  </Button>
+                  <Space wrap>
+                    <Button
+                      onClick={() => {
+                        const failed = sel.filter((s) => isInternalBadOutput(runOf(s)) || Boolean(runOf(s).turboError));
+                        const first = failed[0];
+                        if (!first) return;
+                        const run = runOf(first);
+                        if (lastGenerationFail(run) && !run.failedKfHash) onPatchRun?.(first.id, stampFailedInput(run, run.keyframeDataUrl));
+                        if (onReviewKf) onReviewKf(first);
+                        else {
+                          onStep('image');
+                          onOpenShot(first);
+                        }
+                      }}
+                    >
+                      Kiểm tra KF shot lỗi
+                    </Button>
+                    <Button type="primary" loading={assembleBusy} onClick={() => onAssembleCut?.()}>
+                      Ghép tập hoàn chỉnh · {holdN ? `${takeN} take + ${holdN} HOLD` : `${takeN} take`} + thoại
+                    </Button>
+                  </Space>
                 </Space>
               }
             />
@@ -990,8 +1230,64 @@ export function ContentFamixaProdV2({
               showIcon
               style={{ marginBottom: 12 }}
               message={`${lipNeed.length} take chưa khớp môi`}
-              description="Runway không nhận TTS nên miệng không theo lời. Fal 1.9 ~$0.70/phút (~$0.12/clip 10s) — nhận job là trừ. 0 cr Runway. KIT chỉ hiện KHỚP MÔI khi có file. Lỗi 405 ≠ hoàn tiền."
+              description="Runway không nhận TTS nên miệng không theo lời. Chọn bậc giá rồi Confirm — nhận job là trừ Fal. 0 cr Runway."
             />
+          ) : null}
+          {onLipsyncPrefs ? (
+            <div style={{ marginBottom: 12 }}>
+              <Typography.Text strong>Khớp môi — bậc giá</Typography.Text>
+              <Radio.Group
+                value={normalizeLipsyncModel(state.lipsyncModel)}
+                onChange={(e) => {
+                  const lipsyncModel = e.target.value as FalLipsyncModel;
+                  const sync = normalizeLipsyncSyncMode(state.lipsyncSyncMode);
+                  onLipsyncPrefs(
+                    lipsyncModel === 'ls' && sync !== 'loop' && sync !== 'bounce' && sync !== 'cut_off'
+                      ? { lipsyncModel, lipsyncSyncMode: 'cut_off' }
+                      : { lipsyncModel },
+                  );
+                }}
+                style={{ display: 'flex', flexDirection: 'column', gap: 6, margin: '8px 0' }}
+              >
+                {FAL_LIPSYNC_TIERS.map((t) => (
+                  <Radio key={t.value} value={t.value}>
+                    <strong>{t.title}</strong>
+                    {' — '}
+                    {t.hint} · {t.rate}
+                  </Radio>
+                ))}
+              </Radio.Group>
+              <Typography.Text type="secondary">
+                {lipNeed.length
+                  ? `Ước tính ${lipNeed.length} clip · ${lipsyncTierOf(state.lipsyncModel).title} ≈ $${estimateFalLipsyncUsdForShots(lipNeed, normalizeLipsyncModel(state.lipsyncModel)).toFixed(2)} Fal. Confirm mới trừ.`
+                  : `${lipsyncTierOf(state.lipsyncModel).title} — chọn trước, Confirm khi gửi.`}
+                {normalizeLipsyncModel(state.lipsyncModel) === 'ls'
+                  ? ' LatentSync không có remap/cut_off — KIT chỉ gửi loop/bounce nếu bạn chọn.'
+                  : ''}
+              </Typography.Text>
+              <div style={{ marginTop: 8 }}>
+                <Select
+                  value={normalizeLipsyncSyncMode(state.lipsyncSyncMode)}
+                  style={{ minWidth: 280 }}
+                  onChange={(lipsyncSyncMode: FalLipsyncSyncMode) => onLipsyncPrefs({ lipsyncSyncMode })}
+                  options={
+                    normalizeLipsyncModel(state.lipsyncModel) === 'ls'
+                      ? [
+                          { value: 'loop', label: 'loop — lặp video khi thoại dài hơn' },
+                          { value: 'bounce', label: 'bounce — đảo chiều (pingpong)' },
+                          { value: 'cut_off', label: 'mặc định — không loop' },
+                        ]
+                      : [
+                          { value: 'remap', label: 'remap — kéo video theo thoại' },
+                          { value: 'cut_off', label: 'cut_off — cắt phần thừa' },
+                          { value: 'loop', label: 'loop — lặp video' },
+                          { value: 'bounce', label: 'bounce — đảo chiều' },
+                          { value: 'silence', label: 'silence — giữ im hết thoại' },
+                        ]
+                  }
+                />
+              </div>
+            </div>
           ) : null}
           {runwayQuietMin && onClearRunwayQuiet ? (
             <Button type="primary" onClick={onClearRunwayQuiet} style={{ marginBottom: 12 }}>
@@ -1070,6 +1366,14 @@ export function ContentFamixaProdV2({
                     >
                       Tải
                     </Button>
+                    <Button
+                      size="small"
+                      loading={turboBusy === s.id}
+                      disabled={Boolean(turboBusy) || Boolean(runwayQuietMin)}
+                      onClick={() => onCreateVideo([s.id], { remake: true })}
+                    >
+                      Tạo lại take
+                    </Button>
                     {run.lipsynced && lipsyncVideoUrl(run) ? (
                       <>
                         <Tag color="green">KHỚP MÔI</Tag>
@@ -1086,6 +1390,16 @@ export function ContentFamixaProdV2({
                         <Typography.Link href={lipsyncVideoUrl(run)} target="_blank" rel="noopener noreferrer">
                           Link
                         </Typography.Link>
+                        {onLipsync ? (
+                          <Button
+                            size="small"
+                            loading={lipsyncBusy === s.id}
+                            disabled={Boolean(lipsyncBusy) || Boolean(turboBusy)}
+                            onClick={() => onLipsync([s.id], { remake: true })}
+                          >
+                            Khớp lại
+                          </Button>
+                        ) : null}
                       </>
                     ) : lipsyncInFlight(run) || lipsyncBusy === s.id ? (
                       <Tag color="blue">{run.lipsyncStatus || 'PENDING'}</Tag>
@@ -1123,15 +1437,15 @@ export function ContentFamixaProdV2({
                   </>
                 ) : run.turboError ? (
                   <>
-                    <Tag color="red">Lỗi Runway</Tag>
+                    <Tag color={run.videoPipe === 'INPUT_INVALID' || /RUNWAY BLOCKED|KIT PRECHECK/i.test(run.turboError) ? 'orange' : 'red'}>
+                      {run.videoPipe === 'INPUT_INVALID' || /RUNWAY BLOCKED|KIT PRECHECK/i.test(run.turboError)
+                        ? 'KIT PRECHECK'
+                        : 'Lỗi Runway'}
+                    </Tag>
                     <span className="fx-prod-row__warn" title={run.turboError}>
                       {shouldResumeTurboPoll(run)
                         ? `Task cũ còn · ${run.turboError.length > 56 ? `${run.turboError.slice(0, 56)}…` : run.turboError}`
-                        : inferRunwayBilled(run, s.seconds)
-                          ? `Đã trừ ~${inferRunwayBilled(run, s.seconds)} cr · ${run.turboError.length > 48 ? `${run.turboError.slice(0, 48)}…` : run.turboError}`
-                          : run.turboError.length > 72
-                            ? `${run.turboError.slice(0, 72)}…`
-                            : run.turboError}
+                        : `${parseFailureCode(run.turboError) || (run.videoPipe === 'INPUT_INVALID' ? 'BLOCKED' : 'FAILED')} · ${runwayCostView(run, s.seconds).label}`}
                     </span>
                     <Button
                       size="small"
@@ -1143,8 +1457,8 @@ export function ContentFamixaProdV2({
                       Bỏ khỏi dải test
                     </Button>
                     {(() => {
-                      const retry = canManualRetry(run);
-                      const internal = /INTERNAL/i.test(run.turboError || '') || /INTERNAL/i.test(parseFailureCode(run.turboError) || '');
+                      const retry = canManualRetry(run, shotI2vPromptHash(state, s, run));
+                      const internal = isInternalBadOutput(run);
                       if (retry.kind === 'resume') {
                         return (
                           <Button size="small" loading={turboBusy === s.id} onClick={() => onCreateVideo([s.id])}>
@@ -1159,14 +1473,73 @@ export function ContentFamixaProdV2({
                           </Button>
                         );
                       }
-                      if (internal) {
-                        if (sameKfAsInternalFail(run)) {
-                          return <Tag>Cùng KF — không gửi lại INTERNAL</Tag>;
+                      if (retry.kind === 'new' && internal && !kfIsApproved(run)) {
+                        if (visualQaAllowsApprove(run.visualQa) && onApproveKf) {
+                          return (
+                            <Button size="small" type="primary" onClick={() => onApproveKf([s.id])}>
+                              QA {run.visualQa?.total ?? ''} PASS · Duyệt KF
+                            </Button>
+                          );
                         }
                         return (
-                          <Button size="small" danger loading={turboBusy === s.id} onClick={() => onCreateVideo([s.id])}>
-                            Đã sửa KF · 1 job (trừ cr)
+                          <Button
+                            size="small"
+                            onClick={() => {
+                              if (lastGenerationFail(run) && !run.failedKfHash) onPatchRun?.(s.id, stampFailedInput(run, run.keyframeDataUrl));
+                              if (onReviewKf) onReviewKf(s);
+                              else onStep('image');
+                            }}
+                          >
+                            Kiểm tra KF
                           </Button>
+                        );
+                      }
+                      if (retry.kind === 'new' && internal) {
+                        return (
+                          <Button
+                            size="small"
+                            type="primary"
+                            disabled={Boolean(runwayQuietMin)}
+                            loading={turboBusy === s.id}
+                            onClick={() => onCreateVideo([s.id])}
+                          >
+                            KF đã duyệt · Tạo Video · Confirm credit
+                          </Button>
+                        );
+                      }
+                      if (retry.kind === 'none' || internal) {
+                        return (
+                          <Space wrap size={4}>
+                            <Tag color="red">{parseFailureCode(run.turboError) || 'RENDER_FAILURE'}</Tag>
+                            <Button size="small" onClick={() => { setLogShotId(s.id); setLogCompareId(undefined); }}>
+                              Xem lỗi
+                            </Button>
+                            <Button
+                              size="small"
+                              onClick={() => {
+                                if (lastGenerationFail(run) && !run.failedKfHash) onPatchRun?.(s.id, stampFailedInput(run, run.keyframeDataUrl));
+                                if (onReviewKf) onReviewKf(s);
+                                else {
+                                  onStep('image');
+                                  onOpenShot(s);
+                                }
+                              }}
+                            >
+                              Kiểm tra KF
+                            </Button>
+                            <Button
+                              size="small"
+                              type="primary"
+                              onClick={() => {
+                                if (lastGenerationFail(run) && !run.failedKfHash) onPatchRun?.(s.id, stampFailedInput(run, run.keyframeDataUrl));
+                                if (onReviewKf) onReviewKf(s);
+                                else onStep('image');
+                                onGenerateKf([s.id]);
+                              }}
+                            >
+                              Tạo KF sửa lỗi
+                            </Button>
+                          </Space>
                         );
                       }
                       return (
@@ -1176,7 +1549,7 @@ export function ContentFamixaProdV2({
                           loading={turboBusy === s.id}
                           onClick={() => onCreateVideo([s.id])}
                         >
-                          {runwayQuietMin ? 'Cần mở gửi' : `Gửi lại · attempt ${(latestAttempt(run)?.n ?? 0) + 1}`}
+                          {runwayQuietMin ? 'Cần mở gửi' : 'Tạo Video · Confirm credit'}
                         </Button>
                       );
                     })()}
@@ -1206,13 +1579,26 @@ export function ContentFamixaProdV2({
               const run = runOf(s);
               return Boolean(run.keyframeDataUrl) && !kfIsApproved(run) && run.status !== 'approved';
             });
+            const pass = drafts.filter((s) => visualQaAllowsApprove(runOf(s).visualQa));
+            const blocked = drafts.filter((s) => !visualQaAllowsApprove(runOf(s).visualQa));
             if (!drafts.length) return null;
             return (
-              <Space wrap style={{ marginTop: 8 }}>
-                <Button type="primary" onClick={() => onApproveKf?.(drafts.map((s) => s.id))}>
-                  Duyệt {drafts.length} KF DRAFT
-                </Button>
-                <Typography.Text type="secondary">Xem lại hình ở bước Hình nếu áo / bố / số người sai.</Typography.Text>
+              <Space direction="vertical" size={4} style={{ marginTop: 8 }}>
+                {blocked.length ? (
+                  <Typography.Text type="danger">
+                    {blocked.length} KF QA {blocked.some((s) => qaLane(runOf(s).visualQa) === 'BLOCK') ? 'BLOCK' : 'chưa PASS'}
+                    {' — '}
+                    {approveBlockReason(runOf(blocked[0]!).visualQa) || 'cần ≥ 95, không hard fail'}. Tạo lại hình ở bước Hình. Không duyệt.
+                  </Typography.Text>
+                ) : null}
+                {pass.length ? (
+                  <Space wrap>
+                    <Button type="primary" onClick={() => onApproveKf?.(pass.map((s) => s.id))}>
+                      Duyệt {pass.length} KF đã QA PASS
+                    </Button>
+                    <Typography.Text type="secondary">Hard OK = PASS. Điểm 95 là soft — cần bấm Duyệt, không gửi Draft.</Typography.Text>
+                  </Space>
+                ) : null}
               </Space>
             );
           })()}
@@ -1221,8 +1607,8 @@ export function ContentFamixaProdV2({
               const leftoverShots = sel.filter((s) => {
                 const run = runOf(s);
                 if (!kfIsApproved(run) || run.previewUrl?.trim() || run.prodSkip) return false;
-                const retry = canManualRetry(run);
-                return retry.kind === 'resume' || retry.kind === 'recover' || classifyVideoPipe(run) === 'VIDEO_NOT_SENT';
+                const retry = canManualRetry(run, shotI2vPromptHash(state, s, run));
+                return retry.kind === 'resume' || retry.kind === 'recover' || retry.kind === 'new';
               });
               const leftover = leftoverShots.map((s) => s.id);
               if (!leftover.length) return null;
@@ -1250,7 +1636,7 @@ export function ContentFamixaProdV2({
             {(() => {
               const readyShot = sel.find((s) => classifyVideoPipe(runOf(s)) === 'VIDEO_READY' && runOf(s).keyframeDataUrl);
               const failShot = sel.find((s) => /INTERNAL/i.test(runOf(s).turboError || '') && runOf(s).keyframeDataUrl);
-              if (!onAbDiagnostic || !readyShot || !failShot) return null;
+              if (!onAbDiagnostic || !readyShot || !failShot || !state.i2vProductionMode) return null;
               return (
                 <Button
                   disabled={Boolean(turboBusy)}
@@ -1284,17 +1670,13 @@ export function ContentFamixaProdV2({
                 loading={Boolean(lipsyncBusy)}
                 onClick={() => onLipsync(lipNeed)}
               >
-                Khớp môi {lipNeed.length} take · Fal
+                Khớp môi {lipNeed.length} take · {lipsyncTierOf(state.lipsyncModel).title}
               </Button>
             ) : null}
-            <Button disabled={!haveTakes} loading={assembleBusy} onClick={() => onAssembleCut?.()}>
-              {takesOk
-                ? lipReady.length
-                  ? `Ghép tập · ${lipReady.length} khớp môi`
-                  : 'Ghép tập MP4 + thoại + SRT'
-                : lipReady.length
-                  ? `Ghép ${takeN} take · ${lipReady.length} khớp môi`
-                  : `Ghép ${takeN} take đã có + thoại`}
+            <Button type="primary" disabled={!canCompleteCut} loading={assembleBusy} onClick={() => onAssembleCut?.()}>
+              {holdN
+                ? `Ghép tập hoàn chỉnh · ${takeN} take + ${holdN} HOLD + thoại`
+                : `Ghép tập hoàn chỉnh · ${takeN} take${lipReady.length ? ` · ${lipReady.length} khớp môi` : ''} + thoại`}
             </Button>
           </Space>
           {logShotId ? (() => {
@@ -1457,22 +1839,18 @@ export function ContentFamixaProdV2({
               ))}
             </div>
           ) : null}
-          {!takesOk && haveTakes ? (
+          {holdN ? (
             <Alert
               type="info"
               showIcon
-              message={
-                lipReady.length
-                  ? `Ghép ${takeN} take đã có. ${lipReady.map((s) => studioShotCode(s, queue)).join(', ')} giữ tiếng khớp môi — không overlay TTS hàng đó. Short chưa take bị bỏ qua.`
-                  : `Ghép ${takeN} take đã có để nghe thoại. Short chưa có take bị bỏ qua — không tạo ảnh / Runway mới.`
-              }
+              message={`${holdN} shot I2V lỗi sẽ HOLD khung KF + thoại — đủ nhịp kịch bản, không bỏ shot. Tạo lại take sau nếu cần chuyển động.`}
             />
           ) : null}
-          {!haveTakes ? (
+          {!canCompleteCut ? (
             <Alert
               type="warning"
               showIcon
-              message="Chưa có take trên dải. Gửi Runway ở bước 5 Video rồi ghép."
+              message="Thiếu KF trên dải. Tạo hình rồi ghép. Không cắt shot khỏi tập."
             />
           ) : null}
           <Space wrap style={{ marginTop: 12 }}>
@@ -1503,22 +1881,22 @@ export function ContentFamixaProdV2({
             )}
             {onLipsync && lipNeed.length ? (
               <Button disabled={Boolean(lipsyncBusy)} loading={Boolean(lipsyncBusy)} onClick={() => onLipsync(lipNeed)}>
-                Khớp môi {lipNeed.length} take · Fal
+                Khớp môi {lipNeed.length} take · {lipsyncTierOf(state.lipsyncModel).title}
               </Button>
             ) : null}
             <Button
               type="primary"
-              disabled={!haveTakes || (takesOk && Boolean(fullEpisodeBlockReason(state, sel)))}
+              disabled={!canCompleteCut}
               loading={assembleBusy}
               onClick={() => onAssembleCut?.()}
             >
               {takesOk && !fullEpisodeBlockReason(state, sel)
                 ? 'FINAL EPISODE · MP4'
-                : lipReady.length
-                  ? `Preview ${takeN} take · ${lipReady.length} FAL`
-                  : `Preview ${takeN} take đã có`}
+                : holdN
+                  ? `Ghép tập hoàn chỉnh · ${takeN} take + ${holdN} HOLD`
+                  : `Ghép tập hoàn chỉnh · ${takeN || sel.length} shot + thoại`}
             </Button>
-            <Button onClick={() => onApprovePreview?.()} disabled={state.previewApproved || !haveTakes}>
+            <Button onClick={() => onApprovePreview?.()} disabled={state.previewApproved || !canCompleteCut}>
               {state.previewApproved ? 'Đã duyệt Preview' : 'Duyệt Preview dải này'}
             </Button>
             <Button onClick={onLockScene} disabled={sceneLocked || !takesOk || !state.previewApproved}>

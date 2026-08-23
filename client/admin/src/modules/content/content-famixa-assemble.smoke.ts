@@ -4,6 +4,10 @@ import {
   looksLikeVideoUrl,
   existingTakesReady,
   planWithExistingTakes,
+  planCompleteCut,
+  completeCutHolds,
+  completeCutReady,
+  existingTakeIds,
   rangeTakesReady,
   takeDownloadName,
   lipsyncDownloadName,
@@ -110,6 +114,14 @@ if (!existingTakesReady(mixed)) fail.push('one existing take is enough to test-m
 if (planWithExistingTakes(mixed).items.map((i) => i.shotId).join() !== 'SH01') {
   fail.push('test mux keeps only existing takes');
 }
+if (existingTakeIds(mixed).join() !== 'SH01') fail.push('existingTakeIds must drop no-take shots');
+if (planCompleteCut(mixed).items.map((i) => i.shotId).join() !== 'SH01,SH02') {
+  fail.push('complete cut must keep KF-only beats');
+}
+if (completeCutHolds(planCompleteCut(mixed)).map((i) => i.shotId).join() !== 'SH02') {
+  fail.push('SH02 without take is HOLD KF');
+}
+if (!completeCutReady(mixed)) fail.push('KF + take covers the story range');
 
 const lipState = {
   ...state,
@@ -131,10 +143,31 @@ if (!lipCopy.detail.includes('SH01-01') || !/khớp môi/i.test(lipCopy.detail))
 if (/Ghép MP4 \+ thoại/.test(lipCopy.okText) && !/FAL|Preview/.test(lipCopy.okText)) {
   fail.push('mixed cut must not look like TTS-only mux');
 }
-if (!/miệng không theo lời|Preview tạm/i.test(lipCopy.detail)) fail.push('mixed cut must warn overlay has no lips');
+if (!/miệng chưa theo lời|mix TTS|chưa khớp môi/i.test(lipCopy.detail)) fail.push('mixed cut must warn overlay has no lips');
 const lipTl = buildAssembleTimeline(lipReady, { hasVoiceFile: () => true, voiceSecOf: () => 2, fit: 'speech' });
 if (!lipTl.clips[0]?.useVideoAudio) fail.push('lipsynced clip must keep video audio');
 if (lipTl.clips[1]?.useVideoAudio) fail.push('raw take must overlay TTS');
+
+const flagOnly = mapPreviewCut(
+  {
+    ...state,
+    runs: {
+      ...state.runs,
+      SH01: { ...state.runs.SH01!, lipsynced: true, finalSource: 'FAL' as const },
+    },
+  } as SeriesPilotState,
+  shots,
+  { hasVoiceFile: () => true },
+);
+if (!assembleNeedTtsOverlay(planWithExistingTakes(flagOnly)).some((i) => i.shotId === 'SH01')) {
+  fail.push('lipsynced flag without Fal file must still overlay TTS');
+}
+if (buildAssembleTimeline(planWithExistingTakes(flagOnly), { hasVoiceFile: () => true }).clips[0]?.useVideoAudio) {
+  fail.push('flag-only must not keep mute Runway audio');
+}
+if (!/HOLD|không bỏ|không cắt/i.test(assembleConfirmCopy(planCompleteCut(mixed)).detail)) {
+  fail.push('confirm must keep failed I2V as HOLD, not skip');
+}
 
 if (!looksLikeVideoUrl('https://dncdn.runwayml.com/generations/abc')) fail.push('runway url without suffix');
 if (!looksLikeVideoUrl('https://cdn.example.com/a.mp4?x=1')) fail.push('mp4 query');

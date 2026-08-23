@@ -109,13 +109,24 @@ internal static class ContentAiConfigParser
                ?? FirstNonEmpty(configuration[$"Content:Secrets:{key}"]);
     }
 
-    /// <summary>Gemini retired 2.5-flash for new keys — map to the current flash id.</summary>
+    /// <summary>
+    /// Retired Gemini text ids (2.0-flash / 1.5-flash / 2.5-flash) 404 on current keys.
+    /// Map to the park flash id. Do not rewrite image models.
+    /// </summary>
     private static string RewriteRetiredTextModel(string? model)
     {
         var m = (model ?? "").Trim();
+        if (m.StartsWith("models/", StringComparison.OrdinalIgnoreCase))
+            m = m["models/".Length..];
         if (m.Length == 0) return "gemini-3.6-flash";
         if (m.Equals("gemini-2.5-flash", StringComparison.OrdinalIgnoreCase)
-            || m.Equals("models/gemini-2.5-flash", StringComparison.OrdinalIgnoreCase))
+            || m.Equals("gemini-2.0-flash", StringComparison.OrdinalIgnoreCase)
+            || m.Equals("gemini-2.0-flash-001", StringComparison.OrdinalIgnoreCase)
+            || m.Equals("gemini-1.5-flash", StringComparison.OrdinalIgnoreCase)
+            || m.Equals("gemini-1.5-flash-latest", StringComparison.OrdinalIgnoreCase)
+            || m.Equals("gemini-1.5-flash-001", StringComparison.OrdinalIgnoreCase)
+            || m.Equals("gemini-pro", StringComparison.OrdinalIgnoreCase)
+            || m.Equals("gemini-1.5-pro", StringComparison.OrdinalIgnoreCase))
             return "gemini-3.6-flash";
         return m;
     }
