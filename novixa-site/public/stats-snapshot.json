@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-23T13:03:31.668Z",
+  "generatedAt": "2026-08-23T18:49:23.996Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 113,
-    "todayPageViews": 91,
-    "todayRequests": 4600,
-    "last24hVisitors": 217,
-    "last24hPageViews": 644,
-    "last24hRequests": 5530
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 216,
+    "last24hPageViews": 534,
+    "last24hRequests": 7784
   },
   "hourly": [
-    {
-      "time": "2026-08-22T14:00:00Z",
-      "visitors": 6,
-      "requests": 11
-    },
-    {
-      "time": "2026-08-22T15:00:00Z",
-      "visitors": 9,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-22T16:00:00Z",
-      "visitors": 27,
-      "requests": 74
-    },
-    {
-      "time": "2026-08-22T17:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-22T18:00:00Z",
-      "visitors": 10,
-      "requests": 130
-    },
     {
       "time": "2026-08-22T19:00:00Z",
       "visitors": 28,
@@ -125,15 +100,39 @@
       "time": "2026-08-23T12:00:00Z",
       "visitors": 11,
       "requests": 1702
+    },
+    {
+      "time": "2026-08-23T13:00:00Z",
+      "visitors": 14,
+      "requests": 254
+    },
+    {
+      "time": "2026-08-23T14:00:00Z",
+      "visitors": 12,
+      "requests": 259
+    },
+    {
+      "time": "2026-08-23T15:00:00Z",
+      "visitors": 10,
+      "requests": 729
+    },
+    {
+      "time": "2026-08-23T16:00:00Z",
+      "visitors": 19,
+      "requests": 747
+    },
+    {
+      "time": "2026-08-23T17:00:00Z",
+      "visitors": 11,
+      "requests": 492
+    },
+    {
+      "time": "2026-08-23T18:00:00Z",
+      "visitors": 2,
+      "requests": 2
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-17",
-      "visitors": 370,
-      "pageViews": 192,
-      "requests": 757
-    },
     {
       "date": "2026-08-18",
       "visitors": 336,
@@ -166,15 +165,19 @@
     },
     {
       "date": "2026-08-23",
-      "visitors": 113,
-      "pageViews": 91,
-      "requests": 4600
+      "visitors": 156,
+      "pageViews": 107,
+      "requests": 7083
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 154
+      "views": 165
+    },
+    {
+      "path": "/graphql",
+      "views": 106
     },
     {
       "path": "/cdn-cgi/l/email-protection",
@@ -185,52 +188,48 @@
       "views": 95
     },
     {
+      "path": "/app/settings.py",
+      "views": 87
+    },
+    {
+      "path": "/service-worker.js",
+      "views": 84
+    },
+    {
       "path": "/core/settings.py",
       "views": 81
     },
     {
-      "path": "/graphql",
-      "views": 75
+      "path": "/actuator",
+      "views": 80
+    },
+    {
+      "path": "/laravel/.env",
+      "views": 74
+    },
+    {
+      "path": "/web/.env",
+      "views": 73
     },
     {
       "path": "/server/.env",
       "views": 73
     },
     {
-      "path": "/app/settings.py",
-      "views": 66
+      "path": "/id_ecdsa",
+      "views": 72
     },
     {
-      "path": "/docker/.env",
-      "views": 65
+      "path": "/.env.development",
+      "views": 70
     },
     {
       "path": "/env.js",
-      "views": 62
+      "views": 70
     },
     {
-      "path": "/laravel/.env",
-      "views": 62
-    },
-    {
-      "path": "/v1/graphql",
-      "views": 58
-    },
-    {
-      "path": "/.git/config",
-      "views": 58
-    },
-    {
-      "path": "/service-worker.js",
-      "views": 57
-    },
-    {
-      "path": "/actuator/env",
-      "views": 54
-    },
-    {
-      "path": "/actuator",
-      "views": 53
+      "path": "/@fs/.env",
+      "views": 67
     }
   ]
 }
