@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-23T13:08:44.447Z",
+  "generatedAt": "2026-08-23T18:54:13.682Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 41,
-    "todayPageViews": 4,
-    "todayRequests": 64,
+    "todayVisitors": 8,
+    "todayPageViews": 1,
+    "todayRequests": 9,
     "last24hVisitors": 82,
-    "last24hPageViews": 15,
-    "last24hRequests": 1453
+    "last24hPageViews": 20,
+    "last24hRequests": 2731
   },
   "hourly": [
-    {
-      "time": "2026-08-22T14:00:00Z",
-      "visitors": 3,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-22T15:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-22T16:00:00Z",
-      "visitors": 16,
-      "requests": 21
-    },
-    {
-      "time": "2026-08-22T17:00:00Z",
-      "visitors": 2,
-      "requests": 25
-    },
-    {
-      "time": "2026-08-22T18:00:00Z",
-      "visitors": 6,
-      "requests": 13
-    },
     {
       "time": "2026-08-22T19:00:00Z",
       "visitors": 4,
@@ -120,15 +95,39 @@
       "time": "2026-08-23T12:00:00Z",
       "visitors": 4,
       "requests": 4
+    },
+    {
+      "time": "2026-08-23T13:00:00Z",
+      "visitors": 8,
+      "requests": 9
+    },
+    {
+      "time": "2026-08-23T14:00:00Z",
+      "visitors": 2,
+      "requests": 17
+    },
+    {
+      "time": "2026-08-23T15:00:00Z",
+      "visitors": 9,
+      "requests": 1297
+    },
+    {
+      "time": "2026-08-23T16:00:00Z",
+      "visitors": 6,
+      "requests": 15
+    },
+    {
+      "time": "2026-08-23T17:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-23T18:00:00Z",
+      "visitors": 4,
+      "requests": 4
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-17",
-      "visitors": 153,
-      "pageViews": 71,
-      "requests": 433
-    },
     {
       "date": "2026-08-18",
       "visitors": 93,
@@ -161,34 +160,44 @@
     },
     {
       "date": "2026-08-23",
-      "visitors": 82,
-      "pageViews": 13,
-      "requests": 1422
+      "visitors": 66,
+      "pageViews": 14,
+      "requests": 1411
+    },
+    {
+      "date": "2026-08-24",
+      "visitors": 8,
+      "pageViews": 1,
+      "requests": 9
     }
   ],
   "topPages": [
     {
+      "path": "/.well-known/gecko-litespeed.php",
+      "views": 26
+    },
+    {
       "path": "/robots.txt",
-      "views": 25
+      "views": 26
     },
     {
       "path": "/",
-      "views": 23
+      "views": 24
     },
     {
-      "path": "/wp-admin/wp-login.php",
-      "views": 18
+      "path": "/wp-content/languages/404.php",
+      "views": 20
+    },
+    {
+      "path": "/shell.php",
+      "views": 20
     },
     {
       "path": "/db.php",
-      "views": 18
+      "views": 20
     },
     {
-      "path": "/sitemap.xml",
-      "views": 18
-    },
-    {
-      "path": "/.well-known/gecko-litespeed.php",
+      "path": "/wp-includes/rest-api/1.php",
       "views": 18
     },
     {
@@ -196,36 +205,32 @@
       "views": 18
     },
     {
-      "path": "/wp-includes/images/media/dog.php",
-      "views": 15
+      "path": "/ab.php",
+      "views": 18
     },
     {
-      "path": "/ms-users.php",
-      "views": 15
-    },
-    {
-      "path": "/warm.PhP7",
-      "views": 15
+      "path": "/wp-admin/wp-login.php",
+      "views": 18
     },
     {
       "path": "/wp-includes/SimplePie/info.php",
+      "views": 18
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 17
+    },
+    {
+      "path": "/wp-content/plugins/ubh/",
+      "views": 16
+    },
+    {
+      "path": "/wp-includes/category-double.php",
+      "views": 16
+    },
+    {
+      "path": "/wp-includes/images/media/dog.php",
       "views": 15
-    },
-    {
-      "path": "/ab.php",
-      "views": 15
-    },
-    {
-      "path": "/hehehehe.php",
-      "views": 12
-    },
-    {
-      "path": "/wp-includes/style-engine/wp-conflg.php",
-      "views": 12
-    },
-    {
-      "path": "/wp-content/themes/twentytwentytwo/index.php",
-      "views": 12
     }
   ]
 }
