@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-23T07:02:33.772Z",
+  "generatedAt": "2026-08-23T13:03:31.668Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 77,
-    "todayPageViews": 78,
-    "todayRequests": 211,
-    "last24hVisitors": 237,
-    "last24hPageViews": 702,
-    "last24hRequests": 1332
+    "todayVisitors": 113,
+    "todayPageViews": 91,
+    "todayRequests": 4600,
+    "last24hVisitors": 217,
+    "last24hPageViews": 644,
+    "last24hRequests": 5530
   },
   "hourly": [
-    {
-      "time": "2026-08-22T08:00:00Z",
-      "visitors": 10,
-      "requests": 58
-    },
-    {
-      "time": "2026-08-22T09:00:00Z",
-      "visitors": 15,
-      "requests": 30
-    },
-    {
-      "time": "2026-08-22T10:00:00Z",
-      "visitors": 11,
-      "requests": 34
-    },
-    {
-      "time": "2026-08-22T11:00:00Z",
-      "visitors": 13,
-      "requests": 45
-    },
-    {
-      "time": "2026-08-22T12:00:00Z",
-      "visitors": 11,
-      "requests": 13
-    },
-    {
-      "time": "2026-08-22T13:00:00Z",
-      "visitors": 11,
-      "requests": 11
-    },
     {
       "time": "2026-08-22T14:00:00Z",
       "visitors": 6,
@@ -125,6 +95,36 @@
       "time": "2026-08-23T06:00:00Z",
       "visitors": 10,
       "requests": 92
+    },
+    {
+      "time": "2026-08-23T07:00:00Z",
+      "visitors": 6,
+      "requests": 246
+    },
+    {
+      "time": "2026-08-23T08:00:00Z",
+      "visitors": 8,
+      "requests": 486
+    },
+    {
+      "time": "2026-08-23T09:00:00Z",
+      "visitors": 12,
+      "requests": 492
+    },
+    {
+      "time": "2026-08-23T10:00:00Z",
+      "visitors": 10,
+      "requests": 493
+    },
+    {
+      "time": "2026-08-23T11:00:00Z",
+      "visitors": 11,
+      "requests": 970
+    },
+    {
+      "time": "2026-08-23T12:00:00Z",
+      "visitors": 11,
+      "requests": 1702
     }
   ],
   "daily": [
@@ -166,71 +166,71 @@
     },
     {
       "date": "2026-08-23",
-      "visitors": 77,
-      "pageViews": 78,
-      "requests": 211
+      "visitors": 113,
+      "pageViews": 91,
+      "requests": 4600
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 145
+      "views": 154
     },
     {
       "path": "/cdn-cgi/l/email-protection",
       "views": 102
     },
     {
-      "path": "/vi/",
-      "views": 64
+      "path": "/web.config",
+      "views": 95
     },
     {
-      "path": "/robots.txt",
-      "views": 37
+      "path": "/core/settings.py",
+      "views": 81
     },
     {
-      "path": "/.env",
-      "views": 24
+      "path": "/graphql",
+      "views": 75
     },
     {
-      "path": "/.env.backup",
-      "views": 23
+      "path": "/server/.env",
+      "views": 73
     },
     {
-      "path": "/.env.old",
-      "views": 20
+      "path": "/app/settings.py",
+      "views": 66
     },
     {
-      "path": "/vi/nguoi-dan/",
-      "views": 17
+      "path": "/docker/.env",
+      "views": 65
     },
     {
-      "path": "/.env.staging",
-      "views": 16
+      "path": "/env.js",
+      "views": 62
     },
     {
-      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
-      "views": 16
+      "path": "/laravel/.env",
+      "views": 62
     },
     {
-      "path": "/wp-login.php",
-      "views": 15
+      "path": "/v1/graphql",
+      "views": 58
     },
     {
-      "path": "/.env.dev",
-      "views": 15
+      "path": "/.git/config",
+      "views": 58
     },
     {
-      "path": "/.env.production",
-      "views": 13
+      "path": "/service-worker.js",
+      "views": 57
     },
     {
-      "path": "/.env.prod",
-      "views": 13
+      "path": "/actuator/env",
+      "views": 54
     },
     {
-      "path": "/app/.env",
-      "views": 13
+      "path": "/actuator",
+      "views": 53
     }
   ]
 }
